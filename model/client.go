@@ -3,7 +3,7 @@ package model
 import (
 	"net"
 
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/handler"
 )
 
@@ -14,7 +14,7 @@ type ClientActor struct {
 	packetHandler  *handler.PacketHandler
 }
 
-func NewClientActor(conn net.Conn) protoactor.Actor {
+func NewClientActor(conn net.Conn) actor.Actor {
 	act := &ClientActor{
 		Conn:           conn,
 		Buffer:         []byte{},
@@ -27,7 +27,7 @@ func NewClientActor(conn net.Conn) protoactor.Actor {
 	return act
 }
 
-func (state *ClientActor) Receive(context protoactor.Context) {
+func (state *ClientActor) Receive(context actor.Context) {
 	state.messageHandler.Handle(context)
 }
 

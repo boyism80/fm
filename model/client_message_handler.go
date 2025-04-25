@@ -1,9 +1,9 @@
 package model
 
 import (
-	"fmt"
+	"log"
 
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/handler"
 	"github.com/boyism80/fm/msg"
 	"github.com/boyism80/fm/stream"
@@ -11,9 +11,10 @@ import (
 
 func RegisterClientHandlers(m *ClientActor, h *handler.MessageHandler) {
 	handler.RegisterHandler(m, h, onClientConnected)
+	handler.RegisterHandler(m, h, onClientStopping)
 }
 
-func onClientConnected(client *ClientActor, ctx protoactor.Context, m *msg.ClientConnected) {
+func onClientConnected(client *ClientActor, ctx actor.Context, m *msg.ClientConnected) {
 	conn := client.Conn
 	go func() {
 		buf := make([]byte, 1024)
@@ -21,7 +22,7 @@ func onClientConnected(client *ClientActor, ctx protoactor.Context, m *msg.Clien
 		for {
 			n, err := conn.Read(buf)
 			if err != nil {
-				fmt.Println("Error reading from connection:", err)
+				ctx.Stop(ctx.Self())
 				conn.Close()
 				break
 			}
@@ -50,4 +51,9 @@ func onClientConnected(client *ClientActor, ctx protoactor.Context, m *msg.Clien
 			}
 		}
 	}()
+}
+
+func onClientStopping(client *ClientActor, ctx actor.Context, m *actor.Stopping) {
+	log.Println("클라이언트 접속 종료")
+	client.Conn.Close()
 }

@@ -3,24 +3,24 @@ package handler
 import (
 	"reflect"
 
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 )
 
 type MessageHandler struct {
-	handlers map[reflect.Type]func(ctx protoactor.Context, msg interface{})
+	handlers map[reflect.Type]func(ctx actor.Context, msg interface{})
 }
 
 func NewMessageHandler() *MessageHandler {
 	return &MessageHandler{
-		handlers: make(map[reflect.Type]func(ctx protoactor.Context, msg interface{})),
+		handlers: make(map[reflect.Type]func(ctx actor.Context, msg interface{})),
 	}
 }
 
-func (m *MessageHandler) Register(msgType reflect.Type, handler func(ctx protoactor.Context, msg interface{})) {
+func (m *MessageHandler) Register(msgType reflect.Type, handler func(ctx actor.Context, msg interface{})) {
 	m.handlers[msgType] = handler
 }
 
-func (m *MessageHandler) Handle(ctx protoactor.Context) {
+func (m *MessageHandler) Handle(ctx actor.Context) {
 	msg := ctx.Message()
 	msgType := reflect.TypeOf(msg)
 
@@ -29,9 +29,9 @@ func (m *MessageHandler) Handle(ctx protoactor.Context) {
 	}
 }
 
-func RegisterHandler[T any, M any](target *T, h *MessageHandler, fn func(*T, protoactor.Context, *M)) {
+func RegisterHandler[T any, M any](target *T, h *MessageHandler, fn func(*T, actor.Context, *M)) {
 	var msg *M
-	h.Register(reflect.TypeOf(msg), func(ctx protoactor.Context, m interface{}) {
+	h.Register(reflect.TypeOf(msg), func(ctx actor.Context, m interface{}) {
 		fn(target, ctx, m.(*M))
 	})
 }

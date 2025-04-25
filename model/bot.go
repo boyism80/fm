@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/handler"
 	"github.com/boyism80/fm/msg"
 	"github.com/boyism80/fm/packet"
@@ -17,26 +17,28 @@ type BotActor struct {
 	handler *handler.MessageHandler
 }
 
-func NewBotActor() protoactor.Actor {
+func NewBotActor() actor.Actor {
 	act := &BotActor{
 		handler: handler.NewMessageHandler(),
 	}
 
 	handler.RegisterHandler(act, act.handler, onBotConnect)
 	handler.RegisterHandler(act, act.handler, onBotSendPacket)
+	handler.RegisterHandler(act, act.handler, onBotClose)
 	handler.RegisterHandler(act, act.handler, onBotStopping)
 	return act
 }
 
-func (state *BotActor) Receive(context protoactor.Context) {
+func (state *BotActor) Receive(context actor.Context) {
 	state.handler.Handle(context)
 }
 
-func onBotStopping(bot *BotActor, ctx protoactor.Context, m *protoactor.Stopping) {
+func onBotStopping(bot *BotActor, ctx actor.Context, m *actor.Stopping) {
+	log.Println("봇 제거중")
 	bot.Conn.Close()
 }
 
-func onBotConnect(bot *BotActor, ctx protoactor.Context, m *msg.BotConnect) {
+func onBotConnect(bot *BotActor, ctx actor.Context, m *msg.BotConnect) {
 	serverAddr := fmt.Sprintf("localhost:%d", m.Port)
 
 	conn, err := net.Dial("tcp", serverAddr)
@@ -49,9 +51,10 @@ func onBotConnect(bot *BotActor, ctx protoactor.Context, m *msg.BotConnect) {
 	log.Println("서버에 연결됨:", serverAddr)
 
 	ctx.Send(ctx.Self(), &msg.BotSendPacket{Packet: &packet.MovePacket{X: 10, Y: 20}})
+	ctx.Send(ctx.Self(), &msg.BotClose{})
 }
 
-func onBotSendPacket(bot *BotActor, ctx protoactor.Context, m *msg.BotSendPacket) {
+func onBotSendPacket(bot *BotActor, ctx actor.Context, m *msg.BotSendPacket) {
 	wr := stream.NewStreamWriter(stream.LittleEndian)
 	m.Packet.Serialize(wr)
 	bytes := wr.Bytes()
@@ -65,4 +68,8 @@ func onBotSendPacket(bot *BotActor, ctx protoactor.Context, m *msg.BotSendPacket
 		log.Println("데이터 전송 실패:", err)
 		return
 	}
+}
+
+func onBotClose(bot *BotActor, ctx actor.Context, m *msg.BotClose) {
+	ctx.Stop(ctx.Self())
 }

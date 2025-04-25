@@ -9,3 +9,5 @@ type BotConnect struct {
 type BotSendPacket struct {
 	Packet packet.Packet
 }
+
+type BotClose struct{}
