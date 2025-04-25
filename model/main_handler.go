@@ -1,4 +1,4 @@
-package actor
+package model
 
 import (
 	"fmt"
@@ -6,16 +6,15 @@ import (
 
 	protoactor "github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/handler"
-	"github.com/boyism80/fm/model"
 	"github.com/boyism80/fm/msg"
 )
 
-func RegisterMainHandlers(m *model.Main, h *handler.MessageHandler) {
-	handler.RegisterHandler(m, h, handleStartListening)
-	handler.RegisterHandler(m, h, handleAcceptedClient)
+func RegisterMainHandlers(m *MainActor, h *handler.MessageHandler) {
+	handler.RegisterHandler(m, h, onStartListening)
+	handler.RegisterHandler(m, h, onAcceptedClient)
 }
 
-func handleStartListening(obj *model.Main, ctx protoactor.Context, m *msg.StartListening) {
+func onStartListening(obj *MainActor, ctx protoactor.Context, m *msg.StartListening) {
 	port := fmt.Sprintf(":%d", m.Port)
 	go func() {
 		listener, err := net.Listen("tcp", port)
@@ -25,6 +24,13 @@ func handleStartListening(obj *model.Main, ctx protoactor.Context, m *msg.StartL
 		}
 		defer listener.Close()
 		fmt.Println("Listening on", port)
+
+		// 봇 테스트
+		props := protoactor.PropsFromProducer(func() protoactor.Actor {
+			return NewBotActor()
+		})
+		pid := ctx.Spawn(props)
+		ctx.Send(pid, &msg.BotConnect{Port: m.Port})
 
 		for {
 			conn, err := listener.Accept()
@@ -37,12 +43,10 @@ func handleStartListening(obj *model.Main, ctx protoactor.Context, m *msg.StartL
 	}()
 }
 
-func handleAcceptedClient(obj *model.Main, ctx protoactor.Context, m *msg.ClientConnected) {
+func onAcceptedClient(obj *MainActor, ctx protoactor.Context, m *msg.ClientConnected) {
 	props := protoactor.PropsFromProducer(func() protoactor.Actor {
-		return &ClientActor{
-			Client: &model.Client{Conn: m.Conn},
-		}
+		return NewClientActor(m.Conn)
 	})
-	clientPID := ctx.Spawn(props)
-	ctx.Send(clientPID, m)
+	pid := ctx.Spawn(props)
+	ctx.Send(pid, m)
 }

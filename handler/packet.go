@@ -1,21 +1,22 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/boyism80/fm/packet"
 	"github.com/boyism80/fm/stream"
 )
 
 type PacketHandler struct {
-	handlers map[int]func(p interface{})
-	types    map[int]reflect.Type
+	handlers  map[int]func(p interface{})
+	generator map[int]func() packet.Packet
 }
 
 func NewPacketHandler() *PacketHandler {
 	return &PacketHandler{
-		handlers: make(map[int]func(p interface{})),
+		handlers:  map[int]func(p interface{}){},
+		generator: map[int]func() packet.Packet{},
 	}
 }
 
@@ -28,36 +29,39 @@ func RegisterPacketHandler[T any, P any](header int, target *T, h *PacketHandler
 		fn(target, p.(*P))
 	})
 
-	var p *P
-	h.types[header] = reflect.TypeOf(p)
+	h.generator[header] = func() packet.Packet {
+		var p any = new(P)
+		if pkt, ok := p.(packet.Packet); ok {
+			return pkt
+		}
+
+		return nil
+
+	}
 }
 
-func (state *PacketHandler) Handle(header int, data []byte) {
-	packetType, exists := state.types[header]
+func (state *PacketHandler) Handle(header int, data []byte) error {
+	generator, exists := state.generator[header]
 	if !exists {
-		fmt.Printf("No handler found for header %d\n", header)
-		return
+		return fmt.Errorf("No handler found for header %d\n", header)
 	}
 
-	ptr := reflect.New(packetType).Interface()
-	packet, ok := ptr.(packet.Packet)
-	if !ok {
-		fmt.Println("Object does not implement packet.Packet interface")
-		return
+	ptr := generator()
+	if ptr == nil {
+		return errors.New("Object does not implement packet.Packet interface")
 	}
 
 	reader := stream.NewStreamReader(data, stream.LittleEndian)
-	err := packet.Deserialize(reader)
+	err := ptr.Deserialize(reader)
 	if err != nil {
-		fmt.Printf("Failed to deserialize data: %v\n", err)
-		return
+		return fmt.Errorf("Failed to deserialize data: %v\n", err)
 	}
 
 	handler, exists := state.handlers[header]
 	if !exists {
-		fmt.Printf("No handler registered for header %d\n", header)
-		return
+		return fmt.Errorf("No handler registered for header %d\n", header)
 	}
 
-	handler(packet)
+	handler(ptr)
+	return nil
 }
