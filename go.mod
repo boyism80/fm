@@ -3,9 +3,12 @@ module github.com/boyism80/fm
 go 1.24.1
 
 require (
+	github.com/asynkron/goconsole v0.0.0-20160504192649-bfa12eebf716
+	github.com/asynkron/protoactor-go v0.0.0-20240822202345-3c0e61ca19c9
+)
+
+require (
 	github.com/Workiva/go-datastructures v1.1.3 // indirect
-	github.com/asynkron/goconsole v0.0.0-20160504192649-bfa12eebf716 // indirect
-	github.com/asynkron/protoactor-go v0.0.0-20240822202345-3c0e61ca19c9 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect

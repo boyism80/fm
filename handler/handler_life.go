@@ -11,10 +11,10 @@ import (
 func RegisterLifeHandlers(m *model.Life, handler *MessageHandler) {
 	RegisterObjectHandlers(&m.Object, handler)
 
-	RegisterHandler(m, &msg.LifeAddHp{}, handler, HandleLifeAddHp)
+	RegisterHandler(m, &msg.LifeAddHp{}, handler, handleLifeAddHp)
 }
 
-func HandleLifeAddHp(life *model.Life, ctx actor.Context, m interface{}) {
+func handleLifeAddHp(life *model.Life, ctx actor.Context, m interface{}) {
 	addHp := m.(*msg.LifeAddHp)
 	life.HP += addHp.Hp
 

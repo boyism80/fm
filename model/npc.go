@@ -1,6 +1,6 @@
 package model
 
-type NPC struct {
+type Npc struct {
 	Object
 	Dialog []string
 }
