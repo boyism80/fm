@@ -16,8 +16,7 @@ func NewMessageHandler() *MessageHandler {
 	}
 }
 
-func (m *MessageHandler) Register(msg interface{}, handler func(ctx protoactor.Context, msg interface{})) {
-	msgType := reflect.TypeOf(msg)
+func (m *MessageHandler) Register(msgType reflect.Type, handler func(ctx protoactor.Context, msg interface{})) {
 	m.handlers[msgType] = handler
 }
 
@@ -30,8 +29,9 @@ func (m *MessageHandler) Handle(ctx protoactor.Context) {
 	}
 }
 
-func RegisterHandler[T any](target *T, msg interface{}, handler *MessageHandler, fn func(*T, protoactor.Context, interface{})) {
-	handler.Register(msg, func(ctx protoactor.Context, m interface{}) {
-		fn(target, ctx, m)
+func RegisterHandler[T any, M any](target *T, h *MessageHandler, fn func(*T, protoactor.Context, *M)) {
+	var msg *M
+	h.Register(reflect.TypeOf(msg), func(ctx protoactor.Context, m interface{}) {
+		fn(target, ctx, m.(*M))
 	})
 }

@@ -16,7 +16,7 @@ func NewMobActor(Mob *model.Mob) actor.Actor {
 		Mob:     Mob,
 		handler: handler.NewMessageHandler(),
 	}
-	handler.RegisterMobHandlers(act.Mob, act.handler)
+	RegisterMobHandlers(act.Mob, act.handler)
 	return act
 }
 

@@ -16,7 +16,7 @@ func NewCharacterActor(character *model.Character) actor.Actor {
 		Character: character,
 		handler:   handler.NewMessageHandler(),
 	}
-	handler.RegisterCharacterHandlers(act.Character, act.handler)
+	RegisterCharacterHandlers(act.Character, act.handler)
 	return act
 }
 

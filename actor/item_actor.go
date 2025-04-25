@@ -16,7 +16,7 @@ func NewItemActor(Item *model.Item) actor.Actor {
 		Item:    Item,
 		handler: handler.NewMessageHandler(),
 	}
-	handler.RegisterItemHandlers(act.Item, act.handler)
+	RegisterItemHandlers(act.Item, act.handler)
 	return act
 }
 
