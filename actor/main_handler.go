@@ -12,7 +12,7 @@ import (
 
 func RegisterMainHandlers(m *model.Main, h *handler.MessageHandler) {
 	handler.RegisterHandler(m, h, handleStartListening)
-	handler.RegisterHandler(m, h, handleClientConnected)
+	handler.RegisterHandler(m, h, handleAcceptedClient)
 }
 
 func handleStartListening(obj *model.Main, ctx protoactor.Context, m *msg.StartListening) {
@@ -37,8 +37,12 @@ func handleStartListening(obj *model.Main, ctx protoactor.Context, m *msg.StartL
 	}()
 }
 
-func handleClientConnected(obj *model.Main, ctx protoactor.Context, m *msg.ClientConnected) {
-	props := protoactor.PropsFromProducer(func() protoactor.Actor { return &ClientActor{} })
+func handleAcceptedClient(obj *model.Main, ctx protoactor.Context, m *msg.ClientConnected) {
+	props := protoactor.PropsFromProducer(func() protoactor.Actor {
+		return &ClientActor{
+			Client: &model.Client{Conn: m.Conn},
+		}
+	})
 	clientPID := ctx.Spawn(props)
 	ctx.Send(clientPID, m)
 }
