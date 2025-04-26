@@ -14,12 +14,12 @@ var (
 )
 
 type StreamReader struct {
-	data   []byte
+	data   *[]byte
 	cursor int
 	order  binary.ByteOrder
 }
 
-func NewStreamReader(data []byte, endian Endian) *StreamReader {
+func NewStreamReader(data *[]byte, endian Endian) *StreamReader {
 	return &StreamReader{
 		data:   data,
 		cursor: 0,
@@ -28,10 +28,11 @@ func NewStreamReader(data []byte, endian Endian) *StreamReader {
 }
 
 func (sr *StreamReader) Read(n int) ([]byte, error) {
-	if sr.cursor+n > len(sr.data) {
+	if sr.cursor+n > len(*sr.data) {
 		return nil, errors.New("not enough bytes to read")
 	}
-	b := sr.data[sr.cursor : sr.cursor+n]
+	bytes := *sr.data
+	b := bytes[sr.cursor : sr.cursor+n]
 	sr.cursor += n
 	return b, nil
 }
@@ -137,11 +138,12 @@ func (sr *StreamReader) Reset() {
 
 func (sr *StreamReader) DiscardRead() {
 	if sr.cursor > 0 {
-		sr.data = sr.data[sr.cursor:]
+		bytes := *sr.data
+		*sr.data = bytes[sr.cursor:]
 		sr.cursor = 0
 	}
 }
 
 func (sr *StreamReader) Remaining() int {
-	return len(sr.data) - sr.cursor
+	return len(*sr.data) - sr.cursor
 }

@@ -51,7 +51,7 @@ func (state *PacketHandler) Handle(header int, data []byte) error {
 		return errors.New("Object does not implement packet.Packet interface")
 	}
 
-	reader := stream.NewStreamReader(data, stream.LittleEndian)
+	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	err := ptr.Deserialize(reader)
 	if err != nil {
 		return fmt.Errorf("Failed to deserialize data: %v\n", err)
