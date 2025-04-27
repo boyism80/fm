@@ -5,6 +5,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"math"
+
+	"golang.org/x/text/encoding/korean"
+	"golang.org/x/text/transform"
 )
 
 type StreamWriter struct {
@@ -92,10 +95,18 @@ func (sw *StreamWriter) WriteStr16(str string) error {
 	if len(str) > 65535 {
 		return errors.New("string too long for WriteStr16")
 	}
-	if err := sw.WriteU16(uint16(len(str))); err != nil {
+
+	cp949Encoder := korean.EUCKR.NewEncoder()
+	encodedStr, _, err := transform.Bytes(cp949Encoder, []byte(str))
+	if err != nil {
 		return err
 	}
-	_, err := sw.buf.Write([]byte(str))
+
+	if err := sw.WriteU16(uint16(len(encodedStr))); err != nil {
+		return err
+	}
+
+	_, err = sw.buf.Write(encodedStr)
 	return err
 }
 
@@ -103,9 +114,27 @@ func (sw *StreamWriter) WriteStr32(str string) error {
 	if len(str) > int(^uint32(0)) {
 		return errors.New("string too long for WriteStr32")
 	}
-	if err := sw.WriteU32(uint32(len(str))); err != nil {
+
+	cp949Decoder := korean.EUCKR.NewDecoder()
+	decodedStr, _, err := transform.Bytes(cp949Decoder, []byte(str))
+	if err != nil {
 		return err
 	}
-	_, err := sw.buf.Write([]byte(str))
+
+	if err := sw.WriteU32(uint32(len(decodedStr))); err != nil {
+		return err
+	}
+
+	_, err = sw.buf.Write(decodedStr)
 	return err
+}
+
+func (sw *StreamWriter) WriteBoolean(val bool) error {
+	var byteVal uint8
+	if val {
+		byteVal = 1
+	} else {
+		byteVal = 0
+	}
+	return sw.WriteU8(byteVal)
 }

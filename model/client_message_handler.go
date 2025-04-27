@@ -71,6 +71,7 @@ func (client *ClientActor) ReceivePackets(ctx actor.Context) {
 }
 
 func onClientConnected(client *ClientActor, ctx actor.Context, m *msg.ClientConnected) {
+	log.Println("클라이언트 연결됨")
 	timer := scheduler.NewTimerScheduler(ctx.ActorSystem().Root)
 	client.stopTimer = timer.SendRepeatedly(10*time.Second, 10*time.Second, ctx.Self(), &msg.Ping{})
 

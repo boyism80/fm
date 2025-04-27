@@ -9,17 +9,17 @@ import (
 var version string
 
 const (
-	MAPLE_VERSION = 10
-	MAPLE_CHECK   = 1
-	MAPLE_PATCH   = 1
-	MAPLE_MAGIC   = 291
+	VERSION = 10
+	CHECK   = 1
+	PATCH   = 1
+	MAGIC   = 291
 )
 
 func init() {
 	ret := 0
-	ret ^= (MAPLE_VERSION & 0x7FFF)
-	ret ^= (MAPLE_CHECK << 15)
-	ret ^= ((MAPLE_PATCH & 0xFF) << 16)
+	ret ^= (VERSION & 0x7FFF)
+	ret ^= (CHECK << 15)
+	ret ^= ((PATCH & 0xFF) << 16)
 	version = fmt.Sprintf("%d", ret)
 }
 
@@ -34,7 +34,7 @@ func (a *Welcome) Serialize(writer *stream.StreamWriter) error {
 		return err
 	}
 
-	err = writer.WriteU16(MAPLE_MAGIC)
+	err = writer.WriteU16(MAGIC)
 	if err != nil {
 		return err
 	}

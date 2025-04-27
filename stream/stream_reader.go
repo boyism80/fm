@@ -4,6 +4,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"math"
+
+	"golang.org/x/text/encoding/korean"
+	"golang.org/x/text/transform"
 )
 
 type Endian binary.ByteOrder
@@ -119,8 +122,19 @@ func (sr *StreamReader) ReadStr16() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	b, err := sr.Read(int(length))
-	return string(b), err
+	if err != nil {
+		return "", err
+	}
+
+	cp949Decoder := korean.EUCKR.NewDecoder()
+	decodedStr, _, err := transform.Bytes(cp949Decoder, b)
+	if err != nil {
+		return "", err
+	}
+
+	return string(decodedStr), nil
 }
 
 func (sr *StreamReader) ReadStr32() (string, error) {
@@ -128,8 +142,19 @@ func (sr *StreamReader) ReadStr32() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	b, err := sr.Read(int(length))
-	return string(b), err
+	if err != nil {
+		return "", err
+	}
+
+	cp949Decoder := korean.EUCKR.NewDecoder()
+	decodedStr, _, err := transform.Bytes(cp949Decoder, b)
+	if err != nil {
+		return "", err
+	}
+
+	return string(decodedStr), nil
 }
 
 func (sr *StreamReader) Reset() {
