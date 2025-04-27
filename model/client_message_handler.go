@@ -11,6 +11,7 @@ import (
 	"github.com/boyism80/fm/msg"
 	"github.com/boyism80/fm/packet/resp"
 	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/util"
 )
 
 func RegisterClientHandlers(m *ClientActor, h *handler.MessageHandler) {
@@ -54,6 +55,7 @@ func (client *ClientActor) ReceivePackets(ctx actor.Context) {
 			}
 
 			data = client.recvEncryption.Decrypt(data)
+			log.Println("[R] " + util.ToHexString(data))
 			opcodeReader := stream.NewStreamReader(&data, stream.LittleEndian)
 			opcode, err := opcodeReader.ReadU16()
 			if err != nil {

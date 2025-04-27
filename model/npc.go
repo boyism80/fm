@@ -2,12 +2,12 @@ package model
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/dao"
 	"github.com/boyism80/fm/handler"
 )
 
 type NpcActor struct {
-	Object
-	Dialog  []string
+	dao.Npc
 	handler *handler.MessageHandler
 }
 

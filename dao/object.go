@@ -1,4 +1,4 @@
-package model
+package dao
 
 type Vec2 struct {
 	X, Y int

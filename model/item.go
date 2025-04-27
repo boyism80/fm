@@ -2,13 +2,12 @@ package model
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/dao"
 	"github.com/boyism80/fm/handler"
 )
 
 type ItemActor struct {
-	Object
-	ID      int64
-	Name    string
+	dao.Item
 	handler *handler.MessageHandler
 }
 

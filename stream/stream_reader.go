@@ -128,8 +128,8 @@ func (sr *StreamReader) ReadStr16() (string, error) {
 		return "", err
 	}
 
-	cp949Decoder := korean.EUCKR.NewDecoder()
-	decodedStr, _, err := transform.Bytes(cp949Decoder, b)
+	decoder := korean.EUCKR.NewDecoder()
+	decodedStr, _, err := transform.Bytes(decoder, b)
 	if err != nil {
 		return "", err
 	}
@@ -148,8 +148,8 @@ func (sr *StreamReader) ReadStr32() (string, error) {
 		return "", err
 	}
 
-	cp949Decoder := korean.EUCKR.NewDecoder()
-	decodedStr, _, err := transform.Bytes(cp949Decoder, b)
+	decoder := korean.EUCKR.NewDecoder()
+	decodedStr, _, err := transform.Bytes(decoder, b)
 	if err != nil {
 		return "", err
 	}

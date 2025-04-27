@@ -11,6 +11,7 @@ import (
 	"github.com/boyism80/fm/handler"
 	"github.com/boyism80/fm/packet"
 	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/util"
 )
 
 const (
@@ -64,6 +65,8 @@ func (state *ClientActor) Send(p packet.Packet, policy int) {
 	writer := stream.NewStreamWriter(stream.LittleEndian)
 	p.Serialize(writer)
 	bytes := writer.Bytes()
+
+	log.Println("[S] " + util.ToHexString(bytes))
 
 	if policy == SEND_POLICY_RAW {
 		state.Conn.Write(bytes)

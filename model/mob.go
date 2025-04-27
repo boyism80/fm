@@ -2,12 +2,12 @@ package model
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/dao"
 	"github.com/boyism80/fm/handler"
 )
 
 type MobActor struct {
-	Life
-	Aggro   bool
+	dao.Mob
 	handler *handler.MessageHandler
 }
 

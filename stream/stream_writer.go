@@ -96,8 +96,8 @@ func (sw *StreamWriter) WriteStr16(str string) error {
 		return errors.New("string too long for WriteStr16")
 	}
 
-	cp949Encoder := korean.EUCKR.NewEncoder()
-	encodedStr, _, err := transform.Bytes(cp949Encoder, []byte(str))
+	encoder := korean.EUCKR.NewEncoder()
+	encodedStr, _, err := transform.Bytes(encoder, []byte(str))
 	if err != nil {
 		return err
 	}
@@ -115,8 +115,8 @@ func (sw *StreamWriter) WriteStr32(str string) error {
 		return errors.New("string too long for WriteStr32")
 	}
 
-	cp949Decoder := korean.EUCKR.NewDecoder()
-	decodedStr, _, err := transform.Bytes(cp949Decoder, []byte(str))
+	encoder := korean.EUCKR.NewEncoder()
+	decodedStr, _, err := transform.Bytes(encoder, []byte(str))
 	if err != nil {
 		return err
 	}
@@ -127,6 +127,26 @@ func (sw *StreamWriter) WriteStr32(str string) error {
 
 	_, err = sw.buf.Write(decodedStr)
 	return err
+}
+
+func (sw *StreamWriter) WriteStaticStr(str string, max int) error {
+	if len(str) > int(^uint32(0)) {
+		return errors.New("string too long for WriteStr32")
+	}
+
+	encoder := korean.EUCKR.NewEncoder()
+	encodedStr, _, err := transform.Bytes(encoder, []byte(str))
+	if err != nil {
+		return err
+	}
+
+	if len(encodedStr) > max {
+		encodedStr = encodedStr[:max]
+	}
+
+	sw.Write(encodedStr)
+	sw.Write(make([]byte, max-len(encodedStr)))
+	return nil
 }
 
 func (sw *StreamWriter) WriteBoolean(val bool) error {

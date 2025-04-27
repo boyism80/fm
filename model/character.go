@@ -2,15 +2,18 @@ package model
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/dao"
 	"github.com/boyism80/fm/handler"
 )
 
-type CharacterActor struct {
-	Life
-	PlayerID int64
-	Class    string
+type Character struct {
+	dao.Character
 	Exp      int
-	handler  *handler.MessageHandler
+}
+
+type CharacterActor struct {
+	Character
+	handler *handler.MessageHandler
 }
 
 func NewCharacterActor() actor.Actor {
