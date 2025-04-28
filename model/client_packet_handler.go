@@ -11,6 +11,9 @@ func RegisterPacketHandler(client *ClientActor, h *handler.PacketHandler) {
 	handler.RegisterPacketHandler(0x0A, client, h, onPong)
 	handler.RegisterPacketHandler(0x01, client, h, onLogin)
 	handler.RegisterPacketHandler(0x04, client, h, onCharacterList)
+	handler.RegisterPacketHandler(0x07, client, h, onCheckName)
+	handler.RegisterPacketHandler(0x08, client, h, onCreateCharacter)
+	handler.RegisterPacketHandler(0x09, client, h, onDeleteCharacter)
 }
 
 func onPong(client *ClientActor, request *req.Pong) {
@@ -92,5 +95,44 @@ func onCharacterList(client *ClientActor, request *req.CharacterList) {
 			},
 		},
 		SlotCount: 6,
+	}, SEND_POLICY_ENCRYPT)
+}
+
+func onCheckName(client *ClientActor, request *req.CheckName) {
+	exists := request.Name == "채승현"
+	client.Send(&resp.CheckName{Name: request.Name, Exists: exists}, SEND_POLICY_ENCRYPT)
+}
+
+func onCreateCharacter(client *ClientActor, request *req.CreateCharacter) {
+
+	success := request.Name != "채진영"
+	client.Send(&resp.CreateCharacter{
+		Success: success,
+		Character: &dao.Character{
+			Id:         1,
+			Name:       request.Name,
+			Gender:     0,
+			SkinColor:  0,
+			Face:       request.Face,
+			Hair:       request.Hair,
+			Level:      1,
+			Class:      0,
+			Str:        12,
+			Dex:        5,
+			Int:        4,
+			Luk:        4,
+			Hp:         50,
+			MaxHp:      50,
+			Mp:         5,
+			MaxMp:      5,
+			SpawnPoint: 3,
+		},
+	}, SEND_POLICY_ENCRYPT)
+}
+
+func onDeleteCharacter(client *ClientActor, request *req.DeleteCharacter) {
+	client.Send(&resp.DeleteCharacter{
+		Id:      request.Id,
+		Success: true,
 	}, SEND_POLICY_ENCRYPT)
 }
