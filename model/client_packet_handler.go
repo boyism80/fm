@@ -14,6 +14,7 @@ func RegisterPacketHandler(client *ClientActor, h *handler.PacketHandler) {
 	handler.RegisterPacketHandler(0x07, client, h, onCheckName)
 	handler.RegisterPacketHandler(0x08, client, h, onCreateCharacter)
 	handler.RegisterPacketHandler(0x09, client, h, onDeleteCharacter)
+	handler.RegisterPacketHandler(0x05, client, h, onSelectCharacter)
 }
 
 func onPong(client *ClientActor, request *req.Pong) {
@@ -55,44 +56,8 @@ func onLogin(client *ClientActor, request *req.Login) {
 func onCharacterList(client *ClientActor, request *req.CharacterList) {
 	client.Send(&resp.CharacterList{
 		Characters: []dao.Character{
-			{
-				Id:         1,
-				Name:       "채승현",
-				Gender:     0,
-				SkinColor:  0,
-				Face:       20401,
-				Hair:       30027,
-				Level:      1,
-				Class:      0,
-				Str:        12,
-				Dex:        5,
-				Int:        4,
-				Luk:        4,
-				Hp:         50,
-				MaxHp:      50,
-				Mp:         5,
-				MaxMp:      5,
-				SpawnPoint: 3,
-			},
-			{
-				Id:         2,
-				Name:       "채진영",
-				Gender:     0,
-				SkinColor:  0,
-				Face:       20401,
-				Hair:       30027,
-				Level:      1,
-				Class:      0,
-				Str:        12,
-				Dex:        5,
-				Int:        4,
-				Luk:        4,
-				Hp:         50,
-				MaxHp:      50,
-				Mp:         5,
-				MaxMp:      5,
-				SpawnPoint: 3,
-			},
+			dao.NewDummyCharacter(1, "채승현"),
+			dao.NewDummyCharacter(2, "채진영"),
 		},
 		SlotCount: 6,
 	}, SEND_POLICY_ENCRYPT)
@@ -134,5 +99,13 @@ func onDeleteCharacter(client *ClientActor, request *req.DeleteCharacter) {
 	client.Send(&resp.DeleteCharacter{
 		Id:      request.Id,
 		Success: true,
+	}, SEND_POLICY_ENCRYPT)
+}
+
+func onSelectCharacter(client *ClientActor, request *req.SelectCharacter) {
+	client.Send(&resp.Transfer{
+		IP:          "127.0.0.1",
+		Port:        7100,
+		CharacterId: request.CharacterId,
 	}, SEND_POLICY_ENCRYPT)
 }

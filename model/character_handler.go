@@ -15,7 +15,7 @@ func RegisterCharacterHandlers(m *CharacterActor, h *handler.MessageHandler) {
 }
 
 func onGainExp(ch *CharacterActor, ctx actor.Context, m *msg.CharacterGainExp) {
-	ch.Exp += m.Amount
+	ch.Character.Exp += uint32(m.Amount)
 
 	fmt.Println("gain exp")
 }

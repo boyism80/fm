@@ -6,13 +6,8 @@ import (
 	"github.com/boyism80/fm/handler"
 )
 
-type Character struct {
-	dao.Character
-	Exp      int
-}
-
 type CharacterActor struct {
-	Character
+	dao.Character
 	handler *handler.MessageHandler
 }
 

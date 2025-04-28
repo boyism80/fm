@@ -2,6 +2,7 @@ package resp
 
 import (
 	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/util"
 )
 
 const (
@@ -28,13 +29,6 @@ const (
 	LoginFailedReasonPasswordChangeRequired      = 84
 )
 
-const (
-	TimeFtUtOffset int64 = 116445060000000000 // KST
-	TimeMax        int64 = 150842304000000000 // 00 80 05 BB 46 E6 17 02
-	TimeZero       int64 = 94354848000000000  // 00 40 E0 FD 3B 37 4F 01
-	TimePermanent  int64 = 150841440000000000 // 00 C0 9B 90 7D E5 17 02
-)
-
 type LoginFailed struct {
 	Reason int
 }
@@ -52,7 +46,7 @@ func (a *LoginFailed) Serialize(writer *stream.StreamWriter) error {
 
 	switch a.Reason {
 	case LoginFailedReasonPasswordChangeRequired:
-		writer.Write64(TimeZero)
+		writer.WriteU64(util.TimeZero)
 
 	case LoginFailedReasonAlreadyLoggedIn:
 		writer.Write([]byte{0x00, 0x00, 0x00, 0x00, 0x00})

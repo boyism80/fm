@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"math"
+	"strconv"
+	"strings"
 
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/transform"
@@ -157,4 +159,21 @@ func (sw *StreamWriter) WriteBoolean(val bool) error {
 		byteVal = 0
 	}
 	return sw.WriteU8(byteVal)
+}
+
+func (sw *StreamWriter) WriteIPAddress(ip string) error {
+	parts := strings.Split(ip, ".")
+	if len(parts) != 4 {
+		return errors.New("invalid IP address format")
+	}
+
+	serverIP := make([]byte, 4)
+	for i, part := range parts {
+		num, err := strconv.ParseUint(part, 10, 8)
+		if err != nil {
+			return err
+		}
+		serverIP[i] = byte(num)
+	}
+	return sw.Write(serverIP)
 }
