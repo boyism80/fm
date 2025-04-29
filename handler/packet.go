@@ -4,19 +4,19 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/boyism80/fm/packet"
 	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/types"
 )
 
 type PacketHandler struct {
 	handlers  map[int]func(p interface{})
-	generator map[int]func() packet.Packet
+	generator map[int]func() types.Packet
 }
 
 func NewPacketHandler() *PacketHandler {
 	return &PacketHandler{
 		handlers:  map[int]func(p interface{}){},
-		generator: map[int]func() packet.Packet{},
+		generator: map[int]func() types.Packet{},
 	}
 }
 
@@ -29,9 +29,9 @@ func RegisterPacketHandler[T any, P any](header int, target *T, h *PacketHandler
 		fn(target, p.(*P))
 	})
 
-	h.generator[header] = func() packet.Packet {
+	h.generator[header] = func() types.Packet {
 		var p any = new(P)
-		if pkt, ok := p.(packet.Packet); ok {
+		if pkt, ok := p.(types.Packet); ok {
 			return pkt
 		}
 
@@ -48,7 +48,7 @@ func (state *PacketHandler) Handle(header int, data []byte) error {
 
 	ptr := generator()
 	if ptr == nil {
-		return errors.New("Object does not implement packet.Packet interface")
+		return errors.New("Object does not implement types.Packet interface")
 	}
 
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)

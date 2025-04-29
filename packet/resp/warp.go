@@ -3,23 +3,24 @@ package resp
 import (
 	"time"
 
-	"github.com/boyism80/fm/dao"
+	"github.com/boyism80/fm/entity"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/util"
 )
 
 type Warp struct {
+	Character *entity.Character
 }
 
 func (a *Warp) Serialize(writer *stream.StreamWriter) error {
-	ch := dao.NewDummyCharacter(1, "채승현")
+	a.Character.Inventory[entity.InventoryTypeCash].SlotLimit = 60
 
 	writer.WriteU16(0x55)
 	writer.WriteU32(0) // channel
 	writer.WriteU8(0)
 	writer.WriteU8(0) // first time
 
-	isEvent := true
+	isEvent := false
 	if isEvent {
 		writer.WriteU16(1)
 		writer.WriteStr16("event alarm")
@@ -28,37 +29,37 @@ func (a *Warp) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU16(0)
 	}
 
-	ch.Random1.Serialize(writer)
+	a.Character.Random1.Serialize(writer)
 
 	writer.WriteU64(0xFFFFFFFFFFFFFFFF) // flag
 
 	// flag 0x1
-	ch.SerializeStats(writer)
+	a.Character.SerializeStats(writer)
 	writer.WriteU8(20) // buddy capacity
 
 	// flag 0x2 ~ 0x40
-	ch.SerializeInventory(writer)
+	a.Character.SerializeInventory(writer)
 
 	// flag 0x100
-	ch.SerializeSkills(writer)
+	a.Character.SerializeSkills(writer)
 
 	// flag 0x8000
-	ch.SerializeCooldowns(writer)
+	a.Character.SerializeCooldowns(writer)
 
 	// flag 0x200, 0x4000
-	ch.SerializeQuests(writer)
+	a.Character.SerializeQuests(writer)
 
 	// flag 0x400, 0x800
-	ch.SerializeRings(writer)
+	a.Character.SerializeRings(writer)
 
 	// flag 0x1000
-	ch.SerializeRocks(writer)
+	a.Character.SerializeRocks(writer)
 
 	// flag 0x20000, 0x10000
-	ch.SerializeMonsterBook(writer)
+	a.Character.SerializeMonsterBook(writer)
 
 	// flag 0x40000
-	ch.SerializeQuestInfo(writer)
+	a.Character.SerializeQuestInfo(writer)
 
 	writer.WriteU16(0)
 	writer.WriteU64(util.GetTime(time.Now().UnixMilli()))

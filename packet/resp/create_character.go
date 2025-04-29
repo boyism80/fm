@@ -1,12 +1,12 @@
 package resp
 
 import (
-	"github.com/boyism80/fm/dao"
+	"github.com/boyism80/fm/entity"
 	"github.com/boyism80/fm/stream"
 )
 
 type CreateCharacter struct {
-	Character *dao.Character
+	Character *entity.Character
 	Success   bool
 }
 

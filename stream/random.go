@@ -59,6 +59,10 @@ func (prs *RandomStream) Serialize(writer *StreamWriter) error {
 
 	prs.crand32Seed(v5, s2, v6)
 
+	v5 = uint32(830473165)
+	s2 = uint32(1078821873)
+	v6 = uint32(1922386602)
+
 	if err := writer.WriteU32(uint32(v5)); err != nil {
 		return err
 	}

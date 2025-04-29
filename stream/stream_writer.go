@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/boyism80/fm/util"
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/transform"
 )
@@ -176,4 +177,8 @@ func (sw *StreamWriter) WriteIPAddress(ip string) error {
 		serverIP[i] = byte(num)
 	}
 	return sw.Write(serverIP)
+}
+
+func (sw *StreamWriter) ToString() string {
+	return util.ToHexString(sw.Bytes())
 }

@@ -1,13 +1,13 @@
 package msg
 
-import "github.com/boyism80/fm/packet"
+import "github.com/boyism80/fm/types"
 
 type BotConnect struct {
 	Port int
 }
 
 type BotSendPacket struct {
-	Packet packet.Packet
+	Packet types.Packet
 }
 
 type BotClose struct{}

@@ -1,13 +1,13 @@
 package resp
 
 import (
-	"github.com/boyism80/fm/dao"
+	"github.com/boyism80/fm/entity"
 	"github.com/boyism80/fm/stream"
 )
 
 type CharacterList struct {
 	SecondPw   string
-	Characters []dao.Character
+	Characters []entity.Character
 	SlotCount  uint32
 }
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/model"
+	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/actor"
 	"github.com/boyism80/fm/msg"
 	"gopkg.in/yaml.v3"
 )
@@ -36,8 +36,8 @@ func main() {
 		return
 	}
 
-	system := actor.NewActorSystem()
-	props := actor.PropsFromProducer(func() actor.Actor { return model.NewMainActor() })
+	system := protoactor.NewActorSystem()
+	props := protoactor.PropsFromProducer(func() protoactor.Actor { return actor.NewMainActor() })
 	pid := system.Root.Spawn(props)
 	system.Root.Send(pid, &msg.StartListening{Port: config.Server.Port})
 
