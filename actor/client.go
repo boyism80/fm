@@ -7,6 +7,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/scheduler"
+	"github.com/boyism80/fm/context"
 	"github.com/boyism80/fm/encrypt"
 	"github.com/boyism80/fm/entity"
 	"github.com/boyism80/fm/handler"
@@ -16,7 +17,8 @@ import (
 )
 
 type ClientActor struct {
-	*entity.Character
+	Context        context.IServerContext
+	Character      *entity.Character
 	Conn           net.Conn
 	Buffer         []byte
 	messageHandler *handler.MessageHandler
@@ -35,8 +37,9 @@ func generateRandomBytes(size int) []byte {
 	return b
 }
 
-func NewClientActor(conn net.Conn) actor.Actor {
+func NewClientActor(ctx actor.Context, serverCtx context.IServerContext, conn net.Conn) actor.Actor {
 	act := &ClientActor{
+		Context:        serverCtx,
 		Conn:           conn,
 		Buffer:         []byte{},
 		messageHandler: handler.NewMessageHandler(),
@@ -45,9 +48,8 @@ func NewClientActor(conn net.Conn) actor.Actor {
 		recvEncryption: encrypt.NewEncryption(generateRandomBytes(4), 5),
 	}
 
-	RegisterCharacterHandlers(act.Character, act.messageHandler)
-	RegisterClientHandlers(act, act.messageHandler)
-	RegisterPacketHandler(act, act.packetHandler)
+	RegisterClientHandlers(ctx, act, act.messageHandler)
+	RegisterPacketHandler(ctx, act, act.packetHandler)
 	return act
 }
 
@@ -55,8 +57,13 @@ func (state *ClientActor) Receive(context actor.Context) {
 	state.messageHandler.Handle(context)
 }
 
-func (state *ClientActor) Invoke(header int, data []byte) error {
-	return state.packetHandler.Handle(header, data)
+func (state *ClientActor) Invoke(ctx actor.Context, header int, data []byte) error {
+	return state.packetHandler.Handle(ctx, header, data)
+}
+
+func (c *ClientActor) BindCharacter(ctx actor.Context, ch *entity.Character) {
+	c.Character = ch
+	RegisterCharacterHandlers(ctx, c.Character, c.messageHandler)
 }
 
 func (c *ClientActor) ID() int64 {

@@ -1,31 +1,14 @@
 package entity
 
-import (
-	"github.com/boyism80/fm/ctrl"
-	"github.com/boyism80/fm/types"
-)
+import "github.com/boyism80/fm/types"
 
 type Map struct {
-	MapObjects map[uint32]ctrl.ObjectController // 이제 타입별 분리 없이 한 곳에 다 모은다
-}
-
-func (m *Map) GetMapObjectsInRange(from types.Vec2, rangeSq int, targetType types.ObjectType) []ctrl.ObjectController {
-	var ret []ctrl.ObjectController
-
-	for _, obj := range m.MapObjects {
-		if obj.Type()&targetType == 0 {
-			continue
-		}
-		if from.DistanceSq(obj.Position()) <= rangeSq {
-			ret = append(ret, obj)
-		}
-	}
-
-	return ret
-}
-
-func NewMap() Map {
-	return Map{
-		MapObjects: map[uint32]ctrl.ObjectController{},
-	}
+	Id          uint32               // 맵 ID
+	Name        string               // 맵 이름
+	PortalCount uint8                // 포탈 수
+	SpawnPoints map[uint8]types.Vec2 // 스폰 위치
+	Bounds      types.Rect           // 맵 범위 (좌표계)
+	IsTown      bool                 // 마을 여부
+	HasClock    bool                 // 시계 UI
+	Properties  map[string]string    // 기타 설정 (BGM, weather 등)
 }

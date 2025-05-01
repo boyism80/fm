@@ -9,16 +9,23 @@ import (
 	"github.com/boyism80/fm/msg"
 )
 
-func RegisterMainHandlers(m *MainActor, h *handler.MessageHandler) {
-	handler.RegisterHandler(m, h, onStartListening)
-	handler.RegisterHandler(m, h, onAcceptedClient)
+func RegisterMainHandlers(ctx protoactor.Context, m *ServerActor, h *handler.MessageHandler) {
+	handler.RegisterHandler(ctx, m, h, onStartListening)
+	handler.RegisterHandler(ctx, m, h, onAcceptedClient)
 }
 
-func onStartListening(obj *MainActor, ctx protoactor.Context, m *msg.StartListening) {
+func onStartListening(ctx protoactor.Context, obj *ServerActor, m *msg.StartListening) {
 	port := fmt.Sprintf(":%d", m.Port)
+
+	// 임시 맵 추가
+	props := NewMapActorProps(ctx, m.ServerCtx)
+	pid := ctx.Spawn(props)
+	m.ServerCtx.Load(200000301, pid)
+
 	go func() {
 		listener, err := net.Listen("tcp", port)
 		if err != nil {
+
 			fmt.Println("Error listening:", err)
 			return
 		}
@@ -27,7 +34,7 @@ func onStartListening(obj *MainActor, ctx protoactor.Context, m *msg.StartListen
 
 		// 봇 테스트
 		props := protoactor.PropsFromProducer(func() protoactor.Actor {
-			return NewBotActor()
+			return NewBotActor(ctx, m.ServerCtx)
 		})
 		pid := ctx.Spawn(props)
 		ctx.Send(pid, &msg.BotConnect{Port: m.Port})
@@ -38,14 +45,14 @@ func onStartListening(obj *MainActor, ctx protoactor.Context, m *msg.StartListen
 				fmt.Println("Error accepting:", err)
 				continue
 			}
-			ctx.Send(ctx.Self(), &msg.ClientConnected{Conn: conn})
+			ctx.Send(ctx.Self(), &msg.ClientConnected{Conn: conn, ServerCtx: m.ServerCtx})
 		}
 	}()
 }
 
-func onAcceptedClient(obj *MainActor, ctx protoactor.Context, m *msg.ClientConnected) {
+func onAcceptedClient(ctx protoactor.Context, obj *ServerActor, m *msg.ClientConnected) {
 	props := protoactor.PropsFromProducer(func() protoactor.Actor {
-		return NewClientActor(m.Conn)
+		return NewClientActor(ctx, m.ServerCtx, m.Conn)
 	})
 	pid := ctx.Spawn(props)
 	ctx.Send(pid, m)

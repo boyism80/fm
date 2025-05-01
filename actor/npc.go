@@ -2,6 +2,7 @@ package actor
 
 import (
 	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/context"
 	"github.com/boyism80/fm/entity"
 	"github.com/boyism80/fm/handler"
 )
@@ -11,11 +12,11 @@ type NpcActor struct {
 	handler *handler.MessageHandler
 }
 
-func NewNpcActor() protoactor.Actor {
+func NewNpcActor(ctx protoactor.Context, serverCtx context.IServerContext) protoactor.Actor {
 	act := &NpcActor{
 		handler: handler.NewMessageHandler(),
 	}
-	RegisterNpcHandlers(act, act.handler)
+	RegisterNpcHandlers(ctx, act, act.handler)
 	return act
 }
 

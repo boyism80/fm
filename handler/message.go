@@ -29,9 +29,9 @@ func (m *MessageHandler) Handle(ctx actor.Context) {
 	}
 }
 
-func RegisterHandler[T any, M any](target *T, h *MessageHandler, fn func(*T, actor.Context, *M)) {
+func RegisterHandler[T any, M any](ctx actor.Context, target *T, h *MessageHandler, fn func(actor.Context, *T, *M)) {
 	var msg *M
 	h.Register(reflect.TypeOf(msg), func(ctx actor.Context, m interface{}) {
-		fn(target, ctx, m.(*M))
+		fn(ctx, target, m.(*M))
 	})
 }

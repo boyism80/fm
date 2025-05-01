@@ -6,6 +6,7 @@ import (
 	"net"
 
 	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/context"
 	"github.com/boyism80/fm/handler"
 	"github.com/boyism80/fm/msg"
 	"github.com/boyism80/fm/packet"
@@ -14,18 +15,20 @@ import (
 
 type BotActor struct {
 	Conn    net.Conn
+	Context context.IServerContext
 	handler *handler.MessageHandler
 }
 
-func NewBotActor() protoactor.Actor {
+func NewBotActor(ctx protoactor.Context, serverCtx context.IServerContext) protoactor.Actor {
 	act := &BotActor{
+		Context: serverCtx,
 		handler: handler.NewMessageHandler(),
 	}
 
-	handler.RegisterHandler(act, act.handler, onBotConnect)
-	handler.RegisterHandler(act, act.handler, onBotSendPacket)
-	handler.RegisterHandler(act, act.handler, onBotClose)
-	handler.RegisterHandler(act, act.handler, onBotStopping)
+	handler.RegisterHandler(ctx, act, act.handler, onBotConnect)
+	handler.RegisterHandler(ctx, act, act.handler, onBotSendPacket)
+	handler.RegisterHandler(ctx, act, act.handler, onBotClose)
+	handler.RegisterHandler(ctx, act, act.handler, onBotStopping)
 	return act
 }
 
@@ -33,12 +36,12 @@ func (state *BotActor) Receive(context protoactor.Context) {
 	state.handler.Handle(context)
 }
 
-func onBotStopping(bot *BotActor, ctx protoactor.Context, m *protoactor.Stopping) {
+func onBotStopping(ctx protoactor.Context, bot *BotActor, m *protoactor.Stopping) {
 	log.Println("봇 제거중")
 	bot.Conn.Close()
 }
 
-func onBotConnect(bot *BotActor, ctx protoactor.Context, m *msg.BotConnect) {
+func onBotConnect(ctx protoactor.Context, bot *BotActor, m *msg.BotConnect) {
 	serverAddr := fmt.Sprintf("localhost:%d", m.Port)
 
 	conn, err := net.Dial("tcp", serverAddr)
@@ -54,7 +57,7 @@ func onBotConnect(bot *BotActor, ctx protoactor.Context, m *msg.BotConnect) {
 	ctx.Send(ctx.Self(), &msg.BotClose{})
 }
 
-func onBotSendPacket(bot *BotActor, ctx protoactor.Context, m *msg.BotSendPacket) {
+func onBotSendPacket(ctx protoactor.Context, bot *BotActor, m *msg.BotSendPacket) {
 	wr := stream.NewStreamWriter(stream.LittleEndian)
 	m.Packet.Serialize(wr)
 	bytes := wr.Bytes()
@@ -70,6 +73,6 @@ func onBotSendPacket(bot *BotActor, ctx protoactor.Context, m *msg.BotSendPacket
 	}
 }
 
-func onBotClose(bot *BotActor, ctx protoactor.Context, m *msg.BotClose) {
+func onBotClose(ctx protoactor.Context, bot *BotActor, m *msg.BotClose) {
 	ctx.Stop(ctx.Self())
 }

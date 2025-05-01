@@ -2,20 +2,23 @@ package actor
 
 import (
 	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/context"
 	"github.com/boyism80/fm/entity"
 	"github.com/boyism80/fm/handler"
 )
 
 type ItemActor struct {
 	entity.Item
-	handler *handler.MessageHandler
+	ServerCtx context.IServerContext
+	handler   *handler.MessageHandler
 }
 
-func NewItemActor() protoactor.Actor {
+func NewItemActor(ctx protoactor.Context, serverCtx context.IServerContext) protoactor.Actor {
 	act := &ItemActor{
-		handler: handler.NewMessageHandler(),
+		ServerCtx: serverCtx,
+		handler:   handler.NewMessageHandler(),
 	}
-	RegisterItemHandlers(act, act.handler)
+	RegisterItemHandlers(ctx, act, act.handler)
 	return act
 }
 

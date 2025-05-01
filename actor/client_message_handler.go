@@ -2,10 +2,9 @@ package actor
 
 import (
 	"log"
-	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	protoactor "github.com/asynkron/protoactor-go/actor"
-	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/encrypt"
 	"github.com/boyism80/fm/handler"
 	"github.com/boyism80/fm/msg"
@@ -15,13 +14,17 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
-func RegisterClientHandlers(m *ClientActor, h *handler.MessageHandler) {
-	handler.RegisterHandler(m, h, onClientConnected)
-	handler.RegisterHandler(m, h, onClientStopping)
-	handler.RegisterHandler(m, h, onPing)
+func RegisterClientHandlers(ctx protoactor.Context, m *ClientActor, h *handler.MessageHandler) {
+	handler.RegisterHandler(ctx, m, h, onClientConnected)
+	handler.RegisterHandler(ctx, m, h, onClientStopping)
+	handler.RegisterHandler(ctx, m, h, onClientInvokeHandler)
+	handler.RegisterHandler(ctx, m, h, onSendProtocol)
+	handler.RegisterHandler(ctx, m, h, onPing)
+
+	handler.RegisterHandler(ctx, m, h, onClientWarped)
 }
 
-func (client *ClientActor) ReceivePackets(ctx protoactor.Context) {
+func (client *ClientActor) ReceivePackets(ctx protoactor.Context, pid *protoactor.PID) {
 	buf := make([]byte, 1024)
 	conn := client.Conn
 
@@ -64,27 +67,31 @@ func (client *ClientActor) ReceivePackets(ctx protoactor.Context) {
 			}
 
 			data = data[2:]
-			err = client.Invoke(int(opcode), data)
-			if err != nil {
-				log.Println(err)
-			}
+			ctx.Send(pid, &msg.InvokeHandler{
+				Opcode: opcode,
+				Data:   data,
+			})
+			// err = client.Invoke(int(), data)
+			// if err != nil {
+			// 	log.Println(err)
+			// }
 			reader.DiscardRead()
 		}
 	}
 }
 
-func onClientConnected(client *ClientActor, ctx protoactor.Context, m *msg.ClientConnected) {
+func onClientConnected(ctx protoactor.Context, client *ClientActor, m *msg.ClientConnected) {
 	log.Println("클라이언트 연결됨")
-	timer := scheduler.NewTimerScheduler(ctx.ActorSystem().Root)
-	client.stopTimer = timer.SendRepeatedly(10*time.Second, 10*time.Second, ctx.Self(), &msg.Ping{})
+	// timer := scheduler.NewTimerScheduler(ctx.ActorSystem().Root)
+	// client.stopTimer = timer.SendRepeatedly(10*time.Second, 10*time.Second, ctx.Self(), &msg.Ping{})
 
 	client.Send(&resp.Welcome{
 		SendIv: client.sendEncryption.IV(),
 		RecvIv: client.recvEncryption.IV()}, types.SEND_POLICY_RAW)
-	go client.ReceivePackets(ctx)
+	go client.ReceivePackets(ctx, ctx.Self())
 }
 
-func onClientStopping(client *ClientActor, ctx protoactor.Context, m *protoactor.Stopping) {
+func onClientStopping(ctx protoactor.Context, client *ClientActor, m *protoactor.Stopping) {
 	log.Println("클라이언트 접속 종료")
 	client.Conn.Close()
 	if client.stopTimer != nil {
@@ -92,6 +99,26 @@ func onClientStopping(client *ClientActor, ctx protoactor.Context, m *protoactor
 	}
 }
 
-func onPing(client *ClientActor, ctx protoactor.Context, m *msg.Ping) {
+func onClientInvokeHandler(ctx protoactor.Context, client *ClientActor, m *msg.InvokeHandler) {
+	client.Invoke(ctx, int(m.Opcode), m.Data)
+}
+
+func onSendProtocol(ctx actor.Context, state *ClientActor, m *msg.SendProtocol) {
+	state.Send(m.Protocol, m.Policy)
+}
+
+func onPing(ctx protoactor.Context, client *ClientActor, m *msg.Ping) {
 	client.Send(&resp.Ping{}, types.SEND_POLICY_ENCRYPT)
+}
+
+func onClientWarped(ctx protoactor.Context, client *ClientActor, m *msg.Warped) {
+	// 어떤 플레이어가 내가 속한 맵으로 왔다.
+	// 나의 캐릭터 정보를 해당 플레이어에게 보내준다.
+
+	ctx.Send(m.Sender, &msg.SendProtocol{
+		Protocol: &resp.SpawnPlayer{
+			Character: client.Character,
+		},
+		Policy: types.SEND_POLICY_ENCRYPT,
+	})
 }

@@ -9,13 +9,13 @@ import (
 	"github.com/boyism80/fm/msg"
 )
 
-func RegisterLifeHandlers(m *entity.Life, h *handler.MessageHandler) {
-	RegisterObjectHandlers(&m.Object, h)
+func RegisterLifeHandlers(ctx protoactor.Context, m *entity.Life, h *handler.MessageHandler) {
+	RegisterObjectHandlers(ctx, &m.Object, h)
 
-	handler.RegisterHandler(m, h, onLifeAddHp)
+	handler.RegisterHandler(ctx, m, h, onLifeAddHp)
 }
 
-func onLifeAddHp(life *entity.Life, ctx protoactor.Context, m *msg.LifeAddHp) {
+func onLifeAddHp(ctx protoactor.Context, life *entity.Life, m *msg.LifeAddHp) {
 	life.HP += m.Hp
 
 	fmt.Println("add hp")

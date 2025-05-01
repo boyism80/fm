@@ -5,18 +5,18 @@ import (
 	"github.com/boyism80/fm/handler"
 )
 
-type MainActor struct {
+type ServerActor struct {
 	handler *handler.MessageHandler
 }
 
 func NewMainActor() protoactor.Actor {
-	act := &MainActor{
+	act := &ServerActor{
 		handler: handler.NewMessageHandler(),
 	}
-	RegisterMainHandlers(act, act.handler)
+	RegisterMainHandlers(nil, act, act.handler)
 	return act
 }
 
-func (state *MainActor) Receive(context protoactor.Context) {
+func (state *ServerActor) Receive(context protoactor.Context) {
 	state.handler.Handle(context)
 }

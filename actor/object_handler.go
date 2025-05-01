@@ -9,11 +9,11 @@ import (
 	"github.com/boyism80/fm/msg"
 )
 
-func RegisterObjectHandlers(m *entity.Object, h *handler.MessageHandler) {
-	handler.RegisterHandler(m, h, onObjectMove)
+func RegisterObjectHandlers(ctx protoactor.Context, m *entity.Object, h *handler.MessageHandler) {
+	handler.RegisterHandler(ctx, m, h, onObjectMove)
 }
 
-func onObjectMove(obj *entity.Object, ctx protoactor.Context, m *msg.ObjectMove) {
+func onObjectMove(ctx protoactor.Context, obj *entity.Object, m *msg.ObjectMove) {
 	obj.Position.X += m.X
 	obj.Position.Y += m.Y
 

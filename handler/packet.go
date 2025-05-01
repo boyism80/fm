@@ -4,29 +4,30 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
 
 type PacketHandler struct {
-	handlers  map[int]func(p interface{})
+	handlers  map[int]func(ctx actor.Context, p interface{})
 	generator map[int]func() types.Packet
 }
 
 func NewPacketHandler() *PacketHandler {
 	return &PacketHandler{
-		handlers:  map[int]func(p interface{}){},
+		handlers:  map[int]func(ctx actor.Context, p interface{}){},
 		generator: map[int]func() types.Packet{},
 	}
 }
 
-func (state *PacketHandler) Register(packetType int, handler func(p interface{})) {
+func (state *PacketHandler) Register(packetType int, handler func(ctx actor.Context, p interface{})) {
 	state.handlers[packetType] = handler
 }
 
-func RegisterPacketHandler[T any, P any](header int, target *T, h *PacketHandler, fn func(*T, *P)) {
-	h.Register(header, func(p interface{}) {
-		fn(target, p.(*P))
+func RegisterPacketHandler[T any, P any](header int, ctx actor.Context, target *T, h *PacketHandler, fn func(actor.Context, *T, *P)) {
+	h.Register(header, func(ctx actor.Context, p interface{}) {
+		fn(ctx, target, p.(*P))
 	})
 
 	h.generator[header] = func() types.Packet {
@@ -40,7 +41,7 @@ func RegisterPacketHandler[T any, P any](header int, target *T, h *PacketHandler
 	}
 }
 
-func (state *PacketHandler) Handle(header int, data []byte) error {
+func (state *PacketHandler) Handle(ctx actor.Context, header int, data []byte) error {
 	generator, exists := state.generator[header]
 	if !exists {
 		return fmt.Errorf("No handler found for header %d\n", header)
@@ -62,6 +63,6 @@ func (state *PacketHandler) Handle(header int, data []byte) error {
 		return fmt.Errorf("No handler registered for header %d\n", header)
 	}
 
-	handler(ptr)
+	handler(ctx, ptr)
 	return nil
 }
