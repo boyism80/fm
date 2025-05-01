@@ -5,10 +5,10 @@ import (
 	"os"
 
 	protoactor "github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/actor"
-	"github.com/boyism80/fm/context"
-	"github.com/boyism80/fm/data"
-	"github.com/boyism80/fm/msg"
+	"github.com/boyism80/fm/common/context"
+	"github.com/boyism80/fm/common/msg"
+	"github.com/boyism80/fm/game/actor"
+	"github.com/boyism80/fm/game/data"
 	"gopkg.in/yaml.v3"
 )
 
