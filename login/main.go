@@ -14,7 +14,13 @@ import (
 
 type Config struct {
 	Server struct {
-		Port int `yaml:"port"`
+		Login struct {
+			Port int `yaml:"port"`
+		} `yaml:"login"`
+
+		Game struct {
+			Port int `yaml:"port"`
+		} `yaml:"game"`
 	} `yaml:"server"`
 }
 
@@ -39,11 +45,11 @@ func main() {
 	}
 
 	system := protoactor.NewActorSystem()
-	props := protoactor.PropsFromProducer(func() protoactor.Actor { return actor.NewMainActor() })
+	props := protoactor.PropsFromProducer(func() protoactor.Actor { return actor.NewLoginServerActor() })
 	pid := system.Root.Spawn(props)
 
 	serverCtx := context.NewServerContext(data.NewGameData(), map[uint32]*protoactor.PID{}, pid)
-	system.Root.Send(pid, &msg.StartListening{Port: config.Server.Port, ServerCtx: serverCtx})
+	system.Root.Send(pid, &msg.StartListening{Port: config.Server.Login.Port, ServerCtx: serverCtx})
 
 	select {}
 }

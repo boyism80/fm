@@ -30,7 +30,7 @@ const (
 )
 
 type LoginFailed struct {
-	Reason int
+	Reason uint8
 }
 
 func (a *LoginFailed) Serialize(writer *stream.StreamWriter) error {
@@ -39,7 +39,7 @@ func (a *LoginFailed) Serialize(writer *stream.StreamWriter) error {
 		return err
 	}
 
-	err = writer.WriteU32(uint32(a.Reason))
+	err = writer.WriteU8(a.Reason)
 	if err != nil {
 		return err
 	}

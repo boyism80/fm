@@ -1,11 +1,8 @@
 package resp
 
 import (
-	"time"
-
 	"github.com/boyism80/fm/entity"
 	"github.com/boyism80/fm/stream"
-	"github.com/boyism80/fm/util"
 )
 
 type Warp struct {
@@ -18,7 +15,7 @@ func (a *Warp) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0x55)
 	writer.WriteU32(0) // channel
 	writer.WriteU8(0)
-	writer.WriteU8(0) // first time
+	writer.WriteU8(1) // first time
 
 	isEvent := false
 	if isEvent {
@@ -62,7 +59,7 @@ func (a *Warp) Serialize(writer *stream.StreamWriter) error {
 	a.Character.SerializeQuestInfo(writer)
 
 	writer.WriteU16(0)
-	writer.WriteU64(util.GetTime(time.Now().UnixMilli()))
+	writer.WriteU64(133906314709330000)
 	return nil
 }
 

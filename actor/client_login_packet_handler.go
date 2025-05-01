@@ -4,29 +4,25 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/entity"
 	"github.com/boyism80/fm/handler"
-	"github.com/boyism80/fm/msg"
 	"github.com/boyism80/fm/packet/req"
 	"github.com/boyism80/fm/packet/resp"
 	"github.com/boyism80/fm/types"
 )
 
-func RegisterPacketHandler(ctx actor.Context, client *ClientActor, h *handler.PacketHandler) {
-	handler.RegisterPacketHandler(0x0A, ctx, client, h, onPong)
-	handler.RegisterPacketHandler(0x01, ctx, client, h, onLogin)
-	handler.RegisterPacketHandler(0x04, ctx, client, h, onCharacterList)
-	handler.RegisterPacketHandler(0x07, ctx, client, h, onCheckName)
-	handler.RegisterPacketHandler(0x08, ctx, client, h, onCreateCharacter)
-	handler.RegisterPacketHandler(0x09, ctx, client, h, onDeleteCharacter)
-	handler.RegisterPacketHandler(0x05, ctx, client, h, onSelectCharacter)
-
-	// game
-	handler.RegisterPacketHandler(0x06, ctx, client, h, onLoginGame)
+func RegisterLoginClientPacketHandler(ctx actor.Context, client *LoginClientActor, h *handler.PacketHandler) {
+	handler.RegisterPacketHandler(0x0A, ctx, client, h, onLoginClientPong)
+	handler.RegisterPacketHandler(0x01, ctx, client, h, onLoginClientLogin)
+	handler.RegisterPacketHandler(0x04, ctx, client, h, onLoginClientCharacterList)
+	handler.RegisterPacketHandler(0x07, ctx, client, h, onLoginClientCheckName)
+	handler.RegisterPacketHandler(0x08, ctx, client, h, onLoginClientCreateCharacter)
+	handler.RegisterPacketHandler(0x09, ctx, client, h, onLoginClientDeleteCharacter)
+	handler.RegisterPacketHandler(0x05, ctx, client, h, onLoginClientSelectCharacter)
 }
 
-func onPong(ctx actor.Context, client *ClientActor, request *req.Pong) {
+func onLoginClientPong(ctx actor.Context, client *LoginClientActor, request *req.Pong) {
 }
 
-func onLogin(ctx actor.Context, client *ClientActor, request *req.Login) {
+func onLoginClientLogin(ctx actor.Context, client *LoginClientActor, request *req.Login) {
 
 	if request.Id == "cshyeon" {
 		client.Send(&resp.Authenticate{
@@ -59,22 +55,22 @@ func onLogin(ctx actor.Context, client *ClientActor, request *req.Login) {
 	}
 }
 
-func onCharacterList(ctx actor.Context, client *ClientActor, request *req.CharacterList) {
+func onLoginClientCharacterList(ctx actor.Context, client *LoginClientActor, request *req.CharacterList) {
 	client.Send(&resp.CharacterList{
 		Characters: []entity.Character{
-			entity.NewDummyCharacter(1, "채승현"),
-			entity.NewDummyCharacter(2, "채진영"),
+			entity.NewDummyCharacter(35177, "채승현"),
+			entity.NewDummyCharacter(35178, "채진영"),
 		},
 		SlotCount: 6,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func onCheckName(ctx actor.Context, client *ClientActor, request *req.CheckName) {
+func onLoginClientCheckName(ctx actor.Context, client *LoginClientActor, request *req.CheckName) {
 	exists := request.Name == "채승현"
 	client.Send(&resp.CheckName{Name: request.Name, Exists: exists}, types.SEND_POLICY_ENCRYPT)
 }
 
-func onCreateCharacter(ctx actor.Context, client *ClientActor, request *req.CreateCharacter) {
+func onLoginClientCreateCharacter(ctx actor.Context, client *LoginClientActor, request *req.CreateCharacter) {
 
 	success := request.Name != "채진영"
 	client.Send(&resp.CreateCharacter{
@@ -101,32 +97,17 @@ func onCreateCharacter(ctx actor.Context, client *ClientActor, request *req.Crea
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func onDeleteCharacter(ctx actor.Context, client *ClientActor, request *req.DeleteCharacter) {
+func onLoginClientDeleteCharacter(ctx actor.Context, client *LoginClientActor, request *req.DeleteCharacter) {
 	client.Send(&resp.DeleteCharacter{
 		Id:      request.Id,
 		Success: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func onSelectCharacter(ctx actor.Context, client *ClientActor, request *req.SelectCharacter) {
+func onLoginClientSelectCharacter(ctx actor.Context, client *LoginClientActor, request *req.SelectCharacter) {
 	client.Send(&resp.Transfer{
 		IP:          "127.0.0.1",
-		Port:        7100,
+		Port:        7111,
 		CharacterId: request.CharacterId,
 	}, types.SEND_POLICY_ENCRYPT)
-}
-
-func onLoginGame(ctx actor.Context, client *ClientActor, request *req.LoginGame) {
-	ch := entity.NewDummyCharacter(request.PlayerId, "강원기")
-	client.BindCharacter(ctx, &ch)
-
-	mapActor := client.Context.MapActor(client.Character.Map)
-	ctx.Send(mapActor, &msg.EnterMap{
-		Id:  ch.Id,
-		PID: ctx.Self(),
-	})
-
-	// TODO: 맵에 EnterMap 메시지가 전달된 이후에
-	// 맵의 모든 오브젝트에게 Warped 메시지가 전달된다.
-	// client.Send(&resp.Warp{Character: &ch}, types.SEND_POLICY_ENCRYPT)
 }

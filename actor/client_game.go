@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"crypto/rand"
 	"log"
 	"net"
 
@@ -16,7 +15,7 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
-type ClientActor struct {
+type GameClientActor struct {
 	Context        context.IServerContext
 	Character      *entity.Character
 	Conn           net.Conn
@@ -28,70 +27,64 @@ type ClientActor struct {
 	stopTimer      scheduler.CancelFunc
 }
 
-func generateRandomBytes(size int) []byte {
-	b := make([]byte, size)
-	_, err := rand.Read(b)
-	if err != nil {
-		log.Fatal("failed to generate random bytes:", err)
-	}
-	return b
-}
+func NewGameClientActor(ctx actor.Context, serverCtx context.IServerContext, conn net.Conn) actor.Actor {
+	ivSend := []byte{0x2F, 0xA3, 0x65, 0x43}
+	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
 
-func NewClientActor(ctx actor.Context, serverCtx context.IServerContext, conn net.Conn) actor.Actor {
-	act := &ClientActor{
+	act := &GameClientActor{
 		Context:        serverCtx,
 		Conn:           conn,
 		Buffer:         []byte{},
 		messageHandler: handler.NewMessageHandler(),
 		packetHandler:  handler.NewPacketHandler(),
-		sendEncryption: encrypt.NewEncryption(generateRandomBytes(4), -5),
-		recvEncryption: encrypt.NewEncryption(generateRandomBytes(4), 5),
+		sendEncryption: encrypt.NewEncryption(ivSend, -5),
+		recvEncryption: encrypt.NewEncryption(ivRecv, 5),
 	}
 
-	RegisterClientHandlers(ctx, act, act.messageHandler)
-	RegisterPacketHandler(ctx, act, act.packetHandler)
+	RegisterGameClientMessageHandlers(ctx, act, act.messageHandler)
+	RegisterGameClientPacketHandler(ctx, act, act.packetHandler)
 	return act
 }
 
-func (state *ClientActor) Receive(context actor.Context) {
+func (state *GameClientActor) Receive(context actor.Context) {
 	state.messageHandler.Handle(context)
 }
 
-func (state *ClientActor) Invoke(ctx actor.Context, header int, data []byte) error {
+func (state *GameClientActor) Invoke(ctx actor.Context, header int, data []byte) error {
 	return state.packetHandler.Handle(ctx, header, data)
 }
 
-func (c *ClientActor) BindCharacter(ctx actor.Context, ch *entity.Character) {
+func (c *GameClientActor) BindCharacter(ctx actor.Context, ch *entity.Character) {
 	c.Character = ch
 	RegisterCharacterHandlers(ctx, c.Character, c.messageHandler)
 }
 
-func (c *ClientActor) ID() int64 {
+func (c *GameClientActor) ID() int64 {
 	if c.Character == nil {
 		return 0
 	}
 	return c.Character.Object.ID
 }
 
-func (c *ClientActor) Position() types.Vec2 {
+func (c *GameClientActor) Position() types.Vec2 {
 	if c.Character == nil {
 		return types.Vec2{}
 	}
 	return c.Character.Object.Position
 }
 
-func (c *ClientActor) Type() types.ObjectType {
+func (c *GameClientActor) Type() types.ObjectType {
 	return types.ObjectTypePlayer
 }
 
-func (c *ClientActor) Name() string {
+func (c *GameClientActor) Name() string {
 	if c.Character == nil {
 		return ""
 	}
 	return c.Character.Name
 }
 
-func (state *ClientActor) Send(p types.Packet, policy types.SendPolicy) {
+func (state *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
 	writer := stream.NewStreamWriter(stream.LittleEndian)
 	p.Serialize(writer)
 	bytes := writer.Bytes()

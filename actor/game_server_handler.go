@@ -9,12 +9,12 @@ import (
 	"github.com/boyism80/fm/msg"
 )
 
-func RegisterMainHandlers(ctx protoactor.Context, m *ServerActor, h *handler.MessageHandler) {
-	handler.RegisterHandler(ctx, m, h, onStartListening)
-	handler.RegisterHandler(ctx, m, h, onAcceptedClient)
+func RegisterGameServerHandlers(ctx protoactor.Context, m *GameServerActor, h *handler.MessageHandler) {
+	handler.RegisterHandler(ctx, m, h, onGameStart)
+	handler.RegisterHandler(ctx, m, h, onGameClientAccepted)
 }
 
-func onStartListening(ctx protoactor.Context, obj *ServerActor, m *msg.StartListening) {
+func onGameStart(ctx protoactor.Context, obj *GameServerActor, m *msg.StartListening) {
 	port := fmt.Sprintf(":%d", m.Port)
 
 	// 임시 맵 추가
@@ -50,9 +50,9 @@ func onStartListening(ctx protoactor.Context, obj *ServerActor, m *msg.StartList
 	}()
 }
 
-func onAcceptedClient(ctx protoactor.Context, obj *ServerActor, m *msg.ClientConnected) {
+func onGameClientAccepted(ctx protoactor.Context, obj *GameServerActor, m *msg.ClientConnected) {
 	props := protoactor.PropsFromProducer(func() protoactor.Actor {
-		return NewClientActor(ctx, m.ServerCtx, m.Conn)
+		return NewGameClientActor(ctx, m.ServerCtx, m.Conn)
 	})
 	pid := ctx.Spawn(props)
 	ctx.Send(pid, m)

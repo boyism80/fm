@@ -1,6 +1,10 @@
 package encrypt
 
-import "github.com/boyism80/fm/stream"
+import (
+	"slices"
+
+	"github.com/boyism80/fm/stream"
+)
 
 var hexaBytes = []byte{
 	0xEC, 0x3F, 0x77, 0xA4, 0x45, 0xD0, 0x71, 0xBF, 0xB7, 0x98, 0x20, 0xFC,
@@ -33,8 +37,9 @@ type Encryption struct {
 }
 
 func NewEncryption(iv []byte, version int16) Encryption {
+
 	return Encryption{
-		iv:      append([]byte(nil), iv...),
+		iv:      slices.Clone(iv),
 		version: ((version >> 8) & 0x00FF) | int16(uint16(version<<8)&uint16(0xFF00)),
 	}
 }
