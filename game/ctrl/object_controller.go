@@ -6,7 +6,7 @@ import (
 
 type ObjectController interface {
 	ID() int64
-	Position() types.Vec2
+	Position() types.Vec2[int32]
 	Type() types.ObjectType
 	Send(p types.Packet, policy types.SendPolicy)
 }

@@ -2,11 +2,11 @@ package msg
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/common/types"
 )
 
-type ObjectMove struct {
-	X int
-	Y int
+type CharacterMove struct {
+	Position types.Vec2[int16]
 }
 
 type Warped struct {

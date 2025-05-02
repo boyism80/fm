@@ -59,24 +59,6 @@ func (c *GameClientActor) BindCharacter(ctx actor.Context, ch *entity.Character)
 	RegisterCharacterHandlers(ctx, c.Character, c.messageHandler)
 }
 
-func (c *GameClientActor) ID() int64 {
-	if c.Character == nil {
-		return 0
-	}
-	return c.Character.Object.ID
-}
-
-func (c *GameClientActor) Position() types.Vec2 {
-	if c.Character == nil {
-		return types.Vec2{}
-	}
-	return c.Character.Object.Position
-}
-
-func (c *GameClientActor) Type() types.ObjectType {
-	return types.ObjectTypePlayer
-}
-
 func (c *GameClientActor) Name() string {
 	if c.Character == nil {
 		return ""

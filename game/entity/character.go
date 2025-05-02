@@ -146,18 +146,6 @@ func NewDummyCharacter(id uint32, name string) Character {
 	}
 }
 
-func (ch *Character) ID() int64 {
-	return ch.Life.Object.ID
-}
-
-func (ch *Character) Position() types.Vec2 {
-	return ch.Life.Object.Position
-}
-
-func (ch *Character) Type() types.ObjectType {
-	return types.ObjectTypePlayer
-}
-
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) {
 
 }

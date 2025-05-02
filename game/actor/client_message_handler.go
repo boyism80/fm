@@ -10,6 +10,7 @@ import (
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol/resp"
 
@@ -119,7 +120,12 @@ func onGameClientWarped(ctx protoactor.Context, client *GameClientActor, m *msg.
 
 	ctx.Send(m.Sender, &common_msg.SendProtocol{
 		Protocol: &resp.SpawnPlayer{
-			Character: client.Character,
+			Character:       client.Character,
+			BuffStates:      [4]uint32{},
+			Diseases:        [4]uint32{},
+			CrushRings:      []*entity.Ring{},
+			FriendshipRings: []*entity.Ring{},
+			MarriageRings:   []*entity.Ring{},
 		},
 		Policy: types.SEND_POLICY_ENCRYPT,
 	})
