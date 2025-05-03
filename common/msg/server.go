@@ -12,5 +12,5 @@ type StartListening struct {
 }
 type ClientConnected struct {
 	Conn      net.Conn
-	ServerCtx context.IServerContext
+	ServerCtx *context.ServerContext
 }

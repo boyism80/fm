@@ -16,7 +16,7 @@ import (
 )
 
 type GameClientActor struct {
-	Context        context.IServerContext
+	Context        *context.ServerContext
 	Character      *entity.Character
 	Conn           net.Conn
 	Buffer         []byte
@@ -27,7 +27,7 @@ type GameClientActor struct {
 	stopTimer      scheduler.CancelFunc
 }
 
-func NewGameClientActor(ctx actor.Context, serverCtx context.IServerContext, conn net.Conn) actor.Actor {
+func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, conn net.Conn) actor.Actor {
 	ivSend := []byte{0x2F, 0xA3, 0x65, 0x43}
 	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
 

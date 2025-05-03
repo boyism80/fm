@@ -9,11 +9,11 @@ import (
 
 type ItemActor struct {
 	entity.Item
-	ServerCtx context.IServerContext
+	ServerCtx context.ServerContext
 	handler   *handler.MessageHandler
 }
 
-func NewItemActor(ctx protoactor.Context, serverCtx context.IServerContext) protoactor.Actor {
+func NewItemActor(ctx protoactor.Context, serverCtx context.ServerContext) protoactor.Actor {
 	act := &ItemActor{
 		ServerCtx: serverCtx,
 		handler:   handler.NewMessageHandler(),

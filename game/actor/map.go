@@ -5,20 +5,23 @@ import (
 	protoactor "github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/handler"
+	"github.com/boyism80/fm/game/data"
 	"github.com/boyism80/fm/game/msg"
 )
 
 type MapActor struct {
 	objectPIDs map[uint32]*actor.PID // 오브젝트 ID → PID
 	handler    *handler.MessageHandler
+	Template   *data.MapTemplate
 }
 
-func NewMapActorProps(ctx protoactor.Context, serverCtx context.IServerContext) *actor.Props {
+func NewMapActorProps(ctx protoactor.Context, serverCtx *context.ServerContext, template *data.MapTemplate) *actor.Props {
 	return actor.PropsFromProducer(func() actor.Actor {
 
 		act := &MapActor{
 			objectPIDs: make(map[uint32]*actor.PID),
 			handler:    handler.NewMessageHandler(),
+			Template:   template,
 		}
 
 		handler.RegisterHandler(ctx, act, act.handler, onMapEnter)

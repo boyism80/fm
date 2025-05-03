@@ -29,13 +29,15 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 		name = "채진영"
 	}
 	ch := entity.NewDummyCharacter(request.PlayerId, name)
+	spawnPoint := client.Context.GameData.Maps[ch.Map].Portals[ch.SpawnPoint].Position
+	ch.Position = spawnPoint
 	client.BindCharacter(ctx, &ch)
 
 	// TODO: 맵에 EnterMap 메시지가 전달된 이후에
 	// 맵의 모든 오브젝트에게 Warped 메시지가 전달된다.
 	client.Send(&resp.Warp{Character: &ch}, types.SEND_POLICY_ENCRYPT)
 
-	mapActor := client.Context.MapActor(client.Character.Map)
+	mapActor := client.Context.MapActors[client.Character.Map]
 	if mapActor != nil {
 		// 기존 오브젝트들에게 날 보여줌
 		spawnResp := resp.SpawnPlayer{
@@ -74,7 +76,7 @@ func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req
 		client.Character.Stance = frag.GetNewState()
 	}
 
-	mapActor := client.Context.MapActor(client.Character.Map)
+	mapActor := client.Context.MapActors[client.Character.Map]
 	if mapActor == nil {
 		return
 	}

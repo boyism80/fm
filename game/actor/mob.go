@@ -12,7 +12,7 @@ type MobActor struct {
 	handler *handler.MessageHandler
 }
 
-func NewMobActor(ctx protoactor.Context, serverCtx context.IServerContext) protoactor.Actor {
+func NewMobActor(ctx protoactor.Context, serverCtx context.ServerContext) protoactor.Actor {
 	act := &MobActor{
 		handler: handler.NewMessageHandler(),
 	}

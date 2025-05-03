@@ -2,34 +2,32 @@ package resp
 
 import (
 	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/entity"
 )
 
 type SpawnPlayer struct {
 	Character         *entity.Character
-	GuildName         string            // 길드 이름 (없으면 "")
-	GuildLogoBG       uint16            // 길드 엠블럼 배경 모양
-	GuildLogoBGColor  uint8             // 길드 엠블럼 배경 색
-	GuildLogo         uint16            // 길드 엠블럼 모양
-	GuildLogoColor    uint8             // 길드 엠블럼 색
-	BuffStates        [4]uint32         // 버프 bitmask
-	Diseases          [4]uint32         // 디버프 bitmask
-	SpeedBuff         uint8             // 버프된 속도 (옵션)
-	ComboCount        uint8             // 콤보 카운트 (옵션)
-	WKChargeSkillId   uint32            // WK 차지 스킬 ID (옵션)
-	MorphId           uint16            // 변신 ID (옵션)
-	SpiritClawSkillId uint32            // 스피릿클로 스킬 ID (옵션)
-	ItemEffectId      uint32            // 캐릭터 적용 아이템 이펙트
-	ChairId           uint32            // 앉아있는 의자 ID
-	Balloons          uint32            // 풍선 개수
-	Position          types.Vec2[int32] // 캐릭터 실제 위치 (좌표)
-	Stance            uint8             // 스탠스
-	MountLevel        uint32            // 탈것 레벨
-	MountExp          uint32            // 탈것 경험치
-	MountFatigue      uint32            // 탈것 피로도
-	Chalkboard        string            // 칠판 텍스트 (없으면 "")
-	Team              uint8             // 팀 (0/1)
+	GuildName         string    // 길드 이름 (없으면 "")
+	GuildLogoBG       uint16    // 길드 엠블럼 배경 모양
+	GuildLogoBGColor  uint8     // 길드 엠블럼 배경 색
+	GuildLogo         uint16    // 길드 엠블럼 모양
+	GuildLogoColor    uint8     // 길드 엠블럼 색
+	BuffStates        [4]uint32 // 버프 bitmask
+	Diseases          [4]uint32 // 디버프 bitmask
+	SpeedBuff         uint8     // 버프된 속도 (옵션)
+	ComboCount        uint8     // 콤보 카운트 (옵션)
+	WKChargeSkillId   uint32    // WK 차지 스킬 ID (옵션)
+	MorphId           uint16    // 변신 ID (옵션)
+	SpiritClawSkillId uint32    // 스피릿클로 스킬 ID (옵션)
+	ItemEffectId      uint32    // 캐릭터 적용 아이템 이펙트
+	ChairId           uint32    // 앉아있는 의자 ID
+	Balloons          uint32    // 풍선 개수
+	Stance            uint8     // 스탠스
+	MountLevel        uint32    // 탈것 레벨
+	MountExp          uint32    // 탈것 경험치
+	MountFatigue      uint32    // 탈것 피로도
+	Chalkboard        string    // 칠판 텍스트 (없으면 "")
+	Team              uint8     // 팀 (0/1)
 	CrushRings        []*entity.Ring
 	FriendshipRings   []*entity.Ring
 	MarriageRings     []*entity.Ring
@@ -99,8 +97,8 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.ChairId)
 
 	// 12. 위치
-	writer.Write16(int16(p.Position.X))
-	writer.Write16(int16(p.Position.Y))
+	writer.Write16(p.Character.Position.X)
+	writer.Write16(p.Character.Position.Y)
 
 	// 13. 스탠스
 	writer.WriteU8(p.Stance)

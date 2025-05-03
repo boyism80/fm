@@ -19,10 +19,11 @@ func RegisterGameServerHandlers(ctx protoactor.Context, m *GameServerActor, h *h
 func onGameStart(ctx protoactor.Context, obj *GameServerActor, m *msg.StartListening) {
 	port := fmt.Sprintf(":%d", m.Port)
 
-	// 임시 맵 추가
-	props := NewMapActorProps(ctx, m.ServerCtx)
-	pid := ctx.Spawn(props)
-	m.ServerCtx.Load(200000301, pid)
+	for _, template := range m.ServerCtx.GameData.Maps {
+		props := NewMapActorProps(ctx, m.ServerCtx, template)
+		pid := ctx.Spawn(props)
+		m.ServerCtx.MapActors[template.Id] = pid
+	}
 
 	go func() {
 		listener, err := net.Listen("tcp", port)

@@ -14,11 +14,11 @@ import (
 
 type BotActor struct {
 	Conn    net.Conn
-	Context context.IServerContext
+	Context *context.ServerContext
 	handler *handler.MessageHandler
 }
 
-func NewBotActor(ctx protoactor.Context, serverCtx context.IServerContext) protoactor.Actor {
+func NewBotActor(ctx protoactor.Context, serverCtx *context.ServerContext) protoactor.Actor {
 	act := &BotActor{
 		Context: serverCtx,
 		handler: handler.NewMessageHandler(),

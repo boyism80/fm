@@ -12,7 +12,7 @@ type NpcActor struct {
 	handler *handler.MessageHandler
 }
 
-func NewNpcActor(ctx protoactor.Context, serverCtx context.IServerContext) protoactor.Actor {
+func NewNpcActor(ctx protoactor.Context, serverCtx context.ServerContext) protoactor.Actor {
 	act := &NpcActor{
 		handler: handler.NewMessageHandler(),
 	}
