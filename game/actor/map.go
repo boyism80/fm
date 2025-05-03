@@ -5,8 +5,12 @@ import (
 	protoactor "github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/handler"
+	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/data"
 	"github.com/boyism80/fm/game/msg"
+	"github.com/boyism80/fm/game/protocol/resp"
+
+	common_msg "github.com/boyism80/fm/common/msg"
 )
 
 type MapActor struct {
@@ -52,6 +56,15 @@ func onMapEnter(ctx protoactor.Context, state *MapActor, m *msg.EnterMap) {
 
 func onMapLeave(ctx protoactor.Context, state *MapActor, m *msg.LeaveMap) {
 	delete(state.objectPIDs, m.Id)
+
+	for _, pid := range state.objectPIDs {
+		ctx.Send(pid, &common_msg.SendProtocol{
+			Protocol: &resp.LeavePlayer{
+				Id: m.Id,
+			},
+			Policy: types.SEND_POLICY_ENCRYPT,
+		})
+	}
 }
 
 func onMapPidList(ctx protoactor.Context, state *MapActor, m *msg.MapPidList) {

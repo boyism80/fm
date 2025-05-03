@@ -25,7 +25,7 @@ func onGameClientPong(ctx actor.Context, client *GameClientActor, request *commo
 
 func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginGame) {
 	name := "채승현"
-	if request.PlayerId != 35177 {
+	if request.PlayerId != 1 {
 		name = "채진영"
 	}
 	ch := entity.NewDummyCharacter(request.PlayerId, name)
