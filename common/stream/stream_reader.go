@@ -40,6 +40,15 @@ func (sr *StreamReader) Read(n int) ([]byte, error) {
 	return b, nil
 }
 
+func (sr *StreamReader) ReadBool() (bool, error) {
+	b, err := sr.ReadU8()
+	if err != nil {
+		return false, err
+	}
+
+	return b != 0, nil
+}
+
 func (sr *StreamReader) ReadU8() (uint8, error) {
 	b, err := sr.Read(1)
 	if err != nil {

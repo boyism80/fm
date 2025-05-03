@@ -79,7 +79,7 @@ func onMapBroadcastRange(ctx protoactor.Context, state *MapActor, m *msg.MapBroa
 	// 나중에 섹터 추가하고 섹터 찾아서 섹터 액터한테 던짐
 
 	for _, pid := range state.objectPIDs {
-		if pid == m.Sender {
+		if m.ExceptSelf && pid == m.Sender {
 			continue
 		}
 

@@ -28,7 +28,8 @@ type MapPidList struct {
 }
 
 type MapBroadcastRange struct {
-	Sender  *actor.PID
-	Pivot   types.Vec2[int16]
-	Message interface{}
+	Sender     *actor.PID
+	Pivot      types.Vec2[int16]
+	Message    interface{}
+	ExceptSelf bool
 }
