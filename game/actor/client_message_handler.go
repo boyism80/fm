@@ -95,6 +95,16 @@ func onGameClientConnected(ctx protoactor.Context, client *GameClientActor, m *c
 }
 
 func onGameClientStopping(ctx protoactor.Context, client *GameClientActor, m *protoactor.Stopping) {
+	ch := client.Character
+	if ch != nil {
+		mapActor := client.Context.MapActors[client.Character.Map]
+		if mapActor != nil {
+			ctx.Send(mapActor, &msg.LeaveMap{
+				Id: ch.Id,
+			})
+		}
+	}
+
 	log.Println("클라이언트 접속 종료")
 	client.Conn.Close()
 	if client.stopTimer != nil {

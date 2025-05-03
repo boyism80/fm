@@ -22,7 +22,6 @@ type SpawnPlayer struct {
 	ItemEffectId      uint32    // 캐릭터 적용 아이템 이펙트
 	ChairId           uint32    // 앉아있는 의자 ID
 	Balloons          uint32    // 풍선 개수
-	Stance            uint8     // 스탠스
 	MountLevel        uint32    // 탈것 레벨
 	MountExp          uint32    // 탈것 경험치
 	MountFatigue      uint32    // 탈것 피로도
@@ -101,7 +100,7 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	writer.Write16(p.Character.Position.Y)
 
 	// 13. 스탠스
-	writer.WriteU8(p.Stance)
+	writer.WriteU8(p.Character.Stance)
 
 	// 14. Foothold (FH)
 	writer.WriteU16(0)

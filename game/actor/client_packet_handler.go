@@ -39,6 +39,11 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 
 	mapActor := client.Context.MapActors[client.Character.Map]
 	if mapActor != nil {
+		ctx.Send(mapActor, &msg.EnterMap{
+			Id:  ch.Id,
+			PID: ctx.Self(),
+		})
+
 		// 기존 오브젝트들에게 날 보여줌
 		spawnResp := resp.SpawnPlayer{
 			Character:       &ch,
@@ -55,11 +60,6 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 				Protocol: &spawnResp,
 				Policy:   types.SEND_POLICY_ENCRYPT,
 			},
-		})
-
-		ctx.Send(mapActor, &msg.EnterMap{
-			Id:  ch.Id,
-			PID: ctx.Self(),
 		})
 	}
 }
@@ -84,7 +84,7 @@ func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req
 	ctx.Send(mapActor, &msg.MapBroadcastRange{
 		Sender: ctx.Self(),
 		Pivot:  beforePosition,
-		Message: common_msg.SendProtocol{
+		Message: &common_msg.SendProtocol{
 			Protocol: &resp.Move{
 				Character:     client.Character,
 				MoveFragments: req.Fragments,
