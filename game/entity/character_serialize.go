@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -179,10 +178,6 @@ func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.WriteU8(ch.Inventory[InventoryTypeCash].SlotLimit)
 
 	equipped := ch.Inventory[InventoryTypeEquipped].NewList()
-	sort.Slice(equipped, func(i, j int) bool {
-		return equipped[i].Parts < equipped[j].Parts
-	})
-
 	for _, item := range equipped {
 		if item.Parts < 0 && item.Parts > -100 {
 			item.Serialize(writer, false, false, true, false)

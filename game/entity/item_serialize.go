@@ -67,16 +67,10 @@ func (item *Item) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut,
 	}
 	writer.WriteU32(item.Id)
 
-	hasUniqueId := item.UniqueID > 0
-	writer.WriteU8(func() uint8 {
-		if hasUniqueId {
-			return 1
-		}
-		return 0
-	}())
-
-	if hasUniqueId {
-		writer.WriteU64(item.UniqueID)
+	hasUID := item.UniqueID > 0
+	writer.WriteBoolean(hasUID)
+	if hasUID {
+		writer.Write64(item.UniqueID)
 	}
 
 	if item.Pet != nil {
@@ -105,19 +99,14 @@ func (item *Item) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut,
 			writer.WriteU16(equip.Jump)
 			writer.WriteStr16(item.Owner)
 			writer.WriteU16(item.Flag)
-			writer.WriteU8(func() uint8 {
-				if equip.IncSkill > 0 {
-					return 1
-				}
-				return 0
-			}())
+			writer.WriteBoolean(item.IncSkill > 0)
 
 			writer.WriteU8(uint8(math.Max(float64(equip.BaseLevel), float64(equip.EquipLevel))))
 			writer.WriteU32(equip.ExpPercentage * 100000)
 
 			if item.UniqueID <= 0 {
 				if item.InventoryID <= 0 {
-					writer.WriteU64(0xFFFFFFFFFFFFFFFF)
+					writer.Write64(-1)
 				} else {
 					writer.WriteU64(item.InventoryID)
 				}

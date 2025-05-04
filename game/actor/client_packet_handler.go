@@ -19,6 +19,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x06, ctx, client, h, onLoginGame)
 	handler.RegisterPacketHandler(0x18, ctx, client, h, onGameClientMovePlayer)
 	handler.RegisterPacketHandler(0x20, ctx, client, h, onGameClientNormalChat)
+	handler.RegisterPacketHandler(0x1B, ctx, client, h, onGameClientAttack)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -113,6 +114,27 @@ func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req
 				Highlight: false,
 				Message:   req.Message,
 				Show:      req.Show,
+			},
+			Policy: types.SEND_POLICY_ENCRYPT,
+		},
+	})
+}
+
+func onGameClientAttack(ctx actor.Context, client *GameClientActor, req *req.Attack) {
+	position := client.Character.Position
+	mapActor := client.Context.MapActors[client.Character.Map]
+	if mapActor == nil {
+		return
+	}
+
+	ctx.Send(mapActor, &msg.MapBroadcastRange{
+		Sender: ctx.Self(),
+		Pivot:  position,
+		Message: &common_msg.SendProtocol{
+			Protocol: &resp.Attack{
+				CharacterId: client.Character.Id,
+				AttackInfo:  req.AttackInfo,
+				SkillLevel:  0,
 			},
 			Policy: types.SEND_POLICY_ENCRYPT,
 		},

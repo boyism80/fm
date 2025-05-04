@@ -107,7 +107,7 @@ func (ch *Character) RemainingSkillPoints() uint16 {
 }
 
 func NewDummyCharacter(id uint32, name string) Character {
-	return Character{
+	ch := Character{
 		Id:         id,
 		Name:       name,
 		Gender:     0,
@@ -144,6 +144,19 @@ func NewDummyCharacter(id uint32, name string) Character {
 		RegRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
 		Rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
 	}
+
+	// 더미 장비
+	ch.Inventory[InventoryTypeEquipped].Items[-11] = &Item{
+		Parts:    -11,
+		Id:       1302000,
+		Type:     1, // isEquipment
+		UniqueID: -1,
+		Equip: &Equip{
+			UpgradeSlots: 7,
+		},
+	}
+
+	return ch
 }
 
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) {

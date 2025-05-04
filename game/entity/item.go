@@ -3,7 +3,7 @@ package entity
 type Item struct {
 	Object
 	Id            uint32
-	UniqueID      uint64
+	UniqueID      int64
 	Type          uint8
 	Parts         int16
 	Quantity      uint16

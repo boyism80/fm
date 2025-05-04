@@ -64,7 +64,7 @@ func (m *MapleInventory) FindByID(itemID uint32) *Item {
 	return nil
 }
 
-func (m *MapleInventory) FindByUniqueID(uniqueID uint64) *Item {
+func (m *MapleInventory) FindByUniqueID(uniqueID int64) *Item {
 	for _, item := range m.Items {
 		if item.UniqueID == uniqueID {
 			return item

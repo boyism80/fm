@@ -181,3 +181,11 @@ func (sr *StreamReader) DiscardRead() {
 func (sr *StreamReader) Remaining() int {
 	return len(*sr.data) - sr.cursor
 }
+
+func (sr *StreamReader) Skip(n int) error {
+	if n > sr.Remaining() {
+		return errors.New("Skip out of bounds")
+	}
+	sr.cursor += n
+	return nil
+}
