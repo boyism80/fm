@@ -9,11 +9,33 @@ import (
 	"sync"
 )
 
-type xmlNode struct {
+type XMLNode struct {
 	XMLName  xml.Name
 	Name     string    `xml:"name,attr"`
 	Value    string    `xml:"value,attr"`
-	Children []xmlNode `xml:",any"`
+	Children []XMLNode `xml:",any"`
+}
+
+func (node *XMLNode) Find(name string) *XMLNode {
+
+	parts := strings.Split(name, ":")
+	current := node
+	for _, part := range parts {
+		found := false
+		for _, v := range current.Children {
+			if v.Name == part {
+				current = &v
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return nil
+		}
+	}
+
+	return current
 }
 
 func LoadXmlFiles[T any](root string,
