@@ -110,10 +110,10 @@ func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req
 		Pivot:  position,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.NormalChat{
-				Character: client.Character,
-				Highlight: false,
-				Message:   req.Message,
-				Show:      req.Show,
+				CharacterId: client.Character.Id,
+				Highlight:   false,
+				Message:     req.Message,
+				Show:        req.Show,
 			},
 			Policy: types.SEND_POLICY_ENCRYPT,
 		},
