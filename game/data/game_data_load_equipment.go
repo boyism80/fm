@@ -8,9 +8,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-func loadWeaponFromXML(path string) (*ItemTemplate, error) {
+var mutex sync.Mutex = sync.Mutex{}
+var visit map[string]bool = map[string]bool{}
+
+func loadWeaponFromXML(path string) (*EquipmentTemplate, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -22,7 +26,9 @@ func loadWeaponFromXML(path string) (*ItemTemplate, error) {
 		return nil, err
 	}
 
-	template := ItemTemplate{}
+	template := EquipmentTemplate{
+		baseItemTemplate: &baseItemTemplate{},
+	}
 	id, err := strconv.Atoi(strings.TrimSuffix(root.Name, ".img"))
 	if err != nil {
 		return nil, err
@@ -67,6 +73,67 @@ func loadWeaponFromXML(path string) (*ItemTemplate, error) {
 		case "cashTradeBlock":
 		case "abilityTimeLimited":
 		case "cashForceCharmExp":
+		case "effect":
+		case "reqPOP":
+		case "invisibleFace":
+		case "equippedEmotion":
+		case "equippedSound":
+		case "baseLevel":
+		case "medalTag":
+		case "tradBlock":
+		case "MaxHP":
+		case "bonusExp":
+		case "incCraft":
+		case "specialID":
+		case "speed":
+		case "epicItem":
+		case "notExtend":
+		case "origin":
+		case "incMMD":
+		case "accountShareTag":
+		case "pachinko":
+		case "incHP":
+		case "onlyCash":
+		case "incMHPr":
+		case "incMMPr":
+		case "keywordEffect":
+		case "extendFrame":
+		case "vehicleDefaultFrame":
+		case "isAbleToTradeOnce":
+		case "noExtend":
+		case "incLUk":
+		case "recovery":
+		case "groupEffectID":
+		case "sample":
+		case "nameTag":
+		case "chatBalloon":
+		case "pickupMeso":
+		case "pickupItem":
+		case "pickupOthers":
+		case "sweepForDrop":
+		case "longRange":
+		case "consumeMP":
+		case "onlyEquip":
+		case "scope":
+		case "bestFriendPartyBonusExp":
+		case "bloodAllianceExpRate":
+		case "bloodAlliancePartyExpRate":
+		case "fs":
+		case "tamingMob":
+		case "vehicleNaviFlyingLevel":
+		case "vehicleDoubleJumpLevel":
+		case "vehicleGlideLevel":
+		case "vehicleNewFlyingLevel":
+		case "vehicleSkillIsTown":
+		case "passengerNum":
+		case "removeBody":
+		case "ActionEffect":
+		case "incSwim":
+		case "incFatigue":
+		case "hpRecovery":
+		case "mpRecovery":
+		case "partsQuestID":
+		case "partsCount":
 			break
 
 		case "reqJob":
@@ -267,6 +334,13 @@ func loadWeaponFromXML(path string) (*ItemTemplate, error) {
 			}
 			template.MasterSpecial = value == 1
 		default:
+			mutex.Lock()
+			if _, ok := visit[v.Name]; ok {
+				mutex.Unlock()
+				continue
+			}
+			visit[v.Name] = true
+			mutex.Unlock()
 			log.Printf("%s is not declared in %s\n", v.Name, filepath.Base(path))
 		}
 	}
