@@ -40,7 +40,7 @@ type Character struct {
 	Random1          stream.RandomStream
 	Random2          stream.RandomStream
 	Random3          stream.RandomStream
-	Inventory        map[MapleInventoryType]*MapleInventory
+	Inventory        map[MapleInventoryType]*Inventory
 	SkillsMap        map[*Skill]*SkillEntry
 	CoolDowns        map[uint32]*CooldownEntry
 	Quests           map[int]*QuestStatus
@@ -132,7 +132,7 @@ func NewDummyCharacter(id uint32, name string) Character {
 		Random2: stream.NewRandomStream(),
 		Random3: stream.NewRandomStream(),
 
-		Inventory: map[MapleInventoryType]*MapleInventory{
+		Inventory: map[MapleInventoryType]*Inventory{
 			InventoryTypeEquip:    NewMapleInventory(InventoryTypeEquip),
 			InventoryTypeUse:      NewMapleInventory(InventoryTypeUse),
 			InventoryTypeSetUp:    NewMapleInventory(InventoryTypeSetUp),

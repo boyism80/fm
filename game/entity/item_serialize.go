@@ -1,42 +1,11 @@
 package entity
 
 import (
-	"errors"
 	"math"
-	"time"
 
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/util"
 )
-
-func (item *Item) serializePet(writer *stream.StreamWriter) error {
-	if item.Pet == nil {
-		return errors.New("serializePet: pet is nil")
-	}
-
-	writer.WriteU64(util.GetTime(item.Expiration))
-	writer.WriteStaticStr(item.Name, 13)
-	writer.WriteU8(item.Pet.Level)
-	writer.WriteU16(item.Pet.Closeness)
-	writer.WriteU8(item.Pet.Fullness)
-
-	if item == nil {
-		writer.WriteU64(util.GetKoreanTimestamp(int64(float64(time.Now().UnixNano()) / float64(time.Millisecond) * 1.5)))
-	} else {
-		writer.WriteU64(util.GetTime(item.Expiration))
-	}
-
-	writer.WriteU16(item.Pet.Speed)
-	writer.WriteU16(item.Pet.Flags)
-
-	if item.Pet.PetItemId == 5000054 && item.Pet.SecondsLeft > 0 {
-		writer.WriteU32(item.Pet.SecondsLeft)
-	} else {
-		writer.WriteU32(0)
-	}
-
-	return nil
-}
 
 func (item *Item) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut, trade, bagSlot bool) {
 	parts := item.Parts
@@ -53,7 +22,7 @@ func (item *Item) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut,
 		}
 		if bagSlot {
 			writer.WriteU32(uint32((parts % 100) - 1))
-		} else if !trade && item.Type == 1 {
+		} else if !trade && item.Type == 1 { // equipment
 			writer.WriteU16(uint16(parts))
 		} else {
 			writer.WriteU8(uint8(parts))
@@ -78,7 +47,8 @@ func (item *Item) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut,
 	} else {
 		writer.WriteU64(util.GetTime(item.Expiration))
 
-		if item.Type == 1 && item.Equip != nil {
+		isEquipment := (item.Type == 1 && item.Equip != nil)
+		if isEquipment {
 			equip := item.Equip
 			writer.WriteU8(equip.UpgradeSlots)
 			writer.WriteU8(equip.Level)

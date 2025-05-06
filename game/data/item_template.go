@@ -78,6 +78,10 @@ type EquipmentTemplate struct {
 	AttackSpeed     int
 }
 
+type PetTemplate struct {
+	*baseItemTemplate
+}
+
 type ActiveEffect struct {
 	HP int
 	MP int
