@@ -8,6 +8,7 @@ import (
 
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/game/data"
 )
 
 func (c *Character) cooldowns() []*CooldownEntry {
@@ -97,37 +98,35 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 	writer.WriteBoolean(ch.Mega)
 	writer.WriteU32(ch.Hair)
 
-	inventory := map[int8]uint32{
-		// -101: 1002577,
-		// -105: 1052309,
-		// -107: 1073255,
-		// -111: 1702382,
-		// -5:   1040010,
-		// -6:   1060006,
-		// -7:   1072005,
-		// -11:  1312004,
-	}
 	equipments := map[int8]uint32{}
 	skins := map[int8]uint32{}
-	for parts, itemId := range inventory {
+	for parts, equipment := range ch.Equipments {
+		if equipment == nil {
+			continue
+		}
+
 		if parts < -127 {
 			continue
 		}
 
-		realParts := int8(parts * -1)
+		template, ok := equipment.Template.(*data.EquipmentTemplate)
+		if !ok {
+			continue
+		}
 
-		if realParts < 100 {
-			if _, exists := equipments[realParts]; !exists {
-				equipments[realParts] = itemId
+		absoluteParts := int8(parts * -1)
+		if absoluteParts < 100 {
+			if _, exists := equipments[absoluteParts]; !exists {
+				equipments[absoluteParts] = template.Id
 			}
-		} else if realParts > 100 && realParts != 111 {
-			adjustedParts := int8(realParts - 100)
+		} else if absoluteParts > 100 && absoluteParts != 111 {
+			adjustedParts := int8(absoluteParts - 100)
 			if existingItem, exists := equipments[adjustedParts]; exists {
 				skins[adjustedParts] = existingItem
 			}
-			equipments[adjustedParts] = itemId
-		} else if _, exists := equipments[realParts]; exists {
-			skins[realParts] = itemId
+			equipments[adjustedParts] = template.Id
+		} else if _, exists := equipments[absoluteParts]; exists {
+			skins[absoluteParts] = template.Id
 		}
 	}
 

@@ -29,12 +29,6 @@ func (pet *Pet) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut, t
 			writer.WriteU8(0)
 		}
 	} else {
-		if slot <= -1 {
-			slot *= -1
-			if slot > 100 && slot < 1000 {
-				slot -= 100
-			}
-		}
 		writer.WriteU8(uint8(slot))
 	}
 

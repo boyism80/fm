@@ -15,6 +15,11 @@ type Equipment struct {
 }
 
 func (equipment *Equipment) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut, trade bool, slot int16, itemType ItemType) {
+	template, ok := equipment.Template.(*data.EquipmentTemplate)
+	if !ok {
+		return // TODO: return error
+	}
+
 	if zeroPosition {
 		if !leaveOut {
 			writer.WriteU8(0)
@@ -34,7 +39,7 @@ func (equipment *Equipment) Serialize(writer *stream.StreamWriter, zeroPosition,
 	}
 
 	writer.WriteU8(uint8(itemType))
-	writer.WriteU32(equipment.Template.GetID())
+	writer.WriteU32(template.Id)
 
 	hasUID := equipment.UniqueId > 0
 	writer.WriteBoolean(hasUID)
@@ -44,11 +49,6 @@ func (equipment *Equipment) Serialize(writer *stream.StreamWriter, zeroPosition,
 
 	writer.WriteU64(util.GetTime(equipment.Expiration))
 	writer.WriteU8(equipment.EnchantChance)
-
-	template, ok := equipment.Template.(*data.EquipmentTemplate)
-	if !ok {
-		return // TODO: return error
-	}
 	writer.WriteU8(template.Required.Level)
 	writer.WriteU16(template.Ability.Str)
 	writer.WriteU16(template.Ability.Dex)
