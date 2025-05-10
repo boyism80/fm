@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
 )
@@ -40,7 +41,8 @@ type Character struct {
 	Random1          stream.RandomStream
 	Random2          stream.RandomStream
 	Random3          stream.RandomStream
-	Inventory        map[MapleInventoryType]*Inventory
+	Inventory        map[InventoryType]*Inventory
+	Equipments       map[EquipmentPartsType]*Equipment
 	SkillsMap        map[*Skill]*SkillEntry
 	CoolDowns        map[uint32]*CooldownEntry
 	Quests           map[int]*QuestStatus
@@ -106,7 +108,7 @@ func (ch *Character) RemainingSkillPoints() uint16 {
 	return uint16(ret)
 }
 
-func NewDummyCharacter(id uint32, name string) Character {
+func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Character {
 	ch := Character{
 		Id:         id,
 		Name:       name,
@@ -132,28 +134,49 @@ func NewDummyCharacter(id uint32, name string) Character {
 		Random2: stream.NewRandomStream(),
 		Random3: stream.NewRandomStream(),
 
-		Inventory: map[MapleInventoryType]*Inventory{
-			InventoryTypeEquip:    NewMapleInventory(InventoryTypeEquip),
-			InventoryTypeUse:      NewMapleInventory(InventoryTypeUse),
-			InventoryTypeSetUp:    NewMapleInventory(InventoryTypeSetUp),
-			InventoryTypeEtc:      NewMapleInventory(InventoryTypeEtc),
-			InventoryTypeCash:     NewMapleInventory(InventoryTypeCash),
-			InventoryTypeEquipped: NewMapleInventory(InventoryTypeEquipped),
+		Inventory: map[InventoryType]*Inventory{
+			InventoryTypeEquip: NewMapleInventory(InventoryTypeEquip),
+			InventoryTypeUse:   NewMapleInventory(InventoryTypeUse),
+			InventoryTypeSetUp: NewMapleInventory(InventoryTypeSetUp),
+			InventoryTypeEtc:   NewMapleInventory(InventoryTypeEtc),
+			InventoryTypeCash:  NewMapleInventory(InventoryTypeCash),
+		},
+		Equipments: map[EquipmentPartsType]*Equipment{
+			EquipmentPartsWeapon: nil,
+			EquipmentPartsShield: nil,
 		},
 
 		RegRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
 		Rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
 	}
 
-	// 더미 장비
-	ch.Inventory[InventoryTypeEquipped].Items[-11] = &Item{
-		Parts:    -11,
-		Id:       1302000,
-		Type:     1, // isEquipment
-		UniqueID: -1,
-		Equip: &Equip{
-			UpgradeSlots: 7,
-		},
+	if ctx != nil {
+		ch.Equipments[EquipmentPartsWeapon] = &Equipment{
+			BaseItem: &BaseItem{
+				Object:     nil,
+				Template:   ctx.GameData.Items[1302000],
+				UniqueId:   0,
+				Expiration: -1,
+			},
+			EnchantChance: 7,
+		}
+
+		// TODO: 펫 추가하고 이어서 작업
+		// ch.Inventory[InventoryTypeCash].Items[1] = &Pet{
+		// 	BaseItem: &BaseItem{
+		// 		Object:     nil,
+		// 		Template:   ctx.GameData.Items[5000007],
+		// 		UniqueId:   1,
+		// 		Expiration: -1,
+		// 	},
+		// 	Level:       1,
+		// 	Closeness:   0,
+		// 	Fullness:    0,
+		// 	Speed:       1,
+		// 	Flags:       0,
+		// 	SecondsLeft: 0,
+		// 	Expiration:  -1,
+		// }
 	}
 
 	return ch

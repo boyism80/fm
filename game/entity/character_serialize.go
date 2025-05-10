@@ -143,11 +143,9 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0xFF)
 
-	weapon := &Item{
-		Id: 1702382,
-	}
+	weapon := ch.Equipments[EquipmentPartsWeapon]
 	if weapon != nil {
-		writer.WriteU32(weapon.Id)
+		writer.WriteU32(weapon.Template.GetID())
 	} else {
 		writer.WriteU32(0)
 	}
@@ -177,47 +175,25 @@ func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.WriteU8(ch.Inventory[InventoryTypeEtc].SlotLimit)
 	writer.WriteU8(ch.Inventory[InventoryTypeCash].SlotLimit)
 
-	equipped := ch.Inventory[InventoryTypeEquipped].NewList()
-	for _, item := range equipped {
-		if item.Parts < 0 && item.Parts > -100 {
-			item.Serialize(writer, false, false, true, false)
+	for parts, equipment := range ch.Equipments {
+		if equipment != nil && (parts <= 0 && parts > -100) {
+			equipment.Serialize(writer, false, false, true, int16(parts), ItemTypeEquipment)
 		}
 	}
 	writer.WriteU8(0)
 
-	for _, item := range equipped {
-		if item.Parts <= -100 && item.Parts > -1000 {
-			item.Serialize(writer, false, false, true, false)
+	for parts, equipment := range ch.Equipments {
+		if equipment != nil && (parts <= -100 && parts > -1000) {
+			equipment.Serialize(writer, false, false, true, int16(parts), ItemTypeEquipment)
 		}
 	}
 	writer.WriteU8(0)
 
-	for _, item := range ch.Inventory[InventoryTypeEquip].NewList() {
-		item.Serialize(writer, false, false, true, false)
-	}
-	writer.WriteU8(0)
-
-	for _, item := range ch.Inventory[InventoryTypeUse].NewList() {
-		item.Serialize(writer, false, false, true, false)
-	}
-	writer.WriteU8(0)
-
-	for _, item := range ch.Inventory[InventoryTypeSetUp].NewList() {
-		item.Serialize(writer, false, false, true, false)
-	}
-	writer.WriteU8(0)
-
-	for _, item := range ch.Inventory[InventoryTypeEtc].NewList() {
-		if item.Parts < 100 {
-			item.Serialize(writer, false, false, true, false)
-		}
-	}
-	writer.WriteU8(0)
-
-	for _, item := range ch.Inventory[InventoryTypeCash].NewList() {
-		item.Serialize(writer, false, false, true, false)
-	}
-	writer.WriteU8(0)
+	ch.Inventory[InventoryTypeEquip].Serialize(writer)
+	ch.Inventory[InventoryTypeUse].Serialize(writer)
+	ch.Inventory[InventoryTypeSetUp].Serialize(writer)
+	ch.Inventory[InventoryTypeEtc].Serialize(writer)
+	ch.Inventory[InventoryTypeCash].Serialize(writer)
 }
 
 func (ch *Character) SerializeSkills(writer *stream.StreamWriter) {

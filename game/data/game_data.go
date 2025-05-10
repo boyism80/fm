@@ -12,7 +12,7 @@ import (
 type GameData struct {
 	Maps     map[uint32]*MapTemplate
 	Monsters map[uint32]*MonsterTemplate
-	Items    map[uint32]*baseItemTemplate
+	Items    map[uint32]ItemTemplate
 }
 
 // 생성자
@@ -95,6 +95,6 @@ func NewGameData() *GameData {
 	return &GameData{
 		Maps:     maps,
 		Monsters: map[uint32]*MonsterTemplate{},
-		Items:    map[uint32]*baseItemTemplate{},
+		Items:    items,
 	}
 }

@@ -3,6 +3,8 @@ package entity
 import (
 	"errors"
 	"sort"
+
+	"github.com/boyism80/fm/common/stream"
 )
 
 var (
@@ -12,37 +14,42 @@ var (
 	ErrSlotAlreadyOccupied = errors.New("slot already occupied")
 )
 
-type MapleInventoryType int
+type InventoryType int
 
 const (
-	InventoryTypeEquip MapleInventoryType = iota
+	InventoryTypeEquip InventoryType = iota
 	InventoryTypeUse
 	InventoryTypeSetUp
 	InventoryTypeEtc
 	InventoryTypeCash
-	InventoryTypeEquipped
+)
+
+type ItemType int
+
+const (
+	ItemTypeEquipment ItemType = 1
+	ItemTypeEtc       ItemType = 2
+)
+
+type EquipmentPartsType int
+
+const (
+	EquipmentPartsWeapon EquipmentPartsType = -11
+	EquipmentPartsShield EquipmentPartsType = -10
 )
 
 type Inventory struct {
 	Items     map[int16]Item
 	SlotLimit uint8
-	Type      MapleInventoryType
+	Type      InventoryType
 }
 
-func NewMapleInventory(typ MapleInventoryType) *Inventory {
+func NewMapleInventory(typ InventoryType) *Inventory {
 	return &Inventory{
 		Type:      typ,
 		SlotLimit: 32,
 		Items:     map[int16]Item{},
 	}
-}
-
-func (m *Inventory) NewList() []Item {
-	ret := []Item{}
-	for _, item := range m.Items {
-		ret = append(ret, item)
-	}
-	return ret
 }
 
 func (m *Inventory) ListIDs() []uint32 {
@@ -58,4 +65,21 @@ func (m *Inventory) ListIDs() []uint32 {
 		return ret[i] < ret[j]
 	})
 	return ret
+}
+
+func (m *Inventory) Serialize(sw *stream.StreamWriter) {
+
+	itemType := ItemTypeEtc
+	if m.Type == InventoryTypeEquip {
+		itemType = ItemTypeEquipment
+	}
+
+	for slot, item := range m.Items {
+		if item == nil {
+			continue
+		}
+
+		item.Serialize(sw, false, false, true, slot, itemType)
+	}
+	sw.WriteU8(0)
 }

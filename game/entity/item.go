@@ -6,14 +6,20 @@ import (
 )
 
 type Item interface {
+	GetObject() *Object
 	GetTemplate() data.ItemTemplate
-	GetParts() uint32
-	Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut, trade, bagSlot bool)
+	Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut, trade bool, slot int16, itemType ItemType)
 }
 
 type BaseItem struct {
-	Template data.ItemTemplate
-	UniqueId int64
+	*Object
+	Template   data.ItemTemplate
+	UniqueId   int64
+	Expiration int64
+}
+
+func (item *BaseItem) GetObject() *Object {
+	return item.Object
 }
 
 func (item *BaseItem) GetTemplate() data.ItemTemplate {

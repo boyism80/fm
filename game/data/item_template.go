@@ -1,31 +1,34 @@
 package data
 
 type baseStats struct {
-	Str int
-	Dex int
-	Int int
-	Luk int
+	Str uint16
+	Dex uint16
+	Int uint16
+	Luk uint16
 }
 
 type RequiredStats struct {
 	baseStats
-	Level int
+	Level uint8
 	Class int
 }
 
 type AbilityStats struct {
 	baseStats
-	PAD       int // Physical attack damage
-	MAD       int // Magical attack damage
-	PDD       int // Physical defense damage
-	MDD       int // Magical defense damage
-	Speed     int
-	Jump      int
-	ACC       int
+	PAD       uint16 // Physical attack damage
+	MAD       uint16 // Magical attack damage
+	PDD       uint16 // Physical defense damage
+	MDD       uint16 // Magical defense damage
+	Speed     uint16
+	Jump      uint16
+	ACC       uint16
 	EVA       int
-	MaxHP     int
-	MaxMP     int
+	MaxHP     uint16
+	MaxMP     uint16
 	PVPDamage int
+
+	Avoid uint16
+	Hands uint16
 }
 
 type baseItemTemplate struct {
@@ -79,6 +82,10 @@ type EquipmentTemplate struct {
 }
 
 type PetTemplate struct {
+	*baseItemTemplate
+}
+
+type GeneralItemTemplate struct {
 	*baseItemTemplate
 }
 

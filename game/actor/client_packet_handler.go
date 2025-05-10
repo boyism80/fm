@@ -30,7 +30,7 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 	if request.PlayerId != 1 {
 		name = "채진영"
 	}
-	ch := entity.NewDummyCharacter(request.PlayerId, name)
+	ch := entity.NewDummyCharacter(request.PlayerId, name, client.Context)
 	spawnPoint := client.Context.GameData.Maps[ch.Map].Portals[ch.SpawnPoint].Position
 	ch.Position = spawnPoint
 	client.BindCharacter(ctx, &ch)

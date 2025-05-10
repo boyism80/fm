@@ -153,73 +153,73 @@ func loadWeaponFromXML(path string) (*EquipmentTemplate, error) {
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Str = value
+			template.Required.Str = uint16(value)
 		case "reqDEX":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Dex = value
+			template.Required.Dex = uint16(value)
 		case "reqINT":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Int = value
+			template.Required.Int = uint16(value)
 		case "reqLUK":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Luk = value
+			template.Required.Luk = uint16(value)
 		case "incSTR":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Str = value
+			template.Ability.Str = uint16(value)
 		case "incDEX":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Dex = value
+			template.Ability.Dex = uint16(value)
 		case "incINT":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Int = value
+			template.Ability.Int = uint16(value)
 		case "incLUK":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Luk = value
+			template.Ability.Luk = uint16(value)
 		case "incPAD":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.PAD = value
+			template.Ability.PAD = uint16(value)
 		case "incMAD":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.MAD = value
+			template.Ability.MAD = uint16(value)
 		case "incPDD":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.PDD = value
+			template.Ability.PDD = uint16(value)
 		case "incMDD":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.MDD = value
+			template.Ability.MDD = uint16(value)
 		case "incPVPDamage":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
@@ -231,20 +231,20 @@ func loadWeaponFromXML(path string) (*EquipmentTemplate, error) {
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Speed = value
+			template.Ability.Speed = uint16(value)
 		case "incJump":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Jump = value
+			template.Ability.Jump = uint16(value)
 
 		case "incACC":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.ACC = value
+			template.Ability.ACC = uint16(value)
 
 		case "incEVA":
 			value, err := strconv.Atoi(v.Value)
@@ -257,13 +257,13 @@ func loadWeaponFromXML(path string) (*EquipmentTemplate, error) {
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.MaxHP = value
+			template.Ability.MaxHP = uint16(value)
 		case "incMMP":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.MaxMP = value
+			template.Ability.MaxMP = uint16(value)
 		case "tuc":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
