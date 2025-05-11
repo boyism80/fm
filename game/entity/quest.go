@@ -1,11 +1,13 @@
 package entity
 
+import "time"
+
 type QuestStatus struct {
 	Quest          *Quest
 	Status         uint8 // 1 = Started, 2 = Completed
 	MobKills       map[int]int
 	CustomData     string
-	CompletionTime int64
+	CompletionTime time.Time
 }
 
 type Quest struct {

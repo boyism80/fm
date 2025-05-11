@@ -2,7 +2,6 @@ package entity
 
 import (
 	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/common/util"
 	"github.com/boyism80/fm/game/data"
 )
 
@@ -41,7 +40,7 @@ func (item *GeneralItem) Serialize(writer *stream.StreamWriter, zeroPosition, le
 		writer.Write64(item.UniqueId)
 	}
 
-	writer.WriteU64(util.GetTime(item.Expiration))
+	writer.WriteDateTime(item.Expiration)
 	template, ok := item.Template.(*data.GeneralItemTemplate)
 	if !ok {
 		return // TODO: return error

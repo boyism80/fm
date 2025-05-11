@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"time"
+
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/game/data"
 )
@@ -15,7 +17,7 @@ type BaseItem struct {
 	*Object
 	Template   data.ItemTemplate
 	UniqueId   int64
-	Expiration int64
+	Expiration time.Time
 }
 
 func (item *BaseItem) GetObject() *Object {

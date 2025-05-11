@@ -1,9 +1,13 @@
 package entity
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/common/util"
 )
 
 type Character struct {
@@ -156,27 +160,30 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 				Object:     nil,
 				Template:   ctx.GameData.Items[1302000],
 				UniqueId:   0,
-				Expiration: -1,
+				Expiration: util.TimeMax,
 			},
 			EnchantChance: 7,
 		}
 
-		// TODO: 펫 추가하고 이어서 작업
-		// ch.Inventory[InventoryTypeCash].Items[1] = &Pet{
-		// 	BaseItem: &BaseItem{
-		// 		Object:     nil,
-		// 		Template:   ctx.GameData.Items[5000007],
-		// 		UniqueId:   1,
-		// 		Expiration: -1,
-		// 	},
-		// 	Level:       1,
-		// 	Closeness:   0,
-		// 	Fullness:    0,
-		// 	Speed:       1,
-		// 	Flags:       0,
-		// 	SecondsLeft: 0,
-		// 	Expiration:  -1,
-		// }
+		petExpiration, err := time.ParseInLocation("2006-01-02 15:04:05", "2025-05-30 09:30:00", util.KST)
+		if err != nil {
+			fmt.Println(err)
+		}
+		ch.Inventory[InventoryTypeCash].Items[1] = &Pet{
+			BaseItem: &BaseItem{
+				Object:     nil,
+				Template:   ctx.GameData.Items[5000007],
+				UniqueId:   1,
+				Expiration: util.TimeMax,
+			},
+			Level:       1,
+			Closeness:   0,
+			Fullness:    0,
+			Speed:       1,
+			Flags:       0,
+			SecondsLeft: 0,
+			Expiration:  petExpiration,
+		}
 	}
 
 	return ch

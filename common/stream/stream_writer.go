@@ -7,6 +7,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/boyism80/fm/common/util"
 	"golang.org/x/text/encoding/korean"
@@ -177,6 +178,10 @@ func (sw *StreamWriter) WriteIPAddress(ip string) error {
 		serverIP[i] = byte(num)
 	}
 	return sw.Write(serverIP)
+}
+
+func (sw *StreamWriter) WriteDateTime(dt time.Time) error {
+	return sw.WriteU64(util.ToFileTime(dt))
 }
 
 func (sw *StreamWriter) ToString() string {

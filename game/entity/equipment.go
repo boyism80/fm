@@ -47,7 +47,7 @@ func (equipment *Equipment) Serialize(writer *stream.StreamWriter, zeroPosition,
 		writer.Write64(equipment.UniqueId)
 	}
 
-	writer.WriteU64(util.GetTime(equipment.Expiration))
+	writer.WriteDateTime(equipment.Expiration)
 	writer.WriteU8(equipment.EnchantChance)
 	writer.WriteU8(template.Required.Level)
 	writer.WriteU16(template.Ability.Str)
@@ -78,6 +78,6 @@ func (equipment *Equipment) Serialize(writer *stream.StreamWriter, zeroPosition,
 			writer.Write64(-1)
 		}
 	}
-	writer.WriteU64(util.GetTime(-2))
+	writer.WriteDateTime(util.TimeZero)
 	writer.Write32(-1)
 }

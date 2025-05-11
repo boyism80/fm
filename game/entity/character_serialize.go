@@ -244,7 +244,7 @@ func (ch *Character) SerializeQuests(writer *stream.StreamWriter) {
 					if err != nil {
 						timeVal = 0
 					}
-					writer.WriteU64(util.GetTime(timeVal))
+					writer.WriteDateTime(util.GetTime(timeVal))
 				} else {
 					writer.WriteStr8(q.CustomData)
 				}
@@ -259,7 +259,7 @@ func (ch *Character) SerializeQuests(writer *stream.StreamWriter) {
 
 	for _, q := range completed {
 		writer.WriteU16(uint16(q.Quest.Id))
-		writer.WriteU64(util.GetTime(q.CompletionTime))
+		writer.WriteDateTime(q.CompletionTime)
 	}
 }
 

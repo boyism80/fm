@@ -52,6 +52,21 @@ func NewGameData() *GameData {
 		return nil
 	}
 
+	err = LoadXmlFiles("D:/git/fm-backup/wz/Item.wz/Pet",
+		workerCount,
+		func(path string) (result *PetTemplate, err error) {
+			return loadPetFromXML(path)
+		},
+		func(percent float32, value *PetTemplate) {
+
+			items[value.Id] = value
+			fmt.Printf("펫 데이터 로딩 중: %.1f%%\n", percent)
+		})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
 	stringResult := map[uint32]*StringTemplate{}
 	_ = LoadXmlFiles("D:/git/fm/wz/String.wz", workerCount, func(path string) (result *StringTemplate, err error) {
 

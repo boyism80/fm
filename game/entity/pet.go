@@ -1,8 +1,9 @@
 package entity
 
 import (
+	"time"
+
 	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/common/util"
 	"github.com/boyism80/fm/game/data"
 )
 
@@ -14,7 +15,7 @@ type Pet struct {
 	Speed       uint16
 	Flags       uint16
 	SecondsLeft uint32
-	Expiration  int64
+	Expiration  time.Time
 }
 
 func (pet *Pet) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut, trade bool, slot int16, itemType ItemType) {
@@ -41,12 +42,12 @@ func (pet *Pet) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut, t
 		writer.Write64(pet.UniqueId)
 	}
 
-	writer.WriteU64(util.GetTime(pet.Expiration))
+	writer.WriteDateTime(pet.BaseItem.Expiration)
 	writer.WriteStaticStr(template.Name, 13)
 	writer.WriteU8(pet.Level)
 	writer.WriteU16(pet.Closeness)
 	writer.WriteU8(pet.Fullness)
-	writer.WriteU64(util.GetTime(pet.Expiration))
+	writer.WriteDateTime(pet.Expiration)
 	writer.WriteU16(pet.Speed)
 	writer.WriteU16(pet.Flags)
 	if template.Id == 5000054 && pet.SecondsLeft > 0 {
