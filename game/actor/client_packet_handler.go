@@ -107,10 +107,12 @@ func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req
 		return
 	}
 
-	params := strings.Split(req.Message, " ")
-	err := client.commandHandler.Handle(ctx, params...)
-	if err == nil {
-		return
+	if strings.HasPrefix(req.Message, "/") {
+		params := strings.Split(strings.TrimPrefix(req.Message, "/"), " ")
+		err := client.commandHandler.Handle(ctx, params...)
+		if err == nil {
+			return
+		}
 	}
 
 	ctx.Send(mapActor, &msg.MapBroadcastRange{

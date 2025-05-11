@@ -14,31 +14,29 @@ type Equipment struct {
 	SkillBonus    uint16
 }
 
-func (equipment *Equipment) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut, trade bool, slot int16, itemType ItemType) {
+func (equipment *Equipment) GetInventoryType() InventoryType {
+	return InventoryTypeEquip
+}
+
+func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	template, ok := equipment.Template.(*data.EquipmentTemplate)
 	if !ok {
 		return // TODO: return error
 	}
 
-	if zeroPosition {
-		if !leaveOut {
-			writer.WriteU8(0)
-		}
-	} else {
-		if slot <= -1 {
-			slot *= -1
-			if slot > 100 && slot < 1000 {
-				slot -= 100
-			}
-		}
-		if !trade && itemType == ItemTypeEquipment { // equipment
-			writer.WriteU16(uint16(slot))
-		} else {
-			writer.WriteU8(uint8(slot))
+	if slot <= -1 {
+		slot *= -1
+		if slot > 100 && slot < 1000 {
+			slot -= 100
 		}
 	}
+	if slot != 0 && !trade {
+		writer.WriteU16(uint16(slot))
+	} else {
+		writer.WriteU8(uint8(slot))
+	}
 
-	writer.WriteU8(uint8(itemType))
+	writer.WriteU8(uint8(ItemTypeEquipment))
 	writer.WriteU32(template.Id)
 
 	hasUID := equipment.UniqueId > 0

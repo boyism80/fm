@@ -4,18 +4,18 @@ import (
 	"github.com/boyism80/fm/common/stream"
 )
 
-type GeneralItem struct {
+type CashItem struct {
 	*BaseItem
 	Count     uint16
 	OwnerName string
 	Flags     uint16
 }
 
-func (item *GeneralItem) GetInventoryType() InventoryType {
-	return InventoryTypeEtc
+func (item *CashItem) GetInventoryType() InventoryType {
+	return InventoryTypeCash
 }
 
-func (item *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
+func (item *CashItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(ItemTypeEtc))
 	writer.WriteU32(item.Template.GetID())

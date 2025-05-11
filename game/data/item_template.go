@@ -73,7 +73,7 @@ type EquipmentTemplate struct {
 	*baseItemTemplate
 	Required        RequiredStats
 	Ability         AbilityStats
-	TUC             int // Total upgrade count
+	TUC             uint8 // Total upgrade count
 	EquipTradeBlock bool
 	RoyalSpecial    bool
 	MasterSpecial   bool

@@ -169,28 +169,28 @@ func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.WriteU32(ch.Meso)
 
 	writer.WriteU8(ch.Inventory[InventoryTypeEquip].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeUse].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeSetUp].SlotLimit)
+	writer.WriteU8(ch.Inventory[InventoryTypeConsume].SlotLimit)
+	writer.WriteU8(ch.Inventory[InventoryTypeInstallation].SlotLimit)
 	writer.WriteU8(ch.Inventory[InventoryTypeEtc].SlotLimit)
 	writer.WriteU8(ch.Inventory[InventoryTypeCash].SlotLimit)
 
 	for parts, equipment := range ch.Equipments {
 		if equipment != nil && (parts <= 0 && parts > -100) {
-			equipment.Serialize(writer, false, false, true, int16(parts), ItemTypeEquipment)
+			equipment.Serialize(writer, true, int16(parts))
 		}
 	}
 	writer.WriteU8(0)
 
 	for parts, equipment := range ch.Equipments {
 		if equipment != nil && (parts <= -100 && parts > -1000) {
-			equipment.Serialize(writer, false, false, true, int16(parts), ItemTypeEquipment)
+			equipment.Serialize(writer, true, int16(parts))
 		}
 	}
 	writer.WriteU8(0)
 
 	ch.Inventory[InventoryTypeEquip].Serialize(writer)
-	ch.Inventory[InventoryTypeUse].Serialize(writer)
-	ch.Inventory[InventoryTypeSetUp].Serialize(writer)
+	ch.Inventory[InventoryTypeConsume].Serialize(writer)
+	ch.Inventory[InventoryTypeInstallation].Serialize(writer)
 	ch.Inventory[InventoryTypeEtc].Serialize(writer)
 	ch.Inventory[InventoryTypeCash].Serialize(writer)
 }

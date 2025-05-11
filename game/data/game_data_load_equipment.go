@@ -269,7 +269,7 @@ func loadWeaponFromXML(path string) (*EquipmentTemplate, error) {
 			if err != nil {
 				return nil, err
 			}
-			template.TUC = value
+			template.TUC = uint8(value)
 		case "price":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {

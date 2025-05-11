@@ -139,11 +139,11 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		Random3: stream.NewRandomStream(),
 
 		Inventory: map[InventoryType]*Inventory{
-			InventoryTypeEquip: NewMapleInventory(InventoryTypeEquip),
-			InventoryTypeUse:   NewMapleInventory(InventoryTypeUse),
-			InventoryTypeSetUp: NewMapleInventory(InventoryTypeSetUp),
-			InventoryTypeEtc:   NewMapleInventory(InventoryTypeEtc),
-			InventoryTypeCash:  NewMapleInventory(InventoryTypeCash),
+			InventoryTypeEquip:        NewInventory(InventoryTypeEquip),
+			InventoryTypeConsume:      NewInventory(InventoryTypeConsume),
+			InventoryTypeInstallation: NewInventory(InventoryTypeInstallation),
+			InventoryTypeEtc:          NewInventory(InventoryTypeEtc),
+			InventoryTypeCash:         NewInventory(InventoryTypeCash),
 		},
 		Equipments: map[EquipmentPartsType]*Equipment{
 			EquipmentPartsWeapon: nil,

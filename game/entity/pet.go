@@ -18,21 +18,18 @@ type Pet struct {
 	Expiration  time.Time
 }
 
-func (pet *Pet) Serialize(writer *stream.StreamWriter, zeroPosition, leaveOut, trade bool, slot int16, itemType ItemType) {
+func (equipment *Pet) GetInventoryType() InventoryType {
+	return InventoryTypeCash
+}
+
+func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 
 	template, ok := pet.Template.(*data.PetTemplate)
 	if !ok {
 		return // TODO: return error
 	}
 
-	if zeroPosition {
-		if !leaveOut {
-			writer.WriteU8(0)
-		}
-	} else {
-		writer.WriteU8(uint8(slot))
-	}
-
+	writer.WriteU8(uint8(slot))
 	writer.WriteU8(3) // pet
 	writer.WriteU32(template.Id)
 

@@ -2,7 +2,6 @@ package entity
 
 import (
 	"errors"
-	"sort"
 
 	"github.com/boyism80/fm/common/stream"
 )
@@ -14,14 +13,14 @@ var (
 	ErrSlotAlreadyOccupied = errors.New("slot already occupied")
 )
 
-type InventoryType int
+type InventoryType uint8
 
 const (
-	InventoryTypeEquip InventoryType = iota
-	InventoryTypeUse
-	InventoryTypeSetUp
-	InventoryTypeEtc
-	InventoryTypeCash
+	InventoryTypeEquip        InventoryType = 1
+	InventoryTypeConsume      InventoryType = 2
+	InventoryTypeInstallation InventoryType = 3
+	InventoryTypeEtc          InventoryType = 4
+	InventoryTypeCash         InventoryType = 5
 )
 
 type ItemType int
@@ -44,7 +43,7 @@ type Inventory struct {
 	Type      InventoryType
 }
 
-func NewMapleInventory(typ InventoryType) *Inventory {
+func NewInventory(typ InventoryType) *Inventory {
 	return &Inventory{
 		Type:      typ,
 		SlotLimit: 32,
@@ -52,34 +51,23 @@ func NewMapleInventory(typ InventoryType) *Inventory {
 	}
 }
 
-func (m *Inventory) ListIDs() []uint32 {
-	idSet := make(map[uint32]struct{})
-	for _, item := range m.Items {
-		idSet[item.GetTemplate().GetID()] = struct{}{}
+func (m *Inventory) NextSlot() (uint8, error) {
+	for i := 1; i <= int(m.SlotLimit); i++ {
+		if _, ok := m.Items[int16(i)]; !ok {
+			return uint8(i), nil
+		}
 	}
-	ret := make([]uint32, 0, len(idSet))
-	for id := range idSet {
-		ret = append(ret, id)
-	}
-	sort.Slice(ret, func(i, j int) bool {
-		return ret[i] < ret[j]
-	})
-	return ret
+	return 0, errors.New("inventory is full")
 }
 
 func (m *Inventory) Serialize(sw *stream.StreamWriter) {
-
-	itemType := ItemTypeEtc
-	if m.Type == InventoryTypeEquip {
-		itemType = ItemTypeEquipment
-	}
 
 	for slot, item := range m.Items {
 		if item == nil {
 			continue
 		}
 
-		item.Serialize(sw, false, false, true, slot, itemType)
+		item.Serialize(sw, true, slot)
 	}
 	sw.WriteU8(0)
 }
