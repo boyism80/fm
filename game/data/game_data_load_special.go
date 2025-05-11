@@ -8,22 +8,22 @@ import (
 	"strconv"
 )
 
-func loadSpecialItemFromXML(path string) (*[]*SpecialItemTemplate, error) {
+func loadSpecialItemFromXML(path string) (*[]*SpecialItemSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var root XMLNode
+	var root node
 	if err := xml.NewDecoder(file).Decode(&root); err != nil {
 		return nil, err
 	}
 
-	templates := []*SpecialItemTemplate{}
+	templates := []*SpecialItemSpec{}
 	for _, v := range root.Children {
-		template := SpecialItemTemplate{
-			baseItemTemplate: &baseItemTemplate{
+		template := SpecialItemSpec{
+			ItemCoreSpec: &ItemCoreSpec{
 				SlotMax: 1,
 			},
 		}
@@ -41,7 +41,7 @@ func loadSpecialItemFromXML(path string) (*[]*SpecialItemTemplate, error) {
 			case "iconRaw":
 			case "desc":
 				break
-				
+
 			default:
 				mutex.Lock()
 				if _, ok := visit[iv.Name]; ok {

@@ -4,13 +4,14 @@ import (
 	"errors"
 
 	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 )
 
 type AddItem struct {
 	IsDrop        bool
 	Slot          uint8
-	InventoryType entity.InventoryType
+	InventoryType constant.InventoryType
 	Item          entity.Item
 }
 

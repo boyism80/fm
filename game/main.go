@@ -48,7 +48,7 @@ func main() {
 	props := protoactor.PropsFromProducer(func() protoactor.Actor { return actor.NewGameServerActor() })
 	pid := system.Root.Spawn(props)
 
-	serverCtx := context.NewServerContext(data.NewGameData(), map[uint32]*protoactor.PID{}, pid)
+	serverCtx := context.NewServerContext(data.NewResources(), map[uint32]*protoactor.PID{}, pid)
 	system.Root.Send(pid, &msg.StartListening{Port: config.Server.Game.Port, ServerCtx: serverCtx})
 
 	select {}

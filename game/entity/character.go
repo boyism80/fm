@@ -8,6 +8,7 @@ import (
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/game/constant"
 )
 
 type Character struct {
@@ -45,8 +46,8 @@ type Character struct {
 	Random1          stream.RandomStream
 	Random2          stream.RandomStream
 	Random3          stream.RandomStream
-	Inventory        map[InventoryType]*Inventory
-	Equipments       map[EquipmentPartsType]*Equipment
+	Inventory        map[constant.InventoryType]*Inventory
+	Equipments       map[constant.EquipmentPartsType]*Equipment
 	SkillsMap        map[*Skill]*SkillEntry
 	CoolDowns        map[uint32]*CooldownEntry
 	Quests           map[int]*QuestStatus
@@ -138,16 +139,16 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		Random2: stream.NewRandomStream(),
 		Random3: stream.NewRandomStream(),
 
-		Inventory: map[InventoryType]*Inventory{
-			InventoryTypeEquip:        NewInventory(InventoryTypeEquip),
-			InventoryTypeConsume:      NewInventory(InventoryTypeConsume),
-			InventoryTypeInstallation: NewInventory(InventoryTypeInstallation),
-			InventoryTypeEtc:          NewInventory(InventoryTypeEtc),
-			InventoryTypeCash:         NewInventory(InventoryTypeCash),
+		Inventory: map[constant.InventoryType]*Inventory{
+			constant.InventoryTypeEquip:        NewInventory(constant.InventoryTypeEquip),
+			constant.InventoryTypeConsume:      NewInventory(constant.InventoryTypeConsume),
+			constant.InventoryTypeInstallation: NewInventory(constant.InventoryTypeInstallation),
+			constant.InventoryTypeEtc:          NewInventory(constant.InventoryTypeEtc),
+			constant.InventoryTypeCash:         NewInventory(constant.InventoryTypeCash),
 		},
-		Equipments: map[EquipmentPartsType]*Equipment{
-			EquipmentPartsWeapon: nil,
-			EquipmentPartsShield: nil,
+		Equipments: map[constant.EquipmentPartsType]*Equipment{
+			constant.EquipmentPartsWeapon: nil,
+			constant.EquipmentPartsShield: nil,
 		},
 
 		RegRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
@@ -155,8 +156,8 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 	}
 
 	if ctx != nil {
-		ch.Equipments[EquipmentPartsWeapon] = &Equipment{
-			baseItem: &baseItem{
+		ch.Equipments[constant.EquipmentPartsWeapon] = &Equipment{
+			ItemCore: &ItemCore{
 				Object:     nil,
 				Template:   ctx.Resources.Items[1302000],
 				UniqueId:   0,
@@ -169,8 +170,8 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		if err != nil {
 			fmt.Println(err)
 		}
-		ch.Inventory[InventoryTypeCash].Items[1] = &Pet{
-			baseItem: &baseItem{
+		ch.Inventory[constant.InventoryTypeCash].Items[1] = &Pet{
+			ItemCore: &ItemCore{
 				Object:     nil,
 				Template:   ctx.Resources.Items[5000007],
 				UniqueId:   1,
@@ -185,8 +186,8 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 			Expiration:  petExpiration,
 		}
 
-		ch.Inventory[InventoryTypeEtc].Items[1] = &GeneralItem{
-			baseItem: &baseItem{
+		ch.Inventory[constant.InventoryTypeEtc].Items[1] = &GeneralItem{
+			ItemCore: &ItemCore{
 				Object:     nil,
 				Template:   ctx.Resources.Items[4000001],
 				Expiration: util.TimeMax,

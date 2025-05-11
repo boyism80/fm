@@ -9,14 +9,14 @@ import (
 	"strings"
 )
 
-func loadPetFromXML(path string) (*PetTemplate, error) {
+func loadPetFromXML(path string) (*PetSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var root XMLNode
+	var root node
 	if err := xml.NewDecoder(file).Decode(&root); err != nil {
 		return nil, err
 	}
@@ -25,12 +25,12 @@ func loadPetFromXML(path string) (*PetTemplate, error) {
 	if err != nil {
 		return nil, err
 	}
-	template := &PetTemplate{
-		baseItemTemplate: &baseItemTemplate{
+	spec := &PetSpec{
+		ItemCoreSpec: &ItemCoreSpec{
 			Id: uint32(id),
 		},
 	}
-	info := root.Find("info")
+	info := root.find("info")
 	for _, iv := range info.Children {
 		switch iv.Name {
 		case "mob":
@@ -68,5 +68,5 @@ func loadPetFromXML(path string) (*PetTemplate, error) {
 			log.Printf("%s is not declared in %s:info\n", iv.Name, filepath.Base(path))
 		}
 	}
-	return template, nil
+	return spec, nil
 }

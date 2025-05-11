@@ -8,6 +8,7 @@ import (
 
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/data"
 )
 
@@ -109,7 +110,7 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 			continue
 		}
 
-		template, ok := equipment.Template.(*data.EquipmentTemplate)
+		template, ok := equipment.Template.(*data.EquipmentSpec)
 		if !ok {
 			continue
 		}
@@ -142,7 +143,7 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0xFF)
 
-	weapon := ch.Equipments[EquipmentPartsWeapon]
+	weapon := ch.Equipments[constant.EquipmentPartsWeapon]
 	if weapon != nil {
 		writer.WriteU32(weapon.Template.GetID())
 	} else {
@@ -168,11 +169,11 @@ func (ch *Character) Serialize(writer *stream.StreamWriter) {
 func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.WriteU32(ch.Meso)
 
-	writer.WriteU8(ch.Inventory[InventoryTypeEquip].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeConsume].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeInstallation].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeEtc].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeCash].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeEquip].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeConsume].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeInstallation].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeEtc].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeCash].SlotLimit)
 
 	for parts, equipment := range ch.Equipments {
 		if equipment != nil && (parts <= 0 && parts > -100) {
@@ -188,11 +189,11 @@ func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0)
 
-	ch.Inventory[InventoryTypeEquip].Serialize(writer)
-	ch.Inventory[InventoryTypeConsume].Serialize(writer)
-	ch.Inventory[InventoryTypeInstallation].Serialize(writer)
-	ch.Inventory[InventoryTypeEtc].Serialize(writer)
-	ch.Inventory[InventoryTypeCash].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeEquip].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeConsume].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeInstallation].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeEtc].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeCash].Serialize(writer)
 }
 
 func (ch *Character) SerializeSkills(writer *stream.StreamWriter) {

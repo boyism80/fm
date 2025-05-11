@@ -6,63 +6,64 @@ import (
 	"strconv"
 )
 
-func loadMapFromXML(path string, mapId uint32) (*MapTemplate, error) {
+func loadMapFromXML(path string, mapId uint32) (*MapSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var root XMLNode
+	var root node
 	if err := xml.NewDecoder(file).Decode(&root); err != nil {
 		return nil, err
 	}
 
-	var m MapTemplate
-	m.Id = mapId
-	m.Portals = make(map[uint8]Portal)
+	spec := MapSpec{
+		Id:      mapId,
+		Portals: map[uint8]Portal{},
+	}
 
 	for _, child := range root.Children {
 		if child.Name == "info" {
 			for _, info := range child.Children {
 				switch info.Name {
 				case "mapName":
-					m.Name = info.Value
+					spec.Name = info.Value
 				case "version":
-					m.Version, _ = strconv.Atoi(info.Value)
+					spec.Version, _ = strconv.Atoi(info.Value)
 				case "cloud":
-					m.Cloud, _ = strconv.Atoi(info.Value)
+					spec.Cloud, _ = strconv.Atoi(info.Value)
 				case "returnMap":
-					m.ReturnMapId, _ = strconv.Atoi(info.Value)
+					spec.ReturnMapId, _ = strconv.Atoi(info.Value)
 				case "forcedReturn":
-					m.ForcedReturn, _ = strconv.Atoi(info.Value)
+					spec.ForcedReturn, _ = strconv.Atoi(info.Value)
 				case "fieldLimit":
-					m.FieldLimit, _ = strconv.Atoi(info.Value)
+					spec.FieldLimit, _ = strconv.Atoi(info.Value)
 				case "VRTop":
-					m.VRTop, _ = strconv.Atoi(info.Value)
+					spec.VRTop, _ = strconv.Atoi(info.Value)
 				case "VRLeft":
-					m.VRLeft, _ = strconv.Atoi(info.Value)
+					spec.VRLeft, _ = strconv.Atoi(info.Value)
 				case "VRBottom":
-					m.VRBottom, _ = strconv.Atoi(info.Value)
+					spec.VRBottom, _ = strconv.Atoi(info.Value)
 				case "VRRight":
-					m.VRRight, _ = strconv.Atoi(info.Value)
+					spec.VRRight, _ = strconv.Atoi(info.Value)
 				case "hideMinimap":
-					m.HideMinimap = info.Value == "1"
+					spec.HideMinimap = info.Value == "1"
 				case "town":
-					m.IsTown = info.Value == "1"
+					spec.IsTown = info.Value == "1"
 				case "mobRate":
 					f, err := strconv.ParseFloat(info.Value, 32)
 					if err == nil {
-						m.MobRate = float32(f)
+						spec.MobRate = float32(f)
 					}
 				case "bgm":
-					m.BGM = info.Value
+					spec.BGM = info.Value
 				case "mapMark":
-					m.MapMark = info.Value
+					spec.MapMark = info.Value
 				case "mapDesc":
-					m.MapDesc = info.Value
+					spec.MapDesc = info.Value
 				case "miniMapOnOff":
-					m.MiniMapOnOff = info.Value == "1"
+					spec.MiniMapOnOff = info.Value == "1"
 				default:
 					break
 				}
@@ -98,10 +99,10 @@ func loadMapFromXML(path string, mapId uint32) (*MapTemplate, error) {
 				}
 				id, _ := strconv.Atoi(pnode.Name)
 				portal.Id = uint8(id)
-				m.Portals[portal.Id] = portal
+				spec.Portals[portal.Id] = portal
 			}
 		}
 	}
 
-	return &m, nil
+	return &spec, nil
 }

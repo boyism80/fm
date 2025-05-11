@@ -2,6 +2,7 @@ package resp
 
 import (
 	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 )
 
@@ -10,7 +11,7 @@ type Warp struct {
 }
 
 func (a *Warp) Serialize(writer *stream.StreamWriter) error {
-	a.Character.Inventory[entity.InventoryTypeCash].SlotLimit = 60
+	a.Character.Inventory[constant.InventoryTypeCash].SlotLimit = 60
 
 	writer.WriteU16(0x55)
 	writer.WriteU32(0) // channel

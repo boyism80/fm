@@ -1,5 +1,15 @@
 package data
 
+type ItemSpec interface {
+	GetID() uint32
+	GetName() string
+	GetPrice() int
+	IsCash() bool
+	IsQuest() bool
+	GetSlotMax() uint16
+	IsTradeAvailable() int
+}
+
 type baseStats struct {
 	Str uint16
 	Dex uint16
@@ -31,7 +41,7 @@ type AbilityStats struct {
 	Hands uint16
 }
 
-type baseItemTemplate struct {
+type ItemCoreSpec struct {
 	Id             uint32
 	Name           string
 	Price          int
@@ -41,36 +51,36 @@ type baseItemTemplate struct {
 	TradeAvailable int
 }
 
-func (template *baseItemTemplate) GetID() uint32 {
+func (template *ItemCoreSpec) GetID() uint32 {
 	return template.Id
 }
 
-func (template *baseItemTemplate) GetName() string {
+func (template *ItemCoreSpec) GetName() string {
 	return template.Name
 }
 
-func (template *baseItemTemplate) GetPrice() int {
+func (template *ItemCoreSpec) GetPrice() int {
 	return template.Price
 }
 
-func (template *baseItemTemplate) IsCash() bool {
+func (template *ItemCoreSpec) IsCash() bool {
 	return template.Cash
 }
 
-func (template *baseItemTemplate) IsQuest() bool {
+func (template *ItemCoreSpec) IsQuest() bool {
 	return template.Quest
 }
 
-func (template *baseItemTemplate) GetSlotMax() uint16 {
+func (template *ItemCoreSpec) GetSlotMax() uint16 {
 	return template.SlotMax
 }
 
-func (template *baseItemTemplate) IsTradeAvailable() int {
+func (template *ItemCoreSpec) IsTradeAvailable() int {
 	return template.TradeAvailable
 }
 
-type EquipmentTemplate struct {
-	*baseItemTemplate
+type EquipmentSpec struct {
+	*ItemCoreSpec
 	Required        RequiredStats
 	Ability         AbilityStats
 	TUC             uint8 // Total upgrade count
@@ -81,16 +91,16 @@ type EquipmentTemplate struct {
 	AttackSpeed     int
 }
 
-type PetTemplate struct {
-	*baseItemTemplate
+type PetSpec struct {
+	*ItemCoreSpec
 }
 
-type GeneralItemTemplate struct {
-	*baseItemTemplate
+type GeneralItemSpec struct {
+	*ItemCoreSpec
 }
 
-type CashItemTemplate struct {
-	*baseItemTemplate
+type CashItemSpec struct {
+	*ItemCoreSpec
 }
 
 type ActiveEffect struct {
@@ -98,26 +108,16 @@ type ActiveEffect struct {
 	MP int
 }
 
-type ConsumeTemplate struct {
-	*baseItemTemplate
+type ConsumeSpec struct {
+	*ItemCoreSpec
 	ActiveEffect ActiveEffect
 }
 
-type InstallationTemplate struct {
-	*baseItemTemplate
+type InstallationSpec struct {
+	*ItemCoreSpec
 }
 
-type SpecialItemTemplate struct {
-	*baseItemTemplate
+type SpecialItemSpec struct {
+	*ItemCoreSpec
 	ActiveEffect ActiveEffect
-}
-
-type ItemTemplate interface {
-	GetID() uint32
-	GetName() string
-	GetPrice() int
-	IsCash() bool
-	IsQuest() bool
-	GetSlotMax() uint16
-	IsTradeAvailable() int
 }

@@ -8,31 +8,31 @@ import (
 	"strconv"
 )
 
-func loadConsumeFromXML(path string) (*[]*ConsumeTemplate, error) {
+func loadConsumeFromXML(path string) (*[]*ConsumeSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var root XMLNode
+	var root node
 	if err := xml.NewDecoder(file).Decode(&root); err != nil {
 		return nil, err
 	}
 
-	templates := []*ConsumeTemplate{}
+	specs := []*ConsumeSpec{}
 	for _, v := range root.Children {
-		template := ConsumeTemplate{
-			baseItemTemplate: &baseItemTemplate{},
+		spec := ConsumeSpec{
+			ItemCoreSpec: &ItemCoreSpec{},
 		}
 
 		id, err := strconv.Atoi(v.Name)
 		if err != nil {
 			return nil, err
 		}
-		template.Id = uint32(id)
-		info := v.Find("info")
-		for _, iv := range info.Children {
+		spec.Id = uint32(id)
+		nodeInfo := v.find("info")
+		for _, iv := range nodeInfo.Children {
 			switch iv.Name {
 			case "icon":
 			case "iconRaw":
@@ -97,14 +97,14 @@ func loadConsumeFromXML(path string) (*[]*ConsumeTemplate, error) {
 				if err != nil {
 					return nil, err
 				}
-				template.Price = value
+				spec.Price = value
 
 			case "slotMax":
 				value, err := strconv.Atoi(iv.Value)
 				if err != nil {
 					return nil, err
 				}
-				template.SlotMax = uint16(value)
+				spec.SlotMax = uint16(value)
 
 			default:
 				mutex.Lock()
@@ -118,9 +118,9 @@ func loadConsumeFromXML(path string) (*[]*ConsumeTemplate, error) {
 			}
 		}
 
-		spec := v.Find("spec")
-		if spec != nil {
-			for _, sv := range spec.Children {
+		nodeSpec := v.find("spec")
+		if nodeSpec != nil {
+			for _, sv := range nodeSpec.Children {
 				switch sv.Name {
 				case "0":
 				case "1":
@@ -209,8 +209,8 @@ func loadConsumeFromXML(path string) (*[]*ConsumeTemplate, error) {
 			}
 		}
 
-		templates = append(templates, &template)
+		specs = append(specs, &spec)
 	}
 
-	return &templates, nil
+	return &specs, nil
 }

@@ -8,30 +8,30 @@ import (
 	"strconv"
 )
 
-func loadInstallationFromXML(path string) (*[]*InstallationTemplate, error) {
+func loadInstallationFromXML(path string) (*[]*InstallationSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var root XMLNode
+	var root node
 	if err := xml.NewDecoder(file).Decode(&root); err != nil {
 		return nil, err
 	}
 
-	templates := []*InstallationTemplate{}
+	specs := []*InstallationSpec{}
 	for _, v := range root.Children {
-		template := InstallationTemplate{
-			baseItemTemplate: &baseItemTemplate{},
+		spec := InstallationSpec{
+			ItemCoreSpec: &ItemCoreSpec{},
 		}
 
 		id, err := strconv.Atoi(v.Name)
 		if err != nil {
 			return nil, err
 		}
-		template.Id = uint32(id)
-		info := v.Find("info")
+		spec.Id = uint32(id)
+		info := v.find("info")
 		for _, iv := range info.Children {
 			switch iv.Name {
 			case "price":
@@ -60,13 +60,13 @@ func loadInstallationFromXML(path string) (*[]*InstallationTemplate, error) {
 			case "maxDiff":
 			case "direction":
 				break
-				
+
 			case "slotMax":
 				slotMax, err := strconv.Atoi(iv.Value)
 				if err != nil {
 					return nil, err
 				}
-				template.SlotMax = uint16(slotMax)
+				spec.SlotMax = uint16(slotMax)
 
 			default:
 				mutex.Lock()
@@ -80,8 +80,8 @@ func loadInstallationFromXML(path string) (*[]*InstallationTemplate, error) {
 			}
 		}
 
-		templates = append(templates, &template)
+		specs = append(specs, &spec)
 	}
 
-	return &templates, nil
+	return &specs, nil
 }

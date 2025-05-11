@@ -14,27 +14,27 @@ import (
 var mutex sync.Mutex = sync.Mutex{}
 var visit map[string]bool = map[string]bool{}
 
-func loadWeaponFromXML(path string) (*EquipmentTemplate, error) {
+func loadWeaponFromXML(path string) (*EquipmentSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var root XMLNode
+	var root node
 	if err := xml.NewDecoder(file).Decode(&root); err != nil {
 		return nil, err
 	}
 
-	template := EquipmentTemplate{
-		baseItemTemplate: &baseItemTemplate{},
+	spec := EquipmentSpec{
+		ItemCoreSpec: &ItemCoreSpec{},
 	}
 	id, err := strconv.Atoi(strings.TrimSuffix(root.Name, ".img"))
 	if err != nil {
 		return nil, err
 	}
-	template.Id = uint32(id)
-	node := root.Find("info")
+	spec.Id = uint32(id)
+	node := root.find("info")
 	if node == nil {
 		return nil, fmt.Errorf("'info' does not exist in %s", path)
 	}
@@ -141,198 +141,198 @@ func loadWeaponFromXML(path string) (*EquipmentTemplate, error) {
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Class = class
+			spec.Required.Class = class
 		case "reqLevel":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Class = value
+			spec.Required.Class = value
 		case "reqSTR":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Str = uint16(value)
+			spec.Required.Str = uint16(value)
 		case "reqDEX":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Dex = uint16(value)
+			spec.Required.Dex = uint16(value)
 		case "reqINT":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Int = uint16(value)
+			spec.Required.Int = uint16(value)
 		case "reqLUK":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Required.Luk = uint16(value)
+			spec.Required.Luk = uint16(value)
 		case "incSTR":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Str = uint16(value)
+			spec.Ability.Str = uint16(value)
 		case "incDEX":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Dex = uint16(value)
+			spec.Ability.Dex = uint16(value)
 		case "incINT":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Int = uint16(value)
+			spec.Ability.Int = uint16(value)
 		case "incLUK":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Luk = uint16(value)
+			spec.Ability.Luk = uint16(value)
 		case "incPAD":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.PAD = uint16(value)
+			spec.Ability.PAD = uint16(value)
 		case "incMAD":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.MAD = uint16(value)
+			spec.Ability.MAD = uint16(value)
 		case "incPDD":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.PDD = uint16(value)
+			spec.Ability.PDD = uint16(value)
 		case "incMDD":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.MDD = uint16(value)
+			spec.Ability.MDD = uint16(value)
 		case "incPVPDamage":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.PVPDamage = value
+			spec.Ability.PVPDamage = value
 		case "incSpeed":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Speed = uint16(value)
+			spec.Ability.Speed = uint16(value)
 		case "incJump":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.Jump = uint16(value)
+			spec.Ability.Jump = uint16(value)
 
 		case "incACC":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.ACC = uint16(value)
+			spec.Ability.ACC = uint16(value)
 
 		case "incEVA":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.EVA = value
+			spec.Ability.EVA = value
 		case "incMHP":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.MaxHP = uint16(value)
+			spec.Ability.MaxHP = uint16(value)
 		case "incMMP":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Ability.MaxMP = uint16(value)
+			spec.Ability.MaxMP = uint16(value)
 		case "tuc":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.TUC = uint8(value)
+			spec.TUC = uint8(value)
 		case "price":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Price = value
+			spec.Price = value
 		case "attackSpeed":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.AttackSpeed = value
+			spec.AttackSpeed = value
 		case "cash":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Cash = value == 1
+			spec.Cash = value == 1
 
 		case "slotMax":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.SlotMax = uint16(value)
+			spec.SlotMax = uint16(value)
 
 		case "quest":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Quest = value == 1
+			spec.Quest = value == 1
 
 		case "equipTradeBlock":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.EquipTradeBlock = value == 1
+			spec.EquipTradeBlock = value == 1
 		case "tradeAvailable":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.TradeAvailable = value
+			spec.TradeAvailable = value
 		case "hide":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.Hide = value == 1
+			spec.Hide = value == 1
 		case "royalSpecial":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.RoyalSpecial = value == 1
+			spec.RoyalSpecial = value == 1
 		case "masterSpecial":
 			value, err := strconv.Atoi(v.Value)
 			if err != nil {
 				return nil, err
 			}
-			template.MasterSpecial = value == 1
+			spec.MasterSpecial = value == 1
 		default:
 			mutex.Lock()
 			if _, ok := visit[v.Name]; ok {
@@ -345,5 +345,5 @@ func loadWeaponFromXML(path string) (*EquipmentTemplate, error) {
 		}
 	}
 
-	return &template, nil
+	return &spec, nil
 }

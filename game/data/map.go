@@ -12,7 +12,7 @@ type Portal struct {
 	Type        uint8
 }
 
-type MapTemplate struct {
+type MapSpec struct {
 	Id           uint32
 	Name         string
 	Version      int
