@@ -110,7 +110,7 @@ func NewResources() *Resources {
 	err := loadResourceFiles("D:/git/fm-backup/wz/Character.wz",
 		workerCount,
 		func(path string) (result *EquipmentSpec, err error) {
-			return loadWeaponFromXML(path)
+			return loadWeapons(path)
 		},
 		func(percent float32, value *EquipmentSpec) {
 			items[value.Id] = value
@@ -124,7 +124,7 @@ func NewResources() *Resources {
 	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Consume",
 		workerCount,
 		func(path string) (result *[]*ConsumeSpec, err error) {
-			return loadConsumeFromXML(path)
+			return loadConsumes(path)
 		},
 		func(percent float32, value *[]*ConsumeSpec) {
 
@@ -141,7 +141,7 @@ func NewResources() *Resources {
 	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Cash",
 		workerCount,
 		func(path string) (result *[]*CashItemSpec, err error) {
-			return loadCashItemFromXML(path)
+			return loadCashItems(path)
 		},
 		func(percent float32, value *[]*CashItemSpec) {
 
@@ -158,7 +158,7 @@ func NewResources() *Resources {
 	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Install",
 		workerCount,
 		func(path string) (result *[]*InstallationSpec, err error) {
-			return loadInstallationFromXML(path)
+			return loadInstallations(path)
 		},
 		func(percent float32, value *[]*InstallationSpec) {
 
@@ -175,7 +175,7 @@ func NewResources() *Resources {
 	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Special",
 		workerCount,
 		func(path string) (result *[]*SpecialItemSpec, err error) {
-			return loadSpecialItemFromXML(path)
+			return loadSpecialItems(path)
 		},
 		func(percent float32, value *[]*SpecialItemSpec) {
 
@@ -192,7 +192,7 @@ func NewResources() *Resources {
 	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Etc",
 		workerCount,
 		func(path string) (result *[]*GeneralItemSpec, err error) {
-			return loadGeneralItemFromXML(path)
+			return loadGeneralItems(path)
 		},
 		func(percent float32, value *[]*GeneralItemSpec) {
 
@@ -209,7 +209,7 @@ func NewResources() *Resources {
 	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Pet",
 		workerCount,
 		func(path string) (result *PetSpec, err error) {
-			return loadPetFromXML(path)
+			return loadPets(path)
 		},
 		func(percent float32, value *PetSpec) {
 
@@ -224,7 +224,7 @@ func NewResources() *Resources {
 	stringResult := map[uint32]*StringSpec{}
 	_ = loadResourceFiles("D:/git/fm/wz/String.wz", workerCount, func(path string) (result *[]*StringSpec, err error) {
 
-		m, err := loadStringFromXML(path)
+		m, err := loadStringResources(path)
 		if err != nil {
 			return nil, err
 		}
@@ -247,7 +247,7 @@ func NewResources() *Resources {
 			return nil, err
 		}
 
-		m, err := loadMapFromXML(path, uint32(mapId))
+		m, err := loadMaps(path, uint32(mapId))
 		if err != nil {
 			return nil, err
 		}

@@ -1,4 +1,4 @@
-package entity
+package protocol
 
 import (
 	"github.com/boyism80/fm/common/stream"

@@ -16,15 +16,15 @@ import (
 )
 
 type GameClientActor struct {
-	context        *context.ServerContext
-	character      *entity.Character
+	ctx            *context.ServerContext
+	ch             *entity.Character
 	conn           net.Conn
 	buffer         []byte
 	messageHandler *handler.MessageHandler
 	packetHandler  *handler.PacketHandler
 	commandHandler *handler.CommandHandler
-	sendEncryption encrypt.Encryption
-	recvEncryption encrypt.Encryption
+	sendCrypt      encrypt.Encryption
+	receiveCrypt   encrypt.Encryption
 	stopTimer      scheduler.CancelFunc
 }
 
@@ -33,14 +33,14 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
 
 	act := &GameClientActor{
-		context:        serverCtx,
+		ctx:            serverCtx,
 		conn:           conn,
 		buffer:         []byte{},
 		messageHandler: handler.NewMessageHandler(),
 		packetHandler:  handler.NewPacketHandler(),
 		commandHandler: handler.NewCommandHandler(),
-		sendEncryption: encrypt.NewEncryption(ivSend, -5),
-		recvEncryption: encrypt.NewEncryption(ivRecv, 5),
+		sendCrypt:      encrypt.NewEncryption(ivSend, -5),
+		receiveCrypt:   encrypt.NewEncryption(ivRecv, 5),
 	}
 
 	RegisterGameClientMessageHandlers(ctx, act, act.messageHandler)
@@ -57,16 +57,11 @@ func (state *GameClientActor) Invoke(ctx actor.Context, header int, data []byte)
 	return state.packetHandler.Handle(ctx, header, data)
 }
 
-func (c *GameClientActor) BindCharacter(ctx actor.Context, ch *entity.Character) {
-	c.character = ch
-	RegisterLifeHandlers(ctx, &c.character.Life, c.messageHandler)
-}
-
 func (c *GameClientActor) Name() string {
-	if c.character == nil {
+	if c.ch == nil {
 		return ""
 	}
-	return c.character.Name
+	return c.ch.Name
 }
 
 func (actor *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
@@ -83,9 +78,9 @@ func (actor *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
 
 	writer = stream.NewStreamWriter(stream.LittleEndian)
 	if policy&types.SEND_POLICY_ENCRYPT != 0 {
-		header := actor.sendEncryption.GetPacketHeader(len(bytes))
+		header := actor.sendCrypt.GetPacketHeader(len(bytes))
 		writer.Write(header)
-		bytes = actor.sendEncryption.Encrypt(bytes)
+		bytes = actor.sendCrypt.Encrypt(bytes)
 	}
 
 	writer.Write(bytes)

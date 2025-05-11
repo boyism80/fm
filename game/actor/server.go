@@ -32,10 +32,10 @@ func (state *GameServerActor) Receive(context protoactor.Context) {
 func onGameStart(ctx protoactor.Context, obj *GameServerActor, m *msg.StartListening) {
 	port := fmt.Sprintf(":%d", m.Port)
 
-	for _, template := range m.ServerCtx.Resources.Maps {
-		props := NewMapActorProps(ctx, m.ServerCtx, template)
+	for _, spec := range m.ServerCtx.Resources.Maps {
+		props := NewMapActorProps(ctx, m.ServerCtx, spec)
 		pid := ctx.Spawn(props)
-		m.ServerCtx.MapActors[template.Id] = pid
+		m.ServerCtx.MapActors[spec.Id] = pid
 	}
 
 	go func() {

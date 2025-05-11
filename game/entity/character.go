@@ -6,7 +6,6 @@ import (
 
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
 	"github.com/boyism80/fm/game/constant"
 )
@@ -57,6 +56,40 @@ type Character struct {
 	MonsterBookCover uint32
 	MonsterBook      *MonsterBook
 	QuestInfo        map[uint16]string
+}
+
+type CooldownEntry struct {
+	SkillId   uint32
+	StartTime int64 // milliseconds
+	Length    int64 // milliseconds
+}
+
+type Ring struct {
+	RingId       uint64
+	PartnerId    uint64
+	RingUniqueId uint64
+	PartnerChrId uint32
+	ItemId       uint32
+	PartnerName  string
+	Equipped     bool
+}
+
+type RingContainer struct {
+	Left  []*Ring
+	Mid   []*Ring
+	Right []*Ring
+}
+
+type MonsterBook struct {
+	Cards map[uint32]uint32
+}
+
+func (mb *MonsterBook) Serialize(writer *stream.StreamWriter) {
+	writer.WriteU16(uint16(len(mb.Cards)))
+
+	for cardId := range mb.Cards {
+		writer.WriteU16(uint16(cardId))
+	}
 }
 
 func (ch *Character) IsRanked() bool {
@@ -159,7 +192,7 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		ch.Equipments[constant.EquipmentPartsWeapon] = &Equipment{
 			ItemCore: &ItemCore{
 				Object:     nil,
-				Template:   ctx.Resources.Items[1302000],
+				Spec:       ctx.Resources.Items[1302000],
 				UniqueId:   0,
 				Expiration: util.TimeMax,
 			},
@@ -173,7 +206,7 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		ch.Inventory[constant.InventoryTypeCash].Items[1] = &Pet{
 			ItemCore: &ItemCore{
 				Object:     nil,
-				Template:   ctx.Resources.Items[5000007],
+				Spec:       ctx.Resources.Items[5000007],
 				UniqueId:   1,
 				Expiration: util.TimeMax,
 			},
@@ -189,7 +222,7 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		ch.Inventory[constant.InventoryTypeEtc].Items[1] = &GeneralItem{
 			ItemCore: &ItemCore{
 				Object:     nil,
-				Template:   ctx.Resources.Items[4000001],
+				Spec:       ctx.Resources.Items[4000001],
 				Expiration: util.TimeMax,
 			},
 			Count: 100,
@@ -197,8 +230,4 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 	}
 
 	return ch
-}
-
-func (ch *Character) Send(p types.Packet, policy types.SendPolicy) {
-
 }

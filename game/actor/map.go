@@ -16,16 +16,16 @@ import (
 type MapActor struct {
 	objectPIDs map[uint32]*actor.PID // 오브젝트 ID → PID
 	handler    *handler.MessageHandler
-	Template   *data.MapSpec
+	Spec       *data.MapSpec
 }
 
-func NewMapActorProps(ctx protoactor.Context, serverCtx *context.ServerContext, template *data.MapSpec) *actor.Props {
+func NewMapActorProps(ctx protoactor.Context, serverCtx *context.ServerContext, spec *data.MapSpec) *actor.Props {
 	return actor.PropsFromProducer(func() actor.Actor {
 
 		act := &MapActor{
 			objectPIDs: make(map[uint32]*actor.PID),
 			handler:    handler.NewMessageHandler(),
-			Template:   template,
+			Spec:       spec,
 		}
 
 		handler.RegisterHandler(ctx, act, act.handler, onMapEnter)

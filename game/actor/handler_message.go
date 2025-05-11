@@ -47,7 +47,7 @@ func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *proto
 				break
 			}
 
-			if !client.recvEncryption.CheckPacketHeader(header) {
+			if !client.receiveCrypt.CheckPacketHeader(header) {
 				break
 			}
 
@@ -61,7 +61,7 @@ func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *proto
 				break
 			}
 
-			data = client.recvEncryption.Decrypt(data)
+			data = client.receiveCrypt.Decrypt(data)
 			log.Println("[R] " + util.ToHexString(data))
 			opcodeReader := stream.NewStreamReader(&data, stream.LittleEndian)
 			opcode, err := opcodeReader.ReadU16()
@@ -86,8 +86,8 @@ func onGameClientConnected(ctx protoactor.Context, client *GameClientActor, m *c
 
 	// 게임서버에서 보내주면 안됨
 	client.Send(&common_resp.Welcome{
-		SendIv: client.sendEncryption.IV(),
-		RecvIv: client.recvEncryption.IV()}, types.SEND_POLICY_RAW)
+		SendIv: client.sendCrypt.IV(),
+		RecvIv: client.receiveCrypt.IV()}, types.SEND_POLICY_RAW)
 
 	client.Send(&login_resp.LoginFailed{
 		Reason: login_resp.LoginFailedReasonNoPopup}, types.SEND_POLICY_ENCRYPT)
@@ -95,9 +95,9 @@ func onGameClientConnected(ctx protoactor.Context, client *GameClientActor, m *c
 }
 
 func onGameClientStopping(ctx protoactor.Context, client *GameClientActor, m *protoactor.Stopping) {
-	ch := client.character
+	ch := client.ch
 	if ch != nil {
-		mapActor := client.context.MapActors[client.character.Map]
+		mapActor := client.ctx.MapActors[client.ch.Map]
 		if mapActor != nil {
 			ctx.Send(mapActor, &msg.LeaveMap{
 				Id: ch.Id,
@@ -130,7 +130,7 @@ func onGameClientWarped(ctx protoactor.Context, client *GameClientActor, m *msg.
 
 	ctx.Send(m.Sender, &common_msg.SendProtocol{
 		Protocol: &resp.SpawnPlayer{
-			Character:       client.character,
+			Character:       client.ch,
 			BuffStates:      [4]uint32{},
 			Diseases:        [4]uint32{},
 			CrushRings:      []*entity.Ring{},

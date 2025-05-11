@@ -42,9 +42,9 @@ func (c *Character) completedQuests() []*QuestStatus {
 	return ret
 }
 
-func (c *Character) getRings(onlyEquipped bool) *RingCollection {
+func (c *Character) getRings(onlyEquipped bool) *RingContainer {
 	// 임시 더미 데이터 (실제 DB/메모리에서 로드하는건 나중에 구현)
-	return &RingCollection{
+	return &RingContainer{
 		Left:  []*Ring{},
 		Mid:   []*Ring{},
 		Right: []*Ring{},
@@ -110,7 +110,7 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 			continue
 		}
 
-		template, ok := equipment.Template.(*data.EquipmentSpec)
+		spec, ok := equipment.Spec.(*data.EquipmentSpec)
 		if !ok {
 			continue
 		}
@@ -118,16 +118,16 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 		absoluteParts := int8(parts * -1)
 		if absoluteParts < 100 {
 			if _, exists := equipments[absoluteParts]; !exists {
-				equipments[absoluteParts] = template.Id
+				equipments[absoluteParts] = spec.Id
 			}
 		} else if absoluteParts > 100 && absoluteParts != 111 {
 			adjustedParts := int8(absoluteParts - 100)
 			if existingItem, exists := equipments[adjustedParts]; exists {
 				skins[adjustedParts] = existingItem
 			}
-			equipments[adjustedParts] = template.Id
+			equipments[adjustedParts] = spec.Id
 		} else if _, exists := equipments[absoluteParts]; exists {
-			skins[absoluteParts] = template.Id
+			skins[absoluteParts] = spec.Id
 		}
 	}
 
@@ -145,7 +145,7 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 
 	weapon := ch.Equipments[constant.EquipmentPartsWeapon]
 	if weapon != nil {
-		writer.WriteU32(weapon.Template.GetID())
+		writer.WriteU32(weapon.Spec.GetID())
 	} else {
 		writer.WriteU32(0)
 	}

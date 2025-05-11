@@ -10,7 +10,7 @@ type ItemSpec interface {
 	IsTradeAvailable() int
 }
 
-type baseStats struct {
+type BasicStats struct {
 	Str uint16
 	Dex uint16
 	Int uint16
@@ -18,13 +18,13 @@ type baseStats struct {
 }
 
 type RequiredStats struct {
-	baseStats
+	BasicStats
 	Level uint8
 	Class int
 }
 
 type AbilityStats struct {
-	baseStats
+	BasicStats
 	PAD       uint16 // Physical attack damage
 	MAD       uint16 // Magical attack damage
 	PDD       uint16 // Physical defense damage
@@ -49,34 +49,6 @@ type ItemCoreSpec struct {
 	Quest          bool
 	SlotMax        uint16
 	TradeAvailable int
-}
-
-func (template *ItemCoreSpec) GetID() uint32 {
-	return template.Id
-}
-
-func (template *ItemCoreSpec) GetName() string {
-	return template.Name
-}
-
-func (template *ItemCoreSpec) GetPrice() int {
-	return template.Price
-}
-
-func (template *ItemCoreSpec) IsCash() bool {
-	return template.Cash
-}
-
-func (template *ItemCoreSpec) IsQuest() bool {
-	return template.Quest
-}
-
-func (template *ItemCoreSpec) GetSlotMax() uint16 {
-	return template.SlotMax
-}
-
-func (template *ItemCoreSpec) IsTradeAvailable() int {
-	return template.TradeAvailable
 }
 
 type EquipmentSpec struct {
@@ -120,4 +92,32 @@ type InstallationSpec struct {
 type SpecialItemSpec struct {
 	*ItemCoreSpec
 	ActiveEffect ActiveEffect
+}
+
+func (spec *ItemCoreSpec) GetID() uint32 {
+	return spec.Id
+}
+
+func (spec *ItemCoreSpec) GetName() string {
+	return spec.Name
+}
+
+func (spec *ItemCoreSpec) GetPrice() int {
+	return spec.Price
+}
+
+func (spec *ItemCoreSpec) IsCash() bool {
+	return spec.Cash
+}
+
+func (spec *ItemCoreSpec) IsQuest() bool {
+	return spec.Quest
+}
+
+func (spec *ItemCoreSpec) GetSlotMax() uint16 {
+	return spec.SlotMax
+}
+
+func (spec *ItemCoreSpec) IsTradeAvailable() int {
+	return spec.TradeAvailable
 }

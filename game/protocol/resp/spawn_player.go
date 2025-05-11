@@ -71,7 +71,7 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	}
 
 	// 4. Secondary Stats (Buffs)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		writer.WriteU32(p.BuffStates[i])
 	}
 

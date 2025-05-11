@@ -36,14 +36,14 @@ func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) 
 		}
 	}
 
-	item, err := entity.NewItem(client.context, uint32(itemId), uint16(count))
+	item, err := entity.NewItem(client.ctx, uint32(itemId), uint16(count))
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	inventoryType := item.GetInventoryType()
-	inventory := client.character.Inventory[inventoryType]
+	inventory := client.ch.Inventory[inventoryType]
 	nextSlot, err := inventory.NextSlot()
 	if err != nil {
 		return
