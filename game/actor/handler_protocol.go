@@ -7,8 +7,8 @@ import (
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/game/entity/movement"
 	"github.com/boyism80/fm/game/msg"
+	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/req"
 	"github.com/boyism80/fm/game/protocol/resp"
 
@@ -75,11 +75,11 @@ func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req
 	beforePosition := client.ch.Position
 
 	for _, frag := range req.Fragments {
-		if move, ok := frag.(*movement.AbsoluteLifeMovement); ok {
+		if move, ok := frag.(*protocol.AbsoluteLifeMovement); ok {
 			client.ch.Position = move.Position
 		}
 
-		client.ch.Stance = frag.GetNewState()
+		client.ch.Stance = frag.GetStance()
 	}
 
 	mapActor := client.ctx.MapActors[client.ch.Map]
@@ -92,9 +92,9 @@ func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req
 		Pivot:  beforePosition,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.Move{
-				Character:     client.ch,
-				MoveFragments: req.Fragments,
-				StartPoint:    beforePosition,
+				Character:  client.ch,
+				Fragments:  req.Fragments,
+				StartPoint: beforePosition,
 			},
 			Policy: types.SEND_POLICY_ENCRYPT,
 		},

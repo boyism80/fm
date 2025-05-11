@@ -2,11 +2,11 @@ package req
 
 import (
 	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/game/entity/movement"
+	"github.com/boyism80/fm/game/protocol"
 )
 
 type MovePlayer struct {
-	Fragments []movement.MoveFragment
+	Fragments []protocol.MoveFragment
 }
 
 func (m *MovePlayer) Serialize(writer *stream.StreamWriter) error {
@@ -18,7 +18,7 @@ func (m *MovePlayer) Deserialize(reader *stream.StreamReader) error {
 		return err
 	}
 
-	fragments, err := movement.Parse(reader)
+	fragments, err := protocol.Parse(reader)
 	if err != nil {
 		return err
 	}
