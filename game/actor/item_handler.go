@@ -6,5 +6,5 @@ import (
 )
 
 func RegisterItemHandlers(ctx actor.Context, m *ItemActor, h *handler.MessageHandler) {
-	RegisterObjectHandlers(ctx, &m.Item.Object, h)
+	RegisterObjectHandlers(ctx, m.Item.GetObject(), h)
 }

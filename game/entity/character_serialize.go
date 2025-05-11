@@ -8,6 +8,7 @@ import (
 
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/game/data"
 )
 
 func (c *Character) cooldowns() []*CooldownEntry {
@@ -97,37 +98,35 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 	writer.WriteBoolean(ch.Mega)
 	writer.WriteU32(ch.Hair)
 
-	inventory := map[int8]uint32{
-		// -101: 1002577,
-		// -105: 1052309,
-		// -107: 1073255,
-		// -111: 1702382,
-		// -5:   1040010,
-		// -6:   1060006,
-		// -7:   1072005,
-		// -11:  1312004,
-	}
 	equipments := map[int8]uint32{}
 	skins := map[int8]uint32{}
-	for parts, itemId := range inventory {
+	for parts, equipment := range ch.Equipments {
+		if equipment == nil {
+			continue
+		}
+
 		if parts < -127 {
 			continue
 		}
 
-		realParts := int8(parts * -1)
+		template, ok := equipment.Template.(*data.EquipmentTemplate)
+		if !ok {
+			continue
+		}
 
-		if realParts < 100 {
-			if _, exists := equipments[realParts]; !exists {
-				equipments[realParts] = itemId
+		absoluteParts := int8(parts * -1)
+		if absoluteParts < 100 {
+			if _, exists := equipments[absoluteParts]; !exists {
+				equipments[absoluteParts] = template.Id
 			}
-		} else if realParts > 100 && realParts != 111 {
-			adjustedParts := int8(realParts - 100)
+		} else if absoluteParts > 100 && absoluteParts != 111 {
+			adjustedParts := int8(absoluteParts - 100)
 			if existingItem, exists := equipments[adjustedParts]; exists {
 				skins[adjustedParts] = existingItem
 			}
-			equipments[adjustedParts] = itemId
-		} else if _, exists := equipments[realParts]; exists {
-			skins[realParts] = itemId
+			equipments[adjustedParts] = template.Id
+		} else if _, exists := equipments[absoluteParts]; exists {
+			skins[absoluteParts] = template.Id
 		}
 	}
 
@@ -143,11 +142,9 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0xFF)
 
-	weapon := &Item{
-		Id: 1702382,
-	}
+	weapon := ch.Equipments[EquipmentPartsWeapon]
 	if weapon != nil {
-		writer.WriteU32(weapon.Id)
+		writer.WriteU32(weapon.Template.GetID())
 	} else {
 		writer.WriteU32(0)
 	}
@@ -172,52 +169,30 @@ func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.WriteU32(ch.Meso)
 
 	writer.WriteU8(ch.Inventory[InventoryTypeEquip].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeUse].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeSetUp].SlotLimit)
+	writer.WriteU8(ch.Inventory[InventoryTypeConsume].SlotLimit)
+	writer.WriteU8(ch.Inventory[InventoryTypeInstallation].SlotLimit)
 	writer.WriteU8(ch.Inventory[InventoryTypeEtc].SlotLimit)
 	writer.WriteU8(ch.Inventory[InventoryTypeCash].SlotLimit)
 
-	equipped := ch.Inventory[InventoryTypeEquipped].NewList()
-	for _, item := range equipped {
-		if item.Parts < 0 && item.Parts > -100 {
-			item.Serialize(writer, false, false, true, false)
+	for parts, equipment := range ch.Equipments {
+		if equipment != nil && (parts <= 0 && parts > -100) {
+			equipment.Serialize(writer, true, int16(parts))
 		}
 	}
 	writer.WriteU8(0)
 
-	for _, item := range equipped {
-		if item.Parts <= -100 && item.Parts > -1000 {
-			item.Serialize(writer, false, false, true, false)
+	for parts, equipment := range ch.Equipments {
+		if equipment != nil && (parts <= -100 && parts > -1000) {
+			equipment.Serialize(writer, true, int16(parts))
 		}
 	}
 	writer.WriteU8(0)
 
-	for _, item := range ch.Inventory[InventoryTypeEquip].NewList() {
-		item.Serialize(writer, false, false, true, false)
-	}
-	writer.WriteU8(0)
-
-	for _, item := range ch.Inventory[InventoryTypeUse].NewList() {
-		item.Serialize(writer, false, false, true, false)
-	}
-	writer.WriteU8(0)
-
-	for _, item := range ch.Inventory[InventoryTypeSetUp].NewList() {
-		item.Serialize(writer, false, false, true, false)
-	}
-	writer.WriteU8(0)
-
-	for _, item := range ch.Inventory[InventoryTypeEtc].NewList() {
-		if item.Parts < 100 {
-			item.Serialize(writer, false, false, true, false)
-		}
-	}
-	writer.WriteU8(0)
-
-	for _, item := range ch.Inventory[InventoryTypeCash].NewList() {
-		item.Serialize(writer, false, false, true, false)
-	}
-	writer.WriteU8(0)
+	ch.Inventory[InventoryTypeEquip].Serialize(writer)
+	ch.Inventory[InventoryTypeConsume].Serialize(writer)
+	ch.Inventory[InventoryTypeInstallation].Serialize(writer)
+	ch.Inventory[InventoryTypeEtc].Serialize(writer)
+	ch.Inventory[InventoryTypeCash].Serialize(writer)
 }
 
 func (ch *Character) SerializeSkills(writer *stream.StreamWriter) {
@@ -269,7 +244,7 @@ func (ch *Character) SerializeQuests(writer *stream.StreamWriter) {
 					if err != nil {
 						timeVal = 0
 					}
-					writer.WriteU64(util.GetTime(timeVal))
+					writer.WriteDateTime(util.GetTime(timeVal))
 				} else {
 					writer.WriteStr8(q.CustomData)
 				}
@@ -284,7 +259,7 @@ func (ch *Character) SerializeQuests(writer *stream.StreamWriter) {
 
 	for _, q := range completed {
 		writer.WriteU16(uint16(q.Quest.Id))
-		writer.WriteU64(util.GetTime(q.CompletionTime))
+		writer.WriteDateTime(q.CompletionTime)
 	}
 }
 

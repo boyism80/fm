@@ -10,23 +10,23 @@ import (
 )
 
 type PacketHandler struct {
-	handlers  map[int]func(ctx actor.Context, p interface{})
+	handlers  map[int]func(ctx actor.Context, p any)
 	generator map[int]func() types.Packet
 }
 
 func NewPacketHandler() *PacketHandler {
 	return &PacketHandler{
-		handlers:  map[int]func(ctx actor.Context, p interface{}){},
+		handlers:  map[int]func(ctx actor.Context, p any){},
 		generator: map[int]func() types.Packet{},
 	}
 }
 
-func (state *PacketHandler) Register(packetType int, handler func(ctx actor.Context, p interface{})) {
+func (state *PacketHandler) Register(packetType int, handler func(ctx actor.Context, p any)) {
 	state.handlers[packetType] = handler
 }
 
 func RegisterPacketHandler[T any, P any](header int, ctx actor.Context, target *T, h *PacketHandler, fn func(actor.Context, *T, *P)) {
-	h.Register(header, func(ctx actor.Context, p interface{}) {
+	h.Register(header, func(ctx actor.Context, p any) {
 		fn(ctx, target, p.(*P))
 	})
 

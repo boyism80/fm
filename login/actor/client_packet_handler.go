@@ -60,8 +60,8 @@ func onLoginClientLogin(ctx actor.Context, client *LoginClientActor, request *re
 func onLoginClientCharacterList(ctx actor.Context, client *LoginClientActor, request *req.CharacterList) {
 	client.Send(&resp.CharacterList{
 		Characters: []entity.Character{
-			entity.NewDummyCharacter(1, "채승현"),
-			entity.NewDummyCharacter(2, "채진영"),
+			entity.NewDummyCharacter(1, "채승현", nil),
+			entity.NewDummyCharacter(2, "채진영", nil),
 		},
 		SlotCount: 6,
 	}, types.SEND_POLICY_ENCRYPT)

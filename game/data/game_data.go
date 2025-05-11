@@ -12,10 +12,9 @@ import (
 type GameData struct {
 	Maps     map[uint32]*MapTemplate
 	Monsters map[uint32]*MonsterTemplate
-	Items    map[uint32]*baseItemTemplate
+	Items    map[uint32]ItemTemplate
 }
 
-// 생성자
 func NewGameData() *GameData {
 
 	workerCount := runtime.NumCPU() * 2
@@ -52,19 +51,103 @@ func NewGameData() *GameData {
 		return nil
 	}
 
-	stringResult := map[uint32]*StringTemplate{}
-	_ = LoadXmlFiles("D:/git/fm/wz/String.wz", workerCount, func(path string) (result *StringTemplate, err error) {
+	err = LoadXmlFiles("D:/git/fm-backup/wz/Item.wz/Cash",
+		workerCount,
+		func(path string) (result *[]*CashItemTemplate, err error) {
+			return loadCashItemFromXML(path)
+		},
+		func(percent float32, value *[]*CashItemTemplate) {
 
-		// TODO: 파일명으로 분기해서 데이터 파싱 다르게 하기
+			for _, v := range *value {
+				items[v.Id] = v
+			}
+			fmt.Printf("캐시 아이템 데이터 로딩 중: %.1f%%\n", percent)
+		})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	err = LoadXmlFiles("D:/git/fm-backup/wz/Item.wz/Install",
+		workerCount,
+		func(path string) (result *[]*InstallationTemplate, err error) {
+			return loadInstallationFromXML(path)
+		},
+		func(percent float32, value *[]*InstallationTemplate) {
+
+			for _, v := range *value {
+				items[v.Id] = v
+			}
+			fmt.Printf("설치 아이템 데이터 로딩 중: %.1f%%\n", percent)
+		})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	err = LoadXmlFiles("D:/git/fm-backup/wz/Item.wz/Special",
+		workerCount,
+		func(path string) (result *[]*SpecialItemTemplate, err error) {
+			return loadSpecialItemFromXML(path)
+		},
+		func(percent float32, value *[]*SpecialItemTemplate) {
+
+			for _, v := range *value {
+				items[v.Id] = v
+			}
+			fmt.Printf("설치 아이템 데이터 로딩 중: %.1f%%\n", percent)
+		})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	err = LoadXmlFiles("D:/git/fm-backup/wz/Item.wz/Etc",
+		workerCount,
+		func(path string) (result *[]*GeneralItemTemplate, err error) {
+			return loadGeneralItemFromXML(path)
+		},
+		func(percent float32, value *[]*GeneralItemTemplate) {
+
+			for _, v := range *value {
+				items[v.Id] = v
+			}
+			fmt.Printf("일반 아이템 데이터 로딩 중: %.1f%%\n", percent)
+		})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	err = LoadXmlFiles("D:/git/fm-backup/wz/Item.wz/Pet",
+		workerCount,
+		func(path string) (result *PetTemplate, err error) {
+			return loadPetFromXML(path)
+		},
+		func(percent float32, value *PetTemplate) {
+
+			items[value.Id] = value
+			fmt.Printf("펫 데이터 로딩 중: %.1f%%\n", percent)
+		})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	stringResult := map[uint32]*StringTemplate{}
+	_ = LoadXmlFiles("D:/git/fm/wz/String.wz", workerCount, func(path string) (result *[]*StringTemplate, err error) {
+
 		m, err := loadStringFromXML(path)
 		if err != nil {
 			return nil, err
 		}
 		return m, nil
-	}, func(percent float32, value *StringTemplate) {
+	}, func(percent float32, value *[]*StringTemplate) {
 
-		// TODO: 파일명으로 분기해서 데이터 적재 다르게 하기
-		stringResult[value.Id] = value
+		for _, v := range *value {
+			stringResult[v.Id] = v
+		}
+
 		fmt.Printf("문자열 데이터 로딩 중: %.1f%%\n", percent)
 	})
 
@@ -95,6 +178,6 @@ func NewGameData() *GameData {
 	return &GameData{
 		Maps:     maps,
 		Monsters: map[uint32]*MonsterTemplate{},
-		Items:    map[uint32]*baseItemTemplate{},
+		Items:    items,
 	}
 }

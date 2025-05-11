@@ -1,6 +1,8 @@
 package actor
 
 import (
+	"strings"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/types"
@@ -30,7 +32,7 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 	if request.PlayerId != 1 {
 		name = "채진영"
 	}
-	ch := entity.NewDummyCharacter(request.PlayerId, name)
+	ch := entity.NewDummyCharacter(request.PlayerId, name, client.Context)
 	spawnPoint := client.Context.GameData.Maps[ch.Map].Portals[ch.SpawnPoint].Position
 	ch.Position = spawnPoint
 	client.BindCharacter(ctx, &ch)
@@ -103,6 +105,14 @@ func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req
 	mapActor := client.Context.MapActors[client.Character.Map]
 	if mapActor == nil {
 		return
+	}
+
+	if strings.HasPrefix(req.Message, "/") {
+		params := strings.Split(strings.TrimPrefix(req.Message, "/"), " ")
+		err := client.commandHandler.Handle(ctx, params...)
+		if err == nil {
+			return
+		}
 	}
 
 	ctx.Send(mapActor, &msg.MapBroadcastRange{

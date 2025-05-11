@@ -7,16 +7,16 @@ import (
 )
 
 type MessageHandler struct {
-	handlers map[reflect.Type]func(ctx actor.Context, msg interface{})
+	handlers map[reflect.Type]func(ctx actor.Context, msg any)
 }
 
 func NewMessageHandler() *MessageHandler {
 	return &MessageHandler{
-		handlers: make(map[reflect.Type]func(ctx actor.Context, msg interface{})),
+		handlers: make(map[reflect.Type]func(ctx actor.Context, msg any)),
 	}
 }
 
-func (m *MessageHandler) Register(msgType reflect.Type, handler func(ctx actor.Context, msg interface{})) {
+func (m *MessageHandler) Register(msgType reflect.Type, handler func(ctx actor.Context, msg any)) {
 	m.handlers[msgType] = handler
 }
 
@@ -31,7 +31,7 @@ func (m *MessageHandler) Handle(ctx actor.Context) {
 
 func RegisterHandler[T any, M any](ctx actor.Context, target *T, h *MessageHandler, fn func(actor.Context, *T, *M)) {
 	var msg *M
-	h.Register(reflect.TypeOf(msg), func(ctx actor.Context, m interface{}) {
+	h.Register(reflect.TypeOf(msg), func(ctx actor.Context, m any) {
 		fn(ctx, target, m.(*M))
 	})
 }
