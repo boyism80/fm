@@ -16,10 +16,10 @@ import (
 )
 
 type GameClientActor struct {
-	Context        *context.ServerContext
-	Character      *entity.Character
-	Conn           net.Conn
-	Buffer         []byte
+	context        *context.ServerContext
+	character      *entity.Character
+	conn           net.Conn
+	buffer         []byte
 	messageHandler *handler.MessageHandler
 	packetHandler  *handler.PacketHandler
 	commandHandler *handler.CommandHandler
@@ -33,9 +33,9 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
 
 	act := &GameClientActor{
-		Context:        serverCtx,
-		Conn:           conn,
-		Buffer:         []byte{},
+		context:        serverCtx,
+		conn:           conn,
+		buffer:         []byte{},
 		messageHandler: handler.NewMessageHandler(),
 		packetHandler:  handler.NewPacketHandler(),
 		commandHandler: handler.NewCommandHandler(),
@@ -58,18 +58,18 @@ func (state *GameClientActor) Invoke(ctx actor.Context, header int, data []byte)
 }
 
 func (c *GameClientActor) BindCharacter(ctx actor.Context, ch *entity.Character) {
-	c.Character = ch
-	RegisterCharacterHandlers(ctx, c.Character, c.messageHandler)
+	c.character = ch
+	RegisterLifeHandlers(ctx, &c.character.Life, c.messageHandler)
 }
 
 func (c *GameClientActor) Name() string {
-	if c.Character == nil {
+	if c.character == nil {
 		return ""
 	}
-	return c.Character.Name
+	return c.character.Name
 }
 
-func (state *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
+func (actor *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
 	writer := stream.NewStreamWriter(stream.LittleEndian)
 	p.Serialize(writer)
 	bytes := writer.Bytes()
@@ -77,18 +77,18 @@ func (state *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
 	log.Println("[S] " + util.ToHexString(bytes))
 
 	if policy == types.SEND_POLICY_RAW {
-		state.Conn.Write(bytes)
+		actor.conn.Write(bytes)
 		return
 	}
 
 	writer = stream.NewStreamWriter(stream.LittleEndian)
 	if policy&types.SEND_POLICY_ENCRYPT != 0 {
-		header := state.sendEncryption.GetPacketHeader(len(bytes))
+		header := actor.sendEncryption.GetPacketHeader(len(bytes))
 		writer.Write(header)
-		bytes = state.sendEncryption.Encrypt(bytes)
+		bytes = actor.sendEncryption.Encrypt(bytes)
 	}
 
 	writer.Write(bytes)
 	bytes = writer.Bytes()
-	state.Conn.Write(bytes)
+	actor.conn.Write(bytes)
 }

@@ -14,7 +14,7 @@ func (m *MovePlayer) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (m *MovePlayer) Deserialize(reader *stream.StreamReader) error {
-	if _, err := reader.Read(5); err != nil { // skip
+	if _, err := reader.Read(5); err != nil {
 		return err
 	}
 

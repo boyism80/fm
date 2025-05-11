@@ -9,13 +9,13 @@ import (
 	"strings"
 )
 
-type GameData struct {
+type Resources struct {
 	Maps     map[uint32]*MapTemplate
 	Monsters map[uint32]*MonsterTemplate
 	Items    map[uint32]ItemTemplate
 }
 
-func NewGameData() *GameData {
+func NewGameData() *Resources {
 
 	workerCount := runtime.NumCPU() * 2
 
@@ -175,7 +175,7 @@ func NewGameData() *GameData {
 	}
 	fmt.Println("\n모든 맵 로딩 완료.")
 
-	return &GameData{
+	return &Resources{
 		Maps:     maps,
 		Monsters: map[uint32]*MonsterTemplate{},
 		Items:    items,

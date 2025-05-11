@@ -8,7 +8,7 @@ import (
 )
 
 type Pet struct {
-	*BaseItem
+	*baseItem
 	Level       uint8
 	Closeness   uint16
 	Fullness    uint8
@@ -39,7 +39,7 @@ func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 		writer.Write64(pet.UniqueId)
 	}
 
-	writer.WriteDateTime(pet.BaseItem.Expiration)
+	writer.WriteDateTime(pet.baseItem.Expiration)
 	writer.WriteStaticStr(template.Name, 13)
 	writer.WriteU8(pet.Level)
 	writer.WriteU16(pet.Closeness)

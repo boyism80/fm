@@ -5,7 +5,7 @@ import (
 )
 
 type Installation struct {
-	*BaseItem
+	*baseItem
 	OwnerName string
 	Flags     uint16
 }

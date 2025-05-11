@@ -32,8 +32,8 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 	if request.PlayerId != 1 {
 		name = "채진영"
 	}
-	ch := entity.NewDummyCharacter(request.PlayerId, name, client.Context)
-	spawnPoint := client.Context.GameData.Maps[ch.Map].Portals[ch.SpawnPoint].Position
+	ch := entity.NewDummyCharacter(request.PlayerId, name, client.context)
+	spawnPoint := client.context.Resources.Maps[ch.Map].Portals[ch.SpawnPoint].Position
 	ch.Position = spawnPoint
 	client.BindCharacter(ctx, &ch)
 
@@ -41,7 +41,7 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 	// 맵의 모든 오브젝트에게 Warped 메시지가 전달된다.
 	client.Send(&resp.Warp{Character: &ch}, types.SEND_POLICY_ENCRYPT)
 
-	mapActor := client.Context.MapActors[client.Character.Map]
+	mapActor := client.context.MapActors[client.character.Map]
 	if mapActor != nil {
 		ctx.Send(mapActor, &msg.EnterMap{
 			Id:  ch.Id,
@@ -71,17 +71,17 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 
 func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req.MovePlayer) {
 
-	beforePosition := client.Character.Position
+	beforePosition := client.character.Position
 
 	for _, frag := range req.Fragments {
 		if move, ok := frag.(*movement.AbsoluteLifeMovement); ok {
-			client.Character.Position = move.Position
+			client.character.Position = move.Position
 		}
 
-		client.Character.Stance = frag.GetNewState()
+		client.character.Stance = frag.GetNewState()
 	}
 
-	mapActor := client.Context.MapActors[client.Character.Map]
+	mapActor := client.context.MapActors[client.character.Map]
 	if mapActor == nil {
 		return
 	}
@@ -91,7 +91,7 @@ func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req
 		Pivot:  beforePosition,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.Move{
-				Character:     client.Character,
+				Character:     client.character,
 				MoveFragments: req.Fragments,
 				StartPoint:    beforePosition,
 			},
@@ -101,8 +101,8 @@ func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req
 }
 
 func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req.NormalChat) {
-	position := client.Character.Position
-	mapActor := client.Context.MapActors[client.Character.Map]
+	position := client.character.Position
+	mapActor := client.context.MapActors[client.character.Map]
 	if mapActor == nil {
 		return
 	}
@@ -120,7 +120,7 @@ func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req
 		Pivot:  position,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.NormalChat{
-				CharacterId: client.Character.Id,
+				CharacterId: client.character.Id,
 				Highlight:   false,
 				Message:     req.Message,
 				Show:        req.Show,
@@ -131,8 +131,8 @@ func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req
 }
 
 func onGameClientAttack(ctx actor.Context, client *GameClientActor, req *req.Attack) {
-	position := client.Character.Position
-	mapActor := client.Context.MapActors[client.Character.Map]
+	position := client.character.Position
+	mapActor := client.context.MapActors[client.character.Map]
 	if mapActor == nil {
 		return
 	}
@@ -142,7 +142,7 @@ func onGameClientAttack(ctx actor.Context, client *GameClientActor, req *req.Att
 		Pivot:  position,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.Attack{
-				CharacterId: client.Character.Id,
+				CharacterId: client.character.Id,
 				AttackInfo:  req.AttackInfo,
 				SkillLevel:  0,
 			},

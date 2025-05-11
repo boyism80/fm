@@ -6,7 +6,7 @@ import (
 )
 
 type Consume struct {
-	*BaseItem
+	*baseItem
 	Count     uint16
 	OwnerName string
 	Flags     uint16

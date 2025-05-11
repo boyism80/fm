@@ -18,7 +18,7 @@ func NewItemActor(ctx protoactor.Context, serverCtx context.ServerContext) proto
 		ServerCtx: serverCtx,
 		handler:   handler.NewMessageHandler(),
 	}
-	RegisterItemHandlers(ctx, act, act.handler)
+	RegisterObjectHandlers(ctx, act.Item.GetObject(), act.handler)
 	return act
 }
 

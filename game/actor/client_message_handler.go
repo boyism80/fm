@@ -29,7 +29,7 @@ func RegisterGameClientMessageHandlers(ctx protoactor.Context, m *GameClientActo
 
 func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *protoactor.PID) {
 	buf := make([]byte, 1024)
-	conn := client.Conn
+	conn := client.conn
 
 	for {
 		n, err := conn.Read(buf)
@@ -38,8 +38,8 @@ func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *proto
 			break
 		}
 
-		client.Buffer = append(client.Buffer, buf[:n]...)
-		reader := stream.NewStreamReader(&client.Buffer, stream.LittleEndian)
+		client.buffer = append(client.buffer, buf[:n]...)
+		reader := stream.NewStreamReader(&client.buffer, stream.LittleEndian)
 
 		for {
 			header, err := reader.Read(4)
@@ -95,9 +95,9 @@ func onGameClientConnected(ctx protoactor.Context, client *GameClientActor, m *c
 }
 
 func onGameClientStopping(ctx protoactor.Context, client *GameClientActor, m *protoactor.Stopping) {
-	ch := client.Character
+	ch := client.character
 	if ch != nil {
-		mapActor := client.Context.MapActors[client.Character.Map]
+		mapActor := client.context.MapActors[client.character.Map]
 		if mapActor != nil {
 			ctx.Send(mapActor, &msg.LeaveMap{
 				Id: ch.Id,
@@ -106,7 +106,7 @@ func onGameClientStopping(ctx protoactor.Context, client *GameClientActor, m *pr
 	}
 
 	log.Println("클라이언트 접속 종료")
-	client.Conn.Close()
+	client.conn.Close()
 	if client.stopTimer != nil {
 		client.stopTimer()
 	}
@@ -130,7 +130,7 @@ func onGameClientWarped(ctx protoactor.Context, client *GameClientActor, m *msg.
 
 	ctx.Send(m.Sender, &common_msg.SendProtocol{
 		Protocol: &resp.SpawnPlayer{
-			Character:       client.Character,
+			Character:       client.character,
 			BuffStates:      [4]uint32{},
 			Diseases:        [4]uint32{},
 			CrushRings:      []*entity.Ring{},

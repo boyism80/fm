@@ -26,108 +26,108 @@ func Parse(reader *stream.StreamReader) ([]MoveFragment, error) {
 
 		switch cmd {
 		case 0, 5, 17:
-			xpos, _ := reader.Read16()
-			ypos, _ := reader.Read16()
-			xwobble, _ := reader.Read16()
-			ywobble, _ := reader.Read16()
-			unk, _ := reader.Read16()
-			newstate, _ := reader.ReadU8()
+			x, _ := reader.Read16()
+			y, _ := reader.Read16()
+			vx, _ := reader.Read16()
+			vy, _ := reader.Read16()
+			foothold, _ := reader.Read16()
+			stance, _ := reader.ReadU8()
 			duration, _ := reader.Read16()
 
 			frag := AbsoluteLifeMovement{
-				Command:        cmd,
-				Position:       types.Vec2[int16]{X: xpos, Y: ypos},
-				Unknown:        unk,
-				NewState:       newstate,
-				Duration:       duration,
-				PixelPerSecond: types.Vec2[int16]{X: xwobble, Y: ywobble},
+				Command:  cmd,
+				Position: types.Vec2[int16]{X: x, Y: y},
+				Foothold: foothold,
+				Stance:   stance,
+				Duration: duration,
+				Velocity: types.Vec2[int16]{X: vx, Y: vy},
 			}
 
 			fragments = append(fragments, &frag)
 
 		case 15:
-			xpos, _ := reader.Read16()
-			ypos, _ := reader.Read16()
-			xwobble, _ := reader.Read16()
-			ywobble, _ := reader.Read16()
+			x, _ := reader.Read16()
+			y, _ := reader.Read16()
+			vx, _ := reader.Read16()
+			vy, _ := reader.Read16()
 			unk, _ := reader.Read16()
-			fh, _ := reader.Read16()
-			newstate, _ := reader.ReadU8()
+			foothold, _ := reader.Read16()
+			stance, _ := reader.ReadU8()
 			duration, _ := reader.Read16()
 			frag := JumpDownMovement{
-				Command:        cmd,
-				Position:       types.Vec2[int16]{X: xpos, Y: ypos},
-				Duration:       duration,
-				NewState:       newstate,
-				PixelPerSecond: types.Vec2[int16]{X: xwobble, Y: ywobble},
-				Unknown:        unk,
-				FH:             fh,
+				Command:  cmd,
+				Position: types.Vec2[int16]{X: x, Y: y},
+				Duration: duration,
+				Stance:   stance,
+				Velocity: types.Vec2[int16]{X: vx, Y: vy},
+				Unknown:  unk,
+				Foothold: foothold,
 			}
 
 			fragments = append(fragments, &frag)
 
 		case 1, 2, 6, 12, 13, 16:
-			xmod, _ := reader.Read16()
-			ymod, _ := reader.Read16()
-			newstate, _ := reader.ReadU8()
+			x, _ := reader.Read16()
+			y, _ := reader.Read16()
+			stance, _ := reader.ReadU8()
 			duration, _ := reader.Read16()
 
 			frag := RelativeLifeMovement{
 				Command:  cmd,
-				Position: types.Vec2[int16]{X: xmod, Y: ymod},
-				NewState: newstate,
+				Position: types.Vec2[int16]{X: x, Y: y},
+				Stance:   stance,
 				Duration: duration,
 			}
 
 			fragments = append(fragments, &frag)
 
 		case 3, 4, 7, 8, 9, 11:
-			xpos, _ := reader.Read16()
-			ypos, _ := reader.Read16()
-			xwobble, _ := reader.Read16()
-			ywobble, _ := reader.Read16()
-			newstate, _ := reader.ReadU8()
+			x, _ := reader.Read16()
+			y, _ := reader.Read16()
+			vx, _ := reader.Read16()
+			vy, _ := reader.Read16()
+			stance, _ := reader.ReadU8()
 
 			frag := TeleportMovement{
-				Command:        cmd,
-				Position:       types.Vec2[int16]{X: xpos, Y: ypos},
-				PixelPerSecond: types.Vec2[int16]{X: xwobble, Y: ywobble},
-				NewState:       newstate,
+				Command:  cmd,
+				Position: types.Vec2[int16]{X: x, Y: y},
+				Velocity: types.Vec2[int16]{X: vx, Y: vy},
+				Stance:   stance,
 			}
 
 			fragments = append(fragments, &frag)
 
 		case 10:
-			news, _ := reader.ReadU8()
+			stance, _ := reader.ReadU8()
 			frag := NoneMovement{
-				Command:  cmd,
-				NewState: news,
+				Command: cmd,
+				Stance:  stance,
 			}
 			fragments = append(fragments, &frag)
 
 		case 14:
-			xpos, _ := reader.Read16()
-			ypos, _ := reader.Read16()
-			unk, _ := reader.Read16()
-			newstate, _ := reader.ReadU8()
+			x, _ := reader.Read16()
+			y, _ := reader.Read16()
+			foothold, _ := reader.Read16()
+			stance, _ := reader.ReadU8()
 			duration, _ := reader.Read16()
 
 			frag := ChairMovement{
 				Command:  cmd,
-				Position: types.Vec2[int16]{X: xpos, Y: ypos},
-				Unknown:  unk,
-				NewState: newstate,
+				Position: types.Vec2[int16]{X: x, Y: y},
+				Foothold: foothold,
+				Stance:   stance,
 				Duration: duration,
 			}
 			fragments = append(fragments, &frag)
 
 		default:
-			newstate, _ := reader.ReadU8()
-			unk, _ := reader.Read16()
+			stance, _ := reader.ReadU8()
+			foothold, _ := reader.Read16()
 			frag := AranMovement{
 				Command:  cmd,
-				NewState: newstate,
-				Unknown:  unk,
+				Stance:   stance,
+				Foothold: foothold,
 				Position: types.Vec2[int16]{},
 			}
 			fragments = append(fragments, &frag)

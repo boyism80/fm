@@ -156,9 +156,9 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 
 	if ctx != nil {
 		ch.Equipments[EquipmentPartsWeapon] = &Equipment{
-			BaseItem: &BaseItem{
+			baseItem: &baseItem{
 				Object:     nil,
-				Template:   ctx.GameData.Items[1302000],
+				Template:   ctx.Resources.Items[1302000],
 				UniqueId:   0,
 				Expiration: util.TimeMax,
 			},
@@ -170,9 +170,9 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 			fmt.Println(err)
 		}
 		ch.Inventory[InventoryTypeCash].Items[1] = &Pet{
-			BaseItem: &BaseItem{
+			baseItem: &baseItem{
 				Object:     nil,
-				Template:   ctx.GameData.Items[5000007],
+				Template:   ctx.Resources.Items[5000007],
 				UniqueId:   1,
 				Expiration: util.TimeMax,
 			},
@@ -186,9 +186,9 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		}
 
 		ch.Inventory[InventoryTypeEtc].Items[1] = &GeneralItem{
-			BaseItem: &BaseItem{
+			baseItem: &baseItem{
 				Object:     nil,
-				Template:   ctx.GameData.Items[4000001],
+				Template:   ctx.Resources.Items[4000001],
 				Expiration: util.TimeMax,
 			},
 			Count: 100,
