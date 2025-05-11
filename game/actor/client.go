@@ -22,6 +22,7 @@ type GameClientActor struct {
 	Buffer         []byte
 	messageHandler *handler.MessageHandler
 	packetHandler  *handler.PacketHandler
+	commandHandler *handler.CommandHandler
 	sendEncryption encrypt.Encryption
 	recvEncryption encrypt.Encryption
 	stopTimer      scheduler.CancelFunc
@@ -37,12 +38,14 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 		Buffer:         []byte{},
 		messageHandler: handler.NewMessageHandler(),
 		packetHandler:  handler.NewPacketHandler(),
+		commandHandler: handler.NewCommandHandler(),
 		sendEncryption: encrypt.NewEncryption(ivSend, -5),
 		recvEncryption: encrypt.NewEncryption(ivRecv, 5),
 	}
 
 	RegisterGameClientMessageHandlers(ctx, act, act.messageHandler)
 	RegisterGameClientPacketHandler(ctx, act, act.packetHandler)
+	RegisterGameClientCommandHandler(ctx, act, act.commandHandler)
 	return act
 }
 

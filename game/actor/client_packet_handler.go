@@ -1,6 +1,8 @@
 package actor
 
 import (
+	"strings"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/types"
@@ -102,6 +104,12 @@ func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req
 	position := client.Character.Position
 	mapActor := client.Context.MapActors[client.Character.Map]
 	if mapActor == nil {
+		return
+	}
+
+	params := strings.Split(req.Message, " ")
+	err := client.commandHandler.Handle(ctx, params...)
+	if err == nil {
 		return
 	}
 
