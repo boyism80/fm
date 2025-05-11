@@ -184,6 +184,15 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 			SecondsLeft: 0,
 			Expiration:  petExpiration,
 		}
+
+		ch.Inventory[InventoryTypeEtc].Items[1] = &GeneralItem{
+			BaseItem: &BaseItem{
+				Object:     nil,
+				Template:   ctx.GameData.Items[4000001],
+				Expiration: util.TimeMax,
+			},
+			Count: 100,
+		}
 	}
 
 	return ch

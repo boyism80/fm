@@ -6,7 +6,32 @@ import (
 	"strconv"
 )
 
-func loadStringFromXML(path string) (*StringTemplate, error) {
+func loadStringNodeRecursive(root *XMLNode) []*StringTemplate {
+
+	templates := []*StringTemplate{}
+	for _, child := range root.Children {
+
+		id, err := strconv.Atoi(child.Name)
+		if err != nil {
+			templates = append(templates, loadStringNodeRecursive(&child)...)
+		}
+		template := StringTemplate{
+			Id: uint32(id),
+		}
+		for _, v := range child.Children {
+			switch v.Name {
+			case "name":
+				template.Name = v.Value
+			case "desc":
+				template.Desc = v.Value
+			}
+		}
+	}
+
+	return templates
+}
+
+func loadStringFromXML(path string) (*[]*StringTemplate, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -18,23 +43,6 @@ func loadStringFromXML(path string) (*StringTemplate, error) {
 		return nil, err
 	}
 
-	m := StringTemplate{}
-	for _, child := range root.Children {
-		id, err := strconv.Atoi(child.Name)
-		m.Id = uint32(id)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range child.Children {
-			switch node.Name {
-			case "name":
-				m.Name = node.Value
-
-			case "desc":
-				m.Desc = node.Value
-			}
-		}
-	}
-
-	return &m, nil
+	templates := loadStringNodeRecursive(&root)
+	return &templates, nil
 }

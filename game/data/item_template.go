@@ -89,12 +89,25 @@ type GeneralItemTemplate struct {
 	*baseItemTemplate
 }
 
+type CashItemTemplate struct {
+	*baseItemTemplate
+}
+
 type ActiveEffect struct {
 	HP int
 	MP int
 }
 
 type ConsumeTemplate struct {
+	*baseItemTemplate
+	ActiveEffect ActiveEffect
+}
+
+type InstallationTemplate struct {
+	*baseItemTemplate
+}
+
+type SpecialItemTemplate struct {
 	*baseItemTemplate
 	ActiveEffect ActiveEffect
 }

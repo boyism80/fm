@@ -193,6 +193,7 @@ func loadConsumeFromXML(path string) (*[]*ConsumeTemplate, error) {
 				case "thaw":
 				case "time":
 				case "weakness":
+				case "mob":
 					break
 
 				default:
