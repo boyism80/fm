@@ -8,6 +8,7 @@ import (
 
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/data"
 )
 
@@ -39,15 +40,6 @@ func (c *Character) completedQuests() []*QuestStatus {
 		}
 	}
 	return ret
-}
-
-func (c *Character) getRings(onlyEquipped bool) *RingCollection {
-	// 임시 더미 데이터 (실제 DB/메모리에서 로드하는건 나중에 구현)
-	return &RingCollection{
-		Left:  []*Ring{},
-		Mid:   []*Ring{},
-		Right: []*Ring{},
-	}
 }
 
 func (ch *Character) SerializeStats(writer *stream.StreamWriter) {
@@ -109,7 +101,7 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 			continue
 		}
 
-		template, ok := equipment.Template.(*data.EquipmentTemplate)
+		spec, ok := equipment.Spec.(*data.EquipmentSpec)
 		if !ok {
 			continue
 		}
@@ -117,16 +109,16 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 		absoluteParts := int8(parts * -1)
 		if absoluteParts < 100 {
 			if _, exists := equipments[absoluteParts]; !exists {
-				equipments[absoluteParts] = template.Id
+				equipments[absoluteParts] = spec.Id
 			}
 		} else if absoluteParts > 100 && absoluteParts != 111 {
 			adjustedParts := int8(absoluteParts - 100)
 			if existingItem, exists := equipments[adjustedParts]; exists {
 				skins[adjustedParts] = existingItem
 			}
-			equipments[adjustedParts] = template.Id
+			equipments[adjustedParts] = spec.Id
 		} else if _, exists := equipments[absoluteParts]; exists {
-			skins[absoluteParts] = template.Id
+			skins[absoluteParts] = spec.Id
 		}
 	}
 
@@ -142,9 +134,9 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0xFF)
 
-	weapon := ch.Equipments[EquipmentPartsWeapon]
+	weapon := ch.Equipments[constant.EquipmentPartsWeapon]
 	if weapon != nil {
-		writer.WriteU32(weapon.Template.GetID())
+		writer.WriteU32(weapon.Spec.GetID())
 	} else {
 		writer.WriteU32(0)
 	}
@@ -168,11 +160,11 @@ func (ch *Character) Serialize(writer *stream.StreamWriter) {
 func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.WriteU32(ch.Meso)
 
-	writer.WriteU8(ch.Inventory[InventoryTypeEquip].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeConsume].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeInstallation].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeEtc].SlotLimit)
-	writer.WriteU8(ch.Inventory[InventoryTypeCash].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeEquipment].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeConsume].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeInstallation].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeEtc].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeCash].SlotLimit)
 
 	for parts, equipment := range ch.Equipments {
 		if equipment != nil && (parts <= 0 && parts > -100) {
@@ -188,11 +180,11 @@ func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0)
 
-	ch.Inventory[InventoryTypeEquip].Serialize(writer)
-	ch.Inventory[InventoryTypeConsume].Serialize(writer)
-	ch.Inventory[InventoryTypeInstallation].Serialize(writer)
-	ch.Inventory[InventoryTypeEtc].Serialize(writer)
-	ch.Inventory[InventoryTypeCash].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeEquipment].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeConsume].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeInstallation].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeEtc].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeCash].Serialize(writer)
 }
 
 func (ch *Character) SerializeSkills(writer *stream.StreamWriter) {
@@ -266,21 +258,18 @@ func (ch *Character) SerializeQuests(writer *stream.StreamWriter) {
 func (ch *Character) SerializeRings(writer *stream.StreamWriter) {
 	writer.WriteU16(0)
 
-	aRing := ch.getRings(true)
-	cRing := aRing.Left
-	writer.WriteU16(uint16(len(cRing)))
+	writer.WriteU16(uint16(len(ch.Rings.Left)))
 
-	for _, ring := range cRing {
+	for _, ring := range ch.Rings.Left {
 		writer.WriteU32(ring.PartnerChrId)
 		writer.WriteStaticStr(ring.PartnerName, 13)
 		writer.WriteU64(ring.RingId)
 		writer.WriteU64(ring.PartnerId)
 	}
 
-	fRing := aRing.Mid
-	writer.WriteU16(uint16(len(fRing)))
+	writer.WriteU16(uint16(len(ch.Rings.Mid)))
 
-	for _, ring := range fRing {
+	for _, ring := range ch.Rings.Mid {
 		writer.WriteU32(ring.PartnerChrId)
 		writer.WriteStaticStr(ring.PartnerName, 13)
 		writer.WriteU64(ring.RingId)
@@ -288,10 +277,8 @@ func (ch *Character) SerializeRings(writer *stream.StreamWriter) {
 		writer.WriteU32(ring.ItemId)
 	}
 
-	mRing := aRing.Right
-	writer.WriteU16(uint16(len(mRing)))
-
-	for _, ring := range mRing {
+	writer.WriteU16(uint16(len(ch.Rings.Right)))
+	for _, ring := range ch.Rings.Right {
 		writer.WriteU32(ch.MarriageId)
 
 		data := GetMarriageManager().GetMarriage(ch.MarriageId)

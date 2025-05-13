@@ -7,7 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/common/context"
-	"github.com/boyism80/fm/common/encrypt"
+	"github.com/boyism80/fm/common/crypt"
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
@@ -16,15 +16,15 @@ import (
 )
 
 type GameClientActor struct {
-	Context        *context.ServerContext
-	Character      *entity.Character
-	Conn           net.Conn
-	Buffer         []byte
+	ctx            *context.ServerContext
+	ch             *entity.Character
+	conn           net.Conn
+	buffer         []byte
 	messageHandler *handler.MessageHandler
 	packetHandler  *handler.PacketHandler
 	commandHandler *handler.CommandHandler
-	sendEncryption encrypt.Encryption
-	recvEncryption encrypt.Encryption
+	sendCrypt      crypt.Encryption
+	receiveCrypt   crypt.Encryption
 	stopTimer      scheduler.CancelFunc
 }
 
@@ -33,14 +33,14 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
 
 	act := &GameClientActor{
-		Context:        serverCtx,
-		Conn:           conn,
-		Buffer:         []byte{},
+		ctx:            serverCtx,
+		conn:           conn,
+		buffer:         []byte{},
 		messageHandler: handler.NewMessageHandler(),
 		packetHandler:  handler.NewPacketHandler(),
 		commandHandler: handler.NewCommandHandler(),
-		sendEncryption: encrypt.NewEncryption(ivSend, -5),
-		recvEncryption: encrypt.NewEncryption(ivRecv, 5),
+		sendCrypt:      crypt.NewEncryption(ivSend, -5),
+		receiveCrypt:   crypt.NewEncryption(ivRecv, 5),
 	}
 
 	RegisterGameClientMessageHandlers(ctx, act, act.messageHandler)
@@ -57,19 +57,14 @@ func (state *GameClientActor) Invoke(ctx actor.Context, header int, data []byte)
 	return state.packetHandler.Handle(ctx, header, data)
 }
 
-func (c *GameClientActor) BindCharacter(ctx actor.Context, ch *entity.Character) {
-	c.Character = ch
-	RegisterCharacterHandlers(ctx, c.Character, c.messageHandler)
-}
-
 func (c *GameClientActor) Name() string {
-	if c.Character == nil {
+	if c.ch == nil {
 		return ""
 	}
-	return c.Character.Name
+	return c.ch.Name
 }
 
-func (state *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
+func (actor *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
 	writer := stream.NewStreamWriter(stream.LittleEndian)
 	p.Serialize(writer)
 	bytes := writer.Bytes()
@@ -77,18 +72,18 @@ func (state *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
 	log.Println("[S] " + util.ToHexString(bytes))
 
 	if policy == types.SEND_POLICY_RAW {
-		state.Conn.Write(bytes)
+		actor.conn.Write(bytes)
 		return
 	}
 
 	writer = stream.NewStreamWriter(stream.LittleEndian)
 	if policy&types.SEND_POLICY_ENCRYPT != 0 {
-		header := state.sendEncryption.GetPacketHeader(len(bytes))
+		header := actor.sendCrypt.GetPacketHeader(len(bytes))
 		writer.Write(header)
-		bytes = state.sendEncryption.Encrypt(bytes)
+		bytes = actor.sendCrypt.Encrypt(bytes)
 	}
 
 	writer.Write(bytes)
 	bytes = writer.Bytes()
-	state.Conn.Write(bytes)
+	actor.conn.Write(bytes)
 }

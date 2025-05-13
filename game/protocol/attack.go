@@ -1,4 +1,4 @@
-package entity
+package protocol
 
 import (
 	"github.com/boyism80/fm/common/stream"
@@ -50,7 +50,16 @@ func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
 	a.Skill = skill
 
 	switch skill {
-	case 2121001, 2221001, 2321001, 3221001, 3121004, 13111002, 5101004, 15101003, 5221004, 5201002:
+	case 2121001:
+	case 2221001:
+	case 2321001:
+	case 3221001:
+	case 3121004:
+	case 13111002:
+	case 5101004:
+	case 15101003:
+	case 5221004:
+	case 5201002:
 		charge, err := sr.ReadU32()
 		if err != nil {
 			return err

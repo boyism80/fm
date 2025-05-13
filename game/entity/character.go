@@ -6,8 +6,8 @@ import (
 
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/game/constant"
 )
 
 type Character struct {
@@ -45,8 +45,9 @@ type Character struct {
 	Random1          stream.RandomStream
 	Random2          stream.RandomStream
 	Random3          stream.RandomStream
-	Inventory        map[InventoryType]*Inventory
-	Equipments       map[EquipmentPartsType]*Equipment
+	Inventory        map[constant.InventoryType]*Inventory
+	Equipments       map[constant.EquipmentPartsType]*Equipment
+	Rings            RingContainer
 	SkillsMap        map[*Skill]*SkillEntry
 	CoolDowns        map[uint32]*CooldownEntry
 	Quests           map[int]*QuestStatus
@@ -56,6 +57,40 @@ type Character struct {
 	MonsterBookCover uint32
 	MonsterBook      *MonsterBook
 	QuestInfo        map[uint16]string
+}
+
+type CooldownEntry struct {
+	SkillId   uint32
+	StartTime int64 // milliseconds
+	Length    int64 // milliseconds
+}
+
+type Ring struct {
+	RingId       uint64
+	PartnerId    uint64
+	RingUniqueId uint64
+	PartnerChrId uint32
+	ItemId       uint32
+	PartnerName  string
+	Equipped     bool
+}
+
+type RingContainer struct {
+	Left  []*Ring
+	Mid   []*Ring
+	Right []*Ring
+}
+
+type MonsterBook struct {
+	Cards map[uint32]uint32
+}
+
+func (mb *MonsterBook) Serialize(writer *stream.StreamWriter) {
+	writer.WriteU16(uint16(len(mb.Cards)))
+
+	for cardId := range mb.Cards {
+		writer.WriteU16(uint16(cardId))
+	}
 }
 
 func (ch *Character) IsRanked() bool {
@@ -138,16 +173,21 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		Random2: stream.NewRandomStream(),
 		Random3: stream.NewRandomStream(),
 
-		Inventory: map[InventoryType]*Inventory{
-			InventoryTypeEquip:        NewInventory(InventoryTypeEquip),
-			InventoryTypeConsume:      NewInventory(InventoryTypeConsume),
-			InventoryTypeInstallation: NewInventory(InventoryTypeInstallation),
-			InventoryTypeEtc:          NewInventory(InventoryTypeEtc),
-			InventoryTypeCash:         NewInventory(InventoryTypeCash),
+		Inventory: map[constant.InventoryType]*Inventory{
+			constant.InventoryTypeEquipment:    NewInventory(constant.InventoryTypeEquipment),
+			constant.InventoryTypeConsume:      NewInventory(constant.InventoryTypeConsume),
+			constant.InventoryTypeInstallation: NewInventory(constant.InventoryTypeInstallation),
+			constant.InventoryTypeEtc:          NewInventory(constant.InventoryTypeEtc),
+			constant.InventoryTypeCash:         NewInventory(constant.InventoryTypeCash),
 		},
-		Equipments: map[EquipmentPartsType]*Equipment{
-			EquipmentPartsWeapon: nil,
-			EquipmentPartsShield: nil,
+		Rings: RingContainer{
+			Left:  []*Ring{},
+			Right: []*Ring{},
+			Mid:   []*Ring{},
+		},
+		Equipments: map[constant.EquipmentPartsType]*Equipment{
+			constant.EquipmentPartsWeapon: nil,
+			constant.EquipmentPartsShield: nil,
 		},
 
 		RegRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
@@ -155,10 +195,10 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 	}
 
 	if ctx != nil {
-		ch.Equipments[EquipmentPartsWeapon] = &Equipment{
-			BaseItem: &BaseItem{
+		ch.Equipments[constant.EquipmentPartsWeapon] = &Equipment{
+			ItemCore: &ItemCore{
 				Object:     nil,
-				Template:   ctx.GameData.Items[1302000],
+				Spec:       ctx.Resources.Items[1302000],
 				UniqueId:   0,
 				Expiration: util.TimeMax,
 			},
@@ -169,10 +209,10 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		if err != nil {
 			fmt.Println(err)
 		}
-		ch.Inventory[InventoryTypeCash].Items[1] = &Pet{
-			BaseItem: &BaseItem{
+		ch.Inventory[constant.InventoryTypeCash].Items[1] = &Pet{
+			ItemCore: &ItemCore{
 				Object:     nil,
-				Template:   ctx.GameData.Items[5000007],
+				Spec:       ctx.Resources.Items[5000007],
 				UniqueId:   1,
 				Expiration: util.TimeMax,
 			},
@@ -185,10 +225,10 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 			Expiration:  petExpiration,
 		}
 
-		ch.Inventory[InventoryTypeEtc].Items[1] = &GeneralItem{
-			BaseItem: &BaseItem{
+		ch.Inventory[constant.InventoryTypeEtc].Items[1] = &GeneralItem{
+			ItemCore: &ItemCore{
 				Object:     nil,
-				Template:   ctx.GameData.Items[4000001],
+				Spec:       ctx.Resources.Items[4000001],
 				Expiration: util.TimeMax,
 			},
 			Count: 100,
@@ -196,8 +236,4 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 	}
 
 	return ch
-}
-
-func (ch *Character) Send(p types.Packet, policy types.SendPolicy) {
-
 }

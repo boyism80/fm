@@ -7,7 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/common/context"
-	"github.com/boyism80/fm/common/encrypt"
+	"github.com/boyism80/fm/common/crypt"
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
@@ -20,8 +20,8 @@ type LoginClientActor struct {
 	Buffer         []byte
 	messageHandler *handler.MessageHandler
 	packetHandler  *handler.PacketHandler
-	sendEncryption encrypt.Encryption
-	recvEncryption encrypt.Encryption
+	sendEncryption crypt.Encryption
+	recvEncryption crypt.Encryption
 	stopTimer      scheduler.CancelFunc
 }
 
@@ -36,8 +36,8 @@ func NewLoginClientActor(ctx actor.Context, serverCtx *context.ServerContext, co
 		Buffer:         []byte{},
 		messageHandler: handler.NewMessageHandler(),
 		packetHandler:  handler.NewPacketHandler(),
-		sendEncryption: encrypt.NewEncryption(ivSend, -5),
-		recvEncryption: encrypt.NewEncryption(ivRecv, 5),
+		sendEncryption: crypt.NewEncryption(ivSend, -5),
+		recvEncryption: crypt.NewEncryption(ivRecv, 5),
 	}
 
 	RegisterLoginClientMessageHandlers(ctx, act, act.messageHandler)

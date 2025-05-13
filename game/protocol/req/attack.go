@@ -2,11 +2,11 @@ package req
 
 import (
 	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/game/protocol"
 )
 
 type Attack struct {
-	entity.AttackInfo
+	protocol.AttackInfo
 }
 
 func (a *Attack) Serialize(writer *stream.StreamWriter) error {

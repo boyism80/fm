@@ -16,7 +16,7 @@ func NewMobActor(ctx protoactor.Context, serverCtx context.ServerContext) protoa
 	act := &MobActor{
 		handler: handler.NewMessageHandler(),
 	}
-	RegisterMobHandlers(ctx, act, act.handler)
+	RegisterLifeHandlers(ctx, &act.Mob.Life, act.handler)
 	return act
 }
 

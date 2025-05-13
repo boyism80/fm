@@ -16,7 +16,7 @@ func NewNpcActor(ctx protoactor.Context, serverCtx context.ServerContext) protoa
 	act := &NpcActor{
 		handler: handler.NewMessageHandler(),
 	}
-	RegisterNpcHandlers(ctx, act, act.handler)
+	RegisterObjectHandlers(ctx, &act.Npc.Object, act.handler)
 	return act
 }
 
