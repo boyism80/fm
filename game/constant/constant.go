@@ -7,17 +7,17 @@ const (
 	ItemTypeEtc       ItemType = 2
 )
 
-type EquipmentPartsType int
+type EquipmentPartsType int16
 
 const (
 	EquipmentPartsWeapon EquipmentPartsType = -11
 	EquipmentPartsShield EquipmentPartsType = -10
 )
 
-type InventoryType uint8
+type InventoryType int8
 
 const (
-	InventoryTypeEquip        InventoryType = 1
+	InventoryTypeEquipment    InventoryType = 1
 	InventoryTypeConsume      InventoryType = 2
 	InventoryTypeInstallation InventoryType = 3
 	InventoryTypeEtc          InventoryType = 4

@@ -4,7 +4,7 @@ import (
 	"log"
 
 	protoactor "github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/common/encrypt"
+	"github.com/boyism80/fm/common/crypt"
 	"github.com/boyism80/fm/common/handler"
 	common_msg "github.com/boyism80/fm/common/msg"
 	"github.com/boyism80/fm/common/stream"
@@ -51,7 +51,7 @@ func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *proto
 				break
 			}
 
-			len, err := encrypt.GetPacketLength(header)
+			len, err := crypt.GetPacketLength(header)
 			if err != nil {
 				break
 			}

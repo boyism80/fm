@@ -7,7 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/common/context"
-	"github.com/boyism80/fm/common/encrypt"
+	"github.com/boyism80/fm/common/crypt"
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
@@ -23,8 +23,8 @@ type GameClientActor struct {
 	messageHandler *handler.MessageHandler
 	packetHandler  *handler.PacketHandler
 	commandHandler *handler.CommandHandler
-	sendCrypt      encrypt.Encryption
-	receiveCrypt   encrypt.Encryption
+	sendCrypt      crypt.Encryption
+	receiveCrypt   crypt.Encryption
 	stopTimer      scheduler.CancelFunc
 }
 
@@ -39,8 +39,8 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 		messageHandler: handler.NewMessageHandler(),
 		packetHandler:  handler.NewPacketHandler(),
 		commandHandler: handler.NewCommandHandler(),
-		sendCrypt:      encrypt.NewEncryption(ivSend, -5),
-		receiveCrypt:   encrypt.NewEncryption(ivRecv, 5),
+		sendCrypt:      crypt.NewEncryption(ivSend, -5),
+		receiveCrypt:   crypt.NewEncryption(ivRecv, 5),
 	}
 
 	RegisterGameClientMessageHandlers(ctx, act, act.messageHandler)

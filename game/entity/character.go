@@ -47,6 +47,7 @@ type Character struct {
 	Random3          stream.RandomStream
 	Inventory        map[constant.InventoryType]*Inventory
 	Equipments       map[constant.EquipmentPartsType]*Equipment
+	Rings            RingContainer
 	SkillsMap        map[*Skill]*SkillEntry
 	CoolDowns        map[uint32]*CooldownEntry
 	Quests           map[int]*QuestStatus
@@ -173,11 +174,16 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		Random3: stream.NewRandomStream(),
 
 		Inventory: map[constant.InventoryType]*Inventory{
-			constant.InventoryTypeEquip:        NewInventory(constant.InventoryTypeEquip),
+			constant.InventoryTypeEquipment:    NewInventory(constant.InventoryTypeEquipment),
 			constant.InventoryTypeConsume:      NewInventory(constant.InventoryTypeConsume),
 			constant.InventoryTypeInstallation: NewInventory(constant.InventoryTypeInstallation),
 			constant.InventoryTypeEtc:          NewInventory(constant.InventoryTypeEtc),
 			constant.InventoryTypeCash:         NewInventory(constant.InventoryTypeCash),
+		},
+		Rings: RingContainer{
+			Left:  []*Ring{},
+			Right: []*Ring{},
+			Mid:   []*Ring{},
 		},
 		Equipments: map[constant.EquipmentPartsType]*Equipment{
 			constant.EquipmentPartsWeapon: nil,

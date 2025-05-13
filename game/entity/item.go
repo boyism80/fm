@@ -143,15 +143,11 @@ func (item *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot
 }
 
 func (item *Equipment) GetInventoryType() constant.InventoryType {
-	return constant.InventoryTypeEquip
+	return constant.InventoryTypeEquipment
 }
 
 func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	spec, ok := equipment.Spec.(*data.EquipmentSpec)
-	if !ok {
-		return
-	}
-
+	spec, _ := equipment.Spec.(*data.EquipmentSpec)
 	if slot <= -1 {
 		slot *= -1
 		if slot > 100 && slot < 1000 {

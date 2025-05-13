@@ -42,15 +42,6 @@ func (c *Character) completedQuests() []*QuestStatus {
 	return ret
 }
 
-func (c *Character) getRings(onlyEquipped bool) *RingContainer {
-	// 임시 더미 데이터 (실제 DB/메모리에서 로드하는건 나중에 구현)
-	return &RingContainer{
-		Left:  []*Ring{},
-		Mid:   []*Ring{},
-		Right: []*Ring{},
-	}
-}
-
 func (ch *Character) SerializeStats(writer *stream.StreamWriter) {
 	writer.WriteU32(ch.Id)
 	writer.WriteStaticStr(ch.Name, 13)
@@ -169,7 +160,7 @@ func (ch *Character) Serialize(writer *stream.StreamWriter) {
 func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.WriteU32(ch.Meso)
 
-	writer.WriteU8(ch.Inventory[constant.InventoryTypeEquip].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.InventoryTypeEquipment].SlotLimit)
 	writer.WriteU8(ch.Inventory[constant.InventoryTypeConsume].SlotLimit)
 	writer.WriteU8(ch.Inventory[constant.InventoryTypeInstallation].SlotLimit)
 	writer.WriteU8(ch.Inventory[constant.InventoryTypeEtc].SlotLimit)
@@ -189,7 +180,7 @@ func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0)
 
-	ch.Inventory[constant.InventoryTypeEquip].Serialize(writer)
+	ch.Inventory[constant.InventoryTypeEquipment].Serialize(writer)
 	ch.Inventory[constant.InventoryTypeConsume].Serialize(writer)
 	ch.Inventory[constant.InventoryTypeInstallation].Serialize(writer)
 	ch.Inventory[constant.InventoryTypeEtc].Serialize(writer)
@@ -267,21 +258,18 @@ func (ch *Character) SerializeQuests(writer *stream.StreamWriter) {
 func (ch *Character) SerializeRings(writer *stream.StreamWriter) {
 	writer.WriteU16(0)
 
-	aRing := ch.getRings(true)
-	cRing := aRing.Left
-	writer.WriteU16(uint16(len(cRing)))
+	writer.WriteU16(uint16(len(ch.Rings.Left)))
 
-	for _, ring := range cRing {
+	for _, ring := range ch.Rings.Left {
 		writer.WriteU32(ring.PartnerChrId)
 		writer.WriteStaticStr(ring.PartnerName, 13)
 		writer.WriteU64(ring.RingId)
 		writer.WriteU64(ring.PartnerId)
 	}
 
-	fRing := aRing.Mid
-	writer.WriteU16(uint16(len(fRing)))
+	writer.WriteU16(uint16(len(ch.Rings.Mid)))
 
-	for _, ring := range fRing {
+	for _, ring := range ch.Rings.Mid {
 		writer.WriteU32(ring.PartnerChrId)
 		writer.WriteStaticStr(ring.PartnerName, 13)
 		writer.WriteU64(ring.RingId)
@@ -289,10 +277,8 @@ func (ch *Character) SerializeRings(writer *stream.StreamWriter) {
 		writer.WriteU32(ring.ItemId)
 	}
 
-	mRing := aRing.Right
-	writer.WriteU16(uint16(len(mRing)))
-
-	for _, ring := range mRing {
+	writer.WriteU16(uint16(len(ch.Rings.Right)))
+	for _, ring := range ch.Rings.Right {
 		writer.WriteU32(ch.MarriageId)
 
 		data := GetMarriageManager().GetMarriage(ch.MarriageId)

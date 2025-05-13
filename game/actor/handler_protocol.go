@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -22,6 +23,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x18, ctx, client, h, onGameClientMovePlayer)
 	handler.RegisterPacketHandler(0x20, ctx, client, h, onGameClientNormalChat)
 	handler.RegisterPacketHandler(0x1B, ctx, client, h, onGameClientAttack)
+	handler.RegisterPacketHandler(0x36, ctx, client, h, onGameMoveItem)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -150,4 +152,15 @@ func onGameClientAttack(ctx actor.Context, client *GameClientActor, req *req.Att
 			Policy: types.SEND_POLICY_ENCRYPT,
 		},
 	})
+}
+
+func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveItem) {
+	ch := client.ch
+	src, ok := ch.Inventory[req.InventoryType].Items[req.Source]
+	if !ok {
+		return
+	}
+
+	dst, ok := ch.Inventory[req.InventoryType].Items[req.Dest]
+	fmt.Println(src, dst)
 }
