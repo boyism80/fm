@@ -161,6 +161,30 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 		return
 	}
 
+	remained := uint16(0)
 	dst, ok := ch.Inventory[req.InventoryType].Items[req.Dest]
+	if !ok { // drop to map
+		switch v := src.(type) {
+		case *entity.CashItem:
+			v.Count -= req.Count
+			remained = v.Count
+		case *entity.Consume:
+			v.Count -= req.Count
+			remained = v.Count
+		case *entity.GeneralItem:
+			v.Count -= req.Count
+			remained = v.Count
+		}
+
+		if remained == 0 {
+			delete(ch.Inventory[req.InventoryType].Items, req.Source)
+		}
+
+		client.Send(&resp.UpdateItemCount{
+			InventoryType: req.InventoryType,
+			Slot:          uint16(req.Source),
+			Count:         remained,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
 	fmt.Println(src, dst)
 }

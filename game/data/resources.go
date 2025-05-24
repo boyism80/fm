@@ -107,7 +107,7 @@ func NewResources() *Resources {
 	workerCount := runtime.NumCPU() * 2
 
 	items := map[uint32]ItemSpec{}
-	err := loadResourceFiles("D:/git/fm-backup/wz/Character.wz",
+	err := loadResourceFiles("D:/git/fm/wz/Character.wz",
 		workerCount,
 		func(path string) (result *EquipmentSpec, err error) {
 			return loadWeapons(path)
@@ -121,7 +121,7 @@ func NewResources() *Resources {
 		return nil
 	}
 
-	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Consume",
+	err = loadResourceFiles("D:/git/fm/wz/Item.wz/Consume",
 		workerCount,
 		func(path string) (result *[]*ConsumeSpec, err error) {
 			return loadConsumes(path)
@@ -138,7 +138,7 @@ func NewResources() *Resources {
 		return nil
 	}
 
-	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Cash",
+	err = loadResourceFiles("D:/git/fm/wz/Item.wz/Cash",
 		workerCount,
 		func(path string) (result *[]*CashItemSpec, err error) {
 			return loadCashItems(path)
@@ -155,7 +155,7 @@ func NewResources() *Resources {
 		return nil
 	}
 
-	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Install",
+	err = loadResourceFiles("D:/git/fm/wz/Item.wz/Install",
 		workerCount,
 		func(path string) (result *[]*InstallationSpec, err error) {
 			return loadInstallations(path)
@@ -172,7 +172,7 @@ func NewResources() *Resources {
 		return nil
 	}
 
-	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Special",
+	err = loadResourceFiles("D:/git/fm/wz/Item.wz/Special",
 		workerCount,
 		func(path string) (result *[]*SpecialItemSpec, err error) {
 			return loadSpecialItems(path)
@@ -189,7 +189,7 @@ func NewResources() *Resources {
 		return nil
 	}
 
-	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Etc",
+	err = loadResourceFiles("D:/git/fm/wz/Item.wz/Etc",
 		workerCount,
 		func(path string) (result *[]*GeneralItemSpec, err error) {
 			return loadGeneralItems(path)
@@ -206,7 +206,7 @@ func NewResources() *Resources {
 		return nil
 	}
 
-	err = loadResourceFiles("D:/git/fm-backup/wz/Item.wz/Pet",
+	err = loadResourceFiles("D:/git/fm/wz/Item.wz/Pet",
 		workerCount,
 		func(path string) (result *PetSpec, err error) {
 			return loadPets(path)

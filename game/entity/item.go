@@ -13,8 +13,10 @@ import (
 
 type Item interface {
 	GetObject() *Object
-	GetTemplate() data.ItemSpec
+	GetSpec() data.ItemSpec
 	GetInventoryType() constant.InventoryType
+	GetExpiration() time.Time
+	GetCount() uint16
 	Serialize(writer *stream.StreamWriter, trade bool, slot int16)
 }
 
@@ -75,12 +77,20 @@ func (item *ItemCore) GetObject() *Object {
 	return item.Object
 }
 
-func (item *ItemCore) GetTemplate() data.ItemSpec {
+func (item *ItemCore) GetSpec() data.ItemSpec {
 	return item.Spec
+}
+
+func (item *ItemCore) GetExpiration() time.Time {
+	return item.Expiration
 }
 
 func (item *CashItem) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeCash
+}
+
+func (item *CashItem) GetCount() uint16 {
+	return item.Count
 }
 
 func (item *CashItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
@@ -104,6 +114,10 @@ func (item *Installation) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeInstallation
 }
 
+func (item *Installation) GetCount() uint16 {
+	return 1
+}
+
 func (item *Installation) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ItemTypeEtc))
@@ -125,6 +139,10 @@ func (item *GeneralItem) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeEtc
 }
 
+func (item *GeneralItem) GetCount() uint16 {
+	return item.Count
+}
+
 func (item *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ItemTypeEtc))
@@ -144,6 +162,10 @@ func (item *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot
 
 func (item *Equipment) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeEquipment
+}
+
+func (item *Equipment) GetCount() uint16 {
+	return 1
 }
 
 func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
@@ -208,6 +230,10 @@ func (item *Consume) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeConsume
 }
 
+func (item *Consume) GetCount() uint16 {
+	return item.Count
+}
+
 func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ItemTypeEtc))
@@ -240,6 +266,10 @@ func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int
 
 func (item *Pet) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeCash
+}
+
+func (item *Pet) GetCount() uint16 {
+	return 1
 }
 
 func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {

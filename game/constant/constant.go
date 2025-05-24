@@ -23,3 +23,12 @@ const (
 	InventoryTypeEtc          InventoryType = 4
 	InventoryTypeCash         InventoryType = 5
 )
+
+type DropItemAnimationType uint8
+
+const (
+	DropItemAnimationTypeDefault       DropItemAnimationType = 1
+	DropItemAnimationTypeNone          DropItemAnimationType = 2
+	DropItemAnimationTypeDisappearFade DropItemAnimationType = 3
+	DropItemAnimationTypeDisappear     DropItemAnimationType = 4
+)

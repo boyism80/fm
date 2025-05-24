@@ -13,9 +13,13 @@ type UpdateItemCount struct {
 
 func (p *UpdateItemCount) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0x12)
-	writer.WriteU8(0)
-	writer.WriteU8(0)
-	writer.WriteU8(0)
+	writer.WriteU8(1)
+	writer.WriteU8(1)
+	if p.Count > 0 {
+		writer.WriteU8(1)
+	} else {
+		writer.WriteU8(3)
+	}
 	writer.WriteU8(uint8(p.InventoryType))
 	writer.WriteU16(p.Slot)
 	writer.WriteU16(p.Count)
