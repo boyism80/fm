@@ -1,19 +1,20 @@
 package context
 
 import (
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/game/data"
 )
 
 type ServerContext struct {
+	actor.Context
 	Resources *data.Resources
-	MapActors map[uint32]*protoactor.PID
+	MapActors map[uint32]*actor.PID
 }
 
 func NewServerContext(
 	Resources *data.Resources,
-	mapActors map[uint32]*protoactor.PID,
-	serverCtxActor *protoactor.PID) *ServerContext {
+	mapActors map[uint32]*actor.PID,
+	serverCtxActor *actor.PID) *ServerContext {
 
 	return &ServerContext{
 		Resources: Resources,

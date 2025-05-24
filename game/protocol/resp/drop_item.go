@@ -8,11 +8,12 @@ import (
 )
 
 type DropItem struct {
+	Id           uint32
 	Animation    constant.DropItemAnimationType
 	Meso         uint32
 	DropType     uint8
 	Item         entity.Item
-	Owner        *entity.Character
+	OwnerId      uint32
 	DropFrom     types.Vec2[int16]
 	IsPlayerDrop bool
 }
@@ -21,7 +22,7 @@ func (p *DropItem) Serialize(writer *stream.StreamWriter) error {
 	isMeso := p.Meso > 0
 	writer.WriteU16(0xC6)
 	writer.WriteU8(uint8(p.Animation))
-	writer.WriteU32(p.Item.GetObject().ID)
+	writer.WriteU32(p.Id)
 	writer.WriteBoolean(isMeso)
 	if isMeso {
 		writer.WriteU32(p.Meso)
@@ -29,7 +30,7 @@ func (p *DropItem) Serialize(writer *stream.StreamWriter) error {
 		template := p.Item.GetSpec()
 		writer.WriteU32(template.GetID())
 	}
-	writer.WriteU32(p.Owner.Id)
+	writer.WriteU32(p.OwnerId)
 	writer.WriteU8(p.DropType)
 	position := p.Item.GetObject().Position
 	writer.Write16(position.X)
@@ -46,9 +47,9 @@ func (p *DropItem) Serialize(writer *stream.StreamWriter) error {
 	}
 
 	if p.IsPlayerDrop {
-		writer.WriteU16(1)
-	} else {
 		writer.WriteU16(0)
+	} else {
+		writer.WriteU16(1)
 	}
 
 	return nil

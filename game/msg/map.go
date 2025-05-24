@@ -4,6 +4,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	protoactor "github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/game/entity"
 )
 
 // 맵에 오브젝트 등록
@@ -32,4 +33,11 @@ type MapBroadcastRange struct {
 	Pivot      types.Vec2[int16]
 	Message    interface{}
 	ExceptSelf bool
+}
+
+type MapSpawnItem struct {
+	Item     entity.Item
+	Position types.Vec2[int16]
+	Owner    *actor.PID
+	OwnerId  uint32
 }

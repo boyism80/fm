@@ -161,30 +161,35 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 		return
 	}
 
-	remained := uint16(0)
 	dst, ok := ch.Inventory[req.InventoryType].Items[req.Dest]
 	if !ok { // drop to map
-		switch v := src.(type) {
-		case *entity.CashItem:
-			v.Count -= req.Count
-			remained = v.Count
-		case *entity.Consume:
-			v.Count -= req.Count
-			remained = v.Count
-		case *entity.GeneralItem:
-			v.Count -= req.Count
-			remained = v.Count
+		mapActor := client.ctx.MapActors[ch.Map]
+		if mapActor == nil {
+			return
 		}
 
-		if remained == 0 {
-			delete(ch.Inventory[req.InventoryType].Items, req.Source)
-		}
-
+		remained := src.Reduce(req.Count)
 		client.Send(&resp.UpdateItemCount{
 			InventoryType: req.InventoryType,
 			Slot:          uint16(req.Source),
 			Count:         remained,
 		}, types.SEND_POLICY_ENCRYPT)
+
+		spawned := src.Clone(req.Count)
+		spawned.BindObject(&entity.Object{
+			Position: ch.Position,
+		})
+
+		ctx.Send(mapActor, &msg.MapSpawnItem{
+			Item:     spawned,
+			Position: ch.Position,
+			Owner:    ctx.Self(),
+			OwnerId:  ch.Id,
+		})
+
+		if remained == 0 {
+			delete(ch.Inventory[req.InventoryType].Items, req.Source)
+		}
 	}
 	fmt.Println(src, dst)
 }

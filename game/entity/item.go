@@ -17,6 +17,9 @@ type Item interface {
 	GetInventoryType() constant.InventoryType
 	GetExpiration() time.Time
 	GetCount() uint16
+	Reduce(count uint16) uint16
+	Clone(count uint16) Item
+	BindObject(obj *Object)
 	Serialize(writer *stream.StreamWriter, trade bool, slot int16)
 }
 
@@ -85,12 +88,39 @@ func (item *ItemCore) GetExpiration() time.Time {
 	return item.Expiration
 }
 
+func (item *ItemCore) BindObject(obj *Object) {
+	item.Object = obj
+}
+
 func (item *CashItem) GetInventoryType() constant.InventoryType {
 	return constant.InventoryTypeCash
 }
 
 func (item *CashItem) GetCount() uint16 {
 	return item.Count
+}
+
+func (item *CashItem) Reduce(count uint16) uint16 {
+	if count > item.Count {
+		item.Count = 0
+	} else {
+		item.Count -= count
+	}
+	return item.Count
+}
+
+func (item *CashItem) Clone(count uint16) Item {
+	return &CashItem{
+		ItemCore: &ItemCore{
+			Object:     nil,
+			Spec:       item.Spec,
+			UniqueId:   item.UniqueId,
+			Expiration: item.Expiration,
+		},
+		Count:     count,
+		OwnerName: item.OwnerName,
+		Flags:     item.Flags,
+	}
 }
 
 func (item *CashItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
@@ -118,6 +148,23 @@ func (item *Installation) GetCount() uint16 {
 	return 1
 }
 
+func (item *Installation) Reduce(count uint16) uint16 {
+	return 0
+}
+
+func (item *Installation) Clone(count uint16) Item {
+	return &Installation{
+		ItemCore: &ItemCore{
+			Object:     nil,
+			Spec:       item.Spec,
+			UniqueId:   item.UniqueId,
+			Expiration: item.Expiration,
+		},
+		OwnerName: item.OwnerName,
+		Flags:     item.Flags,
+	}
+}
+
 func (item *Installation) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ItemTypeEtc))
@@ -143,6 +190,29 @@ func (item *GeneralItem) GetCount() uint16 {
 	return item.Count
 }
 
+func (item *GeneralItem) Reduce(count uint16) uint16 {
+	if count > item.Count {
+		item.Count = 0
+	} else {
+		item.Count -= count
+	}
+	return item.Count
+}
+
+func (item *GeneralItem) Clone(count uint16) Item {
+	return &GeneralItem{
+		ItemCore: &ItemCore{
+			Object:     nil,
+			Spec:       item.Spec,
+			UniqueId:   item.UniqueId,
+			Expiration: item.Expiration,
+		},
+		Count:     count,
+		OwnerName: item.OwnerName,
+		Flags:     item.Flags,
+	}
+}
+
 func (item *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ItemTypeEtc))
@@ -166,6 +236,25 @@ func (item *Equipment) GetInventoryType() constant.InventoryType {
 
 func (item *Equipment) GetCount() uint16 {
 	return 1
+}
+
+func (item *Equipment) Reduce(count uint16) uint16 {
+	return 0
+}
+
+func (item *Equipment) Clone(count uint16) Item {
+	return &Equipment{
+		ItemCore: &ItemCore{
+			Object:     nil,
+			Spec:       item.Spec,
+			UniqueId:   item.UniqueId,
+			Expiration: item.Expiration,
+		},
+		OwnerName:     item.OwnerName,
+		EnchantChance: item.EnchantChance,
+		Flag:          item.Flag,
+		SkillBonus:    item.SkillBonus,
+	}
 }
 
 func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
@@ -234,6 +323,29 @@ func (item *Consume) GetCount() uint16 {
 	return item.Count
 }
 
+func (item *Consume) Reduce(count uint16) uint16 {
+	if count > item.Count {
+		item.Count = 0
+	} else {
+		item.Count -= count
+	}
+	return item.Count
+}
+
+func (item *Consume) Clone(count uint16) Item {
+	return &Consume{
+		ItemCore: &ItemCore{
+			Object:     nil,
+			Spec:       item.Spec,
+			UniqueId:   item.UniqueId,
+			Expiration: item.Expiration,
+		},
+		OwnerName: item.OwnerName,
+		Count:     item.Count,
+		Flags:     item.Flags,
+	}
+}
+
 func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ItemTypeEtc))
@@ -270,6 +382,28 @@ func (item *Pet) GetInventoryType() constant.InventoryType {
 
 func (item *Pet) GetCount() uint16 {
 	return 1
+}
+
+func (item *Pet) Reduce(count uint16) uint16 {
+	return 0
+}
+
+func (item *Pet) Clone(count uint16) Item {
+	return &Pet{
+		ItemCore: &ItemCore{
+			Object:     nil,
+			Spec:       item.Spec,
+			UniqueId:   item.UniqueId,
+			Expiration: item.ItemCore.Expiration,
+		},
+		Flags:       item.Flags,
+		Level:       item.Level,
+		Closeness:   item.Closeness,
+		Fullness:    item.Fullness,
+		Speed:       item.Speed,
+		SecondsLeft: item.SecondsLeft,
+		Expiration:  item.Expiration,
+	}
 }
 
 func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
