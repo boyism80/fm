@@ -91,6 +91,13 @@ func onMapBroadcastRange(ctx actor.Context, state *MapActor, m *msg.MapBroadcast
 }
 
 func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
+	obj := m.Item.GetObject()
+	dropPoint, ok := state.Spec.DropPoint(obj.Position)
+	if ok {
+		dropPoint = obj.Position
+	}
+	obj.Position = dropPoint
+
 	props := actor.PropsFromProducer(func() actor.Actor {
 		state.sequence++
 		return NewItemActor(ctx,
@@ -102,6 +109,7 @@ func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 	pid := ctx.Spawn(props)
 
 	ctx.Send(pid, &msg.ItemSpawn{
-		OwnerId: m.OwnerId,
+		OwnerId:      m.OwnerId,
+		SpawnedPoint: m.SpawnedPoint,
 	})
 }

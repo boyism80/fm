@@ -12,7 +12,7 @@ type DamagePair struct {
 
 type AttackPair struct {
 	ObjectId uint32
-	Point    types.Vec2[int16]
+	Point    types.Vector2[int16]
 	Attack   []DamagePair
 }
 
@@ -29,7 +29,7 @@ type AttackInfo struct {
 	CsStar    uint8 // only for RANGED_ATTACK
 	AOE       uint8 // only for RANGED_ATTACK
 	AllDamage []AttackPair
-	Position  types.Vec2[int16]
+	Position  types.Vector2[int16]
 }
 
 func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
@@ -151,7 +151,7 @@ func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
 		if err != nil {
 			return err
 		}
-		a.Position = types.Vec2[int16]{X: x, Y: y}
+		a.Position = types.Vector2[int16]{X: x, Y: y}
 	}
 
 	return nil

@@ -30,14 +30,14 @@ type MapPidList struct {
 
 type MapBroadcastRange struct {
 	Sender     *actor.PID
-	Pivot      types.Vec2[int16]
+	Pivot      types.Vector2[int16]
 	Message    interface{}
 	ExceptSelf bool
 }
 
 type MapSpawnItem struct {
-	Item     entity.Item
-	Position types.Vec2[int16]
-	Owner    *actor.PID
-	OwnerId  uint32
+	Item         entity.Item
+	SpawnedPoint types.Vector2[int16]
+	Owner        *actor.PID
+	OwnerId      uint32
 }

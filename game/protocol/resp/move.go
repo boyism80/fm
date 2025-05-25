@@ -10,7 +10,7 @@ import (
 type Move struct {
 	Character  *entity.Character
 	Fragments  []protocol.MoveFragment
-	StartPoint types.Vec2[int16]
+	StartPoint types.Vector2[int16]
 }
 
 func (a *Move) Serialize(writer *stream.StreamWriter) error {

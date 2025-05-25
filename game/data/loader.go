@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/boyism80/fm/common/types"
 )
 
 var mutex sync.Mutex = sync.Mutex{}
@@ -832,84 +834,151 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 		Portals: map[uint8]Portal{},
 	}
 
-	for _, child := range root.Children {
-		if child.Name == "info" {
-			for _, info := range child.Children {
-				switch info.Name {
-				case "mapName":
-					spec.Name = info.Value
-				case "version":
-					spec.Version, _ = strconv.Atoi(info.Value)
-				case "cloud":
-					spec.Cloud, _ = strconv.Atoi(info.Value)
-				case "returnMap":
-					spec.ReturnMapId, _ = strconv.Atoi(info.Value)
-				case "forcedReturn":
-					spec.ForcedReturn, _ = strconv.Atoi(info.Value)
-				case "fieldLimit":
-					spec.FieldLimit, _ = strconv.Atoi(info.Value)
-				case "VRTop":
-					spec.VRTop, _ = strconv.Atoi(info.Value)
-				case "VRLeft":
-					spec.VRLeft, _ = strconv.Atoi(info.Value)
-				case "VRBottom":
-					spec.VRBottom, _ = strconv.Atoi(info.Value)
-				case "VRRight":
-					spec.VRRight, _ = strconv.Atoi(info.Value)
-				case "hideMinimap":
-					spec.HideMinimap = info.Value == "1"
-				case "town":
-					spec.IsTown = info.Value == "1"
-				case "mobRate":
-					f, err := strconv.ParseFloat(info.Value, 32)
-					if err == nil {
-						spec.MobRate = float32(f)
+	info := root.find("info")
+	if info != nil {
+		for _, v := range info.Children {
+			switch v.Name {
+			case "mapName":
+				spec.Name = v.Value
+			case "version":
+				spec.Version, _ = strconv.Atoi(v.Value)
+			case "cloud":
+				spec.Cloud, _ = strconv.Atoi(v.Value)
+			case "returnMap":
+				spec.ReturnMapId, _ = strconv.Atoi(v.Value)
+			case "forcedReturn":
+				spec.ForcedReturn, _ = strconv.Atoi(v.Value)
+			case "fieldLimit":
+				spec.FieldLimit, _ = strconv.Atoi(v.Value)
+			case "VRTop":
+				spec.VRTop, _ = strconv.Atoi(v.Value)
+			case "VRLeft":
+				spec.VRLeft, _ = strconv.Atoi(v.Value)
+			case "VRBottom":
+				spec.VRBottom, _ = strconv.Atoi(v.Value)
+			case "VRRight":
+				spec.VRRight, _ = strconv.Atoi(v.Value)
+			case "hideMinimap":
+				spec.HideMinimap = v.Value == "1"
+			case "town":
+				spec.IsTown = v.Value == "1"
+			case "mobRate":
+				f, err := strconv.ParseFloat(v.Value, 32)
+				if err == nil {
+					spec.MobRate = float32(f)
+				}
+			case "bgm":
+				spec.BGM = v.Value
+			case "mapMark":
+				spec.MapMark = v.Value
+			case "mapDesc":
+				spec.MapDesc = v.Value
+			case "miniMapOnOff":
+				spec.MiniMapOnOff = v.Value == "1"
+			default:
+				break
+			}
+		}
+	}
+
+	portals := root.find("portal")
+	if portals != nil {
+		for _, v := range portals.Children {
+			var portal Portal
+			for _, field := range v.Children {
+				switch field.Name {
+				case "pn":
+					portal.Name = field.Value
+				case "pt":
+					v, _ := strconv.Atoi(field.Value)
+					portal.Type = uint8(v)
+				case "tm":
+					v, _ := strconv.Atoi(field.Value)
+					portal.TargetMapId = int32(v)
+				case "tn":
+					portal.Target = field.Value
+				case "x":
+					v, _ := strconv.Atoi(field.Value)
+					portal.Position.X = int16(v)
+				case "y":
+					v, _ := strconv.Atoi(field.Value)
+					portal.Position.Y = int16(v)
+				case "script":
+					if field.Value != "" {
+						portal.ScriptName = field.Value
 					}
-				case "bgm":
-					spec.BGM = info.Value
-				case "mapMark":
-					spec.MapMark = info.Value
-				case "mapDesc":
-					spec.MapDesc = info.Value
-				case "miniMapOnOff":
-					spec.MiniMapOnOff = info.Value == "1"
-				default:
-					break
+				}
+			}
+			id, _ := strconv.Atoi(v.Name)
+			portal.Id = uint8(id)
+			spec.Portals[portal.Id] = portal
+		}
+	}
+
+	bound := types.Rect[int16]{}
+	footholds := root.find("foothold")
+	buffer := []Foothold{}
+	if footholds != nil {
+		for _, v1 := range footholds.Children {
+			for _, v2 := range v1.Children {
+				for _, v3 := range v2.Children {
+					id, err := strconv.Atoi(v3.Name)
+					if err != nil {
+						continue
+					}
+
+					x1, err := strconv.Atoi(v3.find("x1").Value)
+					if err != nil {
+						continue
+					}
+
+					x2, err := strconv.Atoi(v3.find("x2").Value)
+					if err != nil {
+						continue
+					}
+
+					y1, err := strconv.Atoi(v3.find("y1").Value)
+					if err != nil {
+						continue
+					}
+
+					y2, err := strconv.Atoi(v3.find("y2").Value)
+					if err != nil {
+						continue
+					}
+
+					prev, err := strconv.Atoi(v3.find("prev").Value)
+					if err != nil {
+						continue
+					}
+
+					next, err := strconv.Atoi(v3.find("next").Value)
+					if err != nil {
+						continue
+					}
+
+					foothold := Foothold{
+						Id:   id,
+						X1:   int16(x1),
+						Y1:   int16(y1),
+						X2:   int16(x2),
+						Y2:   int16(y2),
+						Prev: int16(prev),
+						Next: int16(next),
+					}
+					buffer = append(buffer, foothold)
+
+					bound.Left = min(bound.Left, foothold.X1)
+					bound.Right = max(bound.Right, foothold.X2)
+					bound.Top = min(bound.Top, foothold.Y1)
+					bound.Bottom = max(bound.Bottom, foothold.Y2)
 				}
 			}
 		}
 
-		if child.Name == "portal" {
-			for _, pnode := range child.Children {
-				var portal Portal
-				for _, field := range pnode.Children {
-					switch field.Name {
-					case "pn":
-						portal.Name = field.Value
-					case "pt":
-						v, _ := strconv.Atoi(field.Value)
-						portal.Type = uint8(v)
-					case "tm":
-						v, _ := strconv.Atoi(field.Value)
-						portal.TargetMapId = int32(v)
-					case "tn":
-						portal.Target = field.Value
-					case "x":
-						v, _ := strconv.Atoi(field.Value)
-						portal.Position.X = int16(v)
-					case "y":
-						v, _ := strconv.Atoi(field.Value)
-						portal.Position.Y = int16(v)
-					case "script":
-						if field.Value != "" {
-							portal.ScriptName = field.Value
-						}
-					}
-				}
-				id, _ := strconv.Atoi(pnode.Name)
-				portal.Id = uint8(id)
-				spec.Portals[portal.Id] = portal
-			}
+		spec.Footholds = types.NewQuadTreeNode[int16, Foothold](bound, 0)
+		for _, foothold := range buffer {
+			spec.Footholds.Insert(foothold)
 		}
 	}
 

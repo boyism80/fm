@@ -17,31 +17,31 @@ type BasicMovement struct {
 
 type AbsoluteLifeMovement struct {
 	*BasicMovement
-	Position types.Vec2[int16]
+	Position types.Vector2[int16]
 	Duration int16
-	Velocity types.Vec2[int16]
-	Offset   types.Vec2[int16]
+	Velocity types.Vector2[int16]
+	Offset   types.Vector2[int16]
 	Foothold int16
 }
 
 type AranMovement struct {
 	*BasicMovement
 	Foothold int16
-	Position types.Vec2[int16]
+	Position types.Vector2[int16]
 }
 
 type ChairMovement struct {
 	*BasicMovement
-	Position types.Vec2[int16]
+	Position types.Vector2[int16]
 	Foothold int16
 	Duration int16
 }
 
 type JumpDownMovement struct {
 	*BasicMovement
-	Position types.Vec2[int16]
+	Position types.Vector2[int16]
 	Duration int16
-	Velocity types.Vec2[int16]
+	Velocity types.Vector2[int16]
 	Unknown  int16
 	Foothold int16
 }
@@ -52,14 +52,14 @@ type NoneMovement struct {
 
 type RelativeLifeMovement struct {
 	*BasicMovement
-	Position types.Vec2[int16]
+	Position types.Vector2[int16]
 	Duration int16
 }
 
 type TeleportMovement struct {
 	*BasicMovement
-	Position types.Vec2[int16]
-	Velocity types.Vec2[int16]
+	Position types.Vector2[int16]
+	Velocity types.Vector2[int16]
 }
 
 func (m *BasicMovement) GetStance() uint8 {
@@ -156,10 +156,10 @@ func Parse(reader *stream.StreamReader) ([]MoveFragment, error) {
 					Command: cmd,
 					Stance:  stance,
 				},
-				Position: types.Vec2[int16]{X: x, Y: y},
+				Position: types.Vector2[int16]{X: x, Y: y},
 				Foothold: foothold,
 				Duration: duration,
-				Velocity: types.Vec2[int16]{X: vx, Y: vy},
+				Velocity: types.Vector2[int16]{X: vx, Y: vy},
 			}
 
 			fragments = append(fragments, &frag)
@@ -178,9 +178,9 @@ func Parse(reader *stream.StreamReader) ([]MoveFragment, error) {
 					Command: cmd,
 					Stance:  stance,
 				},
-				Position: types.Vec2[int16]{X: x, Y: y},
+				Position: types.Vector2[int16]{X: x, Y: y},
 				Duration: duration,
-				Velocity: types.Vec2[int16]{X: vx, Y: vy},
+				Velocity: types.Vector2[int16]{X: vx, Y: vy},
 				Unknown:  unk,
 				Foothold: foothold,
 			}
@@ -198,7 +198,7 @@ func Parse(reader *stream.StreamReader) ([]MoveFragment, error) {
 					Command: cmd,
 					Stance:  stance,
 				},
-				Position: types.Vec2[int16]{X: x, Y: y},
+				Position: types.Vector2[int16]{X: x, Y: y},
 				Duration: duration,
 			}
 
@@ -216,8 +216,8 @@ func Parse(reader *stream.StreamReader) ([]MoveFragment, error) {
 					Command: cmd,
 					Stance:  stance,
 				},
-				Position: types.Vec2[int16]{X: x, Y: y},
-				Velocity: types.Vec2[int16]{X: vx, Y: vy},
+				Position: types.Vector2[int16]{X: x, Y: y},
+				Velocity: types.Vector2[int16]{X: vx, Y: vy},
 			}
 
 			fragments = append(fragments, &frag)
@@ -244,7 +244,7 @@ func Parse(reader *stream.StreamReader) ([]MoveFragment, error) {
 					Command: cmd,
 					Stance:  stance,
 				},
-				Position: types.Vec2[int16]{X: x, Y: y},
+				Position: types.Vector2[int16]{X: x, Y: y},
 				Foothold: foothold,
 				Duration: duration,
 			}
@@ -259,7 +259,7 @@ func Parse(reader *stream.StreamReader) ([]MoveFragment, error) {
 					Stance:  stance,
 				},
 				Foothold: foothold,
-				Position: types.Vec2[int16]{},
+				Position: types.Vector2[int16]{},
 			}
 			fragments = append(fragments, &frag)
 		}

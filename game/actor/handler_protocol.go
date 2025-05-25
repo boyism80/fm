@@ -181,10 +181,10 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 		})
 
 		ctx.Send(mapActor, &msg.MapSpawnItem{
-			Item:     spawned,
-			Position: ch.Position,
-			Owner:    ctx.Self(),
-			OwnerId:  ch.Id,
+			Item:         spawned,
+			SpawnedPoint: ch.Position,
+			Owner:        ctx.Self(),
+			OwnerId:      ch.Id,
 		})
 
 		if remained == 0 {

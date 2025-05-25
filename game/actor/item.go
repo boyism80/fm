@@ -55,7 +55,7 @@ func onItemSpawn(ctx actor.Context, state *ItemActor, request *msg.ItemSpawn) {
 				DropType:     2,
 				Item:         state.Item,
 				OwnerId:      request.OwnerId,
-				DropFrom:     state.Item.GetObject().Position,
+				SpawnedPoint: request.SpawnedPoint,
 				IsPlayerDrop: true,
 			},
 			Policy: types.SEND_POLICY_ENCRYPT,

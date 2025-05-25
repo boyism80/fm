@@ -14,7 +14,7 @@ type DropItem struct {
 	DropType     uint8
 	Item         entity.Item
 	OwnerId      uint32
-	DropFrom     types.Vec2[int16]
+	SpawnedPoint types.Vector2[int16]
 	IsPlayerDrop bool
 }
 
@@ -37,8 +37,8 @@ func (p *DropItem) Serialize(writer *stream.StreamWriter) error {
 	writer.Write16(position.Y)
 	writer.WriteU32(0)
 	if p.Animation != constant.DropItemAnimationTypeNone {
-		writer.Write16(p.DropFrom.X)
-		writer.Write16(p.DropFrom.Y)
+		writer.Write16(p.SpawnedPoint.X)
+		writer.Write16(p.SpawnedPoint.Y)
 		writer.WriteU16(0)
 	}
 

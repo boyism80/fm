@@ -6,7 +6,7 @@ import (
 )
 
 type CharacterMove struct {
-	Position types.Vec2[int16]
+	Position types.Vector2[int16]
 }
 
 type Warped struct {
