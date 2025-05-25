@@ -27,7 +27,6 @@ type QuadTreeNode[T constraints.Integer, U AnySpatial[T]] struct {
 }
 
 const (
-	maxItems = 4
 	maxDepth = 8
 )
 
@@ -52,7 +51,7 @@ func (n *QuadTreeNode[T, U]) Insert(item U) bool {
 	if !n.Bounds.Intersects(b) {
 		return false
 	}
-	if len(n.Items) < maxItems || n.Depth >= maxDepth {
+	if n.Depth >= maxDepth {
 		n.Items = append(n.Items, item)
 		return true
 	}
