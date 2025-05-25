@@ -32,3 +32,27 @@ const (
 	DropItemAnimationTypeDisappearFade DropItemAnimationType = 3
 	DropItemAnimationTypeDisappear     DropItemAnimationType = 4
 )
+
+type Stat uint32
+
+const (
+	StatSkin        Stat = 0x1
+	StatFace        Stat = 0x2
+	StatHair        Stat = 0x4
+	StatPet         Stat = 0x8
+	StatLevel       Stat = 0x10
+	StatJob         Stat = 0x20
+	StatStr         Stat = 0x40
+	StatDex         Stat = 0x80
+	StatInt         Stat = 0x100
+	StatLuk         Stat = 0x200
+	StatHP          Stat = 0x400
+	StatMaxHP       Stat = 0x800
+	StatMP          Stat = 0x1000
+	StatMaxMP       Stat = 0x2000
+	StatAvailableAP Stat = 0x4000
+	StatAvailableSP Stat = 0x8000
+	StatExp         Stat = 0x10000
+	StatFame        Stat = 0x20000
+	StatMeso        Stat = 0x40000
+)

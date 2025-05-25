@@ -24,6 +24,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x20, ctx, client, h, onGameClientNormalChat)
 	handler.RegisterPacketHandler(0x1B, ctx, client, h, onGameClientAttack)
 	handler.RegisterPacketHandler(0x36, ctx, client, h, onGameMoveItem)
+	handler.RegisterPacketHandler(0xA3, ctx, client, h, onGameItemPickup)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -168,11 +169,21 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 			return
 		}
 
-		remained := src.Reduce(req.Count)
-		client.Send(&resp.UpdateItemCount{
+		removed := (src.Reduce(req.Count) == 0)
+		mode := resp.InventoryModeUpdate
+		if removed {
+			mode = resp.InventoryModeRemove
+		}
+		client.Send(&resp.UpdateInventorySlot{
 			InventoryType: req.InventoryType,
-			Slot:          uint16(req.Source),
-			Count:         remained,
+			Mode:          mode,
+			IsDrop:        true,
+			Items: []resp.SlotItem{
+				{
+					Slot: req.Source,
+					Item: src,
+				},
+			},
 		}, types.SEND_POLICY_ENCRYPT)
 
 		spawned := src.Clone(req.Count)
@@ -187,9 +198,15 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 			OwnerId:      ch.Id,
 		})
 
-		if remained == 0 {
+		if removed {
 			delete(ch.Inventory[req.InventoryType].Items, req.Source)
 		}
 	}
 	fmt.Println(src, dst)
+}
+
+func onGameItemPickup(ctx actor.Context, client *GameClientActor, req *req.ItemPickup) {
+	client.Send(&resp.UpdateStats{
+		UnlockAction: true,
+	}, types.SEND_POLICY_ENCRYPT)
 }
