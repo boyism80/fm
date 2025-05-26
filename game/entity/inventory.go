@@ -60,6 +60,33 @@ func (m *Inventory) FindSlot(spec data.ItemSpec) (uint8, bool) {
 	return m.NextSlot()
 }
 
+func (m *Inventory) EmptySlotCount() uint16 {
+	count := uint16(0)
+	for i := 1; i <= int(m.SlotLimit); i++ {
+		if _, ok := m.Items[int16(i)]; !ok {
+			count += 1
+		}
+	}
+
+	return count
+}
+
+func (m *Inventory) IsFree(spec data.ItemSpec, count uint16) bool {
+	space := uint16(0)
+	slot, ok := m.FindSlot(spec)
+	if ok {
+		exists, ok := m.Items[int16(slot)]
+		if ok {
+			if spec.GetCapacity() > exists.GetCount() {
+				space += spec.GetCapacity() - exists.GetCount()
+			}
+		}
+	}
+
+	space += m.EmptySlotCount() * spec.GetCapacity()
+	return space >= count
+}
+
 func (m *Inventory) Serialize(sw *stream.StreamWriter) {
 
 	for slot, item := range m.Items {

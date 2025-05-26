@@ -148,6 +148,22 @@ func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m 
 	inven := client.ch.Inventory[invenType]
 	spec := m.Item.GetSpec()
 	gain := uint16(0)
+	if !inven.IsFree(spec, m.Item.GetCount()) {
+		client.Send(&resp.ItemGainFailed{
+			Mode: resp.ItemGainFailedTypeFull,
+		}, types.SEND_POLICY_ENCRYPT)
+		client.Send(&resp.UpdateStats{
+			UnlockAction: true,
+		}, types.SEND_POLICY_ENCRYPT)
+
+		ctx.Send(m.Pid, &msg.ItemLooted{
+			Success:     false,
+			Count:       0,
+			CharacterId: client.ch.Id,
+		})
+		return
+	}
+
 	for m.Item.GetCount() > 0 {
 		slot, ok := inven.FindSlot(spec)
 		if !ok {
@@ -175,28 +191,30 @@ func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m 
 			// 새로운 슬롯에 아이템 추가
 			cap = min(spec.GetCapacity(), m.Item.GetCount())
 			inven.Items[int16(slot)] = m.Item.Clone(cap)
+			client.Send(&resp.UpdateInventorySlot{
+				InventoryType: invenType,
+				Mode:          resp.InventoryModeAdd,
+				IsDrop:        true,
+				Items: []resp.SlotItem{
+					{
+						Slot: int16(slot),
+						Item: inven.Items[int16(slot)],
+					},
+				},
+			}, types.SEND_POLICY_ENCRYPT)
 		}
 		m.Item.Reduce(cap)
 		gain += cap
 	}
 
-	if gain > 0 {
-		client.Send(&resp.ShowItemGain{
-			ItemId: spec.GetID(),
-			Count:  uint32(gain),
-			Mode:   resp.ShowItemGainTypeStatus,
-		}, types.SEND_POLICY_ENCRYPT)
-	} else {
-		client.Send(&resp.ItemGainFailed{
-			Mode: resp.ItemGainFailedTypeFull,
-		}, types.SEND_POLICY_ENCRYPT)
-		client.Send(&resp.UpdateStats{
-			UnlockAction: true,
-		}, types.SEND_POLICY_ENCRYPT)
-	}
+	client.Send(&resp.ShowItemGain{
+		ItemId: spec.GetID(),
+		Count:  uint32(gain),
+		Mode:   resp.ShowItemGainTypeStatus,
+	}, types.SEND_POLICY_ENCRYPT)
 
 	ctx.Send(m.Pid, &msg.ItemLooted{
-		Success:     gain > 0,
+		Success:     true,
 		Count:       gain,
 		CharacterId: client.ch.Id,
 	})

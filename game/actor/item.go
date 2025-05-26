@@ -73,15 +73,14 @@ func onItemLooting(ctx actor.Context, state *ItemActor, request *msg.ItemLooting
 		ctx.Send(request.Actor, &msg.CharacterLootFailed{
 			Oid: state.id,
 		})
-		return
+	} else {
+		ctx.Send(request.Actor, &msg.CharacterItemLooting{
+			Pid:  ctx.Self(),
+			Oid:  state.id,
+			Item: state.Item.Clone(state.GetCount()),
+		})
+		state.looting = true
 	}
-
-	state.looting = true
-	ctx.Send(request.Actor, &msg.CharacterItemLooting{
-		Pid:  ctx.Self(),
-		Oid:  state.id,
-		Item: state.Item.Clone(state.GetCount()),
-	})
 }
 
 func onItemLooted(ctx actor.Context, state *ItemActor, request *msg.ItemLooted) {

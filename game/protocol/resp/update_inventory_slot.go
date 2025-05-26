@@ -36,7 +36,10 @@ func (p *UpdateInventorySlot) Serialize(writer *stream.StreamWriter) error {
 
 	switch p.Mode {
 	case InventoryModeAdd:
-		// TODO: item add
+		for _, v := range p.Items {
+			writer.WriteU8(uint8(v.Slot))
+			v.Item.Serialize(writer, false, 0)
+		}
 
 	case InventoryModeUpdate:
 		for _, v := range p.Items {
