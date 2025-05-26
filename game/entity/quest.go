@@ -11,7 +11,7 @@ type QuestStatus struct {
 }
 
 type Quest struct {
-	Id int
+	ID int
 }
 
 func (q *QuestStatus) HasMobKills() bool {

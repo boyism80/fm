@@ -15,7 +15,7 @@ type Move struct {
 
 func (a *Move) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0x82)
-	writer.WriteU32(a.Character.Id)
+	writer.WriteU32(a.Character.ID)
 	writer.Write16(a.Character.Position.X)
 	writer.Write16(a.Character.Position.Y)
 	writer.WriteU8(uint8(len(a.Fragments)))

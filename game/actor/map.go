@@ -36,7 +36,7 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapEnter)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapLeave)
-		handler.RegisterHandler(ctx, actor, actor.handler, onMapPidList)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapPIDList)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapBroadcastRange)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnItem)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnMeso)
@@ -61,28 +61,28 @@ func onMapEnter(ctx actor.Context, state *MapActor, m *msg.EnterMap) {
 	}
 
 	// 맵에 플레이어를 추가
-	state.objectPIDs[m.Id] = m.PID
+	state.objectPIDs[m.ID] = m.PID
 }
 
 func onMapLeave(ctx actor.Context, state *MapActor, m *msg.LeaveMap) {
-	delete(state.objectPIDs, m.Id)
+	delete(state.objectPIDs, m.ID)
 
 	for _, pid := range state.objectPIDs {
 		ctx.Send(pid, &common_msg.SendProtocol{
 			Protocol: &resp.LeavePlayer{
-				Id: m.Id,
+				ID: m.ID,
 			},
 			Policy: types.SEND_POLICY_ENCRYPT,
 		})
 	}
 }
 
-func onMapPidList(ctx actor.Context, state *MapActor, m *msg.MapPidList) {
+func onMapPIDList(ctx actor.Context, state *MapActor, m *msg.MapPIDList) {
 	var pids []*actor.PID
 	for _, pid := range state.objectPIDs {
 		pids = append(pids, pid)
 	}
-	ctx.Send(ctx.Sender(), &msg.MapPidList{Targets: pids})
+	ctx.Send(ctx.Sender(), &msg.MapPIDList{Targets: pids})
 }
 
 func onMapBroadcastRange(ctx actor.Context, state *MapActor, m *msg.MapBroadcastRange) {
@@ -101,7 +101,7 @@ func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 	state.sequence++
 	drop := m.Item.GetDrop()
 	drop.Position = state.Spec.DropPoint(drop.SpawnedPoint)
-	drop.Id = state.sequence
+	drop.ID = state.sequence
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return NewItemActor(ctx,
 			state.ctx,
@@ -125,10 +125,10 @@ func onMapSpawnMeso(ctx actor.Context, state *MapActor, m *msg.MapSpawnMeso) {
 					Object: &entity.Object{
 						Position: dropPoint,
 					},
-					Id:           state.sequence,
+					ID:           state.sequence,
 					SpawnedPoint: m.SpawnedPoint,
 					DropType:     constant.DropTypeFFA,
-					Owner:        m.OwnerId,
+					Owner:        m.OwnerID,
 				},
 				Count: m.Count,
 			},
@@ -142,10 +142,10 @@ func onMapSpawnMeso(ctx actor.Context, state *MapActor, m *msg.MapSpawnMeso) {
 
 func onMapItemLoot(ctx actor.Context, state *MapActor, m *msg.MapItemLoot) {
 
-	pid, ok := state.objects[m.Oid]
+	pid, ok := state.objects[m.OID]
 	if !ok {
 		ctx.Send(m.Actor, &msg.CharacterLootFailed{
-			Oid: m.Oid,
+			OID: m.OID,
 		})
 	} else {
 		ctx.Send(pid, &msg.ItemLooting{
@@ -161,13 +161,13 @@ func onMapRemoveItem(ctx actor.Context, state *MapActor, m *msg.MapRemoveItem) {
 		ctx.Send(pid, &common_msg.SendProtocol{
 			Protocol: &resp.RemoveItem{
 				Mode:        m.Mode,
-				Oid:         m.Oid,
+				OID:         m.OID,
 				CharacterId: m.CharacterId,
 			},
 			Policy: types.SEND_POLICY_ENCRYPT,
 		})
 	}
 
-	delete(state.objects, m.Oid)
+	delete(state.objects, m.OID)
 	ctx.Stop(m.Actor)
 }

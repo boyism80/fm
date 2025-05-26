@@ -35,7 +35,7 @@ func onGameStart(ctx protoactor.Context, obj *GameServerActor, m *msg.StartListe
 	for _, spec := range m.ServerCtx.Resources.Maps {
 		props := NewMapActorProps(ctx, m.ServerCtx, spec)
 		pid := ctx.Spawn(props)
-		m.ServerCtx.MapActors[spec.Id] = pid
+		m.ServerCtx.MapActors[spec.ID] = pid
 	}
 
 	go func() {

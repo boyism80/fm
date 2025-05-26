@@ -12,7 +12,7 @@ import (
 
 type Character struct {
 	Life
-	Id            uint32
+	ID            uint32
 	Name          string
 	Gender        uint8
 	SkinColor     uint8
@@ -150,7 +150,7 @@ func (ch *Character) RemainingSkillPoints() uint16 {
 
 func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Character {
 	ch := Character{
-		Id:         id,
+		ID:         id,
 		Name:       name,
 		Gender:     0,
 		SkinColor:  0,

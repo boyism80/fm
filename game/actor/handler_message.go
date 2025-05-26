@@ -104,7 +104,7 @@ func onGameClientStopping(ctx protoactor.Context, client *GameClientActor, m *pr
 		mapActor := client.ctx.MapActors[client.ch.Map]
 		if mapActor != nil {
 			ctx.Send(mapActor, &msg.LeaveMap{
-				Id: ch.Id,
+				ID: ch.ID,
 			})
 		}
 	}
@@ -160,10 +160,10 @@ func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m 
 			UnlockAction: true,
 		}, types.SEND_POLICY_ENCRYPT)
 
-		ctx.Send(m.Pid, &msg.ItemLooted{
+		ctx.Send(m.PID, &msg.ItemLooted{
 			Success:     false,
 			Count:       0,
-			CharacterId: client.ch.Id,
+			CharacterId: client.ch.ID,
 		})
 		return
 	}
@@ -217,10 +217,10 @@ func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m 
 		Mode:   resp.ShowItemGainTypeStatus,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	ctx.Send(m.Pid, &msg.ItemLooted{
+	ctx.Send(m.PID, &msg.ItemLooted{
 		Success:     true,
 		Count:       int32(gain),
-		CharacterId: client.ch.Id,
+		CharacterId: client.ch.ID,
 	})
 }
 
@@ -235,10 +235,10 @@ func onGameClientMesoLooting(ctx protoactor.Context, client *GameClientActor, m 
 			UnlockAction: true,
 		}, types.SEND_POLICY_ENCRYPT)
 
-		ctx.Send(m.Pid, &msg.ItemLooted{
+		ctx.Send(m.PID, &msg.ItemLooted{
 			Success:     false,
 			Count:       0,
-			CharacterId: client.ch.Id,
+			CharacterId: client.ch.ID,
 		})
 		return
 	}
@@ -256,9 +256,9 @@ func onGameClientMesoLooting(ctx protoactor.Context, client *GameClientActor, m 
 		Mode:  resp.ShowMesoGainTypeStatus,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	ctx.Send(m.Pid, &msg.ItemLooted{
+	ctx.Send(m.PID, &msg.ItemLooted{
 		Success:     true,
 		Count:       m.Meso,
-		CharacterId: client.ch.Id,
+		CharacterId: client.ch.ID,
 	})
 }

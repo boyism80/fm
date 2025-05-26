@@ -43,7 +43,7 @@ func (c *Character) completedQuests() []*QuestStatus {
 }
 
 func (ch *Character) SerializeStats(writer *stream.StreamWriter) {
-	writer.WriteU32(ch.Id)
+	writer.WriteU32(ch.ID)
 	writer.WriteStaticStr(ch.Name, 13)
 	writer.WriteU8(ch.Gender)
 	writer.WriteU8(ch.SkinColor)
@@ -109,16 +109,16 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 		absoluteParts := int8(parts * -1)
 		if absoluteParts < 100 {
 			if _, exists := equipments[absoluteParts]; !exists {
-				equipments[absoluteParts] = spec.Id
+				equipments[absoluteParts] = spec.ID
 			}
 		} else if absoluteParts > 100 && absoluteParts != 111 {
 			adjustedParts := int8(absoluteParts - 100)
 			if existingItem, exists := equipments[adjustedParts]; exists {
 				skins[adjustedParts] = existingItem
 			}
-			equipments[adjustedParts] = spec.Id
+			equipments[adjustedParts] = spec.ID
 		} else if _, exists := equipments[absoluteParts]; exists {
-			skins[absoluteParts] = spec.Id
+			skins[absoluteParts] = spec.ID
 		}
 	}
 
@@ -191,10 +191,10 @@ func (ch *Character) SerializeSkills(writer *stream.StreamWriter) {
 	writer.WriteU16(uint16(len(ch.SkillsMap)))
 
 	for skill, entry := range ch.SkillsMap {
-		writer.WriteU32(skill.Id)
+		writer.WriteU32(skill.ID)
 		writer.WriteU32(uint32(entry.SkillLevel))
 
-		if (skill.Id/10000)%100 > 0 && (skill.Id/10000)%10 == 2 {
+		if (skill.ID/10000)%100 > 0 && (skill.ID/10000)%10 == 2 {
 			writer.WriteU32(uint32(entry.MasterLevel))
 		}
 	}
@@ -218,7 +218,7 @@ func (ch *Character) SerializeQuests(writer *stream.StreamWriter) {
 	writer.WriteU16(uint16(len(started)))
 
 	for _, q := range started {
-		writer.WriteU16(uint16(q.Quest.Id))
+		writer.WriteU16(uint16(q.Quest.ID))
 
 		if q.HasMobKills() {
 			var sb strings.Builder
@@ -250,7 +250,7 @@ func (ch *Character) SerializeQuests(writer *stream.StreamWriter) {
 	writer.WriteU16(uint16(len(completed)))
 
 	for _, q := range completed {
-		writer.WriteU16(uint16(q.Quest.Id))
+		writer.WriteU16(uint16(q.Quest.ID))
 		writer.WriteDateTime(q.CompletionTime)
 	}
 }

@@ -16,14 +16,14 @@ const (
 
 type RemoveItem struct {
 	Mode        RemoveItemType
-	Oid         uint32
+	OID         uint32
 	CharacterId uint32
 }
 
 func (p *RemoveItem) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0xC7)
 	writer.WriteU8(uint8(p.Mode))
-	writer.WriteU32(p.Oid)
+	writer.WriteU32(p.OID)
 	switch p.Mode {
 	case RemoveItemTypeAnimated, RemoveItemTypeLootByPet:
 		writer.WriteU32(p.CharacterId)

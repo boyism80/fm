@@ -50,7 +50,7 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 	mapActor := client.ctx.MapActors[client.ch.Map]
 	if mapActor != nil {
 		ctx.Send(mapActor, &msg.EnterMap{
-			Id:  ch.Id,
+			ID:  ch.ID,
 			PID: ctx.Self(),
 		})
 
@@ -126,7 +126,7 @@ func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req
 		Pivot:  position,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.NormalChat{
-				CharacterId: client.ch.Id,
+				CharacterId: client.ch.ID,
 				Highlight:   false,
 				Message:     req.Message,
 				Show:        req.Show,
@@ -148,7 +148,7 @@ func onGameClientAttack(ctx actor.Context, client *GameClientActor, req *req.Att
 		Pivot:  position,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.Attack{
-				CharacterId: client.ch.Id,
+				CharacterId: client.ch.ID,
 				AttackInfo:  req.AttackInfo,
 				SkillLevel:  0,
 			},
@@ -191,7 +191,7 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 		spawned := src.Clone(req.Count)
 		spawned.BindDrop(&entity.Drop{
 			Object:       &entity.Object{},
-			Owner:        ch.Id,
+			Owner:        ch.ID,
 			SpawnedPoint: ch.Position,
 			DropType:     constant.DropTypeFFA,
 			Looting:      false,
@@ -200,7 +200,7 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 		ctx.Send(mapActor, &msg.MapSpawnItem{
 			Item:    spawned,
 			Owner:   ctx.Self(),
-			OwnerId: ch.Id,
+			OwnerID: ch.ID,
 		})
 
 		if removed {
@@ -222,8 +222,8 @@ func onGameItemLoot(ctx actor.Context, client *GameClientActor, req *req.ItemLoo
 
 	ctx.Send(mpid, &msg.MapItemLoot{
 		Actor:       ctx.Self(),
-		Oid:         req.Oid,
-		CharacterId: client.ch.Id,
+		OID:         req.OID,
+		CharacterId: client.ch.ID,
 		Position:    req.Position,
 	})
 }
@@ -235,19 +235,19 @@ func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMes
 		return
 	}
 
-	if req.Meso < 10 || req.Meso > 50000 {
+	if req.Count < 10 || req.Count > 50000 {
 		ctx.Stop(ctx.Self())
 		return
 	}
 
-	if req.Meso > ch.Meso {
+	if req.Count > ch.Meso {
 		client.Send(&resp.UpdateStats{
 			UnlockAction: true,
 		}, types.SEND_POLICY_ENCRYPT)
 		return
 	}
 
-	ch.Meso -= req.Meso
+	ch.Meso -= req.Count
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.StatMeso: ch.Meso,
@@ -256,9 +256,9 @@ func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMes
 	}, types.SEND_POLICY_ENCRYPT)
 
 	ctx.Send(mapActor, &msg.MapSpawnMeso{
-		Count:        req.Meso,
+		Count:        req.Count,
 		SpawnedPoint: ch.Position,
 		Owner:        ctx.Self(),
-		OwnerId:      ch.Id,
+		OwnerID:      ch.ID,
 	})
 }

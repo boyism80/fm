@@ -38,7 +38,7 @@ func loadCashItems(path string) (*[]*CashItemSpec, error) {
 		if err != nil {
 			return nil, err
 		}
-		spec.Id = uint32(id)
+		spec.ID = uint32(id)
 		info := v.find("info")
 		for _, iv := range info.Children {
 			switch iv.Name {
@@ -122,7 +122,7 @@ func loadConsumes(path string) (*[]*ConsumeSpec, error) {
 		if err != nil {
 			return nil, err
 		}
-		spec.Id = uint32(id)
+		spec.ID = uint32(id)
 		nodeInfo := v.find("info")
 		for _, iv := range nodeInfo.Children {
 			switch iv.Name {
@@ -326,7 +326,7 @@ func loadWeapons(path string) (*EquipmentSpec, error) {
 	if err != nil {
 		return nil, err
 	}
-	spec.Id = uint32(id)
+	spec.ID = uint32(id)
 	node := root.find("info")
 	if node == nil {
 		return nil, fmt.Errorf("'info' does not exist in %s", path)
@@ -663,7 +663,7 @@ func loadGeneralItems(path string) (*[]*GeneralItemSpec, error) {
 		if err != nil {
 			return nil, err
 		}
-		spec.Id = uint32(id)
+		spec.ID = uint32(id)
 		info := v.find("info")
 		for _, iv := range info.Children {
 			switch iv.Name {
@@ -761,7 +761,7 @@ func loadInstallations(path string) (*[]*InstallationSpec, error) {
 		if err != nil {
 			return nil, err
 		}
-		spec.Id = uint32(id)
+		spec.ID = uint32(id)
 		info := v.find("info")
 		for _, iv := range info.Children {
 			switch iv.Name {
@@ -830,7 +830,7 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 	}
 
 	spec := MapSpec{
-		Id:      mapId,
+		ID:      mapId,
 		Portals: map[uint8]Portal{},
 	}
 
@@ -910,8 +910,8 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 				}
 			}
 			id, _ := strconv.Atoi(v.Name)
-			portal.Id = uint8(id)
-			spec.Portals[portal.Id] = portal
+			portal.ID = uint8(id)
+			spec.Portals[portal.ID] = portal
 		}
 	}
 
@@ -958,7 +958,7 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 					}
 
 					foothold := Foothold{
-						Id:   id,
+						ID:   id,
 						X1:   int16(x1),
 						Y1:   int16(y1),
 						X2:   int16(x2),
@@ -1003,7 +1003,7 @@ func loadPets(path string) (*PetSpec, error) {
 	}
 	spec := &PetSpec{
 		ItemCoreSpec: &ItemCoreSpec{
-			Id: uint32(id),
+			ID: uint32(id),
 		},
 	}
 	info := root.find("info")
@@ -1071,7 +1071,7 @@ func loadSpecialItems(path string) (*[]*SpecialItemSpec, error) {
 		if err != nil {
 			return nil, err
 		}
-		spec.Id = uint32(id)
+		spec.ID = uint32(id)
 		for _, iv := range v.Children {
 			switch iv.Name {
 			case "icon":
@@ -1109,7 +1109,7 @@ func loadStringNodeRecursive(root *node) []*StringSpec {
 			templates = append(templates, loadStringNodeRecursive(&child)...)
 		}
 		spec := StringSpec{
-			Id: uint32(id),
+			ID: uint32(id),
 		}
 		for _, v := range child.Children {
 			switch v.Name {

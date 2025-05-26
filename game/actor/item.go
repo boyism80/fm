@@ -18,19 +18,19 @@ import (
 type ItemActor struct {
 	entity.Item
 	handler   *handler.MessageHandler
-	mapPid    *actor.PID
+	mapPID    *actor.PID
 	scheduler *scheduler.TimerScheduler
 }
 
 func NewItemActor(ctx actor.Context,
 	serverCtx *context.ServerContext,
 	entity entity.Item,
-	mapPid *actor.PID) actor.Actor {
+	mapPID *actor.PID) actor.Actor {
 
 	actor := &ItemActor{
 		handler:   handler.NewMessageHandler(),
 		Item:      entity,
-		mapPid:    mapPid,
+		mapPID:    mapPID,
 		scheduler: scheduler.NewTimerScheduler(ctx),
 	}
 	RegisterObjectHandlers(ctx, actor.Item.GetObject(), actor.handler)
@@ -60,17 +60,17 @@ func onItemStarted(ctx actor.Context, state *ItemActor, m *actor.Started) {
 
 func onItemSpawn(ctx actor.Context, state *ItemActor, m *msg.ItemSpawn) {
 	drop := state.GetDrop()
-	ctx.Send(state.mapPid, &msg.MapBroadcastRange{
+	ctx.Send(state.mapPID, &msg.MapBroadcastRange{
 		Sender:     ctx.Self(),
 		Pivot:      state.GetObject().Position,
 		ExceptSelf: true,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.DropItem{
-				Id:           drop.Id,
+				ID:           drop.ID,
 				Animation:    constant.DropItemAnimationTypeLooting,
 				DropType:     drop.DropType,
 				Item:         state.Item,
-				OwnerId:      drop.Owner,
+				OwnerID:      drop.Owner,
 				SpawnedPoint: drop.SpawnedPoint,
 				IsPlayerDrop: true,
 			},
@@ -83,21 +83,21 @@ func onItemLooting(ctx actor.Context, state *ItemActor, m *msg.ItemLooting) {
 	drop := state.GetDrop()
 	if drop.Looting {
 		ctx.Send(m.Actor, &msg.CharacterLootFailed{
-			Oid: drop.Id,
+			OID: drop.ID,
 		})
 		return
 	}
 
 	if drop.DropType == constant.DropTypeOwned && drop.Owner != m.CharacterId {
 		ctx.Send(m.Actor, &msg.CharacterLootFailed{
-			Oid: drop.Id,
+			OID: drop.ID,
 		})
 		return
 	}
 
 	ctx.Send(m.Actor, &msg.CharacterItemLooting{
-		Pid:  ctx.Self(),
-		Oid:  drop.Id,
+		PID:  ctx.Self(),
+		OID:  drop.ID,
 		Item: state.Item.Clone(state.GetCount()),
 	})
 	drop.Looting = true
@@ -108,9 +108,9 @@ func onItemLooted(ctx actor.Context, state *ItemActor, m *msg.ItemLooted) {
 	drop.Looting = false
 	if m.Success {
 		if state.Reduce(uint16(m.Count)) == 0 {
-			ctx.Send(state.mapPid, &msg.MapRemoveItem{
+			ctx.Send(state.mapPID, &msg.MapRemoveItem{
 				Actor:       ctx.Self(),
-				Oid:         drop.Id,
+				OID:         drop.ID,
 				CharacterId: m.CharacterId,
 				Mode:        resp.RemoveItemTypeAnimated,
 				Position:    drop.Position,
@@ -126,9 +126,9 @@ func onItemDropTypeChanged(ctx actor.Context, state *ItemActor, m *msg.ItemDropT
 
 func onItemDestroy(ctx actor.Context, state *ItemActor, m *msg.ItemDestroy) {
 	drop := state.GetDrop()
-	ctx.Send(state.mapPid, &msg.MapRemoveItem{
+	ctx.Send(state.mapPID, &msg.MapRemoveItem{
 		Actor:    ctx.Self(),
-		Oid:      drop.Id,
+		OID:      drop.ID,
 		Mode:     resp.RemoveItemTypeExpired,
 		Position: drop.Position,
 	})

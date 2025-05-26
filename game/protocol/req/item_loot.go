@@ -8,7 +8,7 @@ import (
 type ItemLoot struct {
 	Tick     uint32
 	Position types.Vector2[int16]
-	Oid      uint32
+	OID      uint32
 }
 
 func (p *ItemLoot) Serialize(writer *stream.StreamWriter) error {
@@ -24,6 +24,6 @@ func (p *ItemLoot) Deserialize(reader *stream.StreamReader) error {
 		X: x,
 		Y: y,
 	}
-	p.Oid, _ = reader.ReadU32()
+	p.OID, _ = reader.ReadU32()
 	return nil
 }

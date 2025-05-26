@@ -4,7 +4,7 @@ import "github.com/boyism80/fm/common/types"
 
 type Foothold struct {
 	X1, Y1, X2, Y2 int16
-	Id             int
+	ID             int
 	Prev, Next     int16
 }
 
@@ -33,5 +33,5 @@ func (f Foothold) Compare(o types.AnySpatial[int16]) bool {
 	if fTop != oTop {
 		return fTop < oTop
 	}
-	return f.Id < other.Id
+	return f.ID < other.ID
 }

@@ -1,7 +1,7 @@
 package entity
 
 type Skill struct {
-	Id uint32
+	ID uint32
 }
 
 type SkillEntry struct {

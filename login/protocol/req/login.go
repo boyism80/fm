@@ -8,7 +8,7 @@ import (
 )
 
 type Login struct {
-	Id  string
+	ID  string
 	Pw  string
 	Mac string
 }
@@ -22,7 +22,7 @@ func (a *Login) Deserialize(reader *stream.StreamReader) error {
 	if err != nil {
 		return err
 	}
-	a.Id = id
+	a.ID = id
 
 	pw, err := reader.ReadStr16()
 	if err != nil {

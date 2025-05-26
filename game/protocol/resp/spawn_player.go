@@ -53,7 +53,7 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0x6E)
 
 	// 1. 캐릭터 ID
-	writer.WriteU32(p.Character.Id)
+	writer.WriteU32(p.Character.ID)
 
 	// 2. 캐릭터 이름 (MapleAsciiString)
 	writer.WriteStr16(p.Character.Name)

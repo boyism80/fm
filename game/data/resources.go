@@ -113,7 +113,7 @@ func NewResources() *Resources {
 			return loadWeapons(path)
 		},
 		func(percent float32, value *EquipmentSpec) {
-			items[value.Id] = value
+			items[value.ID] = value
 			fmt.Printf("장비 데이터 로딩 중: %.1f%%\n", percent)
 		})
 	if err != nil {
@@ -129,7 +129,7 @@ func NewResources() *Resources {
 		func(percent float32, value *[]*ConsumeSpec) {
 
 			for _, v := range *value {
-				items[v.Id] = v
+				items[v.ID] = v
 			}
 			fmt.Printf("소비 아이템 데이터 로딩 중: %.1f%%\n", percent)
 		})
@@ -146,7 +146,7 @@ func NewResources() *Resources {
 		func(percent float32, value *[]*CashItemSpec) {
 
 			for _, v := range *value {
-				items[v.Id] = v
+				items[v.ID] = v
 			}
 			fmt.Printf("캐시 아이템 데이터 로딩 중: %.1f%%\n", percent)
 		})
@@ -163,7 +163,7 @@ func NewResources() *Resources {
 		func(percent float32, value *[]*InstallationSpec) {
 
 			for _, v := range *value {
-				items[v.Id] = v
+				items[v.ID] = v
 			}
 			fmt.Printf("설치 아이템 데이터 로딩 중: %.1f%%\n", percent)
 		})
@@ -180,7 +180,7 @@ func NewResources() *Resources {
 		func(percent float32, value *[]*SpecialItemSpec) {
 
 			for _, v := range *value {
-				items[v.Id] = v
+				items[v.ID] = v
 			}
 			fmt.Printf("설치 아이템 데이터 로딩 중: %.1f%%\n", percent)
 		})
@@ -197,7 +197,7 @@ func NewResources() *Resources {
 		func(percent float32, value *[]*GeneralItemSpec) {
 
 			for _, v := range *value {
-				items[v.Id] = v
+				items[v.ID] = v
 			}
 			fmt.Printf("일반 아이템 데이터 로딩 중: %.1f%%\n", percent)
 		})
@@ -213,7 +213,7 @@ func NewResources() *Resources {
 		},
 		func(percent float32, value *PetSpec) {
 
-			items[value.Id] = value
+			items[value.ID] = value
 			fmt.Printf("펫 데이터 로딩 중: %.1f%%\n", percent)
 		})
 	if err != nil {
@@ -232,7 +232,7 @@ func NewResources() *Resources {
 	}, func(percent float32, value *[]*StringSpec) {
 
 		for _, v := range *value {
-			stringResult[v.Id] = v
+			stringResult[v.ID] = v
 		}
 
 		fmt.Printf("문자열 데이터 로딩 중: %.1f%%\n", percent)
@@ -253,7 +253,7 @@ func NewResources() *Resources {
 		}
 		return m, nil
 	}, func(percent float32, value *MapSpec) {
-		maps[value.Id] = value
+		maps[value.ID] = value
 		fmt.Printf("맵 데이터 로딩 중: %.1f%%\n", percent)
 	})
 	if err != nil {

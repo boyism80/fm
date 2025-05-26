@@ -5,13 +5,13 @@ import (
 )
 
 type DeleteCharacter struct {
-	Id      uint32
+	ID      uint32
 	Success bool
 }
 
 func (a *DeleteCharacter) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0x07)
-	writer.WriteU32(a.Id)
+	writer.WriteU32(a.ID)
 	writer.WriteBoolean(!a.Success)
 
 	return nil

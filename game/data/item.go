@@ -42,7 +42,7 @@ type AbilityStats struct {
 }
 
 type ItemCoreSpec struct {
-	Id             uint32
+	ID             uint32
 	Name           string
 	Price          int
 	Cash           bool
@@ -95,7 +95,7 @@ type SpecialItemSpec struct {
 }
 
 func (spec *ItemCoreSpec) GetID() uint32 {
-	return spec.Id
+	return spec.ID
 }
 
 func (spec *ItemCoreSpec) GetName() string {

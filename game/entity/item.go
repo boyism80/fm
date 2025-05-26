@@ -28,7 +28,7 @@ type Item interface {
 
 type Drop struct {
 	*Object
-	Id           uint32
+	ID           uint32
 	Owner        uint32
 	SpawnedPoint types.Point[int16]
 	DropType     constant.DropType
@@ -321,7 +321,7 @@ func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, s
 	}
 
 	writer.WriteU8(uint8(constant.ItemTypeEquipment))
-	writer.WriteU32(spec.Id)
+	writer.WriteU32(spec.ID)
 
 	hasUID := equipment.UniqueId > 0
 	writer.WriteBoolean(hasUID)
@@ -425,9 +425,9 @@ func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int
 	writer.WriteStr16(item.OwnerName)
 	writer.WriteU16(item.Flags)
 
-	isThrowingStart := spec.Id/10000 == 207
-	isBullet := spec.Id/10000 == 233
-	isWhat := spec.Id/10000 == 287
+	isThrowingStart := spec.ID/10000 == 207
+	isBullet := spec.ID/10000 == 233
+	isWhat := spec.ID/10000 == 287
 	inventoryId := uint64(54399043)
 	if isThrowingStart || isBullet || isWhat {
 		writer.WriteU64(inventoryId)
@@ -476,7 +476,7 @@ func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(3)
-	writer.WriteU32(spec.Id)
+	writer.WriteU32(spec.ID)
 
 	hasUID := pet.UniqueId > 0
 	writer.WriteBoolean(hasUID)
@@ -492,7 +492,7 @@ func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteDateTime(pet.Expiration)
 	writer.WriteU16(pet.Speed)
 	writer.WriteU16(pet.Flags)
-	if spec.Id == 5000054 && pet.SecondsLeft > 0 {
+	if spec.ID == 5000054 && pet.SecondsLeft > 0 {
 		writer.WriteU32(pet.SecondsLeft)
 	} else {
 		writer.WriteU32(0)

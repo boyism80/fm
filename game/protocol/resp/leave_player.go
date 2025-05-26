@@ -5,12 +5,12 @@ import (
 )
 
 type LeavePlayer struct {
-	Id uint32
+	ID uint32
 }
 
 func (p *LeavePlayer) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0x6F)
-	writer.WriteU32(p.Id)
+	writer.WriteU32(p.ID)
 
 	return nil
 }

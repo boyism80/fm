@@ -3,7 +3,7 @@ package req
 import "github.com/boyism80/fm/common/stream"
 
 type DeleteCharacter struct {
-	Id uint32
+	ID uint32
 }
 
 func (a *DeleteCharacter) Serialize(writer *stream.StreamWriter) error {
@@ -20,6 +20,6 @@ func (a *DeleteCharacter) Deserialize(reader *stream.StreamReader) error {
 		return err
 	}
 
-	a.Id = id
+	a.ID = id
 	return nil
 }

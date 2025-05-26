@@ -26,12 +26,12 @@ func onLoginClientPong(ctx actor.Context, client *LoginClientActor, request *com
 
 func onLoginClientLogin(ctx actor.Context, client *LoginClientActor, request *req.Login) {
 
-	if request.Id == "cshyeon" {
+	if request.ID == "cshyeon" {
 		client.Send(&resp.Authenticate{
 			AccountId:     2390,
 			Gender:        0,
 			Admin:         true,
-			AccountName:   request.Id,
+			AccountName:   request.ID,
 			IsChatBlocked: false,
 			ChatBlockTime: 116445060000000000,
 		}, types.SEND_POLICY_ENCRYPT)
@@ -78,7 +78,7 @@ func onLoginClientCreateCharacter(ctx actor.Context, client *LoginClientActor, r
 	client.Send(&resp.CreateCharacter{
 		Success: success,
 		Character: &entity.Character{
-			Id:         1,
+			ID:         1,
 			Name:       request.Name,
 			Gender:     0,
 			SkinColor:  0,
@@ -101,7 +101,7 @@ func onLoginClientCreateCharacter(ctx actor.Context, client *LoginClientActor, r
 
 func onLoginClientDeleteCharacter(ctx actor.Context, client *LoginClientActor, request *req.DeleteCharacter) {
 	client.Send(&resp.DeleteCharacter{
-		Id:      request.Id,
+		ID:      request.ID,
 		Success: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }

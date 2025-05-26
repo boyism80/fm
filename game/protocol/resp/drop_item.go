@@ -8,11 +8,11 @@ import (
 )
 
 type DropItem struct {
-	Id           uint32
+	ID           uint32
 	Animation    constant.DropItemAnimationType
 	DropType     constant.DropType
 	Item         entity.Item
-	OwnerId      uint32
+	OwnerID      uint32
 	SpawnedPoint types.Vector2[int16]
 	IsPlayerDrop bool
 }
@@ -20,11 +20,11 @@ type DropItem struct {
 func (p *DropItem) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0xC6)
 	writer.WriteU8(uint8(p.Animation))
-	writer.WriteU32(p.Id)
+	writer.WriteU32(p.ID)
 	writer.WriteBoolean(false)
 	template := p.Item.GetSpec()
 	writer.WriteU32(template.GetID())
-	writer.WriteU32(p.OwnerId)
+	writer.WriteU32(p.OwnerID)
 	writer.WriteU8(uint8(p.DropType))
 	position := p.Item.GetObject().Position
 	writer.Write16(position.X)

@@ -7,7 +7,7 @@ import (
 )
 
 type Portal struct {
-	Id          uint8
+	ID          uint8
 	Name        string
 	TargetMapId int32
 	Target      string
@@ -17,7 +17,7 @@ type Portal struct {
 }
 
 type MapSpec struct {
-	Id           uint32
+	ID           uint32
 	Name         string
 	Version      int
 	Cloud        int
