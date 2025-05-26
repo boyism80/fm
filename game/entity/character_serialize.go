@@ -158,7 +158,7 @@ func (ch *Character) Serialize(writer *stream.StreamWriter) {
 }
 
 func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
-	writer.WriteU32(ch.Meso)
+	writer.Write32(ch.Meso)
 
 	writer.WriteU8(ch.Inventory[constant.InventoryTypeEquipment].SlotLimit)
 	writer.WriteU8(ch.Inventory[constant.InventoryTypeConsume].SlotLimit)

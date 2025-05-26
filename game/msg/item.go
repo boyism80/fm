@@ -18,5 +18,5 @@ type ItemLooting struct {
 type ItemLooted struct {
 	Success     bool
 	CharacterId uint32
-	Count       uint16
+	Count       int32
 }

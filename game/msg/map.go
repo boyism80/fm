@@ -43,6 +43,13 @@ type MapSpawnItem struct {
 	OwnerId      uint32
 }
 
+type MapSpawnMeso struct {
+	Meso         int32
+	SpawnedPoint types.Vector2[int16]
+	Owner        *actor.PID
+	OwnerId      uint32
+}
+
 type MapItemLoot struct {
 	Actor    *actor.PID
 	Oid      uint32

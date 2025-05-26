@@ -37,6 +37,7 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 		handler.RegisterHandler(ctx, act, act.handler, onMapPidList)
 		handler.RegisterHandler(ctx, act, act.handler, onMapBroadcastRange)
 		handler.RegisterHandler(ctx, act, act.handler, onMapSpawnItem)
+		handler.RegisterHandler(ctx, act, act.handler, onMapSpawnMeso)
 		handler.RegisterHandler(ctx, act, act.handler, onMapItemLoot)
 		handler.RegisterHandler(ctx, act, act.handler, onMapItemLooted)
 
@@ -115,6 +116,29 @@ func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 
 	ctx.Send(pid, &msg.ItemSpawn{
 		OwnerId:      m.OwnerId,
+		SpawnedPoint: m.SpawnedPoint,
+	})
+}
+
+func onMapSpawnMeso(ctx actor.Context, state *MapActor, m *msg.MapSpawnMeso) {
+	dropPoint, ok := state.Spec.DropPoint(m.SpawnedPoint)
+	if !ok {
+		dropPoint = m.SpawnedPoint
+	}
+	state.sequence++
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return NewMesoActor(ctx,
+			state.ctx,
+			m.Meso,
+			state.sequence,
+			ctx.Self(),
+			dropPoint)
+	})
+	pid := ctx.Spawn(props)
+	state.objects[state.sequence] = pid
+	ctx.Send(pid, &msg.MesoSpawn{
+		OwnerId:      m.OwnerId,
+		Position:     dropPoint,
 		SpawnedPoint: m.SpawnedPoint,
 	})
 }

@@ -14,3 +14,9 @@ type CharacterItemLooting struct {
 	Oid  uint32
 	Item entity.Item
 }
+
+type CharacterMesoLooting struct {
+	Pid  *actor.PID
+	Oid  uint32
+	Meso int32
+}

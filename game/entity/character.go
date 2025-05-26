@@ -40,7 +40,7 @@ type Character struct {
 	Map           uint32
 	SpawnPoint    uint8
 	Mega          bool
-	Meso          uint32
+	Meso          int32
 	Stance        uint8
 
 	Random1          stream.RandomStream

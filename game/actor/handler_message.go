@@ -2,6 +2,7 @@ package actor
 
 import (
 	"log"
+	"math"
 
 	protoactor "github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/crypt"
@@ -10,6 +11,7 @@ import (
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol/resp"
@@ -26,6 +28,7 @@ func RegisterGameClientMessageHandlers(ctx protoactor.Context, m *GameClientActo
 	handler.RegisterHandler(ctx, m, h, onGameClientPing)
 	handler.RegisterHandler(ctx, m, h, onGameClientWarped)
 	handler.RegisterHandler(ctx, m, h, onGameClientItemLooting)
+	handler.RegisterHandler(ctx, m, h, onGameClientMesoLooting)
 }
 
 func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *protoactor.PID) {
@@ -152,6 +155,7 @@ func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m 
 		client.Send(&resp.ItemGainFailed{
 			Mode: resp.ItemGainFailedTypeFull,
 		}, types.SEND_POLICY_ENCRYPT)
+
 		client.Send(&resp.UpdateStats{
 			UnlockAction: true,
 		}, types.SEND_POLICY_ENCRYPT)
@@ -215,7 +219,46 @@ func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m 
 
 	ctx.Send(m.Pid, &msg.ItemLooted{
 		Success:     true,
-		Count:       gain,
+		Count:       int32(gain),
+		CharacterId: client.ch.Id,
+	})
+}
+
+func onGameClientMesoLooting(ctx protoactor.Context, client *GameClientActor, m *msg.CharacterMesoLooting) {
+	cap := math.MaxInt32 - client.ch.Meso
+	if m.Meso > cap {
+		client.Send(&resp.ItemGainFailed{
+			Mode: resp.ItemGainFailedTypeFull,
+		}, types.SEND_POLICY_ENCRYPT)
+
+		client.Send(&resp.UpdateStats{
+			UnlockAction: true,
+		}, types.SEND_POLICY_ENCRYPT)
+
+		ctx.Send(m.Pid, &msg.ItemLooted{
+			Success:     false,
+			Count:       0,
+			CharacterId: client.ch.Id,
+		})
+		return
+	}
+
+	client.ch.Meso += m.Meso
+	client.Send(&resp.UpdateStats{
+		Stats: map[constant.Stat]int32{
+			constant.StatMeso: client.ch.Meso,
+		},
+		UnlockAction: true,
+	}, types.SEND_POLICY_ENCRYPT)
+
+	client.Send(&resp.ShowMesoGain{
+		Count: m.Meso,
+		Mode:  resp.ShowMesoGainTypeStatus,
+	}, types.SEND_POLICY_ENCRYPT)
+
+	ctx.Send(m.Pid, &msg.ItemLooted{
+		Success:     true,
+		Count:       m.Meso,
 		CharacterId: client.ch.Id,
 	})
 }

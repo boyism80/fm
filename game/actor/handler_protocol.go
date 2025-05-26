@@ -7,6 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol"
@@ -25,6 +26,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x1B, ctx, client, h, onGameClientAttack)
 	handler.RegisterPacketHandler(0x36, ctx, client, h, onGameMoveItem)
 	handler.RegisterPacketHandler(0xA3, ctx, client, h, onGameItemLoot)
+	handler.RegisterPacketHandler(0x4D, ctx, client, h, onGameDropMeso)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -219,5 +221,35 @@ func onGameItemLoot(ctx actor.Context, client *GameClientActor, req *req.ItemLoo
 		Actor:    ctx.Self(),
 		Oid:      req.Oid,
 		Position: req.Position,
+	})
+}
+
+func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMeso) {
+	ch := client.ch
+	mapActor := client.ctx.MapActors[ch.Map]
+	if mapActor == nil {
+		return
+	}
+
+	if req.Meso > ch.Meso {
+		client.Send(&resp.UpdateStats{
+			UnlockAction: true,
+		}, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+
+	ch.Meso -= req.Meso
+	client.Send(&resp.UpdateStats{
+		Stats: map[constant.Stat]int32{
+			constant.StatMeso: ch.Meso,
+		},
+		UnlockAction: true,
+	}, types.SEND_POLICY_ENCRYPT)
+
+	ctx.Send(mapActor, &msg.MapSpawnMeso{
+		Meso:         req.Meso,
+		SpawnedPoint: ch.Position,
+		Owner:        ctx.Self(),
+		OwnerId:      ch.Id,
 	})
 }
