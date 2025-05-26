@@ -10,11 +10,11 @@ type LoginServerActor struct {
 }
 
 func NewLoginServerActor() protoactor.Actor {
-	act := &LoginServerActor{
+	actor := &LoginServerActor{
 		handler: handler.NewMessageHandler(),
 	}
-	RegisterLoginServerHandlers(nil, act, act.handler)
-	return act
+	RegisterLoginServerHandlers(nil, actor, actor.handler)
+	return actor
 }
 
 func (state *LoginServerActor) Receive(context protoactor.Context) {

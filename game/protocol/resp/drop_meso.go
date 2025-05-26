@@ -9,8 +9,8 @@ import (
 type DropMeso struct {
 	Id           uint32
 	Animation    constant.DropItemAnimationType
-	Meso         int32
-	DropType     uint8
+	Count        int32
+	DropType     constant.DropType
 	OwnerId      uint32
 	SpawnedPoint types.Vector2[int16]
 	IsPlayerDrop bool
@@ -22,9 +22,9 @@ func (p *DropMeso) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(p.Animation))
 	writer.WriteU32(p.Id)
 	writer.WriteBoolean(true)
-	writer.Write32(p.Meso)
+	writer.Write32(p.Count)
 	writer.WriteU32(p.OwnerId)
-	writer.WriteU8(p.DropType)
+	writer.WriteU8(uint8(p.DropType))
 	writer.Write16(p.Position.X)
 	writer.Write16(p.Position.Y)
 	writer.WriteU32(0)

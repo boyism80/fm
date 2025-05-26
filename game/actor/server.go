@@ -17,12 +17,12 @@ type GameServerActor struct {
 }
 
 func NewGameServerActor() protoactor.Actor {
-	act := &GameServerActor{
+	actor := &GameServerActor{
 		handler: handler.NewMessageHandler(),
 	}
-	handler.RegisterHandler(nil, act, act.handler, onGameStart)
-	handler.RegisterHandler(nil, act, act.handler, onGameClientAccepted)
-	return act
+	handler.RegisterHandler(nil, actor, actor.handler, onGameStart)
+	handler.RegisterHandler(nil, actor, actor.handler, onGameClientAccepted)
+	return actor
 }
 
 func (state *GameServerActor) Receive(context protoactor.Context) {

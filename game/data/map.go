@@ -66,10 +66,10 @@ func (ms *MapSpec) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 	return &pt
 }
 
-func (ms *MapSpec) DropPoint(initial types.Point[int16]) (types.Point[int16], bool) {
+func (ms *MapSpec) DropPoint(initial types.Point[int16]) types.Point[int16] {
 	highest := types.Point[int16]{X: initial.X, Y: initial.Y - int16(100)}
 	if result := ms.FootholdPoint(highest); result != nil {
-		return *result, true
+		return *result
 	}
-	return types.Point[int16]{}, false
+	return initial
 }

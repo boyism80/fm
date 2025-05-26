@@ -30,7 +30,7 @@ func NewLoginClientActor(ctx actor.Context, serverCtx *context.ServerContext, co
 	ivSend := []byte{0x2F, 0xA3, 0x65, 0x43}
 	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
 
-	act := &LoginClientActor{
+	actor := &LoginClientActor{
 		Context:        serverCtx,
 		Conn:           conn,
 		Buffer:         []byte{},
@@ -40,9 +40,9 @@ func NewLoginClientActor(ctx actor.Context, serverCtx *context.ServerContext, co
 		recvEncryption: crypt.NewEncryption(ivRecv, 5),
 	}
 
-	RegisterLoginClientMessageHandlers(ctx, act, act.messageHandler)
-	RegisterLoginClientPacketHandler(ctx, act, act.packetHandler)
-	return act
+	RegisterLoginClientMessageHandlers(ctx, actor, actor.messageHandler)
+	RegisterLoginClientPacketHandler(ctx, actor, actor.packetHandler)
+	return actor
 }
 
 func (state *LoginClientActor) Receive(context actor.Context) {

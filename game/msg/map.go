@@ -37,26 +37,26 @@ type MapBroadcastRange struct {
 }
 
 type MapSpawnItem struct {
-	Item         entity.Item
-	SpawnedPoint types.Vector2[int16]
-	Owner        *actor.PID
-	OwnerId      uint32
+	Item    entity.Item
+	Owner   *actor.PID
+	OwnerId uint32
 }
 
 type MapSpawnMeso struct {
-	Meso         int32
+	Count        int32
 	SpawnedPoint types.Vector2[int16]
 	Owner        *actor.PID
 	OwnerId      uint32
 }
 
 type MapItemLoot struct {
-	Actor    *actor.PID
-	Oid      uint32
-	Position types.Vector2[int16]
+	Actor       *actor.PID
+	Oid         uint32
+	CharacterId uint32
+	Position    types.Vector2[int16]
 }
 
-type MapItemLooted struct {
+type MapRemoveItem struct {
 	Actor       *actor.PID
 	Oid         uint32
 	CharacterId uint32

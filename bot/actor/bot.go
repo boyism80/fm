@@ -19,16 +19,16 @@ type BotActor struct {
 }
 
 func NewBotActor(ctx protoactor.Context, serverCtx *context.ServerContext) protoactor.Actor {
-	act := &BotActor{
+	actor := &BotActor{
 		Context: serverCtx,
 		handler: handler.NewMessageHandler(),
 	}
 
-	handler.RegisterHandler(ctx, act, act.handler, onBotConnect)
-	handler.RegisterHandler(ctx, act, act.handler, onBotSendPacket)
-	handler.RegisterHandler(ctx, act, act.handler, onBotClose)
-	handler.RegisterHandler(ctx, act, act.handler, onBotStopping)
-	return act
+	handler.RegisterHandler(ctx, actor, actor.handler, onBotConnect)
+	handler.RegisterHandler(ctx, actor, actor.handler, onBotSendPacket)
+	handler.RegisterHandler(ctx, actor, actor.handler, onBotClose)
+	handler.RegisterHandler(ctx, actor, actor.handler, onBotStopping)
+	return actor
 }
 
 func (state *BotActor) Receive(context protoactor.Context) {

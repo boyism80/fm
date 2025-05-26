@@ -13,11 +13,11 @@ type MobActor struct {
 }
 
 func NewMobActor(ctx protoactor.Context, serverCtx context.ServerContext) protoactor.Actor {
-	act := &MobActor{
+	actor := &MobActor{
 		handler: handler.NewMessageHandler(),
 	}
-	RegisterLifeHandlers(ctx, &act.Mob.Life, act.handler)
-	return act
+	RegisterLifeHandlers(ctx, &actor.Mob.Life, actor.handler)
+	return actor
 }
 
 func (state *MobActor) Receive(context protoactor.Context) {

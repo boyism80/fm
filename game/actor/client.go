@@ -32,7 +32,7 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 	ivSend := []byte{0x2F, 0xA3, 0x65, 0x43}
 	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
 
-	act := &GameClientActor{
+	actor := &GameClientActor{
 		ctx:            serverCtx,
 		conn:           conn,
 		buffer:         []byte{},
@@ -43,10 +43,10 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 		receiveCrypt:   crypt.NewEncryption(ivRecv, 5),
 	}
 
-	RegisterGameClientMessageHandlers(ctx, act, act.messageHandler)
-	RegisterGameClientPacketHandler(ctx, act, act.packetHandler)
-	RegisterGameClientCommandHandler(ctx, act, act.commandHandler)
-	return act
+	RegisterGameClientMessageHandlers(ctx, actor, actor.messageHandler)
+	RegisterGameClientPacketHandler(ctx, actor, actor.packetHandler)
+	RegisterGameClientCommandHandler(ctx, actor, actor.commandHandler)
+	return actor
 }
 
 func (state *GameClientActor) Receive(context actor.Context) {

@@ -189,15 +189,18 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 		}, types.SEND_POLICY_ENCRYPT)
 
 		spawned := src.Clone(req.Count)
-		spawned.BindObject(&entity.Object{
-			Position: ch.Position,
+		spawned.BindDrop(&entity.Drop{
+			Object:       &entity.Object{},
+			Owner:        ch.Id,
+			SpawnedPoint: ch.Position,
+			DropType:     constant.DropTypeFFA,
+			Looting:      false,
 		})
 
 		ctx.Send(mapActor, &msg.MapSpawnItem{
-			Item:         spawned,
-			SpawnedPoint: ch.Position,
-			Owner:        ctx.Self(),
-			OwnerId:      ch.Id,
+			Item:    spawned,
+			Owner:   ctx.Self(),
+			OwnerId: ch.Id,
 		})
 
 		if removed {
@@ -218,9 +221,10 @@ func onGameItemLoot(ctx actor.Context, client *GameClientActor, req *req.ItemLoo
 	}
 
 	ctx.Send(mpid, &msg.MapItemLoot{
-		Actor:    ctx.Self(),
-		Oid:      req.Oid,
-		Position: req.Position,
+		Actor:       ctx.Self(),
+		Oid:         req.Oid,
+		CharacterId: client.ch.Id,
+		Position:    req.Position,
 	})
 }
 
@@ -228,6 +232,11 @@ func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMes
 	ch := client.ch
 	mapActor := client.ctx.MapActors[ch.Map]
 	if mapActor == nil {
+		return
+	}
+
+	if req.Meso < 10 || req.Meso > 50000 {
+		ctx.Stop(ctx.Self())
 		return
 	}
 
@@ -247,7 +256,7 @@ func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMes
 	}, types.SEND_POLICY_ENCRYPT)
 
 	ctx.Send(mapActor, &msg.MapSpawnMeso{
-		Meso:         req.Meso,
+		Count:        req.Meso,
 		SpawnedPoint: ch.Position,
 		Owner:        ctx.Self(),
 		OwnerId:      ch.Id,

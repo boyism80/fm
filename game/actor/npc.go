@@ -13,11 +13,11 @@ type NpcActor struct {
 }
 
 func NewNpcActor(ctx protoactor.Context, serverCtx context.ServerContext) protoactor.Actor {
-	act := &NpcActor{
+	actor := &NpcActor{
 		handler: handler.NewMessageHandler(),
 	}
-	RegisterObjectHandlers(ctx, &act.Npc.Object, act.handler)
-	return act
+	RegisterObjectHandlers(ctx, &actor.Npc.Object, actor.handler)
+	return actor
 }
 
 func (state *NpcActor) Receive(context protoactor.Context) {

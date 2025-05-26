@@ -6,12 +6,14 @@ import (
 
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/data"
 )
 
 type Item interface {
+	GetDrop() *Drop
 	GetObject() *Object
 	GetSpec() data.ItemSpec
 	GetInventoryType() constant.InventoryType
@@ -20,15 +22,31 @@ type Item interface {
 	Increase(count uint16) uint16
 	Reduce(count uint16) uint16
 	Clone(count uint16) Item
-	BindObject(obj *Object)
+	BindDrop(drop *Drop)
 	Serialize(writer *stream.StreamWriter, trade bool, slot int16)
 }
 
-type ItemCore struct {
+type Drop struct {
 	*Object
+	Id           uint32
+	Owner        uint32
+	SpawnedPoint types.Point[int16]
+	DropType     constant.DropType
+	NextFFA      time.Time
+	NextExpiry   time.Time
+	Looting      bool
+}
+
+type ItemCore struct {
+	*Drop
 	Spec       data.ItemSpec
 	UniqueId   int64
 	Expiration time.Time
+}
+
+type Meso struct {
+	*Drop
+	Count int32
 }
 
 type CashItem struct {
@@ -77,6 +95,10 @@ type Pet struct {
 	Expiration  time.Time
 }
 
+func (item *ItemCore) GetDrop() *Drop {
+	return item.Drop
+}
+
 func (item *ItemCore) GetObject() *Object {
 	return item.Object
 }
@@ -89,8 +111,8 @@ func (item *ItemCore) GetExpiration() time.Time {
 	return item.Expiration
 }
 
-func (item *ItemCore) BindObject(obj *Object) {
-	item.Object = obj
+func (item *ItemCore) BindDrop(drop *Drop) {
+	item.Drop = drop
 }
 
 func (item *CashItem) GetInventoryType() constant.InventoryType {
@@ -122,7 +144,7 @@ func (item *CashItem) Increase(count uint16) uint16 {
 func (item *CashItem) Clone(count uint16) Item {
 	return &CashItem{
 		ItemCore: &ItemCore{
-			Object:     nil,
+			Drop:       nil,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
@@ -169,7 +191,7 @@ func (item *Installation) Increase(count uint16) uint16 {
 func (item *Installation) Clone(count uint16) Item {
 	return &Installation{
 		ItemCore: &ItemCore{
-			Object:     nil,
+			Drop:       nil,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
@@ -225,7 +247,7 @@ func (item *GeneralItem) Increase(count uint16) uint16 {
 func (item *GeneralItem) Clone(count uint16) Item {
 	return &GeneralItem{
 		ItemCore: &ItemCore{
-			Object:     nil,
+			Drop:       nil,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
@@ -272,7 +294,7 @@ func (item *Equipment) Increase(count uint16) uint16 {
 func (item *Equipment) Clone(count uint16) Item {
 	return &Equipment{
 		ItemCore: &ItemCore{
-			Object:     nil,
+			Drop:       nil,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
@@ -371,7 +393,7 @@ func (item *Consume) Increase(count uint16) uint16 {
 func (item *Consume) Clone(count uint16) Item {
 	return &Consume{
 		ItemCore: &ItemCore{
-			Object:     nil,
+			Drop:       nil,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
@@ -431,7 +453,7 @@ func (item *Pet) Increase(count uint16) uint16 {
 func (item *Pet) Clone(count uint16) Item {
 	return &Pet{
 		ItemCore: &ItemCore{
-			Object:     nil,
+			Drop:       nil,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.ItemCore.Expiration,
