@@ -16,7 +16,7 @@ import (
 
 type ItemActor struct {
 	entity.Item
-	id      uint32
+	oid     uint32
 	ctx     *context.ServerContext
 	handler *handler.MessageHandler
 	mapPid  *actor.PID
@@ -30,7 +30,7 @@ func NewItemActor(ctx actor.Context,
 	mapPid *actor.PID) actor.Actor {
 
 	act := &ItemActor{
-		id:      oid,
+		oid:     oid,
 		ctx:     serverCtx,
 		handler: handler.NewMessageHandler(),
 		Item:    entity,
@@ -54,7 +54,7 @@ func onItemSpawn(ctx actor.Context, state *ItemActor, request *msg.ItemSpawn) {
 		ExceptSelf: true,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.DropItem{
-				Id:           state.id,
+				Id:           state.oid,
 				Animation:    constant.DropItemAnimationTypeDefault,
 				DropType:     2,
 				Item:         state.Item,
@@ -70,12 +70,12 @@ func onItemSpawn(ctx actor.Context, state *ItemActor, request *msg.ItemSpawn) {
 func onItemLooting(ctx actor.Context, state *ItemActor, request *msg.ItemLooting) {
 	if state.looting {
 		ctx.Send(request.Actor, &msg.CharacterLootFailed{
-			Oid: state.id,
+			Oid: state.oid,
 		})
 	} else {
 		ctx.Send(request.Actor, &msg.CharacterItemLooting{
 			Pid:  ctx.Self(),
-			Oid:  state.id,
+			Oid:  state.oid,
 			Item: state.Item.Clone(state.GetCount()),
 		})
 		state.looting = true
@@ -88,7 +88,7 @@ func onItemLooted(ctx actor.Context, state *ItemActor, request *msg.ItemLooted) 
 		if state.Reduce(uint16(request.Count)) == 0 {
 			ctx.Send(state.mapPid, &msg.MapItemLooted{
 				Actor:       ctx.Self(),
-				Oid:         state.id,
+				Oid:         state.oid,
 				CharacterId: request.CharacterId,
 				Mode:        resp.RemoveItemTypeAnimated,
 				Position:    state.GetObject().Position,

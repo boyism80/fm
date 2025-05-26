@@ -14,7 +14,7 @@ import (
 
 type MesoActor struct {
 	entity.Object
-	id      uint32
+	oid     uint32
 	ctx     *context.ServerContext
 	handler *handler.MessageHandler
 	mapPid  *actor.PID
@@ -33,7 +33,7 @@ func NewMesoActor(ctx actor.Context,
 		Object: entity.Object{
 			Position: position,
 		},
-		id:      oid,
+		oid:     oid,
 		ctx:     serverCtx,
 		handler: handler.NewMessageHandler(),
 		meso:    meso,
@@ -57,7 +57,7 @@ func onMesoSpawn(ctx actor.Context, state *MesoActor, request *msg.MesoSpawn) {
 		ExceptSelf: true,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.DropMeso{
-				Id:           state.id,
+				Id:           state.oid,
 				Animation:    constant.DropItemAnimationTypeDefault,
 				DropType:     2,
 				Meso:         state.meso,
@@ -74,12 +74,12 @@ func onMesoSpawn(ctx actor.Context, state *MesoActor, request *msg.MesoSpawn) {
 func onMesoLooting(ctx actor.Context, state *MesoActor, request *msg.ItemLooting) {
 	if state.looting {
 		ctx.Send(request.Actor, &msg.CharacterLootFailed{
-			Oid: state.id,
+			Oid: state.oid,
 		})
 	} else {
 		ctx.Send(request.Actor, &msg.CharacterMesoLooting{
 			Pid:  ctx.Self(),
-			Oid:  state.id,
+			Oid:  state.oid,
 			Meso: state.meso,
 		})
 		state.looting = true
@@ -93,7 +93,7 @@ func onMesoLooted(ctx actor.Context, state *MesoActor, request *msg.ItemLooted) 
 		if state.meso == 0 {
 			ctx.Send(state.mapPid, &msg.MapItemLooted{
 				Actor:       ctx.Self(),
-				Oid:         state.id,
+				Oid:         state.oid,
 				CharacterId: request.CharacterId,
 				Mode:        resp.RemoveItemTypeAnimated,
 				Position:    state.Object.Position,

@@ -57,14 +57,14 @@ func (state *GameClientActor) Invoke(ctx actor.Context, header int, data []byte)
 	return state.packetHandler.Handle(ctx, header, data)
 }
 
-func (c *GameClientActor) Name() string {
-	if c.ch == nil {
+func (state *GameClientActor) Name() string {
+	if state.ch == nil {
 		return ""
 	}
-	return c.ch.Name
+	return state.ch.Name
 }
 
-func (actor *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
+func (state *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
 	writer := stream.NewStreamWriter(stream.LittleEndian)
 	p.Serialize(writer)
 	bytes := writer.Bytes()
@@ -72,18 +72,18 @@ func (actor *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
 	log.Println("[S] " + util.ToHexString(bytes))
 
 	if policy == types.SEND_POLICY_RAW {
-		actor.conn.Write(bytes)
+		state.conn.Write(bytes)
 		return
 	}
 
 	writer = stream.NewStreamWriter(stream.LittleEndian)
 	if policy&types.SEND_POLICY_ENCRYPT != 0 {
-		header := actor.sendCrypt.GetPacketHeader(len(bytes))
+		header := state.sendCrypt.GetPacketHeader(len(bytes))
 		writer.Write(header)
-		bytes = actor.sendCrypt.Encrypt(bytes)
+		bytes = state.sendCrypt.Encrypt(bytes)
 	}
 
 	writer.Write(bytes)
 	bytes = writer.Bytes()
-	actor.conn.Write(bytes)
+	state.conn.Write(bytes)
 }
