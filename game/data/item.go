@@ -6,7 +6,7 @@ type ItemSpec interface {
 	GetPrice() int
 	IsCash() bool
 	IsQuest() bool
-	GetSlotMax() uint16
+	GetCapacity() uint16
 	IsTradeAvailable() int
 }
 
@@ -114,7 +114,7 @@ func (spec *ItemCoreSpec) IsQuest() bool {
 	return spec.Quest
 }
 
-func (spec *ItemCoreSpec) GetSlotMax() uint16 {
+func (spec *ItemCoreSpec) GetCapacity() uint16 {
 	return spec.SlotMax
 }
 

@@ -5,17 +5,17 @@ import (
 	"github.com/boyism80/fm/common/types"
 )
 
-type ItemPickup struct {
+type ItemLoot struct {
 	Tick     uint32
 	Position types.Vector2[int16]
 	Oid      uint32
 }
 
-func (p *ItemPickup) Serialize(writer *stream.StreamWriter) error {
+func (p *ItemLoot) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ItemPickup) Deserialize(reader *stream.StreamReader) error {
+func (p *ItemLoot) Deserialize(reader *stream.StreamReader) error {
 	p.Tick, _ = reader.ReadU32()
 	reader.Skip(1)
 	x, _ := reader.Read16()

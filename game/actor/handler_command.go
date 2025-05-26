@@ -44,8 +44,8 @@ func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) 
 
 	inventoryType := item.GetInventoryType()
 	inventory := client.ch.Inventory[inventoryType]
-	nextSlot, err := inventory.NextSlot()
-	if err != nil {
+	nextSlot, ok := inventory.NextSlot()
+	if !ok {
 		return
 	}
 

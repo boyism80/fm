@@ -1,6 +1,8 @@
 package actor
 
 import (
+	"log"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/handler"
@@ -18,6 +20,7 @@ type ItemActor struct {
 	ctx     *context.ServerContext
 	handler *handler.MessageHandler
 	mapPid  *actor.PID
+	looting bool
 }
 
 func NewItemActor(ctx actor.Context,
@@ -35,6 +38,8 @@ func NewItemActor(ctx actor.Context,
 	}
 	RegisterObjectHandlers(ctx, act.Item.GetObject(), act.handler)
 	handler.RegisterHandler(ctx, act, act.handler, onItemSpawn)
+	handler.RegisterHandler(ctx, act, act.handler, onItemLooting)
+	handler.RegisterHandler(ctx, act, act.handler, onItemLooted)
 	return act
 }
 
@@ -61,4 +66,40 @@ func onItemSpawn(ctx actor.Context, state *ItemActor, request *msg.ItemSpawn) {
 			Policy: types.SEND_POLICY_ENCRYPT,
 		},
 	})
+}
+
+func onItemLooting(ctx actor.Context, state *ItemActor, request *msg.ItemLooting) {
+	if state.looting {
+		ctx.Send(request.Actor, &msg.CharacterLootFailed{
+			Oid: state.id,
+		})
+		return
+	}
+
+	state.looting = true
+	ctx.Send(request.Actor, &msg.CharacterItemLooting{
+		Pid:  ctx.Self(),
+		Oid:  state.id,
+		Item: state.Item.Clone(state.GetCount()),
+	})
+}
+
+func onItemLooted(ctx actor.Context, state *ItemActor, request *msg.ItemLooted) {
+	state.looting = false
+	if request.Success {
+		if state.Reduce(request.Count) == 0 {
+			// delete item
+			// send map for remove me
+
+			ctx.Send(state.mapPid, &msg.MapItemLooted{
+				Actor:       ctx.Self(),
+				Oid:         state.id,
+				CharacterId: request.CharacterId,
+				Mode:        resp.RemoveItemTypeAnimated,
+				Position:    state.GetObject().Position,
+			})
+		}
+	}
+
+	log.Println("item looted")
 }

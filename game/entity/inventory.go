@@ -5,6 +5,7 @@ import (
 
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/game/data"
 )
 
 var (
@@ -28,13 +29,35 @@ func NewInventory(typ constant.InventoryType) *Inventory {
 	}
 }
 
-func (m *Inventory) NextSlot() (uint8, error) {
+func (m *Inventory) NextSlot() (uint8, bool) {
 	for i := 1; i <= int(m.SlotLimit); i++ {
 		if _, ok := m.Items[int16(i)]; !ok {
-			return uint8(i), nil
+			return uint8(i), true
 		}
 	}
-	return 0, errors.New("inventory is full")
+	return 0, false
+}
+
+func (m *Inventory) FindSlot(spec data.ItemSpec) (uint8, bool) {
+	for i := 1; i <= int(m.SlotLimit); i++ {
+		item, ok := m.Items[int16(i)]
+		if !ok {
+			continue
+		}
+
+		if item.GetSpec().GetID() != spec.GetID() {
+			continue
+		}
+
+		cap := spec.GetCapacity() - item.GetCount()
+		if cap == 0 {
+			continue
+		}
+
+		return uint8(i), true
+	}
+
+	return m.NextSlot()
 }
 
 func (m *Inventory) Serialize(sw *stream.StreamWriter) {

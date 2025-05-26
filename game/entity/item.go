@@ -17,6 +17,7 @@ type Item interface {
 	GetInventoryType() constant.InventoryType
 	GetExpiration() time.Time
 	GetCount() uint16
+	Increase(count uint16) uint16
 	Reduce(count uint16) uint16
 	Clone(count uint16) Item
 	BindObject(obj *Object)
@@ -109,6 +110,15 @@ func (item *CashItem) Reduce(count uint16) uint16 {
 	return item.Count
 }
 
+func (item *CashItem) Increase(count uint16) uint16 {
+	if count > item.Count {
+		item.Count = 0
+	} else {
+		item.Count += count
+	}
+	return item.Count
+}
+
 func (item *CashItem) Clone(count uint16) Item {
 	return &CashItem{
 		ItemCore: &ItemCore{
@@ -149,6 +159,10 @@ func (item *Installation) GetCount() uint16 {
 }
 
 func (item *Installation) Reduce(count uint16) uint16 {
+	return 0
+}
+
+func (item *Installation) Increase(count uint16) uint16 {
 	return 0
 }
 
@@ -199,6 +213,15 @@ func (item *GeneralItem) Reduce(count uint16) uint16 {
 	return item.Count
 }
 
+func (item *GeneralItem) Increase(count uint16) uint16 {
+	if count > item.Count {
+		item.Count = 0
+	} else {
+		item.Count += count
+	}
+	return item.Count
+}
+
 func (item *GeneralItem) Clone(count uint16) Item {
 	return &GeneralItem{
 		ItemCore: &ItemCore{
@@ -239,6 +262,10 @@ func (item *Equipment) GetCount() uint16 {
 }
 
 func (item *Equipment) Reduce(count uint16) uint16 {
+	return 0
+}
+
+func (item *Equipment) Increase(count uint16) uint16 {
 	return 0
 }
 
@@ -332,6 +359,15 @@ func (item *Consume) Reduce(count uint16) uint16 {
 	return item.Count
 }
 
+func (item *Consume) Increase(count uint16) uint16 {
+	if count > item.Count {
+		item.Count = 0
+	} else {
+		item.Count += count
+	}
+	return item.Count
+}
+
 func (item *Consume) Clone(count uint16) Item {
 	return &Consume{
 		ItemCore: &ItemCore{
@@ -385,6 +421,10 @@ func (item *Pet) GetCount() uint16 {
 }
 
 func (item *Pet) Reduce(count uint16) uint16 {
+	return 0
+}
+
+func (item *Pet) Increase(count uint16) uint16 {
 	return 0
 }
 

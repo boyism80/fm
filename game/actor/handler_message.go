@@ -25,6 +25,7 @@ func RegisterGameClientMessageHandlers(ctx protoactor.Context, m *GameClientActo
 	handler.RegisterHandler(ctx, m, h, onGameClientSendProtocol)
 	handler.RegisterHandler(ctx, m, h, onGameClientPing)
 	handler.RegisterHandler(ctx, m, h, onGameClientWarped)
+	handler.RegisterHandler(ctx, m, h, onGameClientItemLooting)
 }
 
 func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *protoactor.PID) {
@@ -138,5 +139,65 @@ func onGameClientWarped(ctx protoactor.Context, client *GameClientActor, m *msg.
 			MarriageRings:   []*entity.Ring{},
 		},
 		Policy: types.SEND_POLICY_ENCRYPT,
+	})
+}
+
+func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m *msg.CharacterItemLooting) {
+
+	invenType := m.Item.GetInventoryType()
+	inven := client.ch.Inventory[invenType]
+	spec := m.Item.GetSpec()
+	gain := uint16(0)
+	for m.Item.GetCount() > 0 {
+		slot, ok := inven.FindSlot(spec)
+		if !ok {
+			break
+		}
+
+		exists, ok := inven.Items[int16(slot)]
+		cap := uint16(0)
+		if ok {
+			// 기존에 있는 아이템 수량 증가
+			cap = min(spec.GetCapacity()-exists.GetCount(), m.Item.GetCount())
+			exists.Increase(cap)
+			client.Send(&resp.UpdateInventorySlot{
+				InventoryType: invenType,
+				Mode:          resp.InventoryModeUpdate,
+				IsDrop:        true,
+				Items: []resp.SlotItem{
+					{
+						Slot: int16(slot),
+						Item: exists,
+					},
+				},
+			}, types.SEND_POLICY_ENCRYPT)
+		} else {
+			// 새로운 슬롯에 아이템 추가
+			cap = min(spec.GetCapacity(), m.Item.GetCount())
+			inven.Items[int16(slot)] = m.Item.Clone(cap)
+		}
+		m.Item.Reduce(cap)
+		gain += cap
+	}
+
+	if gain > 0 {
+		client.Send(&resp.ShowItemGain{
+			ItemId: spec.GetID(),
+			Count:  uint32(gain),
+			Mode:   resp.ShowItemGainTypeStatus,
+		}, types.SEND_POLICY_ENCRYPT)
+	} else {
+		client.Send(&resp.ItemGainFailed{
+			Mode: resp.ItemGainFailedTypeFull,
+		}, types.SEND_POLICY_ENCRYPT)
+		client.Send(&resp.UpdateStats{
+			UnlockAction: true,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+
+	ctx.Send(m.Pid, &msg.ItemLooted{
+		Success:     gain > 0,
+		Count:       gain,
+		CharacterId: client.ch.Id,
 	})
 }

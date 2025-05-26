@@ -14,6 +14,7 @@ import (
 
 type MapActor struct {
 	objectPIDs map[uint32]*actor.PID // 오브젝트 ID → PID
+	objects    map[uint32]*actor.PID
 	sequence   uint32
 	handler    *handler.MessageHandler
 	Spec       *data.MapSpec
@@ -25,6 +26,7 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 
 		act := &MapActor{
 			objectPIDs: make(map[uint32]*actor.PID),
+			objects:    map[uint32]*actor.PID{},
 			handler:    handler.NewMessageHandler(),
 			Spec:       spec,
 			ctx:        serverCtx,
@@ -35,6 +37,8 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 		handler.RegisterHandler(ctx, act, act.handler, onMapPidList)
 		handler.RegisterHandler(ctx, act, act.handler, onMapBroadcastRange)
 		handler.RegisterHandler(ctx, act, act.handler, onMapSpawnItem)
+		handler.RegisterHandler(ctx, act, act.handler, onMapItemLoot)
+		handler.RegisterHandler(ctx, act, act.handler, onMapItemLooted)
 
 		return act
 	})
@@ -93,13 +97,13 @@ func onMapBroadcastRange(ctx actor.Context, state *MapActor, m *msg.MapBroadcast
 func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 	obj := m.Item.GetObject()
 	dropPoint, ok := state.Spec.DropPoint(obj.Position)
-	if ok {
+	if !ok {
 		dropPoint = obj.Position
 	}
 	obj.Position = dropPoint
 
+	state.sequence++
 	props := actor.PropsFromProducer(func() actor.Actor {
-		state.sequence++
 		return NewItemActor(ctx,
 			state.ctx,
 			m.Item,
@@ -107,9 +111,41 @@ func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 			ctx.Self())
 	})
 	pid := ctx.Spawn(props)
+	state.objects[state.sequence] = pid
 
 	ctx.Send(pid, &msg.ItemSpawn{
 		OwnerId:      m.OwnerId,
 		SpawnedPoint: m.SpawnedPoint,
 	})
+}
+
+func onMapItemLoot(ctx actor.Context, state *MapActor, m *msg.MapItemLoot) {
+
+	pid, ok := state.objects[m.Oid]
+	if !ok {
+		ctx.Send(m.Actor, &msg.CharacterLootFailed{
+			Oid: m.Oid,
+		})
+	} else {
+		ctx.Send(pid, &msg.ItemLooting{
+			Actor:    m.Actor,
+			Position: m.Position,
+		})
+	}
+}
+
+func onMapItemLooted(ctx actor.Context, state *MapActor, m *msg.MapItemLooted) {
+	for _, pid := range state.objectPIDs {
+		ctx.Send(pid, &common_msg.SendProtocol{
+			Protocol: &resp.RemoveItem{
+				Mode:        m.Mode,
+				Oid:         m.Oid,
+				CharacterId: m.CharacterId,
+			},
+			Policy: types.SEND_POLICY_ENCRYPT,
+		})
+	}
+
+	delete(state.objects, m.Oid)
+	ctx.Stop(m.Actor)
 }

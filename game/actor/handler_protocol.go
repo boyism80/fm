@@ -24,7 +24,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x20, ctx, client, h, onGameClientNormalChat)
 	handler.RegisterPacketHandler(0x1B, ctx, client, h, onGameClientAttack)
 	handler.RegisterPacketHandler(0x36, ctx, client, h, onGameMoveItem)
-	handler.RegisterPacketHandler(0xA3, ctx, client, h, onGameItemPickup)
+	handler.RegisterPacketHandler(0xA3, ctx, client, h, onGameItemLoot)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -205,8 +205,19 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 	fmt.Println(src, dst)
 }
 
-func onGameItemPickup(ctx actor.Context, client *GameClientActor, req *req.ItemPickup) {
-	client.Send(&resp.UpdateStats{
-		UnlockAction: true,
-	}, types.SEND_POLICY_ENCRYPT)
+func onGameItemLoot(ctx actor.Context, client *GameClientActor, req *req.ItemLoot) {
+
+	mpid, ok := client.ctx.MapActors[client.ch.Map]
+	if !ok {
+		client.Send(&resp.UpdateStats{
+			UnlockAction: true,
+		}, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+
+	ctx.Send(mpid, &msg.MapItemLoot{
+		Actor:    ctx.Self(),
+		Oid:      req.Oid,
+		Position: req.Position,
+	})
 }
