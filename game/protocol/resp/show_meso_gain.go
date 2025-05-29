@@ -8,7 +8,7 @@ type ShowMesoGainType uint8
 
 const (
 	ShowMesoGainTypeStatus ShowMesoGainType = iota
-	SHowMesoGainTypeChat
+	ShowMesoGainTypeChat
 )
 
 type ShowMesoGain struct {
@@ -19,7 +19,7 @@ type ShowMesoGain struct {
 func (p *ShowMesoGain) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0x1C)
 	switch p.Mode {
-	case SHowMesoGainTypeChat:
+	case ShowMesoGainTypeChat:
 		writer.WriteU8(5)
 		writer.Write32(p.Count)
 		writer.Write32(-1)

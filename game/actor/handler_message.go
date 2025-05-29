@@ -182,29 +182,17 @@ func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m 
 			exists.Increase(cap)
 			client.Send(&resp.UpdateInventorySlot{
 				InventoryType: invenType,
-				Mode:          resp.InventoryModeUpdate,
-				IsDrop:        true,
-				Items: []resp.SlotItem{
-					{
-						Slot: int16(slot),
-						Item: exists,
-					},
-				},
+				Slot:          int16(slot),
+				Item:          exists,
 			}, types.SEND_POLICY_ENCRYPT)
 		} else {
 			// 새로운 슬롯에 아이템 추가
 			cap = min(spec.GetCapacity(), m.Item.GetCount())
 			inven.Items[int16(slot)] = m.Item.Clone(cap)
-			client.Send(&resp.UpdateInventorySlot{
+			client.Send(&resp.AddInventorySlot{
 				InventoryType: invenType,
-				Mode:          resp.InventoryModeAdd,
-				IsDrop:        true,
-				Items: []resp.SlotItem{
-					{
-						Slot: int16(slot),
-						Item: inven.Items[int16(slot)],
-					},
-				},
+				Slot:          int16(slot),
+				Item:          inven.Items[int16(slot)],
 			}, types.SEND_POLICY_ENCRYPT)
 		}
 		m.Item.Reduce(cap)

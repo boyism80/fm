@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -157,57 +156,115 @@ func onGameClientAttack(ctx actor.Context, client *GameClientActor, req *req.Att
 	})
 }
 
-func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveItem) {
+func (client *GameClientActor) dropItem(ctx actor.Context, invenType constant.InventoryType, slot int16, count uint16) {
 	ch := client.ch
-	src, ok := ch.Inventory[req.InventoryType].Items[req.Source]
+	item, ok := ch.Inventory[invenType].Items[slot]
 	if !ok {
 		return
 	}
 
-	dst, ok := ch.Inventory[req.InventoryType].Items[req.Dest]
-	if !ok { // drop to map
-		mapActor := client.ctx.MapActors[ch.Map]
-		if mapActor == nil {
-			return
-		}
-
-		removed := (src.Reduce(req.Count) == 0)
-		mode := resp.InventoryModeUpdate
-		if removed {
-			mode = resp.InventoryModeRemove
-		}
-		client.Send(&resp.UpdateInventorySlot{
-			InventoryType: req.InventoryType,
-			Mode:          mode,
-			IsDrop:        true,
-			Items: []resp.SlotItem{
-				{
-					Slot: req.Source,
-					Item: src,
-				},
-			},
-		}, types.SEND_POLICY_ENCRYPT)
-
-		spawned := src.Clone(req.Count)
-		spawned.BindDrop(&entity.Drop{
-			Object:       &entity.Object{},
-			Owner:        ch.ID,
-			SpawnedPoint: ch.Position,
-			DropType:     constant.DropTypeFFA,
-			Looting:      false,
-		})
-
-		ctx.Send(mapActor, &msg.MapSpawnItem{
-			Item:    spawned,
-			Owner:   ctx.Self(),
-			OwnerID: ch.ID,
-		})
-
-		if removed {
-			delete(ch.Inventory[req.InventoryType].Items, req.Source)
-		}
+	mapActor := client.ctx.MapActors[ch.Map]
+	if mapActor == nil {
+		return
 	}
-	fmt.Println(src, dst)
+
+	removed := (item.Reduce(count) == 0)
+	if removed {
+		client.Send(&resp.RemoveInventorySlot{
+			InventoryType: invenType,
+			Slot:          slot,
+		}, types.SEND_POLICY_ENCRYPT)
+	} else {
+		client.Send(&resp.UpdateInventorySlot{
+			InventoryType: invenType,
+			Slot:          slot,
+			Item:          item,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+
+	spawned := item.Clone(count)
+	spawned.BindDrop(&entity.Drop{
+		Object:       &entity.Object{},
+		Owner:        ch.ID,
+		SpawnedPoint: ch.Position,
+		DropType:     constant.DropTypeFFA,
+		Looting:      false,
+	})
+
+	ctx.Send(mapActor, &msg.MapSpawnItem{
+		Item:    spawned,
+		Owner:   ctx.Self(),
+		OwnerID: ch.ID,
+	})
+
+	if removed {
+		delete(ch.Inventory[invenType].Items, slot)
+	}
+}
+
+func (client *GameClientActor) moveItem(invenType constant.InventoryType, slotSrc int16, slotDst int16) {
+	ch := client.ch
+	inven := ch.Inventory[invenType]
+	src, ok := inven.Items[slotSrc]
+	if !ok {
+		return
+	}
+
+	dst, ok := inven.Items[slotDst]
+
+	if !ok {
+		inven.Items[slotDst] = inven.Items[slotSrc]
+		delete(inven.Items, slotSrc)
+		client.Send(&resp.SwapInventorySlot{
+			InventoryType: invenType,
+			Source:        slotSrc,
+			Dest:          slotDst,
+		}, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+
+	specSrc := src.GetSpec()
+	specDst := dst.GetSpec()
+	if specSrc != specDst {
+		buffer := inven.Items[slotDst]
+		inven.Items[slotSrc] = inven.Items[slotDst]
+		inven.Items[slotDst] = buffer
+
+		client.Send(&resp.SwapInventorySlot{
+			InventoryType: invenType,
+			Source:        slotSrc,
+			Dest:          slotDst,
+		}, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+
+	limit := min(src.GetCount(), specSrc.GetCapacity()-dst.GetCount())
+	dst.Increase(limit)
+	if src.Reduce(limit) == 0 {
+		client.Send(&resp.FullMergeInventorySlot{
+			InventoryType: invenType,
+			Source:        slotSrc,
+			Dest:          slotDst,
+			Count:         dst.GetCount(),
+		}, types.SEND_POLICY_ENCRYPT)
+		delete(inven.Items, slotSrc)
+	} else {
+		client.Send(&resp.PartialMergeInventorySlot{
+			InventoryType: invenType,
+			Source:        slotSrc,
+			Dest:          slotDst,
+			SourceCount:   src.GetCount(),
+			DestCount:     dst.GetCount(),
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+}
+
+func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveItem) {
+	if req.Dest == 0 {
+		client.dropItem(ctx, req.InventoryType, req.Source, req.Count)
+	} else {
+		client.moveItem(req.InventoryType, req.Source, req.Dest)
+	}
 }
 
 func onGameItemLoot(ctx actor.Context, client *GameClientActor, req *req.ItemLoot) {

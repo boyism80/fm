@@ -133,11 +133,7 @@ func (item *CashItem) Reduce(count uint16) uint16 {
 }
 
 func (item *CashItem) Increase(count uint16) uint16 {
-	if count > item.Count {
-		item.Count = 0
-	} else {
-		item.Count += count
-	}
+	item.Count += count
 	return item.Count
 }
 
@@ -236,11 +232,7 @@ func (item *GeneralItem) Reduce(count uint16) uint16 {
 }
 
 func (item *GeneralItem) Increase(count uint16) uint16 {
-	if count > item.Count {
-		item.Count = 0
-	} else {
-		item.Count += count
-	}
+	item.Count += count
 	return item.Count
 }
 
@@ -382,11 +374,7 @@ func (item *Consume) Reduce(count uint16) uint16 {
 }
 
 func (item *Consume) Increase(count uint16) uint16 {
-	if count > item.Count {
-		item.Count = 0
-	} else {
-		item.Count += count
-	}
+	item.Count += count
 	return item.Count
 }
 
