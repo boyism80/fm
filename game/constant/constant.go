@@ -12,6 +12,8 @@ type EquipmentPartsType int16
 const (
 	EquipmentPartsWeapon EquipmentPartsType = -11
 	EquipmentPartsShield EquipmentPartsType = -10
+	EquipmentPartsTop    EquipmentPartsType = -5
+	EquipmentPartsPants  EquipmentPartsType = -6
 )
 
 type InventoryType int8

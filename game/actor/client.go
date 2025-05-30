@@ -203,7 +203,7 @@ func (client *GameClientActor) Unequip(ctx actor.Context, parts constant.Equipme
 	}
 
 	inven.Items[slot] = ch.Equipments[parts]
-	ch.Equipments[parts] = nil
+	delete(ch.Equipments, parts)
 	client.Send(&resp.SwapInventorySlot{
 		InventoryType:   constant.InventoryTypeEquipment,
 		Source:          int16(parts),
@@ -226,10 +226,6 @@ func (client *GameClientActor) Unequip(ctx actor.Context, parts constant.Equipme
 
 func (client *GameClientActor) Equip(ctx actor.Context, parts constant.EquipmentPartsType, slot int16) {
 	ch := client.ch
-	if ch.Equipments[parts] != nil {
-		return
-	}
-
 	inven := ch.Inventory[constant.InventoryTypeEquipment]
 	if inven.Items[slot] == nil {
 		return
@@ -240,12 +236,46 @@ func (client *GameClientActor) Equip(ctx actor.Context, parts constant.Equipment
 		return
 	}
 
-	equipment, ok := inven.Items[slot].(*entity.Equipment)
+	new, ok := inven.Items[slot].(*entity.Equipment)
 	if !ok {
 		return
 	}
-	ch.Equipments[parts] = equipment
-	inven.Items[slot] = nil
+	old, swap := ch.Equipments[parts]
+	switch parts {
+	case constant.EquipmentPartsTop:
+		if new.IsOverall() {
+			_, isWearPants := ch.Equipments[constant.EquipmentPartsPants]
+			storageSlot, isFree := inven.NextSlot()
+			if isWearPants {
+				if !isFree {
+					client.Send(&resp.ItemGainFailed{
+						Mode: resp.ItemGainFailedTypeFull,
+					}, types.SEND_POLICY_ENCRYPT)
+					return
+				}
+				client.Unequip(ctx, constant.EquipmentPartsPants, int16(storageSlot))
+			}
+		}
+
+	case constant.EquipmentPartsPants:
+		top, isWearTop := ch.Equipments[constant.EquipmentPartsTop]
+		if isWearTop && top.IsOverall() {
+			storageSlot, isFree := inven.NextSlot()
+			if swap && !isFree {
+				client.Send(&resp.ItemGainFailed{
+					Mode: resp.ItemGainFailedTypeFull,
+				}, types.SEND_POLICY_ENCRYPT)
+				return
+			}
+
+			client.Unequip(ctx, constant.EquipmentPartsTop, int16(storageSlot))
+		}
+	}
+	ch.Equipments[parts], inven.Items[slot] = new, old
+	if !swap {
+		delete(inven.Items, slot)
+	}
+
 	client.Send(&resp.SwapInventorySlot{
 		InventoryType:   constant.InventoryTypeEquipment,
 		Source:          slot,

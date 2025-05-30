@@ -156,7 +156,7 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		SkinColor:  0,
 		Face:       20100,
 		Hair:       30000,
-		Level:      1,
+		Level:      255,
 		Class:      0,
 		Str:        12,
 		Dex:        5,
@@ -233,6 +233,11 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 				Expiration: util.TimeMax,
 			},
 		}
+
+		ch.Inventory[constant.InventoryTypeEquipment].Items[1], err = NewItem(ctx, 1060002, 1)
+		ch.Inventory[constant.InventoryTypeEquipment].Items[2], err = NewItem(ctx, 1060006, 1)
+		ch.Inventory[constant.InventoryTypeEquipment].Items[3], err = NewItem(ctx, 1040002, 1)
+		ch.Inventory[constant.InventoryTypeEquipment].Items[4], err = NewItem(ctx, 1040010, 1)
 	}
 
 	return ch

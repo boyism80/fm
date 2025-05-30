@@ -307,6 +307,11 @@ func (item *Equipment) Clone(count uint16) Item {
 	}
 }
 
+func (item *Equipment) IsOverall() bool {
+	spec := item.Spec
+	return (spec.GetID() / 10000) == 105
+}
+
 func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	spec, _ := equipment.Spec.(*data.EquipmentSpec)
 	if slot <= -1 {

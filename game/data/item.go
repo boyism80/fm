@@ -115,7 +115,7 @@ func (spec *ItemCoreSpec) IsQuest() bool {
 }
 
 func (spec *ItemCoreSpec) GetCapacity() uint16 {
-	return spec.SlotMax
+	return max(1, spec.SlotMax)
 }
 
 func (spec *ItemCoreSpec) IsTradeAvailable() int {
