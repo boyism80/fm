@@ -15,6 +15,14 @@ const (
 	InventoryModeRemove                      // 3: Remove (슬롯 아이템 제거)
 )
 
+type EquipmentActionType uint8
+
+const (
+	EquipmentActionTypeNone EquipmentActionType = 0
+	EquipmentActionTypeOff  EquipmentActionType = 1
+	EquipmentActionTypeOn   EquipmentActionType = 2
+)
+
 type SlotItem struct {
 	Slot int16
 	Item entity.Item
@@ -38,8 +46,9 @@ type RemoveInventorySlot struct {
 }
 
 type SwapInventorySlot struct {
-	InventoryType constant.InventoryType
-	Source, Dest  int16
+	InventoryType   constant.InventoryType
+	Source, Dest    int16
+	EquipmentAction EquipmentActionType
 }
 
 type PartialMergeInventorySlot struct {
@@ -106,6 +115,9 @@ func (p *SwapInventorySlot) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(p.InventoryType))
 	writer.Write16(p.Source)
 	writer.Write16(p.Dest)
+	if p.EquipmentAction != EquipmentActionTypeNone {
+		writer.WriteU8(uint8(p.EquipmentAction))
+	}
 	return nil
 }
 

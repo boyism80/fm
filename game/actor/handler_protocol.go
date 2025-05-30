@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/data"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol"
@@ -158,235 +157,21 @@ func onGameClientAttack(ctx actor.Context, client *GameClientActor, req *req.Att
 	})
 }
 
-func (client *GameClientActor) dropItem(ctx actor.Context, invenType constant.InventoryType, slot int16, count uint16) {
-	ch := client.ch
-	item, ok := ch.Inventory[invenType].Items[slot]
-	if !ok {
-		return
-	}
-
-	mapActor := client.ctx.MapActors[ch.Map]
-	if mapActor == nil {
-		return
-	}
-
-	removed := (item.Reduce(count) == 0)
-	if removed {
-		client.Send(&resp.RemoveInventorySlot{
-			InventoryType: invenType,
-			Slot:          slot,
-		}, types.SEND_POLICY_ENCRYPT)
-	} else {
-		client.Send(&resp.UpdateInventorySlot{
-			InventoryType: invenType,
-			Slot:          slot,
-			Item:          item,
-		}, types.SEND_POLICY_ENCRYPT)
-	}
-
-	spawned := item.Clone(count)
-	spawned.BindDrop(&entity.Drop{
-		Object:       &entity.Object{},
-		Owner:        ch.ID,
-		SpawnedPoint: ch.Position,
-		DropType:     constant.DropTypeFFA,
-		Looting:      false,
-	})
-
-	ctx.Send(mapActor, &msg.MapSpawnItem{
-		Item:    spawned,
-		Owner:   ctx.Self(),
-		OwnerID: ch.ID,
-	})
-
-	if removed {
-		delete(ch.Inventory[invenType].Items, slot)
-	}
-}
-
-func (client *GameClientActor) moveItem(invenType constant.InventoryType, sourceSlot int16, destSlot int16) {
-	ch := client.ch
-	inven := ch.Inventory[invenType]
-	src, ok := inven.Items[sourceSlot]
-	if !ok {
-		return
-	}
-
-	dst, ok := inven.Items[destSlot]
-
-	if !ok {
-		inven.Items[destSlot] = inven.Items[sourceSlot]
-		delete(inven.Items, sourceSlot)
-		client.Send(&resp.SwapInventorySlot{
-			InventoryType: invenType,
-			Source:        sourceSlot,
-			Dest:          destSlot,
-		}, types.SEND_POLICY_ENCRYPT)
-		return
-	}
-
-	specSrc := src.GetSpec()
-	specDst := dst.GetSpec()
-	if specSrc != specDst {
-		inven.Items[sourceSlot], inven.Items[destSlot] = inven.Items[destSlot], inven.Items[sourceSlot]
-		client.Send(&resp.SwapInventorySlot{
-			InventoryType: invenType,
-			Source:        sourceSlot,
-			Dest:          destSlot,
-		}, types.SEND_POLICY_ENCRYPT)
-		return
-	}
-
-	limit := min(src.GetCount(), specSrc.GetCapacity()-dst.GetCount())
-	dst.Increase(limit)
-	if src.Reduce(limit) == 0 {
-		client.Send(&resp.FullMergeInventorySlot{
-			InventoryType: invenType,
-			Source:        sourceSlot,
-			Dest:          destSlot,
-			Count:         dst.GetCount(),
-		}, types.SEND_POLICY_ENCRYPT)
-		delete(inven.Items, sourceSlot)
-	} else {
-		client.Send(&resp.PartialMergeInventorySlot{
-			InventoryType: invenType,
-			Source:        sourceSlot,
-			Dest:          destSlot,
-			SourceCount:   src.GetCount(),
-			DestCount:     dst.GetCount(),
-		}, types.SEND_POLICY_ENCRYPT)
-	}
-}
-
 func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveItem) {
-	if req.Dest == 0 {
-		client.dropItem(ctx, req.InventoryType, req.Source, req.Count)
+	if req.Source < 0 {
+		client.Unequip(ctx, constant.EquipmentPartsType(req.Source), req.Dest)
+	} else if req.Dest < 0 {
+		client.Equip(ctx, constant.EquipmentPartsType(req.Dest), req.Source)
+	} else if req.Dest == 0 {
+		client.Drop(ctx, req.InventoryType, req.Source, req.Count)
 	} else {
-		client.moveItem(req.InventoryType, req.Source, req.Dest)
-	}
-}
-
-func mergeItems(inventoryType constant.InventoryType, client *GameClientActor) {
-	inven := client.ch.Inventory[inventoryType]
-	buckets := map[data.ItemSpec]map[int16]entity.Item{}
-
-	for i := range inven.SlotLimit {
-		item := inven.Items[int16(i+1)]
-		if item == nil {
-			continue
-		}
-
-		spec := item.GetSpec()
-		if buckets[spec] == nil {
-			buckets[spec] = map[int16]entity.Item{}
-		}
-
-		buckets[spec][int16(i+1)] = item
-	}
-
-	for spec, bucket := range buckets {
-		count := uint16(0)
-		for _, v := range bucket {
-			count += v.GetCount()
-		}
-
-		capacity := spec.GetCapacity()
-		for slot, item := range bucket {
-			value := min(capacity, count)
-			if item.GetCount() != value {
-				item.SetCount(value)
-				if value == 0 {
-					client.Send(&resp.RemoveInventorySlot{
-						InventoryType: inventoryType,
-						Slot:          slot,
-					}, types.SEND_POLICY_ENCRYPT)
-					delete(inven.Items, slot)
-				} else {
-					client.Send(&resp.UpdateInventorySlot{
-						InventoryType: inventoryType,
-						Slot:          slot,
-						Item:          item,
-					}, types.SEND_POLICY_ENCRYPT)
-				}
-			}
-			count -= value
-		}
-	}
-}
-
-func sortInventory(inventoryType constant.InventoryType, client *GameClientActor) {
-	inven := client.ch.Inventory[inventoryType]
-	n := inven.SlotLimit
-	buffer := make([]entity.Item, n)
-	for i := range n {
-		buffer[i] = inven.Items[int16(i+1)]
-	}
-
-	less := func(item1, item2 entity.Item) bool {
-		if item1 == nil && item2 == nil {
-			return false
-		}
-		if item1 == nil {
-			return false
-		}
-		if item2 == nil {
-			return true
-		}
-		id1, id2 := item1.GetSpec().GetID(), item2.GetSpec().GetID()
-		if id1 != id2 {
-			return id1 < id2
-		}
-		return item1.GetCount() > item2.GetCount()
-	}
-
-	partition := func(low, high int) int {
-		pivot := buffer[(low+high)/2]
-		i1, i2 := low, high
-		for i1 <= i2 {
-			for less(buffer[i1], pivot) {
-				i1++
-			}
-			for less(pivot, buffer[i2]) {
-				i2--
-			}
-			if i1 <= i2 {
-
-				buffer[i1], buffer[i2] = buffer[i2], buffer[i1]
-
-				client.Send(&resp.SwapInventorySlot{
-					InventoryType: inventoryType,
-					Source:        int16(i1 + 1),
-					Dest:          int16(i2 + 1),
-				}, types.SEND_POLICY_ENCRYPT)
-				i1++
-				i2--
-			}
-		}
-		return i1
-	}
-
-	var qsort func(low, high int)
-	qsort = func(low, high int) {
-		if low < high {
-			p := partition(low, high)
-			qsort(low, p-1)
-			qsort(p, high)
-		}
-	}
-
-	qsort(0, int(n-1))
-
-	inven.Items = map[int16]entity.Item{}
-	for i := range buffer {
-		if buffer[i] != nil {
-			inven.Items[int16(i+1)] = buffer[i]
-		}
+		client.MoveItem(req.InventoryType, req.Source, req.Dest)
 	}
 }
 
 func onGameSortInventory(ctx actor.Context, client *GameClientActor, req *req.SortInventory) {
-	mergeItems(req.InventoryType, client)
-	sortInventory(req.InventoryType, client)
+	client.MergeItems(req.InventoryType)
+	client.SortInventory(req.InventoryType)
 
 	client.Send(&resp.EndSortInventory{
 		InventoryType: req.InventoryType,
