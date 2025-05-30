@@ -5,16 +5,16 @@ import (
 	"github.com/boyism80/fm/game/constant"
 )
 
-type SortItem struct {
+type SortInventory struct {
 	Tick          uint32
 	InventoryType constant.InventoryType
 }
 
-func (p *SortItem) Serialize(writer *stream.StreamWriter) error {
+func (p *SortInventory) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SortItem) Deserialize(reader *stream.StreamReader) error {
+func (p *SortInventory) Deserialize(reader *stream.StreamReader) error {
 	p.Tick, _ = reader.ReadU32()
 	inventoryType, _ := reader.ReadU8()
 	p.InventoryType = constant.InventoryType(inventoryType)

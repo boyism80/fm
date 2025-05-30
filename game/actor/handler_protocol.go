@@ -25,7 +25,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x20, ctx, client, h, onGameClientNormalChat)
 	handler.RegisterPacketHandler(0x1B, ctx, client, h, onGameClientAttack)
 	handler.RegisterPacketHandler(0x36, ctx, client, h, onGameMoveItem)
-	handler.RegisterPacketHandler(0x34, ctx, client, h, onGameSortItem)
+	handler.RegisterPacketHandler(0x34, ctx, client, h, onGameSortInventory)
 	handler.RegisterPacketHandler(0xA3, ctx, client, h, onGameItemLoot)
 	handler.RegisterPacketHandler(0x4D, ctx, client, h, onGameDropMeso)
 }
@@ -266,13 +266,11 @@ func onGameMoveItem(ctx actor.Context, client *GameClientActor, req *req.MoveIte
 	}
 }
 
-func onGameSortItem(ctx actor.Context, client *GameClientActor, req *req.SortItem) {
-
-	inven := client.ch.Inventory[req.InventoryType]
-	n := int(inven.SlotLimit)
-
+func mergeItems(inventoryType constant.InventoryType, client *GameClientActor) {
+	inven := client.ch.Inventory[inventoryType]
 	buckets := map[data.ItemSpec]map[int16]entity.Item{}
-	for i := 0; i < n; i++ {
+
+	for i := range inven.SlotLimit {
 		item := inven.Items[int16(i+1)]
 		if item == nil {
 			continue
@@ -299,13 +297,13 @@ func onGameSortItem(ctx actor.Context, client *GameClientActor, req *req.SortIte
 				item.SetCount(value)
 				if value == 0 {
 					client.Send(&resp.RemoveInventorySlot{
-						InventoryType: req.InventoryType,
+						InventoryType: inventoryType,
 						Slot:          slot,
 					}, types.SEND_POLICY_ENCRYPT)
 					delete(inven.Items, slot)
 				} else {
 					client.Send(&resp.UpdateInventorySlot{
-						InventoryType: req.InventoryType,
+						InventoryType: inventoryType,
 						Slot:          slot,
 						Item:          item,
 					}, types.SEND_POLICY_ENCRYPT)
@@ -314,9 +312,13 @@ func onGameSortItem(ctx actor.Context, client *GameClientActor, req *req.SortIte
 			count -= value
 		}
 	}
+}
 
+func sortInventory(inventoryType constant.InventoryType, client *GameClientActor) {
+	inven := client.ch.Inventory[inventoryType]
+	n := inven.SlotLimit
 	buffer := make([]entity.Item, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		buffer[i] = inven.Items[int16(i+1)]
 	}
 
@@ -352,7 +354,7 @@ func onGameSortItem(ctx actor.Context, client *GameClientActor, req *req.SortIte
 				buffer[i1], buffer[i2] = buffer[i2], buffer[i1]
 
 				client.Send(&resp.SwapInventorySlot{
-					InventoryType: req.InventoryType,
+					InventoryType: inventoryType,
 					Source:        int16(i1 + 1),
 					Dest:          int16(i2 + 1),
 				}, types.SEND_POLICY_ENCRYPT)
@@ -372,14 +374,23 @@ func onGameSortItem(ctx actor.Context, client *GameClientActor, req *req.SortIte
 		}
 	}
 
-	qsort(0, n-1)
+	qsort(0, int(n-1))
 
 	inven.Items = map[int16]entity.Item{}
-	for i := 0; i < len(buffer); i++ {
+	for i := range buffer {
 		if buffer[i] != nil {
 			inven.Items[int16(i+1)] = buffer[i]
 		}
 	}
+}
+
+func onGameSortInventory(ctx actor.Context, client *GameClientActor, req *req.SortInventory) {
+	mergeItems(req.InventoryType, client)
+	sortInventory(req.InventoryType, client)
+
+	client.Send(&resp.EndSortInventory{
+		InventoryType: req.InventoryType,
+	}, types.SEND_POLICY_ENCRYPT)
 
 	client.Send(&resp.UpdateStats{
 		UnlockAction: true,
