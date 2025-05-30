@@ -31,7 +31,8 @@ func NewInventory(typ constant.InventoryType) *Inventory {
 
 func (m *Inventory) NextSlot() (uint8, bool) {
 	for i := 1; i <= int(m.SlotLimit); i++ {
-		if _, ok := m.Items[int16(i)]; !ok {
+		item := m.Items[int16(i)]
+		if item == nil {
 			return uint8(i), true
 		}
 	}
@@ -40,8 +41,8 @@ func (m *Inventory) NextSlot() (uint8, bool) {
 
 func (m *Inventory) FindSlot(spec data.ItemSpec) (uint8, bool) {
 	for i := 1; i <= int(m.SlotLimit); i++ {
-		item, ok := m.Items[int16(i)]
-		if !ok {
+		item := m.Items[int16(i)]
+		if item == nil {
 			continue
 		}
 

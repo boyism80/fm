@@ -199,6 +199,7 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		ch.Equipments[constant.EquipmentPartsWeapon] = &Equipment{
 			ItemCore: &ItemCore{
 				Spec:       ctx.Resources.Items[1302000],
+				Count:      1,
 				UniqueId:   0,
 				Expiration: util.TimeMax,
 			},
@@ -212,6 +213,7 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		ch.Inventory[constant.InventoryTypeCash].Items[1] = &Pet{
 			ItemCore: &ItemCore{
 				Spec:       ctx.Resources.Items[5000007],
+				Count:      1,
 				UniqueId:   1,
 				Expiration: util.TimeMax,
 			},
@@ -227,9 +229,9 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		ch.Inventory[constant.InventoryTypeEtc].Items[1] = &GeneralItem{
 			ItemCore: &ItemCore{
 				Spec:       ctx.Resources.Items[4000001],
+				Count:      100,
 				Expiration: util.TimeMax,
 			},
-			Count: 100,
 		}
 	}
 

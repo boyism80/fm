@@ -19,6 +19,7 @@ type Item interface {
 	GetInventoryType() constant.InventoryType
 	GetExpiration() time.Time
 	GetCount() uint16
+	SetCount(count uint16)
 	Increase(count uint16) uint16
 	Reduce(count uint16) uint16
 	Clone(count uint16) Item
@@ -42,6 +43,7 @@ type ItemCore struct {
 	Spec       data.ItemSpec
 	UniqueId   int64
 	Expiration time.Time
+	Count      uint16
 }
 
 type Meso struct {
@@ -51,7 +53,6 @@ type Meso struct {
 
 type CashItem struct {
 	*ItemCore
-	Count     uint16
 	OwnerName string
 	Flags     uint16
 }
@@ -64,7 +65,6 @@ type Installation struct {
 
 type GeneralItem struct {
 	*ItemCore
-	Count     uint16
 	OwnerName string
 	Flags     uint16
 }
@@ -79,7 +79,6 @@ type Equipment struct {
 
 type Consume struct {
 	*ItemCore
-	Count     uint16
 	OwnerName string
 	Flags     uint16
 }
@@ -97,6 +96,14 @@ type Pet struct {
 
 func (item *ItemCore) GetDrop() *Drop {
 	return item.Drop
+}
+
+func (item *ItemCore) Getcount() uint16 {
+	return item.Count
+}
+
+func (item *ItemCore) SetCount(count uint16) {
+	item.Count = count
 }
 
 func (item *ItemCore) GetObject() *Object {
@@ -141,11 +148,11 @@ func (item *CashItem) Clone(count uint16) Item {
 	return &CashItem{
 		ItemCore: &ItemCore{
 			Drop:       nil,
+			Count:      count,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
-		Count:     count,
 		OwnerName: item.OwnerName,
 		Flags:     item.Flags,
 	}
@@ -188,6 +195,7 @@ func (item *Installation) Clone(count uint16) Item {
 	return &Installation{
 		ItemCore: &ItemCore{
 			Drop:       nil,
+			Count:      count,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
@@ -240,11 +248,11 @@ func (item *GeneralItem) Clone(count uint16) Item {
 	return &GeneralItem{
 		ItemCore: &ItemCore{
 			Drop:       nil,
+			Count:      count,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
-		Count:     count,
 		OwnerName: item.OwnerName,
 		Flags:     item.Flags,
 	}
@@ -287,6 +295,7 @@ func (item *Equipment) Clone(count uint16) Item {
 	return &Equipment{
 		ItemCore: &ItemCore{
 			Drop:       nil,
+			Count:      count,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
@@ -382,12 +391,12 @@ func (item *Consume) Clone(count uint16) Item {
 	return &Consume{
 		ItemCore: &ItemCore{
 			Drop:       nil,
+			Count:      count,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
 		OwnerName: item.OwnerName,
-		Count:     item.Count,
 		Flags:     item.Flags,
 	}
 }
@@ -442,6 +451,7 @@ func (item *Pet) Clone(count uint16) Item {
 	return &Pet{
 		ItemCore: &ItemCore{
 			Drop:       nil,
+			Count:      count,
 			Spec:       item.Spec,
 			UniqueId:   item.UniqueId,
 			Expiration: item.ItemCore.Expiration,
@@ -497,7 +507,8 @@ func NewItem(ctx *context.ServerContext, itemId uint32, count uint16) (Item, err
 	case *data.EquipmentSpec:
 		return &Equipment{
 			ItemCore: &ItemCore{
-				Spec: spec,
+				Spec:  spec,
+				Count: 1,
 			},
 			EnchantChance: spec.TUC,
 		}, nil
@@ -505,32 +516,33 @@ func NewItem(ctx *context.ServerContext, itemId uint32, count uint16) (Item, err
 	case *data.ConsumeSpec:
 		return &Consume{
 			ItemCore: &ItemCore{
-				Spec: spec,
+				Spec:  spec,
+				Count: count,
 			},
-			Count: count,
 		}, nil
 
 	case *data.InstallationSpec:
 		return &Installation{
 			ItemCore: &ItemCore{
-				Spec: spec,
+				Spec:  spec,
+				Count: 1,
 			},
 		}, nil
 
 	case *data.GeneralItemSpec:
 		return &GeneralItem{
 			ItemCore: &ItemCore{
-				Spec: spec,
+				Spec:  spec,
+				Count: count,
 			},
-			Count: count,
 		}, nil
 
 	case *data.CashItemSpec:
 		return &CashItem{
 			ItemCore: &ItemCore{
-				Spec: spec,
+				Spec:  spec,
+				Count: count,
 			},
-			Count: count,
 		}, nil
 
 	case *data.PetSpec:
@@ -540,7 +552,8 @@ func NewItem(ctx *context.ServerContext, itemId uint32, count uint16) (Item, err
 		}
 		return &Pet{
 			ItemCore: &ItemCore{
-				Spec: spec,
+				Spec:  spec,
+				Count: 1,
 			},
 			Expiration: petExpiration,
 		}, nil
