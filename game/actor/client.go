@@ -413,3 +413,23 @@ func (client *GameClientActor) SortInventory(inventoryType constant.InventoryTyp
 		}
 	}
 }
+
+func (client *GameClientActor) ChangeMap(ctx actor.Context, id uint32) {
+	ch := client.ch
+	from := client.ctx.MapActors[ch.Map]
+	if from == nil {
+		return
+	}
+
+	to := client.ctx.MapActors[id]
+	if to == nil {
+		return
+	}
+
+	ctx.Send(from, &msg.MapChange{
+		Sender:      ctx.Self(),
+		CharacterId: ch.ID,
+		To:          to,
+		SpawnPoint:  0,
+	})
+}

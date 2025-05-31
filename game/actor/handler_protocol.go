@@ -38,39 +38,16 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 		name = "채진영"
 	}
 	ch := entity.NewDummyCharacter(request.PlayerId, name, client.ctx)
-	spawnPoint := client.ctx.Resources.Maps[ch.Map].Portals[ch.SpawnPoint].Position
-	ch.Position = spawnPoint
 	client.ch = &ch
 	RegisterLifeHandlers(ctx, &ch.Life, client.messageHandler)
-
-	// TODO: 맵에 EnterMap 메시지가 전달된 이후에
-	// 맵의 모든 오브젝트에게 Warped 메시지가 전달된다.
-	client.Send(&resp.Warp{Character: &ch}, types.SEND_POLICY_ENCRYPT)
 
 	mapActor := client.ctx.MapActors[client.ch.Map]
 	if mapActor != nil {
 		ctx.Send(mapActor, &msg.EnterMap{
-			ID:  ch.ID,
-			PID: ctx.Self(),
-		})
-
-		// 기존 오브젝트들에게 날 보여줌
-		spawnResp := resp.SpawnPlayer{
-			Character:       &ch,
-			BuffStates:      [4]uint32{},
-			Diseases:        [4]uint32{},
-			CrushRings:      []*entity.Ring{},
-			FriendshipRings: []*entity.Ring{},
-			MarriageRings:   []*entity.Ring{},
-		}
-		ctx.Send(mapActor, &msg.MapBroadcastRange{
-			Sender: ctx.Self(),
-			Pivot:  ch.Position,
-			Message: &common_msg.SendProtocol{
-				Protocol: &spawnResp,
-				Policy:   types.SEND_POLICY_ENCRYPT,
-			},
-			ExceptSelf: true,
+			ID:         ch.ID,
+			PID:        ctx.Self(),
+			Init:       true,
+			SpawnPoint: ch.SpawnPoint,
 		})
 	}
 }

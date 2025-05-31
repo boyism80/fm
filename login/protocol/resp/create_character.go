@@ -13,7 +13,7 @@ type CreateCharacter struct {
 func (a *CreateCharacter) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0x06)
 	writer.WriteBoolean(!a.Success)
-	a.Character.Serialize(writer)
+	a.Character.SerializeOverview(writer)
 	return nil
 }
 

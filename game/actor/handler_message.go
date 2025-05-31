@@ -29,6 +29,7 @@ func RegisterGameClientMessageHandlers(ctx protoactor.Context, m *GameClientActo
 	handler.RegisterHandler(ctx, m, h, onGameClientWarped)
 	handler.RegisterHandler(ctx, m, h, onGameClientItemLooting)
 	handler.RegisterHandler(ctx, m, h, onGameClientMesoLooting)
+	handler.RegisterHandler(ctx, m, h, onGameClientMapChanged)
 }
 
 func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *protoactor.PID) {
@@ -248,5 +249,44 @@ func onGameClientMesoLooting(ctx protoactor.Context, client *GameClientActor, m 
 		Success:     true,
 		Count:       m.Meso,
 		CharacterId: client.ch.ID,
+	})
+}
+
+func onGameClientMapChanged(ctx protoactor.Context, client *GameClientActor, m *msg.CharacterMapChanged) {
+	ch := client.ch
+	ch.Map = m.MID
+
+	portal, ok := client.ctx.Resources.Maps[ch.Map].Portals[m.SpawnPoint]
+	if !ok {
+		portal = client.ctx.Resources.Maps[ch.Map].Portals[0]
+	}
+	ch.Stance = 0
+	ch.Position = portal.Position
+
+	if m.Init {
+		client.Send(&resp.Login{Character: ch}, types.SEND_POLICY_ENCRYPT)
+	} else {
+		client.Send(&resp.Warp{
+			Character:  ch,
+			Channel:    0,
+			SpawnPoint: 0,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+
+	ctx.Send(m.Map, &msg.MapBroadcastRange{
+		Sender: ctx.Self(),
+		Pivot:  ch.Position,
+		Message: &common_msg.SendProtocol{
+			Protocol: &resp.SpawnPlayer{
+				Character:       ch,
+				BuffStates:      [4]uint32{},
+				Diseases:        [4]uint32{},
+				CrushRings:      []*entity.Ring{},
+				FriendshipRings: []*entity.Ring{},
+				MarriageRings:   []*entity.Ring{},
+			},
+			Policy: types.SEND_POLICY_ENCRYPT,
+		},
+		ExceptSelf: true,
 	})
 }

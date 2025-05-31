@@ -18,7 +18,7 @@ func (e *CharacterList) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(len(e.Characters)))
 
 	for _, ch := range e.Characters {
-		ch.Serialize(writer)
+		ch.SerializeOverview(writer)
 	}
 
 	if e.SecondPw != "" {

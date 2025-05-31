@@ -18,6 +18,7 @@ func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor
 	handler.RegisterCommandHandler("메소초기화", ctx, client, h, onClearMeso)
 	handler.RegisterCommandHandler("메소얻기", ctx, client, h, onGainMeso)
 	handler.RegisterCommandHandler("풀메소", ctx, client, h, onFullMeso)
+	handler.RegisterCommandHandler("맵이동", ctx, client, h, onChangeMap)
 }
 
 func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) {
@@ -100,4 +101,19 @@ func onFullMeso(ctx actor.Context, client *GameClientActor, params ...string) {
 			constant.StatMeso: client.ch.Meso,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func onChangeMap(ctx actor.Context, client *GameClientActor, params ...string) {
+	if len(params) < 1 {
+		log.Println("onGainMeso: missing itemId")
+		return
+	}
+
+	value, err := strconv.Atoi(params[0])
+	if err != nil {
+		log.Println("onGainMeso: invalid itemId:", params[0])
+		return
+	}
+
+	client.ChangeMap(ctx, uint32(value))
 }

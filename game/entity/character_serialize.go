@@ -143,7 +143,7 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 	writer.WriteU32(0)
 }
 
-func (ch *Character) Serialize(writer *stream.StreamWriter) {
+func (ch *Character) SerializeOverview(writer *stream.StreamWriter) {
 	ch.SerializeStats(writer)
 	ch.SerializeLook(writer)
 
@@ -155,6 +155,40 @@ func (ch *Character) Serialize(writer *stream.StreamWriter) {
 		writer.WriteU32(ch.ClassRank)
 		writer.Write32(ch.ClassRankDiff)
 	}
+}
+
+func (ch *Character) Serialize(writer *stream.StreamWriter) {
+	writer.WriteU64(0xFFFFFFFFFFFFFFFF) // flag
+
+	// flag 0x1
+	ch.SerializeStats(writer)
+	writer.WriteU8(20) // buddy capacity
+
+	// flag 0x2 ~ 0x40
+	ch.SerializeInventory(writer)
+
+	// flag 0x100
+	ch.SerializeSkills(writer)
+
+	// flag 0x8000
+	ch.SerializeCooldowns(writer)
+
+	// flag 0x200, 0x4000
+	ch.SerializeQuests(writer)
+
+	// flag 0x400, 0x800
+	ch.SerializeRings(writer)
+
+	// flag 0x1000
+	ch.SerializeRocks(writer)
+
+	// flag 0x20000, 0x10000
+	ch.SerializeMonsterBook(writer)
+
+	// flag 0x40000
+	ch.SerializeQuestInfo(writer)
+
+	writer.WriteU16(0)
 }
 
 func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {

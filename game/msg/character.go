@@ -20,3 +20,10 @@ type CharacterMesoLooting struct {
 	OID  uint32
 	Meso int32
 }
+
+type CharacterMapChanged struct {
+	MID        uint32
+	Map        *actor.PID
+	Init       bool
+	SpawnPoint uint8
+}

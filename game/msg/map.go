@@ -10,8 +10,10 @@ import (
 
 // 맵에 오브젝트 등록
 type EnterMap struct {
-	ID  uint32
-	PID *protoactor.PID
+	ID         uint32
+	PID        *protoactor.PID
+	SpawnPoint uint8
+	Init       bool
 }
 
 // 맵에서 오브젝트 제거
@@ -62,4 +64,11 @@ type MapRemoveItem struct {
 	CharacterId uint32
 	Mode        resp.RemoveItemType
 	Position    types.Vector2[int16]
+}
+
+type MapChange struct {
+	CharacterId uint32
+	Sender      *actor.PID
+	To          *actor.PID
+	SpawnPoint  uint8
 }
