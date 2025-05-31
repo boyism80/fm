@@ -73,3 +73,13 @@ func (ms *MapSpec) DropPoint(initial types.Point[int16]) types.Point[int16] {
 	}
 	return initial
 }
+
+func (spec *MapSpec) FindPortal(name string) (*Portal, bool) {
+	for _, portal := range spec.Portals {
+		if portal.Name == name {
+			return &portal, true
+		}
+	}
+
+	return nil, false
+}

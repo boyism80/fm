@@ -414,14 +414,14 @@ func (client *GameClientActor) SortInventory(inventoryType constant.InventoryTyp
 	}
 }
 
-func (client *GameClientActor) ChangeMap(ctx actor.Context, id uint32) {
+func (client *GameClientActor) Warp(ctx actor.Context, mapID uint32, spawnPoint uint8) {
 	ch := client.ch
 	from := client.ctx.MapActors[ch.Map]
 	if from == nil {
 		return
 	}
 
-	to := client.ctx.MapActors[id]
+	to := client.ctx.MapActors[mapID]
 	if to == nil {
 		return
 	}
@@ -430,6 +430,6 @@ func (client *GameClientActor) ChangeMap(ctx actor.Context, id uint32) {
 		Sender:      ctx.Self(),
 		CharacterId: ch.ID,
 		To:          to,
-		SpawnPoint:  0,
+		SpawnPoint:  spawnPoint,
 	})
 }

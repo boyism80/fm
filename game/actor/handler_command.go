@@ -115,5 +115,5 @@ func onChangeMap(ctx actor.Context, client *GameClientActor, params ...string) {
 		return
 	}
 
-	client.ChangeMap(ctx, uint32(value))
+	client.Warp(ctx, uint32(value), 0)
 }

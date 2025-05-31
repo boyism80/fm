@@ -27,6 +27,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x34, ctx, client, h, onGameSortInventory)
 	handler.RegisterPacketHandler(0xA3, ctx, client, h, onGameItemLoot)
 	handler.RegisterPacketHandler(0x4D, ctx, client, h, onGameDropMeso)
+	handler.RegisterPacketHandler(0x15, ctx, client, h, onGameWarp)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -210,4 +211,40 @@ func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMes
 		Owner:        ctx.Self(),
 		OwnerID:      ch.ID,
 	})
+}
+
+func onGameWarp(ctx actor.Context, client *GameClientActor, req *req.Warp) {
+	if req.Target != 0xFFFFFFFF {
+		return
+	}
+	oldMapSpec, ok := client.ctx.Resources.Maps[client.ch.Map]
+	if !ok {
+		return
+	}
+
+	oldPortal, ok := oldMapSpec.FindPortal(req.PortalName)
+	if !ok {
+		client.Send(&resp.UpdateStats{
+			UnlockAction: true,
+		}, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+
+	newMapSpec, ok := client.ctx.Resources.Maps[uint32(oldPortal.TargetMapId)]
+	if !ok {
+		client.Send(&resp.UpdateStats{
+			UnlockAction: true,
+		}, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+
+	newPortal, ok := newMapSpec.FindPortal(oldPortal.Target)
+	if !ok {
+		client.Send(&resp.UpdateStats{
+			UnlockAction: true,
+		}, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+
+	client.Warp(ctx, uint32(oldPortal.TargetMapId), newPortal.ID)
 }

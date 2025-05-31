@@ -253,23 +253,28 @@ func onGameClientMesoLooting(ctx protoactor.Context, client *GameClientActor, m 
 }
 
 func onGameClientMapChanged(ctx protoactor.Context, client *GameClientActor, m *msg.CharacterMapChanged) {
-	ch := client.ch
-	ch.Map = m.MID
-
-	portal, ok := client.ctx.Resources.Maps[ch.Map].Portals[m.SpawnPoint]
+	mapSpec, ok := client.ctx.Resources.Maps[m.MID]
 	if !ok {
-		portal = client.ctx.Resources.Maps[ch.Map].Portals[0]
+		return
 	}
+
+	portal, ok := mapSpec.Portals[m.SpawnPoint]
+	if !ok {
+		return
+	}
+
+	ch := client.ch
 	ch.Stance = 0
+	ch.Map = m.MID
+	ch.SpawnPoint = m.SpawnPoint
 	ch.Position = portal.Position
 
 	if m.Init {
 		client.Send(&resp.Login{Character: ch}, types.SEND_POLICY_ENCRYPT)
 	} else {
 		client.Send(&resp.Warp{
-			Character:  ch,
-			Channel:    0,
-			SpawnPoint: 0,
+			Character: ch,
+			Channel:   0,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 
