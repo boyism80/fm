@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -832,6 +833,8 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 	spec := MapSpec{
 		ID:      mapId,
 		Portals: map[uint8]Portal{},
+		NPCs:    map[uint32]NPCSpec{},
+		Mobs:    map[uint32]MobSpec{},
 	}
 
 	info := root.find("info")
@@ -979,6 +982,138 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 		spec.Footholds = types.NewQuadTreeNode[int16, Foothold](bound, 0)
 		for _, foothold := range buffer {
 			spec.Footholds.Insert(foothold)
+		}
+	}
+
+	lives := root.find("life")
+	if lives != nil {
+		baseSpec := LifeSpec{}
+		for _, life := range lives.Children {
+			var lifeSpec Life
+			for _, prop := range life.Children {
+				switch prop.Name {
+				case "type":
+					if prop.Value == "n" {
+						lifeSpec = NPCSpec{
+							LifeSpec: &baseSpec,
+						}
+					} else if prop.Value == "m" {
+						lifeSpec = MobSpec{
+							LifeSpec: &baseSpec,
+						}
+					} else {
+						return nil, errors.New("invalid life type")
+					}
+
+				case "id":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.ID = uint32(value)
+				case "x":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.Position.X = int16(value)
+				case "y":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.Position.Y = int16(value)
+				case "mobTime":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.MobTime = uint64(value)
+				case "f":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.FacingDirection = uint8(value)
+				case "fh":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.Foothold = int16(value)
+				case "cy":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.CollisionY = int16(value)
+				case "rx0":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.RenderX0 = int16(value)
+				case "rx1":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.RenderX1 = int16(value)
+				case "hide":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.Hide = value != 0
+				case "useDay":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.UseDay = value != 0
+				case "useNight":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.UseNight = value != 0
+				case "limitedname":
+					baseSpec.LimitedName = prop.Value
+				case "info":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.Info = uint8(value)
+				case "nofoothold":
+					value, err := strconv.Atoi(prop.Value)
+					if err != nil {
+						return nil, err
+					}
+					baseSpec.NoFoothold = value != 0
+
+				default:
+					mutex.Lock()
+					if _, ok := visit[prop.Name]; ok {
+						mutex.Unlock()
+						continue
+					}
+					visit[prop.Name] = true
+					mutex.Unlock()
+					log.Printf("%s is not declared in %s:info\n", prop.Name, filepath.Base(path))
+				}
+			}
+
+			switch v := lifeSpec.(type) {
+			case NPCSpec:
+				spec.NPCs[v.ID] = v
+
+			case MobSpec:
+				spec.Mobs[v.ID] = v
+
+			default:
+				return nil, errors.New("invalid life type")
+			}
 		}
 	}
 

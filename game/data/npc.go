@@ -1,5 +1,5 @@
 package data
 
-type MobSpec struct {
+type NPCSpec struct {
 	*LifeSpec
 }
