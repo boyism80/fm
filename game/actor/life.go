@@ -16,7 +16,7 @@ func RegisterLifeHandlers(ctx protoactor.Context, m *entity.Life, h *handler.Mes
 }
 
 func onLifeAddHp(ctx protoactor.Context, life *entity.Life, m *msg.LifeAddHp) {
-	life.HP += m.Hp
+	life.Hp += uint16(m.Hp)
 
 	fmt.Println("add hp")
 }

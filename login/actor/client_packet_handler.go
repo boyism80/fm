@@ -78,6 +78,12 @@ func onLoginClientCreateCharacter(ctx actor.Context, client *LoginClientActor, r
 	client.Send(&resp.CreateCharacter{
 		Success: success,
 		Character: &entity.Character{
+			Life: entity.Life{
+				Hp:    50,
+				MaxHp: 50,
+				Mp:    5,
+				MaxMp: 5,
+			},
 			ID:         1,
 			Name:       request.Name,
 			Gender:     0,
@@ -90,10 +96,6 @@ func onLoginClientCreateCharacter(ctx actor.Context, client *LoginClientActor, r
 			Dex:        5,
 			Int:        4,
 			Luk:        4,
-			Hp:         50,
-			MaxHp:      50,
-			Mp:         5,
-			MaxMp:      5,
 			SpawnPoint: 3,
 		},
 	}, types.SEND_POLICY_ENCRYPT)

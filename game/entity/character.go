@@ -8,7 +8,48 @@ import (
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/util"
 	"github.com/boyism80/fm/game/constant"
+	lua "github.com/yuin/gopher-lua"
 )
+
+var characterBuiltinFuncs = map[string]lua.LGFunction{
+	"hp": func(L *lua.LState) int {
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+		top := L.GetTop()
+		if top == 1 {
+			// 인자가 없으면 현재 HP 리턴
+			L.Push(lua.LNumber(ch.Hp))
+			return 1
+		}
+		// 정수 인자가 있으면 HP를 해당 값으로 설정
+		newHp := L.CheckInt(2)
+		ch.Hp = uint16(newHp)
+		return 0
+	},
+	"dialog": func(L *lua.LState) int {
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		if ch.PID == nil {
+			L.ArgError(1, "Character is not spawned")
+			return 0
+		}
+
+		// me:dialog(ctx, "Hello") 이런식으로 구현을 해야할 것 같음.
+		// me:pid:hp_down(10) 이렇게 하면 체력 깎는 메시지를 보내고
+		// me:hp(me:hp() - 10) 이렇게 하면 즉시 체력이 깎임
+		// 현재 스크립트에서는 me 이외의 entity 정보를 획득할 수 없도록 함
+		return 0
+	},
+}
 
 type Character struct {
 	Life
@@ -29,10 +70,6 @@ type Character struct {
 	Dex           uint16
 	Int           uint16
 	Luk           uint16
-	Hp            uint16
-	MaxHp         uint16
-	Mp            uint16
-	MaxMp         uint16
 	AbilityPoint  uint16
 	SkillPoint    []uint16
 	Exp           uint32
@@ -150,6 +187,12 @@ func (ch *Character) RemainingSkillPoints() uint16 {
 
 func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Character {
 	ch := Character{
+		Life: Life{
+			Hp:    50,
+			MaxHp: 50,
+			Mp:    5,
+			MaxMp: 5,
+		},
 		ID:         id,
 		Name:       name,
 		Gender:     0,
@@ -162,10 +205,6 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		Dex:        5,
 		Int:        4,
 		Luk:        4,
-		Hp:         50,
-		MaxHp:      50,
-		Mp:         5,
-		MaxMp:      5,
 		SpawnPoint: 1,
 		Map:        200000301,
 		Meso:       2135983647,
@@ -241,4 +280,11 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 	}
 
 	return ch
+}
+
+func (m *Character) LuaTypeName() string {
+	return "Character"
+}
+func (m *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
+	return characterBuiltinFuncs
 }

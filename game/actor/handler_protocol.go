@@ -40,6 +40,7 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 		name = "채진영"
 	}
 	ch := entity.NewDummyCharacter(request.PlayerId, name, client.ctx)
+	ch.PID = ctx.Self()
 	client.ch = &ch
 	RegisterLifeHandlers(ctx, &ch.Life, client.messageHandler)
 
