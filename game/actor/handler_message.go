@@ -278,6 +278,10 @@ func onGameClientMapChanged(ctx protoactor.Context, client *GameClientActor, m *
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 
+	ctx.Send(m.Map, &msg.MapSpawnNpc{
+		Sender: ctx.Self(),
+	})
+
 	ctx.Send(m.Map, &msg.MapBroadcastRange{
 		Sender: ctx.Self(),
 		Pivot:  ch.Position,

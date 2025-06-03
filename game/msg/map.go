@@ -31,6 +31,10 @@ type MapPIDList struct {
 	Targets []*protoactor.PID
 }
 
+type MapSpawnNpc struct {
+	Sender *actor.PID
+}
+
 type MapBroadcastRange struct {
 	Sender     *actor.PID
 	Pivot      types.Vector2[int16]

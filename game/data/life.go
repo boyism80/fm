@@ -5,8 +5,8 @@ import "github.com/boyism80/fm/common/types"
 type FacingDirectionType uint8
 
 const (
-	FACING_DIRECTION_LEFT FacingDirectionType = iota
-	FACING_DIRECTION_RIGHT
+	FACING_DIRECTION_RIGHT FacingDirectionType = iota
+	FACING_DIRECTION_LEFT
 )
 
 type Life interface {

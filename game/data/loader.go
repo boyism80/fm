@@ -989,7 +989,9 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 	if lives != nil {
 		for _, life := range lives.Children {
 			var createdSpec Life
-			baseSpec := LifeSpec{}
+			baseSpec := LifeSpec{
+				FacingDirection: FACING_DIRECTION_LEFT,
+			}
 			for _, prop := range life.Children {
 				switch prop.Name {
 				case "type":
@@ -1035,9 +1037,9 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 						return nil, err
 					}
 					if value == 0 {
-						baseSpec.FacingDirection = FACING_DIRECTION_RIGHT
-					} else {
 						baseSpec.FacingDirection = FACING_DIRECTION_LEFT
+					} else {
+						baseSpec.FacingDirection = FACING_DIRECTION_RIGHT
 					}
 				case "fh":
 					value, err := strconv.Atoi(prop.Value)
