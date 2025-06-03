@@ -28,6 +28,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0xA3, ctx, client, h, onGameItemLoot)
 	handler.RegisterPacketHandler(0x4D, ctx, client, h, onGameDropMeso)
 	handler.RegisterPacketHandler(0x15, ctx, client, h, onGameWarp)
+	handler.RegisterPacketHandler(0x9E, ctx, client, h, onGameClientNpcControl)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -247,4 +248,11 @@ func onGameWarp(ctx actor.Context, client *GameClientActor, req *req.Warp) {
 	}
 
 	client.Warp(ctx, uint32(oldPortal.TargetMapId), newPortal.ID)
+}
+
+func onGameClientNpcControl(ctx actor.Context, client *GameClientActor, req *req.NpcAction) {
+
+	client.Send(&resp.NpcAction{
+		Bytes: req.Bytes,
+	}, types.SEND_POLICY_ENCRYPT)
 }

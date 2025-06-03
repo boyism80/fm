@@ -1,6 +1,10 @@
 package entity
 
+import (
+	"github.com/boyism80/fm/game/data"
+)
+
 type Npc struct {
-	Object
-	Dialog []string
+	ID   uint32
+	Spec *data.NPCSpec
 }

@@ -2,6 +2,13 @@ package data
 
 import "github.com/boyism80/fm/common/types"
 
+type FacingDirectionType uint8
+
+const (
+	FACING_DIRECTION_LEFT FacingDirectionType = iota
+	FACING_DIRECTION_RIGHT
+)
+
 type Life interface {
 }
 
@@ -13,7 +20,7 @@ type LifeSpec struct {
 	Hide               bool
 	UseDay, UseNight   bool
 	Foothold           int16
-	FacingDirection    uint8
+	FacingDirection    FacingDirectionType
 	MobTime            uint64
 	Info               uint8
 	LimitedName        string

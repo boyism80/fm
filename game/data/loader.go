@@ -987,18 +987,18 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 
 	lives := root.find("life")
 	if lives != nil {
-		baseSpec := LifeSpec{}
 		for _, life := range lives.Children {
-			var lifeSpec Life
+			var createdSpec Life
+			baseSpec := LifeSpec{}
 			for _, prop := range life.Children {
 				switch prop.Name {
 				case "type":
 					if prop.Value == "n" {
-						lifeSpec = NPCSpec{
+						createdSpec = NPCSpec{
 							LifeSpec: &baseSpec,
 						}
 					} else if prop.Value == "m" {
-						lifeSpec = MobSpec{
+						createdSpec = MobSpec{
 							LifeSpec: &baseSpec,
 						}
 					} else {
@@ -1034,7 +1034,11 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.FacingDirection = uint8(value)
+					if value == 0 {
+						baseSpec.FacingDirection = FACING_DIRECTION_RIGHT
+					} else {
+						baseSpec.FacingDirection = FACING_DIRECTION_LEFT
+					}
 				case "fh":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
@@ -1104,7 +1108,7 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 				}
 			}
 
-			switch v := lifeSpec.(type) {
+			switch v := createdSpec.(type) {
 			case NPCSpec:
 				spec.NPCs[v.ID] = v
 
@@ -1114,6 +1118,7 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 			default:
 				return nil, errors.New("invalid life type")
 			}
+			createdSpec = nil
 		}
 	}
 

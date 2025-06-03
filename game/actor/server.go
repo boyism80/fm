@@ -36,10 +36,6 @@ func onGameStart(ctx protoactor.Context, obj *GameServerActor, m *msg.StartListe
 		props := NewMapActorProps(ctx, m.ServerCtx, spec)
 		pid := ctx.Spawn(props)
 		m.ServerCtx.MapActors[spec.ID] = pid
-
-		// for _, npcSpec := range spec.NPCs {
-		// 	// TODO: spawn npc actor
-		// }
 	}
 
 	go func() {

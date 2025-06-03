@@ -21,6 +21,7 @@ type MapActor struct {
 	handler    *handler.MessageHandler
 	Spec       *data.MapSpec
 	ctx        *context.ServerContext
+	npcs       map[uint32]*actor.PID
 }
 
 func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec *data.MapSpec) *actor.Props {
@@ -32,6 +33,14 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 			handler:    handler.NewMessageHandler(),
 			Spec:       spec,
 			ctx:        serverCtx,
+			npcs:       map[uint32]*actor.PID{},
+		}
+
+		for _, npcSpec := range spec.NPCs {
+			actor.sequence++
+			props := NewNpcActorProps(ctx, &npcSpec, actor.sequence)
+			pid := ctx.Spawn(props)
+			actor.npcs[actor.sequence] = pid
 		}
 
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapEnter)
@@ -56,6 +65,12 @@ func onMapEnter(ctx actor.Context, state *MapActor, m *msg.EnterMap) {
 
 	// 기존에 있던 오브젝트들에게 새로 추가된 오브젝트 알림
 	for _, pid := range state.characters {
+		ctx.Send(pid, &msg.Warped{
+			Sender: m.PID,
+		})
+	}
+
+	for _, pid := range state.npcs {
 		ctx.Send(pid, &msg.Warped{
 			Sender: m.PID,
 		})
