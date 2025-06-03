@@ -19,6 +19,7 @@ func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor
 	handler.RegisterCommandHandler("메소얻기", ctx, client, h, onGainMeso)
 	handler.RegisterCommandHandler("풀메소", ctx, client, h, onFullMeso)
 	handler.RegisterCommandHandler("맵이동", ctx, client, h, onChangeMap)
+	handler.RegisterCommandHandler("다이얼로그", ctx, client, h, onDialog)
 }
 
 func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) {
@@ -116,4 +117,27 @@ func onChangeMap(ctx actor.Context, client *GameClientActor, params ...string) {
 	}
 
 	client.Warp(ctx, uint32(value), 0)
+}
+
+func onDialog(ctx actor.Context, client *GameClientActor, params ...string) {
+	prev := 0
+	if len(params) > 1 {
+		if val, err := strconv.Atoi(params[1]); err == nil {
+			prev = val
+		}
+	}
+
+	next := 0
+	if len(params) > 2 {
+		if val, err := strconv.Atoi(params[2]); err == nil {
+			next = val
+		}
+	}
+
+	client.Send(&resp.Dialog{
+		NPC:  9001000,
+		Text: "안녕하세요",
+		Prev: prev != 0,
+		Next: next != 0,
+	}, types.SEND_POLICY_ENCRYPT)
 }
