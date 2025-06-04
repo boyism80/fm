@@ -8,6 +8,7 @@ import (
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/game/listener"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/req"
@@ -39,8 +40,7 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 	if request.PlayerId != 1 {
 		name = "채진영"
 	}
-	ch := entity.NewDummyCharacter(request.PlayerId, name, client.ctx)
-	ch.PID = ctx.Self()
+	ch := entity.NewDummyCharacter(client, &listener.CharacterListener{}, request.PlayerId, name, client.ctx)
 	client.ch = &ch
 	RegisterLifeHandlers(ctx, &ch.Life, client.messageHandler)
 

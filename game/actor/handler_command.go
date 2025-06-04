@@ -3,14 +3,17 @@ package actor
 import (
 	"log"
 	"math"
+	"path/filepath"
 	"strconv"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
+	"github.com/boyism80/fm/common/lua"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol/resp"
+	raw_lua "github.com/yuin/gopher-lua"
 )
 
 func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor, h *handler.CommandHandler) {
@@ -20,6 +23,7 @@ func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor
 	handler.RegisterCommandHandler("풀메소", ctx, client, h, onFullMeso)
 	handler.RegisterCommandHandler("맵이동", ctx, client, h, onChangeMap)
 	handler.RegisterCommandHandler("다이얼로그", ctx, client, h, onDialog)
+	handler.RegisterCommandHandler("스크립트", ctx, client, h, onScript)
 }
 
 func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) {
@@ -134,10 +138,32 @@ func onDialog(ctx actor.Context, client *GameClientActor, params ...string) {
 		}
 	}
 
-	client.Send(&resp.Dialog{
-		NPC:  9001000,
-		Text: "안녕하세요",
-		Prev: prev != 0,
-		Next: next != 0,
-	}, types.SEND_POLICY_ENCRYPT)
+	if client.ch.Listener != nil {
+		client.ch.Listener.OnDialog(client.ch, "안녕하세요", prev != 0, next != 0)
+	}
+}
+
+func onScript(ctx actor.Context, client *GameClientActor, params ...string) {
+	fileName := "script.lua"
+	if len(params) >= 1 {
+		fileName = params[0]
+	}
+	path := filepath.Join("script", fileName)
+
+	L := raw_lua.NewState()
+	defer L.Close()
+
+	lua.Register(L, "pid", map[string]raw_lua.LGFunction{})
+	lua.RegisterLuaType[*entity.Object](L)
+	lua.RegisterLuaDerivedType[*entity.Life, *entity.Object](L)    // Life ← Object
+	lua.RegisterLuaDerivedType[*entity.Character, *entity.Life](L) // Monster ← Life
+
+	ud := L.NewUserData()
+	ud.Value = client.ch
+	L.SetMetatable(ud, L.GetTypeMetatable(client.ch.LuaTypeName()))
+	L.SetGlobal("me", ud)
+
+	if err := L.DoFile(path); err != nil {
+		log.Fatal(err)
+	}
 }

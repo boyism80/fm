@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
 	"github.com/boyism80/fm/game/constant"
 	lua "github.com/yuin/gopher-lua"
@@ -31,6 +32,7 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 		return 0
 	},
 	"dialog": func(L *lua.LState) int {
+		argc := L.GetTop()
 		ud := L.CheckUserData(1)
 		ch, ok := ud.Value.(*Character)
 		if !ok {
@@ -38,21 +40,30 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 			return 0
 		}
 
-		if ch.PID == nil {
-			L.ArgError(1, "Character is not spawned")
-			return 0
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
 		}
 
-		// me:dialog(ctx, "Hello") 이런식으로 구현을 해야할 것 같음.
-		// me:pid:hp_down(10) 이렇게 하면 체력 깎는 메시지를 보내고
-		// me:hp(me:hp() - 10) 이렇게 하면 즉시 체력이 깎임
-		// 현재 스크립트에서는 me 이외의 entity 정보를 획득할 수 없도록 함
+		prev := false
+		if argc > 2 {
+			prev = L.CheckBool(3)
+		}
+		next := false
+		if argc > 3 {
+			next = L.CheckBool(4)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialog(ch, message, prev, next)
+		}
 		return 0
 	},
 }
 
 type Character struct {
 	Life
+	Sendable
+	Listener      CharacterListener
 	ID            uint32
 	Name          string
 	Gender        uint8
@@ -123,6 +134,13 @@ type MonsterBook struct {
 	Cards map[uint32]uint32
 }
 
+func (ch *Character) Send(p types.Packet, policy types.SendPolicy) {
+	if ch.Sendable == nil {
+		return
+	}
+	ch.Sendable.Send(p, policy)
+}
+
 func (mb *MonsterBook) Serialize(writer *stream.StreamWriter) {
 	writer.WriteU16(uint16(len(mb.Cards)))
 
@@ -185,8 +203,10 @@ func (ch *Character) RemainingSkillPoints() uint16 {
 	return uint16(ret)
 }
 
-func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Character {
+func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx *context.ServerContext) Character {
 	ch := Character{
+		Sendable: sender,
+		Listener: listener,
 		Life: Life{
 			Hp:    50,
 			MaxHp: 50,
