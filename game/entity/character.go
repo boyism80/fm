@@ -6,12 +6,195 @@ import (
 
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
 	"github.com/boyism80/fm/game/constant"
+	lua "github.com/yuin/gopher-lua"
 )
+
+var characterBuiltinFuncs = map[string]lua.LGFunction{
+	"hp": func(L *lua.LState) int {
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+		top := L.GetTop()
+		if top == 1 {
+			L.Push(lua.LNumber(ch.Hp))
+			return 1
+		}
+
+		newHp := L.CheckInt(2)
+		ch.Hp = uint16(newHp)
+		return 0
+	},
+	"chat": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := L.CheckString(2)
+		highlight := false
+		if argc > 3 {
+			highlight = L.CheckBool(3)
+		}
+		dontRecordHistory := false
+		if argc > 4 {
+			dontRecordHistory = L.CheckBool(4)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnChat(message, highlight, dontRecordHistory)
+		}
+
+		ch.Dialog = L
+		return 0
+	},
+	"dialog": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
+		}
+
+		prev := false
+		if argc > 2 {
+			prev = L.CheckBool(3)
+		}
+		next := false
+		if argc > 3 {
+			next = L.CheckBool(4)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialog(message, prev, next)
+		}
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
+	},
+	"dialog_list": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
+		}
+
+		selections := []string{}
+		if argc > 2 {
+			tbl := L.CheckTable(3)
+			tbl.ForEach(func(_, value lua.LValue) {
+				if str, ok := value.(lua.LString); ok {
+					selections = append(selections, string(str))
+				}
+			})
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialogList(message, selections)
+		}
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
+	},
+	"dialog_accept": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
+		}
+
+		enableEscape := false
+		if argc > 2 {
+			enableEscape = L.CheckBool(3)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialogAccept(message, enableEscape)
+		}
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
+	},
+	"dialog_yes_no": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
+		}
+
+		prev := false
+		if argc > 2 {
+			prev = L.CheckBool(3)
+		}
+		next := false
+		if argc > 3 {
+			next = L.CheckBool(4)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialogYesNo(message, prev, next)
+		}
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
+	},
+	"dialog_input": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialogInput(message)
+		}
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
+	},
+}
 
 type Character struct {
 	Life
+	Sendable
+	Listener      CharacterListener
+	Dialog        *lua.LState
 	ID            uint32
 	Name          string
 	Gender        uint8
@@ -29,10 +212,6 @@ type Character struct {
 	Dex           uint16
 	Int           uint16
 	Luk           uint16
-	Hp            uint16
-	MaxHp         uint16
-	Mp            uint16
-	MaxMp         uint16
 	AbilityPoint  uint16
 	SkillPoint    []uint16
 	Exp           uint32
@@ -84,6 +263,13 @@ type RingContainer struct {
 
 type MonsterBook struct {
 	Cards map[uint32]uint32
+}
+
+func (ch *Character) Send(p types.Packet, policy types.SendPolicy) {
+	if ch.Sendable == nil {
+		return
+	}
+	ch.Sendable.Send(p, policy)
 }
 
 func (mb *MonsterBook) Serialize(writer *stream.StreamWriter) {
@@ -148,8 +334,16 @@ func (ch *Character) RemainingSkillPoints() uint16 {
 	return uint16(ret)
 }
 
-func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Character {
+func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx *context.ServerContext) Character {
 	ch := Character{
+		Sendable: sender,
+		Listener: listener,
+		Life: Life{
+			Hp:    50,
+			MaxHp: 50,
+			Mp:    5,
+			MaxMp: 5,
+		},
 		ID:         id,
 		Name:       name,
 		Gender:     0,
@@ -162,10 +356,6 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 		Dex:        5,
 		Int:        4,
 		Luk:        4,
-		Hp:         50,
-		MaxHp:      50,
-		Mp:         5,
-		MaxMp:      5,
 		SpawnPoint: 1,
 		Map:        200000301,
 		Meso:       2135983647,
@@ -241,4 +431,11 @@ func NewDummyCharacter(id uint32, name string, ctx *context.ServerContext) Chara
 	}
 
 	return ch
+}
+
+func (m *Character) LuaTypeName() string {
+	return "Character"
+}
+func (m *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
+	return characterBuiltinFuncs
 }

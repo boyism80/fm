@@ -1,7 +1,7 @@
-package actor
+package actorx
 
 import (
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/game/entity"
@@ -12,7 +12,7 @@ type MobActor struct {
 	handler *handler.MessageHandler
 }
 
-func NewMobActor(ctx protoactor.Context, serverCtx context.ServerContext) protoactor.Actor {
+func NewMobActor(ctx actor.Context, serverCtx context.ServerContext) actor.Actor {
 	actor := &MobActor{
 		handler: handler.NewMessageHandler(),
 	}
@@ -20,6 +20,6 @@ func NewMobActor(ctx protoactor.Context, serverCtx context.ServerContext) protoa
 	return actor
 }
 
-func (state *MobActor) Receive(context protoactor.Context) {
+func (state *MobActor) Receive(context actor.Context) {
 	state.handler.Handle(context)
 }

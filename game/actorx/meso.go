@@ -1,4 +1,4 @@
-package actor
+package actorx
 
 import (
 	"time"
@@ -15,40 +15,40 @@ import (
 	"github.com/boyism80/fm/game/protocol/resp"
 )
 
-type ItemActor struct {
-	entity.Item
+type MesoActor struct {
+	entity.Meso
 	handler   *handler.MessageHandler
 	mapPID    *actor.PID
 	scheduler *scheduler.TimerScheduler
 }
 
-func NewItemActor(ctx actor.Context,
+func NewMesoActor(ctx actor.Context,
 	serverCtx *context.ServerContext,
-	entity entity.Item,
-	mapPID *actor.PID) actor.Actor {
+	meso entity.Meso,
+	mapPID *actor.PID,
+	position types.Vector2[int16]) actor.Actor {
 
-	actor := &ItemActor{
+	actor := &MesoActor{
+		Meso:      meso,
 		handler:   handler.NewMessageHandler(),
-		Item:      entity,
 		mapPID:    mapPID,
 		scheduler: scheduler.NewTimerScheduler(ctx),
 	}
-	RegisterObjectHandlers(ctx, actor.Item.GetObject(), actor.handler)
-	handler.RegisterHandler(ctx, actor, actor.handler, onItemStarted)
-	handler.RegisterHandler(ctx, actor, actor.handler, onItemSpawn)
-	handler.RegisterHandler(ctx, actor, actor.handler, onItemLooting)
-	handler.RegisterHandler(ctx, actor, actor.handler, onItemLooted)
-	handler.RegisterHandler(ctx, actor, actor.handler, onItemDropTypeChanged)
-	handler.RegisterHandler(ctx, actor, actor.handler, onItemDestroy)
-
+	RegisterObjectHandlers(ctx, actor.Drop.Object, actor.handler)
+	handler.RegisterHandler(ctx, actor, actor.handler, onMesoStarted)
+	handler.RegisterHandler(ctx, actor, actor.handler, onMesoSpawn)
+	handler.RegisterHandler(ctx, actor, actor.handler, onMesoLooting)
+	handler.RegisterHandler(ctx, actor, actor.handler, onMesoLooted)
+	handler.RegisterHandler(ctx, actor, actor.handler, onMesoDropTypeChanged)
+	handler.RegisterHandler(ctx, actor, actor.handler, onMesoDestroy)
 	return actor
 }
 
-func (state *ItemActor) Receive(context actor.Context) {
+func (state *MesoActor) Receive(context actor.Context) {
 	state.handler.Handle(context)
 }
 
-func onItemStarted(ctx actor.Context, state *ItemActor, m *actor.Started) {
+func onMesoStarted(ctx actor.Context, state *MesoActor, m *actor.Started) {
 	state.scheduler.SendOnce(30*time.Second, ctx.Self(), &msg.ItemDropTypeChanged{
 		Mode: constant.DropTypeFFA,
 	})
@@ -58,19 +58,21 @@ func onItemStarted(ctx actor.Context, state *ItemActor, m *actor.Started) {
 	})
 }
 
-func onItemSpawn(ctx actor.Context, state *ItemActor, m *msg.ItemSpawn) {
-	drop := state.GetDrop()
+func onMesoSpawn(ctx actor.Context, state *MesoActor, m *msg.MesoSpawn) {
+	drop := state.Drop
+
 	ctx.Send(state.mapPID, &msg.MapBroadcastRange{
 		Sender:     ctx.Self(),
-		Pivot:      state.GetObject().Position,
+		Pivot:      state.Object.Position,
 		ExceptSelf: true,
 		Message: &common_msg.SendProtocol{
-			Protocol: &resp.DropItem{
+			Protocol: &resp.DropMeso{
 				ID:           drop.ID,
 				Animation:    constant.DropItemAnimationTypeLooting,
 				DropType:     drop.DropType,
-				Item:         state.Item,
+				Count:        state.Count,
 				OwnerID:      drop.Owner,
+				Position:     drop.Position,
 				SpawnedPoint: drop.SpawnedPoint,
 				IsPlayerDrop: true,
 			},
@@ -79,9 +81,9 @@ func onItemSpawn(ctx actor.Context, state *ItemActor, m *msg.ItemSpawn) {
 	})
 }
 
-func onItemLooting(ctx actor.Context, state *ItemActor, m *msg.ItemLooting) {
-	drop := state.GetDrop()
-	if drop.Looting {
+func onMesoLooting(ctx actor.Context, state *MesoActor, m *msg.ItemLooting) {
+	drop := state.Drop
+	if state.Looting {
 		ctx.Send(m.Actor, &msg.CharacterLootFailed{
 			OID: drop.ID,
 		})
@@ -95,19 +97,20 @@ func onItemLooting(ctx actor.Context, state *ItemActor, m *msg.ItemLooting) {
 		return
 	}
 
-	ctx.Send(m.Actor, &msg.CharacterItemLooting{
+	ctx.Send(m.Actor, &msg.CharacterMesoLooting{
 		PID:  ctx.Self(),
 		OID:  drop.ID,
-		Item: state.Item.Clone(state.GetCount()),
+		Meso: state.Meso.Count,
 	})
 	drop.Looting = true
 }
 
-func onItemLooted(ctx actor.Context, state *ItemActor, m *msg.ItemLooted) {
-	drop := state.GetDrop()
-	drop.Looting = false
+func onMesoLooted(ctx actor.Context, state *MesoActor, m *msg.ItemLooted) {
+	drop := state.Drop
+	state.Looting = false
 	if m.Success {
-		if state.Reduce(uint16(m.Count)) == 0 {
+		state.Count -= m.Count
+		if state.Count == 0 {
 			ctx.Send(state.mapPID, &msg.MapRemoveItem{
 				Actor:       ctx.Self(),
 				OID:         drop.ID,
@@ -119,13 +122,12 @@ func onItemLooted(ctx actor.Context, state *ItemActor, m *msg.ItemLooted) {
 	}
 }
 
-func onItemDropTypeChanged(ctx actor.Context, state *ItemActor, m *msg.ItemDropTypeChanged) {
-	drop := state.GetDrop()
-	drop.DropType = m.Mode
+func onMesoDropTypeChanged(ctx actor.Context, state *MesoActor, m *msg.ItemDropTypeChanged) {
+	state.Drop.DropType = m.Mode
 }
 
-func onItemDestroy(ctx actor.Context, state *ItemActor, m *msg.ItemDestroy) {
-	drop := state.GetDrop()
+func onMesoDestroy(ctx actor.Context, state *MesoActor, m *msg.ItemDestroy) {
+	drop := state.Drop
 	ctx.Send(state.mapPID, &msg.MapRemoveItem{
 		Actor:    ctx.Self(),
 		OID:      drop.ID,

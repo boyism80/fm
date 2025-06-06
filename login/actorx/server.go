@@ -1,7 +1,7 @@
-package actor
+package actorx
 
 import (
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
 )
 
@@ -9,7 +9,7 @@ type LoginServerActor struct {
 	handler *handler.MessageHandler
 }
 
-func NewLoginServerActor() protoactor.Actor {
+func NewLoginServerActor() actor.Actor {
 	actor := &LoginServerActor{
 		handler: handler.NewMessageHandler(),
 	}
@@ -17,6 +17,6 @@ func NewLoginServerActor() protoactor.Actor {
 	return actor
 }
 
-func (state *LoginServerActor) Receive(context protoactor.Context) {
+func (state *LoginServerActor) Receive(context actor.Context) {
 	state.handler.Handle(context)
 }

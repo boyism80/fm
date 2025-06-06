@@ -1,10 +1,10 @@
-package actor
+package actorx
 
 import (
 	"log"
 	"math"
 
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/crypt"
 	"github.com/boyism80/fm/common/handler"
 	common_msg "github.com/boyism80/fm/common/msg"
@@ -20,7 +20,7 @@ import (
 	login_resp "github.com/boyism80/fm/login/protocol/resp"
 )
 
-func RegisterGameClientMessageHandlers(ctx protoactor.Context, m *GameClientActor, h *handler.MessageHandler) {
+func RegisterGameClientMessageHandlers(ctx actor.Context, m *GameClientActor, h *handler.MessageHandler) {
 	handler.RegisterHandler(ctx, m, h, onGameClientConnected)
 	handler.RegisterHandler(ctx, m, h, onGameClientStopping)
 	handler.RegisterHandler(ctx, m, h, onGameClientInvokeHandler)
@@ -32,7 +32,7 @@ func RegisterGameClientMessageHandlers(ctx protoactor.Context, m *GameClientActo
 	handler.RegisterHandler(ctx, m, h, onGameClientMapChanged)
 }
 
-func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *protoactor.PID) {
+func (client *GameClientActor) ReceivePackets(ctx actor.Context, pid *actor.PID) {
 	buf := make([]byte, 1024)
 	conn := client.conn
 
@@ -84,7 +84,7 @@ func (client *GameClientActor) ReceivePackets(ctx protoactor.Context, pid *proto
 	}
 }
 
-func onGameClientConnected(ctx protoactor.Context, client *GameClientActor, m *common_msg.ClientConnected) {
+func onGameClientConnected(ctx actor.Context, client *GameClientActor, m *common_msg.ClientConnected) {
 	log.Println("클라이언트 연결됨")
 	// timer := scheduler.NewTimerScheduler(ctx.ActorSystem().Root)
 	// client.stopTimer = timer.SendRepeatedly(10*time.Second, 10*time.Second, ctx.Self(), &msg.Ping{})
@@ -99,15 +99,17 @@ func onGameClientConnected(ctx protoactor.Context, client *GameClientActor, m *c
 	go client.ReceivePackets(ctx, ctx.Self())
 }
 
-func onGameClientStopping(ctx protoactor.Context, client *GameClientActor, m *protoactor.Stopping) {
+func onGameClientStopping(ctx actor.Context, client *GameClientActor, m *actor.Stopping) {
 	ch := client.ch
 	if ch != nil {
-		mapActor := client.ctx.MapActors[client.ch.Map]
+		mapActor := client.serverContext.MapActors[client.ch.Map]
 		if mapActor != nil {
 			ctx.Send(mapActor, &msg.LeaveMap{
 				ID: ch.ID,
 			})
 		}
+
+		ch.Dialog = nil
 	}
 
 	log.Println("클라이언트 접속 종료")
@@ -117,19 +119,19 @@ func onGameClientStopping(ctx protoactor.Context, client *GameClientActor, m *pr
 	}
 }
 
-func onGameClientInvokeHandler(ctx protoactor.Context, client *GameClientActor, m *common_msg.InvokeHandler) {
+func onGameClientInvokeHandler(ctx actor.Context, client *GameClientActor, m *common_msg.InvokeHandler) {
 	client.Invoke(ctx, int(m.Opcode), m.Data)
 }
 
-func onGameClientSendProtocol(ctx protoactor.Context, state *GameClientActor, m *common_msg.SendProtocol) {
+func onGameClientSendProtocol(ctx actor.Context, state *GameClientActor, m *common_msg.SendProtocol) {
 	state.Send(m.Protocol, m.Policy)
 }
 
-func onGameClientPing(ctx protoactor.Context, client *GameClientActor, m *common_msg.Ping) {
+func onGameClientPing(ctx actor.Context, client *GameClientActor, m *common_msg.Ping) {
 	client.Send(&common_resp.Ping{}, types.SEND_POLICY_ENCRYPT)
 }
 
-func onGameClientWarped(ctx protoactor.Context, client *GameClientActor, m *msg.Warped) {
+func onGameClientWarped(ctx actor.Context, client *GameClientActor, m *msg.Warped) {
 	// 어떤 플레이어가 내가 속한 맵으로 왔다.
 	// 나의 캐릭터 정보를 해당 플레이어에게 보내준다.
 
@@ -146,7 +148,7 @@ func onGameClientWarped(ctx protoactor.Context, client *GameClientActor, m *msg.
 	})
 }
 
-func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m *msg.CharacterItemLooting) {
+func onGameClientItemLooting(ctx actor.Context, client *GameClientActor, m *msg.CharacterItemLooting) {
 
 	invenType := m.Item.GetInventoryType()
 	inven := client.ch.Inventory[invenType]
@@ -213,7 +215,7 @@ func onGameClientItemLooting(ctx protoactor.Context, client *GameClientActor, m 
 	})
 }
 
-func onGameClientMesoLooting(ctx protoactor.Context, client *GameClientActor, m *msg.CharacterMesoLooting) {
+func onGameClientMesoLooting(ctx actor.Context, client *GameClientActor, m *msg.CharacterMesoLooting) {
 	cap := math.MaxInt32 - client.ch.Meso
 	if m.Meso > cap {
 		client.Send(&resp.ItemGainFailed{
@@ -252,8 +254,8 @@ func onGameClientMesoLooting(ctx protoactor.Context, client *GameClientActor, m 
 	})
 }
 
-func onGameClientMapChanged(ctx protoactor.Context, client *GameClientActor, m *msg.CharacterMapChanged) {
-	mapSpec, ok := client.ctx.Resources.Maps[m.MID]
+func onGameClientMapChanged(ctx actor.Context, client *GameClientActor, m *msg.CharacterMapChanged) {
+	mapSpec, ok := client.serverContext.Resources.Maps[m.MID]
 	if !ok {
 		return
 	}

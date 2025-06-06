@@ -1,16 +1,19 @@
-package actor
+package actorx
 
 import (
 	"log"
 	"math"
+	"path/filepath"
 	"strconv"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
+	"github.com/boyism80/fm/common/luax"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol/resp"
+	lua "github.com/yuin/gopher-lua"
 )
 
 func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor, h *handler.CommandHandler) {
@@ -20,6 +23,7 @@ func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor
 	handler.RegisterCommandHandler("풀메소", ctx, client, h, onFullMeso)
 	handler.RegisterCommandHandler("맵이동", ctx, client, h, onChangeMap)
 	handler.RegisterCommandHandler("다이얼로그", ctx, client, h, onDialog)
+	handler.RegisterCommandHandler("스크립트", ctx, client, h, onScript)
 }
 
 func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) {
@@ -43,7 +47,7 @@ func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) 
 		}
 	}
 
-	item, err := entity.NewItem(client.ctx, uint32(itemId), uint16(count))
+	item, err := entity.NewItem(client.serverContext, uint32(itemId), uint16(count))
 	if err != nil {
 		log.Println(err)
 		return
@@ -134,10 +138,31 @@ func onDialog(ctx actor.Context, client *GameClientActor, params ...string) {
 		}
 	}
 
-	client.Send(&resp.Dialog{
-		NPC:  9001000,
-		Text: "안녕하세요",
-		Prev: prev != 0,
-		Next: next != 0,
-	}, types.SEND_POLICY_ENCRYPT)
+	if client.ch.Listener != nil {
+		client.ch.Listener.OnDialog("안녕하세요", prev != 0, next != 0)
+	}
+}
+
+func onScript(ctx actor.Context, client *GameClientActor, params ...string) {
+	fileName := "script.lua"
+	if len(params) >= 1 {
+		fileName = params[0]
+	}
+	path := filepath.Join("script", fileName)
+
+	co, err := luax.NewThread(path)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	state, err := luax.Call(co, "on_start", luax.NewLuable(co, client.ch))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	if state == lua.ResumeYield {
+		client.ch.Dialog = co
+	}
 }

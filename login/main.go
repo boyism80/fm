@@ -7,7 +7,7 @@ import (
 	protoactor "github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/msg"
-	"github.com/boyism80/fm/login/actor"
+	"github.com/boyism80/fm/login/actorx"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,7 +44,7 @@ func main() {
 	}
 
 	system := protoactor.NewActorSystem()
-	props := protoactor.PropsFromProducer(func() protoactor.Actor { return actor.NewLoginServerActor() })
+	props := protoactor.PropsFromProducer(func() protoactor.Actor { return actorx.NewLoginServerActor() })
 	pid := system.Root.Spawn(props)
 
 	serverCtx := context.NewServerContext(nil, map[uint32]*protoactor.PID{}, pid)

@@ -1,4 +1,4 @@
-package actor
+package actorx
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
@@ -60,8 +60,8 @@ func onLoginClientLogin(ctx actor.Context, client *LoginClientActor, request *re
 func onLoginClientCharacterList(ctx actor.Context, client *LoginClientActor, request *req.CharacterList) {
 	client.Send(&resp.CharacterList{
 		Characters: []entity.Character{
-			entity.NewDummyCharacter(1, "채승현", nil),
-			entity.NewDummyCharacter(2, "채진영", nil),
+			entity.NewDummyCharacter(client, nil, 1, "채승현", nil),
+			entity.NewDummyCharacter(client, nil, 2, "채진영", nil),
 		},
 		SlotCount: 6,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -78,6 +78,12 @@ func onLoginClientCreateCharacter(ctx actor.Context, client *LoginClientActor, r
 	client.Send(&resp.CreateCharacter{
 		Success: success,
 		Character: &entity.Character{
+			Life: entity.Life{
+				Hp:    50,
+				MaxHp: 50,
+				Mp:    5,
+				MaxMp: 5,
+			},
 			ID:         1,
 			Name:       request.Name,
 			Gender:     0,
@@ -90,10 +96,6 @@ func onLoginClientCreateCharacter(ctx actor.Context, client *LoginClientActor, r
 			Dex:        5,
 			Int:        4,
 			Luk:        4,
-			Hp:         50,
-			MaxHp:      50,
-			Mp:         5,
-			MaxMp:      5,
 			SpawnPoint: 3,
 		},
 	}, types.SEND_POLICY_ENCRYPT)

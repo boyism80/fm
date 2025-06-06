@@ -5,8 +5,8 @@ import (
 )
 
 type NormalChat struct {
-	Message string
-	Show    bool
+	Message           string
+	DontRecordHistory bool
 }
 
 func (m *NormalChat) Serialize(writer *stream.StreamWriter) error {
@@ -25,6 +25,6 @@ func (m *NormalChat) Deserialize(reader *stream.StreamReader) error {
 	}
 
 	m.Message = message
-	m.Show = show
+	m.DontRecordHistory = show
 	return nil
 }
