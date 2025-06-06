@@ -11,6 +11,8 @@ var (
 	onCreateHooks   []func(*lua.LState)
 	onCreateHooksMu sync.Mutex
 	root            *lua.LState
+	compileMu       sync.Mutex
+	compiledFuncs   = make(map[string]*lua.LFunction)
 )
 
 type Luable interface {
@@ -18,19 +20,41 @@ type Luable interface {
 	LuaBuiltinFuncs() map[string]lua.LGFunction
 }
 
-func NewThread(path string) (*lua.LState, error) {
+func preloadScript(path string) (*lua.LFunction, error) {
+	compileMu.Lock()
+	defer compileMu.Unlock()
+
+	if fn, ok := compiledFuncs[path]; ok {
+		return fn, nil
+	}
 
 	if root == nil {
 		root = lua.NewState()
 		onCreateHooksMu.Lock()
-		defer onCreateHooksMu.Unlock()
 		for _, hook := range onCreateHooks {
 			hook(root)
 		}
+		onCreateHooksMu.Unlock()
 	}
-	co, _ := root.NewThread()
-	if err := co.DoFile(path); err != nil {
+
+	fn, err := root.LoadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile %s: %w", path, err)
+	}
+	compiledFuncs[path] = fn
+	return fn, nil
+}
+
+func NewThread(path string) (*lua.LState, error) {
+	fn, err := preloadScript(path)
+	if err != nil {
 		return nil, err
+	}
+
+	co, _ := root.NewThread()
+	co.Push(fn)
+	if err := co.PCall(0, lua.MultRet, nil); err != nil {
+		return nil, fmt.Errorf("script runtime error: %w", err)
 	}
 
 	return co, nil
