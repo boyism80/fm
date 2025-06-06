@@ -27,3 +27,7 @@ type CharacterMapChanged struct {
 	Init       bool
 	SpawnPoint uint8
 }
+
+type RunScript struct {
+	Script string
+}

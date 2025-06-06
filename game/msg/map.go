@@ -75,3 +75,8 @@ type MapChange struct {
 	To          *actor.PID
 	SpawnPoint  uint8
 }
+
+type SendMessage struct {
+	OID     uint32
+	Message any
+}

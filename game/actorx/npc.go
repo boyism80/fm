@@ -1,6 +1,11 @@
 package actorx
 
 import (
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
 	common_msg "github.com/boyism80/fm/common/msg"
@@ -27,6 +32,7 @@ func NewNpcActorProps(ctx actor.Context, spec *data.NPCSpec, sequence uint32) *a
 		}
 
 		handler.RegisterHandler(ctx, actor, actor.handler, onNpcPlayerWarped)
+		handler.RegisterHandler(ctx, actor, actor.handler, onNpcClick)
 
 		return actor
 	})
@@ -51,5 +57,17 @@ func onNpcPlayerWarped(ctx actor.Context, state *NpcActor, m *msg.Warped) {
 			MiniMap: true,
 		},
 		Policy: types.SEND_POLICY_ENCRYPT,
+	})
+}
+
+func onNpcClick(ctx actor.Context, state *NpcActor, m *msg.NpcClick) {
+	path := filepath.Join("script", "npc", fmt.Sprintf("%d.lua", state.Npc.Spec.ID))
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Printf("Npc script not found: %s", path)
+		return
+	}
+
+	ctx.Send(m.Sender, &msg.RunScript{
+		Script: path,
 	})
 }

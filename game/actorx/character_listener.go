@@ -4,6 +4,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	common_msg "github.com/boyism80/fm/common/msg"
 	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol/resp"
 )
@@ -16,44 +17,44 @@ func (l *CharacterListener) GetContext() actor.Context {
 	return l.Actor.actorContext
 }
 
-func (l *CharacterListener) OnDialog(message string, prev bool, next bool) {
+func (l *CharacterListener) OnDialog(npc uint32, message string, prev bool, next bool) {
 	l.Actor.Send(&resp.Dialog{
-		NPC:  9001000,
+		NPC:  npc,
 		Text: message,
 		Prev: prev,
 		Next: next,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListener) OnDialogYesNo(message string, prev bool, next bool) {
+func (l *CharacterListener) OnDialogYesNo(npc uint32, message string, prev bool, next bool) {
 
 	l.Actor.Send(&resp.DialogYesNo{
-		NPC:  9001000,
+		NPC:  npc,
 		Text: message,
 		Prev: prev,
 		Next: next,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListener) OnDialogAccept(message string, enableEscape bool) {
+func (l *CharacterListener) OnDialogAccept(npc uint32, message string, enableEscape bool) {
 	l.Actor.Send(&resp.DialogAccept{
-		NPC:          9001000,
+		NPC:          npc,
 		Text:         message,
 		EnableEscape: enableEscape,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListener) OnDialogList(message string, selections []string) {
+func (l *CharacterListener) OnDialogList(npc uint32, message string, selections []string) {
 	l.Actor.Send(&resp.DialogList{
-		NPC:        9001000,
+		NPC:        npc,
 		Text:       message,
 		Selections: selections,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListener) OnDialogInput(message string) {
+func (l *CharacterListener) OnDialogInput(npc uint32, message string) {
 	l.Actor.Send(&resp.DialogInput{
-		NPC:  9001000,
+		NPC:  npc,
 		Text: message,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -74,11 +75,19 @@ func (l *CharacterListener) OnChat(message string, highlight bool, dontRecordHis
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.NormalChat{
 				CharacterId:       ch.ID,
-				Highlight:         false,
+				Highlight:         highlight,
 				Message:           message,
 				DontRecordHistory: dontRecordHistory,
 			},
 			Policy: types.SEND_POLICY_ENCRYPT,
 		},
 	})
+}
+
+func (l *CharacterListener) OnMesoChanged(meso int32) {
+	l.Actor.Send(&resp.UpdateStats{
+		Stats: map[constant.Stat]int32{
+			constant.StatMeso: meso,
+		},
+	}, types.SEND_POLICY_ENCRYPT)
 }

@@ -139,7 +139,7 @@ func onDialog(ctx actor.Context, client *GameClientActor, params ...string) {
 	}
 
 	if client.ch.Listener != nil {
-		client.ch.Listener.OnDialog("안녕하세요", prev != 0, next != 0)
+		client.ch.Listener.OnDialog(9001000, "안녕하세요", prev != 0, next != 0)
 	}
 }
 

@@ -33,6 +33,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x15, ctx, client, h, onGameWarp)
 	handler.RegisterPacketHandler(0x9E, ctx, client, h, onGameClientNpcControl)
 	handler.RegisterPacketHandler(0x2B, ctx, client, h, onGameClientDialog)
+	handler.RegisterPacketHandler(0x29, ctx, client, h, onGameClientNpcClick)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -302,4 +303,18 @@ func onGameClientDialog(ctx actor.Context, client *GameClientActor, req *req.Dia
 	if state == lua.ResumeYield {
 		client.ch.Dialog = co
 	}
+}
+
+func onGameClientNpcClick(ctx actor.Context, client *GameClientActor, req *req.NpcClick) {
+	mapActor, ok := client.serverContext.MapActors[client.ch.Map]
+	if !ok {
+		return
+	}
+
+	ctx.Send(mapActor, &msg.SendMessage{
+		OID: req.OID,
+		Message: &msg.NpcClick{
+			Sender: ctx.Self(),
+		},
+	})
 }

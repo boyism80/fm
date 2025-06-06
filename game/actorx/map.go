@@ -53,6 +53,7 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapRemoveItem)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapChange)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnNpc)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapSendMessage)
 
 		return actor
 	})
@@ -208,4 +209,13 @@ func onMapSpawnNpc(ctx actor.Context, state *MapActor, m *msg.MapSpawnNpc) {
 			Sender: m.Sender,
 		})
 	}
+}
+
+func onMapSendMessage(ctx actor.Context, state *MapActor, m *msg.SendMessage) {
+	pid, ok := state.npcs[m.OID]
+	if !ok {
+		return
+	}
+
+	ctx.Send(pid, m.Message)
 }

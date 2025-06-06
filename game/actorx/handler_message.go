@@ -7,6 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/crypt"
 	"github.com/boyism80/fm/common/handler"
+	"github.com/boyism80/fm/common/luax"
 	common_msg "github.com/boyism80/fm/common/msg"
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
@@ -15,6 +16,7 @@ import (
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol/resp"
+	lua "github.com/yuin/gopher-lua"
 
 	common_resp "github.com/boyism80/fm/common/protocol/resp"
 	login_resp "github.com/boyism80/fm/login/protocol/resp"
@@ -30,6 +32,7 @@ func RegisterGameClientMessageHandlers(ctx actor.Context, m *GameClientActor, h 
 	handler.RegisterHandler(ctx, m, h, onGameClientItemLooting)
 	handler.RegisterHandler(ctx, m, h, onGameClientMesoLooting)
 	handler.RegisterHandler(ctx, m, h, onGameClientMapChanged)
+	handler.RegisterHandler(ctx, m, h, onGameClientRunScript)
 }
 
 func (client *GameClientActor) ReceivePackets(ctx actor.Context, pid *actor.PID) {
@@ -300,4 +303,22 @@ func onGameClientMapChanged(ctx actor.Context, client *GameClientActor, m *msg.C
 		},
 		ExceptSelf: true,
 	})
+}
+
+func onGameClientRunScript(ctx actor.Context, client *GameClientActor, m *msg.RunScript) {
+	co, err := luax.NewThread(m.Script)
+	if err != nil {
+		log.Println("Failed to create thread: ", err)
+		return
+	}
+
+	state, err := luax.Call(co, "on_start", luax.NewLuable(co, client.ch))
+	if err != nil {
+		log.Printf("Failed to run script: %v", err)
+		return
+	}
+
+	if state == lua.ResumeYield {
+		client.ch.Dialog = co
+	}
 }
