@@ -2,7 +2,6 @@ package msg
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	protoactor "github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol/resp"
@@ -11,7 +10,7 @@ import (
 // 맵에 오브젝트 등록
 type EnterMap struct {
 	ID         uint32
-	PID        *protoactor.PID
+	PID        *actor.PID
 	SpawnPoint uint8
 	Init       bool
 }
@@ -23,12 +22,12 @@ type LeaveMap struct {
 
 // 맵에 존재하는 모든 PID 요청
 type QueryAllPIDs struct {
-	ReplyTo *protoactor.PID
+	ReplyTo *actor.PID
 }
 
 // 응답 메시지: PID 리스트
 type MapPIDList struct {
-	Targets []*protoactor.PID
+	Targets []*actor.PID
 }
 
 type MapSpawnNpc struct {

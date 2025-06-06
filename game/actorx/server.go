@@ -1,10 +1,10 @@
-package actor
+package actorx
 
 import (
 	"fmt"
 	"net"
 
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/msg"
 
@@ -16,7 +16,7 @@ type GameServerActor struct {
 	handler *handler.MessageHandler
 }
 
-func NewGameServerActor() protoactor.Actor {
+func NewGameServerActor() actor.Actor {
 	actor := &GameServerActor{
 		handler: handler.NewMessageHandler(),
 	}
@@ -25,11 +25,11 @@ func NewGameServerActor() protoactor.Actor {
 	return actor
 }
 
-func (state *GameServerActor) Receive(context protoactor.Context) {
+func (state *GameServerActor) Receive(context actor.Context) {
 	state.handler.Handle(context)
 }
 
-func onGameStart(ctx protoactor.Context, obj *GameServerActor, m *msg.StartListening) {
+func onGameStart(ctx actor.Context, obj *GameServerActor, m *msg.StartListening) {
 	port := fmt.Sprintf(":%d", m.Port)
 
 	for _, spec := range m.ServerCtx.Resources.Maps {
@@ -49,7 +49,7 @@ func onGameStart(ctx protoactor.Context, obj *GameServerActor, m *msg.StartListe
 		fmt.Println("Listening on", port)
 
 		// 봇 테스트
-		props := protoactor.PropsFromProducer(func() protoactor.Actor {
+		props := actor.PropsFromProducer(func() actor.Actor {
 			return bot.NewBotActor(ctx, m.ServerCtx)
 		})
 		pid := ctx.Spawn(props)
@@ -66,8 +66,8 @@ func onGameStart(ctx protoactor.Context, obj *GameServerActor, m *msg.StartListe
 	}()
 }
 
-func onGameClientAccepted(ctx protoactor.Context, obj *GameServerActor, m *msg.ClientConnected) {
-	props := protoactor.PropsFromProducer(func() protoactor.Actor {
+func onGameClientAccepted(ctx actor.Context, obj *GameServerActor, m *msg.ClientConnected) {
+	props := actor.PropsFromProducer(func() actor.Actor {
 		return NewGameClientActor(ctx, m.ServerCtx, m.Conn)
 	})
 	pid := ctx.Spawn(props)

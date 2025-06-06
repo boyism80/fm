@@ -1,4 +1,4 @@
-package actor
+package actorx
 
 import (
 	"log"
@@ -21,7 +21,8 @@ import (
 )
 
 type GameClientActor struct {
-	ctx            *context.ServerContext
+	actorContext   actor.Context
+	serverContext  *context.ServerContext
 	ch             *entity.Character
 	conn           net.Conn
 	buffer         []byte
@@ -31,6 +32,7 @@ type GameClientActor struct {
 	sendCrypt      crypt.Encryption
 	receiveCrypt   crypt.Encryption
 	stopTimer      scheduler.CancelFunc
+	listener       entity.CharacterListener
 }
 
 func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, conn net.Conn) actor.Actor {
@@ -38,7 +40,8 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
 
 	actor := &GameClientActor{
-		ctx:            serverCtx,
+		actorContext:   ctx,
+		serverContext:  serverCtx,
 		conn:           conn,
 		buffer:         []byte{},
 		messageHandler: handler.NewMessageHandler(),
@@ -47,6 +50,7 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 		sendCrypt:      crypt.NewEncryption(ivSend, -5),
 		receiveCrypt:   crypt.NewEncryption(ivRecv, 5),
 	}
+	actor.listener = &CharacterListener{Actor: actor}
 
 	RegisterGameClientMessageHandlers(ctx, actor, actor.messageHandler)
 	RegisterGameClientPacketHandler(ctx, actor, actor.packetHandler)
@@ -55,6 +59,7 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 }
 
 func (state *GameClientActor) Receive(context actor.Context) {
+	state.actorContext = context
 	state.messageHandler.Handle(context)
 }
 
@@ -93,7 +98,7 @@ func (client *GameClientActor) Drop(ctx actor.Context, invenType constant.Invent
 		return
 	}
 
-	mapActor := client.ctx.MapActors[ch.Map]
+	mapActor := client.serverContext.MapActors[ch.Map]
 	if mapActor == nil {
 		return
 	}
@@ -197,7 +202,7 @@ func (client *GameClientActor) Unequip(ctx actor.Context, parts constant.Equipme
 		return
 	}
 
-	mapActor := client.ctx.MapActors[client.ch.Map]
+	mapActor := client.serverContext.MapActors[client.ch.Map]
 	if mapActor == nil {
 		return
 	}
@@ -231,7 +236,7 @@ func (client *GameClientActor) Equip(ctx actor.Context, parts constant.Equipment
 		return
 	}
 
-	mapActor := client.ctx.MapActors[client.ch.Map]
+	mapActor := client.serverContext.MapActors[client.ch.Map]
 	if mapActor == nil {
 		return
 	}
@@ -416,12 +421,12 @@ func (client *GameClientActor) SortInventory(inventoryType constant.InventoryTyp
 
 func (client *GameClientActor) Warp(ctx actor.Context, mapID uint32, spawnPoint uint8) {
 	ch := client.ch
-	from := client.ctx.MapActors[ch.Map]
+	from := client.serverContext.MapActors[ch.Map]
 	if from == nil {
 		return
 	}
 
-	to := client.ctx.MapActors[mapID]
+	to := client.serverContext.MapActors[mapID]
 	if to == nil {
 		return
 	}

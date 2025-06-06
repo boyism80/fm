@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/context"
+	"github.com/boyism80/fm/common/luax"
 	"github.com/boyism80/fm/common/msg"
-	"github.com/boyism80/fm/game/actor"
+	"github.com/boyism80/fm/game/actorx"
 	"github.com/boyism80/fm/game/data"
+	"github.com/boyism80/fm/game/entity"
+	lua "github.com/yuin/gopher-lua"
 	"gopkg.in/yaml.v3"
 )
 
@@ -37,6 +40,14 @@ func loadConfig(path string) (*Config, error) {
 	return &config, nil
 }
 
+func init() {
+	luax.RegisterOnCreateHook(func(L *lua.LState) {
+		luax.RegisterLuaType[*entity.Object](L)
+		luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](L)
+		luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](L)
+	})
+}
+
 func main() {
 	config, err := loadConfig("config.yaml")
 	if err != nil {
@@ -44,11 +55,11 @@ func main() {
 		return
 	}
 
-	system := protoactor.NewActorSystem()
-	props := protoactor.PropsFromProducer(func() protoactor.Actor { return actor.NewGameServerActor() })
+	system := actor.NewActorSystem()
+	props := actor.PropsFromProducer(func() actor.Actor { return actorx.NewGameServerActor() })
 	pid := system.Root.Spawn(props)
 
-	serverCtx := context.NewServerContext(data.NewResources(), map[uint32]*protoactor.PID{}, pid)
+	serverCtx := context.NewServerContext(data.NewResources(), map[uint32]*actor.PID{}, pid)
 	system.Root.Send(pid, &msg.StartListening{Port: config.Server.Game.Port, ServerCtx: serverCtx})
 
 	select {}

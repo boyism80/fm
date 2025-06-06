@@ -5,10 +5,10 @@ import (
 )
 
 type NormalChat struct {
-	CharacterId uint32
-	Highlight   bool
-	Message     string
-	Show        bool
+	CharacterId       uint32
+	Highlight         bool
+	Message           string
+	DontRecordHistory bool
 }
 
 func (a *NormalChat) Serialize(writer *stream.StreamWriter) error {
@@ -16,7 +16,7 @@ func (a *NormalChat) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(a.CharacterId)
 	writer.WriteBoolean(a.Highlight)
 	writer.WriteStr16(a.Message)
-	writer.WriteBoolean(a.Show)
+	writer.WriteBoolean(a.DontRecordHistory)
 	return nil
 }
 

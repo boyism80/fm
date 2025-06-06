@@ -1,18 +1,20 @@
-package actor
+package actorx
 
 import (
+	"log"
 	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
+	"github.com/boyism80/fm/common/luax"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/game/listener"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/req"
 	"github.com/boyism80/fm/game/protocol/resp"
+	lua "github.com/yuin/gopher-lua"
 
 	common_msg "github.com/boyism80/fm/common/msg"
 	common_req "github.com/boyism80/fm/common/protocol/req"
@@ -30,6 +32,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x4D, ctx, client, h, onGameDropMeso)
 	handler.RegisterPacketHandler(0x15, ctx, client, h, onGameWarp)
 	handler.RegisterPacketHandler(0x9E, ctx, client, h, onGameClientNpcControl)
+	handler.RegisterPacketHandler(0x2B, ctx, client, h, onGameClientDialog)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -40,11 +43,11 @@ func onLoginGame(ctx actor.Context, client *GameClientActor, request *req.LoginG
 	if request.PlayerId != 1 {
 		name = "채진영"
 	}
-	ch := entity.NewDummyCharacter(client, &listener.CharacterListener{}, request.PlayerId, name, client.ctx)
+	ch := entity.NewDummyCharacter(client, client.listener, request.PlayerId, name, client.serverContext)
 	client.ch = &ch
 	RegisterLifeHandlers(ctx, &ch.Life, client.messageHandler)
 
-	mapActor := client.ctx.MapActors[client.ch.Map]
+	mapActor := client.serverContext.MapActors[client.ch.Map]
 	if mapActor != nil {
 		ctx.Send(mapActor, &msg.EnterMap{
 			ID:         ch.ID,
@@ -67,7 +70,7 @@ func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req
 		client.ch.Stance = frag.GetStance()
 	}
 
-	mapActor := client.ctx.MapActors[client.ch.Map]
+	mapActor := client.serverContext.MapActors[client.ch.Map]
 	if mapActor == nil {
 		return
 	}
@@ -87,11 +90,6 @@ func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req
 }
 
 func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req.NormalChat) {
-	position := client.ch.Position
-	mapActor := client.ctx.MapActors[client.ch.Map]
-	if mapActor == nil {
-		return
-	}
 
 	if strings.HasPrefix(req.Message, "/") {
 		params := strings.Split(strings.TrimPrefix(req.Message, "/"), " ")
@@ -101,24 +99,12 @@ func onGameClientNormalChat(ctx actor.Context, client *GameClientActor, req *req
 		}
 	}
 
-	ctx.Send(mapActor, &msg.MapBroadcastRange{
-		Sender: ctx.Self(),
-		Pivot:  position,
-		Message: &common_msg.SendProtocol{
-			Protocol: &resp.NormalChat{
-				CharacterId: client.ch.ID,
-				Highlight:   false,
-				Message:     req.Message,
-				Show:        req.Show,
-			},
-			Policy: types.SEND_POLICY_ENCRYPT,
-		},
-	})
+	client.listener.OnChat(req.Message, false, req.DontRecordHistory)
 }
 
 func onGameClientAttack(ctx actor.Context, client *GameClientActor, req *req.Attack) {
 	position := client.ch.Position
-	mapActor := client.ctx.MapActors[client.ch.Map]
+	mapActor := client.serverContext.MapActors[client.ch.Map]
 	if mapActor == nil {
 		return
 	}
@@ -164,7 +150,7 @@ func onGameSortInventory(ctx actor.Context, client *GameClientActor, req *req.So
 
 func onGameItemLoot(ctx actor.Context, client *GameClientActor, req *req.ItemLoot) {
 
-	mpid, ok := client.ctx.MapActors[client.ch.Map]
+	mpid, ok := client.serverContext.MapActors[client.ch.Map]
 	if !ok {
 		client.Send(&resp.UpdateStats{
 			UnlockAction: true,
@@ -182,7 +168,7 @@ func onGameItemLoot(ctx actor.Context, client *GameClientActor, req *req.ItemLoo
 
 func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMeso) {
 	ch := client.ch
-	mapActor := client.ctx.MapActors[ch.Map]
+	mapActor := client.serverContext.MapActors[ch.Map]
 	if mapActor == nil {
 		return
 	}
@@ -219,7 +205,7 @@ func onGameWarp(ctx actor.Context, client *GameClientActor, req *req.Warp) {
 	if req.Target != 0xFFFFFFFF {
 		return
 	}
-	oldMapSpec, ok := client.ctx.Resources.Maps[client.ch.Map]
+	oldMapSpec, ok := client.serverContext.Resources.Maps[client.ch.Map]
 	if !ok {
 		return
 	}
@@ -232,7 +218,7 @@ func onGameWarp(ctx actor.Context, client *GameClientActor, req *req.Warp) {
 		return
 	}
 
-	newMapSpec, ok := client.ctx.Resources.Maps[uint32(oldPortal.TargetMapId)]
+	newMapSpec, ok := client.serverContext.Resources.Maps[uint32(oldPortal.TargetMapId)]
 	if !ok {
 		client.Send(&resp.UpdateStats{
 			UnlockAction: true,
@@ -256,4 +242,64 @@ func onGameClientNpcControl(ctx actor.Context, client *GameClientActor, req *req
 	client.Send(&resp.NpcAction{
 		Bytes: req.Bytes,
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func onGameClientDialog(ctx actor.Context, client *GameClientActor, req *req.Dialog) {
+
+	if client.ch.Dialog == nil {
+		return
+	}
+
+	args := []lua.LValue{}
+
+	co := client.ch.Dialog
+	client.ch.Dialog = nil
+
+	switch req.DialogType {
+	case constant.DIALOG_TYPE_DEFAULT:
+		if req.Next {
+			args = append(args, lua.LTrue)
+		} else {
+			args = append(args, lua.LFalse)
+		}
+
+	case constant.DIALOG_TYPE_YES_NO:
+		if req.Next {
+			args = append(args, lua.LTrue)
+		} else {
+			args = append(args, lua.LFalse)
+		}
+
+	case constant.DIALOG_TYPE_LIST:
+		if req.Next {
+			args = append(args, lua.LNumber(req.Selected))
+		} else {
+			args = append(args, lua.LNil)
+		}
+
+	case constant.DIALOG_TYPE_INPUT:
+		if req.Next {
+			args = append(args, lua.LString(req.Text))
+		} else {
+			args = append(args, lua.LNil)
+		}
+
+	case constant.DIALOG_TYPE_ACCEPT_ESCAPE:
+	case constant.DIALOG_TYPE_ACCEPT:
+		if req.Next {
+			args = append(args, lua.LTrue)
+		} else {
+			args = append(args, lua.LFalse)
+		}
+	}
+
+	state, err := luax.Resume(co, args...)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	if state == lua.ResumeYield {
+		client.ch.Dialog = co
+	}
 }

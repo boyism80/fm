@@ -1,4 +1,4 @@
-package actor
+package actorx
 
 import (
 	"log"
@@ -8,12 +8,12 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
-	"github.com/boyism80/fm/common/lua"
+	"github.com/boyism80/fm/common/luax"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol/resp"
-	raw_lua "github.com/yuin/gopher-lua"
+	lua "github.com/yuin/gopher-lua"
 )
 
 func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor, h *handler.CommandHandler) {
@@ -47,7 +47,7 @@ func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) 
 		}
 	}
 
-	item, err := entity.NewItem(client.ctx, uint32(itemId), uint16(count))
+	item, err := entity.NewItem(client.serverContext, uint32(itemId), uint16(count))
 	if err != nil {
 		log.Println(err)
 		return
@@ -139,7 +139,7 @@ func onDialog(ctx actor.Context, client *GameClientActor, params ...string) {
 	}
 
 	if client.ch.Listener != nil {
-		client.ch.Listener.OnDialog(client.ch, "안녕하세요", prev != 0, next != 0)
+		client.ch.Listener.OnDialog("안녕하세요", prev != 0, next != 0)
 	}
 }
 
@@ -150,20 +150,19 @@ func onScript(ctx actor.Context, client *GameClientActor, params ...string) {
 	}
 	path := filepath.Join("script", fileName)
 
-	L := raw_lua.NewState()
-	defer L.Close()
+	co, err := luax.NewThread(path)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	lua.Register(L, "pid", map[string]raw_lua.LGFunction{})
-	lua.RegisterLuaType[*entity.Object](L)
-	lua.RegisterLuaDerivedType[*entity.Life, *entity.Object](L)    // Life ← Object
-	lua.RegisterLuaDerivedType[*entity.Character, *entity.Life](L) // Monster ← Life
+	state, err := luax.Call(co, "on_start", luax.NewLuable(co, client.ch))
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	ud := L.NewUserData()
-	ud.Value = client.ch
-	L.SetMetatable(ud, L.GetTypeMetatable(client.ch.LuaTypeName()))
-	L.SetGlobal("me", ud)
-
-	if err := L.DoFile(path); err != nil {
-		log.Fatal(err)
+	if state == lua.ResumeYield {
+		client.ch.Dialog = co
 	}
 }

@@ -22,13 +22,37 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 		}
 		top := L.GetTop()
 		if top == 1 {
-			// 인자가 없으면 현재 HP 리턴
 			L.Push(lua.LNumber(ch.Hp))
 			return 1
 		}
-		// 정수 인자가 있으면 HP를 해당 값으로 설정
+
 		newHp := L.CheckInt(2)
 		ch.Hp = uint16(newHp)
+		return 0
+	},
+	"chat": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := L.CheckString(2)
+		highlight := false
+		if argc > 3 {
+			highlight = L.CheckBool(3)
+		}
+		dontRecordHistory := false
+		if argc > 4 {
+			dontRecordHistory = L.CheckBool(4)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnChat(message, highlight, dontRecordHistory)
+		}
+
+		ch.Dialog = L
 		return 0
 	},
 	"dialog": func(L *lua.LState) int {
@@ -54,9 +78,115 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 			next = L.CheckBool(4)
 		}
 		if ch.Listener != nil {
-			ch.Listener.OnDialog(ch, message, prev, next)
+			ch.Listener.OnDialog(message, prev, next)
 		}
-		return 0
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
+	},
+	"dialog_list": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
+		}
+
+		selections := []string{}
+		if argc > 2 {
+			tbl := L.CheckTable(3)
+			tbl.ForEach(func(_, value lua.LValue) {
+				if str, ok := value.(lua.LString); ok {
+					selections = append(selections, string(str))
+				}
+			})
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialogList(message, selections)
+		}
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
+	},
+	"dialog_accept": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
+		}
+
+		enableEscape := false
+		if argc > 2 {
+			enableEscape = L.CheckBool(3)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialogAccept(message, enableEscape)
+		}
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
+	},
+	"dialog_yes_no": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
+		}
+
+		prev := false
+		if argc > 2 {
+			prev = L.CheckBool(3)
+		}
+		next := false
+		if argc > 3 {
+			next = L.CheckBool(4)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialogYesNo(message, prev, next)
+		}
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
+	},
+	"dialog_input": func(L *lua.LState) int {
+		argc := L.GetTop()
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+
+		message := ""
+		if argc > 1 {
+			message = L.CheckString(2)
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnDialogInput(message)
+		}
+
+		ch.Dialog = L
+		return L.Yield(lua.LNumber(1))
 	},
 }
 
@@ -64,6 +194,7 @@ type Character struct {
 	Life
 	Sendable
 	Listener      CharacterListener
+	Dialog        *lua.LState
 	ID            uint32
 	Name          string
 	Gender        uint8

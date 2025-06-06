@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	protoactor "github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/bot/msg"
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/handler"
@@ -18,7 +18,7 @@ type BotActor struct {
 	handler *handler.MessageHandler
 }
 
-func NewBotActor(ctx protoactor.Context, serverCtx *context.ServerContext) protoactor.Actor {
+func NewBotActor(ctx actor.Context, serverCtx *context.ServerContext) actor.Actor {
 	actor := &BotActor{
 		Context: serverCtx,
 		handler: handler.NewMessageHandler(),
@@ -31,16 +31,16 @@ func NewBotActor(ctx protoactor.Context, serverCtx *context.ServerContext) proto
 	return actor
 }
 
-func (state *BotActor) Receive(context protoactor.Context) {
+func (state *BotActor) Receive(context actor.Context) {
 	state.handler.Handle(context)
 }
 
-func onBotStopping(ctx protoactor.Context, bot *BotActor, m *protoactor.Stopping) {
+func onBotStopping(ctx actor.Context, bot *BotActor, m *actor.Stopping) {
 	log.Println("봇 제거중")
 	bot.Conn.Close()
 }
 
-func onBotConnect(ctx protoactor.Context, bot *BotActor, m *msg.BotConnect) {
+func onBotConnect(ctx actor.Context, bot *BotActor, m *msg.BotConnect) {
 	serverAddr := fmt.Sprintf("localhost:%d", m.Port)
 
 	conn, err := net.Dial("tcp", serverAddr)
@@ -55,7 +55,7 @@ func onBotConnect(ctx protoactor.Context, bot *BotActor, m *msg.BotConnect) {
 	ctx.Send(ctx.Self(), &msg.BotClose{})
 }
 
-func onBotSendPacket(ctx protoactor.Context, bot *BotActor, m *msg.BotSendPacket) {
+func onBotSendPacket(ctx actor.Context, bot *BotActor, m *msg.BotSendPacket) {
 	wr := stream.NewStreamWriter(stream.LittleEndian)
 	m.Packet.Serialize(wr)
 	bytes := wr.Bytes()
@@ -71,6 +71,6 @@ func onBotSendPacket(ctx protoactor.Context, bot *BotActor, m *msg.BotSendPacket
 	}
 }
 
-func onBotClose(ctx protoactor.Context, bot *BotActor, m *msg.BotClose) {
+func onBotClose(ctx actor.Context, bot *BotActor, m *msg.BotClose) {
 	ctx.Stop(ctx.Self())
 }
