@@ -2,18 +2,21 @@ package resp
 
 import (
 	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 )
 
-type SpawnMob struct {
-	Mob       *entity.Mob
-	SpawnType constant.MobSpawnType
-	Link      uint32
+type ControlMob struct {
+	Mob   *entity.Mob
+	Aggro bool
 }
 
-func (p *SpawnMob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xA9)
+func (p *ControlMob) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU16(0xAB)
+	if p.Aggro {
+		writer.WriteU8(2)
+	} else {
+		writer.WriteU8(1)
+	}
 	writer.WriteU32(p.Mob.OID)
 	writer.WriteU8(1)
 	writer.WriteU32(p.Mob.Spec.ID)
@@ -23,16 +26,12 @@ func (p *SpawnMob) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(p.Mob.Stance)
 	writer.WriteU16(0)
 	writer.Write16(p.Mob.Foothold)
-	writer.Write8(int8(p.SpawnType))
-
-	if p.SpawnType == -3 || p.SpawnType >= 0 {
-		writer.WriteU32(p.Link)
-	}
+	writer.Write8(-1)
 	writer.Write8(-1)
 	writer.WriteU32(0)
 	return nil
 }
 
-func (p *SpawnMob) Deserialize(reader *stream.StreamReader) error {
+func (m *ControlMob) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }

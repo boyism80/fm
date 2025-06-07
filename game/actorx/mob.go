@@ -28,6 +28,7 @@ func NewMobActor(ctx actor.Context, serverCtx context.ServerContext, entity enti
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobSpawn)
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobPlayerWarped)
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobKill)
+	handler.RegisterHandler(ctx, actor, actor.handler, onMobControllerChange)
 	return actor
 }
 
@@ -65,8 +66,18 @@ func onMobPlayerWarped(ctx actor.Context, state *MobActor, m *msg.Warped) {
 func onMobKill(ctx actor.Context, state *MobActor, m *msg.MobKill) {
 	ctx.Send(state.mapPID, &msg.MapDieMob{
 		Sender:        ctx.Self(),
-		OID:           state.ID,
+		OID:           state.OID,
 		AnimationType: m.AnimationType,
 		Position:      state.Position,
+	})
+}
+
+func onMobControllerChange(ctx actor.Context, state *MobActor, m *msg.MobControllerChange) {
+	ctx.Send(m.Controller, &common_msg.SendProtocol{
+		Protocol: &resp.ControlMob{
+			Mob:   &state.Mob,
+			Aggro: false,
+		},
+		Policy: types.SEND_POLICY_ENCRYPT,
 	})
 }

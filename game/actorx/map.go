@@ -24,13 +24,25 @@ type mobSpawn struct {
 }
 
 type MapActor struct {
-	sequence    uint32
-	handler     *handler.MessageHandler
-	Spec        *data.MapSpec
-	ctx         *context.ServerContext
-	objects     map[constant.ObjectType]map[uint32]*actor.PID
-	mobSpawners map[uint32]*mobSpawn
-	scheduler   *scheduler.TimerScheduler
+	sequence        uint32
+	handler         *handler.MessageHandler
+	Spec            *data.MapSpec
+	ctx             *context.ServerContext
+	objects         map[constant.ObjectType]map[uint32]*actor.PID
+	mobSpawners     map[uint32]*mobSpawn
+	scheduler       *scheduler.TimerScheduler
+	controllerTable *entity.ControllerTable
+}
+
+func OnMobControllerChange(ctx actor.Context, mob, controller *actor.PID) {
+
+	if controller == nil {
+		return
+	}
+
+	ctx.Send(mob, &msg.MobControllerChange{
+		Controller: controller,
+	})
 }
 
 func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec *data.MapSpec) *actor.Props {
@@ -46,8 +58,9 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 				constant.ObjectTypeMob:       make(map[uint32]*actor.PID),
 				constant.ObjectTypeCharacter: make(map[uint32]*actor.PID),
 			},
-			mobSpawners: map[uint32]*mobSpawn{},
-			scheduler:   scheduler.NewTimerScheduler(ctx),
+			mobSpawners:     map[uint32]*mobSpawn{},
+			scheduler:       scheduler.NewTimerScheduler(ctx),
+			controllerTable: entity.NewControllerTable(OnMobControllerChange),
 		}
 
 		for _, npcSpec := range spec.NpcSpawns {
@@ -123,7 +136,7 @@ func (state *MapActor) SpawnMobs(ctx actor.Context) {
 					Stance: 5,
 				},
 				Spec:     mobSpec,
-				ID:       spawnId,
+				OID:      spawnId,
 				Foothold: mobSpawner.Spec.Foothold,
 			}, ctx.Self())
 		})
@@ -131,6 +144,8 @@ func (state *MapActor) SpawnMobs(ctx actor.Context) {
 		state.objects[constant.ObjectTypeMob][spawnId] = pid
 		mobSpawner.Spawned = true
 		ctx.Send(pid, &msg.Spawn{})
+
+		state.controllerTable.EnterMob(ctx, pid)
 	}
 }
 
@@ -152,10 +167,16 @@ func onMapEnter(ctx actor.Context, state *MapActor, m *msg.EnterMap) {
 		Init:       m.Init,
 		SpawnPoint: m.SpawnPoint,
 	})
+
+	state.controllerTable.EnterPlayer(ctx, m.PID)
 }
 
 func onMapLeave(ctx actor.Context, state *MapActor, m *msg.LeaveMap) {
-	delete(state.objects[constant.ObjectTypeCharacter], m.ID)
+
+	if pid, ok := state.objects[constant.ObjectTypeCharacter][m.ID]; ok {
+		state.controllerTable.LeavePlayer(ctx, pid)
+		delete(state.objects[constant.ObjectTypeCharacter], m.ID)
+	}
 
 	for _, pid := range state.objects[constant.ObjectTypeCharacter] {
 		ctx.Send(pid, &common_msg.SendProtocol{
@@ -305,6 +326,7 @@ func onMapDieMob(ctx actor.Context, state *MapActor, m *msg.MapDieMob) {
 		return
 	}
 
+	state.controllerTable.LeaveMob(ctx, pid)
 	ctx.Stop(pid)
 	delete(state.objects[constant.ObjectTypeMob], m.OID)
 
