@@ -1,5 +1,5 @@
 package data
 
-type MobSpec struct {
-	*LifeSpec
+type MobSpawnSpec struct {
+	*SpawnSpec
 }

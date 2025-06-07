@@ -831,10 +831,10 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 	}
 
 	spec := MapSpec{
-		ID:      mapId,
-		Portals: map[uint8]Portal{},
-		NPCs:    map[uint32]NPCSpec{},
-		Mobs:    map[uint32]MobSpec{},
+		ID:        mapId,
+		Portals:   map[uint8]Portal{},
+		NpcSpawns: map[uint32]NpcSpawnSpec{},
+		MobSpawns: map[uint32]MobSpawnSpec{},
 	}
 
 	info := root.find("info")
@@ -987,21 +987,23 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 
 	lives := root.find("life")
 	if lives != nil {
+		var spawnId int
 		for _, life := range lives.Children {
-			var createdSpec Life
-			baseSpec := LifeSpec{
+			spawnId, _ = strconv.Atoi(life.Name)
+			var spawn Spawn
+			baseSpawnSpec := SpawnSpec{
 				FacingDirection: FACING_DIRECTION_LEFT,
 			}
 			for _, prop := range life.Children {
 				switch prop.Name {
 				case "type":
 					if prop.Value == "n" {
-						createdSpec = NPCSpec{
-							LifeSpec: &baseSpec,
+						spawn = NpcSpawnSpec{
+							SpawnSpec: &baseSpawnSpec,
 						}
 					} else if prop.Value == "m" {
-						createdSpec = MobSpec{
-							LifeSpec: &baseSpec,
+						spawn = MobSpawnSpec{
+							SpawnSpec: &baseSpawnSpec,
 						}
 					} else {
 						return nil, errors.New("invalid life type")
@@ -1012,91 +1014,91 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.ID = uint32(value)
+					baseSpawnSpec.ID = uint32(value)
 				case "x":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.Position.X = int16(value)
+					baseSpawnSpec.Position.X = int16(value)
 				case "y":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.Position.Y = int16(value)
+					baseSpawnSpec.Position.Y = int16(value)
 				case "mobTime":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.MobTime = uint64(value)
+					baseSpawnSpec.MobTime = uint64(value)
 				case "f":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
 					if value == 0 {
-						baseSpec.FacingDirection = FACING_DIRECTION_LEFT
+						baseSpawnSpec.FacingDirection = FACING_DIRECTION_LEFT
 					} else {
-						baseSpec.FacingDirection = FACING_DIRECTION_RIGHT
+						baseSpawnSpec.FacingDirection = FACING_DIRECTION_RIGHT
 					}
 				case "fh":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.Foothold = int16(value)
+					baseSpawnSpec.Foothold = int16(value)
 				case "cy":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.CollisionY = int16(value)
+					baseSpawnSpec.CollisionY = int16(value)
 				case "rx0":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.RenderX0 = int16(value)
+					baseSpawnSpec.RenderX0 = int16(value)
 				case "rx1":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.RenderX1 = int16(value)
+					baseSpawnSpec.RenderX1 = int16(value)
 				case "hide":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.Hide = value != 0
+					baseSpawnSpec.Hide = value != 0
 				case "useDay":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.UseDay = value != 0
+					baseSpawnSpec.UseDay = value != 0
 				case "useNight":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.UseNight = value != 0
+					baseSpawnSpec.UseNight = value != 0
 				case "limitedname":
-					baseSpec.LimitedName = prop.Value
+					baseSpawnSpec.LimitedName = prop.Value
 				case "info":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.Info = uint8(value)
+					baseSpawnSpec.Info = uint8(value)
 				case "nofoothold":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
 						return nil, err
 					}
-					baseSpec.NoFoothold = value != 0
+					baseSpawnSpec.NoFoothold = value != 0
 
 				default:
 					mutex.Lock()
@@ -1110,17 +1112,17 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 				}
 			}
 
-			switch v := createdSpec.(type) {
-			case NPCSpec:
-				spec.NPCs[v.ID] = v
+			switch v := spawn.(type) {
+			case NpcSpawnSpec:
+				spec.NpcSpawns[uint32(spawnId)] = v
 
-			case MobSpec:
-				spec.Mobs[v.ID] = v
+			case MobSpawnSpec:
+				spec.MobSpawns[uint32(spawnId)] = v
 
 			default:
 				return nil, errors.New("invalid life type")
 			}
-			createdSpec = nil
+			spawn = nil
 		}
 	}
 

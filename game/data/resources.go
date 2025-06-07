@@ -19,7 +19,7 @@ type node struct {
 
 type Resources struct {
 	Maps     map[uint32]*MapSpec
-	Monsters map[uint32]*MobSpec
+	Monsters map[uint32]*MobSpawnSpec
 	Items    map[uint32]ItemSpec
 }
 
@@ -264,7 +264,7 @@ func NewResources() *Resources {
 
 	return &Resources{
 		Maps:     maps,
-		Monsters: map[uint32]*MobSpec{},
+		Monsters: map[uint32]*MobSpawnSpec{},
 		Items:    items,
 	}
 }

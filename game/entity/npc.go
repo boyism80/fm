@@ -6,5 +6,5 @@ import (
 
 type Npc struct {
 	ID   uint32
-	Spec *data.NPCSpec
+	Spec *data.NpcSpawnSpec
 }

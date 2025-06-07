@@ -1,6 +1,8 @@
 package actorx
 
 import (
+	"time"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/handler"
@@ -14,33 +16,50 @@ import (
 	common_msg "github.com/boyism80/fm/common/msg"
 )
 
+type mobSpawn struct {
+	Spec          *data.MobSpawnSpec
+	LastSpawnedAt time.Time
+	Spawned       bool
+}
+
 type MapActor struct {
-	characters map[uint32]*actor.PID // 오브젝트 ID → PID
-	objects    map[uint32]*actor.PID
-	sequence   uint32
-	handler    *handler.MessageHandler
-	Spec       *data.MapSpec
-	ctx        *context.ServerContext
-	npcs       map[uint32]*actor.PID
+	sequence    uint32
+	handler     *handler.MessageHandler
+	Spec        *data.MapSpec
+	ctx         *context.ServerContext
+	objects     map[constant.ObjectType]map[uint32]*actor.PID
+	mobSpawners map[uint32]mobSpawn
 }
 
 func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec *data.MapSpec) *actor.Props {
 	return actor.PropsFromProducer(func() actor.Actor {
 
 		actor := &MapActor{
-			characters: make(map[uint32]*actor.PID),
-			objects:    map[uint32]*actor.PID{},
-			handler:    handler.NewMessageHandler(),
-			Spec:       spec,
-			ctx:        serverCtx,
-			npcs:       map[uint32]*actor.PID{},
+			handler: handler.NewMessageHandler(),
+			Spec:    spec,
+			ctx:     serverCtx,
+			objects: map[constant.ObjectType]map[uint32]*actor.PID{
+				constant.ObjectTypeItem:      make(map[uint32]*actor.PID),
+				constant.ObjectTypeNpc:       make(map[uint32]*actor.PID),
+				constant.ObjectTypeMob:       make(map[uint32]*actor.PID),
+				constant.ObjectTypeCharacter: make(map[uint32]*actor.PID),
+			},
+			mobSpawners: map[uint32]mobSpawn{},
 		}
 
-		for _, npcSpec := range spec.NPCs {
+		for _, npcSpec := range spec.NpcSpawns {
 			actor.sequence++
 			props := NewNpcActorProps(ctx, &npcSpec, actor.sequence)
 			pid := ctx.Spawn(props)
-			actor.npcs[actor.sequence] = pid
+			actor.objects[constant.ObjectTypeNpc][actor.sequence] = pid
+		}
+
+		for i, mobSpawnSpec := range spec.MobSpawns {
+			actor.mobSpawners[uint32(i)] = mobSpawn{
+				Spec:          &mobSpawnSpec,
+				LastSpawnedAt: time.Time{},
+				Spawned:       false,
+			}
 		}
 
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapEnter)
@@ -63,17 +82,31 @@ func (state *MapActor) Receive(ctx actor.Context) {
 	state.handler.Handle(ctx)
 }
 
+func (state *MapActor) SpawnMobs(ctx actor.Context) {
+	for _, mobSpawner := range state.mobSpawners {
+		if mobSpawner.Spawned {
+			continue
+		}
+
+		if mobSpawner.LastSpawnedAt.After(time.Now()) {
+			continue
+		}
+
+		mobSpawner.Spawned = true
+	}
+}
+
 func onMapEnter(ctx actor.Context, state *MapActor, m *msg.EnterMap) {
 
 	// 기존에 있던 오브젝트들에게 새로 추가된 오브젝트 알림
-	for _, pid := range state.characters {
+	for _, pid := range state.objects[constant.ObjectTypeCharacter] {
 		ctx.Send(pid, &msg.Warped{
 			Sender: m.PID,
 		})
 	}
 
 	// 맵에 플레이어를 추가
-	state.characters[m.ID] = m.PID
+	state.objects[constant.ObjectTypeCharacter][m.ID] = m.PID
 	ctx.Send(m.PID, &msg.CharacterMapChanged{
 		MID:        state.Spec.ID,
 		Map:        ctx.Self(),
@@ -83,9 +116,9 @@ func onMapEnter(ctx actor.Context, state *MapActor, m *msg.EnterMap) {
 }
 
 func onMapLeave(ctx actor.Context, state *MapActor, m *msg.LeaveMap) {
-	delete(state.characters, m.ID)
+	delete(state.objects[constant.ObjectTypeCharacter], m.ID)
 
-	for _, pid := range state.characters {
+	for _, pid := range state.objects[constant.ObjectTypeCharacter] {
 		ctx.Send(pid, &common_msg.SendProtocol{
 			Protocol: &resp.LeavePlayer{
 				ID: m.ID,
@@ -97,7 +130,7 @@ func onMapLeave(ctx actor.Context, state *MapActor, m *msg.LeaveMap) {
 
 func onMapPIDList(ctx actor.Context, state *MapActor, m *msg.MapPIDList) {
 	var pids []*actor.PID
-	for _, pid := range state.characters {
+	for _, pid := range state.objects[constant.ObjectTypeCharacter] {
 		pids = append(pids, pid)
 	}
 	ctx.Send(ctx.Sender(), &msg.MapPIDList{Targets: pids})
@@ -106,7 +139,7 @@ func onMapPIDList(ctx actor.Context, state *MapActor, m *msg.MapPIDList) {
 func onMapBroadcastRange(ctx actor.Context, state *MapActor, m *msg.MapBroadcastRange) {
 	// 나중에 섹터 추가하고 섹터 찾아서 섹터 액터한테 던짐
 
-	for _, pid := range state.characters {
+	for _, pid := range state.objects[constant.ObjectTypeCharacter] {
 		if m.ExceptSelf && pid == m.Sender {
 			continue
 		}
@@ -127,7 +160,7 @@ func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 			ctx.Self())
 	})
 	pid := ctx.Spawn(props)
-	state.objects[state.sequence] = pid
+	state.objects[constant.ObjectTypeItem][state.sequence] = pid
 
 	ctx.Send(pid, &msg.ItemSpawn{})
 }
@@ -154,13 +187,13 @@ func onMapSpawnMeso(ctx actor.Context, state *MapActor, m *msg.MapSpawnMeso) {
 			dropPoint)
 	})
 	pid := ctx.Spawn(props)
-	state.objects[state.sequence] = pid
+	state.objects[constant.ObjectTypeItem][state.sequence] = pid
 	ctx.Send(pid, &msg.MesoSpawn{})
 }
 
 func onMapItemLoot(ctx actor.Context, state *MapActor, m *msg.MapItemLoot) {
 
-	pid, ok := state.objects[m.OID]
+	pid, ok := state.objects[constant.ObjectTypeItem][m.OID]
 	if !ok {
 		ctx.Send(m.Actor, &msg.CharacterLootFailed{
 			OID: m.OID,
@@ -175,7 +208,7 @@ func onMapItemLoot(ctx actor.Context, state *MapActor, m *msg.MapItemLoot) {
 }
 
 func onMapRemoveItem(ctx actor.Context, state *MapActor, m *msg.MapRemoveItem) {
-	for _, pid := range state.characters {
+	for _, pid := range state.objects[constant.ObjectTypeCharacter] {
 		ctx.Send(pid, &common_msg.SendProtocol{
 			Protocol: &resp.RemoveItem{
 				Mode:        m.Mode,
@@ -186,7 +219,7 @@ func onMapRemoveItem(ctx actor.Context, state *MapActor, m *msg.MapRemoveItem) {
 		})
 	}
 
-	delete(state.objects, m.OID)
+	delete(state.objects[constant.ObjectTypeItem], m.OID)
 	ctx.Stop(m.Actor)
 }
 
@@ -204,7 +237,7 @@ func onMapChange(ctx actor.Context, state *MapActor, m *msg.MapChange) {
 }
 
 func onMapSpawnNpc(ctx actor.Context, state *MapActor, m *msg.MapSpawnNpc) {
-	for _, pid := range state.npcs {
+	for _, pid := range state.objects[constant.ObjectTypeNpc] {
 		ctx.Send(pid, &msg.Warped{
 			Sender: m.Sender,
 		})
@@ -212,7 +245,7 @@ func onMapSpawnNpc(ctx actor.Context, state *MapActor, m *msg.MapSpawnNpc) {
 }
 
 func onMapSendMessage(ctx actor.Context, state *MapActor, m *msg.SendMessage) {
-	pid, ok := state.npcs[m.OID]
+	pid, ok := state.objects[constant.ObjectTypeNpc][m.OID]
 	if !ok {
 		return
 	}

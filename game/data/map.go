@@ -36,8 +36,8 @@ type MapSpec struct {
 	MapDesc      string
 	MiniMapOnOff bool
 	Portals      map[uint8]Portal
-	NPCs         map[uint32]NPCSpec
-	Mobs         map[uint32]MobSpec
+	NpcSpawns    map[uint32]NpcSpawnSpec
+	MobSpawns    map[uint32]MobSpawnSpec
 	Footholds    *types.QuadTreeNode[int16, Foothold]
 }
 

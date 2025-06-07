@@ -1,5 +1,5 @@
 package data
 
-type NPCSpec struct {
-	*LifeSpec
+type NpcSpawnSpec struct {
+	*SpawnSpec
 }

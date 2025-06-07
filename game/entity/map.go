@@ -1,13 +1,17 @@
 package entity
 
-import "github.com/boyism80/fm/common/types"
+import (
+	"time"
+
+	"github.com/boyism80/fm/game/data"
+)
+
+type MobSpawn struct {
+	Spec          *data.MobSpawnSpec
+	Spawned       bool
+	LastSpawnedAt time.Time
+}
 
 type Map struct {
-	ID          uint32
-	Name        string
-	SpawnPoints map[uint8]types.Vector2[int32]
-	Bounds      types.Rect[int32]
-	IsTown      bool
-	HasClock    bool
-	Properties  map[string]string
+	MobSpawns map[uint32]*MobSpawn
 }

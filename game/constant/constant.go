@@ -77,3 +77,14 @@ const (
 	DIALOG_TYPE_ACCEPT_ESCAPE DialogType = 11
 	DIALOG_TYPE_ACCEPT        DialogType = 12
 )
+
+type ObjectType uint8
+
+const (
+	ObjectTypeItem      ObjectType = 1
+	ObjectTypeNpc       ObjectType = 2
+	ObjectTypeMob       ObjectType = 4
+	ObjectTypeCharacter ObjectType = 8
+	ObjectTypeLife      ObjectType = ObjectTypeMob | ObjectTypeCharacter
+	ObjectTypeAll       ObjectType = ObjectTypeItem | ObjectTypeNpc | ObjectTypeMob | ObjectTypeCharacter
+)

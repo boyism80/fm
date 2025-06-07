@@ -9,10 +9,10 @@ const (
 	FACING_DIRECTION_LEFT
 )
 
-type Life interface {
+type Spawn interface {
 }
 
-type LifeSpec struct {
+type SpawnSpec struct {
 	ID                 uint32
 	Position           types.Vector2[int16]
 	RenderX0, RenderX1 int16
