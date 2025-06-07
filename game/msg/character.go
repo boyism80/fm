@@ -3,6 +3,7 @@ package msg
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/game/entity"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type CharacterLootFailed struct {
@@ -30,4 +31,9 @@ type CharacterMapChanged struct {
 
 type RunScript struct {
 	Script string
+}
+
+type ResumeScript struct {
+	L    *lua.LState
+	Args []lua.LValue
 }

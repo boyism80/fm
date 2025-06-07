@@ -3,6 +3,7 @@ package actorx
 import (
 	"log"
 	"net"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/scheduler"
@@ -33,6 +34,7 @@ type GameClientActor struct {
 	receiveCrypt   crypt.Encryption
 	stopTimer      scheduler.CancelFunc
 	listener       entity.CharacterListener
+	scheduler      *scheduler.TimerScheduler
 }
 
 func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, conn net.Conn) actor.Actor {
@@ -49,6 +51,7 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 		commandHandler: handler.NewCommandHandler(),
 		sendCrypt:      crypt.NewEncryption(ivSend, -5),
 		receiveCrypt:   crypt.NewEncryption(ivRecv, 5),
+		scheduler:      scheduler.NewTimerScheduler(ctx),
 	}
 	actor.listener = &CharacterListener{Actor: actor}
 
@@ -89,6 +92,10 @@ func (state *GameClientActor) Send(p types.Packet, policy types.SendPolicy) {
 	writer.Write(bytes)
 	bytes = writer.Bytes()
 	state.conn.Write(bytes)
+}
+
+func (client *GameClientActor) SendAfter(ctx actor.Context, duration time.Duration, message interface{}) {
+	client.scheduler.SendOnce(duration, ctx.Self(), message)
 }
 
 func (client *GameClientActor) Drop(ctx actor.Context, invenType constant.InventoryType, slot int16, count uint16) {

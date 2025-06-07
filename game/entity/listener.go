@@ -1,6 +1,11 @@
 package entity
 
-import "github.com/asynkron/protoactor-go/actor"
+import (
+	"time"
+
+	"github.com/asynkron/protoactor-go/actor"
+	lua "github.com/yuin/gopher-lua"
+)
 
 type CharacterListener interface {
 	GetContext() actor.Context
@@ -11,4 +16,5 @@ type CharacterListener interface {
 	OnDialogInput(npc uint32, message string)
 	OnChat(message string, highlight bool, dontRecordHistory bool)
 	OnMesoChanged(meso int32)
+	OnSleep(duration time.Duration, L *lua.LState, args []lua.LValue)
 }

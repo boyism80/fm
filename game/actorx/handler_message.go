@@ -33,6 +33,7 @@ func RegisterGameClientMessageHandlers(ctx actor.Context, m *GameClientActor, h 
 	handler.RegisterHandler(ctx, m, h, onGameClientMesoLooting)
 	handler.RegisterHandler(ctx, m, h, onGameClientMapChanged)
 	handler.RegisterHandler(ctx, m, h, onGameClientRunScript)
+	handler.RegisterHandler(ctx, m, h, onGameClientResumeScript)
 }
 
 func (client *GameClientActor) ReceivePackets(ctx actor.Context, pid *actor.PID) {
@@ -320,5 +321,22 @@ func onGameClientRunScript(ctx actor.Context, client *GameClientActor, m *msg.Ru
 
 	if state == lua.ResumeYield {
 		client.ch.Dialog = co
+	}
+}
+
+func onGameClientResumeScript(ctx actor.Context, client *GameClientActor, m *msg.ResumeScript) {
+	if client.ch.Dialog != m.L {
+		return
+	}
+
+	client.ch.Dialog = nil
+	resumeState, err := luax.Resume(m.L, m.Args...)
+	if err != nil {
+		log.Printf("Failed to resume script: %v", err)
+		return
+	}
+
+	if resumeState == lua.ResumeYield {
+		client.ch.Dialog = m.L
 	}
 }

@@ -1,8 +1,27 @@
 package entity
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"time"
+
+	lua "github.com/yuin/gopher-lua"
+)
 
 var characterBuiltinFuncs = map[string]lua.LGFunction{
+	"sleep": func(L *lua.LState) int {
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*Character)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+		ms := L.CheckInt(2)
+		if ms == 0 {
+			return 0
+		}
+
+		ch.Listener.OnSleep(time.Duration(ms)*time.Millisecond, L, []lua.LValue{})
+		return L.Yield(lua.LNumber(0))
+	},
 	"hp": func(L *lua.LState) int {
 		ud := L.CheckUserData(1)
 		ch, ok := ud.Value.(*Character)

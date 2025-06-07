@@ -2,6 +2,7 @@ package luax
 
 import (
 	"fmt"
+	"os"
 	"sync"
 
 	lua "github.com/yuin/gopher-lua"
@@ -13,7 +14,16 @@ var (
 	root            *lua.LState
 	compileMu       sync.Mutex
 	compiledFuncs   = make(map[string]*lua.LFunction)
+	useCache        = os.Getenv("GO_ENV") != "development"
 )
+
+func init() {
+	env, ok := os.LookupEnv("GO_ENV")
+	if !ok || env == "" {
+		env = "development"
+	}
+	useCache = env != "development"
+}
 
 type Luable interface {
 	LuaTypeName() string
@@ -24,7 +34,7 @@ func preloadScript(path string) (*lua.LFunction, error) {
 	compileMu.Lock()
 	defer compileMu.Unlock()
 
-	if fn, ok := compiledFuncs[path]; ok {
+	if fn, ok := compiledFuncs[path]; ok && useCache {
 		return fn, nil
 	}
 

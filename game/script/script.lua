@@ -5,6 +5,10 @@ function on_start(me)
 	-- me:dialog_yes_no('안녕하세요', true, true)
 	local text = me:dialog_input(npc,'안녕하세요')
 	me:dialog(npc, '반갑습니다.')
+	for i=1, 10 do
+		me:chat(tostring(i))
+		me:sleep(100)
+	end
 	if text ~= nil then
 		me:chat(text)
 	else
