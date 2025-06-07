@@ -6,7 +6,7 @@ import (
 	"github.com/boyism80/fm/game/constant"
 )
 
-type ItemSpawn struct {
+type Spawn struct {
 }
 
 type ItemLooting struct {

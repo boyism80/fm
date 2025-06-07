@@ -16,6 +16,14 @@ type Portal struct {
 	Type        uint8
 }
 
+type NpcSpawnSpec struct {
+	*SpawnSpec
+}
+
+type MobSpawnSpec struct {
+	*SpawnSpec
+}
+
 type MapSpec struct {
 	ID           uint32
 	Name         string

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/handler"
 	"github.com/boyism80/fm/common/types"
@@ -18,7 +19,7 @@ import (
 
 type mobSpawn struct {
 	Spec          *data.MobSpawnSpec
-	LastSpawnedAt time.Time
+	NextSpawnTime time.Time
 	Spawned       bool
 }
 
@@ -28,7 +29,8 @@ type MapActor struct {
 	Spec        *data.MapSpec
 	ctx         *context.ServerContext
 	objects     map[constant.ObjectType]map[uint32]*actor.PID
-	mobSpawners map[uint32]mobSpawn
+	mobSpawners map[uint32]*mobSpawn
+	scheduler   *scheduler.TimerScheduler
 }
 
 func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec *data.MapSpec) *actor.Props {
@@ -44,7 +46,8 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 				constant.ObjectTypeMob:       make(map[uint32]*actor.PID),
 				constant.ObjectTypeCharacter: make(map[uint32]*actor.PID),
 			},
-			mobSpawners: map[uint32]mobSpawn{},
+			mobSpawners: map[uint32]*mobSpawn{},
+			scheduler:   scheduler.NewTimerScheduler(ctx),
 		}
 
 		for _, npcSpec := range spec.NpcSpawns {
@@ -54,14 +57,16 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 			actor.objects[constant.ObjectTypeNpc][actor.sequence] = pid
 		}
 
-		for i, mobSpawnSpec := range spec.MobSpawns {
-			actor.mobSpawners[uint32(i)] = mobSpawn{
+		for _, mobSpawnSpec := range spec.MobSpawns {
+			actor.sequence++
+			actor.mobSpawners[actor.sequence] = &mobSpawn{
 				Spec:          &mobSpawnSpec,
-				LastSpawnedAt: time.Time{},
+				NextSpawnTime: time.Time{},
 				Spawned:       false,
 			}
 		}
 
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapStarted)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapEnter)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapLeave)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapPIDList)
@@ -73,6 +78,9 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapChange)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnNpc)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapSendMessage)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnMob)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapDieMob)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapClearMobs)
 
 		return actor
 	})
@@ -83,30 +91,61 @@ func (state *MapActor) Receive(ctx actor.Context) {
 }
 
 func (state *MapActor) SpawnMobs(ctx actor.Context) {
-	for _, mobSpawner := range state.mobSpawners {
+
+	if len(state.objects[constant.ObjectTypeCharacter]) == 0 {
+		return
+	}
+
+	for spawnId, mobSpawner := range state.mobSpawners {
 		if mobSpawner.Spawned {
 			continue
 		}
 
-		if mobSpawner.LastSpawnedAt.After(time.Now()) {
+		if mobSpawner.NextSpawnTime.After(time.Now()) {
 			continue
 		}
 
+		mobSpec, ok := state.ctx.Resources.Monsters[mobSpawner.Spec.ID]
+		if !ok {
+			continue
+		}
+
+		props := actor.PropsFromProducer(func() actor.Actor {
+			return NewMobActor(ctx, *state.ctx, entity.Mob{
+				Life: entity.Life{
+					Object: entity.Object{
+						Position: state.Spec.DropPoint(mobSpawner.Spec.Position),
+					},
+					Hp:     uint16(mobSpec.MaxHP),
+					Mp:     uint16(mobSpec.MaxMP),
+					MaxHp:  uint16(mobSpec.MaxHP),
+					MaxMp:  uint16(mobSpec.MaxMP),
+					Stance: 5,
+				},
+				Spec:     mobSpec,
+				ID:       spawnId,
+				Foothold: mobSpawner.Spec.Foothold,
+			}, ctx.Self())
+		})
+		pid := ctx.Spawn(props)
+		state.objects[constant.ObjectTypeMob][spawnId] = pid
 		mobSpawner.Spawned = true
+		ctx.Send(pid, &msg.Spawn{})
 	}
+}
+
+func onMapStarted(ctx actor.Context, state *MapActor, m *actor.Started) {
+	state.scheduler.SendRepeatedly(time.Second*8, time.Second*8, ctx.Self(), &msg.MapSpawnMob{})
 }
 
 func onMapEnter(ctx actor.Context, state *MapActor, m *msg.EnterMap) {
 
-	// 기존에 있던 오브젝트들에게 새로 추가된 오브젝트 알림
-	for _, pid := range state.objects[constant.ObjectTypeCharacter] {
-		ctx.Send(pid, &msg.Warped{
-			Sender: m.PID,
-		})
-	}
-
 	// 맵에 플레이어를 추가
 	state.objects[constant.ObjectTypeCharacter][m.ID] = m.PID
+	if len(state.objects[constant.ObjectTypeCharacter]) == 1 {
+		state.SpawnMobs(ctx)
+	}
+
 	ctx.Send(m.PID, &msg.CharacterMapChanged{
 		MID:        state.Spec.ID,
 		Map:        ctx.Self(),
@@ -162,7 +201,7 @@ func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 	pid := ctx.Spawn(props)
 	state.objects[constant.ObjectTypeItem][state.sequence] = pid
 
-	ctx.Send(pid, &msg.ItemSpawn{})
+	ctx.Send(pid, &msg.Spawn{})
 }
 
 func onMapSpawnMeso(ctx actor.Context, state *MapActor, m *msg.MapSpawnMeso) {
@@ -188,7 +227,7 @@ func onMapSpawnMeso(ctx actor.Context, state *MapActor, m *msg.MapSpawnMeso) {
 	})
 	pid := ctx.Spawn(props)
 	state.objects[constant.ObjectTypeItem][state.sequence] = pid
-	ctx.Send(pid, &msg.MesoSpawn{})
+	ctx.Send(pid, &msg.Spawn{})
 }
 
 func onMapItemLoot(ctx actor.Context, state *MapActor, m *msg.MapItemLoot) {
@@ -236,11 +275,14 @@ func onMapChange(ctx actor.Context, state *MapActor, m *msg.MapChange) {
 	})
 }
 
-func onMapSpawnNpc(ctx actor.Context, state *MapActor, m *msg.MapSpawnNpc) {
-	for _, pid := range state.objects[constant.ObjectTypeNpc] {
-		ctx.Send(pid, &msg.Warped{
-			Sender: m.Sender,
-		})
+func onMapSpawnNpc(ctx actor.Context, state *MapActor, m *msg.MapNotifyCharacterWarped) {
+
+	for _, v := range state.objects {
+		for _, pid := range v {
+			ctx.Send(pid, &msg.Warped{
+				Sender: m.Sender,
+			})
+		}
 	}
 }
 
@@ -251,4 +293,49 @@ func onMapSendMessage(ctx actor.Context, state *MapActor, m *msg.SendMessage) {
 	}
 
 	ctx.Send(pid, m.Message)
+}
+
+func onMapSpawnMob(ctx actor.Context, state *MapActor, m *msg.MapSpawnMob) {
+	state.SpawnMobs(ctx)
+}
+
+func onMapDieMob(ctx actor.Context, state *MapActor, m *msg.MapDieMob) {
+	pid, ok := state.objects[constant.ObjectTypeMob][m.OID]
+	if !ok {
+		return
+	}
+
+	ctx.Stop(pid)
+	delete(state.objects[constant.ObjectTypeMob], m.OID)
+
+	spawner, ok := state.mobSpawners[m.OID]
+	if ok {
+		spawner.Spawned = false
+		nextSpawnDuration := spawner.Spec.MobTime
+		if nextSpawnDuration == 0 {
+			nextSpawnDuration = constant.DefaultMobSpawnTime
+		}
+		spawner.NextSpawnTime = time.Now().Add(nextSpawnDuration)
+	}
+
+	ctx.Send(ctx.Self(), &msg.MapBroadcastRange{
+		Sender: m.Sender,
+		Message: &common_msg.SendProtocol{
+			Protocol: &resp.DieMob{
+				OID:           m.OID,
+				AnimationType: m.AnimationType,
+			},
+			Policy: types.SEND_POLICY_ENCRYPT,
+		},
+		Pivot:      m.Position,
+		ExceptSelf: true,
+	})
+}
+
+func onMapClearMobs(ctx actor.Context, state *MapActor, m *msg.MapClearMobs) {
+	for _, v := range state.objects[constant.ObjectTypeMob] {
+		ctx.Send(v, &msg.MobKill{
+			AnimationType: m.AnimationType,
+		})
+	}
 }

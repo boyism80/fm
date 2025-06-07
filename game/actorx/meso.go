@@ -58,7 +58,7 @@ func onMesoStarted(ctx actor.Context, state *MesoActor, m *actor.Started) {
 	})
 }
 
-func onMesoSpawn(ctx actor.Context, state *MesoActor, m *msg.MesoSpawn) {
+func onMesoSpawn(ctx actor.Context, state *MesoActor, m *msg.Spawn) {
 	drop := state.Drop
 
 	ctx.Send(state.mapPID, &msg.MapBroadcastRange{
@@ -66,7 +66,7 @@ func onMesoSpawn(ctx actor.Context, state *MesoActor, m *msg.MesoSpawn) {
 		Pivot:      state.Object.Position,
 		ExceptSelf: true,
 		Message: &common_msg.SendProtocol{
-			Protocol: &resp.DropMeso{
+			Protocol: &resp.SpawnMeso{
 				ID:           drop.ID,
 				Animation:    constant.DropItemAnimationTypeLooting,
 				DropType:     drop.DropType,

@@ -6,11 +6,11 @@ var lifeBuiltinFuncs = map[string]lua.LGFunction{}
 
 type Life struct {
 	Object
-	Hp      uint16
-	MaxHp   uint16
-	Mp      uint16
-	MaxMp   uint16
-	IsAlive bool
+	Hp     uint16
+	MaxHp  uint16
+	Mp     uint16
+	MaxMp  uint16
+	Stance uint8
 }
 
 func (l *Life) LuaTypeName() string {

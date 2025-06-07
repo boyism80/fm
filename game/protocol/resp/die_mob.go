@@ -1,0 +1,26 @@
+package resp
+
+import (
+	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/game/constant"
+)
+
+type DieMob struct {
+	OID           uint32
+	AnimationType constant.MobDieAnimationType
+}
+
+func (p *DieMob) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU16(0xAA)
+	writer.WriteU32(p.OID)
+	writer.WriteU8(uint8(p.AnimationType))
+	switch p.AnimationType {
+	case 4:
+		writer.Write32(-1)
+	}
+	return nil
+}
+
+func (p *DieMob) Deserialize(reader *stream.StreamReader) error {
+	return nil
+}

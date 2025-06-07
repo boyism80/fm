@@ -58,14 +58,14 @@ func onItemStarted(ctx actor.Context, state *ItemActor, m *actor.Started) {
 	})
 }
 
-func onItemSpawn(ctx actor.Context, state *ItemActor, m *msg.ItemSpawn) {
+func onItemSpawn(ctx actor.Context, state *ItemActor, m *msg.Spawn) {
 	drop := state.GetDrop()
 	ctx.Send(state.mapPID, &msg.MapBroadcastRange{
 		Sender:     ctx.Self(),
 		Pivot:      state.GetObject().Position,
 		ExceptSelf: true,
 		Message: &common_msg.SendProtocol{
-			Protocol: &resp.DropItem{
+			Protocol: &resp.SpawnItem{
 				ID:           drop.ID,
 				Animation:    constant.DropItemAnimationTypeLooting,
 				DropType:     drop.DropType,

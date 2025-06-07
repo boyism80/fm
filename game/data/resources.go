@@ -19,7 +19,7 @@ type node struct {
 
 type Resources struct {
 	Maps     map[uint32]*MapSpec
-	Monsters map[uint32]*MobSpawnSpec
+	Monsters map[uint32]*MobSpec
 	Items    map[uint32]ItemSpec
 }
 
@@ -116,6 +116,18 @@ func NewResources() *Resources {
 			items[value.ID] = value
 			fmt.Printf("장비 데이터 로딩 중: %.1f%%\n", percent)
 		})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	mobs := map[uint32]*MobSpec{}
+	err = loadResourceFiles("D:/git/fm/wz/Mob.wz", workerCount, func(path string) (result *MobSpec, err error) {
+		return loadMob(path)
+	}, func(percent float32, value *MobSpec) {
+		mobs[value.ID] = value
+		fmt.Printf("몹 데이터 로딩 중: %.1f%%\n", percent)
+	})
 	if err != nil {
 		log.Fatal(err)
 		return nil
@@ -264,7 +276,7 @@ func NewResources() *Resources {
 
 	return &Resources{
 		Maps:     maps,
-		Monsters: map[uint32]*MobSpawnSpec{},
+		Monsters: mobs,
 		Items:    items,
 	}
 }

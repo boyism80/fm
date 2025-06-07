@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/boyism80/fm/common/types"
 )
@@ -1032,7 +1033,7 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 					if err != nil {
 						return nil, err
 					}
-					baseSpawnSpec.MobTime = uint64(value)
+					baseSpawnSpec.MobTime = time.Duration(value) * time.Second
 				case "f":
 					value, err := strconv.Atoi(prop.Value)
 					if err != nil {
@@ -1282,4 +1283,177 @@ func loadStringResources(path string) (*[]*StringSpec, error) {
 
 	templates := loadStringNodeRecursive(&root)
 	return &templates, nil
+}
+
+func loadMob(path string) (*MobSpec, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var root node
+	if err := xml.NewDecoder(file).Decode(&root); err != nil {
+		return nil, err
+	}
+
+	id, err := strconv.Atoi(strings.TrimSuffix(root.Name, ".img"))
+	if err != nil {
+		return nil, err
+	}
+	spec := &MobSpec{ID: uint32(id)}
+
+	info := root.find("info")
+	if info == nil {
+		return nil, fmt.Errorf("'info' 노드가 없습니다: %s", path)
+	}
+
+	for _, iv := range info.Children {
+		switch iv.Name {
+		case "elemAttr":
+		case "PDRate":
+		case "MDRate":
+		case "category":
+		case "firstAttack":
+		case "link":
+		case "skill":
+		case "attack":
+		case "fixedDamage":
+		case "flySpeed":
+		case "mpRecovery":
+		case "boss":
+		case "hpRecovery":
+		case "removeAfter":
+		case "revive":
+		case "hpTagColor":
+		case "hpTagBgcolor":
+		case "HPgaugeHide":
+		case "rareItemDropLevel":
+		case "noFlip":
+		case "mbookID":
+		case "finalmaxHP":
+		case "changeableMob":
+		case "changeableMob_Type":
+		case "publicReward":
+		case "explosiveReward":
+		case "wp":
+		case "ban":
+		case "chaseSpeed":
+		case "default":
+		case "noregen":
+		case "isRemoteRange":
+		case "showNotRemoteDam":
+		case "ignoreMovable":
+		case "ignoreMoveImpact":
+		case "selfDestruction":
+		case "buff":
+		case "speak":
+		case "useReaction":
+		case "ignoreFieldOut":
+		case "defaultHP":
+		case "defaultMP":
+		case "partyBonusMob":
+		case "firstAttackRange":
+		case "hideMove":
+		case "mobJobCategory":
+		case "invincible":
+		case "hideHP":
+		case "hideName":
+		case "noDebuff":
+		case "charismaEXP":
+		case "willEXP":
+		case "fixedBodyAttackDamageR":
+		case "bodyDisease":
+		case "bodyDiseaseLevel":
+		case "summonEffect":
+		case "disable":
+		case "notAttack":
+		case "underObject":
+		case "damagedBySelectedSkill":
+		case "atom":
+		case "damagedByMob":
+		case "dropItemPeriod":
+		case "getCP":
+		case "damagedBySelectedMob":
+		case "doNotRemove":
+		case "loseItem":
+		case "thumbnail":
+		case "Speed":
+		case "fixDamage":
+		case "nonLevelCheckACC":
+		case "nonLevelCheckEVA":
+		case "patrol":
+		case "onlyNormalAttack":
+		case "effectiveSkill":
+		case "mobZone":
+		case "ignoreSkill":
+		case "individualReward":
+		case "FlySpeed":
+		case "firstattack":
+		case "removeQuest":
+		case "bodyattack":
+		case "damageModification":
+
+		case "bodyAttack":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.BodyAttack = v
+		case "level":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.Level = uint8(v)
+		case "maxHP":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.MaxHP = v
+		case "maxMP":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.MaxMP = v
+		case "speed":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.Speed = int16(v)
+		case "PADamage":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.PADamage = v
+		case "PDDamage":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.PDDamage = v
+		case "MADamage":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.MADamage = v
+		case "MDDamage":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.MDDamage = v
+		case "acc":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.ACC = v
+		case "eva":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.EVA = v
+		case "exp":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.EXP = v
+		case "undead":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.Undead = (v == 1)
+		case "pushed":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.Pushed = (v == 1)
+		case "fs":
+			f, _ := strconv.ParseFloat(iv.Value, 32)
+			spec.FS = float32(f)
+		case "summonType":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.SummonType = uint8(v)
+		case "mobType":
+			v, _ := strconv.Atoi(iv.Value)
+			spec.MobType = uint8(v)
+		default:
+			mutex.Lock()
+			if _, seen := visit[iv.Name]; !seen {
+				visit[iv.Name] = true
+				log.Printf("%s is not declared in %s:info\n", iv.Name, filepath.Base(path))
+			}
+			mutex.Unlock()
+		}
+	}
+
+	return spec, nil
 }

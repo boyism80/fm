@@ -1,6 +1,10 @@
 package data
 
-import "github.com/boyism80/fm/common/types"
+import (
+	"time"
+
+	"github.com/boyism80/fm/common/types"
+)
 
 type FacingDirectionType uint8
 
@@ -21,7 +25,7 @@ type SpawnSpec struct {
 	UseDay, UseNight   bool
 	Foothold           int16
 	FacingDirection    FacingDirectionType
-	MobTime            uint64
+	MobTime            time.Duration
 	Info               uint8
 	LimitedName        string
 	NoFoothold         bool

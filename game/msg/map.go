@@ -3,6 +3,7 @@ package msg
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol/resp"
 )
@@ -30,7 +31,7 @@ type MapPIDList struct {
 	Targets []*actor.PID
 }
 
-type MapSpawnNpc struct {
+type MapNotifyCharacterWarped struct {
 	Sender *actor.PID
 }
 
@@ -79,4 +80,18 @@ type MapChange struct {
 type SendMessage struct {
 	OID     uint32
 	Message any
+}
+
+type MapSpawnMob struct {
+}
+
+type MapDieMob struct {
+	Sender        *actor.PID
+	OID           uint32
+	Position      types.Vector2[int16]
+	AnimationType constant.MobDieAnimationType
+}
+
+type MapClearMobs struct {
+	AnimationType constant.MobDieAnimationType
 }

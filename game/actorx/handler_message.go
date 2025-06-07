@@ -284,7 +284,7 @@ func onGameClientMapChanged(ctx actor.Context, client *GameClientActor, m *msg.C
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	ctx.Send(m.Map, &msg.MapSpawnNpc{
+	ctx.Send(m.Map, &msg.MapNotifyCharacterWarped{
 		Sender: ctx.Self(),
 	})
 

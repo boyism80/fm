@@ -12,21 +12,23 @@ import (
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol/resp"
 	lua "github.com/yuin/gopher-lua"
 )
 
 func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor, h *handler.CommandHandler) {
-	handler.RegisterCommandHandler("아이템", ctx, client, h, onCreateItem)
-	handler.RegisterCommandHandler("메소초기화", ctx, client, h, onClearMeso)
-	handler.RegisterCommandHandler("메소얻기", ctx, client, h, onGainMeso)
-	handler.RegisterCommandHandler("풀메소", ctx, client, h, onFullMeso)
-	handler.RegisterCommandHandler("맵이동", ctx, client, h, onChangeMap)
-	handler.RegisterCommandHandler("다이얼로그", ctx, client, h, onDialog)
-	handler.RegisterCommandHandler("스크립트", ctx, client, h, onScript)
+	handler.RegisterCommandHandler("아이템", ctx, client, h, onCommandCreateItem)
+	handler.RegisterCommandHandler("메소초기화", ctx, client, h, onCommandClearMeso)
+	handler.RegisterCommandHandler("메소얻기", ctx, client, h, onCommandGainMeso)
+	handler.RegisterCommandHandler("풀메소", ctx, client, h, onCommandFullMeso)
+	handler.RegisterCommandHandler("맵이동", ctx, client, h, onCommandChangeMap)
+	handler.RegisterCommandHandler("다이얼로그", ctx, client, h, onCommandDialog)
+	handler.RegisterCommandHandler("스크립트", ctx, client, h, onCommandScript)
+	handler.RegisterCommandHandler("몬스터죽이기", ctx, client, h, onCommandMobKill)
 }
 
-func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) {
+func onCommandCreateItem(ctx actor.Context, client *GameClientActor, params ...string) {
 	if len(params) < 1 {
 		log.Println("onCreateItem: missing itemId")
 		return
@@ -69,7 +71,7 @@ func onCreateItem(ctx actor.Context, client *GameClientActor, params ...string) 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func onClearMeso(ctx actor.Context, client *GameClientActor, params ...string) {
+func onCommandClearMeso(ctx actor.Context, client *GameClientActor, params ...string) {
 	client.ch.Meso = 0
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
@@ -78,7 +80,7 @@ func onClearMeso(ctx actor.Context, client *GameClientActor, params ...string) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func onGainMeso(ctx actor.Context, client *GameClientActor, params ...string) {
+func onCommandGainMeso(ctx actor.Context, client *GameClientActor, params ...string) {
 	if len(params) < 1 {
 		log.Println("onGainMeso: missing itemId")
 		return
@@ -99,7 +101,7 @@ func onGainMeso(ctx actor.Context, client *GameClientActor, params ...string) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func onFullMeso(ctx actor.Context, client *GameClientActor, params ...string) {
+func onCommandFullMeso(ctx actor.Context, client *GameClientActor, params ...string) {
 	client.ch.Meso = math.MaxInt32
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
@@ -108,7 +110,7 @@ func onFullMeso(ctx actor.Context, client *GameClientActor, params ...string) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func onChangeMap(ctx actor.Context, client *GameClientActor, params ...string) {
+func onCommandChangeMap(ctx actor.Context, client *GameClientActor, params ...string) {
 	if len(params) < 1 {
 		log.Println("onGainMeso: missing itemId")
 		return
@@ -123,7 +125,7 @@ func onChangeMap(ctx actor.Context, client *GameClientActor, params ...string) {
 	client.Warp(ctx, uint32(value), 0)
 }
 
-func onDialog(ctx actor.Context, client *GameClientActor, params ...string) {
+func onCommandDialog(ctx actor.Context, client *GameClientActor, params ...string) {
 	prev := 0
 	if len(params) > 1 {
 		if val, err := strconv.Atoi(params[1]); err == nil {
@@ -143,7 +145,7 @@ func onDialog(ctx actor.Context, client *GameClientActor, params ...string) {
 	}
 }
 
-func onScript(ctx actor.Context, client *GameClientActor, params ...string) {
+func onCommandScript(ctx actor.Context, client *GameClientActor, params ...string) {
 	fileName := "script.lua"
 	if len(params) >= 1 {
 		fileName = params[0]
@@ -165,4 +167,25 @@ func onScript(ctx actor.Context, client *GameClientActor, params ...string) {
 	if state == lua.ResumeYield {
 		client.ch.Dialog = co
 	}
+}
+
+func onCommandMobKill(ctx actor.Context, client *GameClientActor, params ...string) {
+	animationType := 1
+	if len(params) > 0 {
+		v, err := strconv.Atoi(params[0])
+		if err != nil {
+			log.Println("onMobKill: invalid animationType:", params[0])
+			return
+		}
+		animationType = v
+	}
+
+	mapActor, ok := client.serverContext.MapActors[client.ch.Map]
+	if !ok {
+		return
+	}
+
+	ctx.Send(mapActor, &msg.MapClearMobs{
+		AnimationType: constant.MobDieAnimationType(animationType),
+	})
 }

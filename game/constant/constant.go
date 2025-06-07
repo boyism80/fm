@@ -1,5 +1,7 @@
 package constant
 
+import "time"
+
 type ItemType int
 
 const (
@@ -88,3 +90,19 @@ const (
 	ObjectTypeLife      ObjectType = ObjectTypeMob | ObjectTypeCharacter
 	ObjectTypeAll       ObjectType = ObjectTypeItem | ObjectTypeNpc | ObjectTypeMob | ObjectTypeCharacter
 )
+
+type MobSpawnType int8
+
+const (
+	MobSpawnTypeNone    MobSpawnType = -1
+	MobSpawnTypeAnimate MobSpawnType = -2
+)
+
+type MobDieAnimationType uint8
+
+const (
+	MobDieAnimationTypeDisappear MobDieAnimationType = 0
+	MobDieAnimationTypeFadeOut   MobDieAnimationType = 1
+)
+
+var DefaultMobSpawnTime = 5 * time.Second

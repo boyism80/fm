@@ -42,7 +42,6 @@ type Character struct {
 	SpawnPoint    uint8
 	Mega          bool
 	Meso          int32
-	Stance        uint8
 
 	Random1          stream.RandomStream
 	Random2          stream.RandomStream
