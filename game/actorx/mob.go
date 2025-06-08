@@ -9,6 +9,7 @@ import (
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/msg"
+	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/resp"
 )
 
@@ -29,6 +30,7 @@ func NewMobActor(ctx actor.Context, serverCtx context.ServerContext, entity enti
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobPlayerWarped)
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobKill)
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobControllerChange)
+	handler.RegisterHandler(ctx, actor, actor.handler, onMobMove)
 	return actor
 }
 
@@ -79,5 +81,48 @@ func onMobControllerChange(ctx actor.Context, state *MobActor, m *msg.MobControl
 			Aggro: false,
 		},
 		Policy: types.SEND_POLICY_ENCRYPT,
+	})
+}
+
+func onMobMove(ctx actor.Context, state *MobActor, m *msg.MobMove) {
+	ctx.Send(m.Sender, &common_msg.SendProtocol{
+		Protocol: &resp.ControlMoveMob{
+			OID:          state.OID,
+			MoveId:       m.MovementId,
+			EnabledSkill: m.EnabledSkill,
+			MP:           state.Mp,
+			SkillId:      0,
+			SkillLevel:   0,
+		},
+		Policy: types.SEND_POLICY_ENCRYPT,
+	})
+
+	for _, movement := range m.Movements {
+		if move, ok := movement.(*protocol.AbsoluteLifeMovement); ok {
+			state.Mob.Position = move.Position
+		}
+
+		state.Mob.Stance = movement.GetStance()
+	}
+
+	ctx.Send(state.mapPID, &msg.MapBroadcastRange{
+		Sender:     ctx.Self(),
+		Pivot:      state.Position,
+		ExceptSelf: true,
+		Excepts:    map[*actor.PID]struct{}{m.Sender: {}},
+		Message: &common_msg.SendProtocol{
+			Protocol: &resp.MoveMob{
+				EnabledSkill: m.EnabledSkill,
+				CenterSplit:  m.CenterSplit,
+				Skill1:       m.Skill1,
+				Skill2:       m.Skill2,
+				Skill3:       m.Skill3,
+				Skill4:       m.Skill4,
+				OID:          state.OID,
+				StartPoint:   state.Position,
+				Movements:    m.Movements,
+			},
+			Policy: types.SEND_POLICY_ENCRYPT,
+		},
 	})
 }

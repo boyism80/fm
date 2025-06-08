@@ -4,7 +4,7 @@ import "github.com/boyism80/fm/common/types"
 
 type Foothold struct {
 	X1, Y1, X2, Y2 int16
-	ID             int
+	ID             int16
 	Prev, Next     int16
 }
 

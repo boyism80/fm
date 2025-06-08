@@ -5,6 +5,7 @@ import (
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/game/protocol/req"
 	"github.com/boyism80/fm/game/protocol/resp"
 )
 
@@ -40,6 +41,7 @@ type MapBroadcastRange struct {
 	Pivot      types.Vector2[int16]
 	Message    any
 	ExceptSelf bool
+	Excepts    map[*actor.PID]struct{}
 }
 
 type MapSpawnItem struct {
@@ -82,7 +84,7 @@ type SendMessage struct {
 	Message any
 }
 
-type MapSpawnMob struct {
+type MapRepeatSpawnMobs struct {
 }
 
 type MapDieMob struct {
@@ -94,4 +96,14 @@ type MapDieMob struct {
 
 type MapClearMobs struct {
 	AnimationType constant.MobDieAnimationType
+}
+
+type MapMoveMob struct {
+	req.MoveMob
+	Sender *actor.PID
+}
+
+type MapSpawnMob struct {
+	Position types.Vector2[int16]
+	MobId    uint32
 }

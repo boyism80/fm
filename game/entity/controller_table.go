@@ -54,6 +54,11 @@ func (t *ControllerTable) LeavePlayer(ctx actor.Context, controller *actor.PID) 
 func (t *ControllerTable) EnterMob(ctx actor.Context, mob *actor.PID) {
 	t.mobs[mob] = struct{}{}
 	t.mob2controller[mob] = nil
+
+	for controller := range t.controllers {
+		t.assign(ctx, mob, controller)
+		break
+	}
 }
 
 func (t *ControllerTable) LeaveMob(ctx actor.Context, mob *actor.PID) {
@@ -87,4 +92,9 @@ func (t *ControllerTable) assign(ctx actor.Context, mob *actor.PID, controller *
 	if t.onControllerChange != nil {
 		t.onControllerChange(ctx, mob, controller)
 	}
+}
+
+func (t *ControllerTable) GetController(mob *actor.PID) (*actor.PID, bool) {
+	controller, ok := t.mob2controller[mob]
+	return controller, ok
 }

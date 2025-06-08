@@ -18,7 +18,7 @@ func (m *MovePlayer) Deserialize(reader *stream.StreamReader) error {
 		return err
 	}
 
-	fragments, err := protocol.Parse(reader)
+	fragments, err := protocol.ReadMovements(reader)
 	if err != nil {
 		return err
 	}

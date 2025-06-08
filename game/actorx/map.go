@@ -91,9 +91,11 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapChange)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnNpc)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapSendMessage)
-		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnMob)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapRepeatSpawnMobs)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapDieMob)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapClearMobs)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapMoveMob)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnMob)
 
 		return actor
 	})
@@ -101,6 +103,36 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 
 func (state *MapActor) Receive(ctx actor.Context) {
 	state.handler.Handle(ctx)
+}
+
+func (state *MapActor) SpawnMob(ctx actor.Context, mobId uint32, oid uint32, foothold int16, position types.Vector2[int16]) bool {
+	mobSpec, ok := state.ctx.Resources.Monsters[mobId]
+	if !ok {
+		return false
+	}
+
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return NewMobActor(ctx, *state.ctx, entity.Mob{
+			Life: entity.Life{
+				Object: entity.Object{
+					Position: state.Spec.DropPoint(position),
+				},
+				Hp:     uint16(mobSpec.MaxHP),
+				Mp:     uint16(mobSpec.MaxMP),
+				MaxHp:  uint16(mobSpec.MaxHP),
+				MaxMp:  uint16(mobSpec.MaxMP),
+				Stance: 5,
+			},
+			Spec:     mobSpec,
+			OID:      oid,
+			Foothold: foothold,
+		}, ctx.Self())
+	})
+	pid := ctx.Spawn(props)
+	state.objects[constant.ObjectTypeMob][oid] = pid
+	state.controllerTable.EnterMob(ctx, pid)
+	ctx.Send(pid, &msg.Spawn{})
+	return true
 }
 
 func (state *MapActor) SpawnMobs(ctx actor.Context) {
@@ -118,39 +150,16 @@ func (state *MapActor) SpawnMobs(ctx actor.Context) {
 			continue
 		}
 
-		mobSpec, ok := state.ctx.Resources.Monsters[mobSpawner.Spec.ID]
-		if !ok {
+		if !state.SpawnMob(ctx, mobSpawner.Spec.ID, spawnId, mobSpawner.Spec.Foothold, mobSpawner.Spec.Position) {
 			continue
 		}
 
-		props := actor.PropsFromProducer(func() actor.Actor {
-			return NewMobActor(ctx, *state.ctx, entity.Mob{
-				Life: entity.Life{
-					Object: entity.Object{
-						Position: state.Spec.DropPoint(mobSpawner.Spec.Position),
-					},
-					Hp:     uint16(mobSpec.MaxHP),
-					Mp:     uint16(mobSpec.MaxMP),
-					MaxHp:  uint16(mobSpec.MaxHP),
-					MaxMp:  uint16(mobSpec.MaxMP),
-					Stance: 5,
-				},
-				Spec:     mobSpec,
-				OID:      spawnId,
-				Foothold: mobSpawner.Spec.Foothold,
-			}, ctx.Self())
-		})
-		pid := ctx.Spawn(props)
-		state.objects[constant.ObjectTypeMob][spawnId] = pid
 		mobSpawner.Spawned = true
-		ctx.Send(pid, &msg.Spawn{})
-
-		state.controllerTable.EnterMob(ctx, pid)
 	}
 }
 
 func onMapStarted(ctx actor.Context, state *MapActor, m *actor.Started) {
-	state.scheduler.SendRepeatedly(time.Second*8, time.Second*8, ctx.Self(), &msg.MapSpawnMob{})
+	state.scheduler.SendRepeatedly(time.Second*8, time.Second*8, ctx.Self(), &msg.MapRepeatSpawnMobs{})
 }
 
 func onMapEnter(ctx actor.Context, state *MapActor, m *msg.EnterMap) {
@@ -202,6 +211,12 @@ func onMapBroadcastRange(ctx actor.Context, state *MapActor, m *msg.MapBroadcast
 	for _, pid := range state.objects[constant.ObjectTypeCharacter] {
 		if m.ExceptSelf && pid == m.Sender {
 			continue
+		}
+
+		if m.Excepts != nil {
+			if _, ok := m.Excepts[pid]; ok {
+				continue
+			}
 		}
 
 		ctx.Send(pid, m.Message)
@@ -316,7 +331,7 @@ func onMapSendMessage(ctx actor.Context, state *MapActor, m *msg.SendMessage) {
 	ctx.Send(pid, m.Message)
 }
 
-func onMapSpawnMob(ctx actor.Context, state *MapActor, m *msg.MapSpawnMob) {
+func onMapRepeatSpawnMobs(ctx actor.Context, state *MapActor, m *msg.MapRepeatSpawnMobs) {
 	state.SpawnMobs(ctx)
 }
 
@@ -360,4 +375,39 @@ func onMapClearMobs(ctx actor.Context, state *MapActor, m *msg.MapClearMobs) {
 			AnimationType: m.AnimationType,
 		})
 	}
+}
+
+func onMapMoveMob(ctx actor.Context, state *MapActor, m *msg.MapMoveMob) {
+	pid, ok := state.objects[constant.ObjectTypeMob][m.OID]
+	if !ok {
+		return
+	}
+
+	controller, ok := state.controllerTable.GetController(pid)
+	if !ok {
+		return
+	}
+
+	if m.Sender != controller {
+		if m.Unknown2 {
+			// TODO: stopControl
+		} else {
+			// TODO: switchControl
+		}
+		return
+	}
+
+	ctx.Send(pid, &msg.MobMove{
+		MoveMob: m.MoveMob,
+		Sender:  m.Sender,
+	})
+}
+
+func onMapSpawnMob(ctx actor.Context, state *MapActor, m *msg.MapSpawnMob) {
+	state.sequence++
+	foothold, ok := state.Spec.Footholds.Find(m.Position)
+	if !ok {
+		return
+	}
+	state.SpawnMob(ctx, m.MobId, state.sequence, foothold.ID, m.Position)
 }

@@ -962,7 +962,7 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 					}
 
 					foothold := Foothold{
-						ID:   id,
+						ID:   int16(id),
 						X1:   int16(x1),
 						Y1:   int16(y1),
 						X2:   int16(x2),

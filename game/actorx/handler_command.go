@@ -26,6 +26,7 @@ func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor
 	handler.RegisterCommandHandler("다이얼로그", ctx, client, h, onCommandDialog)
 	handler.RegisterCommandHandler("스크립트", ctx, client, h, onCommandScript)
 	handler.RegisterCommandHandler("몬스터죽이기", ctx, client, h, onCommandMobKill)
+	handler.RegisterCommandHandler("몬스터생성", ctx, client, h, onCommandSpawnMob)
 }
 
 func onCommandCreateItem(ctx actor.Context, client *GameClientActor, params ...string) {
@@ -187,5 +188,29 @@ func onCommandMobKill(ctx actor.Context, client *GameClientActor, params ...stri
 
 	ctx.Send(mapActor, &msg.MapClearMobs{
 		AnimationType: constant.MobDieAnimationType(animationType),
+	})
+}
+
+func onCommandSpawnMob(ctx actor.Context, client *GameClientActor, params ...string) {
+
+	if len(params) < 1 {
+		log.Println("onCommandSpawnMob: missing mobId")
+		return
+	}
+
+	mobId, err := strconv.Atoi(params[0])
+	if err != nil {
+		log.Println("onCommandSpawnMob: invalid mobId:", params[0])
+		return
+	}
+
+	mapActor, ok := client.serverContext.MapActors[client.ch.Map]
+	if !ok {
+		return
+	}
+
+	ctx.Send(mapActor, &msg.MapSpawnMob{
+		MobId:    uint32(mobId),
+		Position: client.ch.Position,
 	})
 }

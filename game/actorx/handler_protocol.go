@@ -34,6 +34,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x9E, ctx, client, h, onGameClientNpcControl)
 	handler.RegisterPacketHandler(0x2B, ctx, client, h, onGameClientDialog)
 	handler.RegisterPacketHandler(0x29, ctx, client, h, onGameClientNpcClick)
+	handler.RegisterPacketHandler(0x95, ctx, client, h, onGameClientMoveMob)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -316,5 +317,17 @@ func onGameClientNpcClick(ctx actor.Context, client *GameClientActor, req *req.N
 		Message: &msg.NpcClick{
 			Sender: ctx.Self(),
 		},
+	})
+}
+
+func onGameClientMoveMob(ctx actor.Context, client *GameClientActor, req *req.MoveMob) {
+	mapActor, ok := client.serverContext.MapActors[client.ch.Map]
+	if !ok {
+		return
+	}
+
+	ctx.Send(mapActor, &msg.MapMoveMob{
+		MoveMob: *req,
+		Sender:  ctx.Self(),
 	})
 }

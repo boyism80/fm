@@ -13,18 +13,18 @@ type Move struct {
 	StartPoint types.Vector2[int16]
 }
 
-func (a *Move) Serialize(writer *stream.StreamWriter) error {
+func (p *Move) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0x82)
-	writer.WriteU32(a.Character.ID)
-	writer.Write16(a.Character.Position.X)
-	writer.Write16(a.Character.Position.Y)
-	writer.WriteU8(uint8(len(a.Fragments)))
-	for _, move := range a.Fragments {
+	writer.WriteU32(p.Character.ID)
+	writer.Write16(p.Character.Position.X)
+	writer.Write16(p.Character.Position.Y)
+	writer.WriteU8(uint8(len(p.Fragments)))
+	for _, move := range p.Fragments {
 		move.Serialize(writer)
 	}
 	return nil
 }
 
-func (a *Move) Deserialize(reader *stream.StreamReader) error {
+func (p *Move) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }

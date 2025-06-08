@@ -127,7 +127,7 @@ func (m *TeleportMovement) Serialize(writer *stream.StreamWriter) {
 	writer.Write16(m.Velocity.Y)
 }
 
-func Parse(reader *stream.StreamReader) ([]MoveFragment, error) {
+func ReadMovements(reader *stream.StreamReader) ([]MoveFragment, error) {
 	numCommands, err := reader.ReadU8()
 	if err != nil {
 		return nil, err
