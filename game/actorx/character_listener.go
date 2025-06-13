@@ -1,23 +1,15 @@
 package actorx
 
 import (
-	"time"
-
-	"github.com/asynkron/protoactor-go/actor"
 	common_msg "github.com/boyism80/fm/common/msg"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol/resp"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type CharacterListener struct {
 	Actor *GameClientActor
-}
-
-func (l *CharacterListener) GetContext() actor.Context {
-	return l.Actor.actorContext
 }
 
 func (l *CharacterListener) OnDialog(npc uint32, message string, prev bool, next bool) {
@@ -93,12 +85,4 @@ func (l *CharacterListener) OnMesoChanged(meso int32) {
 			constant.StatMeso: meso,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
-}
-
-func (l *CharacterListener) OnSleep(duration time.Duration, L *lua.LState, args []lua.LValue) {
-	ctx := l.GetContext()
-	l.Actor.SendAfter(ctx, duration, &msg.ResumeScript{
-		L:    L,
-		Args: args,
-	})
 }

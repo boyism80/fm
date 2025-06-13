@@ -14,7 +14,6 @@ import (
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol/resp"
-	lua "github.com/yuin/gopher-lua"
 )
 
 func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor, h *handler.CommandHandler) {
@@ -153,21 +152,7 @@ func onCommandScript(ctx actor.Context, client *GameClientActor, params ...strin
 	}
 	path := filepath.Join("script", fileName)
 
-	co, err := luax.NewThread(path)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	state, err := luax.Call(co, "on_start", luax.NewLuable(co, client.ch))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	if state == lua.ResumeYield {
-		client.ch.Dialog = co
-	}
+	luax.Call(ctx, ctx.Self(), path, "on_start", client.builtin)
 }
 
 func onCommandMobKill(ctx actor.Context, client *GameClientActor, params ...string) {

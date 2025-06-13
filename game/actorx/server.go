@@ -6,6 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
+	"github.com/boyism80/fm/common/luax"
 	"github.com/boyism80/fm/common/msg"
 
 	bot "github.com/boyism80/fm/bot/actor"
@@ -31,6 +32,8 @@ func (state *GameServerActor) Receive(context actor.Context) {
 
 func onGameStart(ctx actor.Context, obj *GameServerActor, m *msg.StartListening) {
 	port := fmt.Sprintf(":%d", m.Port)
+
+	luax.Setup(ctx)
 
 	for _, spec := range m.ServerCtx.Resources.Maps {
 		props := NewMapActorProps(ctx, m.ServerCtx, spec)

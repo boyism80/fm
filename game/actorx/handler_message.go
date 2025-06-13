@@ -16,7 +16,6 @@ import (
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol/resp"
-	lua "github.com/yuin/gopher-lua"
 
 	common_resp "github.com/boyism80/fm/common/protocol/resp"
 	login_resp "github.com/boyism80/fm/login/protocol/resp"
@@ -34,6 +33,13 @@ func RegisterGameClientMessageHandlers(ctx actor.Context, m *GameClientActor, h 
 	handler.RegisterHandler(ctx, m, h, onGameClientMapChanged)
 	handler.RegisterHandler(ctx, m, h, onGameClientRunScript)
 	handler.RegisterHandler(ctx, m, h, onGameClientResumeScript)
+	handler.RegisterHandler(ctx, m, h, onGameClientLuaYield)
+
+	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinDialog)
+	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinDialogInput)
+	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinDialogAccept)
+	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinDialogList)
+	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinChat)
 }
 
 func (client *GameClientActor) ReceivePackets(ctx actor.Context, pid *actor.PID) {
@@ -92,6 +98,8 @@ func onGameClientConnected(ctx actor.Context, client *GameClientActor, m *common
 	log.Println("클라이언트 연결됨")
 	// timer := scheduler.NewTimerScheduler(ctx.ActorSystem().Root)
 	// client.stopTimer = timer.SendRepeatedly(10*time.Second, 10*time.Second, ctx.Self(), &msg.Ping{})
+
+	client.builtin.PID = ctx.Self()
 
 	// 게임서버에서 보내주면 안됨
 	client.Send(&common_resp.Welcome{
@@ -307,21 +315,7 @@ func onGameClientMapChanged(ctx actor.Context, client *GameClientActor, m *msg.C
 }
 
 func onGameClientRunScript(ctx actor.Context, client *GameClientActor, m *msg.RunScript) {
-	co, err := luax.NewThread(m.Script)
-	if err != nil {
-		log.Println("Failed to create thread: ", err)
-		return
-	}
-
-	state, err := luax.Call(co, "on_start", luax.NewLuable(co, client.ch))
-	if err != nil {
-		log.Printf("Failed to run script: %v", err)
-		return
-	}
-
-	if state == lua.ResumeYield {
-		client.ch.Dialog = co
-	}
+	luax.Call(ctx, ctx.Self(), m.Script, "on_start", client.ch)
 }
 
 func onGameClientResumeScript(ctx actor.Context, client *GameClientActor, m *msg.ResumeScript) {
@@ -329,14 +323,39 @@ func onGameClientResumeScript(ctx actor.Context, client *GameClientActor, m *msg
 		return
 	}
 
-	client.ch.Dialog = nil
-	resumeState, err := luax.Resume(m.L, m.Args...)
-	if err != nil {
-		log.Printf("Failed to resume script: %v", err)
-		return
-	}
+	luax.Resume(ctx, ctx.Self(), m.L, m.Args...)
+}
 
-	if resumeState == lua.ResumeYield {
-		client.ch.Dialog = m.L
+func onGameClientLuaYield(ctx actor.Context, client *GameClientActor, m *msg.LuaYield) {
+	client.ch.Dialog = m.Lua
+}
+
+func onGameClientBuiltinDialog(ctx actor.Context, client *GameClientActor, m *msg.CharacterBuiltinDialog) {
+	if client.listener != nil {
+		client.listener.OnDialog(m.NPC, m.Message, m.Prev, m.Next)
+	}
+}
+
+func onGameClientBuiltinDialogInput(ctx actor.Context, client *GameClientActor, m *msg.CharacterBuiltinDialogInput) {
+	if client.listener != nil {
+		client.listener.OnDialogInput(m.NPC, m.Message)
+	}
+}
+
+func onGameClientBuiltinDialogAccept(ctx actor.Context, client *GameClientActor, m *msg.CharacterBuiltinDialogAccept) {
+	if client.listener != nil {
+		client.listener.OnDialogAccept(m.NPC, m.Message, m.EnableEscape)
+	}
+}
+
+func onGameClientBuiltinDialogList(ctx actor.Context, client *GameClientActor, m *msg.CharacterBuiltinDialogList) {
+	if client.listener != nil {
+		client.listener.OnDialogList(m.NPC, m.Message, m.Selections)
+	}
+}
+
+func onGameClientBuiltinChat(ctx actor.Context, client *GameClientActor, m *msg.CharacterBuiltinChat) {
+	if client.listener != nil {
+		client.listener.OnChat(m.Message, m.Highlight, m.DontRecordHistory)
 	}
 }

@@ -1,7 +1,6 @@
 package actorx
 
 import (
-	"log"
 	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -14,7 +13,6 @@ import (
 	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/req"
 	"github.com/boyism80/fm/game/protocol/resp"
-	lua "github.com/yuin/gopher-lua"
 
 	common_msg "github.com/boyism80/fm/common/msg"
 	common_req "github.com/boyism80/fm/common/protocol/req"
@@ -252,7 +250,7 @@ func onGameClientDialog(ctx actor.Context, client *GameClientActor, req *req.Dia
 		return
 	}
 
-	args := []lua.LValue{}
+	args := []any{}
 
 	co := client.ch.Dialog
 	client.ch.Dialog = nil
@@ -260,50 +258,42 @@ func onGameClientDialog(ctx actor.Context, client *GameClientActor, req *req.Dia
 	switch req.DialogType {
 	case constant.DIALOG_TYPE_DEFAULT:
 		if req.Next {
-			args = append(args, lua.LTrue)
+			args = append(args, true)
 		} else {
-			args = append(args, lua.LFalse)
+			args = append(args, false)
 		}
 
 	case constant.DIALOG_TYPE_YES_NO:
 		if req.Next {
-			args = append(args, lua.LTrue)
+			args = append(args, true)
 		} else {
-			args = append(args, lua.LFalse)
+			args = append(args, false)
 		}
 
 	case constant.DIALOG_TYPE_LIST:
 		if req.Next {
-			args = append(args, lua.LNumber(req.Selected))
+			args = append(args, req.Selected)
 		} else {
-			args = append(args, lua.LNil)
+			args = append(args, nil)
 		}
 
 	case constant.DIALOG_TYPE_INPUT:
 		if req.Next {
-			args = append(args, lua.LString(req.Text))
+			args = append(args, req.Text)
 		} else {
-			args = append(args, lua.LNil)
+			args = append(args, nil)
 		}
 
 	case constant.DIALOG_TYPE_ACCEPT_ESCAPE:
 	case constant.DIALOG_TYPE_ACCEPT:
 		if req.Next {
-			args = append(args, lua.LTrue)
+			args = append(args, true)
 		} else {
-			args = append(args, lua.LFalse)
+			args = append(args, false)
 		}
 	}
 
-	state, err := luax.Resume(co, args...)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	if state == lua.ResumeYield {
-		client.ch.Dialog = co
-	}
+	luax.Resume(ctx, ctx.Self(), co, args...)
 }
 
 func onGameClientNpcClick(ctx actor.Context, client *GameClientActor, req *req.NpcClick) {

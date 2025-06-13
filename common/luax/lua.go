@@ -4,17 +4,23 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/scheduler"
+	"github.com/boyism80/fm/game/msg"
 	lua "github.com/yuin/gopher-lua"
 )
 
 var (
 	onCreateHooks   []func(*lua.LState)
 	onCreateHooksMu sync.Mutex
-	root            *lua.LState
 	compileMu       sync.Mutex
 	compiledFuncs   = make(map[string]*lua.LFunction)
 	useCache        = os.Getenv("GO_ENV") != "development"
+	ExecutorPID     *actor.PID
+	RootContext     *actor.RootContext
+	timerScheduler  *scheduler.TimerScheduler
 )
 
 func init() {
@@ -30,21 +36,22 @@ type Luable interface {
 	LuaBuiltinFuncs() map[string]lua.LGFunction
 }
 
-func preloadScript(path string) (*lua.LFunction, error) {
+func NewState() *lua.LState {
+	luaState := lua.NewState()
+	onCreateHooksMu.Lock()
+	for _, hook := range onCreateHooks {
+		hook(luaState)
+	}
+	onCreateHooksMu.Unlock()
+	return luaState
+}
+
+func preloadScript(root *lua.LState, path string) (*lua.LFunction, error) {
 	compileMu.Lock()
 	defer compileMu.Unlock()
 
 	if fn, ok := compiledFuncs[path]; ok && useCache {
 		return fn, nil
-	}
-
-	if root == nil {
-		root = lua.NewState()
-		onCreateHooksMu.Lock()
-		for _, hook := range onCreateHooks {
-			hook(root)
-		}
-		onCreateHooksMu.Unlock()
 	}
 
 	fn, err := root.LoadFile(path)
@@ -55,8 +62,8 @@ func preloadScript(path string) (*lua.LFunction, error) {
 	return fn, nil
 }
 
-func NewThread(path string) (*lua.LState, error) {
-	fn, err := preloadScript(path)
+func NewThread(root *lua.LState, path string) (*lua.LState, error) {
+	fn, err := preloadScript(root, path)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +77,7 @@ func NewThread(path string) (*lua.LState, error) {
 	return co, nil
 }
 
-func Call(co *lua.LState, funcName string, args ...lua.LValue) (lua.ResumeState, error) {
+func call(root *lua.LState, co *lua.LState, funcName string, args ...lua.LValue) (lua.ResumeState, error) {
 	fn := co.GetGlobal(funcName)
 	if fn.Type() != lua.LTFunction {
 		return lua.ResumeYield, fmt.Errorf("on_start is not a function")
@@ -83,12 +90,30 @@ func Call(co *lua.LState, funcName string, args ...lua.LValue) (lua.ResumeState,
 	return resumeState, nil
 }
 
-func Resume(co *lua.LState, args ...lua.LValue) (lua.ResumeState, error) {
+func Call(ctx actor.Context, sender *actor.PID, fileName string, funcName string, args ...any) {
+
+	ctx.Send(ExecutorPID, &msg.LuaRun{
+		PID:      sender,
+		FileName: fileName,
+		FuncName: funcName,
+		Params:   args,
+	})
+}
+
+func resume(root *lua.LState, co *lua.LState, args ...lua.LValue) (lua.ResumeState, error) {
 	resumeState, err, _ := root.Resume(co, nil, args...)
 	if err != nil {
 		return lua.ResumeYield, err
 	}
 	return resumeState, nil
+}
+
+func Resume(ctx actor.Context, sender *actor.PID, co *lua.LState, args ...any) {
+	ctx.Send(ExecutorPID, &msg.LuaResume{
+		PID:    sender,
+		Lua:    co,
+		Params: args,
+	})
 }
 
 func RegisterOnCreateHook(fn func(*lua.LState)) {
@@ -97,10 +122,8 @@ func RegisterOnCreateHook(fn func(*lua.LState)) {
 	onCreateHooks = append(onCreateHooks, fn)
 }
 
-func Register(L *lua.LState, name string, funcs map[string]lua.LGFunction) {
-	mt := L.NewTypeMetatable(name)
-	L.SetField(mt, "__index", mt)
-	L.SetFuncs(mt, funcs)
+func RegisterFunc(L *lua.LState, name string, fn lua.LGFunction) {
+	L.SetGlobal(name, L.NewFunction(fn))
 }
 
 func RegisterLuaType[T Luable](L *lua.LState) {
@@ -139,4 +162,16 @@ func NewLuable(L *lua.LState, obj Luable) *lua.LUserData {
 	ud.Value = obj
 	L.SetMetatable(ud, L.GetTypeMetatable(obj.LuaTypeName()))
 	return ud
+}
+
+func Setup(ctx actor.Context) {
+	RootContext = ctx.ActorSystem().Root
+
+	props := actor.PropsFromProducer(func() actor.Actor { return newLuaExecutor(ctx, 10) })
+	ExecutorPID = ctx.Spawn(props)
+	timerScheduler = scheduler.NewTimerScheduler(ctx)
+}
+
+func SendAfter(duration time.Duration, message interface{}) {
+	timerScheduler.SendOnce(duration, ExecutorPID, message)
 }

@@ -253,10 +253,3 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 
 	return ch
 }
-
-func (m *Character) LuaTypeName() string {
-	return "Character"
-}
-func (m *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	return characterBuiltinFuncs
-}

@@ -14,6 +14,7 @@ import (
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/game/builtin"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/data"
 	"github.com/boyism80/fm/game/entity"
@@ -26,6 +27,7 @@ type GameClientActor struct {
 	serverContext  *context.ServerContext
 	ch             *entity.Character
 	conn           net.Conn
+	builtin        *builtin.LuaCharacter
 	buffer         []byte
 	messageHandler *handler.MessageHandler
 	packetHandler  *handler.PacketHandler
@@ -52,6 +54,13 @@ func NewGameClientActor(ctx actor.Context, serverCtx *context.ServerContext, con
 		sendCrypt:      crypt.NewEncryption(ivSend, -5),
 		receiveCrypt:   crypt.NewEncryption(ivRecv, 5),
 		scheduler:      scheduler.NewTimerScheduler(ctx),
+		builtin: &builtin.LuaCharacter{
+			LuaLife: builtin.LuaLife{
+				LuaObject: builtin.LuaObject{
+					Context: ctx.ActorSystem().Root,
+				},
+			},
+		},
 	}
 	actor.listener = &CharacterListener{Actor: actor}
 

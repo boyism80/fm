@@ -9,8 +9,8 @@ import (
 	"github.com/boyism80/fm/common/luax"
 	"github.com/boyism80/fm/common/msg"
 	"github.com/boyism80/fm/game/actorx"
+	"github.com/boyism80/fm/game/builtin"
 	"github.com/boyism80/fm/game/data"
-	"github.com/boyism80/fm/game/entity"
 	lua "github.com/yuin/gopher-lua"
 	"gopkg.in/yaml.v3"
 )
@@ -42,9 +42,10 @@ func loadConfig(path string) (*Config, error) {
 
 func init() {
 	luax.RegisterOnCreateHook(func(L *lua.LState) {
-		luax.RegisterLuaType[*entity.Object](L)
-		luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](L)
-		luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](L)
+		luax.RegisterFunc(L, "sleep", builtin.Sleep)
+		luax.RegisterLuaType[*builtin.LuaObject](L)
+		luax.RegisterLuaDerivedType[*builtin.LuaLife, *builtin.LuaObject](L)
+		luax.RegisterLuaDerivedType[*builtin.LuaCharacter, *builtin.LuaLife](L)
 	})
 }
 

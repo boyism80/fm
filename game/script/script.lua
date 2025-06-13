@@ -7,7 +7,7 @@ function on_start(me)
 	me:dialog(npc, '반갑습니다.')
 	for i=1, 10 do
 		me:chat(tostring(i))
-		me:sleep(100)
+		sleep(100)
 	end
 	if text ~= nil then
 		me:chat(text)

@@ -35,5 +35,35 @@ type RunScript struct {
 
 type ResumeScript struct {
 	L    *lua.LState
-	Args []lua.LValue
+	Args []any
+}
+
+type CharacterBuiltinDialog struct {
+	NPC     uint32
+	Message string
+	Prev    bool
+	Next    bool
+}
+
+type CharacterBuiltinDialogList struct {
+	NPC        uint32
+	Message    string
+	Selections []string
+}
+
+type CharacterBuiltinDialogAccept struct {
+	NPC          uint32
+	Message      string
+	EnableEscape bool
+}
+
+type CharacterBuiltinDialogInput struct {
+	NPC     uint32
+	Message string
+}
+
+type CharacterBuiltinChat struct {
+	Message           string
+	Highlight         bool
+	DontRecordHistory bool
 }
