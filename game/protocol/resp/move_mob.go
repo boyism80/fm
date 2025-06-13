@@ -7,21 +7,21 @@ import (
 )
 
 type MoveMob struct {
-	EnabledSkill bool
-	CenterSplit  int8
-	Skill1       uint8
-	Skill2       uint8
-	Skill3       uint8
-	Skill4       uint8
-	OID          uint32
-	StartPoint   types.Vector2[int16]
-	Movements    []protocol.MoveFragment
+	IsAggroed   bool
+	CenterSplit int8
+	Skill1      uint8
+	Skill2      uint8
+	Skill3      uint8
+	Skill4      uint8
+	OID         uint32
+	StartPoint  types.Vector2[int16]
+	Movements   []protocol.MoveFragment
 }
 
 func (p *MoveMob) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0xAC)
 	writer.WriteU32(p.OID)
-	writer.WriteBoolean(p.EnabledSkill)
+	writer.WriteBoolean(p.IsAggroed)
 	writer.Write8(p.CenterSplit)
 	writer.WriteU8(p.Skill1)
 	writer.WriteU8(p.Skill2)

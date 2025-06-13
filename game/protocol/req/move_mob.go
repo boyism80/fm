@@ -6,16 +6,16 @@ import (
 )
 
 type MoveMob struct {
-	OID          uint32
-	MovementId   uint16
-	EnabledSkill bool
-	Unknown2     bool
-	CenterSplit  int8
-	Skill1       uint8
-	Skill2       uint8
-	Skill3       uint8
-	Skill4       uint8
-	Movements    []protocol.MoveFragment
+	OID         uint32
+	MovementId  uint16
+	IsAggroed   bool
+	Unknown2    bool
+	CenterSplit int8
+	Skill1      uint8
+	Skill2      uint8
+	Skill3      uint8
+	Skill4      uint8
+	Movements   []protocol.MoveFragment
 }
 
 func (m *MoveMob) Serialize(writer *stream.StreamWriter) error {
@@ -39,7 +39,7 @@ func (m *MoveMob) Deserialize(reader *stream.StreamReader) error {
 		return err
 	}
 
-	m.EnabledSkill = flag&0xF != 0
+	m.IsAggroed = flag&0xF != 0
 	m.Unknown2 = flag&0xF0 != 0
 	m.CenterSplit, err = reader.Read8()
 	if err != nil {
