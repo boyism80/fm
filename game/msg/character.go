@@ -35,7 +35,7 @@ type RunScript struct {
 
 type ResumeScript struct {
 	L    *lua.LState
-	Args []any
+	Args []lua.LValue
 }
 
 type CharacterBuiltinDialog struct {
@@ -63,7 +63,26 @@ type CharacterBuiltinDialogInput struct {
 }
 
 type CharacterBuiltinChat struct {
+	Lua               *lua.LState
 	Message           string
 	Highlight         bool
 	DontRecordHistory bool
+}
+
+type CharacterBuiltinName struct {
+	Lua *lua.LState
+}
+
+type CharacterBuiltinMeso struct {
+	Lua *lua.LState
+}
+
+type CharacterBuiltinRemoveMeso struct {
+	Lua   *lua.LState
+	Count int32
+}
+
+type CharacterBuiltinAddMeso struct {
+	Lua   *lua.LState
+	Count int32
 }

@@ -9,13 +9,13 @@ type LuaRun struct {
 	PID      *actor.PID
 	FileName string
 	FuncName string
-	Params   []any
+	Params   []lua.LValue
 }
 
 type LuaResume struct {
 	PID    *actor.PID
 	Lua    *lua.LState
-	Params []any
+	Params []lua.LValue
 }
 
 type LuaYield struct {

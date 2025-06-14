@@ -4,7 +4,7 @@ function on_start(me)
 	-- me:dialog_accept('안녕하세요', true)
 	-- me:dialog_yes_no('안녕하세요', true, true)
 	local text = me:dialog_input(npc,'안녕하세요')
-	me:dialog(npc, '반갑습니다.')
+	me:dialog(npc, string.format("반갑습니다. %s님", me:name()))
 	for i=1, 10 do
 		me:chat(tostring(i))
 		sleep(100)

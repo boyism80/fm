@@ -28,22 +28,14 @@ func (state *executor) Receive(context actor.Context) {
 	state.handler.Handle(context)
 }
 
-func convertToLuaValue(co *lua.LState, args []any) []lua.LValue {
+func convertToLuaValue(co *lua.LState, args []lua.LValue) []lua.LValue {
 	result := make([]lua.LValue, len(args))
 	for i, arg := range args {
 		switch v := arg.(type) {
-		case nil:
-			result[i] = lua.LNil
-		case string:
-			result[i] = lua.LString(v)
-		case int:
-			result[i] = lua.LNumber(v)
-		case float64:
-			result[i] = lua.LNumber(v)
-		case bool:
-			result[i] = lua.LBool(v)
 		case Luable:
 			result[i] = NewLuable(co, v)
+		case lua.LValue:
+			result[i] = v
 		}
 	}
 	return result
@@ -56,7 +48,7 @@ func (state *executor) run(ctx actor.Context, worker *worker, i int) {
 		switch m := task.(type) {
 		case *msg.LuaRun:
 			if m.Params == nil {
-				m.Params = []any{}
+				m.Params = []lua.LValue{}
 			}
 			co, err := NewThread(worker.Lua, m.FileName)
 			if err != nil {
@@ -85,7 +77,7 @@ func (state *executor) run(ctx actor.Context, worker *worker, i int) {
 		case *msg.LuaResume:
 			co := m.Lua
 			if m.Params == nil {
-				m.Params = []any{}
+				m.Params = []lua.LValue{}
 			}
 			resumeState, err := resume(worker.Lua, co, convertToLuaValue(co, m.Params)...)
 			if err != nil {

@@ -16,6 +16,7 @@ import (
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/msg"
 	"github.com/boyism80/fm/game/protocol/resp"
+	lua "github.com/yuin/gopher-lua"
 
 	common_resp "github.com/boyism80/fm/common/protocol/resp"
 	login_resp "github.com/boyism80/fm/login/protocol/resp"
@@ -40,6 +41,10 @@ func RegisterGameClientMessageHandlers(ctx actor.Context, m *GameClientActor, h 
 	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinDialogAccept)
 	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinDialogList)
 	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinChat)
+	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinName)
+	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinMeso)
+	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinRemoveMeso)
+	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinAddMeso)
 }
 
 func (client *GameClientActor) ReceivePackets(ctx actor.Context, pid *actor.PID) {
@@ -315,7 +320,7 @@ func onGameClientMapChanged(ctx actor.Context, client *GameClientActor, m *msg.C
 }
 
 func onGameClientRunScript(ctx actor.Context, client *GameClientActor, m *msg.RunScript) {
-	luax.Call(ctx, ctx.Self(), m.Script, "on_start", client.ch)
+	luax.Call(ctx, ctx.Self(), m.Script, "on_start", client.builtin)
 }
 
 func onGameClientResumeScript(ctx actor.Context, client *GameClientActor, m *msg.ResumeScript) {
@@ -358,4 +363,50 @@ func onGameClientBuiltinChat(ctx actor.Context, client *GameClientActor, m *msg.
 	if client.listener != nil {
 		client.listener.OnChat(m.Message, m.Highlight, m.DontRecordHistory)
 	}
+	luax.Resume(ctx, ctx.Self(), m.Lua)
+}
+
+func onGameClientBuiltinName(ctx actor.Context, client *GameClientActor, m *msg.CharacterBuiltinName) {
+	luax.Resume(ctx, ctx.Self(), m.Lua, lua.LString(client.ch.Name))
+}
+
+func onGameClientBuiltinMeso(ctx actor.Context, client *GameClientActor, m *msg.CharacterBuiltinMeso) {
+	luax.Resume(ctx, ctx.Self(), m.Lua, lua.LNumber(client.ch.Meso))
+}
+
+func onGameClientBuiltinRemoveMeso(ctx actor.Context, client *GameClientActor, m *msg.CharacterBuiltinRemoveMeso) {
+	if m.Count < 0 {
+		m.Count = client.ch.Meso
+	}
+
+	if m.Count > client.ch.Meso {
+		luax.Resume(ctx, ctx.Self(), m.Lua, lua.LFalse, lua.LNumber(client.ch.Meso), lua.LNumber(0))
+		return
+	}
+
+	client.ch.Meso -= m.Count
+	client.Send(&resp.UpdateStats{
+		Stats: map[constant.Stat]int32{
+			constant.StatMeso: client.ch.Meso,
+		},
+		UnlockAction: true,
+	}, types.SEND_POLICY_ENCRYPT)
+	luax.Resume(ctx, ctx.Self(), m.Lua, lua.LTrue, lua.LNumber(client.ch.Meso), lua.LNumber(m.Count))
+}
+
+func onGameClientBuiltinAddMeso(ctx actor.Context, client *GameClientActor, m *msg.CharacterBuiltinAddMeso) {
+	cap := math.MaxInt32 - client.ch.Meso
+	if m.Count > cap {
+		luax.Resume(ctx, ctx.Self(), m.Lua, lua.LFalse, lua.LNumber(client.ch.Meso), lua.LNumber(cap))
+		return
+	}
+
+	client.ch.Meso += m.Count
+	client.Send(&resp.UpdateStats{
+		Stats: map[constant.Stat]int32{
+			constant.StatMeso: client.ch.Meso,
+		},
+		UnlockAction: true,
+	}, types.SEND_POLICY_ENCRYPT)
+	luax.Resume(ctx, ctx.Self(), m.Lua, lua.LTrue, lua.LNumber(client.ch.Meso), lua.LNumber(math.MaxInt32-client.ch.Meso))
 }

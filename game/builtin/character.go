@@ -8,34 +8,56 @@ import (
 var characterBuiltinFuncs = map[string]lua.LGFunction{
 
 	"name": func(L *lua.LState) int {
-		// ud := L.CheckUserData(1)
-		// ch, ok := ud.Value.(*Character)
-		// if !ok {
-		// 	L.ArgError(1, "Character expected")
-		// 	return 0
-		// }
-		// L.Push(lua.LString(ch.Name))
-		// return 1
-		return 0
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*LuaCharacter)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+		ch.Context.Send(ch.PID, &msg.CharacterBuiltinName{
+			Lua: L,
+		})
+		return L.Yield(lua.LNumber(0))
 	},
 	"meso": func(L *lua.LState) int {
-		// argc := L.GetTop()
-		// ud := L.CheckUserData(1)
-		// ch, ok := ud.Value.(*Character)
-		// if !ok {
-		// 	L.ArgError(1, "Character expected")
-		// 	return 0
-		// }
-
-		// if argc > 1 {
-		// 	ch.Meso = int32(L.CheckInt(2))
-		// 	ch.Listener.OnMesoChanged(ch.Meso)
-		// 	return 0
-		// } else {
-		// 	L.Push(lua.LNumber(ch.Meso))
-		// 	return 1
-		// }
-		return 0
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*LuaCharacter)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+		ch.Context.Send(ch.PID, &msg.CharacterBuiltinMeso{
+			Lua: L,
+		})
+		return L.Yield(lua.LNumber(0))
+	},
+	"remove_meso": func(L *lua.LState) int {
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*LuaCharacter)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+		count := L.CheckInt(2)
+		ch.Context.Send(ch.PID, &msg.CharacterBuiltinRemoveMeso{
+			Lua:   L,
+			Count: int32(count),
+		})
+		return L.Yield(lua.LNumber(0))
+	},
+	"add_meso": func(L *lua.LState) int {
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*LuaCharacter)
+		if !ok {
+			L.ArgError(1, "Character expected")
+			return 0
+		}
+		count := L.CheckInt(2)
+		ch.Context.Send(ch.PID, &msg.CharacterBuiltinAddMeso{
+			Lua:   L,
+			Count: int32(count),
+		})
+		return L.Yield(lua.LNumber(0))
 	},
 	"chat": func(L *lua.LState) int {
 		argc := L.GetTop()
@@ -57,12 +79,13 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 		}
 
 		ch.Context.Send(ch.PID, &msg.CharacterBuiltinChat{
+			Lua:               L,
 			Message:           message,
 			Highlight:         highlight,
 			DontRecordHistory: dontRecordHistory,
 		})
 
-		return 0
+		return L.Yield(lua.LNumber(0))
 	},
 	"dialog": func(L *lua.LState) int {
 		argc := L.GetTop()
@@ -99,7 +122,7 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 			Next:    next,
 		})
 
-		return L.Yield(lua.LNumber(1))
+		return L.Yield(lua.LNumber(0))
 	},
 	"dialog_list": func(L *lua.LState) int {
 		argc := L.GetTop()
@@ -136,7 +159,7 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 			Selections: selections,
 		})
 
-		return L.Yield(lua.LNumber(1))
+		return L.Yield(lua.LNumber(0))
 	},
 	"dialog_accept": func(L *lua.LState) int {
 		argc := L.GetTop()
@@ -168,7 +191,7 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 			EnableEscape: enableEscape,
 		})
 
-		return L.Yield(lua.LNumber(1))
+		return L.Yield(lua.LNumber(0))
 	},
 	"dialog_yes_no": func(L *lua.LState) int {
 		argc := L.GetTop()
@@ -205,7 +228,7 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 			Next:    next,
 		})
 
-		return L.Yield(lua.LNumber(1))
+		return L.Yield(lua.LNumber(0))
 	},
 	"dialog_input": func(L *lua.LState) int {
 		argc := L.GetTop()
@@ -231,7 +254,7 @@ var characterBuiltinFuncs = map[string]lua.LGFunction{
 			Message: message,
 		})
 
-		return L.Yield(lua.LNumber(1))
+		return L.Yield(lua.LNumber(0))
 	},
 }
 
@@ -245,4 +268,12 @@ func (ch *LuaCharacter) LuaTypeName() string {
 
 func (ch *LuaCharacter) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return characterBuiltinFuncs
+}
+
+func (ch *LuaCharacter) String() string {
+	return ch.LuaTypeName()
+}
+
+func (ch *LuaCharacter) Type() lua.LValueType {
+	return lua.LTUserData
 }

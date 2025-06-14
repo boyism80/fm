@@ -13,6 +13,7 @@ import (
 	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/req"
 	"github.com/boyism80/fm/game/protocol/resp"
+	lua "github.com/yuin/gopher-lua"
 
 	common_msg "github.com/boyism80/fm/common/msg"
 	common_req "github.com/boyism80/fm/common/protocol/req"
@@ -250,7 +251,7 @@ func onGameClientDialog(ctx actor.Context, client *GameClientActor, req *req.Dia
 		return
 	}
 
-	args := []any{}
+	args := []lua.LValue{}
 
 	co := client.ch.Dialog
 	client.ch.Dialog = nil
@@ -258,38 +259,38 @@ func onGameClientDialog(ctx actor.Context, client *GameClientActor, req *req.Dia
 	switch req.DialogType {
 	case constant.DIALOG_TYPE_DEFAULT:
 		if req.Next {
-			args = append(args, true)
+			args = append(args, lua.LTrue)
 		} else {
-			args = append(args, false)
+			args = append(args, lua.LFalse)
 		}
 
 	case constant.DIALOG_TYPE_YES_NO:
 		if req.Next {
-			args = append(args, true)
+			args = append(args, lua.LTrue)
 		} else {
-			args = append(args, false)
+			args = append(args, lua.LFalse)
 		}
 
 	case constant.DIALOG_TYPE_LIST:
 		if req.Next {
-			args = append(args, req.Selected)
+			args = append(args, lua.LNumber(req.Selected))
 		} else {
-			args = append(args, nil)
+			args = append(args, lua.LNil)
 		}
 
 	case constant.DIALOG_TYPE_INPUT:
 		if req.Next {
-			args = append(args, req.Text)
+			args = append(args, lua.LString(req.Text))
 		} else {
-			args = append(args, nil)
+			args = append(args, lua.LNil)
 		}
 
 	case constant.DIALOG_TYPE_ACCEPT_ESCAPE:
 	case constant.DIALOG_TYPE_ACCEPT:
 		if req.Next {
-			args = append(args, true)
+			args = append(args, lua.LTrue)
 		} else {
-			args = append(args, false)
+			args = append(args, lua.LFalse)
 		}
 	}
 

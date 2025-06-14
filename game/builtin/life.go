@@ -17,3 +17,11 @@ func (life *LuaLife) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 	}
 }
+
+func (life *LuaLife) String() string {
+	return life.LuaTypeName()
+}
+
+func (life *LuaLife) Type() lua.LValueType {
+	return lua.LTUserData
+}

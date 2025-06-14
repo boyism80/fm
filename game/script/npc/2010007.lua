@@ -42,7 +42,12 @@ function on_start(me)
 	local meso = me:meso()
 	if meso >= 1000000 then
 		me:dialog(npc, '돈은 충분하군요..')
-		me:meso(0)
+		local ok, _, removed = me:remove_meso(-1)
+		if not ok then
+			me:dialog(npc, string.format('돈이 부족해요..'))
+			return
+		end
+
 		selected = me:dialog_list(npc, '에라 모르겠다 돈 다 훔쳐버리기 ㅋㅋ', {'...!!!', '뭐하는새끼야 이거'})
 		if selected == nil then
 
@@ -51,7 +56,16 @@ function on_start(me)
 		else
 			me:dialog(npc, '말하는 뽄새보소? 장난이었어 임마 ㅋ')
 		end
-		me:meso(meso)
+		
+		while true do
+			local ok, _, cap = me:add_meso(removed)
+			if ok then
+				break
+			end
+
+			me:dialog(npc, string.format('돈이 너무 많아요.. 일단 %d메소를 돌려드릴게요..', cap))
+			removed = cap
+		end
 	else
 		me:dialog(npc, '당신은 너무 가난해서 대화를 그만두고 싶군요.')
 	end

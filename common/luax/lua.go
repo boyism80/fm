@@ -32,6 +32,7 @@ func init() {
 }
 
 type Luable interface {
+	lua.LValue
 	LuaTypeName() string
 	LuaBuiltinFuncs() map[string]lua.LGFunction
 }
@@ -90,7 +91,7 @@ func call(root *lua.LState, co *lua.LState, funcName string, args ...lua.LValue)
 	return resumeState, nil
 }
 
-func Call(ctx actor.Context, sender *actor.PID, fileName string, funcName string, args ...any) {
+func Call(ctx actor.Context, sender *actor.PID, fileName string, funcName string, args ...lua.LValue) {
 
 	ctx.Send(ExecutorPID, &msg.LuaRun{
 		PID:      sender,
@@ -108,7 +109,7 @@ func resume(root *lua.LState, co *lua.LState, args ...lua.LValue) (lua.ResumeSta
 	return resumeState, nil
 }
 
-func Resume(ctx actor.Context, sender *actor.PID, co *lua.LState, args ...any) {
+func Resume(ctx actor.Context, sender *actor.PID, co *lua.LState, args ...lua.LValue) {
 	ctx.Send(ExecutorPID, &msg.LuaResume{
 		PID:    sender,
 		Lua:    co,
