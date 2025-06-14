@@ -34,6 +34,7 @@ func RegisterGameClientPacketHandler(ctx actor.Context, client *GameClientActor,
 	handler.RegisterPacketHandler(0x2B, ctx, client, h, onGameClientDialog)
 	handler.RegisterPacketHandler(0x29, ctx, client, h, onGameClientNpcClick)
 	handler.RegisterPacketHandler(0x95, ctx, client, h, onGameClientMoveMob)
+	handler.RegisterPacketHandler(0x1F, ctx, client, h, onGameClientDamaged)
 }
 
 func onGameClientPong(ctx actor.Context, client *GameClientActor, request *common_req.Pong) {
@@ -321,4 +322,11 @@ func onGameClientMoveMob(ctx actor.Context, client *GameClientActor, req *req.Mo
 		MoveMob: *req,
 		Sender:  ctx.Self(),
 	})
+}
+
+func onGameClientDamaged(ctx actor.Context, client *GameClientActor, req *req.Damaged) {
+
+	client.Send(&resp.UpdateStats{
+		UnlockAction: true,
+	}, types.SEND_POLICY_ENCRYPT)
 }
