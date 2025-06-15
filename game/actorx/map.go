@@ -260,12 +260,14 @@ func onMapSpawnItems(ctx actor.Context, state *MapActor, m *msg.MapSpawnItems) {
 		}
 
 		if dropped.IsMeso() {
+			meso := dropped.(*entity.Meso)
 			onMapSpawnMeso(ctx, state, &msg.MapSpawnMeso{
 				Count:        dropped.GetCount32(),
 				SpawnedPoint: spawnPoint,
 				DestPoint:    destPoint,
 				Owner:        m.Owner,
 				OwnerID:      m.OwnerID,
+				DropType:     meso.GetDrop().DropType,
 			})
 		} else {
 			item, ok := dropped.(entity.Item)
@@ -298,7 +300,7 @@ func onMapSpawnMeso(ctx actor.Context, state *MapActor, m *msg.MapSpawnMeso) {
 					},
 					ID:           state.sequence,
 					SpawnedPoint: m.SpawnedPoint,
-					DropType:     constant.DropTypeFFA,
+					DropType:     m.DropType,
 					Owner:        m.OwnerID,
 				},
 				Count: m.Count,

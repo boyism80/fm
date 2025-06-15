@@ -30,6 +30,7 @@ func RegisterGameClientMessageHandlers(ctx actor.Context, m *GameClientActor, h 
 	handler.RegisterHandler(ctx, m, h, onGameClientPing)
 	handler.RegisterHandler(ctx, m, h, onGameClientWarped)
 	handler.RegisterHandler(ctx, m, h, onGameClientItemLooting)
+	handler.RegisterHandler(ctx, m, h, onGameClientItemLootingFailed)
 	handler.RegisterHandler(ctx, m, h, onGameClientMesoLooting)
 	handler.RegisterHandler(ctx, m, h, onGameClientMapChanged)
 	handler.RegisterHandler(ctx, m, h, onGameClientRunScript)
@@ -231,6 +232,12 @@ func onGameClientItemLooting(ctx actor.Context, client *GameClientActor, m *msg.
 		Count:       int32(gain),
 		CharacterId: client.ch.ID,
 	})
+}
+
+func onGameClientItemLootingFailed(ctx actor.Context, client *GameClientActor, m *msg.CharacterLootFailed) {
+	client.Send(&resp.UpdateStats{
+		UnlockAction: true,
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func onGameClientMesoLooting(ctx actor.Context, client *GameClientActor, m *msg.CharacterMesoLooting) {

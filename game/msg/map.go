@@ -64,6 +64,7 @@ type MapSpawnMeso struct {
 	DestPoint    types.Vector2[int16]
 	Owner        *actor.PID
 	OwnerID      uint32
+	DropType     constant.DropType
 }
 
 type MapItemLoot struct {
