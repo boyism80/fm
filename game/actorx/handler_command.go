@@ -1,6 +1,7 @@
 package actorx
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"path/filepath"
@@ -29,6 +30,7 @@ func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor
 	handler.RegisterCommandHandler("몬스터생성", ctx, client, h, onCommandSpawnMob)
 	handler.RegisterCommandHandler("힌트", ctx, client, h, onCommandHint)
 	handler.RegisterCommandHandler("공지", ctx, client, h, onCommandNotice)
+	handler.RegisterCommandHandler("좌표", ctx, client, h, onCommandGetPosition)
 }
 
 func onCommandCreateItem(ctx actor.Context, client *GameClientActor, params ...string) {
@@ -264,4 +266,8 @@ func onCommandNotice(ctx actor.Context, client *GameClientActor, params ...strin
 		Message: formattedText,
 		MegaEar: megaEar,
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func onCommandGetPosition(ctx actor.Context, client *GameClientActor, params ...string) {
+	client.listener.OnChat(fmt.Sprintf("%d, %d, %d", client.ch.Map, client.ch.Position.X, client.ch.Position.Y), false, false)
 }

@@ -76,12 +76,12 @@ func (ms *MapSpec) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 	return &pt
 }
 
-func (ms *MapSpec) DropPoint(initial types.Point[int16]) types.Point[int16] {
+func (ms *MapSpec) DropPoint(initial types.Point[int16]) (types.Point[int16], bool) {
 	highest := types.Point[int16]{X: initial.X, Y: initial.Y - int16(100)}
 	if result := ms.FootholdPoint(highest); result != nil {
-		return *result
+		return *result, true
 	}
-	return initial
+	return initial, false
 }
 
 func (spec *MapSpec) FindPortal(name string) (*Portal, bool) {

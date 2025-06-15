@@ -55,7 +55,6 @@ type MapSpawnItems struct {
 	Items    []entity.Dropable
 	Position types.Vector2[int16]
 	Owner    *actor.PID
-	OwnerID  uint32
 }
 
 type MapSpawnMeso struct {

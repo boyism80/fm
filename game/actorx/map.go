@@ -112,10 +112,14 @@ func (state *MapActor) SpawnMob(ctx actor.Context, mobId uint32, oid uint32, foo
 	}
 
 	props := actor.PropsFromProducer(func() actor.Actor {
+		spawnPoint, ok := state.Spec.DropPoint(position)
+		if !ok {
+			spawnPoint = position
+		}
 		return NewMobActor(ctx, state.ctx, entity.Mob{
 			Life: entity.Life{
 				Object: entity.Object{
-					Position: state.Spec.DropPoint(position),
+					Position: spawnPoint,
 				},
 				Hp:     uint16(mobSpec.MaxHP),
 				Mp:     uint16(mobSpec.MaxMP),
@@ -230,7 +234,11 @@ func onMapBroadcastRange(ctx actor.Context, state *MapActor, m *msg.MapBroadcast
 func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 	state.sequence++
 	drop := m.Item.GetDrop()
-	drop.Position = state.Spec.DropPoint(drop.Position)
+	dropPoint, ok := state.Spec.DropPoint(drop.Position)
+	if !ok {
+		dropPoint = drop.SpawnedPoint
+	}
+	drop.Position = dropPoint
 	drop.ID = state.sequence
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return NewItemActor(ctx,
@@ -266,7 +274,7 @@ func onMapSpawnItems(ctx actor.Context, state *MapActor, m *msg.MapSpawnItems) {
 				SpawnedPoint: spawnPoint,
 				DestPoint:    destPoint,
 				Owner:        m.Owner,
-				OwnerID:      m.OwnerID,
+				OwnerID:      meso.GetDrop().Owner,
 				DropType:     meso.GetDrop().DropType,
 			})
 		} else {
@@ -281,7 +289,7 @@ func onMapSpawnItems(ctx actor.Context, state *MapActor, m *msg.MapSpawnItems) {
 			onMapSpawnItem(ctx, state, &msg.MapSpawnItem{
 				Item:    item,
 				Owner:   m.Owner,
-				OwnerID: m.OwnerID,
+				OwnerID: item.GetDrop().Owner,
 			})
 		}
 	}
@@ -289,7 +297,10 @@ func onMapSpawnItems(ctx actor.Context, state *MapActor, m *msg.MapSpawnItems) {
 
 func onMapSpawnMeso(ctx actor.Context, state *MapActor, m *msg.MapSpawnMeso) {
 	state.sequence++
-	dropPoint := state.Spec.DropPoint(m.DestPoint)
+	dropPoint, ok := state.Spec.DropPoint(m.DestPoint)
+	if !ok {
+		dropPoint = m.SpawnedPoint
+	}
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return NewMesoActor(ctx,
 			state.ctx,

@@ -227,9 +227,8 @@ func onMobDamaged(ctx actor.Context, state *MobActor, m *msg.MobDamaged) {
 		if len(dropables) > 0 {
 			ctx.Send(state.mapPID, &msg.MapSpawnItems{
 				Items:    dropables,
-				Position: state.Position,
 				Owner:    m.Sender,
-				OwnerID:  state.OID,
+				Position: state.Position,
 			})
 		}
 
