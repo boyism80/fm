@@ -111,7 +111,7 @@ func (state *MapActor) SpawnMob(ctx actor.Context, mobId uint32, oid uint32, foo
 	}
 
 	props := actor.PropsFromProducer(func() actor.Actor {
-		return NewMobActor(ctx, *state.ctx, entity.Mob{
+		return NewMobActor(ctx, state.ctx, entity.Mob{
 			Life: entity.Life{
 				Object: entity.Object{
 					Position: state.Spec.DropPoint(position),
@@ -431,6 +431,7 @@ func onMapCharacterAttack(ctx actor.Context, state *MapActor, m *msg.MapCharacte
 
 		ctx.Send(pid, &msg.MobDamaged{
 			Sender:      m.Sender,
+			CharacterId: m.CharacterId,
 			DamagePairs: damage.DamagePairs,
 		})
 	}

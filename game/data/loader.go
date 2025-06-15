@@ -1457,3 +1457,77 @@ func loadMob(path string) (*MobSpec, error) {
 
 	return spec, nil
 }
+
+func loadDrops(path string) (*map[uint32][]DropSpec, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var root node
+	if err := xml.NewDecoder(file).Decode(&root); err != nil {
+		return nil, err
+	}
+
+	specs := map[uint32][]DropSpec{}
+	for _, v := range root.Children {
+		if !strings.HasPrefix(v.Name, "m") {
+			continue
+		}
+		id, err := strconv.Atoi(strings.TrimPrefix(v.Name, "m"))
+		if err != nil {
+			return nil, err
+		}
+		spec := DropSpec{
+			Mob: uint32(id),
+		}
+
+		for _, iv1 := range v.Children {
+			for _, iv2 := range iv1.Children {
+				switch iv2.Name {
+				case "item":
+					value, err := strconv.Atoi(iv2.Value)
+					if err != nil {
+						return nil, err
+					}
+					spec.Item = uint32(value)
+				case "money":
+					value, err := strconv.Atoi(iv2.Value)
+					if err != nil {
+						return nil, err
+					}
+					spec.Money = uint32(value)
+				case "prob":
+					value, err := strconv.ParseFloat(strings.TrimPrefix(iv2.Value, "[R8]"), 32)
+					if err != nil {
+						return nil, err
+					}
+					spec.Prob = float32(value)
+				case "min":
+					value, err := strconv.Atoi(iv2.Value)
+					if err != nil {
+						return nil, err
+					}
+					spec.Min = uint16(value)
+				case "max":
+					value, err := strconv.Atoi(iv2.Value)
+					if err != nil {
+						return nil, err
+					}
+					spec.Max = uint16(value)
+				default:
+					mutex.Lock()
+					if _, seen := visit[iv2.Name]; !seen {
+						visit[iv2.Name] = true
+						log.Printf("%s is not declared in %s:info\n", iv2.Name, filepath.Base(path))
+					}
+					mutex.Unlock()
+				}
+			}
+			specs[spec.Mob] = append(specs[spec.Mob], spec)
+		}
+	}
+
+	return &specs, nil
+}

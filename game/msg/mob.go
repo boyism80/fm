@@ -23,5 +23,6 @@ type MobMove struct {
 
 type MobDamaged struct {
 	Sender      *actor.PID
+	CharacterId uint32
 	DamagePairs []protocol.DamagePair
 }

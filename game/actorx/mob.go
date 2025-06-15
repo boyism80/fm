@@ -2,6 +2,7 @@ package actorx
 
 import (
 	"math"
+	"math/rand/v2"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/context"
@@ -17,15 +18,17 @@ import (
 
 type MobActor struct {
 	entity.Mob
-	handler *handler.MessageHandler
-	mapPID  *actor.PID
+	handler   *handler.MessageHandler
+	mapPID    *actor.PID
+	ServerCtx *context.ServerContext
 }
 
-func NewMobActor(ctx actor.Context, serverCtx context.ServerContext, entity entity.Mob, mapPID *actor.PID) actor.Actor {
+func NewMobActor(ctx actor.Context, serverCtx *context.ServerContext, entity entity.Mob, mapPID *actor.PID) actor.Actor {
 	actor := &MobActor{
-		Mob:     entity,
-		handler: handler.NewMessageHandler(),
-		mapPID:  mapPID,
+		Mob:       entity,
+		handler:   handler.NewMessageHandler(),
+		mapPID:    mapPID,
+		ServerCtx: serverCtx,
 	}
 	RegisterLifeHandlers(ctx, &actor.Mob.Life, actor.handler)
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobSpawn)
@@ -170,6 +173,55 @@ func onMobDamaged(ctx actor.Context, state *MobActor, m *msg.MobDamaged) {
 	// TODO: drop items
 
 	if isDead {
+
+		drops, ok := state.ServerCtx.Resources.Drops[state.Spec.ID]
+		if ok {
+			for _, drop := range drops {
+				// drop.Prob 확률로 아이템 드랍
+				if rand.Float32() > drop.Prob {
+					continue
+				}
+
+				if drop.Item == 0 {
+					min := float64(drop.Money) * 0.75
+					max := float64(drop.Money)
+					count := int32(min + rand.Float64()*(max-min))
+					if count == 0 {
+						continue
+					}
+
+					ctx.Send(state.mapPID, &msg.MapSpawnMeso{
+						Count:        count,
+						SpawnedPoint: state.Position,
+						Owner:        m.Sender,
+						OwnerID:      state.OID,
+					})
+				} else {
+					count := uint16(1)
+					if drop.Max != 0 && drop.Min != 0 {
+						count = uint16(rand.Uint32N(uint32(drop.Max-drop.Min)+1) + uint32(drop.Min))
+					}
+
+					item, err := entity.NewItem(state.ServerCtx, drop.Item, count)
+					if err != nil {
+						continue
+					}
+					item.BindDrop(&entity.Drop{
+						Object:       &entity.Object{},
+						Owner:        m.CharacterId,
+						SpawnedPoint: state.Position,
+						DropType:     constant.DropTypeOwned,
+						Looting:      false,
+					})
+					ctx.Send(state.mapPID, &msg.MapSpawnItem{
+						Item:    item,
+						Owner:   m.Sender,
+						OwnerID: state.OID,
+					})
+				}
+			}
+		}
+
 		ctx.Send(m.Sender, &msg.CharacterKillMob{
 			OID:   state.OID,
 			MobID: state.Spec.ID,

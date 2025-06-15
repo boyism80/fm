@@ -21,6 +21,7 @@ type Resources struct {
 	Maps     map[uint32]*MapSpec
 	Monsters map[uint32]*MobSpec
 	Items    map[uint32]ItemSpec
+	Drops    map[uint32][]DropSpec
 }
 
 func (node *node) find(name string) *node {
@@ -106,8 +107,20 @@ func NewResources() *Resources {
 
 	workerCount := runtime.NumCPU() * 2
 
+	drop := map[uint32][]DropSpec{}
+	err := loadResourceFiles("D:/git/fm/imgs/Reward.img.xml", workerCount, func(path string) (result *map[uint32][]DropSpec, err error) {
+		return loadDrops(path)
+	}, func(percent float32, value *map[uint32][]DropSpec) {
+		drop = *value
+		fmt.Printf("드랍 데이터 로딩 중: %.1f%%\n", percent)
+	})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
 	items := map[uint32]ItemSpec{}
-	err := loadResourceFiles("D:/git/fm/wz/Character.wz",
+	err = loadResourceFiles("D:/git/fm/wz/Character.wz",
 		workerCount,
 		func(path string) (result *EquipmentSpec, err error) {
 			return loadWeapons(path)
@@ -278,5 +291,6 @@ func NewResources() *Resources {
 		Maps:     maps,
 		Monsters: mobs,
 		Items:    items,
+		Drops:    drop,
 	}
 }
