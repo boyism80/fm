@@ -5,12 +5,16 @@ import (
 	"github.com/boyism80/fm/game/entity"
 )
 
-type ControlMob struct {
+type StartControlMob struct {
 	Mob   *entity.Mob
 	Aggro bool
 }
 
-func (p *ControlMob) Serialize(writer *stream.StreamWriter) error {
+type StopControlMob struct {
+	OID uint32
+}
+
+func (p *StartControlMob) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(0xAB)
 	if p.Aggro {
 		writer.WriteU8(2)
@@ -32,6 +36,17 @@ func (p *ControlMob) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (m *ControlMob) Deserialize(reader *stream.StreamReader) error {
+func (p *StartControlMob) Deserialize(reader *stream.StreamReader) error {
+	return nil
+}
+
+func (p *StopControlMob) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU16(0xAB)
+	writer.WriteU8(0)
+	writer.WriteU32(p.OID)
+	return nil
+}
+
+func (p *StopControlMob) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }

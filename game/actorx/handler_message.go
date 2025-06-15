@@ -35,6 +35,7 @@ func RegisterGameClientMessageHandlers(ctx actor.Context, m *GameClientActor, h 
 	handler.RegisterHandler(ctx, m, h, onGameClientRunScript)
 	handler.RegisterHandler(ctx, m, h, onGameClientResumeScript)
 	handler.RegisterHandler(ctx, m, h, onGameClientLuaYield)
+	handler.RegisterHandler(ctx, m, h, onGameClientKillMob)
 
 	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinDialog)
 	handler.RegisterHandler(ctx, m, h, onGameClientBuiltinDialogInput)
@@ -301,7 +302,7 @@ func onGameClientMapChanged(ctx actor.Context, client *GameClientActor, m *msg.C
 		Sender: ctx.Self(),
 	})
 
-	ctx.Send(m.Map, &msg.MapBroadcastRange{
+	ctx.Send(m.Map, &msg.MapBroadcast{
 		Sender: ctx.Self(),
 		Pivot:  ch.Position,
 		Message: &common_msg.SendProtocol{
@@ -409,4 +410,25 @@ func onGameClientBuiltinAddMeso(ctx actor.Context, client *GameClientActor, m *m
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
 	luax.Resume(ctx, ctx.Self(), m.Lua, lua.LTrue, lua.LNumber(client.ch.Meso), lua.LNumber(math.MaxInt32-client.ch.Meso))
+}
+
+func onGameClientKillMob(ctx actor.Context, client *GameClientActor, m *msg.CharacterKillMob) {
+	spec, ok := client.serverContext.Resources.Monsters[m.MobID]
+	if !ok {
+		return
+	}
+
+	client.ch.Exp += spec.EXP
+	client.Send(&resp.UpdateStats{
+		Stats: map[constant.Stat]int32{
+			constant.StatExp: int32(client.ch.Exp),
+		},
+		UnlockAction: true,
+	}, types.SEND_POLICY_ENCRYPT)
+
+	client.Send(&resp.GainExp{
+		Gain:     spec.EXP,
+		White:    true,
+		PartyInc: 0,
+	}, types.SEND_POLICY_ENCRYPT)
 }

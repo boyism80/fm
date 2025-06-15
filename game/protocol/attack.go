@@ -11,25 +11,25 @@ type DamagePair struct {
 }
 
 type AttackPair struct {
-	ObjectId uint32
-	Point    types.Vector2[int16]
-	Attack   []DamagePair
+	OID         uint32
+	Position    types.Vector2[int16]
+	DamagePairs []DamagePair
 }
 
 type AttackInfo struct {
-	Targets   uint8
-	Hits      uint8
-	Skill     uint32
-	Charge    uint32
-	Unk       uint8
-	Speed     uint8
-	Display   uint8
-	LastTick  uint32
-	Slot      uint8 // only for RANGED_ATTACK
-	CsStar    uint8 // only for RANGED_ATTACK
-	AOE       uint8 // only for RANGED_ATTACK
-	AllDamage []AttackPair
-	Position  types.Vector2[int16]
+	Targets  uint8
+	Hits     uint8
+	Skill    uint32
+	Charge   uint32
+	Unk      uint8
+	Speed    uint8
+	Display  uint8
+	LastTick uint32
+	Slot     uint8 // only for RANGED_ATTACK
+	CsStar   uint8 // only for RANGED_ATTACK
+	AOE      uint8 // only for RANGED_ATTACK
+	Damages  []AttackPair
+	Position types.Vector2[int16]
 }
 
 func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
@@ -96,7 +96,7 @@ func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
 	}
 	a.LastTick = lastTick
 
-	a.AllDamage = make([]AttackPair, 0, a.Targets)
+	a.Damages = make([]AttackPair, 0, a.Targets)
 	for range int(a.Targets) {
 		oid, err := sr.ReadU32()
 		if err != nil {
@@ -118,9 +118,9 @@ func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
 			})
 		}
 
-		a.AllDamage = append(a.AllDamage, AttackPair{
-			ObjectId: oid,
-			Attack:   attack,
+		a.Damages = append(a.Damages, AttackPair{
+			OID:         oid,
+			DamagePairs: attack,
 		})
 	}
 

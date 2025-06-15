@@ -13,7 +13,7 @@ type MobSpec struct {
 	MDDamage   int
 	ACC        int
 	EVA        int
-	EXP        int
+	EXP        uint32
 	Undead     bool
 	Pushed     bool
 	FS         float32

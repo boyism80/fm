@@ -34,14 +34,11 @@ type MapActor struct {
 	controllerTable *entity.ControllerTable
 }
 
-func OnMobControllerChange(ctx actor.Context, mob, controller *actor.PID) {
-
-	if controller == nil {
-		return
-	}
+func OnMobControllerChange(ctx actor.Context, mob *actor.PID, before *actor.PID, after *actor.PID) {
 
 	ctx.Send(mob, &msg.MobControllerChange{
-		Controller: controller,
+		Before: before,
+		After:  after,
 	})
 }
 
@@ -95,7 +92,9 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapDieMob)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapClearMobs)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapMoveMob)
-		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnMob)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawningMob)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnedMob)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapCharacterAttack)
 
 		return actor
 	})
@@ -130,7 +129,6 @@ func (state *MapActor) SpawnMob(ctx actor.Context, mobId uint32, oid uint32, foo
 	})
 	pid := ctx.Spawn(props)
 	state.objects[constant.ObjectTypeMob][oid] = pid
-	state.controllerTable.EnterMob(ctx, pid)
 	ctx.Send(pid, &msg.Spawn{})
 	return true
 }
@@ -205,22 +203,27 @@ func onMapPIDList(ctx actor.Context, state *MapActor, m *msg.MapPIDList) {
 	ctx.Send(ctx.Sender(), &msg.MapPIDList{Targets: pids})
 }
 
-func onMapBroadcastRange(ctx actor.Context, state *MapActor, m *msg.MapBroadcastRange) {
-	// 나중에 섹터 추가하고 섹터 찾아서 섹터 액터한테 던짐
+func (state *MapActor) broadcast(ctx actor.Context, sender *actor.PID, m any, exceptSelf bool, excepts map[*actor.PID]struct{}) {
 
 	for _, pid := range state.objects[constant.ObjectTypeCharacter] {
-		if m.ExceptSelf && pid == m.Sender {
+		if exceptSelf && pid == sender {
 			continue
 		}
 
-		if m.Excepts != nil {
-			if _, ok := m.Excepts[pid]; ok {
+		if excepts != nil {
+			if _, ok := excepts[pid]; ok {
 				continue
 			}
 		}
 
-		ctx.Send(pid, m.Message)
+		ctx.Send(pid, m)
 	}
+}
+
+func onMapBroadcastRange(ctx actor.Context, state *MapActor, m *msg.MapBroadcast) {
+	// 나중에 섹터 추가하고 섹터 찾아서 섹터 액터한테 던짐
+
+	state.broadcast(ctx, m.Sender, m.Message, m.ExceptSelf, m.Excepts)
 }
 
 func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
@@ -342,8 +345,6 @@ func onMapDieMob(ctx actor.Context, state *MapActor, m *msg.MapDieMob) {
 	}
 
 	state.controllerTable.LeaveMob(ctx, pid)
-	ctx.Stop(pid)
-	delete(state.objects[constant.ObjectTypeMob], m.OID)
 
 	spawner, ok := state.mobSpawners[m.OID]
 	if ok {
@@ -355,7 +356,7 @@ func onMapDieMob(ctx actor.Context, state *MapActor, m *msg.MapDieMob) {
 		spawner.NextSpawnTime = time.Now().Add(nextSpawnDuration)
 	}
 
-	ctx.Send(ctx.Self(), &msg.MapBroadcastRange{
+	ctx.Send(ctx.Self(), &msg.MapBroadcast{
 		Sender: m.Sender,
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.DieMob{
@@ -367,6 +368,9 @@ func onMapDieMob(ctx actor.Context, state *MapActor, m *msg.MapDieMob) {
 		Pivot:      m.Position,
 		ExceptSelf: true,
 	})
+
+	delete(state.objects[constant.ObjectTypeMob], m.OID)
+	ctx.Stop(pid)
 }
 
 func onMapClearMobs(ctx actor.Context, state *MapActor, m *msg.MapClearMobs) {
@@ -403,11 +407,40 @@ func onMapMoveMob(ctx actor.Context, state *MapActor, m *msg.MapMoveMob) {
 	})
 }
 
-func onMapSpawnMob(ctx actor.Context, state *MapActor, m *msg.MapSpawnMob) {
+func onMapSpawningMob(ctx actor.Context, state *MapActor, m *msg.MapSpawningMob) {
 	state.sequence++
 	foothold, ok := state.Spec.Footholds.Find(m.Position)
 	if !ok {
 		return
 	}
 	state.SpawnMob(ctx, m.MobId, state.sequence, foothold.ID, m.Position)
+}
+
+func onMapSpawnedMob(ctx actor.Context, state *MapActor, m *msg.MapSpawnedMob) {
+
+	state.controllerTable.EnterMob(ctx, m.PID)
+}
+
+func onMapCharacterAttack(ctx actor.Context, state *MapActor, m *msg.MapCharacterAttack) {
+
+	for _, damage := range m.AttackInfo.Damages {
+		pid, ok := state.objects[constant.ObjectTypeMob][damage.OID]
+		if !ok {
+			continue
+		}
+
+		ctx.Send(pid, &msg.MobDamaged{
+			Sender:      m.Sender,
+			DamagePairs: damage.DamagePairs,
+		})
+	}
+
+	state.broadcast(ctx, m.Sender, &common_msg.SendProtocol{
+		Protocol: &resp.Attack{
+			CharacterId: m.CharacterId,
+			AttackInfo:  m.AttackInfo,
+			SkillLevel:  0,
+		},
+		Policy: types.SEND_POLICY_ENCRYPT,
+	}, true, nil)
 }

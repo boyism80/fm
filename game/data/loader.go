@@ -1429,7 +1429,7 @@ func loadMob(path string) (*MobSpec, error) {
 			spec.EVA = v
 		case "exp":
 			v, _ := strconv.Atoi(iv.Value)
-			spec.EXP = v
+			spec.EXP = uint32(v)
 		case "undead":
 			v, _ := strconv.Atoi(iv.Value)
 			spec.Undead = (v == 1)

@@ -60,7 +60,7 @@ func onItemStarted(ctx actor.Context, state *ItemActor, m *actor.Started) {
 
 func onItemSpawn(ctx actor.Context, state *ItemActor, m *msg.Spawn) {
 	drop := state.GetDrop()
-	ctx.Send(state.mapPID, &msg.MapBroadcastRange{
+	ctx.Send(state.mapPID, &msg.MapBroadcast{
 		Sender:     ctx.Self(),
 		Pivot:      state.GetObject().Position,
 		ExceptSelf: true,

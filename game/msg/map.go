@@ -5,6 +5,7 @@ import (
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/req"
 	"github.com/boyism80/fm/game/protocol/resp"
 )
@@ -36,7 +37,7 @@ type MapNotifyCharacterWarped struct {
 	Sender *actor.PID
 }
 
-type MapBroadcastRange struct {
+type MapBroadcast struct {
 	Sender     *actor.PID
 	Pivot      types.Vector2[int16]
 	Message    any
@@ -103,7 +104,19 @@ type MapMoveMob struct {
 	Sender *actor.PID
 }
 
-type MapSpawnMob struct {
+type MapSpawningMob struct {
 	Position types.Vector2[int16]
 	MobId    uint32
+}
+
+type MapSpawnedMob struct {
+	PID *actor.PID
+	OID uint32
+}
+
+type MapCharacterAttack struct {
+	Sender      *actor.PID
+	CharacterId uint32
+	AttackInfo  protocol.AttackInfo
+	Position    types.Vector2[int16]
 }

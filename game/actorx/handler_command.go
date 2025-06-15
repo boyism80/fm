@@ -156,14 +156,14 @@ func onCommandScript(ctx actor.Context, client *GameClientActor, params ...strin
 }
 
 func onCommandMobKill(ctx actor.Context, client *GameClientActor, params ...string) {
-	animationType := 1
+	animationType := constant.MobDieAnimationTypeFadeOut
 	if len(params) > 0 {
 		v, err := strconv.Atoi(params[0])
 		if err != nil {
 			log.Println("onMobKill: invalid animationType:", params[0])
 			return
 		}
-		animationType = v
+		animationType = constant.MobDieAnimationType(v)
 	}
 
 	mapActor, ok := client.serverContext.MapActors[client.ch.Map]
@@ -172,7 +172,7 @@ func onCommandMobKill(ctx actor.Context, client *GameClientActor, params ...stri
 	}
 
 	ctx.Send(mapActor, &msg.MapClearMobs{
-		AnimationType: constant.MobDieAnimationType(animationType),
+		AnimationType: animationType,
 	})
 }
 
@@ -194,7 +194,7 @@ func onCommandSpawnMob(ctx actor.Context, client *GameClientActor, params ...str
 		return
 	}
 
-	ctx.Send(mapActor, &msg.MapSpawnMob{
+	ctx.Send(mapActor, &msg.MapSpawningMob{
 		MobId:    uint32(mobId),
 		Position: client.ch.Position,
 	})

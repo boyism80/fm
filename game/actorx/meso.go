@@ -61,7 +61,7 @@ func onMesoStarted(ctx actor.Context, state *MesoActor, m *actor.Started) {
 func onMesoSpawn(ctx actor.Context, state *MesoActor, m *msg.Spawn) {
 	drop := state.Drop
 
-	ctx.Send(state.mapPID, &msg.MapBroadcastRange{
+	ctx.Send(state.mapPID, &msg.MapBroadcast{
 		Sender:     ctx.Self(),
 		Pivot:      state.Object.Position,
 		ExceptSelf: true,

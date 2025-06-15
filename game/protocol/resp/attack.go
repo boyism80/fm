@@ -28,15 +28,15 @@ func (a *Attack) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(a.Speed)
 	writer.WriteU8(a.Display)
 	writer.WriteU32(0) // cash bullet?
-	for _, oned := range a.AllDamage {
-		if oned.Attack != nil {
-			writer.WriteU32(oned.ObjectId)
+	for _, oned := range a.Damages {
+		if oned.DamagePairs != nil {
+			writer.WriteU32(oned.OID)
 			writer.WriteU8(0x07)
 			if a.Skill == 4211006 {
-				writer.WriteU8(uint8(len(oned.Attack)))
+				writer.WriteU8(uint8(len(oned.DamagePairs)))
 			}
 
-			for _, v := range oned.Attack {
+			for _, v := range oned.DamagePairs {
 				if v.Unknown {
 					writer.WriteU32(v.Damage | 0x80000000)
 				} else {

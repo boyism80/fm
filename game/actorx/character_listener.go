@@ -64,7 +64,7 @@ func (l *CharacterListener) OnChat(message string, highlight bool, dontRecordHis
 		return
 	}
 
-	ctx.Send(mapActor, &msg.MapBroadcastRange{
+	ctx.Send(mapActor, &msg.MapBroadcast{
 		Sender: ctx.Self(),
 		Pivot:  position,
 		Message: &common_msg.SendProtocol{

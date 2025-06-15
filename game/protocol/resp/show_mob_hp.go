@@ -1,0 +1,25 @@
+package resp
+
+import "github.com/boyism80/fm/common/stream"
+
+type ShowMobHp struct {
+	OID        uint32
+	Percentage uint8
+}
+
+func (m *ShowMobHp) Serialize(sw *stream.StreamWriter) error {
+	if err := sw.WriteU16(0xB6); err != nil {
+		return err
+	}
+	if err := sw.WriteU32(m.OID); err != nil {
+		return err
+	}
+	if err := sw.WriteU8(m.Percentage); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *ShowMobHp) Deserialize(sr *stream.StreamReader) error {
+	return nil
+}

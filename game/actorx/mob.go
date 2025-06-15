@@ -1,6 +1,8 @@
 package actorx
 
 import (
+	"math"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/handler"
@@ -31,6 +33,7 @@ func NewMobActor(ctx actor.Context, serverCtx context.ServerContext, entity enti
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobKill)
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobControllerChange)
 	handler.RegisterHandler(ctx, actor, actor.handler, onMobMove)
+	handler.RegisterHandler(ctx, actor, actor.handler, onMobDamaged)
 	return actor
 }
 
@@ -39,7 +42,7 @@ func (state *MobActor) Receive(context actor.Context) {
 }
 
 func onMobSpawn(ctx actor.Context, state *MobActor, m *msg.Spawn) {
-	ctx.Send(state.mapPID, &msg.MapBroadcastRange{
+	ctx.Send(state.mapPID, &msg.MapBroadcast{
 		Sender:     ctx.Self(),
 		Pivot:      state.Position,
 		ExceptSelf: true,
@@ -51,6 +54,11 @@ func onMobSpawn(ctx actor.Context, state *MobActor, m *msg.Spawn) {
 			},
 			Policy: types.SEND_POLICY_ENCRYPT,
 		},
+	})
+
+	ctx.Send(state.mapPID, &msg.MapSpawnedMob{
+		PID: ctx.Self(),
+		OID: state.OID,
 	})
 }
 
@@ -75,13 +83,22 @@ func onMobKill(ctx actor.Context, state *MobActor, m *msg.MobKill) {
 }
 
 func onMobControllerChange(ctx actor.Context, state *MobActor, m *msg.MobControllerChange) {
-	ctx.Send(m.Controller, &common_msg.SendProtocol{
-		Protocol: &resp.ControlMob{
-			Mob:   &state.Mob,
-			Aggro: false,
-		},
-		Policy: types.SEND_POLICY_ENCRYPT,
-	})
+
+	if m.After != nil {
+		ctx.Send(m.After, &common_msg.SendProtocol{
+			Protocol: &resp.StartControlMob{
+				Mob:   &state.Mob,
+				Aggro: false,
+			},
+			Policy: types.SEND_POLICY_ENCRYPT,
+		})
+	} else {
+		ctx.Send(m.Before, &common_msg.SendProtocol{
+			Protocol: &resp.StopControlMob{
+				OID: state.OID,
+			},
+		})
+	}
 }
 
 func onMobMove(ctx actor.Context, state *MobActor, m *msg.MobMove) {
@@ -105,7 +122,7 @@ func onMobMove(ctx actor.Context, state *MobActor, m *msg.MobMove) {
 		state.Mob.Stance = movement.GetStance()
 	}
 
-	ctx.Send(state.mapPID, &msg.MapBroadcastRange{
+	ctx.Send(state.mapPID, &msg.MapBroadcast{
 		Sender:     ctx.Self(),
 		Pivot:      state.Position,
 		ExceptSelf: true,
@@ -125,4 +142,44 @@ func onMobMove(ctx actor.Context, state *MobActor, m *msg.MobMove) {
 			Policy: types.SEND_POLICY_ENCRYPT,
 		},
 	})
+}
+
+func onMobDamaged(ctx actor.Context, state *MobActor, m *msg.MobDamaged) {
+
+	if state.Hp <= 0 {
+		return
+	}
+
+	isDead := false
+	for _, damage := range m.DamagePairs {
+		state.Hp -= uint16(math.Min(float64(state.Hp), float64(damage.Damage)))
+		if state.Hp == 0 {
+			isDead = true
+			break
+		}
+	}
+
+	ctx.Send(m.Sender, &common_msg.SendProtocol{
+		Protocol: &resp.ShowMobHp{
+			OID:        state.OID,
+			Percentage: uint8(state.Hp * 100 / state.MaxHp),
+		},
+		Policy: types.SEND_POLICY_ENCRYPT,
+	})
+
+	// TODO: drop items
+
+	if isDead {
+		ctx.Send(m.Sender, &msg.CharacterKillMob{
+			OID:   state.OID,
+			MobID: state.Spec.ID,
+		})
+
+		ctx.Send(state.mapPID, &msg.MapDieMob{
+			Sender:        ctx.Self(),
+			OID:           state.OID,
+			AnimationType: constant.MobDieAnimationTypeFadeOut,
+			Position:      state.Position,
+		})
+	}
 }

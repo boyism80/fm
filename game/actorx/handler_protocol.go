@@ -77,7 +77,7 @@ func onGameClientMovePlayer(ctx actor.Context, client *GameClientActor, req *req
 		return
 	}
 
-	ctx.Send(mapActor, &msg.MapBroadcastRange{
+	ctx.Send(mapActor, &msg.MapBroadcast{
 		Sender: ctx.Self(),
 		Pivot:  beforePosition,
 		Message: &common_msg.SendProtocol{
@@ -111,17 +111,11 @@ func onGameClientAttack(ctx actor.Context, client *GameClientActor, req *req.Att
 		return
 	}
 
-	ctx.Send(mapActor, &msg.MapBroadcastRange{
-		Sender: ctx.Self(),
-		Pivot:  position,
-		Message: &common_msg.SendProtocol{
-			Protocol: &resp.Attack{
-				CharacterId: client.ch.ID,
-				AttackInfo:  req.AttackInfo,
-				SkillLevel:  0,
-			},
-			Policy: types.SEND_POLICY_ENCRYPT,
-		},
+	ctx.Send(mapActor, &msg.MapCharacterAttack{
+		Sender:      ctx.Self(),
+		CharacterId: client.ch.ID,
+		AttackInfo:  req.AttackInfo,
+		Position:    position,
 	})
 }
 

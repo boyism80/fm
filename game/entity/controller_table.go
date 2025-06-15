@@ -7,10 +7,10 @@ type ControllerTable struct {
 	mobs               map[*actor.PID]struct{}
 	controller2mob     map[*actor.PID]map[*actor.PID]struct{}
 	mob2controller     map[*actor.PID]*actor.PID
-	onControllerChange func(ctx actor.Context, mob *actor.PID, controller *actor.PID)
+	onControllerChange func(ctx actor.Context, mob *actor.PID, before *actor.PID, after *actor.PID)
 }
 
-func NewControllerTable(onControllerChange func(ctx actor.Context, mob *actor.PID, controller *actor.PID)) *ControllerTable {
+func NewControllerTable(onControllerChange func(ctx actor.Context, mob *actor.PID, before *actor.PID, after *actor.PID)) *ControllerTable {
 	return &ControllerTable{
 		onControllerChange: onControllerChange,
 		controllers:        make(map[*actor.PID]struct{}),
@@ -61,23 +61,24 @@ func (t *ControllerTable) EnterMob(ctx actor.Context, mob *actor.PID) {
 	}
 }
 
-func (t *ControllerTable) LeaveMob(ctx actor.Context, mob *actor.PID) {
-	if cur := t.mob2controller[mob]; cur != nil {
-		// O(1) 삭제
+func (t *ControllerTable) LeaveMob(ctx actor.Context, mob *actor.PID) *actor.PID {
+	cur := t.mob2controller[mob]
+	if cur != nil {
 		delete(t.controller2mob[cur], mob)
-		// 콜백: controller=nil
 		if t.onControllerChange != nil {
-			t.onControllerChange(ctx, mob, nil)
+			t.onControllerChange(ctx, mob, cur, nil)
 		}
 	}
 	delete(t.mobs, mob)
 	delete(t.mob2controller, mob)
+	return cur
 }
 
 // assign은 몬스터→컨트롤러 매핑과 controller2mob 업데이트, 콜백 호출을 담당
 func (t *ControllerTable) assign(ctx actor.Context, mob *actor.PID, controller *actor.PID) {
 	// 이전 컨트롤러가 있으면 삭제
-	if prev := t.mob2controller[mob]; prev != nil {
+	prev := t.mob2controller[mob]
+	if prev != nil {
 		delete(t.controller2mob[prev], mob)
 	}
 	// 새 컨트롤러 설정
@@ -90,7 +91,7 @@ func (t *ControllerTable) assign(ctx actor.Context, mob *actor.PID, controller *
 	}
 	// 콜백
 	if t.onControllerChange != nil {
-		t.onControllerChange(ctx, mob, controller)
+		t.onControllerChange(ctx, mob, prev, controller)
 	}
 }
 

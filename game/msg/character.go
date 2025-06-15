@@ -38,6 +38,11 @@ type ResumeScript struct {
 	Args []lua.LValue
 }
 
+type CharacterKillMob struct {
+	OID   uint32
+	MobID uint32
+}
+
 type CharacterBuiltinDialog struct {
 	NPC     uint32
 	Message string

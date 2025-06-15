@@ -232,7 +232,7 @@ func (client *GameClientActor) Unequip(ctx actor.Context, parts constant.Equipme
 		EquipmentAction: resp.EquipmentActionTypeOff,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	ctx.Send(mapActor, &msg.MapBroadcastRange{
+	ctx.Send(mapActor, &msg.MapBroadcast{
 		Sender: ctx.Self(),
 		Pivot:  ch.Position,
 		Message: &common_msg.SendProtocol{
@@ -304,7 +304,7 @@ func (client *GameClientActor) Equip(ctx actor.Context, parts constant.Equipment
 		EquipmentAction: resp.EquipmentActionTypeOn,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	ctx.Send(mapActor, &msg.MapBroadcastRange{
+	ctx.Send(mapActor, &msg.MapBroadcast{
 		Sender: ctx.Self(),
 		Pivot:  ch.Position,
 		Message: &common_msg.SendProtocol{
