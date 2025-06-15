@@ -44,6 +44,58 @@ func (state *MobActor) Receive(context actor.Context) {
 	state.handler.Handle(context)
 }
 
+func (state *MobActor) dropItems(m *msg.MobDamaged) []entity.Dropable {
+	dropables := []entity.Dropable{}
+	drops, ok := state.ServerCtx.Resources.Drops[state.Spec.ID]
+	if ok {
+		for _, drop := range drops {
+			if rand.Float32() > drop.Prob {
+				continue
+			}
+
+			if drop.Item == 0 {
+				min := float64(drop.Money) * 0.75
+				max := float64(drop.Money)
+				count := int32(min + rand.Float64()*(max-min))
+				if count == 0 {
+					continue
+				}
+				meso := &entity.Meso{
+					Count: count,
+					Drop: &entity.Drop{
+						Object:       &entity.Object{},
+						Owner:        m.CharacterId,
+						SpawnedPoint: state.Position,
+						DropType:     constant.DropTypeOwned,
+						Looting:      false,
+					},
+				}
+				dropables = append(dropables, meso)
+			} else {
+				count := uint16(1)
+				if drop.Max != 0 && drop.Min != 0 {
+					count = uint16(rand.Uint32N(uint32(drop.Max-drop.Min)+1) + uint32(drop.Min))
+				}
+
+				item, err := entity.NewItem(state.ServerCtx, drop.Item, count)
+				if err != nil {
+					continue
+				}
+				item.BindDrop(&entity.Drop{
+					Object:       &entity.Object{},
+					Owner:        m.CharacterId,
+					SpawnedPoint: state.Position,
+					DropType:     constant.DropTypeOwned,
+					Looting:      false,
+				})
+				dropables = append(dropables, item.(entity.Dropable))
+			}
+		}
+	}
+
+	return dropables
+}
+
 func onMobSpawn(ctx actor.Context, state *MobActor, m *msg.Spawn) {
 	ctx.Send(state.mapPID, &msg.MapBroadcast{
 		Sender:     ctx.Self(),
@@ -170,78 +222,15 @@ func onMobDamaged(ctx actor.Context, state *MobActor, m *msg.MobDamaged) {
 		Policy: types.SEND_POLICY_ENCRYPT,
 	})
 
-	// TODO: drop items
-
 	if isDead {
-
-		dropables := []entity.Dropable{}
-		drops, ok := state.ServerCtx.Resources.Drops[state.Spec.ID]
-		if ok {
-			for _, drop := range drops {
-				if rand.Float32() > drop.Prob {
-					continue
-				}
-
-				if drop.Item == 0 {
-					min := float64(drop.Money) * 0.75
-					max := float64(drop.Money)
-					count := int32(min + rand.Float64()*(max-min))
-					if count == 0 {
-						continue
-					}
-					meso := &entity.Meso{
-						Count: count,
-						Drop: &entity.Drop{
-							Object:       &entity.Object{},
-							Owner:        m.CharacterId,
-							SpawnedPoint: state.Position,
-							DropType:     constant.DropTypeOwned,
-							Looting:      false,
-						},
-					}
-					dropables = append(dropables, meso)
-
-					// ctx.Send(state.mapPID, &msg.MapSpawnMeso{
-					// 	Count:        count,
-					// 	SpawnedPoint: state.Position,
-					// 	Owner:        m.Sender,
-					// 	OwnerID:      state.OID,
-					// })
-				} else {
-					count := uint16(1)
-					if drop.Max != 0 && drop.Min != 0 {
-						count = uint16(rand.Uint32N(uint32(drop.Max-drop.Min)+1) + uint32(drop.Min))
-					}
-
-					item, err := entity.NewItem(state.ServerCtx, drop.Item, count)
-					if err != nil {
-						continue
-					}
-					item.BindDrop(&entity.Drop{
-						Object:       &entity.Object{},
-						Owner:        m.CharacterId,
-						SpawnedPoint: state.Position,
-						DropType:     constant.DropTypeOwned,
-						Looting:      false,
-					})
-					dropables = append(dropables, item.(entity.Dropable))
-
-					// ctx.Send(state.mapPID, &msg.MapSpawnItem{
-					// 	Item:    item,
-					// 	Owner:   m.Sender,
-					// 	OwnerID: state.OID,
-					// })
-				}
-			}
-
-			if len(dropables) > 0 {
-				ctx.Send(state.mapPID, &msg.MapSpawnItems{
-					Items:    dropables,
-					Position: state.Position,
-					Owner:    m.Sender,
-					OwnerID:  state.OID,
-				})
-			}
+		dropables := state.dropItems(m)
+		if len(dropables) > 0 {
+			ctx.Send(state.mapPID, &msg.MapSpawnItems{
+				Items:    dropables,
+				Position: state.Position,
+				Owner:    m.Sender,
+				OwnerID:  state.OID,
+			})
 		}
 
 		ctx.Send(m.Sender, &msg.CharacterKillMob{
