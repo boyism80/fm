@@ -5,6 +5,7 @@ import (
 	"math"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/handler"
@@ -26,6 +27,8 @@ func RegisterGameClientCommandHandler(ctx actor.Context, client *GameClientActor
 	handler.RegisterCommandHandler("스크립트", ctx, client, h, onCommandScript)
 	handler.RegisterCommandHandler("몬스터죽이기", ctx, client, h, onCommandMobKill)
 	handler.RegisterCommandHandler("몬스터생성", ctx, client, h, onCommandSpawnMob)
+	handler.RegisterCommandHandler("힌트", ctx, client, h, onCommandHint)
+	handler.RegisterCommandHandler("공지", ctx, client, h, onCommandNotice)
 }
 
 func onCommandCreateItem(ctx actor.Context, client *GameClientActor, params ...string) {
@@ -198,4 +201,67 @@ func onCommandSpawnMob(ctx actor.Context, client *GameClientActor, params ...str
 		MobId:    uint32(mobId),
 		Position: client.ch.Position,
 	})
+}
+
+func onCommandHint(ctx actor.Context, client *GameClientActor, params ...string) {
+	if len(params) < 1 {
+		log.Println("onCommandHint: missing text")
+		return
+	}
+
+	text := params[0]
+	width := 0
+	if len(params) > 1 {
+		if val, err := strconv.Atoi(params[1]); err == nil {
+			width = val
+		}
+	}
+
+	height := 0
+	if len(params) > 2 {
+		if val, err := strconv.Atoi(params[2]); err == nil {
+			height = val
+		}
+	}
+
+	client.Send(&resp.Hint{
+		Text:   text,
+		Width:  uint16(width),
+		Height: uint16(height),
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func onCommandNotice(ctx actor.Context, client *GameClientActor, params ...string) {
+	if len(params) < 1 {
+		log.Println("onCommandNotice: missing text")
+		return
+	}
+	text := params[0]
+
+	var sb strings.Builder
+	sb.WriteString(client.ch.Name)
+	sb.WriteString(" : ")
+	sb.WriteString(text)
+	formattedText := sb.String()
+
+	noticeType := resp.MsgNotice
+	if len(params) > 1 {
+		if val, err := strconv.Atoi(params[1]); err == nil {
+			noticeType = resp.ServerMessageType(val)
+		}
+	}
+
+	megaEar := false
+	if len(params) > 2 {
+		if val, err := strconv.Atoi(params[2]); err == nil {
+			megaEar = val != 0
+		}
+	}
+
+	client.Send(&resp.Notice{
+		Type:    noticeType,
+		Channel: 0,
+		Message: formattedText,
+		MegaEar: megaEar,
+	}, types.SEND_POLICY_ENCRYPT)
 }
