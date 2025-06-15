@@ -51,9 +51,17 @@ type MapSpawnItem struct {
 	OwnerID uint32
 }
 
+type MapSpawnItems struct {
+	Items    []entity.Dropable
+	Position types.Vector2[int16]
+	Owner    *actor.PID
+	OwnerID  uint32
+}
+
 type MapSpawnMeso struct {
 	Count        int32
 	SpawnedPoint types.Vector2[int16]
+	DestPoint    types.Vector2[int16]
 	Owner        *actor.PID
 	OwnerID      uint32
 }

@@ -135,7 +135,9 @@ func (client *GameClientActor) Drop(ctx actor.Context, invenType constant.Invent
 
 	spawned := item.Clone(count)
 	spawned.BindDrop(&entity.Drop{
-		Object:       &entity.Object{},
+		Object: &entity.Object{
+			Position: ch.Position,
+		},
 		Owner:        ch.ID,
 		SpawnedPoint: ch.Position,
 		DropType:     constant.DropTypeFFA,

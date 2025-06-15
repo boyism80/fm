@@ -82,6 +82,7 @@ func NewMapActorProps(ctx actor.Context, serverCtx *context.ServerContext, spec 
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapPIDList)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapBroadcastRange)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnItem)
+		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnItems)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapSpawnMeso)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapItemLoot)
 		handler.RegisterHandler(ctx, actor, actor.handler, onMapRemoveItem)
@@ -229,7 +230,7 @@ func onMapBroadcastRange(ctx actor.Context, state *MapActor, m *msg.MapBroadcast
 func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 	state.sequence++
 	drop := m.Item.GetDrop()
-	drop.Position = state.Spec.DropPoint(drop.SpawnedPoint)
+	drop.Position = state.Spec.DropPoint(drop.Position)
 	drop.ID = state.sequence
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return NewItemActor(ctx,
@@ -243,9 +244,50 @@ func onMapSpawnItem(ctx actor.Context, state *MapActor, m *msg.MapSpawnItem) {
 	ctx.Send(pid, &msg.Spawn{})
 }
 
+func onMapSpawnItems(ctx actor.Context, state *MapActor, m *msg.MapSpawnItems) {
+	spawnPoint := m.Position
+	spacing := int16(15)
+
+	for i, dropped := range m.Items {
+		destPoint := spawnPoint
+		if len(m.Items) > 1 {
+			offset := spacing * int16(i/2+1)
+			if i%2 == 0 {
+				destPoint.X += offset
+			} else {
+				destPoint.X -= offset
+			}
+		}
+
+		if dropped.IsMeso() {
+			onMapSpawnMeso(ctx, state, &msg.MapSpawnMeso{
+				Count:        dropped.GetCount32(),
+				SpawnedPoint: spawnPoint,
+				DestPoint:    destPoint,
+				Owner:        m.Owner,
+				OwnerID:      m.OwnerID,
+			})
+		} else {
+			item, ok := dropped.(entity.Item)
+			if !ok {
+				continue
+			}
+
+			drop := item.GetDrop()
+			drop.SpawnedPoint = spawnPoint
+			drop.Position = destPoint
+			onMapSpawnItem(ctx, state, &msg.MapSpawnItem{
+				Item:    item,
+				Owner:   m.Owner,
+				OwnerID: m.OwnerID,
+			})
+		}
+	}
+}
+
 func onMapSpawnMeso(ctx actor.Context, state *MapActor, m *msg.MapSpawnMeso) {
 	state.sequence++
-	dropPoint := state.Spec.DropPoint(m.SpawnedPoint)
+	dropPoint := state.Spec.DropPoint(m.DestPoint)
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return NewMesoActor(ctx,
 			state.ctx,

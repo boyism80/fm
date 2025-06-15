@@ -192,6 +192,7 @@ func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMes
 	ctx.Send(mapActor, &msg.MapSpawnMeso{
 		Count:        req.Count,
 		SpawnedPoint: ch.Position,
+		DestPoint:    ch.Position,
 		Owner:        ctx.Self(),
 		OwnerID:      ch.ID,
 	})

@@ -12,6 +12,13 @@ import (
 	"github.com/boyism80/fm/game/data"
 )
 
+type Dropable interface {
+	GetDrop() *Drop
+	BindDrop(drop *Drop)
+	GetCount32() int32
+	IsMeso() bool
+}
+
 type Item interface {
 	GetDrop() *Drop
 	GetObject() *Object
@@ -19,6 +26,7 @@ type Item interface {
 	GetInventoryType() constant.InventoryType
 	GetExpiration() time.Time
 	GetCount() uint16
+	GetCount32() int32
 	SetCount(count uint16)
 	Increase(count uint16) uint16
 	Reduce(count uint16) uint16
@@ -102,6 +110,14 @@ func (item *ItemCore) Getcount() uint16 {
 	return item.Count
 }
 
+func (item *ItemCore) GetCount32() int32 {
+	return int32(item.Count)
+}
+
+func (item *ItemCore) IsMeso() bool {
+	return false
+}
+
 func (item *ItemCore) SetCount(count uint16) {
 	item.Count = count
 }
@@ -120,6 +136,22 @@ func (item *ItemCore) GetExpiration() time.Time {
 
 func (item *ItemCore) BindDrop(drop *Drop) {
 	item.Drop = drop
+}
+
+func (meso *Meso) GetCount32() int32 {
+	return meso.Count
+}
+
+func (meso *Meso) GetDrop() *Drop {
+	return meso.Drop
+}
+
+func (meso *Meso) BindDrop(drop *Drop) {
+	meso.Drop = drop
+}
+
+func (meso *Meso) IsMeso() bool {
+	return true
 }
 
 func (item *CashItem) GetInventoryType() constant.InventoryType {

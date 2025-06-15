@@ -174,10 +174,10 @@ func onMobDamaged(ctx actor.Context, state *MobActor, m *msg.MobDamaged) {
 
 	if isDead {
 
+		dropables := []entity.Dropable{}
 		drops, ok := state.ServerCtx.Resources.Drops[state.Spec.ID]
 		if ok {
 			for _, drop := range drops {
-				// drop.Prob 확률로 아이템 드랍
 				if rand.Float32() > drop.Prob {
 					continue
 				}
@@ -189,13 +189,24 @@ func onMobDamaged(ctx actor.Context, state *MobActor, m *msg.MobDamaged) {
 					if count == 0 {
 						continue
 					}
+					meso := &entity.Meso{
+						Count: count,
+						Drop: &entity.Drop{
+							Object:       &entity.Object{},
+							Owner:        m.CharacterId,
+							SpawnedPoint: state.Position,
+							DropType:     constant.DropTypeOwned,
+							Looting:      false,
+						},
+					}
+					dropables = append(dropables, meso)
 
-					ctx.Send(state.mapPID, &msg.MapSpawnMeso{
-						Count:        count,
-						SpawnedPoint: state.Position,
-						Owner:        m.Sender,
-						OwnerID:      state.OID,
-					})
+					// ctx.Send(state.mapPID, &msg.MapSpawnMeso{
+					// 	Count:        count,
+					// 	SpawnedPoint: state.Position,
+					// 	Owner:        m.Sender,
+					// 	OwnerID:      state.OID,
+					// })
 				} else {
 					count := uint16(1)
 					if drop.Max != 0 && drop.Min != 0 {
@@ -213,12 +224,23 @@ func onMobDamaged(ctx actor.Context, state *MobActor, m *msg.MobDamaged) {
 						DropType:     constant.DropTypeOwned,
 						Looting:      false,
 					})
-					ctx.Send(state.mapPID, &msg.MapSpawnItem{
-						Item:    item,
-						Owner:   m.Sender,
-						OwnerID: state.OID,
-					})
+					dropables = append(dropables, item.(entity.Dropable))
+
+					// ctx.Send(state.mapPID, &msg.MapSpawnItem{
+					// 	Item:    item,
+					// 	Owner:   m.Sender,
+					// 	OwnerID: state.OID,
+					// })
 				}
+			}
+
+			if len(dropables) > 0 {
+				ctx.Send(state.mapPID, &msg.MapSpawnItems{
+					Items:    dropables,
+					Position: state.Position,
+					Owner:    m.Sender,
+					OwnerID:  state.OID,
+				})
 			}
 		}
 
