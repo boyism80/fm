@@ -134,7 +134,7 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0xFF)
 
-	weapon := ch.Equipments[constant.EquipmentPartsWeapon]
+	weapon := ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON]
 	if weapon != nil {
 		writer.WriteU32(weapon.Spec.GetID())
 	} else {
@@ -194,11 +194,11 @@ func (ch *Character) Serialize(writer *stream.StreamWriter) {
 func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.Write32(ch.Meso)
 
-	writer.WriteU8(ch.Inventory[constant.InventoryTypeEquipment].SlotLimit)
-	writer.WriteU8(ch.Inventory[constant.InventoryTypeConsume].SlotLimit)
-	writer.WriteU8(ch.Inventory[constant.InventoryTypeInstallation].SlotLimit)
-	writer.WriteU8(ch.Inventory[constant.InventoryTypeEtc].SlotLimit)
-	writer.WriteU8(ch.Inventory[constant.InventoryTypeCash].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.INVENTORY_TYPE_CONSUME].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.INVENTORY_TYPE_INSTALLATION].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.INVENTORY_TYPE_ETC].SlotLimit)
+	writer.WriteU8(ch.Inventory[constant.INVENTORY_TYPE_CASH].SlotLimit)
 
 	for parts, equipment := range ch.Equipments {
 		if equipment != nil && (parts <= 0 && parts > -100) {
@@ -214,11 +214,11 @@ func (ch *Character) SerializeInventory(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0)
 
-	ch.Inventory[constant.InventoryTypeEquipment].Serialize(writer)
-	ch.Inventory[constant.InventoryTypeConsume].Serialize(writer)
-	ch.Inventory[constant.InventoryTypeInstallation].Serialize(writer)
-	ch.Inventory[constant.InventoryTypeEtc].Serialize(writer)
-	ch.Inventory[constant.InventoryTypeCash].Serialize(writer)
+	ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Serialize(writer)
+	ch.Inventory[constant.INVENTORY_TYPE_CONSUME].Serialize(writer)
+	ch.Inventory[constant.INVENTORY_TYPE_INSTALLATION].Serialize(writer)
+	ch.Inventory[constant.INVENTORY_TYPE_ETC].Serialize(writer)
+	ch.Inventory[constant.INVENTORY_TYPE_CASH].Serialize(writer)
 }
 
 func (ch *Character) SerializeSkills(writer *stream.StreamWriter) {

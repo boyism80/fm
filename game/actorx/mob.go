@@ -66,7 +66,7 @@ func (state *MobActor) dropItems(m *msg.MobDamaged) []entity.Dropable {
 						Object:       &entity.Object{},
 						Owner:        m.CharacterId,
 						SpawnedPoint: state.Position,
-						DropType:     constant.DropTypeOwned,
+						DropType:     constant.DROP_TYPE_OWNED,
 						Looting:      false,
 					},
 				}
@@ -85,7 +85,7 @@ func (state *MobActor) dropItems(m *msg.MobDamaged) []entity.Dropable {
 					Object:       &entity.Object{},
 					Owner:        m.CharacterId,
 					SpawnedPoint: state.Position,
-					DropType:     constant.DropTypeOwned,
+					DropType:     constant.DROP_TYPE_OWNED,
 					Looting:      false,
 				})
 				dropables = append(dropables, item.(entity.Dropable))
@@ -104,7 +104,7 @@ func onMobSpawn(ctx actor.Context, state *MobActor, m *msg.Spawn) {
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.SpawnMob{
 				Mob:       &state.Mob,
-				SpawnType: constant.MobSpawnTypeAnimate,
+				SpawnType: constant.MOB_SPAWN_TYPE_ANIMATE,
 				Link:      0,
 			},
 			Policy: types.SEND_POLICY_ENCRYPT,
@@ -121,7 +121,7 @@ func onMobPlayerWarped(ctx actor.Context, state *MobActor, m *msg.Warped) {
 	ctx.Send(m.Sender, &common_msg.SendProtocol{
 		Protocol: &resp.SpawnMob{
 			Mob:       &state.Mob,
-			SpawnType: constant.MobSpawnTypeNone,
+			SpawnType: constant.MOB_SPAWN_TYPE_NONE,
 			Link:      0,
 		},
 		Policy: types.SEND_POLICY_ENCRYPT,
@@ -240,7 +240,7 @@ func onMobDamaged(ctx actor.Context, state *MobActor, m *msg.MobDamaged) {
 		ctx.Send(state.mapPID, &msg.MapDieMob{
 			Sender:        ctx.Self(),
 			OID:           state.OID,
-			AnimationType: constant.MobDieAnimationTypeFadeOut,
+			AnimationType: constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT,
 			Position:      state.Position,
 		})
 	}

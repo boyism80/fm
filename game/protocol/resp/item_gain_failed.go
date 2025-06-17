@@ -7,8 +7,8 @@ import (
 type ItemGainFailedType uint8
 
 const (
-	ItemGainFailedTypeFull  ItemGainFailedType = 0xFF
-	ItemGainFailedTypeError ItemGainFailedType = 0xFE
+	ITEM_GAIN_FAILED_TYPE_FULL  ItemGainFailedType = 0xFF
+	ITEM_GAIN_FAILED_TYPE_ERROR ItemGainFailedType = 0xFE
 )
 
 type ItemGainFailed struct {

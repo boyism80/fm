@@ -1,3 +1,5 @@
+// Package data provides MapleStory game data specifications and types.
+// This file contains resource loading and management functionality.
 package data
 
 import (
@@ -11,19 +13,22 @@ import (
 	"sync"
 )
 
+// node represents an XML node from MapleStory WZ files.
 type node struct {
 	Name     string `xml:"name,attr"`
 	Value    string `xml:"value,attr"`
 	Children []node `xml:",any"`
 }
 
+// Resources contains all loaded MapleStory game data.
 type Resources struct {
-	Maps     map[uint32]*MapSpec
-	Monsters map[uint32]*MobSpec
-	Items    map[uint32]ItemSpec
-	Drops    map[uint32][]DropSpec
+	Maps     map[uint32]*MapSpec   // All map specifications
+	Monsters map[uint32]*MobSpec   // All monster specifications
+	Items    map[uint32]ItemSpec   // All item specifications
+	Drops    map[uint32][]DropSpec // Monster drop tables
 }
 
+// find searches for a child node by path (supports ":" separated paths).
 func (node *node) find(name string) *node {
 
 	parts := strings.Split(name, ":")
@@ -46,6 +51,8 @@ func (node *node) find(name string) *node {
 	return current
 }
 
+// loadResourceFiles loads multiple XML files concurrently using worker goroutines.
+// Generic function that processes files and calls callback with progress updates.
 func loadResourceFiles[T any](root string, workerCount int, action func(path string) (result *T, err error), callback func(percent float32, value *T)) error {
 	var allFiles []string
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
@@ -103,6 +110,8 @@ func loadResourceFiles[T any](root string, workerCount int, action func(path str
 	return nil
 }
 
+// NewResources loads all MapleStory game data from WZ files.
+// Returns a fully populated Resources struct with maps, monsters, items, and drops.
 func NewResources() *Resources {
 
 	workerCount := runtime.NumCPU() * 2

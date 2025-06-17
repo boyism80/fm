@@ -82,7 +82,7 @@ func (l *CharacterListener) OnChat(message string, highlight bool, dontRecordHis
 func (l *CharacterListener) OnMesoChanged(meso int32) {
 	l.Actor.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.StatMeso: meso,
+			constant.STAT_MESO: meso,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 }

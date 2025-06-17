@@ -155,7 +155,7 @@ func (meso *Meso) IsMeso() bool {
 }
 
 func (item *CashItem) GetInventoryType() constant.InventoryType {
-	return constant.InventoryTypeCash
+	return constant.INVENTORY_TYPE_CASH
 }
 
 func (item *CashItem) GetCount() uint16 {
@@ -192,7 +192,7 @@ func (item *CashItem) Clone(count uint16) Item {
 
 func (item *CashItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
-	writer.WriteU8(uint8(constant.ItemTypeEtc))
+	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
 	writer.WriteU32(item.Spec.GetID())
 
 	hasUID := item.UniqueId > 0
@@ -208,7 +208,7 @@ func (item *CashItem) Serialize(writer *stream.StreamWriter, trade bool, slot in
 }
 
 func (item *Installation) GetInventoryType() constant.InventoryType {
-	return constant.InventoryTypeInstallation
+	return constant.INVENTORY_TYPE_INSTALLATION
 }
 
 func (item *Installation) GetCount() uint16 {
@@ -239,7 +239,7 @@ func (item *Installation) Clone(count uint16) Item {
 
 func (item *Installation) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
-	writer.WriteU8(uint8(constant.ItemTypeEtc))
+	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
 	writer.WriteU32(item.Spec.GetID())
 
 	hasUID := item.UniqueId > 0
@@ -255,7 +255,7 @@ func (item *Installation) Serialize(writer *stream.StreamWriter, trade bool, slo
 }
 
 func (item *GeneralItem) GetInventoryType() constant.InventoryType {
-	return constant.InventoryTypeEtc
+	return constant.INVENTORY_TYPE_ETC
 }
 
 func (item *GeneralItem) GetCount() uint16 {
@@ -292,7 +292,7 @@ func (item *GeneralItem) Clone(count uint16) Item {
 
 func (item *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
-	writer.WriteU8(uint8(constant.ItemTypeEtc))
+	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
 	writer.WriteU32(item.Spec.GetID())
 
 	hasUID := item.UniqueId > 0
@@ -308,7 +308,7 @@ func (item *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot
 }
 
 func (item *Equipment) GetInventoryType() constant.InventoryType {
-	return constant.InventoryTypeEquipment
+	return constant.INVENTORY_TYPE_EQUIPMENT
 }
 
 func (item *Equipment) GetCount() uint16 {
@@ -358,7 +358,7 @@ func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, s
 		writer.WriteU8(uint8(slot))
 	}
 
-	writer.WriteU8(uint8(constant.ItemTypeEquipment))
+	writer.WriteU8(uint8(constant.ITEM_TYPE_EQUIPMENT))
 	writer.WriteU32(spec.ID)
 
 	hasUID := equipment.UniqueId > 0
@@ -403,7 +403,7 @@ func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, s
 }
 
 func (item *Consume) GetInventoryType() constant.InventoryType {
-	return constant.InventoryTypeConsume
+	return constant.INVENTORY_TYPE_CONSUME
 }
 
 func (item *Consume) GetCount() uint16 {
@@ -440,7 +440,7 @@ func (item *Consume) Clone(count uint16) Item {
 
 func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
-	writer.WriteU8(uint8(constant.ItemTypeEtc))
+	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
 	writer.WriteU32(item.Spec.GetID())
 
 	hasUID := item.UniqueId > 0
@@ -469,7 +469,7 @@ func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int
 }
 
 func (item *Pet) GetInventoryType() constant.InventoryType {
-	return constant.InventoryTypeCash
+	return constant.INVENTORY_TYPE_CASH
 }
 
 func (item *Pet) GetCount() uint16 {

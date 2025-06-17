@@ -50,11 +50,11 @@ func (state *MesoActor) Receive(context actor.Context) {
 
 func onMesoStarted(ctx actor.Context, state *MesoActor, m *actor.Started) {
 	state.scheduler.SendOnce(30*time.Second, ctx.Self(), &msg.ItemDropTypeChanged{
-		Mode: constant.DropTypeFFA,
+		Mode: constant.DROP_TYPE_FFA,
 	})
 
 	state.scheduler.SendOnce(2*time.Minute, ctx.Self(), &msg.ItemDestroy{
-		Animation: constant.DropItemAnimationTypeDisappear,
+		Animation: constant.DROP_ITEM_ANIMATION_TYPE_DISAPPEAR,
 	})
 }
 
@@ -68,7 +68,7 @@ func onMesoSpawn(ctx actor.Context, state *MesoActor, m *msg.Spawn) {
 		Message: &common_msg.SendProtocol{
 			Protocol: &resp.SpawnMeso{
 				ID:           drop.ID,
-				Animation:    constant.DropItemAnimationTypeLooting,
+				Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
 				DropType:     drop.DropType,
 				Count:        state.Count,
 				OwnerID:      drop.Owner,
@@ -90,7 +90,7 @@ func onMesoLooting(ctx actor.Context, state *MesoActor, m *msg.ItemLooting) {
 		return
 	}
 
-	if drop.DropType == constant.DropTypeOwned && drop.Owner != m.CharacterId {
+	if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != m.CharacterId {
 		ctx.Send(m.Actor, &msg.CharacterLootFailed{
 			OID: drop.ID,
 		})
@@ -115,7 +115,7 @@ func onMesoLooted(ctx actor.Context, state *MesoActor, m *msg.ItemLooted) {
 				Actor:       ctx.Self(),
 				OID:         drop.ID,
 				CharacterId: m.CharacterId,
-				Mode:        resp.RemoveItemTypeAnimated,
+				Mode:        resp.REMOVE_ITEM_TYPE_ANIMATED,
 				Position:    drop.Position,
 			})
 		}
@@ -131,7 +131,7 @@ func onMesoDestroy(ctx actor.Context, state *MesoActor, m *msg.ItemDestroy) {
 	ctx.Send(state.mapPID, &msg.MapRemoveItem{
 		Actor:    ctx.Self(),
 		OID:      drop.ID,
-		Mode:     resp.RemoveItemTypeExpired,
+		Mode:     resp.REMOVE_ITEM_TYPE_EXPIRED,
 		Position: drop.Position,
 	})
 }

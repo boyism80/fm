@@ -175,7 +175,7 @@ func onGameClientItemLooting(ctx actor.Context, client *GameClientActor, m *msg.
 	gain := uint16(0)
 	if !inven.IsFree(spec, m.Item.GetCount()) {
 		client.Send(&resp.ItemGainFailed{
-			Mode: resp.ItemGainFailedTypeFull,
+			Mode: resp.ITEM_GAIN_FAILED_TYPE_FULL,
 		}, types.SEND_POLICY_ENCRYPT)
 
 		client.Send(&resp.UpdateStats{
@@ -244,7 +244,7 @@ func onGameClientMesoLooting(ctx actor.Context, client *GameClientActor, m *msg.
 	cap := math.MaxInt32 - client.ch.Meso
 	if m.Meso > cap {
 		client.Send(&resp.ItemGainFailed{
-			Mode: resp.ItemGainFailedTypeFull,
+			Mode: resp.ITEM_GAIN_FAILED_TYPE_FULL,
 		}, types.SEND_POLICY_ENCRYPT)
 
 		client.Send(&resp.UpdateStats{
@@ -262,7 +262,7 @@ func onGameClientMesoLooting(ctx actor.Context, client *GameClientActor, m *msg.
 	client.ch.Meso += m.Meso
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.StatMeso: client.ch.Meso,
+			constant.STAT_MESO: client.ch.Meso,
 		},
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -395,7 +395,7 @@ func onGameClientBuiltinRemoveMeso(ctx actor.Context, client *GameClientActor, m
 	client.ch.Meso -= m.Count
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.StatMeso: client.ch.Meso,
+			constant.STAT_MESO: client.ch.Meso,
 		},
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -412,7 +412,7 @@ func onGameClientBuiltinAddMeso(ctx actor.Context, client *GameClientActor, m *m
 	client.ch.Meso += m.Count
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.StatMeso: client.ch.Meso,
+			constant.STAT_MESO: client.ch.Meso,
 		},
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -428,7 +428,7 @@ func onGameClientKillMob(ctx actor.Context, client *GameClientActor, m *msg.Char
 	client.ch.Exp += spec.EXP
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.StatExp: int32(client.ch.Exp),
+			constant.STAT_EXP: int32(client.ch.Exp),
 		},
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)

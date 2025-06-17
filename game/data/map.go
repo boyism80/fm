@@ -1,3 +1,5 @@
+// Package data provides MapleStory game data specifications and types.
+// This file contains map-related data structures and utilities.
 package data
 
 import (
@@ -6,49 +8,55 @@ import (
 	"github.com/boyism80/fm/common/types"
 )
 
+// Portal represents a map transition point in MapleStory.
 type Portal struct {
-	ID          uint8
-	Name        string
-	TargetMapId int32
-	Target      string
-	Position    types.Point[int16]
-	ScriptName  string
-	Type        uint8
+	ID          uint8              // Portal identifier
+	Name        string             // Portal name for targeting
+	TargetMapId int32              // Destination map ID
+	Target      string             // Target portal name
+	Position    types.Point[int16] // Portal position in map
+	ScriptName  string             // Lua script for portal logic
+	Type        uint8              // Portal type (normal, script, etc.)
 }
 
+// NpcSpawnSpec represents an NPC spawn point on a map.
 type NpcSpawnSpec struct {
 	*SpawnSpec
 }
 
+// MobSpawnSpec represents a monster spawn point on a map.
 type MobSpawnSpec struct {
 	*SpawnSpec
 }
 
+// MapSpec contains all data for a MapleStory map.
 type MapSpec struct {
-	ID           uint32
-	Name         string
-	Version      int
-	Cloud        int
-	ReturnMapId  int
-	ForcedReturn int
-	FieldLimit   int
-	VRTop        int
-	VRLeft       int
-	VRBottom     int
-	VRRight      int
-	HideMinimap  bool
-	IsTown       bool
-	MobRate      float32
-	BGM          string
-	MapMark      string
-	MapDesc      string
-	MiniMapOnOff bool
-	Portals      map[uint8]Portal
-	NpcSpawns    map[uint32]NpcSpawnSpec
-	MobSpawns    map[uint32]MobSpawnSpec
-	Footholds    *types.QuadTreeNode[int16, Foothold]
+	ID           uint32                               // Map identifier
+	Name         string                               // Map display name
+	Version      int                                  // Map version
+	Cloud        int                                  // Cloud effect type
+	ReturnMapId  int                                  // Return map for teleport
+	ForcedReturn int                                  // Forced return map
+	FieldLimit   int                                  // Field restrictions
+	VRTop        int                                  // View rectangle top
+	VRLeft       int                                  // View rectangle left
+	VRBottom     int                                  // View rectangle bottom
+	VRRight      int                                  // View rectangle right
+	HideMinimap  bool                                 // Hide minimap flag
+	IsTown       bool                                 // Town map flag
+	MobRate      float32                              // Monster spawn rate
+	BGM          string                               // Background music
+	MapMark      string                               // Map mark identifier
+	MapDesc      string                               // Map description
+	MiniMapOnOff bool                                 // Minimap toggle
+	Portals      map[uint8]Portal                     // Map portals
+	NpcSpawns    map[uint32]NpcSpawnSpec              // NPC spawn points
+	MobSpawns    map[uint32]MobSpawnSpec              // Monster spawn points
+	Footholds    *types.QuadTreeNode[int16, Foothold] // Foothold collision data
 }
 
+// FootholdPoint calculates the foothold position for a given point.
+// Returns the Y coordinate where a character should stand.
 func (ms *MapSpec) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 	foothold, ok := ms.Footholds.Find(point)
 	if !ok {
@@ -76,6 +84,8 @@ func (ms *MapSpec) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 	return &pt
 }
 
+// DropPoint calculates a valid drop position for items.
+// Returns the foothold position below the initial point.
 func (ms *MapSpec) DropPoint(initial types.Point[int16]) (types.Point[int16], bool) {
 	highest := types.Point[int16]{X: initial.X, Y: initial.Y - int16(100)}
 	if result := ms.FootholdPoint(highest); result != nil {
@@ -84,6 +94,7 @@ func (ms *MapSpec) DropPoint(initial types.Point[int16]) (types.Point[int16], bo
 	return initial, false
 }
 
+// FindPortal searches for a portal by name.
 func (spec *MapSpec) FindPortal(name string) (*Portal, bool) {
 	for _, portal := range spec.Portals {
 		if portal.Name == name {

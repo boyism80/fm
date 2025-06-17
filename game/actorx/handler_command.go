@@ -80,7 +80,7 @@ func onCommandClearMeso(ctx actor.Context, client *GameClientActor, params ...st
 	client.ch.Meso = 0
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.StatMeso: client.ch.Meso,
+			constant.STAT_MESO: client.ch.Meso,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -101,7 +101,7 @@ func onCommandGainMeso(ctx actor.Context, client *GameClientActor, params ...str
 	client.ch.Meso += meso
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.StatMeso: client.ch.Meso,
+			constant.STAT_MESO: client.ch.Meso,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -110,7 +110,7 @@ func onCommandFullMeso(ctx actor.Context, client *GameClientActor, params ...str
 	client.ch.Meso = math.MaxInt32
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.StatMeso: client.ch.Meso,
+			constant.STAT_MESO: client.ch.Meso,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -161,7 +161,7 @@ func onCommandScript(ctx actor.Context, client *GameClientActor, params ...strin
 }
 
 func onCommandMobKill(ctx actor.Context, client *GameClientActor, params ...string) {
-	animationType := constant.MobDieAnimationTypeFadeOut
+	animationType := constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT
 	if len(params) > 0 {
 		v, err := strconv.Atoi(params[0])
 		if err != nil {
@@ -246,7 +246,7 @@ func onCommandNotice(ctx actor.Context, client *GameClientActor, params ...strin
 	sb.WriteString(text)
 	formattedText := sb.String()
 
-	noticeType := resp.MsgNotice
+	noticeType := resp.MSG_NOTICE
 	if len(params) > 1 {
 		if val, err := strconv.Atoi(params[1]); err == nil {
 			noticeType = resp.ServerMessageType(val)

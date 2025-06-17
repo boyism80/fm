@@ -1,3 +1,5 @@
+// Package data provides MapleStory game data specifications and types.
+// This file contains XML data loading functions for various game resources.
 package data
 
 import (
@@ -18,6 +20,7 @@ import (
 var mutex sync.Mutex = sync.Mutex{}
 var visit map[string]bool = map[string]bool{}
 
+// loadCashItems loads cash shop item specifications from XML file.
 func loadCashItems(path string) (*[]*CashItemSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -102,6 +105,7 @@ func loadCashItems(path string) (*[]*CashItemSpec, error) {
 	return &specs, nil
 }
 
+// loadConsumes loads consumable item specifications from XML file.
 func loadConsumes(path string) (*[]*ConsumeSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -309,6 +313,7 @@ func loadConsumes(path string) (*[]*ConsumeSpec, error) {
 	return &specs, nil
 }
 
+// loadWeapons loads weapon and equipment specifications from XML file.
 func loadWeapons(path string) (*EquipmentSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -643,6 +648,7 @@ func loadWeapons(path string) (*EquipmentSpec, error) {
 	return &spec, nil
 }
 
+// loadGeneralItems loads general item specifications from XML file.
 func loadGeneralItems(path string) (*[]*GeneralItemSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -741,6 +747,7 @@ func loadGeneralItems(path string) (*[]*GeneralItemSpec, error) {
 	return &specs, nil
 }
 
+// loadInstallations loads installation item specifications from XML file.
 func loadInstallations(path string) (*[]*InstallationSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -819,6 +826,7 @@ func loadInstallations(path string) (*[]*InstallationSpec, error) {
 	return &specs, nil
 }
 
+// loadMaps loads map specifications from XML file.
 func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1130,6 +1138,7 @@ func loadMaps(path string, mapId uint32) (*MapSpec, error) {
 	return &spec, nil
 }
 
+// loadPets loads pet specifications from XML file.
 func loadPets(path string) (*PetSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1192,6 +1201,7 @@ func loadPets(path string) (*PetSpec, error) {
 	return spec, nil
 }
 
+// loadSpecialItems loads special item specifications from XML file.
 func loadSpecialItems(path string) (*[]*SpecialItemSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1244,6 +1254,7 @@ func loadSpecialItems(path string) (*[]*SpecialItemSpec, error) {
 	return &specs, nil
 }
 
+// loadStringNodeRecursive recursively loads string specifications from XML nodes.
 func loadStringNodeRecursive(root *node) []*StringSpec {
 
 	templates := []*StringSpec{}
@@ -1269,6 +1280,7 @@ func loadStringNodeRecursive(root *node) []*StringSpec {
 	return templates
 }
 
+// loadStringResources loads string resources from XML file.
 func loadStringResources(path string) (*[]*StringSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1285,6 +1297,7 @@ func loadStringResources(path string) (*[]*StringSpec, error) {
 	return &templates, nil
 }
 
+// loadMob loads monster specifications from XML file.
 func loadMob(path string) (*MobSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1458,6 +1471,7 @@ func loadMob(path string) (*MobSpec, error) {
 	return spec, nil
 }
 
+// loadDrops loads monster drop tables from XML file.
 func loadDrops(path string) (*map[uint32][]DropSpec, error) {
 	file, err := os.Open(path)
 	if err != nil {

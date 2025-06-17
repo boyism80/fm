@@ -22,10 +22,10 @@ type Damaged struct {
 }
 
 const (
-	DamageTypeMist      DamageType = -4
-	DamageTypeEnv       DamageType = -3
-	DamageTypeMapDebuff DamageType = -2
-	DamageTypeCollide   DamageType = -1
+	DAMAGE_TYPE_MIST       DamageType = -4
+	DAMAGE_TYPE_ENV        DamageType = -3
+	DAMAGE_TYPE_MAP_DEBUFF DamageType = -2
+	DAMAGE_TYPE_COLLIDE    DamageType = -1
 )
 
 func (p *Damaged) Serialize(writer *stream.StreamWriter) error {
@@ -50,7 +50,7 @@ func (p *Damaged) Deserialize(reader *stream.StreamReader) error {
 	}
 
 	switch p.Type {
-	case DamageTypeMapDebuff:
+	case DAMAGE_TYPE_MAP_DEBUFF:
 		if p.Level, err = reader.ReadU8(); err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ func (p *Damaged) Deserialize(reader *stream.StreamReader) error {
 			return err
 		}
 
-	case DamageTypeEnv, DamageTypeMist:
+	case DAMAGE_TYPE_ENV, DAMAGE_TYPE_MIST:
 	default:
 		if p.MobID, err = reader.ReadU32(); err != nil {
 			return err

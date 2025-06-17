@@ -30,7 +30,7 @@ func (p *SpawnItem) Serialize(writer *stream.StreamWriter) error {
 	writer.Write16(position.X)
 	writer.Write16(position.Y)
 	writer.WriteU32(0)
-	if p.Animation != constant.DropItemAnimationTypeNone {
+	if p.Animation != constant.DROP_ITEM_ANIMATION_TYPE_NONE {
 		writer.Write16(p.SpawnedPoint.X)
 		writer.Write16(p.SpawnedPoint.Y)
 		writer.WriteU16(0)

@@ -186,11 +186,11 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		Random3: stream.NewRandomStream(),
 
 		Inventory: map[constant.InventoryType]*Inventory{
-			constant.InventoryTypeEquipment:    NewInventory(constant.InventoryTypeEquipment),
-			constant.InventoryTypeConsume:      NewInventory(constant.InventoryTypeConsume),
-			constant.InventoryTypeInstallation: NewInventory(constant.InventoryTypeInstallation),
-			constant.InventoryTypeEtc:          NewInventory(constant.InventoryTypeEtc),
-			constant.InventoryTypeCash:         NewInventory(constant.InventoryTypeCash),
+			constant.INVENTORY_TYPE_EQUIPMENT:    NewInventory(constant.INVENTORY_TYPE_EQUIPMENT),
+			constant.INVENTORY_TYPE_CONSUME:      NewInventory(constant.INVENTORY_TYPE_CONSUME),
+			constant.INVENTORY_TYPE_INSTALLATION: NewInventory(constant.INVENTORY_TYPE_INSTALLATION),
+			constant.INVENTORY_TYPE_ETC:          NewInventory(constant.INVENTORY_TYPE_ETC),
+			constant.INVENTORY_TYPE_CASH:         NewInventory(constant.INVENTORY_TYPE_CASH),
 		},
 		Rings: RingContainer{
 			Left:  []*Ring{},
@@ -198,8 +198,8 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			Mid:   []*Ring{},
 		},
 		Equipments: map[constant.EquipmentPartsType]*Equipment{
-			constant.EquipmentPartsWeapon: nil,
-			constant.EquipmentPartsShield: nil,
+			constant.EQUIPMENT_PARTS_WEAPON: nil,
+			constant.EQUIPMENT_PARTS_SHIELD: nil,
 		},
 
 		RegRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
@@ -207,7 +207,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 	}
 
 	if ctx != nil {
-		ch.Equipments[constant.EquipmentPartsWeapon] = &Equipment{
+		ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = &Equipment{
 			ItemCore: &ItemCore{
 				Spec:       ctx.Resources.Items[1302000],
 				Count:      1,
@@ -221,7 +221,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		if err != nil {
 			fmt.Println(err)
 		}
-		ch.Inventory[constant.InventoryTypeCash].Items[1] = &Pet{
+		ch.Inventory[constant.INVENTORY_TYPE_CASH].Items[1] = &Pet{
 			ItemCore: &ItemCore{
 				Spec:       ctx.Resources.Items[5000007],
 				Count:      1,
@@ -237,7 +237,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			Expiration:  petExpiration,
 		}
 
-		ch.Inventory[constant.InventoryTypeEtc].Items[1] = &GeneralItem{
+		ch.Inventory[constant.INVENTORY_TYPE_ETC].Items[1] = &GeneralItem{
 			ItemCore: &ItemCore{
 				Spec:       ctx.Resources.Items[4000001],
 				Count:      100,
@@ -245,10 +245,10 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			},
 		}
 
-		ch.Inventory[constant.InventoryTypeEquipment].Items[1], err = NewItem(ctx, 1060002, 1)
-		ch.Inventory[constant.InventoryTypeEquipment].Items[2], err = NewItem(ctx, 1060006, 1)
-		ch.Inventory[constant.InventoryTypeEquipment].Items[3], err = NewItem(ctx, 1040002, 1)
-		ch.Inventory[constant.InventoryTypeEquipment].Items[4], err = NewItem(ctx, 1040010, 1)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1], err = NewItem(ctx, 1060002, 1)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2], err = NewItem(ctx, 1060006, 1)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3], err = NewItem(ctx, 1040002, 1)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(ctx, 1040010, 1)
 	}
 
 	return ch

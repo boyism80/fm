@@ -140,7 +140,7 @@ func (client *GameClientActor) Drop(ctx actor.Context, invenType constant.Invent
 		},
 		Owner:        ch.ID,
 		SpawnedPoint: ch.Position,
-		DropType:     constant.DropTypeFFA,
+		DropType:     constant.DROP_TYPE_FFA,
 		Looting:      false,
 	})
 
@@ -215,7 +215,7 @@ func (client *GameClientActor) Unequip(ctx actor.Context, parts constant.Equipme
 		return
 	}
 
-	inven := ch.Inventory[constant.InventoryTypeEquipment]
+	inven := ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
 	if inven.Items[slot] != nil {
 		return
 	}
@@ -228,10 +228,10 @@ func (client *GameClientActor) Unequip(ctx actor.Context, parts constant.Equipme
 	inven.Items[slot] = ch.Equipments[parts]
 	delete(ch.Equipments, parts)
 	client.Send(&resp.SwapInventorySlot{
-		InventoryType:   constant.InventoryTypeEquipment,
+		InventoryType:   constant.INVENTORY_TYPE_EQUIPMENT,
 		Source:          int16(parts),
 		Dest:            slot,
-		EquipmentAction: resp.EquipmentActionTypeOff,
+		EquipmentAction: resp.EQUIPMENT_ACTION_TYPE_OFF,
 	}, types.SEND_POLICY_ENCRYPT)
 
 	ctx.Send(mapActor, &msg.MapBroadcast{
@@ -249,7 +249,7 @@ func (client *GameClientActor) Unequip(ctx actor.Context, parts constant.Equipme
 
 func (client *GameClientActor) Equip(ctx actor.Context, parts constant.EquipmentPartsType, slot int16) {
 	ch := client.ch
-	inven := ch.Inventory[constant.InventoryTypeEquipment]
+	inven := ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
 	if inven.Items[slot] == nil {
 		return
 	}
@@ -265,33 +265,33 @@ func (client *GameClientActor) Equip(ctx actor.Context, parts constant.Equipment
 	}
 	old, swap := ch.Equipments[parts]
 	switch parts {
-	case constant.EquipmentPartsTop:
+	case constant.EQUIPMENT_PARTS_TOP:
 		if new.IsOverall() {
-			_, isWearPants := ch.Equipments[constant.EquipmentPartsPants]
+			_, isWearPants := ch.Equipments[constant.EQUIPMENT_PARTS_PANTS]
 			storageSlot, isFree := inven.NextSlot()
 			if isWearPants {
 				if !isFree {
 					client.Send(&resp.ItemGainFailed{
-						Mode: resp.ItemGainFailedTypeFull,
+						Mode: resp.ITEM_GAIN_FAILED_TYPE_FULL,
 					}, types.SEND_POLICY_ENCRYPT)
 					return
 				}
-				client.Unequip(ctx, constant.EquipmentPartsPants, int16(storageSlot))
+				client.Unequip(ctx, constant.EQUIPMENT_PARTS_PANTS, int16(storageSlot))
 			}
 		}
 
-	case constant.EquipmentPartsPants:
-		top, isWearTop := ch.Equipments[constant.EquipmentPartsTop]
+	case constant.EQUIPMENT_PARTS_PANTS:
+		top, isWearTop := ch.Equipments[constant.EQUIPMENT_PARTS_TOP]
 		if isWearTop && top.IsOverall() {
 			storageSlot, isFree := inven.NextSlot()
 			if swap && !isFree {
 				client.Send(&resp.ItemGainFailed{
-					Mode: resp.ItemGainFailedTypeFull,
+					Mode: resp.ITEM_GAIN_FAILED_TYPE_FULL,
 				}, types.SEND_POLICY_ENCRYPT)
 				return
 			}
 
-			client.Unequip(ctx, constant.EquipmentPartsTop, int16(storageSlot))
+			client.Unequip(ctx, constant.EQUIPMENT_PARTS_TOP, int16(storageSlot))
 		}
 	}
 	ch.Equipments[parts], inven.Items[slot] = new, old
@@ -300,10 +300,10 @@ func (client *GameClientActor) Equip(ctx actor.Context, parts constant.Equipment
 	}
 
 	client.Send(&resp.SwapInventorySlot{
-		InventoryType:   constant.InventoryTypeEquipment,
+		InventoryType:   constant.INVENTORY_TYPE_EQUIPMENT,
 		Source:          slot,
 		Dest:            int16(parts),
-		EquipmentAction: resp.EquipmentActionTypeOn,
+		EquipmentAction: resp.EQUIPMENT_ACTION_TYPE_ON,
 	}, types.SEND_POLICY_ENCRYPT)
 
 	ctx.Send(mapActor, &msg.MapBroadcast{

@@ -10,22 +10,22 @@ import (
 type ServerMessageType uint8
 
 const (
-	MsgNotice              ServerMessageType = 0  // [Notice]
-	MsgPopup               ServerMessageType = 1  // Popup
-	MsgMegaphone           ServerMessageType = 2  // Megaphone
-	MsgSuperMegaphone      ServerMessageType = 3  // Super Megaphone
-	MsgScrollingTop        ServerMessageType = 4  // Scrolling message at top
-	MsgPinkText            ServerMessageType = 5  // Pink Text
-	MsgLightBlueText       ServerMessageType = 6  // Lightblue Text
-	MsgItemMegaphone       ServerMessageType = 8  // Item megaphone
-	MsgHeartMegaphone      ServerMessageType = 9  // Heart megaphone
-	MsgSkullSuperMegaphone ServerMessageType = 10 // Skull Super megaphone
-	MsgGreenMegaphone      ServerMessageType = 11 // Green megaphone message
-	MsgThreeMegaphoneLines ServerMessageType = 12 // Three-line megaphone text
-	MsgEOF                 ServerMessageType = 13 // End of file
-	MsgAni                 ServerMessageType = 14 // Ani msg
-	MsgRedGachaponBox      ServerMessageType = 15 // Red Gachapon box
-	MsgBlueNotice          ServerMessageType = 18 // Blue Notice
+	MSG_NOTICE                ServerMessageType = 0  // [Notice]
+	MSG_POPUP                 ServerMessageType = 1  // Popup
+	MSG_MEGAPHONE             ServerMessageType = 2  // Megaphone
+	MSG_SUPER_MEGAPHONE       ServerMessageType = 3  // Super Megaphone
+	MSG_SCROLLING_TOP         ServerMessageType = 4  // Scrolling message at top
+	MSG_PINK_TEXT             ServerMessageType = 5  // Pink Text
+	MSG_LIGHT_BLUE_TEXT       ServerMessageType = 6  // Lightblue Text
+	MSG_ITEM_MEGAPHONE        ServerMessageType = 8  // Item megaphone
+	MSG_HEART_MEGAPHONE       ServerMessageType = 9  // Heart megaphone
+	MSG_SKULL_SUPER_MEGAPHONE ServerMessageType = 10 // Skull Super megaphone
+	MSG_GREEN_MEGAPHONE       ServerMessageType = 11 // Green megaphone message
+	MSG_THREE_MEGAPHONE_LINES ServerMessageType = 12 // Three-line megaphone text
+	MSG_EOF                   ServerMessageType = 13 // End of file
+	MSG_ANI                   ServerMessageType = 14 // Ani msg
+	MSG_RED_GACHAPON_BOX      ServerMessageType = 15 // Red Gachapon box
+	MSG_BLUE_NOTICE           ServerMessageType = 18 // Blue Notice
 )
 
 type Notice struct {
@@ -42,7 +42,7 @@ func (p *Notice) Serialize(sw *stream.StreamWriter) error {
 	if err := sw.WriteU8(uint8(p.Type)); err != nil {
 		return err
 	}
-	if p.Type == MsgScrollingTop {
+	if p.Type == MSG_SCROLLING_TOP {
 		if err := sw.WriteU8(1); err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func (p *Notice) Serialize(sw *stream.StreamWriter) error {
 	}
 
 	switch p.Type {
-	case MsgSuperMegaphone, MsgHeartMegaphone, MsgSkullSuperMegaphone:
+	case MSG_SUPER_MEGAPHONE, MSG_HEART_MEGAPHONE, MSG_SKULL_SUPER_MEGAPHONE:
 		channel := int(math.Max(1, float64(p.Channel))) - 1
 		if err := sw.WriteU8(uint8(channel)); err != nil {
 			return err
@@ -61,7 +61,7 @@ func (p *Notice) Serialize(sw *stream.StreamWriter) error {
 			return err
 		}
 
-	case MsgLightBlueText, MsgBlueNotice:
+	case MSG_LIGHT_BLUE_TEXT, MSG_BLUE_NOTICE:
 		var item uint32
 		if p.Channel >= 1_000_000 && p.Channel < 6_000_000 {
 			item = uint32(p.Channel)

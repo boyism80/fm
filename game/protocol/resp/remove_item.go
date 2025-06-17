@@ -7,11 +7,11 @@ import (
 type RemoveItemType uint8
 
 const (
-	RemoveItemTypeExpired RemoveItemType = iota
-	RemoveItemTypeNoAnimated
-	RemoveItemTypeAnimated
-	RemoveItemTypeExplosion
-	RemoveItemTypeLootByPet
+	REMOVE_ITEM_TYPE_EXPIRED RemoveItemType = iota
+	REMOVE_ITEM_TYPE_NO_ANIMATED
+	REMOVE_ITEM_TYPE_ANIMATED
+	REMOVE_ITEM_TYPE_EXPLOSION
+	REMOVE_ITEM_TYPE_LOOT_BY_PET
 )
 
 type RemoveItem struct {
@@ -25,7 +25,7 @@ func (p *RemoveItem) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(p.Mode))
 	writer.WriteU32(p.OID)
 	switch p.Mode {
-	case RemoveItemTypeAnimated, RemoveItemTypeLootByPet:
+	case REMOVE_ITEM_TYPE_ANIMATED, REMOVE_ITEM_TYPE_LOOT_BY_PET:
 		writer.WriteU32(p.CharacterId)
 	}
 	return nil

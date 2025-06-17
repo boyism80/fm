@@ -184,7 +184,7 @@ func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMes
 	ch.Meso -= req.Count
 	client.Send(&resp.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.StatMeso: ch.Meso,
+			constant.STAT_MESO: ch.Meso,
 		},
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
