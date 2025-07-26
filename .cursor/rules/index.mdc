@@ -299,4 +299,13 @@ Examples of commits needing detailed body:
 4. **RECOMMENDED**: Test critical functionality
 5. **RECOMMENDED**: Review diff for unintended changes
 
+### Git Command Guidelines (CRITICAL REQUIREMENTS)
+1. **MANDATORY**: When using git commands that output to terminal, ALWAYS use `--no-pager` option
+2. **Examples**:
+   - `git --no-pager diff`
+   - `git --no-pager log`
+   - `git --no-pager show`
+   - `git --no-pager status`
+3. **Reason**: Prevents pager from blocking automated processes and ensures consistent output
+
 Remember: This is a game server that must handle real-time interactions, maintain game state consistency, and provide a smooth player experience. Prioritize correctness, performance, and maintainability in that order. 

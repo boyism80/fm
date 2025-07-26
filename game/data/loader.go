@@ -1255,33 +1255,35 @@ func loadSpecialItems(path string) (*[]*SpecialItemSpec, error) {
 }
 
 // loadStringNodeRecursive recursively loads string specifications from XML nodes.
-func loadStringNodeRecursive(root *node) []*StringSpec {
+func loadStringNodeRecursive(root *node) map[uint32]map[string]string {
 
-	templates := []*StringSpec{}
+	result := map[uint32]map[string]string{}
 	for _, child := range root.Children {
 
 		id, err := strconv.Atoi(child.Name)
 		if err != nil {
-			templates = append(templates, loadStringNodeRecursive(&child)...)
-		}
-		spec := StringSpec{
-			ID: uint32(id),
-		}
-		for _, v := range child.Children {
-			switch v.Name {
-			case "name":
-				spec.Name = v.Value
-			case "desc":
-				spec.Desc = v.Value
+			// If not an integer, recursively process child nodes
+			childResult := loadStringNodeRecursive(&child)
+			for k, v := range childResult {
+				result[k] = v
 			}
+			continue
 		}
+
+		// Create a map for this ID's string data
+		stringData := map[string]string{}
+		for _, v := range child.Children {
+			stringData[v.Name] = v.Value
+		}
+
+		result[uint32(id)] = stringData
 	}
 
-	return templates
+	return result
 }
 
 // loadStringResources loads string resources from XML file.
-func loadStringResources(path string) (*[]*StringSpec, error) {
+func loadStringResources(path string) (*map[uint32]map[string]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -1293,8 +1295,8 @@ func loadStringResources(path string) (*[]*StringSpec, error) {
 		return nil, err
 	}
 
-	templates := loadStringNodeRecursive(&root)
-	return &templates, nil
+	result := loadStringNodeRecursive(&root)
+	return &result, nil
 }
 
 // loadMob loads monster specifications from XML file.

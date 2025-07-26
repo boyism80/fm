@@ -148,11 +148,11 @@ func onMobControllerChange(ctx actor.Context, state *MobActor, m *msg.MobControl
 			Policy: types.SEND_POLICY_ENCRYPT,
 		})
 	} else {
-		ctx.Send(m.Before, &common_msg.SendProtocol{
-			Protocol: &resp.StopControlMob{
-				OID: state.OID,
-			},
-		})
+		// ctx.Send(m.Before, &common_msg.SendProtocol{
+		// 	Protocol: &resp.StopControlMob{
+		// 		OID: state.OID,
+		// 	},
+		// })
 	}
 }
 

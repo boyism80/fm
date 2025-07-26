@@ -41,8 +41,12 @@ func onCommandCreateItem(ctx actor.Context, client *GameClientActor, params ...s
 
 	itemId, err := strconv.Atoi(params[0])
 	if err != nil {
-		log.Println("onCreateItem: invalid itemId:", params[0])
-		return
+		value, ok := client.serverContext.Resources.NameToItem(params[0])
+		if !ok {
+			log.Println("onCreateItem: invalid itemId:", params[0])
+			return
+		}
+		itemId = int(value)
 	}
 
 	count := 1
@@ -123,8 +127,12 @@ func onCommandChangeMap(ctx actor.Context, client *GameClientActor, params ...st
 
 	value, err := strconv.Atoi(params[0])
 	if err != nil {
-		log.Println("onGainMeso: invalid itemId:", params[0])
-		return
+		mapId, ok := client.serverContext.Resources.NameToMap(params[0])
+		if !ok {
+			log.Println("onCommandChangeMap: invalid mapId:", params[0])
+			return
+		}
+		value = int(mapId)
 	}
 
 	client.Warp(ctx, uint32(value), 0)
@@ -190,7 +198,7 @@ func onCommandSpawnMob(ctx actor.Context, client *GameClientActor, params ...str
 
 	mobId64, err := strconv.ParseUint(params[0], 10, 32)
 	if err != nil {
-		mobId, ok := client.serverContext.Resources.NameToMonster(params[0])
+		mobId, ok := client.serverContext.Resources.NameToMob(params[0])
 		if !ok {
 			log.Println("onCommandSpawnMob: invalid mobId:", params[0])
 			return

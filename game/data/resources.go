@@ -22,10 +22,14 @@ type node struct {
 
 // Resources contains all loaded MapleStory game data.
 type Resources struct {
-	Maps     map[uint32]*MapSpec   // All map specifications
-	Monsters map[uint32]*MobSpec   // All monster specifications
-	Items    map[uint32]ItemSpec   // All item specifications
-	Drops    map[uint32][]DropSpec // Monster drop tables
+	nameMapBuffer    map[string]*MapSpec
+	nameStringBuffer map[string][]uint32
+
+	Maps     map[uint32]*MapSpec          // All map specifications
+	Monsters map[uint32]*MobSpec          // All monster specifications
+	Items    map[uint32]ItemSpec          // All item specifications
+	Drops    map[uint32][]DropSpec        // Monster drop tables
+	Strings  map[uint32]map[string]string // All string data
 }
 
 // find searches for a child node by path (supports ":" separated paths).
@@ -108,6 +112,56 @@ func loadResourceFiles[T any](root string, workerCount int, action func(path str
 	}
 
 	return nil
+}
+
+func (r *Resources) NameToItem(name string) (uint32, bool) {
+
+	ids, ok := r.nameStringBuffer[name]
+	if !ok {
+		return 0, false
+	}
+
+	if len(ids) == 0 {
+		return 0, false
+	}
+
+	for _, id := range ids {
+		if _, ok := r.Items[id]; ok {
+			return id, true
+		}
+	}
+
+	return 0, false
+}
+
+func (r *Resources) NameToMob(name string) (uint32, bool) {
+
+	ids, ok := r.nameStringBuffer[name]
+	if !ok {
+		return 0, false
+	}
+
+	if len(ids) == 0 {
+		return 0, false
+	}
+
+	for _, id := range ids {
+		if _, ok := r.Monsters[id]; ok {
+			return id, true
+		}
+	}
+
+	return 0, false
+}
+
+func (r *Resources) NameToMap(name string) (uint32, bool) {
+
+	m, ok := r.nameMapBuffer[name]
+	if !ok {
+		return 0, false
+	}
+
+	return m.ID, true
 }
 
 // NewResources loads all MapleStory game data from WZ files.
@@ -255,18 +309,18 @@ func NewResources() *Resources {
 		return nil
 	}
 
-	stringResult := map[uint32]*StringSpec{}
-	_ = loadResourceFiles("D:/git/fm/wz/String.wz", workerCount, func(path string) (result *[]*StringSpec, err error) {
+	stringResult := map[uint32]map[string]string{}
+	_ = loadResourceFiles("D:/git/fm/wz/String.wz", workerCount, func(path string) (result *map[uint32]map[string]string, err error) {
 
 		m, err := loadStringResources(path)
 		if err != nil {
 			return nil, err
 		}
 		return m, nil
-	}, func(percent float32, value *[]*StringSpec) {
+	}, func(percent float32, value *map[uint32]map[string]string) {
 
-		for _, v := range *value {
-			stringResult[v.ID] = v
+		for k, v := range *value {
+			stringResult[k] = v
 		}
 
 		fmt.Printf("문자열 데이터 로딩 중: %.1f%%\n", percent)
@@ -296,10 +350,31 @@ func NewResources() *Resources {
 	}
 	fmt.Println("\n모든 맵 로딩 완료.")
 
-	return &Resources{
-		Maps:     maps,
-		Monsters: mobs,
-		Items:    items,
-		Drops:    drop,
+	result := &Resources{
+		nameMapBuffer:    map[string]*MapSpec{},
+		nameStringBuffer: map[string][]uint32{},
+		Maps:             maps,
+		Monsters:         mobs,
+		Items:            items,
+		Drops:            drop,
+		Strings:          stringResult,
 	}
+
+	for id, v := range stringResult {
+		name, ok := v["name"]
+		if ok {
+			// Remove all whitespace characters from name before using as key
+			cleanName := strings.ReplaceAll(name, " ", "")
+			result.nameStringBuffer[cleanName] = append(result.nameStringBuffer[cleanName], uint32(id))
+		}
+
+		mapName, ok := v["mapName"]
+		if ok {
+			// Remove all whitespace characters from mapName before using as key
+			cleanMapName := strings.ReplaceAll(mapName, " ", "")
+			result.nameMapBuffer[cleanMapName] = result.Maps[id]
+		}
+	}
+
+	return result
 }
