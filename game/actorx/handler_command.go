@@ -188,11 +188,16 @@ func onCommandSpawnMob(ctx actor.Context, client *GameClientActor, params ...str
 		return
 	}
 
-	mobId, err := strconv.Atoi(params[0])
+	mobId64, err := strconv.ParseUint(params[0], 10, 32)
 	if err != nil {
-		log.Println("onCommandSpawnMob: invalid mobId:", params[0])
-		return
+		mobId, ok := client.serverContext.Resources.NameToMonster(params[0])
+		if !ok {
+			log.Println("onCommandSpawnMob: invalid mobId:", params[0])
+			return
+		}
+		mobId64 = uint64(mobId)
 	}
+	mobId := uint32(mobId64)
 
 	mapActor, ok := client.serverContext.MapActors[client.ch.Map]
 	if !ok {
