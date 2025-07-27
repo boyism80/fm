@@ -21,12 +21,12 @@ type NpcActor struct {
 	handler *handler.MessageHandler
 }
 
-func NewNpcActorProps(ctx actor.Context, spec *data.NpcSpawnSpec, sequence uint32) *actor.Props {
+func NewNpcActorProps(ctx actor.Context, spec *data.NpcSpawnSpec, oid uint32) *actor.Props {
 	return actor.PropsFromProducer(func() actor.Actor {
 		actor := &NpcActor{
 			handler: handler.NewMessageHandler(),
 			Npc: entity.Npc{
-				ID:   sequence,
+				ID:   oid,
 				Spec: spec,
 			},
 		}

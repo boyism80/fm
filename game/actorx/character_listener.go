@@ -86,3 +86,12 @@ func (l *CharacterListener) OnMesoChanged(meso int32) {
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 }
+
+func (l *CharacterListener) OnMessage(message string) {
+	l.Actor.Send(&resp.Notice{
+		Type:    resp.MSG_LIGHT_BLUE_TEXT,
+		Message: message,
+		Channel: 0,
+		MegaEar: false,
+	}, types.SEND_POLICY_ENCRYPT)
+}

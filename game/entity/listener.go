@@ -8,4 +8,5 @@ type CharacterListener interface {
 	OnDialogInput(npc uint32, message string)
 	OnChat(message string, highlight bool, dontRecordHistory bool)
 	OnMesoChanged(meso int32)
+	OnMessage(message string)
 }

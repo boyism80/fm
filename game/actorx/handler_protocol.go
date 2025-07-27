@@ -199,39 +199,64 @@ func onGameDropMeso(ctx actor.Context, client *GameClientActor, req *req.DropMes
 }
 
 func onGameWarp(ctx actor.Context, client *GameClientActor, req *req.Warp) {
+	mapId := int32(0)
+	spawnPoint := uint8(0)
+	stats := map[constant.Stat]int32{}
+
 	if req.Target != 0xFFFFFFFF {
-		return
-	}
-	oldMapSpec, ok := client.serverContext.Resources.Maps[client.ch.Map]
-	if !ok {
-		return
+		if client.ch.Hp == 0 {
+			client.ch.Hp = 50
+			client.ch.Stance = 0
+
+			returnMap, ok := client.serverContext.Resources.Maps[client.ch.Map]
+			if !ok {
+				return
+			}
+
+			mapId = int32(returnMap.ReturnMapId)
+			spawnPoint = 0
+			stats[constant.STAT_HP] = int32(client.ch.Hp)
+
+			client.Send(&resp.UpdateStats{
+				Stats:        stats,
+				UnlockAction: true,
+			}, types.SEND_POLICY_ENCRYPT)
+		}
+	} else {
+		oldMapSpec, ok := client.serverContext.Resources.Maps[client.ch.Map]
+		if !ok {
+			return
+		}
+
+		oldPortal, ok := oldMapSpec.FindPortal(req.PortalName)
+		if !ok {
+			client.Send(&resp.UpdateStats{
+				UnlockAction: true,
+			}, types.SEND_POLICY_ENCRYPT)
+			return
+		}
+
+		newMapSpec, ok := client.serverContext.Resources.Maps[uint32(oldPortal.TargetMapId)]
+		if !ok {
+			client.Send(&resp.UpdateStats{
+				UnlockAction: true,
+			}, types.SEND_POLICY_ENCRYPT)
+			return
+		}
+
+		newPortal, ok := newMapSpec.FindPortal(oldPortal.Target)
+		if !ok {
+			client.Send(&resp.UpdateStats{
+				UnlockAction: true,
+			}, types.SEND_POLICY_ENCRYPT)
+			return
+		}
+
+		mapId = newPortal.TargetMapId
+		spawnPoint = newPortal.ID
 	}
 
-	oldPortal, ok := oldMapSpec.FindPortal(req.PortalName)
-	if !ok {
-		client.Send(&resp.UpdateStats{
-			UnlockAction: true,
-		}, types.SEND_POLICY_ENCRYPT)
-		return
-	}
-
-	newMapSpec, ok := client.serverContext.Resources.Maps[uint32(oldPortal.TargetMapId)]
-	if !ok {
-		client.Send(&resp.UpdateStats{
-			UnlockAction: true,
-		}, types.SEND_POLICY_ENCRYPT)
-		return
-	}
-
-	newPortal, ok := newMapSpec.FindPortal(oldPortal.Target)
-	if !ok {
-		client.Send(&resp.UpdateStats{
-			UnlockAction: true,
-		}, types.SEND_POLICY_ENCRYPT)
-		return
-	}
-
-	client.Warp(ctx, uint32(oldPortal.TargetMapId), newPortal.ID)
+	client.Warp(ctx, uint32(mapId), spawnPoint)
 }
 
 func onGameClientNpcControl(ctx actor.Context, client *GameClientActor, req *req.NpcAction) {
@@ -321,7 +346,14 @@ func onGameClientMoveMob(ctx actor.Context, client *GameClientActor, req *req.Mo
 
 func onGameClientDamaged(ctx actor.Context, client *GameClientActor, req *req.Damaged) {
 
+	stats := map[constant.Stat]int32{}
+	if !client.ch.Invincible {
+		client.ch.Hp = uint16(max(0, min(int32(client.ch.Hp)-req.Damage, int32(client.ch.MaxHp))))
+		stats[constant.STAT_HP] = int32(client.ch.Hp)
+	}
+
 	client.Send(&resp.UpdateStats{
+		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
