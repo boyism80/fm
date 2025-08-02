@@ -12,8 +12,11 @@ type SpawnMob struct {
 	Link      uint32
 }
 
+func (p *SpawnMob) Opcode() uint16 {
+	return 0xA9
+}
+
 func (p *SpawnMob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xA9)
 	writer.WriteU32(p.Mob.OID)
 	writer.WriteU8(1)
 	writer.WriteU32(p.Mob.Spec.ID)

@@ -98,6 +98,13 @@ func (ch *Character) GetMap() uint32 {
 	return ch.Map
 }
 
+// GetInventory returns the inventory for the given slot
+// Slot format: 0xXXYY where XX is inventory type and YY is slot number
+func (ch *Character) GetInventory(slot uint16) *Inventory {
+	inventoryType := constant.InventoryType(slot >> 8)
+	return ch.Inventory[inventoryType]
+}
+
 // GetID returns the character's ID
 func (ch *Character) GetID() uint32 {
 	return ch.ID
@@ -255,10 +262,10 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			},
 		}
 
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1], err = NewItem(ctx, 1060002, 1)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2], err = NewItem(ctx, 1060006, 1)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3], err = NewItem(ctx, 1040002, 1)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(ctx, 1040010, 1)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1], err = NewItem(ctx.Resources.Items[1060002], 1)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2], err = NewItem(ctx.Resources.Items[1060006], 1)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3], err = NewItem(ctx.Resources.Items[1040002], 1)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(ctx.Resources.Items[1040010], 1)
 	}
 
 	return ch

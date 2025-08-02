@@ -10,7 +10,6 @@ type UpdateCharacterLook struct {
 }
 
 func (p *UpdateCharacterLook) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x8E)
 	writer.WriteU32(p.Character.ID)
 	writer.WriteU8(1)
 	p.Character.SerializeLook(writer)
@@ -23,4 +22,8 @@ func (p *UpdateCharacterLook) Serialize(writer *stream.StreamWriter) error {
 
 func (p *UpdateCharacterLook) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *UpdateCharacterLook) Opcode() uint16 {
+	return 0x8E
 }

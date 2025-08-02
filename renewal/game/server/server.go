@@ -18,11 +18,12 @@ import (
 
 // GameServer represents the game server for MapleStory private server
 type GameServer struct {
-	server    *core.Server
-	config    *GameConfig
-	resources *data.Resources        // Game data resources
-	maps      map[uint32]*entity.Map // Map instances by map ID
-	mapsMutex sync.RWMutex
+	server         *core.Server
+	config         *GameConfig
+	resources      *data.Resources        // Game data resources
+	maps           map[uint32]*entity.Map // Map instances by map ID
+	mapsMutex      sync.RWMutex
+	commandHandler *CommandHandler
 }
 
 // GameConfig holds game server specific configuration
@@ -65,6 +66,9 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		resources: resources,
 		maps:      make(map[uint32]*entity.Map),
 	}
+
+	// Initialize command handler
+	gameServer.commandHandler = NewCommandHandler(gameServer)
 
 	// Pre-create all maps
 	gameServer.preCreateMaps()

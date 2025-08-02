@@ -12,7 +12,6 @@ type NormalChat struct {
 }
 
 func (a *NormalChat) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x70)
 	writer.WriteU32(a.CharacterId)
 	writer.WriteBoolean(a.Highlight)
 	writer.WriteStr16(a.Message)
@@ -22,4 +21,8 @@ func (a *NormalChat) Serialize(writer *stream.StreamWriter) error {
 
 func (a *NormalChat) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (a *NormalChat) Opcode() uint16 {
+	return 0x70 // NormalChat opcode
 }

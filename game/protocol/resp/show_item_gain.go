@@ -17,17 +17,26 @@ type ShowItemGain struct {
 	Mode   ShowItemGainType
 }
 
+func (p *ShowItemGain) Opcode() uint16 {
+	switch p.Mode {
+	case SHowItemGainTypeChat:
+		return 0x97
+	case ShowItemGainTypeStatus:
+		return 0x1C
+	default:
+		return 0x1C
+	}
+}
+
 func (p *ShowItemGain) Serialize(writer *stream.StreamWriter) error {
 	switch p.Mode {
 	case SHowItemGainTypeChat:
-		writer.WriteU16(0x97)
 		writer.WriteU8(3)
 		writer.WriteU8(1)
 		writer.WriteU32(p.ItemId)
 		writer.WriteU32(p.Count)
 
 	case ShowItemGainTypeStatus:
-		writer.WriteU16(0x1C)
 		writer.WriteU16(0)
 		writer.WriteU32(p.ItemId)
 		writer.WriteU32(p.Count)

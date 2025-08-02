@@ -11,8 +11,11 @@ type Attack struct {
 	SkillLevel  uint8
 }
 
+func (a *Attack) Opcode() uint16 {
+	return 0x83
+}
+
 func (a *Attack) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x83)
 	writer.WriteU32(a.CharacterId)
 	tbyte := (a.Targets << 4) | (a.Hits & 0xF)
 	writer.WriteU8(tbyte)

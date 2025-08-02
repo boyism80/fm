@@ -21,7 +21,6 @@ type RemoveItem struct {
 }
 
 func (p *RemoveItem) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xC7)
 	writer.WriteU8(uint8(p.Mode))
 	writer.WriteU32(p.OID)
 	switch p.Mode {
@@ -33,4 +32,8 @@ func (p *RemoveItem) Serialize(writer *stream.StreamWriter) error {
 
 func (p *RemoveItem) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *RemoveItem) Opcode() uint16 {
+	return 0xC7
 }

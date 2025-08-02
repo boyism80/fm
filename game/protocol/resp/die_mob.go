@@ -10,8 +10,11 @@ type DieMob struct {
 	AnimationType constant.MobDieAnimationType
 }
 
+func (p *DieMob) Opcode() uint16 {
+	return 0xAA
+}
+
 func (p *DieMob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xAA)
 	writer.WriteU32(p.OID)
 	writer.WriteU8(uint8(p.AnimationType))
 	switch p.AnimationType {

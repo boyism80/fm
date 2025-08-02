@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
@@ -37,13 +36,11 @@ type Item interface {
 
 type Drop struct {
 	*Object
-	ID           uint32
 	Owner        uint32
 	SpawnedPoint types.Point[int16]
 	DropType     constant.DropType
 	NextFFA      time.Time
 	NextExpiry   time.Time
-	Looting      bool
 }
 
 type ItemCore struct {
@@ -534,26 +531,21 @@ func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	}
 }
 
-func NewItem(ctx *context.ServerContext, itemId uint32, count uint16) (Item, error) {
-	t, ok := ctx.Resources.Items[uint32(itemId)]
-	if !ok {
-		return nil, fmt.Errorf("%d is not valid item id", itemId)
-	}
-
-	switch spec := t.(type) {
+func NewItem(spec data.ItemSpec, count uint16) (Item, error) {
+	switch itemSpec := spec.(type) {
 	case *data.EquipmentSpec:
 		return &Equipment{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Spec:  itemSpec,
 				Count: 1,
 			},
-			EnchantChance: spec.TUC,
+			EnchantChance: itemSpec.TUC,
 		}, nil
 
 	case *data.ConsumeSpec:
 		return &Consume{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Spec:  itemSpec,
 				Count: count,
 			},
 		}, nil
@@ -561,7 +553,7 @@ func NewItem(ctx *context.ServerContext, itemId uint32, count uint16) (Item, err
 	case *data.InstallationSpec:
 		return &Installation{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Spec:  itemSpec,
 				Count: 1,
 			},
 		}, nil
@@ -569,7 +561,7 @@ func NewItem(ctx *context.ServerContext, itemId uint32, count uint16) (Item, err
 	case *data.GeneralItemSpec:
 		return &GeneralItem{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Spec:  itemSpec,
 				Count: count,
 			},
 		}, nil
@@ -577,7 +569,7 @@ func NewItem(ctx *context.ServerContext, itemId uint32, count uint16) (Item, err
 	case *data.CashItemSpec:
 		return &CashItem{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Spec:  itemSpec,
 				Count: count,
 			},
 		}, nil
@@ -589,7 +581,7 @@ func NewItem(ctx *context.ServerContext, itemId uint32, count uint16) (Item, err
 		}
 		return &Pet{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Spec:  itemSpec,
 				Count: 1,
 			},
 			Expiration: petExpiration,

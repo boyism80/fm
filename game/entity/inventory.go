@@ -99,3 +99,36 @@ func (m *Inventory) Serialize(sw *stream.StreamWriter) {
 	}
 	sw.WriteU8(0)
 }
+
+// GetItem returns the item at the specified slot
+func (m *Inventory) GetItem(slot uint8) Item {
+	return m.Items[int16(slot)]
+}
+
+// AddItem adds an item to the specified slot
+func (m *Inventory) AddItem(slot uint8, item Item) error {
+	if slot < 1 || slot > m.SlotLimit {
+		return ErrSlotNotFound
+	}
+
+	if m.Items[int16(slot)] != nil {
+		return ErrSlotAlreadyOccupied
+	}
+
+	m.Items[int16(slot)] = item
+	return nil
+}
+
+// RemoveItem removes an item from the specified slot
+func (m *Inventory) RemoveItem(slot uint8) error {
+	if slot < 1 || slot > m.SlotLimit {
+		return ErrSlotNotFound
+	}
+
+	if m.Items[int16(slot)] == nil {
+		return ErrSourceSlotEmpty
+	}
+
+	delete(m.Items, int16(slot))
+	return nil
+}

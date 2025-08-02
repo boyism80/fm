@@ -1,11 +1,25 @@
 package entity
 
+// RemoveItemType constants (matching resp.RemoveItemType)
+const (
+	REMOVE_ITEM_TYPE_EXPIRED     = 0
+	REMOVE_ITEM_TYPE_NO_ANIMATED = 1
+	REMOVE_ITEM_TYPE_ANIMATED    = 2
+	REMOVE_ITEM_TYPE_EXPLOSION   = 3
+	REMOVE_ITEM_TYPE_LOOT_BY_PET = 4
+)
+
 // MapListener defines interface for map events
 type MapListener interface {
 	OnPlayerAdded(mapID uint32, playerID uint32, character *Character, init bool)
 	OnPlayerRemoved(mapID uint32, playerID uint32)
 	OnPlayerMoved(mapID uint32, playerID uint32, character *Character)
 	OnPlayerChat(mapID uint32, playerID uint32, message string)
+	OnItemSpawned(mapID uint32, itemID uint32, item Item, drop *Drop)
+	OnMesoSpawned(mapID uint32, itemID uint32, meso *Meso)
+	OnItemRemoved(mapID uint32, itemID uint32, characterID uint32, mode uint8)
+	OnMobSpawned(mapID uint32, mobID uint32, mob *Mob)
+	OnMobRemoved(mapID uint32, mobID uint32)
 }
 
 // MapListenerImpl implements MapListener interface

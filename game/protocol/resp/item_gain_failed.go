@@ -16,7 +16,6 @@ type ItemGainFailed struct {
 }
 
 func (p *ItemGainFailed) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x1C)
 	writer.WriteU8(0)
 	writer.WriteU8(uint8(p.Mode))
 	writer.WriteU16(0)
@@ -25,4 +24,8 @@ func (p *ItemGainFailed) Serialize(writer *stream.StreamWriter) error {
 
 func (p *ItemGainFailed) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *ItemGainFailed) Opcode() uint16 {
+	return 0x1C
 }

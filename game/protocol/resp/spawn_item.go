@@ -18,7 +18,6 @@ type SpawnItem struct {
 }
 
 func (p *SpawnItem) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xC6)
 	writer.WriteU8(uint8(p.Animation))
 	writer.WriteU32(p.ID)
 	writer.WriteBoolean(false)
@@ -48,4 +47,8 @@ func (p *SpawnItem) Serialize(writer *stream.StreamWriter) error {
 
 func (p *SpawnItem) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *SpawnItem) Opcode() uint16 {
+	return 0xC6
 }

@@ -5,5 +5,6 @@ import (
 )
 
 type Object struct {
+	OID      uint32
 	Position types.Vector2[int16]
 }

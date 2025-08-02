@@ -18,7 +18,6 @@ type SpawnMeso struct {
 }
 
 func (p *SpawnMeso) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xC6)
 	writer.WriteU8(uint8(p.Animation))
 	writer.WriteU32(p.ID)
 	writer.WriteBoolean(true)
@@ -45,4 +44,8 @@ func (p *SpawnMeso) Serialize(writer *stream.StreamWriter) error {
 
 func (p *SpawnMeso) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *SpawnMeso) Opcode() uint16 {
+	return 0xC6
 }

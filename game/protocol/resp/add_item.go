@@ -20,7 +20,6 @@ func (p *AddItem) Serialize(writer *stream.StreamWriter) error {
 		return errors.New("item is empty")
 	}
 
-	writer.WriteU16(0x12)
 	writer.WriteBoolean(p.IsDrop)
 	writer.WriteU8(1)
 	writer.WriteU8(0)
@@ -32,4 +31,8 @@ func (p *AddItem) Serialize(writer *stream.StreamWriter) error {
 
 func (p *AddItem) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *AddItem) Opcode() uint16 {
+	return 0x12
 }

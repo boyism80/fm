@@ -10,12 +10,15 @@ type UpdateStats struct {
 	UnlockAction bool
 }
 
+func (p *UpdateStats) Opcode() uint16 {
+	return 0x14
+}
+
 func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 	if p.Stats == nil {
 		p.Stats = map[constant.Stat]int32{}
 	}
 
-	writer.WriteU16(0x14)
 	writer.WriteBoolean(p.UnlockAction)
 
 	mask := uint32(0)

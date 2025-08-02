@@ -11,9 +11,8 @@ type NpcControl struct {
 }
 
 func (p *NpcControl) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xBD)
 	writer.WriteU8(1)
-	writer.WriteU32(p.NPC.ID)
+	writer.WriteU32(p.NPC.OID)
 	writer.WriteU32(p.NPC.Spec.ID)
 	writer.Write16(p.NPC.Spec.Position.X)
 	writer.Write16(p.NPC.Spec.CollisionY)
@@ -27,4 +26,8 @@ func (p *NpcControl) Serialize(writer *stream.StreamWriter) error {
 
 func (s *NpcControl) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *NpcControl) Opcode() uint16 {
+	return 0xBD // NpcControl opcode
 }

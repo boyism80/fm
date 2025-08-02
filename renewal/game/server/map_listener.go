@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol/resp"
 )
@@ -73,6 +74,42 @@ func (l *GameMapListener) OnPlayerAdded(mapID uint32, playerID uint32, character
 		MarriageRings:   []*entity.Ring{},
 	}
 	mapInstance.BroadcastToPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT, playerID)
+
+	// 4. Send NPC spawn packets to the new player (following old server pattern)
+	for _, npc := range mapInstance.GetNpcs() {
+		if npc, ok := npc.(*entity.Npc); ok {
+			// Send SpawnNpc packet
+			character.Send(&resp.SpawnNpc{
+				NPC:     npc,
+				Visible: true,
+			}, types.SEND_POLICY_ENCRYPT)
+
+			// Send NpcControl packet
+			character.Send(&resp.NpcControl{
+				NPC:     npc,
+				MiniMap: true,
+			}, types.SEND_POLICY_ENCRYPT)
+		}
+	}
+
+	// 5. Send existing items on the map to the new player (following old server pattern)
+	for _, item := range mapInstance.GetItems() {
+		if item, ok := item.(entity.Item); ok {
+			drop := item.GetDrop()
+			if drop != nil {
+				// Send SpawnItem packet for existing items
+				character.Send(&resp.SpawnItem{
+					ID:           drop.Object.OID,
+					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
+					DropType:     drop.DropType,
+					Item:         item,
+					OwnerID:      drop.Owner,
+					SpawnedPoint: drop.SpawnedPoint,
+					IsPlayerDrop: true,
+				}, types.SEND_POLICY_ENCRYPT)
+			}
+		}
+	}
 }
 
 // OnPlayerRemoved sends leave player packet to other players on the map
@@ -118,4 +155,104 @@ func (l *GameMapListener) OnPlayerChat(mapID uint32, playerID uint32, message st
 	//     Message: message,
 	// }
 	// mapInstance.BroadcastToPlayers(chatPacket, types.SEND_POLICY_ENCRYPT, playerID)
+}
+
+// OnItemSpawned sends spawn item packet to all players on the map
+func (l *GameMapListener) OnItemSpawned(mapID uint32, itemID uint32, item entity.Item, drop *entity.Drop) {
+	// Get the map instance
+	mapInstance := l.gameServer.GetMap(mapID)
+	if mapInstance == nil {
+		return
+	}
+
+	// Create spawn item packet
+	spawnPacket := &resp.SpawnItem{
+		ID:           drop.OID,
+		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
+		DropType:     drop.DropType,
+		Item:         item,
+		OwnerID:      drop.Owner,
+		SpawnedPoint: drop.SpawnedPoint,
+		IsPlayerDrop: true,
+	}
+
+	// Broadcast to all players on the map
+	mapInstance.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+}
+
+// OnMesoSpawned sends spawn meso packet to all players on the map
+func (l *GameMapListener) OnMesoSpawned(mapID uint32, itemID uint32, meso *entity.Meso) {
+	// Get the map instance
+	mapInstance := l.gameServer.GetMap(mapID)
+	if mapInstance == nil {
+		return
+	}
+
+	// Create spawn meso packet
+	spawnPacket := &resp.SpawnMeso{
+		ID:           meso.GetDrop().OID,
+		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
+		DropType:     meso.GetDrop().DropType,
+		Count:        meso.Count,
+		OwnerID:      meso.GetDrop().Owner,
+		Position:     meso.GetDrop().Position,
+		SpawnedPoint: meso.GetDrop().SpawnedPoint,
+		IsPlayerDrop: true,
+	}
+
+	// Broadcast to all players on the map
+	mapInstance.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+}
+
+// OnItemRemoved sends remove item packet to all players on the map
+func (l *GameMapListener) OnItemRemoved(mapID uint32, itemID uint32, characterID uint32, mode uint8) {
+	// Get the map instance
+	mapInstance := l.gameServer.GetMap(mapID)
+	if mapInstance == nil {
+		return
+	}
+
+	// Create remove item packet
+	removePacket := &resp.RemoveItem{
+		Mode:        resp.RemoveItemType(mode),
+		OID:         itemID,
+		CharacterId: characterID,
+	}
+
+	// Broadcast to all players on the map
+	mapInstance.BroadcastToAllPlayers(removePacket, types.SEND_POLICY_ENCRYPT)
+}
+
+// OnMobSpawned sends spawn mob packet to all players on the map
+func (l *GameMapListener) OnMobSpawned(mapID uint32, mobID uint32, mob *entity.Mob) {
+	// Get the map instance
+	mapInstance := l.gameServer.GetMap(mapID)
+	if mapInstance == nil {
+		return
+	}
+
+	// Create spawn mob packet
+	spawnPacket := &resp.SpawnMob{
+		Mob: mob,
+	}
+
+	// Broadcast to all players on the map
+	mapInstance.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+}
+
+// OnMobRemoved sends remove mob packet to all players on the map
+func (l *GameMapListener) OnMobRemoved(mapID uint32, mobID uint32) {
+	// Get the map instance
+	mapInstance := l.gameServer.GetMap(mapID)
+	if mapInstance == nil {
+		return
+	}
+
+	// Create remove mob packet
+	removePacket := &resp.DieMob{
+		OID: mobID,
+	}
+
+	// Broadcast to all players on the map
+	mapInstance.BroadcastToAllPlayers(removePacket, types.SEND_POLICY_ENCRYPT)
 }

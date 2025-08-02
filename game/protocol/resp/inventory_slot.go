@@ -64,7 +64,6 @@ type FullMergeInventorySlot struct {
 }
 
 func (p *UpdateInventorySlot) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x12)
 	writer.WriteBoolean(true)
 	writer.WriteU8(1)
 	writer.WriteU8(uint8(INVENTORY_MODE_UPDATE))
@@ -78,8 +77,11 @@ func (p *UpdateInventorySlot) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }
 
+func (p *UpdateInventorySlot) Opcode() uint16 {
+	return 0x12
+}
+
 func (p *AddInventorySlot) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x12)
 	writer.WriteBoolean(true)
 	writer.WriteU8(1)
 	writer.WriteU8(uint8(INVENTORY_MODE_ADD))
@@ -93,8 +95,11 @@ func (p *AddInventorySlot) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }
 
+func (p *AddInventorySlot) Opcode() uint16 {
+	return 0x12
+}
+
 func (p *RemoveInventorySlot) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x12)
 	writer.WriteBoolean(true)
 	writer.WriteU8(1)
 	writer.WriteU8(uint8(INVENTORY_MODE_REMOVE))
@@ -107,8 +112,11 @@ func (p *RemoveInventorySlot) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }
 
+func (p *RemoveInventorySlot) Opcode() uint16 {
+	return 0x12
+}
+
 func (p *SwapInventorySlot) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x12)
 	writer.WriteBoolean(true)
 	writer.WriteU8(1)
 	writer.WriteU8(uint8(INVENTORY_MODE_MOVE))
@@ -125,8 +133,11 @@ func (p *SwapInventorySlot) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }
 
+func (p *SwapInventorySlot) Opcode() uint16 {
+	return 0x12
+}
+
 func (p *PartialMergeInventorySlot) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x12)
 	writer.WriteBoolean(true)
 	writer.WriteU8(2)
 	writer.WriteU8(uint8(INVENTORY_MODE_UPDATE))
@@ -144,8 +155,11 @@ func (p *PartialMergeInventorySlot) Deserialize(reader *stream.StreamReader) err
 	return nil
 }
 
+func (p *PartialMergeInventorySlot) Opcode() uint16 {
+	return 0x12
+}
+
 func (p *FullMergeInventorySlot) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x12)
 	writer.WriteBoolean(true)
 	writer.WriteU8(2)
 	writer.WriteU8(uint8(INVENTORY_MODE_REMOVE))
@@ -160,4 +174,8 @@ func (p *FullMergeInventorySlot) Serialize(writer *stream.StreamWriter) error {
 
 func (p *FullMergeInventorySlot) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *FullMergeInventorySlot) Opcode() uint16 {
+	return 0x12
 }

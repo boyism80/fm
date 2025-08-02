@@ -8,7 +8,6 @@ import (
 type Mob struct {
 	Life
 	Spec     *data.MobSpec
-	OID      uint32
 	Foothold int16
 }
 

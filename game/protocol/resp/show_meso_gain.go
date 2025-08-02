@@ -17,7 +17,6 @@ type ShowMesoGain struct {
 }
 
 func (p *ShowMesoGain) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x1C)
 	switch p.Mode {
 	case ShowMesoGainTypeChat:
 		writer.WriteU8(5)
@@ -35,4 +34,8 @@ func (p *ShowMesoGain) Serialize(writer *stream.StreamWriter) error {
 
 func (p *ShowMesoGain) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *ShowMesoGain) Opcode() uint16 {
+	return 0x1C
 }

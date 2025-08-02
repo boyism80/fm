@@ -11,8 +11,7 @@ type SpawnNpc struct {
 }
 
 func (p *SpawnNpc) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xBB)
-	writer.WriteU32(p.NPC.ID)
+	writer.WriteU32(p.NPC.OID)
 	writer.WriteU32(p.NPC.Spec.ID)
 	writer.Write16(p.NPC.Spec.Position.X)
 	writer.Write16(p.NPC.Spec.CollisionY)
@@ -26,4 +25,8 @@ func (p *SpawnNpc) Serialize(writer *stream.StreamWriter) error {
 
 func (s *SpawnNpc) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *SpawnNpc) Opcode() uint16 {
+	return 0xBB // SpawnNpc opcode
 }
