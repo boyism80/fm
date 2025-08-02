@@ -27,7 +27,7 @@ func (ls *LoginServer) registerPacketHandlers() {
 }
 
 // handlePong processes pong packets from clients
-func (ls *LoginServer) handlePong(ctx *core.ClientContext[any], data []byte) error {
+func (ls *LoginServer) handlePong(ctx *core.ClientContext, data []byte) error {
 	// Deserialize pong packet
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &common_req.Pong{}
@@ -41,7 +41,7 @@ func (ls *LoginServer) handlePong(ctx *core.ClientContext[any], data []byte) err
 }
 
 // handleLogin processes login authentication requests
-func (ls *LoginServer) handleLogin(ctx *core.ClientContext[any], data []byte) error {
+func (ls *LoginServer) handleLogin(ctx *core.ClientContext, data []byte) error {
 	// Deserialize login packet
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.Login{}
@@ -115,7 +115,7 @@ func (ls *LoginServer) handleLogin(ctx *core.ClientContext[any], data []byte) er
 }
 
 // handleCharacterList processes character list requests
-func (ls *LoginServer) handleCharacterList(ctx *core.ClientContext[any], data []byte) error {
+func (ls *LoginServer) handleCharacterList(ctx *core.ClientContext, data []byte) error {
 	// Deserialize character list packet
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.CharacterList{}
@@ -187,7 +187,7 @@ func (ls *LoginServer) handleCharacterList(ctx *core.ClientContext[any], data []
 }
 
 // handleCheckName processes character name availability checks
-func (ls *LoginServer) handleCheckName(ctx *core.ClientContext[any], data []byte) error {
+func (ls *LoginServer) handleCheckName(ctx *core.ClientContext, data []byte) error {
 	// Deserialize check name packet
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.CheckName{}
@@ -216,7 +216,7 @@ func (ls *LoginServer) handleCheckName(ctx *core.ClientContext[any], data []byte
 }
 
 // handleCreateCharacter processes character creation requests
-func (ls *LoginServer) handleCreateCharacter(ctx *core.ClientContext[any], data []byte) error {
+func (ls *LoginServer) handleCreateCharacter(ctx *core.ClientContext, data []byte) error {
 	// Deserialize create character packet
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.CreateCharacter{}
@@ -265,7 +265,7 @@ func (ls *LoginServer) handleCreateCharacter(ctx *core.ClientContext[any], data 
 }
 
 // handleDeleteCharacter processes character deletion requests
-func (ls *LoginServer) handleDeleteCharacter(ctx *core.ClientContext[any], data []byte) error {
+func (ls *LoginServer) handleDeleteCharacter(ctx *core.ClientContext, data []byte) error {
 	// Deserialize delete character packet
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.DeleteCharacter{}
@@ -291,7 +291,7 @@ func (ls *LoginServer) handleDeleteCharacter(ctx *core.ClientContext[any], data 
 }
 
 // handleSelectCharacter processes character selection requests
-func (ls *LoginServer) handleSelectCharacter(ctx *core.ClientContext[any], data []byte) error {
+func (ls *LoginServer) handleSelectCharacter(ctx *core.ClientContext, data []byte) error {
 	// Deserialize select character packet
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.SelectCharacter{}

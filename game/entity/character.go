@@ -93,6 +93,16 @@ func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
 	return ch.Sendable.Send(p, policy)
 }
 
+// GetMap returns the character's current map ID
+func (ch *Character) GetMap() uint32 {
+	return ch.Map
+}
+
+// GetID returns the character's ID
+func (ch *Character) GetID() uint32 {
+	return ch.ID
+}
+
 func (mb *MonsterBook) Serialize(writer *stream.StreamWriter) {
 	writer.WriteU16(uint16(len(mb.Cards)))
 

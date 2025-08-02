@@ -42,7 +42,28 @@ func (l *GameMapListener) OnPlayerAdded(mapID uint32, playerID uint32, character
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}
 
-	// 2. Send SpawnPlayer packet to all other players on the map
+	// 2. Send existing players' info to the new player
+	if mapInstance.GetPlayerCount() > 1 { // More than just the new player
+		for cid, p := range mapInstance.GetAllPlayers() {
+			if cid == playerID {
+				continue // Skip the new player
+			}
+
+			if ch, ok := p.(*entity.Character); ok {
+				// Send existing player's spawn info to the new player
+				character.Send(&resp.SpawnPlayer{
+					Character:       ch,
+					BuffStates:      [4]uint32{},
+					Diseases:        [4]uint32{},
+					CrushRings:      []*entity.Ring{},
+					FriendshipRings: []*entity.Ring{},
+					MarriageRings:   []*entity.Ring{},
+				}, types.SEND_POLICY_ENCRYPT)
+			}
+		}
+	}
+
+	// 3. Send SpawnPlayer packet to all other players on the map
 	spawnPacket := &resp.SpawnPlayer{
 		Character:       character,
 		BuffStates:      [4]uint32{},

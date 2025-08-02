@@ -2,17 +2,19 @@ package server
 
 import (
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/renewal/login/client"
 )
 
 // LoginServer represents the login server for MapleStory private server
 type LoginServer struct {
-	server *core.Server[any]
+	server *core.Server
 	config *LoginConfig
 }
 
@@ -27,16 +29,18 @@ type LoginConfig struct {
 
 // NewLoginServer creates a new login server with specified configuration
 func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
-
 	// Create core server configuration
 	serverConfig := &core.ServerConfig{
 		LogicThreadCount: config.LogicThreadCount,
 		Host:             config.Host,
 		Port:             config.Port,
+		ClientFactory: func(conn net.Conn, clientID int) (core.Client, error) {
+			return client.NewLoginClient(conn, clientID)
+		},
 	}
 
 	// Create core server
-	server, err := core.NewServer[any](serverConfig)
+	server, err := core.NewServer(serverConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +49,9 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		server: server,
 		config: config,
 	}
+
+	// Register packet handlers
+	loginServer.registerPacketHandlers()
 
 	return loginServer, nil
 }

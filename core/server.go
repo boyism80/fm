@@ -14,11 +14,11 @@ import (
 	"github.com/boyism80/fm/login/protocol/resp"
 )
 
-type Server[T any] struct {
+type Server struct {
 	logicThreadCount   int
 	listener           net.Listener
-	logicThreads       []*LogicThread[T]
-	clients            map[net.Conn]*Client[T]
+	logicThreads       []*LogicThread
+	clients            map[net.Conn]Client
 	clientsMutex       sync.RWMutex
 	shutdownChan       chan struct{}
 	wg                 sync.WaitGroup
@@ -26,35 +26,38 @@ type Server[T any] struct {
 	cancel             context.CancelFunc
 	nextClientID       int // Counter for generating unique client IDs
 	clientIDMutex      sync.Mutex
-	packetHandler      *PacketHandler[T] // Central packet handler for the server
-	onClientDisconnect func(*Client[T])  // Callback when client disconnects
+	packetHandler      *PacketHandler                      // Central packet handler for the server
+	onClientDisconnect func(Client)                        // Callback when client disconnects
+	clientFactory      func(net.Conn, int) (Client, error) // Factory for creating clients
 }
 
 // ServerConfig holds server configuration parameters
 type ServerConfig struct {
-	LogicThreadCount   int               // Number of logic threads for game processing
-	Host               string            // Server host address
-	Port               int               // Server port number
-	OnClientDisconnect func(interface{}) // Callback when client disconnects
+	LogicThreadCount   int                                 // Number of logic threads for game processing
+	Host               string                              // Server host address
+	Port               int                                 // Server port number
+	OnClientDisconnect func(interface{})                   // Callback when client disconnects
+	ClientFactory      func(net.Conn, int) (Client, error) // Factory for creating clients
 }
 
-// NewServer creates a new game server with specified thread configuration
-func NewServer[T any](config *ServerConfig) (*Server[T], error) {
+// NewServer creates a new server with specified thread configuration
+func NewServer(config *ServerConfig) (*Server, error) {
 	if config.LogicThreadCount <= 0 {
 		return nil, fmt.Errorf("invalid logic thread count: %d", config.LogicThreadCount)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	server := &Server[T]{
+	server := &Server{
 		logicThreadCount: config.LogicThreadCount,
-		clients:          make(map[net.Conn]*Client[T]),
+		clients:          make(map[net.Conn]Client),
 		shutdownChan:     make(chan struct{}),
 		ctx:              ctx,
 		cancel:           cancel,
 		nextClientID:     0,
-		packetHandler:    NewPacketHandler[T](),
-		onClientDisconnect: func(client *Client[T]) {
+		packetHandler:    NewPacketHandler(),
+		clientFactory:    config.ClientFactory,
+		onClientDisconnect: func(client Client) {
 			if config.OnClientDisconnect != nil {
 				config.OnClientDisconnect(client)
 			}
@@ -65,7 +68,7 @@ func NewServer[T any](config *ServerConfig) (*Server[T], error) {
 }
 
 // Start initializes and starts the server with configured threads
-func (s *Server[T]) Start(host string, port int) error {
+func (s *Server) Start(host string, port int) error {
 	// Create listener
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
@@ -74,9 +77,9 @@ func (s *Server[T]) Start(host string, port int) error {
 	s.listener = listener
 
 	// Start logic threads
-	s.logicThreads = make([]*LogicThread[T], s.logicThreadCount)
+	s.logicThreads = make([]*LogicThread, s.logicThreadCount)
 	for i := 0; i < s.logicThreadCount; i++ {
-		logicThread := &LogicThread[T]{
+		logicThread := &LogicThread{
 			id:       i,
 			server:   s,
 			stopChan: make(chan struct{}),
@@ -85,7 +88,7 @@ func (s *Server[T]) Start(host string, port int) error {
 		s.logicThreads[i] = logicThread
 
 		s.wg.Add(1)
-		go func(thread *LogicThread[T]) {
+		go func(thread *LogicThread) {
 			defer s.wg.Done()
 			thread.run()
 		}(logicThread)
@@ -102,7 +105,7 @@ func (s *Server[T]) Start(host string, port int) error {
 }
 
 // Stop gracefully shuts down the server and all threads
-func (s *Server[T]) Stop() error {
+func (s *Server) Stop() error {
 	log.Println("Shutting down server...")
 
 	// Signal shutdown
@@ -117,7 +120,7 @@ func (s *Server[T]) Stop() error {
 	// Close all client connections
 	s.clientsMutex.Lock()
 	for conn, client := range s.clients {
-		client.conn.Close()
+		client.GetConnection().Close()
 		delete(s.clients, conn)
 	}
 	s.clientsMutex.Unlock()
@@ -135,7 +138,7 @@ func (s *Server[T]) Stop() error {
 }
 
 // acceptConnections accepts new client connections and starts goroutines for each
-func (s *Server[T]) acceptConnections() {
+func (s *Server) acceptConnections() {
 	defer s.wg.Done()
 
 	for {
@@ -159,9 +162,8 @@ func (s *Server[T]) acceptConnections() {
 			s.nextClientID++
 			s.clientIDMutex.Unlock()
 
-			// Create client with file descriptor
-			var zero T // Create zero value for type T
-			client, err := NewClient(conn, clientID, zero)
+			// Create client using factory
+			client, err := s.createClient(conn, clientID)
 			if err != nil {
 				log.Printf("Failed to create client for %s: %v", conn.RemoteAddr(), err)
 				conn.Close()
@@ -177,13 +179,21 @@ func (s *Server[T]) acceptConnections() {
 			s.wg.Add(1)
 			go s.handleClient(client)
 
-			log.Printf("New client connected: %s (fd=%d)", conn.RemoteAddr(), client.fd)
+			log.Printf("New client connected: %s", conn.RemoteAddr())
 		}
 	}
 }
 
+// createClient creates a new client using the configured factory
+func (s *Server) createClient(conn net.Conn, clientID int) (Client, error) {
+	if s.clientFactory != nil {
+		return s.clientFactory(conn, clientID)
+	}
+	return nil, fmt.Errorf("no client factory provided")
+}
+
 // handleClient handles a single client connection in its own goroutine
-func (s *Server[T]) handleClient(client *Client[T]) {
+func (s *Server) handleClient(client Client) {
 	defer func() {
 		// Call disconnect callback if set
 		if s.onClientDisconnect != nil {
@@ -192,22 +202,22 @@ func (s *Server[T]) handleClient(client *Client[T]) {
 
 		// Clean up client
 		s.clientsMutex.Lock()
-		delete(s.clients, client.conn)
+		delete(s.clients, client.GetConnection())
 		s.clientsMutex.Unlock()
-		client.conn.Close()
+		client.GetConnection().Close()
 		s.wg.Done()
-		log.Printf("Client disconnected: %s", client.conn.RemoteAddr())
+		log.Printf("Client disconnected: %s", client.GetConnection().RemoteAddr())
 	}()
 
 	// Send welcome packet on connection (for login server)
 	welcome := &common_resp.Welcome{
-		SendIv: client.sendEncryption.IV(),
-		RecvIv: client.recvEncryption.IV(),
+		SendIv: client.GetSendEncryption().IV(),
+		RecvIv: client.GetRecvEncryption().IV(),
 	}
 	if err := client.Send(welcome, types.SEND_POLICY_RAW); err != nil {
-		log.Printf("Failed to send welcome packet to %s: %v", client.conn.RemoteAddr(), err)
+		log.Printf("Failed to send welcome packet to %s: %v", client.GetConnection().RemoteAddr(), err)
 	} else {
-		log.Printf("Sent welcome packet to %s", client.conn.RemoteAddr())
+		log.Printf("Sent welcome packet to %s", client.GetConnection().RemoteAddr())
 	}
 
 	// Send login failed packet (for login server)
@@ -215,9 +225,9 @@ func (s *Server[T]) handleClient(client *Client[T]) {
 		Reason: resp.LoginFailedReasonNoPopup,
 	}
 	if err := client.Send(loginFailed, types.SEND_POLICY_ENCRYPT); err != nil {
-		log.Printf("Failed to send login failed packet to %s: %v", client.conn.RemoteAddr(), err)
+		log.Printf("Failed to send login failed packet to %s: %v", client.GetConnection().RemoteAddr(), err)
 	} else {
-		log.Printf("Sent login failed packet to %s", client.conn.RemoteAddr())
+		log.Printf("Sent login failed packet to %s", client.GetConnection().RemoteAddr())
 	}
 
 	for {
@@ -230,38 +240,38 @@ func (s *Server[T]) handleClient(client *Client[T]) {
 			if err != nil {
 				if err.Error() == "EOF" {
 					// Client disconnected normally
-					log.Printf("Client disconnected normally: %s", client.conn.RemoteAddr())
+					log.Printf("Client disconnected normally: %s", client.GetConnection().RemoteAddr())
 					return
 				}
 
 				// Check for connection abort errors (common on Windows)
 				if strings.Contains(err.Error(), "wsarecv") || strings.Contains(err.Error(), "connection was aborted") {
-					log.Printf("Client connection aborted: %s", client.conn.RemoteAddr())
+					log.Printf("Client connection aborted: %s", client.GetConnection().RemoteAddr())
 					return
 				}
 
-				log.Printf("Error reading packet from %s: %v", client.conn.RemoteAddr(), err)
+				log.Printf("Error reading packet from %s: %v", client.GetConnection().RemoteAddr(), err)
 				continue
 			}
 
 			if packetProcessed {
 				// Packet was submitted to logic thread for processing
-				log.Printf("Packet submitted to logic thread for client %s", client.conn.RemoteAddr())
+				log.Printf("Packet submitted to logic thread for client %s", client.GetConnection().RemoteAddr())
 			}
 		}
 	}
 }
 
 // readPacket attempts to read a packet from the client connection
-func (s *Server[T]) readPacket(client *Client[T]) (bool, error) {
+func (s *Server) readPacket(client Client) (bool, error) {
 	// Read packet header (4 bytes)
 	headerBytes := make([]byte, 4)
-	if _, err := client.conn.Read(headerBytes); err != nil {
+	if _, err := client.GetConnection().Read(headerBytes); err != nil {
 		return false, err
 	}
 
 	// Check packet header validity
-	if !client.recvEncryption.CheckPacketHeader(headerBytes) {
+	if !client.GetRecvEncryption().CheckPacketHeader(headerBytes) {
 		return false, fmt.Errorf("invalid packet header")
 	}
 
@@ -277,7 +287,7 @@ func (s *Server[T]) readPacket(client *Client[T]) (bool, error) {
 
 	// Read encrypted packet data
 	encryptedData := make([]byte, packetLength)
-	if _, err := client.conn.Read(encryptedData); err != nil {
+	if _, err := client.GetConnection().Read(encryptedData); err != nil {
 		return false, err
 	}
 
@@ -286,11 +296,9 @@ func (s *Server[T]) readPacket(client *Client[T]) (bool, error) {
 }
 
 // processPacket handles packet decryption and logic thread submission
-func (s *Server[T]) processPacket(client *Client[T], encryptedData []byte) (bool, error) {
-	// Decrypt packet data (minimal lock scope)
-	client.mu.Lock()
-	defer client.mu.Unlock()
-	packetData := client.recvEncryption.Decrypt(encryptedData)
+func (s *Server) processPacket(client Client, encryptedData []byte) (bool, error) {
+	// Decrypt packet data
+	packetData := client.GetRecvEncryption().Decrypt(encryptedData)
 
 	// Parse opcode (first 2 bytes)
 	if len(packetData) < 2 {
@@ -303,11 +311,11 @@ func (s *Server[T]) processPacket(client *Client[T], encryptedData []byte) (bool
 	task := &LogicTask{
 		Predicate: func() bool {
 			// Check if client is still connected and valid
-			return client.conn != nil
+			return client.GetConnection() != nil
 		},
 		Logic: func() error {
 			// Create client context
-			ctx := &ClientContext[T]{
+			ctx := &ClientContext{
 				Client: client,
 				Server: s,
 				SendFunc: func(p types.Packet, policy types.SendPolicy) error {
@@ -322,7 +330,7 @@ func (s *Server[T]) processPacket(client *Client[T], encryptedData []byte) (bool
 			if err != nil {
 				log.Printf("Error processing packet opcode 0x%02X: %v", opcode, err)
 			} else {
-				log.Printf("Packet processed successfully for client %s", client.conn.RemoteAddr())
+				log.Printf("Packet processed successfully for client %s", client.GetConnection().RemoteAddr())
 			}
 		},
 		Object:     client, // Use client for thread assignment
@@ -339,7 +347,7 @@ func (s *Server[T]) processPacket(client *Client[T], encryptedData []byte) (bool
 }
 
 // SubmitLogicTask submits a task to a logic thread (round-robin distribution)
-func (s *Server[T]) SubmitLogicTask(task *LogicTask) error {
+func (s *Server) SubmitLogicTask(task *LogicTask) error {
 	if task == nil {
 		return fmt.Errorf("cannot submit nil task")
 	}
@@ -352,7 +360,7 @@ func (s *Server[T]) SubmitLogicTask(task *LogicTask) error {
 }
 
 // SubmitLogicTaskToThread submits a task to a specific logic thread
-func (s *Server[T]) SubmitLogicTaskToThread(threadIndex int, task *LogicTask) error {
+func (s *Server) SubmitLogicTaskToThread(threadIndex int, task *LogicTask) error {
 	if task == nil {
 		return fmt.Errorf("cannot submit nil task")
 	}
@@ -365,7 +373,7 @@ func (s *Server[T]) SubmitLogicTaskToThread(threadIndex int, task *LogicTask) er
 }
 
 // SubmitLogicTaskForObject submits a task to the appropriate logic thread for a ThreadAssignable object
-func (s *Server[T]) SubmitLogicTaskForObject(obj ThreadAssignable, task *LogicTask) error {
+func (s *Server) SubmitLogicTaskForObject(obj ThreadAssignable, task *LogicTask) error {
 	if obj == nil {
 		return fmt.Errorf("cannot submit task for nil object")
 	}
@@ -388,7 +396,7 @@ func (s *Server[T]) SubmitLogicTaskForObject(obj ThreadAssignable, task *LogicTa
 }
 
 // GetThreadForObject returns the logic thread index for a ThreadAssignable object
-func (s *Server[T]) GetThreadForObject(obj ThreadAssignable) (int, error) {
+func (s *Server) GetThreadForObject(obj ThreadAssignable) (int, error) {
 	if obj == nil {
 		return -1, fmt.Errorf("cannot get thread for nil object")
 	}
@@ -398,17 +406,17 @@ func (s *Server[T]) GetThreadForObject(obj ThreadAssignable) (int, error) {
 }
 
 // RegisterPacketHandler registers a packet handler for a specific opcode
-func (s *Server[T]) RegisterPacketHandler(opcode int, handler func(ctx *ClientContext[T], data []byte) error) {
+func (s *Server) RegisterPacketHandler(opcode int, handler func(ctx *ClientContext, data []byte) error) {
 	s.packetHandler.RegisterHandler(opcode, handler)
 }
 
 // GetPacketHandler returns the server's packet handler for external access
-func (s *Server[T]) GetPacketHandler() *PacketHandler[T] {
+func (s *Server) GetPacketHandler() *PacketHandler {
 	return s.packetHandler
 }
 
 // GetStats returns server statistics for monitoring
-func (s *Server[T]) GetStats() map[string]interface{} {
+func (s *Server) GetStats() map[string]interface{} {
 	s.clientsMutex.RLock()
 	clientCount := len(s.clients)
 	s.clientsMutex.RUnlock()
@@ -422,8 +430,8 @@ func (s *Server[T]) GetStats() map[string]interface{} {
 }
 
 // SetOnClientDisconnect sets the callback function for client disconnection
-func (s *Server[T]) SetOnClientDisconnect(callback func(interface{})) {
-	s.onClientDisconnect = func(client *Client[T]) {
+func (s *Server) SetOnClientDisconnect(callback func(interface{})) {
+	s.onClientDisconnect = func(client Client) {
 		callback(client)
 	}
 }

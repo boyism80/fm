@@ -22,9 +22,9 @@ type LogicTask struct {
 
 // Thread Safety: Processes game state updates atomically
 // Error Handling: Game logic errors, state inconsistencies
-type LogicThread[T any] struct {
+type LogicThread struct {
 	id       int
-	server   *Server[T]
+	server   *Server
 	stopChan chan struct{}
 	taskChan chan *LogicTask // Channel for receiving logic tasks
 }
@@ -33,7 +33,7 @@ type LogicThread[T any] struct {
 // Flow: Receives tasks from channel -> Processes game logic -> Sends responses
 // Game Logic: Character movement, combat, inventory, chat, etc.
 // Thread Safety: Processes game state updates atomically
-func (t *LogicThread[T]) run() {
+func (t *LogicThread) run() {
 	log.Printf("Logic thread %d started", t.id)
 	defer log.Printf("Logic thread %d stopped", t.id)
 
@@ -51,7 +51,7 @@ func (t *LogicThread[T]) run() {
 // Flow: Thread validation -> Predicate check -> Logic execution -> Result callback
 // Error Handling: Predicate failure, logic execution errors, callback failures, thread reassignment
 // Thread Safety: Executes tasks atomically within the logic thread
-func (t *LogicThread[T]) processTask(task *LogicTask) {
+func (t *LogicThread) processTask(task *LogicTask) {
 	if task == nil {
 		log.Printf("Logic thread %d received nil task", t.id)
 		return
@@ -120,7 +120,7 @@ func (t *LogicThread[T]) processTask(task *LogicTask) {
 // SubmitTask submits a logic task to this logic thread for execution
 // Flow: Creates task -> Sends to task channel -> Logic thread processes
 // Thread Safety: Safe to call from any thread, non-blocking
-func (t *LogicThread[T]) SubmitTask(task *LogicTask) error {
+func (t *LogicThread) SubmitTask(task *LogicTask) error {
 	if task == nil {
 		return fmt.Errorf("cannot submit nil task")
 	}
@@ -133,18 +133,14 @@ func (t *LogicThread[T]) SubmitTask(task *LogicTask) error {
 	}
 }
 
-// processPacket processes a packet for a specific client
-// Flow: Packet -> Client processing -> Response
-// Thread Safety: Executes within logic thread context
-func (t *LogicThread[T]) processPacket(client *Client[T], packet types.Packet) {
-	// This is a placeholder for packet processing logic
-	log.Printf("Logic thread %d processing packet for client %d", t.id, client.clientID)
+// processPacket is a placeholder for packet processing logic
+func (t *LogicThread) processPacket(client Client, packet types.Packet) {
+	log.Printf("Logic thread %d processing packet for client %d", t.id, client.GetThreadHash())
+	// ... actual packet processing logic ...
 }
 
-// processPacketForClient processes a packet for a specific client with additional context
-// Flow: Packet -> Client processing -> Response
-// Thread Safety: Executes within logic thread context
-func (t *LogicThread[T]) processPacketForClient(client *Client[T], packet types.Packet) {
-	// This is a placeholder for packet processing logic with additional context
-	log.Printf("Logic thread %d processing packet for client %d with additional context", t.id, client.clientID)
+// processPacketForClient is a placeholder for client-specific packet processing
+func (t *LogicThread) processPacketForClient(client Client, packet types.Packet) {
+	log.Printf("Logic thread %d processing packet for client %d", t.id, client.GetThreadHash())
+	// ... actual packet processing logic ...
 }

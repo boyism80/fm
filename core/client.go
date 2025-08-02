@@ -11,76 +11,46 @@ import (
 )
 
 // Client represents a connected game client with socket functionality
-// Flow: Network connection -> IO thread processing -> Logic thread game state
-// State: Connection, authentication status, game session, file descriptor, encryption
-// Error Conditions: Connection lost, invalid packets, authentication failure
-type Client[T any] struct {
-	conn           net.Conn
-	mu             sync.Mutex
-	clientID       int              // Unique client identifier for thread assignment
-	fd             int              // File descriptor for thread assignment (extracted from connection)
-	sendEncryption crypt.Encryption // Encryption for outgoing packets
-	recvEncryption crypt.Encryption // Encryption for incoming packets
-	data           T                // Generic data for server-specific information
+type Client interface {
+	ThreadAssignable
+	Send(packet types.Packet, policy types.SendPolicy) error
+	GetConnection() net.Conn
+	GetSendEncryption() *crypt.Encryption
+	GetRecvEncryption() *crypt.Encryption
 }
 
-// Ensure Client implements ThreadAssignable
-var _ ThreadAssignable = (*Client[any])(nil)
-
-// GetThreadHash returns a hash value for thread assignment based on file descriptor
-// Flow: File descriptor -> Hash generation -> Thread assignment
-// Thread Assignment: Uses file descriptor for consistent thread assignment
-// Error Handling: Returns valid hash value
-func (c *Client[T]) GetThreadHash() int {
-	return c.fd
+// BaseClient contains common fields and methods for all client types
+type BaseClient struct {
+	conn           net.Conn
+	mu             sync.Mutex
+	clientID       int
+	fd             int
+	sendEncryption *crypt.Encryption
+	recvEncryption *crypt.Encryption
 }
 
 // GetConnection returns the underlying network connection
-func (c *Client[T]) GetConnection() net.Conn {
+func (c *BaseClient) GetConnection() net.Conn {
 	return c.conn
 }
 
-// GetFileDescriptor returns the file descriptor of this client
-func (c *Client[T]) GetFileDescriptor() int {
+// GetSendEncryption returns the send encryption object
+func (c *BaseClient) GetSendEncryption() *crypt.Encryption {
+	return c.sendEncryption
+}
+
+// GetRecvEncryption returns the receive encryption object
+func (c *BaseClient) GetRecvEncryption() *crypt.Encryption {
+	return c.recvEncryption
+}
+
+// GetFd returns the file descriptor
+func (c *BaseClient) GetFd() int {
 	return c.fd
 }
 
-// NewClient creates a new Client with file descriptor extraction and encryption
-func NewClient[T any](conn net.Conn, clientID int, data T) (*Client[T], error) {
-	fd, err := getFileDescriptor(conn)
-	if err != nil {
-		return nil, err
-	}
-
-	// Initialize encryption with default IVs
-	ivSend := []byte{0x2F, 0xA3, 0x65, 0x43}
-	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
-
-	return &Client[T]{
-		conn:           conn,
-		clientID:       clientID,
-		fd:             fd,
-		sendEncryption: crypt.NewEncryption(ivSend, -5),
-		recvEncryption: crypt.NewEncryption(ivRecv, 5),
-		data:           data,
-	}, nil
-}
-
-// getFileDescriptor extracts the file descriptor from a net.Conn
-func getFileDescriptor(conn net.Conn) (int, error) {
-	remoteAddr := conn.RemoteAddr().String()
-	fd := 0
-	for _, char := range remoteAddr {
-		fd = fd*31 + int(char)
-	}
-	if fd < 0 {
-		fd = -fd
-	}
-	return fd, nil
-}
-
 // Send sends a packet to the client with optional encryption
-func (c *Client[T]) Send(packet types.Packet, policy types.SendPolicy) error {
+func (c *BaseClient) Send(packet types.Packet, policy types.SendPolicy) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -119,26 +89,26 @@ func (c *Client[T]) Send(packet types.Packet, policy types.SendPolicy) error {
 	return fmt.Errorf("unsupported send policy: %d", policy)
 }
 
-// GetSendEncryption returns the send encryption object
-func (c *Client[T]) GetSendEncryption() crypt.Encryption {
-	return c.sendEncryption
+// GetFileDescriptor extracts the file descriptor from a net.Conn
+func GetFileDescriptor(conn net.Conn) (int, error) {
+	remoteAddr := conn.RemoteAddr().String()
+	fd := 0
+	for _, char := range remoteAddr {
+		fd = fd*31 + int(char)
+	}
+	if fd < 0 {
+		fd = -fd
+	}
+	return fd, nil
 }
 
-// GetRecvEncryption returns the receive encryption object
-func (c *Client[T]) GetRecvEncryption() crypt.Encryption {
-	return c.recvEncryption
-}
-
-// GetData returns the generic data for this client
-func (c *Client[T]) GetData() T {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.data
-}
-
-// SetData sets the generic data for this client
-func (c *Client[T]) SetData(data T) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.data = data
+// NewBaseClient creates a new BaseClient with the given parameters
+func NewBaseClient(conn net.Conn, clientID int, fd int, sendEncryption, recvEncryption *crypt.Encryption) BaseClient {
+	return BaseClient{
+		conn:           conn,
+		clientID:       clientID,
+		fd:             fd,
+		sendEncryption: sendEncryption,
+		recvEncryption: recvEncryption,
+	}
 }

@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"sync"
@@ -12,16 +13,12 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/data"
 	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/renewal/game/client"
 )
-
-// GameClientData represents game-specific client data
-type GameClientData struct {
-	Character *entity.Character // Character data for the connected player
-}
 
 // GameServer represents the game server for MapleStory private server
 type GameServer struct {
-	server    *core.Server[GameClientData]
+	server    *core.Server
 	config    *GameConfig
 	resources *data.Resources        // Game data resources
 	maps      map[uint32]*entity.Map // Map instances by map ID
@@ -42,23 +39,17 @@ type GameConfig struct {
 
 // NewGameServer creates a new game server with specified configuration
 func NewGameServer(config *GameConfig) (*GameServer, error) {
-	// Create core server configuration
 	serverConfig := &core.ServerConfig{
 		LogicThreadCount: config.LogicThreadCount,
 		Host:             config.Host,
 		Port:             config.Port,
+		ClientFactory: func(conn net.Conn, clientID int) (core.Client, error) {
+			return client.NewGameClient(conn, clientID)
+		},
 	}
-
-	// Create core server
-	server, err := core.NewServer[GameClientData](serverConfig)
+	server, err := core.NewServer(serverConfig)
 	if err != nil {
 		return nil, err
-	}
-
-	gameServer := &GameServer{
-		server: server,
-		config: config,
-		maps:   make(map[uint32]*entity.Map),
 	}
 
 	// Load game resources
@@ -67,34 +58,43 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	if resources == nil {
 		return nil, fmt.Errorf("failed to load game resources")
 	}
-	gameServer.resources = resources
-	log.Println("Game resources loaded successfully")
 
-	// Set up map listeners for packet broadcasting
-	log.Println("Setting up map listeners...")
-	gameMapListener := NewGameMapListener(gameServer)
-
-	// Pre-create all map instances from loaded resources
-	log.Println("Pre-creating map instances...")
-	for mapID, _ := range resources.Maps {
-		mapInstance := entity.NewMap(mapID, gameMapListener)
-		// TODO: Initialize map with MapSpec data (mob spawns, etc.)
-		gameServer.maps[mapID] = mapInstance
+	gameServer := &GameServer{
+		server:    server,
+		config:    config,
+		resources: resources,
+		maps:      make(map[uint32]*entity.Map),
 	}
-	log.Printf("Pre-created %d map instances", len(gameServer.maps))
-	log.Println("Map listeners configured")
 
-	// Register game server packet handlers
+	// Pre-create all maps
+	gameServer.preCreateMaps()
+
+	// Register packet handlers
 	gameServer.registerPacketHandlers()
 
-	// Set up client disconnect callback
-	gameServer.server.SetOnClientDisconnect(func(client interface{}) {
-		if gameClient, ok := client.(*core.Client[GameClientData]); ok {
-			gameServer.handleClientDisconnect(gameClient)
+	// Set client disconnect handler
+	server.SetOnClientDisconnect(func(client interface{}) {
+		if client, ok := client.(core.Client); ok {
+			gameServer.handleClientDisconnect(client)
 		}
 	})
 
 	return gameServer, nil
+}
+
+// preCreateMaps pre-creates all map instances from loaded resources
+func (gs *GameServer) preCreateMaps() {
+	log.Println("Setting up map listeners...")
+	gameMapListener := NewGameMapListener(gs)
+
+	log.Println("Pre-creating map instances...")
+	for mapID, _ := range gs.resources.Maps {
+		mapInstance := entity.NewMap(mapID, gameMapListener)
+		// TODO: Initialize map with MapSpec data (mob spawns, etc.)
+		gs.maps[mapID] = mapInstance
+	}
+	log.Printf("Pre-created %d map instances", len(gs.maps))
+	log.Println("Map listeners configured")
 }
 
 // Start initializes and starts the game server
@@ -138,17 +138,21 @@ func (gs *GameServer) GetMap(mapID uint32) *entity.Map {
 }
 
 // handleClientDisconnect handles client disconnection by removing character from map
-func (gs *GameServer) handleClientDisconnect(client *core.Client[GameClientData]) {
-	clientData := client.GetData()
-	if clientData.Character == nil {
+func (gs *GameServer) handleClientDisconnect(c core.Client) {
+	client, ok := c.(*client.GameClient)
+	if !ok {
 		return
 	}
-	character := clientData.Character
-	mapInstance := gs.GetMap(character.Map)
+	character := client.GetCharacter()
+	if character == nil {
+		return
+	}
+	mapID := character.GetMap()
+	mapInstance := gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
-	mapInstance.RemovePlayer(character.ID)
+	mapInstance.RemovePlayer(character.GetID())
 }
 
 // GetStats returns game server statistics for monitoring

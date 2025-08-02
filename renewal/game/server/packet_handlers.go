@@ -9,6 +9,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol/req"
+	"github.com/boyism80/fm/renewal/game/client"
 )
 
 // registerPacketHandlers registers all game server packet handlers
@@ -34,7 +35,7 @@ func (gs *GameServer) registerPacketHandlers() {
 }
 
 // handlePong processes pong responses
-func (gs *GameServer) handlePong(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handlePong(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &common_req.Pong{}
 	if err := request.Deserialize(reader); err != nil {
@@ -48,7 +49,7 @@ func (gs *GameServer) handlePong(ctx *core.ClientContext[GameClientData], data [
 }
 
 // handleLoginGame processes game login requests
-func (gs *GameServer) handleLoginGame(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleLoginGame(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.LoginGame{}
 	if err := request.Deserialize(reader); err != nil {
@@ -68,10 +69,13 @@ func (gs *GameServer) handleLoginGame(ctx *core.ClientContext[GameClientData], d
 	// Create character using NewDummyCharacter (following old server pattern)
 	character := entity.NewDummyCharacter(ctx.Client, nil, request.PlayerId, name, nil)
 
-	// Set character in client data
-	clientData := ctx.Client.GetData()
-	clientData.Character = &character
-	ctx.Client.SetData(clientData)
+	// Set character in game client
+	client, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		log.Printf("Client is not a GameClient")
+		return fmt.Errorf("client is not a GameClient")
+	}
+	client.SetCharacter(&character)
 
 	// Add player to map directly
 	mapInstance := gs.GetMap(character.Map)
@@ -92,7 +96,7 @@ func (gs *GameServer) handleLoginGame(ctx *core.ClientContext[GameClientData], d
 }
 
 // handleMovePlayer processes player movement requests
-func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.MovePlayer{}
 	if err := request.Deserialize(reader); err != nil {
@@ -106,7 +110,7 @@ func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext[GameClientData], 
 }
 
 // handleNormalChat processes normal chat messages
-func (gs *GameServer) handleNormalChat(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleNormalChat(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.NormalChat{}
 	if err := request.Deserialize(reader); err != nil {
@@ -120,7 +124,7 @@ func (gs *GameServer) handleNormalChat(ctx *core.ClientContext[GameClientData], 
 }
 
 // handleAttack processes attack requests
-func (gs *GameServer) handleAttack(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleAttack(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.Attack{}
 	if err := request.Deserialize(reader); err != nil {
@@ -134,7 +138,7 @@ func (gs *GameServer) handleAttack(ctx *core.ClientContext[GameClientData], data
 }
 
 // handleMoveItem processes item movement requests
-func (gs *GameServer) handleMoveItem(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleMoveItem(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.MoveItem{}
 	if err := request.Deserialize(reader); err != nil {
@@ -148,7 +152,7 @@ func (gs *GameServer) handleMoveItem(ctx *core.ClientContext[GameClientData], da
 }
 
 // handleSortInventory processes inventory sorting requests
-func (gs *GameServer) handleSortInventory(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleSortInventory(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.SortInventory{}
 	if err := request.Deserialize(reader); err != nil {
@@ -162,7 +166,7 @@ func (gs *GameServer) handleSortInventory(ctx *core.ClientContext[GameClientData
 }
 
 // handleItemLoot processes item looting requests
-func (gs *GameServer) handleItemLoot(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.ItemLoot{}
 	if err := request.Deserialize(reader); err != nil {
@@ -176,7 +180,7 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext[GameClientData], da
 }
 
 // handleDropMeso processes meso dropping requests
-func (gs *GameServer) handleDropMeso(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleDropMeso(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.DropMeso{}
 	if err := request.Deserialize(reader); err != nil {
@@ -190,7 +194,7 @@ func (gs *GameServer) handleDropMeso(ctx *core.ClientContext[GameClientData], da
 }
 
 // handleWarp processes warp requests
-func (gs *GameServer) handleWarp(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.Warp{}
 	if err := request.Deserialize(reader); err != nil {
@@ -204,7 +208,7 @@ func (gs *GameServer) handleWarp(ctx *core.ClientContext[GameClientData], data [
 }
 
 // handleNpcControl processes NPC control requests
-func (gs *GameServer) handleNpcControl(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleNpcControl(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.NpcAction{}
 	if err := request.Deserialize(reader); err != nil {
@@ -218,7 +222,7 @@ func (gs *GameServer) handleNpcControl(ctx *core.ClientContext[GameClientData], 
 }
 
 // handleDialog processes dialog requests
-func (gs *GameServer) handleDialog(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleDialog(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.Dialog{}
 	if err := request.Deserialize(reader); err != nil {
@@ -232,7 +236,7 @@ func (gs *GameServer) handleDialog(ctx *core.ClientContext[GameClientData], data
 }
 
 // handleNpcClick processes NPC click requests
-func (gs *GameServer) handleNpcClick(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleNpcClick(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.NpcClick{}
 	if err := request.Deserialize(reader); err != nil {
@@ -246,7 +250,7 @@ func (gs *GameServer) handleNpcClick(ctx *core.ClientContext[GameClientData], da
 }
 
 // handleMoveMob processes mob movement requests
-func (gs *GameServer) handleMoveMob(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.MoveMob{}
 	if err := request.Deserialize(reader); err != nil {
@@ -260,7 +264,7 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext[GameClientData], dat
 }
 
 // handleDamaged processes damage requests
-func (gs *GameServer) handleDamaged(ctx *core.ClientContext[GameClientData], data []byte) error {
+func (gs *GameServer) handleDamaged(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.Damaged{}
 	if err := request.Deserialize(reader); err != nil {

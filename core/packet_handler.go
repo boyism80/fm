@@ -11,17 +11,17 @@ import (
 // Flow: Opcode -> Handler function -> Packet processing
 // Purpose: Centralized packet handling with automatic deserialization
 // Thread Safety: Safe for concurrent registration and handling
-type PacketHandler[T any] struct {
-	handlers map[int]func(ctx *ClientContext[T], data []byte) error
+type PacketHandler struct {
+	handlers map[int]func(ctx *ClientContext, data []byte) error
 }
 
 // ClientContext provides context for packet handlers
 // Flow: Client -> Server -> Handler function
 // Purpose: Provides client and server references to handlers
 // Thread Safety: Safe for concurrent access
-type ClientContext[T any] struct {
-	Client   *Client[T]
-	Server   *Server[T]
+type ClientContext struct {
+	Client   Client
+	Server   *Server
 	SendFunc func(p types.Packet, policy types.SendPolicy) error
 }
 
@@ -29,9 +29,9 @@ type ClientContext[T any] struct {
 // Flow: Initialization -> Handler registration -> Packet processing
 // Purpose: Creates empty packet handler ready for registration
 // Error Handling: None (always succeeds)
-func NewPacketHandler[T any]() *PacketHandler[T] {
-	return &PacketHandler[T]{
-		handlers: make(map[int]func(ctx *ClientContext[T], data []byte) error),
+func NewPacketHandler() *PacketHandler {
+	return &PacketHandler{
+		handlers: make(map[int]func(ctx *ClientContext, data []byte) error),
 	}
 }
 
@@ -39,7 +39,7 @@ func NewPacketHandler[T any]() *PacketHandler[T] {
 // Flow: Opcode -> Handler function -> Registration
 // Thread Safety: Should be called during server initialization
 // Error Handling: Overwrites existing handler for same opcode
-func (h *PacketHandler[T]) RegisterHandler(opcode int, handler func(ctx *ClientContext[T], data []byte) error) {
+func (h *PacketHandler) RegisterHandler(opcode int, handler func(ctx *ClientContext, data []byte) error) {
 	h.handlers[opcode] = handler
 	log.Printf("Registered packet handler for opcode 0x%02X", opcode)
 }
@@ -48,7 +48,7 @@ func (h *PacketHandler[T]) RegisterHandler(opcode int, handler func(ctx *ClientC
 // Flow: Opcode lookup -> Handler execution -> Result reporting
 // Thread Safety: Safe for concurrent handling
 // Error Handling: Missing handlers, handler execution errors
-func (h *PacketHandler[T]) Handle(ctx *ClientContext[T], opcode int, data []byte) error {
+func (h *PacketHandler) Handle(ctx *ClientContext, opcode int, data []byte) error {
 	handler, exists := h.handlers[opcode]
 	if !exists {
 		return fmt.Errorf("no handler registered for opcode 0x%02X", opcode)
@@ -61,7 +61,7 @@ func (h *PacketHandler[T]) Handle(ctx *ClientContext[T], opcode int, data []byte
 // Flow: Count calculation -> Return value
 // Purpose: Statistics and monitoring
 // Thread Safety: Safe for concurrent access
-func (h *PacketHandler[T]) GetHandlerCount() int {
+func (h *PacketHandler) GetHandlerCount() int {
 	return len(h.handlers)
 }
 
@@ -69,7 +69,7 @@ func (h *PacketHandler[T]) GetHandlerCount() int {
 // Flow: Opcode collection -> Return slice
 // Purpose: Debugging and monitoring
 // Thread Safety: Safe for concurrent access
-func (h *PacketHandler[T]) GetRegisteredOpcodes() []int {
+func (h *PacketHandler) GetRegisteredOpcodes() []int {
 	opcodes := make([]int, 0, len(h.handlers))
 	for opcode := range h.handlers {
 		opcodes = append(opcodes, opcode)

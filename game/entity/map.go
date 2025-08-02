@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/boyism80/fm/common/types"
@@ -17,7 +16,6 @@ type MobSpawn struct {
 
 type Map struct {
 	ID              uint32
-	mu              sync.RWMutex
 	objects         map[types.ObjectType]map[uint32]interface{} // Players, Mobs, Items, etc.
 	controllerTable *ControllerTable
 	MobSpawns       map[uint32]*MobSpawn
@@ -39,9 +37,6 @@ func NewMap(id uint32, listener MapListener) *Map {
 }
 
 func (m *Map) AddPlayer(playerID uint32, character *Character, init bool) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
 		m.objects[types.OBJECT_TYPE_PLAYER] = make(map[uint32]interface{})
 	}
@@ -55,9 +50,6 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, init bool) error 
 }
 
 func (m *Map) RemovePlayer(playerID uint32) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
 		return fmt.Errorf("no players on map")
 	}
@@ -75,9 +67,6 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 }
 
 func (m *Map) GetPlayer(playerID uint32) *Character {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
 		return nil
 	}
@@ -89,13 +78,18 @@ func (m *Map) GetPlayer(playerID uint32) *Character {
 }
 
 func (m *Map) GetPlayerCount() int {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
 		return 0
 	}
 	return len(m.objects[types.OBJECT_TYPE_PLAYER])
+}
+
+// GetAllPlayers returns all players on the map
+func (m *Map) GetAllPlayers() map[uint32]interface{} {
+	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
+		return make(map[uint32]interface{})
+	}
+	return m.objects[types.OBJECT_TYPE_PLAYER]
 }
 
 func (m *Map) GetControllerTable() *ControllerTable {
@@ -104,9 +98,6 @@ func (m *Map) GetControllerTable() *ControllerTable {
 
 // BroadcastToPlayers sends a message to all players on the map
 func (m *Map) BroadcastToPlayers(message types.Packet, policy types.SendPolicy, exceptPlayerID uint32) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
 		return
 	}
@@ -124,9 +115,6 @@ func (m *Map) BroadcastToPlayers(message types.Packet, policy types.SendPolicy, 
 
 // BroadcastToPlayer sends a message to a specific player on the map
 func (m *Map) BroadcastToPlayer(playerID uint32, message types.Packet, policy types.SendPolicy) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
 		return
 	}
