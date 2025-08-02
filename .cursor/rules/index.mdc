@@ -213,42 +213,34 @@ func (ls *LoginServer) handleCreateCharacter(ctx *core.ClientContext, data []byt
 
 ## Git Commit Guidelines (CRITICAL REQUIREMENTS)
 
-### Commit Message Format - ABSOLUTELY MANDATORY
-1. **Subject Line**: Keep under 50 characters, use imperative mood
-2. **Body**: Add detailed description ONLY when additional context is needed
-3. **Format**: Follow conventional commit structure when appropriate
+**Commit Command Format**:
+- **Maximum 2 `-m` options only**: Use exactly 2 `-m` options maximum
+- **First `-m`**: Subject line only
+- **Second `-m`**: Description with multiple bullet points (no unnecessary newlines between points)
+- **Multiline description**: Use single string with embedded newlines, not multiple `-m` options
 
-### Commit Message Structure
+**Example**:
 ```
-Short, descriptive subject line (≤50 chars)
-
-Optional body (add ONLY if needed for clarity):
-- What was changed and why (if not obvious)
-- Implementation details (if complex)
-- Breaking changes or migration notes
-- Related issues or tickets
-
-Examples of commits needing detailed body:
-- Multiple system changes in one commit
-- Complex refactoring with non-obvious implications
-- Bug fixes where the cause/solution needs explanation
+git commit -m "feat: add user authentication system" -m "- Implement JWT token validation
+- Add password hashing with bcrypt
+- Create login/logout endpoints
+- Add session management middleware"
 ```
 
-### Subject Line Guidelines
-- **Good**: "Add mob spawn mechanics"
-- **Good**: "Fix inventory slot validation"
-- **Good**: "Refactor protocol handlers"
-- **Bad**: "Add mob spawn mechanics and fix inventory validation and update protocol handlers"
-- **Bad**: "Various improvements and bug fixes"
+**WRONG Example** (multiple -m options):
+```
+git commit -m "feat: add user authentication system" -m "- Implement JWT token validation" -m "- Add password hashing with bcrypt" -m "- Create login/logout endpoints"
+```
 
-### When to Use Body Description
-- **Use detailed body ONLY when needed for:**
-  - Multiple related changes in one commit
-  - Complex implementation details requiring explanation
-  - Breaking changes or API modifications
-  - Non-obvious bug fixes that need context
-  - Changes that might not be self-explanatory from code diff
-- **Simple, self-explanatory changes can use subject line only**
+Types:
+- `feat`: New feature
+- `fix`: Bug fix
+- `refactor`: Code refactoring without feature changes
+- `docs`: Documentation updates (including Doxygen)
+- `style`: Code style changes (formatting, etc.)
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+- `script`: Lua script additions or modifications
 
 ### Commit Frequency
 - Commit early and often with logical units of work

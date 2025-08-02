@@ -14,7 +14,6 @@ type Move struct {
 }
 
 func (p *Move) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x82)
 	writer.WriteU32(p.Character.ID)
 	writer.Write16(p.Character.Position.X)
 	writer.Write16(p.Character.Position.Y)
@@ -23,6 +22,10 @@ func (p *Move) Serialize(writer *stream.StreamWriter) error {
 		move.Serialize(writer)
 	}
 	return nil
+}
+
+func (p *Move) Opcode() uint16 {
+	return 0x82 // Move opcode
 }
 
 func (p *Move) Deserialize(reader *stream.StreamReader) error {

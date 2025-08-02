@@ -88,8 +88,8 @@ func (gs *GameServer) preCreateMaps() {
 	gameMapListener := NewGameMapListener(gs)
 
 	log.Println("Pre-creating map instances...")
-	for mapID, _ := range gs.resources.Maps {
-		mapInstance := entity.NewMap(mapID, gameMapListener)
+	for mapID, mapSpec := range gs.resources.Maps {
+		mapInstance := entity.NewMap(mapID, gameMapListener, mapSpec)
 		// TODO: Initialize map with MapSpec data (mob spawns, etc.)
 		gs.maps[mapID] = mapInstance
 	}

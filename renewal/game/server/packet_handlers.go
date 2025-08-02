@@ -6,9 +6,12 @@ import (
 
 	common_req "github.com/boyism80/fm/common/protocol/req"
 	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/req"
+	"github.com/boyism80/fm/game/protocol/resp"
 	"github.com/boyism80/fm/renewal/game/client"
 )
 
@@ -77,12 +80,29 @@ func (gs *GameServer) handleLoginGame(ctx *core.ClientContext, data []byte) erro
 	}
 	client.SetCharacter(&character)
 
-	// Add player to map directly
+	// Get map instance and set character position based on SpawnPoint
 	mapInstance := gs.GetMap(character.Map)
 	if mapInstance == nil {
 		log.Printf("Map %d not found (should have been pre-created)", character.Map)
 		return fmt.Errorf("map %d not found", character.Map)
 	}
+
+	// Set character position based on SpawnPoint (following old server pattern)
+	mapSpec := mapInstance.GetSpec()
+	if mapSpec == nil {
+		log.Printf("MapSpec not found for map %d", character.Map)
+		return fmt.Errorf("mapSpec not found for map %d", character.Map)
+	}
+
+	portal, ok := mapSpec.Portals[character.SpawnPoint]
+	if !ok {
+		log.Printf("Portal %d not found in map %d", character.SpawnPoint, character.Map)
+		return fmt.Errorf("portal %d not found in map %d", character.SpawnPoint, character.Map)
+	}
+
+	// Set character position to portal position (following old server pattern)
+	character.Position = portal.Position
+	character.Stance = 0
 
 	if err := mapInstance.AddPlayer(character.ID, &character, true); err != nil {
 		log.Printf("Failed to add player to map: %v", err)
@@ -104,8 +124,47 @@ func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext, data []byte) err
 		return err
 	}
 
-	log.Printf("Move player packet received from %s - Fragments: %d",
-		ctx.Client.GetConnection().RemoteAddr(), len(request.Fragments))
+	// Get the game client and character
+	client, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		log.Printf("Client is not a GameClient")
+		return fmt.Errorf("client is not a GameClient")
+	}
+
+	character := client.GetCharacter()
+	if character == nil {
+		log.Printf("Character is nil for client")
+		return fmt.Errorf("character is nil")
+	}
+
+	// Store the position before movement
+	beforePosition := character.Position
+
+	// Process movement fragments
+	for _, frag := range request.Fragments {
+		if move, ok := frag.(*protocol.AbsoluteLifeMovement); ok {
+			character.Position = move.Position
+		}
+		character.Stance = frag.GetStance()
+	}
+
+	// Get the map instance
+	mapInstance := gs.GetMap(character.GetMap())
+	if mapInstance == nil {
+		log.Printf("Map %d not found for character movement", character.GetMap())
+		return fmt.Errorf("map %d not found", character.GetMap())
+	}
+
+	// Broadcast movement to other players on the map
+	movePacket := &resp.Move{
+		Character:  character,
+		Fragments:  request.Fragments,
+		StartPoint: beforePosition,
+	}
+	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+
+	log.Printf("Move player packet processed for character %d - Position: %v, Fragments: %d",
+		character.GetID(), character.Position, len(request.Fragments))
 	return nil
 }
 

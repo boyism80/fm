@@ -20,11 +20,15 @@ type Map struct {
 	controllerTable *ControllerTable
 	MobSpawns       map[uint32]*MobSpawn
 	listener        MapListener
+	spec            *data.MapSpec // Map specification data
 }
 
-func NewMap(id uint32, listener MapListener) *Map {
+func NewMap(id uint32, listener MapListener, spec *data.MapSpec) *Map {
 	if listener == nil {
 		panic("MapListener cannot be nil")
+	}
+	if spec == nil {
+		panic("MapSpec cannot be nil")
 	}
 
 	return &Map{
@@ -33,6 +37,7 @@ func NewMap(id uint32, listener MapListener) *Map {
 		controllerTable: NewControllerTable(nil),
 		MobSpawns:       make(map[uint32]*MobSpawn),
 		listener:        listener,
+		spec:            spec,
 	}
 }
 
@@ -94,6 +99,16 @@ func (m *Map) GetAllPlayers() map[uint32]interface{} {
 
 func (m *Map) GetControllerTable() *ControllerTable {
 	return m.controllerTable
+}
+
+// GetSpec returns the map specification data
+func (m *Map) GetSpec() *data.MapSpec {
+	return m.spec
+}
+
+// FootholdPoint calculates the foothold position for a given point
+func (m *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
+	return m.spec.FootholdPoint(point)
 }
 
 // BroadcastToPlayers sends a message to all players on the map
