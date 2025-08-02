@@ -31,6 +31,11 @@ type Authenticate struct {
 	ChatBlockTime uint64 // Chat ban expiration (FILETIME)
 }
 
+// Opcode returns the packet opcode for Authenticate
+func (a *Authenticate) Opcode() uint16 {
+	return 0x00
+}
+
 // Serialize writes the authentication success packet to client.
 // Constructs the authentication success packet to send to the client.
 //
@@ -53,7 +58,6 @@ type Authenticate struct {
 // Returns:
 //   - error: Error if serialization fails (typically nil)
 func (a *Authenticate) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x00)
 	writer.WriteU8(0)
 	writer.WriteU32(a.AccountId)
 	writer.WriteU8(a.Gender)

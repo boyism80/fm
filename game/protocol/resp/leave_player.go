@@ -9,7 +9,6 @@ type LeavePlayer struct {
 }
 
 func (p *LeavePlayer) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x6F)
 	writer.WriteU32(p.ID)
 
 	return nil
@@ -17,4 +16,8 @@ func (p *LeavePlayer) Serialize(writer *stream.StreamWriter) error {
 
 func (p *LeavePlayer) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (p *LeavePlayer) Opcode() uint16 {
+	return 0x6F
 }

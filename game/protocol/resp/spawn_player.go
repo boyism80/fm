@@ -50,8 +50,6 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 		return nil
 	}
 
-	writer.WriteU16(0x6E)
-
 	// 1. 캐릭터 ID
 	writer.WriteU32(p.Character.ID)
 
@@ -148,6 +146,10 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(0)
 
 	return nil
+}
+
+func (s *SpawnPlayer) Opcode() uint16 {
+	return 0x6E // SpawnPlayer opcode
 }
 
 func (s *SpawnPlayer) Deserialize(reader *stream.StreamReader) error {

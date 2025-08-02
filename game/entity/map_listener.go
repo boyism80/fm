@@ -1,0 +1,44 @@
+package entity
+
+// MapListener defines interface for map events
+type MapListener interface {
+	OnPlayerAdded(mapID uint32, playerID uint32, character *Character, init bool)
+	OnPlayerRemoved(mapID uint32, playerID uint32)
+	OnPlayerMoved(mapID uint32, playerID uint32, character *Character)
+	OnPlayerChat(mapID uint32, playerID uint32, message string)
+}
+
+// MapListenerImpl implements MapListener interface
+type MapListenerImpl struct {
+	// This will be implemented to handle packet sending
+	// without creating import cycles
+}
+
+// NewMapListenerImpl creates a new MapListenerImpl instance
+func NewMapListenerImpl() *MapListenerImpl {
+	return &MapListenerImpl{}
+}
+
+// OnPlayerAdded is called when a player is added to a map
+func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character *Character, init bool) {
+	// TODO: Send spawn player packet to other players on the map
+	// This will be implemented by the game server
+}
+
+// OnPlayerRemoved is called when a player is removed from a map
+func (l *MapListenerImpl) OnPlayerRemoved(mapID uint32, playerID uint32) {
+	// TODO: Send leave player packet to other players on the map
+	// This will be implemented by the game server
+}
+
+// OnPlayerMoved is called when a player moves on a map
+func (l *MapListenerImpl) OnPlayerMoved(mapID uint32, playerID uint32, character *Character) {
+	// TODO: Send move player packet to other players on the map
+	// This will be implemented by the game server
+}
+
+// OnPlayerChat is called when a player sends a chat message
+func (l *MapListenerImpl) OnPlayerChat(mapID uint32, playerID uint32, message string) {
+	// TODO: Send chat packet to other players on the map
+	// This will be implemented by the game server
+}

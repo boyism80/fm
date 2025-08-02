@@ -32,6 +32,11 @@ type CreateCharacter struct {
 	Success   bool              // Whether creation was successful
 }
 
+// Opcode returns the packet opcode for CreateCharacter
+func (a *CreateCharacter) Opcode() uint16 {
+	return 0x06
+}
+
 // Serialize writes the character creation result packet to client.
 // Constructs the character creation result packet to send to the client.
 //
@@ -54,7 +59,6 @@ type CreateCharacter struct {
 //   - Character.SerializeOverview() handles the character data serialization
 //   - If Success is false, Character may be nil or contain partial data
 func (a *CreateCharacter) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x06)
 	writer.WriteBoolean(!a.Success)
 	a.Character.SerializeOverview(writer)
 	return nil

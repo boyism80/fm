@@ -10,12 +10,13 @@ type Transfer struct {
 	CharacterId uint32
 }
 
+// Opcode returns the packet opcode for Transfer
+func (a *Transfer) Opcode() uint16 {
+	return 0x04
+}
+
 func (a *Transfer) Serialize(writer *stream.StreamWriter) error {
-	err := writer.WriteU16(0x04)
-	if err != nil {
-		return err
-	}
-	err = writer.WriteU16(0)
+	err := writer.WriteU16(0)
 	if err != nil {
 		return err
 	}

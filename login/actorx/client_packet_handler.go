@@ -110,7 +110,7 @@ func onLoginClientDeleteCharacter(ctx actor.Context, client *LoginClientActor, r
 
 func onLoginClientSelectCharacter(ctx actor.Context, client *LoginClientActor, request *req.SelectCharacter) {
 	client.Send(&resp.Transfer{
-		IP:          "127.0.0.1",
+		IP:          "localhost",
 		Port:        7111,
 		CharacterId: request.CharacterId,
 	}, types.SEND_POLICY_ENCRYPT)

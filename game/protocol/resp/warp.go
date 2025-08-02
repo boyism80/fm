@@ -13,7 +13,6 @@ type Warp struct {
 }
 
 func (p *Warp) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x55)
 	writer.WriteU32(p.Channel)
 	writer.WriteU16(2)
 	writer.WriteU16(0)
@@ -26,4 +25,8 @@ func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 
 func (a *Warp) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (w *Warp) Opcode() uint16 {
+	return 0x55 // Warp opcode (same as Login)
 }

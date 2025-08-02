@@ -86,11 +86,11 @@ type MonsterBook struct {
 	Cards map[uint32]uint32
 }
 
-func (ch *Character) Send(p types.Packet, policy types.SendPolicy) {
+func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
 	if ch.Sendable == nil {
-		return
+		return nil
 	}
-	ch.Sendable.Send(p, policy)
+	return ch.Sendable.Send(p, policy)
 }
 
 func (mb *MonsterBook) Serialize(writer *stream.StreamWriter) {

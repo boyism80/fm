@@ -1,16 +1,13 @@
----
-description: 
-globs: 
-alwaysApply: true
----
+
 # MapleStory Private Server (FM) - Project Rules
 
 ## Project Overview
-This is a MapleStory private server implementation written in Go, using the Proto.Actor framework for distributed actor-based architecture. The project implements game mechanics, network protocols, and server infrastructure for a 2D MMORPG.
+This is a MapleStory private server implementation written in Go, using a custom core server architecture with logic threads and packet handlers. The project implements game mechanics, network protocols, and server infrastructure for a 2D MMORPG.
 
 ## Architecture Patterns
-- **Actor Model**: Uses Proto.Actor framework for concurrent, distributed game logic
-- **Message Passing**: Actors communicate via typed messages (msg package)
+- **Core Server**: Custom server implementation with configurable logic threads
+- **Packet Handlers**: Function-based packet processing with raw byte data
+- **Thread Assignment**: Hash-based thread assignment for game objects
 - **Protocol Buffers**: Custom binary protocol for client-server communication
 - **Resource Management**: WZ file parsing for game data (items, maps, NPCs, etc.)
 - **Lua Scripting**: Embedded Lua for NPCs and game logic
@@ -18,14 +15,14 @@ This is a MapleStory private server implementation written in Go, using the Prot
 ## Naming Conventions
 
 ### Go Language Standards
-- **Types**: Use PascalCase for exported types (e.g., `GameClientActor`, `MapActor`)
+- **Types**: Use PascalCase for exported types (e.g., `GameServer`, `LoginServer`)
 - **Functions**: Use PascalCase for exported functions, camelCase for private
 - **Variables**: Use camelCase for local variables, PascalCase for exported fields
-- **Packages**: Use lowercase, single word package names (e.g., `actor`, `entity`, `protocol`)
+- **Packages**: Use lowercase, single word package names (e.g., `core`, `entity`, `protocol`)
 
 ### Project-Specific Conventions
-- **Actor Types**: Suffix with "Actor" (e.g., `GameClientActor`, `MapActor`, `NpcActor`)
-- **Message Types**: Descriptive names without suffix (e.g., `CharacterMove`, `MapBroadcast`)
+- **Server Types**: Suffix with "Server" (e.g., `LoginServer`, `GameServer`)
+- **Packet Handlers**: Prefix with "handle" (e.g., `handleLogin`, `handleCharacterList`)
 - **Protocol Messages**: Separate req/resp packages, descriptive names (e.g., `Login`, `Warp`)
 - **Specifications**: Suffix with "Spec" for data structures (e.g., `ItemSpec`, `MapSpec`)
 
@@ -40,7 +37,7 @@ This is a MapleStory private server implementation written in Go, using the Prot
 - **NPC**: Non-Player Character
 - **Mob**: Monster/Enemy
 - **WZ**: MapleStory resource file format
-- **PID**: Process ID (Actor reference)
+- **PID**: Process ID (legacy term, now refers to object references)
 - **OID**: Object ID (game object identifier)
 
 ## Code Organization
@@ -48,14 +45,16 @@ This is a MapleStory private server implementation written in Go, using the Prot
 ### Directory Structure
 ```
 /common/    - Shared utilities, protocols, types
-/game/      - Main game server implementation
-/login/     - Login server implementation
+/core/      - Core server implementation
+/renewal/   - New server implementations
+  /login/   - Login server implementation
+  /game/    - Game server implementation
 /wz/        - MapleStory resource files
 /bot/       - Bot/testing utilities
 ```
 
 ### Key Packages
-- `actor/`: Game actors and message handlers
+- `core/`: Core server implementation and packet handling
 - `entity/`: Game objects (Character, Item, etc.)
 - `protocol/`: Network protocol definitions
 - `constant/`: Game constants and enums
@@ -74,8 +73,8 @@ This is a MapleStory private server implementation written in Go, using the Prot
 ### Build Commands
 ```bash
 # Check main packages
-go build ./game
-go build ./login
+go build renewal/login/main.go
+go build renewal/game/main.go
 go build ./bot
 
 # Check all packages
@@ -94,30 +93,12 @@ go build -race ./...
 4. **When code changes, comments MUST be updated immediately**
 5. **Misleading or outdated comments are worse than no comments**
 
-### Message Flow Documentation (MANDATORY)
-Every message type MUST include detailed comments explaining:
+### Packet Handler Documentation
+Every packet handler should include a simple comment explaining its purpose:
 
 ```go
-// CharacterMove represents a character movement request
-// Flow: GameClient -> MapActor -> broadcast to other players in map
-// Sender: GameClientActor (player who moved)
-// Recipients: All other GameClientActors in the same map
-// Triggers: Player input, teleport, warp
-// Side effects: Updates character position, broadcasts to nearby players
-type CharacterMove struct {
-    Position types.Vector2[int16] // New character position in map coordinates
-}
-```
-
-### Actor Message Flow Documentation
-For every message handler, include:
-```go
-// handleCharacterMove processes character movement messages
-// Input: CharacterMove from GameClientActor
-// Process: Validates movement, updates position, broadcasts to map
-// Output: Movement confirmation to sender, position update to other players
-// Error cases: Invalid position, out of bounds, movement too fast
-func (a *MapActor) handleCharacterMove(ctx actor.Context, msg *CharacterMove) {
+// handleLogin processes login authentication requests
+func (ls *LoginServer) handleLogin(ctx *core.ClientContext, data []byte) error {
     // Implementation...
 }
 ```
@@ -126,10 +107,6 @@ func (a *MapActor) handleCharacterMove(ctx actor.Context, msg *CharacterMove) {
 For every protocol message:
 ```go
 // Login packet sent from client to server during authentication
-// Direction: Client -> LoginServer
-// Packet ID: 0x01
-// Response: LoginResponse with success/failure status
-// Security: Contains encrypted credentials
 type Login struct {
     Username string // Player account name (max 12 chars)
     Password string // Encrypted password hash
@@ -144,19 +121,17 @@ type Login struct {
 - Log errors with context information
 - Prefer returning errors over panicking
 
-### Actor Implementation
-- Actors should be stateful and handle concurrent access
-- Use message passing for inter-actor communication
-- Implement proper message handlers for each actor type
-- Handle actor lifecycle (spawn, stop, restart)
-- **MANDATORY**: Document message flow between actors
+### Server Implementation
+- Servers should be stateful and handle concurrent access
+- Use packet handlers for client-server communication
+- Implement proper packet handlers for each server type
+- Handle server lifecycle (start, stop, graceful shutdown)
 
 ### Protocol Implementation
 - Implement both Serialize and Deserialize methods
 - Use stream.StreamWriter/StreamReader for binary protocols
 - Follow MapleStory packet structure conventions
 - Handle endianness correctly
-- **MANDATORY**: Document packet structure and flow
 
 ### Resource Management
 - Use specifications (Spec types) for game data
@@ -164,36 +139,27 @@ type Login struct {
 - Cache frequently accessed resources
 - Handle missing or corrupted resources gracefully
 
-## Message Type Documentation Standards
+## Packet Handler Documentation Standards
 
-### Required Documentation for Each Message Type:
-1. **Purpose**: What this message accomplishes
-2. **Flow**: Source Actor -> Destination Actor(s)
-3. **Trigger**: What causes this message to be sent
-4. **Side Effects**: What changes in the system
-5. **Error Conditions**: What can go wrong
-6. **Related Messages**: What messages might follow
+### Required Documentation for Each Packet Handler:
+1. **Purpose**: What this handler accomplishes
 
-### Example Message Documentation:
+### Example Packet Handler Documentation:
 ```go
-// MapSpawnItem creates a new item drop in the map
-// Flow: Any Actor -> MapActor -> broadcast to players in range
-// Trigger: Monster death, player drop, quest reward
-// Side Effects: 
-//   - Creates new item entity in map
-//   - Broadcasts spawn packet to nearby players
-//   - Starts item expiration timer
-// Error Conditions:
-//   - Map full (too many items)
-//   - Invalid item specification
-//   - Invalid drop position
-// Related Messages: MapRemoveItem (when picked up or expired)
-type MapSpawnItem struct {
-    Item     entity.Item               // The item to spawn
-    Owner    *actor.PID               // Player who can pick it up first (nil for FFA)
-    OwnerID  uint32                   // Character ID of owner
-    Position types.Vector2[int16]     // Drop position in map coordinates
-    DropType constant.DropType        // FFA, Party, or Owned drop type
+// handleCreateCharacter processes character creation requests
+func (ls *LoginServer) handleCreateCharacter(ctx *core.ClientContext, data []byte) error {
+    // Deserialize create character packet
+    reader := stream.NewStreamReader(&data, stream.LittleEndian)
+    request := &req.CreateCharacter{}
+    if err := request.Deserialize(reader); err != nil {
+        log.Printf("Failed to deserialize create character packet from %s: %v", 
+            ctx.Client.GetConnection().RemoteAddr(), err)
+        return err
+    }
+    
+    log.Printf("Create character packet received from %s - Name: %s, Face: %d, Hair: %d",
+        ctx.Client.GetConnection().RemoteAddr(), request.Name, request.Face, request.Hair)
+    return nil
 }
 ```
 
@@ -207,7 +173,7 @@ type MapSpawnItem struct {
 - Write unit tests for core game logic
 - Use table-driven tests where appropriate
 - Mock external dependencies (database, network)
-- Test actor message handling scenarios
+- Test packet handler scenarios
 
 ## Security
 - Validate all client input
@@ -235,7 +201,6 @@ type MapSpawnItem struct {
 - **CRITICAL**: Maintain comment-code synchronization at all times
 
 ## Dependencies
-- Proto.Actor for actor framework
 - Lua for scripting
 - YAML for configuration
 - Custom stream package for binary protocols
@@ -243,9 +208,8 @@ type MapSpawnItem struct {
 ## CRITICAL REMINDERS
 1. **ENUM VALUES**: Always use UPPER_CASE with underscores
 2. **COMMENTS**: Must be accurate, complete, and synchronized with code
-3. **MESSAGE FLOW**: Every message must document its actor flow path
-4. **DEBUGGING**: Comments should enable understanding without running code
-5. **COMPILATION**: ALWAYS run `go build ./...` after any code changes
+3. **DEBUGGING**: Comments should enable understanding without running code
+4. **COMPILATION**: ALWAYS run `go build ./...` after any code changes
 
 ## Git Commit Guidelines (CRITICAL REQUIREMENTS)
 
@@ -307,5 +271,8 @@ Examples of commits needing detailed body:
    - `git --no-pager show`
    - `git --no-pager status`
 3. **Reason**: Prevents pager from blocking automated processes and ensures consistent output
+
+Remember: This is a game server that must handle real-time interactions, maintain game state consistency, and provide a smooth player experience. Prioritize correctness, performance, and maintainability in that order. 
+
 
 Remember: This is a game server that must handle real-time interactions, maintain game state consistency, and provide a smooth player experience. Prioritize correctness, performance, and maintainability in that order. 

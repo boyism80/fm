@@ -33,13 +33,13 @@ type LoginFailed struct {
 	Reason uint8
 }
 
-func (a *LoginFailed) Serialize(writer *stream.StreamWriter) error {
-	err := writer.WriteU16(0x00)
-	if err != nil {
-		return err
-	}
+// Opcode returns the packet opcode for LoginFailed
+func (a *LoginFailed) Opcode() uint16 {
+	return 0x00
+}
 
-	err = writer.WriteU8(a.Reason)
+func (a *LoginFailed) Serialize(writer *stream.StreamWriter) error {
+	err := writer.WriteU8(a.Reason)
 	if err != nil {
 		return err
 	}

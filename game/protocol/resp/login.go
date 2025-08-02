@@ -15,7 +15,6 @@ type Login struct {
 func (p *Login) Serialize(writer *stream.StreamWriter) error {
 	p.Character.Inventory[constant.INVENTORY_TYPE_CASH].SlotLimit = 60
 
-	writer.WriteU16(0x55)
 	writer.WriteU32(0) // channel
 	writer.WriteU8(0)
 	writer.WriteU8(1) // first time
@@ -37,4 +36,8 @@ func (p *Login) Serialize(writer *stream.StreamWriter) error {
 
 func (a *Login) Deserialize(reader *stream.StreamReader) error {
 	return nil
+}
+
+func (l *Login) Opcode() uint16 {
+	return 0x55
 }

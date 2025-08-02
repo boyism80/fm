@@ -28,13 +28,13 @@ type Welcome struct {
 	RecvIv []byte
 }
 
-func (a *Welcome) Serialize(writer *stream.StreamWriter) error {
-	err := writer.WriteU16(uint16(13 + len(version)))
-	if err != nil {
-		return err
-	}
+// Opcode returns the packet opcode for Welcome
+func (a *Welcome) Opcode() uint16 {
+	return uint16(13 + len(version))
+}
 
-	err = writer.WriteU16(MAGIC)
+func (a *Welcome) Serialize(writer *stream.StreamWriter) error {
+	err := writer.WriteU16(MAGIC)
 	if err != nil {
 		return err
 	}

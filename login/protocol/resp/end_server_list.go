@@ -6,8 +6,12 @@ import (
 
 type EndOfServerList struct{}
 
+// Opcode returns the packet opcode for EndOfServerList
+func (e *EndOfServerList) Opcode() uint16 {
+	return 0x02
+}
+
 func (e *EndOfServerList) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x02)
 	writer.WriteU8(0xFF)
 
 	return nil

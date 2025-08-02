@@ -9,8 +9,12 @@ type DeleteCharacter struct {
 	Success bool
 }
 
+// Opcode returns the packet opcode for DeleteCharacter
+func (a *DeleteCharacter) Opcode() uint16 {
+	return 0x07
+}
+
 func (a *DeleteCharacter) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x07)
 	writer.WriteU32(a.ID)
 	writer.WriteBoolean(!a.Success)
 

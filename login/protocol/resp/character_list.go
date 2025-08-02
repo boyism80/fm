@@ -11,8 +11,12 @@ type CharacterList struct {
 	SlotCount  uint32
 }
 
+// Opcode returns the packet opcode for CharacterList
+func (e *CharacterList) Opcode() uint16 {
+	return 0x03
+}
+
 func (e *CharacterList) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x03)
 	writer.WriteU8(0)
 	writer.WriteU32(0)
 	writer.WriteU8(uint8(len(e.Characters)))

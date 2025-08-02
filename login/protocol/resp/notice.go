@@ -30,13 +30,13 @@ type Notice struct {
 	MegaEar bool
 }
 
-func (a *Notice) Serialize(writer *stream.StreamWriter) error {
-	err := writer.WriteU16(0x33)
-	if err != nil {
-		return err
-	}
+// Opcode returns the packet opcode for Notice
+func (a *Notice) Opcode() uint16 {
+	return 0x33
+}
 
-	err = writer.WriteU8(a.Type)
+func (a *Notice) Serialize(writer *stream.StreamWriter) error {
+	err := writer.WriteU8(a.Type)
 	if err != nil {
 		return err
 	}

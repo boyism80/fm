@@ -14,8 +14,12 @@ type ServerList struct {
 	EventMessage string
 }
 
+// Opcode returns the packet opcode for ServerList
+func (s *ServerList) Opcode() uint16 {
+	return 0x02
+}
+
 func (s *ServerList) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x02)
 	writer.WriteU8(s.ServerId)
 	writer.WriteStr16(s.WorldName)
 	writer.WriteU8(s.Flag)

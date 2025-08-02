@@ -164,6 +164,9 @@ func (sw *StreamWriter) WriteBoolean(val bool) error {
 }
 
 func (sw *StreamWriter) WriteIPAddress(ip string) error {
+	if ip == "localhost" {
+		ip = "127.0.0.1"
+	}
 	parts := strings.Split(ip, ".")
 	if len(parts) != 4 {
 		return errors.New("invalid IP address format")

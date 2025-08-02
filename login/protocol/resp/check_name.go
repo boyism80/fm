@@ -9,8 +9,12 @@ type CheckName struct {
 	Exists bool
 }
 
+// Opcode returns the packet opcode for CheckName
+func (a *CheckName) Opcode() uint16 {
+	return 0x05
+}
+
 func (a *CheckName) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0x05)
 	writer.WriteStr16(a.Name)
 	writer.WriteBoolean(a.Exists)
 	return nil
