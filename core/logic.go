@@ -3,10 +3,14 @@ package core
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
+	"github.com/boyism80/fm/common/luax"
 	"github.com/boyism80/fm/common/timer"
 	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/game/entity"
+	lua "github.com/yuin/gopher-lua"
 )
 
 // LogicTask represents a task to be executed by a logic thread
@@ -30,6 +34,35 @@ type LogicThread struct {
 	stopChan     chan struct{}
 	taskChan     chan *LogicTask // Channel for receiving logic tasks
 	timerManager *TimerManager
+	luaState     *lua.LState // Pre-created Lua state for this thread
+	luaMutex     sync.Mutex  // Mutex for Lua state access
+}
+
+// GetLuaState returns the Lua state for this logic thread
+// Thread Safety: Safe to call from any thread
+func (t *LogicThread) GetLuaState() *lua.LState {
+	t.luaMutex.Lock()
+	defer t.luaMutex.Unlock()
+	return t.luaState
+}
+
+// initializeLuaState sets up Lua state with type registrations
+func (t *LogicThread) initializeLuaState() {
+	t.luaMutex.Lock()
+	defer t.luaMutex.Unlock()
+
+	// Register Lua types with inheritance
+	luax.RegisterLuaType[*entity.Object](t.luaState)
+	luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](t.luaState)
+	luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](t.luaState)
+	luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](t.luaState)
+
+	// Register utility functions
+	luax.RegisterFunc(t.luaState, "sleep", func(L *lua.LState) int {
+		duration := L.CheckNumber(1)
+		time.Sleep(time.Duration(float64(duration) * float64(time.Second)))
+		return 0
+	})
 }
 
 // run executes the logic thread main loop
@@ -39,6 +72,9 @@ type LogicThread struct {
 func (t *LogicThread) run() {
 	log.Printf("Logic thread %d started", t.id)
 	defer log.Printf("Logic thread %d stopped", t.id)
+
+	// Initialize Lua state
+	t.initializeLuaState()
 
 	for {
 		select {
@@ -116,8 +152,6 @@ func (t *LogicThread) processTask(task *LogicTask) {
 	if task.Callback != nil {
 		task.Callback(canExecute, logicError)
 	}
-
-	log.Printf("Logic thread %d processed task: predicate=%v, error=%v", t.id, canExecute, logicError)
 }
 
 // SubmitTask submits a logic task to this logic thread for execution

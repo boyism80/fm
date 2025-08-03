@@ -13,6 +13,7 @@ import (
 	common_resp "github.com/boyism80/fm/common/protocol/resp"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/login/protocol/resp"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type Server struct {
@@ -86,6 +87,7 @@ func (s *Server) Start(host string, port int) error {
 			stopChan:     make(chan struct{}),
 			taskChan:     make(chan *LogicTask, 100), // Buffer for 100 tasks
 			timerManager: NewTimerManager(),
+			luaState:     lua.NewState(), // Initialize Lua state for this thread
 		}
 		s.logicThreads[i] = logicThread
 
@@ -241,7 +243,7 @@ func (s *Server) handleClient(client Client) {
 			return
 		default:
 			// Try to read packet
-			packetProcessed, err := s.readPacket(client)
+			_, err := s.readPacket(client)
 			if err != nil {
 				if err.Error() == "EOF" {
 					// Client disconnected normally
@@ -257,11 +259,6 @@ func (s *Server) handleClient(client Client) {
 
 				log.Printf("Error reading packet from %s: %v", client.GetConnection().RemoteAddr(), err)
 				continue
-			}
-
-			if packetProcessed {
-				// Packet was submitted to logic thread for processing
-				log.Printf("Packet submitted to logic thread for client %s", client.GetConnection().RemoteAddr())
 			}
 		}
 	}
@@ -334,8 +331,6 @@ func (s *Server) processPacket(client Client, encryptedData []byte) (bool, error
 		Callback: func(success bool, err error) {
 			if err != nil {
 				log.Printf("Error processing packet opcode 0x%02X: %v", opcode, err)
-			} else {
-				log.Printf("Packet processed successfully for client %s", client.GetConnection().RemoteAddr())
 			}
 		},
 		Object:     client, // Use client for thread assignment

@@ -16,6 +16,7 @@ import (
 	"github.com/boyism80/fm/game/protocol/req"
 	"github.com/boyism80/fm/game/protocol/resp"
 	"github.com/boyism80/fm/renewal/game/client"
+	lua "github.com/yuin/gopher-lua"
 )
 
 // registerPacketHandlers registers all game server packet handlers
@@ -37,7 +38,6 @@ func (gs *GameServer) registerPacketHandlers() {
 	gs.server.RegisterPacketHandler(0x95, gs.handleMoveMob)
 	gs.server.RegisterPacketHandler(0x1F, gs.handleDamaged)
 
-	log.Printf("Registered %d game server packet handlers", gs.server.GetPacketHandler().GetHandlerCount())
 }
 
 // handlePong processes pong responses
@@ -49,8 +49,6 @@ func (gs *GameServer) handlePong(ctx *core.ClientContext, data []byte) error {
 		return err
 	}
 
-	log.Printf("Pong packet received from %s",
-		ctx.Client.GetConnection().RemoteAddr())
 	return nil
 }
 
@@ -62,9 +60,6 @@ func (gs *GameServer) handleLoginGame(ctx *core.ClientContext, data []byte) erro
 		log.Printf("Failed to deserialize login game packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
 	}
-
-	log.Printf("Login game packet received from %s - Player ID: %d",
-		ctx.Client.GetConnection().RemoteAddr(), request.PlayerId)
 
 	// Create character name based on player ID (following old server pattern)
 	name := "채승현"
@@ -114,9 +109,6 @@ func (gs *GameServer) handleLoginGame(ctx *core.ClientContext, data []byte) erro
 		log.Printf("Failed to add player to map: %v", err)
 		return err
 	}
-
-	log.Printf("Character created for player %d: %s (Level %d, Class %d, Map %d)",
-		character.ID, character.Name, character.Level, character.Class, character.Map)
 
 	return nil
 }
@@ -169,8 +161,6 @@ func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext, data []byte) err
 	}
 	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, character.GetID())
 
-	log.Printf("Move player packet processed for character %d - Position: %v, Fragments: %d",
-		character.GetID(), character.Position, len(request.Fragments))
 	return nil
 }
 
@@ -216,8 +206,6 @@ func (gs *GameServer) handleNormalChat(ctx *core.ClientContext, data []byte) err
 	// Use character listener to handle chat (following old server pattern)
 	character.Listener.OnChat(request.Message, false, request.DontRecordHistory)
 
-	log.Printf("Normal chat packet processed for character %d - Message: %s, DontRecord: %t",
-		character.GetID(), request.Message, request.DontRecordHistory)
 	return nil
 }
 
@@ -278,8 +266,6 @@ func (gs *GameServer) handleAttack(ctx *core.ClientContext, data []byte) error {
 		SkillLevel:  0,
 	}, types.SEND_POLICY_ENCRYPT, character.GetID())
 
-	log.Printf("Attack packet processed for character %d - Targets: %d, Hits: %d, Skill: %d",
-		character.GetID(), request.AttackInfo.Targets, request.AttackInfo.Hits, request.AttackInfo.Skill)
 	return nil
 }
 
@@ -320,8 +306,6 @@ func (gs *GameServer) handleMoveItem(ctx *core.ClientContext, data []byte) error
 		gs.handleMoveItemInternal(client, character, request.InventoryType, request.Source, request.Dest)
 	}
 
-	log.Printf("Move item packet processed for character %d - Source: %d, Dest: %d, Count: %d",
-		character.GetID(), request.Source, request.Dest, request.Count)
 	return nil
 }
 
@@ -361,8 +345,6 @@ func (gs *GameServer) handleSortInventory(ctx *core.ClientContext, data []byte) 
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	log.Printf("Sort inventory packet processed for character %d - Inventory Type: %d",
-		character.GetID(), request.InventoryType)
 	return nil
 }
 
@@ -487,9 +469,6 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 			},
 		}, types.SEND_POLICY_ENCRYPT)
 
-		log.Printf("Meso loot packet processed for character %d - OID: %d, Count: %d",
-			character.GetID(), request.OID, mesoCount)
-
 	default:
 		log.Printf("Unknown looted object type for OID %d", request.OID)
 		client.Send(&resp.UpdateStats{
@@ -503,8 +482,6 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	log.Printf("Item loot packet processed for character %d - OID: %d",
-		character.GetID(), request.OID)
 	return nil
 }
 
@@ -562,13 +539,9 @@ func (gs *GameServer) handleDropMeso(ctx *core.ClientContext, data []byte) error
 	if mapInstance != nil {
 		if err := mapInstance.SpawnMeso(request.Count, character.Position, character.ID, constant.DROP_TYPE_FFA); err != nil {
 			log.Printf("Failed to spawn meso on map: %v", err)
-		} else {
-			log.Printf("Drop meso spawned: %d at position %v", request.Count, character.Position)
 		}
 	}
 
-	log.Printf("Drop meso packet processed for character %d - Count: %d",
-		character.GetID(), request.Count)
 	return nil
 }
 
@@ -678,8 +651,6 @@ func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 		return fmt.Errorf("failed to perform warp: %v", err)
 	}
 
-	log.Printf("Warp packet processed from %s - Target Map: %d, Spawn Point: %d",
-		ctx.Client.GetConnection().RemoteAddr(), targetMapId, spawnPoint)
 	return nil
 }
 
@@ -705,12 +676,10 @@ func (gs *GameServer) handleNpcControl(ctx *core.ClientContext, data []byte) err
 	}
 	client.Send(response, types.SEND_POLICY_ENCRYPT)
 
-	log.Printf("NPC control packet processed from %s - Bytes: %d bytes",
-		ctx.Client.GetConnection().RemoteAddr(), len(request.Bytes))
 	return nil
 }
 
-// handleDialog processes dialog requests
+// handleDialog processes dialog responses
 func (gs *GameServer) handleDialog(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
 	request := &req.Dialog{}
@@ -719,8 +688,89 @@ func (gs *GameServer) handleDialog(ctx *core.ClientContext, data []byte) error {
 		return err
 	}
 
-	log.Printf("Dialog packet received from %s - Dialog Type: %d, Next: %t",
-		ctx.Client.GetConnection().RemoteAddr(), request.DialogType, request.Next)
+	// Get game client
+	client, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		log.Printf("Client is not a GameClient")
+		return fmt.Errorf("client is not a GameClient")
+	}
+
+	// Get character
+	character := client.GetCharacter()
+	if character == nil {
+		log.Printf("Character not found for client")
+		return fmt.Errorf("character not found")
+	}
+
+	// Get current dialog coroutine
+	dialog := character.GetCurrentDialog()
+	if dialog == nil {
+		log.Printf("No active dialog for character %d", character.GetID())
+		return fmt.Errorf("no active dialog")
+	}
+
+	// Get Lua state from LogicThread
+	logicThreadInterface := gs.GetLogicThread()
+	if logicThreadInterface == nil {
+		return fmt.Errorf("logic thread not available")
+	}
+
+	logicThread, ok := logicThreadInterface.(*core.LogicThread)
+	if !ok {
+		return fmt.Errorf("invalid logic thread type")
+	}
+
+	luaState := logicThread.GetLuaState()
+	if luaState == nil {
+		return fmt.Errorf("lua state not available")
+	}
+
+	// Convert client response to Lua arguments
+	var args []lua.LValue
+	switch request.DialogType {
+	case constant.DIALOG_TYPE_DEFAULT:
+		args = append(args, lua.LBool(request.Next))
+	case constant.DIALOG_TYPE_YES_NO:
+		args = append(args, lua.LBool(request.Next))
+	case constant.DIALOG_TYPE_LIST:
+		if request.Next {
+			args = append(args, lua.LNumber(request.Selected))
+		} else {
+			args = append(args, lua.LNil)
+		}
+	case constant.DIALOG_TYPE_INPUT:
+		if request.Next {
+			args = append(args, lua.LString(request.Text))
+		} else {
+			args = append(args, lua.LNil)
+		}
+	case constant.DIALOG_TYPE_ACCEPT_ESCAPE:
+	case constant.DIALOG_TYPE_ACCEPT:
+		args = append(args, lua.LBool(request.Next))
+	}
+
+	// Resume Lua coroutine with client response
+	resumeState, err, _ := luaState.Resume(dialog, nil, args...)
+	if err != nil {
+		log.Printf("Failed to resume dialog: %v", err)
+		character.ClearCurrentDialog()
+		return fmt.Errorf("failed to resume dialog: %w", err)
+	}
+
+	// Handle dialog completion
+	switch resumeState {
+	case lua.ResumeOK:
+
+		character.ClearCurrentDialog()
+	case lua.ResumeYield:
+
+		// Dialog is still active, keep the coroutine
+	case lua.ResumeError:
+		log.Printf("Dialog error for character %d: %v", character.GetID(), err)
+		character.ClearCurrentDialog()
+		return fmt.Errorf("dialog error: %w", err)
+	}
+
 	return nil
 }
 
@@ -733,8 +783,41 @@ func (gs *GameServer) handleNpcClick(ctx *core.ClientContext, data []byte) error
 		return err
 	}
 
-	log.Printf("NPC click packet received from %s - OID: %d",
-		ctx.Client.GetConnection().RemoteAddr(), request.OID)
+	// Get game client
+	client, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		log.Printf("Client is not a GameClient")
+		return fmt.Errorf("client is not a GameClient")
+	}
+
+	// Get character
+	character := client.GetCharacter()
+	if character == nil {
+		log.Printf("Character not found for client")
+		return fmt.Errorf("character not found")
+	}
+
+	// Get map instance
+	mapInstance := gs.GetMap(character.GetMap())
+	if mapInstance == nil {
+		log.Printf("Map %d not found", character.GetMap())
+		return fmt.Errorf("map %d not found", character.GetMap())
+	}
+
+	// Get NPC from map
+	npcs := mapInstance.GetNpcs()
+	npc, exists := npcs[request.OID]
+	if !exists {
+		log.Printf("NPC %d not found on map %d", request.OID, character.GetMap())
+		return fmt.Errorf("npc %d not found", request.OID)
+	}
+
+	// Execute NPC script using GameServer's method
+	if err := gs.ExecuteNpcScript(character, npc); err != nil {
+		log.Printf("Failed to execute NPC script: %v", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -746,9 +829,6 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 		log.Printf("Failed to deserialize move mob packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
 	}
-
-	log.Printf("Move mob packet received from %s - OID: %d, MovementId: %d, IsAggroed: %t, Unknown2: %t",
-		ctx.Client.GetConnection().RemoteAddr(), request.OID, request.MovementId, request.IsAggroed, request.Unknown2)
 
 	// Get game client
 	client, ok := ctx.Client.(*client.GameClient)
@@ -790,11 +870,9 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 	if controller.GetID() != character.GetID() {
 		if request.Unknown2 {
 			// TODO: stopControl - Stop control logic
-			log.Printf("Stop control requested for mob %d by character %d", request.OID, character.GetID())
 			// Currently only logging, actual implementation to be added later
 		} else {
 			// TODO: switchControl - Switch control logic
-			log.Printf("Switch control requested for mob %d by character %d", request.OID, character.GetID())
 			// Currently only logging, actual implementation to be added later
 		}
 		return nil // Don't return error, handle normally
@@ -836,9 +914,6 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 	// Broadcast to all players on the map (excluding the sender)
 	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, character.GetID())
 
-	log.Printf("Mob %d movement broadcasted - Position: %v, Stance: %d",
-		request.OID, mob.Position, mob.Stance)
-
 	return nil
 }
 
@@ -850,9 +925,6 @@ func (gs *GameServer) handleDamaged(ctx *core.ClientContext, data []byte) error 
 		log.Printf("Failed to deserialize damaged packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
 	}
-
-	log.Printf("Damaged packet received from %s - Damage: %d",
-		ctx.Client.GetConnection().RemoteAddr(), request.Damage)
 
 	// Get game client
 	client, ok := ctx.Client.(*client.GameClient)
@@ -889,9 +961,6 @@ func (gs *GameServer) handleDamaged(ctx *core.ClientContext, data []byte) error 
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
-
-	log.Printf("Damage processed for character %d - Damage: %d, New HP: %d/%d",
-		character.GetID(), request.Damage, character.Hp, character.MaxHp)
 
 	return nil
 }
@@ -946,8 +1015,6 @@ func (gs *GameServer) performWarp(client *client.GameClient, character *entity.C
 		Callback: func(success bool, err error) {
 			if err != nil {
 				log.Printf("Failed to add character to target map: %v", err)
-			} else {
-				log.Printf("Character %d successfully warped to map %d", character.GetID(), targetMapId)
 			}
 		},
 		Object:     client, // Use client for thread assignment (based on character's new map)
@@ -1105,8 +1172,6 @@ func (gs *GameServer) handleDrop(client *client.GameClient, character *entity.Ch
 	if mapInstance != nil {
 		if err := mapInstance.SpawnItem(spawned, character.ID, constant.DROP_TYPE_FFA); err != nil {
 			log.Printf("Failed to spawn item on map: %v", err)
-		} else {
-			log.Printf("Drop item spawned: %d x %d at position %v", spawned.GetSpec().GetID(), count, character.Position)
 		}
 	}
 }

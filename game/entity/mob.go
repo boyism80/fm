@@ -1,12 +1,14 @@
 package entity
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 
 	"github.com/boyism80/fm/common/stream"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/data"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type Mob struct {
@@ -14,6 +16,127 @@ type Mob struct {
 	Spec     *data.MobSpec
 	Foothold int16
 	MapID    uint32 // Map ID where this mob is located
+}
+
+// Luable interface implementation
+func (m *Mob) LuaTypeName() string {
+	return "LuaMob"
+}
+
+func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
+	return map[string]lua.LGFunction{
+		"id": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return id
+				L.Push(lua.LNumber(mob.Spec.ID))
+				return 1
+			} else {
+				L.ArgError(2, "id() is read-only")
+				return 0
+			}
+		},
+		"name": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return name (using ID as name for now)
+				L.Push(lua.LString(fmt.Sprintf("Mob_%d", mob.Spec.ID)))
+				return 1
+			} else {
+				L.ArgError(2, "name() is read-only")
+				return 0
+			}
+		},
+		"exp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return exp
+				L.Push(lua.LNumber(mob.Spec.EXP))
+				return 1
+			} else {
+				L.ArgError(2, "exp() is read-only")
+				return 0
+			}
+		},
+		"foothold": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return foothold
+				L.Push(lua.LNumber(mob.Foothold))
+				return 1
+			} else if argc == 2 {
+				// Setter: foothold(value)
+				foothold := L.CheckInt(2)
+				mob.Foothold = int16(foothold)
+				return 0
+			} else {
+				L.ArgError(2, "foothold() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+		"map_id": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return map_id
+				L.Push(lua.LNumber(mob.MapID))
+				return 1
+			} else if argc == 2 {
+				// Setter: map_id(value)
+				mapID := L.CheckInt(2)
+				if mapID < 0 {
+					mapID = 0
+				}
+				mob.MapID = uint32(mapID)
+				return 0
+			} else {
+				L.ArgError(2, "map_id() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+	}
+}
+
+func (m *Mob) String() string {
+	return m.LuaTypeName()
+}
+
+func (m *Mob) Type() lua.LValueType {
+	return lua.LTUserData
 }
 
 func (m *Mob) Serialize(writer *stream.StreamWriter) error {

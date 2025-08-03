@@ -6,37 +6,18 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/boyism80/fm/common/luax"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/data"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/renewal/game/client"
+	lua "github.com/yuin/gopher-lua"
 )
-
-// logicThreadWrapper wraps core.LogicThread to match entity.LogicThread interface
-type logicThreadWrapper struct {
-	logicThread *core.LogicThread
-}
-
-func (w *logicThreadWrapper) Schedule(delay time.Duration, task func()) interface{} {
-	return w.logicThread.Schedule(delay, func() error {
-		task()
-		return nil
-	}, nil)
-}
-
-func (w *logicThreadWrapper) ScheduleAtFixedRate(initialDelay, period time.Duration, task func()) interface{} {
-	// Not implemented in core.LogicThread, return nil
-	return nil
-}
-
-func (w *logicThreadWrapper) ScheduleWithFixedDelay(initialDelay, delay time.Duration, task func()) interface{} {
-	// Not implemented in core.LogicThread, return nil
-	return nil
-}
 
 // GameServer represents the game server for MapleStory private server
 type GameServer struct {
@@ -46,6 +27,13 @@ type GameServer struct {
 	maps           map[uint32]*entity.Map // Map instances by map ID
 	mapsMutex      sync.RWMutex
 	commandHandler *CommandHandler
+}
+
+// GameContext provides access to game resources and services
+type GameContext interface {
+	GetResources() *data.Resources
+	GetMap(mapId uint32) *entity.Map
+	GetLogicThread() interface{} // Returns core.LogicThread
 }
 
 // GameConfig holds game server specific configuration
@@ -58,6 +46,80 @@ type GameConfig struct {
 	ExpRate          int    // Experience rate multiplier
 	DropRate         int    // Drop rate multiplier
 	MesoRate         int    // Meso rate multiplier
+}
+
+// GetLuaState returns the Lua state for script execution
+
+// ExecuteNpcScript executes the Lua script for an NPC
+func (gs *GameServer) ExecuteNpcScript(character *entity.Character, npcInterface interface{}) error {
+	// Get NPC spec to determine script file
+	npc, ok := npcInterface.(*entity.Npc)
+	if !ok {
+		return fmt.Errorf("invalid NPC type")
+	}
+
+	if npc.Spec == nil {
+		return fmt.Errorf("NPC has no spec")
+	}
+
+	// Get Lua state from LogicThread
+	logicThreadInterface := gs.GetLogicThread()
+	if logicThreadInterface == nil {
+		return fmt.Errorf("logic thread not available")
+	}
+
+	logicThread, ok := logicThreadInterface.(*core.LogicThread)
+	if !ok {
+		return fmt.Errorf("invalid logic thread type")
+	}
+
+	luaState := logicThread.GetLuaState()
+	if luaState == nil {
+		return fmt.Errorf("lua state not available")
+	}
+
+	// Load NPC script
+	path := filepath.Join("script", "npc", fmt.Sprintf("%d.lua", npc.Spec.ID))
+
+	// Load script function
+	fn, err := luaState.LoadFile(path)
+	if err != nil {
+		log.Printf("Failed to load NPC script %s: %v", path, err)
+		return fmt.Errorf("failed to load NPC script: %w", err)
+	}
+
+	// Create new thread for script execution
+	co, _ := luaState.NewThread()
+
+	// Push script function to thread
+	co.Push(fn)
+
+	// Execute script (loads all functions)
+	if err := co.PCall(0, lua.MultRet, nil); err != nil {
+		return fmt.Errorf("failed to execute NPC script: %w", err)
+	}
+
+	// Get on_start function
+	onStartFn := co.GetGlobal("on_start")
+	if onStartFn.Type() != lua.LTFunction {
+		return fmt.Errorf("on_start function not found in NPC script")
+	}
+
+	// Create character Lua object using luax.NewLuable
+	characterLua := luax.NewLuable(co, character)
+
+	// Call on_start(me) function
+	resumeState, err, _ := luaState.Resume(co, onStartFn.(*lua.LFunction), characterLua)
+	if err != nil {
+		return fmt.Errorf("failed to call on_start: %w", err)
+	}
+
+	// If script yielded (waiting for dialog response), store the coroutine
+	if resumeState == lua.ResumeYield {
+		character.SetCurrentDialog(co)
+	}
+
+	return nil
 }
 
 // NewGameServer creates a new game server with specified configuration
@@ -119,12 +181,12 @@ func (gs *GameServer) GetThreadHash() int {
 }
 
 // GetLogicThread returns the logic thread for scheduling tasks
-func (gs *GameServer) GetLogicThread() entity.LogicThread {
+func (gs *GameServer) GetLogicThread() interface{} {
 	logicThread, err := gs.server.GetLogicThread(gs)
 	if err != nil {
 		return nil
 	}
-	return &logicThreadWrapper{logicThread: logicThread}
+	return logicThread
 }
 
 // preCreateMaps pre-creates all map instances from loaded resources

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/boyism80/fm/common/stream"
@@ -58,6 +59,10 @@ type Character struct {
 	MonsterBookCover uint32
 	MonsterBook      *MonsterBook
 	QuestInfo        map[uint16]string
+
+	// Dialog state management
+	currentDialog *lua.LState // Current dialog coroutine
+	dialogMutex   sync.Mutex  // Mutex for dialog state access
 }
 
 type CooldownEntry struct {
@@ -221,6 +226,396 @@ func (ch *Character) AddExp(exp uint32) {
 	}
 }
 
+// AddMeso adds meso to character
+func (ch *Character) AddMeso(amount int32) {
+	if amount <= 0 {
+		return
+	}
+
+	// Check for overflow
+	if ch.Meso > 0 && amount > 0 && ch.Meso+amount < ch.Meso {
+		ch.Meso = int32(^uint32(0) >> 1) // int32.MaxValue
+	} else {
+		ch.Meso += amount
+	}
+
+	// Notify listener about meso change
+	if ch.Listener != nil {
+		ch.Listener.OnMesoChanged(ch.Meso)
+	}
+}
+
+// RemoveMeso removes meso from character
+func (ch *Character) RemoveMeso(amount int32) {
+	if amount <= 0 {
+		return
+	}
+
+	if ch.Meso < amount {
+		ch.Meso = 0
+	} else {
+		ch.Meso -= amount
+	}
+
+	// Notify listener about meso change
+	if ch.Listener != nil {
+		ch.Listener.OnMesoChanged(ch.Meso)
+	}
+}
+
+// Luable interface implementation
+func (ch *Character) LuaTypeName() string {
+	return "LuaCharacter"
+}
+
+func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
+	return map[string]lua.LGFunction{
+		"id": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return id
+				L.Push(lua.LNumber(ch.ID))
+				return 1
+			} else {
+				L.ArgError(2, "id() is read-only")
+				return 0
+			}
+		},
+		"name": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return name
+				L.Push(lua.LString(ch.Name))
+				return 1
+			} else if argc == 2 {
+				// Setter: name(value)
+				name := L.CheckString(2)
+				ch.Name = name
+				return 0
+			} else {
+				L.ArgError(2, "name() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+		"level": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return level
+				L.Push(lua.LNumber(ch.Level))
+				return 1
+			} else if argc == 2 {
+				// Setter: level(value)
+				level := L.CheckInt(2)
+				if level < 1 {
+					level = 1
+				}
+				if level > 200 {
+					level = 200
+				}
+				ch.Level = uint8(level)
+				return 0
+			} else {
+				L.ArgError(2, "level() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+		"exp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return exp
+				L.Push(lua.LNumber(ch.Exp))
+				return 1
+			} else if argc == 2 {
+				// Setter: exp(value) or exp(+value) or exp(-value)
+				value := L.CheckNumber(2)
+				if value >= 0 {
+					// Direct set or add operation
+					if value < 0 {
+						value = 0
+					}
+					ch.Exp = uint32(value)
+				} else {
+					// Add operation (negative value)
+					amount := uint32(-value)
+					ch.AddExp(amount)
+					return 0
+				}
+				return 0
+			} else {
+				L.ArgError(2, "exp() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+		"meso": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return meso
+				L.Push(lua.LNumber(ch.Meso))
+				return 1
+			} else if argc == 2 {
+				// Setter: meso(value) or meso(+value) or meso(-value)
+				value := L.CheckNumber(2)
+				if value >= 0 {
+					// Direct set or add operation
+					if value <= 2147483647 { // int32.MaxValue
+						ch.Meso = int32(value)
+					} else {
+						ch.Meso = 2147483647
+					}
+				} else {
+					// Subtract operation (negative value)
+					amount := int32(-value)
+					if ch.Meso < amount {
+						ch.Meso = 0
+					} else {
+						ch.Meso -= amount
+					}
+				}
+				if ch.Listener != nil {
+					ch.Listener.OnMesoChanged(ch.Meso)
+				}
+				return 0
+			} else {
+				L.ArgError(2, "meso() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+		"chat": func(L *lua.LState) int {
+			argc := L.GetTop()
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			message := L.CheckString(2)
+			highlight := false
+			if argc > 2 {
+				highlight = L.CheckBool(3)
+			}
+			dontRecordHistory := false
+			if argc > 3 {
+				dontRecordHistory = L.CheckBool(4)
+			}
+
+			if ch.Listener != nil {
+				ch.Listener.OnChat(message, highlight, dontRecordHistory)
+			}
+			return 0
+		},
+		"dialog": func(L *lua.LState) int {
+			argc := L.GetTop()
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			npc := 0
+			if argc > 1 {
+				npc = L.CheckInt(2)
+			}
+
+			message := ""
+			if argc > 2 {
+				message = L.CheckString(3)
+			}
+
+			prev := false
+			if argc > 3 {
+				prev = L.CheckBool(4)
+			}
+			next := false
+			if argc > 4 {
+				next = L.CheckBool(5)
+			}
+
+			if ch.Listener != nil {
+				ch.Listener.OnDialog(uint32(npc), message, prev, next)
+			}
+			return L.Yield(lua.LNumber(0))
+		},
+		"dialog_yes_no": func(L *lua.LState) int {
+			argc := L.GetTop()
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			npc := 0
+			if argc > 1 {
+				npc = L.CheckInt(2)
+			}
+
+			message := ""
+			if argc > 2 {
+				message = L.CheckString(3)
+			}
+
+			prev := false
+			if argc > 3 {
+				prev = L.CheckBool(4)
+			}
+			next := false
+			if argc > 4 {
+				next = L.CheckBool(5)
+			}
+
+			if ch.Listener != nil {
+				ch.Listener.OnDialogYesNo(uint32(npc), message, prev, next)
+			}
+			return L.Yield(lua.LNumber(0))
+		},
+		"dialog_list": func(L *lua.LState) int {
+			argc := L.GetTop()
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			npc := 0
+			if argc > 1 {
+				npc = L.CheckInt(2)
+			}
+
+			message := ""
+			if argc > 2 {
+				message = L.CheckString(3)
+			}
+
+			selections := []string{}
+			if argc > 3 {
+				tbl := L.CheckTable(4)
+				tbl.ForEach(func(_, value lua.LValue) {
+					if str, ok := value.(lua.LString); ok {
+						selections = append(selections, string(str))
+					}
+				})
+			}
+
+			if ch.Listener != nil {
+				ch.Listener.OnDialogList(uint32(npc), message, selections)
+			}
+			return L.Yield(lua.LNumber(0))
+		},
+		"dialog_accept": func(L *lua.LState) int {
+			argc := L.GetTop()
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			npc := 0
+			if argc > 1 {
+				npc = L.CheckInt(2)
+			}
+
+			message := ""
+			if argc > 2 {
+				message = L.CheckString(3)
+			}
+
+			enableEscape := false
+			if argc > 3 {
+				enableEscape = L.CheckBool(4)
+			}
+
+			if ch.Listener != nil {
+				ch.Listener.OnDialogAccept(uint32(npc), message, enableEscape)
+			}
+			return L.Yield(lua.LNumber(0))
+		},
+		"dialog_input": func(L *lua.LState) int {
+			argc := L.GetTop()
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			npc := 0
+			if argc > 1 {
+				npc = L.CheckInt(2)
+			}
+
+			message := ""
+			if argc > 2 {
+				message = L.CheckString(3)
+			}
+
+			if ch.Listener != nil {
+				ch.Listener.OnDialogInput(uint32(npc), message)
+			}
+			return L.Yield(lua.LNumber(0))
+		},
+		"notice": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			message := L.CheckString(2)
+			if ch.Listener != nil {
+				ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
+			}
+			return 0
+		},
+	}
+}
+
+func (ch *Character) String() string {
+	return ch.LuaTypeName()
+}
+
+func (ch *Character) Type() lua.LValueType {
+	return lua.LTUserData
+}
+
 func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx GameContext) Character {
 	ch := Character{
 		Sendable: sender,
@@ -319,4 +714,25 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 	}
 
 	return ch
+}
+
+// GetCurrentDialog returns the current dialog coroutine
+func (ch *Character) GetCurrentDialog() *lua.LState {
+	ch.dialogMutex.Lock()
+	defer ch.dialogMutex.Unlock()
+	return ch.currentDialog
+}
+
+// SetCurrentDialog sets the current dialog coroutine
+func (ch *Character) SetCurrentDialog(dialog *lua.LState) {
+	ch.dialogMutex.Lock()
+	defer ch.dialogMutex.Unlock()
+	ch.currentDialog = dialog
+}
+
+// ClearCurrentDialog clears the current dialog coroutine
+func (ch *Character) ClearCurrentDialog() {
+	ch.dialogMutex.Lock()
+	defer ch.dialogMutex.Unlock()
+	ch.currentDialog = nil
 }
