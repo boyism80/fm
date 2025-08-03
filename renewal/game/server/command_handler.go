@@ -67,6 +67,10 @@ func (ch *CommandHandler) Handle(gameClient *client.GameClient, params ...string
 		return ch.handleInvincible(gameClient, args...)
 	case "직업바꾸기":
 		return ch.handleChangeClass(gameClient, args...)
+	case "몬스터생성":
+		return ch.handleSpawnMob(gameClient, args...)
+	case "몬스터죽이기":
+		return ch.handleKillAllMobs(gameClient, args...)
 	default:
 		return fmt.Errorf("unknown command: %s", command)
 	}
@@ -106,14 +110,14 @@ func (ch *CommandHandler) handleCreateItem(gameClient *client.GameClient, args .
 		return fmt.Errorf("character not found")
 	}
 
-	// Get item spec from resources
-	itemSpec, ok := ch.gameServer.resources.Items[uint32(itemId)]
+	// Verify item spec exists
+	_, ok := ch.gameServer.resources.Items[uint32(itemId)]
 	if !ok {
 		return fmt.Errorf("item spec not found for id: %d", itemId)
 	}
 
 	// Create the item
-	item, err := entity.NewItem(itemSpec, uint16(count))
+	item, err := entity.NewItem(uint32(itemId), uint16(count), ch.gameServer)
 	if err != nil {
 		return fmt.Errorf("failed to create item: %v", err)
 	}
@@ -566,6 +570,9 @@ func (ch *CommandHandler) handleInvincible(gameClient *client.GameClient, args .
 		status = "disabled"
 	}
 
+	// Send notice to character through listener
+	character.Message(fmt.Sprintf("무적 상태: %s", status))
+
 	log.Printf("Command: Invincibility %s for character %d", status, character.GetID())
 	return nil
 }
@@ -594,5 +601,88 @@ func (ch *CommandHandler) handleChangeClass(gameClient *client.GameClient, args 
 	}, types.SEND_POLICY_ENCRYPT)
 
 	log.Printf("Command: Changed class to %d for character %d", class, character.GetID())
+	return nil
+}
+
+// handleSpawnMob spawns a monster at the character's position
+func (ch *CommandHandler) handleSpawnMob(gameClient *client.GameClient, args ...string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("missing mobId or mob name")
+	}
+
+	var mobId uint32
+	var err error
+
+	// Try to parse as mob ID first
+	mobId64, err := strconv.ParseUint(args[0], 10, 32)
+	if err != nil {
+		// If not a number, try to find by mob name
+		mobIdUint, ok := ch.gameServer.resources.NameToMob(args[0])
+		if !ok {
+			return fmt.Errorf("invalid mobId or mob name: %s", args[0])
+		}
+		mobId = mobIdUint
+	} else {
+		mobId = uint32(mobId64)
+	}
+
+	// Get character
+	character := gameClient.GetCharacter()
+	if character == nil {
+		return fmt.Errorf("character not found")
+	}
+
+	// Get current map
+	mapInstance := ch.gameServer.GetMap(character.Map)
+	if mapInstance == nil {
+		return fmt.Errorf("map %d not found", character.Map)
+	}
+
+	// Verify mob specification exists
+	_, ok := ch.gameServer.resources.Monsters[mobId]
+	if !ok {
+		return fmt.Errorf("mob specification not found for ID: %d", mobId)
+	}
+
+	// Spawn mob at character's position (following old server pattern)
+	mob, err := mapInstance.SpawnMob(mobId, character.Position)
+	if err != nil {
+		log.Printf("Failed to spawn mob %d: %v", mobId, err)
+		return fmt.Errorf("failed to spawn mob: %v", err)
+	}
+
+	log.Printf("Mob spawned successfully - ID: %d, Position: %v, OID: %d",
+		mobId, character.Position, mob.OID)
+
+	return nil
+}
+
+// handleKillAllMobs kills all mobs in the current map
+func (ch *CommandHandler) handleKillAllMobs(gameClient *client.GameClient, args ...string) error {
+	character := gameClient.GetCharacter()
+	if character == nil {
+		return fmt.Errorf("character not found")
+	}
+
+	// Get current map
+	mapInstance := ch.gameServer.GetMap(character.Map)
+	if mapInstance == nil {
+		return fmt.Errorf("map %d not found", character.Map)
+	}
+
+	// Iterate through all mobs in the map and kill them
+	mobs := mapInstance.GetMobs()
+	for mobID, mobInterface := range mobs {
+		if _, ok := mobInterface.(*entity.Mob); ok {
+			// Remove mob from map with fade out animation
+			if err := mapInstance.RemoveMob(mobID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT); err != nil {
+				log.Printf("Failed to remove mob %d: %v", mobID, err)
+			} else {
+				log.Printf("Command: Killed mob OID: %d", mobID)
+			}
+		}
+	}
+
+	log.Printf("Command: Killed all mobs in map %d for character %d", character.Map, character.GetID())
 	return nil
 }

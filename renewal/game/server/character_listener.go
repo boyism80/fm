@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/resp"
@@ -91,6 +92,26 @@ func (l *GameCharacterListener) OnMesoChanged(meso int32) {
 }
 
 // OnMessage handles general message events
-func (l *GameCharacterListener) OnMessage(message string) {
-	// TODO: Implement general message handling
+func (l *GameCharacterListener) OnMessage(messageType constant.ServerMessageType, message string) {
+	// Send notice packet to the character
+	l.character.Send(&resp.Notice{
+		Type:    messageType,
+		Message: message,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+// OnExpGain handles experience gain events by sending exp gain packet to the character
+func (l *GameCharacterListener) OnExpGain(exp uint32) {
+	// Send exp gain packet to the character (following old server pattern)
+	expPacket := &resp.GainExp{
+		Gain:  exp,
+		White: false,
+	}
+
+	l.character.Send(expPacket, types.SEND_POLICY_ENCRYPT)
+	l.character.Send(&resp.UpdateStats{
+		Stats: map[constant.Stat]int32{
+			constant.STAT_EXP: int32(l.character.Exp),
+		},
+	}, types.SEND_POLICY_ENCRYPT)
 }

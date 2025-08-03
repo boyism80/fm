@@ -7,10 +7,11 @@ type ShowMobHp struct {
 	Percentage uint8
 }
 
+func (m *ShowMobHp) Opcode() uint16 {
+	return 0xB6
+}
+
 func (m *ShowMobHp) Serialize(sw *stream.StreamWriter) error {
-	if err := sw.WriteU16(0xB6); err != nil {
-		return err
-	}
 	if err := sw.WriteU32(m.OID); err != nil {
 		return err
 	}

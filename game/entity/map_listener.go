@@ -1,5 +1,7 @@
 package entity
 
+import "github.com/boyism80/fm/game/constant"
+
 // RemoveItemType constants (matching resp.RemoveItemType)
 const (
 	REMOVE_ITEM_TYPE_EXPIRED     = 0
@@ -19,7 +21,8 @@ type MapListener interface {
 	OnMesoSpawned(mapID uint32, itemID uint32, meso *Meso)
 	OnItemRemoved(mapID uint32, itemID uint32, characterID uint32, mode uint8)
 	OnMobSpawned(mapID uint32, mobID uint32, mob *Mob)
-	OnMobRemoved(mapID uint32, mobID uint32)
+	OnMobRemoved(mapID uint32, mobID uint32, animationType constant.MobDieAnimationType)
+	OnMobControllerChange(mob *Mob, before *Character, after *Character)
 }
 
 // MapListenerImpl implements MapListener interface
@@ -54,5 +57,11 @@ func (l *MapListenerImpl) OnPlayerMoved(mapID uint32, playerID uint32, character
 // OnPlayerChat is called when a player sends a chat message
 func (l *MapListenerImpl) OnPlayerChat(mapID uint32, playerID uint32, message string) {
 	// TODO: Send chat packet to other players on the map
+	// This will be implemented by the game server
+}
+
+// OnMobControllerChange is called when a mob's controller changes
+func (l *MapListenerImpl) OnMobControllerChange(mob *Mob, before *Character, after *Character) {
+	// TODO: Send StartControlMob packet to new controller
 	// This will be implemented by the game server
 }

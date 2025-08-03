@@ -11,8 +11,11 @@ type ControlMoveMob struct {
 	SkillLevel   uint8
 }
 
+func (p *ControlMoveMob) Opcode() uint16 {
+	return 0xAD
+}
+
 func (p *ControlMoveMob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xAD)
 	writer.WriteU32(p.OID)
 	writer.WriteU16(p.MoveId)
 	writer.WriteBoolean(p.EnabledSkill)

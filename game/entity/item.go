@@ -11,6 +11,15 @@ import (
 	"github.com/boyism80/fm/game/data"
 )
 
+// Timer constants
+const (
+	// ffaDelay    = 30 * time.Second
+	// expiryDelay = 5 * time.Minute
+
+	ffaDelay    = 5 * time.Second
+	expiryDelay = 10 * time.Second
+)
+
 type Dropable interface {
 	GetDrop() *Drop
 	BindDrop(drop *Drop)
@@ -39,8 +48,9 @@ type Drop struct {
 	Owner        uint32
 	SpawnedPoint types.Point[int16]
 	DropType     constant.DropType
-	NextFFA      time.Time
-	NextExpiry   time.Time
+	MapID        uint32      // Map ID where this drop is located
+	ffaTimer     interface{} // Timer for FFA (Free For All) transition
+	expiryTimer  interface{} // Timer for item expiry
 }
 
 type ItemCore struct {
@@ -149,6 +159,53 @@ func (meso *Meso) BindDrop(drop *Drop) {
 
 func (meso *Meso) IsMeso() bool {
 	return true
+}
+
+// setupDropTimers sets up timers for drop ownership changes and expiry
+func (drop *Drop) setupDropTimers() {
+	if drop.Object == nil || drop.Object.Context == nil {
+		return
+	}
+
+	logicThread := drop.Object.Context.GetLogicThread()
+	if logicThread == nil {
+		return
+	}
+
+	// Set up FFA timer (Free For All after 30 seconds)
+	drop.ffaTimer = logicThread.Schedule(ffaDelay, func() {
+		drop.DropType = constant.DROP_TYPE_FFA
+		drop.Owner = 0
+	})
+
+	// Set up expiry timer (item disappears after 5 minutes)
+	drop.expiryTimer = logicThread.Schedule(expiryDelay, func() {
+		// Remove item from map
+		if drop.Object != nil && drop.Object.Context != nil {
+			if mapInstance := drop.Object.Context.GetMap(drop.MapID); mapInstance != nil {
+				mapInstance.RemoveItem(drop.Object.OID, REMOVE_ITEM_TYPE_EXPIRED, 0)
+			}
+		}
+	})
+}
+
+// cancelTimers cancels all active timers for this drop
+func (drop *Drop) cancelTimers() {
+	// Cancel FFA timer if it exists
+	if drop.ffaTimer != nil {
+		if timer, ok := drop.ffaTimer.(interface{ Cancel() }); ok {
+			timer.Cancel()
+		}
+		drop.ffaTimer = nil
+	}
+
+	// Cancel expiry timer if it exists
+	if drop.expiryTimer != nil {
+		if timer, ok := drop.expiryTimer.(interface{ Cancel() }); ok {
+			timer.Cancel()
+		}
+		drop.expiryTimer = nil
+	}
 }
 
 func (item *CashItem) GetInventoryType() constant.InventoryType {
@@ -531,21 +588,51 @@ func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	}
 }
 
-func NewItem(spec data.ItemSpec, count uint16) (Item, error) {
-	switch itemSpec := spec.(type) {
+// NewMeso creates a meso entity with drop information
+func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, context GameContext, mapID uint32) *Meso {
+	meso := &Meso{
+		Drop: &Drop{
+			Object: &Object{
+				OID:      sequence,
+				Position: position,
+				Context:  context,
+			},
+			SpawnedPoint: position,
+			DropType:     dropType,
+			Owner:        ownerID,
+			MapID:        mapID,
+		},
+		Count: count,
+	}
+
+	// Set up drop timers
+	meso.Drop.setupDropTimers()
+
+	return meso
+}
+
+// NewItem creates an item from item ID using GameContext
+func NewItem(itemId uint32, count uint16, context GameContext) (Item, error) {
+	// Get item spec from resources
+	itemSpec, ok := context.GetResources().Items[itemId]
+	if !ok {
+		return nil, fmt.Errorf("item spec not found for ID: %d", itemId)
+	}
+
+	switch spec := itemSpec.(type) {
 	case *data.EquipmentSpec:
 		return &Equipment{
 			ItemCore: &ItemCore{
-				Spec:  itemSpec,
+				Spec:  spec,
 				Count: 1,
 			},
-			EnchantChance: itemSpec.TUC,
+			EnchantChance: spec.TUC,
 		}, nil
 
 	case *data.ConsumeSpec:
 		return &Consume{
 			ItemCore: &ItemCore{
-				Spec:  itemSpec,
+				Spec:  spec,
 				Count: count,
 			},
 		}, nil
@@ -553,7 +640,7 @@ func NewItem(spec data.ItemSpec, count uint16) (Item, error) {
 	case *data.InstallationSpec:
 		return &Installation{
 			ItemCore: &ItemCore{
-				Spec:  itemSpec,
+				Spec:  spec,
 				Count: 1,
 			},
 		}, nil
@@ -561,7 +648,7 @@ func NewItem(spec data.ItemSpec, count uint16) (Item, error) {
 	case *data.GeneralItemSpec:
 		return &GeneralItem{
 			ItemCore: &ItemCore{
-				Spec:  itemSpec,
+				Spec:  spec,
 				Count: count,
 			},
 		}, nil
@@ -569,7 +656,7 @@ func NewItem(spec data.ItemSpec, count uint16) (Item, error) {
 	case *data.CashItemSpec:
 		return &CashItem{
 			ItemCore: &ItemCore{
-				Spec:  itemSpec,
+				Spec:  spec,
 				Count: count,
 			},
 		}, nil
@@ -581,7 +668,7 @@ func NewItem(spec data.ItemSpec, count uint16) (Item, error) {
 		}
 		return &Pet{
 			ItemCore: &ItemCore{
-				Spec:  itemSpec,
+				Spec:  spec,
 				Count: 1,
 			},
 			Expiration: petExpiration,

@@ -73,7 +73,7 @@ func (gs *GameServer) handleLoginGame(ctx *core.ClientContext, data []byte) erro
 	}
 
 	// Create character using NewDummyCharacter (following old server pattern)
-	character := entity.NewDummyCharacter(ctx.Client, nil, request.PlayerId, name, nil)
+	character := entity.NewDummyCharacter(ctx.Client, nil, request.PlayerId, name, gs)
 
 	// Set character listener for packet sending
 	character.Listener = NewGameCharacterListener(gs, &character)
@@ -243,8 +243,40 @@ func (gs *GameServer) handleAttack(ctx *core.ClientContext, data []byte) error {
 		return fmt.Errorf("character is nil")
 	}
 
-	// Use character listener to handle attack (following old server pattern)
-	character.Listener.OnAttack(request.AttackInfo)
+	// Get map instance
+	mapID := character.GetMap()
+	mapInstance := gs.GetMap(mapID)
+	if mapInstance == nil {
+		log.Printf("Character is not in a map")
+		return fmt.Errorf("character is not in a map")
+	}
+
+	// Process damage to mobs (following old server pattern)
+	for _, damage := range request.AttackInfo.Damages {
+		mob := mapInstance.GetMob(damage.OID)
+		if mob == nil {
+			log.Printf("Mob not found for OID: %d", damage.OID)
+			continue
+		}
+
+		// Apply damage to mob using Mob.Damage method
+		for _, damagePair := range damage.DamagePairs {
+			mob.Damage(uint16(damagePair.Damage), character)
+
+			// Send mob HP update to attacker
+			character.Send(&resp.ShowMobHp{
+				OID:        mob.OID,
+				Percentage: uint8(mob.Hp * 100 / mob.MaxHp),
+			}, types.SEND_POLICY_ENCRYPT)
+		}
+	}
+
+	// Broadcast attack to all players in map (following old server pattern)
+	mapInstance.BroadcastToPlayers(&resp.Attack{
+		CharacterId: character.GetID(),
+		AttackInfo:  request.AttackInfo,
+		SkillLevel:  0,
+	}, types.SEND_POLICY_ENCRYPT, character.GetID())
 
 	log.Printf("Attack packet processed for character %d - Targets: %d, Hits: %d, Skill: %d",
 		character.GetID(), request.AttackInfo.Targets, request.AttackInfo.Hits, request.AttackInfo.Skill)
@@ -367,12 +399,17 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 	}
 
 	// Attempt to loot the item/meso
-	lootedObject, success := mapInstance.LootItem(request.OID, character, request.Position)
-	if !success {
-		log.Printf("Failed to loot item %d for character %d", request.OID, character.GetID())
-		client.Send(&resp.ItemGainFailed{
-			Mode: resp.ITEM_GAIN_FAILED_TYPE_FULL,
-		}, types.SEND_POLICY_ENCRYPT)
+	lootedObject, reason := mapInstance.LootItem(request.OID, character, request.Position)
+	if reason != constant.LOOT_SUCCESS {
+		log.Printf("Failed to loot item %d for character %d, reason: %d", request.OID, character.GetID(), reason)
+
+		// Only send ItemGainFailed for inventory/meso capacity issues
+		if reason == constant.LOOT_FAILED_INVENTORY_FULL || reason == constant.LOOT_FAILED_MESO_FULL {
+			client.Send(&resp.ItemGainFailed{
+				Mode: constant.ITEM_GAIN_FAILED_TYPE_FULL,
+			}, types.SEND_POLICY_ENCRYPT)
+		}
+
 		client.Send(&resp.UpdateStats{
 			UnlockAction: true,
 		}, types.SEND_POLICY_ENCRYPT)
@@ -710,8 +747,98 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 		return err
 	}
 
-	log.Printf("Move mob packet received from %s - OID: %d",
-		ctx.Client.GetConnection().RemoteAddr(), request.OID)
+	log.Printf("Move mob packet received from %s - OID: %d, MovementId: %d, IsAggroed: %t, Unknown2: %t",
+		ctx.Client.GetConnection().RemoteAddr(), request.OID, request.MovementId, request.IsAggroed, request.Unknown2)
+
+	// Get game client
+	client, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		log.Printf("Client is not a GameClient")
+		return fmt.Errorf("client is not a GameClient")
+	}
+
+	// Get character
+	character := client.GetCharacter()
+	if character == nil {
+		log.Printf("Character not found for client")
+		return fmt.Errorf("character not found")
+	}
+
+	// Get map instance
+	mapInstance := gs.GetMap(character.GetMap())
+	if mapInstance == nil {
+		log.Printf("Map %d not found", character.GetMap())
+		return fmt.Errorf("map %d not found", character.GetMap())
+	}
+
+	// Get mob from map
+	mob := mapInstance.GetMob(request.OID)
+	if mob == nil {
+		log.Printf("Mob %d not found on map %d", request.OID, character.GetMap())
+		return fmt.Errorf("mob %d not found", request.OID)
+	}
+
+	// Check controller (following old server pattern)
+	controllerTable := mapInstance.GetControllerTable()
+	controller, exists := controllerTable.GetController(mob)
+	if !exists {
+		log.Printf("No controller found for mob %d", request.OID)
+		return fmt.Errorf("no controller found for this mob")
+	}
+
+	// If sender is not the controller, handle control switching (following old server pattern)
+	if controller.GetID() != character.GetID() {
+		if request.Unknown2 {
+			// TODO: stopControl - Stop control logic
+			log.Printf("Stop control requested for mob %d by character %d", request.OID, character.GetID())
+			// Currently only logging, actual implementation to be added later
+		} else {
+			// TODO: switchControl - Switch control logic
+			log.Printf("Switch control requested for mob %d by character %d", request.OID, character.GetID())
+			// Currently only logging, actual implementation to be added later
+		}
+		return nil // Don't return error, handle normally
+	}
+
+	// Send ControlMoveMob packet to the controller (following old server pattern)
+	controlPacket := &resp.ControlMoveMob{
+		OID:          request.OID,
+		MoveId:       request.MovementId,
+		EnabledSkill: request.IsAggroed,
+		MP:           mob.Mp,
+		SkillId:      0,
+		SkillLevel:   0,
+	}
+	client.Send(controlPacket, types.SEND_POLICY_ENCRYPT)
+
+	// Update mob position based on movement data (following old server pattern)
+	for _, movement := range request.Movements {
+		if move, ok := movement.(*protocol.AbsoluteLifeMovement); ok {
+			mob.Position = move.Position
+		}
+
+		mob.Stance = movement.GetStance()
+	}
+
+	// Broadcast the movement to all players on the map
+	movePacket := &resp.MoveMob{
+		IsAggroed:   request.IsAggroed,
+		CenterSplit: request.CenterSplit,
+		Skill1:      request.Skill1,
+		Skill2:      request.Skill2,
+		Skill3:      request.Skill3,
+		Skill4:      request.Skill4,
+		OID:         request.OID,
+		StartPoint:  mob.Position, // Use current position as start point
+		Movements:   request.Movements,
+	}
+
+	// Broadcast to all players on the map (excluding the sender)
+	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+
+	log.Printf("Mob %d movement broadcasted - Position: %v, Stance: %d",
+		request.OID, mob.Position, mob.Stance)
+
 	return nil
 }
 
@@ -726,6 +853,46 @@ func (gs *GameServer) handleDamaged(ctx *core.ClientContext, data []byte) error 
 
 	log.Printf("Damaged packet received from %s - Damage: %d",
 		ctx.Client.GetConnection().RemoteAddr(), request.Damage)
+
+	// Get game client
+	client, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		log.Printf("Client is not a GameClient")
+		return fmt.Errorf("client is not a GameClient")
+	}
+
+	// Get character
+	character := client.GetCharacter()
+	if character == nil {
+		log.Printf("Character not found for client")
+		return fmt.Errorf("character not found")
+	}
+
+	// Process damage (following old server pattern)
+	stats := map[constant.Stat]int32{}
+	if !character.Invincible {
+		// Calculate new HP (following old server pattern)
+		newHp := int32(character.Hp) - int32(request.Damage)
+		if newHp < 0 {
+			newHp = 0
+		}
+		if newHp > int32(character.MaxHp) {
+			newHp = int32(character.MaxHp)
+		}
+
+		character.Hp = uint16(newHp)
+		stats[constant.STAT_HP] = int32(character.Hp)
+	}
+
+	// Send stats update to client (following old server pattern)
+	client.Send(&resp.UpdateStats{
+		Stats:        stats,
+		UnlockAction: true,
+	}, types.SEND_POLICY_ENCRYPT)
+
+	log.Printf("Damage processed for character %d - Damage: %d, New HP: %d/%d",
+		character.GetID(), request.Damage, character.Hp, character.MaxHp)
+
 	return nil
 }
 
@@ -854,7 +1021,7 @@ func (gs *GameServer) handleEquip(client *client.GameClient, character *entity.C
 				storageSlot, isFree := inven.NextSlot()
 				if !isFree {
 					client.Send(&resp.ItemGainFailed{
-						Mode: resp.ITEM_GAIN_FAILED_TYPE_FULL,
+						Mode: constant.ITEM_GAIN_FAILED_TYPE_FULL,
 					}, types.SEND_POLICY_ENCRYPT)
 					return
 				}
@@ -868,7 +1035,7 @@ func (gs *GameServer) handleEquip(client *client.GameClient, character *entity.C
 			storageSlot, isFree := inven.NextSlot()
 			if swap && !isFree {
 				client.Send(&resp.ItemGainFailed{
-					Mode: resp.ITEM_GAIN_FAILED_TYPE_FULL,
+					Mode: constant.ITEM_GAIN_FAILED_TYPE_FULL,
 				}, types.SEND_POLICY_ENCRYPT)
 				return
 			}

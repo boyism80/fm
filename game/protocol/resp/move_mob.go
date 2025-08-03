@@ -18,8 +18,11 @@ type MoveMob struct {
 	Movements   []protocol.MoveFragment
 }
 
+func (p *MoveMob) Opcode() uint16 {
+	return 0xAC
+}
+
 func (p *MoveMob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xAC)
 	writer.WriteU32(p.OID)
 	writer.WriteBoolean(p.IsAggroed)
 	writer.Write8(p.CenterSplit)

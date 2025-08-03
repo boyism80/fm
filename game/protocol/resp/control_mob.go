@@ -10,12 +10,19 @@ type StartControlMob struct {
 	Aggro bool
 }
 
+func (p *StartControlMob) Opcode() uint16 {
+	return 0xAB
+}
+
 type StopControlMob struct {
 	OID uint32
 }
 
+func (p *StopControlMob) Opcode() uint16 {
+	return 0xAB
+}
+
 func (p *StartControlMob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xAB)
 	if p.Aggro {
 		writer.WriteU8(2)
 	} else {
@@ -41,7 +48,7 @@ func (p *StartControlMob) Deserialize(reader *stream.StreamReader) error {
 }
 
 func (p *StopControlMob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(0xAB)
+	writer.WriteU16(p.Opcode())
 	writer.WriteU8(0)
 	writer.WriteU32(p.OID)
 	return nil

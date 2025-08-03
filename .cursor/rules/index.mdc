@@ -69,6 +69,7 @@ This is a MapleStory private server implementation written in Go, using a custom
 3. **When changing enum constants or function signatures, ALWAYS run compilation check**
 4. **If compilation fails, ALL related files MUST be updated immediately**
 5. **Use `go build ./...` to check all packages in the project**
+6. **CRITICAL**: If import cycle occurs, IMMEDIATELY stop work and revert changes
 
 ### Build Commands
 ```bash
@@ -132,6 +133,8 @@ type Login struct {
 - Use stream.StreamWriter/StreamReader for binary protocols
 - Follow MapleStory packet structure conventions
 - Handle endianness correctly
+- **CRITICAL**: Serialize methods should NOT write opcode - Send() method handles opcode writing
+- **CRITICAL**: Remove `writer.WriteU16(p.Opcode())` from Serialize methods - this causes double opcode writing
 
 ### Resource Management
 - Use specifications (Spec types) for game data

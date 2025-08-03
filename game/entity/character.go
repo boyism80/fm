@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/boyism80/fm/common/context"
 	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/common/timer"
 	"github.com/boyism80/fm/common/types"
 	"github.com/boyism80/fm/common/util"
 	"github.com/boyism80/fm/game/constant"
@@ -110,6 +110,45 @@ func (ch *Character) GetID() uint32 {
 	return ch.ID
 }
 
+// Message sends a notice message to the character through the listener
+func (ch *Character) Message(message string) {
+	if ch.Listener != nil {
+		ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
+	}
+}
+
+// GetThreadHash returns the character's map ID for thread assignment
+// Characters on the same map will be assigned to the same logic thread
+func (ch *Character) GetThreadHash() int {
+	return int(ch.Map)
+}
+
+// ScheduleTimer schedules a one-shot timer for this character
+// The timer will execute on the same logic thread as the character
+func (ch *Character) ScheduleTimer(duration time.Duration, logic func() error, callback func(bool, error)) (*timer.Timer, error) {
+	// This would need access to the server instance
+	// For now, we'll return an error indicating this needs to be implemented
+	// with proper server access
+	return nil, fmt.Errorf("ScheduleTimer not implemented - needs server access")
+}
+
+// ReviveTimer schedules a revive timer for this character
+// This is a convenience method for scheduling character revival
+func (ch *Character) ReviveTimer(duration time.Duration) (*timer.Timer, error) {
+	return ch.ScheduleTimer(duration, func() error {
+		// Revive logic
+		ch.Hp = ch.MaxHp
+		ch.Mp = ch.MaxMp
+		return nil
+	}, func(success bool, err error) {
+		if err != nil {
+			fmt.Printf("Revive timer failed for character %s: %v\n", ch.Name, err)
+		} else {
+			fmt.Printf("Character %s revived successfully\n", ch.Name)
+		}
+	})
+}
+
 func (mb *MonsterBook) Serialize(writer *stream.StreamWriter) {
 	writer.WriteU16(uint16(len(mb.Cards)))
 
@@ -172,7 +211,17 @@ func (ch *Character) RemainingSkillPoints() uint16 {
 	return uint16(ret)
 }
 
-func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx *context.ServerContext) Character {
+// AddExp adds experience points to the character and notifies the listener
+func (ch *Character) AddExp(exp uint32) {
+	ch.Exp += exp
+
+	// Notify listener about exp gain (following old server pattern)
+	if ch.Listener != nil {
+		ch.Listener.OnExpGain(exp)
+	}
+}
+
+func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx GameContext) Character {
 	ch := Character{
 		Sendable: sender,
 		Listener: listener,
@@ -224,9 +273,10 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 	}
 
 	if ctx != nil {
+		resources := ctx.GetResources()
 		ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = &Equipment{
 			ItemCore: &ItemCore{
-				Spec:       ctx.Resources.Items[1302000],
+				Spec:       resources.Items[1302000],
 				Count:      1,
 				UniqueId:   0,
 				Expiration: util.TimeMax,
@@ -240,7 +290,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		}
 		ch.Inventory[constant.INVENTORY_TYPE_CASH].Items[1] = &Pet{
 			ItemCore: &ItemCore{
-				Spec:       ctx.Resources.Items[5000007],
+				Spec:       resources.Items[5000007],
 				Count:      1,
 				UniqueId:   1,
 				Expiration: util.TimeMax,
@@ -256,16 +306,16 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 
 		ch.Inventory[constant.INVENTORY_TYPE_ETC].Items[1] = &GeneralItem{
 			ItemCore: &ItemCore{
-				Spec:       ctx.Resources.Items[4000001],
+				Spec:       resources.Items[4000001],
 				Count:      100,
 				Expiration: util.TimeMax,
 			},
 		}
 
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1], err = NewItem(ctx.Resources.Items[1060002], 1)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2], err = NewItem(ctx.Resources.Items[1060006], 1)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3], err = NewItem(ctx.Resources.Items[1040002], 1)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(ctx.Resources.Items[1040010], 1)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1], err = NewItem(1060002, 1, ctx)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2], err = NewItem(1060006, 1, ctx)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3], err = NewItem(1040002, 1, ctx)
+		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(1040010, 1, ctx)
 	}
 
 	return ch

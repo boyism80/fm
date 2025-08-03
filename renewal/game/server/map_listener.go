@@ -92,15 +92,16 @@ func (l *GameMapListener) OnPlayerAdded(mapID uint32, playerID uint32, character
 		}
 	}
 
-	// 5. Send existing items on the map to the new player (following old server pattern)
+	// 5. Send existing items and meso on the map to the new player (following old server pattern)
 	for _, item := range mapInstance.GetItems() {
+		// Handle regular items
 		if item, ok := item.(entity.Item); ok {
 			drop := item.GetDrop()
 			if drop != nil {
 				// Send SpawnItem packet for existing items
 				character.Send(&resp.SpawnItem{
 					ID:           drop.Object.OID,
-					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
+					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
 					DropType:     drop.DropType,
 					Item:         item,
 					OwnerID:      drop.Owner,
@@ -108,6 +109,35 @@ func (l *GameMapListener) OnPlayerAdded(mapID uint32, playerID uint32, character
 					IsPlayerDrop: true,
 				}, types.SEND_POLICY_ENCRYPT)
 			}
+		}
+
+		// Handle meso separately
+		if meso, ok := item.(*entity.Meso); ok {
+			drop := meso.GetDrop()
+			if drop != nil {
+				// Send SpawnMeso packet for existing meso
+				character.Send(&resp.SpawnMeso{
+					ID:           drop.Object.OID,
+					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
+					DropType:     drop.DropType,
+					Count:        meso.Count,
+					OwnerID:      drop.Owner,
+					Position:     drop.Position,
+					SpawnedPoint: drop.SpawnedPoint,
+					IsPlayerDrop: true,
+				}, types.SEND_POLICY_ENCRYPT)
+			}
+		}
+	}
+
+	// 6. Send existing mobs on the map to the new player (following old server pattern)
+	for _, mob := range mapInstance.GetMobs() {
+		if mob, ok := mob.(*entity.Mob); ok {
+			// Send SpawnMob packet for existing mobs (following old server pattern)
+			character.Send(&resp.SpawnMob{
+				Mob:       mob,
+				SpawnType: constant.MOB_SPAWN_TYPE_NONE, // Use NONE for existing mobs (following old server pattern)
+			}, types.SEND_POLICY_ENCRYPT)
 		}
 	}
 }
@@ -233,7 +263,8 @@ func (l *GameMapListener) OnMobSpawned(mapID uint32, mobID uint32, mob *entity.M
 
 	// Create spawn mob packet
 	spawnPacket := &resp.SpawnMob{
-		Mob: mob,
+		Mob:       mob,
+		SpawnType: constant.MOB_SPAWN_TYPE_ANIMATE,
 	}
 
 	// Broadcast to all players on the map
@@ -241,7 +272,7 @@ func (l *GameMapListener) OnMobSpawned(mapID uint32, mobID uint32, mob *entity.M
 }
 
 // OnMobRemoved sends remove mob packet to all players on the map
-func (l *GameMapListener) OnMobRemoved(mapID uint32, mobID uint32) {
+func (l *GameMapListener) OnMobRemoved(mapID uint32, mobID uint32, animationType constant.MobDieAnimationType) {
 	// Get the map instance
 	mapInstance := l.gameServer.GetMap(mapID)
 	if mapInstance == nil {
@@ -250,9 +281,22 @@ func (l *GameMapListener) OnMobRemoved(mapID uint32, mobID uint32) {
 
 	// Create remove mob packet
 	removePacket := &resp.DieMob{
-		OID: mobID,
+		OID:           mobID,
+		AnimationType: animationType,
 	}
 
 	// Broadcast to all players on the map
 	mapInstance.BroadcastToAllPlayers(removePacket, types.SEND_POLICY_ENCRYPT)
+}
+
+// OnMobControllerChange sends StartControlMob packet to new controller (following old server pattern)
+func (l *GameMapListener) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character) {
+	// Send StartControlMob packet to new controller (following old server pattern)
+	if after != nil {
+		after.Send(&resp.StartControlMob{
+			Mob:   mob,
+			Aggro: false,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+	// Note: StopControlMob is commented out in old server, so we skip it here too
 }

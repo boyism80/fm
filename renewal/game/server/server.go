@@ -16,6 +16,28 @@ import (
 	"github.com/boyism80/fm/renewal/game/client"
 )
 
+// logicThreadWrapper wraps core.LogicThread to match entity.LogicThread interface
+type logicThreadWrapper struct {
+	logicThread *core.LogicThread
+}
+
+func (w *logicThreadWrapper) Schedule(delay time.Duration, task func()) interface{} {
+	return w.logicThread.Schedule(delay, func() error {
+		task()
+		return nil
+	}, nil)
+}
+
+func (w *logicThreadWrapper) ScheduleAtFixedRate(initialDelay, period time.Duration, task func()) interface{} {
+	// Not implemented in core.LogicThread, return nil
+	return nil
+}
+
+func (w *logicThreadWrapper) ScheduleWithFixedDelay(initialDelay, delay time.Duration, task func()) interface{} {
+	// Not implemented in core.LogicThread, return nil
+	return nil
+}
+
 // GameServer represents the game server for MapleStory private server
 type GameServer struct {
 	server         *core.Server
@@ -86,14 +108,33 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	return gameServer, nil
 }
 
+// GetResources returns the game resources
+func (gs *GameServer) GetResources() *data.Resources {
+	return gs.resources
+}
+
+// GetThreadHash returns a hash for thread assignment
+func (gs *GameServer) GetThreadHash() int {
+	return 0 // GameServer uses a single thread hash
+}
+
+// GetLogicThread returns the logic thread for scheduling tasks
+func (gs *GameServer) GetLogicThread() entity.LogicThread {
+	logicThread, err := gs.server.GetLogicThread(gs)
+	if err != nil {
+		return nil
+	}
+	return &logicThreadWrapper{logicThread: logicThread}
+}
+
 // preCreateMaps pre-creates all map instances from loaded resources
 func (gs *GameServer) preCreateMaps() {
 	log.Println("Setting up map listeners...")
 	gameMapListener := NewGameMapListener(gs)
 
 	log.Println("Pre-creating map instances...")
-	for mapID, mapSpec := range gs.resources.Maps {
-		mapInstance := entity.NewMap(mapID, gameMapListener, mapSpec)
+	for mapID := range gs.resources.Maps {
+		mapInstance := entity.NewMap(mapID, gameMapListener, mapID, gs) // Pass mapID instead of mapSpec
 		// TODO: Initialize map with MapSpec data (mob spawns, etc.)
 		gs.maps[mapID] = mapInstance
 	}

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/protocol"
 )
 
@@ -13,5 +14,6 @@ type CharacterListener interface {
 	OnChat(message string, highlight bool, dontRecordHistory bool)
 	OnAttack(attackInfo protocol.AttackInfo)
 	OnMesoChanged(meso int32)
-	OnMessage(message string)
+	OnMessage(messageType constant.ServerMessageType, message string)
+	OnExpGain(exp uint32)
 }

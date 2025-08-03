@@ -7,6 +7,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/boyism80/fm/common/crypt"
 	common_resp "github.com/boyism80/fm/common/protocol/resp"
@@ -80,10 +81,11 @@ func (s *Server) Start(host string, port int) error {
 	s.logicThreads = make([]*LogicThread, s.logicThreadCount)
 	for i := 0; i < s.logicThreadCount; i++ {
 		logicThread := &LogicThread{
-			id:       i,
-			server:   s,
-			stopChan: make(chan struct{}),
-			taskChan: make(chan *LogicTask, 100), // Buffer for 100 tasks
+			id:           i,
+			server:       s,
+			stopChan:     make(chan struct{}),
+			taskChan:     make(chan *LogicTask, 100), // Buffer for 100 tasks
+			timerManager: NewTimerManager(),
 		}
 		s.logicThreads[i] = logicThread
 
@@ -125,8 +127,11 @@ func (s *Server) Stop() error {
 	}
 	s.clientsMutex.Unlock()
 
-	// Stop all threads
+	// Cancel all timers and stop all threads
 	for _, thread := range s.logicThreads {
+		// Cancel all active timers
+		thread.timerManager.CancelAllTimers()
+
 		close(thread.stopChan)
 	}
 
@@ -405,6 +410,65 @@ func (s *Server) GetThreadForObject(obj ThreadAssignable) (int, error) {
 	return threadIndex, nil
 }
 
+// GetLogicThread returns the LogicThread instance for a ThreadAssignable object
+func (s *Server) GetLogicThread(obj ThreadAssignable) (*LogicThread, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("cannot get thread for nil object")
+	}
+
+	threadIndex := obj.GetThreadHash() % s.logicThreadCount
+	if threadIndex < 0 || threadIndex >= s.logicThreadCount {
+		return nil, fmt.Errorf("invalid thread index: %d (valid range: 0-%d)", threadIndex, s.logicThreadCount-1)
+	}
+
+	return s.logicThreads[threadIndex], nil
+}
+
+// SetTimer sets a repeating timer on all logic threads
+// This is useful for server-wide periodic tasks
+func (s *Server) SetTimer(interval time.Duration, logic func() error, callback func(bool, error)) []*RepeatingTimer {
+	var timers []*RepeatingTimer
+
+	for _, logicThread := range s.logicThreads {
+		timer := logicThread.SetRepeatingTimer(interval, logic, callback)
+		timers = append(timers, timer)
+	}
+
+	return timers
+}
+
+// CancelTimer cancels a repeating timer by ID on all logic threads
+func (s *Server) CancelTimer(timerID uint64) error {
+	var lastError error
+	successCount := 0
+
+	for _, logicThread := range s.logicThreads {
+		if err := logicThread.CancelRepeatingTimer(timerID); err == nil {
+			successCount++
+		} else {
+			lastError = err
+		}
+	}
+
+	if successCount == 0 {
+		if lastError != nil {
+			return fmt.Errorf("timer %d not found on any logic thread: %w", timerID, lastError)
+		}
+		return fmt.Errorf("timer %d not found on any logic thread", timerID)
+	}
+
+	return nil
+}
+
+// GetRepeatingTimerCount returns the total number of repeating timers across all logic threads
+func (s *Server) GetRepeatingTimerCount() int {
+	total := 0
+	for _, logicThread := range s.logicThreads {
+		total += logicThread.GetRepeatingTimerCount()
+	}
+	return total
+}
+
 // RegisterPacketHandler registers a packet handler for a specific opcode
 func (s *Server) RegisterPacketHandler(opcode int, handler func(ctx *ClientContext, data []byte) error) {
 	s.packetHandler.RegisterHandler(opcode, handler)
@@ -421,11 +485,29 @@ func (s *Server) GetStats() map[string]interface{} {
 	clientCount := len(s.clients)
 	s.clientsMutex.RUnlock()
 
+	// Get timer statistics for each logic thread
+	timerStats := make(map[string]int)
+	repeatingTimerStats := make(map[string]int)
+	totalTimers := 0
+	totalRepeatingTimers := 0
+	for i, thread := range s.logicThreads {
+		timerCount := thread.GetTimerCount()
+		repeatingTimerCount := thread.GetRepeatingTimerCount()
+		timerStats[fmt.Sprintf("thread_%d_timers", i)] = timerCount
+		repeatingTimerStats[fmt.Sprintf("thread_%d_repeating_timers", i)] = repeatingTimerCount
+		totalTimers += timerCount
+		totalRepeatingTimers += repeatingTimerCount
+	}
+
 	return map[string]interface{}{
-		"logic_thread_count": s.logicThreadCount,
-		"client_count":       clientCount,
-		"listening":          s.listener != nil,
-		"packet_handlers":    s.packetHandler.GetHandlerCount(),
+		"logic_thread_count":     s.logicThreadCount,
+		"client_count":           clientCount,
+		"listening":              s.listener != nil,
+		"packet_handlers":        s.packetHandler.GetHandlerCount(),
+		"total_timers":           totalTimers,
+		"total_repeating_timers": totalRepeatingTimers,
+		"timer_stats":            timerStats,
+		"repeating_timer_stats":  repeatingTimerStats,
 	}
 }
 

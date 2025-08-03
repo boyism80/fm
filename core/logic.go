@@ -3,7 +3,9 @@ package core
 import (
 	"fmt"
 	"log"
+	"time"
 
+	"github.com/boyism80/fm/common/timer"
 	"github.com/boyism80/fm/common/types"
 )
 
@@ -23,10 +25,11 @@ type LogicTask struct {
 // Thread Safety: Processes game state updates atomically
 // Error Handling: Game logic errors, state inconsistencies
 type LogicThread struct {
-	id       int
-	server   *Server
-	stopChan chan struct{}
-	taskChan chan *LogicTask // Channel for receiving logic tasks
+	id           int
+	server       *Server
+	stopChan     chan struct{}
+	taskChan     chan *LogicTask // Channel for receiving logic tasks
+	timerManager *TimerManager
 }
 
 // run executes the logic thread main loop
@@ -131,6 +134,97 @@ func (t *LogicThread) SubmitTask(task *LogicTask) error {
 	default:
 		return fmt.Errorf("task channel is full")
 	}
+}
+
+// Schedule schedules a one-shot timer that will execute the given logic function
+// after the specified duration. The logic will be executed on this logic thread.
+func (t *LogicThread) Schedule(duration time.Duration, logic func() error, callback func(bool, error)) *timer.Timer {
+	timer := t.timerManager.Schedule(duration, logic, callback)
+
+	// Start timer in a separate goroutine
+	go t.runTimer(timer, duration)
+
+	return timer
+}
+
+// runTimer runs the timer logic after the specified duration
+func (t *LogicThread) runTimer(timer *timer.Timer, duration time.Duration) {
+	select {
+	case <-time.After(duration):
+		// Timer expired - create LogicTask and submit to this thread
+		task := &LogicTask{
+			Logic:    timer.Logic,
+			Callback: timer.Callback,
+		}
+		t.taskChan <- task
+
+	case <-timer.CancelChan:
+		// Timer was cancelled
+		return
+	}
+
+	// Clean up timer after execution or cancellation
+	t.timerManager.RemoveTimer(timer.ID)
+}
+
+// GetTimerCount returns the number of active timers on this logic thread
+func (t *LogicThread) GetTimerCount() int {
+	return t.timerManager.GetTimerCount()
+}
+
+// SetRepeatingTimer sets a repeating timer that will execute the given logic function
+// at the specified interval. The logic will be executed on this logic thread.
+func (t *LogicThread) SetRepeatingTimer(interval time.Duration, logic func() error, callback func(bool, error)) *RepeatingTimer {
+	repeatingTimer := t.timerManager.SetRepeatingTimer(interval, logic, callback)
+
+	// Start repeating timer in a separate goroutine
+	go t.runRepeatingTimer(repeatingTimer)
+
+	return repeatingTimer
+}
+
+// runRepeatingTimer runs the repeating timer logic at the specified interval
+func (t *LogicThread) runRepeatingTimer(timer *RepeatingTimer) {
+	ticker := time.NewTicker(timer.Interval)
+	defer ticker.Stop()
+
+	// Execute immediately on start
+	t.executeTimerLogic(timer)
+
+	for {
+		select {
+		case <-ticker.C:
+			if !timer.IsRunning {
+				return
+			}
+			t.executeTimerLogic(timer)
+
+		case <-timer.CancelChan:
+			timer.IsRunning = false
+			// Clean up timer
+			t.timerManager.RemoveRepeatingTimer(timer.ID)
+			return
+		}
+	}
+}
+
+// executeTimerLogic executes the timer logic as a LogicTask
+func (t *LogicThread) executeTimerLogic(timer *RepeatingTimer) {
+	task := &LogicTask{
+		Logic:    timer.Logic,
+		Callback: timer.Callback,
+	}
+	t.taskChan <- task
+}
+
+// GetRepeatingTimerCount returns the number of active repeating timers on this logic thread
+func (t *LogicThread) GetRepeatingTimerCount() int {
+	return t.timerManager.GetRepeatingTimerCount()
+}
+
+// CancelRepeatingTimer cancels a repeating timer by ID
+func (t *LogicThread) CancelRepeatingTimer(timerID uint64) error {
+	return t.timerManager.CancelRepeatingTimer(timerID)
 }
 
 // processPacket is a placeholder for packet processing logic

@@ -24,30 +24,55 @@ type Map struct {
 	listener        MapListener
 	spec            *data.MapSpec // Map specification data
 	sequence        uint32        // Sequence ID for generating unique object IDs
+	context         GameContext   // GameContext for accessing resources
 }
 
-func NewMap(id uint32, listener MapListener, spec *data.MapSpec) *Map {
+func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) *Map {
 	if listener == nil {
 		panic("MapListener cannot be nil")
 	}
-	if spec == nil {
-		panic("MapSpec cannot be nil")
+	if context == nil {
+		panic("GameContext cannot be nil")
+	}
+
+	// Get map spec from resources
+	mapSpec, ok := context.GetResources().Maps[mapId]
+	if !ok {
+		panic(fmt.Sprintf("MapSpec not found for ID: %d", mapId))
 	}
 
 	mapInstance := &Map{
 		ID:              id,
 		objects:         make(map[types.ObjectType]map[uint32]interface{}),
-		controllerTable: NewControllerTable(nil),
+		controllerTable: nil, // Will be set after mapInstance is created
 		MobSpawns:       make(map[uint32]*MobSpawn),
 		listener:        listener,
-		spec:            spec,
+		spec:            mapSpec,
 		sequence:        0,
+		context:         context,
 	}
+
+	// Set up controller table with Map-specific callback
+	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
 
 	// Initialize NPCs from MapSpec (following old server pattern)
 	mapInstance.initializeNpcs()
 
 	return mapInstance
+}
+
+// onMobControllerChange is the Map-specific callback for mob controller changes
+func (m *Map) onMobControllerChange(mob *Mob, before *Character, after *Character) {
+	// Delegate to MapListener to handle the mob controller change
+	m.listener.OnMobControllerChange(mob, before, after)
+}
+
+// OnMobControllerChange handles mob controller changes (following old server pattern)
+// This is a global callback that will be replaced with Map-specific callback
+func OnMobControllerChange(mob *Mob, before *Character, after *Character) {
+	// This callback is called when a mob's controller changes
+	// In the new Entity-based architecture, we'll handle this through the MapListener
+	// The actual mob AI logic will be implemented in the MapListener
 }
 
 func (m *Map) AddPlayer(playerID uint32, character *Character, init bool) error {
@@ -57,7 +82,10 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, init bool) error 
 
 	m.objects[types.OBJECT_TYPE_PLAYER][playerID] = character
 
-	// Notify listener about player addition
+	// Add player to controller table for mob AI (following old server pattern)
+	m.controllerTable.EnterPlayer(character)
+
+	// Notify listener about player addition (mob AI will be handled by listener)
 	m.listener.OnPlayerAdded(m.ID, playerID, character, init)
 
 	return nil
@@ -72,7 +100,11 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 		return fmt.Errorf("player %d not found on map", playerID)
 	}
 
+	character := m.objects[types.OBJECT_TYPE_PLAYER][playerID].(*Character)
 	delete(m.objects[types.OBJECT_TYPE_PLAYER], playerID)
+
+	// Remove player from controller table for mob AI (following old server pattern)
+	m.controllerTable.LeavePlayer(character)
 
 	// Notify listener about player removal
 	m.listener.OnPlayerRemoved(m.ID, playerID)
@@ -148,9 +180,21 @@ func (m *Map) GetNpcs() map[uint32]interface{} {
 }
 
 // SpawnMob spawns a mob on the map (following old server pattern)
-func (m *Map) SpawnMob(mobID uint32, foothold int16, position types.Point[int16]) (*Mob, error) {
+func (m *Map) SpawnMob(mobId uint32, position types.Point[int16]) (*Mob, error) {
 	// Generate unique sequence ID for mob
 	m.sequence++
+
+	// Get mob spec from resources
+	mobSpec, ok := m.context.GetResources().Monsters[mobId]
+	if !ok {
+		return nil, fmt.Errorf("mob spec not found for ID: %d", mobId)
+	}
+
+	// Find foothold for the position (following old server pattern)
+	foothold, ok := m.spec.Footholds.Find(position)
+	if !ok {
+		return nil, fmt.Errorf("no valid foothold found at position: %v", position)
+	}
 
 	// Calculate spawn point
 	spawnPoint, ok := m.spec.DropPoint(position)
@@ -164,14 +208,17 @@ func (m *Map) SpawnMob(mobID uint32, foothold int16, position types.Point[int16]
 			Object: Object{
 				OID:      m.sequence, // Use sequence as OID
 				Position: spawnPoint,
+				Context:  m.context, // Pass GameContext to Object
 			},
-			Hp:     0, // Will be set by mob spec
-			Mp:     0, // Will be set by mob spec
-			MaxHp:  0, // Will be set by mob spec
-			MaxMp:  0, // Will be set by mob spec
+			Hp:     uint16(mobSpec.MaxHP), // Set from mob spec
+			Mp:     uint16(mobSpec.MaxMP), // Set from mob spec
+			MaxHp:  uint16(mobSpec.MaxHP), // Set from mob spec
+			MaxMp:  uint16(mobSpec.MaxMP), // Set from mob spec
 			Stance: 5,
 		},
-		Foothold: foothold,
+		Foothold: foothold.ID,
+		Spec:     mobSpec, // Pass MobSpec directly
+		MapID:    m.ID,    // Set the map ID where this mob is spawned
 	}
 
 	// Initialize objects map for monsters if needed
@@ -185,11 +232,14 @@ func (m *Map) SpawnMob(mobID uint32, foothold int16, position types.Point[int16]
 	// Notify listener about mob spawn
 	m.listener.OnMobSpawned(m.ID, m.sequence, mob)
 
+	// Add mob to controller table for mob AI (following old server pattern)
+	m.controllerTable.EnterMob(mob)
+
 	return mob, nil
 }
 
 // RemoveMob removes a mob from the map
-func (m *Map) RemoveMob(mobID uint32) error {
+func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType) error {
 	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
 		return fmt.Errorf("no monsters on map")
 	}
@@ -198,10 +248,14 @@ func (m *Map) RemoveMob(mobID uint32) error {
 		return fmt.Errorf("mob %d not found on map", mobID)
 	}
 
+	mob := m.objects[types.OBJECT_TYPE_MONSTER][mobID].(*Mob)
 	delete(m.objects[types.OBJECT_TYPE_MONSTER], mobID)
 
+	// Remove mob from controller table for mob AI (following old server pattern)
+	m.controllerTable.LeaveMob(mob)
+
 	// Notify listener about mob removal
-	m.listener.OnMobRemoved(m.ID, mobID)
+	m.listener.OnMobRemoved(m.ID, mobID, animationType)
 
 	return nil
 }
@@ -289,6 +343,8 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	drop.OID = m.sequence
 	drop.Owner = ownerID
 	drop.DropType = dropType
+	drop.MapID = m.ID
+	drop.setupDropTimers()
 
 	// Initialize objects map for items if needed
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
@@ -316,18 +372,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 	}
 
 	// Create meso entity
-	meso := &Meso{
-		Drop: &Drop{
-			Object: &Object{
-				OID:      m.sequence,
-				Position: dropPoint,
-			},
-			SpawnedPoint: position,
-			DropType:     dropType,
-			Owner:        ownerID,
-		},
-		Count: count,
-	}
+	meso := NewMeso(count, dropPoint, ownerID, dropType, m.sequence, m.context, m.ID)
 
 	// Initialize objects map for items if needed
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
@@ -344,7 +389,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 }
 
 // RemoveItem removes an item from the map
-func (m *Map) RemoveItem(itemID uint32) error {
+func (m *Map) RemoveItem(itemID uint32, removeType uint8, playerID uint32) error {
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
 		return fmt.Errorf("no items on map")
 	}
@@ -353,10 +398,20 @@ func (m *Map) RemoveItem(itemID uint32) error {
 		return fmt.Errorf("item %d not found on map", itemID)
 	}
 
+	// Get the item before removing it to cancel its timers
+	itemInterface := m.objects[types.OBJECT_TYPE_ITEM][itemID]
+
+	// Cancel timers if it's a dropable item
+	if dropable, ok := itemInterface.(Dropable); ok {
+		if drop := dropable.GetDrop(); drop != nil {
+			drop.cancelTimers()
+		}
+	}
+
 	delete(m.objects[types.OBJECT_TYPE_ITEM], itemID)
 
 	// Notify listener about item removal
-	m.listener.OnItemRemoved(m.ID, itemID, 0, REMOVE_ITEM_TYPE_EXPIRED)
+	m.listener.OnItemRemoved(m.ID, itemID, playerID, removeType)
 
 	return nil
 }
@@ -381,28 +436,28 @@ func (m *Map) GetItems() map[uint32]interface{} {
 	return m.objects[types.OBJECT_TYPE_ITEM]
 }
 
-// LootItem attempts to loot an item from the map and returns the looted item and success status
+// LootItem attempts to loot an item from the map and returns the looted item and reason
 // All capacity checks are performed before removing the item from the map
-func (m *Map) LootItem(itemID uint32, character *Character, position types.Point[int16]) (interface{}, bool) {
+func (m *Map) LootItem(itemID uint32, character *Character, position types.Point[int16]) (interface{}, constant.LootResult) {
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
-		return nil, false
+		return nil, constant.LOOT_FAILED_ITEM_NOT_FOUND
 	}
 
 	itemInterface, exists := m.objects[types.OBJECT_TYPE_ITEM][itemID]
 	if !exists {
-		return nil, false
+		return nil, constant.LOOT_FAILED_ITEM_NOT_FOUND
 	}
 
 	switch item := itemInterface.(type) {
 	case Item:
 		drop := item.GetDrop()
 		if drop == nil {
-			return nil, false
+			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 
 		// Check ownership for owned drops
 		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.ID {
-			return nil, false
+			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
 		// Check inventory capacity before removing from map
@@ -411,47 +466,43 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		spec := item.GetSpec()
 
 		if !inven.IsFree(spec, item.GetCount()) {
-			// Inventory is full, don't remove from map
-			return nil, false
+			return nil, constant.LOOT_FAILED_INVENTORY_FULL
 		}
 
-		// Remove item from map immediately
-		delete(m.objects[types.OBJECT_TYPE_ITEM], itemID)
+		// Remove item from map using RemoveItem
+		if err := m.RemoveItem(itemID, REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
+			return nil, constant.LOOT_FAILED_INVALID_ITEM
+		}
 
-		// Notify listener about item removal
-		m.listener.OnItemRemoved(m.ID, itemID, character.ID, REMOVE_ITEM_TYPE_ANIMATED)
-
-		return item, true
+		return item, constant.LOOT_SUCCESS
 
 	case *Meso:
 		drop := item.GetDrop()
 		if drop == nil {
-			return nil, false
+			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 
 		// Check ownership for owned drops
 		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.ID {
-			return nil, false
+			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
 		// Check meso capacity before removing from map
 		mesoCount := item.GetCount32()
 		cap := math.MaxInt32 - character.Meso
 		if int32(mesoCount) > cap {
-			// Capacity exceeded, don't remove from map
-			return nil, false
+			return nil, constant.LOOT_FAILED_MESO_FULL
 		}
 
-		// Remove meso from map immediately
-		delete(m.objects[types.OBJECT_TYPE_ITEM], itemID)
-
-		// Notify listener about item removal
-		m.listener.OnItemRemoved(m.ID, itemID, character.ID, REMOVE_ITEM_TYPE_ANIMATED)
+		// Remove meso from map using RemoveItem
+		if err := m.RemoveItem(itemID, REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
+			return nil, constant.LOOT_FAILED_INVALID_ITEM
+		}
 
 		// Return the meso object
-		return item, true
+		return item, constant.LOOT_SUCCESS
 
 	default:
-		return nil, false
+		return nil, constant.LOOT_FAILED_INVALID_ITEM
 	}
 }

@@ -2,17 +2,11 @@ package resp
 
 import (
 	"github.com/boyism80/fm/common/stream"
-)
-
-type ItemGainFailedType uint8
-
-const (
-	ITEM_GAIN_FAILED_TYPE_FULL  ItemGainFailedType = 0xFF
-	ITEM_GAIN_FAILED_TYPE_ERROR ItemGainFailedType = 0xFE
+	"github.com/boyism80/fm/game/constant"
 )
 
 type ItemGainFailed struct {
-	Mode ItemGainFailedType
+	Mode constant.ItemGainFailedType
 }
 
 func (p *ItemGainFailed) Serialize(writer *stream.StreamWriter) error {
