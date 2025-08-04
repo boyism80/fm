@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/core/stream"
 )
 
 type Login struct {

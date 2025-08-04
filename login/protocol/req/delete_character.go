@@ -1,6 +1,6 @@
 package req
 
-import "github.com/boyism80/fm/common/stream"
+import "github.com/boyism80/fm/core/stream"
 
 type DeleteCharacter struct {
 	ID uint32

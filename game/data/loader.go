@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/core/types"
 )
 
 var mutex sync.Mutex = sync.Mutex{}

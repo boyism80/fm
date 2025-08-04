@@ -6,17 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boyism80/fm/common/luax"
-	"github.com/boyism80/fm/common/timer"
-	"github.com/boyism80/fm/common/types"
-	"github.com/boyism80/fm/game/entity"
 	lua "github.com/yuin/gopher-lua"
 )
 
 // LogicTask represents a task to be executed by a logic thread
-// Flow: Predicate check -> Logic execution -> Result callback
-// Components: Predicate function, logic function, result callback function
-// Error Handling: Predicate failure, logic execution errors, callback failures
 type LogicTask struct {
 	Predicate  func() bool       // First function: Check if logic can be executed
 	Logic      func() error      // Second function: Execute the actual logic
@@ -26,55 +19,38 @@ type LogicTask struct {
 	retryCount int               // Current retry count (internal use)
 }
 
-// Thread Safety: Processes game state updates atomically
-// Error Handling: Game logic errors, state inconsistencies
 type LogicThread struct {
 	id           int
 	server       *Server
 	stopChan     chan struct{}
 	taskChan     chan *LogicTask // Channel for receiving logic tasks
 	timerManager *TimerManager
-	luaState     *lua.LState // Pre-created Lua state for this thread
-	luaMutex     sync.Mutex  // Mutex for Lua state access
+	luaState     *lua.LState        // Pre-created Lua state for this thread
+	luaMutex     sync.Mutex         // Mutex for Lua state access
+	initFunc     func(*LogicThread) // Initialization function injected by server
+}
+
+// GetID returns the logic thread ID
+func (t *LogicThread) GetID() int {
+	return t.id
 }
 
 // GetLuaState returns the Lua state for this logic thread
-// Thread Safety: Safe to call from any thread
 func (t *LogicThread) GetLuaState() *lua.LState {
 	t.luaMutex.Lock()
 	defer t.luaMutex.Unlock()
 	return t.luaState
 }
 
-// initializeLuaState sets up Lua state with type registrations
-func (t *LogicThread) initializeLuaState() {
-	t.luaMutex.Lock()
-	defer t.luaMutex.Unlock()
-
-	// Register Lua types with inheritance
-	luax.RegisterLuaType[*entity.Object](t.luaState)
-	luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](t.luaState)
-	luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](t.luaState)
-	luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](t.luaState)
-
-	// Register utility functions
-	luax.RegisterFunc(t.luaState, "sleep", func(L *lua.LState) int {
-		duration := L.CheckNumber(1)
-		time.Sleep(time.Duration(float64(duration) * float64(time.Second)))
-		return 0
-	})
-}
-
 // run executes the logic thread main loop
-// Flow: Receives tasks from channel -> Processes game logic -> Sends responses
-// Game Logic: Character movement, combat, inventory, chat, etc.
-// Thread Safety: Processes game state updates atomically
 func (t *LogicThread) run() {
 	log.Printf("Logic thread %d started", t.id)
 	defer log.Printf("Logic thread %d stopped", t.id)
 
 	// Initialize Lua state
-	t.initializeLuaState()
+	if t.initFunc != nil {
+		t.initFunc(t)
+	}
 
 	for {
 		select {
@@ -87,9 +63,6 @@ func (t *LogicThread) run() {
 }
 
 // processTask executes a logic task with the three-function pattern
-// Flow: Thread validation -> Predicate check -> Logic execution -> Result callback
-// Error Handling: Predicate failure, logic execution errors, callback failures, thread reassignment
-// Thread Safety: Executes tasks atomically within the logic thread
 func (t *LogicThread) processTask(task *LogicTask) {
 	if task == nil {
 		log.Printf("Logic thread %d received nil task", t.id)
@@ -155,8 +128,6 @@ func (t *LogicThread) processTask(task *LogicTask) {
 }
 
 // SubmitTask submits a logic task to this logic thread for execution
-// Flow: Creates task -> Sends to task channel -> Logic thread processes
-// Thread Safety: Safe to call from any thread, non-blocking
 func (t *LogicThread) SubmitTask(task *LogicTask) error {
 	if task == nil {
 		return fmt.Errorf("cannot submit nil task")
@@ -172,7 +143,7 @@ func (t *LogicThread) SubmitTask(task *LogicTask) error {
 
 // Schedule schedules a one-shot timer that will execute the given logic function
 // after the specified duration. The logic will be executed on this logic thread.
-func (t *LogicThread) Schedule(duration time.Duration, logic func() error, callback func(bool, error)) *timer.Timer {
+func (t *LogicThread) Schedule(duration time.Duration, logic func() error, callback func(bool, error)) *Timer {
 	timer := t.timerManager.Schedule(duration, logic, callback)
 
 	// Start timer in a separate goroutine
@@ -182,7 +153,7 @@ func (t *LogicThread) Schedule(duration time.Duration, logic func() error, callb
 }
 
 // runTimer runs the timer logic after the specified duration
-func (t *LogicThread) runTimer(timer *timer.Timer, duration time.Duration) {
+func (t *LogicThread) runTimer(timer *Timer, duration time.Duration) {
 	select {
 	case <-time.After(duration):
 		// Timer expired - create LogicTask and submit to this thread
@@ -259,16 +230,4 @@ func (t *LogicThread) GetRepeatingTimerCount() int {
 // CancelRepeatingTimer cancels a repeating timer by ID
 func (t *LogicThread) CancelRepeatingTimer(timerID uint64) error {
 	return t.timerManager.CancelRepeatingTimer(timerID)
-}
-
-// processPacket is a placeholder for packet processing logic
-func (t *LogicThread) processPacket(client Client, packet types.Packet) {
-	log.Printf("Logic thread %d processing packet for client %d", t.id, client.GetThreadHash())
-	// ... actual packet processing logic ...
-}
-
-// processPacketForClient is a placeholder for client-specific packet processing
-func (t *LogicThread) processPacketForClient(client Client, packet types.Packet) {
-	log.Printf("Logic thread %d processing packet for client %d", t.id, client.GetThreadHash())
-	// ... actual packet processing logic ...
 }

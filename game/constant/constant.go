@@ -119,3 +119,13 @@ const (
 
 // DefaultMobSpawnTime is the default respawn time for monsters.
 var DefaultMobSpawnTime = 5 * time.Second
+
+type RemoveItemType uint8
+
+const (
+	REMOVE_ITEM_TYPE_EXPIRED RemoveItemType = iota
+	REMOVE_ITEM_TYPE_NO_ANIMATED
+	REMOVE_ITEM_TYPE_ANIMATED
+	REMOVE_ITEM_TYPE_EXPLOSION
+	REMOVE_ITEM_TYPE_LOOT_BY_PET
+)

@@ -5,7 +5,7 @@ package data
 import (
 	"math"
 
-	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/core/types"
 )
 
 // Portal represents a map transition point in MapleStory.

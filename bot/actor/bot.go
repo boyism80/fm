@@ -7,9 +7,9 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/bot/msg"
-	"github.com/boyism80/fm/common/context"
-	"github.com/boyism80/fm/common/handler"
-	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/core/context"
+	"github.com/boyism80/fm/core/handler"
+	"github.com/boyism80/fm/core/stream"
 )
 
 type BotActor struct {

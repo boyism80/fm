@@ -2,7 +2,7 @@
 // This file contains foothold collision data structures for map navigation.
 package data
 
-import "github.com/boyism80/fm/common/types"
+import "github.com/boyism80/fm/core/types"
 
 // Foothold represents a walkable platform or surface in a MapleStory map.
 // Footholds define where characters can stand and walk, providing collision detection.

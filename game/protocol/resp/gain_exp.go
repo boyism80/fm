@@ -1,6 +1,6 @@
 package resp
 
-import "github.com/boyism80/fm/common/stream"
+import "github.com/boyism80/fm/core/stream"
 
 type GainExp struct {
 	Gain     uint32

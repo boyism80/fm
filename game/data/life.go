@@ -5,7 +5,7 @@ package data
 import (
 	"time"
 
-	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/core/types"
 )
 
 // FacingDirectionType represents the direction a life entity is facing.

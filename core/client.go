@@ -5,9 +5,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/boyism80/fm/common/crypt"
-	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/core/crypt"
+	"github.com/boyism80/fm/core/stream"
+	"github.com/boyism80/fm/core/types"
 )
 
 // Client represents a connected game client with socket functionality

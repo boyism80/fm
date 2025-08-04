@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/core/types"
 	lua "github.com/yuin/gopher-lua"
 )
 

@@ -5,10 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/common/timer"
-	"github.com/boyism80/fm/common/types"
-	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/core/stream"
+	"github.com/boyism80/fm/core/types"
+	"github.com/boyism80/fm/core/util"
 	"github.com/boyism80/fm/game/constant"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -126,32 +125,6 @@ func (ch *Character) Message(message string) {
 // Characters on the same map will be assigned to the same logic thread
 func (ch *Character) GetThreadHash() int {
 	return int(ch.Map)
-}
-
-// ScheduleTimer schedules a one-shot timer for this character
-// The timer will execute on the same logic thread as the character
-func (ch *Character) ScheduleTimer(duration time.Duration, logic func() error, callback func(bool, error)) (*timer.Timer, error) {
-	// This would need access to the server instance
-	// For now, we'll return an error indicating this needs to be implemented
-	// with proper server access
-	return nil, fmt.Errorf("ScheduleTimer not implemented - needs server access")
-}
-
-// ReviveTimer schedules a revive timer for this character
-// This is a convenience method for scheduling character revival
-func (ch *Character) ReviveTimer(duration time.Duration) (*timer.Timer, error) {
-	return ch.ScheduleTimer(duration, func() error {
-		// Revive logic
-		ch.Hp = ch.MaxHp
-		ch.Mp = ch.MaxMp
-		return nil
-	}, func(success bool, err error) {
-		if err != nil {
-			fmt.Printf("Revive timer failed for character %s: %v\n", ch.Name, err)
-		} else {
-			fmt.Printf("Character %s revived successfully\n", ch.Name)
-		}
-	})
 }
 
 func (mb *MonsterBook) Serialize(writer *stream.StreamWriter) {

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/data"
 )
 
@@ -8,5 +9,5 @@ import (
 type GameContext interface {
 	GetResources() *data.Resources
 	GetMap(mapId uint32) *Map
-	GetLogicThread() interface{} // Returns core.LogicThread
+	GetLogicThread() *core.LogicThread // Returns core.LogicThread
 }

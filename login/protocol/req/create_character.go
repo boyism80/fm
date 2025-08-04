@@ -2,7 +2,7 @@
 // This file defines character creation protocol messages.
 package req
 
-import "github.com/boyism80/fm/common/stream"
+import "github.com/boyism80/fm/core/stream"
 
 // CreateCharacter represents a character creation request from client to login server.
 // Handles new character creation with customization options for appearance and starting equipment.

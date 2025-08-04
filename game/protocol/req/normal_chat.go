@@ -3,7 +3,7 @@
 package req
 
 import (
-	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/core/stream"
 )
 
 // NormalChat represents a normal chat message from client to server.

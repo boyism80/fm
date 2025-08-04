@@ -5,10 +5,24 @@ import (
 	"math"
 	"time"
 
-	"github.com/boyism80/fm/common/types"
+	"github.com/boyism80/fm/core/types"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/data"
 )
+
+// MapListener defines interface for map events
+type MapListener interface {
+	OnPlayerAdded(mapID uint32, playerID uint32, character *Character, init bool)
+	OnPlayerRemoved(mapID uint32, playerID uint32)
+	OnPlayerMoved(mapID uint32, playerID uint32, character *Character)
+	OnPlayerChat(mapID uint32, playerID uint32, message string)
+	OnItemSpawned(mapID uint32, itemID uint32, item Item, drop *Drop)
+	OnMesoSpawned(mapID uint32, itemID uint32, meso *Meso)
+	OnItemRemoved(mapID uint32, itemID uint32, characterID uint32, mode constant.RemoveItemType)
+	OnMobSpawned(mapID uint32, mobID uint32, mob *Mob)
+	OnMobRemoved(mapID uint32, mobID uint32, animationType constant.MobDieAnimationType)
+	OnMobControllerChange(mob *Mob, before *Character, after *Character)
+}
 
 type MobSpawn struct {
 	Spec          *data.MobSpawnSpec
@@ -389,7 +403,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 }
 
 // RemoveItem removes an item from the map
-func (m *Map) RemoveItem(itemID uint32, removeType uint8, playerID uint32) error {
+func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, playerID uint32) error {
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
 		return fmt.Errorf("no items on map")
 	}
@@ -470,7 +484,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Remove item from map using RemoveItem
-		if err := m.RemoveItem(itemID, REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
+		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 
@@ -495,7 +509,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Remove meso from map using RemoveItem
-		if err := m.RemoveItem(itemID, REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
+		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 

@@ -1,7 +1,7 @@
 package req
 
 import (
-	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/core/stream"
 )
 
 // Revive represents a player revival request packet
@@ -38,4 +38,4 @@ func (p *Revive) Deserialize(reader *stream.StreamReader) error {
 	useWheelByte, _ := reader.ReadU8()
 	p.UseWheel = useWheelByte > 0
 	return nil
-} 
+}

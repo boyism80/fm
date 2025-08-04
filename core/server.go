@@ -9,10 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boyism80/fm/common/crypt"
-	common_resp "github.com/boyism80/fm/common/protocol/resp"
-	"github.com/boyism80/fm/common/types"
-	"github.com/boyism80/fm/login/protocol/resp"
+	"github.com/boyism80/fm/core/crypt"
+	"github.com/boyism80/fm/core/protocol/resp"
+	"github.com/boyism80/fm/core/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -31,6 +30,7 @@ type Server struct {
 	packetHandler      *PacketHandler                      // Central packet handler for the server
 	onClientDisconnect func(Client)                        // Callback when client disconnects
 	clientFactory      func(net.Conn, int) (Client, error) // Factory for creating clients
+	config             *ServerConfig                       // Server configuration
 }
 
 // ServerConfig holds server configuration parameters
@@ -40,6 +40,7 @@ type ServerConfig struct {
 	Port               int                                 // Server port number
 	OnClientDisconnect func(interface{})                   // Callback when client disconnects
 	ClientFactory      func(net.Conn, int) (Client, error) // Factory for creating clients
+	LogicThreadInit    func(*LogicThread)                  // Initialization function for logic threads
 }
 
 // NewServer creates a new server with specified thread configuration
@@ -64,6 +65,7 @@ func NewServer(config *ServerConfig) (*Server, error) {
 				config.OnClientDisconnect(client)
 			}
 		},
+		config: config,
 	}
 
 	return server, nil
@@ -87,7 +89,8 @@ func (s *Server) Start(host string, port int) error {
 			stopChan:     make(chan struct{}),
 			taskChan:     make(chan *LogicTask, 100), // Buffer for 100 tasks
 			timerManager: NewTimerManager(),
-			luaState:     lua.NewState(), // Initialize Lua state for this thread
+			luaState:     lua.NewState(),           // Initialize Lua state for this thread
+			initFunc:     s.config.LogicThreadInit, // Inject initialization function
 		}
 		s.logicThreads[i] = logicThread
 
@@ -217,7 +220,7 @@ func (s *Server) handleClient(client Client) {
 	}()
 
 	// Send welcome packet on connection (for login server)
-	welcome := &common_resp.Welcome{
+	welcome := &resp.Welcome{
 		SendIv: client.GetSendEncryption().IV(),
 		RecvIv: client.GetRecvEncryption().IV(),
 	}

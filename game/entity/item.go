@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/boyism80/fm/common/stream"
-	"github.com/boyism80/fm/common/types"
-	"github.com/boyism80/fm/common/util"
+	"github.com/boyism80/fm/core/stream"
+	"github.com/boyism80/fm/core/types"
+	"github.com/boyism80/fm/core/util"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/data"
 )
@@ -167,16 +167,8 @@ func (drop *Drop) setupDropTimers() {
 		return
 	}
 
-	logicThreadInterface := drop.Object.Context.GetLogicThread()
-	if logicThreadInterface == nil {
-		return
-	}
-
-	// Type assert to get the actual LogicThread
-	logicThread, ok := logicThreadInterface.(interface {
-		Schedule(duration time.Duration, logic func() error, callback func(bool, error)) interface{}
-	})
-	if !ok {
+	logicThread := drop.Object.Context.GetLogicThread()
+	if logicThread == nil {
 		return
 	}
 
@@ -194,7 +186,7 @@ func (drop *Drop) setupDropTimers() {
 		// Remove item from map
 		if drop.Object != nil && drop.Object.Context != nil {
 			if mapInstance := drop.Object.Context.GetMap(drop.MapID); mapInstance != nil {
-				mapInstance.RemoveItem(drop.Object.OID, REMOVE_ITEM_TYPE_EXPIRED, 0)
+				mapInstance.RemoveItem(drop.Object.OID, constant.REMOVE_ITEM_TYPE_EXPIRED, 0)
 			}
 		}
 		return nil

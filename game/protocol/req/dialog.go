@@ -3,7 +3,7 @@ package req
 import (
 	"fmt"
 
-	"github.com/boyism80/fm/common/stream"
+	"github.com/boyism80/fm/core/stream"
 	"github.com/boyism80/fm/game/constant"
 )
 

@@ -4,9 +4,26 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
-	"github.com/boyism80/fm/common/timer"
 )
+
+// Timer represents a one-shot timer that executes logic on a specific logic thread
+type Timer struct {
+	ID         uint64
+	Logic      func() error
+	Callback   func(bool, error)
+	CancelChan chan struct{}
+	CreatedAt  time.Time
+}
+
+// Cancel cancels a timer if it hasn't been executed yet
+func (t *Timer) Cancel() {
+	select {
+	case t.CancelChan <- struct{}{}:
+		// Successfully cancelled
+	default:
+		// Timer already executed or cancelled
+	}
+}
 
 // RepeatingTimer represents a repeating timer that executes logic periodically
 type RepeatingTimer struct {
@@ -31,7 +48,7 @@ func (rt *RepeatingTimer) Cancel() {
 
 // TimerManager manages timers for a logic thread
 type TimerManager struct {
-	timers          map[uint64]*timer.Timer
+	timers          map[uint64]*Timer
 	timerMu         sync.RWMutex
 	nextTimerID     uint64
 	repeatingTimers map[uint64]*RepeatingTimer
@@ -42,17 +59,17 @@ type TimerManager struct {
 // NewTimerManager creates a new timer manager
 func NewTimerManager() *TimerManager {
 	return &TimerManager{
-		timers:          make(map[uint64]*timer.Timer),
+		timers:          make(map[uint64]*Timer),
 		repeatingTimers: make(map[uint64]*RepeatingTimer),
 	}
 }
 
 // Schedule schedules a one-shot timer
-func (tm *TimerManager) Schedule(duration time.Duration, logic func() error, callback func(bool, error)) *timer.Timer {
+func (tm *TimerManager) Schedule(duration time.Duration, logic func() error, callback func(bool, error)) *Timer {
 	tm.timerMu.Lock()
 	defer tm.timerMu.Unlock()
 
-	timer := &timer.Timer{
+	timer := &Timer{
 		ID:         tm.nextTimerID,
 		Logic:      logic,
 		Callback:   callback,
