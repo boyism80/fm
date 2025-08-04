@@ -2,11 +2,11 @@ package resp
 
 import (
 	"github.com/boyism80/fm/core/stream"
-	"github.com/boyism80/fm/game/protocol"
+	"github.com/boyism80/fm/game/action"
 )
 
 type Attack struct {
-	protocol.AttackInfo
+	action.AttackInfo
 	CharacterId uint32
 	SkillLevel  uint8
 }

@@ -2,7 +2,7 @@ package req
 
 import (
 	"github.com/boyism80/fm/core/stream"
-	"github.com/boyism80/fm/game/protocol"
+	"github.com/boyism80/fm/game/action"
 )
 
 type MoveMob struct {
@@ -15,7 +15,7 @@ type MoveMob struct {
 	Skill2      uint8
 	Skill3      uint8
 	Skill4      uint8
-	Movements   []protocol.MoveFragment
+	Movements   []action.MoveFragment
 }
 
 func (m *MoveMob) Serialize(writer *stream.StreamWriter) error {
@@ -46,7 +46,7 @@ func (m *MoveMob) Deserialize(reader *stream.StreamReader) error {
 		return err
 	}
 
-	action := m.CenterSplit
+	centerSplit := m.CenterSplit
 	m.Skill1, err = reader.ReadU8()
 	if err != nil {
 		return err
@@ -67,13 +67,13 @@ func (m *MoveMob) Deserialize(reader *stream.StreamReader) error {
 	}
 
 	reader.Skip(9)
-	if action < 0 {
-		action = -1
+	if centerSplit < 0 {
+		centerSplit = -1
 	} else {
-		action = action >> 1
+		centerSplit = centerSplit >> 1
 	}
 
-	m.Movements, err = protocol.ReadMovements(reader)
+	m.Movements, err = action.ReadMovements(reader)
 	if err != nil {
 		return err
 	}

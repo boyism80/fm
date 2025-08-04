@@ -3,13 +3,13 @@ package resp
 import (
 	"github.com/boyism80/fm/core/stream"
 	"github.com/boyism80/fm/core/types"
+	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/game/protocol"
 )
 
 type Move struct {
 	Character  *entity.Character
-	Fragments  []protocol.MoveFragment
+	Fragments  []action.MoveFragment
 	StartPoint types.Vector2[int16]
 }
 

@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/boyism80/fm/core/types"
+	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol/resp"
@@ -172,6 +173,25 @@ func (l *MapListenerImpl) OnPlayerMoved(mapID uint32, playerID uint32, character
 	// mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, playerID)
 }
 
+// OnPlayerMove sends move packet with fragments to all other players on the map
+func (l *MapListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []action.MoveFragment) {
+	// Get the map instance
+	mapInstance := l.gameServer.GetMap(mapID)
+	if mapInstance == nil {
+		return
+	}
+
+	// Create move packet
+	movePacket := &resp.Move{
+		Character:  character,
+		Fragments:  fragments,
+		StartPoint: startPoint,
+	}
+
+	// Broadcast to all players on the map except the moving player
+	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, playerID)
+}
+
 // OnPlayerChat sends chat packet to other players on the map
 func (l *MapListenerImpl) OnPlayerChat(mapID uint32, playerID uint32, message string) {
 	// Get the map instance
@@ -299,4 +319,48 @@ func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 	// Note: StopControlMob is commented out in old server, so we skip it here too
+}
+
+// OnMobMoved broadcasts mob movement to all players on the map
+func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []action.MoveFragment) {
+	// Get the map instance
+	mapInstance := l.gameServer.GetMap(mapID)
+	if mapInstance == nil {
+		return
+	}
+
+	// Create move mob packet
+	movePacket := &resp.MoveMob{
+		IsAggroed:   isAggroed,
+		CenterSplit: centerSplit,
+		Skill1:      skill1,
+		Skill2:      skill2,
+		Skill3:      skill3,
+		Skill4:      skill4,
+		OID:         mobID,
+		StartPoint:  startPoint,
+		Movements:   movements,
+	}
+
+	// Broadcast to all players on the map
+	mapInstance.BroadcastToAllPlayers(movePacket, types.SEND_POLICY_ENCRYPT)
+}
+
+// OnAttack broadcasts attack to all players on the map
+func (l *MapListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo action.AttackInfo, skillLevel uint8) {
+	// Get the map instance
+	mapInstance := l.gameServer.GetMap(mapID)
+	if mapInstance == nil {
+		return
+	}
+
+	// Create attack packet
+	attackPacket := &resp.Attack{
+		CharacterId: characterID,
+		AttackInfo:  attackInfo,
+		SkillLevel:  skillLevel,
+	}
+
+	// Broadcast to all players on the map except the attacker
+	mapInstance.BroadcastToPlayers(attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
 }

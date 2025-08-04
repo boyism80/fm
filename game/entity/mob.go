@@ -270,5 +270,8 @@ func (m *Mob) Damage(damage uint16, attacker *Character) bool {
 		mapInstance.RemoveMob(m.OID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT)
 	}
 
+	// Send mob HP update to attacker via listener
+	attacker.Listener.OnShowMobHp(m.OID, uint8(m.Hp*100/m.MaxHp))
+
 	return true
 }

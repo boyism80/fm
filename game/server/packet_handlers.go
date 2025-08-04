@@ -8,12 +8,11 @@ import (
 	"github.com/boyism80/fm/core"
 	common_req "github.com/boyism80/fm/core/protocol/req"
 	"github.com/boyism80/fm/core/stream"
-	"github.com/boyism80/fm/core/types"
+	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/data"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/game/protocol"
 	"github.com/boyism80/fm/game/protocol/req"
 	"github.com/boyism80/fm/game/protocol/resp"
 	lua "github.com/yuin/gopher-lua"
@@ -140,7 +139,7 @@ func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext, data []byte) err
 
 	// Process movement fragments
 	for _, frag := range request.Fragments {
-		if move, ok := frag.(*protocol.AbsoluteLifeMovement); ok {
+		if move, ok := frag.(*action.AbsoluteLifeMovement); ok {
 			character.Position = move.Position
 		}
 		character.Stance = frag.GetStance()
@@ -153,13 +152,8 @@ func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext, data []byte) err
 		return fmt.Errorf("map %d not found", character.GetMap())
 	}
 
-	// Broadcast movement to other players on the map
-	movePacket := &resp.Move{
-		Character:  character,
-		Fragments:  request.Fragments,
-		StartPoint: beforePosition,
-	}
-	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+	// Broadcast movement to other players on the map via listener
+	character.Listener.OnPlayerMove(character.GetMap(), character.GetID(), character, beforePosition, request.Fragments)
 
 	return nil
 }
@@ -250,21 +244,11 @@ func (gs *GameServer) handleAttack(ctx *core.ClientContext, data []byte) error {
 		// Apply damage to mob using Mob.Damage method
 		for _, damagePair := range damage.DamagePairs {
 			mob.Damage(uint16(damagePair.Damage), character)
-
-			// Send mob HP update to attacker
-			character.Send(&resp.ShowMobHp{
-				OID:        mob.OID,
-				Percentage: uint8(mob.Hp * 100 / mob.MaxHp),
-			}, types.SEND_POLICY_ENCRYPT)
 		}
 	}
 
-	// Broadcast attack to all players in map (following old server pattern)
-	mapInstance.BroadcastToPlayers(&resp.Attack{
-		CharacterId: character.GetID(),
-		AttackInfo:  request.AttackInfo,
-		SkillLevel:  0,
-	}, types.SEND_POLICY_ENCRYPT, character.GetID())
+	// Broadcast attack to all players in map via listener
+	character.Listener.OnAttack(mapID, character.GetID(), request.AttackInfo, 0)
 
 	return nil
 }
@@ -336,14 +320,10 @@ func (gs *GameServer) handleSortInventory(ctx *core.ClientContext, data []byte) 
 	gs.handleSortInventoryInternal(client, character, request.InventoryType)
 
 	// Send end sort inventory response
-	client.Send(&resp.EndSortInventory{
-		InventoryType: request.InventoryType,
-	}, types.SEND_POLICY_ENCRYPT)
+	character.Listener.OnEndSortInventory(request.InventoryType)
 
 	// Send unlock action response
-	client.Send(&resp.UpdateStats{
-		UnlockAction: true,
-	}, types.SEND_POLICY_ENCRYPT)
+	character.Listener.OnUpdateStats(nil, true)
 
 	return nil
 }
@@ -374,9 +354,7 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 	mapInstance := gs.GetMap(character.GetMap())
 	if mapInstance == nil {
 		log.Printf("Map %d not found for character %d", character.GetMap(), character.GetID())
-		client.Send(&resp.UpdateStats{
-			UnlockAction: true,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnUpdateStats(nil, true)
 		return fmt.Errorf("map not found")
 	}
 
@@ -387,14 +365,10 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 
 		// Only send ItemGainFailed for inventory/meso capacity issues
 		if reason == constant.LOOT_FAILED_INVENTORY_FULL || reason == constant.LOOT_FAILED_MESO_FULL {
-			client.Send(&resp.ItemGainFailed{
-				Mode: constant.ITEM_GAIN_FAILED_TYPE_FULL,
-			}, types.SEND_POLICY_ENCRYPT)
+			character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
 		}
 
-		client.Send(&resp.UpdateStats{
-			UnlockAction: true,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnUpdateStats(nil, true)
 		return nil
 	}
 
@@ -421,20 +395,12 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 				// Increase existing item count
 				cap = min(spec.GetCapacity()-exists.GetCount(), item.GetCount())
 				exists.Increase(cap)
-				client.Send(&resp.UpdateInventorySlot{
-					InventoryType: invenType,
-					Slot:          int16(slot),
-					Item:          exists,
-				}, types.SEND_POLICY_ENCRYPT)
+				character.Listener.OnInventorySlotUpdated(invenType, int16(slot), exists)
 			} else {
 				// Add new item to slot
 				cap = min(spec.GetCapacity(), item.GetCount())
 				inven.Items[int16(slot)] = item.Clone(cap)
-				client.Send(&resp.AddInventorySlot{
-					InventoryType: invenType,
-					Slot:          int16(slot),
-					Item:          inven.Items[int16(slot)],
-				}, types.SEND_POLICY_ENCRYPT)
+				character.Listener.OnInventorySlotAdded(invenType, int16(slot), inven.Items[int16(slot)])
 			}
 			if item.Reduce(cap) == 0 {
 				break
@@ -443,11 +409,7 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 		}
 
 		// Show item gain message
-		client.Send(&resp.ShowItemGain{
-			ItemId: spec.GetID(),
-			Count:  uint32(gain),
-			Mode:   resp.ShowItemGainTypeStatus,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnShowItemGain(spec.GetID(), uint32(gain), constant.ShowItemGainTypeStatus)
 
 	case *entity.Meso:
 		// Handle meso looting
@@ -458,29 +420,20 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 		character.Meso += int32(mesoCount)
 
 		// Show meso gain message
-		client.Send(&resp.ShowMesoGain{
-			Count: int32(mesoCount),
-			Mode:  resp.ShowMesoGainTypeStatus,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnShowMesoGain(int32(mesoCount), constant.ShowMesoGainTypeStatus)
 
-		client.Send(&resp.UpdateStats{
-			Stats: map[constant.Stat]int32{
-				constant.STAT_MESO: character.Meso,
-			},
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_MESO: character.Meso,
+		}, false)
 
 	default:
 		log.Printf("Unknown looted object type for OID %d", request.OID)
-		client.Send(&resp.UpdateStats{
-			UnlockAction: true,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnUpdateStats(nil, true)
 		return nil
 	}
 
 	// Send unlock action response
-	client.Send(&resp.UpdateStats{
-		UnlockAction: true,
-	}, types.SEND_POLICY_ENCRYPT)
+	character.Listener.OnUpdateStats(nil, true)
 
 	return nil
 }
@@ -510,29 +463,22 @@ func (gs *GameServer) handleDropMeso(ctx *core.ClientContext, data []byte) error
 	// Validate meso count (following old server pattern)
 	if request.Count < 10 || request.Count > 50000 {
 		log.Printf("Invalid meso count: %d", request.Count)
-		client.Send(&resp.UpdateStats{
-			UnlockAction: true,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnUpdateStats(nil, true)
 		return nil
 	}
 
 	// Check if character has enough meso
 	if request.Count > character.Meso {
 		log.Printf("Character doesn't have enough meso: %d < %d", character.Meso, request.Count)
-		client.Send(&resp.UpdateStats{
-			UnlockAction: true,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnUpdateStats(nil, true)
 		return nil
 	}
 
 	// Deduct meso from character
 	character.Meso -= request.Count
-	client.Send(&resp.UpdateStats{
-		Stats: map[constant.Stat]int32{
-			constant.STAT_MESO: character.Meso,
-		},
-		UnlockAction: true,
-	}, types.SEND_POLICY_ENCRYPT)
+	character.Listener.OnUpdateStats(map[constant.Stat]int32{
+		constant.STAT_MESO: character.Meso,
+	}, true)
 
 	// Spawn meso on map (following old server pattern)
 	mapInstance := gs.GetMap(character.GetMap())
@@ -592,15 +538,10 @@ func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 			stats[constant.STAT_HP] = int32(character.Hp)
 
 			// Send stats update
-			client.Send(&resp.UpdateStats{
-				Stats:        stats,
-				UnlockAction: true,
-			}, types.SEND_POLICY_ENCRYPT)
+			character.Listener.OnUpdateStats(stats, true)
 		} else {
 			// Invalid target for non-zero HP
-			client.Send(&resp.UpdateStats{
-				UnlockAction: true,
-			}, types.SEND_POLICY_ENCRYPT)
+			character.Listener.OnUpdateStats(nil, true)
 			return nil
 		}
 	} else {
@@ -618,27 +559,21 @@ func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 		// Find portal by name
 		portal, ok := mapSpec.FindPortal(request.PortalName)
 		if !ok {
-			client.Send(&resp.UpdateStats{
-				UnlockAction: true,
-			}, types.SEND_POLICY_ENCRYPT)
+			character.Listener.OnUpdateStats(nil, true)
 			return nil
 		}
 
 		// Get target map spec
 		targetMapSpec, ok := gs.resources.Maps[uint32(portal.TargetMapId)]
 		if !ok {
-			client.Send(&resp.UpdateStats{
-				UnlockAction: true,
-			}, types.SEND_POLICY_ENCRYPT)
+			character.Listener.OnUpdateStats(nil, true)
 			return nil
 		}
 
 		// Find target portal in new map
 		targetPortal, ok := targetMapSpec.FindPortal(portal.Target)
 		if !ok {
-			client.Send(&resp.UpdateStats{
-				UnlockAction: true,
-			}, types.SEND_POLICY_ENCRYPT)
+			character.Listener.OnUpdateStats(nil, true)
 			return nil
 		}
 
@@ -670,11 +605,15 @@ func (gs *GameServer) handleNpcControl(ctx *core.ClientContext, data []byte) err
 		return fmt.Errorf("client is not a GameClient")
 	}
 
-	// Send NPC action response back to the client (following old server pattern)
-	response := &resp.NpcAction{
-		Bytes: request.Bytes,
+	// Get character
+	character := client.GetCharacter()
+	if character == nil {
+		log.Printf("Character is nil for client")
+		return fmt.Errorf("character is nil")
 	}
-	client.Send(response, types.SEND_POLICY_ENCRYPT)
+
+	// Send NPC action response back to the client (following old server pattern)
+	character.Listener.OnNpcAction(request.Bytes)
 
 	return nil
 }
@@ -863,51 +802,36 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 
 	// If sender is not the controller, handle control switching (following old server pattern)
 	if controller.GetID() != character.GetID() {
-		if request.Unknown2 {
-			// TODO: stopControl - Stop control logic
-			// Currently only logging, actual implementation to be added later
-		} else {
-			// TODO: switchControl - Switch control logic
-			// Currently only logging, actual implementation to be added later
-		}
+		// TODO: stopControl/switchControl logic
+		// Currently only logging, actual implementation to be added later
 		return nil // Don't return error, handle normally
 	}
 
-	// Send ControlMoveMob packet to the controller (following old server pattern)
-	controlPacket := &resp.ControlMoveMob{
-		OID:          request.OID,
-		MoveId:       request.MovementId,
-		EnabledSkill: request.IsAggroed,
-		MP:           mob.Mp,
-		SkillId:      0,
-		SkillLevel:   0,
-	}
-	client.Send(controlPacket, types.SEND_POLICY_ENCRYPT)
+	// Send ControlMoveMob packet to the controller via listener
+	character.Listener.OnControlMoveMob(request.OID, uint8(request.MovementId), request.IsAggroed, mob.Mp, 0, 0)
 
 	// Update mob position based on movement data (following old server pattern)
-	for _, movement := range request.Movements {
-		if move, ok := movement.(*protocol.AbsoluteLifeMovement); ok {
+	for _, mnt := range request.Movements {
+		if move, ok := mnt.(*action.AbsoluteLifeMovement); ok {
 			mob.Position = move.Position
 		}
 
-		mob.Stance = movement.GetStance()
+		mob.Stance = mnt.GetStance()
 	}
 
-	// Broadcast the movement to all players on the map
-	movePacket := &resp.MoveMob{
-		IsAggroed:   request.IsAggroed,
-		CenterSplit: request.CenterSplit,
-		Skill1:      request.Skill1,
-		Skill2:      request.Skill2,
-		Skill3:      request.Skill3,
-		Skill4:      request.Skill4,
-		OID:         request.OID,
-		StartPoint:  mob.Position, // Use current position as start point
-		Movements:   request.Movements,
-	}
-
-	// Broadcast to all players on the map (excluding the sender)
-	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+	// Broadcast the movement to all players on the map via listener
+	character.Listener.OnMobMoved(
+		character.GetMap(),
+		request.OID,
+		request.IsAggroed,
+		request.CenterSplit,
+		request.Skill1,
+		request.Skill2,
+		request.Skill3,
+		request.Skill4,
+		mob.Position, // Use current position as start point
+		request.Movements,
+	)
 
 	return nil
 }
@@ -951,11 +875,8 @@ func (gs *GameServer) handleDamaged(ctx *core.ClientContext, data []byte) error 
 		stats[constant.STAT_HP] = int32(character.Hp)
 	}
 
-	// Send stats update to client (following old server pattern)
-	client.Send(&resp.UpdateStats{
-		Stats:        stats,
-		UnlockAction: true,
-	}, types.SEND_POLICY_ENCRYPT)
+	// Send stats update to client via listener
+	character.Listener.OnUpdateStats(stats, true)
 
 	return nil
 }
@@ -1042,20 +963,10 @@ func (gs *GameServer) handleUnequip(client *client.GameClient, character *entity
 	delete(character.Equipments, parts)
 
 	// Send swap inventory slot response
-	client.Send(&resp.SwapInventorySlot{
-		InventoryType:   constant.INVENTORY_TYPE_EQUIPMENT,
-		Source:          int16(parts),
-		Dest:            slot,
-		EquipmentAction: resp.EQUIPMENT_ACTION_TYPE_OFF,
-	}, types.SEND_POLICY_ENCRYPT)
+	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), slot, int8(resp.EQUIPMENT_ACTION_TYPE_OFF))
 
 	// Broadcast character look update
-	mapInstance := gs.GetMap(character.GetMap())
-	if mapInstance != nil {
-		mapInstance.BroadcastToPlayers(&resp.UpdateCharacterLook{
-			Character: character,
-		}, types.SEND_POLICY_ENCRYPT, character.GetID())
-	}
+	character.Listener.OnUpdateCharacterLook(character)
 }
 
 // handleEquip handles equipping items
@@ -1082,9 +993,7 @@ func (gs *GameServer) handleEquip(client *client.GameClient, character *entity.C
 				// Unequip pants when wearing overall
 				storageSlot, isFree := inven.NextSlot()
 				if !isFree {
-					client.Send(&resp.ItemGainFailed{
-						Mode: constant.ITEM_GAIN_FAILED_TYPE_FULL,
-					}, types.SEND_POLICY_ENCRYPT)
+					character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
 					return
 				}
 				gs.handleUnequip(client, character, constant.EQUIPMENT_PARTS_PANTS, int16(storageSlot))
@@ -1096,9 +1005,7 @@ func (gs *GameServer) handleEquip(client *client.GameClient, character *entity.C
 		if isWearTop && top.IsOverall() {
 			storageSlot, isFree := inven.NextSlot()
 			if swap && !isFree {
-				client.Send(&resp.ItemGainFailed{
-					Mode: constant.ITEM_GAIN_FAILED_TYPE_FULL,
-				}, types.SEND_POLICY_ENCRYPT)
+				character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
 				return
 			}
 			gs.handleUnequip(client, character, constant.EQUIPMENT_PARTS_TOP, int16(storageSlot))
@@ -1112,20 +1019,10 @@ func (gs *GameServer) handleEquip(client *client.GameClient, character *entity.C
 	}
 
 	// Send swap inventory slot response
-	client.Send(&resp.SwapInventorySlot{
-		InventoryType:   constant.INVENTORY_TYPE_EQUIPMENT,
-		Source:          slot,
-		Dest:            int16(parts),
-		EquipmentAction: resp.EQUIPMENT_ACTION_TYPE_ON,
-	}, types.SEND_POLICY_ENCRYPT)
+	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, slot, int16(parts), int8(resp.EQUIPMENT_ACTION_TYPE_ON))
 
 	// Broadcast character look update
-	mapInstance := gs.GetMap(character.GetMap())
-	if mapInstance != nil {
-		mapInstance.BroadcastToPlayers(&resp.UpdateCharacterLook{
-			Character: character,
-		}, types.SEND_POLICY_ENCRYPT, character.GetID())
-	}
+	character.Listener.OnUpdateCharacterLook(character)
 }
 
 // handleDrop handles dropping items
@@ -1138,17 +1035,10 @@ func (gs *GameServer) handleDrop(client *client.GameClient, character *entity.Ch
 	// Remove item from inventory
 	removed := (item.Reduce(count) == 0)
 	if removed {
-		client.Send(&resp.RemoveInventorySlot{
-			InventoryType: invenType,
-			Slot:          slot,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnRemoveInventorySlot(invenType, slot)
 		delete(character.Inventory[invenType].Items, slot)
 	} else {
-		client.Send(&resp.UpdateInventorySlot{
-			InventoryType: invenType,
-			Slot:          slot,
-			Item:          item,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnUpdateInventorySlot(invenType, slot, item)
 	}
 
 	// Create drop item
@@ -1185,11 +1075,7 @@ func (gs *GameServer) handleMoveItemInternal(client *client.GameClient, characte
 		// Move to empty slot
 		inven.Items[destSlot] = inven.Items[sourceSlot]
 		delete(inven.Items, sourceSlot)
-		client.Send(&resp.SwapInventorySlot{
-			InventoryType: invenType,
-			Source:        sourceSlot,
-			Dest:          destSlot,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnSwapInventorySlot(invenType, sourceSlot, destSlot, 0)
 		return
 	}
 
@@ -1199,11 +1085,7 @@ func (gs *GameServer) handleMoveItemInternal(client *client.GameClient, characte
 	if specSrc != specDst {
 		// Swap different items
 		inven.Items[sourceSlot], inven.Items[destSlot] = inven.Items[destSlot], inven.Items[sourceSlot]
-		client.Send(&resp.SwapInventorySlot{
-			InventoryType: invenType,
-			Source:        sourceSlot,
-			Dest:          destSlot,
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnSwapInventorySlot(invenType, sourceSlot, destSlot, 0)
 		return
 	}
 
@@ -1211,21 +1093,10 @@ func (gs *GameServer) handleMoveItemInternal(client *client.GameClient, characte
 	limit := min(src.GetCount(), specSrc.GetCapacity()-dst.GetCount())
 	dst.Increase(limit)
 	if src.Reduce(limit) == 0 {
-		client.Send(&resp.FullMergeInventorySlot{
-			InventoryType: invenType,
-			Source:        sourceSlot,
-			Dest:          destSlot,
-			Count:         dst.GetCount(),
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnFullMergeInventorySlot(invenType, sourceSlot, destSlot, dst.GetCount())
 		delete(inven.Items, sourceSlot)
 	} else {
-		client.Send(&resp.PartialMergeInventorySlot{
-			InventoryType: invenType,
-			Source:        sourceSlot,
-			Dest:          destSlot,
-			SourceCount:   src.GetCount(),
-			DestCount:     dst.GetCount(),
-		}, types.SEND_POLICY_ENCRYPT)
+		character.Listener.OnPartialMergeInventorySlot(invenType, sourceSlot, destSlot, src.GetCount(), dst.GetCount())
 	}
 }
 
@@ -1260,17 +1131,10 @@ func (gs *GameServer) handleMergeItems(client *client.GameClient, character *ent
 			if item.GetCount() != value {
 				item.SetCount(value)
 				if value == 0 {
-					client.Send(&resp.RemoveInventorySlot{
-						InventoryType: inventoryType,
-						Slot:          slot,
-					}, types.SEND_POLICY_ENCRYPT)
+					character.Listener.OnRemoveInventorySlot(inventoryType, slot)
 					delete(inven.Items, slot)
 				} else {
-					client.Send(&resp.UpdateInventorySlot{
-						InventoryType: inventoryType,
-						Slot:          slot,
-						Item:          item,
-					}, types.SEND_POLICY_ENCRYPT)
+					character.Listener.OnUpdateInventorySlot(inventoryType, slot, item)
 				}
 			}
 			count -= value
@@ -1317,11 +1181,7 @@ func (gs *GameServer) handleSortInventoryInternal(client *client.GameClient, cha
 			if i1 <= i2 {
 				buffer[i1], buffer[i2] = buffer[i2], buffer[i1]
 
-				client.Send(&resp.SwapInventorySlot{
-					InventoryType: inventoryType,
-					Source:        int16(i1 + 1),
-					Dest:          int16(i2 + 1),
-				}, types.SEND_POLICY_ENCRYPT)
+				character.Listener.OnSwapInventorySlot(inventoryType, int16(i1+1), int16(i2+1), 0)
 				i1++
 				i2--
 			}

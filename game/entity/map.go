@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/core/types"
+	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/data"
 )
@@ -15,6 +16,7 @@ type MapListener interface {
 	OnPlayerAdded(mapID uint32, playerID uint32, character *Character, init bool)
 	OnPlayerRemoved(mapID uint32, playerID uint32)
 	OnPlayerMoved(mapID uint32, playerID uint32, character *Character)
+	OnPlayerMove(mapID uint32, playerID uint32, character *Character, startPoint types.Vector2[int16], fragments []action.MoveFragment)
 	OnPlayerChat(mapID uint32, playerID uint32, message string)
 	OnItemSpawned(mapID uint32, itemID uint32, item Item, drop *Drop)
 	OnMesoSpawned(mapID uint32, itemID uint32, meso *Meso)
@@ -22,6 +24,8 @@ type MapListener interface {
 	OnMobSpawned(mapID uint32, mobID uint32, mob *Mob)
 	OnMobRemoved(mapID uint32, mobID uint32, animationType constant.MobDieAnimationType)
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
+	OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []action.MoveFragment)
+	OnAttack(mapID uint32, characterID uint32, attackInfo action.AttackInfo, skillLevel uint8)
 }
 
 type MobSpawn struct {

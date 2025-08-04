@@ -3,7 +3,7 @@ package resp
 import (
 	"github.com/boyism80/fm/core/stream"
 	"github.com/boyism80/fm/core/types"
-	"github.com/boyism80/fm/game/protocol"
+	"github.com/boyism80/fm/game/action"
 )
 
 type MoveMob struct {
@@ -15,7 +15,7 @@ type MoveMob struct {
 	Skill4      uint8
 	OID         uint32
 	StartPoint  types.Vector2[int16]
-	Movements   []protocol.MoveFragment
+	Movements   []action.MoveFragment
 }
 
 func (p *MoveMob) Opcode() uint16 {
