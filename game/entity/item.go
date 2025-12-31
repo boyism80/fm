@@ -8,7 +8,7 @@ import (
 	"github.com/boyism80/fm/core/types"
 	"github.com/boyism80/fm/core/util"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/data"
+	"github.com/boyism80/fm/game/wz"
 )
 
 // Timer constants
@@ -30,7 +30,7 @@ type Dropable interface {
 type Item interface {
 	GetDrop() *Drop
 	GetObject() *Object
-	GetSpec() data.ItemSpec
+	GetModel() wz.Item
 	GetInventoryType() constant.InventoryType
 	GetExpiration() time.Time
 	GetCount() uint16
@@ -55,7 +55,7 @@ type Drop struct {
 
 type ItemCore struct {
 	*Drop
-	Spec       data.ItemSpec
+	Wz         wz.Item
 	UniqueId   int64
 	Expiration time.Time
 	Count      uint16
@@ -133,8 +133,8 @@ func (item *ItemCore) GetObject() *Object {
 	return item.Object
 }
 
-func (item *ItemCore) GetSpec() data.ItemSpec {
-	return item.Spec
+func (item *ItemCore) GetModel() wz.Item {
+	return item.Wz
 }
 
 func (item *ItemCore) GetExpiration() time.Time {
@@ -241,7 +241,7 @@ func (item *CashItem) Clone(count uint16) Item {
 		ItemCore: &ItemCore{
 			Drop:       nil,
 			Count:      count,
-			Spec:       item.Spec,
+			Wz:         item.Wz,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
@@ -253,7 +253,7 @@ func (item *CashItem) Clone(count uint16) Item {
 func (item *CashItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
-	writer.WriteU32(item.Spec.GetID())
+	writer.WriteU32(item.Wz.GetID())
 
 	hasUID := item.UniqueId > 0
 	writer.WriteBoolean(false)
@@ -288,7 +288,7 @@ func (item *Installation) Clone(count uint16) Item {
 		ItemCore: &ItemCore{
 			Drop:       nil,
 			Count:      count,
-			Spec:       item.Spec,
+			Wz:         item.Wz,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
@@ -300,7 +300,7 @@ func (item *Installation) Clone(count uint16) Item {
 func (item *Installation) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
-	writer.WriteU32(item.Spec.GetID())
+	writer.WriteU32(item.Wz.GetID())
 
 	hasUID := item.UniqueId > 0
 	writer.WriteBoolean(false)
@@ -341,7 +341,7 @@ func (item *GeneralItem) Clone(count uint16) Item {
 		ItemCore: &ItemCore{
 			Drop:       nil,
 			Count:      count,
-			Spec:       item.Spec,
+			Wz:         item.Wz,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
@@ -353,7 +353,7 @@ func (item *GeneralItem) Clone(count uint16) Item {
 func (item *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
-	writer.WriteU32(item.Spec.GetID())
+	writer.WriteU32(item.Wz.GetID())
 
 	hasUID := item.UniqueId > 0
 	writer.WriteBoolean(false)
@@ -388,7 +388,7 @@ func (item *Equipment) Clone(count uint16) Item {
 		ItemCore: &ItemCore{
 			Drop:       nil,
 			Count:      count,
-			Spec:       item.Spec,
+			Wz:         item.Wz,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
@@ -400,12 +400,12 @@ func (item *Equipment) Clone(count uint16) Item {
 }
 
 func (item *Equipment) IsOverall() bool {
-	spec := item.Spec
-	return (spec.GetID() / 10000) == 105
+	model := item.Wz
+	return (model.GetID() / 10000) == 105
 }
 
 func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	spec, _ := equipment.Spec.(*data.EquipmentSpec)
+	model, _ := equipment.Wz.(*wz.Equipment)
 	if slot <= -1 {
 		slot *= -1
 		if slot > 100 && slot < 1000 {
@@ -419,7 +419,7 @@ func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, s
 	}
 
 	writer.WriteU8(uint8(constant.ITEM_TYPE_EQUIPMENT))
-	writer.WriteU32(spec.ID)
+	writer.WriteU32(model.ID)
 
 	hasUID := equipment.UniqueId > 0
 	writer.WriteBoolean(hasUID)
@@ -429,22 +429,22 @@ func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, s
 
 	writer.WriteDateTime(equipment.Expiration)
 	writer.WriteU8(equipment.EnchantChance)
-	writer.WriteU8(spec.Required.Level)
-	writer.WriteU16(spec.Ability.Str)
-	writer.WriteU16(spec.Ability.Dex)
-	writer.WriteU16(spec.Ability.Int)
-	writer.WriteU16(spec.Ability.Luk)
-	writer.WriteU16(spec.Ability.MaxHP)
-	writer.WriteU16(spec.Ability.MaxMP)
-	writer.WriteU16(spec.Ability.PAD)
-	writer.WriteU16(spec.Ability.MAD)
-	writer.WriteU16(spec.Ability.PDD)
-	writer.WriteU16(spec.Ability.MDD)
-	writer.WriteU16(spec.Ability.ACC)
-	writer.WriteU16(spec.Ability.Avoid)
-	writer.WriteU16(spec.Ability.Hands)
-	writer.WriteU16(spec.Ability.Speed)
-	writer.WriteU16(spec.Ability.Jump)
+	writer.WriteU8(model.Required.Level)
+	writer.WriteU16(model.Ability.Str)
+	writer.WriteU16(model.Ability.Dex)
+	writer.WriteU16(model.Ability.Int)
+	writer.WriteU16(model.Ability.Luk)
+	writer.WriteU16(model.Ability.MaxHP)
+	writer.WriteU16(model.Ability.MaxMP)
+	writer.WriteU16(model.Ability.PAD)
+	writer.WriteU16(model.Ability.MAD)
+	writer.WriteU16(model.Ability.PDD)
+	writer.WriteU16(model.Ability.MDD)
+	writer.WriteU16(model.Ability.ACC)
+	writer.WriteU16(model.Ability.Avoid)
+	writer.WriteU16(model.Ability.Hands)
+	writer.WriteU16(model.Ability.Speed)
+	writer.WriteU16(model.Ability.Jump)
 	writer.WriteStr16(equipment.OwnerName)
 	writer.WriteU16(equipment.Flag)
 	writer.WriteBoolean(equipment.SkillBonus > 0)
@@ -489,7 +489,7 @@ func (item *Consume) Clone(count uint16) Item {
 		ItemCore: &ItemCore{
 			Drop:       nil,
 			Count:      count,
-			Spec:       item.Spec,
+			Wz:         item.Wz,
 			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
@@ -501,7 +501,7 @@ func (item *Consume) Clone(count uint16) Item {
 func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
-	writer.WriteU32(item.Spec.GetID())
+	writer.WriteU32(item.Wz.GetID())
 
 	hasUID := item.UniqueId > 0
 	writer.WriteBoolean(false)
@@ -510,7 +510,7 @@ func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int
 	}
 
 	writer.WriteDateTime(item.Expiration)
-	spec, ok := item.Spec.(*data.ConsumeSpec)
+	model, ok := item.Wz.(*wz.Consume)
 	if !ok {
 		return
 	}
@@ -519,9 +519,9 @@ func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int
 	writer.WriteStr16(item.OwnerName)
 	writer.WriteU16(item.Flags)
 
-	isThrowingStart := spec.ID/10000 == 207
-	isBullet := spec.ID/10000 == 233
-	isWhat := spec.ID/10000 == 287
+	isThrowingStart := model.ID/10000 == 207
+	isBullet := model.ID/10000 == 233
+	isWhat := model.ID/10000 == 287
 	inventoryId := uint64(54399043)
 	if isThrowingStart || isBullet || isWhat {
 		writer.WriteU64(inventoryId)
@@ -549,7 +549,7 @@ func (item *Pet) Clone(count uint16) Item {
 		ItemCore: &ItemCore{
 			Drop:       nil,
 			Count:      count,
-			Spec:       item.Spec,
+			Wz:         item.Wz,
 			UniqueId:   item.UniqueId,
 			Expiration: item.ItemCore.Expiration,
 		},
@@ -564,14 +564,14 @@ func (item *Pet) Clone(count uint16) Item {
 }
 
 func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	spec, ok := pet.Spec.(*data.PetSpec)
+	model, ok := pet.Wz.(*wz.Pet)
 	if !ok {
 		return
 	}
 
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(3)
-	writer.WriteU32(spec.ID)
+	writer.WriteU32(model.ID)
 
 	hasUID := pet.UniqueId > 0
 	writer.WriteBoolean(hasUID)
@@ -580,14 +580,14 @@ func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	}
 
 	writer.WriteDateTime(pet.ItemCore.Expiration)
-	writer.WriteStaticStr(spec.Name, 13)
+	writer.WriteStaticStr(model.Name, 13)
 	writer.WriteU8(pet.Level)
 	writer.WriteU16(pet.Closeness)
 	writer.WriteU8(pet.Fullness)
 	writer.WriteDateTime(pet.Expiration)
 	writer.WriteU16(pet.Speed)
 	writer.WriteU16(pet.Flags)
-	if spec.ID == 5000054 && pet.SecondsLeft > 0 {
+	if model.ID == 5000054 && pet.SecondsLeft > 0 {
 		writer.WriteU32(pet.SecondsLeft)
 	} else {
 		writer.WriteU32(0)
@@ -619,62 +619,62 @@ func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType 
 
 // NewItem creates an item from item ID using GameContext
 func NewItem(itemId uint32, count uint16, context GameContext) (Item, error) {
-	// Get item spec from resources
-	itemSpec, ok := context.GetResources().Items[itemId]
+	// Get item model from resources
+	model, ok := context.GetResources().Items[itemId]
 	if !ok {
-		return nil, fmt.Errorf("item spec not found for ID: %d", itemId)
+		return nil, fmt.Errorf("item model not found for ID: %d", itemId)
 	}
 
-	switch spec := itemSpec.(type) {
-	case *data.EquipmentSpec:
+	switch wz := model.(type) {
+	case *wz.Equipment:
 		return &Equipment{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Wz:    wz,
 				Count: 1,
 			},
-			EnchantChance: spec.TUC,
+			EnchantChance: wz.TUC,
 		}, nil
 
-	case *data.ConsumeSpec:
+	case *wz.Consume:
 		return &Consume{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Wz:    wz,
 				Count: count,
 			},
 		}, nil
 
-	case *data.InstallationSpec:
+	case *wz.Installation:
 		return &Installation{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Wz:    wz,
 				Count: 1,
 			},
 		}, nil
 
-	case *data.GeneralItemSpec:
+	case *wz.GeneralItem:
 		return &GeneralItem{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Wz:    wz,
 				Count: count,
 			},
 		}, nil
 
-	case *data.CashItemSpec:
+	case *wz.CashItem:
 		return &CashItem{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Wz:    wz,
 				Count: count,
 			},
 		}, nil
 
-	case *data.PetSpec:
+	case *wz.Pet:
 		petExpiration, err := time.ParseInLocation("2006-01-02 15:04:05", "2025-05-30 09:30:00", util.KST)
 		if err != nil {
 			fmt.Println(err)
 		}
 		return &Pet{
 			ItemCore: &ItemCore{
-				Spec:  spec,
+				Wz:    wz,
 				Count: 1,
 			},
 			Expiration: petExpiration,

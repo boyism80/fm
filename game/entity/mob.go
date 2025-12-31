@@ -7,13 +7,13 @@ import (
 
 	"github.com/boyism80/fm/core/stream"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/data"
+	"github.com/boyism80/fm/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
 type Mob struct {
 	Life
-	Spec     *data.MobSpec
+	Wz       *wz.Mob
 	Foothold int16
 	MapID    uint32 // Map ID where this mob is located
 }
@@ -36,7 +36,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			if argc == 1 {
 				// Getter: return id
-				L.Push(lua.LNumber(mob.Spec.ID))
+				L.Push(lua.LNumber(mob.Wz.ID))
 				return 1
 			} else {
 				L.ArgError(2, "id() is read-only")
@@ -54,7 +54,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			if argc == 1 {
 				// Getter: return name (using ID as name for now)
-				L.Push(lua.LString(fmt.Sprintf("Mob_%d", mob.Spec.ID)))
+				L.Push(lua.LString(fmt.Sprintf("Mob_%d", mob.Wz.ID)))
 				return 1
 			} else {
 				L.ArgError(2, "name() is read-only")
@@ -72,7 +72,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			if argc == 1 {
 				// Getter: return exp
-				L.Push(lua.LNumber(mob.Spec.EXP))
+				L.Push(lua.LNumber(mob.Wz.EXP))
 				return 1
 			} else {
 				L.ArgError(2, "exp() is read-only")
@@ -152,7 +152,7 @@ func (m *Mob) dropItems(attacker *Character) {
 	}
 
 	resources := m.Context.GetResources()
-	mobDrops, ok := resources.Drops[m.Spec.ID]
+	mobDrops, ok := resources.Drops[m.Wz.ID]
 	if !ok {
 		return
 	}
@@ -256,10 +256,10 @@ func (m *Mob) Damage(damage uint16, attacker *Character) bool {
 	}
 
 	// Mob dies - handle all death-related logic
-	log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Spec.ID, attacker.GetID())
+	log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
 
 	// Add experience to character
-	attacker.AddExp(uint32(m.Spec.EXP))
+	attacker.AddExp(uint32(m.Wz.EXP))
 
 	// Generate mob drops
 	m.dropItems(attacker)

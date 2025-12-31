@@ -13,13 +13,13 @@ type NpcControl struct {
 func (p *NpcControl) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(1)
 	writer.WriteU32(p.NPC.OID)
-	writer.WriteU32(p.NPC.Spec.ID)
-	writer.Write16(p.NPC.Spec.Position.X)
-	writer.Write16(p.NPC.Spec.CollisionY)
-	writer.WriteU8(uint8(p.NPC.Spec.FacingDirection))
-	writer.Write16(p.NPC.Spec.Foothold)
-	writer.Write16(p.NPC.Spec.RenderX0)
-	writer.Write16(p.NPC.Spec.RenderX1)
+	writer.WriteU32(p.NPC.Wz.ID)
+	writer.Write16(p.NPC.Wz.Position.X)
+	writer.Write16(p.NPC.Wz.CollisionY)
+	writer.WriteU8(uint8(p.NPC.Wz.FacingDirection))
+	writer.Write16(p.NPC.Wz.Foothold)
+	writer.Write16(p.NPC.Wz.RenderX0)
+	writer.Write16(p.NPC.Wz.RenderX1)
 	writer.WriteBoolean(p.MiniMap)
 	return nil
 }

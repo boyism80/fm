@@ -17,6 +17,7 @@ func main() {
 	var (
 		host         = flag.String("host", "0.0.0.0", "Game server host address")
 		port         = flag.Int("port", 8485, "Game server port number")
+		wzPath       = flag.String("wz-path", "resources/wz", "Path to WZ files directory")
 		logicThreads = flag.Int("logic-threads", 8, "Number of logic threads")
 		worldName    = flag.String("world", "Scania", "World/Channel name")
 		maxPlayers   = flag.Int("max-players", 1000, "Maximum number of players per world")
@@ -60,6 +61,7 @@ func main() {
 		LogicThreadCount: *logicThreads,
 		Host:             *host,
 		Port:             *port,
+		WzPath:           *wzPath,
 		WorldName:        *worldName,
 		MaxPlayers:       *maxPlayers,
 		ExpRate:          *expRate,

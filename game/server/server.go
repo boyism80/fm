@@ -14,8 +14,8 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
-	"github.com/boyism80/fm/game/data"
 	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -23,7 +23,7 @@ import (
 type GameServer struct {
 	server         *core.Server
 	config         *GameConfig
-	resources      *data.Resources        // Game data resources
+	resources      *wz.Resources          // Game data resources
 	maps           map[uint32]*entity.Map // Map instances by map ID
 	mapsMutex      sync.RWMutex
 	commandHandler *CommandHandler
@@ -31,7 +31,7 @@ type GameServer struct {
 
 // GameContext provides access to game resources and services
 type GameContext interface {
-	GetResources() *data.Resources
+	GetResources() *wz.Resources
 	GetMap(mapId uint32) *entity.Map
 	GetLogicThread() *core.LogicThread // Returns core.LogicThread
 }
@@ -41,6 +41,7 @@ type GameConfig struct {
 	LogicThreadCount int    // Number of logic threads for game processing
 	Host             string // Game server host address
 	Port             int    // Game server port number
+	WzPath           string // Path to WZ files directory
 	WorldName        string // World/Channel name
 	MaxPlayers       int    // Maximum number of players per world
 	ExpRate          int    // Experience rate multiplier
@@ -52,14 +53,14 @@ type GameConfig struct {
 
 // ExecuteNpcScript executes the Lua script for an NPC
 func (gs *GameServer) ExecuteNpcScript(character *entity.Character, npcInterface interface{}) error {
-	// Get NPC spec to determine script file
+	// Get NPC model to determine script file
 	npc, ok := npcInterface.(*entity.Npc)
 	if !ok {
 		return fmt.Errorf("invalid NPC type")
 	}
 
-	if npc.Spec == nil {
-		return fmt.Errorf("NPC has no spec")
+	if npc.Wz == nil {
+		return fmt.Errorf("NPC has no model")
 	}
 
 	// Get Lua state from LogicThread
@@ -74,7 +75,7 @@ func (gs *GameServer) ExecuteNpcScript(character *entity.Character, npcInterface
 	}
 
 	// Load NPC script
-	path := filepath.Join("script", "npc", fmt.Sprintf("%d.lua", npc.Spec.ID))
+	path := filepath.Join("script", "npc", fmt.Sprintf("%d.lua", npc.Wz.ID))
 
 	// Load script function
 	fn, err := luaState.LoadFile(path)
@@ -156,8 +157,8 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	}
 
 	// Load game resources
-	log.Println("Loading game resources...")
-	resources := data.NewResources()
+	// FindWzPath is called inside NewResources, so we just pass the config path
+	resources := wz.NewResources(config.WzPath)
 	if resources == nil {
 		return nil, fmt.Errorf("failed to load game resources")
 	}
@@ -189,7 +190,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 }
 
 // GetResources returns the game resources
-func (gs *GameServer) GetResources() *data.Resources {
+func (gs *GameServer) GetResources() *wz.Resources {
 	return gs.resources
 }
 
@@ -238,9 +239,13 @@ func (gs *GameServer) Start() error {
 
 	// Log resource information
 	if gs.resources != nil {
+		stringCount := 0
+		if gs.resources.Strings != nil {
+			stringCount = gs.resources.Strings.CountStrings()
+		}
 		log.Printf("Resources loaded: %d maps, %d monsters, %d items, %d drops, %d strings",
 			len(gs.resources.Maps), len(gs.resources.Monsters),
-			len(gs.resources.Items), len(gs.resources.Drops), len(gs.resources.Strings))
+			len(gs.resources.Items), len(gs.resources.Drops), stringCount)
 	}
 
 	return nil
@@ -299,7 +304,11 @@ func (gs *GameServer) GetStats() map[string]interface{} {
 		stats["monsters_loaded"] = len(gs.resources.Monsters)
 		stats["items_loaded"] = len(gs.resources.Items)
 		stats["drops_loaded"] = len(gs.resources.Drops)
-		stats["strings_loaded"] = len(gs.resources.Strings)
+		if gs.resources.Strings != nil {
+			stats["strings_loaded"] = gs.resources.Strings.CountStrings()
+		} else {
+			stats["strings_loaded"] = 0
+		}
 	}
 
 	return stats

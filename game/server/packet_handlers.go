@@ -11,10 +11,10 @@ import (
 	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/data"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/protocol/req"
 	"github.com/boyism80/fm/game/protocol/resp"
+	"github.com/boyism80/fm/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -379,12 +379,12 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 		item := obj
 		invenType := item.GetInventoryType()
 		inven := character.Inventory[invenType]
-		spec := item.GetSpec()
+		model := item.GetModel()
 		gain := uint16(0)
 
 		// Add item to inventory (capacity check already done in LootItem)
 		for item.GetCount() > 0 {
-			slot, ok := inven.FindSlot(spec)
+			slot, ok := inven.FindSlot(model)
 			if !ok {
 				break
 			}
@@ -393,12 +393,12 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 			cap := uint16(0)
 			if ok {
 				// Increase existing item count
-				cap = min(spec.GetCapacity()-exists.GetCount(), item.GetCount())
+				cap = min(model.GetCapacity()-exists.GetCount(), item.GetCount())
 				exists.Increase(cap)
 				character.Listener.OnInventorySlotUpdated(invenType, int16(slot), exists)
 			} else {
 				// Add new item to slot
-				cap = min(spec.GetCapacity(), item.GetCount())
+				cap = min(model.GetCapacity(), item.GetCount())
 				inven.Items[int16(slot)] = item.Clone(cap)
 				character.Listener.OnInventorySlotAdded(invenType, int16(slot), inven.Items[int16(slot)])
 			}
@@ -409,7 +409,7 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 		}
 
 		// Show item gain message
-		character.Listener.OnShowItemGain(spec.GetID(), uint32(gain), constant.ShowItemGainTypeStatus)
+		character.Listener.OnShowItemGain(model.GetID(), uint32(gain), constant.ShowItemGainTypeStatus)
 
 	case *entity.Meso:
 		// Handle meso looting
@@ -522,7 +522,7 @@ func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 			character.Hp = 50
 			character.Stance = 0
 
-			// Get return map from current map spec
+			// Get return map from current map model
 			currentMap := gs.GetMap(character.Map)
 			if currentMap == nil {
 				return fmt.Errorf("current map not found")
@@ -530,7 +530,7 @@ func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 
 			mapSpec := currentMap.GetSpec()
 			if mapSpec == nil {
-				return fmt.Errorf("map spec not found")
+				return fmt.Errorf("map model not found")
 			}
 
 			targetMapId = uint32(mapSpec.ReturnMapId)
@@ -553,7 +553,7 @@ func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 
 		mapSpec := currentMap.GetSpec()
 		if mapSpec == nil {
-			return fmt.Errorf("map spec not found")
+			return fmt.Errorf("map model not found")
 		}
 
 		// Find portal by name
@@ -563,7 +563,7 @@ func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 			return nil
 		}
 
-		// Get target map spec
+		// Get target map model
 		targetMapSpec, ok := gs.resources.Maps[uint32(portal.TargetMapId)]
 		if !ok {
 			character.Listener.OnUpdateStats(nil, true)
@@ -1085,8 +1085,8 @@ func (gs *GameServer) handleMoveItemInternal(client *client.GameClient, characte
 	}
 
 	// Check if items are the same type
-	specSrc := src.GetSpec()
-	specDst := dst.GetSpec()
+	specSrc := src.GetModel()
+	specDst := dst.GetModel()
 	if specSrc != specDst {
 		// Swap different items
 		inven.Items[sourceSlot], inven.Items[destSlot] = inven.Items[destSlot], inven.Items[sourceSlot]
@@ -1108,7 +1108,7 @@ func (gs *GameServer) handleMoveItemInternal(client *client.GameClient, characte
 // handleMergeItems handles merging items in inventory
 func (gs *GameServer) handleMergeItems(client *client.GameClient, character *entity.Character, inventoryType constant.InventoryType) {
 	inven := character.Inventory[inventoryType]
-	buckets := map[data.ItemSpec]map[int16]entity.Item{}
+	buckets := map[wz.Item]map[int16]entity.Item{}
 
 	for i := range inven.SlotLimit {
 		item := inven.Items[int16(i+1)]
@@ -1116,21 +1116,21 @@ func (gs *GameServer) handleMergeItems(client *client.GameClient, character *ent
 			continue
 		}
 
-		spec := item.GetSpec()
-		if buckets[spec] == nil {
-			buckets[spec] = map[int16]entity.Item{}
+		model := item.GetModel()
+		if buckets[model] == nil {
+			buckets[model] = map[int16]entity.Item{}
 		}
 
-		buckets[spec][int16(i+1)] = item
+		buckets[model][int16(i+1)] = item
 	}
 
-	for spec, bucket := range buckets {
+	for model, bucket := range buckets {
 		count := uint16(0)
 		for _, v := range bucket {
 			count += v.GetCount()
 		}
 
-		capacity := spec.GetCapacity()
+		capacity := model.GetCapacity()
 		for slot, item := range bucket {
 			value := min(capacity, count)
 			if item.GetCount() != value {
@@ -1166,7 +1166,7 @@ func (gs *GameServer) handleSortInventoryInternal(client *client.GameClient, cha
 		if item2 == nil {
 			return true
 		}
-		id1, id2 := item1.GetSpec().GetID(), item2.GetSpec().GetID()
+		id1, id2 := item1.GetModel().GetID(), item2.GetModel().GetID()
 		if id1 != id2 {
 			return id1 < id2
 		}

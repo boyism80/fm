@@ -8,7 +8,7 @@ import (
 	"github.com/boyism80/fm/core/types"
 	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/data"
+	"github.com/boyism80/fm/game/wz"
 )
 
 // MapListener defines interface for map events
@@ -29,7 +29,7 @@ type MapListener interface {
 }
 
 type MobSpawn struct {
-	Spec          *data.MobSpawnSpec
+	Wz            *wz.MobSpawn
 	Spawned       bool
 	LastSpawnedAt time.Time
 }
@@ -40,9 +40,9 @@ type Map struct {
 	controllerTable *ControllerTable
 	MobSpawns       map[uint32]*MobSpawn
 	listener        MapListener
-	spec            *data.MapSpec // Map specification data
-	sequence        uint32        // Sequence ID for generating unique object IDs
-	context         GameContext   // GameContext for accessing resources
+	model           *wz.Map     // Map specification data
+	sequence        uint32      // Sequence ID for generating unique object IDs
+	context         GameContext // GameContext for accessing resources
 }
 
 func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) *Map {
@@ -53,7 +53,7 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 		panic("GameContext cannot be nil")
 	}
 
-	// Get map spec from resources
+	// Get map model from resources
 	mapSpec, ok := context.GetResources().Maps[mapId]
 	if !ok {
 		panic(fmt.Sprintf("MapSpec not found for ID: %d", mapId))
@@ -65,7 +65,7 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 		controllerTable: nil, // Will be set after mapInstance is created
 		MobSpawns:       make(map[uint32]*MobSpawn),
 		listener:        listener,
-		spec:            mapSpec,
+		model:           mapSpec,
 		sequence:        0,
 		context:         context,
 	}
@@ -75,6 +75,9 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 
 	// Initialize NPCs from MapSpec (following old server pattern)
 	mapInstance.initializeNpcs()
+
+	// Initialize mobs from MapSpec (following old server pattern)
+	mapInstance.initializeMobs()
 
 	return mapInstance
 }
@@ -100,11 +103,13 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, init bool) error 
 
 	m.objects[types.OBJECT_TYPE_PLAYER][playerID] = character
 
-	// Add player to controller table for mob AI (following old server pattern)
-	m.controllerTable.EnterPlayer(character)
-
-	// Notify listener about player addition (mob AI will be handled by listener)
+	// Notify listener about player addition first (sends Warp and SpawnMob packets)
+	// Controller assignment will be done after SpawnMob packets are sent
 	m.listener.OnPlayerAdded(m.ID, playerID, character, init)
+
+	// Add player to controller table for mob AI (following old server pattern)
+	// This will trigger StartControlMob packets after SpawnMob packets
+	m.controllerTable.EnterPlayer(character)
 
 	return nil
 }
@@ -161,13 +166,13 @@ func (m *Map) GetControllerTable() *ControllerTable {
 }
 
 // GetSpec returns the map specification data
-func (m *Map) GetSpec() *data.MapSpec {
-	return m.spec
+func (m *Map) GetSpec() *wz.Map {
+	return m.model
 }
 
 // FootholdPoint calculates the foothold position for a given point
 func (m *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
-	return m.spec.FootholdPoint(point)
+	return m.model.FootholdPoint(point)
 }
 
 // initializeNpcs initializes NPCs from MapSpec (following old server pattern)
@@ -177,15 +182,45 @@ func (m *Map) initializeNpcs() {
 	}
 
 	// Create NPCs from MapSpec (following old server pattern)
-	for _, npcSpec := range m.spec.NpcSpawns {
+	for _, npcSpec := range m.model.NpcSpawns {
 		m.sequence++ // Generate unique OID for NPC
 		npc := &Npc{
 			Object: Object{
 				OID: m.sequence, // Use sequence as OID
 			},
-			Spec: &npcSpec,
+			Wz: &npcSpec,
 		}
 		m.objects[types.OBJECT_TYPE_NPC][npc.OID] = npc
+	}
+}
+
+// initializeMobs initializes mobs from MapSpec MobSpawns (following old server pattern)
+func (m *Map) initializeMobs() {
+	// Initialize MobSpawns map from MapSpec
+	for spawnId, mobSpawnSpec := range m.model.MobSpawns {
+		// Create MobSpawn entry
+		m.MobSpawns[spawnId] = &MobSpawn{
+			Wz:            &mobSpawnSpec,
+			Spawned:       false,
+			LastSpawnedAt: time.Time{},
+		}
+
+		// Spawn the mob immediately
+		position := types.Point[int16]{
+			X: mobSpawnSpec.Position.X,
+			Y: mobSpawnSpec.Position.Y,
+		}
+
+		_, err := m.SpawnMob(mobSpawnSpec.ID, position)
+		if err != nil {
+			// Log error but continue with other mobs
+			fmt.Printf("Failed to spawn mob %d at spawn point %d: %v\n", mobSpawnSpec.ID, spawnId, err)
+			continue
+		}
+
+		// Mark as spawned
+		m.MobSpawns[spawnId].Spawned = true
+		m.MobSpawns[spawnId].LastSpawnedAt = time.Now()
 	}
 }
 
@@ -202,20 +237,20 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16]) (*Mob, error) 
 	// Generate unique sequence ID for mob
 	m.sequence++
 
-	// Get mob spec from resources
+	// Get mob model from resources
 	mobSpec, ok := m.context.GetResources().Monsters[mobId]
 	if !ok {
-		return nil, fmt.Errorf("mob spec not found for ID: %d", mobId)
+		return nil, fmt.Errorf("mob model not found for ID: %d", mobId)
 	}
 
 	// Find foothold for the position (following old server pattern)
-	foothold, ok := m.spec.Footholds.Find(position)
+	foothold, ok := m.model.Footholds.Find(position)
 	if !ok {
 		return nil, fmt.Errorf("no valid foothold found at position: %v", position)
 	}
 
 	// Calculate spawn point
-	spawnPoint, ok := m.spec.DropPoint(position)
+	spawnPoint, ok := m.model.DropPoint(position)
 	if !ok {
 		spawnPoint = position
 	}
@@ -228,14 +263,14 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16]) (*Mob, error) 
 				Position: spawnPoint,
 				Context:  m.context, // Pass GameContext to Object
 			},
-			Hp:     uint16(mobSpec.MaxHP), // Set from mob spec
-			Mp:     uint16(mobSpec.MaxMP), // Set from mob spec
-			MaxHp:  uint16(mobSpec.MaxHP), // Set from mob spec
-			MaxMp:  uint16(mobSpec.MaxMP), // Set from mob spec
+			Hp:     uint16(mobSpec.MaxHP), // Set from mob model
+			Mp:     uint16(mobSpec.MaxMP), // Set from mob model
+			MaxHp:  uint16(mobSpec.MaxHP), // Set from mob model
+			MaxMp:  uint16(mobSpec.MaxMP), // Set from mob model
 			Stance: 5,
 		},
 		Foothold: foothold.ID,
-		Spec:     mobSpec, // Pass MobSpec directly
+		Wz:       mobSpec, // Pass MobSpec directly
 		MapID:    m.ID,    // Set the map ID where this mob is spawned
 	}
 
@@ -351,7 +386,7 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	}
 
 	// Calculate drop point (following old server pattern)
-	dropPoint, ok := m.spec.DropPoint(drop.Position)
+	dropPoint, ok := m.model.DropPoint(drop.Position)
 	if !ok {
 		dropPoint = drop.SpawnedPoint
 	}
@@ -384,7 +419,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 	m.sequence++
 
 	// Calculate drop point
-	dropPoint, ok := m.spec.DropPoint(position)
+	dropPoint, ok := m.model.DropPoint(position)
 	if !ok {
 		dropPoint = position
 	}
@@ -481,9 +516,9 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		// Check inventory capacity before removing from map
 		invenType := item.GetInventoryType()
 		inven := character.Inventory[invenType]
-		spec := item.GetSpec()
+		model := item.GetModel()
 
-		if !inven.IsFree(spec, item.GetCount()) {
+		if !inven.IsFree(model, item.GetCount()) {
 			return nil, constant.LOOT_FAILED_INVENTORY_FULL
 		}
 

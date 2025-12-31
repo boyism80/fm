@@ -21,7 +21,7 @@ func (p *SpawnItem) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(p.Animation))
 	writer.WriteU32(p.ID)
 	writer.WriteBoolean(false)
-	template := p.Item.GetSpec()
+	template := p.Item.GetModel()
 	writer.WriteU32(template.GetID())
 	writer.WriteU32(p.OwnerID)
 	writer.WriteU8(uint8(p.DropType))

@@ -9,7 +9,7 @@ import (
 	"github.com/boyism80/fm/core/stream"
 	"github.com/boyism80/fm/core/util"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/data"
+	"github.com/boyism80/fm/game/wz"
 )
 
 func (c *Character) cooldowns() []*CooldownEntry {
@@ -101,7 +101,7 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 			continue
 		}
 
-		spec, ok := equipment.Spec.(*data.EquipmentSpec)
+		model, ok := equipment.Wz.(*wz.Equipment)
 		if !ok {
 			continue
 		}
@@ -109,16 +109,16 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 		absoluteParts := int8(parts * -1)
 		if absoluteParts < 100 {
 			if _, exists := equipments[absoluteParts]; !exists {
-				equipments[absoluteParts] = spec.ID
+				equipments[absoluteParts] = model.ID
 			}
 		} else if absoluteParts > 100 && absoluteParts != 111 {
 			adjustedParts := int8(absoluteParts - 100)
 			if existingItem, exists := equipments[adjustedParts]; exists {
 				skins[adjustedParts] = existingItem
 			}
-			equipments[adjustedParts] = spec.ID
+			equipments[adjustedParts] = model.ID
 		} else if _, exists := equipments[absoluteParts]; exists {
-			skins[absoluteParts] = spec.ID
+			skins[absoluteParts] = model.ID
 		}
 	}
 
@@ -136,7 +136,7 @@ func (ch *Character) SerializeLook(writer *stream.StreamWriter) {
 
 	weapon := ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON]
 	if weapon != nil {
-		writer.WriteU32(weapon.Spec.GetID())
+		writer.WriteU32(weapon.Wz.GetID())
 	} else {
 		writer.WriteU32(0)
 	}

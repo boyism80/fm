@@ -644,7 +644,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		resources := ctx.GetResources()
 		ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = &Equipment{
 			ItemCore: &ItemCore{
-				Spec:       resources.Items[1302000],
+				Wz:         resources.Items[1302000],
 				Count:      1,
 				UniqueId:   0,
 				Expiration: util.TimeMax,
@@ -658,7 +658,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		}
 		ch.Inventory[constant.INVENTORY_TYPE_CASH].Items[1] = &Pet{
 			ItemCore: &ItemCore{
-				Spec:       resources.Items[5000007],
+				Wz:         resources.Items[5000007],
 				Count:      1,
 				UniqueId:   1,
 				Expiration: util.TimeMax,
@@ -674,7 +674,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 
 		ch.Inventory[constant.INVENTORY_TYPE_ETC].Items[1] = &GeneralItem{
 			ItemCore: &ItemCore{
-				Spec:       resources.Items[4000001],
+				Wz:         resources.Items[4000001],
 				Count:      100,
 				Expiration: util.TimeMax,
 			},

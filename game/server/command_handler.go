@@ -110,10 +110,10 @@ func (ch *CommandHandler) handleCreateItem(gameClient *client.GameClient, args .
 		return fmt.Errorf("character not found")
 	}
 
-	// Verify item spec exists
+	// Verify item model exists
 	_, ok := ch.gameServer.resources.Items[uint32(itemId)]
 	if !ok {
-		return fmt.Errorf("item spec not found for id: %d", itemId)
+		return fmt.Errorf("item model not found for id: %d", itemId)
 	}
 
 	// Create the item

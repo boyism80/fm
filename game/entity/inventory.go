@@ -5,7 +5,7 @@ import (
 
 	"github.com/boyism80/fm/core/stream"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/data"
+	"github.com/boyism80/fm/game/wz"
 )
 
 var (
@@ -39,18 +39,18 @@ func (m *Inventory) NextSlot() (uint8, bool) {
 	return 0, false
 }
 
-func (m *Inventory) FindSlot(spec data.ItemSpec) (uint8, bool) {
+func (m *Inventory) FindSlot(model wz.Item) (uint8, bool) {
 	for i := 1; i <= int(m.SlotLimit); i++ {
 		item := m.Items[int16(i)]
 		if item == nil {
 			continue
 		}
 
-		if item.GetSpec().GetID() != spec.GetID() {
+		if item.GetModel().GetID() != model.GetID() {
 			continue
 		}
 
-		cap := spec.GetCapacity() - item.GetCount()
+		cap := model.GetCapacity() - item.GetCount()
 		if cap == 0 {
 			continue
 		}
@@ -72,19 +72,19 @@ func (m *Inventory) EmptySlotCount() uint16 {
 	return count
 }
 
-func (m *Inventory) IsFree(spec data.ItemSpec, count uint16) bool {
+func (m *Inventory) IsFree(model wz.Item, count uint16) bool {
 	space := uint16(0)
-	slot, ok := m.FindSlot(spec)
+	slot, ok := m.FindSlot(model)
 	if ok {
 		exists, ok := m.Items[int16(slot)]
 		if ok {
-			if spec.GetCapacity() > exists.GetCount() {
-				space += spec.GetCapacity() - exists.GetCount()
+			if model.GetCapacity() > exists.GetCount() {
+				space += model.GetCapacity() - exists.GetCount()
 			}
 		}
 	}
 
-	space += m.EmptySlotCount() * spec.GetCapacity()
+	space += m.EmptySlotCount() * model.GetCapacity()
 	return space >= count
 }
 

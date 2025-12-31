@@ -30,7 +30,7 @@ func (p *StartControlMob) Serialize(writer *stream.StreamWriter) error {
 	}
 	writer.WriteU32(p.Mob.OID)
 	writer.WriteU8(1)
-	writer.WriteU32(p.Mob.Spec.ID)
+	writer.WriteU32(p.Mob.Wz.ID)
 	p.Mob.Serialize(writer)
 	writer.Write16(p.Mob.Position.X)
 	writer.Write16(p.Mob.Position.Y)
