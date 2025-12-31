@@ -3,7 +3,6 @@ package entity
 import (
 	"errors"
 
-	"github.com/boyism80/fm/core/stream"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 )
@@ -86,18 +85,6 @@ func (m *Inventory) IsFree(model wz.Item, count uint16) bool {
 
 	space += m.EmptySlotCount() * model.GetCapacity()
 	return space >= count
-}
-
-func (m *Inventory) Serialize(sw *stream.StreamWriter) {
-
-	for slot, item := range m.Items {
-		if item == nil {
-			continue
-		}
-
-		item.Serialize(sw, true, slot)
-	}
-	sw.WriteU8(0)
 }
 
 // GetItem returns the item at the specified slot

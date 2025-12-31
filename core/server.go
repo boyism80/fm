@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/core/crypt"
-	"github.com/boyism80/fm/core/protocol/resp"
-	"github.com/boyism80/fm/core/types"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -220,7 +220,7 @@ func (s *Server) handleClient(client Client) {
 	}()
 
 	// Send welcome packet on connection (for login server)
-	welcome := &resp.Welcome{
+	welcome := &response.Welcome{
 		SendIv: client.GetSendEncryption().IV(),
 		RecvIv: client.GetRecvEncryption().IV(),
 	}
@@ -231,8 +231,8 @@ func (s *Server) handleClient(client Client) {
 	}
 
 	// Send login failed packet (for login server)
-	loginFailed := &resp.LoginFailed{
-		Reason: resp.LoginFailedReasonNoPopup,
+	loginFailed := &response.LoginFailed{
+		Reason: response.LoginFailedReasonNoPopup,
 	}
 	if err := client.Send(loginFailed, types.SEND_POLICY_ENCRYPT); err != nil {
 		log.Printf("Failed to send login failed packet to %s: %v", client.GetConnection().RemoteAddr(), err)

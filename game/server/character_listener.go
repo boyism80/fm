@@ -1,11 +1,11 @@
 package server
 
 import (
-	"github.com/boyism80/fm/core/types"
-	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/game/protocol/resp"
+	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 )
 
 // CharacterListenerImpl implements CharacterListener for game server
@@ -25,7 +25,7 @@ func NewGameCharacterListener(gameServer *GameServer, character *entity.Characte
 // OnDialog handles dialog events
 func (l *CharacterListenerImpl) OnDialog(npc uint32, message string, prev bool, next bool) {
 	// Send dialog packet to client
-	dialogPacket := &resp.Dialog{
+	dialogPacket := &response.Dialog{
 		NPC:  npc,
 		Type: constant.DIALOG_TYPE_DEFAULT,
 		Text: message,
@@ -38,7 +38,7 @@ func (l *CharacterListenerImpl) OnDialog(npc uint32, message string, prev bool, 
 // OnDialogYesNo handles yes/no dialog events
 func (l *CharacterListenerImpl) OnDialogYesNo(npc uint32, message string, prev bool, next bool) {
 	// Send yes/no dialog packet to client
-	dialogPacket := &resp.DialogYesNo{
+	dialogPacket := &response.DialogYesNo{
 		NPC:  npc,
 		Text: message,
 		Prev: prev,
@@ -50,7 +50,7 @@ func (l *CharacterListenerImpl) OnDialogYesNo(npc uint32, message string, prev b
 // OnDialogAccept handles dialog accept events
 func (l *CharacterListenerImpl) OnDialogAccept(npc uint32, message string, enableEscape bool) {
 	// Send dialog accept packet to client
-	dialogPacket := &resp.DialogAccept{
+	dialogPacket := &response.DialogAccept{
 		NPC:          npc,
 		Text:         message,
 		EnableEscape: enableEscape,
@@ -61,7 +61,7 @@ func (l *CharacterListenerImpl) OnDialogAccept(npc uint32, message string, enabl
 // OnDialogList handles dialog list events
 func (l *CharacterListenerImpl) OnDialogList(npc uint32, message string, selections []string) {
 	// Send dialog list packet to client
-	dialogPacket := &resp.DialogList{
+	dialogPacket := &response.DialogList{
 		NPC:        npc,
 		Text:       message,
 		Selections: selections,
@@ -72,7 +72,7 @@ func (l *CharacterListenerImpl) OnDialogList(npc uint32, message string, selecti
 // OnDialogInput handles dialog input events
 func (l *CharacterListenerImpl) OnDialogInput(npc uint32, message string) {
 	// Send dialog input packet to client
-	dialogPacket := &resp.DialogInput{
+	dialogPacket := &response.DialogInput{
 		NPC:  npc,
 		Text: message,
 	}
@@ -82,7 +82,7 @@ func (l *CharacterListenerImpl) OnDialogInput(npc uint32, message string) {
 // OnChat handles chat events by broadcasting chat packet to all players on the map
 func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecordHistory bool) {
 	// Create chat packet
-	chatPacket := &resp.NormalChat{
+	chatPacket := &response.NormalChat{
 		CharacterId:       l.character.ID,
 		Message:           message,
 		Highlight:         highlight,
@@ -102,7 +102,7 @@ func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecor
 func (l *CharacterListenerImpl) OnMesoChanged(meso int32) {
 	// TODO: Implement meso change handling
 	// This could involve sending a packet to update the client's meso display
-	l.character.Send(&resp.UpdateStats{
+	l.character.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MESO: meso,
 		},
@@ -112,7 +112,7 @@ func (l *CharacterListenerImpl) OnMesoChanged(meso int32) {
 // OnMessage handles general message events
 func (l *CharacterListenerImpl) OnMessage(messageType constant.ServerMessageType, message string) {
 	// Send notice packet to client
-	noticePacket := &resp.Notice{
+	noticePacket := &response.Notice{
 		Message: message,
 		Type:    messageType,
 	}
@@ -122,7 +122,7 @@ func (l *CharacterListenerImpl) OnMessage(messageType constant.ServerMessageType
 // OnExpGain handles experience gain events
 func (l *CharacterListenerImpl) OnExpGain(exp uint32) {
 	// Send experience gain packet to client
-	expPacket := &resp.GainExp{
+	expPacket := &response.GainExp{
 		Gain:  exp,
 		White: false,
 	}
@@ -131,7 +131,7 @@ func (l *CharacterListenerImpl) OnExpGain(exp uint32) {
 
 // OnControlMoveMob handles control move mob events
 func (l *CharacterListenerImpl) OnControlMoveMob(oid uint32, moveId uint8, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
-	l.character.Send(&resp.ControlMoveMob{
+	l.character.Send(&response.ControlMoveMob{
 		OID:          oid,
 		MoveId:       uint16(moveId),
 		EnabledSkill: enabledSkill,
@@ -143,7 +143,7 @@ func (l *CharacterListenerImpl) OnControlMoveMob(oid uint32, moveId uint8, enabl
 
 // OnShowMobHp handles mob HP display events
 func (l *CharacterListenerImpl) OnShowMobHp(oid uint32, percentage uint8) {
-	l.character.Send(&resp.ShowMobHp{
+	l.character.Send(&response.ShowMobHp{
 		OID:        oid,
 		Percentage: percentage,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -151,39 +151,41 @@ func (l *CharacterListenerImpl) OnShowMobHp(oid uint32, percentage uint8) {
 
 // OnUnlockAction handles unlock action events
 func (l *CharacterListenerImpl) OnUnlockAction() {
-	l.character.Send(&resp.UpdateStats{
+	l.character.Send(&response.UpdateStats{
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 // OnItemGainFailed handles item gain failed events
 func (l *CharacterListenerImpl) OnItemGainFailed(mode constant.ItemGainFailedType) {
-	l.character.Send(&resp.ItemGainFailed{
+	l.character.Send(&response.ItemGainFailed{
 		Mode: mode,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 // OnInventorySlotUpdated handles inventory slot update events
 func (l *CharacterListenerImpl) OnInventorySlotUpdated(inventoryType constant.InventoryType, slot int16, item entity.Item) {
-	l.character.Send(&resp.UpdateInventorySlot{
+	itemDTO := entity.ItemToDTO(item)
+	l.character.Send(&response.UpdateInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
-		Item:          item,
+		Item:          itemDTO,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 // OnInventorySlotAdded handles inventory slot add events
 func (l *CharacterListenerImpl) OnInventorySlotAdded(inventoryType constant.InventoryType, slot int16, item entity.Item) {
-	l.character.Send(&resp.AddInventorySlot{
+	itemDTO := entity.ItemToDTO(item)
+	l.character.Send(&response.AddInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
-		Item:          item,
+		Item:          itemDTO,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 // OnShowItemGain handles item gain display events
 func (l *CharacterListenerImpl) OnShowItemGain(itemId uint32, count uint32, mode constant.ShowItemGainType) {
-	l.character.Send(&resp.ShowItemGain{
+	l.character.Send(&response.ShowItemGain{
 		ItemId: itemId,
 		Count:  count,
 		Mode:   mode,
@@ -192,7 +194,7 @@ func (l *CharacterListenerImpl) OnShowItemGain(itemId uint32, count uint32, mode
 
 // OnShowMesoGain handles meso gain display events
 func (l *CharacterListenerImpl) OnShowMesoGain(count int32, mode constant.ShowMesoGainType) {
-	l.character.Send(&resp.ShowMesoGain{
+	l.character.Send(&response.ShowMesoGain{
 		Count: count,
 		Mode:  mode,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -200,7 +202,7 @@ func (l *CharacterListenerImpl) OnShowMesoGain(count int32, mode constant.ShowMe
 
 // OnUpdateStats handles general stat update events
 func (l *CharacterListenerImpl) OnUpdateStats(stats map[constant.Stat]int32, unlock bool) {
-	l.character.Send(&resp.UpdateStats{
+	l.character.Send(&response.UpdateStats{
 		Stats:        stats,
 		UnlockAction: unlock,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -208,7 +210,7 @@ func (l *CharacterListenerImpl) OnUpdateStats(stats map[constant.Stat]int32, unl
 
 // OnMobMoved broadcasts mob movement to all players on the map
 // Following mob branch pattern: broadcast to all players except the controller (sender)
-func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []action.MoveFragment) {
+func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	// Get the map instance
 	mapInstance := l.gameServer.GetMap(mapID)
 	if mapInstance == nil {
@@ -230,7 +232,7 @@ func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed
 	}
 
 	// Create move mob packet
-	movePacket := &resp.MoveMob{
+	movePacket := &response.MoveMob{
 		IsAggroed:   isAggroed,
 		CenterSplit: centerSplit,
 		Skill1:      skill1,
@@ -248,16 +250,19 @@ func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed
 }
 
 // OnPlayerMove sends move packet with fragments to all other players on the map
-func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []action.MoveFragment) {
+func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
 	// Get the map instance
 	mapInstance := l.gameServer.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
 
+	// Convert entity to DTO
+	characterDTO := character.ToDTO()
+
 	// Create move packet
-	movePacket := &resp.Move{
-		Character:  character,
+	movePacket := &response.Move{
+		Character:  characterDTO,
 		Fragments:  fragments,
 		StartPoint: startPoint,
 	}
@@ -267,7 +272,7 @@ func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, char
 }
 
 // OnAttack broadcasts attack to all players on the map
-func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo action.AttackInfo, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8) {
 	// Get the map instance
 	mapInstance := l.gameServer.GetMap(mapID)
 	if mapInstance == nil {
@@ -275,7 +280,7 @@ func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attac
 	}
 
 	// Create attack packet
-	attackPacket := &resp.Attack{
+	attackPacket := &response.Attack{
 		AttackInfo: attackInfo,
 		SkillLevel: skillLevel,
 	}
@@ -286,24 +291,24 @@ func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attac
 
 // OnEndSortInventory handles end sort inventory events
 func (l *CharacterListenerImpl) OnEndSortInventory(inventoryType constant.InventoryType) {
-	l.character.Send(&resp.EndSortInventory{
+	l.character.Send(&response.EndSortInventory{
 		InventoryType: inventoryType,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 // OnSwapInventorySlot handles inventory slot swapping events
 func (l *CharacterListenerImpl) OnSwapInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8) {
-	l.character.Send(&resp.SwapInventorySlot{
+	l.character.Send(&response.SwapInventorySlot{
 		InventoryType:   inventoryType,
 		Source:          source,
 		Dest:            dest,
-		EquipmentAction: resp.EquipmentActionType(equipmentAction),
+		EquipmentAction: response.EquipmentActionType(equipmentAction),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 // OnRemoveInventorySlot handles inventory slot removal events
 func (l *CharacterListenerImpl) OnRemoveInventorySlot(inventoryType constant.InventoryType, slot int16) {
-	l.character.Send(&resp.RemoveInventorySlot{
+	l.character.Send(&response.RemoveInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -311,16 +316,17 @@ func (l *CharacterListenerImpl) OnRemoveInventorySlot(inventoryType constant.Inv
 
 // OnUpdateInventorySlot handles inventory slot update events
 func (l *CharacterListenerImpl) OnUpdateInventorySlot(inventoryType constant.InventoryType, slot int16, item entity.Item) {
-	l.character.Send(&resp.UpdateInventorySlot{
+	itemDTO := entity.ItemToDTO(item)
+	l.character.Send(&response.UpdateInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
-		Item:          item,
+		Item:          itemDTO,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 // OnFullMergeInventorySlot handles full merge inventory slot events
 func (l *CharacterListenerImpl) OnFullMergeInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, count uint16) {
-	l.character.Send(&resp.FullMergeInventorySlot{
+	l.character.Send(&response.FullMergeInventorySlot{
 		InventoryType: inventoryType,
 		Source:        source,
 		Dest:          dest,
@@ -330,7 +336,7 @@ func (l *CharacterListenerImpl) OnFullMergeInventorySlot(inventoryType constant.
 
 // OnPartialMergeInventorySlot handles partial merge inventory slot events
 func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16) {
-	l.character.Send(&resp.PartialMergeInventorySlot{
+	l.character.Send(&response.PartialMergeInventorySlot{
 		InventoryType: inventoryType,
 		Source:        source,
 		Dest:          dest,
@@ -347,9 +353,12 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Characte
 		return
 	}
 
+	// Convert entity to DTO
+	characterDTO := character.ToDTO()
+
 	// Create update character look packet
-	lookPacket := &resp.UpdateCharacterLook{
-		Character: character,
+	lookPacket := &response.UpdateCharacterLook{
+		Character: characterDTO,
 	}
 
 	// Broadcast to all players on the map except the character
@@ -358,7 +367,7 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Characte
 
 // OnNpcAction handles NPC action events
 func (l *CharacterListenerImpl) OnNpcAction(bytes []byte) {
-	l.character.Send(&resp.NpcAction{
+	l.character.Send(&response.NpcAction{
 		Bytes: bytes,
 	}, types.SEND_POLICY_ENCRYPT)
 }

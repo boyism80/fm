@@ -6,15 +6,14 @@ import (
 	"strings"
 
 	"github.com/boyism80/fm/core"
-	common_req "github.com/boyism80/fm/core/protocol/req"
-	"github.com/boyism80/fm/core/stream"
-	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/game/protocol/req"
-	"github.com/boyism80/fm/game/protocol/resp"
 	"github.com/boyism80/fm/game/wz"
+	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/stream"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -42,7 +41,7 @@ func (gs *GameServer) registerPacketHandlers() {
 // handlePong processes pong responses
 func (gs *GameServer) handlePong(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &common_req.Pong{}
+	request := &request.Pong{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize pong packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -54,7 +53,7 @@ func (gs *GameServer) handlePong(ctx *core.ClientContext, data []byte) error {
 // handleLoginGame processes game login requests
 func (gs *GameServer) handleLoginGame(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.LoginGame{}
+	request := &request.LoginGame{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize login game packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -115,7 +114,7 @@ func (gs *GameServer) handleLoginGame(ctx *core.ClientContext, data []byte) erro
 // handleMovePlayer processes player movement requests
 func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.MovePlayer{}
+	request := &request.MovePlayer{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize move player packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -139,7 +138,7 @@ func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext, data []byte) err
 
 	// Process movement fragments
 	for _, frag := range request.Fragments {
-		if move, ok := frag.(*action.AbsoluteLifeMovement); ok {
+		if move, ok := frag.(*dto.AbsoluteLifeMovement); ok {
 			character.Position = move.Position
 		}
 		character.Stance = frag.GetStance()
@@ -161,7 +160,7 @@ func (gs *GameServer) handleMovePlayer(ctx *core.ClientContext, data []byte) err
 // handleNormalChat processes normal chat messages
 func (gs *GameServer) handleNormalChat(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.NormalChat{}
+	request := &request.NormalChat{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize normal chat packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -206,7 +205,7 @@ func (gs *GameServer) handleNormalChat(ctx *core.ClientContext, data []byte) err
 // handleAttack processes attack requests
 func (gs *GameServer) handleAttack(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.Attack{}
+	request := &request.Attack{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize attack packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -256,7 +255,7 @@ func (gs *GameServer) handleAttack(ctx *core.ClientContext, data []byte) error {
 // handleMoveItem processes item movement requests
 func (gs *GameServer) handleMoveItem(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.MoveItem{}
+	request := &request.MoveItem{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize move item packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -296,7 +295,7 @@ func (gs *GameServer) handleMoveItem(ctx *core.ClientContext, data []byte) error
 // handleSortInventory processes inventory sorting requests
 func (gs *GameServer) handleSortInventory(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.SortInventory{}
+	request := &request.SortInventory{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize sort inventory packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -331,7 +330,7 @@ func (gs *GameServer) handleSortInventory(ctx *core.ClientContext, data []byte) 
 // handleItemLoot processes item looting requests
 func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.ItemLoot{}
+	request := &request.ItemLoot{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize item loot packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -441,7 +440,7 @@ func (gs *GameServer) handleItemLoot(ctx *core.ClientContext, data []byte) error
 // handleDropMeso processes meso dropping requests
 func (gs *GameServer) handleDropMeso(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.DropMeso{}
+	request := &request.DropMeso{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize drop meso packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -494,7 +493,7 @@ func (gs *GameServer) handleDropMeso(ctx *core.ClientContext, data []byte) error
 // handleWarp processes warp requests
 func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.Warp{}
+	request := &request.Warp{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize warp packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -592,7 +591,7 @@ func (gs *GameServer) handleWarp(ctx *core.ClientContext, data []byte) error {
 // handleNpcControl processes NPC control requests
 func (gs *GameServer) handleNpcControl(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.NpcAction{}
+	request := &request.NpcAction{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize NPC control packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -621,7 +620,7 @@ func (gs *GameServer) handleNpcControl(ctx *core.ClientContext, data []byte) err
 // handleDialog processes dialog responses
 func (gs *GameServer) handleDialog(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.Dialog{}
+	request := &request.Dialog{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize dialog packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -711,7 +710,7 @@ func (gs *GameServer) handleDialog(ctx *core.ClientContext, data []byte) error {
 // handleNpcClick processes NPC click requests
 func (gs *GameServer) handleNpcClick(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.NpcClick{}
+	request := &request.NpcClick{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize NPC click packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -758,7 +757,7 @@ func (gs *GameServer) handleNpcClick(ctx *core.ClientContext, data []byte) error
 // handleMoveMob processes mob movement requests
 func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.MoveMob{}
+	request := &request.MoveMob{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize move mob packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -812,7 +811,7 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 
 	// Update mob position based on movement data (following old server pattern)
 	for _, mnt := range request.Movements {
-		if move, ok := mnt.(*action.AbsoluteLifeMovement); ok {
+		if move, ok := mnt.(*dto.AbsoluteLifeMovement); ok {
 			mob.Position = move.Position
 		}
 
@@ -844,7 +843,7 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 // handleDamaged processes damage requests
 func (gs *GameServer) handleDamaged(ctx *core.ClientContext, data []byte) error {
 	reader := stream.NewStreamReader(&data, stream.LittleEndian)
-	request := &req.Damaged{}
+	request := &request.Damaged{}
 	if err := request.Deserialize(reader); err != nil {
 		log.Printf("Failed to deserialize damaged packet from %s: %v", ctx.Client.GetConnection().RemoteAddr(), err)
 		return err
@@ -968,7 +967,7 @@ func (gs *GameServer) handleUnequip(client *client.GameClient, character *entity
 	delete(character.Equipments, parts)
 
 	// Send swap inventory slot response
-	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), slot, int8(resp.EQUIPMENT_ACTION_TYPE_OFF))
+	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), slot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
 
 	// Broadcast character look update
 	character.Listener.OnUpdateCharacterLook(character)
@@ -1024,7 +1023,7 @@ func (gs *GameServer) handleEquip(client *client.GameClient, character *entity.C
 	}
 
 	// Send swap inventory slot response
-	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, slot, int16(parts), int8(resp.EQUIPMENT_ACTION_TYPE_ON))
+	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
 
 	// Broadcast character look update
 	character.Listener.OnUpdateCharacterLook(character)

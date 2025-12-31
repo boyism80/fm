@@ -3,7 +3,7 @@ package crypt
 import (
 	"slices"
 
-	"github.com/boyism80/fm/core/stream"
+	"github.com/boyism80/fm/stream"
 )
 
 var hexaBytes = []byte{

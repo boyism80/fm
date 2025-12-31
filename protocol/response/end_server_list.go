@@ -1,0 +1,22 @@
+package response
+
+import (
+	"github.com/boyism80/fm/stream"
+)
+
+type EndOfServerList struct{}
+
+// Opcode returns the packet opcode for EndOfServerList
+func (e *EndOfServerList) Opcode() uint16 {
+	return 0x02
+}
+
+func (e *EndOfServerList) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(0xFF)
+
+	return nil
+}
+
+func (e *EndOfServerList) Deserialize(reader *stream.StreamReader) error {
+	return nil
+}

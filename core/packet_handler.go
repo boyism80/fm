@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/boyism80/fm/core/types"
+	"github.com/boyism80/fm/types"
 )
 
 // PacketHandler manages packet processing for the server

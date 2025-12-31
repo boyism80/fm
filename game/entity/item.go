@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/boyism80/fm/core/stream"
-	"github.com/boyism80/fm/core/types"
-	"github.com/boyism80/fm/core/util"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
+	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/types"
+	"github.com/boyism80/fm/util"
 )
 
 // Timer constants
@@ -40,7 +40,7 @@ type Item interface {
 	Reduce(count uint16) uint16
 	Clone(count uint16) Item
 	BindDrop(drop *Drop)
-	Serialize(writer *stream.StreamWriter, trade bool, slot int16)
+	ToDTO() dto.Item
 }
 
 type Drop struct {
@@ -250,23 +250,6 @@ func (item *CashItem) Clone(count uint16) Item {
 	}
 }
 
-func (item *CashItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	writer.WriteU8(uint8(slot))
-	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
-	writer.WriteU32(item.Wz.GetID())
-
-	hasUID := item.UniqueId > 0
-	writer.WriteBoolean(false)
-	if hasUID {
-		writer.Write64(item.UniqueId)
-	}
-
-	writer.WriteDateTime(item.Expiration)
-	writer.WriteU16(item.Count)
-	writer.WriteStr16(item.OwnerName)
-	writer.WriteU16(item.Flags)
-}
-
 func (item *Installation) GetInventoryType() constant.InventoryType {
 	return constant.INVENTORY_TYPE_INSTALLATION
 }
@@ -295,23 +278,6 @@ func (item *Installation) Clone(count uint16) Item {
 		OwnerName: item.OwnerName,
 		Flags:     item.Flags,
 	}
-}
-
-func (item *Installation) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	writer.WriteU8(uint8(slot))
-	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
-	writer.WriteU32(item.Wz.GetID())
-
-	hasUID := item.UniqueId > 0
-	writer.WriteBoolean(false)
-	if hasUID {
-		writer.Write64(item.UniqueId)
-	}
-
-	writer.WriteDateTime(item.Expiration)
-	writer.WriteU16(1)
-	writer.WriteStr16(item.OwnerName)
-	writer.WriteU16(item.Flags)
 }
 
 func (item *GeneralItem) GetInventoryType() constant.InventoryType {
@@ -348,23 +314,6 @@ func (item *GeneralItem) Clone(count uint16) Item {
 		OwnerName: item.OwnerName,
 		Flags:     item.Flags,
 	}
-}
-
-func (item *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	writer.WriteU8(uint8(slot))
-	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
-	writer.WriteU32(item.Wz.GetID())
-
-	hasUID := item.UniqueId > 0
-	writer.WriteBoolean(false)
-	if hasUID {
-		writer.Write64(item.UniqueId)
-	}
-
-	writer.WriteDateTime(item.Expiration)
-	writer.WriteU16(item.Count)
-	writer.WriteStr16(item.OwnerName)
-	writer.WriteU16(item.Flags)
 }
 
 func (item *Equipment) GetInventoryType() constant.InventoryType {
@@ -404,64 +353,6 @@ func (item *Equipment) IsOverall() bool {
 	return (model.GetID() / 10000) == 105
 }
 
-func (equipment *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	model, _ := equipment.Wz.(*wz.Equipment)
-	if slot <= -1 {
-		slot *= -1
-		if slot > 100 && slot < 1000 {
-			slot -= 100
-		}
-	}
-	if slot != 0 && !trade {
-		writer.WriteU16(uint16(slot))
-	} else {
-		writer.WriteU8(uint8(slot))
-	}
-
-	writer.WriteU8(uint8(constant.ITEM_TYPE_EQUIPMENT))
-	writer.WriteU32(model.ID)
-
-	hasUID := equipment.UniqueId > 0
-	writer.WriteBoolean(hasUID)
-	if hasUID {
-		writer.Write64(equipment.UniqueId)
-	}
-
-	writer.WriteDateTime(equipment.Expiration)
-	writer.WriteU8(equipment.EnchantChance)
-	writer.WriteU8(model.Required.Level)
-	writer.WriteU16(model.Ability.Str)
-	writer.WriteU16(model.Ability.Dex)
-	writer.WriteU16(model.Ability.Int)
-	writer.WriteU16(model.Ability.Luk)
-	writer.WriteU16(model.Ability.MaxHP)
-	writer.WriteU16(model.Ability.MaxMP)
-	writer.WriteU16(model.Ability.PAD)
-	writer.WriteU16(model.Ability.MAD)
-	writer.WriteU16(model.Ability.PDD)
-	writer.WriteU16(model.Ability.MDD)
-	writer.WriteU16(model.Ability.ACC)
-	writer.WriteU16(model.Ability.Avoid)
-	writer.WriteU16(model.Ability.Hands)
-	writer.WriteU16(model.Ability.Speed)
-	writer.WriteU16(model.Ability.Jump)
-	writer.WriteStr16(equipment.OwnerName)
-	writer.WriteU16(equipment.Flag)
-	writer.WriteBoolean(equipment.SkillBonus > 0)
-	writer.WriteU8(1)
-	writer.WriteU32(0)
-	if equipment.UniqueId <= 0 {
-		inventoryId := 0
-		if inventoryId > 0 {
-			writer.WriteU64(uint64(inventoryId))
-		} else {
-			writer.Write64(-1)
-		}
-	}
-	writer.WriteDateTime(util.TimeZero)
-	writer.Write32(-1)
-}
-
 func (item *Consume) GetInventoryType() constant.InventoryType {
 	return constant.INVENTORY_TYPE_CONSUME
 }
@@ -498,36 +389,6 @@ func (item *Consume) Clone(count uint16) Item {
 	}
 }
 
-func (item *Consume) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	writer.WriteU8(uint8(slot))
-	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
-	writer.WriteU32(item.Wz.GetID())
-
-	hasUID := item.UniqueId > 0
-	writer.WriteBoolean(false)
-	if hasUID {
-		writer.Write64(item.UniqueId)
-	}
-
-	writer.WriteDateTime(item.Expiration)
-	model, ok := item.Wz.(*wz.Consume)
-	if !ok {
-		return
-	}
-
-	writer.WriteU16(item.Count)
-	writer.WriteStr16(item.OwnerName)
-	writer.WriteU16(item.Flags)
-
-	isThrowingStart := model.ID/10000 == 207
-	isBullet := model.ID/10000 == 233
-	isWhat := model.ID/10000 == 287
-	inventoryId := uint64(54399043)
-	if isThrowingStart || isBullet || isWhat {
-		writer.WriteU64(inventoryId)
-	}
-}
-
 func (item *Pet) GetInventoryType() constant.InventoryType {
 	return constant.INVENTORY_TYPE_CASH
 }
@@ -560,37 +421,6 @@ func (item *Pet) Clone(count uint16) Item {
 		Speed:       item.Speed,
 		SecondsLeft: item.SecondsLeft,
 		Expiration:  item.Expiration,
-	}
-}
-
-func (pet *Pet) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	model, ok := pet.Wz.(*wz.Pet)
-	if !ok {
-		return
-	}
-
-	writer.WriteU8(uint8(slot))
-	writer.WriteU8(3)
-	writer.WriteU32(model.ID)
-
-	hasUID := pet.UniqueId > 0
-	writer.WriteBoolean(hasUID)
-	if hasUID {
-		writer.Write64(pet.UniqueId)
-	}
-
-	writer.WriteDateTime(pet.ItemCore.Expiration)
-	writer.WriteStaticStr(model.Name, 13)
-	writer.WriteU8(pet.Level)
-	writer.WriteU16(pet.Closeness)
-	writer.WriteU8(pet.Fullness)
-	writer.WriteDateTime(pet.Expiration)
-	writer.WriteU16(pet.Speed)
-	writer.WriteU16(pet.Flags)
-	if model.ID == 5000054 && pet.SecondsLeft > 0 {
-		writer.WriteU32(pet.SecondsLeft)
-	} else {
-		writer.WriteU32(0)
 	}
 }
 

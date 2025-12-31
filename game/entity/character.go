@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boyism80/fm/core/stream"
-	"github.com/boyism80/fm/core/types"
-	"github.com/boyism80/fm/core/util"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/types"
+	"github.com/boyism80/fm/util"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -53,8 +53,8 @@ type Character struct {
 	CoolDowns        map[uint32]*CooldownEntry
 	Quests           map[int]*QuestStatus
 	MarriageId       uint32
-	RegRocks         []uint32 // 기본 순간이동 장소 (5개)
-	Rocks            []uint32 // VIP 순간이동 장소 (10개)
+	RegRocks         []uint32 // Basic warp rock slots (5 slots)?
+	Rocks            []uint32 // VIP warp rock slots (10 slots)?
 	MonsterBookCover uint32
 	MonsterBook      *MonsterBook
 	QuestInfo        map[uint16]string
@@ -125,14 +125,6 @@ func (ch *Character) Message(message string) {
 // Characters on the same map will be assigned to the same logic thread
 func (ch *Character) GetThreadHash() int {
 	return int(ch.Map)
-}
-
-func (mb *MonsterBook) Serialize(writer *stream.StreamWriter) {
-	writer.WriteU16(uint16(len(mb.Cards)))
-
-	for cardId := range mb.Cards {
-		writer.WriteU16(uint16(cardId))
-	}
 }
 
 func (ch *Character) IsRanked() bool {

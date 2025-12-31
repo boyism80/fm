@@ -68,7 +68,7 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					maxHp = 0
 				}
 				life.MaxHp = uint16(maxHp)
-				// HP가 새로운 MaxHP를 초과하면 조정
+				// Adjust HP if it exceeds MaxHP
 				if life.Hp > life.MaxHp {
 					life.Hp = life.MaxHp
 				}
@@ -127,7 +127,7 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					maxMp = 0
 				}
 				life.MaxMp = uint16(maxMp)
-				// MP가 새로운 MaxMP를 초과하면 조정
+				// Adjust MP if it exceeds MaxMP
 				if life.Mp > life.MaxMp {
 					life.Mp = life.MaxMp
 				}

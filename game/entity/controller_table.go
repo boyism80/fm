@@ -23,7 +23,7 @@ func (t *ControllerTable) EnterPlayer(character *Character) {
 	t.controllers[playerID] = character
 	t.controller2mob[playerID] = make(map[uint32]struct{})
 
-	// orphan 몹을 빠르게 조회해 바로 할당
+	// Quickly assign orphan mobs immediately
 	for mobOID, mob := range t.mobs {
 		if t.mob2controller[mobOID] == 0 {
 			t.assign(mob, nil, character)
@@ -34,7 +34,7 @@ func (t *ControllerTable) EnterPlayer(character *Character) {
 func (t *ControllerTable) LeavePlayer(character *Character) {
 	playerID := character.GetID()
 
-	// 다음 플레이어 찾기
+	// Find next controller
 	var next *Character
 	for id, controller := range t.controllers {
 		if id != playerID {
@@ -43,7 +43,7 @@ func (t *ControllerTable) LeavePlayer(character *Character) {
 		}
 	}
 
-	// controller가 관리하던 모든 몹을 재할당
+	// controller가 관리하??모든 몹을 ?할??
 	for mobOID := range t.controller2mob[playerID] {
 		if mob, exists := t.mobs[mobOID]; exists {
 			t.assign(mob, character, next)
@@ -83,17 +83,17 @@ func (t *ControllerTable) LeaveMob(mob *Mob) *Character {
 	return controller
 }
 
-// assign은 몬스터→컨트롤러 매핑과 controller2mob 업데이트, 콜백 호출을 담당
+// assign updates monster→controller mapping in controller2mob, calls callback, assigns
 func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character) {
 	mobOID := mob.OID
 
-	// 이전 컨트롤러가 있으면 삭제
+	// ?전 컨트롤러가 ?으???
 	prevControllerID := t.mob2controller[mobOID]
 	if prevControllerID != 0 {
 		delete(t.controller2mob[prevControllerID], mobOID)
 	}
 
-	// 새 컨트롤러 설정
+	// Set new controller
 	if after != nil {
 		afterID := after.GetID()
 		t.mob2controller[mobOID] = afterID

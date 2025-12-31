@@ -9,7 +9,7 @@ import (
 	"github.com/boyism80/fm/bot/msg"
 	"github.com/boyism80/fm/core/context"
 	"github.com/boyism80/fm/core/handler"
-	"github.com/boyism80/fm/core/stream"
+	"github.com/boyism80/fm/stream"
 )
 
 type BotActor struct {
@@ -36,7 +36,7 @@ func (state *BotActor) Receive(context actor.Context) {
 }
 
 func onBotStopping(ctx actor.Context, bot *BotActor, m *actor.Stopping) {
-	log.Println("봇 제거중")
+	log.Println("�??�거�?)
 	bot.Conn.Close()
 }
 
@@ -45,12 +45,12 @@ func onBotConnect(ctx actor.Context, bot *BotActor, m *msg.BotConnect) {
 
 	conn, err := net.Dial("tcp", serverAddr)
 	if err != nil {
-		log.Println("연결 실패:", err)
+		log.Println("?�결 ?�패:", err)
 		ctx.Stop(ctx.Self())
 		return
 	}
 	bot.Conn = conn
-	log.Println("서버에 연결됨:", serverAddr)
+	log.Println("?�버???�결??", serverAddr)
 
 	ctx.Send(ctx.Self(), &msg.BotClose{})
 }
@@ -66,7 +66,7 @@ func onBotSendPacket(ctx actor.Context, bot *BotActor, m *msg.BotSendPacket) {
 
 	_, err := bot.Conn.Write(wr2.Bytes())
 	if err != nil {
-		log.Println("데이터 전송 실패:", err)
+		log.Println("?�이???�송 ?�패:", err)
 		return
 	}
 }

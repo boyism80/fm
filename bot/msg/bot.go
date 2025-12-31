@@ -1,6 +1,6 @@
 package msg
 
-import "github.com/boyism80/fm/core/types"
+import "github.com/boyism80/fm/types"
 
 type BotConnect struct {
 	Port int

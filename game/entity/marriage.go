@@ -21,7 +21,7 @@ func (m *MarriageManager) GetMarriage(marriageId uint32) *MarriageData {
 	return m.marriages[marriageId]
 }
 
-// 전역 접근용
+// ?역 ?근??
 func GetMarriageManager() *MarriageManager {
 	return marriageManager
 }

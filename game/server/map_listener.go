@@ -1,11 +1,11 @@
 package server
 
 import (
-	"github.com/boyism80/fm/core/types"
-	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/game/protocol/resp"
+	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 )
 
 // MapListenerImpl implements MapListener for game server
@@ -31,14 +31,19 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 	// 1. Send Login/Warp packet to the new player based on init status
 	if init {
 		// First time entering the game
-		loginPacket := &resp.Login{
-			Character: character,
+		// Convert entity to DTO (with full data for Login)
+		characterDTO := character.ToFullDTO()
+
+		loginPacket := &response.Login{
+			Character: characterDTO,
 		}
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
 	} else {
 		// Warping to a new map
-		warpPacket := &resp.Warp{
-			Character: character,
+		// Convert entity to DTO
+		characterDTO := character.ToDTO()
+		warpPacket := &response.Warp{
+			Character: characterDTO,
 			Channel:   0,
 		}
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
@@ -52,42 +57,48 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 			}
 
 			if ch, ok := p.(*entity.Character); ok {
+				// Convert entity to DTO
+				chDTO := ch.ToDTO()
 				// Send existing player's spawn info to the new player
-				character.Send(&resp.SpawnPlayer{
-					Character:       ch,
+				character.Send(&response.SpawnPlayer{
+					Character:       chDTO,
 					BuffStates:      [4]uint32{},
 					Diseases:        [4]uint32{},
-					CrushRings:      []*entity.Ring{},
-					FriendshipRings: []*entity.Ring{},
-					MarriageRings:   []*entity.Ring{},
+					CrushRings:      entity.RingsToDTO(ch.Rings.Left),
+					FriendshipRings: entity.RingsToDTO(ch.Rings.Mid),
+					MarriageRings:   entity.RingsToDTO(ch.Rings.Right),
 				}, types.SEND_POLICY_ENCRYPT)
 			}
 		}
 	}
 
 	// 3. Send SpawnPlayer packet to all other players on the map
-	spawnPacket := &resp.SpawnPlayer{
-		Character:       character,
+	// Convert entity to DTO
+	characterDTO := character.ToDTO()
+	spawnPacket := &response.SpawnPlayer{
+		Character:       characterDTO,
 		BuffStates:      [4]uint32{},
 		Diseases:        [4]uint32{},
-		CrushRings:      []*entity.Ring{},
-		FriendshipRings: []*entity.Ring{},
-		MarriageRings:   []*entity.Ring{},
+		CrushRings:      entity.RingsToDTO(character.Rings.Left),
+		FriendshipRings: entity.RingsToDTO(character.Rings.Mid),
+		MarriageRings:   entity.RingsToDTO(character.Rings.Right),
 	}
 	mapInstance.BroadcastToPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT, playerID)
 
 	// 4. Send NPC spawn packets to the new player (following old server pattern)
 	for _, npc := range mapInstance.GetNpcs() {
 		if npc, ok := npc.(*entity.Npc); ok {
+			// Convert entity to DTO
+			npcDTO := npc.ToDTO()
 			// Send SpawnNpc packet
-			character.Send(&resp.SpawnNpc{
-				NPC:     npc,
+			character.Send(&response.SpawnNpc{
+				NPC:     npcDTO,
 				Visible: true,
 			}, types.SEND_POLICY_ENCRYPT)
 
 			// Send NpcControl packet
-			character.Send(&resp.NpcControl{
-				NPC:     npc,
+			character.Send(&response.NpcControl{
+				NPC:     npcDTO,
 				MiniMap: true,
 			}, types.SEND_POLICY_ENCRYPT)
 		}
@@ -100,11 +111,13 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 			drop := item.GetDrop()
 			if drop != nil {
 				// Send SpawnItem packet for existing items
-				character.Send(&resp.SpawnItem{
+				character.Send(&response.SpawnItem{
 					ID:           drop.Object.OID,
 					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
 					DropType:     drop.DropType,
-					Item:         item,
+					ItemModel:    item.GetModel(),
+					Expiration:   item.GetExpiration(),
+					Position:     drop.Object.Position,
 					OwnerID:      drop.Owner,
 					SpawnedPoint: drop.SpawnedPoint,
 					IsPlayerDrop: true,
@@ -117,7 +130,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 			drop := meso.GetDrop()
 			if drop != nil {
 				// Send SpawnMeso packet for existing meso
-				character.Send(&resp.SpawnMeso{
+				character.Send(&response.SpawnMeso{
 					ID:           drop.Object.OID,
 					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
 					DropType:     drop.DropType,
@@ -134,9 +147,11 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 	// 6. Send existing mobs on the map to the new player (following old server pattern)
 	for _, mob := range mapInstance.GetMobs() {
 		if mob, ok := mob.(*entity.Mob); ok {
+			// Convert entity to DTO
+			mobDTO := mob.ToDTO()
 			// Send SpawnMob packet for existing mobs (following old server pattern)
-			character.Send(&resp.SpawnMob{
-				Mob:       mob,
+			character.Send(&response.SpawnMob{
+				Mob:       mobDTO,
 				SpawnType: constant.MOB_SPAWN_TYPE_NONE, // Use NONE for existing mobs (following old server pattern)
 			}, types.SEND_POLICY_ENCRYPT)
 		}
@@ -152,7 +167,7 @@ func (l *MapListenerImpl) OnPlayerRemoved(mapID uint32, playerID uint32) {
 	}
 
 	// Send LeavePlayer packet to all other players on the map
-	leavePacket := &resp.LeavePlayer{
+	leavePacket := &response.LeavePlayer{
 		ID: playerID,
 	}
 	mapInstance.BroadcastToPlayers(leavePacket, types.SEND_POLICY_ENCRYPT, 0)
@@ -167,23 +182,25 @@ func (l *MapListenerImpl) OnPlayerMoved(mapID uint32, playerID uint32, character
 	}
 
 	// TODO: Create and send move player packet
-	// movePacket := &resp.MovePlayer{
+	// movePacket := &response.MovePlayer{
 	//     Character: character,
 	// }
 	// mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, playerID)
 }
 
 // OnPlayerMove sends move packet with fragments to all other players on the map
-func (l *MapListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []action.MoveFragment) {
+func (l *MapListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
 	// Get the map instance
 	mapInstance := l.gameServer.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
 
+	// Convert entity to DTO
+	characterDTO := character.ToDTO()
 	// Create move packet
-	movePacket := &resp.Move{
-		Character:  character,
+	movePacket := &response.Move{
+		Character:  characterDTO,
 		Fragments:  fragments,
 		StartPoint: startPoint,
 	}
@@ -201,7 +218,7 @@ func (l *MapListenerImpl) OnPlayerChat(mapID uint32, playerID uint32, message st
 	}
 
 	// TODO: Create and send chat packet
-	// chatPacket := &resp.NormalChat{
+	// chatPacket := &response.NormalChat{
 	//     Message: message,
 	// }
 	// mapInstance.BroadcastToPlayers(chatPacket, types.SEND_POLICY_ENCRYPT, playerID)
@@ -215,12 +232,15 @@ func (l *MapListenerImpl) OnItemSpawned(mapID uint32, itemID uint32, item entity
 		return
 	}
 
+	dropObj := item.GetDrop()
 	// Create spawn item packet
-	spawnPacket := &resp.SpawnItem{
+	spawnPacket := &response.SpawnItem{
 		ID:           drop.OID,
 		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
 		DropType:     drop.DropType,
-		Item:         item,
+		ItemModel:    item.GetModel(),
+		Expiration:   item.GetExpiration(),
+		Position:     dropObj.Object.Position,
 		OwnerID:      drop.Owner,
 		SpawnedPoint: drop.SpawnedPoint,
 		IsPlayerDrop: true,
@@ -239,7 +259,7 @@ func (l *MapListenerImpl) OnMesoSpawned(mapID uint32, itemID uint32, meso *entit
 	}
 
 	// Create spawn meso packet
-	spawnPacket := &resp.SpawnMeso{
+	spawnPacket := &response.SpawnMeso{
 		ID:           meso.GetDrop().OID,
 		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
 		DropType:     meso.GetDrop().DropType,
@@ -263,7 +283,7 @@ func (l *MapListenerImpl) OnItemRemoved(mapID uint32, itemID uint32, characterID
 	}
 
 	// Create remove item packet
-	removePacket := &resp.RemoveItem{
+	removePacket := &response.RemoveItem{
 		Mode:        mode,
 		OID:         itemID,
 		CharacterId: characterID,
@@ -281,9 +301,12 @@ func (l *MapListenerImpl) OnMobSpawned(mapID uint32, mobID uint32, mob *entity.M
 		return
 	}
 
+	// Convert entity to DTO
+	mobDTO := mob.ToDTO()
+
 	// Create spawn mob packet
-	spawnPacket := &resp.SpawnMob{
-		Mob:       mob,
+	spawnPacket := &response.SpawnMob{
+		Mob:       mobDTO,
 		SpawnType: constant.MOB_SPAWN_TYPE_ANIMATE,
 	}
 
@@ -300,7 +323,7 @@ func (l *MapListenerImpl) OnMobRemoved(mapID uint32, mobID uint32, animationType
 	}
 
 	// Create remove mob packet
-	removePacket := &resp.DieMob{
+	removePacket := &response.DieMob{
 		OID:           mobID,
 		AnimationType: animationType,
 	}
@@ -313,8 +336,10 @@ func (l *MapListenerImpl) OnMobRemoved(mapID uint32, mobID uint32, animationType
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character) {
 	// Send StartControlMob packet to new controller (following old server pattern)
 	if after != nil {
-		after.Send(&resp.StartControlMob{
-			Mob:   mob,
+		// Convert entity to DTO
+		mobDTO := mob.ToDTO()
+		after.Send(&response.StartControlMob{
+			Mob:   mobDTO,
 			Aggro: false,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
@@ -322,7 +347,7 @@ func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.
 }
 
 // OnMobMoved broadcasts mob movement to all players on the map
-func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []action.MoveFragment) {
+func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	// Get the map instance
 	mapInstance := l.gameServer.GetMap(mapID)
 	if mapInstance == nil {
@@ -330,7 +355,7 @@ func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool,
 	}
 
 	// Create move mob packet
-	movePacket := &resp.MoveMob{
+	movePacket := &response.MoveMob{
 		IsAggroed:   isAggroed,
 		CenterSplit: centerSplit,
 		Skill1:      skill1,
@@ -347,7 +372,7 @@ func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool,
 }
 
 // OnAttack broadcasts attack to all players on the map
-func (l *MapListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo action.AttackInfo, skillLevel uint8) {
+func (l *MapListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8) {
 	// Get the map instance
 	mapInstance := l.gameServer.GetMap(mapID)
 	if mapInstance == nil {
@@ -355,7 +380,7 @@ func (l *MapListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo 
 	}
 
 	// Create attack packet
-	attackPacket := &resp.Attack{
+	attackPacket := &response.Attack{
 		CharacterId: characterID,
 		AttackInfo:  attackInfo,
 		SkillLevel:  skillLevel,

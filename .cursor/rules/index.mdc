@@ -1,221 +1,3 @@
-
-# MapleStory Private Server (FM) - Project Rules
-
-## Project Overview
-This is a MapleStory private server implementation written in Go, using a custom core server architecture with logic threads and packet handlers. The project implements game mechanics, network protocols, and server infrastructure for a 2D MMORPG.
-
-## Architecture Patterns
-- **Core Server**: Custom server implementation with configurable logic threads
-- **Packet Handlers**: Function-based packet processing with raw byte data
-- **Thread Assignment**: Hash-based thread assignment for game objects
-- **Protocol Buffers**: Custom binary protocol for client-server communication
-- **Resource Management**: WZ file parsing for game data (items, maps, NPCs, etc.)
-- **Lua Scripting**: Embedded Lua for NPCs and game logic
-
-## Naming Conventions
-
-### Go Language Standards
-- **Types**: Use PascalCase for exported types (e.g., `GameServer`, `LoginServer`)
-- **Functions**: Use PascalCase for exported functions, camelCase for private
-- **Variables**: Use camelCase for local variables, PascalCase for exported fields
-- **Packages**: Use lowercase, single word package names (e.g., `core`, `entity`, `protocol`)
-
-### Project-Specific Conventions
-- **Server Types**: Suffix with "Server" (e.g., `LoginServer`, `GameServer`)
-- **Packet Handlers**: Prefix with "handle" (e.g., `handleLogin`, `handleCharacterList`)
-- **Protocol Messages**: Separate req/resp packages, descriptive names (e.g., `Login`, `Warp`)
-- **Specifications**: Suffix with "Spec" for data structures (e.g., `ItemSpec`, `MapSpec`)
-
-### Enum Conventions (CRITICAL)
-- **ALL enums MUST use UPPER_CASE with underscores**
-- **Example**: `DIALOG_TYPE_DEFAULT`, `INVENTORY_TYPE_EQUIPMENT`, `MOB_SPAWN_TYPE_ANIMATE`
-- **Never use camelCase or PascalCase for enum values**
-- **Enum type names should be descriptive with "Type" suffix when appropriate**
-
-### MapleStory-Specific Terms
-- **Meso**: MapleStory's currency (always capitalized)
-- **NPC**: Non-Player Character
-- **Mob**: Monster/Enemy
-- **WZ**: MapleStory resource file format
-- **PID**: Process ID (legacy term, now refers to object references)
-- **OID**: Object ID (game object identifier)
-
-## Code Organization
-
-### Directory Structure
-```
-/common/    - Shared utilities, protocols, types
-/core/      - Core server implementation
-/renewal/   - New server implementations
-  /login/   - Login server implementation
-  /game/    - Game server implementation
-/wz/        - MapleStory resource files
-/bot/       - Bot/testing utilities
-```
-
-### Key Packages
-- `core/`: Core server implementation and packet handling
-- `entity/`: Game objects (Character, Item, etc.)
-- `protocol/`: Network protocol definitions
-- `constant/`: Game constants and enums
-- `data/`: Resource loading and specifications
-- `script/`: Lua scripts for NPCs and events
-
-## Code Quality and Compilation (CRITICAL REQUIREMENTS)
-
-### Compilation Verification - ABSOLUTELY MANDATORY
-1. **EVERY code change MUST be verified with `go build` command**
-2. **NO code changes should be committed with compilation errors**
-3. **When changing enum constants or function signatures, ALWAYS run compilation check**
-4. **If compilation fails, ALL related files MUST be updated immediately**
-5. **Use `go build ./...` to check all packages in the project**
-6. **CRITICAL**: If import cycle occurs, IMMEDIATELY stop work and revert changes
-
-### Build Commands
-```bash
-# Check main packages
-go build renewal/login/main.go
-go build renewal/game/main.go
-go build ./bot
-
-# Check all packages
-go build ./...
-
-# Run with race detection
-go build -race ./...
-```
-
-## Documentation and Comments (CRITICAL REQUIREMENTS)
-
-### Comment Requirements - ABSOLUTELY MANDATORY
-1. **EVERY function, struct, and interface MUST have comments**
-2. **Comments MUST accurately reflect the actual implementation**
-3. **Comments and code MUST NEVER be out of sync - this is CRITICAL**
-4. **When code changes, comments MUST be updated immediately**
-5. **Misleading or outdated comments are worse than no comments**
-
-### Packet Handler Documentation
-Every packet handler should include a simple comment explaining its purpose:
-
-```go
-// handleLogin processes login authentication requests
-func (ls *LoginServer) handleLogin(ctx *core.ClientContext, data []byte) error {
-    // Implementation...
-}
-```
-
-### Protocol Documentation
-For every protocol message:
-```go
-// Login packet sent from client to server during authentication
-type Login struct {
-    Username string // Player account name (max 12 chars)
-    Password string // Encrypted password hash
-}
-```
-
-## Coding Guidelines
-
-### Error Handling
-- Always handle errors explicitly
-- Use early returns for error conditions
-- Log errors with context information
-- Prefer returning errors over panicking
-
-### Server Implementation
-- Servers should be stateful and handle concurrent access
-- Use packet handlers for client-server communication
-- Implement proper packet handlers for each server type
-- Handle server lifecycle (start, stop, graceful shutdown)
-
-### Protocol Implementation
-- Implement both Serialize and Deserialize methods
-- Use stream.StreamWriter/StreamReader for binary protocols
-- Follow MapleStory packet structure conventions
-- Handle endianness correctly
-- **CRITICAL**: Serialize methods should NOT write opcode - Send() method handles opcode writing
-- **CRITICAL**: Remove `writer.WriteU16(p.Opcode())` from Serialize methods - this causes double opcode writing
-
-### Resource Management
-- Use specifications (Spec types) for game data
-- Implement proper resource loading from WZ files
-- Cache frequently accessed resources
-- Handle missing or corrupted resources gracefully
-
-## Packet Handler Documentation Standards
-
-### Required Documentation for Each Packet Handler:
-1. **Purpose**: What this handler accomplishes
-
-### Example Packet Handler Documentation:
-```go
-// handleCreateCharacter processes character creation requests
-func (ls *LoginServer) handleCreateCharacter(ctx *core.ClientContext, data []byte) error {
-    // Deserialize create character packet
-    reader := stream.NewStreamReader(&data, stream.LittleEndian)
-    request := &req.CreateCharacter{}
-    if err := request.Deserialize(reader); err != nil {
-        log.Printf("Failed to deserialize create character packet from %s: %v", 
-            ctx.Client.GetConnection().RemoteAddr(), err)
-        return err
-    }
-    
-    log.Printf("Create character packet received from %s - Name: %s, Face: %d, Hair: %d",
-        ctx.Client.GetConnection().RemoteAddr(), request.Name, request.Face, request.Hair)
-    return nil
-}
-```
-
-## Performance Considerations
-- Use object pooling for frequently created objects
-- Minimize allocations in hot paths
-- Use appropriate data structures (maps for lookups, slices for iteration)
-- Consider memory usage for large collections
-
-## Testing
-- Write unit tests for core game logic
-- Use table-driven tests where appropriate
-- Mock external dependencies (database, network)
-- Test packet handler scenarios
-
-## Security
-- Validate all client input
-- Implement proper authentication and authorization
-- Use encryption for sensitive data transmission
-- Rate limit client requests
-
-## MapleStory Game Logic
-- Maintain compatibility with MapleStory client expectations
-- Implement proper game mechanics (stats, items, skills)
-- Handle player interactions (chat, trade, party)
-- Manage game world state (maps, spawns, events)
-
-## Common Patterns
-- Use factory functions for creating complex objects
-- Implement interfaces for polymorphic behavior
-- Use context.Context for cancellation and timeouts
-- Follow dependency injection patterns
-
-## Code Quality
-- Write self-documenting code with clear variable names
-- Add comments for complex game logic
-- Keep functions focused and single-purpose
-- Use Go's built-in formatting and linting tools
-- **CRITICAL**: Maintain comment-code synchronization at all times
-
-## Dependencies
-- Lua for scripting
-- YAML for configuration
-- Custom stream package for binary protocols
-
-## CRITICAL REMINDERS
-1. **ENUM VALUES**: Always use UPPER_CASE with underscores
-2. **COMMENTS**: Must be accurate, complete, and synchronized with code
-3. **DEBUGGING**: Comments should enable understanding without running code
-4. **COMPILATION**: ALWAYS run `go build ./...` after any code changes
-
-## Git Commit Guidelines (CRITICAL REQUIREMENTS)
-
 **Commit Command Format**:
 - **Maximum 2 `-m` options only**: Use exactly 2 `-m` options maximum
 - **First `-m`**: Subject line only
@@ -245,29 +27,38 @@ Types:
 - `chore`: Maintenance tasks
 - `script`: Lua script additions or modifications
 
-### Commit Frequency
-- Commit early and often with logical units of work
-- Each commit should compile successfully
-- Related changes should be grouped together
-- Separate concerns into different commits when possible
+**Comments**:
+- Add comments only where necessary
+- Keep comments brief and simple
+- Avoid obvious comments that just restate what the code does
 
-### Pre-Commit Checklist
-1. **MANDATORY**: Run `go build ./...` to ensure compilation
-2. **MANDATORY**: Update comments if code behavior changed
-3. **MANDATORY**: Ensure enum values follow UPPER_CASE convention
-4. **RECOMMENDED**: Test critical functionality
-5. **RECOMMENDED**: Review diff for unintended changes
+**What NOT to comment** (code is self-explanatory):
+- Simple read/write operations: `// Read character name` → `reader.ReadStr16()` is clear
+- Serialization calls: `// Serialize character overview` → `SerializeOverview()` is clear
+- Simple assignments: `// Create socket using socket factory` → function call is clear
+- Conditional logic: `// Handle raw policy (no encryption)` → `if policy == SEND_POLICY_RAW` is clear
+- Handler registration: `// Register Pong handler (0x0A)` → opcode in code is clear
+- Method calls: `// Get encryption IVs from socket` → `SendEncryption()` is clear
+- Loop iterations: `// Serialize each character overview` → loop body is clear
 
-### Git Command Guidelines (CRITICAL REQUIREMENTS)
-1. **MANDATORY**: When using git commands that output to terminal, ALWAYS use `--no-pager` option
-2. **Examples**:
-   - `git --no-pager diff`
-   - `git --no-pager log`
-   - `git --no-pager show`
-   - `git --no-pager status`
-3. **Reason**: Prevents pager from blocking automated processes and ensures consistent output
+**What TO comment**:
+- TODO items for future work
+- Complex business logic that isn't immediately obvious
+- Protocol/packet structure documentation (opcode, direction, etc.)
+- Interface implementation verification: `// Verify implements types.Packet interface`
+- Non-obvious implementation details or workarounds
+- Important constraints or limitations
 
-Remember: This is a game server that must handle real-time interactions, maintain game state consistency, and provide a smooth player experience. Prioritize correctness, performance, and maintainability in that order. 
-
-
-Remember: This is a game server that must handle real-time interactions, maintain game state consistency, and provide a smooth player experience. Prioritize correctness, performance, and maintainability in that order. 
+**Naming Conventions**:
+- Names must be concise, intuitive, and accurately reflect their role
+- Use descriptive names that clearly indicate purpose and behavior
+- Avoid abbreviations unless they are widely understood (e.g., `ID`, `PID`, `IV`)
+- Prefer full words over shortened forms: `connection` over `conn`, `character` over `char`
+- Function names should be verbs: `CreateCharacter`, `SendPacket`, `Deserialize`
+- Type names should be nouns: `CharacterOverview`, `ServerActor`, `LoginHandler`
+- Boolean variables should be questions or assertions: `isValid`, `hasRanking`, `nameUsed`
+- Constants should be uppercase with underscores: `SEND_POLICY_RAW`, `WELCOME_MAGIC`
+- Package-level functions should be clear about their scope: `NewServer`, `LoadConfig`
+- Interface names should describe behavior: `PacketHandler`, `Socket`, `Packet`
+- Avoid redundant prefixes: `LoginLoginHandler` → `LoginHandler`, `PacketPacket` → `Packet`
+- Match naming to actual functionality: if it creates, use `New` or `Create`; if it reads, use `Read` or `Get`

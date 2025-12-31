@@ -1,9 +1,9 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/core/types"
-	"github.com/boyism80/fm/game/action"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/types"
 )
 
 type CharacterListener interface {
@@ -25,9 +25,9 @@ type CharacterListener interface {
 	OnShowItemGain(itemId uint32, count uint32, mode constant.ShowItemGainType)
 	OnShowMesoGain(count int32, mode constant.ShowMesoGainType)
 	OnUpdateStats(stats map[constant.Stat]int32, unlock bool)
-	OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []action.MoveFragment)
-	OnPlayerMove(mapID uint32, playerID uint32, character *Character, startPoint types.Vector2[int16], fragments []action.MoveFragment)
-	OnAttack(mapID uint32, characterID uint32, attackInfo action.AttackInfo, skillLevel uint8)
+	OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
+	OnPlayerMove(mapID uint32, playerID uint32, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
+	OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8)
 	// New methods for remaining client.Send calls
 	OnEndSortInventory(inventoryType constant.InventoryType)
 	OnSwapInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8)

@@ -6,11 +6,11 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/boyism80/fm/core/types"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/game/protocol/resp"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 )
 
 // CommandHandler handles chat commands for the game server
@@ -138,12 +138,14 @@ func (ch *CommandHandler) handleCreateItem(gameClient *client.GameClient, args .
 	// Add item to inventory
 	inventory.Items[int16(nextSlot)] = item
 
+	// Convert entity to DTO
+	itemDTO := entity.ItemToDTO(item)
 	// Send AddItem packet to client
-	gameClient.Send(&resp.AddItem{
+	gameClient.Send(&response.AddItem{
 		IsDrop:        false,
 		Slot:          nextSlot,
 		InventoryType: inventoryType,
-		Item:          item,
+		Item:          itemDTO,
 	}, types.SEND_POLICY_ENCRYPT)
 
 	log.Printf("Command: Created item %d, count %d in slot %d for character %d", itemId, count, nextSlot, character.GetID())
@@ -158,7 +160,7 @@ func (ch *CommandHandler) handleClearMeso(gameClient *client.GameClient, args ..
 	}
 
 	character.Meso = 0
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MESO: character.Meso,
 		},
@@ -185,7 +187,7 @@ func (ch *CommandHandler) handleGainMeso(gameClient *client.GameClient, args ...
 	}
 
 	character.Meso += int32(amount)
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MESO: character.Meso,
 		},
@@ -203,7 +205,7 @@ func (ch *CommandHandler) handleFullMeso(gameClient *client.GameClient, args ...
 	}
 
 	character.Meso = math.MaxInt32
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MESO: character.Meso,
 		},
@@ -311,7 +313,7 @@ func (ch *CommandHandler) handleChangeHp(gameClient *client.GameClient, args ...
 
 	character.Hp = uint16(hp)
 	character.MaxHp = uint16(hp)
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_HP:     int32(character.Hp),
 			constant.STAT_MAX_HP: int32(character.MaxHp),
@@ -345,7 +347,7 @@ func (ch *CommandHandler) handleChangeMp(gameClient *client.GameClient, args ...
 
 	character.Mp = uint16(mp)
 	character.MaxMp = uint16(mp)
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MP:     int32(character.Mp),
 			constant.STAT_MAX_MP: int32(character.MaxMp),
@@ -378,7 +380,7 @@ func (ch *CommandHandler) handleChangeStr(gameClient *client.GameClient, args ..
 	}
 
 	character.Str = uint16(str)
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_STR: int32(character.Str),
 		},
@@ -410,7 +412,7 @@ func (ch *CommandHandler) handleChangeDex(gameClient *client.GameClient, args ..
 	}
 
 	character.Dex = uint16(dex)
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_DEX: int32(character.Dex),
 		},
@@ -442,7 +444,7 @@ func (ch *CommandHandler) handleChangeInt(gameClient *client.GameClient, args ..
 	}
 
 	character.Int = uint16(intVal)
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_INT: int32(character.Int),
 		},
@@ -474,7 +476,7 @@ func (ch *CommandHandler) handleChangeLuk(gameClient *client.GameClient, args ..
 	}
 
 	character.Luk = uint16(luk)
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_LUK: int32(character.Luk),
 		},
@@ -510,7 +512,7 @@ func (ch *CommandHandler) handleChangeAllStats(gameClient *client.GameClient, ar
 	character.Int = uint16(statValue)
 	character.Luk = uint16(statValue)
 
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_STR: int32(character.Str),
 			constant.STAT_DEX: int32(character.Dex),
@@ -547,7 +549,7 @@ func (ch *CommandHandler) handleChangeLevel(gameClient *client.GameClient, args 
 	}
 
 	character.Level = uint8(level)
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_LEVEL: int32(character.Level),
 		},
@@ -571,7 +573,7 @@ func (ch *CommandHandler) handleInvincible(gameClient *client.GameClient, args .
 	}
 
 	// Send notice to character through listener
-	character.Message(fmt.Sprintf("무적 상태: %s", status))
+	character.Message(fmt.Sprintf("무적 ?태: %s", status))
 
 	log.Printf("Command: Invincibility %s for character %d", status, character.GetID())
 	return nil
@@ -594,7 +596,7 @@ func (ch *CommandHandler) handleChangeClass(gameClient *client.GameClient, args 
 	}
 
 	character.Class = uint16(class)
-	gameClient.Send(&resp.UpdateStats{
+	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_JOB: int32(character.Class),
 		},

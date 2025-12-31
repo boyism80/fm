@@ -5,7 +5,6 @@ import (
 	"log"
 	"math/rand"
 
-	"github.com/boyism80/fm/core/stream"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	lua "github.com/yuin/gopher-lua"
@@ -139,10 +138,7 @@ func (m *Mob) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
-func (m *Mob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU32(0)
-	return nil
-}
+// Serialize method removed - use DTO instead
 
 func (m *Mob) dropItems(attacker *Character) {
 	// Get map instance
