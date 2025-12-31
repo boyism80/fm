@@ -207,11 +207,26 @@ func (l *CharacterListenerImpl) OnUpdateStats(stats map[constant.Stat]int32, unl
 }
 
 // OnMobMoved broadcasts mob movement to all players on the map
+// Following mob branch pattern: broadcast to all players except the controller (sender)
 func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []action.MoveFragment) {
 	// Get the map instance
 	mapInstance := l.gameServer.GetMap(mapID)
 	if mapInstance == nil {
 		return
+	}
+
+	// Get mob to find controller
+	mob := mapInstance.GetMob(mobID)
+	if mob == nil {
+		return
+	}
+
+	// Get controller to exclude from broadcast (following mob branch pattern)
+	controllerTable := mapInstance.GetControllerTable()
+	controller, exists := controllerTable.GetController(mob)
+	var exceptPlayerID uint32
+	if exists {
+		exceptPlayerID = controller.GetID()
 	}
 
 	// Create move mob packet
@@ -227,8 +242,9 @@ func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed
 		Movements:   movements,
 	}
 
-	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(movePacket, types.SEND_POLICY_ENCRYPT)
+	// Broadcast to all players on the map except the controller (following mob branch pattern)
+	// The controller already received ControlMoveMob, so exclude from MoveMob broadcast
+	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, exceptPlayerID)
 }
 
 // OnPlayerMove sends move packet with fragments to all other players on the map

@@ -807,8 +807,8 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 		return nil // Don't return error, handle normally
 	}
 
-	// Send ControlMoveMob packet to the controller via listener
-	character.Listener.OnControlMoveMob(request.OID, uint8(request.MovementId), request.IsAggroed, mob.Mp, 0, 0)
+	// Store start position before updating (following mob branch pattern)
+	startPoint := mob.Position
 
 	// Update mob position based on movement data (following old server pattern)
 	for _, mnt := range request.Movements {
@@ -819,7 +819,12 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 		mob.Stance = mnt.GetStance()
 	}
 
+	// Send ControlMoveMob packet to the controller via listener (following mob branch pattern)
+	// This must be sent after position update but before broadcast
+	character.Listener.OnControlMoveMob(request.OID, uint8(request.MovementId), request.IsAggroed, mob.Mp, 0, 0)
+
 	// Broadcast the movement to all players on the map via listener
+	// Use startPoint (position before update) as StartPoint in packet (following mob branch pattern)
 	character.Listener.OnMobMoved(
 		character.GetMap(),
 		request.OID,
@@ -829,7 +834,7 @@ func (gs *GameServer) handleMoveMob(ctx *core.ClientContext, data []byte) error 
 		request.Skill2,
 		request.Skill3,
 		request.Skill4,
-		mob.Position, // Use current position as start point
+		startPoint, // Use position before update as start point (following mob branch pattern)
 		request.Movements,
 	)
 
