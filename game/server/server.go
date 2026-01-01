@@ -39,6 +39,7 @@ type GameContext interface {
 	GetResources() *wz.Resources
 	GetMap(mapId uint32) *entity.Map
 	GetLogicThread() *core.LogicThread // Returns core.LogicThread
+	GetExpRate() int                   // Returns experience rate multiplier
 }
 
 // GameConfig holds game server specific configuration
@@ -203,6 +204,10 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 // GetResources returns the game resources
 func (gs *GameServer) GetResources() *wz.Resources {
 	return gs.resources
+}
+
+func (gs *GameServer) GetExpRate() int {
+	return gs.config.ExpRate
 }
 
 // GetThreadHash returns a hash for thread assignment

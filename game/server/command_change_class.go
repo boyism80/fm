@@ -5,9 +5,6 @@ import (
 	"strconv"
 
 	"github.com/boyism80/fm/game/client"
-	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
 )
 
 type ChangeClass struct {
@@ -43,13 +40,7 @@ func (h *ChangeClass) Handle(gameClient *client.GameClient, args ...string) erro
 		return fmt.Errorf("character not found")
 	}
 
-	character.Class = uint16(class)
-	gameClient.Send(&response.UpdateStats{
-		Stats: map[constant.Stat]int32{
-			constant.STAT_JOB: int32(character.Class),
-		},
-	}, types.SEND_POLICY_ENCRYPT)
+	character.ChangeClass(uint16(class))
 
 	return nil
 }
-

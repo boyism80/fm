@@ -129,3 +129,37 @@ const (
 	REMOVE_ITEM_TYPE_EXPLOSION
 	REMOVE_ITEM_TYPE_LOOT_BY_PET
 )
+
+// StatType represents the stat type for AP distribution
+type StatType uint32
+
+const (
+	STAT_TYPE_STR StatType = 64   // Strength
+	STAT_TYPE_DEX StatType = 128  // Dexterity
+	STAT_TYPE_INT StatType = 256  // Intelligence
+	STAT_TYPE_LUK StatType = 512  // Luck
+	STAT_TYPE_HP  StatType = 2048 // Maximum HP
+	STAT_TYPE_MP  StatType = 8192 // Maximum MP
+)
+
+// Stat limits
+const (
+	STAT_MAX_STR_DEX_INT_LUK uint16 = 999   // Maximum value for STR, DEX, INT, LUK
+	STAT_MAX_HP_MP           uint16 = 30000 // Maximum value for HP and MP
+	HP_AP_USED_MAX           uint16 = 10000 // Maximum HP/MP AP usage count
+)
+
+// Job ranges for stat calculation
+const (
+	JOB_BEGINNER_MIN uint16 = 0
+	JOB_BEGINNER_1   uint16 = 1000
+	JOB_BEGINNER_2   uint16 = 2000
+	JOB_WARRIOR_MIN  uint16 = 100
+	JOB_WARRIOR_MAX  uint16 = 132
+	JOB_MAGICIAN_MIN uint16 = 200
+	JOB_MAGICIAN_MAX uint16 = 232
+	JOB_BOWMAN_MIN   uint16 = 300
+	JOB_BOWMAN_MAX   uint16 = 322
+	JOB_THIEF_MIN    uint16 = 400
+	JOB_THIEF_MAX    uint16 = 422
+)

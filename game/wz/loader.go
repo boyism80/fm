@@ -1266,6 +1266,45 @@ func loadMob(path string) (*Mob, error) {
 		return nil, fmt.Errorf("'info' node not found: %s", path)
 	}
 
+	// Process int fields first (maxHP, maxMP, level, etc.)
+	for _, intField := range info.Ints {
+		switch intField.Name {
+		case "bodyAttack":
+			model.BodyAttack = intField.Value
+		case "level":
+			model.Level = uint8(intField.Value)
+		case "maxHP":
+			model.MaxHP = intField.Value
+		case "maxMP":
+			model.MaxMP = intField.Value
+		case "speed":
+			model.Speed = int16(intField.Value)
+		case "PADamage":
+			model.PADamage = intField.Value
+		case "PDDamage":
+			model.PDDamage = intField.Value
+		case "MADamage":
+			model.MADamage = intField.Value
+		case "MDDamage":
+			model.MDDamage = intField.Value
+		case "acc":
+			model.ACC = intField.Value
+		case "eva":
+			model.EVA = intField.Value
+		case "exp":
+			model.EXP = uint32(intField.Value)
+		case "undead":
+			model.Undead = (intField.Value == 1)
+		case "pushed":
+			model.Pushed = (intField.Value == 1)
+		case "summonType":
+			model.SummonType = uint8(intField.Value)
+		case "mobType":
+			model.MobType = uint8(intField.Value)
+		}
+	}
+
+	// Process child nodes (for nested structures)
 	for _, iv := range info.Children {
 		switch iv.Name {
 		case "elemAttr":
@@ -1352,57 +1391,9 @@ func loadMob(path string) (*Mob, error) {
 		case "bodyattack":
 		case "damageModification":
 
-		case "bodyAttack":
-			v, _ := strconv.Atoi(iv.Value)
-			model.BodyAttack = v
-		case "level":
-			v, _ := strconv.Atoi(iv.Value)
-			model.Level = uint8(v)
-		case "maxHP":
-			v, _ := strconv.Atoi(iv.Value)
-			model.MaxHP = v
-		case "maxMP":
-			v, _ := strconv.Atoi(iv.Value)
-			model.MaxMP = v
-		case "speed":
-			v, _ := strconv.Atoi(iv.Value)
-			model.Speed = int16(v)
-		case "PADamage":
-			v, _ := strconv.Atoi(iv.Value)
-			model.PADamage = v
-		case "PDDamage":
-			v, _ := strconv.Atoi(iv.Value)
-			model.PDDamage = v
-		case "MADamage":
-			v, _ := strconv.Atoi(iv.Value)
-			model.MADamage = v
-		case "MDDamage":
-			v, _ := strconv.Atoi(iv.Value)
-			model.MDDamage = v
-		case "acc":
-			v, _ := strconv.Atoi(iv.Value)
-			model.ACC = v
-		case "eva":
-			v, _ := strconv.Atoi(iv.Value)
-			model.EVA = v
-		case "exp":
-			v, _ := strconv.Atoi(iv.Value)
-			model.EXP = uint32(v)
-		case "undead":
-			v, _ := strconv.Atoi(iv.Value)
-			model.Undead = (v == 1)
-		case "pushed":
-			v, _ := strconv.Atoi(iv.Value)
-			model.Pushed = (v == 1)
 		case "fs":
 			f, _ := strconv.ParseFloat(iv.Value, 32)
 			model.FS = float32(f)
-		case "summonType":
-			v, _ := strconv.Atoi(iv.Value)
-			model.SummonType = uint8(v)
-		case "mobType":
-			v, _ := strconv.Atoi(iv.Value)
-			model.MobType = uint8(v)
 		default:
 			mutex.Lock()
 			if _, seen := visit[iv.Name]; !seen {
@@ -1489,4 +1480,236 @@ func loadDrops(path string) (*map[uint32][]Drop, error) {
 	}
 
 	return &specs, nil
+}
+
+// loadExpTable loads character experience table from XML file.
+// Expected structure: Character.img/info/exp/{level} = {exp}
+// Or: CharacterExpTable.img/{level} = {exp}
+func loadExpTable(path string) ([]uint32, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var root node
+	if err := xml.NewDecoder(file).Decode(&root); err != nil {
+		return nil, err
+	}
+
+	// Try to find exp table in info/exp structure (Character.img)
+	info := root.find("info")
+	var expNode *node
+	if info != nil {
+		expNode = info.find("exp")
+	}
+
+	// If not found, try root level (CharacterExpTable.img)
+	if expNode == nil {
+		expNode = &root
+	}
+
+	// Build exp table: index = level, value = exp needed for that level
+	// Maximum level is typically 200, so we'll allocate for 201 levels (0-200)
+	expTable := make([]uint32, 201)
+
+	// If we found an exp node, parse its children
+	if expNode != nil {
+		for _, child := range expNode.Children {
+			level, err := strconv.Atoi(child.Name)
+			if err != nil {
+				continue // Skip non-numeric keys
+			}
+			if level < 0 || level > 200 {
+				continue // Skip invalid levels
+			}
+
+			var expValue int
+			for _, intField := range child.Ints {
+				if intField.Name == "" || intField.Name == "value" {
+					expValue = intField.Value
+					break
+				}
+			}
+			if expValue == 0 {
+				for _, intField := range child.Ints {
+					expValue = intField.Value
+					break
+				}
+			}
+			if expValue == 0 && child.Value != "" {
+				if val, err := strconv.Atoi(child.Value); err == nil {
+					expValue = val
+				}
+			}
+
+			if expValue > 0 {
+				expTable[level] = uint32(expValue)
+			}
+		}
+	}
+
+	// Validate that we loaded some exp data
+	hasData := false
+	for i := 1; i <= 10; i++ {
+		if expTable[i] > 0 {
+			hasData = true
+			break
+		}
+	}
+
+	if !hasData {
+		return nil, fmt.Errorf("no exp table data found in %s", path)
+	}
+
+	return expTable, nil
+}
+
+// loadSkillJobFile loads all skills from a job's .img.xml file
+// Structure: Skill.wz/{job}.img.xml contains skill/{skillid} nodes
+func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var root node
+	if err := xml.NewDecoder(file).Decode(&root); err != nil {
+		return nil, err
+	}
+
+	skills := make(map[uint32]*Skill)
+
+	// Find the "skill" node which contains all skills for this job
+	skillNode := root.find("skill")
+	if skillNode == nil {
+		return skills, nil
+	}
+
+	// Iterate through each skill in the skill node
+	for _, skillChild := range skillNode.Children {
+		skillIDStr := skillChild.Name
+		skillID, err := strconv.Atoi(skillIDStr)
+		if err != nil {
+			continue
+		}
+
+		skill := &Skill{
+			ID:        uint32(skillID),
+			LevelData: make(map[int]*SkillLevelData),
+		}
+
+		// Parse skill data from the skill node
+		info := skillChild.find("info")
+		if info != nil {
+			for _, intField := range info.Ints {
+				switch intField.Name {
+				case "masterLevel":
+					skill.MasterLevel = intField.Value
+				case "invisible":
+					if intField.Value > 0 {
+						skill.Invisible = true
+					}
+				case "timeLimited":
+					if intField.Value > 0 {
+						skill.TimeLimited = true
+					}
+				case "combatOrders":
+					if intField.Value > 0 {
+						skill.CombatOrders = true
+					}
+				}
+			}
+		}
+
+		common := skillChild.find("common")
+		if common != nil {
+			for _, intField := range common.Ints {
+				if intField.Name == "maxLevel" {
+					skill.MaxLevel = intField.Value
+					break
+				}
+			}
+		}
+
+		levelNode := skillChild.find("level")
+		if levelNode != nil {
+			if skill.MaxLevel == 0 {
+				skill.MaxLevel = len(levelNode.Children)
+			}
+
+			// Parse level-specific data
+			for _, levelChild := range levelNode.Children {
+				levelNum, err := strconv.Atoi(levelChild.Name)
+				if err != nil {
+					continue
+				}
+
+				levelData := &SkillLevelData{}
+
+				for _, intField := range levelChild.Ints {
+					switch intField.Name {
+					case "mpCon":
+						levelData.MPCon = intField.Value
+					case "cooltime":
+						levelData.Cooldown = intField.Value
+					case "damage":
+						levelData.Damage = intField.Value
+					case "hpCon":
+						levelData.HPCon = intField.Value
+					}
+				}
+
+				skill.LevelData[levelNum] = levelData
+			}
+		} else {
+			if skill.MaxLevel == 0 {
+				skill.MaxLevel = 1
+			}
+		}
+
+		skills[uint32(skillID)] = skill
+	}
+
+	return skills, nil
+}
+
+// getHardcodedExpTable returns the hardcoded experience table from Java GameConstants.java
+func getHardcodedExpTable() []uint32 {
+	exp := []uint32{0, 15, 34, 57, 92, 135, 372, 560, 840, 1242, 1716, 2360, 3216, 4200, 5460, 7050, 8840, 11040, 13716, 16680, 20216, 24402, 28980, 34320, 40512, 47216, 54900, 63666, 73080, 83720, 95700, 108480, 122760, 138666, 155540, 174216, 194832, 216600, 240500, 266682, 294216, 324240, 356916, 391160, 428280, 468450, 510420, 555680, 604416, 655200, 709716, 748608, 789631, 832902, 878545, 926689, 977471, 1031036, 1087536, 1147032, 1209994, 1276301, 1346242, 1420016, 1497832, 1579913, 1666492, 1757815, 1854143, 1955750, 2062925, 2175973, 2295216, 2420993, 2553663, 2693603, 2841212, 2996910, 3161140, 3334370, 3517093, 3709829, 3913127, 4127566, 4353756, 4592341, 4844001, 5109452, 5389449, 5684790, 5996316, 6324914, 6671519, 7037118, 7422752, 7829518, 8258575, 8711144, 9188514, 9692044, 10223168, 10783397, 11374327, 11997640, 12655110, 13348610, 14080113, 14851703, 15665576, 16524049, 17429566, 18384706, 19392187, 20454878, 21575805, 22758159, 24005306, 25320796, 26708375, 28171993, 29715818, 31344244, 33061908, 34873700, 36784778, 38800583, 40926854, 43169645, 45535341, 48030677, 50662758, 53439077, 56367538, 59456479, 62714694, 66151459, 69776558, 73600313, 77633610, 81887931, 86375389, 91108760, 96101520, 101367883, 106992842, 112782213, 118962678, 125481832, 132358236, 139611467, 147262175, 155332142, 163844343, 172823012, 182293713, 192283408, 202820538, 213935103, 225658746, 238024845, 251068606, 264827165, 279339639, 294647508, 310794191, 327825712, 345790561, 364739883, 384727628, 405810702, 428049128, 451506220, 476248760, 502347192, 529875818, 558913012, 589541445, 621848316, 655925603, 691870326, 729784819, 769777027, 811960808, 856456260, 903390063, 952895838, 1005114529, 1060194805, 1118293480, 1179575962, 1244216724, 1312399800, 1384319309, 1460180007, 1540197871, 1624600714, 1713628833, 1807535693, 1906558648, 2011069705, 2121276324}
+
+	expTable := make([]uint32, 201)
+	copy(expTable, exp)
+	if len(exp) < 201 {
+		for i := len(exp); i < 201; i++ {
+			expTable[i] = 0
+		}
+	}
+	return expTable
+}
+
+// calculateDefaultExp calculates default experience needed for a level using a formula
+// This is a fallback when WZ file is not available (deprecated, use getHardcodedExpTable instead)
+func calculateDefaultExp(level int) uint32 {
+	if level <= 0 || level > 200 {
+		return 0
+	}
+	if level == 1 {
+		return 15
+	}
+	// Approximate formula based on MapleStory exp curve
+	// This is a simplified version - actual values should come from WZ files
+	baseExp := 15
+	multiplier := 1.0
+	if level > 10 {
+		multiplier += float64(level-10) * 0.1
+	}
+	if level > 20 {
+		multiplier += float64(level-20) * 0.15
+	}
+	if level > 30 {
+		multiplier += float64(level-30) * 0.2
+	}
+	return uint32(float64(baseExp*level) * multiplier)
 }

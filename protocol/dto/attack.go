@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// Attack types
 type DamagePair struct {
 	Damage  uint32
 	Unknown bool
@@ -13,7 +12,6 @@ type DamagePair struct {
 
 type AttackPair struct {
 	OID         uint32
-	Position    types.Vector2[int16]
 	DamagePairs []DamagePair
 }
 
@@ -26,16 +24,15 @@ type AttackInfo struct {
 	Speed    uint8
 	Display  uint8
 	LastTick uint32
-	Slot     uint8 // only for RANGED_ATTACK
-	CsStar   uint8 // only for RANGED_ATTACK
-	AOE      uint8 // only for RANGED_ATTACK
+	Slot     uint16
+	CsStar   uint16
+	AOE      uint8
 	Damages  []AttackPair
 	Position types.Vector2[int16]
 }
 
-// Deserialize deserializes AttackInfo from stream
 func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
-	_ = sr.Skip(1) // unknown byte
+	_ = sr.Skip(1)
 
 	tbyte, err := sr.ReadU8()
 	if err != nil {
@@ -72,7 +69,7 @@ func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
 		a.Charge = 0
 	}
 
-	err = sr.Skip(1) // nOption
+	err = sr.Skip(1)
 	if err != nil {
 		return err
 	}
@@ -102,13 +99,13 @@ func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
 	a.LastTick = lastTick
 
 	if opcode == 0x1C {
-		slot, err := sr.ReadU8()
+		slot, err := sr.ReadU16()
 		if err != nil {
 			return err
 		}
 		a.Slot = slot
 
-		csStar, err := sr.ReadU8()
+		csStar, err := sr.ReadU16()
 		if err != nil {
 			return err
 		}
@@ -121,16 +118,6 @@ func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
 		a.AOE = aoe
 	}
 
-	x, err := sr.Read16()
-	if err != nil {
-		return err
-	}
-	y, err := sr.Read16()
-	if err != nil {
-		return err
-	}
-	a.Position = types.Vector2[int16]{X: x, Y: y}
-
 	damages := make([]AttackPair, 0, a.Targets)
 	for range int(a.Targets) {
 		oid, err := sr.ReadU32()
@@ -138,11 +125,7 @@ func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
 			return err
 		}
 
-		x, err := sr.Read16()
-		if err != nil {
-			return err
-		}
-		y, err := sr.Read16()
+		err = sr.Skip(14)
 		if err != nil {
 			return err
 		}
@@ -154,31 +137,36 @@ func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
 				return err
 			}
 
-			unknown, err := sr.ReadBool()
-			if err != nil {
-				return err
-			}
-
 			damagePairs = append(damagePairs, DamagePair{
 				Damage:  damage,
-				Unknown: unknown,
+				Unknown: false,
 			})
 		}
 
 		damages = append(damages, AttackPair{
 			OID:         oid,
-			Position:    types.Vector2[int16]{X: x, Y: y},
 			DamagePairs: damagePairs,
 		})
+	}
+
+	if sr.Remaining() >= 4 {
+		x, err := sr.Read16()
+		if err != nil {
+			return err
+		}
+		y, err := sr.Read16()
+		if err != nil {
+			return err
+		}
+		a.Position = types.Vector2[int16]{X: x, Y: y}
 	}
 
 	a.Damages = damages
 	return nil
 }
 
-// Serialize serializes AttackInfo to stream
 func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
-	sw.WriteU8(0) // unknown byte
+	sw.WriteU8(0)
 	sw.WriteU8((a.Targets << 4) | a.Hits)
 	sw.WriteU32(a.Skill)
 
@@ -195,33 +183,32 @@ func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
 	case 5201002:
 		sw.WriteU32(a.Charge)
 	default:
-		// Charge is already 0
 	}
 
-	sw.WriteU8(0) // nOption
+	sw.WriteU8(0)
 	sw.WriteU8(a.Unk)
 	sw.WriteU8(a.Speed)
 	sw.WriteU8(a.Display)
 	sw.WriteU32(a.LastTick)
 
 	if a.Slot != 0 || a.CsStar != 0 || a.AOE != 0 {
-		sw.WriteU8(a.Slot)
-		sw.WriteU8(a.CsStar)
+		sw.WriteU16(a.Slot)
+		sw.WriteU16(a.CsStar)
 		sw.WriteU8(a.AOE)
 	}
 
-	sw.Write16(a.Position.X)
-	sw.Write16(a.Position.Y)
-
 	for _, damage := range a.Damages {
 		sw.WriteU32(damage.OID)
-		sw.Write16(damage.Position.X)
-		sw.Write16(damage.Position.Y)
+		sw.Write(make([]byte, 14))
 
 		for _, pair := range damage.DamagePairs {
 			sw.WriteU32(pair.Damage)
-			sw.WriteBoolean(pair.Unknown)
 		}
+	}
+
+	if a.Position.X != 0 || a.Position.Y != 0 {
+		sw.Write16(a.Position.X)
+		sw.Write16(a.Position.Y)
 	}
 
 	return nil

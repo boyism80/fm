@@ -103,7 +103,9 @@ type Resources struct {
 	Monsters map[uint32]*Mob   // All monster specifications
 	Items    map[uint32]Item   // All item specifications
 	Drops    map[uint32][]Drop // Monster drop tables
+	Skills   map[uint32]*Skill // All skill specifications
 	Strings  *StringData       // String data organized by type
+	ExpTable []uint32          // Experience table: index = level, value = exp needed for that level
 }
 
 // find searches for a child node by path (supports ":" separated paths).
@@ -564,7 +566,46 @@ func NewResources(wzPath string) *Resources {
 		log.Fatal(err)
 		return nil
 	}
+	skills := map[uint32]*Skill{}
+	skillPath = filepath.Join(wzPath, "Skill.wz")
+	var skillFiles []string
+	err = filepath.WalkDir(skillPath, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !d.IsDir() && strings.HasSuffix(d.Name(), ".img.xml") {
+			base := d.Name()
+			// Skip special files like ItemSkill.img.xml, MobSkill.img.xml, MCSkill.img.xml
+			if base != "ItemSkill.img.xml" && base != "MobSkill.img.xml" && base != "MCSkill.img.xml" && base != "MCGuardian.img.xml" {
+				skillFiles = append(skillFiles, path)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	total := len(skillFiles)
+	for i, path := range skillFiles {
+		jobSkills, loadErr := loadSkillJobFile(path)
+		if loadErr != nil {
+			log.Printf("Failed to load skill file %s: %v", path, loadErr)
+			continue
+		}
+		for skillID, skill := range jobSkills {
+			skills[skillID] = skill
+		}
+		if total > 0 {
+			percent := float32(i+1) * 100.0 / float32(total)
+			fmt.Printf("Loading skill files: %.1f%%\n", percent)
+		}
+	}
+
 	fmt.Println("\nAll files loaded.")
+
+	expTable := getHardcodedExpTable()
 
 	result := &Resources{
 		mapNameToId:  make(map[string]uint32),
@@ -576,6 +617,8 @@ func NewResources(wzPath string) *Resources {
 		Items:        items,
 		Drops:        drop,
 		Strings:      stringData,
+		ExpTable:     expTable,
+		Skills:       skills,
 	}
 
 	// Build name lookup indexes from string data (following renewal branch pattern)
@@ -592,16 +635,30 @@ func (r *Resources) buildNameIndexes() {
 	r.buildItemNameIndex()
 }
 
+// GetSkill returns a skill by ID
+func (r *Resources) GetSkill(skillID uint32) *Skill {
+	return r.Skills[skillID]
+}
+
+// GetExpNeededForLevel returns the cumulative experience needed to reach the specified level.
+// expTable[level] contains the cumulative exp needed to reach level (level+1).
+func (r *Resources) GetExpNeededForLevel(level uint8) uint32 {
+	if level <= 0 || level > 200 {
+		return 0
+	}
+	if int(level) >= len(r.ExpTable) {
+		return 0
+	}
+	return r.ExpTable[level]
+}
+
 // buildMapNameIndex builds the name to ID index for maps
 func (r *Resources) buildMapNameIndex() {
-	// Iterate through all regions and maps
 	for _, regionMaps := range r.Strings.MapStrings {
 		for mapId, mapNameData := range regionMaps {
 			if mapNameData != nil {
 				if mapName, ok := mapNameData["mapName"]; ok && mapName != "" {
-					// Normalize name (lowercase + remove whitespace)
 					key := normalizeName(mapName)
-					// If multiple maps have the same name, keep the first one found
 					if _, exists := r.mapNameToId[key]; !exists {
 						r.mapNameToId[key] = mapId
 					}

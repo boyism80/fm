@@ -8,9 +8,7 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 )
 
-// ToDTO converts entity Character to dto Character
 func (ch *Character) ToDTO() *dto.Character {
-	// Convert equipments to dto format
 	equipments := make(map[int8]uint32)
 	skins := make(map[int8]uint32)
 
@@ -92,12 +90,9 @@ func (ch *Character) ToDTO() *dto.Character {
 	}
 }
 
-// ToFullDTO converts entity Character to full dto Character (with all data for Login packet)
 func (ch *Character) ToFullDTO() *dto.Character {
-	// Start with basic DTO
 	charDTO := ch.ToDTO()
 
-	// Add full data
 	charDTO.Meso = ch.Meso
 	charDTO.SkillPoint = ch.SkillPoint
 	charDTO.MarriageId = ch.MarriageId
@@ -106,16 +101,11 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO.MonsterBookCover = ch.MonsterBookCover
 	charDTO.QuestInfo = ch.QuestInfo
 	charDTO.BuddyCapacity = 20
-	charDTO.IsEvan = ch.IsEvan()
-	charDTO.IsResist = ch.IsResist()
-	charDTO.IsMercedes = ch.IsMercedes()
 
-	// Convert Random streams
 	charDTO.Random1 = &ch.Random1
 	charDTO.Random2 = &ch.Random2
 	charDTO.Random3 = &ch.Random3
 
-	// Convert Inventory
 	charDTO.Inventory = make(map[constant.InventoryType]*dto.Inventory)
 	for invType, inv := range ch.Inventory {
 		if inv == nil {
@@ -126,7 +116,6 @@ func (ch *Character) ToFullDTO() *dto.Character {
 			SlotLimit: inv.SlotLimit,
 		}
 
-		// Convert all items (including equipment) to Items
 		invDTO.Items = make(map[int16]dto.Item)
 		for slot, item := range inv.Items {
 			if item == nil {
@@ -140,7 +129,6 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		charDTO.Inventory[invType] = invDTO
 	}
 
-	// Convert Equipments
 	charDTO.Equipments = make(map[constant.EquipmentPartsType]*dto.Equipment)
 	for parts, equipment := range ch.Equipments {
 		if equipment == nil {
@@ -152,42 +140,38 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		}
 	}
 
-	// Convert Skills
 	charDTO.Skills = make([]*dto.Skill, 0, len(ch.SkillsMap))
-	for skill, entry := range ch.SkillsMap {
-		if skill == nil || entry == nil {
+	for skillID, entry := range ch.SkillsMap {
+		if entry == nil {
 			continue
 		}
 		skillDTO := &dto.Skill{
-			ID:         skill.ID,
+			ID:         skillID,
 			SkillLevel: uint32(entry.SkillLevel),
 		}
-		// Check if skill needs master level
-		if (skill.ID/10000)%100 > 0 && (skill.ID/10000)%10 == 2 {
+		if entry.Skill != nil && entry.Skill.MasterLevel > 0 {
 			skillDTO.MasterLevel = uint32(entry.MasterLevel)
 		}
 		charDTO.Skills = append(charDTO.Skills, skillDTO)
 	}
 
-	// Convert Cooldowns
 	charDTO.Cooldowns = make([]*dto.Cooldown, 0, len(ch.CoolDowns))
-	now := time.Now().UnixMilli()
+	now := time.Now()
 	for _, cd := range ch.CoolDowns {
 		if cd == nil {
 			continue
 		}
-		remaining := int32((cd.Length + cd.StartTime - now) / 1000)
+		remaining := cd.StartTime.Add(cd.Duration).Sub(now)
 		if remaining < 0 {
 			remaining = 0
 		}
 		cooldownDTO := &dto.Cooldown{
 			SkillId:   cd.SkillId,
-			Remaining: uint16(remaining),
+			Remaining: uint16(remaining.Seconds()),
 		}
 		charDTO.Cooldowns = append(charDTO.Cooldowns, cooldownDTO)
 	}
 
-	// Convert Quests
 	charDTO.QuestsStarted = make([]*dto.QuestStatus, 0)
 	charDTO.QuestsCompleted = make([]*dto.QuestStatus, 0)
 	for _, qs := range ch.Quests {
@@ -200,7 +184,6 @@ func (ch *Character) ToFullDTO() *dto.Character {
 			CustomData:     qs.CustomData,
 			CompletionTime: qs.CompletionTime,
 		}
-		// Convert MobKills
 		if len(qs.MobKills) > 0 {
 			questDTO.MobKills = make([]uint16, 0, len(qs.MobKills))
 			for _, kills := range qs.MobKills {
@@ -214,7 +197,6 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		}
 	}
 
-	// Convert Rings
 	charDTO.Rings = dto.RingContainer{
 		Left:  RingsToDTO(ch.Rings.Left),
 		Mid:   RingsToDTO(ch.Rings.Mid),

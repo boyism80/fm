@@ -5,9 +5,6 @@ import (
 	"strconv"
 
 	"github.com/boyism80/fm/game/client"
-	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
 )
 
 type ChangeLevel struct {
@@ -49,13 +46,7 @@ func (h *ChangeLevel) Handle(gameClient *client.GameClient, args ...string) erro
 		return fmt.Errorf("character not found")
 	}
 
-	character.Level = uint8(level)
-	gameClient.Send(&response.UpdateStats{
-		Stats: map[constant.Stat]int32{
-			constant.STAT_LEVEL: int32(character.Level),
-		},
-	}, types.SEND_POLICY_ENCRYPT)
+	character.SetLevel(uint8(level))
 
 	return nil
 }
-

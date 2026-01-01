@@ -37,4 +37,5 @@ type CharacterListener interface {
 	OnPartialMergeInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16)
 	OnUpdateCharacterLook(character *Character)
 	OnNpcAction(bytes []byte)
+	OnClassChange(oldClass uint16, newClass uint16)
 }

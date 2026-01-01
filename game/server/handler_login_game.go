@@ -36,6 +36,12 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	character := entity.NewDummyCharacter(ctx.Client, nil, req.PlayerId, name, h.gameServer)
 	character.Listener = NewGameCharacterListener(h.gameServer, &character)
 
+	// Set GM mode (for testing: player ID 1 is GM)
+	if req.PlayerId == 1 {
+		character.Admin = true
+		character.Invincible = true
+	}
+
 	client, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")

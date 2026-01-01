@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 	"github.com/boyism80/fm/util"
@@ -36,6 +37,7 @@ type Character struct {
 	Luk           uint16
 	AbilityPoint  uint16
 	SkillPoint    []uint16
+	HpApUsed      uint16 // HP/MP AP usage count (max 10000)
 	Exp           uint32
 	FamePoint     uint16
 	Map           uint32
@@ -49,7 +51,7 @@ type Character struct {
 	Inventory        map[constant.InventoryType]*Inventory
 	Equipments       map[constant.EquipmentPartsType]*Equipment
 	Rings            RingContainer
-	SkillsMap        map[*Skill]*SkillEntry
+	SkillsMap        map[uint32]*SkillEntry
 	CoolDowns        map[uint32]*CooldownEntry
 	Quests           map[int]*QuestStatus
 	MarriageId       uint32
@@ -66,8 +68,8 @@ type Character struct {
 
 type CooldownEntry struct {
 	SkillId   uint32
-	StartTime int64 // milliseconds
-	Length    int64 // milliseconds
+	StartTime time.Time
+	Duration  time.Duration
 }
 
 type Ring struct {
@@ -102,27 +104,21 @@ func (ch *Character) GetMap() uint32 {
 	return ch.Map
 }
 
-// GetInventory returns the inventory for the given slot
-// Slot format: 0xXXYY where XX is inventory type and YY is slot number
 func (ch *Character) GetInventory(slot uint16) *Inventory {
 	inventoryType := constant.InventoryType(slot >> 8)
 	return ch.Inventory[inventoryType]
 }
 
-// GetID returns the character's ID
 func (ch *Character) GetID() uint32 {
 	return ch.ID
 }
 
-// Message sends a notice message to the character through the listener
 func (ch *Character) Message(message string) {
 	if ch.Listener != nil {
 		ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
 	}
 }
 
-// GetThreadHash returns the character's map ID for thread assignment
-// Characters on the same map will be assigned to the same logic thread
 func (ch *Character) GetThreadHash() int {
 	return int(ch.Map)
 }
@@ -139,36 +135,84 @@ func (ch *Character) IsRanked() bool {
 	return true
 }
 
-func (ch *Character) IsEvan() bool {
-	return ch.Class == 2001 || (ch.Class >= 2200 && ch.Class <= 2218)
-}
-
-func (ch *Character) IsKOC() bool {
-	return ch.Class >= 1000 && ch.Class < 2000
-}
-
-func (ch *Character) IsMercedes() bool {
-	return ch.Class == 2002 || (ch.Class >= 2300 && ch.Class <= 2312)
-}
-
-func (ch *Character) IsDemon() bool {
-	return ch.Class == 3001 || (ch.Class >= 3100 && ch.Class <= 3112)
-}
-
-func (ch *Character) IsAran() bool {
-	return (ch.Class >= 2000 && ch.Class <= 2112) && ch.Class != 2001 && ch.Class != 2002
-}
-
-func (ch *Character) IsResist() bool {
-	return ch.Class >= 3000 && ch.Class <= 3512
-}
-
 func (ch *Character) IsAdventurer() bool {
 	return ch.Class < 1000
 }
 
+// IsBeginner returns true if the character's class is a beginner class
+func (ch *Character) IsBeginner() bool {
+	return ch.Class == 0
+}
+
+func (ch *Character) getJobAdvancementLevel() int {
+	class := ch.Class
+
+	if class == 0 {
+		return 0
+	}
+
+	if class >= 100 {
+		secondDigit := (class / 10) % 10
+		thirdDigit := class % 10
+
+		if secondDigit == 0 {
+			return 1
+		} else if thirdDigit == 0 {
+			return 2
+		} else if thirdDigit == 1 {
+			return 3
+		} else {
+			return 4
+		}
+	}
+
+	return 0
+}
+
 func (ch *Character) IsCannon() bool {
 	return ch.Class == 1 || ch.Class == 501 || (ch.Class >= 530 && ch.Class <= 532)
+}
+
+func (ch *Character) GetSkillBookIndex() int {
+	class := ch.Class
+
+	if class >= 100 {
+		secondDigit := (class / 10) % 10
+		thirdDigit := class % 10
+
+		if secondDigit == 0 {
+			return 0
+		} else if thirdDigit == 0 {
+			return 1
+		} else if thirdDigit == 1 {
+			return 2
+		} else if thirdDigit == 2 {
+			return 3
+		}
+	}
+
+	return 0
+}
+
+func (ch *Character) GetSkillBookIndexForSkill(skillID uint32) int {
+	classID := skillID / 10000
+
+	if classID >= 100 {
+		secondDigit := (classID / 10) % 10
+		thirdDigit := classID % 10
+
+		if secondDigit == 0 {
+			return 0
+		} else if thirdDigit == 0 {
+			return 1
+		} else if thirdDigit == 1 {
+			return 2
+		} else if thirdDigit == 2 {
+			return 3
+		}
+	}
+
+	return 0
 }
 
 func (ch *Character) RemainingSkillPoints() uint16 {
@@ -181,13 +225,132 @@ func (ch *Character) RemainingSkillPoints() uint16 {
 	return uint16(ret)
 }
 
+func (ch *Character) GetTotalSkillLevel(skillID uint32) int {
+	if ch.SkillsMap == nil {
+		return 0
+	}
+	skillEntry, exists := ch.SkillsMap[skillID]
+	if !exists || skillEntry == nil {
+		return 0
+	}
+	return skillEntry.SkillLevel
+}
+
+func (ch *Character) IsSkillCooling(skillID uint32) bool {
+	if ch.CoolDowns == nil {
+		return false
+	}
+	cooldown, exists := ch.CoolDowns[skillID]
+	if !exists || cooldown == nil {
+		return false
+	}
+	return time.Since(cooldown.StartTime) < cooldown.Duration
+}
+
+func (ch *Character) AddCooldown(skillID uint32, cooldownSeconds int) {
+	if ch.CoolDowns == nil {
+		ch.CoolDowns = make(map[uint32]*CooldownEntry)
+	}
+	ch.CoolDowns[skillID] = &CooldownEntry{
+		SkillId:   skillID,
+		StartTime: time.Now(),
+		Duration:  time.Duration(cooldownSeconds) * time.Second,
+	}
+}
+
+func (ch *Character) ConsumeMP(amount uint16) bool {
+	if ch.Mp < amount {
+		return false
+	}
+	ch.Mp -= amount
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_MP: int32(ch.Mp),
+		}, false)
+	}
+	return true
+}
+
+// ChangeClass changes the character's class and handles SP allocation
+func (ch *Character) ChangeClass(newClass uint16) {
+	oldClass := ch.Class
+	ch.Class = newClass
+
+	ch.initializeSkillPoints()
+	ch.grantClassChangeSP(newClass)
+
+	if ch.Listener != nil {
+		ch.Listener.OnClassChange(oldClass, newClass)
+	}
+}
+
+// initializeSkillPoints initializes the SkillPoint array based on class advancement level
+func (ch *Character) initializeSkillPoints() {
+	advancementLevel := ch.getJobAdvancementLevel()
+
+	requiredSize := advancementLevel + 1
+	if requiredSize < 10 {
+		requiredSize = 10
+	}
+
+	if len(ch.SkillPoint) < requiredSize {
+		newSkillPoint := make([]uint16, requiredSize)
+		copy(newSkillPoint, ch.SkillPoint)
+		ch.SkillPoint = newSkillPoint
+	}
+}
+
+// grantClassChangeSP grants SP when changing classes
+func (ch *Character) grantClassChangeSP(newClass uint16) {
+	if ch.IsBeginner() {
+		return
+	}
+
+	skillBookIndex := ch.GetSkillBookIndex()
+	if skillBookIndex < 0 || skillBookIndex >= len(ch.SkillPoint) {
+		return
+	}
+
+	ch.SkillPoint[skillBookIndex]++
+
+	if newClass >= 100 {
+		thirdDigit := newClass % 10
+		if thirdDigit >= 2 {
+			ch.SkillPoint[skillBookIndex] += 2
+		}
+	}
+
+	if newClass%100 == 0 {
+		minLevel := uint8(10)
+		if newClass == 200 {
+			minLevel = 8
+		}
+
+		if ch.Level > minLevel {
+			spToGrant := uint16(3 * (int(ch.Level) - int(minLevel)))
+			ch.SkillPoint[skillBookIndex] += spToGrant
+		}
+	}
+}
+
 // AddExp adds experience points to the character and notifies the listener
 func (ch *Character) AddExp(exp uint32) {
-	ch.Exp += exp
+	// Apply experience rate multiplier if context is available
+	if ch.Context != nil {
+		expRate := ch.Context.GetExpRate()
+		if expRate > 0 {
+			exp = exp * uint32(expRate)
+		}
+	}
 
-	// Notify listener about exp gain (following old server pattern)
-	if ch.Listener != nil {
-		ch.Listener.OnExpGain(exp)
+	ch.Exp += exp
+	ch.Listener.OnExpGain(exp)
+
+	// Check for level up
+	if !ch.tryLevelUp() {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_EXP: int32(ch.Exp),
+		}, false)
 	}
 }
 
@@ -586,26 +749,32 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		Sendable: sender,
 		Listener: listener,
 		Life: Life{
+			Object: Object{
+				Context: ctx,
+			},
 			Hp:    50,
 			MaxHp: 50,
 			Mp:    5,
 			MaxMp: 5,
 		},
-		ID:         id,
-		Name:       name,
-		Gender:     0,
-		SkinColor:  0,
-		Face:       20100,
-		Hair:       30000,
-		Level:      255,
-		Class:      0,
-		Str:        12,
-		Dex:        5,
-		Int:        4,
-		Luk:        4,
-		SpawnPoint: 1,
-		Map:        200000301,
-		Meso:       2135983647,
+		ID:           id,
+		Name:         name,
+		Gender:       0,
+		SkinColor:    0,
+		Face:         20100,
+		Hair:         30000,
+		Level:        1,
+		Class:        0,
+		Str:          12,
+		Dex:          5,
+		Int:          4,
+		Luk:          4,
+		AbilityPoint: 0,
+		SkillPoint:   make([]uint16, 10),
+		HpApUsed:     0,
+		SpawnPoint:   1,
+		Map:          200000301,
+		Meso:         2135983647,
 
 		Random1: stream.NewRandomStream(),
 		Random2: stream.NewRandomStream(),
@@ -678,6 +847,8 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(1040010, 1, ctx)
 	}
 
+	ch.initializeSkillPoints()
+
 	return ch
 }
 
@@ -700,4 +871,180 @@ func (ch *Character) ClearCurrentDialog() {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
 	ch.currentDialog = nil
+}
+
+// tryLevelUp checks if the character can level up and performs level up if possible
+// Returns true if level up occurred, false otherwise
+func (ch *Character) tryLevelUp() bool {
+	if ch.Context == nil {
+		return false
+	}
+
+	resources := ch.Context.GetResources()
+	if resources == nil {
+		return false
+	}
+
+	if ch.Level >= 200 {
+		return false
+	}
+
+	oldLevel := ch.Level
+	remainingExp := ch.Exp
+	targetLevel := ch.Level
+
+	// Calculate the maximum level we can reach with current experience
+	for targetLevel < 200 {
+		expNeeded := resources.GetExpNeededForLevel(targetLevel)
+		if expNeeded == 0 {
+			break
+		}
+
+		if remainingExp < expNeeded {
+			break
+		}
+
+		remainingExp -= expNeeded
+		targetLevel++
+	}
+
+	if targetLevel == oldLevel {
+		return false
+	}
+
+	// Update experience
+	ch.Exp = remainingExp
+
+	// Set level once with all stat increases
+	ch.SetLevel(targetLevel)
+
+	return true
+}
+
+// SetLevel sets the character's level and applies all stat changes
+// This simulates leveling up from the current level to the target level
+func (ch *Character) SetLevel(newLevel uint8) {
+	if newLevel < 1 {
+		newLevel = 1
+	}
+	if newLevel > 200 {
+		newLevel = 200
+	}
+
+	if newLevel == ch.Level {
+		return
+	}
+
+	oldLevel := ch.Level
+	levelDiff := int(newLevel) - int(oldLevel)
+
+	if levelDiff > 0 {
+		// Leveling up: calculate stat increases for each level
+		totalAPIncrease := uint16(0)
+		totalSPIncrease := uint16(0)
+		totalHPIncrease := uint16(0)
+		totalMPIncrease := uint16(0)
+
+		for level := oldLevel + 1; level <= newLevel; level++ {
+			// AP: +5 per level
+			totalAPIncrease += 5
+
+			// SP: +3 per level (if not beginner)
+			if !ch.IsBeginner() {
+				totalSPIncrease += 3
+			}
+
+			// HP/MP: formula based on level
+			hpIncrease := uint16(20 + int(level)*2)
+			mpIncrease := uint16(10 + int(level))
+			totalHPIncrease += hpIncrease
+			totalMPIncrease += mpIncrease
+		}
+
+		// Apply stat increases
+		ch.Level = newLevel
+		ch.AbilityPoint += totalAPIncrease
+
+		if totalSPIncrease > 0 {
+			skillBookIndex := ch.GetSkillBookIndex()
+			if skillBookIndex >= 0 && skillBookIndex < len(ch.SkillPoint) {
+				ch.SkillPoint[skillBookIndex] += totalSPIncrease
+			}
+		}
+
+		ch.MaxHp += totalHPIncrease
+		ch.MaxMp += totalMPIncrease
+
+		// Restore HP/MP to max
+		ch.Hp = ch.MaxHp
+		ch.Mp = ch.MaxMp
+
+		// Notify listener
+		if ch.Listener != nil {
+			stats := map[constant.Stat]int32{
+				constant.STAT_LEVEL:        int32(ch.Level),
+				constant.STAT_EXP:          int32(ch.Exp),
+				constant.STAT_MAX_HP:       int32(ch.MaxHp),
+				constant.STAT_MAX_MP:       int32(ch.MaxMp),
+				constant.STAT_HP:           int32(ch.Hp),
+				constant.STAT_MP:           int32(ch.Mp),
+				constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
+			}
+			if len(ch.SkillPoint) > 0 {
+				skillBookIndex := ch.GetSkillBookIndex()
+				if skillBookIndex >= 0 && skillBookIndex < len(ch.SkillPoint) {
+					stats[constant.STAT_AVAILABLE_SP] = int32(ch.SkillPoint[skillBookIndex])
+				}
+			}
+			ch.Listener.OnUpdateStats(stats, false)
+
+			// Broadcast level up effect for each level gained
+			for level := oldLevel + 1; level <= newLevel; level++ {
+				ch.broadcastLevelUpEffect()
+			}
+		}
+	} else {
+		// Leveling down: just set the level and exp, don't decrease stats
+		ch.Level = newLevel
+
+		if ch.Context != nil {
+			resources := ch.Context.GetResources()
+			if resources != nil {
+				if newLevel > 1 {
+					ch.Exp = resources.GetExpNeededForLevel(newLevel - 1)
+				} else {
+					ch.Exp = 0
+				}
+			}
+		}
+
+		if ch.Listener != nil {
+			stats := map[constant.Stat]int32{
+				constant.STAT_LEVEL: int32(ch.Level),
+				constant.STAT_EXP:   int32(ch.Exp),
+			}
+			ch.Listener.OnUpdateStats(stats, false)
+		}
+	}
+}
+
+// broadcastLevelUpEffect broadcasts level up effect to other players on the map
+func (ch *Character) broadcastLevelUpEffect() {
+	if ch.Context == nil {
+		return
+	}
+
+	mapInstance := ch.Context.GetMap(ch.Map)
+	if mapInstance == nil {
+		return
+	}
+
+	// Create SHOW_FOREIGN_EFFECT packet for level up (EffectID 0)
+	levelUpPacket := &response.ShowForeignEffect{
+		CharacterID: ch.ID,
+		EffectID:    0, // Level up effect
+	}
+
+	// Broadcast to all players on the map except the character who leveled up
+	mapInstance.BroadcastToPlayers(levelUpPacket, types.SEND_POLICY_ENCRYPT, ch.ID)
 }

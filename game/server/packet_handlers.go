@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/core"
 )
 
-// registerPacketHandlers registers all game server packet handlers
 func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, Pong](gs)
 	core.Bind[*GameServer, LoginGame](gs)
@@ -21,4 +20,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, Warp](gs)
 	core.Bind[*GameServer, MoveItem](gs)
 	core.Bind[*GameServer, SortInventory](gs)
+	core.Bind[*GameServer, DistributeAP](gs)
+	core.Bind[*GameServer, AutoAssignAP](gs)
+	core.Bind[*GameServer, DistributeSP](gs)
 }

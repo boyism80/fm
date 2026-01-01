@@ -10,4 +10,5 @@ type GameContext interface {
 	GetResources() *wz.Resources
 	GetMap(mapId uint32) *Map
 	GetLogicThread() *core.LogicThread // Returns core.LogicThread
+	GetExpRate() int                   // Returns experience rate multiplier
 }

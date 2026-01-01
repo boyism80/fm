@@ -21,7 +21,7 @@ func main() {
 		logicThreads = flag.Int("logic-threads", 8, "Number of logic threads")
 		worldName    = flag.String("world", "Scania", "World/Channel name")
 		maxPlayers   = flag.Int("max-players", 1000, "Maximum number of players per world")
-		expRate      = flag.Int("exp-rate", 1, "Experience rate multiplier")
+		expRate      = flag.Int("exp-rate", 100, "Experience rate multiplier")
 		dropRate     = flag.Int("drop-rate", 1, "Drop rate multiplier")
 		mesoRate     = flag.Int("meso-rate", 1, "Meso rate multiplier")
 		withStats    = flag.Bool("stats", false, "Enable statistics monitoring")
