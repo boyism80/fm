@@ -1,3 +1,6 @@
+---
+alwaysApply: true
+---
 **Commit Command Format**:
 - **Maximum 2 `-m` options only**: Use exactly 2 `-m` options maximum
 - **First `-m`**: Subject line only
