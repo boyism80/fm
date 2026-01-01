@@ -27,6 +27,11 @@ type GameServer struct {
 	maps           map[uint32]*entity.Map // Map instances by map ID
 	mapsMutex      sync.RWMutex
 	commandHandler *CommandHandler
+	packetHandlers *PacketHandlerRegistry
+}
+
+func (gs *GameServer) GetServer() *core.Server {
+	return gs.server
 }
 
 // GameContext provides access to game resources and services
@@ -173,11 +178,17 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	// Initialize command handler
 	gameServer.commandHandler = NewCommandHandler(gameServer)
 
+	// Initialize packet handler registry
+	gameServer.packetHandlers = NewPacketHandlerRegistry(gameServer)
+
 	// Pre-create all maps
 	gameServer.preCreateMaps()
 
 	// Register packet handlers
 	gameServer.registerPacketHandlers()
+
+	// Register command handlers
+	gameServer.registerCommandHandlers()
 
 	// Set client disconnect handler
 	server.SetOnClientDisconnect(func(client interface{}) {

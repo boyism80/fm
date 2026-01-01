@@ -14,8 +14,13 @@ import (
 
 // LoginServer represents the login server for MapleStory private server
 type LoginServer struct {
-	server *core.Server
-	config *LoginConfig
+	server        *core.Server
+	config        *LoginConfig
+	packetHandlers *PacketHandlerRegistry
+}
+
+func (ls *LoginServer) GetServer() *core.Server {
+	return ls.server
 }
 
 // LoginConfig holds login server specific configuration
@@ -50,9 +55,11 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 	}
 
 	loginServer := &LoginServer{
-		server: server,
-		config: config,
+		server:        server,
+		config:        config,
+		packetHandlers: NewPacketHandlerRegistry(nil),
 	}
+	loginServer.packetHandlers.loginServer = loginServer
 
 	// Register packet handlers
 	loginServer.registerPacketHandlers()
@@ -63,9 +70,6 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 // Start initializes and starts the login server
 func (ls *LoginServer) Start() error {
 	log.Println("Starting MapleStory Login Server...")
-
-	// Register login server packet handlers
-	ls.registerPacketHandlers()
 
 	// Start the core server
 	if err := ls.server.Start(ls.config.Host, ls.config.Port); err != nil {

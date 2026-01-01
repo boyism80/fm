@@ -1,0 +1,187 @@
+package server
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/game/client"
+	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/protocol/response"
+)
+
+// MoveItem handles item movement packet requests
+type MoveItem struct {
+	gameServer *GameServer
+	opcode     byte
+}
+
+func (MoveItem) New(gameServer *GameServer) *MoveItem {
+	return &MoveItem{
+		gameServer: gameServer,
+		opcode:     0x36,
+	}
+}
+
+func (h *MoveItem) GetOpcode() byte {
+	return h.opcode
+}
+
+func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error {
+	client, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		log.Printf("Client is not a GameClient")
+		return fmt.Errorf("client is not a GameClient")
+	}
+
+	character := client.GetCharacter()
+	if character == nil {
+		log.Printf("Character is nil for client")
+		return fmt.Errorf("character is nil")
+	}
+
+	if req.Source < 0 {
+		h.handleUnequip(client, character, constant.EquipmentPartsType(req.Source), req.Dest)
+	} else if req.Dest < 0 {
+		h.handleEquip(client, character, constant.EquipmentPartsType(req.Dest), req.Source)
+	} else if req.Dest == 0 {
+		h.handleDrop(client, character, req.InventoryType, req.Source, req.Count)
+	} else {
+		h.handleMoveItemInternal(client, character, req.InventoryType, req.Source, req.Dest)
+	}
+
+	return nil
+}
+
+func (h *MoveItem) handleUnequip(client *client.GameClient, character *entity.Character, parts constant.EquipmentPartsType, slot int16) {
+	if character.Equipments[parts] == nil {
+		return
+	}
+
+	inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	if inven.Items[slot] != nil {
+		return
+	}
+
+	inven.Items[slot] = character.Equipments[parts]
+	delete(character.Equipments, parts)
+
+	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), slot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
+	character.Listener.OnUpdateCharacterLook(character)
+}
+
+func (h *MoveItem) handleEquip(client *client.GameClient, character *entity.Character, parts constant.EquipmentPartsType, slot int16) {
+	inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	if inven.Items[slot] == nil {
+		return
+	}
+
+	new, ok := inven.Items[slot].(*entity.Equipment)
+	if !ok {
+		return
+	}
+
+	old, swap := character.Equipments[parts]
+
+	switch parts {
+	case constant.EQUIPMENT_PARTS_TOP:
+		if new.IsOverall() {
+			_, isWearPants := character.Equipments[constant.EQUIPMENT_PARTS_PANTS]
+			if isWearPants {
+				storageSlot, isFree := inven.NextSlot()
+				if !isFree {
+					character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
+					return
+				}
+				h.handleUnequip(client, character, constant.EQUIPMENT_PARTS_PANTS, int16(storageSlot))
+			}
+		}
+
+	case constant.EQUIPMENT_PARTS_PANTS:
+		top, isWearTop := character.Equipments[constant.EQUIPMENT_PARTS_TOP]
+		if isWearTop && top.IsOverall() {
+			storageSlot, isFree := inven.NextSlot()
+			if swap && !isFree {
+				character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
+				return
+			}
+			h.handleUnequip(client, character, constant.EQUIPMENT_PARTS_TOP, int16(storageSlot))
+		}
+	}
+
+	character.Equipments[parts], inven.Items[slot] = new, old
+	if !swap {
+		delete(inven.Items, slot)
+	}
+
+	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
+	character.Listener.OnUpdateCharacterLook(character)
+}
+
+func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Character, invenType constant.InventoryType, slot int16, count uint16) {
+	item, ok := character.Inventory[invenType].Items[slot]
+	if !ok {
+		return
+	}
+
+	removed := (item.Reduce(count) == 0)
+	if removed {
+		character.Listener.OnRemoveInventorySlot(invenType, slot)
+		delete(character.Inventory[invenType].Items, slot)
+	} else {
+		character.Listener.OnUpdateInventorySlot(invenType, slot, item)
+	}
+
+	spawned := item.Clone(count)
+	spawned.BindDrop(&entity.Drop{
+		Object: &entity.Object{
+			Position: character.Position,
+		},
+		Owner:        character.ID,
+		SpawnedPoint: character.Position,
+		DropType:     constant.DROP_TYPE_FFA,
+	})
+
+	mapInstance := h.gameServer.GetMap(character.GetMap())
+	if mapInstance != nil {
+		if err := mapInstance.SpawnItem(spawned, character.ID, constant.DROP_TYPE_FFA); err != nil {
+			log.Printf("Failed to spawn item on map: %v", err)
+		}
+	}
+}
+
+func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *entity.Character, invenType constant.InventoryType, sourceSlot int16, destSlot int16) {
+	inven := character.Inventory[invenType]
+	src, ok := inven.Items[sourceSlot]
+	if !ok {
+		return
+	}
+
+	dst, ok := inven.Items[destSlot]
+
+	if !ok {
+		inven.Items[destSlot] = inven.Items[sourceSlot]
+		delete(inven.Items, sourceSlot)
+		character.Listener.OnSwapInventorySlot(invenType, sourceSlot, destSlot, 0)
+		return
+	}
+
+	specSrc := src.GetModel()
+	specDst := dst.GetModel()
+	if specSrc != specDst {
+		inven.Items[sourceSlot], inven.Items[destSlot] = inven.Items[destSlot], inven.Items[sourceSlot]
+		character.Listener.OnSwapInventorySlot(invenType, sourceSlot, destSlot, 0)
+		return
+	}
+
+	limit := min(src.GetCount(), specSrc.GetCapacity()-dst.GetCount())
+	dst.Increase(limit)
+	if src.Reduce(limit) == 0 {
+		character.Listener.OnFullMergeInventorySlot(invenType, sourceSlot, destSlot, dst.GetCount())
+		delete(inven.Items, sourceSlot)
+	} else {
+		character.Listener.OnPartialMergeInventorySlot(invenType, sourceSlot, destSlot, src.GetCount(), dst.GetCount())
+	}
+}
