@@ -1600,13 +1600,33 @@ func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
 			LevelData: make(map[int]*SkillLevelData),
 		}
 
-		// Parse skill data from the skill node
+		for _, intField := range skillChild.Ints {
+			switch intField.Name {
+			case "masterLevel":
+				skill.MasterLevel = intField.Value
+			case "invisible":
+				if intField.Value > 0 {
+					skill.Invisible = true
+				}
+			case "timeLimited":
+				if intField.Value > 0 {
+					skill.TimeLimited = true
+				}
+			case "combatOrders":
+				if intField.Value > 0 {
+					skill.CombatOrders = true
+				}
+			}
+		}
+
 		info := skillChild.find("info")
 		if info != nil {
 			for _, intField := range info.Ints {
 				switch intField.Name {
 				case "masterLevel":
-					skill.MasterLevel = intField.Value
+					if skill.MasterLevel == 0 {
+						skill.MasterLevel = intField.Value
+					}
 				case "invisible":
 					if intField.Value > 0 {
 						skill.Invisible = true

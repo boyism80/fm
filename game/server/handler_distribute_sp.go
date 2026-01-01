@@ -45,14 +45,9 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 	}
 
 	skillID := req.SkillID
-	skillBookIndex := character.GetSkillBookIndexForSkill(skillID)
 
-	if skillBookIndex < 0 || skillBookIndex >= len(character.SkillPoint) {
-		return nil
-	}
-
-	remainingSP := character.SkillPoint[skillBookIndex]
-	if remainingSP == 0 {
+	if character.SkillPoint == 0 {
+		log.Printf("Character %d has no SP to distribute for skill %d", character.ID, skillID)
 		return nil
 	}
 
@@ -71,6 +66,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		}
 
 		if wzSkill == nil {
+			log.Printf("Skill %d not found in WZ for character %d", skillID, character.ID)
 			return nil
 		}
 
@@ -80,6 +76,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		} else if wzSkill.MaxLevel > 0 {
 			masterLevel = wzSkill.MaxLevel
 		} else {
+			log.Printf("Skill %d has no masterLevel or maxLevel for character %d", skillID, character.ID)
 			return nil
 		}
 
@@ -93,6 +90,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 	}
 
 	if skillEntry.Skill == nil {
+		log.Printf("SkillEntry for skill %d has nil Skill for character %d", skillID, character.ID)
 		return nil
 	}
 
@@ -101,24 +99,27 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		maxLevel = skillEntry.Skill.MaxLevel
 	}
 	if maxLevel == 0 {
+		log.Printf("Skill %d has no maxLevel for character %d", skillID, character.ID)
 		return nil
 	}
 
 	if skillEntry.MasterLevel > skillEntry.Skill.MaxLevel {
+		log.Printf("Skill %d MasterLevel %d exceeds MaxLevel %d for character %d, clamping", skillID, skillEntry.MasterLevel, skillEntry.Skill.MaxLevel, character.ID)
 		skillEntry.MasterLevel = skillEntry.Skill.MaxLevel
 		maxLevel = skillEntry.MasterLevel
 	}
 
 	if skillEntry.SkillLevel >= maxLevel {
+		log.Printf("Skill %d is already at max level %d for character %d", skillID, maxLevel, character.ID)
 		return nil
 	}
 
-	character.SkillPoint[skillBookIndex]--
+	character.SkillPoint--
 	skillEntry.SkillLevel++
 
 	if character.Listener != nil {
 		stats := map[constant.Stat]int32{
-			constant.STAT_AVAILABLE_SP: int32(character.SkillPoint[skillBookIndex]),
+			constant.STAT_AVAILABLE_SP: int32(character.SkillPoint),
 		}
 		character.Listener.OnUpdateStats(stats, false)
 	}

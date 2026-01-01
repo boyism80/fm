@@ -314,14 +314,8 @@ func (l *CharacterListenerImpl) OnNpcAction(bytes []byte) {
 
 func (l *CharacterListenerImpl) OnClassChange(oldClass uint16, newClass uint16) {
 	stats := map[constant.Stat]int32{
-		constant.STAT_JOB: int32(newClass),
-	}
-
-	if len(l.character.SkillPoint) > 0 {
-		skillBookIndex := l.character.GetSkillBookIndex()
-		if skillBookIndex >= 0 && skillBookIndex < len(l.character.SkillPoint) {
-			stats[constant.STAT_AVAILABLE_SP] = int32(l.character.SkillPoint[skillBookIndex])
-		}
+		constant.STAT_JOB:          int32(newClass),
+		constant.STAT_AVAILABLE_SP: int32(l.character.SkillPoint),
 	}
 
 	l.character.Send(&response.UpdateStats{

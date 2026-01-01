@@ -23,4 +23,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, DistributeAP](gs)
 	core.Bind[*GameServer, AutoAssignAP](gs)
 	core.Bind[*GameServer, DistributeSP](gs)
+	core.Bind[*GameServer, HealOverTime](gs)
+	core.Bind[*GameServer, PartySearchStop](gs)
+	core.Bind[*GameServer, Unknown0C](gs)
 }

@@ -60,7 +60,7 @@ type Character struct {
 	Position         types.Vector2[int16]
 	Stance           uint8
 	Meso             int32
-	SkillPoint       []uint16
+	SkillPoint       uint16
 	Inventory        map[constant.InventoryType]*Inventory
 	Equipments       map[constant.EquipmentPartsType]*Equipment
 	Skills           []*Skill
@@ -77,9 +77,6 @@ type Character struct {
 	Random2          *stream.RandomStream
 	Random3          *stream.RandomStream
 	BuddyCapacity    uint8
-	IsEvan           bool
-	IsResist         bool
-	IsMercedes       bool
 }
 
 // SerializeOverview serializes character overview data
@@ -187,31 +184,7 @@ func (c *Character) SerializeStats(writer *stream.StreamWriter) {
 	writer.WriteU16(c.Mp)
 	writer.WriteU16(c.MaxMp)
 	writer.WriteU16(c.AbilityPoint)
-
-	remainingSkillPoints := uint16(0)
-	if c.SkillPoint != nil {
-		for _, sp := range c.SkillPoint {
-			if sp > 0 {
-				remainingSkillPoints++
-			}
-		}
-	}
-
-	if c.IsEvan || c.IsResist || c.IsMercedes {
-		writer.WriteU8(uint8(remainingSkillPoints))
-		if c.SkillPoint != nil {
-			for i, sp := range c.SkillPoint {
-				if sp == 0 {
-					continue
-				}
-				writer.WriteU8(uint8(i))
-				writer.WriteU8(uint8(sp))
-			}
-		}
-	} else {
-		writer.WriteU16(remainingSkillPoints)
-	}
-
+	writer.WriteU16(c.SkillPoint)
 	writer.WriteU32(c.Exp)
 	writer.WriteU16(c.FamePoint)
 	writer.WriteU32(c.Map)

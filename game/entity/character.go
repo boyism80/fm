@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
@@ -36,8 +37,8 @@ type Character struct {
 	Int           uint16
 	Luk           uint16
 	AbilityPoint  uint16
-	SkillPoint    []uint16
-	HpApUsed      uint16 // HP/MP AP usage count (max 10000)
+	SkillPoint    uint16
+	HpApUsed      uint16
 	Exp           uint32
 	FamePoint     uint16
 	Map           uint32
@@ -173,6 +174,36 @@ func (ch *Character) IsCannon() bool {
 	return ch.Class == 1 || ch.Class == 501 || (ch.Class >= 530 && ch.Class <= 532)
 }
 
+func (ch *Character) IsMagician() bool {
+	return ch.Class >= 200 && ch.Class < 300
+}
+
+func (ch *Character) getSkillBookIndexByLevel(level uint8) int {
+	if ch.IsBeginner() {
+		return -1
+	}
+
+	isMagician := ch.IsMagician()
+	minLevel := uint8(10)
+	if isMagician {
+		minLevel = 8
+	}
+
+	if level < minLevel {
+		return -1
+	}
+
+	if level <= 30 {
+		return 0
+	} else if level <= 70 {
+		return 1
+	} else if level <= 120 {
+		return 2
+	} else {
+		return 3
+	}
+}
+
 func (ch *Character) GetSkillBookIndex() int {
 	class := ch.Class
 
@@ -216,13 +247,7 @@ func (ch *Character) GetSkillBookIndexForSkill(skillID uint32) int {
 }
 
 func (ch *Character) RemainingSkillPoints() uint16 {
-	ret := 0
-	for _, sp := range ch.SkillPoint {
-		if sp > 0 {
-			ret++
-		}
-	}
-	return uint16(ret)
+	return ch.SkillPoint
 }
 
 func (ch *Character) GetTotalSkillLevel(skillID uint32) int {
@@ -271,52 +296,29 @@ func (ch *Character) ConsumeMP(amount uint16) bool {
 	return true
 }
 
-// ChangeClass changes the character's class and handles SP allocation
 func (ch *Character) ChangeClass(newClass uint16) {
 	oldClass := ch.Class
 	ch.Class = newClass
 
-	ch.initializeSkillPoints()
 	ch.grantClassChangeSP(newClass)
+	ch.initializeBaseSkills(newClass)
 
 	if ch.Listener != nil {
 		ch.Listener.OnClassChange(oldClass, newClass)
 	}
 }
 
-// initializeSkillPoints initializes the SkillPoint array based on class advancement level
-func (ch *Character) initializeSkillPoints() {
-	advancementLevel := ch.getJobAdvancementLevel()
-
-	requiredSize := advancementLevel + 1
-	if requiredSize < 10 {
-		requiredSize = 10
-	}
-
-	if len(ch.SkillPoint) < requiredSize {
-		newSkillPoint := make([]uint16, requiredSize)
-		copy(newSkillPoint, ch.SkillPoint)
-		ch.SkillPoint = newSkillPoint
-	}
-}
-
-// grantClassChangeSP grants SP when changing classes
 func (ch *Character) grantClassChangeSP(newClass uint16) {
 	if ch.IsBeginner() {
 		return
 	}
 
-	skillBookIndex := ch.GetSkillBookIndex()
-	if skillBookIndex < 0 || skillBookIndex >= len(ch.SkillPoint) {
-		return
-	}
-
-	ch.SkillPoint[skillBookIndex]++
+	ch.SkillPoint++
 
 	if newClass >= 100 {
 		thirdDigit := newClass % 10
 		if thirdDigit >= 2 {
-			ch.SkillPoint[skillBookIndex] += 2
+			ch.SkillPoint += 2
 		}
 	}
 
@@ -328,9 +330,104 @@ func (ch *Character) grantClassChangeSP(newClass uint16) {
 
 		if ch.Level > minLevel {
 			spToGrant := uint16(3 * (int(ch.Level) - int(minLevel)))
-			ch.SkillPoint[skillBookIndex] += spToGrant
+			ch.SkillPoint += spToGrant
 		}
 	}
+}
+
+func (ch *Character) initializeBaseSkills(newClass uint16) {
+	if ch.Context == nil {
+		return
+	}
+
+	resources := ch.Context.GetResources()
+	if resources == nil {
+		return
+	}
+
+	advancementLevel := ch.getJobAdvancementLevel()
+	if advancementLevel < 3 {
+		return
+	}
+
+	classID := uint32(newClass)
+	skillIDStart := classID * 10000
+	skillIDEnd := skillIDStart + 9999
+
+	if ch.SkillsMap == nil {
+		ch.SkillsMap = make(map[uint32]*SkillEntry)
+	}
+
+	for skillID := skillIDStart; skillID <= skillIDEnd; skillID++ {
+		wzSkill := resources.GetSkill(skillID)
+		if wzSkill == nil {
+			continue
+		}
+
+		if wzSkill.Invisible {
+			continue
+		}
+
+		if !ch.isFourthClassSkill(skillID, wzSkill) {
+			continue
+		}
+
+		masterLevel := 0
+		if wzSkill.MasterLevel > 0 {
+			masterLevel = wzSkill.MasterLevel
+		} else if wzSkill.MaxLevel > 0 {
+			masterLevel = wzSkill.MaxLevel
+		} else {
+			continue
+		}
+
+		existingEntry, exists := ch.SkillsMap[skillID]
+		if exists && existingEntry != nil {
+			if existingEntry.SkillLevel > 0 || existingEntry.MasterLevel > 0 {
+				continue
+			}
+		}
+
+		skillEntry := &SkillEntry{
+			Skill:       wzSkill,
+			SkillLevel:  0,
+			MasterLevel: masterLevel,
+			Expiration:  time.Time{},
+		}
+		ch.SkillsMap[skillID] = skillEntry
+
+		if ch.Listener != nil {
+			ch.Send(&response.UpdateSkills{
+				SkillID:     skillID,
+				Level:       0,
+				MasterLevel: int32(skillEntry.MasterLevel),
+			}, types.SEND_POLICY_ENCRYPT)
+		}
+	}
+}
+
+func (ch *Character) isFourthClassSkill(skillID uint32, wzSkill *wz.Skill) bool {
+	classID := skillID / 10000
+
+	if classID == 2312 {
+		return true
+	}
+
+	if (wzSkill.MaxLevel <= 15 && !wzSkill.Invisible && wzSkill.MasterLevel <= 0) ||
+		skillID == 3220010 || skillID == 3120011 || skillID == 33120010 || skillID == 32120009 ||
+		skillID == 5321006 || skillID == 21120011 || skillID == 22181004 || skillID == 4340010 {
+		return false
+	}
+
+	if classID >= 2212 && classID < 3000 {
+		return (classID % 10) >= 7
+	}
+
+	if classID >= 430 && classID <= 434 {
+		return (classID%10) == 4 || wzSkill.MasterLevel > 0
+	}
+
+	return (classID%10) == 2 && skillID < 90000000
 }
 
 // AddExp adds experience points to the character and notifies the listener
@@ -770,7 +867,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		Int:          4,
 		Luk:          4,
 		AbilityPoint: 0,
-		SkillPoint:   make([]uint16, 10),
+		SkillPoint:   0,
 		HpApUsed:     0,
 		SpawnPoint:   1,
 		Map:          200000301,
@@ -846,8 +943,6 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3], err = NewItem(1040002, 1, ctx)
 		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(1040010, 1, ctx)
 	}
-
-	ch.initializeSkillPoints()
 
 	return ch
 }
@@ -939,38 +1034,27 @@ func (ch *Character) SetLevel(newLevel uint8) {
 	levelDiff := int(newLevel) - int(oldLevel)
 
 	if levelDiff > 0 {
-		// Leveling up: calculate stat increases for each level
 		totalAPIncrease := uint16(0)
 		totalSPIncrease := uint16(0)
 		totalHPIncrease := uint16(0)
 		totalMPIncrease := uint16(0)
 
 		for level := oldLevel + 1; level <= newLevel; level++ {
-			// AP: +5 per level
 			totalAPIncrease += 5
 
-			// SP: +3 per level (if not beginner)
 			if !ch.IsBeginner() {
 				totalSPIncrease += 3
 			}
 
-			// HP/MP: formula based on level
 			hpIncrease := uint16(20 + int(level)*2)
 			mpIncrease := uint16(10 + int(level))
 			totalHPIncrease += hpIncrease
 			totalMPIncrease += mpIncrease
 		}
 
-		// Apply stat increases
 		ch.Level = newLevel
 		ch.AbilityPoint += totalAPIncrease
-
-		if totalSPIncrease > 0 {
-			skillBookIndex := ch.GetSkillBookIndex()
-			if skillBookIndex >= 0 && skillBookIndex < len(ch.SkillPoint) {
-				ch.SkillPoint[skillBookIndex] += totalSPIncrease
-			}
-		}
+		ch.SkillPoint += totalSPIncrease
 
 		ch.MaxHp += totalHPIncrease
 		ch.MaxMp += totalMPIncrease
@@ -989,12 +1073,7 @@ func (ch *Character) SetLevel(newLevel uint8) {
 				constant.STAT_HP:           int32(ch.Hp),
 				constant.STAT_MP:           int32(ch.Mp),
 				constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
-			}
-			if len(ch.SkillPoint) > 0 {
-				skillBookIndex := ch.GetSkillBookIndex()
-				if skillBookIndex >= 0 && skillBookIndex < len(ch.SkillPoint) {
-					stats[constant.STAT_AVAILABLE_SP] = int32(ch.SkillPoint[skillBookIndex])
-				}
+				constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
 			}
 			ch.Listener.OnUpdateStats(stats, false)
 
