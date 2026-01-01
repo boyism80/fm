@@ -22,6 +22,10 @@ func (h *SpawnMob) GetCommandName() string {
 	return "몬스터생성"
 }
 
+func (h *SpawnMob) GetUsage() string {
+	return "<몬스터ID/이름> - 몬스터 생성"
+}
+
 func (h *SpawnMob) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing mobId or mob name")

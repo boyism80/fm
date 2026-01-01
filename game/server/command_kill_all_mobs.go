@@ -23,6 +23,10 @@ func (h *KillAllMobs) GetCommandName() string {
 	return "몬스터죽이기"
 }
 
+func (h *KillAllMobs) GetUsage() string {
+	return "- 모든 몬스터 제거"
+}
+
 func (h *KillAllMobs) Handle(gameClient *client.GameClient, args ...string) error {
 	character := gameClient.GetCharacter()
 	if character == nil {

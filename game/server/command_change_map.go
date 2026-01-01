@@ -21,6 +21,10 @@ func (h *ChangeMap) GetCommandName() string {
 	return "맵이동"
 }
 
+func (h *ChangeMap) GetUsage() string {
+	return "<맵ID/이름> - 맵 이동"
+}
+
 func (h *ChangeMap) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing mapId or map name")

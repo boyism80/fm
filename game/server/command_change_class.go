@@ -24,6 +24,10 @@ func (h *ChangeClass) GetCommandName() string {
 	return "직업바꾸기"
 }
 
+func (h *ChangeClass) GetUsage() string {
+	return "<직업ID> - 직업 변경"
+}
+
 func (h *ChangeClass) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing class value")

@@ -21,6 +21,10 @@ func (h *GetPosition) GetCommandName() string {
 	return "좌표"
 }
 
+func (h *GetPosition) GetUsage() string {
+	return "- 현재 좌표 확인"
+}
+
 func (h *GetPosition) Handle(gameClient *client.GameClient, args ...string) error {
 	character := gameClient.GetCharacter()
 	if character == nil {

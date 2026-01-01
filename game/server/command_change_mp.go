@@ -24,6 +24,10 @@ func (h *ChangeMp) GetCommandName() string {
 	return "마력바꾸기"
 }
 
+func (h *ChangeMp) GetUsage() string {
+	return "<마력값> - 마력 설정"
+}
+
 func (h *ChangeMp) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing MP value")

@@ -24,6 +24,10 @@ func (h *ChangeLuk) GetCommandName() string {
 	return "행운바꾸기"
 }
 
+func (h *ChangeLuk) GetUsage() string {
+	return "<행운값> - 행운 설정"
+}
+
 func (h *ChangeLuk) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing LUK value")

@@ -24,6 +24,10 @@ func (h *ChangeAllStats) GetCommandName() string {
 	return "모든스탯바꾸기"
 }
 
+func (h *ChangeAllStats) GetUsage() string {
+	return "<스탯값> - 모든 스탯 설정"
+}
+
 func (h *ChangeAllStats) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing stat value")

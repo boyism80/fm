@@ -24,6 +24,10 @@ func (h *ChangeStr) GetCommandName() string {
 	return "힘바꾸기"
 }
 
+func (h *ChangeStr) GetUsage() string {
+	return "<힘값> - 힘 설정"
+}
+
 func (h *ChangeStr) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing STR value")

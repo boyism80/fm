@@ -24,6 +24,10 @@ func (h *ChangeHp) GetCommandName() string {
 	return "체력바꾸기"
 }
 
+func (h *ChangeHp) GetUsage() string {
+	return "<체력값> - 체력 설정"
+}
+
 func (h *ChangeHp) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing HP value")

@@ -23,6 +23,10 @@ func (h *ClearMeso) GetCommandName() string {
 	return "메소초기화"
 }
 
+func (h *ClearMeso) GetUsage() string {
+	return "- 메소 초기화"
+}
+
 func (h *ClearMeso) Handle(gameClient *client.GameClient, args ...string) error {
 	character := gameClient.GetCharacter()
 	if character == nil {

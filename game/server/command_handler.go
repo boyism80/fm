@@ -44,7 +44,12 @@ func (ch *CommandHandler) Handle(gameClient *client.GameClient, params ...string
 	return handler.Handle(gameClient, args...)
 }
 
+func (ch *CommandHandler) GetHandlers() map[string]Command {
+	return ch.handlers
+}
+
 func (gs *GameServer) registerCommandHandlers() {
+	Bind[*ListCommands](gs.commandHandler)
 	Bind[*CreateItem](gs.commandHandler)
 	Bind[*ClearMeso](gs.commandHandler)
 	Bind[*GainMeso](gs.commandHandler)

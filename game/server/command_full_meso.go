@@ -24,6 +24,10 @@ func (h *FullMeso) GetCommandName() string {
 	return "풀메소"
 }
 
+func (h *FullMeso) GetUsage() string {
+	return "- 메소 최대치로 설정"
+}
+
 func (h *FullMeso) Handle(gameClient *client.GameClient, args ...string) error {
 	character := gameClient.GetCharacter()
 	if character == nil {

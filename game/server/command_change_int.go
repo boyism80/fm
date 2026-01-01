@@ -24,6 +24,10 @@ func (h *ChangeInt) GetCommandName() string {
 	return "지능바꾸기"
 }
 
+func (h *ChangeInt) GetUsage() string {
+	return "<지능값> - 지능 설정"
+}
+
 func (h *ChangeInt) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing INT value")

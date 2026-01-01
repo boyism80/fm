@@ -24,6 +24,10 @@ func (h *ChangeLevel) GetCommandName() string {
 	return "레벨바꾸기"
 }
 
+func (h *ChangeLevel) GetUsage() string {
+	return "<레벨> - 레벨 설정"
+}
+
 func (h *ChangeLevel) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing level value")

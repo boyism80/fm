@@ -24,6 +24,10 @@ func (h *ChangeDex) GetCommandName() string {
 	return "민첩바꾸기"
 }
 
+func (h *ChangeDex) GetUsage() string {
+	return "<민첩값> - 민첩 설정"
+}
+
 func (h *ChangeDex) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing DEX value")

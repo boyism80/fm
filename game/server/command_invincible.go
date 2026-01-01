@@ -20,6 +20,10 @@ func (h *Invincible) GetCommandName() string {
 	return "무적"
 }
 
+func (h *Invincible) GetUsage() string {
+	return "- 무적 상태 토글"
+}
+
 func (h *Invincible) Handle(gameClient *client.GameClient, args ...string) error {
 	character := gameClient.GetCharacter()
 	if character == nil {

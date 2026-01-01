@@ -24,6 +24,10 @@ func (h *GainMeso) GetCommandName() string {
 	return "메소얻기"
 }
 
+func (h *GainMeso) GetUsage() string {
+	return "<금액> - 메소 획득"
+}
+
 func (h *GainMeso) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing meso amount")

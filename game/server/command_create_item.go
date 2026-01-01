@@ -25,6 +25,10 @@ func (h *CreateItem) GetCommandName() string {
 	return "아이템생성"
 }
 
+func (h *CreateItem) GetUsage() string {
+	return "<아이템ID/이름> [개수] - 아이템 생성"
+}
+
 func (h *CreateItem) Handle(gameClient *client.GameClient, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("missing itemId or item name")
