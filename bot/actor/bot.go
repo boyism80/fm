@@ -36,7 +36,7 @@ func (state *BotActor) Receive(context actor.Context) {
 }
 
 func onBotStopping(ctx actor.Context, bot *BotActor, m *actor.Stopping) {
-	log.Println("Î¥??úÍ±∞Ï§?)
+	log.Println("Bot stopped")
 	bot.Conn.Close()
 }
 
@@ -45,12 +45,12 @@ func onBotConnect(ctx actor.Context, bot *BotActor, m *msg.BotConnect) {
 
 	conn, err := net.Dial("tcp", serverAddr)
 	if err != nil {
-		log.Println("?∞Í≤∞ ?§Ìå®:", err)
+		log.Println("Connection failed:", err)
 		ctx.Stop(ctx.Self())
 		return
 	}
 	bot.Conn = conn
-	log.Println("?úÎ≤Ñ???∞Í≤∞??", serverAddr)
+	log.Println("Server connected:", serverAddr)
 
 	ctx.Send(ctx.Self(), &msg.BotClose{})
 }
@@ -66,7 +66,7 @@ func onBotSendPacket(ctx actor.Context, bot *BotActor, m *msg.BotSendPacket) {
 
 	_, err := bot.Conn.Write(wr2.Bytes())
 	if err != nil {
-		log.Println("?∞Ïù¥???ÑÏÜ° ?§Ìå®:", err)
+		log.Println("Packet send failed:", err)
 		return
 	}
 }

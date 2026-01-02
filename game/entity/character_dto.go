@@ -10,7 +10,7 @@ import (
 
 func (ch *Character) ToDTO() *dto.Character {
 	equipments := make(map[int8]uint32)
-	skins := make(map[int8]uint32)
+	overlays := make(map[int8]uint32)
 
 	for parts, equipment := range ch.Equipments {
 		if equipment == nil {
@@ -34,11 +34,11 @@ func (ch *Character) ToDTO() *dto.Character {
 		} else if absoluteParts > 100 && absoluteParts != 111 {
 			adjustedParts := int8(absoluteParts - 100)
 			if existingItem, exists := equipments[adjustedParts]; exists {
-				skins[adjustedParts] = existingItem
+				overlays[adjustedParts] = existingItem
 			}
 			equipments[adjustedParts] = model.ID
 		} else if _, exists := equipments[absoluteParts]; exists {
-			skins[absoluteParts] = model.ID
+			overlays[absoluteParts] = model.ID
 		}
 	}
 
@@ -48,45 +48,37 @@ func (ch *Character) ToDTO() *dto.Character {
 	}
 
 	return &dto.Character{
-		CharacterOverview: dto.CharacterOverview{
-			ID:            ch.ID,
-			Name:          ch.Name,
-			Gender:        ch.Gender,
-			SkinColor:     ch.SkinColor,
-			Face:          ch.Face,
-			Hair:          ch.Hair,
-			Level:         ch.Level,
-			Class:         ch.Class,
-			Str:           ch.Str,
-			Dex:           ch.Dex,
-			Int:           ch.Int,
-			Luk:           ch.Luk,
-			Hp:            ch.Hp,
-			MaxHp:         ch.MaxHp,
-			Mp:            ch.Mp,
-			MaxMp:         ch.MaxMp,
-			AbilityPoint:  ch.AbilityPoint,
-			Exp:           ch.Exp,
-			FamePoint:     ch.FamePoint,
-			Map:           ch.Map,
-			SpawnPoint:    ch.SpawnPoint,
-			Rank:          ch.Rank,
-			RankDiff:      ch.RankDiff,
-			ClassRank:     ch.ClassRank,
-			ClassRankDiff: ch.ClassRankDiff,
-		},
-		CharacterLook: dto.CharacterLook{
-			Gender:     ch.Gender,
-			SkinColor:  ch.SkinColor,
-			Face:       ch.Face,
-			Hair:       ch.Hair,
-			Mega:       ch.Mega,
-			Equipments: equipments,
-			Skins:      skins,
-			Weapon:     weapon,
-		},
-		Position: ch.Position,
-		Stance:   ch.Stance,
+		ID:            ch.ID,
+		Name:          ch.Name,
+		Gender:        ch.Gender,
+		SkinColor:     ch.SkinColor,
+		Face:          ch.Face,
+		Hair:          ch.Hair,
+		Level:         ch.Level,
+		Class:         ch.Class,
+		Str:           ch.Str,
+		Dex:           ch.Dex,
+		Int:           ch.Int,
+		Luk:           ch.Luk,
+		Hp:            ch.Hp,
+		MaxHp:         ch.MaxHp,
+		Mp:            ch.Mp,
+		MaxMp:         ch.MaxMp,
+		AbilityPoint:  ch.AbilityPoint,
+		Exp:           ch.Exp,
+		FamePoint:     ch.FamePoint,
+		Map:           ch.Map,
+		SpawnPoint:    ch.SpawnPoint,
+		Rank:          ch.Rank,
+		RankDiff:      ch.RankDiff,
+		ClassRank:     ch.ClassRank,
+		ClassRankDiff: ch.ClassRankDiff,
+		Mega:          ch.Mega,
+		BaseLooks: equipments,
+		Overlays:   overlays,
+		Weapon:     weapon,
+		Position:       ch.Position,
+		Stance:         ch.Stance,
 	}
 }
 

@@ -12,51 +12,37 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
-// CharacterOverview represents character data for character list
-type CharacterOverview struct {
-	ID            uint32
-	Name          string
-	Gender        uint8
-	SkinColor     uint8
-	Face          uint32
-	Hair          uint32
-	Level         uint8
-	Class         uint16
-	Str           uint16
-	Dex           uint16
-	Int           uint16
-	Luk           uint16
-	Hp            uint16
-	MaxHp         uint16
-	Mp            uint16
-	MaxMp         uint16
-	AbilityPoint  uint16
-	Exp           uint32
-	FamePoint     uint16
-	Map           uint32
-	SpawnPoint    uint8
-	Rank          uint32
-	RankDiff      int32
-	ClassRank     uint32
-	ClassRankDiff int32
-}
-
-// CharacterLook represents character appearance data
-type CharacterLook struct {
-	Gender     uint8
-	SkinColor  uint8
-	Face       uint32
-	Hair       uint32
-	Mega       bool
-	Equipments map[int8]uint32
-	Skins      map[int8]uint32
-	Weapon     uint32
-}
-
 // Character represents full character data for protocol
 type Character struct {
-	CharacterOverview
-	CharacterLook
+	ID               uint32
+	Name             string
+	Gender           uint8
+	SkinColor        uint8
+	Face             uint32
+	Hair             uint32
+	Level            uint8
+	Class            uint16
+	Str              uint16
+	Dex              uint16
+	Int              uint16
+	Luk              uint16
+	Hp               uint16
+	MaxHp            uint16
+	Mp               uint16
+	MaxMp            uint16
+	AbilityPoint     uint16
+	Exp              uint32
+	FamePoint        uint16
+	Map              uint32
+	SpawnPoint       uint8
+	Rank             uint32
+	RankDiff         int32
+	ClassRank        uint32
+	ClassRankDiff    int32
+	Mega             bool
+	BaseLooks        map[int8]uint32
+	Overlays         map[int8]uint32
+	Weapon           uint32
 	Position         types.Vector2[int16]
 	Stance           uint8
 	Meso             int32
@@ -83,10 +69,10 @@ type Character struct {
 func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 	writer.WriteU32(c.ID)
 	writer.WriteStaticStr(c.Name, 13)
-	writer.WriteU8(c.CharacterOverview.Gender)
-	writer.WriteU8(c.CharacterOverview.SkinColor)
-	writer.WriteU32(c.CharacterOverview.Face)
-	writer.WriteU32(c.CharacterOverview.Hair)
+	writer.WriteU8(c.Gender)
+	writer.WriteU8(c.SkinColor)
+	writer.WriteU32(c.Face)
+	writer.WriteU32(c.Hair)
 	writer.Write([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 	writer.WriteU8(c.Level)
 	writer.WriteU16(c.Class)
@@ -106,27 +92,27 @@ func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 	writer.WriteU8(c.SpawnPoint)
 
 	// Look
-	writer.WriteU8(c.CharacterLook.Gender)
-	writer.WriteU8(c.CharacterLook.SkinColor)
-	writer.WriteU32(c.CharacterLook.Face)
-	writer.WriteBoolean(c.CharacterLook.Mega)
-	writer.WriteU32(c.CharacterLook.Hair)
+	writer.WriteU8(c.Gender)
+	writer.WriteU8(c.SkinColor)
+	writer.WriteU32(c.Face)
+	writer.WriteBoolean(c.Mega)
+	writer.WriteU32(c.Hair)
 
 	// Equipments
-	for parts, itemId := range c.CharacterLook.Equipments {
+	for parts, itemId := range c.BaseLooks {
 		writer.Write8(parts)
 		writer.WriteU32(itemId)
 	}
 	writer.WriteU8(0xFF)
 
-	// Skins
-	for parts, itemId := range c.CharacterLook.Skins {
+	// Overlays
+	for parts, itemId := range c.Overlays {
 		writer.Write8(parts)
 		writer.WriteU32(itemId)
 	}
 	writer.WriteU8(0xFF)
 
-	writer.WriteU32(c.CharacterLook.Weapon)
+	writer.WriteU32(c.Weapon)
 	writer.WriteU32(0)
 
 	// Rank info
@@ -141,20 +127,20 @@ func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 }
 
 // SerializeLook serializes character look data
-func (c *CharacterLook) SerializeLook(writer *stream.StreamWriter) {
+func (c *Character) SerializeLook(writer *stream.StreamWriter) {
 	writer.WriteU8(c.Gender)
 	writer.WriteU8(c.SkinColor)
 	writer.WriteU32(c.Face)
 	writer.WriteBoolean(c.Mega)
 	writer.WriteU32(c.Hair)
 
-	for parts, itemId := range c.Equipments {
+	for parts, itemId := range c.BaseLooks {
 		writer.Write8(parts)
 		writer.WriteU32(itemId)
 	}
 	writer.WriteU8(0xFF)
 
-	for parts, itemId := range c.Skins {
+	for parts, itemId := range c.Overlays {
 		writer.Write8(parts)
 		writer.WriteU32(itemId)
 	}
@@ -168,10 +154,10 @@ func (c *CharacterLook) SerializeLook(writer *stream.StreamWriter) {
 func (c *Character) SerializeStats(writer *stream.StreamWriter) {
 	writer.WriteU32(c.ID)
 	writer.WriteStaticStr(c.Name, 13)
-	writer.WriteU8(c.CharacterOverview.Gender)
-	writer.WriteU8(c.CharacterOverview.SkinColor)
-	writer.WriteU32(c.CharacterOverview.Face)
-	writer.WriteU32(c.CharacterOverview.Hair)
+	writer.WriteU8(c.Gender)
+	writer.WriteU8(c.SkinColor)
+	writer.WriteU32(c.Face)
+	writer.WriteU32(c.Hair)
 	writer.Write([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 	writer.WriteU8(c.Level)
 	writer.WriteU16(c.Class)
