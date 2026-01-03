@@ -77,7 +77,7 @@ func (model *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 }
 
 func (model *Map) DropPoint(initial types.Point[int16]) (types.Point[int16], bool) {
-	highest := types.Point[int16]{X: initial.X, Y: initial.Y - int16(100)}
+	highest := types.Point[int16]{X: initial.X, Y: initial.Y - int16(50)}
 	if result := model.FootholdPoint(highest); result != nil {
 		return *result, true
 	}

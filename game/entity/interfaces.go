@@ -11,4 +11,6 @@ type GameContext interface {
 	GetMap(mapId uint32) *Map
 	GetLogicThread() *core.LogicThread // Returns core.LogicThread
 	GetExpRate() int                   // Returns experience rate multiplier
+	GetDropRate() int                  // Returns drop rate multiplier
+	GetMesoRate() int                  // Returns meso rate multiplier
 }

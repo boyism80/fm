@@ -40,6 +40,8 @@ type GameContext interface {
 	GetMap(mapId uint32) *entity.Map
 	GetLogicThread() *core.LogicThread // Returns core.LogicThread
 	GetExpRate() int                   // Returns experience rate multiplier
+	GetDropRate() int                  // Returns drop rate multiplier
+	GetMesoRate() int                  // Returns meso rate multiplier
 }
 
 // GameConfig holds game server specific configuration
@@ -208,6 +210,14 @@ func (gs *GameServer) GetResources() *wz.Resources {
 
 func (gs *GameServer) GetExpRate() int {
 	return gs.config.ExpRate
+}
+
+func (gs *GameServer) GetDropRate() int {
+	return gs.config.DropRate
+}
+
+func (gs *GameServer) GetMesoRate() int {
+	return gs.config.MesoRate
 }
 
 // GetThreadHash returns a hash for thread assignment

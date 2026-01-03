@@ -234,8 +234,9 @@ func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attac
 	}
 
 	attackPacket := &response.Attack{
-		AttackInfo: attackInfo,
-		SkillLevel: skillLevel,
+		AttackInfo:  attackInfo,
+		CharacterId: characterID,
+		SkillLevel:  skillLevel,
 	}
 
 	mapInstance.BroadcastToAllPlayers(attackPacket, types.SEND_POLICY_ENCRYPT)

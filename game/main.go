@@ -22,7 +22,7 @@ func main() {
 		worldName    = flag.String("world", "Scania", "World/Channel name")
 		maxPlayers   = flag.Int("max-players", 1000, "Maximum number of players per world")
 		expRate      = flag.Int("exp-rate", 100, "Experience rate multiplier")
-		dropRate     = flag.Int("drop-rate", 1, "Drop rate multiplier")
+		dropRate     = flag.Int("drop-rate", 10, "Drop rate multiplier")
 		mesoRate     = flag.Int("meso-rate", 1, "Meso rate multiplier")
 		withStats    = flag.Bool("stats", false, "Enable statistics monitoring")
 		highRate     = flag.Bool("high-rate", false, "Enable high-rate server configuration")

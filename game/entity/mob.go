@@ -160,17 +160,34 @@ func (m *Mob) dropItems(attacker *Character) {
 		item   Item
 	}
 
+	// Get drop rate from context
+	dropRate := float32(m.Context.GetDropRate())
+	mesoRate := float32(m.Context.GetMesoRate())
+
 	for _, drop := range mobDrops {
+		// Calculate adjusted drop probability (following Java pattern)
+		// chance = de.chance * (showdown / 100.0) * (chServerrate + eventbonus)
+		// For now, we use drop.Prob * dropRate (showdown = 100.0, eventbonus = 0)
+		adjustedProb := drop.Prob * dropRate
+		if adjustedProb > 1.0 {
+			adjustedProb = 1.0
+		}
+
 		// Check drop probability
-		if rand.Float32() > drop.Prob {
+		if rand.Float32() > adjustedProb {
 			continue
 		}
 
 		if drop.Item == 0 {
-			// Generate meso drop
+			// Generate meso drop (apply meso rate)
 			min := float64(drop.Money) * 0.75
 			max := float64(drop.Money)
 			count := int32(min + rand.Float64()*(max-min))
+			if count == 0 {
+				continue
+			}
+			// Apply meso rate multiplier
+			count = int32(float32(count) * mesoRate)
 			if count == 0 {
 				continue
 			}
@@ -204,6 +221,7 @@ func (m *Mob) dropItems(attacker *Character) {
 	spacing := int16(15)
 
 	for i, drop := range drops {
+		// Calculate X position (following Java pattern)
 		destPoint := spawnPoint
 		if len(drops) > 1 {
 			offset := spacing * int16(i/2+1)
@@ -224,7 +242,7 @@ func (m *Mob) dropItems(attacker *Character) {
 			drop.item.BindDrop(&Drop{
 				Object: &Object{
 					OID:      0,         // Will be set by Map.SpawnItem
-					Position: destPoint, // Use calculated position
+					Position: destPoint, // Use calculated position (X calculated, Y is mob Y)
 					Context:  m.Context,
 				},
 				Owner:        attacker.GetID(),

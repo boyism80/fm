@@ -1304,6 +1304,14 @@ func loadMob(path string) (*Mob, error) {
 		}
 	}
 
+	// Process string fields (link, etc.)
+	for _, strField := range info.Strings {
+		switch strField.Name {
+		case "link":
+			model.Link = strField.Value
+		}
+	}
+
 	// Process child nodes (for nested structures)
 	for _, iv := range info.Children {
 		switch iv.Name {
@@ -1407,6 +1415,28 @@ func loadMob(path string) (*Mob, error) {
 	return model, nil
 }
 
+// dropEntry represents a single drop entry in Reward.img.xml
+type dropEntry struct {
+	XMLName xml.Name      `xml:"imgdir"`
+	Name    string        `xml:"name,attr"`
+	Ints    []intField    `xml:"int"`
+	Strings []stringField `xml:"string"`
+}
+
+// mobDropNode represents a mob's drop list in Reward.img.xml
+type mobDropNode struct {
+	XMLName xml.Name    `xml:"imgdir"`
+	Name    string      `xml:"name,attr"`
+	Entries []dropEntry `xml:"imgdir"`
+}
+
+// rewardRoot represents the root of Reward.img.xml
+type rewardRoot struct {
+	XMLName xml.Name      `xml:"imgdir"`
+	Name    string        `xml:"name,attr"`
+	Mobs    []mobDropNode `xml:"imgdir"`
+}
+
 // loadDrops loads monster drop tables from XML file.
 func loadDrops(path string) (*map[uint32][]Drop, error) {
 	file, err := os.Open(path)
@@ -1415,66 +1445,50 @@ func loadDrops(path string) (*map[uint32][]Drop, error) {
 	}
 	defer file.Close()
 
-	var root node
+	var root rewardRoot
 	if err := xml.NewDecoder(file).Decode(&root); err != nil {
 		return nil, err
 	}
 
 	specs := map[uint32][]Drop{}
-	for _, v := range root.Children {
-		if !strings.HasPrefix(v.Name, "m") {
+	for _, mobNode := range root.Mobs {
+		if !strings.HasPrefix(mobNode.Name, "m") {
 			continue
 		}
-		id, err := strconv.Atoi(strings.TrimPrefix(v.Name, "m"))
+		id, err := strconv.Atoi(strings.TrimPrefix(mobNode.Name, "m"))
 		if err != nil {
-			return nil, err
+			continue
 		}
-		model := Drop{
-			Mob: uint32(id),
-		}
+		mobID := uint32(id)
 
-		for _, iv1 := range v.Children {
-			for _, iv2 := range iv1.Children {
-				switch iv2.Name {
+		for _, entry := range mobNode.Entries {
+			model := Drop{
+				Mob: mobID,
+			}
+
+			for _, intField := range entry.Ints {
+				switch intField.Name {
 				case "item":
-					value, err := strconv.Atoi(iv2.Value)
-					if err != nil {
-						return nil, err
-					}
-					model.Item = uint32(value)
+					model.Item = uint32(intField.Value)
 				case "money":
-					value, err := strconv.Atoi(iv2.Value)
-					if err != nil {
-						return nil, err
-					}
-					model.Money = uint32(value)
-				case "prob":
-					value, err := strconv.ParseFloat(strings.TrimPrefix(iv2.Value, "[R8]"), 32)
-					if err != nil {
-						return nil, err
-					}
-					model.Prob = float32(value)
+					model.Money = uint32(intField.Value)
 				case "min":
-					value, err := strconv.Atoi(iv2.Value)
-					if err != nil {
-						return nil, err
-					}
-					model.Min = uint16(value)
+					model.Min = uint16(intField.Value)
 				case "max":
-					value, err := strconv.Atoi(iv2.Value)
-					if err != nil {
-						return nil, err
-					}
-					model.Max = uint16(value)
-				default:
-					mutex.Lock()
-					if _, seen := visit[iv2.Name]; !seen {
-						visit[iv2.Name] = true
-						log.Printf("%s is not declared in %s:info\n", iv2.Name, filepath.Base(path))
-					}
-					mutex.Unlock()
+					model.Max = uint16(intField.Value)
 				}
 			}
+
+			for _, stringField := range entry.Strings {
+				if stringField.Name == "prob" {
+					probStr := strings.TrimPrefix(stringField.Value, "[R8]")
+					value, err := strconv.ParseFloat(probStr, 32)
+					if err == nil {
+						model.Prob = float32(value)
+					}
+				}
+			}
+
 			specs[model.Mob] = append(specs[model.Mob], model)
 		}
 	}

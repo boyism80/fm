@@ -296,18 +296,20 @@ func NewResources(wzPath string) *Resources {
 	workerCount := runtime.NumCPU() * 2
 
 	drop := map[uint32][]Drop{}
-	err := loadResourceFiles("imgs/Reward.img.xml", workerCount, func(path string) (result *map[uint32][]Drop, err error) {
-		return loadDrops(path)
-	}, func(percent float32, value *map[uint32][]Drop) {
-		drop = *value
-		fmt.Printf("Loading drop files: %.1f%%\n", percent)
-	})
-	if err != nil {
-		log.Fatal(err)
-		return nil
+	// Load Reward.img.xml (single file, not a directory)
+	rewardPath := filepath.Join(wzPath, "Reward.img.xml")
+	if dropData, err := loadDrops(rewardPath); err == nil && dropData != nil {
+		// Merge drop data from the file
+		for mobID, drops := range *dropData {
+			drop[mobID] = drops
+		}
+		fmt.Println("Drop files loaded.")
+	} else if err != nil {
+		log.Printf("Failed to load Reward.img.xml: %v", err)
 	}
 
 	items := map[uint32]Item{}
+	var err error
 	err = loadResourceFiles(filepath.Join(wzPath, "Character.wz"),
 		workerCount,
 		func(path string) (result *Equipment, err error) {
@@ -653,30 +655,60 @@ func (r *Resources) GetExpNeededForLevel(level uint8) uint32 {
 }
 
 // buildMapNameIndex builds the name to ID index for maps
+// Only includes maps that are actually loaded in r.Maps (from Map.wz)
 func (r *Resources) buildMapNameIndex() {
-	for _, regionMaps := range r.Strings.MapStrings {
-		for mapId, mapNameData := range regionMaps {
-			if mapNameData != nil {
+	// Iterate through actually loaded maps (from Map.wz)
+	for mapId := range r.Maps {
+		// Get map name from String.wz
+		for _, regionMaps := range r.Strings.MapStrings {
+			if mapNameData, ok := regionMaps[mapId]; ok && mapNameData != nil {
 				if mapName, ok := mapNameData["mapName"]; ok && mapName != "" {
 					key := normalizeName(mapName)
 					if _, exists := r.mapNameToId[key]; !exists {
 						r.mapNameToId[key] = mapId
 					}
 				}
+				break // Found the map, no need to check other regions
 			}
 		}
 	}
 }
 
 // buildMobNameIndex builds the name to ID index for mobs
+// Only includes mobs that are actually loaded in r.Monsters (from Mob.wz)
+// Prioritizes original mobs (without link) over linked mobs
 func (r *Resources) buildMobNameIndex() {
-	// Iterate through all mobs
-	for mobId, mobNameData := range r.Strings.MobStrings {
-		if mobNameData != nil {
+	// First pass: Add original mobs (without link) to index
+	for mobId, mob := range r.Monsters {
+		// Skip linked mobs in first pass
+		if mob.Link != "" {
+			continue
+		}
+		// Get mob name from String.wz
+		if mobNameData, ok := r.Strings.MobStrings[mobId]; ok && mobNameData != nil {
 			if mobName, ok := mobNameData["name"]; ok && mobName != "" {
 				// Normalize name (lowercase + remove whitespace)
 				key := normalizeName(mobName)
-				// If multiple mobs have the same name, keep the first one found
+				// Add to index (original mobs have priority)
+				if _, exists := r.mobNameToId[key]; !exists {
+					r.mobNameToId[key] = mobId
+				}
+			}
+		}
+	}
+
+	// Second pass: Add linked mobs to index (only if name not already exists)
+	for mobId, mob := range r.Monsters {
+		// Only process linked mobs in second pass
+		if mob.Link == "" {
+			continue
+		}
+		// Get mob name from String.wz
+		if mobNameData, ok := r.Strings.MobStrings[mobId]; ok && mobNameData != nil {
+			if mobName, ok := mobNameData["name"]; ok && mobName != "" {
+				// Normalize name (lowercase + remove whitespace)
+				key := normalizeName(mobName)
+				// Only add if name not already exists (original mobs have priority)
 				if _, exists := r.mobNameToId[key]; !exists {
 					r.mobNameToId[key] = mobId
 				}
@@ -686,10 +718,20 @@ func (r *Resources) buildMobNameIndex() {
 }
 
 // buildNpcNameIndex builds the name to ID index for NPCs
+// Only includes NPCs that are actually spawned in loaded maps (from Map.wz)
 func (r *Resources) buildNpcNameIndex() {
-	// Iterate through all NPCs
-	for npcId, npcNameData := range r.Strings.NpcStrings {
-		if npcNameData != nil {
+	// Collect all NPC IDs from loaded maps
+	npcIds := make(map[uint32]bool)
+	for _, mapData := range r.Maps {
+		for npcId := range mapData.NpcSpawns {
+			npcIds[npcId] = true
+		}
+	}
+
+	// Iterate through NPCs that are actually spawned in maps
+	for npcId := range npcIds {
+		// Get NPC name from String.wz
+		if npcNameData, ok := r.Strings.NpcStrings[npcId]; ok && npcNameData != nil {
 			if npcName, ok := npcNameData["name"]; ok && npcName != "" {
 				// Normalize name (lowercase + remove whitespace)
 				key := normalizeName(npcName)
@@ -703,77 +745,48 @@ func (r *Resources) buildNpcNameIndex() {
 }
 
 // buildItemNameIndex builds the name to ID index for items
+// Only includes items that are actually loaded in r.Items (from Item.wz)
 func (r *Resources) buildItemNameIndex() {
-	// ItemCashStrings
-	for itemId, itemNameData := range r.Strings.ItemCashStrings {
-		if itemNameData != nil {
-			if itemName, ok := itemNameData["name"]; ok && itemName != "" {
-				key := normalizeName(itemName)
-				if _, exists := r.itemNameToId[key]; !exists {
-					r.itemNameToId[key] = itemId
+	// Iterate through actually loaded items (from Item.wz)
+	for itemId := range r.Items {
+		// Get item name from String.wz based on item category
+		itemName := ""
+		itemCategory := itemId / 1000000
+
+		switch itemCategory {
+		case 1: // Equipment
+			categoryKey := strconv.FormatUint(uint64(itemId/10000), 10)
+			if categoryData, ok := r.Strings.ItemEqpStrings[categoryKey]; ok {
+				if itemNameData, ok := categoryData[itemId]; ok && itemNameData != nil {
+					itemName, _ = itemNameData["name"]
 				}
 			}
-		}
-	}
-
-	// ItemConsumeStrings
-	for itemId, itemNameData := range r.Strings.ItemConsumeStrings {
-		if itemNameData != nil {
-			if itemName, ok := itemNameData["name"]; ok && itemName != "" {
-				key := normalizeName(itemName)
-				if _, exists := r.itemNameToId[key]; !exists {
-					r.itemNameToId[key] = itemId
-				}
+		case 2: // Consumable
+			if itemNameData, ok := r.Strings.ItemConsumeStrings[itemId]; ok && itemNameData != nil {
+				itemName, _ = itemNameData["name"]
+			}
+		case 3: // Etc
+			if itemNameData, ok := r.Strings.ItemEtcStrings[itemId]; ok && itemNameData != nil {
+				itemName, _ = itemNameData["name"]
+			}
+		case 4: // Installation
+			if itemNameData, ok := r.Strings.ItemInsStrings[itemId]; ok && itemNameData != nil {
+				itemName, _ = itemNameData["name"]
+			}
+		case 5: // Pet
+			if itemNameData, ok := r.Strings.ItemPetStrings[itemId]; ok && itemNameData != nil {
+				itemName, _ = itemNameData["name"]
+			}
+		case 9: // Cash
+			if itemNameData, ok := r.Strings.ItemCashStrings[itemId]; ok && itemNameData != nil {
+				itemName, _ = itemNameData["name"]
 			}
 		}
-	}
 
-	// ItemEqpStrings
-	for _, categoryData := range r.Strings.ItemEqpStrings {
-		for itemId, itemNameData := range categoryData {
-			if itemNameData != nil {
-				if itemName, ok := itemNameData["name"]; ok && itemName != "" {
-					key := normalizeName(itemName)
-					if _, exists := r.itemNameToId[key]; !exists {
-						r.itemNameToId[key] = itemId
-					}
-				}
-			}
-		}
-	}
-
-	// ItemEtcStrings
-	for itemId, itemNameData := range r.Strings.ItemEtcStrings {
-		if itemNameData != nil {
-			if itemName, ok := itemNameData["name"]; ok && itemName != "" {
-				key := normalizeName(itemName)
-				if _, exists := r.itemNameToId[key]; !exists {
-					r.itemNameToId[key] = itemId
-				}
-			}
-		}
-	}
-
-	// ItemInsStrings
-	for itemId, itemNameData := range r.Strings.ItemInsStrings {
-		if itemNameData != nil {
-			if itemName, ok := itemNameData["name"]; ok && itemName != "" {
-				key := normalizeName(itemName)
-				if _, exists := r.itemNameToId[key]; !exists {
-					r.itemNameToId[key] = itemId
-				}
-			}
-		}
-	}
-
-	// ItemPetStrings
-	for itemId, itemNameData := range r.Strings.ItemPetStrings {
-		if itemNameData != nil {
-			if itemName, ok := itemNameData["name"]; ok && itemName != "" {
-				key := normalizeName(itemName)
-				if _, exists := r.itemNameToId[key]; !exists {
-					r.itemNameToId[key] = itemId
-				}
+		if itemName != "" {
+			key := normalizeName(itemName)
+			if _, exists := r.itemNameToId[key]; !exists {
+				r.itemNameToId[key] = itemId
 			}
 		}
 	}

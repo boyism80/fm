@@ -42,6 +42,7 @@ type Map struct {
 	listener        MapListener
 	model           *wz.Map     // Map specification data
 	sequence        uint32      // Sequence ID for generating unique object IDs
+	availableOIDs   []uint32    // Queue of available OIDs for reuse
 	context         GameContext // GameContext for accessing resources
 }
 
@@ -67,6 +68,7 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 		listener:        listener,
 		model:           mapSpec,
 		sequence:        0,
+		availableOIDs:   make([]uint32, 0),
 		context:         context,
 	}
 
@@ -86,6 +88,24 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 func (m *Map) onMobControllerChange(mob *Mob, before *Character, after *Character) {
 	// Delegate to MapListener to handle the mob controller change
 	m.listener.OnMobControllerChange(mob, before, after)
+}
+
+// allocateOID allocates a new OID, reusing from queue if available
+func (m *Map) allocateOID() uint32 {
+	if len(m.availableOIDs) > 0 {
+		// Reuse OID from queue
+		oid := m.availableOIDs[0]
+		m.availableOIDs = m.availableOIDs[1:]
+		return oid
+	}
+	// Generate new OID
+	m.sequence++
+	return m.sequence
+}
+
+// releaseOID releases an OID back to the queue for reuse
+func (m *Map) releaseOID(oid uint32) {
+	m.availableOIDs = append(m.availableOIDs, oid)
 }
 
 // OnMobControllerChange handles mob controller changes (following old server pattern)
@@ -183,10 +203,10 @@ func (m *Map) initializeNpcs() {
 
 	// Create NPCs from MapSpec (following old server pattern)
 	for _, npcSpec := range m.model.NpcSpawns {
-		m.sequence++ // Generate unique OID for NPC
+		oid := m.allocateOID()
 		npc := &Npc{
 			Object: Object{
-				OID: m.sequence, // Use sequence as OID
+				OID: oid,
 			},
 			Wz: &npcSpec,
 		}
@@ -234,8 +254,8 @@ func (m *Map) GetNpcs() map[uint32]interface{} {
 
 // SpawnMob spawns a mob on the map (following old server pattern)
 func (m *Map) SpawnMob(mobId uint32, position types.Point[int16]) (*Mob, error) {
-	// Generate unique sequence ID for mob
-	m.sequence++
+	// Allocate OID for mob
+	oid := m.allocateOID()
 
 	// Get mob model from resources
 	mobSpec, ok := m.context.GetResources().Monsters[mobId]
@@ -259,7 +279,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16]) (*Mob, error) 
 	mob := &Mob{
 		Life: Life{
 			Object: Object{
-				OID:      m.sequence, // Use sequence as OID
+				OID:      oid,
 				Position: spawnPoint,
 				Context:  m.context, // Pass GameContext to Object
 			},
@@ -280,10 +300,10 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16]) (*Mob, error) 
 	}
 
 	// Add mob to map objects
-	m.objects[types.OBJECT_TYPE_MONSTER][m.sequence] = mob
+	m.objects[types.OBJECT_TYPE_MONSTER][oid] = mob
 
 	// Notify listener about mob spawn
-	m.listener.OnMobSpawned(m.ID, m.sequence, mob)
+	m.listener.OnMobSpawned(m.ID, oid, mob)
 
 	// Add mob to controller table for mob AI (following old server pattern)
 	m.controllerTable.EnterMob(mob)
@@ -303,6 +323,9 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 
 	mob := m.objects[types.OBJECT_TYPE_MONSTER][mobID].(*Mob)
 	delete(m.objects[types.OBJECT_TYPE_MONSTER], mobID)
+
+	// Release OID for reuse
+	m.releaseOID(mobID)
 
 	// Remove mob from controller table for mob AI (following old server pattern)
 	m.controllerTable.LeaveMob(mob)
@@ -376,8 +399,8 @@ func (m *Map) BroadcastToPlayer(playerID uint32, message types.Packet, policy ty
 
 // SpawnItem spawns an item on the map (following old server pattern)
 func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) error {
-	// Generate unique sequence ID
-	m.sequence++
+	// Allocate OID for item
+	oid := m.allocateOID()
 
 	// Get drop from item
 	drop := item.GetDrop()
@@ -393,7 +416,7 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 
 	// Update drop information
 	drop.Position = dropPoint
-	drop.OID = m.sequence
+	drop.OID = oid
 	drop.Owner = ownerID
 	drop.DropType = dropType
 	drop.MapID = m.ID
@@ -405,18 +428,18 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	}
 
 	// Add item to map objects
-	m.objects[types.OBJECT_TYPE_ITEM][m.sequence] = item
+	m.objects[types.OBJECT_TYPE_ITEM][oid] = item
 
 	// Notify listener about item spawn
-	m.listener.OnItemSpawned(m.ID, m.sequence, item, drop)
+	m.listener.OnItemSpawned(m.ID, oid, item, drop)
 
 	return nil
 }
 
 // SpawnMeso spawns meso on the map (following old server pattern)
 func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType) error {
-	// Generate unique sequence ID
-	m.sequence++
+	// Allocate OID for meso
+	oid := m.allocateOID()
 
 	// Calculate drop point
 	dropPoint, ok := m.model.DropPoint(position)
@@ -425,7 +448,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 	}
 
 	// Create meso entity
-	meso := NewMeso(count, dropPoint, ownerID, dropType, m.sequence, m.context, m.ID)
+	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.context, m.ID)
 
 	// Initialize objects map for items if needed
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
@@ -433,10 +456,10 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 	}
 
 	// Add meso to map objects
-	m.objects[types.OBJECT_TYPE_ITEM][m.sequence] = meso
+	m.objects[types.OBJECT_TYPE_ITEM][oid] = meso
 
 	// Notify listener about meso spawn
-	m.listener.OnMesoSpawned(m.ID, m.sequence, meso)
+	m.listener.OnMesoSpawned(m.ID, oid, meso)
 
 	return nil
 }
@@ -462,6 +485,9 @@ func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, play
 	}
 
 	delete(m.objects[types.OBJECT_TYPE_ITEM], itemID)
+
+	// Release OID for reuse
+	m.releaseOID(itemID)
 
 	// Notify listener about item removal
 	m.listener.OnItemRemoved(m.ID, itemID, playerID, removeType)
