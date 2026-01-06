@@ -65,3 +65,7 @@ Types:
 - Interface names should describe behavior: `PacketHandler`, `Socket`, `Packet`
 - Avoid redundant prefixes: `LoginLoginHandler` → `LoginHandler`, `PacketPacket` → `Packet`
 - Match naming to actual functionality: if it creates, use `New` or `Create`; if it reads, use `Read` or `Get`
+
+**Type Safety and Package Design**:
+- **Never use `interface{}` type**: All code must use strongly-typed interfaces or concrete types. The use of `interface{}` (empty interface) is strictly prohibited.
+- **Import cycle handling**: If an import cycle is detected, immediately stop all work and redesign the package structure. Import cycles indicate a fundamental architectural problem that must be resolved before proceeding.
