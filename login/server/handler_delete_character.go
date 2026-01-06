@@ -34,7 +34,7 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 		ID:      req.ID,
 		Success: true,
 	}
-	if err := ctx.SendFunc(deleteResp, types.SEND_POLICY_ENCRYPT); err != nil {
+	if err := ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT); err != nil {
 		log.Printf("Failed to send delete character response: %v", err)
 		return err
 	}

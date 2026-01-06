@@ -2,9 +2,12 @@ package entity
 
 import (
 	"fmt"
+	"log"
 	"math"
+	"sync"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
@@ -26,6 +29,7 @@ type MapListener interface {
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
 	OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
 	OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8)
+	OnWarpCharacter(character *Character, targetMapID uint32, portal uint8)
 }
 
 type MobSpawn struct {
@@ -44,6 +48,8 @@ type Map struct {
 	sequence        uint32      // Sequence ID for generating unique object IDs
 	availableOIDs   []uint32    // Queue of available OIDs for reuse
 	context         GameContext // GameContext for accessing resources
+	actorPID        *actor.PID
+	pidMutex        sync.RWMutex
 }
 
 func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) *Map {
@@ -584,4 +590,28 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 	default:
 		return nil, constant.LOOT_FAILED_INVALID_ITEM
 	}
+}
+
+func (m *Map) GetActorPID() *actor.PID {
+	m.pidMutex.RLock()
+	defer m.pidMutex.RUnlock()
+	return m.actorPID
+}
+
+func (m *Map) SetActorPID(pid *actor.PID) {
+	m.pidMutex.Lock()
+	defer m.pidMutex.Unlock()
+	m.actorPID = pid
+}
+
+func (m *Map) WarpCharacter(character *Character, targetMapID uint32, portal uint8) {
+	if m != nil {
+		if err := m.RemovePlayer(character.ID); err != nil {
+			log.Fatalf("Failed to remove player %d from map: %v", character.ID, err)
+			return
+		}
+	}
+	character.Map = targetMapID
+	character.SpawnPoint = portal
+	m.listener.OnWarpCharacter(character, targetMapID, portal)
 }

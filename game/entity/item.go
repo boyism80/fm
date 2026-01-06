@@ -167,32 +167,33 @@ func (drop *Drop) setupDropTimers() {
 		return
 	}
 
-	logicThread := drop.Object.Context.GetLogicThread()
-	if logicThread == nil {
-		return
-	}
-
-	// Set up FFA timer (Free For All after 30 seconds)
-	drop.ffaTimer = logicThread.Schedule(ffaDelay, func() error {
-		drop.DropType = constant.DROP_TYPE_FFA
-		drop.Owner = 0
-		return nil
-	}, func(success bool, err error) {
-		// Callback for FFA timer
-	})
-
-	// Set up expiry timer (item disappears after 5 minutes)
-	drop.expiryTimer = logicThread.Schedule(expiryDelay, func() error {
-		// Remove item from map
-		if drop.Object != nil && drop.Object.Context != nil {
-			if mapInstance := drop.Object.Context.GetMap(drop.MapID); mapInstance != nil {
-				mapInstance.RemoveItem(drop.Object.OID, constant.REMOVE_ITEM_TYPE_EXPIRED, 0)
-			}
-		}
-		return nil
-	}, func(success bool, err error) {
-		// Callback for expiry timer
-	})
+	// Commented out: LogicThread removed, timer setup will be handled later
+	// logicThread := drop.Object.Context.GetLogicThread()
+	// if logicThread == nil {
+	// 	return
+	// }
+	//
+	// // Set up FFA timer (Free For All after 30 seconds)
+	// drop.ffaTimer = logicThread.Schedule(ffaDelay, func() error {
+	// 	drop.DropType = constant.DROP_TYPE_FFA
+	// 	drop.Owner = 0
+	// 	return nil
+	// }, func(success bool, err error) {
+	// 	// Callback for FFA timer
+	// })
+	//
+	// // Set up expiry timer (item disappears after 5 minutes)
+	// drop.expiryTimer = logicThread.Schedule(expiryDelay, func() error {
+	// 	// Remove item from map
+	// 	if drop.Object != nil && drop.Object.Context != nil {
+	// 		if mapInstance := drop.Object.Context.GetMap(drop.MapID); mapInstance != nil {
+	// 			mapInstance.RemoveItem(drop.Object.OID, constant.REMOVE_ITEM_TYPE_EXPIRED, 0)
+	// 		}
+	// 	}
+	// 	return nil
+	// }, func(success bool, err error) {
+	// 	// Callback for expiry timer
+	// })
 }
 
 // cancelTimers cancels all active timers for this drop

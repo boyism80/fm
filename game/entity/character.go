@@ -65,6 +65,7 @@ type Character struct {
 	// Dialog state management
 	currentDialog *lua.LState // Current dialog coroutine
 	dialogMutex   sync.Mutex  // Mutex for dialog state access
+
 }
 
 type CooldownEntry struct {
@@ -118,10 +119,6 @@ func (ch *Character) Message(message string) {
 	if ch.Listener != nil {
 		ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
 	}
-}
-
-func (ch *Character) GetThreadHash() int {
-	return int(ch.Map)
 }
 
 func (ch *Character) IsRanked() bool {

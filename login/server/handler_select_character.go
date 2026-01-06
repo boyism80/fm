@@ -35,7 +35,7 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 		Port:        uint16(h.loginServer.config.GameServerPort),
 		CharacterId: req.CharacterId,
 	}
-	if err := ctx.SendFunc(transferResp, types.SEND_POLICY_ENCRYPT); err != nil {
+	if err := ctx.Client.Send(transferResp, types.SEND_POLICY_ENCRYPT); err != nil {
 		log.Printf("Failed to send transfer response: %v", err)
 		return err
 	}

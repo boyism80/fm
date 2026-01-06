@@ -3,8 +3,6 @@ package core
 import (
 	"fmt"
 	"log"
-
-	"github.com/boyism80/fm/types"
 )
 
 // PacketHandler manages packet processing for the server
@@ -20,9 +18,8 @@ type PacketHandler struct {
 // Purpose: Provides client and server references to handlers
 // Thread Safety: Safe for concurrent access
 type ClientContext struct {
-	Client   Client
-	Server   *Server
-	SendFunc func(p types.Packet, policy types.SendPolicy) error
+	Client Client
+	Server *Server
 }
 
 // NewPacketHandler creates a new packet handler
@@ -42,6 +39,11 @@ func NewPacketHandler() *PacketHandler {
 func (h *PacketHandler) RegisterHandler(opcode int, handler func(ctx *ClientContext, data []byte) error) {
 	h.handlers[opcode] = handler
 	log.Printf("Registered packet handler for opcode 0x%02X", opcode)
+}
+
+// GetHandler returns the handler for a specific opcode
+func (h *PacketHandler) GetHandler(opcode int) func(ctx *ClientContext, data []byte) error {
+	return h.handlers[opcode]
 }
 
 // Handle processes a packet with the registered handler

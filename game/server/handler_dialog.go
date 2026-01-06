@@ -6,9 +6,9 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
-	"github.com/boyism80/fm/game/constant"
+	// "github.com/boyism80/fm/game/constant" // Commented out: LogicThread removed
 	"github.com/boyism80/fm/protocol/request"
-	lua "github.com/yuin/gopher-lua"
+	// lua "github.com/yuin/gopher-lua" // Commented out: LogicThread removed
 )
 
 // Dialog handles dialog packet requests
@@ -47,55 +47,56 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		return fmt.Errorf("no active dialog")
 	}
 
-	logicThread := h.gameServer.GetLogicThread()
-	if logicThread == nil {
-		return fmt.Errorf("logic thread not available")
-	}
-
-	luaState := logicThread.GetLuaState()
-	if luaState == nil {
-		return fmt.Errorf("lua state not available")
-	}
-
-	var args []lua.LValue
-	switch req.DialogType {
-	case constant.DIALOG_TYPE_DEFAULT:
-		args = append(args, lua.LBool(req.Next))
-	case constant.DIALOG_TYPE_YES_NO:
-		args = append(args, lua.LBool(req.Next))
-	case constant.DIALOG_TYPE_LIST:
-		if req.Next {
-			args = append(args, lua.LNumber(req.Selected))
-		} else {
-			args = append(args, lua.LNil)
-		}
-	case constant.DIALOG_TYPE_INPUT:
-		if req.Next {
-			args = append(args, lua.LString(req.Text))
-		} else {
-			args = append(args, lua.LNil)
-		}
-	case constant.DIALOG_TYPE_ACCEPT_ESCAPE:
-	case constant.DIALOG_TYPE_ACCEPT:
-		args = append(args, lua.LBool(req.Next))
-	}
-
-	resumeState, err, _ := luaState.Resume(dialog, nil, args...)
-	if err != nil {
-		log.Printf("Failed to resume dialog: %v", err)
-		character.ClearCurrentDialog()
-		return fmt.Errorf("failed to resume dialog: %w", err)
-	}
-
-	switch resumeState {
-	case lua.ResumeOK:
-		character.ClearCurrentDialog()
-	case lua.ResumeYield:
-	case lua.ResumeError:
-		log.Printf("Dialog error for character %d: %v", character.GetID(), err)
-		character.ClearCurrentDialog()
-		return fmt.Errorf("dialog error: %w", err)
-	}
+	// Commented out: LogicThread removed, Lua script execution will be handled later
+	// logicThread := h.gameServer.GetLogicThread()
+	// if logicThread == nil {
+	// 	return fmt.Errorf("logic thread not available")
+	// }
+	//
+	// luaState := logicThread.GetLuaState()
+	// if luaState == nil {
+	// 	return fmt.Errorf("lua state not available")
+	// }
+	//
+	// var args []lua.LValue
+	// switch req.DialogType {
+	// case constant.DIALOG_TYPE_DEFAULT:
+	// 	args = append(args, lua.LBool(req.Next))
+	// case constant.DIALOG_TYPE_YES_NO:
+	// 	args = append(args, lua.LBool(req.Next))
+	// case constant.DIALOG_TYPE_LIST:
+	// 	if req.Next {
+	// 		args = append(args, lua.LNumber(req.Selected))
+	// 	} else {
+	// 		args = append(args, lua.LNil)
+	// 	}
+	// case constant.DIALOG_TYPE_INPUT:
+	// 	if req.Next {
+	// 		args = append(args, lua.LString(req.Text))
+	// 	} else {
+	// 		args = append(args, lua.LNil)
+	// 	}
+	// case constant.DIALOG_TYPE_ACCEPT_ESCAPE:
+	// case constant.DIALOG_TYPE_ACCEPT:
+	// 	args = append(args, lua.LBool(req.Next))
+	// }
+	//
+	// resumeState, err, _ := luaState.Resume(dialog, nil, args...)
+	// if err != nil {
+	// 	log.Printf("Failed to resume dialog: %v", err)
+	// 	character.ClearCurrentDialog()
+	// 	return fmt.Errorf("failed to resume dialog: %w", err)
+	// }
+	//
+	// switch resumeState {
+	// case lua.ResumeOK:
+	// 	character.ClearCurrentDialog()
+	// case lua.ResumeYield:
+	// case lua.ResumeError:
+	// 	log.Printf("Dialog error for character %d: %v", character.GetID(), err)
+	// 	character.ClearCurrentDialog()
+	// 	return fmt.Errorf("dialog error: %w", err)
+	// }
 
 	return nil
 }

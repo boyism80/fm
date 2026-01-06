@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -8,44 +9,89 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
+	coreactor "github.com/boyism80/fm/core/actor"
+	loginactor "github.com/boyism80/fm/login/actor"
 	"github.com/boyism80/fm/login/client"
 )
 
 // LoginServer represents the login server for MapleStory private server
 type LoginServer struct {
-	server        *core.Server
-	config        *LoginConfig
+	server         *core.Server
+	config         *LoginConfig
 	packetHandlers *PacketHandlerRegistry
+	context        *LoginServerContext
+	actorSystem    *coreactor.ActorSystem
+	actorRegistry  *coreactor.ActorRegistry
 }
 
 func (ls *LoginServer) GetServer() *core.Server {
 	return ls.server
 }
 
+func (ls *LoginServer) GetServerContext() core.ServerContext {
+	return ls.context
+}
+
+// handleClient creates LoginLogicActor for a new client connection
+func (ls *LoginServer) handleClient(c core.Client) {
+	loginClient, ok := c.(*client.LoginClient)
+	if !ok {
+		log.Printf("Client is not a LoginClient")
+		return
+	}
+
+	// Create LoginLogicActor
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return &loginactor.LoginLogicActor{
+			Client:  loginClient,
+			Context: ls.context,
+		}
+	})
+
+	pid := ls.actorRegistry.GetOrCreateActor(
+		fmt.Sprintf("login_session_%d", loginClient.GetFd()),
+		props,
+	)
+
+	// LoginClient에 LogicActor PID 저장
+	loginClient.SetLogicActorPID(pid)
+}
+
 // LoginConfig holds login server specific configuration
 type LoginConfig struct {
-	LogicThreadCount int    // Number of logic threads for login processing
-	Host             string // Login server host address
-	Port             int    // Login server port number
-	GameServerHost   string // Game server host for redirection
-	GameServerPort   int    // Game server port for redirection
+	// LogicThreadCount int    // Commented out: LogicThread removed
+	Host           string // Login server host address
+	Port           int    // Login server port number
+	GameServerHost string // Game server host for redirection
+	GameServerPort int    // Game server port for redirection
 }
 
 // NewLoginServer creates a new login server with specified configuration
 func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
+	// Create ServerContext
+	context := NewLoginServerContext()
+
+	// Create Actor system
+	actorSystem := coreactor.NewActorSystem()
+	actorRegistry := coreactor.NewActorRegistry(actorSystem)
+
 	// Create core server configuration
 	serverConfig := &core.ServerConfig{
-		LogicThreadCount: config.LogicThreadCount,
-		Host:             config.Host,
-		Port:             config.Port,
+		Host: config.Host,
+		Port: config.Port,
 		ClientFactory: func(conn net.Conn, clientID int) (core.Client, error) {
 			return client.NewLoginClient(conn, clientID)
 		},
-		LogicThreadInit: func(thread *core.LogicThread) {
-			// Login server doesn't need Lua initialization
-			log.Printf("Login server logic thread %d initialized (no Lua required)", thread.GetID())
+		OnClientConnect: func(c core.Client) {
+			// This will be set after loginServer is created
 		},
+		// LogicThreadInit: func(thread *core.LogicThread) {
+		// 	// Commented out: LogicThread removed
+		// 	// Login server doesn't need Lua initialization
+		// 	// log.Printf("Login server logic thread %d initialized (no Lua required)", thread.GetID())
+		// },
 	}
 
 	// Create core server
@@ -54,12 +100,21 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		return nil, err
 	}
 
+	// Set RootContext in server for actor message sending
+	server.SetRootContext(actorSystem.GetRoot())
+
 	loginServer := &LoginServer{
-		server:        server,
-		config:        config,
+		server:         server,
+		config:         config,
 		packetHandlers: NewPacketHandlerRegistry(nil),
+		context:        context,
+		actorSystem:    actorSystem,
+		actorRegistry:  actorRegistry,
 	}
 	loginServer.packetHandlers.loginServer = loginServer
+
+	// Set OnClientConnect callback to create Actor for each client
+	serverConfig.OnClientConnect = loginServer.handleClient
 
 	// Register packet handlers
 	loginServer.registerPacketHandlers()
@@ -104,11 +159,11 @@ func (ls *LoginServer) GetStats() map[string]interface{} {
 func RunLoginServer() {
 	// Create login server configuration
 	config := &LoginConfig{
-		LogicThreadCount: 4, // 4 logic threads for login processing
-		Host:             "0.0.0.0",
-		Port:             8484, // MapleStory login port
-		GameServerHost:   "localhost",
-		GameServerPort:   8485, // Game server port
+		// LogicThreadCount: 4, // Commented out: LogicThread removed
+		Host:           "0.0.0.0",
+		Port:           8484, // MapleStory login port
+		GameServerHost: "localhost",
+		GameServerPort: 8485, // Game server port
 	}
 
 	// Create login server
@@ -139,11 +194,11 @@ func RunLoginServer() {
 // RunLoginServerWithStats demonstrates login server with statistics monitoring
 func RunLoginServerWithStats() {
 	config := &LoginConfig{
-		LogicThreadCount: 4,
-		Host:             "localhost",
-		Port:             8484,
-		GameServerHost:   "localhost",
-		GameServerPort:   8485,
+		// LogicThreadCount: 4, // Commented out: LogicThread removed
+		Host:           "localhost",
+		Port:           8484,
+		GameServerHost: "localhost",
+		GameServerPort: 8485,
 	}
 
 	loginServer, err := NewLoginServer(config)
@@ -159,9 +214,7 @@ func RunLoginServerWithStats() {
 	go func() {
 		for {
 			stats := loginServer.GetStats()
-			log.Printf("Login Server Stats: IO Threads=%d, Logic Threads=%d, Clients=%d, Listening=%v, Game Server=%s:%d",
-				stats["io_thread_count"],
-				stats["logic_thread_count"],
+			log.Printf("Login Server Stats: Clients=%d, Listening=%v, Game Server=%s:%d",
 				stats["client_count"],
 				stats["listening"],
 				stats["game_server_host"],

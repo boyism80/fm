@@ -36,7 +36,7 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 		Name:   req.Name,
 		Exists: exists,
 	}
-	if err := ctx.SendFunc(checkResp, types.SEND_POLICY_ENCRYPT); err != nil {
+	if err := ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT); err != nil {
 		log.Printf("Failed to send check name response: %v", err)
 		return err
 	}

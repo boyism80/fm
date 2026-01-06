@@ -15,18 +15,18 @@ import (
 func main() {
 	// Define command line flags
 	var (
-		host         = flag.String("host", "0.0.0.0", "Game server host address")
-		port         = flag.Int("port", 8485, "Game server port number")
-		wzPath       = flag.String("wz-path", "resources/wz", "Path to WZ files directory")
-		logicThreads = flag.Int("logic-threads", 8, "Number of logic threads")
-		worldName    = flag.String("world", "Scania", "World/Channel name")
-		maxPlayers   = flag.Int("max-players", 1000, "Maximum number of players per world")
-		expRate      = flag.Int("exp-rate", 100, "Experience rate multiplier")
-		dropRate     = flag.Int("drop-rate", 10, "Drop rate multiplier")
-		mesoRate     = flag.Int("meso-rate", 1, "Meso rate multiplier")
-		withStats    = flag.Bool("stats", false, "Enable statistics monitoring")
-		highRate     = flag.Bool("high-rate", false, "Enable high-rate server configuration")
-		help         = flag.Bool("help", false, "Show help information")
+		host   = flag.String("host", "0.0.0.0", "Game server host address")
+		port   = flag.Int("port", 8485, "Game server port number")
+		wzPath = flag.String("wz-path", "resources/wz", "Path to WZ files directory")
+		// logicThreads = flag.Int("logic-threads", 8, "Number of logic threads") // Commented out: LogicThread removed
+		worldName  = flag.String("world", "Scania", "World/Channel name")
+		maxPlayers = flag.Int("max-players", 1000, "Maximum number of players per world")
+		expRate    = flag.Int("exp-rate", 100, "Experience rate multiplier")
+		dropRate   = flag.Int("drop-rate", 10, "Drop rate multiplier")
+		mesoRate   = flag.Int("meso-rate", 1, "Meso rate multiplier")
+		withStats  = flag.Bool("stats", false, "Enable statistics monitoring")
+		highRate   = flag.Bool("high-rate", false, "Enable high-rate server configuration")
+		help       = flag.Bool("help", false, "Show help information")
 	)
 
 	// Parse command line arguments
@@ -47,7 +47,7 @@ func main() {
 
 	// Override settings for high-rate server
 	if *highRate {
-		*logicThreads = 12
+		// *logicThreads = 12 // Commented out: LogicThread removed
 		*worldName = "HighRate"
 		*maxPlayers = 2000
 		*expRate = 10
@@ -58,15 +58,15 @@ func main() {
 
 	// Create game server configuration
 	config := &server.GameConfig{
-		LogicThreadCount: *logicThreads,
-		Host:             *host,
-		Port:             *port,
-		WzPath:           *wzPath,
-		WorldName:        *worldName,
-		MaxPlayers:       *maxPlayers,
-		ExpRate:          *expRate,
-		DropRate:         *dropRate,
-		MesoRate:         *mesoRate,
+		// LogicThreadCount: *logicThreads, // Commented out: LogicThread removed
+		Host:       *host,
+		Port:       *port,
+		WzPath:     *wzPath,
+		WorldName:  *worldName,
+		MaxPlayers: *maxPlayers,
+		ExpRate:    *expRate,
+		DropRate:   *dropRate,
+		MesoRate:   *mesoRate,
 	}
 
 	// Create game server
@@ -85,8 +85,7 @@ func main() {
 		go func() {
 			for {
 				stats := gameServer.GetStats()
-				log.Printf("Game Server Stats: Logic Threads=%d, Players=%d/%d, World=%s, Rates: Exp=%dx, Drop=%dx, Meso=%dx",
-					stats["logic_thread_count"],
+				log.Printf("Game Server Stats: Players=%d/%d, World=%s, Rates: Exp=%dx, Drop=%dx, Meso=%dx",
 					stats["current_players"],
 					stats["max_players"],
 					stats["world_name"],

@@ -1,6 +1,8 @@
 package server
 
 import (
+	gameactor "github.com/boyism80/fm/game/actor"
+	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/dto"
@@ -388,4 +390,33 @@ func (l *MapListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo 
 
 	// Broadcast to all players on the map except the attacker
 	mapInstance.BroadcastToPlayers(attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
+}
+
+func (l *MapListenerImpl) OnWarpCharacter(character *entity.Character, targetMapID uint32, portal uint8) {
+	targetMapInstance := l.gameServer.GetMap(targetMapID)
+	if targetMapInstance == nil {
+		return
+	}
+
+	targetMapPID := targetMapInstance.GetActorPID()
+	if targetMapPID == nil {
+		return
+	}
+
+	gameClient, ok := character.Sendable.(*client.GameClient)
+	if !ok {
+		return
+	}
+
+	gameClient.SetLogicActorPID(targetMapPID)
+
+	rootContext := l.gameServer.GetServer().GetRootContext()
+	if rootContext == nil {
+		return
+	}
+
+	rootContext.Send(targetMapPID, &gameactor.AddCharacter{
+		Character: character,
+		Init:      false,
+	})
 }

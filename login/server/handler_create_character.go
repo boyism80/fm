@@ -58,7 +58,7 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 			Overlays:   make(map[int8]uint32),
 		},
 	}
-	if err := ctx.SendFunc(createResp, types.SEND_POLICY_ENCRYPT); err != nil {
+	if err := ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT); err != nil {
 		log.Printf("Failed to send create character response: %v", err)
 		return err
 	}

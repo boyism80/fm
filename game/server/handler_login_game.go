@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	gameactor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
@@ -42,6 +43,9 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		character.Invincible = true
 	}
 
+	// Character 생성 시점에는 map이 결정되지 않음
+	character.Map = 0
+
 	client, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")
@@ -49,31 +53,52 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	}
 	client.SetCharacter(&character)
 
-	mapInstance := h.gameServer.GetMap(character.Map)
+	// nil MapActor에 할당 (맵이 결정되기 전까지)
+	client.SetLogicActorPID(nil)
+
+	// 초기 맵으로 이동 (nil MapActor에서 실제 맵으로)
+	initialMapID, ok := h.gameServer.resources.NameToMap("헤네시스")
+	if !ok {
+		return fmt.Errorf("initial map name not found")
+	}
+	initialSpawnPoint := uint8(1)
+
+	mapInstance := h.gameServer.GetMap(initialMapID)
 	if mapInstance == nil {
-		log.Printf("Map %d not found (should have been pre-created)", character.Map)
-		return fmt.Errorf("map %d not found", character.Map)
+		log.Printf("Initial map %d not found", initialMapID)
+		return fmt.Errorf("initial map %d not found", initialMapID)
 	}
 
 	mapSpec := mapInstance.GetSpec()
 	if mapSpec == nil {
-		log.Printf("MapSpec not found for map %d", character.Map)
-		return fmt.Errorf("mapSpec not found for map %d", character.Map)
+		log.Printf("MapSpec not found for map %d", initialMapID)
+		return fmt.Errorf("mapSpec not found for map %d", initialMapID)
 	}
 
-	portal, ok := mapSpec.Portals[character.SpawnPoint]
+	portal, ok := mapSpec.Portals[initialSpawnPoint]
 	if !ok {
-		log.Printf("Portal %d not found in map %d", character.SpawnPoint, character.Map)
-		return fmt.Errorf("portal %d not found in map %d", character.SpawnPoint, character.Map)
+		log.Printf("Portal %d not found in map %d", initialSpawnPoint, initialMapID)
+		return fmt.Errorf("portal %d not found in map %d", initialSpawnPoint, initialMapID)
 	}
 
 	character.Position = portal.Position
 	character.Stance = 0
 
-	if err := mapInstance.AddPlayer(character.ID, &character, true); err != nil {
-		log.Printf("Failed to add player to map: %v", err)
-		return err
+	// initialMapID에 대응되는 MapActor의 PID를 구해서 WarpCharacter 메시지 전송
+	targetMapPID := mapInstance.GetActorPID()
+	if targetMapPID == nil {
+		return fmt.Errorf("MapActor PID not found for map %d", initialMapID)
 	}
+
+	rootContext := h.gameServer.GetServer().GetRootContext()
+	if rootContext == nil {
+		return fmt.Errorf("rootContext not set")
+	}
+
+	rootContext.Send(targetMapPID, &gameactor.AddCharacter{
+		Character: &character,
+		Init:      true,
+	})
 
 	return nil
 }

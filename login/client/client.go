@@ -2,7 +2,9 @@ package client
 
 import (
 	"net"
+	"sync"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/crypt"
 )
@@ -10,14 +12,26 @@ import (
 // LoginClient represents a login server client with file descriptor based thread assignment
 type LoginClient struct {
 	core.BaseClient
+	logicActorPID *actor.PID
+	pidMutex      sync.RWMutex
 }
 
 // Ensure LoginClient implements core.Client
 var _ core.Client = (*LoginClient)(nil)
 
-// GetThreadHash returns file descriptor for thread assignment
-func (c *LoginClient) GetThreadHash() int {
-	return c.GetFd()
+
+// GetLogicActorPID returns the LogicActor PID for this client
+func (c *LoginClient) GetLogicActorPID() *actor.PID {
+	c.pidMutex.RLock()
+	defer c.pidMutex.RUnlock()
+	return c.logicActorPID
+}
+
+// SetLogicActorPID sets the LogicActor PID for this client
+func (c *LoginClient) SetLogicActorPID(pid *actor.PID) {
+	c.pidMutex.Lock()
+	defer c.pidMutex.Unlock()
+	c.logicActorPID = pid
 }
 
 // NewLoginClient creates a new LoginClient with file descriptor extraction and encryption

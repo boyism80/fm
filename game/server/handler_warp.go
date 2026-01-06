@@ -135,28 +135,29 @@ func (h *Warp) performWarp(client *client.GameClient, character *entity.Characte
 		}
 	}
 
-	task := &core.LogicTask{
-		Predicate: func() bool {
-			return character != nil && client.GetConnection() != nil
-		},
-		Logic: func() error {
-			if err := targetMap.AddPlayer(character.GetID(), character, false); err != nil {
-				return fmt.Errorf("failed to add character to target map: %v", err)
-			}
-			return nil
-		},
-		Callback: func(success bool, err error) {
-			if err != nil {
-				log.Printf("Failed to add character to target map: %v", err)
-			}
-		},
-		Object:     client,
-		MaxRetries: 3,
-	}
-
-	if err := h.gameServer.server.SubmitLogicTaskForObject(client, task); err != nil {
-		return fmt.Errorf("failed to submit warp task: %v", err)
-	}
+	// Commented out: LogicThread removed, warp is now handled by MapActor
+	// task := &core.LogicTask{
+	// 	Predicate: func() bool {
+	// 		return character != nil && client.GetConnection() != nil
+	// 	},
+	// 	Logic: func() error {
+	// 		if err := targetMap.AddPlayer(character.GetID(), character, false); err != nil {
+	// 			return fmt.Errorf("failed to add character to target map: %v", err)
+	// 		}
+	// 		return nil
+	// 	},
+	// 	Callback: func(success bool, err error) {
+	// 		if err != nil {
+	// 			log.Printf("Failed to add character to target map: %v", err)
+	// 		}
+	// 	},
+	// 	ThreadHash: 0, // Use hash 0 for warp tasks
+	// 	MaxRetries: 3,
+	// }
+	//
+	// if err := h.gameServer.server.SubmitLogicTaskForHash(0, task); err != nil {
+	// 	return fmt.Errorf("failed to submit warp task: %v", err)
+	// }
 
 	return nil
 }

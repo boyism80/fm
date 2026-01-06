@@ -41,7 +41,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 			IsChatBlocked: false,
 			ChatBlockTime: 116445060000000000,
 		}
-		if err := ctx.SendFunc(authResp, types.SEND_POLICY_ENCRYPT); err != nil {
+		if err := ctx.Client.Send(authResp, types.SEND_POLICY_ENCRYPT); err != nil {
 			log.Printf("Failed to send authenticate response: %v", err)
 			return err
 		}
@@ -54,20 +54,20 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 				Flag:         0,
 				EventMessage: "채승현이 간다.",
 			}
-			if err := ctx.SendFunc(serverResp, types.SEND_POLICY_ENCRYPT); err != nil {
+			if err := ctx.Client.Send(serverResp, types.SEND_POLICY_ENCRYPT); err != nil {
 				log.Printf("Failed to send server list response: %v", err)
 				return err
 			}
 		}
 
 		endResp := &response.EndOfServerList{}
-		if err := ctx.SendFunc(endResp, types.SEND_POLICY_ENCRYPT); err != nil {
+		if err := ctx.Client.Send(endResp, types.SEND_POLICY_ENCRYPT); err != nil {
 			log.Printf("Failed to send end of server list: %v", err)
 			return err
 		}
 	} else {
 		failedResp := &response.LoginFailed{Reason: response.LoginFailedReasonNoPopup}
-		if err := ctx.SendFunc(failedResp, types.SEND_POLICY_ENCRYPT); err != nil {
+		if err := ctx.Client.Send(failedResp, types.SEND_POLICY_ENCRYPT); err != nil {
 			log.Printf("Failed to send login failed response: %v", err)
 			return err
 		}
@@ -78,7 +78,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 			Message: "Hello",
 			MegaEar: false,
 		}
-		if err := ctx.SendFunc(noticeResp, types.SEND_POLICY_ENCRYPT); err != nil {
+		if err := ctx.Client.Send(noticeResp, types.SEND_POLICY_ENCRYPT); err != nil {
 			log.Printf("Failed to send notice: %v", err)
 			return err
 		}

@@ -6,17 +6,22 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
+
+	// "path/filepath" // Commented out: LogicThread removed
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/luax"
+	coreactor "github.com/boyism80/fm/core/actor"
+
+	// "github.com/boyism80/fm/core/luax" // Commented out: LogicThread removed
+	gameactor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
-	lua "github.com/yuin/gopher-lua"
+	// lua "github.com/yuin/gopher-lua" // Commented out: LogicThread removed
 )
 
 // GameServer represents the game server for MapleStory private server
@@ -28,33 +33,45 @@ type GameServer struct {
 	mapsMutex      sync.RWMutex
 	commandHandler *CommandHandler
 	packetHandlers *PacketHandlerRegistry
+	context        *GameServerContext
+	actorSystem    *coreactor.ActorSystem
+	actorRegistry  *coreactor.ActorRegistry
+	nilMapActorPID *actor.PID
 }
 
 func (gs *GameServer) GetServer() *core.Server {
 	return gs.server
 }
 
+func (gs *GameServer) GetServerContext() core.ServerContext {
+	return gs.context
+}
+
+func (gs *GameServer) GetRootContext() *actor.RootContext {
+	return gs.server.GetRootContext()
+}
+
 // GameContext provides access to game resources and services
 type GameContext interface {
 	GetResources() *wz.Resources
 	GetMap(mapId uint32) *entity.Map
-	GetLogicThread() *core.LogicThread // Returns core.LogicThread
-	GetExpRate() int                   // Returns experience rate multiplier
-	GetDropRate() int                  // Returns drop rate multiplier
-	GetMesoRate() int                  // Returns meso rate multiplier
+	// GetLogicThread() *core.LogicThread // Commented out: LogicThread removed
+	GetExpRate() int  // Returns experience rate multiplier
+	GetDropRate() int // Returns drop rate multiplier
+	GetMesoRate() int // Returns meso rate multiplier
 }
 
 // GameConfig holds game server specific configuration
 type GameConfig struct {
-	LogicThreadCount int    // Number of logic threads for game processing
-	Host             string // Game server host address
-	Port             int    // Game server port number
-	WzPath           string // Path to WZ files directory
-	WorldName        string // World/Channel name
-	MaxPlayers       int    // Maximum number of players per world
-	ExpRate          int    // Experience rate multiplier
-	DropRate         int    // Drop rate multiplier
-	MesoRate         int    // Meso rate multiplier
+	// LogicThreadCount int    // Commented out: LogicThread removed
+	Host       string // Game server host address
+	Port       int    // Game server port number
+	WzPath     string // Path to WZ files directory
+	WorldName  string // World/Channel name
+	MaxPlayers int    // Maximum number of players per world
+	ExpRate    int    // Experience rate multiplier
+	DropRate   int    // Drop rate multiplier
+	MesoRate   int    // Meso rate multiplier
 }
 
 // GetLuaState returns the Lua state for script execution
@@ -71,57 +88,58 @@ func (gs *GameServer) ExecuteNpcScript(character *entity.Character, npcInterface
 		return fmt.Errorf("NPC has no model")
 	}
 
-	// Get Lua state from LogicThread
-	logicThread := gs.GetLogicThread()
-	if logicThread == nil {
-		return fmt.Errorf("logic thread not available")
-	}
-
-	luaState := logicThread.GetLuaState()
-	if luaState == nil {
-		return fmt.Errorf("lua state not available")
-	}
-
-	// Load NPC script
-	path := filepath.Join("script", "npc", fmt.Sprintf("%d.lua", npc.Wz.ID))
-
-	// Load script function
-	fn, err := luaState.LoadFile(path)
-	if err != nil {
-		log.Printf("Failed to load NPC script %s: %v", path, err)
-		return fmt.Errorf("failed to load NPC script: %w", err)
-	}
-
-	// Create new thread for script execution
-	co, _ := luaState.NewThread()
-
-	// Push script function to thread
-	co.Push(fn)
-
-	// Execute script (loads all functions)
-	if err := co.PCall(0, lua.MultRet, nil); err != nil {
-		return fmt.Errorf("failed to execute NPC script: %w", err)
-	}
-
-	// Get on_start function
-	onStartFn := co.GetGlobal("on_start")
-	if onStartFn.Type() != lua.LTFunction {
-		return fmt.Errorf("on_start function not found in NPC script")
-	}
-
-	// Create character Lua object using luax.NewLuable
-	characterLua := luax.NewLuable(co, character)
-
-	// Call on_start(me) function
-	resumeState, err, _ := luaState.Resume(co, onStartFn.(*lua.LFunction), characterLua)
-	if err != nil {
-		return fmt.Errorf("failed to call on_start: %w", err)
-	}
-
-	// If script yielded (waiting for dialog response), store the coroutine
-	if resumeState == lua.ResumeYield {
-		character.SetCurrentDialog(co)
-	}
+	// Commented out: LogicThread removed, Lua script execution will be handled later
+	// // Get Lua state from LogicThread
+	// logicThread := gs.GetLogicThread()
+	// if logicThread == nil {
+	// 	return fmt.Errorf("logic thread not available")
+	// }
+	//
+	// luaState := logicThread.GetLuaState()
+	// if luaState == nil {
+	// 	return fmt.Errorf("lua state not available")
+	// }
+	//
+	// // Load NPC script
+	// path := filepath.Join("script", "npc", fmt.Sprintf("%d.lua", npc.Wz.ID))
+	//
+	// // Load script function
+	// fn, err := luaState.LoadFile(path)
+	// if err != nil {
+	// 	log.Printf("Failed to load NPC script %s: %v", path, err)
+	// 	return fmt.Errorf("failed to load NPC script: %w", err)
+	// }
+	//
+	// // Create new thread for script execution
+	// co, _ := luaState.NewThread()
+	//
+	// // Push script function to thread
+	// co.Push(fn)
+	//
+	// // Execute script (loads all functions)
+	// if err := co.PCall(0, lua.MultRet, nil); err != nil {
+	// 	return fmt.Errorf("failed to execute NPC script: %w", err)
+	// }
+	//
+	// // Get on_start function
+	// onStartFn := co.GetGlobal("on_start")
+	// if onStartFn.Type() != lua.LTFunction {
+	// 	return fmt.Errorf("on_start function not found in NPC script")
+	// }
+	//
+	// // Create character Lua object using luax.NewLuable
+	// characterLua := luax.NewLuable(co, character)
+	//
+	// // Call on_start(me) function
+	// resumeState, err, _ := luaState.Resume(co, onStartFn.(*lua.LFunction), characterLua)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to call on_start: %w", err)
+	// }
+	//
+	// // If script yielded (waiting for dialog response), store the coroutine
+	// if resumeState == lua.ResumeYield {
+	// 	character.SetCurrentDialog(co)
+	// }
 
 	return nil
 }
@@ -129,35 +147,35 @@ func (gs *GameServer) ExecuteNpcScript(character *entity.Character, npcInterface
 // NewGameServer creates a new game server with specified configuration
 func NewGameServer(config *GameConfig) (*GameServer, error) {
 	serverConfig := &core.ServerConfig{
-		LogicThreadCount: config.LogicThreadCount,
-		Host:             config.Host,
-		Port:             config.Port,
+		Host: config.Host,
+		Port: config.Port,
 		ClientFactory: func(conn net.Conn, clientID int) (core.Client, error) {
 			return client.NewGameClient(conn, clientID)
 		},
-		LogicThreadInit: func(thread *core.LogicThread) {
-			// Initialize Lua state for game server logic thread
-			luaState := thread.GetLuaState()
-			if luaState == nil {
-				log.Printf("Failed to get Lua state for logic thread %d", thread.GetID())
-				return
-			}
-
-			// Register Lua types with inheritance
-			luax.RegisterLuaType[*entity.Object](luaState)
-			luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)
-			luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](luaState)
-			luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](luaState)
-
-			// Register utility functions
-			luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
-				duration := L.CheckNumber(1)
-				time.Sleep(time.Duration(float64(duration) * float64(time.Second)))
-				return 0
-			})
-
-			log.Printf("Lua state initialized for logic thread %d", thread.GetID())
-		},
+		// LogicThreadInit: func(thread *core.LogicThread) {
+		// 	// Commented out: LogicThread removed, Lua initialization will be handled later
+		// 	// Initialize Lua state for game server logic thread
+		// 	// luaState := thread.GetLuaState()
+		// 	// if luaState == nil {
+		// 	// 	log.Printf("Failed to get Lua state for logic thread %d", thread.GetID())
+		// 	// 	return
+		// 	// }
+		// 	//
+		// 	// // Register Lua types with inheritance
+		// 	// luax.RegisterLuaType[*entity.Object](luaState)
+		// 	// luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)
+		// 	// luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](luaState)
+		// 	// luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](luaState)
+		// 	//
+		// 	// // Register utility functions
+		// 	// luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
+		// 	// 	duration := L.CheckNumber(1)
+		// 	// 	time.Sleep(time.Duration(float64(duration) * float64(time.Second)))
+		// 	// 	return 0
+		// 	// })
+		// 	//
+		// 	// log.Printf("Lua state initialized for logic thread %d", thread.GetID())
+		// },
 	}
 	server, err := core.NewServer(serverConfig)
 	if err != nil {
@@ -171,12 +189,29 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		return nil, fmt.Errorf("failed to load game resources")
 	}
 
+	// Create ServerContext (temporary, will be set after gameServer is created)
+	// MapListener will be set after gameServer is created in preCreateMaps
+	context := NewGameServerContext(config.WzPath, nil, nil)
+
+	// Create Actor system
+	actorSystem := coreactor.NewActorSystem()
+	actorRegistry := coreactor.NewActorRegistry(actorSystem)
+
+	// Set RootContext in server for actor message sending
+	server.SetRootContext(actorSystem.GetRoot())
+
 	gameServer := &GameServer{
-		server:    server,
-		config:    config,
-		resources: resources,
-		maps:      make(map[uint32]*entity.Map),
+		server:        server,
+		config:        config,
+		resources:     resources,
+		maps:          make(map[uint32]*entity.Map),
+		context:       context,
+		actorSystem:   actorSystem,
+		actorRegistry: actorRegistry,
 	}
+
+	// Set gameServer reference in context
+	context.gameServer = gameServer
 
 	// Initialize command handler
 	gameServer.commandHandler = NewCommandHandler(gameServer)
@@ -194,10 +229,8 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	gameServer.registerCommandHandlers()
 
 	// Set client disconnect handler
-	server.SetOnClientDisconnect(func(client interface{}) {
-		if client, ok := client.(core.Client); ok {
-			gameServer.handleClientDisconnect(client)
-		}
+	server.SetOnClientDisconnect(func(client core.Client) {
+		gameServer.handleClientDisconnect(client)
 	})
 
 	return gameServer, nil
@@ -220,30 +253,57 @@ func (gs *GameServer) GetMesoRate() int {
 	return gs.config.MesoRate
 }
 
-// GetThreadHash returns a hash for thread assignment
-func (gs *GameServer) GetThreadHash() int {
-	return 0 // GameServer uses a single thread hash
-}
-
 // GetLogicThread returns the logic thread for scheduling tasks
-func (gs *GameServer) GetLogicThread() *core.LogicThread {
-	logicThread, err := gs.server.GetLogicThread(gs)
-	if err != nil {
-		return nil
-	}
-	return logicThread
-}
+// Commented out: LogicThread removed, will be replaced with Actor model
+// func (gs *GameServer) GetLogicThread() *core.LogicThread {
+// 	logicThread, err := gs.server.GetLogicThreadByHash(0)
+// 	if err != nil {
+// 		return nil
+// 	}
+// 	return logicThread
+// }
 
 // preCreateMaps pre-creates all map instances from loaded resources
 func (gs *GameServer) preCreateMaps() {
 	log.Println("Setting up map listeners...")
 	gameMapListener := NewGameMapListener(gs)
 
+	// Create nil MapActor (for characters before map assignment)
+	nilMapProps := actor.PropsFromProducer(func() actor.Actor {
+		return &gameactor.MapActor{
+			MapData: nil,
+			Context: gs.context,
+		}
+	})
+
+	nilMapPID := gs.actorRegistry.GetOrCreateActor(
+		"map_nil",
+		nilMapProps,
+	)
+	gs.nilMapActorPID = nilMapPID
+
+	// Set nil MapActor PID in server for handling nil PID clients
+	gs.server.SetNilMapActorPID(nilMapPID)
+
 	log.Println("Pre-creating map instances...")
 	for mapID := range gs.resources.Maps {
-		mapInstance := entity.NewMap(mapID, gameMapListener, mapID, gs) // Pass mapID instead of mapSpec
-		// TODO: Initialize map with MapSpec data (mob spawns, etc.)
+		mapInstance := entity.NewMap(mapID, gameMapListener, mapID, gs)
 		gs.maps[mapID] = mapInstance
+
+		// Create MapActor for this map
+		props := actor.PropsFromProducer(func() actor.Actor {
+			return &gameactor.MapActor{
+				MapData: mapInstance,
+				Context: gs.context,
+			}
+		})
+
+		pid := gs.actorRegistry.GetOrCreateActor(
+			fmt.Sprintf("map_%d", mapID),
+			props,
+		)
+
+		mapInstance.SetActorPID(pid)
 	}
 	log.Printf("Pre-created %d map instances", len(gs.maps))
 	log.Println("Map listeners configured")
@@ -344,14 +404,14 @@ func (gs *GameServer) GetStats() map[string]interface{} {
 func RunGameServer() {
 	// Create game server configuration
 	config := &GameConfig{
-		LogicThreadCount: 8, // 8 logic threads for game processing
-		Host:             "0.0.0.0",
-		Port:             8485, // MapleStory game port
-		WorldName:        "Scania",
-		MaxPlayers:       1000,
-		ExpRate:          1, // 1x experience rate
-		DropRate:         1, // 1x drop rate
-		MesoRate:         1, // 1x meso rate
+		// LogicThreadCount: 8, // Commented out: LogicThread removed
+		Host:       "0.0.0.0",
+		Port:       8485, // MapleStory game port
+		WorldName:  "Scania",
+		MaxPlayers: 1000,
+		ExpRate:    1, // 1x experience rate
+		DropRate:   1, // 1x drop rate
+		MesoRate:   1, // 1x meso rate
 	}
 
 	// Create game server
@@ -382,14 +442,14 @@ func RunGameServer() {
 // RunGameServerWithStats runs game server with statistics monitoring
 func RunGameServerWithStats() {
 	config := &GameConfig{
-		LogicThreadCount: 8,
-		Host:             "localhost",
-		Port:             8485,
-		WorldName:        "Scania",
-		MaxPlayers:       1000,
-		ExpRate:          2, // 2x experience rate
-		DropRate:         2, // 2x drop rate
-		MesoRate:         2, // 2x meso rate
+		// LogicThreadCount: 8, // Commented out: LogicThread removed
+		Host:       "localhost",
+		Port:       8485,
+		WorldName:  "Scania",
+		MaxPlayers: 1000,
+		ExpRate:    2, // 2x experience rate
+		DropRate:   2, // 2x drop rate
+		MesoRate:   2, // 2x meso rate
 	}
 
 	gameServer, err := NewGameServer(config)
@@ -405,9 +465,7 @@ func RunGameServerWithStats() {
 	go func() {
 		for {
 			stats := gameServer.GetStats()
-			log.Printf("Game Server Stats: IO Threads=%d, Logic Threads=%d, Players=%d/%d, World=%s, Rates: Exp=%dx, Drop=%dx, Meso=%dx",
-				stats["io_thread_count"],
-				stats["logic_thread_count"],
+			log.Printf("Game Server Stats: Players=%d/%d, World=%s, Rates: Exp=%dx, Drop=%dx, Meso=%dx",
 				stats["current_players"],
 				stats["max_players"],
 				stats["world_name"],
@@ -432,14 +490,14 @@ func RunGameServerWithStats() {
 // RunHighRateGameServer runs a high-rate game server configuration
 func RunHighRateGameServer() {
 	config := &GameConfig{
-		LogicThreadCount: 12, // More logic threads for complex game mechanics
-		Host:             "0.0.0.0",
-		Port:             8485,
-		WorldName:        "HighRate",
-		MaxPlayers:       2000,
-		ExpRate:          10, // 10x experience rate
-		DropRate:         5,  // 5x drop rate
-		MesoRate:         5,  // 5x meso rate
+		// LogicThreadCount: 12, // Commented out: LogicThread removed
+		Host:       "0.0.0.0",
+		Port:       8485,
+		WorldName:  "HighRate",
+		MaxPlayers: 2000,
+		ExpRate:    10, // 10x experience rate
+		DropRate:   5,  // 5x drop rate
+		MesoRate:   5,  // 5x meso rate
 	}
 
 	gameServer, err := NewGameServer(config)

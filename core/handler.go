@@ -26,6 +26,7 @@ type HandlerConstructor[S any, H Handler[T], T RequestPtr[U], U any] interface {
 
 type ServerRegistry interface {
 	GetServer() *Server
+	GetServerContext() ServerContext
 }
 
 func Bind[S ServerRegistry, C HandlerConstructor[S, H, T, U], H Handler[T], T RequestPtr[U], U any](registry S) {
@@ -47,6 +48,6 @@ func Bind[S ServerRegistry, C HandlerConstructor[S, H, T, U], H Handler[T], T Re
 		return handler.Handle(ctx, req)
 	}
 
-	registry.GetServer().RegisterPacketHandler(int(opcode), handlerFunc)
+	registry.GetServerContext().GetPacketHandler().RegisterHandler(int(opcode), handlerFunc)
 	log.Printf("Registered packet handler 0x%X for type %T", opcode, handler)
 }

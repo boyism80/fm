@@ -5,19 +5,13 @@ import (
 	"net"
 	"sync"
 
+	"github.com/boyism80/fm/core/client"
 	"github.com/boyism80/fm/core/crypt"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
 
-// Client represents a connected game client with socket functionality
-type Client interface {
-	ThreadAssignable
-	Send(packet types.Packet, policy types.SendPolicy) error
-	GetConnection() net.Conn
-	GetSendEncryption() *crypt.Encryption
-	GetRecvEncryption() *crypt.Encryption
-}
+type Client = client.Client
 
 // BaseClient contains common fields and methods for all client types
 type BaseClient struct {

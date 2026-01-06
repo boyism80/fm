@@ -81,7 +81,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 		Characters: characters,
 		SlotCount:  6,
 	}
-	if err := ctx.SendFunc(charListResp, types.SEND_POLICY_ENCRYPT); err != nil {
+	if err := ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT); err != nil {
 		log.Printf("Failed to send character list response: %v", err)
 		return err
 	}
