@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -656,9 +657,22 @@ func (r *Resources) GetExpNeededForLevel(level uint8) uint32 {
 
 // buildMapNameIndex builds the name to ID index for maps
 // Only includes maps that are actually loaded in r.Maps (from Map.wz)
+// When multiple maps have the same name, the smallest map ID is prioritized
 func (r *Resources) buildMapNameIndex() {
-	// Iterate through actually loaded maps (from Map.wz)
+	// Collect all map IDs and sort them to ensure deterministic behavior
+	mapIds := make([]uint32, 0, len(r.Maps))
 	for mapId := range r.Maps {
+		mapIds = append(mapIds, mapId)
+	}
+
+	// Sort map IDs to ensure smaller IDs are processed first
+	// This ensures consistent behavior when multiple maps have the same name
+	sort.Slice(mapIds, func(i, j int) bool {
+		return mapIds[i] < mapIds[j]
+	})
+
+	// Iterate through sorted map IDs
+	for _, mapId := range mapIds {
 		// Get map name from String.wz
 		for _, regionMaps := range r.Strings.MapStrings {
 			if mapNameData, ok := regionMaps[mapId]; ok && mapNameData != nil {

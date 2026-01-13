@@ -73,7 +73,7 @@ func (a *MapActor) addCharacter(ctx actor.Context, msg *AddCharacter) {
 	if a.MapData == nil {
 		return
 	}
-	a.MapData.AddPlayer(msg.Character.ID, msg.Character, msg.Init)
+	a.MapData.AddPlayer(msg.Character.ID, msg.Character, msg.SpawnPoint, msg.Init)
 }
 
 func (a *MapActor) removeCharacter(ctx actor.Context, msg *RemoveCharacter) {
@@ -87,5 +87,5 @@ func (a *MapActor) warpCharacter(ctx actor.Context, msg *WarpCharacter) {
 	if a.MapData == nil {
 		return
 	}
-	a.MapData.WarpCharacter(msg.Character, msg.TargetMap, msg.Portal)
+	a.MapData.AddPlayer(msg.Character.ID, msg.Character, msg.Portal, false)
 }

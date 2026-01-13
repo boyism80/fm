@@ -5,8 +5,9 @@ import (
 )
 
 type AddCharacter struct {
-	Character *entity.Character
-	Init      bool
+	Character  *entity.Character
+	SpawnPoint uint8
+	Init       bool
 }
 
 type RemoveCharacter struct {
@@ -15,6 +16,5 @@ type RemoveCharacter struct {
 
 type WarpCharacter struct {
 	Character *entity.Character
-	TargetMap uint32
 	Portal    uint8
 }

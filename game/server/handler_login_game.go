@@ -96,8 +96,9 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	}
 
 	rootContext.Send(targetMapPID, &gameactor.AddCharacter{
-		Character: &character,
-		Init:      true,
+		Character:  &character,
+		SpawnPoint: initialSpawnPoint,
+		Init:       true,
 	})
 
 	return nil

@@ -191,7 +191,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 	// Create ServerContext (temporary, will be set after gameServer is created)
 	// MapListener will be set after gameServer is created in preCreateMaps
-	context := NewGameServerContext(config.WzPath, nil, nil)
+	context := NewGameServerContext(config.WzPath, nil)
 
 	// Create Actor system
 	actorSystem := coreactor.NewActorSystem()

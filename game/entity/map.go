@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"sync"
 	"time"
@@ -29,7 +28,6 @@ type MapListener interface {
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
 	OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
 	OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8)
-	OnWarpCharacter(character *Character, targetMapID uint32, portal uint8)
 }
 
 type MobSpawn struct {
@@ -122,10 +120,13 @@ func OnMobControllerChange(mob *Mob, before *Character, after *Character) {
 	// The actual mob AI logic will be implemented in the MapListener
 }
 
-func (m *Map) AddPlayer(playerID uint32, character *Character, init bool) error {
+func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8, init bool) error {
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
 		m.objects[types.OBJECT_TYPE_PLAYER] = make(map[uint32]interface{})
 	}
+
+	character.Map = m.ID
+	character.SpawnPoint = spawnPoint
 
 	m.objects[types.OBJECT_TYPE_PLAYER][playerID] = character
 
@@ -602,16 +603,4 @@ func (m *Map) SetActorPID(pid *actor.PID) {
 	m.pidMutex.Lock()
 	defer m.pidMutex.Unlock()
 	m.actorPID = pid
-}
-
-func (m *Map) WarpCharacter(character *Character, targetMapID uint32, portal uint8) {
-	if m != nil {
-		if err := m.RemovePlayer(character.ID); err != nil {
-			log.Fatalf("Failed to remove player %d from map: %v", character.ID, err)
-			return
-		}
-	}
-	character.Map = targetMapID
-	character.SpawnPoint = portal
-	m.listener.OnWarpCharacter(character, targetMapID, portal)
 }
