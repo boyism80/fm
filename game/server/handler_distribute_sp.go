@@ -16,14 +16,14 @@ import (
 )
 
 type DistributeSP struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (DistributeSP) New(gameServer *GameServer) *DistributeSP {
+func (DistributeSP) New(gs *GameServer) *DistributeSP {
 	return &DistributeSP{
-		gameServer: gameServer,
-		opcode:     0x49,
+		gs:     gs,
+		opcode: 0x49,
 	}
 }
 

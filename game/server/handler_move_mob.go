@@ -12,14 +12,14 @@ import (
 
 // MoveMob handles mob movement packet requests
 type MoveMob struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (MoveMob) New(gameServer *GameServer) *MoveMob {
+func (MoveMob) New(gs *GameServer) *MoveMob {
 	return &MoveMob{
-		gameServer: gameServer,
-		opcode:     0x95,
+		gs:     gs,
+		opcode: 0x95,
 	}
 }
 
@@ -40,7 +40,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gameServer.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.GetMap())
 	if mapInstance == nil {
 		log.Printf("Map %d not found", character.GetMap())
 		return fmt.Errorf("map %d not found", character.GetMap())

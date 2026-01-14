@@ -9,14 +9,14 @@ import (
 )
 
 type CharacterListenerImpl struct {
-	gameServer *GameServer
-	character  *entity.Character
+	gs *GameServer
+	ch *entity.Character
 }
 
-func NewGameCharacterListener(gameServer *GameServer, character *entity.Character) *CharacterListenerImpl {
+func NewGameCharacterListener(gs *GameServer, ch *entity.Character) *CharacterListenerImpl {
 	return &CharacterListenerImpl{
-		gameServer: gameServer,
-		character:  character,
+		gs: gs,
+		ch: ch,
 	}
 }
 
@@ -28,7 +28,7 @@ func (l *CharacterListenerImpl) OnDialog(npc uint32, message string, prev bool, 
 		Prev: prev,
 		Next: next,
 	}
-	l.character.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnDialogYesNo(npc uint32, message string, prev bool, next bool) {
@@ -38,7 +38,7 @@ func (l *CharacterListenerImpl) OnDialogYesNo(npc uint32, message string, prev b
 		Prev: prev,
 		Next: next,
 	}
-	l.character.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnDialogAccept(npc uint32, message string, enableEscape bool) {
@@ -47,7 +47,7 @@ func (l *CharacterListenerImpl) OnDialogAccept(npc uint32, message string, enabl
 		Text:         message,
 		EnableEscape: enableEscape,
 	}
-	l.character.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnDialogList(npc uint32, message string, selections []string) {
@@ -56,7 +56,7 @@ func (l *CharacterListenerImpl) OnDialogList(npc uint32, message string, selecti
 		Text:       message,
 		Selections: selections,
 	}
-	l.character.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnDialogInput(npc uint32, message string) {
@@ -64,18 +64,18 @@ func (l *CharacterListenerImpl) OnDialogInput(npc uint32, message string) {
 		NPC:  npc,
 		Text: message,
 	}
-	l.character.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecordHistory bool) {
 	chatPacket := &response.NormalChat{
-		CharacterId:       l.character.ID,
+		CharacterId:       l.ch.ID,
 		Message:           message,
 		Highlight:         highlight,
 		DontRecordHistory: dontRecordHistory,
 	}
 
-	mapInstance := l.gameServer.GetMap(l.character.Map)
+	mapInstance := l.gs.GetMap(l.ch.Map)
 	if mapInstance == nil {
 		return
 	}
@@ -84,7 +84,7 @@ func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecor
 }
 
 func (l *CharacterListenerImpl) OnMesoChanged(meso int32) {
-	l.character.Send(&response.UpdateStats{
+	l.ch.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MESO: meso,
 		},
@@ -96,7 +96,7 @@ func (l *CharacterListenerImpl) OnMessage(messageType constant.ServerMessageType
 		Message: message,
 		Type:    messageType,
 	}
-	l.character.Send(noticePacket, types.SEND_POLICY_ENCRYPT)
+	l.ch.Send(noticePacket, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnExpGain(exp uint32) {
@@ -104,11 +104,11 @@ func (l *CharacterListenerImpl) OnExpGain(exp uint32) {
 		Gain:  exp,
 		White: false,
 	}
-	l.character.Send(expPacket, types.SEND_POLICY_ENCRYPT)
+	l.ch.Send(expPacket, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnControlMoveMob(oid uint32, moveId uint8, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
-	l.character.Send(&response.ControlMoveMob{
+	l.ch.Send(&response.ControlMoveMob{
 		OID:          oid,
 		MoveId:       uint16(moveId),
 		EnabledSkill: enabledSkill,
@@ -119,27 +119,27 @@ func (l *CharacterListenerImpl) OnControlMoveMob(oid uint32, moveId uint8, enabl
 }
 
 func (l *CharacterListenerImpl) OnShowMobHp(oid uint32, percentage uint8) {
-	l.character.Send(&response.ShowMobHp{
+	l.ch.Send(&response.ShowMobHp{
 		OID:        oid,
 		Percentage: percentage,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnUnlockAction() {
-	l.character.Send(&response.UpdateStats{
+	l.ch.Send(&response.UpdateStats{
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnItemGainFailed(mode constant.ItemGainFailedType) {
-	l.character.Send(&response.ItemGainFailed{
+	l.ch.Send(&response.ItemGainFailed{
 		Mode: mode,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnInventorySlotUpdated(inventoryType constant.InventoryType, slot int16, item entity.Item) {
 	itemDTO := entity.ItemToDTO(item)
-	l.character.Send(&response.UpdateInventorySlot{
+	l.ch.Send(&response.UpdateInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 		Item:          itemDTO,
@@ -148,7 +148,7 @@ func (l *CharacterListenerImpl) OnInventorySlotUpdated(inventoryType constant.In
 
 func (l *CharacterListenerImpl) OnInventorySlotAdded(inventoryType constant.InventoryType, slot int16, item entity.Item) {
 	itemDTO := entity.ItemToDTO(item)
-	l.character.Send(&response.AddInventorySlot{
+	l.ch.Send(&response.AddInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 		Item:          itemDTO,
@@ -156,7 +156,7 @@ func (l *CharacterListenerImpl) OnInventorySlotAdded(inventoryType constant.Inve
 }
 
 func (l *CharacterListenerImpl) OnShowItemGain(itemId uint32, count uint32, mode constant.ShowItemGainType) {
-	l.character.Send(&response.ShowItemGain{
+	l.ch.Send(&response.ShowItemGain{
 		ItemId: itemId,
 		Count:  count,
 		Mode:   mode,
@@ -164,21 +164,21 @@ func (l *CharacterListenerImpl) OnShowItemGain(itemId uint32, count uint32, mode
 }
 
 func (l *CharacterListenerImpl) OnShowMesoGain(count int32, mode constant.ShowMesoGainType) {
-	l.character.Send(&response.ShowMesoGain{
+	l.ch.Send(&response.ShowMesoGain{
 		Count: count,
 		Mode:  mode,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnUpdateStats(stats map[constant.Stat]int32, unlock bool) {
-	l.character.Send(&response.UpdateStats{
+	l.ch.Send(&response.UpdateStats{
 		Stats:        stats,
 		UnlockAction: unlock,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -211,7 +211,7 @@ func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed
 }
 
 func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -228,7 +228,7 @@ func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, char
 }
 
 func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8) {
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -243,13 +243,13 @@ func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attac
 }
 
 func (l *CharacterListenerImpl) OnEndSortInventory(inventoryType constant.InventoryType) {
-	l.character.Send(&response.EndSortInventory{
+	l.ch.Send(&response.EndSortInventory{
 		InventoryType: inventoryType,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnSwapInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8) {
-	l.character.Send(&response.SwapInventorySlot{
+	l.ch.Send(&response.SwapInventorySlot{
 		InventoryType:   inventoryType,
 		Source:          source,
 		Dest:            dest,
@@ -258,7 +258,7 @@ func (l *CharacterListenerImpl) OnSwapInventorySlot(inventoryType constant.Inven
 }
 
 func (l *CharacterListenerImpl) OnRemoveInventorySlot(inventoryType constant.InventoryType, slot int16) {
-	l.character.Send(&response.RemoveInventorySlot{
+	l.ch.Send(&response.RemoveInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -266,7 +266,7 @@ func (l *CharacterListenerImpl) OnRemoveInventorySlot(inventoryType constant.Inv
 
 func (l *CharacterListenerImpl) OnUpdateInventorySlot(inventoryType constant.InventoryType, slot int16, item entity.Item) {
 	itemDTO := entity.ItemToDTO(item)
-	l.character.Send(&response.UpdateInventorySlot{
+	l.ch.Send(&response.UpdateInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 		Item:          itemDTO,
@@ -274,7 +274,7 @@ func (l *CharacterListenerImpl) OnUpdateInventorySlot(inventoryType constant.Inv
 }
 
 func (l *CharacterListenerImpl) OnFullMergeInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, count uint16) {
-	l.character.Send(&response.FullMergeInventorySlot{
+	l.ch.Send(&response.FullMergeInventorySlot{
 		InventoryType: inventoryType,
 		Source:        source,
 		Dest:          dest,
@@ -283,7 +283,7 @@ func (l *CharacterListenerImpl) OnFullMergeInventorySlot(inventoryType constant.
 }
 
 func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16) {
-	l.character.Send(&response.PartialMergeInventorySlot{
+	l.ch.Send(&response.PartialMergeInventorySlot{
 		InventoryType: inventoryType,
 		Source:        source,
 		Dest:          dest,
@@ -293,7 +293,7 @@ func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(inventoryType consta
 }
 
 func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Character) {
-	mapInstance := l.gameServer.GetMap(character.GetMap())
+	mapInstance := l.gs.GetMap(character.GetMap())
 	if mapInstance == nil {
 		return
 	}
@@ -308,7 +308,7 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Characte
 }
 
 func (l *CharacterListenerImpl) OnNpcAction(bytes []byte) {
-	l.character.Send(&response.NpcAction{
+	l.ch.Send(&response.NpcAction{
 		Bytes: bytes,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -316,10 +316,10 @@ func (l *CharacterListenerImpl) OnNpcAction(bytes []byte) {
 func (l *CharacterListenerImpl) OnClassChange(oldClass uint16, newClass uint16) {
 	stats := map[constant.Stat]int32{
 		constant.STAT_JOB:          int32(newClass),
-		constant.STAT_AVAILABLE_SP: int32(l.character.SkillPoint),
+		constant.STAT_AVAILABLE_SP: int32(l.ch.SkillPoint),
 	}
 
-	l.character.Send(&response.UpdateStats{
+	l.ch.Send(&response.UpdateStats{
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)

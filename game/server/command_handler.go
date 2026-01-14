@@ -8,20 +8,20 @@ import (
 )
 
 type CommandHandler struct {
-	gameServer *GameServer
-	handlers   map[string]Command
+	gs       *GameServer
+	handlers map[string]Command
 }
 
-func NewCommandHandler(gameServer *GameServer) *CommandHandler {
+func NewCommandHandler(gs *GameServer) *CommandHandler {
 	return &CommandHandler{
-		gameServer: gameServer,
-		handlers:   make(map[string]Command),
+		gs:       gs,
+		handlers: make(map[string]Command),
 	}
 }
 
 func Bind[C CommandHandlerConstructor[H], H Command](ch *CommandHandler) {
 	var constructor C
-	handler := constructor.New(ch.gameServer)
+	handler := constructor.New(ch.gs)
 
 	commandName := handler.GetCommandName()
 	ch.handlers[commandName] = handler

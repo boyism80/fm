@@ -10,12 +10,12 @@ import (
 )
 
 type KillAllMobs struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*KillAllMobs) New(gameServer *GameServer) *KillAllMobs {
+func (*KillAllMobs) New(gs *GameServer) *KillAllMobs {
 	return &KillAllMobs{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -33,7 +33,7 @@ func (h *KillAllMobs) Handle(gameClient *client.GameClient, args ...string) erro
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gameServer.GetMap(character.Map)
+	mapInstance := h.gs.GetMap(character.Map)
 	if mapInstance == nil {
 		return fmt.Errorf("map %d not found", character.Map)
 	}
@@ -51,4 +51,3 @@ func (h *KillAllMobs) Handle(gameClient *client.GameClient, args ...string) erro
 
 	return nil
 }
-

@@ -11,12 +11,12 @@ import (
 )
 
 type ChangeInt struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ChangeInt) New(gameServer *GameServer) *ChangeInt {
+func (*ChangeInt) New(gs *GameServer) *ChangeInt {
 	return &ChangeInt{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -56,4 +56,3 @@ func (h *ChangeInt) Handle(gameClient *client.GameClient, args ...string) error 
 
 	return nil
 }
-

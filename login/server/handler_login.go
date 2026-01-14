@@ -12,14 +12,14 @@ import (
 
 // Login handles login packet requests
 type Login struct {
-	loginServer *LoginServer
-	opcode      byte
+	ls     *LoginServer
+	opcode byte
 }
 
-func (Login) New(loginServer *LoginServer) *Login {
+func (Login) New(ls *LoginServer) *Login {
 	return &Login{
-		loginServer: loginServer,
-		opcode:      0x01,
+		ls:     ls,
+		opcode: 0x01,
 	}
 }
 

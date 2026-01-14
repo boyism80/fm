@@ -7,12 +7,12 @@ import (
 )
 
 type Invincible struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*Invincible) New(gameServer *GameServer) *Invincible {
+func (*Invincible) New(gs *GameServer) *Invincible {
 	return &Invincible{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -40,4 +40,3 @@ func (h *Invincible) Handle(gameClient *client.GameClient, args ...string) error
 
 	return nil
 }
-

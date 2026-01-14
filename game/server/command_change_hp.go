@@ -11,12 +11,12 @@ import (
 )
 
 type ChangeHp struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ChangeHp) New(gameServer *GameServer) *ChangeHp {
+func (*ChangeHp) New(gs *GameServer) *ChangeHp {
 	return &ChangeHp{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -58,4 +58,3 @@ func (h *ChangeHp) Handle(gameClient *client.GameClient, args ...string) error {
 
 	return nil
 }
-

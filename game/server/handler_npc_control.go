@@ -11,14 +11,14 @@ import (
 
 // NpcControl handles NPC control packet requests
 type NpcControl struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (NpcControl) New(gameServer *GameServer) *NpcControl {
+func (NpcControl) New(gs *GameServer) *NpcControl {
 	return &NpcControl{
-		gameServer: gameServer,
-		opcode:     0x9E,
+		gs:     gs,
+		opcode: 0x9E,
 	}
 }
 

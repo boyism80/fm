@@ -12,14 +12,14 @@ import (
 
 // DropMeso handles meso dropping packet requests
 type DropMeso struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (DropMeso) New(gameServer *GameServer) *DropMeso {
+func (DropMeso) New(gs *GameServer) *DropMeso {
 	return &DropMeso{
-		gameServer: gameServer,
-		opcode:     0x4D,
+		gs:     gs,
+		opcode: 0x4D,
 	}
 }
 
@@ -57,7 +57,7 @@ func (h *DropMeso) Handle(ctx *core.ClientContext, req *request.DropMeso) error 
 		constant.STAT_MESO: character.Meso,
 	}, true)
 
-	mapInstance := h.gameServer.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.GetMap())
 	if mapInstance != nil {
 		if err := mapInstance.SpawnMeso(req.Count, character.Position, character.ID, constant.DROP_TYPE_FFA); err != nil {
 			log.Printf("Failed to spawn meso on map: %v", err)

@@ -9,12 +9,12 @@ import (
 )
 
 type SpawnMob struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*SpawnMob) New(gameServer *GameServer) *SpawnMob {
+func (*SpawnMob) New(gs *GameServer) *SpawnMob {
 	return &SpawnMob{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -36,7 +36,7 @@ func (h *SpawnMob) Handle(gameClient *client.GameClient, args ...string) error {
 
 	mobId64, err := strconv.ParseUint(args[0], 10, 32)
 	if err != nil {
-		mobIdUint, ok := h.gameServer.resources.NameToMob(args[0])
+		mobIdUint, ok := h.gs.resources.NameToMob(args[0])
 		if !ok {
 			return fmt.Errorf("invalid mobId or mob name: %s", args[0])
 		}
@@ -50,12 +50,12 @@ func (h *SpawnMob) Handle(gameClient *client.GameClient, args ...string) error {
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gameServer.GetMap(character.Map)
+	mapInstance := h.gs.GetMap(character.Map)
 	if mapInstance == nil {
 		return fmt.Errorf("map %d not found", character.Map)
 	}
 
-	_, ok := h.gameServer.resources.Monsters[mobId]
+	_, ok := h.gs.resources.Monsters[mobId]
 	if !ok {
 		return fmt.Errorf("mob specification not found for ID: %d", mobId)
 	}
@@ -71,4 +71,3 @@ func (h *SpawnMob) Handle(gameClient *client.GameClient, args ...string) error {
 
 	return nil
 }
-

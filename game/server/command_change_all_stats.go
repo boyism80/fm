@@ -11,12 +11,12 @@ import (
 )
 
 type ChangeAllStats struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ChangeAllStats) New(gameServer *GameServer) *ChangeAllStats {
+func (*ChangeAllStats) New(gs *GameServer) *ChangeAllStats {
 	return &ChangeAllStats{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 

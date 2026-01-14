@@ -1,11 +1,11 @@
 ﻿package server
 
 type PacketHandlerRegistry struct {
-	loginServer *LoginServer
+	ls *LoginServer
 }
 
-func NewPacketHandlerRegistry(loginServer *LoginServer) *PacketHandlerRegistry {
+func NewPacketHandlerRegistry(ls *LoginServer) *PacketHandlerRegistry {
 	return &PacketHandlerRegistry{
-		loginServer: loginServer,
+		ls: ls,
 	}
 }

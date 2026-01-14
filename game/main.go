@@ -70,13 +70,13 @@ func main() {
 	}
 
 	// Create game server
-	gameServer, err := server.NewGameServer(config)
+	gs, err := server.NewGameServer(config)
 	if err != nil {
 		log.Fatalf("Failed to create game server: %v", err)
 	}
 
 	// Start the game server
-	if err := gameServer.Start(); err != nil {
+	if err := gs.Start(); err != nil {
 		log.Fatalf("Failed to start game server: %v", err)
 	}
 
@@ -84,7 +84,7 @@ func main() {
 	if *withStats {
 		go func() {
 			for {
-				stats := gameServer.GetStats()
+				stats := gs.GetStats()
 				log.Printf("Game Server Stats: Players=%d/%d, World=%s, Rates: Exp=%dx, Drop=%dx, Meso=%dx",
 					stats["current_players"],
 					stats["max_players"],
@@ -108,7 +108,7 @@ func main() {
 	log.Println("Received shutdown signal, stopping game server...")
 
 	// Stop the game server gracefully
-	if err := gameServer.Stop(); err != nil {
+	if err := gs.Stop(); err != nil {
 		log.Printf("Error stopping game server: %v", err)
 	}
 

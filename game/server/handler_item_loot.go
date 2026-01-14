@@ -13,14 +13,14 @@ import (
 
 // ItemLoot handles item looting packet requests
 type ItemLoot struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (ItemLoot) New(gameServer *GameServer) *ItemLoot {
+func (ItemLoot) New(gs *GameServer) *ItemLoot {
 	return &ItemLoot{
-		gameServer: gameServer,
-		opcode:     0xA3,
+		gs:     gs,
+		opcode: 0xA3,
 	}
 }
 
@@ -41,7 +41,7 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		return fmt.Errorf("character is nil")
 	}
 
-	mapInstance := h.gameServer.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.GetMap())
 	if mapInstance == nil {
 		log.Printf("Map %d not found for character %d", character.GetMap(), character.GetID())
 		character.Listener.OnUpdateStats(nil, true)

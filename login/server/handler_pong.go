@@ -9,14 +9,14 @@ import (
 
 // Pong handles pong packet requests
 type Pong struct {
-	loginServer *LoginServer
-	opcode      byte
+	ls     *LoginServer
+	opcode byte
 }
 
-func (Pong) New(loginServer *LoginServer) *Pong {
+func (Pong) New(ls *LoginServer) *Pong {
 	return &Pong{
-		loginServer: loginServer,
-		opcode:      0x0A,
+		ls:     ls,
+		opcode: 0x0A,
 	}
 }
 
@@ -28,4 +28,3 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 	log.Printf("Pong packet received from %s", ctx.Client.GetConnection().RemoteAddr())
 	return nil
 }
-

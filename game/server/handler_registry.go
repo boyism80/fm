@@ -1,11 +1,11 @@
 ﻿package server
 
 type PacketHandlerRegistry struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func NewPacketHandlerRegistry(gameServer *GameServer) *PacketHandlerRegistry {
+func NewPacketHandlerRegistry(gs *GameServer) *PacketHandlerRegistry {
 	return &PacketHandlerRegistry{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }

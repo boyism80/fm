@@ -8,12 +8,12 @@ import (
 )
 
 type ChangeLevel struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ChangeLevel) New(gameServer *GameServer) *ChangeLevel {
+func (*ChangeLevel) New(gs *GameServer) *ChangeLevel {
 	return &ChangeLevel{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 

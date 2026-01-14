@@ -13,14 +13,14 @@ import (
 
 // DistributeAP handles DISTRIBUTE_AP packet requests (0x46)
 type DistributeAP struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (DistributeAP) New(gameServer *GameServer) *DistributeAP {
+func (DistributeAP) New(gs *GameServer) *DistributeAP {
 	return &DistributeAP{
-		gameServer: gameServer,
-		opcode:     0x46,
+		gs:     gs,
+		opcode: 0x46,
 	}
 }
 

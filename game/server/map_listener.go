@@ -10,20 +10,20 @@ import (
 
 // MapListenerImpl implements MapListener for game server
 type MapListenerImpl struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
 // NewGameMapListener creates a new GameMapListener instance
-func NewGameMapListener(gameServer *GameServer) *MapListenerImpl {
+func NewGameMapListener(gs *GameServer) *MapListenerImpl {
 	return &MapListenerImpl{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
 // OnPlayerAdded sends spawn player packet to other players on the map
 func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character *entity.Character, init bool) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -161,7 +161,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 // OnPlayerRemoved sends leave player packet to other players on the map
 func (l *MapListenerImpl) OnPlayerRemoved(mapID uint32, playerID uint32) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -176,7 +176,7 @@ func (l *MapListenerImpl) OnPlayerRemoved(mapID uint32, playerID uint32) {
 // OnPlayerMoved sends move player packet to other players on the map
 func (l *MapListenerImpl) OnPlayerMoved(mapID uint32, playerID uint32, character *entity.Character) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -191,7 +191,7 @@ func (l *MapListenerImpl) OnPlayerMoved(mapID uint32, playerID uint32, character
 // OnPlayerMove sends move packet with fragments to all other players on the map
 func (l *MapListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -212,7 +212,7 @@ func (l *MapListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character 
 // OnPlayerChat sends chat packet to other players on the map
 func (l *MapListenerImpl) OnPlayerChat(mapID uint32, playerID uint32, message string) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -227,7 +227,7 @@ func (l *MapListenerImpl) OnPlayerChat(mapID uint32, playerID uint32, message st
 // OnItemSpawned sends spawn item packet to all players on the map
 func (l *MapListenerImpl) OnItemSpawned(mapID uint32, itemID uint32, item entity.Item, drop *entity.Drop) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -253,7 +253,7 @@ func (l *MapListenerImpl) OnItemSpawned(mapID uint32, itemID uint32, item entity
 // OnMesoSpawned sends spawn meso packet to all players on the map
 func (l *MapListenerImpl) OnMesoSpawned(mapID uint32, itemID uint32, meso *entity.Meso) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -277,7 +277,7 @@ func (l *MapListenerImpl) OnMesoSpawned(mapID uint32, itemID uint32, meso *entit
 // OnItemRemoved sends remove item packet to all players on the map
 func (l *MapListenerImpl) OnItemRemoved(mapID uint32, itemID uint32, characterID uint32, mode constant.RemoveItemType) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -296,7 +296,7 @@ func (l *MapListenerImpl) OnItemRemoved(mapID uint32, itemID uint32, characterID
 // OnMobSpawned sends spawn mob packet to all players on the map
 func (l *MapListenerImpl) OnMobSpawned(mapID uint32, mobID uint32, mob *entity.Mob) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -317,7 +317,7 @@ func (l *MapListenerImpl) OnMobSpawned(mapID uint32, mobID uint32, mob *entity.M
 // OnMobRemoved sends remove mob packet to all players on the map
 func (l *MapListenerImpl) OnMobRemoved(mapID uint32, mobID uint32, animationType constant.MobDieAnimationType) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -349,7 +349,7 @@ func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.
 // OnMobMoved broadcasts mob movement to all players on the map
 func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}
@@ -374,7 +374,7 @@ func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool,
 // OnAttack broadcasts attack to all players on the map
 func (l *MapListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8) {
 	// Get the map instance
-	mapInstance := l.gameServer.GetMap(mapID)
+	mapInstance := l.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return
 	}

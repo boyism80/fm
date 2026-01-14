@@ -8,12 +8,12 @@ import (
 )
 
 type GetPosition struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*GetPosition) New(gameServer *GameServer) *GetPosition {
+func (*GetPosition) New(gs *GameServer) *GetPosition {
 	return &GetPosition{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -35,4 +35,3 @@ func (h *GetPosition) Handle(gameClient *client.GameClient, args ...string) erro
 		character.GetID(), character.GetMap(), character.Position)
 	return nil
 }
-

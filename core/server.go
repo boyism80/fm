@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/asynkron/protoactor-go/actor"
-	coreactor "github.com/boyism80/fm/core/actor"
+	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/crypt"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
@@ -310,7 +310,7 @@ func (s *Server) processPacket(client Client, encryptedData []byte) (bool, error
 	}
 
 	// Send HandlePacket message to LogicActor
-	msg := &coreactor.HandlePacket{
+	msg := &c_actor.HandlePacket{
 		Opcode: opcode,
 		Data:   packetData,
 		Client: client,

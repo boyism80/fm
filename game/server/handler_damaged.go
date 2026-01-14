@@ -12,14 +12,14 @@ import (
 
 // Damaged handles damage packet requests
 type Damaged struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (Damaged) New(gameServer *GameServer) *Damaged {
+func (Damaged) New(gs *GameServer) *Damaged {
 	return &Damaged{
-		gameServer: gameServer,
-		opcode:     0x1F,
+		gs:     gs,
+		opcode: 0x1F,
 	}
 }
 

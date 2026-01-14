@@ -12,14 +12,14 @@ import (
 
 // CreateCharacter handles create character packet requests
 type CreateCharacter struct {
-	loginServer *LoginServer
-	opcode      byte
+	ls     *LoginServer
+	opcode byte
 }
 
-func (CreateCharacter) New(loginServer *LoginServer) *CreateCharacter {
+func (CreateCharacter) New(ls *LoginServer) *CreateCharacter {
 	return &CreateCharacter{
-		loginServer: loginServer,
-		opcode:      0x08,
+		ls:     ls,
+		opcode: 0x08,
 	}
 }
 
@@ -51,10 +51,10 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 			Luk:        4,
 			Hp:         50,
 			MaxHp:      50,
-			Mp:            5,
-			MaxMp:         5,
-			SpawnPoint:    3,
-			BaseLooks: make(map[int8]uint32),
+			Mp:         5,
+			MaxMp:      5,
+			SpawnPoint: 3,
+			BaseLooks:  make(map[int8]uint32),
 			Overlays:   make(map[int8]uint32),
 		},
 	}
@@ -65,4 +65,3 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 
 	return nil
 }
-

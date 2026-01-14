@@ -11,12 +11,12 @@ import (
 )
 
 type FullMeso struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*FullMeso) New(gameServer *GameServer) *FullMeso {
+func (*FullMeso) New(gs *GameServer) *FullMeso {
 	return &FullMeso{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -43,4 +43,3 @@ func (h *FullMeso) Handle(gameClient *client.GameClient, args ...string) error {
 
 	return nil
 }
-

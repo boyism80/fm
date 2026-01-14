@@ -9,12 +9,12 @@ import (
 )
 
 type ListCommands struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ListCommands) New(gameServer *GameServer) *ListCommands {
+func (*ListCommands) New(gs *GameServer) *ListCommands {
 	return &ListCommands{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -38,7 +38,7 @@ func (h *ListCommands) Handle(gameClient *client.GameClient, args ...string) err
 	}
 
 	var commands []commandInfo
-	handlers := h.gameServer.commandHandler.GetHandlers()
+	handlers := h.gs.commandHandler.GetHandlers()
 	for cmdName, cmd := range handlers {
 		if cmdName != "명령어" {
 			commands = append(commands, commandInfo{

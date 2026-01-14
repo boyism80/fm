@@ -14,14 +14,14 @@ import (
 
 // MoveItem handles item movement packet requests
 type MoveItem struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (MoveItem) New(gameServer *GameServer) *MoveItem {
+func (MoveItem) New(gs *GameServer) *MoveItem {
 	return &MoveItem{
-		gameServer: gameServer,
-		opcode:     0x36,
+		gs:     gs,
+		opcode: 0x36,
 	}
 }
 
@@ -144,7 +144,7 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 		DropType:     constant.DROP_TYPE_FFA,
 	})
 
-	mapInstance := h.gameServer.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.GetMap())
 	if mapInstance != nil {
 		if err := mapInstance.SpawnItem(spawned, character.ID, constant.DROP_TYPE_FFA); err != nil {
 			log.Printf("Failed to spawn item on map: %v", err)

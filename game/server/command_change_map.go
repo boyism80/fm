@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strconv"
 
-	gameactor "github.com/boyism80/fm/game/actor"
+	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
 )
 
 type ChangeMap struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ChangeMap) New(gameServer *GameServer) *ChangeMap {
+func (*ChangeMap) New(gs *GameServer) *ChangeMap {
 	return &ChangeMap{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -36,7 +36,7 @@ func (h *ChangeMap) Handle(gameClient *client.GameClient, args ...string) error 
 
 	mapId, err = strconv.Atoi(args[0])
 	if err != nil {
-		mapIdUint, ok := h.gameServer.resources.NameToMap(args[0])
+		mapIdUint, ok := h.gs.resources.NameToMap(args[0])
 		if !ok {
 			return fmt.Errorf("invalid mapId or map name: %s", args[0])
 		}
@@ -48,12 +48,12 @@ func (h *ChangeMap) Handle(gameClient *client.GameClient, args ...string) error 
 		return fmt.Errorf("character not found")
 	}
 
-	currentMap := h.gameServer.GetMap(character.GetMap())
+	currentMap := h.gs.GetMap(character.GetMap())
 	if currentMap == nil {
 		return fmt.Errorf("current map not found")
 	}
 
-	targetMap := h.gameServer.GetMap(uint32(mapId))
+	targetMap := h.gs.GetMap(uint32(mapId))
 	if targetMap == nil {
 		return fmt.Errorf("target map %d not found", mapId)
 	}
@@ -65,12 +65,12 @@ func (h *ChangeMap) Handle(gameClient *client.GameClient, args ...string) error 
 
 	currentMap.RemovePlayer(character.GetID())
 
-	rootContext := h.gameServer.GetServer().GetRootContext()
+	rootContext := h.gs.GetServer().GetRootContext()
 	if rootContext == nil {
 		return fmt.Errorf("rootContext not set")
 	}
 
-	rootContext.Send(targetMapPID, &gameactor.WarpCharacter{
+	rootContext.Send(targetMapPID, &g_actor.WarpCharacter{
 		Character: character,
 		Portal:    1,
 	})

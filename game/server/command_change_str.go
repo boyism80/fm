@@ -11,12 +11,12 @@ import (
 )
 
 type ChangeStr struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ChangeStr) New(gameServer *GameServer) *ChangeStr {
+func (*ChangeStr) New(gs *GameServer) *ChangeStr {
 	return &ChangeStr{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -56,4 +56,3 @@ func (h *ChangeStr) Handle(gameClient *client.GameClient, args ...string) error 
 
 	return nil
 }
-

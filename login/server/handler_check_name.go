@@ -10,14 +10,14 @@ import (
 )
 
 type CheckName struct {
-	loginServer *LoginServer
-	opcode      byte
+	ls     *LoginServer
+	opcode byte
 }
 
-func (CheckName) New(loginServer *LoginServer) *CheckName {
+func (CheckName) New(ls *LoginServer) *CheckName {
 	return &CheckName{
-		loginServer: loginServer,
-		opcode:      0x07,
+		ls:     ls,
+		opcode: 0x07,
 	}
 }
 

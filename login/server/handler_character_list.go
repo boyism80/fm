@@ -12,14 +12,14 @@ import (
 
 // CharacterList handles character list packet requests
 type CharacterList struct {
-	loginServer *LoginServer
-	opcode      byte
+	ls     *LoginServer
+	opcode byte
 }
 
-func (CharacterList) New(loginServer *LoginServer) *CharacterList {
+func (CharacterList) New(ls *LoginServer) *CharacterList {
 	return &CharacterList{
-		loginServer: loginServer,
-		opcode:      0x04,
+		ls:     ls,
+		opcode: 0x04,
 	}
 }
 

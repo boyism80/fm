@@ -11,14 +11,14 @@ import (
 
 // NpcClick handles NPC click packet requests
 type NpcClick struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (NpcClick) New(gameServer *GameServer) *NpcClick {
+func (NpcClick) New(gs *GameServer) *NpcClick {
 	return &NpcClick{
-		gameServer: gameServer,
-		opcode:     0x29,
+		gs:     gs,
+		opcode: 0x29,
 	}
 }
 
@@ -39,7 +39,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gameServer.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.GetMap())
 	if mapInstance == nil {
 		log.Printf("Map %d not found", character.GetMap())
 		return fmt.Errorf("map %d not found", character.GetMap())
@@ -52,7 +52,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 
-	if err := h.gameServer.ExecuteNpcScript(character, npc); err != nil {
+	if err := h.gs.ExecuteNpcScript(character, npc); err != nil {
 		log.Printf("Failed to execute NPC script: %v", err)
 		return err
 	}

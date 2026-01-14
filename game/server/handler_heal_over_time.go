@@ -11,14 +11,14 @@ import (
 )
 
 type HealOverTime struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (HealOverTime) New(gameServer *GameServer) *HealOverTime {
+func (HealOverTime) New(gs *GameServer) *HealOverTime {
 	return &HealOverTime{
-		gameServer: gameServer,
-		opcode:     0x48,
+		gs:     gs,
+		opcode: 0x48,
 	}
 }
 
@@ -71,4 +71,3 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 
 	return nil
 }
-

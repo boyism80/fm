@@ -13,14 +13,14 @@ import (
 )
 
 type Attack struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (Attack) New(gameServer *GameServer) *Attack {
+func (Attack) New(gs *GameServer) *Attack {
 	return &Attack{
-		gameServer: gameServer,
-		opcode:     0x1B,
+		gs:     gs,
+		opcode: 0x1B,
 	}
 }
 
@@ -42,7 +42,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	}
 
 	mapID := character.GetMap()
-	mapInstance := h.gameServer.GetMap(mapID)
+	mapInstance := h.gs.GetMap(mapID)
 	if mapInstance == nil {
 		log.Printf("Character is not in a map")
 		return fmt.Errorf("character is not in a map")

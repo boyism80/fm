@@ -13,14 +13,14 @@ import (
 
 // Warp handles warp packet requests
 type Warp struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (Warp) New(gameServer *GameServer) *Warp {
+func (Warp) New(gs *GameServer) *Warp {
 	return &Warp{
-		gameServer: gameServer,
-		opcode:     0x15,
+		gs:     gs,
+		opcode: 0x15,
 	}
 }
 
@@ -49,7 +49,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			character.Hp = 50
 			character.Stance = 0
 
-			currentMap := h.gameServer.GetMap(character.Map)
+			currentMap := h.gs.GetMap(character.Map)
 			if currentMap == nil {
 				return fmt.Errorf("current map not found")
 			}
@@ -69,7 +69,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			return nil
 		}
 	} else {
-		currentMap := h.gameServer.GetMap(character.Map)
+		currentMap := h.gs.GetMap(character.Map)
 		if currentMap == nil {
 			return fmt.Errorf("current map not found")
 		}
@@ -85,7 +85,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			return nil
 		}
 
-		targetMapSpec, ok := h.gameServer.resources.Maps[uint32(portal.TargetMapId)]
+		targetMapSpec, ok := h.gs.resources.Maps[uint32(portal.TargetMapId)]
 		if !ok {
 			character.Listener.OnUpdateStats(nil, true)
 			return nil
@@ -110,12 +110,12 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 }
 
 func (h *Warp) performWarp(client *client.GameClient, character *entity.Character, targetMapId uint32, spawnPoint uint8) error {
-	currentMap := h.gameServer.GetMap(character.Map)
+	currentMap := h.gs.GetMap(character.Map)
 	if currentMap == nil {
 		return fmt.Errorf("current map not found")
 	}
 
-	targetMap := h.gameServer.GetMap(targetMapId)
+	targetMap := h.gs.GetMap(targetMapId)
 	if targetMap == nil {
 		return fmt.Errorf("target map %d not found", targetMapId)
 	}
@@ -155,7 +155,7 @@ func (h *Warp) performWarp(client *client.GameClient, character *entity.Characte
 	// 	MaxRetries: 3,
 	// }
 	//
-	// if err := h.gameServer.server.SubmitLogicTaskForHash(0, task); err != nil {
+	// if err := h.gs.server.SubmitLogicTaskForHash(0, task); err != nil {
 	// 	return fmt.Errorf("failed to submit warp task: %v", err)
 	// }
 

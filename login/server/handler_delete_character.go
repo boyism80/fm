@@ -11,14 +11,14 @@ import (
 
 // DeleteCharacter handles delete character packet requests
 type DeleteCharacter struct {
-	loginServer *LoginServer
-	opcode      byte
+	ls     *LoginServer
+	opcode byte
 }
 
-func (DeleteCharacter) New(loginServer *LoginServer) *DeleteCharacter {
+func (DeleteCharacter) New(ls *LoginServer) *DeleteCharacter {
 	return &DeleteCharacter{
-		loginServer: loginServer,
-		opcode:      0x09,
+		ls:     ls,
+		opcode: 0x09,
 	}
 }
 
@@ -41,4 +41,3 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 
 	return nil
 }
-

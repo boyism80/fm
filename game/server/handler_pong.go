@@ -7,14 +7,14 @@ import (
 
 // Pong handles pong packet requests
 type Pong struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (Pong) New(gameServer *GameServer) *Pong {
+func (Pong) New(gs *GameServer) *Pong {
 	return &Pong{
-		gameServer: gameServer,
-		opcode:     0x0A,
+		gs:     gs,
+		opcode: 0x0A,
 	}
 }
 

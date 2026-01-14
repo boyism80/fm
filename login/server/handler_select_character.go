@@ -11,14 +11,14 @@ import (
 
 // SelectCharacter handles select character packet requests
 type SelectCharacter struct {
-	loginServer *LoginServer
-	opcode      byte
+	ls     *LoginServer
+	opcode byte
 }
 
-func (SelectCharacter) New(loginServer *LoginServer) *SelectCharacter {
+func (SelectCharacter) New(ls *LoginServer) *SelectCharacter {
 	return &SelectCharacter{
-		loginServer: loginServer,
-		opcode:      0x05,
+		ls:     ls,
+		opcode: 0x05,
 	}
 }
 
@@ -31,8 +31,8 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 		ctx.Client.GetConnection().RemoteAddr(), req.CharacterId)
 
 	transferResp := &response.Transfer{
-		IP:          h.loginServer.config.GameServerHost,
-		Port:        uint16(h.loginServer.config.GameServerPort),
+		IP:          h.ls.config.GameServerHost,
+		Port:        uint16(h.ls.config.GameServerPort),
 		CharacterId: req.CharacterId,
 	}
 	if err := ctx.Client.Send(transferResp, types.SEND_POLICY_ENCRYPT); err != nil {
@@ -42,4 +42,3 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 
 	return nil
 }
-

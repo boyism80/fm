@@ -10,19 +10,19 @@ import (
 type GameServerContext struct {
 	packetHandler *core.PacketHandler
 	resources     *wz.Resources
-	gameServer    GameServerInterface
+	gs            GameServerInterface
 }
 
 type GameServerInterface interface {
 	GetMap(mapID uint32) *entity.Map
 }
 
-func NewGameServerContext(wzPath string, gameServer GameServerInterface) *GameServerContext {
+func NewGameServerContext(wzPath string, gs GameServerInterface) *GameServerContext {
 	resources := wz.NewResources(wzPath)
 	return &GameServerContext{
 		packetHandler: core.NewPacketHandler(),
 		resources:     resources,
-		gameServer:    gameServer,
+		gs:            gs,
 	}
 }
 
@@ -35,10 +35,10 @@ func (c *GameServerContext) GetResources() *wz.Resources {
 }
 
 func (c *GameServerContext) GetMapActorPID(mapID uint32) *actor.PID {
-	if c.gameServer == nil {
+	if c.gs == nil {
 		return nil
 	}
-	mapInstance := c.gameServer.GetMap(mapID)
+	mapInstance := c.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return nil
 	}

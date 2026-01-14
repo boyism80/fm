@@ -14,14 +14,14 @@ import (
 
 // SortInventory handles inventory sorting packet requests
 type SortInventory struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (SortInventory) New(gameServer *GameServer) *SortInventory {
+func (SortInventory) New(gs *GameServer) *SortInventory {
 	return &SortInventory{
-		gameServer: gameServer,
-		opcode:     0x34,
+		gs:     gs,
+		opcode: 0x34,
 	}
 }
 

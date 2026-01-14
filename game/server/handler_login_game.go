@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
-	gameactor "github.com/boyism80/fm/game/actor"
+	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
@@ -13,14 +13,14 @@ import (
 
 // LoginGame handles game login packet requests
 type LoginGame struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (LoginGame) New(gameServer *GameServer) *LoginGame {
+func (LoginGame) New(gs *GameServer) *LoginGame {
 	return &LoginGame{
-		gameServer: gameServer,
-		opcode:     0x06,
+		gs:     gs,
+		opcode: 0x06,
 	}
 }
 
@@ -34,8 +34,8 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		name = "채진영"
 	}
 
-	character := entity.NewDummyCharacter(ctx.Client, nil, req.PlayerId, name, h.gameServer)
-	character.Listener = NewGameCharacterListener(h.gameServer, &character)
+	character := entity.NewDummyCharacter(ctx.Client, nil, req.PlayerId, name, h.gs)
+	character.Listener = NewGameCharacterListener(h.gs, &character)
 
 	// Set GM mode (for testing: player ID 1 is GM)
 	if req.PlayerId == 1 {
@@ -57,13 +57,13 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	client.SetLogicActorPID(nil)
 
 	// 초기 맵으로 이동 (nil MapActor에서 실제 맵으로)
-	initialMapID, ok := h.gameServer.resources.NameToMap("헤네시스")
+	initialMapID, ok := h.gs.resources.NameToMap("헤네시스")
 	if !ok {
 		return fmt.Errorf("initial map name not found")
 	}
 	initialSpawnPoint := uint8(1)
 
-	mapInstance := h.gameServer.GetMap(initialMapID)
+	mapInstance := h.gs.GetMap(initialMapID)
 	if mapInstance == nil {
 		log.Printf("Initial map %d not found", initialMapID)
 		return fmt.Errorf("initial map %d not found", initialMapID)
@@ -90,12 +90,12 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		return fmt.Errorf("MapActor PID not found for map %d", initialMapID)
 	}
 
-	rootContext := h.gameServer.GetServer().GetRootContext()
+	rootContext := h.gs.GetServer().GetRootContext()
 	if rootContext == nil {
 		return fmt.Errorf("rootContext not set")
 	}
 
-	rootContext.Send(targetMapPID, &gameactor.AddCharacter{
+	rootContext.Send(targetMapPID, &g_actor.AddCharacter{
 		Character:  &character,
 		SpawnPoint: initialSpawnPoint,
 		Init:       true,

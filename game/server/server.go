@@ -7,21 +7,20 @@ import (
 	"os"
 	"os/signal"
 
-	// "path/filepath" // Commented out: LogicThread removed
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
-	coreactor "github.com/boyism80/fm/core/actor"
+	c_actor "github.com/boyism80/fm/core/actor"
 
-	// "github.com/boyism80/fm/core/luax" // Commented out: LogicThread removed
-	gameactor "github.com/boyism80/fm/game/actor"
+	"github.com/boyism80/fm/core/luax"
+	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
-	// lua "github.com/yuin/gopher-lua" // Commented out: LogicThread removed
+	lua "github.com/yuin/gopher-lua"
 )
 
 // GameServer represents the game server for MapleStory private server
@@ -34,8 +33,8 @@ type GameServer struct {
 	commandHandler *CommandHandler
 	packetHandlers *PacketHandlerRegistry
 	context        *GameServerContext
-	actorSystem    *coreactor.ActorSystem
-	actorRegistry  *coreactor.ActorRegistry
+	actorSystem    *c_actor.ActorSystem
+	actorRegistry  *c_actor.ActorRegistry
 	nilMapActorPID *actor.PID
 }
 
@@ -77,6 +76,7 @@ type GameConfig struct {
 // GetLuaState returns the Lua state for script execution
 
 // ExecuteNpcScript executes the Lua script for an NPC
+// Uses thread-local LuaState, which is shared among MapActors running on the same thread
 func (gs *GameServer) ExecuteNpcScript(character *entity.Character, npcInterface interface{}) error {
 	// Get NPC model to determine script file
 	npc, ok := npcInterface.(*entity.Npc)
@@ -88,58 +88,53 @@ func (gs *GameServer) ExecuteNpcScript(character *entity.Character, npcInterface
 		return fmt.Errorf("NPC has no model")
 	}
 
-	// Commented out: LogicThread removed, Lua script execution will be handled later
-	// // Get Lua state from LogicThread
-	// logicThread := gs.GetLogicThread()
-	// if logicThread == nil {
-	// 	return fmt.Errorf("logic thread not available")
-	// }
-	//
-	// luaState := logicThread.GetLuaState()
-	// if luaState == nil {
-	// 	return fmt.Errorf("lua state not available")
-	// }
-	//
-	// // Load NPC script
-	// path := filepath.Join("script", "npc", fmt.Sprintf("%d.lua", npc.Wz.ID))
-	//
-	// // Load script function
-	// fn, err := luaState.LoadFile(path)
-	// if err != nil {
-	// 	log.Printf("Failed to load NPC script %s: %v", path, err)
-	// 	return fmt.Errorf("failed to load NPC script: %w", err)
-	// }
-	//
-	// // Create new thread for script execution
-	// co, _ := luaState.NewThread()
-	//
-	// // Push script function to thread
-	// co.Push(fn)
-	//
-	// // Execute script (loads all functions)
-	// if err := co.PCall(0, lua.MultRet, nil); err != nil {
-	// 	return fmt.Errorf("failed to execute NPC script: %w", err)
-	// }
-	//
-	// // Get on_start function
-	// onStartFn := co.GetGlobal("on_start")
-	// if onStartFn.Type() != lua.LTFunction {
-	// 	return fmt.Errorf("on_start function not found in NPC script")
-	// }
-	//
-	// // Create character Lua object using luax.NewLuable
-	// characterLua := luax.NewLuable(co, character)
-	//
-	// // Call on_start(me) function
-	// resumeState, err, _ := luaState.Resume(co, onStartFn.(*lua.LFunction), characterLua)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to call on_start: %w", err)
-	// }
-	//
-	// // If script yielded (waiting for dialog response), store the coroutine
-	// if resumeState == lua.ResumeYield {
-	// 	character.SetCurrentDialog(co)
-	// }
+	// Get thread-local LuaState
+	// This will be shared among all MapActors running on the same thread
+	luaState := luax.GetThreadLocalState()
+	if luaState == nil {
+		return fmt.Errorf("lua state not available")
+	}
+
+	// Load NPC script
+	path := fmt.Sprintf("script/npc/%d.lua", npc.Wz.ID)
+
+	// Load script function
+	fn, err := luaState.LoadFile(path)
+	if err != nil {
+		log.Printf("Failed to load NPC script %s: %v", path, err)
+		return fmt.Errorf("failed to load NPC script: %w", err)
+	}
+
+	// Create new thread for script execution
+	co, _ := luaState.NewThread()
+
+	// Push script function to thread
+	co.Push(fn)
+
+	// Execute script (loads all functions)
+	if err := co.PCall(0, lua.MultRet, nil); err != nil {
+		return fmt.Errorf("failed to execute NPC script: %w", err)
+	}
+
+	// Get on_start function
+	onStartFn := co.GetGlobal("on_start")
+	if onStartFn.Type() != lua.LTFunction {
+		return fmt.Errorf("on_start function not found in NPC script")
+	}
+
+	// Create character Lua object using luax.NewLuable
+	characterLua := luax.NewLuable(co, character)
+
+	// Call on_start(me) function
+	resumeState, err, _ := luaState.Resume(co, onStartFn.(*lua.LFunction), characterLua)
+	if err != nil {
+		return fmt.Errorf("failed to call on_start: %w", err)
+	}
+
+	// If script yielded (waiting for dialog response), store the coroutine
+	if resumeState == lua.ResumeYield {
+		character.SetCurrentDialog(co)
+	}
 
 	return nil
 }
@@ -152,30 +147,6 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		ClientFactory: func(conn net.Conn, clientID int) (core.Client, error) {
 			return client.NewGameClient(conn, clientID)
 		},
-		// LogicThreadInit: func(thread *core.LogicThread) {
-		// 	// Commented out: LogicThread removed, Lua initialization will be handled later
-		// 	// Initialize Lua state for game server logic thread
-		// 	// luaState := thread.GetLuaState()
-		// 	// if luaState == nil {
-		// 	// 	log.Printf("Failed to get Lua state for logic thread %d", thread.GetID())
-		// 	// 	return
-		// 	// }
-		// 	//
-		// 	// // Register Lua types with inheritance
-		// 	// luax.RegisterLuaType[*entity.Object](luaState)
-		// 	// luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)
-		// 	// luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](luaState)
-		// 	// luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](luaState)
-		// 	//
-		// 	// // Register utility functions
-		// 	// luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
-		// 	// 	duration := L.CheckNumber(1)
-		// 	// 	time.Sleep(time.Duration(float64(duration) * float64(time.Second)))
-		// 	// 	return 0
-		// 	// })
-		// 	//
-		// 	// log.Printf("Lua state initialized for logic thread %d", thread.GetID())
-		// },
 	}
 	server, err := core.NewServer(serverConfig)
 	if err != nil {
@@ -194,13 +165,13 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	context := NewGameServerContext(config.WzPath, nil)
 
 	// Create Actor system
-	actorSystem := coreactor.NewActorSystem()
-	actorRegistry := coreactor.NewActorRegistry(actorSystem)
+	actorSystem := c_actor.NewActorSystem()
+	actorRegistry := c_actor.NewActorRegistry(actorSystem)
 
 	// Set RootContext in server for actor message sending
 	server.SetRootContext(actorSystem.GetRoot())
 
-	gameServer := &GameServer{
+	gs := &GameServer{
 		server:        server,
 		config:        config,
 		resources:     resources,
@@ -211,29 +182,46 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	}
 
 	// Set gameServer reference in context
-	context.gameServer = gameServer
+	context.gs = gs
 
 	// Initialize command handler
-	gameServer.commandHandler = NewCommandHandler(gameServer)
+	gs.commandHandler = NewCommandHandler(gs)
 
 	// Initialize packet handler registry
-	gameServer.packetHandlers = NewPacketHandlerRegistry(gameServer)
+	gs.packetHandlers = NewPacketHandlerRegistry(gs)
+
+	// Register thread-local LuaState initialization hook
+	// This ensures that each thread-local LuaState has game-specific types registered
+	luax.RegisterThreadLocalInitHook(func(luaState *lua.LState) {
+		// Register Lua types with inheritance
+		luax.RegisterLuaType[*entity.Object](luaState)
+		luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)
+		luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](luaState)
+		luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](luaState)
+
+		// Register utility functions
+		luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
+			duration := L.CheckNumber(1)
+			time.Sleep(time.Duration(float64(duration) * float64(time.Second)))
+			return 0
+		})
+	})
 
 	// Pre-create all maps
-	gameServer.preCreateMaps()
+	gs.preCreateMaps()
 
 	// Register packet handlers
-	gameServer.registerPacketHandlers()
+	gs.registerPacketHandlers()
 
 	// Register command handlers
-	gameServer.registerCommandHandlers()
+	gs.registerCommandHandlers()
 
 	// Set client disconnect handler
 	server.SetOnClientDisconnect(func(client core.Client) {
-		gameServer.handleClientDisconnect(client)
+		gs.handleClientDisconnect(client)
 	})
 
-	return gameServer, nil
+	return gs, nil
 }
 
 // GetResources returns the game resources
@@ -270,7 +258,7 @@ func (gs *GameServer) preCreateMaps() {
 
 	// Create nil MapActor (for characters before map assignment)
 	nilMapProps := actor.PropsFromProducer(func() actor.Actor {
-		return &gameactor.MapActor{
+		return &g_actor.MapActor{
 			MapData: nil,
 			Context: gs.context,
 		}
@@ -292,7 +280,7 @@ func (gs *GameServer) preCreateMaps() {
 
 		// Create MapActor for this map
 		props := actor.PropsFromProducer(func() actor.Actor {
-			return &gameactor.MapActor{
+			return &g_actor.MapActor{
 				MapData: mapInstance,
 				Context: gs.context,
 			}
@@ -415,13 +403,13 @@ func RunGameServer() {
 	}
 
 	// Create game server
-	gameServer, err := NewGameServer(config)
+	gs, err := NewGameServer(config)
 	if err != nil {
 		log.Fatalf("Failed to create game server: %v", err)
 	}
 
 	// Start the game server
-	if err := gameServer.Start(); err != nil {
+	if err := gs.Start(); err != nil {
 		log.Fatalf("Failed to start game server: %v", err)
 	}
 
@@ -434,7 +422,7 @@ func RunGameServer() {
 	log.Println("Received shutdown signal, stopping game server...")
 
 	// Stop the game server gracefully
-	if err := gameServer.Stop(); err != nil {
+	if err := gs.Stop(); err != nil {
 		log.Printf("Error stopping game server: %v", err)
 	}
 }
@@ -452,19 +440,19 @@ func RunGameServerWithStats() {
 		MesoRate:   2, // 2x meso rate
 	}
 
-	gameServer, err := NewGameServer(config)
+	gs, err := NewGameServer(config)
 	if err != nil {
 		log.Fatalf("Failed to create game server: %v", err)
 	}
 
-	if err := gameServer.Start(); err != nil {
+	if err := gs.Start(); err != nil {
 		log.Fatalf("Failed to start game server: %v", err)
 	}
 
 	// Monitor server stats periodically
 	go func() {
 		for {
-			stats := gameServer.GetStats()
+			stats := gs.GetStats()
 			log.Printf("Game Server Stats: Players=%d/%d, World=%s, Rates: Exp=%dx, Drop=%dx, Meso=%dx",
 				stats["current_players"],
 				stats["max_players"],
@@ -484,7 +472,7 @@ func RunGameServerWithStats() {
 	<-sigChan
 
 	log.Println("Shutting down game server...")
-	gameServer.Stop()
+	gs.Stop()
 }
 
 // RunHighRateGameServer runs a high-rate game server configuration
@@ -500,19 +488,19 @@ func RunHighRateGameServer() {
 		MesoRate:   5,  // 5x meso rate
 	}
 
-	gameServer, err := NewGameServer(config)
+	gs, err := NewGameServer(config)
 	if err != nil {
 		log.Fatalf("Failed to create high-rate game server: %v", err)
 	}
 
-	if err := gameServer.Start(); err != nil {
+	if err := gs.Start(); err != nil {
 		log.Fatalf("Failed to start high-rate game server: %v", err)
 	}
 
 	// Monitor high-rate server stats
 	go func() {
 		for {
-			stats := gameServer.GetStats()
+			stats := gs.GetStats()
 			log.Printf("High-Rate Game Server Stats: Players=%d/%d, World=%s, Rates: Exp=%dx, Drop=%dx, Meso=%dx",
 				stats["current_players"],
 				stats["max_players"],
@@ -531,5 +519,5 @@ func RunHighRateGameServer() {
 	<-sigChan
 
 	log.Println("Shutting down high-rate game server...")
-	gameServer.Stop()
+	gs.Stop()
 }

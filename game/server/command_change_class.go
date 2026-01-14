@@ -8,12 +8,12 @@ import (
 )
 
 type ChangeClass struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ChangeClass) New(gameServer *GameServer) *ChangeClass {
+func (*ChangeClass) New(gs *GameServer) *ChangeClass {
 	return &ChangeClass{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 

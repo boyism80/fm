@@ -10,14 +10,14 @@ import (
 )
 
 type PartySearchStop struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (PartySearchStop) New(gameServer *GameServer) *PartySearchStop {
+func (PartySearchStop) New(gs *GameServer) *PartySearchStop {
 	return &PartySearchStop{
-		gameServer: gameServer,
-		opcode:     0xB6,
+		gs:     gs,
+		opcode: 0xB6,
 	}
 }
 

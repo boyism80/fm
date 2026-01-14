@@ -11,7 +11,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
-	coreactor "github.com/boyism80/fm/core/actor"
+	c_actor "github.com/boyism80/fm/core/actor"
 	loginactor "github.com/boyism80/fm/login/actor"
 	"github.com/boyism80/fm/login/client"
 )
@@ -22,8 +22,8 @@ type LoginServer struct {
 	config         *LoginConfig
 	packetHandlers *PacketHandlerRegistry
 	context        *LoginServerContext
-	actorSystem    *coreactor.ActorSystem
-	actorRegistry  *coreactor.ActorRegistry
+	actorSystem    *c_actor.ActorSystem
+	actorRegistry  *c_actor.ActorRegistry
 }
 
 func (ls *LoginServer) GetServer() *core.Server {
@@ -74,8 +74,8 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 	context := NewLoginServerContext()
 
 	// Create Actor system
-	actorSystem := coreactor.NewActorSystem()
-	actorRegistry := coreactor.NewActorRegistry(actorSystem)
+	actorSystem := c_actor.NewActorSystem()
+	actorRegistry := c_actor.NewActorRegistry(actorSystem)
 
 	// Create core server configuration
 	serverConfig := &core.ServerConfig{
@@ -103,7 +103,7 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 	// Set RootContext in server for actor message sending
 	server.SetRootContext(actorSystem.GetRoot())
 
-	loginServer := &LoginServer{
+	ls := &LoginServer{
 		server:         server,
 		config:         config,
 		packetHandlers: NewPacketHandlerRegistry(nil),
@@ -111,15 +111,15 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		actorSystem:    actorSystem,
 		actorRegistry:  actorRegistry,
 	}
-	loginServer.packetHandlers.loginServer = loginServer
+	ls.packetHandlers.ls = ls
 
 	// Set OnClientConnect callback to create Actor for each client
-	serverConfig.OnClientConnect = loginServer.handleClient
+	serverConfig.OnClientConnect = ls.handleClient
 
 	// Register packet handlers
-	loginServer.registerPacketHandlers()
+	ls.registerPacketHandlers()
 
-	return loginServer, nil
+	return ls, nil
 }
 
 // Start initializes and starts the login server
@@ -167,13 +167,13 @@ func RunLoginServer() {
 	}
 
 	// Create login server
-	loginServer, err := NewLoginServer(config)
+	ls, err := NewLoginServer(config)
 	if err != nil {
 		log.Fatalf("Failed to create login server: %v", err)
 	}
 
 	// Start the login server
-	if err := loginServer.Start(); err != nil {
+	if err := ls.Start(); err != nil {
 		log.Fatalf("Failed to start login server: %v", err)
 	}
 
@@ -186,7 +186,7 @@ func RunLoginServer() {
 	log.Println("Received shutdown signal, stopping login server...")
 
 	// Stop the login server gracefully
-	if err := loginServer.Stop(); err != nil {
+	if err := ls.Stop(); err != nil {
 		log.Printf("Error stopping login server: %v", err)
 	}
 }
@@ -201,19 +201,19 @@ func RunLoginServerWithStats() {
 		GameServerPort: 8485,
 	}
 
-	loginServer, err := NewLoginServer(config)
+	ls, err := NewLoginServer(config)
 	if err != nil {
 		log.Fatalf("Failed to create login server: %v", err)
 	}
 
-	if err := loginServer.Start(); err != nil {
+	if err := ls.Start(); err != nil {
 		log.Fatalf("Failed to start login server: %v", err)
 	}
 
 	// Monitor server stats periodically
 	go func() {
 		for {
-			stats := loginServer.GetStats()
+			stats := ls.GetStats()
 			log.Printf("Login Server Stats: Clients=%d, Listening=%v, Game Server=%s:%d",
 				stats["client_count"],
 				stats["listening"],
@@ -231,5 +231,5 @@ func RunLoginServerWithStats() {
 	<-sigChan
 
 	log.Println("Shutting down login server...")
-	loginServer.Stop()
+	ls.Stop()
 }

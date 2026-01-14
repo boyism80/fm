@@ -11,12 +11,12 @@ import (
 )
 
 type GainMeso struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*GainMeso) New(gameServer *GameServer) *GainMeso {
+func (*GainMeso) New(gs *GameServer) *GainMeso {
 	return &GainMeso{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -52,4 +52,3 @@ func (h *GainMeso) Handle(gameClient *client.GameClient, args ...string) error {
 
 	return nil
 }
-

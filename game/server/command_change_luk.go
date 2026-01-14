@@ -11,12 +11,12 @@ import (
 )
 
 type ChangeLuk struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ChangeLuk) New(gameServer *GameServer) *ChangeLuk {
+func (*ChangeLuk) New(gs *GameServer) *ChangeLuk {
 	return &ChangeLuk{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -56,4 +56,3 @@ func (h *ChangeLuk) Handle(gameClient *client.GameClient, args ...string) error 
 
 	return nil
 }
-

@@ -49,13 +49,13 @@ func main() {
 	}
 
 	// Create login server
-	loginServer, err := server.NewLoginServer(config)
+	ls, err := server.NewLoginServer(config)
 	if err != nil {
 		log.Fatalf("Failed to create login server: %v", err)
 	}
 
 	// Start the login server
-	if err := loginServer.Start(); err != nil {
+	if err := ls.Start(); err != nil {
 		log.Fatalf("Failed to start login server: %v", err)
 	}
 
@@ -63,7 +63,7 @@ func main() {
 	if *withStats {
 		go func() {
 			for {
-				stats := loginServer.GetStats()
+				stats := ls.GetStats()
 				log.Printf("Login Server Stats: Clients=%d, Listening=%v, Game Server=%s:%d",
 					stats["client_count"],
 					stats["listening"],
@@ -85,7 +85,7 @@ func main() {
 	log.Println("Received shutdown signal, stopping login server...")
 
 	// Stop the login server gracefully
-	if err := loginServer.Stop(); err != nil {
+	if err := ls.Stop(); err != nil {
 		log.Printf("Error stopping login server: %v", err)
 	}
 

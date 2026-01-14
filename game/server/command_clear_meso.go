@@ -10,12 +10,12 @@ import (
 )
 
 type ClearMeso struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ClearMeso) New(gameServer *GameServer) *ClearMeso {
+func (*ClearMeso) New(gs *GameServer) *ClearMeso {
 	return &ClearMeso{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -42,4 +42,3 @@ func (h *ClearMeso) Handle(gameClient *client.GameClient, args ...string) error 
 
 	return nil
 }
-

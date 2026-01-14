@@ -6,7 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
-	coreactor "github.com/boyism80/fm/core/actor"
+	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/game/entity"
 )
 
@@ -17,11 +17,11 @@ type MapActor struct {
 
 func (a *MapActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
-	case *coreactor.HandlePacket:
+	case *c_actor.HandlePacket:
 		a.handlePacket(ctx, msg)
-	case *coreactor.ScheduleTimer:
+	case *c_actor.ScheduleTimer:
 		a.scheduleTimer(ctx, msg)
-	case *coreactor.ExecuteTimer:
+	case *c_actor.ExecuteTimer:
 		a.executeTimer(ctx, msg)
 	case *AddCharacter:
 		a.addCharacter(ctx, msg)
@@ -32,7 +32,7 @@ func (a *MapActor) Receive(ctx actor.Context) {
 	}
 }
 
-func (a *MapActor) handlePacket(ctx actor.Context, msg *coreactor.HandlePacket) {
+func (a *MapActor) handlePacket(ctx actor.Context, msg *c_actor.HandlePacket) {
 	client, ok := msg.Client.(core.Client)
 	if !ok {
 		log.Printf("Invalid client type in HandlePacket")
@@ -44,7 +44,7 @@ func (a *MapActor) handlePacket(ctx actor.Context, msg *coreactor.HandlePacket) 
 	}
 }
 
-func (a *MapActor) scheduleTimer(ctx actor.Context, msg *coreactor.ScheduleTimer) {
+func (a *MapActor) scheduleTimer(ctx actor.Context, msg *c_actor.ScheduleTimer) {
 	if msg.Logic == nil {
 		return
 	}
@@ -53,13 +53,13 @@ func (a *MapActor) scheduleTimer(ctx actor.Context, msg *coreactor.ScheduleTimer
 	// Send ExecuteTimer message to self after the interval
 	go func() {
 		time.Sleep(msg.Interval)
-		ctx.Send(ctx.Self(), &coreactor.ExecuteTimer{
+		ctx.Send(ctx.Self(), &c_actor.ExecuteTimer{
 			Logic: msg.Logic,
 		})
 	}()
 }
 
-func (a *MapActor) executeTimer(ctx actor.Context, msg *coreactor.ExecuteTimer) {
+func (a *MapActor) executeTimer(ctx actor.Context, msg *c_actor.ExecuteTimer) {
 	if msg.Logic == nil {
 		return
 	}

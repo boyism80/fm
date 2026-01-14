@@ -13,14 +13,14 @@ import (
 
 // AutoAssignAP handles AUTO_ASSIGN_AP packet requests (0x47)
 type AutoAssignAP struct {
-	gameServer *GameServer
-	opcode     byte
+	gs     *GameServer
+	opcode byte
 }
 
-func (AutoAssignAP) New(gameServer *GameServer) *AutoAssignAP {
+func (AutoAssignAP) New(gs *GameServer) *AutoAssignAP {
 	return &AutoAssignAP{
-		gameServer: gameServer,
-		opcode:     0x47,
+		gs:     gs,
+		opcode: 0x47,
 	}
 }
 
@@ -130,4 +130,3 @@ func (h *AutoAssignAP) processStat(character *entity.Character, statType uint32,
 		return false // Invalid stat type (HP/MP not supported in AUTO_ASSIGN_AP)
 	}
 }
-

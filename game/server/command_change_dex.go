@@ -11,12 +11,12 @@ import (
 )
 
 type ChangeDex struct {
-	gameServer *GameServer
+	gs *GameServer
 }
 
-func (*ChangeDex) New(gameServer *GameServer) *ChangeDex {
+func (*ChangeDex) New(gs *GameServer) *ChangeDex {
 	return &ChangeDex{
-		gameServer: gameServer,
+		gs: gs,
 	}
 }
 
@@ -56,4 +56,3 @@ func (h *ChangeDex) Handle(gameClient *client.GameClient, args ...string) error 
 
 	return nil
 }
-
