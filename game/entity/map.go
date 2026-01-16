@@ -209,15 +209,20 @@ func (m *Map) initializeNpcs() {
 	}
 
 	// Create NPCs from MapSpec (following old server pattern)
-	for _, npcSpec := range m.model.NpcSpawns {
+	for _, wz := range m.model.NpcSpawns {
 		oid := m.allocateOID()
 		npc := &Npc{
 			Object: Object{
 				OID: oid,
+				Position: types.Point[int16]{
+					X: wz.BaseSpawn.Position.X,
+					Y: wz.BaseSpawn.Position.Y,
+				},
+				Context: m.context,
 			},
-			Wz: &npcSpec,
+			Wz: &wz,
 		}
-		m.objects[types.OBJECT_TYPE_NPC][npc.OID] = npc
+		m.objects[types.OBJECT_TYPE_NPC][oid] = npc
 	}
 }
 

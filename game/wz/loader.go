@@ -1242,6 +1242,127 @@ func loadStringResources(path string) (*map[uint32]map[string]string, error) {
 	return &result, nil
 }
 
+// parseUnitPrice parses unit price string like "[R8]0.300000" to float64
+func parseUnitPrice(unitPriceStr string) float64 {
+	// Remove [R8] prefix if present
+	priceStr := strings.TrimPrefix(unitPriceStr, "[R8]")
+	priceStr = strings.TrimPrefix(priceStr, "[R4]")
+	priceStr = strings.Trim(priceStr, "[]")
+	
+	price, err := strconv.ParseFloat(priceStr, 64)
+	if err != nil {
+		return 0
+	}
+	return price
+}
+
+// loadNpcShops loads NPC shop data from NpcShop.img.xml
+func loadNpcShops(path string) (*map[uint32]*Shop, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var root shopRoot
+	if err := xml.NewDecoder(file).Decode(&root); err != nil {
+		return nil, err
+	}
+
+	result := make(map[uint32]*Shop)
+
+	for _, shopNode := range root.Shops {
+		npcID, err := strconv.ParseUint(shopNode.Name, 10, 32)
+		if err != nil {
+			continue
+		}
+
+		shop := &Shop{
+			NpcID: uint32(npcID),
+			Items: make([]ShopItem, 0, len(shopNode.Items)),
+		}
+
+		for _, itemNode := range shopNode.Items {
+			item := ShopItem{}
+
+			for _, intField := range itemNode.Ints {
+				switch intField.Name {
+				case "item":
+					item.ItemID = uint32(intField.Value)
+				case "price":
+					item.Price = intField.Value
+				case "period":
+					item.Period = intField.Value
+				case "stock":
+					item.Stock = intField.Value
+				}
+			}
+
+			for _, strField := range itemNode.Strings {
+				if strField.Name == "unitPrice" {
+					item.UnitPrice = parseUnitPrice(strField.Value)
+				}
+			}
+
+			// Apply Java MapleShopParser filtering logic:
+			// Skip throwing stars except 2070000 (item / 10000 == 207 && item != 2070000)
+			if item.ItemID > 0 {
+				if item.ItemID/10000 == 207 && item.ItemID != 2070000 {
+					continue
+				}
+				shop.Items = append(shop.Items, item)
+			}
+		}
+
+		// Add rechargeable items that are not in the shop (Java MapleShop.createFromDB logic)
+		// This matches Java behavior where rechargeable items are automatically added
+		// Java rechargeableItems set: 2070000-2070013 (except 2070014, 2070015), 2330000-2330005, 2331000, 2332000
+		rechargeableItems := []uint32{
+			2070000, 2070001, 2070002, 2070003, 2070004, 2070005,
+			2070006, 2070007, 2070008, 2070009, 2070010, 2070011,
+			2070012, 2070013, // Note: 2070014, 2070015 are commented out in Java
+			2330000, 2330001, 2330002, 2330003, 2330004, 2330005,
+			2331000, 2332000,
+		}
+
+		// Track which rechargeable items are already in the shop
+		existingRechargeable := make(map[uint32]bool)
+		for _, existingItem := range shop.Items {
+			if existingItem.ItemID/10000 == 207 || existingItem.ItemID/10000 == 233 {
+				existingRechargeable[existingItem.ItemID] = true
+			}
+		}
+
+		// Add missing rechargeable items
+		// Java adds these with price=0, and uses ItemInformationProvider.getPrice() in serialization
+		// Note: Even if item exists in WZ, Java doesn't use WZ unitPrice for added items - it uses getPrice()
+		// However, for items that were filtered out but exist in WZ (like 2070001-2070011),
+		// we should check if they were in DB. If not in DB, they're added rechargeable items and use getPrice()
+		// If in DB, they would have been loaded already, so this shouldn't happen
+		for _, rechargeID := range rechargeableItems {
+			if !existingRechargeable[rechargeID] {
+				// Java adds these items with price=0, unitPrice=0
+				// Serialization will use ItemInformationProvider.getPrice() which may return different values
+				// For 2070012, 2070013: getPrice() returns 1.0 (even though WZ has 0.8, 0.6)
+				// For 2070001-2070011: getPrice() returns unitPrice from item data (0.4, 0.5, etc.)
+				shop.Items = append(shop.Items, ShopItem{
+					ItemID:   rechargeID,
+					Price:    0,
+					Period:   0,
+					Stock:    0,
+					UnitPrice: 0, // Always 0 for added rechargeable items - will use getPrice() in serialization
+				})
+			}
+		}
+
+		if len(shop.Items) > 0 {
+			result[shop.NpcID] = shop
+		}
+	}
+
+	return &result, nil
+}
+
 // loadMob loads monster specifications from XML file.
 func loadMob(path string) (*Mob, error) {
 	file, err := os.Open(path)
@@ -1435,6 +1556,28 @@ type rewardRoot struct {
 	XMLName xml.Name      `xml:"imgdir"`
 	Name    string        `xml:"name,attr"`
 	Mobs    []mobDropNode `xml:"imgdir"`
+}
+
+// shopItemNode represents a single shop item entry
+type shopItemNode struct {
+	XMLName xml.Name      `xml:"imgdir"`
+	Name    string        `xml:"name,attr"`
+	Ints    []intField    `xml:"int"`
+	Strings []stringField `xml:"string"`
+}
+
+// shopNode represents an NPC shop with its items
+type shopNode struct {
+	XMLName xml.Name       `xml:"imgdir"`
+	Name    string         `xml:"name,attr"`
+	Items   []shopItemNode `xml:"imgdir"`
+}
+
+// shopRoot represents the root of NpcShop.img.xml
+type shopRoot struct {
+	XMLName xml.Name   `xml:"imgdir"`
+	Name    string     `xml:"name,attr"`
+	Shops   []shopNode `xml:"imgdir"`
 }
 
 // loadDrops loads monster drop tables from XML file.

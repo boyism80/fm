@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -6,7 +6,10 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
+	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 )
 
 // NpcClick handles NPC click packet requests
@@ -46,12 +49,44 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 	}
 
 	npcs := mapInstance.GetNpcs()
-	npc, exists := npcs[req.OID]
+	npcInterface, exists := npcs[req.OID]
 	if !exists {
 		log.Printf("NPC %d not found on map %d", req.OID, character.GetMap())
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 
+	// Type assert to entity.Npc
+	npc, ok := npcInterface.(*entity.Npc)
+	if !ok {
+		log.Printf("Invalid NPC type for OID %d", req.OID)
+		return fmt.Errorf("invalid NPC type")
+	}
+
+	// Check if NPC has a shop
+	resources := h.gs.GetResources()
+	if resources == nil {
+		log.Printf("Resources not available")
+		return fmt.Errorf("resources not available")
+	}
+
+	npcID := npc.Wz.ID
+	shop := resources.GetShop(npcID)
+
+	if shop != nil {
+		// NPC has a shop, send OPEN_NPC_SHOP packet
+		packet := &response.OpenNpcShop{
+			ShopID: int32(npcID),
+			Shop:   shop,
+			Items:  resources.Items,
+		}
+		if err := character.Send(packet, types.SEND_POLICY_ENCRYPT); err != nil {
+			log.Printf("Failed to send OPEN_NPC_SHOP packet: %v", err)
+			return err
+		}
+		return nil
+	}
+
+	// NPC doesn't have a shop, execute script
 	if err := h.gs.ExecuteNpcScript(character, npc); err != nil {
 		log.Printf("Failed to execute NPC script: %v", err)
 		return err

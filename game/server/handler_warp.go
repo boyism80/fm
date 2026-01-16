@@ -5,9 +5,9 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
 )
 
@@ -101,63 +101,19 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 		spawnPoint = targetPortal.ID
 	}
 
-	// Perform the warp
-	if err := h.performWarp(client, character, targetMapId, spawnPoint); err != nil {
-		return fmt.Errorf("failed to perform warp: %v", err)
+	targetMapPID := h.gs.GetMap(targetMapId).GetActorPID()
+	if targetMapPID == nil {
+		return fmt.Errorf("target map actor PID not found")
 	}
 
-	return nil
-}
-
-func (h *Warp) performWarp(client *client.GameClient, character *entity.Character, targetMapId uint32, spawnPoint uint8) error {
-	currentMap := h.gs.GetMap(character.Map)
-	if currentMap == nil {
-		return fmt.Errorf("current map not found")
+	rootContext := h.gs.GetServer().GetRootContext()
+	if rootContext == nil {
+		return fmt.Errorf("rootContext not set")
 	}
 
-	targetMap := h.gs.GetMap(targetMapId)
-	if targetMap == nil {
-		return fmt.Errorf("target map %d not found", targetMapId)
-	}
-
-	currentMap.RemovePlayer(character.GetID())
-
-	character.Map = targetMapId
-	character.SpawnPoint = spawnPoint
-
-	mapSpec := targetMap.GetSpec()
-	if mapSpec != nil && len(mapSpec.Portals) > 0 {
-		for portalId, portal := range mapSpec.Portals {
-			if portalId == spawnPoint {
-				character.Position = portal.Position
-				break
-			}
-		}
-	}
-
-	// Commented out: LogicThread removed, warp is now handled by MapActor
-	// task := &core.LogicTask{
-	// 	Predicate: func() bool {
-	// 		return character != nil && client.GetConnection() != nil
-	// 	},
-	// 	Logic: func() error {
-	// 		if err := targetMap.AddPlayer(character.GetID(), character, false); err != nil {
-	// 			return fmt.Errorf("failed to add character to target map: %v", err)
-	// 		}
-	// 		return nil
-	// 	},
-	// 	Callback: func(success bool, err error) {
-	// 		if err != nil {
-	// 			log.Printf("Failed to add character to target map: %v", err)
-	// 		}
-	// 	},
-	// 	ThreadHash: 0, // Use hash 0 for warp tasks
-	// 	MaxRetries: 3,
-	// }
-	//
-	// if err := h.gs.server.SubmitLogicTaskForHash(0, task); err != nil {
-	// 	return fmt.Errorf("failed to submit warp task: %v", err)
-	// }
-
+	rootContext.Send(targetMapPID, &g_actor.WarpCharacter{
+		Character: character,
+		Portal:    spawnPoint,
+	})
 	return nil
 }

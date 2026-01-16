@@ -9,6 +9,7 @@ import (
 	"github.com/boyism80/fm/core/crypt"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
+	"github.com/boyism80/fm/util"
 )
 
 type Client = client.Client
@@ -55,6 +56,7 @@ func (c *BaseClient) Send(packet types.Packet, policy types.SendPolicy) error {
 		return fmt.Errorf("failed to serialize packet: %w", err)
 	}
 	packetData := writer.Bytes()
+	fmt.Println(util.ToHexString(packetData))
 
 	// Handle raw policy (no encryption)
 	if policy == types.SEND_POLICY_RAW {

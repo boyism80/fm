@@ -1,4 +1,4 @@
-﻿// Package data provides MapleStory game data specifications and types.
+// Package data provides MapleStory game data specifications and types.
 // This file contains resource loading and management functionality.
 package wz
 
@@ -107,6 +107,7 @@ type Resources struct {
 	Skills   map[uint32]*Skill // All skill specifications
 	Strings  *StringData       // String data organized by type
 	ExpTable []uint32          // Experience table: index = level, value = exp needed for that level
+	Shops    map[uint32]*Shop  // NPC shops: npcId -> shop
 }
 
 // find searches for a child node by path (supports ":" separated paths).
@@ -307,6 +308,18 @@ func NewResources(wzPath string) *Resources {
 		fmt.Println("Drop files loaded.")
 	} else if err != nil {
 		log.Printf("Failed to load Reward.img.xml: %v", err)
+	}
+
+	shops := map[uint32]*Shop{}
+	// Load NpcShop.img.xml (single file, not a directory)
+	shopPath := filepath.Join(wzPath, "NpcShop.img.xml")
+	if shopData, err := loadNpcShops(shopPath); err == nil && shopData != nil {
+		for npcID, shop := range *shopData {
+			shops[npcID] = shop
+		}
+		fmt.Println("NPC shop files loaded.")
+	} else if err != nil {
+		log.Printf("Failed to load NpcShop.img.xml: %v", err)
 	}
 
 	items := map[uint32]Item{}
@@ -622,6 +635,7 @@ func NewResources(wzPath string) *Resources {
 		Strings:      stringData,
 		ExpTable:     expTable,
 		Skills:       skills,
+		Shops:        shops,
 	}
 
 	// Build name lookup indexes from string data (following renewal branch pattern)
@@ -641,6 +655,11 @@ func (r *Resources) buildNameIndexes() {
 // GetSkill returns a skill by ID
 func (r *Resources) GetSkill(skillID uint32) *Skill {
 	return r.Skills[skillID]
+}
+
+// GetShop returns a shop by NPC ID
+func (r *Resources) GetShop(npcID uint32) *Shop {
+	return r.Shops[npcID]
 }
 
 // GetExpNeededForLevel returns the cumulative experience needed to reach the specified level.
