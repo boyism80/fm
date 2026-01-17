@@ -66,6 +66,9 @@ type Character struct {
 	currentDialog *lua.LState // Current dialog coroutine
 	dialogMutex   sync.Mutex  // Mutex for dialog state access
 
+	// Shop state management
+	CurrentShopID uint32 // Current shop NPC ID (0 if no shop is open)
+
 }
 
 type CooldownEntry struct {
@@ -482,6 +485,97 @@ func (ch *Character) RemoveMeso(amount int32) {
 	// Notify listener about meso change
 	if ch.Listener != nil {
 		ch.Listener.OnMesoChanged(ch.Meso)
+	}
+}
+
+// AddItem adds an item to character's inventory
+// If allOrNothing is true, adds all items or returns an error if cannot add all.
+// If allOrNothing is false, adds as many items as possible and returns the count added.
+// Returns (addedCount, error). If allOrNothing is true and not all items can be added, returns (0, error).
+func (ch *Character) AddItem(item Item, allOrNothing bool) (uint16, error) {
+	if item == nil {
+		return 0, fmt.Errorf("item is nil")
+	}
+
+	invenType := item.GetInventoryType()
+	inven := ch.Inventory[invenType]
+	if inven == nil {
+		return 0, fmt.Errorf("inventory type %d not found", invenType)
+	}
+
+	model := item.GetModel()
+	requestedCount := item.GetCount()
+
+	if allOrNothing {
+		if !inven.IsFree(model, requestedCount) {
+			return 0, fmt.Errorf("not enough inventory space for %d items", requestedCount)
+		}
+	}
+
+	remainingCount := requestedCount
+	addedCount := uint16(0)
+
+	for remainingCount > 0 {
+		slot, ok := inven.FindSlot(model)
+		if !ok {
+			// No more slots available
+			if allOrNothing && addedCount == 0 {
+				return 0, fmt.Errorf("no available slot found")
+			}
+			break
+		}
+
+		exists, ok := inven.Items[int16(slot)]
+		cap := uint16(0)
+		if ok {
+			cap = min(model.GetCapacity()-exists.GetCount(), remainingCount)
+			exists.Increase(cap)
+			if ch.Listener != nil {
+				ch.Listener.OnInventorySlotUpdated(invenType, int16(slot), exists)
+			}
+		} else {
+			cap = min(model.GetCapacity(), remainingCount)
+			inven.Items[int16(slot)] = item.Clone(cap)
+			if ch.Listener != nil {
+				ch.Listener.OnInventorySlotAdded(invenType, int16(slot), inven.Items[int16(slot)])
+			}
+		}
+		remainingCount -= cap
+		addedCount += cap
+	}
+
+	// Update original item's count to reflect remaining items
+	if !allOrNothing && addedCount < requestedCount {
+		item.SetCount(remainingCount)
+	}
+
+	if ch.Listener != nil && addedCount > 0 {
+		ch.Listener.OnShowItemGain(model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
+	}
+
+	return addedCount, nil
+}
+
+// GainMeso adds meso to character and shows gain notification
+func (ch *Character) GainMeso(amount int32) {
+	if amount <= 0 {
+		return
+	}
+
+	// Check for overflow
+	if ch.Meso > 0 && amount > 0 && ch.Meso+amount < ch.Meso {
+		ch.Meso = int32(^uint32(0) >> 1) // int32.MaxValue
+	} else {
+		ch.Meso += amount
+	}
+
+	// Notify listener about meso change
+	if ch.Listener != nil {
+		ch.Listener.OnMesoChanged(ch.Meso)
+		ch.Listener.OnShowMesoGain(amount, constant.ShowMesoGainTypeStatus)
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_MESO: ch.Meso,
+		}, false)
 	}
 }
 

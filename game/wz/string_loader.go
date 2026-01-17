@@ -116,8 +116,8 @@ func loadEqpStrings(path string) (*map[string]map[uint32]map[string]string, erro
 
 	result := make(map[string]map[uint32]map[string]string)
 
-	// Eqp.img structure: category -> itemId -> {name, msg, desc}
-	// Some categories may have nested structures (e.g., Face -> subcategory -> itemId)
+	// Eqp.img structure: Eqp.img -> Eqp -> category (Face, Cap, Weapon, etc.) -> itemId -> {name, msg, desc}
+	// We need to skip the "Eqp" wrapper and process categories directly
 	var processNode func(node *node, category string)
 	processNode = func(n *node, category string) {
 		// Check if this node's name is a numeric item ID
@@ -147,9 +147,19 @@ func loadEqpStrings(path string) (*map[string]map[uint32]map[string]string, erro
 		}
 	}
 
-	// Process root children (categories)
-	for _, categoryNode := range root.Children {
-		processNode(&categoryNode, categoryNode.Name)
+	// Process root children
+	// Structure: Eqp.img -> Eqp -> categories (Face, Cap, Weapon, etc.)
+	for _, rootChild := range root.Children {
+		// Skip the "Eqp" wrapper node and process its children (actual categories)
+		if rootChild.Name == "Eqp" {
+			// Process categories directly (Face, Cap, Weapon, etc.)
+			for _, categoryNode := range rootChild.Children {
+				processNode(&categoryNode, categoryNode.Name)
+			}
+		} else {
+			// Fallback: if structure is different, process normally
+			processNode(&rootChild, rootChild.Name)
+		}
 	}
 
 	return &result, nil

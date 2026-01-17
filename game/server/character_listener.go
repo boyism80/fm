@@ -148,10 +148,22 @@ func (l *CharacterListenerImpl) OnInventorySlotUpdated(inventoryType constant.In
 
 func (l *CharacterListenerImpl) OnInventorySlotAdded(inventoryType constant.InventoryType, slot int16, item entity.Item) {
 	itemDTO := entity.ItemToDTO(item)
+
+	// Determine FromDrop value based on item capacity
+	// 0 = stackable (capacity >= 2), 1 = non-stackable (capacity < 2)
+	fromDrop := true // default to non-stackable
+	if item != nil {
+		model := item.GetModel()
+		if model != nil && model.GetCapacity() >= 2 {
+			fromDrop = false // stackable
+		}
+	}
+
 	l.ch.Send(&response.AddInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 		Item:          itemDTO,
+		FromDrop:      fromDrop,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

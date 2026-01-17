@@ -304,6 +304,11 @@ func loadConsumes(path string) (*[]*Consume, error) {
 			}
 		}
 
+		// Set default slotMax for Consume if not specified (EQUIP = 1, others = 100)
+		if model.SlotMax == 0 {
+			model.SlotMax = 100 // Consume default
+		}
+
 		specs = append(specs, &model)
 	}
 
@@ -514,6 +519,11 @@ func loadWeapons(path string) (*Equipment, error) {
 		}
 	}
 
+	// Set default slotMax for Equipment if not specified (EQUIP = 1, others = 100)
+	if model.SlotMax == 0 {
+		model.SlotMax = 1 // Equipment default
+	}
+
 	return &model, nil
 }
 
@@ -613,6 +623,11 @@ func loadGeneralItems(path string) (*[]*GeneralItem, error) {
 			}
 		}
 
+		// Set default slotMax for GeneralItem if not specified (EQUIP = 1, others = 100)
+		if model.SlotMax == 0 {
+			model.SlotMax = 100 // GeneralItem default
+		}
+
 		specs = append(specs, &model)
 	}
 
@@ -692,6 +707,11 @@ func loadInstallations(path string) (*[]*Installation, error) {
 					log.Printf("%s is not declared in %s:info\n", iv.Name, filepath.Base(path))
 				}
 			}
+		}
+
+		// Set default slotMax for Installation if not specified (EQUIP = 1, others = 100)
+		if model.SlotMax == 0 {
+			model.SlotMax = 100 // Installation default
 		}
 
 		specs = append(specs, &model)
@@ -1100,7 +1120,8 @@ func loadPets(path string) (*Pet, error) {
 	}
 	model := &Pet{
 		ItemCore: &ItemCore{
-			ID: uint32(id),
+			ID:      uint32(id),
+			SlotMax: 100, // Pet default (EQUIP = 1, others = 100)
 		},
 	}
 	info := root.find("info")
@@ -1248,7 +1269,7 @@ func parseUnitPrice(unitPriceStr string) float64 {
 	priceStr := strings.TrimPrefix(unitPriceStr, "[R8]")
 	priceStr = strings.TrimPrefix(priceStr, "[R4]")
 	priceStr = strings.Trim(priceStr, "[]")
-	
+
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
 		return 0
@@ -1346,10 +1367,10 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 				// For 2070012, 2070013: getPrice() returns 1.0 (even though WZ has 0.8, 0.6)
 				// For 2070001-2070011: getPrice() returns unitPrice from item data (0.4, 0.5, etc.)
 				shop.Items = append(shop.Items, ShopItem{
-					ItemID:   rechargeID,
-					Price:    0,
-					Period:   0,
-					Stock:    0,
+					ItemID:    rechargeID,
+					Price:     0,
+					Period:    0,
+					Stock:     0,
 					UnitPrice: 0, // Always 0 for added rechargeable items - will use getPrice() in serialization
 				})
 			}

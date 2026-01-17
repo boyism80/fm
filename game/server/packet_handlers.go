@@ -26,4 +26,5 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, HealOverTime](gs)
 	core.Bind[*GameServer, PartySearchStop](gs)
 	core.Bind[*GameServer, Unknown0C](gs)
+	core.Bind[*GameServer, NpcShop](gs)
 }

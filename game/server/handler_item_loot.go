@@ -63,47 +63,14 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 	switch obj := lootedObject.(type) {
 	case entity.Item:
 		item := obj
-		invenType := item.GetInventoryType()
-		inven := character.Inventory[invenType]
-		model := item.GetModel()
-		gain := uint16(0)
-
-		for item.GetCount() > 0 {
-			slot, ok := inven.FindSlot(model)
-			if !ok {
-				break
-			}
-
-			exists, ok := inven.Items[int16(slot)]
-			cap := uint16(0)
-			if ok {
-				cap = min(model.GetCapacity()-exists.GetCount(), item.GetCount())
-				exists.Increase(cap)
-				character.Listener.OnInventorySlotUpdated(invenType, int16(slot), exists)
-			} else {
-				cap = min(model.GetCapacity(), item.GetCount())
-				inven.Items[int16(slot)] = item.Clone(cap)
-				character.Listener.OnInventorySlotAdded(invenType, int16(slot), inven.Items[int16(slot)])
-			}
-			if item.Reduce(cap) == 0 {
-				break
-			}
-			gain += cap
+		_, err := character.AddItem(item, false) // allOrNothing = false for looting (fill as much as possible)
+		if err != nil {
+			log.Printf("Failed to add item: %v", err)
 		}
 
-		character.Listener.OnShowItemGain(model.GetID(), uint32(gain), constant.ShowItemGainTypeStatus)
-
 	case *entity.Meso:
-		meso := obj
-		mesoCount := meso.GetCount32()
-
-		character.Meso += int32(mesoCount)
-
-		character.Listener.OnShowMesoGain(int32(mesoCount), constant.ShowMesoGainTypeStatus)
-
-		character.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_MESO: character.Meso,
-		}, false)
+		mesoCount := obj.GetCount32()
+		character.GainMeso(int32(mesoCount))
 
 	default:
 		log.Printf("Unknown looted object type for OID %d", req.OID)

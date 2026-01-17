@@ -38,6 +38,7 @@ type AddInventorySlot struct {
 	InventoryType constant.InventoryType
 	Slot          int16
 	Item          dto.Item
+	FromDrop      bool // 0 = stackable (capacity >= 2), 1 = non-stackable (capacity < 2)
 }
 
 type RemoveInventorySlot struct {
@@ -86,7 +87,7 @@ func (p *UpdateInventorySlot) Opcode() uint16 {
 }
 
 func (p *AddInventorySlot) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteBoolean(true)
+	writer.WriteBoolean(p.FromDrop)
 	writer.WriteU8(1)
 	writer.WriteU8(uint8(INVENTORY_MODE_ADD))
 	writer.WriteU8(uint8(p.InventoryType))

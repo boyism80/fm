@@ -7,8 +7,6 @@ import (
 
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
 )
 
 type CreateItem struct {
@@ -70,27 +68,11 @@ func (h *CreateItem) Handle(gameClient *client.GameClient, args ...string) error
 		return fmt.Errorf("failed to create item: %v", err)
 	}
 
-	inventoryType := item.GetInventoryType()
-	inventory := character.Inventory[inventoryType]
-	if inventory == nil {
-		return fmt.Errorf("inventory not found for type: %v", inventoryType)
+	_, err = character.AddItem(item, false)
+	if err != nil {
+		return fmt.Errorf("failed to add item: %v", err)
 	}
 
-	nextSlot, ok := inventory.NextSlot()
-	if !ok {
-		return fmt.Errorf("inventory is full for type: %v", inventoryType)
-	}
-
-	inventory.Items[int16(nextSlot)] = item
-
-	itemDTO := entity.ItemToDTO(item)
-	gameClient.Send(&response.AddItem{
-		IsDrop:        false,
-		Slot:          nextSlot,
-		InventoryType: inventoryType,
-		Item:          itemDTO,
-	}, types.SEND_POLICY_ENCRYPT)
-
-	log.Printf("Command: Created item %d, count %d in slot %d for character %d", itemId, count, nextSlot, character.GetID())
+	log.Printf("Command: Created item %d, count %d for character %d", itemId, count, character.GetID())
 	return nil
 }

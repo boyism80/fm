@@ -460,8 +460,9 @@ func NewItem(itemId uint32, count uint16, context GameContext) (Item, error) {
 	case *wz.Equipment:
 		return &Equipment{
 			ItemCore: &ItemCore{
-				Wz:    wz,
-				Count: 1,
+				Wz:         wz,
+				Count:      1,
+				Expiration: util.TimeMax,
 			},
 			EnchantChance: wz.TUC,
 		}, nil
@@ -469,32 +470,36 @@ func NewItem(itemId uint32, count uint16, context GameContext) (Item, error) {
 	case *wz.Consume:
 		return &Consume{
 			ItemCore: &ItemCore{
-				Wz:    wz,
-				Count: count,
+				Wz:         wz,
+				Count:      count,
+				Expiration: util.TimeMax,
 			},
 		}, nil
 
 	case *wz.Installation:
 		return &Installation{
 			ItemCore: &ItemCore{
-				Wz:    wz,
-				Count: 1,
+				Wz:         wz,
+				Count:      1,
+				Expiration: util.TimeMax,
 			},
 		}, nil
 
 	case *wz.GeneralItem:
 		return &GeneralItem{
 			ItemCore: &ItemCore{
-				Wz:    wz,
-				Count: count,
+				Wz:         wz,
+				Count:      count,
+				Expiration: util.TimeMax,
 			},
 		}, nil
 
 	case *wz.CashItem:
 		return &CashItem{
 			ItemCore: &ItemCore{
-				Wz:    wz,
-				Count: count,
+				Wz:         wz,
+				Count:      count,
+				Expiration: util.TimeMax,
 			},
 		}, nil
 

@@ -74,6 +74,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 
 	if shop != nil {
 		// NPC has a shop, send OPEN_NPC_SHOP packet
+		character.CurrentShopID = npcID
 		packet := &response.OpenNpcShop{
 			ShopID: int32(npcID),
 			Shop:   shop,
