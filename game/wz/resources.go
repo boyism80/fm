@@ -782,37 +782,41 @@ func (r *Resources) buildNpcNameIndex() {
 func (r *Resources) buildItemNameIndex() {
 	// Iterate through actually loaded items (from Item.wz)
 	for itemId := range r.Items {
-		// Get item name from String.wz based on item category
+		// Get item name from String.wz based on item ID range (same logic as GetItemName)
 		itemName := ""
-		itemCategory := itemId / 1000000
 
-		switch itemCategory {
-		case 1: // Equipment
-			categoryKey := strconv.FormatUint(uint64(itemId/10000), 10)
-			if categoryData, ok := r.Strings.ItemEqpStrings[categoryKey]; ok {
-				if itemNameData, ok := categoryData[itemId]; ok && itemNameData != nil {
-					itemName, _ = itemNameData["name"]
-				}
+		if itemId >= 5010000 {
+			// Cash items
+			if itemNameData, ok := r.Strings.ItemCashStrings[itemId]; ok && itemNameData != nil {
+				itemName, _ = itemNameData["name"]
 			}
-		case 2: // Consumable
+		} else if itemId >= 2000000 && itemId < 3000000 {
+			// Consumable items
 			if itemNameData, ok := r.Strings.ItemConsumeStrings[itemId]; ok && itemNameData != nil {
 				itemName, _ = itemNameData["name"]
 			}
-		case 3: // Etc
+		} else if itemId >= 4000000 && itemId < 5000000 {
+			// Etc items
 			if itemNameData, ok := r.Strings.ItemEtcStrings[itemId]; ok && itemNameData != nil {
 				itemName, _ = itemNameData["name"]
 			}
-		case 4: // Installation
+		} else if itemId >= 3000000 && itemId < 4000000 {
+			// Installation items
 			if itemNameData, ok := r.Strings.ItemInsStrings[itemId]; ok && itemNameData != nil {
 				itemName, _ = itemNameData["name"]
 			}
-		case 5: // Pet
+		} else if itemId >= 5000000 && itemId < 5010000 {
+			// Pet items
 			if itemNameData, ok := r.Strings.ItemPetStrings[itemId]; ok && itemNameData != nil {
 				itemName, _ = itemNameData["name"]
 			}
-		case 9: // Cash
-			if itemNameData, ok := r.Strings.ItemCashStrings[itemId]; ok && itemNameData != nil {
-				itemName, _ = itemNameData["name"]
+		} else {
+			// Equipment items - need to find category using getItemCategory
+			category := getItemCategory(itemId)
+			if categoryData, ok := r.Strings.ItemEqpStrings[category]; ok {
+				if itemNameData, ok := categoryData[itemId]; ok && itemNameData != nil {
+					itemName, _ = itemNameData["name"]
+				}
 			}
 		}
 
