@@ -251,7 +251,7 @@ func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attac
 		SkillLevel:  skillLevel,
 	}
 
-	mapInstance.BroadcastToAllPlayers(attackPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.BroadcastToPlayers(attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
 }
 
 func (l *CharacterListenerImpl) OnEndSortInventory(inventoryType constant.InventoryType) {

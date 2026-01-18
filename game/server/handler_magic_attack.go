@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -10,25 +10,27 @@ import (
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 )
 
-type Attack struct {
+type MagicAttack struct {
 	gs     *GameServer
 	opcode byte
 }
 
-func (Attack) New(gs *GameServer) *Attack {
-	return &Attack{
+func (MagicAttack) New(gs *GameServer) *MagicAttack {
+	return &MagicAttack{
 		gs:     gs,
-		opcode: 0x1B,
+		opcode: 0x1D,
 	}
 }
 
-func (h *Attack) GetOpcode() byte {
+func (h *MagicAttack) GetOpcode() byte {
 	return h.opcode
 }
 
-func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
+func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) error {
 	client, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")
@@ -41,6 +43,10 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		return fmt.Errorf("character is nil")
 	}
 
+	if character.Hp <= 0 {
+		return nil
+	}
+
 	mapID := character.GetMap()
 	mapInstance := h.gs.GetMap(mapID)
 	if mapInstance == nil {
@@ -48,21 +54,12 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		return fmt.Errorf("character is not in a map")
 	}
 
-	var skillLevel uint8 = 0
-	if req.AttackInfo.Skill != 0 {
-		if !h.validateAndConsumeSkill(character, req.AttackInfo.Skill) {
-			return nil
-		}
-		skillLevel = uint8(character.GetTotalSkillLevel(req.AttackInfo.Skill))
+	if req.AttackInfo.Skill == 0 {
+		character.Listener.OnUpdateStats(nil, true)
+		return nil
 	}
 
-	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
-	character.Listener.OnAttack(mapID, character.GetID(), req.AttackInfo, skillLevel)
-
-	return nil
-}
-
-func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID uint32) bool {
+	skillID := req.AttackInfo.Skill
 	var wzSkill *wz.Skill
 	if character.Context != nil {
 		resources := character.Context.GetResources()
@@ -73,24 +70,28 @@ func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID ui
 
 	if wzSkill == nil {
 		log.Printf("Skill not found: %d", skillID)
-		return false
+		character.Listener.OnUpdateStats(nil, true)
+		return nil
 	}
 
 	skillLevel := character.GetTotalSkillLevel(skillID)
 	if skillLevel <= 0 {
 		log.Printf("Character does not have skill %d or skill level is 0", skillID)
-		return false
+		character.Listener.OnUpdateStats(nil, true)
+		return nil
 	}
 
 	levelData := wzSkill.GetLevelData(skillLevel)
 	if levelData == nil {
-		return false
+		character.Listener.OnUpdateStats(nil, true)
+		return nil
 	}
 
 	if levelData.Cooldown > 0 {
 		if character.IsSkillCooling(skillID) {
 			log.Printf("Skill %d is on cooldown", skillID)
-			return false
+			character.Listener.OnUpdateStats(nil, true)
+			return nil
 		}
 		character.AddCooldown(skillID, levelData.Cooldown)
 	}
@@ -99,14 +100,25 @@ func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID ui
 		mpCon := uint16(levelData.MPCon)
 		if !character.ConsumeMP(mpCon) {
 			log.Printf("Not enough MP for skill %d (required: %d, current: %d)", skillID, mpCon, character.Mp)
-			return false
+			character.Listener.OnUpdateStats(nil, true)
+			return nil
 		}
 	}
 
-	return true
+	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
+
+	magicAttackPacket := &response.MagicAttack{
+		AttackInfo:  req.AttackInfo,
+		CharacterId: character.GetID(),
+		SkillLevel:  uint8(skillLevel),
+	}
+
+	mapInstance.BroadcastToPlayers(magicAttackPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+
+	return nil
 }
 
-func (h *Attack) applyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {
+func (h *MagicAttack) applyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {
 	for _, damage := range damages {
 		mob := mapInstance.GetMob(damage.OID)
 		if mob == nil {

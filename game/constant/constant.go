@@ -169,3 +169,27 @@ const (
 	JOB_THIEF_MIN    uint16 = 400
 	JOB_THIEF_MAX    uint16 = 422
 )
+
+// Item category IDs (itemID / 10000)
+const (
+	ITEM_CATEGORY_THROWING_STAR uint32 = 207
+	ITEM_CATEGORY_BULLET        uint32 = 233
+)
+
+// Rechargeable item IDs
+const (
+	ITEM_THROWING_STAR_BASE uint32 = 2070000
+	ITEM_BULLET_BASE        uint32 = 2330000
+)
+
+// Rechargeable item ID ranges
+var RechargeableThrowingStars = []uint32{
+	2070000, 2070001, 2070002, 2070003, 2070004, 2070005,
+	2070006, 2070007, 2070008, 2070009, 2070010, 2070011,
+	2070012, 2070013,
+}
+
+var RechargeableBullets = []uint32{
+	2330000, 2330001, 2330002, 2330003, 2330004, 2330005,
+	2331000, 2332000,
+}

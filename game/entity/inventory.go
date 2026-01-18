@@ -119,3 +119,13 @@ func (m *Inventory) RemoveItem(slot uint8) error {
 	delete(m.Items, int16(slot))
 	return nil
 }
+
+// FindById finds an item by its ID in the inventory
+func (m *Inventory) FindById(itemID uint32) Item {
+	for _, item := range m.Items {
+		if item != nil && item.GetModel().GetID() == itemID {
+			return item
+		}
+	}
+	return nil
+}

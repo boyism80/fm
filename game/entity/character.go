@@ -69,6 +69,9 @@ type Character struct {
 	// Shop state management
 	CurrentShopID uint32 // Current shop NPC ID (0 if no shop is open)
 
+	// Chair state
+	Chair uint32 // Chair item ID (0 if not sitting)
+
 }
 
 type CooldownEntry struct {
@@ -107,11 +110,6 @@ func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
 // GetMap returns the character's current map ID
 func (ch *Character) GetMap() uint32 {
 	return ch.Map
-}
-
-func (ch *Character) GetInventory(slot uint16) *Inventory {
-	inventoryType := constant.InventoryType(slot >> 8)
-	return ch.Inventory[inventoryType]
 }
 
 func (ch *Character) GetID() uint32 {

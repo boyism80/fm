@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/types"
 )
 
@@ -213,8 +214,25 @@ func loadConsumes(path string) (*[]*Consume, error) {
 			}
 		}
 
+		specNode := v.find("spec")
+		if specNode != nil {
+			for _, intField := range specNode.Ints {
+				switch intField.Name {
+				case "hp":
+					model.ActiveEffect.HP = intField.Value
+				case "mp":
+					model.ActiveEffect.MP = intField.Value
+				case "hpR":
+					model.ActiveEffect.HPRate = intField.Value
+				case "mpR":
+					model.ActiveEffect.MPRate = intField.Value
+				}
+			}
+		}
+
 		node := v.find("model")
 		if node != nil {
+
 			for _, sv := range node.Children {
 				switch sv.Name {
 				case "0":
@@ -1325,27 +1343,24 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 				}
 			}
 
-			// Skip throwing stars except 2070000 (item / 10000 == 207 && item != 2070000)
+			// Skip throwing stars except ITEM_THROWING_STAR_BASE
 			if item.ItemID > 0 {
-				if item.ItemID/10000 == 207 && item.ItemID != 2070000 {
+				if item.ItemID/10000 == constant.ITEM_CATEGORY_THROWING_STAR && item.ItemID != constant.ITEM_THROWING_STAR_BASE {
 					continue
 				}
 				shop.Items = append(shop.Items, item)
 			}
 		}
 
-		rechargeableItems := []uint32{
-			2070000, 2070001, 2070002, 2070003, 2070004, 2070005,
-			2070006, 2070007, 2070008, 2070009, 2070010, 2070011,
-			2070012, 2070013,
-			2330000, 2330001, 2330002, 2330003, 2330004, 2330005,
-			2331000, 2332000,
-		}
+		rechargeableItems := make([]uint32, 0, len(constant.RechargeableThrowingStars)+len(constant.RechargeableBullets))
+		rechargeableItems = append(rechargeableItems, constant.RechargeableThrowingStars...)
+		rechargeableItems = append(rechargeableItems, constant.RechargeableBullets...)
 
 		// Track which rechargeable items are already in the shop
 		existingRechargeable := make(map[uint32]bool)
 		for _, existingItem := range shop.Items {
-			if existingItem.ItemID/10000 == 207 || existingItem.ItemID/10000 == 233 {
+			category := existingItem.ItemID / 10000
+			if category == constant.ITEM_CATEGORY_THROWING_STAR || category == constant.ITEM_CATEGORY_BULLET {
 				existingRechargeable[existingItem.ItemID] = true
 			}
 		}
