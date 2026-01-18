@@ -68,4 +68,5 @@ func (gs *GameServer) registerCommandHandlers() {
 	Bind[*ChangeClass](gs.commandHandler)
 	Bind[*SpawnMob](gs.commandHandler)
 	Bind[*KillAllMobs](gs.commandHandler)
+	Bind[*MasterSkills](gs.commandHandler)
 }
