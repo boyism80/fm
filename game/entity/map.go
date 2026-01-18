@@ -10,6 +10,7 @@ import (
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
 )
 
@@ -226,6 +227,73 @@ func (m *Map) GetNpcs() map[uint32]interface{} {
 		return make(map[uint32]interface{})
 	}
 	return m.objects[types.OBJECT_TYPE_NPC]
+}
+
+func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) {
+	oid := m.allocateOID()
+
+	footholdID := int16(0)
+	foothold, ok := m.model.Footholds.Find(position)
+	if ok {
+		footholdID = foothold.ID
+	}
+
+	footholdPoint := m.model.FootholdPoint(position)
+	spawnPosition := position
+	if footholdPoint != nil {
+		spawnPosition = *footholdPoint
+	}
+
+	baseSpawn := &wz.BaseSpawn{
+		ID:              npcId,
+		Position:        spawnPosition,
+		RenderX0:        -50,
+		RenderX1:        50,
+		CollisionY:      spawnPosition.Y,
+		Hide:            false,
+		UseDay:          true,
+		UseNight:        true,
+		Foothold:        footholdID,
+		FacingDirection: wz.FACING_DIRECTION_RIGHT,
+		MobTime:         0,
+		Info:            0,
+		LimitedName:     "",
+		NoFoothold:      false,
+	}
+
+	npcSpawn := wz.NpcSpawn{
+		BaseSpawn: baseSpawn,
+	}
+
+	npc := &Npc{
+		Object: Object{
+			OID:      oid,
+			Position: spawnPosition,
+			Context:  m.context,
+		},
+		Wz: &npcSpawn,
+	}
+
+	if m.objects[types.OBJECT_TYPE_NPC] == nil {
+		m.objects[types.OBJECT_TYPE_NPC] = make(map[uint32]interface{})
+	}
+
+	m.objects[types.OBJECT_TYPE_NPC][oid] = npc
+
+	npcDTO := npc.ToDTO()
+	spawnPacket := &response.SpawnNpc{
+		NPC:     npcDTO,
+		Visible: true,
+	}
+	controlPacket := &response.NpcControl{
+		NPC:     npcDTO,
+		MiniMap: true,
+	}
+
+	m.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+	m.BroadcastToAllPlayers(controlPacket, types.SEND_POLICY_ENCRYPT)
+
+	return npc, nil
 }
 
 func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn) (*Mob, error) {

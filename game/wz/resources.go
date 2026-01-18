@@ -756,8 +756,8 @@ func (r *Resources) buildNpcNameIndex() {
 	// Collect all NPC IDs from loaded maps
 	npcIds := make(map[uint32]bool)
 	for _, mapData := range r.Maps {
-		for npcId := range mapData.NpcSpawns {
-			npcIds[npcId] = true
+		for _, spawn := range mapData.NpcSpawns {
+			npcIds[spawn.ID] = true
 		}
 	}
 
