@@ -14,7 +14,8 @@ type Mob struct {
 	Life
 	Wz       *wz.Mob
 	Foothold int16
-	MapID    uint32 // Map ID where this mob is located
+	MapID    uint32    // Map ID where this mob is located
+	Spawn    *MobSpawn // Spawn point where this mob was spawned (nil if not from a spawn point)
 }
 
 // Luable interface implementation
@@ -165,9 +166,6 @@ func (m *Mob) dropItems(attacker *Character) {
 	mesoRate := float32(m.Context.GetMesoRate())
 
 	for _, drop := range mobDrops {
-		// Calculate adjusted drop probability (following Java pattern)
-		// chance = de.chance * (showdown / 100.0) * (chServerrate + eventbonus)
-		// For now, we use drop.Prob * dropRate (showdown = 100.0, eventbonus = 0)
 		adjustedProb := drop.Prob * dropRate
 		if adjustedProb > 1.0 {
 			adjustedProb = 1.0
@@ -216,12 +214,10 @@ func (m *Mob) dropItems(attacker *Character) {
 		}
 	}
 
-	// Spawn drops with position spreading (following old server pattern)
 	spawnPoint := m.Position
 	spacing := int16(15)
 
 	for i, drop := range drops {
-		// Calculate X position (following Java pattern)
 		destPoint := spawnPoint
 		if len(drops) > 1 {
 			offset := spacing * int16(i/2+1)

@@ -79,10 +79,7 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 	// Set up controller table with Map-specific callback
 	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
 
-	// Initialize NPCs from MapSpec (following old server pattern)
 	mapInstance.initializeNpcs()
-
-	// Initialize mobs from MapSpec (following old server pattern)
 	mapInstance.initializeMobs()
 
 	return mapInstance
@@ -112,12 +109,7 @@ func (m *Map) releaseOID(oid uint32) {
 	m.availableOIDs = append(m.availableOIDs, oid)
 }
 
-// OnMobControllerChange handles mob controller changes (following old server pattern)
-// This is a global callback that will be replaced with Map-specific callback
 func OnMobControllerChange(mob *Mob, before *Character, after *Character) {
-	// This callback is called when a mob's controller changes
-	// In the new Entity-based architecture, we'll handle this through the MapListener
-	// The actual mob AI logic will be implemented in the MapListener
 }
 
 func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8, init bool) error {
@@ -130,12 +122,7 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8,
 
 	m.objects[types.OBJECT_TYPE_PLAYER][playerID] = character
 
-	// Notify listener about player addition first (sends Warp and SpawnMob packets)
-	// Controller assignment will be done after SpawnMob packets are sent
 	m.listener.OnPlayerAdded(m.ID, playerID, character, init)
-
-	// Add player to controller table for mob AI (following old server pattern)
-	// This will trigger StartControlMob packets after SpawnMob packets
 	m.controllerTable.EnterPlayer(character)
 
 	return nil
@@ -153,7 +140,6 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	character := m.objects[types.OBJECT_TYPE_PLAYER][playerID].(*Character)
 	delete(m.objects[types.OBJECT_TYPE_PLAYER], playerID)
 
-	// Remove player from controller table for mob AI (following old server pattern)
 	m.controllerTable.LeavePlayer(character)
 
 	// Notify listener about player removal
@@ -202,13 +188,11 @@ func (m *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 	return m.model.FootholdPoint(point)
 }
 
-// initializeNpcs initializes NPCs from MapSpec (following old server pattern)
 func (m *Map) initializeNpcs() {
 	if m.objects[types.OBJECT_TYPE_NPC] == nil {
 		m.objects[types.OBJECT_TYPE_NPC] = make(map[uint32]interface{})
 	}
 
-	// Create NPCs from MapSpec (following old server pattern)
 	for _, wz := range m.model.NpcSpawns {
 		oid := m.allocateOID()
 		npc := &Npc{
@@ -226,33 +210,13 @@ func (m *Map) initializeNpcs() {
 	}
 }
 
-// initializeMobs initializes mobs from MapSpec MobSpawns (following old server pattern)
 func (m *Map) initializeMobs() {
-	// Initialize MobSpawns map from MapSpec
 	for spawnId, mobSpawnSpec := range m.model.MobSpawns {
-		// Create MobSpawn entry
 		m.MobSpawns[spawnId] = &MobSpawn{
 			Wz:            &mobSpawnSpec,
 			Spawned:       false,
 			LastSpawnedAt: time.Time{},
 		}
-
-		// Spawn the mob immediately
-		position := types.Point[int16]{
-			X: mobSpawnSpec.Position.X,
-			Y: mobSpawnSpec.Position.Y,
-		}
-
-		_, err := m.SpawnMob(mobSpawnSpec.ID, position)
-		if err != nil {
-			// Log error but continue with other mobs
-			fmt.Printf("Failed to spawn mob %d at spawn point %d: %v\n", mobSpawnSpec.ID, spawnId, err)
-			continue
-		}
-
-		// Mark as spawned
-		m.MobSpawns[spawnId].Spawned = true
-		m.MobSpawns[spawnId].LastSpawnedAt = time.Now()
 	}
 }
 
@@ -264,60 +228,55 @@ func (m *Map) GetNpcs() map[uint32]interface{} {
 	return m.objects[types.OBJECT_TYPE_NPC]
 }
 
-// SpawnMob spawns a mob on the map (following old server pattern)
-func (m *Map) SpawnMob(mobId uint32, position types.Point[int16]) (*Mob, error) {
-	// Allocate OID for mob
+func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn) (*Mob, error) {
 	oid := m.allocateOID()
 
-	// Get mob model from resources
 	mobSpec, ok := m.context.GetResources().Monsters[mobId]
 	if !ok {
 		return nil, fmt.Errorf("mob model not found for ID: %d", mobId)
 	}
 
-	// Find foothold for the position (following old server pattern)
-	foothold, ok := m.model.Footholds.Find(position)
-	if !ok {
-		return nil, fmt.Errorf("no valid foothold found at position: %v", position)
+	footholdID := int16(0)
+	if mobSpawn != nil && mobSpawn.Wz != nil {
+		footholdID = mobSpawn.Wz.Foothold
+	}
+	if footholdID == 0 {
+		foothold, ok := m.model.Footholds.Find(position)
+		if ok {
+			footholdID = foothold.ID
+		}
 	}
 
-	// Calculate spawn point
 	spawnPoint, ok := m.model.DropPoint(position)
 	if !ok {
 		spawnPoint = position
 	}
 
-	// Create mob entity
 	mob := &Mob{
 		Life: Life{
 			Object: Object{
 				OID:      oid,
 				Position: spawnPoint,
-				Context:  m.context, // Pass GameContext to Object
+				Context:  m.context,
 			},
-			Hp:     uint16(mobSpec.MaxHP), // Set from mob model
-			Mp:     uint16(mobSpec.MaxMP), // Set from mob model
-			MaxHp:  uint16(mobSpec.MaxHP), // Set from mob model
-			MaxMp:  uint16(mobSpec.MaxMP), // Set from mob model
+			Hp:     uint16(mobSpec.MaxHP),
+			Mp:     uint16(mobSpec.MaxMP),
+			MaxHp:  uint16(mobSpec.MaxHP),
+			MaxMp:  uint16(mobSpec.MaxMP),
 			Stance: 5,
 		},
-		Foothold: foothold.ID,
-		Wz:       mobSpec, // Pass MobSpec directly
-		MapID:    m.ID,    // Set the map ID where this mob is spawned
+		Foothold: footholdID,
+		Wz:       mobSpec,
+		MapID:    m.ID,
+		Spawn:    mobSpawn,
 	}
 
-	// Initialize objects map for monsters if needed
 	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
 		m.objects[types.OBJECT_TYPE_MONSTER] = make(map[uint32]interface{})
 	}
 
-	// Add mob to map objects
 	m.objects[types.OBJECT_TYPE_MONSTER][oid] = mob
-
-	// Notify listener about mob spawn
 	m.listener.OnMobSpawned(m.ID, oid, mob)
-
-	// Add mob to controller table for mob AI (following old server pattern)
 	m.controllerTable.EnterMob(mob)
 
 	return mob, nil
@@ -336,13 +295,12 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	mob := m.objects[types.OBJECT_TYPE_MONSTER][mobID].(*Mob)
 	delete(m.objects[types.OBJECT_TYPE_MONSTER], mobID)
 
-	// Release OID for reuse
+	if mob.Spawn != nil {
+		mob.Spawn.Spawned = false
+	}
+
 	m.releaseOID(mobID)
-
-	// Remove mob from controller table for mob AI (following old server pattern)
 	m.controllerTable.LeaveMob(mob)
-
-	// Notify listener about mob removal
 	m.listener.OnMobRemoved(m.ID, mobID, animationType)
 
 	return nil
@@ -409,51 +367,42 @@ func (m *Map) BroadcastToPlayer(playerID uint32, message types.Packet, policy ty
 	}
 }
 
-// SpawnItem spawns an item on the map (following old server pattern)
 func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) error {
-	// Allocate OID for item
 	oid := m.allocateOID()
 
-	// Get drop from item
 	drop := item.GetDrop()
 	if drop == nil {
 		return fmt.Errorf("item has no drop information")
 	}
 
-	// Calculate drop point (following old server pattern)
 	dropPoint, ok := m.model.DropPoint(drop.Position)
 	if !ok {
 		dropPoint = drop.SpawnedPoint
 	}
 
-	// Update drop information
 	drop.Position = dropPoint
 	drop.OID = oid
 	drop.Owner = ownerID
 	drop.DropType = dropType
 	drop.MapID = m.ID
-	drop.setupDropTimers()
+	drop.RegisterExpire(constant.ITEM_EXPIRE_TIME)
+	if dropType == constant.DROP_TYPE_OWNED || dropType == constant.DROP_TYPE_PARTY {
+		drop.RegisterFFA(constant.ITEM_FFA_TIME)
+	}
 
-	// Initialize objects map for items if needed
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
 		m.objects[types.OBJECT_TYPE_ITEM] = make(map[uint32]interface{})
 	}
 
-	// Add item to map objects
 	m.objects[types.OBJECT_TYPE_ITEM][oid] = item
-
-	// Notify listener about item spawn
 	m.listener.OnItemSpawned(m.ID, oid, item, drop)
 
 	return nil
 }
 
-// SpawnMeso spawns meso on the map (following old server pattern)
 func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType) error {
-	// Allocate OID for meso
 	oid := m.allocateOID()
 
-	// Calculate drop point
 	dropPoint, ok := m.model.DropPoint(position)
 	if !ok {
 		dropPoint = position
@@ -461,6 +410,15 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 
 	// Create meso entity
 	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.context, m.ID)
+
+	// Register timers for meso
+	drop := meso.GetDrop()
+	if drop != nil {
+		drop.RegisterExpire(constant.ITEM_EXPIRE_TIME)
+		if dropType == constant.DROP_TYPE_OWNED || dropType == constant.DROP_TYPE_PARTY {
+			drop.RegisterFFA(constant.ITEM_FFA_TIME)
+		}
+	}
 
 	// Initialize objects map for items if needed
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
@@ -489,10 +447,11 @@ func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, play
 	// Get the item before removing it to cancel its timers
 	itemInterface := m.objects[types.OBJECT_TYPE_ITEM][itemID]
 
-	// Cancel timers if it's a dropable item
+	// Cancel timers and mark as picked up if it's a dropable item
 	if dropable, ok := itemInterface.(Dropable); ok {
 		if drop := dropable.GetDrop(); drop != nil {
 			drop.cancelTimers()
+			drop.pickedUp = true
 		}
 	}
 

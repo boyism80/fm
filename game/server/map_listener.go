@@ -85,18 +85,14 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 	}
 	mapInstance.BroadcastToPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT, playerID)
 
-	// 4. Send NPC spawn packets to the new player (following old server pattern)
 	for _, npc := range mapInstance.GetNpcs() {
 		if npc, ok := npc.(*entity.Npc); ok {
-			// Convert entity to DTO
 			npcDTO := npc.ToDTO()
-			// Send SpawnNpc packet
 			character.Send(&response.SpawnNpc{
 				NPC:     npcDTO,
 				Visible: true,
 			}, types.SEND_POLICY_ENCRYPT)
 
-			// Send NpcControl packet
 			character.Send(&response.NpcControl{
 				NPC:     npcDTO,
 				MiniMap: true,
@@ -104,13 +100,10 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 		}
 	}
 
-	// 5. Send existing items and meso on the map to the new player (following old server pattern)
 	for _, item := range mapInstance.GetItems() {
-		// Handle regular items
 		if item, ok := item.(entity.Item); ok {
 			drop := item.GetDrop()
 			if drop != nil {
-				// Send SpawnItem packet for existing items
 				character.Send(&response.SpawnItem{
 					ID:           drop.Object.OID,
 					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
@@ -125,11 +118,9 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 			}
 		}
 
-		// Handle meso separately
 		if meso, ok := item.(*entity.Meso); ok {
 			drop := meso.GetDrop()
 			if drop != nil {
-				// Send SpawnMeso packet for existing meso
 				character.Send(&response.SpawnMeso{
 					ID:           drop.Object.OID,
 					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
@@ -144,15 +135,12 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 		}
 	}
 
-	// 6. Send existing mobs on the map to the new player (following old server pattern)
 	for _, mob := range mapInstance.GetMobs() {
 		if mob, ok := mob.(*entity.Mob); ok {
-			// Convert entity to DTO
 			mobDTO := mob.ToDTO()
-			// Send SpawnMob packet for existing mobs (following old server pattern)
 			character.Send(&response.SpawnMob{
 				Mob:       mobDTO,
-				SpawnType: constant.MOB_SPAWN_TYPE_NONE, // Use NONE for existing mobs (following old server pattern)
+				SpawnType: constant.MOB_SPAWN_TYPE_NONE,
 			}, types.SEND_POLICY_ENCRYPT)
 		}
 	}
@@ -332,9 +320,7 @@ func (l *MapListenerImpl) OnMobRemoved(mapID uint32, mobID uint32, animationType
 	mapInstance.BroadcastToAllPlayers(removePacket, types.SEND_POLICY_ENCRYPT)
 }
 
-// OnMobControllerChange sends StartControlMob packet to new controller (following old server pattern)
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character) {
-	// Send StartControlMob packet to new controller (following old server pattern)
 	if after != nil {
 		// Convert entity to DTO
 		mobDTO := mob.ToDTO()

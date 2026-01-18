@@ -51,6 +51,9 @@ type Drop struct {
 	MapID        uint32      // Map ID where this drop is located
 	ffaTimer     interface{} // Timer for FFA (Free For All) transition
 	expiryTimer  interface{} // Timer for item expiry
+	nextFFA      time.Time   // Time when item becomes FFA
+	nextExpiry   time.Time   // Time when item expires
+	pickedUp     bool        // Whether item has been picked up
 }
 
 type ItemCore struct {
@@ -213,6 +216,46 @@ func (drop *Drop) cancelTimers() {
 		}
 		drop.expiryTimer = nil
 	}
+}
+
+// RegisterExpire sets the expiry time for the drop
+func (drop *Drop) RegisterExpire(duration time.Duration) {
+	drop.nextExpiry = time.Now().Add(duration)
+}
+
+// RegisterFFA sets the FFA time for the drop
+func (drop *Drop) RegisterFFA(duration time.Duration) {
+	drop.nextFFA = time.Now().Add(duration)
+}
+
+// ShouldExpire checks if the drop should expire
+func (drop *Drop) ShouldExpire(now time.Time) bool {
+	if drop.pickedUp {
+		return false
+	}
+
+	if drop.nextExpiry.IsZero() {
+		return false
+	}
+
+	return now.After(drop.nextExpiry)
+}
+
+// ShouldFFA checks if the drop should become FFA
+func (drop *Drop) ShouldFFA(now time.Time) bool {
+	if drop.pickedUp {
+		return false
+	}
+
+	if drop.DropType == constant.DROP_TYPE_FFA {
+		return false
+	}
+
+	if drop.nextFFA.IsZero() {
+		return false
+	}
+
+	return now.After(drop.nextFFA)
 }
 
 func (item *CashItem) GetInventoryType() constant.InventoryType {
@@ -441,9 +484,6 @@ func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType 
 		},
 		Count: count,
 	}
-
-	// Set up drop timers
-	meso.Drop.setupDropTimers()
 
 	return meso
 }

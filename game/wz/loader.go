@@ -1325,7 +1325,6 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 				}
 			}
 
-			// Apply Java MapleShopParser filtering logic:
 			// Skip throwing stars except 2070000 (item / 10000 == 207 && item != 2070000)
 			if item.ItemID > 0 {
 				if item.ItemID/10000 == 207 && item.ItemID != 2070000 {
@@ -1335,13 +1334,10 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 			}
 		}
 
-		// Add rechargeable items that are not in the shop (Java MapleShop.createFromDB logic)
-		// This matches Java behavior where rechargeable items are automatically added
-		// Java rechargeableItems set: 2070000-2070013 (except 2070014, 2070015), 2330000-2330005, 2331000, 2332000
 		rechargeableItems := []uint32{
 			2070000, 2070001, 2070002, 2070003, 2070004, 2070005,
 			2070006, 2070007, 2070008, 2070009, 2070010, 2070011,
-			2070012, 2070013, // Note: 2070014, 2070015 are commented out in Java
+			2070012, 2070013,
 			2330000, 2330001, 2330002, 2330003, 2330004, 2330005,
 			2331000, 2332000,
 		}
@@ -1354,18 +1350,8 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 			}
 		}
 
-		// Add missing rechargeable items
-		// Java adds these with price=0, and uses ItemInformationProvider.getPrice() in serialization
-		// Note: Even if item exists in WZ, Java doesn't use WZ unitPrice for added items - it uses getPrice()
-		// However, for items that were filtered out but exist in WZ (like 2070001-2070011),
-		// we should check if they were in DB. If not in DB, they're added rechargeable items and use getPrice()
-		// If in DB, they would have been loaded already, so this shouldn't happen
 		for _, rechargeID := range rechargeableItems {
 			if !existingRechargeable[rechargeID] {
-				// Java adds these items with price=0, unitPrice=0
-				// Serialization will use ItemInformationProvider.getPrice() which may return different values
-				// For 2070012, 2070013: getPrice() returns 1.0 (even though WZ has 0.8, 0.6)
-				// For 2070001-2070011: getPrice() returns unitPrice from item data (0.4, 0.5, etc.)
 				shop.Items = append(shop.Items, ShopItem{
 					ItemID:    rechargeID,
 					Price:     0,
@@ -1873,7 +1859,6 @@ func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
 	return skills, nil
 }
 
-// getHardcodedExpTable returns the hardcoded experience table from Java GameConstants.java
 func getHardcodedExpTable() []uint32 {
 	exp := []uint32{0, 15, 34, 57, 92, 135, 372, 560, 840, 1242, 1716, 2360, 3216, 4200, 5460, 7050, 8840, 11040, 13716, 16680, 20216, 24402, 28980, 34320, 40512, 47216, 54900, 63666, 73080, 83720, 95700, 108480, 122760, 138666, 155540, 174216, 194832, 216600, 240500, 266682, 294216, 324240, 356916, 391160, 428280, 468450, 510420, 555680, 604416, 655200, 709716, 748608, 789631, 832902, 878545, 926689, 977471, 1031036, 1087536, 1147032, 1209994, 1276301, 1346242, 1420016, 1497832, 1579913, 1666492, 1757815, 1854143, 1955750, 2062925, 2175973, 2295216, 2420993, 2553663, 2693603, 2841212, 2996910, 3161140, 3334370, 3517093, 3709829, 3913127, 4127566, 4353756, 4592341, 4844001, 5109452, 5389449, 5684790, 5996316, 6324914, 6671519, 7037118, 7422752, 7829518, 8258575, 8711144, 9188514, 9692044, 10223168, 10783397, 11374327, 11997640, 12655110, 13348610, 14080113, 14851703, 15665576, 16524049, 17429566, 18384706, 19392187, 20454878, 21575805, 22758159, 24005306, 25320796, 26708375, 28171993, 29715818, 31344244, 33061908, 34873700, 36784778, 38800583, 40926854, 43169645, 45535341, 48030677, 50662758, 53439077, 56367538, 59456479, 62714694, 66151459, 69776558, 73600313, 77633610, 81887931, 86375389, 91108760, 96101520, 101367883, 106992842, 112782213, 118962678, 125481832, 132358236, 139611467, 147262175, 155332142, 163844343, 172823012, 182293713, 192283408, 202820538, 213935103, 225658746, 238024845, 251068606, 264827165, 279339639, 294647508, 310794191, 327825712, 345790561, 364739883, 384727628, 405810702, 428049128, 451506220, 476248760, 502347192, 529875818, 558913012, 589541445, 621848316, 655925603, 691870326, 729784819, 769777027, 811960808, 856456260, 903390063, 952895838, 1005114529, 1060194805, 1118293480, 1179575962, 1244216724, 1312399800, 1384319309, 1460180007, 1540197871, 1624600714, 1713628833, 1807535693, 1906558648, 2011069705, 2121276324}
 

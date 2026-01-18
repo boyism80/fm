@@ -120,6 +120,12 @@ const (
 // DefaultMobSpawnTime is the default respawn time for monsters.
 var DefaultMobSpawnTime = 5 * time.Second
 
+// Item cleanup times
+const (
+	ITEM_EXPIRE_TIME = 120 * time.Second // Time before item/meso expires
+	ITEM_FFA_TIME    = 30 * time.Second  // Time before owned/party drop becomes FFA
+)
+
 type RemoveItemType uint8
 
 const (

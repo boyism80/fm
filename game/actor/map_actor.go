@@ -5,18 +5,24 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/game/actor/timers"
 	"github.com/boyism80/fm/game/entity"
 )
 
 type MapActor struct {
-	MapData *entity.Map
-	Context core.ServerContext
+	MapData   *entity.Map
+	Context   core.ServerContext
+	scheduler *scheduler.TimerScheduler
+	timerReg  *TimerRegistry
 }
 
 func (a *MapActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
+	case *actor.Started:
+		a.onStarted(ctx)
 	case *c_actor.HandlePacket:
 		a.handlePacket(ctx, msg)
 	case *c_actor.ScheduleTimer:
@@ -29,6 +35,8 @@ func (a *MapActor) Receive(ctx actor.Context) {
 		a.removeCharacter(ctx, msg)
 	case *WarpCharacter:
 		a.warpCharacter(ctx, msg)
+	case *TimerTick:
+		a.onTimerTick(ctx, msg)
 	}
 }
 
@@ -88,4 +96,43 @@ func (a *MapActor) warpCharacter(ctx actor.Context, msg *WarpCharacter) {
 		return
 	}
 	a.MapData.AddPlayer(msg.Character.ID, msg.Character, msg.Portal, false)
+}
+
+func (a *MapActor) onStarted(ctx actor.Context) {
+	a.scheduler = scheduler.NewTimerScheduler(ctx)
+	a.timerReg = NewTimerRegistry()
+	a.registerTimers()
+
+	for _, handler := range a.timerReg.GetAllHandlers() {
+		a.scheduler.SendRepeatedly(
+			handler.GetInitialDelay(),
+			handler.GetInterval(),
+			ctx.Self(),
+			&TimerTick{
+				HandlerName: handler.GetName(),
+			},
+		)
+	}
+}
+
+func (a *MapActor) registerTimers() {
+	RegisterTimer[*timers.MobSpawnTimer, *timers.MobSpawnTimer](a.timerReg)
+	RegisterTimer[*timers.ItemCleanupTimer, *timers.ItemCleanupTimer](a.timerReg)
+}
+
+func (a *MapActor) onTimerTick(ctx actor.Context, msg *TimerTick) {
+	if a.MapData == nil {
+		return
+	}
+
+	for _, handler := range a.timerReg.GetAllHandlers() {
+		if handler.GetName() == msg.HandlerName {
+			if a.MapData.GetPlayerCount() > 0 {
+				if err := handler.Handle(ctx, a.MapData); err != nil {
+					log.Printf("Timer handler %s error: %v", handler.GetName(), err)
+				}
+			}
+			return
+		}
+	}
 }

@@ -60,7 +60,7 @@ func (h *SpawnMob) Handle(gameClient *client.GameClient, args ...string) error {
 		return fmt.Errorf("mob specification not found for ID: %d", mobId)
 	}
 
-	mob, err := mapInstance.SpawnMob(mobId, character.Position)
+	mob, err := mapInstance.SpawnMob(mobId, character.Position, nil)
 	if err != nil {
 		log.Printf("Failed to spawn mob %d: %v", mobId, err)
 		return fmt.Errorf("failed to spawn mob: %v", err)

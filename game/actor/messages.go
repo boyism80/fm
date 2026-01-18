@@ -18,3 +18,7 @@ type WarpCharacter struct {
 	Character *entity.Character
 	Portal    uint8
 }
+
+type TimerTick struct {
+	HandlerName string
+}
