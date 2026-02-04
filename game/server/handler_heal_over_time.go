@@ -47,16 +47,18 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 
 	if healHP > 0 {
 		newHP := character.Hp + healHP
-		if newHP > character.MaxHp {
-			newHP = character.MaxHp
+		maxHp := character.Life.GetMaxHp()
+		if newHP > maxHp {
+			newHP = maxHp
 		}
 		character.Hp = newHP
 	}
 
 	if healMP > 0 {
 		newMP := character.Mp + healMP
-		if newMP > character.MaxMp {
-			newMP = character.MaxMp
+		maxMp := character.Life.GetMaxMp()
+		if newMP > maxMp {
+			newMP = maxMp
 		}
 		character.Mp = newMP
 	}

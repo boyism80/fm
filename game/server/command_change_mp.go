@@ -48,11 +48,11 @@ func (h *ChangeMp) Handle(gameClient *client.GameClient, args ...string) error {
 	}
 
 	character.Mp = uint16(mp)
-	character.MaxMp = uint16(mp)
+	character.Life.BaseMp = uint16(mp)
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MP:     int32(character.Mp),
-			constant.STAT_MAX_MP: int32(character.MaxMp),
+			constant.STAT_MAX_MP: int32(character.Life.GetMaxMp()),
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 

@@ -198,6 +198,9 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)
 		luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](luaState)
 		luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](luaState)
+		luax.RegisterLuaDerivedType[*entity.Npc, *entity.Object](luaState)
+		luax.RegisterLuaType[*entity.Map](luaState)
+		luax.RegisterLuaType[*entity.SkillEntry](luaState)
 
 		// Register utility functions
 		luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {

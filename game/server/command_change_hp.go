@@ -47,12 +47,12 @@ func (h *ChangeHp) Handle(gameClient *client.GameClient, args ...string) error {
 		return fmt.Errorf("character not found")
 	}
 
-	character.Hp = uint16(hp)
-	character.MaxHp = uint16(hp)
+	character.Life.Hp = uint16(hp)
+	character.Life.BaseHp = uint16(hp)
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_HP:     int32(character.Hp),
-			constant.STAT_MAX_HP: int32(character.MaxHp),
+			constant.STAT_MAX_HP: int32(character.Life.GetMaxHp()),
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 

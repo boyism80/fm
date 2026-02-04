@@ -22,9 +22,8 @@ func (m *Mob) ToDTO() *dto.Mob {
 		Stance:   m.Stance,
 		Foothold: m.Foothold,
 		Hp:       m.Hp,
-		MaxHp:    m.MaxHp,
+		MaxHp:    m.Life.GetMaxHp(),
 		Mp:       m.Mp,
-		MaxMp:    m.MaxMp,
+		MaxMp:    m.Life.GetMaxMp(),
 	}
 }
-

@@ -114,13 +114,15 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 
 	stats := make(map[constant.Stat]int32)
 
+	maxHp := character.GetMaxHp()
+	maxMp := character.GetMaxMp()
 	if hpRate > 0 {
-		hpRecovery := int(character.MaxHp) * hpRate / 100
+		hpRecovery := int(maxHp) * hpRate / 100
 		hpChange += hpRecovery
 	}
 
 	if mpRate > 0 {
-		mpRecovery := int(character.MaxMp) * mpRate / 100
+		mpRecovery := int(maxMp) * mpRate / 100
 		mpChange += mpRecovery
 	}
 
@@ -132,8 +134,8 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		if newHP < 1 {
 			newHP = 1
 		}
-		if newHP > int(character.MaxHp) {
-			newHP = int(character.MaxHp)
+		if newHP > int(maxHp) {
+			newHP = int(maxHp)
 		}
 		actualHPChange = newHP - int(character.Hp)
 		if actualHPChange != 0 {
@@ -147,8 +149,8 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		if newMP < 0 {
 			newMP = 0
 		}
-		if newMP > int(character.MaxMp) {
-			newMP = int(character.MaxMp)
+		if newMP > int(maxMp) {
+			newMP = int(maxMp)
 		}
 		actualMPChange = newMP - int(character.Mp)
 		if actualMPChange != 0 {

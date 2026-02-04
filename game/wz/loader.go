@@ -1847,16 +1847,117 @@ func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
 
 				levelData := &SkillLevelData{}
 
+				// Parse int fields
 				for _, intField := range levelChild.Ints {
 					switch intField.Name {
 					case "mpCon":
 						levelData.MPCon = intField.Value
-					case "cooltime":
-						levelData.Cooldown = intField.Value
-					case "damage":
-						levelData.Damage = intField.Value
 					case "hpCon":
 						levelData.HPCon = intField.Value
+					case "moneyCon":
+						levelData.MoneyCon = intField.Value
+					case "itemCon":
+						levelData.ItemCon = intField.Value
+					case "itemConNo":
+						levelData.ItemConNo = intField.Value
+					case "itemConsume":
+						levelData.ItemConsume = intField.Value
+					case "bulletConsume":
+						levelData.BulletConsume = intField.Value
+					case "bulletCount":
+						levelData.BulletCount = intField.Value
+					case "damage":
+						levelData.Damage = intField.Value
+					case "damagepc":
+						levelData.DamagePC = intField.Value
+					case "fixdamage":
+						levelData.FixDamage = intField.Value
+					case "criticalDamage":
+						levelData.CriticalDamage = intField.Value
+					case "attackCount":
+						levelData.AttackCount = intField.Value
+					case "mobCount":
+						levelData.MobCount = intField.Value
+					case "pad":
+						levelData.PAD = intField.Value
+					case "mad":
+						levelData.MAD = intField.Value
+					case "pdd":
+						levelData.PDD = intField.Value
+					case "mdd":
+						levelData.MDD = intField.Value
+					case "eva":
+						levelData.EVA = intField.Value
+					case "acc":
+						levelData.ACC = intField.Value
+					case "str":
+						levelData.STR = intField.Value
+					case "hp":
+						levelData.HP = intField.Value
+					case "mp":
+						levelData.MP = intField.Value
+					case "jump":
+						levelData.Jump = intField.Value
+					case "speed":
+						levelData.Speed = intField.Value
+					case "mastery":
+						levelData.Mastery = intField.Value
+					case "prop":
+						levelData.Prop = intField.Value
+					case "range":
+						levelData.Range = intField.Value
+					case "time":
+						levelData.Time = intField.Value
+					case "cooltime":
+						levelData.Cooldown = intField.Value
+					case "morph":
+						levelData.Morph = intField.Value
+					case "x":
+						levelData.X = intField.Value
+					case "y":
+						levelData.Y = intField.Value
+					case "z":
+						levelData.Z = intField.Value
+					}
+				}
+
+				// Parse string fields
+				for _, strField := range levelChild.Strings {
+					switch strField.Name {
+					case "damage":
+						// String value is parsed as int
+						if val, err := strconv.Atoi(strField.Value); err == nil {
+							levelData.Damage = val
+						}
+					case "attackCount":
+						// String value is parsed as int
+						if val, err := strconv.Atoi(strField.Value); err == nil {
+							levelData.AttackCount = val
+						}
+					case "acc":
+						// String value is parsed as int
+						if val, err := strconv.Atoi(strField.Value); err == nil {
+							levelData.ACC = val
+						}
+					case "time":
+						// String value is parsed as int
+						if val, err := strconv.Atoi(strField.Value); err == nil {
+							levelData.Time = val
+						}
+					case "hs":
+						levelData.HS = strField.Value
+					case "action":
+						levelData.Action = strField.Value
+					}
+				}
+
+				// Parse vector fields
+				for _, vecField := range levelChild.Vectors {
+					switch vecField.Name {
+					case "lt":
+						levelData.LT = types.Vector2[int32]{X: int32(vecField.X), Y: int32(vecField.Y)}
+					case "rb":
+						levelData.RB = types.Vector2[int32]{X: int32(vecField.X), Y: int32(vecField.Y)}
 					}
 				}
 

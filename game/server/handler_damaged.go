@@ -42,16 +42,16 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 
 	stats := map[constant.Stat]int32{}
 	if !character.Invincible {
-		newHp := int32(character.Hp) - int32(req.Damage)
+		newHp := int32(character.Life.Hp) - int32(req.Damage)
 		if newHp < 0 {
 			newHp = 0
 		}
-		if newHp > int32(character.MaxHp) {
-			newHp = int32(character.MaxHp)
+		if newHp > int32(character.Life.GetMaxHp()) {
+			newHp = int32(character.Life.GetMaxHp())
 		}
 
-		character.Hp = uint16(newHp)
-		stats[constant.STAT_HP] = int32(character.Hp)
+		character.Life.Hp = uint16(newHp)
+		stats[constant.STAT_HP] = int32(character.Life.Hp)
 	}
 
 	character.Listener.OnUpdateStats(stats, true)

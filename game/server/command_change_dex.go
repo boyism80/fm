@@ -47,10 +47,11 @@ func (h *ChangeDex) Handle(gameClient *client.GameClient, args ...string) error 
 		return fmt.Errorf("character not found")
 	}
 
-	character.Dex = uint16(dex)
+	character.BaseStats.Dex = uint16(dex)
+	character.BonusStats.Dex = 0
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.STAT_DEX: int32(character.Dex),
+			constant.STAT_DEX: int32(character.GetTotalDex()),
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 

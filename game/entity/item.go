@@ -11,15 +11,6 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
-// Timer constants
-const (
-	// ffaDelay    = 30 * time.Second
-	// expiryDelay = 5 * time.Minute
-
-	ffaDelay    = 5 * time.Second
-	expiryDelay = 10 * time.Second
-)
-
 type Dropable interface {
 	GetDrop() *Drop
 	BindDrop(drop *Drop)
@@ -48,12 +39,9 @@ type Drop struct {
 	Owner        uint32
 	SpawnedPoint types.Point[int16]
 	DropType     constant.DropType
-	MapID        uint32      // Map ID where this drop is located
-	ffaTimer     interface{} // Timer for FFA (Free For All) transition
-	expiryTimer  interface{} // Timer for item expiry
-	nextFFA      time.Time   // Time when item becomes FFA
-	nextExpiry   time.Time   // Time when item expires
-	pickedUp     bool        // Whether item has been picked up
+	MapID        uint32    // Map ID where this drop is located
+	nextFFA      time.Time // Time when item becomes FFA
+	nextExpiry   time.Time // Time when item expires
 }
 
 type ItemCore struct {
@@ -164,60 +152,6 @@ func (meso *Meso) IsMeso() bool {
 	return true
 }
 
-// setupDropTimers sets up timers for drop ownership changes and expiry
-func (drop *Drop) setupDropTimers() {
-	if drop.Object == nil || drop.Object.Context == nil {
-		return
-	}
-
-	// Commented out: LogicThread removed, timer setup will be handled later
-	// logicThread := drop.Object.Context.GetLogicThread()
-	// if logicThread == nil {
-	// 	return
-	// }
-	//
-	// // Set up FFA timer (Free For All after 30 seconds)
-	// drop.ffaTimer = logicThread.Schedule(ffaDelay, func() error {
-	// 	drop.DropType = constant.DROP_TYPE_FFA
-	// 	drop.Owner = 0
-	// 	return nil
-	// }, func(success bool, err error) {
-	// 	// Callback for FFA timer
-	// })
-	//
-	// // Set up expiry timer (item disappears after 5 minutes)
-	// drop.expiryTimer = logicThread.Schedule(expiryDelay, func() error {
-	// 	// Remove item from map
-	// 	if drop.Object != nil && drop.Object.Context != nil {
-	// 		if mapInstance := drop.Object.Context.GetMap(drop.MapID); mapInstance != nil {
-	// 			mapInstance.RemoveItem(drop.Object.OID, constant.REMOVE_ITEM_TYPE_EXPIRED, 0)
-	// 		}
-	// 	}
-	// 	return nil
-	// }, func(success bool, err error) {
-	// 	// Callback for expiry timer
-	// })
-}
-
-// cancelTimers cancels all active timers for this drop
-func (drop *Drop) cancelTimers() {
-	// Cancel FFA timer if it exists
-	if drop.ffaTimer != nil {
-		if timer, ok := drop.ffaTimer.(interface{ Cancel() }); ok {
-			timer.Cancel()
-		}
-		drop.ffaTimer = nil
-	}
-
-	// Cancel expiry timer if it exists
-	if drop.expiryTimer != nil {
-		if timer, ok := drop.expiryTimer.(interface{ Cancel() }); ok {
-			timer.Cancel()
-		}
-		drop.expiryTimer = nil
-	}
-}
-
 // RegisterExpire sets the expiry time for the drop
 func (drop *Drop) RegisterExpire(duration time.Duration) {
 	drop.nextExpiry = time.Now().Add(duration)
@@ -230,10 +164,6 @@ func (drop *Drop) RegisterFFA(duration time.Duration) {
 
 // ShouldExpire checks if the drop should expire
 func (drop *Drop) ShouldExpire(now time.Time) bool {
-	if drop.pickedUp {
-		return false
-	}
-
 	if drop.nextExpiry.IsZero() {
 		return false
 	}
@@ -243,10 +173,6 @@ func (drop *Drop) ShouldExpire(now time.Time) bool {
 
 // ShouldFFA checks if the drop should become FFA
 func (drop *Drop) ShouldFFA(now time.Time) bool {
-	if drop.pickedUp {
-		return false
-	}
-
 	if drop.DropType == constant.DROP_TYPE_FFA {
 		return false
 	}

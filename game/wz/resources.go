@@ -55,6 +55,7 @@ type node struct {
 	Children []node        `xml:"imgdir"`
 	Strings  []stringField `xml:"string"`
 	Ints     []intField    `xml:"int"`
+	Vectors  []vectorField `xml:"vector"`
 }
 
 // intField represents an int element in WZ XML
@@ -67,6 +68,13 @@ type intField struct {
 type stringField struct {
 	Name  string `xml:"name,attr"`
 	Value string `xml:"value,attr"`
+}
+
+// vectorField represents a vector element in WZ XML
+type vectorField struct {
+	Name string `xml:"name,attr"`
+	X    int    `xml:"x,attr"`
+	Y    int    `xml:"y,attr"`
 }
 
 // StringData contains string data for different types

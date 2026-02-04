@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/response"
@@ -72,6 +73,35 @@ type Character struct {
 	// Chair state
 	Chair uint32 // Chair item ID (0 if not sitting)
 
+	// Base stats (permanent) - only for STR, DEX, INT, LUK
+	BaseStats BaseStats
+
+	// Bonus stats (temporary from buffs/equipment) - only for STR, DEX, INT, LUK
+	BonusStats BonusStats
+}
+
+// BaseStats represents permanent character statistics
+type BaseStats struct {
+	Str uint16 // Base strength
+	Dex uint16 // Base dexterity
+	Int uint16 // Base intelligence
+	Luk uint16 // Base luck
+}
+
+// BonusStats represents temporary stat increases from buffs/equipment
+type BonusStats struct {
+	Str   int16 // Bonus strength (can be negative)
+	Dex   int16 // Bonus dexterity (can be negative)
+	Int   int16 // Bonus intelligence (can be negative)
+	Luk   int16 // Bonus luck (can be negative)
+	Watk  int16 // Bonus weapon attack
+	Matk  int16 // Bonus magic attack
+	Wdef  int16 // Bonus weapon defense
+	Mdef  int16 // Bonus magic defense
+	Acc   int16 // Bonus accuracy
+	Avoid int16 // Bonus evasion
+	Speed int16 // Bonus speed
+	Jump  int16 // Bonus jump
 }
 
 type CooldownEntry struct {
@@ -98,6 +128,103 @@ type RingContainer struct {
 
 type MonsterBook struct {
 	Cards map[uint32]uint32
+}
+
+// GetTotalStr returns the total strength (BaseStr + BonusStr)
+func (ch *Character) GetTotalStr() uint16 {
+	// Migration: if BaseStats.Str is 0 and Str is set, copy Str to BaseStats.Str
+	if ch.BaseStats.Str == 0 && ch.Str > 0 {
+		ch.BaseStats.Str = ch.Str
+		ch.Str = 0
+	}
+
+	total := int32(ch.BaseStats.Str) + int32(ch.BonusStats.Str)
+	if total < 0 {
+		return 0
+	}
+	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
+		return constant.STAT_MAX_STR_DEX_INT_LUK
+	}
+	return uint16(total)
+}
+
+// GetTotalDex returns the total dexterity (BaseDex + BonusDex)
+func (ch *Character) GetTotalDex() uint16 {
+	// Migration: if BaseStats.Dex is 0 and Dex is set, copy Dex to BaseStats.Dex
+	if ch.BaseStats.Dex == 0 && ch.Dex > 0 {
+		ch.BaseStats.Dex = ch.Dex
+		ch.Dex = 0
+	}
+
+	total := int32(ch.BaseStats.Dex) + int32(ch.BonusStats.Dex)
+	if total < 0 {
+		return 0
+	}
+	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
+		return constant.STAT_MAX_STR_DEX_INT_LUK
+	}
+	return uint16(total)
+}
+
+// GetTotalInt returns the total intelligence (BaseInt + BonusInt)
+func (ch *Character) GetTotalInt() uint16 {
+	// Migration: if BaseStats.Int is 0 and Int is set, copy Int to BaseStats.Int
+	if ch.BaseStats.Int == 0 && ch.Int > 0 {
+		ch.BaseStats.Int = ch.Int
+		ch.Int = 0
+	}
+
+	total := int32(ch.BaseStats.Int) + int32(ch.BonusStats.Int)
+	if total < 0 {
+		return 0
+	}
+	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
+		return constant.STAT_MAX_STR_DEX_INT_LUK
+	}
+	return uint16(total)
+}
+
+// GetTotalLuk returns the total luck (BaseLuk + BonusLuk)
+func (ch *Character) GetTotalLuk() uint16 {
+	// Migration: if BaseStats.Luk is 0 and Luk is set, copy Luk to BaseStats.Luk
+	if ch.BaseStats.Luk == 0 && ch.Luk > 0 {
+		ch.BaseStats.Luk = ch.Luk
+		ch.Luk = 0
+	}
+
+	total := int32(ch.BaseStats.Luk) + int32(ch.BonusStats.Luk)
+	if total < 0 {
+		return 0
+	}
+	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
+		return constant.STAT_MAX_STR_DEX_INT_LUK
+	}
+	return uint16(total)
+}
+
+// notifyStatChange notifies the listener of a stat change
+func (ch *Character) notifyStatChange(stat constant.Stat) {
+	if ch.Listener == nil {
+		return
+	}
+
+	stats := make(map[constant.Stat]int32)
+	switch stat {
+	case constant.STAT_STR:
+		stats[constant.STAT_STR] = int32(ch.GetTotalStr())
+	case constant.STAT_DEX:
+		stats[constant.STAT_DEX] = int32(ch.GetTotalDex())
+	case constant.STAT_INT:
+		stats[constant.STAT_INT] = int32(ch.GetTotalInt())
+	case constant.STAT_LUK:
+		stats[constant.STAT_LUK] = int32(ch.GetTotalLuk())
+	case constant.STAT_MAX_HP:
+		stats[constant.STAT_MAX_HP] = int32(ch.Life.GetMaxHp())
+	case constant.STAT_MAX_MP:
+		stats[constant.STAT_MAX_MP] = int32(ch.Life.GetMaxMp())
+	}
+
+	ch.Listener.OnUpdateStats(stats, false)
 }
 
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
@@ -919,6 +1046,373 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 0
 		},
+		"skill": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			skillID := uint32(L.CheckInt(2))
+
+			if ch.SkillsMap == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+
+			skillEntry, exists := ch.SkillsMap[skillID]
+			if !exists || skillEntry == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+
+			skillUD := luax.NewLuable(L, skillEntry)
+			L.Push(skillUD)
+			return 1
+		},
+		"get_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.Hp))
+			return 1
+		},
+		"map": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Context == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			mapInstance := ch.Context.GetMap(ch.Map)
+			if mapInstance == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, mapInstance))
+			return 1
+		},
+		"get_max_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.Life.GetMaxHp()))
+			return 1
+		},
+		"set_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			hp := int(L.CheckNumber(2))
+			if hp < 0 {
+				hp = 0
+			}
+			maxHp := ch.Life.GetMaxHp()
+			if hp > int(maxHp) {
+				hp = int(maxHp)
+			}
+			ch.Hp = uint16(hp)
+			if ch.Listener != nil {
+				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+					constant.STAT_HP: int32(ch.Hp),
+				}, false)
+			}
+			return 0
+		},
+		"add_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			amount := int(L.CheckNumber(2))
+			newHp := int(ch.Hp) + amount
+			if newHp < 0 {
+				newHp = 0
+			}
+			maxHp := ch.Life.GetMaxHp()
+			if newHp > int(maxHp) {
+				newHp = int(maxHp)
+			}
+			ch.Hp = uint16(newHp)
+			if ch.Listener != nil {
+				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+					constant.STAT_HP: int32(ch.Hp),
+				}, false)
+			}
+			return 0
+		},
+		"get_mp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.Mp))
+			return 1
+		},
+		"get_max_mp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.Life.GetMaxMp()))
+			return 1
+		},
+		"set_mp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			mp := int(L.CheckNumber(2))
+			if mp < 0 {
+				mp = 0
+			}
+			maxMp := ch.Life.GetMaxMp()
+			if mp > int(maxMp) {
+				mp = int(maxMp)
+			}
+			ch.Mp = uint16(mp)
+			if ch.Listener != nil {
+				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+					constant.STAT_MP: int32(ch.Mp),
+				}, false)
+			}
+			return 0
+		},
+		"add_mp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			amount := int(L.CheckNumber(2))
+			newMp := int(ch.Mp) + amount
+			if newMp < 0 {
+				newMp = 0
+			}
+			maxMp := ch.Life.GetMaxMp()
+			if newMp > int(maxMp) {
+				newMp = int(maxMp)
+			}
+			ch.Mp = uint16(newMp)
+			if ch.Listener != nil {
+				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+					constant.STAT_MP: int32(ch.Mp),
+				}, false)
+			}
+			return 0
+		},
+		"add_mp_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			hpChange := int(L.CheckNumber(2))
+			mpChange := int(L.CheckNumber(3))
+
+			newHp := int(ch.Hp) + hpChange
+			if newHp < 0 {
+				newHp = 0
+			}
+			maxHp := ch.Life.GetMaxHp()
+			if newHp > int(maxHp) {
+				newHp = int(maxHp)
+			}
+			ch.Hp = uint16(newHp)
+
+			newMp := int(ch.Mp) + mpChange
+			if newMp < 0 {
+				newMp = 0
+			}
+			maxMp := ch.Life.GetMaxMp()
+			if newMp > int(maxMp) {
+				newMp = int(maxMp)
+			}
+			ch.Mp = uint16(newMp)
+
+			if ch.Listener != nil {
+				stats := map[constant.Stat]int32{
+					constant.STAT_HP: int32(ch.Hp),
+					constant.STAT_MP: int32(ch.Mp),
+				}
+				ch.Listener.OnUpdateStats(stats, false)
+			}
+			return 0
+		},
+		"is_alive": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LBool(ch.Hp > 0))
+			return 1
+		},
+		"get_bonus_str": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.BonusStats.Str))
+			return 1
+		},
+		"set_bonus_str": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			bonusStr := L.CheckInt(2)
+			ch.BonusStats.Str = int16(bonusStr)
+			ch.notifyStatChange(constant.STAT_STR)
+			return 0
+		},
+		"get_bonus_dex": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.BonusStats.Dex))
+			return 1
+		},
+		"set_bonus_dex": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			bonusDex := L.CheckInt(2)
+			ch.BonusStats.Dex = int16(bonusDex)
+			ch.notifyStatChange(constant.STAT_DEX)
+			return 0
+		},
+		"get_bonus_int": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.BonusStats.Int))
+			return 1
+		},
+		"set_bonus_int": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			bonusInt := L.CheckInt(2)
+			ch.BonusStats.Int = int16(bonusInt)
+			ch.notifyStatChange(constant.STAT_INT)
+			return 0
+		},
+		"get_bonus_luk": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.BonusStats.Luk))
+			return 1
+		},
+		"set_bonus_luk": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			bonusLuk := L.CheckInt(2)
+			ch.BonusStats.Luk = int16(bonusLuk)
+			ch.notifyStatChange(constant.STAT_LUK)
+			return 0
+		},
+		"get_bonus_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.Life.BonusHp))
+			return 1
+		},
+		"set_bonus_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			bonusHp := L.CheckInt(2)
+			ch.Life.BonusHp = int16(bonusHp)
+			// Adjust HP if it exceeds new max
+			if ch.Hp > ch.Life.GetMaxHp() {
+				ch.Hp = ch.Life.GetMaxHp()
+			}
+			ch.notifyStatChange(constant.STAT_MAX_HP)
+			return 0
+		},
+		"get_bonus_mp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.Life.BonusMp))
+			return 1
+		},
+		"set_bonus_mp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			bonusMp := L.CheckInt(2)
+			ch.Life.BonusMp = int16(bonusMp)
+			// Adjust MP if it exceeds new max
+			if ch.Mp > ch.Life.GetMaxMp() {
+				ch.Mp = ch.Life.GetMaxMp()
+			}
+			ch.notifyStatChange(constant.STAT_MAX_MP)
+			return 0
+		},
 	}
 }
 
@@ -938,10 +1432,10 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			Object: Object{
 				Context: ctx,
 			},
-			Hp:    50,
-			MaxHp: 50,
-			Mp:    5,
-			MaxMp: 5,
+			Hp:     50,
+			BaseHp: 50,
+			Mp:     5,
+			BaseMp: 5,
 		},
 		ID:           id,
 		Name:         name,
@@ -1145,20 +1639,20 @@ func (ch *Character) SetLevel(newLevel uint8) {
 		ch.AbilityPoint += totalAPIncrease
 		ch.SkillPoint += totalSPIncrease
 
-		ch.MaxHp += totalHPIncrease
-		ch.MaxMp += totalMPIncrease
+		ch.Life.AddBaseHp(totalHPIncrease)
+		ch.Life.AddBaseMp(totalMPIncrease)
 
 		// Restore HP/MP to max
-		ch.Hp = ch.MaxHp
-		ch.Mp = ch.MaxMp
+		ch.Hp = ch.Life.GetMaxHp()
+		ch.Mp = ch.Life.GetMaxMp()
 
 		// Notify listener
 		if ch.Listener != nil {
 			stats := map[constant.Stat]int32{
 				constant.STAT_LEVEL:        int32(ch.Level),
 				constant.STAT_EXP:          int32(ch.Exp),
-				constant.STAT_MAX_HP:       int32(ch.MaxHp),
-				constant.STAT_MAX_MP:       int32(ch.MaxMp),
+				constant.STAT_MAX_HP:       int32(ch.Life.GetMaxHp()),
+				constant.STAT_MAX_MP:       int32(ch.Life.GetMaxMp()),
 				constant.STAT_HP:           int32(ch.Hp),
 				constant.STAT_MP:           int32(ch.Mp),
 				constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),

@@ -128,6 +128,25 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"wz": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			// Convert wz.Mob to Lua table
+			tbl := L.NewTable()
+			if mob.Wz != nil {
+				tbl.RawSetString("id", lua.LNumber(mob.Wz.ID))
+				tbl.RawSetString("level", lua.LNumber(mob.Wz.Level))
+				tbl.RawSetString("max_hp", lua.LNumber(mob.Wz.MaxHP))
+				tbl.RawSetString("max_mp", lua.LNumber(mob.Wz.MaxMP))
+				tbl.RawSetString("exp", lua.LNumber(mob.Wz.EXP))
+			}
+			L.Push(tbl)
+			return 1
+		},
 	}
 }
 
@@ -281,7 +300,7 @@ func (m *Mob) Damage(damage uint16, attacker *Character) bool {
 	}
 
 	// Send mob HP update to attacker via listener
-	attacker.Listener.OnShowMobHp(m.OID, uint8(m.Hp*100/m.MaxHp))
+	attacker.Listener.OnShowMobHp(m.OID, uint8(m.Hp*100/m.Life.GetMaxHp()))
 
 	return true
 }

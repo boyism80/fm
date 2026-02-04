@@ -47,10 +47,11 @@ func (h *ChangeLuk) Handle(gameClient *client.GameClient, args ...string) error 
 		return fmt.Errorf("character not found")
 	}
 
-	character.Luk = uint16(luk)
+	character.BaseStats.Luk = uint16(luk)
+	character.BonusStats.Luk = 0
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.STAT_LUK: int32(character.Luk),
+			constant.STAT_LUK: int32(character.GetTotalLuk()),
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 

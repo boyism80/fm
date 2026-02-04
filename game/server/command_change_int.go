@@ -47,10 +47,11 @@ func (h *ChangeInt) Handle(gameClient *client.GameClient, args ...string) error 
 		return fmt.Errorf("character not found")
 	}
 
-	character.Int = uint16(intVal)
+	character.BaseStats.Int = uint16(intVal)
+	character.BonusStats.Int = 0
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.STAT_INT: int32(character.Int),
+			constant.STAT_INT: int32(character.GetTotalInt()),
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 

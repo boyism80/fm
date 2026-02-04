@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
+	lua "github.com/yuin/gopher-lua"
 )
 
 // MapListener defines interface for map events
@@ -328,9 +330,9 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 				Context:  m.context,
 			},
 			Hp:     uint16(mobSpec.MaxHP),
+			BaseHp: uint16(mobSpec.MaxHP),
 			Mp:     uint16(mobSpec.MaxMP),
-			MaxHp:  uint16(mobSpec.MaxHP),
-			MaxMp:  uint16(mobSpec.MaxMP),
+			BaseMp: uint16(mobSpec.MaxMP),
 			Stance: 5,
 		},
 		Foothold: footholdID,
@@ -512,17 +514,6 @@ func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, play
 		return fmt.Errorf("item %d not found on map", itemID)
 	}
 
-	// Get the item before removing it to cancel its timers
-	itemInterface := m.objects[types.OBJECT_TYPE_ITEM][itemID]
-
-	// Cancel timers and mark as picked up if it's a dropable item
-	if dropable, ok := itemInterface.(Dropable); ok {
-		if drop := dropable.GetDrop(); drop != nil {
-			drop.cancelTimers()
-			drop.pickedUp = true
-		}
-	}
-
 	delete(m.objects[types.OBJECT_TYPE_ITEM], itemID)
 
 	// Release OID for reuse
@@ -635,4 +626,110 @@ func (m *Map) SetActorPID(pid *actor.PID) {
 	m.pidMutex.Lock()
 	defer m.pidMutex.Unlock()
 	m.actorPID = pid
+}
+
+// Luable interface implementation
+func (m *Map) LuaTypeName() string {
+	return "LuaMap"
+}
+
+func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
+	return map[string]lua.LGFunction{
+		"npcs": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			npcs := mapInstance.GetNpcs()
+			tbl := L.NewTable()
+			for _, npc := range npcs {
+				if npcObj, ok := npc.(*Npc); ok {
+					tbl.RawSetInt(int(npcObj.OID), luax.NewLuable(L, npcObj))
+				}
+			}
+			L.Push(tbl)
+			return 1
+		},
+		"mobs": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mobs := mapInstance.GetMobs()
+			tbl := L.NewTable()
+			for _, mob := range mobs {
+				if mobObj, ok := mob.(*Mob); ok {
+					tbl.RawSetInt(int(mobObj.OID), luax.NewLuable(L, mobObj))
+				}
+			}
+			L.Push(tbl)
+			return 1
+		},
+		"characters": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			players := mapInstance.GetAllPlayers()
+			tbl := L.NewTable()
+			for _, player := range players {
+				if char, ok := player.(*Character); ok {
+					tbl.RawSetInt(int(char.ID), luax.NewLuable(L, char))
+				}
+			}
+			L.Push(tbl)
+			return 1
+		},
+		"items": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			items := mapInstance.GetItems()
+			tbl := L.NewTable()
+			for _, item := range items {
+				if itemObj, ok := item.(Item); ok {
+					drop := itemObj.GetDrop()
+					if drop != nil && drop.Object != nil {
+						// Item interface를 타입 어설션하여 실제 타입을 얻고 Luable로 변환
+						switch v := itemObj.(type) {
+						case *Equipment:
+							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
+						case *Consume:
+							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
+						case *CashItem:
+							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
+						case *GeneralItem:
+							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
+						case *Installation:
+							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
+						case *Pet:
+							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
+						default:
+							// Fallback to Object
+							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, drop.Object))
+						}
+					}
+				}
+			}
+			L.Push(tbl)
+			return 1
+		},
+	}
+}
+
+func (m *Map) String() string {
+	return m.LuaTypeName()
+}
+
+func (m *Map) Type() lua.LValueType {
+	return lua.LTUserData
 }
