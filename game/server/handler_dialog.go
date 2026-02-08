@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -42,17 +42,15 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		return fmt.Errorf("character not found")
 	}
 
+	pid := ctx.LogicActorID
+	rootState := luax.GetRootState(pid)
+	if rootState == nil {
+		return fmt.Errorf("lua state not available")
+	}
 	dialog := character.GetCurrentDialog()
 	if dialog == nil {
 		log.Printf("No active dialog for character %d", character.GetID())
 		return fmt.Errorf("no active dialog")
-	}
-
-	// Get thread-local LuaState
-	// This will be shared among all MapActors running on the same thread
-	luaState := luax.GetThreadLocalState()
-	if luaState == nil {
-		return fmt.Errorf("lua state not available")
 	}
 
 	var args []lua.LValue
@@ -78,7 +76,7 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		args = append(args, lua.LBool(req.Next))
 	}
 
-	resumeState, err, _ := luaState.Resume(dialog, nil, args...)
+	resumeState, err, _ := rootState.Resume(dialog, nil, args...)
 	if err != nil {
 		log.Printf("Failed to resume dialog: %v", err)
 		character.ClearCurrentDialog()

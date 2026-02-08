@@ -73,72 +73,6 @@ type GameConfig struct {
 	MesoRate   int    // Meso rate multiplier
 }
 
-// GetLuaState returns the Lua state for script execution
-
-// ExecuteNpcScript executes the Lua script for an NPC
-// Uses thread-local LuaState, which is shared among MapActors running on the same thread
-func (gs *GameServer) ExecuteNpcScript(character *entity.Character, npcInterface interface{}) error {
-	// Get NPC model to determine script file
-	npc, ok := npcInterface.(*entity.Npc)
-	if !ok {
-		return fmt.Errorf("invalid NPC type")
-	}
-
-	if npc.Wz == nil {
-		return fmt.Errorf("NPC has no model")
-	}
-
-	// Get thread-local LuaState
-	// This will be shared among all MapActors running on the same thread
-	luaState := luax.GetThreadLocalState()
-	if luaState == nil {
-		return fmt.Errorf("lua state not available")
-	}
-
-	// Load NPC script
-	path := fmt.Sprintf("script/npc/%d.lua", npc.Wz.ID)
-
-	// Load script function
-	fn, err := luaState.LoadFile(path)
-	if err != nil {
-		log.Printf("Failed to load NPC script %s: %v", path, err)
-		return fmt.Errorf("failed to load NPC script: %w", err)
-	}
-
-	// Create new thread for script execution
-	co, _ := luaState.NewThread()
-
-	// Push script function to thread
-	co.Push(fn)
-
-	// Execute script (loads all functions)
-	if err := co.PCall(0, lua.MultRet, nil); err != nil {
-		return fmt.Errorf("failed to execute NPC script: %w", err)
-	}
-
-	// Get on_start function
-	onStartFn := co.GetGlobal("on_start")
-	if onStartFn.Type() != lua.LTFunction {
-		return fmt.Errorf("on_start function not found in NPC script")
-	}
-
-	// Create character Lua object using luax.NewLuable
-	characterLua := luax.NewLuable(co, character)
-
-	// Call on_start(me) function
-	resumeState, err, _ := luaState.Resume(co, onStartFn.(*lua.LFunction), characterLua)
-	if err != nil {
-		return fmt.Errorf("failed to call on_start: %w", err)
-	}
-
-	// If script yielded (waiting for dialog response), store the coroutine
-	if resumeState == lua.ResumeYield {
-		character.SetCurrentDialog(co)
-	}
-
-	return nil
-}
-
 // NewGameServer creates a new game server with specified configuration
 func NewGameServer(config *GameConfig) (*GameServer, error) {
 	serverConfig := &core.ServerConfig{
@@ -190,9 +124,8 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	// Initialize packet handler registry
 	gs.packetHandlers = NewPacketHandlerRegistry(gs)
 
-	// Register thread-local LuaState initialization hook
-	// This ensures that each thread-local LuaState has game-specific types registered
-	luax.RegisterThreadLocalInitHook(func(luaState *lua.LState) {
+	// Register hook so each root LuaState (e.g. per map actor) gets game-specific types
+	luax.RegisterOnCreateHook(func(luaState *lua.LState) {
 		// Register Lua types with inheritance
 		luax.RegisterLuaType[*entity.Object](luaState)
 		luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)

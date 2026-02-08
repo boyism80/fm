@@ -8,6 +8,7 @@ import (
 	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/actor/timers"
 	"github.com/boyism80/fm/game/entity"
 )
@@ -23,6 +24,8 @@ func (a *MapActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		a.onStarted(ctx)
+	case *actor.Stopped:
+		a.onStopped(ctx)
 	case *c_actor.HandlePacket:
 		a.handlePacket(ctx, msg)
 	case *c_actor.ScheduleTimer:
@@ -46,7 +49,7 @@ func (a *MapActor) handlePacket(ctx actor.Context, msg *c_actor.HandlePacket) {
 		log.Printf("Invalid client type in HandlePacket")
 		return
 	}
-	err := core.ExecutePacketHandler(a.Context, client, msg.Opcode, msg.Data)
+	err := core.ExecutePacketHandler(a.Context, client, msg.Opcode, msg.Data, ctx.Self().String())
 	if err != nil {
 		log.Printf("Error handling packet 0x%02X: %v", msg.Opcode, err)
 	}
@@ -99,6 +102,9 @@ func (a *MapActor) warpCharacter(ctx actor.Context, msg *WarpCharacter) {
 }
 
 func (a *MapActor) onStarted(ctx actor.Context) {
+	L := luax.NewState()
+	luax.RegisterRootState(ctx.Self().String(), L)
+
 	a.scheduler = scheduler.NewTimerScheduler(ctx)
 	a.timerReg = NewTimerRegistry()
 	a.registerTimers()
@@ -113,6 +119,10 @@ func (a *MapActor) onStarted(ctx actor.Context) {
 			},
 		)
 	}
+}
+
+func (a *MapActor) onStopped(ctx actor.Context) {
+	luax.UnregisterRootState(ctx.Self().String())
 }
 
 func (a *MapActor) registerTimers() {

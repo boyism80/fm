@@ -18,8 +18,9 @@ type PacketHandler struct {
 // Purpose: Provides client and server references to handlers
 // Thread Safety: Safe for concurrent access
 type ClientContext struct {
-	Client Client
-	Server *Server
+	Client        Client
+	Server        *Server
+	LogicActorID  string // Actor PID handling this packet (e.g. map actor), for script root state lookup
 }
 
 // NewPacketHandler creates a new packet handler

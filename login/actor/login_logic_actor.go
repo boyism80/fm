@@ -34,7 +34,7 @@ func (a *LoginLogicActor) handlePacket(ctx actor.Context, msg *c_actor.HandlePac
 		log.Printf("Invalid client type in HandlePacket")
 		return
 	}
-	err := core.ExecutePacketHandler(a.Context, client, msg.Opcode, msg.Data)
+	err := core.ExecutePacketHandler(a.Context, client, msg.Opcode, msg.Data, "")
 	if err != nil {
 		log.Printf("Error handling packet 0x%02X: %v", msg.Opcode, err)
 	}

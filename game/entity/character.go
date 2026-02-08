@@ -911,6 +911,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if ch.Listener != nil {
 				ch.Listener.OnDialog(uint32(npc), message, prev, next)
 			}
+			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_yes_no": func(L *lua.LState) int {
@@ -944,6 +945,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if ch.Listener != nil {
 				ch.Listener.OnDialogYesNo(uint32(npc), message, prev, next)
 			}
+			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_list": func(L *lua.LState) int {
@@ -978,6 +980,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if ch.Listener != nil {
 				ch.Listener.OnDialogList(uint32(npc), message, selections)
 			}
+			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_accept": func(L *lua.LState) int {
@@ -1007,6 +1010,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if ch.Listener != nil {
 				ch.Listener.OnDialogAccept(uint32(npc), message, enableEscape)
 			}
+			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_input": func(L *lua.LState) int {
@@ -1031,6 +1035,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if ch.Listener != nil {
 				ch.Listener.OnDialogInput(uint32(npc), message)
 			}
+			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"notice": func(L *lua.LState) int {

@@ -2,6 +2,7 @@ package luax
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"sync"
 
@@ -14,7 +15,32 @@ var (
 	compileMu       sync.Mutex
 	compiledFuncs   = make(map[string]*lua.LFunction)
 	useCache        = os.Getenv("GO_ENV") != "development"
+
+	rootStateRegistry sync.Map // map[string]*lua.LState, keyed by actor PID
 )
+
+// RegisterRootState registers the root LState for the given actor PID (e.g. map actor).
+func RegisterRootState(pid string, L *lua.LState) {
+	rootStateRegistry.Store(pid, L)
+}
+
+// GetRootState returns the root LState for the actor PID, or nil if not registered.
+func GetRootState(pid string) *lua.LState {
+	v, ok := rootStateRegistry.Load(pid)
+	if !ok {
+		return nil
+	}
+	return v.(*lua.LState)
+}
+
+// UnregisterRootState removes the root LState for the actor PID and closes it.
+func UnregisterRootState(pid string) {
+	if v, ok := rootStateRegistry.LoadAndDelete(pid); ok {
+		if L, ok := v.(*lua.LState); ok && L != nil {
+			L.Close()
+		}
+	}
+}
 
 func init() {
 	env, ok := os.LookupEnv("GO_ENV")
@@ -45,9 +71,11 @@ func preloadScript(root *lua.LState, path string) (*lua.LFunction, error) {
 	defer compileMu.Unlock()
 
 	if fn, ok := compiledFuncs[path]; ok && useCache {
+		log.Printf("[luax] preloadScript cache hit: %s", path)
 		return fn, nil
 	}
 
+	log.Printf("[luax] preloadScript cache miss, loading: %s", path)
 	fn, err := root.LoadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile %s: %w", path, err)
