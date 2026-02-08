@@ -2,7 +2,6 @@ package luax
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"sync"
 
@@ -71,11 +70,9 @@ func preloadScript(root *lua.LState, path string) (*lua.LFunction, error) {
 	defer compileMu.Unlock()
 
 	if fn, ok := compiledFuncs[path]; ok && useCache {
-		log.Printf("[luax] preloadScript cache hit: %s", path)
 		return fn, nil
 	}
 
-	log.Printf("[luax] preloadScript cache miss, loading: %s", path)
 	fn, err := root.LoadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile %s: %w", path, err)
