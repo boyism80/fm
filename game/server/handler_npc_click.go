@@ -88,7 +88,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return nil
 	}
 
-	// NPC doesn't have a shop, execute script (luax.NewThread uses preloadScript cache; dialog builtins set currentDialog on yield)
+	// NPC doesn't have a shop, execute script
 	pid := ctx.LogicActorID
 	rootState := luax.GetRootState(pid)
 	if rootState == nil {

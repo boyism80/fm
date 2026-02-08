@@ -27,9 +27,6 @@ func (p *HealOverTime) Deserialize(reader *stream.StreamReader) error {
 		if err = reader.Skip(4); err != nil {
 			return err
 		}
-		if p.Tick, err = reader.ReadU32(); err != nil {
-			return err
-		}
 	}
 
 	if p.HealHP, err = reader.ReadU16(); err != nil {
