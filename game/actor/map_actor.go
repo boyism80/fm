@@ -103,7 +103,7 @@ func (a *MapActor) warpCharacter(ctx actor.Context, msg *WarpCharacter) {
 
 func (a *MapActor) onStarted(ctx actor.Context) {
 	L := luax.NewState()
-	luax.RegisterRootState(ctx.Self().String(), L)
+	luax.RegisterRootLuaState(ctx.Self().String(), L)
 
 	a.scheduler = scheduler.NewTimerScheduler(ctx)
 	a.timerReg = NewTimerRegistry()
@@ -122,7 +122,7 @@ func (a *MapActor) onStarted(ctx actor.Context) {
 }
 
 func (a *MapActor) onStopped(ctx actor.Context) {
-	luax.UnregisterRootState(ctx.Self().String())
+	luax.UnregisterRootLuaState(ctx.Self().String())
 }
 
 func (a *MapActor) registerTimers() {

@@ -90,18 +90,18 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 
 	// NPC doesn't have a shop, execute script
 	pid := ctx.LogicActorID
-	rootState := luax.GetRootState(pid)
-	if rootState == nil {
+	root := luax.GetRootLuaState(pid)
+	if root == nil {
 		log.Printf("No lua root state for actor %s", pid)
 		return fmt.Errorf("lua state not available")
 	}
 	scriptPath := fmt.Sprintf("script/npc/%d.lua", npcID)
-	luaThread, err := luax.NewThread(rootState, scriptPath)
+	luaThread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Failed to create NPC script thread: %v", err)
 		return err
 	}
-	if err := h.gs.ExecuteScript(rootState, luaThread, "on_start", character); err != nil {
+	if err := h.gs.ExecuteScript(root, luaThread, "on_start", character); err != nil {
 		log.Printf("Failed to execute NPC script: %v", err)
 		return err
 	}

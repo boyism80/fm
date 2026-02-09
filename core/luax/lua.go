@@ -14,27 +14,26 @@ var (
 	compileMu       sync.Mutex
 	compiledFuncs   = make(map[string]*lua.LFunction)
 	useCache        = os.Getenv("GO_ENV") != "development"
-
-	rootStateRegistry sync.Map // map[string]*lua.LState, keyed by actor PID
+	rootStates      sync.Map // map[string]*lua.LState, keyed by actor PID
 )
 
-// RegisterRootState registers the root LState for the given actor PID (e.g. map actor).
-func RegisterRootState(pid string, L *lua.LState) {
-	rootStateRegistry.Store(pid, L)
+// RegisterRootLuaState registers the root LState for the given actor PID (e.g. map actor).
+func RegisterRootLuaState(pid string, L *lua.LState) {
+	rootStates.Store(pid, L)
 }
 
-// GetRootState returns the root LState for the actor PID, or nil if not registered.
-func GetRootState(pid string) *lua.LState {
-	v, ok := rootStateRegistry.Load(pid)
+// GetRootLuaState returns the root LState for the actor PID, or nil if not registered.
+func GetRootLuaState(pid string) *lua.LState {
+	v, ok := rootStates.Load(pid)
 	if !ok {
 		return nil
 	}
 	return v.(*lua.LState)
 }
 
-// UnregisterRootState removes the root LState for the actor PID and closes it.
-func UnregisterRootState(pid string) {
-	if v, ok := rootStateRegistry.LoadAndDelete(pid); ok {
+// UnregisterRootLuaState removes the root LState for the actor PID and closes it.
+func UnregisterRootLuaState(pid string) {
+	if v, ok := rootStates.LoadAndDelete(pid); ok {
 		if L, ok := v.(*lua.LState); ok && L != nil {
 			L.Close()
 		}

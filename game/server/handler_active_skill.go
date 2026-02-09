@@ -11,23 +11,23 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-type SpecialMove struct {
+type ActiveSkill struct {
 	gs     *GameServer
 	opcode byte
 }
 
-func (SpecialMove) New(gs *GameServer) *SpecialMove {
-	return &SpecialMove{
+func (ActiveSkill) New(gs *GameServer) *ActiveSkill {
+	return &ActiveSkill{
 		gs:     gs,
 		opcode: 0x4A,
 	}
 }
 
-func (h *SpecialMove) GetOpcode() byte {
+func (h *ActiveSkill) GetOpcode() byte {
 	return h.opcode
 }
 
-func (h *SpecialMove) Handle(ctx *core.ClientContext, req *request.SpecialMove) error {
+func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) error {
 	client, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")
@@ -110,8 +110,8 @@ func (h *SpecialMove) Handle(ctx *core.ClientContext, req *request.SpecialMove) 
 	}
 
 	pid := ctx.LogicActorID
-	rootState := luax.GetRootState(pid)
-	if rootState == nil {
+	root := luax.GetRootLuaState(pid)
+	if root == nil {
 		log.Printf("No lua root state for actor %s", pid)
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
@@ -120,7 +120,7 @@ func (h *SpecialMove) Handle(ctx *core.ClientContext, req *request.SpecialMove) 
 	}
 
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
-	luaThread, err := luax.NewThread(rootState, scriptPath)
+	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Skill script not found or failed to load %s: %v", scriptPath, err)
 		if character.Listener != nil {
@@ -129,7 +129,7 @@ func (h *SpecialMove) Handle(ctx *core.ClientContext, req *request.SpecialMove) 
 		return nil
 	}
 
-	if err := h.gs.ExecuteScript(rootState, luaThread, "on_active", character, skillEntry); err != nil {
+	if err := h.gs.ExecuteScript(root, thread, "on_active", character, skillEntry); err != nil {
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/types"
 )
@@ -38,4 +39,6 @@ type CharacterListener interface {
 	OnUpdateCharacterLook(character *Character)
 	OnNpcAction(bytes []byte)
 	OnClassChange(oldClass uint16, newClass uint16)
+	OnBuffAdded(character *Character, wz *wz.Skill, level uint8, entries []BuffEntry)
+	OnBuffRemoved(character *Character, flags []constant.BuffFlag)
 }

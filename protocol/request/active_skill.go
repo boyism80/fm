@@ -5,7 +5,7 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-type SpecialMove struct {
+type ActiveSkill struct {
 	OldX       int16
 	OldY       int16
 	SkillID    uint32
@@ -21,15 +21,15 @@ type SpecialMove struct {
 	Position *types.Vector2[int16]
 }
 
-func (s *SpecialMove) Opcode() uint16 {
+func (s *ActiveSkill) Opcode() uint16 {
 	return 0x4A
 }
 
-func (s *SpecialMove) Serialize(writer *stream.StreamWriter) error {
+func (s *ActiveSkill) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (s *SpecialMove) Deserialize(reader *stream.StreamReader) error {
+func (s *ActiveSkill) Deserialize(reader *stream.StreamReader) error {
 	var err error
 	if s.OldX, err = reader.Read16(); err != nil {
 		return err

@@ -78,6 +78,25 @@ type Character struct {
 
 	// Bonus stats (temporary from buffs/equipment) - only for STR, DEX, INT, LUK
 	BonusStats BonusStats
+
+	// Buffs[position][mask]: active buffs by mask group (position 0..MaxBuffFlag-1) and mask bit.
+	Buffs [constant.MaxBuffFlag]map[uint32]*ActiveBuff
+}
+
+// ActiveBuff holds runtime state for one active buff (one position+mask).
+type ActiveBuff struct {
+	Value     int32
+	StartTime time.Time
+	Wz        *wz.Skill
+	Level     uint8
+}
+
+// BuffEntry is one buff type+value for AddBuff and listener.
+// Wz+Level describe the source skill; nil Wz means item or no source.
+// Same Wz+Level are used to build ActiveBuff.
+type BuffEntry struct {
+	Buff  constant.BuffFlag
+	Value int32
 }
 
 // BaseStats represents permanent character statistics
@@ -397,14 +416,60 @@ func (ch *Character) IsSkillCooling(skillID uint32) bool {
 	return time.Since(cooldown.StartTime) < cooldown.Duration
 }
 
-func (ch *Character) AddCooldown(skillID uint32, cooldownSeconds int) {
+func (ch *Character) AddCooldown(skillID uint32, cooldown time.Duration) {
 	if ch.CoolDowns == nil {
 		ch.CoolDowns = make(map[uint32]*CooldownEntry)
 	}
 	ch.CoolDowns[skillID] = &CooldownEntry{
 		SkillId:   skillID,
 		StartTime: time.Now(),
-		Duration:  time.Duration(cooldownSeconds) * time.Second,
+		Duration:  cooldown,
+	}
+}
+
+// AddBuff applies buff(s) to the character (buffs[position][mask]) and notifies the listener.
+// duration is used for the packet/timer; when entries have Wz, it can be derived from Wz.GetLevelData(Level).Time.
+func (ch *Character) AddBuff(wz *wz.Skill, level uint8, entries []BuffEntry) {
+	if len(entries) == 0 {
+		return
+	}
+	now := time.Now()
+	for _, e := range entries {
+		position := e.Buff.Position - 1
+		if position < 0 || position >= constant.MaxBuffFlag {
+			continue
+		}
+		if ch.Buffs[position] == nil {
+			ch.Buffs[position] = make(map[uint32]*ActiveBuff)
+		}
+		ch.Buffs[position][e.Buff.Mask] = &ActiveBuff{
+			Value:     e.Value,
+			StartTime: now,
+			Wz:        wz,
+			Level:     level,
+		}
+	}
+	if ch.Listener != nil {
+		ch.Listener.OnBuffAdded(ch, wz, level, entries)
+	}
+}
+
+// RemoveBuff removes buff(s) from the character and notifies the listener.
+func (ch *Character) RemoveBuff(flags []constant.BuffFlag) {
+	if len(flags) == 0 {
+		return
+	}
+	for _, f := range flags {
+		posIdx := f.Position - 1
+		if posIdx < 0 || posIdx >= constant.MaxBuffFlag {
+			continue
+		}
+		if ch.Buffs[posIdx] != nil {
+			delete(ch.Buffs[posIdx], f.Mask)
+		}
+	}
+	if ch.Listener != nil {
+		ch.Listener.OnBuffRemoved(ch, flags)
 	}
 }
 

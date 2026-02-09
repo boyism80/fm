@@ -1,8 +1,11 @@
 package server
 
 import (
+	"time"
+
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
+	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
@@ -335,4 +338,51 @@ func (l *CharacterListenerImpl) OnClassChange(oldClass uint16, newClass uint16) 
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, wz *wz.Skill, level uint8, entries []entity.BuffEntry) {
+	if len(entries) == 0 {
+		return
+	}
+	dtoBuffs := make([]dto.BuffEntry, 0, len(entries))
+	for _, e := range entries {
+		dtoBuff := dto.BuffEntry{Buff: e.Buff, Value: e.Value}
+		dtoBuffs = append(dtoBuffs, dtoBuff)
+	}
+
+	duration := time.Duration(0)
+	if wz != nil {
+		duration = wz.GetLevelData(int(level)).Time
+	}
+
+	buffID := int32(0)
+	if wz != nil {
+		buffID = int32(wz.ID)
+	}
+
+	character.Send(&response.UpdateBuff{
+		BuffID:   buffID,
+		Duration: duration,
+		Buffs:    dtoBuffs,
+	}, types.SEND_POLICY_ENCRYPT)
+
+	mapInstance := l.gs.GetMap(character.GetMap())
+	if mapInstance != nil {
+		mapInstance.BroadcastToPlayers(&response.UpdateRemoteBuff{
+			CharacterID: int32(character.GetID()),
+			Buffs:       dtoBuffs,
+		}, types.SEND_POLICY_ENCRYPT, character.GetID())
+	}
+}
+
+func (l *CharacterListenerImpl) OnBuffRemoved(character *entity.Character, flags []constant.BuffFlag) {
+	character.Send(&response.CancelBuff{Buffs: flags}, types.SEND_POLICY_ENCRYPT)
+
+	mapInstance := l.gs.GetMap(character.GetMap())
+	if mapInstance != nil {
+		mapInstance.BroadcastToPlayers(&response.CancelRemoteBuff{
+			CharacterID: int32(character.GetID()),
+			Buffs:       flags,
+		}, types.SEND_POLICY_ENCRYPT, character.GetID())
+	}
 }

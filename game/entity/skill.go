@@ -156,8 +156,8 @@ func skillLevelDataToLuaTable(L *lua.LState, data *wz.SkillLevelData) *lua.LTabl
 	tbl.RawSetString("mastery", lua.LNumber(data.Mastery))
 	tbl.RawSetString("prop", lua.LNumber(data.Prop))
 	tbl.RawSetString("range", lua.LNumber(data.Range))
-	tbl.RawSetString("time", lua.LNumber(data.Time))
-	tbl.RawSetString("cooldown", lua.LNumber(data.Cooldown))
+	tbl.RawSetString("time", lua.LNumber(data.Time.Milliseconds()))
+	tbl.RawSetString("cooldown", lua.LNumber(data.Cooldown.Milliseconds()))
 
 	// Special properties
 	tbl.RawSetString("morph", lua.LNumber(data.Morph))

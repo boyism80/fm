@@ -43,12 +43,12 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 	}
 
 	pid := ctx.LogicActorID
-	rootState := luax.GetRootState(pid)
-	if rootState == nil {
+	root := luax.GetRootLuaState(pid)
+	if root == nil {
 		return fmt.Errorf("lua state not available")
 	}
-	dialog := character.GetCurrentDialog()
-	if dialog == nil {
+	thread := character.GetCurrentDialog()
+	if thread == nil {
 		log.Printf("No active dialog for character %d", character.GetID())
 		return fmt.Errorf("no active dialog")
 	}
@@ -76,7 +76,7 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		args = append(args, lua.LBool(req.Next))
 	}
 
-	resumeState, err, _ := rootState.Resume(dialog, nil, args...)
+	resumeState, err, _ := root.Resume(thread, nil, args...)
 	if err != nil {
 		log.Printf("Failed to resume dialog: %v", err)
 		character.ClearCurrentDialog()

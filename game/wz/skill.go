@@ -1,6 +1,10 @@
 package wz
 
-import "github.com/boyism80/fm/types"
+import (
+	"time"
+
+	"github.com/boyism80/fm/types"
+)
 
 // SkillLevelData contains level-specific skill data
 type SkillLevelData struct {
@@ -40,11 +44,11 @@ type SkillLevelData struct {
 	Speed int // Movement speed
 
 	// Skill properties
-	Mastery  int // Mastery
-	Prop     int // Probability (>= 100: always success, < 100: probability applied)
-	Range    int // Range
-	Time     int // Duration in seconds (items converted to milliseconds) (can be int or string, string is parsed as int)
-	Cooldown int // Cooldown in seconds
+	Mastery  int           // Mastery
+	Prop     int           // Probability (>= 100: always success, < 100: probability applied)
+	Range    int           // Range
+	Time     time.Duration // Duration in milliseconds
+	Cooldown time.Duration // Cooldown in milliseconds
 
 	// Special properties
 	Morph int // Morph ID
