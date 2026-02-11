@@ -18,6 +18,7 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	lua "github.com/yuin/gopher-lua"
@@ -135,11 +136,32 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		luax.RegisterLuaType[*entity.Map](luaState)
 		luax.RegisterLuaType[*entity.SkillEntry](luaState)
 
-		// Register utility functions
+		// BuffFlag table for scripts
+		buffFlagTable := luaState.NewTable()
+		for name, bf := range constant.AllBuffFlags() {
+			entry := luaState.NewTable()
+			entry.RawSetString("mask", lua.LNumber(bf.Mask))
+			entry.RawSetString("position", lua.LNumber(bf.Position))
+			buffFlagTable.RawSetString(name, entry)
+		}
+		luaState.SetGlobal("BuffFlag", buffFlagTable)
+
+		// Register utility functions (yield + AfterFunc send ResumeLua; pid from luax.GetThreadPID)
 		luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
 			duration := L.CheckNumber(1)
-			time.Sleep(time.Duration(float64(duration) * float64(time.Second)))
-			return 0
+			pid := luax.GetThreadPID(L)
+			if pid == nil {
+				return 0
+			}
+			root := luax.GetRootLuaState(pid.String())
+			if root == nil {
+				return 0
+			}
+			d := time.Duration(float64(duration) * float64(time.Millisecond))
+			time.AfterFunc(d, func() {
+				gs.GetRootContext().Send(pid, &g_actor.ResumeLua{Root: root, Thread: L})
+			})
+			return L.Yield(lua.LNil)
 		})
 	})
 

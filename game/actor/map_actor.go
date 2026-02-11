@@ -11,6 +11,7 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/actor/timers"
 	"github.com/boyism80/fm/game/entity"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type MapActor struct {
@@ -38,8 +39,20 @@ func (a *MapActor) Receive(ctx actor.Context) {
 		a.removeCharacter(ctx, msg)
 	case *WarpCharacter:
 		a.warpCharacter(ctx, msg)
+	case *ResumeLua:
+		a.resumeLua(ctx, msg)
 	case *TimerTick:
 		a.onTimerTick(ctx, msg)
+	}
+}
+
+func (a *MapActor) resumeLua(ctx actor.Context, msg *ResumeLua) {
+	if msg.Root == nil || msg.Thread == nil {
+		return
+	}
+	state, _, _ := msg.Root.Resume(msg.Thread, nil)
+	if state == lua.ResumeOK {
+		luax.ClearThreadPID(msg.Thread)
 	}
 }
 
@@ -49,7 +62,7 @@ func (a *MapActor) handlePacket(ctx actor.Context, msg *c_actor.HandlePacket) {
 		log.Printf("Invalid client type in HandlePacket")
 		return
 	}
-	err := core.ExecutePacketHandler(a.Context, client, msg.Opcode, msg.Data, ctx.Self().String())
+	err := core.ExecutePacketHandler(a.Context, client, msg.Opcode, msg.Data, msg.LogicActorPID)
 	if err != nil {
 		log.Printf("Error handling packet 0x%02X: %v", msg.Opcode, err)
 	}

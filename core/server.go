@@ -311,9 +311,10 @@ func (s *Server) processPacket(client Client, encryptedData []byte) (bool, error
 
 	// Send HandlePacket message to LogicActor
 	msg := &c_actor.HandlePacket{
-		Opcode: opcode,
-		Data:   packetData,
-		Client: client,
+		Opcode:        opcode,
+		Data:          packetData,
+		Client:        client,
+		LogicActorPID: logicActorPID,
 	}
 
 	if s.rootContext != nil {

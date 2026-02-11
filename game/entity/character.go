@@ -434,16 +434,16 @@ func (ch *Character) AddBuff(wz *wz.Skill, level uint8, entries []BuffEntry) {
 		return
 	}
 	now := time.Now()
-	for _, e := range entries {
-		position := e.Buff.Position - 1
+	for _, entry := range entries {
+		position := entry.Buff.Position - 1
 		if position < 0 || position >= constant.MaxBuffFlag {
 			continue
 		}
 		if ch.Buffs[position] == nil {
 			ch.Buffs[position] = make(map[uint32]*ActiveBuff)
 		}
-		ch.Buffs[position][e.Buff.Mask] = &ActiveBuff{
-			Value:     e.Value,
+		ch.Buffs[position][entry.Buff.Mask] = &ActiveBuff{
+			Value:     entry.Value,
 			StartTime: now,
 			Wz:        wz,
 			Level:     level,
@@ -943,6 +943,54 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if ch.Listener != nil {
 				ch.Listener.OnChat(message, highlight, dontRecordHistory)
 			}
+			return 0
+		},
+		"add_buff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			skillUD := L.CheckUserData(2)
+			skillEntry, ok := skillUD.Value.(*SkillEntry)
+			if !ok || skillEntry == nil || skillEntry.Skill == nil {
+				L.ArgError(2, "SkillEntry with Wz expected")
+				return 0
+			}
+			bfTable := L.CheckTable(3)
+			maskLV := bfTable.RawGetString("mask")
+			posLV := bfTable.RawGetString("position")
+			if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+				L.ArgError(3, "BuffFlag table must have numeric mask and position")
+				return 0
+			}
+			value := int32(1)
+			if L.GetTop() >= 4 {
+				value = int32(L.CheckNumber(4))
+			}
+			bf := constant.BuffFlag{Mask: uint32(maskLV.(lua.LNumber)), Position: int(posLV.(lua.LNumber))}
+			ch.AddBuff(skillEntry.Skill, uint8(skillEntry.SkillLevel), []BuffEntry{{Buff: bf, Value: value}})
+			return 0
+		},
+		"remove_buff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			var flags []constant.BuffFlag
+			for i := 2; i <= L.GetTop(); i++ {
+				bfTable := L.CheckTable(i)
+				maskLV := bfTable.RawGetString("mask")
+				posLV := bfTable.RawGetString("position")
+				if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+					continue
+				}
+				flags = append(flags, constant.BuffFlag{Mask: uint32(maskLV.(lua.LNumber)), Position: int(posLV.(lua.LNumber))})
+			}
+			ch.RemoveBuff(flags)
 			return 0
 		},
 		"dialog": func(L *lua.LState) int {

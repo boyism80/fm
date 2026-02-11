@@ -3,14 +3,16 @@ package actor
 import (
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/client"
 	"github.com/boyism80/fm/types"
 )
 
 type HandlePacket struct {
-	Opcode int
-	Data   []byte
-	Client client.Client
+	Opcode        int
+	Data          []byte
+	Client        client.Client
+	LogicActorPID *actor.PID
 }
 
 type ScheduleTimer struct {

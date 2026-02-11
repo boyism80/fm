@@ -109,10 +109,15 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	pid := ctx.LogicActorID
-	root := luax.GetRootLuaState(pid)
+	if ctx.LogicActorPID == nil {
+		if character.Listener != nil {
+			character.Listener.OnUpdateStats(nil, true)
+		}
+		return nil
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
 	if root == nil {
-		log.Printf("No lua root state for actor %s", pid)
+		log.Printf("No lua root state for actor %s", ctx.LogicActorPID.String())
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
 		}
@@ -129,7 +134,8 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	if err := h.gs.ExecuteScript(root, thread, "on_active", character, skillEntry); err != nil {
+	_, err = luax.ExecuteScript(root, thread, ctx.LogicActorPID, "on_active", character, skillEntry)
+	if err != nil {
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
