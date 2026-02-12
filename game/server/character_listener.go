@@ -83,7 +83,7 @@ func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecor
 		return
 	}
 
-	mapInstance.BroadcastToAllPlayers(chatPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(l.ch, chatPacket, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnMesoChanged(meso int32) {
@@ -222,7 +222,12 @@ func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed
 		Movements:   movements,
 	}
 
-	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, exceptPlayerID)
+	source := mapInstance.GetPlayer(exceptPlayerID)
+	if source == nil {
+		mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, exceptPlayerID)
+	} else {
+		mapInstance.Broadcast(source, movePacket, types.SEND_POLICY_ENCRYPT)
+	}
 }
 
 func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
@@ -239,7 +244,7 @@ func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, char
 		StartPoint: startPoint,
 	}
 
-	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, playerID)
+	mapInstance.Broadcast(character, movePacket, types.SEND_POLICY_ENCRYPT, playerID)
 }
 
 func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8) {
@@ -254,7 +259,12 @@ func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attac
 		SkillLevel:  skillLevel,
 	}
 
-	mapInstance.BroadcastToPlayers(attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
+	source := mapInstance.GetPlayer(characterID)
+	if source == nil {
+		return
+	}
+
+	mapInstance.Broadcast(source, attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
 }
 
 func (l *CharacterListenerImpl) OnEndSortInventory(inventoryType constant.InventoryType) {
@@ -319,7 +329,7 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Characte
 		Character: characterDTO,
 	}
 
-	mapInstance.BroadcastToPlayers(lookPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+	mapInstance.Broadcast(character, lookPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
 }
 
 func (l *CharacterListenerImpl) OnNpcAction(bytes []byte) {
@@ -368,7 +378,7 @@ func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, wz *wz.
 
 	mapInstance := l.gs.GetMap(character.GetMap())
 	if mapInstance != nil {
-		mapInstance.BroadcastToPlayers(&response.UpdateRemoteBuff{
+		mapInstance.Broadcast(character, &response.UpdateRemoteBuff{
 			CharacterID: int32(character.GetID()),
 			Buffs:       dtoBuffs,
 		}, types.SEND_POLICY_ENCRYPT, character.GetID())
@@ -380,7 +390,7 @@ func (l *CharacterListenerImpl) OnBuffRemoved(character *entity.Character, flags
 
 	mapInstance := l.gs.GetMap(character.GetMap())
 	if mapInstance != nil {
-		mapInstance.BroadcastToPlayers(&response.CancelRemoteBuff{
+		mapInstance.Broadcast(character, &response.CancelRemoteBuff{
 			CharacterID: int32(character.GetID()),
 			Buffs:       flags,
 		}, types.SEND_POLICY_ENCRYPT, character.GetID())
@@ -392,4 +402,27 @@ func (l *CharacterListenerImpl) OnSkillCooldown(skillID uint32, remainingSec uin
 		SkillID:      skillID,
 		RemainingSec: uint32(remainingSec),
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnHiddenChanged(hidden bool) {
+	l.ch.Send(&response.SuperHide{Hidden: hidden}, types.SEND_POLICY_ENCRYPT)
+
+	mapInstance := l.gs.GetMap(l.ch.Map)
+	if mapInstance == nil {
+		return
+	}
+
+	// Only players with lower role receive Leave/Spawn; same-or-higher role always see the character.
+	if hidden {
+		mapInstance.BroadcastToRoleBelow(l.ch, &response.LeavePlayer{ID: l.ch.ID}, types.SEND_POLICY_ENCRYPT)
+	} else {
+		mapInstance.BroadcastToRoleBelow(l.ch, &response.SpawnPlayer{
+			Character:       l.ch.ToDTO(),
+			BuffStates:      [4]uint32{},
+			Diseases:        [4]uint32{},
+			CrushRings:      entity.RingsToDTO(l.ch.Rings.Left),
+			FriendshipRings: entity.RingsToDTO(l.ch.Rings.Mid),
+			MarriageRings:   entity.RingsToDTO(l.ch.Rings.Right),
+		}, types.SEND_POLICY_ENCRYPT)
+	}
 }

@@ -65,12 +65,10 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 
 	character.Chair = req.ItemID
 
-	showChairPacket := &response.ShowChair{
+	mapInstance.Broadcast(character, &response.ShowChair{
 		CharacterID: character.GetID(),
 		ItemID:      req.ItemID,
-	}
-
-	mapInstance.BroadcastToPlayers(showChairPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+	}, types.SEND_POLICY_ENCRYPT, character.GetID())
 
 	if character.Listener != nil {
 		character.Listener.OnUpdateStats(nil, true)

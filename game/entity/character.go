@@ -32,7 +32,7 @@ type Character struct {
 	RankDiff      int32
 	ClassRank     uint32
 	ClassRankDiff int32
-	Admin         bool
+	Role          constant.CharacterRole // 일반유저(RoleUser) / 관리자(RoleAdmin)
 	Str           uint16
 	Dex           uint16
 	Int           uint16
@@ -71,6 +71,9 @@ type Character struct {
 
 	// Chair state
 	Chair uint32 // Chair item ID (0 if not sitting)
+
+	// Hidden state (e.g. skill 9001004); when true, other players do not see this character on the map
+	Hidden bool
 
 	// Base stats (permanent) - only for STR, DEX, INT, LUK
 	BaseStats BaseStats
@@ -251,6 +254,20 @@ func (ch *Character) GetMap() uint32 {
 	return ch.Map
 }
 
+func (ch *Character) IsHidden() bool {
+	return ch.Hidden
+}
+
+func (ch *Character) SetHidden(hidden bool) {
+	if ch.Hidden == hidden {
+		return
+	}
+	ch.Hidden = hidden
+	if ch.Listener != nil {
+		ch.Listener.OnHiddenChanged(hidden)
+	}
+}
+
 func (ch *Character) GetID() uint32 {
 	return ch.ID
 }
@@ -261,8 +278,18 @@ func (ch *Character) Message(message string) {
 	}
 }
 
+// GetRole returns the character's permission role.
+func (ch *Character) GetRole() constant.CharacterRole {
+	return ch.Role
+}
+
+// HasRoleAtLeast returns true if the character's role is at least the given role (same or higher privilege).
+func (ch *Character) HasRoleAtLeast(role constant.CharacterRole) bool {
+	return ch.Role >= role
+}
+
 func (ch *Character) IsRanked() bool {
-	if ch.Admin {
+	if ch.HasRoleAtLeast(constant.RoleAdmin) {
 		return false
 	}
 
@@ -1190,6 +1217,27 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, mapInstance))
 			return 1
 		},
+		"is_hidden": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LBool(ch.IsHidden()))
+			return 1
+		},
+		"set_hidden": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			hidden := L.CheckBool(2)
+			ch.SetHidden(hidden)
+			return 0
+		},
 		"get_max_hp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1792,11 +1840,9 @@ func (ch *Character) broadcastLevelUpEffect() {
 	}
 
 	// Create SHOW_FOREIGN_EFFECT packet for level up (EffectID 0)
-	levelUpPacket := &response.ShowForeignEffect{
+
+	mapInstance.Broadcast(ch, &response.ShowForeignEffect{
 		CharacterID: ch.ID,
 		EffectID:    0, // Level up effect
-	}
-
-	// Broadcast to all players on the map except the character who leveled up
-	mapInstance.BroadcastToPlayers(levelUpPacket, types.SEND_POLICY_ENCRYPT, ch.ID)
+	}, types.SEND_POLICY_ENCRYPT, ch.GetID())
 }

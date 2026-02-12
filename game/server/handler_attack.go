@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
@@ -115,7 +116,7 @@ func (h *Attack) applyDamageToMobs(character *entity.Character, mapInstance *ent
 			continue
 		}
 
-		if character.Admin {
+		if character.HasRoleAtLeast(constant.RoleAdmin) {
 			mob.Damage(mob.Hp, character)
 		} else {
 			for _, damagePair := range damage.DamagePairs {

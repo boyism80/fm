@@ -51,11 +51,10 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 		character.Send(cancelChairPacket, types.SEND_POLICY_ENCRYPT)
 
 		if mapInstance != nil {
-			showChairPacket := &response.ShowChair{
+			mapInstance.Broadcast(character, &response.ShowChair{
 				CharacterID: character.GetID(),
 				ItemID:      0,
-			}
-			mapInstance.BroadcastToPlayers(showChairPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+			}, types.SEND_POLICY_ENCRYPT, character.GetID())
 		}
 	} else {
 		character.Chair = uint32(req.ChairID)

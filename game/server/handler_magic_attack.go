@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
@@ -114,7 +115,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		SkillLevel:  uint8(skillLevel),
 	}
 
-	mapInstance.BroadcastToPlayers(magicAttackPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+	mapInstance.Broadcast(character, magicAttackPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
 
 	return nil
 }
@@ -127,7 +128,7 @@ func (h *MagicAttack) applyDamageToMobs(character *entity.Character, mapInstance
 			continue
 		}
 
-		if character.Admin {
+		if character.HasRoleAtLeast(constant.RoleAdmin) {
 			mob.Damage(mob.Hp, character)
 		} else {
 			for _, damagePair := range damage.DamagePairs {

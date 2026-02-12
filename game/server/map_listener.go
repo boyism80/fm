@@ -57,6 +57,9 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 			}
 
 			if ch, ok := p.(*entity.Character); ok {
+				if ch.IsHidden() && !character.HasRoleAtLeast(ch.GetRole()) {
+					continue
+				}
 				// Convert entity to DTO
 				chDTO := ch.ToDTO()
 				// Send existing player's spawn info to the new player
@@ -83,7 +86,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 		FriendshipRings: entity.RingsToDTO(character.Rings.Mid),
 		MarriageRings:   entity.RingsToDTO(character.Rings.Right),
 	}
-	mapInstance.BroadcastToPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT, playerID)
+	mapInstance.Broadcast(character, spawnPacket, types.SEND_POLICY_ENCRYPT, playerID)
 
 	for _, npc := range mapInstance.GetNpcs() {
 		if npc, ok := npc.(*entity.Npc); ok {
@@ -193,8 +196,7 @@ func (l *MapListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character 
 		StartPoint: startPoint,
 	}
 
-	// Broadcast to all players on the map except the moving player
-	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, playerID)
+	mapInstance.Broadcast(character, movePacket, types.SEND_POLICY_ENCRYPT, playerID)
 }
 
 // OnPlayerChat sends chat packet to other players on the map
@@ -372,6 +374,10 @@ func (l *MapListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo 
 		SkillLevel:  skillLevel,
 	}
 
-	// Broadcast to all players on the map except the attacker
-	mapInstance.BroadcastToPlayers(attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
+	source := mapInstance.GetPlayer(characterID)
+	if source == nil {
+		return
+	}
+
+	mapInstance.Broadcast(source, attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
 }

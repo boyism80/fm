@@ -413,6 +413,52 @@ func (m *Map) BroadcastToPlayers(message types.Packet, policy types.SendPolicy, 
 	}
 }
 
+// Broadcast sends a message to players on the map. source is the character whose action/state is broadcast (first param).
+// When source is not hidden, sends to all except source and exceptIDs. When source is hidden, sends only to players with role >= source (lower role does not receive).
+// exceptIDs: optional player IDs to exclude in addition to source.
+func (m *Map) Broadcast(source *Character, message types.Packet, policy types.SendPolicy, exceptIDs ...uint32) {
+	if m.objects[types.OBJECT_TYPE_PLAYER] == nil || source == nil {
+		return
+	}
+
+	exceptSet := map[uint32]bool{source.GetID(): true}
+	for _, id := range exceptIDs {
+		exceptSet[id] = true
+	}
+
+	sourceRole := source.GetRole()
+
+	for playerID, player := range m.objects[types.OBJECT_TYPE_PLAYER] {
+		if exceptSet[playerID] {
+			continue
+		}
+
+		character, ok := player.(*Character)
+		if !ok {
+			continue
+		}
+
+		if source.IsHidden() && character.GetRole() < sourceRole {
+			continue
+		}
+		character.Send(message, policy)
+	}
+}
+
+// BroadcastToRoleBelow sends a message only to players with role < source's role. Used for Leave/Spawn when toggling hidden (only lower-role players receive those packets).
+func (m *Map) BroadcastToRoleBelow(source *Character, message types.Packet, policy types.SendPolicy) {
+	if m.objects[types.OBJECT_TYPE_PLAYER] == nil || source == nil {
+		return
+	}
+
+	sourceRole := source.GetRole()
+	for _, player := range m.objects[types.OBJECT_TYPE_PLAYER] {
+		if character, ok := player.(*Character); ok && character.GetRole() < sourceRole {
+			character.Send(message, policy)
+		}
+	}
+}
+
 // BroadcastToAllPlayers sends a message to all players on the map (including sender)
 func (m *Map) BroadcastToAllPlayers(message types.Packet, policy types.SendPolicy) {
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
@@ -423,17 +469,6 @@ func (m *Map) BroadcastToAllPlayers(message types.Packet, policy types.SendPolic
 		if character, ok := player.(*Character); ok {
 			character.Send(message, policy)
 		}
-	}
-}
-
-// BroadcastToPlayer sends a message to a specific player on the map
-func (m *Map) BroadcastToPlayer(playerID uint32, message types.Packet, policy types.SendPolicy) {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
-		return
-	}
-
-	if player, ok := m.objects[types.OBJECT_TYPE_PLAYER][playerID].(*Character); ok {
-		player.Send(message, policy)
 	}
 }
 

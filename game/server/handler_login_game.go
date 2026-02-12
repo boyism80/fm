@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core"
 	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
 )
@@ -39,7 +40,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 
 	// Set GM mode (for testing: player ID 1 is GM)
 	if req.PlayerId == 1 {
-		character.Admin = true
+		character.Role = constant.RoleAdmin
 		character.Invincible = true
 	}
 
