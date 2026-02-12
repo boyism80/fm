@@ -12,7 +12,7 @@ type UpdateRemoteBuff struct {
 	Buffs       []dto.BuffEntry
 }
 
-func (p *UpdateRemoteBuff) Opcode() uint16 { return 0x5E }
+func (p *UpdateRemoteBuff) Opcode() uint16 { return 0x90 }
 
 func (p *UpdateRemoteBuff) Serialize(writer *stream.StreamWriter) error {
 	if p.Buffs == nil {

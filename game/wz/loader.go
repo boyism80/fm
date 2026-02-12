@@ -1907,7 +1907,7 @@ func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
 					case "range":
 						levelData.Range = intField.Value
 					case "time":
-						levelData.Time = time.Duration(intField.Value) * time.Millisecond
+						levelData.Time = time.Duration(intField.Value) * time.Second
 					case "cooltime":
 						levelData.Cooldown = time.Duration(intField.Value) * time.Millisecond
 					case "morph":
@@ -1940,9 +1940,9 @@ func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
 							levelData.ACC = val
 						}
 					case "time":
-						// String value is parsed as int
+						// String value is parsed as int (WZ time is in seconds)
 						if val, err := strconv.Atoi(strField.Value); err == nil {
-							levelData.Time = time.Duration(val) * time.Millisecond
+							levelData.Time = time.Duration(val) * time.Second
 						}
 					case "hs":
 						levelData.HS = strField.Value

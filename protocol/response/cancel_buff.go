@@ -10,7 +10,7 @@ type CancelBuff struct {
 	Buffs []constant.BuffFlag
 }
 
-func (p *CancelBuff) Opcode() uint16 { return 0x64 }
+func (p *CancelBuff) Opcode() uint16 { return 0x16 }
 
 func (p *CancelBuff) Serialize(writer *stream.StreamWriter) error {
 	if p.Buffs == nil {

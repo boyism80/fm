@@ -14,7 +14,7 @@ type UpdateBuff struct {
 	Buffs    []dto.BuffEntry
 }
 
-func (p *UpdateBuff) Opcode() uint16 { return 0x63 }
+func (p *UpdateBuff) Opcode() uint16 { return 0x15 }
 
 func (p *UpdateBuff) Serialize(writer *stream.StreamWriter) error {
 	if p.Buffs == nil {

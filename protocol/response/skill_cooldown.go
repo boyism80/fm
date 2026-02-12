@@ -6,12 +6,12 @@ import (
 
 // SkillCooldown notifies the client of a skill cooldown. RemainingSec 0 clears the cooldown UI.
 type SkillCooldown struct {
-	SkillID     uint32
+	SkillID      uint32
 	RemainingSec uint32
 }
 
 func (p *SkillCooldown) Opcode() uint16 {
-	return 0x1F
+	return 0xA7
 }
 
 func (p *SkillCooldown) Serialize(writer *stream.StreamWriter) error {

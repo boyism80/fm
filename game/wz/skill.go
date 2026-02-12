@@ -47,7 +47,7 @@ type SkillLevelData struct {
 	Mastery  int           // Mastery
 	Prop     int           // Probability (>= 100: always success, < 100: probability applied)
 	Range    int           // Range
-	Time     time.Duration // Duration in milliseconds
+	Time     time.Duration // Buff duration (WZ value in seconds; .Milliseconds() for packet)
 	Cooldown time.Duration // Cooldown in milliseconds
 
 	// Special properties

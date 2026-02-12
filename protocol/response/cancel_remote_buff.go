@@ -11,7 +11,7 @@ type CancelRemoteBuff struct {
 	Buffs       []constant.BuffFlag
 }
 
-func (p *CancelRemoteBuff) Opcode() uint16 { return 0x5F }
+func (p *CancelRemoteBuff) Opcode() uint16 { return 0x91 }
 
 func (p *CancelRemoteBuff) Serialize(writer *stream.StreamWriter) error {
 	if p.Buffs == nil {

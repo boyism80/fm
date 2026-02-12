@@ -421,7 +421,7 @@ func (m *Map) Broadcast(source *Character, message types.Packet, policy types.Se
 		return
 	}
 
-	exceptSet := map[uint32]bool{source.GetID(): true}
+	exceptSet := map[uint32]bool{}
 	for _, id := range exceptIDs {
 		exceptSet[id] = true
 	}
