@@ -81,16 +81,20 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 	resumeState, err, _ := root.Resume(thread, nil, args...)
 	if err != nil {
 		log.Printf("Failed to resume dialog: %v", err)
+		thread.Close()
 		character.ClearCurrentDialog()
 		return fmt.Errorf("failed to resume dialog: %w", err)
 	}
 
 	switch resumeState {
 	case lua.ResumeOK:
+		thread.Close()
 		character.ClearCurrentDialog()
 	case lua.ResumeYield:
+		// Dialog still waiting for next input; do not close thread
 	case lua.ResumeError:
 		log.Printf("Dialog error for character %d: %v", character.GetID(), err)
+		thread.Close()
 		character.ClearCurrentDialog()
 		return fmt.Errorf("dialog error: %w", err)
 	}

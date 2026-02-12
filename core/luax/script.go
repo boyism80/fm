@@ -7,9 +7,63 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// ExecuteScript runs the given function on a lua thread. mapActorPID is required (nil returns error).
+// Call loads the script at scriptPath in a new thread (using root), runs the global function funcName synchronously (PCall), and returns the first return value and the thread. The thread can be reused (e.g. for Execute). Caller must call thread.Close() when done with the thread to release resources; the thread is not garbage-collected with automatic Close. On script load error returns (nil, nil, error). If the function is not defined returns (nil, thread, nil).
+func Call(root *lua.LState, scriptPath string, funcName string, args ...interface{}) (lua.LValue, *lua.LState, error) {
+	thread, err := NewThread(root, scriptPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	f := thread.GetGlobal(funcName)
+	if f.Type() != lua.LTFunction {
+		return nil, thread, nil
+	}
+	lvArgs, err := toLValues(thread, args)
+	if err != nil {
+		return nil, thread, err
+	}
+	thread.Push(f)
+	for _, lv := range lvArgs {
+		thread.Push(lv)
+	}
+	if err := thread.PCall(len(lvArgs), 1, nil); err != nil {
+		return nil, thread, fmt.Errorf("%s: %w", funcName, err)
+	}
+	defer thread.Pop(1)
+	return thread.Get(-1), thread, nil
+}
+
+func toLValues(L *lua.LState, args []interface{}) ([]lua.LValue, error) {
+	out := make([]lua.LValue, len(args))
+	for i, arg := range args {
+		switch v := arg.(type) {
+		case uint32:
+			out[i] = lua.LNumber(v)
+		case int32:
+			out[i] = lua.LNumber(v)
+		case uint64:
+			out[i] = lua.LNumber(v)
+		case int64:
+			out[i] = lua.LNumber(v)
+		case float64:
+			out[i] = lua.LNumber(v)
+		case string:
+			out[i] = lua.LString(v)
+		case bool:
+			out[i] = lua.LBool(v)
+		case Luable:
+			out[i] = NewLuable(L, v)
+		case lua.LValue:
+			out[i] = v
+		default:
+			return nil, fmt.Errorf("unsupported argument type: %T", arg)
+		}
+	}
+	return out, nil
+}
+
+// Execute runs the given function on a lua thread. mapActorPID is required (nil returns error).
 // Sets thread PID before first resume; clears it when script ends (ResumeOK or error), not on yield.
-func ExecuteScript(root *lua.LState, thread *lua.LState, pid *actor.PID, funcName string, args ...interface{}) (lua.ResumeState, error) {
+func Execute(root *lua.LState, thread *lua.LState, pid *actor.PID, funcName string, args ...interface{}) (lua.ResumeState, error) {
 	if pid == nil {
 		return lua.ResumeOK, fmt.Errorf("script requires map actor PID")
 	}
@@ -17,31 +71,9 @@ func ExecuteScript(root *lua.LState, thread *lua.LState, pid *actor.PID, funcNam
 	if f.Type() != lua.LTFunction {
 		return lua.ResumeOK, fmt.Errorf("function %s not found in script", funcName)
 	}
-
-	lvArgs := make([]lua.LValue, len(args))
-	for i, arg := range args {
-		switch v := arg.(type) {
-		case uint32:
-			lvArgs[i] = lua.LNumber(v)
-		case int32:
-			lvArgs[i] = lua.LNumber(v)
-		case uint64:
-			lvArgs[i] = lua.LNumber(v)
-		case int64:
-			lvArgs[i] = lua.LNumber(v)
-		case float64:
-			lvArgs[i] = lua.LNumber(v)
-		case string:
-			lvArgs[i] = lua.LString(v)
-		case bool:
-			lvArgs[i] = lua.LBool(v)
-		case Luable:
-			lvArgs[i] = NewLuable(thread, v)
-		case lua.LValue:
-			lvArgs[i] = v
-		default:
-			return lua.ResumeOK, fmt.Errorf("unsupported argument type: %T", arg)
-		}
+	lvArgs, err := toLValues(thread, args)
+	if err != nil {
+		return lua.ResumeOK, err
 	}
 
 	SetThreadPID(thread, pid)

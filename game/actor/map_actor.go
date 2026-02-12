@@ -28,41 +28,37 @@ func (a *MapActor) Receive(ctx actor.Context) {
 	case *actor.Stopped:
 		a.onStopped(ctx)
 	case *c_actor.HandlePacket:
-		a.handlePacket(ctx, msg)
+		a.handlePacket(msg)
 	case *c_actor.ScheduleTimer:
 		a.scheduleTimer(ctx, msg)
 	case *c_actor.ExecuteTimer:
-		a.executeTimer(ctx, msg)
+		a.executeTimer(msg)
 	case *AddCharacter:
-		a.addCharacter(ctx, msg)
+		a.addCharacter(msg)
 	case *RemoveCharacter:
-		a.removeCharacter(ctx, msg)
+		a.removeCharacter(msg)
 	case *WarpCharacter:
-		a.warpCharacter(ctx, msg)
+		a.warpCharacter(msg)
 	case *ResumeLua:
-		a.resumeLua(ctx, msg)
+		a.resumeLua(msg)
 	case *TimerTick:
 		a.onTimerTick(ctx, msg)
 	}
 }
 
-func (a *MapActor) resumeLua(ctx actor.Context, msg *ResumeLua) {
+func (a *MapActor) resumeLua(msg *ResumeLua) {
 	if msg.Root == nil || msg.Thread == nil {
 		return
 	}
 	state, _, _ := msg.Root.Resume(msg.Thread, nil)
 	if state == lua.ResumeOK {
 		luax.ClearThreadPID(msg.Thread)
+		msg.Thread.Close()
 	}
 }
 
-func (a *MapActor) handlePacket(ctx actor.Context, msg *c_actor.HandlePacket) {
-	client, ok := msg.Client.(core.Client)
-	if !ok {
-		log.Printf("Invalid client type in HandlePacket")
-		return
-	}
-	err := core.ExecutePacketHandler(a.Context, client, msg.Opcode, msg.Data, msg.LogicActorPID)
+func (a *MapActor) handlePacket(msg *c_actor.HandlePacket) {
+	err := core.ExecutePacketHandler(a.Context, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)
 	if err != nil {
 		log.Printf("Error handling packet 0x%02X: %v", msg.Opcode, err)
 	}
@@ -83,7 +79,7 @@ func (a *MapActor) scheduleTimer(ctx actor.Context, msg *c_actor.ScheduleTimer) 
 	}()
 }
 
-func (a *MapActor) executeTimer(ctx actor.Context, msg *c_actor.ExecuteTimer) {
+func (a *MapActor) executeTimer(msg *c_actor.ExecuteTimer) {
 	if msg.Logic == nil {
 		return
 	}
@@ -93,21 +89,21 @@ func (a *MapActor) executeTimer(ctx actor.Context, msg *c_actor.ExecuteTimer) {
 	}
 }
 
-func (a *MapActor) addCharacter(ctx actor.Context, msg *AddCharacter) {
+func (a *MapActor) addCharacter(msg *AddCharacter) {
 	if a.MapData == nil {
 		return
 	}
 	a.MapData.AddPlayer(msg.Character.ID, msg.Character, msg.SpawnPoint, msg.Init)
 }
 
-func (a *MapActor) removeCharacter(ctx actor.Context, msg *RemoveCharacter) {
+func (a *MapActor) removeCharacter(msg *RemoveCharacter) {
 	if a.MapData == nil {
 		return
 	}
 	a.MapData.RemovePlayer(msg.CharacterID)
 }
 
-func (a *MapActor) warpCharacter(ctx actor.Context, msg *WarpCharacter) {
+func (a *MapActor) warpCharacter(msg *WarpCharacter) {
 	if a.MapData == nil {
 		return
 	}

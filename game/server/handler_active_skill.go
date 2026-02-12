@@ -9,6 +9,7 @@ import (
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/request"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type ActiveSkill struct {
@@ -70,7 +71,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	// Validate skill level
 	skillLevel := character.GetTotalSkillLevel(req.SkillID)
 	if skillLevel <= 0 || skillLevel != int(req.SkillLevel) {
-		// TODO: Check for Mu Lung Dojo and Pyramid skills
+		// TODO: Check for Mu Lung Dojo skills
 		// For now, reject if skill level doesn't match
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
@@ -123,23 +124,48 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
+	// Common validation (e.g. event map check when event system exists). Optional; skip if script missing.
+	const commonSkillScript = "script/skill/common.lua"
+	if commonResult, commonThread, commonErr := luax.Call(root, commonSkillScript, "on_preactive_common", character, skillEntry); commonErr == nil {
+		defer commonThread.Close()
+		if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
+			if character.Listener != nil {
+				character.Listener.OnUpdateStats(nil, true)
+			}
+			return nil
+		}
+	}
+
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
-	thread, err := luax.NewThread(root, scriptPath)
+	result, thread, err := luax.Call(root, scriptPath, "on_preactive", character, skillEntry)
 	if err != nil {
-		log.Printf("Skill script not found or failed to load %s: %v", scriptPath, err)
+		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
+		if character.Listener != nil {
+			character.Listener.OnUpdateStats(nil, true)
+		}
+		return nil
+	}
+	if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
+		thread.Close()
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
 		}
 		return nil
 	}
 
-	_, err = luax.ExecuteScript(root, thread, ctx.LogicActorPID, "on_active", character, skillEntry)
+	resumeState, err := luax.Execute(root, thread, ctx.LogicActorPID, "on_active", character, skillEntry)
 	if err != nil {
+		thread.Close()
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
 		}
 		return err
+	}
+	// Thread may have yielded (e.g. sleep); only close when it finished in this call (ResumeOK).
+	// If it yielded, ResumeLua will resume it later and close it in MapActor.resumeLua when done.
+	if resumeState == lua.ResumeOK {
+		thread.Close()
 	}
 
 	if character.Listener != nil {

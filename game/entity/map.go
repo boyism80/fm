@@ -723,6 +723,26 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(tbl)
 			return 1
 		},
+		"wz": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			spec := mapInstance.GetSpec()
+			if spec == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			tbl := L.NewTable()
+			tbl.RawSetString("id", lua.LNumber(spec.ID))
+			tbl.RawSetString("name", lua.LString(spec.Name))
+			tbl.RawSetString("return_map_id", lua.LNumber(spec.ReturnMapId))
+			tbl.RawSetString("town", lua.LBool(spec.IsTown))
+			L.Push(tbl)
+			return 1
+		},
 	}
 }
 
