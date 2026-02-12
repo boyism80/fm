@@ -53,8 +53,7 @@ type Character struct {
 	Inventory        map[constant.InventoryType]*Inventory
 	Equipments       map[constant.EquipmentPartsType]*Equipment
 	Rings            RingContainer
-	SkillsMap        map[uint32]*SkillEntry
-	CoolDowns        map[uint32]*CooldownEntry
+	Skills           map[uint32]*SkillEntry
 	Quests           map[int]*QuestStatus
 	MarriageId       uint32
 	RegRocks         []uint32 // Basic warp rock slots (5 slots)?
@@ -121,12 +120,6 @@ type BonusStats struct {
 	Avoid int16 // Bonus evasion
 	Speed int16 // Bonus speed
 	Jump  int16 // Bonus jump
-}
-
-type CooldownEntry struct {
-	SkillId   uint32
-	StartTime time.Time
-	Duration  time.Duration
 }
 
 type Ring struct {
@@ -395,36 +388,14 @@ func (ch *Character) RemainingSkillPoints() uint16 {
 }
 
 func (ch *Character) GetTotalSkillLevel(skillID uint32) int {
-	if ch.SkillsMap == nil {
+	if ch.Skills == nil {
 		return 0
 	}
-	skillEntry, exists := ch.SkillsMap[skillID]
+	skillEntry, exists := ch.Skills[skillID]
 	if !exists || skillEntry == nil {
 		return 0
 	}
 	return skillEntry.SkillLevel
-}
-
-func (ch *Character) IsSkillCooling(skillID uint32) bool {
-	if ch.CoolDowns == nil {
-		return false
-	}
-	cooldown, exists := ch.CoolDowns[skillID]
-	if !exists || cooldown == nil {
-		return false
-	}
-	return time.Since(cooldown.StartTime) < cooldown.Duration
-}
-
-func (ch *Character) AddCooldown(skillID uint32, cooldown time.Duration) {
-	if ch.CoolDowns == nil {
-		ch.CoolDowns = make(map[uint32]*CooldownEntry)
-	}
-	ch.CoolDowns[skillID] = &CooldownEntry{
-		SkillId:   skillID,
-		StartTime: time.Now(),
-		Duration:  cooldown,
-	}
 }
 
 // AddBuff applies buff(s) to the character (buffs[position][mask]) and notifies the listener.
@@ -544,8 +515,8 @@ func (ch *Character) initializeBaseSkills(newClass uint16) {
 	skillIDStart := classID * 10000
 	skillIDEnd := skillIDStart + 9999
 
-	if ch.SkillsMap == nil {
-		ch.SkillsMap = make(map[uint32]*SkillEntry)
+	if ch.Skills == nil {
+		ch.Skills = make(map[uint32]*SkillEntry)
 	}
 
 	for skillID := skillIDStart; skillID <= skillIDEnd; skillID++ {
@@ -571,7 +542,7 @@ func (ch *Character) initializeBaseSkills(newClass uint16) {
 			continue
 		}
 
-		existingEntry, exists := ch.SkillsMap[skillID]
+		existingEntry, exists := ch.Skills[skillID]
 		if exists && existingEntry != nil {
 			if existingEntry.SkillLevel > 0 || existingEntry.MasterLevel > 0 {
 				continue
@@ -583,8 +554,9 @@ func (ch *Character) initializeBaseSkills(newClass uint16) {
 			SkillLevel:  0,
 			MasterLevel: masterLevel,
 			Expiration:  time.Time{},
+			Owner:       ch,
 		}
-		ch.SkillsMap[skillID] = skillEntry
+		ch.Skills[skillID] = skillEntry
 
 		if ch.Listener != nil {
 			ch.Send(&response.UpdateSkills{
@@ -1174,12 +1146,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			skillID := uint32(L.CheckInt(2))
 
-			if ch.SkillsMap == nil {
+			if ch.Skills == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
 
-			skillEntry, exists := ch.SkillsMap[skillID]
+			skillEntry, exists := ch.Skills[skillID]
 			if !exists || skillEntry == nil {
 				L.Push(lua.LNil)
 				return 1

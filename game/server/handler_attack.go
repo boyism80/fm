@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -88,11 +88,12 @@ func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID ui
 	}
 
 	if levelData.Cooldown > 0 {
-		if character.IsSkillCooling(skillID) {
+		skillEntry := character.Skills[skillID]
+		if skillEntry == nil || skillEntry.IsCooling() {
 			log.Printf("Skill %d is on cooldown", skillID)
 			return false
 		}
-		character.AddCooldown(skillID, levelData.Cooldown)
+		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
 	if levelData.MPCon > 0 {

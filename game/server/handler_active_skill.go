@@ -90,23 +90,22 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	// Check MP recovery skill HP requirement
 	// TODO: Check if effect.isMPRecovery() and HP < 10%
 
-	// Check cooldown
-	if levelData.Cooldown > 0 && !character.Admin {
-		if character.IsSkillCooling(req.SkillID) {
-			if character.Listener != nil {
-				character.Listener.OnUpdateStats(nil, true)
-			}
-			return nil
-		}
-		character.AddCooldown(req.SkillID, levelData.Cooldown)
-	}
-
-	skillEntry := character.SkillsMap[req.SkillID]
+	skillEntry := character.Skills[req.SkillID]
 	if skillEntry == nil {
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
 		}
 		return nil
+	}
+
+	if levelData.Cooldown > 0 {
+		if skillEntry.IsCooling() {
+			if character.Listener != nil {
+				character.Listener.OnUpdateStats(nil, true)
+			}
+			return nil
+		}
+		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
 	if ctx.LogicActorPID == nil {

@@ -41,8 +41,8 @@ func (h *MasterSkills) Handle(gameClient *client.GameClient, args ...string) err
 		return fmt.Errorf("resources not available")
 	}
 
-	if character.SkillsMap == nil {
-		character.SkillsMap = make(map[uint32]*entity.SkillEntry)
+	if character.Skills == nil {
+		character.Skills = make(map[uint32]*entity.SkillEntry)
 	}
 
 	class := character.Class
@@ -73,15 +73,16 @@ func (h *MasterSkills) Handle(gameClient *client.GameClient, args ...string) err
 				continue
 			}
 
-			skillEntry, exists := character.SkillsMap[skillID]
+			skillEntry, exists := character.Skills[skillID]
 			if !exists || skillEntry == nil {
 				skillEntry = &entity.SkillEntry{
 					Skill:       wzSkill,
 					SkillLevel:  wzSkill.MaxLevel,
 					MasterLevel: masterLevel,
 					Expiration:  time.Time{},
+					Owner:       character,
 				}
-				character.SkillsMap[skillID] = skillEntry
+				character.Skills[skillID] = skillEntry
 				addedCount++
 			} else {
 				if skillEntry.Skill == nil {

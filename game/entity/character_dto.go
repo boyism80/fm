@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"time"
-
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
@@ -132,8 +130,8 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		}
 	}
 
-	charDTO.Skills = make([]*dto.Skill, 0, len(ch.SkillsMap))
-	for skillID, entry := range ch.SkillsMap {
+	charDTO.Skills = make([]*dto.Skill, 0, len(ch.Skills))
+	for skillID, entry := range ch.Skills {
 		if entry == nil {
 			continue
 		}
@@ -147,21 +145,14 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		charDTO.Skills = append(charDTO.Skills, skillDTO)
 	}
 
-	charDTO.Cooldowns = make([]*dto.Cooldown, 0, len(ch.CoolDowns))
-	now := time.Now()
-	for _, cd := range ch.CoolDowns {
-		if cd == nil {
+	charDTO.Cooldowns = make(map[uint32]uint16)
+	for skillID, entry := range ch.Skills {
+		if entry == nil || !entry.IsCooling() {
 			continue
 		}
-		remaining := cd.StartTime.Add(cd.Duration).Sub(now)
-		if remaining < 0 {
-			remaining = 0
-		}
-		cooldownDTO := &dto.Cooldown{
-			SkillId:   cd.SkillId,
-			Remaining: uint16(remaining.Seconds()),
-		}
-		charDTO.Cooldowns = append(charDTO.Cooldowns, cooldownDTO)
+		sec := int(entry.CooldownRemaining().Seconds())
+		sec = min(sec, 65535)
+		charDTO.Cooldowns[skillID] = uint16(sec)
 	}
 
 	charDTO.QuestsStarted = make([]*dto.QuestStatus, 0)

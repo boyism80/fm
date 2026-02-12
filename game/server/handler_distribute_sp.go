@@ -51,11 +51,11 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		return nil
 	}
 
-	if character.SkillsMap == nil {
-		character.SkillsMap = make(map[uint32]*entity.SkillEntry)
+	if character.Skills == nil {
+		character.Skills = make(map[uint32]*entity.SkillEntry)
 	}
 
-	skillEntry, exists := character.SkillsMap[skillID]
+	skillEntry, exists := character.Skills[skillID]
 	if !exists {
 		var wzSkill *wz.Skill
 		if character.Context != nil {
@@ -85,8 +85,9 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 			SkillLevel:  0,
 			MasterLevel: masterLevel,
 			Expiration:  time.Time{},
+			Owner:       character,
 		}
-		character.SkillsMap[skillID] = skillEntry
+		character.Skills[skillID] = skillEntry
 	}
 
 	if skillEntry.Skill == nil {

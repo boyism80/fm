@@ -41,4 +41,5 @@ type CharacterListener interface {
 	OnClassChange(oldClass uint16, newClass uint16)
 	OnBuffAdded(character *Character, wz *wz.Skill, level uint8, entries []BuffEntry)
 	OnBuffRemoved(character *Character, flags []constant.BuffFlag)
+	OnSkillCooldown(skillID uint32, remainingSec uint16)
 }

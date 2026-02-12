@@ -12,6 +12,48 @@ type SkillEntry struct {
 	SkillLevel  int
 	MasterLevel int
 	Expiration  time.Time
+	CooldownEnd *time.Time // When cooldown ends; nil means cooldown is done and the skill is ready to use. Non-nil and now < *CooldownEnd means still cooling.
+	Owner      *Character // Character that owns this skill; set when added to character.Skills
+}
+
+// IsCooling returns true if the skill is still on cooldown (not yet ready to use).
+func (s *SkillEntry) IsCooling() bool {
+	if s.CooldownEnd == nil {
+		return false
+	}
+	return time.Now().Before(*s.CooldownEnd)
+}
+
+// StartCooldown starts the cooldown for the given duration and notifies the owner's listener.
+func (s *SkillEntry) StartCooldown(duration time.Duration) {
+	end := time.Now().Add(duration)
+	s.CooldownEnd = &end
+	sec := min(int(duration.Seconds()), 65535)
+	s.notifyCooldown(uint16(sec))
+}
+
+// CooldownRemaining returns remaining cooldown duration, or 0 if the skill is ready to use.
+func (s *SkillEntry) CooldownRemaining() time.Duration {
+	if s.CooldownEnd == nil {
+		return 0
+	}
+	if !time.Now().Before(*s.CooldownEnd) {
+		return 0
+	}
+	return time.Until(*s.CooldownEnd)
+}
+
+// ClearCooldown marks the skill as ready to use (CooldownEnd = nil) and notifies the owner's listener so the client can clear the cooldown UI.
+func (s *SkillEntry) ClearCooldown() {
+	s.CooldownEnd = nil
+	s.notifyCooldown(0)
+}
+
+func (s *SkillEntry) notifyCooldown(remainingSec uint16) {
+	if s.Owner == nil || s.Owner.Listener == nil || s.Skill == nil {
+		return
+	}
+	s.Owner.Listener.OnSkillCooldown(s.Skill.ID, remainingSec)
 }
 
 // Luable interface implementation
@@ -74,6 +116,41 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			wzTable := skillToLuaTable(L, skill.Skill)
 			L.Push(wzTable)
 			return 1
+		},
+		"is_cooling": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			skill, ok := ud.Value.(*SkillEntry)
+			if !ok {
+				L.ArgError(1, "Skill expected")
+				return 0
+			}
+			L.Push(lua.LBool(skill.IsCooling()))
+			return 1
+		},
+		"cooldown_remaining": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			skill, ok := ud.Value.(*SkillEntry)
+			if !ok {
+				L.ArgError(1, "Skill expected")
+				return 0
+			}
+			L.Push(lua.LNumber(skill.CooldownRemaining().Milliseconds()))
+			return 1
+		},
+		"set_cooldown": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			skill, ok := ud.Value.(*SkillEntry)
+			if !ok {
+				L.ArgError(1, "Skill expected")
+				return 0
+			}
+			ms := L.CheckNumber(2)
+			if ms <= 0 {
+				skill.ClearCooldown()
+			} else {
+				skill.StartCooldown(time.Duration(ms) * time.Millisecond)
+			}
+			return 0
 		},
 	}
 }

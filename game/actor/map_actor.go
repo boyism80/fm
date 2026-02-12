@@ -139,8 +139,9 @@ func (a *MapActor) onStopped(ctx actor.Context) {
 }
 
 func (a *MapActor) registerTimers() {
-	RegisterTimer[*timers.MobSpawnTimer, *timers.MobSpawnTimer](a.timerReg)
-	RegisterTimer[*timers.ItemCleanupTimer, *timers.ItemCleanupTimer](a.timerReg)
+	RegisterTimer[*timers.MobSpawnTimer](a.timerReg)
+	RegisterTimer[*timers.ItemCleanupTimer](a.timerReg)
+	RegisterTimer[*timers.CooldownCheckTimer](a.timerReg)
 }
 
 func (a *MapActor) onTimerTick(ctx actor.Context, msg *TimerTick) {

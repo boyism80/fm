@@ -386,3 +386,10 @@ func (l *CharacterListenerImpl) OnBuffRemoved(character *entity.Character, flags
 		}, types.SEND_POLICY_ENCRYPT, character.GetID())
 	}
 }
+
+func (l *CharacterListenerImpl) OnSkillCooldown(skillID uint32, remainingSec uint16) {
+	l.ch.Send(&response.SkillCooldown{
+		SkillID:      skillID,
+		RemainingSec: uint32(remainingSec),
+	}, types.SEND_POLICY_ENCRYPT)
+}

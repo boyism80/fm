@@ -88,12 +88,13 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	}
 
 	if levelData.Cooldown > 0 {
-		if character.IsSkillCooling(skillID) {
+		skillEntry := character.Skills[skillID]
+		if skillEntry == nil || skillEntry.IsCooling() {
 			log.Printf("Skill %d is on cooldown", skillID)
 			character.Listener.OnUpdateStats(nil, true)
 			return nil
 		}
-		character.AddCooldown(skillID, levelData.Cooldown)
+		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
 	if levelData.MPCon > 0 {

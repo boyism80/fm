@@ -15,11 +15,6 @@ type TimerHandler interface {
 	Handle(ctx actor.Context, mapData *entity.Map) error
 }
 
-// TimerHandlerConstructor defines the factory interface for timer handlers
-type TimerHandlerConstructor[H TimerHandler] interface {
-	New() H
-}
-
 // TimerRegistry manages timer handlers for MapActor
 type TimerRegistry struct {
 	handlers []TimerHandler
@@ -31,11 +26,13 @@ func NewTimerRegistry() *TimerRegistry {
 	}
 }
 
-// RegisterTimer registers a timer handler (similar to core.Bind pattern)
-func RegisterTimer[H TimerHandler, C TimerHandlerConstructor[H]](registry *TimerRegistry) {
-	var constructor C
-	handler := constructor.New()
-	registry.handlers = append(registry.handlers, handler)
+// RegisterTimer registers a timer handler. H must implement TimerHandler and New() H.
+func RegisterTimer[H interface {
+	TimerHandler
+	New() H
+}](registry *TimerRegistry) {
+	var zero H
+	registry.handlers = append(registry.handlers, zero.New())
 }
 
 // GetAllHandlers returns all registered timer handlers
