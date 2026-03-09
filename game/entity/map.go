@@ -53,6 +53,29 @@ type Map struct {
 	pidMutex        sync.RWMutex
 }
 
+type BroadcastRecipientFilter func(recipient *Character, referenceCharacter *Character) bool
+
+type BroadcastOption struct {
+	SendRaw            bool
+	ExceptPlayerIDs    []uint32
+	ReferenceCharacter *Character
+	RecipientFilter    BroadcastRecipientFilter
+}
+
+func BroadcastVisibleByReference(recipient *Character, referenceCharacter *Character) bool {
+	if referenceCharacter == nil || !referenceCharacter.IsHidden() {
+		return true
+	}
+	return recipient.Role >= referenceCharacter.Role
+}
+
+func BroadcastRoleBelowReference(recipient *Character, referenceCharacter *Character) bool {
+	if referenceCharacter == nil {
+		return false
+	}
+	return recipient.Role < referenceCharacter.Role
+}
+
 func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) *Map {
 	if listener == nil {
 		panic("MapListener cannot be nil")
@@ -121,7 +144,7 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8,
 	}
 
 	character.Map = m.ID
-	character.SpawnPoint = spawnPoint
+	character.spawnPoint = spawnPoint
 
 	m.objects[types.OBJECT_TYPE_PLAYER][playerID] = character
 
@@ -292,8 +315,8 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 		MiniMap: true,
 	}
 
-	m.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
-	m.BroadcastToAllPlayers(controlPacket, types.SEND_POLICY_ENCRYPT)
+	m.Broadcast(spawnPacket, nil)
+	m.Broadcast(controlPacket, nil)
 
 	return npc, nil
 }
@@ -396,40 +419,34 @@ func (m *Map) GetMobs() map[uint32]interface{} {
 	return m.objects[types.OBJECT_TYPE_MONSTER]
 }
 
-// BroadcastToPlayers sends a message to all players on the map (excluding specified player)
-func (m *Map) BroadcastToPlayers(message types.Packet, policy types.SendPolicy, exceptPlayerID uint32) {
+// Broadcast sends a message to players on the map.
+// When option is nil, defaults are used: encrypt policy, no except player, no filter.
+func (m *Map) Broadcast(message types.Packet, option *BroadcastOption) {
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
 		return
 	}
 
-	for playerID, player := range m.objects[types.OBJECT_TYPE_PLAYER] {
-		if playerID == exceptPlayerID {
-			continue
+	policy := types.SEND_POLICY_ENCRYPT
+	exceptPlayerIDs := []uint32(nil)
+	var referenceCharacter *Character
+	var recipientFilter BroadcastRecipientFilter
+
+	if option != nil {
+		if option.SendRaw {
+			policy = types.SEND_POLICY_RAW
 		}
-
-		if character, ok := player.(*Character); ok {
-			character.Send(message, policy)
-		}
-	}
-}
-
-// Broadcast sends a message to players on the map. source is the character whose action/state is broadcast (first param).
-// When source is not hidden, sends to all except source and exceptIDs. When source is hidden, sends only to players with role >= source (lower role does not receive).
-// exceptIDs: optional player IDs to exclude in addition to source.
-func (m *Map) Broadcast(source *Character, message types.Packet, policy types.SendPolicy, exceptIDs ...uint32) {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil || source == nil {
-		return
+		exceptPlayerIDs = option.ExceptPlayerIDs
+		referenceCharacter = option.ReferenceCharacter
+		recipientFilter = option.RecipientFilter
 	}
 
-	exceptSet := map[uint32]bool{}
-	for _, id := range exceptIDs {
-		exceptSet[id] = true
+	exceptSet := make(map[uint32]struct{}, len(exceptPlayerIDs))
+	for _, playerID := range exceptPlayerIDs {
+		exceptSet[playerID] = struct{}{}
 	}
-
-	sourceRole := source.GetRole()
 
 	for playerID, player := range m.objects[types.OBJECT_TYPE_PLAYER] {
-		if exceptSet[playerID] {
+		if _, excluded := exceptSet[playerID]; excluded {
 			continue
 		}
 
@@ -438,37 +455,11 @@ func (m *Map) Broadcast(source *Character, message types.Packet, policy types.Se
 			continue
 		}
 
-		if source.IsHidden() && character.GetRole() < sourceRole {
+		if recipientFilter != nil && !recipientFilter(character, referenceCharacter) {
 			continue
 		}
+
 		character.Send(message, policy)
-	}
-}
-
-// BroadcastToRoleBelow sends a message only to players with role < source's role. Used for Leave/Spawn when toggling hidden (only lower-role players receive those packets).
-func (m *Map) BroadcastToRoleBelow(source *Character, message types.Packet, policy types.SendPolicy) {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil || source == nil {
-		return
-	}
-
-	sourceRole := source.GetRole()
-	for _, player := range m.objects[types.OBJECT_TYPE_PLAYER] {
-		if character, ok := player.(*Character); ok && character.GetRole() < sourceRole {
-			character.Send(message, policy)
-		}
-	}
-}
-
-// BroadcastToAllPlayers sends a message to all players on the map (including sender)
-func (m *Map) BroadcastToAllPlayers(message types.Packet, policy types.SendPolicy) {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
-		return
-	}
-
-	for _, player := range m.objects[types.OBJECT_TYPE_PLAYER] {
-		if character, ok := player.(*Character); ok {
-			character.Send(message, policy)
-		}
 	}
 }
 
@@ -600,7 +591,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Check ownership for owned drops
-		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.ID {
+		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.GetID() {
 			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
@@ -614,7 +605,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Remove item from map using RemoveItem
-		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
+		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 
@@ -627,7 +618,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Check ownership for owned drops
-		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.ID {
+		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.GetID() {
 			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
@@ -639,7 +630,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Remove meso from map using RemoveItem
-		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
+		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 
@@ -715,7 +706,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			tbl := L.NewTable()
 			for _, player := range players {
 				if char, ok := player.(*Character); ok {
-					tbl.RawSetInt(int(char.ID), luax.NewLuable(L, char))
+					tbl.RawSetInt(int(char.GetID()), luax.NewLuable(L, char))
 				}
 			}
 			L.Push(tbl)

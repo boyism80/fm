@@ -1,4 +1,4 @@
 -- Skill name (String.wz/Skill.img.xml): 소울
 
-function on_active(me, skill)
+function on_activated(me, skill)
 end

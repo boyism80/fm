@@ -1,8 +1,8 @@
 package response
 
 import (
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/stream"
 )
 
 type UpdateStats struct {
@@ -26,7 +26,7 @@ func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 		mask = mask | uint32(k)
 	}
 	writer.WriteU32(mask)
-	order := []constant.Stat{constant.STAT_SKIN, constant.STAT_FACE, constant.STAT_HAIR, constant.STAT_PET, constant.STAT_LEVEL, constant.STAT_JOB, constant.STAT_STR, constant.STAT_DEX, constant.STAT_INT, constant.STAT_LUK, constant.STAT_HP, constant.STAT_MAX_HP, constant.STAT_MP, constant.STAT_MAX_MP, constant.STAT_AVAILABLE_AP, constant.STAT_AVAILABLE_SP, constant.STAT_EXP, constant.STAT_FAME, constant.STAT_MESO}
+	order := []constant.Stat{constant.STAT_SKIN, constant.STAT_FACE, constant.STAT_HAIR, constant.STAT_PET, constant.STAT_LEVEL, constant.STAT_CLASS, constant.STAT_STR, constant.STAT_DEX, constant.STAT_INT, constant.STAT_LUK, constant.STAT_HP, constant.STAT_MAX_HP, constant.STAT_MP, constant.STAT_MAX_MP, constant.STAT_AVAILABLE_AP, constant.STAT_AVAILABLE_SP, constant.STAT_EXP, constant.STAT_FAME, constant.STAT_MESO}
 	for _, stat := range order {
 		if val, ok := p.Stats[stat]; ok {
 			switch stat {
@@ -42,7 +42,7 @@ func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 			case constant.STAT_LEVEL:
 				writer.WriteU8(uint8(val))
 
-			case constant.STAT_JOB, constant.STAT_STR, constant.STAT_DEX,
+			case constant.STAT_CLASS, constant.STAT_STR, constant.STAT_DEX,
 				constant.STAT_INT, constant.STAT_LUK, constant.STAT_HP,
 				constant.STAT_MAX_HP, constant.STAT_MP, constant.STAT_MAX_MP,
 				constant.STAT_AVAILABLE_AP, constant.STAT_AVAILABLE_SP:

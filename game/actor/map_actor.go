@@ -93,7 +93,7 @@ func (a *MapActor) addCharacter(msg *AddCharacter) {
 	if a.MapData == nil {
 		return
 	}
-	a.MapData.AddPlayer(msg.Character.ID, msg.Character, msg.SpawnPoint, msg.Init)
+	a.MapData.AddPlayer(msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
 }
 
 func (a *MapActor) removeCharacter(msg *RemoveCharacter) {
@@ -107,7 +107,7 @@ func (a *MapActor) warpCharacter(msg *WarpCharacter) {
 	if a.MapData == nil {
 		return
 	}
-	a.MapData.AddPlayer(msg.Character.ID, msg.Character, msg.Portal, false)
+	a.MapData.AddPlayer(msg.Character.GetID(), msg.Character, msg.Portal, false)
 }
 
 func (a *MapActor) onStarted(ctx actor.Context) {
@@ -138,6 +138,7 @@ func (a *MapActor) registerTimers() {
 	RegisterTimer[*timers.MobSpawnTimer](a.timerReg)
 	RegisterTimer[*timers.ItemCleanupTimer](a.timerReg)
 	RegisterTimer[*timers.CooldownCheckTimer](a.timerReg)
+	RegisterTimer[*timers.BuffExpireTimer](a.timerReg)
 }
 
 func (a *MapActor) onTimerTick(ctx actor.Context, msg *TimerTick) {

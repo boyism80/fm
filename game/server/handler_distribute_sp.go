@@ -47,15 +47,13 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 	skillID := req.SkillID
 
 	if character.SkillPoint == 0 {
-		log.Printf("Character %d has no SP to distribute for skill %d", character.ID, skillID)
+		log.Printf("Character %d has no SP to distribute for skill %d", character.GetID(), skillID)
 		return nil
 	}
 
-	if character.Skills == nil {
-		character.Skills = make(map[uint32]*entity.SkillEntry)
-	}
+	skills := character.Skills
 
-	skillEntry, exists := character.Skills[skillID]
+	skillEntry, exists := skills[skillID]
 	if !exists {
 		var wzSkill *wz.Skill
 		if character.Context != nil {
@@ -66,7 +64,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		}
 
 		if wzSkill == nil {
-			log.Printf("Skill %d not found in WZ for character %d", skillID, character.ID)
+			log.Printf("Skill %d not found in WZ for character %d", skillID, character.GetID())
 			return nil
 		}
 
@@ -76,7 +74,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		} else if wzSkill.MaxLevel > 0 {
 			masterLevel = wzSkill.MaxLevel
 		} else {
-			log.Printf("Skill %d has no masterLevel or maxLevel for character %d", skillID, character.ID)
+			log.Printf("Skill %d has no masterLevel or maxLevel for character %d", skillID, character.GetID())
 			return nil
 		}
 
@@ -87,11 +85,11 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 			Expiration:  time.Time{},
 			Owner:       character,
 		}
-		character.Skills[skillID] = skillEntry
+		skills[skillID] = skillEntry
 	}
 
 	if skillEntry.Skill == nil {
-		log.Printf("SkillEntry for skill %d has nil Skill for character %d", skillID, character.ID)
+		log.Printf("SkillEntry for skill %d has nil Skill for character %d", skillID, character.GetID())
 		return nil
 	}
 
@@ -100,22 +98,22 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		maxLevel = skillEntry.Skill.MaxLevel
 	}
 	if maxLevel == 0 {
-		log.Printf("Skill %d has no maxLevel for character %d", skillID, character.ID)
+		log.Printf("Skill %d has no maxLevel for character %d", skillID, character.GetID())
 		return nil
 	}
 
 	if skillEntry.MasterLevel > skillEntry.Skill.MaxLevel {
-		log.Printf("Skill %d MasterLevel %d exceeds MaxLevel %d for character %d, clamping", skillID, skillEntry.MasterLevel, skillEntry.Skill.MaxLevel, character.ID)
+		log.Printf("Skill %d MasterLevel %d exceeds MaxLevel %d for character %d, clamping", skillID, skillEntry.MasterLevel, skillEntry.Skill.MaxLevel, character.GetID())
 		skillEntry.MasterLevel = skillEntry.Skill.MaxLevel
 		maxLevel = skillEntry.MasterLevel
 	}
 
 	if skillEntry.SkillLevel >= maxLevel {
-		log.Printf("Skill %d is already at max level %d for character %d", skillID, maxLevel, character.ID)
+		log.Printf("Skill %d is already at max level %d for character %d", skillID, maxLevel, character.GetID())
 		return nil
 	}
 
-	character.SkillPoint--
+	character.SkillPoint = character.SkillPoint - 1
 	skillEntry.SkillLevel++
 
 	if character.Listener != nil {

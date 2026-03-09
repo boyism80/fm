@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -42,17 +42,17 @@ func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) er
 
 	if strings.HasPrefix(req.Message, "/") {
 		params := strings.Split(strings.TrimPrefix(req.Message, "/"), " ")
-		err := h.gs.commandHandler.Handle(client, params...)
+		err := h.gs.commandHandler.Handle(ctx, client, params...)
 		if err != nil {
 			log.Printf("Command error: %v", err)
 		}
 		return nil
 	}
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.Map)
 	if mapInstance == nil {
-		log.Printf("Map %d not found for character chat", character.GetMap())
-		return fmt.Errorf("map %d not found", character.GetMap())
+		log.Printf("Map %d not found for character chat", character.Map)
+		return fmt.Errorf("map %d not found", character.Map)
 	}
 
 	character.Listener.OnChat(req.Message, false, req.DontRecordHistory)

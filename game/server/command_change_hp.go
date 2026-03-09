@@ -52,7 +52,7 @@ func (h *ChangeHp) Handle(gameClient *client.GameClient, args ...string) error {
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_HP:     int32(character.Hp),
-			constant.STAT_MAX_HP: int32(character.Life.GetMaxHp()),
+			constant.STAT_MAX_HP: int32(character.GetMaxHp()),
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 

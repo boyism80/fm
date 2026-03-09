@@ -39,7 +39,7 @@ type CharacterListener interface {
 	OnUpdateCharacterLook(character *Character)
 	OnNpcAction(bytes []byte)
 	OnClassChange(oldClass uint16, newClass uint16)
-	OnBuffAdded(character *Character, wz *wz.Skill, level uint8, entries []BuffEntry)
+	OnBuffAdded(character *Character, wz *wz.Skill, level uint8, values map[constant.BuffFlag]int32)
 	OnBuffRemoved(character *Character, flags []constant.BuffFlag)
 	OnSkillCooldown(skillID uint32, remainingSec uint16)
 	OnHiddenChanged(hidden bool)

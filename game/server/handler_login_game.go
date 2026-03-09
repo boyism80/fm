@@ -36,7 +36,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	}
 
 	character := entity.NewDummyCharacter(ctx.Client, nil, req.PlayerId, name, h.gs)
-	character.Listener = NewGameCharacterListener(h.gs, &character)
+	character.Listener = NewGameCharacterListener(h.gs, character)
 
 	// Set GM mode (for testing: player ID 1 is GM)
 	if req.PlayerId == 1 {
@@ -52,10 +52,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		log.Printf("Client is not a GameClient")
 		return fmt.Errorf("client is not a GameClient")
 	}
-	client.SetCharacter(&character)
-
-	// nil MapActor에 할당 (맵이 결정되기 전까지)
-	client.SetLogicActorPID(nil)
+	client.SetCharacter(character)
 
 	// 초기 맵으로 이동 (nil MapActor에서 실제 맵으로)
 	initialMapID, ok := h.gs.resources.NameToMap("헤네시스")
@@ -97,7 +94,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	}
 
 	rootContext.Send(targetMapPID, &g_actor.AddCharacter{
-		Character:  &character,
+		Character:  character,
 		SpawnPoint: initialSpawnPoint,
 		Init:       true,
 	})

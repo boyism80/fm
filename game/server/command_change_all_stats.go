@@ -47,17 +47,17 @@ func (h *ChangeAllStats) Handle(gameClient *client.GameClient, args ...string) e
 		return fmt.Errorf("character not found")
 	}
 
-	character.Str = uint16(statValue)
-	character.Dex = uint16(statValue)
-	character.Int = uint16(statValue)
-	character.Luk = uint16(statValue)
+	character.BaseStats.Str = uint16(statValue)
+	character.BaseStats.Dex = uint16(statValue)
+	character.BaseStats.Int = uint16(statValue)
+	character.BaseStats.Luk = uint16(statValue)
 
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.STAT_STR: int32(character.Str),
-			constant.STAT_DEX: int32(character.Dex),
-			constant.STAT_INT: int32(character.Int),
-			constant.STAT_LUK: int32(character.Luk),
+			constant.STAT_STR: int32(character.GetTotalStr()),
+			constant.STAT_DEX: int32(character.GetTotalDex()),
+			constant.STAT_INT: int32(character.GetTotalInt()),
+			constant.STAT_LUK: int32(character.GetTotalLuk()),
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 

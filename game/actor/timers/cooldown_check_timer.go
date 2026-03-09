@@ -31,10 +31,14 @@ func (t *CooldownCheckTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 	players := mapData.GetAllPlayers()
 	for _, obj := range players {
 		ch, ok := obj.(*entity.Character)
-		if !ok || ch.Skills == nil {
+		if !ok {
 			continue
 		}
-		for _, entry := range ch.Skills {
+		skills := ch.Skills
+		if skills == nil {
+			continue
+		}
+		for _, entry := range skills {
 			if entry == nil {
 				continue
 			}

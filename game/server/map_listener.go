@@ -57,7 +57,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 			}
 
 			if ch, ok := p.(*entity.Character); ok {
-				if ch.IsHidden() && !character.HasRoleAtLeast(ch.GetRole()) {
+				if ch.IsHidden() && !character.HasRoleAtLeast(ch.Role) {
 					continue
 				}
 				// Convert entity to DTO
@@ -86,7 +86,11 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 		FriendshipRings: entity.RingsToDTO(character.Rings.Mid),
 		MarriageRings:   entity.RingsToDTO(character.Rings.Right),
 	}
-	mapInstance.Broadcast(character, spawnPacket, types.SEND_POLICY_ENCRYPT, playerID)
+	mapInstance.Broadcast(spawnPacket, &entity.BroadcastOption{
+		ExceptPlayerIDs:    []uint32{playerID},
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
 
 	for _, npc := range mapInstance.GetNpcs() {
 		if npc, ok := npc.(*entity.Npc); ok {
@@ -161,7 +165,7 @@ func (l *MapListenerImpl) OnPlayerRemoved(mapID uint32, playerID uint32) {
 	leavePacket := &response.LeavePlayer{
 		ID: playerID,
 	}
-	mapInstance.BroadcastToPlayers(leavePacket, types.SEND_POLICY_ENCRYPT, 0)
+	mapInstance.Broadcast(leavePacket, nil)
 }
 
 // OnPlayerMoved sends move player packet to other players on the map
@@ -196,7 +200,11 @@ func (l *MapListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character 
 		StartPoint: startPoint,
 	}
 
-	mapInstance.Broadcast(character, movePacket, types.SEND_POLICY_ENCRYPT, playerID)
+	mapInstance.Broadcast(movePacket, &entity.BroadcastOption{
+		ExceptPlayerIDs:    []uint32{playerID},
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
 }
 
 // OnPlayerChat sends chat packet to other players on the map
@@ -237,7 +245,7 @@ func (l *MapListenerImpl) OnItemSpawned(mapID uint32, itemID uint32, item entity
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(spawnPacket, nil)
 }
 
 // OnMesoSpawned sends spawn meso packet to all players on the map
@@ -261,7 +269,7 @@ func (l *MapListenerImpl) OnMesoSpawned(mapID uint32, itemID uint32, meso *entit
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(spawnPacket, nil)
 }
 
 // OnItemRemoved sends remove item packet to all players on the map
@@ -280,7 +288,7 @@ func (l *MapListenerImpl) OnItemRemoved(mapID uint32, itemID uint32, characterID
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(removePacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(removePacket, nil)
 }
 
 // OnMobSpawned sends spawn mob packet to all players on the map
@@ -301,7 +309,7 @@ func (l *MapListenerImpl) OnMobSpawned(mapID uint32, mobID uint32, mob *entity.M
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(spawnPacket, nil)
 }
 
 // OnMobRemoved sends remove mob packet to all players on the map
@@ -319,7 +327,7 @@ func (l *MapListenerImpl) OnMobRemoved(mapID uint32, mobID uint32, animationType
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(removePacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(removePacket, nil)
 }
 
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character) {
@@ -356,7 +364,7 @@ func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool,
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(movePacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(movePacket, nil)
 }
 
 // OnAttack broadcasts attack to all players on the map
@@ -379,5 +387,9 @@ func (l *MapListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo 
 		return
 	}
 
-	mapInstance.Broadcast(source, attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
+	mapInstance.Broadcast(attackPacket, &entity.BroadcastOption{
+		ExceptPlayerIDs:    []uint32{characterID},
+		ReferenceCharacter: source,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
 }

@@ -298,8 +298,11 @@ func (s *Server) processPacket(client Client, encryptedData []byte) (bool, error
 	opcode := int(packetData[0]) | int(packetData[1])<<8
 	packetData = packetData[2:] // Remove opcode from data
 
-	// Get LogicActor PID from client
-	logicActorPID := client.GetLogicActorPID()
+	// Get LogicActor PID from client when supported
+	var logicActorPID *actor.PID
+	if logicClient, ok := client.(interface{ GetLogicActorPID() *actor.PID }); ok {
+		logicActorPID = logicClient.GetLogicActorPID()
+	}
 	if logicActorPID == nil {
 		// Use nil MapActor if PID is nil
 		if s.nilMapActorPID == nil {

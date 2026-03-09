@@ -52,7 +52,7 @@ func (h *ChangeMp) Handle(gameClient *client.GameClient, args ...string) error {
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MP:     int32(character.Mp),
-			constant.STAT_MAX_MP: int32(character.Life.GetMaxMp()),
+			constant.STAT_MAX_MP: int32(character.GetMaxMp()),
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 

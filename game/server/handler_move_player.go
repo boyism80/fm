@@ -49,13 +49,13 @@ func (h *MovePlayer) Handle(ctx *core.ClientContext, req *request.MovePlayer) er
 		character.Stance = frag.GetStance()
 	}
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.Map)
 	if mapInstance == nil {
-		log.Printf("Map %d not found for character movement", character.GetMap())
-		return fmt.Errorf("map %d not found", character.GetMap())
+		log.Printf("Map %d not found for character movement", character.Map)
+		return fmt.Errorf("map %d not found", character.Map)
 	}
 
-	character.Listener.OnPlayerMove(character.GetMap(), character.GetID(), character, beforePosition, req.Fragments)
+	character.Listener.OnPlayerMove(character.Map, character.GetID(), character, beforePosition, req.Fragments)
 
 	return nil
 }

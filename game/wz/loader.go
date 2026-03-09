@@ -1744,9 +1744,9 @@ func loadExpTable(path string) ([]uint32, error) {
 	return expTable, nil
 }
 
-// loadSkillJobFile loads all skills from a job's .img.xml file
+// loadSkillClassFile loads all skills from a job's .img.xml file
 // Structure: Skill.wz/{job}.img.xml contains skill/{skillid} nodes
-func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
+func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

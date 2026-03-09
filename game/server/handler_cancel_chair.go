@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
+	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
@@ -39,7 +40,7 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 		return nil
 	}
 
-	mapID := character.GetMap()
+	mapID := character.Map
 	mapInstance := h.gs.GetMap(mapID)
 
 	if req.ChairID == -1 {
@@ -51,10 +52,14 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 		character.Send(cancelChairPacket, types.SEND_POLICY_ENCRYPT)
 
 		if mapInstance != nil {
-			mapInstance.Broadcast(character, &response.ShowChair{
+			mapInstance.Broadcast(&response.ShowChair{
 				CharacterID: character.GetID(),
 				ItemID:      0,
-			}, types.SEND_POLICY_ENCRYPT, character.GetID())
+			}, &entity.BroadcastOption{
+				ExceptPlayerIDs:    []uint32{character.GetID()},
+				ReferenceCharacter: character,
+				RecipientFilter:    entity.BroadcastVisibleByReference,
+			})
 		}
 	} else {
 		character.Chair = uint32(req.ChairID)

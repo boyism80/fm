@@ -5,9 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
@@ -18,228 +16,54 @@ import (
 type Character struct {
 	Life
 	Sendable
+
+	dialog           *lua.LState
+	id               uint32
+	name             string
+	gender           uint8
+	skinColor        uint8
+	face             uint32
+	hair             uint32
+	level            uint8
+	rank             uint32
+	rankDiff         int32
+	classRank        uint32
+	classRankDiff    int32
+	exp              uint32
+	famePoint        uint16
+	spawnPoint       uint8
+	mega             bool
+	random1          stream.RandomStream
+	random2          stream.RandomStream
+	random3          stream.RandomStream
+	questStatuses    map[int]*QuestStatus
+	marriageId       uint32
+	regRocks         []uint32
+	rocks            []uint32
+	monsterBookCover uint32
+	monsterBook      *MonsterBook
+	quests           map[uint16]string
+	currentDialog    *lua.LState
+	dialogMutex      sync.Mutex
+	hidden           bool
+
 	Listener      CharacterListener
-	Dialog        *lua.LState
-	ID            uint32
-	Name          string
-	Gender        uint8
-	SkinColor     uint8
-	Face          uint32
-	Hair          uint32
-	Level         uint8
 	Class         uint16
-	Rank          uint32
-	RankDiff      int32
-	ClassRank     uint32
-	ClassRankDiff int32
-	Role          constant.CharacterRole // 일반유저(RoleUser) / 관리자(RoleAdmin)
-	Str           uint16
-	Dex           uint16
-	Int           uint16
-	Luk           uint16
+	Role          constant.CharacterRole
 	AbilityPoint  uint16
 	SkillPoint    uint16
 	HpApUsed      uint16
-	Exp           uint32
-	FamePoint     uint16
 	Map           uint32
-	SpawnPoint    uint8
-	Mega          bool
 	Meso          int32
-
-	Random1          stream.RandomStream
-	Random2          stream.RandomStream
-	Random3          stream.RandomStream
-	Inventory        map[constant.InventoryType]*Inventory
-	Equipments       map[constant.EquipmentPartsType]*Equipment
-	Rings            RingContainer
-	Skills           map[uint32]*SkillEntry
-	Quests           map[int]*QuestStatus
-	MarriageId       uint32
-	RegRocks         []uint32 // Basic warp rock slots (5 slots)?
-	Rocks            []uint32 // VIP warp rock slots (10 slots)?
-	MonsterBookCover uint32
-	MonsterBook      *MonsterBook
-	QuestInfo        map[uint16]string
-
-	// Dialog state management
-	currentDialog *lua.LState // Current dialog coroutine
-	dialogMutex   sync.Mutex  // Mutex for dialog state access
-
-	// Shop state management
-	CurrentShopID uint32 // Current shop NPC ID (0 if no shop is open)
-
-	// Chair state
-	Chair uint32 // Chair item ID (0 if not sitting)
-
-	// Hidden state (e.g. skill 9001004); when true, other players do not see this character on the map
-	Hidden bool
-
-	// Base stats (permanent) - only for STR, DEX, INT, LUK
-	BaseStats BaseStats
-
-	// Bonus stats (temporary from buffs/equipment) - only for STR, DEX, INT, LUK
-	BonusStats BonusStats
-
-	// Buffs[position][mask]: active buffs by mask group (position 0..MaxBuffFlag-1) and mask bit.
-	Buffs [constant.MaxBuffFlag]map[uint32]*ActiveBuff
-}
-
-// ActiveBuff holds runtime state for one active buff (one position+mask).
-type ActiveBuff struct {
-	Value     int32
-	StartTime time.Time
-	Wz        *wz.Skill
-	Level     uint8
-}
-
-// BuffEntry is one buff type+value for AddBuff and listener.
-// Wz+Level describe the source skill; nil Wz means item or no source.
-// Same Wz+Level are used to build ActiveBuff.
-type BuffEntry struct {
-	Buff  constant.BuffFlag
-	Value int32
-}
-
-// BaseStats represents permanent character statistics
-type BaseStats struct {
-	Str uint16 // Base strength
-	Dex uint16 // Base dexterity
-	Int uint16 // Base intelligence
-	Luk uint16 // Base luck
-}
-
-// BonusStats represents temporary stat increases from buffs/equipment
-type BonusStats struct {
-	Str   int16 // Bonus strength (can be negative)
-	Dex   int16 // Bonus dexterity (can be negative)
-	Int   int16 // Bonus intelligence (can be negative)
-	Luk   int16 // Bonus luck (can be negative)
-	Watk  int16 // Bonus weapon attack
-	Matk  int16 // Bonus magic attack
-	Wdef  int16 // Bonus weapon defense
-	Mdef  int16 // Bonus magic defense
-	Acc   int16 // Bonus accuracy
-	Avoid int16 // Bonus evasion
-	Speed int16 // Bonus speed
-	Jump  int16 // Bonus jump
-}
-
-type Ring struct {
-	RingId       uint64
-	PartnerId    uint64
-	RingUniqueId uint64
-	PartnerChrId uint32
-	ItemId       uint32
-	PartnerName  string
-	Equipped     bool
-}
-
-type RingContainer struct {
-	Left  []*Ring
-	Mid   []*Ring
-	Right []*Ring
-}
-
-type MonsterBook struct {
-	Cards map[uint32]uint32
-}
-
-// GetTotalStr returns the total strength (BaseStr + BonusStr)
-func (ch *Character) GetTotalStr() uint16 {
-	// Migration: if BaseStats.Str is 0 and Str is set, copy Str to BaseStats.Str
-	if ch.BaseStats.Str == 0 && ch.Str > 0 {
-		ch.BaseStats.Str = ch.Str
-		ch.Str = 0
-	}
-
-	total := int32(ch.BaseStats.Str) + int32(ch.BonusStats.Str)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
-		return constant.STAT_MAX_STR_DEX_INT_LUK
-	}
-	return uint16(total)
-}
-
-// GetTotalDex returns the total dexterity (BaseDex + BonusDex)
-func (ch *Character) GetTotalDex() uint16 {
-	// Migration: if BaseStats.Dex is 0 and Dex is set, copy Dex to BaseStats.Dex
-	if ch.BaseStats.Dex == 0 && ch.Dex > 0 {
-		ch.BaseStats.Dex = ch.Dex
-		ch.Dex = 0
-	}
-
-	total := int32(ch.BaseStats.Dex) + int32(ch.BonusStats.Dex)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
-		return constant.STAT_MAX_STR_DEX_INT_LUK
-	}
-	return uint16(total)
-}
-
-// GetTotalInt returns the total intelligence (BaseInt + BonusInt)
-func (ch *Character) GetTotalInt() uint16 {
-	// Migration: if BaseStats.Int is 0 and Int is set, copy Int to BaseStats.Int
-	if ch.BaseStats.Int == 0 && ch.Int > 0 {
-		ch.BaseStats.Int = ch.Int
-		ch.Int = 0
-	}
-
-	total := int32(ch.BaseStats.Int) + int32(ch.BonusStats.Int)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
-		return constant.STAT_MAX_STR_DEX_INT_LUK
-	}
-	return uint16(total)
-}
-
-// GetTotalLuk returns the total luck (BaseLuk + BonusLuk)
-func (ch *Character) GetTotalLuk() uint16 {
-	// Migration: if BaseStats.Luk is 0 and Luk is set, copy Luk to BaseStats.Luk
-	if ch.BaseStats.Luk == 0 && ch.Luk > 0 {
-		ch.BaseStats.Luk = ch.Luk
-		ch.Luk = 0
-	}
-
-	total := int32(ch.BaseStats.Luk) + int32(ch.BonusStats.Luk)
-	if total < 0 {
-		return 0
-	}
-	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
-		return constant.STAT_MAX_STR_DEX_INT_LUK
-	}
-	return uint16(total)
-}
-
-// notifyStatChange notifies the listener of a stat change
-func (ch *Character) notifyStatChange(stat constant.Stat) {
-	if ch.Listener == nil {
-		return
-	}
-
-	stats := make(map[constant.Stat]int32)
-	switch stat {
-	case constant.STAT_STR:
-		stats[constant.STAT_STR] = int32(ch.GetTotalStr())
-	case constant.STAT_DEX:
-		stats[constant.STAT_DEX] = int32(ch.GetTotalDex())
-	case constant.STAT_INT:
-		stats[constant.STAT_INT] = int32(ch.GetTotalInt())
-	case constant.STAT_LUK:
-		stats[constant.STAT_LUK] = int32(ch.GetTotalLuk())
-	case constant.STAT_MAX_HP:
-		stats[constant.STAT_MAX_HP] = int32(ch.Life.GetMaxHp())
-	case constant.STAT_MAX_MP:
-		stats[constant.STAT_MAX_MP] = int32(ch.Life.GetMaxMp())
-	}
-
-	ch.Listener.OnUpdateStats(stats, false)
+	Inventory     map[constant.InventoryType]*Inventory
+	Equipments    map[constant.EquipmentPartsType]*Equipment
+	Rings         RingContainer
+	Skills        map[uint32]*SkillEntry
+	CurrentShopID uint32
+	Chair         uint32
+	BaseStats     BaseStats
+	BonusStats    BonusStats
+	Buffs         *BuffContainer
 }
 
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
@@ -249,27 +73,22 @@ func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
 	return ch.Sendable.Send(p, policy)
 }
 
-// GetMap returns the character's current map ID
-func (ch *Character) GetMap() uint32 {
-	return ch.Map
-}
-
 func (ch *Character) IsHidden() bool {
-	return ch.Hidden
+	return ch.hidden
 }
 
 func (ch *Character) SetHidden(hidden bool) {
-	if ch.Hidden == hidden {
+	if ch.hidden == hidden {
 		return
 	}
-	ch.Hidden = hidden
+	ch.hidden = hidden
 	if ch.Listener != nil {
 		ch.Listener.OnHiddenChanged(hidden)
 	}
 }
 
 func (ch *Character) GetID() uint32 {
-	return ch.ID
+	return ch.id
 }
 
 func (ch *Character) Message(message string) {
@@ -278,14 +97,16 @@ func (ch *Character) Message(message string) {
 	}
 }
 
-// GetRole returns the character's permission role.
-func (ch *Character) GetRole() constant.CharacterRole {
-	return ch.Role
-}
-
-// HasRoleAtLeast returns true if the character's role is at least the given role (same or higher privilege).
 func (ch *Character) HasRoleAtLeast(role constant.CharacterRole) bool {
 	return ch.Role >= role
+}
+
+func (ch *Character) SetMeso(meso int32) {
+	if meso < 0 {
+		ch.Meso = 0
+		return
+	}
+	ch.Meso = meso
 }
 
 func (ch *Character) IsRanked() bool {
@@ -293,335 +114,15 @@ func (ch *Character) IsRanked() bool {
 		return false
 	}
 
-	if ch.Level < 30 {
+	if ch.level < 30 {
 		return false
 	}
 
 	return true
 }
 
-func (ch *Character) IsAdventurer() bool {
-	return ch.Class < 1000
-}
-
-// IsBeginner returns true if the character's class is a beginner class
-func (ch *Character) IsBeginner() bool {
-	return ch.Class == 0
-}
-
-func (ch *Character) getJobAdvancementLevel() int {
-	class := ch.Class
-
-	if class == 0 {
-		return 0
-	}
-
-	if class >= 100 {
-		secondDigit := (class / 10) % 10
-		thirdDigit := class % 10
-
-		if secondDigit == 0 {
-			return 1
-		} else if thirdDigit == 0 {
-			return 2
-		} else if thirdDigit == 1 {
-			return 3
-		} else {
-			return 4
-		}
-	}
-
-	return 0
-}
-
-func (ch *Character) IsCannon() bool {
-	return ch.Class == 1 || ch.Class == 501 || (ch.Class >= 530 && ch.Class <= 532)
-}
-
-func (ch *Character) IsMagician() bool {
-	return ch.Class >= 200 && ch.Class < 300
-}
-
-func (ch *Character) getSkillBookIndexByLevel(level uint8) int {
-	if ch.IsBeginner() {
-		return -1
-	}
-
-	isMagician := ch.IsMagician()
-	minLevel := uint8(10)
-	if isMagician {
-		minLevel = 8
-	}
-
-	if level < minLevel {
-		return -1
-	}
-
-	if level <= 30 {
-		return 0
-	} else if level <= 70 {
-		return 1
-	} else if level <= 120 {
-		return 2
-	} else {
-		return 3
-	}
-}
-
-func (ch *Character) GetSkillBookIndex() int {
-	class := ch.Class
-
-	if class >= 100 {
-		secondDigit := (class / 10) % 10
-		thirdDigit := class % 10
-
-		if secondDigit == 0 {
-			return 0
-		} else if thirdDigit == 0 {
-			return 1
-		} else if thirdDigit == 1 {
-			return 2
-		} else if thirdDigit == 2 {
-			return 3
-		}
-	}
-
-	return 0
-}
-
-func (ch *Character) GetSkillBookIndexForSkill(skillID uint32) int {
-	classID := skillID / 10000
-
-	if classID >= 100 {
-		secondDigit := (classID / 10) % 10
-		thirdDigit := classID % 10
-
-		if secondDigit == 0 {
-			return 0
-		} else if thirdDigit == 0 {
-			return 1
-		} else if thirdDigit == 1 {
-			return 2
-		} else if thirdDigit == 2 {
-			return 3
-		}
-	}
-
-	return 0
-}
-
-func (ch *Character) RemainingSkillPoints() uint16 {
-	return ch.SkillPoint
-}
-
-func (ch *Character) GetTotalSkillLevel(skillID uint32) int {
-	if ch.Skills == nil {
-		return 0
-	}
-	skillEntry, exists := ch.Skills[skillID]
-	if !exists || skillEntry == nil {
-		return 0
-	}
-	return skillEntry.SkillLevel
-}
-
-// AddBuff applies buff(s) to the character (buffs[position][mask]) and notifies the listener.
-// duration is used for the packet/timer; when entries have Wz, it can be derived from Wz.GetLevelData(Level).Time.
-func (ch *Character) AddBuff(wz *wz.Skill, level uint8, entries []BuffEntry) {
-	if len(entries) == 0 {
-		return
-	}
-	now := time.Now()
-	for _, entry := range entries {
-		position := entry.Buff.Position - 1
-		if position < 0 || position >= constant.MaxBuffFlag {
-			continue
-		}
-		if ch.Buffs[position] == nil {
-			ch.Buffs[position] = make(map[uint32]*ActiveBuff)
-		}
-		ch.Buffs[position][entry.Buff.Mask] = &ActiveBuff{
-			Value:     entry.Value,
-			StartTime: now,
-			Wz:        wz,
-			Level:     level,
-		}
-	}
-	if ch.Listener != nil {
-		ch.Listener.OnBuffAdded(ch, wz, level, entries)
-	}
-}
-
-// RemoveBuff removes buff(s) from the character and notifies the listener.
-func (ch *Character) RemoveBuff(flags []constant.BuffFlag) {
-	if len(flags) == 0 {
-		return
-	}
-	for _, f := range flags {
-		posIdx := f.Position - 1
-		if posIdx < 0 || posIdx >= constant.MaxBuffFlag {
-			continue
-		}
-		if ch.Buffs[posIdx] != nil {
-			delete(ch.Buffs[posIdx], f.Mask)
-		}
-	}
-	if ch.Listener != nil {
-		ch.Listener.OnBuffRemoved(ch, flags)
-	}
-}
-
-func (ch *Character) ConsumeMP(amount uint16) bool {
-	if ch.Mp < amount {
-		return false
-	}
-	ch.Mp -= amount
-	if ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_MP: int32(ch.Mp),
-		}, false)
-	}
-	return true
-}
-
-func (ch *Character) ChangeClass(newClass uint16) {
-	oldClass := ch.Class
-	ch.Class = newClass
-
-	ch.grantClassChangeSP(newClass)
-	ch.initializeBaseSkills(newClass)
-
-	if ch.Listener != nil {
-		ch.Listener.OnClassChange(oldClass, newClass)
-	}
-}
-
-func (ch *Character) grantClassChangeSP(newClass uint16) {
-	if ch.IsBeginner() {
-		return
-	}
-
-	ch.SkillPoint++
-
-	if newClass >= 100 {
-		thirdDigit := newClass % 10
-		if thirdDigit >= 2 {
-			ch.SkillPoint += 2
-		}
-	}
-
-	if newClass%100 == 0 {
-		minLevel := uint8(10)
-		if newClass == 200 {
-			minLevel = 8
-		}
-
-		if ch.Level > minLevel {
-			spToGrant := uint16(3 * (int(ch.Level) - int(minLevel)))
-			ch.SkillPoint += spToGrant
-		}
-	}
-}
-
-func (ch *Character) initializeBaseSkills(newClass uint16) {
-	if ch.Context == nil {
-		return
-	}
-
-	resources := ch.Context.GetResources()
-	if resources == nil {
-		return
-	}
-
-	advancementLevel := ch.getJobAdvancementLevel()
-	if advancementLevel < 3 {
-		return
-	}
-
-	classID := uint32(newClass)
-	skillIDStart := classID * 10000
-	skillIDEnd := skillIDStart + 9999
-
-	if ch.Skills == nil {
-		ch.Skills = make(map[uint32]*SkillEntry)
-	}
-
-	for skillID := skillIDStart; skillID <= skillIDEnd; skillID++ {
-		wzSkill := resources.GetSkill(skillID)
-		if wzSkill == nil {
-			continue
-		}
-
-		if wzSkill.Invisible {
-			continue
-		}
-
-		if !ch.isFourthClassSkill(skillID, wzSkill) {
-			continue
-		}
-
-		masterLevel := 0
-		if wzSkill.MasterLevel > 0 {
-			masterLevel = wzSkill.MasterLevel
-		} else if wzSkill.MaxLevel > 0 {
-			masterLevel = wzSkill.MaxLevel
-		} else {
-			continue
-		}
-
-		existingEntry, exists := ch.Skills[skillID]
-		if exists && existingEntry != nil {
-			if existingEntry.SkillLevel > 0 || existingEntry.MasterLevel > 0 {
-				continue
-			}
-		}
-
-		skillEntry := &SkillEntry{
-			Skill:       wzSkill,
-			SkillLevel:  0,
-			MasterLevel: masterLevel,
-			Expiration:  time.Time{},
-			Owner:       ch,
-		}
-		ch.Skills[skillID] = skillEntry
-
-		if ch.Listener != nil {
-			ch.Send(&response.UpdateSkills{
-				SkillID:     skillID,
-				Level:       0,
-				MasterLevel: int32(skillEntry.MasterLevel),
-			}, types.SEND_POLICY_ENCRYPT)
-		}
-	}
-}
-
-func (ch *Character) isFourthClassSkill(skillID uint32, wzSkill *wz.Skill) bool {
-	classID := skillID / 10000
-
-	if classID == 2312 {
-		return true
-	}
-
-	if (wzSkill.MaxLevel <= 15 && !wzSkill.Invisible && wzSkill.MasterLevel <= 0) ||
-		skillID == 3220010 || skillID == 3120011 || skillID == 33120010 || skillID == 32120009 ||
-		skillID == 5321006 || skillID == 21120011 || skillID == 22181004 || skillID == 4340010 {
-		return false
-	}
-
-	if classID >= 2212 && classID < 3000 {
-		return (classID % 10) >= 7
-	}
-
-	if classID >= 430 && classID <= 434 {
-		return (classID%10) == 4 || wzSkill.MasterLevel > 0
-	}
-
-	return (classID%10) == 2 && skillID < 90000000
-}
-
-// AddExp adds experience points to the character and notifies the listener
 func (ch *Character) AddExp(exp uint32) {
-	// Apply experience rate multiplier if context is available
+
 	if ch.Context != nil {
 		expRate := ch.Context.GetExpRate()
 		if expRate > 0 {
@@ -629,940 +130,17 @@ func (ch *Character) AddExp(exp uint32) {
 		}
 	}
 
-	ch.Exp += exp
+	ch.exp += exp
 	ch.Listener.OnExpGain(exp)
 
-	// Check for level up
 	if !ch.tryLevelUp() {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_EXP: int32(ch.Exp),
+			constant.STAT_EXP: int32(ch.exp),
 		}, false)
 	}
 }
 
-// AddMeso adds meso to character
-func (ch *Character) AddMeso(amount int32) {
-	if amount <= 0 {
-		return
-	}
-
-	// Check for overflow
-	if ch.Meso > 0 && amount > 0 && ch.Meso+amount < ch.Meso {
-		ch.Meso = int32(^uint32(0) >> 1) // int32.MaxValue
-	} else {
-		ch.Meso += amount
-	}
-
-	// Notify listener about meso change
-	if ch.Listener != nil {
-		ch.Listener.OnMesoChanged(ch.Meso)
-	}
-}
-
-// RemoveMeso removes meso from character
-func (ch *Character) RemoveMeso(amount int32) {
-	if amount <= 0 {
-		return
-	}
-
-	if ch.Meso < amount {
-		ch.Meso = 0
-	} else {
-		ch.Meso -= amount
-	}
-
-	// Notify listener about meso change
-	if ch.Listener != nil {
-		ch.Listener.OnMesoChanged(ch.Meso)
-	}
-}
-
-// AddItem adds an item to character's inventory
-// If allOrNothing is true, adds all items or returns an error if cannot add all.
-// If allOrNothing is false, adds as many items as possible and returns the count added.
-// Returns (addedCount, error). If allOrNothing is true and not all items can be added, returns (0, error).
-func (ch *Character) AddItem(item Item, allOrNothing bool) (uint16, error) {
-	if item == nil {
-		return 0, fmt.Errorf("item is nil")
-	}
-
-	invenType := item.GetInventoryType()
-	inven := ch.Inventory[invenType]
-	if inven == nil {
-		return 0, fmt.Errorf("inventory type %d not found", invenType)
-	}
-
-	model := item.GetModel()
-	requestedCount := item.GetCount()
-
-	if allOrNothing {
-		if !inven.IsFree(model, requestedCount) {
-			return 0, fmt.Errorf("not enough inventory space for %d items", requestedCount)
-		}
-	}
-
-	remainingCount := requestedCount
-	addedCount := uint16(0)
-
-	for remainingCount > 0 {
-		slot, ok := inven.FindSlot(model)
-		if !ok {
-			// No more slots available
-			if allOrNothing && addedCount == 0 {
-				return 0, fmt.Errorf("no available slot found")
-			}
-			break
-		}
-
-		exists, ok := inven.Items[int16(slot)]
-		cap := uint16(0)
-		if ok {
-			cap = min(model.GetCapacity()-exists.GetCount(), remainingCount)
-			exists.Increase(cap)
-			if ch.Listener != nil {
-				ch.Listener.OnInventorySlotUpdated(invenType, int16(slot), exists)
-			}
-		} else {
-			cap = min(model.GetCapacity(), remainingCount)
-			inven.Items[int16(slot)] = item.Clone(cap)
-			if ch.Listener != nil {
-				ch.Listener.OnInventorySlotAdded(invenType, int16(slot), inven.Items[int16(slot)])
-			}
-		}
-		remainingCount -= cap
-		addedCount += cap
-	}
-
-	// Update original item's count to reflect remaining items
-	if !allOrNothing && addedCount < requestedCount {
-		item.SetCount(remainingCount)
-	}
-
-	if ch.Listener != nil && addedCount > 0 {
-		ch.Listener.OnShowItemGain(model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
-	}
-
-	return addedCount, nil
-}
-
-// GainMeso adds meso to character and shows gain notification
-func (ch *Character) GainMeso(amount int32) {
-	if amount <= 0 {
-		return
-	}
-
-	// Check for overflow
-	if ch.Meso > 0 && amount > 0 && ch.Meso+amount < ch.Meso {
-		ch.Meso = int32(^uint32(0) >> 1) // int32.MaxValue
-	} else {
-		ch.Meso += amount
-	}
-
-	// Notify listener about meso change
-	if ch.Listener != nil {
-		ch.Listener.OnMesoChanged(ch.Meso)
-		ch.Listener.OnShowMesoGain(amount, constant.ShowMesoGainTypeStatus)
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_MESO: ch.Meso,
-		}, false)
-	}
-}
-
-// Luable interface implementation
-func (ch *Character) LuaTypeName() string {
-	return "LuaCharacter"
-}
-
-func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	return map[string]lua.LGFunction{
-		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return id
-				L.Push(lua.LNumber(ch.ID))
-				return 1
-			} else {
-				L.ArgError(2, "id() is read-only")
-				return 0
-			}
-		},
-		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return name
-				L.Push(lua.LString(ch.Name))
-				return 1
-			} else if argc == 2 {
-				// Setter: name(value)
-				name := L.CheckString(2)
-				ch.Name = name
-				return 0
-			} else {
-				L.ArgError(2, "name() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"level": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return level
-				L.Push(lua.LNumber(ch.Level))
-				return 1
-			} else if argc == 2 {
-				// Setter: level(value)
-				level := L.CheckInt(2)
-				if level < 1 {
-					level = 1
-				}
-				if level > 200 {
-					level = 200
-				}
-				ch.Level = uint8(level)
-				return 0
-			} else {
-				L.ArgError(2, "level() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"exp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return exp
-				L.Push(lua.LNumber(ch.Exp))
-				return 1
-			} else if argc == 2 {
-				// Setter: exp(value) or exp(+value) or exp(-value)
-				value := L.CheckNumber(2)
-				if value >= 0 {
-					// Direct set or add operation
-					if value < 0 {
-						value = 0
-					}
-					ch.Exp = uint32(value)
-				} else {
-					// Add operation (negative value)
-					amount := uint32(-value)
-					ch.AddExp(amount)
-					return 0
-				}
-				return 0
-			} else {
-				L.ArgError(2, "exp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"meso": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return meso
-				L.Push(lua.LNumber(ch.Meso))
-				return 1
-			} else if argc == 2 {
-				// Setter: meso(value) or meso(+value) or meso(-value)
-				value := L.CheckNumber(2)
-				if value >= 0 {
-					// Direct set or add operation
-					if value <= 2147483647 { // int32.MaxValue
-						ch.Meso = int32(value)
-					} else {
-						ch.Meso = 2147483647
-					}
-				} else {
-					// Subtract operation (negative value)
-					amount := int32(-value)
-					if ch.Meso < amount {
-						ch.Meso = 0
-					} else {
-						ch.Meso -= amount
-					}
-				}
-				if ch.Listener != nil {
-					ch.Listener.OnMesoChanged(ch.Meso)
-				}
-				return 0
-			} else {
-				L.ArgError(2, "meso() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"chat": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			message := L.CheckString(2)
-			highlight := false
-			if argc > 2 {
-				highlight = L.CheckBool(3)
-			}
-			dontRecordHistory := false
-			if argc > 3 {
-				dontRecordHistory = L.CheckBool(4)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnChat(message, highlight, dontRecordHistory)
-			}
-			return 0
-		},
-		"add_buff": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			skillUD := L.CheckUserData(2)
-			skillEntry, ok := skillUD.Value.(*SkillEntry)
-			if !ok || skillEntry == nil || skillEntry.Skill == nil {
-				L.ArgError(2, "SkillEntry with Wz expected")
-				return 0
-			}
-			bfTable := L.CheckTable(3)
-			maskLV := bfTable.RawGetString("mask")
-			posLV := bfTable.RawGetString("position")
-			if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
-				L.ArgError(3, "BuffFlag table must have numeric mask and position")
-				return 0
-			}
-			value := int32(1)
-			if L.GetTop() >= 4 {
-				value = int32(L.CheckNumber(4))
-			}
-			bf := constant.BuffFlag{Mask: uint32(maskLV.(lua.LNumber)), Position: int(posLV.(lua.LNumber))}
-			ch.AddBuff(skillEntry.Skill, uint8(skillEntry.SkillLevel), []BuffEntry{{Buff: bf, Value: value}})
-			return 0
-		},
-		"remove_buff": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			var flags []constant.BuffFlag
-			for i := 2; i <= L.GetTop(); i++ {
-				bfTable := L.CheckTable(i)
-				maskLV := bfTable.RawGetString("mask")
-				posLV := bfTable.RawGetString("position")
-				if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
-					continue
-				}
-				flags = append(flags, constant.BuffFlag{Mask: uint32(maskLV.(lua.LNumber)), Position: int(posLV.(lua.LNumber))})
-			}
-			ch.RemoveBuff(flags)
-			return 0
-		},
-		"dialog": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			prev := false
-			if argc > 3 {
-				prev = L.CheckBool(4)
-			}
-			next := false
-			if argc > 4 {
-				next = L.CheckBool(5)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialog(uint32(npc), message, prev, next)
-			}
-			ch.SetCurrentDialog(L)
-			return L.Yield(lua.LNumber(0))
-		},
-		"dialog_yes_no": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			prev := false
-			if argc > 3 {
-				prev = L.CheckBool(4)
-			}
-			next := false
-			if argc > 4 {
-				next = L.CheckBool(5)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialogYesNo(uint32(npc), message, prev, next)
-			}
-			ch.SetCurrentDialog(L)
-			return L.Yield(lua.LNumber(0))
-		},
-		"dialog_list": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			selections := []string{}
-			if argc > 3 {
-				tbl := L.CheckTable(4)
-				tbl.ForEach(func(_, value lua.LValue) {
-					if str, ok := value.(lua.LString); ok {
-						selections = append(selections, string(str))
-					}
-				})
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialogList(uint32(npc), message, selections)
-			}
-			ch.SetCurrentDialog(L)
-			return L.Yield(lua.LNumber(0))
-		},
-		"dialog_accept": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			enableEscape := false
-			if argc > 3 {
-				enableEscape = L.CheckBool(4)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialogAccept(uint32(npc), message, enableEscape)
-			}
-			ch.SetCurrentDialog(L)
-			return L.Yield(lua.LNumber(0))
-		},
-		"dialog_input": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialogInput(uint32(npc), message)
-			}
-			ch.SetCurrentDialog(L)
-			return L.Yield(lua.LNumber(0))
-		},
-		"notice": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			message := L.CheckString(2)
-			if ch.Listener != nil {
-				ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
-			}
-			return 0
-		},
-		"skill": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			skillID := uint32(L.CheckInt(2))
-
-			if ch.Skills == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-
-			skillEntry, exists := ch.Skills[skillID]
-			if !exists || skillEntry == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-
-			skillUD := luax.NewLuable(L, skillEntry)
-			L.Push(skillUD)
-			return 1
-		},
-		"get_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.Hp))
-			return 1
-		},
-		"map": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			if ch.Context == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			mapInstance := ch.Context.GetMap(ch.Map)
-			if mapInstance == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			L.Push(luax.NewLuable(L, mapInstance))
-			return 1
-		},
-		"is_hidden": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LBool(ch.IsHidden()))
-			return 1
-		},
-		"set_hidden": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			hidden := L.CheckBool(2)
-			ch.SetHidden(hidden)
-			return 0
-		},
-		"get_max_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.Life.GetMaxHp()))
-			return 1
-		},
-		"set_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			hp := int(L.CheckNumber(2))
-			if hp < 0 {
-				hp = 0
-			}
-			maxHp := ch.Life.GetMaxHp()
-			if hp > int(maxHp) {
-				hp = int(maxHp)
-			}
-			ch.Hp = uint16(hp)
-			if ch.Listener != nil {
-				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-					constant.STAT_HP: int32(ch.Hp),
-				}, false)
-			}
-			return 0
-		},
-		"add_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			amount := int(L.CheckNumber(2))
-			newHp := int(ch.Hp) + amount
-			if newHp < 0 {
-				newHp = 0
-			}
-			maxHp := ch.Life.GetMaxHp()
-			if newHp > int(maxHp) {
-				newHp = int(maxHp)
-			}
-			ch.Hp = uint16(newHp)
-			if ch.Listener != nil {
-				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-					constant.STAT_HP: int32(ch.Hp),
-				}, false)
-			}
-			return 0
-		},
-		"get_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.Mp))
-			return 1
-		},
-		"get_max_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.Life.GetMaxMp()))
-			return 1
-		},
-		"set_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			mp := int(L.CheckNumber(2))
-			if mp < 0 {
-				mp = 0
-			}
-			maxMp := ch.Life.GetMaxMp()
-			if mp > int(maxMp) {
-				mp = int(maxMp)
-			}
-			ch.Mp = uint16(mp)
-			if ch.Listener != nil {
-				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-					constant.STAT_MP: int32(ch.Mp),
-				}, false)
-			}
-			return 0
-		},
-		"add_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			amount := int(L.CheckNumber(2))
-			newMp := int(ch.Mp) + amount
-			if newMp < 0 {
-				newMp = 0
-			}
-			maxMp := ch.Life.GetMaxMp()
-			if newMp > int(maxMp) {
-				newMp = int(maxMp)
-			}
-			ch.Mp = uint16(newMp)
-			if ch.Listener != nil {
-				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-					constant.STAT_MP: int32(ch.Mp),
-				}, false)
-			}
-			return 0
-		},
-		"add_mp_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			hpChange := int(L.CheckNumber(2))
-			mpChange := int(L.CheckNumber(3))
-
-			newHp := int(ch.Hp) + hpChange
-			if newHp < 0 {
-				newHp = 0
-			}
-			maxHp := ch.Life.GetMaxHp()
-			if newHp > int(maxHp) {
-				newHp = int(maxHp)
-			}
-			ch.Hp = uint16(newHp)
-
-			newMp := int(ch.Mp) + mpChange
-			if newMp < 0 {
-				newMp = 0
-			}
-			maxMp := ch.Life.GetMaxMp()
-			if newMp > int(maxMp) {
-				newMp = int(maxMp)
-			}
-			ch.Mp = uint16(newMp)
-
-			if ch.Listener != nil {
-				stats := map[constant.Stat]int32{
-					constant.STAT_HP: int32(ch.Hp),
-					constant.STAT_MP: int32(ch.Mp),
-				}
-				ch.Listener.OnUpdateStats(stats, false)
-			}
-			return 0
-		},
-		"is_alive": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LBool(ch.Hp > 0))
-			return 1
-		},
-		"get_bonus_str": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.BonusStats.Str))
-			return 1
-		},
-		"set_bonus_str": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			bonusStr := L.CheckInt(2)
-			ch.BonusStats.Str = int16(bonusStr)
-			ch.notifyStatChange(constant.STAT_STR)
-			return 0
-		},
-		"get_bonus_dex": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.BonusStats.Dex))
-			return 1
-		},
-		"set_bonus_dex": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			bonusDex := L.CheckInt(2)
-			ch.BonusStats.Dex = int16(bonusDex)
-			ch.notifyStatChange(constant.STAT_DEX)
-			return 0
-		},
-		"get_bonus_int": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.BonusStats.Int))
-			return 1
-		},
-		"set_bonus_int": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			bonusInt := L.CheckInt(2)
-			ch.BonusStats.Int = int16(bonusInt)
-			ch.notifyStatChange(constant.STAT_INT)
-			return 0
-		},
-		"get_bonus_luk": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.BonusStats.Luk))
-			return 1
-		},
-		"set_bonus_luk": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			bonusLuk := L.CheckInt(2)
-			ch.BonusStats.Luk = int16(bonusLuk)
-			ch.notifyStatChange(constant.STAT_LUK)
-			return 0
-		},
-		"get_bonus_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.Life.BonusHp))
-			return 1
-		},
-		"set_bonus_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			bonusHp := L.CheckInt(2)
-			ch.Life.BonusHp = int16(bonusHp)
-			// Adjust HP if it exceeds new max
-			if ch.Hp > ch.Life.GetMaxHp() {
-				ch.Hp = ch.Life.GetMaxHp()
-			}
-			ch.notifyStatChange(constant.STAT_MAX_HP)
-			return 0
-		},
-		"get_bonus_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			L.Push(lua.LNumber(ch.Life.BonusMp))
-			return 1
-		},
-		"set_bonus_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			bonusMp := L.CheckInt(2)
-			ch.Life.BonusMp = int16(bonusMp)
-			// Adjust MP if it exceeds new max
-			if ch.Mp > ch.Life.GetMaxMp() {
-				ch.Mp = ch.Life.GetMaxMp()
-			}
-			ch.notifyStatChange(constant.STAT_MAX_MP)
-			return 0
-		},
-	}
-}
-
-func (ch *Character) String() string {
-	return ch.LuaTypeName()
-}
-
-func (ch *Character) Type() lua.LValueType {
-	return lua.LTUserData
-}
-
-func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx GameContext) Character {
+func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx GameContext) *Character {
 	ch := Character{
 		Sendable: sender,
 		Listener: listener,
@@ -1575,28 +153,30 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			Mp:     5,
 			BaseMp: 5,
 		},
-		ID:           id,
-		Name:         name,
-		Gender:       0,
-		SkinColor:    0,
-		Face:         20100,
-		Hair:         30000,
-		Level:        1,
-		Class:        0,
-		Str:          12,
-		Dex:          5,
-		Int:          4,
-		Luk:          4,
+		id:        id,
+		name:      name,
+		gender:    0,
+		skinColor: 0,
+		face:      20100,
+		hair:      30000,
+		level:     1,
+		Class:     0,
+		BaseStats: BaseStats{
+			Str: 12,
+			Dex: 5,
+			Int: 4,
+			Luk: 4,
+		},
 		AbilityPoint: 0,
 		SkillPoint:   0,
 		HpApUsed:     0,
-		SpawnPoint:   1,
+		spawnPoint:   1,
 		Map:          200000301,
 		Meso:         2135983647,
 
-		Random1: stream.NewRandomStream(),
-		Random2: stream.NewRandomStream(),
-		Random3: stream.NewRandomStream(),
+		random1: stream.NewRandomStream(),
+		random2: stream.NewRandomStream(),
+		random3: stream.NewRandomStream(),
 
 		Inventory: map[constant.InventoryType]*Inventory{
 			constant.INVENTORY_TYPE_EQUIPMENT:    NewInventory(constant.INVENTORY_TYPE_EQUIPMENT),
@@ -1614,10 +194,12 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			constant.EQUIPMENT_PARTS_WEAPON: nil,
 			constant.EQUIPMENT_PARTS_SHIELD: nil,
 		},
+		Skills: make(map[uint32]*SkillEntry),
 
-		RegRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
-		Rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
+		regRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
+		rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
 	}
+	ch.Buffs = NewBuffContainer(&ch)
 
 	if ctx != nil {
 		resources := ctx.GetResources()
@@ -1665,32 +247,27 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(1040010, 1, ctx)
 	}
 
-	return ch
+	return &ch
 }
 
-// GetCurrentDialog returns the current dialog coroutine
 func (ch *Character) GetCurrentDialog() *lua.LState {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
 	return ch.currentDialog
 }
 
-// SetCurrentDialog sets the current dialog coroutine
 func (ch *Character) SetCurrentDialog(dialog *lua.LState) {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
 	ch.currentDialog = dialog
 }
 
-// ClearCurrentDialog clears the current dialog coroutine
 func (ch *Character) ClearCurrentDialog() {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
 	ch.currentDialog = nil
 }
 
-// tryLevelUp checks if the character can level up and performs level up if possible
-// Returns true if level up occurred, false otherwise
 func (ch *Character) tryLevelUp() bool {
 	if ch.Context == nil {
 		return false
@@ -1701,15 +278,14 @@ func (ch *Character) tryLevelUp() bool {
 		return false
 	}
 
-	if ch.Level >= 200 {
+	if ch.level >= 200 {
 		return false
 	}
 
-	oldLevel := ch.Level
-	remainingExp := ch.Exp
-	targetLevel := ch.Level
+	oldLevel := ch.level
+	remainingExp := ch.exp
+	targetLevel := ch.level
 
-	// Calculate the maximum level we can reach with current experience
 	for targetLevel < 200 {
 		expNeeded := resources.GetExpNeededForLevel(targetLevel)
 		if expNeeded == 0 {
@@ -1728,17 +304,13 @@ func (ch *Character) tryLevelUp() bool {
 		return false
 	}
 
-	// Update experience
-	ch.Exp = remainingExp
+	ch.exp = remainingExp
 
-	// Set level once with all stat increases
 	ch.SetLevel(targetLevel)
 
 	return true
 }
 
-// SetLevel sets the character's level and applies all stat changes
-// This simulates leveling up from the current level to the target level
 func (ch *Character) SetLevel(newLevel uint8) {
 	if newLevel < 1 {
 		newLevel = 1
@@ -1747,11 +319,11 @@ func (ch *Character) SetLevel(newLevel uint8) {
 		newLevel = 200
 	}
 
-	if newLevel == ch.Level {
+	if newLevel == ch.level {
 		return
 	}
 
-	oldLevel := ch.Level
+	oldLevel := ch.level
 	levelDiff := int(newLevel) - int(oldLevel)
 
 	if levelDiff > 0 {
@@ -1773,24 +345,22 @@ func (ch *Character) SetLevel(newLevel uint8) {
 			totalMPIncrease += mpIncrease
 		}
 
-		ch.Level = newLevel
+		ch.level = newLevel
 		ch.AbilityPoint += totalAPIncrease
 		ch.SkillPoint += totalSPIncrease
 
 		ch.Life.AddBaseHp(totalHPIncrease)
 		ch.Life.AddBaseMp(totalMPIncrease)
 
-		// Restore HP/MP to max
-		ch.Hp = ch.Life.GetMaxHp()
-		ch.Mp = ch.Life.GetMaxMp()
+		ch.Hp = ch.GetMaxHp()
+		ch.Mp = ch.GetMaxMp()
 
-		// Notify listener
 		if ch.Listener != nil {
 			stats := map[constant.Stat]int32{
-				constant.STAT_LEVEL:        int32(ch.Level),
-				constant.STAT_EXP:          int32(ch.Exp),
-				constant.STAT_MAX_HP:       int32(ch.Life.GetMaxHp()),
-				constant.STAT_MAX_MP:       int32(ch.Life.GetMaxMp()),
+				constant.STAT_LEVEL:        int32(ch.level),
+				constant.STAT_EXP:          int32(ch.exp),
+				constant.STAT_MAX_HP:       int32(ch.GetMaxHp()),
+				constant.STAT_MAX_MP:       int32(ch.GetMaxMp()),
 				constant.STAT_HP:           int32(ch.Hp),
 				constant.STAT_MP:           int32(ch.Mp),
 				constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
@@ -1798,37 +368,35 @@ func (ch *Character) SetLevel(newLevel uint8) {
 			}
 			ch.Listener.OnUpdateStats(stats, false)
 
-			// Broadcast level up effect for each level gained
 			for level := oldLevel + 1; level <= newLevel; level++ {
 				ch.broadcastLevelUpEffect()
 			}
 		}
 	} else {
-		// Leveling down: just set the level and exp, don't decrease stats
-		ch.Level = newLevel
+
+		ch.level = newLevel
 
 		if ch.Context != nil {
 			resources := ch.Context.GetResources()
 			if resources != nil {
 				if newLevel > 1 {
-					ch.Exp = resources.GetExpNeededForLevel(newLevel - 1)
+					ch.exp = resources.GetExpNeededForLevel(newLevel - 1)
 				} else {
-					ch.Exp = 0
+					ch.exp = 0
 				}
 			}
 		}
 
 		if ch.Listener != nil {
 			stats := map[constant.Stat]int32{
-				constant.STAT_LEVEL: int32(ch.Level),
-				constant.STAT_EXP:   int32(ch.Exp),
+				constant.STAT_LEVEL: int32(ch.level),
+				constant.STAT_EXP:   int32(ch.exp),
 			}
 			ch.Listener.OnUpdateStats(stats, false)
 		}
 	}
 }
 
-// broadcastLevelUpEffect broadcasts level up effect to other players on the map
 func (ch *Character) broadcastLevelUpEffect() {
 	if ch.Context == nil {
 		return
@@ -1839,10 +407,12 @@ func (ch *Character) broadcastLevelUpEffect() {
 		return
 	}
 
-	// Create SHOW_FOREIGN_EFFECT packet for level up (EffectID 0)
-
-	mapInstance.Broadcast(ch, &response.ShowForeignEffect{
-		CharacterID: ch.ID,
-		EffectID:    0, // Level up effect
-	}, types.SEND_POLICY_ENCRYPT, ch.GetID())
+	mapInstance.Broadcast(&response.ShowForeignEffect{
+		CharacterID: ch.id,
+		EffectID:    0,
+	}, &BroadcastOption{
+		ExceptPlayerIDs:    []uint32{ch.GetID()},
+		ReferenceCharacter: ch,
+		RecipientFilter:    BroadcastVisibleByReference,
+	})
 }

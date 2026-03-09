@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -52,14 +52,14 @@ func (h *DropMeso) Handle(ctx *core.ClientContext, req *request.DropMeso) error 
 		return nil
 	}
 
-	character.Meso -= req.Count
+	character.SetMeso(character.Meso - req.Count)
 	character.Listener.OnUpdateStats(map[constant.Stat]int32{
 		constant.STAT_MESO: character.Meso,
 	}, true)
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.Map)
 	if mapInstance != nil {
-		if err := mapInstance.SpawnMeso(req.Count, character.Position, character.ID, constant.DROP_TYPE_FFA); err != nil {
+		if err := mapInstance.SpawnMeso(req.Count, character.Position, character.GetID(), constant.DROP_TYPE_FFA); err != nil {
 			log.Printf("Failed to spawn meso on map: %v", err)
 		}
 	}

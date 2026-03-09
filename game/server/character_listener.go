@@ -72,7 +72,7 @@ func (l *CharacterListenerImpl) OnDialogInput(npc uint32, message string) {
 
 func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecordHistory bool) {
 	chatPacket := &response.NormalChat{
-		CharacterId:       l.ch.ID,
+		CharacterId:       l.ch.GetID(),
 		Message:           message,
 		Highlight:         highlight,
 		DontRecordHistory: dontRecordHistory,
@@ -83,7 +83,10 @@ func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecor
 		return
 	}
 
-	mapInstance.Broadcast(l.ch, chatPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(chatPacket, &entity.BroadcastOption{
+		ReferenceCharacter: l.ch,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
 }
 
 func (l *CharacterListenerImpl) OnMesoChanged(meso int32) {
@@ -205,10 +208,6 @@ func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed
 
 	controllerTable := mapInstance.GetControllerTable()
 	controller, exists := controllerTable.GetController(mob)
-	var exceptPlayerID uint32
-	if exists {
-		exceptPlayerID = controller.GetID()
-	}
 
 	movePacket := &response.MoveMob{
 		IsAggroed:   isAggroed,
@@ -222,12 +221,14 @@ func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed
 		Movements:   movements,
 	}
 
-	source := mapInstance.GetPlayer(exceptPlayerID)
-	if source == nil {
-		mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, exceptPlayerID)
-	} else {
-		mapInstance.Broadcast(source, movePacket, types.SEND_POLICY_ENCRYPT)
+	var broadcastOption *entity.BroadcastOption
+	if exists {
+		broadcastOption = &entity.BroadcastOption{
+			ExceptPlayerIDs: []uint32{controller.GetID()},
+		}
 	}
+
+	mapInstance.Broadcast(movePacket, broadcastOption)
 }
 
 func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
@@ -244,7 +245,11 @@ func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, char
 		StartPoint: startPoint,
 	}
 
-	mapInstance.Broadcast(character, movePacket, types.SEND_POLICY_ENCRYPT, playerID)
+	mapInstance.Broadcast(movePacket, &entity.BroadcastOption{
+		ExceptPlayerIDs:    []uint32{playerID},
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
 }
 
 func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8) {
@@ -259,12 +264,11 @@ func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attac
 		SkillLevel:  skillLevel,
 	}
 
-	source := mapInstance.GetPlayer(characterID)
-	if source == nil {
-		return
-	}
-
-	mapInstance.Broadcast(source, attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
+	mapInstance.Broadcast(attackPacket, &entity.BroadcastOption{
+		ExceptPlayerIDs:    []uint32{characterID},
+		ReferenceCharacter: mapInstance.GetPlayer(characterID),
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
 }
 
 func (l *CharacterListenerImpl) OnEndSortInventory(inventoryType constant.InventoryType) {
@@ -318,7 +322,7 @@ func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(inventoryType consta
 }
 
 func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Character) {
-	mapInstance := l.gs.GetMap(character.GetMap())
+	mapInstance := l.gs.GetMap(character.Map)
 	if mapInstance == nil {
 		return
 	}
@@ -329,7 +333,11 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Characte
 		Character: characterDTO,
 	}
 
-	mapInstance.Broadcast(character, lookPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+	mapInstance.Broadcast(lookPacket, &entity.BroadcastOption{
+		ExceptPlayerIDs:    []uint32{character.GetID()},
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
 }
 
 func (l *CharacterListenerImpl) OnNpcAction(bytes []byte) {
@@ -340,7 +348,7 @@ func (l *CharacterListenerImpl) OnNpcAction(bytes []byte) {
 
 func (l *CharacterListenerImpl) OnClassChange(oldClass uint16, newClass uint16) {
 	stats := map[constant.Stat]int32{
-		constant.STAT_JOB:          int32(newClass),
+		constant.STAT_CLASS:        int32(newClass),
 		constant.STAT_AVAILABLE_SP: int32(l.ch.SkillPoint),
 	}
 
@@ -350,13 +358,13 @@ func (l *CharacterListenerImpl) OnClassChange(oldClass uint16, newClass uint16) 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, wz *wz.Skill, level uint8, entries []entity.BuffEntry) {
-	if len(entries) == 0 {
+func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, wz *wz.Skill, level uint8, values map[constant.BuffFlag]int32) {
+	if len(values) == 0 {
 		return
 	}
-	dtoBuffs := make([]dto.BuffEntry, 0, len(entries))
-	for _, e := range entries {
-		dtoBuff := dto.BuffEntry{Buff: e.Buff, Value: e.Value}
+	dtoBuffs := make([]dto.BuffEntry, 0, len(values))
+	for flag, value := range values {
+		dtoBuff := dto.BuffEntry{Buff: flag, Value: value}
 		dtoBuffs = append(dtoBuffs, dtoBuff)
 	}
 
@@ -376,24 +384,32 @@ func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, wz *wz.
 		Buffs:    dtoBuffs,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := l.gs.GetMap(character.GetMap())
+	mapInstance := l.gs.GetMap(character.Map)
 	if mapInstance != nil {
-		mapInstance.Broadcast(character, &response.UpdateRemoteBuff{
+		mapInstance.Broadcast(&response.UpdateRemoteBuff{
 			CharacterID: int32(character.GetID()),
 			Buffs:       dtoBuffs,
-		}, types.SEND_POLICY_ENCRYPT, character.GetID())
+		}, &entity.BroadcastOption{
+			ExceptPlayerIDs:    []uint32{character.GetID()},
+			ReferenceCharacter: character,
+			RecipientFilter:    entity.BroadcastVisibleByReference,
+		})
 	}
 }
 
 func (l *CharacterListenerImpl) OnBuffRemoved(character *entity.Character, flags []constant.BuffFlag) {
 	character.Send(&response.CancelBuff{Buffs: flags}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := l.gs.GetMap(character.GetMap())
+	mapInstance := l.gs.GetMap(character.Map)
 	if mapInstance != nil {
-		mapInstance.Broadcast(character, &response.CancelRemoteBuff{
+		mapInstance.Broadcast(&response.CancelRemoteBuff{
 			CharacterID: int32(character.GetID()),
 			Buffs:       flags,
-		}, types.SEND_POLICY_ENCRYPT, character.GetID())
+		}, &entity.BroadcastOption{
+			ExceptPlayerIDs:    []uint32{character.GetID()},
+			ReferenceCharacter: character,
+			RecipientFilter:    entity.BroadcastVisibleByReference,
+		})
 	}
 }
 
@@ -414,15 +430,21 @@ func (l *CharacterListenerImpl) OnHiddenChanged(hidden bool) {
 
 	// Only players with lower role receive Leave/Spawn; same-or-higher role always see the character.
 	if hidden {
-		mapInstance.BroadcastToRoleBelow(l.ch, &response.LeavePlayer{ID: l.ch.ID}, types.SEND_POLICY_ENCRYPT)
+		mapInstance.Broadcast(&response.LeavePlayer{ID: l.ch.GetID()}, &entity.BroadcastOption{
+			ReferenceCharacter: l.ch,
+			RecipientFilter:    entity.BroadcastRoleBelowReference,
+		})
 	} else {
-		mapInstance.BroadcastToRoleBelow(l.ch, &response.SpawnPlayer{
+		mapInstance.Broadcast(&response.SpawnPlayer{
 			Character:       l.ch.ToDTO(),
 			BuffStates:      [4]uint32{},
 			Diseases:        [4]uint32{},
 			CrushRings:      entity.RingsToDTO(l.ch.Rings.Left),
 			FriendshipRings: entity.RingsToDTO(l.ch.Rings.Mid),
 			MarriageRings:   entity.RingsToDTO(l.ch.Rings.Right),
-		}, types.SEND_POLICY_ENCRYPT)
+		}, &entity.BroadcastOption{
+			ReferenceCharacter: l.ch,
+			RecipientFilter:    entity.BroadcastRoleBelowReference,
+		})
 	}
 }

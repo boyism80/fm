@@ -70,7 +70,7 @@ const (
 	STAT_HAIR         Stat = 0x4     // Hair ID
 	STAT_PET          Stat = 0x8     // Pet data
 	STAT_LEVEL        Stat = 0x10    // Character level
-	STAT_JOB          Stat = 0x20    // Job class
+	STAT_CLASS        Stat = 0x20    // Job class
 	STAT_STR          Stat = 0x40    // Strength
 	STAT_DEX          Stat = 0x80    // Dexterity
 	STAT_INT          Stat = 0x100   // Intelligence
@@ -164,19 +164,19 @@ const (
 	HP_AP_USED_MAX           uint16 = 10000 // Maximum HP/MP AP usage count
 )
 
-// Job ranges for stat calculation
+// Class ranges for stat calculation
 const (
-	JOB_BEGINNER_MIN uint16 = 0
-	JOB_BEGINNER_1   uint16 = 1000
-	JOB_BEGINNER_2   uint16 = 2000
-	JOB_WARRIOR_MIN  uint16 = 100
-	JOB_WARRIOR_MAX  uint16 = 132
-	JOB_MAGICIAN_MIN uint16 = 200
-	JOB_MAGICIAN_MAX uint16 = 232
-	JOB_BOWMAN_MIN   uint16 = 300
-	JOB_BOWMAN_MAX   uint16 = 322
-	JOB_THIEF_MIN    uint16 = 400
-	JOB_THIEF_MAX    uint16 = 422
+	CLASS_BEGINNER_MIN uint16 = 0
+	CLASS_BEGINNER_1   uint16 = 1000
+	CLASS_BEGINNER_2   uint16 = 2000
+	CLASS_WARRIOR_MIN  uint16 = 100
+	CLASS_WARRIOR_MAX  uint16 = 132
+	CLASS_MAGICIAN_MIN uint16 = 200
+	CLASS_MAGICIAN_MAX uint16 = 232
+	CLASS_BOWMAN_MIN   uint16 = 300
+	CLASS_BOWMAN_MAX   uint16 = 322
+	CLASS_THIEF_MIN    uint16 = 400
+	CLASS_THIEF_MAX    uint16 = 422
 )
 
 // Item category IDs (itemID / 10000)

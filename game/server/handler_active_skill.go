@@ -43,7 +43,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	// Check blocked inventory
 	// TODO: Implement hasBlockedInventory check
 
-	mapID := character.GetMap()
+	mapID := character.Map
 	mapInstance := h.gs.GetMap(mapID)
 	if mapInstance == nil {
 		if character.Listener != nil {
@@ -126,7 +126,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 
 	// Common validation (e.g. event map check when event system exists). Optional; skip if script missing.
 	const commonSkillScript = "script/skill/common.lua"
-	if commonResult, commonThread, commonErr := luax.Call(root, commonSkillScript, "on_preactive_common", character, skillEntry); commonErr == nil {
+	if commonResult, commonThread, commonErr := luax.Call(root, commonSkillScript, "on_preactivated_common", character, skillEntry); commonErr == nil {
 		defer commonThread.Close()
 		if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
 			if character.Listener != nil {
@@ -137,7 +137,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	}
 
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
-	result, thread, err := luax.Call(root, scriptPath, "on_preactive", character, skillEntry)
+	result, thread, err := luax.Call(root, scriptPath, "on_preactivated", character, skillEntry)
 	if err != nil {
 		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
 		if character.Listener != nil {
@@ -153,7 +153,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	resumeState, err := luax.Execute(root, thread, ctx.LogicActorPID, "on_active", character, skillEntry)
+	resumeState, err := luax.Execute(root, thread, ctx.LogicActorPID, "on_activated", character, skillEntry)
 	if err != nil {
 		thread.Close()
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)

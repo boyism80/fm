@@ -4,7 +4,6 @@ import (
 	"net"
 	"sync"
 
-	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/crypt"
 	"github.com/boyism80/fm/game/entity"
@@ -13,10 +12,8 @@ import (
 // GameClient represents a game server client with Character.Map based thread assignment
 type GameClient struct {
 	core.BaseClient
-	character     *entity.Character
-	logicActorPID *actor.PID
-	mu            sync.Mutex
-	pidMutex      sync.RWMutex
+	character *entity.Character
+	mu        sync.Mutex
 }
 
 // Ensure GameClient implements core.Client
@@ -49,18 +46,4 @@ func (c *GameClient) GetCharacter() *entity.Character {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.character
-}
-
-// GetLogicActorPID returns the LogicActor PID for this client
-func (c *GameClient) GetLogicActorPID() *actor.PID {
-	c.pidMutex.RLock()
-	defer c.pidMutex.RUnlock()
-	return c.logicActorPID
-}
-
-// SetLogicActorPID sets the LogicActor PID for this client
-func (c *GameClient) SetLogicActorPID(pid *actor.PID) {
-	c.pidMutex.Lock()
-	defer c.pidMutex.Unlock()
-	c.logicActorPID = pid
 }

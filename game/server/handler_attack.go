@@ -5,12 +5,14 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type Attack struct {
@@ -42,7 +44,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		return fmt.Errorf("character is nil")
 	}
 
-	mapID := character.GetMap()
+	mapID := character.Map
 	mapInstance := h.gs.GetMap(mapID)
 	if mapInstance == nil {
 		log.Printf("Character is not in a map")
@@ -57,10 +59,50 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		skillLevel = uint8(character.GetTotalSkillLevel(req.AttackInfo.Skill))
 	}
 
+	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill)
 	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
 	character.Listener.OnAttack(mapID, character.GetID(), req.AttackInfo, skillLevel)
 
 	return nil
+}
+
+func (h *Attack) callOnAttackScript(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32) {
+	if ctx.LogicActorPID == nil {
+		return
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return
+	}
+
+	targets := make([]luax.Luable, 0, len(damages))
+	seen := make(map[uint32]bool)
+	for _, damage := range damages {
+		if seen[damage.OID] {
+			continue
+		}
+		seen[damage.OID] = true
+		mob := mapInstance.GetMob(damage.OID)
+		if mob != nil {
+			targets = append(targets, mob)
+		}
+	}
+
+	var skillArg interface{} = lua.LNil
+	if skillID != 0 {
+		if skillEntry := character.Skills[skillID]; skillEntry != nil {
+			skillArg = skillEntry
+		}
+	}
+
+	_, thread, err := luax.Call(root, "script/script.lua", "on_attack", character, targets, skillArg)
+	if err != nil {
+		log.Printf("Failed to call script on_attack: %v", err)
+		return
+	}
+	if thread != nil {
+		thread.Close()
+	}
 }
 
 func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID uint32) bool {

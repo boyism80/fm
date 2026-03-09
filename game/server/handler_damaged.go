@@ -1,13 +1,16 @@
-﻿package server
+package server
 
 import (
 	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
+	lua "github.com/yuin/gopher-lua"
 )
 
 // Damaged handles damage packet requests
@@ -41,13 +44,15 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 	}
 
 	stats := map[constant.Stat]int32{}
+	damage := h.resolveDamageByScript(ctx, character, req, req.Damage)
+
 	if !character.Invincible {
-		newHp := int32(character.Life.Hp) - int32(req.Damage)
+		newHp := int32(character.Life.Hp) - damage
 		if newHp < 0 {
 			newHp = 0
 		}
-		if newHp > int32(character.Life.GetMaxHp()) {
-			newHp = int32(character.Life.GetMaxHp())
+		if newHp > int32(character.GetMaxHp()) {
+			newHp = int32(character.GetMaxHp())
 		}
 
 		character.Life.Hp = uint16(newHp)
@@ -57,4 +62,70 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 	character.Listener.OnUpdateStats(stats, true)
 
 	return nil
+}
+
+func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *entity.Character, req *request.Damaged, damage int32) int32 {
+	if ctx.LogicActorPID == nil {
+		return damage
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return damage
+	}
+
+	attackerArg := h.resolveDamageAttackerArg(character, req)
+	skillArg := h.resolveDamageSkillArg(character, req)
+
+	result, thread, err := luax.Call(root, "script/script.lua", "on_damaged", character, attackerArg, skillArg, damage)
+	if thread != nil {
+		thread.Close()
+	}
+	if err != nil {
+		log.Printf("Failed to call script on_damaged: %v", err)
+		return damage
+	}
+	if result == nil || result.Type() != lua.LTNumber {
+		return damage
+	}
+
+	adjustedDamage := int32(lua.LVAsNumber(result))
+	if adjustedDamage < 0 {
+		return 0
+	}
+	return adjustedDamage
+}
+
+func (h *Damaged) resolveDamageAttackerArg(character *entity.Character, req *request.Damaged) interface{} {
+	if character.Context == nil || req.OID == 0 {
+		return lua.LNil
+	}
+	mapInstance := character.Context.GetMap(character.Map)
+	if mapInstance == nil {
+		return lua.LNil
+	}
+	mob := mapInstance.GetMob(req.OID)
+	if mob == nil {
+		return lua.LNil
+	}
+	return mob
+}
+
+func (h *Damaged) resolveDamageSkillArg(character *entity.Character, req *request.Damaged) interface{} {
+	if character.Context == nil || req.SkillID == 0 {
+		return lua.LNil
+	}
+	resources := character.Context.GetResources()
+	if resources == nil {
+		return lua.LNil
+	}
+	skillID := uint32(req.SkillID)
+	skillModel := resources.GetSkill(skillID)
+	if skillModel == nil {
+		return lua.LNil
+	}
+	return &entity.SkillEntry{
+		Skill:      skillModel,
+		SkillLevel: int(req.Level),
+		Owner:      character,
+	}
 }

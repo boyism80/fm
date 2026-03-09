@@ -32,6 +32,6 @@ func (h *GetPosition) Handle(gameClient *client.GameClient, args ...string) erro
 	}
 
 	log.Printf("Command: Character %d position - Map: %d, Position: %v",
-		character.GetID(), character.GetMap(), character.Position)
+		character.GetID(), character.Map, character.Position)
 	return nil
 }

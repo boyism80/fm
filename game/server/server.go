@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sort"
 
 	"sync"
 	"syscall"
@@ -37,6 +38,24 @@ type GameServer struct {
 	actorSystem    *c_actor.ActorSystem
 	actorRegistry  *c_actor.ActorRegistry
 	nilMapActorPID *actor.PID
+}
+
+func registerSkillConstants(luaState *lua.LState) {
+	skillTable := luaState.NewTable()
+	for key, skillID := range constant.AllSkillConstants() {
+		skillTable.RawSetString(key, lua.LNumber(skillID))
+	}
+	luaState.SetGlobal("SKILL", skillTable)
+}
+
+func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
+	skillTable := luaState.NewTable()
+	skillTable.RawSetString("id", lua.LNumber(skill.ID))
+	skillTable.RawSetString("skill_id", lua.LNumber(skill.ID))
+	skillTable.RawSetString("max_level", lua.LNumber(skill.MaxLevel))
+	skillTable.RawSetString("master_level", lua.LNumber(skill.MasterLevel))
+	skillTable.RawSetString("invisible", lua.LBool(skill.Invisible))
+	return skillTable
 }
 
 func (gs *GameServer) GetServer() *core.Server {
@@ -145,6 +164,45 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 			buffFlagTable.RawSetString(name, entry)
 		}
 		luaState.SetGlobal("BuffFlag", buffFlagTable)
+		registerSkillConstants(luaState)
+		luax.RegisterFunc(luaState, "class_learnable_skill_wzs", func(L *lua.LState) int {
+			class := uint16(L.CheckInt(1))
+			result := L.NewTable()
+			if gs.resources == nil {
+				L.Push(result)
+				return 1
+			}
+
+			classIDs := getClassAdvancementClasses(class)
+			skillByID := make(map[uint32]*wz.Skill)
+			for _, classID := range classIDs {
+				skillIDStart := uint32(classID) * 10000
+				skillIDEnd := skillIDStart + 9999
+				for skillID := skillIDStart; skillID <= skillIDEnd; skillID++ {
+					wzSkill := gs.resources.GetSkill(skillID)
+					if wzSkill == nil {
+						continue
+					}
+					skillByID[skillID] = wzSkill
+				}
+			}
+
+			orderedSkillIDs := make([]int, 0, len(skillByID))
+			for skillID := range skillByID {
+				orderedSkillIDs = append(orderedSkillIDs, int(skillID))
+			}
+			sort.Ints(orderedSkillIDs)
+
+			index := 1
+			for _, skillID := range orderedSkillIDs {
+				skillTable := skillToLuaWzTable(L, skillByID[uint32(skillID)])
+				result.RawSetInt(index, skillTable)
+				index++
+			}
+
+			L.Push(result)
+			return 1
+		})
 
 		// Register utility functions (yield + AfterFunc send ResumeLua; pid from luax.GetThreadPID)
 		luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
@@ -309,7 +367,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	if character == nil {
 		return
 	}
-	mapID := character.GetMap()
+	mapID := character.Map
 	mapInstance := gs.GetMap(mapID)
 	if mapInstance == nil {
 		return

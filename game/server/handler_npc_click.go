@@ -43,16 +43,16 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.Map)
 	if mapInstance == nil {
-		log.Printf("Map %d not found", character.GetMap())
-		return fmt.Errorf("map %d not found", character.GetMap())
+		log.Printf("Map %d not found", character.Map)
+		return fmt.Errorf("map %d not found", character.Map)
 	}
 
 	npcs := mapInstance.GetNpcs()
 	npcInterface, exists := npcs[req.OID]
 	if !exists {
-		log.Printf("NPC %d not found on map %d", req.OID, character.GetMap())
+		log.Printf("NPC %d not found on map %d", req.OID, character.Map)
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 

@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
@@ -12,7 +13,7 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type MagicAttack struct {
@@ -48,7 +49,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		return nil
 	}
 
-	mapID := character.GetMap()
+	mapID := character.Map
 	mapInstance := h.gs.GetMap(mapID)
 	if mapInstance == nil {
 		log.Printf("Character is not in a map")
@@ -108,6 +109,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	}
 
 	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
+	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill)
 
 	magicAttackPacket := &response.MagicAttack{
 		AttackInfo:  req.AttackInfo,
@@ -115,9 +117,52 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		SkillLevel:  uint8(skillLevel),
 	}
 
-	mapInstance.Broadcast(character, magicAttackPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+	mapInstance.Broadcast(magicAttackPacket, &entity.BroadcastOption{
+		ExceptPlayerIDs:    []uint32{character.GetID()},
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
 
 	return nil
+}
+
+func (h *MagicAttack) callOnAttackScript(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32) {
+	if ctx.LogicActorPID == nil {
+		return
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return
+	}
+
+	targets := make([]luax.Luable, 0, len(damages))
+	seen := make(map[uint32]bool)
+	for _, damage := range damages {
+		if seen[damage.OID] {
+			continue
+		}
+		seen[damage.OID] = true
+		mob := mapInstance.GetMob(damage.OID)
+		if mob != nil {
+			targets = append(targets, mob)
+		}
+	}
+
+	var skillArg interface{} = lua.LNil
+	if skillID != 0 {
+		if skillEntry := character.Skills[skillID]; skillEntry != nil {
+			skillArg = skillEntry
+		}
+	}
+
+	_, thread, err := luax.Call(root, "script/script.lua", "on_attack", character, targets, skillArg)
+	if err != nil {
+		log.Printf("Failed to call script on_attack: %v", err)
+		return
+	}
+	if thread != nil {
+		thread.Close()
+	}
 }
 
 func (h *MagicAttack) applyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {

@@ -104,25 +104,25 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		success = true
 
 	case constant.STAT_TYPE_HP:
-		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.Life.GetMaxHp() >= constant.STAT_MAX_HP_MP {
+		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.GetMaxHp() >= constant.STAT_MAX_HP_MP {
 			return nil
 		}
 		// Calculate HP increase based on job
 		hpIncrease := h.calculateHPIncrease(character.Class)
 		character.Life.AddBaseHp(hpIncrease)
 		character.HpApUsed++
-		statUpdate[constant.STAT_MAX_HP] = int32(character.Life.GetMaxHp())
+		statUpdate[constant.STAT_MAX_HP] = int32(character.GetMaxHp())
 		success = true
 
 	case constant.STAT_TYPE_MP:
-		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.Life.GetMaxMp() >= constant.STAT_MAX_HP_MP {
+		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.GetMaxMp() >= constant.STAT_MAX_HP_MP {
 			return nil
 		}
 		// Calculate MP increase based on job
 		mpIncrease := h.calculateMPIncrease(character.Class)
 		character.Life.AddBaseMp(mpIncrease)
 		character.HpApUsed++
-		statUpdate[constant.STAT_MAX_MP] = int32(character.Life.GetMaxMp())
+		statUpdate[constant.STAT_MAX_MP] = int32(character.GetMaxMp())
 		success = true
 
 	default:
@@ -133,7 +133,7 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 
 	if success {
 		// Decrease AP
-		character.AbilityPoint--
+		character.AbilityPoint = character.AbilityPoint - 1
 		statUpdate[constant.STAT_AVAILABLE_AP] = int32(character.AbilityPoint)
 
 		// Send stat update packet
@@ -146,20 +146,20 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 // calculateHPIncrease calculates HP increase based on job
 func (h *DistributeAP) calculateHPIncrease(job uint16) uint16 {
 	// Beginner
-	if job == constant.JOB_BEGINNER_MIN || job == constant.JOB_BEGINNER_1 || job == constant.JOB_BEGINNER_2 {
+	if job == constant.CLASS_BEGINNER_MIN || job == constant.CLASS_BEGINNER_1 || job == constant.CLASS_BEGINNER_2 {
 		return uint16(rand.Intn(5) + 8) // 8-12
 	}
 	// Warrior
-	if job >= constant.JOB_WARRIOR_MIN && job <= constant.JOB_WARRIOR_MAX {
+	if job >= constant.CLASS_WARRIOR_MIN && job <= constant.CLASS_WARRIOR_MAX {
 		return uint16(rand.Intn(9) + 12) // 12-20
 	}
 	// Magician
-	if job >= constant.JOB_MAGICIAN_MIN && job <= constant.JOB_MAGICIAN_MAX {
+	if job >= constant.CLASS_MAGICIAN_MIN && job <= constant.CLASS_MAGICIAN_MAX {
 		return uint16(rand.Intn(6) + 6) // 6-11
 	}
 	// Bowman/Thief
-	if (job >= constant.JOB_BOWMAN_MIN && job <= constant.JOB_BOWMAN_MAX) ||
-		(job >= constant.JOB_THIEF_MIN && job <= constant.JOB_THIEF_MAX) {
+	if (job >= constant.CLASS_BOWMAN_MIN && job <= constant.CLASS_BOWMAN_MAX) ||
+		(job >= constant.CLASS_THIEF_MIN && job <= constant.CLASS_THIEF_MAX) {
 		return uint16(rand.Intn(5) + 14) // 14-18
 	}
 	// Default (GameMaster)
@@ -169,20 +169,20 @@ func (h *DistributeAP) calculateHPIncrease(job uint16) uint16 {
 // calculateMPIncrease calculates MP increase based on job
 func (h *DistributeAP) calculateMPIncrease(job uint16) uint16 {
 	// Beginner
-	if job == constant.JOB_BEGINNER_MIN || job == constant.JOB_BEGINNER_1 || job == constant.JOB_BEGINNER_2 {
+	if job == constant.CLASS_BEGINNER_MIN || job == constant.CLASS_BEGINNER_1 || job == constant.CLASS_BEGINNER_2 {
 		return uint16(rand.Intn(3) + 6) // 6-8
 	}
 	// Magician
-	if job >= constant.JOB_MAGICIAN_MIN && job <= constant.JOB_MAGICIAN_MAX {
+	if job >= constant.CLASS_MAGICIAN_MIN && job <= constant.CLASS_MAGICIAN_MAX {
 		return uint16(rand.Intn(11) + 10) // 10-20
 	}
 	// Bowman/Thief
-	if (job >= constant.JOB_BOWMAN_MIN && job <= constant.JOB_BOWMAN_MAX) ||
-		(job >= constant.JOB_THIEF_MIN && job <= constant.JOB_THIEF_MAX) {
+	if (job >= constant.CLASS_BOWMAN_MIN && job <= constant.CLASS_BOWMAN_MAX) ||
+		(job >= constant.CLASS_THIEF_MIN && job <= constant.CLASS_THIEF_MAX) {
 		return uint16(rand.Intn(5) + 8) // 8-12
 	}
 	// Warrior/Soul Master
-	if job >= constant.JOB_WARRIOR_MIN && job <= constant.JOB_WARRIOR_MAX {
+	if job >= constant.CLASS_WARRIOR_MIN && job <= constant.CLASS_WARRIOR_MAX {
 		return uint16(rand.Intn(4) + 4) // 4-7
 	}
 	// Default (GameMaster)

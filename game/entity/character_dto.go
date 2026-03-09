@@ -27,16 +27,16 @@ func (ch *Character) ToDTO() *dto.Character {
 		absoluteParts := int8(parts * -1)
 		if absoluteParts < 100 {
 			if _, exists := equipments[absoluteParts]; !exists {
-				equipments[absoluteParts] = model.ID
+				equipments[absoluteParts] = model.GetID()
 			}
 		} else if absoluteParts > 100 && absoluteParts != 111 {
 			adjustedParts := int8(absoluteParts - 100)
 			if existingItem, exists := equipments[adjustedParts]; exists {
 				overlays[adjustedParts] = existingItem
 			}
-			equipments[adjustedParts] = model.ID
+			equipments[adjustedParts] = model.GetID()
 		} else if _, exists := equipments[absoluteParts]; exists {
-			overlays[absoluteParts] = model.ID
+			overlays[absoluteParts] = model.GetID()
 		}
 	}
 
@@ -46,32 +46,32 @@ func (ch *Character) ToDTO() *dto.Character {
 	}
 
 	return &dto.Character{
-		ID:            ch.ID,
-		Name:          ch.Name,
-		Gender:        ch.Gender,
-		SkinColor:     ch.SkinColor,
-		Face:          ch.Face,
-		Hair:          ch.Hair,
-		Level:         ch.Level,
+		ID:            ch.GetID(),
+		Name:          ch.name,
+		Gender:        ch.gender,
+		SkinColor:     ch.skinColor,
+		Face:          ch.face,
+		Hair:          ch.hair,
+		Level:         ch.level,
 		Class:         ch.Class,
 		Str:           ch.GetTotalStr(),
 		Dex:           ch.GetTotalDex(),
 		Int:           ch.GetTotalInt(),
 		Luk:           ch.GetTotalLuk(),
 		Hp:            ch.Hp,
-		MaxHp:         ch.Life.GetMaxHp(),
+		MaxHp:         ch.GetMaxHp(),
 		Mp:            ch.Mp,
-		MaxMp:         ch.Life.GetMaxMp(),
+		MaxMp:         ch.GetMaxMp(),
 		AbilityPoint:  ch.AbilityPoint,
-		Exp:           ch.Exp,
-		FamePoint:     ch.FamePoint,
+		Exp:           ch.exp,
+		FamePoint:     ch.famePoint,
 		Map:           ch.Map,
-		SpawnPoint:    ch.SpawnPoint,
-		Rank:          ch.Rank,
-		RankDiff:      ch.RankDiff,
-		ClassRank:     ch.ClassRank,
-		ClassRankDiff: ch.ClassRankDiff,
-		Mega:          ch.Mega,
+		SpawnPoint:    ch.spawnPoint,
+		Rank:          ch.rank,
+		RankDiff:      ch.rankDiff,
+		ClassRank:     ch.classRank,
+		ClassRankDiff: ch.classRankDiff,
+		Mega:          ch.mega,
 		BaseLooks:     equipments,
 		Overlays:      overlays,
 		Weapon:        weapon,
@@ -85,16 +85,16 @@ func (ch *Character) ToFullDTO() *dto.Character {
 
 	charDTO.Meso = ch.Meso
 	charDTO.SkillPoint = ch.SkillPoint
-	charDTO.MarriageId = ch.MarriageId
-	charDTO.RegRocks = ch.RegRocks
-	charDTO.Rocks = ch.Rocks
-	charDTO.MonsterBookCover = ch.MonsterBookCover
-	charDTO.QuestInfo = ch.QuestInfo
+	charDTO.MarriageId = ch.marriageId
+	charDTO.RegRocks = ch.regRocks
+	charDTO.Rocks = ch.rocks
+	charDTO.MonsterBookCover = ch.monsterBookCover
+	charDTO.QuestInfo = ch.quests
 	charDTO.BuddyCapacity = 20
 
-	charDTO.Random1 = &ch.Random1
-	charDTO.Random2 = &ch.Random2
-	charDTO.Random3 = &ch.Random3
+	charDTO.Random1 = &ch.random1
+	charDTO.Random2 = &ch.random2
+	charDTO.Random3 = &ch.random3
 
 	charDTO.Inventory = make(map[constant.InventoryType]*dto.Inventory)
 	for invType, inv := range ch.Inventory {
@@ -157,7 +157,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 
 	charDTO.QuestsStarted = make([]*dto.QuestStatus, 0)
 	charDTO.QuestsCompleted = make([]*dto.QuestStatus, 0)
-	for _, qs := range ch.Quests {
+	for _, qs := range ch.questStatuses {
 		if qs == nil {
 			continue
 		}

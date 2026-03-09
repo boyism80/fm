@@ -52,6 +52,15 @@ func toLValues(L *lua.LState, args []interface{}) ([]lua.LValue, error) {
 			out[i] = lua.LBool(v)
 		case Luable:
 			out[i] = NewLuable(L, v)
+		case []Luable:
+			tbl := L.NewTable()
+			for idx, item := range v {
+				if item == nil {
+					continue
+				}
+				tbl.RawSetInt(idx+1, NewLuable(L, item))
+			}
+			out[i] = tbl
 		case lua.LValue:
 			out[i] = v
 		default:

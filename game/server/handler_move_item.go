@@ -56,24 +56,28 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 }
 
 func (h *MoveItem) handleUnequip(client *client.GameClient, character *entity.Character, parts constant.EquipmentPartsType, slot int16) {
-	if character.Equipments[parts] == nil {
+	equipments := character.Equipments
+	inventory := character.Inventory
+	if equipments[parts] == nil {
 		return
 	}
 
-	inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	inven := inventory[constant.INVENTORY_TYPE_EQUIPMENT]
 	if inven.Items[slot] != nil {
 		return
 	}
 
-	inven.Items[slot] = character.Equipments[parts]
-	delete(character.Equipments, parts)
+	inven.Items[slot] = equipments[parts]
+	delete(equipments, parts)
 
 	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), slot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
 	character.Listener.OnUpdateCharacterLook(character)
 }
 
 func (h *MoveItem) handleEquip(client *client.GameClient, character *entity.Character, parts constant.EquipmentPartsType, slot int16) {
-	inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	equipments := character.Equipments
+	inventory := character.Inventory
+	inven := inventory[constant.INVENTORY_TYPE_EQUIPMENT]
 	if inven.Items[slot] == nil {
 		return
 	}
@@ -83,12 +87,12 @@ func (h *MoveItem) handleEquip(client *client.GameClient, character *entity.Char
 		return
 	}
 
-	old, swap := character.Equipments[parts]
+	old, swap := equipments[parts]
 
 	switch parts {
 	case constant.EQUIPMENT_PARTS_TOP:
 		if new.IsOverall() {
-			_, isWearPants := character.Equipments[constant.EQUIPMENT_PARTS_PANTS]
+			_, isWearPants := equipments[constant.EQUIPMENT_PARTS_PANTS]
 			if isWearPants {
 				storageSlot, isFree := inven.NextSlot()
 				if !isFree {
@@ -100,7 +104,7 @@ func (h *MoveItem) handleEquip(client *client.GameClient, character *entity.Char
 		}
 
 	case constant.EQUIPMENT_PARTS_PANTS:
-		top, isWearTop := character.Equipments[constant.EQUIPMENT_PARTS_TOP]
+		top, isWearTop := equipments[constant.EQUIPMENT_PARTS_TOP]
 		if isWearTop && top.IsOverall() {
 			storageSlot, isFree := inven.NextSlot()
 			if swap && !isFree {
@@ -111,7 +115,7 @@ func (h *MoveItem) handleEquip(client *client.GameClient, character *entity.Char
 		}
 	}
 
-	character.Equipments[parts], inven.Items[slot] = new, old
+	equipments[parts], inven.Items[slot] = new, old
 	if !swap {
 		delete(inven.Items, slot)
 	}
@@ -139,14 +143,14 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 		Object: &entity.Object{
 			Position: character.Position,
 		},
-		Owner:        character.ID,
+		Owner:        character.GetID(),
 		SpawnedPoint: character.Position,
 		DropType:     constant.DROP_TYPE_FFA,
 	})
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.Map)
 	if mapInstance != nil {
-		if err := mapInstance.SpawnItem(spawned, character.ID, constant.DROP_TYPE_FFA); err != nil {
+		if err := mapInstance.SpawnItem(spawned, character.GetID(), constant.DROP_TYPE_FFA); err != nil {
 			log.Printf("Failed to spawn item on map: %v", err)
 		}
 	}

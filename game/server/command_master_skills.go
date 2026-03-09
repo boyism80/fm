@@ -41,16 +41,14 @@ func (h *MasterSkills) Handle(gameClient *client.GameClient, args ...string) err
 		return fmt.Errorf("resources not available")
 	}
 
-	if character.Skills == nil {
-		character.Skills = make(map[uint32]*entity.SkillEntry)
-	}
+	skills := character.Skills
 
 	class := character.Class
 	if class < 100 {
 		return fmt.Errorf("character class %d is too low", class)
 	}
 
-	classIDs := getJobAdvancementClasses(class)
+	classIDs := getClassAdvancementClasses(class)
 	addedCount := 0
 	updatedCount := 0
 
@@ -73,7 +71,7 @@ func (h *MasterSkills) Handle(gameClient *client.GameClient, args ...string) err
 				continue
 			}
 
-			skillEntry, exists := character.Skills[skillID]
+			skillEntry, exists := skills[skillID]
 			if !exists || skillEntry == nil {
 				skillEntry = &entity.SkillEntry{
 					Skill:       wzSkill,
@@ -82,7 +80,7 @@ func (h *MasterSkills) Handle(gameClient *client.GameClient, args ...string) err
 					Expiration:  time.Time{},
 					Owner:       character,
 				}
-				character.Skills[skillID] = skillEntry
+				skills[skillID] = skillEntry
 				addedCount++
 			} else {
 				if skillEntry.Skill == nil {
@@ -105,7 +103,7 @@ func (h *MasterSkills) Handle(gameClient *client.GameClient, args ...string) err
 	return nil
 }
 
-func getJobAdvancementClasses(class uint16) []uint16 {
+func getClassAdvancementClasses(class uint16) []uint16 {
 	if class < 100 {
 		return []uint16{class}
 	}

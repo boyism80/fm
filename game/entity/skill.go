@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/game/wz"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -13,7 +15,7 @@ type SkillEntry struct {
 	MasterLevel int
 	Expiration  time.Time
 	CooldownEnd *time.Time // When cooldown ends; nil means cooldown is done and the skill is ready to use. Non-nil and now < *CooldownEnd means still cooling.
-	Owner      *Character // Character that owns this skill; set when added to character.Skills
+	Owner       *Character // Character that owns this skill; set when added to character.Skills
 }
 
 // IsCooling returns true if the skill is still on cooldown (not yet ready to use).
@@ -72,12 +74,33 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return skill level
+			switch argc {
+			case 1:
 				L.Push(lua.LNumber(skill.SkillLevel))
 				return 1
-			} else {
-				L.ArgError(2, "level() is read-only")
+			case 2, 3:
+				level := L.CheckInt(2)
+				if level < 0 {
+					level = 0
+				}
+				skill.SkillLevel = level
+				if argc == 3 {
+					masterLevel := L.CheckInt(3)
+					if masterLevel < 0 {
+						masterLevel = 0
+					}
+					skill.MasterLevel = masterLevel
+				}
+				if skill.Owner != nil && skill.Skill != nil {
+					skill.Owner.Send(&response.UpdateSkills{
+						SkillID:     skill.Skill.ID,
+						Level:       int32(skill.SkillLevel),
+						MasterLevel: int32(skill.MasterLevel),
+					}, types.SEND_POLICY_ENCRYPT)
+				}
+				return 0
+			default:
+				L.ArgError(2, "level() requires 0, 1 or 2 arguments")
 				return 0
 			}
 		},
@@ -90,12 +113,27 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return master level
+			switch argc {
+			case 1:
 				L.Push(lua.LNumber(skill.MasterLevel))
 				return 1
-			} else {
-				L.ArgError(2, "master_level() is read-only")
+			case 2:
+				masterLevel := L.CheckInt(2)
+				if masterLevel < 0 {
+					masterLevel = 0
+				}
+				skill.MasterLevel = masterLevel
+
+				if skill.Owner != nil && skill.Skill != nil {
+					skill.Owner.Send(&response.UpdateSkills{
+						SkillID:     skill.Skill.ID,
+						Level:       int32(skill.SkillLevel),
+						MasterLevel: int32(skill.MasterLevel),
+					}, types.SEND_POLICY_ENCRYPT)
+				}
+				return 0
+			default:
+				L.ArgError(2, "master_level() requires 0 or 1 arguments")
 				return 0
 			}
 		},

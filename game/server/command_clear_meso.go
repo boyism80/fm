@@ -33,7 +33,7 @@ func (h *ClearMeso) Handle(gameClient *client.GameClient, args ...string) error 
 		return fmt.Errorf("character not found")
 	}
 
-	character.Meso = 0
+	character.SetMeso(0)
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MESO: character.Meso,

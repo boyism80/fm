@@ -34,7 +34,7 @@ func (h *FullMeso) Handle(gameClient *client.GameClient, args ...string) error {
 		return fmt.Errorf("character not found")
 	}
 
-	character.Meso = math.MaxInt32
+	character.SetMeso(math.MaxInt32)
 	gameClient.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MESO: character.Meso,

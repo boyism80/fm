@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
 )
 
@@ -28,7 +29,7 @@ func Bind[C CommandHandlerConstructor[H], H Command](ch *CommandHandler) {
 	log.Printf("Registered command handler: %s", commandName)
 }
 
-func (ch *CommandHandler) Handle(gameClient *client.GameClient, params ...string) error {
+func (ch *CommandHandler) Handle(ctx *core.ClientContext, gameClient *client.GameClient, params ...string) error {
 	if len(params) == 0 {
 		return fmt.Errorf("no command specified")
 	}
@@ -39,6 +40,10 @@ func (ch *CommandHandler) Handle(gameClient *client.GameClient, params ...string
 	handler, ok := ch.handlers[command]
 	if !ok {
 		return fmt.Errorf("unknown command: %s", command)
+	}
+
+	if contextHandler, ok := handler.(ContextCommand); ok {
+		return contextHandler.HandleWithContext(ctx, gameClient, args...)
 	}
 
 	return handler.Handle(gameClient, args...)
@@ -70,4 +75,5 @@ func (gs *GameServer) registerCommandHandlers() {
 	Bind[*KillAllMobs](gs.commandHandler)
 	Bind[*MasterSkills](gs.commandHandler)
 	Bind[*SpawnNpc](gs.commandHandler)
+	Bind[*Script](gs.commandHandler)
 }

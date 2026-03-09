@@ -40,15 +40,15 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := h.gs.GetMap(character.Map)
 	if mapInstance == nil {
-		log.Printf("Map %d not found", character.GetMap())
-		return fmt.Errorf("map %d not found", character.GetMap())
+		log.Printf("Map %d not found", character.Map)
+		return fmt.Errorf("map %d not found", character.Map)
 	}
 
 	mob := mapInstance.GetMob(req.OID)
 	if mob == nil {
-		log.Printf("Mob %d not found on map %d", req.OID, character.GetMap())
+		log.Printf("Mob %d not found on map %d", req.OID, character.Map)
 		return fmt.Errorf("mob %d not found", req.OID)
 	}
 
@@ -76,7 +76,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 	character.Listener.OnControlMoveMob(req.OID, uint8(req.MovementId), req.IsAggroed, mob.Mp, 0, 0)
 
 	character.Listener.OnMobMoved(
-		character.GetMap(),
+		character.Map,
 		req.OID,
 		req.IsAggroed,
 		req.CenterSplit,

@@ -48,7 +48,7 @@ func (h *ChangeMap) Handle(gameClient *client.GameClient, args ...string) error 
 		return fmt.Errorf("character not found")
 	}
 
-	currentMap := h.gs.GetMap(character.GetMap())
+	currentMap := h.gs.GetMap(character.Map)
 	if currentMap == nil {
 		return fmt.Errorf("current map not found")
 	}

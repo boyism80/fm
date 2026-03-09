@@ -24,7 +24,9 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, AutoAssignAP](gs)
 	core.Bind[*GameServer, DistributeSP](gs)
 	core.Bind[*GameServer, HealOverTime](gs)
+	core.Bind[*GameServer, CancelBuff](gs)
 	core.Bind[*GameServer, UseItem](gs)
+	core.Bind[*GameServer, UseInnerPortal](gs)
 	core.Bind[*GameServer, PartySearchStop](gs)
 	core.Bind[*GameServer, Unknown0C](gs)
 	core.Bind[*GameServer, NpcShop](gs)
@@ -32,4 +34,5 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, ActiveSkill](gs)
 	core.Bind[*GameServer, UseChair](gs)
 	core.Bind[*GameServer, CancelChair](gs)
+	core.Bind[*GameServer, ChangeKeymap](gs)
 }

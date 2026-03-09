@@ -80,7 +80,7 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 
 	if success {
 		// Decrease AP
-		character.AbilityPoint -= uint16(totalAmount)
+		character.AbilityPoint = character.AbilityPoint - uint16(totalAmount)
 		statUpdate[constant.STAT_AVAILABLE_AP] = int32(character.AbilityPoint)
 
 		// Send stat update packet

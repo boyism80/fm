@@ -7,9 +7,9 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
 )
 
 type UseChair struct {
@@ -40,7 +40,7 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 		return nil
 	}
 
-	mapID := character.GetMap()
+	mapID := character.Map
 	mapInstance := h.gs.GetMap(mapID)
 	if mapInstance == nil {
 		return nil
@@ -65,10 +65,14 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 
 	character.Chair = req.ItemID
 
-	mapInstance.Broadcast(character, &response.ShowChair{
+	mapInstance.Broadcast(&response.ShowChair{
 		CharacterID: character.GetID(),
 		ItemID:      req.ItemID,
-	}, types.SEND_POLICY_ENCRYPT, character.GetID())
+	}, &entity.BroadcastOption{
+		ExceptPlayerIDs:    []uint32{character.GetID()},
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
 
 	if character.Listener != nil {
 		character.Listener.OnUpdateStats(nil, true)
