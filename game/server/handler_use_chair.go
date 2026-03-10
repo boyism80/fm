@@ -40,8 +40,7 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 		return nil
 	}
 
-	mapID := character.Map
-	mapInstance := h.gs.GetMap(mapID)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return nil
 	}

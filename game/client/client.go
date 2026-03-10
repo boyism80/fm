@@ -9,7 +9,6 @@ import (
 	"github.com/boyism80/fm/game/entity"
 )
 
-// GameClient represents a game server client with Character.Map based thread assignment
 type GameClient struct {
 	core.BaseClient
 	character *entity.Character
@@ -19,7 +18,6 @@ type GameClient struct {
 // Ensure GameClient implements core.Client
 var _ core.Client = (*GameClient)(nil)
 
-// NewGameClient creates a new GameClient with Character.Map based thread assignment
 func NewGameClient(conn net.Conn, clientID int) (*GameClient, error) {
 	fd, err := core.GetFileDescriptor(conn)
 	if err != nil {

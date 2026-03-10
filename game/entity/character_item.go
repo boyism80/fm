@@ -38,15 +38,15 @@ func (ch *Character) RemoveMeso(amount int32) {
 	}
 }
 
-func (ch *Character) AddItem(item Item, allOrNothing bool) (uint16, error) {
+func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
 	if item == nil {
-		return 0, fmt.Errorf("item is nil")
+		return nil, fmt.Errorf("item is nil")
 	}
 
 	invenType := item.GetInventoryType()
 	inven := ch.Inventory[invenType]
 	if inven == nil {
-		return 0, fmt.Errorf("inventory type %d not found", invenType)
+		return nil, fmt.Errorf("inventory type %d not found", invenType)
 	}
 
 	model := item.GetModel()
@@ -54,37 +54,42 @@ func (ch *Character) AddItem(item Item, allOrNothing bool) (uint16, error) {
 
 	if allOrNothing {
 		if !inven.IsFree(model, requestedCount) {
-			return 0, fmt.Errorf("not enough inventory space for %d items", requestedCount)
+			return nil, fmt.Errorf("not enough inventory space for %d items", requestedCount)
 		}
 	}
 
 	remainingCount := requestedCount
-	addedCount := uint16(0)
+	var addedCount uint16
 
 	for remainingCount > 0 {
 		slot, ok := inven.FindSlot(model)
 		if !ok {
 			if allOrNothing && addedCount == 0 {
-				return 0, fmt.Errorf("no available slot found")
+				return nil, fmt.Errorf("no available slot found")
 			}
 			break
 		}
 
 		exists, ok := inven.Items[int16(slot)]
 		cap := uint16(0)
+		var slotItem Item
 		if ok {
 			cap = min(model.GetCapacity()-exists.GetCount(), remainingCount)
 			exists.Increase(cap)
+			slotItem = exists
 			if ch.Listener != nil {
 				ch.Listener.OnInventorySlotUpdated(invenType, int16(slot), exists)
 			}
 		} else {
 			cap = min(model.GetCapacity(), remainingCount)
-			inven.Items[int16(slot)] = item.Clone(cap)
+			placed := item.Clone(cap)
+			inven.Items[int16(slot)] = placed
+			slotItem = placed
 			if ch.Listener != nil {
-				ch.Listener.OnInventorySlotAdded(invenType, int16(slot), inven.Items[int16(slot)])
+				ch.Listener.OnInventorySlotAdded(invenType, int16(slot), placed)
 			}
 		}
+		addedItems = append(addedItems, slotItem)
 		remainingCount -= cap
 		addedCount += cap
 	}
@@ -97,7 +102,29 @@ func (ch *Character) AddItem(item Item, allOrNothing bool) (uint16, error) {
 		ch.Listener.OnShowItemGain(model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
 	}
 
-	return addedCount, nil
+	return addedItems, nil
+}
+
+// RemoveItemByID removes one slot of the first matching item by ID from any inventory.
+// Returns true if an item was removed.
+func (ch *Character) RemoveItemByID(itemId uint32) bool {
+	for invType, inven := range ch.Inventory {
+		if inven == nil {
+			continue
+		}
+		for slot, item := range inven.Items {
+			if item != nil && item.GetModel().GetID() == itemId {
+				if err := inven.RemoveItem(uint8(slot)); err != nil {
+					return false
+				}
+				if ch.Listener != nil {
+					ch.Listener.OnRemoveInventorySlot(invType, slot)
+				}
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (ch *Character) GainMeso(amount int32) {

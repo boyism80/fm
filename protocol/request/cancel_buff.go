@@ -8,10 +8,6 @@ type CancelBuff struct {
 	SourceID int32
 }
 
-func (c *CancelBuff) Opcode() uint16 {
-	return 0x4B
-}
-
 func (c *CancelBuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

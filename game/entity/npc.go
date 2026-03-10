@@ -10,7 +10,10 @@ type Npc struct {
 	Wz *wz.NpcSpawn
 }
 
-// Luable interface implementation
+func (n *Npc) GetObject() *Object {
+	return &n.Object
+}
+
 func (n *Npc) LuaTypeName() string {
 	return "LuaNpc"
 }
@@ -38,7 +41,7 @@ func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Npc expected")
 				return 0
 			}
-			// Convert wz.NpcSpawn to Lua table
+
 			tbl := L.NewTable()
 			if npc.Wz != nil && npc.Wz.BaseSpawn != nil {
 				tbl.RawSetString("id", lua.LNumber(npc.Wz.BaseSpawn.ID))

@@ -19,4 +19,3 @@ func (p *Unknown0C) Serialize(writer *stream.StreamWriter) error {
 func (p *Unknown0C) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }
-

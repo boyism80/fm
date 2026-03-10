@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
@@ -43,9 +44,20 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 	}
 
 	if req.Source < 0 {
-		h.handleUnequip(client, character, constant.EquipmentPartsType(req.Source), req.Dest)
+		parts := constant.EquipmentPartsType(req.Source)
+		before := character.Equipments[parts]
+		h.handleUnequip(client, character, parts, req.Dest)
+		callOnEquipmentChanged(ctx, character, parts, before, nil)
 	} else if req.Dest < 0 {
-		h.handleEquip(client, character, constant.EquipmentPartsType(req.Dest), req.Source)
+		parts := constant.EquipmentPartsType(req.Dest)
+		before := character.Equipments[parts]
+		inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+		var after *entity.Equipment
+		if item := inven.Items[req.Source]; item != nil {
+			after, _ = item.(*entity.Equipment)
+		}
+		h.handleEquip(client, character, parts, req.Source)
+		callOnEquipmentChanged(ctx, character, parts, before, after)
 	} else if req.Dest == 0 {
 		h.handleDrop(client, character, req.InventoryType, req.Source, req.Count)
 	} else {
@@ -148,7 +160,7 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 		DropType:     constant.DROP_TYPE_FFA,
 	})
 
-	mapInstance := h.gs.GetMap(character.Map)
+	mapInstance := character.GetMap()
 	if mapInstance != nil {
 		if err := mapInstance.SpawnItem(spawned, character.GetID(), constant.DROP_TYPE_FFA); err != nil {
 			log.Printf("Failed to spawn item on map: %v", err)
@@ -187,5 +199,29 @@ func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *
 		delete(inven.Items, sourceSlot)
 	} else {
 		character.Listener.OnPartialMergeInventorySlot(invenType, sourceSlot, destSlot, src.GetCount(), dst.GetCount())
+	}
+}
+
+func callOnEquipmentChanged(ctx *core.ClientContext, character *entity.Character, parts constant.EquipmentPartsType, before, after *entity.Equipment) {
+	if ctx.LogicActorPID == nil {
+		return
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return
+	}
+	var beforeArg, afterArg interface{}
+	if before != nil {
+		beforeArg = before
+	}
+	if after != nil {
+		afterArg = after
+	}
+	_, thread, err := luax.Call(root, "script/script.lua", "on_equipment_changed", character, int32(parts), beforeArg, afterArg)
+	if thread != nil {
+		thread.Close()
+	}
+	if err != nil {
+		log.Printf("Failed to call script on_equipment_changed: %v", err)
 	}
 }

@@ -49,8 +49,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		return nil
 	}
 
-	mapID := character.Map
-	mapInstance := h.gs.GetMap(mapID)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		log.Printf("Character is not in a map")
 		return fmt.Errorf("character is not in a map")
@@ -108,8 +107,8 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		}
 	}
 
-	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
 	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill)
+	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
 
 	magicAttackPacket := &response.MagicAttack{
 		AttackInfo:  req.AttackInfo,
@@ -135,34 +134,35 @@ func (h *MagicAttack) callOnAttackScript(ctx *core.ClientContext, character *ent
 		return
 	}
 
-	targets := make([]luax.Luable, 0, len(damages))
-	seen := make(map[uint32]bool)
-	for _, damage := range damages {
-		if seen[damage.OID] {
-			continue
-		}
-		seen[damage.OID] = true
-		mob := mapInstance.GetMob(damage.OID)
-		if mob != nil {
-			targets = append(targets, mob)
-		}
+	thread, err := luax.NewThread(root, "script/script.lua")
+	if err != nil {
+		log.Printf("Failed to load script: %v", err)
+		return
+	}
+	defer thread.Close()
+
+	f := thread.GetGlobal("on_attack")
+	if f.Type() != lua.LTFunction {
+		return
 	}
 
-	var skillArg interface{} = lua.LNil
+	var skillLV lua.LValue = lua.LNil
 	if skillID != 0 {
 		if skillEntry := character.Skills[skillID]; skillEntry != nil {
-			skillArg = skillEntry
+			skillLV = luax.NewLuable(thread, skillEntry)
 		}
 	}
 
-	_, thread, err := luax.Call(root, "script/script.lua", "on_attack", character, targets, skillArg)
-	if err != nil {
+	damagesTable := buildDamagesTable(thread, mapInstance, damages)
+	thread.Push(f)
+	thread.Push(luax.NewLuable(thread, character))
+	thread.Push(skillLV)
+	thread.Push(damagesTable)
+	if err := thread.PCall(3, 1, nil); err != nil {
 		log.Printf("Failed to call script on_attack: %v", err)
 		return
 	}
-	if thread != nil {
-		thread.Close()
-	}
+	thread.Pop(1)
 }
 
 func (h *MagicAttack) applyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {

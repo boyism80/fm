@@ -45,6 +45,10 @@ func (ch *Character) ToDTO() *dto.Character {
 		weapon = weaponEquip.Wz.GetID()
 	}
 
+	mapID := uint32(0)
+	if m := ch.GetMap(); m != nil {
+		mapID = m.ID
+	}
 	return &dto.Character{
 		ID:            ch.GetID(),
 		Name:          ch.name,
@@ -65,7 +69,7 @@ func (ch *Character) ToDTO() *dto.Character {
 		AbilityPoint:  ch.AbilityPoint,
 		Exp:           ch.exp,
 		FamePoint:     ch.famePoint,
-		Map:           ch.Map,
+		Map:           mapID,
 		SpawnPoint:    ch.spawnPoint,
 		Rank:          ch.rank,
 		RankDiff:      ch.rankDiff,

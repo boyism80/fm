@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -40,15 +40,15 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gs.GetMap(character.Map)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
-		log.Printf("Map %d not found", character.Map)
-		return fmt.Errorf("map %d not found", character.Map)
+		log.Printf("Character not on a map")
+		return fmt.Errorf("map not found")
 	}
 
 	mob := mapInstance.GetMob(req.OID)
 	if mob == nil {
-		log.Printf("Mob %d not found on map %d", req.OID, character.Map)
+		log.Printf("Mob %d not found on map", req.OID)
 		return fmt.Errorf("mob %d not found", req.OID)
 	}
 
@@ -73,11 +73,10 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		mob.Stance = mnt.GetStance()
 	}
 
-	character.Listener.OnControlMoveMob(req.OID, uint8(req.MovementId), req.IsAggroed, mob.Mp, 0, 0)
+	character.Listener.OnControlMoveMob(mob, uint8(req.MovementId), req.IsAggroed, mob.Mp, 0, 0)
 
 	character.Listener.OnMobMoved(
-		character.Map,
-		req.OID,
+		mob,
 		req.IsAggroed,
 		req.CenterSplit,
 		req.Skill1,

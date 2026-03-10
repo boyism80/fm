@@ -31,7 +31,11 @@ func (h *GetPosition) Handle(gameClient *client.GameClient, args ...string) erro
 		return fmt.Errorf("character not found")
 	}
 
+	mapID := uint32(0)
+	if m := character.GetMap(); m != nil {
+		mapID = m.ID
+	}
 	log.Printf("Command: Character %d position - Map: %d, Position: %v",
-		character.GetID(), character.Map, character.Position)
+		character.GetID(), mapID, character.Position)
 	return nil
 }

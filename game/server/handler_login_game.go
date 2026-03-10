@@ -44,9 +44,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		character.Invincible = true
 	}
 
-	// Character 생성 시점에는 map이 결정되지 않음
-	character.Map = 0
-
+	// Character 생성 시점에는 map이 결정되지 않음 (AddPlayer에서 SetMap 호출됨)
 	client, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")

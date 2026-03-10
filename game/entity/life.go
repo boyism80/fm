@@ -8,16 +8,40 @@ import (
 type Life struct {
 	Object
 	Hp         uint16
-	BaseHp     uint16 // Base maximum HP (from level, AP, or WZ data)
-	BonusHp    int16  // Bonus maximum HP (from buffs/equipment, can be negative)
+	BaseHp     uint16
+	BonusHp    int16
 	Mp         uint16
-	BaseMp     uint16 // Base maximum MP (from level, AP, or WZ data)
-	BonusMp    int16  // Bonus maximum MP (from buffs/equipment, can be negative)
+	BaseMp     uint16
+	BonusMp    int16
 	Stance     uint8
 	Invincible bool
 }
 
-// GetMaxHp returns the current maximum HP (BaseHp + BonusHp)
+type LifeAccessor interface {
+	GetHp() uint16
+	SetHp(uint16)
+	GetMp() uint16
+	SetMp(uint16)
+	GetMaxHp() uint16
+	SetMaxHp(uint16)
+	GetMaxMp() uint16
+	SetMaxMp(uint16)
+	AddHp(int)
+	AddMp(int)
+	AddHpMp(hpDelta, mpDelta int)
+	GetBonusHp() int16
+	SetBonusHp(int16)
+	GetBonusMp() int16
+	SetBonusMp(int16)
+	GetInvincible() bool
+	SetInvincible(bool)
+	IsAlive() bool
+}
+
+func (life *Life) GetObject() *Object {
+	return &life.Object
+}
+
 func (life *Life) GetMaxHp() uint16 {
 	total := int32(life.BaseHp) + int32(life.BonusHp)
 	if total < 1 {
@@ -29,7 +53,6 @@ func (life *Life) GetMaxHp() uint16 {
 	return uint16(total)
 }
 
-// GetMaxMp returns the current maximum MP (BaseMp + BonusMp)
 func (life *Life) GetMaxMp() uint16 {
 	total := int32(life.BaseMp) + int32(life.BonusMp)
 	if total < 0 {
@@ -41,51 +64,134 @@ func (life *Life) GetMaxMp() uint16 {
 	return uint16(total)
 }
 
-// AddBaseHp adds to base maximum HP (permanent change)
 func (life *Life) AddBaseHp(amount uint16) {
 	newHp := life.BaseHp + amount
 	if newHp > constant.STAT_MAX_HP_MP {
 		newHp = constant.STAT_MAX_HP_MP
 	}
 	life.BaseHp = newHp
-	// Adjust current HP if it exceeds new max
+
 	if life.Hp > life.GetMaxHp() {
 		life.Hp = life.GetMaxHp()
 	}
 }
 
-// AddBonusHp adds to bonus maximum HP (temporary change from buffs/equipment)
 func (life *Life) AddBonusHp(amount int16) {
 	life.BonusHp += amount
-	// Adjust current HP if it exceeds new max
+
 	if life.Hp > life.GetMaxHp() {
 		life.Hp = life.GetMaxHp()
 	}
 }
 
-// AddBaseMp adds to base maximum MP (permanent change)
 func (life *Life) AddBaseMp(amount uint16) {
 	newMp := life.BaseMp + amount
 	if newMp > constant.STAT_MAX_HP_MP {
 		newMp = constant.STAT_MAX_HP_MP
 	}
 	life.BaseMp = newMp
-	// Adjust current MP if it exceeds new max
+
 	if life.Mp > life.GetMaxMp() {
 		life.Mp = life.GetMaxMp()
 	}
 }
 
-// AddBonusMp adds to bonus maximum MP (temporary change from buffs/equipment)
 func (life *Life) AddBonusMp(amount int16) {
 	life.BonusMp += amount
-	// Adjust current MP if it exceeds new max
+
 	if life.Mp > life.GetMaxMp() {
 		life.Mp = life.GetMaxMp()
 	}
 }
 
-// Luable interface implementation
+func (life *Life) GetHp() uint16       { return life.Hp }
+func (life *Life) GetMp() uint16       { return life.Mp }
+func (life *Life) GetBonusHp() int16   { return life.BonusHp }
+func (life *Life) GetBonusMp() int16   { return life.BonusMp }
+func (life *Life) GetInvincible() bool { return life.Invincible }
+func (life *Life) IsAlive() bool       { return life.Hp > 0 }
+
+func (life *Life) SetHp(v uint16) {
+	maxHp := life.GetMaxHp()
+	if v > maxHp {
+		v = maxHp
+	}
+	life.Hp = v
+}
+
+func (life *Life) SetMp(v uint16) {
+	maxMp := life.GetMaxMp()
+	if v > maxMp {
+		v = maxMp
+	}
+	life.Mp = v
+}
+
+func (life *Life) SetMaxHp(v uint16) {
+	if v > constant.STAT_MAX_HP_MP {
+		v = constant.STAT_MAX_HP_MP
+	}
+	life.BaseHp = v
+	if life.Hp > life.GetMaxHp() {
+		life.Hp = life.GetMaxHp()
+	}
+}
+
+func (life *Life) SetMaxMp(v uint16) {
+	if v > constant.STAT_MAX_HP_MP {
+		v = constant.STAT_MAX_HP_MP
+	}
+	life.BaseMp = v
+	if life.Mp > life.GetMaxMp() {
+		life.Mp = life.GetMaxMp()
+	}
+}
+
+func (life *Life) SetBonusHp(v int16) {
+	life.BonusHp = v
+	if life.Hp > life.GetMaxHp() {
+		life.Hp = life.GetMaxHp()
+	}
+}
+
+func (life *Life) SetBonusMp(v int16) {
+	life.BonusMp = v
+	if life.Mp > life.GetMaxMp() {
+		life.Mp = life.GetMaxMp()
+	}
+}
+
+func (life *Life) SetInvincible(b bool) { life.Invincible = b }
+
+func (life *Life) AddHp(amount int) {
+	newHp := int(life.Hp) + amount
+	if newHp < 0 {
+		newHp = 0
+	}
+	maxHp := life.GetMaxHp()
+	if newHp > int(maxHp) {
+		newHp = int(maxHp)
+	}
+	life.Hp = uint16(newHp)
+}
+
+func (life *Life) AddMp(amount int) {
+	newMp := int(life.Mp) + amount
+	if newMp < 0 {
+		newMp = 0
+	}
+	maxMp := life.GetMaxMp()
+	if newMp > int(maxMp) {
+		newMp = int(maxMp)
+	}
+	life.Mp = uint16(newMp)
+}
+
+func (life *Life) AddHpMp(hpDelta, mpDelta int) {
+	life.AddHp(hpDelta)
+	life.AddMp(mpDelta)
+}
+
 func (life *Life) LuaTypeName() string {
 	return "LuaLife"
 }
@@ -94,214 +200,215 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"hp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
+			acc, ok := ud.Value.(LifeAccessor)
 			if !ok {
 				L.ArgError(1, "Life expected")
 				return 0
 			}
-
 			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return hp
-				L.Push(lua.LNumber(life.Hp))
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(acc.GetHp()))
 				return 1
-			} else if argc == 2 {
-				// Setter: hp(value)
+			case 2:
 				hp := L.CheckInt(2)
 				if hp < 0 {
 					hp = 0
 				}
-				maxHp := life.GetMaxHp()
+				maxHp := acc.GetMaxHp()
 				if hp > int(maxHp) {
 					hp = int(maxHp)
 				}
-				life.Hp = uint16(hp)
+				acc.SetHp(uint16(hp))
 				return 0
-			} else {
+			default:
 				L.ArgError(2, "hp() requires 0 or 1 arguments")
 				return 0
 			}
 		},
-		"get_max_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
-			L.Push(lua.LNumber(life.GetMaxHp()))
-			return 1
-		},
-		"set_base_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
-			baseHp := L.CheckInt(2)
-			if baseHp < 0 {
-				baseHp = 0
-			}
-			life.BaseHp = uint16(baseHp)
-			// Adjust HP if it exceeds new max
-			if life.Hp > life.GetMaxHp() {
-				life.Hp = life.GetMaxHp()
-			}
-			return 0
-		},
-		"add_bonus_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
-			bonusHp := L.CheckInt(2)
-			life.AddBonusHp(int16(bonusHp))
-			return 0
-		},
 		"mp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
+			acc, ok := ud.Value.(LifeAccessor)
 			if !ok {
 				L.ArgError(1, "Life expected")
 				return 0
 			}
-
 			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return mp
-				L.Push(lua.LNumber(life.Mp))
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(acc.GetMp()))
 				return 1
-			} else if argc == 2 {
-				// Setter: mp(value)
+			case 2:
 				mp := L.CheckInt(2)
 				if mp < 0 {
 					mp = 0
 				}
-				maxMp := life.GetMaxMp()
+				maxMp := acc.GetMaxMp()
 				if mp > int(maxMp) {
 					mp = int(maxMp)
 				}
-				life.Mp = uint16(mp)
+				acc.SetMp(uint16(mp))
 				return 0
-			} else {
+			default:
 				L.ArgError(2, "mp() requires 0 or 1 arguments")
 				return 0
 			}
 		},
-		"get_max_mp": func(L *lua.LState) int {
+		"max_hp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
+			acc, ok := ud.Value.(LifeAccessor)
 			if !ok {
 				L.ArgError(1, "Life expected")
 				return 0
 			}
-			L.Push(lua.LNumber(life.GetMaxMp()))
-			return 1
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(acc.GetMaxHp()))
+				return 1
+			case 2:
+				hp := L.CheckInt(2)
+				if hp < 0 {
+					hp = 0
+				}
+				maxCap := int(constant.STAT_MAX_HP_MP)
+				if hp > maxCap {
+					hp = maxCap
+				}
+				acc.SetMaxHp(uint16(hp))
+				return 0
+			default:
+				L.ArgError(2, "max_hp() requires 0 or 1 arguments")
+				return 0
+			}
 		},
-		"set_base_mp": func(L *lua.LState) int {
+		"max_mp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
+			acc, ok := ud.Value.(LifeAccessor)
 			if !ok {
 				L.ArgError(1, "Life expected")
 				return 0
 			}
-			baseMp := L.CheckInt(2)
-			if baseMp < 0 {
-				baseMp = 0
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(acc.GetMaxMp()))
+				return 1
+			case 2:
+				mp := L.CheckInt(2)
+				if mp < 0 {
+					mp = 0
+				}
+				maxCap := int(constant.STAT_MAX_HP_MP)
+				if mp > maxCap {
+					mp = maxCap
+				}
+				acc.SetMaxMp(uint16(mp))
+				return 0
+			default:
+				L.ArgError(2, "max_mp() requires 0 or 1 arguments")
+				return 0
 			}
-			life.BaseMp = uint16(baseMp)
-			// Adjust MP if it exceeds new max
-			if life.Mp > life.GetMaxMp() {
-				life.Mp = life.GetMaxMp()
+		},
+		"bonus_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			acc, ok := ud.Value.(LifeAccessor)
+			if !ok {
+				L.ArgError(1, "Life expected")
+				return 0
 			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(acc.GetBonusHp()))
+				return 1
+			case 2:
+				acc.SetBonusHp(int16(L.CheckInt(2)))
+				return 0
+			default:
+				L.ArgError(2, "bonus_hp() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+		"bonus_mp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			acc, ok := ud.Value.(LifeAccessor)
+			if !ok {
+				L.ArgError(1, "Life expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(acc.GetBonusMp()))
+				return 1
+			case 2:
+				acc.SetBonusMp(int16(L.CheckInt(2)))
+				return 0
+			default:
+				L.ArgError(2, "bonus_mp() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+		"add_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			acc, ok := ud.Value.(LifeAccessor)
+			if !ok {
+				L.ArgError(1, "Life expected")
+				return 0
+			}
+			acc.AddHp(L.CheckInt(2))
 			return 0
 		},
-		"add_bonus_mp": func(L *lua.LState) int {
+		"add_mp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
+			acc, ok := ud.Value.(LifeAccessor)
 			if !ok {
 				L.ArgError(1, "Life expected")
 				return 0
 			}
-			bonusMp := L.CheckInt(2)
-			life.AddBonusMp(int16(bonusMp))
+			acc.AddMp(L.CheckInt(2))
 			return 0
 		},
-		"get_bonus_hp": func(L *lua.LState) int {
+		"add_mp_hp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
+			acc, ok := ud.Value.(LifeAccessor)
 			if !ok {
 				L.ArgError(1, "Life expected")
 				return 0
 			}
-			L.Push(lua.LNumber(life.BonusHp))
-			return 1
-		},
-		"set_bonus_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
-			bonusHp := L.CheckInt(2)
-			life.BonusHp = int16(bonusHp)
-			// Adjust HP if it exceeds new max
-			if life.Hp > life.GetMaxHp() {
-				life.Hp = life.GetMaxHp()
-			}
-			return 0
-		},
-		"get_bonus_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
-			L.Push(lua.LNumber(life.BonusMp))
-			return 1
-		},
-		"set_bonus_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
-			bonusMp := L.CheckInt(2)
-			life.BonusMp = int16(bonusMp)
-			// Adjust MP if it exceeds new max
-			if life.Mp > life.GetMaxMp() {
-				life.Mp = life.GetMaxMp()
-			}
+			acc.AddHpMp(L.CheckInt(2), L.CheckInt(3))
 			return 0
 		},
 		"invincible": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
+			acc, ok := ud.Value.(LifeAccessor)
 			if !ok {
 				L.ArgError(1, "Life expected")
 				return 0
 			}
-
 			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return invincible
-				L.Push(lua.LBool(life.Invincible))
+			switch argc {
+			case 1:
+				L.Push(lua.LBool(acc.GetInvincible()))
 				return 1
-			} else if argc == 2 {
-				// Setter: invincible(value)
-				invincible := L.CheckBool(2)
-				life.Invincible = invincible
+			case 2:
+				acc.SetInvincible(L.CheckBool(2))
 				return 0
-			} else {
+			default:
 				L.ArgError(2, "invincible() requires 0 or 1 arguments")
 				return 0
 			}
+		},
+		"is_alive": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			acc, ok := ud.Value.(LifeAccessor)
+			if !ok {
+				L.ArgError(1, "Life expected")
+				return 0
+			}
+			L.Push(lua.LBool(acc.IsAlive()))
+			return 1
 		},
 	}
 }
@@ -313,3 +420,9 @@ func (life *Life) String() string {
 func (life *Life) Type() lua.LValueType {
 	return lua.LTUserData
 }
+
+var (
+	_ LifeAccessor = (*Life)(nil)
+	_ LifeAccessor = (*Character)(nil)
+	_ LifeAccessor = (*Mob)(nil)
+)

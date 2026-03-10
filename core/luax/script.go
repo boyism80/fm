@@ -7,7 +7,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// Call loads the script at scriptPath in a new thread (using root), runs the global function funcName synchronously (PCall), and returns the first return value and the thread. The thread can be reused (e.g. for Execute). Caller must call thread.Close() when done with the thread to release resources; the thread is not garbage-collected with automatic Close. On script load error returns (nil, nil, error). If the function is not defined returns (nil, thread, nil).
 func Call(root *lua.LState, scriptPath string, funcName string, args ...interface{}) (lua.LValue, *lua.LState, error) {
 	thread, err := NewThread(root, scriptPath)
 	if err != nil {
@@ -35,6 +34,10 @@ func Call(root *lua.LState, scriptPath string, funcName string, args ...interfac
 func toLValues(L *lua.LState, args []interface{}) ([]lua.LValue, error) {
 	out := make([]lua.LValue, len(args))
 	for i, arg := range args {
+		if arg == nil {
+			out[i] = lua.LNil
+			continue
+		}
 		switch v := arg.(type) {
 		case uint32:
 			out[i] = lua.LNumber(v)
@@ -51,7 +54,11 @@ func toLValues(L *lua.LState, args []interface{}) ([]lua.LValue, error) {
 		case bool:
 			out[i] = lua.LBool(v)
 		case Luable:
-			out[i] = NewLuable(L, v)
+			if v == nil {
+				out[i] = lua.LNil
+			} else {
+				out[i] = NewLuable(L, v)
+			}
 		case []Luable:
 			tbl := L.NewTable()
 			for idx, item := range v {
@@ -64,7 +71,11 @@ func toLValues(L *lua.LState, args []interface{}) ([]lua.LValue, error) {
 		case lua.LValue:
 			out[i] = v
 		default:
-			return nil, fmt.Errorf("unsupported argument type: %T", arg)
+			if l, ok := arg.(Luable); ok {
+				out[i] = NewLuable(L, l)
+			} else {
+				return nil, fmt.Errorf("unsupported argument type: %T", arg)
+			}
 		}
 	}
 	return out, nil

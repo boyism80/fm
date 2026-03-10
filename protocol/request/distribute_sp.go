@@ -11,10 +11,6 @@ type DistributeSP struct {
 	SkillID uint32
 }
 
-func (p *DistributeSP) Opcode() uint16 {
-	return 0x49
-}
-
 func (p *DistributeSP) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
@@ -29,4 +25,3 @@ func (p *DistributeSP) Deserialize(reader *stream.StreamReader) error {
 	}
 	return nil
 }
-

@@ -74,10 +74,10 @@ func (gs *GameServer) GetRootContext() *actor.RootContext {
 type GameContext interface {
 	GetResources() *wz.Resources
 	GetMap(mapId uint32) *entity.Map
-	// GetLogicThread() *core.LogicThread // Commented out: LogicThread removed
 	GetExpRate() int  // Returns experience rate multiplier
 	GetDropRate() int // Returns drop rate multiplier
 	GetMesoRate() int // Returns meso rate multiplier
+	RequestWarp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error
 }
 
 // GameConfig holds game server specific configuration
@@ -148,12 +148,21 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	luax.RegisterOnCreateHook(func(luaState *lua.LState) {
 		// Register Lua types with inheritance
 		luax.RegisterLuaType[*entity.Object](luaState)
+		luax.RegisterLuaDerivedType[*entity.Drop, *entity.Object](luaState)
+		luax.RegisterLuaDerivedType[*entity.Meso, *entity.Drop](luaState)
 		luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)
 		luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](luaState)
 		luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](luaState)
 		luax.RegisterLuaDerivedType[*entity.Npc, *entity.Object](luaState)
 		luax.RegisterLuaType[*entity.Map](luaState)
 		luax.RegisterLuaType[*entity.SkillEntry](luaState)
+		luax.RegisterLuaType[*entity.ItemCore](luaState)
+		luax.RegisterLuaDerivedType[*entity.Equipment, *entity.ItemCore](luaState)
+		luax.RegisterLuaDerivedType[*entity.Consume, *entity.ItemCore](luaState)
+		luax.RegisterLuaDerivedType[*entity.CashItem, *entity.ItemCore](luaState)
+		luax.RegisterLuaDerivedType[*entity.GeneralItem, *entity.ItemCore](luaState)
+		luax.RegisterLuaDerivedType[*entity.Installation, *entity.ItemCore](luaState)
+		luax.RegisterLuaDerivedType[*entity.Pet, *entity.ItemCore](luaState)
 
 		// BuffFlag table for scripts
 		buffFlagTable := luaState.NewTable()
@@ -165,6 +174,12 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		}
 		luaState.SetGlobal("BuffFlag", buffFlagTable)
 		registerSkillConstants(luaState)
+		equipmentPartTable := luaState.NewTable()
+		equipmentPartTable.RawSetString("Weapon", lua.LNumber(constant.EQUIPMENT_PARTS_WEAPON))
+		equipmentPartTable.RawSetString("Shield", lua.LNumber(constant.EQUIPMENT_PARTS_SHIELD))
+		equipmentPartTable.RawSetString("Top", lua.LNumber(constant.EQUIPMENT_PARTS_TOP))
+		equipmentPartTable.RawSetString("Pants", lua.LNumber(constant.EQUIPMENT_PARTS_PANTS))
+		luaState.SetGlobal("EquipmentPart", equipmentPartTable)
 		luax.RegisterFunc(luaState, "class_learnable_skill_wzs", func(L *lua.LState) int {
 			class := uint16(L.CheckInt(1))
 			result := L.NewTable()
@@ -357,6 +372,26 @@ func (gs *GameServer) GetMap(mapID uint32) *entity.Map {
 	return gs.maps[mapID]
 }
 
+// RequestWarp implements GameContext. Removes character from current map (if any) and sends WarpCharacter to the target map's actor.
+func (gs *GameServer) RequestWarp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {
+	if targetMap == nil {
+		return fmt.Errorf("target map is nil")
+	}
+	currentMap := character.GetMap()
+	if currentMap != nil {
+		currentMap.RemovePlayer(character.GetID())
+	}
+	targetPID := targetMap.GetActorPID()
+	if targetPID == nil {
+		return fmt.Errorf("target map actor not found")
+	}
+	gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
+		Character: character,
+		Portal:    spawnPoint,
+	})
+	return nil
+}
+
 // handleClientDisconnect handles client disconnection by removing character from map
 func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	client, ok := c.(*client.GameClient)
@@ -367,8 +402,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	if character == nil {
 		return
 	}
-	mapID := character.Map
-	mapInstance := gs.GetMap(mapID)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return
 	}

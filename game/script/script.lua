@@ -17,6 +17,9 @@ function on_start(me)
 end
 
 function on_script(me)
+    local x, y = me:position()
+    me:chat(string.format("position: %d, %d", x, y))
+
     me:class(412)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
@@ -29,7 +32,16 @@ function on_script(me)
         end
     end
     me:max_hp(20000)
+    me:hp(me:max_hp())
     me:max_mp(20000)
+    me:mp(me:max_mp())
+    me:mkitem('후루츠 대거')
+    me:mkitem('소환의 돌', 200)
+    me:mkitem('화비표창', 10)
+    me:mkitem('메바')
+    me:base_dex(128)
+    me:base_luk(128)
+    me:level(200)
 end
 
 local function handle_combo_attack(me, targets, skill)
@@ -102,8 +114,77 @@ local function handle_combo_attack(me, targets, skill)
     me:buff_value(BuffFlag.Combo, new_orbs)
 end
 
-function on_attack(me, targets, skill)
+local PICKPOCKET_SKILL_IDS = {
+    [0] = true,
+    [SKILL.DOUBLE_STAB] = true,
+    [SKILL.SAVAGE_BLOW] = true,
+    [SKILL.ASSAULTER] = true,
+    [SKILL.BAND_OF_THIEVES] = true,
+    [SKILL.SHOWDOWN_4221003] = true,
+    [SKILL.BOOMERANG_STEP] = true,
+}
+
+local function handle_pickpocket(me, skill, damages)
+    if damages == nil then
+        return
+    end
+    local maxmeso = me:buff_value(BuffFlag.Pickpocket)
+    if maxmeso == nil or maxmeso < 1 then
+        return
+    end
+    local wz = skill and skill:wz()
+    local skill_id = (wz and wz.id) or 0
+    if not PICKPOCKET_SKILL_IDS[skill_id] then
+        return
+    end
+    local map = me:map()
+    if map == nil then
+        return
+    end
+    for mob, hits in pairs(damages) do
+        if not mob or not hits then
+            goto continue_mob
+        end
+        for _, amount in ipairs(hits) do
+            if not amount or amount <= 0 then
+                goto continue_hit
+            end
+            local meso = math.floor((amount / 12300) * maxmeso)
+            if meso < 1 then
+                meso = 1
+            end
+            if meso > maxmeso then
+                meso = maxmeso
+            end
+            if math.random(100) >= 100 then
+                goto continue_hit
+            end
+            local x, y = mob:position()
+            local offset = math.random(-20, 20)
+            map:spawn_meso(meso, { x + offset, y }, me)
+            ::continue_hit::
+        end
+        ::continue_mob::
+    end
+end
+
+local function damages_to_targets(damages)
+    if damages == nil then
+        return {}
+    end
+    local targets = {}
+    for mob, _ in pairs(damages) do
+        if mob ~= nil then
+            targets[#targets + 1] = mob
+        end
+    end
+    return targets
+end
+
+function on_attack(me, skill, damages)
+    local targets = damages_to_targets(damages)
     handle_combo_attack(me, targets, skill)
+    handle_pickpocket(me, skill, damages)
 end
 
 local function get_skill_effect_x(skill_entry)
@@ -163,6 +244,46 @@ local function handle_magic_guard(me, attacker, skill, damage)
     return hp_loss
 end
 
+local function handle_meso_guard(me, attacker, skill, damage)
+    if damage == nil or damage <= 0 then
+        return damage
+    end
+    if me:buff_value(BuffFlag.MesoGuard) == nil then
+        return damage
+    end
+
+    local guard_percent = get_skill_effect_x(me:skill(SKILL.MESO_GUARD))
+    if guard_percent == nil or guard_percent <= 0 then
+        return damage
+    end
+    local current_meso = me:meso()
+    if current_meso == nil or current_meso <= 0 then
+        return damage
+    end
+    local meso_loss = math.floor(damage * (guard_percent / 100.0))
+    if meso_loss < 0 then
+        meso_loss = 0
+    end
+    if meso_loss > current_meso then
+        meso_loss = current_meso
+    end
+    local hp_loss = damage - meso_loss
+    if hp_loss < 0 then
+        hp_loss = 0
+    end
+    if meso_loss > 0 then
+        me:meso(-meso_loss)
+    end
+    return hp_loss
+end
+
 function on_damaged(me, attacker, skill, damage)
-    return handle_magic_guard(me, attacker, skill, damage)
+    local d = handle_magic_guard(me, attacker, skill, damage)
+    return handle_meso_guard(me, attacker, skill, d)
+end
+
+function on_equipment_changed(me, part, before, after)
+    if part == EquipmentPart.Weapon then
+        me:remove_buff(BuffFlag.WkCharge)
+    end
 end

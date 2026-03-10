@@ -21,10 +21,6 @@ type KeymapChange struct {
 	Action int32
 }
 
-func (c *ChangeKeymap) Opcode() uint16 {
-	return 0x71
-}
-
 func (c *ChangeKeymap) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

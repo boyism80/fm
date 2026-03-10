@@ -221,7 +221,7 @@ func (ch *Character) invokeOnDeactivateScripts(removed []*BuffEntity) {
 		return
 	}
 
-	mapInstance := ch.Context.GetMap(ch.Map)
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}

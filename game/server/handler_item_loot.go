@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -41,9 +41,9 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		return fmt.Errorf("character is nil")
 	}
 
-	mapInstance := h.gs.GetMap(character.Map)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
-		log.Printf("Map %d not found for character %d", character.Map, character.GetID())
+		log.Printf("Map not found for character %d", character.GetID())
 		character.Listener.OnUpdateStats(nil, true)
 		return fmt.Errorf("map not found")
 	}

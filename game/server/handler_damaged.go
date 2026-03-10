@@ -96,10 +96,10 @@ func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *enti
 }
 
 func (h *Damaged) resolveDamageAttackerArg(character *entity.Character, req *request.Damaged) interface{} {
-	if character.Context == nil || req.OID == 0 {
+	if req.OID == 0 {
 		return lua.LNil
 	}
-	mapInstance := character.Context.GetMap(character.Map)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return lua.LNil
 	}

@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
-	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/request"
@@ -49,7 +48,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			character.Hp = 50
 			character.Stance = 0
 
-			currentMap := h.gs.GetMap(character.Map)
+			currentMap := character.GetMap()
 			if currentMap == nil {
 				return fmt.Errorf("current map not found")
 			}
@@ -69,7 +68,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			return nil
 		}
 	} else {
-		currentMap := h.gs.GetMap(character.Map)
+		currentMap := character.GetMap()
 		if currentMap == nil {
 			return fmt.Errorf("current map not found")
 		}
@@ -101,19 +100,12 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 		spawnPoint = targetPortal.ID
 	}
 
-	targetMapPID := h.gs.GetMap(targetMapId).GetActorPID()
-	if targetMapPID == nil {
-		return fmt.Errorf("target map actor PID not found")
+	targetMap := h.gs.GetMap(targetMapId)
+	if targetMap == nil {
+		return fmt.Errorf("target map not found")
 	}
-
-	rootContext := h.gs.GetServer().GetRootContext()
-	if rootContext == nil {
-		return fmt.Errorf("rootContext not set")
+	if err := character.Warp(targetMap, spawnPoint); err != nil {
+		return err
 	}
-
-	rootContext.Send(targetMapPID, &g_actor.WarpCharacter{
-		Character: character,
-		Portal:    spawnPoint,
-	})
 	return nil
 }

@@ -13,10 +13,6 @@ type UseInnerPortal struct {
 	FromY      int16
 }
 
-func (p *UseInnerPortal) Opcode() uint16 {
-	return 0x54
-}
-
 func (p *UseInnerPortal) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

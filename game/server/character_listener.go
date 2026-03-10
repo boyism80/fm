@@ -78,7 +78,7 @@ func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecor
 		DontRecordHistory: dontRecordHistory,
 	}
 
-	mapInstance := l.gs.GetMap(l.ch.Map)
+	mapInstance := l.ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
@@ -113,9 +113,9 @@ func (l *CharacterListenerImpl) OnExpGain(exp uint32) {
 	l.ch.Send(expPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnControlMoveMob(oid uint32, moveId uint8, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnControlMoveMob(mob *entity.Mob, moveId uint8, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
 	l.ch.Send(&response.ControlMoveMob{
-		OID:          oid,
+		OID:          mob.OID,
 		MoveId:       uint16(moveId),
 		EnabledSkill: enabledSkill,
 		MP:           mp,
@@ -124,9 +124,9 @@ func (l *CharacterListenerImpl) OnControlMoveMob(oid uint32, moveId uint8, enabl
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowMobHp(oid uint32, percentage uint8) {
+func (l *CharacterListenerImpl) OnShowMobHp(mob *entity.Mob, percentage uint8) {
 	l.ch.Send(&response.ShowMobHp{
-		OID:        oid,
+		OID:        mob.OID,
 		Percentage: percentage,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -195,14 +195,9 @@ func (l *CharacterListenerImpl) OnUpdateStats(stats map[constant.Stat]int32, unl
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
-	mapInstance := l.gs.GetMap(mapID)
+func (l *CharacterListenerImpl) OnMobMoved(mob *entity.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
+	mapInstance := mob.GetObject().GetMap()
 	if mapInstance == nil {
-		return
-	}
-
-	mob := mapInstance.GetMob(mobID)
-	if mob == nil {
 		return
 	}
 
@@ -216,7 +211,7 @@ func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed
 		Skill2:      skill2,
 		Skill3:      skill3,
 		Skill4:      skill4,
-		OID:         mobID,
+		OID:         mob.OID,
 		StartPoint:  startPoint,
 		Movements:   movements,
 	}
@@ -231,8 +226,8 @@ func (l *CharacterListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed
 	mapInstance.Broadcast(movePacket, broadcastOption)
 }
 
-func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
-	mapInstance := l.gs.GetMap(mapID)
+func (l *CharacterListenerImpl) OnPlayerMove(character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return
 	}
@@ -246,27 +241,27 @@ func (l *CharacterListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, char
 	}
 
 	mapInstance.Broadcast(movePacket, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{playerID},
+		ExceptPlayerIDs:    []uint32{character.GetID()},
 		ReferenceCharacter: character,
 		RecipientFilter:    entity.BroadcastVisibleByReference,
 	})
 }
 
-func (l *CharacterListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8) {
-	mapInstance := l.gs.GetMap(mapID)
+func (l *CharacterListenerImpl) OnAttack(character *entity.Character, attackInfo dto.AttackInfo, skillLevel uint8) {
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
 	attackPacket := &response.Attack{
 		AttackInfo:  attackInfo,
-		CharacterId: characterID,
+		CharacterId: character.GetID(),
 		SkillLevel:  skillLevel,
 	}
 
 	mapInstance.Broadcast(attackPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{characterID},
-		ReferenceCharacter: mapInstance.GetPlayer(characterID),
+		ExceptPlayerIDs:    []uint32{character.GetID()},
+		ReferenceCharacter: character,
 		RecipientFilter:    entity.BroadcastVisibleByReference,
 	})
 }
@@ -322,7 +317,7 @@ func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(inventoryType consta
 }
 
 func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Character) {
-	mapInstance := l.gs.GetMap(character.Map)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return
 	}
@@ -384,7 +379,7 @@ func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, wz *wz.
 		Buffs:    dtoBuffs,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := l.gs.GetMap(character.Map)
+	mapInstance := character.GetMap()
 	if mapInstance != nil {
 		mapInstance.Broadcast(&response.UpdateRemoteBuff{
 			CharacterID: int32(character.GetID()),
@@ -400,7 +395,7 @@ func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, wz *wz.
 func (l *CharacterListenerImpl) OnBuffRemoved(character *entity.Character, flags []constant.BuffFlag) {
 	character.Send(&response.CancelBuff{Buffs: flags}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := l.gs.GetMap(character.Map)
+	mapInstance := character.GetMap()
 	if mapInstance != nil {
 		mapInstance.Broadcast(&response.CancelRemoteBuff{
 			CharacterID: int32(character.GetID()),
@@ -423,7 +418,7 @@ func (l *CharacterListenerImpl) OnSkillCooldown(skillID uint32, remainingSec uin
 func (l *CharacterListenerImpl) OnHiddenChanged(hidden bool) {
 	l.ch.Send(&response.SuperHide{Hidden: hidden}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := l.gs.GetMap(l.ch.Map)
+	mapInstance := l.ch.GetMap()
 	if mapInstance == nil {
 		return
 	}

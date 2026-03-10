@@ -39,7 +39,6 @@ type Drop struct {
 	Owner        uint32
 	SpawnedPoint types.Point[int16]
 	DropType     constant.DropType
-	MapID        uint32    // Map ID where this drop is located
 	nextFFA      time.Time // Time when item becomes FFA
 	nextExpiry   time.Time // Time when item expires
 }
@@ -394,19 +393,19 @@ func (item *Pet) Clone(count uint16) Item {
 	}
 }
 
-// NewMeso creates a meso entity with drop information
-func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, context GameContext, mapID uint32) *Meso {
+func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, context GameContext, mapInstance *Map) *Meso {
+	obj := &Object{
+		OID:      sequence,
+		Position: position,
+		Context:  context,
+		Map:      mapInstance,
+	}
 	meso := &Meso{
 		Drop: &Drop{
-			Object: &Object{
-				OID:      sequence,
-				Position: position,
-				Context:  context,
-			},
+			Object:       obj,
 			SpawnedPoint: position,
 			DropType:     dropType,
 			Owner:        ownerID,
-			MapID:        mapID,
 		},
 		Count: count,
 	}

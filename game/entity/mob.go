@@ -14,8 +14,12 @@ type Mob struct {
 	Life
 	Wz       *wz.Mob
 	Foothold int16
-	MapID    uint32    // Map ID where this mob is located
 	Spawn    *MobSpawn // Spawn point where this mob was spawned (nil if not from a spawn point)
+}
+
+// GetObject implements ObjectProvider (Mob embeds Life which embeds Object).
+func (m *Mob) GetObject() *Object {
+	return &m.Life.Object
 }
 
 // Luable interface implementation
@@ -109,24 +113,17 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return map_id
-				L.Push(lua.LNumber(mob.MapID))
-				return 1
-			} else if argc == 2 {
-				// Setter: map_id(value)
-				mapID := L.CheckInt(2)
-				if mapID < 0 {
-					mapID = 0
-				}
-				mob.MapID = uint32(mapID)
-				return 0
-			} else {
-				L.ArgError(2, "map_id() requires 0 or 1 arguments")
+			if L.GetTop() != 1 {
+				L.ArgError(2, "map_id() is read-only (map is fixed at spawn)")
 				return 0
 			}
+			mapInstance := mob.GetObject().GetMap()
+			if mapInstance == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
+			L.Push(lua.LNumber(mapInstance.ID))
+			return 1
 		},
 		"wz": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -161,8 +158,7 @@ func (m *Mob) Type() lua.LValueType {
 // Serialize method removed - use DTO instead
 
 func (m *Mob) dropItems(attacker *Character) {
-	// Get map instance
-	mapInstance := m.Context.GetMap(m.MapID)
+	mapInstance := m.GetObject().GetMap()
 	if mapInstance == nil {
 		return
 	}
@@ -180,31 +176,41 @@ func (m *Mob) dropItems(attacker *Character) {
 		item   Item
 	}
 
-	// Get drop rate from context
 	dropRate := float32(m.Context.GetDropRate())
 	mesoRate := float32(m.Context.GetMesoRate())
+	dropRateMul := int16(100)
+	mesoAmountMul := int16(100)
+	if attacker.BonusStats.DropRate > 0 {
+		dropRateMul = attacker.BonusStats.DropRate
+	}
+	if attacker.BonusStats.MesoMultiplier > 0 {
+		mesoAmountMul = attacker.BonusStats.MesoMultiplier
+	}
+	dropRateMulF := float32(dropRateMul) / 100.0
+	mesoAmountMulF := float32(mesoAmountMul) / 100.0
 
 	for _, drop := range mobDrops {
-		adjustedProb := drop.Prob * dropRate
+		adjustedProb := drop.Prob * dropRate * dropRateMulF
 		if adjustedProb > 1.0 {
 			adjustedProb = 1.0
 		}
 
-		// Check drop probability
 		if rand.Float32() > adjustedProb {
 			continue
 		}
 
 		if drop.Item == 0 {
-			// Generate meso drop (apply meso rate)
 			min := float64(drop.Money) * 0.75
 			max := float64(drop.Money)
 			count := int32(min + rand.Float64()*(max-min))
 			if count == 0 {
 				continue
 			}
-			// Apply meso rate multiplier
 			count = int32(float32(count) * mesoRate)
+			if count == 0 {
+				continue
+			}
+			count = int32(float32(count) * mesoAmountMulF)
 			if count == 0 {
 				continue
 			}
@@ -212,6 +218,7 @@ func (m *Mob) dropItems(attacker *Character) {
 				isMeso bool
 				count  int32
 				item   Item
+				
 			}{isMeso: true, count: count, item: nil})
 		} else {
 			// Generate item drop
@@ -249,7 +256,7 @@ func (m *Mob) dropItems(attacker *Character) {
 
 		if drop.isMeso {
 			// Spawn meso drop
-			if err := mapInstance.SpawnMeso(drop.count, destPoint, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
+			if _, err := mapInstance.SpawnMeso(drop.count, destPoint, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
 				log.Printf("Failed to spawn meso drop: %v", err)
 			}
 		} else {
@@ -294,13 +301,13 @@ func (m *Mob) Damage(damage uint16, attacker *Character) bool {
 	m.dropItems(attacker)
 
 	// Remove mob from map
-	mapInstance := m.Context.GetMap(m.MapID)
+	mapInstance := m.GetObject().GetMap()
 	if mapInstance != nil {
 		mapInstance.RemoveMob(m.OID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT)
 	}
 
 	// Send mob HP update to attacker via listener
-	attacker.Listener.OnShowMobHp(m.OID, uint8(m.Hp*100/m.Life.GetMaxHp()))
+	attacker.Listener.OnShowMobHp(m, uint8(m.Hp*100/m.Life.GetMaxHp()))
 
 	return true
 }

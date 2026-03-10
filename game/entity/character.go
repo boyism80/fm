@@ -53,7 +53,6 @@ type Character struct {
 	AbilityPoint  uint16
 	SkillPoint    uint16
 	HpApUsed      uint16
-	Map           uint32
 	Meso          int32
 	Inventory     map[constant.InventoryType]*Inventory
 	Equipments    map[constant.EquipmentPartsType]*Equipment
@@ -64,6 +63,121 @@ type Character struct {
 	BaseStats     BaseStats
 	BonusStats    BonusStats
 	Buffs         *BuffContainer
+}
+
+// GetObject implements ObjectProvider (Character embeds Life which embeds Object).
+func (ch *Character) GetObject() *Object {
+	return &ch.Life.Object
+}
+
+// LifeAccessor implementation for *Character (delegates to Life then notifies client)
+func (ch *Character) GetHp() uint16       { return ch.Life.Hp }
+func (ch *Character) GetMp() uint16       { return ch.Life.Mp }
+func (ch *Character) GetBonusHp() int16   { return ch.Life.BonusHp }
+func (ch *Character) GetBonusMp() int16   { return ch.Life.BonusMp }
+func (ch *Character) GetInvincible() bool { return ch.Life.Invincible }
+func (ch *Character) IsAlive() bool       { return ch.Life.Hp > 0 }
+
+func (ch *Character) SetHp(v uint16) {
+	ch.Life.SetHp(v)
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
+	}
+}
+
+func (ch *Character) SetMp(v uint16) {
+	ch.Life.SetMp(v)
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
+	}
+}
+
+const characterMaxHpMpCap = 32767
+
+func (ch *Character) SetMaxHp(v uint16) {
+	if v > characterMaxHpMpCap {
+		v = characterMaxHpMpCap
+	}
+	ch.Life.BaseHp = v
+	if ch.Life.Hp > ch.GetMaxHp() {
+		ch.Life.Hp = ch.GetMaxHp()
+	}
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_HP:     int32(ch.Hp),
+			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+		}, false)
+	}
+}
+
+func (ch *Character) SetMaxMp(v uint16) {
+	if v > characterMaxHpMpCap {
+		v = characterMaxHpMpCap
+	}
+	ch.Life.BaseMp = v
+	if ch.Life.Mp > ch.GetMaxMp() {
+		ch.Life.Mp = ch.GetMaxMp()
+	}
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_MP:     int32(ch.Mp),
+			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+		}, false)
+	}
+}
+
+func (ch *Character) SetBonusHp(v int16) {
+	ch.Life.SetBonusHp(v)
+	if ch.Listener != nil {
+		ch.notifyStatChange(constant.STAT_MAX_HP)
+	}
+}
+
+func (ch *Character) SetBonusMp(v int16) {
+	ch.Life.SetBonusMp(v)
+	if ch.Listener != nil {
+		ch.notifyStatChange(constant.STAT_MAX_MP)
+	}
+}
+
+func (ch *Character) SetInvincible(b bool) { ch.Life.Invincible = b }
+
+func (ch *Character) AddHp(amount int) {
+	ch.Life.AddHp(amount)
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
+	}
+}
+
+func (ch *Character) AddMp(amount int) {
+	ch.Life.AddMp(amount)
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
+	}
+}
+
+func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
+	ch.Life.AddHpMp(hpDelta, mpDelta)
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_HP: int32(ch.Hp),
+			constant.STAT_MP: int32(ch.Mp),
+		}, false)
+	}
+}
+
+// GetMap returns the current map (nil if not on a map). Delegates to Object.
+func (ch *Character) GetMap() *Map {
+	return ch.GetObject().GetMap()
+}
+
+// Warp requests to move the character to targetMap at the given spawn point (portal).
+// It sends an actor message; the target map's actor will call AddPlayer which sets Map.
+func (ch *Character) Warp(targetMap *Map, spawnPoint uint8) error {
+	if ch.Context == nil {
+		return fmt.Errorf("no game context")
+	}
+	return ch.Context.RequestWarp(ch, targetMap, spawnPoint)
 }
 
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
@@ -171,7 +285,6 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		SkillPoint:   0,
 		HpApUsed:     0,
 		spawnPoint:   1,
-		Map:          200000301,
 		Meso:         2135983647,
 
 		random1: stream.NewRandomStream(),
@@ -398,11 +511,7 @@ func (ch *Character) SetLevel(newLevel uint8) {
 }
 
 func (ch *Character) broadcastLevelUpEffect() {
-	if ch.Context == nil {
-		return
-	}
-
-	mapInstance := ch.Context.GetMap(ch.Map)
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}

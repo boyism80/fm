@@ -8,10 +8,6 @@ type UseChair struct {
 	ItemID uint32
 }
 
-func (u *UseChair) Opcode() uint16 {
-	return 0x1A
-}
-
 func (u *UseChair) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

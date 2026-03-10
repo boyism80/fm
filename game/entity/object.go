@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -8,10 +9,22 @@ import (
 type Object struct {
 	OID      uint32
 	Position types.Vector2[int16]
-	Context  GameContext // GameContext for accessing game resources
+	Context  GameContext
+	Map      *Map
 }
 
-// Luable interface implementation
+type ObjectProvider interface {
+	GetObject() *Object
+}
+
+func (obj *Object) GetObject() *Object {
+	return obj
+}
+
+func (obj *Object) GetMap() *Map {
+	return obj.Map
+}
+
 func (obj *Object) LuaTypeName() string {
 	return "LuaObject"
 }
@@ -20,20 +33,21 @@ func (obj *Object) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"position": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			obj, ok := ud.Value.(*Object)
+			provider, ok := ud.Value.(ObjectProvider)
 			if !ok {
 				L.ArgError(1, "Object expected")
 				return 0
 			}
+			obj := provider.GetObject()
 
 			argc := L.GetTop()
 			if argc == 1 {
-				// Getter: return x, y
+
 				L.Push(lua.LNumber(obj.Position.X))
 				L.Push(lua.LNumber(obj.Position.Y))
 				return 2
 			} else if argc == 3 {
-				// Setter: position(x, y)
+
 				x := L.CheckInt(2)
 				y := L.CheckInt(3)
 				obj.Position.X = int16(x)
@@ -46,21 +60,38 @@ func (obj *Object) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"oid": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			obj, ok := ud.Value.(*Object)
+			provider, ok := ud.Value.(ObjectProvider)
 			if !ok {
 				L.ArgError(1, "Object expected")
 				return 0
 			}
+			obj := provider.GetObject()
 
 			argc := L.GetTop()
 			if argc == 1 {
-				// Getter: return oid
+
 				L.Push(lua.LNumber(obj.OID))
 				return 1
 			} else {
 				L.ArgError(2, "oid() is read-only")
 				return 0
 			}
+		},
+		"map": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			provider, ok := ud.Value.(ObjectProvider)
+			if !ok {
+				L.Push(lua.LNil)
+				return 1
+			}
+			obj := provider.GetObject()
+			mapInstance := obj.GetMap()
+			if mapInstance == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, mapInstance))
+			return 1
 		},
 	}
 }
@@ -72,3 +103,19 @@ func (obj *Object) String() string {
 func (obj *Object) Type() lua.LValueType {
 	return lua.LTUserData
 }
+
+func (d *Drop) GetObject() *Object {
+	if d == nil {
+		return nil
+	}
+	return d.Object
+}
+
+var (
+	_ ObjectProvider = (*Object)(nil)
+	_ ObjectProvider = (*Life)(nil)
+	_ ObjectProvider = (*Character)(nil)
+	_ ObjectProvider = (*Mob)(nil)
+	_ ObjectProvider = (*Npc)(nil)
+	_ ObjectProvider = (*Drop)(nil)
+)

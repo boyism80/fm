@@ -16,21 +16,21 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// MapListener defines interface for map events
+// MapListener defines interface for map events. Prefer passing object pointers (*Map, *Character, *Mob) over IDs.
 type MapListener interface {
-	OnPlayerAdded(mapID uint32, playerID uint32, character *Character, init bool)
-	OnPlayerRemoved(mapID uint32, playerID uint32)
-	OnPlayerMoved(mapID uint32, playerID uint32, character *Character)
-	OnPlayerMove(mapID uint32, playerID uint32, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
-	OnPlayerChat(mapID uint32, playerID uint32, message string)
-	OnItemSpawned(mapID uint32, itemID uint32, item Item, drop *Drop)
-	OnMesoSpawned(mapID uint32, itemID uint32, meso *Meso)
-	OnItemRemoved(mapID uint32, itemID uint32, characterID uint32, mode constant.RemoveItemType)
-	OnMobSpawned(mapID uint32, mobID uint32, mob *Mob)
-	OnMobRemoved(mapID uint32, mobID uint32, animationType constant.MobDieAnimationType)
+	OnPlayerAdded(mapInstance *Map, character *Character, init bool)
+	OnPlayerRemoved(mapInstance *Map, character *Character)
+	OnPlayerMoved(mapInstance *Map, character *Character)
+	OnPlayerMove(mapInstance *Map, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
+	OnPlayerChat(mapInstance *Map, character *Character, message string)
+	OnItemSpawned(mapInstance *Map, item Item, drop *Drop)
+	OnMesoSpawned(mapInstance *Map, meso *Meso)
+	OnItemRemoved(mapInstance *Map, itemID uint32, looterID uint32, mode constant.RemoveItemType)
+	OnMobSpawned(mapInstance *Map, mob *Mob)
+	OnMobRemoved(mapInstance *Map, mob *Mob, animationType constant.MobDieAnimationType)
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
-	OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
-	OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8)
+	OnMobMoved(mapInstance *Map, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
+	OnAttack(mapInstance *Map, character *Character, attackInfo dto.AttackInfo, skillLevel uint8)
 }
 
 type MobSpawn struct {
@@ -143,12 +143,12 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8,
 		m.objects[types.OBJECT_TYPE_PLAYER] = make(map[uint32]interface{})
 	}
 
-	character.Map = m.ID
+	character.GetObject().Map = m
 	character.spawnPoint = spawnPoint
 
 	m.objects[types.OBJECT_TYPE_PLAYER][playerID] = character
 
-	m.listener.OnPlayerAdded(m.ID, playerID, character, init)
+	m.listener.OnPlayerAdded(m, character, init)
 	m.controllerTable.EnterPlayer(character)
 
 	return nil
@@ -166,10 +166,11 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	character := m.objects[types.OBJECT_TYPE_PLAYER][playerID].(*Character)
 	delete(m.objects[types.OBJECT_TYPE_PLAYER], playerID)
 
+	character.GetObject().Map = nil
 	m.controllerTable.LeavePlayer(character)
 
 	// Notify listener about player removal
-	m.listener.OnPlayerRemoved(m.ID, playerID)
+	m.listener.OnPlayerRemoved(m, character)
 
 	return nil
 }
@@ -223,12 +224,10 @@ func (m *Map) initializeNpcs() {
 		oid := m.allocateOID()
 		npc := &Npc{
 			Object: Object{
-				OID: oid,
-				Position: types.Point[int16]{
-					X: wz.BaseSpawn.Position.X,
-					Y: wz.BaseSpawn.Position.Y,
-				},
-				Context: m.context,
+				OID:      oid,
+				Position: types.Point[int16]{X: wz.BaseSpawn.Position.X, Y: wz.BaseSpawn.Position.Y},
+				Context:  m.context,
+				Map:      m,
 			},
 			Wz: &wz,
 		}
@@ -295,6 +294,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 			OID:      oid,
 			Position: spawnPosition,
 			Context:  m.context,
+			Map:      m,
 		},
 		Wz: &npcSpawn,
 	}
@@ -351,6 +351,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 				OID:      oid,
 				Position: spawnPoint,
 				Context:  m.context,
+				Map:      m,
 			},
 			Hp:     uint16(mobSpec.MaxHP),
 			BaseHp: uint16(mobSpec.MaxHP),
@@ -360,7 +361,6 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		},
 		Foothold: footholdID,
 		Wz:       mobSpec,
-		MapID:    m.ID,
 		Spawn:    mobSpawn,
 	}
 
@@ -369,7 +369,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	}
 
 	m.objects[types.OBJECT_TYPE_MONSTER][oid] = mob
-	m.listener.OnMobSpawned(m.ID, oid, mob)
+	m.listener.OnMobSpawned(m, mob)
 	m.controllerTable.EnterMob(mob)
 
 	return mob, nil
@@ -394,7 +394,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 
 	m.releaseOID(mobID)
 	m.controllerTable.LeaveMob(mob)
-	m.listener.OnMobRemoved(m.ID, mobID, animationType)
+	m.listener.OnMobRemoved(m, mob, animationType)
 
 	return nil
 }
@@ -480,7 +480,7 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	drop.OID = oid
 	drop.Owner = ownerID
 	drop.DropType = dropType
-	drop.MapID = m.ID
+	drop.Object.Map = m
 	drop.RegisterExpire(constant.ITEM_EXPIRE_TIME)
 	if dropType == constant.DROP_TYPE_OWNED || dropType == constant.DROP_TYPE_PARTY {
 		drop.RegisterFFA(constant.ITEM_FFA_TIME)
@@ -491,12 +491,12 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	}
 
 	m.objects[types.OBJECT_TYPE_ITEM][oid] = item
-	m.listener.OnItemSpawned(m.ID, oid, item, drop)
+	m.listener.OnItemSpawned(m, item, drop)
 
 	return nil
 }
 
-func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType) error {
+func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType) (*Meso, error) {
 	oid := m.allocateOID()
 
 	dropPoint, ok := m.model.DropPoint(position)
@@ -504,8 +504,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 		dropPoint = position
 	}
 
-	// Create meso entity
-	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.context, m.ID)
+	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.context, m)
 
 	// Register timers for meso
 	drop := meso.GetDrop()
@@ -525,9 +524,9 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 	m.objects[types.OBJECT_TYPE_ITEM][oid] = meso
 
 	// Notify listener about meso spawn
-	m.listener.OnMesoSpawned(m.ID, oid, meso)
+	m.listener.OnMesoSpawned(m, meso)
 
-	return nil
+	return meso, nil
 }
 
 // RemoveItem removes an item from the map
@@ -546,7 +545,7 @@ func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, play
 	m.releaseOID(itemID)
 
 	// Notify listener about item removal
-	m.listener.OnItemRemoved(m.ID, itemID, playerID, removeType)
+	m.listener.OnItemRemoved(m, itemID, playerID, removeType)
 
 	return nil
 }
@@ -767,6 +766,161 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			tbl.RawSetString("return_map_id", lua.LNumber(spec.ReturnMapId))
 			tbl.RawSetString("town", lua.LBool(spec.IsTown))
 			L.Push(tbl)
+			return 1
+		},
+		"spawn_meso": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			count := int32(L.CheckInt(2))
+			posTbl := L.CheckTable(3)
+			var x, y int16
+			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
+				x = int16(lua.LVAsNumber(lx))
+			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
+				x = int16(lua.LVAsNumber(lx))
+			}
+			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
+				y = int16(lua.LVAsNumber(ly))
+			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
+				y = int16(lua.LVAsNumber(ly))
+			}
+			var owner *Character
+			if ownerLV := L.Get(4); ownerLV != lua.LNil {
+				if ownerUd, ok := ownerLV.(*lua.LUserData); ok {
+					if ch, ok := ownerUd.Value.(*Character); ok {
+						owner = ch
+					}
+				}
+			}
+			if count <= 0 {
+				return 0
+			}
+			pos := types.Point[int16]{X: x, Y: y}
+			dropType := constant.DROP_TYPE_FFA
+			ownerID := uint32(0)
+			if owner != nil {
+				dropType = constant.DROP_TYPE_OWNED
+				ownerID = owner.GetID()
+			}
+			meso, err := mapInstance.SpawnMeso(count, pos, ownerID, dropType)
+			if err != nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, meso))
+			return 1
+		},
+		"spawn_item": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			if mapInstance.context == nil {
+				return 0
+			}
+			resources := mapInstance.context.GetResources()
+			if resources == nil {
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc < 3 {
+				L.ArgError(2, "spawn_item(itemIdOrName, count, position [, owner]) requires at least 3 arguments")
+				return 0
+			}
+
+			var itemId uint32
+			switch lv := L.Get(2).(type) {
+			case lua.LString:
+				id, ok := resources.NameToItem(string(lv))
+				if !ok {
+					return 0
+				}
+				itemId = id
+			case lua.LNumber:
+				itemId = uint32(lv)
+			default:
+				L.ArgError(2, "item id (number) or item name (string) expected")
+				return 0
+			}
+
+			if _, ok := resources.Items[itemId]; !ok {
+				return 0
+			}
+
+			count := uint16(1)
+			if n := L.CheckInt(3); n >= 1 {
+				count = uint16(n)
+			}
+
+			posTbl := L.CheckTable(4)
+			var x, y int16
+			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
+				x = int16(lua.LVAsNumber(lx))
+			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
+				x = int16(lua.LVAsNumber(lx))
+			}
+			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
+				y = int16(lua.LVAsNumber(ly))
+			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
+				y = int16(lua.LVAsNumber(ly))
+			}
+			pos := types.Point[int16]{X: x, Y: y}
+
+			var owner *Character
+			if argc >= 5 {
+				if ownerLV := L.Get(5); ownerLV != lua.LNil {
+					if ownerUd, ok := ownerLV.(*lua.LUserData); ok {
+						if ch, ok := ownerUd.Value.(*Character); ok {
+							owner = ch
+						}
+					}
+				}
+			}
+
+			item, err := NewItem(itemId, count, mapInstance.context)
+			if err != nil {
+				return 0
+			}
+			dropType := constant.DROP_TYPE_FFA
+			ownerID := uint32(0)
+			if owner != nil {
+				dropType = constant.DROP_TYPE_OWNED
+				ownerID = owner.GetID()
+			}
+			item.BindDrop(&Drop{
+				Object:        &Object{Position: pos},
+				Owner:         ownerID,
+				SpawnedPoint:  pos,
+				DropType:      dropType,
+			})
+
+			if err := mapInstance.SpawnItem(item, ownerID, dropType); err != nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			switch v := item.(type) {
+			case *Equipment:
+				L.Push(luax.NewLuable(L, v))
+			case *Consume:
+				L.Push(luax.NewLuable(L, v))
+			case *CashItem:
+				L.Push(luax.NewLuable(L, v))
+			case *GeneralItem:
+				L.Push(luax.NewLuable(L, v))
+			case *Installation:
+				L.Push(luax.NewLuable(L, v))
+			case *Pet:
+				L.Push(luax.NewLuable(L, v))
+			default:
+				L.Push(luax.NewLuable(L, item.GetObject()))
+			}
 			return 1
 		},
 	}

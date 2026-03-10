@@ -40,8 +40,7 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 		return nil
 	}
 
-	mapID := character.Map
-	mapInstance := h.gs.GetMap(mapID)
+	mapInstance := character.GetMap()
 
 	if req.ChairID == -1 {
 		character.Chair = 0

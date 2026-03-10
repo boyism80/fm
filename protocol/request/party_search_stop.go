@@ -8,10 +8,6 @@ import (
 type PartySearchStop struct {
 }
 
-func (p *PartySearchStop) Opcode() uint16 {
-	return 0xB6
-}
-
 func (p *PartySearchStop) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
@@ -19,4 +15,3 @@ func (p *PartySearchStop) Serialize(writer *stream.StreamWriter) error {
 func (p *PartySearchStop) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }
-

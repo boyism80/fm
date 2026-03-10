@@ -25,11 +25,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc == 1 {
-
+			switch argc {
+			case 1:
 				L.Push(lua.LNumber(ch.GetID()))
 				return 1
-			} else {
+			default:
 				L.ArgError(2, "id() is read-only")
 				return 0
 			}
@@ -43,16 +43,15 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc == 1 {
-
+			switch argc {
+			case 1:
 				L.Push(lua.LString(ch.name))
 				return 1
-			} else if argc == 2 {
-
+			case 2:
 				name := L.CheckString(2)
 				ch.name = name
 				return 0
-			} else {
+			default:
 				L.ArgError(2, "name() requires 0 or 1 arguments")
 				return 0
 			}
@@ -66,12 +65,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc == 1 {
-
+			switch argc {
+			case 1:
 				L.Push(lua.LNumber(ch.level))
 				return 1
-			} else if argc == 2 {
-
+			case 2:
 				level := L.CheckInt(2)
 				if level < 1 {
 					level = 1
@@ -79,9 +77,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if level > 200 {
 					level = 200
 				}
-				ch.level = uint8(level)
+				ch.SetLevel(uint8(level))
 				return 0
-			} else {
+			default:
 				L.ArgError(2, "level() requires 0 or 1 arguments")
 				return 0
 			}
@@ -95,27 +93,24 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc == 1 {
-
+			switch argc {
+			case 1:
 				L.Push(lua.LNumber(ch.exp))
 				return 1
-			} else if argc == 2 {
-
+			case 2:
 				value := L.CheckNumber(2)
 				if value >= 0 {
-
 					if value < 0 {
 						value = 0
 					}
 					ch.exp = uint32(value)
 				} else {
-
 					amount := uint32(-value)
 					ch.AddExp(amount)
 					return 0
 				}
 				return 0
-			} else {
+			default:
 				L.ArgError(2, "exp() requires 0 or 1 arguments")
 				return 0
 			}
@@ -129,22 +124,19 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc == 1 {
-
+			switch argc {
+			case 1:
 				L.Push(lua.LNumber(ch.Meso))
 				return 1
-			} else if argc == 2 {
-
+			case 2:
 				value := L.CheckNumber(2)
 				if value >= 0 {
-
 					if value <= 2147483647 {
 						ch.SetMeso(int32(value))
 					} else {
 						ch.SetMeso(2147483647)
 					}
 				} else {
-
 					amount := int32(-value)
 					if ch.Meso < amount {
 						ch.SetMeso(0)
@@ -156,7 +148,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					ch.Listener.OnMesoChanged(ch.Meso)
 				}
 				return 0
-			} else {
+			default:
 				L.ArgError(2, "meso() requires 0 or 1 arguments")
 				return 0
 			}
@@ -617,58 +609,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
-		"hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			argc := L.GetTop()
-			switch argc {
-			case 1:
-				L.Push(lua.LNumber(ch.Hp))
-				return 1
-			case 2:
-				hp := int(L.CheckNumber(2))
-				if hp < 0 {
-					hp = 0
-				}
-				maxHp := ch.GetMaxHp()
-				if hp > int(maxHp) {
-					hp = int(maxHp)
-				}
-				ch.Hp = uint16(hp)
-				if ch.Listener != nil {
-					ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-						constant.STAT_HP: int32(ch.Hp),
-					}, false)
-				}
-				return 0
-			default:
-				L.ArgError(2, "hp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"map": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			if ch.Context == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			mapInstance := ch.Context.GetMap(ch.Map)
-			if mapInstance == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			L.Push(luax.NewLuable(L, mapInstance))
-			return 1
-		},
 		"hidden": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -690,7 +630,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
-		"max_hp": func(L *lua.LState) int {
+		"base_str": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
@@ -700,52 +640,25 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.GetMaxHp()))
+				L.Push(lua.LNumber(ch.BaseStats.Str))
 				return 1
 			case 2:
-				hp := L.CheckInt(2)
-				if hp > 32767 {
-					hp = 32767
+				v := L.CheckInt(2)
+				if v < 0 {
+					v = 0
 				}
-				ch.Life.Hp = uint16(hp)
-				ch.Life.BaseHp = uint16(hp)
-				if ch.Listener != nil {
-					ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-						constant.STAT_HP:     int32(ch.Hp),
-						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
-					}, false)
+				if v > int(constant.STAT_MAX_STR_DEX_INT_LUK) {
+					v = int(constant.STAT_MAX_STR_DEX_INT_LUK)
 				}
+				ch.BaseStats.Str = uint16(v)
+				ch.notifyStatChange(constant.STAT_STR)
 				return 0
 			default:
-				L.ArgError(2, "max_hp() requires 0 or 1 arguments")
+				L.ArgError(2, "base_str() requires 0 or 1 arguments")
 				return 0
 			}
 		},
-		"add_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			amount := int(L.CheckNumber(2))
-			newHp := int(ch.Hp) + amount
-			if newHp < 0 {
-				newHp = 0
-			}
-			maxHp := ch.GetMaxHp()
-			if newHp > int(maxHp) {
-				newHp = int(maxHp)
-			}
-			ch.Hp = uint16(newHp)
-			if ch.Listener != nil {
-				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-					constant.STAT_HP: int32(ch.Hp),
-				}, false)
-			}
-			return 0
-		},
-		"mp": func(L *lua.LState) int {
+		"base_dex": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
@@ -755,30 +668,25 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Mp))
+				L.Push(lua.LNumber(ch.BaseStats.Dex))
 				return 1
 			case 2:
-				mp := int(L.CheckNumber(2))
-				if mp < 0 {
-					mp = 0
+				v := L.CheckInt(2)
+				if v < 0 {
+					v = 0
 				}
-				maxMp := ch.GetMaxMp()
-				if mp > int(maxMp) {
-					mp = int(maxMp)
+				if v > int(constant.STAT_MAX_STR_DEX_INT_LUK) {
+					v = int(constant.STAT_MAX_STR_DEX_INT_LUK)
 				}
-				ch.Mp = uint16(mp)
-				if ch.Listener != nil {
-					ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-						constant.STAT_MP: int32(ch.Mp),
-					}, false)
-				}
+				ch.BaseStats.Dex = uint16(v)
+				ch.notifyStatChange(constant.STAT_DEX)
 				return 0
 			default:
-				L.ArgError(2, "mp() requires 0 or 1 arguments")
+				L.ArgError(2, "base_dex() requires 0 or 1 arguments")
 				return 0
 			}
 		},
-		"max_mp": func(L *lua.LState) int {
+		"base_int": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
@@ -788,99 +696,51 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.GetMaxMp()))
+				L.Push(lua.LNumber(ch.BaseStats.Int))
 				return 1
 			case 2:
-				mp := L.CheckInt(2)
-				if mp > 32767 {
-					mp = 32767
+				v := L.CheckInt(2)
+				if v < 0 {
+					v = 0
 				}
-				ch.Life.Mp = uint16(mp)
-				ch.Life.BaseMp = uint16(mp)
-				if ch.Listener != nil {
-					ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-						constant.STAT_MP:     int32(ch.Mp),
-						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
-					}, false)
+				if v > int(constant.STAT_MAX_STR_DEX_INT_LUK) {
+					v = int(constant.STAT_MAX_STR_DEX_INT_LUK)
 				}
+				ch.BaseStats.Int = uint16(v)
+				ch.notifyStatChange(constant.STAT_INT)
 				return 0
 			default:
-				L.ArgError(2, "max_mp() requires 0 or 1 arguments")
+				L.ArgError(2, "base_int() requires 0 or 1 arguments")
 				return 0
 			}
 		},
-		"add_mp": func(L *lua.LState) int {
+		"base_luk": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			amount := int(L.CheckNumber(2))
-			newMp := int(ch.Mp) + amount
-			if newMp < 0 {
-				newMp = 0
-			}
-			maxMp := ch.GetMaxMp()
-			if newMp > int(maxMp) {
-				newMp = int(maxMp)
-			}
-			ch.Mp = uint16(newMp)
-			if ch.Listener != nil {
-				ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-					constant.STAT_MP: int32(ch.Mp),
-				}, false)
-			}
-			return 0
-		},
-		"add_mp_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			hpChange := int(L.CheckNumber(2))
-			mpChange := int(L.CheckNumber(3))
-
-			newHp := int(ch.Hp) + hpChange
-			if newHp < 0 {
-				newHp = 0
-			}
-			maxHp := ch.GetMaxHp()
-			if newHp > int(maxHp) {
-				newHp = int(maxHp)
-			}
-			ch.Hp = uint16(newHp)
-
-			newMp := int(ch.Mp) + mpChange
-			if newMp < 0 {
-				newMp = 0
-			}
-			maxMp := ch.GetMaxMp()
-			if newMp > int(maxMp) {
-				newMp = int(maxMp)
-			}
-			ch.Mp = uint16(newMp)
-
-			if ch.Listener != nil {
-				stats := map[constant.Stat]int32{
-					constant.STAT_HP: int32(ch.Hp),
-					constant.STAT_MP: int32(ch.Mp),
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.BaseStats.Luk))
+				return 1
+			case 2:
+				v := L.CheckInt(2)
+				if v < 0 {
+					v = 0
 				}
-				ch.Listener.OnUpdateStats(stats, false)
-			}
-			return 0
-		},
-		"is_alive": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
+				if v > int(constant.STAT_MAX_STR_DEX_INT_LUK) {
+					v = int(constant.STAT_MAX_STR_DEX_INT_LUK)
+				}
+				ch.BaseStats.Luk = uint16(v)
+				ch.notifyStatChange(constant.STAT_LUK)
+				return 0
+			default:
+				L.ArgError(2, "base_luk() requires 0 or 1 arguments")
 				return 0
 			}
-			L.Push(lua.LBool(ch.Hp > 0))
-			return 1
 		},
 		"bonus_str": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -1081,6 +941,206 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "bonus_max_mp() requires 0, 1 or 2 arguments")
 				return 0
 			}
+		},
+		"bonus_meso_multiplier": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.BonusStats.MesoMultiplier))
+				return 1
+			case 2:
+				ch.BonusStats.MesoMultiplier = int16(L.CheckInt(2))
+				return 0
+			default:
+				L.ArgError(2, "bonus_meso_multiplier() requires 1 or 2 arguments")
+				return 0
+			}
+		},
+		"bonus_drop_rate": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.BonusStats.DropRate))
+				return 1
+			case 2:
+				ch.BonusStats.DropRate = int16(L.CheckInt(2))
+				return 0
+			default:
+				L.ArgError(2, "bonus_drop_rate() requires 1 or 2 arguments")
+				return 0
+			}
+		},
+		"map": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			if argc == 1 {
+				// Getter: return current map (or nil)
+				m := ch.GetMap()
+				if m == nil {
+					L.Push(lua.LNil)
+					return 1
+				}
+				L.Push(luax.NewLuable(L, m))
+				return 1
+			}
+			// Setter: map(targetMap [, spawnPoint]) -> Warp
+			targetMapUD := L.CheckUserData(2)
+			targetMap, ok := targetMapUD.Value.(*Map)
+			if !ok || targetMap == nil {
+				L.ArgError(2, "Map expected")
+				return 0
+			}
+			spawnPoint := uint8(1)
+			if argc >= 3 {
+				spawnPoint = uint8(L.CheckInt(3))
+			}
+			if err := ch.Warp(targetMap, spawnPoint); err != nil {
+				L.RaiseError("warp: %v", err)
+				return 0
+			}
+			return 0
+		},
+		"mkitem": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Context == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			resources := ch.Context.GetResources()
+			if resources == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+
+			argc := L.GetTop()
+			if argc < 2 {
+				L.ArgError(2, "mkitem(itemIdOrName [, count]) requires at least one argument")
+				return 0
+			}
+
+			var itemId uint32
+			switch lv := L.Get(2).(type) {
+			case lua.LString:
+				id, ok := resources.NameToItem(string(lv))
+				if !ok {
+					L.Push(lua.LNil)
+					return 1
+				}
+				itemId = id
+			case lua.LNumber:
+				itemId = uint32(lv)
+			default:
+				L.ArgError(2, "item id (number) or item name (string) expected")
+				return 0
+			}
+
+			if _, ok := resources.Items[itemId]; !ok {
+				L.Push(lua.LNil)
+				return 1
+			}
+
+			count := uint16(1)
+			if argc >= 3 {
+				if n := L.CheckInt(3); n >= 1 {
+					count = uint16(n)
+				}
+			}
+
+			item, err := NewItem(itemId, count, ch.Context)
+			if err != nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+
+			addedItems, err := ch.AddItem(item, false)
+			if err != nil || len(addedItems) == 0 {
+				L.Push(lua.LNil)
+				return 1
+			}
+
+			addedItem := addedItems[0]
+			switch v := addedItem.(type) {
+			case *Equipment:
+				L.Push(luax.NewLuable(L, v))
+			case *Consume:
+				L.Push(luax.NewLuable(L, v))
+			case *CashItem:
+				L.Push(luax.NewLuable(L, v))
+			case *GeneralItem:
+				L.Push(luax.NewLuable(L, v))
+			case *Installation:
+				L.Push(luax.NewLuable(L, v))
+			case *Pet:
+				L.Push(luax.NewLuable(L, v))
+			default:
+				L.Push(luax.NewLuable(L, addedItem.GetObject()))
+			}
+			return 1
+		},
+		"rmitem": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Context == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			resources := ch.Context.GetResources()
+			if resources == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+
+			argc := L.GetTop()
+			if argc < 2 {
+				L.ArgError(2, "rmitem(itemIdOrName) requires one argument")
+				return 0
+			}
+
+			var itemId uint32
+			switch lv := L.Get(2).(type) {
+			case lua.LString:
+				id, ok := resources.NameToItem(string(lv))
+				if !ok {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				itemId = id
+			case lua.LNumber:
+				itemId = uint32(lv)
+			default:
+				L.ArgError(2, "item id (number) or item name (string) expected")
+				return 0
+			}
+
+			removed := ch.RemoveItemByID(itemId)
+			L.Push(lua.LBool(removed))
+			return 1
 		},
 	}
 }

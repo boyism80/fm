@@ -43,8 +43,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	// Check blocked inventory
 	// TODO: Implement hasBlockedInventory check
 
-	mapID := character.Map
-	mapInstance := h.gs.GetMap(mapID)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)

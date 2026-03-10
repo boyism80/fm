@@ -26,6 +26,8 @@ type BonusStats struct {
 	MaxMpFixed   int16
 	MaxHpPercent int16
 	MaxMpPercent int16
+	MesoMultiplier int16 // 100 = 100%, 0 = use 100
+	DropRate       int16 // 100 = 100%, 0 = use 100; applies to both item and meso drop probability
 }
 
 func (ch *Character) GetTotalStr() uint16 {

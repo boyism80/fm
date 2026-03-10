@@ -44,8 +44,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		return fmt.Errorf("character is nil")
 	}
 
-	mapID := character.Map
-	mapInstance := h.gs.GetMap(mapID)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		log.Printf("Character is not in a map")
 		return fmt.Errorf("character is not in a map")
@@ -61,7 +60,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 
 	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill)
 	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
-	character.Listener.OnAttack(mapID, character.GetID(), req.AttackInfo, skillLevel)
+	character.Listener.OnAttack(character, req.AttackInfo, skillLevel)
 
 	return nil
 }
@@ -75,34 +74,53 @@ func (h *Attack) callOnAttackScript(ctx *core.ClientContext, character *entity.C
 		return
 	}
 
-	targets := make([]luax.Luable, 0, len(damages))
-	seen := make(map[uint32]bool)
-	for _, damage := range damages {
-		if seen[damage.OID] {
-			continue
-		}
-		seen[damage.OID] = true
-		mob := mapInstance.GetMob(damage.OID)
-		if mob != nil {
-			targets = append(targets, mob)
-		}
+	thread, err := luax.NewThread(root, "script/script.lua")
+	if err != nil {
+		log.Printf("Failed to load script: %v", err)
+		return
+	}
+	defer thread.Close()
+
+	f := thread.GetGlobal("on_attack")
+	if f.Type() != lua.LTFunction {
+		return
 	}
 
-	var skillArg interface{} = lua.LNil
+	var skillLV lua.LValue = lua.LNil
 	if skillID != 0 {
 		if skillEntry := character.Skills[skillID]; skillEntry != nil {
-			skillArg = skillEntry
+			skillLV = luax.NewLuable(thread, skillEntry)
 		}
 	}
 
-	_, thread, err := luax.Call(root, "script/script.lua", "on_attack", character, targets, skillArg)
-	if err != nil {
+	damagesTable := buildDamagesTable(thread, mapInstance, damages)
+	thread.Push(f)
+	thread.Push(luax.NewLuable(thread, character))
+	thread.Push(skillLV)
+	thread.Push(damagesTable)
+	if err := thread.PCall(3, 1, nil); err != nil {
 		log.Printf("Failed to call script on_attack: %v", err)
 		return
 	}
-	if thread != nil {
-		thread.Close()
+	thread.Pop(1)
+}
+
+// buildDamagesTable builds a Lua table: key = mob, value = array of damage amounts per hit.
+// In Lua: for mob, hits in damages do ... for _, amount in ipairs(hits) do
+func buildDamagesTable(L *lua.LState, mapInstance *entity.Map, damages []dto.AttackPair) *lua.LTable {
+	tbl := L.NewTable()
+	for _, ap := range damages {
+		mob := mapInstance.GetMob(ap.OID)
+		if mob == nil {
+			continue
+		}
+		hits := L.NewTable()
+		for i, dp := range ap.DamagePairs {
+			hits.RawSetInt(i+1, lua.LNumber(dp.Damage))
+		}
+		tbl.RawSet(luax.NewLuable(L, mob), hits)
 	}
+	return tbl
 }
 
 func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID uint32) bool {

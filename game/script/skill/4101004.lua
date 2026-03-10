@@ -18,3 +18,8 @@ function on_activated(me, skill)
         [BuffFlag.Jump] = jump,
     })
 end
+
+-- TODO: Party buff (Java applyBuff): when party system exists, apply same buff to party members
+-- in range (lt/rb bounding box) with primary=false; each needs giveBuff-equivalent + registerEffect
+-- + showOwnBuffEffect/showBuffeffect. Not just add_buff on other Character without running
+-- on_activated per target / duration sync.

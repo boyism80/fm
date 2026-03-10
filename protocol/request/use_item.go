@@ -11,10 +11,6 @@ type UseItem struct {
 	ItemID uint32
 }
 
-func (p *UseItem) Opcode() uint16 {
-	return 0x37
-}
-
 func (p *UseItem) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

@@ -8,10 +8,6 @@ type CancelChair struct {
 	ChairID int16
 }
 
-func (c *CancelChair) Opcode() uint16 {
-	return 0x19
-}
-
 func (c *CancelChair) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

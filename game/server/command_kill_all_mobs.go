@@ -33,9 +33,9 @@ func (h *KillAllMobs) Handle(gameClient *client.GameClient, args ...string) erro
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gs.GetMap(character.Map)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
-		return fmt.Errorf("map %d not found", character.Map)
+		return fmt.Errorf("map not found")
 	}
 
 	mobs := mapInstance.GetMobs()

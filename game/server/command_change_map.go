@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
 )
 
@@ -48,7 +47,7 @@ func (h *ChangeMap) Handle(gameClient *client.GameClient, args ...string) error 
 		return fmt.Errorf("character not found")
 	}
 
-	currentMap := h.gs.GetMap(character.Map)
+	currentMap := character.GetMap()
 	if currentMap == nil {
 		return fmt.Errorf("current map not found")
 	}
@@ -58,22 +57,8 @@ func (h *ChangeMap) Handle(gameClient *client.GameClient, args ...string) error 
 		return fmt.Errorf("target map %d not found", mapId)
 	}
 
-	targetMapPID := targetMap.GetActorPID()
-	if targetMapPID == nil {
-		return fmt.Errorf("target map actor PID not found")
+	if err := character.Warp(targetMap, 1); err != nil {
+		return err
 	}
-
-	currentMap.RemovePlayer(character.GetID())
-
-	rootContext := h.gs.GetServer().GetRootContext()
-	if rootContext == nil {
-		return fmt.Errorf("rootContext not set")
-	}
-
-	rootContext.Send(targetMapPID, &g_actor.WarpCharacter{
-		Character: character,
-		Portal:    1,
-	})
-
 	return nil
 }
