@@ -3,8 +3,8 @@ package response
 import (
 	"time"
 
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/stream"
 )
 
 type Warp struct {

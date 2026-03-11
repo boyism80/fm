@@ -91,4 +91,3 @@ func (e *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int1
 	writer.WriteDateTime(util.TimeZero)
 	writer.Write32(-1)
 }
-

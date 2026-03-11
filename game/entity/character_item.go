@@ -105,8 +105,6 @@ func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, e
 	return addedItems, nil
 }
 
-// RemoveItemByID removes one slot of the first matching item by ID from any inventory.
-// Returns true if an item was removed.
 func (ch *Character) RemoveItemByID(itemId uint32) bool {
 	for invType, inven := range ch.Inventory {
 		if inven == nil {
@@ -125,6 +123,69 @@ func (ch *Character) RemoveItemByID(itemId uint32) bool {
 		}
 	}
 	return false
+}
+
+func (ch *Character) GetItem(invType constant.InventoryType, slot int16) Item {
+	if invType == constant.INVENTORY_TYPE_EQUIPMENT {
+		part := constant.EquipmentPartsType(slot)
+		if eq, ok := ch.Equipments[part]; ok && eq != nil {
+			return eq
+		}
+		return nil
+	}
+	inven := ch.Inventory[invType]
+	if inven == nil {
+		return nil
+	}
+	if slot < 1 || slot > int16(inven.SlotLimit) {
+		return nil
+	}
+	return inven.GetItem(uint8(slot))
+}
+
+func (ch *Character) RemoveItemCount(invType constant.InventoryType, slot int16, count uint16) bool {
+	if invType == constant.INVENTORY_TYPE_EQUIPMENT {
+		if count < 1 {
+			return false
+		}
+		part := constant.EquipmentPartsType(slot)
+		if _, ok := ch.Equipments[part]; !ok {
+			return false
+		}
+		delete(ch.Equipments, part)
+		if ch.Listener != nil {
+			ch.Listener.OnRemoveInventorySlot(invType, slot)
+		}
+		return true
+	}
+	inven := ch.Inventory[invType]
+	if inven == nil {
+		return false
+	}
+	if slot < 1 || slot > int16(inven.SlotLimit) {
+		return false
+	}
+	item := inven.GetItem(uint8(slot))
+	if item == nil {
+		return false
+	}
+	if item.GetCount() < count {
+		return false
+	}
+	item.Reduce(count)
+	if item.GetCount() == 0 {
+		if err := inven.RemoveItem(uint8(slot)); err != nil {
+			return false
+		}
+		if ch.Listener != nil {
+			ch.Listener.OnRemoveInventorySlot(invType, slot)
+		}
+	} else {
+		if ch.Listener != nil {
+			ch.Listener.OnInventorySlotUpdated(invType, slot, item)
+		}
+	}
+	return true
 }
 
 func (ch *Character) GainMeso(amount int32) {

@@ -53,4 +53,3 @@ func (r *ActorRegistry) RemoveActor(name string) {
 
 	delete(r.actors, name)
 }
-

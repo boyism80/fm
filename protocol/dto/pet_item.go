@@ -8,16 +8,16 @@ import (
 
 // PetItem represents pet item DTO
 type PetItem struct {
-	ItemId        uint32
-	UniqueId      int64
-	Expiration    time.Time // ItemCore.Expiration
-	PetName       string
-	PetLevel      uint8
-	PetCloseness  uint16
-	PetFullness   uint8
-	PetSpeed      uint16
-	PetFlags      uint16
-	PetExpiration time.Time // Pet.Expiration
+	ItemId         uint32
+	UniqueId       int64
+	Expiration     time.Time // ItemCore.Expiration
+	PetName        string
+	PetLevel       uint8
+	PetCloseness   uint16
+	PetFullness    uint8
+	PetSpeed       uint16
+	PetFlags       uint16
+	PetExpiration  time.Time // Pet.Expiration
 	PetSecondsLeft uint32
 }
 
@@ -50,4 +50,3 @@ func (i *PetItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16)
 		writer.WriteU32(0)
 	}
 }
-

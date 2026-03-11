@@ -58,14 +58,14 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		skillLevel = uint8(character.GetTotalSkillLevel(req.AttackInfo.Skill))
 	}
 
-	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill)
+	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill, false, 0)
 	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
 	character.Listener.OnAttack(character, req.AttackInfo, skillLevel)
 
 	return nil
 }
 
-func (h *Attack) callOnAttackScript(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32) {
+func (h *Attack) callOnAttackScript(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32, ranged bool, consumeSlot uint16) {
 	if ctx.LogicActorPID == nil {
 		return
 	}
@@ -94,15 +94,24 @@ func (h *Attack) callOnAttackScript(ctx *core.ClientContext, character *entity.C
 	}
 
 	damagesTable := buildDamagesTable(thread, mapInstance, damages)
+	attackInfoTable := buildAttackInfoTable(thread, ranged, consumeSlot)
 	thread.Push(f)
 	thread.Push(luax.NewLuable(thread, character))
 	thread.Push(skillLV)
 	thread.Push(damagesTable)
-	if err := thread.PCall(3, 1, nil); err != nil {
+	thread.Push(attackInfoTable)
+	if err := thread.PCall(4, 1, nil); err != nil {
 		log.Printf("Failed to call script on_attack: %v", err)
 		return
 	}
 	thread.Pop(1)
+}
+
+func buildAttackInfoTable(L *lua.LState, ranged bool, consumeSlot uint16) *lua.LTable {
+	tbl := L.NewTable()
+	tbl.RawSetString("ranged", lua.LBool(ranged))
+	tbl.RawSetString("consume_slot", lua.LNumber(consumeSlot))
+	return tbl
 }
 
 // buildDamagesTable builds a Lua table: key = mob, value = array of damage amounts per hit.

@@ -15,6 +15,5 @@ func (r *RangedAttack) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (r *RangedAttack) Deserialize(reader *stream.StreamReader) error {
-	// TODO: implement after packet structure is analyzed
-	return nil
+	return r.AttackInfo.Deserialize(reader, 0x1C)
 }

@@ -177,7 +177,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 0
 		},
-		"add_buff": func(L *lua.LState) int {
+		"buff": func(L *lua.LState) int {
 			argc := L.GetTop()
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -185,13 +185,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			skillUD := L.CheckUserData(2)
-			skillEntry, ok := skillUD.Value.(*SkillEntry)
-			if !ok || skillEntry == nil || skillEntry.Skill == nil {
-				L.ArgError(2, "SkillEntry with Wz expected")
-				return 0
-			}
-			values := make(map[constant.BuffFlag]int32)
 
 			parseFlag := func(argument lua.LValue, argIndex int) (constant.BuffFlag, bool) {
 				bfTable, ok := argument.(*lua.LTable)
@@ -211,6 +204,32 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}, true
 			}
 
+			if argc == 2 {
+				flag, ok := parseFlag(L.Get(2), 2)
+				if !ok {
+					return 0
+				}
+				entity := ch.Buffs.GetEntity(flag)
+				if entity == nil || entity.Wz == nil {
+					L.Push(lua.LNil)
+					return 1
+				}
+				view := &SkillEntry{
+					Skill:      entity.Wz,
+					SkillLevel: int(entity.Level),
+				}
+				L.Push(luax.NewLuable(L, view))
+				return 1
+			}
+
+			skillUD := L.CheckUserData(2)
+			skillEntry, ok := skillUD.Value.(*SkillEntry)
+			if !ok || skillEntry == nil || skillEntry.Skill == nil {
+				L.ArgError(2, "SkillEntry with Wz expected")
+				return 0
+			}
+			values := make(map[constant.BuffFlag]int32)
+
 			switch argc {
 			case 3:
 				valueTable := L.CheckTable(3)
@@ -220,7 +239,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						return
 					}
 					if value.Type() != lua.LTNumber {
-						L.ArgError(3, "add_buff() values must be numbers")
+						L.ArgError(3, "buff() values must be numbers")
 						return
 					}
 					values[flag] = int32(value.(lua.LNumber))
@@ -232,18 +251,18 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				values[flag] = int32(L.CheckNumber(4))
 			default:
-				L.ArgError(3, "add_buff() requires (skill, {[flag]=value}) or (skill, flag, value)")
+				L.ArgError(3, "buff() requires (skill, {[flag]=value}) or (skill, flag, value)")
 				return 0
 			}
 
 			if len(values) == 0 {
-				L.ArgError(3, "add_buff() requires at least one flag-value pair")
+				L.ArgError(3, "buff() requires at least one flag-value pair")
 				return 0
 			}
 			ch.Buffs.AddBuff(skillEntry.Skill, uint8(skillEntry.SkillLevel), values)
 			return 0
 		},
-		"remove_buff": func(L *lua.LState) int {
+		"unbuff": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
@@ -1017,6 +1036,61 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 0
 		},
+		"equipped": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() < 2 {
+				L.ArgError(2, "equipped(part) requires equipment part (e.g. EquipmentPart.Weapon)")
+				return 0
+			}
+			part := constant.EquipmentPartsType(L.CheckInt(2))
+			if eq, ok := ch.Equipments[part]; ok && eq != nil {
+				L.Push(luax.NewLuable(L, eq.(luax.Luable)))
+				return 1
+			}
+			L.Push(lua.LNil)
+			return 1
+		},
+		"item": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() < 3 {
+				L.ArgError(2, "item(inv_type, slot) requires two arguments")
+				return 0
+			}
+			invType := constant.InventoryType(L.CheckInt(2))
+			slot := int16(L.CheckInt(3))
+			item := ch.GetItem(invType, slot)
+			if item == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			switch v := item.(type) {
+			case Equipment:
+				L.Push(luax.NewLuable(L, v.(luax.Luable)))
+			case *Consume:
+				L.Push(luax.NewLuable(L, v))
+			case *CashItem:
+				L.Push(luax.NewLuable(L, v))
+			case *GeneralItem:
+				L.Push(luax.NewLuable(L, v))
+			case *Installation:
+				L.Push(luax.NewLuable(L, v))
+			case *Pet:
+				L.Push(luax.NewLuable(L, v))
+			default:
+				L.Push(luax.NewLuable(L, item.GetObject()))
+			}
+			return 1
+		},
 		"mkitem": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1082,8 +1156,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			addedItem := addedItems[0]
 			switch v := addedItem.(type) {
-			case *Equipment:
-				L.Push(luax.NewLuable(L, v))
+			case Equipment:
+				L.Push(luax.NewLuable(L, v.(luax.Luable)))
 			case *Consume:
 				L.Push(luax.NewLuable(L, v))
 			case *CashItem:
@@ -1106,6 +1180,23 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
+			argc := L.GetTop()
+			if argc < 2 {
+				L.ArgError(2, "rmitem(itemIdOrName) or rmitem(inv_type, slot, count)")
+				return 0
+			}
+			if argc == 4 {
+				invType := constant.InventoryType(L.CheckInt(2))
+				slot := int16(L.CheckInt(3))
+				count := uint16(L.CheckInt(4))
+				if count == 0 {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				ok := ch.RemoveItemCount(invType, slot, count)
+				L.Push(lua.LBool(ok))
+				return 1
+			}
 			if ch.Context == nil {
 				L.Push(lua.LBool(false))
 				return 1
@@ -1115,13 +1206,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-
-			argc := L.GetTop()
-			if argc < 2 {
-				L.ArgError(2, "rmitem(itemIdOrName) requires one argument")
-				return 0
-			}
-
 			var itemId uint32
 			switch lv := L.Get(2).(type) {
 			case lua.LString:
@@ -1137,7 +1221,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "item id (number) or item name (string) expected")
 				return 0
 			}
-
 			removed := ch.RemoveItemByID(itemId)
 			L.Push(lua.LBool(removed))
 			return 1

@@ -31,6 +31,8 @@ type MapListener interface {
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
 	OnMobMoved(mapInstance *Map, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
 	OnAttack(mapInstance *Map, character *Character, attackInfo dto.AttackInfo, skillLevel uint8)
+	OnMobDebuffApplied(mapInstance *Map, mob *Mob, debuff constant.Debuff, value int32, skillID uint32, durationMs int64)
+	OnMobDebuffCancelled(mapInstance *Map, mob *Mob, debuff constant.Debuff)
 }
 
 type MobSpawn struct {
@@ -388,6 +390,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	mob := m.objects[types.OBJECT_TYPE_MONSTER][mobID].(*Mob)
 	delete(m.objects[types.OBJECT_TYPE_MONSTER], mobID)
 
+	mob.ClearAllDebuffTimers()
 	if mob.Spawn != nil {
 		mob.Spawn.Spawned = false
 	}
@@ -726,8 +729,8 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					if drop != nil && drop.Object != nil {
 						// Item interface를 타입 어설션하여 실제 타입을 얻고 Luable로 변환
 						switch v := itemObj.(type) {
-						case *Equipment:
-							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
+						case Equipment:
+							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v.(luax.Luable)))
 						case *Consume:
 							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
 						case *CashItem:
@@ -895,10 +898,10 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				ownerID = owner.GetID()
 			}
 			item.BindDrop(&Drop{
-				Object:        &Object{Position: pos},
-				Owner:         ownerID,
-				SpawnedPoint:  pos,
-				DropType:      dropType,
+				Object:       &Object{Position: pos},
+				Owner:        ownerID,
+				SpawnedPoint: pos,
+				DropType:     dropType,
 			})
 
 			if err := mapInstance.SpawnItem(item, ownerID, dropType); err != nil {
@@ -906,8 +909,8 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			switch v := item.(type) {
-			case *Equipment:
-				L.Push(luax.NewLuable(L, v))
+			case Equipment:
+				L.Push(luax.NewLuable(L, v.(luax.Luable)))
 			case *Consume:
 				L.Push(luax.NewLuable(L, v))
 			case *CashItem:

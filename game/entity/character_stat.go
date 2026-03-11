@@ -10,22 +10,22 @@ type BaseStats struct {
 }
 
 type BonusStats struct {
-	Str          int16
-	Dex          int16
-	Int          int16
-	Luk          int16
-	Watk         int16
-	Matk         int16
-	Wdef         int16
-	Mdef         int16
-	Acc          int16
-	Avoid        int16
-	Speed        int16
-	Jump         int16
-	MaxHpFixed   int16
-	MaxMpFixed   int16
-	MaxHpPercent int16
-	MaxMpPercent int16
+	Str            int16
+	Dex            int16
+	Int            int16
+	Luk            int16
+	Watk           int16
+	Matk           int16
+	Wdef           int16
+	Mdef           int16
+	Acc            int16
+	Avoid          int16
+	Speed          int16
+	Jump           int16
+	MaxHpFixed     int16
+	MaxMpFixed     int16
+	MaxHpPercent   int16
+	MaxMpPercent   int16
 	MesoMultiplier int16 // 100 = 100%, 0 = use 100
 	DropRate       int16 // 100 = 100%, 0 = use 100; applies to both item and meso drop probability
 }

@@ -156,6 +156,8 @@ func (bc *BuffContainer) AddBuff(wz *wz.Skill, level uint8, values map[constant.
 		ch.handleRemovedBuffEntities(removed)
 	}
 
+	ch.invokeOnBuffScript(entity)
+
 	if ch.Listener != nil {
 		ch.Listener.OnBuffAdded(ch, wz, level, entityValues)
 	}
@@ -213,10 +215,43 @@ func (ch *Character) handleRemovedBuffEntities(removed []*BuffEntity) {
 	if len(removed) == 0 {
 		return
 	}
-	ch.invokeOnDeactivateScripts(removed)
+	ch.invokeOnUnbuffScripts(removed)
 }
 
-func (ch *Character) invokeOnDeactivateScripts(removed []*BuffEntity) {
+func (ch *Character) invokeOnBuffScript(entity *BuffEntity) {
+	if entity == nil || entity.Wz == nil || ch.Context == nil {
+		return
+	}
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	pid := mapInstance.GetActorPID()
+	if pid == nil {
+		return
+	}
+	root := luax.GetRootLuaState(pid.String())
+	if root == nil {
+		return
+	}
+	skillID := entity.Wz.ID
+	skillEntry := &SkillEntry{
+		Skill:      entity.Wz,
+		SkillLevel: int(entity.Level),
+		Owner:      ch,
+	}
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	_, thread, err := luax.Call(root, scriptPath, "on_buff", ch, skillEntry)
+	if err != nil {
+		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
+		return
+	}
+	if thread != nil {
+		thread.Close()
+	}
+}
+
+func (ch *Character) invokeOnUnbuffScripts(removed []*BuffEntity) {
 	if len(removed) == 0 || ch.Context == nil {
 		return
 	}
@@ -247,9 +282,9 @@ func (ch *Character) invokeOnDeactivateScripts(removed []*BuffEntity) {
 		}
 
 		scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-		_, thread, err := luax.Call(root, scriptPath, "on_deactivated", ch, skillEntry)
+		_, thread, err := luax.Call(root, scriptPath, "on_unbuff", ch, skillEntry)
 		if err != nil {
-			log.Printf("Failed to call on_deactivated for skill %d: %v", skillID, err)
+			log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
 			continue
 		}
 		if thread != nil {

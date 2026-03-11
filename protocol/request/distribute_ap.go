@@ -25,4 +25,3 @@ func (p *DistributeAP) Deserialize(reader *stream.StreamReader) error {
 	}
 	return nil
 }
-

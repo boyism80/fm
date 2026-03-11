@@ -25,10 +25,18 @@ const (
 type EquipmentPartsType int16
 
 const (
-	EQUIPMENT_PARTS_WEAPON EquipmentPartsType = -11 // Weapon slot
-	EQUIPMENT_PARTS_SHIELD EquipmentPartsType = -10 // Shield slot
-	EQUIPMENT_PARTS_TOP    EquipmentPartsType = -5  // Top clothing slot
-	EQUIPMENT_PARTS_PANTS  EquipmentPartsType = -6  // Pants slot
+	EQUIPMENT_PARTS_CAP    EquipmentPartsType = -1
+	EQUIPMENT_PARTS_FACE   EquipmentPartsType = -2
+	EQUIPMENT_PARTS_EYE    EquipmentPartsType = -3
+	EQUIPMENT_PARTS_EAR    EquipmentPartsType = -4
+	EQUIPMENT_PARTS_TOP    EquipmentPartsType = -5
+	EQUIPMENT_PARTS_PANTS  EquipmentPartsType = -6
+	EQUIPMENT_PARTS_SHOES  EquipmentPartsType = -7
+	EQUIPMENT_PARTS_GLOVE  EquipmentPartsType = -8
+	EQUIPMENT_PARTS_CAPE   EquipmentPartsType = -9
+	EQUIPMENT_PARTS_SHIELD EquipmentPartsType = -10
+	EQUIPMENT_PARTS_WEAPON EquipmentPartsType = -11
+	EQUIPMENT_PARTS_RING   EquipmentPartsType = -12
 )
 
 // InventoryType represents the different inventory tabs.
@@ -181,18 +189,18 @@ const (
 
 // Item category IDs (itemID / 10000)
 const (
-	ITEM_CATEGORY_THROWING_STAR uint32 = 207
-	ITEM_CATEGORY_BULLET        uint32 = 233
+	ITEM_CATEGORY_SHURIKEN uint32 = 207
+	ITEM_CATEGORY_BULLET   uint32 = 233
 )
 
 // Rechargeable item IDs
 const (
-	ITEM_THROWING_STAR_BASE uint32 = 2070000
-	ITEM_BULLET_BASE        uint32 = 2330000
+	ITEM_SHURIKEN_BASE uint32 = 2070000
+	ITEM_BULLET_BASE   uint32 = 2330000
 )
 
 // Rechargeable item ID ranges
-var RechargeableThrowingStars = []uint32{
+var RechargeableShurikens = []uint32{
 	2070000, 2070001, 2070002, 2070003, 2070004, 2070005,
 	2070006, 2070007, 2070008, 2070009, 2070010, 2070011,
 	2070012, 2070013,

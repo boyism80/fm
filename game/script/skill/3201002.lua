@@ -12,8 +12,9 @@ function on_activated(me, skill)
     end
 
     local x = effect.x or 0
-    me:add_buff(skill, BuffFlag.Booster, x)
+    me:buff(skill, BuffFlag.Booster, x)
 end
 
-function on_deactivated(me, skill)
+function on_unbuff(me, skill)
 end
+

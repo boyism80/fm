@@ -53,7 +53,7 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 		skillLevel = uint8(character.GetTotalSkillLevel(req.AttackInfo.Skill))
 	}
 
-	attackHandler.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill)
+	attackHandler.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill, true, req.AttackInfo.Slot)
 	attackHandler.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
 	character.Listener.OnAttack(character, req.AttackInfo, skillLevel)
 

@@ -12,12 +12,7 @@ function on_activated(me, skill)
     end
 
     local percent = effect.x or 0
-
-    local hp_fixed, hp_percent = me:bonus_max_hp()
-    local mp_fixed, mp_percent = me:bonus_max_mp()
-    me:bonus_max_hp(hp_fixed, hp_percent + percent)
-    me:bonus_max_mp(mp_fixed, mp_percent + percent)
-    me:add_buff(skill, {
+    me:buff(skill, {
         [BuffFlag.MaxHp] = percent,
         [BuffFlag.MaxMp] = percent,
     })
@@ -25,7 +20,25 @@ function on_activated(me, skill)
     -- TODO: Apply this buff to nearby party members when party system is implemented.
 end
 
-function on_deactivated(me, skill)
+function on_buff(me, skill)
+    local wz = skill:wz()
+    if wz == nil or wz.effects == nil then
+        return
+    end
+
+    local effect = wz.effects[skill:level()]
+    if effect == nil then
+        return
+    end
+
+    local percent = effect.x or 0
+    local hp_fixed, hp_percent = me:bonus_max_hp()
+    local mp_fixed, mp_percent = me:bonus_max_mp()
+    me:bonus_max_hp(hp_fixed, hp_percent + percent)
+    me:bonus_max_mp(mp_fixed, mp_percent + percent)
+end
+
+function on_unbuff(me, skill)
     local wz = skill:wz()
     if wz == nil or wz.effects == nil then
         return

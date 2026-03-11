@@ -10,5 +10,6 @@ function on_activated(me, skill)
         return
     end
     local guard_percent = effect.x or 0
-    me:add_buff(skill, BuffFlag.MesoGuard, guard_percent)
+    me:buff(skill, BuffFlag.MesoGuard, guard_percent)
 end
+

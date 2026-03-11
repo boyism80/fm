@@ -1,5 +1,7 @@
 package wz
 
+import "github.com/boyism80/fm/game/constant"
+
 type Item interface {
 	GetID() uint32
 	GetName() string
@@ -8,6 +10,11 @@ type Item interface {
 	IsQuest() bool
 	GetCapacity() uint16
 	IsTradeAvailable() int
+}
+
+type EquipmentModel interface {
+	Item
+	GetEquipment() *Equipment
 }
 
 type BasicStats struct {
@@ -61,6 +68,21 @@ type Equipment struct {
 	MasterSpecial   bool
 	Hide            bool
 	AttackSpeed     int
+}
+
+type Weapon struct {
+	*Equipment
+}
+
+type Armor struct {
+	*Equipment
+}
+
+func (w *Weapon) GetEquipment() *Equipment { return w.Equipment }
+func (a *Armor) GetEquipment() *Equipment  { return a.Equipment }
+
+func (w *Weapon) WeaponType() constant.WeaponType {
+	return constant.GetWeaponType(w.Equipment.ItemCore.ID)
 }
 
 type Pet struct {
@@ -122,4 +144,20 @@ func (model *ItemCore) GetCapacity() uint16 {
 
 func (model *ItemCore) IsTradeAvailable() int {
 	return model.TradeAvailable
+}
+
+func (c *Consume) IsShuriken() bool {
+	return constant.GetConsumeType(c.ItemCore.ID) == constant.ConsumeTypeShuriken
+}
+
+func (c *Consume) IsBullet() bool {
+	return constant.GetConsumeType(c.ItemCore.ID) == constant.ConsumeTypeBullet
+}
+
+func (c *Consume) IsArrowForBow() bool {
+	return constant.GetConsumeType(c.ItemCore.ID) == constant.ConsumeTypeArrowBow
+}
+
+func (c *Consume) IsArrowForCrossBow() bool {
+	return constant.GetConsumeType(c.ItemCore.ID) == constant.ConsumeTypeArrowCrossBow
 }

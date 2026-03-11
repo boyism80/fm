@@ -1,4 +1,4 @@
--- Skill name (String.wz/Skill.img.xml): 쉐도우 파트너 (4th job)
+-- Skill name (String.wz/Skill.img.xml): 쉐도우 파트너
 
 function on_activated(me, skill)
     local wz = skill:wz()
@@ -10,5 +10,6 @@ function on_activated(me, skill)
         return
     end
     local percent = effect.x or 0
-    me:add_buff(skill, BuffFlag.ShadowPartner, percent)
+    me:buff(skill, BuffFlag.ShadowPartner, percent)
 end
+

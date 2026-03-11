@@ -23,4 +23,3 @@ func (m *Mob) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(0) // Control status
 	return nil
 }
-

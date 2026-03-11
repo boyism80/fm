@@ -35,4 +35,3 @@ func (f Foothold) Compare(o types.AnySpatial[int16]) bool {
 	}
 	return f.ID < other.ID
 }
-

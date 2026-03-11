@@ -17,7 +17,7 @@ function on_activated(me, skill)
     me:bonus_meso_multiplier(current + (percent - 100))
 end
 
-function on_deactivated(me, skill)
+function on_unbuff(me, skill)
     local wz = skill:wz()
     if wz == nil or wz.effects == nil then
         return

@@ -1,9 +1,9 @@
 package response
 
 import (
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
-	"github.com/boyism80/fm/protocol/dto"
 )
 
 type MoveMob struct {

@@ -15,4 +15,3 @@ type RingContainer struct {
 	Mid   []*Ring
 	Right []*Ring
 }
-

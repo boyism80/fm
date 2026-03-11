@@ -107,7 +107,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		}
 	}
 
-	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill)
+	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill, false, 0)
 	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
 
 	magicAttackPacket := &response.MagicAttack{
@@ -125,7 +125,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	return nil
 }
 
-func (h *MagicAttack) callOnAttackScript(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32) {
+func (h *MagicAttack) callOnAttackScript(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32, ranged bool, consumeSlot uint16) {
 	if ctx.LogicActorPID == nil {
 		return
 	}
@@ -154,11 +154,13 @@ func (h *MagicAttack) callOnAttackScript(ctx *core.ClientContext, character *ent
 	}
 
 	damagesTable := buildDamagesTable(thread, mapInstance, damages)
+	attackInfoTable := buildAttackInfoTable(thread, ranged, consumeSlot)
 	thread.Push(f)
 	thread.Push(luax.NewLuable(thread, character))
 	thread.Push(skillLV)
 	thread.Push(damagesTable)
-	if err := thread.PCall(3, 1, nil); err != nil {
+	thread.Push(attackInfoTable)
+	if err := thread.PCall(4, 1, nil); err != nil {
 		log.Printf("Failed to call script on_attack: %v", err)
 		return
 	}

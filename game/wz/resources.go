@@ -141,6 +141,59 @@ func (node *node) find(name string) *node {
 	return current
 }
 
+// loadEquipmentFiles walks Character.wz, loads each equipment (Weapon/Armor) via loadWeapons, and stores Item by ID.
+func loadEquipmentFiles(root string, workerCount int, items map[uint32]Item) error {
+	var allFiles []string
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err == nil && !d.IsDir() && strings.HasSuffix(d.Name(), ".img.xml") {
+			allFiles = append(allFiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	total := len(allFiles)
+	if total == 0 {
+		return nil
+	}
+	jobs := make(chan string, total)
+	results := make(chan Item, total)
+	var wg sync.WaitGroup
+	for range workerCount {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for path := range jobs {
+				item, loadErr := loadWeapons(path)
+				if loadErr == nil && item != nil {
+					results <- item
+				} else if loadErr != nil {
+					log.Println(loadErr)
+				}
+			}
+		}()
+	}
+	go func() {
+		for _, path := range allFiles {
+			jobs <- path
+		}
+		close(jobs)
+		wg.Wait()
+		close(results)
+	}()
+	count := 0
+	for item := range results {
+		count++
+		items[item.GetID()] = item
+		if total > 0 && count%500 == 0 {
+			fmt.Printf("Loading equipment files: %.1f%%\n", float32(count)/float32(total)*100)
+		}
+	}
+	fmt.Printf("Loading equipment files: 100.0%%\n")
+	return nil
+}
+
 // loadResourceFiles loads multiple XML files concurrently using worker goroutines.
 // Generic function that processes files and calls callback with progress updates.
 func loadResourceFiles[T any](root string, workerCount int, action func(path string) (result *T, err error), callback func(percent float32, value *T)) error {
@@ -332,17 +385,7 @@ func NewResources(wzPath string) *Resources {
 
 	items := map[uint32]Item{}
 	var err error
-	err = loadResourceFiles(filepath.Join(wzPath, "Character.wz"),
-		workerCount,
-		func(path string) (result *Equipment, err error) {
-			return loadWeapons(path)
-		},
-		func(percent float32, value *Equipment) {
-			if value != nil {
-				items[value.ID] = value
-			}
-			fmt.Printf("Loading equipment files: %.1f%%\n", percent)
-		})
+	err = loadEquipmentFiles(filepath.Join(wzPath, "Character.wz"), workerCount, items)
 	if err != nil {
 		log.Fatal(err)
 		return nil

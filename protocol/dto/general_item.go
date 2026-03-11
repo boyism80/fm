@@ -9,12 +9,12 @@ import (
 
 // GeneralItem represents general item DTO
 type GeneralItem struct {
-	ItemId      uint32
-	UniqueId    int64
-	Count       uint16
-	Expiration  time.Time
-	OwnerName   string
-	Flags       uint16
+	ItemId     uint32
+	UniqueId   int64
+	Count      uint16
+	Expiration time.Time
+	OwnerName  string
+	Flags      uint16
 }
 
 func (i *GeneralItem) GetCount() uint16 {
@@ -37,4 +37,3 @@ func (i *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot in
 	writer.WriteStr16(i.OwnerName)
 	writer.WriteU16(i.Flags)
 }
-

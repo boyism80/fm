@@ -12,6 +12,7 @@ function on_activated(me, skill)
     end
 
     local pad = effect.pad or 0
-    me:add_buff(skill, BuffFlag.WeaponAtk, pad)
+    me:buff(skill, BuffFlag.WeaponAtk, pad)
     -- TODO: Apply this buff to nearby party members when party system is implemented.
 end
+

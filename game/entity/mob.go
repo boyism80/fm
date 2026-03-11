@@ -4,17 +4,29 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sync"
+	"time"
 
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
+type mobDebuffEntry struct {
+	value       int32
+	Wz          *wz.Skill // skill that applied this debuff (nil if non-skill); packet uses Wz.ID when non-nil
+	Level       uint8
+	expiresAt   time.Time
+	cancelTimer *time.Timer
+}
+
 type Mob struct {
 	Life
 	Wz       *wz.Mob
 	Foothold int16
-	Spawn    *MobSpawn // Spawn point where this mob was spawned (nil if not from a spawn point)
+	Spawn    *MobSpawn
+	debuffs  map[constant.Debuff]*mobDebuffEntry
+	debuffMu sync.RWMutex
 }
 
 // GetObject implements ObjectProvider (Mob embeds Life which embeds Object).
@@ -125,6 +137,72 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(mapInstance.ID))
 			return 1
 		},
+		"set_debuff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			debuffTbl := L.CheckTable(2)
+			maskLV := debuffTbl.RawGetString("mask")
+			if maskLV.Type() != lua.LTNumber {
+				L.ArgError(2, "Debuff table with numeric mask expected")
+				return 0
+			}
+			debuff := constant.Debuff{Mask: uint32(lua.LVAsNumber(maskLV))}
+			value := int32(L.CheckInt(3))
+			durationMs := L.CheckInt64(4)
+			if durationMs < 0 {
+				durationMs = 0
+			}
+			var skillWz *wz.Skill
+			var skillLevel uint8
+			if L.GetTop() >= 5 {
+				if lv, ok := L.Get(5).(*lua.LUserData); ok {
+					if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Skill != nil {
+						skillWz = se.Skill
+						skillLevel = uint8(se.SkillLevel)
+					}
+				}
+			}
+			mob.ApplyDebuff(debuff, value, durationMs, skillWz, skillLevel)
+			return 0
+		},
+		"clear_debuff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			debuffTbl := L.CheckTable(2)
+			maskLV := debuffTbl.RawGetString("mask")
+			if maskLV.Type() != lua.LTNumber {
+				L.ArgError(2, "Debuff table with numeric mask expected")
+				return 0
+			}
+			debuff := constant.Debuff{Mask: uint32(lua.LVAsNumber(maskLV))}
+			mob.CancelDebuff(debuff)
+			return 0
+		},
+		"has_debuff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			debuffTbl := L.CheckTable(2)
+			maskLV := debuffTbl.RawGetString("mask")
+			if maskLV.Type() != lua.LTNumber {
+				L.ArgError(2, "Debuff table with numeric mask expected")
+				return 0
+			}
+			debuff := constant.Debuff{Mask: uint32(lua.LVAsNumber(maskLV))}
+			L.Push(lua.LBool(mob.HasDebuff(debuff)))
+			return 1
+		},
 		"wz": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
@@ -153,6 +231,91 @@ func (m *Mob) String() string {
 
 func (m *Mob) Type() lua.LValueType {
 	return lua.LTUserData
+}
+
+// ApplyDebuff applies a debuff (e.g. FREEZE) to the mob with optional duration. If durationMs > 0, a timer clears the debuff when it expires.
+// Re-applying the same debuff type: existing entry is removed (timer stopped, no cancel packet), then a new entry is created (no apply packet). Same observable behavior as refresh.
+// skillWz and skillLevel identify the skill that applied the debuff; packet uses skillWz.ID when non-nil.
+// Boss check (FREEZE/STUN/SEAL not applied to boss) is the caller's responsibility.
+func (m *Mob) ApplyDebuff(debuff constant.Debuff, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8) {
+	m.debuffMu.Lock()
+	if m.debuffs == nil {
+		m.debuffs = make(map[constant.Debuff]*mobDebuffEntry)
+	}
+	existing := m.debuffs[debuff]
+	wasRefresh := existing != nil
+	if existing != nil {
+		if existing.cancelTimer != nil {
+			existing.cancelTimer.Stop()
+		}
+		delete(m.debuffs, debuff)
+	}
+
+	entry := &mobDebuffEntry{
+		value: value,
+		Wz:    skillWz,
+		Level: skillLevel,
+	}
+	if durationMs > 0 {
+		entry.expiresAt = time.Now().Add(time.Duration(durationMs) * time.Millisecond)
+		entry.cancelTimer = time.AfterFunc(time.Duration(durationMs)*time.Millisecond, func() {
+			m.CancelDebuff(debuff)
+		})
+	}
+	m.debuffs[debuff] = entry
+	m.debuffMu.Unlock()
+
+	if wasRefresh {
+		return
+	}
+	packetSkillID := uint32(0)
+	if skillWz != nil {
+		packetSkillID = skillWz.ID
+	}
+	mapInstance := m.GetObject().GetMap()
+	if mapInstance != nil && mapInstance.listener != nil {
+		mapInstance.listener.OnMobDebuffApplied(mapInstance, m, debuff, value, packetSkillID, durationMs)
+	}
+}
+
+// CancelDebuff removes a debuff and notifies the map listener (broadcast cancel packet).
+func (m *Mob) CancelDebuff(debuff constant.Debuff) {
+	m.debuffMu.Lock()
+	entry, ok := m.debuffs[debuff]
+	if !ok {
+		m.debuffMu.Unlock()
+		return
+	}
+	if entry.cancelTimer != nil {
+		entry.cancelTimer.Stop()
+	}
+	delete(m.debuffs, debuff)
+	m.debuffMu.Unlock()
+
+	mapInstance := m.GetObject().GetMap()
+	if mapInstance != nil && mapInstance.listener != nil {
+		mapInstance.listener.OnMobDebuffCancelled(mapInstance, m, debuff)
+	}
+}
+
+// HasDebuff returns whether the mob currently has the given debuff.
+func (m *Mob) HasDebuff(debuff constant.Debuff) bool {
+	m.debuffMu.RLock()
+	defer m.debuffMu.RUnlock()
+	_, ok := m.debuffs[debuff]
+	return ok
+}
+
+// ClearAllDebuffTimers stops all debuff timers without notifying. Used when mob is removed from map.
+func (m *Mob) ClearAllDebuffTimers() {
+	m.debuffMu.Lock()
+	defer m.debuffMu.Unlock()
+	for _, entry := range m.debuffs {
+		if entry.cancelTimer != nil {
+			entry.cancelTimer.Stop()
+		}
+	}
+	m.debuffs = nil
 }
 
 // Serialize method removed - use DTO instead
@@ -218,7 +381,6 @@ func (m *Mob) dropItems(attacker *Character) {
 				isMeso bool
 				count  int32
 				item   Item
-				
 			}{isMeso: true, count: count, item: nil})
 		} else {
 			// Generate item drop

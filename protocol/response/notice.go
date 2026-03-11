@@ -3,8 +3,8 @@ package response
 import (
 	"math"
 
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/stream"
 )
 
 type Notice struct {

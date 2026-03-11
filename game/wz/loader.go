@@ -334,7 +334,8 @@ func loadConsumes(path string) (*[]*Consume, error) {
 }
 
 // loadWeapons loads weapon and equipment specifications from XML file.
-func loadWeapons(path string) (*Equipment, error) {
+// Returns *Weapon for path under Character.wz/Weapon/, *Armor for other equipment (Cap, Coat, etc.).
+func loadWeapons(path string) (Item, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -542,7 +543,11 @@ func loadWeapons(path string) (*Equipment, error) {
 		model.SlotMax = 1 // Equipment default
 	}
 
-	return &model, nil
+	eq := &model
+	if constant.GetEquipmentType(model.ID) == constant.EquipmentTypeWeapon {
+		return &Weapon{Equipment: eq}, nil
+	}
+	return &Armor{Equipment: eq}, nil
 }
 
 // loadGeneralItems loads general item specifications from XML file.
@@ -1343,24 +1348,24 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 				}
 			}
 
-			// Skip throwing stars except ITEM_THROWING_STAR_BASE
+			// Skip shurikens except ITEM_SHURIKEN_BASE
 			if item.ItemID > 0 {
-				if item.ItemID/10000 == constant.ITEM_CATEGORY_THROWING_STAR && item.ItemID != constant.ITEM_THROWING_STAR_BASE {
+				if item.ItemID/10000 == constant.ITEM_CATEGORY_SHURIKEN && item.ItemID != constant.ITEM_SHURIKEN_BASE {
 					continue
 				}
 				shop.Items = append(shop.Items, item)
 			}
 		}
 
-		rechargeableItems := make([]uint32, 0, len(constant.RechargeableThrowingStars)+len(constant.RechargeableBullets))
-		rechargeableItems = append(rechargeableItems, constant.RechargeableThrowingStars...)
+		rechargeableItems := make([]uint32, 0, len(constant.RechargeableShurikens)+len(constant.RechargeableBullets))
+		rechargeableItems = append(rechargeableItems, constant.RechargeableShurikens...)
 		rechargeableItems = append(rechargeableItems, constant.RechargeableBullets...)
 
 		// Track which rechargeable items are already in the shop
 		existingRechargeable := make(map[uint32]bool)
 		for _, existingItem := range shop.Items {
 			category := existingItem.ItemID / 10000
-			if category == constant.ITEM_CATEGORY_THROWING_STAR || category == constant.ITEM_CATEGORY_BULLET {
+			if category == constant.ITEM_CATEGORY_SHURIKEN || category == constant.ITEM_CATEGORY_BULLET {
 				existingRechargeable[existingItem.ItemID] = true
 			}
 		}

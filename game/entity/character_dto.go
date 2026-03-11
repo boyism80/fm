@@ -19,7 +19,7 @@ func (ch *Character) ToDTO() *dto.Character {
 			continue
 		}
 
-		model, ok := equipment.Wz.(*wz.Equipment)
+		model, ok := equipment.GetModel().(wz.EquipmentModel)
 		if !ok {
 			continue
 		}
@@ -42,7 +42,7 @@ func (ch *Character) ToDTO() *dto.Character {
 
 	var weapon uint32
 	if weaponEquip := ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON]; weaponEquip != nil {
-		weapon = weaponEquip.Wz.GetID()
+		weapon = weaponEquip.GetModel().GetID()
 	}
 
 	mapID := uint32(0)

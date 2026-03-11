@@ -8,9 +8,9 @@ import (
 )
 
 type OpenNpcShop struct {
-	ShopID  int32
-	Shop    *wz.Shop
-	Items   map[uint32]wz.Item
+	ShopID int32
+	Shop   *wz.Shop
+	Items  map[uint32]wz.Item
 }
 
 func (p *OpenNpcShop) Opcode() uint16 {
@@ -25,10 +25,10 @@ func (p *OpenNpcShop) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU32(item.ItemID)
 		writer.Write32(int32(item.Price))
 
-		isThrowingStar := item.ItemID/10000 == 207
+		isShuriken := item.ItemID/10000 == 207
 		isBullet := item.ItemID/10000 == 233
 
-		if isThrowingStar || isBullet {
+		if isShuriken || isBullet {
 			writer.WriteU8(0)
 			writer.WriteU8(0)
 			writer.WriteU8(0)

@@ -358,3 +358,37 @@ func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Ch
 		RecipientFilter:    entity.BroadcastVisibleByReference,
 	})
 }
+
+// OnMobDebuffApplied broadcasts APPLY_DEBUFF (0xAF) to all players on the map (including attacker).
+func (l *MapListenerImpl) OnMobDebuffApplied(mapInstance *entity.Map, mob *entity.Mob, debuff constant.Debuff, value int32, skillID uint32, durationMs int64) {
+	if mapInstance == nil {
+		return
+	}
+	buffTime := int16(32767)
+	if durationMs > 0 && durationMs/1000 < 32767 {
+		buffTime = int16(durationMs / 1000)
+	}
+	pkt := &response.ApplyDebuff{
+		OID:        mob.OID,
+		Status:     int32(debuff.Mask),
+		X:          int16(value),
+		SkillID:    skillID,
+		BuffTime:   buffTime,
+		Delay:      0,
+		StatusSize: 1,
+	}
+	mapInstance.Broadcast(pkt, nil)
+}
+
+// OnMobDebuffCancelled broadcasts CANCEL_DEBUFF (0xB0) to all players on the map.
+func (l *MapListenerImpl) OnMobDebuffCancelled(mapInstance *entity.Map, mob *entity.Mob, debuff constant.Debuff) {
+	if mapInstance == nil {
+		return
+	}
+	pkt := &response.CancelDebuff{
+		OID:    mob.OID,
+		Status: int32(debuff.Mask),
+		Size:   1,
+	}
+	mapInstance.Broadcast(pkt, nil)
+}

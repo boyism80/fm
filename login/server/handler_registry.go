@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 type PacketHandlerRegistry struct {
 	ls *LoginServer

@@ -12,8 +12,9 @@ function on_activated(me, skill)
     end
 
     local guard_percent = effect.x or 0
-    me:add_buff(skill, BuffFlag.MagicGuard, guard_percent)
+    me:buff(skill, BuffFlag.MagicGuard, guard_percent)
 end
 
-function on_deactivated(me, skill)
+function on_unbuff(me, skill)
 end
+

@@ -13,7 +13,6 @@ import (
 	"github.com/boyism80/fm/protocol/response"
 )
 
-// MoveItem handles item movement packet requests
 type MoveItem struct {
 	gs     *GameServer
 	opcode byte
@@ -52,9 +51,9 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 		parts := constant.EquipmentPartsType(req.Dest)
 		before := character.Equipments[parts]
 		inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
-		var after *entity.Equipment
+		var after entity.Equipment
 		if item := inven.Items[req.Source]; item != nil {
-			after, _ = item.(*entity.Equipment)
+			after, _ = item.(entity.Equipment)
 		}
 		h.handleEquip(client, character, parts, req.Source)
 		callOnEquipmentChanged(ctx, character, parts, before, after)
@@ -94,7 +93,7 @@ func (h *MoveItem) handleEquip(client *client.GameClient, character *entity.Char
 		return
 	}
 
-	new, ok := inven.Items[slot].(*entity.Equipment)
+	new, ok := inven.Items[slot].(entity.Equipment)
 	if !ok {
 		return
 	}
@@ -103,7 +102,7 @@ func (h *MoveItem) handleEquip(client *client.GameClient, character *entity.Char
 
 	switch parts {
 	case constant.EQUIPMENT_PARTS_TOP:
-		if new.IsOverall() {
+		if topNew, ok := new.(*entity.Top); ok && topNew.IsOverall() {
 			_, isWearPants := equipments[constant.EQUIPMENT_PARTS_PANTS]
 			if isWearPants {
 				storageSlot, isFree := inven.NextSlot()
@@ -116,14 +115,16 @@ func (h *MoveItem) handleEquip(client *client.GameClient, character *entity.Char
 		}
 
 	case constant.EQUIPMENT_PARTS_PANTS:
-		top, isWearTop := equipments[constant.EQUIPMENT_PARTS_TOP]
-		if isWearTop && top.IsOverall() {
-			storageSlot, isFree := inven.NextSlot()
-			if swap && !isFree {
-				character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
-				return
+		topEq, isWearTop := equipments[constant.EQUIPMENT_PARTS_TOP]
+		if isWearTop {
+			if top, ok := topEq.(*entity.Top); ok && top.IsOverall() {
+				storageSlot, isFree := inven.NextSlot()
+				if swap && !isFree {
+					character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
+					return
+				}
+				h.handleUnequip(client, character, constant.EQUIPMENT_PARTS_TOP, int16(storageSlot))
 			}
-			h.handleUnequip(client, character, constant.EQUIPMENT_PARTS_TOP, int16(storageSlot))
 		}
 	}
 
@@ -202,7 +203,7 @@ func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *
 	}
 }
 
-func callOnEquipmentChanged(ctx *core.ClientContext, character *entity.Character, parts constant.EquipmentPartsType, before, after *entity.Equipment) {
+func callOnEquipmentChanged(ctx *core.ClientContext, character *entity.Character, parts constant.EquipmentPartsType, before, after entity.Equipment) {
 	if ctx.LogicActorPID == nil {
 		return
 	}
@@ -212,10 +213,10 @@ func callOnEquipmentChanged(ctx *core.ClientContext, character *entity.Character
 	}
 	var beforeArg, afterArg interface{}
 	if before != nil {
-		beforeArg = before
+		beforeArg = luax.NewLuable(root, before.(luax.Luable))
 	}
 	if after != nil {
-		afterArg = after
+		afterArg = luax.NewLuable(root, after.(luax.Luable))
 	}
 	_, thread, err := luax.Call(root, "script/script.lua", "on_equipment_changed", character, int32(parts), beforeArg, afterArg)
 	if thread != nil {

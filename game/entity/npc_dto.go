@@ -15,7 +15,7 @@ func (n *Npc) ToDTO() *dto.Npc {
 	rx0 := int16(0)
 	rx1 := int16(0)
 	cy := int16(0)
-	
+
 	if n.Wz != nil && n.Wz.BaseSpawn != nil {
 		npcId = n.Wz.ID
 		foothold = n.Wz.Foothold
@@ -34,4 +34,3 @@ func (n *Npc) ToDTO() *dto.Npc {
 		Cy:       cy,
 	}
 }
-

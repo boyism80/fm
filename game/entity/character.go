@@ -55,7 +55,7 @@ type Character struct {
 	HpApUsed      uint16
 	Meso          int32
 	Inventory     map[constant.InventoryType]*Inventory
-	Equipments    map[constant.EquipmentPartsType]*Equipment
+	Equipments    map[constant.EquipmentPartsType]Equipment
 	Rings         RingContainer
 	Skills        map[uint32]*SkillEntry
 	CurrentShopID uint32
@@ -303,7 +303,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			Right: []*Ring{},
 			Mid:   []*Ring{},
 		},
-		Equipments: map[constant.EquipmentPartsType]*Equipment{
+		Equipments: map[constant.EquipmentPartsType]Equipment{
 			constant.EQUIPMENT_PARTS_WEAPON: nil,
 			constant.EQUIPMENT_PARTS_SHIELD: nil,
 		},
@@ -316,14 +316,23 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 
 	if ctx != nil {
 		resources := ctx.GetResources()
-		ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = &Equipment{
-			ItemCore: &ItemCore{
-				Wz:         resources.Items[1302000],
-				Count:      1,
-				UniqueId:   0,
-				Expiration: util.TimeMax,
-			},
-			EnchantChance: 7,
+		weaponItem, err := NewItem(1302000, 1, ctx)
+		if err == nil {
+			if eq, ok := weaponItem.(Equipment); ok {
+				ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = eq
+			}
+		}
+		if ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] == nil && resources != nil {
+			core := &EquipmentCore{
+				ItemCore: &ItemCore{
+					Wz:         resources.Items[1302000],
+					Count:      1,
+					UniqueId:   0,
+					Expiration: util.TimeMax,
+				},
+				EnchantChance: 7,
+			}
+			ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = &Weapon{EquipmentCore: core}
 		}
 
 		petExpiration, err := time.ParseInLocation("2006-01-02 15:04:05", "2025-05-30 09:30:00", util.KST)

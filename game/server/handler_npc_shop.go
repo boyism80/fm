@@ -185,7 +185,7 @@ func (h *NpcShop) handleSell(character *entity.Character, shop *wz.Shop, tx *req
 		return nil
 	}
 
-	if h.isThrowingStar(tx.ItemID) || h.isBullet(tx.ItemID) {
+	if h.isShuriken(tx.ItemID) || h.isBullet(tx.ItemID) {
 		quantity = item.GetCount()
 	}
 
@@ -205,7 +205,7 @@ func (h *NpcShop) handleSell(character *entity.Character, shop *wz.Shop, tx *req
 	itemModel := item.GetModel()
 	price := itemModel.GetPrice()
 
-	if h.isThrowingStar(tx.ItemID) || h.isBullet(tx.ItemID) {
+	if h.isShuriken(tx.ItemID) || h.isBullet(tx.ItemID) {
 		wholePrice := itemModel.GetPrice()
 		slotMax := itemModel.GetCapacity()
 		if slotMax > 0 {
@@ -248,7 +248,7 @@ func (h *NpcShop) handleRecharge(character *entity.Character, shop *wz.Shop, tx 
 	}
 
 	itemID := item.GetModel().GetID()
-	if !h.isThrowingStar(itemID) && !h.isBullet(itemID) {
+	if !h.isShuriken(itemID) && !h.isBullet(itemID) {
 		return nil
 	}
 
@@ -278,7 +278,7 @@ func (h *NpcShop) handleRecharge(character *entity.Character, shop *wz.Shop, tx 
 	return nil
 }
 
-func (h *NpcShop) isThrowingStar(itemID uint32) bool {
+func (h *NpcShop) isShuriken(itemID uint32) bool {
 	return itemID/10000 == 207
 }
 
@@ -287,7 +287,7 @@ func (h *NpcShop) isBullet(itemID uint32) bool {
 }
 
 func (h *NpcShop) isRechargable(itemID uint32) bool {
-	return h.isThrowingStar(itemID) || h.isBullet(itemID)
+	return h.isShuriken(itemID) || h.isBullet(itemID)
 }
 
 func (h *NpcShop) isPet(itemID uint32) bool {
@@ -297,7 +297,7 @@ func (h *NpcShop) isPet(itemID uint32) bool {
 func (h *NpcShop) getItemInventoryType(itemID uint32, itemModel wz.Item) constant.InventoryType {
 	if itemModel != nil {
 		switch itemModel.(type) {
-		case *wz.Equipment:
+		case *wz.Weapon, *wz.Armor:
 			return constant.INVENTORY_TYPE_EQUIPMENT
 		case *wz.Consume:
 			return constant.INVENTORY_TYPE_CONSUME

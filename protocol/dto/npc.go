@@ -29,4 +29,3 @@ func (n *Npc) Serialize(writer *stream.StreamWriter) error {
 	writer.Write16(n.Cy)
 	return nil
 }
-
