@@ -1,7 +1,7 @@
 package entity
 
 import (
-	// "github.com/boyism80/fm/core" // Commented out: LogicThread removed
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/game/wz"
 )
 
@@ -13,4 +13,5 @@ type GameContext interface {
 	GetDropRate() int // Returns drop rate multiplier
 	GetMesoRate() int // Returns meso rate multiplier
 	RequestWarp(character *Character, targetMap *Map, spawnPoint uint8) error
+	SendToActor(pid *actor.PID, msg interface{})
 }

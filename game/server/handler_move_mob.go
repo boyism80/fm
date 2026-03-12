@@ -48,8 +48,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 
 	mob := mapInstance.GetMob(req.OID)
 	if mob == nil {
-		log.Printf("Mob %d not found on map", req.OID)
-		return fmt.Errorf("mob %d not found", req.OID)
+		return nil
 	}
 
 	controllerTable := mapInstance.GetControllerTable()

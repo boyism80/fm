@@ -210,3 +210,23 @@ var RechargeableBullets = []uint32{
 	2330000, 2330001, 2330002, 2330003, 2330004, 2330005,
 	2331000, 2332000,
 }
+
+// GetInventoryTypeByItemID returns the inventory type for an item by its ID.
+// Uses MapleStory item ID ranges (itemID / 10000).
+func GetInventoryTypeByItemID(itemID uint32) InventoryType {
+	itemType := itemID / 10000
+	switch {
+	case itemType >= 100 && itemType < 200:
+		return INVENTORY_TYPE_EQUIPMENT
+	case itemType >= 200 && itemType < 300:
+		return INVENTORY_TYPE_CONSUME
+	case itemType >= 300 && itemType < 400:
+		return INVENTORY_TYPE_INSTALLATION
+	case itemType >= 400 && itemType < 500:
+		return INVENTORY_TYPE_ETC
+	case itemType >= 500 && itemType < 600:
+		return INVENTORY_TYPE_CASH
+	default:
+		return INVENTORY_TYPE_ETC
+	}
+}

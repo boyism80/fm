@@ -289,6 +289,14 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 			})
 			return L.Yield(lua.LNil)
 		})
+		if fn, err := luaState.LoadFile("script/skill/skill.lua"); err != nil {
+			log.Printf("Failed to load script/skill/skill.lua: %v", err)
+		} else {
+			luaState.Push(fn)
+			if err := luaState.PCall(0, 0, nil); err != nil {
+				log.Printf("Failed to run script/skill/skill.lua: %v", err)
+			}
+		}
 	})
 
 	// Pre-create all maps
@@ -445,6 +453,15 @@ func (gs *GameServer) RequestWarp(character *entity.Character, targetMap *entity
 	return nil
 }
 
+func (gs *GameServer) SendToActor(pid *actor.PID, msg interface{}) {
+	if pid == nil {
+		return
+	}
+	if root := gs.GetRootContext(); root != nil {
+		root.Send(pid, msg)
+	}
+}
+
 // handleClientDisconnect handles client disconnection by removing character from map
 func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	client, ok := c.(*client.GameClient)
@@ -456,10 +473,10 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		return
 	}
 	mapInstance := character.GetMap()
-	if mapInstance == nil {
-		return
+	if mapInstance != nil {
+		mapInstance.RemovePlayer(character.GetID())
 	}
-	mapInstance.RemovePlayer(character.GetID())
+	character.ClearTimers()
 }
 
 // GetStats returns game server statistics for monitoring

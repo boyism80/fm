@@ -168,6 +168,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	character := m.objects[types.OBJECT_TYPE_PLAYER][playerID].(*Character)
 	delete(m.objects[types.OBJECT_TYPE_PLAYER], playerID)
 
+	character.SuspendTimers()
 	character.GetObject().Map = nil
 	m.controllerTable.LeavePlayer(character)
 
@@ -727,24 +728,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if itemObj, ok := item.(Item); ok {
 					drop := itemObj.GetDrop()
 					if drop != nil && drop.Object != nil {
-						// Item interface를 타입 어설션하여 실제 타입을 얻고 Luable로 변환
-						switch v := itemObj.(type) {
-						case Equipment:
-							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v.(luax.Luable)))
-						case *Consume:
-							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
-						case *CashItem:
-							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
-						case *GeneralItem:
-							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
-						case *Installation:
-							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
-						case *Pet:
-							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, v))
-						default:
-							// Fallback to Object
-							tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, drop.Object))
-						}
+						tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, itemObj))
 					}
 				}
 			}
@@ -908,22 +892,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			switch v := item.(type) {
-			case Equipment:
-				L.Push(luax.NewLuable(L, v.(luax.Luable)))
-			case *Consume:
-				L.Push(luax.NewLuable(L, v))
-			case *CashItem:
-				L.Push(luax.NewLuable(L, v))
-			case *GeneralItem:
-				L.Push(luax.NewLuable(L, v))
-			case *Installation:
-				L.Push(luax.NewLuable(L, v))
-			case *Pet:
-				L.Push(luax.NewLuable(L, v))
-			default:
-				L.Push(luax.NewLuable(L, item.GetObject()))
-			}
+			L.Push(luax.NewLuable(L, item))
 			return 1
 		},
 	}

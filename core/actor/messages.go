@@ -24,6 +24,11 @@ type ExecuteTimer struct {
 	Logic func() error
 }
 
+type RunCharacterTimer struct {
+	CharacterID uint32
+	Key         string
+}
+
 type PacketResponse struct {
 	Packet types.Packet
 	Policy types.SendPolicy

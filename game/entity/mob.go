@@ -456,8 +456,11 @@ func (m *Mob) Damage(damage uint16, attacker *Character) bool {
 	// Mob dies - handle all death-related logic
 	log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
 
-	// Add experience to character
-	attacker.AddExp(uint32(m.Wz.EXP))
+	exp := uint32(m.Wz.EXP)
+	if attacker.BonusStats.ExpRate > 0 {
+		exp = exp * uint32(attacker.BonusStats.ExpRate) / 100
+	}
+	attacker.AddExp(exp)
 
 	// Generate mob drops
 	m.dropItems(attacker)

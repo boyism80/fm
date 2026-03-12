@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"log"
 	"time"
 
 	"github.com/boyism80/fm/core/luax"
@@ -9,6 +10,29 @@ import (
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
+
+func luaValuesToInterfaces(L *lua.LState, from, to int) []interface{} {
+	if from > to {
+		return nil
+	}
+	out := make([]interface{}, 0, to-from+1)
+	for i := from; i <= to; i++ {
+		lv := L.Get(i)
+		switch v := lv.(type) {
+		case lua.LNumber:
+			out = append(out, float64(v))
+		case lua.LString:
+			out = append(out, string(v))
+		case lua.LBool:
+			out = append(out, bool(v))
+		case *lua.LNilType:
+			out = append(out, nil)
+		default:
+			out = append(out, nil)
+		}
+	}
+	return out
+}
 
 func (ch *Character) LuaTypeName() string {
 	return "LuaCharacter"
@@ -164,12 +188,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			message := L.CheckString(2)
 			highlight := false
-			if argc > 2 {
-				highlight = L.CheckBool(3)
-			}
 			dontRecordHistory := false
-			if argc > 3 {
+			switch argc {
+			case 4:
 				dontRecordHistory = L.CheckBool(4)
+				fallthrough
+			case 3:
+				highlight = L.CheckBool(3)
 			}
 
 			if ch.Listener != nil {
@@ -204,7 +229,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}, true
 			}
 
-			if argc == 2 {
+			switch argc {
+			case 2:
 				flag, ok := parseFlag(L.Get(2), 2)
 				if !ok {
 					return 0
@@ -220,18 +246,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				L.Push(luax.NewLuable(L, view))
 				return 1
-			}
-
-			skillUD := L.CheckUserData(2)
-			skillEntry, ok := skillUD.Value.(*SkillEntry)
-			if !ok || skillEntry == nil || skillEntry.Skill == nil {
-				L.ArgError(2, "SkillEntry with Wz expected")
-				return 0
-			}
-			values := make(map[constant.BuffFlag]int32)
-
-			switch argc {
 			case 3:
+				skillUD := L.CheckUserData(2)
+				skillEntry, ok := skillUD.Value.(*SkillEntry)
+				if !ok || skillEntry == nil || skillEntry.Skill == nil {
+					L.ArgError(2, "SkillEntry with Wz expected")
+					return 0
+				}
+				values := make(map[constant.BuffFlag]int32)
 				valueTable := L.CheckTable(3)
 				valueTable.ForEach(func(key lua.LValue, value lua.LValue) {
 					flag, ok := parseFlag(key, 3)
@@ -244,23 +266,30 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 					values[flag] = int32(value.(lua.LNumber))
 				})
+				if len(values) == 0 {
+					L.ArgError(3, "buff() requires at least one flag-value pair")
+					return 0
+				}
+				ch.Buffs.AddBuff(skillEntry.Skill, uint8(skillEntry.SkillLevel), values)
+				return 0
 			case 4:
+				skillUD := L.CheckUserData(2)
+				skillEntry, ok := skillUD.Value.(*SkillEntry)
+				if !ok || skillEntry == nil || skillEntry.Skill == nil {
+					L.ArgError(2, "SkillEntry with Wz expected")
+					return 0
+				}
 				flag, ok := parseFlag(L.Get(3), 3)
 				if !ok {
 					return 0
 				}
-				values[flag] = int32(L.CheckNumber(4))
+				values := map[constant.BuffFlag]int32{flag: int32(L.CheckNumber(4))}
+				ch.Buffs.AddBuff(skillEntry.Skill, uint8(skillEntry.SkillLevel), values)
+				return 0
 			default:
 				L.ArgError(3, "buff() requires (skill, {[flag]=value}) or (skill, flag, value)")
 				return 0
 			}
-
-			if len(values) == 0 {
-				L.ArgError(3, "buff() requires at least one flag-value pair")
-				return 0
-			}
-			ch.Buffs.AddBuff(skillEntry.Skill, uint8(skillEntry.SkillLevel), values)
-			return 0
 		},
 		"unbuff": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -334,22 +363,21 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
 			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
 			prev := false
-			if argc > 3 {
-				prev = L.CheckBool(4)
-			}
 			next := false
-			if argc > 4 {
+			switch argc {
+			case 5:
 				next = L.CheckBool(5)
+				fallthrough
+			case 4:
+				prev = L.CheckBool(4)
+				fallthrough
+			case 3:
+				message = L.CheckString(3)
+				fallthrough
+			case 2:
+				npc = L.CheckInt(2)
 			}
 
 			if ch.Listener != nil {
@@ -368,22 +396,21 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
 			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
 			prev := false
-			if argc > 3 {
-				prev = L.CheckBool(4)
-			}
 			next := false
-			if argc > 4 {
+			switch argc {
+			case 5:
 				next = L.CheckBool(5)
+				fallthrough
+			case 4:
+				prev = L.CheckBool(4)
+				fallthrough
+			case 3:
+				message = L.CheckString(3)
+				fallthrough
+			case 2:
+				npc = L.CheckInt(2)
 			}
 
 			if ch.Listener != nil {
@@ -402,23 +429,22 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
 			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
 			selections := []string{}
-			if argc > 3 {
+			switch argc {
+			case 4:
 				tbl := L.CheckTable(4)
 				tbl.ForEach(func(_, value lua.LValue) {
 					if str, ok := value.(lua.LString); ok {
 						selections = append(selections, string(str))
 					}
 				})
+				fallthrough
+			case 3:
+				message = L.CheckString(3)
+				fallthrough
+			case 2:
+				npc = L.CheckInt(2)
 			}
 
 			if ch.Listener != nil {
@@ -437,18 +463,17 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
 			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
 			enableEscape := false
-			if argc > 3 {
+			switch argc {
+			case 4:
 				enableEscape = L.CheckBool(4)
+				fallthrough
+			case 3:
+				message = L.CheckString(3)
+				fallthrough
+			case 2:
+				npc = L.CheckInt(2)
 			}
 
 			if ch.Listener != nil {
@@ -467,13 +492,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
 			message := ""
-			if argc > 2 {
+			switch argc {
+			case 3:
 				message = L.CheckString(3)
+				fallthrough
+			case 2:
+				npc = L.CheckInt(2)
 			}
 
 			if ch.Listener != nil {
@@ -585,7 +610,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if L.GetTop() != 1 {
+			switch L.GetTop() {
+			case 1:
+				// continue
+			default:
 				L.ArgError(2, "skills() is read-only")
 				return 0
 			}
@@ -845,6 +873,26 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"bonus_watk": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.BonusStats.Watk))
+				return 1
+			case 2:
+				ch.BonusStats.Watk = int16(L.CheckInt(2))
+				return 0
+			default:
+				L.ArgError(2, "bonus_watk() requires 0 or 1 arguments")
+				return 0
+			}
+		},
 		"bonus_hp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -906,11 +954,22 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(ch.BonusStats.MaxHpFixed))
 				L.Push(lua.LNumber(ch.BonusStats.MaxHpPercent))
 				return 2
-			case 2, 3:
+			case 2:
 				ch.BonusStats.MaxHpFixed = int16(L.CheckInt(2))
-				if argc == 3 {
-					ch.BonusStats.MaxHpPercent = int16(L.CheckInt(3))
+				if ch.Hp > ch.GetMaxHp() {
+					ch.Hp = ch.GetMaxHp()
 				}
+				if ch.Listener != nil {
+					stats := map[constant.Stat]int32{
+						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+						constant.STAT_HP:     int32(ch.Hp),
+					}
+					ch.Listener.OnUpdateStats(stats, false)
+				}
+				return 0
+			case 3:
+				ch.BonusStats.MaxHpFixed = int16(L.CheckInt(2))
+				ch.BonusStats.MaxHpPercent = int16(L.CheckInt(3))
 				if ch.Hp > ch.GetMaxHp() {
 					ch.Hp = ch.GetMaxHp()
 				}
@@ -940,11 +999,22 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(ch.BonusStats.MaxMpFixed))
 				L.Push(lua.LNumber(ch.BonusStats.MaxMpPercent))
 				return 2
-			case 2, 3:
+			case 2:
 				ch.BonusStats.MaxMpFixed = int16(L.CheckInt(2))
-				if argc == 3 {
-					ch.BonusStats.MaxMpPercent = int16(L.CheckInt(3))
+				if ch.Mp > ch.GetMaxMp() {
+					ch.Mp = ch.GetMaxMp()
 				}
+				if ch.Listener != nil {
+					stats := map[constant.Stat]int32{
+						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+						constant.STAT_MP:     int32(ch.Mp),
+					}
+					ch.Listener.OnUpdateStats(stats, false)
+				}
+				return 0
+			case 3:
+				ch.BonusStats.MaxMpFixed = int16(L.CheckInt(2))
+				ch.BonusStats.MaxMpPercent = int16(L.CheckInt(3))
 				if ch.Mp > ch.GetMaxMp() {
 					ch.Mp = ch.GetMaxMp()
 				}
@@ -1001,6 +1071,26 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"bonus_exp_rate": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.BonusStats.ExpRate))
+				return 1
+			case 2:
+				ch.BonusStats.ExpRate = int16(L.CheckInt(2))
+				return 0
+			default:
+				L.ArgError(2, "bonus_exp_rate() requires 1 or 2 arguments")
+				return 0
+			}
+		},
 		"map": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1009,8 +1099,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return current map (or nil)
+			switch argc {
+			case 1:
 				m := ch.GetMap()
 				if m == nil {
 					L.Push(lua.LNil)
@@ -1018,23 +1108,32 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				L.Push(luax.NewLuable(L, m))
 				return 1
-			}
-			// Setter: map(targetMap [, spawnPoint]) -> Warp
-			targetMapUD := L.CheckUserData(2)
-			targetMap, ok := targetMapUD.Value.(*Map)
-			if !ok || targetMap == nil {
-				L.ArgError(2, "Map expected")
+			case 2:
+				targetMapUD := L.CheckUserData(2)
+				targetMap, ok := targetMapUD.Value.(*Map)
+				if !ok || targetMap == nil {
+					L.ArgError(2, "Map expected")
+					return 0
+				}
+				if err := ch.Warp(targetMap, 1); err != nil {
+					L.RaiseError("warp: %v", err)
+					return 0
+				}
+				return 0
+			default:
+				targetMapUD := L.CheckUserData(2)
+				targetMap, ok := targetMapUD.Value.(*Map)
+				if !ok || targetMap == nil {
+					L.ArgError(2, "Map expected")
+					return 0
+				}
+				spawnPoint := uint8(L.CheckInt(3))
+				if err := ch.Warp(targetMap, spawnPoint); err != nil {
+					L.RaiseError("warp: %v", err)
+					return 0
+				}
 				return 0
 			}
-			spawnPoint := uint8(1)
-			if argc >= 3 {
-				spawnPoint = uint8(L.CheckInt(3))
-			}
-			if err := ch.Warp(targetMap, spawnPoint); err != nil {
-				L.RaiseError("warp: %v", err)
-				return 0
-			}
-			return 0
 		},
 		"equipped": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -1043,17 +1142,19 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if L.GetTop() < 2 {
+			switch L.GetTop() {
+			case 1:
 				L.ArgError(2, "equipped(part) requires equipment part (e.g. EquipmentPart.Weapon)")
 				return 0
-			}
-			part := constant.EquipmentPartsType(L.CheckInt(2))
-			if eq, ok := ch.Equipments[part]; ok && eq != nil {
-				L.Push(luax.NewLuable(L, eq.(luax.Luable)))
+			default:
+				part := constant.EquipmentPartsType(L.CheckInt(2))
+				if eq, ok := ch.Equipments[part]; ok && eq != nil {
+					L.Push(luax.NewLuable(L, eq.(luax.Luable)))
+					return 1
+				}
+				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(lua.LNil)
-			return 1
 		},
 		"item": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -1062,34 +1163,104 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if L.GetTop() < 3 {
-				L.ArgError(2, "item(inv_type, slot) requires two arguments")
+			switch L.GetTop() {
+			case 2:
+				var itemID uint32
+				switch lv := L.Get(2).(type) {
+				case lua.LNumber:
+					itemID = uint32(lv)
+				case lua.LString:
+					if ch.Context == nil {
+						L.Push(L.NewTable())
+						return 1
+					}
+					resources := ch.Context.GetResources()
+					if resources == nil {
+						L.Push(L.NewTable())
+						return 1
+					}
+					id, ok := resources.NameToItem(string(lv))
+					if !ok {
+						L.Push(L.NewTable())
+						return 1
+					}
+					itemID = id
+				default:
+					L.ArgError(2, "item id (number) or item name (string) expected")
+					return 0
+				}
+				invType := constant.GetInventoryTypeByItemID(itemID)
+				slotTbl := L.NewTable()
+				if inven := ch.Inventory[invType]; inven != nil {
+					for slot, item := range inven.Items {
+						if item != nil && item.GetModel().GetID() == itemID {
+							L.Push(luax.NewLuable(L, item))
+							slotTbl.RawSet(lua.LNumber(slot), L.Get(-1))
+							L.Pop(1)
+						}
+					}
+				}
+				L.Push(slotTbl)
+				return 1
+			case 3:
+				invType := constant.InventoryType(L.CheckInt(2))
+				slot := int16(L.CheckInt(3))
+				item := ch.GetItem(invType, slot)
+				if item == nil {
+					L.Push(lua.LNil)
+				} else {
+					L.Push(luax.NewLuable(L, item))
+				}
+				return 1
+			default:
+				L.ArgError(2, "item(item_id) or item(inven_type, slot) expected")
 				return 0
 			}
-			invType := constant.InventoryType(L.CheckInt(2))
-			slot := int16(L.CheckInt(3))
-			item := ch.GetItem(invType, slot)
-			if item == nil {
-				L.Push(lua.LNil)
+		},
+		"items": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				result := L.NewTable()
+				for invType, inven := range ch.Inventory {
+					if inven == nil {
+						continue
+					}
+					invTbl := L.NewTable()
+					for slot, item := range inven.Items {
+						if item == nil {
+							continue
+						}
+						L.Push(luax.NewLuable(L, item))
+						invTbl.RawSet(lua.LNumber(slot), L.Get(-1))
+						L.Pop(1)
+					}
+					result.RawSet(lua.LNumber(invType), invTbl)
+				}
+				L.Push(result)
+				return 1
+			default:
+				invType := constant.InventoryType(L.CheckInt(2))
+				slotTbl := L.NewTable()
+				if inven := ch.Inventory[invType]; inven != nil {
+					for slot, item := range inven.Items {
+						if item == nil {
+							continue
+						}
+						L.Push(luax.NewLuable(L, item))
+						slotTbl.RawSet(lua.LNumber(slot), L.Get(-1))
+						L.Pop(1)
+					}
+				}
+				L.Push(slotTbl)
 				return 1
 			}
-			switch v := item.(type) {
-			case Equipment:
-				L.Push(luax.NewLuable(L, v.(luax.Luable)))
-			case *Consume:
-				L.Push(luax.NewLuable(L, v))
-			case *CashItem:
-				L.Push(luax.NewLuable(L, v))
-			case *GeneralItem:
-				L.Push(luax.NewLuable(L, v))
-			case *Installation:
-				L.Push(luax.NewLuable(L, v))
-			case *Pet:
-				L.Push(luax.NewLuable(L, v))
-			default:
-				L.Push(luax.NewLuable(L, item.GetObject()))
-			}
-			return 1
 		},
 		"mkitem": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -1109,9 +1280,17 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc < 2 {
+			count := uint16(1)
+			switch argc {
+			case 1:
 				L.ArgError(2, "mkitem(itemIdOrName [, count]) requires at least one argument")
 				return 0
+			case 2:
+				// count defaults to 1
+			default:
+				if n := L.CheckInt(3); n >= 1 {
+					count = uint16(n)
+				}
 			}
 
 			var itemId uint32
@@ -1135,13 +1314,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 
-			count := uint16(1)
-			if argc >= 3 {
-				if n := L.CheckInt(3); n >= 1 {
-					count = uint16(n)
-				}
-			}
-
 			item, err := NewItem(itemId, count, ch.Context)
 			if err != nil {
 				L.Push(lua.LNil)
@@ -1154,23 +1326,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 
-			addedItem := addedItems[0]
-			switch v := addedItem.(type) {
-			case Equipment:
-				L.Push(luax.NewLuable(L, v.(luax.Luable)))
-			case *Consume:
-				L.Push(luax.NewLuable(L, v))
-			case *CashItem:
-				L.Push(luax.NewLuable(L, v))
-			case *GeneralItem:
-				L.Push(luax.NewLuable(L, v))
-			case *Installation:
-				L.Push(luax.NewLuable(L, v))
-			case *Pet:
-				L.Push(luax.NewLuable(L, v))
-			default:
-				L.Push(luax.NewLuable(L, addedItem.GetObject()))
-			}
+			L.Push(luax.NewLuable(L, addedItems[0]))
 			return 1
 		},
 		"rmitem": func(L *lua.LState) int {
@@ -1181,11 +1337,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			argc := L.GetTop()
-			if argc < 2 {
-				L.ArgError(2, "rmitem(itemIdOrName) or rmitem(inv_type, slot, count)")
+			switch argc {
+			case 1:
+				L.ArgError(2, "rmitem(itemIdOrName [, count]) or rmitem(inv_type, slot, count)")
 				return 0
-			}
-			if argc == 4 {
+			case 4:
 				invType := constant.InventoryType(L.CheckInt(2))
 				slot := int16(L.CheckInt(3))
 				count := uint16(L.CheckInt(4))
@@ -1193,35 +1349,104 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				ok := ch.RemoveItemCount(invType, slot, count)
+				ok := ch.RemoveItem(invType, slot, count)
 				L.Push(lua.LBool(ok))
 				return 1
-			}
-			if ch.Context == nil {
-				L.Push(lua.LBool(false))
-				return 1
-			}
-			resources := ch.Context.GetResources()
-			if resources == nil {
-				L.Push(lua.LBool(false))
-				return 1
-			}
-			var itemId uint32
-			switch lv := L.Get(2).(type) {
-			case lua.LString:
-				id, ok := resources.NameToItem(string(lv))
-				if !ok {
+			case 2, 3:
+				if ch.Context == nil {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				itemId = id
-			case lua.LNumber:
-				itemId = uint32(lv)
+				resources := ch.Context.GetResources()
+				if resources == nil {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				var itemId uint32
+				switch lv := L.Get(2).(type) {
+				case lua.LString:
+					id, ok := resources.NameToItem(string(lv))
+					if !ok {
+						L.Push(lua.LBool(false))
+						return 1
+					}
+					itemId = id
+				case lua.LNumber:
+					itemId = uint32(lv)
+				default:
+					L.ArgError(2, "item id (number) or item name (string) expected")
+					return 0
+				}
+				count := uint16(1)
+				if argc == 3 {
+					if n := L.CheckInt(3); n < 1 {
+						L.Push(lua.LBool(false))
+						return 1
+					}
+					count = uint16(L.CheckInt(3))
+				}
+				removed := ch.RemoveByItemIDCount(itemId, count)
+				L.Push(lua.LBool(removed))
+				return 1
 			default:
-				L.ArgError(2, "item id (number) or item name (string) expected")
+				L.ArgError(2, "rmitem(itemIdOrName [, count]) or rmitem(inv_type, slot, count)")
 				return 0
 			}
-			removed := ch.RemoveItemByID(itemId)
+		},
+		"mktimer": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			if argc < 5 {
+				L.ArgError(2, "mktimer(key, intervalMs, repeat, function [, ...args])")
+				return 0
+			}
+			key := L.CheckString(2)
+			intervalMs := L.CheckInt(3)
+			if intervalMs < 1 {
+				L.ArgError(3, "intervalMs must be positive")
+				return 0
+			}
+			repeat := L.CheckBool(4)
+			fn := L.CheckFunction(5)
+			args := luaValuesToInterfaces(L, 6, argc)
+			callback := func() {
+				m := ch.GetMap()
+				if m == nil {
+					return
+				}
+				pid := m.GetActorPID()
+				if pid == nil {
+					return
+				}
+				root := luax.GetRootLuaState(pid.String())
+				if root == nil {
+					return
+				}
+				fullArgs := make([]interface{}, 0, len(args)+1)
+				fullArgs = append(fullArgs, ch)
+				fullArgs = append(fullArgs, args...)
+				if _, err := luax.CallFunction(root, fn, fullArgs...); err != nil {
+					log.Printf("RunCharacterTimer %s: %v", key, err)
+				}
+			}
+			added := ch.AddTimerWithCallback(key, time.Duration(intervalMs)*time.Millisecond, repeat, callback)
+			L.Push(lua.LBool(added))
+			return 1
+		},
+		"rmtimer": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			key := L.CheckString(2)
+			removed := ch.RemoveTimer(key)
 			L.Push(lua.LBool(removed))
 			return 1
 		},

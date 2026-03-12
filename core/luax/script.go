@@ -31,6 +31,27 @@ func Call(root *lua.LState, scriptPath string, funcName string, args ...interfac
 	return thread.Get(-1), thread, nil
 }
 
+// CallFunction invokes a Lua function value on the root state with the given arguments.
+// Used when the timer callback is a Lua function (e.g. from mktimer(..., function() ... end)).
+func CallFunction(root *lua.LState, fn *lua.LFunction, args ...interface{}) (lua.LValue, error) {
+	lvArgs, err := toLValues(root, args)
+	if err != nil {
+		return nil, err
+	}
+	root.Push(fn)
+	for _, lv := range lvArgs {
+		root.Push(lv)
+	}
+	err = root.PCall(len(lvArgs), 1, nil)
+	if err != nil {
+		root.Pop(1)
+		return nil, err
+	}
+	ret := root.Get(-1)
+	root.Pop(1)
+	return ret, nil
+}
+
 func toLValues(L *lua.LState, args []interface{}) ([]lua.LValue, error) {
 	out := make([]lua.LValue, len(args))
 	for i, arg := range args {

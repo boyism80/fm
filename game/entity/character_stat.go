@@ -28,6 +28,7 @@ type BonusStats struct {
 	MaxMpPercent   int16
 	MesoMultiplier int16 // 100 = 100%, 0 = use 100
 	DropRate       int16 // 100 = 100%, 0 = use 100; applies to both item and meso drop probability
+	ExpRate        int16 // 100 = 100%, 0 = no bonus; when > 0, exp is multiplied by ExpRate/100 (e.g. 150 = 1.5x for Holy Symbol)
 }
 
 func (ch *Character) GetTotalStr() uint16 {

@@ -16,12 +16,14 @@ import "github.com/boyism80/fm/stream"
 //   - Character appears in player's character list
 //   - Starting equipment and stats assigned
 //   - Character slot consumed from player's account
+//
 // Error Conditions:
 //   - Character name already exists
 //   - Invalid character name (profanity, length, special characters)
 //   - Invalid appearance combinations
 //   - Account has reached maximum character limit
 //   - Database connection failure
+//
 // Related Messages: CreateCharacterResponse (success/failure response to client)
 //
 // Security Notes:

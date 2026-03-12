@@ -34,13 +34,15 @@ func (a *MapActor) Receive(ctx actor.Context) {
 	case *c_actor.ExecuteTimer:
 		a.executeTimer(msg)
 	case *AddCharacter:
-		a.addCharacter(msg)
+		a.addCharacter(ctx, msg)
 	case *RemoveCharacter:
 		a.removeCharacter(msg)
 	case *WarpCharacter:
-		a.warpCharacter(msg)
+		a.warpCharacter(ctx, msg)
 	case *ResumeLua:
 		a.resumeLua(msg)
+	case *c_actor.RunCharacterTimer:
+		a.runCharacterTimer(ctx, msg)
 	case *TimerTick:
 		a.onTimerTick(ctx, msg)
 	}
@@ -89,11 +91,12 @@ func (a *MapActor) executeTimer(msg *c_actor.ExecuteTimer) {
 	}
 }
 
-func (a *MapActor) addCharacter(msg *AddCharacter) {
+func (a *MapActor) addCharacter(ctx actor.Context, msg *AddCharacter) {
 	if a.MapData == nil {
 		return
 	}
 	a.MapData.AddPlayer(msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
+	msg.Character.ResumeTimers(ctx.Self())
 }
 
 func (a *MapActor) removeCharacter(msg *RemoveCharacter) {
@@ -103,11 +106,39 @@ func (a *MapActor) removeCharacter(msg *RemoveCharacter) {
 	a.MapData.RemovePlayer(msg.CharacterID)
 }
 
-func (a *MapActor) warpCharacter(msg *WarpCharacter) {
+func (a *MapActor) warpCharacter(ctx actor.Context, msg *WarpCharacter) {
 	if a.MapData == nil {
 		return
 	}
 	a.MapData.AddPlayer(msg.Character.GetID(), msg.Character, msg.Portal, false)
+	msg.Character.ResumeTimers(ctx.Self())
+}
+
+func (a *MapActor) runCharacterTimer(ctx actor.Context, msg *c_actor.RunCharacterTimer) {
+	if a.MapData == nil {
+		return
+	}
+	ch := a.MapData.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	entry := ch.GetTimerEntry(msg.Key)
+	if entry == nil {
+		return
+	}
+	if entry.Callback != nil {
+		entry.Callback()
+	}
+	if entry.Repeat && ch.GetTimerEntry(msg.Key) != nil {
+		characterID := msg.CharacterID
+		key := msg.Key
+		entry.NextFireAt = time.Now().Add(entry.Interval)
+		entry.Timer = time.AfterFunc(entry.Interval, func() {
+			ctx.Send(ctx.Self(), &c_actor.RunCharacterTimer{CharacterID: characterID, Key: key})
+		})
+	} else if !entry.Repeat {
+		ch.RemoveTimer(msg.Key)
+	}
 }
 
 func (a *MapActor) onStarted(ctx actor.Context) {

@@ -306,14 +306,14 @@ func (l *MapListenerImpl) OnMobRemoved(mapInstance *entity.Map, mob *entity.Mob,
 
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character) {
 	if after != nil {
-		// Convert entity to DTO
 		mobDTO := mob.ToDTO()
 		after.Send(&response.StartControlMob{
 			Mob:   mobDTO,
 			Aggro: false,
 		}, types.SEND_POLICY_ENCRYPT)
+	} else if before != nil {
+		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
 	}
-	// Note: StopControlMob is commented out in old server, so we skip it here too
 }
 
 // OnMobMoved broadcasts mob movement to all players on the map

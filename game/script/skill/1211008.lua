@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 라이트닝 차지 : 둔기
 
 function on_activated(me, skill)
-    me:buff(skill, BuffFlag.WkCharge, 1)
+	Skill.apply_wk_charge(me, skill)
 end
 

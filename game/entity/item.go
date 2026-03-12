@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
@@ -19,6 +20,7 @@ type Dropable interface {
 }
 
 type Item interface {
+	luax.Luable
 	GetDrop() *Drop
 	GetObject() *Object
 	GetModel() wz.Item

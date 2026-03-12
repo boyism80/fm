@@ -48,7 +48,6 @@ func (p *StartControlMob) Deserialize(reader *stream.StreamReader) error {
 }
 
 func (p *StopControlMob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(p.Opcode())
 	writer.WriteU8(0)
 	writer.WriteU32(p.OID)
 	return nil

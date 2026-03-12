@@ -38,7 +38,17 @@ type ItemWzInstallation struct {
 func (*ItemWzCore) LuaTypeName() string { return "LuaItemWzCore" }
 
 func (*ItemWzCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	return map[string]lua.LGFunction{}
+	return map[string]lua.LGFunction{
+		"id": func(L *lua.LState) int {
+			model := getItemWzModel(L, 1)
+			if model == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(lua.LNumber(model.GetID()))
+			return 1
+		},
+	}
 }
 
 func (w *ItemWzCore) String() string       { return w.LuaTypeName() }

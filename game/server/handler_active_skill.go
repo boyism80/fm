@@ -152,6 +152,18 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
+	// Consume WZ item requirement after preactivated passed (so we don't consume if script rejected).
+	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
+		itemID := uint32(levelData.ItemCon)
+		count := uint16(levelData.ItemConNo)
+		if !character.RemoveByItemIDCount(itemID, count) {
+			if character.Listener != nil {
+				character.Listener.OnUpdateStats(nil, true)
+			}
+			return nil
+		}
+	}
+
 	resumeState, err := luax.Execute(root, thread, ctx.LogicActorPID, "on_activated", character, skillEntry)
 	if err != nil {
 		thread.Close()

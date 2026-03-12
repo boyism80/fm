@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
+	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/stream"
@@ -63,14 +65,132 @@ type Character struct {
 	BaseStats     BaseStats
 	BonusStats    BonusStats
 	Buffs         *BuffContainer
+	timers        map[string]*CharacterTimer
 }
 
-// GetObject implements ObjectProvider (Character embeds Life which embeds Object).
+type CharacterTimer struct {
+	Timer      *time.Timer
+	Interval   time.Duration
+	Repeat     bool
+	Callback   func()
+	NextFireAt time.Time
+	Remaining  time.Duration
+}
+
+func (ch *Character) AddTimerWithCallback(key string, interval time.Duration, repeat bool, callback func()) bool {
+	return ch.addTimer(key, interval, repeat, callback)
+}
+
+func (ch *Character) addTimer(key string, interval time.Duration, repeat bool, callback func()) bool {
+	if ch.timers == nil {
+		ch.timers = make(map[string]*CharacterTimer)
+	}
+	if _, exists := ch.timers[key]; exists {
+		ch.RemoveTimer(key)
+	}
+	if ch.Context == nil {
+		return false
+	}
+	m := ch.GetMap()
+	if m == nil {
+		return false
+	}
+	pid := m.GetActorPID()
+	if pid == nil {
+		return false
+	}
+	characterID := ch.GetID()
+	entry := &CharacterTimer{
+		Interval:   interval,
+		Repeat:     repeat,
+		Callback:   callback,
+		NextFireAt: time.Now().Add(interval),
+	}
+	entry.Timer = time.AfterFunc(interval, func() {
+		ch.Context.SendToActor(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: key})
+	})
+	ch.timers[key] = entry
+	return true
+}
+
+func (ch *Character) RemoveTimer(key string) bool {
+	if ch.timers == nil {
+		return false
+	}
+	entry := ch.timers[key]
+	if entry == nil {
+		return false
+	}
+	if entry.Timer != nil {
+		entry.Timer.Stop()
+	}
+	delete(ch.timers, key)
+	return true
+}
+
+func (ch *Character) GetTimerEntry(key string) *CharacterTimer {
+	if ch.timers == nil {
+		return nil
+	}
+	return ch.timers[key]
+}
+
+func (ch *Character) ClearTimers() {
+	if ch.timers == nil {
+		return
+	}
+	for key, entry := range ch.timers {
+		if entry != nil && entry.Timer != nil {
+			entry.Timer.Stop()
+		}
+		delete(ch.timers, key)
+	}
+}
+
+func (ch *Character) SuspendTimers() {
+	if ch.timers == nil {
+		return
+	}
+	now := time.Now()
+	for _, entry := range ch.timers {
+		if entry == nil || entry.Timer == nil {
+			continue
+		}
+		entry.Remaining = entry.NextFireAt.Sub(now)
+		if entry.Remaining < 0 {
+			entry.Remaining = 0
+		}
+		entry.Timer.Stop()
+		entry.Timer = nil
+	}
+}
+
+func (ch *Character) ResumeTimers(pid *actor.PID) {
+	if ch.timers == nil || pid == nil || ch.Context == nil {
+		return
+	}
+	characterID := ch.GetID()
+	for key, entry := range ch.timers {
+		if entry == nil || entry.Timer != nil {
+			continue
+		}
+		duration := entry.Remaining
+		if duration <= 0 {
+			duration = entry.Interval
+		}
+		entry.Remaining = 0
+		entry.NextFireAt = time.Now().Add(duration)
+		k := key
+		entry.Timer = time.AfterFunc(duration, func() {
+			ch.Context.SendToActor(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: k})
+		})
+	}
+}
+
 func (ch *Character) GetObject() *Object {
 	return &ch.Life.Object
 }
 
-// LifeAccessor implementation for *Character (delegates to Life then notifies client)
 func (ch *Character) GetHp() uint16       { return ch.Life.Hp }
 func (ch *Character) GetMp() uint16       { return ch.Life.Mp }
 func (ch *Character) GetBonusHp() int16   { return ch.Life.BonusHp }
@@ -166,13 +286,10 @@ func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
 	}
 }
 
-// GetMap returns the current map (nil if not on a map). Delegates to Object.
 func (ch *Character) GetMap() *Map {
 	return ch.GetObject().GetMap()
 }
 
-// Warp requests to move the character to targetMap at the given spawn point (portal).
-// It sends an actor message; the target map's actor will call AddPlayer which sets Map.
 func (ch *Character) Warp(targetMap *Map, spawnPoint uint8) error {
 	if ch.Context == nil {
 		return fmt.Errorf("no game context")

@@ -1,18 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 폴암 부스터
 
 function on_activated(me, skill)
-    local wz = skill:wz()
-    if wz == nil or wz.effects == nil then
-        return
-    end
-
-    local effect = wz.effects[skill:level()]
-    if effect == nil then
-        return
-    end
-
-    local x = effect.x or 0
-    me:buff(skill, BuffFlag.Booster, x)
+	Skill.apply_booster(me, skill)
 end
 
 function on_unbuff(me, skill)
