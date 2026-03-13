@@ -31,8 +31,8 @@ type MapListener interface {
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
 	OnMobMoved(mapInstance *Map, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
 	OnAttack(mapInstance *Map, character *Character, attackInfo dto.AttackInfo, skillLevel uint8)
-	OnMobDebuffApplied(mapInstance *Map, mob *Mob, debuff constant.Debuff, value int32, skillID uint32, durationMs int64)
-	OnMobDebuffCancelled(mapInstance *Map, mob *Mob, debuff constant.Debuff)
+	OnMobMobStatusApplied(mapInstance *Map, mob *Mob, debuff constant.MobStatus, value int32, skillID uint32, durationMs int64)
+	OnMobMobStatusCancelled(mapInstance *Map, mob *Mob, debuff constant.MobStatus)
 }
 
 type MobSpawn struct {
@@ -196,7 +196,6 @@ func (m *Map) GetPlayerCount() int {
 	return len(m.objects[types.OBJECT_TYPE_PLAYER])
 }
 
-// GetAllPlayers returns all players on the map
 func (m *Map) GetAllPlayers() map[uint32]interface{} {
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
 		return make(map[uint32]interface{})
@@ -208,13 +207,10 @@ func (m *Map) GetControllerTable() *ControllerTable {
 	return m.controllerTable
 }
 
-// GetSpec returns the map specification data
 func (m *Map) GetSpec() *wz.Map {
 	return m.model
 }
 
-// GetRecoveryRate returns the map's HP/MP recovery rate multiplier (e.g. 1.0 for normal).
-// Value comes from WZ Map.wz info node "recoveryRate"; default 1.0 if missing.
 func (m *Map) GetRecoveryRate() float32 {
 	if m.model == nil {
 		return 1.0
@@ -225,7 +221,6 @@ func (m *Map) GetRecoveryRate() float32 {
 	return m.model.RecoveryRate
 }
 
-// FootholdPoint calculates the foothold position for a given point
 func (m *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 	return m.model.FootholdPoint(point)
 }
@@ -260,7 +255,6 @@ func (m *Map) initializeMobs() {
 	}
 }
 
-// GetNpcs returns all NPCs on the map
 func (m *Map) GetNpcs() map[uint32]interface{} {
 	if m.objects[types.OBJECT_TYPE_NPC] == nil {
 		return make(map[uint32]interface{})
@@ -390,7 +384,6 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	return mob, nil
 }
 
-// RemoveMob removes a mob from the map
 func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType) error {
 	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
 		return fmt.Errorf("no monsters on map")
@@ -403,7 +396,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	mob := m.objects[types.OBJECT_TYPE_MONSTER][mobID].(*Mob)
 	delete(m.objects[types.OBJECT_TYPE_MONSTER], mobID)
 
-	mob.ClearAllDebuffTimers()
+	mob.ClearAllMobStatusTimers()
 	if mob.Spawn != nil {
 		mob.Spawn.Spawned = false
 	}
@@ -415,7 +408,6 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	return nil
 }
 
-// GetMob retrieves a mob from the map
 func (m *Map) GetMob(mobID uint32) *Mob {
 	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
 		return nil
@@ -427,12 +419,62 @@ func (m *Map) GetMob(mobID uint32) *Mob {
 	return nil
 }
 
-// GetMobs returns all mobs on the map
 func (m *Map) GetMobs() map[uint32]interface{} {
 	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
 		return make(map[uint32]interface{})
 	}
 	return m.objects[types.OBJECT_TYPE_MONSTER]
+}
+
+type ObjectsFilter struct {
+	Area     *struct{ MinX, MinY, MaxX, MaxY int16 }
+	Distance *struct {
+		Dist int
+		X, Y int16
+	}
+}
+
+func (m *Map) GetObjects(filter constant.ObjectType, opts *ObjectsFilter) []interface{} {
+	var out []interface{}
+	buckets := []types.ObjectType{
+		types.OBJECT_TYPE_PLAYER,
+		types.OBJECT_TYPE_MONSTER,
+		types.OBJECT_TYPE_NPC,
+		types.OBJECT_TYPE_ITEM,
+	}
+	for _, bucket := range buckets {
+		if m.objects[bucket] == nil {
+			continue
+		}
+		for _, v := range m.objects[bucket] {
+			provider, ok := v.(ObjectProvider)
+			if !ok {
+				continue
+			}
+			if !provider.Is(filter) {
+				continue
+			}
+			if opts != nil {
+				pos := provider.GetObject().Position
+				if opts.Area != nil {
+					a := opts.Area
+					if pos.X < a.MinX || pos.X > a.MaxX || pos.Y < a.MinY || pos.Y > a.MaxY {
+						continue
+					}
+				}
+				if opts.Distance != nil {
+					d := opts.Distance
+					dx := int(pos.X) - int(d.X)
+					dy := int(pos.Y) - int(d.Y)
+					if dx*dx+dy*dy > d.Dist*d.Dist {
+						continue
+					}
+				}
+			}
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // Broadcast sends a message to players on the map.
@@ -708,6 +750,77 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			L.Push(tbl)
+			return 1
+		},
+		"objects": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			filter := constant.ObjectTypeObject
+			if L.GetTop() >= 2 {
+				if lv := L.Get(2); lv.Type() == lua.LTNumber {
+					filter = constant.ObjectType(lua.LVAsNumber(lv))
+				}
+			}
+			var opts *ObjectsFilter
+			if L.GetTop() >= 3 {
+				tbl := L.CheckTable(3)
+				opts = &ObjectsFilter{}
+				readArea := func(t *lua.LTable) {
+					minX := t.RawGetString("minX")
+					minY := t.RawGetString("minY")
+					maxX := t.RawGetString("maxX")
+					maxY := t.RawGetString("maxY")
+					if minX.Type() == lua.LTNumber && minY.Type() == lua.LTNumber && maxX.Type() == lua.LTNumber && maxY.Type() == lua.LTNumber {
+						opts.Area = &struct{ MinX, MinY, MaxX, MaxY int16 }{
+							MinX: int16(lua.LVAsNumber(minX)),
+							MinY: int16(lua.LVAsNumber(minY)),
+							MaxX: int16(lua.LVAsNumber(maxX)),
+							MaxY: int16(lua.LVAsNumber(maxY)),
+						}
+					}
+				}
+				if area := tbl.RawGetString("area"); area.Type() == lua.LTTable {
+					readArea(area.(*lua.LTable))
+				} else if tbl.RawGetString("minX").Type() == lua.LTNumber {
+					readArea(tbl)
+				}
+				if distLV := tbl.RawGetString("distance"); distLV.Type() == lua.LTNumber {
+					xLV := tbl.RawGetString("x")
+					yLV := tbl.RawGetString("y")
+					x, y := int16(0), int16(0)
+					if xLV.Type() == lua.LTNumber {
+						x = int16(lua.LVAsNumber(xLV))
+					}
+					if yLV.Type() == lua.LTNumber {
+						y = int16(lua.LVAsNumber(yLV))
+					}
+					opts.Distance = &struct {
+						Dist int
+						X, Y int16
+					}{
+						Dist: int(lua.LVAsNumber(distLV)),
+						X:    x,
+						Y:    y,
+					}
+				}
+				if opts.Area == nil && opts.Distance == nil {
+					opts = nil
+				}
+			}
+			objs := mapInstance.GetObjects(filter, opts)
+			result := L.NewTable()
+			idx := 0
+			for _, v := range objs {
+				if luable, ok := v.(luax.Luable); ok {
+					idx++
+					result.RawSetInt(idx, luax.NewLuable(L, luable))
+				}
+			}
+			L.Push(result)
 			return 1
 		},
 		"characters": func(L *lua.LState) int {

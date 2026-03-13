@@ -19,6 +19,10 @@ func (n *Npc) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeNpc
 }
 
+func (n *Npc) Is(typ constant.ObjectType) bool {
+	return n.GetObjectType().Has(typ)
+}
+
 func (n *Npc) LuaTypeName() string {
 	return "LuaNpc"
 }

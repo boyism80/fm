@@ -1,14 +1,19 @@
 -- Attack handlers: combo, pickpocket, ice charge, ammo consume
 
-local PICKPOCKET_SKILL_IDS = {
-    [0] = true,
-    [Skill.DoubleStab] = true,
-    [Skill.SavageBlow] = true,
-    [Skill.Assaulter] = true,
-    [Skill.BandOfThieves] = true,
-    [Skill.Showdown4221003] = true,
-    [Skill.BoomerangStep] = true,
-}
+local PICKPOCKET_SKILL_IDS = { [0] = true }
+do
+    local function add(id)
+        if id ~= nil then
+            PICKPOCKET_SKILL_IDS[id] = true
+        end
+    end
+    add(Skill.DoubleStab)
+    add(Skill.SavageBlow)
+    add(Skill.Assaulter)
+    add(Skill.BandOfThieves)
+    add(Skill.Showdown4221003)
+    add(Skill.BoomerangStep)
+end
 
 function handle_combo_attack(me, targets, skill)
     if targets == nil or #targets == 0 then
@@ -56,7 +61,7 @@ function handle_combo_attack(me, targets, skill)
         return
     end
 
-    local max_orbs = ceffect.x or 0
+    local max_orbs = (ceffect.x or 0) + 1
     if max_orbs <= 0 then
         return
     end
@@ -179,7 +184,7 @@ function handle_ice_charge_freeze(me, damages)
     end
     for mob, hits in pairs(damages) do
         if mob and hits and total_damage_to_mob(hits) > 0 then
-            mob:set_debuff(Debuff.Freeze, 1, duration_ms, buff)
+            mob:set_status(MobStatus.Freeze, 1, duration_ms, buff)
         end
     end
 end

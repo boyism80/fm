@@ -1294,30 +1294,52 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				L.Push(luax.NewLuable(L, m))
 				return 1
-			case 2:
-				targetMapUD := L.CheckUserData(2)
-				targetMap, ok := targetMapUD.Value.(*Map)
-				if !ok || targetMap == nil {
-					L.ArgError(2, "Map expected")
+			case 2, 3:
+				var targetMap *Map
+				arg2 := L.Get(2)
+				switch v := arg2.(type) {
+				case *lua.LUserData:
+					var ok bool
+					targetMap, ok = v.Value.(*Map)
+					if !ok || targetMap == nil {
+						L.ArgError(2, "Map or map name (string) expected")
+						return 0
+					}
+				case lua.LString:
+					if ch.Context == nil {
+						L.RaiseError("map: no context to resolve map name")
+						return 0
+					}
+					resources := ch.Context.GetResources()
+					if resources == nil {
+						L.RaiseError("map: no resources to resolve map name")
+						return 0
+					}
+					mapId, ok := resources.NameToMap(string(v))
+					if !ok {
+						L.RaiseError("map: unknown map name %q", string(v))
+						return 0
+					}
+					targetMap = ch.Context.GetMap(mapId)
+					if targetMap == nil {
+						L.RaiseError("map: map %q (id %d) not found", string(v), mapId)
+						return 0
+					}
+				default:
+					L.ArgError(2, "Map or map name (string) expected")
 					return 0
 				}
-				if err := ch.Warp(targetMap, 1); err != nil {
+				spawnPoint := uint8(1)
+				if argc == 3 {
+					spawnPoint = uint8(L.CheckInt(3))
+				}
+				if err := ch.Warp(targetMap, spawnPoint); err != nil {
 					L.RaiseError("warp: %v", err)
 					return 0
 				}
 				return 0
 			default:
-				targetMapUD := L.CheckUserData(2)
-				targetMap, ok := targetMapUD.Value.(*Map)
-				if !ok || targetMap == nil {
-					L.ArgError(2, "Map expected")
-					return 0
-				}
-				spawnPoint := uint8(L.CheckInt(3))
-				if err := ch.Warp(targetMap, spawnPoint); err != nil {
-					L.RaiseError("warp: %v", err)
-					return 0
-				}
+				L.ArgError(2, "map() getter: 0 args; setter: map or name (string), optional spawnPoint")
 				return 0
 			}
 		},

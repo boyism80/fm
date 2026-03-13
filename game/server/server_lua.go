@@ -18,10 +18,10 @@ func registerSkillConstants(luaState *lua.LState) {
 	for key, skillID := range constant.AllSkillConstants() {
 		skillTable.RawSetString(key, lua.LNumber(skillID))
 	}
-	luaState.SetGlobal("SKILL", skillTable)
+	luaState.SetGlobal("Skill", skillTable)
 }
 
-func registerBuffFlagAndDebuff(luaState *lua.LState) {
+func registerBuffFlagAndMobStatus(luaState *lua.LState) {
 	buffFlagTable := luaState.NewTable()
 	for name, bf := range constant.AllBuffFlags() {
 		entry := luaState.NewTable()
@@ -30,13 +30,13 @@ func registerBuffFlagAndDebuff(luaState *lua.LState) {
 		buffFlagTable.RawSetString(name, entry)
 	}
 	luaState.SetGlobal("BuffFlag", buffFlagTable)
-	debuffTable := luaState.NewTable()
-	for name, d := range constant.AllDebuffs() {
+	mobStatusTable := luaState.NewTable()
+	for name, st := range constant.AllMobStatuses() {
 		entry := luaState.NewTable()
-		entry.RawSetString("mask", lua.LNumber(d.Mask))
-		debuffTable.RawSetString(name, entry)
+		entry.RawSetString("mask", lua.LNumber(st))
+		mobStatusTable.RawSetString(name, entry)
 	}
-	luaState.SetGlobal("Debuff", debuffTable)
+	luaState.SetGlobal("MobStatus", mobStatusTable)
 }
 
 func registerWeaponTypeAndConsumeType(luaState *lua.LState) {
@@ -172,7 +172,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Installation, *entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Pet, *entity.ItemCore](luaState)
 
-	registerBuffFlagAndDebuff(luaState)
+	registerBuffFlagAndMobStatus(luaState)
 	registerWeaponTypeAndConsumeType(luaState)
 	registerSkillConstants(luaState)
 	registerEquipmentPartConstants(luaState)

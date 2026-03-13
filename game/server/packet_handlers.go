@@ -6,7 +6,7 @@ import (
 
 func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, Pong](gs)
-	core.Bind[*GameServer, Unknown0C](gs)
+	core.Bind[*GameServer, Secure](gs)
 	core.Bind[*GameServer, LoginGame](gs)
 	core.Bind[*GameServer, MovePlayer](gs)
 	core.Bind[*GameServer, NormalChat](gs)

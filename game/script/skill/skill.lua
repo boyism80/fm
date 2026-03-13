@@ -1,10 +1,9 @@
 -- Shared skill logic. Loaded once per root Lua state.
--- Individual skill scripts call Skill.apply_*(me, skill) for common buff patterns.
-
-Skill = {}
+-- Individual skill scripts call apply_*(me, skill) etc. as global functions.
+-- Skill (Endure, ImprovingHpRecovery, etc.) is injected by Go.
 
 -- Applies a buff using value from effect[value_key] (e.g. "x" or "prop"). Default 0 if missing.
-function Skill.apply_buff_from_effect(me, skill, flag, value_key)
+function apply_buff_from_effect(me, skill, flag, value_key)
 	value_key = value_key or "x"
 	local wz = skill:wz()
 	if wz == nil or wz.effects == nil then
@@ -22,52 +21,52 @@ function Skill.apply_buff_from_effect(me, skill, flag, value_key)
 end
 
 -- Buff with fixed value (e.g. 1 for Darksight, Soul Arrow, WkCharge, Combo).
-function Skill.apply_buff_fixed(me, skill, flag, value)
+function apply_buff_fixed(me, skill, flag, value)
 	value = value or 1
 	me:buff(skill, flag, value)
 end
 
-function Skill.apply_booster(me, skill)
-	Skill.apply_buff_from_effect(me, skill, BuffFlag.Booster, "x")
+function apply_booster(me, skill)
+	apply_buff_from_effect(me, skill, BuffFlag.Booster, "x")
 end
 
-function Skill.apply_stance(me, skill)
-	Skill.apply_buff_from_effect(me, skill, BuffFlag.Stance, "prop")
+function apply_stance(me, skill)
+	apply_buff_from_effect(me, skill, BuffFlag.Stance, "prop")
 end
 
-function Skill.apply_invincible(me, skill)
-	Skill.apply_buff_from_effect(me, skill, BuffFlag.Invincible, "x")
+function apply_invincible(me, skill)
+	apply_buff_from_effect(me, skill, BuffFlag.Invincible, "x")
 end
 
-function Skill.apply_maple_warrior(me, skill)
-	Skill.apply_buff_from_effect(me, skill, BuffFlag.MapleWarrior, "x")
+function apply_maple_warrior(me, skill)
+	apply_buff_from_effect(me, skill, BuffFlag.MapleWarrior, "x")
 end
 
-function Skill.apply_powerguard(me, skill)
-	Skill.apply_buff_from_effect(me, skill, BuffFlag.Powerguard, "x")
+function apply_powerguard(me, skill)
+	apply_buff_from_effect(me, skill, BuffFlag.Powerguard, "x")
 end
 
-function Skill.apply_darksight(me, skill)
-	Skill.apply_buff_fixed(me, skill, BuffFlag.Darksight, 1)
+function apply_darksight(me, skill)
+	apply_buff_fixed(me, skill, BuffFlag.Darksight, 1)
 end
 
-function Skill.apply_soul_arrow(me, skill)
-	Skill.apply_buff_fixed(me, skill, BuffFlag.SoulArrow, 1)
+function apply_soul_arrow(me, skill)
+	apply_buff_fixed(me, skill, BuffFlag.SoulArrow, 1)
 end
 
-function Skill.apply_wk_charge(me, skill)
-	Skill.apply_buff_fixed(me, skill, BuffFlag.WkCharge, 1)
+function apply_wk_charge(me, skill)
+	apply_buff_fixed(me, skill, BuffFlag.WkCharge, 1)
 end
 
-function Skill.apply_combo(me, skill)
-	Skill.apply_buff_fixed(me, skill, BuffFlag.Combo, 1)
+function apply_combo(me, skill)
+	apply_buff_fixed(me, skill, BuffFlag.Combo, 1)
 end
 
-function Skill.apply_holy_symbol(me, skill)
-	Skill.apply_buff_from_effect(me, skill, BuffFlag.HolySymbol, "x")
+function apply_holy_symbol(me, skill)
+	apply_buff_from_effect(me, skill, BuffFlag.HolySymbol, "x")
 end
 
-function Skill.add_holy_symbol_bonus(me, skill)
+function add_holy_symbol_bonus(me, skill)
 	local wz = skill:wz()
 	if wz == nil or wz.effects == nil then return end
 	local effect = wz.effects[skill:level()]
@@ -80,7 +79,7 @@ function Skill.add_holy_symbol_bonus(me, skill)
 	me:bonus_exp_rate(current + bonus)
 end
 
-function Skill.remove_holy_symbol_bonus(me, skill)
+function remove_holy_symbol_bonus(me, skill)
 	local wz = skill:wz()
 	if wz == nil or wz.effects == nil then return end
 	local effect = wz.effects[skill:level()]
@@ -90,7 +89,7 @@ function Skill.remove_holy_symbol_bonus(me, skill)
 	me:bonus_exp_rate(current - bonus)
 end
 
-function Skill.apply_hyper_body(me, skill)
+function apply_hyper_body(me, skill)
 	local wz = skill:wz()
 	if wz == nil or wz.effects == nil then return end
 	local effect = wz.effects[skill:level()]
@@ -102,7 +101,7 @@ function Skill.apply_hyper_body(me, skill)
 	})
 end
 
-function Skill.add_hyper_body_bonus(me, skill)
+function add_hyper_body_bonus(me, skill)
 	local wz = skill:wz()
 	if wz == nil or wz.effects == nil then return end
 	local effect = wz.effects[skill:level()]
@@ -114,7 +113,7 @@ function Skill.add_hyper_body_bonus(me, skill)
 	me:bonus_max_mp(mp_fixed, mp_percent + percent)
 end
 
-function Skill.remove_hyper_body_bonus(me, skill)
+function remove_hyper_body_bonus(me, skill)
 	local wz = skill:wz()
 	if wz == nil or wz.effects == nil then return end
 	local effect = wz.effects[skill:level()]
@@ -124,4 +123,46 @@ function Skill.remove_hyper_body_bonus(me, skill)
 	local mp_fixed, mp_percent = me:bonus_max_mp()
 	me:bonus_max_hp(hp_fixed, hp_percent - percent)
 	me:bonus_max_mp(mp_fixed, mp_percent - percent)
+end
+
+function apply_iron_body(me, skill)
+	local wz = skill:wz()
+	if wz == nil or wz.effects == nil then
+		return
+	end
+
+	local effect = wz.effects[skill:level()]
+	if effect == nil then
+		return
+	end
+
+	local pdd = effect.pdd or 0
+	if pdd <= 0 then
+		return
+	end
+
+	me:buff(skill, BuffFlag.WeaponDef, pdd)
+end
+
+-- Consumes combo orbs from the ComboAttack buff.
+-- If howmany is nil, consumes all orbs except leaves at least 1 (matching old server behavior).
+function consume_combo_orbs(me, howmany)
+	local current = me:buff_value(BuffFlag.Combo)
+	if current == nil or current <= 1 then
+		return
+	end
+
+	if howmany == nil then
+		howmany = current - 1
+	end
+	if howmany <= 0 then
+		return
+	end
+
+	local new_orbs = current - howmany
+	if new_orbs < 1 then
+		new_orbs = 1
+	end
+
+	me:buff_value(BuffFlag.Combo, new_orbs)
 end

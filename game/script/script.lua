@@ -28,7 +28,7 @@ function on_script(me)
     local x, y = me:position()
     me:chat(string.format("position: %d, %d", x, y))
 
-    me:class(412)
+    me:class(322)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -40,20 +40,25 @@ function on_script(me)
         end
     end
     me:max_hp(20000)
-    me:hp(me:max_hp())
+    me:hp(me:max_hp() * 0.5)
     me:max_mp(20000)
     me:mp(me:max_mp())
-    me:mkitem('후루츠 대거')
-    me:mkitem('소환의 돌', 200)
-    me:mkitem('화비표창', 2000)
-    me:mkitem('메바')
-    me:base_dex(128)
-    me:base_luk(128)
+    me:mkitem('워보우')
+    me:mkitem('산양 석궁')
+    me:mkitem('활전용 화살', 200)
+    me:mkitem('석궁전용 화살', 200)
+    me:base_dex(1280)
+    me:base_luk(4)
     me:level(200)
+    me:map('오르비스탑입구')
 end
 
 function on_attack(me, skill, damages, attack_info)
     local targets = damages_to_targets(damages)
+
+    for _, target in pairs(targets) do
+        me:chat(string.format('target hp : %d / %d', target:hp(), target:max_hp()))
+    end
     handle_combo_attack(me, targets, skill)
     handle_pickpocket(me, skill, damages)
     handle_ice_charge_freeze(me, damages)
@@ -133,7 +138,9 @@ end
 
 function on_damaged(me, attacker, skill, damage)
     local d = handle_magic_guard(me, attacker, skill, damage)
-    return handle_meso_guard(me, attacker, skill, d)
+    d = handle_meso_guard(me, attacker, skill, d)
+    d = handle_power_guard(me, attacker, skill, d)
+    return d
 end
 
 function on_equipment_changed(me, part, before, after)
@@ -190,6 +197,7 @@ function on_ap_to_hp(me)
             bonus = effect.y
         end
     end
+    me:chat(string.format("base: %d, bonus: %d", base, bonus))
     return base + bonus
 end
 

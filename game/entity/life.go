@@ -46,6 +46,10 @@ func (life *Life) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeLife
 }
 
+func (life *Life) Is(typ constant.ObjectType) bool {
+	return life.GetObjectType().Has(typ)
+}
+
 func (life *Life) GetMaxHp() uint16 {
 	total := int32(life.BaseHp) + int32(life.BonusHp)
 	if total < 1 {

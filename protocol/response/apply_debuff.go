@@ -4,7 +4,7 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-type ApplyDebuff struct {
+type ApplyMobStatus struct {
 	OID        uint32
 	Status     int32
 	X          int16
@@ -14,11 +14,11 @@ type ApplyDebuff struct {
 	StatusSize byte
 }
 
-func (p *ApplyDebuff) Opcode() uint16 {
+func (p *ApplyMobStatus) Opcode() uint16 {
 	return 0xAF
 }
 
-func (p *ApplyDebuff) Serialize(writer *stream.StreamWriter) error {
+func (p *ApplyMobStatus) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.OID)
 	writer.Write32(p.Status)
 	writer.Write16(p.X)
@@ -31,6 +31,6 @@ func (p *ApplyDebuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ApplyDebuff) Deserialize(reader *stream.StreamReader) error {
+func (p *ApplyMobStatus) Deserialize(reader *stream.StreamReader) error {
 	return nil
 }

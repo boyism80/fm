@@ -46,16 +46,30 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 
 	attackHandler := (&Attack{}).New(h.gs)
 	var skillLevel uint8 = 0
-	if req.AttackInfo.Skill != 0 {
-		if !attackHandler.validateAndConsumeSkill(character, req.AttackInfo.Skill) {
+	skillID := req.AttackInfo.Skill
+	if skillID != 0 {
+		if !attackHandler.validateAndConsumeSkill(character, skillID) {
 			return nil
 		}
-		skillLevel = uint8(character.GetTotalSkillLevel(req.AttackInfo.Skill))
+		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
+		// Phase 1: per-skill on_activating (pre-attack hook).
+		attackHandler.callSkillHook(ctx, character, skillID, "on_activating")
 	}
 
-	attackHandler.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill, true, req.AttackInfo.Slot)
+	attackHandler.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, skillID, true, req.AttackInfo.Slot)
 	attackHandler.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
+
+	// Phase 2: per-skill on_attack (post-damage).
+	if skillID != 0 {
+		attackHandler.callSkillHook(ctx, character, skillID, "on_attack")
+	}
+
 	character.Listener.OnAttack(character, req.AttackInfo, skillLevel)
+
+	// Phase 3: per-skill on_activated (finalization).
+	if skillID != 0 {
+		attackHandler.callSkillHook(ctx, character, skillID, "on_activated")
+	}
 
 	return nil
 }

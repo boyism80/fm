@@ -107,8 +107,17 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		}
 	}
 
-	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill, false, 0)
+	// Phase 1: per-skill on_activating (pre-attack hook).
+	h.callSkillHook(ctx, character, uint32(skillID), "on_activating")
+
+	// Global magic attack script (script.lua:on_attack).
+	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, uint32(skillID), false, 0)
+
+	// Apply damage in Go.
 	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
+
+	// Phase 2: per-skill on_attack (post-damage).
+	h.callSkillHook(ctx, character, uint32(skillID), "on_attack")
 
 	magicAttackPacket := &response.MagicAttack{
 		AttackInfo:  req.AttackInfo,
@@ -121,6 +130,9 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		ReferenceCharacter: character,
 		RecipientFilter:    entity.BroadcastVisibleByReference,
 	})
+
+	// Phase 3: per-skill on_activated (finalization).
+	h.callSkillHook(ctx, character, uint32(skillID), "on_activated")
 
 	return nil
 }
@@ -167,6 +179,12 @@ func (h *MagicAttack) callOnAttackScript(ctx *core.ClientContext, character *ent
 	thread.Pop(1)
 }
 
+// callSkillHook delegates to Attack.callSkillHook so magic/ranged attacks share the same per-skill hook behavior.
+func (h *MagicAttack) callSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) {
+	attack := (&Attack{}).New(h.gs)
+	attack.callSkillHook(ctx, character, skillID, hook)
+}
+
 func (h *MagicAttack) applyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {
 	for _, damage := range damages {
 		mob := mapInstance.GetMob(damage.OID)
@@ -176,10 +194,10 @@ func (h *MagicAttack) applyDamageToMobs(character *entity.Character, mapInstance
 		}
 
 		if character.HasRoleAtLeast(constant.RoleAdmin) {
-			mob.Damage(mob.Hp, character)
+			mob.ApplyDamage(character, uint32(mob.Hp))
 		} else {
 			for _, damagePair := range damage.DamagePairs {
-				mob.Damage(uint16(damagePair.Damage), character)
+				mob.ApplyDamage(character, uint32(damagePair.Damage))
 			}
 		}
 	}

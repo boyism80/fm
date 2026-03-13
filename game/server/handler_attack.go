@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
-	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
@@ -51,16 +50,34 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	}
 
 	var skillLevel uint8 = 0
-	if req.AttackInfo.Skill != 0 {
-		if !h.validateAndConsumeSkill(character, req.AttackInfo.Skill) {
+	skillID := req.AttackInfo.Skill
+	if skillID != 0 {
+		if !h.validateAndConsumeSkill(character, skillID) {
 			return nil
 		}
-		skillLevel = uint8(character.GetTotalSkillLevel(req.AttackInfo.Skill))
+		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
+		// Phase 1: per-skill on_activating (pre-attack hook).
+		h.callSkillHook(ctx, character, skillID, "on_activating")
 	}
 
-	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, req.AttackInfo.Skill, false, 0)
+	// Global attack script (script.lua:on_attack) – may adjust damages etc.
+	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, skillID, false, 0)
+
+	// Apply damage in Go.
 	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
+
+	// Phase 2: per-skill on_attack (post-damage, per-skill logic like counters).
+	if skillID != 0 {
+		h.callSkillHook(ctx, character, skillID, "on_attack")
+	}
+
+	// Notify listeners about the attack packet.
 	character.Listener.OnAttack(character, req.AttackInfo, skillLevel)
+
+	// Phase 3: per-skill on_activated (finalization; e.g., consume combo orbs for Panic/Coma).
+	if skillID != 0 {
+		h.callSkillHook(ctx, character, skillID, "on_activated")
+	}
 
 	return nil
 }
@@ -105,6 +122,35 @@ func (h *Attack) callOnAttackScript(ctx *core.ClientContext, character *entity.C
 		return
 	}
 	thread.Pop(1)
+}
+
+// callSkillHook calls a per-skill Lua hook function (e.g. on_activating/on_attack/on_activated)
+// defined in script/skill/<skillID>.lua. Missing scripts or functions are treated as no-op.
+func (h *Attack) callSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) {
+	if skillID == 0 || ctx.LogicActorPID == nil {
+		return
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return
+	}
+
+	skillEntry := character.Skills[skillID]
+	if skillEntry == nil {
+		return
+	}
+
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	result, thread, err := luax.Call(root, scriptPath, hook, character, skillEntry)
+	if thread != nil {
+		thread.Close()
+	}
+	if err != nil {
+		// Skill scripts are optional for hooks; log at debug level only.
+		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
+		return
+	}
+	_ = result
 }
 
 func buildAttackInfoTable(L *lua.LState, ranged bool, consumeSlot uint16) *lua.LTable {
@@ -185,12 +231,8 @@ func (h *Attack) applyDamageToMobs(character *entity.Character, mapInstance *ent
 			continue
 		}
 
-		if character.HasRoleAtLeast(constant.RoleAdmin) {
-			mob.Damage(mob.Hp, character)
-		} else {
-			for _, damagePair := range damage.DamagePairs {
-				mob.Damage(uint16(damagePair.Damage), character)
-			}
+		for _, damagePair := range damage.DamagePairs {
+			mob.ApplyDamage(character, uint32(damagePair.Damage))
 		}
 	}
 }

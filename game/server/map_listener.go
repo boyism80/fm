@@ -359,8 +359,8 @@ func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Ch
 	})
 }
 
-// OnMobDebuffApplied broadcasts APPLY_DEBUFF (0xAF) to all players on the map (including attacker).
-func (l *MapListenerImpl) OnMobDebuffApplied(mapInstance *entity.Map, mob *entity.Mob, debuff constant.Debuff, value int32, skillID uint32, durationMs int64) {
+// OnMobMobStatusApplied broadcasts APPLY_DEBUFF (0xAF) to all players on the map (including attacker).
+func (l *MapListenerImpl) OnMobMobStatusApplied(mapInstance *entity.Map, mob *entity.Mob, debuff constant.MobStatus, value int32, skillID uint32, durationMs int64) {
 	if mapInstance == nil {
 		return
 	}
@@ -368,9 +368,9 @@ func (l *MapListenerImpl) OnMobDebuffApplied(mapInstance *entity.Map, mob *entit
 	if durationMs > 0 && durationMs/1000 < 32767 {
 		buffTime = int16(durationMs / 1000)
 	}
-	pkt := &response.ApplyDebuff{
+	pkt := &response.ApplyMobStatus{
 		OID:        mob.OID,
-		Status:     int32(debuff.Mask),
+		Status:     int32(debuff),
 		X:          int16(value),
 		SkillID:    skillID,
 		BuffTime:   buffTime,
@@ -380,14 +380,14 @@ func (l *MapListenerImpl) OnMobDebuffApplied(mapInstance *entity.Map, mob *entit
 	mapInstance.Broadcast(pkt, nil)
 }
 
-// OnMobDebuffCancelled broadcasts CANCEL_DEBUFF (0xB0) to all players on the map.
-func (l *MapListenerImpl) OnMobDebuffCancelled(mapInstance *entity.Map, mob *entity.Mob, debuff constant.Debuff) {
+// OnMobMobStatusCancelled broadcasts CANCEL_DEBUFF (0xB0) to all players on the map.
+func (l *MapListenerImpl) OnMobMobStatusCancelled(mapInstance *entity.Map, mob *entity.Mob, debuff constant.MobStatus) {
 	if mapInstance == nil {
 		return
 	}
-	pkt := &response.CancelDebuff{
+	pkt := &response.CancelMobStatus{
 		OID:    mob.OID,
-		Status: int32(debuff.Mask),
+		Status: int32(debuff),
 		Size:   1,
 	}
 	mapInstance.Broadcast(pkt, nil)

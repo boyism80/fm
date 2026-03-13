@@ -8,5 +8,9 @@ function get_skill_effect(skill_entry)
     if wz == nil or wz.effects == nil then
         return nil
     end
-    return wz.effects[skill_entry:level()]
+    local level = skill_entry:level()
+    if level == nil then
+        return nil
+    end
+    return wz.effects[level]
 end

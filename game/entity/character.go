@@ -84,6 +84,10 @@ func (ch *Character) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeCharacter
 }
 
+func (ch *Character) Is(typ constant.ObjectType) bool {
+	return ch.GetObjectType().Has(typ)
+}
+
 func (ch *Character) AddTimerWithCallback(key string, interval time.Duration, repeat bool, callback func()) bool {
 	return ch.addTimer(key, interval, repeat, callback)
 }

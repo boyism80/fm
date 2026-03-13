@@ -12,12 +12,13 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-type mobDebuffEntry struct {
-	value       int32
-	Wz          *wz.Skill // skill that applied this debuff (nil if non-skill); packet uses Wz.ID when non-nil
-	Level       uint8
-	expiresAt   time.Time
-	cancelTimer *time.Timer
+type mobMobStatusEntry struct {
+	value             int32
+	Wz                *wz.Skill // skill that applied this debuff (nil if non-skill); packet uses Wz.ID when non-nil
+	Level             uint8
+	CauserCharacterID uint32 // character ID who applied the debuff (for EXP/drops when mob dies from DoT); 0 if none
+	expiresAt         time.Time
+	cancelTimer       *time.Timer
 }
 
 type Mob struct {
@@ -25,12 +26,16 @@ type Mob struct {
 	Wz       *wz.Mob
 	Foothold int16
 	Spawn    *MobSpawn
-	debuffs  map[constant.Debuff]*mobDebuffEntry
+	debuffs  map[constant.MobStatus]*mobMobStatusEntry
 	debuffMu sync.RWMutex
 }
 
 func (m *Mob) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeMob
+}
+
+func (m *Mob) Is(typ constant.ObjectType) bool {
+	return m.GetObjectType().Has(typ)
 }
 
 // GetObject implements ObjectProvider (Mob embeds Life which embeds Object).
@@ -141,20 +146,20 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(mapInstance.ID))
 			return 1
 		},
-		"set_debuff": func(L *lua.LState) int {
+		"set_status": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
 			if !ok {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-			debuffTbl := L.CheckTable(2)
-			maskLV := debuffTbl.RawGetString("mask")
+			statusTbl := L.CheckTable(2)
+			maskLV := statusTbl.RawGetString("mask")
 			if maskLV.Type() != lua.LTNumber {
-				L.ArgError(2, "Debuff table with numeric mask expected")
+				L.ArgError(2, "MobStatus table with numeric mask expected")
 				return 0
 			}
-			debuff := constant.Debuff{Mask: uint32(lua.LVAsNumber(maskLV))}
+			status := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
 			value := int32(L.CheckInt(3))
 			durationMs := L.CheckInt64(4)
 			if durationMs < 0 {
@@ -170,41 +175,55 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 				}
 			}
-			mob.ApplyDebuff(debuff, value, durationMs, skillWz, skillLevel)
+			var causer *Character
+			if L.GetTop() >= 6 && L.Get(6) != lua.LNil {
+				if cud, ok := L.Get(6).(*lua.LUserData); ok {
+					if ch, ok := cud.Value.(*Character); ok {
+						causer = ch
+					} else {
+						L.ArgError(6, "causer must be Character or nil")
+						return 0
+					}
+				} else {
+					L.ArgError(6, "causer must be Character or nil")
+					return 0
+				}
+			}
+			mob.ApplyMobStatus(status, value, durationMs, skillWz, skillLevel, causer)
 			return 0
 		},
-		"clear_debuff": func(L *lua.LState) int {
+		"clear_status": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
 			if !ok {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-			debuffTbl := L.CheckTable(2)
-			maskLV := debuffTbl.RawGetString("mask")
+			statusTbl := L.CheckTable(2)
+			maskLV := statusTbl.RawGetString("mask")
 			if maskLV.Type() != lua.LTNumber {
-				L.ArgError(2, "Debuff table with numeric mask expected")
+				L.ArgError(2, "MobStatus table with numeric mask expected")
 				return 0
 			}
-			debuff := constant.Debuff{Mask: uint32(lua.LVAsNumber(maskLV))}
-			mob.CancelDebuff(debuff)
+			status := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
+			mob.CancelMobStatus(status)
 			return 0
 		},
-		"has_debuff": func(L *lua.LState) int {
+		"has_status": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
 			if !ok {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-			debuffTbl := L.CheckTable(2)
-			maskLV := debuffTbl.RawGetString("mask")
+			statusTbl := L.CheckTable(2)
+			maskLV := statusTbl.RawGetString("mask")
 			if maskLV.Type() != lua.LTNumber {
-				L.ArgError(2, "Debuff table with numeric mask expected")
+				L.ArgError(2, "MobStatus table with numeric mask expected")
 				return 0
 			}
-			debuff := constant.Debuff{Mask: uint32(lua.LVAsNumber(maskLV))}
-			L.Push(lua.LBool(mob.HasDebuff(debuff)))
+			status := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
+			L.Push(lua.LBool(mob.HasMobStatus(status)))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
@@ -226,6 +245,45 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(tbl)
 			return 1
 		},
+		"damage": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			if argc != 3 {
+				L.ArgError(2, "damage(attacker, amount) requires attacker (Character or nil) and amount")
+				return 0
+			}
+
+			var attacker *Character
+			if L.Get(2) != lua.LNil {
+				if aud, ok := L.Get(2).(*lua.LUserData); ok {
+					if ch, ok := aud.Value.(*Character); ok {
+						attacker = ch
+					} else {
+						L.ArgError(2, "attacker must be Character or nil")
+						return 0
+					}
+				} else {
+					L.ArgError(2, "attacker must be Character or nil")
+					return 0
+				}
+			}
+
+			amount := L.CheckInt(3)
+			if amount <= 0 {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+
+			killed := mob.ApplyDamage(attacker, uint32(amount))
+			L.Push(lua.LBool(killed))
+			return 1
+		},
 	}
 }
 
@@ -237,14 +295,16 @@ func (m *Mob) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
-// ApplyDebuff applies a debuff (e.g. FREEZE) to the mob with optional duration. If durationMs > 0, a timer clears the debuff when it expires.
+// ApplyMobStatus applies a debuff (e.g. FREEZE) to the mob with optional duration. If durationMs > 0, a timer clears the debuff when it expires.
+// causer is the character who applied the debuff; when the mob dies from this debuff (e.g. DoT), EXP/drops can be attributed to that character.
+// Internally only the character ID is stored on the debuff entry so reconnects do not break attribution.
 // Re-applying the same debuff type: existing entry is removed (timer stopped, no cancel packet), then a new entry is created (no apply packet). Same observable behavior as refresh.
 // skillWz and skillLevel identify the skill that applied the debuff; packet uses skillWz.ID when non-nil.
 // Boss check (FREEZE/STUN/SEAL not applied to boss) is the caller's responsibility.
-func (m *Mob) ApplyDebuff(debuff constant.Debuff, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8) {
+func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causer *Character) {
 	m.debuffMu.Lock()
 	if m.debuffs == nil {
-		m.debuffs = make(map[constant.Debuff]*mobDebuffEntry)
+		m.debuffs = make(map[constant.MobStatus]*mobMobStatusEntry)
 	}
 	existing := m.debuffs[debuff]
 	wasRefresh := existing != nil
@@ -255,15 +315,21 @@ func (m *Mob) ApplyDebuff(debuff constant.Debuff, value int32, durationMs int64,
 		delete(m.debuffs, debuff)
 	}
 
-	entry := &mobDebuffEntry{
-		value: value,
-		Wz:    skillWz,
-		Level: skillLevel,
+	var causerID uint32
+	if causer != nil {
+		causerID = causer.GetID()
+	}
+
+	entry := &mobMobStatusEntry{
+		value:             value,
+		Wz:                skillWz,
+		Level:             skillLevel,
+		CauserCharacterID: causerID,
 	}
 	if durationMs > 0 {
 		entry.expiresAt = time.Now().Add(time.Duration(durationMs) * time.Millisecond)
 		entry.cancelTimer = time.AfterFunc(time.Duration(durationMs)*time.Millisecond, func() {
-			m.CancelDebuff(debuff)
+			m.CancelMobStatus(debuff)
 		})
 	}
 	m.debuffs[debuff] = entry
@@ -278,12 +344,12 @@ func (m *Mob) ApplyDebuff(debuff constant.Debuff, value int32, durationMs int64,
 	}
 	mapInstance := m.GetObject().GetMap()
 	if mapInstance != nil && mapInstance.listener != nil {
-		mapInstance.listener.OnMobDebuffApplied(mapInstance, m, debuff, value, packetSkillID, durationMs)
+		mapInstance.listener.OnMobMobStatusApplied(mapInstance, m, debuff, value, packetSkillID, durationMs)
 	}
 }
 
-// CancelDebuff removes a debuff and notifies the map listener (broadcast cancel packet).
-func (m *Mob) CancelDebuff(debuff constant.Debuff) {
+// CancelMobStatus removes a debuff and notifies the map listener (broadcast cancel packet).
+func (m *Mob) CancelMobStatus(debuff constant.MobStatus) {
 	m.debuffMu.Lock()
 	entry, ok := m.debuffs[debuff]
 	if !ok {
@@ -298,20 +364,32 @@ func (m *Mob) CancelDebuff(debuff constant.Debuff) {
 
 	mapInstance := m.GetObject().GetMap()
 	if mapInstance != nil && mapInstance.listener != nil {
-		mapInstance.listener.OnMobDebuffCancelled(mapInstance, m, debuff)
+		mapInstance.listener.OnMobMobStatusCancelled(mapInstance, m, debuff)
 	}
 }
 
-// HasDebuff returns whether the mob currently has the given debuff.
-func (m *Mob) HasDebuff(debuff constant.Debuff) bool {
+// HasMobStatus returns whether the mob currently has the given debuff.
+func (m *Mob) HasMobStatus(debuff constant.MobStatus) bool {
 	m.debuffMu.RLock()
 	defer m.debuffMu.RUnlock()
 	_, ok := m.debuffs[debuff]
 	return ok
 }
 
-// ClearAllDebuffTimers stops all debuff timers without notifying. Used when mob is removed from map.
-func (m *Mob) ClearAllDebuffTimers() {
+// GetCauserCharacterID returns the character ID who applied the given debuff, or 0 if the debuff is not present or has no causer.
+// Used when the mob dies from that debuff (e.g. DoT) to attribute EXP/drops; resolve via map.GetPlayer(id).
+func (m *Mob) GetCauserCharacterID(debuff constant.MobStatus) uint32 {
+	m.debuffMu.RLock()
+	defer m.debuffMu.RUnlock()
+	entry, ok := m.debuffs[debuff]
+	if !ok || entry == nil {
+		return 0
+	}
+	return entry.CauserCharacterID
+}
+
+// ClearAllMobStatusTimers stops all debuff timers without notifying. Used when mob is removed from map.
+func (m *Mob) ClearAllMobStatusTimers() {
 	m.debuffMu.Lock()
 	defer m.debuffMu.Unlock()
 	for _, entry := range m.debuffs {
@@ -446,28 +524,48 @@ func (m *Mob) dropItems(attacker *Character) {
 	}
 }
 
-// Damage applies damage to the mob and handles all death-related logic
-func (m *Mob) Damage(damage uint16, attacker *Character) bool {
-	if damage > m.Hp {
-		damage = m.Hp
-	}
-	m.Hp -= damage
-	isDead := m.Hp == 0
-	if !isDead {
+func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
+	if amount == 0 || m.Hp == 0 {
 		return false
 	}
 
-	// Mob dies - handle all death-related logic
-	log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
-
-	exp := uint32(m.Wz.EXP)
-	if attacker.BonusStats.ExpRate > 0 {
-		exp = exp * uint32(attacker.BonusStats.ExpRate) / 100
+	// Clamp to current HP so we do not underflow.
+	damage := amount
+	if damage > uint32(m.Hp) {
+		damage = uint32(m.Hp)
 	}
-	attacker.AddExp(exp)
 
-	// Generate mob drops
-	m.dropItems(attacker)
+	m.Hp -= uint16(damage)
+	isDead := m.Hp == 0
+
+	// If mob is still alive, only HP bar update is needed.
+	if !isDead {
+		if attacker != nil && attacker.Listener != nil {
+			maxHp := m.GetMaxHp()
+			if maxHp == 0 {
+				return false
+			}
+			percent := min(uint32(m.Hp)*100/uint32(maxHp), 100)
+			attacker.Listener.OnShowMobHp(m, uint8(percent))
+		}
+		return false
+	}
+
+	// Mob dies - handle all death-related logic.
+	if attacker != nil {
+		log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
+
+		exp := uint32(m.Wz.EXP)
+		if attacker.BonusStats.ExpRate > 0 {
+			exp = exp * uint32(attacker.BonusStats.ExpRate) / 100
+		}
+		attacker.AddExp(exp)
+
+		// Generate mob drops
+		m.dropItems(attacker)
+	} else {
+		log.Printf("Mob %d (ID: %d) killed with no attacker", m.OID, m.Wz.ID)
+	}
 
 	// Remove mob from map
 	mapInstance := m.GetObject().GetMap()
@@ -475,8 +573,10 @@ func (m *Mob) Damage(damage uint16, attacker *Character) bool {
 		mapInstance.RemoveMob(m.OID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT)
 	}
 
-	// Send mob HP update to attacker via listener
-	attacker.Listener.OnShowMobHp(m, uint8(m.Hp*100/m.Life.GetMaxHp()))
+	// Send mob HP update to attacker via listener (0% HP)
+	if attacker != nil && attacker.Listener != nil {
+		attacker.Listener.OnShowMobHp(m, 0)
+	}
 
 	return true
 }

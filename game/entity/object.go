@@ -21,10 +21,15 @@ func (obj *Object) GetObjectType() constant.ObjectType {
 type ObjectProvider interface {
 	GetObject() *Object
 	GetObjectType() constant.ObjectType
+	Is(typ constant.ObjectType) bool
 }
 
 func (obj *Object) GetObject() *Object {
 	return obj
+}
+
+func (obj *Object) Is(typ constant.ObjectType) bool {
+	return obj.GetObjectType().Has(typ)
 }
 
 func (obj *Object) GetMap() *Map {
@@ -107,7 +112,7 @@ func (obj *Object) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			typeArg := constant.ObjectType(L.CheckInt(2))
-			L.Push(lua.LBool((provider.GetObjectType() & typeArg) != 0))
+			L.Push(lua.LBool(provider.Is(typeArg)))
 			return 1
 		},
 	}
@@ -126,6 +131,10 @@ func (d *Drop) GetObject() *Object {
 		return nil
 	}
 	return d.Object
+}
+
+func (d *Drop) Is(typ constant.ObjectType) bool {
+	return d.GetObjectType().Has(typ)
 }
 
 var (

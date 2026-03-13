@@ -1519,7 +1519,7 @@ func loadMob(path string) (*Mob, error) {
 		case "invincible":
 		case "hideHP":
 		case "hideName":
-		case "noDebuff":
+		case "noMobStatus":
 		case "charismaEXP":
 		case "willEXP":
 		case "fixedBodyAttackDamageR":
