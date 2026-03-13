@@ -17,7 +17,7 @@ type CharacterListener interface {
 	OnMesoChanged(meso int32)
 	OnMessage(messageType constant.ServerMessageType, message string)
 	OnExpGain(exp uint32)
-	OnControlMoveMob(mob *Mob, moveId uint8, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8)
+	OnControlMoveMob(mob *Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8)
 	OnShowMobHp(mob *Mob, percentage uint8)
 	OnUnlockAction()
 	OnItemGainFailed(mode constant.ItemGainFailedType)

@@ -113,10 +113,10 @@ func (l *CharacterListenerImpl) OnExpGain(exp uint32) {
 	l.ch.Send(expPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnControlMoveMob(mob *entity.Mob, moveId uint8, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnControlMoveMob(mob *entity.Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
 	l.ch.Send(&response.ControlMoveMob{
 		OID:          mob.OID,
-		MoveId:       uint16(moveId),
+		MoveId:       moveId,
 		EnabledSkill: enabledSkill,
 		MP:           mp,
 		SkillId:      uint8(skillId),

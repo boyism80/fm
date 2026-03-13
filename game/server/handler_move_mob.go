@@ -72,7 +72,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		mob.Stance = mnt.GetStance()
 	}
 
-	character.Listener.OnControlMoveMob(mob, uint8(req.MovementId), req.IsAggroed, mob.Mp, 0, 0)
+	character.Listener.OnControlMoveMob(mob, req.MovementId, req.IsAggroed, mob.Mp, 0, 0)
 
 	character.Listener.OnMobMoved(
 		mob,
