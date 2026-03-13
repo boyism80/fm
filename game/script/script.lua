@@ -1,3 +1,11 @@
+-- Main script entry: loads sub modules via run_script, defines all on_* hooks called from Go.
+run_script("script/script_common.lua")
+run_script("script/script_heal_recovery.lua")
+run_script("script/script_level_stat.lua")
+run_script("script/script_combat.lua")
+run_script("script/script_damage.lua")
+run_script("script/script_equip.lua")
+
 function on_start(me)
 	local npc = 9001000
 	-- me:dialog_list("안녕하세요", {"hello1", "hello2", "hello3"})
@@ -42,195 +50,6 @@ function on_script(me)
     me:base_dex(128)
     me:base_luk(128)
     me:level(200)
-end
-
-local function handle_combo_attack(me, targets, skill)
-    if targets == nil or #targets == 0 then
-        return
-    end
-
-    local current = me:buff_value(BuffFlag.Combo)
-    if current == nil then
-        return
-    end
-
-    local shout_hero = SKILL.SHOUT
-    local shout_dw = SKILL.DAWN_WARRIOR_SHOUT
-    if skill ~= nil then
-        local wz = skill:wz()
-        if wz ~= nil then
-            local sid = wz.id
-            if sid == shout_hero or sid == shout_dw then
-                return
-            end
-        end
-    end
-
-    local combo = me:skill(SKILL.COMBO_ATTACK)
-    local adv = me:skill(SKILL.ADVANCED_COMBO)
-    if combo == nil then
-        combo = me:skill(SKILL.DAWN_WARRIOR_COMBO_ATTACK)
-        adv = me:skill(SKILL.DAWN_WARRIOR_ADVANCED_COMBO)
-    end
-    if combo == nil then
-        return
-    end
-
-    local ceffect_skill = combo
-    if adv ~= nil and adv:level() > 0 then
-        ceffect_skill = adv
-    end
-
-    local ceffect = nil
-    local wz = ceffect_skill:wz()
-    if wz ~= nil and wz.effects ~= nil then
-        ceffect = wz.effects[ceffect_skill:level()]
-    end
-    if ceffect == nil then
-        return
-    end
-
-    local max_orbs = (ceffect.x or 0) + 1
-    if max_orbs <= 0 then
-        return
-    end
-    if current >= max_orbs then
-        return
-    end
-
-    local new_orbs = current + 1
-    if adv ~= nil and adv:level() > 0 then
-        local prop = ceffect.prop or 0
-        if prop > 0 and math.random(100) <= prop and new_orbs < max_orbs then
-            new_orbs = new_orbs + 1
-        end
-    end
-
-    if new_orbs > max_orbs then
-        new_orbs = max_orbs
-    end
-    me:buff_value(BuffFlag.Combo, new_orbs)
-end
-
-local PICKPOCKET_SKILL_IDS = {
-    [0] = true,
-    [SKILL.DOUBLE_STAB] = true,
-    [SKILL.SAVAGE_BLOW] = true,
-    [SKILL.ASSAULTER] = true,
-    [SKILL.BAND_OF_THIEVES] = true,
-    [SKILL.SHOWDOWN_4221003] = true,
-    [SKILL.BOOMERANG_STEP] = true,
-}
-
-local function handle_pickpocket(me, skill, damages)
-    if damages == nil then
-        return
-    end
-    local maxmeso = me:buff_value(BuffFlag.Pickpocket)
-    if maxmeso == nil or maxmeso < 1 then
-        return
-    end
-    local wz = skill and skill:wz()
-    local skill_id = (wz and wz.id) or 0
-    if not PICKPOCKET_SKILL_IDS[skill_id] then
-        return
-    end
-    local map = me:map()
-    if map == nil then
-        return
-    end
-    for mob, hits in pairs(damages) do
-        if not mob or not hits then
-            goto continue_mob
-        end
-        for _, amount in ipairs(hits) do
-            if not amount or amount <= 0 then
-                goto continue_hit
-            end
-            local meso = math.floor((amount / 12300) * maxmeso)
-            if meso < 1 then
-                meso = 1
-            end
-            if meso > maxmeso then
-                meso = maxmeso
-            end
-            if math.random(100) >= 100 then
-                goto continue_hit
-            end
-            local x, y = mob:position()
-            local offset = math.random(-20, 20)
-            map:spawn_meso(meso, { x + offset, y }, me)
-            ::continue_hit::
-        end
-        ::continue_mob::
-    end
-end
-
-local function damages_to_targets(damages)
-    if damages == nil then
-        return {}
-    end
-    local targets = {}
-    for mob, _ in pairs(damages) do
-        if mob ~= nil then
-            targets[#targets + 1] = mob
-        end
-    end
-    return targets
-end
-
-local ICE_CHARGE_SWORD = 1211005
-local BLIZZARD_CHARGE_BW = 1211006
-local HERO_JOB = 121
-local PALADIN_JOB = 122
-
-local function total_damage_to_mob(hits)
-    if hits == nil then
-        return 0
-    end
-    local total = 0
-    for _, amount in ipairs(hits) do
-        if amount and amount > 0 then
-            total = total + amount
-        end
-    end
-    return total
-end
-
-local function handle_ice_charge_freeze(me, damages)
-    if damages == nil then
-        return
-    end
-    local job = me:class()
-    if job ~= HERO_JOB and job ~= PALADIN_JOB then
-        return
-    end
-    local buff = me:buff(BuffFlag.WkCharge)
-    if buff == nil then
-        return
-    end
-    local wz = buff:wz()
-    if wz == nil or wz.effects == nil then
-        return
-    end
-    local sid = wz.id
-    if sid ~= ICE_CHARGE_SWORD and sid ~= BLIZZARD_CHARGE_BW then
-        return
-    end
-    local effect = wz.effects[buff:level()]
-    if effect == nil then
-        return
-    end
-    local y = effect.y or 0
-    local duration_ms = y * 2000
-    if duration_ms <= 0 then
-        return
-    end
-    for mob, hits in pairs(damages) do
-        if mob and hits and total_damage_to_mob(hits) > 0 then
-            mob:set_debuff(Debuff.Freeze, 1, duration_ms, buff)
-        end
-    end
 end
 
 function on_attack(me, skill, damages, attack_info)
@@ -312,96 +131,6 @@ function on_attack(me, skill, damages, attack_info)
     end
 end
 
-local function get_skill_effect_x(skill_entry)
-    if skill_entry == nil then
-        return nil
-    end
-    local wz = skill_entry:wz()
-    if wz == nil or wz.effects == nil then
-        return nil
-    end
-    local effect = wz.effects[skill_entry:level()]
-    if effect == nil then
-        return nil
-    end
-    return effect.x
-end
-
-local function handle_magic_guard(me, attacker, skill, damage)
-    if damage == nil or damage <= 0 then
-        return damage
-    end
-
-    if me:buff_value(BuffFlag.MagicGuard) == nil then
-        return damage
-    end
-
-    local guard_percent = get_skill_effect_x(me:skill(SKILL.MAGIC_GUARD))
-    if guard_percent == nil or guard_percent <= 0 then
-        guard_percent = get_skill_effect_x(me:skill(SKILL.MAGIC_GUARD_CYGNUS))
-    end
-    if guard_percent == nil or guard_percent <= 0 then
-        return damage
-    end
-
-    local current_mp = me:mp()
-    if current_mp == nil or current_mp <= 0 then
-        return damage
-    end
-
-    local mp_loss = math.floor(damage * (guard_percent / 100.0))
-    if mp_loss < 0 then
-        mp_loss = 0
-    end
-    if mp_loss > current_mp then
-        mp_loss = current_mp
-    end
-
-    local hp_loss = damage - mp_loss
-    if hp_loss < 0 then
-        hp_loss = 0
-    end
-
-    if mp_loss > 0 then
-        me:add_mp(-mp_loss)
-    end
-
-    return hp_loss
-end
-
-local function handle_meso_guard(me, attacker, skill, damage)
-    if damage == nil or damage <= 0 then
-        return damage
-    end
-    if me:buff_value(BuffFlag.MesoGuard) == nil then
-        return damage
-    end
-
-    local guard_percent = get_skill_effect_x(me:skill(SKILL.MESO_GUARD))
-    if guard_percent == nil or guard_percent <= 0 then
-        return damage
-    end
-    local current_meso = me:meso()
-    if current_meso == nil or current_meso <= 0 then
-        return damage
-    end
-    local meso_loss = math.floor(damage * (guard_percent / 100.0))
-    if meso_loss < 0 then
-        meso_loss = 0
-    end
-    if meso_loss > current_meso then
-        meso_loss = current_meso
-    end
-    local hp_loss = damage - meso_loss
-    if hp_loss < 0 then
-        hp_loss = 0
-    end
-    if meso_loss > 0 then
-        me:meso(-meso_loss)
-    end
-    return hp_loss
-end
-
 function on_damaged(me, attacker, skill, damage)
     local d = handle_magic_guard(me, attacker, skill, damage)
     return handle_meso_guard(me, attacker, skill, d)
@@ -411,4 +140,71 @@ function on_equipment_changed(me, part, before, after)
     if part == EquipmentPart.Weapon then
         me:unbuff(BuffFlag.WkCharge)
     end
+end
+
+function on_level_up(me, old_level, new_level)
+    if me == nil or new_level <= old_level then
+        return
+    end
+    local diff = new_level - old_level
+    me:ability_point(me:ability_point() + diff * 5, false)
+    if not me:class_of(Class.Beginner) then
+        me:skill_point(me:skill_point() + diff * 3, false)
+    end
+    local total_hp = 0
+    local total_mp = 0
+    for level = old_level + 1, new_level do
+        total_hp = total_hp + (20 + level * 2)
+        total_mp = total_mp + (10 + level)
+    end
+    local bonus_hp = 0
+    local bonus_mp = 0
+    if me:class_of(Class.Warrior) then
+        local effect = get_skill_effect(me:skill(Skill.ImprovingMaxhpIncrease))
+        if effect ~= nil and effect.x ~= nil and effect.x > 0 then
+            bonus_hp = bonus_hp + diff * effect.x
+        end
+    end
+    me:base_hp(me:base_hp() + total_hp + bonus_hp, false)
+    me:base_mp(me:base_mp() + total_mp + bonus_mp, false)
+    me:hp(me:max_hp(), false)
+    me:mp(me:max_mp(), false)
+    me:update_stats({
+        STAT.Level,
+        STAT.Exp,
+        STAT.MaxHp,
+        STAT.MaxMp,
+        STAT.Hp,
+        STAT.Mp,
+        STAT.AvailableAP,
+        STAT.AvailableSP,
+    })
+end
+
+function on_ap_to_hp(me)
+    local base = ap_to_hp_base(me)
+    local bonus = 0
+    if me:class_of(Class.Warrior) then
+        local effect = get_skill_effect(me:skill(Skill.ImprovingMaxhpIncrease))
+        if effect ~= nil and effect.y ~= nil and effect.y > 0 then
+            bonus = effect.y
+        end
+    end
+    return base + bonus
+end
+
+function on_ap_to_mp(me)
+    if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+        return math.random(6, 8)
+    end
+    if me:class_of(Class.Magician) then
+        return math.random(10, 20)
+    end
+    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) then
+        return math.random(8, 12)
+    end
+    if me:class_of(Class.Warrior) then
+        return math.random(4, 7)
+    end
+    return math.random(50, 100)
 end

@@ -1,5 +1,45 @@
 package entity
 
+// getClassParent returns the parent class code in the job tree. ok is false at roots.
+func getClassParent(class uint16) (parent uint16, ok bool) {
+	if class == 0 {
+		return 0, false
+	}
+	if class%10 != 0 {
+		return class - 1, true
+	}
+	switch {
+	case class == 100 || class == 200 || class == 300 || class == 400 || class == 500 || class == 800 || class == 900:
+		return 0, false
+	case class == 1000 || class == 2000:
+		return 0, false
+	case class >= 1100 && class <= 1500 && class%100 == 0:
+		return 1000, true
+	case class >= 2100 && class%100 == 0:
+		return 2000, true
+	case class < 1000:
+		return (class / 100) * 100, true
+	default:
+		return (class/10 - 1) * 10, true
+	}
+}
+
+// ClassOf returns true if the character's class is the given class or any advancement of it in the job tree.
+func (ch *Character) ClassOf(classCode uint16) bool {
+	c := ch.Class
+	for c != 0 {
+		if c == classCode {
+			return true
+		}
+		var ok bool
+		c, ok = getClassParent(c)
+		if !ok {
+			break
+		}
+	}
+	return c == classCode
+}
+
 func (ch *Character) IsAdventurer() bool {
 	return ch.Class < 1000
 }

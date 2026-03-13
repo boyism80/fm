@@ -19,13 +19,13 @@ type Life struct {
 
 type LifeAccessor interface {
 	GetHp() uint16
-	SetHp(uint16)
+	SetHp(uint16, bool)
 	GetMp() uint16
-	SetMp(uint16)
+	SetMp(uint16, bool)
 	GetMaxHp() uint16
-	SetMaxHp(uint16)
+	SetMaxHp(uint16, bool)
 	GetMaxMp() uint16
-	SetMaxMp(uint16)
+	SetMaxMp(uint16, bool)
 	AddHp(int)
 	AddMp(int)
 	AddHpMp(hpDelta, mpDelta int)
@@ -40,6 +40,10 @@ type LifeAccessor interface {
 
 func (life *Life) GetObject() *Object {
 	return &life.Object
+}
+
+func (life *Life) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeLife
 }
 
 func (life *Life) GetMaxHp() uint16 {
@@ -111,7 +115,7 @@ func (life *Life) GetBonusMp() int16   { return life.BonusMp }
 func (life *Life) GetInvincible() bool { return life.Invincible }
 func (life *Life) IsAlive() bool       { return life.Hp > 0 }
 
-func (life *Life) SetHp(v uint16) {
+func (life *Life) SetHp(v uint16, _ bool) {
 	maxHp := life.GetMaxHp()
 	if v > maxHp {
 		v = maxHp
@@ -119,7 +123,7 @@ func (life *Life) SetHp(v uint16) {
 	life.Hp = v
 }
 
-func (life *Life) SetMp(v uint16) {
+func (life *Life) SetMp(v uint16, _ bool) {
 	maxMp := life.GetMaxMp()
 	if v > maxMp {
 		v = maxMp
@@ -127,7 +131,7 @@ func (life *Life) SetMp(v uint16) {
 	life.Mp = v
 }
 
-func (life *Life) SetMaxHp(v uint16) {
+func (life *Life) SetMaxHp(v uint16, _ bool) {
 	if v > constant.STAT_MAX_HP_MP {
 		v = constant.STAT_MAX_HP_MP
 	}
@@ -137,7 +141,7 @@ func (life *Life) SetMaxHp(v uint16) {
 	}
 }
 
-func (life *Life) SetMaxMp(v uint16) {
+func (life *Life) SetMaxMp(v uint16, _ bool) {
 	if v > constant.STAT_MAX_HP_MP {
 		v = constant.STAT_MAX_HP_MP
 	}
@@ -210,7 +214,7 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 1:
 				L.Push(lua.LNumber(acc.GetHp()))
 				return 1
-			case 2:
+			case 2, 3:
 				hp := L.CheckInt(2)
 				if hp < 0 {
 					hp = 0
@@ -219,10 +223,11 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if hp > int(maxHp) {
 					hp = int(maxHp)
 				}
-				acc.SetHp(uint16(hp))
+				notify := argc == 2 || L.ToBool(3)
+				acc.SetHp(uint16(hp), notify)
 				return 0
 			default:
-				L.ArgError(2, "hp() requires 0 or 1 arguments")
+				L.ArgError(2, "hp() requires 0, 1 or 2 arguments")
 				return 0
 			}
 		},
@@ -238,7 +243,7 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 1:
 				L.Push(lua.LNumber(acc.GetMp()))
 				return 1
-			case 2:
+			case 2, 3:
 				mp := L.CheckInt(2)
 				if mp < 0 {
 					mp = 0
@@ -247,10 +252,11 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if mp > int(maxMp) {
 					mp = int(maxMp)
 				}
-				acc.SetMp(uint16(mp))
+				notify := argc == 2 || L.ToBool(3)
+				acc.SetMp(uint16(mp), notify)
 				return 0
 			default:
-				L.ArgError(2, "mp() requires 0 or 1 arguments")
+				L.ArgError(2, "mp() requires 0, 1 or 2 arguments")
 				return 0
 			}
 		},
@@ -266,7 +272,7 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 1:
 				L.Push(lua.LNumber(acc.GetMaxHp()))
 				return 1
-			case 2:
+			case 2, 3:
 				hp := L.CheckInt(2)
 				if hp < 0 {
 					hp = 0
@@ -275,10 +281,11 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if hp > maxCap {
 					hp = maxCap
 				}
-				acc.SetMaxHp(uint16(hp))
+				notify := argc == 2 || L.ToBool(3)
+				acc.SetMaxHp(uint16(hp), notify)
 				return 0
 			default:
-				L.ArgError(2, "max_hp() requires 0 or 1 arguments")
+				L.ArgError(2, "max_hp() requires 0, 1 or 2 arguments")
 				return 0
 			}
 		},
@@ -294,7 +301,7 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 1:
 				L.Push(lua.LNumber(acc.GetMaxMp()))
 				return 1
-			case 2:
+			case 2, 3:
 				mp := L.CheckInt(2)
 				if mp < 0 {
 					mp = 0
@@ -303,10 +310,11 @@ func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if mp > maxCap {
 					mp = maxCap
 				}
-				acc.SetMaxMp(uint16(mp))
+				notify := argc == 2 || L.ToBool(3)
+				acc.SetMaxMp(uint16(mp), notify)
 				return 0
 			default:
-				L.ArgError(2, "max_mp() requires 0 or 1 arguments")
+				L.ArgError(2, "max_mp() requires 0, 1 or 2 arguments")
 				return 0
 			}
 		},

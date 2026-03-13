@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -13,8 +14,13 @@ type Object struct {
 	Map      *Map
 }
 
+func (obj *Object) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeObject
+}
+
 type ObjectProvider interface {
 	GetObject() *Object
+	GetObjectType() constant.ObjectType
 }
 
 func (obj *Object) GetObject() *Object {
@@ -91,6 +97,17 @@ func (obj *Object) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			L.Push(luax.NewLuable(L, mapInstance))
+			return 1
+		},
+		"is": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			provider, ok := ud.Value.(ObjectProvider)
+			if !ok {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			typeArg := constant.ObjectType(L.CheckInt(2))
+			L.Push(lua.LBool((provider.GetObjectType() & typeArg) != 0))
 			return 1
 		},
 	}

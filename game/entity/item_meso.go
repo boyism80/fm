@@ -15,6 +15,10 @@ func (meso *Meso) GetDrop() *Drop      { return meso.Drop }
 func (meso *Meso) BindDrop(drop *Drop) { meso.Drop = drop }
 func (meso *Meso) IsMeso() bool        { return true }
 
+func (meso *Meso) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeItem
+}
+
 func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, context GameContext, mapInstance *Map) *Meso {
 	return &Meso{
 		Drop: &Drop{

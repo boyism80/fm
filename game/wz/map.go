@@ -39,6 +39,7 @@ type Map struct {
 	HideMinimap  bool
 	IsTown       bool
 	MobRate      float32
+	RecoveryRate float32
 	BGM          string
 	MapMark      string
 	MapDesc      string

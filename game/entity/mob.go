@@ -29,6 +29,10 @@ type Mob struct {
 	debuffMu sync.RWMutex
 }
 
+func (m *Mob) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeMob
+}
+
 // GetObject implements ObjectProvider (Mob embeds Life which embeds Object).
 func (m *Mob) GetObject() *Object {
 	return &m.Life.Object

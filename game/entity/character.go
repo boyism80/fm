@@ -7,6 +7,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/stream"
@@ -49,23 +50,25 @@ type Character struct {
 	dialogMutex      sync.Mutex
 	hidden           bool
 
-	Listener      CharacterListener
-	Class         uint16
-	Role          constant.CharacterRole
-	AbilityPoint  uint16
-	SkillPoint    uint16
-	HpApUsed      uint16
-	Meso          int32
-	Inventory     map[constant.InventoryType]*Inventory
-	Equipments    map[constant.EquipmentPartsType]Equipment
-	Rings         RingContainer
-	Skills        map[uint32]*SkillEntry
-	CurrentShopID uint32
-	Chair         uint32
-	BaseStats     BaseStats
-	BonusStats    BonusStats
-	Buffs         *BuffContainer
-	timers        map[string]*CharacterTimer
+	Listener       CharacterListener
+	Class          uint16
+	Role           constant.CharacterRole
+	AbilityPoint   uint16
+	SkillPoint     uint16
+	HpApUsed       uint16
+	Meso           int32
+	Inventory      map[constant.InventoryType]*Inventory
+	Equipments     map[constant.EquipmentPartsType]Equipment
+	Rings          RingContainer
+	Skills         map[uint32]*SkillEntry
+	CurrentShopID  uint32
+	Chair          uint32
+	LastHealHPTime time.Time // used for heal-over-time rate limit
+	LastHealMPTime time.Time // used for heal-over-time rate limit
+	BaseStats      BaseStats
+	BonusStats     BonusStats
+	Buffs          *BuffContainer
+	timers         map[string]*CharacterTimer
 }
 
 type CharacterTimer struct {
@@ -75,6 +78,10 @@ type CharacterTimer struct {
 	Callback   func()
 	NextFireAt time.Time
 	Remaining  time.Duration
+}
+
+func (ch *Character) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeCharacter
 }
 
 func (ch *Character) AddTimerWithCallback(key string, interval time.Duration, repeat bool, callback func()) bool {
@@ -198,31 +205,31 @@ func (ch *Character) GetBonusMp() int16   { return ch.Life.BonusMp }
 func (ch *Character) GetInvincible() bool { return ch.Life.Invincible }
 func (ch *Character) IsAlive() bool       { return ch.Life.Hp > 0 }
 
-func (ch *Character) SetHp(v uint16) {
-	ch.Life.SetHp(v)
-	if ch.Listener != nil {
+const characterMaxHpMpCap = 32767
+
+func (ch *Character) SetHp(v uint16, notify bool) {
+	ch.Life.SetHp(v, false)
+	if notify && ch.Listener != nil {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
 	}
 }
 
-func (ch *Character) SetMp(v uint16) {
-	ch.Life.SetMp(v)
-	if ch.Listener != nil {
+func (ch *Character) SetMp(v uint16, notify bool) {
+	ch.Life.SetMp(v, false)
+	if notify && ch.Listener != nil {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
 	}
 }
 
-const characterMaxHpMpCap = 32767
-
-func (ch *Character) SetMaxHp(v uint16) {
+func (ch *Character) SetMaxHp(v uint16, notify bool) {
 	if v > characterMaxHpMpCap {
 		v = characterMaxHpMpCap
 	}
-	ch.Life.BaseHp = v
+	ch.Life.SetMaxHp(v, false)
 	if ch.Life.Hp > ch.GetMaxHp() {
 		ch.Life.Hp = ch.GetMaxHp()
 	}
-	if ch.Listener != nil {
+	if notify && ch.Listener != nil {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
 			constant.STAT_HP:     int32(ch.Hp),
 			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
@@ -230,15 +237,15 @@ func (ch *Character) SetMaxHp(v uint16) {
 	}
 }
 
-func (ch *Character) SetMaxMp(v uint16) {
+func (ch *Character) SetMaxMp(v uint16, notify bool) {
 	if v > characterMaxHpMpCap {
 		v = characterMaxHpMpCap
 	}
-	ch.Life.BaseMp = v
+	ch.Life.SetMaxMp(v, false)
 	if ch.Life.Mp > ch.GetMaxMp() {
 		ch.Life.Mp = ch.GetMaxMp()
 	}
-	if ch.Listener != nil {
+	if notify && ch.Listener != nil {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
 			constant.STAT_MP:     int32(ch.Mp),
 			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
@@ -282,6 +289,64 @@ func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
 			constant.STAT_HP: int32(ch.Hp),
 			constant.STAT_MP: int32(ch.Mp),
+		}, false)
+	}
+}
+
+func (ch *Character) GetBaseHp() uint16 {
+	return ch.Life.BaseHp
+}
+
+func (ch *Character) SetBaseHp(v uint16, notify bool) {
+	if v > constant.STAT_MAX_HP_MP {
+		v = constant.STAT_MAX_HP_MP
+	}
+	ch.Life.BaseHp = v
+	if ch.Life.Hp > ch.GetMaxHp() {
+		ch.Life.Hp = ch.GetMaxHp()
+	}
+	if notify && ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_HP:     int32(ch.Hp),
+			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+		}, false)
+	}
+}
+
+func (ch *Character) GetBaseMp() uint16 {
+	return ch.Life.BaseMp
+}
+
+func (ch *Character) SetBaseMp(v uint16, notify bool) {
+	if v > constant.STAT_MAX_HP_MP {
+		v = constant.STAT_MAX_HP_MP
+	}
+	ch.Life.BaseMp = v
+	if ch.Life.Mp > ch.GetMaxMp() {
+		ch.Life.Mp = ch.GetMaxMp()
+	}
+	if notify && ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_MP:     int32(ch.Mp),
+			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+		}, false)
+	}
+}
+
+func (ch *Character) SetAbilityPoint(v uint16, notify bool) {
+	ch.AbilityPoint = v
+	if notify && ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
+		}, false)
+	}
+}
+
+func (ch *Character) SetSkillPoint(v uint16, notify bool) {
+	ch.SkillPoint = v
+	if notify && ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
 		}, false)
 	}
 }
@@ -543,10 +608,47 @@ func (ch *Character) tryLevelUp() bool {
 		return false
 	}
 
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return false
+	}
+
+	pid := mapInstance.GetActorPID()
+	if pid == nil {
+		return false
+	}
+
+	root := luax.GetRootLuaState(pid.String())
+	if root == nil {
+		return false
+	}
+
 	ch.exp = remainingExp
-
 	ch.SetLevel(targetLevel)
+	levelDiff := int(targetLevel) - int(oldLevel)
+	if levelDiff >= 1 {
+		_, thread, _ := luax.Call(root, "script/script.lua", "on_level_up", ch, int32(oldLevel), int32(targetLevel))
+		if thread != nil {
+			thread.Close()
+		}
 
+		if ch.Listener != nil {
+			stats := map[constant.Stat]int32{
+				constant.STAT_LEVEL:        int32(ch.level),
+				constant.STAT_EXP:          int32(ch.exp),
+				constant.STAT_MAX_HP:       int32(ch.GetMaxHp()),
+				constant.STAT_MAX_MP:       int32(ch.GetMaxMp()),
+				constant.STAT_HP:           int32(ch.Hp),
+				constant.STAT_MP:           int32(ch.Mp),
+				constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
+				constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
+			}
+			ch.Listener.OnUpdateStats(stats, false)
+			for i := 0; i < levelDiff; i++ {
+				ch.broadcastLevelUpEffect()
+			}
+		}
+	}
 	return true
 }
 
@@ -563,58 +665,8 @@ func (ch *Character) SetLevel(newLevel uint8) {
 	}
 
 	oldLevel := ch.level
-	levelDiff := int(newLevel) - int(oldLevel)
-
-	if levelDiff > 0 {
-		totalAPIncrease := uint16(0)
-		totalSPIncrease := uint16(0)
-		totalHPIncrease := uint16(0)
-		totalMPIncrease := uint16(0)
-
-		for level := oldLevel + 1; level <= newLevel; level++ {
-			totalAPIncrease += 5
-
-			if !ch.IsBeginner() {
-				totalSPIncrease += 3
-			}
-
-			hpIncrease := uint16(20 + int(level)*2)
-			mpIncrease := uint16(10 + int(level))
-			totalHPIncrease += hpIncrease
-			totalMPIncrease += mpIncrease
-		}
-
-		ch.level = newLevel
-		ch.AbilityPoint += totalAPIncrease
-		ch.SkillPoint += totalSPIncrease
-
-		ch.Life.AddBaseHp(totalHPIncrease)
-		ch.Life.AddBaseMp(totalMPIncrease)
-
-		ch.Hp = ch.GetMaxHp()
-		ch.Mp = ch.GetMaxMp()
-
-		if ch.Listener != nil {
-			stats := map[constant.Stat]int32{
-				constant.STAT_LEVEL:        int32(ch.level),
-				constant.STAT_EXP:          int32(ch.exp),
-				constant.STAT_MAX_HP:       int32(ch.GetMaxHp()),
-				constant.STAT_MAX_MP:       int32(ch.GetMaxMp()),
-				constant.STAT_HP:           int32(ch.Hp),
-				constant.STAT_MP:           int32(ch.Mp),
-				constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
-				constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
-			}
-			ch.Listener.OnUpdateStats(stats, false)
-
-			for level := oldLevel + 1; level <= newLevel; level++ {
-				ch.broadcastLevelUpEffect()
-			}
-		}
-	} else {
-
-		ch.level = newLevel
-
+	ch.level = newLevel
+	if newLevel < oldLevel {
 		if ch.Context != nil {
 			resources := ch.Context.GetResources()
 			if resources != nil {
@@ -625,14 +677,13 @@ func (ch *Character) SetLevel(newLevel uint8) {
 				}
 			}
 		}
+	}
 
-		if ch.Listener != nil {
-			stats := map[constant.Stat]int32{
-				constant.STAT_LEVEL: int32(ch.level),
-				constant.STAT_EXP:   int32(ch.exp),
-			}
-			ch.Listener.OnUpdateStats(stats, false)
-		}
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_LEVEL: int32(ch.level),
+			constant.STAT_EXP:   int32(ch.exp),
+		}, false)
 	}
 }
 

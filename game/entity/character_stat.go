@@ -99,6 +99,43 @@ func (ch *Character) GetMaxMp() uint16 {
 	return uint16(total)
 }
 
+func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
+	switch stat {
+	case constant.STAT_LEVEL:
+		return int32(ch.level), true
+	case constant.STAT_EXP:
+		return int32(ch.exp), true
+	case constant.STAT_CLASS:
+		return int32(ch.Class), true
+	case constant.STAT_STR:
+		return int32(ch.GetTotalStr()), true
+	case constant.STAT_DEX:
+		return int32(ch.GetTotalDex()), true
+	case constant.STAT_INT:
+		return int32(ch.GetTotalInt()), true
+	case constant.STAT_LUK:
+		return int32(ch.GetTotalLuk()), true
+	case constant.STAT_HP:
+		return int32(ch.Hp), true
+	case constant.STAT_MAX_HP:
+		return int32(ch.GetMaxHp()), true
+	case constant.STAT_MP:
+		return int32(ch.Mp), true
+	case constant.STAT_MAX_MP:
+		return int32(ch.GetMaxMp()), true
+	case constant.STAT_AVAILABLE_AP:
+		return int32(ch.AbilityPoint), true
+	case constant.STAT_AVAILABLE_SP:
+		return int32(ch.SkillPoint), true
+	case constant.STAT_FAME:
+		return int32(ch.famePoint), true
+	case constant.STAT_MESO:
+		return ch.Meso, true
+	default:
+		return 0, false
+	}
+}
+
 func (ch *Character) notifyStatChange(stat constant.Stat) {
 	if ch.Listener == nil {
 		return

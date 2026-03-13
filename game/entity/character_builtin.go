@@ -108,6 +108,129 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"ability_point": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.AbilityPoint))
+				return 1
+			case 2, 3:
+				v := L.CheckInt(2)
+				if v < 0 {
+					v = 0
+				}
+				notify := argc == 2 || L.ToBool(3)
+				ch.SetAbilityPoint(uint16(v), notify)
+				return 0
+			default:
+				L.ArgError(2, "ability_point() requires 0, 1 or 2 arguments")
+				return 0
+			}
+		},
+		"skill_point": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.SkillPoint))
+				return 1
+			case 2, 3:
+				v := L.CheckInt(2)
+				if v < 0 {
+					v = 0
+				}
+				notify := argc == 2 || L.ToBool(3)
+				ch.SetSkillPoint(uint16(v), notify)
+				return 0
+			default:
+				L.ArgError(2, "skill_point() requires 0, 1 or 2 arguments")
+				return 0
+			}
+		},
+		"base_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.GetBaseHp()))
+				return 1
+			case 2, 3:
+				v := L.CheckInt(2)
+				if v < 0 {
+					v = 0
+				}
+				notify := argc == 2 || L.ToBool(3)
+				ch.SetBaseHp(uint16(v), notify)
+				return 0
+			default:
+				L.ArgError(2, "base_hp() requires 0, 1 or 2 arguments")
+				return 0
+			}
+		},
+		"base_mp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.GetBaseMp()))
+				return 1
+			case 2, 3:
+				v := L.CheckInt(2)
+				if v < 0 {
+					v = 0
+				}
+				notify := argc == 2 || L.ToBool(3)
+				ch.SetBaseMp(uint16(v), notify)
+				return 0
+			default:
+				L.ArgError(2, "base_mp() requires 0, 1 or 2 arguments")
+				return 0
+			}
+		},
+		"update_stats": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			tbl := L.CheckTable(2)
+			stats := make(map[constant.Stat]int32)
+			tbl.ForEach(func(k lua.LValue, v lua.LValue) {
+				if v.Type() != lua.LTNumber {
+					return
+				}
+				stat := constant.Stat(lua.LVAsNumber(v))
+				if val, ok := ch.GetStatValue(stat); ok {
+					stats[stat] = val
+				}
+			})
+			if len(stats) > 0 && ch.Listener != nil {
+				ch.Listener.OnUpdateStats(stats, true)
+			}
+			return 0
+		},
 		"exp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -655,6 +778,69 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "class() requires 0 or 1 arguments")
 				return 0
 			}
+		},
+		"chair": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.Chair))
+			return 1
+		},
+		"stance": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.Stance))
+				return 1
+			case 2:
+				ch.Stance = uint8(L.CheckInt(2))
+				return 0
+			default:
+				L.ArgError(2, "stance() requires 0 or 1 argument")
+				return 0
+			}
+		},
+		"stance_of": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			group := constant.StanceKind(L.CheckInt(2))
+			members, ok := constant.StanceGroupByKind[group]
+			if ok {
+				for _, v := range members {
+					if ch.Stance == v {
+						L.Push(lua.LTrue)
+						return 1
+					}
+				}
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LBool(ch.Stance == uint8(group)))
+			return 1
+		},
+		"class_of": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			classCode := uint16(L.CheckInt(2))
+			L.Push(lua.LBool(ch.ClassOf(classCode)))
+			return 1
 		},
 		"hidden": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

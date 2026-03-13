@@ -796,6 +796,13 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				if err == nil {
 					model.MobRate = float32(f)
 				}
+			case "recoveryRate":
+				f, err := strconv.ParseFloat(v.Value, 32)
+				if err == nil && f > 0 {
+					model.RecoveryRate = float32(f)
+				} else {
+					model.RecoveryRate = 1.0
+				}
 			case "bgm":
 				model.BGM = v.Value
 			case "mapMark":

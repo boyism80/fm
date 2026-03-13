@@ -45,6 +45,10 @@ type Drop struct {
 	nextExpiry   time.Time
 }
 
+func (d *Drop) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeItem
+}
+
 type ItemCore struct {
 	*Drop
 	Wz         wz.Item
@@ -83,6 +87,10 @@ func cloneEquipmentCore(c *EquipmentCore, count uint16) *EquipmentCore {
 		Flag:          c.Flag,
 		SkillBonus:    c.SkillBonus,
 	}
+}
+
+func (item *ItemCore) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeItem
 }
 
 func (item *ItemCore) GetDrop() *Drop           { return item.Drop }

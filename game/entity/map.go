@@ -213,6 +213,18 @@ func (m *Map) GetSpec() *wz.Map {
 	return m.model
 }
 
+// GetRecoveryRate returns the map's HP/MP recovery rate multiplier (e.g. 1.0 for normal).
+// Value comes from WZ Map.wz info node "recoveryRate"; default 1.0 if missing.
+func (m *Map) GetRecoveryRate() float32 {
+	if m.model == nil {
+		return 1.0
+	}
+	if m.model.RecoveryRate <= 0 {
+		return 1.0
+	}
+	return m.model.RecoveryRate
+}
+
 // FootholdPoint calculates the foothold position for a given point
 func (m *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 	return m.model.FootholdPoint(point)
@@ -753,6 +765,16 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			tbl.RawSetString("return_map_id", lua.LNumber(spec.ReturnMapId))
 			tbl.RawSetString("town", lua.LBool(spec.IsTown))
 			L.Push(tbl)
+			return 1
+		},
+		"recovery_rate": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			L.Push(lua.LNumber(mapInstance.GetRecoveryRate()))
 			return 1
 		},
 		"spawn_meso": func(L *lua.LState) int {

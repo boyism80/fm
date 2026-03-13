@@ -3,12 +3,13 @@ package server
 import (
 	"fmt"
 	"log"
-	"math/rand"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/request"
+	lua "github.com/yuin/gopher-lua"
 )
 
 // DistributeAP handles DISTRIBUTE_AP packet requests (0x46)
@@ -107,8 +108,10 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.GetMaxHp() >= constant.STAT_MAX_HP_MP {
 			return nil
 		}
-		// Calculate HP increase based on job
-		hpIncrease := h.calculateHPIncrease(character.Class)
+		hpIncrease := h.scriptAPToHP(ctx, character)
+		if hpIncrease == 0 {
+			hpIncrease = 10
+		}
 		character.Life.AddBaseHp(hpIncrease)
 		character.HpApUsed++
 		statUpdate[constant.STAT_MAX_HP] = int32(character.GetMaxHp())
@@ -118,8 +121,10 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.GetMaxMp() >= constant.STAT_MAX_HP_MP {
 			return nil
 		}
-		// Calculate MP increase based on job
-		mpIncrease := h.calculateMPIncrease(character.Class)
+		mpIncrease := h.scriptAPToMP(ctx, character)
+		if mpIncrease == 0 {
+			mpIncrease = 5
+		}
 		character.Life.AddBaseMp(mpIncrease)
 		character.HpApUsed++
 		statUpdate[constant.STAT_MAX_MP] = int32(character.GetMaxMp())
@@ -143,48 +148,28 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	return nil
 }
 
-// calculateHPIncrease calculates HP increase based on job
-func (h *DistributeAP) calculateHPIncrease(job uint16) uint16 {
-	// Beginner
-	if job == constant.CLASS_BEGINNER_MIN || job == constant.CLASS_BEGINNER_1 || job == constant.CLASS_BEGINNER_2 {
-		return uint16(rand.Intn(5) + 8) // 8-12
-	}
-	// Warrior
-	if job >= constant.CLASS_WARRIOR_MIN && job <= constant.CLASS_WARRIOR_MAX {
-		return uint16(rand.Intn(9) + 12) // 12-20
-	}
-	// Magician
-	if job >= constant.CLASS_MAGICIAN_MIN && job <= constant.CLASS_MAGICIAN_MAX {
-		return uint16(rand.Intn(6) + 6) // 6-11
-	}
-	// Bowman/Thief
-	if (job >= constant.CLASS_BOWMAN_MIN && job <= constant.CLASS_BOWMAN_MAX) ||
-		(job >= constant.CLASS_THIEF_MIN && job <= constant.CLASS_THIEF_MAX) {
-		return uint16(rand.Intn(5) + 14) // 14-18
-	}
-	// Default (GameMaster)
-	return uint16(rand.Intn(51) + 50) // 50-100
+func (h *DistributeAP) scriptAPToHP(ctx *core.ClientContext, character interface{}) uint16 {
+	return h.callAPToStatScript(ctx, character, "on_ap_to_hp")
 }
 
-// calculateMPIncrease calculates MP increase based on job
-func (h *DistributeAP) calculateMPIncrease(job uint16) uint16 {
-	// Beginner
-	if job == constant.CLASS_BEGINNER_MIN || job == constant.CLASS_BEGINNER_1 || job == constant.CLASS_BEGINNER_2 {
-		return uint16(rand.Intn(3) + 6) // 6-8
+func (h *DistributeAP) scriptAPToMP(ctx *core.ClientContext, character interface{}) uint16 {
+	return h.callAPToStatScript(ctx, character, "on_ap_to_mp")
+}
+
+func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character interface{}, funcName string) uint16 {
+	if ctx.LogicActorPID == nil {
+		return 0
 	}
-	// Magician
-	if job >= constant.CLASS_MAGICIAN_MIN && job <= constant.CLASS_MAGICIAN_MAX {
-		return uint16(rand.Intn(11) + 10) // 10-20
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return 0
 	}
-	// Bowman/Thief
-	if (job >= constant.CLASS_BOWMAN_MIN && job <= constant.CLASS_BOWMAN_MAX) ||
-		(job >= constant.CLASS_THIEF_MIN && job <= constant.CLASS_THIEF_MAX) {
-		return uint16(rand.Intn(5) + 8) // 8-12
+	result, thread, err := luax.Call(root, "script/script.lua", funcName, character)
+	if thread != nil {
+		thread.Close()
 	}
-	// Warrior/Soul Master
-	if job >= constant.CLASS_WARRIOR_MIN && job <= constant.CLASS_WARRIOR_MAX {
-		return uint16(rand.Intn(4) + 4) // 4-7
+	if err != nil || result == nil || result.Type() != lua.LTNumber {
+		return 0
 	}
-	// Default (GameMaster)
-	return uint16(rand.Intn(51) + 50) // 50-100
+	return uint16(lua.LVAsNumber(result))
 }

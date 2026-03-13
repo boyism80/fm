@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -12,6 +13,10 @@ type Npc struct {
 
 func (n *Npc) GetObject() *Object {
 	return &n.Object
+}
+
+func (n *Npc) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeNpc
 }
 
 func (n *Npc) LuaTypeName() string {
