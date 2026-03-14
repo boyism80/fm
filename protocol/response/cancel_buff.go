@@ -16,7 +16,7 @@ func (p *CancelBuff) Serialize(writer *stream.StreamWriter) error {
 	if p.Buffs == nil {
 		p.Buffs = []constant.BuffFlag{}
 	}
-	if err := writeMask(writer, p.Buffs); err != nil {
+	if err := WriteMask(writer, SlotsFromBuffFlags(p.Buffs)); err != nil {
 		return err
 	}
 	writer.WriteU8(1)

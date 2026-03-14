@@ -18,7 +18,7 @@ func (p *CancelRemoteBuff) Serialize(writer *stream.StreamWriter) error {
 		p.Buffs = []constant.BuffFlag{}
 	}
 	writer.Write32(p.CharacterID)
-	return writeMask(writer, p.Buffs)
+	return WriteMask(writer, SlotsFromBuffFlags(p.Buffs))
 }
 
 func (p *CancelRemoteBuff) Deserialize(_ *stream.StreamReader) error { return nil }

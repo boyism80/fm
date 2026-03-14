@@ -65,7 +65,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 				character.Send(&response.SpawnPlayer{
 					Character:       chDTO,
 					BuffStates:      [4]uint32{},
-					Diseases:        [4]uint32{},
+					Diseases:        ch.GetDiseaseMask(),
 					CrushRings:      entity.RingsToDTO(ch.Rings.Left),
 					FriendshipRings: entity.RingsToDTO(ch.Rings.Mid),
 					MarriageRings:   entity.RingsToDTO(ch.Rings.Right),
@@ -80,7 +80,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 	spawnPacket := &response.SpawnPlayer{
 		Character:       characterDTO,
 		BuffStates:      [4]uint32{},
-		Diseases:        [4]uint32{},
+		Diseases:        character.GetDiseaseMask(),
 		CrushRings:      entity.RingsToDTO(character.Rings.Left),
 		FriendshipRings: entity.RingsToDTO(character.Rings.Mid),
 		MarriageRings:   entity.RingsToDTO(character.Rings.Right),
@@ -305,14 +305,14 @@ func (l *MapListenerImpl) OnMobRemoved(mapInstance *entity.Map, mob *entity.Mob,
 }
 
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character) {
-	if after != nil {
-		mobDTO := mob.ToDTO()
-		after.Send(&response.StartControlMob{
-			Mob:   mobDTO,
-			Aggro: false,
-		}, types.SEND_POLICY_ENCRYPT)
-	} else if before != nil {
+	switch {
+	case before == nil && after != nil:
+		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: false}, types.SEND_POLICY_ENCRYPT)
+	case before != nil && after == nil:
 		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
+	case before != nil && after != nil:
+		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
+		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: false}, types.SEND_POLICY_ENCRYPT)
 	}
 }
 

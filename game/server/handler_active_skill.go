@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
+	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/request"
 	lua "github.com/yuin/gopher-lua"
@@ -108,6 +109,16 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
+	if levelData.MPCon > 0 {
+		mpCon := uint16(levelData.MPCon)
+		if !character.ConsumeMP(mpCon) {
+			if character.Listener != nil {
+				character.Listener.OnUpdateStats(nil, true)
+			}
+			return nil
+		}
+	}
+
 	if ctx.LogicActorPID == nil {
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
@@ -135,8 +146,10 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
+	params := buildActiveSkillParams(root, mapInstance, req)
+
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
-	result, thread, err := luax.Call(root, scriptPath, "on_preactivated", character, skillEntry)
+	result, thread, err := luax.Call(root, scriptPath, "on_preactivated", character, skillEntry, params)
 	if err != nil {
 		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
 		if character.Listener != nil {
@@ -164,7 +177,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
-	resumeState, err := luax.Execute(root, thread, ctx.LogicActorPID, "on_activated", character, skillEntry)
+	resumeState, err := luax.Execute(root, thread, ctx.LogicActorPID, "on_activated", character, skillEntry, params)
 	if err != nil {
 		thread.Close()
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
@@ -183,4 +196,27 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		character.Listener.OnUpdateStats(nil, true)
 	}
 	return nil
+}
+
+func buildActiveSkillParams(L *lua.LState, mapInstance *entity.Map, req *request.ActiveSkill) lua.LValue {
+	params := L.NewTable()
+	switch req.SkillID {
+	case 1121001, 1221001, 1321001:
+		magnet := L.NewTable()
+		mobs := L.NewTable()
+		for i, entry := range req.MagnetMobData.Mobs {
+			mob := mapInstance.GetMob(entry.OID)
+			if mob != nil {
+				entryTbl := L.NewTable()
+				entryTbl.RawSetString("mob", luax.NewLuable(L, mob))
+				entryTbl.RawSetString("oid", lua.LNumber(entry.OID))
+				entryTbl.RawSetString("success", lua.LBool(entry.Success))
+				mobs.RawSetInt(i+1, entryTbl)
+			}
+		}
+		magnet.RawSetString("mobs", mobs)
+		magnet.RawSetString("direction", lua.LNumber(req.MagnetMobData.Direction))
+		params.RawSetString("magnet", magnet)
+	}
+	return params
 }

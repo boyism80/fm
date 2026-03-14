@@ -44,7 +44,14 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 	}
 
 	stats := map[constant.Stat]int32{}
-	damage := h.resolveDamageByScript(ctx, character, req, req.Damage)
+	isBlock := req.Damage == -1 && req.Type == request.DAMAGE_TYPE_COLLIDE
+	var damage int32
+	if isBlock {
+		h.callOnBlocked(ctx, character, req)
+		damage = 0
+	} else {
+		damage = h.resolveDamageByScript(ctx, character, req, req.Damage)
+	}
 
 	if !character.Invincible {
 		newHp := int32(character.Life.Hp) - damage
@@ -93,6 +100,24 @@ func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *enti
 		return 0
 	}
 	return adjustedDamage
+}
+
+func (h *Damaged) callOnBlocked(ctx *core.ClientContext, character *entity.Character, req *request.Damaged) {
+	if ctx.LogicActorPID == nil {
+		return
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return
+	}
+	attackerArg := h.resolveDamageAttackerArg(character, req)
+	_, thread, err := luax.Call(root, "script/script.lua", "on_blocked", character, attackerArg)
+	if thread != nil {
+		thread.Close()
+	}
+	if err != nil {
+		log.Printf("Failed to call script on_blocked: %v", err)
+	}
 }
 
 func (h *Damaged) resolveDamageAttackerArg(character *entity.Character, req *request.Damaged) interface{} {

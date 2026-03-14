@@ -1343,6 +1343,153 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"show_buffeffect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			skillUD := L.CheckUserData(2)
+			if skillUD.Value == nil {
+				L.ArgError(2, "Skill expected")
+				return 0
+			}
+			skill, ok := skillUD.Value.(*SkillEntry)
+			if !ok || skill.Skill == nil {
+				L.ArgError(2, "Skill expected (with WZ data)")
+				return 0
+			}
+			effectID := uint8(L.CheckInt(3))
+			var dir *uint8
+			if L.GetTop() >= 4 {
+				d := uint8(L.CheckInt(4))
+				dir = &d
+			}
+			m := ch.GetMap()
+			if m != nil {
+				m.Broadcast(&response.ShowBuffeffect{
+					CharacterID: ch.GetID(),
+					EffectID:    effectID,
+					SkillID:     skill.Skill.ID,
+					SkillLevel:  uint8(skill.SkillLevel),
+					Direction:   dir,
+				}, nil)
+			}
+			return 0
+		},
+		"show_magnet": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			mobUD := L.CheckUserData(2)
+			if mobUD.Value == nil {
+				L.ArgError(2, "Mob expected")
+				return 0
+			}
+			mob, ok := mobUD.Value.(*Mob)
+			if !ok {
+				L.ArgError(2, "Mob expected")
+				return 0
+			}
+			success := L.CheckBool(3)
+			var successByte uint8
+			if success {
+				successByte = 1
+			}
+			m := ch.GetMap()
+			if m != nil {
+				m.Broadcast(&response.ShowMagnet{MobID: mob.OID, Success: successByte}, nil)
+			}
+			return 0
+		},
+		"debuff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			parseDebuffFlag := func(lv lua.LValue, argIndex int) (constant.DebuffFlag, bool) {
+				tbl, ok := lv.(*lua.LTable)
+				if !ok {
+					L.ArgError(argIndex, "DebuffFlag table expected")
+					return constant.DebuffFlag{}, false
+				}
+				maskLV := tbl.RawGetString("mask")
+				posLV := tbl.RawGetString("position")
+				if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+					L.ArgError(argIndex, "DebuffFlag table must have numeric mask and position")
+					return constant.DebuffFlag{}, false
+				}
+				return constant.DebuffFlag{
+					Mask:     uint32(maskLV.(lua.LNumber)),
+					Position: int(posLV.(lua.LNumber)),
+				}, true
+			}
+			flag, ok := parseDebuffFlag(L.Get(2), 2)
+			if !ok {
+				return 0
+			}
+			durationMs := L.CheckNumber(3)
+			if durationMs <= 0 {
+				L.ArgError(3, "duration_ms must be positive")
+				return 0
+			}
+			var x int16
+			var skillID, skillLevel uint16
+			if L.GetTop() >= 4 {
+				x = int16(L.CheckNumber(4))
+			}
+			if L.GetTop() >= 5 {
+				skillID = uint16(L.CheckNumber(5))
+			}
+			if L.GetTop() >= 6 {
+				skillLevel = uint16(L.CheckNumber(6))
+			}
+			ch.GiveDebuff(flag, time.Duration(durationMs)*time.Millisecond, x, skillID, skillLevel)
+			return 0
+		},
+		"remove_debuff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			parseDebuffFlag := func(lv lua.LValue, argIndex int) (constant.DebuffFlag, bool) {
+				tbl, ok := lv.(*lua.LTable)
+				if !ok {
+					L.ArgError(argIndex, "DebuffFlag table expected")
+					return constant.DebuffFlag{}, false
+				}
+				maskLV := tbl.RawGetString("mask")
+				posLV := tbl.RawGetString("position")
+				if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+					L.ArgError(argIndex, "DebuffFlag table must have numeric mask and position")
+					return constant.DebuffFlag{}, false
+				}
+				return constant.DebuffFlag{
+					Mask:     uint32(maskLV.(lua.LNumber)),
+					Position: int(posLV.(lua.LNumber)),
+				}, true
+			}
+			var flags []constant.DebuffFlag
+			for i := 2; i <= L.GetTop(); i++ {
+				flag, ok := parseDebuffFlag(L.Get(i), i)
+				if !ok {
+					return 0
+				}
+				flags = append(flags, flag)
+			}
+			if len(flags) > 0 {
+				ch.RemoveDebuff(flags...)
+			}
+			return 0
+		},
 		"equipped": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

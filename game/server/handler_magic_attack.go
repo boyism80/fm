@@ -116,8 +116,8 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	// Apply damage in Go.
 	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
 
-	// Phase 2: per-skill on_attack (post-damage).
-	h.callSkillHook(ctx, character, uint32(skillID), "on_attack")
+	// Phase 2: per-skill on_attack (post-damage, receives me, skill, damages).
+	h.callSkillOnAttackHook(ctx, character, uint32(skillID), mapInstance, req.AttackInfo.Damages)
 
 	magicAttackPacket := &response.MagicAttack{
 		AttackInfo:  req.AttackInfo,
@@ -174,6 +174,40 @@ func (h *MagicAttack) callOnAttackScript(ctx *core.ClientContext, character *ent
 	thread.Push(attackInfoTable)
 	if err := thread.PCall(4, 1, nil); err != nil {
 		log.Printf("Failed to call script on_attack: %v", err)
+		return
+	}
+	thread.Pop(1)
+}
+
+func (h *MagicAttack) callSkillOnAttackHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, mapInstance *entity.Map, damages []dto.AttackPair) {
+	if skillID == 0 || ctx.LogicActorPID == nil {
+		return
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return
+	}
+	skillEntry := character.Skills[skillID]
+	if skillEntry == nil {
+		return
+	}
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		return
+	}
+	defer thread.Close()
+	f := thread.GetGlobal("on_attack")
+	if f.Type() != lua.LTFunction {
+		return
+	}
+	damagesTable := buildDamagesTable(thread, mapInstance, damages)
+	thread.Push(f)
+	thread.Push(luax.NewLuable(thread, character))
+	thread.Push(luax.NewLuable(thread, skillEntry))
+	thread.Push(damagesTable)
+	if err := thread.PCall(3, 1, nil); err != nil {
+		log.Printf("Skill hook on_attack failed for %s: %v", scriptPath, err)
 		return
 	}
 	thread.Pop(1)

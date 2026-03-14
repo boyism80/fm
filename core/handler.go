@@ -45,6 +45,10 @@ func Bind[S ServerRegistry, C HandlerConstructor[S, H, T, U], H Handler[T], T Re
 			return err
 		}
 
+		if GetPacketLogEnabled() {
+			log.Printf("recv 0x%04X: %+v", opcode, req)
+		}
+
 		return handler.Handle(ctx, req)
 	}
 

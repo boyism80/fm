@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 하이퍼 바디
 
-function on_activated(me, skill)
+function on_activated(me, skill, params)
 	apply_hyper_body(me, skill)
 end
 

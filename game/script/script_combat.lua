@@ -37,12 +37,20 @@ function handle_combo_attack(me, targets, skill)
         end
     end
 
-    local combo = me:skill(Skill.ComboAttack)
-    local adv = me:skill(Skill.AdvancedCombo)
-    if combo == nil then
-        combo = me:skill(Skill.DawnWarriorComboAttack)
-        adv = me:skill(Skill.DawnWarriorAdvancedCombo)
+    local combo_skill = nil
+    local adv_skill = nil
+    if me:class_of(Class.Crusader) then
+        combo_skill = Skill.ComboAttack
+        adv_skill = Skill.AdvancedCombo
+    elseif me:class_of(Class.DawnWarrior3) then
+        combo_skill = Skill.DawnWarriorComboAttack
+        adv_skill = Skill.DawnWarriorAdvancedCombo
+    else
+        return
     end
+
+    local combo = me:skill(combo_skill)
+    local adv = me:skill(adv_skill)
     if combo == nil then
         return
     end
@@ -72,7 +80,7 @@ function handle_combo_attack(me, targets, skill)
     local new_orbs = current + 1
     if adv ~= nil and adv:level() > 0 then
         local prop = ceffect.prop or 0
-        if prop > 0 and math.random(100) <= prop and new_orbs < max_orbs then
+        if prop > 0 and math.random(1, 100) <= prop and new_orbs < max_orbs then
             new_orbs = new_orbs + 1
         end
     end
@@ -188,3 +196,4 @@ function handle_ice_charge_freeze(me, damages)
         end
     end
 end
+

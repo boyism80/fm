@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/constant"
@@ -30,6 +31,14 @@ func registerBuffFlagAndMobStatus(luaState *lua.LState) {
 		buffFlagTable.RawSetString(name, entry)
 	}
 	luaState.SetGlobal("BuffFlag", buffFlagTable)
+	debuffFlagTable := luaState.NewTable()
+	for name, df := range constant.AllDebuffFlags() {
+		entry := luaState.NewTable()
+		entry.RawSetString("mask", lua.LNumber(df.Mask))
+		entry.RawSetString("position", lua.LNumber(df.Position))
+		debuffFlagTable.RawSetString(name, entry)
+	}
+	luaState.SetGlobal("DebuffFlag", debuffFlagTable)
 	mobStatusTable := luaState.NewTable()
 	for name, st := range constant.AllMobStatuses() {
 		entry := luaState.NewTable()
@@ -251,6 +260,15 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			gs.GetRootContext().Send(pid, &g_actor.ResumeLua{Root: root, Thread: L})
 		})
 		return L.Yield(lua.LNil)
+	})
+
+	luax.RegisterFunc(luaState, "set_packet_log_enabled", func(L *lua.LState) int {
+		core.SetPacketLogEnabled(L.CheckBool(1))
+		return 0
+	})
+	luax.RegisterFunc(luaState, "get_packet_log_enabled", func(L *lua.LState) int {
+		L.Push(lua.LBool(core.GetPacketLogEnabled()))
+		return 1
 	})
 
 	if fn, err := luaState.LoadFile("script/skill/skill.lua"); err != nil {

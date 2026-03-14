@@ -87,7 +87,7 @@ func (t *ControllerTable) LeaveMob(mob *Mob) *Character {
 func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character) {
 	mobOID := mob.OID
 
-	// ?전 컨트롤러가 ?으???
+	// Previous controller is removed
 	prevControllerID := t.mob2controller[mobOID]
 	if prevControllerID != 0 {
 		delete(t.controller2mob[prevControllerID], mobOID)
@@ -119,4 +119,12 @@ func (t *ControllerTable) GetController(mob *Mob) (*Character, bool) {
 	}
 	controller, exists := t.controllers[controllerID]
 	return controller, exists
+}
+
+func (t *ControllerTable) SwitchController(mob *Mob, newController *Character) {
+	before, _ := t.GetController(mob)
+	if before == newController {
+		return
+	}
+	t.assign(mob, before, newController)
 }

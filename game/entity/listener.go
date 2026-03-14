@@ -41,6 +41,9 @@ type CharacterListener interface {
 	OnClassChange(oldClass uint16, newClass uint16)
 	OnBuffAdded(character *Character, wz *wz.Skill, level uint8, values map[constant.BuffFlag]int32)
 	OnBuffRemoved(character *Character, flags []constant.BuffFlag)
+	OnDebuffAdded(character *Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32)
+	OnDebuffRemoved(character *Character, flags []constant.DebuffFlag)
+
 	OnSkillCooldown(skillID uint32, remainingSec uint16)
 	OnHiddenChanged(hidden bool)
 }

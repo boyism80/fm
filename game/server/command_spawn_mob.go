@@ -23,7 +23,7 @@ func (h *SpawnMob) GetCommandName() string {
 }
 
 func (h *SpawnMob) GetUsage() string {
-	return "<몬스터ID/이름> - 몬스터 생성"
+	return "<몬스터ID/이름> [개수] - 몬스터 생성 (개수 기본값 1)"
 }
 
 func (h *SpawnMob) Handle(gameClient *client.GameClient, args ...string) error {
@@ -45,6 +45,15 @@ func (h *SpawnMob) Handle(gameClient *client.GameClient, args ...string) error {
 		mobId = uint32(mobId64)
 	}
 
+	count := 1
+	if len(args) >= 2 {
+		count64, err := strconv.ParseInt(args[1], 10, 32)
+		if err != nil || count64 < 1 {
+			return fmt.Errorf("count must be a positive integer")
+		}
+		count = int(count64)
+	}
+
 	character := gameClient.GetCharacter()
 	if character == nil {
 		return fmt.Errorf("character not found")
@@ -60,14 +69,15 @@ func (h *SpawnMob) Handle(gameClient *client.GameClient, args ...string) error {
 		return fmt.Errorf("mob specification not found for ID: %d", mobId)
 	}
 
-	mob, err := mapInstance.SpawnMob(mobId, character.Position, nil)
-	if err != nil {
-		log.Printf("Failed to spawn mob %d: %v", mobId, err)
-		return fmt.Errorf("failed to spawn mob: %v", err)
+	for i := 0; i < count; i++ {
+		mob, err := mapInstance.SpawnMob(mobId, character.Position, nil)
+		if err != nil {
+			log.Printf("Failed to spawn mob %d (attempt %d/%d): %v", mobId, i+1, count, err)
+			return fmt.Errorf("failed to spawn mob: %v", err)
+		}
+		log.Printf("Mob spawned - ID: %d, Position: %v, OID: %d (%d/%d)",
+			mobId, character.Position, mob.OID, i+1, count)
 	}
-
-	log.Printf("Mob spawned successfully - ID: %d, Position: %v, OID: %d",
-		mobId, character.Position, mob.OID)
 
 	return nil
 }

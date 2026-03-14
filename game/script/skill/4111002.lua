@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 쉐도우 파트너
 
-function on_activated(me, skill)
+function on_activated(me, skill, params)
     local wz = skill:wz()
     if wz == nil or wz.effects == nil then
         return

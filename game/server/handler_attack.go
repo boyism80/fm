@@ -64,11 +64,12 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, skillID, false, 0)
 
 	// Apply damage in Go.
+
 	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
 
-	// Phase 2: per-skill on_attack (post-damage, per-skill logic like counters).
+	// Phase 2: per-skill on_attack (post-damage, receives me, skill, damages).
 	if skillID != 0 {
-		h.callSkillHook(ctx, character, skillID, "on_attack")
+		h.callSkillOnAttackHook(ctx, character, skillID, mapInstance, req.AttackInfo.Damages)
 	}
 
 	// Notify listeners about the attack packet.
@@ -124,7 +125,7 @@ func (h *Attack) callOnAttackScript(ctx *core.ClientContext, character *entity.C
 	thread.Pop(1)
 }
 
-// callSkillHook calls a per-skill Lua hook function (e.g. on_activating/on_attack/on_activated)
+// callSkillHook calls a per-skill Lua hook function (e.g. on_activating/on_activated)
 // defined in script/skill/<skillID>.lua. Missing scripts or functions are treated as no-op.
 func (h *Attack) callSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) {
 	if skillID == 0 || ctx.LogicActorPID == nil {
@@ -151,6 +152,45 @@ func (h *Attack) callSkillHook(ctx *core.ClientContext, character *entity.Charac
 		return
 	}
 	_ = result
+}
+
+// callSkillOnAttackHook calls the per-skill on_attack hook with (me, skill, damages).
+// Use this for attack flows; damages table is built in the skill script's thread.
+func (h *Attack) callSkillOnAttackHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, mapInstance *entity.Map, damages []dto.AttackPair) {
+	if skillID == 0 || ctx.LogicActorPID == nil {
+		return
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return
+	}
+	skillEntry := character.Skills[skillID]
+	if skillEntry == nil {
+		return
+	}
+
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		return
+	}
+	defer thread.Close()
+
+	f := thread.GetGlobal("on_attack")
+	if f.Type() != lua.LTFunction {
+		return
+	}
+
+	damagesTable := buildDamagesTable(thread, mapInstance, damages)
+	thread.Push(f)
+	thread.Push(luax.NewLuable(thread, character))
+	thread.Push(luax.NewLuable(thread, skillEntry))
+	thread.Push(damagesTable)
+	if err := thread.PCall(3, 1, nil); err != nil {
+		log.Printf("Skill hook on_attack failed for %s: %v", scriptPath, err)
+		return
+	}
+	thread.Pop(1)
 }
 
 func buildAttackInfoTable(L *lua.LState, ranged bool, consumeSlot uint16) *lua.LTable {

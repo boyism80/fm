@@ -6,7 +6,6 @@ import (
 )
 
 // UpdateRemoteBuff notifies other clients on the map that a character gained buff(s).
-// "Remote" = another character (observed by others). Broadcast to map for display.
 type UpdateRemoteBuff struct {
 	CharacterID int32
 	Buffs       []dto.BuffEntry
@@ -20,10 +19,9 @@ func (p *UpdateRemoteBuff) Serialize(writer *stream.StreamWriter) error {
 	}
 	buffs := make([]dto.BuffEntry, len(p.Buffs))
 	copy(buffs, p.Buffs)
-	sortBuffs(buffs)
-
+	SortBuffEntries(buffs)
 	writer.Write32(p.CharacterID)
-	if err := writeBuffMask(writer, buffs); err != nil {
+	if err := WriteMask(writer, SlotsFromBuffEntries(buffs)); err != nil {
 		return err
 	}
 	for _, e := range buffs {

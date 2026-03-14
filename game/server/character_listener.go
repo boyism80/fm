@@ -408,6 +408,47 @@ func (l *CharacterListenerImpl) OnBuffRemoved(character *entity.Character, flags
 	}
 }
 
+func (l *CharacterListenerImpl) OnDebuffAdded(character *entity.Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32) {
+	character.Send(&response.GiveDebuff{
+		Disease:    disease,
+		X:          x,
+		SkillID:    skillID,
+		SkillLevel: skillLevel,
+		DurationMs: durationMs,
+	}, types.SEND_POLICY_ENCRYPT)
+
+	mapInstance := character.GetMap()
+	if mapInstance != nil {
+		mapInstance.Broadcast(&response.GiveRemoteDebuff{
+			CharacterID: int32(character.GetID()),
+			Disease:     disease,
+			X:           x,
+			SkillID:     skillID,
+			SkillLevel:  skillLevel,
+		}, &entity.BroadcastOption{
+			ExceptPlayerIDs:    []uint32{character.GetID()},
+			ReferenceCharacter: character,
+			RecipientFilter:    entity.BroadcastVisibleByReference,
+		})
+	}
+}
+
+func (l *CharacterListenerImpl) OnDebuffRemoved(character *entity.Character, flags []constant.DebuffFlag) {
+	character.Send(&response.RemoveDebuff{Diseases: flags}, types.SEND_POLICY_ENCRYPT)
+
+	mapInstance := character.GetMap()
+	if mapInstance != nil {
+		mapInstance.Broadcast(&response.RemoveRemoteDebuff{
+			CharacterID: int32(character.GetID()),
+			Diseases:    flags,
+		}, &entity.BroadcastOption{
+			ExceptPlayerIDs:    []uint32{character.GetID()},
+			ReferenceCharacter: character,
+			RecipientFilter:    entity.BroadcastVisibleByReference,
+		})
+	}
+}
+
 func (l *CharacterListenerImpl) OnSkillCooldown(skillID uint32, remainingSec uint16) {
 	l.ch.Send(&response.SkillCooldown{
 		SkillID:      skillID,
@@ -433,7 +474,7 @@ func (l *CharacterListenerImpl) OnHiddenChanged(hidden bool) {
 		mapInstance.Broadcast(&response.SpawnPlayer{
 			Character:       l.ch.ToDTO(),
 			BuffStates:      [4]uint32{},
-			Diseases:        [4]uint32{},
+			Diseases:        l.ch.GetDiseaseMask(),
 			CrushRings:      entity.RingsToDTO(l.ch.Rings.Left),
 			FriendshipRings: entity.RingsToDTO(l.ch.Rings.Mid),
 			MarriageRings:   entity.RingsToDTO(l.ch.Rings.Right),

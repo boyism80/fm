@@ -76,4 +76,5 @@ func (gs *GameServer) registerCommandHandlers() {
 	Bind[*MasterSkills](gs.commandHandler)
 	Bind[*SpawnNpc](gs.commandHandler)
 	Bind[*Script](gs.commandHandler)
+	Bind[*PacketLog](gs.commandHandler)
 }

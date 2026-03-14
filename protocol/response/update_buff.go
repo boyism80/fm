@@ -22,9 +22,8 @@ func (p *UpdateBuff) Serialize(writer *stream.StreamWriter) error {
 	}
 	buffs := make([]dto.BuffEntry, len(p.Buffs))
 	copy(buffs, p.Buffs)
-	sortBuffs(buffs)
-
-	if err := writeBuffMask(writer, buffs); err != nil {
+	SortBuffEntries(buffs)
+	if err := WriteMask(writer, SlotsFromBuffEntries(buffs)); err != nil {
 		return err
 	}
 	for _, buff := range buffs {

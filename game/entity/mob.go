@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sort"
 	"sync"
 	"time"
 
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	lua "github.com/yuin/gopher-lua"
@@ -14,9 +16,9 @@ import (
 
 type mobMobStatusEntry struct {
 	value             int32
-	Wz                *wz.Skill // skill that applied this debuff (nil if non-skill); packet uses Wz.ID when non-nil
+	Wz                *wz.Skill
 	Level             uint8
-	CauserCharacterID uint32 // character ID who applied the debuff (for EXP/drops when mob dies from DoT); 0 if none
+	CauserCharacterID uint32
 	expiresAt         time.Time
 	cancelTimer       *time.Timer
 }
@@ -38,12 +40,10 @@ func (m *Mob) Is(typ constant.ObjectType) bool {
 	return m.GetObjectType().Has(typ)
 }
 
-// GetObject implements ObjectProvider (Mob embeds Life which embeds Object).
 func (m *Mob) GetObject() *Object {
 	return &m.Life.Object
 }
 
-// Luable interface implementation
 func (m *Mob) LuaTypeName() string {
 	return "LuaMob"
 }
@@ -60,7 +60,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			argc := L.GetTop()
 			if argc == 1 {
-				// Getter: return id
+
 				L.Push(lua.LNumber(mob.Wz.ID))
 				return 1
 			} else {
@@ -78,7 +78,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			argc := L.GetTop()
 			if argc == 1 {
-				// Getter: return name (using ID as name for now)
+
 				L.Push(lua.LString(fmt.Sprintf("Mob_%d", mob.Wz.ID)))
 				return 1
 			} else {
@@ -96,7 +96,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			argc := L.GetTop()
 			if argc == 1 {
-				// Getter: return exp
+
 				L.Push(lua.LNumber(mob.Wz.EXP))
 				return 1
 			} else {
@@ -114,11 +114,11 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			argc := L.GetTop()
 			if argc == 1 {
-				// Getter: return foothold
+
 				L.Push(lua.LNumber(mob.Foothold))
 				return 1
 			} else if argc == 2 {
-				// Setter: foothold(value)
+
 				foothold := L.CheckInt(2)
 				mob.Foothold = int16(foothold)
 				return 0
@@ -233,7 +233,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-			// Convert wz.Mob to Lua table
+
 			tbl := L.NewTable()
 			if mob.Wz != nil {
 				tbl.RawSetString("id", lua.LNumber(mob.Wz.ID))
@@ -284,6 +284,55 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(killed))
 			return 1
 		},
+		"controller": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			argc := L.GetTop()
+			if argc == 1 {
+				mapInstance := mob.GetObject().GetMap()
+				if mapInstance == nil {
+					L.Push(lua.LNil)
+					return 1
+				}
+				ct := mapInstance.GetControllerTable()
+				controller, ok := ct.GetController(mob)
+				if !ok {
+					L.Push(lua.LNil)
+					return 1
+				}
+				L.Push(luax.NewLuable(L, controller))
+				return 1
+			}
+			if argc == 2 {
+				var ch *Character
+				if L.Get(2) != lua.LNil {
+					cud, ok := L.Get(2).(*lua.LUserData)
+					if !ok {
+						L.ArgError(2, "controller must be Character or nil")
+						return 0
+					}
+					var isChar bool
+					ch, isChar = cud.Value.(*Character)
+					if !isChar {
+						L.ArgError(2, "controller must be Character or nil")
+						return 0
+					}
+				}
+				mapInstance := mob.GetObject().GetMap()
+				if mapInstance == nil {
+					return 0
+				}
+				ct := mapInstance.GetControllerTable()
+				ct.SwitchController(mob, ch)
+				return 0
+			}
+			L.ArgError(2, "controller() requires 0 or 1 arguments")
+			return 0
+		},
 	}
 }
 
@@ -295,12 +344,6 @@ func (m *Mob) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
-// ApplyMobStatus applies a debuff (e.g. FREEZE) to the mob with optional duration. If durationMs > 0, a timer clears the debuff when it expires.
-// causer is the character who applied the debuff; when the mob dies from this debuff (e.g. DoT), EXP/drops can be attributed to that character.
-// Internally only the character ID is stored on the debuff entry so reconnects do not break attribution.
-// Re-applying the same debuff type: existing entry is removed (timer stopped, no cancel packet), then a new entry is created (no apply packet). Same observable behavior as refresh.
-// skillWz and skillLevel identify the skill that applied the debuff; packet uses skillWz.ID when non-nil.
-// Boss check (FREEZE/STUN/SEAL not applied to boss) is the caller's responsibility.
 func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causer *Character) {
 	m.debuffMu.Lock()
 	if m.debuffs == nil {
@@ -348,7 +391,6 @@ func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs 
 	}
 }
 
-// CancelMobStatus removes a debuff and notifies the map listener (broadcast cancel packet).
 func (m *Mob) CancelMobStatus(debuff constant.MobStatus) {
 	m.debuffMu.Lock()
 	entry, ok := m.debuffs[debuff]
@@ -368,7 +410,6 @@ func (m *Mob) CancelMobStatus(debuff constant.MobStatus) {
 	}
 }
 
-// HasMobStatus returns whether the mob currently has the given debuff.
 func (m *Mob) HasMobStatus(debuff constant.MobStatus) bool {
 	m.debuffMu.RLock()
 	defer m.debuffMu.RUnlock()
@@ -376,8 +417,6 @@ func (m *Mob) HasMobStatus(debuff constant.MobStatus) bool {
 	return ok
 }
 
-// GetCauserCharacterID returns the character ID who applied the given debuff, or 0 if the debuff is not present or has no causer.
-// Used when the mob dies from that debuff (e.g. DoT) to attribute EXP/drops; resolve via map.GetPlayer(id).
 func (m *Mob) GetCauserCharacterID(debuff constant.MobStatus) uint32 {
 	m.debuffMu.RLock()
 	defer m.debuffMu.RUnlock()
@@ -388,7 +427,6 @@ func (m *Mob) GetCauserCharacterID(debuff constant.MobStatus) uint32 {
 	return entry.CauserCharacterID
 }
 
-// ClearAllMobStatusTimers stops all debuff timers without notifying. Used when mob is removed from map.
 func (m *Mob) ClearAllMobStatusTimers() {
 	m.debuffMu.Lock()
 	defer m.debuffMu.Unlock()
@@ -400,7 +438,34 @@ func (m *Mob) ClearAllMobStatusTimers() {
 	m.debuffs = nil
 }
 
-// Serialize method removed - use DTO instead
+type debuffForPacket struct {
+	Status  constant.MobStatus
+	Value   int32
+	SkillID uint32
+}
+
+func (m *Mob) getDebuffMaskAndEntries() (mask uint32, entries []debuffForPacket) {
+	m.debuffMu.RLock()
+	defer m.debuffMu.RUnlock()
+	if len(m.debuffs) == 0 {
+		return 0, nil
+	}
+	mask = 0
+	entries = make([]debuffForPacket, 0, len(m.debuffs))
+	for status, entry := range m.debuffs {
+		if entry == nil {
+			continue
+		}
+		mask |= uint32(status)
+		skillID := uint32(0)
+		if entry.Wz != nil {
+			skillID = entry.Wz.ID
+		}
+		entries = append(entries, debuffForPacket{Status: status, Value: entry.value, SkillID: skillID})
+	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Status < entries[j].Status })
+	return mask, entries
+}
 
 func (m *Mob) dropItems(attacker *Character) {
 	mapInstance := m.GetObject().GetMap()
@@ -414,7 +479,6 @@ func (m *Mob) dropItems(attacker *Character) {
 		return
 	}
 
-	// Collect all drops first to calculate positions
 	var drops []struct {
 		isMeso bool
 		count  int32
@@ -465,16 +529,15 @@ func (m *Mob) dropItems(attacker *Character) {
 				item   Item
 			}{isMeso: true, count: count, item: nil})
 		} else {
-			// Generate item drop
+
 			count := uint16(1)
 			if drop.Max != 0 && drop.Min != 0 {
 				count = uint16(rand.Intn(int(drop.Max-drop.Min)+1) + int(drop.Min))
 			}
 
-			// Create item using NewItem function
 			item, err := NewItem(drop.Item, count, m.Context)
 			if err != nil {
-				continue // Skip if item creation fails
+				continue
 			}
 			drops = append(drops, struct {
 				isMeso bool
@@ -499,16 +562,16 @@ func (m *Mob) dropItems(attacker *Character) {
 		}
 
 		if drop.isMeso {
-			// Spawn meso drop
+
 			if _, err := mapInstance.SpawnMeso(drop.count, destPoint, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
 				log.Printf("Failed to spawn meso drop: %v", err)
 			}
 		} else {
-			// Bind drop information to item
+
 			drop.item.BindDrop(&Drop{
 				Object: &Object{
-					OID:      0,         // Will be set by Map.SpawnItem
-					Position: destPoint, // Use calculated position (X calculated, Y is mob Y)
+					OID:      0,
+					Position: destPoint,
 					Context:  m.Context,
 				},
 				Owner:        attacker.GetID(),
@@ -516,7 +579,6 @@ func (m *Mob) dropItems(attacker *Character) {
 				DropType:     constant.DROP_TYPE_OWNED,
 			})
 
-			// Spawn item drop
 			if err := mapInstance.SpawnItem(drop.item, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}
@@ -529,7 +591,6 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		return false
 	}
 
-	// Clamp to current HP so we do not underflow.
 	damage := amount
 	if damage > uint32(m.Hp) {
 		damage = uint32(m.Hp)
@@ -538,7 +599,6 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 	m.Hp -= uint16(damage)
 	isDead := m.Hp == 0
 
-	// If mob is still alive, only HP bar update is needed.
 	if !isDead {
 		if attacker != nil && attacker.Listener != nil {
 			maxHp := m.GetMaxHp()
@@ -551,7 +611,6 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		return false
 	}
 
-	// Mob dies - handle all death-related logic.
 	if attacker != nil {
 		log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
 
@@ -561,19 +620,16 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		}
 		attacker.AddExp(exp)
 
-		// Generate mob drops
 		m.dropItems(attacker)
 	} else {
 		log.Printf("Mob %d (ID: %d) killed with no attacker", m.OID, m.Wz.ID)
 	}
 
-	// Remove mob from map
 	mapInstance := m.GetObject().GetMap()
 	if mapInstance != nil {
 		mapInstance.RemoveMob(m.OID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT)
 	}
 
-	// Send mob HP update to attacker via listener (0% HP)
 	if attacker != nil && attacker.Listener != nil {
 		attacker.Listener.OnShowMobHp(m, 0)
 	}

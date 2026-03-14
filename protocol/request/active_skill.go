@@ -5,20 +5,24 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-type ActiveSkill struct {
-	OldX       int16
-	OldY       int16
-	SkillID    uint32
-	SkillLevel uint8
+// MagnetMobEntry holds the result for a single mob pulled by Monster Magnet.
+type MagnetMobEntry struct {
+	OID     uint32
+	Success bool
+}
 
-	// Skill-specific data (varies by SkillID)
-	// For Rush skills (1121001, 1221001, 1321001):
-	MobID     uint32
-	Success   byte
+type MagnetMobData struct {
+	Mobs      []MagnetMobEntry
 	Direction byte
+}
 
-	// For other skills (optional position):
-	Position *types.Vector2[int16]
+type ActiveSkill struct {
+	OldX          int16
+	OldY          int16
+	SkillID       uint32
+	SkillLevel    uint8
+	MagnetMobData MagnetMobData
+	Position      *types.Vector2[int16]
 }
 
 func (s *ActiveSkill) Serialize(writer *stream.StreamWriter) error {
@@ -42,23 +46,29 @@ func (s *ActiveSkill) Deserialize(reader *stream.StreamReader) error {
 
 	available := reader.Remaining()
 
-	// Rush skills (1121001, 1221001, 1321001)
-	if s.SkillID == 1121001 || s.SkillID == 1221001 || s.SkillID == 1321001 {
-		if available >= 6 {
-			if s.MobID, err = reader.ReadU32(); err != nil {
-				return err
-			}
-			if s.Success, err = reader.ReadU8(); err != nil {
-				return err
-			}
-			if s.Direction, err = reader.ReadU8(); err != nil {
-				return err
-			}
+	switch s.SkillID {
+	case 1121001, 1221001, 1321001:
+		var count uint32
+		if count, err = reader.ReadU32(); err != nil {
+			return err
 		}
-	} else if s.SkillID == 9001004 {
-		// Hidden toggle - no additional data
-	} else {
-		// Other skills - optional position
+		s.MagnetMobData.Mobs = make([]MagnetMobEntry, 0, count)
+		for i := uint32(0); i < count; i++ {
+			var entry MagnetMobEntry
+			if entry.OID, err = reader.ReadU32(); err != nil {
+				return err
+			}
+			var raw uint8
+			if raw, err = reader.ReadU8(); err != nil {
+				return err
+			}
+			entry.Success = raw != 0
+			s.MagnetMobData.Mobs = append(s.MagnetMobData.Mobs, entry)
+		}
+		if s.MagnetMobData.Direction, err = reader.ReadU8(); err != nil {
+			return err
+		}
+	default:
 		if available == 5 || available == 7 {
 			var x, y int16
 			if x, err = reader.Read16(); err != nil {

@@ -28,7 +28,7 @@ function on_script(me)
     local x, y = me:position()
     me:chat(string.format("position: %d, %d", x, y))
 
-    me:class(322)
+    me:class(112)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -47,7 +47,9 @@ function on_script(me)
     me:mkitem('산양 석궁')
     me:mkitem('활전용 화살', 200)
     me:mkitem('석궁전용 화살', 200)
-    me:base_dex(1280)
+    me:mkitem('사각 나무 방패', 1)
+    me:base_dex(4)
+    
     me:base_luk(4)
     me:level(200)
     me:map('오르비스탑입구')
@@ -141,6 +143,37 @@ function on_damaged(me, attacker, skill, damage)
     d = handle_meso_guard(me, attacker, skill, d)
     d = handle_power_guard(me, attacker, skill, d)
     return d
+end
+
+function on_blocked(me, attacker)
+    if me == nil or attacker == nil then
+        return
+    end
+    local class = me:class()
+    local block_skill_id
+    if class == Class.Hero then
+        block_skill_id = Skill.Guardian
+    elseif class == Class.Paladin then
+        block_skill_id = Skill.Guardian1220006
+    else
+        return
+    end
+    local skill = me:skill(block_skill_id)
+    if skill == nil then
+        return
+    end
+    local effect = get_skill_effect(skill)
+    if effect == nil then
+        return
+    end
+    local prop = effect.prop or 0
+    local duration_ms = effect.time or 0
+    if prop <= 0 or duration_ms <= 0 then
+        return
+    end
+    if math.random(1, 100) <= math.min(100, prop) then
+        attacker:set_status(MobStatus.Stun, 1, duration_ms, skill, me)
+    end
 end
 
 function on_equipment_changed(me, part, before, after)

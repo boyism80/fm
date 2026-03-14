@@ -144,6 +144,22 @@ function apply_iron_body(me, skill)
 	me:buff(skill, BuffFlag.WeaponDef, pdd)
 end
 
+function apply_monster_magnet(me, skill, params)
+	if params == nil or params.magnet == nil then
+		return
+	end
+	local magnet_direction = params.magnet.direction or 3
+	me:show_buffeffect(skill, 1, magnet_direction)
+	for _, entry in ipairs(params.magnet.mobs) do
+		local mob = entry.mob
+		local success = entry.success
+		if mob then
+			me:show_magnet(mob, success)
+			mob:controller(me)
+		end
+	end
+end
+
 -- Consumes combo orbs from the ComboAttack buff.
 -- If howmany is nil, consumes all orbs except leaves at least 1 (matching old server behavior).
 function consume_combo_orbs(me, howmany)
@@ -165,4 +181,8 @@ function consume_combo_orbs(me, howmany)
 	end
 
 	me:buff_value(BuffFlag.Combo, new_orbs)
+end
+
+function apply_hero_will(me)
+	me:remove_debuff(DebuffFlag.Seduce)
 end

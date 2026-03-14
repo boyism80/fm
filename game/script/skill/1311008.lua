@@ -31,7 +31,7 @@ local function get_attack_bonus(skill)
     return effect.pad or 0
 end
 
-function on_activated(me, skill)
+function on_activated(me, skill, params)
     local hp_loss, bonus = params(skill)
     local buff = me:buff(skill, {[BuffFlag.DragonBlood] = hp_loss, [BuffFlag.WeaponAtk] = bonus})
 end

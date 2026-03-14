@@ -68,7 +68,15 @@ type Character struct {
 	BaseStats      BaseStats
 	BonusStats     BonusStats
 	Buffs          *BuffContainer
+	diseases       map[constant.DebuffFlag]*DiseaseValueHolder
 	timers         map[string]*CharacterTimer
+}
+
+// DiseaseValueHolder holds one applied disease (mirrors MapleDiseaseValueHolder: disease, start time, duration).
+type DiseaseValueHolder struct {
+	Disease   constant.DebuffFlag
+	StartTime time.Time
+	Duration  time.Duration
 }
 
 type CharacterTimer struct {
@@ -705,4 +713,82 @@ func (ch *Character) broadcastLevelUpEffect() {
 		ReferenceCharacter: ch,
 		RecipientFilter:    BroadcastVisibleByReference,
 	})
+}
+
+func debuffTimerKey(flag constant.DebuffFlag) string {
+	return fmt.Sprintf("debuff_%d_%d", flag.Position, flag.Mask)
+}
+
+func (ch *Character) HasDebuff(flag constant.DebuffFlag) bool {
+	if ch.diseases == nil {
+		return false
+	}
+	_, ok := ch.diseases[flag]
+	return ok
+}
+
+func (ch *Character) AddDebuff(holder *DiseaseValueHolder) {
+	if holder == nil {
+		return
+	}
+	if ch.diseases == nil {
+		ch.diseases = make(map[constant.DebuffFlag]*DiseaseValueHolder)
+	}
+	ch.RemoveTimer(debuffTimerKey(holder.Disease))
+	ch.diseases[holder.Disease] = holder
+	if holder.Duration > 0 {
+		flag := holder.Disease
+		ch.addTimer(debuffTimerKey(flag), holder.Duration, false, func() {
+			ch.RemoveTimer(debuffTimerKey(flag))
+			if _, ok := ch.diseases[flag]; ok {
+				delete(ch.diseases, flag)
+				if ch.Listener != nil {
+					ch.Listener.OnDebuffRemoved(ch, []constant.DebuffFlag{flag})
+				}
+			}
+		})
+	}
+}
+
+// GiveDebuff adds the disease to the character (refresh if already present), starts duration timer, and notifies the listener to send GiveDebuff/GiveRemoteDebuff packets.
+func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration, x int16, skillID uint16, skillLevel uint16) {
+	holder := &DiseaseValueHolder{
+		Disease:   flag,
+		StartTime: time.Now(),
+		Duration:  duration,
+	}
+	ch.AddDebuff(holder)
+	if ch.Listener != nil {
+		ch.Listener.OnDebuffAdded(ch, flag, x, skillID, skillLevel, int32(duration.Milliseconds()))
+	}
+}
+
+func (ch *Character) RemoveDebuff(flags ...constant.DebuffFlag) {
+	var removed []constant.DebuffFlag
+	if ch.diseases != nil {
+		for _, flag := range flags {
+			ch.RemoveTimer(debuffTimerKey(flag))
+			if _, ok := ch.diseases[flag]; ok {
+				delete(ch.diseases, flag)
+				removed = append(removed, flag)
+			}
+		}
+	}
+	if len(removed) > 0 && ch.Listener != nil {
+		ch.Listener.OnDebuffRemoved(ch, removed)
+	}
+}
+
+func (ch *Character) GetDiseaseMask() [4]uint32 {
+	var mask [4]uint32
+	if ch.diseases == nil {
+		return mask
+	}
+	for flag := range ch.diseases {
+		idx := flag.Position - 1
+		if idx >= 0 && idx < constant.MaxBuffFlag {
+			mask[idx] |= flag.Mask
+		}
+	}
+	return mask
 }

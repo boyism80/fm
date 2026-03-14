@@ -1921,7 +1921,7 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 					case "time":
 						levelData.Time = time.Duration(intField.Value) * time.Second
 					case "cooltime":
-						levelData.Cooldown = time.Duration(intField.Value) * time.Millisecond
+						levelData.Cooldown = time.Duration(intField.Value) * time.Second
 					case "morph":
 						levelData.Morph = intField.Value
 					case "x":

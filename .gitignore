@@ -27,3 +27,5 @@ go.work.sum
 resources/wz
 imgs
 docs
+
+/scripts

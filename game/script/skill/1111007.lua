@@ -1,8 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 아머 크래쉬
--- Cancels WEAPON_DEFENSE_UP (물리가드 업) on affected mobs with prop% chance each, up to mobCount targets.
--- WZ: prop 24~100, mobCount 6; req 1111008 (Shout) level 3+.
 
-function on_activated(me, skill)
+function on_activated(me, skill, params)
 	local map = me:map()
 	if map == nil then
 		return

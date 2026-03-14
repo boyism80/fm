@@ -7,6 +7,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
@@ -15,6 +16,19 @@ import (
 	"github.com/boyism80/fm/types"
 	// lua "github.com/yuin/gopher-lua" // Commented out: LogicThread removed
 )
+
+// packetLogEnabled controls whether each received client packet is logged (opcode + payload). Default false.
+var packetLogEnabled atomic.Bool
+
+// SetPacketLogEnabled sets whether to log received client packets. Call from Lua builtin or elsewhere to toggle.
+func SetPacketLogEnabled(b bool) {
+	packetLogEnabled.Store(b)
+}
+
+// GetPacketLogEnabled returns whether received client packets are currently logged.
+func GetPacketLogEnabled() bool {
+	return packetLogEnabled.Load()
+}
 
 type Server struct {
 	listener           net.Listener
