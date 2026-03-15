@@ -172,3 +172,16 @@ func (ch *Character) ConsumeMP(amount uint16) bool {
 	}
 	return true
 }
+
+func (ch *Character) ConsumeHP(amount uint16) bool {
+	if ch.Hp <= amount {
+		return false
+	}
+	ch.Hp -= amount
+	if ch.Listener != nil {
+		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+			constant.STAT_HP: int32(ch.Hp),
+		}, false)
+	}
+	return true
+}

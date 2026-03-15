@@ -643,6 +643,91 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 0
 		},
+		"role": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.Role))
+				return 1
+			case 2:
+				ch.Role = constant.CharacterRole(L.CheckInt(2))
+				return 0
+			default:
+				L.ArgError(2, "role() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+		"invincible": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LBool(ch.GetInvincible()))
+				return 1
+			case 2:
+				ch.SetInvincible(L.CheckBool(2))
+				return 0
+			default:
+				L.ArgError(2, "invincible() requires 0 or 1 arguments")
+				return 0
+			}
+		},
+		"script": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			if argc < 3 {
+				L.ArgError(2, "script(scriptPath, funcName, ...) requires at least 2 arguments")
+				return 0
+			}
+			scriptPath := L.CheckString(2)
+			funcName := L.CheckString(3)
+			args := make([]interface{}, 0, argc-2)
+			args = append(args, ch)
+			for i := 4; i <= argc; i++ {
+				if v, ok := luax.LValueToInterface(L.Get(i)); ok {
+					args = append(args, v)
+				}
+			}
+			pid := luax.GetThreadPID(L)
+			if pid == nil {
+				L.RaiseError("script: thread has no actor PID (call from command context)")
+				return 0
+			}
+			root := luax.GetRootLuaState(pid.String())
+			if root == nil {
+				L.RaiseError("script: root lua state not found")
+				return 0
+			}
+			result, thread, err := luax.Call(root, scriptPath, funcName, args...)
+			if thread != nil {
+				thread.Close()
+			}
+			if err != nil {
+				L.RaiseError("script: %v", err)
+				return 0
+			}
+			if result != nil {
+				L.Push(result)
+				return 1
+			}
+			return 0
+		},
 		"skill": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1343,41 +1428,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
-		"show_buffeffect": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			skillUD := L.CheckUserData(2)
-			if skillUD.Value == nil {
-				L.ArgError(2, "Skill expected")
-				return 0
-			}
-			skill, ok := skillUD.Value.(*SkillEntry)
-			if !ok || skill.Skill == nil {
-				L.ArgError(2, "Skill expected (with WZ data)")
-				return 0
-			}
-			effectID := uint8(L.CheckInt(3))
-			var dir *uint8
-			if L.GetTop() >= 4 {
-				d := uint8(L.CheckInt(4))
-				dir = &d
-			}
-			m := ch.GetMap()
-			if m != nil {
-				m.Broadcast(&response.ShowBuffeffect{
-					CharacterID: ch.GetID(),
-					EffectID:    effectID,
-					SkillID:     skill.Skill.ID,
-					SkillLevel:  uint8(skill.SkillLevel),
-					Direction:   dir,
-				}, nil)
-			}
-			return 0
-		},
 		"show_magnet": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1425,10 +1475,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(argIndex, "DebuffFlag table must have numeric mask and position")
 					return constant.DebuffFlag{}, false
 				}
-				return constant.DebuffFlag{
+				f := constant.DebuffFlag{
 					Mask:     uint32(maskLV.(lua.LNumber)),
 					Position: int(posLV.(lua.LNumber)),
-				}, true
+				}
+				if debuffLV := tbl.RawGetString("debuff"); debuffLV.Type() == lua.LTNumber {
+					f.DiseaseSkillID = uint16(debuffLV.(lua.LNumber))
+				}
+				return f, true
 			}
 			flag, ok := parseDebuffFlag(L.Get(2), 2)
 			if !ok {
@@ -1439,8 +1493,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(3, "duration_ms must be positive")
 				return 0
 			}
-			var x int16
-			var skillID, skillLevel uint16
+			x := int16(1)
+			skillID := flag.DiseaseSkillID
+			skillLevel := uint16(1)
 			if L.GetTop() >= 4 {
 				x = int16(L.CheckNumber(4))
 			}
@@ -1472,10 +1527,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(argIndex, "DebuffFlag table must have numeric mask and position")
 					return constant.DebuffFlag{}, false
 				}
-				return constant.DebuffFlag{
+				f := constant.DebuffFlag{
 					Mask:     uint32(maskLV.(lua.LNumber)),
 					Position: int(posLV.(lua.LNumber)),
-				}, true
+				}
+				if debuffLV := tbl.RawGetString("debuff"); debuffLV.Type() == lua.LTNumber {
+					f.DiseaseSkillID = uint16(debuffLV.(lua.LNumber))
+				}
+				return f, true
 			}
 			var flags []constant.DebuffFlag
 			for i := 2; i <= L.GetTop(); i++ {
@@ -1510,6 +1569,128 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
+		},
+		"equip": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() < 2 {
+				L.ArgError(2, "equip(slot | item | name) requires one argument")
+				return 0
+			}
+			var slot int16
+			switch lv := L.Get(2).(type) {
+			case lua.LNumber:
+				slot = int16(lv)
+			case lua.LString:
+				if ch.Context == nil {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				resources := ch.Context.GetResources()
+				if resources == nil {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				itemID, ok := resources.NameToItem(string(lv))
+				if !ok {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				invType, slots := ch.FindSlots(itemID)
+				if invType != constant.INVENTORY_TYPE_EQUIPMENT || len(slots) == 0 {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				slot = slots[0]
+			default:
+				if itemUD, ok := L.Get(2).(*lua.LUserData); ok && itemUD.Value != nil {
+					if item, ok := itemUD.Value.(Item); ok {
+						var found bool
+						slot, found = ch.FindSlot(constant.INVENTORY_TYPE_EQUIPMENT, item)
+						if !found {
+							L.Push(lua.LBool(false))
+							return 1
+						}
+						break
+					}
+				}
+				L.ArgError(2, "equip(slot | item | name): slot (number), item (equipment), or name (string) expected")
+				return 0
+			}
+			err := ch.Equip(slot)
+			L.Push(lua.LBool(err == nil))
+			return 1
+		},
+		"unequip": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() < 2 {
+				L.ArgError(2, "unequip(parts | item | name) requires one argument")
+				return 0
+			}
+			var parts constant.EquipmentPartsType
+			switch lv := L.Get(2).(type) {
+			case lua.LNumber:
+				parts = constant.EquipmentPartsType(lv)
+			case lua.LString:
+				if ch.Context == nil {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				resources := ch.Context.GetResources()
+				if resources == nil {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				itemID, ok := resources.NameToItem(string(lv))
+				if !ok {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				var found bool
+				for p, eq := range ch.Equipments {
+					if eq != nil && eq.GetModel().GetID() == itemID {
+						parts = p
+						found = true
+						break
+					}
+				}
+				if !found {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+			default:
+				if itemUD, ok := L.Get(2).(*lua.LUserData); ok && itemUD.Value != nil {
+					if item, ok := itemUD.Value.(Item); ok {
+						var found bool
+						for p, eq := range ch.Equipments {
+							if eq == item {
+								parts = p
+								found = true
+								break
+							}
+						}
+						if !found {
+							L.Push(lua.LBool(false))
+							return 1
+						}
+						break
+					}
+				}
+				L.ArgError(2, "unequip(parts | item | name): parts (EquipmentPart), item (equipment), or name (string) expected")
+				return 0
+			}
+			err := ch.Unequip(parts)
+			L.Push(lua.LBool(err == nil))
+			return 1
 		},
 		"item": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

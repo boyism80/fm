@@ -13,7 +13,7 @@ type Equipment struct {
 	UniqueId      int64
 	Expiration    time.Time // Time.Time for proper serialization
 	EnchantChance uint8
-	Level         uint8
+	EnchantCount  uint8
 	Str           uint16
 	Dex           uint16
 	Int           uint16
@@ -64,7 +64,7 @@ func (e *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int1
 
 	writer.WriteDateTime(e.Expiration)
 	writer.WriteU8(e.EnchantChance)
-	writer.WriteU8(e.Level)
+	writer.WriteU8(e.EnchantCount)
 	writer.WriteU16(e.Str)
 	writer.WriteU16(e.Dex)
 	writer.WriteU16(e.Int)

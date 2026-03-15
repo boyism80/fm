@@ -8,9 +8,17 @@ import (
 )
 
 func Call(root *lua.LState, scriptPath string, funcName string, args ...interface{}) (lua.LValue, *lua.LState, error) {
+	return CallWithPID(root, nil, scriptPath, funcName, args...)
+}
+
+func CallWithPID(root *lua.LState, pid *actor.PID, scriptPath string, funcName string, args ...interface{}) (lua.LValue, *lua.LState, error) {
 	thread, err := NewThread(root, scriptPath)
 	if err != nil {
 		return nil, nil, err
+	}
+	if pid != nil {
+		SetThreadPID(thread, pid)
+		defer ClearThreadPID(thread)
 	}
 	f := thread.GetGlobal(funcName)
 	if f.Type() != lua.LTFunction {

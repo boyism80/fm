@@ -62,7 +62,7 @@ type Equipment struct {
 	*ItemCore
 	Required        RequiredStats
 	Ability         AbilityStats
-	TUC             uint8
+	EnchantChance   uint8
 	EquipTradeBlock bool
 	RoyalSpecial    bool
 	MasterSpecial   bool

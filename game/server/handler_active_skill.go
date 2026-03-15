@@ -10,6 +10,7 @@ import (
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/protocol/response"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -118,6 +119,15 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 			return nil
 		}
 	}
+	if levelData.HPCon > 0 {
+		hpCon := uint16(levelData.HPCon)
+		if !character.ConsumeHP(hpCon) {
+			if character.Listener != nil {
+				character.Listener.OnUpdateStats(nil, true)
+			}
+			return nil
+		}
+	}
 
 	if ctx.LogicActorPID == nil {
 		if character.Listener != nil {
@@ -192,6 +202,21 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		thread.Close()
 	}
 
+	if !character.IsHidden() {
+		var dir *uint8
+		if req.MagnetMobData != nil {
+			d := req.MagnetMobData.Direction
+			dir = &d
+		}
+		mapInstance.Broadcast(&response.ShowBuffeffect{
+			CharacterID: character.GetID(),
+			EffectID:    1,
+			SkillID:     req.SkillID,
+			SkillLevel:  req.SkillLevel,
+			Direction:   dir,
+		}, nil)
+	}
+
 	if character.Listener != nil {
 		character.Listener.OnUpdateStats(nil, true)
 	}
@@ -200,8 +225,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 
 func buildActiveSkillParams(L *lua.LState, mapInstance *entity.Map, req *request.ActiveSkill) lua.LValue {
 	params := L.NewTable()
-	switch req.SkillID {
-	case 1121001, 1221001, 1321001:
+	if req.MagnetMobData != nil {
 		magnet := L.NewTable()
 		mobs := L.NewTable()
 		for i, entry := range req.MagnetMobData.Mobs {

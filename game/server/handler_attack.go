@@ -56,26 +56,14 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 			return nil
 		}
 		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
-		// Phase 1: per-skill on_activating (pre-attack hook).
 		h.callSkillHook(ctx, character, skillID, "on_activating")
 	}
 
-	// Global attack script (script.lua:on_attack) – may adjust damages etc.
-	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, skillID, false, 0)
-
-	// Apply damage in Go.
-
-	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
-
-	// Phase 2: per-skill on_attack (post-damage, receives me, skill, damages).
-	if skillID != 0 {
-		h.callSkillOnAttackHook(ctx, character, skillID, mapInstance, req.AttackInfo.Damages)
-	}
-
-	// Notify listeners about the attack packet.
+	damages := req.AttackInfo.Damages
+	CallSkillOnAttack(ctx, character, skillID, mapInstance, damages)
+	CallOnAttackScript(ctx, character, mapInstance, damages, skillID, false, 0)
+	ApplyDamageToMobs(character, mapInstance, damages)
 	character.Listener.OnAttack(character, req.AttackInfo, skillLevel)
-
-	// Phase 3: per-skill on_activated (finalization; e.g., consume combo orbs for Panic/Coma).
 	if skillID != 0 {
 		h.callSkillHook(ctx, character, skillID, "on_activated")
 	}
@@ -83,50 +71,6 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	return nil
 }
 
-func (h *Attack) callOnAttackScript(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32, ranged bool, consumeSlot uint16) {
-	if ctx.LogicActorPID == nil {
-		return
-	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
-	if root == nil {
-		return
-	}
-
-	thread, err := luax.NewThread(root, "script/script.lua")
-	if err != nil {
-		log.Printf("Failed to load script: %v", err)
-		return
-	}
-	defer thread.Close()
-
-	f := thread.GetGlobal("on_attack")
-	if f.Type() != lua.LTFunction {
-		return
-	}
-
-	var skillLV lua.LValue = lua.LNil
-	if skillID != 0 {
-		if skillEntry := character.Skills[skillID]; skillEntry != nil {
-			skillLV = luax.NewLuable(thread, skillEntry)
-		}
-	}
-
-	damagesTable := buildDamagesTable(thread, mapInstance, damages)
-	attackInfoTable := buildAttackInfoTable(thread, ranged, consumeSlot)
-	thread.Push(f)
-	thread.Push(luax.NewLuable(thread, character))
-	thread.Push(skillLV)
-	thread.Push(damagesTable)
-	thread.Push(attackInfoTable)
-	if err := thread.PCall(4, 1, nil); err != nil {
-		log.Printf("Failed to call script on_attack: %v", err)
-		return
-	}
-	thread.Pop(1)
-}
-
-// callSkillHook calls a per-skill Lua hook function (e.g. on_activating/on_activated)
-// defined in script/skill/<skillID>.lua. Missing scripts or functions are treated as no-op.
 func (h *Attack) callSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) {
 	if skillID == 0 || ctx.LogicActorPID == nil {
 		return
@@ -147,50 +91,10 @@ func (h *Attack) callSkillHook(ctx *core.ClientContext, character *entity.Charac
 		thread.Close()
 	}
 	if err != nil {
-		// Skill scripts are optional for hooks; log at debug level only.
 		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
 		return
 	}
 	_ = result
-}
-
-// callSkillOnAttackHook calls the per-skill on_attack hook with (me, skill, damages).
-// Use this for attack flows; damages table is built in the skill script's thread.
-func (h *Attack) callSkillOnAttackHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, mapInstance *entity.Map, damages []dto.AttackPair) {
-	if skillID == 0 || ctx.LogicActorPID == nil {
-		return
-	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
-	if root == nil {
-		return
-	}
-	skillEntry := character.Skills[skillID]
-	if skillEntry == nil {
-		return
-	}
-
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	thread, err := luax.NewThread(root, scriptPath)
-	if err != nil {
-		return
-	}
-	defer thread.Close()
-
-	f := thread.GetGlobal("on_attack")
-	if f.Type() != lua.LTFunction {
-		return
-	}
-
-	damagesTable := buildDamagesTable(thread, mapInstance, damages)
-	thread.Push(f)
-	thread.Push(luax.NewLuable(thread, character))
-	thread.Push(luax.NewLuable(thread, skillEntry))
-	thread.Push(damagesTable)
-	if err := thread.PCall(3, 1, nil); err != nil {
-		log.Printf("Skill hook on_attack failed for %s: %v", scriptPath, err)
-		return
-	}
-	thread.Pop(1)
 }
 
 func buildAttackInfoTable(L *lua.LState, ranged bool, consumeSlot uint16) *lua.LTable {
@@ -200,8 +104,6 @@ func buildAttackInfoTable(L *lua.LState, ranged bool, consumeSlot uint16) *lua.L
 	return tbl
 }
 
-// buildDamagesTable builds a Lua table: key = mob, value = array of damage amounts per hit.
-// In Lua: for mob, hits in damages do ... for _, amount in ipairs(hits) do
 func buildDamagesTable(L *lua.LState, mapInstance *entity.Map, damages []dto.AttackPair) *lua.LTable {
 	tbl := L.NewTable()
 	for _, ap := range damages {
@@ -216,6 +118,39 @@ func buildDamagesTable(L *lua.LState, mapInstance *entity.Map, damages []dto.Att
 		tbl.RawSet(luax.NewLuable(L, mob), hits)
 	}
 	return tbl
+}
+
+func readDamagesFromLuaTableInto(damagesTable *lua.LTable, damages []dto.AttackPair) {
+	oidToPairs := make(map[uint32][]dto.DamagePair)
+	damagesTable.ForEach(func(key lua.LValue, value lua.LValue) {
+		ud, ok := key.(*lua.LUserData)
+		if !ok || ud.Value == nil {
+			return
+		}
+		mob, ok := ud.Value.(*entity.Mob)
+		if !ok {
+			return
+		}
+		oid := mob.GetObject().OID
+		hitsTbl, ok := value.(*lua.LTable)
+		if !ok {
+			return
+		}
+		n := hitsTbl.Len()
+		pairs := make([]dto.DamagePair, 0, n)
+		for i := 1; i <= n; i++ {
+			lv := hitsTbl.RawGetInt(i)
+			if num, ok := lv.(lua.LNumber); ok {
+				pairs = append(pairs, dto.DamagePair{Damage: uint32(num), Unknown: false})
+			}
+		}
+		oidToPairs[oid] = pairs
+	})
+	for i := range damages {
+		if pairs, ok := oidToPairs[damages[i].OID]; ok {
+			damages[i].DamagePairs = pairs
+		}
+	}
 }
 
 func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID uint32) bool {
@@ -259,20 +194,13 @@ func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID ui
 			return false
 		}
 	}
-
-	return true
-}
-
-func (h *Attack) applyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {
-	for _, damage := range damages {
-		mob := mapInstance.GetMob(damage.OID)
-		if mob == nil {
-			log.Printf("Mob not found for OID: %d", damage.OID)
-			continue
-		}
-
-		for _, damagePair := range damage.DamagePairs {
-			mob.ApplyDamage(character, uint32(damagePair.Damage))
+	if levelData.HPCon > 0 {
+		hpCon := uint16(levelData.HPCon)
+		if !character.ConsumeHP(hpCon) {
+			log.Printf("Not enough HP for skill %d (required: %d, current: %d)", skillID, hpCon, character.Hp)
+			return false
 		}
 	}
+
+	return true
 }

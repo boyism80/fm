@@ -15,3 +15,10 @@ const (
 	MOB_DIE_ANIMATION_TYPE_DISAPPEAR MobDieAnimationType = 0 // Instant disappear
 	MOB_DIE_ANIMATION_TYPE_FADE_OUT  MobDieAnimationType = 1 // Fade out animation
 )
+
+func AllMobDieAnimationTypes() map[string]MobDieAnimationType {
+	return map[string]MobDieAnimationType{
+		"Disappear": MOB_DIE_ANIMATION_TYPE_DISAPPEAR,
+		"FadeOut":   MOB_DIE_ANIMATION_TYPE_FADE_OUT,
+	}
+}

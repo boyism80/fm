@@ -129,7 +129,7 @@ func NewItem(itemId uint32, count uint16, context GameContext) (Item, error) {
 				Count:      1,
 				Expiration: util.TimeMax,
 			},
-			EnchantChance: eq.TUC,
+			EnchantChance: eq.EnchantChance,
 		}
 		switch constant.GetEquipmentType(itemId) {
 		case constant.EquipmentTypeWeapon:

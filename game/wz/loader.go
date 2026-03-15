@@ -406,7 +406,7 @@ func loadWeapons(path string) (Item, error) {
 		case "incMMP":
 			model.Ability.MaxMP = uint16(intField.Value)
 		case "tuc":
-			model.TUC = uint8(intField.Value)
+			model.EnchantChance = uint8(intField.Value)
 		case "price":
 			model.Price = intField.Value
 		case "attackSpeed":
@@ -1456,6 +1456,8 @@ func loadMob(path string) (*Mob, error) {
 			model.SummonType = uint8(intField.Value)
 		case "mobType":
 			model.MobType = uint8(intField.Value)
+		case "boss":
+			model.Boss = (intField.Value != 0)
 		}
 	}
 
@@ -1482,6 +1484,7 @@ func loadMob(path string) (*Mob, error) {
 		case "flySpeed":
 		case "mpRecovery":
 		case "boss":
+			model.Boss = true
 		case "hpRecovery":
 		case "removeAfter":
 		case "revive":

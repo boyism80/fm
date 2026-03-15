@@ -8,3 +8,10 @@ const (
 	RoleUser  CharacterRole = iota // 일반유저
 	RoleAdmin                      // 관리자
 )
+
+func AllCharacterRoles() map[string]CharacterRole {
+	return map[string]CharacterRole{
+		"User":  RoleUser,
+		"Admin": RoleAdmin,
+	}
+}

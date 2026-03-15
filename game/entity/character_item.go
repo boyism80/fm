@@ -1,9 +1,11 @@
 package entity
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/protocol/response"
 )
 
 func (ch *Character) AddMeso(amount int32) {
@@ -269,4 +271,112 @@ func (ch *Character) GainMeso(amount int32) {
 			constant.STAT_MESO: ch.Meso,
 		}, false)
 	}
+}
+
+func (ch *Character) FindSlot(invType constant.InventoryType, item Item) (int16, bool) {
+	inven := ch.Inventory[invType]
+	if inven == nil || item == nil {
+		return 0, false
+	}
+	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
+		if inven.Items[slot] == item {
+			return slot, true
+		}
+	}
+	return 0, false
+}
+
+func (ch *Character) UnequipToSlot(parts constant.EquipmentPartsType, destSlot int16) error {
+	equipments := ch.Equipments
+	inventory := ch.Inventory
+	if equipments[parts] == nil {
+		return nil
+	}
+	inven := inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	if inven == nil || inven.Items[destSlot] != nil {
+		return ErrSlotAlreadyOccupied
+	}
+	inven.Items[destSlot] = equipments[parts]
+	delete(equipments, parts)
+	if ch.Listener != nil {
+		ch.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), destSlot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
+		ch.Listener.OnUpdateCharacterLook(ch)
+	}
+	return nil
+}
+
+func (ch *Character) Unequip(parts constant.EquipmentPartsType) error {
+	inven := ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	if inven == nil {
+		return errors.New("equipment inventory not found")
+	}
+	destSlot, ok := inven.NextSlot()
+	if !ok {
+		return ErrInventoryFull
+	}
+	return ch.UnequipToSlot(parts, int16(destSlot))
+}
+
+func (ch *Character) Equip(slot int16) error {
+	equipments := ch.Equipments
+	inventory := ch.Inventory
+	inven := inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	if inven == nil {
+		return errors.New("equipment inventory not found")
+	}
+	item := inven.Items[slot]
+	if item == nil {
+		return ErrSourceSlotEmpty
+	}
+	newEq, ok := item.(Equipment)
+	if !ok {
+		return ErrItemNotEquipment
+	}
+	parts := constant.GetEquipmentPartsType(newEq.GetModel().GetID())
+	if parts == 0 {
+		return ErrInvalidEquipmentPart
+	}
+
+	old, swap := equipments[parts]
+
+	switch parts {
+	case constant.EQUIPMENT_PARTS_TOP:
+		if topNew, ok := newEq.(*Top); ok && topNew.IsOverall() {
+			if equipments[constant.EQUIPMENT_PARTS_PANTS] != nil {
+				storageSlot, isFree := inven.NextSlot()
+				if !isFree {
+					return ErrInventoryFull
+				}
+				if err := ch.UnequipToSlot(constant.EQUIPMENT_PARTS_PANTS, int16(storageSlot)); err != nil {
+					return err
+				}
+			}
+		}
+	case constant.EQUIPMENT_PARTS_PANTS:
+		topEq := equipments[constant.EQUIPMENT_PARTS_TOP]
+		if topEq != nil {
+			if top, ok := topEq.(*Top); ok && top.IsOverall() {
+				storageSlot, isFree := inven.NextSlot()
+				if swap && !isFree {
+					return ErrInventoryFull
+				}
+				if err := ch.UnequipToSlot(constant.EQUIPMENT_PARTS_TOP, int16(storageSlot)); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	equipments[parts] = newEq
+	if old == nil {
+		delete(inven.Items, slot)
+	} else {
+		inven.Items[slot] = old
+	}
+
+	if ch.Listener != nil {
+		ch.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
+		ch.Listener.OnUpdateCharacterLook(ch)
+	}
+	return nil
 }

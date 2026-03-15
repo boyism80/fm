@@ -142,3 +142,23 @@ func NewLuable(L *lua.LState, obj Luable) *lua.LUserData {
 	L.SetMetatable(ud, L.GetTypeMetatable(obj.LuaTypeName()))
 	return ud
 }
+
+func LValueToInterface(lv lua.LValue) (interface{}, bool) {
+	if lv == nil {
+		return nil, true
+	}
+	switch v := lv.(type) {
+	case *lua.LUserData:
+		return v.Value, true
+	case lua.LNumber:
+		return float64(v), true
+	case lua.LString:
+		return string(v), true
+	case lua.LBool:
+		return bool(v), true
+	case *lua.LNilType:
+		return nil, true
+	default:
+		return nil, false
+	}
+}

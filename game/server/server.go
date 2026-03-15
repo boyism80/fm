@@ -28,7 +28,6 @@ type GameServer struct {
 	resources      *wz.Resources          // Game data resources
 	maps           map[uint32]*entity.Map // Map instances by map ID
 	mapsMutex      sync.RWMutex
-	commandHandler *CommandHandler
 	packetHandlers *PacketHandlerRegistry
 	context        *GameServerContext
 	actorSystem    *c_actor.ActorSystem
@@ -116,9 +115,6 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	// Set gameServer reference in context
 	context.gs = gs
 
-	// Initialize command handler
-	gs.commandHandler = NewCommandHandler(gs)
-
 	// Initialize packet handler registry
 	gs.packetHandlers = NewPacketHandlerRegistry(gs)
 
@@ -131,9 +127,6 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 	// Register packet handlers
 	gs.registerPacketHandlers()
-
-	// Register command handlers
-	gs.registerCommandHandlers()
 
 	// Set client disconnect handler
 	server.SetOnClientDisconnect(func(client core.Client) {

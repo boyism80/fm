@@ -165,8 +165,7 @@ function handle_ice_charge_freeze(me, damages)
     if damages == nil then
         return
     end
-    local job = me:class()
-    if job ~= Class.WhiteKnight and job ~= Class.Paladin then
+    if not me:class_of(Class.WhiteKnight) and not me:class_of(Class.Paladin) then
         return
     end
     local buff = me:buff(BuffFlag.WkCharge)

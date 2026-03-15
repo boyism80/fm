@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/protocol/request"
+	lua "github.com/yuin/gopher-lua"
 )
 
 // NormalChat handles normal chat packet requests
@@ -41,10 +43,21 @@ func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) er
 	}
 
 	if strings.HasPrefix(req.Message, "/") {
-		params := strings.Split(strings.TrimPrefix(req.Message, "/"), " ")
-		err := h.gs.commandHandler.Handle(ctx, client, params...)
-		if err != nil {
-			log.Printf("Command error: %v", err)
+		if ctx.LogicActorPID != nil {
+			root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+			if root != nil {
+				result, thread, err := luax.CallWithPID(root, ctx.LogicActorPID, "script/command.lua", "on_chat", character, req.Message, false)
+				if thread != nil {
+					thread.Close()
+				}
+				if err != nil {
+					log.Printf("Command Lua error: %v", err)
+				} else if result != nil && result.Type() == lua.LTBool && lua.LVAsBool(result) {
+					return nil
+				} else if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
+					log.Printf("Unknown command: %s", strings.TrimSpace(req.Message))
+				}
+			}
 		}
 		return nil
 	}

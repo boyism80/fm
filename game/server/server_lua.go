@@ -14,6 +14,27 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
+func getClassAdvancementClasses(class uint16) []uint16 {
+	if class < 100 {
+		return []uint16{class}
+	}
+	classes := make([]uint16, 0, 4)
+	baseClass := (class / 100) * 100
+	secondClass := (class / 10) * 10
+	thirdClass := secondClass + 1
+	classes = append(classes, baseClass)
+	if secondClass != baseClass {
+		classes = append(classes, secondClass)
+	}
+	if thirdClass != secondClass && thirdClass <= class {
+		classes = append(classes, thirdClass)
+	}
+	if class != thirdClass && class != secondClass && class != baseClass {
+		classes = append(classes, class)
+	}
+	return classes
+}
+
 func registerSkillConstants(luaState *lua.LState) {
 	skillTable := luaState.NewTable()
 	for key, skillID := range constant.AllSkillConstants() {
@@ -36,6 +57,7 @@ func registerBuffFlagAndMobStatus(luaState *lua.LState) {
 		entry := luaState.NewTable()
 		entry.RawSetString("mask", lua.LNumber(df.Mask))
 		entry.RawSetString("position", lua.LNumber(df.Position))
+		entry.RawSetString("debuff", lua.LNumber(df.DiseaseSkillID))
 		debuffFlagTable.RawSetString(name, entry)
 	}
 	luaState.SetGlobal("DebuffFlag", debuffFlagTable)
@@ -133,6 +155,22 @@ func registerObjectTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("ObjectType", t)
 }
 
+func registerRoleConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	for name, value := range constant.AllCharacterRoles() {
+		t.RawSetString(name, lua.LNumber(value))
+	}
+	luaState.SetGlobal("ROLE", t)
+}
+
+func registerMobDieAnimationConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	for name, value := range constant.AllMobDieAnimationTypes() {
+		t.RawSetString(name, lua.LNumber(value))
+	}
+	luaState.SetGlobal("MobDieAnimation", t)
+}
+
 func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
 	skillTable := luaState.NewTable()
 	skillTable.RawSetString("id", lua.LNumber(skill.ID))
@@ -190,6 +228,73 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerClassConstants(luaState)
 	registerStanceConstants(luaState)
 	registerObjectTypeConstants(luaState)
+	registerRoleConstants(luaState)
+	registerMobDieAnimationConstants(luaState)
+
+	luax.RegisterFunc(luaState, "name2map", func(L *lua.LState) int {
+		name := L.CheckString(1)
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		mapID, ok := gs.resources.NameToMap(name)
+		if !ok {
+			L.Push(lua.LNil)
+			return 1
+		}
+		m := gs.GetMap(mapID)
+		if m == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(luax.NewLuable(L, m))
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "name2mob", func(L *lua.LState) int {
+		name := L.CheckString(1)
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		id, ok := gs.resources.NameToMob(name)
+		if !ok {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(lua.LNumber(id))
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "name2npc", func(L *lua.LState) int {
+		name := L.CheckString(1)
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		id, ok := gs.resources.NameToNpc(name)
+		if !ok {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(lua.LNumber(id))
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "name2item", func(L *lua.LState) int {
+		name := L.CheckString(1)
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		id, ok := gs.resources.NameToItem(name)
+		if !ok {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(lua.LNumber(id))
+		return 1
+	})
 
 	luax.RegisterFunc(luaState, "class_learnable_skill_wzs", func(L *lua.LState) int {
 		class := uint16(L.CheckInt(1))
@@ -268,6 +373,43 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	})
 	luax.RegisterFunc(luaState, "get_packet_log_enabled", func(L *lua.LState) int {
 		L.Push(lua.LBool(core.GetPacketLogEnabled()))
+		return 1
+	})
+	luax.RegisterFunc(luaState, "set_packet_log", func(L *lua.LState) int {
+		core.SetPacketLogEnabled(L.CheckBool(1))
+		return 0
+	})
+	luax.RegisterFunc(luaState, "get_packet_log", func(L *lua.LState) int {
+		L.Push(lua.LBool(core.GetPacketLogEnabled()))
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "run_on_script", func(L *lua.LState) int {
+		ud := L.CheckUserData(1)
+		ch, ok := ud.Value.(*entity.Character)
+		if !ok || ch == nil {
+			L.RaiseError("run_on_script: Character expected")
+			return 0
+		}
+		pid := luax.GetThreadPID(L)
+		if pid == nil {
+			L.RaiseError("run_on_script: thread has no actor PID (call from command context)")
+			return 0
+		}
+		root := luax.GetRootLuaState(pid.String())
+		if root == nil {
+			L.RaiseError("run_on_script: root lua state not found")
+			return 0
+		}
+		_, thread, err := luax.Call(root, "script/script.lua", "on_script", ch)
+		if thread != nil {
+			thread.Close()
+		}
+		if err != nil {
+			L.RaiseError("run_on_script: %v", err)
+			return 0
+		}
+		L.Push(lua.LBool(true))
 		return 1
 	})
 

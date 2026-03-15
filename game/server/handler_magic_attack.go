@@ -5,15 +5,11 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
-	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
-	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type MagicAttack struct {
@@ -106,18 +102,22 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 			return nil
 		}
 	}
+	if levelData.HPCon > 0 {
+		hpCon := uint16(levelData.HPCon)
+		if !character.ConsumeHP(hpCon) {
+			log.Printf("Not enough HP for skill %d (required: %d, current: %d)", skillID, hpCon, character.Hp)
+			character.Listener.OnUpdateStats(nil, true)
+			return nil
+		}
+	}
 
 	// Phase 1: per-skill on_activating (pre-attack hook).
 	h.callSkillHook(ctx, character, uint32(skillID), "on_activating")
 
-	// Global magic attack script (script.lua:on_attack).
-	h.callOnAttackScript(ctx, character, mapInstance, req.AttackInfo.Damages, uint32(skillID), false, 0)
-
-	// Apply damage in Go.
-	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
-
-	// Phase 2: per-skill on_attack (post-damage, receives me, skill, damages).
-	h.callSkillOnAttackHook(ctx, character, uint32(skillID), mapInstance, req.AttackInfo.Damages)
+	damages := req.AttackInfo.Damages
+	CallSkillOnAttack(ctx, character, uint32(skillID), mapInstance, damages)
+	CallOnAttackScript(ctx, character, mapInstance, damages, uint32(skillID), false, 0)
+	ApplyDamageToMobs(character, mapInstance, damages)
 
 	magicAttackPacket := &response.MagicAttack{
 		AttackInfo:  req.AttackInfo,
@@ -137,102 +137,8 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	return nil
 }
 
-func (h *MagicAttack) callOnAttackScript(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32, ranged bool, consumeSlot uint16) {
-	if ctx.LogicActorPID == nil {
-		return
-	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
-	if root == nil {
-		return
-	}
-
-	thread, err := luax.NewThread(root, "script/script.lua")
-	if err != nil {
-		log.Printf("Failed to load script: %v", err)
-		return
-	}
-	defer thread.Close()
-
-	f := thread.GetGlobal("on_attack")
-	if f.Type() != lua.LTFunction {
-		return
-	}
-
-	var skillLV lua.LValue = lua.LNil
-	if skillID != 0 {
-		if skillEntry := character.Skills[skillID]; skillEntry != nil {
-			skillLV = luax.NewLuable(thread, skillEntry)
-		}
-	}
-
-	damagesTable := buildDamagesTable(thread, mapInstance, damages)
-	attackInfoTable := buildAttackInfoTable(thread, ranged, consumeSlot)
-	thread.Push(f)
-	thread.Push(luax.NewLuable(thread, character))
-	thread.Push(skillLV)
-	thread.Push(damagesTable)
-	thread.Push(attackInfoTable)
-	if err := thread.PCall(4, 1, nil); err != nil {
-		log.Printf("Failed to call script on_attack: %v", err)
-		return
-	}
-	thread.Pop(1)
-}
-
-func (h *MagicAttack) callSkillOnAttackHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, mapInstance *entity.Map, damages []dto.AttackPair) {
-	if skillID == 0 || ctx.LogicActorPID == nil {
-		return
-	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
-	if root == nil {
-		return
-	}
-	skillEntry := character.Skills[skillID]
-	if skillEntry == nil {
-		return
-	}
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	thread, err := luax.NewThread(root, scriptPath)
-	if err != nil {
-		return
-	}
-	defer thread.Close()
-	f := thread.GetGlobal("on_attack")
-	if f.Type() != lua.LTFunction {
-		return
-	}
-	damagesTable := buildDamagesTable(thread, mapInstance, damages)
-	thread.Push(f)
-	thread.Push(luax.NewLuable(thread, character))
-	thread.Push(luax.NewLuable(thread, skillEntry))
-	thread.Push(damagesTable)
-	if err := thread.PCall(3, 1, nil); err != nil {
-		log.Printf("Skill hook on_attack failed for %s: %v", scriptPath, err)
-		return
-	}
-	thread.Pop(1)
-}
-
 // callSkillHook delegates to Attack.callSkillHook so magic/ranged attacks share the same per-skill hook behavior.
 func (h *MagicAttack) callSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) {
 	attack := (&Attack{}).New(h.gs)
 	attack.callSkillHook(ctx, character, skillID, hook)
-}
-
-func (h *MagicAttack) applyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {
-	for _, damage := range damages {
-		mob := mapInstance.GetMob(damage.OID)
-		if mob == nil {
-			log.Printf("Mob not found for OID: %d", damage.OID)
-			continue
-		}
-
-		if character.HasRoleAtLeast(constant.RoleAdmin) {
-			mob.ApplyDamage(character, uint32(mob.Hp))
-		} else {
-			for _, damagePair := range damage.DamagePairs {
-				mob.ApplyDamage(character, uint32(damagePair.Damage))
-			}
-		}
-	}
 }

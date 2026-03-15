@@ -87,12 +87,13 @@ func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.EquipmentModel) *dto.E
 		return nil
 	}
 	eq := model.GetEquipment()
+	maxEnchantChance := model.GetEquipment().EnchantChance
 	return &dto.Equipment{
 		ItemId:        eq.ItemCore.ID,
 		UniqueId:      core.UniqueId,
 		Expiration:    core.Expiration,
-		EnchantChance: core.EnchantChance,
-		Level:         eq.Required.Level,
+		EnchantChance: maxEnchantChance,
+		EnchantCount:  maxEnchantChance - eq.EnchantChance,
 		Str:           eq.Ability.Str,
 		Dex:           eq.Ability.Dex,
 		Int:           eq.Ability.Int,

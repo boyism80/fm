@@ -24,7 +24,6 @@ function on_activated(me, skill, params)
 	local mobs = map:objects(ObjectType.Mob, { area = { minX = minX, minY = minY, maxX = maxX, maxY = maxY } })
 	local n = 0
 	for _, mob in ipairs(mobs) do
-		me:chat(string.format('mob: %d', mob:oid()))
 		if n >= mob_count then
 			break
 		end

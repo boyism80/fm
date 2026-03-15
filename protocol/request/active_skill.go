@@ -21,7 +21,7 @@ type ActiveSkill struct {
 	OldY          int16
 	SkillID       uint32
 	SkillLevel    uint8
-	MagnetMobData MagnetMobData
+	MagnetMobData *MagnetMobData
 	Position      *types.Vector2[int16]
 }
 
@@ -52,7 +52,9 @@ func (s *ActiveSkill) Deserialize(reader *stream.StreamReader) error {
 		if count, err = reader.ReadU32(); err != nil {
 			return err
 		}
-		s.MagnetMobData.Mobs = make([]MagnetMobEntry, 0, count)
+		s.MagnetMobData = &MagnetMobData{
+			Mobs: make([]MagnetMobEntry, 0, count),
+		}
 		for i := uint32(0); i < count; i++ {
 			var entry MagnetMobEntry
 			if entry.OID, err = reader.ReadU32(); err != nil {

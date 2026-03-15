@@ -8,10 +8,12 @@ import (
 )
 
 var (
-	ErrInventoryFull       = errors.New("inventory is full")
-	ErrSourceSlotEmpty     = errors.New("source slot is empty")
-	ErrSlotNotFound        = errors.New("slot not found")
-	ErrSlotAlreadyOccupied = errors.New("slot already occupied")
+	ErrInventoryFull        = errors.New("inventory is full")
+	ErrSourceSlotEmpty      = errors.New("source slot is empty")
+	ErrSlotNotFound         = errors.New("slot not found")
+	ErrSlotAlreadyOccupied  = errors.New("slot already occupied")
+	ErrInvalidEquipmentPart = errors.New("invalid equipment part")
+	ErrItemNotEquipment     = errors.New("item is not equipment")
 )
 
 type Inventory struct {

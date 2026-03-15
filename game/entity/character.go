@@ -399,6 +399,10 @@ func (ch *Character) GetID() uint32 {
 	return ch.id
 }
 
+func (ch *Character) GetName() string {
+	return ch.name
+}
+
 func (ch *Character) Message(message string) {
 	if ch.Listener != nil {
 		ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
@@ -557,10 +561,18 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			},
 		}
 
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1], err = NewItem(1060002, 1, ctx)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2], err = NewItem(1060006, 1, ctx)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3], err = NewItem(1040002, 1, ctx)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(1040010, 1, ctx)
+		if item, e := NewItem(1060002, 1, ctx); e == nil {
+			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1] = item
+		}
+		if item, e := NewItem(1060006, 1, ctx); e == nil {
+			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2] = item
+		}
+		if item, e := NewItem(1040002, 1, ctx); e == nil {
+			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3] = item
+		}
+		if item, e := NewItem(1040010, 1, ctx); e == nil {
+			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4] = item
+		}
 	}
 
 	return &ch
@@ -751,7 +763,14 @@ func (ch *Character) AddDebuff(holder *DiseaseValueHolder) {
 }
 
 // GiveDebuff adds the disease to the character (refresh if already present), starts duration timer, and notifies the listener to send GiveDebuff/GiveRemoteDebuff packets.
+// If skillID is 0, flag.DiseaseSkillID is used; if skillLevel is 0, 1 is used.
 func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration, x int16, skillID uint16, skillLevel uint16) {
+	if skillID == 0 {
+		skillID = flag.DiseaseSkillID
+	}
+	if skillLevel == 0 {
+		skillLevel = 1
+	}
 	holder := &DiseaseValueHolder{
 		Disease:   flag,
 		StartTime: time.Now(),

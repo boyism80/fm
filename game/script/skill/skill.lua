@@ -148,8 +148,6 @@ function apply_monster_magnet(me, skill, params)
 	if params == nil or params.magnet == nil then
 		return
 	end
-	local magnet_direction = params.magnet.direction or 3
-	me:show_buffeffect(skill, 1, magnet_direction)
 	for _, entry in ipairs(params.magnet.mobs) do
 		local mob = entry.mob
 		local success = entry.success

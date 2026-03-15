@@ -1030,6 +1030,109 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, item))
 			return 1
 		},
+		"spawn_mob": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			if mapInstance.context == nil {
+				L.RaiseError("spawn_mob: map has no context")
+				return 0
+			}
+			resources := mapInstance.context.GetResources()
+			if resources == nil {
+				L.RaiseError("spawn_mob: no resources")
+				return 0
+			}
+			var mobID uint32
+			switch lv := L.Get(2).(type) {
+			case lua.LString:
+				id, ok := resources.NameToMob(string(lv))
+				if !ok {
+					L.RaiseError("spawn_mob: unknown mob name %q", string(lv))
+					return 0
+				}
+				mobID = id
+			case lua.LNumber:
+				mobID = uint32(lv)
+			default:
+				L.ArgError(2, "mob id (number) or mob name (string) expected")
+				return 0
+			}
+			x := int16(L.CheckInt(3))
+			y := int16(L.CheckInt(4))
+			pos := types.Point[int16]{X: x, Y: y}
+			mob, err := mapInstance.SpawnMob(mobID, pos, nil)
+			if err != nil {
+				L.RaiseError("spawn_mob: %v", err)
+				return 0
+			}
+			L.Push(luax.NewLuable(L, mob))
+			return 1
+		},
+		"spawn_npc": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			if mapInstance.context == nil {
+				L.RaiseError("spawn_npc: map has no context")
+				return 0
+			}
+			resources := mapInstance.context.GetResources()
+			if resources == nil {
+				L.RaiseError("spawn_npc: no resources")
+				return 0
+			}
+			var npcID uint32
+			switch lv := L.Get(2).(type) {
+			case lua.LString:
+				id, ok := resources.NameToNpc(string(lv))
+				if !ok {
+					L.RaiseError("spawn_npc: unknown npc name %q", string(lv))
+					return 0
+				}
+				npcID = id
+			case lua.LNumber:
+				npcID = uint32(lv)
+			default:
+				L.ArgError(2, "npc id (number) or npc name (string) expected")
+				return 0
+			}
+			x := int16(L.CheckInt(3))
+			y := int16(L.CheckInt(4))
+			pos := types.Point[int16]{X: x, Y: y}
+			npc, err := mapInstance.SpawnNpc(npcID, pos)
+			if err != nil {
+				L.RaiseError("spawn_npc: %v", err)
+				return 0
+			}
+			L.Push(luax.NewLuable(L, npc))
+			return 1
+		},
+		"remove_mob": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			oid := uint32(L.CheckInt(2))
+			animType := constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT
+			if L.GetTop() >= 3 {
+				animType = constant.MobDieAnimationType(L.CheckInt(3))
+			}
+			err := mapInstance.RemoveMob(oid, animType)
+			if err != nil {
+				L.RaiseError("remove_mob: %v", err)
+				return 0
+			}
+			return 0
+		},
 	}
 }
 

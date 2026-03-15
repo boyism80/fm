@@ -155,20 +155,59 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			statusTbl := L.CheckTable(2)
 			maskLV := statusTbl.RawGetString("mask")
-			if maskLV.Type() != lua.LTNumber {
-				L.ArgError(2, "MobStatus table with numeric mask expected")
+			parseMobStatus := func(v lua.LValue) (constant.MobStatus, bool) {
+				t, ok := v.(*lua.LTable)
+				if !ok {
+					return 0, false
+				}
+				m := t.RawGetString("mask")
+				if m.Type() != lua.LTNumber {
+					return 0, false
+				}
+				return constant.MobStatus(uint32(lua.LVAsNumber(m))), true
+			}
+			if maskLV.Type() == lua.LTNumber {
+				status := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
+				value := int32(L.CheckInt(3))
+				durationMs := L.CheckInt64(4)
+				if durationMs < 0 {
+					durationMs = 0
+				}
+				var skillWz *wz.Skill
+				var skillLevel uint8
+				if L.GetTop() >= 5 {
+					if lv, ok := L.Get(5).(*lua.LUserData); ok {
+						if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Skill != nil {
+							skillWz = se.Skill
+							skillLevel = uint8(se.SkillLevel)
+						}
+					}
+				}
+				var causer *Character
+				if L.GetTop() >= 6 && L.Get(6) != lua.LNil {
+					if cud, ok := L.Get(6).(*lua.LUserData); ok {
+						if ch, ok := cud.Value.(*Character); ok {
+							causer = ch
+						} else {
+							L.ArgError(6, "causer must be Character or nil")
+							return 0
+						}
+					} else {
+						L.ArgError(6, "causer must be Character or nil")
+						return 0
+					}
+				}
+				mob.ApplyMobStatus(status, value, durationMs, skillWz, skillLevel, causer)
 				return 0
 			}
-			status := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
-			value := int32(L.CheckInt(3))
-			durationMs := L.CheckInt64(4)
+			durationMs := L.CheckInt64(3)
 			if durationMs < 0 {
 				durationMs = 0
 			}
 			var skillWz *wz.Skill
 			var skillLevel uint8
-			if L.GetTop() >= 5 {
-				if lv, ok := L.Get(5).(*lua.LUserData); ok {
+			if L.GetTop() >= 4 {
+				if lv, ok := L.Get(4).(*lua.LUserData); ok {
 					if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Skill != nil {
 						skillWz = se.Skill
 						skillLevel = uint8(se.SkillLevel)
@@ -176,20 +215,30 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			var causer *Character
-			if L.GetTop() >= 6 && L.Get(6) != lua.LNil {
-				if cud, ok := L.Get(6).(*lua.LUserData); ok {
+			if L.GetTop() >= 5 && L.Get(5) != lua.LNil {
+				if cud, ok := L.Get(5).(*lua.LUserData); ok {
 					if ch, ok := cud.Value.(*Character); ok {
 						causer = ch
 					} else {
-						L.ArgError(6, "causer must be Character or nil")
+						L.ArgError(5, "causer must be Character or nil")
 						return 0
 					}
 				} else {
-					L.ArgError(6, "causer must be Character or nil")
+					L.ArgError(5, "causer must be Character or nil")
 					return 0
 				}
 			}
-			mob.ApplyMobStatus(status, value, durationMs, skillWz, skillLevel, causer)
+			statusTbl.ForEach(func(key lua.LValue, value lua.LValue) {
+				status, ok := parseMobStatus(key)
+				if !ok {
+					return
+				}
+				if value.Type() != lua.LTNumber {
+					return
+				}
+				val := int32(lua.LVAsNumber(value))
+				mob.ApplyMobStatus(status, val, durationMs, skillWz, skillLevel, causer)
+			})
 			return 0
 		},
 		"clear_status": func(L *lua.LState) int {
@@ -241,6 +290,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				tbl.RawSetString("max_hp", lua.LNumber(mob.Wz.MaxHP))
 				tbl.RawSetString("max_mp", lua.LNumber(mob.Wz.MaxMP))
 				tbl.RawSetString("exp", lua.LNumber(mob.Wz.EXP))
+				tbl.RawSetString("boss", lua.LBool(mob.Wz.Boss))
 			}
 			L.Push(tbl)
 			return 1

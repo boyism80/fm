@@ -14,21 +14,17 @@ function on_start(me)
 	local text = me:dialog_input(npc,'안녕하세요')
 	me:dialog(npc, string.format("반갑습니다. %s님", me:name()))
 	for i=1, 10 do
-		me:chat(tostring(i))
 		sleep(100)
 	end
 	if text ~= nil then
-		me:chat(text)
 	else
-		me:chat('cancel')
 	end
 end
 
 function on_script(me)
     local x, y = me:position()
-    me:chat(string.format("position: %d, %d", x, y))
 
-    me:class(112)
+    me:class(132)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -43,13 +39,12 @@ function on_script(me)
     me:hp(me:max_hp() * 0.5)
     me:max_mp(20000)
     me:mp(me:max_mp())
-    me:mkitem('워보우')
-    me:mkitem('산양 석궁')
-    me:mkitem('활전용 화살', 200)
-    me:mkitem('석궁전용 화살', 200)
-    me:mkitem('사각 나무 방패', 1)
+    local weapon = me:mkitem('폴암')
+    if weapon ~= nil then
+        me:equip(weapon)
+    end
+    me:base_str(80)
     me:base_dex(4)
-    
     me:base_luk(4)
     me:level(200)
     me:map('오르비스탑입구')
@@ -57,10 +52,6 @@ end
 
 function on_attack(me, skill, damages, attack_info)
     local targets = damages_to_targets(damages)
-
-    for _, target in pairs(targets) do
-        me:chat(string.format('target hp : %d / %d', target:hp(), target:max_hp()))
-    end
     handle_combo_attack(me, targets, skill)
     handle_pickpocket(me, skill, damages)
     handle_ice_charge_freeze(me, damages)
@@ -79,7 +70,6 @@ function on_attack(me, skill, damages, attack_info)
             return
         end
 
-        me:chat(string.format("consume_slot: %d", attack_info.consume_slot))
         local consume_item = me:item(InventoryType.Use, attack_info.consume_slot)
         if consume_item == nil then
             return
@@ -230,7 +220,6 @@ function on_ap_to_hp(me)
             bonus = effect.y
         end
     end
-    me:chat(string.format("base: %d, bonus: %d", base, bonus))
     return base + bonus
 end
 
