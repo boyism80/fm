@@ -37,4 +37,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, CancelChair](gs)
 	core.Bind[*GameServer, ChangeKeymap](gs)
 	core.Bind[*GameServer, Aggro](gs)
+	core.Bind[*GameServer, MoveSummon](gs)
+	core.Bind[*GameServer, SummonAttack](gs)
+	core.Bind[*GameServer, DamageSummon](gs)
 }

@@ -171,6 +171,20 @@ func registerMobDieAnimationConstants(luaState *lua.LState) {
 	luaState.SetGlobal("MobDieAnimation", t)
 }
 
+func registerSummonConstants(luaState *lua.LState) {
+	moveTable := luaState.NewTable()
+	for name, value := range constant.AllSummonMovementTypes() {
+		moveTable.RawSetString(name, lua.LNumber(value))
+	}
+	luaState.SetGlobal("SummonMovementType", moveTable)
+
+	typeTable := luaState.NewTable()
+	for name, value := range constant.AllSummonTypes() {
+		typeTable.RawSetString(name, lua.LNumber(value))
+	}
+	luaState.SetGlobal("SummonType", typeTable)
+}
+
 func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
 	skillTable := luaState.NewTable()
 	skillTable.RawSetString("id", lua.LNumber(skill.ID))
@@ -188,6 +202,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)
 	luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](luaState)
 	luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](luaState)
+	luax.RegisterLuaDerivedType[*entity.Summon, *entity.Life](luaState)
 	luax.RegisterLuaDerivedType[*entity.Npc, *entity.Object](luaState)
 	luax.RegisterLuaType[*entity.Map](luaState)
 	luax.RegisterLuaType[*entity.SkillEntry](luaState)
@@ -230,6 +245,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerObjectTypeConstants(luaState)
 	registerRoleConstants(luaState)
 	registerMobDieAnimationConstants(luaState)
+	registerSummonConstants(luaState)
 
 	luax.RegisterFunc(luaState, "name2map", func(L *lua.LState) int {
 		name := L.CheckString(1)

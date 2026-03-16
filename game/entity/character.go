@@ -70,6 +70,7 @@ type Character struct {
 	Buffs          *BuffContainer
 	diseases       map[constant.DebuffFlag]*DiseaseValueHolder
 	timers         map[string]*CharacterTimer
+	summons        map[constant.SkillID]*Summon
 }
 
 // DiseaseValueHolder holds one applied disease (mirrors MapleDiseaseValueHolder: disease, start time, duration).
@@ -164,6 +165,80 @@ func (ch *Character) ClearTimers() {
 		}
 		delete(ch.timers, key)
 	}
+}
+
+func summonTimerKey(skillID constant.SkillID) string {
+	return fmt.Sprintf("summon:%d", skillID)
+}
+
+func (ch *Character) AddSummon(skillID uint32, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, duration time.Duration) *Summon {
+	m := ch.GetMap()
+	if m == nil {
+		return nil
+	}
+	position := ch.Position
+	return m.SpawnSummon(ch, constant.SkillID(skillID), skillLevel, movementType, summonType, position, duration)
+}
+
+func (ch *Character) RemoveSummon(target *Summon) {
+	if target == nil {
+		return
+	}
+	_ = ch.RemoveTimer(summonTimerKey(target.SkillID))
+	if m := ch.GetMap(); m != nil && target.OID != 0 {
+		m.RemoveSummon(target.OID)
+	}
+	if ch.summons != nil {
+		delete(ch.summons, constant.SkillID(target.SkillID))
+	}
+}
+
+func (ch *Character) GetSummons() []*Summon {
+	if len(ch.summons) == 0 {
+		return nil
+	}
+	out := make([]*Summon, 0, len(ch.summons))
+	for _, s := range ch.summons {
+		if s != nil {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func (ch *Character) GetSummon(skillId constant.SkillID) *Summon {
+	return ch.summons[skillId]
+}
+
+func (ch *Character) GetSummonsSize() int {
+	return len(ch.summons)
+}
+
+func (ch *Character) ClearSummons() {
+	if len(ch.summons) > 0 && ch.Listener != nil {
+		for _, s := range ch.summons {
+			if s == nil {
+				continue
+			}
+			_ = ch.RemoveTimer(summonTimerKey(s.SkillID))
+			ch.Listener.OnSummonRemove(ch, s, true)
+		}
+	}
+	ch.summons = nil
+}
+
+func (ch *Character) handleSummonExpireBySkill(skillID constant.SkillID) {
+	if ch.summons == nil {
+		return
+	}
+	s := ch.summons[skillID]
+	if s == nil {
+		return
+	}
+	if ch.Listener != nil {
+		ch.Listener.OnSummonRemove(ch, s, true)
+	}
+	ch.RemoveSummon(s)
 }
 
 func (ch *Character) SuspendTimers() {

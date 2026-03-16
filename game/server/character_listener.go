@@ -484,3 +484,116 @@ func (l *CharacterListenerImpl) OnHiddenChanged(hidden bool) {
 		})
 	}
 }
+
+func (l *CharacterListenerImpl) OnSummonSpawn(character *entity.Character, summon *entity.Summon) {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	packet := &response.SpawnSummon{
+		OwnerID:      character.GetID(),
+		OID:          summon.OID,
+		SkillID:      summon.SkillID,
+		SkillLevel:   summon.SkillLevel,
+		Position:     summon.Position,
+		MovementType: summon.MovementType,
+		SummonType:   summon.SummonType,
+		Animated:     true,
+	}
+	mapInstance.Broadcast(packet, &entity.BroadcastOption{
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
+}
+
+func (l *CharacterListenerImpl) OnSummonRemove(character *entity.Character, summon *entity.Summon, animated bool) {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	packet := &response.RemoveSummon{
+		OwnerID:  character.GetID(),
+		OID:      summon.OID,
+		Animated: animated,
+	}
+	mapInstance.Broadcast(packet, &entity.BroadcastOption{
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
+}
+
+func (l *CharacterListenerImpl) OnSummonMove(character *entity.Character, summon *entity.Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	packet := &response.MoveSummon{
+		CharacterID: character.GetID(),
+		OID:         summon.OID,
+		StartPoint:  startPoint,
+		Fragments:   movements,
+	}
+	mapInstance.Broadcast(packet, &entity.BroadcastOption{
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs:    []uint32{character.GetID()},
+	})
+}
+
+func (l *CharacterListenerImpl) OnSummonAttack(character *entity.Character, summon *entity.Summon, animation uint8, targets []entity.SummonAttackTarget) {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	respTargets := make([]response.SummonAttackTarget, len(targets))
+	for i, t := range targets {
+		respTargets[i] = response.SummonAttackTarget{
+			OID:    t.OID,
+			Damage: t.Damage,
+		}
+	}
+	packet := &response.SummonAttack{
+		CharacterID:   character.GetID(),
+		SummonSkillID: uint32(summon.SkillID),
+		Animation:     animation,
+		Targets:       respTargets,
+	}
+	mapInstance.Broadcast(packet, &entity.BroadcastOption{
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
+}
+
+func (l *CharacterListenerImpl) OnSummonSkill(character *entity.Character, summon *entity.Summon, newStance uint8) {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	packet := &response.SummonSkill{
+		CharacterID:   character.GetID(),
+		SummonSkillID: uint32(summon.SkillID),
+		NewStance:     newStance,
+	}
+	mapInstance.Broadcast(packet, &entity.BroadcastOption{
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
+}
+
+func (l *CharacterListenerImpl) OnSummonDamaged(character *entity.Character, summon *entity.Summon, unknown uint8, damage uint32, monsterIdFrom uint32) {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	packet := &response.DamageSummon{
+		CharacterID:   character.GetID(),
+		SummonSkillID: uint32(summon.SkillID),
+		Unknown:       unknown,
+		Damage:        damage,
+		MonsterIDFrom: monsterIdFrom,
+	}
+	mapInstance.Broadcast(packet, &entity.BroadcastOption{
+		ReferenceCharacter: character,
+		RecipientFilter:    entity.BroadcastVisibleByReference,
+	})
+}

@@ -46,4 +46,11 @@ type CharacterListener interface {
 
 	OnSkillCooldown(skillID uint32, remainingSec uint16)
 	OnHiddenChanged(hidden bool)
+
+	OnSummonSpawn(character *Character, summon *Summon)
+	OnSummonRemove(character *Character, summon *Summon, animated bool)
+	OnSummonMove(character *Character, summon *Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment)
+	OnSummonAttack(character *Character, summon *Summon, animation uint8, targets []SummonAttackTarget)
+	OnSummonSkill(character *Character, summon *Summon, newStance uint8)
+	OnSummonDamaged(character *Character, summon *Summon, unknown uint8, damage uint32, monsterIdFrom uint32)
 }

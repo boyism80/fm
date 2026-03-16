@@ -476,6 +476,61 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"create_summon": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			skillID := uint32(L.CheckInt(2))
+			skillLevel := uint8(L.CheckInt(3))
+			durationMs := L.CheckInt(4)
+			if durationMs < 0 {
+				durationMs = 0
+			}
+			movType := constant.SummonMovementType(L.CheckInt(5))
+			summonType := constant.SummonType(L.CheckInt(6))
+
+			duration := time.Duration(durationMs) * time.Millisecond
+			s := ch.AddSummon(skillID, skillLevel, movType, summonType, duration)
+			if s == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, s))
+			return 1
+		},
+		"remove_summon": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			skillID := uint32(L.CheckInt(2))
+			for _, s := range ch.summons {
+				if s != nil && s.SkillID == constant.SkillID(skillID) {
+					if ch.Listener != nil {
+						ch.Listener.OnSummonRemove(ch, s, true)
+					}
+					ch.RemoveSummon(s)
+					break
+				}
+			}
+			return 0
+		},
+		"clear_summons": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.ClearSummons()
+			return 0
+		},
 		"dialog": func(L *lua.LState) int {
 			argc := L.GetTop()
 			ud := L.CheckUserData(1)

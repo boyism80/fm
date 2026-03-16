@@ -9,6 +9,7 @@ const (
 	ObjectTypeItem      ObjectType = ObjectTypeObject | 0x0040
 	ObjectTypeCharacter ObjectType = ObjectTypeLife | 0x0100
 	ObjectTypeMob       ObjectType = ObjectTypeLife | 0x0200
+	ObjectTypeSummon    ObjectType = ObjectTypeLife | 0x0400
 )
 
 func (t ObjectType) Has(other ObjectType) bool {
@@ -24,5 +25,6 @@ func AllObjectTypeConstants() map[string]ObjectType {
 		"Mob":       ObjectTypeMob,
 		"Npc":       ObjectTypeNpc,
 		"Item":      ObjectTypeItem,
+		"Summon":    ObjectTypeSummon,
 	}
 }

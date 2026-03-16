@@ -245,6 +245,95 @@ func (m *Map) initializeNpcs() {
 	}
 }
 
+func (m *Map) addSummon(s *Summon) {
+	if s == nil {
+		return
+	}
+	if m.objects[types.OBJECT_TYPE_SUMMON] == nil {
+		m.objects[types.OBJECT_TYPE_SUMMON] = make(map[uint32]interface{})
+	}
+	if s.OID == 0 {
+		s.OID = m.allocateOID()
+	}
+	if s.Map == nil {
+		s.Map = m
+	}
+	m.objects[types.OBJECT_TYPE_SUMMON][s.OID] = s
+}
+
+func (m *Map) SpawnSummon(owner *Character, skillID constant.SkillID, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, position types.Point[int16], duration time.Duration) *Summon {
+	if owner == nil {
+		return nil
+	}
+	// Remove existing summon of same skill (if any), including timers and packets.
+	if owner.summons != nil {
+		if current, ok := owner.summons[skillID]; ok && current != nil {
+			if owner.Listener != nil {
+				owner.Listener.OnSummonRemove(owner, current, true)
+			}
+			owner.RemoveSummon(current)
+		}
+	}
+
+	s := &Summon{
+		Life: Life{
+			Object: Object{
+				Position: position,
+				Context:  m.context,
+				Map:      m,
+			},
+			Hp:     1,
+			BaseHp: 1,
+		},
+		Owner:        owner,
+		OwnerID:      owner.GetID(),
+		SkillID:      skillID,
+		SkillLevel:   skillLevel,
+		MovementType: movementType,
+		SummonType:   summonType,
+	}
+	m.addSummon(s)
+	if duration > 0 {
+		_ = owner.AddTimerWithCallback(summonTimerKey(s.SkillID), duration, false, func() {
+			owner.handleSummonExpireBySkill(s.SkillID)
+		})
+	}
+
+	if owner.summons == nil {
+		owner.summons = make(map[constant.SkillID]*Summon)
+	}
+	owner.summons[skillID] = s
+	if owner.Listener != nil {
+		owner.Listener.OnSummonSpawn(owner, s)
+	}
+	return s
+}
+
+func (m *Map) RemoveSummon(oid uint32) {
+	if m.objects[types.OBJECT_TYPE_SUMMON] == nil {
+		return
+	}
+	obj, ok := m.objects[types.OBJECT_TYPE_SUMMON][oid]
+	if !ok {
+		return
+	}
+	delete(m.objects[types.OBJECT_TYPE_SUMMON], oid)
+	m.releaseOID(oid)
+	if s, ok := obj.(*Summon); ok && s.Map == m {
+		s.Map = nil
+	}
+}
+
+func (m *Map) GetSummon(oid uint32) *Summon {
+	if m.objects[types.OBJECT_TYPE_SUMMON] == nil {
+		return nil
+	}
+	if s, ok := m.objects[types.OBJECT_TYPE_SUMMON][oid].(*Summon); ok {
+		return s
+	}
+	return nil
+}
+
 func (m *Map) initializeMobs() {
 	for spawnId, mobSpawnSpec := range m.model.MobSpawns {
 		m.MobSpawns[spawnId] = &MobSpawn{
@@ -441,6 +530,7 @@ func (m *Map) GetObjects(filter constant.ObjectType, opts *ObjectsFilter) []inte
 		types.OBJECT_TYPE_MONSTER,
 		types.OBJECT_TYPE_NPC,
 		types.OBJECT_TYPE_ITEM,
+		types.OBJECT_TYPE_SUMMON,
 	}
 	for _, bucket := range buckets {
 		if m.objects[bucket] == nil {
