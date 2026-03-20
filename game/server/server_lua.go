@@ -312,6 +312,59 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 		return 1
 	})
 
+	luax.RegisterFunc(luaState, "item_wz", func(L *lua.LState) int {
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+
+		argc := L.GetTop()
+		if argc < 1 {
+			L.ArgError(1, "item_wz(itemIdOrName [, count]) requires at least one argument")
+			return 0
+		}
+
+		count := uint16(1)
+		switch argc {
+		case 1:
+		case 2:
+			if n := L.CheckInt(2); n >= 1 {
+				count = uint16(n)
+			}
+		default:
+			L.ArgError(2, "item_wz(itemIdOrName [, count]) expects 1 or 2 arguments")
+			return 0
+		}
+
+		var itemId uint32
+		switch lv := L.Get(1).(type) {
+		case lua.LString:
+			id, ok := gs.resources.NameToItem(string(lv))
+			if !ok {
+				L.Push(lua.LNil)
+				return 1
+			}
+			itemId = id
+		case lua.LNumber:
+			itemId = uint32(lv)
+		default:
+			L.ArgError(1, "item id (number) or item name (string) expected")
+			return 0
+		}
+
+		model, ok := gs.resources.Items[itemId]
+		if !ok {
+			L.Push(lua.LNil)
+			return 1
+		}
+
+		// Return a wz item wrapper (e.g. *wz.ItemWzConsume) so Lua scripts can pass it back
+		// without creating real inventory items.
+		_ = count // currently not used for the wrapper (buff scripts don't need consume count)
+		wz.PushItemWz(L, model)
+		return 1
+	})
+
 	luax.RegisterFunc(luaState, "class_learnable_skill_wzs", func(L *lua.LState) int {
 		class := uint16(L.CheckInt(1))
 		result := L.NewTable()

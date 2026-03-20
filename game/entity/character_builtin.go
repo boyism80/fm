@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
@@ -421,44 +422,51 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.SkillLevel), values)
 					return 0
 				}
-
-				if consume, ok := arg2UD.Value.(*Consume); ok {
-					if consume == nil {
-						L.ArgError(2, "Consume expected")
-						return 0
-					}
-
-					durationMs := L.CheckInt(3)
-					values := make(map[constant.BuffFlag]int32)
-					valueTable := L.CheckTable(4)
-					valueTable.ForEach(func(key lua.LValue, value lua.LValue) {
-						flag, ok := parseFlag(key, 4)
-						if !ok {
-							return
-						}
-						if value.Type() != lua.LTNumber {
-							L.ArgError(4, "buff() item values must be numbers")
-							return
-						}
-						values[flag] = int32(value.(lua.LNumber))
-					})
-					if len(values) == 0 {
-						L.ArgError(4, "buff() requires at least one flag-value pair")
-						return 0
-					}
-
-					duration := time.Duration(durationMs) * time.Millisecond
-					ch.Buffs.AddItemBuff(consume, duration, values)
+				itemWzConsume, ok := arg2UD.Value.(*wz.ItemWzConsume)
+				if !ok || itemWzConsume == nil || itemWzConsume.Model == nil {
+					L.ArgError(2, "wz.Consume expected")
 					return 0
 				}
 
-				L.ArgError(2, "SkillEntry or Consume expected")
+				consumeWz, ok := itemWzConsume.Model.(*wz.Consume)
+				if !ok || consumeWz == nil {
+					L.ArgError(2, "wz.Consume expected")
+					return 0
+				}
+
+				durationMs := L.CheckInt(3)
+				values := make(map[constant.BuffFlag]int32)
+				valueTable := L.CheckTable(4)
+				valueTable.ForEach(func(key lua.LValue, value lua.LValue) {
+					flag, ok := parseFlag(key, 4)
+					if !ok {
+						return
+					}
+					if value.Type() != lua.LTNumber {
+						L.ArgError(4, "buff() item values must be numbers")
+						return
+					}
+					values[flag] = int32(value.(lua.LNumber))
+				})
+				if len(values) == 0 {
+					L.ArgError(4, "buff() requires at least one flag-value pair")
+					return 0
+				}
+
+				duration := time.Duration(durationMs) * time.Millisecond
+				ch.Buffs.AddItemBuff(consumeWz, duration, values)
 				return 0
 			case 5:
 				arg2UD := L.CheckUserData(2)
-				consume, ok := arg2UD.Value.(*Consume)
-				if !ok || consume == nil {
-					L.ArgError(2, "Consume expected")
+				itemWzConsume, ok := arg2UD.Value.(*wz.ItemWzConsume)
+				if !ok || itemWzConsume == nil || itemWzConsume.Model == nil {
+					L.ArgError(2, "wz.Consume expected")
+					return 0
+				}
+
+				consumeWz, ok := itemWzConsume.Model.(*wz.Consume)
+				if !ok || consumeWz == nil {
+					L.ArgError(2, "wz.Consume expected")
 					return 0
 				}
 
@@ -470,7 +478,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 				values := map[constant.BuffFlag]int32{flag: int32(L.CheckNumber(5))}
 				duration := time.Duration(durationMs) * time.Millisecond
-				ch.Buffs.AddItemBuff(consume, duration, values)
+				ch.Buffs.AddItemBuff(consumeWz, duration, values)
 				return 0
 			default:
 				L.ArgError(3, "buff() requires (skill, {[flag]=value}), (skill, flag, value), (consume, durationMs, {[flag]=value}), or (consume, durationMs, flag, value)")
@@ -1968,19 +1976,85 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 
+			_ = count // item_wz is a data lookup; scripts don't need consume count
+			model := resources.Items[itemId]
+			if model == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			_, ok = model.(*wz.Consume)
+			if !ok {
+				L.Push(lua.LNil)
+				return 1
+			}
+			wz.PushItemWz(L, model)
+			return 1
+		},
+		"item_wz": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Context == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			resources := ch.Context.GetResources()
+			if resources == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+
+			argc := L.GetTop()
+			count := uint16(1)
+			switch argc {
+			case 1:
+				L.ArgError(2, "item_wz(itemIdOrName [, count]) requires at least one argument")
+				return 0
+			case 2:
+				// count defaults to 1
+			default:
+				if n := L.CheckInt(3); n >= 1 {
+					count = uint16(n)
+				}
+			}
+
+			var itemId uint32
+			switch lv := L.Get(2).(type) {
+			case lua.LString:
+				id, ok := resources.NameToItem(string(lv))
+				if !ok {
+					L.Push(lua.LNil)
+					return 1
+				}
+				itemId = id
+			case lua.LNumber:
+				itemId = uint32(lv)
+			default:
+				L.ArgError(2, "item id (number) or item name (string) expected")
+				return 0
+			}
+
+			if _, ok := resources.Items[itemId]; !ok {
+				L.Push(lua.LNil)
+				return 1
+			}
+
 			item, err := NewItem(itemId, count, ch.Context)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
 			}
 
-			addedItems, err := ch.AddItem(item, false)
-			if err != nil || len(addedItems) == 0 {
+			consume, ok := item.(*Consume)
+			if !ok || consume == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
 
-			L.Push(luax.NewLuable(L, addedItems[0]))
+			L.Push(luax.NewLuable(L, consume))
 			return 1
 		},
 		"rmitem": func(L *lua.LState) int {

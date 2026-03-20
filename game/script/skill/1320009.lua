@@ -55,11 +55,11 @@ function on_summon_skill(me, summon, skill, params)
 		return
 	end
 
-	local item = me:mkitem(buff_id)
-	if item == nil then
+	local consume_wz = item_wz(buff_id)
+	if consume_wz == nil then
 		return
 	end
 
-	me:buff(item, duration, {[buff_flag] = buff_value})
+	me:buff(consume_wz, duration, {[buff_flag] = buff_value})
 	summon:use_skill(buff_effect_index + 6)
 end

@@ -371,14 +371,14 @@ func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLeve
 	}
 }
 
-func (bc *BuffContainer) AddItemBuff(consume *Consume, duration time.Duration, values map[constant.BuffFlag]int32) {
+func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32) {
 	if bc == nil {
 		return
 	}
-	if consume == nil {
+	if len(values) == 0 {
 		return
 	}
-	if len(values) == 0 {
+	if consumeWz == nil {
 		return
 	}
 
@@ -393,11 +393,6 @@ func (bc *BuffContainer) AddItemBuff(consume *Consume, duration time.Duration, v
 
 	now := time.Now()
 
-	itemWz, ok := consume.GetModel().(*wz.Consume)
-	if !ok || itemWz == nil {
-		return
-	}
-
 	entity := &ItemBuff{
 		BaseBuff: &BaseBuff{
 			StartTime: now,
@@ -405,7 +400,7 @@ func (bc *BuffContainer) AddItemBuff(consume *Consume, duration time.Duration, v
 			Flags:     entityFlags,
 			Values:    entityValues,
 		},
-		Wz: itemWz,
+		Wz: consumeWz,
 	}
 
 	removed := bc.add(entity)

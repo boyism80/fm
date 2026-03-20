@@ -31,6 +31,7 @@ var (
 	BuffFlagInvincible    = BuffFlag{0x8000, 4}
 	BuffFlagSoulArrow     = BuffFlag{0x10000, 4}
 	BuffFlagCombo         = BuffFlag{0x200000, 4}
+	BuffFlagSummon        = BuffFlag{0x200000, 4}
 	BuffFlagWkCharge      = BuffFlag{0x400000, 4}
 	BuffFlagDragonBlood   = BuffFlag{0x800000, 4}
 	BuffFlagHolySymbol    = BuffFlag{0x1000000, 4}
@@ -76,7 +77,7 @@ func AllBuffFlags() map[string]BuffFlag {
 		"Acc": BuffFlagAcc, "Avoid": BuffFlagAvoid, "Hands": BuffFlagHands, "Speed": BuffFlagSpeed, "Jump": BuffFlagJump,
 		"MagicGuard": BuffFlagMagicGuard, "Darksight": BuffFlagDarksight, "Booster": BuffFlagBooster, "Powerguard": BuffFlagPowerguard,
 		"MaxHp": BuffFlagMaxHp, "MaxMp": BuffFlagMaxMp, "Invincible": BuffFlagInvincible, "SoulArrow": BuffFlagSoulArrow,
-		"Combo": BuffFlagCombo, "WkCharge": BuffFlagWkCharge, "DragonBlood": BuffFlagDragonBlood, "HolySymbol": BuffFlagHolySymbol,
+		"Combo": BuffFlagCombo, "Summon": BuffFlagSummon, "WkCharge": BuffFlagWkCharge, "DragonBlood": BuffFlagDragonBlood, "HolySymbol": BuffFlagHolySymbol,
 		"MesoUp": BuffFlagMesoUp, "ShadowPartner": BuffFlagShadowPartner, "Pickpocket": BuffFlagPickpocket, "MesoGuard": BuffFlagMesoGuard, "HpLossGuard": BuffFlagHpLossGuard,
 		"Morph": BuffFlagMorph, "Recovery": BuffFlagRecovery, "MapleWarrior": BuffFlagMapleWarrior, "Stance": BuffFlagStance,
 		"SharpEyes": BuffFlagSharpEyes, "ManaReflection": BuffFlagManaReflection, "SpiritClaw": BuffFlagSpiritClaw, "Infinity": BuffFlagInfinity,

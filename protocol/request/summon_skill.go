@@ -49,6 +49,9 @@ func (m *SummonSkill) Deserialize(reader *stream.StreamReader) error {
 			return fmt.Errorf("summon_skill: %d trailing bytes after beholder buff payload", reader.Remaining())
 		}
 	case skillIDBeholderHealing:
+		if reader.Remaining() == 1 {
+			reader.Skip(1)
+		}
 		if reader.Remaining() != 0 {
 			return fmt.Errorf("summon_skill: %d trailing bytes after beholder healing sub_skill_id", reader.Remaining())
 		}
