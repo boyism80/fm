@@ -143,7 +143,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 			ID:         skillID,
 			SkillLevel: uint32(entry.SkillLevel),
 		}
-		if entry.Skill != nil && entry.Skill.MasterLevel > 0 {
+		if entry.Wz != nil && entry.Wz.MasterLevel > 0 {
 			skillDTO.MasterLevel = uint32(entry.MasterLevel)
 		}
 		charDTO.Skills = append(charDTO.Skills, skillDTO)

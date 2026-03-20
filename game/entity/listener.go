@@ -1,8 +1,9 @@
 package entity
 
 import (
+	"time"
+
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/types"
 )
@@ -39,7 +40,7 @@ type CharacterListener interface {
 	OnUpdateCharacterLook(character *Character)
 	OnNpcAction(bytes []byte)
 	OnClassChange(oldClass uint16, newClass uint16)
-	OnBuffAdded(character *Character, wz *wz.Skill, level uint8, values map[constant.BuffFlag]int32)
+	OnBuffAdded(character *Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32)
 	OnBuffRemoved(character *Character, flags []constant.BuffFlag)
 	OnDebuffAdded(character *Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32)
 	OnDebuffRemoved(character *Character, flags []constant.DebuffFlag)

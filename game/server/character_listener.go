@@ -5,7 +5,6 @@ import (
 
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
-	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
@@ -353,7 +352,7 @@ func (l *CharacterListenerImpl) OnClassChange(oldClass uint16, newClass uint16) 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, wz *wz.Skill, level uint8, values map[constant.BuffFlag]int32) {
+func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32) {
 	if len(values) == 0 {
 		return
 	}
@@ -363,19 +362,9 @@ func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, wz *wz.
 		dtoBuffs = append(dtoBuffs, dtoBuff)
 	}
 
-	duration := time.Duration(0)
-	if wz != nil {
-		duration = wz.GetLevelData(int(level)).Time
-	}
-
-	buffID := int32(0)
-	if wz != nil {
-		buffID = int32(wz.ID)
-	}
-
 	character.Send(&response.UpdateBuff{
 		BuffID:   buffID,
-		Duration: duration,
+		Duration: remainingDuration,
 		Buffs:    dtoBuffs,
 	}, types.SEND_POLICY_ENCRYPT)
 
@@ -570,9 +559,9 @@ func (l *CharacterListenerImpl) OnSummonSkill(character *entity.Character, summo
 		return
 	}
 	packet := &response.SummonSkill{
-		CharacterID:   character.GetID(),
-		SummonSkillID: uint32(summon.SkillID),
-		NewStance:     newStance,
+		CharacterID: character.GetID(),
+		SummonOID:   summon.OID,
+		NewStance:   newStance,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
 		ReferenceCharacter: character,

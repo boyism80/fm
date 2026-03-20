@@ -79,7 +79,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		}
 
 		skillEntry = &entity.SkillEntry{
-			Skill:       wzSkill,
+			Wz:          wzSkill,
 			SkillLevel:  0,
 			MasterLevel: masterLevel,
 			Expiration:  time.Time{},
@@ -88,23 +88,23 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		skills[skillID] = skillEntry
 	}
 
-	if skillEntry.Skill == nil {
+	if skillEntry.Wz == nil {
 		log.Printf("SkillEntry for skill %d has nil Skill for character %d", skillID, character.GetID())
 		return nil
 	}
 
 	maxLevel := skillEntry.MasterLevel
-	if maxLevel == 0 && skillEntry.Skill.MaxLevel > 0 {
-		maxLevel = skillEntry.Skill.MaxLevel
+	if maxLevel == 0 && skillEntry.Wz.MaxLevel > 0 {
+		maxLevel = skillEntry.Wz.MaxLevel
 	}
 	if maxLevel == 0 {
 		log.Printf("Skill %d has no maxLevel for character %d", skillID, character.GetID())
 		return nil
 	}
 
-	if skillEntry.MasterLevel > skillEntry.Skill.MaxLevel {
-		log.Printf("Skill %d MasterLevel %d exceeds MaxLevel %d for character %d, clamping", skillID, skillEntry.MasterLevel, skillEntry.Skill.MaxLevel, character.GetID())
-		skillEntry.MasterLevel = skillEntry.Skill.MaxLevel
+	if skillEntry.MasterLevel > skillEntry.Wz.MaxLevel {
+		log.Printf("Skill %d MasterLevel %d exceeds MaxLevel %d for character %d, clamping", skillID, skillEntry.MasterLevel, skillEntry.Wz.MaxLevel, character.GetID())
+		skillEntry.MasterLevel = skillEntry.Wz.MaxLevel
 		maxLevel = skillEntry.MasterLevel
 	}
 

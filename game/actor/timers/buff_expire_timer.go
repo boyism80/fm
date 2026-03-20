@@ -38,15 +38,25 @@ func (t *BuffExpireTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
 
 		entities := ch.Buffs.Entities()
 		for _, buff := range entities {
-			if buff == nil || buff.Wz == nil {
+			if buff == nil {
 				continue
 			}
-			levelData := buff.Wz.GetLevelData(int(buff.Level))
-			if levelData == nil || levelData.Time <= 0 {
-				continue
-			}
-			if now.After(buff.StartTime.Add(levelData.Time)) {
-				ch.Buffs.RemoveBuff(buff.Flags)
+
+			switch b := buff.(type) {
+			case *entity.SkillBuff:
+				if b.Duration <= 0 {
+					continue
+				}
+				if now.After(b.StartTime.Add(b.Duration)) {
+					ch.Buffs.RemoveBuff(b.GetFlags())
+				}
+			case *entity.ItemBuff:
+				if b.Duration <= 0 {
+					continue
+				}
+				if now.After(b.StartTime.Add(b.Duration)) {
+					ch.Buffs.RemoveBuff(b.GetFlags())
+				}
 			}
 		}
 	}

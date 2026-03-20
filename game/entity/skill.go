@@ -10,7 +10,7 @@ import (
 )
 
 type SkillEntry struct {
-	*wz.Skill
+	Wz          *wz.Skill
 	SkillLevel  int
 	MasterLevel int
 	Expiration  time.Time
@@ -52,10 +52,10 @@ func (s *SkillEntry) ClearCooldown() {
 }
 
 func (s *SkillEntry) notifyCooldown(remainingSec uint16) {
-	if s.Owner == nil || s.Owner.Listener == nil || s.Skill == nil {
+	if s.Owner == nil || s.Owner.Listener == nil || s.Wz == nil {
 		return
 	}
-	s.Owner.Listener.OnSkillCooldown(s.Skill.ID, remainingSec)
+	s.Owner.Listener.OnSkillCooldown(s.Wz.ID, remainingSec)
 }
 
 // Luable interface implementation
@@ -91,9 +91,9 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 					skill.MasterLevel = masterLevel
 				}
-				if skill.Owner != nil && skill.Skill != nil {
+				if skill.Owner != nil && skill.Wz != nil {
 					skill.Owner.Send(&response.UpdateSkills{
-						SkillID:     skill.Skill.ID,
+						SkillID:     skill.Wz.ID,
 						Level:       int32(skill.SkillLevel),
 						MasterLevel: int32(skill.MasterLevel),
 					}, types.SEND_POLICY_ENCRYPT)
@@ -124,9 +124,9 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				skill.MasterLevel = masterLevel
 
-				if skill.Owner != nil && skill.Skill != nil {
+				if skill.Owner != nil && skill.Wz != nil {
 					skill.Owner.Send(&response.UpdateSkills{
-						SkillID:     skill.Skill.ID,
+						SkillID:     skill.Wz.ID,
 						Level:       int32(skill.SkillLevel),
 						MasterLevel: int32(skill.MasterLevel),
 					}, types.SEND_POLICY_ENCRYPT)
@@ -145,13 +145,13 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 
-			if skill.Skill == nil {
+			if skill.Wz == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
 
 			// Convert WZ skill data to Lua table
-			wzTable := skillToLuaTable(L, skill.Skill)
+			wzTable := skillToLuaTable(L, skill.Wz)
 			L.Push(wzTable)
 			return 1
 		},

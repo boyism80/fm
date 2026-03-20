@@ -145,7 +145,7 @@ func (ch *Character) initializeBaseSkills(newClass uint16) {
 		}
 
 		skillEntry := &SkillEntry{
-			Skill:       wzSkill,
+			Wz:          wzSkill,
 			SkillLevel:  0,
 			MasterLevel: masterLevel,
 			Expiration:  time.Time{},

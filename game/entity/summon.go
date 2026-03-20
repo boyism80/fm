@@ -111,6 +111,21 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			summon.Owner.Listener.OnSummonMove(summon.Owner, summon, start, nil)
 			return 0
 		},
+		"use_skill": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			summon, ok := ud.Value.(*Summon)
+			if !ok {
+				L.ArgError(1, "Summon expected")
+				return 0
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "use_skill() requires stance")
+				return 0
+			}
+			newStance := uint8(L.CheckInt(2))
+			summon.UseSkill(newStance)
+			return 0
+		},
 	}
 }
 

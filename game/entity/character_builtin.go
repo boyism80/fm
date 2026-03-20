@@ -358,21 +358,22 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if !ok {
 					return 0
 				}
-				entity := ch.Buffs.GetEntity(flag)
-				if entity == nil || entity.Wz == nil {
+				buff := ch.Buffs.GetEntity(flag)
+				skillBuff, ok := buff.(*SkillBuff)
+				if !ok || skillBuff == nil || skillBuff.Wz == nil {
 					L.Push(lua.LNil)
 					return 1
 				}
 				view := &SkillEntry{
-					Skill:      entity.Wz,
-					SkillLevel: int(entity.Level),
+					Wz:         skillBuff.Wz,
+					SkillLevel: int(skillBuff.SkillLevel),
 				}
 				L.Push(luax.NewLuable(L, view))
 				return 1
 			case 3:
 				skillUD := L.CheckUserData(2)
 				skillEntry, ok := skillUD.Value.(*SkillEntry)
-				if !ok || skillEntry == nil || skillEntry.Skill == nil {
+				if !ok || skillEntry == nil || skillEntry.Wz == nil {
 					L.ArgError(2, "SkillEntry with Wz expected")
 					return 0
 				}
@@ -393,24 +394,86 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(3, "buff() requires at least one flag-value pair")
 					return 0
 				}
-				ch.Buffs.AddBuff(skillEntry.Skill, uint8(skillEntry.SkillLevel), values)
+				duration := time.Duration(0)
+				if ld := skillEntry.Wz.GetLevelData(skillEntry.SkillLevel); ld != nil {
+					duration = ld.Time
+				}
+				ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.SkillLevel), values)
 				return 0
 			case 4:
-				skillUD := L.CheckUserData(2)
-				skillEntry, ok := skillUD.Value.(*SkillEntry)
-				if !ok || skillEntry == nil || skillEntry.Skill == nil {
-					L.ArgError(2, "SkillEntry with Wz expected")
+				arg2UD := L.CheckUserData(2)
+				if skillEntry, ok := arg2UD.Value.(*SkillEntry); ok {
+					if skillEntry == nil || skillEntry.Wz == nil {
+						L.ArgError(2, "SkillEntry with Wz expected")
+						return 0
+					}
+
+					flag, ok := parseFlag(L.Get(3), 3)
+					if !ok {
+						return 0
+					}
+
+					values := map[constant.BuffFlag]int32{flag: int32(L.CheckNumber(4))}
+					duration := time.Duration(0)
+					if ld := skillEntry.Wz.GetLevelData(skillEntry.SkillLevel); ld != nil {
+						duration = ld.Time
+					}
+					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.SkillLevel), values)
 					return 0
 				}
-				flag, ok := parseFlag(L.Get(3), 3)
+
+				if consume, ok := arg2UD.Value.(*Consume); ok {
+					if consume == nil {
+						L.ArgError(2, "Consume expected")
+						return 0
+					}
+
+					durationMs := L.CheckInt(3)
+					values := make(map[constant.BuffFlag]int32)
+					valueTable := L.CheckTable(4)
+					valueTable.ForEach(func(key lua.LValue, value lua.LValue) {
+						flag, ok := parseFlag(key, 4)
+						if !ok {
+							return
+						}
+						if value.Type() != lua.LTNumber {
+							L.ArgError(4, "buff() item values must be numbers")
+							return
+						}
+						values[flag] = int32(value.(lua.LNumber))
+					})
+					if len(values) == 0 {
+						L.ArgError(4, "buff() requires at least one flag-value pair")
+						return 0
+					}
+
+					duration := time.Duration(durationMs) * time.Millisecond
+					ch.Buffs.AddItemBuff(consume, duration, values)
+					return 0
+				}
+
+				L.ArgError(2, "SkillEntry or Consume expected")
+				return 0
+			case 5:
+				arg2UD := L.CheckUserData(2)
+				consume, ok := arg2UD.Value.(*Consume)
+				if !ok || consume == nil {
+					L.ArgError(2, "Consume expected")
+					return 0
+				}
+
+				durationMs := L.CheckInt(3)
+				flag, ok := parseFlag(L.Get(4), 4)
 				if !ok {
 					return 0
 				}
-				values := map[constant.BuffFlag]int32{flag: int32(L.CheckNumber(4))}
-				ch.Buffs.AddBuff(skillEntry.Skill, uint8(skillEntry.SkillLevel), values)
+
+				values := map[constant.BuffFlag]int32{flag: int32(L.CheckNumber(5))}
+				duration := time.Duration(durationMs) * time.Millisecond
+				ch.Buffs.AddItemBuff(consume, duration, values)
 				return 0
 			default:
-				L.ArgError(3, "buff() requires (skill, {[flag]=value}) or (skill, flag, value)")
+				L.ArgError(3, "buff() requires (skill, {[flag]=value}), (skill, flag, value), (consume, durationMs, {[flag]=value}), or (consume, durationMs, flag, value)")
 				return 0
 			}
 		},
@@ -847,7 +910,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			skillEntry := &SkillEntry{
-				Skill:       wzSkill,
+				Wz:          wzSkill,
 				SkillLevel:  0,
 				MasterLevel: masterLevel,
 				Expiration:  time.Time{},

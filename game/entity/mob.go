@@ -177,8 +177,8 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				var skillLevel uint8
 				if L.GetTop() >= 5 {
 					if lv, ok := L.Get(5).(*lua.LUserData); ok {
-						if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Skill != nil {
-							skillWz = se.Skill
+						if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Wz != nil {
+							skillWz = se.Wz
 							skillLevel = uint8(se.SkillLevel)
 						}
 					}
@@ -208,8 +208,8 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			var skillLevel uint8
 			if L.GetTop() >= 4 {
 				if lv, ok := L.Get(4).(*lua.LUserData); ok {
-					if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Skill != nil {
-						skillWz = se.Skill
+					if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Wz != nil {
+						skillWz = se.Wz
 						skillLevel = uint8(se.SkillLevel)
 					}
 				}

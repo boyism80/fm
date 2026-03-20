@@ -149,7 +149,7 @@ func (h *Damaged) resolveDamageSkillArg(character *entity.Character, req *reques
 		return lua.LNil
 	}
 	return &entity.SkillEntry{
-		Skill:      skillModel,
+		Wz:         skillModel,
 		SkillLevel: int(req.Level),
 		Owner:      character,
 	}

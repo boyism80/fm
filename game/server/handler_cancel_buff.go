@@ -32,17 +32,29 @@ func (h *CancelBuff) Handle(ctx *core.ClientContext, req *request.CancelBuff) er
 	if character == nil || character.Buffs == nil {
 		return nil
 	}
-	if req.SourceID <= 0 {
+	sourceID := req.SourceID
+	if sourceID == 0 {
 		return nil
 	}
-
-	skillID := uint32(req.SourceID)
+	if sourceID < 0 {
+		sourceID = -sourceID
+	}
 	flagSet := make(map[constant.BuffFlag]struct{})
 	for _, buff := range character.Buffs.Entities() {
-		if buff == nil || buff.Wz == nil || buff.Wz.ID != skillID {
+		if buff == nil {
 			continue
 		}
-		for _, flag := range buff.Flags {
+		buffID := buff.GetBuffID()
+		if buffID == 0 {
+			continue
+		}
+		if buffID < 0 {
+			buffID = -buffID
+		}
+		if buffID != sourceID {
+			continue
+		}
+		for _, flag := range buff.GetFlags() {
 			flagSet[flag] = struct{}{}
 		}
 	}

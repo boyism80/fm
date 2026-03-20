@@ -195,6 +195,12 @@ function on_level_up(me, old_level, new_level)
             bonus_hp = bonus_hp + diff * effect.x
         end
     end
+    if me:class_of(Class.Magician) then
+        local effect = get_skill_effect(me:skill(Skill.ImprovingMaxMpIncrease))
+        if effect ~= nil and effect.x ~= nil and effect.x > 0 then
+            bonus_mp = bonus_mp + diff * effect.x
+        end
+    end
     me:base_hp(me:base_hp() + total_hp + bonus_hp, false)
     me:base_mp(me:base_mp() + total_mp + bonus_mp, false)
     me:hp(me:max_hp(), false)
@@ -224,17 +230,14 @@ function on_ap_to_hp(me)
 end
 
 function on_ap_to_mp(me)
-    if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
-        return math.random(6, 8)
-    end
+    local base = ap_to_mp_base(me)
+
+    local bonus = 0
     if me:class_of(Class.Magician) then
-        return math.random(10, 20)
+        local effect = get_skill_effect(me:skill(Skill.ImprovingMaxMpIncrease))
+        if effect ~= nil and effect.y ~= nil and effect.y > 0 then
+            bonus = effect.y
+        end
     end
-    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) then
-        return math.random(8, 12)
-    end
-    if me:class_of(Class.Warrior) then
-        return math.random(4, 7)
-    end
-    return math.random(50, 100)
+    return base + bonus
 end

@@ -15,3 +15,19 @@ function ap_to_hp_base(me)
     end
     return math.random(50, 100)
 end
+
+function ap_to_mp_base(me)
+    if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+        return math.random(6, 8)
+    end
+    if me:class_of(Class.Magician) then
+        return math.random(10, 20)
+    end
+    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) then
+        return math.random(8, 12)
+    end
+    if me:class_of(Class.Warrior) then
+        return math.random(4, 7)
+    end
+    return math.random(50, 100)
+end

@@ -3,9 +3,9 @@ package response
 import "github.com/boyism80/fm/stream"
 
 type SummonSkill struct {
-	CharacterID   uint32
-	SummonSkillID uint32
-	NewStance     uint8
+	CharacterID uint32
+	SummonOID   uint32
+	NewStance   uint8
 }
 
 func (p *SummonSkill) Opcode() uint16 {
@@ -16,7 +16,7 @@ func (p *SummonSkill) Serialize(w *stream.StreamWriter) error {
 	if err := w.WriteU32(p.CharacterID); err != nil {
 		return err
 	}
-	if err := w.WriteU32(p.SummonSkillID); err != nil {
+	if err := w.WriteU32(p.SummonOID); err != nil {
 		return err
 	}
 	if err := w.WriteU8(p.NewStance); err != nil {

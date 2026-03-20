@@ -24,10 +24,9 @@ end
 
 local function get_mp_recover_check(me)
     if me:class_of(Class.Magician) then
-        local skill = me:skill(Skill.ImprovingMpRecovery2000000)
-        if skill ~= nil then
-            local lv = skill:level()
-            return math.floor(lv * me:level() * 0.1 + 0.5)
+        local effect = get_skill_effect(me:skill(Skill.ImprovingMpRecovery2000000))
+        if effect ~= nil and effect.mp ~= nil and effect.mp > 0 then
+            return effect.mp
         end
         return 0
     end
