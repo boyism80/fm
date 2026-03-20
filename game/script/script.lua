@@ -24,7 +24,7 @@ end
 function on_script(me)
     local x, y = me:position()
 
-    me:class(132)
+    me:class(212)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -45,7 +45,8 @@ function on_script(me)
     end
     me:base_str(80)
     me:base_dex(4)
-    me:base_luk(4)
+    me:base_int(999)
+    me:base_luk(999)
     me:level(200)
     me:map('오르비스탑입구')
 end
@@ -228,6 +229,7 @@ function handle_mp_eater(me, damages)
 
     if total_absorb_mp > 0 then
         me:add_mp(total_absorb_mp)
+        me:show_buff_effect(mp_eater_skill)
     end
 end
 

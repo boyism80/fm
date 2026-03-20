@@ -24,7 +24,7 @@ type mobMobStatusEntry struct {
 }
 
 type Mob struct {
-	Life
+	LifeCore
 	Wz       *wz.Mob
 	Foothold int16
 	Spawn    *MobSpawn
@@ -38,10 +38,6 @@ func (m *Mob) GetObjectType() constant.ObjectType {
 
 func (m *Mob) Is(typ constant.ObjectType) bool {
 	return m.GetObjectType().Has(typ)
-}
-
-func (m *Mob) GetObject() *Object {
-	return &m.Life.Object
 }
 
 func (m *Mob) LuaTypeName() string {
@@ -138,7 +134,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "map_id() is read-only (map is fixed at spawn)")
 				return 0
 			}
-			mapInstance := mob.GetObject().GetMap()
+			mapInstance := mob.GetMap()
 			if mapInstance == nil {
 				L.Push(lua.LNumber(0))
 				return 1
@@ -343,7 +339,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			argc := L.GetTop()
 			if argc == 1 {
-				mapInstance := mob.GetObject().GetMap()
+				mapInstance := mob.GetMap()
 				if mapInstance == nil {
 					L.Push(lua.LNil)
 					return 1
@@ -372,7 +368,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						return 0
 					}
 				}
-				mapInstance := mob.GetObject().GetMap()
+				mapInstance := mob.GetMap()
 				if mapInstance == nil {
 					return 0
 				}
@@ -435,7 +431,7 @@ func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs 
 	if skillWz != nil {
 		packetSkillID = skillWz.ID
 	}
-	mapInstance := m.GetObject().GetMap()
+	mapInstance := m.GetMap()
 	if mapInstance != nil && mapInstance.listener != nil {
 		mapInstance.listener.OnMobMobStatusApplied(mapInstance, m, debuff, value, packetSkillID, durationMs)
 	}
@@ -454,7 +450,7 @@ func (m *Mob) CancelMobStatus(debuff constant.MobStatus) {
 	delete(m.debuffs, debuff)
 	m.debuffMu.Unlock()
 
-	mapInstance := m.GetObject().GetMap()
+	mapInstance := m.GetMap()
 	if mapInstance != nil && mapInstance.listener != nil {
 		mapInstance.listener.OnMobMobStatusCancelled(mapInstance, m, debuff)
 	}
@@ -518,7 +514,7 @@ func (m *Mob) getDebuffMaskAndEntries() (mask uint32, entries []debuffForPacket)
 }
 
 func (m *Mob) dropItems(attacker *Character) {
-	mapInstance := m.GetObject().GetMap()
+	mapInstance := m.GetMap()
 	if mapInstance == nil {
 		return
 	}
@@ -619,7 +615,7 @@ func (m *Mob) dropItems(attacker *Character) {
 		} else {
 
 			drop.item.BindDrop(&Drop{
-				Object: &Object{
+				ObjectCore: &ObjectCore{
 					OID:      0,
 					Position: destPoint,
 					Context:  m.Context,
@@ -675,7 +671,7 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		log.Printf("Mob %d (ID: %d) killed with no attacker", m.OID, m.Wz.ID)
 	}
 
-	mapInstance := m.GetObject().GetMap()
+	mapInstance := m.GetMap()
 	if mapInstance != nil {
 		mapInstance.RemoveMob(m.OID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT)
 	}

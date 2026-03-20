@@ -1,6 +1,6 @@
 package constant
 
-// ItemType represents the general category of an item.
+// ItemType represents the misc category of an item.
 type ItemType int
 
 const (

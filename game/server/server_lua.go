@@ -196,14 +196,14 @@ func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
 }
 
 func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
-	luax.RegisterLuaType[*entity.Object](luaState)
-	luax.RegisterLuaDerivedType[*entity.Drop, *entity.Object](luaState)
+	luax.RegisterLuaType[*entity.ObjectCore](luaState)
+	luax.RegisterLuaDerivedType[*entity.Drop, *entity.ObjectCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Meso, *entity.Drop](luaState)
-	luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)
-	luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](luaState)
-	luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](luaState)
-	luax.RegisterLuaDerivedType[*entity.Summon, *entity.Life](luaState)
-	luax.RegisterLuaDerivedType[*entity.Npc, *entity.Object](luaState)
+	luax.RegisterLuaDerivedType[*entity.LifeCore, *entity.ObjectCore](luaState)
+	luax.RegisterLuaDerivedType[*entity.Character, *entity.LifeCore](luaState)
+	luax.RegisterLuaDerivedType[*entity.Mob, *entity.LifeCore](luaState)
+	luax.RegisterLuaDerivedType[*entity.Summon, *entity.LifeCore](luaState)
+	luax.RegisterLuaDerivedType[*entity.Npc, *entity.ObjectCore](luaState)
 	luax.RegisterLuaType[*entity.Map](luaState)
 	luax.RegisterLuaType[*entity.SkillEntry](luaState)
 	luax.RegisterLuaType[*entity.ItemCore](luaState)
@@ -219,18 +219,18 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Glove, *entity.EquipmentCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Cape, *entity.EquipmentCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.RingEquip, *entity.EquipmentCore](luaState)
-	luax.RegisterLuaType[*wz.ItemWzCore](luaState)
-	luax.RegisterLuaDerivedType[*wz.ItemWzEquipment, *wz.ItemWzCore](luaState)
-	luax.RegisterLuaDerivedType[*wz.ItemWzWeapon, *wz.ItemWzEquipment](luaState)
-	luax.RegisterLuaDerivedType[*wz.ItemWzArmor, *wz.ItemWzEquipment](luaState)
-	luax.RegisterLuaDerivedType[*wz.ItemWzConsume, *wz.ItemWzCore](luaState)
-	luax.RegisterLuaDerivedType[*wz.ItemWzPet, *wz.ItemWzCore](luaState)
-	luax.RegisterLuaDerivedType[*wz.ItemWzGeneralItem, *wz.ItemWzCore](luaState)
-	luax.RegisterLuaDerivedType[*wz.ItemWzCashItem, *wz.ItemWzCore](luaState)
-	luax.RegisterLuaDerivedType[*wz.ItemWzInstallation, *wz.ItemWzCore](luaState)
+	luax.RegisterLuaType[*wz.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*wz.EquipmentCore, *wz.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*wz.Weapon, *wz.EquipmentCore](luaState)
+	luax.RegisterLuaDerivedType[*wz.Armor, *wz.EquipmentCore](luaState)
+	luax.RegisterLuaDerivedType[*wz.Consume, *wz.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*wz.Pet, *wz.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*wz.MiscItem, *wz.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*wz.CashItem, *wz.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*wz.Installation, *wz.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Consume, *entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.CashItem, *entity.ItemCore](luaState)
-	luax.RegisterLuaDerivedType[*entity.GeneralItem, *entity.ItemCore](luaState)
+	luax.RegisterLuaDerivedType[*entity.MiscItem, *entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Installation, *entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Pet, *entity.ItemCore](luaState)
 
@@ -358,10 +358,14 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			return 1
 		}
 
-		// Return a wz item wrapper (e.g. *wz.ItemWzConsume) so Lua scripts can pass it back
+		// Return raw wz item model (e.g. *wz.Consume) so Lua scripts can pass it back
 		// without creating real inventory items.
-		_ = count // currently not used for the wrapper (buff scripts don't need consume count)
-		wz.PushItemWz(L, model)
+		_ = count
+		if luable, ok := model.(luax.Luable); ok && luable != nil {
+			L.Push(luax.NewLuable(L, luable))
+			return 1
+		}
+		L.Push(lua.LNil)
 		return 1
 	})
 

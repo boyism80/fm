@@ -54,7 +54,7 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 	}
 
 	if !character.Invincible {
-		newHp := int32(character.Life.Hp) - damage
+		newHp := int32(character.Hp) - damage
 		if newHp < 0 {
 			newHp = 0
 		}
@@ -62,8 +62,8 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 			newHp = int32(character.GetMaxHp())
 		}
 
-		character.Life.Hp = uint16(newHp)
-		stats[constant.STAT_HP] = int32(character.Life.Hp)
+		character.Hp = uint16(newHp)
+		stats[constant.STAT_HP] = int32(character.Hp)
 	}
 
 	character.Listener.OnUpdateStats(stats, true)

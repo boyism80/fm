@@ -9,7 +9,7 @@ type ShowBuffeffect struct {
 	EffectID    uint8
 	SkillID     uint32
 	SkillLevel  uint8
-	Direction   *uint8
+	Additional  *uint8
 }
 
 func (p *ShowBuffeffect) Opcode() uint16 {
@@ -21,8 +21,8 @@ func (p *ShowBuffeffect) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(p.EffectID)
 	writer.WriteU32(p.SkillID)
 	writer.WriteU8(p.SkillLevel)
-	if p.Direction != nil && *p.Direction != 3 {
-		writer.WriteU8(*p.Direction)
+	if p.Additional != nil {
+		writer.WriteU8(*p.Additional)
 	}
 	return nil
 }

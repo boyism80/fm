@@ -131,7 +131,7 @@ func readDamagesFromLuaTableInto(damagesTable *lua.LTable, damages []dto.AttackP
 		if !ok {
 			return
 		}
-		oid := mob.GetObject().OID
+		oid := mob.GetOID()
 		hitsTbl, ok := value.(*lua.LTable)
 		if !ok {
 			return

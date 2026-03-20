@@ -194,8 +194,32 @@ func (l *CharacterListenerImpl) OnUpdateStats(stats map[constant.Stat]int32, unl
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnShowBuffEffect(effectID uint8, skillID uint32, skillLevel uint8, additional *uint8) {
+	mapInstance := l.ch.GetMap()
+	if mapInstance == nil {
+		return
+	}
+
+	l.ch.Send(&response.ShowOwnBuffeffect{
+		EffectID:   effectID,
+		SkillID:    skillID,
+		SkillLevel: skillLevel,
+		Additional: additional,
+	}, types.SEND_POLICY_ENCRYPT)
+
+	mapInstance.Broadcast(&response.ShowBuffeffect{
+		CharacterID: l.ch.GetID(),
+		EffectID:    effectID,
+		SkillID:     skillID,
+		SkillLevel:  skillLevel,
+		Additional:  additional,
+	}, &entity.BroadcastOption{
+		ExceptPlayerIDs: []uint32{l.ch.GetID()},
+	})
+}
+
 func (l *CharacterListenerImpl) OnMobMoved(mob *entity.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
-	mapInstance := mob.GetObject().GetMap()
+	mapInstance := mob.GetMap()
 	if mapInstance == nil {
 		return
 	}

@@ -28,8 +28,8 @@ func (item *Consume) ToDTO() dto.Item {
 	}
 }
 
-func (item *GeneralItem) ToDTO() dto.Item {
-	return &dto.GeneralItem{
+func (item *MiscItem) ToDTO() dto.Item {
+	return &dto.MiscItem{
 		ItemId:     item.GetModel().GetID(),
 		UniqueId:   item.UniqueId,
 		Count:      item.GetCount(),
@@ -82,33 +82,33 @@ func (pet *Pet) ToDTO() dto.Item {
 	}
 }
 
-func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.EquipmentModel) *dto.Equipment {
+func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.Equipment) *dto.Equipment {
 	if core == nil || model == nil {
 		return nil
 	}
-	eq := model.GetEquipment()
-	maxEnchantChance := model.GetEquipment().EnchantChance
+	ability := model.GetAbility()
+	maxEnchantChance := model.GetEnchantChance()
 	return &dto.Equipment{
-		ItemId:        eq.ItemCore.ID,
+		ItemId:        model.GetID(),
 		UniqueId:      core.UniqueId,
 		Expiration:    core.Expiration,
 		EnchantChance: maxEnchantChance,
-		EnchantCount:  maxEnchantChance - eq.EnchantChance,
-		Str:           eq.Ability.Str,
-		Dex:           eq.Ability.Dex,
-		Int:           eq.Ability.Int,
-		Luk:           eq.Ability.Luk,
-		MaxHP:         eq.Ability.MaxHP,
-		MaxMP:         eq.Ability.MaxMP,
-		PAD:           eq.Ability.PAD,
-		MAD:           eq.Ability.MAD,
-		PDD:           eq.Ability.PDD,
-		MDD:           eq.Ability.MDD,
-		ACC:           eq.Ability.ACC,
-		Avoid:         eq.Ability.Avoid,
-		Hands:         eq.Ability.Hands,
-		Speed:         eq.Ability.Speed,
-		Jump:          eq.Ability.Jump,
+		EnchantCount:  maxEnchantChance - model.GetEnchantChance(),
+		Str:           ability.Str,
+		Dex:           ability.Dex,
+		Int:           ability.Int,
+		Luk:           ability.Luk,
+		MaxHP:         ability.MaxHP,
+		MaxMP:         ability.MaxMP,
+		PAD:           ability.PAD,
+		MAD:           ability.MAD,
+		PDD:           ability.PDD,
+		MDD:           ability.MDD,
+		ACC:           ability.ACC,
+		Avoid:         ability.Avoid,
+		Hands:         ability.Hands,
+		Speed:         ability.Speed,
+		Jump:          ability.Jump,
 		OwnerName:     core.OwnerName,
 		Flag:          core.Flag,
 		SkillBonus:    uint8(core.SkillBonus),
@@ -116,14 +116,14 @@ func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.EquipmentModel) *dto.E
 }
 
 func (e *Weapon) ToDTO() dto.Item {
-	model, ok := e.GetModel().(wz.EquipmentModel)
+	model, ok := e.GetModel().(wz.Equipment)
 	if !ok {
 		return nil
 	}
 	return ToEquipmentDTOFromCore(e.EquipmentCore, model)
 }
 func (e *Weapon) ToEquipmentDTO() *dto.Equipment {
-	model, ok := e.GetModel().(wz.EquipmentModel)
+	model, ok := e.GetModel().(wz.Equipment)
 	if !ok {
 		return nil
 	}
@@ -131,7 +131,7 @@ func (e *Weapon) ToEquipmentDTO() *dto.Equipment {
 }
 
 func equipToDTO(e Equipment) dto.Item {
-	model, ok := e.GetModel().(wz.EquipmentModel)
+	model, ok := e.GetModel().(wz.Equipment)
 	if !ok {
 		return nil
 	}
@@ -139,7 +139,7 @@ func equipToDTO(e Equipment) dto.Item {
 }
 
 func equipToEquipmentDTO(e Equipment) *dto.Equipment {
-	model, ok := e.GetModel().(wz.EquipmentModel)
+	model, ok := e.GetModel().(wz.Equipment)
 	if !ok {
 		return nil
 	}

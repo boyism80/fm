@@ -473,15 +473,15 @@ func NewResources(wzPath string) *Resources {
 
 	err = loadResourceFiles(filepath.Join(wzPath, "Item.wz", "Etc"),
 		workerCount,
-		func(path string) (result *[]*GeneralItem, err error) {
-			return loadGeneralItems(path)
+		func(path string) (result *[]*MiscItem, err error) {
+			return loadMiscItems(path)
 		},
-		func(percent float32, value *[]*GeneralItem) {
+		func(percent float32, value *[]*MiscItem) {
 
 			for _, v := range *value {
 				items[v.ID] = v
 			}
-			fmt.Printf("Loading general item files: %.1f%%\n", percent)
+			fmt.Printf("Loading misc item files: %.1f%%\n", percent)
 		})
 	if err != nil {
 		log.Fatal(err)

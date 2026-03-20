@@ -347,7 +347,7 @@ func loadWeapons(path string) (Item, error) {
 		return nil, err
 	}
 
-	model := Equipment{
+	model := EquipmentCore{
 		ItemCore: &ItemCore{},
 	}
 	id, err := strconv.Atoi(strings.TrimSuffix(root.Name, ".img"))
@@ -545,13 +545,13 @@ func loadWeapons(path string) (Item, error) {
 
 	eq := &model
 	if constant.GetEquipmentType(model.ID) == constant.EquipmentTypeWeapon {
-		return &Weapon{Equipment: eq}, nil
+		return &Weapon{EquipmentCore: eq}, nil
 	}
-	return &Armor{Equipment: eq}, nil
+	return &Armor{EquipmentCore: eq}, nil
 }
 
-// loadGeneralItems loads general item specifications from XML file.
-func loadGeneralItems(path string) (*[]*GeneralItem, error) {
+// loadMiscItems loads misc item specifications from XML file.
+func loadMiscItems(path string) (*[]*MiscItem, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -563,9 +563,9 @@ func loadGeneralItems(path string) (*[]*GeneralItem, error) {
 		return nil, err
 	}
 
-	specs := []*GeneralItem{}
+	specs := []*MiscItem{}
 	for _, v := range root.Children {
-		model := GeneralItem{
+		model := MiscItem{
 			ItemCore: &ItemCore{},
 		}
 
@@ -646,9 +646,9 @@ func loadGeneralItems(path string) (*[]*GeneralItem, error) {
 			}
 		}
 
-		// Set default slotMax for GeneralItem if not specified (EQUIP = 1, others = 100)
+		// Set default slotMax for MiscItem if not specified (EQUIP = 1, others = 100)
 		if model.SlotMax == 0 {
-			model.SlotMax = 100 // GeneralItem default
+			model.SlotMax = 100 // MiscItem default
 		}
 
 		specs = append(specs, &model)

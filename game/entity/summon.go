@@ -8,7 +8,7 @@ import (
 )
 
 type Summon struct {
-	Life
+	LifeCore
 	Owner        *Character
 	OwnerID      uint32
 	SkillID      constant.SkillID
@@ -24,10 +24,6 @@ func (s *Summon) GetObjectType() constant.ObjectType {
 
 func (s *Summon) Is(typ constant.ObjectType) bool {
 	return s.GetObjectType().Has(typ)
-}
-
-func (s *Summon) GetObject() *Object {
-	return &s.Life.Object
 }
 
 func (s *Summon) LuaTypeName() string {

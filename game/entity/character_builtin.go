@@ -169,7 +169,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.GetBaseHp()))
+				L.Push(lua.LNumber(ch.BaseHp))
 				return 1
 			case 2, 3:
 				v := L.CheckInt(2)
@@ -194,7 +194,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.GetBaseMp()))
+				L.Push(lua.LNumber(ch.BaseMp))
 				return 1
 			case 2, 3:
 				v := L.CheckInt(2)
@@ -422,13 +422,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.SkillLevel), values)
 					return 0
 				}
-				itemWzConsume, ok := arg2UD.Value.(*wz.ItemWzConsume)
-				if !ok || itemWzConsume == nil || itemWzConsume.Model == nil {
-					L.ArgError(2, "wz.Consume expected")
-					return 0
-				}
-
-				consumeWz, ok := itemWzConsume.Model.(*wz.Consume)
+				consumeWz, ok := arg2UD.Value.(*wz.Consume)
 				if !ok || consumeWz == nil {
 					L.ArgError(2, "wz.Consume expected")
 					return 0
@@ -458,13 +452,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			case 5:
 				arg2UD := L.CheckUserData(2)
-				itemWzConsume, ok := arg2UD.Value.(*wz.ItemWzConsume)
-				if !ok || itemWzConsume == nil || itemWzConsume.Model == nil {
-					L.ArgError(2, "wz.Consume expected")
-					return 0
-				}
-
-				consumeWz, ok := itemWzConsume.Model.(*wz.Consume)
+				consumeWz, ok := arg2UD.Value.(*wz.Consume)
 				if !ok || consumeWz == nil {
 					L.ArgError(2, "wz.Consume expected")
 					return 0
@@ -484,6 +472,59 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(3, "buff() requires (skill, {[flag]=value}), (skill, flag, value), (consume, durationMs, {[flag]=value}), or (consume, durationMs, flag, value)")
 				return 0
 			}
+		},
+		"show_buff_effect": func(L *lua.LState) int {
+			argc := L.GetTop()
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			skillUD := L.CheckUserData(2)
+			skillEntry, ok := skillUD.Value.(*SkillEntry)
+			if !ok || skillEntry == nil || skillEntry.Wz == nil {
+				L.ArgError(2, "SkillEntry expected")
+				return 0
+			}
+
+			effectID := uint8(1)
+			if argc >= 3 {
+				effectID = uint8(L.CheckInt(3))
+			}
+			skillLevelInt := skillEntry.SkillLevel
+			if skillLevelInt < 0 {
+				skillLevelInt = 0
+			}
+			skillLevel := uint8(skillLevelInt)
+
+			if ch.Listener != nil {
+				ch.Listener.OnShowBuffEffect(effectID, skillEntry.Wz.ID, skillLevel, nil)
+				return 0
+			}
+
+			// Fallback when listener is missing: send both packets directly.
+			mapInstance := ch.GetMap()
+			if mapInstance == nil {
+				return 0
+			}
+
+			ch.Send(&response.ShowOwnBuffeffect{
+				EffectID:   effectID,
+				SkillID:    skillEntry.Wz.ID,
+				SkillLevel: skillLevel,
+			}, types.SEND_POLICY_ENCRYPT)
+
+			mapInstance.Broadcast(&response.ShowBuffeffect{
+				CharacterID: ch.GetID(),
+				EffectID:    effectID,
+				SkillID:     skillEntry.Wz.ID,
+				SkillLevel:  skillLevel,
+			}, &BroadcastOption{
+				ExceptPlayerIDs: []uint32{ch.GetID()},
+			})
+			return 0
 		},
 		"unbuff": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -1290,54 +1331,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
-		"bonus_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			argc := L.GetTop()
-			switch argc {
-			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.MaxHpFixed))
-				return 1
-			case 2:
-				ch.BonusStats.MaxHpFixed = int16(L.CheckInt(2))
-				if ch.Hp > ch.GetMaxHp() {
-					ch.Hp = ch.GetMaxHp()
-				}
-				ch.notifyStatChange(constant.STAT_MAX_HP)
-				return 0
-			default:
-				L.ArgError(2, "bonus_hp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"bonus_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			argc := L.GetTop()
-			switch argc {
-			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.MaxMpFixed))
-				return 1
-			case 2:
-				ch.BonusStats.MaxMpFixed = int16(L.CheckInt(2))
-				if ch.Mp > ch.GetMaxMp() {
-					ch.Mp = ch.GetMaxMp()
-				}
-				ch.notifyStatChange(constant.STAT_MAX_MP)
-				return 0
-			default:
-				L.ArgError(2, "bonus_mp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
 		"bonus_max_hp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1348,11 +1341,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.MaxHpFixed))
+				L.Push(lua.LNumber(ch.GetBonusHp()))
 				L.Push(lua.LNumber(ch.BonusStats.MaxHpPercent))
 				return 2
 			case 2:
-				ch.BonusStats.MaxHpFixed = int16(L.CheckInt(2))
+				ch.SetBonusHp(int16(L.CheckInt(2)))
 				if ch.Hp > ch.GetMaxHp() {
 					ch.Hp = ch.GetMaxHp()
 				}
@@ -1365,7 +1358,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				return 0
 			case 3:
-				ch.BonusStats.MaxHpFixed = int16(L.CheckInt(2))
+				ch.SetBonusHp(int16(L.CheckInt(2)))
 				ch.BonusStats.MaxHpPercent = int16(L.CheckInt(3))
 				if ch.Hp > ch.GetMaxHp() {
 					ch.Hp = ch.GetMaxHp()
@@ -1393,11 +1386,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.BonusStats.MaxMpFixed))
+				L.Push(lua.LNumber(ch.GetBonusMp()))
 				L.Push(lua.LNumber(ch.BonusStats.MaxMpPercent))
 				return 2
 			case 2:
-				ch.BonusStats.MaxMpFixed = int16(L.CheckInt(2))
+				ch.SetBonusMp(int16(L.CheckInt(2)))
 				if ch.Mp > ch.GetMaxMp() {
 					ch.Mp = ch.GetMaxMp()
 				}
@@ -1410,7 +1403,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				return 0
 			case 3:
-				ch.BonusStats.MaxMpFixed = int16(L.CheckInt(2))
+				ch.SetBonusMp(int16(L.CheckInt(2)))
 				ch.BonusStats.MaxMpPercent = int16(L.CheckInt(3))
 				if ch.Mp > ch.GetMaxMp() {
 					ch.Mp = ch.GetMaxMp()
@@ -1425,6 +1418,134 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			default:
 				L.ArgError(2, "bonus_max_mp() requires 0, 1 or 2 arguments")
+				return 0
+			}
+		},
+		"bonus_max_hp_fixed": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.GetBonusHp()))
+				return 1
+			case 2, 3:
+				v := int16(L.CheckInt(2))
+				notify := argc == 2 || L.ToBool(3)
+				ch.BonusHp = v
+				if ch.Hp > ch.GetMaxHp() {
+					ch.Hp = ch.GetMaxHp()
+				}
+				if notify && ch.Listener != nil {
+					stats := map[constant.Stat]int32{
+						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+						constant.STAT_HP:     int32(ch.Hp),
+					}
+					ch.Listener.OnUpdateStats(stats, false)
+				}
+				return 0
+			default:
+				L.ArgError(2, "bonus_max_hp_fixed() requires 0, 1 or 2 arguments")
+				return 0
+			}
+		},
+		"bonus_max_hp_ratio": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.BonusStats.MaxHpPercent))
+				return 1
+			case 2, 3:
+				p := int16(L.CheckInt(2))
+				notify := argc == 2 || L.ToBool(3)
+				ch.BonusStats.MaxHpPercent = p
+				if ch.Hp > ch.GetMaxHp() {
+					ch.Hp = ch.GetMaxHp()
+				}
+				if notify && ch.Listener != nil {
+					stats := map[constant.Stat]int32{
+						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+						constant.STAT_HP:     int32(ch.Hp),
+					}
+					ch.Listener.OnUpdateStats(stats, false)
+				}
+				return 0
+			default:
+				L.ArgError(2, "bonus_max_hp_ratio() requires 0, 1 or 2 arguments")
+				return 0
+			}
+		},
+		"bonus_max_mp_fixed": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.GetBonusMp()))
+				return 1
+			case 2, 3:
+				v := int16(L.CheckInt(2))
+				notify := argc == 2 || L.ToBool(3)
+				ch.BonusMp = v
+				if ch.Mp > ch.GetMaxMp() {
+					ch.Mp = ch.GetMaxMp()
+				}
+				if notify && ch.Listener != nil {
+					stats := map[constant.Stat]int32{
+						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+						constant.STAT_MP:     int32(ch.Mp),
+					}
+					ch.Listener.OnUpdateStats(stats, false)
+				}
+				return 0
+			default:
+				L.ArgError(2, "bonus_max_mp_fixed() requires 0, 1 or 2 arguments")
+				return 0
+			}
+		},
+		"bonus_max_mp_ratio": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.BonusStats.MaxMpPercent))
+				return 1
+			case 2, 3:
+				p := int16(L.CheckInt(2))
+				notify := argc == 2 || L.ToBool(3)
+				ch.BonusStats.MaxMpPercent = p
+				if ch.Mp > ch.GetMaxMp() {
+					ch.Mp = ch.GetMaxMp()
+				}
+				if notify && ch.Listener != nil {
+					stats := map[constant.Stat]int32{
+						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+						constant.STAT_MP:     int32(ch.Mp),
+					}
+					ch.Listener.OnUpdateStats(stats, false)
+				}
+				return 0
+			default:
+				L.ArgError(2, "bonus_max_mp_ratio() requires 0, 1 or 2 arguments")
 				return 0
 			}
 		},
@@ -1987,7 +2108,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			wz.PushItemWz(L, model)
+			if luable, ok := model.(luax.Luable); ok && luable != nil {
+				L.Push(luax.NewLuable(L, luable))
+				return 1
+			}
+			L.Push(lua.LNil)
 			return 1
 		},
 		"item_wz": func(L *lua.LState) int {

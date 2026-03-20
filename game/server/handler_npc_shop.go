@@ -303,7 +303,7 @@ func (h *NpcShop) getItemInventoryType(itemID uint32, itemModel wz.Item) constan
 			return constant.INVENTORY_TYPE_CONSUME
 		case *wz.Installation:
 			return constant.INVENTORY_TYPE_INSTALLATION
-		case *wz.GeneralItem:
+		case *wz.MiscItem:
 			return constant.INVENTORY_TYPE_ETC
 		case *wz.CashItem:
 			return constant.INVENTORY_TYPE_CASH

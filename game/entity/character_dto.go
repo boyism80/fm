@@ -19,7 +19,7 @@ func (ch *Character) ToDTO() *dto.Character {
 			continue
 		}
 
-		model, ok := equipment.GetModel().(wz.EquipmentModel)
+		model, ok := equipment.GetModel().(wz.Equipment)
 		if !ok {
 			continue
 		}

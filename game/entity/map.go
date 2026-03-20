@@ -43,7 +43,7 @@ type MobSpawn struct {
 
 type Map struct {
 	ID              uint32
-	objects         map[types.ObjectType]map[uint32]interface{} // Players, Mobs, Items, etc.
+	objects         map[types.ObjectType]map[uint32]Object // Players, Mobs, Items, etc.
 	controllerTable *ControllerTable
 	MobSpawns       map[uint32]*MobSpawn
 	listener        MapListener
@@ -94,7 +94,7 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 
 	mapInstance := &Map{
 		ID:              id,
-		objects:         make(map[types.ObjectType]map[uint32]interface{}),
+		objects:         make(map[types.ObjectType]map[uint32]Object),
 		controllerTable: nil, // Will be set after mapInstance is created
 		MobSpawns:       make(map[uint32]*MobSpawn),
 		listener:        listener,
@@ -142,10 +142,10 @@ func OnMobControllerChange(mob *Mob, before *Character, after *Character) {
 
 func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8, init bool) error {
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
-		m.objects[types.OBJECT_TYPE_PLAYER] = make(map[uint32]interface{})
+		m.objects[types.OBJECT_TYPE_PLAYER] = make(map[uint32]Object)
 	}
 
-	character.GetObject().Map = m
+	character.Map = m
 	character.spawnPoint = spawnPoint
 
 	m.objects[types.OBJECT_TYPE_PLAYER][playerID] = character
@@ -169,7 +169,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	delete(m.objects[types.OBJECT_TYPE_PLAYER], playerID)
 
 	character.SuspendTimers()
-	character.GetObject().Map = nil
+	character.Map = nil
 	m.controllerTable.LeavePlayer(character)
 
 	// Notify listener about player removal
@@ -196,9 +196,9 @@ func (m *Map) GetPlayerCount() int {
 	return len(m.objects[types.OBJECT_TYPE_PLAYER])
 }
 
-func (m *Map) GetAllPlayers() map[uint32]interface{} {
+func (m *Map) GetAllPlayers() map[uint32]Object {
 	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
-		return make(map[uint32]interface{})
+		return make(map[uint32]Object)
 	}
 	return m.objects[types.OBJECT_TYPE_PLAYER]
 }
@@ -227,13 +227,13 @@ func (m *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 
 func (m *Map) initializeNpcs() {
 	if m.objects[types.OBJECT_TYPE_NPC] == nil {
-		m.objects[types.OBJECT_TYPE_NPC] = make(map[uint32]interface{})
+		m.objects[types.OBJECT_TYPE_NPC] = make(map[uint32]Object)
 	}
 
 	for _, wz := range m.model.NpcSpawns {
 		oid := m.allocateOID()
 		npc := &Npc{
-			Object: Object{
+			ObjectCore: ObjectCore{
 				OID:      oid,
 				Position: types.Point[int16]{X: wz.BaseSpawn.Position.X, Y: wz.BaseSpawn.Position.Y},
 				Context:  m.context,
@@ -250,7 +250,7 @@ func (m *Map) addSummon(s *Summon) {
 		return
 	}
 	if m.objects[types.OBJECT_TYPE_SUMMON] == nil {
-		m.objects[types.OBJECT_TYPE_SUMMON] = make(map[uint32]interface{})
+		m.objects[types.OBJECT_TYPE_SUMMON] = make(map[uint32]Object)
 	}
 	if s.OID == 0 {
 		s.OID = m.allocateOID()
@@ -276,14 +276,15 @@ func (m *Map) SpawnSummon(owner *Character, skillID constant.SkillID, skillLevel
 	}
 
 	s := &Summon{
-		Life: Life{
-			Object: Object{
+		LifeCore: LifeCore{
+			ObjectCore: ObjectCore{
 				Position: position,
 				Context:  m.context,
 				Map:      m,
 			},
 			Hp:     1,
 			BaseHp: 1,
+			BaseMp: 1,
 		},
 		Owner:        owner,
 		OwnerID:      owner.GetID(),
@@ -344,9 +345,9 @@ func (m *Map) initializeMobs() {
 	}
 }
 
-func (m *Map) GetNpcs() map[uint32]interface{} {
+func (m *Map) GetNpcs() map[uint32]Object {
 	if m.objects[types.OBJECT_TYPE_NPC] == nil {
-		return make(map[uint32]interface{})
+		return make(map[uint32]Object)
 	}
 	return m.objects[types.OBJECT_TYPE_NPC]
 }
@@ -388,7 +389,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	}
 
 	npc := &Npc{
-		Object: Object{
+		ObjectCore: ObjectCore{
 			OID:      oid,
 			Position: spawnPosition,
 			Context:  m.context,
@@ -398,7 +399,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	}
 
 	if m.objects[types.OBJECT_TYPE_NPC] == nil {
-		m.objects[types.OBJECT_TYPE_NPC] = make(map[uint32]interface{})
+		m.objects[types.OBJECT_TYPE_NPC] = make(map[uint32]Object)
 	}
 
 	m.objects[types.OBJECT_TYPE_NPC][oid] = npc
@@ -444,16 +445,16 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	}
 
 	mob := &Mob{
-		Life: Life{
-			Object: Object{
+		LifeCore: LifeCore{
+			ObjectCore: ObjectCore{
 				OID:      oid,
 				Position: spawnPoint,
 				Context:  m.context,
 				Map:      m,
 			},
 			Hp:     uint16(mobSpec.MaxHP),
-			BaseHp: uint16(mobSpec.MaxHP),
 			Mp:     uint16(mobSpec.MaxMP),
+			BaseHp: uint16(mobSpec.MaxHP),
 			BaseMp: uint16(mobSpec.MaxMP),
 			Stance: 5,
 		},
@@ -463,7 +464,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	}
 
 	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
-		m.objects[types.OBJECT_TYPE_MONSTER] = make(map[uint32]interface{})
+		m.objects[types.OBJECT_TYPE_MONSTER] = make(map[uint32]Object)
 	}
 
 	m.objects[types.OBJECT_TYPE_MONSTER][oid] = mob
@@ -508,9 +509,9 @@ func (m *Map) GetMob(mobID uint32) *Mob {
 	return nil
 }
 
-func (m *Map) GetMobs() map[uint32]interface{} {
+func (m *Map) GetMobs() map[uint32]Object {
 	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
-		return make(map[uint32]interface{})
+		return make(map[uint32]Object)
 	}
 	return m.objects[types.OBJECT_TYPE_MONSTER]
 }
@@ -536,16 +537,15 @@ func (m *Map) GetObjects(filter constant.ObjectType, opts *ObjectsFilter) []inte
 		if m.objects[bucket] == nil {
 			continue
 		}
-		for _, v := range m.objects[bucket] {
-			provider, ok := v.(ObjectProvider)
-			if !ok {
+		for _, obj := range m.objects[bucket] {
+			if obj == nil {
 				continue
 			}
-			if !provider.Is(filter) {
+			if !obj.Is(filter) {
 				continue
 			}
 			if opts != nil {
-				pos := provider.GetObject().Position
+				pos := obj.GetPosition()
 				if opts.Area != nil {
 					a := opts.Area
 					if pos.X < a.MinX || pos.X > a.MaxX || pos.Y < a.MinY || pos.Y > a.MaxY {
@@ -561,7 +561,7 @@ func (m *Map) GetObjects(filter constant.ObjectType, opts *ObjectsFilter) []inte
 					}
 				}
 			}
-			out = append(out, v)
+			out = append(out, obj)
 		}
 	}
 	return out
@@ -628,17 +628,16 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	drop.OID = oid
 	drop.Owner = ownerID
 	drop.DropType = dropType
-	drop.Object.Map = m
+	drop.Map = m
 	drop.RegisterExpire(constant.ITEM_EXPIRE_TIME)
 	if dropType == constant.DROP_TYPE_OWNED || dropType == constant.DROP_TYPE_PARTY {
 		drop.RegisterFFA(constant.ITEM_FFA_TIME)
 	}
 
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
-		m.objects[types.OBJECT_TYPE_ITEM] = make(map[uint32]interface{})
+		m.objects[types.OBJECT_TYPE_ITEM] = make(map[uint32]Object)
 	}
-
-	m.objects[types.OBJECT_TYPE_ITEM][oid] = item
+	m.objects[types.OBJECT_TYPE_ITEM][oid] = drop
 	m.listener.OnItemSpawned(m, item, drop)
 
 	return nil
@@ -665,7 +664,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 
 	// Initialize objects map for items if needed
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
-		m.objects[types.OBJECT_TYPE_ITEM] = make(map[uint32]interface{})
+		m.objects[types.OBJECT_TYPE_ITEM] = make(map[uint32]Object)
 	}
 
 	// Add meso to map objects
@@ -711,9 +710,9 @@ func (m *Map) GetItem(itemID uint32) Item {
 }
 
 // GetItems returns all items on the map
-func (m *Map) GetItems() map[uint32]interface{} {
+func (m *Map) GetItems() map[uint32]Object {
 	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
-		return make(map[uint32]interface{})
+		return make(map[uint32]Object)
 	}
 	return m.objects[types.OBJECT_TYPE_ITEM]
 }
@@ -942,7 +941,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			for _, item := range items {
 				if itemObj, ok := item.(Item); ok {
 					drop := itemObj.GetDrop()
-					if drop != nil && drop.Object != nil {
+					if drop != nil && drop.ObjectCore != nil {
 						tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, itemObj))
 					}
 				}
@@ -1107,7 +1106,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				ownerID = owner.GetID()
 			}
 			item.BindDrop(&Drop{
-				Object:       &Object{Position: pos},
+				ObjectCore:   &ObjectCore{Position: pos},
 				Owner:        ownerID,
 				SpawnedPoint: pos,
 				DropType:     dropType,

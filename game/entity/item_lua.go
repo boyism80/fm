@@ -20,7 +20,7 @@ var (
 	_ luax.Luable = (*Meso)(nil)
 	_ luax.Luable = (*Consume)(nil)
 	_ luax.Luable = (*CashItem)(nil)
-	_ luax.Luable = (*GeneralItem)(nil)
+	_ luax.Luable = (*MiscItem)(nil)
 	_ luax.Luable = (*Installation)(nil)
 	_ luax.Luable = (*Pet)(nil)
 )

@@ -107,10 +107,20 @@ function add_hyper_body_bonus(me, skill)
 	local effect = wz.effects[skill:level()]
 	if effect == nil then return end
 	local percent = effect.x or 0
-	local hp_fixed, hp_percent = me:bonus_max_hp()
-	local mp_fixed, mp_percent = me:bonus_max_mp()
-	me:bonus_max_hp(hp_fixed, hp_percent + percent)
-	me:bonus_max_mp(mp_fixed, mp_percent + percent)
+	local hp_percent = me:bonus_max_hp_ratio()
+	local mp_percent = me:bonus_max_mp_ratio()
+
+	-- Apply ratio delta without intermediate notifications.
+	me:bonus_max_hp_ratio(hp_percent + percent, false)
+	me:bonus_max_mp_ratio(mp_percent + percent, false)
+
+	-- Notify once after clamping to the new max values.
+	me:update_stats({
+		STAT.MaxHp,
+		STAT.Hp,
+		STAT.MaxMp,
+		STAT.Mp,
+	})
 end
 
 function remove_hyper_body_bonus(me, skill)
@@ -119,10 +129,18 @@ function remove_hyper_body_bonus(me, skill)
 	local effect = wz.effects[skill:level()]
 	if effect == nil then return end
 	local percent = effect.x or 0
-	local hp_fixed, hp_percent = me:bonus_max_hp()
-	local mp_fixed, mp_percent = me:bonus_max_mp()
-	me:bonus_max_hp(hp_fixed, hp_percent - percent)
-	me:bonus_max_mp(mp_fixed, mp_percent - percent)
+	local hp_percent = me:bonus_max_hp_ratio()
+	local mp_percent = me:bonus_max_mp_ratio()
+
+	me:bonus_max_hp_ratio(hp_percent - percent, false)
+	me:bonus_max_mp_ratio(mp_percent - percent, false)
+
+	me:update_stats({
+		STAT.MaxHp,
+		STAT.Hp,
+		STAT.MaxMp,
+		STAT.Mp,
+	})
 end
 
 function apply_iron_body(me, skill)

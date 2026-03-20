@@ -4,17 +4,17 @@ import (
 	"github.com/boyism80/fm/game/constant"
 )
 
-type GeneralItem struct {
+type MiscItem struct {
 	*ItemCore
 	OwnerName string
 	Flags     uint16
 }
 
-func (item *GeneralItem) GetInventoryType() constant.InventoryType {
+func (item *MiscItem) GetInventoryType() constant.InventoryType {
 	return constant.INVENTORY_TYPE_ETC
 }
-func (item *GeneralItem) GetCount() uint16 { return item.Count }
-func (item *GeneralItem) Reduce(count uint16) uint16 {
+func (item *MiscItem) GetCount() uint16 { return item.Count }
+func (item *MiscItem) Reduce(count uint16) uint16 {
 	if count > item.Count {
 		item.Count = 0
 	} else {
@@ -22,12 +22,12 @@ func (item *GeneralItem) Reduce(count uint16) uint16 {
 	}
 	return item.Count
 }
-func (item *GeneralItem) Increase(count uint16) uint16 {
+func (item *MiscItem) Increase(count uint16) uint16 {
 	item.Count += count
 	return item.Count
 }
-func (item *GeneralItem) Clone(count uint16) Item {
-	return &GeneralItem{
+func (item *MiscItem) Clone(count uint16) Item {
+	return &MiscItem{
 		ItemCore: &ItemCore{
 			Drop:       nil,
 			Count:      count,

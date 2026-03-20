@@ -112,7 +112,7 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		if hpIncrease == 0 {
 			hpIncrease = 10
 		}
-		character.Life.AddBaseHp(hpIncrease)
+		character.AddBaseHp(hpIncrease)
 		character.HpApUsed++
 		statUpdate[constant.STAT_MAX_HP] = int32(character.GetMaxHp())
 		success = true
@@ -125,7 +125,7 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		if mpIncrease == 0 {
 			mpIncrease = 5
 		}
-		character.Life.AddBaseMp(mpIncrease)
+		character.AddBaseMp(mpIncrease)
 		character.HpApUsed++
 		statUpdate[constant.STAT_MAX_MP] = int32(character.GetMaxMp())
 		success = true

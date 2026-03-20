@@ -2,7 +2,6 @@ package entity
 
 import (
 	"github.com/boyism80/fm/core/luax"
-	"github.com/boyism80/fm/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -36,7 +35,7 @@ func (c *ItemCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			drop := item.GetDrop()
-			if drop == nil || drop.Object == nil {
+			if drop == nil || drop.ObjectCore == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -50,7 +49,12 @@ func (c *ItemCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Item expected")
 				return 0
 			}
-			wz.PushItemWz(L, item.GetModel())
+			model := item.GetModel()
+			if luable, ok := model.(luax.Luable); ok && luable != nil {
+				L.Push(luax.NewLuable(L, luable))
+				return 1
+			}
+			L.Push(lua.LNil)
 			return 1
 		},
 	}

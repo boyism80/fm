@@ -7,62 +7,78 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-type Object struct {
+type ObjectCore struct {
 	OID      uint32
 	Position types.Vector2[int16]
 	Context  GameContext
 	Map      *Map
 }
 
-func (obj *Object) GetObjectType() constant.ObjectType {
+func (obj *ObjectCore) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeObject
 }
 
-type ObjectProvider interface {
-	GetObject() *Object
+type Object interface {
+	GetOID() uint32
+	GetPosition() types.Vector2[int16]
+	SetPosition(x, y int16)
+	GetContext() GameContext
+	GetMap() *Map
 	GetObjectType() constant.ObjectType
 	Is(typ constant.ObjectType) bool
 }
 
-func (obj *Object) GetObject() *Object {
-	return obj
+func (obj *ObjectCore) GetOID() uint32 {
+	return obj.OID
 }
 
-func (obj *Object) Is(typ constant.ObjectType) bool {
+func (obj *ObjectCore) GetPosition() types.Vector2[int16] {
+	return obj.Position
+}
+
+func (obj *ObjectCore) SetPosition(x, y int16) {
+	obj.Position.X = x
+	obj.Position.Y = y
+}
+
+func (obj *ObjectCore) GetContext() GameContext {
+	return obj.Context
+}
+
+func (obj *ObjectCore) Is(typ constant.ObjectType) bool {
 	return obj.GetObjectType().Has(typ)
 }
 
-func (obj *Object) GetMap() *Map {
+func (obj *ObjectCore) GetMap() *Map {
 	return obj.Map
 }
 
-func (obj *Object) LuaTypeName() string {
+func (obj *ObjectCore) LuaTypeName() string {
 	return "LuaObject"
 }
 
-func (obj *Object) LuaBuiltinFuncs() map[string]lua.LGFunction {
+func (obj *ObjectCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"position": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			provider, ok := ud.Value.(ObjectProvider)
+			obj, ok := ud.Value.(Object)
 			if !ok {
 				L.ArgError(1, "Object expected")
 				return 0
 			}
-			obj := provider.GetObject()
+			pos := obj.GetPosition()
 
 			argc := L.GetTop()
 			if argc == 1 {
 
-				L.Push(lua.LNumber(obj.Position.X))
-				L.Push(lua.LNumber(obj.Position.Y))
+				L.Push(lua.LNumber(pos.X))
+				L.Push(lua.LNumber(pos.Y))
 				return 2
 			} else if argc == 3 {
 
 				x := L.CheckInt(2)
 				y := L.CheckInt(3)
-				obj.Position.X = int16(x)
-				obj.Position.Y = int16(y)
+				obj.SetPosition(int16(x), int16(y))
 				return 0
 			} else {
 				L.ArgError(2, "position() requires 0 or 2 arguments")
@@ -71,17 +87,17 @@ func (obj *Object) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"oid": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			provider, ok := ud.Value.(ObjectProvider)
+			obj, ok := ud.Value.(Object)
 			if !ok {
 				L.ArgError(1, "Object expected")
 				return 0
 			}
-			obj := provider.GetObject()
+			oid := obj.GetOID()
 
 			argc := L.GetTop()
 			if argc == 1 {
 
-				L.Push(lua.LNumber(obj.OID))
+				L.Push(lua.LNumber(oid))
 				return 1
 			} else {
 				L.ArgError(2, "oid() is read-only")
@@ -90,12 +106,11 @@ func (obj *Object) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"map": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			provider, ok := ud.Value.(ObjectProvider)
+			obj, ok := ud.Value.(Object)
 			if !ok {
 				L.Push(lua.LNil)
 				return 1
 			}
-			obj := provider.GetObject()
 			mapInstance := obj.GetMap()
 			if mapInstance == nil {
 				L.Push(lua.LNil)
@@ -106,31 +121,24 @@ func (obj *Object) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"is": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			provider, ok := ud.Value.(ObjectProvider)
+			obj, ok := ud.Value.(Object)
 			if !ok {
 				L.Push(lua.LFalse)
 				return 1
 			}
 			typeArg := constant.ObjectType(L.CheckInt(2))
-			L.Push(lua.LBool(provider.Is(typeArg)))
+			L.Push(lua.LBool(obj.Is(typeArg)))
 			return 1
 		},
 	}
 }
 
-func (obj *Object) String() string {
+func (obj *ObjectCore) String() string {
 	return obj.LuaTypeName()
 }
 
-func (obj *Object) Type() lua.LValueType {
+func (obj *ObjectCore) Type() lua.LValueType {
 	return lua.LTUserData
-}
-
-func (d *Drop) GetObject() *Object {
-	if d == nil {
-		return nil
-	}
-	return d.Object
 }
 
 func (d *Drop) Is(typ constant.ObjectType) bool {
@@ -138,10 +146,10 @@ func (d *Drop) Is(typ constant.ObjectType) bool {
 }
 
 var (
-	_ ObjectProvider = (*Object)(nil)
-	_ ObjectProvider = (*Life)(nil)
-	_ ObjectProvider = (*Character)(nil)
-	_ ObjectProvider = (*Mob)(nil)
-	_ ObjectProvider = (*Npc)(nil)
-	_ ObjectProvider = (*Drop)(nil)
+	_ Object = (*ObjectCore)(nil)
+	_ Object = (*LifeCore)(nil)
+	_ Object = (*Character)(nil)
+	_ Object = (*Mob)(nil)
+	_ Object = (*Npc)(nil)
+	_ Object = (*Drop)(nil)
 )

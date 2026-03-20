@@ -22,7 +22,6 @@ type Dropable interface {
 type Item interface {
 	luax.Luable
 	GetDrop() *Drop
-	GetObject() *Object
 	GetModel() wz.Item
 	GetInventoryType() constant.InventoryType
 	GetExpiration() time.Time
@@ -37,7 +36,7 @@ type Item interface {
 }
 
 type Drop struct {
-	*Object
+	*ObjectCore
 	Owner        uint32
 	SpawnedPoint types.Point[int16]
 	DropType     constant.DropType
@@ -98,7 +97,6 @@ func (item *ItemCore) Getcount() uint16         { return item.Count }
 func (item *ItemCore) GetCount32() int32        { return int32(item.Count) }
 func (item *ItemCore) IsMeso() bool             { return false }
 func (item *ItemCore) SetCount(count uint16)    { item.Count = count }
-func (item *ItemCore) GetObject() *Object       { return item.Object }
 func (item *ItemCore) GetModel() wz.Item        { return item.Wz }
 func (item *ItemCore) GetExpiration() time.Time { return item.Expiration }
 func (item *ItemCore) BindDrop(drop *Drop)      { item.Drop = drop }
@@ -118,18 +116,17 @@ func NewItem(itemId uint32, count uint16, context GameContext) (Item, error) {
 		return nil, fmt.Errorf("item model not found for ID: %d", itemId)
 	}
 	switch m := model.(type) {
-	case wz.EquipmentModel:
+	case wz.Equipment:
 		if !constant.IsEquipment(itemId) {
 			return nil, fmt.Errorf("item %d: model is equipment but GetEquipmentType is not equippable", itemId)
 		}
-		eq := m.GetEquipment()
 		core := &EquipmentCore{
 			ItemCore: &ItemCore{
 				Wz:         m,
 				Count:      1,
 				Expiration: util.TimeMax,
 			},
-			EnchantChance: eq.EnchantChance,
+			EnchantChance: m.GetEnchantChance(),
 		}
 		switch constant.GetEquipmentType(itemId) {
 		case constant.EquipmentTypeWeapon:
@@ -165,8 +162,8 @@ func NewItem(itemId uint32, count uint16, context GameContext) (Item, error) {
 		return &Installation{
 			ItemCore: &ItemCore{Wz: m, Count: 1, Expiration: util.TimeMax},
 		}, nil
-	case *wz.GeneralItem:
-		return &GeneralItem{
+	case *wz.MiscItem:
+		return &MiscItem{
 			ItemCore: &ItemCore{Wz: m, Count: count, Expiration: util.TimeMax},
 		}, nil
 	case *wz.CashItem:

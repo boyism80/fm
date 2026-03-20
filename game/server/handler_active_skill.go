@@ -10,7 +10,6 @@ import (
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -202,22 +201,15 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		thread.Close()
 	}
 
-	if !character.IsHidden() {
-		var dir *uint8
-		if req.MagnetMobData != nil {
-			d := req.MagnetMobData.Direction
-			dir = &d
-		}
-		mapInstance.Broadcast(&response.ShowBuffeffect{
-			CharacterID: character.GetID(),
-			EffectID:    1,
-			SkillID:     req.SkillID,
-			SkillLevel:  req.SkillLevel,
-			Direction:   dir,
-		}, nil)
-	}
-
 	if character.Listener != nil {
+		if !character.IsHidden() {
+			var dir *uint8
+			if req.MagnetMobData != nil {
+				d := req.MagnetMobData.Direction
+				dir = &d
+			}
+			character.Listener.OnShowBuffEffect(1, req.SkillID, req.SkillLevel, dir)
+		}
 		character.Listener.OnUpdateStats(nil, true)
 	}
 	return nil

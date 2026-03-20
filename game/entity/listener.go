@@ -44,10 +44,9 @@ type CharacterListener interface {
 	OnBuffRemoved(character *Character, flags []constant.BuffFlag)
 	OnDebuffAdded(character *Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32)
 	OnDebuffRemoved(character *Character, flags []constant.DebuffFlag)
-
 	OnSkillCooldown(skillID uint32, remainingSec uint16)
 	OnHiddenChanged(hidden bool)
-
+	OnShowBuffEffect(effectID uint8, skillID uint32, skillLevel uint8, additional *uint8)
 	OnSummonSpawn(character *Character, summon *Summon)
 	OnSummonRemove(character *Character, summon *Summon, animated bool)
 	OnSummonMove(character *Character, summon *Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment)

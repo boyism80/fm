@@ -7,12 +7,8 @@ import (
 )
 
 type Npc struct {
-	Object
+	ObjectCore
 	Wz *wz.NpcSpawn
-}
-
-func (n *Npc) GetObject() *Object {
-	return &n.Object
 }
 
 func (n *Npc) GetObjectType() constant.ObjectType {

@@ -7,8 +7,8 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// GeneralItem represents general item DTO
-type GeneralItem struct {
+// MiscItem represents misc item DTO
+type MiscItem struct {
 	ItemId     uint32
 	UniqueId   int64
 	Count      uint16
@@ -17,11 +17,11 @@ type GeneralItem struct {
 	Flags      uint16
 }
 
-func (i *GeneralItem) GetCount() uint16 {
+func (i *MiscItem) GetCount() uint16 {
 	return i.Count
 }
 
-func (i *GeneralItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
+func (i *MiscItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	writer.WriteU8(uint8(slot))
 	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
 	writer.WriteU32(i.ItemId)

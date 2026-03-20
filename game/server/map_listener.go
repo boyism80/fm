@@ -111,12 +111,12 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 			drop := item.GetDrop()
 			if drop != nil {
 				character.Send(&response.SpawnItem{
-					ID:           drop.Object.OID,
+					ID:           drop.OID,
 					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
 					DropType:     drop.DropType,
 					ItemModel:    item.GetModel(),
 					Expiration:   item.GetExpiration(),
-					Position:     drop.Object.Position,
+					Position:     drop.Position,
 					OwnerID:      drop.Owner,
 					SpawnedPoint: drop.SpawnedPoint,
 					IsPlayerDrop: true,
@@ -128,7 +128,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 			drop := meso.GetDrop()
 			if drop != nil {
 				character.Send(&response.SpawnMeso{
-					ID:           drop.Object.OID,
+					ID:           drop.OID,
 					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
 					DropType:     drop.DropType,
 					Count:        meso.Count,
@@ -219,7 +219,7 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Ite
 		DropType:     drop.DropType,
 		ItemModel:    item.GetModel(),
 		Expiration:   item.GetExpiration(),
-		Position:     dropObj.Object.Position,
+		Position:     dropObj.Position,
 		OwnerID:      drop.Owner,
 		SpawnedPoint: drop.SpawnedPoint,
 		IsPlayerDrop: true,

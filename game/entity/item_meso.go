@@ -22,7 +22,7 @@ func (meso *Meso) GetObjectType() constant.ObjectType {
 func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, context GameContext, mapInstance *Map) *Meso {
 	return &Meso{
 		Drop: &Drop{
-			Object: &Object{
+			ObjectCore: &ObjectCore{
 				OID:      sequence,
 				Position: position,
 				Context:  context,

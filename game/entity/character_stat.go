@@ -22,8 +22,6 @@ type BonusStats struct {
 	Avoid          int16
 	Speed          int16
 	Jump           int16
-	MaxHpFixed     int16
-	MaxMpFixed     int16
 	MaxHpPercent   int16
 	MaxMpPercent   int16
 	MesoMultiplier int16 // 100 = 100%, 0 = use 100
@@ -76,7 +74,7 @@ func (ch *Character) GetTotalLuk() uint16 {
 }
 
 func (ch *Character) GetMaxHp() uint16 {
-	base := int32(ch.Life.BaseHp) + int32(ch.Life.BonusHp) + int32(ch.BonusStats.MaxHpFixed)
+	base := int32(ch.BaseHp) + int32(ch.BonusHp)
 	total := base + (base*int32(ch.BonusStats.MaxHpPercent))/100
 	if total < 1 {
 		return 1
@@ -88,7 +86,7 @@ func (ch *Character) GetMaxHp() uint16 {
 }
 
 func (ch *Character) GetMaxMp() uint16 {
-	base := int32(ch.Life.BaseMp) + int32(ch.Life.BonusMp) + int32(ch.BonusStats.MaxMpFixed)
+	base := int32(ch.BaseMp) + int32(ch.BonusMp)
 	total := base + (base*int32(ch.BonusStats.MaxMpPercent))/100
 	if total < 0 {
 		return 0
