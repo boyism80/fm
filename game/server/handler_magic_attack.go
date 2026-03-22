@@ -94,29 +94,15 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
-	if levelData.MPCon > 0 {
-		mpCon := uint16(levelData.MPCon)
-		if !character.ConsumeMP(mpCon) {
-			log.Printf("Not enough MP for skill %d (required: %d, current: %d)", skillID, mpCon, character.Mp)
+	if !CallSkillHook(ctx, character, uint32(skillID), "on_activating") {
+		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
-			return nil
 		}
+		return nil
 	}
-	if levelData.HPCon > 0 {
-		hpCon := uint16(levelData.HPCon)
-		if !character.ConsumeHP(hpCon) {
-			log.Printf("Not enough HP for skill %d (required: %d, current: %d)", skillID, hpCon, character.Hp)
-			character.Listener.OnUpdateStats(nil, true)
-			return nil
-		}
-	}
-
-	// Phase 1: per-skill on_activating (pre-attack hook).
-	h.callSkillHook(ctx, character, uint32(skillID), "on_activating")
 
 	damages := req.AttackInfo.Damages
-	CallSkillOnAttack(ctx, character, uint32(skillID), mapInstance, damages)
-	CallOnAttackScript(ctx, character, mapInstance, damages, uint32(skillID), false, 0)
+	CallOnAttackHooks(ctx, character, mapInstance, damages, uint32(skillID), false, 0)
 	ApplyDamageToMobs(character, mapInstance, damages)
 
 	magicAttackPacket := &response.MagicAttack{
@@ -131,14 +117,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		RecipientFilter:    entity.BroadcastVisibleByReference,
 	})
 
-	// Phase 3: per-skill on_activated (finalization).
-	h.callSkillHook(ctx, character, uint32(skillID), "on_activated")
+	CallSkillHook(ctx, character, uint32(skillID), "on_activated")
 
 	return nil
-}
-
-// callSkillHook delegates to Attack.callSkillHook so magic/ranged attacks share the same per-skill hook behavior.
-func (h *MagicAttack) callSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) {
-	attack := (&Attack{}).New(h.gs)
-	attack.callSkillHook(ctx, character, skillID, hook)
 }

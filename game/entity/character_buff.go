@@ -94,7 +94,7 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 		Owner:      ch,
 	}
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	_, thread, err := luax.Call(root, scriptPath, "on_buff", ch, skillEntry)
+	_, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_buff", skillID), ch, skillEntry)
 	if err != nil {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
 	}
@@ -127,7 +127,7 @@ func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
 		Owner:      ch,
 	}
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	_, thread, err := luax.Call(root, scriptPath, "on_unbuff", ch, skillEntry)
+	_, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_unbuff", skillID), ch, skillEntry)
 	if err != nil {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
 	}

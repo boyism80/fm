@@ -465,6 +465,18 @@ var skillConstantsRaw = map[string]SkillID{
 	"SharkWave":                    15111007,
 }
 
+// HitElement is the element byte in the TakeDamage packet (immediately after IncomingHitType).
+// Matches the client layout described in legacy handlers: neutral, ice, fire, lightning.
+// Other values may appear in later clients; compare with server/life Element in Java sources if needed.
+type HitElement uint8
+
+const (
+	HitElementNeutral   HitElement = 0
+	HitElementIce       HitElement = 1
+	HitElementFire      HitElement = 2
+	HitElementLightning HitElement = 3
+)
+
 // AllSkillConstants returns Lua SKILL constants by name (PascalCase keys for consistency with Class, Stance, etc.).
 func AllSkillConstants() map[string]uint32 {
 	out := make(map[string]uint32, len(skillConstantsRaw))

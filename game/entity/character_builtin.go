@@ -177,7 +177,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					v = 0
 				}
 				notify := argc == 2 || L.ToBool(3)
-				ch.SetBaseHp(uint16(v), notify)
+				ch.SetBaseHp(uint32(v), notify)
 				return 0
 			default:
 				L.ArgError(2, "base_hp() requires 0, 1 or 2 arguments")
@@ -202,7 +202,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					v = 0
 				}
 				notify := argc == 2 || L.ToBool(3)
-				ch.SetBaseMp(uint16(v), notify)
+				ch.SetBaseMp(uint32(v), notify)
 				return 0
 			default:
 				L.ArgError(2, "base_mp() requires 0, 1 or 2 arguments")
@@ -1345,7 +1345,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(ch.BonusStats.MaxHpPercent))
 				return 2
 			case 2:
-				ch.SetBonusHp(int16(L.CheckInt(2)))
+				ch.SetBonusHp(int32(L.CheckInt(2)))
 				if ch.Hp > ch.GetMaxHp() {
 					ch.Hp = ch.GetMaxHp()
 				}
@@ -1358,7 +1358,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				return 0
 			case 3:
-				ch.SetBonusHp(int16(L.CheckInt(2)))
+				ch.SetBonusHp(int32(L.CheckInt(2)))
 				ch.BonusStats.MaxHpPercent = int16(L.CheckInt(3))
 				if ch.Hp > ch.GetMaxHp() {
 					ch.Hp = ch.GetMaxHp()
@@ -1390,7 +1390,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(ch.BonusStats.MaxMpPercent))
 				return 2
 			case 2:
-				ch.SetBonusMp(int16(L.CheckInt(2)))
+				ch.SetBonusMp(int32(L.CheckInt(2)))
 				if ch.Mp > ch.GetMaxMp() {
 					ch.Mp = ch.GetMaxMp()
 				}
@@ -1403,7 +1403,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				return 0
 			case 3:
-				ch.SetBonusMp(int16(L.CheckInt(2)))
+				ch.SetBonusMp(int32(L.CheckInt(2)))
 				ch.BonusStats.MaxMpPercent = int16(L.CheckInt(3))
 				if ch.Mp > ch.GetMaxMp() {
 					ch.Mp = ch.GetMaxMp()
@@ -1434,7 +1434,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(ch.GetBonusHp()))
 				return 1
 			case 2, 3:
-				v := int16(L.CheckInt(2))
+				v := int32(L.CheckInt(2))
 				notify := argc == 2 || L.ToBool(3)
 				ch.BonusHp = v
 				if ch.Hp > ch.GetMaxHp() {
@@ -1498,7 +1498,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(ch.GetBonusMp()))
 				return 1
 			case 2, 3:
-				v := int16(L.CheckInt(2))
+				v := int32(L.CheckInt(2))
 				notify := argc == 2 || L.ToBool(3)
 				ch.BonusMp = v
 				if ch.Mp > ch.GetMaxMp() {

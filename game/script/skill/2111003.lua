@@ -1,4 +1,4 @@
 -- Skill name (String.wz/Skill.img.xml): 포이즌 미스트
 
-function on_activated(me, skill, params)
+function on_activated_2111003(me, skill, params)
 end

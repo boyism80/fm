@@ -212,6 +212,9 @@ func skillToLuaTable(L *lua.LState, skill *wz.Skill) *lua.LTable {
 	tbl.RawSetString("invisible", lua.LBool(skill.Invisible))
 	tbl.RawSetString("time_limited", lua.LBool(skill.TimeLimited))
 	tbl.RawSetString("combat_orders", lua.LBool(skill.CombatOrders))
+	if skill.ElemAttr != "" {
+		tbl.RawSetString("elem_attr", lua.LString(skill.ElemAttr))
+	}
 
 	// Convert LevelData to effects table
 	effectsTable := L.NewTable()

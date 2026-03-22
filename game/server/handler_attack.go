@@ -52,49 +52,27 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	var skillLevel uint8 = 0
 	skillID := req.AttackInfo.Skill
 	if skillID != 0 {
-		if !h.validateAndConsumeSkill(character, skillID) {
+		if !h.validateSkillForAttack(character, skillID) {
 			return nil
 		}
 		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
-		h.callSkillHook(ctx, character, skillID, "on_activating")
+		if !CallSkillHook(ctx, character, skillID, "on_activating") {
+			if character.Listener != nil {
+				character.Listener.OnUpdateStats(nil, true)
+			}
+			return nil
+		}
 	}
 
 	damages := req.AttackInfo.Damages
-	CallSkillOnAttack(ctx, character, skillID, mapInstance, damages)
-	CallOnAttackScript(ctx, character, mapInstance, damages, skillID, false, 0)
+	CallOnAttackHooks(ctx, character, mapInstance, damages, skillID, false, 0)
 	ApplyDamageToMobs(character, mapInstance, damages)
 	character.Listener.OnAttack(character, req.AttackInfo, skillLevel)
 	if skillID != 0 {
-		h.callSkillHook(ctx, character, skillID, "on_activated")
+		CallSkillHook(ctx, character, skillID, "on_activated")
 	}
 
 	return nil
-}
-
-func (h *Attack) callSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) {
-	if skillID == 0 || ctx.LogicActorPID == nil {
-		return
-	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
-	if root == nil {
-		return
-	}
-
-	skillEntry := character.Skills[skillID]
-	if skillEntry == nil {
-		return
-	}
-
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	result, thread, err := luax.Call(root, scriptPath, hook, character, skillEntry)
-	if thread != nil {
-		thread.Close()
-	}
-	if err != nil {
-		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
-		return
-	}
-	_ = result
 }
 
 func buildAttackInfoTable(L *lua.LState, ranged bool, consumeSlot uint16) *lua.LTable {
@@ -153,7 +131,7 @@ func readDamagesFromLuaTableInto(damagesTable *lua.LTable, damages []dto.AttackP
 	}
 }
 
-func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID uint32) bool {
+func (h *Attack) validateSkillForAttack(character *entity.Character, skillID uint32) bool {
 	var wzSkill *wz.Skill
 	if character.Context != nil {
 		resources := character.Context.GetResources()
@@ -185,21 +163,6 @@ func (h *Attack) validateAndConsumeSkill(character *entity.Character, skillID ui
 			return false
 		}
 		skillEntry.StartCooldown(levelData.Cooldown)
-	}
-
-	if levelData.MPCon > 0 {
-		mpCon := uint16(levelData.MPCon)
-		if !character.ConsumeMP(mpCon) {
-			log.Printf("Not enough MP for skill %d (required: %d, current: %d)", skillID, mpCon, character.Mp)
-			return false
-		}
-	}
-	if levelData.HPCon > 0 {
-		hpCon := uint16(levelData.HPCon)
-		if !character.ConsumeHP(hpCon) {
-			log.Printf("Not enough HP for skill %d (required: %d, current: %d)", skillID, hpCon, character.Hp)
-			return false
-		}
 	}
 
 	return true

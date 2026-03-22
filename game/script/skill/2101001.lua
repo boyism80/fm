@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 메디테이션
 
-function on_activated(me, skill, params)
+function on_activated_2101001(me, skill, params)
 	local wz = skill:wz()
 	if wz == nil or wz.effects == nil then
 		return
@@ -21,5 +21,5 @@ function on_activated(me, skill, params)
 	-- Party support is not implemented, so apply to self only.
 end
 
-function on_unbuff(me, skill)
+function on_unbuff_2101001(me, skill)
 end

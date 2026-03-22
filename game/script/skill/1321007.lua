@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 비홀더
 
-function on_activated(me, skill, params)
+function on_activated_1321007(me, skill, params)
 	if me == nil or skill == nil then
 		return
 	end
@@ -19,7 +19,7 @@ function on_activated(me, skill, params)
 	me:buff(skill, BuffFlag.Summon, 1)
 end
 
-function on_buff(me, skill)
+function on_buff_1321007(me, skill)
 	if me == nil or skill == nil then
 		return
 	end
@@ -46,7 +46,7 @@ function on_buff(me, skill)
 	me:create_summon(wz.id, level, duration_ms, SummonMovementType.Follow, SummonType.Buff)
 end
 
-function on_unbuff(me, skill)
+function on_unbuff_1321007(me, skill)
 	if me == nil or skill == nil then
 		return
 	end

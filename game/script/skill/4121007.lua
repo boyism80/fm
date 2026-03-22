@@ -1,4 +1,4 @@
 -- Skill name (String.wz/Skill.img.xml): 트리플 스로우
 
-function on_activated(me, skill, params)
+function on_activated_4121007(me, skill, params)
 end

@@ -1,32 +1,22 @@
 package request
 
 import (
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/stream"
 )
 
-type DamageType int8
-
 type Damaged struct {
 	UpdateTick uint32
-	Type       DamageType
-	Element    uint8
+	Type       constant.IncomingHitType
+	Element    constant.HitElement
 	Damage     int32
-
-	MobID     uint32
-	OID       uint32
-	Direction uint8
-	Reflect   uint8
-
-	Level   uint8
-	SkillID uint8
+	MobID      uint32
+	OID        uint32
+	Direction  uint8
+	Reflect    uint8
+	Level      uint8
+	SkillID    uint8
 }
-
-const (
-	DAMAGE_TYPE_MIST       DamageType = -4
-	DAMAGE_TYPE_ENV        DamageType = -3
-	DAMAGE_TYPE_MAP_DEBUFF DamageType = -2
-	DAMAGE_TYPE_COLLIDE    DamageType = -1
-)
 
 func (p *Damaged) Serialize(writer *stream.StreamWriter) error {
 	return nil
@@ -41,16 +31,18 @@ func (p *Damaged) Deserialize(reader *stream.StreamReader) error {
 	if t, err = reader.Read8(); err != nil {
 		return err
 	}
-	p.Type = DamageType(t)
-	if p.Element, err = reader.ReadU8(); err != nil {
+	p.Type = constant.IncomingHitType(t)
+	var elem uint8
+	if elem, err = reader.ReadU8(); err != nil {
 		return err
 	}
+	p.Element = constant.HitElement(elem)
 	if p.Damage, err = reader.Read32(); err != nil {
 		return err
 	}
 
 	switch p.Type {
-	case DAMAGE_TYPE_MAP_DEBUFF:
+	case constant.IncomingHitMapDebuff:
 		if p.Level, err = reader.ReadU8(); err != nil {
 			return err
 		}
@@ -58,7 +50,7 @@ func (p *Damaged) Deserialize(reader *stream.StreamReader) error {
 			return err
 		}
 
-	case DAMAGE_TYPE_ENV, DAMAGE_TYPE_MIST:
+	case constant.IncomingHitEnv, constant.IncomingHitMist:
 	default:
 		if p.MobID, err = reader.ReadU32(); err != nil {
 			return err

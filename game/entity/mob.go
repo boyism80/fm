@@ -5,7 +5,6 @@ import (
 	"log"
 	"math/rand"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/boyism80/fm/core/luax"
@@ -25,11 +24,10 @@ type mobMobStatusEntry struct {
 
 type Mob struct {
 	LifeCore
-	Wz       *wz.Mob
-	Foothold int16
-	Spawn    *MobSpawn
-	debuffs  map[constant.MobStatus]*mobMobStatusEntry
-	debuffMu sync.RWMutex
+	Wz               *wz.Mob
+	Foothold         int16
+	Spawn            *MobSpawn
+	debuffs map[constant.MobStatus]*mobMobStatusEntry
 }
 
 func (m *Mob) GetObjectType() constant.ObjectType {
@@ -287,6 +285,13 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				tbl.RawSetString("max_mp", lua.LNumber(mob.Wz.MaxMP))
 				tbl.RawSetString("exp", lua.LNumber(mob.Wz.EXP))
 				tbl.RawSetString("boss", lua.LBool(mob.Wz.Boss))
+				if len(mob.Wz.ElemResist) > 0 {
+					er := L.NewTable()
+					for k, v := range mob.Wz.ElemResist {
+						er.RawSetString(k, lua.LNumber(v))
+					}
+					tbl.RawSetString("elem_resist", er)
+				}
 			}
 			L.Push(tbl)
 			return 1
@@ -390,8 +395,15 @@ func (m *Mob) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
+func (m *Mob) GetMobStatusValue(debuff constant.MobStatus) int32 {
+	entry, ok := m.debuffs[debuff]
+	if !ok || entry == nil {
+		return 0
+	}
+	return entry.value
+}
+
 func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causer *Character) {
-	m.debuffMu.Lock()
 	if m.debuffs == nil {
 		m.debuffs = make(map[constant.MobStatus]*mobMobStatusEntry)
 	}
@@ -422,7 +434,6 @@ func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs 
 		})
 	}
 	m.debuffs[debuff] = entry
-	m.debuffMu.Unlock()
 
 	if wasRefresh {
 		return
@@ -438,17 +449,14 @@ func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs 
 }
 
 func (m *Mob) CancelMobStatus(debuff constant.MobStatus) {
-	m.debuffMu.Lock()
 	entry, ok := m.debuffs[debuff]
 	if !ok {
-		m.debuffMu.Unlock()
 		return
 	}
 	if entry.cancelTimer != nil {
 		entry.cancelTimer.Stop()
 	}
 	delete(m.debuffs, debuff)
-	m.debuffMu.Unlock()
 
 	mapInstance := m.GetMap()
 	if mapInstance != nil && mapInstance.listener != nil {
@@ -457,15 +465,11 @@ func (m *Mob) CancelMobStatus(debuff constant.MobStatus) {
 }
 
 func (m *Mob) HasMobStatus(debuff constant.MobStatus) bool {
-	m.debuffMu.RLock()
-	defer m.debuffMu.RUnlock()
 	_, ok := m.debuffs[debuff]
 	return ok
 }
 
 func (m *Mob) GetCauserCharacterID(debuff constant.MobStatus) uint32 {
-	m.debuffMu.RLock()
-	defer m.debuffMu.RUnlock()
 	entry, ok := m.debuffs[debuff]
 	if !ok || entry == nil {
 		return 0
@@ -474,8 +478,6 @@ func (m *Mob) GetCauserCharacterID(debuff constant.MobStatus) uint32 {
 }
 
 func (m *Mob) ClearAllMobStatusTimers() {
-	m.debuffMu.Lock()
-	defer m.debuffMu.Unlock()
 	for _, entry := range m.debuffs {
 		if entry.cancelTimer != nil {
 			entry.cancelTimer.Stop()
@@ -491,8 +493,6 @@ type debuffForPacket struct {
 }
 
 func (m *Mob) getDebuffMaskAndEntries() (mask uint32, entries []debuffForPacket) {
-	m.debuffMu.RLock()
-	defer m.debuffMu.RUnlock()
 	if len(m.debuffs) == 0 {
 		return 0, nil
 	}
@@ -642,7 +642,7 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		damage = uint32(m.Hp)
 	}
 
-	m.Hp -= uint16(damage)
+	m.Hp -= damage
 	isDead := m.Hp == 0
 
 	if !isDead {

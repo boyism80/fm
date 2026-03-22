@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
@@ -282,30 +281,36 @@ func (ch *Character) ResumeTimers(pid *actor.PID) {
 	}
 }
 
-func (ch *Character) GetHp() uint16       { return ch.Hp }
-func (ch *Character) GetMp() uint16       { return ch.Mp }
-func (ch *Character) GetBonusHp() int16   { return ch.BonusHp }
-func (ch *Character) GetBonusMp() int16   { return ch.BonusMp }
+func (ch *Character) GetHp() uint32       { return ch.Hp }
+func (ch *Character) GetMp() uint32       { return ch.Mp }
+func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
+func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
 func (ch *Character) GetInvincible() bool { return ch.Invincible }
 func (ch *Character) IsAlive() bool       { return ch.Hp > 0 }
 
-const characterMaxHpMpCap = 32767
-
-func (ch *Character) SetHp(v uint16, notify bool) {
+func (ch *Character) SetHp(v uint32, notify bool) {
+	maxHp := ch.GetMaxHp()
+	if v > maxHp {
+		v = maxHp
+	}
 	ch.Hp = v
 	if notify && ch.Listener != nil {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
 	}
 }
 
-func (ch *Character) SetMp(v uint16, notify bool) {
+func (ch *Character) SetMp(v uint32, notify bool) {
+	maxMp := ch.GetMaxMp()
+	if v > maxMp {
+		v = maxMp
+	}
 	ch.Mp = v
 	if notify && ch.Listener != nil {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
 	}
 }
 
-func (ch *Character) SetBonusHp(v int16) {
+func (ch *Character) SetBonusHp(v int32) {
 	ch.BonusHp = v
 	if ch.Hp > ch.GetMaxHp() {
 		ch.Hp = ch.GetMaxHp()
@@ -315,7 +320,7 @@ func (ch *Character) SetBonusHp(v int16) {
 	}
 }
 
-func (ch *Character) SetBonusMp(v int16) {
+func (ch *Character) SetBonusMp(v int32) {
 	ch.BonusMp = v
 	if ch.Mp > ch.GetMaxMp() {
 		ch.Mp = ch.GetMaxMp()
@@ -328,22 +333,54 @@ func (ch *Character) SetBonusMp(v int16) {
 func (ch *Character) SetInvincible(b bool) { ch.Invincible = b }
 
 func (ch *Character) AddHp(amount int) {
-	ch.Hp = uint16(math.Min(float64(ch.Hp+uint16(amount)), float64(ch.GetMaxHp())))
+	n := int(ch.Hp) + amount
+	if n < 0 {
+		n = 0
+	}
+	maxHp := int(ch.GetMaxHp())
+	if n > maxHp {
+		n = maxHp
+	}
+	ch.Hp = uint32(n)
 	if ch.Listener != nil {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
 	}
 }
 
 func (ch *Character) AddMp(amount int) {
-	ch.Mp = uint16(math.Min(float64(ch.Mp+uint16(amount)), float64(ch.GetMaxMp())))
+	n := int(ch.Mp) + amount
+	if n < 0 {
+		n = 0
+	}
+	maxMp := int(ch.GetMaxMp())
+	if n > maxMp {
+		n = maxMp
+	}
+	ch.Mp = uint32(n)
 	if ch.Listener != nil {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
 	}
 }
 
 func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
-	ch.Hp = uint16(math.Min(float64(ch.Hp+uint16(hpDelta)), float64(ch.GetMaxHp())))
-	ch.Mp = uint16(math.Min(float64(ch.Mp+uint16(mpDelta)), float64(ch.GetMaxMp())))
+	nh := int(ch.Hp) + hpDelta
+	if nh < 0 {
+		nh = 0
+	}
+	maxHp := int(ch.GetMaxHp())
+	if nh > maxHp {
+		nh = maxHp
+	}
+	ch.Hp = uint32(nh)
+	nm := int(ch.Mp) + mpDelta
+	if nm < 0 {
+		nm = 0
+	}
+	maxMp := int(ch.GetMaxMp())
+	if nm > maxMp {
+		nm = maxMp
+	}
+	ch.Mp = uint32(nm)
 	if ch.Listener != nil {
 		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
 			constant.STAT_HP: int32(ch.Hp),
@@ -352,7 +389,7 @@ func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
 	}
 }
 
-func (ch *Character) SetBaseHp(v uint16, notify bool) {
+func (ch *Character) SetBaseHp(v uint32, notify bool) {
 	if v > constant.STAT_MAX_HP_MP {
 		v = constant.STAT_MAX_HP_MP
 	}
@@ -368,7 +405,7 @@ func (ch *Character) SetBaseHp(v uint16, notify bool) {
 	}
 }
 
-func (ch *Character) SetBaseMp(v uint16, notify bool) {
+func (ch *Character) SetBaseMp(v uint32, notify bool) {
 	if v > constant.STAT_MAX_HP_MP {
 		v = constant.STAT_MAX_HP_MP
 	}

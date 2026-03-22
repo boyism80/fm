@@ -82,21 +82,21 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 	}
 
 	if healHP > 0 {
-		newHP := character.Hp + healHP
+		newHP := character.Hp + uint32(healHP)
 		maxHp := character.GetMaxHp()
 		if newHP > maxHp {
 			newHP = maxHp
 		}
-		character.SetHp(uint16(newHP), false)
+		character.SetHp(newHP, false)
 	}
 
 	if healMP > 0 {
-		newMP := character.Mp + healMP
+		newMP := character.Mp + uint32(healMP)
 		maxMp := character.GetMaxMp()
 		if newMP > maxMp {
 			newMP = maxMp
 		}
-		character.SetMp(uint16(newMP), false)
+		character.SetMp(newMP, false)
 	}
 
 	if character.Listener != nil && (healHP > 0 || healMP > 0) {

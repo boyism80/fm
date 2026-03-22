@@ -148,15 +148,15 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	return nil
 }
 
-func (h *DistributeAP) scriptAPToHP(ctx *core.ClientContext, character interface{}) uint16 {
+func (h *DistributeAP) scriptAPToHP(ctx *core.ClientContext, character interface{}) uint32 {
 	return h.callAPToStatScript(ctx, character, "on_ap_to_hp")
 }
 
-func (h *DistributeAP) scriptAPToMP(ctx *core.ClientContext, character interface{}) uint16 {
+func (h *DistributeAP) scriptAPToMP(ctx *core.ClientContext, character interface{}) uint32 {
 	return h.callAPToStatScript(ctx, character, "on_ap_to_mp")
 }
 
-func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character interface{}, funcName string) uint16 {
+func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character interface{}, funcName string) uint32 {
 	if ctx.LogicActorPID == nil {
 		return 0
 	}
@@ -171,5 +171,12 @@ func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character int
 	if err != nil || result == nil || result.Type() != lua.LTNumber {
 		return 0
 	}
-	return uint16(lua.LVAsNumber(result))
+	n := float64(lua.LVAsNumber(result))
+	if n <= 0 {
+		return 0
+	}
+	if n >= float64(0xffffffff) {
+		return 0xffffffff
+	}
+	return uint32(n)
 }

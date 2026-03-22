@@ -139,7 +139,7 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		}
 		actualHPChange = newHP - int(character.Hp)
 		if actualHPChange != 0 {
-			character.Hp = uint16(newHP)
+			character.Hp = uint32(newHP)
 			stats[constant.STAT_HP] = int32(character.Hp)
 		}
 	}
@@ -154,7 +154,7 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		}
 		actualMPChange = newMP - int(character.Mp)
 		if actualMPChange != 0 {
-			character.Mp = uint16(newMP)
+			character.Mp = uint32(newMP)
 			stats[constant.STAT_MP] = int32(character.Mp)
 		}
 	}

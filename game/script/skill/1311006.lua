@@ -1,7 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 드래곤 로어
 -- MP 16/24/30 소비, HP의 59%~30% 소비, 15마리 공격, 발동 시 자기 스턴 (4/3/2초). HP 50% 이상일 때만 사용 가능.
 
-function on_activated(me, skill, params)
+function on_activated_1311006(me, skill, params)
 	local effect = get_skill_effect(skill)
 	if effect == nil then
 		return

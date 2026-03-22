@@ -1,4 +1,4 @@
 -- Skill name (String.wz/Skill.img.xml): 아마존의 눈
 
-function on_activated(me, skill, params)
+function on_activated_3000002(me, skill, params)
 end

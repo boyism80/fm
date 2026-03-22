@@ -7,32 +7,32 @@ import (
 
 type LifeCore struct {
 	ObjectCore
-	Hp         uint16
-	Mp         uint16
-	BaseHp     uint16
-	BaseMp     uint16
-	BonusHp    int16
-	BonusMp    int16
+	Hp         uint32
+	Mp         uint32
+	BaseHp     uint32
+	BaseMp     uint32
+	BonusHp    int32
+	BonusMp    int32
 	Stance     uint8
 	Invincible bool
 }
 
 type Life interface {
-	GetHp() uint16
-	SetHp(uint16, bool)
-	GetMp() uint16
-	SetMp(uint16, bool)
-	GetMaxHp() uint16
-	SetBaseHp(uint16, bool)
-	GetMaxMp() uint16
-	SetBaseMp(uint16, bool)
+	GetHp() uint32
+	SetHp(uint32, bool)
+	GetMp() uint32
+	SetMp(uint32, bool)
+	GetMaxHp() uint32
+	SetBaseHp(uint32, bool)
+	GetMaxMp() uint32
+	SetBaseMp(uint32, bool)
 	AddHp(int)
 	AddMp(int)
 	AddHpMp(hpDelta, mpDelta int)
-	GetBonusHp() int16
-	SetBonusHp(int16)
-	GetBonusMp() int16
-	SetBonusMp(int16)
+	GetBonusHp() int32
+	SetBonusHp(int32)
+	GetBonusMp() int32
+	SetBonusMp(int32)
 	GetInvincible() bool
 	SetInvincible(bool)
 	IsAlive() bool
@@ -46,66 +46,58 @@ func (life *LifeCore) Is(typ constant.ObjectType) bool {
 	return life.GetObjectType().Has(typ)
 }
 
-func (life *LifeCore) GetMaxHp() uint16 {
-	total := int32(life.BaseHp) + int32(life.BonusHp)
-	if total < 1 {
+func (life *LifeCore) GetMaxHp() uint32 {
+	t := int64(life.BaseHp) + int64(life.BonusHp)
+	if t < 1 {
 		return 1
 	}
-	if total > int32(constant.STAT_MAX_HP_MP) {
-		return constant.STAT_MAX_HP_MP
+	if t > 0xffffffff {
+		return 0xffffffff
 	}
-	return uint16(total)
+	return uint32(t)
 }
 
-func (life *LifeCore) GetMaxMp() uint16 {
-	total := int32(life.BaseMp) + int32(life.BonusMp)
-	if total < 0 {
+func (life *LifeCore) GetMaxMp() uint32 {
+	t := int64(life.BaseMp) + int64(life.BonusMp)
+	if t < 0 {
 		return 0
 	}
-	if total > int32(constant.STAT_MAX_HP_MP) {
-		return constant.STAT_MAX_HP_MP
+	if t > 0xffffffff {
+		return 0xffffffff
 	}
-	return uint16(total)
+	return uint32(t)
 }
 
-func (life *LifeCore) AddBaseHp(amount uint16) {
-	newHp := life.BaseHp + amount
-	if newHp > constant.STAT_MAX_HP_MP {
-		newHp = constant.STAT_MAX_HP_MP
-	}
-	life.BaseHp = newHp
+func (life *LifeCore) AddBaseHp(amount uint32) {
+	life.BaseHp += amount
 }
 
-func (life *LifeCore) AddBonusHp(amount int16) {
+func (life *LifeCore) AddBonusHp(amount int32) {
 	life.BonusHp += amount
 	if life.Hp > life.GetMaxHp() {
 		life.Hp = life.GetMaxHp()
 	}
 }
 
-func (life *LifeCore) AddBaseMp(amount uint16) {
-	newMp := life.BaseMp + amount
-	if newMp > constant.STAT_MAX_HP_MP {
-		newMp = constant.STAT_MAX_HP_MP
-	}
-	life.BaseMp = newMp
+func (life *LifeCore) AddBaseMp(amount uint32) {
+	life.BaseMp += amount
 }
 
-func (life *LifeCore) AddBonusMp(amount int16) {
+func (life *LifeCore) AddBonusMp(amount int32) {
 	life.BonusMp += amount
 	if life.Mp > life.GetMaxMp() {
 		life.Mp = life.GetMaxMp()
 	}
 }
 
-func (life *LifeCore) GetHp() uint16       { return life.Hp }
-func (life *LifeCore) GetMp() uint16       { return life.Mp }
-func (life *LifeCore) GetBonusHp() int16   { return life.BonusHp }
-func (life *LifeCore) GetBonusMp() int16   { return life.BonusMp }
+func (life *LifeCore) GetHp() uint32       { return life.Hp }
+func (life *LifeCore) GetMp() uint32       { return life.Mp }
+func (life *LifeCore) GetBonusHp() int32   { return life.BonusHp }
+func (life *LifeCore) GetBonusMp() int32   { return life.BonusMp }
 func (life *LifeCore) GetInvincible() bool { return life.Invincible }
 func (life *LifeCore) IsAlive() bool       { return life.Hp > 0 }
 
-func (life *LifeCore) SetHp(v uint16, _ bool) {
+func (life *LifeCore) SetHp(v uint32, _ bool) {
 	maxHp := life.GetMaxHp()
 	if v > maxHp {
 		v = maxHp
@@ -113,7 +105,7 @@ func (life *LifeCore) SetHp(v uint16, _ bool) {
 	life.Hp = v
 }
 
-func (life *LifeCore) SetMp(v uint16, _ bool) {
+func (life *LifeCore) SetMp(v uint32, _ bool) {
 	maxMp := life.GetMaxMp()
 	if v > maxMp {
 		v = maxMp
@@ -121,34 +113,28 @@ func (life *LifeCore) SetMp(v uint16, _ bool) {
 	life.Mp = v
 }
 
-func (life *LifeCore) SetBaseHp(v uint16, _ bool) {
-	if v > constant.STAT_MAX_HP_MP {
-		v = constant.STAT_MAX_HP_MP
-	}
+func (life *LifeCore) SetBaseHp(v uint32, _ bool) {
 	life.BaseHp = v
 	if life.Hp > life.GetMaxHp() {
 		life.Hp = life.GetMaxHp()
 	}
 }
 
-func (life *LifeCore) SetBaseMp(v uint16, _ bool) {
-	if v > constant.STAT_MAX_HP_MP {
-		v = constant.STAT_MAX_HP_MP
-	}
+func (life *LifeCore) SetBaseMp(v uint32, _ bool) {
 	life.BaseMp = v
 	if life.Mp > life.GetMaxMp() {
 		life.Mp = life.GetMaxMp()
 	}
 }
 
-func (life *LifeCore) SetBonusHp(v int16) {
+func (life *LifeCore) SetBonusHp(v int32) {
 	life.BonusHp = v
 	if life.Hp > life.GetMaxHp() {
 		life.Hp = life.GetMaxHp()
 	}
 }
 
-func (life *LifeCore) SetBonusMp(v int16) {
+func (life *LifeCore) SetBonusMp(v int32) {
 	life.BonusMp = v
 	if life.Mp > life.GetMaxMp() {
 		life.Mp = life.GetMaxMp()
@@ -158,27 +144,27 @@ func (life *LifeCore) SetBonusMp(v int16) {
 func (life *LifeCore) SetInvincible(b bool) { life.Invincible = b }
 
 func (life *LifeCore) AddHp(amount int) {
-	newHp := int(life.Hp) + amount
-	if newHp < 0 {
-		newHp = 0
+	n := int(life.Hp) + amount
+	if n < 0 {
+		n = 0
 	}
-	maxHp := life.GetMaxHp()
-	if newHp > int(maxHp) {
-		newHp = int(maxHp)
+	m := int(life.GetMaxHp())
+	if n > m {
+		n = m
 	}
-	life.Hp = uint16(newHp)
+	life.Hp = uint32(n)
 }
 
 func (life *LifeCore) AddMp(amount int) {
-	newMp := int(life.Mp) + amount
-	if newMp < 0 {
-		newMp = 0
+	n := int(life.Mp) + amount
+	if n < 0 {
+		n = 0
 	}
-	maxMp := life.GetMaxMp()
-	if newMp > int(maxMp) {
-		newMp = int(maxMp)
+	m := int(life.GetMaxMp())
+	if n > m {
+		n = m
 	}
-	life.Mp = uint16(newMp)
+	life.Mp = uint32(n)
 }
 
 func (life *LifeCore) AddHpMp(hpDelta, mpDelta int) {
@@ -214,7 +200,7 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					hp = int(maxHp)
 				}
 				notify := argc == 2 || L.ToBool(3)
-				acc.SetHp(uint16(hp), notify)
+				acc.SetHp(uint32(hp), notify)
 				return 0
 			default:
 				L.ArgError(2, "hp() requires 0, 1 or 2 arguments")
@@ -243,7 +229,7 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					mp = int(maxMp)
 				}
 				notify := argc == 2 || L.ToBool(3)
-				acc.SetMp(uint16(mp), notify)
+				acc.SetMp(uint32(mp), notify)
 				return 0
 			default:
 				L.ArgError(2, "mp() requires 0, 1 or 2 arguments")
@@ -267,12 +253,8 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if hp < 0 {
 					hp = 0
 				}
-				maxCap := int(constant.STAT_MAX_HP_MP)
-				if hp > maxCap {
-					hp = maxCap
-				}
 				notify := argc == 2 || L.ToBool(3)
-				life.SetBaseHp(uint16(hp), notify)
+				life.SetBaseHp(uint32(hp), notify)
 				return 0
 			default:
 				L.ArgError(2, "max_hp() requires 0, 1 or 2 arguments")
@@ -296,12 +278,8 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if mp < 0 {
 					mp = 0
 				}
-				maxCap := int(constant.STAT_MAX_HP_MP)
-				if mp > maxCap {
-					mp = maxCap
-				}
 				notify := argc == 2 || L.ToBool(3)
-				acc.SetBaseMp(uint16(mp), notify)
+				acc.SetBaseMp(uint32(mp), notify)
 				return 0
 			default:
 				L.ArgError(2, "max_mp() requires 0, 1 or 2 arguments")
@@ -321,7 +299,7 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(acc.GetBonusHp()))
 				return 1
 			case 2:
-				v := int16(L.CheckInt(2))
+				v := int32(L.CheckInt(2))
 				acc.SetBonusHp(v)
 				return 0
 			default:
@@ -342,7 +320,7 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(acc.GetBonusMp()))
 				return 1
 			case 2:
-				v := int16(L.CheckInt(2))
+				v := int32(L.CheckInt(2))
 				acc.SetBonusMp(v)
 				return 0
 			default:

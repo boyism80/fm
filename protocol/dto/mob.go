@@ -16,10 +16,10 @@ type Mob struct {
 	Position   types.Vector2[int16]
 	Stance     uint8
 	Foothold   int16
-	Hp         uint16
-	MaxHp      uint16
-	Mp         uint16
-	MaxMp      uint16
+	Hp         uint32
+	MaxHp      uint32
+	Mp         uint32
+	MaxMp      uint32
 	StatusMask int32
 	Statuses   []MobStatusEntry
 }

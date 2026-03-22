@@ -1,4 +1,4 @@
 -- Skill name (String.wz/Skill.img.xml): 스탠스
-function on_activated(me, skill, params)
+function on_activated_1321002(me, skill, params)
 	apply_stance(me, skill)
 end

@@ -2,7 +2,7 @@
 
 local SPIRIT_CLAW_CONSUME_COUNT = 200
 
-function on_preactivated(me, skill, params)
+function on_activating_4121006(me, skill, params)
     local visited = {}
     for slot, item in pairs(me:items(InventoryType.Use)) do
         local wz = item:wz()
@@ -23,7 +23,7 @@ function on_preactivated(me, skill, params)
     return false
 end
 
-function on_activated(me, skill, params)
+function on_activated_4121006(me, skill, params)
     local wz = skill:wz()
     if wz == nil or wz.effects == nil then
         return

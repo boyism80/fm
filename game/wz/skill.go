@@ -73,6 +73,7 @@ type Skill struct {
 	Invisible    bool
 	TimeLimited  bool
 	CombatOrders bool
+	ElemAttr     string
 	LevelData    map[int]*SkillLevelData // Level -> LevelData mapping
 }
 

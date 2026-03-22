@@ -21,4 +21,5 @@ type Mob struct {
 	SummonType uint8
 	MobType    uint8
 	Link       string // Link to another mob ID (e.g., "0100101")
+	ElemResist map[string]int
 }

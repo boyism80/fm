@@ -11,38 +11,50 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func CallSkillOnAttack(ctx *core.ClientContext, character *entity.Character, skillID uint32, mapInstance *entity.Map, damages []dto.AttackPair) {
+const commonSkillScriptPath = "script/skill/common.lua"
+
+func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) bool {
 	if skillID == 0 || ctx.LogicActorPID == nil {
-		return
+		return true
 	}
 	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
 	if root == nil {
-		return
+		return false
 	}
+
 	skillEntry := character.Skills[skillID]
 	if skillEntry == nil {
-		return
+		return false
 	}
-	thread, err := luax.NewThread(root, fmt.Sprintf("script/skill/%d.lua", skillID))
+
+	commonResult, commonThread, commonErr := luax.Call(root, commonSkillScriptPath, hook, character, skillEntry)
+	if commonErr != nil {
+		log.Printf("Skill common %s: %v", hook, commonErr)
+		return false
+	}
+	if commonThread != nil {
+		defer commonThread.Close()
+	}
+	if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
+		return false
+	}
+
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	result, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName(hook, skillID), character, skillEntry)
+	if thread != nil {
+		defer thread.Close()
+	}
 	if err != nil {
-		return
+		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
+		return true
 	}
-	defer thread.Close()
-	f := thread.GetGlobal("on_attack")
-	if f.Type() != lua.LTFunction {
-		return
+	if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
+		return false
 	}
-	damagesTable := buildDamagesTable(thread, mapInstance, damages)
-	thread.Push(f)
-	thread.Push(luax.NewLuable(thread, character))
-	thread.Push(luax.NewLuable(thread, skillEntry))
-	thread.Push(damagesTable)
-	if thread.PCall(3, 1, nil) == nil {
-		readDamagesFromLuaTableInto(damagesTable, damages)
-	}
+	return true
 }
 
-func CallOnAttackScript(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32, ranged bool, consumeSlot uint16) {
+func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32, ranged bool, consumeSlot uint16) {
 	if ctx.LogicActorPID == nil {
 		return
 	}
@@ -50,34 +62,60 @@ func CallOnAttackScript(ctx *core.ClientContext, character *entity.Character, ma
 	if root == nil {
 		return
 	}
-	thread, err := luax.NewThread(root, "script/script.lua")
+
+	commonThread, err := luax.NewThread(root, commonSkillScriptPath)
 	if err != nil {
-		log.Printf("Failed to load script: %v", err)
+		log.Printf("common.lua: %v", err)
 		return
 	}
-	defer thread.Close()
-	f := thread.GetGlobal("on_attack")
-	if f.Type() != lua.LTFunction {
-		return
-	}
+	defer commonThread.Close()
+
 	var skillLV lua.LValue = lua.LNil
 	if skillID != 0 {
 		if skillEntry := character.Skills[skillID]; skillEntry != nil {
-			skillLV = luax.NewLuable(thread, skillEntry)
+			skillLV = luax.NewLuable(commonThread, skillEntry)
 		}
 	}
-	damagesTable := buildDamagesTable(thread, mapInstance, damages)
-	attackInfoTable := buildAttackInfoTable(thread, ranged, consumeSlot)
-	thread.Push(f)
-	thread.Push(luax.NewLuable(thread, character))
-	thread.Push(skillLV)
-	thread.Push(damagesTable)
-	thread.Push(attackInfoTable)
-	if err := thread.PCall(4, 1, nil); err != nil {
-		log.Printf("Failed to call script on_attack: %v", err)
+	damagesTable := buildDamagesTable(commonThread, mapInstance, damages)
+	attackInfoTable := buildAttackInfoTable(commonThread, ranged, consumeSlot)
+	f := commonThread.GetGlobal("on_attack")
+	if f.Type() == lua.LTFunction {
+		commonThread.Push(f)
+		commonThread.Push(luax.NewLuable(commonThread, character))
+		commonThread.Push(skillLV)
+		commonThread.Push(damagesTable)
+		commonThread.Push(attackInfoTable)
+		if err := commonThread.PCall(4, 0, nil); err != nil {
+			log.Printf("common on_attack: %v", err)
+			return
+		}
+	}
+
+	if skillID == 0 {
 		return
 	}
-	thread.Pop(1)
+	skillEntry := character.Skills[skillID]
+	if skillEntry == nil {
+		return
+	}
+
+	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/%d.lua", skillID))
+	if err != nil {
+		return
+	}
+	defer skillThread.Close()
+	f2 := skillThread.GetGlobal(luax.SkillScriptHookName("on_attack", skillID))
+	if f2.Type() != lua.LTFunction {
+		return
+	}
+	damagesTable2 := buildDamagesTable(skillThread, mapInstance, damages)
+	skillThread.Push(f2)
+	skillThread.Push(luax.NewLuable(skillThread, character))
+	skillThread.Push(luax.NewLuable(skillThread, skillEntry))
+	skillThread.Push(damagesTable2)
+	if skillThread.PCall(3, 1, nil) == nil {
+		readDamagesFromLuaTableInto(damagesTable2, damages)
+	}
 }
 
 func ApplyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {

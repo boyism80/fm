@@ -109,25 +109,6 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
-	if levelData.MPCon > 0 {
-		mpCon := uint16(levelData.MPCon)
-		if !character.ConsumeMP(mpCon) {
-			if character.Listener != nil {
-				character.Listener.OnUpdateStats(nil, true)
-			}
-			return nil
-		}
-	}
-	if levelData.HPCon > 0 {
-		hpCon := uint16(levelData.HPCon)
-		if !character.ConsumeHP(hpCon) {
-			if character.Listener != nil {
-				character.Listener.OnUpdateStats(nil, true)
-			}
-			return nil
-		}
-	}
-
 	if ctx.LogicActorPID == nil {
 		if character.Listener != nil {
 			character.Listener.OnUpdateStats(nil, true)
@@ -143,9 +124,9 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	// Common validation (e.g. event map check when event system exists). Optional; skip if script missing.
-	const commonSkillScript = "script/skill/common.lua"
-	if commonResult, commonThread, commonErr := luax.Call(root, commonSkillScript, "on_preactivated_common", character, skillEntry); commonErr == nil {
+	params := buildActiveSkillParams(root, mapInstance, req)
+
+	if commonResult, commonThread, commonErr := luax.Call(root, commonSkillScriptPath, "on_activating", character, skillEntry, params); commonErr == nil {
 		defer commonThread.Close()
 		if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
 			if character.Listener != nil {
@@ -155,10 +136,8 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
-	params := buildActiveSkillParams(root, mapInstance, req)
-
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
-	result, thread, err := luax.Call(root, scriptPath, "on_preactivated", character, skillEntry, params)
+	result, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_activating", req.SkillID), character, skillEntry, params)
 	if err != nil {
 		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
 		if character.Listener != nil {
@@ -174,7 +153,6 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	// Consume WZ item requirement after preactivated passed (so we don't consume if script rejected).
 	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
 		itemID := uint32(levelData.ItemCon)
 		count := uint16(levelData.ItemConNo)
@@ -186,7 +164,27 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
-	resumeState, err := luax.Execute(root, thread, ctx.LogicActorPID, "on_activated", character, skillEntry, params)
+	commonActivatedResult, commonActivatedThread, commonActivatedErr := luax.Call(root, commonSkillScriptPath, "on_activated", character, skillEntry, params)
+	if commonActivatedErr != nil {
+		log.Printf("common on_activated: %v", commonActivatedErr)
+		thread.Close()
+		if character.Listener != nil {
+			character.Listener.OnUpdateStats(nil, true)
+		}
+		return nil
+	}
+	if commonActivatedThread != nil {
+		defer commonActivatedThread.Close()
+	}
+	if commonActivatedResult != nil && commonActivatedResult.Type() == lua.LTBool && !lua.LVAsBool(commonActivatedResult) {
+		thread.Close()
+		if character.Listener != nil {
+			character.Listener.OnUpdateStats(nil, true)
+		}
+		return nil
+	}
+
+	resumeState, err := luax.Execute(root, thread, ctx.LogicActorPID, luax.SkillScriptHookName("on_activated", req.SkillID), character, skillEntry, params)
 	if err != nil {
 		thread.Close()
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
@@ -195,8 +193,6 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 		return err
 	}
-	// Thread may have yielded (e.g. sleep); only close when it finished in this call (ResumeOK).
-	// If it yielded, ResumeLua will resume it later and close it in MapActor.resumeLua when done.
 	if resumeState == lua.ResumeOK {
 		thread.Close()
 	}

@@ -31,12 +31,12 @@ local function get_attack_bonus(skill)
     return effect.pad or 0
 end
 
-function on_activated(me, skill, params)
+function on_activated_1311008(me, skill, params)
     local hp_loss, bonus = params(skill)
     local buff = me:buff(skill, {[BuffFlag.DragonBlood] = hp_loss, [BuffFlag.WeaponAtk] = bonus})
 end
 
-function on_buff(me, skill)
+function on_buff_1311008(me, skill)
     local hp_loss = me:buff_value(BuffFlag.DragonBlood)
     if hp_loss == nil then
         return
@@ -59,7 +59,7 @@ function on_tick(me, hp_loss)
     end
 end
 
-function on_unbuff(me, skill)
+function on_unbuff_1311008(me, skill)
     local success = me:rmtimer(TIMER_KEY)
     if success then
         me:chat('remove timer success')

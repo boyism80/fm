@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 픽파킷
 
-function on_activated(me, skill, params)
+function on_activated_4211003(me, skill, params)
     local wz = skill:wz()
     if wz == nil or wz.effects == nil then
         return
@@ -15,6 +15,6 @@ function on_activated(me, skill, params)
     me:buff(skill, BuffFlag.Pickpocket, x)
 end
 
-function on_unbuff(me, skill)
+function on_unbuff_4211003(me, skill)
 end
 

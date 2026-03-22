@@ -1473,6 +1473,17 @@ func loadMob(path string) (*Mob, error) {
 	for _, iv := range info.Children {
 		switch iv.Name {
 		case "elemAttr":
+			for _, el := range iv.Children {
+				key := strings.ToLower(el.Name)
+				for _, inf := range el.Ints {
+					if inf.Name == "value" {
+						if model.ElemResist == nil {
+							model.ElemResist = make(map[string]int)
+						}
+						model.ElemResist[key] = inf.Value
+					}
+				}
+			}
 		case "PDRate":
 		case "MDRate":
 		case "category":
@@ -1792,6 +1803,13 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 		skill := &Skill{
 			ID:        uint32(skillID),
 			LevelData: make(map[int]*SkillLevelData),
+		}
+
+		for _, strField := range skillChild.Strings {
+			switch strField.Name {
+			case "elemAttr":
+				skill.ElemAttr = strField.Value
+			}
 		}
 
 		for _, intField := range skillChild.Ints {

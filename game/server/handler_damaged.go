@@ -44,7 +44,7 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 	}
 
 	stats := map[constant.Stat]int32{}
-	isBlock := req.Damage == -1 && req.Type == request.DAMAGE_TYPE_COLLIDE
+	isBlock := req.Damage == -1 && req.Type == constant.IncomingHitCollide
 	var damage int32
 	if isBlock {
 		h.callOnBlocked(ctx, character, req)
@@ -54,15 +54,16 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 	}
 
 	if !character.Invincible {
-		newHp := int32(character.Hp) - damage
-		if newHp < 0 {
-			newHp = 0
+		n := int(character.Hp) - int(damage)
+		if n < 0 {
+			n = 0
 		}
-		if newHp > int32(character.GetMaxHp()) {
-			newHp = int32(character.GetMaxHp())
+		maxHp := int(character.GetMaxHp())
+		if n > maxHp {
+			n = maxHp
 		}
 
-		character.Hp = uint16(newHp)
+		character.Hp = uint32(n)
 		stats[constant.STAT_HP] = int32(character.Hp)
 	}
 
@@ -83,7 +84,11 @@ func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *enti
 	attackerArg := h.resolveDamageAttackerArg(character, req)
 	skillArg := h.resolveDamageSkillArg(character, req)
 
-	result, thread, err := luax.Call(root, "script/script.lua", "on_damaged", character, attackerArg, skillArg, damage)
+	params := root.NewTable()
+	params.RawSetString("hit_type", lua.LNumber(int32(req.Type)))
+	params.RawSetString("reflect_ratio", lua.LNumber(int32(req.Reflect)))
+
+	result, thread, err := luax.Call(root, "script/script.lua", "on_damaged", character, attackerArg, skillArg, damage, params)
 	if thread != nil {
 		thread.Close()
 	}

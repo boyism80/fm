@@ -1,5 +1,5 @@
 -- Skill name (String.wz/Skill.img.xml): 인레이지
-function on_activated(me, skill, params)
+function on_activated_1121010(me, skill, params)
 	local effect = get_skill_effect(skill)
 	if effect == nil then
 		return

@@ -46,12 +46,36 @@ function apply_powerguard(me, skill)
 	apply_buff_from_effect(me, skill, BuffFlag.Powerguard, "x")
 end
 
+function apply_mana_reflection(me, skill)
+	local wz = skill:wz()
+	if wz == nil or wz.effects == nil then
+		return
+	end
+	local effect = wz.effects[skill:level()]
+	if effect == nil then
+		return
+	end
+	local prop = effect.prop
+	if prop == nil then
+		prop = 0
+	end
+	local val = prop - 30
+	if val < 0 then
+		val = 0
+	end
+	me:buff(skill, BuffFlag.ManaReflection, val)
+end
+
 function apply_darksight(me, skill)
 	apply_buff_fixed(me, skill, BuffFlag.Darksight, 1)
 end
 
 function apply_soul_arrow(me, skill)
 	apply_buff_fixed(me, skill, BuffFlag.SoulArrow, 1)
+end
+
+function apply_infinity(me, skill)
+	apply_buff_fixed(me, skill, BuffFlag.Infinity, 1)
 end
 
 function apply_wk_charge(me, skill)

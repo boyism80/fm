@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 아이언 월
 
-function on_activated(me, skill, params)
+function on_activated_1301006(me, skill, params)
 	local wz = skill:wz()
 	if wz == nil or wz.effects == nil then
 		return

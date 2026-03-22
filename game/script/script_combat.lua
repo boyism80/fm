@@ -1,5 +1,150 @@
 -- Attack handlers: combo, pickpocket, ice charge, ammo consume
 
+local function skill_effect_mob_limit(effect)
+	if effect == nil then
+		return nil
+	end
+	local c = effect.mob_count
+	if c == nil then
+		return nil
+	end
+	c = tonumber(c) or 0
+	if c <= 0 then
+		return nil
+	end
+	return c
+end
+
+local function total_damage_to_mob(hits)
+	if hits == nil then
+		return 0
+	end
+	local total = 0
+	for _, amount in ipairs(hits) do
+		if amount and amount > 0 then
+			total = total + amount
+		end
+	end
+	return total
+end
+
+function for_each_mob_in_skill_area(me, skill, callback)
+	if me == nil or skill == nil or callback == nil then
+		return
+	end
+	local map = me:map()
+	if map == nil then
+		return
+	end
+	local effect = get_skill_effect(skill)
+	if effect == nil then
+		return
+	end
+	local prop = effect.prop or 0
+	if prop <= 0 then
+		prop = 100
+	end
+	local mob_limit = skill_effect_mob_limit(effect)
+	local pos_x, pos_y = me:position()
+	local lt = effect.lt
+	local rb = effect.rb
+	if lt == nil or rb == nil then
+		return
+	end
+	local min_x = pos_x + math.min(lt.x, rb.x)
+	local max_x = pos_x + math.max(lt.x, rb.x)
+	local min_y = pos_y + math.min(lt.y, rb.y)
+	local max_y = pos_y + math.max(lt.y, rb.y)
+	local mobs = map:objects(ObjectType.Mob, { area = { minX = min_x, minY = min_y, maxX = max_x, maxY = max_y } })
+	local n = 0
+	for _, mob in ipairs(mobs) do
+		if mob_limit ~= nil and n >= mob_limit then
+			break
+		end
+		if math.random(1, 100) <= prop then
+			callback(mob)
+		end
+		n = n + 1
+	end
+end
+
+local poison_pdam_cap = 30000
+local poison_denominator_base = 70
+
+function compute_poison_tick_damage(me, skill, mob)
+	if mob == nil or skill == nil then
+		return 0
+	end
+	local effect = get_skill_effect(skill)
+	if effect == nil then
+		return 0
+	end
+	local mwz = mob:wz()
+	if mwz == nil then
+		return 0
+	end
+	local max_hp = mwz.max_hp or 0
+	if max_hp <= 0 then
+		return 0
+	end
+	local skill_level = skill:level() or 1
+	local denom = poison_denominator_base - skill_level
+	if denom <= 0 then
+		denom = 1
+	end
+	local quotient = math.floor(max_hp / denom)
+	local base = quotient + 0.999
+	local weak = element_weak_multiplier(skill, mwz)
+	local amp = element_amp_from_class(me)
+	local raw = base * weak * amp
+	local clamped = math.max(1, math.min(raw, poison_pdam_cap))
+	local swz = skill:wz()
+	if swz ~= nil and swz.id == Skill.Flamethrower and me ~= nil then
+		local boost = me:skill(Skill.ElementBoost)
+		if boost ~= nil then
+			local be = get_skill_effect(boost)
+			local x = 0
+			if be ~= nil and be.x ~= nil then
+				x = be.x
+			end
+			if x > 0 then
+				local mul = x / 100.0 + 1.0
+				clamped = math.min(poison_pdam_cap, mul * clamped)
+			end
+		end
+	end
+	return math.floor(clamped)
+end
+
+function apply_prob_status_on_skill_hit(me, skill, damages, status)
+	if damages == nil or skill == nil or status == nil then
+		return
+	end
+	local effect = get_skill_effect(skill)
+	if effect == nil then
+		return
+	end
+	local prop = effect.prop or 0
+	if prop <= 0 then
+		prop = 100
+	end
+	local duration_ms = effect.time or 0
+	if duration_ms <= 0 then
+		return
+	end
+	for mob, hits in pairs(damages) do
+		if mob and hits and total_damage_to_mob(hits) > 0 then
+			if math.random(1, 100) <= prop then
+				local value = 1
+				if status == MobStatus.Poison then
+					value = compute_poison_tick_damage(me, skill, mob)
+				end
+				mob:set_status(status, value, duration_ms, skill, me)
+			end
+		end
+	end
+end
+
 local PICKPOCKET_SKILL_IDS = { [0] = true }
 do
     local function add(id)
@@ -146,19 +291,6 @@ function damages_to_targets(damages)
         end
     end
     return targets
-end
-
-local function total_damage_to_mob(hits)
-    if hits == nil then
-        return 0
-    end
-    local total = 0
-    for _, amount in ipairs(hits) do
-        if amount and amount > 0 then
-            total = total + amount
-        end
-    end
-    return total
 end
 
 function handle_ice_charge_freeze(me, damages)

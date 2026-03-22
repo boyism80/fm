@@ -1,4 +1,4 @@
 -- Skill name (String.wz/Skill.img.xml): 미스틱 도어
 
-function on_activated(me, skill, params)
+function on_activated_2311002(me, skill, params)
 end

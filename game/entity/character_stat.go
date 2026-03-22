@@ -73,8 +73,8 @@ func (ch *Character) GetTotalLuk() uint16 {
 	return uint16(total)
 }
 
-func (ch *Character) GetMaxHp() uint16 {
-	base := int32(ch.BaseHp) + int32(ch.BonusHp)
+func (ch *Character) GetMaxHp() uint32 {
+	base := int32(ch.BaseHp) + ch.BonusHp
 	total := base + (base*int32(ch.BonusStats.MaxHpPercent))/100
 	if total < 1 {
 		return 1
@@ -82,11 +82,11 @@ func (ch *Character) GetMaxHp() uint16 {
 	if total > int32(constant.STAT_MAX_HP_MP) {
 		return constant.STAT_MAX_HP_MP
 	}
-	return uint16(total)
+	return uint32(total)
 }
 
-func (ch *Character) GetMaxMp() uint16 {
-	base := int32(ch.BaseMp) + int32(ch.BonusMp)
+func (ch *Character) GetMaxMp() uint32 {
+	base := int32(ch.BaseMp) + ch.BonusMp
 	total := base + (base*int32(ch.BonusStats.MaxMpPercent))/100
 	if total < 0 {
 		return 0
@@ -94,7 +94,7 @@ func (ch *Character) GetMaxMp() uint16 {
 	if total > int32(constant.STAT_MAX_HP_MP) {
 		return constant.STAT_MAX_HP_MP
 	}
-	return uint16(total)
+	return uint32(total)
 }
 
 func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
@@ -158,7 +158,7 @@ func (ch *Character) notifyStatChange(stat constant.Stat) {
 	ch.Listener.OnUpdateStats(stats, false)
 }
 
-func (ch *Character) ConsumeMP(amount uint16) bool {
+func (ch *Character) ConsumeMP(amount uint32) bool {
 	if ch.Mp < amount {
 		return false
 	}
@@ -171,7 +171,7 @@ func (ch *Character) ConsumeMP(amount uint16) bool {
 	return true
 }
 
-func (ch *Character) ConsumeHP(amount uint16) bool {
+func (ch *Character) ConsumeHP(amount uint32) bool {
 	if ch.Hp <= amount {
 		return false
 	}

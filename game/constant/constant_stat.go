@@ -40,6 +40,6 @@ const (
 // Stat limits
 const (
 	STAT_MAX_STR_DEX_INT_LUK uint16 = 999   // Maximum value for STR, DEX, INT, LUK
-	STAT_MAX_HP_MP           uint16 = 30000 // Maximum value for HP and MP
+	STAT_MAX_HP_MP           uint32 = 30000
 	HP_AP_USED_MAX           uint16 = 10000 // Maximum HP/MP AP usage count
 )

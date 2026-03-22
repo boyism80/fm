@@ -1,4 +1,4 @@
 -- Skill name (String.wz/Skill.img.xml): 윙즈
 
-function on_activated(me, skill, params)
+function on_activated_5201005(me, skill, params)
 end

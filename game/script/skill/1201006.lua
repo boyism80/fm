@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 위협
 
-function on_activated(me, skill, params)
+function on_activated_1201006(me, skill, params)
 	local map = me:map()
 	if map == nil then
 		return

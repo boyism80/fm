@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 새크리파이스
 
-function on_attack(me, skill, damages)
+function on_attack_1311005(me, skill, damages)
 	if damages == nil or skill == nil then
 		return
 	end
@@ -35,5 +35,5 @@ function on_attack(me, skill, damages)
 	me:hp(new_hp, true)
 end
 
-function on_activated(me, skill, params)
+function on_activated_1311005(me, skill, params)
 end
