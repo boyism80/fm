@@ -139,15 +139,15 @@ func (s *Summon) Spawn(animated bool) {
 		return
 	}
 	pos := s.Owner.Position
-	_ = m.SpawnSummon(s.Owner, constant.SkillID(s.SkillID), s.SkillLevel, s.MovementType, s.SummonType, pos, 0)
+	s.Position = pos
+	m.AddSummon(s)
 }
 
 func (s *Summon) Remove(animated bool) {
-	if s.Owner == nil || s.Owner.Listener == nil {
+	if s.Owner == nil {
 		return
 	}
-	s.Owner.RemoveSummon(s)
-	s.Owner.Listener.OnSummonRemove(s.Owner, s, animated)
+	s.Owner.RemoveSummon(s, animated)
 }
 
 func (s *Summon) Move(start types.Vector2[int16], movements []dto.MoveFragment) {

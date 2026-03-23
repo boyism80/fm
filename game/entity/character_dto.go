@@ -47,7 +47,7 @@ func (ch *Character) ToDTO() *dto.Character {
 
 	mapID := uint32(0)
 	if m := ch.GetMap(); m != nil {
-		mapID = m.ID
+		mapID = m.id
 	}
 	return &dto.Character{
 		ID:            ch.GetID(),

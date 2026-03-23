@@ -53,12 +53,12 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 				return fmt.Errorf("current map not found")
 			}
 
-			mapSpec := currentMap.GetSpec()
-			if mapSpec == nil {
+			wz := currentMap.Wz
+			if wz == nil {
 				return fmt.Errorf("map model not found")
 			}
 
-			targetMapId = uint32(mapSpec.ReturnMapId)
+			targetMapId = uint32(wz.ReturnMapId)
 			spawnPoint = 0
 			stats[constant.STAT_HP] = int32(character.Hp)
 
@@ -73,24 +73,24 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			return fmt.Errorf("current map not found")
 		}
 
-		mapSpec := currentMap.GetSpec()
-		if mapSpec == nil {
+		wz := currentMap.Wz
+		if wz == nil {
 			return fmt.Errorf("map model not found")
 		}
 
-		portal, ok := mapSpec.FindPortal(req.PortalName)
+		portal, ok := wz.FindPortal(req.PortalName)
 		if !ok {
 			character.Listener.OnUpdateStats(nil, true)
 			return nil
 		}
 
-		targetMapSpec, ok := h.gs.resources.Maps[uint32(portal.TargetMapId)]
+		targetMapWz, ok := h.gs.resources.Maps[uint32(portal.TargetMapId)]
 		if !ok {
 			character.Listener.OnUpdateStats(nil, true)
 			return nil
 		}
 
-		targetPortal, ok := targetMapSpec.FindPortal(portal.Target)
+		targetPortal, ok := targetMapWz.FindPortal(portal.Target)
 		if !ok {
 			character.Listener.OnUpdateStats(nil, true)
 			return nil

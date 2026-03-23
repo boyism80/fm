@@ -65,19 +65,17 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		return fmt.Errorf("initial map %d not found", initialMapID)
 	}
 
-	mapSpec := mapInstance.GetSpec()
-	if mapSpec == nil {
-		log.Printf("MapSpec not found for map %d", initialMapID)
-		return fmt.Errorf("mapSpec not found for map %d", initialMapID)
+	wz := mapInstance.Wz
+	if wz == nil {
+		log.Printf("Wz not found for map %d", initialMapID)
+		return fmt.Errorf("wz not found for map %d", initialMapID)
 	}
 
-	portal, ok := mapSpec.Portals[initialSpawnPoint]
-	if !ok {
+	if _, ok := wz.Portals[initialSpawnPoint]; !ok {
 		log.Printf("Portal %d not found in map %d", initialSpawnPoint, initialMapID)
 		return fmt.Errorf("portal %d not found in map %d", initialSpawnPoint, initialMapID)
 	}
 
-	character.Position = portal.Position
 	character.Stance = 0
 
 	// initialMapID에 대응되는 MapActor의 PID를 구해서 WarpCharacter 메시지 전송

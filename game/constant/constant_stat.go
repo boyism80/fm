@@ -29,17 +29,17 @@ const (
 type StatType uint32
 
 const (
-	STAT_TYPE_STR StatType = 64   // Strength
-	STAT_TYPE_DEX StatType = 128  // Dexterity
-	STAT_TYPE_INT StatType = 256  // Intelligence
-	STAT_TYPE_LUK StatType = 512  // Luck
-	STAT_TYPE_HP  StatType = 2048 // Maximum HP
-	STAT_TYPE_MP  StatType = 8192 // Maximum MP
+	STAT_TYPE_STR StatType = 0x40   // Strength
+	STAT_TYPE_DEX StatType = 0x80   // Dexterity
+	STAT_TYPE_INT StatType = 0x100  // Intelligence
+	STAT_TYPE_LUK StatType = 0x200  // Luck
+	STAT_TYPE_HP  StatType = 0x800  // Maximum HP
+	STAT_TYPE_MP  StatType = 0x2000 // Maximum MP
 )
 
 // Stat limits
 const (
-	STAT_MAX_STR_DEX_INT_LUK uint16 = 999   // Maximum value for STR, DEX, INT, LUK
+	STAT_MAX_STR_DEX_INT_LUK uint16 = 999 // Maximum value for STR, DEX, INT, LUK
 	STAT_MAX_HP_MP           uint32 = 30000
 	HP_AP_USED_MAX           uint16 = 10000 // Maximum HP/MP AP usage count
 )

@@ -24,10 +24,10 @@ type mobMobStatusEntry struct {
 
 type Mob struct {
 	LifeCore
-	Wz               *wz.Mob
-	Foothold         int16
-	Spawn            *MobSpawn
-	debuffs map[constant.MobStatus]*mobMobStatusEntry
+	Wz       *wz.Mob
+	Foothold int16
+	Spawn    *MobSpawn
+	debuffs  map[constant.MobStatus]*mobMobStatusEntry
 }
 
 func (m *Mob) GetObjectType() constant.ObjectType {
@@ -137,7 +137,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
-			L.Push(lua.LNumber(mapInstance.ID))
+			L.Push(lua.LNumber(mapInstance.id))
 			return 1
 		},
 		"set_status": func(L *lua.LState) int {

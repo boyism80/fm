@@ -48,8 +48,7 @@ func (h *DamageSummon) Handle(ctx *core.ClientContext, req *request.DamageSummon
 	if damage > 0 {
 		if summon.Hp <= damage {
 			summon.Hp = 0
-			character.RemoveSummon(summon)
-			character.Listener.OnSummonRemove(character, summon, true)
+			character.RemoveSummon(summon, true)
 		} else {
 			summon.Hp -= damage
 			character.Listener.OnSummonDamaged(character, summon, req.Unknown, damage, req.MonsterIdFrom)

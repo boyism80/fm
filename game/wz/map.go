@@ -94,3 +94,18 @@ func (model *Map) FindPortal(name string) (*Portal, bool) {
 
 	return nil, false
 }
+
+func (model *Map) GetSpawnPosition(spawnPoint uint8) (types.Point[int16], bool) {
+	if model == nil {
+		return types.Point[int16]{}, false
+	}
+	portal, ok := model.Portals[spawnPoint]
+	if !ok {
+		return types.Point[int16]{}, false
+	}
+	position := portal.Position
+	if dropped, ok := model.DropPoint(position); ok {
+		position = dropped
+	}
+	return position, true
+}

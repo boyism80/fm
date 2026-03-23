@@ -606,7 +606,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			summonType := constant.SummonType(L.CheckInt(6))
 
 			duration := time.Duration(durationMs) * time.Millisecond
-			s := ch.AddSummon(skillID, skillLevel, movType, summonType, duration)
+			s := ch.SpawnSummon(constant.SkillID(skillID), skillLevel, movType, summonType, ch.Position, duration)
 			if s == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -624,10 +624,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			skillID := uint32(L.CheckInt(2))
 			for _, s := range ch.summons {
 				if s != nil && s.SkillID == constant.SkillID(skillID) {
-					if ch.Listener != nil {
-						ch.Listener.OnSummonRemove(ch, s, true)
-					}
-					ch.RemoveSummon(s)
+					ch.RemoveSummon(s, true)
 					break
 				}
 			}

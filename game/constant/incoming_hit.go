@@ -3,7 +3,8 @@ package constant
 // IncomingHitType is the first byte of the TakeDamage client packet (after update tick).
 //
 // Negative values are reserved hit sources that do not select a mob attack slot:
-//   -4 mist, -3 environmental / map hazard, -2 map debuff, -1 touch / collision with mob.
+//
+//	-4 mist, -3 environmental / map hazard, -2 map debuff, -1 touch / collision with mob.
 //
 // Non-negative values (0, 1, 2, …) are not extra enum members: they are the 0-based index
 // into the mob’s WZ attack list (attack1 → 0, attack2 → 1, attack3 → 2, …). The client

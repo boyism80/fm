@@ -171,22 +171,58 @@ func summonTimerKey(skillID constant.SkillID) string {
 	return fmt.Sprintf("summon:%d", skillID)
 }
 
-func (ch *Character) AddSummon(skillID uint32, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, duration time.Duration) *Summon {
+func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, position types.Point[int16], duration time.Duration) *Summon {
+	if ch == nil {
+		return nil
+	}
 	m := ch.GetMap()
 	if m == nil {
 		return nil
 	}
-	position := ch.Position
-	return m.SpawnSummon(ch, constant.SkillID(skillID), skillLevel, movementType, summonType, position, duration)
+	if ch.summons != nil {
+		if current, ok := ch.summons[skillID]; ok && current != nil {
+			ch.RemoveSummon(current, true)
+		}
+	}
+
+	s := &Summon{
+		LifeCore: LifeCore{
+			ObjectCore: ObjectCore{
+				Position: position,
+				Context:  m.context,
+				Map:      nil,
+			},
+			Hp:     1,
+			BaseHp: 1,
+			BaseMp: 1,
+		},
+		Owner:        ch,
+		OwnerID:      ch.GetID(),
+		SkillID:      skillID,
+		SkillLevel:   skillLevel,
+		MovementType: movementType,
+		SummonType:   summonType,
+	}
+	if ch.summons == nil {
+		ch.summons = make(map[constant.SkillID]*Summon)
+	}
+	ch.summons[skillID] = s
+	m.AddSummon(s)
+	if duration > 0 {
+		_ = ch.AddTimerWithCallback(summonTimerKey(s.SkillID), duration, false, func() {
+			ch.handleSummonExpireBySkill(s.SkillID)
+		})
+	}
+	return s
 }
 
-func (ch *Character) RemoveSummon(target *Summon) {
+func (ch *Character) RemoveSummon(target *Summon, animated bool) {
 	if target == nil {
 		return
 	}
 	_ = ch.RemoveTimer(summonTimerKey(target.SkillID))
-	if m := ch.GetMap(); m != nil && target.OID != 0 {
-		m.RemoveSummon(target.OID)
+	if m := target.GetMap(); m != nil && target.OID != 0 {
+		m.RemoveSummon(target.OID, animated)
 	}
 	if ch.summons != nil {
 		delete(ch.summons, constant.SkillID(target.SkillID))
@@ -215,16 +251,12 @@ func (ch *Character) GetSummonsSize() int {
 }
 
 func (ch *Character) ClearSummons() {
-	if len(ch.summons) > 0 && ch.Listener != nil {
-		for _, s := range ch.summons {
-			if s == nil {
-				continue
-			}
-			_ = ch.RemoveTimer(summonTimerKey(s.SkillID))
-			ch.Listener.OnSummonRemove(ch, s, true)
-		}
+	if len(ch.summons) == 0 {
+		return
 	}
-	ch.summons = nil
+	for _, s := range ch.GetSummons() {
+		ch.RemoveSummon(s, true)
+	}
 }
 
 func (ch *Character) handleSummonExpireBySkill(skillID constant.SkillID) {
@@ -235,10 +267,7 @@ func (ch *Character) handleSummonExpireBySkill(skillID constant.SkillID) {
 	if s == nil {
 		return
 	}
-	if ch.Listener != nil {
-		ch.Listener.OnSummonRemove(ch, s, true)
-	}
-	ch.RemoveSummon(s)
+	ch.RemoveSummon(s, true)
 }
 
 func (ch *Character) SuspendTimers() {
