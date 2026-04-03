@@ -83,8 +83,8 @@ func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecor
 	}
 
 	mapInstance.Broadcast(chatPacket, &entity.BroadcastOption{
-		ReferenceCharacter: l.ch,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		Reference:       l.ch,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -264,9 +264,9 @@ func (l *CharacterListenerImpl) OnPlayerMove(character *entity.Character, startP
 	}
 
 	mapInstance.Broadcast(movePacket, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{character.GetID()},
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{character.GetID()},
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -283,9 +283,9 @@ func (l *CharacterListenerImpl) OnAttack(character *entity.Character, attackInfo
 	}
 
 	mapInstance.Broadcast(attackPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{character.GetID()},
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{character.GetID()},
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -352,9 +352,9 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Characte
 	}
 
 	mapInstance.Broadcast(lookPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{character.GetID()},
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{character.GetID()},
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -398,9 +398,9 @@ func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, buffID 
 			CharacterID: int32(character.GetID()),
 			Buffs:       dtoBuffs,
 		}, &entity.BroadcastOption{
-			ExceptPlayerIDs:    []uint32{character.GetID()},
-			ReferenceCharacter: character,
-			RecipientFilter:    entity.BroadcastVisibleByReference,
+			ExceptPlayerIDs: []uint32{character.GetID()},
+			Reference:       character,
+			RecipientFilter: entity.BroadcastVisibleByReference,
 		})
 	}
 }
@@ -414,9 +414,9 @@ func (l *CharacterListenerImpl) OnBuffRemoved(character *entity.Character, flags
 			CharacterID: int32(character.GetID()),
 			Buffs:       flags,
 		}, &entity.BroadcastOption{
-			ExceptPlayerIDs:    []uint32{character.GetID()},
-			ReferenceCharacter: character,
-			RecipientFilter:    entity.BroadcastVisibleByReference,
+			ExceptPlayerIDs: []uint32{character.GetID()},
+			Reference:       character,
+			RecipientFilter: entity.BroadcastVisibleByReference,
 		})
 	}
 }
@@ -439,9 +439,9 @@ func (l *CharacterListenerImpl) OnDebuffAdded(character *entity.Character, disea
 			SkillID:     skillID,
 			SkillLevel:  skillLevel,
 		}, &entity.BroadcastOption{
-			ExceptPlayerIDs:    []uint32{character.GetID()},
-			ReferenceCharacter: character,
-			RecipientFilter:    entity.BroadcastVisibleByReference,
+			ExceptPlayerIDs: []uint32{character.GetID()},
+			Reference:       character,
+			RecipientFilter: entity.BroadcastVisibleByReference,
 		})
 	}
 }
@@ -455,9 +455,9 @@ func (l *CharacterListenerImpl) OnDebuffRemoved(character *entity.Character, fla
 			CharacterID: int32(character.GetID()),
 			Diseases:    flags,
 		}, &entity.BroadcastOption{
-			ExceptPlayerIDs:    []uint32{character.GetID()},
-			ReferenceCharacter: character,
-			RecipientFilter:    entity.BroadcastVisibleByReference,
+			ExceptPlayerIDs: []uint32{character.GetID()},
+			Reference:       character,
+			RecipientFilter: entity.BroadcastVisibleByReference,
 		})
 	}
 }
@@ -480,8 +480,8 @@ func (l *CharacterListenerImpl) OnHiddenChanged(hidden bool) {
 	// Only players with lower role receive Leave/Spawn; same-or-higher role always see the character.
 	if hidden {
 		mapInstance.Broadcast(&response.LeavePlayer{ID: l.ch.GetID()}, &entity.BroadcastOption{
-			ReferenceCharacter: l.ch,
-			RecipientFilter:    entity.BroadcastRoleBelowReference,
+			Reference:       l.ch,
+			RecipientFilter: entity.BroadcastRoleBelowReference,
 		})
 	} else {
 		mapInstance.Broadcast(&response.SpawnPlayer{
@@ -492,8 +492,8 @@ func (l *CharacterListenerImpl) OnHiddenChanged(hidden bool) {
 			FriendshipRings: entity.RingsToDTO(l.ch.Rings.Mid),
 			MarriageRings:   entity.RingsToDTO(l.ch.Rings.Right),
 		}, &entity.BroadcastOption{
-			ReferenceCharacter: l.ch,
-			RecipientFilter:    entity.BroadcastRoleBelowReference,
+			Reference:       l.ch,
+			RecipientFilter: entity.BroadcastRoleBelowReference,
 		})
 	}
 }
@@ -514,8 +514,8 @@ func (l *CharacterListenerImpl) OnSummonSpawn(character *entity.Character, summo
 		Animated:     true,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -530,8 +530,8 @@ func (l *CharacterListenerImpl) OnSummonRemove(character *entity.Character, summ
 		Animated: animated,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -547,9 +547,9 @@ func (l *CharacterListenerImpl) OnSummonMove(character *entity.Character, summon
 		Fragments:   movements,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
-		ExceptPlayerIDs:    []uint32{character.GetID()},
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{character.GetID()},
 	})
 }
 
@@ -572,8 +572,8 @@ func (l *CharacterListenerImpl) OnSummonAttack(character *entity.Character, summ
 		Targets:       respTargets,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -588,8 +588,8 @@ func (l *CharacterListenerImpl) OnSummonSkill(character *entity.Character, summo
 		NewStance:   newStance,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -606,7 +606,7 @@ func (l *CharacterListenerImpl) OnSummonDamaged(character *entity.Character, sum
 		MonsterIDFrom: monsterIdFrom,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }

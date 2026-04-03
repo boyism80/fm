@@ -68,9 +68,9 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 		CharacterID: character.GetID(),
 		ItemID:      req.ItemID,
 	}, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{character.GetID()},
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{character.GetID()},
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 
 	if character.Listener != nil {

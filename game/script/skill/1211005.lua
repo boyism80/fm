@@ -1,6 +1,6 @@
 -- Skill name (String.wz/Skill.img.xml): 블리자드 차지 : 검
 
 function on_activated_1211005(me, skill, params)
-	apply_wk_charge(me, skill)
+	apply_buff_fixed(me, skill, BuffFlag.WkCharge, 1)
 end
 

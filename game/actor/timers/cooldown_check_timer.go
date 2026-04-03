@@ -27,6 +27,9 @@ func (t *CooldownCheckTimer) GetInitialDelay() time.Duration {
 
 func (t *CooldownCheckTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
 	_ = ctx
+	if mapData.GetPlayerCount() == 0 {
+		return nil
+	}
 	now := time.Now()
 	players := mapData.GetAllPlayers()
 	for _, obj := range players {

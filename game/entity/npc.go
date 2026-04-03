@@ -3,6 +3,8 @@ package entity
 import (
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -17,6 +19,21 @@ func (n *Npc) GetObjectType() constant.ObjectType {
 
 func (n *Npc) Is(typ constant.ObjectType) bool {
 	return n.GetObjectType().Has(typ)
+}
+
+func (n *Npc) SendSpawnSyncToViewer(viewer *Character) {
+	if n == nil || viewer == nil {
+		return
+	}
+	npcDTO := n.ToDTO()
+	viewer.Send(&response.SpawnNpc{
+		NPC:     npcDTO,
+		Visible: true,
+	}, types.SEND_POLICY_ENCRYPT)
+	viewer.Send(&response.NpcControl{
+		NPC:     npcDTO,
+		MiniMap: true,
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (n *Npc) LuaTypeName() string {

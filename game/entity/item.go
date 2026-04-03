@@ -8,6 +8,7 @@ import (
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
 	"github.com/boyism80/fm/util"
 )
@@ -90,6 +91,27 @@ func cloneEquipmentCore(c *EquipmentCore, count uint16) *EquipmentCore {
 
 func (item *ItemCore) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeItem
+}
+
+func (item *ItemCore) SendSpawnSyncToViewer(viewer *Character) {
+	if item == nil || viewer == nil {
+		return
+	}
+	drop := item.GetDrop()
+	if drop == nil {
+		return
+	}
+	viewer.Send(&response.SpawnItem{
+		ID:           drop.OID,
+		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
+		DropType:     drop.DropType,
+		ItemModel:    item.GetModel(),
+		Expiration:   item.GetExpiration(),
+		Position:     drop.Position,
+		OwnerID:      drop.Owner,
+		SpawnedPoint: drop.SpawnedPoint,
+		IsPlayerDrop: true,
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (item *ItemCore) GetDrop() *Drop           { return item.Drop }

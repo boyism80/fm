@@ -211,6 +211,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Character, *entity.LifeCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Mob, *entity.LifeCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Summon, *entity.LifeCore](luaState)
+	luax.RegisterLuaDerivedType[*entity.Mist, *entity.ObjectCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Npc, *entity.ObjectCore](luaState)
 	luax.RegisterLuaType[*entity.Map](luaState)
 	luax.RegisterLuaType[*entity.SkillEntry](luaState)

@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
-	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
 )
@@ -33,17 +32,26 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 	if character == nil {
 		return nil
 	}
-	if character.GetMap() == nil {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
 		return nil
 	}
 
-	summon := character.GetSummon(constant.SkillID(req.AttackInfo.Skill))
+	summon := mapInstance.GetSummon(req.SummonOID)
 	if summon == nil {
 		return nil
 	}
+	if summon.OwnerID != character.GetID() {
+		return nil
+	}
+
+	// Apply real damage to mobs first so server-side HP/reward logic matches.
+	// The first argument must be the owner character (for loot/kill rewards).
+	ApplyDamageToMobs(character, mapInstance, req.Damages)
+	CallSummonOnAttackHooks(ctx, character, mapInstance, req.Damages, uint32(summon.SkillID))
 
 	var targets []entity.SummonAttackTarget
-	for _, ap := range req.AttackInfo.Damages {
+	for _, ap := range req.Damages {
 		for _, dp := range ap.DamagePairs {
 			if dp.Damage == 0 {
 				continue
@@ -55,7 +63,7 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 		}
 	}
 	if len(targets) > 0 {
-		character.Listener.OnSummonAttack(character, summon, 0, targets)
+		character.Listener.OnSummonAttack(character, summon, req.Animation, targets)
 	}
 	return nil
 }

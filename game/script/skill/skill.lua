@@ -17,6 +17,9 @@ function apply_buff_from_effect(me, skill, flag, value_key)
 	if val == nil then
 		val = 0
 	end
+	if val <= 0 then
+		return
+	end
 	me:buff(skill, flag, val)
 end
 
@@ -26,68 +29,23 @@ function apply_buff_fixed(me, skill, flag, value)
 	me:buff(skill, flag, value)
 end
 
-function apply_booster(me, skill)
-	apply_buff_from_effect(me, skill, BuffFlag.Booster, "x")
-end
-
-function apply_stance(me, skill)
-	apply_buff_from_effect(me, skill, BuffFlag.Stance, "prop")
-end
-
-function apply_invincible(me, skill)
-	apply_buff_from_effect(me, skill, BuffFlag.Invincible, "x")
-end
-
-function apply_maple_warrior(me, skill)
-	apply_buff_from_effect(me, skill, BuffFlag.MapleWarrior, "x")
-end
-
-function apply_powerguard(me, skill)
-	apply_buff_from_effect(me, skill, BuffFlag.Powerguard, "x")
-end
-
-function apply_mana_reflection(me, skill)
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then
-		return
-	end
-	local effect = wz.effects[skill:level()]
+function apply_sharp_eyes(me, skill)
+	local effect = get_skill_effect(skill)
 	if effect == nil then
 		return
 	end
-	local prop = effect.prop
-	if prop == nil then
-		prop = 0
+	local x = math.floor(tonumber(effect.x) or 0)
+	local y = math.floor(tonumber(effect.y) or 0)
+	if x <= 0 or y <= 0 then
+		return
 	end
-	local val = prop - 30
-	if val < 0 then
-		val = 0
-	end
-	me:buff(skill, BuffFlag.ManaReflection, val)
-end
-
-function apply_darksight(me, skill)
-	apply_buff_fixed(me, skill, BuffFlag.Darksight, 1)
-end
-
-function apply_soul_arrow(me, skill)
-	apply_buff_fixed(me, skill, BuffFlag.SoulArrow, 1)
-end
-
-function apply_infinity(me, skill)
-	apply_buff_fixed(me, skill, BuffFlag.Infinity, 1)
-end
-
-function apply_wk_charge(me, skill)
-	apply_buff_fixed(me, skill, BuffFlag.WkCharge, 1)
-end
-
-function apply_combo(me, skill)
-	apply_buff_fixed(me, skill, BuffFlag.Combo, 1)
-end
-
-function apply_holy_symbol(me, skill)
-	apply_buff_from_effect(me, skill, BuffFlag.HolySymbol, "x")
+	local packed = x * 256 + (y % 256)
+	for_each_character_in_skill_area(me, skill, function(ch)
+		if ch == nil or not ch:is_alive() then
+			return
+		end
+		ch:buff(skill, BuffFlag.SharpEyes, packed)
+	end)
 end
 
 function add_holy_symbol_bonus(me, skill)
@@ -225,4 +183,95 @@ end
 
 function apply_hero_will(me)
 	me:remove_debuff(DebuffFlag.Seduce)
+end
+
+function apply_dispel(me, skill)
+	local effect = get_skill_effect(skill)
+	if effect == nil then
+		return
+	end
+	local prop = tonumber(effect.prop) or 0
+	if prop <= 0 then
+		return
+	end
+	if prop < 100 and math.random(1, 100) > prop then
+		return
+	end
+	me:remove_debuff(
+		DebuffFlag.Curse,
+		DebuffFlag.Darkness,
+		DebuffFlag.Poison,
+		DebuffFlag.Seal,
+		DebuffFlag.Slow,
+		DebuffFlag.Weaken
+	)
+end
+
+function get_heal_recovery_amount(me, skill)
+	local effect = get_skill_effect(skill)
+	if effect == nil then
+		return 0
+	end
+	local hp_rate = (effect.hp or 0) / 100.0
+	if hp_rate <= 0 then
+		return 0
+	end
+
+	local total_magic = (me:base_int() or 0) + (me:bonus_int() or 0)
+	if total_magic <= 0 then
+		total_magic = 1
+	end
+
+	local min_heal = math.floor(total_magic * 3.0 * hp_rate)
+	local max_heal = math.floor(total_magic * 5.0 * hp_rate)
+	if min_heal < 1 then
+		min_heal = 1
+	end
+	if max_heal < min_heal then
+		max_heal = min_heal
+	end
+
+	local heal = math.random(min_heal, max_heal)
+	if me:has_debuff(DebuffFlag.Zombify) then
+		heal = -heal
+	end
+	return heal
+end
+
+function apply_mana_reflection(me, skill)
+	local wz = skill:wz()
+	if wz == nil or wz.effects == nil then
+		return
+	end
+
+	local effect = wz.effects[skill:level()]
+	if effect == nil then
+		return
+	end
+
+	local prop = effect.prop
+	if prop == nil then
+		prop = 0
+	end
+
+	local val = prop - 30
+	if val < 0 then
+		val = 0
+	end
+
+	me:buff(skill, BuffFlag.ManaReflection, val)
+end
+
+function apply_resurrection_in_range(me, skill)
+	if me == nil or skill == nil then
+		return
+	end
+	for_each_character_in_skill_area(me, skill, function(ch)
+		if ch == nil or ch:is_alive() then
+			return
+		end
+		ch:stance(0)
+		ch:hp(ch:max_hp())
+		ch:mp(ch:max_mp())
+	end)
 end

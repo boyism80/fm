@@ -71,6 +71,7 @@ type Character struct {
 	diseases       map[constant.DebuffFlag]*DiseaseValueHolder
 	timers         map[string]*CharacterTimer
 	summons        map[constant.SkillID]*Summon
+	doors          map[constant.SkillID]*Door
 }
 
 // DiseaseValueHolder holds one applied disease (mirrors MapleDiseaseValueHolder: disease, start time, duration).
@@ -95,6 +96,26 @@ func (ch *Character) GetObjectType() constant.ObjectType {
 
 func (ch *Character) Is(typ constant.ObjectType) bool {
 	return ch.GetObjectType().Has(typ)
+}
+
+func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
+	if ch == nil || viewer == nil {
+		return
+	}
+	if ch.GetID() == viewer.GetID() {
+		return
+	}
+	if ch.IsHidden() && !viewer.HasRoleAtLeast(ch.Role) {
+		return
+	}
+	viewer.Send(&response.SpawnPlayer{
+		Character:       ch.ToDTO(),
+		BuffStates:      [4]uint32{},
+		Diseases:        ch.GetDiseaseMask(),
+		CrushRings:      RingsToDTO(ch.Rings.Left),
+		FriendshipRings: RingsToDTO(ch.Rings.Mid),
+		MarriageRings:   RingsToDTO(ch.Rings.Right),
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (ch *Character) AddTimerWithCallback(key string, interval time.Duration, repeat bool, callback func()) bool {
@@ -216,6 +237,112 @@ func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, mov
 	return s
 }
 
+func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], poisonMist uint8, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
+	if ch == nil || ch.Context == nil {
+		return nil
+	}
+	if skill == nil || skill.Wz == nil {
+		return nil
+	}
+	m := ch.GetMap()
+	if m == nil {
+		return nil
+	}
+	wzSkill := ch.Context.GetResources().GetSkill(skill.Wz.ID)
+	if wzSkill == nil {
+		return nil
+	}
+	skillLevel := uint8(skill.SkillLevel)
+	ld := wzSkill.GetLevelData(int(skillLevel))
+	b := bounds
+	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
+		b = MistWorldBounds(position, ld)
+	}
+	if poisonTickMultiplier <= 0 {
+		poisonTickMultiplier = 1.0
+	}
+	mist := &Mist{
+		ObjectCore: ObjectCore{
+			Position: position,
+			Context:  m.context,
+			Map:      nil,
+		},
+		OwnerID:              ch.GetID(),
+		SkillWz:              wzSkill,
+		SkillLevel:           skillLevel,
+		PoisonMist:           poisonMist,
+		MobMist:              false,
+		MobSkill:             false,
+		SkillDelay:           8,
+		Bounds:               b,
+		ExpiresAt:            time.Time{},
+		PoisonTickMultiplier: poisonTickMultiplier,
+	}
+	if initialDelay > 0 {
+		mist.NextPoisonTickAt = time.Now().Add(initialDelay)
+	}
+	if duration > 0 {
+		mist.ExpiresAt = time.Now().Add(duration)
+	}
+	m.AddMist(mist)
+	return mist
+}
+
+func (ch *Character) SpawnDoor(skillID constant.SkillID, duration time.Duration) *Door {
+	if ch == nil {
+		return nil
+	}
+	m := ch.GetMap()
+	if m == nil || m.Wz == nil {
+		return nil
+	}
+	if ch.doors != nil {
+		if current, ok := ch.doors[skillID]; ok && current != nil {
+			ch.RemoveDoor(current, true)
+		}
+	}
+
+	oppositeMapID := uint32(m.Wz.ReturnMapId)
+	townPosition := ch.Position
+	if ch.Context != nil {
+		if townWz, ok := ch.Context.GetResources().Maps[oppositeMapID]; ok {
+			if spawnPos, ok := townWz.GetSpawnPosition(0); ok {
+				townPosition = spawnPos
+			}
+		}
+	}
+
+	door := &Door{
+		ObjectCore: ObjectCore{
+			Position: ch.Position,
+			Context:  m.context,
+			Map:      nil,
+		},
+		OwnerID:          ch.GetID(),
+		SkillID:          skillID,
+		OppositeMapID:    oppositeMapID,
+		OppositePosition: townPosition,
+	}
+	if duration > 0 {
+		door.ExpiresAt = time.Now().Add(duration)
+	}
+	if ch.doors == nil {
+		ch.doors = make(map[constant.SkillID]*Door)
+	}
+	ch.doors[skillID] = door
+	m.AddDoor(door)
+	return door
+}
+
+func (ch *Character) RemoveMist(mist *Mist) {
+	if mist == nil {
+		return
+	}
+	if m := mist.GetMap(); m != nil && mist.OID != 0 {
+		m.RemoveMist(mist.OID)
+	}
+}
+
 func (ch *Character) RemoveSummon(target *Summon, animated bool) {
 	if target == nil {
 		return
@@ -227,6 +354,29 @@ func (ch *Character) RemoveSummon(target *Summon, animated bool) {
 	if ch.summons != nil {
 		delete(ch.summons, constant.SkillID(target.SkillID))
 	}
+}
+
+func (ch *Character) RemoveDoor(target *Door, animated bool) {
+	if target == nil {
+		return
+	}
+	if m := target.GetMap(); m != nil && target.OID != 0 {
+		m.RemoveDoor(target.OID, animated)
+	}
+	if ch.doors != nil {
+		delete(ch.doors, constant.SkillID(target.SkillID))
+	}
+}
+
+func (ch *Character) RemoveDoorBySkill(skillID constant.SkillID, animated bool) {
+	if ch.doors == nil {
+		return
+	}
+	door := ch.doors[skillID]
+	if door == nil {
+		return
+	}
+	ch.RemoveDoor(door, animated)
 }
 
 func (ch *Character) GetSummons() []*Summon {
@@ -256,6 +406,28 @@ func (ch *Character) ClearSummons() {
 	}
 	for _, s := range ch.GetSummons() {
 		ch.RemoveSummon(s, true)
+	}
+}
+
+func (ch *Character) GetDoors() []*Door {
+	if len(ch.doors) == 0 {
+		return nil
+	}
+	out := make([]*Door, 0, len(ch.doors))
+	for _, d := range ch.doors {
+		if d != nil {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
+func (ch *Character) ClearDoors() {
+	if len(ch.doors) == 0 {
+		return
+	}
+	for _, d := range ch.GetDoors() {
+		ch.RemoveDoor(d, true)
 	}
 }
 
@@ -822,9 +994,9 @@ func (ch *Character) broadcastLevelUpEffect() {
 		CharacterID: ch.id,
 		EffectID:    0,
 	}, &BroadcastOption{
-		ExceptPlayerIDs:    []uint32{ch.GetID()},
-		ReferenceCharacter: ch,
-		RecipientFilter:    BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{ch.GetID()},
+		Reference:       ch,
+		RecipientFilter: BroadcastVisibleByReference,
 	})
 }
 

@@ -7,9 +7,11 @@ const (
 	ObjectTypeLife      ObjectType = ObjectTypeObject | 0x0010
 	ObjectTypeNpc       ObjectType = ObjectTypeObject | 0x0020
 	ObjectTypeItem      ObjectType = ObjectTypeObject | 0x0040
-	ObjectTypeCharacter ObjectType = ObjectTypeLife | 0x0100
-	ObjectTypeMob       ObjectType = ObjectTypeLife | 0x0200
-	ObjectTypeSummon    ObjectType = ObjectTypeLife | 0x0400
+	ObjectTypeMist      ObjectType = ObjectTypeObject | 0x0080
+	ObjectTypeDoor      ObjectType = ObjectTypeObject | 0x0100
+	ObjectTypeCharacter ObjectType = ObjectTypeLife | 0x1000
+	ObjectTypeMob       ObjectType = ObjectTypeLife | 0x2000
+	ObjectTypeSummon    ObjectType = ObjectTypeLife | 0x4000
 )
 
 func (t ObjectType) Has(other ObjectType) bool {
@@ -26,5 +28,7 @@ func AllObjectTypeConstants() map[string]ObjectType {
 		"Npc":       ObjectTypeNpc,
 		"Item":      ObjectTypeItem,
 		"Summon":    ObjectTypeSummon,
+		"Mist":      ObjectTypeMist,
+		"Door":      ObjectTypeDoor,
 	}
 }

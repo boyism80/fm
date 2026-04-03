@@ -52,6 +52,10 @@ var (
 	BuffFlagManaReflection = BuffFlag{0x40, 3}
 	BuffFlagSpiritClaw     = BuffFlag{0x100, 3}
 	BuffFlagInfinity       = BuffFlag{0x200, 3}
+	BuffFlagHolyShield     = BuffFlag{0x400, 3}
+	BuffFlagHamstring      = BuffFlag{0x800, 3}
+	BuffFlagBlind          = BuffFlag{0x1000, 3}
+	BuffFlagConcentrate    = BuffFlag{0x2000, 3}
 	BuffFlagBerserkFury    = BuffFlag{0x2000000, 3}
 	BuffFlagDivineBody     = BuffFlag{0x4000000, 3}
 	BuffFlagFinalAttack    = BuffFlag{0x20000000, 3}
@@ -81,9 +85,13 @@ func AllBuffFlags() map[string]BuffFlag {
 		"MesoUp": BuffFlagMesoUp, "ShadowPartner": BuffFlagShadowPartner, "Pickpocket": BuffFlagPickpocket, "MesoGuard": BuffFlagMesoGuard, "HpLossGuard": BuffFlagHpLossGuard,
 		"Morph": BuffFlagMorph, "Recovery": BuffFlagRecovery, "MapleWarrior": BuffFlagMapleWarrior, "Stance": BuffFlagStance,
 		"SharpEyes": BuffFlagSharpEyes, "ManaReflection": BuffFlagManaReflection, "SpiritClaw": BuffFlagSpiritClaw, "Infinity": BuffFlagInfinity,
+		"HolyShield":  BuffFlagHolyShield,
+		"Concentrate": BuffFlagConcentrate,
 		"BerserkFury": BuffFlagBerserkFury, "DivineBody": BuffFlagDivineBody, "FinalAttack": BuffFlagFinalAttack,
 		"EnergyCharge": BuffFlagEnergyCharge, "DashSpeed": BuffFlagDashSpeed, "DashJump": BuffFlagDashJump,
 		"MonsterRiding": BuffFlagMonsterRiding, "SpeedInfusion": BuffFlagSpeedInfusion, "HomingBeacon": BuffFlagHomingBeacon,
 		"ExpRate": BuffFlagExpRate, "DropRate": BuffFlagDropRate, "MesoRate": BuffFlagMesoRate,
+		"Hamstring": BuffFlagHamstring,
+		"Blind":     BuffFlagBlind,
 	}
 }

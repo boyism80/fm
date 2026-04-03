@@ -24,7 +24,7 @@ end
 function on_script(me)
     local x, y = me:position()
 
-    me:class(212)
+    me:class(312)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -39,12 +39,15 @@ function on_script(me)
     me:hp(me:max_hp() * 0.5)
     me:max_mp(20000)
     me:mp(me:max_mp())
-    local weapon = me:mkitem('폴암')
+    me:mkitem('활전용화살', 200)
+    me:mkitem('석궁전용화살', 200)
+    me:mkitem('석궁')
+    local weapon = me:mkitem('워보우')
     if weapon ~= nil then
         me:equip(weapon)
     end
     me:base_str(80)
-    me:base_dex(4)
+    me:base_dex(300)
     me:base_int(4)
     me:base_luk(4)
     me:level(200)
@@ -56,6 +59,42 @@ function on_damaged(me, attacker, skill, damage, params)
     d = handle_meso_guard(me, attacker, skill, d)
     d = handle_reflect_damage(me, attacker, skill, d, params)
     return d
+end
+
+function on_poison(mist, mobs)
+    if mist == nil or mobs == nil then
+        return
+    end
+    local skill = mist:skill()
+    if skill == nil then
+        return
+    end
+    local multiplier = mist:poison_tick_multiplier() or 1.0
+    if multiplier <= 0 then
+        multiplier = 1.0
+    end
+    local effect = get_skill_effect(skill)
+    if effect == nil then
+        return
+    end
+    local prop = effect.prop or 0
+    if prop <= 0 then
+        prop = 100
+    end
+    local duration_ms = effect.time or 0
+    if duration_ms <= 0 then
+        return
+    end
+    for _, mob in ipairs(mobs) do
+        if mob ~= nil and not mob:has_status(MobStatus.Poison) then
+            if math.random(1, 100) <= prop then
+                local value = compute_poison_tick_damage(skill, mob, multiplier)
+                if value > 0 then
+                    mob:set_status(MobStatus.Poison, value, duration_ms, skill, mist:owner_id())
+                end
+            end
+        end
+    end
 end
 
 function on_blocked(me, attacker)

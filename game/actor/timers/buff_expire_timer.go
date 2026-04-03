@@ -27,6 +27,9 @@ func (t *BuffExpireTimer) GetInitialDelay() time.Duration {
 
 func (t *BuffExpireTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
 	_ = ctx
+	if mapData.GetPlayerCount() == 0 {
+		return nil
+	}
 	now := time.Now()
 	players := mapData.GetAllPlayers()
 

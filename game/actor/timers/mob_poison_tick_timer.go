@@ -27,6 +27,9 @@ func (t *MobPoisonTickTimer) GetInitialDelay() time.Duration {
 }
 
 func (t *MobPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
+	if mapData.GetPlayerCount() == 0 {
+		return nil
+	}
 	for _, obj := range mapData.GetMobs() {
 		mob, ok := obj.(*entity.Mob)
 		if !ok || mob == nil || !mob.IsAlive() {

@@ -47,35 +47,8 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}
 
-	// 2. Send existing players' info to the new player
 	playerID := character.GetID()
-	if mapInstance.GetPlayerCount() > 1 { // More than just the new player
-		for cid, p := range mapInstance.GetAllPlayers() {
-			if cid == playerID {
-				continue // Skip the new player
-			}
 
-			if ch, ok := p.(*entity.Character); ok {
-				if ch.IsHidden() && !character.HasRoleAtLeast(ch.Role) {
-					continue
-				}
-				// Convert entity to DTO
-				chDTO := ch.ToDTO()
-				// Send existing player's spawn info to the new player
-				character.Send(&response.SpawnPlayer{
-					Character:       chDTO,
-					BuffStates:      [4]uint32{},
-					Diseases:        ch.GetDiseaseMask(),
-					CrushRings:      entity.RingsToDTO(ch.Rings.Left),
-					FriendshipRings: entity.RingsToDTO(ch.Rings.Mid),
-					MarriageRings:   entity.RingsToDTO(ch.Rings.Right),
-				}, types.SEND_POLICY_ENCRYPT)
-			}
-		}
-	}
-
-	// 3. Send SpawnPlayer packet to all other players on the map
-	// Convert entity to DTO
 	characterDTO := character.ToDTO()
 	spawnPacket := &response.SpawnPlayer{
 		Character:       characterDTO,
@@ -86,69 +59,13 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 		MarriageRings:   entity.RingsToDTO(character.Rings.Right),
 	}
 	mapInstance.Broadcast(spawnPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{playerID},
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{playerID},
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 
-	for _, npc := range mapInstance.GetNpcs() {
-		if npc, ok := npc.(*entity.Npc); ok {
-			npcDTO := npc.ToDTO()
-			character.Send(&response.SpawnNpc{
-				NPC:     npcDTO,
-				Visible: true,
-			}, types.SEND_POLICY_ENCRYPT)
-
-			character.Send(&response.NpcControl{
-				NPC:     npcDTO,
-				MiniMap: true,
-			}, types.SEND_POLICY_ENCRYPT)
-		}
-	}
-
-	for _, item := range mapInstance.GetItems() {
-		if item, ok := item.(entity.Item); ok {
-			drop := item.GetDrop()
-			if drop != nil {
-				character.Send(&response.SpawnItem{
-					ID:           drop.OID,
-					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
-					DropType:     drop.DropType,
-					ItemModel:    item.GetModel(),
-					Expiration:   item.GetExpiration(),
-					Position:     drop.Position,
-					OwnerID:      drop.Owner,
-					SpawnedPoint: drop.SpawnedPoint,
-					IsPlayerDrop: true,
-				}, types.SEND_POLICY_ENCRYPT)
-			}
-		}
-
-		if meso, ok := item.(*entity.Meso); ok {
-			drop := meso.GetDrop()
-			if drop != nil {
-				character.Send(&response.SpawnMeso{
-					ID:           drop.OID,
-					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
-					DropType:     drop.DropType,
-					Count:        meso.Count,
-					OwnerID:      drop.Owner,
-					Position:     drop.Position,
-					SpawnedPoint: drop.SpawnedPoint,
-					IsPlayerDrop: true,
-				}, types.SEND_POLICY_ENCRYPT)
-			}
-		}
-	}
-
-	for _, mob := range mapInstance.GetMobs() {
-		if mob, ok := mob.(*entity.Mob); ok {
-			mobDTO := mob.ToDTO()
-			character.Send(&response.SpawnMob{
-				Mob:       mobDTO,
-				SpawnType: constant.MOB_SPAWN_TYPE_NONE,
-			}, types.SEND_POLICY_ENCRYPT)
-		}
+	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeObject, nil) {
+		obj.SendSpawnSyncToViewer(character)
 	}
 }
 
@@ -190,9 +107,9 @@ func (l *MapListenerImpl) OnPlayerMove(mapInstance *entity.Map, character *entit
 	}
 
 	mapInstance.Broadcast(movePacket, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{character.GetID()},
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{character.GetID()},
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -353,9 +270,9 @@ func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Ch
 	}
 
 	mapInstance.Broadcast(attackPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{character.GetID()},
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{character.GetID()},
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
@@ -391,4 +308,89 @@ func (l *MapListenerImpl) OnMobMobStatusCancelled(mapInstance *entity.Map, mob *
 		Size:   1,
 	}
 	mapInstance.Broadcast(pkt, nil)
+}
+
+func (l *MapListenerImpl) OnMistSpawned(mapInstance *entity.Map, mist *entity.Mist) {
+	if mapInstance == nil || mist == nil {
+		return
+	}
+	skillID := uint32(0)
+	if mist.SkillWz != nil {
+		skillID = mist.SkillWz.ID
+	}
+	pkt := &response.SpawnMist{
+		OID:        mist.OID,
+		PoisonMist: mist.PoisonMist,
+		MobMist:    mist.MobMist,
+		OwnerID:    mist.OwnerID,
+		SkillID:    skillID,
+		SkillLevel: mist.SkillLevel,
+		SkillDelay: mist.SkillDelay,
+		Bounds:     mist.Bounds,
+		MobSkill:   mist.MobSkill,
+	}
+	mapInstance.Broadcast(pkt, &entity.BroadcastOption{
+		Reference:       mist,
+		RecipientFilter: entity.BroadcastVisibleByReference,
+	})
+}
+
+func (l *MapListenerImpl) OnMistRemoved(mapInstance *entity.Map, mist *entity.Mist) {
+	if mapInstance == nil || mist == nil {
+		return
+	}
+	pkt := &response.RemoveMist{
+		OID:      mist.OID,
+		Eruption: false,
+	}
+	mapInstance.Broadcast(pkt, &entity.BroadcastOption{
+		Reference:       mist,
+		RecipientFilter: entity.BroadcastVisibleByReference,
+	})
+}
+
+func (l *MapListenerImpl) OnDoorSpawned(mapInstance *entity.Map, door *entity.Door) {
+	if mapInstance == nil || door == nil {
+		return
+	}
+	mapInstance.Broadcast(&response.SpawnDoor{
+		OwnerID:  door.OwnerID,
+		Position: door.Position,
+		Animated: true,
+	}, &entity.BroadcastOption{
+		Reference:       door,
+		RecipientFilter: entity.BroadcastVisibleByReference,
+	})
+	pos := door.Position
+	mapInstance.Broadcast(&response.SpawnPortal{
+		TownMapID:   door.OppositeMapID,
+		TargetMapID: uint32(mapInstance.Wz.ID),
+		SkillID:     uint32(door.SkillID),
+		Position:    &pos,
+	}, &entity.BroadcastOption{
+		Reference:       door,
+		RecipientFilter: entity.BroadcastVisibleByReference,
+	})
+}
+
+func (l *MapListenerImpl) OnDoorRemoved(mapInstance *entity.Map, door *entity.Door, animated bool) {
+	if mapInstance == nil || door == nil {
+		return
+	}
+	mapInstance.Broadcast(&response.RemoveDoor{
+		OwnerID:  door.OwnerID,
+		Animated: animated,
+	}, &entity.BroadcastOption{
+		Reference:       door,
+		RecipientFilter: entity.BroadcastVisibleByReference,
+	})
+	mapInstance.Broadcast(&response.SpawnPortal{
+		TownMapID:   response.DisabledPortalMapID,
+		TargetMapID: response.DisabledPortalMapID,
+		SkillID:     0,
+		Position:    nil,
+	}, &entity.BroadcastOption{
+		Reference:       door,
+		RecipientFilter: entity.BroadcastVisibleByReference,
+	})
 }

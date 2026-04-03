@@ -112,9 +112,9 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	}
 
 	mapInstance.Broadcast(magicAttackPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs:    []uint32{character.GetID()},
-		ReferenceCharacter: character,
-		RecipientFilter:    entity.BroadcastVisibleByReference,
+		ExceptPlayerIDs: []uint32{character.GetID()},
+		Reference:       character,
+		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 
 	CallSkillHook(ctx, character, uint32(skillID), "on_activated")

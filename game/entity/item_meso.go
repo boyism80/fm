@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
 )
 
@@ -17,6 +18,26 @@ func (meso *Meso) IsMeso() bool        { return true }
 
 func (meso *Meso) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeItem
+}
+
+func (meso *Meso) SendSpawnSyncToViewer(viewer *Character) {
+	if meso == nil || viewer == nil {
+		return
+	}
+	drop := meso.GetDrop()
+	if drop == nil {
+		return
+	}
+	viewer.Send(&response.SpawnMeso{
+		ID:           drop.OID,
+		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
+		DropType:     drop.DropType,
+		Count:        meso.Count,
+		OwnerID:      drop.Owner,
+		Position:     drop.Position,
+		SpawnedPoint: drop.SpawnedPoint,
+		IsPlayerDrop: true,
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, context GameContext, mapInstance *Map) *Meso {

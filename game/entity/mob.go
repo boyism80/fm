@@ -10,6 +10,8 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -36,6 +38,16 @@ func (m *Mob) GetObjectType() constant.ObjectType {
 
 func (m *Mob) Is(typ constant.ObjectType) bool {
 	return m.GetObjectType().Has(typ)
+}
+
+func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
+	if m == nil || viewer == nil {
+		return
+	}
+	viewer.Send(&response.SpawnMob{
+		Mob:       m.ToDTO(),
+		SpawnType: constant.MOB_SPAWN_TYPE_NONE,
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (m *Mob) LuaTypeName() string {
@@ -143,7 +155,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"set_status": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
-			if !ok {
+			if !ok || mob == nil {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
@@ -177,21 +189,30 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						}
 					}
 				}
-				var causer *Character
+				var causerOID uint32
 				if L.GetTop() >= 6 && L.Get(6) != lua.LNil {
-					if cud, ok := L.Get(6).(*lua.LUserData); ok {
-						if ch, ok := cud.Value.(*Character); ok {
-							causer = ch
+					switch cv := L.Get(6).(type) {
+					case *lua.LUserData:
+						cud := cv
+						if ch, ok := cud.Value.(*Character); ok && ch != nil {
+							causerOID = ch.GetID()
 						} else {
-							L.ArgError(6, "causer must be Character or nil")
+							L.ArgError(6, "causer must be Character, OID(number), or nil")
 							return 0
 						}
-					} else {
-						L.ArgError(6, "causer must be Character or nil")
+					case lua.LNumber:
+						oid := int64(lua.LVAsNumber(cv))
+						if oid < 0 {
+							L.ArgError(6, "causer OID must be >= 0")
+							return 0
+						}
+						causerOID = uint32(oid)
+					default:
+						L.ArgError(6, "causer must be Character, OID(number), or nil")
 						return 0
 					}
 				}
-				mob.ApplyMobStatus(status, value, durationMs, skillWz, skillLevel, causer)
+				mob.ApplyMobStatus(status, value, durationMs, skillWz, skillLevel, causerOID)
 				return 0
 			}
 			durationMs := L.CheckInt64(3)
@@ -208,17 +229,26 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 				}
 			}
-			var causer *Character
+			var causerOID uint32
 			if L.GetTop() >= 5 && L.Get(5) != lua.LNil {
-				if cud, ok := L.Get(5).(*lua.LUserData); ok {
-					if ch, ok := cud.Value.(*Character); ok {
-						causer = ch
+				switch cv := L.Get(5).(type) {
+				case *lua.LUserData:
+					cud := cv
+					if ch, ok := cud.Value.(*Character); ok && ch != nil {
+						causerOID = ch.GetID()
 					} else {
-						L.ArgError(5, "causer must be Character or nil")
+						L.ArgError(5, "causer must be Character, OID(number), or nil")
 						return 0
 					}
-				} else {
-					L.ArgError(5, "causer must be Character or nil")
+				case lua.LNumber:
+					oid := int64(lua.LVAsNumber(cv))
+					if oid < 0 {
+						L.ArgError(5, "causer OID must be >= 0")
+						return 0
+					}
+					causerOID = uint32(oid)
+				default:
+					L.ArgError(5, "causer must be Character, OID(number), or nil")
 					return 0
 				}
 			}
@@ -231,7 +261,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return
 				}
 				val := int32(lua.LVAsNumber(value))
-				mob.ApplyMobStatus(status, val, durationMs, skillWz, skillLevel, causer)
+				mob.ApplyMobStatus(status, val, durationMs, skillWz, skillLevel, causerOID)
 			})
 			return 0
 		},
@@ -403,7 +433,7 @@ func (m *Mob) GetMobStatusValue(debuff constant.MobStatus) int32 {
 	return entry.value
 }
 
-func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causer *Character) {
+func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causerOID uint32) {
 	if m.debuffs == nil {
 		m.debuffs = make(map[constant.MobStatus]*mobMobStatusEntry)
 	}
@@ -416,16 +446,11 @@ func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs 
 		delete(m.debuffs, debuff)
 	}
 
-	var causerID uint32
-	if causer != nil {
-		causerID = causer.GetID()
-	}
-
 	entry := &mobMobStatusEntry{
 		value:             value,
 		Wz:                skillWz,
 		Level:             skillLevel,
-		CauserCharacterID: causerID,
+		CauserCharacterID: causerOID,
 	}
 	if durationMs > 0 {
 		entry.expiresAt = time.Now().Add(time.Duration(durationMs) * time.Millisecond)

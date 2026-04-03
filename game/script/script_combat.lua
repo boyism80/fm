@@ -28,6 +28,49 @@ local function total_damage_to_mob(hits)
 	return total
 end
 
+function apply_skill_drain_on_attack(me, skill, damages)
+	if me == nil or skill == nil or damages == nil then
+		return
+	end
+	local effect = get_skill_effect(skill)
+	if effect == nil then
+		return
+	end
+	local pct = tonumber(effect.x) or 0
+	if pct <= 0 then
+		return
+	end
+	local player_max = me:max_hp()
+	if player_max == nil or player_max <= 0 then
+		return
+	end
+	local cap_half = math.floor(player_max / 2)
+	local total_heal = 0
+	for mob, hits in pairs(damages) do
+		if mob == nil or hits == nil then
+			goto continue_drain
+		end
+		local tot_damage = total_damage_to_mob(hits)
+		if tot_damage <= 0 then
+			goto continue_drain
+		end
+		local mob_max_hp = 0
+		local mwz = mob:wz()
+		if mwz ~= nil and mwz.max_hp ~= nil then
+			mob_max_hp = tonumber(mwz.max_hp) or 0
+		end
+		local raw = math.floor(tot_damage * pct / 100.0)
+		local heal = math.min(mob_max_hp, math.min(raw, cap_half))
+		if heal > 0 then
+			total_heal = total_heal + heal
+		end
+		::continue_drain::
+	end
+	if total_heal > 0 then
+		me:add_hp(total_heal)
+	end
+end
+
 function for_each_mob_in_skill_area(me, skill, callback)
 	if me == nil or skill == nil or callback == nil then
 		return
@@ -62,16 +105,72 @@ function for_each_mob_in_skill_area(me, skill, callback)
 			break
 		end
 		if math.random(1, 100) <= prop then
-			callback(mob)
+			if callback(mob) ~= false then
+				n = n + 1
+			end
+		else
+			n = n + 1
 		end
-		n = n + 1
+	end
+end
+
+function for_each_character_in_skill_area(me, skill, callback)
+	if me == nil or skill == nil or callback == nil then
+		return
+	end
+	local map = me:map()
+	if map == nil then
+		return
+	end
+	local effect = get_skill_effect(skill)
+	local pos_x, pos_y = me:position()
+	local lt, rb
+	if effect ~= nil then
+		lt = effect.lt
+		rb = effect.rb
+	end
+	if lt == nil or rb == nil then
+		lt = { x = -400, y = -350 }
+		rb = { x = 400, y = 250 }
+	end
+	local min_x = pos_x + math.min(lt.x, rb.x)
+	local max_x = pos_x + math.max(lt.x, rb.x)
+	local min_y = pos_y + math.min(lt.y, rb.y)
+	local max_y = pos_y + math.max(lt.y, rb.y)
+	local chars = map:objects(ObjectType.Character, { area = { minX = min_x, minY = min_y, maxX = max_x, maxY = max_y } })
+	for _, ch in ipairs(chars) do
+		if ch ~= nil then
+			callback(ch)
+		end
 	end
 end
 
 local poison_pdam_cap = 30000
 local poison_denominator_base = 70
 
-function compute_poison_tick_damage(me, skill, mob)
+function compute_poison_tick_multiplier(me, skill)
+	local mul = 1.0
+	if me ~= nil then
+		mul = mul * element_amp_from_class(me)
+	end
+	local swz = skill and skill:wz()
+	if swz ~= nil and swz.id == Skill.Flamethrower and me ~= nil then
+		local boost = me:skill(Skill.ElementBoost)
+		if boost ~= nil then
+			local be = get_skill_effect(boost)
+			local x = 0
+			if be ~= nil and be.x ~= nil then
+				x = be.x
+			end
+			if x > 0 then
+				mul = mul * (x / 100.0 + 1.0)
+			end
+		end
+	end
+	return mul
+end
+
+function compute_poison_tick_damage(skill, mob, multiplier)
 	if mob == nil or skill == nil then
 		return 0
 	end
@@ -95,24 +194,12 @@ function compute_poison_tick_damage(me, skill, mob)
 	local quotient = math.floor(max_hp / denom)
 	local base = quotient + 0.999
 	local weak = element_weak_multiplier(skill, mwz)
-	local amp = element_amp_from_class(me)
-	local raw = base * weak * amp
-	local clamped = math.max(1, math.min(raw, poison_pdam_cap))
-	local swz = skill:wz()
-	if swz ~= nil and swz.id == Skill.Flamethrower and me ~= nil then
-		local boost = me:skill(Skill.ElementBoost)
-		if boost ~= nil then
-			local be = get_skill_effect(boost)
-			local x = 0
-			if be ~= nil and be.x ~= nil then
-				x = be.x
-			end
-			if x > 0 then
-				local mul = x / 100.0 + 1.0
-				clamped = math.min(poison_pdam_cap, mul * clamped)
-			end
-		end
+	local mul = multiplier or 1.0
+	if mul <= 0 then
+		mul = 1.0
 	end
+	local raw = base * weak * mul
+	local clamped = math.max(1, math.min(raw, poison_pdam_cap))
 	return math.floor(clamped)
 end
 
@@ -137,7 +224,8 @@ function apply_prob_status_on_skill_hit(me, skill, damages, status)
 			if math.random(1, 100) <= prop then
 				local value = 1
 				if status == MobStatus.Poison then
-					value = compute_poison_tick_damage(me, skill, mob)
+					local multiplier = compute_poison_tick_multiplier(me, skill)
+					value = compute_poison_tick_damage(skill, mob, multiplier)
 				end
 				mob:set_status(status, value, duration_ms, skill, me)
 			end
@@ -328,3 +416,39 @@ function handle_ice_charge_freeze(me, damages)
     end
 end
 
+function handle_mortal_blow(me, damages)
+    if damages == nil then
+        return
+    end
+
+	local skill = nil
+	if me:class_of(Class.Ranger) then
+		skill = me:skill(Skill.MortalBlow)
+	elseif me:class_of(Class.Crossbowman) then
+		skill = me:skill(Skill.MortalBlow3210001)
+	else
+		return
+	end
+	if skill == nil then
+		return
+	end
+	local wz = skill:wz()
+	if wz == nil then
+		return
+	end
+	local effect = wz.effects[skill:level()]
+	if effect == nil then
+		return
+	end
+
+	for mob, hits in pairs(damages) do
+		local mob_hp_percent = mob:hp() / mob:max_hp()
+		if mob_hp_percent <= effect.x / 100 then
+			if math.random(1, 100) <= effect.y then
+				for i = 1, #hits do
+					hits[i] = mob:max_hp()
+				end
+			end
+		end
+	end
+end

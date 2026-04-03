@@ -26,6 +26,7 @@ type Object interface {
 	GetMap() *Map
 	GetObjectType() constant.ObjectType
 	Is(typ constant.ObjectType) bool
+	SendSpawnSyncToViewer(viewer *Character)
 }
 
 func (obj *ObjectCore) GetOID() uint32 {
@@ -141,6 +142,8 @@ func (obj *ObjectCore) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
+func (obj *ObjectCore) SendSpawnSyncToViewer(viewer *Character) {}
+
 func (d *Drop) Is(typ constant.ObjectType) bool {
 	return d.GetObjectType().Has(typ)
 }
@@ -152,4 +155,9 @@ var (
 	_ Object = (*Mob)(nil)
 	_ Object = (*Npc)(nil)
 	_ Object = (*Drop)(nil)
+	_ Object = (*Mist)(nil)
+	_ Object = (*Door)(nil)
+	_ Object = (*Summon)(nil)
+	_ Object = (*ItemCore)(nil)
+	_ Object = (*Meso)(nil)
 )

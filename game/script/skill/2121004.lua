@@ -1,5 +1,5 @@
 -- Skill name (String.wz/Skill.img.xml): 인피니티
 
 function on_activated_2121004(me, skill, params)
-	apply_infinity(me, skill)
+	apply_buff_fixed(me, skill, BuffFlag.Infinity, 1)
 end

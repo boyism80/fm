@@ -614,6 +614,74 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, s))
 			return 1
 		},
+		"create_mist": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			skillUD := L.CheckUserData(2)
+			skill, ok := skillUD.Value.(*SkillEntry)
+			if !ok || skill == nil || skill.Wz == nil {
+				L.ArgError(2, "Skill expected")
+				return 0
+			}
+			durationMs := L.CheckInt(3)
+			if durationMs < 0 {
+				durationMs = 0
+			}
+			poisonMist := uint8(L.CheckInt(4))
+			boundsTable := L.CheckTable(5)
+			left := int32(lua.LVAsNumber(boundsTable.RawGetString("left")))
+			top := int32(lua.LVAsNumber(boundsTable.RawGetString("top")))
+			right := int32(lua.LVAsNumber(boundsTable.RawGetString("right")))
+			bottom := int32(lua.LVAsNumber(boundsTable.RawGetString("bottom")))
+			duration := time.Duration(durationMs) * time.Millisecond
+			initialDelay := time.Duration(0)
+			if L.GetTop() >= 6 {
+				initialDelayMs := L.CheckInt(6)
+				if initialDelayMs > 0 {
+					initialDelay = time.Duration(initialDelayMs) * time.Millisecond
+				}
+			}
+			poisonTickMultiplier := 1.0
+			if L.GetTop() >= 7 {
+				poisonTickMultiplier = float64(L.CheckNumber(7))
+				if poisonTickMultiplier <= 0 {
+					poisonTickMultiplier = 1.0
+				}
+			}
+			bounds := types.Rect[int32]{Left: left, Top: top, Right: right, Bottom: bottom}
+			mist := ch.SpawnMist(skill, ch.Position, poisonMist, bounds, duration, initialDelay, poisonTickMultiplier)
+			if mist == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, mist))
+			return 1
+		},
+		"create_door": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			skillID := uint32(L.CheckInt(2))
+			durationMs := L.CheckInt(3)
+			if durationMs < 0 {
+				durationMs = 0
+			}
+			duration := time.Duration(durationMs) * time.Millisecond
+			door := ch.SpawnDoor(constant.SkillID(skillID), duration)
+			if door == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, door))
+			return 1
+		},
 		"remove_summon": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -628,6 +696,17 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					break
 				}
 			}
+			return 0
+		},
+		"remove_door": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			skillID := uint32(L.CheckInt(2))
+			ch.RemoveDoorBySkill(constant.SkillID(skillID), true)
 			return 0
 		},
 		"clear_summons": func(L *lua.LState) int {
@@ -1752,6 +1831,41 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.GiveDebuff(flag, time.Duration(durationMs)*time.Millisecond, x, skillID, skillLevel)
 			return 0
 		},
+		"has_debuff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			parseDebuffFlag := func(lv lua.LValue, argIndex int) (constant.DebuffFlag, bool) {
+				tbl, ok := lv.(*lua.LTable)
+				if !ok {
+					L.ArgError(argIndex, "DebuffFlag table expected")
+					return constant.DebuffFlag{}, false
+				}
+				maskLV := tbl.RawGetString("mask")
+				posLV := tbl.RawGetString("position")
+				if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+					L.ArgError(argIndex, "DebuffFlag table must have numeric mask and position")
+					return constant.DebuffFlag{}, false
+				}
+				f := constant.DebuffFlag{
+					Mask:     uint32(maskLV.(lua.LNumber)),
+					Position: int(posLV.(lua.LNumber)),
+				}
+				if debuffLV := tbl.RawGetString("debuff"); debuffLV.Type() == lua.LTNumber {
+					f.DiseaseSkillID = uint16(debuffLV.(lua.LNumber))
+				}
+				return f, true
+			}
+			flag, ok := parseDebuffFlag(L.Get(2), 2)
+			if !ok {
+				return 0
+			}
+			L.Push(lua.LBool(ch.HasDebuff(flag)))
+			return 1
+		},
 		"remove_debuff": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -2100,16 +2214,19 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			_, ok = model.(*wz.Consume)
-			if !ok {
+			item, err := NewItem(itemId, count, ch.Context)
+			if err != nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			if luable, ok := model.(luax.Luable); ok && luable != nil {
-				L.Push(luax.NewLuable(L, luable))
+
+			added, err := ch.AddItem(item, true)
+			if err != nil {
+				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(lua.LNil)
+
+			L.Push(luax.NewLuable(L, added[0]))
 			return 1
 		},
 		"item_wz": func(L *lua.LState) int {

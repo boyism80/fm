@@ -17,12 +17,12 @@ type TimerHandler interface {
 
 // TimerRegistry manages timer handlers for MapActor
 type TimerRegistry struct {
-	handlers []TimerHandler
+	handlers map[string]TimerHandler
 }
 
 func NewTimerRegistry() *TimerRegistry {
 	return &TimerRegistry{
-		handlers: make([]TimerHandler, 0),
+		handlers: make(map[string]TimerHandler),
 	}
 }
 
@@ -32,10 +32,19 @@ func RegisterTimer[H interface {
 	New() H
 }](registry *TimerRegistry) {
 	var zero H
-	registry.handlers = append(registry.handlers, zero.New())
+	handler := zero.New()
+	registry.handlers[handler.GetName()] = handler
 }
 
 // GetAllHandlers returns all registered timer handlers
 func (r *TimerRegistry) GetAllHandlers() []TimerHandler {
-	return r.handlers
+	out := make([]TimerHandler, 0, len(r.handlers))
+	for _, h := range r.handlers {
+		out = append(out, h)
+	}
+	return out
+}
+
+func (r *TimerRegistry) GetHandler(name string) TimerHandler {
+	return r.handlers[name]
 }

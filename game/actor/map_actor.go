@@ -171,21 +171,20 @@ func (a *MapActor) registerTimers() {
 	RegisterTimer[*timers.CooldownCheckTimer](a.timerReg)
 	RegisterTimer[*timers.BuffExpireTimer](a.timerReg)
 	RegisterTimer[*timers.MobPoisonTickTimer](a.timerReg)
+	RegisterTimer[*timers.MistExpireTimer](a.timerReg)
+	RegisterTimer[*timers.MistPoisonTickTimer](a.timerReg)
+	RegisterTimer[*timers.DoorExpireTimer](a.timerReg)
 }
 
 func (a *MapActor) onTimerTick(ctx actor.Context, msg *TimerTick) {
 	if a.MapData == nil {
 		return
 	}
-
-	for _, handler := range a.timerReg.GetAllHandlers() {
-		if handler.GetName() == msg.HandlerName {
-			if a.MapData.GetPlayerCount() > 0 {
-				if err := handler.Handle(ctx, a.MapData); err != nil {
-					log.Printf("Timer handler %s error: %v", handler.GetName(), err)
-				}
-			}
-			return
-		}
+	handler := a.timerReg.GetHandler(msg.HandlerName)
+	if handler == nil {
+		return
+	}
+	if err := handler.Handle(ctx, a.MapData); err != nil {
+		log.Printf("Timer handler %s error: %v", handler.GetName(), err)
 	}
 }

@@ -55,9 +55,9 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 				CharacterID: character.GetID(),
 				ItemID:      0,
 			}, &entity.BroadcastOption{
-				ExceptPlayerIDs:    []uint32{character.GetID()},
-				ReferenceCharacter: character,
-				RecipientFilter:    entity.BroadcastVisibleByReference,
+				ExceptPlayerIDs: []uint32{character.GetID()},
+				Reference:       character,
+				RecipientFilter: entity.BroadcastVisibleByReference,
 			})
 		}
 	} else {

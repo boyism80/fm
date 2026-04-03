@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -24,6 +25,26 @@ func (s *Summon) GetObjectType() constant.ObjectType {
 
 func (s *Summon) Is(typ constant.ObjectType) bool {
 	return s.GetObjectType().Has(typ)
+}
+
+func (s *Summon) SendSpawnSyncToViewer(viewer *Character) {
+	if s == nil || viewer == nil {
+		return
+	}
+	ownerID := s.OwnerID
+	if s.Owner != nil {
+		ownerID = s.Owner.GetID()
+	}
+	viewer.Send(&response.SpawnSummon{
+		OwnerID:      ownerID,
+		OID:          s.OID,
+		SkillID:      s.SkillID,
+		SkillLevel:   s.SkillLevel,
+		Position:     s.Position,
+		MovementType: s.MovementType,
+		SummonType:   s.SummonType,
+		Animated:     false,
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (s *Summon) LuaTypeName() string {

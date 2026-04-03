@@ -240,6 +240,26 @@ local function apply_element_amplification_mp_cost(me, skill, mp_con)
 	return math.floor(mp_con * mult / 100)
 end
 
+local function apply_concentrate_mp_cost(me, base_mp_con, mp_con_after_amp)
+	if me == nil or base_mp_con <= 0 or mp_con_after_amp <= 0 then
+		return mp_con_after_amp
+	end
+	local s = me:buff_value(BuffFlag.Concentrate)
+	if s == nil then
+		return mp_con_after_amp
+	end
+	s = tonumber(s) or 0
+	if s <= 0 then
+		return mp_con_after_amp
+	end
+	local reduce = math.floor(base_mp_con * s / 100)
+	local out = mp_con_after_amp - reduce
+	if out < 0 then
+		out = 0
+	end
+	return out
+end
+
 function apply_default_skill_cost(me, skill)
 	if me == nil or skill == nil then
 		return true
@@ -248,10 +268,12 @@ function apply_default_skill_cost(me, skill)
 	if effect == nil then
 		return true
 	end
-	local mp_con = tonumber(effect.mp_con) or 0
-	mp_con = apply_element_amplification_mp_cost(me, skill, mp_con)
+	local base_mp = tonumber(effect.mp_con) or 0
+	local mp_con = apply_element_amplification_mp_cost(me, skill, base_mp)
 	if me:buff_value(BuffFlag.Infinity) ~= nil then
 		mp_con = 0
+	else
+		mp_con = apply_concentrate_mp_cost(me, base_mp, mp_con)
 	end
 	local hp_con = tonumber(effect.hp_con) or 0
 	if mp_con > 0 then
@@ -287,4 +309,95 @@ function on_attack(me, skill, damages, attack_info)
 	handle_ice_charge_freeze(me, damages)
 	handle_attack_consume_item(me, skill, attack_info)
 	handle_mp_eater(me, damages)
+	handle_hamstring_slow(me, damages)
+	handle_blind_acc_debuff(me, damages)
+	handle_mortal_blow(me, damages)
+end
+
+function handle_blind_acc_debuff(me, damages)
+	if me == nil or damages == nil then
+		return
+	end
+	if me:buff_value(BuffFlag.Blind) == nil then
+		return
+	end
+	local blind_skill = me:skill(Skill.Blind)
+	if blind_skill == nil then
+		return
+	end
+	local effect = get_skill_effect(blind_skill)
+	if effect == nil then
+		return
+	end
+	local chance = tonumber(effect.prop) or 0
+	if chance <= 0 then
+		return
+	end
+	local acc = tonumber(me:buff_value(BuffFlag.Blind)) or 0
+	if acc == 0 then
+		return
+	end
+	local duration_ms = (tonumber(effect.y) or 0) * 1000
+	if duration_ms <= 0 then
+		return
+	end
+	for mob, hits in pairs(damages) do
+		if mob == nil or hits == nil then
+			goto continue_blind
+		end
+		if not damages_has_positive_damage(hits) then
+			goto continue_blind
+		end
+		if roll_percent(chance) then
+			mob:set_status(MobStatus.Acc, acc, duration_ms, blind_skill, me)
+		end
+		::continue_blind::
+	end
+end
+
+function handle_hamstring_slow(me, damages)
+	if me == nil or damages == nil then
+		return
+	end
+	if me:buff_value(BuffFlag.Hamstring) == nil then
+		return
+	end
+
+	local ham_skill = me:skill(Skill.Hamstring)
+	if ham_skill == nil then
+		return
+	end
+
+	local effect = get_skill_effect(ham_skill)
+	if effect == nil then
+		return
+	end
+
+	local chance = tonumber(effect.prop) or 0
+	if chance <= 0 then
+		return
+	end
+
+	local slow = tonumber(me:buff_value(BuffFlag.Hamstring)) or 0
+	if slow == 0 then
+		return
+	end
+
+	local duration_ms = (tonumber(effect.y) or 0) * 1000
+	if duration_ms <= 0 then
+		return
+	end
+
+	for mob, hits in pairs(damages) do
+		if mob == nil or hits == nil then
+			goto continue_mob
+		end
+		if not damages_has_positive_damage(hits) then
+			goto continue_mob
+		end
+		if roll_percent(chance) then
+			mob:set_status(MobStatus.Speed, slow, duration_ms, ham_skill, me)
+		end
+		::continue_mob::
+	end
 end
