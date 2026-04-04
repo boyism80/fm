@@ -48,10 +48,12 @@ func (h *DamageSummon) Handle(ctx *core.ClientContext, req *request.DamageSummon
 	if damage > 0 {
 		if summon.Hp <= damage {
 			summon.Hp = 0
-			character.RemoveSummon(summon, true)
 		} else {
 			summon.Hp -= damage
-			character.Listener.OnSummonDamaged(character, summon, req.Unknown, damage, req.MonsterIdFrom)
+		}
+		character.Listener.OnSummonDamaged(character, summon, req.Unknown, damage, req.MonsterIdFrom)
+		if summon.Hp == 0 {
+			character.Buffs.RemoveSkillBuff(uint32(summon.SkillID))
 		}
 	}
 

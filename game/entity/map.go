@@ -180,7 +180,30 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8,
 		m.AddSummon(summon)
 	}
 
+	m.callMapLifecycleScript(character, "on_map_enter")
+
 	return nil
+}
+
+func (m *Map) callMapLifecycleScript(character *Character, hook string) {
+	if m == nil || character == nil || character.Context == nil {
+		return
+	}
+	if character.GetMap() != m {
+		return
+	}
+	pid := m.GetActorPID()
+	if pid == nil {
+		return
+	}
+	root := luax.GetRootLuaState(pid.String())
+	if root == nil {
+		return
+	}
+	_, thread, _ := luax.Call(root, "script/script.lua", hook, character, m)
+	if thread != nil {
+		thread.Close()
+	}
 }
 
 func (m *Map) RemovePlayer(playerID uint32) error {
@@ -193,6 +216,8 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	}
 
 	character := m.objects[constant.ObjectTypeCharacter][playerID].(*Character)
+
+	m.callMapLifecycleScript(character, "on_map_leave")
 
 	for _, summon := range character.GetSummons() {
 		if summon == nil || summon.Map != m || summon.OID == 0 {
@@ -252,6 +277,9 @@ func (m *Map) GetRecoveryRate() float32 {
 }
 
 func (m *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
+	if m == nil || m.Wz == nil {
+		return nil
+	}
 	return m.Wz.FootholdPoint(point)
 }
 
@@ -927,6 +955,36 @@ func (m *Map) LuaTypeName() string {
 
 func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
+		"foothold_point": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			posTbl := L.CheckTable(2)
+			var x, y int16
+			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
+				x = int16(lua.LVAsNumber(lx))
+			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
+				x = int16(lua.LVAsNumber(lx))
+			}
+			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
+				y = int16(lua.LVAsNumber(ly))
+			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
+				y = int16(lua.LVAsNumber(ly))
+			}
+			out := mapInstance.FootholdPoint(types.Point[int16]{X: x, Y: y})
+			if out == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			res := L.NewTable()
+			res.RawSetString("x", lua.LNumber(out.X))
+			res.RawSetString("y", lua.LNumber(out.Y))
+			L.Push(res)
+			return 1
+		},
 		"npcs": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

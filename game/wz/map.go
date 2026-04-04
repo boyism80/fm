@@ -2,6 +2,7 @@ package wz
 
 import (
 	"math"
+	"sort"
 
 	"github.com/boyism80/fm/types"
 )
@@ -50,31 +51,81 @@ type Map struct {
 	Footholds    *types.QuadTreeNode[int16, Foothold]
 }
 
+func footholdSpansX(f Foothold, x int16) bool {
+	xLo, xHi := f.X1, f.X2
+	if xLo > xHi {
+		xLo, xHi = xHi, xLo
+	}
+	return xLo <= x && x <= xHi
+}
+
+func footholdSurfaceYAtX(f Foothold, x int16) int16 {
+	if f.X1 == f.X2 {
+		return f.Y1
+	}
+	if f.Y1 == f.Y2 {
+		return f.Y1
+	}
+	s1 := math.Abs(float64(f.Y2 - f.Y1))
+	s2 := math.Abs(float64(f.X2 - f.X1))
+	dx := math.Abs(float64(x - f.X1))
+	alpha := math.Atan(s2 / s1)
+	beta := math.Atan(s1 / s2)
+	offset := math.Cos(alpha) * (dx / math.Cos(beta))
+	if f.Y2 < f.Y1 {
+		return f.Y1 - int16(offset)
+	}
+	return f.Y1 + int16(offset)
+}
+
+func (model *Map) findBelow(p types.Point[int16]) (*Foothold, bool) {
+	if model == nil || model.Footholds == nil {
+		return nil, false
+	}
+	rels := model.Footholds.Relations(p)
+	xMatches := make([]Foothold, 0, len(rels))
+	for _, fh := range rels {
+		if footholdSpansX(fh, p.X) {
+			xMatches = append(xMatches, fh)
+		}
+	}
+	sort.Slice(xMatches, func(i, j int) bool {
+		return xMatches[i].Compare(xMatches[j])
+	})
+	for i := range xMatches {
+		fh := xMatches[i]
+		if fh.IsWall() {
+			continue
+		}
+		if fh.X1 != fh.X2 && fh.Y1 != fh.Y2 {
+			calcY := footholdSurfaceYAtX(fh, p.X)
+			if calcY >= p.Y {
+				return &xMatches[i], true
+			}
+		} else {
+			if fh.Y1 >= p.Y {
+				return &xMatches[i], true
+			}
+		}
+	}
+	return nil, false
+}
+
 func (model *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
-	foothold, ok := model.Footholds.Find(point)
+	if model == nil || model.Footholds == nil {
+		return nil
+	}
+	fh, ok := model.findBelow(point)
 	if !ok {
 		return nil
 	}
-
-	top := foothold.Y1
-	if foothold.X1 != foothold.X2 && foothold.Y1 != foothold.Y2 {
-		s1 := float64(math.Abs(float64(foothold.Y2 - foothold.Y1)))
-		s2 := float64(math.Abs(float64(foothold.X2 - foothold.X1)))
-		dx := float64(math.Abs(float64(point.X - foothold.X1)))
-
-		alpha := math.Atan(s2 / s1)
-		beta := math.Atan(s1 / s2)
-		offset := math.Cos(alpha) * (dx / math.Cos(beta))
-
-		if foothold.Y2 < foothold.Y1 {
-			top = foothold.Y1 - int16(offset)
-		} else {
-			top = foothold.Y1 + int16(offset)
-		}
+	var y int16
+	if !fh.IsWall() && fh.Y1 != fh.Y2 {
+		y = footholdSurfaceYAtX(*fh, point.X)
+	} else {
+		y = fh.Y1
 	}
-
-	pt := types.Point[int16]{X: point.X, Y: top}
-	return &pt
+	return &types.Point[int16]{X: point.X, Y: y}
 }
 
 func (model *Map) DropPoint(initial types.Point[int16]) (types.Point[int16], bool) {

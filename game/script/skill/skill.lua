@@ -275,3 +275,80 @@ function apply_resurrection_in_range(me, skill)
 		ch:mp(ch:max_mp())
 	end)
 end
+
+local archer_puppet_offset_x = 180
+
+local function archer_puppet_facing_left(me)
+	local s = me:stance()
+	return s % 2 ~= 0
+end
+
+function apply_archer_puppet_activated(me, skill, params)
+	if me == nil or skill == nil then
+		return
+	end
+	local effect = get_skill_effect(skill)
+	if effect == nil then
+		return
+	end
+	local duration_ms = tonumber(effect.time) or 0
+	if duration_ms <= 0 then
+		return
+	end
+	me:buff(skill, BuffFlag.Puppet, 1)
+end
+
+function apply_archer_puppet_buff(me, skill)
+	if me == nil or skill == nil then
+		return
+	end
+	local wz = skill:wz()
+	if wz == nil or wz.id == nil then
+		return
+	end
+	local effect = wz.effects[skill:level()]
+	if effect == nil then
+		return
+	end
+	local duration_ms = tonumber(effect.time) or 0
+	if duration_ms <= 0 then
+		return
+	end
+	local level = skill:level()
+	if level == nil or level <= 0 then
+		return
+	end
+	local summon_hp = math.floor(tonumber(effect.x) or 0)
+	if summon_hp <= 0 then
+		return
+	end
+	local px, py = me:position()
+	local ox = px + (archer_puppet_facing_left(me) and -archer_puppet_offset_x or archer_puppet_offset_x)
+	local map = me:map()
+	if map == nil then
+		return
+	end
+	local grounded = map:foothold_point({ x = ox, y = py })
+	local spawn_pos
+	if grounded == nil then
+		spawn_pos = { x = ox, y = py }
+	else
+		spawn_pos = { x = grounded.x, y = grounded.y }
+	end
+	local s = me:create_summon(wz.id, level, duration_ms, SummonMovementType.Stationary, SummonType.Puppet, spawn_pos)
+	if s ~= nil then
+		s:max_hp(summon_hp, false)
+		s:hp(summon_hp, false)
+	end
+end
+
+function apply_archer_puppet_unbuff(me, skill)
+	if me == nil or skill == nil then
+		return
+	end
+	local wz = skill:wz()
+	if wz == nil or wz.id == nil then
+		return
+	end
+	me:remove_summon(wz.id)
+end

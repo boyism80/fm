@@ -81,6 +81,20 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(summon.SkillID))
 			return 1
 		},
+		"movement_type": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			summon, ok := ud.Value.(*Summon)
+			if !ok {
+				L.ArgError(1, "Summon expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "movement_type() is read-only")
+				return 0
+			}
+			L.Push(lua.LNumber(summon.MovementType))
+			return 1
+		},
 		"attack": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			summon, ok := ud.Value.(*Summon)

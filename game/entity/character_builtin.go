@@ -535,16 +535,44 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			var flags []constant.BuffFlag
 			for i := 2; i <= L.GetTop(); i++ {
-				bfTable := L.CheckTable(i)
-				maskLV := bfTable.RawGetString("mask")
-				posLV := bfTable.RawGetString("position")
-				if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
-					continue
+				lv := L.Get(i)
+				switch v := lv.(type) {
+				case lua.LNumber:
+					ch.Buffs.RemoveSkillBuff(uint32(L.CheckInt(i)))
+				case *lua.LTable:
+					maskLV := v.RawGetString("mask")
+					posLV := v.RawGetString("position")
+					if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+						continue
+					}
+					flags = append(flags, constant.BuffFlag{Mask: uint32(maskLV.(lua.LNumber)), Position: int(posLV.(lua.LNumber))})
+				default:
+					L.ArgError(i, "BuffFlag table or skill id (number) expected")
+					return 0
 				}
-				flags = append(flags, constant.BuffFlag{Mask: uint32(maskLV.(lua.LNumber)), Position: int(posLV.(lua.LNumber))})
 			}
-			ch.Buffs.RemoveBuff(flags)
+			if len(flags) > 0 {
+				ch.Buffs.RemoveBuff(flags)
+			}
 			return 0
+		},
+		"summons": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			tbl := L.NewTable()
+			idx := 1
+			for _, s := range ch.GetSummons() {
+				if s != nil {
+					tbl.RawSetInt(idx, luax.NewLuable(L, s))
+					idx++
+				}
+			}
+			L.Push(tbl)
+			return 1
 		},
 		"buff_value": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -605,8 +633,32 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			movType := constant.SummonMovementType(L.CheckInt(5))
 			summonType := constant.SummonType(L.CheckInt(6))
 
+			pos := ch.Position
+			if L.GetTop() >= 7 {
+				lv := L.Get(7)
+				if lv != lua.LNil {
+					posTbl, tableOK := lv.(*lua.LTable)
+					if !tableOK {
+						L.ArgError(7, "position table or nil expected")
+						return 0
+					}
+					var x, y int16
+					if lx := posTbl.RawGetInt(1); lx != lua.LNil {
+						x = int16(lua.LVAsNumber(lx))
+					} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
+						x = int16(lua.LVAsNumber(lx))
+					}
+					if ly := posTbl.RawGetInt(2); ly != lua.LNil {
+						y = int16(lua.LVAsNumber(ly))
+					} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
+						y = int16(lua.LVAsNumber(ly))
+					}
+					pos = types.Point[int16]{X: x, Y: y}
+				}
+			}
+
 			duration := time.Duration(durationMs) * time.Millisecond
-			s := ch.SpawnSummon(constant.SkillID(skillID), skillLevel, movType, summonType, ch.Position, duration)
+			s := ch.SpawnSummon(constant.SkillID(skillID), skillLevel, movType, summonType, pos, duration)
 			if s == nil {
 				L.Push(lua.LNil)
 				return 1

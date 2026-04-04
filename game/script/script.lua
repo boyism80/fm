@@ -6,6 +6,47 @@ run_script("script/script_combat.lua")
 run_script("script/script_damage.lua")
 run_script("script/script_equip.lua")
 
+function on_map_enter(me, map)
+end
+
+local function unbuff_stationary_summons_for_map(me, mapId)
+	if me == nil then
+		return
+	end
+	for _, s in ipairs(me:summons()) do
+		if s == nil then
+			goto continue
+		end
+		local sm = s:map()
+		if sm == nil then
+			goto continue
+		end
+		local swz = sm:wz()
+		if swz == nil or swz.id ~= mapId then
+			goto continue
+		end
+		local mt = s:movement_type()
+		if mt ~= SummonMovementType.Stationary
+			and mt ~= SummonMovementType.WalkStationary
+			and mt ~= SummonMovementType.CircleStationary then
+			goto continue
+		end
+		me:unbuff(s:skill_id())
+		::continue::
+	end
+end
+
+function on_map_leave(me, map)
+	if me == nil or map == nil then
+		return
+	end
+	local mwz = map:wz()
+	if mwz == nil then
+		return
+	end
+	unbuff_stationary_summons_for_map(me, mwz.id)
+end
+
 function on_start(me)
 	local npc = 9001000
 	-- me:dialog_list("안녕하세요", {"hello1", "hello2", "hello3"})
@@ -24,7 +65,7 @@ end
 function on_script(me)
     local x, y = me:position()
 
-    me:class(312)
+    me:class(322)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)

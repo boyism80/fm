@@ -433,6 +433,31 @@ func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {
 	}
 }
 
+func (bc *BuffContainer) RemoveSkillBuff(skillID uint32) {
+	if bc == nil {
+		return
+	}
+	var target Buff
+	for entity := range bc.entities {
+		skillBuff, ok := entity.(*SkillBuff)
+		if !ok || skillBuff == nil || skillBuff.Wz == nil {
+			continue
+		}
+		if skillBuff.Wz.ID == skillID {
+			target = entity
+			break
+		}
+	}
+	if target == nil {
+		return
+	}
+	flags := target.GetFlags()
+	if len(flags) == 0 {
+		return
+	}
+	bc.RemoveBuff(flags)
+}
+
 func (bc *BuffContainer) GetBuffValue(flag constant.BuffFlag) (Buff, int32, bool) {
 	if bc == nil {
 		return nil, 0, false
