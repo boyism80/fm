@@ -656,12 +656,12 @@ func NewResources(wzPath string) *Resources {
 
 	total := len(skillFiles)
 	for i, path := range skillFiles {
-		jobSkills, loadErr := loadSkillClassFile(path)
+		classSkills, loadErr := loadSkillClassFile(path)
 		if loadErr != nil {
 			log.Printf("Failed to load skill file %s: %v", path, loadErr)
 			continue
 		}
-		for skillID, skill := range jobSkills {
+		for skillID, skill := range classSkills {
 			skills[skillID] = skill
 		}
 		if total > 0 {

@@ -114,6 +114,28 @@ function for_each_mob_in_skill_area(me, skill, callback)
 	end
 end
 
+function apply_shadow_web_skill(me, skill)
+	if me == nil or skill == nil then
+		return
+	end
+	local effect = get_skill_effect(skill)
+	if effect == nil then
+		return
+	end
+	local duration_ms = effect.time or 0
+	if duration_ms <= 0 then
+		return
+	end
+	for_each_mob_in_skill_area(me, skill, function(mob)
+		local mwz = mob:wz()
+		if mwz ~= nil and mwz.boss then
+			return false
+		end
+		mob:set_status(MobStatus.ShadowWeb, 1, duration_ms, skill, me)
+		return true
+	end)
+end
+
 function for_each_character_in_skill_area(me, skill, callback)
 	if me == nil or skill == nil or callback == nil then
 		return
@@ -450,5 +472,95 @@ function handle_mortal_blow(me, damages)
 				end
 			end
 		end
+	end
+end
+
+-- v83 MapleMonster VENOM: matk * (dex + 5*v43) / 49, v43 = floor((rand[0,v55-1] + v55*0.8)), v55 = str+luk (min 1).
+function roll_venom_tick_damage(me, venom_skill)
+	if me == nil or venom_skill == nil then
+		return 1
+	end
+	local effect = get_skill_effect(venom_skill)
+	if effect == nil then
+		return 1
+	end
+	local matk = math.floor(tonumber(effect.mad) or 0)
+	if matk < 1 then
+		matk = 1
+	end
+	local str = math.floor(tonumber(me:base_str()) or 0) + math.floor(tonumber(me:bonus_str()) or 0)
+	local dex = math.floor(tonumber(me:base_dex()) or 0) + math.floor(tonumber(me:bonus_dex()) or 0)
+	local luk = math.floor(tonumber(me:base_luk()) or 0) + math.floor(tonumber(me:bonus_luk()) or 0)
+	local v55 = str + luk
+	if v55 < 1 then
+		v55 = 1
+	end
+	local v56 = v55 * 0.8
+	local mod = math.random(0, v55 - 1)
+	local v43 = math.floor(mod + v56)
+	local v44 = math.floor(matk * (dex + 5 * v43) / 49)
+	if v44 < 1 then
+		v44 = 1
+	end
+	if v44 > 30000 then
+		v44 = 30000
+	end
+	return v44
+end
+
+-- Passive venom: WZ prop, stack 1..3, tick = sum of rolls capped 30000, immediate hit, set_status with stack (Lua drives value like poison mist).
+function apply_venom(me, damages, passive_skill_id)
+	if me == nil or damages == nil or passive_skill_id == nil then
+		return
+	end
+	local venom_skill = me:skill(passive_skill_id)
+	if venom_skill == nil then
+		return
+	end
+	local venom_level = venom_skill:level()
+	if venom_level == nil or venom_level <= 0 then
+		return
+	end
+	local effect = get_skill_effect(venom_skill)
+	if effect == nil then
+		return
+	end
+	local chance = tonumber(effect.prop) or 0
+	if chance <= 0 then
+		return
+	end
+	local duration_ms = tonumber(effect.time) or 0
+	if duration_ms <= 0 then
+		return
+	end
+	for mob, hits in pairs(damages) do
+		if mob == nil or hits == nil then
+			goto venom_passive_continue
+		end
+		if total_damage_to_mob(hits) <= 0 then
+			goto venom_passive_continue
+		end
+		if math.random(0, 99) >= chance then
+			goto venom_passive_continue
+		end
+		local old_stack = math.floor(tonumber(mob:status_stack(MobStatus.Venom)) or 0)
+		if old_stack >= 3 then
+			goto venom_passive_continue
+		end
+		local old_tick = 0
+		if mob:has_status(MobStatus.Venom) then
+			old_tick = math.floor(tonumber(mob:status_value(MobStatus.Venom)) or 0)
+		end
+		local roll = roll_venom_tick_damage(me, venom_skill)
+		local new_tick = old_tick + roll
+		if new_tick < 1 then
+			new_tick = 1
+		end
+		if new_tick > 30000 then
+			new_tick = 30000
+		end
+		local new_stack = old_stack + 1
+		mob:set_status(MobStatus.Venom, new_tick, duration_ms, venom_skill, me, new_stack)
+		::venom_passive_continue::
 	end
 end

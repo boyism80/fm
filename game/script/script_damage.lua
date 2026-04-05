@@ -72,7 +72,7 @@ function handle_meso_guard(me, attacker, skill, damage)
         hp_loss = 0
     end
     if meso_loss > 0 then
-        me:meso(-meso_loss)
+        me:meso(current_meso - meso_loss)
     end
     return hp_loss
 end

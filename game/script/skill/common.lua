@@ -87,25 +87,29 @@ function handle_attack_consume_item(me, skill, attack_info)
 		return
 	end
 
-	local count = 1
+	local bullet_count = 1
 	if skill ~= nil then
 		local wz = skill:wz()
 		if wz ~= nil and wz.effects ~= nil then
 			local lv = skill:level()
 			local effect = wz.effects[lv]
 			if effect ~= nil then
-				local bc = (effect.bullet_count and effect.bullet_count > 0) and effect.bullet_count or 1
-				local ac = (effect.attack_count and effect.attack_count > 0) and effect.attack_count or 1
-				count = math.max(bc, ac)
+				if effect.bullet_consume ~= nil and effect.bullet_consume > 0 then
+					bullet_count = effect.bullet_consume
+				else
+					local bc = effect.bullet_count or 1
+					local ac = effect.attack_count or 1
+					bullet_count = math.max(bc, ac)
+				end
 			end
 		end
 	end
 
 	if me:buff_value(BuffFlag.ShadowPartner) ~= nil then
-		count = count * 2
+		bullet_count = bullet_count * 2
 	end
 
-	me:rmitem(InventoryType.Use, attack_info.consume_slot, count)
+	me:rmitem(InventoryType.Use, attack_info.consume_slot, bullet_count)
 end
 
 local function get_mp_eater_skill(me)

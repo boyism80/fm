@@ -22,6 +22,7 @@ type mobMobStatusEntry struct {
 	CauserCharacterID uint32
 	expiresAt         time.Time
 	cancelTimer       *time.Timer
+	stack             uint8 // debuff stack (most statuses stay 1; venom uses 1..3)
 }
 
 type Mob struct {
@@ -212,7 +213,18 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						return 0
 					}
 				}
-				mob.ApplyMobStatus(status, value, durationMs, skillWz, skillLevel, causerOID)
+				stack := uint8(1)
+				if L.GetTop() >= 7 && L.Get(7) != lua.LNil {
+					s := L.CheckInt(7)
+					if s < 1 {
+						s = 1
+					}
+					if s > 255 {
+						s = 255
+					}
+					stack = uint8(s)
+				}
+				mob.ApplyMobStatus(status, value, durationMs, skillWz, skillLevel, causerOID, stack)
 				return 0
 			}
 			durationMs := L.CheckInt64(3)
@@ -261,7 +273,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return
 				}
 				val := int32(lua.LVAsNumber(value))
-				mob.ApplyMobStatus(status, val, durationMs, skillWz, skillLevel, causerOID)
+				mob.ApplyMobStatus(status, val, durationMs, skillWz, skillLevel, causerOID, 1)
 			})
 			return 0
 		},
@@ -297,6 +309,49 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			status := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
 			L.Push(lua.LBool(mob.HasMobStatus(status)))
+			return 1
+		},
+		"status_value": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			statusTbl := L.CheckTable(2)
+			maskLV := statusTbl.RawGetString("mask")
+			if maskLV.Type() != lua.LTNumber {
+				L.ArgError(2, "MobStatus table with numeric mask expected")
+				return 0
+			}
+			st := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
+			L.Push(lua.LNumber(mob.GetMobStatusValue(st)))
+			return 1
+		},
+		// status_stack(mask) -> stack; status_stack(mask, stack) -> bool (set ok)
+		"status_stack": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			statusTbl := L.CheckTable(2)
+			maskLV := statusTbl.RawGetString("mask")
+			if maskLV.Type() != lua.LTNumber {
+				L.ArgError(2, "MobStatus table with numeric mask expected")
+				return 0
+			}
+			st := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
+			if L.GetTop() >= 3 {
+				stack := uint8(L.CheckInt(3))
+				if stack < 1 {
+					stack = 1
+				}
+				L.Push(lua.LBool(mob.SetMobStatusStack(st, stack)))
+				return 1
+			}
+			L.Push(lua.LNumber(mob.GetMobStatusStack(st)))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
@@ -433,13 +488,49 @@ func (m *Mob) GetMobStatusValue(debuff constant.MobStatus) int32 {
 	return entry.value
 }
 
-func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causerOID uint32) {
+// GetMobStatusStack returns 0 if the debuff is not present; otherwise stack (at least 1).
+func (m *Mob) GetMobStatusStack(debuff constant.MobStatus) uint8 {
+	entry, ok := m.debuffs[debuff]
+	if !ok || entry == nil {
+		return 0
+	}
+	s := entry.stack
+	if s < 1 {
+		return 1
+	}
+	return s
+}
+
+// SetMobStatusStack updates stack on an existing debuff. Returns false if the debuff is not active.
+func (m *Mob) SetMobStatusStack(debuff constant.MobStatus, stack uint8) bool {
+	entry, ok := m.debuffs[debuff]
+	if !ok || entry == nil {
+		return false
+	}
+	if stack < 1 {
+		stack = 1
+	}
+	entry.stack = stack
+	return true
+}
+
+func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
+	if stack < 1 {
+		stack = 1
+	}
 	if m.debuffs == nil {
 		m.debuffs = make(map[constant.MobStatus]*mobMobStatusEntry)
 	}
 	existing := m.debuffs[debuff]
 	wasRefresh := existing != nil
+	var oldStack uint8
+	var oldValue int32
 	if existing != nil {
+		oldStack = existing.stack
+		if oldStack < 1 {
+			oldStack = 1
+		}
+		oldValue = existing.value
 		if existing.cancelTimer != nil {
 			existing.cancelTimer.Stop()
 		}
@@ -451,6 +542,7 @@ func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs 
 		Wz:                skillWz,
 		Level:             skillLevel,
 		CauserCharacterID: causerOID,
+		stack:             stack,
 	}
 	if durationMs > 0 {
 		entry.expiresAt = time.Now().Add(time.Duration(durationMs) * time.Millisecond)
@@ -460,7 +552,8 @@ func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs 
 	}
 	m.debuffs[debuff] = entry
 
-	if wasRefresh {
+	// Refresh: skip 0xAF only when stack and tick value are unchanged (seal spam); send when stack or value changes (venom stacks, poison retick).
+	if wasRefresh && stack == oldStack && value == oldValue {
 		return
 	}
 	packetSkillID := uint32(0)

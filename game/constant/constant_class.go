@@ -1,6 +1,6 @@
 package constant
 
-// Class code constants (job IDs). Used for Lua Class table and class_of checks.
+// Class code constants. Used for Lua Class table and class_of checks.
 const (
 	ClassBeginner           uint16 = 0
 	ClassWarrior            uint16 = 100

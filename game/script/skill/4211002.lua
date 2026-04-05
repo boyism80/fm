@@ -2,6 +2,7 @@
 
 function on_attack_4211002(me, skill, damages)
 	apply_prob_status_on_skill_hit(me, skill, damages, MobStatus.Stun)
+	apply_venom(me, damages, Skill.Venom4220005)
 end
 
 function on_activated_4211002(me, skill, params)

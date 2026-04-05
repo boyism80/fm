@@ -246,20 +246,35 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(ch.exp))
 				return 1
 			case 2:
-				value := L.CheckNumber(2)
-				if value >= 0 {
-					if value < 0 {
-						value = 0
-					}
-					ch.exp = uint32(value)
-				} else {
-					amount := uint32(-value)
-					ch.AddExp(amount)
+				value := float64(L.CheckNumber(2))
+				if value < 0 {
+					L.ArgError(2, "exp() setter requires a non-negative value; compute new total in script")
 					return 0
+				}
+				maxU := float64(^uint32(0))
+				var newExp uint32
+				if value > maxU {
+					newExp = ^uint32(0)
+				} else {
+					newExp = uint32(value)
+				}
+				cur := ch.exp
+				if newExp == cur {
+					return 0
+				}
+				if newExp > cur {
+					ch.AddExp(newExp - cur)
+					return 0
+				}
+				ch.exp = newExp
+				if ch.Listener != nil {
+					ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+						constant.STAT_EXP: int32(ch.exp),
+					}, false)
 				}
 				return 0
 			default:
-				L.ArgError(2, "exp() requires 0 or 1 arguments")
+				L.ArgError(2, "exp() getter: exp(); setter: exp(value)")
 				return 0
 			}
 		},
@@ -278,26 +293,21 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			case 2:
 				value := L.CheckNumber(2)
-				if value >= 0 {
-					if value <= 2147483647 {
-						ch.SetMeso(int32(value))
-					} else {
-						ch.SetMeso(2147483647)
-					}
+				if value < 0 {
+					L.ArgError(2, "meso() setter requires a non-negative value; compute new total in script")
+					return 0
+				}
+				if value <= 2147483647 {
+					ch.SetMeso(int32(value))
 				} else {
-					amount := int32(-value)
-					if ch.Meso < amount {
-						ch.SetMeso(0)
-					} else {
-						ch.SetMeso(ch.Meso - amount)
-					}
+					ch.SetMeso(2147483647)
 				}
 				if ch.Listener != nil {
 					ch.Listener.OnMesoChanged(ch.Meso)
 				}
 				return 0
 			default:
-				L.ArgError(2, "meso() requires 0 or 1 arguments")
+				L.ArgError(2, "meso() getter: meso(); setter: meso(value)")
 				return 0
 			}
 		},

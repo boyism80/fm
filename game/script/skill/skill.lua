@@ -262,7 +262,7 @@ function apply_mana_reflection(me, skill)
 	me:buff(skill, BuffFlag.ManaReflection, val)
 end
 
-function apply_resurrection_in_range(me, skill)
+function apply_resurrection(me, skill)
 	if me == nil or skill == nil then
 		return
 	end

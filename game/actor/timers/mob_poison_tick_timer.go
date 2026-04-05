@@ -35,30 +35,35 @@ func (t *MobPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 		if !ok || mob == nil || !mob.IsAlive() {
 			continue
 		}
-		if !mob.HasMobStatus(constant.MobStatusPoison) {
-			continue
-		}
-		tick := mob.GetMobStatusValue(constant.MobStatusPoison)
-		if tick <= 0 {
-			continue
-		}
-		hp := mob.GetHp()
-		if hp <= 1 {
-			continue
-		}
-		damage := uint32(tick)
-		if damage >= hp {
-			damage = hp - 1
-		}
-		if damage == 0 {
-			continue
-		}
-		causerID := mob.GetCauserCharacterID(constant.MobStatusPoison)
-		var attacker *entity.Character
-		if causerID != 0 {
-			attacker = mapData.GetPlayer(causerID)
-		}
-		mob.ApplyDamage(attacker, damage)
+		applyMobStatusDotDamage(mapData, mob, constant.MobStatusPoison)
+		applyMobStatusDotDamage(mapData, mob, constant.MobStatusVenom)
 	}
 	return nil
+}
+
+func applyMobStatusDotDamage(mapData *entity.Map, mob *entity.Mob, status constant.MobStatus) {
+	if !mob.HasMobStatus(status) {
+		return
+	}
+	tick := mob.GetMobStatusValue(status)
+	if tick <= 0 {
+		return
+	}
+	hp := mob.GetHp()
+	if hp <= 1 {
+		return
+	}
+	damage := uint32(tick)
+	if damage >= hp {
+		damage = hp - 1
+	}
+	if damage == 0 {
+		return
+	}
+	causerID := mob.GetCauserCharacterID(status)
+	var attacker *entity.Character
+	if causerID != 0 {
+		attacker = mapData.GetPlayer(causerID)
+	}
+	mob.ApplyDamage(attacker, damage)
 }
