@@ -5,15 +5,10 @@ function on_activated_2201003(me, skill, params)
 	if effect == nil then
 		return
 	end
-	local duration_ms = effect.time or 0
-	if duration_ms <= 0 then
-		return
-	end
-	local speed_x = effect.x
-	if speed_x == nil then
+	if effect.time <= 0 then
 		return
 	end
 	for_each_mob_in_skill_area(me, skill, function(mob)
-		mob:buff(MobBuff.Speed, speed_x, duration_ms, skill, me)
+		mob:buff(MobBuff.Speed, effect.x, effect.time, skill, me)
 	end)
 end

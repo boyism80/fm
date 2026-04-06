@@ -4,11 +4,11 @@ function on_activated_1320009(me, skill, params)
 end
 
 function on_summon_skill_1320009(me, summon, skill, params)
-	if me == nil or summon == nil or skill == nil or params == nil or params.buff_effect_index == nil then
+	if params == nil or params.buff_effect_index == nil then
 		return
 	end
 
-	local buff_effect_index = tonumber(params.buff_effect_index) or 0
+	local buff_effect_index = params.buff_effect_index
 	if buff_effect_index < 0 or buff_effect_index > 4 then
 		return
 	end
@@ -18,8 +18,7 @@ function on_summon_skill_1320009(me, summon, skill, params)
 		return
 	end
 
-	local duration = tonumber(skill_effect.time) or 0
-	if duration <= 0 then
+	if skill_effect.time <= 0 then
 		return
 	end
 
@@ -29,19 +28,19 @@ function on_summon_skill_1320009(me, summon, skill, params)
 
 	if buff_effect_index == 0 then
 		buff_flag = BuffFlag.WeaponDef
-		buff_value = tonumber(skill_effect.pdd) or 0
+		buff_value = skill_effect.pdd
 	elseif buff_effect_index == 1 then
 		buff_flag = BuffFlag.MagicDef
-		buff_value = tonumber(skill_effect.mdd) or 0
+		buff_value = skill_effect.mdd
 	elseif buff_effect_index == 2 then
 		buff_flag = BuffFlag.Acc
-		buff_value = tonumber(skill_effect.acc) or 0
+		buff_value = skill_effect.acc
 	elseif buff_effect_index == 3 then
 		buff_flag = BuffFlag.Avoid
-		buff_value = tonumber(skill_effect.eva) or 0
+		buff_value = skill_effect.eva
 	elseif buff_effect_index == 4 then
 		buff_flag = BuffFlag.WeaponAtk
-		buff_value = tonumber(skill_effect.pad) or 0
+		buff_value = skill_effect.pad
 	else
 		return
 	end
@@ -55,6 +54,6 @@ function on_summon_skill_1320009(me, summon, skill, params)
 		return
 	end
 
-	me:buff(consume_wz, duration, {[buff_flag] = buff_value})
+	me:buff(consume_wz, skill_effect.time, {[buff_flag] = buff_value})
 	summon:use_skill(buff_effect_index + 6)
 end

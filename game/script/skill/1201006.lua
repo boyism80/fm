@@ -9,10 +9,7 @@ function on_activated_1201006(me, skill, params)
 	if effect == nil then
 		return
 	end
-	local duration_ms = effect.time or 0
-	local x_val = effect.x or 0
-	local y_val = effect.y or 0
-	if duration_ms <= 0 or (x_val == 0 and y_val == 0) then
+	if effect.time <= 0 or (effect.x == 0 and effect.y == 0) then
 		return
 	end
 	local mob_count = effect.mob_count or 6
@@ -33,14 +30,14 @@ function on_activated_1201006(me, skill, params)
 			break
 		end
 		local buff_values = {}
-		if x_val ~= 0 then
-			buff_values[MobBuff.Watk] = x_val
+		if effect.x ~= 0 then
+			buff_values[MobBuff.Watk] = effect.x
 		end
-		if y_val ~= 0 then
-			buff_values[MobBuff.Wdef] = y_val
+		if effect.y ~= 0 then
+			buff_values[MobBuff.Wdef] = effect.y
 		end
 		if next(buff_values) ~= nil then
-			mob:buff(buff_values, duration_ms, skill, me)
+			mob:buff(buff_values, effect.time, skill, me)
 		end
 		n = n + 1
 	end

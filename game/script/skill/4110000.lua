@@ -5,12 +5,11 @@ function on_passive_4110000(me, skill)
 	if effect == nil then
 		return
 	end
-	local pct = math.floor(tonumber(effect.x) or 0)
-	if pct <= 0 then
+	if effect.x <= 0 then
 		return
 	end
-	me:potion_heal_rate(pct)
-	me:potion_duration_rate(pct)
+	me:potion_heal_rate(effect.x)
+	me:potion_duration_rate(effect.x)
 end
 
 function on_unpassive_4110000(me, skill)

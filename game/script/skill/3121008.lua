@@ -5,14 +5,12 @@ function on_activated_3121008(me, skill, params)
 	if effect == nil then
 		return
 	end
-	local pad = math.floor(tonumber(effect.pad) or 0)
-	local x = math.floor(tonumber(effect.x) or 0)
 	local vals = {}
-	if pad > 0 then
-		vals[BuffFlag.WeaponAtk] = pad
+	if effect.pad > 0 then
+		vals[BuffFlag.WeaponAtk] = effect.pad
 	end
-	if x > 0 then
-		vals[BuffFlag.Concentrate] = x
+	if effect.x > 0 then
+		vals[BuffFlag.Concentrate] = effect.x
 	end
 	if next(vals) == nil then
 		return

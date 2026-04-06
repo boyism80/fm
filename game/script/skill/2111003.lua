@@ -2,7 +2,7 @@
 
 function on_activated_2111003(me, skill, params)
 	local effect = skill:effect()
-	if me == nil or skill == nil or effect == nil then
+	if effect == nil then
 		return
 	end
 	local lt = effect.lt
@@ -15,10 +15,9 @@ function on_activated_2111003(me, skill, params)
 	local right = x + math.max(lt.x, rb.x)
 	local top = y + math.min(lt.y, rb.y)
 	local bottom = y + math.max(lt.y, rb.y)
-	local duration_ms = effect.time or 0
-	if duration_ms <= 0 then
+	if effect.time <= 0 then
 		return
 	end
 	local multiplier = compute_poison_tick_multiplier(me, skill)
-	me:create_mist(skill, duration_ms, 0, { left = left, top = top, right = right, bottom = bottom }, 2000, multiplier)
+	me:create_mist(skill, effect.time, 0, { left = left, top = top, right = right, bottom = bottom }, 2000, multiplier)
 end

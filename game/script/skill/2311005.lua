@@ -5,8 +5,7 @@ function on_activated_2311005(me, skill, params)
 	if effect == nil then
 		return
 	end
-	local duration_ms = effect.time or 0
-	if duration_ms <= 0 then
+	if effect.time <= 0 then
 		return
 	end
 	for_each_mob_in_skill_area(me, skill, function(mob)
@@ -14,7 +13,7 @@ function on_activated_2311005(me, skill, params)
 		if wz ~= nil and wz.boss then
 			return false
 		end
-		mob:buff(MobBuff.Doom, 1, duration_ms, skill, me)
+		mob:buff(MobBuff.Doom, 1, effect.time, skill, me)
 		return true
 	end)
 end

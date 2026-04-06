@@ -9,6 +9,5 @@ function on_activated_1121010(me, skill, params)
 		return
 	end
 	consume_combo_orbs(me, 10)
-	local pad = effect.pad or 0
-	me:buff(skill, BuffFlag.WeaponAtk, pad)
+	me:buff(skill, BuffFlag.WeaponAtk, effect.pad)
 end

@@ -24,13 +24,9 @@ function on_activating_4121006(me, skill, params)
 end
 
 function on_activated_4121006(me, skill, params)
-    local wz = skill:wz()
-    if wz == nil or wz.effects == nil then
-        return
-    end
     local effect = skill:effect()
     local value = 1
-    if effect ~= nil and effect.x ~= nil then
+    if effect ~= nil then
         value = effect.x
     end
     me:buff(skill, BuffFlag.SpiritClaw, value)

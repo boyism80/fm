@@ -7,28 +7,12 @@ local function params(skill)
     if skill == nil then
         return 20
     end
-    local wz = skill:wz()
-    if wz == nil or wz.effects == nil then
-        return 20
-    end
     local effect = skill:effect()
     if effect == nil then
         return 0, 0
     end
 
     return effect.x, effect.pad
-end
-
-local function get_attack_bonus(skill)
-    local wz = skill:wz()
-    if wz == nil or wz.effects == nil then
-        return 0
-    end
-    local effect = skill:effect()
-    if effect == nil then
-        return 0
-    end
-    return effect.pad or 0
 end
 
 function on_activated_1311008(me, skill, params)
@@ -45,9 +29,6 @@ function on_buff_1311008(me, skill)
 end
 
 function on_tick(me, hp_loss)
-    if me == nil then
-        return
-    end
     local v = math.floor(hp_loss)
     if v <= 0 then
         return

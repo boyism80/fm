@@ -29,9 +29,6 @@ local function total_damage_to_mob(hits)
 end
 
 function apply_skill_drain_on_attack(me, skill, damages)
-	if me == nil or skill == nil or damages == nil then
-		return
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -47,9 +44,6 @@ function apply_skill_drain_on_attack(me, skill, damages)
 	local cap_half = math.floor(player_max / 2)
 	local total_heal = 0
 	for mob, hits in pairs(damages) do
-		if mob == nil or hits == nil then
-			goto continue_drain
-		end
 		local tot_damage = total_damage_to_mob(hits)
 		if tot_damage <= 0 then
 			goto continue_drain
@@ -72,7 +66,7 @@ function apply_skill_drain_on_attack(me, skill, damages)
 end
 
 function for_each_mob_in_skill_area(me, skill, callback)
-	if me == nil or skill == nil or callback == nil then
+	if callback == nil then
 		return
 	end
 	local map = me:map()
@@ -115,9 +109,6 @@ function for_each_mob_in_skill_area(me, skill, callback)
 end
 
 function apply_shadow_web_skill(me, skill)
-	if me == nil or skill == nil then
-		return
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -137,9 +128,6 @@ function apply_shadow_web_skill(me, skill)
 end
 
 function compute_ninja_ambush_tick_damage(me, skill)
-	if me == nil or skill == nil then
-		return 0
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return 0
@@ -157,9 +145,6 @@ function compute_ninja_ambush_tick_damage(me, skill)
 end
 
 function apply_ninja_ambush_skill(me, skill)
-	if me == nil or skill == nil then
-		return
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -179,7 +164,7 @@ function apply_ninja_ambush_skill(me, skill)
 end
 
 function for_each_character_in_skill_area(me, skill, callback)
-	if me == nil or skill == nil or callback == nil then
+	if callback == nil then
 		return
 	end
 	local map = me:map()
@@ -298,9 +283,6 @@ function apply_prob_status_on_skill_hit(me, skill, damages, status)
 end
 
 function apply_showdown_on_attack(me, skill, damages)
-	if me == nil or skill == nil or damages == nil then
-		return
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -322,9 +304,6 @@ function apply_showdown_on_attack(me, skill, damages)
 		return
 	end
 	for mob, hits in pairs(damages) do
-		if mob == nil or hits == nil then
-			goto continue_showdown
-		end
 		if total_damage_to_mob(hits) <= 0 then
 			goto continue_showdown
 		end
@@ -428,9 +407,6 @@ function handle_combo_attack(me, targets, skill)
 end
 
 function handle_pickpocket(me, skill, damages)
-    if damages == nil then
-        return
-    end
     local maxmeso = me:buff_value(BuffFlag.Pickpocket)
     if maxmeso == nil or maxmeso < 1 then
         return
@@ -445,11 +421,8 @@ function handle_pickpocket(me, skill, damages)
         return
     end
     for mob, hits in pairs(damages) do
-        if not mob or not hits then
-            goto continue_mob
-        end
         for _, amount in ipairs(hits) do
-            if not amount or amount <= 0 then
+            if (amount or 0) <= 0 then
                 goto continue_hit
             end
             local meso = math.floor((amount / 12300) * maxmeso)
@@ -467,7 +440,6 @@ function handle_pickpocket(me, skill, damages)
             map:spawn_meso(meso, { x + offset, y }, me)
             ::continue_hit::
         end
-        ::continue_mob::
     end
 end
 
@@ -477,9 +449,7 @@ function damages_to_targets(damages)
     end
     local targets = {}
     for mob, _ in pairs(damages) do
-        if mob ~= nil then
-            targets[#targets + 1] = mob
-        end
+        targets[#targets + 1] = mob
     end
     return targets
 end
@@ -554,7 +524,7 @@ end
 
 -- v83 MapleMonster VENOM: matk * (dex + 5*v43) / 49, v43 = floor((rand[0,v55-1] + v55*0.8)), v55 = str+luk (min 1).
 function roll_venom_tick_damage(me, venom_skill)
-	if me == nil or venom_skill == nil then
+	if venom_skill == nil then
 		return 1
 	end
 	local effect = venom_skill:effect()
@@ -587,7 +557,7 @@ end
 
 -- Passive venom: WZ prop, stack 1..3, tick = sum of rolls capped 30000, immediate hit, buff with stack (Lua drives value like poison mist).
 function apply_venom(me, damages, passive_skill_id)
-	if me == nil or damages == nil or passive_skill_id == nil then
+	if damages == nil or passive_skill_id == nil then
 		return
 	end
 	local venom_skill = me:skill(passive_skill_id)

@@ -4,35 +4,27 @@ function on_activated_4221003(me, skill, params)
 end
 
 function on_mob_buff_4221003(mob, skill, causer)
-	if mob == nil or skill == nil then
-		return
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
-	local n = math.floor(tonumber(effect.x) or 0)
-	if n <= 0 then
+	if effect.x <= 0 then
 		return
 	end
-	mob:exp_rate(mob:exp_rate() + n)
-	mob:drop_rate(mob:drop_rate() + n)
+	mob:exp_rate(mob:exp_rate() + effect.x)
+	mob:drop_rate(mob:drop_rate() + effect.x)
 end
 
 function on_mob_unbuff_4221003(mob, skill, causer)
-	if mob == nil or skill == nil then
-		return
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
-	local n = math.floor(tonumber(effect.x) or 0)
-	if n <= 0 then
+	if effect.x <= 0 then
 		return
 	end
-	mob:exp_rate(mob:exp_rate() - n)
-	mob:drop_rate(mob:drop_rate() - n)
+	mob:exp_rate(mob:exp_rate() - effect.x)
+	mob:drop_rate(mob:drop_rate() - effect.x)
 end
 
 function on_attack_4221003(me, skill, damages)

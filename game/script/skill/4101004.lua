@@ -1,21 +1,14 @@
 -- Skill name (String.wz/Skill.img.xml): 헤이스트
 
 function on_activated_4101004(me, skill, params)
-    local wz = skill:wz()
-    if wz == nil or wz.effects == nil then
-        return
-    end
-
     local effect = skill:effect()
     if effect == nil then
         return
     end
 
-    local speed = effect.speed or 0
-    local jump = effect.jump or 0
     me:buff(skill, {
-        [BuffFlag.Speed] = speed,
-        [BuffFlag.Jump] = jump,
+        [BuffFlag.Speed] = effect.speed,
+        [BuffFlag.Jump] = effect.jump,
     })
 end
 

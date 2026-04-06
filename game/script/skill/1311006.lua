@@ -14,17 +14,14 @@ function on_activated_1311006(me, skill, params)
 	if cur_hp * 100 < max_hp * 50 then
 		return
 	end
-	local x = effect.x or 0
-	if x > 0 then
-		local hp_loss = math.floor(cur_hp * x / 100)
+	if effect.x > 0 then
+		local hp_loss = math.floor(cur_hp * effect.x / 100)
 		if hp_loss > 0 then
 			local new_hp = math.max(cur_hp - hp_loss, 1)
 			me:hp(new_hp, true)
 		end
 	end
-	local stun_sec = effect.y or 0
-	if stun_sec > 0 then
-		local duration_ms = stun_sec * 1000
-		me:debuff(DebuffFlag.Stun, duration_ms)
+	if effect.y > 0 then
+		me:debuff(DebuffFlag.Stun, effect.y * 1000)
 	end
 end

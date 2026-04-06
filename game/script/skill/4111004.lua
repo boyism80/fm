@@ -27,11 +27,8 @@ local function shadow_meso_roll_cost(skill)
 end
 
 local function apply_shadow_meso_cost(me, skill)
-	if me == nil or skill == nil then
-		return true
-	end
 	local cost = shadow_meso_roll_cost(skill)
-	local have = math.floor(tonumber(me:meso()) or 0)
+	local have = math.floor(me:meso())
 	if cost > have then
 		cost = have
 	end

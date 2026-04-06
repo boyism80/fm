@@ -6,7 +6,7 @@ local function damages_has_positive_damage(hits)
 		return false
 	end
 	for _, amount in ipairs(hits) do
-		if amount ~= nil and amount > 0 then
+		if (amount or 0) > 0 then
 			return true
 		end
 	end
@@ -14,14 +14,13 @@ local function damages_has_positive_damage(hits)
 end
 
 local function roll_percent(prob)
-	local p = tonumber(prob) or 0
-	if p <= 0 then
+	if prob == nil or prob <= 0 then
 		return false
 	end
-	if p >= 100 then
+	if prob >= 100 then
 		return true
 	end
-	return math.random(0, 99) < p
+	return math.random(0, 99) < prob
 end
 
 function handle_attack_consume_item(me, skill, attack_info)
@@ -89,18 +88,14 @@ function handle_attack_consume_item(me, skill, attack_info)
 
 	local bullet_count = 1
 	if skill ~= nil then
-		local wz = skill:wz()
-		if wz ~= nil and wz.effects ~= nil then
-			local lv = skill:level()
-			local effect = wz.effects[lv]
-			if effect ~= nil then
-				if effect.bullet_consume ~= nil and effect.bullet_consume > 0 then
-					bullet_count = effect.bullet_consume
-				else
-					local bc = effect.bullet_count or 1
-					local ac = effect.attack_count or 1
-					bullet_count = math.max(bc, ac)
-				end
+		local effect = skill:effect()
+		if effect ~= nil then
+			if effect.bullet_consume ~= nil and effect.bullet_consume > 0 then
+				bullet_count = effect.bullet_consume
+			else
+				local bc = effect.bullet_count or 1
+				local ac = effect.attack_count or 1
+				bullet_count = math.max(bc, ac)
 			end
 		end
 	end
@@ -113,9 +108,6 @@ function handle_attack_consume_item(me, skill, attack_info)
 end
 
 local function get_mp_eater_skill(me)
-	if me == nil then
-		return nil
-	end
 	if me:class_of(Class.FpWizard) then
 		return me:skill(Skill.MpEater)
 	end
@@ -132,10 +124,6 @@ local function get_mp_eater_skill(me)
 end
 
 function handle_mp_eater(me, damages)
-	if damages == nil then
-		return
-	end
-
 	local mp_eater_skill = get_mp_eater_skill(me)
 	if mp_eater_skill == nil then
 		return
@@ -146,22 +134,13 @@ function handle_mp_eater(me, damages)
 		return
 	end
 
-	local chance = tonumber(effect.prop) or 0
-	local absorb_percent = tonumber(effect.x) or 0
-
-	if chance <= 0 or absorb_percent <= 0 then
+	if effect.prop <= 0 or effect.x <= 0 then
 		return
 	end
 
 	local total_absorb_mp = 0
 
 	for mob, hits in pairs(damages) do
-		if mob == nil then
-			goto continue_mob
-		end
-		if hits == nil then
-			goto continue_mob
-		end
 		if not damages_has_positive_damage(hits) then
 			goto continue_mob
 		end
@@ -172,7 +151,7 @@ function handle_mp_eater(me, damages)
 			goto continue_mob
 		end
 
-		if not roll_percent(chance) then
+		if not roll_percent(effect.prop) then
 			goto continue_mob
 		end
 
@@ -181,7 +160,7 @@ function handle_mp_eater(me, damages)
 			goto continue_mob
 		end
 
-		local absorb_mp = math.floor(mob:max_mp() * (absorb_percent / 100.0))
+		local absorb_mp = math.floor(mob:max_mp() * (effect.x / 100.0))
 		if absorb_mp > mob_mp then
 			absorb_mp = mob_mp
 		end
@@ -209,8 +188,7 @@ local function is_magic_attack_skill(skill)
 	if effect == nil then
 		return false
 	end
-	local mad = tonumber(effect.mad) or 0
-	return mad > 0
+	return effect.mad > 0
 end
 
 local function apply_element_amplification_mp_cost(me, skill, mp_con)
@@ -237,7 +215,7 @@ local function apply_element_amplification_mp_cost(me, skill, mp_con)
 	if amp_effect == nil then
 		return mp_con
 	end
-	local mult = tonumber(amp_effect.x) or 100
+	local mult = amp_effect.x
 	if mult <= 0 then
 		return mp_con
 	end
@@ -245,14 +223,13 @@ local function apply_element_amplification_mp_cost(me, skill, mp_con)
 end
 
 local function apply_concentrate_mp_cost(me, base_mp_con, mp_con_after_amp)
-	if me == nil or base_mp_con <= 0 or mp_con_after_amp <= 0 then
+	if base_mp_con <= 0 or mp_con_after_amp <= 0 then
 		return mp_con_after_amp
 	end
 	local s = me:buff_value(BuffFlag.Concentrate)
 	if s == nil then
 		return mp_con_after_amp
 	end
-	s = tonumber(s) or 0
 	if s <= 0 then
 		return mp_con_after_amp
 	end
@@ -265,21 +242,17 @@ local function apply_concentrate_mp_cost(me, base_mp_con, mp_con_after_amp)
 end
 
 function apply_default_skill_cost(me, skill)
-	if me == nil or skill == nil then
-		return true
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return true
 	end
-	local base_mp = tonumber(effect.mp_con) or 0
-	local mp_con = apply_element_amplification_mp_cost(me, skill, base_mp)
+	local mp_con = apply_element_amplification_mp_cost(me, skill, effect.mp_con)
 	if me:buff_value(BuffFlag.Infinity) ~= nil then
 		mp_con = 0
 	else
-		mp_con = apply_concentrate_mp_cost(me, base_mp, mp_con)
+		mp_con = apply_concentrate_mp_cost(me, effect.mp_con, mp_con)
 	end
-	local hp_con = tonumber(effect.hp_con) or 0
+	local hp_con = effect.hp_con
 	if mp_con > 0 then
 		local mp = me:mp()
 		if mp < mp_con then
@@ -325,9 +298,6 @@ function on_attack(me, skill, damages, attack_info)
 end
 
 function handle_blind_acc_debuff(me, damages)
-	if me == nil or damages == nil then
-		return
-	end
 	if me:buff_value(BuffFlag.Blind) == nil then
 		return
 	end
@@ -339,26 +309,22 @@ function handle_blind_acc_debuff(me, damages)
 	if effect == nil then
 		return
 	end
-	local chance = tonumber(effect.prop) or 0
-	if chance <= 0 then
+	if effect.prop <= 0 then
 		return
 	end
-	local acc = tonumber(me:buff_value(BuffFlag.Blind)) or 0
+	local acc = me:buff_value(BuffFlag.Blind) or 0
 	if acc == 0 then
 		return
 	end
-	local duration_ms = (tonumber(effect.y) or 0) * 1000
+	local duration_ms = effect.y * 1000
 	if duration_ms <= 0 then
 		return
 	end
 	for mob, hits in pairs(damages) do
-		if mob == nil or hits == nil then
-			goto continue_blind
-		end
 		if not damages_has_positive_damage(hits) then
 			goto continue_blind
 		end
-		if roll_percent(chance) then
+		if roll_percent(effect.prop) then
 			mob:buff(MobBuff.Acc, acc, duration_ms, blind_skill, me)
 		end
 		::continue_blind::
@@ -366,9 +332,6 @@ function handle_blind_acc_debuff(me, damages)
 end
 
 function handle_hamstring_slow(me, damages)
-	if me == nil or damages == nil then
-		return
-	end
 	if me:buff_value(BuffFlag.Hamstring) == nil then
 		return
 	end
@@ -383,29 +346,25 @@ function handle_hamstring_slow(me, damages)
 		return
 	end
 
-	local chance = tonumber(effect.prop) or 0
-	if chance <= 0 then
+	if effect.prop <= 0 then
 		return
 	end
 
-	local slow = tonumber(me:buff_value(BuffFlag.Hamstring)) or 0
+	local slow = me:buff_value(BuffFlag.Hamstring) or 0
 	if slow == 0 then
 		return
 	end
 
-	local duration_ms = (tonumber(effect.y) or 0) * 1000
+	local duration_ms = effect.y * 1000
 	if duration_ms <= 0 then
 		return
 	end
 
 	for mob, hits in pairs(damages) do
-		if mob == nil or hits == nil then
-			goto continue_mob
-		end
 		if not damages_has_positive_damage(hits) then
 			goto continue_mob
 		end
-		if roll_percent(chance) then
+		if roll_percent(effect.prop) then
 			mob:buff(MobBuff.Speed, slow, duration_ms, ham_skill, me)
 		end
 		::continue_mob::

@@ -2,7 +2,7 @@
 -- Individual skill scripts call apply_*(me, skill) etc. as global functions.
 -- Skill (Endure, ImprovingHpRecovery, etc.) is injected by Go.
 
--- Applies a buff using value from effect[value_key] (e.g. "x" or "prop"). Default 0 if missing.
+-- Applies a buff using value from effect[value_key] (e.g. "x" or "prop").
 function apply_buff_from_effect(me, skill, flag, value_key)
 	value_key = value_key or "x"
 	local effect = skill:effect()
@@ -10,10 +10,7 @@ function apply_buff_from_effect(me, skill, flag, value_key)
 		return
 	end
 	local val = effect[value_key]
-	if val == nil then
-		val = 0
-	end
-	if val <= 0 then
+	if val == nil or val <= 0 then
 		return
 	end
 	me:buff(skill, flag, val)
@@ -30,12 +27,10 @@ function apply_sharp_eyes(me, skill)
 	if effect == nil then
 		return
 	end
-	local x = math.floor(tonumber(effect.x) or 0)
-	local y = math.floor(tonumber(effect.y) or 0)
-	if x <= 0 or y <= 0 then
+	if effect.x <= 0 or effect.y <= 0 then
 		return
 	end
-	local packed = x * 256 + (y % 256)
+	local packed = effect.x * 256 + (effect.y % 256)
 	for_each_character_in_skill_area(me, skill, function(ch)
 		if ch == nil or not ch:is_alive() then
 			return
@@ -47,42 +42,38 @@ end
 function add_holy_symbol_bonus(me, skill)
 	local effect = skill:effect()
 	if effect == nil then return end
-	local bonus = effect.x or 0
 	local current = me:bonus_exp_rate()
 	if current <= 0 then
 		current = 100
 	end
-	me:bonus_exp_rate(current + bonus)
+	me:bonus_exp_rate(current + effect.x)
 end
 
 function remove_holy_symbol_bonus(me, skill)
 	local effect = skill:effect()
 	if effect == nil then return end
-	local bonus = effect.x or 0
 	local current = me:bonus_exp_rate()
-	me:bonus_exp_rate(current - bonus)
+	me:bonus_exp_rate(current - effect.x)
 end
 
 function apply_hyper_body(me, skill)
 	local effect = skill:effect()
 	if effect == nil then return end
-	local percent = effect.x or 0
 	me:buff(skill, {
-		[BuffFlag.MaxHp] = percent,
-		[BuffFlag.MaxMp] = percent,
+		[BuffFlag.MaxHp] = effect.x,
+		[BuffFlag.MaxMp] = effect.x,
 	})
 end
 
 function add_hyper_body_bonus(me, skill)
 	local effect = skill:effect()
 	if effect == nil then return end
-	local percent = effect.x or 0
 	local hp_percent = me:bonus_max_hp_ratio()
 	local mp_percent = me:bonus_max_mp_ratio()
 
 	-- Apply ratio delta without intermediate notifications.
-	me:bonus_max_hp_ratio(hp_percent + percent, false)
-	me:bonus_max_mp_ratio(mp_percent + percent, false)
+	me:bonus_max_hp_ratio(hp_percent + effect.x, false)
+	me:bonus_max_mp_ratio(mp_percent + effect.x, false)
 
 	-- Notify once after clamping to the new max values.
 	me:update_stats({
@@ -96,12 +87,11 @@ end
 function remove_hyper_body_bonus(me, skill)
 	local effect = skill:effect()
 	if effect == nil then return end
-	local percent = effect.x or 0
 	local hp_percent = me:bonus_max_hp_ratio()
 	local mp_percent = me:bonus_max_mp_ratio()
 
-	me:bonus_max_hp_ratio(hp_percent - percent, false)
-	me:bonus_max_mp_ratio(mp_percent - percent, false)
+	me:bonus_max_hp_ratio(hp_percent - effect.x, false)
+	me:bonus_max_mp_ratio(mp_percent - effect.x, false)
 
 	me:update_stats({
 		STAT.MaxHp,
@@ -117,12 +107,11 @@ function apply_iron_body(me, skill)
 		return
 	end
 
-	local pdd = effect.pdd or 0
-	if pdd <= 0 then
+	if effect.pdd <= 0 then
 		return
 	end
 
-	me:buff(skill, BuffFlag.WeaponDef, pdd)
+	me:buff(skill, BuffFlag.WeaponDef, effect.pdd)
 end
 
 function apply_monster_magnet(me, skill, params)
@@ -171,11 +160,10 @@ function apply_dispel(me, skill)
 	if effect == nil then
 		return
 	end
-	local prop = tonumber(effect.prop) or 0
-	if prop <= 0 then
+	if effect.prop <= 0 then
 		return
 	end
-	if prop < 100 and math.random(1, 100) > prop then
+	if effect.prop < 100 and math.random(1, 100) > effect.prop then
 		return
 	end
 	me:remove_debuff(
@@ -193,12 +181,12 @@ function get_heal_recovery_amount(me, skill)
 	if effect == nil then
 		return 0
 	end
-	local hp_rate = (effect.hp or 0) / 100.0
+	local hp_rate = effect.hp / 100.0
 	if hp_rate <= 0 then
 		return 0
 	end
 
-	local total_magic = (me:base_int() or 0) + (me:bonus_int() or 0)
+	local total_magic = me:base_int() + me:bonus_int()
 	if total_magic <= 0 then
 		total_magic = 1
 	end
@@ -225,12 +213,7 @@ function apply_mana_reflection(me, skill)
 		return
 	end
 
-	local prop = effect.prop
-	if prop == nil then
-		prop = 0
-	end
-
-	local val = prop - 30
+	local val = effect.prop - 30
 	if val < 0 then
 		val = 0
 	end
@@ -239,9 +222,6 @@ function apply_mana_reflection(me, skill)
 end
 
 function apply_resurrection(me, skill)
-	if me == nil or skill == nil then
-		return
-	end
 	for_each_character_in_skill_area(me, skill, function(ch)
 		if ch == nil or ch:is_alive() then
 			return
@@ -260,42 +240,30 @@ local function archer_puppet_facing_left(me)
 end
 
 function apply_archer_puppet_activated(me, skill, params)
-	if me == nil or skill == nil then
-		return
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
-	local duration_ms = tonumber(effect.time) or 0
-	if duration_ms <= 0 then
+	if effect.time <= 0 then
 		return
 	end
 	me:buff(skill, BuffFlag.Puppet, 1)
 end
 
 function apply_archer_puppet_buff(me, skill)
-	if me == nil or skill == nil then
-		return
-	end
 	local wz = skill:wz()
-	if wz == nil or wz.id == nil then
-		return
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
-	local duration_ms = tonumber(effect.time) or 0
-	if duration_ms <= 0 then
+	if effect.time <= 0 then
 		return
 	end
 	local level = skill:level()
 	if level == nil or level <= 0 then
 		return
 	end
-	local summon_hp = math.floor(tonumber(effect.x) or 0)
-	if summon_hp <= 0 then
+	if effect.x <= 0 then
 		return
 	end
 	local px, py = me:position()
@@ -311,20 +279,14 @@ function apply_archer_puppet_buff(me, skill)
 	else
 		spawn_pos = { x = grounded.x, y = grounded.y }
 	end
-	local s = me:create_summon(wz.id, level, duration_ms, SummonMovementType.Stationary, SummonType.Puppet, spawn_pos)
+	local s = me:create_summon(wz.id, level, effect.time, SummonMovementType.Stationary, SummonType.Puppet, spawn_pos)
 	if s ~= nil then
-		s:max_hp(summon_hp, false)
-		s:hp(summon_hp, false)
+		s:max_hp(effect.x, false)
+		s:hp(effect.x, false)
 	end
 end
 
 function apply_archer_puppet_unbuff(me, skill)
-	if me == nil or skill == nil then
-		return
-	end
 	local wz = skill:wz()
-	if wz == nil or wz.id == nil then
-		return
-	end
 	me:remove_summon(wz.id)
 end

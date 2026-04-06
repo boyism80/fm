@@ -5,13 +5,11 @@ function on_activated_3001003(me, skill, params)
 	if effect == nil then
 		return
 	end
-	local acc = tonumber(effect.acc) or 0
-	local eva = tonumber(effect.eva) or 0
-	if acc <= 0 and eva <= 0 then
+	if effect.acc <= 0 and effect.eva <= 0 then
 		return
 	end
 	me:buff(skill, {
-		[BuffFlag.Acc] = acc,
-		[BuffFlag.Avoid] = eva,
+		[BuffFlag.Acc] = effect.acc,
+		[BuffFlag.Avoid] = effect.eva,
 	})
 end

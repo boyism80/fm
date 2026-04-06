@@ -4,25 +4,15 @@ function on_activated_1320008(me, skill, params)
 end
 
 function on_summon_skill_1320008(me, summon, skill, params)
-	if me == nil or summon == nil or skill == nil then
-		return
-	end
-
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then
-		return
-	end
-
 	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
 
-	local hp = tonumber(effect.hp) or 0
-	if hp <= 0 then
+	if effect.hp <= 0 then
 		return
 	end
 
-	me:add_hp(hp)
+	me:add_hp(effect.hp)
 	summon:use_skill(5)
 end

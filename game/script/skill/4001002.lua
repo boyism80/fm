@@ -5,8 +5,7 @@ local function hits_have_damage(hits)
 		return false
 	end
 	for i = 1, #hits do
-		local v = hits[i]
-		if v ~= nil and v > 0 then
+		if (hits[i] or 0) > 0 then
 			return true
 		end
 	end
@@ -14,23 +13,16 @@ local function hits_have_damage(hits)
 end
 
 function on_attack_4001002(me, skill, damages)
-	if me == nil or skill == nil or damages == nil then
-		return
-	end
 	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
-	local watk = math.floor(tonumber(effect.x) or 0)
-	local wdef = math.floor(tonumber(effect.y) or 0)
-	local duration_sec = math.floor(tonumber(effect.time) or 0)
-	if duration_sec <= 0 then
+	if effect.time <= 0 then
 		return
 	end
-	local duration_ms = duration_sec * 1000
 	for mob, hits in pairs(damages) do
-		if mob ~= nil and hits_have_damage(hits) then
-			mob:buff({ [MobBuff.Watk] = watk, [MobBuff.Wdef] = wdef }, duration_ms, skill, me)
+		if hits_have_damage(hits) then
+			mob:buff({ [MobBuff.Watk] = effect.x, [MobBuff.Wdef] = effect.y }, effect.time, skill, me)
 		end
 	end
 end

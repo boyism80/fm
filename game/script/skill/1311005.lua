@@ -1,11 +1,8 @@
 -- Skill name (String.wz/Skill.img.xml): 새크리파이스
 
 function on_attack_1311005(me, skill, damages)
-	if damages == nil or skill == nil then
-		return
-	end
 	local effect = skill:effect()
-	if effect == nil or effect.x == nil then
+	if effect == nil then
 		return
 	end
 	local total = 0
