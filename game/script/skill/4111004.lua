@@ -1,7 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 쉐도우 메소
 
 local function shadow_meso_roll_cost(skill)
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return 0
 	end

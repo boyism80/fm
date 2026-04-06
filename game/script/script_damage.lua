@@ -9,12 +9,13 @@ function handle_magic_guard(me, attacker, skill, damage)
         return damage
     end
 
-    local effect = get_skill_effect(me:skill(Skill.MagicGuard))
-    if effect == nil then
-        effect = get_skill_effect(me:skill(Skill.MagicGuardCygnus))
+    local s = me:skill(Skill.MagicGuard)
+    if s == nil then
+        s = me:skill(Skill.MagicGuardCygnus)
     end
-    local guard_percent = effect and effect.x
-    if guard_percent == nil or guard_percent <= 0 then
+    local effect = s:effect()
+    local guard_percent = effect.x
+    if guard_percent <= 0 then
         return damage
     end
 
@@ -51,9 +52,10 @@ function handle_meso_guard(me, attacker, skill, damage)
         return damage
     end
 
-    local effect = get_skill_effect(me:skill(Skill.MesoGuard))
-    local guard_percent = effect and effect.x
-    if guard_percent == nil or guard_percent <= 0 then
+    local s = me:skill(Skill.MesoGuard)
+    local effect = s:effect()
+    local guard_percent = effect.x
+    if guard_percent <= 0 then
         return damage
     end
     local current_meso = me:meso()

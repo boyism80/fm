@@ -53,7 +53,7 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 
 	// Send empty stat update packet first (for client synchronization)
 	stats := map[constant.Stat]int32{}
-	character.Listener.OnUpdateStats(stats, true)
+	character.Listener.OnUpdateStats(character, stats, true)
 
 	// Check if remaining AP matches the total amount
 	totalAmount := req.Amount + req.Amount2
@@ -67,14 +67,14 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 	// Process primary stat
 	if !h.processStat(character, req.PrimaryStat, req.Amount, &statUpdate) {
 		// Invalid primary stat - send empty stat update
-		character.Listener.OnUpdateStats(stats, true)
+		character.Listener.OnUpdateStats(character, stats, true)
 		return nil
 	}
 
 	// Process secondary stat
 	if !h.processStat(character, req.SecondaryStat, req.Amount2, &statUpdate) {
 		// Invalid secondary stat - send empty stat update
-		character.Listener.OnUpdateStats(stats, true)
+		character.Listener.OnUpdateStats(character, stats, true)
 		return nil
 	}
 
@@ -84,7 +84,7 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 		statUpdate[constant.STAT_AVAILABLE_AP] = int32(character.AbilityPoint)
 
 		// Send stat update packet
-		character.Listener.OnUpdateStats(statUpdate, true)
+		character.Listener.OnUpdateStats(character, statUpdate, true)
 	}
 
 	return nil

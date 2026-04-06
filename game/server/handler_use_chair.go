@@ -47,18 +47,14 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 
 	setupInventory := character.Inventory[constant.INVENTORY_TYPE_INSTALLATION]
 	if setupInventory == nil {
-		if character.Listener != nil {
-			character.Listener.OnUpdateStats(nil, true)
-		}
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	item := setupInventory.FindById(req.ItemID)
 	if item == nil {
 		log.Printf("Chair item not found: %d", req.ItemID)
-		if character.Listener != nil {
-			character.Listener.OnUpdateStats(nil, true)
-		}
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
@@ -73,9 +69,7 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 
-	if character.Listener != nil {
-		character.Listener.OnUpdateStats(nil, true)
-	}
+	character.Listener.OnUpdateStats(character, nil, true)
 
 	return nil
 }

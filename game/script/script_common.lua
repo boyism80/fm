@@ -1,20 +1,5 @@
 -- Shared helpers for script modules (skill effect, etc.)
 
-function get_skill_effect(skill_entry)
-    if skill_entry == nil then
-        return nil
-    end
-    local wz = skill_entry:wz()
-    if wz == nil or wz.effects == nil then
-        return nil
-    end
-    local level = skill_entry:level()
-    if level == nil then
-        return nil
-    end
-    return wz.effects[level]
-end
-
 function element_amp_from_class(me)
     local amp = 1.0
     if me == nil then
@@ -35,17 +20,14 @@ function element_amp_from_class(me)
     if s == nil then
         return amp
     end
-    local e = get_skill_effect(s)
-    if e ~= nil and e.y ~= nil then
-        amp = e.y / 100.0
-    end
+    local e = s:effect()
+    amp = e.y / 100.0
     return amp
 end
 
-function element_weak_multiplier(skill, mwz)
+function element_weak_multiplier(swz, mwz)
     local weak = 1.0
-    local swz = skill:wz()
-    if swz == nil or mwz == nil or mwz.elem_resist == nil then
+    if mwz == nil or mwz.elem_resist == nil then
         return weak
     end
     local attr = swz.elem_attr

@@ -44,7 +44,7 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		log.Printf("Map not found for character %d", character.GetID())
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return fmt.Errorf("map not found")
 	}
 
@@ -53,10 +53,10 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		log.Printf("Failed to loot item %d for character %d, reason: %d", req.OID, character.GetID(), reason)
 
 		if reason == constant.LOOT_FAILED_INVENTORY_FULL || reason == constant.LOOT_FAILED_MESO_FULL {
-			character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
+			character.Listener.OnItemGainFailed(character, constant.ITEM_GAIN_FAILED_TYPE_FULL)
 		}
 
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
@@ -74,11 +74,11 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 
 	default:
 		log.Printf("Unknown looted object type for OID %d", req.OID)
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	character.Listener.OnUpdateStats(nil, true)
+	character.Listener.OnUpdateStats(character, nil, true)
 
 	return nil
 }

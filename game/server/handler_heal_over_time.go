@@ -99,12 +99,12 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 		character.SetMp(newMP, false)
 	}
 
-	if character.Listener != nil && (healHP > 0 || healMP > 0) {
+	if healHP > 0 || healMP > 0 {
 		stats := map[constant.Stat]int32{
 			constant.STAT_HP: int32(character.Hp),
 			constant.STAT_MP: int32(character.Mp),
 		}
-		character.Listener.OnUpdateStats(stats, false)
+		character.Listener.OnUpdateStats(character, stats, false)
 	}
 
 	return nil

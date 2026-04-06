@@ -1,7 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 블레스
 
 function on_activated_2301004(me, skill, params)
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end

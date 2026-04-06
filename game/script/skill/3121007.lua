@@ -5,7 +5,7 @@ function on_activated_3121007(me, skill, params)
 		return
 	end
 
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end

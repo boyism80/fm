@@ -3,7 +3,6 @@ package entity
 import (
 	"time"
 
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/response"
@@ -13,10 +12,9 @@ import (
 
 type Mist struct {
 	ObjectCore
-	OwnerID    uint32
-	SkillWz    *wz.Skill
-	SkillLevel uint8
-
+	Causer               uint32
+	SkillWz              *wz.Skill
+	SkillLevel           uint8
 	PoisonMist           uint8
 	MobMist              bool
 	MobSkill             bool
@@ -69,7 +67,7 @@ func (mist *Mist) SendSpawnSyncToViewer(viewer *Character) {
 		OID:        mist.OID,
 		PoisonMist: mist.PoisonMist,
 		MobMist:    mist.MobMist,
-		OwnerID:    mist.OwnerID,
+		CauserID:   mist.Causer,
 		SkillID:    skillID,
 		SkillLevel: mist.SkillLevel,
 		SkillDelay: mist.SkillDelay,
@@ -92,7 +90,7 @@ func (mist *Mist) Type() lua.LValueType {
 
 func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
-		"owner_id": func(L *lua.LState) int {
+		"causer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			m, ok := ud.Value.(*Mist)
 			if !ok {
@@ -100,13 +98,13 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() != 1 {
-				L.ArgError(2, "owner_id() is read-only")
+				L.ArgError(2, "causer() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(m.OwnerID))
+			L.Push(lua.LNumber(m.Causer))
 			return 1
 		},
-		"skill_id": func(L *lua.LState) int {
+		"level": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			m, ok := ud.Value.(*Mist)
 			if !ok {
@@ -114,47 +112,44 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() != 1 {
-				L.ArgError(2, "skill_id() is read-only")
-				return 0
-			}
-			skillID := uint32(0)
-			if m.SkillWz != nil {
-				skillID = m.SkillWz.ID
-			}
-			L.Push(lua.LNumber(skillID))
-			return 1
-		},
-		"skill_level": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			m, ok := ud.Value.(*Mist)
-			if !ok {
-				L.ArgError(1, "Mist expected")
-				return 0
-			}
-			if L.GetTop() != 1 {
-				L.ArgError(2, "skill_level() is read-only")
+				L.ArgError(2, "level() is read-only")
 				return 0
 			}
 			L.Push(lua.LNumber(m.SkillLevel))
 			return 1
 		},
-		"skill": func(L *lua.LState) int {
+		"wz": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			m, ok := ud.Value.(*Mist)
 			if !ok {
 				L.ArgError(1, "Mist expected")
 				return 0
 			}
-			if m.SkillWz == nil {
+			if L.GetTop() != 1 {
+				L.ArgError(2, "wz() is read-only")
+				return 0
+			}
+			wzTable := skillToLuaTable(L, m.SkillWz)
+			L.Push(wzTable)
+			return 1
+		},
+		"effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			m, ok := ud.Value.(*Mist)
+			if !ok {
+				L.ArgError(1, "Mist expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "effect() takes no arguments")
+				return 0
+			}
+			ld := m.SkillWz.GetLevelData(int(m.SkillLevel))
+			if ld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			entry := &SkillEntry{
-				Wz:         m.SkillWz,
-				SkillLevel: int(m.SkillLevel),
-				Owner:      nil,
-			}
-			L.Push(luax.NewLuable(L, entry))
+			L.Push(skillLevelDataToLuaTable(L, ld))
 			return 1
 		},
 		"poison_tick_multiplier": func(L *lua.LState) int {

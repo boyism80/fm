@@ -34,13 +34,13 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		return fmt.Errorf("client is not a GameClient")
 	}
 
-	character := client.GetCharacter()
-	if character == nil {
+	ch := client.GetCharacter()
+	if ch == nil {
 		log.Printf("Character not found for client")
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := character.GetMap()
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		log.Printf("Character not on a map")
 		return fmt.Errorf("map not found")
@@ -58,7 +58,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		return fmt.Errorf("no controller found for this mob")
 	}
 
-	if controller.GetID() != character.GetID() {
+	if controller.GetID() != ch.GetID() {
 		return nil
 	}
 
@@ -72,9 +72,10 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		mob.Stance = mnt.GetStance()
 	}
 
-	character.Listener.OnControlMoveMob(mob, req.MovementId, req.IsAggroed, uint16(min(mob.Mp, 65535)), 0, 0)
+	ch.Listener.OnControlMoveMob(ch, mob, req.MovementId, req.IsAggroed, uint16(min(mob.Mp, 65535)), 0, 0)
 
-	character.Listener.OnMobMoved(
+	ch.Listener.OnMobMoved(
+		ch,
 		mob,
 		req.IsAggroed,
 		req.CenterSplit,

@@ -4,7 +4,7 @@ function on_activated_3221006(me, skill, params)
 	if me == nil or skill == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end

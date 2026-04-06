@@ -1,7 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 포이즌 미스트
 
 function on_activated_2111003(me, skill, params)
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if me == nil or skill == nil or effect == nil then
 		return
 	end

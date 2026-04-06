@@ -67,7 +67,7 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 		stats[constant.STAT_HP] = int32(character.Hp)
 	}
 
-	character.Listener.OnUpdateStats(stats, true)
+	character.Listener.OnUpdateStats(character, stats, true)
 
 	return nil
 }
@@ -153,9 +153,5 @@ func (h *Damaged) resolveDamageSkillArg(character *entity.Character, req *reques
 	if skillModel == nil {
 		return lua.LNil
 	}
-	return &entity.SkillEntry{
-		Wz:         skillModel,
-		SkillLevel: int(req.Level),
-		Owner:      character,
-	}
+	return entity.NewSkillEntry(character, skillModel, int(req.Level), 0)
 }

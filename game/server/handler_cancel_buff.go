@@ -29,7 +29,7 @@ func (h *CancelBuff) Handle(ctx *core.ClientContext, req *request.CancelBuff) er
 		return nil
 	}
 	character := client.GetCharacter()
-	if character == nil || character.Buffs == nil {
+	if character == nil {
 		return nil
 	}
 	sourceID := req.SourceID

@@ -5,11 +5,7 @@
 -- Applies a buff using value from effect[value_key] (e.g. "x" or "prop"). Default 0 if missing.
 function apply_buff_from_effect(me, skill, flag, value_key)
 	value_key = value_key or "x"
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then
-		return
-	end
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -30,7 +26,7 @@ function apply_buff_fixed(me, skill, flag, value)
 end
 
 function apply_sharp_eyes(me, skill)
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -49,9 +45,7 @@ function apply_sharp_eyes(me, skill)
 end
 
 function add_holy_symbol_bonus(me, skill)
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then return end
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then return end
 	local bonus = effect.x or 0
 	local current = me:bonus_exp_rate()
@@ -62,9 +56,7 @@ function add_holy_symbol_bonus(me, skill)
 end
 
 function remove_holy_symbol_bonus(me, skill)
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then return end
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then return end
 	local bonus = effect.x or 0
 	local current = me:bonus_exp_rate()
@@ -72,9 +64,7 @@ function remove_holy_symbol_bonus(me, skill)
 end
 
 function apply_hyper_body(me, skill)
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then return end
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then return end
 	local percent = effect.x or 0
 	me:buff(skill, {
@@ -84,9 +74,7 @@ function apply_hyper_body(me, skill)
 end
 
 function add_hyper_body_bonus(me, skill)
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then return end
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then return end
 	local percent = effect.x or 0
 	local hp_percent = me:bonus_max_hp_ratio()
@@ -106,9 +94,7 @@ function add_hyper_body_bonus(me, skill)
 end
 
 function remove_hyper_body_bonus(me, skill)
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then return end
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then return end
 	local percent = effect.x or 0
 	local hp_percent = me:bonus_max_hp_ratio()
@@ -126,12 +112,7 @@ function remove_hyper_body_bonus(me, skill)
 end
 
 function apply_iron_body(me, skill)
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then
-		return
-	end
-
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -186,7 +167,7 @@ function apply_hero_will(me)
 end
 
 function apply_dispel(me, skill)
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -208,7 +189,7 @@ function apply_dispel(me, skill)
 end
 
 function get_heal_recovery_amount(me, skill)
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return 0
 	end
@@ -239,12 +220,7 @@ function get_heal_recovery_amount(me, skill)
 end
 
 function apply_mana_reflection(me, skill)
-	local wz = skill:wz()
-	if wz == nil or wz.effects == nil then
-		return
-	end
-
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -287,7 +263,7 @@ function apply_archer_puppet_activated(me, skill, params)
 	if me == nil or skill == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -306,7 +282,7 @@ function apply_archer_puppet_buff(me, skill)
 	if wz == nil or wz.id == nil then
 		return
 	end
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end

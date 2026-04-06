@@ -13,7 +13,7 @@ function on_summon_skill_1320008(me, summon, skill, params)
 		return
 	end
 
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end

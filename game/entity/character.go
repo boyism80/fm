@@ -49,29 +49,28 @@ type Character struct {
 	currentDialog    *lua.LState
 	dialogMutex      sync.Mutex
 	hidden           bool
-
-	Listener       CharacterListener
-	Class          uint16
-	Role           constant.CharacterRole
-	AbilityPoint   uint16
-	SkillPoint     uint16
-	HpApUsed       uint16
-	Meso           int32
-	Inventory      map[constant.InventoryType]*Inventory
-	Equipments     map[constant.EquipmentPartsType]Equipment
-	Rings          RingContainer
-	Skills         map[uint32]*SkillEntry
-	CurrentShopID  uint32
-	Chair          uint32
-	LastHealHPTime time.Time // used for heal-over-time rate limit
-	LastHealMPTime time.Time // used for heal-over-time rate limit
-	BaseStats      BaseStats
-	BonusStats     BonusStats
-	Buffs          *BuffContainer
-	diseases       map[constant.DebuffFlag]*DiseaseValueHolder
-	timers         map[string]*CharacterTimer
-	summons        map[constant.SkillID]*Summon
-	doors          map[constant.SkillID]*Door
+	Listener         CharacterListener
+	Class            uint16
+	Role             constant.CharacterRole
+	AbilityPoint     uint16
+	SkillPoint       uint16
+	HpApUsed         uint16
+	Meso             int32
+	Inventory        map[constant.InventoryType]*Inventory
+	Equipments       map[constant.EquipmentPartsType]Equipment
+	Rings            RingContainer
+	Skills           *SkillContainer
+	CurrentShopID    uint32
+	Chair            uint32
+	LastHealHPTime   time.Time // used for heal-over-time rate limit
+	LastHealMPTime   time.Time // used for heal-over-time rate limit
+	BaseStats        BaseStats
+	BonusStats       BonusStats
+	Buffs            *BuffContainer
+	diseases         map[constant.DebuffFlag]*DiseaseValueHolder
+	timers           map[string]*CharacterTimer
+	summons          map[constant.SkillID]*Summon
+	doors            map[constant.SkillID]*Door
 }
 
 // DiseaseValueHolder holds one applied disease (mirrors MapleDiseaseValueHolder: disease, start time, duration).
@@ -241,7 +240,7 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], p
 	if ch == nil || ch.Context == nil {
 		return nil
 	}
-	if skill == nil || skill.Wz == nil {
+	if skill == nil {
 		return nil
 	}
 	m := ch.GetMap()
@@ -252,7 +251,7 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], p
 	if wzSkill == nil {
 		return nil
 	}
-	skillLevel := uint8(skill.SkillLevel)
+	skillLevel := uint8(skill.Level())
 	ld := wzSkill.GetLevelData(int(skillLevel))
 	b := bounds
 	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
@@ -267,7 +266,7 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], p
 			Context:  m.context,
 			Map:      nil,
 		},
-		OwnerID:              ch.GetID(),
+		Causer:               ch.GetID(),
 		SkillWz:              wzSkill,
 		SkillLevel:           skillLevel,
 		PoisonMist:           poisonMist,
@@ -495,8 +494,8 @@ func (ch *Character) SetHp(v uint32, notify bool) {
 		v = maxHp
 	}
 	ch.Hp = v
-	if notify && ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
 	}
 }
 
@@ -506,8 +505,8 @@ func (ch *Character) SetMp(v uint32, notify bool) {
 		v = maxMp
 	}
 	ch.Mp = v
-	if notify && ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
 	}
 }
 
@@ -516,9 +515,7 @@ func (ch *Character) SetBonusHp(v int32) {
 	if ch.Hp > ch.GetMaxHp() {
 		ch.Hp = ch.GetMaxHp()
 	}
-	if ch.Listener != nil {
-		ch.notifyStatChange(constant.STAT_MAX_HP)
-	}
+	ch.notifyStatChange(constant.STAT_MAX_HP)
 }
 
 func (ch *Character) SetBonusMp(v int32) {
@@ -526,9 +523,7 @@ func (ch *Character) SetBonusMp(v int32) {
 	if ch.Mp > ch.GetMaxMp() {
 		ch.Mp = ch.GetMaxMp()
 	}
-	if ch.Listener != nil {
-		ch.notifyStatChange(constant.STAT_MAX_MP)
-	}
+	ch.notifyStatChange(constant.STAT_MAX_MP)
 }
 
 func (ch *Character) SetInvincible(b bool) { ch.Invincible = b }
@@ -543,9 +538,7 @@ func (ch *Character) AddHp(amount int) {
 		n = maxHp
 	}
 	ch.Hp = uint32(n)
-	if ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
-	}
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
 }
 
 func (ch *Character) AddMp(amount int) {
@@ -558,9 +551,7 @@ func (ch *Character) AddMp(amount int) {
 		n = maxMp
 	}
 	ch.Mp = uint32(n)
-	if ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
-	}
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
 }
 
 func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
@@ -582,12 +573,10 @@ func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
 		nm = maxMp
 	}
 	ch.Mp = uint32(nm)
-	if ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_HP: int32(ch.Hp),
-			constant.STAT_MP: int32(ch.Mp),
-		}, false)
-	}
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.STAT_HP: int32(ch.Hp),
+		constant.STAT_MP: int32(ch.Mp),
+	}, false)
 }
 
 func (ch *Character) SetBaseHp(v uint32, notify bool) {
@@ -598,8 +587,8 @@ func (ch *Character) SetBaseHp(v uint32, notify bool) {
 	if ch.Hp > ch.GetMaxHp() {
 		ch.Hp = ch.GetMaxHp()
 	}
-	if notify && ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.STAT_HP:     int32(ch.Hp),
 			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
 		}, false)
@@ -614,8 +603,8 @@ func (ch *Character) SetBaseMp(v uint32, notify bool) {
 	if ch.Mp > ch.GetMaxMp() {
 		ch.Mp = ch.GetMaxMp()
 	}
-	if notify && ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.STAT_MP:     int32(ch.Mp),
 			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
 		}, false)
@@ -624,8 +613,8 @@ func (ch *Character) SetBaseMp(v uint32, notify bool) {
 
 func (ch *Character) SetAbilityPoint(v uint16, notify bool) {
 	ch.AbilityPoint = v
-	if notify && ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
 		}, false)
 	}
@@ -633,8 +622,8 @@ func (ch *Character) SetAbilityPoint(v uint16, notify bool) {
 
 func (ch *Character) SetSkillPoint(v uint16, notify bool) {
 	ch.SkillPoint = v
-	if notify && ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
 		}, false)
 	}
@@ -663,9 +652,7 @@ func (ch *Character) SetHidden(hidden bool) {
 		return
 	}
 	ch.hidden = hidden
-	if ch.Listener != nil {
-		ch.Listener.OnHiddenChanged(hidden)
-	}
+	ch.Listener.OnHiddenChanged(ch, hidden)
 }
 
 func (ch *Character) GetID() uint32 {
@@ -677,9 +664,7 @@ func (ch *Character) GetName() string {
 }
 
 func (ch *Character) Message(message string) {
-	if ch.Listener != nil {
-		ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
-	}
+	ch.Listener.OnMessage(ch, constant.MSG_LIGHT_BLUE_TEXT, message)
 }
 
 func (ch *Character) HasRoleAtLeast(role constant.CharacterRole) bool {
@@ -716,17 +701,20 @@ func (ch *Character) AddExp(exp uint32) {
 	}
 
 	ch.exp += exp
-	ch.Listener.OnExpGain(exp)
+	ch.Listener.OnExpGain(ch, exp)
 
 	if !ch.tryLevelUp() {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 			constant.STAT_EXP: int32(ch.exp),
 		}, false)
 	}
 }
 
 func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx GameContext) *Character {
-	ch := Character{
+	if listener == nil {
+		panic("NewDummyCharacter: listener must not be nil")
+	}
+	ch := &Character{
 		Sendable: sender,
 		Listener: listener,
 		LifeCore: LifeCore{
@@ -778,12 +766,12 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			constant.EQUIPMENT_PARTS_WEAPON: nil,
 			constant.EQUIPMENT_PARTS_SHIELD: nil,
 		},
-		Skills: make(map[uint32]*SkillEntry),
 
 		regRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
 		rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
 	}
-	ch.Buffs = NewBuffContainer(&ch)
+	ch.Buffs = NewBuffContainer(ch)
+	ch.Skills = NewSkillContainer(ch)
 
 	if ctx != nil {
 		resources := ctx.GetResources()
@@ -847,8 +835,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4] = item
 		}
 	}
-
-	return &ch
+	return ch
 }
 
 func (ch *Character) GetCurrentDialog() *lua.LState {
@@ -929,21 +916,19 @@ func (ch *Character) tryLevelUp() bool {
 			thread.Close()
 		}
 
-		if ch.Listener != nil {
-			stats := map[constant.Stat]int32{
-				constant.STAT_LEVEL:        int32(ch.level),
-				constant.STAT_EXP:          int32(ch.exp),
-				constant.STAT_MAX_HP:       int32(ch.GetMaxHp()),
-				constant.STAT_MAX_MP:       int32(ch.GetMaxMp()),
-				constant.STAT_HP:           int32(ch.Hp),
-				constant.STAT_MP:           int32(ch.Mp),
-				constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
-				constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
-			}
-			ch.Listener.OnUpdateStats(stats, false)
-			for i := 0; i < levelDiff; i++ {
-				ch.broadcastLevelUpEffect()
-			}
+		stats := map[constant.Stat]int32{
+			constant.STAT_LEVEL:        int32(ch.level),
+			constant.STAT_EXP:          int32(ch.exp),
+			constant.STAT_MAX_HP:       int32(ch.GetMaxHp()),
+			constant.STAT_MAX_MP:       int32(ch.GetMaxMp()),
+			constant.STAT_HP:           int32(ch.Hp),
+			constant.STAT_MP:           int32(ch.Mp),
+			constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
+			constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
+		}
+		ch.Listener.OnUpdateStats(ch, stats, false)
+		for i := 0; i < levelDiff; i++ {
+			ch.broadcastLevelUpEffect()
 		}
 	}
 	return true
@@ -976,12 +961,10 @@ func (ch *Character) SetLevel(newLevel uint8) {
 		}
 	}
 
-	if ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_LEVEL: int32(ch.level),
-			constant.STAT_EXP:   int32(ch.exp),
-		}, false)
-	}
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.STAT_LEVEL: int32(ch.level),
+		constant.STAT_EXP:   int32(ch.exp),
+	}, false)
 }
 
 func (ch *Character) broadcastLevelUpEffect() {
@@ -1027,9 +1010,7 @@ func (ch *Character) AddDebuff(holder *DiseaseValueHolder) {
 			ch.RemoveTimer(debuffTimerKey(flag))
 			if _, ok := ch.diseases[flag]; ok {
 				delete(ch.diseases, flag)
-				if ch.Listener != nil {
-					ch.Listener.OnDebuffRemoved(ch, []constant.DebuffFlag{flag})
-				}
+				ch.Listener.OnDebuffRemoved(ch, []constant.DebuffFlag{flag})
 			}
 		})
 	}
@@ -1050,9 +1031,7 @@ func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration
 		Duration:  duration,
 	}
 	ch.AddDebuff(holder)
-	if ch.Listener != nil {
-		ch.Listener.OnDebuffAdded(ch, flag, x, skillID, skillLevel, int32(duration.Milliseconds()))
-	}
+	ch.Listener.OnDebuffAdded(ch, flag, x, skillID, skillLevel, int32(duration.Milliseconds()))
 }
 
 func (ch *Character) RemoveDebuff(flags ...constant.DebuffFlag) {
@@ -1066,7 +1045,7 @@ func (ch *Character) RemoveDebuff(flags ...constant.DebuffFlag) {
 			}
 		}
 	}
-	if len(removed) > 0 && ch.Listener != nil {
+	if len(removed) > 0 {
 		ch.Listener.OnDebuffRemoved(ch, removed)
 	}
 }

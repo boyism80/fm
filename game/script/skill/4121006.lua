@@ -28,7 +28,7 @@ function on_activated_4121006(me, skill, params)
     if wz == nil or wz.effects == nil then
         return
     end
-    local effect = wz.effects[skill:level()]
+    local effect = skill:effect()
     local value = 1
     if effect ~= nil and effect.x ~= nil then
         value = effect.x

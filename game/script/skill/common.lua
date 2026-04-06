@@ -141,7 +141,7 @@ function handle_mp_eater(me, damages)
 		return
 	end
 
-	local effect = get_skill_effect(mp_eater_skill)
+	local effect = mp_eater_skill:effect()
 	if effect == nil then
 		return
 	end
@@ -205,7 +205,7 @@ local function is_magic_attack_skill(skill)
 	if skill == nil then
 		return false
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return false
 	end
@@ -233,7 +233,7 @@ local function apply_element_amplification_mp_cost(me, skill, mp_con)
 	if amp == nil or amp:level() <= 0 then
 		return mp_con
 	end
-	local amp_effect = get_skill_effect(amp)
+	local amp_effect = amp:effect()
 	if amp_effect == nil then
 		return mp_con
 	end
@@ -268,7 +268,7 @@ function apply_default_skill_cost(me, skill)
 	if me == nil or skill == nil then
 		return true
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return true
 	end
@@ -296,6 +296,12 @@ function apply_default_skill_cost(me, skill)
 	end
 	me:update_stats({ STAT.Hp, STAT.Mp })
 	return true
+end
+
+function on_passive(me, skill)
+end
+
+function on_unpassive(me, skill)
 end
 
 function on_activating(me, skill, params)
@@ -329,7 +335,7 @@ function handle_blind_acc_debuff(me, damages)
 	if blind_skill == nil then
 		return
 	end
-	local effect = get_skill_effect(blind_skill)
+	local effect = blind_skill:effect()
 	if effect == nil then
 		return
 	end
@@ -353,7 +359,7 @@ function handle_blind_acc_debuff(me, damages)
 			goto continue_blind
 		end
 		if roll_percent(chance) then
-			mob:set_status(MobStatus.Acc, acc, duration_ms, blind_skill, me)
+			mob:buff(MobBuff.Acc, acc, duration_ms, blind_skill, me)
 		end
 		::continue_blind::
 	end
@@ -372,7 +378,7 @@ function handle_hamstring_slow(me, damages)
 		return
 	end
 
-	local effect = get_skill_effect(ham_skill)
+	local effect = ham_skill:effect()
 	if effect == nil then
 		return
 	end
@@ -400,7 +406,7 @@ function handle_hamstring_slow(me, damages)
 			goto continue_mob
 		end
 		if roll_percent(chance) then
-			mob:set_status(MobStatus.Speed, slow, duration_ms, ham_skill, me)
+			mob:buff(MobBuff.Speed, slow, duration_ms, ham_skill, me)
 		end
 		::continue_mob::
 	end

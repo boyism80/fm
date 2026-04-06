@@ -37,7 +37,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 	objects := mapData.GetObjects(constant.ObjectTypeMist, nil)
 	for _, obj := range objects {
 		mist, ok := obj.(*entity.Mist)
-		if !ok || mist == nil || mist.OID == 0 || mist.SkillWz == nil {
+		if !ok || mist == nil || mist.OID == 0 {
 			continue
 		}
 		if mist.PoisonMist != 0 {
@@ -56,7 +56,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 			if !ok || mob == nil || !mob.IsAlive() {
 				continue
 			}
-			if mob.HasMobStatus(constant.MobStatusPoison) {
+			if mob.HasBuff(constant.MobBuffPoison) {
 				continue
 			}
 			pos := mob.GetPosition()

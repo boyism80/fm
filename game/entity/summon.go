@@ -31,12 +31,8 @@ func (s *Summon) SendSpawnSyncToViewer(viewer *Character) {
 	if s == nil || viewer == nil {
 		return
 	}
-	ownerID := s.OwnerID
-	if s.Owner != nil {
-		ownerID = s.Owner.GetID()
-	}
 	viewer.Send(&response.SpawnSummon{
-		OwnerID:      ownerID,
+		OwnerID:      s.Owner.GetID(),
 		OID:          s.OID,
 		SkillID:      s.SkillID,
 		SkillLevel:   s.SkillLevel,
@@ -102,9 +98,6 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Summon expected")
 				return 0
 			}
-			if summon.Owner == nil || summon.Owner.Listener == nil {
-				return 0
-			}
 			animation := uint8(L.CheckInt(2))
 			targetsTable := L.CheckTable(3)
 			var targets []SummonAttackTarget
@@ -131,9 +124,6 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			summon, ok := ud.Value.(*Summon)
 			if !ok {
 				L.ArgError(1, "Summon expected")
-				return 0
-			}
-			if summon.Owner == nil || summon.Owner.Listener == nil {
 				return 0
 			}
 			x := int16(L.CheckInt(2))
@@ -166,9 +156,6 @@ type SummonAttackTarget struct {
 }
 
 func (s *Summon) Spawn(animated bool) {
-	if s.Owner == nil {
-		return
-	}
 	m := s.Owner.GetMap()
 	if m == nil {
 		return
@@ -179,36 +166,21 @@ func (s *Summon) Spawn(animated bool) {
 }
 
 func (s *Summon) Remove(animated bool) {
-	if s.Owner == nil {
-		return
-	}
 	s.Owner.RemoveSummon(s, animated)
 }
 
 func (s *Summon) Move(start types.Vector2[int16], movements []dto.MoveFragment) {
-	if s.Owner == nil || s.Owner.Listener == nil {
-		return
-	}
 	s.Owner.Listener.OnSummonMove(s.Owner, s, start, movements)
 }
 
 func (s *Summon) Attack(animation uint8, targets []SummonAttackTarget) {
-	if s.Owner == nil || s.Owner.Listener == nil {
-		return
-	}
 	s.Owner.Listener.OnSummonAttack(s.Owner, s, animation, targets)
 }
 
 func (s *Summon) UseSkill(newStance uint8) {
-	if s.Owner == nil || s.Owner.Listener == nil {
-		return
-	}
 	s.Owner.Listener.OnSummonSkill(s.Owner, s, newStance)
 }
 
 func (s *Summon) TakeDamage(unknown uint8, damage uint32, monsterIdFrom uint32) {
-	if s.Owner == nil || s.Owner.Listener == nil {
-		return
-	}
 	s.Owner.Listener.OnSummonDamaged(s.Owner, s, unknown, damage, monsterIdFrom)
 }

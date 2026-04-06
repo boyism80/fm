@@ -17,7 +17,7 @@ function on_attack_3111005(me, skill, damages)
 	if me == nil or skill == nil or damages == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -32,7 +32,7 @@ function on_attack_3111005(me, skill, damages)
 	for mob, hits in pairs(damages) do
 		if mob ~= nil and summon_attack_hits_positive(hits) then
 			if math.random(1, 100) <= prop then
-				mob:set_status(MobStatus.Stun, 1, duration_ms, skill, me)
+				mob:buff(MobBuff.Stun, 1, duration_ms, skill, me)
 			end
 		end
 	end
@@ -42,7 +42,7 @@ function on_activated_3111005(me, skill, params)
 	if me == nil or skill == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -62,7 +62,7 @@ function on_buff_3111005(me, skill)
 		return
 	end
 
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end

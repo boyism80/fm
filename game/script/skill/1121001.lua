@@ -1,7 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 몬스터 마그넷
 
 function on_attack_1121001(me, skill, damages)
-	apply_prob_status_on_skill_hit(me, skill, damages, MobStatus.Stun)
+	apply_prob_status_on_skill_hit(me, skill, damages, MobBuff.Stun)
 end
 
 function on_activating_1121001(me, skill, params)

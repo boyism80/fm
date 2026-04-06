@@ -57,9 +57,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		}
 		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
 		if !CallSkillHook(ctx, character, skillID, "on_activating") {
-			if character.Listener != nil {
-				character.Listener.OnUpdateStats(nil, true)
-			}
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 	}
@@ -157,7 +155,7 @@ func (h *Attack) validateSkillForAttack(character *entity.Character, skillID uin
 	}
 
 	if levelData.Cooldown > 0 {
-		skillEntry := character.Skills[skillID]
+		skillEntry := character.Skills.Get(skillID)
 		if skillEntry == nil || skillEntry.IsCooling() {
 			log.Printf("Skill %d is on cooldown", skillID)
 			return false

@@ -69,9 +69,7 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 		character.Send(cancelChairPacket, types.SEND_POLICY_ENCRYPT)
 	}
 
-	if character.Listener != nil {
-		character.Listener.OnUpdateStats(nil, true)
-	}
+	character.Listener.OnUpdateStats(character, nil, true)
 
 	return nil
 }

@@ -227,8 +227,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					stats[stat] = val
 				}
 			})
-			if len(stats) > 0 && ch.Listener != nil {
-				ch.Listener.OnUpdateStats(stats, true)
+			if len(stats) > 0 {
+				ch.Listener.OnUpdateStats(ch, stats, true)
 			}
 			return 0
 		},
@@ -267,11 +267,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				ch.exp = newExp
-				if ch.Listener != nil {
-					ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-						constant.STAT_EXP: int32(ch.exp),
-					}, false)
-				}
+				ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+					constant.STAT_EXP: int32(ch.exp),
+				}, false)
 				return 0
 			default:
 				L.ArgError(2, "exp() getter: exp(); setter: exp(value)")
@@ -302,9 +300,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				} else {
 					ch.SetMeso(2147483647)
 				}
-				if ch.Listener != nil {
-					ch.Listener.OnMesoChanged(ch.Meso)
-				}
+				ch.Listener.OnMesoChanged(ch, ch.Meso)
 				return 0
 			default:
 				L.ArgError(2, "meso() getter: meso(); setter: meso(value)")
@@ -331,9 +327,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				highlight = L.CheckBool(3)
 			}
 
-			if ch.Listener != nil {
-				ch.Listener.OnChat(message, highlight, dontRecordHistory)
-			}
+			ch.Listener.OnChat(ch, message, highlight, dontRecordHistory)
 			return 0
 		},
 		"buff": func(L *lua.LState) int {
@@ -371,20 +365,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				buff := ch.Buffs.GetEntity(flag)
 				skillBuff, ok := buff.(*SkillBuff)
-				if !ok || skillBuff == nil || skillBuff.Wz == nil {
+				if !ok || skillBuff == nil {
 					L.Push(lua.LNil)
 					return 1
 				}
-				view := &SkillEntry{
-					Wz:         skillBuff.Wz,
-					SkillLevel: int(skillBuff.SkillLevel),
-				}
-				L.Push(luax.NewLuable(L, view))
+				L.Push(luax.NewLuable(L, skillBuff))
 				return 1
 			case 3:
 				skillUD := L.CheckUserData(2)
 				skillEntry, ok := skillUD.Value.(*SkillEntry)
-				if !ok || skillEntry == nil || skillEntry.Wz == nil {
+				if !ok || skillEntry == nil {
 					L.ArgError(2, "SkillEntry with Wz expected")
 					return 0
 				}
@@ -406,15 +396,15 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				duration := time.Duration(0)
-				if ld := skillEntry.Wz.GetLevelData(skillEntry.SkillLevel); ld != nil {
+				if ld := skillEntry.Wz.GetLevelData(skillEntry.Level()); ld != nil {
 					duration = ld.Time
 				}
-				ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.SkillLevel), values)
+				ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.Level()), ch.GetID(), values)
 				return 0
 			case 4:
 				arg2UD := L.CheckUserData(2)
 				if skillEntry, ok := arg2UD.Value.(*SkillEntry); ok {
-					if skillEntry == nil || skillEntry.Wz == nil {
+					if skillEntry == nil {
 						L.ArgError(2, "SkillEntry with Wz expected")
 						return 0
 					}
@@ -426,10 +416,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 					values := map[constant.BuffFlag]int32{flag: int32(L.CheckNumber(4))}
 					duration := time.Duration(0)
-					if ld := skillEntry.Wz.GetLevelData(skillEntry.SkillLevel); ld != nil {
+					if ld := skillEntry.Wz.GetLevelData(skillEntry.Level()); ld != nil {
 						duration = ld.Time
 					}
-					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.SkillLevel), values)
+					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.Level()), ch.GetID(), values)
 					return 0
 				}
 				consumeWz, ok := arg2UD.Value.(*wz.Consume)
@@ -494,7 +484,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			skillUD := L.CheckUserData(2)
 			skillEntry, ok := skillUD.Value.(*SkillEntry)
-			if !ok || skillEntry == nil || skillEntry.Wz == nil {
+			if !ok || skillEntry == nil {
 				L.ArgError(2, "SkillEntry expected")
 				return 0
 			}
@@ -503,37 +493,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if argc >= 3 {
 				effectID = uint8(L.CheckInt(3))
 			}
-			skillLevelInt := skillEntry.SkillLevel
+			skillLevelInt := skillEntry.Level()
 			if skillLevelInt < 0 {
 				skillLevelInt = 0
 			}
 			skillLevel := uint8(skillLevelInt)
 
-			if ch.Listener != nil {
-				ch.Listener.OnShowBuffEffect(effectID, skillEntry.Wz.ID, skillLevel, nil)
-				return 0
-			}
-
-			// Fallback when listener is missing: send both packets directly.
-			mapInstance := ch.GetMap()
-			if mapInstance == nil {
-				return 0
-			}
-
-			ch.Send(&response.ShowOwnBuffeffect{
-				EffectID:   effectID,
-				SkillID:    skillEntry.Wz.ID,
-				SkillLevel: skillLevel,
-			}, types.SEND_POLICY_ENCRYPT)
-
-			mapInstance.Broadcast(&response.ShowBuffeffect{
-				CharacterID: ch.GetID(),
-				EffectID:    effectID,
-				SkillID:     skillEntry.Wz.ID,
-				SkillLevel:  skillLevel,
-			}, &BroadcastOption{
-				ExceptPlayerIDs: []uint32{ch.GetID()},
-			})
+			ch.Listener.OnShowBuffEffect(ch, effectID, skillEntry.Wz.ID, skillLevel, nil)
 			return 0
 		},
 		"unbuff": func(L *lua.LState) int {
@@ -685,7 +651,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			skillUD := L.CheckUserData(2)
 			skill, ok := skillUD.Value.(*SkillEntry)
-			if !ok || skill == nil || skill.Wz == nil {
+			if !ok || skill == nil {
 				L.ArgError(2, "Skill expected")
 				return 0
 			}
@@ -808,9 +774,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				npc = L.CheckInt(2)
 			}
 
-			if ch.Listener != nil {
-				ch.Listener.OnDialog(uint32(npc), message, prev, next)
-			}
+			ch.Listener.OnDialog(ch, uint32(npc), message, prev, next)
 			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
@@ -841,9 +805,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				npc = L.CheckInt(2)
 			}
 
-			if ch.Listener != nil {
-				ch.Listener.OnDialogYesNo(uint32(npc), message, prev, next)
-			}
+			ch.Listener.OnDialogYesNo(ch, uint32(npc), message, prev, next)
 			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
@@ -875,9 +837,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				npc = L.CheckInt(2)
 			}
 
-			if ch.Listener != nil {
-				ch.Listener.OnDialogList(uint32(npc), message, selections)
-			}
+			ch.Listener.OnDialogList(ch, uint32(npc), message, selections)
 			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
@@ -904,9 +864,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				npc = L.CheckInt(2)
 			}
 
-			if ch.Listener != nil {
-				ch.Listener.OnDialogAccept(uint32(npc), message, enableEscape)
-			}
+			ch.Listener.OnDialogAccept(ch, uint32(npc), message, enableEscape)
 			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
@@ -929,9 +887,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				npc = L.CheckInt(2)
 			}
 
-			if ch.Listener != nil {
-				ch.Listener.OnDialogInput(uint32(npc), message)
-			}
+			ch.Listener.OnDialogInput(ch, uint32(npc), message)
 			ch.SetCurrentDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
@@ -943,9 +899,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			message := L.CheckString(2)
-			if ch.Listener != nil {
-				ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
-			}
+			ch.Listener.OnMessage(ch, constant.MSG_LIGHT_BLUE_TEXT, message)
 			return 0
 		},
 		"role": func(L *lua.LState) int {
@@ -1043,13 +997,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			skillID := uint32(L.CheckInt(2))
 
-			if ch.Skills == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-
-			skillEntry, exists := ch.Skills[skillID]
-			if !exists || skillEntry == nil {
+			skillEntry := ch.Skills.Get(skillID)
+			if skillEntry == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -1067,8 +1016,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			skillID := uint32(L.CheckInt(2))
-			skills := ch.Skills
-			if existing, exists := skills[skillID]; exists && existing != nil {
+			if existing := ch.Skills.Get(skillID); existing != nil {
 				L.Push(luax.NewLuable(L, existing))
 				return 1
 			}
@@ -1096,22 +1044,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				masterLevel = wzSkill.MaxLevel
 			}
 
-			skillEntry := &SkillEntry{
-				Wz:          wzSkill,
-				SkillLevel:  0,
-				MasterLevel: masterLevel,
-				Expiration:  time.Time{},
-				Owner:       ch,
-			}
-			skills[skillID] = skillEntry
-
-			if ch.Listener != nil {
-				ch.Send(&response.UpdateSkills{
-					SkillID:     skillID,
-					Level:       0,
-					MasterLevel: int32(skillEntry.MasterLevel),
-				}, types.SEND_POLICY_ENCRYPT)
-			}
+			skillEntry := NewSkillEntry(ch, wzSkill, 1, masterLevel)
+			skillEntry.Expiration = time.Time{}
+			ch.Skills.Register(skillID, skillEntry)
 
 			L.Push(luax.NewLuable(L, skillEntry))
 			return 1
@@ -1132,18 +1067,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			skillsTable := L.NewTable()
-			if ch.Skills == nil {
-				L.Push(skillsTable)
-				return 1
-			}
-
-			for skillID, skillEntry := range ch.Skills {
-				if skillEntry == nil {
-					continue
-				}
+			ch.Skills.ForEach(func(skillID uint32, skillEntry *SkillEntry) {
 				skillUD := luax.NewLuable(L, skillEntry)
 				skillsTable.RawSetInt(int(skillID), skillUD)
-			}
+			})
 
 			L.Push(skillsTable)
 			return 1
@@ -1487,13 +1414,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if ch.Hp > ch.GetMaxHp() {
 					ch.Hp = ch.GetMaxHp()
 				}
-				if ch.Listener != nil {
-					stats := map[constant.Stat]int32{
-						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
-						constant.STAT_HP:     int32(ch.Hp),
-					}
-					ch.Listener.OnUpdateStats(stats, false)
+				stats := map[constant.Stat]int32{
+					constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+					constant.STAT_HP:     int32(ch.Hp),
 				}
+				ch.Listener.OnUpdateStats(ch, stats, false)
 				return 0
 			case 3:
 				ch.SetBonusHp(int32(L.CheckInt(2)))
@@ -1501,13 +1426,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if ch.Hp > ch.GetMaxHp() {
 					ch.Hp = ch.GetMaxHp()
 				}
-				if ch.Listener != nil {
-					stats := map[constant.Stat]int32{
-						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
-						constant.STAT_HP:     int32(ch.Hp),
-					}
-					ch.Listener.OnUpdateStats(stats, false)
+				stats := map[constant.Stat]int32{
+					constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+					constant.STAT_HP:     int32(ch.Hp),
 				}
+				ch.Listener.OnUpdateStats(ch, stats, false)
 				return 0
 			default:
 				L.ArgError(2, "bonus_max_hp() requires 0, 1 or 2 arguments")
@@ -1532,13 +1455,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if ch.Mp > ch.GetMaxMp() {
 					ch.Mp = ch.GetMaxMp()
 				}
-				if ch.Listener != nil {
-					stats := map[constant.Stat]int32{
-						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
-						constant.STAT_MP:     int32(ch.Mp),
-					}
-					ch.Listener.OnUpdateStats(stats, false)
+				stats := map[constant.Stat]int32{
+					constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+					constant.STAT_MP:     int32(ch.Mp),
 				}
+				ch.Listener.OnUpdateStats(ch, stats, false)
 				return 0
 			case 3:
 				ch.SetBonusMp(int32(L.CheckInt(2)))
@@ -1546,13 +1467,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if ch.Mp > ch.GetMaxMp() {
 					ch.Mp = ch.GetMaxMp()
 				}
-				if ch.Listener != nil {
-					stats := map[constant.Stat]int32{
-						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
-						constant.STAT_MP:     int32(ch.Mp),
-					}
-					ch.Listener.OnUpdateStats(stats, false)
+				stats := map[constant.Stat]int32{
+					constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+					constant.STAT_MP:     int32(ch.Mp),
 				}
+				ch.Listener.OnUpdateStats(ch, stats, false)
 				return 0
 			default:
 				L.ArgError(2, "bonus_max_mp() requires 0, 1 or 2 arguments")
@@ -1578,12 +1497,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if ch.Hp > ch.GetMaxHp() {
 					ch.Hp = ch.GetMaxHp()
 				}
-				if notify && ch.Listener != nil {
+				if notify {
 					stats := map[constant.Stat]int32{
 						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
 						constant.STAT_HP:     int32(ch.Hp),
 					}
-					ch.Listener.OnUpdateStats(stats, false)
+					ch.Listener.OnUpdateStats(ch, stats, false)
 				}
 				return 0
 			default:
@@ -1610,12 +1529,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if ch.Hp > ch.GetMaxHp() {
 					ch.Hp = ch.GetMaxHp()
 				}
-				if notify && ch.Listener != nil {
+				if notify {
 					stats := map[constant.Stat]int32{
 						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
 						constant.STAT_HP:     int32(ch.Hp),
 					}
-					ch.Listener.OnUpdateStats(stats, false)
+					ch.Listener.OnUpdateStats(ch, stats, false)
 				}
 				return 0
 			default:
@@ -1642,12 +1561,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if ch.Mp > ch.GetMaxMp() {
 					ch.Mp = ch.GetMaxMp()
 				}
-				if notify && ch.Listener != nil {
+				if notify {
 					stats := map[constant.Stat]int32{
 						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
 						constant.STAT_MP:     int32(ch.Mp),
 					}
-					ch.Listener.OnUpdateStats(stats, false)
+					ch.Listener.OnUpdateStats(ch, stats, false)
 				}
 				return 0
 			default:
@@ -1674,12 +1593,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if ch.Mp > ch.GetMaxMp() {
 					ch.Mp = ch.GetMaxMp()
 				}
-				if notify && ch.Listener != nil {
+				if notify {
 					stats := map[constant.Stat]int32{
 						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
 						constant.STAT_MP:     int32(ch.Mp),
 					}
-					ch.Listener.OnUpdateStats(stats, false)
+					ch.Listener.OnUpdateStats(ch, stats, false)
 				}
 				return 0
 			default:
@@ -1744,6 +1663,46 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			default:
 				L.ArgError(2, "bonus_exp_rate() requires 1 or 2 arguments")
+				return 0
+			}
+		},
+		"potion_heal_rate": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.BonusStats.PotionHealRate))
+				return 1
+			case 2:
+				ch.BonusStats.PotionHealRate = int16(L.CheckInt(2))
+				return 0
+			default:
+				L.ArgError(2, "potion_heal_rate() requires 1 or 2 arguments")
+				return 0
+			}
+		},
+		"potion_duration_rate": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.BonusStats.PotionDurationRate))
+				return 1
+			case 2:
+				ch.BonusStats.PotionDurationRate = int16(L.CheckInt(2))
+				return 0
+			default:
+				L.ArgError(2, "potion_duration_rate() requires 1 or 2 arguments")
 				return 0
 			}
 		},

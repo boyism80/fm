@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
@@ -11,8 +10,6 @@ import (
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
 )
 
 type DistributeSP struct {
@@ -51,10 +48,10 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		return nil
 	}
 
-	skills := character.Skills
-
-	skillEntry, exists := skills[skillID]
-	if !exists {
+	skillEntry := character.Skills.Get(skillID)
+	isFirstPoint := false
+	if skillEntry == nil {
+		isFirstPoint = true
 		var wzSkill *wz.Skill
 		if character.Context != nil {
 			resources := character.Context.GetResources()
@@ -78,19 +75,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 			return nil
 		}
 
-		skillEntry = &entity.SkillEntry{
-			Wz:          wzSkill,
-			SkillLevel:  0,
-			MasterLevel: masterLevel,
-			Expiration:  time.Time{},
-			Owner:       character,
-		}
-		skills[skillID] = skillEntry
-	}
-
-	if skillEntry.Wz == nil {
-		log.Printf("SkillEntry for skill %d has nil Skill for character %d", skillID, character.GetID())
-		return nil
+		skillEntry = entity.NewSkillEntry(character, wzSkill, 0, masterLevel)
 	}
 
 	maxLevel := skillEntry.MasterLevel
@@ -108,26 +93,23 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		maxLevel = skillEntry.MasterLevel
 	}
 
-	if skillEntry.SkillLevel >= maxLevel {
+	if skillEntry.Level() >= maxLevel {
 		log.Printf("Skill %d is already at max level %d for character %d", skillID, maxLevel, character.GetID())
 		return nil
 	}
 
 	character.SkillPoint = character.SkillPoint - 1
-	skillEntry.SkillLevel++
-
-	if character.Listener != nil {
-		stats := map[constant.Stat]int32{
-			constant.STAT_AVAILABLE_SP: int32(character.SkillPoint),
-		}
-		character.Listener.OnUpdateStats(stats, false)
+	if isFirstPoint {
+		skillEntry.SetLevel(1)
+		character.Skills.Bind(skillID, skillEntry)
+	} else {
+		skillEntry.SetLevel(skillEntry.Level() + 1)
 	}
 
-	character.Send(&response.UpdateSkills{
-		SkillID:     skillID,
-		Level:       int32(skillEntry.SkillLevel),
-		MasterLevel: int32(skillEntry.MasterLevel),
-	}, types.SEND_POLICY_ENCRYPT)
+	stats := map[constant.Stat]int32{
+		constant.STAT_AVAILABLE_SP: int32(character.SkillPoint),
+	}
+	character.Listener.OnUpdateStats(character, stats, false)
 
 	return nil
 }

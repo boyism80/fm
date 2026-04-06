@@ -5,7 +5,7 @@ function on_activated_14111000(me, skill, params)
     if wz == nil or wz.effects == nil then
         return
     end
-    local effect = wz.effects[skill:level()]
+    local effect = skill:effect()
     if effect == nil then
         return
     end

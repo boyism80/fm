@@ -19,9 +19,7 @@ func (ch *Character) AddMeso(amount int32) {
 		ch.Meso += amount
 	}
 
-	if ch.Listener != nil {
-		ch.Listener.OnMesoChanged(ch.Meso)
-	}
+	ch.Listener.OnMesoChanged(ch, ch.Meso)
 }
 
 func (ch *Character) RemoveMeso(amount int32) {
@@ -35,9 +33,7 @@ func (ch *Character) RemoveMeso(amount int32) {
 		ch.Meso -= amount
 	}
 
-	if ch.Listener != nil {
-		ch.Listener.OnMesoChanged(ch.Meso)
-	}
+	ch.Listener.OnMesoChanged(ch, ch.Meso)
 }
 
 func (ch *Character) GetItem(invType constant.InventoryType, slot int16) Item {
@@ -71,13 +67,9 @@ func (ch *Character) RemoveItem(invType constant.InventoryType, slot int16, coun
 		if err := inven.RemoveItem(uint8(slot)); err != nil {
 			return false
 		}
-		if ch.Listener != nil {
-			ch.Listener.OnRemoveInventorySlot(invType, slot)
-		}
+		ch.Listener.OnRemoveInventorySlot(ch, invType, slot)
 	} else {
-		if ch.Listener != nil {
-			ch.Listener.OnInventorySlotUpdated(invType, slot, item)
-		}
+		ch.Listener.OnInventorySlotUpdated(ch, invType, slot, item)
 	}
 	return true
 }
@@ -225,17 +217,13 @@ func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, e
 			cap = min(model.GetCapacity()-exists.GetCount(), remainingCount)
 			exists.Increase(cap)
 			slotItem = exists
-			if ch.Listener != nil {
-				ch.Listener.OnInventorySlotUpdated(invenType, int16(slot), exists)
-			}
+			ch.Listener.OnInventorySlotUpdated(ch, invenType, int16(slot), exists)
 		} else {
 			cap = min(model.GetCapacity(), remainingCount)
 			placed := item.Clone(cap)
 			inven.Items[int16(slot)] = placed
 			slotItem = placed
-			if ch.Listener != nil {
-				ch.Listener.OnInventorySlotAdded(invenType, int16(slot), placed)
-			}
+			ch.Listener.OnInventorySlotAdded(ch, invenType, int16(slot), placed)
 		}
 		addedItems = append(addedItems, slotItem)
 		remainingCount -= cap
@@ -246,8 +234,8 @@ func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, e
 		item.SetCount(remainingCount)
 	}
 
-	if ch.Listener != nil && addedCount > 0 {
-		ch.Listener.OnShowItemGain(model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
+	if addedCount > 0 {
+		ch.Listener.OnShowItemGain(ch, model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
 	}
 
 	return addedItems, nil
@@ -264,13 +252,11 @@ func (ch *Character) GainMeso(amount int32) {
 		ch.Meso += amount
 	}
 
-	if ch.Listener != nil {
-		ch.Listener.OnMesoChanged(ch.Meso)
-		ch.Listener.OnShowMesoGain(amount, constant.ShowMesoGainTypeStatus)
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_MESO: ch.Meso,
-		}, false)
-	}
+	ch.Listener.OnMesoChanged(ch, ch.Meso)
+	ch.Listener.OnShowMesoGain(ch, amount, constant.ShowMesoGainTypeStatus)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.STAT_MESO: ch.Meso,
+	}, false)
 }
 
 func (ch *Character) FindSlot(invType constant.InventoryType, item Item) (int16, bool) {
@@ -298,10 +284,8 @@ func (ch *Character) UnequipToSlot(parts constant.EquipmentPartsType, destSlot i
 	}
 	inven.Items[destSlot] = equipments[parts]
 	delete(equipments, parts)
-	if ch.Listener != nil {
-		ch.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), destSlot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
-		ch.Listener.OnUpdateCharacterLook(ch)
-	}
+	ch.Listener.OnSwapInventorySlot(ch, constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), destSlot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
+	ch.Listener.OnUpdateCharacterLook(ch)
 	return nil
 }
 
@@ -374,9 +358,7 @@ func (ch *Character) Equip(slot int16) error {
 		inven.Items[slot] = old
 	}
 
-	if ch.Listener != nil {
-		ch.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
-		ch.Listener.OnUpdateCharacterLook(ch)
-	}
+	ch.Listener.OnSwapInventorySlot(ch, constant.INVENTORY_TYPE_EQUIPMENT, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
+	ch.Listener.OnUpdateCharacterLook(ch)
 	return nil
 }

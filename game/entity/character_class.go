@@ -86,11 +86,8 @@ func (ch *Character) ChangeClass(newClass uint16) {
 	ch.Class = newClass
 
 	ch.grantClassChangeSP(newClass)
-	ch.initializeBaseSkills(newClass)
 
-	if ch.Listener != nil {
-		ch.Listener.OnClassChange(oldClass, newClass)
-	}
+	ch.Listener.OnClassChange(ch, oldClass, newClass)
 }
 
 func (ch *Character) grantClassChangeSP(newClass uint16) {

@@ -35,6 +35,7 @@ type SkillBuff struct {
 	*BaseBuff
 	Wz         *wz.Skill
 	SkillLevel uint8
+	CauserID   uint32
 }
 
 func (e *BaseBuff) RemainingDuration(now time.Time) time.Duration {
@@ -64,14 +65,14 @@ func (e *BaseBuff) GetValues() map[constant.BuffFlag]int32 {
 }
 
 func (e *SkillBuff) GetBuffID() int32 {
-	if e == nil || e.Wz == nil {
+	if e == nil {
 		return 0
 	}
 	return int32(e.Wz.ID)
 }
 
 func (e *SkillBuff) CallOnBuffScript(ch *Character) {
-	if e == nil || e.Wz == nil || ch == nil || ch.Context == nil {
+	if e == nil || ch == nil || ch.Context == nil {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -88,13 +89,8 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 	}
 
 	skillID := e.Wz.ID
-	skillEntry := &SkillEntry{
-		Wz:         e.Wz,
-		SkillLevel: int(e.SkillLevel),
-		Owner:      ch,
-	}
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	_, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_buff", skillID), ch, skillEntry)
+	_, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_buff", skillID), ch, e)
 	if err != nil {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
 	}
@@ -104,7 +100,7 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 }
 
 func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
-	if e == nil || e.Wz == nil || ch == nil || ch.Context == nil {
+	if e == nil || ch == nil || ch.Context == nil {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -121,13 +117,8 @@ func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
 	}
 
 	skillID := e.Wz.ID
-	skillEntry := &SkillEntry{
-		Wz:         e.Wz,
-		SkillLevel: int(e.SkillLevel),
-		Owner:      ch,
-	}
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	_, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_unbuff", skillID), ch, skillEntry)
+	_, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_unbuff", skillID), ch, e)
 	if err != nil {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
 	}
@@ -137,14 +128,14 @@ func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
 }
 
 func (e *ItemBuff) GetBuffID() int32 {
-	if e == nil || e.Wz == nil {
+	if e == nil {
 		return 0
 	}
 	return -int32(e.Wz.ID)
 }
 
 func (e *ItemBuff) CallOnBuffScript(ch *Character) {
-	if e == nil || e.Wz == nil || ch == nil || ch.Context == nil {
+	if e == nil || ch == nil || ch.Context == nil {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -183,7 +174,7 @@ func (e *ItemBuff) CallOnBuffScript(ch *Character) {
 }
 
 func (e *ItemBuff) CallOnUnbuffScript(ch *Character) {
-	if e == nil || e.Wz == nil || ch == nil || ch.Context == nil {
+	if e == nil || ch == nil || ch.Context == nil {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -330,7 +321,7 @@ func (bc *BuffContainer) removeEntity(entity Buff) {
 	}
 }
 
-func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLevel uint8, values map[constant.BuffFlag]int32) {
+func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLevel uint8, causerID uint32, values map[constant.BuffFlag]int32) {
 	if bc == nil {
 		return
 	}
@@ -357,6 +348,7 @@ func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLeve
 		},
 		Wz:         wz,
 		SkillLevel: skillLevel,
+		CauserID:   causerID,
 	}
 
 	removed := bc.add(entity)
@@ -366,9 +358,7 @@ func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLeve
 
 	entity.CallOnBuffScript(ch)
 
-	if ch.Listener != nil {
-		ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
-	}
+	ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
 }
 
 func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32) {
@@ -393,10 +383,16 @@ func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Durati
 
 	now := time.Now()
 
+	scaledDuration := duration
+	if duration > 0 {
+		mul := ch.PotionDurationMultiplierPercent()
+		scaledDuration = time.Duration(int64(duration) * int64(mul) / 100)
+	}
+
 	entity := &ItemBuff{
 		BaseBuff: &BaseBuff{
 			StartTime: now,
-			Duration:  duration,
+			Duration:  scaledDuration,
 			Flags:     entityFlags,
 			Values:    entityValues,
 		},
@@ -410,9 +406,7 @@ func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Durati
 
 	entity.CallOnBuffScript(ch)
 
-	if ch.Listener != nil {
-		ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
-	}
+	ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
 }
 
 func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {
@@ -428,7 +422,7 @@ func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {
 		return
 	}
 	ch.handleRemovedBuffEntities(removed)
-	if ch.Listener != nil && len(removedFlags) > 0 {
+	if len(removedFlags) > 0 {
 		ch.Listener.OnBuffRemoved(ch, removedFlags)
 	}
 }
@@ -440,7 +434,7 @@ func (bc *BuffContainer) RemoveSkillBuff(skillID uint32) {
 	var target Buff
 	for entity := range bc.entities {
 		skillBuff, ok := entity.(*SkillBuff)
-		if !ok || skillBuff == nil || skillBuff.Wz == nil {
+		if !ok || skillBuff == nil {
 			continue
 		}
 		if skillBuff.Wz.ID == skillID {
@@ -490,7 +484,7 @@ func (bc *BuffContainer) SetBuffValue(flag constant.BuffFlag, value int32) (Buff
 		return nil, false
 	}
 	values[flag] = value
-	if bc.owner != nil && bc.owner.Listener != nil {
+	if bc.owner != nil {
 		bc.owner.Listener.OnBuffAdded(bc.owner, entity.GetBuffID(), entity.RemainingDuration(time.Now()), map[constant.BuffFlag]int32{flag: value})
 	}
 	return entity, true

@@ -37,25 +37,17 @@ func (t *CooldownCheckTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 		if !ok {
 			continue
 		}
-		skills := ch.Skills
-		if skills == nil {
-			continue
-		}
-		for _, entry := range skills {
-			if entry == nil {
-				continue
-			}
-
+		ch.Skills.ForEach(func(_ uint32, entry *entity.SkillEntry) {
 			if entry.CooldownEnd == nil {
-				continue
+				return
 			}
 
 			if now.Before(*entry.CooldownEnd) {
-				continue
+				return
 			}
 
 			entry.ClearCooldown()
-		}
+		})
 	}
 	return nil
 }

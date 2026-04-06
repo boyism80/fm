@@ -5,7 +5,7 @@ function on_activated_1201006(me, skill, params)
 	if map == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -32,15 +32,15 @@ function on_activated_1201006(me, skill, params)
 		if n >= mob_count then
 			break
 		end
-		local status_values = {}
+		local buff_values = {}
 		if x_val ~= 0 then
-			status_values[MobStatus.Watk] = x_val
+			buff_values[MobBuff.Watk] = x_val
 		end
 		if y_val ~= 0 then
-			status_values[MobStatus.Wdef] = y_val
+			buff_values[MobBuff.Wdef] = y_val
 		end
-		if next(status_values) ~= nil then
-			mob:set_status(status_values, duration_ms, skill, me)
+		if next(buff_values) ~= nil then
+			mob:buff(buff_values, duration_ms, skill, me)
 		end
 		n = n + 1
 	end

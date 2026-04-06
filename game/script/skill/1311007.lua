@@ -2,6 +2,6 @@
 
 function on_activated_1311007(me, skill, params)
 	for_each_mob_in_skill_area(me, skill, function(mob)
-		mob:clear_status(MobStatus.WeaponAttackUp)
+		mob:clear_buffs(MobBuff.WeaponAttackUp)
 	end)
 end

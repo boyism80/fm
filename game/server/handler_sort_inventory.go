@@ -45,8 +45,8 @@ func (h *SortInventory) Handle(ctx *core.ClientContext, req *request.SortInvento
 	h.handleMergeItems(client, character, req.InventoryType)
 	h.handleSortInventoryInternal(client, character, req.InventoryType)
 
-	character.Listener.OnEndSortInventory(req.InventoryType)
-	character.Listener.OnUpdateStats(nil, true)
+	character.Listener.OnEndSortInventory(character, req.InventoryType)
+	character.Listener.OnUpdateStats(character, nil, true)
 
 	return nil
 }
@@ -81,10 +81,10 @@ func (h *SortInventory) handleMergeItems(client *client.GameClient, character *e
 			if item.GetCount() != value {
 				item.SetCount(value)
 				if value == 0 {
-					character.Listener.OnRemoveInventorySlot(inventoryType, slot)
+					character.Listener.OnRemoveInventorySlot(character, inventoryType, slot)
 					delete(inven.Items, slot)
 				} else {
-					character.Listener.OnUpdateInventorySlot(inventoryType, slot, item)
+					character.Listener.OnUpdateInventorySlot(character, inventoryType, slot, item)
 				}
 			}
 			count -= value
@@ -130,7 +130,7 @@ func (h *SortInventory) handleSortInventoryInternal(client *client.GameClient, c
 			if i1 <= i2 {
 				buffer[i1], buffer[i2] = buffer[i2], buffer[i1]
 
-				character.Listener.OnSwapInventorySlot(inventoryType, int16(i1+1), int16(i2+1), 0)
+				character.Listener.OnSwapInventorySlot(character, inventoryType, int16(i1+1), int16(i2+1), 0)
 				i1++
 				i2--
 			}

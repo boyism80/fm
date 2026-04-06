@@ -9,7 +9,7 @@ type SpawnMist struct {
 	OID        uint32
 	PoisonMist uint8
 	MobMist    bool
-	OwnerID    uint32
+	CauserID   uint32
 	SkillID    uint32
 	SkillLevel uint8
 	SkillDelay uint16
@@ -30,7 +30,7 @@ func (p *SpawnMist) Serialize(w *stream.StreamWriter) error {
 	}
 	third := uint32(1)
 	if p.PoisonMist == 2 || p.MobMist {
-		third = p.OwnerID
+		third = p.CauserID
 	}
 	if err := w.WriteU32(third); err != nil {
 		return err
@@ -79,7 +79,7 @@ func (p *SpawnMist) Serialize(w *stream.StreamWriter) error {
 			return err
 		}
 	}
-	if err := w.WriteU32(p.OwnerID); err != nil {
+	if err := w.WriteU32(p.CauserID); err != nil {
 		return err
 	}
 	return nil

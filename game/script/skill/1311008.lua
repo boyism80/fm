@@ -11,7 +11,7 @@ local function params(skill)
     if wz == nil or wz.effects == nil then
         return 20
     end
-    local effect = wz.effects[skill:level()]
+    local effect = skill:effect()
     if effect == nil then
         return 0, 0
     end
@@ -24,7 +24,7 @@ local function get_attack_bonus(skill)
     if wz == nil or wz.effects == nil then
         return 0
     end
-    local effect = wz.effects[skill:level()]
+    local effect = skill:effect()
     if effect == nil then
         return 0
     end

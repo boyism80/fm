@@ -4,7 +4,7 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 )
 
-// ToDTO converts entity Mob to dto Mob (includes status/debuff for spawn/control packet).
+// ToDTO converts entity Mob to dto Mob (includes mob buff mask/entries for spawn/control packet).
 func (m *Mob) ToDTO() *dto.Mob {
 	if m == nil {
 		return nil
@@ -15,10 +15,10 @@ func (m *Mob) ToDTO() *dto.Mob {
 		mobId = m.Wz.ID
 	}
 
-	mask, debuffEntries := m.getDebuffMaskAndEntries()
-	statuses := make([]dto.MobStatusEntry, 0, len(debuffEntries))
-	for _, e := range debuffEntries {
-		statuses = append(statuses, dto.MobStatusEntry{
+	mask, buffEntries := m.getMobBuffMaskAndEntries()
+	statuses := make([]dto.MobBuffEntry, 0, len(buffEntries))
+	for _, e := range buffEntries {
+		statuses = append(statuses, dto.MobBuffEntry{
 			X:       int16(e.Value),
 			SkillID: e.SkillID,
 		})

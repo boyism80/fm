@@ -1,7 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 씰
 
 function on_activated_2111004(me, skill, params)
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -14,7 +14,7 @@ function on_activated_2111004(me, skill, params)
 		if wz ~= nil and wz.boss then
 			return false
 		end
-		mob:set_status(MobStatus.Seal, 1, duration_ms, skill, me)
+		mob:buff(MobBuff.Seal, 1, duration_ms, skill, me)
 		return true
 	end)
 end

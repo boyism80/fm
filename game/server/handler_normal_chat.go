@@ -68,7 +68,7 @@ func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) er
 		return fmt.Errorf("map not found")
 	}
 
-	character.Listener.OnChat(req.Message, false, req.DontRecordHistory)
+	character.Listener.OnChat(character, req.Message, false, req.DontRecordHistory)
 
 	return nil
 }

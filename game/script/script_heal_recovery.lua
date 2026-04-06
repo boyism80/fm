@@ -2,21 +2,30 @@
 
 local function get_hp_recover_check(me)
     if me:class_of(Class.Warrior) then
-        local effect = get_skill_effect(me:skill(Skill.ImprovingHpRecovery))
-        if effect ~= nil and effect.hp ~= nil and effect.hp > 0 then
-            return effect.hp
+        local s = me:skill(Skill.ImprovingHpRecovery)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.hp > 0 then
+                return effect.hp
+            end
         end
     end
     if me:class_of(Class.Assassin) then
-        local effect = get_skill_effect(me:skill(Skill.Endure4100002))
-        if effect ~= nil and effect.hp ~= nil and effect.hp > 0 then
-            return effect.hp
+        local s = me:skill(Skill.Endure4100002)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.hp > 0 then
+                return effect.hp
+            end
         end
     end
     if me:class_of(Class.Bandit) then
-        local effect = get_skill_effect(me:skill(Skill.Endure4200001))
-        if effect ~= nil and effect.hp ~= nil and effect.hp > 0 then
-            return effect.hp
+        local s = me:skill(Skill.Endure4200001)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.hp > 0 then
+                return effect.hp
+            end
         end
     end
     return 0
@@ -24,34 +33,49 @@ end
 
 local function get_mp_recover_check(me)
     if me:class_of(Class.Magician) then
-        local effect = get_skill_effect(me:skill(Skill.ImprovingMpRecovery2000000))
-        if effect ~= nil and effect.mp ~= nil and effect.mp > 0 then
-            return effect.mp
+        local s = me:skill(Skill.ImprovingMpRecovery2000000)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.mp > 0 then
+                return effect.mp
+            end
         end
         return 0
     end
     if me:class_of(Class.Assassin) then
-        local effect = get_skill_effect(me:skill(Skill.Endure4100002))
-        if effect ~= nil and effect.mp ~= nil and effect.mp > 0 then
-            return effect.mp
+        local s = me:skill(Skill.Endure4100002)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.mp > 0 then
+                return effect.mp
+            end
         end
     end
     if me:class_of(Class.Bandit) then
-        local effect = get_skill_effect(me:skill(Skill.Endure4200001))
-        if effect ~= nil and effect.mp ~= nil and effect.mp > 0 then
-            return effect.mp
+        local s = me:skill(Skill.Endure4200001)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.mp > 0 then
+                return effect.mp
+            end
         end
     end
     if me:class_of(Class.Crusader) then
-        local effect = get_skill_effect(me:skill(Skill.ImprovingMpRecovery))
-        if effect ~= nil and effect.mp ~= nil and effect.mp > 0 then
-            return effect.mp
+        local s = me:skill(Skill.ImprovingMpRecovery)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.mp > 0 then
+                return effect.mp
+            end
         end
     end
     if me:class_of(Class.WhiteKnight) then
-        local effect = get_skill_effect(me:skill(Skill.ImprovingMpRecovery1210000))
-        if effect ~= nil and effect.mp ~= nil and effect.mp > 0 then
-            return effect.mp
+        local s = me:skill(Skill.ImprovingMpRecovery1210000)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.mp > 0 then
+                return effect.mp
+            end
         end
     end
     return 0
@@ -59,21 +83,30 @@ end
 
 function get_endure_hp_interval(me)
     if me:class_of(Class.Warrior) then
-        local effect = get_skill_effect(me:skill(Skill.Endure))
-        if effect ~= nil and effect.time ~= nil and effect.time > 0 then
-            return effect.time / 1000
+        local s = me:skill(Skill.Endure)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.time > 0 then
+                return effect.time / 1000
+            end
         end
     end
     if me:class_of(Class.Assassin) then
-        local effect = get_skill_effect(me:skill(Skill.Endure4100002))
-        if effect ~= nil and effect.time ~= nil and effect.time > 0 then
-            return effect.time / 1000
+        local s = me:skill(Skill.Endure4100002)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.time > 0 then
+                return effect.time / 1000
+            end
         end
     end
     if me:class_of(Class.Bandit) then
-        local effect = get_skill_effect(me:skill(Skill.Endure4200001))
-        if effect ~= nil and effect.time ~= nil and effect.time > 0 then
-            return effect.time / 1000
+        local s = me:skill(Skill.Endure4200001)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.time > 0 then
+                return effect.time / 1000
+            end
         end
     end
     return 0

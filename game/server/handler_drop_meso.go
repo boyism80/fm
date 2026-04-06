@@ -42,18 +42,18 @@ func (h *DropMeso) Handle(ctx *core.ClientContext, req *request.DropMeso) error 
 
 	if req.Count < 10 || req.Count > 50000 {
 		log.Printf("Invalid meso count: %d", req.Count)
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	if req.Count > character.Meso {
 		log.Printf("Character doesn't have enough meso: %d < %d", character.Meso, req.Count)
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	character.SetMeso(character.Meso - req.Count)
-	character.Listener.OnUpdateStats(map[constant.Stat]int32{
+	character.Listener.OnUpdateStats(character, map[constant.Stat]int32{
 		constant.STAT_MESO: character.Meso,
 	}, true)
 

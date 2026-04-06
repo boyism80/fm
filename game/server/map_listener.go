@@ -276,8 +276,8 @@ func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Ch
 	})
 }
 
-// OnMobMobStatusApplied broadcasts APPLY_DEBUFF (0xAF) to all players on the map (including attacker).
-func (l *MapListenerImpl) OnMobMobStatusApplied(mapInstance *entity.Map, mob *entity.Mob, debuff constant.MobStatus, value int32, skillID uint32, durationMs int64) {
+// OnMobMobBuffApplied broadcasts mob buff apply (0xAF) to all players on the map (including attacker).
+func (l *MapListenerImpl) OnMobMobBuffApplied(mapInstance *entity.Map, mob *entity.Mob, buff constant.MobBuffFlag, value int32, skillID uint32, durationMs int64) {
 	if mapInstance == nil {
 		return
 	}
@@ -285,9 +285,9 @@ func (l *MapListenerImpl) OnMobMobStatusApplied(mapInstance *entity.Map, mob *en
 	if durationMs > 0 && durationMs/1000 < 32767 {
 		buffTime = int16(durationMs / 1000)
 	}
-	pkt := &response.ApplyMobStatus{
+	pkt := &response.ApplyMobBuff{
 		OID:        mob.OID,
-		Status:     int32(debuff),
+		Status:     int32(buff),
 		X:          int16(value),
 		SkillID:    skillID,
 		BuffTime:   buffTime,
@@ -297,14 +297,14 @@ func (l *MapListenerImpl) OnMobMobStatusApplied(mapInstance *entity.Map, mob *en
 	mapInstance.Broadcast(pkt, nil)
 }
 
-// OnMobMobStatusCancelled broadcasts CANCEL_DEBUFF (0xB0) to all players on the map.
-func (l *MapListenerImpl) OnMobMobStatusCancelled(mapInstance *entity.Map, mob *entity.Mob, debuff constant.MobStatus) {
+// OnMobMobBuffCancelled broadcasts mob buff cancel (0xB0) to all players on the map.
+func (l *MapListenerImpl) OnMobMobBuffCancelled(mapInstance *entity.Map, mob *entity.Mob, buff constant.MobBuffFlag) {
 	if mapInstance == nil {
 		return
 	}
-	pkt := &response.CancelMobStatus{
+	pkt := &response.CancelMobBuff{
 		OID:    mob.OID,
-		Status: int32(debuff),
+		Status: int32(buff),
 		Size:   1,
 	}
 	mapInstance.Broadcast(pkt, nil)
@@ -322,7 +322,7 @@ func (l *MapListenerImpl) OnMistSpawned(mapInstance *entity.Map, mist *entity.Mi
 		OID:        mist.OID,
 		PoisonMist: mist.PoisonMist,
 		MobMist:    mist.MobMist,
-		OwnerID:    mist.OwnerID,
+		CauserID:   mist.Causer,
 		SkillID:    skillID,
 		SkillLevel: mist.SkillLevel,
 		SkillDelay: mist.SkillDelay,

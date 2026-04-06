@@ -4,18 +4,106 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/game/wz"
-	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
 type SkillEntry struct {
 	Wz          *wz.Skill
-	SkillLevel  int
+	level       int
 	MasterLevel int
 	Expiration  time.Time
 	CooldownEnd *time.Time // When cooldown ends; nil means cooldown is done and the skill is ready to use. Non-nil and now < *CooldownEnd means still cooling.
-	Owner       *Character // Character that owns this skill; set when added to character.Skills
+	Owner       *Character
+}
+
+func NewSkillEntry(owner *Character, w *wz.Skill, level, masterLevel int) *SkillEntry {
+	if w == nil {
+		panic("NewSkillEntry: nil wz.Skill")
+	}
+	if owner == nil {
+		panic("NewSkillEntry: nil Owner")
+	}
+	if level < 0 {
+		level = 0
+	}
+	if masterLevel < 0 {
+		masterLevel = 0
+	}
+	return &SkillEntry{
+		Wz:          w,
+		level:       level,
+		MasterLevel: masterLevel,
+		Owner:       owner,
+	}
+}
+
+func (s *SkillEntry) Level() int {
+	return s.level
+}
+
+func (s *SkillEntry) SetLevel(level int) {
+	if level < 0 {
+		level = 0
+	}
+	prev := s.level
+	s.level = level
+	if prev != level {
+		s.applyPassiveAfterLevelChange(prev, level)
+	}
+	if s.Owner != nil {
+		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
+	}
+	if level == 0 {
+		delete(s.Owner.Skills.entries, s.Wz.ID)
+	}
+}
+
+func (s *SkillEntry) SetLevelAndMaster(level, masterLevel int) {
+	if level < 0 {
+		level = 0
+	}
+	if masterLevel < 0 {
+		masterLevel = 0
+	}
+	s.MasterLevel = masterLevel
+	prev := s.level
+	s.level = level
+	if prev != level {
+		s.applyPassiveAfterLevelChange(prev, level)
+	}
+	if s.Owner != nil {
+		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
+	}
+	if level == 0 {
+		delete(s.Owner.Skills.entries, s.Wz.ID)
+	}
+}
+
+func (s *SkillEntry) SetMasterLevel(masterLevel int) {
+	if masterLevel < 0 {
+		masterLevel = 0
+	}
+	s.MasterLevel = masterLevel
+	if s.Owner != nil {
+		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
+	}
+}
+
+func (s *SkillEntry) applyPassiveAfterLevelChange(prevLevel, newLevel int) {
+	if prevLevel == newLevel {
+		return
+	}
+	skillID := s.Wz.ID
+	if s.Owner == nil {
+		return
+	}
+	if prevLevel > 0 && newLevel == 0 {
+		s.Owner.Listener.OnSkillPassiveHook(s.Owner, skillID, "on_unpassive")
+		return
+	}
+	if newLevel > 0 {
+		s.Owner.Listener.OnSkillPassiveHook(s.Owner, skillID, "on_passive")
+	}
 }
 
 // IsCooling returns true if the skill is still on cooldown (not yet ready to use).
@@ -52,10 +140,9 @@ func (s *SkillEntry) ClearCooldown() {
 }
 
 func (s *SkillEntry) notifyCooldown(remainingSec uint16) {
-	if s.Owner == nil || s.Owner.Listener == nil || s.Wz == nil {
-		return
+	if s.Owner != nil {
+		s.Owner.Listener.OnSkillCooldown(s.Owner, s.Wz.ID, remainingSec)
 	}
-	s.Owner.Listener.OnSkillCooldown(s.Wz.ID, remainingSec)
 }
 
 // Luable interface implementation
@@ -76,31 +163,16 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(skill.SkillLevel))
+				L.Push(lua.LNumber(skill.Level()))
 				return 1
-			case 2, 3:
-				level := L.CheckInt(2)
-				if level < 0 {
-					level = 0
-				}
-				skill.SkillLevel = level
-				if argc == 3 {
-					masterLevel := L.CheckInt(3)
-					if masterLevel < 0 {
-						masterLevel = 0
-					}
-					skill.MasterLevel = masterLevel
-				}
-				if skill.Owner != nil && skill.Wz != nil {
-					skill.Owner.Send(&response.UpdateSkills{
-						SkillID:     skill.Wz.ID,
-						Level:       int32(skill.SkillLevel),
-						MasterLevel: int32(skill.MasterLevel),
-					}, types.SEND_POLICY_ENCRYPT)
-				}
+			case 2:
+				skill.SetLevel(L.CheckInt(2))
+				return 0
+			case 3:
+				skill.SetLevelAndMaster(L.CheckInt(2), L.CheckInt(3))
 				return 0
 			default:
-				L.ArgError(2, "level() requires 0, 1 or 2 arguments")
+				L.ArgError(2, "level() requires 1, 2 or 3 arguments")
 				return 0
 			}
 		},
@@ -118,19 +190,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(skill.MasterLevel))
 				return 1
 			case 2:
-				masterLevel := L.CheckInt(2)
-				if masterLevel < 0 {
-					masterLevel = 0
-				}
-				skill.MasterLevel = masterLevel
-
-				if skill.Owner != nil && skill.Wz != nil {
-					skill.Owner.Send(&response.UpdateSkills{
-						SkillID:     skill.Wz.ID,
-						Level:       int32(skill.SkillLevel),
-						MasterLevel: int32(skill.MasterLevel),
-					}, types.SEND_POLICY_ENCRYPT)
-				}
+				skill.SetMasterLevel(L.CheckInt(2))
 				return 0
 			default:
 				L.ArgError(2, "master_level() requires 0 or 1 arguments")
@@ -145,14 +205,27 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 
-			if skill.Wz == nil {
+			wzTable := skillToLuaTable(L, skill.Wz)
+			L.Push(wzTable)
+			return 1
+		},
+		"effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			skill, ok := ud.Value.(*SkillEntry)
+			if !ok {
+				L.ArgError(1, "Skill expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "effect() takes no arguments")
+				return 0
+			}
+			ld := skill.Wz.GetLevelData(skill.Level())
+			if ld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-
-			// Convert WZ skill data to Lua table
-			wzTable := skillToLuaTable(L, skill.Wz)
-			L.Push(wzTable)
+			L.Push(skillLevelDataToLuaTable(L, ld))
 			return 1
 		},
 		"is_cooling": func(L *lua.LState) int {

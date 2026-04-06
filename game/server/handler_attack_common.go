@@ -22,7 +22,7 @@ func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID
 		return false
 	}
 
-	skillEntry := character.Skills[skillID]
+	skillEntry := character.Skills.Get(skillID)
 	if skillEntry == nil {
 		return false
 	}
@@ -54,6 +54,51 @@ func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID
 	return true
 }
 
+func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) {
+	if skillID == 0 || character == nil {
+		return
+	}
+	var root *lua.LState
+	if m := character.GetMap(); m != nil {
+		if pid := m.GetActorPID(); pid != nil {
+			root = luax.GetRootLuaState(pid.String())
+		}
+	}
+	if root == nil && ctx != nil && ctx.LogicActorPID != nil {
+		root = luax.GetRootLuaState(ctx.LogicActorPID.String())
+	}
+	if root == nil {
+		return
+	}
+	skillEntry := character.Skills.Get(skillID)
+	if skillEntry == nil {
+		return
+	}
+	commonResult, commonThread, commonErr := luax.Call(root, commonSkillScriptPath, hook, character, skillEntry)
+	if commonErr != nil {
+		log.Printf("Skill common %s: %v", hook, commonErr)
+		return
+	}
+	if commonThread != nil {
+		defer commonThread.Close()
+	}
+	if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
+		return
+	}
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	result, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName(hook, skillID), character, skillEntry)
+	if thread != nil {
+		defer thread.Close()
+	}
+	if err != nil {
+		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
+		return
+	}
+	if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
+		return
+	}
+}
+
 func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32, ranged bool, consumeSlot uint16) {
 	if ctx.LogicActorPID == nil {
 		return
@@ -72,7 +117,7 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, map
 
 	var skillLV lua.LValue = lua.LNil
 	if skillID != 0 {
-		if skillEntry := character.Skills[skillID]; skillEntry != nil {
+		if skillEntry := character.Skills.Get(skillID); skillEntry != nil {
 			skillLV = luax.NewLuable(commonThread, skillEntry)
 		}
 	}
@@ -95,7 +140,7 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, map
 	if skillID == 0 {
 		return
 	}
-	skillEntry := character.Skills[skillID]
+	skillEntry := character.Skills.Get(skillID)
 	if skillEntry == nil {
 		return
 	}
@@ -130,7 +175,7 @@ func CallSummonOnAttackHooks(ctx *core.ClientContext, character *entity.Characte
 	if root == nil {
 		return
 	}
-	skillEntry := character.Skills[skillID]
+	skillEntry := character.Skills.Get(skillID)
 	if skillEntry == nil {
 		return
 	}

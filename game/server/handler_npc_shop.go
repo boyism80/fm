@@ -164,14 +164,14 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 	return nil
 }
 
-func (h *NpcShop) handleSell(character *entity.Character, shop *wz.Shop, tx *request.SellTransaction, resources *wz.Resources) error {
+func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.SellTransaction, resources *wz.Resources) error {
 	quantity := tx.Quantity
 	if quantity == 0xFFFF || quantity == 0 {
 		quantity = 1
 	}
 
 	inventoryType := h.getItemInventoryType(tx.ItemID, nil)
-	inventory := character.Inventory[inventoryType]
+	inventory := ch.Inventory[inventoryType]
 	if inventory == nil {
 		return nil
 	}
@@ -220,24 +220,24 @@ func (h *NpcShop) handleSell(character *entity.Character, shop *wz.Shop, tx *req
 
 	if quantity >= itemQuantity {
 		delete(inventory.Items, tx.Slot)
-		character.Listener.OnRemoveInventorySlot(inventoryType, tx.Slot)
+		ch.Listener.OnRemoveInventorySlot(ch, inventoryType, tx.Slot)
 	} else {
 		item.Reduce(quantity)
-		character.Listener.OnUpdateInventorySlot(inventoryType, tx.Slot, item)
+		ch.Listener.OnUpdateInventorySlot(ch, inventoryType, tx.Slot, item)
 	}
 
-	character.GainMeso(recvMesos)
+	ch.GainMeso(recvMesos)
 
 	confirmPacket := &response.ConfirmShopTransaction{
 		Code: 0x8,
 	}
-	character.Send(confirmPacket, types.SEND_POLICY_ENCRYPT)
+	ch.Send(confirmPacket, types.SEND_POLICY_ENCRYPT)
 
 	return nil
 }
 
-func (h *NpcShop) handleRecharge(character *entity.Character, shop *wz.Shop, tx *request.RechargeTransaction, resources *wz.Resources) error {
-	inventory := character.Inventory[constant.INVENTORY_TYPE_CONSUME]
+func (h *NpcShop) handleRecharge(ch *entity.Character, shop *wz.Shop, tx *request.RechargeTransaction, resources *wz.Resources) error {
+	inventory := ch.Inventory[constant.INVENTORY_TYPE_CONSUME]
 	if inventory == nil {
 		return nil
 	}
@@ -261,19 +261,19 @@ func (h *NpcShop) handleRecharge(character *entity.Character, shop *wz.Shop, tx 
 
 	price := int(math.Round(float64(itemModel.GetPrice()) * float64(slotMax-item.GetCount())))
 
-	if character.Meso < int32(price) {
+	if ch.Meso < int32(price) {
 		return nil
 	}
 
 	item.SetCount(slotMax)
-	character.Listener.OnUpdateInventorySlot(constant.INVENTORY_TYPE_CONSUME, tx.Slot, item)
+	ch.Listener.OnUpdateInventorySlot(ch, constant.INVENTORY_TYPE_CONSUME, tx.Slot, item)
 
-	character.RemoveMeso(int32(price))
+	ch.RemoveMeso(int32(price))
 
 	confirmPacket := &response.ConfirmShopTransaction{
 		Code: 0x8,
 	}
-	character.Send(confirmPacket, types.SEND_POLICY_ENCRYPT)
+	ch.Send(confirmPacket, types.SEND_POLICY_ENCRYPT)
 
 	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"sort"
 	"time"
 
 	"github.com/boyism80/fm/core/luax"
@@ -15,22 +14,14 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-type mobMobStatusEntry struct {
-	value             int32
-	Wz                *wz.Skill
-	Level             uint8
-	CauserCharacterID uint32
-	expiresAt         time.Time
-	cancelTimer       *time.Timer
-	stack             uint8 // debuff stack (most statuses stay 1; venom uses 1..3)
-}
-
 type Mob struct {
 	LifeCore
 	Wz       *wz.Mob
 	Foothold int16
 	Spawn    *MobSpawn
-	debuffs  map[constant.MobStatus]*mobMobStatusEntry
+	mobBuffs *MobBuffContainer
+	ExpRate  int32
+	DropRate int32
 }
 
 func (m *Mob) GetObjectType() constant.ObjectType {
@@ -103,7 +94,6 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			argc := L.GetTop()
 			if argc == 1 {
-
 				L.Push(lua.LNumber(mob.Wz.EXP))
 				return 1
 			} else {
@@ -120,16 +110,15 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc == 1 {
-
+			switch argc {
+			case 1:
 				L.Push(lua.LNumber(mob.Foothold))
 				return 1
-			} else if argc == 2 {
-
+			case 2:
 				foothold := L.CheckInt(2)
 				mob.Foothold = int16(foothold)
 				return 0
-			} else {
+			default:
 				L.ArgError(2, "foothold() requires 0 or 1 arguments")
 				return 0
 			}
@@ -153,16 +142,16 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(mapInstance.id))
 			return 1
 		},
-		"set_status": func(L *lua.LState) int {
+		"buff": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
 			if !ok || mob == nil {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-			statusTbl := L.CheckTable(2)
-			maskLV := statusTbl.RawGetString("mask")
-			parseMobStatus := func(v lua.LValue) (constant.MobStatus, bool) {
+			buffTable := L.CheckTable(2)
+			maskLV := buffTable.RawGetString("mask")
+			parseMobBuffs := func(v lua.LValue) (constant.MobBuffFlag, bool) {
 				t, ok := v.(*lua.LTable)
 				if !ok {
 					return 0, false
@@ -171,10 +160,10 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if m.Type() != lua.LTNumber {
 					return 0, false
 				}
-				return constant.MobStatus(uint32(lua.LVAsNumber(m))), true
+				return constant.MobBuffFlag(uint32(lua.LVAsNumber(m))), true
 			}
 			if maskLV.Type() == lua.LTNumber {
-				status := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
+				buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
 				value := int32(L.CheckInt(3))
 				durationMs := L.CheckInt64(4)
 				if durationMs < 0 {
@@ -186,7 +175,16 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					if lv, ok := L.Get(5).(*lua.LUserData); ok {
 						if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Wz != nil {
 							skillWz = se.Wz
-							skillLevel = uint8(se.SkillLevel)
+							skillLevel = uint8(se.Level())
+						} else if m, ok := lv.Value.(*Mist); ok && m != nil && m.SkillWz != nil {
+							skillWz = m.SkillWz
+							skillLevel = m.SkillLevel
+						} else if sb, ok := lv.Value.(*SkillBuff); ok && sb != nil && sb.Wz != nil {
+							skillWz = sb.Wz
+							skillLevel = sb.SkillLevel
+						} else if mb, ok := lv.Value.(*MobSkillBuff); ok && mb != nil && mb.Wz != nil {
+							skillWz = mb.Wz
+							skillLevel = mb.SkillLevel
 						}
 					}
 				}
@@ -224,7 +222,10 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 					stack = uint8(s)
 				}
-				mob.ApplyMobStatus(status, value, durationMs, skillWz, skillLevel, causerOID, stack)
+				now := time.Now()
+				mob.ensureMobBuffs().AddSkillBuff(now, durationMs, skillWz, skillLevel, causerOID,
+					map[constant.MobBuffFlag]int32{buff: value},
+					map[constant.MobBuffFlag]uint8{buff: stack})
 				return 0
 			}
 			durationMs := L.CheckInt64(3)
@@ -237,7 +238,16 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if lv, ok := L.Get(4).(*lua.LUserData); ok {
 					if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Wz != nil {
 						skillWz = se.Wz
-						skillLevel = uint8(se.SkillLevel)
+						skillLevel = uint8(se.Level())
+					} else if m, ok := lv.Value.(*Mist); ok && m != nil && m.SkillWz != nil {
+						skillWz = m.SkillWz
+						skillLevel = m.SkillLevel
+					} else if sb, ok := lv.Value.(*SkillBuff); ok && sb != nil && sb.Wz != nil {
+						skillWz = sb.Wz
+						skillLevel = sb.SkillLevel
+					} else if mb, ok := lv.Value.(*MobSkillBuff); ok && mb != nil && mb.Wz != nil {
+						skillWz = mb.Wz
+						skillLevel = mb.SkillLevel
 					}
 				}
 			}
@@ -264,94 +274,150 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 			}
-			statusTbl.ForEach(func(key lua.LValue, value lua.LValue) {
-				status, ok := parseMobStatus(key)
+			values := make(map[constant.MobBuffFlag]int32)
+			buffTable.ForEach(func(key lua.LValue, value lua.LValue) {
+				buff, ok := parseMobBuffs(key)
 				if !ok {
 					return
 				}
 				if value.Type() != lua.LTNumber {
 					return
 				}
-				val := int32(lua.LVAsNumber(value))
-				mob.ApplyMobStatus(status, val, durationMs, skillWz, skillLevel, causerOID, 1)
+				values[buff] = int32(lua.LVAsNumber(value))
 			})
+			if len(values) > 0 {
+				now := time.Now()
+				mob.ensureMobBuffs().AddSkillBuff(now, durationMs, skillWz, skillLevel, causerOID, values, nil)
+			}
 			return 0
 		},
-		"clear_status": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-			statusTbl := L.CheckTable(2)
-			maskLV := statusTbl.RawGetString("mask")
-			if maskLV.Type() != lua.LTNumber {
-				L.ArgError(2, "MobStatus table with numeric mask expected")
-				return 0
-			}
-			status := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
-			mob.CancelMobStatus(status)
-			return 0
-		},
-		"has_status": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-			statusTbl := L.CheckTable(2)
-			maskLV := statusTbl.RawGetString("mask")
-			if maskLV.Type() != lua.LTNumber {
-				L.ArgError(2, "MobStatus table with numeric mask expected")
-				return 0
-			}
-			status := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
-			L.Push(lua.LBool(mob.HasMobStatus(status)))
-			return 1
-		},
-		"status_value": func(L *lua.LState) int {
+		"exp_rate": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
 			if !ok || mob == nil {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-			statusTbl := L.CheckTable(2)
-			maskLV := statusTbl.RawGetString("mask")
-			if maskLV.Type() != lua.LTNumber {
-				L.ArgError(2, "MobStatus table with numeric mask expected")
+			if L.GetTop() == 1 {
+				v := mob.ExpRate
+				if v <= 0 {
+					v = 100
+				}
+				L.Push(lua.LNumber(v))
+				return 1
+			}
+			if L.GetTop() == 2 {
+				n := int32(L.CheckInt(2))
+				if n < 100 {
+					n = 100
+				}
+				mob.ExpRate = n
 				return 0
 			}
-			st := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
-			L.Push(lua.LNumber(mob.GetMobStatusValue(st)))
-			return 1
+			L.ArgError(2, "exp_rate() get or set one value")
+			return 0
 		},
-		// status_stack(mask) -> stack; status_stack(mask, stack) -> bool (set ok)
-		"status_stack": func(L *lua.LState) int {
+		"drop_rate": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
 			if !ok || mob == nil {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-			statusTbl := L.CheckTable(2)
-			maskLV := statusTbl.RawGetString("mask")
-			if maskLV.Type() != lua.LTNumber {
-				L.ArgError(2, "MobStatus table with numeric mask expected")
+			if L.GetTop() == 1 {
+				v := mob.DropRate
+				if v <= 0 {
+					v = 100
+				}
+				L.Push(lua.LNumber(v))
+				return 1
+			}
+			if L.GetTop() == 2 {
+				n := int32(L.CheckInt(2))
+				if n < 100 {
+					n = 100
+				}
+				mob.DropRate = n
 				return 0
 			}
-			st := constant.MobStatus(uint32(lua.LVAsNumber(maskLV)))
+			L.ArgError(2, "drop_rate() get or set one value")
+			return 0
+		},
+		"clear_buffs": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			buffTable := L.CheckTable(2)
+			maskLV := buffTable.RawGetString("mask")
+			if maskLV.Type() != lua.LTNumber {
+				L.ArgError(2, "MobBuff table with numeric mask expected")
+				return 0
+			}
+			buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
+			mob.CancelMobBuff(buff)
+			return 0
+		},
+		"has_buff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			buffTable := L.CheckTable(2)
+			maskLV := buffTable.RawGetString("mask")
+			if maskLV.Type() != lua.LTNumber {
+				L.ArgError(2, "MobBuff table with numeric mask expected")
+				return 0
+			}
+			buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
+			L.Push(lua.LBool(mob.HasBuff(buff)))
+			return 1
+		},
+		"buff_value": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			buffTable := L.CheckTable(2)
+			maskLV := buffTable.RawGetString("mask")
+			if maskLV.Type() != lua.LTNumber {
+				L.ArgError(2, "MobBuff table with numeric mask expected")
+				return 0
+			}
+			buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
+			L.Push(lua.LNumber(mob.GetMobBuffValue(buff)))
+			return 1
+		},
+		// buff_stack(mask) -> stack; buff_stack(mask, stack) -> bool (set ok)
+		"buff_stack": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			buffTable := L.CheckTable(2)
+			maskLV := buffTable.RawGetString("mask")
+			if maskLV.Type() != lua.LTNumber {
+				L.ArgError(2, "MobBuff table with numeric mask expected")
+				return 0
+			}
+			buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
 			if L.GetTop() >= 3 {
 				stack := uint8(L.CheckInt(3))
 				if stack < 1 {
 					stack = 1
 				}
-				L.Push(lua.LBool(mob.SetMobStatusStack(st, stack)))
+				L.Push(lua.LBool(mob.SetMobBuffStack(buff, stack)))
 				return 1
 			}
-			L.Push(lua.LNumber(mob.GetMobStatusStack(st)))
+			L.Push(lua.LNumber(mob.GetMobBuffStack(buff)))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
@@ -480,155 +546,81 @@ func (m *Mob) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
-func (m *Mob) GetMobStatusValue(debuff constant.MobStatus) int32 {
-	entry, ok := m.debuffs[debuff]
-	if !ok || entry == nil {
-		return 0
+func (m *Mob) ensureMobBuffs() *MobBuffContainer {
+	if m.mobBuffs == nil {
+		m.mobBuffs = NewMobBuffContainer(m)
 	}
-	return entry.value
+	return m.mobBuffs
 }
 
-// GetMobStatusStack returns 0 if the debuff is not present; otherwise stack (at least 1).
-func (m *Mob) GetMobStatusStack(debuff constant.MobStatus) uint8 {
-	entry, ok := m.debuffs[debuff]
-	if !ok || entry == nil {
+func (m *Mob) GetMobBuffValue(flag constant.MobBuffFlag) int32 {
+	if m.mobBuffs == nil {
 		return 0
 	}
-	s := entry.stack
-	if s < 1 {
-		return 1
-	}
-	return s
+	return m.mobBuffs.getValue(flag)
 }
 
-// SetMobStatusStack updates stack on an existing debuff. Returns false if the debuff is not active.
-func (m *Mob) SetMobStatusStack(debuff constant.MobStatus, stack uint8) bool {
-	entry, ok := m.debuffs[debuff]
-	if !ok || entry == nil {
+func (m *Mob) GetMobBuffStack(flag constant.MobBuffFlag) uint8 {
+	if m.mobBuffs == nil {
+		return 0
+	}
+	return m.mobBuffs.getStack(flag)
+}
+
+func (m *Mob) SetMobBuffStack(flag constant.MobBuffFlag, stack uint8) bool {
+	if m.mobBuffs == nil {
 		return false
 	}
+	return m.mobBuffs.setStack(flag, stack)
+}
+
+func (m *Mob) ApplyMobBuff(flag constant.MobBuffFlag, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
 	if stack < 1 {
 		stack = 1
 	}
-	entry.stack = stack
-	return true
+	now := time.Now()
+	m.ensureMobBuffs().AddSkillBuff(now, durationMs, skillWz, skillLevel, causerOID,
+		map[constant.MobBuffFlag]int32{flag: value},
+		map[constant.MobBuffFlag]uint8{flag: stack})
 }
 
-func (m *Mob) ApplyMobStatus(debuff constant.MobStatus, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
-	if stack < 1 {
-		stack = 1
-	}
-	if m.debuffs == nil {
-		m.debuffs = make(map[constant.MobStatus]*mobMobStatusEntry)
-	}
-	existing := m.debuffs[debuff]
-	wasRefresh := existing != nil
-	var oldStack uint8
-	var oldValue int32
-	if existing != nil {
-		oldStack = existing.stack
-		if oldStack < 1 {
-			oldStack = 1
-		}
-		oldValue = existing.value
-		if existing.cancelTimer != nil {
-			existing.cancelTimer.Stop()
-		}
-		delete(m.debuffs, debuff)
-	}
-
-	entry := &mobMobStatusEntry{
-		value:             value,
-		Wz:                skillWz,
-		Level:             skillLevel,
-		CauserCharacterID: causerOID,
-		stack:             stack,
-	}
-	if durationMs > 0 {
-		entry.expiresAt = time.Now().Add(time.Duration(durationMs) * time.Millisecond)
-		entry.cancelTimer = time.AfterFunc(time.Duration(durationMs)*time.Millisecond, func() {
-			m.CancelMobStatus(debuff)
-		})
-	}
-	m.debuffs[debuff] = entry
-
-	// Refresh: skip 0xAF only when stack and tick value are unchanged (seal spam); send when stack or value changes (venom stacks, poison retick).
-	if wasRefresh && stack == oldStack && value == oldValue {
+func (m *Mob) CancelMobBuff(flag constant.MobBuffFlag) {
+	if m.mobBuffs == nil {
 		return
 	}
-	packetSkillID := uint32(0)
-	if skillWz != nil {
-		packetSkillID = skillWz.ID
-	}
-	mapInstance := m.GetMap()
-	if mapInstance != nil && mapInstance.listener != nil {
-		mapInstance.listener.OnMobMobStatusApplied(mapInstance, m, debuff, value, packetSkillID, durationMs)
-	}
+	m.mobBuffs.RemoveBuffForFlag(flag)
 }
 
-func (m *Mob) CancelMobStatus(debuff constant.MobStatus) {
-	entry, ok := m.debuffs[debuff]
-	if !ok {
-		return
+func (m *Mob) HasBuff(flag constant.MobBuffFlag) bool {
+	if m.mobBuffs == nil {
+		return false
 	}
-	if entry.cancelTimer != nil {
-		entry.cancelTimer.Stop()
-	}
-	delete(m.debuffs, debuff)
-
-	mapInstance := m.GetMap()
-	if mapInstance != nil && mapInstance.listener != nil {
-		mapInstance.listener.OnMobMobStatusCancelled(mapInstance, m, debuff)
-	}
+	return m.mobBuffs.hasFlag(flag)
 }
 
-func (m *Mob) HasMobStatus(debuff constant.MobStatus) bool {
-	_, ok := m.debuffs[debuff]
-	return ok
-}
-
-func (m *Mob) GetCauserCharacterID(debuff constant.MobStatus) uint32 {
-	entry, ok := m.debuffs[debuff]
-	if !ok || entry == nil {
+func (m *Mob) GetCauserCharacterID(flag constant.MobBuffFlag) uint32 {
+	if m.mobBuffs == nil {
 		return 0
 	}
-	return entry.CauserCharacterID
+	return m.mobBuffs.causerForFlag(flag)
 }
 
-func (m *Mob) ClearAllMobStatusTimers() {
-	for _, entry := range m.debuffs {
-		if entry.cancelTimer != nil {
-			entry.cancelTimer.Stop()
-		}
+func (m *Mob) ClearAllMobBuffTimers() {
+	m.mobBuffs = nil
+}
+
+func (m *Mob) RemoveExpiredMobBuffs(now time.Time) {
+	if m == nil || m.mobBuffs == nil {
+		return
 	}
-	m.debuffs = nil
+	m.mobBuffs.removeExpiredEntities(now)
 }
 
-type debuffForPacket struct {
-	Status  constant.MobStatus
-	Value   int32
-	SkillID uint32
-}
-
-func (m *Mob) getDebuffMaskAndEntries() (mask uint32, entries []debuffForPacket) {
-	if len(m.debuffs) == 0 {
+func (m *Mob) getMobBuffMaskAndEntries() (mask uint32, entries []mobBuffForPacket) {
+	if m.mobBuffs == nil {
 		return 0, nil
 	}
-	mask = 0
-	entries = make([]debuffForPacket, 0, len(m.debuffs))
-	for status, entry := range m.debuffs {
-		if entry == nil {
-			continue
-		}
-		mask |= uint32(status)
-		skillID := uint32(0)
-		if entry.Wz != nil {
-			skillID = entry.Wz.ID
-		}
-		entries = append(entries, debuffForPacket{Status: status, Value: entry.value, SkillID: skillID})
-	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Status < entries[j].Status })
-	return mask, entries
+	return m.mobBuffs.flattenForSpawnPacket()
 }
 
 func (m *Mob) dropItems(attacker *Character) {
@@ -662,8 +654,14 @@ func (m *Mob) dropItems(attacker *Character) {
 	dropRateMulF := float32(dropRateMul) / 100.0
 	mesoAmountMulF := float32(mesoAmountMul) / 100.0
 
+	mobDrop := m.DropRate
+	if mobDrop <= 0 {
+		mobDrop = 100
+	}
+	mobDropF := float32(mobDrop) / 100.0
+
 	for _, drop := range mobDrops {
-		adjustedProb := drop.Prob * dropRate * dropRateMulF
+		adjustedProb := drop.Prob * dropRate * dropRateMulF * mobDropF
 		if adjustedProb > 1.0 {
 			adjustedProb = 1.0
 		}
@@ -764,13 +762,13 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 	isDead := m.Hp == 0
 
 	if !isDead {
-		if attacker != nil && attacker.Listener != nil {
+		if attacker != nil {
 			maxHp := m.GetMaxHp()
 			if maxHp == 0 {
 				return false
 			}
 			percent := min(uint32(m.Hp)*100/uint32(maxHp), 100)
-			attacker.Listener.OnShowMobHp(m, uint8(percent))
+			attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
 		}
 		return false
 	}
@@ -782,6 +780,11 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		if attacker.BonusStats.ExpRate > 0 {
 			exp = exp * uint32(attacker.BonusStats.ExpRate) / 100
 		}
+		mobExp := m.ExpRate
+		if mobExp <= 0 {
+			mobExp = 100
+		}
+		exp = exp * uint32(mobExp) / 100
 		attacker.AddExp(exp)
 
 		m.dropItems(attacker)
@@ -794,8 +797,8 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		mapInstance.RemoveMob(m.OID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT)
 	}
 
-	if attacker != nil && attacker.Listener != nil {
-		attacker.Listener.OnShowMobHp(m, 0)
+	if attacker != nil {
+		attacker.Listener.OnShowMobHp(attacker, m, 0)
 	}
 
 	return true

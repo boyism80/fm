@@ -32,7 +32,7 @@ function apply_skill_drain_on_attack(me, skill, damages)
 	if me == nil or skill == nil or damages == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -79,7 +79,7 @@ function for_each_mob_in_skill_area(me, skill, callback)
 	if map == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -118,7 +118,7 @@ function apply_shadow_web_skill(me, skill)
 	if me == nil or skill == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -131,7 +131,49 @@ function apply_shadow_web_skill(me, skill)
 		if mwz ~= nil and mwz.boss then
 			return false
 		end
-		mob:set_status(MobStatus.ShadowWeb, 1, duration_ms, skill, me)
+		mob:buff(MobBuff.ShadowWeb, 1, duration_ms, skill, me)
+		return true
+	end)
+end
+
+function compute_ninja_ambush_tick_damage(me, skill)
+	if me == nil or skill == nil then
+		return 0
+	end
+	local effect = skill:effect()
+	if effect == nil then
+		return 0
+	end
+	local skill_level = skill:level() or 1
+	local dmg_field = tonumber(effect.damage) or 0
+	local str = math.floor(tonumber(me:base_str()) or 0) + math.floor(tonumber(me:bonus_str()) or 0)
+	local luk = math.floor(tonumber(me:base_luk()) or 0) + math.floor(tonumber(me:bonus_luk()) or 0)
+	local raw = (skill_level + 30) * dmg_field * (str + luk) / 2000
+	local pdam = math.max(1, math.floor(raw))
+	if pdam > 30000 then
+		pdam = 30000
+	end
+	return pdam
+end
+
+function apply_ninja_ambush_skill(me, skill)
+	if me == nil or skill == nil then
+		return
+	end
+	local effect = skill:effect()
+	if effect == nil then
+		return
+	end
+	local duration_ms = effect.time or 0
+	if duration_ms <= 0 then
+		return
+	end
+	for_each_mob_in_skill_area(me, skill, function(mob)
+		local value = compute_ninja_ambush_tick_damage(me, skill)
+		if value <= 0 then
+			return true
+		end
+		mob:buff(MobBuff.NinjaAmbush, value, duration_ms, skill, me)
 		return true
 	end)
 end
@@ -144,7 +186,7 @@ function for_each_character_in_skill_area(me, skill, callback)
 	if map == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	local pos_x, pos_y = me:position()
 	local lt, rb
 	if effect ~= nil then
@@ -179,7 +221,7 @@ function compute_poison_tick_multiplier(me, skill)
 	if swz ~= nil and swz.id == Skill.Flamethrower and me ~= nil then
 		local boost = me:skill(Skill.ElementBoost)
 		if boost ~= nil then
-			local be = get_skill_effect(boost)
+			local be = boost:effect()
 			local x = 0
 			if be ~= nil and be.x ~= nil then
 				x = be.x
@@ -196,26 +238,26 @@ function compute_poison_tick_damage(skill, mob, multiplier)
 	if mob == nil or skill == nil then
 		return 0
 	end
-	local effect = get_skill_effect(skill)
-	if effect == nil then
+	return compute_poison_tick_damage_wz_level(skill:wz(), skill:level(), mob, multiplier)
+end
+
+function compute_poison_tick_damage_wz_level(wz, level, mob, multiplier)
+	if mob == nil then
 		return 0
 	end
 	local mwz = mob:wz()
-	if mwz == nil then
-		return 0
-	end
 	local max_hp = mwz.max_hp or 0
 	if max_hp <= 0 then
 		return 0
 	end
-	local skill_level = skill:level() or 1
+	local skill_level = level or 1
 	local denom = poison_denominator_base - skill_level
 	if denom <= 0 then
 		denom = 1
 	end
 	local quotient = math.floor(max_hp / denom)
 	local base = quotient + 0.999
-	local weak = element_weak_multiplier(skill, mwz)
+	local weak = element_weak_multiplier(wz, mwz)
 	local mul = multiplier or 1.0
 	if mul <= 0 then
 		mul = 1.0
@@ -229,7 +271,7 @@ function apply_prob_status_on_skill_hit(me, skill, damages, status)
 	if damages == nil or skill == nil or status == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -245,13 +287,56 @@ function apply_prob_status_on_skill_hit(me, skill, damages, status)
 		if mob and hits and total_damage_to_mob(hits) > 0 then
 			if math.random(1, 100) <= prop then
 				local value = 1
-				if status == MobStatus.Poison then
+				if status == MobBuff.Poison then
 					local multiplier = compute_poison_tick_multiplier(me, skill)
 					value = compute_poison_tick_damage(skill, mob, multiplier)
 				end
-				mob:set_status(status, value, duration_ms, skill, me)
+				mob:buff(status, value, duration_ms, skill, me)
 			end
 		end
+	end
+end
+
+function apply_showdown_on_attack(me, skill, damages)
+	if me == nil or skill == nil or damages == nil then
+		return
+	end
+	local effect = skill:effect()
+	if effect == nil then
+		return
+	end
+	local prop = effect.prop or 0
+	if prop <= 0 then
+		prop = 100
+	end
+	local duration_ms = effect.time or 0
+	if duration_ms <= 0 then
+		return
+	end
+	local raw_x = effect.x
+	if raw_x == nil then
+		raw_x = 0
+	end
+	local val = math.floor(tonumber(raw_x) or 0)
+	if val <= 0 then
+		return
+	end
+	for mob, hits in pairs(damages) do
+		if mob == nil or hits == nil then
+			goto continue_showdown
+		end
+		if total_damage_to_mob(hits) <= 0 then
+			goto continue_showdown
+		end
+		if math.random(1, 100) > prop then
+			goto continue_showdown
+		end
+		mob:buff({
+			[MobBuff.Showdown] = val,
+			[MobBuff.Mdef] = val,
+			[MobBuff.Wdef] = val,
+		}, duration_ms, skill, me)
+		::continue_showdown::
 	end
 end
 
@@ -315,11 +400,7 @@ function handle_combo_attack(me, targets, skill)
         ceffect_skill = adv
     end
 
-    local ceffect = nil
-    local wz = ceffect_skill:wz()
-    if wz ~= nil and wz.effects ~= nil then
-        ceffect = wz.effects[ceffect_skill:level()]
-    end
+    local ceffect = ceffect_skill:effect()
     if ceffect == nil then
         return
     end
@@ -415,14 +496,14 @@ function handle_ice_charge_freeze(me, damages)
         return
     end
     local wz = buff:wz()
-    if wz == nil or wz.effects == nil then
+    if wz == nil then
         return
     end
     local sid = wz.id
     if sid ~= Skill.IceChargeSword and sid ~= Skill.BlizzardChargeBw then
         return
     end
-    local effect = wz.effects[buff:level()]
+    local effect = buff:effect()
     if effect == nil then
         return
     end
@@ -433,7 +514,7 @@ function handle_ice_charge_freeze(me, damages)
     end
     for mob, hits in pairs(damages) do
         if mob and hits and total_damage_to_mob(hits) > 0 then
-            mob:set_status(MobStatus.Freeze, 1, duration_ms, buff)
+            mob:buff(MobBuff.Freeze, 1, duration_ms, buff)
         end
     end
 end
@@ -454,11 +535,7 @@ function handle_mortal_blow(me, damages)
 	if skill == nil then
 		return
 	end
-	local wz = skill:wz()
-	if wz == nil then
-		return
-	end
-	local effect = wz.effects[skill:level()]
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -480,7 +557,7 @@ function roll_venom_tick_damage(me, venom_skill)
 	if me == nil or venom_skill == nil then
 		return 1
 	end
-	local effect = get_skill_effect(venom_skill)
+	local effect = venom_skill:effect()
 	if effect == nil then
 		return 1
 	end
@@ -508,7 +585,7 @@ function roll_venom_tick_damage(me, venom_skill)
 	return v44
 end
 
--- Passive venom: WZ prop, stack 1..3, tick = sum of rolls capped 30000, immediate hit, set_status with stack (Lua drives value like poison mist).
+-- Passive venom: WZ prop, stack 1..3, tick = sum of rolls capped 30000, immediate hit, buff with stack (Lua drives value like poison mist).
 function apply_venom(me, damages, passive_skill_id)
 	if me == nil or damages == nil or passive_skill_id == nil then
 		return
@@ -521,7 +598,7 @@ function apply_venom(me, damages, passive_skill_id)
 	if venom_level == nil or venom_level <= 0 then
 		return
 	end
-	local effect = get_skill_effect(venom_skill)
+	local effect = venom_skill:effect()
 	if effect == nil then
 		return
 	end
@@ -543,13 +620,13 @@ function apply_venom(me, damages, passive_skill_id)
 		if math.random(0, 99) >= chance then
 			goto venom_passive_continue
 		end
-		local old_stack = math.floor(tonumber(mob:status_stack(MobStatus.Venom)) or 0)
+		local old_stack = math.floor(tonumber(mob:buff_stack(MobBuff.Venom)) or 0)
 		if old_stack >= 3 then
 			goto venom_passive_continue
 		end
 		local old_tick = 0
-		if mob:has_status(MobStatus.Venom) then
-			old_tick = math.floor(tonumber(mob:status_value(MobStatus.Venom)) or 0)
+		if mob:has_buff(MobBuff.Venom) then
+			old_tick = math.floor(tonumber(mob:buff_value(MobBuff.Venom)) or 0)
 		end
 		local roll = roll_venom_tick_damage(me, venom_skill)
 		local new_tick = old_tick + roll
@@ -560,7 +637,7 @@ function apply_venom(me, damages, passive_skill_id)
 			new_tick = 30000
 		end
 		local new_stack = old_stack + 1
-		mob:set_status(MobStatus.Venom, new_tick, duration_ms, venom_skill, me, new_stack)
+		mob:buff(MobBuff.Venom, new_tick, duration_ms, venom_skill, me, new_stack)
 		::venom_passive_continue::
 	end
 end

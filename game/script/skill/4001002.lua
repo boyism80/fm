@@ -17,7 +17,7 @@ function on_attack_4001002(me, skill, damages)
 	if me == nil or skill == nil or damages == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -30,7 +30,7 @@ function on_attack_4001002(me, skill, damages)
 	local duration_ms = duration_sec * 1000
 	for mob, hits in pairs(damages) do
 		if mob ~= nil and hits_have_damage(hits) then
-			mob:set_status({ [MobStatus.Watk] = watk, [MobStatus.Wdef] = wdef }, duration_ms, skill, me)
+			mob:buff({ [MobBuff.Watk] = watk, [MobBuff.Wdef] = wdef }, duration_ms, skill, me)
 		end
 	end
 end

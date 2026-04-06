@@ -31,8 +31,8 @@ type MapListener interface {
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
 	OnMobMoved(mapInstance *Map, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
 	OnAttack(mapInstance *Map, character *Character, attackInfo dto.AttackInfo, skillLevel uint8)
-	OnMobMobStatusApplied(mapInstance *Map, mob *Mob, debuff constant.MobStatus, value int32, skillID uint32, durationMs int64)
-	OnMobMobStatusCancelled(mapInstance *Map, mob *Mob, debuff constant.MobStatus)
+	OnMobMobBuffApplied(mapInstance *Map, mob *Mob, buff constant.MobBuffFlag, value int32, skillID uint32, durationMs int64)
+	OnMobMobBuffCancelled(mapInstance *Map, mob *Mob, buff constant.MobBuffFlag)
 	OnMistSpawned(mapInstance *Map, mist *Mist)
 	OnMistRemoved(mapInstance *Map, mist *Mist)
 	OnDoorSpawned(mapInstance *Map, door *Door)
@@ -307,6 +307,9 @@ func (m *Map) AddSummon(s *Summon) {
 	if s == nil {
 		return
 	}
+	if s.Owner == nil {
+		panic("AddSummon: summon.Owner must not be nil")
+	}
 	if s.Map == m && m.objects[constant.ObjectTypeSummon] != nil {
 		if existing, ok := m.objects[constant.ObjectTypeSummon][s.OID]; ok && existing == s {
 			return
@@ -327,9 +330,7 @@ func (m *Map) AddSummon(s *Summon) {
 	}
 	m.objects[constant.ObjectTypeSummon][s.OID] = s
 
-	if s.Owner != nil && s.Owner.Listener != nil {
-		s.Owner.Listener.OnSummonSpawn(s.Owner, s)
-	}
+	s.Owner.Listener.OnSummonSpawn(s.Owner, s)
 }
 
 func (m *Map) RemoveSummon(oid uint32, animated bool) {
@@ -348,10 +349,7 @@ func (m *Map) RemoveSummon(oid uint32, animated bool) {
 		return
 	}
 
-	owner := s.Owner
-	if owner != nil && owner.Listener != nil {
-		owner.Listener.OnSummonRemove(owner, s, animated)
-	}
+	s.Owner.Listener.OnSummonRemove(s.Owner, s, animated)
 
 	delete(m.objects[constant.ObjectTypeSummon], oid)
 	m.releaseOID(oid)
@@ -621,6 +619,8 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		Foothold: footholdID,
 		Wz:       mobSpec,
 		Spawn:    mobSpawn,
+		ExpRate:  100,
+		DropRate: 100,
 	}
 
 	if m.objects[constant.ObjectTypeMob] == nil {
@@ -646,7 +646,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	mob := m.objects[constant.ObjectTypeMob][mobID].(*Mob)
 	delete(m.objects[constant.ObjectTypeMob], mobID)
 
-	mob.ClearAllMobStatusTimers()
+	mob.ClearAllMobBuffTimers()
 	if mob.Spawn != nil {
 		mob.Spawn.Spawned = false
 	}

@@ -58,8 +58,8 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 			after, _ = item.(entity.Equipment)
 		}
 		if err := character.Equip(req.Source); err != nil {
-			if errors.Is(err, entity.ErrInventoryFull) && character.Listener != nil {
-				character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
+			if errors.Is(err, entity.ErrInventoryFull) {
+				character.Listener.OnItemGainFailed(character, constant.ITEM_GAIN_FAILED_TYPE_FULL)
 			}
 			return nil
 		}
@@ -81,10 +81,10 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 
 	removed := (item.Reduce(count) == 0)
 	if removed {
-		character.Listener.OnRemoveInventorySlot(invenType, slot)
+		character.Listener.OnRemoveInventorySlot(character, invenType, slot)
 		delete(character.Inventory[invenType].Items, slot)
 	} else {
-		character.Listener.OnUpdateInventorySlot(invenType, slot, item)
+		character.Listener.OnUpdateInventorySlot(character, invenType, slot, item)
 	}
 
 	spawned := item.Clone(count)
@@ -117,7 +117,7 @@ func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *
 	if !ok {
 		inven.Items[destSlot] = inven.Items[sourceSlot]
 		delete(inven.Items, sourceSlot)
-		character.Listener.OnSwapInventorySlot(invenType, sourceSlot, destSlot, 0)
+		character.Listener.OnSwapInventorySlot(character, invenType, sourceSlot, destSlot, 0)
 		return
 	}
 
@@ -125,17 +125,17 @@ func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *
 	specDst := dst.GetModel()
 	if specSrc != specDst {
 		inven.Items[sourceSlot], inven.Items[destSlot] = inven.Items[destSlot], inven.Items[sourceSlot]
-		character.Listener.OnSwapInventorySlot(invenType, sourceSlot, destSlot, 0)
+		character.Listener.OnSwapInventorySlot(character, invenType, sourceSlot, destSlot, 0)
 		return
 	}
 
 	limit := min(src.GetCount(), specSrc.GetCapacity()-dst.GetCount())
 	dst.Increase(limit)
 	if src.Reduce(limit) == 0 {
-		character.Listener.OnFullMergeInventorySlot(invenType, sourceSlot, destSlot, dst.GetCount())
+		character.Listener.OnFullMergeInventorySlot(character, invenType, sourceSlot, destSlot, dst.GetCount())
 		delete(inven.Items, sourceSlot)
 	} else {
-		character.Listener.OnPartialMergeInventorySlot(invenType, sourceSlot, destSlot, src.GetCount(), dst.GetCount())
+		character.Listener.OnPartialMergeInventorySlot(character, invenType, sourceSlot, destSlot, src.GetCount(), dst.GetCount())
 	}
 }
 

@@ -12,17 +12,9 @@ import (
 
 type CharacterListenerImpl struct {
 	gs *GameServer
-	ch *entity.Character
 }
 
-func NewGameCharacterListener(gs *GameServer, ch *entity.Character) *CharacterListenerImpl {
-	return &CharacterListenerImpl{
-		gs: gs,
-		ch: ch,
-	}
-}
-
-func (l *CharacterListenerImpl) OnDialog(npc uint32, message string, prev bool, next bool) {
+func (l *CharacterListenerImpl) OnDialog(ch *entity.Character, npc uint32, message string, prev bool, next bool) {
 	dialogPacket := &response.Dialog{
 		NPC:  npc,
 		Type: constant.DIALOG_TYPE_DEFAULT,
@@ -30,90 +22,90 @@ func (l *CharacterListenerImpl) OnDialog(npc uint32, message string, prev bool, 
 		Prev: prev,
 		Next: next,
 	}
-	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogYesNo(npc uint32, message string, prev bool, next bool) {
+func (l *CharacterListenerImpl) OnDialogYesNo(ch *entity.Character, npc uint32, message string, prev bool, next bool) {
 	dialogPacket := &response.DialogYesNo{
 		NPC:  npc,
 		Text: message,
 		Prev: prev,
 		Next: next,
 	}
-	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogAccept(npc uint32, message string, enableEscape bool) {
+func (l *CharacterListenerImpl) OnDialogAccept(ch *entity.Character, npc uint32, message string, enableEscape bool) {
 	dialogPacket := &response.DialogAccept{
 		NPC:          npc,
 		Text:         message,
 		EnableEscape: enableEscape,
 	}
-	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogList(npc uint32, message string, selections []string) {
+func (l *CharacterListenerImpl) OnDialogList(ch *entity.Character, npc uint32, message string, selections []string) {
 	dialogPacket := &response.DialogList{
 		NPC:        npc,
 		Text:       message,
 		Selections: selections,
 	}
-	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnDialogInput(npc uint32, message string) {
+func (l *CharacterListenerImpl) OnDialogInput(ch *entity.Character, npc uint32, message string) {
 	dialogPacket := &response.DialogInput{
 		NPC:  npc,
 		Text: message,
 	}
-	l.ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
+	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnChat(message string, highlight bool, dontRecordHistory bool) {
+func (l *CharacterListenerImpl) OnChat(ch *entity.Character, message string, highlight bool, dontRecordHistory bool) {
 	chatPacket := &response.NormalChat{
-		CharacterId:       l.ch.GetID(),
+		CharacterId:       ch.GetID(),
 		Message:           message,
 		Highlight:         highlight,
 		DontRecordHistory: dontRecordHistory,
 	}
 
-	mapInstance := l.ch.GetMap()
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
 	mapInstance.Broadcast(chatPacket, &entity.BroadcastOption{
-		Reference:       l.ch,
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
-func (l *CharacterListenerImpl) OnMesoChanged(meso int32) {
-	l.ch.Send(&response.UpdateStats{
+func (l *CharacterListenerImpl) OnMesoChanged(ch *entity.Character, meso int32) {
+	ch.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
 			constant.STAT_MESO: meso,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnMessage(messageType constant.ServerMessageType, message string) {
+func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType constant.ServerMessageType, message string) {
 	noticePacket := &response.Notice{
 		Message: message,
 		Type:    messageType,
 	}
-	l.ch.Send(noticePacket, types.SEND_POLICY_ENCRYPT)
+	ch.Send(noticePacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnExpGain(exp uint32) {
+func (l *CharacterListenerImpl) OnExpGain(ch *entity.Character, exp uint32) {
 	expPacket := &response.GainExp{
 		Gain:  exp,
 		White: false,
 	}
-	l.ch.Send(expPacket, types.SEND_POLICY_ENCRYPT)
+	ch.Send(expPacket, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnControlMoveMob(mob *entity.Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
-	l.ch.Send(&response.ControlMoveMob{
+func (l *CharacterListenerImpl) OnControlMoveMob(ch *entity.Character, mob *entity.Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8) {
+	ch.Send(&response.ControlMoveMob{
 		OID:          mob.OID,
 		MoveId:       moveId,
 		EnabledSkill: enabledSkill,
@@ -123,35 +115,35 @@ func (l *CharacterListenerImpl) OnControlMoveMob(mob *entity.Mob, moveId uint16,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowMobHp(mob *entity.Mob, percentage uint8) {
-	l.ch.Send(&response.ShowMobHp{
+func (l *CharacterListenerImpl) OnShowMobHp(ch *entity.Character, mob *entity.Mob, percentage uint8) {
+	ch.Send(&response.ShowMobHp{
 		OID:        mob.OID,
 		Percentage: percentage,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnUnlockAction() {
-	l.ch.Send(&response.UpdateStats{
+func (l *CharacterListenerImpl) OnUnlockAction(ch *entity.Character) {
+	ch.Send(&response.UpdateStats{
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnItemGainFailed(mode constant.ItemGainFailedType) {
-	l.ch.Send(&response.ItemGainFailed{
+func (l *CharacterListenerImpl) OnItemGainFailed(ch *entity.Character, mode constant.ItemGainFailedType) {
+	ch.Send(&response.ItemGainFailed{
 		Mode: mode,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnInventorySlotUpdated(inventoryType constant.InventoryType, slot int16, item entity.Item) {
+func (l *CharacterListenerImpl) OnInventorySlotUpdated(ch *entity.Character, inventoryType constant.InventoryType, slot int16, item entity.Item) {
 	itemDTO := entity.ItemToDTO(item)
-	l.ch.Send(&response.UpdateInventorySlot{
+	ch.Send(&response.UpdateInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 		Item:          itemDTO,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnInventorySlotAdded(inventoryType constant.InventoryType, slot int16, item entity.Item) {
+func (l *CharacterListenerImpl) OnInventorySlotAdded(ch *entity.Character, inventoryType constant.InventoryType, slot int16, item entity.Item) {
 	itemDTO := entity.ItemToDTO(item)
 
 	// Determine FromDrop value based on item capacity
@@ -164,7 +156,7 @@ func (l *CharacterListenerImpl) OnInventorySlotAdded(inventoryType constant.Inve
 		}
 	}
 
-	l.ch.Send(&response.AddInventorySlot{
+	ch.Send(&response.AddInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 		Item:          itemDTO,
@@ -172,35 +164,35 @@ func (l *CharacterListenerImpl) OnInventorySlotAdded(inventoryType constant.Inve
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowItemGain(itemId uint32, count uint32, mode constant.ShowItemGainType) {
-	l.ch.Send(&response.ShowItemGain{
+func (l *CharacterListenerImpl) OnShowItemGain(ch *entity.Character, itemId uint32, count uint32, mode constant.ShowItemGainType) {
+	ch.Send(&response.ShowItemGain{
 		ItemId: itemId,
 		Count:  count,
 		Mode:   mode,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowMesoGain(count int32, mode constant.ShowMesoGainType) {
-	l.ch.Send(&response.ShowMesoGain{
+func (l *CharacterListenerImpl) OnShowMesoGain(ch *entity.Character, count int32, mode constant.ShowMesoGainType) {
+	ch.Send(&response.ShowMesoGain{
 		Count: count,
 		Mode:  mode,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnUpdateStats(stats map[constant.Stat]int32, unlock bool) {
-	l.ch.Send(&response.UpdateStats{
+func (l *CharacterListenerImpl) OnUpdateStats(ch *entity.Character, stats map[constant.Stat]int32, unlock bool) {
+	ch.Send(&response.UpdateStats{
 		Stats:        stats,
 		UnlockAction: unlock,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnShowBuffEffect(effectID uint8, skillID uint32, skillLevel uint8, additional *uint8) {
-	mapInstance := l.ch.GetMap()
+func (l *CharacterListenerImpl) OnShowBuffEffect(ch *entity.Character, effectID uint8, skillID uint32, skillLevel uint8, additional *uint8) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
-	l.ch.Send(&response.ShowOwnBuffeffect{
+	ch.Send(&response.ShowOwnBuffeffect{
 		EffectID:   effectID,
 		SkillID:    skillID,
 		SkillLevel: skillLevel,
@@ -208,17 +200,17 @@ func (l *CharacterListenerImpl) OnShowBuffEffect(effectID uint8, skillID uint32,
 	}, types.SEND_POLICY_ENCRYPT)
 
 	mapInstance.Broadcast(&response.ShowBuffeffect{
-		CharacterID: l.ch.GetID(),
+		CharacterID: ch.GetID(),
 		EffectID:    effectID,
 		SkillID:     skillID,
 		SkillLevel:  skillLevel,
 		Additional:  additional,
 	}, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{l.ch.GetID()},
+		ExceptPlayerIDs: []uint32{ch.GetID()},
 	})
 }
 
-func (l *CharacterListenerImpl) OnMobMoved(mob *entity.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
+func (l *CharacterListenerImpl) OnMobMoved(ch *entity.Character, mob *entity.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	mapInstance := mob.GetMap()
 	if mapInstance == nil {
 		return
@@ -249,13 +241,13 @@ func (l *CharacterListenerImpl) OnMobMoved(mob *entity.Mob, isAggroed bool, cent
 	mapInstance.Broadcast(movePacket, broadcastOption)
 }
 
-func (l *CharacterListenerImpl) OnPlayerMove(character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
-	mapInstance := character.GetMap()
+func (l *CharacterListenerImpl) OnPlayerMove(ch *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
-	characterDTO := character.ToDTO()
+	characterDTO := ch.ToDTO()
 
 	movePacket := &response.Move{
 		Character:  characterDTO,
@@ -264,39 +256,39 @@ func (l *CharacterListenerImpl) OnPlayerMove(character *entity.Character, startP
 	}
 
 	mapInstance.Broadcast(movePacket, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{character.GetID()},
-		Reference:       character,
+		ExceptPlayerIDs: []uint32{ch.GetID()},
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
-func (l *CharacterListenerImpl) OnAttack(character *entity.Character, attackInfo dto.AttackInfo, skillLevel uint8) {
-	mapInstance := character.GetMap()
+func (l *CharacterListenerImpl) OnAttack(ch *entity.Character, attackInfo dto.AttackInfo, skillLevel uint8) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
 	attackPacket := &response.Attack{
 		AttackInfo:  attackInfo,
-		CharacterId: character.GetID(),
+		CharacterId: ch.GetID(),
 		SkillLevel:  skillLevel,
 	}
 
 	mapInstance.Broadcast(attackPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{character.GetID()},
-		Reference:       character,
+		ExceptPlayerIDs: []uint32{ch.GetID()},
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
-func (l *CharacterListenerImpl) OnEndSortInventory(inventoryType constant.InventoryType) {
-	l.ch.Send(&response.EndSortInventory{
+func (l *CharacterListenerImpl) OnEndSortInventory(ch *entity.Character, inventoryType constant.InventoryType) {
+	ch.Send(&response.EndSortInventory{
 		InventoryType: inventoryType,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnSwapInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8) {
-	l.ch.Send(&response.SwapInventorySlot{
+func (l *CharacterListenerImpl) OnSwapInventorySlot(ch *entity.Character, inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8) {
+	ch.Send(&response.SwapInventorySlot{
 		InventoryType:   inventoryType,
 		Source:          source,
 		Dest:            dest,
@@ -304,24 +296,24 @@ func (l *CharacterListenerImpl) OnSwapInventorySlot(inventoryType constant.Inven
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnRemoveInventorySlot(inventoryType constant.InventoryType, slot int16) {
-	l.ch.Send(&response.RemoveInventorySlot{
+func (l *CharacterListenerImpl) OnRemoveInventorySlot(ch *entity.Character, inventoryType constant.InventoryType, slot int16) {
+	ch.Send(&response.RemoveInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnUpdateInventorySlot(inventoryType constant.InventoryType, slot int16, item entity.Item) {
+func (l *CharacterListenerImpl) OnUpdateInventorySlot(ch *entity.Character, inventoryType constant.InventoryType, slot int16, item entity.Item) {
 	itemDTO := entity.ItemToDTO(item)
-	l.ch.Send(&response.UpdateInventorySlot{
+	ch.Send(&response.UpdateInventorySlot{
 		InventoryType: inventoryType,
 		Slot:          slot,
 		Item:          itemDTO,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnFullMergeInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, count uint16) {
-	l.ch.Send(&response.FullMergeInventorySlot{
+func (l *CharacterListenerImpl) OnFullMergeInventorySlot(ch *entity.Character, inventoryType constant.InventoryType, source int16, dest int16, count uint16) {
+	ch.Send(&response.FullMergeInventorySlot{
 		InventoryType: inventoryType,
 		Source:        source,
 		Dest:          dest,
@@ -329,8 +321,8 @@ func (l *CharacterListenerImpl) OnFullMergeInventorySlot(inventoryType constant.
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16) {
-	l.ch.Send(&response.PartialMergeInventorySlot{
+func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(ch *entity.Character, inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16) {
+	ch.Send(&response.PartialMergeInventorySlot{
 		InventoryType: inventoryType,
 		Source:        source,
 		Dest:          dest,
@@ -339,44 +331,44 @@ func (l *CharacterListenerImpl) OnPartialMergeInventorySlot(inventoryType consta
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnUpdateCharacterLook(character *entity.Character) {
-	mapInstance := character.GetMap()
+func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *entity.Character) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
-	characterDTO := character.ToDTO()
+	characterDTO := ch.ToDTO()
 
 	lookPacket := &response.UpdateCharacterLook{
 		Character: characterDTO,
 	}
 
 	mapInstance.Broadcast(lookPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{character.GetID()},
-		Reference:       character,
+		ExceptPlayerIDs: []uint32{ch.GetID()},
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
-func (l *CharacterListenerImpl) OnNpcAction(bytes []byte) {
-	l.ch.Send(&response.NpcAction{
+func (l *CharacterListenerImpl) OnNpcAction(ch *entity.Character, bytes []byte) {
+	ch.Send(&response.NpcAction{
 		Bytes: bytes,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnClassChange(oldClass uint16, newClass uint16) {
+func (l *CharacterListenerImpl) OnClassChange(ch *entity.Character, oldClass uint16, newClass uint16) {
 	stats := map[constant.Stat]int32{
 		constant.STAT_CLASS:        int32(newClass),
-		constant.STAT_AVAILABLE_SP: int32(l.ch.SkillPoint),
+		constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
 	}
 
-	l.ch.Send(&response.UpdateStats{
+	ch.Send(&response.UpdateStats{
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32) {
+func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32) {
 	if len(values) == 0 {
 		return
 	}
@@ -386,43 +378,43 @@ func (l *CharacterListenerImpl) OnBuffAdded(character *entity.Character, buffID 
 		dtoBuffs = append(dtoBuffs, dtoBuff)
 	}
 
-	character.Send(&response.UpdateBuff{
+	ch.Send(&response.UpdateBuff{
 		BuffID:   buffID,
 		Duration: remainingDuration,
 		Buffs:    dtoBuffs,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := character.GetMap()
+	mapInstance := ch.GetMap()
 	if mapInstance != nil {
 		mapInstance.Broadcast(&response.UpdateRemoteBuff{
-			CharacterID: int32(character.GetID()),
+			CharacterID: int32(ch.GetID()),
 			Buffs:       dtoBuffs,
 		}, &entity.BroadcastOption{
-			ExceptPlayerIDs: []uint32{character.GetID()},
-			Reference:       character,
+			ExceptPlayerIDs: []uint32{ch.GetID()},
+			Reference:       ch,
 			RecipientFilter: entity.BroadcastVisibleByReference,
 		})
 	}
 }
 
-func (l *CharacterListenerImpl) OnBuffRemoved(character *entity.Character, flags []constant.BuffFlag) {
-	character.Send(&response.CancelBuff{Buffs: flags}, types.SEND_POLICY_ENCRYPT)
+func (l *CharacterListenerImpl) OnBuffRemoved(ch *entity.Character, flags []constant.BuffFlag) {
+	ch.Send(&response.CancelBuff{Buffs: flags}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := character.GetMap()
+	mapInstance := ch.GetMap()
 	if mapInstance != nil {
 		mapInstance.Broadcast(&response.CancelRemoteBuff{
-			CharacterID: int32(character.GetID()),
+			CharacterID: int32(ch.GetID()),
 			Buffs:       flags,
 		}, &entity.BroadcastOption{
-			ExceptPlayerIDs: []uint32{character.GetID()},
-			Reference:       character,
+			ExceptPlayerIDs: []uint32{ch.GetID()},
+			Reference:       ch,
 			RecipientFilter: entity.BroadcastVisibleByReference,
 		})
 	}
 }
 
-func (l *CharacterListenerImpl) OnDebuffAdded(character *entity.Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32) {
-	character.Send(&response.GiveDebuff{
+func (l *CharacterListenerImpl) OnDebuffAdded(ch *entity.Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32) {
+	ch.Send(&response.GiveDebuff{
 		Disease:    disease,
 		X:          x,
 		SkillID:    skillID,
@@ -430,81 +422,99 @@ func (l *CharacterListenerImpl) OnDebuffAdded(character *entity.Character, disea
 		DurationMs: durationMs,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := character.GetMap()
+	mapInstance := ch.GetMap()
 	if mapInstance != nil {
 		mapInstance.Broadcast(&response.GiveRemoteDebuff{
-			CharacterID: int32(character.GetID()),
+			CharacterID: int32(ch.GetID()),
 			Disease:     disease,
 			X:           x,
 			SkillID:     skillID,
 			SkillLevel:  skillLevel,
 		}, &entity.BroadcastOption{
-			ExceptPlayerIDs: []uint32{character.GetID()},
-			Reference:       character,
+			ExceptPlayerIDs: []uint32{ch.GetID()},
+			Reference:       ch,
 			RecipientFilter: entity.BroadcastVisibleByReference,
 		})
 	}
 }
 
-func (l *CharacterListenerImpl) OnDebuffRemoved(character *entity.Character, flags []constant.DebuffFlag) {
-	character.Send(&response.RemoveDebuff{Diseases: flags}, types.SEND_POLICY_ENCRYPT)
+func (l *CharacterListenerImpl) OnDebuffRemoved(ch *entity.Character, flags []constant.DebuffFlag) {
+	ch.Send(&response.RemoveDebuff{Diseases: flags}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := character.GetMap()
+	mapInstance := ch.GetMap()
 	if mapInstance != nil {
 		mapInstance.Broadcast(&response.RemoveRemoteDebuff{
-			CharacterID: int32(character.GetID()),
+			CharacterID: int32(ch.GetID()),
 			Diseases:    flags,
 		}, &entity.BroadcastOption{
-			ExceptPlayerIDs: []uint32{character.GetID()},
-			Reference:       character,
+			ExceptPlayerIDs: []uint32{ch.GetID()},
+			Reference:       ch,
 			RecipientFilter: entity.BroadcastVisibleByReference,
 		})
 	}
 }
 
-func (l *CharacterListenerImpl) OnSkillCooldown(skillID uint32, remainingSec uint16) {
-	l.ch.Send(&response.SkillCooldown{
+func (l *CharacterListenerImpl) OnSkillPassiveHook(ch *entity.Character, skillID uint32, hook string) {
+	if ch == nil {
+		return
+	}
+	CallPassiveSkillHook(nil, ch, skillID, hook)
+}
+
+func (l *CharacterListenerImpl) OnUpdateSkill(ch *entity.Character, skillID uint32, level int32, masterLevel int32) {
+	if ch == nil {
+		return
+	}
+	ch.Send(&response.UpdateSkills{
+		SkillID:     skillID,
+		Level:       level,
+		MasterLevel: masterLevel,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnSkillCooldown(ch *entity.Character, skillID uint32, remainingSec uint16) {
+	ch.Send(&response.SkillCooldown{
 		SkillID:      skillID,
 		RemainingSec: uint32(remainingSec),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnHiddenChanged(hidden bool) {
-	l.ch.Send(&response.SuperHide{Hidden: hidden}, types.SEND_POLICY_ENCRYPT)
+func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden bool) {
+	ch.Send(&response.SuperHide{Hidden: hidden}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := l.ch.GetMap()
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
 	// Only players with lower role receive Leave/Spawn; same-or-higher role always see the character.
 	if hidden {
-		mapInstance.Broadcast(&response.LeavePlayer{ID: l.ch.GetID()}, &entity.BroadcastOption{
-			Reference:       l.ch,
+		mapInstance.Broadcast(&response.LeavePlayer{ID: ch.GetID()}, &entity.BroadcastOption{
+			Reference:       ch,
 			RecipientFilter: entity.BroadcastRoleBelowReference,
 		})
 	} else {
 		mapInstance.Broadcast(&response.SpawnPlayer{
-			Character:       l.ch.ToDTO(),
+			Character:       ch.ToDTO(),
 			BuffStates:      [4]uint32{},
-			Diseases:        l.ch.GetDiseaseMask(),
-			CrushRings:      entity.RingsToDTO(l.ch.Rings.Left),
-			FriendshipRings: entity.RingsToDTO(l.ch.Rings.Mid),
-			MarriageRings:   entity.RingsToDTO(l.ch.Rings.Right),
+			Diseases:        ch.GetDiseaseMask(),
+			CrushRings:      entity.RingsToDTO(ch.Rings.Left),
+			FriendshipRings: entity.RingsToDTO(ch.Rings.Mid),
+			MarriageRings:   entity.RingsToDTO(ch.Rings.Right),
 		}, &entity.BroadcastOption{
-			Reference:       l.ch,
+			Reference:       ch,
 			RecipientFilter: entity.BroadcastRoleBelowReference,
 		})
 	}
 }
 
-func (l *CharacterListenerImpl) OnSummonSpawn(character *entity.Character, summon *entity.Summon) {
-	mapInstance := character.GetMap()
+func (l *CharacterListenerImpl) OnSummonSpawn(ch *entity.Character, summon *entity.Summon) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 	packet := &response.SpawnSummon{
-		OwnerID:      character.GetID(),
+		OwnerID:      ch.GetID(),
 		OID:          summon.OID,
 		SkillID:      summon.SkillID,
 		SkillLevel:   summon.SkillLevel,
@@ -514,47 +524,47 @@ func (l *CharacterListenerImpl) OnSummonSpawn(character *entity.Character, summo
 		Animated:     true,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       character,
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
-func (l *CharacterListenerImpl) OnSummonRemove(character *entity.Character, summon *entity.Summon, animated bool) {
-	mapInstance := character.GetMap()
+func (l *CharacterListenerImpl) OnSummonRemove(ch *entity.Character, summon *entity.Summon, animated bool) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 	packet := &response.RemoveSummon{
-		OwnerID:  character.GetID(),
+		OwnerID:  ch.GetID(),
 		OID:      summon.OID,
 		Animated: animated,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       character,
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
-func (l *CharacterListenerImpl) OnSummonMove(character *entity.Character, summon *entity.Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
-	mapInstance := character.GetMap()
+func (l *CharacterListenerImpl) OnSummonMove(ch *entity.Character, summon *entity.Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 	packet := &response.MoveSummon{
-		CharacterID: character.GetID(),
+		CharacterID: ch.GetID(),
 		OID:         summon.OID,
 		StartPoint:  startPoint,
 		Fragments:   movements,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       character,
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
-		ExceptPlayerIDs: []uint32{character.GetID()},
+		ExceptPlayerIDs: []uint32{ch.GetID()},
 	})
 }
 
-func (l *CharacterListenerImpl) OnSummonAttack(character *entity.Character, summon *entity.Summon, animation uint8, targets []entity.SummonAttackTarget) {
-	mapInstance := character.GetMap()
+func (l *CharacterListenerImpl) OnSummonAttack(ch *entity.Character, summon *entity.Summon, animation uint8, targets []entity.SummonAttackTarget) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
@@ -566,47 +576,47 @@ func (l *CharacterListenerImpl) OnSummonAttack(character *entity.Character, summ
 		}
 	}
 	packet := &response.SummonAttack{
-		CharacterID:   character.GetID(),
+		CharacterID:   ch.GetID(),
 		SummonSkillID: uint32(summon.SkillID),
 		Animation:     animation,
 		Targets:       respTargets,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       character,
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
-func (l *CharacterListenerImpl) OnSummonSkill(character *entity.Character, summon *entity.Summon, newStance uint8) {
-	mapInstance := character.GetMap()
+func (l *CharacterListenerImpl) OnSummonSkill(ch *entity.Character, summon *entity.Summon, newStance uint8) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 	packet := &response.SummonSkill{
-		CharacterID: character.GetID(),
+		CharacterID: ch.GetID(),
 		SummonOID:   summon.OID,
 		NewStance:   newStance,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       character,
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }
 
-func (l *CharacterListenerImpl) OnSummonDamaged(character *entity.Character, summon *entity.Summon, unknown uint8, damage uint32, monsterIdFrom uint32) {
-	mapInstance := character.GetMap()
+func (l *CharacterListenerImpl) OnSummonDamaged(ch *entity.Character, summon *entity.Summon, unknown uint8, damage uint32, monsterIdFrom uint32) {
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 	packet := &response.DamageSummon{
-		CharacterID:   character.GetID(),
+		CharacterID:   ch.GetID(),
 		SummonSkillID: uint32(summon.SkillID),
 		Unknown:       unknown,
 		Damage:        damage,
 		MonsterIDFrom: monsterIdFrom,
 	}
 	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       character,
+		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
 	})
 }

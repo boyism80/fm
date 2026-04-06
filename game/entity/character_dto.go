@@ -134,30 +134,27 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		}
 	}
 
-	charDTO.Skills = make([]*dto.Skill, 0, len(ch.Skills))
-	for skillID, entry := range ch.Skills {
-		if entry == nil {
-			continue
-		}
+	charDTO.Skills = make([]*dto.Skill, 0)
+	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
 		skillDTO := &dto.Skill{
 			ID:         skillID,
-			SkillLevel: uint32(entry.SkillLevel),
+			SkillLevel: uint32(entry.Level()),
 		}
-		if entry.Wz != nil && entry.Wz.MasterLevel > 0 {
+		if entry.Wz.MasterLevel > 0 {
 			skillDTO.MasterLevel = uint32(entry.MasterLevel)
 		}
 		charDTO.Skills = append(charDTO.Skills, skillDTO)
-	}
+	})
 
 	charDTO.Cooldowns = make(map[uint32]uint16)
-	for skillID, entry := range ch.Skills {
-		if entry == nil || !entry.IsCooling() {
-			continue
+	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
+		if !entry.IsCooling() {
+			return
 		}
 		sec := int(entry.CooldownRemaining().Seconds())
 		sec = min(sec, 65535)
 		charDTO.Cooldowns[skillID] = uint16(sec)
-	}
+	})
 
 	charDTO.QuestsStarted = make([]*dto.QuestStatus, 0)
 	charDTO.QuestsCompleted = make([]*dto.QuestStatus, 0)

@@ -5,7 +5,7 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-type MobStatusEntry struct {
+type MobBuffEntry struct {
 	X       int16
 	SkillID uint32
 }
@@ -21,7 +21,7 @@ type Mob struct {
 	Mp         uint32
 	MaxMp      uint32
 	StatusMask int32
-	Statuses   []MobStatusEntry
+	Statuses   []MobBuffEntry
 }
 
 func (m *Mob) Serialize(writer *stream.StreamWriter) error {

@@ -1,7 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 집중
 
 function on_activated_3121008(me, skill, params)
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end

@@ -43,7 +43,7 @@ func registerSkillConstants(luaState *lua.LState) {
 	luaState.SetGlobal("Skill", skillTable)
 }
 
-func registerBuffFlagAndMobStatus(luaState *lua.LState) {
+func registerBuffFlagAndMobBuff(luaState *lua.LState) {
 	buffFlagTable := luaState.NewTable()
 	for name, bf := range constant.AllBuffFlags() {
 		entry := luaState.NewTable()
@@ -61,13 +61,13 @@ func registerBuffFlagAndMobStatus(luaState *lua.LState) {
 		debuffFlagTable.RawSetString(name, entry)
 	}
 	luaState.SetGlobal("DebuffFlag", debuffFlagTable)
-	mobStatusTable := luaState.NewTable()
-	for name, st := range constant.AllMobStatuses() {
+	mobBuffTable := luaState.NewTable()
+	for name, st := range constant.AllMobBuffs() {
 		entry := luaState.NewTable()
 		entry.RawSetString("mask", lua.LNumber(st))
-		mobStatusTable.RawSetString(name, entry)
+		mobBuffTable.RawSetString(name, entry)
 	}
-	luaState.SetGlobal("MobStatus", mobStatusTable)
+	luaState.SetGlobal("MobBuff", mobBuffTable)
 }
 
 func registerWeaponTypeAndConsumeType(luaState *lua.LState) {
@@ -215,6 +215,8 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Npc, *entity.ObjectCore](luaState)
 	luax.RegisterLuaType[*entity.Map](luaState)
 	luax.RegisterLuaType[*entity.SkillEntry](luaState)
+	luax.RegisterLuaType[*entity.SkillBuff](luaState)
+	luax.RegisterLuaType[*entity.MobSkillBuff](luaState)
 	luax.RegisterLuaType[*entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.EquipmentCore, *entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Weapon, *entity.EquipmentCore](luaState)
@@ -243,7 +245,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Installation, *entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Pet, *entity.ItemCore](luaState)
 
-	registerBuffFlagAndMobStatus(luaState)
+	registerBuffFlagAndMobBuff(luaState)
 	registerWeaponTypeAndConsumeType(luaState)
 	registerSkillConstants(luaState)
 	registerEquipmentPartConstants(luaState)

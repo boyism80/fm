@@ -4,7 +4,7 @@ function on_attack_1311005(me, skill, damages)
 	if damages == nil or skill == nil then
 		return
 	end
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil or effect.x == nil then
 		return
 	end

@@ -52,7 +52,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	}
 
 	if req.AttackInfo.Skill == 0 {
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
@@ -67,37 +67,35 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 
 	if wzSkill == nil {
 		log.Printf("Skill not found: %d", skillID)
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	skillLevel := character.GetTotalSkillLevel(skillID)
 	if skillLevel <= 0 {
 		log.Printf("Character does not have skill %d or skill level is 0", skillID)
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	levelData := wzSkill.GetLevelData(skillLevel)
 	if levelData == nil {
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	if levelData.Cooldown > 0 {
-		skillEntry := character.Skills[skillID]
+		skillEntry := character.Skills.Get(skillID)
 		if skillEntry == nil || skillEntry.IsCooling() {
 			log.Printf("Skill %d is on cooldown", skillID)
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
 	if !CallSkillHook(ctx, character, uint32(skillID), "on_activating") {
-		if character.Listener != nil {
-			character.Listener.OnUpdateStats(nil, true)
-		}
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 

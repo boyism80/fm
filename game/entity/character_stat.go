@@ -10,23 +10,25 @@ type BaseStats struct {
 }
 
 type BonusStats struct {
-	Str            int16
-	Dex            int16
-	Int            int16
-	Luk            int16
-	Watk           int16
-	Matk           int16
-	Wdef           int16
-	Mdef           int16
-	Acc            int16
-	Avoid          int16
-	Speed          int16
-	Jump           int16
-	MaxHpPercent   int16
-	MaxMpPercent   int16
-	MesoMultiplier int16 // 100 = 100%, 0 = use 100
-	DropRate       int16 // 100 = 100%, 0 = use 100; applies to both item and meso drop probability
-	ExpRate        int16 // 100 = 100%, 0 = no bonus; when > 0, exp is multiplied by ExpRate/100 (e.g. 150 = 1.5x for Holy Symbol)
+	Str                int16
+	Dex                int16
+	Int                int16
+	Luk                int16
+	Watk               int16
+	Matk               int16
+	Wdef               int16
+	Mdef               int16
+	Acc                int16
+	Avoid              int16
+	Speed              int16
+	Jump               int16
+	MaxHpPercent       int16
+	MaxMpPercent       int16
+	MesoMultiplier     int16 // 100 = 100%, 0 = use 100
+	DropRate           int16 // 100 = 100%, 0 = use 100; applies to both item and meso drop probability
+	ExpRate            int16 // 100 = 100%, 0 = no bonus; when > 0, exp is multiplied by ExpRate/100 (e.g. 150 = 1.5x for Holy Symbol)
+	PotionHealRate     int16 // 100 = 100%, 0 = use 100; flat HP/MP from consumables only (not % recovery)
+	PotionDurationRate int16 // 100 = 100%, 0 = use 100; item buff duration from consumables (AddItemBuff)
 }
 
 func (ch *Character) GetTotalStr() uint16 {
@@ -85,6 +87,22 @@ func (ch *Character) GetMaxHp() uint32 {
 	return uint32(total)
 }
 
+func (ch *Character) PotionHealMultiplierPercent() int {
+	r := ch.BonusStats.PotionHealRate
+	if r <= 0 {
+		return 100
+	}
+	return int(r)
+}
+
+func (ch *Character) PotionDurationMultiplierPercent() int {
+	r := ch.BonusStats.PotionDurationRate
+	if r <= 0 {
+		return 100
+	}
+	return int(r)
+}
+
 func (ch *Character) GetMaxMp() uint32 {
 	base := int32(ch.BaseMp) + ch.BonusMp
 	total := base + (base*int32(ch.BonusStats.MaxMpPercent))/100
@@ -135,10 +153,6 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 }
 
 func (ch *Character) notifyStatChange(stat constant.Stat) {
-	if ch.Listener == nil {
-		return
-	}
-
 	stats := make(map[constant.Stat]int32)
 	switch stat {
 	case constant.STAT_STR:
@@ -155,7 +169,7 @@ func (ch *Character) notifyStatChange(stat constant.Stat) {
 		stats[constant.STAT_MAX_MP] = int32(ch.GetMaxMp())
 	}
 
-	ch.Listener.OnUpdateStats(stats, false)
+	ch.Listener.OnUpdateStats(ch, stats, false)
 }
 
 func (ch *Character) ConsumeMP(amount uint32) bool {
@@ -163,11 +177,9 @@ func (ch *Character) ConsumeMP(amount uint32) bool {
 		return false
 	}
 	ch.Mp -= amount
-	if ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_MP: int32(ch.Mp),
-		}, false)
-	}
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.STAT_MP: int32(ch.Mp),
+	}, false)
 	return true
 }
 
@@ -176,10 +188,8 @@ func (ch *Character) ConsumeHP(amount uint32) bool {
 		return false
 	}
 	ch.Hp -= amount
-	if ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_HP: int32(ch.Hp),
-		}, false)
-	}
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.STAT_HP: int32(ch.Hp),
+	}, false)
 	return true
 }

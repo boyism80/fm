@@ -23,16 +23,17 @@ import (
 
 // GameServer represents the game server for MapleStory private server
 type GameServer struct {
-	server         *core.Server
-	config         *GameConfig
-	resources      *wz.Resources          // Game data resources
-	maps           map[uint32]*entity.Map // Map instances by map ID
-	mapsMutex      sync.RWMutex
-	packetHandlers *PacketHandlerRegistry
-	context        *GameServerContext
-	actorSystem    *c_actor.ActorSystem
-	actorRegistry  *c_actor.ActorRegistry
-	nilMapActorPID *actor.PID
+	server            *core.Server
+	config            *GameConfig
+	resources         *wz.Resources          // Game data resources
+	maps              map[uint32]*entity.Map // Map instances by map ID
+	mapsMutex         sync.RWMutex
+	packetHandlers    *PacketHandlerRegistry
+	context           *GameServerContext
+	actorSystem       *c_actor.ActorSystem
+	actorRegistry     *c_actor.ActorRegistry
+	nilMapActorPID    *actor.PID
+	characterListener entity.CharacterListener
 }
 
 func (gs *GameServer) GetServer() *core.Server {
@@ -111,6 +112,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		actorSystem:   actorSystem,
 		actorRegistry: actorRegistry,
 	}
+	gs.characterListener = &CharacterListenerImpl{gs: gs}
 
 	// Set gameServer reference in context
 	context.gs = gs

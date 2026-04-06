@@ -1,7 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 슬로우
 
 function on_activated_2201003(me, skill, params)
-	local effect = get_skill_effect(skill)
+	local effect = skill:effect()
 	if effect == nil then
 		return
 	end
@@ -14,6 +14,6 @@ function on_activated_2201003(me, skill, params)
 		return
 	end
 	for_each_mob_in_skill_area(me, skill, function(mob)
-		mob:set_status(MobStatus.Speed, speed_x, duration_ms, skill, me)
+		mob:buff(MobBuff.Speed, speed_x, duration_ms, skill, me)
 	end)
 end

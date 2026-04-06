@@ -107,17 +107,12 @@ function on_poison(mist, mobs)
     if mist == nil or mobs == nil then
         return
     end
-    local skill = mist:skill()
-    if skill == nil then
-        return
-    end
+    local wz = mist:wz()
+    local level = mist:level()
+    local effect = mist:effect()
     local multiplier = mist:poison_tick_multiplier() or 1.0
     if multiplier <= 0 then
         multiplier = 1.0
-    end
-    local effect = get_skill_effect(skill)
-    if effect == nil then
-        return
     end
     local prop = effect.prop or 0
     if prop <= 0 then
@@ -128,11 +123,11 @@ function on_poison(mist, mobs)
         return
     end
     for _, mob in ipairs(mobs) do
-        if mob ~= nil and not mob:has_status(MobStatus.Poison) then
+        if mob ~= nil and not mob:has_buff(MobBuff.Poison) then
             if math.random(1, 100) <= prop then
-                local value = compute_poison_tick_damage(skill, mob, multiplier)
+                local value = compute_poison_tick_damage_wz_level(wz, level, mob, multiplier)
                 if value > 0 then
-                    mob:set_status(MobStatus.Poison, value, duration_ms, skill, mist:owner_id())
+                    mob:buff(MobBuff.Poison, value, duration_ms, mist, mist:causer())
                 end
             end
         end
@@ -156,17 +151,14 @@ function on_blocked(me, attacker)
     if skill == nil then
         return
     end
-    local effect = get_skill_effect(skill)
-    if effect == nil then
-        return
-    end
+    local effect = skill:effect()
     local prop = effect.prop or 0
     local duration_ms = effect.time or 0
     if prop <= 0 or duration_ms <= 0 then
         return
     end
     if math.random(1, 100) <= math.min(100, prop) then
-        attacker:set_status(MobStatus.Stun, 1, duration_ms, skill, me)
+        attacker:buff(MobBuff.Stun, 1, duration_ms, skill, me)
     end
 end
 
@@ -194,14 +186,16 @@ function on_level_up(me, old_level, new_level)
     local bonus_hp = 0
     local bonus_mp = 0
     if me:class_of(Class.Warrior) then
-        local effect = get_skill_effect(me:skill(Skill.ImprovingMaxhpIncrease))
-        if effect ~= nil and effect.x ~= nil and effect.x > 0 then
+        local s = me:skill(Skill.ImprovingMaxhpIncrease)
+        if s ~= nil then
+            local effect = s:effect()
             bonus_hp = bonus_hp + diff * effect.x
         end
     end
     if me:class_of(Class.Magician) then
-        local effect = get_skill_effect(me:skill(Skill.ImprovingMaxMpIncrease))
-        if effect ~= nil and effect.x ~= nil and effect.x > 0 then
+        local s = me:skill(Skill.ImprovingMaxMpIncrease)
+        if s ~= nil then
+            local effect = s:effect()
             bonus_mp = bonus_mp + diff * effect.x
         end
     end
@@ -225,8 +219,9 @@ function on_ap_to_hp(me)
     local base = ap_to_hp_base(me)
     local bonus = 0
     if me:class_of(Class.Warrior) then
-        local effect = get_skill_effect(me:skill(Skill.ImprovingMaxhpIncrease))
-        if effect ~= nil and effect.y ~= nil and effect.y > 0 then
+        local s = me:skill(Skill.ImprovingMaxhpIncrease)
+        if s ~= nil then
+            local effect = s:effect()
             bonus = effect.y
         end
     end
@@ -238,8 +233,9 @@ function on_ap_to_mp(me)
 
     local bonus = 0
     if me:class_of(Class.Magician) then
-        local effect = get_skill_effect(me:skill(Skill.ImprovingMaxMpIncrease))
-        if effect ~= nil and effect.y ~= nil and effect.y > 0 then
+        local s = me:skill(Skill.ImprovingMaxMpIncrease)
+        if s ~= nil then
+            local effect = s:effect()
             bonus = effect.y
         end
     end

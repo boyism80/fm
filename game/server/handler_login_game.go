@@ -35,8 +35,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		name = "채진영"
 	}
 
-	character := entity.NewDummyCharacter(ctx.Client, nil, req.PlayerId, name, h.gs)
-	character.Listener = NewGameCharacterListener(h.gs, character)
+	character := entity.NewDummyCharacter(ctx.Client, h.gs.characterListener, req.PlayerId, name, h.gs)
 
 	// Set GM mode (for testing: player ID 1 is GM)
 	if req.PlayerId == 1 {

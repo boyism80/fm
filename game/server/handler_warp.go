@@ -62,9 +62,9 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			spawnPoint = 0
 			stats[constant.STAT_HP] = int32(character.Hp)
 
-			character.Listener.OnUpdateStats(stats, true)
+			character.Listener.OnUpdateStats(character, stats, true)
 		} else {
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 	} else {
@@ -80,19 +80,19 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 
 		portal, ok := wz.FindPortal(req.PortalName)
 		if !ok {
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 
 		targetMapWz, ok := h.gs.resources.Maps[uint32(portal.TargetMapId)]
 		if !ok {
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 
 		targetPortal, ok := targetMapWz.FindPortal(portal.Target)
 		if !ok {
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 

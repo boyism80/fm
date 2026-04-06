@@ -170,6 +170,7 @@ func (a *MapActor) registerTimers() {
 	RegisterTimer[*timers.ItemCleanupTimer](a.timerReg)
 	RegisterTimer[*timers.CooldownCheckTimer](a.timerReg)
 	RegisterTimer[*timers.BuffExpireTimer](a.timerReg)
+	RegisterTimer[*timers.MobBuffExpireTimer](a.timerReg)
 	RegisterTimer[*timers.MobPoisonTickTimer](a.timerReg)
 	RegisterTimer[*timers.MistExpireTimer](a.timerReg)
 	RegisterTimer[*timers.MistPoisonTickTimer](a.timerReg)
