@@ -13,18 +13,10 @@ func (m *GainExp) Opcode() uint16 {
 }
 
 func (m *GainExp) Serialize(sw *stream.StreamWriter) error {
-	if err := sw.WriteU8(3); err != nil {
-		return err
-	}
-	if err := sw.WriteBoolean(m.White); err != nil {
-		return err
-	}
-	if err := sw.WriteU32(m.Gain); err != nil {
-		return err
-	}
-	if err := sw.Write(make([]byte, 19)); err != nil {
-		return err
-	}
+	sw.WriteU8(3)
+	sw.WriteBoolean(m.White)
+	sw.WriteU32(m.Gain)
+	sw.Write(make([]byte, 19))
 	return nil
 }
 

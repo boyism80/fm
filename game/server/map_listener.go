@@ -321,7 +321,7 @@ func (l *MapListenerImpl) OnMistSpawned(mapInstance *entity.Map, mist *entity.Mi
 	}
 	pkt := &response.SpawnMist{
 		OID:        mist.OID,
-		PoisonMist: mist.PoisonMist,
+		Type:       mist.MistType,
 		MobMist:    mist.MobMist,
 		CauserID:   mist.Causer,
 		SkillID:    skillID,

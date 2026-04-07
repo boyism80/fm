@@ -236,7 +236,7 @@ func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, mov
 	return s
 }
 
-func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], poisonMist uint8, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
+func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
 	if ch == nil || ch.Context == nil {
 		return nil
 	}
@@ -269,7 +269,7 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], p
 		Causer:               ch.GetID(),
 		SkillWz:              wzSkill,
 		SkillLevel:           skillLevel,
-		PoisonMist:           poisonMist,
+		MistType:             mistType,
 		MobMist:              false,
 		MobSkill:             false,
 		SkillDelay:           8,

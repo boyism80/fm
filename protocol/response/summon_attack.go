@@ -19,28 +19,14 @@ func (p *SummonAttack) Opcode() uint16 {
 }
 
 func (p *SummonAttack) Serialize(w *stream.StreamWriter) error {
-	if err := w.WriteU32(p.CharacterID); err != nil {
-		return err
-	}
-	if err := w.WriteU32(p.SummonSkillID); err != nil {
-		return err
-	}
-	if err := w.WriteU8(p.Animation); err != nil {
-		return err
-	}
-	if err := w.WriteU8(uint8(len(p.Targets))); err != nil {
-		return err
-	}
+	w.WriteU32(p.CharacterID)
+	w.WriteU32(p.SummonSkillID)
+	w.WriteU8(p.Animation)
+	w.WriteU8(uint8(len(p.Targets)))
 	for _, t := range p.Targets {
-		if err := w.WriteU32(t.OID); err != nil {
-			return err
-		}
-		if err := w.WriteU8(6); err != nil {
-			return err
-		}
-		if err := w.WriteU32(t.Damage); err != nil {
-			return err
-		}
+		w.WriteU32(t.OID)
+		w.WriteU8(6)
+		w.WriteU32(t.Damage)
 	}
 	return nil
 }

@@ -12,14 +12,13 @@ func (p *RemoveMist) Opcode() uint16 {
 }
 
 func (p *RemoveMist) Serialize(w *stream.StreamWriter) error {
-	if err := w.WriteU32(p.OID); err != nil {
-		return err
-	}
+	w.WriteU32(p.OID)
 	eruption := uint8(0)
 	if p.Eruption {
 		eruption = 1
 	}
-	return w.WriteU8(eruption)
+	w.WriteU8(eruption)
+	return nil
 }
 
 func (p *RemoveMist) Deserialize(*stream.StreamReader) {}

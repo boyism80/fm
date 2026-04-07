@@ -15,7 +15,7 @@ type Mist struct {
 	Causer               uint32
 	SkillWz              *wz.Skill
 	SkillLevel           uint8
-	PoisonMist           uint8
+	MistType             constant.MistType
 	MobMist              bool
 	MobSkill             bool
 	SkillDelay           uint16
@@ -65,7 +65,7 @@ func (mist *Mist) SendSpawnSyncToViewer(viewer *Character) {
 	}
 	viewer.Send(&response.SpawnMist{
 		OID:        mist.OID,
-		PoisonMist: mist.PoisonMist,
+		Type:       mist.MistType,
 		MobMist:    mist.MobMist,
 		CauserID:   mist.Causer,
 		SkillID:    skillID,

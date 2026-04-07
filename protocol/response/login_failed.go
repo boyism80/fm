@@ -39,7 +39,7 @@ func (a *LoginFailed) Opcode() uint16 {
 }
 
 func (a *LoginFailed) Serialize(writer *stream.StreamWriter) error {
-	_ = writer.WriteU8(a.Reason)
+	writer.WriteU8(a.Reason)
 
 	switch a.Reason {
 	case LoginFailedReasonPasswordChangeRequired:

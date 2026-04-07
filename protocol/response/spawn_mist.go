@@ -1,13 +1,14 @@
 package response
 
 import (
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
 
 type SpawnMist struct {
 	OID        uint32
-	PoisonMist uint8
+	Type       constant.MistType
 	MobMist    bool
 	CauserID   uint32
 	SkillID    uint32
@@ -22,66 +23,32 @@ func (p *SpawnMist) Opcode() uint16 {
 }
 
 func (p *SpawnMist) Serialize(w *stream.StreamWriter) error {
-	if err := w.WriteU32(p.OID); err != nil {
-		return err
+	w.WriteU32(p.OID)
+	w.WriteU8(uint8(p.Type))
+	if p.Type == constant.MistTypeSmoke || p.MobMist {
+		w.WriteU32(p.CauserID)
+	} else {
+		w.WriteU32(1)
 	}
-	if err := w.WriteU8(p.PoisonMist); err != nil {
-		return err
-	}
-	third := uint32(1)
-	if p.PoisonMist == 2 || p.MobMist {
-		third = p.CauserID
-	}
-	if err := w.WriteU32(third); err != nil {
-		return err
-	}
-	if err := w.WriteU32(p.SkillID); err != nil {
-		return err
-	}
-	if err := w.WriteU8(p.SkillLevel); err != nil {
-		return err
-	}
-	if err := w.WriteU16(p.SkillDelay); err != nil {
-		return err
-	}
-	if err := w.Write32(p.Bounds.Left); err != nil {
-		return err
-	}
-	if err := w.Write32(p.Bounds.Top); err != nil {
-		return err
-	}
-	if err := w.Write32(p.Bounds.Right); err != nil {
-		return err
-	}
-	if err := w.Write32(p.Bounds.Bottom); err != nil {
-		return err
-	}
-	tail := p.PoisonMist
+	w.WriteU32(p.SkillID)
+	w.WriteU8(p.SkillLevel)
+	w.WriteU16(p.SkillDelay)
+	w.Write32(p.Bounds.Left)
+	w.Write32(p.Bounds.Top)
+	w.Write32(p.Bounds.Right)
+	w.Write32(p.Bounds.Bottom)
 	if p.MobMist {
-		tail = 0
-	}
-	if err := w.WriteU8(tail); err != nil {
-		return err
+		w.WriteU8(0)
+	} else {
+		w.WriteU8(uint8(p.Type))
 	}
 	if !p.MobSkill {
-		smoke := uint8(0)
-		if p.SkillID == 4221006 {
-			smoke = 2
-		}
-		if err := w.WriteU8(smoke); err != nil {
-			return err
-		}
-		if err := w.WriteU32(0); err != nil {
-			return err
-		}
+		w.WriteU8(uint8(p.Type))
+		w.WriteU32(0)
 	} else {
-		if err := w.WriteU64(0); err != nil {
-			return err
-		}
+		w.WriteU64(0)
 	}
-	if err := w.WriteU32(p.CauserID); err != nil {
-		return err
-	}
+	w.WriteU32(p.CauserID)
 	return nil
 }
 

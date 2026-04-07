@@ -13,15 +13,12 @@ func (p *RemoveDoor) Opcode() uint16 {
 
 func (p *RemoveDoor) Serialize(w *stream.StreamWriter) error {
 	if p.Animated {
-		if err := w.WriteU8(0); err != nil {
-			return err
-		}
+		w.WriteU8(0)
 	} else {
-		if err := w.WriteU8(1); err != nil {
-			return err
-		}
+		w.WriteU8(1)
 	}
-	return w.WriteU32(p.OwnerID)
+	w.WriteU32(p.OwnerID)
+	return nil
 }
 
 func (p *RemoveDoor) Deserialize(*stream.StreamReader) {}

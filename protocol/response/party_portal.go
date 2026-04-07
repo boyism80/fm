@@ -18,31 +18,18 @@ func (p *PartyPortal) Opcode() uint16 {
 }
 
 func (p *PartyPortal) Serialize(w *stream.StreamWriter) error {
-	if err := w.WriteU8(34); err != nil {
-		return err
-	}
+	w.WriteU8(34)
 	if p.Animated {
-		if err := w.WriteU8(0); err != nil {
-			return err
-		}
+		w.WriteU8(0)
 	} else {
-		if err := w.WriteU8(1); err != nil {
-			return err
-		}
+		w.WriteU8(1)
 	}
-	if err := w.WriteU32(p.TownMapID); err != nil {
-		return err
-	}
-	if err := w.WriteU32(p.TargetMapID); err != nil {
-		return err
-	}
-	if err := w.WriteU32(p.SkillID); err != nil {
-		return err
-	}
-	if err := w.Write16(p.Position.X); err != nil {
-		return err
-	}
-	return w.Write16(p.Position.Y)
+	w.WriteU32(p.TownMapID)
+	w.WriteU32(p.TargetMapID)
+	w.WriteU32(p.SkillID)
+	w.Write16(p.Position.X)
+	w.Write16(p.Position.Y)
+	return nil
 }
 
 func (p *PartyPortal) Deserialize(*stream.StreamReader) {}

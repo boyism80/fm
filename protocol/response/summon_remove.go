@@ -13,20 +13,12 @@ func (p *RemoveSummon) Opcode() uint16 {
 }
 
 func (p *RemoveSummon) Serialize(w *stream.StreamWriter) error {
-	if err := w.WriteU32(p.OwnerID); err != nil {
-		return err
-	}
-	if err := w.WriteU32(p.OID); err != nil {
-		return err
-	}
+	w.WriteU32(p.OwnerID)
+	w.WriteU32(p.OID)
 	if p.Animated {
-		if err := w.WriteU8(4); err != nil {
-			return err
-		}
+		w.WriteU8(4)
 	} else {
-		if err := w.WriteU8(1); err != nil {
-			return err
-		}
+		w.WriteU8(1)
 	}
 	return nil
 }

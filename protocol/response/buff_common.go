@@ -20,9 +20,7 @@ func WriteSingleMask(writer *stream.StreamWriter, slot MaskSlot) error {
 		if i == pos0 {
 			v = int32(slot.Mask)
 		}
-		if err := writer.Write32(v); err != nil {
-			return err
-		}
+		writer.Write32(v)
 	}
 	return nil
 }
@@ -36,10 +34,7 @@ func WriteMask(writer *stream.StreamWriter, slots []MaskSlot) error {
 		}
 	}
 	for i := 0; i < constant.MaxBuffFlag; i++ {
-		if err := writer.Write32(mask[i]); err != nil {
-			return err
-		}
-
+		writer.Write32(mask[i])
 	}
 	return nil
 }

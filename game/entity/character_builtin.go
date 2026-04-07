@@ -659,7 +659,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if durationMs < 0 {
 				durationMs = 0
 			}
-			poisonMist := uint8(L.CheckInt(4))
+			mistType := constant.MistType(L.CheckInt(4))
 			boundsTable := L.CheckTable(5)
 			left := int32(lua.LVAsNumber(boundsTable.RawGetString("left")))
 			top := int32(lua.LVAsNumber(boundsTable.RawGetString("top")))
@@ -681,7 +681,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			bounds := types.Rect[int32]{Left: left, Top: top, Right: right, Bottom: bottom}
-			mist := ch.SpawnMist(skill, ch.Position, poisonMist, bounds, duration, initialDelay, poisonTickMultiplier)
+			mist := ch.SpawnMist(skill, ch.Position, mistType, bounds, duration, initialDelay, poisonTickMultiplier)
 			if mist == nil {
 				L.Push(lua.LNil)
 				return 1

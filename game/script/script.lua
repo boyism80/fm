@@ -65,7 +65,7 @@ end
 function on_script(me)
     local x, y = me:position()
 
-    me:class(412)
+    me:class(422)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -77,13 +77,13 @@ function on_script(me)
         end
     end
     me:max_hp(20000)
-    me:hp(me:max_hp() * 0.5)
+    me:hp(me:max_hp() * 0.3)
     me:max_mp(20000)
     me:mp(me:max_mp())
     me:mkitem('활전용화살', 200)
     me:mkitem('석궁전용화살', 200)
     me:mkitem('석궁')
-    local weapon = me:mkitem('가니어')
+    local weapon = me:mkitem('후루츠대거')
     if weapon ~= nil then
         me:equip(weapon)
     end

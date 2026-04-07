@@ -17,21 +17,14 @@ func (p *SpawnDoor) Opcode() uint16 {
 
 func (p *SpawnDoor) Serialize(w *stream.StreamWriter) error {
 	if p.Animated {
-		if err := w.WriteU8(0); err != nil {
-			return err
-		}
+		w.WriteU8(0)
 	} else {
-		if err := w.WriteU8(1); err != nil {
-			return err
-		}
+		w.WriteU8(1)
 	}
-	if err := w.WriteU32(p.OwnerID); err != nil {
-		return err
-	}
-	if err := w.Write16(p.Position.X); err != nil {
-		return err
-	}
-	return w.Write16(p.Position.Y)
+	w.WriteU32(p.OwnerID)
+	w.Write16(p.Position.X)
+	w.Write16(p.Position.Y)
+	return nil
 }
 
 func (p *SpawnDoor) Deserialize(*stream.StreamReader) {}

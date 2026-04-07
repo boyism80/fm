@@ -40,7 +40,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 		if !ok || mist == nil || mist.OID == 0 {
 			continue
 		}
-		if mist.PoisonMist != 0 {
+		if mist.MistType != constant.MistTypePoison {
 			continue
 		}
 		if mist.NextPoisonTickAt.IsZero() {

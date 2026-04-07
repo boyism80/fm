@@ -193,6 +193,14 @@ func registerIncomingHitConstants(luaState *lua.LState) {
 	luaState.SetGlobal("IncomingHit", t)
 }
 
+func registerMistTypeConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	for name, value := range constant.AllMistTypes() {
+		t.RawSetString(name, lua.LNumber(value))
+	}
+	luaState.SetGlobal("MistType", t)
+}
+
 func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
 	skillTable := luaState.NewTable()
 	skillTable.RawSetString("id", lua.LNumber(skill.ID))
@@ -258,6 +266,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerMobDieAnimationConstants(luaState)
 	registerSummonConstants(luaState)
 	registerIncomingHitConstants(luaState)
+	registerMistTypeConstants(luaState)
 
 	luax.RegisterFunc(luaState, "name2map", func(L *lua.LState) int {
 		name := L.CheckString(1)

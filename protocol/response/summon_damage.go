@@ -15,24 +15,12 @@ func (p *DamageSummon) Opcode() uint16 {
 }
 
 func (p *DamageSummon) Serialize(w *stream.StreamWriter) error {
-	if err := w.WriteU32(p.CharacterID); err != nil {
-		return err
-	}
-	if err := w.WriteU32(p.SummonSkillID); err != nil {
-		return err
-	}
-	if err := w.WriteU8(p.Unknown); err != nil {
-		return err
-	}
-	if err := w.WriteU32(p.Damage); err != nil {
-		return err
-	}
-	if err := w.WriteU32(p.MonsterIDFrom); err != nil {
-		return err
-	}
-	if err := w.WriteU8(0); err != nil {
-		return err
-	}
+	w.WriteU32(p.CharacterID)
+	w.WriteU32(p.SummonSkillID)
+	w.WriteU8(p.Unknown)
+	w.WriteU32(p.Damage)
+	w.WriteU32(p.MonsterIDFrom)
+	w.WriteU8(0)
 	return nil
 }
 

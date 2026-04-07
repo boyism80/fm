@@ -34,11 +34,11 @@ func (a *Welcome) Opcode() uint16 {
 }
 
 func (a *Welcome) Serialize(writer *stream.StreamWriter) error {
-	_ = writer.WriteU16(MAGIC)
-	_ = writer.WriteStr16(version)
-	_ = writer.Write(a.RecvIv)
-	_ = writer.Write(a.SendIv)
-	_ = writer.WriteU8(1)
+	writer.WriteU16(MAGIC)
+	writer.WriteStr16(version)
+	writer.Write(a.RecvIv)
+	writer.Write(a.SendIv)
+	writer.WriteU8(1)
 	return nil
 }
 
