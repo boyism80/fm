@@ -29,7 +29,7 @@ type CharacterListener interface {
 	OnUpdateStats(ch *Character, stats map[constant.Stat]int32, unlock bool)
 	OnMobMoved(ch *Character, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
 	OnPlayerMove(ch *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
-	OnAttack(ch *Character, attackInfo dto.AttackInfo, skillLevel uint8)
+	OnAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
 	OnEndSortInventory(ch *Character, inventoryType constant.InventoryType)
 	OnSwapInventorySlot(ch *Character, inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8)
 	OnRemoveInventorySlot(ch *Character, inventoryType constant.InventoryType, slot int16)

@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
@@ -50,7 +51,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	}
 
 	var skillLevel uint8 = 0
-	skillID := req.AttackInfo.Skill
+	skillID := req.Skill
 	if skillID != 0 {
 		if !h.validateSkillForAttack(character, skillID) {
 			return nil
@@ -62,10 +63,29 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		}
 	}
 
-	damages := req.AttackInfo.Damages
+	damages := req.Damages
 	CallOnAttackHooks(ctx, character, mapInstance, damages, skillID, false, 0)
 	ApplyDamageToMobs(character, mapInstance, damages)
-	character.Listener.OnAttack(character, req.AttackInfo, skillLevel)
+
+	if len(req.MesoOIDs) > 0 {
+		items := mapInstance.GetItems()
+		for _, oid := range req.MesoOIDs {
+			obj, exists := items[oid]
+			if !exists {
+				log.Printf("invalid meso explosion oid: %d", oid)
+				return nil
+			}
+			if _, ok := obj.(*entity.Meso); !ok {
+				log.Printf("non-meso object used in meso explosion: %d", oid)
+				return nil
+			}
+			if err := mapInstance.RemoveItem(oid, constant.REMOVE_ITEM_TYPE_EXPLOSION, character.GetID()); err != nil {
+				log.Printf("failed to remove meso oid %d for explosion: %v", oid, err)
+				return nil
+			}
+		}
+	}
+	character.Listener.OnAttack(character, req, skillLevel)
 	if skillID != 0 {
 		CallSkillHook(ctx, character, skillID, "on_activated")
 	}

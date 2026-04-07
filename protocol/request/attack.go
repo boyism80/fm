@@ -6,7 +6,7 @@ import (
 )
 
 type Attack struct {
-	dto.AttackInfo
+	dto.CloseAttackInfo
 }
 
 func (a *Attack) Serialize(writer *stream.StreamWriter) error {
@@ -14,5 +14,5 @@ func (a *Attack) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *Attack) Deserialize(reader *stream.StreamReader) {
-	a.AttackInfo.Deserialize(reader, 0x1B)
+	a.CloseAttackInfo.Deserialize(reader)
 }

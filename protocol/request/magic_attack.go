@@ -6,7 +6,7 @@ import (
 )
 
 type MagicAttack struct {
-	dto.AttackInfo
+	dto.MagicAttackInfo
 }
 
 func (m *MagicAttack) Serialize(writer *stream.StreamWriter) error {
@@ -14,5 +14,5 @@ func (m *MagicAttack) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (m *MagicAttack) Deserialize(reader *stream.StreamReader) {
-	m.AttackInfo.Deserialize(reader, 0x1D)
+	m.MagicAttackInfo.Deserialize(reader)
 }

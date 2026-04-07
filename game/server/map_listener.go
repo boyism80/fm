@@ -257,10 +257,11 @@ func (l *MapListenerImpl) OnMobMoved(mapInstance *entity.Map, mob *entity.Mob, i
 }
 
 // OnAttack broadcasts attack to all players on the map
-func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Character, attackInfo dto.AttackInfo, skillLevel uint8) {
+func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if mapInstance == nil {
 		return
 	}
+	attackInfo := attackPayload.ToAttackInfo()
 
 	// Create attack packet
 	attackPacket := &response.Attack{

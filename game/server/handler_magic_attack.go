@@ -51,12 +51,12 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		return fmt.Errorf("character is not in a map")
 	}
 
-	if req.AttackInfo.Skill == 0 {
+	if req.Skill == 0 {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	skillID := req.AttackInfo.Skill
+	skillID := req.Skill
 	var wzSkill *wz.Skill
 	if character.Context != nil {
 		resources := character.Context.GetResources()
@@ -99,12 +99,12 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		return nil
 	}
 
-	damages := req.AttackInfo.Damages
+	damages := req.Damages
 	CallOnAttackHooks(ctx, character, mapInstance, damages, uint32(skillID), false, 0)
 	ApplyDamageToMobs(character, mapInstance, damages)
 
 	magicAttackPacket := &response.MagicAttack{
-		AttackInfo:  req.AttackInfo,
+		AttackInfo:  req.ToAttackInfo(),
 		CharacterId: character.GetID(),
 		SkillLevel:  uint8(skillLevel),
 	}

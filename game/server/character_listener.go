@@ -262,14 +262,14 @@ func (l *CharacterListenerImpl) OnPlayerMove(ch *entity.Character, startPoint ty
 	})
 }
 
-func (l *CharacterListenerImpl) OnAttack(ch *entity.Character, attackInfo dto.AttackInfo, skillLevel uint8) {
+func (l *CharacterListenerImpl) OnAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
 	attackPacket := &response.Attack{
-		AttackInfo:  attackInfo,
+		AttackInfo:  attackPayload.ToAttackInfo(),
 		CharacterId: ch.GetID(),
 		SkillLevel:  skillLevel,
 	}

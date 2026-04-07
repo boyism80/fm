@@ -6,7 +6,7 @@ import (
 )
 
 type RangedAttack struct {
-	dto.AttackInfo
+	dto.RangedAttackInfo
 }
 
 func (r *RangedAttack) Serialize(writer *stream.StreamWriter) error {
@@ -15,5 +15,5 @@ func (r *RangedAttack) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (r *RangedAttack) Deserialize(reader *stream.StreamReader) {
-	r.AttackInfo.Deserialize(reader, 0x1C)
+	r.RangedAttackInfo.Deserialize(reader)
 }
