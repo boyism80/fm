@@ -17,6 +17,5 @@ func (p *ConfirmShopTransaction) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ConfirmShopTransaction) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ConfirmShopTransaction) Deserialize(reader *stream.StreamReader) {
 }

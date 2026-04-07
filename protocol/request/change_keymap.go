@@ -25,38 +25,19 @@ func (c *ChangeKeymap) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (c *ChangeKeymap) Deserialize(reader *stream.StreamReader) error {
+func (c *ChangeKeymap) Deserialize(reader *stream.StreamReader) {
 	available := reader.Remaining()
 	if available > 8 {
-		// Mode 1: Keymap changes
-		var err error
-		if c.Skip, err = reader.Read32(); err != nil {
-			return err
-		}
-		if c.NumChanges, err = reader.Read32(); err != nil {
-			return err
-		}
+		c.Skip = reader.Read32()
+		c.NumChanges = reader.Read32()
 		c.Changes = make([]KeymapChange, c.NumChanges)
 		for i := int32(0); i < c.NumChanges; i++ {
-			if c.Changes[i].Key, err = reader.Read32(); err != nil {
-				return err
-			}
-			if c.Changes[i].Type, err = reader.ReadU8(); err != nil {
-				return err
-			}
-			if c.Changes[i].Action, err = reader.Read32(); err != nil {
-				return err
-			}
+			c.Changes[i].Key = reader.Read32()
+			c.Changes[i].Type = reader.ReadU8()
+			c.Changes[i].Action = reader.Read32()
 		}
 	} else {
-		// Mode 2: Pet auto pot
-		var err error
-		if c.Type, err = reader.Read32(); err != nil {
-			return err
-		}
-		if c.Data, err = reader.Read32(); err != nil {
-			return err
-		}
+		c.Type = reader.Read32()
+		c.Data = reader.Read32()
 	}
-	return nil
 }

@@ -57,6 +57,5 @@ func (a *Attack) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *Attack) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *Attack) Deserialize(reader *stream.StreamReader) {
 }

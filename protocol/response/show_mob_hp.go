@@ -21,6 +21,5 @@ func (m *ShowMobHp) Serialize(sw *stream.StreamWriter) error {
 	return nil
 }
 
-func (m *ShowMobHp) Deserialize(sr *stream.StreamReader) error {
-	return nil
+func (m *ShowMobHp) Deserialize(sr *stream.StreamReader) {
 }

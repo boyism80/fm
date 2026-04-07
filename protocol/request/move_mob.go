@@ -22,66 +22,27 @@ func (m *MoveMob) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (m *MoveMob) Deserialize(reader *stream.StreamReader) error {
-	var err error
-	m.OID, err = reader.ReadU32()
-	if err != nil {
-		return err
-	}
+func (m *MoveMob) Deserialize(reader *stream.StreamReader) {
+	m.OID = reader.ReadU32()
 
-	m.MovementId, err = reader.ReadU16()
-	if err != nil {
-		return err
-	}
+	m.MovementId = reader.ReadU16()
 
-	flag, err := reader.ReadU8()
-	if err != nil {
-		return err
-	}
+	flag := reader.ReadU8()
 
 	m.IsAggroed = flag&0xF != 0
 	m.Unknown2 = flag&0xF0 != 0
-	m.CenterSplit, err = reader.Read8()
-	if err != nil {
-		return err
-	}
+	m.CenterSplit = reader.Read8()
+	m.Skill1 = reader.ReadU8()
 
-	centerSplit := m.CenterSplit
-	m.Skill1, err = reader.ReadU8()
-	if err != nil {
-		return err
-	}
+	m.Skill2 = reader.ReadU8()
+	m.Skill3 = reader.ReadU8()
 
-	m.Skill2, err = reader.ReadU8()
-	if err != nil {
-		return err
-	}
-	m.Skill3, err = reader.ReadU8()
-	if err != nil {
-		return err
-	}
-
-	m.Skill4, err = reader.ReadU8()
-	if err != nil {
-		return err
-	}
+	m.Skill4 = reader.ReadU8()
 
 	reader.Skip(9)
-	if centerSplit < 0 {
-		centerSplit = -1
-	} else {
-		centerSplit = centerSplit >> 1
-	}
 
-	m.Movements, err = dto.ReadMovements(reader)
-	if err != nil {
-		return err
-	}
+	m.Movements = dto.ReadMovements(reader)
 
-	err = reader.Skip(9)
-	if err != nil {
-		return err
-	}
+	reader.Skip(9)
 
-	return nil
 }

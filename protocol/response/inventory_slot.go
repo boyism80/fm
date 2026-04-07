@@ -78,8 +78,7 @@ func (p *UpdateInventorySlot) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UpdateInventorySlot) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *UpdateInventorySlot) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *UpdateInventorySlot) Opcode() uint16 {
@@ -96,8 +95,7 @@ func (p *AddInventorySlot) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *AddInventorySlot) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *AddInventorySlot) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *AddInventorySlot) Opcode() uint16 {
@@ -113,8 +111,7 @@ func (p *RemoveInventorySlot) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *RemoveInventorySlot) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *RemoveInventorySlot) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *RemoveInventorySlot) Opcode() uint16 {
@@ -134,8 +131,7 @@ func (p *SwapInventorySlot) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SwapInventorySlot) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *SwapInventorySlot) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *SwapInventorySlot) Opcode() uint16 {
@@ -156,8 +152,7 @@ func (p *PartialMergeInventorySlot) Serialize(writer *stream.StreamWriter) error
 	return nil
 }
 
-func (p *PartialMergeInventorySlot) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *PartialMergeInventorySlot) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *PartialMergeInventorySlot) Opcode() uint16 {
@@ -177,8 +172,7 @@ func (p *FullMergeInventorySlot) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *FullMergeInventorySlot) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *FullMergeInventorySlot) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *FullMergeInventorySlot) Opcode() uint16 {

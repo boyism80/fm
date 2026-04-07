@@ -61,6 +61,5 @@ func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UpdateStats) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *UpdateStats) Deserialize(reader *stream.StreamReader) {
 }

@@ -22,6 +22,5 @@ func (p *ShowForeignEffect) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowForeignEffect) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ShowForeignEffect) Deserialize(reader *stream.StreamReader) {
 }

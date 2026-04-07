@@ -117,22 +117,17 @@ func (p *DialogInput) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *Dialog) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *Dialog) Deserialize(reader *stream.StreamReader) {
 }
 
-func (p *DialogYesNo) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *DialogYesNo) Deserialize(reader *stream.StreamReader) {
 }
 
-func (p *DialogList) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *DialogList) Deserialize(reader *stream.StreamReader) {
 }
 
-func (p *DialogAccept) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *DialogAccept) Deserialize(reader *stream.StreamReader) {
 }
 
-func (p *DialogInput) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *DialogInput) Deserialize(reader *stream.StreamReader) {
 }

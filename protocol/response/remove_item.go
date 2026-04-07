@@ -21,8 +21,7 @@ func (p *RemoveItem) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *RemoveItem) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *RemoveItem) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *RemoveItem) Opcode() uint16 {

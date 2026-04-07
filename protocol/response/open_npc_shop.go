@@ -66,8 +66,7 @@ func (p *OpenNpcShop) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (s *OpenNpcShop) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (s *OpenNpcShop) Deserialize(reader *stream.StreamReader) {
 }
 
 func doubleToShortBits(value float64) int16 {

@@ -16,37 +16,16 @@ func (a *SummonAttack) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *SummonAttack) Deserialize(reader *stream.StreamReader) error {
-	var err error
-	a.SummonOID, err = reader.ReadU32()
-	if err != nil {
-		return err
-	}
-	a.Tick, err = reader.ReadU32()
-	if err != nil {
-		return err
-	}
-	a.Animation, err = reader.ReadU8()
-	if err != nil {
-		return err
-	}
-	numAttacked, err := reader.ReadU8()
-	if err != nil {
-		return err
-	}
+func (a *SummonAttack) Deserialize(reader *stream.StreamReader) {
+	a.SummonOID = reader.ReadU32()
+	a.Tick = reader.ReadU32()
+	a.Animation = reader.ReadU8()
+	numAttacked := reader.ReadU8()
 	a.Damages = make([]dto.AttackPair, 0, numAttacked)
 	for i := 0; i < int(numAttacked); i++ {
-		oid, err := reader.ReadU32()
-		if err != nil {
-			return err
-		}
-		if err := reader.Skip(14); err != nil {
-			return err
-		}
-		damage, err := reader.ReadU32()
-		if err != nil {
-			return err
-		}
+		oid := reader.ReadU32()
+		reader.Skip(14)
+		damage := reader.ReadU32()
 		a.Damages = append(a.Damages, dto.AttackPair{
 			OID: oid,
 			DamagePairs: []dto.DamagePair{
@@ -57,5 +36,4 @@ func (a *SummonAttack) Deserialize(reader *stream.StreamReader) error {
 			},
 		})
 	}
-	return nil
 }

@@ -45,4 +45,4 @@ func (p *PartyPortal) Serialize(w *stream.StreamWriter) error {
 	return w.Write16(p.Position.Y)
 }
 
-func (p *PartyPortal) Deserialize(*stream.StreamReader) error { return nil }
+func (p *PartyPortal) Deserialize(*stream.StreamReader) {}

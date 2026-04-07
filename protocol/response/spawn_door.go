@@ -34,4 +34,4 @@ func (p *SpawnDoor) Serialize(w *stream.StreamWriter) error {
 	return w.Write16(p.Position.Y)
 }
 
-func (p *SpawnDoor) Deserialize(*stream.StreamReader) error { return nil }
+func (p *SpawnDoor) Deserialize(*stream.StreamReader) {}

@@ -27,6 +27,5 @@ func (p *Move) Opcode() uint16 {
 	return 0x82 // Move opcode
 }
 
-func (p *Move) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *Move) Deserialize(reader *stream.StreamReader) {
 }

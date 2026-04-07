@@ -19,8 +19,7 @@ func (a *NormalChat) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *NormalChat) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *NormalChat) Deserialize(reader *stream.StreamReader) {
 }
 
 func (a *NormalChat) Opcode() uint16 {

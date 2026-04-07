@@ -23,8 +23,7 @@ func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *Warp) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *Warp) Deserialize(reader *stream.StreamReader) {
 }
 
 func (w *Warp) Opcode() uint16 {

@@ -23,8 +23,7 @@ func (p *SpawnNpc) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (s *SpawnNpc) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (s *SpawnNpc) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *SpawnNpc) Opcode() uint16 {

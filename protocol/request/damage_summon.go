@@ -13,23 +13,9 @@ func (d *DamageSummon) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (d *DamageSummon) Deserialize(reader *stream.StreamReader) error {
-	var err error
-	d.OID, err = reader.ReadU32()
-	if err != nil {
-		return err
-	}
-	d.Unknown, err = reader.ReadU8()
-	if err != nil {
-		return err
-	}
-	d.Damage, err = reader.ReadU32()
-	if err != nil {
-		return err
-	}
-	d.MonsterIdFrom, err = reader.ReadU32()
-	if err != nil {
-		return err
-	}
-	return nil
+func (d *DamageSummon) Deserialize(reader *stream.StreamReader) {
+	d.OID = reader.ReadU32()
+	d.Unknown = reader.ReadU8()
+	d.Damage = reader.ReadU32()
+	d.MonsterIdFrom = reader.ReadU32()
 }

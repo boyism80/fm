@@ -26,8 +26,7 @@ func (p *ShowMesoGain) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowMesoGain) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ShowMesoGain) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *ShowMesoGain) Opcode() uint16 {

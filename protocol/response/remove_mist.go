@@ -22,4 +22,4 @@ func (p *RemoveMist) Serialize(w *stream.StreamWriter) error {
 	return w.WriteU8(eruption)
 }
 
-func (p *RemoveMist) Deserialize(*stream.StreamReader) error { return nil }
+func (p *RemoveMist) Deserialize(*stream.StreamReader) {}

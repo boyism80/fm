@@ -12,6 +12,5 @@ func (p *PartySearchStop) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *PartySearchStop) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *PartySearchStop) Deserialize(reader *stream.StreamReader) {
 }

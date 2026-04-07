@@ -55,8 +55,7 @@ func (p *SpawnItem) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnItem) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *SpawnItem) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *SpawnItem) Opcode() uint16 {

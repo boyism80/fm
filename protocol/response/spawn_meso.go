@@ -42,8 +42,7 @@ func (p *SpawnMeso) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnMeso) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *SpawnMeso) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *SpawnMeso) Opcode() uint16 {

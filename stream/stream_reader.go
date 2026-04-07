@@ -9,6 +9,12 @@ import (
 	"golang.org/x/text/transform"
 )
 
+// ErrTruncated is passed to panic when a read would pass the end of the buffer.
+var ErrTruncated = errors.New("stream: not enough bytes")
+
+// ErrSkipOutOfBounds is passed to panic when Skip exceeds Remaining().
+var ErrSkipOutOfBounds = errors.New("stream: skip out of bounds")
+
 type Endian binary.ByteOrder
 
 var (
@@ -30,140 +36,93 @@ func NewStreamReader(data *[]byte, endian Endian) *StreamReader {
 	}
 }
 
-func (sr *StreamReader) Read(n int) ([]byte, error) {
+func (sr *StreamReader) Read(n int) []byte {
+	if n < 0 {
+		panic("stream: negative read length")
+	}
 	if sr.cursor+n > len(*sr.data) {
-		return nil, errors.New("not enough bytes to read")
+		panic(ErrTruncated)
 	}
 	bytes := *sr.data
 	b := bytes[sr.cursor : sr.cursor+n]
 	sr.cursor += n
-	return b, nil
+	return b
 }
 
-func (sr *StreamReader) ReadBool() (bool, error) {
-	b, err := sr.ReadU8()
-	if err != nil {
-		return false, err
-	}
-
-	return b != 0, nil
+func (sr *StreamReader) ReadBool() bool {
+	b := sr.ReadU8()
+	return b != 0
 }
 
-func (sr *StreamReader) ReadU8() (uint8, error) {
-	b, err := sr.Read(1)
-	if err != nil {
-		return 0, err
-	}
-	return b[0], nil
+func (sr *StreamReader) ReadU8() uint8 {
+	b := sr.Read(1)
+	return b[0]
 }
 
-func (sr *StreamReader) Read8() (int8, error) {
-	val, err := sr.ReadU8()
-	return int8(val), err
+func (sr *StreamReader) Read8() int8 {
+	return int8(sr.ReadU8())
 }
 
-func (sr *StreamReader) ReadU16() (uint16, error) {
-	b, err := sr.Read(2)
-	if err != nil {
-		return 0, err
-	}
-	return sr.order.Uint16(b), nil
+func (sr *StreamReader) ReadU16() uint16 {
+	b := sr.Read(2)
+	return sr.order.Uint16(b)
 }
 
-func (sr *StreamReader) Read16() (int16, error) {
-	val, err := sr.ReadU16()
-	return int16(val), err
+func (sr *StreamReader) Read16() int16 {
+	return int16(sr.ReadU16())
 }
 
-func (sr *StreamReader) ReadU32() (uint32, error) {
-	b, err := sr.Read(4)
-	if err != nil {
-		return 0, err
-	}
-	return sr.order.Uint32(b), nil
+func (sr *StreamReader) ReadU32() uint32 {
+	b := sr.Read(4)
+	return sr.order.Uint32(b)
 }
 
-func (sr *StreamReader) Read32() (int32, error) {
-	val, err := sr.ReadU32()
-	return int32(val), err
+func (sr *StreamReader) Read32() int32 {
+	return int32(sr.ReadU32())
 }
 
-func (sr *StreamReader) ReadU64() (uint64, error) {
-	b, err := sr.Read(8)
-	if err != nil {
-		return 0, err
-	}
-	return sr.order.Uint64(b), nil
+func (sr *StreamReader) ReadU64() uint64 {
+	b := sr.Read(8)
+	return sr.order.Uint64(b)
 }
 
-func (sr *StreamReader) Read64() (int64, error) {
-	val, err := sr.ReadU64()
-	return int64(val), err
+func (sr *StreamReader) Read64() int64 {
+	return int64(sr.ReadU64())
 }
 
-func (sr *StreamReader) ReadFloat32() (float32, error) {
-	bits, err := sr.ReadU32()
-	if err != nil {
-		return 0, err
-	}
-	return math.Float32frombits(bits), nil
+func (sr *StreamReader) ReadFloat32() float32 {
+	return math.Float32frombits(sr.ReadU32())
 }
 
-func (sr *StreamReader) ReadFloat64() (float64, error) {
-	bits, err := sr.ReadU64()
-	if err != nil {
-		return 0, err
-	}
-	return math.Float64frombits(bits), nil
+func (sr *StreamReader) ReadFloat64() float64 {
+	return math.Float64frombits(sr.ReadU64())
 }
 
-func (sr *StreamReader) ReadStr8() (string, error) {
-	length, err := sr.ReadU8()
-	if err != nil {
-		return "", err
-	}
-	b, err := sr.Read(int(length))
-	return string(b), err
+func (sr *StreamReader) ReadStr8() string {
+	length := int(sr.ReadU8())
+	return string(sr.Read(length))
 }
 
-func (sr *StreamReader) ReadStr16() (string, error) {
-	length, err := sr.ReadU16()
-	if err != nil {
-		return "", err
-	}
-
-	b, err := sr.Read(int(length))
-	if err != nil {
-		return "", err
-	}
-
+func (sr *StreamReader) ReadStr16() string {
+	length := int(sr.ReadU16())
+	b := sr.Read(length)
 	decoder := korean.EUCKR.NewDecoder()
 	decodedStr, _, err := transform.Bytes(decoder, b)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-
-	return string(decodedStr), nil
+	return string(decodedStr)
 }
 
-func (sr *StreamReader) ReadStr32() (string, error) {
-	length, err := sr.ReadU32()
-	if err != nil {
-		return "", err
-	}
-
-	b, err := sr.Read(int(length))
-	if err != nil {
-		return "", err
-	}
-
+func (sr *StreamReader) ReadStr32() string {
+	length := int(sr.ReadU32())
+	b := sr.Read(length)
 	decoder := korean.EUCKR.NewDecoder()
 	decodedStr, _, err := transform.Bytes(decoder, b)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-
-	return string(decodedStr), nil
+	return string(decodedStr)
 }
 
 func (sr *StreamReader) Reset() {
@@ -182,10 +141,12 @@ func (sr *StreamReader) Remaining() int {
 	return len(*sr.data) - sr.cursor
 }
 
-func (sr *StreamReader) Skip(n int) error {
+func (sr *StreamReader) Skip(n int) {
+	if n < 0 {
+		panic("stream: negative skip length")
+	}
 	if n > sr.Remaining() {
-		return errors.New("Skip out of bounds")
+		panic(ErrSkipOutOfBounds)
 	}
 	sr.cursor += n
-	return nil
 }

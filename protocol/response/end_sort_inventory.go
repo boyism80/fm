@@ -15,8 +15,7 @@ func (p *EndSortInventory) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *EndSortInventory) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *EndSortInventory) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *EndSortInventory) Opcode() uint16 {

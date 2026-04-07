@@ -38,4 +38,4 @@ func (p *UpdateBuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UpdateBuff) Deserialize(_ *stream.StreamReader) error { return nil }
+func (p *UpdateBuff) Deserialize(_ *stream.StreamReader) {}

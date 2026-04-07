@@ -23,4 +23,4 @@ func (p *CancelBuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *CancelBuff) Deserialize(_ *stream.StreamReader) error { return nil }
+func (p *CancelBuff) Deserialize(_ *stream.StreamReader) {}

@@ -24,8 +24,7 @@ func (p *NpcControl) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (s *NpcControl) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (s *NpcControl) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *NpcControl) Opcode() uint16 {

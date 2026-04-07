@@ -20,6 +20,5 @@ func (p *ShowMagnet) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowMagnet) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ShowMagnet) Deserialize(reader *stream.StreamReader) {
 }

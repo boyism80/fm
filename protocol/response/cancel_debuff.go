@@ -21,6 +21,5 @@ func (p *CancelMobBuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *CancelMobBuff) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *CancelMobBuff) Deserialize(reader *stream.StreamReader) {
 }

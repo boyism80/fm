@@ -21,4 +21,4 @@ func (p *CancelRemoteBuff) Serialize(writer *stream.StreamWriter) error {
 	return WriteMask(writer, SlotsFromBuffFlags(p.Buffs))
 }
 
-func (p *CancelRemoteBuff) Deserialize(_ *stream.StreamReader) error { return nil }
+func (p *CancelRemoteBuff) Deserialize(_ *stream.StreamReader) {}

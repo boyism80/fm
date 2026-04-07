@@ -24,4 +24,4 @@ func (p *RemoveDoor) Serialize(w *stream.StreamWriter) error {
 	return w.WriteU32(p.OwnerID)
 }
 
-func (p *RemoveDoor) Deserialize(*stream.StreamReader) error { return nil }
+func (p *RemoveDoor) Deserialize(*stream.StreamReader) {}

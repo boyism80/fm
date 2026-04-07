@@ -39,4 +39,4 @@ func (p *MoveSummon) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *MoveSummon) Deserialize(*stream.StreamReader) error { return nil }
+func (p *MoveSummon) Deserialize(*stream.StreamReader) {}

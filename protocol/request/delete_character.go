@@ -10,16 +10,7 @@ func (a *DeleteCharacter) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *DeleteCharacter) Deserialize(reader *stream.StreamReader) error {
-	_, err := reader.Read(5)
-	if err != nil {
-		return err
-	}
-	id, err := reader.ReadU32()
-	if err != nil {
-		return err
-	}
-
-	a.ID = id
-	return nil
+func (a *DeleteCharacter) Deserialize(reader *stream.StreamReader) {
+	reader.Read(5)
+	a.ID = reader.ReadU32()
 }

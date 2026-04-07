@@ -17,6 +17,5 @@ func (e *EndOfServerList) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (e *EndOfServerList) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (e *EndOfServerList) Deserialize(reader *stream.StreamReader) {
 }

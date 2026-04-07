@@ -44,8 +44,7 @@ func (p *Login) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *Login) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *Login) Deserialize(reader *stream.StreamReader) {
 }
 
 func (l *Login) Opcode() uint16 {

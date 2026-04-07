@@ -24,6 +24,5 @@ func (p *DieMob) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *DieMob) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *DieMob) Deserialize(reader *stream.StreamReader) {
 }

@@ -45,4 +45,4 @@ func (p *SummonAttack) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SummonAttack) Deserialize(*stream.StreamReader) error { return nil }
+func (p *SummonAttack) Deserialize(*stream.StreamReader) {}

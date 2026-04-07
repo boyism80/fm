@@ -22,6 +22,5 @@ func (c *CancelChair) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (c *CancelChair) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (c *CancelChair) Deserialize(reader *stream.StreamReader) {
 }

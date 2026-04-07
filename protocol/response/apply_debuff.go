@@ -31,6 +31,5 @@ func (p *ApplyMobBuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ApplyMobBuff) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ApplyMobBuff) Deserialize(reader *stream.StreamReader) {
 }

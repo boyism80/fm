@@ -38,18 +38,7 @@ func (m *NormalChat) Serialize(writer *stream.StreamWriter) error {
 }
 
 // Deserialize reads the chat message from client packet.
-func (m *NormalChat) Deserialize(reader *stream.StreamReader) error {
-	message, err := reader.ReadStr16()
-	if err != nil {
-		return err
-	}
-
-	show, err := reader.ReadBool()
-	if err != nil {
-		return err
-	}
-
-	m.Message = message
-	m.DontRecordHistory = show
-	return nil
+func (m *NormalChat) Deserialize(reader *stream.StreamReader) {
+	m.Message = reader.ReadStr16()
+	m.DontRecordHistory = reader.ReadBool()
 }

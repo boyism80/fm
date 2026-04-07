@@ -23,6 +23,5 @@ func (p *SuperHide) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SuperHide) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *SuperHide) Deserialize(reader *stream.StreamReader) {
 }

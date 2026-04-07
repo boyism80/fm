@@ -14,8 +14,7 @@ func (p *LeavePlayer) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *LeavePlayer) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *LeavePlayer) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *LeavePlayer) Opcode() uint16 {

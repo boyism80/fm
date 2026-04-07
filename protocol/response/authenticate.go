@@ -82,6 +82,5 @@ func (a *Authenticate) Serialize(writer *stream.StreamWriter) error {
 //
 // Returns:
 //   - error: Always returns nil for response messages
-func (a *Authenticate) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *Authenticate) Deserialize(reader *stream.StreamReader) {
 }

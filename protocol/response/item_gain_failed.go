@@ -16,8 +16,7 @@ func (p *ItemGainFailed) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ItemGainFailed) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ItemGainFailed) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *ItemGainFailed) Opcode() uint16 {

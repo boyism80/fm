@@ -67,4 +67,4 @@ func (p *SpawnSummon) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnSummon) Deserialize(*stream.StreamReader) error { return nil }
+func (p *SpawnSummon) Deserialize(*stream.StreamReader) {}

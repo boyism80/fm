@@ -31,6 +31,5 @@ func (p *Hint) Serialize(sw *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *Hint) Deserialize(sr *stream.StreamReader) error {
-	return nil
+func (p *Hint) Deserialize(sr *stream.StreamReader) {
 }

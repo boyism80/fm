@@ -12,12 +12,6 @@ func (a *LoginGame) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *LoginGame) Deserialize(reader *stream.StreamReader) error {
-	id, err := reader.ReadU32()
-	if err != nil {
-		return err
-	}
-
-	a.PlayerId = id
-	return nil
+func (a *LoginGame) Deserialize(reader *stream.StreamReader) {
+	a.PlayerId = reader.ReadU32()
 }

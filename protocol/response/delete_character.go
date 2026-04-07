@@ -21,6 +21,5 @@ func (a *DeleteCharacter) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *DeleteCharacter) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *DeleteCharacter) Deserialize(reader *stream.StreamReader) {
 }

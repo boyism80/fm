@@ -1646,6 +1646,20 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"channel_drop_rate": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Context == nil {
+				L.Push(lua.LNumber(1))
+				return 1
+			}
+			L.Push(lua.LNumber(ch.Context.GetDropRate()))
+			return 1
+		},
 		"bonus_exp_rate": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

@@ -28,6 +28,5 @@ func (m *GainExp) Serialize(sw *stream.StreamWriter) error {
 	return nil
 }
 
-func (m *GainExp) Deserialize(sr *stream.StreamReader) error {
-	return nil
+func (m *GainExp) Deserialize(sr *stream.StreamReader) {
 }

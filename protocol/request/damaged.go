@@ -22,48 +22,26 @@ func (p *Damaged) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *Damaged) Deserialize(reader *stream.StreamReader) error {
-	var err error
-	if p.UpdateTick, err = reader.ReadU32(); err != nil {
-		return err
-	}
+func (p *Damaged) Deserialize(reader *stream.StreamReader) {
+	p.UpdateTick = reader.ReadU32()
 	var t int8
-	if t, err = reader.Read8(); err != nil {
-		return err
-	}
+	t = reader.Read8()
 	p.Type = constant.IncomingHitType(t)
 	var elem uint8
-	if elem, err = reader.ReadU8(); err != nil {
-		return err
-	}
+	elem = reader.ReadU8()
 	p.Element = constant.HitElement(elem)
-	if p.Damage, err = reader.Read32(); err != nil {
-		return err
-	}
+	p.Damage = reader.Read32()
 
 	switch p.Type {
 	case constant.IncomingHitMapDebuff:
-		if p.Level, err = reader.ReadU8(); err != nil {
-			return err
-		}
-		if p.SkillID, err = reader.ReadU8(); err != nil {
-			return err
-		}
+		p.Level = reader.ReadU8()
+		p.SkillID = reader.ReadU8()
 
 	case constant.IncomingHitEnv, constant.IncomingHitMist:
 	default:
-		if p.MobID, err = reader.ReadU32(); err != nil {
-			return err
-		}
-		if p.OID, err = reader.ReadU32(); err != nil {
-			return err
-		}
-		if p.Direction, err = reader.ReadU8(); err != nil {
-			return err
-		}
-		if p.Reflect, err = reader.ReadU8(); err != nil {
-			return err
-		}
+		p.MobID = reader.ReadU32()
+		p.OID = reader.ReadU32()
+		p.Direction = reader.ReadU8()
+		p.Reflect = reader.ReadU8()
 	}
-	return nil
 }

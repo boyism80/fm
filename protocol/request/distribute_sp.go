@@ -15,13 +15,7 @@ func (p *DistributeSP) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *DistributeSP) Deserialize(reader *stream.StreamReader) error {
-	var err error
-	if p.Tick, err = reader.ReadU32(); err != nil {
-		return err
-	}
-	if p.SkillID, err = reader.ReadU32(); err != nil {
-		return err
-	}
-	return nil
+func (p *DistributeSP) Deserialize(reader *stream.StreamReader) {
+	p.Tick = reader.ReadU32()
+	p.SkillID = reader.ReadU32()
 }

@@ -85,4 +85,4 @@ func (p *SpawnMist) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnMist) Deserialize(*stream.StreamReader) error { return nil }
+func (p *SpawnMist) Deserialize(*stream.StreamReader) {}

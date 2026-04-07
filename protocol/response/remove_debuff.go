@@ -23,4 +23,4 @@ func (p *RemoveDebuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *RemoveDebuff) Deserialize(_ *stream.StreamReader) error { return nil }
+func (p *RemoveDebuff) Deserialize(_ *stream.StreamReader) {}

@@ -54,6 +54,5 @@ func (p *Notice) Serialize(sw *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *Notice) Deserialize(sr *stream.StreamReader) error {
-	return nil
+func (p *Notice) Deserialize(sr *stream.StreamReader) {
 }

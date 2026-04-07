@@ -16,33 +16,14 @@ func (a *Transfer) Opcode() uint16 {
 }
 
 func (a *Transfer) Serialize(writer *stream.StreamWriter) error {
-	err := writer.WriteU16(0)
-	if err != nil {
-		return err
-	}
-	err = writer.WriteIPAddress(a.IP)
-	if err != nil {
-		return err
-	}
-	err = writer.WriteU16(a.Port)
-	if err != nil {
-		return err
-	}
-	err = writer.WriteU32(a.CharacterId)
-	if err != nil {
-		return err
-	}
-	err = writer.WriteU8(0)
-	if err != nil {
-		return err
-	}
-	err = writer.WriteU32(0)
-	if err != nil {
-		return err
-	}
+	_ = writer.WriteU16(0)
+	_ = writer.WriteIPAddress(a.IP)
+	_ = writer.WriteU16(a.Port)
+	_ = writer.WriteU32(a.CharacterId)
+	_ = writer.WriteU8(0)
+	_ = writer.WriteU32(0)
 	return nil
 }
 
-func (a *Transfer) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *Transfer) Deserialize(reader *stream.StreamReader) {
 }

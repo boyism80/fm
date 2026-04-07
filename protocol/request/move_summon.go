@@ -16,25 +16,9 @@ func (m *MoveSummon) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (m *MoveSummon) Deserialize(reader *stream.StreamReader) error {
-	var err error
-	m.OID, err = reader.ReadU32()
-	if err != nil {
-		return err
-	}
-	x, err := reader.Read16()
-	if err != nil {
-		return err
-	}
-	y, err := reader.Read16()
-	if err != nil {
-		return err
-	}
-	m.Position = types.Vector2[int16]{X: x, Y: y}
-	m.Fragments, err = dto.ReadMovements(reader)
-	if err != nil {
-		return err
-	}
+func (m *MoveSummon) Deserialize(reader *stream.StreamReader) {
+	m.OID = reader.ReadU32()
+	m.Position = types.Vector2[int16]{X: reader.Read16(), Y: reader.Read16()}
+	m.Fragments = dto.ReadMovements(reader)
 
-	return nil
 }

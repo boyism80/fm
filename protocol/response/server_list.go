@@ -44,6 +44,5 @@ func (s *ServerList) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (s *ServerList) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (s *ServerList) Deserialize(reader *stream.StreamReader) {
 }

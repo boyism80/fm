@@ -112,6 +112,5 @@ func (s *SpawnPlayer) Opcode() uint16 {
 	return 0x6E // SpawnPlayer opcode
 }
 
-func (s *SpawnPlayer) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (s *SpawnPlayer) Deserialize(reader *stream.StreamReader) {
 }

@@ -17,28 +17,14 @@ func (p *UseInnerPortal) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UseInnerPortal) Deserialize(reader *stream.StreamReader) error {
-	var err error
-	if p.Mode, err = reader.ReadU8(); err != nil {
-		return err
-	}
-	if p.PortalName, err = reader.ReadStr16(); err != nil {
-		return err
-	}
-	if p.ToX, err = reader.Read16(); err != nil {
-		return err
-	}
-	if p.ToY, err = reader.Read16(); err != nil {
-		return err
-	}
+func (p *UseInnerPortal) Deserialize(reader *stream.StreamReader) {
+	p.Mode = reader.ReadU8()
+	p.PortalName = reader.ReadStr16()
+	p.ToX = reader.Read16()
+	p.ToY = reader.Read16()
 
 	if reader.Remaining() >= 4 {
-		if p.FromX, err = reader.Read16(); err != nil {
-			return err
-		}
-		if p.FromY, err = reader.Read16(); err != nil {
-			return err
-		}
+		p.FromX = reader.Read16()
+		p.FromY = reader.Read16()
 	}
-	return nil
 }

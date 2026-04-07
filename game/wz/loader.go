@@ -1667,6 +1667,8 @@ func loadDrops(path string) (*map[uint32][]Drop, error) {
 					model.Min = uint16(intField.Value)
 				case "max":
 					model.Max = uint16(intField.Value)
+				case "quest", "questid":
+					model.QuestID = uint32(intField.Value)
 				}
 			}
 

@@ -57,6 +57,5 @@ func (a *MagicAttack) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *MagicAttack) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *MagicAttack) Deserialize(reader *stream.StreamReader) {
 }

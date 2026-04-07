@@ -27,6 +27,5 @@ func (p *ShowBuffeffect) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowBuffeffect) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ShowBuffeffect) Deserialize(reader *stream.StreamReader) {
 }

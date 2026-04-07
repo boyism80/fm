@@ -15,11 +15,10 @@ func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *Warp) Deserialize(reader *stream.StreamReader) error {
-	p.Reason, _ = reader.ReadU8()
-	p.Target, _ = reader.ReadU32()
-	p.PortalName, _ = reader.ReadStr16()
+func (p *Warp) Deserialize(reader *stream.StreamReader) {
+	p.Reason = reader.ReadU8()
+	p.Target = reader.ReadU32()
+	p.PortalName = reader.ReadStr16()
 	reader.Skip(1)
-	p.Wheel, _ = reader.ReadBool()
-	return nil
+	p.Wheel = reader.ReadBool()
 }

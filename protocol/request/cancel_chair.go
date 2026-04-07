@@ -12,10 +12,6 @@ func (c *CancelChair) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (c *CancelChair) Deserialize(reader *stream.StreamReader) error {
-	var err error
-	if c.ChairID, err = reader.Read16(); err != nil {
-		return err
-	}
-	return nil
+func (c *CancelChair) Deserialize(reader *stream.StreamReader) {
+	c.ChairID = reader.Read16()
 }

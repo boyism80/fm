@@ -36,4 +36,4 @@ func (p *DamageSummon) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *DamageSummon) Deserialize(*stream.StreamReader) error { return nil }
+func (p *DamageSummon) Deserialize(*stream.StreamReader) {}

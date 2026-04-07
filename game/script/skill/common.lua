@@ -298,14 +298,11 @@ function on_attack(me, skill, damages, attack_info)
 end
 
 function handle_blind_acc_debuff(me, damages)
-	if me:buff_value(BuffFlag.Blind) == nil then
+	local blind_buff = me:buff(BuffFlag.Blind)
+	if blind_buff == nil then
 		return
 	end
-	local blind_skill = me:skill(Skill.Blind)
-	if blind_skill == nil then
-		return
-	end
-	local effect = blind_skill:effect()
+	local effect = blind_buff:effect()
 	if effect == nil then
 		return
 	end
@@ -325,23 +322,19 @@ function handle_blind_acc_debuff(me, damages)
 			goto continue_blind
 		end
 		if roll_percent(effect.prop) then
-			mob:buff(MobBuff.Acc, acc, duration_ms, blind_skill, me)
+			mob:buff(MobBuff.Acc, acc, duration_ms, blind_buff, me)
 		end
 		::continue_blind::
 	end
 end
 
 function handle_hamstring_slow(me, damages)
-	if me:buff_value(BuffFlag.Hamstring) == nil then
+	local ham_buff = me:buff(BuffFlag.Hamstring)
+	if ham_buff == nil then
 		return
 	end
 
-	local ham_skill = me:skill(Skill.Hamstring)
-	if ham_skill == nil then
-		return
-	end
-
-	local effect = ham_skill:effect()
+	local effect = ham_buff:effect()
 	if effect == nil then
 		return
 	end
@@ -365,7 +358,7 @@ function handle_hamstring_slow(me, damages)
 			goto continue_mob
 		end
 		if roll_percent(effect.prop) then
-			mob:buff(MobBuff.Speed, slow, duration_ms, ham_skill, me)
+			mob:buff(MobBuff.Speed, slow, duration_ms, ham_buff, me)
 		end
 		::continue_mob::
 	end

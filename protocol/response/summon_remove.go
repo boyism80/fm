@@ -31,4 +31,4 @@ func (p *RemoveSummon) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *RemoveSummon) Deserialize(*stream.StreamReader) error { return nil }
+func (p *RemoveSummon) Deserialize(*stream.StreamReader) {}

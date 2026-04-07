@@ -11,7 +11,6 @@ func (p *Aggro) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *Aggro) Deserialize(reader *stream.StreamReader) error {
+func (p *Aggro) Deserialize(reader *stream.StreamReader) {
 	// TODO: implement after packet structure is analyzed
-	return nil
 }

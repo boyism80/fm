@@ -16,12 +16,13 @@ import (
 
 type Mob struct {
 	LifeCore
-	Wz       *wz.Mob
-	Foothold int16
-	Spawn    *MobSpawn
-	mobBuffs *MobBuffContainer
-	ExpRate  int32
-	DropRate int32
+	Wz           *wz.Mob
+	Foothold     int16
+	Spawn        *MobSpawn
+	mobBuffs     *MobBuffContainer
+	ExpRate      int32
+	DropRate     int32
+	stealOutcome *uint32
 }
 
 func (m *Mob) GetObjectType() constant.ObjectType {
@@ -343,6 +344,78 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.ArgError(2, "drop_rate() get or set one value")
 			return 0
 		},
+		"drops": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			t := L.NewTable()
+			if mob.Context == nil || mob.Wz == nil {
+				L.Push(t)
+				return 1
+			}
+			resources := mob.Context.GetResources()
+			if resources == nil {
+				L.Push(t)
+				return 1
+			}
+			mobDrops, ok := resources.Drops[mob.Wz.ID]
+			if !ok {
+				L.Push(t)
+				return 1
+			}
+			idx := 1
+			for _, d := range mobDrops {
+				row := L.NewTable()
+				row.RawSetString("item", lua.LNumber(d.Item))
+				row.RawSetString("money", lua.LNumber(d.Money))
+				row.RawSetString("prob", lua.LNumber(d.Prob))
+				row.RawSetString("min", lua.LNumber(d.Min))
+				row.RawSetString("max", lua.LNumber(d.Max))
+				row.RawSetString("quest", lua.LNumber(d.QuestID))
+				t.RawSetInt(idx, row)
+				idx++
+			}
+			L.Push(t)
+			return 1
+		},
+		"has_stolen": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			L.Push(lua.LBool(mob.stealOutcome != nil))
+			return 1
+		},
+		"record_stolen_item": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			if L.GetTop() < 2 {
+				return 0
+			}
+			lv := L.Get(2)
+			if lv == lua.LNil {
+				return 0
+			}
+			n, ok := lv.(lua.LNumber)
+			if !ok {
+				return 0
+			}
+			v := uint32(n)
+			if v == 0 {
+				return 0
+			}
+			mob.stealOutcome = &v
+			return 0
+		},
 		"clear_buffs": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
@@ -661,6 +734,9 @@ func (m *Mob) dropItems(attacker *Character) {
 	mobDropF := float32(mobDrop) / 100.0
 
 	for _, drop := range mobDrops {
+		if m.stealOutcome != nil && drop.Item != 0 && *m.stealOutcome == drop.Item {
+			continue
+		}
 		adjustedProb := drop.Prob * dropRate * dropRateMulF * mobDropF
 		if adjustedProb > 1.0 {
 			adjustedProb = 1.0

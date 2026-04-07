@@ -38,6 +38,5 @@ func (p *ShowItemGain) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowItemGain) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ShowItemGain) Deserialize(reader *stream.StreamReader) {
 }

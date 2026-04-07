@@ -20,6 +20,5 @@ func (p *SkillCooldown) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SkillCooldown) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *SkillCooldown) Deserialize(reader *stream.StreamReader) {
 }

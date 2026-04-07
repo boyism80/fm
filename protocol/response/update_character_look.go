@@ -20,8 +20,7 @@ func (p *UpdateCharacterLook) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UpdateCharacterLook) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *UpdateCharacterLook) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *UpdateCharacterLook) Opcode() uint16 {

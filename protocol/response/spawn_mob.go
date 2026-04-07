@@ -36,6 +36,5 @@ func (p *SpawnMob) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnMob) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *SpawnMob) Deserialize(reader *stream.StreamReader) {
 }

@@ -30,12 +30,10 @@ func (p *Revive) Serialize(writer *stream.StreamWriter) error {
 // 3. PortalName (string) - Portal name for movement
 // 4. SkipByte (1 byte) - Skipped byte
 // 5. UseWheel (1 byte) - Wheel of fortune usage flag
-func (p *Revive) Deserialize(reader *stream.StreamReader) error {
-	p.UnknownFlag, _ = reader.ReadU8()
-	p.TargetID, _ = reader.Read32()
-	p.PortalName, _ = reader.ReadStr16()
-	reader.Skip(1) // Skip 1 byte
-	useWheelByte, _ := reader.ReadU8()
-	p.UseWheel = useWheelByte > 0
-	return nil
+func (p *Revive) Deserialize(reader *stream.StreamReader) {
+	p.UnknownFlag = reader.ReadU8()
+	p.TargetID = reader.Read32()
+	p.PortalName = reader.ReadStr16()
+	reader.Skip(1)
+	p.UseWheel = reader.ReadU8() > 0
 }

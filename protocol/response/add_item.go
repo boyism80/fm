@@ -29,8 +29,7 @@ func (p *AddItem) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *AddItem) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *AddItem) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *AddItem) Opcode() uint16 {

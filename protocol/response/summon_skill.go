@@ -25,4 +25,4 @@ func (p *SummonSkill) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SummonSkill) Deserialize(*stream.StreamReader) error { return nil }
+func (p *SummonSkill) Deserialize(*stream.StreamReader) {}

@@ -32,4 +32,4 @@ func (p *UpdateRemoteBuff) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UpdateRemoteBuff) Deserialize(_ *stream.StreamReader) error { return nil }
+func (p *UpdateRemoteBuff) Deserialize(_ *stream.StreamReader) {}

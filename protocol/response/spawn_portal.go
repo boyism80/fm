@@ -45,4 +45,4 @@ func (p *SpawnPortal) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnPortal) Deserialize(*stream.StreamReader) error { return nil }
+func (p *SpawnPortal) Deserialize(*stream.StreamReader) {}

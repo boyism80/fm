@@ -1,8 +1,6 @@
 package request
 
 import (
-	"fmt"
-
 	"github.com/boyism80/fm/stream"
 )
 
@@ -22,39 +20,19 @@ func (p *Secure) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *Secure) Deserialize(reader *stream.StreamReader) error {
+func (p *Secure) Deserialize(reader *stream.StreamReader) {
 	n := reader.Remaining()
 	if n < 9 {
 		if n > 0 {
-			var err error
-			p.Payload, err = reader.Read(n)
-			if err != nil {
-				return fmt.Errorf("read payload: %w", err)
-			}
+			p.Payload = reader.Read(n)
 		}
-		return nil
+		return
 	}
-	t, err := reader.ReadU8()
-	if err != nil {
-		return err
-	}
-	p.Type = t
-	a, err := reader.Read32()
-	if err != nil {
-		return err
-	}
-	p.ParamA = a
-	b, err := reader.Read32()
-	if err != nil {
-		return err
-	}
-	p.ParamB = b
+	p.Type = reader.ReadU8()
+	p.ParamA = reader.Read32()
+	p.ParamB = reader.Read32()
 	remain := reader.Remaining()
 	if remain > 0 {
-		p.Payload, err = reader.Read(remain)
-		if err != nil {
-			return fmt.Errorf("read remainder: %w", err)
-		}
+		p.Payload = reader.Read(remain)
 	}
-	return nil
 }

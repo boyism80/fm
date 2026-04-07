@@ -74,27 +74,13 @@ func (a *CreateCharacter) Serialize(writer *stream.StreamWriter) error {
 //   - Failed to read any of the required fields
 //   - Malformed packet data
 //   - Unexpected end of packet
-func (a *CreateCharacter) Deserialize(reader *stream.StreamReader) error {
-	name, _ := reader.ReadStr16()
-	a.Name = name
+func (a *CreateCharacter) Deserialize(reader *stream.StreamReader) {
+	a.Name = reader.ReadStr16()
+	a.Face = reader.ReadU32()
+	a.Hair = reader.ReadU32()
+	a.Top = reader.ReadU32()
+	a.Bottom = reader.ReadU32()
+	a.Shoes = reader.ReadU32()
+	a.Weapon = reader.ReadU32()
 
-	face, _ := reader.ReadU32()
-	a.Face = face
-
-	hair, _ := reader.ReadU32()
-	a.Hair = hair
-
-	top, _ := reader.ReadU32()
-	a.Top = top
-
-	bottom, _ := reader.ReadU32()
-	a.Bottom = bottom
-
-	shoes, _ := reader.ReadU32()
-	a.Shoes = shoes
-
-	weapon, _ := reader.ReadU32()
-	a.Weapon = weapon
-
-	return nil
 }
