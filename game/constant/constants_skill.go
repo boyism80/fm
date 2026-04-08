@@ -307,10 +307,9 @@ const (
 	SkillSuperTransformation          SkillID = 5121004
 	SkillDemolition                   SkillID = 5121005
 	SkillSnatch                       SkillID = 5121007
-	SkillSpeedInfusion                SkillID = 5121008
-	SkillTimeLeap                     SkillID = 5121009
-	SkillPiratesRage                  SkillID = 5121010
-	SkillPirateSRage                  SkillID = 5121010
+	SkillHeroWill                     SkillID = 5121008
+	SkillWindBooster                  SkillID = 5121009
+	SkillTimeLeap                     SkillID = 5121010
 	SkillGunMastery                   SkillID = 5200000
 	SkillInvisibleShot                SkillID = 5201001
 	SkillGrenade                      SkillID = 5201002
@@ -459,7 +458,7 @@ const (
 	SkillTransformationCygnus         SkillID = 15111002
 	SkillShockwaveCygnus              SkillID = 15111003
 	SkillSnatchCygnus                 SkillID = 15111004
-	SkillTimeLeapCygnus               SkillID = 15111005
+	SkillWindBoosterCygnus            SkillID = 15111005
 	SkillSpark                        SkillID = 15111006
 	SkillSharkWave                    SkillID = 15111007
 )
@@ -769,10 +768,9 @@ var skillConstantsRaw = map[string]SkillID{
 	"SuperTransformation":          SkillSuperTransformation,
 	"Demolition":                   SkillDemolition,
 	"Snatch":                       SkillSnatch,
-	"SpeedInfusion":                SkillSpeedInfusion,
+	"HeroWill":                     SkillHeroWill,
+	"WindBooster":                  SkillWindBooster,
 	"TimeLeap":                     SkillTimeLeap,
-	"PiratesRage":                  SkillPiratesRage,
-	"PirateSRage":                  SkillPirateSRage,
 	"GunMastery":                   SkillGunMastery,
 	"InvisibleShot":                SkillInvisibleShot,
 	"Grenade":                      SkillGrenade,
@@ -921,7 +919,7 @@ var skillConstantsRaw = map[string]SkillID{
 	"TransformationCygnus":         SkillTransformationCygnus,
 	"ShockwaveCygnus":              SkillShockwaveCygnus,
 	"SnatchCygnus":                 SkillSnatchCygnus,
-	"TimeLeapCygnus":               SkillTimeLeapCygnus,
+	"WindBoosterCygnus":            SkillWindBoosterCygnus,
 	"Spark":                        SkillSpark,
 	"SharkWave":                    SkillSharkWave,
 }

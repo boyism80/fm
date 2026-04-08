@@ -3,6 +3,7 @@ package response
 import (
 	"time"
 
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/stream"
 )
@@ -23,19 +24,79 @@ func (p *UpdateBuff) Serialize(writer *stream.StreamWriter) error {
 	buffs := make([]dto.BuffEntry, len(p.Buffs))
 	copy(buffs, p.Buffs)
 	SortBuffEntries(buffs)
-	if err := WriteMask(writer, SlotsFromBuffEntries(buffs)); err != nil {
-		return err
+	buffFlags := make([]constant.BuffFlag, len(buffs))
+	for i := range buffs {
+		buffFlags[i] = buffs[i].Buff
 	}
-	for _, buff := range buffs {
-		writer.WriteU16(uint16(buff.Value))
-		writer.Write32(p.BuffID)
-		writer.Write32(int32(p.Duration.Milliseconds()))
+	WriteBuffs(writer, buffFlags)
+
+	sec := p.Duration / time.Second
+	var durSec uint16
+	if sec > 65535 {
+		durSec = 65535
+	} else if sec <= 0 && p.Duration > 0 {
+		durSec = 1
+	} else {
+		durSec = uint16(sec)
 	}
-	writer.WriteU16(0)
-	writer.WriteU16(0)
-	writer.Write32(0)
-	writer.WriteU8(0)
-	return nil
+
+	switch constant.SkillID(uint32(p.BuffID)) {
+	case constant.SkillEnergyCharge, constant.SkillEnergyChargeCygnus:
+		energy := int32(0)
+		for _, buff := range buffs {
+			if buff.Buff == constant.BuffFlagEnergyCharge {
+				energy = buff.Value
+				break
+			}
+		}
+		energy = max(int32(0), min(energy, int32(10000)))
+		writer.WriteU16(0)
+		writer.Write32(energy)
+		writer.Write64(0)
+		writer.WriteU8(0)
+		if energy >= 10000 {
+			writer.Write32(int32(durSec))
+		} else {
+			writer.Write32(0)
+		}
+		return nil
+	case constant.SkillDash, constant.SkillDashCygnus:
+		writer.WriteU16(0)
+		sid := int64(p.BuffID)
+		for _, buff := range buffs {
+			writer.Write32(buff.Value)
+			writer.Write64(sid)
+			writer.Write(make([]byte, 1))
+			writer.WriteU16(durSec)
+		}
+		writer.WriteU16(0)
+		writer.WriteU16(0)
+		return nil
+	case constant.SkillWindBooster, constant.SkillWindBoosterCygnus, constant.SkillTimeLeap:
+		writer.WriteU16(0)
+		sid := int64(p.BuffID)
+		for _, buff := range buffs {
+			writer.Write32(buff.Value)
+			writer.Write64(sid)
+			writer.Write(make([]byte, 6))
+			writer.WriteU16(durSec)
+		}
+		
+		writer.WriteU16(0)
+		writer.WriteU16(0)
+		return nil
+	default:
+		for _, buff := range buffs {
+			writer.WriteU16(uint16(buff.Value))
+			writer.Write32(p.BuffID)
+			writer.Write32(int32(p.Duration.Milliseconds()))
+		}
+		writer.WriteU16(0)
+		writer.WriteU16(0)
+		writer.Write32(0)
+		writer.WriteU8(0)
+		return nil
+	}
 }
 
 func (p *UpdateBuff) Deserialize(_ *stream.StreamReader) {}

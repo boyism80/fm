@@ -235,33 +235,32 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Skill expected")
 				return 0
 			}
-			L.Push(lua.LBool(skill.IsCooling()))
+			L.Push(lua.LBool(skill.CooldownRemaining() > 0))
 			return 1
 		},
-		"cooldown_remaining": func(L *lua.LState) int {
+		"cooldown": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			skill, ok := ud.Value.(*SkillEntry)
 			if !ok {
 				L.ArgError(1, "Skill expected")
 				return 0
 			}
-			L.Push(lua.LNumber(skill.CooldownRemaining().Milliseconds()))
-			return 1
-		},
-		"set_cooldown": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			skill, ok := ud.Value.(*SkillEntry)
-			if !ok {
-				L.ArgError(1, "Skill expected")
+			argc := L.GetTop()
+			if argc == 1 {
+				L.Push(lua.LNumber(skill.CooldownRemaining().Milliseconds()))
+				return 1
+			} else if argc == 2 {
+				ms := L.CheckNumber(2)
+				if ms <= 0 {
+					skill.ClearCooldown()
+				} else {
+					skill.StartCooldown(time.Duration(ms) * time.Millisecond)
+				}
 				return 0
-			}
-			ms := L.CheckNumber(2)
-			if ms <= 0 {
-				skill.ClearCooldown()
 			} else {
-				skill.StartCooldown(time.Duration(ms) * time.Millisecond)
+				L.ArgError(2, "cooldown() requires 0 or 1 arguments")
+				return 0
 			}
-			return 0
 		},
 	}
 }

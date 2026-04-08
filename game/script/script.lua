@@ -65,7 +65,7 @@ end
 function on_script(me)
     local x, y = me:position()
 
-    me:class(422)
+    me:class(512)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -83,7 +83,7 @@ function on_script(me)
     me:mkitem('활전용화살', 200)
     me:mkitem('석궁전용화살', 200)
     me:mkitem('석궁')
-    local weapon = me:mkitem('후루츠대거')
+    local weapon = me:mkitem('스틸너클')
     if weapon ~= nil then
         me:equip(weapon)
     end
@@ -192,6 +192,24 @@ function on_level_up(me, old_level, new_level)
             bonus_hp = bonus_hp + diff * effect.x
         end
     end
+    if me:class_of(Class.Pirate) then
+        local s = me:skill(Skill.HpIncrease)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus_hp = bonus_hp + diff * effect.x
+            end
+        end
+    end
+    if me:class_of(Class.ThunderBreaker1) then
+        local s = me:skill(Skill.HpIncreaseCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus_hp = bonus_hp + diff * effect.x
+            end
+        end
+    end
     if me:class_of(Class.Magician) then
         local s = me:skill(Skill.ImprovingMaxMpIncrease)
         if s ~= nil then
@@ -223,6 +241,22 @@ function on_ap_to_hp(me)
         if s ~= nil then
             local effect = s:effect()
             bonus = effect.y
+        end
+    elseif me:class_of(Class.Pirate) then
+        local s = me:skill(Skill.HpIncrease)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus = effect.y
+            end
+        end
+    elseif me:class_of(Class.ThunderBreaker1) then
+        local s = me:skill(Skill.HpIncreaseCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus = effect.y
+            end
         end
     end
     return base + bonus

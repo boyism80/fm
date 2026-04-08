@@ -18,9 +18,7 @@ func (p *RemoveRemoteDebuff) Serialize(writer *stream.StreamWriter) error {
 		p.Diseases = []constant.DebuffFlag{}
 	}
 	writer.Write32(p.CharacterID)
-	if err := WriteMask(writer, SlotsFromDebuffFlags(p.Diseases)); err != nil {
-		return err
-	}
+	WriteDebuffs(writer, p.Diseases)
 	writer.WriteU8(3)
 	writer.WriteU8(1)
 	return nil

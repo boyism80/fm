@@ -18,9 +18,7 @@ func (p *GiveRemoteDebuff) Opcode() uint16 { return 0x90 }
 
 func (p *GiveRemoteDebuff) Serialize(writer *stream.StreamWriter) error {
 	writer.Write32(p.CharacterID)
-	if err := WriteSingleMask(writer, SlotFromDebuffFlag(p.Disease)); err != nil {
-		return err
-	}
+	WriteDebuff(writer, p.Disease)
 	if p.Disease == constant.DebuffFlagPoison {
 		writer.Write16(p.X)
 	}

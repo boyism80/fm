@@ -10,7 +10,7 @@ function apply_buff_from_effect(me, skill, flag, value_key)
 		return
 	end
 	local val = effect[value_key]
-	if val == nil or val <= 0 then
+	if val == nil then
 		return
 	end
 	me:buff(skill, flag, val)

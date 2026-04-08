@@ -388,6 +388,8 @@ func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, 
 	if mapInstance != nil {
 		mapInstance.Broadcast(&response.UpdateRemoteBuff{
 			CharacterID: int32(ch.GetID()),
+			BuffID:      buffID,
+			Duration:    remainingDuration,
 			Buffs:       dtoBuffs,
 		}, &entity.BroadcastOption{
 			ExceptPlayerIDs: []uint32{ch.GetID()},

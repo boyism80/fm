@@ -487,6 +487,7 @@ func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
 func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
 func (ch *Character) GetInvincible() bool { return ch.Invincible }
 func (ch *Character) IsAlive() bool       { return ch.Hp > 0 }
+func (ch *Character) GetGender() uint8    { return ch.gender }
 
 func (ch *Character) SetHp(v uint32, notify bool) {
 	maxHp := ch.GetMaxHp()

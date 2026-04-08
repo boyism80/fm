@@ -79,7 +79,7 @@ var (
 	BuffFlagDashSpeed     = BuffFlag{0x4, 2}
 	BuffFlagDashJump      = BuffFlag{0x8, 2}
 	BuffFlagMonsterRiding = BuffFlag{0x10, 2}
-	BuffFlagSpeedInfusion = BuffFlag{0x20, 2}
+	BuffFlagWindBooster   = BuffFlag{0x20, 2}
 	BuffFlagHomingBeacon  = BuffFlag{0x40, 2}
 	BuffFlagExpRate       = BuffFlag{0x400, 2}
 	BuffFlagDropRate      = BuffFlag{0x800, 2}
@@ -148,7 +148,7 @@ func AllBuffFlags() map[string]BuffFlag {
 		"DashSpeed":      BuffFlagDashSpeed,
 		"DashJump":       BuffFlagDashJump,
 		"MonsterRiding":  BuffFlagMonsterRiding,
-		"SpeedInfusion":  BuffFlagSpeedInfusion,
+		"WindBooster":    BuffFlagWindBooster,
 		"HomingBeacon":   BuffFlagHomingBeacon,
 		"ExpRate":        BuffFlagExpRate,
 		"DropRate":       BuffFlagDropRate,

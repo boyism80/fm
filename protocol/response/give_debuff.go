@@ -17,9 +17,7 @@ type GiveDebuff struct {
 func (p *GiveDebuff) Opcode() uint16 { return 0x15 }
 
 func (p *GiveDebuff) Serialize(writer *stream.StreamWriter) error {
-	if err := WriteSingleMask(writer, SlotFromDebuffFlag(p.Disease)); err != nil {
-		return err
-	}
+	WriteDebuff(writer, p.Disease)
 	writer.Write16(p.X)
 	writer.Write16(int16(p.SkillID))
 	writer.Write16(int16(p.SkillLevel))

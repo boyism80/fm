@@ -285,6 +285,43 @@ function on_activated(me, skill, params)
 	return true
 end
 
+function handle_energy_charge(me, damages)
+	local ec
+	if me:class_of(Class.Brawler) then
+		ec = me:skill(Skill.EnergyCharge)
+	elseif me:class_of(Class.ThunderBreaker2) then
+		ec = me:skill(Skill.EnergyChargeCygnus)
+	else
+		return
+	end
+
+	if ec == nil then
+		return
+	end
+	local effect = ec:effect()
+	if effect == nil then
+		return
+	end
+	local value = me:buff_value(BuffFlag.EnergyCharge) or 0
+	if value >= 10000 then
+		return
+	end
+	local targets = 0
+	for _, hits in pairs(damages or {}) do
+		targets = targets + #(hits or {})
+	end
+	if targets <= 0 then
+		return
+	end
+	local inc = effect.x * targets
+	value = math.min(value + inc, 10000)
+	if value < 10000 then
+		me:buff(ec, BuffFlag.EnergyCharge, value, { time = 0 })
+	else
+		me:buff(ec, BuffFlag.EnergyCharge, value)
+	end
+end
+
 function on_attack(me, skill, damages, attack_info)
 	local targets = damages_to_targets(damages)
 	handle_combo_attack(me, targets, skill)
@@ -295,6 +332,7 @@ function on_attack(me, skill, damages, attack_info)
 	handle_hamstring_slow(me, damages)
 	handle_blind_acc_debuff(me, damages)
 	handle_mortal_blow(me, damages)
+	handle_energy_charge(me, damages)
 end
 
 function handle_blind_acc_debuff(me, damages)

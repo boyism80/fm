@@ -81,6 +81,20 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"gender": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "gender() is read-only")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.GetGender()))
+			return 1
+		},
 		"level": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -339,15 +353,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 
-			parseFlag := func(argument lua.LValue, argIndex int) (constant.BuffFlag, bool) {
-				bfTable, ok := argument.(*lua.LTable)
+			getFlagFromTable := func(argument lua.LValue, argIndex int) (constant.BuffFlag, bool) {
+				fields, ok := luax.ParseTable(L, argument, argIndex)
 				if !ok {
-					L.ArgError(argIndex, "BuffFlag table expected")
 					return constant.BuffFlag{}, false
 				}
-				maskLV := bfTable.RawGetString("mask")
-				posLV := bfTable.RawGetString("position")
-				if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+				maskLV := fields[lua.LString("mask")]
+				posLV := fields[lua.LString("position")]
+				if maskLV == nil || posLV == nil || maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
 					L.ArgError(argIndex, "BuffFlag table must have numeric mask and position")
 					return constant.BuffFlag{}, false
 				}
@@ -356,12 +369,63 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					Position: int(posLV.(lua.LNumber)),
 				}, true
 			}
-
-			switch argc {
-			case 2:
-				flag, ok := parseFlag(L.Get(2), 2)
+			getValuesFromTable := func(argument lua.LValue, argIndex int) (map[constant.BuffFlag]int32, bool) {
+				fieldMap, ok := luax.ParseTable(L, argument, argIndex)
+				if !ok {
+					return nil, false
+				}
+				if len(fieldMap) == 0 {
+					L.ArgError(argIndex, "buff() requires at least one flag-value pair")
+					return nil, false
+				}
+				values := make(map[constant.BuffFlag]int32, len(fieldMap))
+				for keyLV, valueLV := range fieldMap {
+					flag, ok := getFlagFromTable(keyLV, argIndex)
+					if !ok {
+						return nil, false
+					}
+					if valueLV == nil || valueLV.Type() != lua.LTNumber {
+						L.ArgError(argIndex, "buff() values must be numbers")
+						return nil, false
+					}
+					values[flag] = int32(valueLV.(lua.LNumber))
+				}
+				return values, true
+			}
+			isSingleFlagTable := func(argument lua.LValue, argIndex int) (bool, bool) {
+				fields, ok := luax.ParseTable(L, argument, argIndex)
+				if !ok {
+					return false, false
+				}
+				maskLV := fields[lua.LString("mask")]
+				posLV := fields[lua.LString("position")]
+				if maskLV == nil || posLV == nil {
+					return false, true
+				}
+				if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+					L.ArgError(argIndex, "BuffFlag table must have numeric mask and position")
+					return false, false
+				}
+				return true, true
+			}
+			if argc == 2 {
+				if L.Get(2).Type() != lua.LTTable {
+					L.ArgError(2, "buff() getter requires BuffFlag table")
+					return 0
+				}
+				flagFields, ok := luax.ParseTable(L, L.Get(2), 2)
 				if !ok {
 					return 0
+				}
+				maskLV := flagFields[lua.LString("mask")]
+				posLV := flagFields[lua.LString("position")]
+				if maskLV == nil || posLV == nil || maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+					L.ArgError(2, "BuffFlag table must have numeric mask and position")
+					return 0
+				}
+				flag := constant.BuffFlag{
+					Mask:     uint32(maskLV.(lua.LNumber)),
+					Position: int(posLV.(lua.LNumber)),
 				}
 				buff := ch.Buffs.GetEntity(flag)
 				skillBuff, ok := buff.(*SkillBuff)
@@ -371,105 +435,114 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				L.Push(luax.NewLuable(L, skillBuff))
 				return 1
-			case 3:
-				skillUD := L.CheckUserData(2)
-				skillEntry, ok := skillUD.Value.(*SkillEntry)
-				if !ok || skillEntry == nil {
-					L.ArgError(2, "SkillEntry with Wz expected")
+			} else {
+				if argc < 3 {
+					L.ArgError(3, "buff() requires (skill, {[flag]=value}), (skill, {[flag]=value}, option), (skill, flag, value), (skill, flag, value, option), (consume, durationMs, {[flag]=value}), or (consume, durationMs, flag, value)")
 					return 0
 				}
-				values := make(map[constant.BuffFlag]int32)
-				valueTable := L.CheckTable(3)
-				valueTable.ForEach(func(key lua.LValue, value lua.LValue) {
-					flag, ok := parseFlag(key, 3)
-					if !ok {
-						return
-					}
-					if value.Type() != lua.LTNumber {
-						L.ArgError(3, "buff() values must be numbers")
-						return
-					}
-					values[flag] = int32(value.(lua.LNumber))
-				})
-				if len(values) == 0 {
-					L.ArgError(3, "buff() requires at least one flag-value pair")
-					return 0
-				}
-				duration := time.Duration(0)
-				if ld := skillEntry.Wz.GetLevelData(skillEntry.Level()); ld != nil {
-					duration = ld.Time
-				}
-				ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.Level()), ch.GetID(), values)
-				return 0
-			case 4:
+
 				arg2UD := L.CheckUserData(2)
-				if skillEntry, ok := arg2UD.Value.(*SkillEntry); ok {
-					if skillEntry == nil {
+
+				var skillEntry *SkillEntry
+				var consumeWz *wz.Consume
+				var values map[constant.BuffFlag]int32
+				baseDuration := time.Duration(0)
+				duration := time.Duration(0)
+				offset := 2
+
+				if se, ok := arg2UD.Value.(*SkillEntry); ok {
+					if se == nil {
 						L.ArgError(2, "SkillEntry with Wz expected")
 						return 0
 					}
-
-					flag, ok := parseFlag(L.Get(3), 3)
-					if !ok {
+					skillEntry = se
+					if ld := skillEntry.Wz.GetLevelData(skillEntry.Level()); ld != nil {
+						baseDuration = ld.Time
+					}
+					offset++
+				} else if cw, ok := arg2UD.Value.(*wz.Consume); ok {
+					if cw == nil {
+						L.ArgError(2, "wz.Consume expected")
 						return 0
 					}
-
-					values := map[constant.BuffFlag]int32{flag: int32(L.CheckNumber(4))}
-					duration := time.Duration(0)
-					if ld := skillEntry.Wz.GetLevelData(skillEntry.Level()); ld != nil {
-						duration = ld.Time
-					}
-					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.Level()), ch.GetID(), values)
-					return 0
-				}
-				consumeWz, ok := arg2UD.Value.(*wz.Consume)
-				if !ok || consumeWz == nil {
-					L.ArgError(2, "wz.Consume expected")
+					consumeWz = cw
+					offset++
+					durationMs := L.CheckInt(offset)
+					duration = time.Duration(durationMs) * time.Millisecond
+					offset++
+				} else {
+					L.ArgError(2, "SkillEntry with Wz or wz.Consume expected")
 					return 0
 				}
 
-				durationMs := L.CheckInt(3)
-				values := make(map[constant.BuffFlag]int32)
-				valueTable := L.CheckTable(4)
-				valueTable.ForEach(func(key lua.LValue, value lua.LValue) {
-					flag, ok := parseFlag(key, 4)
-					if !ok {
-						return
-					}
-					if value.Type() != lua.LTNumber {
-						L.ArgError(4, "buff() item values must be numbers")
-						return
-					}
-					values[flag] = int32(value.(lua.LNumber))
-				})
-				if len(values) == 0 {
-					L.ArgError(4, "buff() requires at least one flag-value pair")
+				flagsArg := L.Get(offset)
+				if flagsArg.Type() != lua.LTTable {
+					L.ArgError(offset, "buff() requires BuffFlag table or flag-value table")
 					return 0
 				}
 
-				duration := time.Duration(durationMs) * time.Millisecond
-				ch.Buffs.AddItemBuff(consumeWz, duration, values)
-				return 0
-			case 5:
-				arg2UD := L.CheckUserData(2)
-				consumeWz, ok := arg2UD.Value.(*wz.Consume)
-				if !ok || consumeWz == nil {
-					L.ArgError(2, "wz.Consume expected")
-					return 0
-				}
-
-				durationMs := L.CheckInt(3)
-				flag, ok := parseFlag(L.Get(4), 4)
+				isFlag, ok := isSingleFlagTable(flagsArg, offset)
 				if !ok {
 					return 0
 				}
 
-				values := map[constant.BuffFlag]int32{flag: int32(L.CheckNumber(5))}
-				duration := time.Duration(durationMs) * time.Millisecond
-				ch.Buffs.AddItemBuff(consumeWz, duration, values)
-				return 0
-			default:
-				L.ArgError(3, "buff() requires (skill, {[flag]=value}), (skill, flag, value), (consume, durationMs, {[flag]=value}), or (consume, durationMs, flag, value)")
+				if isFlag {
+					offset++
+					valueIndex := offset
+					if valueIndex > argc {
+						if skillEntry != nil {
+							L.ArgError(valueIndex, "buff() requires value for (skill, flag, value)")
+						} else {
+							L.ArgError(valueIndex, "buff() requires value for (consume, durationMs, flag, value)")
+						}
+						return 0
+					}
+					flag, ok := getFlagFromTable(flagsArg, offset-1)
+					if !ok {
+						return 0
+					}
+					values = map[constant.BuffFlag]int32{flag: int32(L.CheckNumber(valueIndex))}
+					offset++
+				} else {
+					parsedValues, ok := getValuesFromTable(flagsArg, offset)
+					if !ok {
+						return 0
+					}
+					values = parsedValues
+				}
+
+				if skillEntry != nil {
+					duration = baseDuration
+					if offset <= argc {
+						optionLV := L.Get(offset)
+						if optionLV.Type() != lua.LTNil {
+							optionFields, ok := luax.ParseTable(L, optionLV, offset)
+							if !ok {
+								return 0
+							}
+							timeLV := optionFields[lua.LString("time")]
+							if timeLV != nil && timeLV.Type() != lua.LTNil {
+								if timeLV.Type() != lua.LTNumber {
+									L.ArgError(offset, "buff() option.time must be number")
+									return 0
+								}
+								sec := float64(timeLV.(lua.LNumber))
+								if sec < 0 {
+									L.ArgError(offset, "buff() option.time must be >= 0")
+									return 0
+								}
+								if sec == 0 {
+									duration = 0
+								} else {
+									duration = time.Duration(sec * float64(time.Second))
+								}
+							}
+						}
+					}
+					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.Level()), ch.GetID(), values)
+				} else {
+					ch.Buffs.AddItemBuff(consumeWz, duration, values)
+				}
 				return 0
 			}
 		},
@@ -516,12 +589,19 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				case lua.LNumber:
 					ch.Buffs.RemoveSkillBuff(uint32(L.CheckInt(i)))
 				case *lua.LTable:
-					maskLV := v.RawGetString("mask")
-					posLV := v.RawGetString("position")
-					if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+					fields, ok := luax.ParseTable(L, v, i)
+					if !ok {
+						return 0
+					}
+					maskLV := fields[lua.LString("mask")]
+					posLV := fields[lua.LString("position")]
+					if maskLV == nil || posLV == nil || maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
 						continue
 					}
-					flags = append(flags, constant.BuffFlag{Mask: uint32(maskLV.(lua.LNumber)), Position: int(posLV.(lua.LNumber))})
+					flags = append(flags, constant.BuffFlag{
+						Mask:     uint32(maskLV.(lua.LNumber)),
+						Position: int(posLV.(lua.LNumber)),
+					})
 				default:
 					L.ArgError(i, "BuffFlag table or skill id (number) expected")
 					return 0
@@ -558,10 +638,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 
-			bfTable := L.CheckTable(2)
-			maskLV := bfTable.RawGetString("mask")
-			posLV := bfTable.RawGetString("position")
-			if maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
+			flagFields, ok := luax.ParseTable(L, L.CheckTable(2), 2)
+			if !ok {
+				return 0
+			}
+			maskLV := flagFields[lua.LString("mask")]
+			posLV := flagFields[lua.LString("position")]
+			if maskLV == nil || posLV == nil || maskLV.Type() != lua.LTNumber || posLV.Type() != lua.LTNumber {
 				L.ArgError(2, "BuffFlag table must have numeric mask and position")
 				return 0
 			}
@@ -574,11 +657,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			switch argc {
-			case 2:
+			if argc == 2 {
 				L.Push(lua.LNumber(currentValue))
 				return 1
-			case 3:
+			} else if argc == 3 {
 				newValue := int32(L.CheckNumber(3))
 				_, updated := ch.Buffs.SetBuffValue(flag, newValue)
 				if !updated {
@@ -587,7 +669,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				L.Push(lua.LNumber(newValue))
 				return 1
-			default:
+			} else {
 				L.ArgError(3, "buff_value() requires 1 or 2 arguments after self")
 				return 0
 			}

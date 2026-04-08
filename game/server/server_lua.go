@@ -111,6 +111,25 @@ func registerInventoryTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("InventoryType", t)
 }
 
+func registerGenderConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	t.RawSetString("Male", lua.LNumber(constant.GenderMale))
+	t.RawSetString("Female", lua.LNumber(constant.GenderFemale))
+	luaState.SetGlobal("Gender", t)
+}
+
+func registerMorphConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	t.RawSetString("Barrel", lua.LNumber(constant.MorphBarrel))
+	t.RawSetString("Transform", lua.LNumber(constant.MorphTransform))
+	t.RawSetString("TransformFemale", lua.LNumber(constant.MorphTransformFemale))
+	t.RawSetString("SuperTransform", lua.LNumber(constant.MorphSuperTransform))
+	t.RawSetString("SuperTransformFemale", lua.LNumber(constant.MorphSuperTransformFemale))
+	t.RawSetString("Albatross", lua.LNumber(constant.MorphAlbatross))
+	t.RawSetString("AlbatrossFemale", lua.LNumber(constant.MorphAlbatrossFemale))
+	luaState.SetGlobal("Morph", t)
+}
+
 func registerStatConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("Level", lua.LNumber(constant.STAT_LEVEL))
@@ -259,6 +278,8 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerEquipmentPartConstants(luaState)
 	registerInventoryTypeConstants(luaState)
 	registerStatConstants(luaState)
+	registerGenderConstants(luaState)
+	registerMorphConstants(luaState)
 	registerClassConstants(luaState)
 	registerStanceConstants(luaState)
 	registerObjectTypeConstants(luaState)
