@@ -62,7 +62,7 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 	CallOnAttackHooks(ctx, character, mapInstance, damages, skillID, true, req.Slot)
 	ApplyDamageToMobs(character, mapInstance, damages)
 
-	character.Listener.OnAttack(character, req, skillLevel)
+	character.Listener.OnRangedAttack(character, req, skillLevel)
 
 	if skillID != 0 {
 		CallSkillHook(ctx, character, skillID, "on_activated")

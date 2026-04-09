@@ -546,6 +546,33 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"ridding": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			skillUD := L.CheckUserData(2)
+			skillEntry, ok := skillUD.Value.(*SkillEntry)
+			if !ok || skillEntry == nil || skillEntry.Wz == nil {
+				L.ArgError(2, "SkillEntry with Wz expected")
+				return 0
+			}
+			mountID := int32(L.CheckInt(3))
+			if mountID <= 0 {
+				L.ArgError(3, "mount_id must be > 0")
+				return 0
+			}
+			ch.Buffs.AddBuff(
+				skillEntry.Wz,
+				time.Duration(0),
+				uint8(skillEntry.Level()),
+				ch.GetID(),
+				map[constant.BuffFlag]int32{constant.BuffFlagMonsterRiding: mountID},
+			)
+			return 0
+		},
 		"show_buff_effect": func(L *lua.LState) int {
 			argc := L.GetTop()
 			ud := L.CheckUserData(1)

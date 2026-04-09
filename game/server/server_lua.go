@@ -354,6 +354,26 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 		return 1
 	})
 
+	luax.RegisterFunc(luaState, "name2skill", func(L *lua.LState) int {
+		name := L.CheckString(1)
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		id, ok := gs.resources.NameToSkill(name)
+		if !ok {
+			L.Push(lua.LNil)
+			return 1
+		}
+		wzSkill := gs.resources.GetSkill(id)
+		if wzSkill == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(skillToLuaWzTable(L, wzSkill))
+		return 1
+	})
+
 	luax.RegisterFunc(luaState, "item_wz", func(L *lua.LState) int {
 		if gs.resources == nil {
 			L.Push(lua.LNil)

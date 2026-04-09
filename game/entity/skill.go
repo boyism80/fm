@@ -246,10 +246,11 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			argc := L.GetTop()
-			if argc == 1 {
+			switch argc {
+			case 1:
 				L.Push(lua.LNumber(skill.CooldownRemaining().Milliseconds()))
 				return 1
-			} else if argc == 2 {
+			case 2:
 				ms := L.CheckNumber(2)
 				if ms <= 0 {
 					skill.ClearCooldown()
@@ -257,7 +258,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					skill.StartCooldown(time.Duration(ms) * time.Millisecond)
 				}
 				return 0
-			} else {
+			default:
 				L.ArgError(2, "cooldown() requires 0 or 1 arguments")
 				return 0
 			}

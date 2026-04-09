@@ -87,6 +87,21 @@ var (
 	BuffFlagSoaring       = BuffFlag{0x40000, 2}
 )
 
+// IsRemoteStatFlag reports whether a buff flag is visible to other players in spawn packets.
+// This mirrors Java's TemporaryStatsPacket.isForRemoteStat.
+func IsRemoteStatFlag(flag BuffFlag) bool {
+	return flag == BuffFlagSpeed ||
+		flag == BuffFlagCombo ||
+		flag == BuffFlagWkCharge ||
+		flag == BuffFlagShadowPartner ||
+		flag == BuffFlagDarksight ||
+		flag == BuffFlagSoulArrow ||
+		flag == BuffFlagMorph ||
+		flag == BuffFlagSpiritClaw ||
+		flag == BuffFlagBerserkFury ||
+		flag == BuffFlagDivineBody
+}
+
 // AllBuffFlags returns all BuffFlag constants by name for injection into Lua (e.g. BuffFlag table).
 func AllBuffFlags() map[string]BuffFlag {
 	return map[string]BuffFlag{
@@ -148,6 +163,7 @@ func AllBuffFlags() map[string]BuffFlag {
 		"DashSpeed":      BuffFlagDashSpeed,
 		"DashJump":       BuffFlagDashJump,
 		"MonsterRiding":  BuffFlagMonsterRiding,
+		"Ridding":        BuffFlagMonsterRiding,
 		"WindBooster":    BuffFlagWindBooster,
 		"HomingBeacon":   BuffFlagHomingBeacon,
 		"ExpRate":        BuffFlagExpRate,

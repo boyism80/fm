@@ -75,7 +75,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		return fmt.Errorf("portal %d not found in map %d", initialSpawnPoint, initialMapID)
 	}
 
-	character.Stance = 0
+	character.Stance = constant.StanceDefaultValue
 
 	// initialMapID에 대응되는 MapActor의 PID를 구해서 WarpCharacter 메시지 전송
 	targetMapPID := mapInstance.GetActorPID()

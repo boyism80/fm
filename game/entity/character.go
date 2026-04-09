@@ -9,6 +9,7 @@ import (
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
@@ -107,14 +108,53 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	if ch.IsHidden() && !viewer.HasRoleAtLeast(ch.Role) {
 		return
 	}
+	spawnBuffData := ch.GetSpawnPlayerBuffData()
 	viewer.Send(&response.SpawnPlayer{
-		Character:       ch.ToDTO(),
-		BuffStates:      [4]uint32{},
-		Diseases:        ch.GetDiseaseMask(),
-		CrushRings:      RingsToDTO(ch.Rings.Left),
-		FriendshipRings: RingsToDTO(ch.Rings.Mid),
-		MarriageRings:   RingsToDTO(ch.Rings.Right),
+		Character:         ch.ToDTO(),
+		BuffStates:        spawnBuffData.BuffStates,
+		Diseases:          ch.GetDiseaseMask(),
+		SpeedBuff:         spawnBuffData.SpeedBuff,
+		ComboCount:        spawnBuffData.ComboCount,
+		WKChargeSkillId:   spawnBuffData.WKChargeSkillID,
+		MorphId:           spawnBuffData.MorphID,
+		SpiritClawSkillId: spawnBuffData.SpiritClawSkillID,
+		MountLevel:        spawnBuffData.MountLevel,
+		MountExp:          spawnBuffData.MountExp,
+		MountFatigue:      spawnBuffData.MountFatigue,
+		CrushRings:        RingsToDTO(ch.Rings.Left),
+		FriendshipRings:   RingsToDTO(ch.Rings.Mid),
+		MarriageRings:     RingsToDTO(ch.Rings.Right),
 	}, types.SEND_POLICY_ENCRYPT)
+
+	if mountID, active := ch.GetRiddingInfo(); active {
+		viewer.Send(&response.UpdateRemoteRidding{
+			CharacterID: int32(ch.GetID()),
+			MountID:     mountID,
+			Buffs:       []dto.BuffEntry{{Buff: constant.BuffFlagMonsterRiding, Value: mountID}},
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+
+	if buff, _, active := ch.Buffs.GetBuffValue(constant.BuffFlagEnergyCharge); active {
+		viewer.Send(&response.UpdateRemoteBuff{
+			CharacterID: int32(ch.GetID()),
+			BuffID:      buff.GetBuffID(),
+			Duration:    50 * time.Second,
+			Buffs:       []dto.BuffEntry{{Buff: constant.BuffFlagEnergyCharge, Value: 10000}},
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+
+	if dashBuff, dashValue, active := ch.Buffs.GetBuffValue(constant.BuffFlagDashSpeed); active {
+		buffs := []dto.BuffEntry{{Buff: constant.BuffFlagDashSpeed, Value: dashValue}}
+		if _, dashJumpValue, hasDashJump := ch.Buffs.GetBuffValue(constant.BuffFlagDashJump); hasDashJump {
+			buffs = append(buffs, dto.BuffEntry{Buff: constant.BuffFlagDashJump, Value: dashJumpValue})
+		}
+		viewer.Send(&response.UpdateRemoteBuff{
+			CharacterID: int32(ch.GetID()),
+			BuffID:      dashBuff.GetBuffID(),
+			Duration:    dashBuff.RemainingDuration(time.Now()),
+			Buffs:       buffs,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
 }
 
 func (ch *Character) AddTimerWithCallback(key string, interval time.Duration, repeat bool, callback func()) bool {
@@ -1063,4 +1103,75 @@ func (ch *Character) GetDiseaseMask() [4]uint32 {
 		}
 	}
 	return mask
+}
+
+type SpawnPlayerBuffData struct {
+	BuffStates        [4]uint32
+	SpeedBuff         uint8
+	ComboCount        uint8
+	WKChargeSkillID   uint32
+	MorphID           uint16
+	SpiritClawSkillID uint32
+	MountLevel        uint32
+	MountExp          uint32
+	MountFatigue      uint32
+}
+
+func (ch *Character) GetRiddingInfo() (mountID int32, active bool) {
+	if ch == nil || ch.Buffs == nil {
+		return 0, false
+	}
+	_, mountID, active = ch.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
+	return
+}
+
+func (ch *Character) GetSpawnPlayerBuffData() SpawnPlayerBuffData {
+	data := SpawnPlayerBuffData{
+		SpeedBuff:  1,
+		ComboCount: 1,
+		MountLevel: 1,
+	}
+	if ch == nil || ch.Buffs == nil {
+		return data
+	}
+
+	for _, buff := range ch.Buffs.Entities() {
+		if buff == nil {
+			continue
+		}
+		values := buff.GetValues()
+		if values == nil {
+			continue
+		}
+		for flag, value := range values {
+			idx := flag.Position - 1
+			if idx < 0 || idx >= constant.MaxBuffFlag {
+				continue
+			}
+			if constant.IsRemoteStatFlag(flag) {
+				data.BuffStates[idx] |= flag.Mask
+			}
+			switch flag {
+			case constant.BuffFlagSpeed:
+				data.SpeedBuff = uint8(value)
+			case constant.BuffFlagCombo:
+				data.ComboCount = uint8(value)
+			case constant.BuffFlagMorph:
+				data.MorphID = uint16(value)
+			}
+		}
+		switch typed := buff.(type) {
+		case *SkillBuff:
+			for _, flag := range typed.GetFlags() {
+				switch flag {
+				case constant.BuffFlagWkCharge:
+					data.WKChargeSkillID = typed.Wz.ID
+				case constant.BuffFlagSpiritClaw:
+					data.SpiritClawSkillID = typed.Wz.ID
+				}
+			}
+		}
+	}
+
+	return data
 }

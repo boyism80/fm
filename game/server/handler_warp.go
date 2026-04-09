@@ -46,7 +46,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 	if req.Target != 0xFFFFFFFF {
 		if character.Hp == 0 {
 			character.Hp = 50
-			character.Stance = 0
+			character.Stance = constant.StanceDefaultValue
 
 			currentMap := character.GetMap()
 			if currentMap == nil {

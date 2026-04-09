@@ -81,7 +81,7 @@ func (p *UpdateBuff) Serialize(writer *stream.StreamWriter) error {
 			writer.Write(make([]byte, 6))
 			writer.WriteU16(durSec)
 		}
-		
+
 		writer.WriteU16(0)
 		writer.WriteU16(0)
 		return nil

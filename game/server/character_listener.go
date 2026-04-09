@@ -262,22 +262,41 @@ func (l *CharacterListenerImpl) OnPlayerMove(ch *entity.Character, startPoint ty
 	})
 }
 
-func (l *CharacterListenerImpl) OnAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+func (l *CharacterListenerImpl) broadcastAttack(ch *entity.Character, packet types.Packet) {
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
-	attackPacket := &response.Attack{
-		AttackInfo:  attackPayload.ToAttackInfo(),
-		CharacterId: ch.GetID(),
-		SkillLevel:  skillLevel,
-	}
-
-	mapInstance.Broadcast(attackPacket, &entity.BroadcastOption{
+	mapInstance.Broadcast(packet, &entity.BroadcastOption{
 		ExceptPlayerIDs: []uint32{ch.GetID()},
 		Reference:       ch,
 		RecipientFilter: entity.BroadcastVisibleByReference,
+	})
+}
+
+func (l *CharacterListenerImpl) OnAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+	l.broadcastAttack(ch, &response.Attack{
+		AttackInfo:  attackPayload.ToAttackInfo(),
+		CharacterId: ch.GetID(),
+		SkillLevel:  skillLevel,
+	})
+}
+
+func (l *CharacterListenerImpl) OnRangedAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+	l.broadcastAttack(ch, &response.RangedAttack{
+		AttackInfo:  attackPayload.ToAttackInfo(),
+		CharacterId: ch.GetID(),
+		SkillLevel:  skillLevel,
+		CashBullet:  0,
+	})
+}
+
+func (l *CharacterListenerImpl) OnMagicAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+	l.broadcastAttack(ch, &response.MagicAttack{
+		AttackInfo:  attackPayload.ToAttackInfo(),
+		CharacterId: ch.GetID(),
+		SkillLevel:  skillLevel,
 	})
 }
 
@@ -378,20 +397,37 @@ func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, 
 		dtoBuffs = append(dtoBuffs, dtoBuff)
 	}
 
-	ch.Send(&response.UpdateBuff{
-		BuffID:   buffID,
-		Duration: remainingDuration,
-		Buffs:    dtoBuffs,
-	}, types.SEND_POLICY_ENCRYPT)
-
-	mapInstance := ch.GetMap()
-	if mapInstance != nil {
-		mapInstance.Broadcast(&response.UpdateRemoteBuff{
+	var selfPacket types.Packet
+	var remotePacket types.Packet
+	if mountID, ok := values[constant.BuffFlagMonsterRiding]; ok {
+		selfPacket = &response.UpdateRidding{
+			BuffID:  buffID,
+			MountID: mountID,
+			Buffs:   dtoBuffs,
+		}
+		remotePacket = &response.UpdateRemoteRidding{
+			CharacterID: int32(ch.GetID()),
+			MountID:     mountID,
+			Buffs:       dtoBuffs,
+		}
+	} else {
+		selfPacket = &response.UpdateBuff{
+			BuffID:   buffID,
+			Duration: remainingDuration,
+			Buffs:    dtoBuffs,
+		}
+		remotePacket = &response.UpdateRemoteBuff{
 			CharacterID: int32(ch.GetID()),
 			BuffID:      buffID,
 			Duration:    remainingDuration,
 			Buffs:       dtoBuffs,
-		}, &entity.BroadcastOption{
+		}
+	}
+
+	ch.Send(selfPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance := ch.GetMap()
+	if mapInstance != nil {
+		mapInstance.Broadcast(remotePacket, &entity.BroadcastOption{
 			ExceptPlayerIDs: []uint32{ch.GetID()},
 			Reference:       ch,
 			RecipientFilter: entity.BroadcastVisibleByReference,
@@ -496,17 +532,11 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 			RecipientFilter: entity.BroadcastRoleBelowReference,
 		})
 	} else {
-		mapInstance.Broadcast(&response.SpawnPlayer{
-			Character:       ch.ToDTO(),
-			BuffStates:      [4]uint32{},
-			Diseases:        ch.GetDiseaseMask(),
-			CrushRings:      entity.RingsToDTO(ch.Rings.Left),
-			FriendshipRings: entity.RingsToDTO(ch.Rings.Mid),
-			MarriageRings:   entity.RingsToDTO(ch.Rings.Right),
-		}, &entity.BroadcastOption{
-			Reference:       ch,
-			RecipientFilter: entity.BroadcastRoleBelowReference,
-		})
+		for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter, nil) {
+			if viewer, ok := obj.(*entity.Character); ok {
+				ch.SendSpawnSyncToViewer(viewer)
+			}
+		}
 	}
 }
 

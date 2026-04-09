@@ -202,20 +202,6 @@ function compute_poison_tick_multiplier(me, skill)
 	if me ~= nil then
 		mul = mul * element_amp_from_class(me)
 	end
-	local swz = skill and skill:wz()
-	if swz ~= nil and swz.id == Skill.Flamethrower and me ~= nil then
-		local boost = me:skill(Skill.ElementBoost)
-		if boost ~= nil then
-			local be = boost:effect()
-			local x = 0
-			if be ~= nil and be.x ~= nil then
-				x = be.x
-			end
-			if x > 0 then
-				mul = mul * (x / 100.0 + 1.0)
-			end
-		end
-	end
 	return mul
 end
 
@@ -587,7 +573,7 @@ function apply_venom(me, damages, passive_skill_id)
 		if total_damage_to_mob(hits) <= 0 then
 			goto venom_passive_continue
 		end
-		if math.random(0, 99) >= chance then
+		if math.random(1, 100) > chance then
 			goto venom_passive_continue
 		end
 		local old_stack = math.floor(tonumber(mob:buff_stack(MobBuff.Venom)) or 0)

@@ -20,7 +20,7 @@ local function roll_percent_steal(prob)
 	if prob >= 100 then
 		return true
 	end
-	return math.random(0, 99) < prob
+	return math.random(1, 100) <= prob
 end
 
 function on_attack_4201004(me, skill, damages)

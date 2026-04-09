@@ -6,10 +6,8 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
-	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
 )
 
 type MagicAttack struct {
@@ -103,17 +101,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	CallOnAttackHooks(ctx, character, mapInstance, damages, uint32(skillID), false, 0)
 	ApplyDamageToMobs(character, mapInstance, damages)
 
-	magicAttackPacket := &response.MagicAttack{
-		AttackInfo:  req.ToAttackInfo(),
-		CharacterId: character.GetID(),
-		SkillLevel:  uint8(skillLevel),
-	}
-
-	mapInstance.Broadcast(magicAttackPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{character.GetID()},
-		Reference:       character,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	character.Listener.OnMagicAttack(character, req, uint8(skillLevel))
 
 	CallSkillHook(ctx, character, uint32(skillID), "on_activated")
 

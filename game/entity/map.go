@@ -31,6 +31,8 @@ type MapListener interface {
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
 	OnMobMoved(mapInstance *Map, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
 	OnAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnRangedAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnMagicAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
 	OnMobMobBuffApplied(mapInstance *Map, mob *Mob, buff constant.MobBuffFlag, value int32, skillID uint32, durationMs int64)
 	OnMobMobBuffCancelled(mapInstance *Map, mob *Mob, buff constant.MobBuffFlag)
 	OnMistSpawned(mapInstance *Map, mist *Mist)
@@ -166,6 +168,7 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8,
 	if pos, ok := m.Wz.GetSpawnPosition(spawnPoint); ok {
 		character.Position = pos
 	}
+	character.Stance = constant.StanceDefaultValue
 
 	m.objects[constant.ObjectTypeCharacter][playerID] = character
 

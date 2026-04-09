@@ -47,22 +47,11 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}
 
-	playerID := character.GetID()
-
-	characterDTO := character.ToDTO()
-	spawnPacket := &response.SpawnPlayer{
-		Character:       characterDTO,
-		BuffStates:      [4]uint32{},
-		Diseases:        character.GetDiseaseMask(),
-		CrushRings:      entity.RingsToDTO(character.Rings.Left),
-		FriendshipRings: entity.RingsToDTO(character.Rings.Mid),
-		MarriageRings:   entity.RingsToDTO(character.Rings.Right),
+	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter, nil) {
+		if viewer, ok := obj.(*entity.Character); ok {
+			character.SendSpawnSyncToViewer(viewer)
+		}
 	}
-	mapInstance.Broadcast(spawnPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{playerID},
-		Reference:       character,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
 
 	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeObject, nil) {
 		obj.SendSpawnSyncToViewer(character)
@@ -256,24 +245,43 @@ func (l *MapListenerImpl) OnMobMoved(mapInstance *entity.Map, mob *entity.Mob, i
 	mapInstance.Broadcast(movePacket, nil)
 }
 
-// OnAttack broadcasts attack to all players on the map
-func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+func (l *MapListenerImpl) broadcastAttack(mapInstance *entity.Map, character *entity.Character, packet types.Packet) {
 	if mapInstance == nil {
 		return
 	}
-	attackInfo := attackPayload.ToAttackInfo()
 
-	// Create attack packet
-	attackPacket := &response.Attack{
-		CharacterId: character.GetID(),
-		AttackInfo:  attackInfo,
-		SkillLevel:  skillLevel,
-	}
-
-	mapInstance.Broadcast(attackPacket, &entity.BroadcastOption{
+	mapInstance.Broadcast(packet, &entity.BroadcastOption{
 		ExceptPlayerIDs: []uint32{character.GetID()},
 		Reference:       character,
 		RecipientFilter: entity.BroadcastVisibleByReference,
+	})
+}
+
+// OnAttack broadcasts close-range attack to all players on the map
+func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+	l.broadcastAttack(mapInstance, character, &response.Attack{
+		CharacterId: character.GetID(),
+		AttackInfo:  attackPayload.ToAttackInfo(),
+		SkillLevel:  skillLevel,
+	})
+}
+
+// OnRangedAttack broadcasts ranged attack to all players on the map
+func (l *MapListenerImpl) OnRangedAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+	l.broadcastAttack(mapInstance, character, &response.RangedAttack{
+		CharacterId: character.GetID(),
+		AttackInfo:  attackPayload.ToAttackInfo(),
+		SkillLevel:  skillLevel,
+		CashBullet:  0,
+	})
+}
+
+// OnMagicAttack broadcasts magic attack to all players on the map
+func (l *MapListenerImpl) OnMagicAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+	l.broadcastAttack(mapInstance, character, &response.MagicAttack{
+		CharacterId: character.GetID(),
+		AttackInfo:  attackPayload.ToAttackInfo(),
+		SkillLevel:  skillLevel,
 	})
 }
 

@@ -405,6 +405,117 @@ command_funcs = {
 			return true
 		end,
 	},
+	["스킬레벨"] = {
+		privilege = ROLE.Admin,
+		usage = "<스킬ID/이름> <레벨> [마스터레벨] - 스킬 레벨 설정",
+		command = function(me, args)
+			if #args < 2 then
+				me:notice("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
+				return true
+			end
+
+			local master_level
+			local level_arg_index = #args
+			local target_end_index = #args - 1
+			if #args >= 3 and tonumber(args[#args]) ~= nil then
+				master_level = tonumber(args[#args])
+				level_arg_index = #args - 1
+				target_end_index = #args - 2
+			end
+
+			local level = tonumber(args[level_arg_index])
+			if level == nil or level < 0 then
+				me:notice("레벨은 0 이상의 숫자여야 합니다.")
+				return true
+			end
+
+			local target = table.concat(args, " ", 1, target_end_index)
+			if target == nil or target == "" then
+				me:notice("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
+				return true
+			end
+
+			local skill_id = tonumber(target)
+			local skill_wz = nil
+			if skill_id == nil then
+				skill_wz = name2skill(target)
+				if skill_wz == nil then
+					me:notice("존재하지 않는 스킬입니다: " .. target)
+					return true
+				end
+				skill_id = skill_wz.id
+			end
+
+			if skill_wz ~= nil then
+				if level > skill_wz.max_level then
+					level = skill_wz.max_level
+				end
+			end
+
+			if master_level == nil then
+				if skill_wz ~= nil then
+					master_level = skill_wz.master_level
+				else
+					master_level = level
+				end
+			end
+			if master_level < level then
+				master_level = level
+			end
+			if skill_wz ~= nil and master_level > skill_wz.master_level then
+				master_level = skill_wz.master_level
+			end
+
+			local skill = me:skill(skill_id)
+			if skill == nil then
+				skill = me:add_skill(skill_id)
+			end
+			if skill == nil then
+				me:notice(string.format("스킬 추가 실패: %d", skill_id))
+				return true
+			end
+
+			skill:level(level, master_level)
+			me:notice(string.format("스킬레벨 설정: %d -> level %d, master %d", skill_id, level, master_level))
+			return true
+		end,
+	},
+	["쿨타임초기화"] = {
+		privilege = ROLE.Admin,
+		usage = "[스킬ID] - 모든 스킬 또는 지정 스킬 쿨타임 초기화",
+		command = function(me, args)
+			if args[1] then
+				local skill_id = tonumber(args[1])
+				if not skill_id or skill_id <= 0 then
+					me:notice("사용법: /쿨타임초기화 [스킬ID]")
+					return true
+				end
+				local skill = me:skill(skill_id)
+				if skill == nil then
+					me:notice(string.format("배운 스킬이 아닙니다: %d", skill_id))
+					return true
+				end
+				skill:cooldown(0)
+				me:notice(string.format("스킬 %d 쿨타임 초기화 완료", skill_id))
+				return true
+			end
+
+			local skills = me:skills()
+			if skills == nil then
+				me:notice("스킬 정보가 없습니다.")
+				return true
+			end
+			local cleared = 0
+			for _, skill in pairs(skills) do
+				if skill ~= nil then
+					skill:cooldown(0)
+					cleared = cleared + 1
+				end
+			end
+			me:notice(string.format("쿨타임 초기화 완료: %d개 스킬", cleared))
+			return true
+		end,
+	},
 	["엔피씨생성"] = {
 		privilege = ROLE.Admin,
 		usage = "<NPCID/이름> - 현재 위치에 NPC 생성",

@@ -20,7 +20,7 @@ local function roll_percent(prob)
 	if prob >= 100 then
 		return true
 	end
-	return math.random(0, 99) < prob
+	return math.random(1, 100) <= prob
 end
 
 function handle_attack_consume_item(me, skill, attack_info)

@@ -103,10 +103,11 @@ type StringData struct {
 // Resources contains all loaded MapleStory game data.
 type Resources struct {
 	// Name lookup indexes (following renewal branch pattern)
-	mapNameToId  map[string]uint32 // normalized map name -> map ID
-	mobNameToId  map[string]uint32 // normalized mob name -> mob ID
-	npcNameToId  map[string]uint32 // normalized NPC name -> NPC ID
-	itemNameToId map[string]uint32 // normalized item name -> item ID
+	mapNameToId   map[string]uint32 // normalized map name -> map ID
+	mobNameToId   map[string]uint32 // normalized mob name -> mob ID
+	npcNameToId   map[string]uint32 // normalized NPC name -> NPC ID
+	itemNameToId  map[string]uint32 // normalized item name -> item ID
+	skillNameToId map[string]uint32 // normalized skill name -> skill ID
 
 	Maps     map[uint32]*Map   // All map specifications
 	Monsters map[uint32]*Mob   // All monster specifications
@@ -297,6 +298,13 @@ func (r *Resources) NameToNpc(name string) (uint32, bool) {
 	key := normalizeName(name)
 	npcId, ok := r.npcNameToId[key]
 	return npcId, ok
+}
+
+// NameToSkill returns skill ID by skill name (case-insensitive, whitespace-insensitive)
+func (r *Resources) NameToSkill(name string) (uint32, bool) {
+	key := normalizeName(name)
+	skillID, ok := r.skillNameToId[key]
+	return skillID, ok
 }
 
 // FindWzPath attempts to find the WZ files directory by checking multiple possible paths.
@@ -675,18 +683,19 @@ func NewResources(wzPath string) *Resources {
 	expTable := getHardcodedExpTable()
 
 	result := &Resources{
-		mapNameToId:  make(map[string]uint32),
-		mobNameToId:  make(map[string]uint32),
-		npcNameToId:  make(map[string]uint32),
-		itemNameToId: make(map[string]uint32),
-		Maps:         maps,
-		Monsters:     mobs,
-		Items:        items,
-		Drops:        drop,
-		Strings:      stringData,
-		ExpTable:     expTable,
-		Skills:       skills,
-		Shops:        shops,
+		mapNameToId:   make(map[string]uint32),
+		mobNameToId:   make(map[string]uint32),
+		npcNameToId:   make(map[string]uint32),
+		itemNameToId:  make(map[string]uint32),
+		skillNameToId: make(map[string]uint32),
+		Maps:          maps,
+		Monsters:      mobs,
+		Items:         items,
+		Drops:         drop,
+		Strings:       stringData,
+		ExpTable:      expTable,
+		Skills:        skills,
+		Shops:         shops,
 	}
 
 	// Build name lookup indexes from string data (following renewal branch pattern)
@@ -701,6 +710,7 @@ func (r *Resources) buildNameIndexes() {
 	r.buildMobNameIndex()
 	r.buildNpcNameIndex()
 	r.buildItemNameIndex()
+	r.buildSkillNameIndex()
 }
 
 // GetSkill returns a skill by ID
@@ -876,6 +886,25 @@ func (r *Resources) buildItemNameIndex() {
 			if _, exists := r.itemNameToId[key]; !exists {
 				r.itemNameToId[key] = itemId
 			}
+		}
+	}
+}
+
+// buildSkillNameIndex builds the name to ID index for skills
+// Only includes skills that are actually loaded in r.Skills (from Skill.wz)
+func (r *Resources) buildSkillNameIndex() {
+	for skillID := range r.Skills {
+		skillNameData, ok := r.Strings.SkillStrings[skillID]
+		if !ok || skillNameData == nil {
+			continue
+		}
+		skillName, ok := skillNameData["name"]
+		if !ok || skillName == "" {
+			continue
+		}
+		key := normalizeName(skillName)
+		if _, exists := r.skillNameToId[key]; !exists {
+			r.skillNameToId[key] = skillID
 		}
 	}
 }
