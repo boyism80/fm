@@ -67,7 +67,7 @@ var (
 	BuffFlagUnknown8       = BuffFlag{0x1000000, 3}
 	BuffFlagBerserkFury    = BuffFlag{0x2000000, 3}
 	BuffFlagDivineBody     = BuffFlag{0x4000000, 3}
-	BuffFlagUnknown9       = BuffFlag{0x8000000, 3}
+	BuffFlagSpark          = BuffFlag{0x8000000, 3}
 	BuffFlagAriantCossImu2 = BuffFlag{0x10000000, 3}
 	BuffFlagFinalAttack    = BuffFlag{0x20000000, 3}
 	BuffFlagElementReset   = BuffFlag{0x80000000, 3}
@@ -155,7 +155,7 @@ func AllBuffFlags() map[string]BuffFlag {
 		"Unknown8":       BuffFlagUnknown8,
 		"BerserkFury":    BuffFlagBerserkFury,
 		"DivineBody":     BuffFlagDivineBody,
-		"Unknown9":       BuffFlagUnknown9,
+		"Spark":          BuffFlagSpark,
 		"AriantCossImu2": BuffFlagAriantCossImu2,
 		"FinalAttack":    BuffFlagFinalAttack,
 		"ElementReset":   BuffFlagElementReset,

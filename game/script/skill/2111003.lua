@@ -19,5 +19,5 @@ function on_activated_2111003(me, skill, params)
 		return
 	end
 	local multiplier = compute_poison_tick_multiplier(me, skill)
-	me:create_mist(skill, effect.time, 0, { left = left, top = top, right = right, bottom = bottom }, 2000, multiplier)
+	me:create_mist(skill, effect.time, MistType.Poison, { left = left, top = top, right = right, bottom = bottom }, 2000, multiplier)
 end

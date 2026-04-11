@@ -50,8 +50,7 @@ local function get_mp_recover_check(me)
                 return effect.mp
             end
         end
-    end
-    if me:class_of(Class.Bandit) then
+    elseif me:class_of(Class.Bandit) then
         local s = me:skill(Skill.Endure4200001)
         if s ~= nil then
             local effect = s:effect()
@@ -59,8 +58,7 @@ local function get_mp_recover_check(me)
                 return effect.mp
             end
         end
-    end
-    if me:class_of(Class.Crusader) then
+    elseif me:class_of(Class.Crusader) then
         local s = me:skill(Skill.ImprovingMpRecovery)
         if s ~= nil then
             local effect = s:effect()
@@ -68,12 +66,19 @@ local function get_mp_recover_check(me)
                 return effect.mp
             end
         end
-    end
-    if me:class_of(Class.WhiteKnight) then
+    elseif me:class_of(Class.WhiteKnight) then
         local s = me:skill(Skill.ImprovingMpRecovery1210000)
         if s ~= nil then
             local effect = s:effect()
             if effect.mp > 0 then
+                return effect.mp
+            end
+        end
+    elseif me:class_of(Class.DawnWarrior3) then
+        local s = me:skill(Skill.ImprovingMpRecoveryCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil and effect.mp > 0 then
                 return effect.mp
             end
         end

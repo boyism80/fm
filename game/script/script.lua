@@ -65,7 +65,7 @@ end
 function on_script(me)
     local x, y = me:position()
 
-    me:class(522)
+    me:class(1412)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -83,7 +83,7 @@ function on_script(me)
     me:mkitem('활전용화살', 200)
     me:mkitem('석궁전용화살', 200)
     me:mkitem('석궁')
-    local weapon = me:mkitem('피스톨')
+    local weapon = me:mkitem('가니어')
     if weapon ~= nil then
         me:equip(weapon)
     end
@@ -192,8 +192,7 @@ function on_level_up(me, old_level, new_level)
             local effect = s:effect()
             bonus_hp = bonus_hp + diff * effect.x
         end
-    end
-    if me:class_of(Class.Pirate) then
+    elseif me:class_of(Class.Pirate) then
         local s = me:skill(Skill.HpIncrease)
         if s ~= nil then
             local effect = s:effect()
@@ -201,8 +200,7 @@ function on_level_up(me, old_level, new_level)
                 bonus_hp = bonus_hp + diff * effect.x
             end
         end
-    end
-    if me:class_of(Class.ThunderBreaker1) then
+    elseif me:class_of(Class.ThunderBreaker1) then
         local s = me:skill(Skill.HpIncreaseCygnus)
         if s ~= nil then
             local effect = s:effect()
@@ -210,12 +208,27 @@ function on_level_up(me, old_level, new_level)
                 bonus_hp = bonus_hp + diff * effect.x
             end
         end
-    end
-    if me:class_of(Class.Magician) then
+    elseif me:class_of(Class.DawnWarrior1) then
+        local s = me:skill(Skill.ImprovingMaxhpIncreaseCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus_hp = bonus_hp + diff * effect.x
+            end
+        end
+    elseif me:class_of(Class.Magician) then
         local s = me:skill(Skill.ImprovingMaxMpIncrease)
         if s ~= nil then
             local effect = s:effect()
             bonus_mp = bonus_mp + diff * effect.x
+        end
+    elseif me:class_of(Class.BlazeWizard1) then
+        local s = me:skill(Skill.ImprovingMaxMpIncreaseCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus_mp = bonus_mp + diff * effect.x
+            end
         end
     end
     me:base_hp(me:base_hp() + total_hp + bonus_hp, false)
@@ -259,6 +272,14 @@ function on_ap_to_hp(me)
                 bonus = effect.y
             end
         end
+    elseif me:class_of(Class.DawnWarrior1) then
+        local s = me:skill(Skill.ImprovingMaxhpIncreaseCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus = effect.y
+            end
+        end
     end
     return base + bonus
 end
@@ -272,6 +293,14 @@ function on_ap_to_mp(me)
         if s ~= nil then
             local effect = s:effect()
             bonus = effect.y
+        end
+    elseif me:class_of(Class.BlazeWizard1) then
+        local s = me:skill(Skill.ImprovingMaxMpIncreaseCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus = effect.y
+            end
         end
     end
     return base + bonus

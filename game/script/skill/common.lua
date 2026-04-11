@@ -333,6 +333,7 @@ function on_attack(me, skill, damages, attack_info)
 	handle_blind_acc_debuff(me, damages)
 	handle_mortal_blow(me, damages)
 	handle_energy_charge(me, damages)
+	handle_dark_sight(me, damages)
 end
 
 function handle_blind_acc_debuff(me, damages)
@@ -400,4 +401,29 @@ function handle_hamstring_slow(me, damages)
 		end
 		::continue_mob::
 	end
+end
+
+function handle_dark_sight(me, damages)
+	if not (me:class_of(Class.NightWalker1) or me:class_of(Class.WindArcher2)) then
+		return
+	end
+
+	if me:buff(BuffFlag.Darksight) == nil then
+		return
+	end
+
+	local is_hit = false
+    for _, hits in pairs(damages) do
+        for _, hit in pairs(hits) do
+            if hit > 0 then
+                is_hit = true
+                break
+            end
+        end
+    end
+    if not is_hit then
+        return
+    end
+
+	me:unbuff(BuffFlag.Darksight)
 end
