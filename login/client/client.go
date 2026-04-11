@@ -19,7 +19,6 @@ type LoginClient struct {
 // Ensure LoginClient implements core.Client
 var _ core.Client = (*LoginClient)(nil)
 
-
 // GetLogicActorPID returns the LogicActor PID for this client
 func (c *LoginClient) GetLogicActorPID() *actor.PID {
 	c.pidMutex.RLock()

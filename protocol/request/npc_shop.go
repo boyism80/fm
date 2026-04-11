@@ -4,7 +4,7 @@ import "github.com/boyism80/fm/stream"
 
 type ShopTransaction interface {
 	GetMode() byte
-	Deserialize(reader *stream.StreamReader) error
+	Deserialize(reader *stream.StreamReader)
 }
 
 type NpcShop struct {
@@ -22,26 +22,11 @@ func (t *BuyTransaction) GetMode() byte {
 	return 0
 }
 
-func (t *BuyTransaction) Deserialize(reader *stream.StreamReader) error {
-	unknown, err := reader.Read16()
-	if err != nil {
-		return err
-	}
-	t.Unknown = unknown
+func (t *BuyTransaction) Deserialize(reader *stream.StreamReader) {
+	t.Unknown = reader.Read16()
+	t.ItemID = reader.ReadU32()
+	t.Quantity = reader.ReadU16()
 
-	itemID, err := reader.ReadU32()
-	if err != nil {
-		return err
-	}
-	t.ItemID = itemID
-
-	quantity, err := reader.ReadU16()
-	if err != nil {
-		return err
-	}
-	t.Quantity = quantity
-
-	return nil
 }
 
 type SellTransaction struct {
@@ -54,26 +39,11 @@ func (t *SellTransaction) GetMode() byte {
 	return 1
 }
 
-func (t *SellTransaction) Deserialize(reader *stream.StreamReader) error {
-	slot, err := reader.Read16()
-	if err != nil {
-		return err
-	}
-	t.Slot = slot
+func (t *SellTransaction) Deserialize(reader *stream.StreamReader) {
+	t.Slot = reader.Read16()
+	t.ItemID = reader.ReadU32()
+	t.Quantity = reader.ReadU16()
 
-	itemID, err := reader.ReadU32()
-	if err != nil {
-		return err
-	}
-	t.ItemID = itemID
-
-	quantity, err := reader.ReadU16()
-	if err != nil {
-		return err
-	}
-	t.Quantity = quantity
-
-	return nil
 }
 
 type RechargeTransaction struct {
@@ -84,29 +54,20 @@ func (t *RechargeTransaction) GetMode() byte {
 	return 2
 }
 
-func (t *RechargeTransaction) Deserialize(reader *stream.StreamReader) error {
-	slot, err := reader.Read16()
-	if err != nil {
-		return err
-	}
-	t.Slot = slot
+func (t *RechargeTransaction) Deserialize(reader *stream.StreamReader) {
+	t.Slot = reader.Read16()
 
-	return nil
 }
 
 func (n *NpcShop) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (n *NpcShop) Deserialize(reader *stream.StreamReader) error {
-	mode, err := reader.ReadU8()
-	if err != nil {
-		return err
-	}
-	n.Mode = mode
+func (n *NpcShop) Deserialize(reader *stream.StreamReader) {
+	n.Mode = reader.ReadU8()
 
 	var transaction ShopTransaction
-	switch mode {
+	switch n.Mode {
 	case 0:
 		transaction = &BuyTransaction{}
 	case 1:
@@ -114,13 +75,9 @@ func (n *NpcShop) Deserialize(reader *stream.StreamReader) error {
 	case 2:
 		transaction = &RechargeTransaction{}
 	default:
-		return nil
+		return
 	}
 
-	if err := transaction.Deserialize(reader); err != nil {
-		return err
-	}
-
+	transaction.Deserialize(reader)
 	n.Transaction = transaction
-	return nil
 }

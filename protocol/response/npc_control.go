@@ -1,8 +1,8 @@
 package response
 
 import (
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/stream"
 )
 
 type NpcControl struct {
@@ -24,8 +24,7 @@ func (p *NpcControl) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (s *NpcControl) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (s *NpcControl) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *NpcControl) Opcode() uint16 {

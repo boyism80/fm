@@ -21,9 +21,7 @@ func NewGameMapListener(gs *GameServer) *MapListenerImpl {
 }
 
 // OnPlayerAdded sends spawn player packet to other players on the map
-func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character *entity.Character, init bool) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *entity.Character, init bool) {
 	if mapInstance == nil {
 		return
 	}
@@ -49,137 +47,41 @@ func (l *MapListenerImpl) OnPlayerAdded(mapID uint32, playerID uint32, character
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}
 
-	// 2. Send existing players' info to the new player
-	if mapInstance.GetPlayerCount() > 1 { // More than just the new player
-		for cid, p := range mapInstance.GetAllPlayers() {
-			if cid == playerID {
-				continue // Skip the new player
-			}
-
-			if ch, ok := p.(*entity.Character); ok {
-				// Convert entity to DTO
-				chDTO := ch.ToDTO()
-				// Send existing player's spawn info to the new player
-				character.Send(&response.SpawnPlayer{
-					Character:       chDTO,
-					BuffStates:      [4]uint32{},
-					Diseases:        [4]uint32{},
-					CrushRings:      entity.RingsToDTO(ch.Rings.Left),
-					FriendshipRings: entity.RingsToDTO(ch.Rings.Mid),
-					MarriageRings:   entity.RingsToDTO(ch.Rings.Right),
-				}, types.SEND_POLICY_ENCRYPT)
-			}
+	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
+		if viewer, ok := obj.(*entity.Character); ok {
+			character.SendSpawnSyncToViewer(viewer)
 		}
 	}
 
-	// 3. Send SpawnPlayer packet to all other players on the map
-	// Convert entity to DTO
-	characterDTO := character.ToDTO()
-	spawnPacket := &response.SpawnPlayer{
-		Character:       characterDTO,
-		BuffStates:      [4]uint32{},
-		Diseases:        [4]uint32{},
-		CrushRings:      entity.RingsToDTO(character.Rings.Left),
-		FriendshipRings: entity.RingsToDTO(character.Rings.Mid),
-		MarriageRings:   entity.RingsToDTO(character.Rings.Right),
-	}
-	mapInstance.BroadcastToPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT, playerID)
-
-	for _, npc := range mapInstance.GetNpcs() {
-		if npc, ok := npc.(*entity.Npc); ok {
-			npcDTO := npc.ToDTO()
-			character.Send(&response.SpawnNpc{
-				NPC:     npcDTO,
-				Visible: true,
-			}, types.SEND_POLICY_ENCRYPT)
-
-			character.Send(&response.NpcControl{
-				NPC:     npcDTO,
-				MiniMap: true,
-			}, types.SEND_POLICY_ENCRYPT)
-		}
-	}
-
-	for _, item := range mapInstance.GetItems() {
-		if item, ok := item.(entity.Item); ok {
-			drop := item.GetDrop()
-			if drop != nil {
-				character.Send(&response.SpawnItem{
-					ID:           drop.Object.OID,
-					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
-					DropType:     drop.DropType,
-					ItemModel:    item.GetModel(),
-					Expiration:   item.GetExpiration(),
-					Position:     drop.Object.Position,
-					OwnerID:      drop.Owner,
-					SpawnedPoint: drop.SpawnedPoint,
-					IsPlayerDrop: true,
-				}, types.SEND_POLICY_ENCRYPT)
-			}
-		}
-
-		if meso, ok := item.(*entity.Meso); ok {
-			drop := meso.GetDrop()
-			if drop != nil {
-				character.Send(&response.SpawnMeso{
-					ID:           drop.Object.OID,
-					Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
-					DropType:     drop.DropType,
-					Count:        meso.Count,
-					OwnerID:      drop.Owner,
-					Position:     drop.Position,
-					SpawnedPoint: drop.SpawnedPoint,
-					IsPlayerDrop: true,
-				}, types.SEND_POLICY_ENCRYPT)
-			}
-		}
-	}
-
-	for _, mob := range mapInstance.GetMobs() {
-		if mob, ok := mob.(*entity.Mob); ok {
-			mobDTO := mob.ToDTO()
-			character.Send(&response.SpawnMob{
-				Mob:       mobDTO,
-				SpawnType: constant.MOB_SPAWN_TYPE_NONE,
-			}, types.SEND_POLICY_ENCRYPT)
-		}
+	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeObject) {
+		obj.SendSpawnSyncToViewer(character)
 	}
 }
 
 // OnPlayerRemoved sends leave player packet to other players on the map
-func (l *MapListenerImpl) OnPlayerRemoved(mapID uint32, playerID uint32) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnPlayerRemoved(mapInstance *entity.Map, character *entity.Character) {
 	if mapInstance == nil {
 		return
 	}
 
 	// Send LeavePlayer packet to all other players on the map
 	leavePacket := &response.LeavePlayer{
-		ID: playerID,
+		ID: character.GetID(),
 	}
-	mapInstance.BroadcastToPlayers(leavePacket, types.SEND_POLICY_ENCRYPT, 0)
+	mapInstance.Broadcast(leavePacket, nil)
 }
 
 // OnPlayerMoved sends move player packet to other players on the map
-func (l *MapListenerImpl) OnPlayerMoved(mapID uint32, playerID uint32, character *entity.Character) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnPlayerMoved(mapInstance *entity.Map, character *entity.Character) {
 	if mapInstance == nil {
 		return
 	}
 
 	// TODO: Create and send move player packet
-	// movePacket := &response.MovePlayer{
-	//     Character: character,
-	// }
-	// mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, playerID)
 }
 
 // OnPlayerMove sends move packet with fragments to all other players on the map
-func (l *MapListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnPlayerMove(mapInstance *entity.Map, character *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
 	if mapInstance == nil {
 		return
 	}
@@ -193,29 +95,20 @@ func (l *MapListenerImpl) OnPlayerMove(mapID uint32, playerID uint32, character 
 		StartPoint: startPoint,
 	}
 
-	// Broadcast to all players on the map except the moving player
-	mapInstance.BroadcastToPlayers(movePacket, types.SEND_POLICY_ENCRYPT, playerID)
+	character.Broadcast(movePacket, nil)
 }
 
 // OnPlayerChat sends chat packet to other players on the map
-func (l *MapListenerImpl) OnPlayerChat(mapID uint32, playerID uint32, message string) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnPlayerChat(mapInstance *entity.Map, character *entity.Character, message string) {
 	if mapInstance == nil {
 		return
 	}
 
 	// TODO: Create and send chat packet
-	// chatPacket := &response.NormalChat{
-	//     Message: message,
-	// }
-	// mapInstance.BroadcastToPlayers(chatPacket, types.SEND_POLICY_ENCRYPT, playerID)
 }
 
 // OnItemSpawned sends spawn item packet to all players on the map
-func (l *MapListenerImpl) OnItemSpawned(mapID uint32, itemID uint32, item entity.Item, drop *entity.Drop) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Item, drop *entity.Drop) {
 	if mapInstance == nil {
 		return
 	}
@@ -228,44 +121,41 @@ func (l *MapListenerImpl) OnItemSpawned(mapID uint32, itemID uint32, item entity
 		DropType:     drop.DropType,
 		ItemModel:    item.GetModel(),
 		Expiration:   item.GetExpiration(),
-		Position:     dropObj.Object.Position,
+		Position:     dropObj.Position,
 		OwnerID:      drop.Owner,
 		SpawnedPoint: drop.SpawnedPoint,
 		IsPlayerDrop: true,
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(spawnPacket, nil)
 }
 
 // OnMesoSpawned sends spawn meso packet to all players on the map
-func (l *MapListenerImpl) OnMesoSpawned(mapID uint32, itemID uint32, meso *entity.Meso) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnMesoSpawned(mapInstance *entity.Map, meso *entity.Meso) {
 	if mapInstance == nil {
 		return
 	}
 
+	drop := meso.GetDrop()
 	// Create spawn meso packet
 	spawnPacket := &response.SpawnMeso{
-		ID:           meso.GetDrop().OID,
+		ID:           drop.OID,
 		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
-		DropType:     meso.GetDrop().DropType,
+		DropType:     drop.DropType,
 		Count:        meso.Count,
-		OwnerID:      meso.GetDrop().Owner,
-		Position:     meso.GetDrop().Position,
-		SpawnedPoint: meso.GetDrop().SpawnedPoint,
+		OwnerID:      drop.Owner,
+		Position:     drop.Position,
+		SpawnedPoint: drop.SpawnedPoint,
 		IsPlayerDrop: true,
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(spawnPacket, nil)
 }
 
 // OnItemRemoved sends remove item packet to all players on the map
-func (l *MapListenerImpl) OnItemRemoved(mapID uint32, itemID uint32, characterID uint32, mode constant.RemoveItemType) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnItemRemoved(mapInstance *entity.Map, itemID uint32, looterID uint32, mode constant.RemoveItemType) {
 	if mapInstance == nil {
 		return
 	}
@@ -274,17 +164,15 @@ func (l *MapListenerImpl) OnItemRemoved(mapID uint32, itemID uint32, characterID
 	removePacket := &response.RemoveItem{
 		Mode:        mode,
 		OID:         itemID,
-		CharacterId: characterID,
+		CharacterId: looterID,
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(removePacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(removePacket, nil)
 }
 
 // OnMobSpawned sends spawn mob packet to all players on the map
-func (l *MapListenerImpl) OnMobSpawned(mapID uint32, mobID uint32, mob *entity.Mob) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnMobSpawned(mapInstance *entity.Map, mob *entity.Mob) {
 	if mapInstance == nil {
 		return
 	}
@@ -299,43 +187,39 @@ func (l *MapListenerImpl) OnMobSpawned(mapID uint32, mobID uint32, mob *entity.M
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(spawnPacket, nil)
 }
 
 // OnMobRemoved sends remove mob packet to all players on the map
-func (l *MapListenerImpl) OnMobRemoved(mapID uint32, mobID uint32, animationType constant.MobDieAnimationType) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnMobRemoved(mapInstance *entity.Map, mob *entity.Mob, animationType constant.MobDieAnimationType) {
 	if mapInstance == nil {
 		return
 	}
 
 	// Create remove mob packet
 	removePacket := &response.DieMob{
-		OID:           mobID,
+		OID:           mob.OID,
 		AnimationType: animationType,
 	}
 
 	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(removePacket, types.SEND_POLICY_ENCRYPT)
+	mapInstance.Broadcast(removePacket, nil)
 }
 
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character) {
-	if after != nil {
-		// Convert entity to DTO
-		mobDTO := mob.ToDTO()
-		after.Send(&response.StartControlMob{
-			Mob:   mobDTO,
-			Aggro: false,
-		}, types.SEND_POLICY_ENCRYPT)
+	switch {
+	case before == nil && after != nil:
+		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: false}, types.SEND_POLICY_ENCRYPT)
+	case before != nil && after == nil:
+		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
+	case before != nil && after != nil:
+		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
+		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: false}, types.SEND_POLICY_ENCRYPT)
 	}
-	// Note: StopControlMob is commented out in old server, so we skip it here too
 }
 
 // OnMobMoved broadcasts mob movement to all players on the map
-func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
+func (l *MapListenerImpl) OnMobMoved(mapInstance *entity.Map, mob *entity.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	if mapInstance == nil {
 		return
 	}
@@ -348,30 +232,147 @@ func (l *MapListenerImpl) OnMobMoved(mapID uint32, mobID uint32, isAggroed bool,
 		Skill2:      skill2,
 		Skill3:      skill3,
 		Skill4:      skill4,
-		OID:         mobID,
+		OID:         mob.OID,
 		StartPoint:  startPoint,
 		Movements:   movements,
 	}
 
-	// Broadcast to all players on the map
-	mapInstance.BroadcastToAllPlayers(movePacket, types.SEND_POLICY_ENCRYPT)
+	mob.Broadcast(movePacket, nil)
 }
 
-// OnAttack broadcasts attack to all players on the map
-func (l *MapListenerImpl) OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8) {
-	// Get the map instance
-	mapInstance := l.gs.GetMap(mapID)
-	if mapInstance == nil {
+func (l *MapListenerImpl) broadcastAttack(character *entity.Character, packet types.Packet) {
+	if character == nil || character.GetMap() == nil {
 		return
 	}
 
-	// Create attack packet
-	attackPacket := &response.Attack{
-		CharacterId: characterID,
-		AttackInfo:  attackInfo,
-		SkillLevel:  skillLevel,
-	}
+	character.Broadcast(packet, nil)
+}
 
-	// Broadcast to all players on the map except the attacker
-	mapInstance.BroadcastToPlayers(attackPacket, types.SEND_POLICY_ENCRYPT, characterID)
+// OnAttack broadcasts close-range attack to all players on the map
+func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+	l.broadcastAttack(character, &response.Attack{
+		CharacterId: character.GetID(),
+		AttackInfo:  attackPayload.ToAttackInfo(),
+		SkillLevel:  skillLevel,
+	})
+}
+
+// OnRangedAttack broadcasts ranged attack to all players on the map
+func (l *MapListenerImpl) OnRangedAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+	l.broadcastAttack(character, &response.RangedAttack{
+		CharacterId: character.GetID(),
+		AttackInfo:  attackPayload.ToAttackInfo(),
+		SkillLevel:  skillLevel,
+		CashBullet:  0,
+	})
+}
+
+// OnMagicAttack broadcasts magic attack to all players on the map
+func (l *MapListenerImpl) OnMagicAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
+	l.broadcastAttack(character, &response.MagicAttack{
+		CharacterId: character.GetID(),
+		AttackInfo:  attackPayload.ToAttackInfo(),
+		SkillLevel:  skillLevel,
+	})
+}
+
+// OnMobMobBuffApplied broadcasts mob buff apply (0xAF) to all players on the map (including attacker).
+func (l *MapListenerImpl) OnMobMobBuffApplied(mapInstance *entity.Map, mob *entity.Mob, buff constant.MobBuffFlag, value int32, skillID uint32, durationMs int64) {
+	if mapInstance == nil {
+		return
+	}
+	buffTime := int16(32767)
+	if durationMs > 0 && durationMs/1000 < 32767 {
+		buffTime = int16(durationMs / 1000)
+	}
+	pkt := &response.ApplyMobBuff{
+		OID:        mob.OID,
+		Status:     int32(buff),
+		X:          int16(value),
+		SkillID:    skillID,
+		BuffTime:   buffTime,
+		Delay:      0,
+		StatusSize: 1,
+	}
+	mapInstance.Broadcast(pkt, nil)
+}
+
+// OnMobMobBuffCancelled broadcasts mob buff cancel (0xB0) to all players on the map.
+func (l *MapListenerImpl) OnMobMobBuffCancelled(mapInstance *entity.Map, mob *entity.Mob, buff constant.MobBuffFlag) {
+	if mapInstance == nil {
+		return
+	}
+	pkt := &response.CancelMobBuff{
+		OID:    mob.OID,
+		Status: int32(buff),
+		Size:   1,
+	}
+	mapInstance.Broadcast(pkt, nil)
+}
+
+func (l *MapListenerImpl) OnMistSpawned(mapInstance *entity.Map, mist *entity.Mist) {
+	if mapInstance == nil || mist == nil {
+		return
+	}
+	skillID := uint32(0)
+	if mist.SkillWz != nil {
+		skillID = mist.SkillWz.ID
+	}
+	pkt := &response.SpawnMist{
+		OID:        mist.OID,
+		Type:       mist.MistType,
+		MobMist:    mist.MobMist,
+		CauserID:   mist.Causer,
+		SkillID:    skillID,
+		SkillLevel: mist.SkillLevel,
+		SkillDelay: mist.SkillDelay,
+		Bounds:     mist.Bounds,
+		MobSkill:   mist.MobSkill,
+	}
+	mist.Broadcast(pkt, nil)
+}
+
+func (l *MapListenerImpl) OnMistRemoved(mapInstance *entity.Map, mist *entity.Mist) {
+	if mapInstance == nil || mist == nil {
+		return
+	}
+	pkt := &response.RemoveMist{
+		OID:      mist.OID,
+		Eruption: false,
+	}
+	mist.Broadcast(pkt, nil)
+}
+
+func (l *MapListenerImpl) OnDoorSpawned(mapInstance *entity.Map, door *entity.Door) {
+	if mapInstance == nil || door == nil {
+		return
+	}
+	door.Broadcast(&response.SpawnDoor{
+		OwnerID:  door.OwnerID,
+		Position: door.Position,
+		Animated: true,
+	}, nil)
+	pos := door.Position
+	door.Broadcast(&response.SpawnPortal{
+		TownMapID:   door.OppositeMapID,
+		TargetMapID: uint32(mapInstance.Wz.ID),
+		SkillID:     uint32(door.SkillID),
+		Position:    &pos,
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnDoorRemoved(mapInstance *entity.Map, door *entity.Door, animated bool) {
+	if mapInstance == nil || door == nil {
+		return
+	}
+	door.Broadcast(&response.RemoveDoor{
+		OwnerID:  door.OwnerID,
+		Animated: animated,
+	}, nil)
+	door.Broadcast(&response.SpawnPortal{
+		TownMapID:   response.DisabledPortalMapID,
+		TargetMapID: response.DisabledPortalMapID,
+		SkillID:     0,
+		Position:    nil,
+	}, nil)
 }

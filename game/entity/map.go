@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
@@ -14,21 +15,29 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// MapListener defines interface for map events
+// MapListener defines interface for map events. Prefer passing object pointers (*Map, *Character, *Mob) over IDs.
 type MapListener interface {
-	OnPlayerAdded(mapID uint32, playerID uint32, character *Character, init bool)
-	OnPlayerRemoved(mapID uint32, playerID uint32)
-	OnPlayerMoved(mapID uint32, playerID uint32, character *Character)
-	OnPlayerMove(mapID uint32, playerID uint32, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
-	OnPlayerChat(mapID uint32, playerID uint32, message string)
-	OnItemSpawned(mapID uint32, itemID uint32, item Item, drop *Drop)
-	OnMesoSpawned(mapID uint32, itemID uint32, meso *Meso)
-	OnItemRemoved(mapID uint32, itemID uint32, characterID uint32, mode constant.RemoveItemType)
-	OnMobSpawned(mapID uint32, mobID uint32, mob *Mob)
-	OnMobRemoved(mapID uint32, mobID uint32, animationType constant.MobDieAnimationType)
+	OnPlayerAdded(mapInstance *Map, character *Character, init bool)
+	OnPlayerRemoved(mapInstance *Map, character *Character)
+	OnPlayerMoved(mapInstance *Map, character *Character)
+	OnPlayerMove(mapInstance *Map, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
+	OnPlayerChat(mapInstance *Map, character *Character, message string)
+	OnItemSpawned(mapInstance *Map, item Item, drop *Drop)
+	OnMesoSpawned(mapInstance *Map, meso *Meso)
+	OnItemRemoved(mapInstance *Map, itemID uint32, looterID uint32, mode constant.RemoveItemType)
+	OnMobSpawned(mapInstance *Map, mob *Mob)
+	OnMobRemoved(mapInstance *Map, mob *Mob, animationType constant.MobDieAnimationType)
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
-	OnMobMoved(mapID uint32, mobID uint32, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
-	OnAttack(mapID uint32, characterID uint32, attackInfo dto.AttackInfo, skillLevel uint8)
+	OnMobMoved(mapInstance *Map, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
+	OnAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnRangedAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnMagicAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnMobMobBuffApplied(mapInstance *Map, mob *Mob, buff constant.MobBuffFlag, value int32, skillID uint32, durationMs int64)
+	OnMobMobBuffCancelled(mapInstance *Map, mob *Mob, buff constant.MobBuffFlag)
+	OnMistSpawned(mapInstance *Map, mist *Mist)
+	OnMistRemoved(mapInstance *Map, mist *Mist)
+	OnDoorSpawned(mapInstance *Map, door *Door)
+	OnDoorRemoved(mapInstance *Map, door *Door, animated bool)
 }
 
 type MobSpawn struct {
@@ -38,17 +47,22 @@ type MobSpawn struct {
 }
 
 type Map struct {
-	ID              uint32
-	objects         map[types.ObjectType]map[uint32]interface{} // Players, Mobs, Items, etc.
+	Wz *wz.Map // Map specification data
+
+	id              uint32
+	objects         map[constant.ObjectType]map[uint32]Object // Players, Mobs, Items, etc.
 	controllerTable *ControllerTable
 	MobSpawns       map[uint32]*MobSpawn
 	listener        MapListener
-	model           *wz.Map     // Map specification data
 	sequence        uint32      // Sequence ID for generating unique object IDs
 	availableOIDs   []uint32    // Queue of available OIDs for reuse
 	context         GameContext // GameContext for accessing resources
 	actorPID        *actor.PID
 	pidMutex        sync.RWMutex
+}
+
+type BroadcastOption struct {
+	SendRaw bool
 }
 
 func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) *Map {
@@ -60,18 +74,18 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 	}
 
 	// Get map model from resources
-	mapSpec, ok := context.GetResources().Maps[mapId]
+	wz, ok := context.GetResources().Maps[mapId]
 	if !ok {
-		panic(fmt.Sprintf("MapSpec not found for ID: %d", mapId))
+		panic(fmt.Sprintf("Wz not found for ID: %d", mapId))
 	}
 
 	mapInstance := &Map{
-		ID:              id,
-		objects:         make(map[types.ObjectType]map[uint32]interface{}),
+		id:              id,
+		objects:         make(map[constant.ObjectType]map[uint32]Object),
 		controllerTable: nil, // Will be set after mapInstance is created
 		MobSpawns:       make(map[uint32]*MobSpawn),
 		listener:        listener,
-		model:           mapSpec,
+		Wz:              wz,
 		sequence:        0,
 		availableOIDs:   make([]uint32, 0),
 		context:         context,
@@ -114,105 +128,355 @@ func OnMobControllerChange(mob *Mob, before *Character, after *Character) {
 }
 
 func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8, init bool) error {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
-		m.objects[types.OBJECT_TYPE_PLAYER] = make(map[uint32]interface{})
+	if m.objects[constant.ObjectTypeCharacter] == nil {
+		m.objects[constant.ObjectTypeCharacter] = make(map[uint32]Object)
 	}
 
-	character.Map = m.ID
-	character.SpawnPoint = spawnPoint
+	character.Map = m
+	character.spawnPoint = spawnPoint
+	if pos, ok := m.Wz.GetSpawnPosition(spawnPoint); ok {
+		character.Position = pos
+	}
+	character.Stance = constant.StanceDefaultValue
 
-	m.objects[types.OBJECT_TYPE_PLAYER][playerID] = character
+	m.objects[constant.ObjectTypeCharacter][playerID] = character
 
-	m.listener.OnPlayerAdded(m.ID, playerID, character, init)
+	m.listener.OnPlayerAdded(m, character, init)
 	m.controllerTable.EnterPlayer(character)
+
+	for _, summon := range character.GetSummons() {
+		if summon == nil || summon.Owner != character {
+			continue
+		}
+		summon.Position = character.Position
+		m.AddSummon(summon)
+	}
+
+	m.callMapLifecycleScript(character, "on_map_enter")
 
 	return nil
 }
 
+func (m *Map) callMapLifecycleScript(character *Character, hook string) {
+	if m == nil || character == nil || character.Context == nil {
+		return
+	}
+	if character.GetMap() != m {
+		return
+	}
+	pid := m.GetActorPID()
+	if pid == nil {
+		return
+	}
+	root := luax.GetRootLuaState(pid.String())
+	if root == nil {
+		return
+	}
+	_, thread, _ := luax.Call(root, "script/script.lua", hook, character, m)
+	if thread != nil {
+		thread.Close()
+	}
+}
+
 func (m *Map) RemovePlayer(playerID uint32) error {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
 		return fmt.Errorf("no players on map")
 	}
 
-	if _, exists := m.objects[types.OBJECT_TYPE_PLAYER][playerID]; !exists {
+	if _, exists := m.objects[constant.ObjectTypeCharacter][playerID]; !exists {
 		return fmt.Errorf("player %d not found on map", playerID)
 	}
 
-	character := m.objects[types.OBJECT_TYPE_PLAYER][playerID].(*Character)
-	delete(m.objects[types.OBJECT_TYPE_PLAYER], playerID)
+	character := m.objects[constant.ObjectTypeCharacter][playerID].(*Character)
 
+	m.callMapLifecycleScript(character, "on_map_leave")
+
+	for _, summon := range character.GetSummons() {
+		if summon == nil || summon.Map != m || summon.OID == 0 {
+			continue
+		}
+		m.RemoveSummon(summon.OID, false)
+	}
+
+	delete(m.objects[constant.ObjectTypeCharacter], playerID)
+
+	character.SuspendTimers()
+	character.Map = nil
 	m.controllerTable.LeavePlayer(character)
 
-	// Notify listener about player removal
-	m.listener.OnPlayerRemoved(m.ID, playerID)
+	m.listener.OnPlayerRemoved(m, character)
 
 	return nil
 }
 
 func (m *Map) GetPlayer(playerID uint32) *Character {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
 		return nil
 	}
 
-	if player, ok := m.objects[types.OBJECT_TYPE_PLAYER][playerID].(*Character); ok {
+	if player, ok := m.objects[constant.ObjectTypeCharacter][playerID].(*Character); ok {
 		return player
 	}
 	return nil
 }
 
 func (m *Map) GetPlayerCount() int {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
 		return 0
 	}
-	return len(m.objects[types.OBJECT_TYPE_PLAYER])
+	return len(m.objects[constant.ObjectTypeCharacter])
 }
 
-// GetAllPlayers returns all players on the map
-func (m *Map) GetAllPlayers() map[uint32]interface{} {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
-		return make(map[uint32]interface{})
+func (m *Map) GetAllPlayers() map[uint32]Object {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
+		return make(map[uint32]Object)
 	}
-	return m.objects[types.OBJECT_TYPE_PLAYER]
+	return m.objects[constant.ObjectTypeCharacter]
 }
 
 func (m *Map) GetControllerTable() *ControllerTable {
 	return m.controllerTable
 }
 
-// GetSpec returns the map specification data
-func (m *Map) GetSpec() *wz.Map {
-	return m.model
+func (m *Map) GetRecoveryRate() float32 {
+	if m.Wz == nil {
+		return 1.0
+	}
+	if m.Wz.RecoveryRate <= 0 {
+		return 1.0
+	}
+	return m.Wz.RecoveryRate
 }
 
-// FootholdPoint calculates the foothold position for a given point
 func (m *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
-	return m.model.FootholdPoint(point)
+	if m == nil || m.Wz == nil {
+		return nil
+	}
+	return m.Wz.FootholdPoint(point)
 }
 
 func (m *Map) initializeNpcs() {
-	if m.objects[types.OBJECT_TYPE_NPC] == nil {
-		m.objects[types.OBJECT_TYPE_NPC] = make(map[uint32]interface{})
+	if m.objects[constant.ObjectTypeNpc] == nil {
+		m.objects[constant.ObjectTypeNpc] = make(map[uint32]Object)
 	}
 
-	for _, wz := range m.model.NpcSpawns {
+	for _, wz := range m.Wz.NpcSpawns {
 		oid := m.allocateOID()
 		npc := &Npc{
-			Object: Object{
-				OID: oid,
-				Position: types.Point[int16]{
-					X: wz.BaseSpawn.Position.X,
-					Y: wz.BaseSpawn.Position.Y,
-				},
-				Context: m.context,
+			ObjectCore: ObjectCore{
+				OID:      oid,
+				Position: types.Point[int16]{X: wz.BaseSpawn.Position.X, Y: wz.BaseSpawn.Position.Y},
+				Context:  m.context,
+				Map:      m,
 			},
 			Wz: &wz,
 		}
-		m.objects[types.OBJECT_TYPE_NPC][oid] = npc
+		npc.ObjectCore.self = npc
+		m.objects[constant.ObjectTypeNpc][oid] = npc
 	}
 }
 
+func (m *Map) AddSummon(s *Summon) {
+	if s == nil {
+		return
+	}
+	if s.Owner == nil {
+		panic("AddSummon: summon.Owner must not be nil")
+	}
+	if s.LifeCore.ObjectCore.self == nil {
+		s.LifeCore.ObjectCore.self = s
+	}
+	if s.Map == m && m.objects[constant.ObjectTypeSummon] != nil {
+		if existing, ok := m.objects[constant.ObjectTypeSummon][s.OID]; ok && existing == s {
+			return
+		}
+	}
+	if s.Map != nil && s.Map != m {
+		return
+	}
+	s.ObjectCore.Context = m.context
+	if m.objects[constant.ObjectTypeSummon] == nil {
+		m.objects[constant.ObjectTypeSummon] = make(map[uint32]Object)
+	}
+	if s.OID == 0 {
+		s.OID = m.allocateOID()
+	}
+	if s.Map == nil {
+		s.Map = m
+	}
+	m.objects[constant.ObjectTypeSummon][s.OID] = s
+
+	s.Owner.Listener.OnSummonSpawn(s.Owner, s)
+}
+
+func (m *Map) RemoveSummon(oid uint32, animated bool) {
+	if m.objects[constant.ObjectTypeSummon] == nil {
+		return
+	}
+	obj, ok := m.objects[constant.ObjectTypeSummon][oid]
+	if !ok {
+		return
+	}
+
+	s, isSummon := obj.(*Summon)
+	if !isSummon {
+		delete(m.objects[constant.ObjectTypeSummon], oid)
+		m.releaseOID(oid)
+		return
+	}
+
+	s.Owner.Listener.OnSummonRemove(s.Owner, s, animated)
+
+	delete(m.objects[constant.ObjectTypeSummon], oid)
+	m.releaseOID(oid)
+	if s.Map == m {
+		s.Map = nil
+		s.OID = 0
+	}
+}
+
+func (m *Map) GetSummon(oid uint32) *Summon {
+	if m.objects[constant.ObjectTypeSummon] == nil {
+		return nil
+	}
+	if s, ok := m.objects[constant.ObjectTypeSummon][oid].(*Summon); ok {
+		return s
+	}
+	return nil
+}
+
+func (m *Map) AddMist(mist *Mist) {
+	if mist == nil {
+		return
+	}
+	if mist.ObjectCore.self == nil {
+		mist.ObjectCore.self = mist
+	}
+	if mist.Map == m && m.objects[constant.ObjectTypeMist] != nil {
+		if existing, ok := m.objects[constant.ObjectTypeMist][mist.OID]; ok && existing == mist {
+			return
+		}
+	}
+	if mist.Map != nil && mist.Map != m {
+		return
+	}
+	mist.ObjectCore.Context = m.context
+	if m.objects[constant.ObjectTypeMist] == nil {
+		m.objects[constant.ObjectTypeMist] = make(map[uint32]Object)
+	}
+	if mist.OID == 0 {
+		mist.OID = m.allocateOID()
+	}
+	if mist.Map == nil {
+		mist.Map = m
+	}
+	m.objects[constant.ObjectTypeMist][mist.OID] = mist
+	m.listener.OnMistSpawned(m, mist)
+}
+
+func (m *Map) RemoveMist(oid uint32) {
+	if m.objects[constant.ObjectTypeMist] == nil {
+		return
+	}
+	obj, ok := m.objects[constant.ObjectTypeMist][oid]
+	if !ok {
+		return
+	}
+
+	mi, isMist := obj.(*Mist)
+	if !isMist {
+		delete(m.objects[constant.ObjectTypeMist], oid)
+		m.releaseOID(oid)
+		return
+	}
+
+	m.listener.OnMistRemoved(m, mi)
+
+	delete(m.objects[constant.ObjectTypeMist], oid)
+	m.releaseOID(oid)
+	if mi.Map == m {
+		mi.Map = nil
+		mi.OID = 0
+	}
+}
+
+func (m *Map) GetMist(oid uint32) *Mist {
+	if m.objects[constant.ObjectTypeMist] == nil {
+		return nil
+	}
+	if mi, ok := m.objects[constant.ObjectTypeMist][oid].(*Mist); ok {
+		return mi
+	}
+	return nil
+}
+
+func (m *Map) AddDoor(door *Door) {
+	if door == nil {
+		return
+	}
+	if door.ObjectCore.self == nil {
+		door.ObjectCore.self = door
+	}
+	if door.Map == m && m.objects[constant.ObjectTypeDoor] != nil {
+		if existing, ok := m.objects[constant.ObjectTypeDoor][door.OID]; ok && existing == door {
+			return
+		}
+	}
+	if door.Map != nil && door.Map != m {
+		return
+	}
+	door.ObjectCore.Context = m.context
+	if m.objects[constant.ObjectTypeDoor] == nil {
+		m.objects[constant.ObjectTypeDoor] = make(map[uint32]Object)
+	}
+	if door.OID == 0 {
+		door.OID = m.allocateOID()
+	}
+	if door.Map == nil {
+		door.Map = m
+	}
+	m.objects[constant.ObjectTypeDoor][door.OID] = door
+	m.listener.OnDoorSpawned(m, door)
+}
+
+func (m *Map) RemoveDoor(oid uint32, animated bool) {
+	if m.objects[constant.ObjectTypeDoor] == nil {
+		return
+	}
+	obj, ok := m.objects[constant.ObjectTypeDoor][oid]
+	if !ok {
+		return
+	}
+
+	door, isDoor := obj.(*Door)
+	if !isDoor {
+		delete(m.objects[constant.ObjectTypeDoor], oid)
+		m.releaseOID(oid)
+		return
+	}
+
+	m.listener.OnDoorRemoved(m, door, animated)
+
+	delete(m.objects[constant.ObjectTypeDoor], oid)
+	m.releaseOID(oid)
+	if door.Map == m {
+		door.Map = nil
+		door.OID = 0
+	}
+}
+
+func (m *Map) GetDoor(oid uint32) *Door {
+	if m.objects[constant.ObjectTypeDoor] == nil {
+		return nil
+	}
+	if door, ok := m.objects[constant.ObjectTypeDoor][oid].(*Door); ok {
+		return door
+	}
+	return nil
+}
+
 func (m *Map) initializeMobs() {
-	for spawnId, mobSpawnSpec := range m.model.MobSpawns {
+	for spawnId, mobSpawnSpec := range m.Wz.MobSpawns {
 		m.MobSpawns[spawnId] = &MobSpawn{
 			Wz:            &mobSpawnSpec,
 			Spawned:       false,
@@ -221,24 +485,23 @@ func (m *Map) initializeMobs() {
 	}
 }
 
-// GetNpcs returns all NPCs on the map
-func (m *Map) GetNpcs() map[uint32]interface{} {
-	if m.objects[types.OBJECT_TYPE_NPC] == nil {
-		return make(map[uint32]interface{})
+func (m *Map) GetNpcs() map[uint32]Object {
+	if m.objects[constant.ObjectTypeNpc] == nil {
+		return make(map[uint32]Object)
 	}
-	return m.objects[types.OBJECT_TYPE_NPC]
+	return m.objects[constant.ObjectTypeNpc]
 }
 
 func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) {
 	oid := m.allocateOID()
 
 	footholdID := int16(0)
-	foothold, ok := m.model.Footholds.Find(position)
+	foothold, ok := m.Wz.Footholds.Find(position)
 	if ok {
 		footholdID = foothold.ID
 	}
 
-	footholdPoint := m.model.FootholdPoint(position)
+	footholdPoint := m.Wz.FootholdPoint(position)
 	spawnPosition := position
 	if footholdPoint != nil {
 		spawnPosition = *footholdPoint
@@ -266,19 +529,21 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	}
 
 	npc := &Npc{
-		Object: Object{
+		ObjectCore: ObjectCore{
 			OID:      oid,
 			Position: spawnPosition,
 			Context:  m.context,
+			Map:      m,
 		},
 		Wz: &npcSpawn,
 	}
+	npc.ObjectCore.self = npc
 
-	if m.objects[types.OBJECT_TYPE_NPC] == nil {
-		m.objects[types.OBJECT_TYPE_NPC] = make(map[uint32]interface{})
+	if m.objects[constant.ObjectTypeNpc] == nil {
+		m.objects[constant.ObjectTypeNpc] = make(map[uint32]Object)
 	}
 
-	m.objects[types.OBJECT_TYPE_NPC][oid] = npc
+	m.objects[constant.ObjectTypeNpc][oid] = npc
 
 	npcDTO := npc.ToDTO()
 	spawnPacket := &response.SpawnNpc{
@@ -290,8 +555,8 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 		MiniMap: true,
 	}
 
-	m.BroadcastToAllPlayers(spawnPacket, types.SEND_POLICY_ENCRYPT)
-	m.BroadcastToAllPlayers(controlPacket, types.SEND_POLICY_ENCRYPT)
+	m.Broadcast(spawnPacket, nil)
+	m.Broadcast(controlPacket, nil)
 
 	return npc, nil
 }
@@ -309,129 +574,124 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		footholdID = mobSpawn.Wz.Foothold
 	}
 	if footholdID == 0 {
-		foothold, ok := m.model.Footholds.Find(position)
+		foothold, ok := m.Wz.Footholds.Find(position)
 		if ok {
 			footholdID = foothold.ID
 		}
 	}
 
-	spawnPoint, ok := m.model.DropPoint(position)
+	spawnPoint, ok := m.Wz.DropPoint(position)
 	if !ok {
 		spawnPoint = position
 	}
 
 	mob := &Mob{
-		Life: Life{
-			Object: Object{
+		LifeCore: LifeCore{
+			ObjectCore: ObjectCore{
 				OID:      oid,
 				Position: spawnPoint,
 				Context:  m.context,
+				Map:      m,
 			},
-			Hp:     uint16(mobSpec.MaxHP),
-			Mp:     uint16(mobSpec.MaxMP),
-			MaxHp:  uint16(mobSpec.MaxHP),
-			MaxMp:  uint16(mobSpec.MaxMP),
+			Hp:     uint32(max(0, mobSpec.MaxHP)),
+			Mp:     uint32(max(0, mobSpec.MaxMP)),
+			BaseHp: uint32(max(0, mobSpec.MaxHP)),
+			BaseMp: uint32(max(0, mobSpec.MaxMP)),
 			Stance: 5,
 		},
 		Foothold: footholdID,
 		Wz:       mobSpec,
-		MapID:    m.ID,
 		Spawn:    mobSpawn,
+		ExpRate:  100,
+		DropRate: 100,
+	}
+	mob.LifeCore.ObjectCore.self = mob
+
+	if m.objects[constant.ObjectTypeMob] == nil {
+		m.objects[constant.ObjectTypeMob] = make(map[uint32]Object)
 	}
 
-	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
-		m.objects[types.OBJECT_TYPE_MONSTER] = make(map[uint32]interface{})
-	}
-
-	m.objects[types.OBJECT_TYPE_MONSTER][oid] = mob
-	m.listener.OnMobSpawned(m.ID, oid, mob)
+	m.objects[constant.ObjectTypeMob][oid] = mob
+	m.listener.OnMobSpawned(m, mob)
 	m.controllerTable.EnterMob(mob)
 
 	return mob, nil
 }
 
-// RemoveMob removes a mob from the map
 func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType) error {
-	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
+	if m.objects[constant.ObjectTypeMob] == nil {
 		return fmt.Errorf("no monsters on map")
 	}
 
-	if _, exists := m.objects[types.OBJECT_TYPE_MONSTER][mobID]; !exists {
+	if _, exists := m.objects[constant.ObjectTypeMob][mobID]; !exists {
 		return fmt.Errorf("mob %d not found on map", mobID)
 	}
 
-	mob := m.objects[types.OBJECT_TYPE_MONSTER][mobID].(*Mob)
-	delete(m.objects[types.OBJECT_TYPE_MONSTER], mobID)
+	mob := m.objects[constant.ObjectTypeMob][mobID].(*Mob)
+	delete(m.objects[constant.ObjectTypeMob], mobID)
 
+	mob.ClearAllMobBuffTimers()
 	if mob.Spawn != nil {
 		mob.Spawn.Spawned = false
 	}
 
 	m.releaseOID(mobID)
 	m.controllerTable.LeaveMob(mob)
-	m.listener.OnMobRemoved(m.ID, mobID, animationType)
+	m.listener.OnMobRemoved(m, mob, animationType)
 
 	return nil
 }
 
-// GetMob retrieves a mob from the map
 func (m *Map) GetMob(mobID uint32) *Mob {
-	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
+	if m.objects[constant.ObjectTypeMob] == nil {
 		return nil
 	}
 
-	if mob, ok := m.objects[types.OBJECT_TYPE_MONSTER][mobID].(*Mob); ok {
+	if mob, ok := m.objects[constant.ObjectTypeMob][mobID].(*Mob); ok {
 		return mob
 	}
 	return nil
 }
 
-// GetMobs returns all mobs on the map
-func (m *Map) GetMobs() map[uint32]interface{} {
-	if m.objects[types.OBJECT_TYPE_MONSTER] == nil {
-		return make(map[uint32]interface{})
+func (m *Map) GetMobs() map[uint32]Object {
+	if m.objects[constant.ObjectTypeMob] == nil {
+		return make(map[uint32]Object)
 	}
-	return m.objects[types.OBJECT_TYPE_MONSTER]
+	return m.objects[constant.ObjectTypeMob]
 }
 
-// BroadcastToPlayers sends a message to all players on the map (excluding specified player)
-func (m *Map) BroadcastToPlayers(message types.Packet, policy types.SendPolicy, exceptPlayerID uint32) {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
+func (m *Map) GetObjects(filter constant.ObjectType) []Object {
+	out := make([]Object, 0)
+	for _, buckets := range m.objects {
+		for _, obj := range buckets {
+			if obj == nil {
+				continue
+			}
+			if !obj.Is(filter) {
+				continue
+			}
+			out = append(out, obj)
+		}
+	}
+	return out
+}
+
+func (m *Map) Broadcast(message types.Packet, option *BroadcastOption) {
+	if m.objects[constant.ObjectTypeCharacter] == nil {
 		return
 	}
 
-	for playerID, player := range m.objects[types.OBJECT_TYPE_PLAYER] {
-		if playerID == exceptPlayerID {
+	policy := types.SEND_POLICY_ENCRYPT
+	if option != nil && option.SendRaw {
+		policy = types.SEND_POLICY_RAW
+	}
+
+	for _, player := range m.objects[constant.ObjectTypeCharacter] {
+		character, ok := player.(*Character)
+		if !ok {
 			continue
 		}
-
-		if character, ok := player.(*Character); ok {
-			character.Send(message, policy)
-		}
-	}
-}
-
-// BroadcastToAllPlayers sends a message to all players on the map (including sender)
-func (m *Map) BroadcastToAllPlayers(message types.Packet, policy types.SendPolicy) {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
-		return
-	}
-
-	for _, player := range m.objects[types.OBJECT_TYPE_PLAYER] {
-		if character, ok := player.(*Character); ok {
-			character.Send(message, policy)
-		}
-	}
-}
-
-// BroadcastToPlayer sends a message to a specific player on the map
-func (m *Map) BroadcastToPlayer(playerID uint32, message types.Packet, policy types.SendPolicy) {
-	if m.objects[types.OBJECT_TYPE_PLAYER] == nil {
-		return
-	}
-
-	if player, ok := m.objects[types.OBJECT_TYPE_PLAYER][playerID].(*Character); ok {
-		player.Send(message, policy)
+		character.Send(message, policy)
 	}
 }
 
@@ -443,7 +703,7 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 		return fmt.Errorf("item has no drop information")
 	}
 
-	dropPoint, ok := m.model.DropPoint(drop.Position)
+	dropPoint, ok := m.Wz.DropPoint(drop.Position)
 	if !ok {
 		dropPoint = drop.SpawnedPoint
 	}
@@ -452,32 +712,37 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	drop.OID = oid
 	drop.Owner = ownerID
 	drop.DropType = dropType
-	drop.MapID = m.ID
+	drop.Map = m
 	drop.RegisterExpire(constant.ITEM_EXPIRE_TIME)
 	if dropType == constant.DROP_TYPE_OWNED || dropType == constant.DROP_TYPE_PARTY {
 		drop.RegisterFFA(constant.ITEM_FFA_TIME)
 	}
 
-	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
-		m.objects[types.OBJECT_TYPE_ITEM] = make(map[uint32]interface{})
+	if m.objects[constant.ObjectTypeItem] == nil {
+		m.objects[constant.ObjectTypeItem] = make(map[uint32]Object)
 	}
-
-	m.objects[types.OBJECT_TYPE_ITEM][oid] = item
-	m.listener.OnItemSpawned(m.ID, oid, item, drop)
+	mapObj, ok := item.(Object)
+	if !ok {
+		return fmt.Errorf("item must implement Object")
+	}
+	if drop.ObjectCore != nil {
+		drop.ObjectCore.self = mapObj
+	}
+	m.objects[constant.ObjectTypeItem][oid] = mapObj
+	m.listener.OnItemSpawned(m, item, drop)
 
 	return nil
 }
 
-func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType) error {
+func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType) (*Meso, error) {
 	oid := m.allocateOID()
 
-	dropPoint, ok := m.model.DropPoint(position)
+	dropPoint, ok := m.Wz.DropPoint(position)
 	if !ok {
 		dropPoint = position
 	}
 
-	// Create meso entity
-	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.context, m.ID)
+	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.context, m)
 
 	// Register timers for meso
 	drop := meso.GetDrop()
@@ -489,79 +754,68 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 	}
 
 	// Initialize objects map for items if needed
-	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
-		m.objects[types.OBJECT_TYPE_ITEM] = make(map[uint32]interface{})
+	if m.objects[constant.ObjectTypeItem] == nil {
+		m.objects[constant.ObjectTypeItem] = make(map[uint32]Object)
 	}
 
 	// Add meso to map objects
-	m.objects[types.OBJECT_TYPE_ITEM][oid] = meso
+	m.objects[constant.ObjectTypeItem][oid] = meso
 
 	// Notify listener about meso spawn
-	m.listener.OnMesoSpawned(m.ID, oid, meso)
+	m.listener.OnMesoSpawned(m, meso)
 
-	return nil
+	return meso, nil
 }
 
 // RemoveItem removes an item from the map
 func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, playerID uint32) error {
-	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
+	if m.objects[constant.ObjectTypeItem] == nil {
 		return fmt.Errorf("no items on map")
 	}
 
-	if _, exists := m.objects[types.OBJECT_TYPE_ITEM][itemID]; !exists {
+	if _, exists := m.objects[constant.ObjectTypeItem][itemID]; !exists {
 		return fmt.Errorf("item %d not found on map", itemID)
 	}
 
-	// Get the item before removing it to cancel its timers
-	itemInterface := m.objects[types.OBJECT_TYPE_ITEM][itemID]
-
-	// Cancel timers and mark as picked up if it's a dropable item
-	if dropable, ok := itemInterface.(Dropable); ok {
-		if drop := dropable.GetDrop(); drop != nil {
-			drop.cancelTimers()
-			drop.pickedUp = true
-		}
-	}
-
-	delete(m.objects[types.OBJECT_TYPE_ITEM], itemID)
+	delete(m.objects[constant.ObjectTypeItem], itemID)
 
 	// Release OID for reuse
 	m.releaseOID(itemID)
 
 	// Notify listener about item removal
-	m.listener.OnItemRemoved(m.ID, itemID, playerID, removeType)
+	m.listener.OnItemRemoved(m, itemID, playerID, removeType)
 
 	return nil
 }
 
 // GetItem retrieves an item from the map
 func (m *Map) GetItem(itemID uint32) Item {
-	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
+	if m.objects[constant.ObjectTypeItem] == nil {
 		return nil
 	}
 
-	if item, ok := m.objects[types.OBJECT_TYPE_ITEM][itemID].(Item); ok {
+	if item, ok := m.objects[constant.ObjectTypeItem][itemID].(Item); ok {
 		return item
 	}
 	return nil
 }
 
 // GetItems returns all items on the map
-func (m *Map) GetItems() map[uint32]interface{} {
-	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
-		return make(map[uint32]interface{})
+func (m *Map) GetItems() map[uint32]Object {
+	if m.objects[constant.ObjectTypeItem] == nil {
+		return make(map[uint32]Object)
 	}
-	return m.objects[types.OBJECT_TYPE_ITEM]
+	return m.objects[constant.ObjectTypeItem]
 }
 
 // LootItem attempts to loot an item from the map and returns the looted item and reason
 // All capacity checks are performed before removing the item from the map
 func (m *Map) LootItem(itemID uint32, character *Character, position types.Point[int16]) (interface{}, constant.LootResult) {
-	if m.objects[types.OBJECT_TYPE_ITEM] == nil {
+	if m.objects[constant.ObjectTypeItem] == nil {
 		return nil, constant.LOOT_FAILED_ITEM_NOT_FOUND
 	}
 
-	itemInterface, exists := m.objects[types.OBJECT_TYPE_ITEM][itemID]
+	itemInterface, exists := m.objects[constant.ObjectTypeItem][itemID]
 	if !exists {
 		return nil, constant.LOOT_FAILED_ITEM_NOT_FOUND
 	}
@@ -574,7 +828,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Check ownership for owned drops
-		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.ID {
+		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.GetID() {
 			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
@@ -588,7 +842,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Remove item from map using RemoveItem
-		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
+		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 
@@ -601,7 +855,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Check ownership for owned drops
-		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.ID {
+		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.GetID() {
 			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
@@ -613,7 +867,7 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		}
 
 		// Remove meso from map using RemoveItem
-		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.ID); err != nil {
+		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 

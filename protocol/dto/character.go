@@ -50,7 +50,7 @@ type Character struct {
 	Inventory        map[constant.InventoryType]*Inventory
 	Equipments       map[constant.EquipmentPartsType]*Equipment
 	Skills           []*Skill
-	Cooldowns        []*Cooldown
+	Cooldowns        map[uint32]uint16 // skillID -> remaining seconds
 	QuestsStarted    []*QuestStatus
 	QuestsCompleted  []*QuestStatus
 	Rings            RingContainer
@@ -247,15 +247,19 @@ func (c *Character) SerializeSkills(writer *stream.StreamWriter) {
 
 // SerializeCooldowns serializes character cooldowns
 func (c *Character) SerializeCooldowns(writer *stream.StreamWriter) {
-	if c.Cooldowns == nil {
+	if c.Cooldowns == nil || len(c.Cooldowns) == 0 {
 		writer.WriteU16(0)
 		return
 	}
-
-	writer.WriteU16(uint16(len(c.Cooldowns)))
-	for _, cd := range c.Cooldowns {
-		writer.WriteU32(cd.SkillId)
-		writer.WriteU16(cd.Remaining)
+	keys := make([]uint32, 0, len(c.Cooldowns))
+	for skillID := range c.Cooldowns {
+		keys = append(keys, skillID)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	writer.WriteU16(uint16(len(keys)))
+	for _, skillID := range keys {
+		writer.WriteU32(skillID)
+		writer.WriteU16(c.Cooldowns[skillID])
 	}
 }
 

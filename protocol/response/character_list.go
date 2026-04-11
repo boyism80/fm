@@ -1,8 +1,8 @@
 package response
 
 import (
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/stream"
 )
 
 type CharacterList struct {
@@ -36,6 +36,5 @@ func (e *CharacterList) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (e *CharacterList) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (e *CharacterList) Deserialize(reader *stream.StreamReader) {
 }

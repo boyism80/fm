@@ -26,6 +26,6 @@ go.work.sum
 .idea
 resources/wz
 imgs
-old
-legacy/**/wz
 docs
+
+/scripts

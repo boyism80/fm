@@ -19,31 +19,16 @@ func (p *AutoAssignAP) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *AutoAssignAP) Deserialize(reader *stream.StreamReader) error {
-	var err error
-	if p.Tick, err = reader.ReadU32(); err != nil {
-		return err
-	}
-	if p.Unknown, err = reader.ReadU32(); err != nil {
-		return err
-	}
+func (p *AutoAssignAP) Deserialize(reader *stream.StreamReader) {
+	p.Tick = reader.ReadU32()
+	p.Unknown = reader.ReadU32()
 
-	// Check if we have enough data (16 bytes for PrimaryStat, Amount, SecondaryStat, Amount2)
 	if reader.Remaining() < 16 {
-		return nil // Not enough data, but don't error
+		return
 	}
 
-	if p.PrimaryStat, err = reader.ReadU32(); err != nil {
-		return err
-	}
-	if p.Amount, err = reader.ReadU32(); err != nil {
-		return err
-	}
-	if p.SecondaryStat, err = reader.ReadU32(); err != nil {
-		return err
-	}
-	if p.Amount2, err = reader.ReadU32(); err != nil {
-		return err
-	}
-	return nil
+	p.PrimaryStat = reader.ReadU32()
+	p.Amount = reader.ReadU32()
+	p.SecondaryStat = reader.ReadU32()
+	p.Amount2 = reader.ReadU32()
 }

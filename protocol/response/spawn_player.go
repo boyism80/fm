@@ -1,6 +1,7 @@
 package response
 
 import (
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/stream"
 )
@@ -66,6 +67,27 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	for i := range 4 {
 		writer.WriteU32(p.BuffStates[i])
 	}
+	for i := len(p.BuffStates) - 1; i >= 0; i-- {
+		buff := p.BuffStates[i]
+		if i == 3 {
+			if (buff & constant.BuffFlagSpeed.Mask) != 0 {
+				writer.WriteU8(p.SpeedBuff)
+			}
+			if (buff & constant.BuffFlagCombo.Mask) != 0 {
+				writer.WriteU8(p.ComboCount)
+			}
+			if (buff & constant.BuffFlagWkCharge.Mask) != 0 {
+				writer.WriteU32(p.WKChargeSkillId)
+			}
+		} else if i == 2 {
+			if (buff & constant.BuffFlagMorph.Mask) != 0 {
+				writer.WriteU16(p.MorphId)
+			}
+			if (buff & constant.BuffFlagSpiritClaw.Mask) != 0 {
+				writer.WriteU32(p.SpiritClawSkillId)
+			}
+		}
+	}
 
 	writer.WriteU16(0)
 	writer.WriteU16(p.Character.Class)
@@ -112,6 +134,5 @@ func (s *SpawnPlayer) Opcode() uint16 {
 	return 0x6E // SpawnPlayer opcode
 }
 
-func (s *SpawnPlayer) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (s *SpawnPlayer) Deserialize(reader *stream.StreamReader) {
 }

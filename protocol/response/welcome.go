@@ -34,29 +34,13 @@ func (a *Welcome) Opcode() uint16 {
 }
 
 func (a *Welcome) Serialize(writer *stream.StreamWriter) error {
-	err := writer.WriteU16(MAGIC)
-	if err != nil {
-		return err
-	}
-	err = writer.WriteStr16(version)
-	if err != nil {
-		return err
-	}
-	err = writer.Write(a.RecvIv)
-	if err != nil {
-		return err
-	}
-	err = writer.Write(a.SendIv)
-	if err != nil {
-		return err
-	}
-	err = writer.WriteU8(1)
-	if err != nil {
-		return err
-	}
+	writer.WriteU16(MAGIC)
+	writer.WriteStr16(version)
+	writer.Write(a.RecvIv)
+	writer.Write(a.SendIv)
+	writer.WriteU8(1)
 	return nil
 }
 
-func (a *Welcome) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *Welcome) Deserialize(reader *stream.StreamReader) {
 }

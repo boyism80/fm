@@ -1,172 +1,180 @@
 package entity
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"github.com/boyism80/fm/game/constant"
+)
 
-type Life struct {
-	Object
-	Hp         uint16
-	MaxHp      uint16
-	Mp         uint16
-	MaxMp      uint16
+type LifeCore struct {
+	ObjectCore
+	Hp         uint32
+	Mp         uint32
+	BaseHp     uint32
+	BaseMp     uint32
+	BonusHp    int32
+	BonusMp    int32
 	Stance     uint8
 	Invincible bool
 }
 
-// Luable interface implementation
-func (life *Life) LuaTypeName() string {
-	return "LuaLife"
+type Life interface {
+	GetHp() uint32
+	SetHp(uint32, bool)
+	GetMp() uint32
+	SetMp(uint32, bool)
+	GetMaxHp() uint32
+	SetBaseHp(uint32, bool)
+	GetMaxMp() uint32
+	SetBaseMp(uint32, bool)
+	AddHp(int)
+	AddMp(int)
+	AddHpMp(hpDelta, mpDelta int)
+	GetBonusHp() int32
+	SetBonusHp(int32)
+	GetBonusMp() int32
+	SetBonusMp(int32)
+	GetInvincible() bool
+	SetInvincible(bool)
+	IsAlive() bool
 }
 
-func (life *Life) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	return map[string]lua.LGFunction{
-		"hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
+func (life *LifeCore) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeLife
+}
 
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return hp
-				L.Push(lua.LNumber(life.Hp))
-				return 1
-			} else if argc == 2 {
-				// Setter: hp(value)
-				hp := L.CheckInt(2)
-				if hp < 0 {
-					hp = 0
-				}
-				if hp > int(life.MaxHp) {
-					hp = int(life.MaxHp)
-				}
-				life.Hp = uint16(hp)
-				return 0
-			} else {
-				L.ArgError(2, "hp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"max_hp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
+func (life *LifeCore) Is(typ constant.ObjectType) bool {
+	return life.GetObjectType().Has(typ)
+}
 
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return max_hp
-				L.Push(lua.LNumber(life.MaxHp))
-				return 1
-			} else if argc == 2 {
-				// Setter: max_hp(value)
-				maxHp := L.CheckInt(2)
-				if maxHp < 0 {
-					maxHp = 0
-				}
-				life.MaxHp = uint16(maxHp)
-				// Adjust HP if it exceeds MaxHP
-				if life.Hp > life.MaxHp {
-					life.Hp = life.MaxHp
-				}
-				return 0
-			} else {
-				L.ArgError(2, "max_hp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
+func (life *LifeCore) SendSpawnSyncToViewer(viewer *Character) {}
 
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return mp
-				L.Push(lua.LNumber(life.Mp))
-				return 1
-			} else if argc == 2 {
-				// Setter: mp(value)
-				mp := L.CheckInt(2)
-				if mp < 0 {
-					mp = 0
-				}
-				if mp > int(life.MaxMp) {
-					mp = int(life.MaxMp)
-				}
-				life.Mp = uint16(mp)
-				return 0
-			} else {
-				L.ArgError(2, "mp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"max_mp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
+func (life *LifeCore) GetMaxHp() uint32 {
+	t := int64(life.BaseHp) + int64(life.BonusHp)
+	if t < 1 {
+		return 1
+	}
+	if t > 0xffffffff {
+		return 0xffffffff
+	}
+	return uint32(t)
+}
 
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return max_mp
-				L.Push(lua.LNumber(life.MaxMp))
-				return 1
-			} else if argc == 2 {
-				// Setter: max_mp(value)
-				maxMp := L.CheckInt(2)
-				if maxMp < 0 {
-					maxMp = 0
-				}
-				life.MaxMp = uint16(maxMp)
-				// Adjust MP if it exceeds MaxMP
-				if life.Mp > life.MaxMp {
-					life.Mp = life.MaxMp
-				}
-				return 0
-			} else {
-				L.ArgError(2, "max_mp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"invincible": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			life, ok := ud.Value.(*Life)
-			if !ok {
-				L.ArgError(1, "Life expected")
-				return 0
-			}
+func (life *LifeCore) GetMaxMp() uint32 {
+	t := int64(life.BaseMp) + int64(life.BonusMp)
+	if t < 0 {
+		return 0
+	}
+	if t > 0xffffffff {
+		return 0xffffffff
+	}
+	return uint32(t)
+}
 
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return invincible
-				L.Push(lua.LBool(life.Invincible))
-				return 1
-			} else if argc == 2 {
-				// Setter: invincible(value)
-				invincible := L.CheckBool(2)
-				life.Invincible = invincible
-				return 0
-			} else {
-				L.ArgError(2, "invincible() requires 0 or 1 arguments")
-				return 0
-			}
-		},
+func (life *LifeCore) AddBaseHp(amount uint32) {
+	life.BaseHp += amount
+}
+
+func (life *LifeCore) AddBonusHp(amount int32) {
+	life.BonusHp += amount
+	if life.Hp > life.GetMaxHp() {
+		life.Hp = life.GetMaxHp()
 	}
 }
 
-func (life *Life) String() string {
-	return life.LuaTypeName()
+func (life *LifeCore) AddBaseMp(amount uint32) {
+	life.BaseMp += amount
 }
 
-func (life *Life) Type() lua.LValueType {
-	return lua.LTUserData
+func (life *LifeCore) AddBonusMp(amount int32) {
+	life.BonusMp += amount
+	if life.Mp > life.GetMaxMp() {
+		life.Mp = life.GetMaxMp()
+	}
 }
+
+func (life *LifeCore) GetHp() uint32       { return life.Hp }
+func (life *LifeCore) GetMp() uint32       { return life.Mp }
+func (life *LifeCore) GetBonusHp() int32   { return life.BonusHp }
+func (life *LifeCore) GetBonusMp() int32   { return life.BonusMp }
+func (life *LifeCore) GetInvincible() bool { return life.Invincible }
+func (life *LifeCore) IsAlive() bool       { return life.Hp > 0 }
+
+func (life *LifeCore) SetHp(v uint32, _ bool) {
+	maxHp := life.GetMaxHp()
+	if v > maxHp {
+		v = maxHp
+	}
+	life.Hp = v
+}
+
+func (life *LifeCore) SetMp(v uint32, _ bool) {
+	maxMp := life.GetMaxMp()
+	if v > maxMp {
+		v = maxMp
+	}
+	life.Mp = v
+}
+
+func (life *LifeCore) SetBaseHp(v uint32, _ bool) {
+	life.BaseHp = v
+	if life.Hp > life.GetMaxHp() {
+		life.Hp = life.GetMaxHp()
+	}
+}
+
+func (life *LifeCore) SetBaseMp(v uint32, _ bool) {
+	life.BaseMp = v
+	if life.Mp > life.GetMaxMp() {
+		life.Mp = life.GetMaxMp()
+	}
+}
+
+func (life *LifeCore) SetBonusHp(v int32) {
+	life.BonusHp = v
+	if life.Hp > life.GetMaxHp() {
+		life.Hp = life.GetMaxHp()
+	}
+}
+
+func (life *LifeCore) SetBonusMp(v int32) {
+	life.BonusMp = v
+	if life.Mp > life.GetMaxMp() {
+		life.Mp = life.GetMaxMp()
+	}
+}
+
+func (life *LifeCore) SetInvincible(b bool) { life.Invincible = b }
+
+func (life *LifeCore) AddHp(amount int) {
+	n := int(life.Hp) + amount
+	if n < 0 {
+		n = 0
+	}
+	m := int(life.GetMaxHp())
+	if n > m {
+		n = m
+	}
+	life.Hp = uint32(n)
+}
+
+func (life *LifeCore) AddMp(amount int) {
+	n := int(life.Mp) + amount
+	if n < 0 {
+		n = 0
+	}
+	m := int(life.GetMaxMp())
+	if n > m {
+		n = m
+	}
+	life.Mp = uint32(n)
+}
+
+func (life *LifeCore) AddHpMp(hpDelta, mpDelta int) {
+	life.AddHp(hpDelta)
+	life.AddMp(mpDelta)
+}
+
+var (
+	_ Life = (*LifeCore)(nil)
+	_ Life = (*Character)(nil)
+	_ Life = (*Mob)(nil)
+)

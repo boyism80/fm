@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -49,13 +49,13 @@ func (h *MovePlayer) Handle(ctx *core.ClientContext, req *request.MovePlayer) er
 		character.Stance = frag.GetStance()
 	}
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
-		log.Printf("Map %d not found for character movement", character.GetMap())
-		return fmt.Errorf("map %d not found", character.GetMap())
+		log.Printf("Map not found for character movement")
+		return fmt.Errorf("map not found")
 	}
 
-	character.Listener.OnPlayerMove(character.GetMap(), character.GetID(), character, beforePosition, req.Fragments)
+	character.Listener.OnPlayerMove(character, beforePosition, req.Fragments)
 
 	return nil
 }

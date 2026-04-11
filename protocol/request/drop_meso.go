@@ -13,8 +13,7 @@ func (p *DropMeso) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *DropMeso) Deserialize(reader *stream.StreamReader) error {
-	p.Tick, _ = reader.ReadU32()
-	p.Count, _ = reader.Read32()
-	return nil
+func (p *DropMeso) Deserialize(reader *stream.StreamReader) {
+	p.Tick = reader.ReadU32()
+	p.Count = reader.Read32()
 }

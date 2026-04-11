@@ -9,11 +9,11 @@ import (
 
 // InstallationItem represents installation item DTO
 type InstallationItem struct {
-	ItemId      uint32
-	UniqueId    int64
-	Expiration  time.Time
-	OwnerName   string
-	Flags       uint16
+	ItemId     uint32
+	UniqueId   int64
+	Expiration time.Time
+	OwnerName  string
+	Flags      uint16
 }
 
 func (i *InstallationItem) GetCount() uint16 {
@@ -36,4 +36,3 @@ func (i *InstallationItem) Serialize(writer *stream.StreamWriter, trade bool, sl
 	writer.WriteStr16(i.OwnerName)
 	writer.WriteU16(i.Flags)
 }
-

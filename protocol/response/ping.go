@@ -15,6 +15,5 @@ func (a *Ping) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *Ping) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *Ping) Deserialize(reader *stream.StreamReader) {
 }

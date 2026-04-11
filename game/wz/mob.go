@@ -16,8 +16,10 @@ type Mob struct {
 	EXP        uint32
 	Undead     bool
 	Pushed     bool
+	Boss       bool
 	FS         float32
 	SummonType uint8
 	MobType    uint8
 	Link       string // Link to another mob ID (e.g., "0100101")
+	ElemResist map[string]int
 }

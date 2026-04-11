@@ -24,9 +24,10 @@ func main() {
 		expRate    = flag.Int("exp-rate", 100, "Experience rate multiplier")
 		dropRate   = flag.Int("drop-rate", 10, "Drop rate multiplier")
 		mesoRate   = flag.Int("meso-rate", 1, "Meso rate multiplier")
-		withStats  = flag.Bool("stats", false, "Enable statistics monitoring")
-		highRate   = flag.Bool("high-rate", false, "Enable high-rate server configuration")
-		help       = flag.Bool("help", false, "Show help information")
+
+		withStats = flag.Bool("stats", false, "Enable statistics monitoring")
+		highRate  = flag.Bool("high-rate", false, "Enable high-rate server configuration")
+		help      = flag.Bool("help", false, "Show help information")
 	)
 
 	// Parse command line arguments

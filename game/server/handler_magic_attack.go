@@ -6,12 +6,8 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
-	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
-	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
 )
 
 type MagicAttack struct {
@@ -47,19 +43,18 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		return nil
 	}
 
-	mapID := character.GetMap()
-	mapInstance := h.gs.GetMap(mapID)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		log.Printf("Character is not in a map")
 		return fmt.Errorf("character is not in a map")
 	}
 
-	if req.AttackInfo.Skill == 0 {
-		character.Listener.OnUpdateStats(nil, true)
+	if req.Skill == 0 {
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	skillID := req.AttackInfo.Skill
+	skillID := req.Skill
 	var wzSkill *wz.Skill
 	if character.Context != nil {
 		resources := character.Context.GetResources()
@@ -70,68 +65,45 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 
 	if wzSkill == nil {
 		log.Printf("Skill not found: %d", skillID)
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	skillLevel := character.GetTotalSkillLevel(skillID)
 	if skillLevel <= 0 {
 		log.Printf("Character does not have skill %d or skill level is 0", skillID)
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	levelData := wzSkill.GetLevelData(skillLevel)
 	if levelData == nil {
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	if levelData.Cooldown > 0 {
-		if character.IsSkillCooling(skillID) {
+		skillEntry := character.Skills.Get(skillID)
+		if skillEntry == nil || skillEntry.IsCooling() {
 			log.Printf("Skill %d is on cooldown", skillID)
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
-		character.AddCooldown(skillID, levelData.Cooldown)
+		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
-	if levelData.MPCon > 0 {
-		mpCon := uint16(levelData.MPCon)
-		if !character.ConsumeMP(mpCon) {
-			log.Printf("Not enough MP for skill %d (required: %d, current: %d)", skillID, mpCon, character.Mp)
-			character.Listener.OnUpdateStats(nil, true)
-			return nil
-		}
+	if !CallSkillHook(ctx, character, uint32(skillID), "on_activating") {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
 	}
 
-	h.applyDamageToMobs(character, mapInstance, req.AttackInfo.Damages)
+	damages := req.Damages
+	CallOnAttackHooks(ctx, character, mapInstance, damages, uint32(skillID), false, 0)
+	ApplyDamageToMobs(character, mapInstance, damages)
 
-	magicAttackPacket := &response.MagicAttack{
-		AttackInfo:  req.AttackInfo,
-		CharacterId: character.GetID(),
-		SkillLevel:  uint8(skillLevel),
-	}
+	character.Listener.OnMagicAttack(character, req, uint8(skillLevel))
 
-	mapInstance.BroadcastToPlayers(magicAttackPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+	CallSkillHook(ctx, character, uint32(skillID), "on_activated")
 
 	return nil
-}
-
-func (h *MagicAttack) applyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {
-	for _, damage := range damages {
-		mob := mapInstance.GetMob(damage.OID)
-		if mob == nil {
-			log.Printf("Mob not found for OID: %d", damage.OID)
-			continue
-		}
-
-		if character.Admin {
-			mob.Damage(mob.Hp, character)
-		} else {
-			for _, damagePair := range damage.DamagePairs {
-				mob.Damage(uint16(damagePair.Damage), character)
-			}
-		}
-	}
 }

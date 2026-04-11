@@ -5,8 +5,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
+	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/wz"
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
@@ -15,89 +18,666 @@ import (
 )
 
 type Character struct {
-	Life
+	LifeCore
 	Sendable
-	Listener      CharacterListener
-	Dialog        *lua.LState
-	ID            uint32
-	Name          string
-	Gender        uint8
-	SkinColor     uint8
-	Face          uint32
-	Hair          uint32
-	Level         uint8
-	Class         uint16
-	Rank          uint32
-	RankDiff      int32
-	ClassRank     uint32
-	ClassRankDiff int32
-	Admin         bool
-	Str           uint16
-	Dex           uint16
-	Int           uint16
-	Luk           uint16
-	AbilityPoint  uint16
-	SkillPoint    uint16
-	HpApUsed      uint16
-	Exp           uint32
-	FamePoint     uint16
-	Map           uint32
-	SpawnPoint    uint8
-	Mega          bool
-	Meso          int32
 
-	Random1          stream.RandomStream
-	Random2          stream.RandomStream
-	Random3          stream.RandomStream
+	dialog           *lua.LState
+	id               uint32
+	name             string
+	gender           uint8
+	skinColor        uint8
+	face             uint32
+	hair             uint32
+	level            uint8
+	rank             uint32
+	rankDiff         int32
+	classRank        uint32
+	classRankDiff    int32
+	exp              uint32
+	famePoint        uint16
+	spawnPoint       uint8
+	mega             bool
+	random1          stream.RandomStream
+	random2          stream.RandomStream
+	random3          stream.RandomStream
+	questStatuses    map[int]*QuestStatus
+	marriageId       uint32
+	regRocks         []uint32
+	rocks            []uint32
+	monsterBookCover uint32
+	monsterBook      *MonsterBook
+	quests           map[uint16]string
+	currentDialog    *lua.LState
+	dialogMutex      sync.Mutex
+	hidden           bool
+	Listener         CharacterListener
+	Class            uint16
+	Role             constant.CharacterRole
+	AbilityPoint     uint16
+	SkillPoint       uint16
+	HpApUsed         uint16
+	Meso             int32
 	Inventory        map[constant.InventoryType]*Inventory
-	Equipments       map[constant.EquipmentPartsType]*Equipment
+	Equipments       map[constant.EquipmentPartsType]Equipment
 	Rings            RingContainer
-	SkillsMap        map[uint32]*SkillEntry
-	CoolDowns        map[uint32]*CooldownEntry
-	Quests           map[int]*QuestStatus
-	MarriageId       uint32
-	RegRocks         []uint32 // Basic warp rock slots (5 slots)?
-	Rocks            []uint32 // VIP warp rock slots (10 slots)?
-	MonsterBookCover uint32
-	MonsterBook      *MonsterBook
-	QuestInfo        map[uint16]string
-
-	// Dialog state management
-	currentDialog *lua.LState // Current dialog coroutine
-	dialogMutex   sync.Mutex  // Mutex for dialog state access
-
-	// Shop state management
-	CurrentShopID uint32 // Current shop NPC ID (0 if no shop is open)
-
-	// Chair state
-	Chair uint32 // Chair item ID (0 if not sitting)
-
+	Skills           *SkillContainer
+	CurrentShopID    uint32
+	Chair            uint32
+	LastHealHPTime   time.Time // used for heal-over-time rate limit
+	LastHealMPTime   time.Time // used for heal-over-time rate limit
+	BaseStats        BaseStats
+	BonusStats       BonusStats
+	Buffs            *BuffContainer
+	diseases         map[constant.DebuffFlag]*DiseaseValueHolder
+	timers           map[string]*CharacterTimer
+	summons          map[constant.SkillID]*Summon
+	doors            map[constant.SkillID]*Door
 }
 
-type CooldownEntry struct {
-	SkillId   uint32
+// DiseaseValueHolder holds one applied disease (mirrors MapleDiseaseValueHolder: disease, start time, duration).
+type DiseaseValueHolder struct {
+	Disease   constant.DebuffFlag
 	StartTime time.Time
 	Duration  time.Duration
 }
 
-type Ring struct {
-	RingId       uint64
-	PartnerId    uint64
-	RingUniqueId uint64
-	PartnerChrId uint32
-	ItemId       uint32
-	PartnerName  string
-	Equipped     bool
+type CharacterTimer struct {
+	Timer      *time.Timer
+	Interval   time.Duration
+	Repeat     bool
+	Callback   func()
+	NextFireAt time.Time
+	Remaining  time.Duration
 }
 
-type RingContainer struct {
-	Left  []*Ring
-	Mid   []*Ring
-	Right []*Ring
+func (ch *Character) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeCharacter
 }
 
-type MonsterBook struct {
-	Cards map[uint32]uint32
+func (ch *Character) Is(typ constant.ObjectType) bool {
+	return ch.GetObjectType().Has(typ)
+}
+
+func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
+	if ch == nil || viewer == nil {
+		return
+	}
+	if ch.GetID() == viewer.GetID() {
+		return
+	}
+	if ch.IsHidden() && !viewer.HasRoleAtLeast(ch.Role) {
+		return
+	}
+	spawnBuffData := ch.GetSpawnPlayerBuffData()
+	viewer.Send(&response.SpawnPlayer{
+		Character:         ch.ToDTO(),
+		BuffStates:        spawnBuffData.BuffStates,
+		Diseases:          ch.GetDiseaseMask(),
+		SpeedBuff:         spawnBuffData.SpeedBuff,
+		ComboCount:        spawnBuffData.ComboCount,
+		WKChargeSkillId:   spawnBuffData.WKChargeSkillID,
+		MorphId:           spawnBuffData.MorphID,
+		SpiritClawSkillId: spawnBuffData.SpiritClawSkillID,
+		MountLevel:        spawnBuffData.MountLevel,
+		MountExp:          spawnBuffData.MountExp,
+		MountFatigue:      spawnBuffData.MountFatigue,
+		CrushRings:        RingsToDTO(ch.Rings.Left),
+		FriendshipRings:   RingsToDTO(ch.Rings.Mid),
+		MarriageRings:     RingsToDTO(ch.Rings.Right),
+	}, types.SEND_POLICY_ENCRYPT)
+
+	if mountID, active := ch.GetRiddingInfo(); active {
+		viewer.Send(&response.UpdateRemoteRidding{
+			CharacterID: int32(ch.GetID()),
+			MountID:     mountID,
+			Buffs:       []dto.BuffEntry{{Buff: constant.BuffFlagMonsterRiding, Value: mountID}},
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+
+	if buff, _, active := ch.Buffs.GetBuffValue(constant.BuffFlagEnergyCharge); active {
+		viewer.Send(&response.UpdateRemoteBuff{
+			CharacterID: int32(ch.GetID()),
+			BuffID:      buff.GetBuffID(),
+			Duration:    50 * time.Second,
+			Buffs:       []dto.BuffEntry{{Buff: constant.BuffFlagEnergyCharge, Value: 10000}},
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+
+	if dashBuff, dashValue, active := ch.Buffs.GetBuffValue(constant.BuffFlagDashSpeed); active {
+		buffs := []dto.BuffEntry{{Buff: constant.BuffFlagDashSpeed, Value: dashValue}}
+		if _, dashJumpValue, hasDashJump := ch.Buffs.GetBuffValue(constant.BuffFlagDashJump); hasDashJump {
+			buffs = append(buffs, dto.BuffEntry{Buff: constant.BuffFlagDashJump, Value: dashJumpValue})
+		}
+		viewer.Send(&response.UpdateRemoteBuff{
+			CharacterID: int32(ch.GetID()),
+			BuffID:      dashBuff.GetBuffID(),
+			Duration:    dashBuff.RemainingDuration(time.Now()),
+			Buffs:       buffs,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+}
+
+func (ch *Character) AddTimerWithCallback(key string, interval time.Duration, repeat bool, callback func()) bool {
+	return ch.addTimer(key, interval, repeat, callback)
+}
+
+func (ch *Character) addTimer(key string, interval time.Duration, repeat bool, callback func()) bool {
+	if ch.timers == nil {
+		ch.timers = make(map[string]*CharacterTimer)
+	}
+	if _, exists := ch.timers[key]; exists {
+		ch.RemoveTimer(key)
+	}
+	if ch.Context == nil {
+		return false
+	}
+	m := ch.GetMap()
+	if m == nil {
+		return false
+	}
+	pid := m.GetActorPID()
+	if pid == nil {
+		return false
+	}
+	characterID := ch.GetID()
+	entry := &CharacterTimer{
+		Interval:   interval,
+		Repeat:     repeat,
+		Callback:   callback,
+		NextFireAt: time.Now().Add(interval),
+	}
+	entry.Timer = time.AfterFunc(interval, func() {
+		ch.Context.SendToActor(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: key})
+	})
+	ch.timers[key] = entry
+	return true
+}
+
+func (ch *Character) RemoveTimer(key string) bool {
+	if ch.timers == nil {
+		return false
+	}
+	entry := ch.timers[key]
+	if entry == nil {
+		return false
+	}
+	if entry.Timer != nil {
+		entry.Timer.Stop()
+	}
+	delete(ch.timers, key)
+	return true
+}
+
+func (ch *Character) GetTimerEntry(key string) *CharacterTimer {
+	if ch.timers == nil {
+		return nil
+	}
+	return ch.timers[key]
+}
+
+func (ch *Character) ClearTimers() {
+	if ch.timers == nil {
+		return
+	}
+	for key, entry := range ch.timers {
+		if entry != nil && entry.Timer != nil {
+			entry.Timer.Stop()
+		}
+		delete(ch.timers, key)
+	}
+}
+
+func summonTimerKey(skillID constant.SkillID) string {
+	return fmt.Sprintf("summon:%d", skillID)
+}
+
+func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, position types.Point[int16], duration time.Duration) *Summon {
+	if ch == nil {
+		return nil
+	}
+	m := ch.GetMap()
+	if m == nil {
+		return nil
+	}
+	if ch.summons != nil {
+		if current, ok := ch.summons[skillID]; ok && current != nil {
+			ch.RemoveSummon(current, true)
+		}
+	}
+
+	s := &Summon{
+		LifeCore: LifeCore{
+			ObjectCore: ObjectCore{
+				Position: position,
+				Context:  m.context,
+				Map:      nil,
+			},
+			Hp:     1,
+			BaseHp: 1,
+			BaseMp: 1,
+		},
+		Owner:        ch,
+		OwnerID:      ch.GetID(),
+		SkillID:      skillID,
+		SkillLevel:   skillLevel,
+		MovementType: movementType,
+		SummonType:   summonType,
+	}
+	s.LifeCore.ObjectCore.self = s
+	if ch.summons == nil {
+		ch.summons = make(map[constant.SkillID]*Summon)
+	}
+	ch.summons[skillID] = s
+	m.AddSummon(s)
+	if duration > 0 {
+		_ = ch.AddTimerWithCallback(summonTimerKey(s.SkillID), duration, false, func() {
+			ch.handleSummonExpireBySkill(s.SkillID)
+		})
+	}
+	return s
+}
+
+func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
+	if ch == nil || ch.Context == nil {
+		return nil
+	}
+	if skill == nil {
+		return nil
+	}
+	m := ch.GetMap()
+	if m == nil {
+		return nil
+	}
+	wzSkill := ch.Context.GetResources().GetSkill(skill.Wz.ID)
+	if wzSkill == nil {
+		return nil
+	}
+	skillLevel := uint8(skill.Level())
+	ld := wzSkill.GetLevelData(int(skillLevel))
+	b := bounds
+	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
+		b = MistWorldBounds(position, ld)
+	}
+	if poisonTickMultiplier <= 0 {
+		poisonTickMultiplier = 1.0
+	}
+	mist := &Mist{
+		ObjectCore: ObjectCore{
+			Position: position,
+			Context:  m.context,
+			Map:      nil,
+		},
+		Causer:               ch.GetID(),
+		SkillWz:              wzSkill,
+		SkillLevel:           skillLevel,
+		MistType:             mistType,
+		MobMist:              false,
+		MobSkill:             false,
+		SkillDelay:           8,
+		Bounds:               b,
+		ExpiresAt:            time.Time{},
+		PoisonTickMultiplier: poisonTickMultiplier,
+	}
+	mist.ObjectCore.self = mist
+	if initialDelay > 0 {
+		mist.NextPoisonTickAt = time.Now().Add(initialDelay)
+	}
+	if duration > 0 {
+		mist.ExpiresAt = time.Now().Add(duration)
+	}
+	m.AddMist(mist)
+	return mist
+}
+
+func (ch *Character) SpawnDoor(skillID constant.SkillID, duration time.Duration) *Door {
+	if ch == nil {
+		return nil
+	}
+	m := ch.GetMap()
+	if m == nil || m.Wz == nil {
+		return nil
+	}
+	if ch.doors != nil {
+		if current, ok := ch.doors[skillID]; ok && current != nil {
+			ch.RemoveDoor(current, true)
+		}
+	}
+
+	oppositeMapID := uint32(m.Wz.ReturnMapId)
+	townPosition := ch.Position
+	if ch.Context != nil {
+		if townWz, ok := ch.Context.GetResources().Maps[oppositeMapID]; ok {
+			if spawnPos, ok := townWz.GetSpawnPosition(0); ok {
+				townPosition = spawnPos
+			}
+		}
+	}
+
+	door := &Door{
+		ObjectCore: ObjectCore{
+			Position: ch.Position,
+			Context:  m.context,
+			Map:      nil,
+		},
+		OwnerID:          ch.GetID(),
+		SkillID:          skillID,
+		OppositeMapID:    oppositeMapID,
+		OppositePosition: townPosition,
+	}
+	door.ObjectCore.self = door
+	if duration > 0 {
+		door.ExpiresAt = time.Now().Add(duration)
+	}
+	if ch.doors == nil {
+		ch.doors = make(map[constant.SkillID]*Door)
+	}
+	ch.doors[skillID] = door
+	m.AddDoor(door)
+	return door
+}
+
+func (ch *Character) RemoveMist(mist *Mist) {
+	if mist == nil {
+		return
+	}
+	if m := mist.GetMap(); m != nil && mist.OID != 0 {
+		m.RemoveMist(mist.OID)
+	}
+}
+
+func (ch *Character) RemoveSummon(target *Summon, animated bool) {
+	if target == nil {
+		return
+	}
+	_ = ch.RemoveTimer(summonTimerKey(target.SkillID))
+	if m := target.GetMap(); m != nil && target.OID != 0 {
+		m.RemoveSummon(target.OID, animated)
+	}
+	if ch.summons != nil {
+		delete(ch.summons, constant.SkillID(target.SkillID))
+	}
+}
+
+func (ch *Character) RemoveDoor(target *Door, animated bool) {
+	if target == nil {
+		return
+	}
+	if m := target.GetMap(); m != nil && target.OID != 0 {
+		m.RemoveDoor(target.OID, animated)
+	}
+	if ch.doors != nil {
+		delete(ch.doors, constant.SkillID(target.SkillID))
+	}
+}
+
+func (ch *Character) RemoveDoorBySkill(skillID constant.SkillID, animated bool) {
+	if ch.doors == nil {
+		return
+	}
+	door := ch.doors[skillID]
+	if door == nil {
+		return
+	}
+	ch.RemoveDoor(door, animated)
+}
+
+func (ch *Character) GetSummons() []*Summon {
+	if len(ch.summons) == 0 {
+		return nil
+	}
+	out := make([]*Summon, 0, len(ch.summons))
+	for _, s := range ch.summons {
+		if s != nil {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func (ch *Character) GetSummon(skillId constant.SkillID) *Summon {
+	return ch.summons[skillId]
+}
+
+func (ch *Character) GetSummonsSize() int {
+	return len(ch.summons)
+}
+
+func (ch *Character) ClearSummons() {
+	if len(ch.summons) == 0 {
+		return
+	}
+	for _, s := range ch.GetSummons() {
+		ch.RemoveSummon(s, true)
+	}
+}
+
+func (ch *Character) GetDoors() []*Door {
+	if len(ch.doors) == 0 {
+		return nil
+	}
+	out := make([]*Door, 0, len(ch.doors))
+	for _, d := range ch.doors {
+		if d != nil {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
+func (ch *Character) ClearDoors() {
+	if len(ch.doors) == 0 {
+		return
+	}
+	for _, d := range ch.GetDoors() {
+		ch.RemoveDoor(d, true)
+	}
+}
+
+func (ch *Character) handleSummonExpireBySkill(skillID constant.SkillID) {
+	if ch.summons == nil {
+		return
+	}
+	s := ch.summons[skillID]
+	if s == nil {
+		return
+	}
+	ch.RemoveSummon(s, true)
+}
+
+func (ch *Character) SuspendTimers() {
+	if ch.timers == nil {
+		return
+	}
+	now := time.Now()
+	for _, entry := range ch.timers {
+		if entry == nil || entry.Timer == nil {
+			continue
+		}
+		entry.Remaining = entry.NextFireAt.Sub(now)
+		if entry.Remaining < 0 {
+			entry.Remaining = 0
+		}
+		entry.Timer.Stop()
+		entry.Timer = nil
+	}
+}
+
+func (ch *Character) ResumeTimers(pid *actor.PID) {
+	if ch.timers == nil || pid == nil || ch.Context == nil {
+		return
+	}
+	characterID := ch.GetID()
+	for key, entry := range ch.timers {
+		if entry == nil || entry.Timer != nil {
+			continue
+		}
+		duration := entry.Remaining
+		if duration <= 0 {
+			duration = entry.Interval
+		}
+		entry.Remaining = 0
+		entry.NextFireAt = time.Now().Add(duration)
+		k := key
+		entry.Timer = time.AfterFunc(duration, func() {
+			ch.Context.SendToActor(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: k})
+		})
+	}
+}
+
+func (ch *Character) GetHp() uint32       { return ch.Hp }
+func (ch *Character) GetMp() uint32       { return ch.Mp }
+func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
+func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
+func (ch *Character) GetInvincible() bool { return ch.Invincible }
+func (ch *Character) IsAlive() bool       { return ch.Hp > 0 }
+func (ch *Character) GetGender() uint8    { return ch.gender }
+
+func (ch *Character) SetHp(v uint32, notify bool) {
+	maxHp := ch.GetMaxHp()
+	if v > maxHp {
+		v = maxHp
+	}
+	ch.Hp = v
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
+	}
+}
+
+func (ch *Character) SetMp(v uint32, notify bool) {
+	maxMp := ch.GetMaxMp()
+	if v > maxMp {
+		v = maxMp
+	}
+	ch.Mp = v
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
+	}
+}
+
+func (ch *Character) SetBonusHp(v int32) {
+	ch.BonusHp = v
+	if ch.Hp > ch.GetMaxHp() {
+		ch.Hp = ch.GetMaxHp()
+	}
+	ch.notifyStatChange(constant.STAT_MAX_HP)
+}
+
+func (ch *Character) SetBonusMp(v int32) {
+	ch.BonusMp = v
+	if ch.Mp > ch.GetMaxMp() {
+		ch.Mp = ch.GetMaxMp()
+	}
+	ch.notifyStatChange(constant.STAT_MAX_MP)
+}
+
+func (ch *Character) SetInvincible(b bool) { ch.Invincible = b }
+
+func (ch *Character) AddHp(amount int) {
+	n := int(ch.Hp) + amount
+	if n < 0 {
+		n = 0
+	}
+	maxHp := int(ch.GetMaxHp())
+	if n > maxHp {
+		n = maxHp
+	}
+	ch.Hp = uint32(n)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
+}
+
+func (ch *Character) AddMp(amount int) {
+	n := int(ch.Mp) + amount
+	if n < 0 {
+		n = 0
+	}
+	maxMp := int(ch.GetMaxMp())
+	if n > maxMp {
+		n = maxMp
+	}
+	ch.Mp = uint32(n)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
+}
+
+func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
+	nh := int(ch.Hp) + hpDelta
+	if nh < 0 {
+		nh = 0
+	}
+	maxHp := int(ch.GetMaxHp())
+	if nh > maxHp {
+		nh = maxHp
+	}
+	ch.Hp = uint32(nh)
+	nm := int(ch.Mp) + mpDelta
+	if nm < 0 {
+		nm = 0
+	}
+	maxMp := int(ch.GetMaxMp())
+	if nm > maxMp {
+		nm = maxMp
+	}
+	ch.Mp = uint32(nm)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.STAT_HP: int32(ch.Hp),
+		constant.STAT_MP: int32(ch.Mp),
+	}, false)
+}
+
+func (ch *Character) SetBaseHp(v uint32, notify bool) {
+	if v > constant.STAT_MAX_HP_MP {
+		v = constant.STAT_MAX_HP_MP
+	}
+	ch.BaseHp = v
+	if ch.Hp > ch.GetMaxHp() {
+		ch.Hp = ch.GetMaxHp()
+	}
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_HP:     int32(ch.Hp),
+			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+		}, false)
+	}
+}
+
+func (ch *Character) SetBaseMp(v uint32, notify bool) {
+	if v > constant.STAT_MAX_HP_MP {
+		v = constant.STAT_MAX_HP_MP
+	}
+	ch.BaseMp = v
+	if ch.Mp > ch.GetMaxMp() {
+		ch.Mp = ch.GetMaxMp()
+	}
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_MP:     int32(ch.Mp),
+			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+		}, false)
+	}
+}
+
+func (ch *Character) SetAbilityPoint(v uint16, notify bool) {
+	ch.AbilityPoint = v
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
+		}, false)
+	}
+}
+
+func (ch *Character) SetSkillPoint(v uint16, notify bool) {
+	ch.SkillPoint = v
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
+		}, false)
+	}
+}
+
+func (ch *Character) Warp(targetMap *Map, spawnPoint uint8) error {
+	if ch.Context == nil {
+		return fmt.Errorf("no game context")
+	}
+	return ch.Context.RequestWarp(ch, targetMap, spawnPoint)
 }
 
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
@@ -107,330 +687,60 @@ func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
 	return ch.Sendable.Send(p, policy)
 }
 
-// GetMap returns the character's current map ID
-func (ch *Character) GetMap() uint32 {
-	return ch.Map
+func (ch *Character) IsHidden() bool {
+	return ch.hidden
+}
+
+func (ch *Character) SetHidden(hidden bool) {
+	if ch.hidden == hidden {
+		return
+	}
+	ch.hidden = hidden
+	ch.Listener.OnHiddenChanged(ch, hidden)
 }
 
 func (ch *Character) GetID() uint32 {
-	return ch.ID
+	return ch.id
+}
+
+func (ch *Character) GetRole() constant.CharacterRole {
+	return ch.Role
+}
+
+func (ch *Character) GetName() string {
+	return ch.name
 }
 
 func (ch *Character) Message(message string) {
-	if ch.Listener != nil {
-		ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
+	ch.Listener.OnMessage(ch, constant.MSG_LIGHT_BLUE_TEXT, message)
+}
+
+func (ch *Character) HasRoleAtLeast(role constant.CharacterRole) bool {
+	return ch.Role >= role
+}
+
+func (ch *Character) SetMeso(meso int32) {
+	if meso < 0 {
+		ch.Meso = 0
+		return
 	}
+	ch.Meso = meso
 }
 
 func (ch *Character) IsRanked() bool {
-	if ch.Admin {
+	if ch.HasRoleAtLeast(constant.RoleAdmin) {
 		return false
 	}
 
-	if ch.Level < 30 {
+	if ch.level < 30 {
 		return false
 	}
 
 	return true
 }
 
-func (ch *Character) IsAdventurer() bool {
-	return ch.Class < 1000
-}
-
-// IsBeginner returns true if the character's class is a beginner class
-func (ch *Character) IsBeginner() bool {
-	return ch.Class == 0
-}
-
-func (ch *Character) getJobAdvancementLevel() int {
-	class := ch.Class
-
-	if class == 0 {
-		return 0
-	}
-
-	if class >= 100 {
-		secondDigit := (class / 10) % 10
-		thirdDigit := class % 10
-
-		if secondDigit == 0 {
-			return 1
-		} else if thirdDigit == 0 {
-			return 2
-		} else if thirdDigit == 1 {
-			return 3
-		} else {
-			return 4
-		}
-	}
-
-	return 0
-}
-
-func (ch *Character) IsCannon() bool {
-	return ch.Class == 1 || ch.Class == 501 || (ch.Class >= 530 && ch.Class <= 532)
-}
-
-func (ch *Character) IsMagician() bool {
-	return ch.Class >= 200 && ch.Class < 300
-}
-
-func (ch *Character) getSkillBookIndexByLevel(level uint8) int {
-	if ch.IsBeginner() {
-		return -1
-	}
-
-	isMagician := ch.IsMagician()
-	minLevel := uint8(10)
-	if isMagician {
-		minLevel = 8
-	}
-
-	if level < minLevel {
-		return -1
-	}
-
-	if level <= 30 {
-		return 0
-	} else if level <= 70 {
-		return 1
-	} else if level <= 120 {
-		return 2
-	} else {
-		return 3
-	}
-}
-
-func (ch *Character) GetSkillBookIndex() int {
-	class := ch.Class
-
-	if class >= 100 {
-		secondDigit := (class / 10) % 10
-		thirdDigit := class % 10
-
-		if secondDigit == 0 {
-			return 0
-		} else if thirdDigit == 0 {
-			return 1
-		} else if thirdDigit == 1 {
-			return 2
-		} else if thirdDigit == 2 {
-			return 3
-		}
-	}
-
-	return 0
-}
-
-func (ch *Character) GetSkillBookIndexForSkill(skillID uint32) int {
-	classID := skillID / 10000
-
-	if classID >= 100 {
-		secondDigit := (classID / 10) % 10
-		thirdDigit := classID % 10
-
-		if secondDigit == 0 {
-			return 0
-		} else if thirdDigit == 0 {
-			return 1
-		} else if thirdDigit == 1 {
-			return 2
-		} else if thirdDigit == 2 {
-			return 3
-		}
-	}
-
-	return 0
-}
-
-func (ch *Character) RemainingSkillPoints() uint16 {
-	return ch.SkillPoint
-}
-
-func (ch *Character) GetTotalSkillLevel(skillID uint32) int {
-	if ch.SkillsMap == nil {
-		return 0
-	}
-	skillEntry, exists := ch.SkillsMap[skillID]
-	if !exists || skillEntry == nil {
-		return 0
-	}
-	return skillEntry.SkillLevel
-}
-
-func (ch *Character) IsSkillCooling(skillID uint32) bool {
-	if ch.CoolDowns == nil {
-		return false
-	}
-	cooldown, exists := ch.CoolDowns[skillID]
-	if !exists || cooldown == nil {
-		return false
-	}
-	return time.Since(cooldown.StartTime) < cooldown.Duration
-}
-
-func (ch *Character) AddCooldown(skillID uint32, cooldownSeconds int) {
-	if ch.CoolDowns == nil {
-		ch.CoolDowns = make(map[uint32]*CooldownEntry)
-	}
-	ch.CoolDowns[skillID] = &CooldownEntry{
-		SkillId:   skillID,
-		StartTime: time.Now(),
-		Duration:  time.Duration(cooldownSeconds) * time.Second,
-	}
-}
-
-func (ch *Character) ConsumeMP(amount uint16) bool {
-	if ch.Mp < amount {
-		return false
-	}
-	ch.Mp -= amount
-	if ch.Listener != nil {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_MP: int32(ch.Mp),
-		}, false)
-	}
-	return true
-}
-
-func (ch *Character) ChangeClass(newClass uint16) {
-	oldClass := ch.Class
-	ch.Class = newClass
-
-	ch.grantClassChangeSP(newClass)
-	ch.initializeBaseSkills(newClass)
-
-	if ch.Listener != nil {
-		ch.Listener.OnClassChange(oldClass, newClass)
-	}
-}
-
-func (ch *Character) grantClassChangeSP(newClass uint16) {
-	if ch.IsBeginner() {
-		return
-	}
-
-	ch.SkillPoint++
-
-	if newClass >= 100 {
-		thirdDigit := newClass % 10
-		if thirdDigit >= 2 {
-			ch.SkillPoint += 2
-		}
-	}
-
-	if newClass%100 == 0 {
-		minLevel := uint8(10)
-		if newClass == 200 {
-			minLevel = 8
-		}
-
-		if ch.Level > minLevel {
-			spToGrant := uint16(3 * (int(ch.Level) - int(minLevel)))
-			ch.SkillPoint += spToGrant
-		}
-	}
-}
-
-func (ch *Character) initializeBaseSkills(newClass uint16) {
-	if ch.Context == nil {
-		return
-	}
-
-	resources := ch.Context.GetResources()
-	if resources == nil {
-		return
-	}
-
-	advancementLevel := ch.getJobAdvancementLevel()
-	if advancementLevel < 3 {
-		return
-	}
-
-	classID := uint32(newClass)
-	skillIDStart := classID * 10000
-	skillIDEnd := skillIDStart + 9999
-
-	if ch.SkillsMap == nil {
-		ch.SkillsMap = make(map[uint32]*SkillEntry)
-	}
-
-	for skillID := skillIDStart; skillID <= skillIDEnd; skillID++ {
-		wzSkill := resources.GetSkill(skillID)
-		if wzSkill == nil {
-			continue
-		}
-
-		if wzSkill.Invisible {
-			continue
-		}
-
-		if !ch.isFourthClassSkill(skillID, wzSkill) {
-			continue
-		}
-
-		masterLevel := 0
-		if wzSkill.MasterLevel > 0 {
-			masterLevel = wzSkill.MasterLevel
-		} else if wzSkill.MaxLevel > 0 {
-			masterLevel = wzSkill.MaxLevel
-		} else {
-			continue
-		}
-
-		existingEntry, exists := ch.SkillsMap[skillID]
-		if exists && existingEntry != nil {
-			if existingEntry.SkillLevel > 0 || existingEntry.MasterLevel > 0 {
-				continue
-			}
-		}
-
-		skillEntry := &SkillEntry{
-			Skill:       wzSkill,
-			SkillLevel:  0,
-			MasterLevel: masterLevel,
-			Expiration:  time.Time{},
-		}
-		ch.SkillsMap[skillID] = skillEntry
-
-		if ch.Listener != nil {
-			ch.Send(&response.UpdateSkills{
-				SkillID:     skillID,
-				Level:       0,
-				MasterLevel: int32(skillEntry.MasterLevel),
-			}, types.SEND_POLICY_ENCRYPT)
-		}
-	}
-}
-
-func (ch *Character) isFourthClassSkill(skillID uint32, wzSkill *wz.Skill) bool {
-	classID := skillID / 10000
-
-	if classID == 2312 {
-		return true
-	}
-
-	if (wzSkill.MaxLevel <= 15 && !wzSkill.Invisible && wzSkill.MasterLevel <= 0) ||
-		skillID == 3220010 || skillID == 3120011 || skillID == 33120010 || skillID == 32120009 ||
-		skillID == 5321006 || skillID == 21120011 || skillID == 22181004 || skillID == 4340010 {
-		return false
-	}
-
-	if classID >= 2212 && classID < 3000 {
-		return (classID % 10) >= 7
-	}
-
-	if classID >= 430 && classID <= 434 {
-		return (classID%10) == 4 || wzSkill.MasterLevel > 0
-	}
-
-	return (classID%10) == 2 && skillID < 90000000
-}
-
-// AddExp adds experience points to the character and notifies the listener
 func (ch *Character) AddExp(exp uint32) {
-	// Apply experience rate multiplier if context is available
+
 	if ch.Context != nil {
 		expRate := ch.Context.GetExpRate()
 		if expRate > 0 {
@@ -438,533 +748,55 @@ func (ch *Character) AddExp(exp uint32) {
 		}
 	}
 
-	ch.Exp += exp
-	ch.Listener.OnExpGain(exp)
+	ch.exp += exp
+	ch.Listener.OnExpGain(ch, exp)
 
-	// Check for level up
 	if !ch.tryLevelUp() {
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_EXP: int32(ch.Exp),
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_EXP: int32(ch.exp),
 		}, false)
 	}
 }
 
-// AddMeso adds meso to character
-func (ch *Character) AddMeso(amount int32) {
-	if amount <= 0 {
-		return
+func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx GameContext) *Character {
+	if listener == nil {
+		panic("NewDummyCharacter: listener must not be nil")
 	}
-
-	// Check for overflow
-	if ch.Meso > 0 && amount > 0 && ch.Meso+amount < ch.Meso {
-		ch.Meso = int32(^uint32(0) >> 1) // int32.MaxValue
-	} else {
-		ch.Meso += amount
-	}
-
-	// Notify listener about meso change
-	if ch.Listener != nil {
-		ch.Listener.OnMesoChanged(ch.Meso)
-	}
-}
-
-// RemoveMeso removes meso from character
-func (ch *Character) RemoveMeso(amount int32) {
-	if amount <= 0 {
-		return
-	}
-
-	if ch.Meso < amount {
-		ch.Meso = 0
-	} else {
-		ch.Meso -= amount
-	}
-
-	// Notify listener about meso change
-	if ch.Listener != nil {
-		ch.Listener.OnMesoChanged(ch.Meso)
-	}
-}
-
-// AddItem adds an item to character's inventory
-// If allOrNothing is true, adds all items or returns an error if cannot add all.
-// If allOrNothing is false, adds as many items as possible and returns the count added.
-// Returns (addedCount, error). If allOrNothing is true and not all items can be added, returns (0, error).
-func (ch *Character) AddItem(item Item, allOrNothing bool) (uint16, error) {
-	if item == nil {
-		return 0, fmt.Errorf("item is nil")
-	}
-
-	invenType := item.GetInventoryType()
-	inven := ch.Inventory[invenType]
-	if inven == nil {
-		return 0, fmt.Errorf("inventory type %d not found", invenType)
-	}
-
-	model := item.GetModel()
-	requestedCount := item.GetCount()
-
-	if allOrNothing {
-		if !inven.IsFree(model, requestedCount) {
-			return 0, fmt.Errorf("not enough inventory space for %d items", requestedCount)
-		}
-	}
-
-	remainingCount := requestedCount
-	addedCount := uint16(0)
-
-	for remainingCount > 0 {
-		slot, ok := inven.FindSlot(model)
-		if !ok {
-			// No more slots available
-			if allOrNothing && addedCount == 0 {
-				return 0, fmt.Errorf("no available slot found")
-			}
-			break
-		}
-
-		exists, ok := inven.Items[int16(slot)]
-		cap := uint16(0)
-		if ok {
-			cap = min(model.GetCapacity()-exists.GetCount(), remainingCount)
-			exists.Increase(cap)
-			if ch.Listener != nil {
-				ch.Listener.OnInventorySlotUpdated(invenType, int16(slot), exists)
-			}
-		} else {
-			cap = min(model.GetCapacity(), remainingCount)
-			inven.Items[int16(slot)] = item.Clone(cap)
-			if ch.Listener != nil {
-				ch.Listener.OnInventorySlotAdded(invenType, int16(slot), inven.Items[int16(slot)])
-			}
-		}
-		remainingCount -= cap
-		addedCount += cap
-	}
-
-	// Update original item's count to reflect remaining items
-	if !allOrNothing && addedCount < requestedCount {
-		item.SetCount(remainingCount)
-	}
-
-	if ch.Listener != nil && addedCount > 0 {
-		ch.Listener.OnShowItemGain(model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
-	}
-
-	return addedCount, nil
-}
-
-// GainMeso adds meso to character and shows gain notification
-func (ch *Character) GainMeso(amount int32) {
-	if amount <= 0 {
-		return
-	}
-
-	// Check for overflow
-	if ch.Meso > 0 && amount > 0 && ch.Meso+amount < ch.Meso {
-		ch.Meso = int32(^uint32(0) >> 1) // int32.MaxValue
-	} else {
-		ch.Meso += amount
-	}
-
-	// Notify listener about meso change
-	if ch.Listener != nil {
-		ch.Listener.OnMesoChanged(ch.Meso)
-		ch.Listener.OnShowMesoGain(amount, constant.ShowMesoGainTypeStatus)
-		ch.Listener.OnUpdateStats(map[constant.Stat]int32{
-			constant.STAT_MESO: ch.Meso,
-		}, false)
-	}
-}
-
-// Luable interface implementation
-func (ch *Character) LuaTypeName() string {
-	return "LuaCharacter"
-}
-
-func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	return map[string]lua.LGFunction{
-		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return id
-				L.Push(lua.LNumber(ch.ID))
-				return 1
-			} else {
-				L.ArgError(2, "id() is read-only")
-				return 0
-			}
-		},
-		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return name
-				L.Push(lua.LString(ch.Name))
-				return 1
-			} else if argc == 2 {
-				// Setter: name(value)
-				name := L.CheckString(2)
-				ch.Name = name
-				return 0
-			} else {
-				L.ArgError(2, "name() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"level": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return level
-				L.Push(lua.LNumber(ch.Level))
-				return 1
-			} else if argc == 2 {
-				// Setter: level(value)
-				level := L.CheckInt(2)
-				if level < 1 {
-					level = 1
-				}
-				if level > 200 {
-					level = 200
-				}
-				ch.Level = uint8(level)
-				return 0
-			} else {
-				L.ArgError(2, "level() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"exp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return exp
-				L.Push(lua.LNumber(ch.Exp))
-				return 1
-			} else if argc == 2 {
-				// Setter: exp(value) or exp(+value) or exp(-value)
-				value := L.CheckNumber(2)
-				if value >= 0 {
-					// Direct set or add operation
-					if value < 0 {
-						value = 0
-					}
-					ch.Exp = uint32(value)
-				} else {
-					// Add operation (negative value)
-					amount := uint32(-value)
-					ch.AddExp(amount)
-					return 0
-				}
-				return 0
-			} else {
-				L.ArgError(2, "exp() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"meso": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return meso
-				L.Push(lua.LNumber(ch.Meso))
-				return 1
-			} else if argc == 2 {
-				// Setter: meso(value) or meso(+value) or meso(-value)
-				value := L.CheckNumber(2)
-				if value >= 0 {
-					// Direct set or add operation
-					if value <= 2147483647 { // int32.MaxValue
-						ch.Meso = int32(value)
-					} else {
-						ch.Meso = 2147483647
-					}
-				} else {
-					// Subtract operation (negative value)
-					amount := int32(-value)
-					if ch.Meso < amount {
-						ch.Meso = 0
-					} else {
-						ch.Meso -= amount
-					}
-				}
-				if ch.Listener != nil {
-					ch.Listener.OnMesoChanged(ch.Meso)
-				}
-				return 0
-			} else {
-				L.ArgError(2, "meso() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"chat": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			message := L.CheckString(2)
-			highlight := false
-			if argc > 2 {
-				highlight = L.CheckBool(3)
-			}
-			dontRecordHistory := false
-			if argc > 3 {
-				dontRecordHistory = L.CheckBool(4)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnChat(message, highlight, dontRecordHistory)
-			}
-			return 0
-		},
-		"dialog": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			prev := false
-			if argc > 3 {
-				prev = L.CheckBool(4)
-			}
-			next := false
-			if argc > 4 {
-				next = L.CheckBool(5)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialog(uint32(npc), message, prev, next)
-			}
-			return L.Yield(lua.LNumber(0))
-		},
-		"dialog_yes_no": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			prev := false
-			if argc > 3 {
-				prev = L.CheckBool(4)
-			}
-			next := false
-			if argc > 4 {
-				next = L.CheckBool(5)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialogYesNo(uint32(npc), message, prev, next)
-			}
-			return L.Yield(lua.LNumber(0))
-		},
-		"dialog_list": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			selections := []string{}
-			if argc > 3 {
-				tbl := L.CheckTable(4)
-				tbl.ForEach(func(_, value lua.LValue) {
-					if str, ok := value.(lua.LString); ok {
-						selections = append(selections, string(str))
-					}
-				})
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialogList(uint32(npc), message, selections)
-			}
-			return L.Yield(lua.LNumber(0))
-		},
-		"dialog_accept": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			enableEscape := false
-			if argc > 3 {
-				enableEscape = L.CheckBool(4)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialogAccept(uint32(npc), message, enableEscape)
-			}
-			return L.Yield(lua.LNumber(0))
-		},
-		"dialog_input": func(L *lua.LState) int {
-			argc := L.GetTop()
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-
-			npc := 0
-			if argc > 1 {
-				npc = L.CheckInt(2)
-			}
-
-			message := ""
-			if argc > 2 {
-				message = L.CheckString(3)
-			}
-
-			if ch.Listener != nil {
-				ch.Listener.OnDialogInput(uint32(npc), message)
-			}
-			return L.Yield(lua.LNumber(0))
-		},
-		"notice": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			message := L.CheckString(2)
-			if ch.Listener != nil {
-				ch.Listener.OnMessage(constant.MSG_LIGHT_BLUE_TEXT, message)
-			}
-			return 0
-		},
-	}
-}
-
-func (ch *Character) String() string {
-	return ch.LuaTypeName()
-}
-
-func (ch *Character) Type() lua.LValueType {
-	return lua.LTUserData
-}
-
-func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx GameContext) Character {
-	ch := Character{
+	ch := &Character{
 		Sendable: sender,
 		Listener: listener,
-		Life: Life{
-			Object: Object{
+		LifeCore: LifeCore{
+			ObjectCore: ObjectCore{
 				Context: ctx,
 			},
-			Hp:    50,
-			MaxHp: 50,
-			Mp:    5,
-			MaxMp: 5,
+			Hp:     50,
+			Mp:     5,
+			BaseHp: 50,
+			BaseMp: 5,
 		},
-		ID:           id,
-		Name:         name,
-		Gender:       0,
-		SkinColor:    0,
-		Face:         20100,
-		Hair:         30000,
-		Level:        1,
-		Class:        0,
-		Str:          12,
-		Dex:          5,
-		Int:          4,
-		Luk:          4,
+		id:        id,
+		name:      name,
+		gender:    0,
+		skinColor: 0,
+		face:      20100,
+		hair:      30000,
+		level:     1,
+		Class:     0,
+		BaseStats: BaseStats{
+			Str: 12,
+			Dex: 5,
+			Int: 4,
+			Luk: 4,
+		},
 		AbilityPoint: 0,
 		SkillPoint:   0,
 		HpApUsed:     0,
-		SpawnPoint:   1,
-		Map:          200000301,
+		spawnPoint:   1,
 		Meso:         2135983647,
 
-		Random1: stream.NewRandomStream(),
-		Random2: stream.NewRandomStream(),
-		Random3: stream.NewRandomStream(),
+		random1: stream.NewRandomStream(),
+		random2: stream.NewRandomStream(),
+		random3: stream.NewRandomStream(),
 
 		Inventory: map[constant.InventoryType]*Inventory{
 			constant.INVENTORY_TYPE_EQUIPMENT:    NewInventory(constant.INVENTORY_TYPE_EQUIPMENT),
@@ -978,25 +810,36 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			Right: []*Ring{},
 			Mid:   []*Ring{},
 		},
-		Equipments: map[constant.EquipmentPartsType]*Equipment{
+		Equipments: map[constant.EquipmentPartsType]Equipment{
 			constant.EQUIPMENT_PARTS_WEAPON: nil,
 			constant.EQUIPMENT_PARTS_SHIELD: nil,
 		},
 
-		RegRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
-		Rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
+		regRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
+		rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
 	}
+	ch.Buffs = NewBuffContainer(ch)
+	ch.Skills = NewSkillContainer(ch)
 
 	if ctx != nil {
 		resources := ctx.GetResources()
-		ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = &Equipment{
-			ItemCore: &ItemCore{
-				Wz:         resources.Items[1302000],
-				Count:      1,
-				UniqueId:   0,
-				Expiration: util.TimeMax,
-			},
-			EnchantChance: 7,
+		weaponItem, err := NewItem(1302000, 1, ctx)
+		if err == nil {
+			if eq, ok := weaponItem.(Equipment); ok {
+				ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = eq
+			}
+		}
+		if ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] == nil && resources != nil {
+			core := &EquipmentCore{
+				ItemCore: &ItemCore{
+					Wz:         resources.Items[1302000],
+					Count:      1,
+					UniqueId:   0,
+					Expiration: util.TimeMax,
+				},
+				EnchantChance: 7,
+			}
+			ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = &Weapon{EquipmentCore: core}
 		}
 
 		petExpiration, err := time.ParseInLocation("2006-01-02 15:04:05", "2025-05-30 09:30:00", util.KST)
@@ -1019,7 +862,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			Expiration:  petExpiration,
 		}
 
-		ch.Inventory[constant.INVENTORY_TYPE_ETC].Items[1] = &GeneralItem{
+		ch.Inventory[constant.INVENTORY_TYPE_ETC].Items[1] = &MiscItem{
 			ItemCore: &ItemCore{
 				Wz:         resources.Items[4000001],
 				Count:      100,
@@ -1027,38 +870,41 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			},
 		}
 
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1], err = NewItem(1060002, 1, ctx)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2], err = NewItem(1060006, 1, ctx)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3], err = NewItem(1040002, 1, ctx)
-		ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4], err = NewItem(1040010, 1, ctx)
+		if item, e := NewItem(1060002, 1, ctx); e == nil {
+			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1] = item
+		}
+		if item, e := NewItem(1060006, 1, ctx); e == nil {
+			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2] = item
+		}
+		if item, e := NewItem(1040002, 1, ctx); e == nil {
+			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3] = item
+		}
+		if item, e := NewItem(1040010, 1, ctx); e == nil {
+			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4] = item
+		}
 	}
-
+	ch.LifeCore.ObjectCore.self = ch
 	return ch
 }
 
-// GetCurrentDialog returns the current dialog coroutine
 func (ch *Character) GetCurrentDialog() *lua.LState {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
 	return ch.currentDialog
 }
 
-// SetCurrentDialog sets the current dialog coroutine
 func (ch *Character) SetCurrentDialog(dialog *lua.LState) {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
 	ch.currentDialog = dialog
 }
 
-// ClearCurrentDialog clears the current dialog coroutine
 func (ch *Character) ClearCurrentDialog() {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
 	ch.currentDialog = nil
 }
 
-// tryLevelUp checks if the character can level up and performs level up if possible
-// Returns true if level up occurred, false otherwise
 func (ch *Character) tryLevelUp() bool {
 	if ch.Context == nil {
 		return false
@@ -1069,15 +915,14 @@ func (ch *Character) tryLevelUp() bool {
 		return false
 	}
 
-	if ch.Level >= 200 {
+	if ch.level >= 200 {
 		return false
 	}
 
-	oldLevel := ch.Level
-	remainingExp := ch.Exp
-	targetLevel := ch.Level
+	oldLevel := ch.level
+	remainingExp := ch.exp
+	targetLevel := ch.level
 
-	// Calculate the maximum level we can reach with current experience
 	for targetLevel < 200 {
 		expNeeded := resources.GetExpNeededForLevel(targetLevel)
 		if expNeeded == 0 {
@@ -1096,17 +941,48 @@ func (ch *Character) tryLevelUp() bool {
 		return false
 	}
 
-	// Update experience
-	ch.Exp = remainingExp
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return false
+	}
 
-	// Set level once with all stat increases
+	pid := mapInstance.GetActorPID()
+	if pid == nil {
+		return false
+	}
+
+	root := luax.GetRootLuaState(pid.String())
+	if root == nil {
+		return false
+	}
+
+	ch.exp = remainingExp
 	ch.SetLevel(targetLevel)
+	levelDiff := int(targetLevel) - int(oldLevel)
+	if levelDiff >= 1 {
+		_, thread, _ := luax.Call(root, "script/script.lua", "on_level_up", ch, int32(oldLevel), int32(targetLevel))
+		if thread != nil {
+			thread.Close()
+		}
 
+		stats := map[constant.Stat]int32{
+			constant.STAT_LEVEL:        int32(ch.level),
+			constant.STAT_EXP:          int32(ch.exp),
+			constant.STAT_MAX_HP:       int32(ch.GetMaxHp()),
+			constant.STAT_MAX_MP:       int32(ch.GetMaxMp()),
+			constant.STAT_HP:           int32(ch.Hp),
+			constant.STAT_MP:           int32(ch.Mp),
+			constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
+			constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
+		}
+		ch.Listener.OnUpdateStats(ch, stats, false)
+		for i := 0; i < levelDiff; i++ {
+			ch.broadcastLevelUpEffect()
+		}
+	}
 	return true
 }
 
-// SetLevel sets the character's level and applies all stat changes
-// This simulates leveling up from the current level to the target level
 func (ch *Character) SetLevel(newLevel uint8) {
 	if newLevel < 1 {
 		newLevel = 1
@@ -1115,104 +991,191 @@ func (ch *Character) SetLevel(newLevel uint8) {
 		newLevel = 200
 	}
 
-	if newLevel == ch.Level {
+	if newLevel == ch.level {
 		return
 	}
 
-	oldLevel := ch.Level
-	levelDiff := int(newLevel) - int(oldLevel)
-
-	if levelDiff > 0 {
-		totalAPIncrease := uint16(0)
-		totalSPIncrease := uint16(0)
-		totalHPIncrease := uint16(0)
-		totalMPIncrease := uint16(0)
-
-		for level := oldLevel + 1; level <= newLevel; level++ {
-			totalAPIncrease += 5
-
-			if !ch.IsBeginner() {
-				totalSPIncrease += 3
-			}
-
-			hpIncrease := uint16(20 + int(level)*2)
-			mpIncrease := uint16(10 + int(level))
-			totalHPIncrease += hpIncrease
-			totalMPIncrease += mpIncrease
-		}
-
-		ch.Level = newLevel
-		ch.AbilityPoint += totalAPIncrease
-		ch.SkillPoint += totalSPIncrease
-
-		ch.MaxHp += totalHPIncrease
-		ch.MaxMp += totalMPIncrease
-
-		// Restore HP/MP to max
-		ch.Hp = ch.MaxHp
-		ch.Mp = ch.MaxMp
-
-		// Notify listener
-		if ch.Listener != nil {
-			stats := map[constant.Stat]int32{
-				constant.STAT_LEVEL:        int32(ch.Level),
-				constant.STAT_EXP:          int32(ch.Exp),
-				constant.STAT_MAX_HP:       int32(ch.MaxHp),
-				constant.STAT_MAX_MP:       int32(ch.MaxMp),
-				constant.STAT_HP:           int32(ch.Hp),
-				constant.STAT_MP:           int32(ch.Mp),
-				constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
-				constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
-			}
-			ch.Listener.OnUpdateStats(stats, false)
-
-			// Broadcast level up effect for each level gained
-			for level := oldLevel + 1; level <= newLevel; level++ {
-				ch.broadcastLevelUpEffect()
-			}
-		}
-	} else {
-		// Leveling down: just set the level and exp, don't decrease stats
-		ch.Level = newLevel
-
+	oldLevel := ch.level
+	ch.level = newLevel
+	if newLevel < oldLevel {
 		if ch.Context != nil {
 			resources := ch.Context.GetResources()
 			if resources != nil {
 				if newLevel > 1 {
-					ch.Exp = resources.GetExpNeededForLevel(newLevel - 1)
+					ch.exp = resources.GetExpNeededForLevel(newLevel - 1)
 				} else {
-					ch.Exp = 0
+					ch.exp = 0
 				}
 			}
 		}
-
-		if ch.Listener != nil {
-			stats := map[constant.Stat]int32{
-				constant.STAT_LEVEL: int32(ch.Level),
-				constant.STAT_EXP:   int32(ch.Exp),
-			}
-			ch.Listener.OnUpdateStats(stats, false)
-		}
 	}
+
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.STAT_LEVEL: int32(ch.level),
+		constant.STAT_EXP:   int32(ch.exp),
+	}, false)
 }
 
-// broadcastLevelUpEffect broadcasts level up effect to other players on the map
 func (ch *Character) broadcastLevelUpEffect() {
-	if ch.Context == nil {
-		return
-	}
-
-	mapInstance := ch.Context.GetMap(ch.Map)
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
 
-	// Create SHOW_FOREIGN_EFFECT packet for level up (EffectID 0)
-	levelUpPacket := &response.ShowForeignEffect{
-		CharacterID: ch.ID,
-		EffectID:    0, // Level up effect
+	ch.Broadcast(&response.ShowForeignEffect{
+		CharacterID: ch.id,
+		EffectID:    0,
+	}, nil)
+}
+
+func debuffTimerKey(flag constant.DebuffFlag) string {
+	return fmt.Sprintf("debuff_%d_%d", flag.Position, flag.Mask)
+}
+
+func (ch *Character) HasDebuff(flag constant.DebuffFlag) bool {
+	if ch.diseases == nil {
+		return false
+	}
+	_, ok := ch.diseases[flag]
+	return ok
+}
+
+func (ch *Character) AddDebuff(holder *DiseaseValueHolder) {
+	if holder == nil {
+		return
+	}
+	if ch.diseases == nil {
+		ch.diseases = make(map[constant.DebuffFlag]*DiseaseValueHolder)
+	}
+	ch.RemoveTimer(debuffTimerKey(holder.Disease))
+	ch.diseases[holder.Disease] = holder
+	if holder.Duration > 0 {
+		flag := holder.Disease
+		ch.addTimer(debuffTimerKey(flag), holder.Duration, false, func() {
+			ch.RemoveTimer(debuffTimerKey(flag))
+			if _, ok := ch.diseases[flag]; ok {
+				delete(ch.diseases, flag)
+				ch.Listener.OnDebuffRemoved(ch, []constant.DebuffFlag{flag})
+			}
+		})
+	}
+}
+
+// GiveDebuff adds the disease to the character (refresh if already present), starts duration timer, and notifies the listener to send GiveDebuff/GiveRemoteDebuff packets.
+// If skillID is 0, flag.DiseaseSkillID is used; if skillLevel is 0, 1 is used.
+func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration, x int16, skillID uint16, skillLevel uint16) {
+	if skillID == 0 {
+		skillID = flag.DiseaseSkillID
+	}
+	if skillLevel == 0 {
+		skillLevel = 1
+	}
+	holder := &DiseaseValueHolder{
+		Disease:   flag,
+		StartTime: time.Now(),
+		Duration:  duration,
+	}
+	ch.AddDebuff(holder)
+	ch.Listener.OnDebuffAdded(ch, flag, x, skillID, skillLevel, int32(duration.Milliseconds()))
+}
+
+func (ch *Character) RemoveDebuff(flags ...constant.DebuffFlag) {
+	var removed []constant.DebuffFlag
+	if ch.diseases != nil {
+		for _, flag := range flags {
+			ch.RemoveTimer(debuffTimerKey(flag))
+			if _, ok := ch.diseases[flag]; ok {
+				delete(ch.diseases, flag)
+				removed = append(removed, flag)
+			}
+		}
+	}
+	if len(removed) > 0 {
+		ch.Listener.OnDebuffRemoved(ch, removed)
+	}
+}
+
+func (ch *Character) GetDiseaseMask() [4]uint32 {
+	var mask [4]uint32
+	if ch.diseases == nil {
+		return mask
+	}
+	for flag := range ch.diseases {
+		idx := flag.Position - 1
+		if idx >= 0 && idx < constant.MaxBuffFlag {
+			mask[idx] |= flag.Mask
+		}
+	}
+	return mask
+}
+
+type SpawnPlayerBuffData struct {
+	BuffStates        [4]uint32
+	SpeedBuff         uint8
+	ComboCount        uint8
+	WKChargeSkillID   uint32
+	MorphID           uint16
+	SpiritClawSkillID uint32
+	MountLevel        uint32
+	MountExp          uint32
+	MountFatigue      uint32
+}
+
+func (ch *Character) GetRiddingInfo() (mountID int32, active bool) {
+	if ch == nil || ch.Buffs == nil {
+		return 0, false
+	}
+	_, mountID, active = ch.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
+	return
+}
+
+func (ch *Character) GetSpawnPlayerBuffData() SpawnPlayerBuffData {
+	data := SpawnPlayerBuffData{
+		SpeedBuff:  1,
+		ComboCount: 1,
+		MountLevel: 1,
+	}
+	if ch == nil || ch.Buffs == nil {
+		return data
 	}
 
-	// Broadcast to all players on the map except the character who leveled up
-	mapInstance.BroadcastToPlayers(levelUpPacket, types.SEND_POLICY_ENCRYPT, ch.ID)
+	for _, buff := range ch.Buffs.Entities() {
+		if buff == nil {
+			continue
+		}
+		values := buff.GetValues()
+		if values == nil {
+			continue
+		}
+		for flag, value := range values {
+			idx := flag.Position - 1
+			if idx < 0 || idx >= constant.MaxBuffFlag {
+				continue
+			}
+			if constant.IsRemoteStatFlag(flag) {
+				data.BuffStates[idx] |= flag.Mask
+			}
+			switch flag {
+			case constant.BuffFlagSpeed:
+				data.SpeedBuff = uint8(value)
+			case constant.BuffFlagCombo:
+				data.ComboCount = uint8(value)
+			case constant.BuffFlagMorph:
+				data.MorphID = uint16(value)
+			}
+		}
+		switch typed := buff.(type) {
+		case *SkillBuff:
+			for _, flag := range typed.GetFlags() {
+				switch flag {
+				case constant.BuffFlagWkCharge:
+					data.WKChargeSkillID = typed.Wz.ID
+				case constant.BuffFlagSpiritClaw:
+					data.SpiritClawSkillID = typed.Wz.ID
+				}
+			}
+		}
+	}
+
+	return data
 }

@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -42,17 +42,17 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		return fmt.Errorf("character not found")
 	}
 
-	dialog := character.GetCurrentDialog()
-	if dialog == nil {
+	if ctx.LogicActorPID == nil {
+		return fmt.Errorf("lua state not available")
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return fmt.Errorf("lua state not available")
+	}
+	thread := character.GetCurrentDialog()
+	if thread == nil {
 		log.Printf("No active dialog for character %d", character.GetID())
 		return fmt.Errorf("no active dialog")
-	}
-
-	// Get thread-local LuaState
-	// This will be shared among all MapActors running on the same thread
-	luaState := luax.GetThreadLocalState()
-	if luaState == nil {
-		return fmt.Errorf("lua state not available")
 	}
 
 	var args []lua.LValue
@@ -78,19 +78,23 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		args = append(args, lua.LBool(req.Next))
 	}
 
-	resumeState, err, _ := luaState.Resume(dialog, nil, args...)
+	resumeState, err, _ := root.Resume(thread, nil, args...)
 	if err != nil {
 		log.Printf("Failed to resume dialog: %v", err)
+		thread.Close()
 		character.ClearCurrentDialog()
 		return fmt.Errorf("failed to resume dialog: %w", err)
 	}
 
 	switch resumeState {
 	case lua.ResumeOK:
+		thread.Close()
 		character.ClearCurrentDialog()
 	case lua.ResumeYield:
+		// Dialog still waiting for next input; do not close thread
 	case lua.ResumeError:
 		log.Printf("Dialog error for character %d: %v", character.GetID(), err)
+		thread.Close()
 		character.ClearCurrentDialog()
 		return fmt.Errorf("dialog error: %w", err)
 	}

@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -42,24 +42,24 @@ func (h *DropMeso) Handle(ctx *core.ClientContext, req *request.DropMeso) error 
 
 	if req.Count < 10 || req.Count > 50000 {
 		log.Printf("Invalid meso count: %d", req.Count)
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	if req.Count > character.Meso {
 		log.Printf("Character doesn't have enough meso: %d < %d", character.Meso, req.Count)
-		character.Listener.OnUpdateStats(nil, true)
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	character.Meso -= req.Count
-	character.Listener.OnUpdateStats(map[constant.Stat]int32{
+	character.SetMeso(character.Meso - req.Count)
+	character.Listener.OnUpdateStats(character, map[constant.Stat]int32{
 		constant.STAT_MESO: character.Meso,
 	}, true)
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := character.GetMap()
 	if mapInstance != nil {
-		if err := mapInstance.SpawnMeso(req.Count, character.Position, character.ID, constant.DROP_TYPE_FFA); err != nil {
+		if _, err := mapInstance.SpawnMeso(req.Count, character.Position, character.GetID(), constant.DROP_TYPE_FFA); err != nil {
 			log.Printf("Failed to spawn meso on map: %v", err)
 		}
 	}

@@ -1,8 +1,8 @@
 package response
 
 import (
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/stream"
 )
 
 type EndSortInventory struct {
@@ -15,8 +15,7 @@ func (p *EndSortInventory) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *EndSortInventory) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *EndSortInventory) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *EndSortInventory) Opcode() uint16 {

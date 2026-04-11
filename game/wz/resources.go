@@ -55,6 +55,7 @@ type node struct {
 	Children []node        `xml:"imgdir"`
 	Strings  []stringField `xml:"string"`
 	Ints     []intField    `xml:"int"`
+	Vectors  []vectorField `xml:"vector"`
 }
 
 // intField represents an int element in WZ XML
@@ -67,6 +68,13 @@ type intField struct {
 type stringField struct {
 	Name  string `xml:"name,attr"`
 	Value string `xml:"value,attr"`
+}
+
+// vectorField represents a vector element in WZ XML
+type vectorField struct {
+	Name string `xml:"name,attr"`
+	X    int    `xml:"x,attr"`
+	Y    int    `xml:"y,attr"`
 }
 
 // StringData contains string data for different types
@@ -95,10 +103,11 @@ type StringData struct {
 // Resources contains all loaded MapleStory game data.
 type Resources struct {
 	// Name lookup indexes (following renewal branch pattern)
-	mapNameToId  map[string]uint32 // normalized map name -> map ID
-	mobNameToId  map[string]uint32 // normalized mob name -> mob ID
-	npcNameToId  map[string]uint32 // normalized NPC name -> NPC ID
-	itemNameToId map[string]uint32 // normalized item name -> item ID
+	mapNameToId   map[string]uint32 // normalized map name -> map ID
+	mobNameToId   map[string]uint32 // normalized mob name -> mob ID
+	npcNameToId   map[string]uint32 // normalized NPC name -> NPC ID
+	itemNameToId  map[string]uint32 // normalized item name -> item ID
+	skillNameToId map[string]uint32 // normalized skill name -> skill ID
 
 	Maps     map[uint32]*Map   // All map specifications
 	Monsters map[uint32]*Mob   // All monster specifications
@@ -131,6 +140,59 @@ func (node *node) find(name string) *node {
 	}
 
 	return current
+}
+
+// loadEquipmentFiles walks Character.wz, loads each equipment (Weapon/Armor) via loadWeapons, and stores Item by ID.
+func loadEquipmentFiles(root string, workerCount int, items map[uint32]Item) error {
+	var allFiles []string
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err == nil && !d.IsDir() && strings.HasSuffix(d.Name(), ".img.xml") {
+			allFiles = append(allFiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	total := len(allFiles)
+	if total == 0 {
+		return nil
+	}
+	jobs := make(chan string, total)
+	results := make(chan Item, total)
+	var wg sync.WaitGroup
+	for range workerCount {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for path := range jobs {
+				item, loadErr := loadWeapons(path)
+				if loadErr == nil && item != nil {
+					results <- item
+				} else if loadErr != nil {
+					log.Println(loadErr)
+				}
+			}
+		}()
+	}
+	go func() {
+		for _, path := range allFiles {
+			jobs <- path
+		}
+		close(jobs)
+		wg.Wait()
+		close(results)
+	}()
+	count := 0
+	for item := range results {
+		count++
+		items[item.GetID()] = item
+		if total > 0 && count%500 == 0 {
+			fmt.Printf("Loading equipment files: %.1f%%\n", float32(count)/float32(total)*100)
+		}
+	}
+	fmt.Printf("Loading equipment files: 100.0%%\n")
+	return nil
 }
 
 // loadResourceFiles loads multiple XML files concurrently using worker goroutines.
@@ -238,6 +300,13 @@ func (r *Resources) NameToNpc(name string) (uint32, bool) {
 	return npcId, ok
 }
 
+// NameToSkill returns skill ID by skill name (case-insensitive, whitespace-insensitive)
+func (r *Resources) NameToSkill(name string) (uint32, bool) {
+	key := normalizeName(name)
+	skillID, ok := r.skillNameToId[key]
+	return skillID, ok
+}
+
 // FindWzPath attempts to find the WZ files directory by checking multiple possible paths.
 // This is useful in debugging environments where the working directory may differ.
 func FindWzPath(configPath string) string {
@@ -324,17 +393,7 @@ func NewResources(wzPath string) *Resources {
 
 	items := map[uint32]Item{}
 	var err error
-	err = loadResourceFiles(filepath.Join(wzPath, "Character.wz"),
-		workerCount,
-		func(path string) (result *Equipment, err error) {
-			return loadWeapons(path)
-		},
-		func(percent float32, value *Equipment) {
-			if value != nil {
-				items[value.ID] = value
-			}
-			fmt.Printf("Loading equipment files: %.1f%%\n", percent)
-		})
+	err = loadEquipmentFiles(filepath.Join(wzPath, "Character.wz"), workerCount, items)
 	if err != nil {
 		log.Fatal(err)
 		return nil
@@ -422,15 +481,15 @@ func NewResources(wzPath string) *Resources {
 
 	err = loadResourceFiles(filepath.Join(wzPath, "Item.wz", "Etc"),
 		workerCount,
-		func(path string) (result *[]*GeneralItem, err error) {
-			return loadGeneralItems(path)
+		func(path string) (result *[]*MiscItem, err error) {
+			return loadMiscItems(path)
 		},
-		func(percent float32, value *[]*GeneralItem) {
+		func(percent float32, value *[]*MiscItem) {
 
 			for _, v := range *value {
 				items[v.ID] = v
 			}
-			fmt.Printf("Loading general item files: %.1f%%\n", percent)
+			fmt.Printf("Loading misc item files: %.1f%%\n", percent)
 		})
 	if err != nil {
 		log.Fatal(err)
@@ -605,12 +664,12 @@ func NewResources(wzPath string) *Resources {
 
 	total := len(skillFiles)
 	for i, path := range skillFiles {
-		jobSkills, loadErr := loadSkillJobFile(path)
+		classSkills, loadErr := loadSkillClassFile(path)
 		if loadErr != nil {
 			log.Printf("Failed to load skill file %s: %v", path, loadErr)
 			continue
 		}
-		for skillID, skill := range jobSkills {
+		for skillID, skill := range classSkills {
 			skills[skillID] = skill
 		}
 		if total > 0 {
@@ -624,18 +683,19 @@ func NewResources(wzPath string) *Resources {
 	expTable := getHardcodedExpTable()
 
 	result := &Resources{
-		mapNameToId:  make(map[string]uint32),
-		mobNameToId:  make(map[string]uint32),
-		npcNameToId:  make(map[string]uint32),
-		itemNameToId: make(map[string]uint32),
-		Maps:         maps,
-		Monsters:     mobs,
-		Items:        items,
-		Drops:        drop,
-		Strings:      stringData,
-		ExpTable:     expTable,
-		Skills:       skills,
-		Shops:        shops,
+		mapNameToId:   make(map[string]uint32),
+		mobNameToId:   make(map[string]uint32),
+		npcNameToId:   make(map[string]uint32),
+		itemNameToId:  make(map[string]uint32),
+		skillNameToId: make(map[string]uint32),
+		Maps:          maps,
+		Monsters:      mobs,
+		Items:         items,
+		Drops:         drop,
+		Strings:       stringData,
+		ExpTable:      expTable,
+		Skills:        skills,
+		Shops:         shops,
 	}
 
 	// Build name lookup indexes from string data (following renewal branch pattern)
@@ -650,6 +710,7 @@ func (r *Resources) buildNameIndexes() {
 	r.buildMobNameIndex()
 	r.buildNpcNameIndex()
 	r.buildItemNameIndex()
+	r.buildSkillNameIndex()
 }
 
 // GetSkill returns a skill by ID
@@ -825,6 +886,25 @@ func (r *Resources) buildItemNameIndex() {
 			if _, exists := r.itemNameToId[key]; !exists {
 				r.itemNameToId[key] = itemId
 			}
+		}
+	}
+}
+
+// buildSkillNameIndex builds the name to ID index for skills
+// Only includes skills that are actually loaded in r.Skills (from Skill.wz)
+func (r *Resources) buildSkillNameIndex() {
+	for skillID := range r.Skills {
+		skillNameData, ok := r.Strings.SkillStrings[skillID]
+		if !ok || skillNameData == nil {
+			continue
+		}
+		skillName, ok := skillNameData["name"]
+		if !ok || skillName == "" {
+			continue
+		}
+		key := normalizeName(skillName)
+		if _, exists := r.skillNameToId[key]; !exists {
+			r.skillNameToId[key] = skillID
 		}
 	}
 }

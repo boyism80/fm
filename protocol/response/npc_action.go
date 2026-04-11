@@ -17,6 +17,5 @@ func (p *NpcAction) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (s *NpcAction) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (s *NpcAction) Deserialize(reader *stream.StreamReader) {
 }

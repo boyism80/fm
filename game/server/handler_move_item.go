@@ -1,18 +1,18 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
 )
 
-// MoveItem handles item movement packet requests
 type MoveItem struct {
 	gs     *GameServer
 	opcode byte
@@ -43,9 +43,27 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 	}
 
 	if req.Source < 0 {
-		h.handleUnequip(client, character, constant.EquipmentPartsType(req.Source), req.Dest)
+		parts := constant.EquipmentPartsType(req.Source)
+		before := character.Equipments[parts]
+		if err := character.UnequipToSlot(parts, req.Dest); err != nil {
+			return nil
+		}
+		callOnEquipmentChanged(ctx, character, parts, before, nil)
 	} else if req.Dest < 0 {
-		h.handleEquip(client, character, constant.EquipmentPartsType(req.Dest), req.Source)
+		parts := constant.EquipmentPartsType(req.Dest)
+		before := character.Equipments[parts]
+		inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+		var after entity.Equipment
+		if item := inven.Items[req.Source]; item != nil {
+			after, _ = item.(entity.Equipment)
+		}
+		if err := character.Equip(req.Source); err != nil {
+			if errors.Is(err, entity.ErrInventoryFull) {
+				character.Listener.OnItemGainFailed(character, constant.ITEM_GAIN_FAILED_TYPE_FULL)
+			}
+			return nil
+		}
+		callOnEquipmentChanged(ctx, character, parts, before, after)
 	} else if req.Dest == 0 {
 		h.handleDrop(client, character, req.InventoryType, req.Source, req.Count)
 	} else {
@@ -53,71 +71,6 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 	}
 
 	return nil
-}
-
-func (h *MoveItem) handleUnequip(client *client.GameClient, character *entity.Character, parts constant.EquipmentPartsType, slot int16) {
-	if character.Equipments[parts] == nil {
-		return
-	}
-
-	inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
-	if inven.Items[slot] != nil {
-		return
-	}
-
-	inven.Items[slot] = character.Equipments[parts]
-	delete(character.Equipments, parts)
-
-	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), slot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
-	character.Listener.OnUpdateCharacterLook(character)
-}
-
-func (h *MoveItem) handleEquip(client *client.GameClient, character *entity.Character, parts constant.EquipmentPartsType, slot int16) {
-	inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
-	if inven.Items[slot] == nil {
-		return
-	}
-
-	new, ok := inven.Items[slot].(*entity.Equipment)
-	if !ok {
-		return
-	}
-
-	old, swap := character.Equipments[parts]
-
-	switch parts {
-	case constant.EQUIPMENT_PARTS_TOP:
-		if new.IsOverall() {
-			_, isWearPants := character.Equipments[constant.EQUIPMENT_PARTS_PANTS]
-			if isWearPants {
-				storageSlot, isFree := inven.NextSlot()
-				if !isFree {
-					character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
-					return
-				}
-				h.handleUnequip(client, character, constant.EQUIPMENT_PARTS_PANTS, int16(storageSlot))
-			}
-		}
-
-	case constant.EQUIPMENT_PARTS_PANTS:
-		top, isWearTop := character.Equipments[constant.EQUIPMENT_PARTS_TOP]
-		if isWearTop && top.IsOverall() {
-			storageSlot, isFree := inven.NextSlot()
-			if swap && !isFree {
-				character.Listener.OnItemGainFailed(constant.ITEM_GAIN_FAILED_TYPE_FULL)
-				return
-			}
-			h.handleUnequip(client, character, constant.EQUIPMENT_PARTS_TOP, int16(storageSlot))
-		}
-	}
-
-	character.Equipments[parts], inven.Items[slot] = new, old
-	if !swap {
-		delete(inven.Items, slot)
-	}
-
-	character.Listener.OnSwapInventorySlot(constant.INVENTORY_TYPE_EQUIPMENT, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
-	character.Listener.OnUpdateCharacterLook(character)
 }
 
 func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Character, invenType constant.InventoryType, slot int16, count uint16) {
@@ -128,25 +81,25 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 
 	removed := (item.Reduce(count) == 0)
 	if removed {
-		character.Listener.OnRemoveInventorySlot(invenType, slot)
+		character.Listener.OnRemoveInventorySlot(character, invenType, slot)
 		delete(character.Inventory[invenType].Items, slot)
 	} else {
-		character.Listener.OnUpdateInventorySlot(invenType, slot, item)
+		character.Listener.OnUpdateInventorySlot(character, invenType, slot, item)
 	}
 
 	spawned := item.Clone(count)
 	spawned.BindDrop(&entity.Drop{
-		Object: &entity.Object{
+		ObjectCore: &entity.ObjectCore{
 			Position: character.Position,
 		},
-		Owner:        character.ID,
+		Owner:        character.GetID(),
 		SpawnedPoint: character.Position,
 		DropType:     constant.DROP_TYPE_FFA,
 	})
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := character.GetMap()
 	if mapInstance != nil {
-		if err := mapInstance.SpawnItem(spawned, character.ID, constant.DROP_TYPE_FFA); err != nil {
+		if err := mapInstance.SpawnItem(spawned, character.GetID(), constant.DROP_TYPE_FFA); err != nil {
 			log.Printf("Failed to spawn item on map: %v", err)
 		}
 	}
@@ -164,7 +117,7 @@ func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *
 	if !ok {
 		inven.Items[destSlot] = inven.Items[sourceSlot]
 		delete(inven.Items, sourceSlot)
-		character.Listener.OnSwapInventorySlot(invenType, sourceSlot, destSlot, 0)
+		character.Listener.OnSwapInventorySlot(character, invenType, sourceSlot, destSlot, 0)
 		return
 	}
 
@@ -172,16 +125,40 @@ func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *
 	specDst := dst.GetModel()
 	if specSrc != specDst {
 		inven.Items[sourceSlot], inven.Items[destSlot] = inven.Items[destSlot], inven.Items[sourceSlot]
-		character.Listener.OnSwapInventorySlot(invenType, sourceSlot, destSlot, 0)
+		character.Listener.OnSwapInventorySlot(character, invenType, sourceSlot, destSlot, 0)
 		return
 	}
 
 	limit := min(src.GetCount(), specSrc.GetCapacity()-dst.GetCount())
 	dst.Increase(limit)
 	if src.Reduce(limit) == 0 {
-		character.Listener.OnFullMergeInventorySlot(invenType, sourceSlot, destSlot, dst.GetCount())
+		character.Listener.OnFullMergeInventorySlot(character, invenType, sourceSlot, destSlot, dst.GetCount())
 		delete(inven.Items, sourceSlot)
 	} else {
-		character.Listener.OnPartialMergeInventorySlot(invenType, sourceSlot, destSlot, src.GetCount(), dst.GetCount())
+		character.Listener.OnPartialMergeInventorySlot(character, invenType, sourceSlot, destSlot, src.GetCount(), dst.GetCount())
+	}
+}
+
+func callOnEquipmentChanged(ctx *core.ClientContext, character *entity.Character, parts constant.EquipmentPartsType, before, after entity.Equipment) {
+	if ctx.LogicActorPID == nil {
+		return
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return
+	}
+	var beforeArg, afterArg interface{}
+	if before != nil {
+		beforeArg = luax.NewLuable(root, before.(luax.Luable))
+	}
+	if after != nil {
+		afterArg = luax.NewLuable(root, after.(luax.Luable))
+	}
+	_, thread, err := luax.Call(root, "script/script.lua", "on_equipment_changed", character, int32(parts), beforeArg, afterArg)
+	if thread != nil {
+		thread.Close()
+	}
+	if err != nil {
+		log.Printf("Failed to call script on_equipment_changed: %v", err)
 	}
 }

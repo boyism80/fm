@@ -6,21 +6,13 @@ import (
 )
 
 type MagicAttack struct {
-	dto.AttackInfo
-}
-
-func (m *MagicAttack) Opcode() uint16 {
-	return 0x1D
+	dto.MagicAttackInfo
 }
 
 func (m *MagicAttack) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (m *MagicAttack) Deserialize(reader *stream.StreamReader) error {
-	err := m.AttackInfo.Deserialize(reader, 0x1D)
-	if err != nil {
-		return err
-	}
-	return nil
+func (m *MagicAttack) Deserialize(reader *stream.StreamReader) {
+	m.MagicAttackInfo.Deserialize(reader)
 }

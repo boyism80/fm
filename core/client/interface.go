@@ -3,7 +3,6 @@ package client
 import (
 	"net"
 
-	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/crypt"
 	"github.com/boyism80/fm/types"
 )
@@ -13,5 +12,4 @@ type Client interface {
 	GetConnection() net.Conn
 	GetSendEncryption() *crypt.Encryption
 	GetRecvEncryption() *crypt.Encryption
-	GetLogicActorPID() *actor.PID
 }

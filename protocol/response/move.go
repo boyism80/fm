@@ -1,9 +1,9 @@
 package response
 
 import (
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
-	"github.com/boyism80/fm/protocol/dto"
 )
 
 type Move struct {
@@ -27,6 +27,5 @@ func (p *Move) Opcode() uint16 {
 	return 0x82 // Move opcode
 }
 
-func (p *Move) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *Move) Deserialize(reader *stream.StreamReader) {
 }

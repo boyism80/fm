@@ -1,8 +1,8 @@
 package response
 
 import (
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/stream"
 )
 
 type MagicAttack struct {
@@ -36,10 +36,6 @@ func (a *MagicAttack) Serialize(writer *stream.StreamWriter) error {
 		if oned.DamagePairs != nil {
 			writer.WriteU32(oned.OID)
 			writer.WriteU8(0x07)
-			if a.Skill == 4211006 {
-				writer.WriteU8(uint8(len(oned.DamagePairs)))
-			}
-
 			for _, v := range oned.DamagePairs {
 				if v.Unknown {
 					writer.WriteU32(v.Damage | 0x80000000)
@@ -57,6 +53,5 @@ func (a *MagicAttack) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *MagicAttack) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *MagicAttack) Deserialize(reader *stream.StreamReader) {
 }

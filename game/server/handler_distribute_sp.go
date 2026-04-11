@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
@@ -11,8 +10,6 @@ import (
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
 )
 
 type DistributeSP struct {
@@ -47,16 +44,14 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 	skillID := req.SkillID
 
 	if character.SkillPoint == 0 {
-		log.Printf("Character %d has no SP to distribute for skill %d", character.ID, skillID)
+		log.Printf("Character %d has no SP to distribute for skill %d", character.GetID(), skillID)
 		return nil
 	}
 
-	if character.SkillsMap == nil {
-		character.SkillsMap = make(map[uint32]*entity.SkillEntry)
-	}
-
-	skillEntry, exists := character.SkillsMap[skillID]
-	if !exists {
+	skillEntry := character.Skills.Get(skillID)
+	isFirstPoint := false
+	if skillEntry == nil {
+		isFirstPoint = true
 		var wzSkill *wz.Skill
 		if character.Context != nil {
 			resources := character.Context.GetResources()
@@ -66,7 +61,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		}
 
 		if wzSkill == nil {
-			log.Printf("Skill %d not found in WZ for character %d", skillID, character.ID)
+			log.Printf("Skill %d not found in WZ for character %d", skillID, character.GetID())
 			return nil
 		}
 
@@ -76,59 +71,45 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 		} else if wzSkill.MaxLevel > 0 {
 			masterLevel = wzSkill.MaxLevel
 		} else {
-			log.Printf("Skill %d has no masterLevel or maxLevel for character %d", skillID, character.ID)
+			log.Printf("Skill %d has no masterLevel or maxLevel for character %d", skillID, character.GetID())
 			return nil
 		}
 
-		skillEntry = &entity.SkillEntry{
-			Skill:       wzSkill,
-			SkillLevel:  0,
-			MasterLevel: masterLevel,
-			Expiration:  time.Time{},
-		}
-		character.SkillsMap[skillID] = skillEntry
-	}
-
-	if skillEntry.Skill == nil {
-		log.Printf("SkillEntry for skill %d has nil Skill for character %d", skillID, character.ID)
-		return nil
+		skillEntry = entity.NewSkillEntry(character, wzSkill, 0, masterLevel)
 	}
 
 	maxLevel := skillEntry.MasterLevel
-	if maxLevel == 0 && skillEntry.Skill.MaxLevel > 0 {
-		maxLevel = skillEntry.Skill.MaxLevel
+	if maxLevel == 0 && skillEntry.Wz.MaxLevel > 0 {
+		maxLevel = skillEntry.Wz.MaxLevel
 	}
 	if maxLevel == 0 {
-		log.Printf("Skill %d has no maxLevel for character %d", skillID, character.ID)
+		log.Printf("Skill %d has no maxLevel for character %d", skillID, character.GetID())
 		return nil
 	}
 
-	if skillEntry.MasterLevel > skillEntry.Skill.MaxLevel {
-		log.Printf("Skill %d MasterLevel %d exceeds MaxLevel %d for character %d, clamping", skillID, skillEntry.MasterLevel, skillEntry.Skill.MaxLevel, character.ID)
-		skillEntry.MasterLevel = skillEntry.Skill.MaxLevel
+	if skillEntry.MasterLevel > skillEntry.Wz.MaxLevel {
+		log.Printf("Skill %d MasterLevel %d exceeds MaxLevel %d for character %d, clamping", skillID, skillEntry.MasterLevel, skillEntry.Wz.MaxLevel, character.GetID())
+		skillEntry.MasterLevel = skillEntry.Wz.MaxLevel
 		maxLevel = skillEntry.MasterLevel
 	}
 
-	if skillEntry.SkillLevel >= maxLevel {
-		log.Printf("Skill %d is already at max level %d for character %d", skillID, maxLevel, character.ID)
+	if skillEntry.Level() >= maxLevel {
+		log.Printf("Skill %d is already at max level %d for character %d", skillID, maxLevel, character.GetID())
 		return nil
 	}
 
-	character.SkillPoint--
-	skillEntry.SkillLevel++
-
-	if character.Listener != nil {
-		stats := map[constant.Stat]int32{
-			constant.STAT_AVAILABLE_SP: int32(character.SkillPoint),
-		}
-		character.Listener.OnUpdateStats(stats, false)
+	character.SkillPoint = character.SkillPoint - 1
+	if isFirstPoint {
+		skillEntry.SetLevel(1)
+		character.Skills.Bind(skillID, skillEntry)
+	} else {
+		skillEntry.SetLevel(skillEntry.Level() + 1)
 	}
 
-	character.Send(&response.UpdateSkills{
-		SkillID:     skillID,
-		Level:       int32(skillEntry.SkillLevel),
-		MasterLevel: int32(skillEntry.MasterLevel),
-	}, types.SEND_POLICY_ENCRYPT)
+	stats := map[constant.Stat]int32{
+		constant.STAT_AVAILABLE_SP: int32(character.SkillPoint),
+	}
+	character.Listener.OnUpdateStats(character, stats, false)
 
 	return nil
 }

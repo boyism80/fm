@@ -8,6 +8,10 @@ type Foothold struct {
 	Prev, Next     int16
 }
 
+func (f Foothold) IsWall() bool {
+	return f.X1 == f.X2
+}
+
 func (f Foothold) Bounds() types.Rect[int16] {
 	left := min(f.X1, f.X2)
 	right := max(f.X1, f.X2)
@@ -35,4 +39,3 @@ func (f Foothold) Compare(o types.AnySpatial[int16]) bool {
 	}
 	return f.ID < other.ID
 }
-

@@ -1,11 +1,10 @@
-﻿package server
+package server
 
 import (
 	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
-	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/request"
@@ -47,53 +46,53 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 	if req.Target != 0xFFFFFFFF {
 		if character.Hp == 0 {
 			character.Hp = 50
-			character.Stance = 0
+			character.Stance = constant.StanceDefaultValue
 
-			currentMap := h.gs.GetMap(character.Map)
+			currentMap := character.GetMap()
 			if currentMap == nil {
 				return fmt.Errorf("current map not found")
 			}
 
-			mapSpec := currentMap.GetSpec()
-			if mapSpec == nil {
+			wz := currentMap.Wz
+			if wz == nil {
 				return fmt.Errorf("map model not found")
 			}
 
-			targetMapId = uint32(mapSpec.ReturnMapId)
+			targetMapId = uint32(wz.ReturnMapId)
 			spawnPoint = 0
 			stats[constant.STAT_HP] = int32(character.Hp)
 
-			character.Listener.OnUpdateStats(stats, true)
+			character.Listener.OnUpdateStats(character, stats, true)
 		} else {
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 	} else {
-		currentMap := h.gs.GetMap(character.Map)
+		currentMap := character.GetMap()
 		if currentMap == nil {
 			return fmt.Errorf("current map not found")
 		}
 
-		mapSpec := currentMap.GetSpec()
-		if mapSpec == nil {
+		wz := currentMap.Wz
+		if wz == nil {
 			return fmt.Errorf("map model not found")
 		}
 
-		portal, ok := mapSpec.FindPortal(req.PortalName)
+		portal, ok := wz.FindPortal(req.PortalName)
 		if !ok {
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 
-		targetMapSpec, ok := h.gs.resources.Maps[uint32(portal.TargetMapId)]
+		targetMapWz, ok := h.gs.resources.Maps[uint32(portal.TargetMapId)]
 		if !ok {
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 
-		targetPortal, ok := targetMapSpec.FindPortal(portal.Target)
+		targetPortal, ok := targetMapWz.FindPortal(portal.Target)
 		if !ok {
-			character.Listener.OnUpdateStats(nil, true)
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 
@@ -101,19 +100,12 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 		spawnPoint = targetPortal.ID
 	}
 
-	targetMapPID := h.gs.GetMap(targetMapId).GetActorPID()
-	if targetMapPID == nil {
-		return fmt.Errorf("target map actor PID not found")
+	targetMap := h.gs.GetMap(targetMapId)
+	if targetMap == nil {
+		return fmt.Errorf("target map not found")
 	}
-
-	rootContext := h.gs.GetServer().GetRootContext()
-	if rootContext == nil {
-		return fmt.Errorf("rootContext not set")
+	if err := character.Warp(targetMap, spawnPoint); err != nil {
+		return err
 	}
-
-	rootContext.Send(targetMapPID, &g_actor.WarpCharacter{
-		Character: character,
-		Portal:    spawnPoint,
-	})
 	return nil
 }

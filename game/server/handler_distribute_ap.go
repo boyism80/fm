@@ -3,12 +3,13 @@ package server
 import (
 	"fmt"
 	"log"
-	"math/rand"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/request"
+	lua "github.com/yuin/gopher-lua"
 )
 
 // DistributeAP handles DISTRIBUTE_AP packet requests (0x46)
@@ -43,7 +44,7 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 
 	// Send empty stat update packet first (for client synchronization)
 	stats := map[constant.Stat]int32{}
-	character.Listener.OnUpdateStats(stats, true)
+	character.Listener.OnUpdateStats(character, stats, true)
 
 	// Check if character has remaining AP
 	if character.AbilityPoint == 0 {
@@ -56,127 +57,126 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 
 	switch constant.StatType(req.StatType) {
 	case constant.STAT_TYPE_STR:
-		if character.Str >= constant.STAT_MAX_STR_DEX_INT_LUK {
+		if character.GetTotalStr() >= constant.STAT_MAX_STR_DEX_INT_LUK {
 			return nil
 		}
-		character.Str++
-		statUpdate[constant.STAT_STR] = int32(character.Str)
+		newStr := character.BaseStats.Str + 1
+		if newStr > constant.STAT_MAX_STR_DEX_INT_LUK {
+			newStr = constant.STAT_MAX_STR_DEX_INT_LUK
+		}
+		character.BaseStats.Str = newStr
+		statUpdate[constant.STAT_STR] = int32(character.GetTotalStr())
 		success = true
 
 	case constant.STAT_TYPE_DEX:
-		if character.Dex >= constant.STAT_MAX_STR_DEX_INT_LUK {
+		if character.GetTotalDex() >= constant.STAT_MAX_STR_DEX_INT_LUK {
 			return nil
 		}
-		character.Dex++
-		statUpdate[constant.STAT_DEX] = int32(character.Dex)
+		newDex := character.BaseStats.Dex + 1
+		if newDex > constant.STAT_MAX_STR_DEX_INT_LUK {
+			newDex = constant.STAT_MAX_STR_DEX_INT_LUK
+		}
+		character.BaseStats.Dex = newDex
+		statUpdate[constant.STAT_DEX] = int32(character.GetTotalDex())
 		success = true
 
 	case constant.STAT_TYPE_INT:
-		if character.Int >= constant.STAT_MAX_STR_DEX_INT_LUK {
+		if character.GetTotalInt() >= constant.STAT_MAX_STR_DEX_INT_LUK {
 			return nil
 		}
-		character.Int++
-		statUpdate[constant.STAT_INT] = int32(character.Int)
+		newInt := character.BaseStats.Int + 1
+		if newInt > constant.STAT_MAX_STR_DEX_INT_LUK {
+			newInt = constant.STAT_MAX_STR_DEX_INT_LUK
+		}
+		character.BaseStats.Int = newInt
+		statUpdate[constant.STAT_INT] = int32(character.GetTotalInt())
 		success = true
 
 	case constant.STAT_TYPE_LUK:
-		if character.Luk >= constant.STAT_MAX_STR_DEX_INT_LUK {
+		if character.GetTotalLuk() >= constant.STAT_MAX_STR_DEX_INT_LUK {
 			return nil
 		}
-		character.Luk++
-		statUpdate[constant.STAT_LUK] = int32(character.Luk)
+		newLuk := character.BaseStats.Luk + 1
+		if newLuk > constant.STAT_MAX_STR_DEX_INT_LUK {
+			newLuk = constant.STAT_MAX_STR_DEX_INT_LUK
+		}
+		character.BaseStats.Luk = newLuk
+		statUpdate[constant.STAT_LUK] = int32(character.GetTotalLuk())
 		success = true
 
 	case constant.STAT_TYPE_HP:
-		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.MaxHp >= constant.STAT_MAX_HP_MP {
+		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.GetMaxHp() >= constant.STAT_MAX_HP_MP {
 			return nil
 		}
-		// Calculate HP increase based on job
-		hpIncrease := h.calculateHPIncrease(character.Class)
-		newMaxHp := character.MaxHp + hpIncrease
-		if newMaxHp > constant.STAT_MAX_HP_MP {
-			newMaxHp = constant.STAT_MAX_HP_MP
+		hpIncrease := h.scriptAPToHP(ctx, character)
+		if hpIncrease == 0 {
+			hpIncrease = 10
 		}
-		character.MaxHp = newMaxHp
+		character.AddBaseHp(hpIncrease)
 		character.HpApUsed++
-		statUpdate[constant.STAT_MAX_HP] = int32(character.MaxHp)
+		statUpdate[constant.STAT_MAX_HP] = int32(character.GetMaxHp())
 		success = true
 
 	case constant.STAT_TYPE_MP:
-		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.MaxMp >= constant.STAT_MAX_HP_MP {
+		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.GetMaxMp() >= constant.STAT_MAX_HP_MP {
 			return nil
 		}
-		// Calculate MP increase based on job
-		mpIncrease := h.calculateMPIncrease(character.Class)
-		newMaxMp := character.MaxMp + mpIncrease
-		if newMaxMp > constant.STAT_MAX_HP_MP {
-			newMaxMp = constant.STAT_MAX_HP_MP
+		mpIncrease := h.scriptAPToMP(ctx, character)
+		if mpIncrease == 0 {
+			mpIncrease = 5
 		}
-		character.MaxMp = newMaxMp
+		character.AddBaseMp(mpIncrease)
 		character.HpApUsed++
-		statUpdate[constant.STAT_MAX_MP] = int32(character.MaxMp)
+		statUpdate[constant.STAT_MAX_MP] = int32(character.GetMaxMp())
 		success = true
 
 	default:
 		// Invalid stat type - send empty stat update
-		character.Listener.OnUpdateStats(stats, true)
+		character.Listener.OnUpdateStats(character, stats, true)
 		return nil
 	}
 
 	if success {
 		// Decrease AP
-		character.AbilityPoint--
+		character.AbilityPoint = character.AbilityPoint - 1
 		statUpdate[constant.STAT_AVAILABLE_AP] = int32(character.AbilityPoint)
 
 		// Send stat update packet
-		character.Listener.OnUpdateStats(statUpdate, true)
+		character.Listener.OnUpdateStats(character, statUpdate, true)
 	}
 
 	return nil
 }
 
-// calculateHPIncrease calculates HP increase based on job
-func (h *DistributeAP) calculateHPIncrease(job uint16) uint16 {
-	// Beginner
-	if job == constant.JOB_BEGINNER_MIN || job == constant.JOB_BEGINNER_1 || job == constant.JOB_BEGINNER_2 {
-		return uint16(rand.Intn(5) + 8) // 8-12
-	}
-	// Warrior
-	if job >= constant.JOB_WARRIOR_MIN && job <= constant.JOB_WARRIOR_MAX {
-		return uint16(rand.Intn(9) + 12) // 12-20
-	}
-	// Magician
-	if job >= constant.JOB_MAGICIAN_MIN && job <= constant.JOB_MAGICIAN_MAX {
-		return uint16(rand.Intn(6) + 6) // 6-11
-	}
-	// Bowman/Thief
-	if (job >= constant.JOB_BOWMAN_MIN && job <= constant.JOB_BOWMAN_MAX) ||
-		(job >= constant.JOB_THIEF_MIN && job <= constant.JOB_THIEF_MAX) {
-		return uint16(rand.Intn(5) + 14) // 14-18
-	}
-	// Default (GameMaster)
-	return uint16(rand.Intn(51) + 50) // 50-100
+func (h *DistributeAP) scriptAPToHP(ctx *core.ClientContext, character interface{}) uint32 {
+	return h.callAPToStatScript(ctx, character, "on_ap_to_hp")
 }
 
-// calculateMPIncrease calculates MP increase based on job
-func (h *DistributeAP) calculateMPIncrease(job uint16) uint16 {
-	// Beginner
-	if job == constant.JOB_BEGINNER_MIN || job == constant.JOB_BEGINNER_1 || job == constant.JOB_BEGINNER_2 {
-		return uint16(rand.Intn(3) + 6) // 6-8
+func (h *DistributeAP) scriptAPToMP(ctx *core.ClientContext, character interface{}) uint32 {
+	return h.callAPToStatScript(ctx, character, "on_ap_to_mp")
+}
+
+func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character interface{}, funcName string) uint32 {
+	if ctx.LogicActorPID == nil {
+		return 0
 	}
-	// Magician
-	if job >= constant.JOB_MAGICIAN_MIN && job <= constant.JOB_MAGICIAN_MAX {
-		return uint16(rand.Intn(11) + 10) // 10-20
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		return 0
 	}
-	// Bowman/Thief
-	if (job >= constant.JOB_BOWMAN_MIN && job <= constant.JOB_BOWMAN_MAX) ||
-		(job >= constant.JOB_THIEF_MIN && job <= constant.JOB_THIEF_MAX) {
-		return uint16(rand.Intn(5) + 8) // 8-12
+	result, thread, err := luax.Call(root, "script/script.lua", funcName, character)
+	if thread != nil {
+		thread.Close()
 	}
-	// Warrior/Soul Master
-	if job >= constant.JOB_WARRIOR_MIN && job <= constant.JOB_WARRIOR_MAX {
-		return uint16(rand.Intn(4) + 4) // 4-7
+	if err != nil || result == nil || result.Type() != lua.LTNumber {
+		return 0
 	}
-	// Default (GameMaster)
-	return uint16(rand.Intn(51) + 50) // 50-100
+	n := float64(lua.LVAsNumber(result))
+	if n <= 0 {
+		return 0
+	}
+	if n >= float64(0xffffffff) {
+		return 0xffffffff
+	}
+	return uint32(n)
 }

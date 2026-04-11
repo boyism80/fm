@@ -39,8 +39,7 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 		return nil
 	}
 
-	mapID := character.GetMap()
-	mapInstance := h.gs.GetMap(mapID)
+	mapInstance := character.GetMap()
 
 	if req.ChairID == -1 {
 		character.Chair = 0
@@ -51,11 +50,10 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 		character.Send(cancelChairPacket, types.SEND_POLICY_ENCRYPT)
 
 		if mapInstance != nil {
-			showChairPacket := &response.ShowChair{
+			character.Broadcast(&response.ShowChair{
 				CharacterID: character.GetID(),
 				ItemID:      0,
-			}
-			mapInstance.BroadcastToPlayers(showChairPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
+			}, nil)
 		}
 	} else {
 		character.Chair = uint32(req.ChairID)
@@ -66,9 +64,7 @@ func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) 
 		character.Send(cancelChairPacket, types.SEND_POLICY_ENCRYPT)
 	}
 
-	if character.Listener != nil {
-		character.Listener.OnUpdateStats(nil, true)
-	}
+	character.Listener.OnUpdateStats(character, nil, true)
 
 	return nil
 }

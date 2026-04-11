@@ -12,15 +12,10 @@ func (m *ShowMobHp) Opcode() uint16 {
 }
 
 func (m *ShowMobHp) Serialize(sw *stream.StreamWriter) error {
-	if err := sw.WriteU32(m.OID); err != nil {
-		return err
-	}
-	if err := sw.WriteU8(m.Percentage); err != nil {
-		return err
-	}
+	sw.WriteU32(m.OID)
+	sw.WriteU8(m.Percentage)
 	return nil
 }
 
-func (m *ShowMobHp) Deserialize(sr *stream.StreamReader) error {
-	return nil
+func (m *ShowMobHp) Deserialize(sr *stream.StreamReader) {
 }

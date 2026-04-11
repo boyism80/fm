@@ -3,6 +3,8 @@ package core
 import (
 	"fmt"
 	"log"
+
+	"github.com/asynkron/protoactor-go/actor"
 )
 
 // PacketHandler manages packet processing for the server
@@ -18,8 +20,9 @@ type PacketHandler struct {
 // Purpose: Provides client and server references to handlers
 // Thread Safety: Safe for concurrent access
 type ClientContext struct {
-	Client Client
-	Server *Server
+	Client        Client
+	Server        *Server
+	LogicActorPID *actor.PID // Map actor handling this packet (e.g. for script root state lookup)
 }
 
 // NewPacketHandler creates a new packet handler

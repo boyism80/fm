@@ -55,45 +55,6 @@ func getGoroutineID() uint64 {
 	return id
 }
 
-// GetThreadLocalState returns the LuaState for the current goroutine
-// Creates a new one if it doesn't exist
-// This ensures that multiple MapActors running on the same thread share one LuaState
-func GetThreadLocalState() *lua.LState {
-	goid := getGoroutineID()
-	if goid == 0 {
-		// Fallback: create a new state if we can't get goroutine ID
-		// This should rarely happen
-		return NewState()
-	}
-
-	// Try to get existing state
-	if state, ok := threadLocalStates.Load(goid); ok {
-		return state.(*lua.LState)
-	}
-
-	// Create new state
-	luaState := NewState()
-
-	// Initialize with hooks
-	initHooksMu.Lock()
-	for _, hook := range initHooks {
-		hook(luaState)
-	}
-	initHooksMu.Unlock()
-
-	// Store in thread-local map
-	threadLocalStates.Store(goid, luaState)
-
-	// Clean up when goroutine ends (best effort)
-	// Note: Finalizer may not run immediately, but it will eventually clean up
-	runtime.SetFinalizer(luaState, func(L *lua.LState) {
-		threadLocalStates.Delete(goid)
-		L.Close()
-	})
-
-	return luaState
-}
-
 // RegisterThreadLocalInitHook registers a hook that will be called when a new thread-local LuaState is created
 func RegisterThreadLocalInitHook(fn func(*lua.LState)) {
 	initHooksMu.Lock()

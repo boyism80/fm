@@ -12,34 +12,16 @@ type HealOverTime struct {
 	PRate  uint8
 }
 
-func (p *HealOverTime) Opcode() uint16 {
-	return 0x48
-}
-
 func (p *HealOverTime) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *HealOverTime) Deserialize(reader *stream.StreamReader) error {
-	var err error
-
+func (p *HealOverTime) Deserialize(reader *stream.StreamReader) {
 	if reader.Remaining() >= 8 {
-		if err = reader.Skip(4); err != nil {
-			return err
-		}
-		if p.Tick, err = reader.ReadU32(); err != nil {
-			return err
-		}
+		reader.Skip(4)
 	}
 
-	if p.HealHP, err = reader.ReadU16(); err != nil {
-		return err
-	}
-	if p.HealMP, err = reader.ReadU16(); err != nil {
-		return err
-	}
-	if p.PRate, err = reader.ReadU8(); err != nil {
-		return err
-	}
-	return nil
+	p.HealHP = reader.ReadU16()
+	p.HealMP = reader.ReadU16()
+	p.PRate = reader.ReadU8()
 }

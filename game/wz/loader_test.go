@@ -6,20 +6,20 @@ import (
 	"testing"
 )
 
-func TestLoadGeneralItems(t *testing.T) {
+func TestLoadMiscItems(t *testing.T) {
 	path := filepath.Join("..", "..", "resources", "wz", "Item.wz", "Etc", "0400.img.xml")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		t.Skipf("Test file not found: %s", path)
 		return
 	}
 
-	items, err := loadGeneralItems(path)
+	items, err := loadMiscItems(path)
 	if err != nil {
-		t.Fatalf("Failed to load general items: %v", err)
+		t.Fatalf("Failed to load misc items: %v", err)
 	}
 
 	if items == nil {
-		t.Fatal("loadGeneralItems returned nil")
+		t.Fatal("loadMiscItems returned nil")
 	}
 
 	if len(*items) == 0 {
@@ -27,7 +27,7 @@ func TestLoadGeneralItems(t *testing.T) {
 	}
 
 	// Test specific item (4000001) that we know should have slotMax = 200
-	var foundItem *GeneralItem
+	var foundItem *MiscItem
 	for _, item := range *items {
 		if item.ID == 4000001 {
 			foundItem = item
@@ -57,7 +57,7 @@ func TestLoadGeneralItems(t *testing.T) {
 		}
 	}
 
-	t.Logf("Successfully loaded %d general items", len(*items))
+	t.Logf("Successfully loaded %d misc items", len(*items))
 }
 
 func TestLoadConsumes(t *testing.T) {
@@ -206,10 +206,15 @@ func TestLoadWeapons(t *testing.T) {
 		return
 	}
 
-	if weapon.ID == 0 {
+	w, ok := weapon.(*Weapon)
+	if !ok {
+		t.Fatalf("expected *Weapon from loadWeapons, got %T", weapon)
+	}
+
+	if w.ID == 0 {
 		t.Errorf("Weapon has ID=0")
 	}
-	if weapon.ItemCore == nil {
+	if w.ItemCore == nil {
 		t.Errorf("Weapon has nil ItemCore")
 	}
 
@@ -217,19 +222,19 @@ func TestLoadWeapons(t *testing.T) {
 	// We only verify that if slotMax is present in XML, it's loaded correctly
 	// This is tested by checking that weapons with slotMax > 0 exist in other test files
 
-	t.Logf("Successfully loaded weapon ID=%d, slotMax=%d, price=%d", weapon.ID, weapon.SlotMax, weapon.Price)
+	t.Logf("Successfully loaded weapon ID=%d, slotMax=%d, price=%d", w.ID, w.SlotMax, w.Price)
 }
 
-func TestLoadGeneralItemsSlotMax(t *testing.T) {
+func TestLoadMiscItemsSlotMax(t *testing.T) {
 	path := filepath.Join("..", "..", "resources", "wz", "Item.wz", "Etc", "0400.img.xml")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		t.Skipf("Test file not found: %s", path)
 		return
 	}
 
-	items, err := loadGeneralItems(path)
+	items, err := loadMiscItems(path)
 	if err != nil {
-		t.Fatalf("Failed to load general items: %v", err)
+		t.Fatalf("Failed to load misc items: %v", err)
 	}
 
 	// Test multiple items with known slotMax values
@@ -243,7 +248,7 @@ func TestLoadGeneralItemsSlotMax(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		var foundItem *GeneralItem
+		var foundItem *MiscItem
 		for _, item := range *items {
 			if item.ID == tc.itemID {
 				foundItem = item

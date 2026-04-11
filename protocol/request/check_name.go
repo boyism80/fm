@@ -10,11 +10,6 @@ func (a *CheckName) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *CheckName) Deserialize(reader *stream.StreamReader) error {
-	name, err := reader.ReadStr16()
-	if err != nil {
-		return err
-	}
-	a.Name = name
-	return nil
+func (a *CheckName) Deserialize(reader *stream.StreamReader) {
+	a.Name = reader.ReadStr16()
 }

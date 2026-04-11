@@ -1,8 +1,8 @@
 package response
 
 import (
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/stream"
 )
 
 type ShowItemGain struct {
@@ -38,6 +38,5 @@ func (p *ShowItemGain) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowItemGain) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ShowItemGain) Deserialize(reader *stream.StreamReader) {
 }

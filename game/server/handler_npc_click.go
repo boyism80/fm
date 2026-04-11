@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
@@ -42,16 +43,16 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
-		log.Printf("Map %d not found", character.GetMap())
-		return fmt.Errorf("map %d not found", character.GetMap())
+		log.Printf("Map not found")
+		return fmt.Errorf("map not found")
 	}
 
 	npcs := mapInstance.GetNpcs()
 	npcInterface, exists := npcs[req.OID]
 	if !exists {
-		log.Printf("NPC %d not found on map %d", req.OID, character.GetMap())
+		log.Printf("NPC %d not found on map", req.OID)
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 
@@ -88,10 +89,24 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 	}
 
 	// NPC doesn't have a shop, execute script
-	if err := h.gs.ExecuteNpcScript(character, npc); err != nil {
+	if ctx.LogicActorPID == nil {
+		return fmt.Errorf("map actor PID not available")
+	}
+	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	if root == nil {
+		log.Printf("No lua root state for actor %s", ctx.LogicActorPID.String())
+		return fmt.Errorf("lua state not available")
+	}
+	scriptPath := fmt.Sprintf("script/npc/%d.lua", npcID)
+	luaThread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		log.Printf("Failed to create NPC script thread: %v", err)
+		return err
+	}
+	_, err = luax.Execute(root, luaThread, ctx.LogicActorPID, "on_start", character)
+	if err != nil {
 		log.Printf("Failed to execute NPC script: %v", err)
 		return err
 	}
-
 	return nil
 }

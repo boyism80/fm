@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
@@ -15,7 +16,7 @@ type AttackPair struct {
 	DamagePairs []DamagePair
 }
 
-type AttackInfo struct {
+type AttackHeader struct {
 	Targets  uint8
 	Hits     uint8
 	Skill    uint32
@@ -24,145 +25,65 @@ type AttackInfo struct {
 	Speed    uint8
 	Display  uint8
 	LastTick uint32
+}
+
+type AttackPayload interface {
+	ToAttackInfo() AttackInfo
+}
+
+// AttackInfo is a transport-friendly superset used by listeners/responses.
+type AttackInfo struct {
+	AttackHeader
 	Slot     uint16
 	CsStar   uint16
 	AOE      uint8
 	Damages  []AttackPair
+	MesoOIDs []uint32
 	Position types.Vector2[int16]
 }
 
-func (a *AttackInfo) Deserialize(sr *stream.StreamReader, opcode uint16) error {
-	_ = sr.Skip(1)
+func (header *AttackHeader) deserialize(sr *stream.StreamReader) {
+	sr.Skip(1)
+	tbyte := sr.ReadU8()
+	header.Targets = (tbyte >> 4) & 0xF
+	header.Hits = tbyte & 0xF
+	header.Skill = sr.ReadU32()
 
-	tbyte, err := sr.ReadU8()
-	if err != nil {
-		return err
-	}
-	a.Targets = (tbyte >> 4) & 0xF
-	a.Hits = tbyte & 0xF
-
-	skill, err := sr.ReadU32()
-	if err != nil {
-		return err
-	}
-
-	a.Skill = skill
-
-	switch skill {
-	case 2121001:
-	case 2221001:
-	case 2321001:
-	case 3221001:
-	case 3121004:
-	case 13111002:
-	case 5101004:
-	case 15101003:
-	case 5221004:
-	case 5201002:
-		charge, err := sr.ReadU32()
-		if err != nil {
-			return err
-		}
-		a.Charge = charge
-
+	switch constant.SkillID(header.Skill) {
+	case constant.SkillBigBang,
+		constant.SkillBigBang2221001,
+		constant.SkillBigBang2321001,
+		constant.SkillPiercing,
+		constant.SkillStormArrow,
+		constant.SkillStormArrowCygnus,
+		constant.SkillCorkscrewBlow,
+		constant.SkillCorkscrewBlowCygnus,
+		constant.SkillRapidFire,
+		constant.SkillGrenade:
+		header.Charge = sr.ReadU32()
 	default:
-		a.Charge = 0
+		header.Charge = 0
 	}
 
-	err = sr.Skip(1)
-	if err != nil {
-		return err
-	}
+	sr.Skip(1)
+	header.Unk = sr.ReadU8()
+	header.Speed = sr.ReadU8()
+	header.Display = sr.ReadU8()
+	header.LastTick = sr.ReadU32()
+}
 
-	unk, err := sr.ReadU8()
-	if err != nil {
-		return err
-	}
-	a.Unk = unk
-
-	speed, err := sr.ReadU8()
-	if err != nil {
-		return err
-	}
-	a.Speed = speed
-
-	display, err := sr.ReadU8()
-	if err != nil {
-		return err
-	}
-	a.Display = display
-
-	lastTick, err := sr.ReadU32()
-	if err != nil {
-		return err
-	}
-	a.LastTick = lastTick
-
-	if opcode == 0x1C {
-		slot, err := sr.ReadU16()
-		if err != nil {
-			return err
+func (header *AttackHeader) parseNormalDamages(sr *stream.StreamReader, skipBytes int) []AttackPair {
+	damages := make([]AttackPair, 0, header.Targets)
+	for range int(header.Targets) {
+		oid := sr.ReadU32()
+		sr.Skip(skipBytes)
+		damagePairs := make([]DamagePair, 0, header.Hits)
+		for range int(header.Hits) {
+			damagePairs = append(damagePairs, DamagePair{Damage: sr.ReadU32(), Unknown: false})
 		}
-		a.Slot = slot
-
-		csStar, err := sr.ReadU16()
-		if err != nil {
-			return err
-		}
-		a.CsStar = csStar
-
-		aoe, err := sr.ReadU8()
-		if err != nil {
-			return err
-		}
-		a.AOE = aoe
+		damages = append(damages, AttackPair{OID: oid, DamagePairs: damagePairs})
 	}
-
-	damages := make([]AttackPair, 0, a.Targets)
-	for range int(a.Targets) {
-		oid, err := sr.ReadU32()
-		if err != nil {
-			return err
-		}
-
-		err = sr.Skip(14)
-		if err != nil {
-			return err
-		}
-
-		damagePairs := make([]DamagePair, 0, a.Hits)
-		for range int(a.Hits) {
-			damage, err := sr.ReadU32()
-			if err != nil {
-				return err
-			}
-
-			damagePairs = append(damagePairs, DamagePair{
-				Damage:  damage,
-				Unknown: false,
-			})
-		}
-
-		damages = append(damages, AttackPair{
-			OID:         oid,
-			DamagePairs: damagePairs,
-		})
-	}
-
-	if sr.Remaining() >= 4 {
-		x, err := sr.Read16()
-		if err != nil {
-			return err
-		}
-		y, err := sr.Read16()
-		if err != nil {
-			return err
-		}
-		a.Position = types.Vector2[int16]{X: x, Y: y}
-	}
-
-	a.Damages = damages
-	return nil
+	return damages
 }
 
 func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
@@ -170,19 +91,18 @@ func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
 	sw.WriteU8((a.Targets << 4) | a.Hits)
 	sw.WriteU32(a.Skill)
 
-	switch a.Skill {
-	case 2121001:
-	case 2221001:
-	case 2321001:
-	case 3221001:
-	case 3121004:
-	case 13111002:
-	case 5101004:
-	case 15101003:
-	case 5221004:
-	case 5201002:
+	switch constant.SkillID(a.Skill) {
+	case constant.SkillBigBang,
+		constant.SkillBigBang2221001,
+		constant.SkillBigBang2321001,
+		constant.SkillPiercing,
+		constant.SkillStormArrow,
+		constant.SkillStormArrowCygnus,
+		constant.SkillCorkscrewBlow,
+		constant.SkillCorkscrewBlowCygnus,
+		constant.SkillRapidFire,
+		constant.SkillGrenade:
 		sw.WriteU32(a.Charge)
-	default:
 	}
 
 	sw.WriteU8(0)
@@ -200,7 +120,6 @@ func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
 	for _, damage := range a.Damages {
 		sw.WriteU32(damage.OID)
 		sw.Write(make([]byte, 14))
-
 		for _, pair := range damage.DamagePairs {
 			sw.WriteU32(pair.Damage)
 		}

@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -34,22 +34,21 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		return fmt.Errorf("client is not a GameClient")
 	}
 
-	character := client.GetCharacter()
-	if character == nil {
+	ch := client.GetCharacter()
+	if ch == nil {
 		log.Printf("Character not found for client")
 		return fmt.Errorf("character not found")
 	}
 
-	mapInstance := h.gs.GetMap(character.GetMap())
+	mapInstance := ch.GetMap()
 	if mapInstance == nil {
-		log.Printf("Map %d not found", character.GetMap())
-		return fmt.Errorf("map %d not found", character.GetMap())
+		log.Printf("Character not on a map")
+		return fmt.Errorf("map not found")
 	}
 
 	mob := mapInstance.GetMob(req.OID)
 	if mob == nil {
-		log.Printf("Mob %d not found on map %d", req.OID, character.GetMap())
-		return fmt.Errorf("mob %d not found", req.OID)
+		return nil
 	}
 
 	controllerTable := mapInstance.GetControllerTable()
@@ -59,7 +58,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		return fmt.Errorf("no controller found for this mob")
 	}
 
-	if controller.GetID() != character.GetID() {
+	if controller.GetID() != ch.GetID() {
 		return nil
 	}
 
@@ -73,11 +72,11 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		mob.Stance = mnt.GetStance()
 	}
 
-	character.Listener.OnControlMoveMob(req.OID, uint8(req.MovementId), req.IsAggroed, mob.Mp, 0, 0)
+	ch.Listener.OnControlMoveMob(ch, mob, req.MovementId, req.IsAggroed, uint16(min(mob.Mp, 65535)), 0, 0)
 
-	character.Listener.OnMobMoved(
-		character.GetMap(),
-		req.OID,
+	ch.Listener.OnMobMoved(
+		ch,
+		mob,
 		req.IsAggroed,
 		req.CenterSplit,
 		req.Skill1,

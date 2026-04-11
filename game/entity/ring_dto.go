@@ -35,4 +35,3 @@ func RingsToDTO(rings []*Ring) []*dto.Ring {
 	}
 	return result
 }
-

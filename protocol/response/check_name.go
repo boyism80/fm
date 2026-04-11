@@ -20,6 +20,5 @@ func (a *CheckName) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *CheckName) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *CheckName) Deserialize(reader *stream.StreamReader) {
 }

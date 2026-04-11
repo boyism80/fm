@@ -1,8 +1,9 @@
 package response
 
 import (
-	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/stream"
 )
 
 type Attack struct {
@@ -35,7 +36,7 @@ func (a *Attack) Serialize(writer *stream.StreamWriter) error {
 		if oned.DamagePairs != nil {
 			writer.WriteU32(oned.OID)
 			writer.WriteU8(0x07)
-			if a.Skill == 4211006 {
+			if a.Skill == uint32(constant.SkillMesoExplosion) {
 				writer.WriteU8(uint8(len(oned.DamagePairs)))
 			}
 
@@ -51,12 +52,9 @@ func (a *Attack) Serialize(writer *stream.StreamWriter) error {
 
 	if a.Charge > 0 {
 		writer.WriteU32(a.Charge)
-	} else {
-		writer.WriteU32(0)
 	}
 	return nil
 }
 
-func (a *Attack) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *Attack) Deserialize(reader *stream.StreamReader) {
 }

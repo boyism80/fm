@@ -1,149 +1,124 @@
 package entity
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
+	"time"
 
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
-	lua "github.com/yuin/gopher-lua"
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/types"
 )
 
 type Mob struct {
-	Life
-	Wz       *wz.Mob
-	Foothold int16
-	MapID    uint32    // Map ID where this mob is located
-	Spawn    *MobSpawn // Spawn point where this mob was spawned (nil if not from a spawn point)
+	LifeCore
+	Wz           *wz.Mob
+	Foothold     int16
+	Spawn        *MobSpawn
+	mobBuffs     *MobBuffContainer
+	ExpRate      int32
+	DropRate     int32
+	stealOutcome *uint32
 }
 
-// Luable interface implementation
-func (m *Mob) LuaTypeName() string {
-	return "LuaMob"
+func (m *Mob) GetObjectType() constant.ObjectType {
+	return constant.ObjectTypeMob
 }
 
-func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	return map[string]lua.LGFunction{
-		"id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
+func (m *Mob) Is(typ constant.ObjectType) bool {
+	return m.GetObjectType().Has(typ)
+}
 
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return id
-				L.Push(lua.LNumber(mob.Wz.ID))
-				return 1
-			} else {
-				L.ArgError(2, "id() is read-only")
-				return 0
-			}
-		},
-		"name": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return name (using ID as name for now)
-				L.Push(lua.LString(fmt.Sprintf("Mob_%d", mob.Wz.ID)))
-				return 1
-			} else {
-				L.ArgError(2, "name() is read-only")
-				return 0
-			}
-		},
-		"exp": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return exp
-				L.Push(lua.LNumber(mob.Wz.EXP))
-				return 1
-			} else {
-				L.ArgError(2, "exp() is read-only")
-				return 0
-			}
-		},
-		"foothold": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return foothold
-				L.Push(lua.LNumber(mob.Foothold))
-				return 1
-			} else if argc == 2 {
-				// Setter: foothold(value)
-				foothold := L.CheckInt(2)
-				mob.Foothold = int16(foothold)
-				return 0
-			} else {
-				L.ArgError(2, "foothold() requires 0 or 1 arguments")
-				return 0
-			}
-		},
-		"map_id": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc == 1 {
-				// Getter: return map_id
-				L.Push(lua.LNumber(mob.MapID))
-				return 1
-			} else if argc == 2 {
-				// Setter: map_id(value)
-				mapID := L.CheckInt(2)
-				if mapID < 0 {
-					mapID = 0
-				}
-				mob.MapID = uint32(mapID)
-				return 0
-			} else {
-				L.ArgError(2, "map_id() requires 0 or 1 arguments")
-				return 0
-			}
-		},
+func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
+	if m == nil || viewer == nil {
+		return
 	}
+	viewer.Send(&response.SpawnMob{
+		Mob:       m.ToDTO(),
+		SpawnType: constant.MOB_SPAWN_TYPE_NONE,
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (m *Mob) String() string {
-	return m.LuaTypeName()
+func (m *Mob) ensureMobBuffs() *MobBuffContainer {
+	if m.mobBuffs == nil {
+		m.mobBuffs = NewMobBuffContainer(m)
+	}
+	return m.mobBuffs
 }
 
-func (m *Mob) Type() lua.LValueType {
-	return lua.LTUserData
+func (m *Mob) GetMobBuffValue(flag constant.MobBuffFlag) int32 {
+	if m.mobBuffs == nil {
+		return 0
+	}
+	return m.mobBuffs.getValue(flag)
 }
 
-// Serialize method removed - use DTO instead
+func (m *Mob) GetMobBuffStack(flag constant.MobBuffFlag) uint8 {
+	if m.mobBuffs == nil {
+		return 0
+	}
+	return m.mobBuffs.getStack(flag)
+}
+
+func (m *Mob) SetMobBuffStack(flag constant.MobBuffFlag, stack uint8) bool {
+	if m.mobBuffs == nil {
+		return false
+	}
+	return m.mobBuffs.setStack(flag, stack)
+}
+
+func (m *Mob) ApplyMobBuff(flag constant.MobBuffFlag, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
+	if stack < 1 {
+		stack = 1
+	}
+	now := time.Now()
+	m.ensureMobBuffs().AddSkillBuff(now, durationMs, skillWz, skillLevel, causerOID,
+		map[constant.MobBuffFlag]int32{flag: value},
+		map[constant.MobBuffFlag]uint8{flag: stack})
+}
+
+func (m *Mob) CancelMobBuff(flag constant.MobBuffFlag) {
+	if m.mobBuffs == nil {
+		return
+	}
+	m.mobBuffs.RemoveBuffForFlag(flag)
+}
+
+func (m *Mob) HasBuff(flag constant.MobBuffFlag) bool {
+	if m.mobBuffs == nil {
+		return false
+	}
+	return m.mobBuffs.hasFlag(flag)
+}
+
+func (m *Mob) GetCauserCharacterID(flag constant.MobBuffFlag) uint32 {
+	if m.mobBuffs == nil {
+		return 0
+	}
+	return m.mobBuffs.causerForFlag(flag)
+}
+
+func (m *Mob) ClearAllMobBuffTimers() {
+	m.mobBuffs = nil
+}
+
+func (m *Mob) RemoveExpiredMobBuffs(now time.Time) {
+	if m == nil || m.mobBuffs == nil {
+		return
+	}
+	m.mobBuffs.removeExpiredEntities(now)
+}
+
+func (m *Mob) getMobBuffMaskAndEntries() (mask uint32, entries []mobBuffForPacket) {
+	if m.mobBuffs == nil {
+		return 0, nil
+	}
+	return m.mobBuffs.flattenForSpawnPacket()
+}
 
 func (m *Mob) dropItems(attacker *Character) {
-	// Get map instance
-	mapInstance := m.Context.GetMap(m.MapID)
+	mapInstance := m.GetMap()
 	if mapInstance == nil {
 		return
 	}
@@ -154,38 +129,56 @@ func (m *Mob) dropItems(attacker *Character) {
 		return
 	}
 
-	// Collect all drops first to calculate positions
 	var drops []struct {
 		isMeso bool
 		count  int32
 		item   Item
 	}
 
-	// Get drop rate from context
 	dropRate := float32(m.Context.GetDropRate())
 	mesoRate := float32(m.Context.GetMesoRate())
+	dropRateMul := int16(100)
+	mesoAmountMul := int16(100)
+	if attacker.BonusStats.DropRate > 0 {
+		dropRateMul = attacker.BonusStats.DropRate
+	}
+	if attacker.BonusStats.MesoMultiplier > 0 {
+		mesoAmountMul = attacker.BonusStats.MesoMultiplier
+	}
+	dropRateMulF := float32(dropRateMul) / 100.0
+	mesoAmountMulF := float32(mesoAmountMul) / 100.0
+
+	mobDrop := m.DropRate
+	if mobDrop <= 0 {
+		mobDrop = 100
+	}
+	mobDropF := float32(mobDrop) / 100.0
 
 	for _, drop := range mobDrops {
-		adjustedProb := drop.Prob * dropRate
+		if m.stealOutcome != nil && drop.Item != 0 && *m.stealOutcome == drop.Item {
+			continue
+		}
+		adjustedProb := drop.Prob * dropRate * dropRateMulF * mobDropF
 		if adjustedProb > 1.0 {
 			adjustedProb = 1.0
 		}
 
-		// Check drop probability
 		if rand.Float32() > adjustedProb {
 			continue
 		}
 
 		if drop.Item == 0 {
-			// Generate meso drop (apply meso rate)
 			min := float64(drop.Money) * 0.75
 			max := float64(drop.Money)
 			count := int32(min + rand.Float64()*(max-min))
 			if count == 0 {
 				continue
 			}
-			// Apply meso rate multiplier
 			count = int32(float32(count) * mesoRate)
+			if count == 0 {
+				continue
+			}
+			count = int32(float32(count) * mesoAmountMulF)
 			if count == 0 {
 				continue
 			}
@@ -195,16 +188,15 @@ func (m *Mob) dropItems(attacker *Character) {
 				item   Item
 			}{isMeso: true, count: count, item: nil})
 		} else {
-			// Generate item drop
+
 			count := uint16(1)
 			if drop.Max != 0 && drop.Min != 0 {
 				count = uint16(rand.Intn(int(drop.Max-drop.Min)+1) + int(drop.Min))
 			}
 
-			// Create item using NewItem function
 			item, err := NewItem(drop.Item, count, m.Context)
 			if err != nil {
-				continue // Skip if item creation fails
+				continue
 			}
 			drops = append(drops, struct {
 				isMeso bool
@@ -229,24 +221,25 @@ func (m *Mob) dropItems(attacker *Character) {
 		}
 
 		if drop.isMeso {
-			// Spawn meso drop
-			if err := mapInstance.SpawnMeso(drop.count, destPoint, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
+
+			if _, err := mapInstance.SpawnMeso(drop.count, destPoint, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
 				log.Printf("Failed to spawn meso drop: %v", err)
 			}
 		} else {
-			// Bind drop information to item
-			drop.item.BindDrop(&Drop{
-				Object: &Object{
-					OID:      0,         // Will be set by Map.SpawnItem
-					Position: destPoint, // Use calculated position (X calculated, Y is mob Y)
+
+			d := &Drop{
+				ObjectCore: &ObjectCore{
+					OID:      0,
+					Position: destPoint,
 					Context:  m.Context,
 				},
 				Owner:        attacker.GetID(),
 				SpawnedPoint: spawnPoint,
 				DropType:     constant.DROP_TYPE_OWNED,
-			})
+			}
+			d.ObjectCore.self = d
+			drop.item.BindDrop(d)
 
-			// Spawn item drop
 			if err := mapInstance.SpawnItem(drop.item, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}
@@ -254,34 +247,58 @@ func (m *Mob) dropItems(attacker *Character) {
 	}
 }
 
-// Damage applies damage to the mob and handles all death-related logic
-func (m *Mob) Damage(damage uint16, attacker *Character) bool {
-	if damage > m.Hp {
-		damage = m.Hp
-	}
-	m.Hp -= damage
-	isDead := m.Hp == 0
-	if !isDead {
+func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
+	if amount == 0 || m.Hp == 0 {
 		return false
 	}
 
-	// Mob dies - handle all death-related logic
-	log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
+	damage := amount
+	if damage > uint32(m.Hp) {
+		damage = uint32(m.Hp)
+	}
 
-	// Add experience to character
-	attacker.AddExp(uint32(m.Wz.EXP))
+	m.Hp -= damage
+	isDead := m.Hp == 0
 
-	// Generate mob drops
-	m.dropItems(attacker)
+	if !isDead {
+		if attacker != nil {
+			maxHp := m.GetMaxHp()
+			if maxHp == 0 {
+				return false
+			}
+			percent := min(uint32(m.Hp)*100/uint32(maxHp), 100)
+			attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
+		}
+		return false
+	}
 
-	// Remove mob from map
-	mapInstance := m.Context.GetMap(m.MapID)
+	if attacker != nil {
+		log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
+
+		exp := uint32(m.Wz.EXP)
+		if attacker.BonusStats.ExpRate > 0 {
+			exp = exp * uint32(attacker.BonusStats.ExpRate) / 100
+		}
+		mobExp := m.ExpRate
+		if mobExp <= 0 {
+			mobExp = 100
+		}
+		exp = exp * uint32(mobExp) / 100
+		attacker.AddExp(exp)
+
+		m.dropItems(attacker)
+	} else {
+		log.Printf("Mob %d (ID: %d) killed with no attacker", m.OID, m.Wz.ID)
+	}
+
+	mapInstance := m.GetMap()
 	if mapInstance != nil {
 		mapInstance.RemoveMob(m.OID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT)
 	}
 
-	// Send mob HP update to attacker via listener
-	attacker.Listener.OnShowMobHp(m.OID, uint8(m.Hp*100/m.MaxHp))
+	if attacker != nil {
+		attacker.Listener.OnShowMobHp(attacker, m, 0)
+	}
 
 	return true
 }

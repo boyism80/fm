@@ -334,7 +334,8 @@ func loadConsumes(path string) (*[]*Consume, error) {
 }
 
 // loadWeapons loads weapon and equipment specifications from XML file.
-func loadWeapons(path string) (*Equipment, error) {
+// Returns *Weapon for path under Character.wz/Weapon/, *Armor for other equipment (Cap, Coat, etc.).
+func loadWeapons(path string) (Item, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -346,7 +347,7 @@ func loadWeapons(path string) (*Equipment, error) {
 		return nil, err
 	}
 
-	model := Equipment{
+	model := EquipmentCore{
 		ItemCore: &ItemCore{},
 	}
 	id, err := strconv.Atoi(strings.TrimSuffix(root.Name, ".img"))
@@ -405,7 +406,7 @@ func loadWeapons(path string) (*Equipment, error) {
 		case "incMMP":
 			model.Ability.MaxMP = uint16(intField.Value)
 		case "tuc":
-			model.TUC = uint8(intField.Value)
+			model.EnchantChance = uint8(intField.Value)
 		case "price":
 			model.Price = intField.Value
 		case "attackSpeed":
@@ -542,11 +543,15 @@ func loadWeapons(path string) (*Equipment, error) {
 		model.SlotMax = 1 // Equipment default
 	}
 
-	return &model, nil
+	eq := &model
+	if constant.GetEquipmentType(model.ID) == constant.EquipmentTypeWeapon {
+		return &Weapon{EquipmentCore: eq}, nil
+	}
+	return &Armor{EquipmentCore: eq}, nil
 }
 
-// loadGeneralItems loads general item specifications from XML file.
-func loadGeneralItems(path string) (*[]*GeneralItem, error) {
+// loadMiscItems loads misc item specifications from XML file.
+func loadMiscItems(path string) (*[]*MiscItem, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -558,9 +563,9 @@ func loadGeneralItems(path string) (*[]*GeneralItem, error) {
 		return nil, err
 	}
 
-	specs := []*GeneralItem{}
+	specs := []*MiscItem{}
 	for _, v := range root.Children {
-		model := GeneralItem{
+		model := MiscItem{
 			ItemCore: &ItemCore{},
 		}
 
@@ -641,9 +646,9 @@ func loadGeneralItems(path string) (*[]*GeneralItem, error) {
 			}
 		}
 
-		// Set default slotMax for GeneralItem if not specified (EQUIP = 1, others = 100)
+		// Set default slotMax for MiscItem if not specified (EQUIP = 1, others = 100)
 		if model.SlotMax == 0 {
-			model.SlotMax = 100 // GeneralItem default
+			model.SlotMax = 100 // MiscItem default
 		}
 
 		specs = append(specs, &model)
@@ -790,6 +795,13 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				f, err := strconv.ParseFloat(v.Value, 32)
 				if err == nil {
 					model.MobRate = float32(f)
+				}
+			case "recoveryRate":
+				f, err := strconv.ParseFloat(v.Value, 32)
+				if err == nil && f > 0 {
+					model.RecoveryRate = float32(f)
+				} else {
+					model.RecoveryRate = 1.0
 				}
 			case "bgm":
 				model.BGM = v.Value
@@ -1343,24 +1355,24 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 				}
 			}
 
-			// Skip throwing stars except ITEM_THROWING_STAR_BASE
+			// Skip shurikens except ITEM_SHURIKEN_BASE
 			if item.ItemID > 0 {
-				if item.ItemID/10000 == constant.ITEM_CATEGORY_THROWING_STAR && item.ItemID != constant.ITEM_THROWING_STAR_BASE {
+				if item.ItemID/10000 == constant.ITEM_CATEGORY_SHURIKEN && item.ItemID != constant.ITEM_SHURIKEN_BASE {
 					continue
 				}
 				shop.Items = append(shop.Items, item)
 			}
 		}
 
-		rechargeableItems := make([]uint32, 0, len(constant.RechargeableThrowingStars)+len(constant.RechargeableBullets))
-		rechargeableItems = append(rechargeableItems, constant.RechargeableThrowingStars...)
+		rechargeableItems := make([]uint32, 0, len(constant.RechargeableShurikens)+len(constant.RechargeableBullets))
+		rechargeableItems = append(rechargeableItems, constant.RechargeableShurikens...)
 		rechargeableItems = append(rechargeableItems, constant.RechargeableBullets...)
 
 		// Track which rechargeable items are already in the shop
 		existingRechargeable := make(map[uint32]bool)
 		for _, existingItem := range shop.Items {
 			category := existingItem.ItemID / 10000
-			if category == constant.ITEM_CATEGORY_THROWING_STAR || category == constant.ITEM_CATEGORY_BULLET {
+			if category == constant.ITEM_CATEGORY_SHURIKEN || category == constant.ITEM_CATEGORY_BULLET {
 				existingRechargeable[existingItem.ItemID] = true
 			}
 		}
@@ -1444,6 +1456,8 @@ func loadMob(path string) (*Mob, error) {
 			model.SummonType = uint8(intField.Value)
 		case "mobType":
 			model.MobType = uint8(intField.Value)
+		case "boss":
+			model.Boss = (intField.Value != 0)
 		}
 	}
 
@@ -1459,6 +1473,17 @@ func loadMob(path string) (*Mob, error) {
 	for _, iv := range info.Children {
 		switch iv.Name {
 		case "elemAttr":
+			for _, el := range iv.Children {
+				key := strings.ToLower(el.Name)
+				for _, inf := range el.Ints {
+					if inf.Name == "value" {
+						if model.ElemResist == nil {
+							model.ElemResist = make(map[string]int)
+						}
+						model.ElemResist[key] = inf.Value
+					}
+				}
+			}
 		case "PDRate":
 		case "MDRate":
 		case "category":
@@ -1470,6 +1495,7 @@ func loadMob(path string) (*Mob, error) {
 		case "flySpeed":
 		case "mpRecovery":
 		case "boss":
+			model.Boss = true
 		case "hpRecovery":
 		case "removeAfter":
 		case "revive":
@@ -1507,7 +1533,7 @@ func loadMob(path string) (*Mob, error) {
 		case "invincible":
 		case "hideHP":
 		case "hideName":
-		case "noDebuff":
+		case "noMobStatus":
 		case "charismaEXP":
 		case "willEXP":
 		case "fixedBodyAttackDamageR":
@@ -1641,6 +1667,8 @@ func loadDrops(path string) (*map[uint32][]Drop, error) {
 					model.Min = uint16(intField.Value)
 				case "max":
 					model.Max = uint16(intField.Value)
+				case "quest", "questid":
+					model.QuestID = uint32(intField.Value)
 				}
 			}
 
@@ -1744,9 +1772,9 @@ func loadExpTable(path string) ([]uint32, error) {
 	return expTable, nil
 }
 
-// loadSkillJobFile loads all skills from a job's .img.xml file
+// loadSkillClassFile loads all skills from a job's .img.xml file
 // Structure: Skill.wz/{job}.img.xml contains skill/{skillid} nodes
-func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
+func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -1777,6 +1805,13 @@ func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
 		skill := &Skill{
 			ID:        uint32(skillID),
 			LevelData: make(map[int]*SkillLevelData),
+		}
+
+		for _, strField := range skillChild.Strings {
+			switch strField.Name {
+			case "elemAttr":
+				skill.ElemAttr = strField.Value
+			}
 		}
 
 		for _, intField := range skillChild.Ints {
@@ -1847,16 +1882,117 @@ func loadSkillJobFile(path string) (map[uint32]*Skill, error) {
 
 				levelData := &SkillLevelData{}
 
+				// Parse int fields
 				for _, intField := range levelChild.Ints {
 					switch intField.Name {
 					case "mpCon":
 						levelData.MPCon = intField.Value
-					case "cooltime":
-						levelData.Cooldown = intField.Value
-					case "damage":
-						levelData.Damage = intField.Value
 					case "hpCon":
 						levelData.HPCon = intField.Value
+					case "moneyCon":
+						levelData.MoneyCon = intField.Value
+					case "itemCon":
+						levelData.ItemCon = intField.Value
+					case "itemConNo":
+						levelData.ItemConNo = intField.Value
+					case "itemConsume":
+						levelData.ItemConsume = intField.Value
+					case "bulletConsume":
+						levelData.BulletConsume = intField.Value
+					case "bulletCount":
+						levelData.BulletCount = intField.Value
+					case "damage":
+						levelData.Damage = intField.Value
+					case "damagepc":
+						levelData.DamagePC = intField.Value
+					case "fixdamage":
+						levelData.FixDamage = intField.Value
+					case "criticalDamage":
+						levelData.CriticalDamage = intField.Value
+					case "attackCount":
+						levelData.AttackCount = intField.Value
+					case "mobCount":
+						levelData.MobCount = intField.Value
+					case "pad":
+						levelData.PAD = intField.Value
+					case "mad":
+						levelData.MAD = intField.Value
+					case "pdd":
+						levelData.PDD = intField.Value
+					case "mdd":
+						levelData.MDD = intField.Value
+					case "eva":
+						levelData.EVA = intField.Value
+					case "acc":
+						levelData.ACC = intField.Value
+					case "str":
+						levelData.STR = intField.Value
+					case "hp":
+						levelData.HP = intField.Value
+					case "mp":
+						levelData.MP = intField.Value
+					case "jump":
+						levelData.Jump = intField.Value
+					case "speed":
+						levelData.Speed = intField.Value
+					case "mastery":
+						levelData.Mastery = intField.Value
+					case "prop":
+						levelData.Prop = intField.Value
+					case "range":
+						levelData.Range = intField.Value
+					case "time":
+						levelData.Time = time.Duration(intField.Value) * time.Second
+					case "cooltime":
+						levelData.Cooldown = time.Duration(intField.Value) * time.Second
+					case "morph":
+						levelData.Morph = intField.Value
+					case "x":
+						levelData.X = intField.Value
+					case "y":
+						levelData.Y = intField.Value
+					case "z":
+						levelData.Z = intField.Value
+					}
+				}
+
+				// Parse string fields
+				for _, strField := range levelChild.Strings {
+					switch strField.Name {
+					case "damage":
+						// String value is parsed as int
+						if val, err := strconv.Atoi(strField.Value); err == nil {
+							levelData.Damage = val
+						}
+					case "attackCount":
+						// String value is parsed as int
+						if val, err := strconv.Atoi(strField.Value); err == nil {
+							levelData.AttackCount = val
+						}
+					case "acc":
+						// String value is parsed as int
+						if val, err := strconv.Atoi(strField.Value); err == nil {
+							levelData.ACC = val
+						}
+					case "time":
+						// String value is parsed as int (WZ time is in seconds)
+						if val, err := strconv.Atoi(strField.Value); err == nil {
+							levelData.Time = time.Duration(val) * time.Second
+						}
+					case "hs":
+						levelData.HS = strField.Value
+					case "action":
+						levelData.Action = strField.Value
+					}
+				}
+
+				// Parse vector fields
+				for _, vecField := range levelChild.Vectors {
+					switch vecField.Name {
+					case "lt":
+						levelData.LT = types.Vector2[int32]{X: int32(vecField.X), Y: int32(vecField.Y)}
+					case "rb":
+						levelData.RB = types.Vector2[int32]{X: int32(vecField.X), Y: int32(vecField.Y)}
 					}
 				}
 

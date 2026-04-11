@@ -53,7 +53,7 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 
 	// Send empty stat update packet first (for client synchronization)
 	stats := map[constant.Stat]int32{}
-	character.Listener.OnUpdateStats(stats, true)
+	character.Listener.OnUpdateStats(character, stats, true)
 
 	// Check if remaining AP matches the total amount
 	totalAmount := req.Amount + req.Amount2
@@ -67,24 +67,24 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 	// Process primary stat
 	if !h.processStat(character, req.PrimaryStat, req.Amount, &statUpdate) {
 		// Invalid primary stat - send empty stat update
-		character.Listener.OnUpdateStats(stats, true)
+		character.Listener.OnUpdateStats(character, stats, true)
 		return nil
 	}
 
 	// Process secondary stat
 	if !h.processStat(character, req.SecondaryStat, req.Amount2, &statUpdate) {
 		// Invalid secondary stat - send empty stat update
-		character.Listener.OnUpdateStats(stats, true)
+		character.Listener.OnUpdateStats(character, stats, true)
 		return nil
 	}
 
 	if success {
 		// Decrease AP
-		character.AbilityPoint -= uint16(totalAmount)
+		character.AbilityPoint = character.AbilityPoint - uint16(totalAmount)
 		statUpdate[constant.STAT_AVAILABLE_AP] = int32(character.AbilityPoint)
 
 		// Send stat update packet
-		character.Listener.OnUpdateStats(statUpdate, true)
+		character.Listener.OnUpdateStats(character, statUpdate, true)
 	}
 
 	return nil
@@ -95,35 +95,51 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 func (h *AutoAssignAP) processStat(character *entity.Character, statType uint32, amount uint32, statUpdate *map[constant.Stat]int32) bool {
 	switch constant.StatType(statType) {
 	case constant.STAT_TYPE_STR:
-		if character.Str+uint16(amount) > constant.STAT_MAX_STR_DEX_INT_LUK {
+		if character.GetTotalStr()+uint16(amount) > constant.STAT_MAX_STR_DEX_INT_LUK {
 			return false
 		}
-		character.Str += uint16(amount)
-		(*statUpdate)[constant.STAT_STR] = int32(character.Str)
+		newStr := character.BaseStats.Str + uint16(amount)
+		if newStr > constant.STAT_MAX_STR_DEX_INT_LUK {
+			newStr = constant.STAT_MAX_STR_DEX_INT_LUK
+		}
+		character.BaseStats.Str = newStr
+		(*statUpdate)[constant.STAT_STR] = int32(character.GetTotalStr())
 		return true
 
 	case constant.STAT_TYPE_DEX:
-		if character.Dex+uint16(amount) > constant.STAT_MAX_STR_DEX_INT_LUK {
+		if character.GetTotalDex()+uint16(amount) > constant.STAT_MAX_STR_DEX_INT_LUK {
 			return false
 		}
-		character.Dex += uint16(amount)
-		(*statUpdate)[constant.STAT_DEX] = int32(character.Dex)
+		newDex := character.BaseStats.Dex + uint16(amount)
+		if newDex > constant.STAT_MAX_STR_DEX_INT_LUK {
+			newDex = constant.STAT_MAX_STR_DEX_INT_LUK
+		}
+		character.BaseStats.Dex = newDex
+		(*statUpdate)[constant.STAT_DEX] = int32(character.GetTotalDex())
 		return true
 
 	case constant.STAT_TYPE_INT:
-		if character.Int+uint16(amount) > constant.STAT_MAX_STR_DEX_INT_LUK {
+		if character.GetTotalInt()+uint16(amount) > constant.STAT_MAX_STR_DEX_INT_LUK {
 			return false
 		}
-		character.Int += uint16(amount)
-		(*statUpdate)[constant.STAT_INT] = int32(character.Int)
+		newInt := character.BaseStats.Int + uint16(amount)
+		if newInt > constant.STAT_MAX_STR_DEX_INT_LUK {
+			newInt = constant.STAT_MAX_STR_DEX_INT_LUK
+		}
+		character.BaseStats.Int = newInt
+		(*statUpdate)[constant.STAT_INT] = int32(character.GetTotalInt())
 		return true
 
 	case constant.STAT_TYPE_LUK:
-		if character.Luk+uint16(amount) > constant.STAT_MAX_STR_DEX_INT_LUK {
+		if character.GetTotalLuk()+uint16(amount) > constant.STAT_MAX_STR_DEX_INT_LUK {
 			return false
 		}
-		character.Luk += uint16(amount)
-		(*statUpdate)[constant.STAT_LUK] = int32(character.Luk)
+		newLuk := character.BaseStats.Luk + uint16(amount)
+		if newLuk > constant.STAT_MAX_STR_DEX_INT_LUK {
+			newLuk = constant.STAT_MAX_STR_DEX_INT_LUK
+		}
+		character.BaseStats.Luk = newLuk
+		(*statUpdate)[constant.STAT_LUK] = int32(character.GetTotalLuk())
 		return true
 
 	default:

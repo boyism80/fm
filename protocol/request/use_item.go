@@ -11,26 +11,13 @@ type UseItem struct {
 	ItemID uint32
 }
 
-func (p *UseItem) Opcode() uint16 {
-	return 0x37
-}
-
 func (p *UseItem) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UseItem) Deserialize(reader *stream.StreamReader) error {
-	var err error
+func (p *UseItem) Deserialize(reader *stream.StreamReader) {
+	p.Tick = reader.ReadU32()
+	p.Slot = reader.ReadU16()
+	p.ItemID = reader.ReadU32()
 
-	if p.Tick, err = reader.ReadU32(); err != nil {
-		return err
-	}
-	if p.Slot, err = reader.ReadU16(); err != nil {
-		return err
-	}
-	if p.ItemID, err = reader.ReadU32(); err != nil {
-		return err
-	}
-
-	return nil
 }

@@ -112,6 +112,13 @@ func (n *QuadTreeNode[T, U]) relations(p Vector2[T]) []U {
 	return list
 }
 
+func (n *QuadTreeNode[T, U]) Relations(p Vector2[T]) []U {
+	if n == nil {
+		return nil
+	}
+	return n.relations(p)
+}
+
 func (n *QuadTreeNode[T, U]) Find(p Vector2[T]) (*U, bool) {
 	relations := n.relations(p)
 	items := []U{}

@@ -1,0 +1,50 @@
+-- Skill name (String.wz/Skill.img.xml): 드래곤 블러드
+
+local TIMER_KEY = "dragon_blood"
+local INTERVAL_MS = 4000
+
+local function params(skill)
+    if skill == nil then
+        return 20
+    end
+    local effect = skill:effect()
+    if effect == nil then
+        return 0, 0
+    end
+
+    return effect.x, effect.pad
+end
+
+function on_activated_1311008(me, skill, params)
+    local hp_loss, bonus = params(skill)
+    local buff = me:buff(skill, {[BuffFlag.DragonBlood] = hp_loss, [BuffFlag.WeaponAtk] = bonus})
+end
+
+function on_buff_1311008(me, skill)
+    local hp_loss = me:buff_value(BuffFlag.DragonBlood)
+    if hp_loss == nil then
+        return
+    end
+    me:mktimer(TIMER_KEY, INTERVAL_MS, true, on_tick, hp_loss)
+end
+
+function on_tick(me, hp_loss)
+    local v = math.floor(hp_loss)
+    if v <= 0 then
+        return
+    end
+    if me:hp() > v then
+        me:add_hp(-v)
+    else
+        me:unbuff(BuffFlag.DragonBlood)
+    end
+end
+
+function on_unbuff_1311008(me, skill)
+    local success = me:rmtimer(TIMER_KEY)
+    if success then
+        me:chat('remove timer success')
+    else
+        me:chat('remove timer failed')
+    end
+end

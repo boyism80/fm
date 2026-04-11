@@ -3,9 +3,9 @@ package response
 import (
 	"errors"
 
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/stream"
 )
 
 type AddItem struct {
@@ -29,8 +29,7 @@ func (p *AddItem) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *AddItem) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *AddItem) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *AddItem) Opcode() uint16 {

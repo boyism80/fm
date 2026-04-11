@@ -54,14 +54,8 @@ func (prs *RandomStream) Serialize(writer *StreamWriter) error {
 
 	prs.crand32Seed(v5, s2, v6)
 
-	if err := writer.Write32(int32(v5)); err != nil {
-		return err
-	}
-	if err := writer.Write32(int32(s2)); err != nil {
-		return err
-	}
-	if err := writer.Write32(int32(v6)); err != nil {
-		return err
-	}
+	writer.Write32(int32(v5))
+	writer.Write32(int32(s2))
+	writer.Write32(int32(v6))
 	return nil
 }

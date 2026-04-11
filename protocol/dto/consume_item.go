@@ -7,17 +7,13 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// ConsumeItem represents consume item DTO
 type ConsumeItem struct {
-	ItemId          uint32
-	UniqueId        int64
-	Count           uint16
-	Expiration      time.Time
-	OwnerName       string
-	Flags           uint16
-	IsThrowingStart bool
-	IsBullet        bool
-	IsWhat          bool
+	ItemId     uint32
+	UniqueId   int64
+	Count      uint16
+	Expiration time.Time
+	OwnerName  string
+	Flags      uint16
 }
 
 func (i *ConsumeItem) GetCount() uint16 {
@@ -40,9 +36,8 @@ func (i *ConsumeItem) Serialize(writer *stream.StreamWriter, trade bool, slot in
 	writer.WriteStr16(i.OwnerName)
 	writer.WriteU16(i.Flags)
 
-	// Special case: inventoryId for certain item types
-	inventoryId := uint64(54399043)
-	if i.IsThrowingStart || i.IsBullet || i.IsWhat {
-		writer.WriteU64(inventoryId)
+	switch constant.GetConsumeType(i.ItemId) {
+	case constant.ConsumeTypeShuriken, constant.ConsumeTypeBullet:
+		writer.WriteU64(54399043)
 	}
 }

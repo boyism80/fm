@@ -130,29 +130,23 @@ func (m *TeleportMovement) Serialize(writer *stream.StreamWriter) {
 }
 
 // ReadMovements reads movement fragments from stream
-func ReadMovements(reader *stream.StreamReader) ([]MoveFragment, error) {
-	numCommands, err := reader.ReadU8()
-	if err != nil {
-		return nil, err
-	}
+func ReadMovements(reader *stream.StreamReader) []MoveFragment {
+	numCommands := reader.ReadU8()
 
 	fragments := make([]MoveFragment, 0, numCommands)
 
 	for range int(numCommands) {
-		cmd, err := reader.ReadU8()
-		if err != nil {
-			return nil, err
-		}
+		cmd := reader.ReadU8()
 
 		switch cmd {
 		case 0, 5, 17:
-			x, _ := reader.Read16()
-			y, _ := reader.Read16()
-			vx, _ := reader.Read16()
-			vy, _ := reader.Read16()
-			foothold, _ := reader.Read16()
-			stance, _ := reader.ReadU8()
-			duration, _ := reader.Read16()
+			x := reader.Read16()
+			y := reader.Read16()
+			vx := reader.Read16()
+			vy := reader.Read16()
+			foothold := reader.Read16()
+			stance := reader.ReadU8()
+			duration := reader.Read16()
 
 			frag := AbsoluteLifeMovement{
 				BasicMovement: &BasicMovement{
@@ -168,14 +162,14 @@ func ReadMovements(reader *stream.StreamReader) ([]MoveFragment, error) {
 			fragments = append(fragments, &frag)
 
 		case 15:
-			x, _ := reader.Read16()
-			y, _ := reader.Read16()
-			vx, _ := reader.Read16()
-			vy, _ := reader.Read16()
-			unk, _ := reader.Read16()
-			foothold, _ := reader.Read16()
-			stance, _ := reader.ReadU8()
-			duration, _ := reader.Read16()
+			x := reader.Read16()
+			y := reader.Read16()
+			vx := reader.Read16()
+			vy := reader.Read16()
+			unk := reader.Read16()
+			foothold := reader.Read16()
+			stance := reader.ReadU8()
+			duration := reader.Read16()
 			frag := JumpDownMovement{
 				BasicMovement: &BasicMovement{
 					Command: cmd,
@@ -191,10 +185,10 @@ func ReadMovements(reader *stream.StreamReader) ([]MoveFragment, error) {
 			fragments = append(fragments, &frag)
 
 		case 1, 2, 6, 12, 13, 16:
-			x, _ := reader.Read16()
-			y, _ := reader.Read16()
-			stance, _ := reader.ReadU8()
-			duration, _ := reader.Read16()
+			x := reader.Read16()
+			y := reader.Read16()
+			stance := reader.ReadU8()
+			duration := reader.Read16()
 
 			frag := RelativeLifeMovement{
 				BasicMovement: &BasicMovement{
@@ -208,11 +202,11 @@ func ReadMovements(reader *stream.StreamReader) ([]MoveFragment, error) {
 			fragments = append(fragments, &frag)
 
 		case 3, 4, 7, 8, 9, 11:
-			x, _ := reader.Read16()
-			y, _ := reader.Read16()
-			vx, _ := reader.Read16()
-			vy, _ := reader.Read16()
-			stance, _ := reader.ReadU8()
+			x := reader.Read16()
+			y := reader.Read16()
+			vx := reader.Read16()
+			vy := reader.Read16()
+			stance := reader.ReadU8()
 
 			frag := TeleportMovement{
 				BasicMovement: &BasicMovement{
@@ -226,7 +220,7 @@ func ReadMovements(reader *stream.StreamReader) ([]MoveFragment, error) {
 			fragments = append(fragments, &frag)
 
 		case 10:
-			stance, _ := reader.ReadU8()
+			stance := reader.ReadU8()
 			frag := NoneMovement{
 				BasicMovement: &BasicMovement{
 					Command: cmd,
@@ -236,11 +230,11 @@ func ReadMovements(reader *stream.StreamReader) ([]MoveFragment, error) {
 			fragments = append(fragments, &frag)
 
 		case 14:
-			x, _ := reader.Read16()
-			y, _ := reader.Read16()
-			foothold, _ := reader.Read16()
-			stance, _ := reader.ReadU8()
-			duration, _ := reader.Read16()
+			x := reader.Read16()
+			y := reader.Read16()
+			foothold := reader.Read16()
+			stance := reader.ReadU8()
+			duration := reader.Read16()
 
 			frag := ChairMovement{
 				BasicMovement: &BasicMovement{
@@ -254,8 +248,8 @@ func ReadMovements(reader *stream.StreamReader) ([]MoveFragment, error) {
 			fragments = append(fragments, &frag)
 
 		default:
-			stance, _ := reader.ReadU8()
-			foothold, _ := reader.Read16()
+			stance := reader.ReadU8()
+			foothold := reader.Read16()
 			frag := AranMovement{
 				BasicMovement: &BasicMovement{
 					Command: cmd,
@@ -268,5 +262,5 @@ func ReadMovements(reader *stream.StreamReader) ([]MoveFragment, error) {
 		}
 	}
 
-	return fragments, nil
+	return fragments
 }

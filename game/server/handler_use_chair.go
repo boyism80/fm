@@ -9,7 +9,6 @@ import (
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
-	"github.com/boyism80/fm/types"
 )
 
 type UseChair struct {
@@ -40,41 +39,32 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 		return nil
 	}
 
-	mapID := character.GetMap()
-	mapInstance := h.gs.GetMap(mapID)
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return nil
 	}
 
 	setupInventory := character.Inventory[constant.INVENTORY_TYPE_INSTALLATION]
 	if setupInventory == nil {
-		if character.Listener != nil {
-			character.Listener.OnUpdateStats(nil, true)
-		}
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	item := setupInventory.FindById(req.ItemID)
 	if item == nil {
 		log.Printf("Chair item not found: %d", req.ItemID)
-		if character.Listener != nil {
-			character.Listener.OnUpdateStats(nil, true)
-		}
+		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
 	character.Chair = req.ItemID
 
-	showChairPacket := &response.ShowChair{
+	character.Broadcast(&response.ShowChair{
 		CharacterID: character.GetID(),
 		ItemID:      req.ItemID,
-	}
+	}, nil)
 
-	mapInstance.BroadcastToPlayers(showChairPacket, types.SEND_POLICY_ENCRYPT, character.GetID())
-
-	if character.Listener != nil {
-		character.Listener.OnUpdateStats(nil, true)
-	}
+	character.Listener.OnUpdateStats(character, nil, true)
 
 	return nil
 }

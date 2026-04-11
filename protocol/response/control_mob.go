@@ -43,17 +43,14 @@ func (p *StartControlMob) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *StartControlMob) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *StartControlMob) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *StopControlMob) Serialize(writer *stream.StreamWriter) error {
-	writer.WriteU16(p.Opcode())
 	writer.WriteU8(0)
 	writer.WriteU32(p.OID)
 	return nil
 }
 
-func (p *StopControlMob) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *StopControlMob) Deserialize(reader *stream.StreamReader) {
 }

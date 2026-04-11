@@ -1,6 +1,7 @@
 package crypt
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/boyism80/fm/stream"
@@ -102,19 +103,13 @@ func (m *Encryption) GetPacketHeader(length int) []byte {
 }
 
 func GetPacketLength(header []byte) (uint16, error) {
+	if len(header) < 4 {
+		return 0, fmt.Errorf("header too short")
+	}
 	sr := stream.NewStreamReader(&header, stream.LittleEndian)
-	hiword, err := sr.Read16()
-	if err != nil {
-		return 0, err
-	}
-
-	loword, err := sr.Read16()
-	if err != nil {
-		return 0, err
-	}
-
-	result := hiword ^ loword
-	return uint16(result), nil
+	hiword := sr.Read16()
+	loword := sr.Read16()
+	return uint16(hiword ^ loword), nil
 }
 
 func (m *Encryption) CheckPacketHeader(header []byte) bool {

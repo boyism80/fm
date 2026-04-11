@@ -1,8 +1,8 @@
 package response
 
 import (
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/stream"
 )
 
 type ShowMesoGain struct {
@@ -26,8 +26,7 @@ func (p *ShowMesoGain) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowMesoGain) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ShowMesoGain) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *ShowMesoGain) Opcode() uint16 {

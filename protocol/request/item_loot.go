@@ -15,15 +15,12 @@ func (p *ItemLoot) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ItemLoot) Deserialize(reader *stream.StreamReader) error {
-	p.Tick, _ = reader.ReadU32()
+func (p *ItemLoot) Deserialize(reader *stream.StreamReader) {
+	p.Tick = reader.ReadU32()
 	reader.Skip(1)
-	x, _ := reader.Read16()
-	y, _ := reader.Read16()
 	p.Position = types.Vector2[int16]{
-		X: x,
-		Y: y,
+		X: reader.Read16(),
+		Y: reader.Read16(),
 	}
-	p.OID, _ = reader.ReadU32()
-	return nil
+	p.OID = reader.ReadU32()
 }

@@ -14,7 +14,31 @@ var (
 	compileMu       sync.Mutex
 	compiledFuncs   = make(map[string]*lua.LFunction)
 	useCache        = os.Getenv("GO_ENV") != "development"
+	rootStates      sync.Map // map[string]*lua.LState, keyed by actor PID
 )
+
+// RegisterRootLuaState registers the root LState for the given actor PID (e.g. map actor).
+func RegisterRootLuaState(pid string, L *lua.LState) {
+	rootStates.Store(pid, L)
+}
+
+// GetRootLuaState returns the root LState for the actor PID, or nil if not registered.
+func GetRootLuaState(pid string) *lua.LState {
+	v, ok := rootStates.Load(pid)
+	if !ok {
+		return nil
+	}
+	return v.(*lua.LState)
+}
+
+// UnregisterRootLuaState removes the root LState for the actor PID and closes it.
+func UnregisterRootLuaState(pid string) {
+	if v, ok := rootStates.LoadAndDelete(pid); ok {
+		if L, ok := v.(*lua.LState); ok && L != nil {
+			L.Close()
+		}
+	}
+}
 
 func init() {
 	env, ok := os.LookupEnv("GO_ENV")
@@ -117,4 +141,24 @@ func NewLuable(L *lua.LState, obj Luable) *lua.LUserData {
 	ud.Value = obj
 	L.SetMetatable(ud, L.GetTypeMetatable(obj.LuaTypeName()))
 	return ud
+}
+
+func LValueToInterface(lv lua.LValue) (interface{}, bool) {
+	if lv == nil {
+		return nil, true
+	}
+	switch v := lv.(type) {
+	case *lua.LUserData:
+		return v.Value, true
+	case lua.LNumber:
+		return float64(v), true
+	case lua.LString:
+		return string(v), true
+	case lua.LBool:
+		return bool(v), true
+	case *lua.LNilType:
+		return nil, true
+	default:
+		return nil, false
+	}
 }

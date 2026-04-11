@@ -19,6 +19,5 @@ func (p *ShowChair) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowChair) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *ShowChair) Deserialize(reader *stream.StreamReader) {
 }

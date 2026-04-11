@@ -3,8 +3,8 @@ package response
 import (
 	"time"
 
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/stream"
 )
 
 type Warp struct {
@@ -23,8 +23,7 @@ func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *Warp) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (a *Warp) Deserialize(reader *stream.StreamReader) {
 }
 
 func (w *Warp) Opcode() uint16 {

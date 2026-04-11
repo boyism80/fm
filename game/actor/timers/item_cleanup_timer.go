@@ -34,8 +34,8 @@ func (t *ItemCleanupTimer) Handle(ctx actor.Context, mapData *entity.Map) error 
 	now := time.Now()
 	items := mapData.GetItems()
 
-	for itemID, itemInterface := range items {
-		dropable, ok := itemInterface.(entity.Dropable)
+	for itemID, item := range items {
+		dropable, ok := item.(entity.Dropable)
 		if !ok {
 			continue
 		}

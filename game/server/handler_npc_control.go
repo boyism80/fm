@@ -1,4 +1,4 @@
-﻿package server
+package server
 
 import (
 	"fmt"
@@ -39,7 +39,7 @@ func (h *NpcControl) Handle(ctx *core.ClientContext, req *request.NpcAction) err
 		return fmt.Errorf("character is nil")
 	}
 
-	character.Listener.OnNpcAction(req.Bytes)
+	character.Listener.OnNpcAction(character, req.Bytes)
 
 	return nil
 }

@@ -1,14 +1,52 @@
 package wz
 
-// SkillLevelData contains level-specific skill data
+import (
+	"time"
+
+	"github.com/boyism80/fm/types"
+)
+
 type SkillLevelData struct {
-	MPCon    int // MP consumption
-	Cooldown int // Cooldown in seconds
-	Damage   int // Damage percentage
-	HPCon    int // HP consumption
+	MPCon          int
+	HPCon          int
+	MoneyCon       int
+	ItemCon        int
+	ItemConNo      int
+	ItemConsume    int
+	BulletConsume  int
+	BulletCount    int
+	Damage         int
+	DamagePC       int
+	FixDamage      int
+	CriticalDamage int
+	AttackCount    int
+	MobCount       int
+	PAD            int
+	MAD            int
+	PDD            int
+	MDD            int
+	EVA            int
+	ACC            int
+	STR            int
+	HP             int
+	MP             int
+	Jump           int
+	Speed          int
+	Mastery        int
+	Prop           int
+	Range          int
+	Time           time.Duration
+	Cooldown       time.Duration
+	Morph          int
+	X              int
+	Y              int
+	Z              int
+	LT             types.Vector2[int32]
+	RB             types.Vector2[int32]
+	HS             string
+	Action         string
 }
 
-// Skill represents skill data loaded from WZ files
 type Skill struct {
 	ID           uint32
 	MaxLevel     int
@@ -16,11 +54,10 @@ type Skill struct {
 	Invisible    bool
 	TimeLimited  bool
 	CombatOrders bool
-	LevelData    map[int]*SkillLevelData // Level -> LevelData mapping
+	ElemAttr     string
+	LevelData    map[int]*SkillLevelData
 }
 
-// GetLevelData returns the level data for a specific skill level
-// If the level doesn't exist, returns the highest available level data
 func (s *Skill) GetLevelData(level int) *SkillLevelData {
 	if s.LevelData == nil {
 		return nil
@@ -31,13 +68,9 @@ func (s *Skill) GetLevelData(level int) *SkillLevelData {
 	if level > s.MaxLevel {
 		level = s.MaxLevel
 	}
-
-	// Try to get exact level
 	if data, exists := s.LevelData[level]; exists {
 		return data
 	}
-
-	// If exact level doesn't exist, find the highest available level <= requested level
 	maxFound := 0
 	for l := range s.LevelData {
 		if l <= level && l > maxFound {
@@ -47,6 +80,5 @@ func (s *Skill) GetLevelData(level int) *SkillLevelData {
 	if maxFound > 0 {
 		return s.LevelData[maxFound]
 	}
-
 	return nil
 }

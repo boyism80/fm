@@ -1,9 +1,9 @@
 package response
 
 import (
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
-	"github.com/boyism80/fm/game/constant"
 )
 
 type SpawnMeso struct {
@@ -42,8 +42,7 @@ func (p *SpawnMeso) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnMeso) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *SpawnMeso) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *SpawnMeso) Opcode() uint16 {

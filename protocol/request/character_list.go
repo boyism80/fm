@@ -13,17 +13,8 @@ func (a *CharacterList) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (a *CharacterList) Deserialize(reader *stream.StreamReader) error {
+func (a *CharacterList) Deserialize(reader *stream.StreamReader) {
 	reader.Read(1)
-	server, err := reader.ReadU8()
-	if err != nil {
-		return err
-	}
-	a.Server = server
-	channel, err := reader.ReadU8()
-	if err != nil {
-		return err
-	}
-	a.Channel = channel
-	return nil
+	a.Server = reader.ReadU8()
+	a.Channel = reader.ReadU8()
 }

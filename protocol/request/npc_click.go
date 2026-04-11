@@ -10,11 +10,6 @@ func (n *NpcClick) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (n *NpcClick) Deserialize(reader *stream.StreamReader) error {
-	oid, err := reader.ReadU32()
-	if err != nil {
-		return err
-	}
-	n.OID = oid
-	return nil
+func (n *NpcClick) Deserialize(reader *stream.StreamReader) {
+	n.OID = reader.ReadU32()
 }

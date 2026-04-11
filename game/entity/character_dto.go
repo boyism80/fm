@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"time"
-
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/wz"
 	"github.com/boyism80/fm/protocol/dto"
@@ -21,7 +19,7 @@ func (ch *Character) ToDTO() *dto.Character {
 			continue
 		}
 
-		model, ok := equipment.Wz.(*wz.Equipment)
+		model, ok := equipment.GetModel().(wz.Equipment)
 		if !ok {
 			continue
 		}
@@ -29,56 +27,60 @@ func (ch *Character) ToDTO() *dto.Character {
 		absoluteParts := int8(parts * -1)
 		if absoluteParts < 100 {
 			if _, exists := equipments[absoluteParts]; !exists {
-				equipments[absoluteParts] = model.ID
+				equipments[absoluteParts] = model.GetID()
 			}
 		} else if absoluteParts > 100 && absoluteParts != 111 {
 			adjustedParts := int8(absoluteParts - 100)
 			if existingItem, exists := equipments[adjustedParts]; exists {
 				overlays[adjustedParts] = existingItem
 			}
-			equipments[adjustedParts] = model.ID
+			equipments[adjustedParts] = model.GetID()
 		} else if _, exists := equipments[absoluteParts]; exists {
-			overlays[absoluteParts] = model.ID
+			overlays[absoluteParts] = model.GetID()
 		}
 	}
 
 	var weapon uint32
 	if weaponEquip := ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON]; weaponEquip != nil {
-		weapon = weaponEquip.Wz.GetID()
+		weapon = weaponEquip.GetModel().GetID()
 	}
 
+	mapID := uint32(0)
+	if m := ch.GetMap(); m != nil {
+		mapID = m.id
+	}
 	return &dto.Character{
-		ID:            ch.ID,
-		Name:          ch.Name,
-		Gender:        ch.Gender,
-		SkinColor:     ch.SkinColor,
-		Face:          ch.Face,
-		Hair:          ch.Hair,
-		Level:         ch.Level,
+		ID:            ch.GetID(),
+		Name:          ch.name,
+		Gender:        ch.gender,
+		SkinColor:     ch.skinColor,
+		Face:          ch.face,
+		Hair:          ch.hair,
+		Level:         ch.level,
 		Class:         ch.Class,
-		Str:           ch.Str,
-		Dex:           ch.Dex,
-		Int:           ch.Int,
-		Luk:           ch.Luk,
-		Hp:            ch.Hp,
-		MaxHp:         ch.MaxHp,
-		Mp:            ch.Mp,
-		MaxMp:         ch.MaxMp,
+		Str:           ch.GetTotalStr(),
+		Dex:           ch.GetTotalDex(),
+		Int:           ch.GetTotalInt(),
+		Luk:           ch.GetTotalLuk(),
+		Hp:            uint16(ch.Hp),
+		MaxHp:         uint16(ch.GetMaxHp()),
+		Mp:            uint16(ch.Mp),
+		MaxMp:         uint16(ch.GetMaxMp()),
 		AbilityPoint:  ch.AbilityPoint,
-		Exp:           ch.Exp,
-		FamePoint:     ch.FamePoint,
-		Map:           ch.Map,
-		SpawnPoint:    ch.SpawnPoint,
-		Rank:          ch.Rank,
-		RankDiff:      ch.RankDiff,
-		ClassRank:     ch.ClassRank,
-		ClassRankDiff: ch.ClassRankDiff,
-		Mega:          ch.Mega,
-		BaseLooks: equipments,
-		Overlays:   overlays,
-		Weapon:     weapon,
-		Position:       ch.Position,
-		Stance:         ch.Stance,
+		Exp:           ch.exp,
+		FamePoint:     ch.famePoint,
+		Map:           mapID,
+		SpawnPoint:    ch.spawnPoint,
+		Rank:          ch.rank,
+		RankDiff:      ch.rankDiff,
+		ClassRank:     ch.classRank,
+		ClassRankDiff: ch.classRankDiff,
+		Mega:          ch.mega,
+		BaseLooks:     equipments,
+		Overlays:      overlays,
+		Weapon:        weapon,
+		Position:      ch.Position,
+		Stance:        ch.Stance,
 	}
 }
 
@@ -87,16 +89,16 @@ func (ch *Character) ToFullDTO() *dto.Character {
 
 	charDTO.Meso = ch.Meso
 	charDTO.SkillPoint = ch.SkillPoint
-	charDTO.MarriageId = ch.MarriageId
-	charDTO.RegRocks = ch.RegRocks
-	charDTO.Rocks = ch.Rocks
-	charDTO.MonsterBookCover = ch.MonsterBookCover
-	charDTO.QuestInfo = ch.QuestInfo
+	charDTO.MarriageId = ch.marriageId
+	charDTO.RegRocks = ch.regRocks
+	charDTO.Rocks = ch.rocks
+	charDTO.MonsterBookCover = ch.monsterBookCover
+	charDTO.QuestInfo = ch.quests
 	charDTO.BuddyCapacity = 20
 
-	charDTO.Random1 = &ch.Random1
-	charDTO.Random2 = &ch.Random2
-	charDTO.Random3 = &ch.Random3
+	charDTO.Random1 = &ch.random1
+	charDTO.Random2 = &ch.random2
+	charDTO.Random3 = &ch.random3
 
 	charDTO.Inventory = make(map[constant.InventoryType]*dto.Inventory)
 	for invType, inv := range ch.Inventory {
@@ -132,41 +134,31 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		}
 	}
 
-	charDTO.Skills = make([]*dto.Skill, 0, len(ch.SkillsMap))
-	for skillID, entry := range ch.SkillsMap {
-		if entry == nil {
-			continue
-		}
+	charDTO.Skills = make([]*dto.Skill, 0)
+	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
 		skillDTO := &dto.Skill{
 			ID:         skillID,
-			SkillLevel: uint32(entry.SkillLevel),
+			SkillLevel: uint32(entry.Level()),
 		}
-		if entry.Skill != nil && entry.Skill.MasterLevel > 0 {
+		if entry.Wz.MasterLevel > 0 {
 			skillDTO.MasterLevel = uint32(entry.MasterLevel)
 		}
 		charDTO.Skills = append(charDTO.Skills, skillDTO)
-	}
+	})
 
-	charDTO.Cooldowns = make([]*dto.Cooldown, 0, len(ch.CoolDowns))
-	now := time.Now()
-	for _, cd := range ch.CoolDowns {
-		if cd == nil {
-			continue
+	charDTO.Cooldowns = make(map[uint32]uint16)
+	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
+		if !entry.IsCooling() {
+			return
 		}
-		remaining := cd.StartTime.Add(cd.Duration).Sub(now)
-		if remaining < 0 {
-			remaining = 0
-		}
-		cooldownDTO := &dto.Cooldown{
-			SkillId:   cd.SkillId,
-			Remaining: uint16(remaining.Seconds()),
-		}
-		charDTO.Cooldowns = append(charDTO.Cooldowns, cooldownDTO)
-	}
+		sec := int(entry.CooldownRemaining().Seconds())
+		sec = min(sec, 65535)
+		charDTO.Cooldowns[skillID] = uint16(sec)
+	})
 
 	charDTO.QuestsStarted = make([]*dto.QuestStatus, 0)
 	charDTO.QuestsCompleted = make([]*dto.QuestStatus, 0)
-	for _, qs := range ch.Quests {
+	for _, qs := range ch.questStatuses {
 		if qs == nil {
 			continue
 		}

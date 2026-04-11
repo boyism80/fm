@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-
 	"sync"
 	"syscall"
 	"time"
@@ -14,7 +13,6 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
-
 	"github.com/boyism80/fm/core/luax"
 	g_actor "github.com/boyism80/fm/game/actor"
 	"github.com/boyism80/fm/game/client"
@@ -25,17 +23,17 @@ import (
 
 // GameServer represents the game server for MapleStory private server
 type GameServer struct {
-	server         *core.Server
-	config         *GameConfig
-	resources      *wz.Resources          // Game data resources
-	maps           map[uint32]*entity.Map // Map instances by map ID
-	mapsMutex      sync.RWMutex
-	commandHandler *CommandHandler
-	packetHandlers *PacketHandlerRegistry
-	context        *GameServerContext
-	actorSystem    *c_actor.ActorSystem
-	actorRegistry  *c_actor.ActorRegistry
-	nilMapActorPID *actor.PID
+	server            *core.Server
+	config            *GameConfig
+	resources         *wz.Resources          // Game data resources
+	maps              map[uint32]*entity.Map // Map instances by map ID
+	mapsMutex         sync.RWMutex
+	packetHandlers    *PacketHandlerRegistry
+	context           *GameServerContext
+	actorSystem       *c_actor.ActorSystem
+	actorRegistry     *c_actor.ActorRegistry
+	nilMapActorPID    *actor.PID
+	characterListener entity.CharacterListener
 }
 
 func (gs *GameServer) GetServer() *core.Server {
@@ -54,10 +52,10 @@ func (gs *GameServer) GetRootContext() *actor.RootContext {
 type GameContext interface {
 	GetResources() *wz.Resources
 	GetMap(mapId uint32) *entity.Map
-	// GetLogicThread() *core.LogicThread // Commented out: LogicThread removed
 	GetExpRate() int  // Returns experience rate multiplier
 	GetDropRate() int // Returns drop rate multiplier
 	GetMesoRate() int // Returns meso rate multiplier
+	RequestWarp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error
 }
 
 // GameConfig holds game server specific configuration
@@ -71,72 +69,6 @@ type GameConfig struct {
 	ExpRate    int    // Experience rate multiplier
 	DropRate   int    // Drop rate multiplier
 	MesoRate   int    // Meso rate multiplier
-}
-
-// GetLuaState returns the Lua state for script execution
-
-// ExecuteNpcScript executes the Lua script for an NPC
-// Uses thread-local LuaState, which is shared among MapActors running on the same thread
-func (gs *GameServer) ExecuteNpcScript(character *entity.Character, npcInterface interface{}) error {
-	// Get NPC model to determine script file
-	npc, ok := npcInterface.(*entity.Npc)
-	if !ok {
-		return fmt.Errorf("invalid NPC type")
-	}
-
-	if npc.Wz == nil {
-		return fmt.Errorf("NPC has no model")
-	}
-
-	// Get thread-local LuaState
-	// This will be shared among all MapActors running on the same thread
-	luaState := luax.GetThreadLocalState()
-	if luaState == nil {
-		return fmt.Errorf("lua state not available")
-	}
-
-	// Load NPC script
-	path := fmt.Sprintf("script/npc/%d.lua", npc.Wz.ID)
-
-	// Load script function
-	fn, err := luaState.LoadFile(path)
-	if err != nil {
-		log.Printf("Failed to load NPC script %s: %v", path, err)
-		return fmt.Errorf("failed to load NPC script: %w", err)
-	}
-
-	// Create new thread for script execution
-	co, _ := luaState.NewThread()
-
-	// Push script function to thread
-	co.Push(fn)
-
-	// Execute script (loads all functions)
-	if err := co.PCall(0, lua.MultRet, nil); err != nil {
-		return fmt.Errorf("failed to execute NPC script: %w", err)
-	}
-
-	// Get on_start function
-	onStartFn := co.GetGlobal("on_start")
-	if onStartFn.Type() != lua.LTFunction {
-		return fmt.Errorf("on_start function not found in NPC script")
-	}
-
-	// Create character Lua object using luax.NewLuable
-	characterLua := luax.NewLuable(co, character)
-
-	// Call on_start(me) function
-	resumeState, err, _ := luaState.Resume(co, onStartFn.(*lua.LFunction), characterLua)
-	if err != nil {
-		return fmt.Errorf("failed to call on_start: %w", err)
-	}
-
-	// If script yielded (waiting for dialog response), store the coroutine
-	if resumeState == lua.ResumeYield {
-		character.SetCurrentDialog(co)
-	}
-
-	return nil
 }
 
 // NewGameServer creates a new game server with specified configuration
@@ -180,31 +112,16 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		actorSystem:   actorSystem,
 		actorRegistry: actorRegistry,
 	}
+	gs.characterListener = &CharacterListenerImpl{gs: gs}
 
 	// Set gameServer reference in context
 	context.gs = gs
 
-	// Initialize command handler
-	gs.commandHandler = NewCommandHandler(gs)
-
 	// Initialize packet handler registry
 	gs.packetHandlers = NewPacketHandlerRegistry(gs)
 
-	// Register thread-local LuaState initialization hook
-	// This ensures that each thread-local LuaState has game-specific types registered
-	luax.RegisterThreadLocalInitHook(func(luaState *lua.LState) {
-		// Register Lua types with inheritance
-		luax.RegisterLuaType[*entity.Object](luaState)
-		luax.RegisterLuaDerivedType[*entity.Life, *entity.Object](luaState)
-		luax.RegisterLuaDerivedType[*entity.Character, *entity.Life](luaState)
-		luax.RegisterLuaDerivedType[*entity.Mob, *entity.Life](luaState)
-
-		// Register utility functions
-		luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
-			duration := L.CheckNumber(1)
-			time.Sleep(time.Duration(float64(duration) * float64(time.Second)))
-			return 0
-		})
+	luax.RegisterOnCreateHook(func(luaState *lua.LState) {
+		registerGameLuaState(gs, luaState)
 	})
 
 	// Pre-create all maps
@@ -212,9 +129,6 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 	// Register packet handlers
 	gs.registerPacketHandlers()
-
-	// Register command handlers
-	gs.registerCommandHandlers()
 
 	// Set client disconnect handler
 	server.SetOnClientDisconnect(func(client core.Client) {
@@ -341,6 +255,35 @@ func (gs *GameServer) GetMap(mapID uint32) *entity.Map {
 	return gs.maps[mapID]
 }
 
+// RequestWarp implements GameContext. Removes character from current map (if any) and sends WarpCharacter to the target map's actor.
+func (gs *GameServer) RequestWarp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {
+	if targetMap == nil {
+		return fmt.Errorf("target map is nil")
+	}
+	currentMap := character.GetMap()
+	if currentMap != nil {
+		currentMap.RemovePlayer(character.GetID())
+	}
+	targetPID := targetMap.GetActorPID()
+	if targetPID == nil {
+		return fmt.Errorf("target map actor not found")
+	}
+	gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
+		Character: character,
+		Portal:    spawnPoint,
+	})
+	return nil
+}
+
+func (gs *GameServer) SendToActor(pid *actor.PID, msg interface{}) {
+	if pid == nil {
+		return
+	}
+	if root := gs.GetRootContext(); root != nil {
+		root.Send(pid, msg)
+	}
+}
+
 // handleClientDisconnect handles client disconnection by removing character from map
 func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	client, ok := c.(*client.GameClient)
@@ -351,12 +294,11 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	if character == nil {
 		return
 	}
-	mapID := character.GetMap()
-	mapInstance := gs.GetMap(mapID)
-	if mapInstance == nil {
-		return
+	mapInstance := character.GetMap()
+	if mapInstance != nil {
+		mapInstance.RemovePlayer(character.GetID())
 	}
-	mapInstance.RemovePlayer(character.GetID())
+	character.ClearTimers()
 }
 
 // GetStats returns game server statistics for monitoring

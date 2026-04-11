@@ -1,8 +1,8 @@
 package response
 
 import (
-	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/stream"
 )
 
 type UpdateCharacterLook struct {
@@ -20,8 +20,7 @@ func (p *UpdateCharacterLook) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *UpdateCharacterLook) Deserialize(reader *stream.StreamReader) error {
-	return nil
+func (p *UpdateCharacterLook) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *UpdateCharacterLook) Opcode() uint16 {
