@@ -31,7 +31,7 @@ func (t *DoorExpireTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
 		return nil
 	}
 	now := time.Now()
-	objects := mapData.GetObjects(constant.ObjectTypeDoor, nil)
+	objects := mapData.GetObjects(constant.ObjectTypeDoor)
 	for _, object := range objects {
 		door, ok := object.(*entity.Door)
 		if !ok || door == nil {

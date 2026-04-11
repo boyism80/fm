@@ -13,7 +13,6 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
-	lua "github.com/yuin/gopher-lua"
 )
 
 // MapListener defines interface for map events. Prefer passing object pointers (*Map, *Character, *Mob) over IDs.
@@ -62,38 +61,8 @@ type Map struct {
 	pidMutex        sync.RWMutex
 }
 
-type BroadcastRecipientFilter func(recipient *Character, reference Object) bool
-
 type BroadcastOption struct {
-	SendRaw         bool
-	ExceptPlayerIDs []uint32
-	Reference       Object
-	RecipientFilter BroadcastRecipientFilter
-}
-
-func BroadcastVisibleByReference(recipient *Character, reference Object) bool {
-	if reference == nil {
-		return true
-	}
-	refCharacter, ok := reference.(*Character)
-	if !ok {
-		return true
-	}
-	if !refCharacter.IsHidden() {
-		return true
-	}
-	return recipient.Role >= refCharacter.Role
-}
-
-func BroadcastRoleBelowReference(recipient *Character, reference Object) bool {
-	if reference == nil {
-		return false
-	}
-	refCharacter, ok := reference.(*Character)
-	if !ok {
-		return true
-	}
-	return recipient.Role < refCharacter.Role
+	SendRaw bool
 }
 
 func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) *Map {
@@ -302,6 +271,7 @@ func (m *Map) initializeNpcs() {
 			},
 			Wz: &wz,
 		}
+		npc.ObjectCore.self = npc
 		m.objects[constant.ObjectTypeNpc][oid] = npc
 	}
 }
@@ -312,6 +282,9 @@ func (m *Map) AddSummon(s *Summon) {
 	}
 	if s.Owner == nil {
 		panic("AddSummon: summon.Owner must not be nil")
+	}
+	if s.LifeCore.ObjectCore.self == nil {
+		s.LifeCore.ObjectCore.self = s
 	}
 	if s.Map == m && m.objects[constant.ObjectTypeSummon] != nil {
 		if existing, ok := m.objects[constant.ObjectTypeSummon][s.OID]; ok && existing == s {
@@ -376,6 +349,9 @@ func (m *Map) AddMist(mist *Mist) {
 	if mist == nil {
 		return
 	}
+	if mist.ObjectCore.self == nil {
+		mist.ObjectCore.self = mist
+	}
 	if mist.Map == m && m.objects[constant.ObjectTypeMist] != nil {
 		if existing, ok := m.objects[constant.ObjectTypeMist][mist.OID]; ok && existing == mist {
 			return
@@ -437,6 +413,9 @@ func (m *Map) GetMist(oid uint32) *Mist {
 func (m *Map) AddDoor(door *Door) {
 	if door == nil {
 		return
+	}
+	if door.ObjectCore.self == nil {
+		door.ObjectCore.self = door
 	}
 	if door.Map == m && m.objects[constant.ObjectTypeDoor] != nil {
 		if existing, ok := m.objects[constant.ObjectTypeDoor][door.OID]; ok && existing == door {
@@ -558,6 +537,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 		},
 		Wz: &npcSpawn,
 	}
+	npc.ObjectCore.self = npc
 
 	if m.objects[constant.ObjectTypeNpc] == nil {
 		m.objects[constant.ObjectTypeNpc] = make(map[uint32]Object)
@@ -625,6 +605,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		ExpRate:  100,
 		DropRate: 100,
 	}
+	mob.LifeCore.ObjectCore.self = mob
 
 	if m.objects[constant.ObjectTypeMob] == nil {
 		m.objects[constant.ObjectTypeMob] = make(map[uint32]Object)
@@ -679,16 +660,7 @@ func (m *Map) GetMobs() map[uint32]Object {
 	return m.objects[constant.ObjectTypeMob]
 }
 
-type ObjectsFilter struct {
-	Area     *struct{ MinX, MinY, MaxX, MaxY int16 }
-	Distance *struct {
-		Dist int
-		X, Y int16
-	}
-}
-
-func (m *Map) GetObjects(filter constant.ObjectType, opts *ObjectsFilter) []Object {
-
+func (m *Map) GetObjects(filter constant.ObjectType) []Object {
 	out := make([]Object, 0)
 	for _, buckets := range m.objects {
 		for _, obj := range buckets {
@@ -698,62 +670,27 @@ func (m *Map) GetObjects(filter constant.ObjectType, opts *ObjectsFilter) []Obje
 			if !obj.Is(filter) {
 				continue
 			}
-
-			if opts != nil {
-				pos := obj.GetPosition()
-				if opts.Area != nil {
-					a := opts.Area
-					if pos.X < a.MinX || pos.X > a.MaxX || pos.Y < a.MinY || pos.Y > a.MaxY {
-						continue
-					}
-				}
-			}
 			out = append(out, obj)
 		}
 	}
 	return out
 }
 
-// Broadcast sends a message to players on the map.
-// When option is nil, defaults are used: encrypt policy, no except player, no filter.
 func (m *Map) Broadcast(message types.Packet, option *BroadcastOption) {
 	if m.objects[constant.ObjectTypeCharacter] == nil {
 		return
 	}
 
 	policy := types.SEND_POLICY_ENCRYPT
-	exceptPlayerIDs := []uint32(nil)
-	var reference Object
-	var recipientFilter BroadcastRecipientFilter
-
-	if option != nil {
-		if option.SendRaw {
-			policy = types.SEND_POLICY_RAW
-		}
-		exceptPlayerIDs = option.ExceptPlayerIDs
-		reference = option.Reference
-		recipientFilter = option.RecipientFilter
+	if option != nil && option.SendRaw {
+		policy = types.SEND_POLICY_RAW
 	}
 
-	exceptSet := make(map[uint32]struct{}, len(exceptPlayerIDs))
-	for _, playerID := range exceptPlayerIDs {
-		exceptSet[playerID] = struct{}{}
-	}
-
-	for playerID, player := range m.objects[constant.ObjectTypeCharacter] {
-		if _, excluded := exceptSet[playerID]; excluded {
-			continue
-		}
-
+	for _, player := range m.objects[constant.ObjectTypeCharacter] {
 		character, ok := player.(*Character)
 		if !ok {
 			continue
 		}
-
-		if recipientFilter != nil && !recipientFilter(character, reference) {
-			continue
-		}
-
 		character.Send(message, policy)
 	}
 }
@@ -787,6 +724,9 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	mapObj, ok := item.(Object)
 	if !ok {
 		return fmt.Errorf("item must implement Object")
+	}
+	if drop.ObjectCore != nil {
+		drop.ObjectCore.self = mapObj
 	}
 	m.objects[constant.ObjectTypeItem][oid] = mapObj
 	m.listener.OnItemSpawned(m, item, drop)
@@ -949,498 +889,4 @@ func (m *Map) SetActorPID(pid *actor.PID) {
 	m.pidMutex.Lock()
 	defer m.pidMutex.Unlock()
 	m.actorPID = pid
-}
-
-// Luable interface implementation
-func (m *Map) LuaTypeName() string {
-	return "LuaMap"
-}
-
-func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	return map[string]lua.LGFunction{
-		"foothold_point": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			posTbl := L.CheckTable(2)
-			var x, y int16
-			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			}
-			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			}
-			out := mapInstance.FootholdPoint(types.Point[int16]{X: x, Y: y})
-			if out == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			res := L.NewTable()
-			res.RawSetString("x", lua.LNumber(out.X))
-			res.RawSetString("y", lua.LNumber(out.Y))
-			L.Push(res)
-			return 1
-		},
-		"npcs": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			npcs := mapInstance.GetNpcs()
-			tbl := L.NewTable()
-			for _, npc := range npcs {
-				if npcObj, ok := npc.(*Npc); ok {
-					tbl.RawSetInt(int(npcObj.OID), luax.NewLuable(L, npcObj))
-				}
-			}
-			L.Push(tbl)
-			return 1
-		},
-		"mobs": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			mobs := mapInstance.GetMobs()
-			tbl := L.NewTable()
-			for _, mob := range mobs {
-				if mobObj, ok := mob.(*Mob); ok {
-					tbl.RawSetInt(int(mobObj.OID), luax.NewLuable(L, mobObj))
-				}
-			}
-			L.Push(tbl)
-			return 1
-		},
-		"objects": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			filter := constant.ObjectTypeObject
-			if L.GetTop() >= 2 {
-				if lv := L.Get(2); lv.Type() == lua.LTNumber {
-					filter = constant.ObjectType(lua.LVAsNumber(lv))
-				}
-			}
-			var opts *ObjectsFilter
-			if L.GetTop() >= 3 {
-				tbl := L.CheckTable(3)
-				opts = &ObjectsFilter{}
-				readArea := func(t *lua.LTable) {
-					minX := t.RawGetString("minX")
-					minY := t.RawGetString("minY")
-					maxX := t.RawGetString("maxX")
-					maxY := t.RawGetString("maxY")
-					if minX.Type() == lua.LTNumber && minY.Type() == lua.LTNumber && maxX.Type() == lua.LTNumber && maxY.Type() == lua.LTNumber {
-						opts.Area = &struct{ MinX, MinY, MaxX, MaxY int16 }{
-							MinX: int16(lua.LVAsNumber(minX)),
-							MinY: int16(lua.LVAsNumber(minY)),
-							MaxX: int16(lua.LVAsNumber(maxX)),
-							MaxY: int16(lua.LVAsNumber(maxY)),
-						}
-					}
-				}
-				if area := tbl.RawGetString("area"); area.Type() == lua.LTTable {
-					readArea(area.(*lua.LTable))
-				} else if tbl.RawGetString("minX").Type() == lua.LTNumber {
-					readArea(tbl)
-				}
-				if distLV := tbl.RawGetString("distance"); distLV.Type() == lua.LTNumber {
-					xLV := tbl.RawGetString("x")
-					yLV := tbl.RawGetString("y")
-					x, y := int16(0), int16(0)
-					if xLV.Type() == lua.LTNumber {
-						x = int16(lua.LVAsNumber(xLV))
-					}
-					if yLV.Type() == lua.LTNumber {
-						y = int16(lua.LVAsNumber(yLV))
-					}
-					opts.Distance = &struct {
-						Dist int
-						X, Y int16
-					}{
-						Dist: int(lua.LVAsNumber(distLV)),
-						X:    x,
-						Y:    y,
-					}
-				}
-				if opts.Area == nil && opts.Distance == nil {
-					opts = nil
-				}
-			}
-			objs := mapInstance.GetObjects(filter, opts)
-			result := L.NewTable()
-			idx := 0
-			for _, v := range objs {
-				if luable, ok := v.(luax.Luable); ok {
-					idx++
-					result.RawSetInt(idx, luax.NewLuable(L, luable))
-				}
-			}
-			L.Push(result)
-			return 1
-		},
-		"characters": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			players := mapInstance.GetAllPlayers()
-			tbl := L.NewTable()
-			for _, player := range players {
-				if char, ok := player.(*Character); ok {
-					tbl.RawSetInt(int(char.GetID()), luax.NewLuable(L, char))
-				}
-			}
-			L.Push(tbl)
-			return 1
-		},
-		"items": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			items := mapInstance.GetItems()
-			tbl := L.NewTable()
-			for _, item := range items {
-				if itemObj, ok := item.(Item); ok {
-					drop := itemObj.GetDrop()
-					if drop != nil && drop.ObjectCore != nil {
-						tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, itemObj))
-					}
-				}
-			}
-			L.Push(tbl)
-			return 1
-		},
-		"wz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			spec := mapInstance.Wz
-			if spec == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			tbl := L.NewTable()
-			tbl.RawSetString("id", lua.LNumber(spec.ID))
-			tbl.RawSetString("name", lua.LString(spec.Name))
-			tbl.RawSetString("return_map_id", lua.LNumber(spec.ReturnMapId))
-			tbl.RawSetString("town", lua.LBool(spec.IsTown))
-			L.Push(tbl)
-			return 1
-		},
-		"recovery_rate": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			L.Push(lua.LNumber(mapInstance.GetRecoveryRate()))
-			return 1
-		},
-		"spawn_meso": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			count := int32(L.CheckInt(2))
-			posTbl := L.CheckTable(3)
-			var x, y int16
-			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			}
-			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			}
-			var owner *Character
-			if ownerLV := L.Get(4); ownerLV != lua.LNil {
-				if ownerUd, ok := ownerLV.(*lua.LUserData); ok {
-					if ch, ok := ownerUd.Value.(*Character); ok {
-						owner = ch
-					}
-				}
-			}
-			if count <= 0 {
-				return 0
-			}
-			pos := types.Point[int16]{X: x, Y: y}
-			dropType := constant.DROP_TYPE_FFA
-			ownerID := uint32(0)
-			if owner != nil {
-				dropType = constant.DROP_TYPE_OWNED
-				ownerID = owner.GetID()
-			}
-			meso, err := mapInstance.SpawnMeso(count, pos, ownerID, dropType)
-			if err != nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			L.Push(luax.NewLuable(L, meso))
-			return 1
-		},
-		"spawn_item": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			if mapInstance.context == nil {
-				return 0
-			}
-			resources := mapInstance.context.GetResources()
-			if resources == nil {
-				return 0
-			}
-
-			argc := L.GetTop()
-			if argc < 3 {
-				L.ArgError(2, "spawn_item(itemIdOrName, count, position [, owner]) requires at least 3 arguments")
-				return 0
-			}
-
-			var itemId uint32
-			switch lv := L.Get(2).(type) {
-			case lua.LString:
-				id, ok := resources.NameToItem(string(lv))
-				if !ok {
-					return 0
-				}
-				itemId = id
-			case lua.LNumber:
-				itemId = uint32(lv)
-			default:
-				L.ArgError(2, "item id (number) or item name (string) expected")
-				return 0
-			}
-
-			if _, ok := resources.Items[itemId]; !ok {
-				return 0
-			}
-
-			count := uint16(1)
-			if n := L.CheckInt(3); n >= 1 {
-				count = uint16(n)
-			}
-
-			posTbl := L.CheckTable(4)
-			var x, y int16
-			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
-				x = int16(lua.LVAsNumber(lx))
-			}
-			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
-				y = int16(lua.LVAsNumber(ly))
-			}
-			pos := types.Point[int16]{X: x, Y: y}
-
-			var owner *Character
-			if argc >= 5 {
-				if ownerLV := L.Get(5); ownerLV != lua.LNil {
-					if ownerUd, ok := ownerLV.(*lua.LUserData); ok {
-						if ch, ok := ownerUd.Value.(*Character); ok {
-							owner = ch
-						}
-					}
-				}
-			}
-
-			item, err := NewItem(itemId, count, mapInstance.context)
-			if err != nil {
-				return 0
-			}
-			dropType := constant.DROP_TYPE_FFA
-			ownerID := uint32(0)
-			if owner != nil {
-				dropType = constant.DROP_TYPE_OWNED
-				ownerID = owner.GetID()
-			}
-			item.BindDrop(&Drop{
-				ObjectCore:   &ObjectCore{Position: pos},
-				Owner:        ownerID,
-				SpawnedPoint: pos,
-				DropType:     dropType,
-			})
-
-			if err := mapInstance.SpawnItem(item, ownerID, dropType); err != nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			L.Push(luax.NewLuable(L, item))
-			return 1
-		},
-		"spawn_mob": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			if mapInstance.context == nil {
-				L.RaiseError("spawn_mob: map has no context")
-				return 0
-			}
-			resources := mapInstance.context.GetResources()
-			if resources == nil {
-				L.RaiseError("spawn_mob: no resources")
-				return 0
-			}
-			var mobID uint32
-			switch lv := L.Get(2).(type) {
-			case lua.LString:
-				id, ok := resources.NameToMob(string(lv))
-				if !ok {
-					L.RaiseError("spawn_mob: unknown mob name %q", string(lv))
-					return 0
-				}
-				mobID = id
-			case lua.LNumber:
-				mobID = uint32(lv)
-			default:
-				L.ArgError(2, "mob id (number) or mob name (string) expected")
-				return 0
-			}
-			x := int16(L.CheckInt(3))
-			y := int16(L.CheckInt(4))
-			pos := types.Point[int16]{X: x, Y: y}
-			mob, err := mapInstance.SpawnMob(mobID, pos, nil)
-			if err != nil {
-				L.RaiseError("spawn_mob: %v", err)
-				return 0
-			}
-			L.Push(luax.NewLuable(L, mob))
-			return 1
-		},
-		"spawn_npc": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			if mapInstance.context == nil {
-				L.RaiseError("spawn_npc: map has no context")
-				return 0
-			}
-			resources := mapInstance.context.GetResources()
-			if resources == nil {
-				L.RaiseError("spawn_npc: no resources")
-				return 0
-			}
-			var npcID uint32
-			switch lv := L.Get(2).(type) {
-			case lua.LString:
-				id, ok := resources.NameToNpc(string(lv))
-				if !ok {
-					L.RaiseError("spawn_npc: unknown npc name %q", string(lv))
-					return 0
-				}
-				npcID = id
-			case lua.LNumber:
-				npcID = uint32(lv)
-			default:
-				L.ArgError(2, "npc id (number) or npc name (string) expected")
-				return 0
-			}
-			x := int16(L.CheckInt(3))
-			y := int16(L.CheckInt(4))
-			pos := types.Point[int16]{X: x, Y: y}
-			npc, err := mapInstance.SpawnNpc(npcID, pos)
-			if err != nil {
-				L.RaiseError("spawn_npc: %v", err)
-				return 0
-			}
-			L.Push(luax.NewLuable(L, npc))
-			return 1
-		},
-		"remove_mob": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			oid := uint32(L.CheckInt(2))
-			animType := constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT
-			if L.GetTop() >= 3 {
-				animType = constant.MobDieAnimationType(L.CheckInt(3))
-			}
-			err := mapInstance.RemoveMob(oid, animType)
-			if err != nil {
-				L.RaiseError("remove_mob: %v", err)
-				return 0
-			}
-			return 0
-		},
-		"remove_mist": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			arg := L.Get(2)
-			switch v := arg.(type) {
-			case *lua.LUserData:
-				mist, ok := v.Value.(*Mist)
-				if !ok || mist == nil {
-					L.ArgError(2, "Mist or mist OID expected")
-					return 0
-				}
-				if mist.GetMap() != mapInstance || mist.OID == 0 {
-					return 0
-				}
-				mapInstance.RemoveMist(mist.OID)
-			case lua.LNumber:
-				oid := uint32(v)
-				if oid == 0 {
-					return 0
-				}
-				mapInstance.RemoveMist(oid)
-			default:
-				L.ArgError(2, "Mist or mist OID expected")
-				return 0
-			}
-			return 0
-		},
-	}
-}
-
-func (m *Map) String() string {
-	return m.LuaTypeName()
-}
-
-func (m *Map) Type() lua.LValueType {
-	return lua.LTUserData
 }

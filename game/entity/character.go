@@ -263,6 +263,7 @@ func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, mov
 		MovementType: movementType,
 		SummonType:   summonType,
 	}
+	s.LifeCore.ObjectCore.self = s
 	if ch.summons == nil {
 		ch.summons = make(map[constant.SkillID]*Summon)
 	}
@@ -317,6 +318,7 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 		ExpiresAt:            time.Time{},
 		PoisonTickMultiplier: poisonTickMultiplier,
 	}
+	mist.ObjectCore.self = mist
 	if initialDelay > 0 {
 		mist.NextPoisonTickAt = time.Now().Add(initialDelay)
 	}
@@ -362,6 +364,7 @@ func (ch *Character) SpawnDoor(skillID constant.SkillID, duration time.Duration)
 		OppositeMapID:    oppositeMapID,
 		OppositePosition: townPosition,
 	}
+	door.ObjectCore.self = door
 	if duration > 0 {
 		door.ExpiresAt = time.Now().Add(duration)
 	}
@@ -700,6 +703,10 @@ func (ch *Character) GetID() uint32 {
 	return ch.id
 }
 
+func (ch *Character) GetRole() constant.CharacterRole {
+	return ch.Role
+}
+
 func (ch *Character) GetName() string {
 	return ch.name
 }
@@ -876,6 +883,7 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4] = item
 		}
 	}
+	ch.LifeCore.ObjectCore.self = ch
 	return ch
 }
 
@@ -1014,14 +1022,10 @@ func (ch *Character) broadcastLevelUpEffect() {
 		return
 	}
 
-	mapInstance.Broadcast(&response.ShowForeignEffect{
+	ch.Broadcast(&response.ShowForeignEffect{
 		CharacterID: ch.id,
 		EffectID:    0,
-	}, &BroadcastOption{
-		ExceptPlayerIDs: []uint32{ch.GetID()},
-		Reference:       ch,
-		RecipientFilter: BroadcastVisibleByReference,
-	})
+	}, nil)
 }
 
 func debuffTimerKey(flag constant.DebuffFlag) string {

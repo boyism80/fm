@@ -69,15 +69,11 @@ func (l *CharacterListenerImpl) OnChat(ch *entity.Character, message string, hig
 		DontRecordHistory: dontRecordHistory,
 	}
 
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if ch.GetMap() == nil {
 		return
 	}
 
-	mapInstance.Broadcast(chatPacket, &entity.BroadcastOption{
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	ch.Broadcast(chatPacket, &entity.ObjectBroadcastOption{WithMe: true})
 }
 
 func (l *CharacterListenerImpl) OnMesoChanged(ch *entity.Character, meso int32) {
@@ -187,8 +183,7 @@ func (l *CharacterListenerImpl) OnUpdateStats(ch *entity.Character, stats map[co
 }
 
 func (l *CharacterListenerImpl) OnShowBuffEffect(ch *entity.Character, effectID uint8, skillID uint32, skillLevel uint8, additional *uint8) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if ch.GetMap() == nil {
 		return
 	}
 
@@ -199,15 +194,13 @@ func (l *CharacterListenerImpl) OnShowBuffEffect(ch *entity.Character, effectID 
 		Additional: additional,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance.Broadcast(&response.ShowBuffeffect{
+	ch.Broadcast(&response.ShowBuffeffect{
 		CharacterID: ch.GetID(),
 		EffectID:    effectID,
 		SkillID:     skillID,
 		SkillLevel:  skillLevel,
 		Additional:  additional,
-	}, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{ch.GetID()},
-	})
+	}, nil)
 }
 
 func (l *CharacterListenerImpl) OnMobMoved(ch *entity.Character, mob *entity.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
@@ -231,19 +224,15 @@ func (l *CharacterListenerImpl) OnMobMoved(ch *entity.Character, mob *entity.Mob
 		Movements:   movements,
 	}
 
-	var broadcastOption *entity.BroadcastOption
 	if exists {
-		broadcastOption = &entity.BroadcastOption{
-			ExceptPlayerIDs: []uint32{controller.GetID()},
-		}
+		controller.Broadcast(movePacket, nil)
+	} else {
+		mob.Broadcast(movePacket, nil)
 	}
-
-	mapInstance.Broadcast(movePacket, broadcastOption)
 }
 
 func (l *CharacterListenerImpl) OnPlayerMove(ch *entity.Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if ch.GetMap() == nil {
 		return
 	}
 
@@ -255,24 +244,15 @@ func (l *CharacterListenerImpl) OnPlayerMove(ch *entity.Character, startPoint ty
 		StartPoint: startPoint,
 	}
 
-	mapInstance.Broadcast(movePacket, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{ch.GetID()},
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	ch.Broadcast(movePacket, nil)
 }
 
 func (l *CharacterListenerImpl) broadcastAttack(ch *entity.Character, packet types.Packet) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if ch.GetMap() == nil {
 		return
 	}
 
-	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{ch.GetID()},
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	ch.Broadcast(packet, nil)
 }
 
 func (l *CharacterListenerImpl) OnAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
@@ -362,11 +342,7 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *entity.Character) {
 		Character: characterDTO,
 	}
 
-	mapInstance.Broadcast(lookPacket, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{ch.GetID()},
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	ch.Broadcast(lookPacket, nil)
 }
 
 func (l *CharacterListenerImpl) OnNpcAction(ch *entity.Character, bytes []byte) {
@@ -425,30 +401,16 @@ func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, 
 	}
 
 	ch.Send(selfPacket, types.SEND_POLICY_ENCRYPT)
-	mapInstance := ch.GetMap()
-	if mapInstance != nil {
-		mapInstance.Broadcast(remotePacket, &entity.BroadcastOption{
-			ExceptPlayerIDs: []uint32{ch.GetID()},
-			Reference:       ch,
-			RecipientFilter: entity.BroadcastVisibleByReference,
-		})
-	}
+	ch.Broadcast(remotePacket, nil)
 }
 
 func (l *CharacterListenerImpl) OnBuffRemoved(ch *entity.Character, flags []constant.BuffFlag) {
 	ch.Send(&response.CancelBuff{Buffs: flags}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := ch.GetMap()
-	if mapInstance != nil {
-		mapInstance.Broadcast(&response.CancelRemoteBuff{
-			CharacterID: int32(ch.GetID()),
-			Buffs:       flags,
-		}, &entity.BroadcastOption{
-			ExceptPlayerIDs: []uint32{ch.GetID()},
-			Reference:       ch,
-			RecipientFilter: entity.BroadcastVisibleByReference,
-		})
-	}
+	ch.Broadcast(&response.CancelRemoteBuff{
+		CharacterID: int32(ch.GetID()),
+		Buffs:       flags,
+	}, nil)
 }
 
 func (l *CharacterListenerImpl) OnDebuffAdded(ch *entity.Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32) {
@@ -460,36 +422,22 @@ func (l *CharacterListenerImpl) OnDebuffAdded(ch *entity.Character, disease cons
 		DurationMs: durationMs,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := ch.GetMap()
-	if mapInstance != nil {
-		mapInstance.Broadcast(&response.GiveRemoteDebuff{
-			CharacterID: int32(ch.GetID()),
-			Disease:     disease,
-			X:           x,
-			SkillID:     skillID,
-			SkillLevel:  skillLevel,
-		}, &entity.BroadcastOption{
-			ExceptPlayerIDs: []uint32{ch.GetID()},
-			Reference:       ch,
-			RecipientFilter: entity.BroadcastVisibleByReference,
-		})
-	}
+	ch.Broadcast(&response.GiveRemoteDebuff{
+		CharacterID: int32(ch.GetID()),
+		Disease:     disease,
+		X:           x,
+		SkillID:     skillID,
+		SkillLevel:  skillLevel,
+	}, nil)
 }
 
 func (l *CharacterListenerImpl) OnDebuffRemoved(ch *entity.Character, flags []constant.DebuffFlag) {
 	ch.Send(&response.RemoveDebuff{Diseases: flags}, types.SEND_POLICY_ENCRYPT)
 
-	mapInstance := ch.GetMap()
-	if mapInstance != nil {
-		mapInstance.Broadcast(&response.RemoveRemoteDebuff{
-			CharacterID: int32(ch.GetID()),
-			Diseases:    flags,
-		}, &entity.BroadcastOption{
-			ExceptPlayerIDs: []uint32{ch.GetID()},
-			Reference:       ch,
-			RecipientFilter: entity.BroadcastVisibleByReference,
-		})
-	}
+	ch.Broadcast(&response.RemoveRemoteDebuff{
+		CharacterID: int32(ch.GetID()),
+		Diseases:    flags,
+	}, nil)
 }
 
 func (l *CharacterListenerImpl) OnSkillPassiveHook(ch *entity.Character, skillID uint32, hook string) {
@@ -527,12 +475,11 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 
 	// Only players with lower role receive Leave/Spawn; same-or-higher role always see the character.
 	if hidden {
-		mapInstance.Broadcast(&response.LeavePlayer{ID: ch.GetID()}, &entity.BroadcastOption{
-			Reference:       ch,
-			RecipientFilter: entity.BroadcastRoleBelowReference,
+		ch.Broadcast(&response.LeavePlayer{ID: ch.GetID()}, &entity.ObjectBroadcastOption{
+			RecipientsRoleBelowPivot: true,
 		})
 	} else {
-		for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter, nil) {
+		for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
 			if viewer, ok := obj.(*entity.Character); ok {
 				ch.SendSpawnSyncToViewer(viewer)
 			}
@@ -541,8 +488,7 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 }
 
 func (l *CharacterListenerImpl) OnSummonSpawn(ch *entity.Character, summon *entity.Summon) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if summon.GetMap() == nil {
 		return
 	}
 	packet := &response.SpawnSummon{
@@ -555,15 +501,11 @@ func (l *CharacterListenerImpl) OnSummonSpawn(ch *entity.Character, summon *enti
 		SummonType:   summon.SummonType,
 		Animated:     true,
 	}
-	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	ch.Broadcast(packet, &entity.ObjectBroadcastOption{WithMe: true})
 }
 
 func (l *CharacterListenerImpl) OnSummonRemove(ch *entity.Character, summon *entity.Summon, animated bool) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if summon.GetMap() == nil {
 		return
 	}
 	packet := &response.RemoveSummon{
@@ -571,15 +513,11 @@ func (l *CharacterListenerImpl) OnSummonRemove(ch *entity.Character, summon *ent
 		OID:      summon.OID,
 		Animated: animated,
 	}
-	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	ch.Broadcast(packet, &entity.ObjectBroadcastOption{WithMe: true})
 }
 
 func (l *CharacterListenerImpl) OnSummonMove(ch *entity.Character, summon *entity.Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if summon.GetMap() == nil {
 		return
 	}
 	packet := &response.MoveSummon{
@@ -588,16 +526,11 @@ func (l *CharacterListenerImpl) OnSummonMove(ch *entity.Character, summon *entit
 		StartPoint:  startPoint,
 		Fragments:   movements,
 	}
-	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-		ExceptPlayerIDs: []uint32{ch.GetID()},
-	})
+	ch.Broadcast(packet, nil)
 }
 
 func (l *CharacterListenerImpl) OnSummonAttack(ch *entity.Character, summon *entity.Summon, animation uint8, targets []entity.SummonAttackTarget) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if summon.GetMap() == nil {
 		return
 	}
 	respTargets := make([]response.SummonAttackTarget, len(targets))
@@ -613,15 +546,11 @@ func (l *CharacterListenerImpl) OnSummonAttack(ch *entity.Character, summon *ent
 		Animation:     animation,
 		Targets:       respTargets,
 	}
-	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	ch.Broadcast(packet, &entity.ObjectBroadcastOption{WithMe: true})
 }
 
 func (l *CharacterListenerImpl) OnSummonSkill(ch *entity.Character, summon *entity.Summon, newStance uint8) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if summon.GetMap() == nil {
 		return
 	}
 	packet := &response.SummonSkill{
@@ -629,15 +558,11 @@ func (l *CharacterListenerImpl) OnSummonSkill(ch *entity.Character, summon *enti
 		SummonOID:   summon.OID,
 		NewStance:   newStance,
 	}
-	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	ch.Broadcast(packet, &entity.ObjectBroadcastOption{WithMe: true})
 }
 
 func (l *CharacterListenerImpl) OnSummonDamaged(ch *entity.Character, summon *entity.Summon, unknown uint8, damage uint32, monsterIdFrom uint32) {
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
+	if summon.GetMap() == nil {
 		return
 	}
 	packet := &response.DamageSummon{
@@ -647,8 +572,5 @@ func (l *CharacterListenerImpl) OnSummonDamaged(ch *entity.Character, summon *en
 		Damage:        damage,
 		MonsterIDFrom: monsterIdFrom,
 	}
-	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		Reference:       ch,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	ch.Broadcast(packet, &entity.ObjectBroadcastOption{WithMe: true})
 }

@@ -41,7 +41,7 @@ func (meso *Meso) SendSpawnSyncToViewer(viewer *Character) {
 }
 
 func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, context GameContext, mapInstance *Map) *Meso {
-	return &Meso{
+	m := &Meso{
 		Drop: &Drop{
 			ObjectCore: &ObjectCore{
 				OID:      sequence,
@@ -55,4 +55,8 @@ func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType 
 		},
 		Count: count,
 	}
+	if m.Drop != nil && m.Drop.ObjectCore != nil {
+		m.Drop.ObjectCore.self = m
+	}
+	return m
 }

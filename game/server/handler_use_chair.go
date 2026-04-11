@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/game/client"
 	"github.com/boyism80/fm/game/constant"
-	"github.com/boyism80/fm/game/entity"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 )
@@ -60,14 +59,10 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 
 	character.Chair = req.ItemID
 
-	mapInstance.Broadcast(&response.ShowChair{
+	character.Broadcast(&response.ShowChair{
 		CharacterID: character.GetID(),
 		ItemID:      req.ItemID,
-	}, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{character.GetID()},
-		Reference:       character,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	}, nil)
 
 	character.Listener.OnUpdateStats(character, nil, true)
 

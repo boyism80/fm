@@ -65,7 +65,7 @@ end
 function on_script(me)
     local x, y = me:position()
 
-    me:class(1412)
+    me:class(900)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -94,7 +94,7 @@ function on_script(me)
     me:base_int(4)
     me:base_luk(4)
     me:level(200)
-    me:map('오르비스탑입구')
+    -- me:map('오르비스탑입구')
 end
 
 function on_damaged(me, attacker, skill, damage, params)

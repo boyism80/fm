@@ -1,17 +1,22 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/types"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type ObjectCore struct {
+	self     Object
 	OID      uint32
 	Position types.Vector2[int16]
 	Context  GameContext
 	Map      *Map
+}
+
+type ObjectBroadcastOption struct {
+	SendRaw                  bool
+	WithMe                   bool
+	RecipientsRoleBelowPivot bool
 }
 
 func (obj *ObjectCore) GetObjectType() constant.ObjectType {
@@ -26,7 +31,12 @@ type Object interface {
 	GetMap() *Map
 	GetObjectType() constant.ObjectType
 	Is(typ constant.ObjectType) bool
+	GetRole() constant.CharacterRole
+	IsHidden() bool
+	Send(p types.Packet, policy types.SendPolicy) error
 	SendSpawnSyncToViewer(viewer *Character)
+	Nears(filter constant.ObjectType) []Object
+	Broadcast(message types.Packet, option *ObjectBroadcastOption)
 }
 
 func (obj *ObjectCore) GetOID() uint32 {
@@ -54,95 +64,82 @@ func (obj *ObjectCore) GetMap() *Map {
 	return obj.Map
 }
 
-func (obj *ObjectCore) LuaTypeName() string {
-	return "LuaObject"
+func (obj *ObjectCore) GetRole() constant.CharacterRole {
+	return constant.RoleUser
 }
 
-func (obj *ObjectCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
-	return map[string]lua.LGFunction{
-		"position": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			obj, ok := ud.Value.(Object)
-			if !ok {
-				L.ArgError(1, "Object expected")
-				return 0
-			}
-			pos := obj.GetPosition()
-
-			argc := L.GetTop()
-			if argc == 1 {
-
-				L.Push(lua.LNumber(pos.X))
-				L.Push(lua.LNumber(pos.Y))
-				return 2
-			} else if argc == 3 {
-
-				x := L.CheckInt(2)
-				y := L.CheckInt(3)
-				obj.SetPosition(int16(x), int16(y))
-				return 0
-			} else {
-				L.ArgError(2, "position() requires 0 or 2 arguments")
-				return 0
-			}
-		},
-		"oid": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			obj, ok := ud.Value.(Object)
-			if !ok {
-				L.ArgError(1, "Object expected")
-				return 0
-			}
-			oid := obj.GetOID()
-
-			argc := L.GetTop()
-			if argc == 1 {
-
-				L.Push(lua.LNumber(oid))
-				return 1
-			} else {
-				L.ArgError(2, "oid() is read-only")
-				return 0
-			}
-		},
-		"map": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			obj, ok := ud.Value.(Object)
-			if !ok {
-				L.Push(lua.LNil)
-				return 1
-			}
-			mapInstance := obj.GetMap()
-			if mapInstance == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			L.Push(luax.NewLuable(L, mapInstance))
-			return 1
-		},
-		"is": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			obj, ok := ud.Value.(Object)
-			if !ok {
-				L.Push(lua.LFalse)
-				return 1
-			}
-			typeArg := constant.ObjectType(L.CheckInt(2))
-			L.Push(lua.LBool(obj.Is(typeArg)))
-			return 1
-		},
-	}
+func (obj *ObjectCore) IsHidden() bool {
+	return false
 }
 
-func (obj *ObjectCore) String() string {
-	return obj.LuaTypeName()
-}
-
-func (obj *ObjectCore) Type() lua.LValueType {
-	return lua.LTUserData
+func (obj *ObjectCore) Send(types.Packet, types.SendPolicy) error {
+	return nil
 }
 
 func (obj *ObjectCore) SendSpawnSyncToViewer(viewer *Character) {}
+
+func (o *ObjectCore) Nears(filter constant.ObjectType) []Object {
+	pivot := o.self
+	if pivot == nil {
+		return nil
+	}
+	m := pivot.GetMap()
+	if m == nil {
+		return nil
+	}
+	pivotPos := pivot.GetPosition()
+	out := make([]Object, 0)
+	for _, cand := range m.GetObjects(filter) {
+		if cand == nil || cand == pivot {
+			continue
+		}
+		op := cand.GetPosition()
+		if pivotPos.DistanceSq(op) > constant.MaxViewRangeSq {
+			continue
+		}
+		if cand.IsHidden() && cand.GetRole() > pivot.GetRole() {
+			continue
+		}
+		out = append(out, cand)
+	}
+	return out
+}
+
+func (o *ObjectCore) Broadcast(message types.Packet, option *ObjectBroadcastOption) {
+
+	if o.Map == nil {
+		return
+	}
+
+	pivot := o.self
+	if pivot == nil {
+		return
+	}
+
+	policy := types.SEND_POLICY_ENCRYPT
+	withMe := false
+	roleBelow := false
+	if option != nil {
+		if option.SendRaw {
+			policy = types.SEND_POLICY_RAW
+		}
+		withMe = option.WithMe
+		roleBelow = option.RecipientsRoleBelowPivot
+	}
+	pivotRole := pivot.GetRole()
+	for _, oc := range pivot.Nears(constant.ObjectTypeCharacter) {
+		if oc == nil {
+			continue
+		}
+		if roleBelow && oc.GetRole() >= pivotRole {
+			continue
+		}
+		_ = oc.Send(message, policy)
+	}
+	if withMe {
+		pivot.Send(message, policy)
+	}
+}
 
 func (d *Drop) Is(typ constant.ObjectType) bool {
 	return d.GetObjectType().Has(typ)

@@ -1919,7 +1919,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			m := ch.GetMap()
 			if m != nil {
-				m.Broadcast(&response.ShowMagnet{MobID: mob.OID, Success: successByte}, nil)
+				ch.Broadcast(&response.ShowMagnet{MobID: mob.OID, Success: successByte}, &ObjectBroadcastOption{})
 			}
 			return 0
 		},

@@ -47,13 +47,13 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}
 
-	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter, nil) {
+	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
 		if viewer, ok := obj.(*entity.Character); ok {
 			character.SendSpawnSyncToViewer(viewer)
 		}
 	}
 
-	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeObject, nil) {
+	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeObject) {
 		obj.SendSpawnSyncToViewer(character)
 	}
 }
@@ -95,11 +95,7 @@ func (l *MapListenerImpl) OnPlayerMove(mapInstance *entity.Map, character *entit
 		StartPoint: startPoint,
 	}
 
-	mapInstance.Broadcast(movePacket, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{character.GetID()},
-		Reference:       character,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	character.Broadcast(movePacket, nil)
 }
 
 // OnPlayerChat sends chat packet to other players on the map
@@ -241,25 +237,20 @@ func (l *MapListenerImpl) OnMobMoved(mapInstance *entity.Map, mob *entity.Mob, i
 		Movements:   movements,
 	}
 
-	// Broadcast to all players on the map
-	mapInstance.Broadcast(movePacket, nil)
+	mob.Broadcast(movePacket, nil)
 }
 
-func (l *MapListenerImpl) broadcastAttack(mapInstance *entity.Map, character *entity.Character, packet types.Packet) {
-	if mapInstance == nil {
+func (l *MapListenerImpl) broadcastAttack(character *entity.Character, packet types.Packet) {
+	if character == nil || character.GetMap() == nil {
 		return
 	}
 
-	mapInstance.Broadcast(packet, &entity.BroadcastOption{
-		ExceptPlayerIDs: []uint32{character.GetID()},
-		Reference:       character,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	character.Broadcast(packet, nil)
 }
 
 // OnAttack broadcasts close-range attack to all players on the map
 func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	l.broadcastAttack(mapInstance, character, &response.Attack{
+	l.broadcastAttack(character, &response.Attack{
 		CharacterId: character.GetID(),
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		SkillLevel:  skillLevel,
@@ -268,7 +259,7 @@ func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Ch
 
 // OnRangedAttack broadcasts ranged attack to all players on the map
 func (l *MapListenerImpl) OnRangedAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	l.broadcastAttack(mapInstance, character, &response.RangedAttack{
+	l.broadcastAttack(character, &response.RangedAttack{
 		CharacterId: character.GetID(),
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		SkillLevel:  skillLevel,
@@ -278,7 +269,7 @@ func (l *MapListenerImpl) OnRangedAttack(mapInstance *entity.Map, character *ent
 
 // OnMagicAttack broadcasts magic attack to all players on the map
 func (l *MapListenerImpl) OnMagicAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	l.broadcastAttack(mapInstance, character, &response.MagicAttack{
+	l.broadcastAttack(character, &response.MagicAttack{
 		CharacterId: character.GetID(),
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		SkillLevel:  skillLevel,
@@ -338,10 +329,7 @@ func (l *MapListenerImpl) OnMistSpawned(mapInstance *entity.Map, mist *entity.Mi
 		Bounds:     mist.Bounds,
 		MobSkill:   mist.MobSkill,
 	}
-	mapInstance.Broadcast(pkt, &entity.BroadcastOption{
-		Reference:       mist,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	mist.Broadcast(pkt, nil)
 }
 
 func (l *MapListenerImpl) OnMistRemoved(mapInstance *entity.Map, mist *entity.Mist) {
@@ -352,54 +340,39 @@ func (l *MapListenerImpl) OnMistRemoved(mapInstance *entity.Map, mist *entity.Mi
 		OID:      mist.OID,
 		Eruption: false,
 	}
-	mapInstance.Broadcast(pkt, &entity.BroadcastOption{
-		Reference:       mist,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	mist.Broadcast(pkt, nil)
 }
 
 func (l *MapListenerImpl) OnDoorSpawned(mapInstance *entity.Map, door *entity.Door) {
 	if mapInstance == nil || door == nil {
 		return
 	}
-	mapInstance.Broadcast(&response.SpawnDoor{
+	door.Broadcast(&response.SpawnDoor{
 		OwnerID:  door.OwnerID,
 		Position: door.Position,
 		Animated: true,
-	}, &entity.BroadcastOption{
-		Reference:       door,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	}, nil)
 	pos := door.Position
-	mapInstance.Broadcast(&response.SpawnPortal{
+	door.Broadcast(&response.SpawnPortal{
 		TownMapID:   door.OppositeMapID,
 		TargetMapID: uint32(mapInstance.Wz.ID),
 		SkillID:     uint32(door.SkillID),
 		Position:    &pos,
-	}, &entity.BroadcastOption{
-		Reference:       door,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	}, nil)
 }
 
 func (l *MapListenerImpl) OnDoorRemoved(mapInstance *entity.Map, door *entity.Door, animated bool) {
 	if mapInstance == nil || door == nil {
 		return
 	}
-	mapInstance.Broadcast(&response.RemoveDoor{
+	door.Broadcast(&response.RemoveDoor{
 		OwnerID:  door.OwnerID,
 		Animated: animated,
-	}, &entity.BroadcastOption{
-		Reference:       door,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
-	mapInstance.Broadcast(&response.SpawnPortal{
+	}, nil)
+	door.Broadcast(&response.SpawnPortal{
 		TownMapID:   response.DisabledPortalMapID,
 		TargetMapID: response.DisabledPortalMapID,
 		SkillID:     0,
 		Position:    nil,
-	}, &entity.BroadcastOption{
-		Reference:       door,
-		RecipientFilter: entity.BroadcastVisibleByReference,
-	})
+	}, nil)
 }

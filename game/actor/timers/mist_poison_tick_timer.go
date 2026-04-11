@@ -34,7 +34,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 		return nil
 	}
 	now := time.Now()
-	objects := mapData.GetObjects(constant.ObjectTypeMist, nil)
+	objects := mapData.GetObjects(constant.ObjectTypeMist)
 	for _, obj := range objects {
 		mist, ok := obj.(*entity.Mist)
 		if !ok || mist == nil || mist.OID == 0 {
