@@ -1,17 +1,12 @@
-// Package constant defines buff types for temporary buffs.
-// Mask is the client bit flag; Position is the mask group index (1-based, 2–4).
-// MaxBuffFlag = 4: packet uses 4 int32 mask words.
 package constant
 
 const MaxBuffFlag = 4
 
-// BuffFlag identifies a buff type for packets (mask value + position).
 type BuffFlag struct {
 	Mask     uint32
 	Position int
 }
 
-// Position 4.
 var (
 	BuffFlagWeaponAtk     = BuffFlag{0x1, 4}
 	BuffFlagWeaponDef     = BuffFlag{0x2, 4}
@@ -43,7 +38,6 @@ var (
 	BuffFlagHpLossGuard   = BuffFlag{0x20000000, 4}
 )
 
-// Position 3.
 var (
 	BuffFlagMorph          = BuffFlag{0x2, 3}
 	BuffFlagRecovery       = BuffFlag{0x4, 3}
@@ -73,7 +67,6 @@ var (
 	BuffFlagElementReset   = BuffFlag{0x80000000, 3}
 )
 
-// Position 2.
 var (
 	BuffFlagEnergyCharge  = BuffFlag{0x2, 2}
 	BuffFlagDashSpeed     = BuffFlag{0x4, 2}
@@ -87,8 +80,6 @@ var (
 	BuffFlagSoaring       = BuffFlag{0x40000, 2}
 )
 
-// IsRemoteStatFlag reports whether a buff flag is visible to other players in spawn packets.
-// This mirrors Java's TemporaryStatsPacket.isForRemoteStat.
 func IsRemoteStatFlag(flag BuffFlag) bool {
 	return flag == BuffFlagSpeed ||
 		flag == BuffFlagCombo ||
@@ -102,7 +93,6 @@ func IsRemoteStatFlag(flag BuffFlag) bool {
 		flag == BuffFlagDivineBody
 }
 
-// AllBuffFlags returns all BuffFlag constants by name for injection into Lua (e.g. BuffFlag table).
 func AllBuffFlags() map[string]BuffFlag {
 	return map[string]BuffFlag{
 		"WeaponAtk":      BuffFlagWeaponAtk,

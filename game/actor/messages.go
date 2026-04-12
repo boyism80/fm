@@ -1,11 +1,24 @@
 package actor
 
 import (
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	lua "github.com/yuin/gopher-lua"
 )
 
-// ResumeLua is sent to the map actor after sleep(duration); receiver resumes the thread.
+type SpawnDoor struct {
+	OwnerID        uint32
+	SkillID        constant.SkillID
+	FieldMapID     uint32
+	ReturnPortalID uint8
+	FieldPortalID  uint8
+}
+
+type RemoveDoor struct {
+	OwnerID uint32
+	SkillID uint32
+}
+
 type ResumeLua struct {
 	Root   *lua.LState
 	Thread *lua.LState

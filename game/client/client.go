@@ -15,7 +15,6 @@ type GameClient struct {
 	mu        sync.Mutex
 }
 
-// Ensure GameClient implements core.Client
 var _ core.Client = (*GameClient)(nil)
 
 func NewGameClient(conn net.Conn, clientID int) (*GameClient, error) {
@@ -32,14 +31,12 @@ func NewGameClient(conn net.Conn, clientID int) (*GameClient, error) {
 	}, nil
 }
 
-// SetCharacter sets the character for this game client
 func (c *GameClient) SetCharacter(character *entity.Character) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.character = character
 }
 
-// GetCharacter returns the character for this game client
 func (c *GameClient) GetCharacter() *entity.Character {
 	c.mu.Lock()
 	defer c.mu.Unlock()

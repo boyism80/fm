@@ -1,6 +1,5 @@
 package constant
 
-// EquipmentPartsType represents the equipment slot position.
 type EquipmentPartsType int16
 
 const (

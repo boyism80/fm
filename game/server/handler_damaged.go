@@ -13,7 +13,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// Damaged handles damage packet requests
 type Damaged struct {
 	gs     *GameServer
 	opcode byte

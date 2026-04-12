@@ -1,6 +1,5 @@
 package constant
 
-// SkillID is the numeric skill identifier (typed enum, same pattern as ConsumeType).
 type SkillID uint32
 
 const (
@@ -463,7 +462,6 @@ const (
 	SkillSharkWave                    SkillID = 15111007
 )
 
-// skillConstantsRaw maps Lua/WZ skill names to SkillID for AllSkillConstants (PascalCase keys).
 var skillConstantsRaw = map[string]SkillID{
 	"BlessingOfTheFairy":           SkillBlessingOfTheFairy,
 	"ThreeSnails":                  SkillThreeSnails,
@@ -924,9 +922,6 @@ var skillConstantsRaw = map[string]SkillID{
 	"SharkWave":                    SkillSharkWave,
 }
 
-// HitElement is the element byte in the TakeDamage packet (immediately after IncomingHitType).
-// Matches the client layout described in legacy handlers: neutral, ice, fire, lightning.
-// Other values may appear in later clients; compare with server/life Element in Java sources if needed.
 type HitElement uint8
 
 const (
@@ -936,7 +931,6 @@ const (
 	HitElementLightning HitElement = 3
 )
 
-// AllSkillConstants returns Lua SKILL constants by name (PascalCase keys for consistency with Class, Stance, etc.).
 func AllSkillConstants() map[string]uint32 {
 	out := make(map[string]uint32, len(skillConstantsRaw))
 	for name, id := range skillConstantsRaw {

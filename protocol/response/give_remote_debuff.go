@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// GiveRemoteDebuff notifies other clients that a debuff was applied to a character (opcode 0x90).
 type GiveRemoteDebuff struct {
 	CharacterID int32
 	Disease     constant.DebuffFlag

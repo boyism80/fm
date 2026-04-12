@@ -147,6 +147,27 @@ command_funcs = {
 			return true
 		end,
 	},
+	["위치"] = {
+		privilege = ROLE.User,
+		usage = "- 현재 맵·좌표를 채팅으로 표시",
+		command = function(me, args)
+			local m = me:map()
+			if m == nil then
+				me:chat("맵 정보 없음")
+				return true
+			end
+			local x, y = me:position()
+			local wz_t = m:wz()
+			local map_id = 0
+			local map_name = "?"
+			if wz_t ~= nil then
+				map_id = wz_t.id or 0
+				map_name = tostring(wz_t.name or "?")
+			end
+			me:chat(string.format("맵: %s (%d), 좌표: %d, %d", map_name, map_id, x, y))
+			return true
+		end,
+	},
 	["체력바꾸기"] = {
 		privilege = ROLE.Admin,
 		usage = "<체력값> - 체력 설정",

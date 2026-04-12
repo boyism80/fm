@@ -420,8 +420,6 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			return 1
 		}
 
-		// Return raw wz item model (e.g. *wz.Consume) so Lua scripts can pass it back
-		// without creating real inventory items.
 		_ = count
 		if luable, ok := model.(luax.Luable); ok && luable != nil {
 			L.Push(luax.NewLuable(L, luable))

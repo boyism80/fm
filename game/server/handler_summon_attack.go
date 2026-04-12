@@ -45,8 +45,6 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 		return nil
 	}
 
-	// Apply real damage to mobs first so server-side HP/reward logic matches.
-	// The first argument must be the owner character (for loot/kill rewards).
 	ApplyDamageToMobs(character, mapInstance, req.Damages)
 	CallSummonOnAttackHooks(ctx, character, mapInstance, req.Damages, uint32(summon.SkillID))
 

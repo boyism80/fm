@@ -13,16 +13,16 @@ type Login struct {
 }
 
 func (p *Login) Serialize(writer *stream.StreamWriter) error {
-	// Set cash inventory slot limit if needed
+
 	if p.Character.Inventory != nil {
 		if cashInv := p.Character.Inventory[constant.INVENTORY_TYPE_CASH]; cashInv != nil {
 			cashInv.SlotLimit = 60
 		}
 	}
 
-	writer.WriteU32(0) // channel
+	writer.WriteU32(0)
 	writer.WriteU8(0)
-	writer.WriteU8(1) // first time
+	writer.WriteU8(1)
 
 	isEvent := false
 	if isEvent {
@@ -33,12 +33,10 @@ func (p *Login) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU16(0)
 	}
 
-	// Serialize Random1 if available
 	if p.Character.Random1 != nil {
 		p.Character.Random1.Serialize(writer)
 	}
 
-	// Serialize full character data
 	p.Character.Serialize(writer)
 	writer.WriteDateTime(time.Now())
 	return nil

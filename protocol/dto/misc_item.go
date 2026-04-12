@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// MiscItem represents misc item DTO
 type MiscItem struct {
 	ItemId     uint32
 	UniqueId   int64

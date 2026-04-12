@@ -806,12 +806,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			skillID := uint32(L.CheckInt(2))
-			durationMs := L.CheckInt(3)
-			if durationMs < 0 {
-				durationMs = 0
-			}
-			duration := time.Duration(durationMs) * time.Millisecond
-			door := ch.SpawnDoor(constant.SkillID(skillID), duration)
+			door := ch.SpawnDoor(constant.SkillID(skillID))
 			if door == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -1169,7 +1164,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			switch L.GetTop() {
 			case 1:
-				// continue
+
 			default:
 				L.ArgError(2, "skills() is read-only")
 				return 0
@@ -1266,6 +1261,34 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			classCode := uint16(L.CheckInt(2))
 			L.Push(lua.LBool(ch.ClassOf(classCode)))
+			return 1
+		},
+		"homing": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "homing() takes no arguments")
+				return 0
+			}
+			if ch.HomingTargetOID == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			mapInstance := ch.GetMap()
+			if mapInstance == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			mob := mapInstance.GetMob(*ch.HomingTargetOID)
+			if mob == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, mob))
 			return 1
 		},
 		"hidden": func(L *lua.LState) int {
@@ -2324,7 +2347,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "mkitem(itemIdOrName [, count]) requires at least one argument")
 				return 0
 			case 2:
-				// count defaults to 1
+
 			default:
 				if n := L.CheckInt(3); n >= 1 {
 					count = uint16(n)
@@ -2352,7 +2375,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 
-			_ = count // item_wz is a data lookup; scripts don't need consume count
+			_ = count
 			model := resources.Items[itemId]
 			if model == nil {
 				L.Push(lua.LNil)
@@ -2397,7 +2420,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "item_wz(itemIdOrName [, count]) requires at least one argument")
 				return 0
 			case 2:
-				// count defaults to 1
+
 			default:
 				if n := L.CheckInt(3); n >= 1 {
 					count = uint16(n)

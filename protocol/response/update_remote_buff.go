@@ -8,7 +8,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// UpdateRemoteBuff notifies other clients on the map that a character gained buff(s).
 type UpdateRemoteBuff struct {
 	CharacterID int32
 	BuffID      int32

@@ -26,7 +26,6 @@ func TestLoadMiscItems(t *testing.T) {
 		t.Fatal("No items loaded")
 	}
 
-	// Test specific item (4000001) that we know should have slotMax = 200
 	var foundItem *MiscItem
 	for _, item := range *items {
 		if item.ID == 4000001 {
@@ -47,7 +46,6 @@ func TestLoadMiscItems(t *testing.T) {
 		t.Logf("Warning: Item %d has price=0 (might be expected)", foundItem.ID)
 	}
 
-	// Test that all items have valid IDs
 	for _, item := range *items {
 		if item.ID == 0 {
 			t.Errorf("Found item with ID=0")
@@ -80,7 +78,6 @@ func TestLoadConsumes(t *testing.T) {
 		t.Fatal("No items loaded")
 	}
 
-	// Test that items have valid data
 	itemsWithSlotMax := 0
 	for _, item := range *items {
 		if item.ID == 0 {
@@ -117,7 +114,6 @@ func TestLoadCashItems(t *testing.T) {
 		t.Fatal("No items loaded")
 	}
 
-	// Test that items have valid data
 	for _, item := range *items {
 		if item.ID == 0 {
 			t.Errorf("Found item with ID=0")
@@ -150,7 +146,6 @@ func TestLoadInstallations(t *testing.T) {
 		t.Fatal("No items loaded")
 	}
 
-	// Test that items have valid data
 	itemsWithSlotMax := 0
 	for _, item := range *items {
 		if item.ID == 0 {
@@ -168,14 +163,13 @@ func TestLoadInstallations(t *testing.T) {
 }
 
 func TestLoadWeapons(t *testing.T) {
-	// Find a weapon file
+
 	weaponDir := filepath.Join("..", "..", "resources", "wz", "Character.wz", "Weapon")
 	if _, err := os.Stat(weaponDir); os.IsNotExist(err) {
 		t.Skipf("Weapon directory not found: %s", weaponDir)
 		return
 	}
 
-	// Try to find any weapon file
 	entries, err := os.ReadDir(weaponDir)
 	if err != nil {
 		t.Skipf("Failed to read weapon directory: %v", err)
@@ -200,7 +194,6 @@ func TestLoadWeapons(t *testing.T) {
 		t.Fatalf("Failed to load weapon: %v", err)
 	}
 
-	// loadWeapons can return nil for category files (hit, bow, axe, etc.)
 	if weapon == nil {
 		t.Log("loadWeapons returned nil (likely a category file, skipping)")
 		return
@@ -218,10 +211,6 @@ func TestLoadWeapons(t *testing.T) {
 		t.Errorf("Weapon has nil ItemCore")
 	}
 
-	// slotMax is optional for weapons (many weapons don't have it in XML)
-	// We only verify that if slotMax is present in XML, it's loaded correctly
-	// This is tested by checking that weapons with slotMax > 0 exist in other test files
-
 	t.Logf("Successfully loaded weapon ID=%d, slotMax=%d, price=%d", w.ID, w.SlotMax, w.Price)
 }
 
@@ -237,7 +226,6 @@ func TestLoadMiscItemsSlotMax(t *testing.T) {
 		t.Fatalf("Failed to load misc items: %v", err)
 	}
 
-	// Test multiple items with known slotMax values
 	testCases := []struct {
 		itemID   uint32
 		slotMax  uint16
@@ -283,7 +271,6 @@ func TestLoadConsumesPriceAndSlotMax(t *testing.T) {
 		t.Fatalf("Failed to load consumes: %v", err)
 	}
 
-	// Test that price and slotMax are loaded from Ints
 	hasPrice := false
 	hasSlotMax := false
 

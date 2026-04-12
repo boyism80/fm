@@ -12,7 +12,6 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
-// Character represents full character data for protocol
 type Character struct {
 	ID               uint32
 	Name             string
@@ -50,7 +49,7 @@ type Character struct {
 	Inventory        map[constant.InventoryType]*Inventory
 	Equipments       map[constant.EquipmentPartsType]*Equipment
 	Skills           []*Skill
-	Cooldowns        map[uint32]uint16 // skillID -> remaining seconds
+	Cooldowns        map[uint32]uint16
 	QuestsStarted    []*QuestStatus
 	QuestsCompleted  []*QuestStatus
 	Rings            RingContainer
@@ -65,7 +64,6 @@ type Character struct {
 	BuddyCapacity    uint8
 }
 
-// SerializeOverview serializes character overview data
 func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 	writer.WriteU32(c.ID)
 	writer.WriteStaticStr(c.Name, 13)
@@ -85,27 +83,24 @@ func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 	writer.WriteU16(c.Mp)
 	writer.WriteU16(c.MaxMp)
 	writer.WriteU16(c.AbilityPoint)
-	writer.WriteU16(0) // Skill points (simplified)
+	writer.WriteU16(0)
 	writer.WriteU32(c.Exp)
 	writer.WriteU16(c.FamePoint)
 	writer.WriteU32(c.Map)
 	writer.WriteU8(c.SpawnPoint)
 
-	// Look
 	writer.WriteU8(c.Gender)
 	writer.WriteU8(c.SkinColor)
 	writer.WriteU32(c.Face)
 	writer.WriteBoolean(c.Mega)
 	writer.WriteU32(c.Hair)
 
-	// Equipments
 	for parts, itemId := range c.BaseLooks {
 		writer.Write8(parts)
 		writer.WriteU32(itemId)
 	}
 	writer.WriteU8(0xFF)
 
-	// Overlays
 	for parts, itemId := range c.Overlays {
 		writer.Write8(parts)
 		writer.WriteU32(itemId)
@@ -115,7 +110,6 @@ func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 	writer.WriteU32(c.Weapon)
 	writer.WriteU32(0)
 
-	// Rank info
 	isRanked := c.Rank > 0
 	writer.WriteBoolean(isRanked)
 	if isRanked {
@@ -126,7 +120,6 @@ func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 	}
 }
 
-// SerializeLook serializes character look data
 func (c *Character) SerializeLook(writer *stream.StreamWriter) {
 	writer.WriteU8(c.Gender)
 	writer.WriteU8(c.SkinColor)
@@ -150,7 +143,6 @@ func (c *Character) SerializeLook(writer *stream.StreamWriter) {
 	writer.WriteU32(0)
 }
 
-// SerializeStats serializes character stats
 func (c *Character) SerializeStats(writer *stream.StreamWriter) {
 	writer.WriteU32(c.ID)
 	writer.WriteStaticStr(c.Name, 13)
@@ -177,18 +169,15 @@ func (c *Character) SerializeStats(writer *stream.StreamWriter) {
 	writer.WriteU8(c.SpawnPoint)
 }
 
-// SerializeInventory serializes character inventory
 func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.Write32(c.Meso)
 
-	// Entity directly accesses inventory without nil check
 	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].SlotLimit)
 	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_CONSUME].SlotLimit)
 	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_INSTALLATION].SlotLimit)
 	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_ETC].SlotLimit)
 	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_CASH].SlotLimit)
 
-	// Serialize equipments (parts <= 0 && parts > -100) - sorted by parts
 	equipParts1 := make([]constant.EquipmentPartsType, 0)
 	for parts := range c.Equipments {
 		if c.Equipments[parts] != nil && (parts <= 0 && parts > -100) {
@@ -196,14 +185,13 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 		}
 	}
 	sort.Slice(equipParts1, func(i, j int) bool {
-		return equipParts1[i] > equipParts1[j] // descending order (most negative first)
+		return equipParts1[i] > equipParts1[j]
 	})
 	for _, parts := range equipParts1 {
 		c.Equipments[parts].Serialize(writer, true, int16(parts))
 	}
 	writer.WriteU8(0)
 
-	// Serialize equipments (parts <= -100 && parts > -1000) - sorted by parts
 	equipParts2 := make([]constant.EquipmentPartsType, 0)
 	for parts := range c.Equipments {
 		if c.Equipments[parts] != nil && (parts <= -100 && parts > -1000) {
@@ -211,14 +199,13 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 		}
 	}
 	sort.Slice(equipParts2, func(i, j int) bool {
-		return equipParts2[i] > equipParts2[j] // descending order (most negative first)
+		return equipParts2[i] > equipParts2[j]
 	})
 	for _, parts := range equipParts2 {
 		c.Equipments[parts].Serialize(writer, true, int16(parts))
 	}
 	writer.WriteU8(0)
 
-	// Serialize inventories (entity directly calls Serialize without nil check)
 	c.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Serialize(writer)
 	c.Inventory[constant.INVENTORY_TYPE_CONSUME].Serialize(writer)
 	c.Inventory[constant.INVENTORY_TYPE_INSTALLATION].Serialize(writer)
@@ -226,7 +213,6 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 	c.Inventory[constant.INVENTORY_TYPE_CASH].Serialize(writer)
 }
 
-// SerializeSkills serializes character skills
 func (c *Character) SerializeSkills(writer *stream.StreamWriter) {
 	if c.Skills == nil {
 		writer.WriteU16(0)
@@ -238,14 +224,12 @@ func (c *Character) SerializeSkills(writer *stream.StreamWriter) {
 		writer.WriteU32(skill.ID)
 		writer.WriteU32(skill.SkillLevel)
 
-		// Check if skill needs master level
 		if (skill.ID/10000)%100 > 0 && (skill.ID/10000)%10 == 2 {
 			writer.WriteU32(skill.MasterLevel)
 		}
 	}
 }
 
-// SerializeCooldowns serializes character cooldowns
 func (c *Character) SerializeCooldowns(writer *stream.StreamWriter) {
 	if c.Cooldowns == nil || len(c.Cooldowns) == 0 {
 		writer.WriteU16(0)
@@ -263,7 +247,6 @@ func (c *Character) SerializeCooldowns(writer *stream.StreamWriter) {
 	}
 }
 
-// SerializeQuests serializes character quests
 func (c *Character) SerializeQuests(writer *stream.StreamWriter) {
 	started := c.QuestsStarted
 	if started == nil {
@@ -312,7 +295,6 @@ func (c *Character) SerializeQuests(writer *stream.StreamWriter) {
 	}
 }
 
-// SerializeRings serializes character rings
 func (c *Character) SerializeRings(writer *stream.StreamWriter) {
 	writer.WriteU16(0)
 
@@ -346,8 +328,7 @@ func (c *Character) SerializeRings(writer *stream.StreamWriter) {
 		right = []*Ring{}
 	}
 	writer.WriteU16(uint16(len(right)))
-	// Note: Right rings serialization requires marriage data which is not in DTO
-	// This is a simplified version
+
 	for _, ring := range right {
 		writer.WriteU32(c.MarriageId)
 		writer.WriteU32(0)
@@ -360,7 +341,6 @@ func (c *Character) SerializeRings(writer *stream.StreamWriter) {
 	}
 }
 
-// SerializeRocks serializes character rocks
 func (c *Character) SerializeRocks(writer *stream.StreamWriter) {
 	if c.RegRocks != nil {
 		for _, regRock := range c.RegRocks {
@@ -375,14 +355,12 @@ func (c *Character) SerializeRocks(writer *stream.StreamWriter) {
 	}
 }
 
-// SerializeMonsterBook serializes character monster book
 func (c *Character) SerializeMonsterBook(writer *stream.StreamWriter) {
 	writer.WriteU32(c.MonsterBookCover)
 	writer.WriteU8(0)
-	writer.WriteU16(0) // Simplified - monster book data not in DTO
+	writer.WriteU16(0)
 }
 
-// SerializeQuestInfo serializes character quest info
 func (c *Character) SerializeQuestInfo(writer *stream.StreamWriter) {
 	if c.QuestInfo == nil {
 		writer.WriteU16(0)
@@ -400,39 +378,29 @@ func (c *Character) SerializeQuestInfo(writer *stream.StreamWriter) {
 	}
 }
 
-// Serialize serializes full character data (for Login packet)
 func (c *Character) Serialize(writer *stream.StreamWriter) {
-	writer.WriteU64(0xFFFFFFFFFFFFFFFF) // flag
+	writer.WriteU64(0xFFFFFFFFFFFFFFFF)
 
-	// flag 0x1
 	c.SerializeStats(writer)
 	if c.BuddyCapacity == 0 {
 		c.BuddyCapacity = 20
 	}
 	writer.WriteU8(c.BuddyCapacity)
 
-	// flag 0x2 ~ 0x40
 	c.SerializeInventory(writer)
 
-	// flag 0x100
 	c.SerializeSkills(writer)
 
-	// flag 0x8000
 	c.SerializeCooldowns(writer)
 
-	// flag 0x200, 0x4000
 	c.SerializeQuests(writer)
 
-	// flag 0x400, 0x800
 	c.SerializeRings(writer)
 
-	// flag 0x1000
 	c.SerializeRocks(writer)
 
-	// flag 0x20000, 0x10000
 	c.SerializeMonsterBook(writer)
 
-	// flag 0x40000
 	c.SerializeQuestInfo(writer)
 
 	writer.WriteU16(0)

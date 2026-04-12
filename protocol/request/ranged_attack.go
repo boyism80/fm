@@ -10,7 +10,7 @@ type RangedAttack struct {
 }
 
 func (r *RangedAttack) Serialize(writer *stream.StreamWriter) error {
-	// TODO: implement after packet structure is analyzed
+
 	return nil
 }
 

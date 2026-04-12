@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// SuperHide notifies the client of GM/hidden state. Opcode GM_EFFECT (0x62); payload is subtype 12 + hidden (0/1).
 type SuperHide struct {
 	Hidden bool
 }

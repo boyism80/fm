@@ -24,7 +24,7 @@ func (p *Move) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *Move) Opcode() uint16 {
-	return 0x82 // Move opcode
+	return 0x82
 }
 
 func (p *Move) Deserialize(reader *stream.StreamReader) {

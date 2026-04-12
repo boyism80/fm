@@ -10,7 +10,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// CharacterList handles character list packet requests
 type CharacterList struct {
 	ls     *LoginServer
 	opcode byte
@@ -31,7 +30,6 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 	log.Printf("Character list packet received from %s - Server: %d, Channel: %d",
 		ctx.Client.GetConnection().RemoteAddr(), req.Server, req.Channel)
 
-	// Create dummy characters for demo (as DTO)
 	characters := []dto.Character{
 		{
 			ID:         1,

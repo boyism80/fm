@@ -12,7 +12,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// SortInventory handles inventory sorting packet requests
 type SortInventory struct {
 	gs     *GameServer
 	opcode byte

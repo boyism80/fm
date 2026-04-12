@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 )
 
-// ToDTO converts entity Npc to dto Npc
 func (n *Npc) ToDTO() *dto.Npc {
 	if n == nil {
 		return nil

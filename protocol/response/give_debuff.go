@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// GiveDebuff notifies the client that a debuff was applied to self (opcode 0x15).
 type GiveDebuff struct {
 	Disease    constant.DebuffFlag
 	X          int16

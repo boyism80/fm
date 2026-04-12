@@ -4,7 +4,7 @@ import "time"
 
 type QuestStatus struct {
 	Quest          *Quest
-	Status         uint8 // 1 = Started, 2 = Completed
+	Status         uint8
 	MobKills       map[int]int
 	CustomData     string
 	CompletionTime time.Time

@@ -41,16 +41,12 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	// Check blocked inventory
-	// TODO: Implement hasBlockedInventory check
-
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
-	// Get skill
 	var wzSkill *wz.Skill
 	if ch.Context != nil {
 		resources := ch.Context.GetResources()
@@ -64,24 +60,18 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	// Validate skill level
 	skillLevel := ch.GetTotalSkillLevel(req.SkillID)
 	if skillLevel <= 0 || skillLevel != int(req.SkillLevel) {
-		// TODO: Check for Mu Lung Dojo skills
-		// For now, reject if skill level doesn't match
+
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
 
-	// Get skill level data
 	levelData := wzSkill.GetLevelData(int(skillLevel))
 	if levelData == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-
-	// Check MP recovery skill HP requirement
-	// TODO: Check if effect.isMPRecovery() and HP < 10%
 
 	skillEntry := ch.Skills.Get(req.SkillID)
 	if skillEntry == nil {

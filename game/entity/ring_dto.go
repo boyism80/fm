@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 )
 
-// RingToDTO converts entity Ring to dto Ring
 func RingToDTO(ring *Ring) *dto.Ring {
 	if ring == nil {
 		return nil
@@ -21,7 +20,6 @@ func RingToDTO(ring *Ring) *dto.Ring {
 	}
 }
 
-// RingsToDTO converts entity Ring slice to dto Ring slice
 func RingsToDTO(rings []*Ring) []*dto.Ring {
 	if rings == nil {
 		return nil

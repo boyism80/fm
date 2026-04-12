@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// InstallationItem represents installation item DTO
 type InstallationItem struct {
 	ItemId     uint32
 	UniqueId   int64
@@ -32,7 +31,7 @@ func (i *InstallationItem) Serialize(writer *stream.StreamWriter, trade bool, sl
 	}
 
 	writer.WriteDateTime(i.Expiration)
-	writer.WriteU16(1) // Installation always has count 1
+	writer.WriteU16(1)
 	writer.WriteStr16(i.OwnerName)
 	writer.WriteU16(i.Flags)
 }

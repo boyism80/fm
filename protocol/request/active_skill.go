@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// MagnetMobEntry holds the result for a single mob pulled by Monster Magnet.
 type MagnetMobEntry struct {
 	OID     uint32
 	Success bool

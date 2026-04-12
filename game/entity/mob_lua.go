@@ -358,6 +358,46 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(mob.stealOutcome != nil))
 			return 1
 		},
+		"homing": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			if L.GetTop() != 3 {
+				L.ArgError(2, "homing(causer, skill_or_nil) requires causer and skill (nil to clear)")
+				return 0
+			}
+			causerUd := L.CheckUserData(2)
+			causer, causerOk := causerUd.Value.(*Character)
+			if !causerOk || causer == nil {
+				L.ArgError(2, "Character expected")
+				return 0
+			}
+			if L.Get(3) == lua.LNil {
+				mob.SetHoming(causer.GetID(), nil)
+				return 0
+			}
+			skillUd := L.CheckUserData(3)
+			skill, skillOk := skillUd.Value.(*SkillEntry)
+			if !skillOk || skill == nil {
+				L.ArgError(3, "Skill expected or nil to clear")
+				return 0
+			}
+			if skill.Wz == nil {
+				L.ArgError(3, "Skill has no wz data")
+				return 0
+			}
+			lv := skill.Level()
+			if lv < 0 || lv > 255 {
+				L.ArgError(3, "skill level out of range for homing")
+				return 0
+			}
+			h := &Homing{SkillWz: skill.Wz, SkillLevel: uint8(lv)}
+			mob.SetHoming(causer.GetID(), h)
+			return 0
+		},
 		"record_stolen_item": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
@@ -434,7 +474,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(mob.GetMobBuffValue(buff)))
 			return 1
 		},
-		// buff_stack(mask) -> stack; buff_stack(mask, stack) -> bool (set ok)
+
 		"buff_stack": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)

@@ -9,10 +9,8 @@ import (
 	"golang.org/x/text/transform"
 )
 
-// ErrTruncated is passed to panic when a read would pass the end of the buffer.
 var ErrTruncated = errors.New("stream: not enough bytes")
 
-// ErrSkipOutOfBounds is passed to panic when Skip exceeds Remaining().
 var ErrSkipOutOfBounds = errors.New("stream: skip out of bounds")
 
 type Endian binary.ByteOrder

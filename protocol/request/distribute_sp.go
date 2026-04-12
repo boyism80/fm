@@ -4,8 +4,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// DistributeSP represents the DISTRIBUTE_SP packet (0x49)
-// Used to distribute 1 SP to a skill
 type DistributeSP struct {
 	Tick    uint32
 	SkillID uint32

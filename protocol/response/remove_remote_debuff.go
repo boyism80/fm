@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// RemoveRemoteDebuff notifies other clients that a character's debuff(s) were removed (opcode 0x91).
 type RemoveRemoteDebuff struct {
 	CharacterID int32
 	Diseases    []constant.DebuffFlag

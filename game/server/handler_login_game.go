@@ -12,7 +12,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// LoginGame handles game login packet requests
 type LoginGame struct {
 	gs     *GameServer
 	opcode byte
@@ -37,13 +36,11 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 
 	character := entity.NewDummyCharacter(ctx.Client, h.gs.characterListener, req.PlayerId, name, h.gs)
 
-	// Set GM mode (for testing: player ID 1 is GM)
 	if req.PlayerId == 1 {
 		character.Role = constant.RoleAdmin
 		character.Invincible = true
 	}
 
-	// Character 생성 시점에는 map이 결정되지 않음 (AddPlayer에서 SetMap 호출됨)
 	client, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")
@@ -51,7 +48,6 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	}
 	client.SetCharacter(character)
 
-	// 초기 맵으로 이동 (nil MapActor에서 실제 맵으로)
 	initialMapID, ok := h.gs.resources.NameToMap("헤네시스")
 	if !ok {
 		return fmt.Errorf("initial map name not found")
@@ -77,7 +73,6 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 
 	character.Stance = constant.StanceDefaultValue
 
-	// initialMapID에 대응되는 MapActor의 PID를 구해서 WarpCharacter 메시지 전송
 	targetMapPID := mapInstance.GetActorPID()
 	if targetMapPID == nil {
 		return fmt.Errorf("MapActor PID not found for map %d", initialMapID)

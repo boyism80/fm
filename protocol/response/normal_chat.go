@@ -23,5 +23,5 @@ func (a *NormalChat) Deserialize(reader *stream.StreamReader) {
 }
 
 func (a *NormalChat) Opcode() uint16 {
-	return 0x70 // NormalChat opcode
+	return 0x70
 }

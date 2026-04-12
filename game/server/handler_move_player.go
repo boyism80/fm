@@ -10,7 +10,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// MovePlayer handles player movement packet requests
 type MovePlayer struct {
 	gs     *GameServer
 	opcode byte

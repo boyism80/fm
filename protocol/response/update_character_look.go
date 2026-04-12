@@ -14,9 +14,9 @@ func (p *UpdateCharacterLook) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(1)
 	p.Character.SerializeLook(writer)
 
-	writer.WriteU8(0) // size of left rings
-	writer.WriteU8(0) // size of right rings
-	writer.WriteU8(0) // size of mid rings
+	writer.WriteU8(0)
+	writer.WriteU8(0)
+	writer.WriteU8(0)
 	return nil
 }
 

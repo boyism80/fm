@@ -29,7 +29,6 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 	log.Printf("Check name packet received from %s - Name: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
-	// Check if name exists (hardcoded for demo)
 	exists := req.Name == "채승현"
 
 	checkResp := &response.CheckName{

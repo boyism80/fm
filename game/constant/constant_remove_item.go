@@ -1,6 +1,5 @@
 package constant
 
-// RemoveItemType represents how an item is removed from the map.
 type RemoveItemType uint8
 
 const (

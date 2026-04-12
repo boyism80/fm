@@ -7,11 +7,10 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
-// Equipment represents equipment data for protocol
 type Equipment struct {
 	ItemId        uint32
 	UniqueId      int64
-	Expiration    time.Time // Time.Time for proper serialization
+	Expiration    time.Time
 	EnchantChance uint8
 	EnchantCount  uint8
 	Str           uint16
@@ -34,12 +33,10 @@ type Equipment struct {
 	SkillBonus    uint8
 }
 
-// GetCount returns the equipment count (always 1 for equipment)
 func (e *Equipment) GetCount() uint16 {
 	return 1
 }
 
-// Serialize serializes equipment data
 func (e *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
 	if slot <= -1 {
 		slot *= -1
@@ -53,7 +50,7 @@ func (e *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int1
 		writer.WriteU8(uint8(slot))
 	}
 
-	writer.WriteU8(1) // ITEM_TYPE_EQUIPMENT
+	writer.WriteU8(1)
 	writer.WriteU32(e.ItemId)
 
 	hasUID := e.UniqueId > 0

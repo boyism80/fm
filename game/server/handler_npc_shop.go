@@ -15,7 +15,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// NpcShop handles NPC shop transaction packet requests
 type NpcShop struct {
 	gs     *GameServer
 	opcode byte
@@ -148,7 +147,7 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 		return nil
 	}
 
-	_, err = character.AddItem(item, true) // allOrNothing = true for shop purchases
+	_, err = character.AddItem(item, true)
 	if err != nil {
 		character.Message("인벤토리 공간이 부족합니다.")
 		return nil

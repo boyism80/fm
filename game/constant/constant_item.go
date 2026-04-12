@@ -1,18 +1,15 @@
 package constant
 
-// Item category IDs (itemID / 10000) for consume/rechargeable.
 const (
 	ITEM_CATEGORY_SHURIKEN uint32 = 207
 	ITEM_CATEGORY_BULLET   uint32 = 233
 )
 
-// Rechargeable item IDs
 const (
 	ITEM_SHURIKEN_BASE uint32 = 2070000
 	ITEM_BULLET_BASE   uint32 = 2330000
 )
 
-// Rechargeable item ID ranges (used by WZ loader).
 var RechargeableShurikens = []uint32{
 	2070000, 2070001, 2070002, 2070003, 2070004, 2070005,
 	2070006, 2070007, 2070008, 2070009, 2070010, 2070011,

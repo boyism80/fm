@@ -7,7 +7,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// Luable interface implementation
 func (m *Map) LuaTypeName() string {
 	return "LuaMap"
 }

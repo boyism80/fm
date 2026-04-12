@@ -9,10 +9,10 @@ import (
 type InventoryMode uint8
 
 const (
-	INVENTORY_MODE_ADD    InventoryMode = iota // 0: Add (new slot added)
-	INVENTORY_MODE_UPDATE                      // 1: Update (existing slot quantity updated)
-	INVENTORY_MODE_MOVE                        // 2: Move (slot item moved)
-	INVENTORY_MODE_REMOVE                      // 3: Remove (slot item removed)
+	INVENTORY_MODE_ADD InventoryMode = iota
+	INVENTORY_MODE_UPDATE
+	INVENTORY_MODE_MOVE
+	INVENTORY_MODE_REMOVE
 )
 
 type EquipmentActionType uint8
@@ -38,7 +38,7 @@ type AddInventorySlot struct {
 	InventoryType constant.InventoryType
 	Slot          int16
 	Item          dto.Item
-	FromDrop      bool // 0 = stackable (capacity >= 2), 1 = non-stackable (capacity < 2)
+	FromDrop      bool
 }
 
 type RemoveInventorySlot struct {

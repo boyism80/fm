@@ -18,7 +18,6 @@ func (t ObjectType) Has(other ObjectType) bool {
 	return (t & other) == other
 }
 
-// AllObjectTypeConstants returns name -> value for Lua ObjectType table.
 func AllObjectTypeConstants() map[string]ObjectType {
 	return map[string]ObjectType{
 		"Object":    ObjectTypeObject,

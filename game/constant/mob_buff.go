@@ -33,7 +33,6 @@ const (
 	MobBuffMagicDamageReflect  MobBuffFlag = 0x40000000
 )
 
-// Has returns true if this MobBuff bitmask includes the given filter (bitwise AND).
 func (t MobBuffFlag) Has(other MobBuffFlag) bool {
 	return (t & other) != 0
 }

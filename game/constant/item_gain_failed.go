@@ -1,6 +1,5 @@
 package constant
 
-// ItemGainFailedType defines the different item gain failure types.
 type ItemGainFailedType uint8
 
 const (

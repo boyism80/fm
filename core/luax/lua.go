@@ -14,15 +14,13 @@ var (
 	compileMu       sync.Mutex
 	compiledFuncs   = make(map[string]*lua.LFunction)
 	useCache        = os.Getenv("GO_ENV") != "development"
-	rootStates      sync.Map // map[string]*lua.LState, keyed by actor PID
+	rootStates      sync.Map
 )
 
-// RegisterRootLuaState registers the root LState for the given actor PID (e.g. map actor).
 func RegisterRootLuaState(pid string, L *lua.LState) {
 	rootStates.Store(pid, L)
 }
 
-// GetRootLuaState returns the root LState for the actor PID, or nil if not registered.
 func GetRootLuaState(pid string) *lua.LState {
 	v, ok := rootStates.Load(pid)
 	if !ok {
@@ -31,7 +29,6 @@ func GetRootLuaState(pid string) *lua.LState {
 	return v.(*lua.LState)
 }
 
-// UnregisterRootLuaState removes the root LState for the actor PID and closes it.
 func UnregisterRootLuaState(pid string) {
 	if v, ok := rootStates.LoadAndDelete(pid); ok {
 		if L, ok := v.(*lua.LState); ok && L != nil {

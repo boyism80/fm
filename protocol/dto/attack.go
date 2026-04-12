@@ -31,7 +31,6 @@ type AttackPayload interface {
 	ToAttackInfo() AttackInfo
 }
 
-// AttackInfo is a transport-friendly superset used by listeners/responses.
 type AttackInfo struct {
 	AttackHeader
 	Slot     uint16

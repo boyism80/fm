@@ -24,11 +24,11 @@ type BonusStats struct {
 	Jump               int16
 	MaxHpPercent       int16
 	MaxMpPercent       int16
-	MesoMultiplier     int16 // 100 = 100%, 0 = use 100
-	DropRate           int16 // 100 = 100%, 0 = use 100; applies to both item and meso drop probability
-	ExpRate            int16 // 100 = 100%, 0 = no bonus; when > 0, exp is multiplied by ExpRate/100 (e.g. 150 = 1.5x for Holy Symbol)
-	PotionHealRate     int16 // 100 = 100%, 0 = use 100; flat HP/MP from consumables only (not % recovery)
-	PotionDurationRate int16 // 100 = 100%, 0 = use 100; item buff duration from consumables (AddItemBuff)
+	MesoMultiplier     int16
+	DropRate           int16
+	ExpRate            int16
+	PotionHealRate     int16
+	PotionDurationRate int16
 }
 
 func (ch *Character) GetTotalStr() uint16 {

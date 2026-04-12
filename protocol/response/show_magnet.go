@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// ShowMagnet is SHOW_MAGNET (0xB7), e.g. Monster Magnet pull result.
 type ShowMagnet struct {
 	MobID   uint32
 	Success uint8

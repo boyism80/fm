@@ -15,7 +15,7 @@ func (p *SpawnNpc) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.NPC.NpcId)
 	writer.Write16(p.NPC.Position.X)
 	writer.Write16(p.NPC.Cy)
-	writer.WriteU8(0) // FacingDirection (default: right)
+	writer.WriteU8(0)
 	writer.Write16(p.NPC.Foothold)
 	writer.Write16(p.NPC.Rx0)
 	writer.Write16(p.NPC.Rx1)
@@ -27,5 +27,5 @@ func (s *SpawnNpc) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *SpawnNpc) Opcode() uint16 {
-	return 0xBB // SpawnNpc opcode
+	return 0xBB
 }

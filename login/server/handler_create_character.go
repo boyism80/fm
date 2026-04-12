@@ -10,7 +10,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// CreateCharacter handles create character packet requests
 type CreateCharacter struct {
 	ls     *LoginServer
 	opcode byte
@@ -31,7 +30,6 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 	log.Printf("Create character packet received from %s - Name: %s, Face: %d, Hair: %d, Top: %d, Bottom: %d, Shoes: %d, Weapon: %d",
 		ctx.Client.GetConnection().RemoteAddr(), req.Name, req.Face, req.Hair, req.Top, req.Bottom, req.Shoes, req.Weapon)
 
-	// Check if creation is successful (hardcoded for demo)
 	success := req.Name != "채진영"
 
 	createResp := &response.CreateCharacter{

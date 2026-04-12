@@ -1,5 +1,3 @@
-// Package data provides MapleStory game data specifications and types.
-// This file contains XML data loading functions for various game resources.
 package wz
 
 import (
@@ -20,7 +18,6 @@ import (
 var mutex sync.Mutex = sync.Mutex{}
 var visit map[string]bool = map[string]bool{}
 
-// loadCashItems loads cash shop item specifications from XML file.
 func loadCashItems(path string) (*[]*CashItem, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -107,7 +104,6 @@ func loadCashItems(path string) (*[]*CashItem, error) {
 	return &specs, nil
 }
 
-// loadConsumes loads consumable item specifications from XML file.
 func loadConsumes(path string) (*[]*Consume, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -322,9 +318,8 @@ func loadConsumes(path string) (*[]*Consume, error) {
 			}
 		}
 
-		// Set default slotMax for Consume if not specified (EQUIP = 1, others = 100)
 		if model.SlotMax == 0 {
-			model.SlotMax = 100 // Consume default
+			model.SlotMax = 100
 		}
 
 		specs = append(specs, &model)
@@ -333,8 +328,6 @@ func loadConsumes(path string) (*[]*Consume, error) {
 	return &specs, nil
 }
 
-// loadWeapons loads weapon and equipment specifications from XML file.
-// Returns *Weapon for path under Character.wz/Weapon/, *Armor for other equipment (Cap, Coat, etc.).
 func loadWeapons(path string) (Item, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -352,7 +345,7 @@ func loadWeapons(path string) (Item, error) {
 	}
 	id, err := strconv.Atoi(strings.TrimSuffix(root.Name, ".img"))
 	if err != nil {
-		// Skip category files (hit, bow, axe, etc.) - these are not equipment items
+
 		return nil, nil
 	}
 	model.ID = uint32(id)
@@ -538,9 +531,8 @@ func loadWeapons(path string) (Item, error) {
 		}
 	}
 
-	// Set default slotMax for Equipment if not specified (EQUIP = 1, others = 100)
 	if model.SlotMax == 0 {
-		model.SlotMax = 1 // Equipment default
+		model.SlotMax = 1
 	}
 
 	eq := &model
@@ -550,7 +542,6 @@ func loadWeapons(path string) (Item, error) {
 	return &Armor{EquipmentCore: eq}, nil
 }
 
-// loadMiscItems loads misc item specifications from XML file.
 func loadMiscItems(path string) (*[]*MiscItem, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -646,9 +637,8 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 			}
 		}
 
-		// Set default slotMax for MiscItem if not specified (EQUIP = 1, others = 100)
 		if model.SlotMax == 0 {
-			model.SlotMax = 100 // MiscItem default
+			model.SlotMax = 100
 		}
 
 		specs = append(specs, &model)
@@ -657,7 +647,6 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 	return &specs, nil
 }
 
-// loadInstallations loads installation item specifications from XML file.
 func loadInstallations(path string) (*[]*Installation, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -732,9 +721,8 @@ func loadInstallations(path string) (*[]*Installation, error) {
 			}
 		}
 
-		// Set default slotMax for Installation if not specified (EQUIP = 1, others = 100)
 		if model.SlotMax == 0 {
-			model.SlotMax = 100 // Installation default
+			model.SlotMax = 100
 		}
 
 		specs = append(specs, &model)
@@ -743,7 +731,6 @@ func loadInstallations(path string) (*[]*Installation, error) {
 	return &specs, nil
 }
 
-// loadMaps loads map specifications from XML file.
 func loadMaps(path string, mapId uint32) (*Map, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -765,6 +752,64 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 
 	info := root.find("info")
 	if info != nil {
+		for _, iv := range info.Ints {
+			switch iv.Name {
+			case "version":
+				model.Version = iv.Value
+			case "cloud":
+				model.Cloud = iv.Value
+			case "returnMap":
+				model.ReturnMapId = iv.Value
+			case "forcedReturn":
+				model.ForcedReturn = iv.Value
+			case "fieldLimit":
+				model.FieldLimit = iv.Value
+			case "VRTop":
+				model.VRTop = iv.Value
+			case "VRLeft":
+				model.VRLeft = iv.Value
+			case "VRBottom":
+				model.VRBottom = iv.Value
+			case "VRRight":
+				model.VRRight = iv.Value
+			case "hideMinimap":
+				model.HideMinimap = iv.Value != 0
+			case "town":
+				model.IsTown = iv.Value == 1
+			case "mobRate":
+				model.MobRate = float32(iv.Value)
+			case "recoveryRate":
+				if iv.Value > 0 {
+					model.RecoveryRate = float32(iv.Value)
+				} else {
+					model.RecoveryRate = 1.0
+				}
+			case "miniMapOnOff":
+				model.MiniMapOnOff = iv.Value != 0
+			}
+		}
+		for _, fv := range info.Floats {
+			if f, err := strconv.ParseFloat(fv.Value, 32); err == nil {
+				switch fv.Name {
+				case "mobRate":
+					model.MobRate = float32(f)
+				case "recoveryRate":
+					if f > 0 {
+						model.RecoveryRate = float32(f)
+					}
+				}
+			}
+		}
+		for _, sv := range info.Strings {
+			switch sv.Name {
+			case "bgm":
+				model.BGM = sv.Value
+			case "mapMark":
+				model.MapMark = sv.Value
+			case "mapDesc":
+				model.MapDesc = sv.Value
+			}
+		}
 		for _, v := range info.Children {
 			switch v.Name {
 			case "mapName":
@@ -819,10 +864,10 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 
 	portals := root.find("portal")
 	if portals != nil {
+		nextDoorPortalID := 0x80
 		for _, v := range portals.Children {
 			var portal Portal
 
-			// Parse string fields
 			for _, strField := range v.Strings {
 				switch strField.Name {
 				case "pn":
@@ -834,7 +879,6 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				}
 			}
 
-			// Parse int fields
 			for _, intField := range v.Ints {
 				switch intField.Name {
 				case "pt":
@@ -848,7 +892,6 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				}
 			}
 
-			// Parse children fields (for compatibility)
 			for _, field := range v.Children {
 				switch field.Name {
 				case "pn":
@@ -876,11 +919,31 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				}
 			}
 
-			id, _ := strconv.Atoi(v.Name)
-			portal.ID = uint8(id)
+			var portalID uint8
+			if portal.Type == 6 {
+				if nextDoorPortalID > 0xff {
+					log.Printf("door portal id overflow (>=256) in map %d (file: %s)", mapId, filepath.Base(path))
+					continue
+				}
+				portalID = uint8(nextDoorPortalID)
+				nextDoorPortalID++
+			} else {
+				id, err := strconv.Atoi(v.Name)
+				if err != nil {
+					log.Printf("Skipping portal with non-numeric name '%s' in map %d (file: %s)", v.Name, mapId, filepath.Base(path))
+					continue
+				}
+				if id < 0 || id > 255 {
+					log.Printf("Portal id %d out of uint8 range in map %d (file: %s)", id, mapId, filepath.Base(path))
+					continue
+				}
+				portalID = uint8(id)
+			}
+			portal.ID = portalID
 			model.Portals[portal.ID] = portal
 		}
 	}
+	model.buildDoorReturnPortal()
 
 	bound := types.Rect[int16]{}
 	footholds := root.find("foothold")
@@ -889,21 +952,20 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 		for _, v1 := range footholds.Children {
 			for _, v2 := range v1.Children {
 				for _, v3 := range v2.Children {
-					// Skip non-numeric nodes (e.g., "AreaCode")
+
 					id, err := strconv.Atoi(v3.Name)
 					if err != nil {
 						log.Printf("Skipping non-numeric foothold node '%s' in map %d (file: %s)", v3.Name, mapId, filepath.Base(path))
 						continue
 					}
 
-					// Helper function to find int field value
 					findIntValue := func(fieldName string) (int, bool) {
 						for _, intField := range v3.Ints {
 							if intField.Name == fieldName {
 								return intField.Value, true
 							}
 						}
-						// Also check in child nodes (for compatibility)
+
 						if childNode := v3.find(fieldName); childNode != nil {
 							if val, err := strconv.Atoi(childNode.Value); err == nil {
 								return val, true
@@ -912,42 +974,36 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 						return 0, false
 					}
 
-					// Find and validate x1
 					x1, found := findIntValue("x1")
 					if !found {
 						log.Printf("Missing 'x1' field in foothold node '%s' (ID: %d) in map %d (file: %s)", v3.Name, id, mapId, filepath.Base(path))
 						continue
 					}
 
-					// Find and validate x2
 					x2, found := findIntValue("x2")
 					if !found {
 						log.Printf("Missing 'x2' field in foothold node '%s' (ID: %d) in map %d (file: %s)", v3.Name, id, mapId, filepath.Base(path))
 						continue
 					}
 
-					// Find and validate y1
 					y1, found := findIntValue("y1")
 					if !found {
 						log.Printf("Missing 'y1' field in foothold node '%s' (ID: %d) in map %d (file: %s)", v3.Name, id, mapId, filepath.Base(path))
 						continue
 					}
 
-					// Find and validate y2
 					y2, found := findIntValue("y2")
 					if !found {
 						log.Printf("Missing 'y2' field in foothold node '%s' (ID: %d) in map %d (file: %s)", v3.Name, id, mapId, filepath.Base(path))
 						continue
 					}
 
-					// Find and validate prev
 					prev, found := findIntValue("prev")
 					if !found {
 						log.Printf("Missing 'prev' field in foothold node '%s' (ID: %d) in map %d (file: %s)", v3.Name, id, mapId, filepath.Base(path))
 						continue
 					}
 
-					// Find and validate next
 					next, found := findIntValue("next")
 					if !found {
 						log.Printf("Missing 'next' field in foothold node '%s' (ID: %d) in map %d (file: %s)", v3.Name, id, mapId, filepath.Base(path))
@@ -989,7 +1045,6 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				FacingDirection: FACING_DIRECTION_LEFT,
 			}
 
-			// Find type field - it's a <string> tag, so check Strings first
 			lifeType := ""
 			for _, strField := range life.Strings {
 				if strField.Name == "type" {
@@ -998,7 +1053,6 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				}
 			}
 
-			// If not found in Strings, check Children (for backward compatibility)
 			if lifeType == "" {
 				for _, prop := range life.Children {
 					if prop.Name == "type" {
@@ -1008,7 +1062,6 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				}
 			}
 
-			// Determine spawn type
 			if lifeType == "n" {
 				spawn = NpcSpawn{
 					BaseSpawn: &baseSpawn,
@@ -1023,7 +1076,6 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				return nil, err
 			}
 
-			// Process string fields (id, limitedname)
 			for _, strField := range life.Strings {
 				switch strField.Name {
 				case "id":
@@ -1037,7 +1089,6 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				}
 			}
 
-			// Process int fields (x, y, mobTime, f, fh, cy, rx0, rx1, hide, useDay, useNight, info, nofoothold)
 			for _, intField := range life.Ints {
 				switch intField.Name {
 				case "x":
@@ -1073,9 +1124,8 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				}
 			}
 
-			// Process children (for backward compatibility with any remaining fields)
 			for _, prop := range life.Children {
-				// Skip if already processed as string or int
+
 				alreadyProcessed := false
 				for _, strField := range life.Strings {
 					if strField.Name == prop.Name {
@@ -1095,10 +1145,9 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 					continue
 				}
 
-				// Handle any remaining fields that might be in Children
 				switch prop.Name {
 				case "type":
-					// Already processed above, skip
+
 					continue
 				default:
 					mutex.Lock()
@@ -1131,7 +1180,6 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	return &model, nil
 }
 
-// loadPets loads pet specifications from XML file.
 func loadPets(path string) (*Pet, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1151,7 +1199,7 @@ func loadPets(path string) (*Pet, error) {
 	model := &Pet{
 		ItemCore: &ItemCore{
 			ID:      uint32(id),
-			SlotMax: 100, // Pet default (EQUIP = 1, others = 100)
+			SlotMax: 100,
 		},
 	}
 	info := root.find("info")
@@ -1195,7 +1243,6 @@ func loadPets(path string) (*Pet, error) {
 	return model, nil
 }
 
-// loadSpecialItems loads special item specifications from XML file.
 func loadSpecialItems(path string) (*[]*SpecialItem, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1248,7 +1295,6 @@ func loadSpecialItems(path string) (*[]*SpecialItem, error) {
 	return &specs, nil
 }
 
-// loadStringNodeRecursive recursively loads string specifications from XML nodes.
 func loadStringNodeRecursive(root *node) map[uint32]map[string]string {
 
 	result := map[uint32]map[string]string{}
@@ -1256,7 +1302,7 @@ func loadStringNodeRecursive(root *node) map[uint32]map[string]string {
 
 		id, err := strconv.Atoi(child.Name)
 		if err != nil {
-			// If not an integer, recursively process child nodes
+
 			childResult := loadStringNodeRecursive(&child)
 			for k, v := range childResult {
 				result[k] = v
@@ -1264,7 +1310,6 @@ func loadStringNodeRecursive(root *node) map[uint32]map[string]string {
 			continue
 		}
 
-		// Create a map for this ID's string data
 		stringData := map[string]string{}
 		for _, v := range child.Children {
 			stringData[v.Name] = v.Value
@@ -1276,7 +1321,6 @@ func loadStringNodeRecursive(root *node) map[uint32]map[string]string {
 	return result
 }
 
-// loadStringResources loads string resources from XML file.
 func loadStringResources(path string) (*map[uint32]map[string]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1293,9 +1337,8 @@ func loadStringResources(path string) (*map[uint32]map[string]string, error) {
 	return &result, nil
 }
 
-// parseUnitPrice parses unit price string like "[R8]0.300000" to float64
 func parseUnitPrice(unitPriceStr string) float64 {
-	// Remove [R8] prefix if present
+
 	priceStr := strings.TrimPrefix(unitPriceStr, "[R8]")
 	priceStr = strings.TrimPrefix(priceStr, "[R4]")
 	priceStr = strings.Trim(priceStr, "[]")
@@ -1307,7 +1350,6 @@ func parseUnitPrice(unitPriceStr string) float64 {
 	return price
 }
 
-// loadNpcShops loads NPC shop data from NpcShop.img.xml
 func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1355,7 +1397,6 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 				}
 			}
 
-			// Skip shurikens except ITEM_SHURIKEN_BASE
 			if item.ItemID > 0 {
 				if item.ItemID/10000 == constant.ITEM_CATEGORY_SHURIKEN && item.ItemID != constant.ITEM_SHURIKEN_BASE {
 					continue
@@ -1368,7 +1409,6 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 		rechargeableItems = append(rechargeableItems, constant.RechargeableShurikens...)
 		rechargeableItems = append(rechargeableItems, constant.RechargeableBullets...)
 
-		// Track which rechargeable items are already in the shop
 		existingRechargeable := make(map[uint32]bool)
 		for _, existingItem := range shop.Items {
 			category := existingItem.ItemID / 10000
@@ -1384,7 +1424,7 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 					Price:     0,
 					Period:    0,
 					Stock:     0,
-					UnitPrice: 0, // Always 0 for added rechargeable items - will use getPrice() in serialization
+					UnitPrice: 0,
 				})
 			}
 		}
@@ -1397,7 +1437,6 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 	return &result, nil
 }
 
-// loadMob loads monster specifications from XML file.
 func loadMob(path string) (*Mob, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1421,7 +1460,6 @@ func loadMob(path string) (*Mob, error) {
 		return nil, fmt.Errorf("'info' node not found: %s", path)
 	}
 
-	// Process int fields first (maxHP, maxMP, level, etc.)
 	for _, intField := range info.Ints {
 		switch intField.Name {
 		case "bodyAttack":
@@ -1461,7 +1499,6 @@ func loadMob(path string) (*Mob, error) {
 		}
 	}
 
-	// Process string fields (link, etc.)
 	for _, strField := range info.Strings {
 		switch strField.Name {
 		case "link":
@@ -1469,7 +1506,6 @@ func loadMob(path string) (*Mob, error) {
 		}
 	}
 
-	// Process child nodes (for nested structures)
 	for _, iv := range info.Children {
 		switch iv.Name {
 		case "elemAttr":
@@ -1584,7 +1620,6 @@ func loadMob(path string) (*Mob, error) {
 	return model, nil
 }
 
-// dropEntry represents a single drop entry in Reward.img.xml
 type dropEntry struct {
 	XMLName xml.Name      `xml:"imgdir"`
 	Name    string        `xml:"name,attr"`
@@ -1592,21 +1627,18 @@ type dropEntry struct {
 	Strings []stringField `xml:"string"`
 }
 
-// mobDropNode represents a mob's drop list in Reward.img.xml
 type mobDropNode struct {
 	XMLName xml.Name    `xml:"imgdir"`
 	Name    string      `xml:"name,attr"`
 	Entries []dropEntry `xml:"imgdir"`
 }
 
-// rewardRoot represents the root of Reward.img.xml
 type rewardRoot struct {
 	XMLName xml.Name      `xml:"imgdir"`
 	Name    string        `xml:"name,attr"`
 	Mobs    []mobDropNode `xml:"imgdir"`
 }
 
-// shopItemNode represents a single shop item entry
 type shopItemNode struct {
 	XMLName xml.Name      `xml:"imgdir"`
 	Name    string        `xml:"name,attr"`
@@ -1614,21 +1646,18 @@ type shopItemNode struct {
 	Strings []stringField `xml:"string"`
 }
 
-// shopNode represents an NPC shop with its items
 type shopNode struct {
 	XMLName xml.Name       `xml:"imgdir"`
 	Name    string         `xml:"name,attr"`
 	Items   []shopItemNode `xml:"imgdir"`
 }
 
-// shopRoot represents the root of NpcShop.img.xml
 type shopRoot struct {
 	XMLName xml.Name   `xml:"imgdir"`
 	Name    string     `xml:"name,attr"`
 	Shops   []shopNode `xml:"imgdir"`
 }
 
-// loadDrops loads monster drop tables from XML file.
 func loadDrops(path string) (*map[uint32][]Drop, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1689,9 +1718,6 @@ func loadDrops(path string) (*map[uint32][]Drop, error) {
 	return &specs, nil
 }
 
-// loadExpTable loads character experience table from XML file.
-// Expected structure: Character.img/info/exp/{level} = {exp}
-// Or: CharacterExpTable.img/{level} = {exp}
 func loadExpTable(path string) ([]uint32, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1704,31 +1730,26 @@ func loadExpTable(path string) ([]uint32, error) {
 		return nil, err
 	}
 
-	// Try to find exp table in info/exp structure (Character.img)
 	info := root.find("info")
 	var expNode *node
 	if info != nil {
 		expNode = info.find("exp")
 	}
 
-	// If not found, try root level (CharacterExpTable.img)
 	if expNode == nil {
 		expNode = &root
 	}
 
-	// Build exp table: index = level, value = exp needed for that level
-	// Maximum level is typically 200, so we'll allocate for 201 levels (0-200)
 	expTable := make([]uint32, 201)
 
-	// If we found an exp node, parse its children
 	if expNode != nil {
 		for _, child := range expNode.Children {
 			level, err := strconv.Atoi(child.Name)
 			if err != nil {
-				continue // Skip non-numeric keys
+				continue
 			}
 			if level < 0 || level > 200 {
-				continue // Skip invalid levels
+				continue
 			}
 
 			var expValue int
@@ -1756,7 +1777,6 @@ func loadExpTable(path string) ([]uint32, error) {
 		}
 	}
 
-	// Validate that we loaded some exp data
 	hasData := false
 	for i := 1; i <= 10; i++ {
 		if expTable[i] > 0 {
@@ -1772,8 +1792,6 @@ func loadExpTable(path string) ([]uint32, error) {
 	return expTable, nil
 }
 
-// loadSkillClassFile loads all skills from a job's .img.xml file
-// Structure: Skill.wz/{job}.img.xml contains skill/{skillid} nodes
 func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -1788,13 +1806,11 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 
 	skills := make(map[uint32]*Skill)
 
-	// Find the "skill" node which contains all skills for this job
 	skillNode := root.find("skill")
 	if skillNode == nil {
 		return skills, nil
 	}
 
-	// Iterate through each skill in the skill node
 	for _, skillChild := range skillNode.Children {
 		skillIDStr := skillChild.Name
 		skillID, err := strconv.Atoi(skillIDStr)
@@ -1873,7 +1889,6 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 				skill.MaxLevel = len(levelNode.Children)
 			}
 
-			// Parse level-specific data
 			for _, levelChild := range levelNode.Children {
 				levelNum, err := strconv.Atoi(levelChild.Name)
 				if err != nil {
@@ -1882,7 +1897,6 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 
 				levelData := &SkillLevelData{}
 
-				// Parse int fields
 				for _, intField := range levelChild.Ints {
 					switch intField.Name {
 					case "mpCon":
@@ -1956,26 +1970,25 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 					}
 				}
 
-				// Parse string fields
 				for _, strField := range levelChild.Strings {
 					switch strField.Name {
 					case "damage":
-						// String value is parsed as int
+
 						if val, err := strconv.Atoi(strField.Value); err == nil {
 							levelData.Damage = val
 						}
 					case "attackCount":
-						// String value is parsed as int
+
 						if val, err := strconv.Atoi(strField.Value); err == nil {
 							levelData.AttackCount = val
 						}
 					case "acc":
-						// String value is parsed as int
+
 						if val, err := strconv.Atoi(strField.Value); err == nil {
 							levelData.ACC = val
 						}
 					case "time":
-						// String value is parsed as int (WZ time is in seconds)
+
 						if val, err := strconv.Atoi(strField.Value); err == nil {
 							levelData.Time = time.Duration(val) * time.Second
 						}
@@ -1986,7 +1999,6 @@ func loadSkillClassFile(path string) (map[uint32]*Skill, error) {
 					}
 				}
 
-				// Parse vector fields
 				for _, vecField := range levelChild.Vectors {
 					switch vecField.Name {
 					case "lt":
@@ -2023,8 +2035,6 @@ func getHardcodedExpTable() []uint32 {
 	return expTable
 }
 
-// calculateDefaultExp calculates default experience needed for a level using a formula
-// This is a fallback when WZ file is not available (deprecated, use getHardcodedExpTable instead)
 func calculateDefaultExp(level int) uint32 {
 	if level <= 0 || level > 200 {
 		return 0
@@ -2032,8 +2042,7 @@ func calculateDefaultExp(level int) uint32 {
 	if level == 1 {
 		return 15
 	}
-	// Approximate formula based on MapleStory exp curve
-	// This is a simplified version - actual values should come from WZ files
+
 	baseExp := 15
 	multiplier := 1.0
 	if level > 10 {

@@ -27,11 +27,11 @@ func (a *Attack) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU32(a.Skill)
 	}
 
-	writer.WriteBoolean(false) // 버프?�태
+	writer.WriteBoolean(false)
 	writer.WriteU8(a.Unk)
 	writer.WriteU8(a.Speed)
 	writer.WriteU8(a.Display)
-	writer.WriteU32(0) // cash bullet?
+	writer.WriteU32(0)
 	for _, oned := range a.Damages {
 		if oned.DamagePairs != nil {
 			writer.WriteU32(oned.OID)

@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/game/entity"
 )
 
-// TimerHandler defines the interface for timer handlers
 type TimerHandler interface {
 	GetName() string
 	GetInterval() time.Duration
@@ -15,7 +14,6 @@ type TimerHandler interface {
 	Handle(ctx actor.Context, mapData *entity.Map) error
 }
 
-// TimerRegistry manages timer handlers for MapActor
 type TimerRegistry struct {
 	handlers map[string]TimerHandler
 }
@@ -26,7 +24,6 @@ func NewTimerRegistry() *TimerRegistry {
 	}
 }
 
-// RegisterTimer registers a timer handler. H must implement TimerHandler and New() H.
 func RegisterTimer[H interface {
 	TimerHandler
 	New() H
@@ -36,7 +33,6 @@ func RegisterTimer[H interface {
 	registry.handlers[handler.GetName()] = handler
 }
 
-// GetAllHandlers returns all registered timer handlers
 func (r *TimerRegistry) GetAllHandlers() []TimerHandler {
 	out := make([]TimerHandler, 0, len(r.handlers))
 	for _, h := range r.handlers {

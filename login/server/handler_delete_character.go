@@ -9,7 +9,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// DeleteCharacter handles delete character packet requests
 type DeleteCharacter struct {
 	ls     *LoginServer
 	opcode byte

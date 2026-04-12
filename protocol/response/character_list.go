@@ -11,7 +11,6 @@ type CharacterList struct {
 	SlotCount  uint32
 }
 
-// Opcode returns the packet opcode for CharacterList
 func (e *CharacterList) Opcode() uint16 {
 	return 0x03
 }

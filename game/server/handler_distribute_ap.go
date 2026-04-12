@@ -12,7 +12,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// DistributeAP handles DISTRIBUTE_AP packet requests (0x46)
 type DistributeAP struct {
 	gs     *GameServer
 	opcode byte
@@ -42,16 +41,13 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		return fmt.Errorf("character is nil")
 	}
 
-	// Send empty stat update packet first (for client synchronization)
 	stats := map[constant.Stat]int32{}
 	character.Listener.OnUpdateStats(character, stats, true)
 
-	// Check if character has remaining AP
 	if character.AbilityPoint == 0 {
 		return nil
 	}
 
-	// Process stat distribution
 	statUpdate := map[constant.Stat]int32{}
 	success := false
 
@@ -131,17 +127,16 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		success = true
 
 	default:
-		// Invalid stat type - send empty stat update
+
 		character.Listener.OnUpdateStats(character, stats, true)
 		return nil
 	}
 
 	if success {
-		// Decrease AP
+
 		character.AbilityPoint = character.AbilityPoint - 1
 		statUpdate[constant.STAT_AVAILABLE_AP] = int32(character.AbilityPoint)
 
-		// Send stat update packet
 		character.Listener.OnUpdateStats(character, statUpdate, true)
 	}
 

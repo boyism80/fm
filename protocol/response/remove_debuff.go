@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// RemoveDebuff notifies the client to remove debuff(s) from self (opcode 0x16; trailing byte 1).
 type RemoveDebuff struct {
 	Diseases []constant.DebuffFlag
 }

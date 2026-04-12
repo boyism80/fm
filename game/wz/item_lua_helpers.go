@@ -5,7 +5,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// Helpers shared by raw wz item Luable implementations.
 func pushWzItemID(L *lua.LState, v interface{}) bool {
 	item, ok := v.(Item)
 	if !ok || item == nil {

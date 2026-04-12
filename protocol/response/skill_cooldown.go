@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// SkillCooldown notifies the client of a skill cooldown. RemainingSec 0 clears the cooldown UI.
 type SkillCooldown struct {
 	SkillID      uint32
 	RemainingSec uint32

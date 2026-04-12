@@ -9,7 +9,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// NpcControl handles NPC control packet requests
 type NpcControl struct {
 	gs     *GameServer
 	opcode byte

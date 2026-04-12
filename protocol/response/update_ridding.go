@@ -6,7 +6,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// UpdateRidding encodes self MONSTER_RIDING buff with mount-specific payload layout.
 type UpdateRidding struct {
 	BuffID  int32
 	MountID int32

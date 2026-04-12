@@ -10,7 +10,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// MoveMob handles mob movement packet requests
 type MoveMob struct {
 	gs     *GameServer
 	opcode byte

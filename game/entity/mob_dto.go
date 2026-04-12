@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 )
 
-// ToDTO converts entity Mob to dto Mob (includes mob buff mask/entries for spawn/control packet).
 func (m *Mob) ToDTO() *dto.Mob {
 	if m == nil {
 		return nil

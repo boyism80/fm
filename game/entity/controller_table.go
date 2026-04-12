@@ -1,10 +1,10 @@
 package entity
 
 type ControllerTable struct {
-	controllers        map[uint32]*Character          // playerID -> Character
-	mobs               map[uint32]*Mob                // mobOID -> Mob
-	controller2mob     map[uint32]map[uint32]struct{} // playerID -> mobOID
-	mob2controller     map[uint32]uint32              // mobOID -> playerID
+	controllers        map[uint32]*Character
+	mobs               map[uint32]*Mob
+	controller2mob     map[uint32]map[uint32]struct{}
+	mob2controller     map[uint32]uint32
 	onControllerChange func(mob *Mob, before *Character, after *Character)
 }
 
@@ -23,7 +23,6 @@ func (t *ControllerTable) EnterPlayer(character *Character) {
 	t.controllers[playerID] = character
 	t.controller2mob[playerID] = make(map[uint32]struct{})
 
-	// Quickly assign orphan mobs immediately
 	for mobOID, mob := range t.mobs {
 		if t.mob2controller[mobOID] == 0 {
 			t.assign(mob, nil, character)
@@ -34,7 +33,6 @@ func (t *ControllerTable) EnterPlayer(character *Character) {
 func (t *ControllerTable) LeavePlayer(character *Character) {
 	playerID := character.GetID()
 
-	// Find next controller
 	var next *Character
 	for id, controller := range t.controllers {
 		if id != playerID {
@@ -43,7 +41,6 @@ func (t *ControllerTable) LeavePlayer(character *Character) {
 		}
 	}
 
-	// controller가 관리하??모든 몹을 ?할??
 	for mobOID := range t.controller2mob[playerID] {
 		if mob, exists := t.mobs[mobOID]; exists {
 			t.assign(mob, character, next)
@@ -83,17 +80,14 @@ func (t *ControllerTable) LeaveMob(mob *Mob) *Character {
 	return controller
 }
 
-// assign updates monster→controller mapping in controller2mob, calls callback, assigns
 func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character) {
 	mobOID := mob.OID
 
-	// Previous controller is removed
 	prevControllerID := t.mob2controller[mobOID]
 	if prevControllerID != 0 {
 		delete(t.controller2mob[prevControllerID], mobOID)
 	}
 
-	// Set new controller
 	if after != nil {
 		afterID := after.GetID()
 		t.mob2controller[mobOID] = afterID
@@ -105,7 +99,6 @@ func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character) 
 		t.mob2controller[mobOID] = 0
 	}
 
-	// 콜백
 	if t.onControllerChange != nil {
 		t.onControllerChange(mob, before, after)
 	}

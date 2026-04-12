@@ -28,7 +28,6 @@ type Welcome struct {
 	RecvIv []byte
 }
 
-// Opcode returns the packet opcode for Welcome
 func (a *Welcome) Opcode() uint16 {
 	return uint16(13 + len(version))
 }

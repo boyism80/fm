@@ -11,7 +11,7 @@ type SkillEntry struct {
 	level       int
 	MasterLevel int
 	Expiration  time.Time
-	CooldownEnd *time.Time // When cooldown ends; nil means cooldown is done and the skill is ready to use. Non-nil and now < *CooldownEnd means still cooling.
+	CooldownEnd *time.Time
 	Owner       *Character
 }
 
@@ -105,7 +105,6 @@ func (s *SkillEntry) applyPassiveAfterLevelChange(prevLevel, newLevel int) {
 	}
 }
 
-// IsCooling returns true if the skill is still on cooldown (not yet ready to use).
 func (s *SkillEntry) IsCooling() bool {
 	if s.CooldownEnd == nil {
 		return false
@@ -113,7 +112,6 @@ func (s *SkillEntry) IsCooling() bool {
 	return time.Now().Before(*s.CooldownEnd)
 }
 
-// StartCooldown starts the cooldown for the given duration and notifies the owner's listener.
 func (s *SkillEntry) StartCooldown(duration time.Duration) {
 	end := time.Now().Add(duration)
 	s.CooldownEnd = &end
@@ -121,7 +119,6 @@ func (s *SkillEntry) StartCooldown(duration time.Duration) {
 	s.notifyCooldown(uint16(sec))
 }
 
-// CooldownRemaining returns remaining cooldown duration, or 0 if the skill is ready to use.
 func (s *SkillEntry) CooldownRemaining() time.Duration {
 	if s.CooldownEnd == nil {
 		return 0
@@ -132,7 +129,6 @@ func (s *SkillEntry) CooldownRemaining() time.Duration {
 	return time.Until(*s.CooldownEnd)
 }
 
-// ClearCooldown marks the skill as ready to use (CooldownEnd = nil) and notifies the owner's listener so the client can clear the cooldown UI.
 func (s *SkillEntry) ClearCooldown() {
 	s.CooldownEnd = nil
 	s.notifyCooldown(0)

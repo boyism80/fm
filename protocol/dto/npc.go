@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// Npc represents NPC data for protocol
 type Npc struct {
 	OID      uint32
 	NpcId    uint32
@@ -16,16 +15,15 @@ type Npc struct {
 	Cy       int16
 }
 
-// Serialize serializes NPC data
 func (n *Npc) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(n.NpcId)
 	writer.Write16(n.Position.X)
 	writer.Write16(n.Position.Y)
-	writer.WriteBoolean(false) // Facing left
+	writer.WriteBoolean(false)
 	writer.WriteU16(uint16(n.Foothold))
 	writer.Write16(n.Rx0)
 	writer.Write16(n.Rx1)
-	writer.WriteBoolean(false) // Hidden
+	writer.WriteBoolean(false)
 	writer.Write16(n.Cy)
 	return nil
 }

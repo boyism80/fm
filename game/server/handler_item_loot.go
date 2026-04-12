@@ -11,7 +11,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// ItemLoot handles item looting packet requests
 type ItemLoot struct {
 	gs     *GameServer
 	opcode byte
@@ -63,7 +62,7 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 	switch obj := lootedObject.(type) {
 	case entity.Item:
 		item := obj
-		_, err := character.AddItem(item, false) // allOrNothing = false for looting (fill as much as possible)
+		_, err := character.AddItem(item, false)
 		if err != nil {
 			log.Printf("Failed to add item: %v", err)
 		}

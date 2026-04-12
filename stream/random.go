@@ -8,7 +8,7 @@ type RandomStream struct {
 
 func NewRandomStream() RandomStream {
 	v4 := int64(5)
-	// seed := rand.New(rand.NewSource(time.Now().UnixNano())).Int63()
+
 	s2s3 := int64(uint32(1170746341*v4) - 755606699)
 
 	stream := RandomStream{}

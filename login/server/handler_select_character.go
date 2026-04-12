@@ -9,7 +9,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// SelectCharacter handles select character packet requests
 type SelectCharacter struct {
 	ls     *LoginServer
 	opcode byte

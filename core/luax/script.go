@@ -39,8 +39,6 @@ func CallWithPID(root *lua.LState, pid *actor.PID, scriptPath string, funcName s
 	return thread.Get(-1), thread, nil
 }
 
-// CallFunction invokes a Lua function value on the root state with the given arguments.
-// Used when the timer callback is a Lua function (e.g. from mktimer(..., function() ... end)).
 func CallFunction(root *lua.LState, fn *lua.LFunction, args ...interface{}) (lua.LValue, error) {
 	lvArgs, err := toLValues(root, args)
 	if err != nil {
@@ -110,8 +108,6 @@ func toLValues(L *lua.LState, args []interface{}) ([]lua.LValue, error) {
 	return out, nil
 }
 
-// Execute runs the given function on a lua thread. mapActorPID is required (nil returns error).
-// Sets thread PID before first resume; clears it when script ends (ResumeOK or error), not on yield.
 func Execute(root *lua.LState, thread *lua.LState, pid *actor.PID, funcName string, args ...interface{}) (lua.ResumeState, error) {
 	if pid == nil {
 		return lua.ResumeOK, fmt.Errorf("script requires map actor PID")

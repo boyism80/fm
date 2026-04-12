@@ -10,7 +10,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// Login handles login packet requests
 type Login struct {
 	ls     *LoginServer
 	opcode byte
@@ -31,7 +30,6 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 	log.Printf("Login packet received from %s - ID: %s, MAC: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.ID, req.Mac)
 
-	// Check if user is "cshyeon" (hardcoded for demo)
 	if req.ID == "cshyeon" {
 		authResp := &response.Authenticate{
 			AccountId:     2390,

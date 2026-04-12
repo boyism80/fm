@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// Pong handles pong packet requests
 type Pong struct {
 	ls     *LoginServer
 	opcode byte

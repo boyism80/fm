@@ -6,7 +6,6 @@ import (
 
 type EndOfServerList struct{}
 
-// Opcode returns the packet opcode for EndOfServerList
 func (e *EndOfServerList) Opcode() uint16 {
 	return 0x02
 }

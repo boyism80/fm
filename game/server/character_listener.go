@@ -142,13 +142,11 @@ func (l *CharacterListenerImpl) OnInventorySlotUpdated(ch *entity.Character, inv
 func (l *CharacterListenerImpl) OnInventorySlotAdded(ch *entity.Character, inventoryType constant.InventoryType, slot int16, item entity.Item) {
 	itemDTO := entity.ItemToDTO(item)
 
-	// Determine FromDrop value based on item capacity
-	// 0 = stackable (capacity >= 2), 1 = non-stackable (capacity < 2)
-	fromDrop := true // default to non-stackable
+	fromDrop := true
 	if item != nil {
 		model := item.GetModel()
 		if model != nil && model.GetCapacity() >= 2 {
-			fromDrop = false // stackable
+			fromDrop = false
 		}
 	}
 
@@ -473,7 +471,6 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 		return
 	}
 
-	// Only players with lower role receive Leave/Spawn; same-or-higher role always see the character.
 	if hidden {
 		ch.Broadcast(&response.LeavePlayer{ID: ch.GetID()}, &entity.ObjectBroadcastOption{
 			RecipientsRoleBelowPivot: true,

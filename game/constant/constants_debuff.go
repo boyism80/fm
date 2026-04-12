@@ -1,8 +1,5 @@
 package constant
 
-// DebuffFlag identifies a character debuff (disease) type for packets.
-// Mask and Position must match MapleDisease (getValue, getPosition); position 3 or 4.
-// DiseaseSkillID is the skill ID used in GiveDebuff packet (MapleDisease.getDisease()).
 type DebuffFlag struct {
 	Mask           uint32
 	Position       int
@@ -27,7 +24,6 @@ var (
 	DebuffFlagReverseDirection = DebuffFlag{0x80000, 3, 132}
 )
 
-// AllDebuffFlags returns all DebuffFlag constants for Lua injection.
 func AllDebuffFlags() map[string]DebuffFlag {
 	return map[string]DebuffFlag{
 		"Stun":             DebuffFlagStun,

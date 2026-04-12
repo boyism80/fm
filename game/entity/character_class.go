@@ -1,6 +1,5 @@
 package entity
 
-// getClassParent returns the parent class code in the job tree. ok is false at roots.
 func getClassParent(class uint16) (parent uint16, ok bool) {
 	if class == 0 {
 		return 0, false
@@ -24,7 +23,6 @@ func getClassParent(class uint16) (parent uint16, ok bool) {
 	}
 }
 
-// ClassOf returns true if the character's class is the given class or any advancement of it in the job tree.
 func (ch *Character) ClassOf(classCode uint16) bool {
 	c := ch.Class
 	for c != 0 {

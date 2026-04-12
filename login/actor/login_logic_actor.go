@@ -45,8 +45,6 @@ func (a *LoginLogicActor) scheduleTimer(ctx actor.Context, msg *c_actor.Schedule
 		return
 	}
 
-	// Schedule timer using goroutine (protoactor-go doesn't have built-in ScheduleOnce)
-	// Send ExecuteTimer message to self after the interval
 	go func() {
 		time.Sleep(msg.Interval)
 		ctx.Send(ctx.Self(), &c_actor.ExecuteTimer{

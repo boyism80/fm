@@ -10,7 +10,6 @@ type Transfer struct {
 	CharacterId uint32
 }
 
-// Opcode returns the packet opcode for Transfer
 func (a *Transfer) Opcode() uint16 {
 	return 0x04
 }

@@ -5,12 +5,10 @@ import (
 )
 
 type ChangeKeymap struct {
-	// Mode 1: Keymap changes (available > 8)
 	Skip       int32
 	NumChanges int32
 	Changes    []KeymapChange
 
-	// Mode 2: Pet auto pot (available <= 8)
 	Type int32
 	Data int32
 }

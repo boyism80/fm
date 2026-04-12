@@ -9,7 +9,6 @@ type DeleteCharacter struct {
 	Success bool
 }
 
-// Opcode returns the packet opcode for DeleteCharacter
 func (a *DeleteCharacter) Opcode() uint16 {
 	return 0x07
 }

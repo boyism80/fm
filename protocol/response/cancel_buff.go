@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// CancelBuff notifies the client to remove buff(s) from self (buff off).
 type CancelBuff struct {
 	Buffs []constant.BuffFlag
 }

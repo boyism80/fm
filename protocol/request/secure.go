@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// Secure represents client packet 0x0C. Structure [1][4][4]: Type, ParamA, ParamB (int32 LE).
 type Secure struct {
 	Type    byte
 	ParamA  int32

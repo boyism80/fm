@@ -40,11 +40,22 @@ function on_map_leave(me, map)
 	if me == nil or map == nil then
 		return
 	end
+	local mob = me:homing()
+	if mob ~= nil then
+		mob:homing(me, nil)
+	end
 	local mwz = map:wz()
 	if mwz == nil then
 		return
 	end
 	unbuff_stationary_summons_for_map(me, mwz.id)
+end
+
+function on_logout(me)
+	if me == nil then
+		return
+	end
+	me:unbuff(Skill.MysticDoor)
 end
 
 function on_start(me)
@@ -65,7 +76,7 @@ end
 function on_script(me)
     local x, y = me:position()
 
-    me:class(900)
+    me:class(232)
     local wz_skills = class_learnable_skill_wzs(me:class())
     for _, wz in pairs(wz_skills) do
         local skill = me:skill(wz.id)
@@ -83,18 +94,19 @@ function on_script(me)
     me:mkitem('활전용화살', 200)
     me:mkitem('석궁전용화살', 200)
     me:mkitem('석궁')
-    local weapon = me:mkitem('가니어')
+    local weapon = me:mkitem('우드완드')
     if weapon ~= nil then
         me:equip(weapon)
     end
     me:mkitem('수비표창', 200)
     me:mkitem('불릿', 2000)
+    me:mkitem('마법의돌', 200)
     me:base_str(80)
     me:base_dex(300)
     me:base_int(4)
     me:base_luk(4)
     me:level(200)
-    -- me:map('오르비스탑입구')
+    me:map('헤네시스사냥터1')
 end
 
 function on_damaged(me, attacker, skill, damage, params)

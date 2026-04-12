@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// PartySearchStop represents the PARTY_SEARCH_STOP packet (0xB6)
 type PartySearchStop struct {
 }
 

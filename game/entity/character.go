@@ -63,8 +63,8 @@ type Character struct {
 	Skills           *SkillContainer
 	CurrentShopID    uint32
 	Chair            uint32
-	LastHealHPTime   time.Time // used for heal-over-time rate limit
-	LastHealMPTime   time.Time // used for heal-over-time rate limit
+	LastHealHPTime   time.Time
+	LastHealMPTime   time.Time
 	BaseStats        BaseStats
 	BonusStats       BonusStats
 	Buffs            *BuffContainer
@@ -72,9 +72,9 @@ type Character struct {
 	timers           map[string]*CharacterTimer
 	summons          map[constant.SkillID]*Summon
 	doors            map[constant.SkillID]*Door
+	HomingTargetOID  *uint32
 }
 
-// DiseaseValueHolder holds one applied disease (mirrors MapleDiseaseValueHolder: disease, start time, duration).
 type DiseaseValueHolder struct {
 	Disease   constant.DebuffFlag
 	StartTime time.Time
@@ -187,7 +187,7 @@ func (ch *Character) addTimer(key string, interval time.Duration, repeat bool, c
 		NextFireAt: time.Now().Add(interval),
 	}
 	entry.Timer = time.AfterFunc(interval, func() {
-		ch.Context.SendToActor(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: key})
+		ch.Context.DispatchRunCharacterTimer(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: key})
 	})
 	ch.timers[key] = entry
 	return true
@@ -329,7 +329,7 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	return mist
 }
 
-func (ch *Character) SpawnDoor(skillID constant.SkillID, duration time.Duration) *Door {
+func (ch *Character) SpawnDoor(skillID constant.SkillID) *Door {
 	if ch == nil {
 		return nil
 	}
@@ -343,13 +343,22 @@ func (ch *Character) SpawnDoor(skillID constant.SkillID, duration time.Duration)
 		}
 	}
 
-	oppositeMapID := uint32(m.Wz.ReturnMapId)
-	townPosition := ch.Position
+	destMapID := uint32(m.Wz.ReturnMapId)
+	fieldAnchor := types.Point[int16]{X: ch.Position.X, Y: ch.Position.Y}
+	var destPortalID uint8
+	var closestPortalID uint8
 	if ch.Context != nil {
-		if townWz, ok := ch.Context.GetResources().Maps[oppositeMapID]; ok {
-			if spawnPos, ok := townWz.GetSpawnPosition(0); ok {
-				townPosition = spawnPos
+		if destMapWz, ok := ch.Context.GetResources().Maps[destMapID]; ok {
+			if id, ok := destMapWz.DoorReturnPortalSpawnID(0); ok {
+				destPortalID = id
+			} else if _, ok := destMapWz.GetSpawnPosition(0); ok {
+				destPortalID = 0
 			}
+		}
+		if id, ok := m.Wz.FindClosestDoorReturnPortalSpawnID(fieldAnchor); ok {
+			closestPortalID = id
+		} else {
+			closestPortalID = m.Wz.FindClosestPortalSpawnID(fieldAnchor)
 		}
 	}
 
@@ -359,21 +368,41 @@ func (ch *Character) SpawnDoor(skillID constant.SkillID, duration time.Duration)
 			Context:  m.context,
 			Map:      nil,
 		},
-		OwnerID:          ch.GetID(),
-		SkillID:          skillID,
-		OppositeMapID:    oppositeMapID,
-		OppositePosition: townPosition,
+		OwnerID:        ch.GetID(),
+		SkillID:        skillID,
+		ReturnMapID:    destMapID,
+		FieldMapID:     uint32(m.Wz.ID),
+		ReturnPortalID: destPortalID,
+		FieldPortalID:  closestPortalID,
 	}
 	door.ObjectCore.self = door
-	if duration > 0 {
-		door.ExpiresAt = time.Now().Add(duration)
-	}
 	if ch.doors == nil {
 		ch.doors = make(map[constant.SkillID]*Door)
 	}
 	ch.doors[skillID] = door
 	m.AddDoor(door)
+	if skillID == constant.SkillMysticDoor && destMapID != 0 && destMapID != uint32(m.Wz.ID) && ch.Context != nil {
+		ch.Context.NotifyDoorSpawn(destMapID, DoorSpawn{
+			OwnerID:        ch.GetID(),
+			SkillID:        skillID,
+			FieldMapID:     uint32(m.Wz.ID),
+			ReturnPortalID: destPortalID,
+			FieldPortalID:  closestPortalID,
+		})
+	}
 	return door
+}
+
+func (ch *Character) forgetDoorRegistrationIfSame(door *Door) {
+	if ch == nil || door == nil {
+		return
+	}
+	if ch.doors != nil {
+		key := constant.SkillID(door.SkillID)
+		if d := ch.doors[key]; d == door {
+			delete(ch.doors, key)
+		}
+	}
 }
 
 func (ch *Character) RemoveMist(mist *Mist) {
@@ -519,7 +548,7 @@ func (ch *Character) ResumeTimers(pid *actor.PID) {
 		entry.NextFireAt = time.Now().Add(duration)
 		k := key
 		entry.Timer = time.AfterFunc(duration, func() {
-			ch.Context.SendToActor(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: k})
+			ch.Context.DispatchRunCharacterTimer(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: k})
 		})
 	}
 }
@@ -1061,8 +1090,6 @@ func (ch *Character) AddDebuff(holder *DiseaseValueHolder) {
 	}
 }
 
-// GiveDebuff adds the disease to the character (refresh if already present), starts duration timer, and notifies the listener to send GiveDebuff/GiveRemoteDebuff packets.
-// If skillID is 0, flag.DiseaseSkillID is used; if skillLevel is 0, 1 is used.
 func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration, x int16, skillID uint16, skillLevel uint16) {
 	if skillID == 0 {
 		skillID = flag.DiseaseSkillID

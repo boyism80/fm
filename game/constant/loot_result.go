@@ -1,6 +1,5 @@
 package constant
 
-// LootResult defines the different results for loot failure or success
 type LootResult uint8
 
 const (

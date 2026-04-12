@@ -27,5 +27,5 @@ func (a *Warp) Deserialize(reader *stream.StreamReader) {
 }
 
 func (w *Warp) Opcode() uint16 {
-	return 0x55 // Warp opcode (same as Login)
+	return 0x55
 }

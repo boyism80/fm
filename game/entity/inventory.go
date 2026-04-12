@@ -89,12 +89,10 @@ func (m *Inventory) IsFree(model wz.Item, count uint16) bool {
 	return space >= count
 }
 
-// GetItem returns the item at the specified slot
 func (m *Inventory) GetItem(slot uint8) Item {
 	return m.Items[int16(slot)]
 }
 
-// AddItem adds an item to the specified slot
 func (m *Inventory) AddItem(slot uint8, item Item) error {
 	if slot < 1 || slot > m.SlotLimit {
 		return ErrSlotNotFound
@@ -108,7 +106,6 @@ func (m *Inventory) AddItem(slot uint8, item Item) error {
 	return nil
 }
 
-// RemoveItem removes an item from the specified slot
 func (m *Inventory) RemoveItem(slot uint8) error {
 	if slot < 1 || slot > m.SlotLimit {
 		return ErrSlotNotFound
@@ -122,7 +119,6 @@ func (m *Inventory) RemoveItem(slot uint8) error {
 	return nil
 }
 
-// FindById finds an item by its ID in the inventory
 func (m *Inventory) FindById(itemID uint32) Item {
 	for _, item := range m.Items {
 		if item != nil && item.GetModel().GetID() == itemID {

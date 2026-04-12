@@ -4,9 +4,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// ShowForeignEffect represents the SHOW_FOREIGN_EFFECT packet (0x8F)
-// This packet is used to show effects for other players on the map.
-// EffectID 0 = Level up effect
 type ShowForeignEffect struct {
 	CharacterID uint32
 	EffectID    uint8

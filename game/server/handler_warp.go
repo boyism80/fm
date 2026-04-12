@@ -10,7 +10,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// Warp handles warp packet requests
 type Warp struct {
 	gs     *GameServer
 	opcode byte

@@ -14,7 +14,6 @@ type ServerList struct {
 	EventMessage string
 }
 
-// Opcode returns the packet opcode for ServerList
 func (s *ServerList) Opcode() uint16 {
 	return 0x02
 }
@@ -31,7 +30,7 @@ func (s *ServerList) Serialize(writer *stream.StreamWriter) error {
 	for i := 1; i <= int(s.ChannelSize); i++ {
 		channelName := fmt.Sprintf("%s-%d", s.WorldName, i)
 		writer.WriteStr16(channelName)
-		writer.WriteU32(1200) // Channel population (placeholder)
+		writer.WriteU32(1200)
 		writer.WriteU8(s.ServerId)
 		writer.WriteU16(uint16(i - 1))
 	}

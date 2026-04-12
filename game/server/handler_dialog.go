@@ -12,7 +12,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// Dialog handles dialog packet requests
 type Dialog struct {
 	gs     *GameServer
 	opcode byte
@@ -91,7 +90,7 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		thread.Close()
 		character.ClearCurrentDialog()
 	case lua.ResumeYield:
-		// Dialog still waiting for next input; do not close thread
+
 	case lua.ResumeError:
 		log.Printf("Dialog error for character %d: %v", character.GetID(), err)
 		thread.Close()

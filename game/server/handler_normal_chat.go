@@ -12,7 +12,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// NormalChat handles normal chat packet requests
 type NormalChat struct {
 	gs     *GameServer
 	opcode byte

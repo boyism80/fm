@@ -10,6 +10,7 @@ import (
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/game/actor/timers"
+	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/game/entity"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -39,6 +40,10 @@ func (a *MapActor) Receive(ctx actor.Context) {
 		a.removeCharacter(msg)
 	case *WarpCharacter:
 		a.warpCharacter(ctx, msg)
+	case *SpawnDoor:
+		a.spawnTownMysticDoor(msg)
+	case *RemoveDoor:
+		a.removeMysticDoor(msg)
 	case *ResumeLua:
 		a.resumeLua(msg)
 	case *c_actor.RunCharacterTimer:
@@ -71,8 +76,6 @@ func (a *MapActor) scheduleTimer(ctx actor.Context, msg *c_actor.ScheduleTimer) 
 		return
 	}
 
-	// Schedule timer using goroutine (protoactor-go doesn't have built-in ScheduleOnce)
-	// Send ExecuteTimer message to self after the interval
 	go func() {
 		time.Sleep(msg.Interval)
 		ctx.Send(ctx.Self(), &c_actor.ExecuteTimer{
@@ -112,6 +115,30 @@ func (a *MapActor) warpCharacter(ctx actor.Context, msg *WarpCharacter) {
 	}
 	a.MapData.AddPlayer(msg.Character.GetID(), msg.Character, msg.Portal, false)
 	msg.Character.ResumeTimers(ctx.Self())
+}
+
+func (a *MapActor) spawnTownMysticDoor(msg *SpawnDoor) {
+	if a.MapData == nil || msg == nil || a.MapData.Wz == nil {
+		return
+	}
+	wz := a.MapData.Wz
+	position, ok := wz.GetSpawnPosition(msg.ReturnPortalID)
+	if !ok {
+		if p, ok2 := wz.Portals[msg.ReturnPortalID]; ok2 {
+			position = p.Position
+		} else {
+			return
+		}
+	}
+	door := entity.NewDoor(position, msg.OwnerID, msg.SkillID, wz.ID, msg.FieldMapID, msg.ReturnPortalID, msg.FieldPortalID)
+	a.MapData.AddDoor(door)
+}
+
+func (a *MapActor) removeMysticDoor(msg *RemoveDoor) {
+	if a.MapData == nil || msg == nil {
+		return
+	}
+	a.MapData.RemoveMysticDoorByOwnerSkill(msg.OwnerID, constant.SkillID(msg.SkillID), true)
 }
 
 func (a *MapActor) runCharacterTimer(ctx actor.Context, msg *c_actor.RunCharacterTimer) {
@@ -174,7 +201,6 @@ func (a *MapActor) registerTimers() {
 	RegisterTimer[*timers.MobPoisonTickTimer](a.timerReg)
 	RegisterTimer[*timers.MistExpireTimer](a.timerReg)
 	RegisterTimer[*timers.MistPoisonTickTimer](a.timerReg)
-	RegisterTimer[*timers.DoorExpireTimer](a.timerReg)
 }
 
 func (a *MapActor) onTimerTick(ctx actor.Context, msg *TimerTick) {

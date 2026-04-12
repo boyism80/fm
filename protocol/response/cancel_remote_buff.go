@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// CancelRemoteBuff notifies other clients on the map that a character's buff(s) were removed.
 type CancelRemoteBuff struct {
 	CharacterID int32
 	Buffs       []constant.BuffFlag

@@ -6,7 +6,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// UpdateRemoteRidding encodes remote MONSTER_RIDING buff with mount payload layout.
 type UpdateRemoteRidding struct {
 	CharacterID int32
 	MountID     int32

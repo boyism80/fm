@@ -26,29 +26,30 @@ type MobSpawn struct {
 }
 
 type Map struct {
-	ID           uint32
-	Name         string
-	Version      int
-	Cloud        int
-	ReturnMapId  int
-	ForcedReturn int
-	FieldLimit   int
-	VRTop        int
-	VRLeft       int
-	VRBottom     int
-	VRRight      int
-	HideMinimap  bool
-	IsTown       bool
-	MobRate      float32
-	RecoveryRate float32
-	BGM          string
-	MapMark      string
-	MapDesc      string
-	MiniMapOnOff bool
-	Portals      map[uint8]Portal
-	NpcSpawns    map[uint32]NpcSpawn
-	MobSpawns    map[uint32]MobSpawn
-	Footholds    *types.QuadTreeNode[int16, Foothold]
+	ID                uint32
+	Name              string
+	Version           int
+	Cloud             int
+	ReturnMapId       int
+	ForcedReturn      int
+	FieldLimit        int
+	VRTop             int
+	VRLeft            int
+	VRBottom          int
+	VRRight           int
+	HideMinimap       bool
+	IsTown            bool
+	MobRate           float32
+	RecoveryRate      float32
+	BGM               string
+	MapMark           string
+	MapDesc           string
+	MiniMapOnOff      bool
+	Portals           map[uint8]Portal
+	NpcSpawns         map[uint32]NpcSpawn
+	MobSpawns         map[uint32]MobSpawn
+	Footholds         *types.QuadTreeNode[int16, Foothold]
+	doorReturnPortals []Portal
 }
 
 func footholdSpansX(f Foothold, x int16) bool {
@@ -159,4 +160,94 @@ func (model *Map) GetSpawnPosition(spawnPoint uint8) (types.Point[int16], bool) 
 		position = dropped
 	}
 	return position, true
+}
+
+func (model *Map) FindClosestPortalSpawnID(pos types.Point[int16]) uint8 {
+	if model == nil || len(model.Portals) == 0 {
+		return 0
+	}
+	var best uint8
+	var bestDist int64 = -1
+	for id, p := range model.Portals {
+		dx := int64(p.Position.X - pos.X)
+		dy := int64(p.Position.Y - pos.Y)
+		d := dx*dx + dy*dy
+		if bestDist < 0 || d < bestDist {
+			bestDist = d
+			best = id
+		}
+	}
+	return best
+}
+
+func (model *Map) FindClosestDoorReturnPortalSpawnID(pos types.Point[int16]) (uint8, bool) {
+	if model == nil || len(model.doorReturnPortals) == 0 {
+		return 0, false
+	}
+	var best uint8
+	var bestDist int64 = -1
+	for i := range model.doorReturnPortals {
+		p := model.doorReturnPortals[i]
+		dx := int64(p.Position.X - pos.X)
+		dy := int64(p.Position.Y - pos.Y)
+		d := dx*dx + dy*dy
+		if bestDist < 0 || d < bestDist {
+			bestDist = d
+			best = p.ID
+		}
+	}
+	return best, true
+}
+
+func (model *Map) buildDoorReturnPortal() {
+	if model == nil || len(model.Portals) == 0 {
+		if model != nil {
+			model.doorReturnPortals = nil
+		}
+		return
+	}
+	out := make([]Portal, 0, len(model.Portals))
+	for _, p := range model.Portals {
+		if p.Type == 6 {
+			out = append(out, p)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ID < out[j].ID
+	})
+	model.doorReturnPortals = out
+}
+
+func (model *Map) GetDoorReturnPosition(partyOwnerSlot int) (types.Point[int16], bool) {
+	if model == nil {
+		return types.Point[int16]{}, false
+	}
+	list := model.doorReturnPortals
+	if len(list) == 0 {
+		return types.Point[int16]{}, false
+	}
+	if partyOwnerSlot < 0 {
+		partyOwnerSlot = 0
+	}
+	if partyOwnerSlot >= len(list) {
+		partyOwnerSlot = len(list) - 1
+	}
+	return list[partyOwnerSlot].Position, true
+}
+
+func (model *Map) DoorReturnPortalSpawnID(partyOwnerSlot int) (uint8, bool) {
+	if model == nil {
+		return 0, false
+	}
+	list := model.doorReturnPortals
+	if len(list) == 0 {
+		return 0, false
+	}
+	if partyOwnerSlot < 0 {
+		partyOwnerSlot = 0
+	}
+	if partyOwnerSlot >= len(list) {
+		partyOwnerSlot = len(list) - 1
+	}
+	return list[partyOwnerSlot].ID, true
 }

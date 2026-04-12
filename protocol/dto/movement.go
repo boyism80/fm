@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// Movement types
 type MoveFragment interface {
 	GetStance() uint8
 	Serialize(sw *stream.StreamWriter)
@@ -63,7 +62,6 @@ type TeleportMovement struct {
 	Velocity types.Vector2[int16]
 }
 
-// Movement methods
 func (m *BasicMovement) GetStance() uint8 {
 	return m.Stance
 }
@@ -129,7 +127,6 @@ func (m *TeleportMovement) Serialize(writer *stream.StreamWriter) {
 	writer.Write16(m.Velocity.Y)
 }
 
-// ReadMovements reads movement fragments from stream
 func ReadMovements(reader *stream.StreamReader) []MoveFragment {
 	numCommands := reader.ReadU8()
 

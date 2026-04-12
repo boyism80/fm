@@ -7,7 +7,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-// Luable interface implementation
 func (s *SkillEntry) LuaTypeName() string {
 	return "LuaSkill"
 }
@@ -136,11 +135,9 @@ func (s *SkillEntry) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
-// skillToLuaTable converts wz.Skill to Lua table
 func skillToLuaTable(L *lua.LState, skill *wz.Skill) *lua.LTable {
 	tbl := L.NewTable()
 
-	// Basic skill properties
 	tbl.RawSetString("id", lua.LNumber(skill.ID))
 	tbl.RawSetString("max_level", lua.LNumber(skill.MaxLevel))
 	tbl.RawSetString("master_level", lua.LNumber(skill.MasterLevel))
@@ -151,7 +148,6 @@ func skillToLuaTable(L *lua.LState, skill *wz.Skill) *lua.LTable {
 		tbl.RawSetString("elem_attr", lua.LString(skill.ElemAttr))
 	}
 
-	// Convert LevelData to effects table
 	effectsTable := L.NewTable()
 	if skill.LevelData != nil {
 		for level, levelData := range skill.LevelData {
@@ -166,23 +162,19 @@ func skillToLuaTable(L *lua.LState, skill *wz.Skill) *lua.LTable {
 	return tbl
 }
 
-// skillLevelDataToLuaTable converts wz.SkillLevelData to Lua table
 func skillLevelDataToLuaTable(L *lua.LState, data *wz.SkillLevelData) *lua.LTable {
 	tbl := L.NewTable()
 
-	// Resource consumption
 	tbl.RawSetString("mp_con", lua.LNumber(data.MPCon))
 	tbl.RawSetString("hp_con", lua.LNumber(data.HPCon))
 	tbl.RawSetString("money_con", lua.LNumber(data.MoneyCon))
 
-	// Item consumption
 	tbl.RawSetString("item_con", lua.LNumber(data.ItemCon))
 	tbl.RawSetString("item_con_no", lua.LNumber(data.ItemConNo))
 	tbl.RawSetString("item_consume", lua.LNumber(data.ItemConsume))
 	tbl.RawSetString("bullet_consume", lua.LNumber(data.BulletConsume))
 	tbl.RawSetString("bullet_count", lua.LNumber(data.BulletCount))
 
-	// Damage and combat stats
 	tbl.RawSetString("damage", lua.LNumber(data.Damage))
 	tbl.RawSetString("damage_pc", lua.LNumber(data.DamagePC))
 	tbl.RawSetString("fix_damage", lua.LNumber(data.FixDamage))
@@ -190,7 +182,6 @@ func skillLevelDataToLuaTable(L *lua.LState, data *wz.SkillLevelData) *lua.LTabl
 	tbl.RawSetString("attack_count", lua.LNumber(data.AttackCount))
 	tbl.RawSetString("mob_count", lua.LNumber(data.MobCount))
 
-	// Defense and evasion
 	tbl.RawSetString("pad", lua.LNumber(data.PAD))
 	tbl.RawSetString("mad", lua.LNumber(data.MAD))
 	tbl.RawSetString("pdd", lua.LNumber(data.PDD))
@@ -198,27 +189,23 @@ func skillLevelDataToLuaTable(L *lua.LState, data *wz.SkillLevelData) *lua.LTabl
 	tbl.RawSetString("eva", lua.LNumber(data.EVA))
 	tbl.RawSetString("acc", lua.LNumber(data.ACC))
 
-	// Stat bonuses
 	tbl.RawSetString("str", lua.LNumber(data.STR))
 	tbl.RawSetString("hp", lua.LNumber(data.HP))
 	tbl.RawSetString("mp", lua.LNumber(data.MP))
 	tbl.RawSetString("jump", lua.LNumber(data.Jump))
 	tbl.RawSetString("speed", lua.LNumber(data.Speed))
 
-	// Skill properties
 	tbl.RawSetString("mastery", lua.LNumber(data.Mastery))
 	tbl.RawSetString("prop", lua.LNumber(data.Prop))
 	tbl.RawSetString("range", lua.LNumber(data.Range))
 	tbl.RawSetString("time", lua.LNumber(data.Time.Milliseconds()))
 	tbl.RawSetString("cooldown", lua.LNumber(data.Cooldown.Milliseconds()))
 
-	// Special properties
 	tbl.RawSetString("morph", lua.LNumber(data.Morph))
 	tbl.RawSetString("x", lua.LNumber(data.X))
 	tbl.RawSetString("y", lua.LNumber(data.Y))
 	tbl.RawSetString("z", lua.LNumber(data.Z))
 
-	// Attack range (vectors)
 	ltTable := L.NewTable()
 	ltTable.RawSetString("x", lua.LNumber(data.LT.X))
 	ltTable.RawSetString("y", lua.LNumber(data.LT.Y))
@@ -229,7 +216,6 @@ func skillLevelDataToLuaTable(L *lua.LState, data *wz.SkillLevelData) *lua.LTabl
 	rbTable.RawSetString("y", lua.LNumber(data.RB.Y))
 	tbl.RawSetString("rb", rbTable)
 
-	// String properties
 	if data.HS != "" {
 		tbl.RawSetString("hs", lua.LString(data.HS))
 	}

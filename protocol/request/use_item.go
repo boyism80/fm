@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// UseItem represents the USE_ITEM packet (0x37)
 type UseItem struct {
 	Tick   uint32
 	Slot   uint16

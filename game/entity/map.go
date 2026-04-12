@@ -15,7 +15,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// MapListener defines interface for map events. Prefer passing object pointers (*Map, *Character, *Mob) over IDs.
 type MapListener interface {
 	OnPlayerAdded(mapInstance *Map, character *Character, init bool)
 	OnPlayerRemoved(mapInstance *Map, character *Character)
@@ -27,6 +26,8 @@ type MapListener interface {
 	OnItemRemoved(mapInstance *Map, itemID uint32, looterID uint32, mode constant.RemoveItemType)
 	OnMobSpawned(mapInstance *Map, mob *Mob)
 	OnMobRemoved(mapInstance *Map, mob *Mob, animationType constant.MobDieAnimationType)
+	OnMobHomingRemoved(mapInstance *Map, mob *Mob, removed *Homing, causer *Character)
+	OnMobHomingSet(mapInstance *Map, mob *Mob, homing *Homing, causer *Character)
 	OnMobControllerChange(mob *Mob, before *Character, after *Character)
 	OnMobMoved(mapInstance *Map, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
 	OnAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
@@ -47,16 +48,16 @@ type MobSpawn struct {
 }
 
 type Map struct {
-	Wz *wz.Map // Map specification data
+	Wz *wz.Map
 
 	id              uint32
-	objects         map[constant.ObjectType]map[uint32]Object // Players, Mobs, Items, etc.
+	objects         map[constant.ObjectType]map[uint32]Object
 	controllerTable *ControllerTable
 	MobSpawns       map[uint32]*MobSpawn
 	listener        MapListener
-	sequence        uint32      // Sequence ID for generating unique object IDs
-	availableOIDs   []uint32    // Queue of available OIDs for reuse
-	context         GameContext // GameContext for accessing resources
+	sequence        uint32
+	availableOIDs   []uint32
+	context         GameContext
 	actorPID        *actor.PID
 	pidMutex        sync.RWMutex
 }
@@ -73,7 +74,6 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 		panic("GameContext cannot be nil")
 	}
 
-	// Get map model from resources
 	wz, ok := context.GetResources().Maps[mapId]
 	if !ok {
 		panic(fmt.Sprintf("Wz not found for ID: %d", mapId))
@@ -82,7 +82,7 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 	mapInstance := &Map{
 		id:              id,
 		objects:         make(map[constant.ObjectType]map[uint32]Object),
-		controllerTable: nil, // Will be set after mapInstance is created
+		controllerTable: nil,
 		MobSpawns:       make(map[uint32]*MobSpawn),
 		listener:        listener,
 		Wz:              wz,
@@ -91,7 +91,6 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 		context:         context,
 	}
 
-	// Set up controller table with Map-specific callback
 	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
 
 	mapInstance.initializeNpcs()
@@ -100,26 +99,23 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 	return mapInstance
 }
 
-// onMobControllerChange is the Map-specific callback for mob controller changes
 func (m *Map) onMobControllerChange(mob *Mob, before *Character, after *Character) {
-	// Delegate to MapListener to handle the mob controller change
+
 	m.listener.OnMobControllerChange(mob, before, after)
 }
 
-// allocateOID allocates a new OID, reusing from queue if available
 func (m *Map) allocateOID() uint32 {
 	if len(m.availableOIDs) > 0 {
-		// Reuse OID from queue
+
 		oid := m.availableOIDs[0]
 		m.availableOIDs = m.availableOIDs[1:]
 		return oid
 	}
-	// Generate new OID
+
 	m.sequence++
 	return m.sequence
 }
 
-// releaseOID releases an OID back to the queue for reuse
 func (m *Map) releaseOID(oid uint32) {
 	m.availableOIDs = append(m.availableOIDs, oid)
 }
@@ -440,6 +436,27 @@ func (m *Map) AddDoor(door *Door) {
 }
 
 func (m *Map) RemoveDoor(oid uint32, animated bool) {
+	m.removeDoorInternal(oid, animated, true)
+}
+
+func (m *Map) RemoveMysticDoorByOwnerSkill(ownerID uint32, skillID constant.SkillID, animated bool) {
+	if m == nil {
+		return
+	}
+	for _, object := range m.GetObjects(constant.ObjectTypeDoor) {
+		door, ok := object.(*Door)
+		if !ok || door == nil || door.OID == 0 {
+			continue
+		}
+		if door.OwnerID != ownerID || door.SkillID != skillID {
+			continue
+		}
+		m.removeDoorInternal(door.OID, animated, false)
+		return
+	}
+}
+
+func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterpart bool) {
 	if m.objects[constant.ObjectTypeDoor] == nil {
 		return
 	}
@@ -455,6 +472,20 @@ func (m *Map) RemoveDoor(oid uint32, animated bool) {
 		return
 	}
 
+	if ch := m.GetPlayer(door.OwnerID); ch != nil {
+		ch.forgetDoorRegistrationIfSame(door)
+	}
+
+	var counterpartMapWZID uint32
+	switch m.Wz.ID {
+	case door.FieldMapID:
+		counterpartMapWZID = door.ReturnMapID
+	case door.ReturnMapID:
+		counterpartMapWZID = door.FieldMapID
+	}
+	ownerID := door.OwnerID
+	skillID := door.SkillID
+
 	m.listener.OnDoorRemoved(m, door, animated)
 
 	delete(m.objects[constant.ObjectTypeDoor], oid)
@@ -462,6 +493,14 @@ func (m *Map) RemoveDoor(oid uint32, animated bool) {
 	if door.Map == m {
 		door.Map = nil
 		door.OID = 0
+	}
+
+	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpartMapWZID != 0 && m.context != nil {
+		m.context.NotifyDoorRemove(DoorRemove{
+			OwnerID:            ownerID,
+			SkillID:            uint32(skillID),
+			CounterpartMapWZID: counterpartMapWZID,
+		})
 	}
 }
 
@@ -471,6 +510,22 @@ func (m *Map) GetDoor(oid uint32) *Door {
 	}
 	if door, ok := m.objects[constant.ObjectTypeDoor][oid].(*Door); ok {
 		return door
+	}
+	return nil
+}
+
+func (m *Map) FindDoorByOwner(ownerID uint32) *Door {
+	if m == nil || ownerID == 0 {
+		return nil
+	}
+	for _, o := range m.GetObjects(constant.ObjectTypeDoor) {
+		d, ok := o.(*Door)
+		if !ok || d == nil {
+			continue
+		}
+		if d.OwnerID == ownerID {
+			return d
+		}
 	}
 	return nil
 }
@@ -604,6 +659,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		Spawn:    mobSpawn,
 		ExpRate:  100,
 		DropRate: 100,
+		Homing:   make(map[uint32]*Homing),
 	}
 	mob.LifeCore.ObjectCore.self = mob
 
@@ -628,6 +684,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	}
 
 	mob := m.objects[constant.ObjectTypeMob][mobID].(*Mob)
+	mob.ClearAllHoming()
 	delete(m.objects[constant.ObjectTypeMob], mobID)
 
 	mob.ClearAllMobBuffTimers()
@@ -744,7 +801,6 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 
 	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.context, m)
 
-	// Register timers for meso
 	drop := meso.GetDrop()
 	if drop != nil {
 		drop.RegisterExpire(constant.ITEM_EXPIRE_TIME)
@@ -753,21 +809,17 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 		}
 	}
 
-	// Initialize objects map for items if needed
 	if m.objects[constant.ObjectTypeItem] == nil {
 		m.objects[constant.ObjectTypeItem] = make(map[uint32]Object)
 	}
 
-	// Add meso to map objects
 	m.objects[constant.ObjectTypeItem][oid] = meso
 
-	// Notify listener about meso spawn
 	m.listener.OnMesoSpawned(m, meso)
 
 	return meso, nil
 }
 
-// RemoveItem removes an item from the map
 func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, playerID uint32) error {
 	if m.objects[constant.ObjectTypeItem] == nil {
 		return fmt.Errorf("no items on map")
@@ -779,16 +831,13 @@ func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, play
 
 	delete(m.objects[constant.ObjectTypeItem], itemID)
 
-	// Release OID for reuse
 	m.releaseOID(itemID)
 
-	// Notify listener about item removal
 	m.listener.OnItemRemoved(m, itemID, playerID, removeType)
 
 	return nil
 }
 
-// GetItem retrieves an item from the map
 func (m *Map) GetItem(itemID uint32) Item {
 	if m.objects[constant.ObjectTypeItem] == nil {
 		return nil
@@ -800,7 +849,6 @@ func (m *Map) GetItem(itemID uint32) Item {
 	return nil
 }
 
-// GetItems returns all items on the map
 func (m *Map) GetItems() map[uint32]Object {
 	if m.objects[constant.ObjectTypeItem] == nil {
 		return make(map[uint32]Object)
@@ -808,8 +856,6 @@ func (m *Map) GetItems() map[uint32]Object {
 	return m.objects[constant.ObjectTypeItem]
 }
 
-// LootItem attempts to loot an item from the map and returns the looted item and reason
-// All capacity checks are performed before removing the item from the map
 func (m *Map) LootItem(itemID uint32, character *Character, position types.Point[int16]) (interface{}, constant.LootResult) {
 	if m.objects[constant.ObjectTypeItem] == nil {
 		return nil, constant.LOOT_FAILED_ITEM_NOT_FOUND
@@ -827,12 +873,10 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 
-		// Check ownership for owned drops
 		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.GetID() {
 			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
-		// Check inventory capacity before removing from map
 		invenType := item.GetInventoryType()
 		inven := character.Inventory[invenType]
 		model := item.GetModel()
@@ -841,7 +885,6 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 			return nil, constant.LOOT_FAILED_INVENTORY_FULL
 		}
 
-		// Remove item from map using RemoveItem
 		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
@@ -854,24 +897,20 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 
-		// Check ownership for owned drops
 		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.GetID() {
 			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
-		// Check meso capacity before removing from map
 		mesoCount := item.GetCount32()
 		cap := math.MaxInt32 - character.Meso
 		if int32(mesoCount) > cap {
 			return nil, constant.LOOT_FAILED_MESO_FULL
 		}
 
-		// Remove meso from map using RemoveItem
 		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
 			return nil, constant.LOOT_FAILED_INVALID_ITEM
 		}
 
-		// Return the meso object
 		return item, constant.LOOT_SUCCESS
 
 	default:

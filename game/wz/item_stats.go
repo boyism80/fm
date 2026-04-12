@@ -15,10 +15,10 @@ type RequiredStats struct {
 
 type AbilityStats struct {
 	BasicStats
-	PAD       uint16 // Physical attack damage
-	MAD       uint16 // Magical attack damage
-	PDD       uint16 // Physical defense damage
-	MDD       uint16 // Magical defense damage
+	PAD       uint16
+	MAD       uint16
+	PDD       uint16
+	MDD       uint16
 	Speed     uint16
 	Jump      uint16
 	ACC       uint16

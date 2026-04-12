@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// CashItem represents cash item DTO
 type CashItem struct {
 	ItemId     uint32
 	UniqueId   int64

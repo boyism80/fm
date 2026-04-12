@@ -1,20 +1,36 @@
 package entity
 
 import (
-	"time"
-
 	"github.com/boyism80/fm/game/constant"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
 )
 
+func NewDoor(position types.Vector2[int16], ownerID uint32, skillID constant.SkillID, returnMapID, fieldMapID uint32, returnPortalID, fieldPortalID uint8) *Door {
+	door := &Door{
+		ObjectCore: ObjectCore{
+			Position: position,
+			Map:      nil,
+		},
+		OwnerID:        ownerID,
+		SkillID:        skillID,
+		ReturnMapID:    returnMapID,
+		FieldMapID:     fieldMapID,
+		ReturnPortalID: returnPortalID,
+		FieldPortalID:  fieldPortalID,
+	}
+	door.ObjectCore.self = door
+	return door
+}
+
 type Door struct {
 	ObjectCore
-	OwnerID          uint32
-	SkillID          constant.SkillID
-	OppositeMapID    uint32
-	OppositePosition types.Vector2[int16]
-	ExpiresAt        time.Time
+	OwnerID        uint32
+	SkillID        constant.SkillID
+	ReturnMapID    uint32
+	FieldMapID     uint32
+	ReturnPortalID uint8
+	FieldPortalID  uint8
 }
 
 func (d *Door) GetObjectType() constant.ObjectType {
@@ -36,15 +52,11 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 	pos := d.Position
 	viewer.Send(&response.SpawnPortal{
-		TownMapID:   d.OppositeMapID,
-		TargetMapID: uint32(d.Map.Wz.ID),
+		DestMapID:   d.ReturnMapID,
+		SourceMapID: d.FieldMapID,
 		SkillID:     uint32(d.SkillID),
 		Position:    &pos,
 	}, types.SEND_POLICY_ENCRYPT)
-}
-
-func (d *Door) IsExpired(now time.Time) bool {
-	return !d.ExpiresAt.IsZero() && !now.Before(d.ExpiresAt)
 }
 
 func (d *Door) Spawn(animated bool) {

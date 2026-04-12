@@ -131,7 +131,7 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (s *SpawnPlayer) Opcode() uint16 {
-	return 0x6E // SpawnPlayer opcode
+	return 0x6E
 }
 
 func (s *SpawnPlayer) Deserialize(reader *stream.StreamReader) {

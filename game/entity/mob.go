@@ -11,6 +11,11 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
+type Homing struct {
+	SkillWz    *wz.Skill
+	SkillLevel uint8
+}
+
 type Mob struct {
 	LifeCore
 	Wz           *wz.Mob
@@ -20,6 +25,90 @@ type Mob struct {
 	ExpRate      int32
 	DropRate     int32
 	stealOutcome *uint32
+	Homing       map[uint32]*Homing
+}
+
+func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
+	if m == nil || m.Map == nil {
+		return
+	}
+	if causerOID == 0 {
+		return
+	}
+
+	if h == nil {
+		before, ok := m.Homing[causerOID]
+		if !ok || before == nil {
+			return
+		}
+		oldCauser := m.Map.GetPlayer(causerOID)
+		if oldCauser != nil && oldCauser.HomingTargetOID != nil && *oldCauser.HomingTargetOID == m.GetOID() {
+			oldCauser.HomingTargetOID = nil
+		}
+		if m.Map.listener != nil {
+			m.Map.listener.OnMobHomingRemoved(m.Map, m, before, oldCauser)
+		}
+		delete(m.Homing, causerOID)
+		return
+	}
+
+	if h.SkillWz == nil {
+		return
+	}
+	lv := int(h.SkillLevel)
+	if lv < 1 {
+		return
+	}
+	if h.SkillWz.MaxLevel > 0 && lv > h.SkillWz.MaxLevel {
+		return
+	}
+	if h.SkillWz.GetLevelData(lv) == nil {
+		return
+	}
+
+	causer := m.Map.GetPlayer(causerOID)
+	if causer != nil && causer.HomingTargetOID != nil {
+		prevOID := *causer.HomingTargetOID
+		if prevOID != m.GetOID() {
+			if prevMob := m.Map.GetMob(prevOID); prevMob != nil {
+				prevMob.SetHoming(causerOID, nil)
+			}
+		}
+	}
+
+	before, hadBefore := m.Homing[causerOID]
+	if hadBefore && before != nil {
+		oldCauser := m.Map.GetPlayer(causerOID)
+		if oldCauser != nil && oldCauser.HomingTargetOID != nil && *oldCauser.HomingTargetOID == m.GetOID() {
+			oldCauser.HomingTargetOID = nil
+		}
+		if m.Map.listener != nil {
+			m.Map.listener.OnMobHomingRemoved(m.Map, m, before, oldCauser)
+		}
+	}
+
+	m.Homing[causerOID] = h
+
+	if causer != nil {
+		oid := m.GetOID()
+		causer.HomingTargetOID = &oid
+	}
+	if m.Map.listener != nil {
+		m.Map.listener.OnMobHomingSet(m.Map, m, h, causer)
+	}
+}
+
+func (m *Mob) ClearAllHoming() {
+	if m == nil || len(m.Homing) == 0 {
+		return
+	}
+	causerOIDs := make([]uint32, 0, len(m.Homing))
+	for id := range m.Homing {
+		causerOIDs = append(causerOIDs, id)
+	}
+	for _, id := range causerOIDs {
+		m.SetHoming(id, nil)
+	}
 }
 
 func (m *Mob) GetObjectType() constant.ObjectType {

@@ -7,21 +7,18 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// Inventory represents inventory data for protocol
 type Inventory struct {
 	Type      constant.InventoryType
 	SlotLimit uint8
-	Items     map[int16]Item // slot -> item (all item types, using interface)
+	Items     map[int16]Item
 }
 
-// Serialize serializes inventory data
 func (inv *Inventory) Serialize(writer *stream.StreamWriter) {
 	if inv == nil || inv.Items == nil {
 		writer.WriteU8(0)
 		return
 	}
 
-	// Sort slots to ensure consistent serialization order
 	slots := make([]int16, 0, len(inv.Items))
 	for slot, item := range inv.Items {
 		if item != nil {
@@ -29,7 +26,7 @@ func (inv *Inventory) Serialize(writer *stream.StreamWriter) {
 		}
 	}
 	sort.Slice(slots, func(i, j int) bool {
-		return slots[i] < slots[j] // ascending order
+		return slots[i] < slots[j]
 	})
 
 	for _, slot := range slots {

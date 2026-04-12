@@ -13,8 +13,8 @@ type SpawnItem struct {
 	ID           uint32
 	Animation    constant.DropItemAnimationType
 	DropType     constant.DropType
-	ItemModel    wz.Item   // For serialization
-	Expiration   time.Time // Item expiration
+	ItemModel    wz.Item
+	Expiration   time.Time
 	Position     types.Vector2[int16]
 	OwnerID      uint32
 	SpawnedPoint types.Vector2[int16]

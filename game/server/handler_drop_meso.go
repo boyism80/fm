@@ -10,7 +10,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// DropMeso handles meso dropping packet requests
 type DropMeso struct {
 	gs     *GameServer
 	opcode byte

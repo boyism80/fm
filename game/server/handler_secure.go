@@ -5,7 +5,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 )
 
-// Secure handles client packet 0x0C and logs the raw payload for inspection.
 type Secure struct {
 	gs     *GameServer
 	opcode byte

@@ -1,6 +1,5 @@
 package constant
 
-// Class code constants. Used for Lua Class table and class_of checks.
 const (
 	ClassBeginner           uint16 = 0
 	ClassWarrior            uint16 = 100
@@ -75,7 +74,6 @@ const (
 	ClassAran5              uint16 = 2112
 )
 
-// AllClassConstants returns name -> class code for Lua Class table injection.
 func AllClassConstants() map[string]uint16 {
 	return map[string]uint16{
 		"Beginner":           ClassBeginner,

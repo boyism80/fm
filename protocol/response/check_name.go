@@ -9,7 +9,6 @@ type CheckName struct {
 	Exists bool
 }
 
-// Opcode returns the packet opcode for CheckName
 func (a *CheckName) Opcode() uint16 {
 	return 0x05
 }

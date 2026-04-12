@@ -4,7 +4,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// HealOverTime represents the HEAL_OVER_TIME packet (0x48)
 type HealOverTime struct {
 	Tick   uint32
 	HealHP uint16

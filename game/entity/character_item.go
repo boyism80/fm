@@ -74,8 +74,6 @@ func (ch *Character) RemoveItem(invType constant.InventoryType, slot int16, coun
 	return true
 }
 
-// FindSlots returns the inventory type for the given item ID and all slots that contain it.
-// itemID determines a single inventory type (GetInventoryTypeByItemID). O(n) over that inventory.
 func (ch *Character) FindSlots(itemID uint32) (invType constant.InventoryType, slots []int16) {
 	invType = constant.GetInventoryTypeByItemID(itemID)
 	inven := ch.Inventory[invType]
@@ -91,11 +89,8 @@ func (ch *Character) FindSlots(itemID uint32) (invType constant.InventoryType, s
 	return invType, slots
 }
 
-// SlotPredicate returns true if the slot should be included. item may be nil for an empty slot.
 type SlotPredicate func(invType constant.InventoryType, slot int16, item Item) bool
 
-// FindSlotsWhere returns slots that satisfy the predicate, grouped by inventory type.
-// Result is map[InventoryType][]int16 (slot list per inventory type).
 func (ch *Character) FindSlotsWhere(pred SlotPredicate) map[constant.InventoryType][]int16 {
 	out := make(map[constant.InventoryType][]int16)
 	if pred == nil {
@@ -137,9 +132,6 @@ func (ch *Character) HasItemCount(itemID uint32, count uint16) bool {
 	return ch.GetCountByItemID(itemID) >= count
 }
 
-// RemoveByItemIDCount removes exactly count items of the given ID. All-or-nothing: either the full
-// count is removed and true is returned, or nothing is removed and false is returned.
-// Surveys all slots for the item ID (e.g. cap 200 per slot, removing 800 uses four slots).
 func (ch *Character) RemoveByItemIDCount(itemID uint32, count uint16) bool {
 	if count == 0 {
 		return true
@@ -173,7 +165,6 @@ func (ch *Character) RemoveByItemIDCount(itemID uint32, count uint16) bool {
 	return true
 }
 
-// RemoveItemByID removes one item of the given ID (surveys all slots, atomic).
 func (ch *Character) RemoveItemByID(itemID uint32) bool {
 	return ch.RemoveByItemIDCount(itemID, 1)
 }

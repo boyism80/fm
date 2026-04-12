@@ -1,18 +1,15 @@
 package constant
 
-// InventoryType represents the different inventory tabs.
 type InventoryType int8
 
 const (
-	INVENTORY_TYPE_EQUIPMENT    InventoryType = 1 // Equipment inventory
-	INVENTORY_TYPE_CONSUME      InventoryType = 2 // Consumable items
-	INVENTORY_TYPE_INSTALLATION InventoryType = 3 // Installation items
-	INVENTORY_TYPE_ETC          InventoryType = 4 // Miscellaneous items
-	INVENTORY_TYPE_CASH         InventoryType = 5 // Cash shop items
+	INVENTORY_TYPE_EQUIPMENT    InventoryType = 1
+	INVENTORY_TYPE_CONSUME      InventoryType = 2
+	INVENTORY_TYPE_INSTALLATION InventoryType = 3
+	INVENTORY_TYPE_ETC          InventoryType = 4
+	INVENTORY_TYPE_CASH         InventoryType = 5
 )
 
-// GetInventoryTypeByItemID returns the inventory type for an item by its ID.
-// Uses MapleStory item ID ranges (itemID / 10000).
 func GetInventoryTypeByItemID(itemID uint32) InventoryType {
 	itemType := itemID / 10000
 	switch {

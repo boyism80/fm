@@ -13,7 +13,6 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-// NpcClick handles NPC click packet requests
 type NpcClick struct {
 	gs     *GameServer
 	opcode byte
@@ -56,14 +55,12 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 
-	// Type assert to entity.Npc
 	npc, ok := npcInterface.(*entity.Npc)
 	if !ok {
 		log.Printf("Invalid NPC type for OID %d", req.OID)
 		return fmt.Errorf("invalid NPC type")
 	}
 
-	// Check if NPC has a shop
 	resources := h.gs.GetResources()
 	if resources == nil {
 		log.Printf("Resources not available")
@@ -74,7 +71,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 	shop := resources.GetShop(npcID)
 
 	if shop != nil {
-		// NPC has a shop, send OPEN_NPC_SHOP packet
+
 		character.CurrentShopID = npcID
 		packet := &response.OpenNpcShop{
 			ShopID: int32(npcID),
@@ -88,7 +85,6 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return nil
 	}
 
-	// NPC doesn't have a shop, execute script
 	if ctx.LogicActorPID == nil {
 		return fmt.Errorf("map actor PID not available")
 	}

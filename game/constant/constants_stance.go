@@ -1,22 +1,19 @@
 package constant
 
-// StanceKind is the canonical stance group value (movement state).
-// Used for stance_of checks; each kind may map to one or two raw stance bytes (left/right).
 type StanceKind uint8
 
 const (
 	StanceDefault  StanceKind = 0
-	StanceWalk     StanceKind = 2  // 2=right, 3=left
-	StanceStanding StanceKind = 4  // 4=right, 5=left
-	StanceJump     StanceKind = 6  // 6=right, 7=left
-	StanceAttack   StanceKind = 8  // 8=right, 9=left
-	StanceProne    StanceKind = 10 // 10=right, 11=left
-	StanceRope     StanceKind = 12 // 12=right, 13=left
-	StanceLadder   StanceKind = 14 // 14=right, 15=left
+	StanceWalk     StanceKind = 2
+	StanceStanding StanceKind = 4
+	StanceJump     StanceKind = 6
+	StanceAttack   StanceKind = 8
+	StanceProne    StanceKind = 10
+	StanceRope     StanceKind = 12
+	StanceLadder   StanceKind = 14
 	StanceSit      StanceKind = 21
 )
 
-// Individual stance values (including Left/Right); same numeric value as protocol.
 const (
 	StanceDefaultValue  = 0
 	StanceWalkRight     = 2
@@ -36,7 +33,6 @@ const (
 	StanceSitValue      = 21
 )
 
-// AllStanceConstants returns name -> value for every stance (for Lua injection).
 func AllStanceConstants() map[string]uint8 {
 	return map[string]uint8{
 		"Default":       StanceDefaultValue,
@@ -65,7 +61,6 @@ func AllStanceConstants() map[string]uint8 {
 	}
 }
 
-// StanceGroupByKind maps a stance kind to the raw stance bytes that belong to it.
 var StanceGroupByKind = map[StanceKind][]uint8{
 	StanceDefault:  {StanceDefaultValue},
 	StanceWalk:     {StanceWalkRight, StanceWalkLeft},

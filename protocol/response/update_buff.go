@@ -8,7 +8,6 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-// UpdateBuff notifies the client to apply buff(s) to self (buff on).
 type UpdateBuff struct {
 	BuffID   int32
 	Duration time.Duration

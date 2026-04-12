@@ -33,7 +33,6 @@ type LoginFailed struct {
 	Reason uint8
 }
 
-// Opcode returns the packet opcode for LoginFailed
 func (a *LoginFailed) Opcode() uint16 {
 	return 0x00
 }
