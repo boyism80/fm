@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package fm.internal;
+
+option go_package = "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal;fminternalpb";
+
+service Internal {
+  rpc Ping (PingRequest) returns (PingReply);
+}
+
+message PingRequest {}
+
+message PingReply {
+  string message = 1;
+}

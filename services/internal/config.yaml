@@ -1,0 +1,36 @@
+# FM internal gRPC service — infrastructure and app settings (see fm_internal_design.md).
+app:
+  log_level: "info"
+  world_id: 1
+
+grpc:
+  host: "0.0.0.0"
+  port: 50051
+
+postgresql:
+  host: "127.0.0.1"
+  port: 5432
+  database: "fm"
+  username: "fm"
+  password: "change_me"
+  ssl: false
+  pool:
+    min: 0
+    max: 10
+
+redis:
+  host: "127.0.0.1"
+  port: 6379
+  password: ""
+  db: 0
+  tls: false
+  key_prefix: "cache:"
+
+cache:
+  write_strategy: "write-through"
+
+sequelize:
+  dialect: "postgres"
+  migration_storage: "sequelize"
+  define:
+    underscored: true

@@ -1,5 +1,0 @@
-server:
-  login:
-    port: 7100
-  game:
-    port: 7111

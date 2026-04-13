@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/boyism80/fm/game/constant"
+import "github.com/boyism80/fm/services/game/constant"
 
 type BuffEntry struct {
 	Buff  constant.BuffFlag

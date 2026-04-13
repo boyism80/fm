@@ -3,7 +3,7 @@ package response
 import (
 	"math"
 
-	"github.com/boyism80/fm/game/wz"
+	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/stream"
 )
 
