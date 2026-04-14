@@ -1,12 +1,15 @@
 package server
 
 import (
+	"context"
 	"log"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/dto"
+	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/services/login/client"
 	"github.com/boyism80/fm/types"
 )
 
@@ -27,39 +30,49 @@ func (h *CreateCharacter) GetOpcode() byte {
 }
 
 func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCharacter) error {
-	log.Printf("Create character packet received from %s - Name: %s, Face: %d, Hair: %d, Top: %d, Bottom: %d, Shoes: %d, Weapon: %d",
-		ctx.Client.GetConnection().RemoteAddr(), req.Name, req.Face, req.Hair, req.Top, req.Bottom, req.Shoes, req.Weapon)
+	log.Printf("Create character packet received from %s - Name: %s",
+		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
-	success := req.Name != "채진영"
+	loginClient, ok := ctx.Client.(*client.LoginClient)
+	if !ok {
+		return nil
+	}
+
+	ic := h.ls.context.InternalClient
+	if ic == nil {
+		createResp := &response.CreateCharacter{Success: false}
+		return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
+	}
+
+	reply, err := ic.CreateCharacter(context.Background(), &fminternalpb.CreateCharacterRequest{
+		AccountId:    loginClient.GetAccountId(),
+		WorldId:      loginClient.GetWorldId(),
+		Name:         req.Name,
+		Face:         req.Face,
+		Hair:         req.Hair,
+		SkinColor:    0,
+		TopItemId:    req.Top,
+		BottomItemId: req.Bottom,
+		ShoesItemId:  req.Shoes,
+		WeaponItemId: req.Weapon,
+	})
+	if err != nil {
+		log.Printf("CreateCharacter RPC error: %v", err)
+		createResp := &response.CreateCharacter{Success: false}
+		return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
+	}
 
 	createResp := &response.CreateCharacter{
-		Success: success,
-		Character: &dto.Character{
-			ID:         1,
-			Name:       req.Name,
-			Gender:     0,
-			SkinColor:  0,
-			Face:       req.Face,
-			Hair:       req.Hair,
-			Level:      1,
-			Class:      0,
-			Str:        12,
-			Dex:        5,
-			Int:        4,
-			Luk:        4,
-			Hp:         50,
-			MaxHp:      50,
-			Mp:         5,
-			MaxMp:      5,
-			SpawnPoint: 3,
-			BaseLooks:  make(map[int8]uint32),
-			Overlays:   make(map[int8]uint32),
-		},
+		Success: reply.Success,
 	}
-	if err := ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT); err != nil {
-		log.Printf("Failed to send create character response: %v", err)
-		return err
+	if reply.Success && reply.Character != nil {
+		ch := overviewToDto(reply.Character)
+		createResp.Character = &ch
+	} else {
+		createResp.Character = &dto.Character{
+			BaseLooks: make(map[int8]uint32),
+			Overlays:  make(map[int8]uint32),
+		}
 	}
-
-	return nil
+	return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
 }

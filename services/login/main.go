@@ -30,6 +30,7 @@ host: "0.0.0.0"
 port: 8484
 game_host: "localhost"
 game_port: 8485
+initial_role: 1
 internal:
   host: ""
   port: 0
@@ -58,6 +59,9 @@ internal:
 		Port:           l.Port,
 		GameServerHost: l.GameHost,
 		GameServerPort: l.GamePort,
+		InitialRole:    uint32(l.InitialRole),
+		InternalHost:   l.Internal.Host,
+		InternalPort:   l.Internal.Port,
 	}
 
 	ls, err := server.NewLoginServer(srvCfg)

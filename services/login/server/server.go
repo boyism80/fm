@@ -11,8 +11,11 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
+	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	loginactor "github.com/boyism80/fm/services/login/actor"
 	"github.com/boyism80/fm/services/login/client"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type LoginServer struct {
@@ -59,11 +62,30 @@ type LoginConfig struct {
 	Port           int
 	GameServerHost string
 	GameServerPort int
+	InitialRole    uint32
+	InternalHost   string
+	InternalPort   int
+}
+
+func (c *LoginConfig) internalAddr() string {
+	if c.InternalHost == "" || c.InternalPort == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s:%d", c.InternalHost, c.InternalPort)
 }
 
 func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
+	var internalClient fminternalpb.InternalClient
+	if addr := config.internalAddr(); addr != "" {
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			return nil, fmt.Errorf("internal gRPC dial %s: %w", addr, err)
+		}
+		internalClient = fminternalpb.NewInternalClient(conn)
+		log.Printf("Internal gRPC client connected to %s", addr)
+	}
 
-	context := NewLoginServerContext()
+	context := NewLoginServerContext(internalClient)
 
 	actorSystem := c_actor.NewActorSystem()
 	actorRegistry := c_actor.NewActorRegistry(actorSystem)
@@ -132,9 +154,7 @@ func (ls *LoginServer) GetStats() map[string]interface{} {
 }
 
 func RunLoginServer() {
-
 	config := &LoginConfig{
-
 		Host:           "0.0.0.0",
 		Port:           8484,
 		GameServerHost: "localhost",

@@ -6,10 +6,231 @@ option go_package = "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal;f
 
 service Internal {
   rpc Ping (PingRequest) returns (PingReply);
+  rpc GetCharacter (GetCharacterRequest) returns (GetCharacterReply);
+  rpc SaveCharacter (SaveCharacterRequest) returns (SaveCharacterReply);
+  rpc SaveCharacters (SaveCharactersRequest) returns (SaveCharactersReply);
+  rpc GetInventory (GetInventoryRequest) returns (GetInventoryReply);
+  rpc SaveInventory (SaveInventoryRequest) returns (SaveInventoryReply);
+  rpc DeleteInventory (DeleteInventoryRequest) returns (DeleteInventoryReply);
+  rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
+  rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
+  rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
+  rpc CreateCharacter (CreateCharacterRequest) returns (CreateCharacterReply);
+  rpc DeleteCharacter (DeleteCharacterRequest) returns (DeleteCharacterReply);
 }
 
 message PingRequest {}
 
 message PingReply {
   string message = 1;
+}
+
+message GetCharacterRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+}
+
+message CharacterPersisted {
+  uint32 character_id      = 1;
+  uint32 world_id          = 2;
+  string name              = 3;
+  uint32 gender            = 4;
+  uint32 skin_color        = 5;
+  uint32 face              = 6;
+  uint32 hair              = 7;
+  uint32 level             = 8;
+  uint32 class_id          = 9;
+  uint32 str               = 10;
+  uint32 dex               = 11;
+  uint32 int_stat          = 12;
+  uint32 luk               = 13;
+  uint32 hp                = 14;
+  uint32 max_hp            = 15;
+  uint32 mp                = 16;
+  uint32 max_mp            = 17;
+  uint32 ability_point     = 18;
+  uint32 exp               = 19;
+  uint32 map_id            = 20;
+  uint32 spawn_point       = 21;
+  int32  position_x        = 22;
+  int32  position_y        = 23;
+  uint32 stance            = 24;
+  int32  meso              = 25;
+  uint32 skill_point       = 26;
+  int64  updated_at_unix_ms = 27;
+  uint32 account_id        = 28;
+  uint32 role              = 29;
+}
+
+message GetCharacterReply {
+  bool                        found     = 1;
+  CharacterPersisted          character = 2;
+  repeated InventoryPersisted inventory = 3;
+  repeated SkillPersisted     skills    = 4;
+}
+
+message SaveCharacterRequest {
+  CharacterPersisted     character  = 1;
+  map<int32, uint32>     base_looks = 2;
+  map<int32, uint32>     overlays   = 3;
+}
+
+message SaveCharacterReply {
+  bool ok = 1;
+}
+
+message CharacterSaveEntry {
+  CharacterPersisted     character  = 1;
+  map<int32, uint32>     base_looks = 2;
+  map<int32, uint32>     overlays   = 3;
+}
+
+message SaveCharactersRequest {
+  repeated CharacterSaveEntry entries = 1;
+}
+
+message SaveCharactersReply {
+  bool ok = 1;
+}
+
+message InventoryPersisted {
+  int64  unique_id          = 1;
+  uint32 owner_id           = 2;
+  uint32 item_id            = 3;
+  int32  slot               = 4;
+  uint32 count              = 5;
+  int64  expiration_unix_ms = 6;
+  uint32 enchant_chance     = 7;
+  uint32 flag               = 8;
+  uint32 skill_bonus        = 9;
+  string owner_name         = 10;
+  int64  updated_at_unix_ms = 11;
+}
+
+message GetInventoryRequest {
+  uint32 world_id  = 1;
+  uint32 owner_id  = 2;
+}
+
+message GetInventoryReply {
+  repeated InventoryPersisted items = 1;
+}
+
+message SaveInventoryRequest {
+  uint32 world_id                  = 1;
+  repeated InventoryPersisted items = 2;
+}
+
+message SaveInventoryReply {
+  bool ok = 1;
+}
+
+message DeleteInventoryRequest {
+  uint32 world_id          = 1;
+  uint32 owner_id          = 2;
+  repeated int64 unique_ids = 3;
+}
+
+message DeleteInventoryReply {
+  bool ok = 1;
+}
+
+message SkillPersisted {
+  uint32 character_id         = 1;
+  uint32 skill_id             = 2;
+  int32  level                = 3;
+  int32  master_level         = 4;
+  int64  cooldown_end_unix_ms = 5;
+  int64  updated_at_unix_ms   = 6;
+}
+
+message LoginAccountRequest {
+  string login_id    = 1;
+  string password    = 2;
+  string mac_address = 3;
+  string ip_address  = 4;
+  uint32 initial_role = 5;
+}
+
+message LoginAccountReply {
+  enum Status {
+    SUCCESS        = 0;
+    WRONG_PASSWORD = 1;
+    BANNED         = 2;
+    REGISTERED     = 3;
+  }
+  Status  status                     = 1;
+  uint32  account_id                 = 2;
+  uint32  gender                     = 3;
+  bool    is_chat_blocked            = 4;
+  int64   chat_blocked_until_unix_ms = 5;
+  uint32  character_slot_count       = 6;
+  uint32  role                       = 7;
+}
+
+message CharacterOverview {
+  uint32             character_id    = 1;
+  string             name            = 2;
+  uint32             gender          = 3;
+  uint32             skin_color      = 4;
+  uint32             face            = 5;
+  uint32             hair            = 6;
+  uint32             level           = 7;
+  uint32             class_id        = 8;
+  uint32             map_id          = 9;
+  uint32             spawn_point     = 10;
+  uint32             account_id      = 11;
+  uint32             world_id        = 12;
+  int32              rank            = 13;
+  int32              rank_diff       = 14;
+  int32              class_rank      = 15;
+  int32              class_rank_diff = 16;
+  map<int32, uint32> base_looks      = 17;
+  map<int32, uint32> overlays        = 18;
+}
+
+message GetCharacterListRequest {
+  uint32 account_id = 1;
+  uint32 world_id   = 2;
+}
+
+message GetCharacterListReply {
+  repeated CharacterOverview characters = 1;
+  uint32                     slot_count = 2;
+}
+
+message CheckCharacterNameRequest {
+  string name = 1;
+}
+
+message CheckCharacterNameReply {
+  bool exists = 1;
+}
+
+message CreateCharacterRequest {
+  uint32 account_id     = 1;
+  uint32 world_id       = 2;
+  string name           = 3;
+  uint32 face           = 4;
+  uint32 hair           = 5;
+  uint32 skin_color     = 6;
+  uint32 top_item_id    = 7;
+  uint32 bottom_item_id = 8;
+  uint32 shoes_item_id  = 9;
+  uint32 weapon_item_id = 10;
+}
+
+message CreateCharacterReply {
+  bool              success   = 1;
+  string            error_msg = 2;
+  CharacterOverview character = 3;
+}
+
+message DeleteCharacterRequest {
+  uint32 account_id   = 1;
+  uint32 character_id = 2;
+}
+
+message DeleteCharacterReply {
+  bool success = 1;
 }

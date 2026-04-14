@@ -19,7 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Internal_Ping_FullMethodName = "/fm.internal.Internal/Ping"
+	Internal_Ping_FullMethodName               = "/fm.internal.Internal/Ping"
+	Internal_GetCharacter_FullMethodName       = "/fm.internal.Internal/GetCharacter"
+	Internal_SaveCharacter_FullMethodName      = "/fm.internal.Internal/SaveCharacter"
+	Internal_SaveCharacters_FullMethodName     = "/fm.internal.Internal/SaveCharacters"
+	Internal_GetInventory_FullMethodName       = "/fm.internal.Internal/GetInventory"
+	Internal_SaveInventory_FullMethodName      = "/fm.internal.Internal/SaveInventory"
+	Internal_DeleteInventory_FullMethodName    = "/fm.internal.Internal/DeleteInventory"
+	Internal_LoginAccount_FullMethodName       = "/fm.internal.Internal/LoginAccount"
+	Internal_GetCharacterList_FullMethodName   = "/fm.internal.Internal/GetCharacterList"
+	Internal_CheckCharacterName_FullMethodName = "/fm.internal.Internal/CheckCharacterName"
+	Internal_CreateCharacter_FullMethodName    = "/fm.internal.Internal/CreateCharacter"
+	Internal_DeleteCharacter_FullMethodName    = "/fm.internal.Internal/DeleteCharacter"
 )
 
 // InternalClient is the client API for Internal service.
@@ -27,6 +38,17 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InternalClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error)
+	GetCharacter(ctx context.Context, in *GetCharacterRequest, opts ...grpc.CallOption) (*GetCharacterReply, error)
+	SaveCharacter(ctx context.Context, in *SaveCharacterRequest, opts ...grpc.CallOption) (*SaveCharacterReply, error)
+	SaveCharacters(ctx context.Context, in *SaveCharactersRequest, opts ...grpc.CallOption) (*SaveCharactersReply, error)
+	GetInventory(ctx context.Context, in *GetInventoryRequest, opts ...grpc.CallOption) (*GetInventoryReply, error)
+	SaveInventory(ctx context.Context, in *SaveInventoryRequest, opts ...grpc.CallOption) (*SaveInventoryReply, error)
+	DeleteInventory(ctx context.Context, in *DeleteInventoryRequest, opts ...grpc.CallOption) (*DeleteInventoryReply, error)
+	LoginAccount(ctx context.Context, in *LoginAccountRequest, opts ...grpc.CallOption) (*LoginAccountReply, error)
+	GetCharacterList(ctx context.Context, in *GetCharacterListRequest, opts ...grpc.CallOption) (*GetCharacterListReply, error)
+	CheckCharacterName(ctx context.Context, in *CheckCharacterNameRequest, opts ...grpc.CallOption) (*CheckCharacterNameReply, error)
+	CreateCharacter(ctx context.Context, in *CreateCharacterRequest, opts ...grpc.CallOption) (*CreateCharacterReply, error)
+	DeleteCharacter(ctx context.Context, in *DeleteCharacterRequest, opts ...grpc.CallOption) (*DeleteCharacterReply, error)
 }
 
 type internalClient struct {
@@ -47,11 +69,132 @@ func (c *internalClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc
 	return out, nil
 }
 
+func (c *internalClient) GetCharacter(ctx context.Context, in *GetCharacterRequest, opts ...grpc.CallOption) (*GetCharacterReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCharacterReply)
+	err := c.cc.Invoke(ctx, Internal_GetCharacter_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SaveCharacter(ctx context.Context, in *SaveCharacterRequest, opts ...grpc.CallOption) (*SaveCharacterReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveCharacterReply)
+	err := c.cc.Invoke(ctx, Internal_SaveCharacter_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SaveCharacters(ctx context.Context, in *SaveCharactersRequest, opts ...grpc.CallOption) (*SaveCharactersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveCharactersReply)
+	err := c.cc.Invoke(ctx, Internal_SaveCharacters_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) GetInventory(ctx context.Context, in *GetInventoryRequest, opts ...grpc.CallOption) (*GetInventoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetInventoryReply)
+	err := c.cc.Invoke(ctx, Internal_GetInventory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SaveInventory(ctx context.Context, in *SaveInventoryRequest, opts ...grpc.CallOption) (*SaveInventoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveInventoryReply)
+	err := c.cc.Invoke(ctx, Internal_SaveInventory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) DeleteInventory(ctx context.Context, in *DeleteInventoryRequest, opts ...grpc.CallOption) (*DeleteInventoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteInventoryReply)
+	err := c.cc.Invoke(ctx, Internal_DeleteInventory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) LoginAccount(ctx context.Context, in *LoginAccountRequest, opts ...grpc.CallOption) (*LoginAccountReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginAccountReply)
+	err := c.cc.Invoke(ctx, Internal_LoginAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) GetCharacterList(ctx context.Context, in *GetCharacterListRequest, opts ...grpc.CallOption) (*GetCharacterListReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCharacterListReply)
+	err := c.cc.Invoke(ctx, Internal_GetCharacterList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) CheckCharacterName(ctx context.Context, in *CheckCharacterNameRequest, opts ...grpc.CallOption) (*CheckCharacterNameReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckCharacterNameReply)
+	err := c.cc.Invoke(ctx, Internal_CheckCharacterName_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) CreateCharacter(ctx context.Context, in *CreateCharacterRequest, opts ...grpc.CallOption) (*CreateCharacterReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateCharacterReply)
+	err := c.cc.Invoke(ctx, Internal_CreateCharacter_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) DeleteCharacter(ctx context.Context, in *DeleteCharacterRequest, opts ...grpc.CallOption) (*DeleteCharacterReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteCharacterReply)
+	err := c.cc.Invoke(ctx, Internal_DeleteCharacter_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InternalServer is the server API for Internal service.
 // All implementations must embed UnimplementedInternalServer
 // for forward compatibility.
 type InternalServer interface {
 	Ping(context.Context, *PingRequest) (*PingReply, error)
+	GetCharacter(context.Context, *GetCharacterRequest) (*GetCharacterReply, error)
+	SaveCharacter(context.Context, *SaveCharacterRequest) (*SaveCharacterReply, error)
+	SaveCharacters(context.Context, *SaveCharactersRequest) (*SaveCharactersReply, error)
+	GetInventory(context.Context, *GetInventoryRequest) (*GetInventoryReply, error)
+	SaveInventory(context.Context, *SaveInventoryRequest) (*SaveInventoryReply, error)
+	DeleteInventory(context.Context, *DeleteInventoryRequest) (*DeleteInventoryReply, error)
+	LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error)
+	GetCharacterList(context.Context, *GetCharacterListRequest) (*GetCharacterListReply, error)
+	CheckCharacterName(context.Context, *CheckCharacterNameRequest) (*CheckCharacterNameReply, error)
+	CreateCharacter(context.Context, *CreateCharacterRequest) (*CreateCharacterReply, error)
+	DeleteCharacter(context.Context, *DeleteCharacterRequest) (*DeleteCharacterReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
 
@@ -64,6 +207,39 @@ type UnimplementedInternalServer struct{}
 
 func (UnimplementedInternalServer) Ping(context.Context, *PingRequest) (*PingReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedInternalServer) GetCharacter(context.Context, *GetCharacterRequest) (*GetCharacterReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCharacter not implemented")
+}
+func (UnimplementedInternalServer) SaveCharacter(context.Context, *SaveCharacterRequest) (*SaveCharacterReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveCharacter not implemented")
+}
+func (UnimplementedInternalServer) SaveCharacters(context.Context, *SaveCharactersRequest) (*SaveCharactersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveCharacters not implemented")
+}
+func (UnimplementedInternalServer) GetInventory(context.Context, *GetInventoryRequest) (*GetInventoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetInventory not implemented")
+}
+func (UnimplementedInternalServer) SaveInventory(context.Context, *SaveInventoryRequest) (*SaveInventoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveInventory not implemented")
+}
+func (UnimplementedInternalServer) DeleteInventory(context.Context, *DeleteInventoryRequest) (*DeleteInventoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteInventory not implemented")
+}
+func (UnimplementedInternalServer) LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoginAccount not implemented")
+}
+func (UnimplementedInternalServer) GetCharacterList(context.Context, *GetCharacterListRequest) (*GetCharacterListReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCharacterList not implemented")
+}
+func (UnimplementedInternalServer) CheckCharacterName(context.Context, *CheckCharacterNameRequest) (*CheckCharacterNameReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckCharacterName not implemented")
+}
+func (UnimplementedInternalServer) CreateCharacter(context.Context, *CreateCharacterRequest) (*CreateCharacterReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateCharacter not implemented")
+}
+func (UnimplementedInternalServer) DeleteCharacter(context.Context, *DeleteCharacterRequest) (*DeleteCharacterReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteCharacter not implemented")
 }
 func (UnimplementedInternalServer) mustEmbedUnimplementedInternalServer() {}
 func (UnimplementedInternalServer) testEmbeddedByValue()                  {}
@@ -104,6 +280,204 @@ func _Internal_Ping_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_GetCharacter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCharacterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).GetCharacter(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_GetCharacter_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).GetCharacter(ctx, req.(*GetCharacterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SaveCharacter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveCharacterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SaveCharacter(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SaveCharacter_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SaveCharacter(ctx, req.(*SaveCharacterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SaveCharacters_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveCharactersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SaveCharacters(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SaveCharacters_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SaveCharacters(ctx, req.(*SaveCharactersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_GetInventory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInventoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).GetInventory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_GetInventory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).GetInventory(ctx, req.(*GetInventoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SaveInventory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveInventoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SaveInventory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SaveInventory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SaveInventory(ctx, req.(*SaveInventoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_DeleteInventory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteInventoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).DeleteInventory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_DeleteInventory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).DeleteInventory(ctx, req.(*DeleteInventoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_LoginAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).LoginAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_LoginAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).LoginAccount(ctx, req.(*LoginAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_GetCharacterList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCharacterListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).GetCharacterList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_GetCharacterList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).GetCharacterList(ctx, req.(*GetCharacterListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_CheckCharacterName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckCharacterNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CheckCharacterName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CheckCharacterName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CheckCharacterName(ctx, req.(*CheckCharacterNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_CreateCharacter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCharacterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CreateCharacter(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CreateCharacter_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CreateCharacter(ctx, req.(*CreateCharacterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_DeleteCharacter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteCharacterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).DeleteCharacter(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_DeleteCharacter_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).DeleteCharacter(ctx, req.(*DeleteCharacterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Internal_ServiceDesc is the grpc.ServiceDesc for Internal service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +488,50 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _Internal_Ping_Handler,
+		},
+		{
+			MethodName: "GetCharacter",
+			Handler:    _Internal_GetCharacter_Handler,
+		},
+		{
+			MethodName: "SaveCharacter",
+			Handler:    _Internal_SaveCharacter_Handler,
+		},
+		{
+			MethodName: "SaveCharacters",
+			Handler:    _Internal_SaveCharacters_Handler,
+		},
+		{
+			MethodName: "GetInventory",
+			Handler:    _Internal_GetInventory_Handler,
+		},
+		{
+			MethodName: "SaveInventory",
+			Handler:    _Internal_SaveInventory_Handler,
+		},
+		{
+			MethodName: "DeleteInventory",
+			Handler:    _Internal_DeleteInventory_Handler,
+		},
+		{
+			MethodName: "LoginAccount",
+			Handler:    _Internal_LoginAccount_Handler,
+		},
+		{
+			MethodName: "GetCharacterList",
+			Handler:    _Internal_GetCharacterList_Handler,
+		},
+		{
+			MethodName: "CheckCharacterName",
+			Handler:    _Internal_CheckCharacterName_Handler,
+		},
+		{
+			MethodName: "CreateCharacter",
+			Handler:    _Internal_CreateCharacter_Handler,
+		},
+		{
+			MethodName: "DeleteCharacter",
+			Handler:    _Internal_DeleteCharacter_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

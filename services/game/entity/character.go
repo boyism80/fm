@@ -13,7 +13,6 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
-	"github.com/boyism80/fm/util"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -53,6 +52,7 @@ type Character struct {
 	Listener         CharacterListener
 	Class            uint16
 	Role             constant.CharacterRole
+	AccountID        uint32
 	AbilityPoint     uint16
 	SkillPoint       uint16
 	HpApUsed         uint16
@@ -553,13 +553,19 @@ func (ch *Character) ResumeTimers(pid *actor.PID) {
 	}
 }
 
-func (ch *Character) GetHp() uint32       { return ch.Hp }
-func (ch *Character) GetMp() uint32       { return ch.Mp }
-func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
-func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
-func (ch *Character) GetInvincible() bool { return ch.Invincible }
-func (ch *Character) IsAlive() bool       { return ch.Hp > 0 }
-func (ch *Character) GetGender() uint8    { return ch.gender }
+func (ch *Character) GetHp() uint32        { return ch.Hp }
+func (ch *Character) GetMp() uint32        { return ch.Mp }
+func (ch *Character) GetBonusHp() int32    { return ch.BonusHp }
+func (ch *Character) GetBonusMp() int32    { return ch.BonusMp }
+func (ch *Character) GetInvincible() bool  { return ch.Invincible }
+func (ch *Character) IsAlive() bool        { return ch.Hp > 0 }
+func (ch *Character) GetGender() uint8     { return ch.gender }
+func (ch *Character) GetSkinColor() uint8  { return ch.skinColor }
+func (ch *Character) GetFace() uint32      { return ch.face }
+func (ch *Character) GetHair() uint32      { return ch.hair }
+func (ch *Character) GetLevel() uint8      { return ch.level }
+func (ch *Character) GetExp() uint32       { return ch.exp }
+func (ch *Character) GetSpawnPoint() uint8 { return ch.spawnPoint }
 
 func (ch *Character) SetHp(v uint32, notify bool) {
 	maxHp := ch.GetMaxHp()
@@ -787,9 +793,38 @@ func (ch *Character) AddExp(exp uint32) {
 	}
 }
 
-func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, name string, ctx GameContext) *Character {
+type CharacterInitData struct {
+	ID           uint32
+	AccountID    uint32
+	Name         string
+	Gender       uint8
+	SkinColor    uint8
+	Face         uint32
+	Hair         uint32
+	Level        uint8
+	Class        uint16
+	Role         uint8
+	Str          uint16
+	Dex          uint16
+	Int          uint16
+	Luk          uint16
+	Hp           uint32
+	MaxHp        uint32
+	Mp           uint32
+	MaxMp        uint32
+	AbilityPoint uint16
+	SkillPoint   uint16
+	Exp          uint32
+	Meso         int32
+	SpawnPoint   uint8
+	PositionX    int16
+	PositionY    int16
+	Stance       uint8
+}
+
+func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterInitData, ctx GameContext) *Character {
 	if listener == nil {
-		panic("NewDummyCharacter: listener must not be nil")
+		panic("NewCharacter: listener must not be nil")
 	}
 	ch := &Character{
 		Sendable: sender,
@@ -797,31 +832,33 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 		LifeCore: LifeCore{
 			ObjectCore: ObjectCore{
 				Context: ctx,
+				Position: types.Vector2[int16]{
+					X: data.PositionX,
+					Y: data.PositionY,
+				},
 			},
-			Hp:     50,
-			Mp:     5,
-			BaseHp: 50,
-			BaseMp: 5,
+			Hp:     data.Hp,
+			Mp:     data.Mp,
+			BaseHp: data.MaxHp,
+			BaseMp: data.MaxMp,
+			Stance: data.Stance,
 		},
-		id:        id,
-		name:      name,
-		gender:    0,
-		skinColor: 0,
-		face:      20100,
-		hair:      30000,
-		level:     1,
-		Class:     0,
-		BaseStats: BaseStats{
-			Str: 12,
-			Dex: 5,
-			Int: 4,
-			Luk: 4,
-		},
-		AbilityPoint: 0,
-		SkillPoint:   0,
-		HpApUsed:     0,
-		spawnPoint:   1,
-		Meso:         2135983647,
+		id:           data.ID,
+		AccountID:    data.AccountID,
+		name:         data.Name,
+		gender:       data.Gender,
+		skinColor:    data.SkinColor,
+		face:         data.Face,
+		hair:         data.Hair,
+		level:        data.Level,
+		Class:        data.Class,
+		Role:         constant.CharacterRole(data.Role),
+		BaseStats:    BaseStats{Str: data.Str, Dex: data.Dex, Int: data.Int, Luk: data.Luk},
+		AbilityPoint: data.AbilityPoint,
+		SkillPoint:   data.SkillPoint,
+		exp:          data.Exp,
+		spawnPoint:   data.SpawnPoint,
+		Meso:         data.Meso,
 
 		random1: stream.NewRandomStream(),
 		random2: stream.NewRandomStream(),
@@ -839,81 +876,45 @@ func NewDummyCharacter(sender Sendable, listener CharacterListener, id uint32, n
 			Right: []*Ring{},
 			Mid:   []*Ring{},
 		},
-		Equipments: map[constant.EquipmentPartsType]Equipment{
-			constant.EQUIPMENT_PARTS_WEAPON: nil,
-			constant.EQUIPMENT_PARTS_SHIELD: nil,
-		},
+		Equipments: map[constant.EquipmentPartsType]Equipment{},
 
 		regRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
 		rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
 	}
 	ch.Buffs = NewBuffContainer(ch)
 	ch.Skills = NewSkillContainer(ch)
-
-	if ctx != nil {
-		resources := ctx.GetResources()
-		weaponItem, err := NewItem(1302000, 1, ctx)
-		if err == nil {
-			if eq, ok := weaponItem.(Equipment); ok {
-				ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = eq
-			}
-		}
-		if ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] == nil && resources != nil {
-			core := &EquipmentCore{
-				ItemCore: &ItemCore{
-					Wz:         resources.Items[1302000],
-					Count:      1,
-					UniqueId:   0,
-					Expiration: util.TimeMax,
-				},
-				EnchantChance: 7,
-			}
-			ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON] = &Weapon{EquipmentCore: core}
-		}
-
-		petExpiration, err := time.ParseInLocation("2006-01-02 15:04:05", "2025-05-30 09:30:00", util.KST)
-		if err != nil {
-			fmt.Println(err)
-		}
-		ch.Inventory[constant.INVENTORY_TYPE_CASH].Items[1] = &Pet{
-			ItemCore: &ItemCore{
-				Wz:         resources.Items[5000007],
-				Count:      1,
-				UniqueId:   1,
-				Expiration: util.TimeMax,
-			},
-			Level:       1,
-			Closeness:   0,
-			Fullness:    0,
-			Speed:       1,
-			Flags:       0,
-			SecondsLeft: 0,
-			Expiration:  petExpiration,
-		}
-
-		ch.Inventory[constant.INVENTORY_TYPE_ETC].Items[1] = &MiscItem{
-			ItemCore: &ItemCore{
-				Wz:         resources.Items[4000001],
-				Count:      100,
-				Expiration: util.TimeMax,
-			},
-		}
-
-		if item, e := NewItem(1060002, 1, ctx); e == nil {
-			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[1] = item
-		}
-		if item, e := NewItem(1060006, 1, ctx); e == nil {
-			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[2] = item
-		}
-		if item, e := NewItem(1040002, 1, ctx); e == nil {
-			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[3] = item
-		}
-		if item, e := NewItem(1040010, 1, ctx); e == nil {
-			ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Items[4] = item
-		}
-	}
 	ch.LifeCore.ObjectCore.self = ch
 	return ch
+}
+
+func (ch *Character) LoadInventory(items []PersistedItemData) {
+	for _, data := range items {
+		item, err := NewItemFromPersisted(data, ch.Context)
+		if err != nil {
+			continue
+		}
+		if data.Slot < 0 {
+			parts := constant.EquipmentPartsType(data.Slot)
+			if eq, ok := item.(Equipment); ok {
+				ch.Equipments[parts] = eq
+			}
+		} else {
+			invType := constant.GetInventoryTypeByItemID(data.ItemId)
+			if inv, ok := ch.Inventory[invType]; ok {
+				inv.Items[data.Slot] = item
+			}
+		}
+	}
+}
+
+func (ch *Character) LoadSkills(skills []PersistedSkillData) {
+	for _, data := range skills {
+		entry, err := NewSkillEntryFromData(ch, data, ch.Context)
+		if err != nil {
+			continue
+		}
+		ch.Skills.Bind(data.SkillId, entry)
+	}
 }
 
 func (ch *Character) GetCurrentDialog() *lua.LState {

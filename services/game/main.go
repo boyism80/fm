@@ -83,14 +83,16 @@ high_rate: false
 	}
 
 	srvCfg := &server.GameConfig{
-		Host:       g.Host,
-		Port:       g.Port,
-		WzPath:     g.WzPath,
-		WorldName:  g.World,
-		MaxPlayers: g.MaxPlayers,
-		ExpRate:    g.Rate.Exp,
-		DropRate:   g.Rate.Drop,
-		MesoRate:   g.Rate.Meso,
+		Host:         g.Host,
+		Port:         g.Port,
+		WzPath:       g.WzPath,
+		WorldName:    g.World,
+		WorldId:      uint32(g.WorldId),
+		MaxPlayers:   g.MaxPlayers,
+		ExpRate:      g.Rate.Exp,
+		DropRate:     g.Rate.Drop,
+		MesoRate:     g.Rate.Meso,
+		InternalAddr: g.Internal.GRPCAddr(),
 	}
 
 	gs, err := server.NewGameServer(srvCfg)

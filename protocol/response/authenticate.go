@@ -7,7 +7,7 @@ import (
 type Authenticate struct {
 	AccountId     uint32
 	Gender        uint8
-	Admin         bool
+	Role          uint8
 	AccountName   string
 	IsChatBlocked bool
 	ChatBlockTime uint64
@@ -21,7 +21,7 @@ func (a *Authenticate) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(0)
 	writer.WriteU32(a.AccountId)
 	writer.WriteU8(a.Gender)
-	writer.WriteBoolean(a.Admin)
+	writer.WriteU8(a.Role)
 	writer.WriteU8(0)
 	writer.WriteStr16(a.AccountName)
 	writer.WriteU32(0)

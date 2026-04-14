@@ -205,6 +205,8 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	return nil
 }
 
+func (m *Map) GetMapID() uint32 { return m.id }
+
 func (m *Map) GetPlayer(playerID uint32) *Character {
 	if m.objects[constant.ObjectTypeCharacter] == nil {
 		return nil

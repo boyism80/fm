@@ -1,0 +1,10 @@
+"use strict";
+
+const path = require("path");
+
+module.exports = {
+    config: path.resolve(__dirname, "sequelize", "config-for-cli.cjs"),
+    "models-path": path.resolve(__dirname, "sequelize", "models"),
+    "seeders-path": path.resolve(__dirname, "sequelize", "seeders"),
+    "migrations-path": path.resolve(__dirname, "sequelize", "migrations"),
+};

@@ -1,36 +1,87 @@
-# FM internal gRPC service — infrastructure and app settings (see fm_internal_design.md).
 app:
   log_level: "info"
-  world_id: 1
+  world_id: 0
 
 grpc:
   host: "0.0.0.0"
   port: 50051
 
 postgresql:
-  host: "127.0.0.1"
-  port: 5432
-  database: "fm"
-  username: "fm"
-  password: "change_me"
-  ssl: false
-  pool:
-    min: 0
-    max: 10
+  unified:
+    host: "127.0.0.1"
+    port: 5432
+    database: "fm"
+    username: "fm"
+    password: "admin"
+    ssl: false
+    pool:
+      min: 0
+      max: 5
+  worlds:
+    "0":
+      global:
+        host: "127.0.0.1"
+        port: 5432
+        database: "fm"
+        username: "fm"
+        password: "admin"
+        ssl: false
+        pool:
+          min: 0
+          max: 10
+      data:
+        - host: "127.0.0.1"
+          port: 5432
+          database: "fm"
+          username: "fm"
+          password: "admin"
+          ssl: false
+          pool:
+            min: 0
+            max: 10
+        - host: "127.0.0.1"
+          port: 5432
+          database: "fm"
+          username: "fm"
+          password: "admin"
+          ssl: false
+          pool:
+            min: 0
+            max: 10
+
 
 redis:
-  host: "127.0.0.1"
-  port: 6379
-  password: ""
-  db: 0
-  tls: false
-  key_prefix: "cache:"
+  worlds:
+    "0":
+      global:
+        host: "127.0.0.1"
+        port: 6379
+        password: ""
+        db: 0
+        tls: false
+        key_prefix: "cache:"
+      data:
+        - host: "127.0.0.1"
+          port: 6379
+          password: ""
+          db: 0
+          tls: false
+          key_prefix: "cache:"
+        - host: "127.0.0.1"
+          port: 6379
+          password: ""
+          db: 1
+          tls: false
+          key_prefix: "cache:"
 
 cache:
   write_strategy: "write-through"
+  character_ttl_seconds: 300
+  item_ttl_seconds: 300
 
 sequelize:
   dialect: "postgres"
   migration_storage: "sequelize"
+  auto_migrate_on_startup: true
   define:
     underscored: true

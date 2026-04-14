@@ -1,10 +1,13 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/boyism80/fm/core"
+	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
@@ -29,53 +32,117 @@ func (h *LoginGame) GetOpcode() byte {
 }
 
 func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
-	name := "채승현"
-	if req.PlayerId != 1 {
-		name = "채진영"
+	if h.gs.internalClient == nil {
+		return fmt.Errorf("internal client not configured")
 	}
 
-	character := entity.NewDummyCharacter(ctx.Client, h.gs.characterListener, req.PlayerId, name, h.gs)
+	grpcCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	if req.PlayerId == 1 {
-		character.Role = constant.RoleAdmin
-		character.Invincible = true
+	reply, err := h.gs.internalClient.GetCharacter(grpcCtx, &fminternalpb.GetCharacterRequest{
+		WorldId:     h.gs.config.WorldId,
+		CharacterId: req.PlayerId,
+	})
+	if err != nil {
+		return fmt.Errorf("GetCharacter rpc: %w", err)
+	}
+	if !reply.GetFound() {
+		return fmt.Errorf("character %d not found", req.PlayerId)
 	}
 
-	client, ok := ctx.Client.(*client.GameClient)
+	p := reply.GetCharacter()
+	initData := &entity.CharacterInitData{
+		ID:           p.GetCharacterId(),
+		AccountID:    p.GetAccountId(),
+		Name:         p.GetName(),
+		Gender:       uint8(p.GetGender()),
+		SkinColor:    uint8(p.GetSkinColor()),
+		Face:         p.GetFace(),
+		Hair:         p.GetHair(),
+		Level:        uint8(p.GetLevel()),
+		Class:        uint16(p.GetClassId()),
+		Role:         uint8(p.GetRole()),
+		Str:          uint16(p.GetStr()),
+		Dex:          uint16(p.GetDex()),
+		Int:          uint16(p.GetIntStat()),
+		Luk:          uint16(p.GetLuk()),
+		Hp:           p.GetHp(),
+		MaxHp:        p.GetMaxHp(),
+		Mp:           p.GetMp(),
+		MaxMp:        p.GetMaxMp(),
+		AbilityPoint: uint16(p.GetAbilityPoint()),
+		SkillPoint:   uint16(p.GetSkillPoint()),
+		Exp:          p.GetExp(),
+		Meso:         p.GetMeso(),
+		SpawnPoint:   uint8(p.GetSpawnPoint()),
+		PositionX:    int16(p.GetPositionX()),
+		PositionY:    int16(p.GetPositionY()),
+		Stance:       uint8(p.GetStance()),
+	}
+
+	character := entity.NewCharacter(ctx.Client, h.gs.characterListener, initData, h.gs)
+
+	inventoryData := make([]entity.PersistedItemData, 0, len(reply.GetInventory()))
+	for _, inv := range reply.GetInventory() {
+		inventoryData = append(inventoryData, entity.PersistedItemData{
+			ItemId:           inv.GetItemId(),
+			UniqueId:         inv.GetUniqueId(),
+			Count:            uint16(inv.GetCount()),
+			Slot:             int16(inv.GetSlot()),
+			ExpirationUnixMs: inv.GetExpirationUnixMs(),
+			EnchantChance:    uint8(inv.GetEnchantChance()),
+			Flag:             uint16(inv.GetFlag()),
+			SkillBonus:       uint16(inv.GetSkillBonus()),
+			OwnerName:        inv.GetOwnerName(),
+		})
+	}
+	character.LoadInventory(inventoryData)
+
+	skillData := make([]entity.PersistedSkillData, 0, len(reply.GetSkills()))
+	for _, sk := range reply.GetSkills() {
+		skillData = append(skillData, entity.PersistedSkillData{
+			SkillId:           sk.GetSkillId(),
+			Level:             int(sk.GetLevel()),
+			MasterLevel:       int(sk.GetMasterLevel()),
+			CooldownEndUnixMs: sk.GetCooldownEndUnixMs(),
+		})
+	}
+	character.LoadSkills(skillData)
+
+	gameClient, ok := ctx.Client.(*client.GameClient)
 	if !ok {
-		log.Printf("Client is not a GameClient")
 		return fmt.Errorf("client is not a GameClient")
 	}
-	client.SetCharacter(character)
+	gameClient.SetCharacter(character)
 
-	initialMapID, ok := h.gs.resources.NameToMap("헤네시스")
-	if !ok {
-		return fmt.Errorf("initial map name not found")
-	}
-	initialSpawnPoint := uint8(1)
-
-	mapInstance := h.gs.GetMap(initialMapID)
+	mapID := p.GetMapId()
+	spawnPoint := uint8(p.GetSpawnPoint())
+	mapInstance := h.gs.GetMap(mapID)
 	if mapInstance == nil {
-		log.Printf("Initial map %d not found", initialMapID)
-		return fmt.Errorf("initial map %d not found", initialMapID)
+		log.Printf("saved map %d not found, falling back to default", mapID)
+		defaultMapID, ok := h.gs.resources.NameToMap("헤네시스")
+		if !ok {
+			return fmt.Errorf("default map not found")
+		}
+		mapID = defaultMapID
+		spawnPoint = 0
+		mapInstance = h.gs.GetMap(mapID)
+		if mapInstance == nil {
+			return fmt.Errorf("default map %d not found", mapID)
+		}
 	}
 
-	wz := mapInstance.Wz
-	if wz == nil {
-		log.Printf("Wz not found for map %d", initialMapID)
-		return fmt.Errorf("wz not found for map %d", initialMapID)
-	}
-
-	if _, ok := wz.Portals[initialSpawnPoint]; !ok {
-		log.Printf("Portal %d not found in map %d", initialSpawnPoint, initialMapID)
-		return fmt.Errorf("portal %d not found in map %d", initialSpawnPoint, initialMapID)
+	if mapInstance.Wz != nil {
+		if _, ok := mapInstance.Wz.Portals[spawnPoint]; !ok {
+			spawnPoint = 0
+		}
 	}
 
 	character.Stance = constant.StanceDefaultValue
 
 	targetMapPID := mapInstance.GetActorPID()
 	if targetMapPID == nil {
-		return fmt.Errorf("MapActor PID not found for map %d", initialMapID)
+		return fmt.Errorf("MapActor PID not found for map %d", mapID)
 	}
 
 	rootContext := h.gs.GetServer().GetRootContext()
@@ -85,7 +152,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 
 	rootContext.Send(targetMapPID, &g_actor.AddCharacter{
 		Character:  character,
-		SpawnPoint: initialSpawnPoint,
+		SpawnPoint: spawnPoint,
 		Init:       true,
 	})
 

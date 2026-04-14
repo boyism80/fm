@@ -21,6 +21,58 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type LoginAccountReply_Status int32
+
+const (
+	LoginAccountReply_SUCCESS        LoginAccountReply_Status = 0
+	LoginAccountReply_WRONG_PASSWORD LoginAccountReply_Status = 1
+	LoginAccountReply_BANNED         LoginAccountReply_Status = 2
+	LoginAccountReply_REGISTERED     LoginAccountReply_Status = 3
+)
+
+// Enum value maps for LoginAccountReply_Status.
+var (
+	LoginAccountReply_Status_name = map[int32]string{
+		0: "SUCCESS",
+		1: "WRONG_PASSWORD",
+		2: "BANNED",
+		3: "REGISTERED",
+	}
+	LoginAccountReply_Status_value = map[string]int32{
+		"SUCCESS":        0,
+		"WRONG_PASSWORD": 1,
+		"BANNED":         2,
+		"REGISTERED":     3,
+	}
+)
+
+func (x LoginAccountReply_Status) Enum() *LoginAccountReply_Status {
+	p := new(LoginAccountReply_Status)
+	*p = x
+	return p
+}
+
+func (x LoginAccountReply_Status) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LoginAccountReply_Status) Descriptor() protoreflect.EnumDescriptor {
+	return file_fminternal_ping_proto_enumTypes[0].Descriptor()
+}
+
+func (LoginAccountReply_Status) Type() protoreflect.EnumType {
+	return &file_fminternal_ping_proto_enumTypes[0]
+}
+
+func (x LoginAccountReply_Status) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LoginAccountReply_Status.Descriptor instead.
+func (LoginAccountReply_Status) EnumDescriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{19, 0}
+}
+
 type PingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -101,6 +153,1962 @@ func (x *PingReply) GetMessage() string {
 	return ""
 }
 
+type GetCharacterRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	CharacterId   uint32                 `protobuf:"varint,2,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCharacterRequest) Reset() {
+	*x = GetCharacterRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCharacterRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCharacterRequest) ProtoMessage() {}
+
+func (x *GetCharacterRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCharacterRequest.ProtoReflect.Descriptor instead.
+func (*GetCharacterRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetCharacterRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *GetCharacterRequest) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+type CharacterPersisted struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	CharacterId     uint32                 `protobuf:"varint,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	WorldId         uint32                 `protobuf:"varint,2,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	Name            string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Gender          uint32                 `protobuf:"varint,4,opt,name=gender,proto3" json:"gender,omitempty"`
+	SkinColor       uint32                 `protobuf:"varint,5,opt,name=skin_color,json=skinColor,proto3" json:"skin_color,omitempty"`
+	Face            uint32                 `protobuf:"varint,6,opt,name=face,proto3" json:"face,omitempty"`
+	Hair            uint32                 `protobuf:"varint,7,opt,name=hair,proto3" json:"hair,omitempty"`
+	Level           uint32                 `protobuf:"varint,8,opt,name=level,proto3" json:"level,omitempty"`
+	ClassId         uint32                 `protobuf:"varint,9,opt,name=class_id,json=classId,proto3" json:"class_id,omitempty"`
+	Str             uint32                 `protobuf:"varint,10,opt,name=str,proto3" json:"str,omitempty"`
+	Dex             uint32                 `protobuf:"varint,11,opt,name=dex,proto3" json:"dex,omitempty"`
+	IntStat         uint32                 `protobuf:"varint,12,opt,name=int_stat,json=intStat,proto3" json:"int_stat,omitempty"`
+	Luk             uint32                 `protobuf:"varint,13,opt,name=luk,proto3" json:"luk,omitempty"`
+	Hp              uint32                 `protobuf:"varint,14,opt,name=hp,proto3" json:"hp,omitempty"`
+	MaxHp           uint32                 `protobuf:"varint,15,opt,name=max_hp,json=maxHp,proto3" json:"max_hp,omitempty"`
+	Mp              uint32                 `protobuf:"varint,16,opt,name=mp,proto3" json:"mp,omitempty"`
+	MaxMp           uint32                 `protobuf:"varint,17,opt,name=max_mp,json=maxMp,proto3" json:"max_mp,omitempty"`
+	AbilityPoint    uint32                 `protobuf:"varint,18,opt,name=ability_point,json=abilityPoint,proto3" json:"ability_point,omitempty"`
+	Exp             uint32                 `protobuf:"varint,19,opt,name=exp,proto3" json:"exp,omitempty"`
+	MapId           uint32                 `protobuf:"varint,20,opt,name=map_id,json=mapId,proto3" json:"map_id,omitempty"`
+	SpawnPoint      uint32                 `protobuf:"varint,21,opt,name=spawn_point,json=spawnPoint,proto3" json:"spawn_point,omitempty"`
+	PositionX       int32                  `protobuf:"varint,22,opt,name=position_x,json=positionX,proto3" json:"position_x,omitempty"`
+	PositionY       int32                  `protobuf:"varint,23,opt,name=position_y,json=positionY,proto3" json:"position_y,omitempty"`
+	Stance          uint32                 `protobuf:"varint,24,opt,name=stance,proto3" json:"stance,omitempty"`
+	Meso            int32                  `protobuf:"varint,25,opt,name=meso,proto3" json:"meso,omitempty"`
+	SkillPoint      uint32                 `protobuf:"varint,26,opt,name=skill_point,json=skillPoint,proto3" json:"skill_point,omitempty"`
+	UpdatedAtUnixMs int64                  `protobuf:"varint,27,opt,name=updated_at_unix_ms,json=updatedAtUnixMs,proto3" json:"updated_at_unix_ms,omitempty"`
+	AccountId       uint32                 `protobuf:"varint,28,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	Role            uint32                 `protobuf:"varint,29,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CharacterPersisted) Reset() {
+	*x = CharacterPersisted{}
+	mi := &file_fminternal_ping_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CharacterPersisted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CharacterPersisted) ProtoMessage() {}
+
+func (x *CharacterPersisted) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CharacterPersisted.ProtoReflect.Descriptor instead.
+func (*CharacterPersisted) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CharacterPersisted) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CharacterPersisted) GetGender() uint32 {
+	if x != nil {
+		return x.Gender
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetSkinColor() uint32 {
+	if x != nil {
+		return x.SkinColor
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetFace() uint32 {
+	if x != nil {
+		return x.Face
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetHair() uint32 {
+	if x != nil {
+		return x.Hair
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetLevel() uint32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetClassId() uint32 {
+	if x != nil {
+		return x.ClassId
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetStr() uint32 {
+	if x != nil {
+		return x.Str
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetDex() uint32 {
+	if x != nil {
+		return x.Dex
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetIntStat() uint32 {
+	if x != nil {
+		return x.IntStat
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetLuk() uint32 {
+	if x != nil {
+		return x.Luk
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetHp() uint32 {
+	if x != nil {
+		return x.Hp
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetMaxHp() uint32 {
+	if x != nil {
+		return x.MaxHp
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetMp() uint32 {
+	if x != nil {
+		return x.Mp
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetMaxMp() uint32 {
+	if x != nil {
+		return x.MaxMp
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetAbilityPoint() uint32 {
+	if x != nil {
+		return x.AbilityPoint
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetExp() uint32 {
+	if x != nil {
+		return x.Exp
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetMapId() uint32 {
+	if x != nil {
+		return x.MapId
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetSpawnPoint() uint32 {
+	if x != nil {
+		return x.SpawnPoint
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetPositionX() int32 {
+	if x != nil {
+		return x.PositionX
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetPositionY() int32 {
+	if x != nil {
+		return x.PositionY
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetStance() uint32 {
+	if x != nil {
+		return x.Stance
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetMeso() int32 {
+	if x != nil {
+		return x.Meso
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetSkillPoint() uint32 {
+	if x != nil {
+		return x.SkillPoint
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetUpdatedAtUnixMs() int64 {
+	if x != nil {
+		return x.UpdatedAtUnixMs
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetAccountId() uint32 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *CharacterPersisted) GetRole() uint32 {
+	if x != nil {
+		return x.Role
+	}
+	return 0
+}
+
+type GetCharacterReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Found         bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
+	Character     *CharacterPersisted    `protobuf:"bytes,2,opt,name=character,proto3" json:"character,omitempty"`
+	Inventory     []*InventoryPersisted  `protobuf:"bytes,3,rep,name=inventory,proto3" json:"inventory,omitempty"`
+	Skills        []*SkillPersisted      `protobuf:"bytes,4,rep,name=skills,proto3" json:"skills,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCharacterReply) Reset() {
+	*x = GetCharacterReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCharacterReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCharacterReply) ProtoMessage() {}
+
+func (x *GetCharacterReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCharacterReply.ProtoReflect.Descriptor instead.
+func (*GetCharacterReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetCharacterReply) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
+func (x *GetCharacterReply) GetCharacter() *CharacterPersisted {
+	if x != nil {
+		return x.Character
+	}
+	return nil
+}
+
+func (x *GetCharacterReply) GetInventory() []*InventoryPersisted {
+	if x != nil {
+		return x.Inventory
+	}
+	return nil
+}
+
+func (x *GetCharacterReply) GetSkills() []*SkillPersisted {
+	if x != nil {
+		return x.Skills
+	}
+	return nil
+}
+
+type SaveCharacterRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Character     *CharacterPersisted    `protobuf:"bytes,1,opt,name=character,proto3" json:"character,omitempty"`
+	BaseLooks     map[int32]uint32       `protobuf:"bytes,2,rep,name=base_looks,json=baseLooks,proto3" json:"base_looks,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	Overlays      map[int32]uint32       `protobuf:"bytes,3,rep,name=overlays,proto3" json:"overlays,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveCharacterRequest) Reset() {
+	*x = SaveCharacterRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveCharacterRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveCharacterRequest) ProtoMessage() {}
+
+func (x *SaveCharacterRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveCharacterRequest.ProtoReflect.Descriptor instead.
+func (*SaveCharacterRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SaveCharacterRequest) GetCharacter() *CharacterPersisted {
+	if x != nil {
+		return x.Character
+	}
+	return nil
+}
+
+func (x *SaveCharacterRequest) GetBaseLooks() map[int32]uint32 {
+	if x != nil {
+		return x.BaseLooks
+	}
+	return nil
+}
+
+func (x *SaveCharacterRequest) GetOverlays() map[int32]uint32 {
+	if x != nil {
+		return x.Overlays
+	}
+	return nil
+}
+
+type SaveCharacterReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveCharacterReply) Reset() {
+	*x = SaveCharacterReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveCharacterReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveCharacterReply) ProtoMessage() {}
+
+func (x *SaveCharacterReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveCharacterReply.ProtoReflect.Descriptor instead.
+func (*SaveCharacterReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SaveCharacterReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+type CharacterSaveEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Character     *CharacterPersisted    `protobuf:"bytes,1,opt,name=character,proto3" json:"character,omitempty"`
+	BaseLooks     map[int32]uint32       `protobuf:"bytes,2,rep,name=base_looks,json=baseLooks,proto3" json:"base_looks,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	Overlays      map[int32]uint32       `protobuf:"bytes,3,rep,name=overlays,proto3" json:"overlays,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CharacterSaveEntry) Reset() {
+	*x = CharacterSaveEntry{}
+	mi := &file_fminternal_ping_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CharacterSaveEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CharacterSaveEntry) ProtoMessage() {}
+
+func (x *CharacterSaveEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CharacterSaveEntry.ProtoReflect.Descriptor instead.
+func (*CharacterSaveEntry) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CharacterSaveEntry) GetCharacter() *CharacterPersisted {
+	if x != nil {
+		return x.Character
+	}
+	return nil
+}
+
+func (x *CharacterSaveEntry) GetBaseLooks() map[int32]uint32 {
+	if x != nil {
+		return x.BaseLooks
+	}
+	return nil
+}
+
+func (x *CharacterSaveEntry) GetOverlays() map[int32]uint32 {
+	if x != nil {
+		return x.Overlays
+	}
+	return nil
+}
+
+type SaveCharactersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Entries       []*CharacterSaveEntry  `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveCharactersRequest) Reset() {
+	*x = SaveCharactersRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveCharactersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveCharactersRequest) ProtoMessage() {}
+
+func (x *SaveCharactersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveCharactersRequest.ProtoReflect.Descriptor instead.
+func (*SaveCharactersRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SaveCharactersRequest) GetEntries() []*CharacterSaveEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+type SaveCharactersReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveCharactersReply) Reset() {
+	*x = SaveCharactersReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveCharactersReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveCharactersReply) ProtoMessage() {}
+
+func (x *SaveCharactersReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveCharactersReply.ProtoReflect.Descriptor instead.
+func (*SaveCharactersReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SaveCharactersReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+type InventoryPersisted struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	UniqueId         int64                  `protobuf:"varint,1,opt,name=unique_id,json=uniqueId,proto3" json:"unique_id,omitempty"`
+	OwnerId          uint32                 `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	ItemId           uint32                 `protobuf:"varint,3,opt,name=item_id,json=itemId,proto3" json:"item_id,omitempty"`
+	Slot             int32                  `protobuf:"varint,4,opt,name=slot,proto3" json:"slot,omitempty"`
+	Count            uint32                 `protobuf:"varint,5,opt,name=count,proto3" json:"count,omitempty"`
+	ExpirationUnixMs int64                  `protobuf:"varint,6,opt,name=expiration_unix_ms,json=expirationUnixMs,proto3" json:"expiration_unix_ms,omitempty"`
+	EnchantChance    uint32                 `protobuf:"varint,7,opt,name=enchant_chance,json=enchantChance,proto3" json:"enchant_chance,omitempty"`
+	Flag             uint32                 `protobuf:"varint,8,opt,name=flag,proto3" json:"flag,omitempty"`
+	SkillBonus       uint32                 `protobuf:"varint,9,opt,name=skill_bonus,json=skillBonus,proto3" json:"skill_bonus,omitempty"`
+	OwnerName        string                 `protobuf:"bytes,10,opt,name=owner_name,json=ownerName,proto3" json:"owner_name,omitempty"`
+	UpdatedAtUnixMs  int64                  `protobuf:"varint,11,opt,name=updated_at_unix_ms,json=updatedAtUnixMs,proto3" json:"updated_at_unix_ms,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *InventoryPersisted) Reset() {
+	*x = InventoryPersisted{}
+	mi := &file_fminternal_ping_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InventoryPersisted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InventoryPersisted) ProtoMessage() {}
+
+func (x *InventoryPersisted) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InventoryPersisted.ProtoReflect.Descriptor instead.
+func (*InventoryPersisted) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *InventoryPersisted) GetUniqueId() int64 {
+	if x != nil {
+		return x.UniqueId
+	}
+	return 0
+}
+
+func (x *InventoryPersisted) GetOwnerId() uint32 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *InventoryPersisted) GetItemId() uint32 {
+	if x != nil {
+		return x.ItemId
+	}
+	return 0
+}
+
+func (x *InventoryPersisted) GetSlot() int32 {
+	if x != nil {
+		return x.Slot
+	}
+	return 0
+}
+
+func (x *InventoryPersisted) GetCount() uint32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+func (x *InventoryPersisted) GetExpirationUnixMs() int64 {
+	if x != nil {
+		return x.ExpirationUnixMs
+	}
+	return 0
+}
+
+func (x *InventoryPersisted) GetEnchantChance() uint32 {
+	if x != nil {
+		return x.EnchantChance
+	}
+	return 0
+}
+
+func (x *InventoryPersisted) GetFlag() uint32 {
+	if x != nil {
+		return x.Flag
+	}
+	return 0
+}
+
+func (x *InventoryPersisted) GetSkillBonus() uint32 {
+	if x != nil {
+		return x.SkillBonus
+	}
+	return 0
+}
+
+func (x *InventoryPersisted) GetOwnerName() string {
+	if x != nil {
+		return x.OwnerName
+	}
+	return ""
+}
+
+func (x *InventoryPersisted) GetUpdatedAtUnixMs() int64 {
+	if x != nil {
+		return x.UpdatedAtUnixMs
+	}
+	return 0
+}
+
+type GetInventoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	OwnerId       uint32                 `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetInventoryRequest) Reset() {
+	*x = GetInventoryRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetInventoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetInventoryRequest) ProtoMessage() {}
+
+func (x *GetInventoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetInventoryRequest.ProtoReflect.Descriptor instead.
+func (*GetInventoryRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetInventoryRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *GetInventoryRequest) GetOwnerId() uint32 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+type GetInventoryReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*InventoryPersisted  `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetInventoryReply) Reset() {
+	*x = GetInventoryReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetInventoryReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetInventoryReply) ProtoMessage() {}
+
+func (x *GetInventoryReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetInventoryReply.ProtoReflect.Descriptor instead.
+func (*GetInventoryReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetInventoryReply) GetItems() []*InventoryPersisted {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type SaveInventoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	Items         []*InventoryPersisted  `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveInventoryRequest) Reset() {
+	*x = SaveInventoryRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveInventoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveInventoryRequest) ProtoMessage() {}
+
+func (x *SaveInventoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveInventoryRequest.ProtoReflect.Descriptor instead.
+func (*SaveInventoryRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *SaveInventoryRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *SaveInventoryRequest) GetItems() []*InventoryPersisted {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type SaveInventoryReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveInventoryReply) Reset() {
+	*x = SaveInventoryReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveInventoryReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveInventoryReply) ProtoMessage() {}
+
+func (x *SaveInventoryReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveInventoryReply.ProtoReflect.Descriptor instead.
+func (*SaveInventoryReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *SaveInventoryReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+type DeleteInventoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	OwnerId       uint32                 `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	UniqueIds     []int64                `protobuf:"varint,3,rep,packed,name=unique_ids,json=uniqueIds,proto3" json:"unique_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteInventoryRequest) Reset() {
+	*x = DeleteInventoryRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteInventoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteInventoryRequest) ProtoMessage() {}
+
+func (x *DeleteInventoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteInventoryRequest.ProtoReflect.Descriptor instead.
+func (*DeleteInventoryRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *DeleteInventoryRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *DeleteInventoryRequest) GetOwnerId() uint32 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *DeleteInventoryRequest) GetUniqueIds() []int64 {
+	if x != nil {
+		return x.UniqueIds
+	}
+	return nil
+}
+
+type DeleteInventoryReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteInventoryReply) Reset() {
+	*x = DeleteInventoryReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteInventoryReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteInventoryReply) ProtoMessage() {}
+
+func (x *DeleteInventoryReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteInventoryReply.ProtoReflect.Descriptor instead.
+func (*DeleteInventoryReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *DeleteInventoryReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+type SkillPersisted struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	CharacterId       uint32                 `protobuf:"varint,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	SkillId           uint32                 `protobuf:"varint,2,opt,name=skill_id,json=skillId,proto3" json:"skill_id,omitempty"`
+	Level             int32                  `protobuf:"varint,3,opt,name=level,proto3" json:"level,omitempty"`
+	MasterLevel       int32                  `protobuf:"varint,4,opt,name=master_level,json=masterLevel,proto3" json:"master_level,omitempty"`
+	CooldownEndUnixMs int64                  `protobuf:"varint,5,opt,name=cooldown_end_unix_ms,json=cooldownEndUnixMs,proto3" json:"cooldown_end_unix_ms,omitempty"`
+	UpdatedAtUnixMs   int64                  `protobuf:"varint,6,opt,name=updated_at_unix_ms,json=updatedAtUnixMs,proto3" json:"updated_at_unix_ms,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SkillPersisted) Reset() {
+	*x = SkillPersisted{}
+	mi := &file_fminternal_ping_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SkillPersisted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SkillPersisted) ProtoMessage() {}
+
+func (x *SkillPersisted) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SkillPersisted.ProtoReflect.Descriptor instead.
+func (*SkillPersisted) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *SkillPersisted) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+func (x *SkillPersisted) GetSkillId() uint32 {
+	if x != nil {
+		return x.SkillId
+	}
+	return 0
+}
+
+func (x *SkillPersisted) GetLevel() int32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *SkillPersisted) GetMasterLevel() int32 {
+	if x != nil {
+		return x.MasterLevel
+	}
+	return 0
+}
+
+func (x *SkillPersisted) GetCooldownEndUnixMs() int64 {
+	if x != nil {
+		return x.CooldownEndUnixMs
+	}
+	return 0
+}
+
+func (x *SkillPersisted) GetUpdatedAtUnixMs() int64 {
+	if x != nil {
+		return x.UpdatedAtUnixMs
+	}
+	return 0
+}
+
+type LoginAccountRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LoginId       string                 `protobuf:"bytes,1,opt,name=login_id,json=loginId,proto3" json:"login_id,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	MacAddress    string                 `protobuf:"bytes,3,opt,name=mac_address,json=macAddress,proto3" json:"mac_address,omitempty"`
+	IpAddress     string                 `protobuf:"bytes,4,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty"`
+	InitialRole   uint32                 `protobuf:"varint,5,opt,name=initial_role,json=initialRole,proto3" json:"initial_role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoginAccountRequest) Reset() {
+	*x = LoginAccountRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoginAccountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoginAccountRequest) ProtoMessage() {}
+
+func (x *LoginAccountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoginAccountRequest.ProtoReflect.Descriptor instead.
+func (*LoginAccountRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *LoginAccountRequest) GetLoginId() string {
+	if x != nil {
+		return x.LoginId
+	}
+	return ""
+}
+
+func (x *LoginAccountRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *LoginAccountRequest) GetMacAddress() string {
+	if x != nil {
+		return x.MacAddress
+	}
+	return ""
+}
+
+func (x *LoginAccountRequest) GetIpAddress() string {
+	if x != nil {
+		return x.IpAddress
+	}
+	return ""
+}
+
+func (x *LoginAccountRequest) GetInitialRole() uint32 {
+	if x != nil {
+		return x.InitialRole
+	}
+	return 0
+}
+
+type LoginAccountReply struct {
+	state                  protoimpl.MessageState   `protogen:"open.v1"`
+	Status                 LoginAccountReply_Status `protobuf:"varint,1,opt,name=status,proto3,enum=fm.internal.LoginAccountReply_Status" json:"status,omitempty"`
+	AccountId              uint32                   `protobuf:"varint,2,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	Gender                 uint32                   `protobuf:"varint,3,opt,name=gender,proto3" json:"gender,omitempty"`
+	IsChatBlocked          bool                     `protobuf:"varint,4,opt,name=is_chat_blocked,json=isChatBlocked,proto3" json:"is_chat_blocked,omitempty"`
+	ChatBlockedUntilUnixMs int64                    `protobuf:"varint,5,opt,name=chat_blocked_until_unix_ms,json=chatBlockedUntilUnixMs,proto3" json:"chat_blocked_until_unix_ms,omitempty"`
+	CharacterSlotCount     uint32                   `protobuf:"varint,6,opt,name=character_slot_count,json=characterSlotCount,proto3" json:"character_slot_count,omitempty"`
+	Role                   uint32                   `protobuf:"varint,7,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *LoginAccountReply) Reset() {
+	*x = LoginAccountReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoginAccountReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoginAccountReply) ProtoMessage() {}
+
+func (x *LoginAccountReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoginAccountReply.ProtoReflect.Descriptor instead.
+func (*LoginAccountReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *LoginAccountReply) GetStatus() LoginAccountReply_Status {
+	if x != nil {
+		return x.Status
+	}
+	return LoginAccountReply_SUCCESS
+}
+
+func (x *LoginAccountReply) GetAccountId() uint32 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *LoginAccountReply) GetGender() uint32 {
+	if x != nil {
+		return x.Gender
+	}
+	return 0
+}
+
+func (x *LoginAccountReply) GetIsChatBlocked() bool {
+	if x != nil {
+		return x.IsChatBlocked
+	}
+	return false
+}
+
+func (x *LoginAccountReply) GetChatBlockedUntilUnixMs() int64 {
+	if x != nil {
+		return x.ChatBlockedUntilUnixMs
+	}
+	return 0
+}
+
+func (x *LoginAccountReply) GetCharacterSlotCount() uint32 {
+	if x != nil {
+		return x.CharacterSlotCount
+	}
+	return 0
+}
+
+func (x *LoginAccountReply) GetRole() uint32 {
+	if x != nil {
+		return x.Role
+	}
+	return 0
+}
+
+type CharacterOverview struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CharacterId   uint32                 `protobuf:"varint,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Gender        uint32                 `protobuf:"varint,3,opt,name=gender,proto3" json:"gender,omitempty"`
+	SkinColor     uint32                 `protobuf:"varint,4,opt,name=skin_color,json=skinColor,proto3" json:"skin_color,omitempty"`
+	Face          uint32                 `protobuf:"varint,5,opt,name=face,proto3" json:"face,omitempty"`
+	Hair          uint32                 `protobuf:"varint,6,opt,name=hair,proto3" json:"hair,omitempty"`
+	Level         uint32                 `protobuf:"varint,7,opt,name=level,proto3" json:"level,omitempty"`
+	ClassId       uint32                 `protobuf:"varint,8,opt,name=class_id,json=classId,proto3" json:"class_id,omitempty"`
+	MapId         uint32                 `protobuf:"varint,9,opt,name=map_id,json=mapId,proto3" json:"map_id,omitempty"`
+	SpawnPoint    uint32                 `protobuf:"varint,10,opt,name=spawn_point,json=spawnPoint,proto3" json:"spawn_point,omitempty"`
+	AccountId     uint32                 `protobuf:"varint,11,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	WorldId       uint32                 `protobuf:"varint,12,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	Rank          int32                  `protobuf:"varint,13,opt,name=rank,proto3" json:"rank,omitempty"`
+	RankDiff      int32                  `protobuf:"varint,14,opt,name=rank_diff,json=rankDiff,proto3" json:"rank_diff,omitempty"`
+	ClassRank     int32                  `protobuf:"varint,15,opt,name=class_rank,json=classRank,proto3" json:"class_rank,omitempty"`
+	ClassRankDiff int32                  `protobuf:"varint,16,opt,name=class_rank_diff,json=classRankDiff,proto3" json:"class_rank_diff,omitempty"`
+	BaseLooks     map[int32]uint32       `protobuf:"bytes,17,rep,name=base_looks,json=baseLooks,proto3" json:"base_looks,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	Overlays      map[int32]uint32       `protobuf:"bytes,18,rep,name=overlays,proto3" json:"overlays,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CharacterOverview) Reset() {
+	*x = CharacterOverview{}
+	mi := &file_fminternal_ping_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CharacterOverview) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CharacterOverview) ProtoMessage() {}
+
+func (x *CharacterOverview) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CharacterOverview.ProtoReflect.Descriptor instead.
+func (*CharacterOverview) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *CharacterOverview) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CharacterOverview) GetGender() uint32 {
+	if x != nil {
+		return x.Gender
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetSkinColor() uint32 {
+	if x != nil {
+		return x.SkinColor
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetFace() uint32 {
+	if x != nil {
+		return x.Face
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetHair() uint32 {
+	if x != nil {
+		return x.Hair
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetLevel() uint32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetClassId() uint32 {
+	if x != nil {
+		return x.ClassId
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetMapId() uint32 {
+	if x != nil {
+		return x.MapId
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetSpawnPoint() uint32 {
+	if x != nil {
+		return x.SpawnPoint
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetAccountId() uint32 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetRank() int32 {
+	if x != nil {
+		return x.Rank
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetRankDiff() int32 {
+	if x != nil {
+		return x.RankDiff
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetClassRank() int32 {
+	if x != nil {
+		return x.ClassRank
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetClassRankDiff() int32 {
+	if x != nil {
+		return x.ClassRankDiff
+	}
+	return 0
+}
+
+func (x *CharacterOverview) GetBaseLooks() map[int32]uint32 {
+	if x != nil {
+		return x.BaseLooks
+	}
+	return nil
+}
+
+func (x *CharacterOverview) GetOverlays() map[int32]uint32 {
+	if x != nil {
+		return x.Overlays
+	}
+	return nil
+}
+
+type GetCharacterListRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccountId     uint32                 `protobuf:"varint,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	WorldId       uint32                 `protobuf:"varint,2,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCharacterListRequest) Reset() {
+	*x = GetCharacterListRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCharacterListRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCharacterListRequest) ProtoMessage() {}
+
+func (x *GetCharacterListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCharacterListRequest.ProtoReflect.Descriptor instead.
+func (*GetCharacterListRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetCharacterListRequest) GetAccountId() uint32 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *GetCharacterListRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+type GetCharacterListReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Characters    []*CharacterOverview   `protobuf:"bytes,1,rep,name=characters,proto3" json:"characters,omitempty"`
+	SlotCount     uint32                 `protobuf:"varint,2,opt,name=slot_count,json=slotCount,proto3" json:"slot_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetCharacterListReply) Reset() {
+	*x = GetCharacterListReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetCharacterListReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetCharacterListReply) ProtoMessage() {}
+
+func (x *GetCharacterListReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetCharacterListReply.ProtoReflect.Descriptor instead.
+func (*GetCharacterListReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetCharacterListReply) GetCharacters() []*CharacterOverview {
+	if x != nil {
+		return x.Characters
+	}
+	return nil
+}
+
+func (x *GetCharacterListReply) GetSlotCount() uint32 {
+	if x != nil {
+		return x.SlotCount
+	}
+	return 0
+}
+
+type CheckCharacterNameRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckCharacterNameRequest) Reset() {
+	*x = CheckCharacterNameRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckCharacterNameRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckCharacterNameRequest) ProtoMessage() {}
+
+func (x *CheckCharacterNameRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckCharacterNameRequest.ProtoReflect.Descriptor instead.
+func (*CheckCharacterNameRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *CheckCharacterNameRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type CheckCharacterNameReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Exists        bool                   `protobuf:"varint,1,opt,name=exists,proto3" json:"exists,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckCharacterNameReply) Reset() {
+	*x = CheckCharacterNameReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckCharacterNameReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckCharacterNameReply) ProtoMessage() {}
+
+func (x *CheckCharacterNameReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckCharacterNameReply.ProtoReflect.Descriptor instead.
+func (*CheckCharacterNameReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *CheckCharacterNameReply) GetExists() bool {
+	if x != nil {
+		return x.Exists
+	}
+	return false
+}
+
+type CreateCharacterRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccountId     uint32                 `protobuf:"varint,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	WorldId       uint32                 `protobuf:"varint,2,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Face          uint32                 `protobuf:"varint,4,opt,name=face,proto3" json:"face,omitempty"`
+	Hair          uint32                 `protobuf:"varint,5,opt,name=hair,proto3" json:"hair,omitempty"`
+	SkinColor     uint32                 `protobuf:"varint,6,opt,name=skin_color,json=skinColor,proto3" json:"skin_color,omitempty"`
+	TopItemId     uint32                 `protobuf:"varint,7,opt,name=top_item_id,json=topItemId,proto3" json:"top_item_id,omitempty"`
+	BottomItemId  uint32                 `protobuf:"varint,8,opt,name=bottom_item_id,json=bottomItemId,proto3" json:"bottom_item_id,omitempty"`
+	ShoesItemId   uint32                 `protobuf:"varint,9,opt,name=shoes_item_id,json=shoesItemId,proto3" json:"shoes_item_id,omitempty"`
+	WeaponItemId  uint32                 `protobuf:"varint,10,opt,name=weapon_item_id,json=weaponItemId,proto3" json:"weapon_item_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCharacterRequest) Reset() {
+	*x = CreateCharacterRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCharacterRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCharacterRequest) ProtoMessage() {}
+
+func (x *CreateCharacterRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCharacterRequest.ProtoReflect.Descriptor instead.
+func (*CreateCharacterRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *CreateCharacterRequest) GetAccountId() uint32 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *CreateCharacterRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *CreateCharacterRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateCharacterRequest) GetFace() uint32 {
+	if x != nil {
+		return x.Face
+	}
+	return 0
+}
+
+func (x *CreateCharacterRequest) GetHair() uint32 {
+	if x != nil {
+		return x.Hair
+	}
+	return 0
+}
+
+func (x *CreateCharacterRequest) GetSkinColor() uint32 {
+	if x != nil {
+		return x.SkinColor
+	}
+	return 0
+}
+
+func (x *CreateCharacterRequest) GetTopItemId() uint32 {
+	if x != nil {
+		return x.TopItemId
+	}
+	return 0
+}
+
+func (x *CreateCharacterRequest) GetBottomItemId() uint32 {
+	if x != nil {
+		return x.BottomItemId
+	}
+	return 0
+}
+
+func (x *CreateCharacterRequest) GetShoesItemId() uint32 {
+	if x != nil {
+		return x.ShoesItemId
+	}
+	return 0
+}
+
+func (x *CreateCharacterRequest) GetWeaponItemId() uint32 {
+	if x != nil {
+		return x.WeaponItemId
+	}
+	return 0
+}
+
+type CreateCharacterReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	ErrorMsg      string                 `protobuf:"bytes,2,opt,name=error_msg,json=errorMsg,proto3" json:"error_msg,omitempty"`
+	Character     *CharacterOverview     `protobuf:"bytes,3,opt,name=character,proto3" json:"character,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateCharacterReply) Reset() {
+	*x = CreateCharacterReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCharacterReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCharacterReply) ProtoMessage() {}
+
+func (x *CreateCharacterReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCharacterReply.ProtoReflect.Descriptor instead.
+func (*CreateCharacterReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *CreateCharacterReply) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *CreateCharacterReply) GetErrorMsg() string {
+	if x != nil {
+		return x.ErrorMsg
+	}
+	return ""
+}
+
+func (x *CreateCharacterReply) GetCharacter() *CharacterOverview {
+	if x != nil {
+		return x.Character
+	}
+	return nil
+}
+
+type DeleteCharacterRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccountId     uint32                 `protobuf:"varint,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	CharacterId   uint32                 `protobuf:"varint,2,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteCharacterRequest) Reset() {
+	*x = DeleteCharacterRequest{}
+	mi := &file_fminternal_ping_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteCharacterRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteCharacterRequest) ProtoMessage() {}
+
+func (x *DeleteCharacterRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteCharacterRequest.ProtoReflect.Descriptor instead.
+func (*DeleteCharacterRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *DeleteCharacterRequest) GetAccountId() uint32 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *DeleteCharacterRequest) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+type DeleteCharacterReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteCharacterReply) Reset() {
+	*x = DeleteCharacterReply{}
+	mi := &file_fminternal_ping_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteCharacterReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteCharacterReply) ProtoMessage() {}
+
+func (x *DeleteCharacterReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_ping_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteCharacterReply.ProtoReflect.Descriptor instead.
+func (*DeleteCharacterReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_ping_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *DeleteCharacterReply) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 var File_fminternal_ping_proto protoreflect.FileDescriptor
 
 const file_fminternal_ping_proto_rawDesc = "" +
@@ -108,9 +2116,225 @@ const file_fminternal_ping_proto_rawDesc = "" +
 	"\x15fminternal/ping.proto\x12\vfm.internal\"\r\n" +
 	"\vPingRequest\"%\n" +
 	"\tPingReply\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2D\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"S\n" +
+	"\x13GetCharacterRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12!\n" +
+	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\"\xef\x05\n" +
+	"\x12CharacterPersisted\x12!\n" +
+	"\fcharacter_id\x18\x01 \x01(\rR\vcharacterId\x12\x19\n" +
+	"\bworld_id\x18\x02 \x01(\rR\aworldId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x16\n" +
+	"\x06gender\x18\x04 \x01(\rR\x06gender\x12\x1d\n" +
+	"\n" +
+	"skin_color\x18\x05 \x01(\rR\tskinColor\x12\x12\n" +
+	"\x04face\x18\x06 \x01(\rR\x04face\x12\x12\n" +
+	"\x04hair\x18\a \x01(\rR\x04hair\x12\x14\n" +
+	"\x05level\x18\b \x01(\rR\x05level\x12\x19\n" +
+	"\bclass_id\x18\t \x01(\rR\aclassId\x12\x10\n" +
+	"\x03str\x18\n" +
+	" \x01(\rR\x03str\x12\x10\n" +
+	"\x03dex\x18\v \x01(\rR\x03dex\x12\x19\n" +
+	"\bint_stat\x18\f \x01(\rR\aintStat\x12\x10\n" +
+	"\x03luk\x18\r \x01(\rR\x03luk\x12\x0e\n" +
+	"\x02hp\x18\x0e \x01(\rR\x02hp\x12\x15\n" +
+	"\x06max_hp\x18\x0f \x01(\rR\x05maxHp\x12\x0e\n" +
+	"\x02mp\x18\x10 \x01(\rR\x02mp\x12\x15\n" +
+	"\x06max_mp\x18\x11 \x01(\rR\x05maxMp\x12#\n" +
+	"\rability_point\x18\x12 \x01(\rR\fabilityPoint\x12\x10\n" +
+	"\x03exp\x18\x13 \x01(\rR\x03exp\x12\x15\n" +
+	"\x06map_id\x18\x14 \x01(\rR\x05mapId\x12\x1f\n" +
+	"\vspawn_point\x18\x15 \x01(\rR\n" +
+	"spawnPoint\x12\x1d\n" +
+	"\n" +
+	"position_x\x18\x16 \x01(\x05R\tpositionX\x12\x1d\n" +
+	"\n" +
+	"position_y\x18\x17 \x01(\x05R\tpositionY\x12\x16\n" +
+	"\x06stance\x18\x18 \x01(\rR\x06stance\x12\x12\n" +
+	"\x04meso\x18\x19 \x01(\x05R\x04meso\x12\x1f\n" +
+	"\vskill_point\x18\x1a \x01(\rR\n" +
+	"skillPoint\x12+\n" +
+	"\x12updated_at_unix_ms\x18\x1b \x01(\x03R\x0fupdatedAtUnixMs\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x1c \x01(\rR\taccountId\x12\x12\n" +
+	"\x04role\x18\x1d \x01(\rR\x04role\"\xdc\x01\n" +
+	"\x11GetCharacterReply\x12\x14\n" +
+	"\x05found\x18\x01 \x01(\bR\x05found\x12=\n" +
+	"\tcharacter\x18\x02 \x01(\v2\x1f.fm.internal.CharacterPersistedR\tcharacter\x12=\n" +
+	"\tinventory\x18\x03 \x03(\v2\x1f.fm.internal.InventoryPersistedR\tinventory\x123\n" +
+	"\x06skills\x18\x04 \x03(\v2\x1b.fm.internal.SkillPersistedR\x06skills\"\xee\x02\n" +
+	"\x14SaveCharacterRequest\x12=\n" +
+	"\tcharacter\x18\x01 \x01(\v2\x1f.fm.internal.CharacterPersistedR\tcharacter\x12O\n" +
+	"\n" +
+	"base_looks\x18\x02 \x03(\v20.fm.internal.SaveCharacterRequest.BaseLooksEntryR\tbaseLooks\x12K\n" +
+	"\boverlays\x18\x03 \x03(\v2/.fm.internal.SaveCharacterRequest.OverlaysEntryR\boverlays\x1a<\n" +
+	"\x0eBaseLooksEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01\x1a;\n" +
+	"\rOverlaysEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01\"$\n" +
+	"\x12SaveCharacterReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xe8\x02\n" +
+	"\x12CharacterSaveEntry\x12=\n" +
+	"\tcharacter\x18\x01 \x01(\v2\x1f.fm.internal.CharacterPersistedR\tcharacter\x12M\n" +
+	"\n" +
+	"base_looks\x18\x02 \x03(\v2..fm.internal.CharacterSaveEntry.BaseLooksEntryR\tbaseLooks\x12I\n" +
+	"\boverlays\x18\x03 \x03(\v2-.fm.internal.CharacterSaveEntry.OverlaysEntryR\boverlays\x1a<\n" +
+	"\x0eBaseLooksEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01\x1a;\n" +
+	"\rOverlaysEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01\"R\n" +
+	"\x15SaveCharactersRequest\x129\n" +
+	"\aentries\x18\x01 \x03(\v2\x1f.fm.internal.CharacterSaveEntryR\aentries\"%\n" +
+	"\x13SaveCharactersReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xe5\x02\n" +
+	"\x12InventoryPersisted\x12\x1b\n" +
+	"\tunique_id\x18\x01 \x01(\x03R\buniqueId\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\rR\aownerId\x12\x17\n" +
+	"\aitem_id\x18\x03 \x01(\rR\x06itemId\x12\x12\n" +
+	"\x04slot\x18\x04 \x01(\x05R\x04slot\x12\x14\n" +
+	"\x05count\x18\x05 \x01(\rR\x05count\x12,\n" +
+	"\x12expiration_unix_ms\x18\x06 \x01(\x03R\x10expirationUnixMs\x12%\n" +
+	"\x0eenchant_chance\x18\a \x01(\rR\renchantChance\x12\x12\n" +
+	"\x04flag\x18\b \x01(\rR\x04flag\x12\x1f\n" +
+	"\vskill_bonus\x18\t \x01(\rR\n" +
+	"skillBonus\x12\x1d\n" +
+	"\n" +
+	"owner_name\x18\n" +
+	" \x01(\tR\townerName\x12+\n" +
+	"\x12updated_at_unix_ms\x18\v \x01(\x03R\x0fupdatedAtUnixMs\"K\n" +
+	"\x13GetInventoryRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\rR\aownerId\"J\n" +
+	"\x11GetInventoryReply\x125\n" +
+	"\x05items\x18\x01 \x03(\v2\x1f.fm.internal.InventoryPersistedR\x05items\"h\n" +
+	"\x14SaveInventoryRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x125\n" +
+	"\x05items\x18\x02 \x03(\v2\x1f.fm.internal.InventoryPersistedR\x05items\"$\n" +
+	"\x12SaveInventoryReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"m\n" +
+	"\x16DeleteInventoryRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\rR\aownerId\x12\x1d\n" +
+	"\n" +
+	"unique_ids\x18\x03 \x03(\x03R\tuniqueIds\"&\n" +
+	"\x14DeleteInventoryReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xe5\x01\n" +
+	"\x0eSkillPersisted\x12!\n" +
+	"\fcharacter_id\x18\x01 \x01(\rR\vcharacterId\x12\x19\n" +
+	"\bskill_id\x18\x02 \x01(\rR\askillId\x12\x14\n" +
+	"\x05level\x18\x03 \x01(\x05R\x05level\x12!\n" +
+	"\fmaster_level\x18\x04 \x01(\x05R\vmasterLevel\x12/\n" +
+	"\x14cooldown_end_unix_ms\x18\x05 \x01(\x03R\x11cooldownEndUnixMs\x12+\n" +
+	"\x12updated_at_unix_ms\x18\x06 \x01(\x03R\x0fupdatedAtUnixMs\"\xaf\x01\n" +
+	"\x13LoginAccountRequest\x12\x19\n" +
+	"\blogin_id\x18\x01 \x01(\tR\aloginId\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1f\n" +
+	"\vmac_address\x18\x03 \x01(\tR\n" +
+	"macAddress\x12\x1d\n" +
+	"\n" +
+	"ip_address\x18\x04 \x01(\tR\tipAddress\x12!\n" +
+	"\finitial_role\x18\x05 \x01(\rR\vinitialRole\"\xfa\x02\n" +
+	"\x11LoginAccountReply\x12=\n" +
+	"\x06status\x18\x01 \x01(\x0e2%.fm.internal.LoginAccountReply.StatusR\x06status\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x02 \x01(\rR\taccountId\x12\x16\n" +
+	"\x06gender\x18\x03 \x01(\rR\x06gender\x12&\n" +
+	"\x0fis_chat_blocked\x18\x04 \x01(\bR\risChatBlocked\x12:\n" +
+	"\x1achat_blocked_until_unix_ms\x18\x05 \x01(\x03R\x16chatBlockedUntilUnixMs\x120\n" +
+	"\x14character_slot_count\x18\x06 \x01(\rR\x12characterSlotCount\x12\x12\n" +
+	"\x04role\x18\a \x01(\rR\x04role\"E\n" +
+	"\x06Status\x12\v\n" +
+	"\aSUCCESS\x10\x00\x12\x12\n" +
+	"\x0eWRONG_PASSWORD\x10\x01\x12\n" +
+	"\n" +
+	"\x06BANNED\x10\x02\x12\x0e\n" +
+	"\n" +
+	"REGISTERED\x10\x03\"\xd7\x05\n" +
+	"\x11CharacterOverview\x12!\n" +
+	"\fcharacter_id\x18\x01 \x01(\rR\vcharacterId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
+	"\x06gender\x18\x03 \x01(\rR\x06gender\x12\x1d\n" +
+	"\n" +
+	"skin_color\x18\x04 \x01(\rR\tskinColor\x12\x12\n" +
+	"\x04face\x18\x05 \x01(\rR\x04face\x12\x12\n" +
+	"\x04hair\x18\x06 \x01(\rR\x04hair\x12\x14\n" +
+	"\x05level\x18\a \x01(\rR\x05level\x12\x19\n" +
+	"\bclass_id\x18\b \x01(\rR\aclassId\x12\x15\n" +
+	"\x06map_id\x18\t \x01(\rR\x05mapId\x12\x1f\n" +
+	"\vspawn_point\x18\n" +
+	" \x01(\rR\n" +
+	"spawnPoint\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\v \x01(\rR\taccountId\x12\x19\n" +
+	"\bworld_id\x18\f \x01(\rR\aworldId\x12\x12\n" +
+	"\x04rank\x18\r \x01(\x05R\x04rank\x12\x1b\n" +
+	"\trank_diff\x18\x0e \x01(\x05R\brankDiff\x12\x1d\n" +
+	"\n" +
+	"class_rank\x18\x0f \x01(\x05R\tclassRank\x12&\n" +
+	"\x0fclass_rank_diff\x18\x10 \x01(\x05R\rclassRankDiff\x12L\n" +
+	"\n" +
+	"base_looks\x18\x11 \x03(\v2-.fm.internal.CharacterOverview.BaseLooksEntryR\tbaseLooks\x12H\n" +
+	"\boverlays\x18\x12 \x03(\v2,.fm.internal.CharacterOverview.OverlaysEntryR\boverlays\x1a<\n" +
+	"\x0eBaseLooksEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01\x1a;\n" +
+	"\rOverlaysEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01\"S\n" +
+	"\x17GetCharacterListRequest\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x01 \x01(\rR\taccountId\x12\x19\n" +
+	"\bworld_id\x18\x02 \x01(\rR\aworldId\"v\n" +
+	"\x15GetCharacterListReply\x12>\n" +
+	"\n" +
+	"characters\x18\x01 \x03(\v2\x1e.fm.internal.CharacterOverviewR\n" +
+	"characters\x12\x1d\n" +
+	"\n" +
+	"slot_count\x18\x02 \x01(\rR\tslotCount\"/\n" +
+	"\x19CheckCharacterNameRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"1\n" +
+	"\x17CheckCharacterNameReply\x12\x16\n" +
+	"\x06exists\x18\x01 \x01(\bR\x06exists\"\xbd\x02\n" +
+	"\x16CreateCharacterRequest\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x01 \x01(\rR\taccountId\x12\x19\n" +
+	"\bworld_id\x18\x02 \x01(\rR\aworldId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x12\n" +
+	"\x04face\x18\x04 \x01(\rR\x04face\x12\x12\n" +
+	"\x04hair\x18\x05 \x01(\rR\x04hair\x12\x1d\n" +
+	"\n" +
+	"skin_color\x18\x06 \x01(\rR\tskinColor\x12\x1e\n" +
+	"\vtop_item_id\x18\a \x01(\rR\ttopItemId\x12$\n" +
+	"\x0ebottom_item_id\x18\b \x01(\rR\fbottomItemId\x12\"\n" +
+	"\rshoes_item_id\x18\t \x01(\rR\vshoesItemId\x12$\n" +
+	"\x0eweapon_item_id\x18\n" +
+	" \x01(\rR\fweaponItemId\"\x8b\x01\n" +
+	"\x14CreateCharacterReply\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1b\n" +
+	"\terror_msg\x18\x02 \x01(\tR\berrorMsg\x12<\n" +
+	"\tcharacter\x18\x03 \x01(\v2\x1e.fm.internal.CharacterOverviewR\tcharacter\"Z\n" +
+	"\x16DeleteCharacterRequest\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x01 \x01(\rR\taccountId\x12!\n" +
+	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\"0\n" +
+	"\x14DeleteCharacterReply\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess2\x8f\b\n" +
 	"\bInternal\x128\n" +
-	"\x04Ping\x12\x18.fm.internal.PingRequest\x1a\x16.fm.internal.PingReplyBHZFgithub.com/boyism80/fm/protocol/protobuf/gengo/fminternal;fminternalpbb\x06proto3"
+	"\x04Ping\x12\x18.fm.internal.PingRequest\x1a\x16.fm.internal.PingReply\x12P\n" +
+	"\fGetCharacter\x12 .fm.internal.GetCharacterRequest\x1a\x1e.fm.internal.GetCharacterReply\x12S\n" +
+	"\rSaveCharacter\x12!.fm.internal.SaveCharacterRequest\x1a\x1f.fm.internal.SaveCharacterReply\x12V\n" +
+	"\x0eSaveCharacters\x12\".fm.internal.SaveCharactersRequest\x1a .fm.internal.SaveCharactersReply\x12P\n" +
+	"\fGetInventory\x12 .fm.internal.GetInventoryRequest\x1a\x1e.fm.internal.GetInventoryReply\x12S\n" +
+	"\rSaveInventory\x12!.fm.internal.SaveInventoryRequest\x1a\x1f.fm.internal.SaveInventoryReply\x12Y\n" +
+	"\x0fDeleteInventory\x12#.fm.internal.DeleteInventoryRequest\x1a!.fm.internal.DeleteInventoryReply\x12P\n" +
+	"\fLoginAccount\x12 .fm.internal.LoginAccountRequest\x1a\x1e.fm.internal.LoginAccountReply\x12\\\n" +
+	"\x10GetCharacterList\x12$.fm.internal.GetCharacterListRequest\x1a\".fm.internal.GetCharacterListReply\x12b\n" +
+	"\x12CheckCharacterName\x12&.fm.internal.CheckCharacterNameRequest\x1a$.fm.internal.CheckCharacterNameReply\x12Y\n" +
+	"\x0fCreateCharacter\x12#.fm.internal.CreateCharacterRequest\x1a!.fm.internal.CreateCharacterReply\x12Y\n" +
+	"\x0fDeleteCharacter\x12#.fm.internal.DeleteCharacterRequest\x1a!.fm.internal.DeleteCharacterReplyBHZFgithub.com/boyism80/fm/protocol/protobuf/gengo/fminternal;fminternalpbb\x06proto3"
 
 var (
 	file_fminternal_ping_proto_rawDescOnce sync.Once
@@ -124,19 +2348,93 @@ func file_fminternal_ping_proto_rawDescGZIP() []byte {
 	return file_fminternal_ping_proto_rawDescData
 }
 
-var file_fminternal_ping_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_fminternal_ping_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_fminternal_ping_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_fminternal_ping_proto_goTypes = []any{
-	(*PingRequest)(nil), // 0: fm.internal.PingRequest
-	(*PingReply)(nil),   // 1: fm.internal.PingReply
+	(LoginAccountReply_Status)(0),     // 0: fm.internal.LoginAccountReply.Status
+	(*PingRequest)(nil),               // 1: fm.internal.PingRequest
+	(*PingReply)(nil),                 // 2: fm.internal.PingReply
+	(*GetCharacterRequest)(nil),       // 3: fm.internal.GetCharacterRequest
+	(*CharacterPersisted)(nil),        // 4: fm.internal.CharacterPersisted
+	(*GetCharacterReply)(nil),         // 5: fm.internal.GetCharacterReply
+	(*SaveCharacterRequest)(nil),      // 6: fm.internal.SaveCharacterRequest
+	(*SaveCharacterReply)(nil),        // 7: fm.internal.SaveCharacterReply
+	(*CharacterSaveEntry)(nil),        // 8: fm.internal.CharacterSaveEntry
+	(*SaveCharactersRequest)(nil),     // 9: fm.internal.SaveCharactersRequest
+	(*SaveCharactersReply)(nil),       // 10: fm.internal.SaveCharactersReply
+	(*InventoryPersisted)(nil),        // 11: fm.internal.InventoryPersisted
+	(*GetInventoryRequest)(nil),       // 12: fm.internal.GetInventoryRequest
+	(*GetInventoryReply)(nil),         // 13: fm.internal.GetInventoryReply
+	(*SaveInventoryRequest)(nil),      // 14: fm.internal.SaveInventoryRequest
+	(*SaveInventoryReply)(nil),        // 15: fm.internal.SaveInventoryReply
+	(*DeleteInventoryRequest)(nil),    // 16: fm.internal.DeleteInventoryRequest
+	(*DeleteInventoryReply)(nil),      // 17: fm.internal.DeleteInventoryReply
+	(*SkillPersisted)(nil),            // 18: fm.internal.SkillPersisted
+	(*LoginAccountRequest)(nil),       // 19: fm.internal.LoginAccountRequest
+	(*LoginAccountReply)(nil),         // 20: fm.internal.LoginAccountReply
+	(*CharacterOverview)(nil),         // 21: fm.internal.CharacterOverview
+	(*GetCharacterListRequest)(nil),   // 22: fm.internal.GetCharacterListRequest
+	(*GetCharacterListReply)(nil),     // 23: fm.internal.GetCharacterListReply
+	(*CheckCharacterNameRequest)(nil), // 24: fm.internal.CheckCharacterNameRequest
+	(*CheckCharacterNameReply)(nil),   // 25: fm.internal.CheckCharacterNameReply
+	(*CreateCharacterRequest)(nil),    // 26: fm.internal.CreateCharacterRequest
+	(*CreateCharacterReply)(nil),      // 27: fm.internal.CreateCharacterReply
+	(*DeleteCharacterRequest)(nil),    // 28: fm.internal.DeleteCharacterRequest
+	(*DeleteCharacterReply)(nil),      // 29: fm.internal.DeleteCharacterReply
+	nil,                               // 30: fm.internal.SaveCharacterRequest.BaseLooksEntry
+	nil,                               // 31: fm.internal.SaveCharacterRequest.OverlaysEntry
+	nil,                               // 32: fm.internal.CharacterSaveEntry.BaseLooksEntry
+	nil,                               // 33: fm.internal.CharacterSaveEntry.OverlaysEntry
+	nil,                               // 34: fm.internal.CharacterOverview.BaseLooksEntry
+	nil,                               // 35: fm.internal.CharacterOverview.OverlaysEntry
 }
 var file_fminternal_ping_proto_depIdxs = []int32{
-	0, // 0: fm.internal.Internal.Ping:input_type -> fm.internal.PingRequest
-	1, // 1: fm.internal.Internal.Ping:output_type -> fm.internal.PingReply
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	4,  // 0: fm.internal.GetCharacterReply.character:type_name -> fm.internal.CharacterPersisted
+	11, // 1: fm.internal.GetCharacterReply.inventory:type_name -> fm.internal.InventoryPersisted
+	18, // 2: fm.internal.GetCharacterReply.skills:type_name -> fm.internal.SkillPersisted
+	4,  // 3: fm.internal.SaveCharacterRequest.character:type_name -> fm.internal.CharacterPersisted
+	30, // 4: fm.internal.SaveCharacterRequest.base_looks:type_name -> fm.internal.SaveCharacterRequest.BaseLooksEntry
+	31, // 5: fm.internal.SaveCharacterRequest.overlays:type_name -> fm.internal.SaveCharacterRequest.OverlaysEntry
+	4,  // 6: fm.internal.CharacterSaveEntry.character:type_name -> fm.internal.CharacterPersisted
+	32, // 7: fm.internal.CharacterSaveEntry.base_looks:type_name -> fm.internal.CharacterSaveEntry.BaseLooksEntry
+	33, // 8: fm.internal.CharacterSaveEntry.overlays:type_name -> fm.internal.CharacterSaveEntry.OverlaysEntry
+	8,  // 9: fm.internal.SaveCharactersRequest.entries:type_name -> fm.internal.CharacterSaveEntry
+	11, // 10: fm.internal.GetInventoryReply.items:type_name -> fm.internal.InventoryPersisted
+	11, // 11: fm.internal.SaveInventoryRequest.items:type_name -> fm.internal.InventoryPersisted
+	0,  // 12: fm.internal.LoginAccountReply.status:type_name -> fm.internal.LoginAccountReply.Status
+	34, // 13: fm.internal.CharacterOverview.base_looks:type_name -> fm.internal.CharacterOverview.BaseLooksEntry
+	35, // 14: fm.internal.CharacterOverview.overlays:type_name -> fm.internal.CharacterOverview.OverlaysEntry
+	21, // 15: fm.internal.GetCharacterListReply.characters:type_name -> fm.internal.CharacterOverview
+	21, // 16: fm.internal.CreateCharacterReply.character:type_name -> fm.internal.CharacterOverview
+	1,  // 17: fm.internal.Internal.Ping:input_type -> fm.internal.PingRequest
+	3,  // 18: fm.internal.Internal.GetCharacter:input_type -> fm.internal.GetCharacterRequest
+	6,  // 19: fm.internal.Internal.SaveCharacter:input_type -> fm.internal.SaveCharacterRequest
+	9,  // 20: fm.internal.Internal.SaveCharacters:input_type -> fm.internal.SaveCharactersRequest
+	12, // 21: fm.internal.Internal.GetInventory:input_type -> fm.internal.GetInventoryRequest
+	14, // 22: fm.internal.Internal.SaveInventory:input_type -> fm.internal.SaveInventoryRequest
+	16, // 23: fm.internal.Internal.DeleteInventory:input_type -> fm.internal.DeleteInventoryRequest
+	19, // 24: fm.internal.Internal.LoginAccount:input_type -> fm.internal.LoginAccountRequest
+	22, // 25: fm.internal.Internal.GetCharacterList:input_type -> fm.internal.GetCharacterListRequest
+	24, // 26: fm.internal.Internal.CheckCharacterName:input_type -> fm.internal.CheckCharacterNameRequest
+	26, // 27: fm.internal.Internal.CreateCharacter:input_type -> fm.internal.CreateCharacterRequest
+	28, // 28: fm.internal.Internal.DeleteCharacter:input_type -> fm.internal.DeleteCharacterRequest
+	2,  // 29: fm.internal.Internal.Ping:output_type -> fm.internal.PingReply
+	5,  // 30: fm.internal.Internal.GetCharacter:output_type -> fm.internal.GetCharacterReply
+	7,  // 31: fm.internal.Internal.SaveCharacter:output_type -> fm.internal.SaveCharacterReply
+	10, // 32: fm.internal.Internal.SaveCharacters:output_type -> fm.internal.SaveCharactersReply
+	13, // 33: fm.internal.Internal.GetInventory:output_type -> fm.internal.GetInventoryReply
+	15, // 34: fm.internal.Internal.SaveInventory:output_type -> fm.internal.SaveInventoryReply
+	17, // 35: fm.internal.Internal.DeleteInventory:output_type -> fm.internal.DeleteInventoryReply
+	20, // 36: fm.internal.Internal.LoginAccount:output_type -> fm.internal.LoginAccountReply
+	23, // 37: fm.internal.Internal.GetCharacterList:output_type -> fm.internal.GetCharacterListReply
+	25, // 38: fm.internal.Internal.CheckCharacterName:output_type -> fm.internal.CheckCharacterNameReply
+	27, // 39: fm.internal.Internal.CreateCharacter:output_type -> fm.internal.CreateCharacterReply
+	29, // 40: fm.internal.Internal.DeleteCharacter:output_type -> fm.internal.DeleteCharacterReply
+	29, // [29:41] is the sub-list for method output_type
+	17, // [17:29] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_fminternal_ping_proto_init() }
@@ -149,13 +2447,14 @@ func file_fminternal_ping_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_fminternal_ping_proto_rawDesc), len(file_fminternal_ping_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      1,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_fminternal_ping_proto_goTypes,
 		DependencyIndexes: file_fminternal_ping_proto_depIdxs,
+		EnumInfos:         file_fminternal_ping_proto_enumTypes,
 		MessageInfos:      file_fminternal_ping_proto_msgTypes,
 	}.Build()
 	File_fminternal_ping_proto = out.File

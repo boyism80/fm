@@ -1,9 +1,11 @@
 package server
 
 import (
+	"context"
 	"log"
 
 	"github.com/boyism80/fm/core"
+	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
@@ -29,16 +31,22 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 	log.Printf("Check name packet received from %s - Name: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
-	exists := req.Name == "채승현"
+	ic := h.ls.context.InternalClient
+	exists := false
+	if ic != nil {
+		reply, err := ic.CheckCharacterName(context.Background(), &fminternalpb.CheckCharacterNameRequest{
+			Name: req.Name,
+		})
+		if err != nil {
+			log.Printf("CheckCharacterName RPC error: %v", err)
+		} else {
+			exists = reply.Exists
+		}
+	}
 
 	checkResp := &response.CheckName{
 		Name:   req.Name,
 		Exists: exists,
 	}
-	if err := ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT); err != nil {
-		log.Printf("Failed to send check name response: %v", err)
-		return err
-	}
-
-	return nil
+	return ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
 }

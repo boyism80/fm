@@ -13,6 +13,9 @@ type LoginClient struct {
 	core.BaseClient
 	logicActorPID *actor.PID
 	pidMutex      sync.RWMutex
+	accountId     uint32
+	worldId       uint32
+	accountMutex  sync.RWMutex
 }
 
 var _ core.Client = (*LoginClient)(nil)
@@ -27,6 +30,30 @@ func (c *LoginClient) SetLogicActorPID(pid *actor.PID) {
 	c.pidMutex.Lock()
 	defer c.pidMutex.Unlock()
 	c.logicActorPID = pid
+}
+
+func (c *LoginClient) GetAccountId() uint32 {
+	c.accountMutex.RLock()
+	defer c.accountMutex.RUnlock()
+	return c.accountId
+}
+
+func (c *LoginClient) SetAccountId(id uint32) {
+	c.accountMutex.Lock()
+	defer c.accountMutex.Unlock()
+	c.accountId = id
+}
+
+func (c *LoginClient) GetWorldId() uint32 {
+	c.accountMutex.RLock()
+	defer c.accountMutex.RUnlock()
+	return c.worldId
+}
+
+func (c *LoginClient) SetWorldId(id uint32) {
+	c.accountMutex.Lock()
+	defer c.accountMutex.Unlock()
+	c.worldId = id
 }
 
 func NewLoginClient(conn net.Conn, clientID int) (*LoginClient, error) {

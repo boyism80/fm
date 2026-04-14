@@ -13,11 +13,14 @@ import (
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
+	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type GameServer struct {
@@ -32,6 +35,8 @@ type GameServer struct {
 	actorRegistry     *c_actor.ActorRegistry
 	nilMapActorPID    *actor.PID
 	characterListener entity.CharacterListener
+	internalClient    fminternalpb.InternalClient
+	internalConn      *grpc.ClientConn
 }
 
 func (gs *GameServer) GetServer() *core.Server {
@@ -56,14 +61,16 @@ type GameContext interface {
 }
 
 type GameConfig struct {
-	Host       string
-	Port       int
-	WzPath     string
-	WorldName  string
-	MaxPlayers int
-	ExpRate    int
-	DropRate   int
-	MesoRate   int
+	Host         string
+	Port         int
+	WzPath       string
+	WorldName    string
+	WorldId      uint32
+	MaxPlayers   int
+	ExpRate      int
+	DropRate     int
+	MesoRate     int
+	InternalAddr string
 }
 
 func NewGameServer(config *GameConfig) (*GameServer, error) {
@@ -100,6 +107,17 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		actorSystem:   actorSystem,
 		actorRegistry: actorRegistry,
 	}
+
+	if config.InternalAddr != "" {
+		conn, err := grpc.NewClient(config.InternalAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Printf("internal grpc dial %q failed: %v", config.InternalAddr, err)
+		} else {
+			gs.internalConn = conn
+			gs.internalClient = fminternalpb.NewInternalClient(conn)
+		}
+	}
+
 	gs.characterListener = &CharacterListenerImpl{gs: gs}
 
 	context.gs = gs
@@ -143,8 +161,9 @@ func (gs *GameServer) preCreateMaps() {
 
 	nilMapProps := actor.PropsFromProducer(func() actor.Actor {
 		return &g_actor.MapActor{
-			MapData: nil,
-			Context: gs.context,
+			MapData:        nil,
+			Context:        gs.context,
+			SaveCharacters: gs.saveCharactersChunked,
 		}
 	})
 
@@ -163,8 +182,9 @@ func (gs *GameServer) preCreateMaps() {
 
 		props := actor.PropsFromProducer(func() actor.Actor {
 			return &g_actor.MapActor{
-				MapData: mapInstance,
-				Context: gs.context,
+				MapData:        mapInstance,
+				Context:        gs.context,
+				SaveCharacters: gs.saveCharactersChunked,
 			}
 		})
 
@@ -206,7 +226,9 @@ func (gs *GameServer) Start() error {
 
 func (gs *GameServer) Stop() error {
 	log.Println("Shutting down game server...")
-
+	if gs.internalConn != nil {
+		_ = gs.internalConn.Close()
+	}
 	return gs.server.Stop()
 }
 
@@ -317,6 +339,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	if character == nil {
 		return
 	}
+	gs.saveCharacterAsync(character)
 	gs.runCharacterLogoutScript(character)
 	mapInstance := character.GetMap()
 	if mapInstance != nil {

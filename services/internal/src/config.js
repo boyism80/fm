@@ -4,46 +4,255 @@ const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
 
+const DEFAULT_PG_POOL = { min: 0, max: 10 };
+
+const DEFAULT_REDIS = {
+    password: "",
+    db: 0,
+    tls: false,
+    key_prefix: "cache:",
+};
+
+function normalizePgEndpoint(ep, defaults = {}) {
+    if (!ep || typeof ep !== "object") {
+        return null;
+    }
+    const poolRaw = ep.pool ?? {};
+    return {
+        host: ep.host ?? defaults.host ?? "127.0.0.1",
+        port: ep.port ?? defaults.port ?? 5432,
+        database: ep.database ?? defaults.database ?? "fm",
+        username: ep.username ?? defaults.username ?? "fm",
+        password: ep.password ?? defaults.password ?? "",
+        ssl: ep.ssl ?? defaults.ssl ?? false,
+        pool: {
+            min: poolRaw.min ?? DEFAULT_PG_POOL.min,
+            max: poolRaw.max ?? DEFAULT_PG_POOL.max,
+        },
+    };
+}
+
+function normalizeRedisEndpoint(ep, defaults = {}) {
+    if (!ep || typeof ep !== "object") {
+        return null;
+    }
+    return {
+        host: ep.host ?? defaults.host ?? "127.0.0.1",
+        port: ep.port ?? defaults.port ?? 6379,
+        password: ep.password ?? defaults.password ?? DEFAULT_REDIS.password,
+        db: ep.db ?? defaults.db ?? DEFAULT_REDIS.db,
+        tls: ep.tls ?? defaults.tls ?? DEFAULT_REDIS.tls,
+        key_prefix: ep.key_prefix ?? defaults.key_prefix ?? DEFAULT_REDIS.key_prefix,
+    };
+}
+
+/** Legacy: flat postgresql.host without worlds / unified wrapper. */
+function isLegacyPostgresql(p) {
+    return p && typeof p === "object" && typeof p.host === "string" && !p.worlds;
+}
+
+/** Legacy: flat redis.host without worlds. */
+function isLegacyRedis(r) {
+    return r && typeof r === "object" && typeof r.host === "string" && !r.worlds;
+}
+
+function migrateLegacyPostgresql(p, worldIdStr) {
+    const base = normalizePgEndpoint(p);
+    return {
+        unified: null,
+        worlds: {
+            [worldIdStr]: {
+                global: { ...base },
+                data: [{ ...base }],
+            },
+        },
+    };
+}
+
+function migrateLegacyRedis(r, worldIdStr) {
+    const base = normalizeRedisEndpoint(r);
+    return {
+        unified: null,
+        worlds: {
+            [worldIdStr]: {
+                global: { ...base },
+                data: [{ ...base }],
+            },
+        },
+    };
+}
+
+function normalizePostgresqlWorldEntry(entry, worldKey) {
+    if (!entry || typeof entry !== "object") {
+        throw new Error(`postgresql.worlds[${worldKey}] must be an object with global and data`);
+    }
+    const global = normalizePgEndpoint(entry.global);
+    if (!global) {
+        throw new Error(`postgresql.worlds[${worldKey}].global is required`);
+    }
+    const dataRaw = entry.data;
+    if (!Array.isArray(dataRaw) || dataRaw.length === 0) {
+        throw new Error(`postgresql.worlds[${worldKey}].data must be a non-empty array of shard endpoints`);
+    }
+    const data = dataRaw.map((shard) => {
+        const s = normalizePgEndpoint(shard, global);
+        if (!s) {
+            throw new Error(`postgresql.worlds[${worldKey}].data: invalid shard entry`);
+        }
+        return s;
+    });
+    return { global, data };
+}
+
+function normalizePostgresql(rawPg, worldIdStr) {
+    let pg = rawPg;
+    if (isLegacyPostgresql(pg)) {
+        pg = migrateLegacyPostgresql(pg, worldIdStr);
+    }
+    if (!pg || typeof pg !== "object") {
+        pg = {};
+    }
+    const unified = pg.unified ? normalizePgEndpoint(pg.unified) : null;
+    const worldsIn = pg.worlds && typeof pg.worlds === "object" ? pg.worlds : {};
+    const worlds = {};
+    for (const key of Object.keys(worldsIn)) {
+        worlds[key] = normalizePostgresqlWorldEntry(worldsIn[key], key);
+    }
+    if (!worlds[worldIdStr]) {
+        throw new Error(
+            `postgresql.worlds["${worldIdStr}"] is missing (app.world_id=${worldIdStr}). ` +
+                "Define per-world global + data[] shards, or use the legacy flat postgresql block for a single node."
+        );
+    }
+    return { unified, worlds };
+}
+
+function normalizeRedisWorldEntry(entry, worldKey) {
+    if (!entry || typeof entry !== "object") {
+        throw new Error(`redis.worlds[${worldKey}] must be an object with global and data`);
+    }
+    const global = normalizeRedisEndpoint(entry.global);
+    if (!global) {
+        throw new Error(`redis.worlds[${worldKey}].global is required`);
+    }
+    const dataRaw = entry.data;
+    if (!Array.isArray(dataRaw) || dataRaw.length === 0) {
+        throw new Error(`redis.worlds[${worldKey}].data must be a non-empty array of shard endpoints`);
+    }
+    const data = dataRaw.map((shard) => {
+        const s = normalizeRedisEndpoint(shard, global);
+        if (!s) {
+            throw new Error(`redis.worlds[${worldKey}].data: invalid shard entry`);
+        }
+        return s;
+    });
+    return { global, data };
+}
+
+function normalizeRedis(rawRedis, worldIdStr) {
+    let r = rawRedis;
+    if (isLegacyRedis(r)) {
+        r = migrateLegacyRedis(r, worldIdStr);
+    }
+    if (!r || typeof r !== "object") {
+        r = {};
+    }
+    const unified = r.unified ? normalizeRedisEndpoint(r.unified) : null;
+    const worldsIn = r.worlds && typeof r.worlds === "object" ? r.worlds : {};
+    const worlds = {};
+    for (const key of Object.keys(worldsIn)) {
+        worlds[key] = normalizeRedisWorldEntry(worldsIn[key], key);
+    }
+    if (!worlds[worldIdStr]) {
+        throw new Error(
+            `redis.worlds["${worldIdStr}"] is missing (app.world_id=${worldIdStr}). ` +
+                "Define per-world global + data[] shards, or use the legacy flat redis block."
+        );
+    }
+    return { unified, worlds };
+}
+
 function withDefaults(raw) {
     const d = raw && typeof raw === "object" ? raw : {};
+    const app = {
+        log_level: d.app?.log_level ?? "info",
+        world_id: d.app?.world_id ?? 0,
+    };
+    const worldIdStr = String(app.world_id);
+
     return {
-        app: {
-            log_level: d.app?.log_level ?? "info",
-            world_id: d.app?.world_id ?? 1,
-        },
+        app,
         grpc: {
             host: d.grpc?.host ?? "0.0.0.0",
             port: d.grpc?.port ?? 50051,
         },
-        postgresql: {
-            host: d.postgresql?.host ?? "127.0.0.1",
-            port: d.postgresql?.port ?? 5432,
-            database: d.postgresql?.database ?? "fm",
-            username: d.postgresql?.username ?? "fm",
-            password: d.postgresql?.password ?? "",
-            ssl: d.postgresql?.ssl ?? false,
-            pool: {
-                min: d.postgresql?.pool?.min ?? 0,
-                max: d.postgresql?.pool?.max ?? 10,
-            },
-        },
-        redis: {
-            host: d.redis?.host ?? "127.0.0.1",
-            port: d.redis?.port ?? 6379,
-            password: d.redis?.password ?? "",
-            db: d.redis?.db ?? 0,
-            tls: d.redis?.tls ?? false,
-            key_prefix: d.redis?.key_prefix ?? "cache:",
-        },
+        postgresql: normalizePostgresql(d.postgresql, worldIdStr),
+        redis: normalizeRedis(d.redis, worldIdStr),
         cache: {
             write_strategy: d.cache?.write_strategy ?? "write-through",
+            character_ttl_seconds: d.cache?.character_ttl_seconds ?? 300,
+            item_ttl_seconds: d.cache?.item_ttl_seconds ?? 300,
         },
         sequelize: {
             dialect: d.sequelize?.dialect ?? "postgres",
             migration_storage: d.sequelize?.migration_storage ?? "sequelize",
+            auto_migrate_on_startup: d.sequelize?.auto_migrate_on_startup ?? false,
             define: d.sequelize?.define ?? { underscored: true },
         },
     };
+}
+
+function getPostgresqlWorld(cfg, worldId) {
+    const w = String(worldId ?? cfg.app.world_id);
+    const block = cfg.postgresql.worlds[w];
+    if (!block) {
+        throw new Error(`No postgresql.worlds["${w}"]`);
+    }
+    return block;
+}
+
+function getRedisWorld(cfg, worldId) {
+    const w = String(worldId ?? cfg.app.world_id);
+    const block = cfg.redis.worlds[w];
+    if (!block) {
+        throw new Error(`No redis.worlds["${w}"]`);
+    }
+    return block;
+}
+
+function getPostgresGlobal(cfg, worldId) {
+    return getPostgresqlWorld(cfg, worldId).global;
+}
+
+function getRedisGlobal(cfg, worldId) {
+    return getRedisWorld(cfg, worldId).global;
+}
+
+/**
+ * Pick a PostgreSQL data shard from a stable hash (e.g. account id). Matches fb-style routing.
+ * @param {number|string|null|undefined} hash
+ */
+function pickPostgresDataShard(worldPg, hash) {
+    const { data } = worldPg;
+    if (data.length === 1) {
+        return data[0];
+    }
+    const h = Number(hash);
+    const idx = Number.isFinite(h) ? Math.abs(Math.trunc(h)) % data.length : 0;
+    return data[idx];
+}
+
+/**
+ * @param {number|string|null|undefined} hash
+ */
+function pickRedisDataShard(worldRedis, hash) {
+    const { data } = worldRedis;
+    if (data.length === 1) {
+        return data[0];
+    }
+    const h = Number(hash);
+    const idx = Number.isFinite(h) ? Math.abs(Math.trunc(h)) % data.length : 0;
+    return data[idx];
 }
 
 function resolveConfigPath() {
@@ -66,4 +275,14 @@ function loadConfig() {
     return { configPath, ...config };
 }
 
-module.exports = { loadConfig, withDefaults, resolveConfigPath };
+module.exports = {
+    loadConfig,
+    withDefaults,
+    resolveConfigPath,
+    getPostgresqlWorld,
+    getRedisWorld,
+    getPostgresGlobal,
+    getRedisGlobal,
+    pickPostgresDataShard,
+    pickRedisDataShard,
+};

@@ -72,11 +72,12 @@ func (e InternalEndpoint) GRPCAddr() string {
 }
 
 type Login struct {
-	Host     string           `yaml:"host"`
-	Port     int              `yaml:"port"`
-	GameHost string           `yaml:"game_host"`
-	GamePort int              `yaml:"game_port"`
-	Internal InternalEndpoint `yaml:"internal"`
+	Host        string           `yaml:"host"`
+	Port        int              `yaml:"port"`
+	GameHost    string           `yaml:"game_host"`
+	GamePort    int              `yaml:"game_port"`
+	InitialRole int              `yaml:"initial_role"`
+	Internal    InternalEndpoint `yaml:"internal"`
 }
 
 type Game struct {
@@ -84,6 +85,7 @@ type Game struct {
 	Port       int              `yaml:"port"`
 	WzPath     string           `yaml:"wz_path"`
 	World      string           `yaml:"world"`
+	WorldId    int              `yaml:"world_id"`
 	MaxPlayers int              `yaml:"max_players"`
 	Rate       GameRates        `yaml:"rate"`
 	Internal   InternalEndpoint `yaml:"internal"`

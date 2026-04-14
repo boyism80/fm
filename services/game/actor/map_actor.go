@@ -16,10 +16,11 @@ import (
 )
 
 type MapActor struct {
-	MapData   *entity.Map
-	Context   core.ServerContext
-	scheduler *scheduler.TimerScheduler
-	timerReg  *TimerRegistry
+	MapData        *entity.Map
+	Context        core.ServerContext
+	SaveCharacters func([]*entity.Character) error
+	scheduler      *scheduler.TimerScheduler
+	timerReg       *TimerRegistry
 }
 
 func (a *MapActor) Receive(ctx actor.Context) {
@@ -201,6 +202,9 @@ func (a *MapActor) registerTimers() {
 	RegisterTimer[*timers.MobPoisonTickTimer](a.timerReg)
 	RegisterTimer[*timers.MistExpireTimer](a.timerReg)
 	RegisterTimer[*timers.MistPoisonTickTimer](a.timerReg)
+	if a.SaveCharacters != nil {
+		a.timerReg.handlers[timers.CharacterSaveTimerName] = timers.NewCharacterSaveTimer(a.SaveCharacters)
+	}
 }
 
 func (a *MapActor) onTimerTick(ctx actor.Context, msg *TimerTick) {
