@@ -94,6 +94,7 @@ func (h *Login) sendLoginAccountResult(ctx *core.ClientContext, req *request.Log
 		Role:          uint8(reply.Role),
 		AccountName:   req.ID,
 		IsChatBlocked: reply.IsChatBlocked,
+		ChatBlockTime: uint64(reply.ChatBlockedUntilUnixMs),
 	}
 	if err := ctx.Client.Send(authResp, types.SEND_POLICY_ENCRYPT); err != nil {
 		return err

@@ -72,6 +72,9 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	}
 
 	p := reply.GetCharacter()
+	if p == nil {
+		return fmt.Errorf("character %d not found: empty character payload", req.PlayerId)
+	}
 	initData := &entity.CharacterInitData{
 		ID:           p.GetCharacterId(),
 		AccountID:    p.GetAccountId(),
