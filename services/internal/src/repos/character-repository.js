@@ -1,6 +1,6 @@
 "use strict";
 
-const { BaseRepository } = require("./base-repository");
+const { ValueRepository } = require("./value-repository");
 
 const SELECT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
@@ -35,7 +35,7 @@ function rowValues(row) {
     ];
 }
 
-class CharacterRepository extends BaseRepository {
+class CharacterRepository extends ValueRepository {
     constructor(internalContext) {
         super(internalContext);
     }

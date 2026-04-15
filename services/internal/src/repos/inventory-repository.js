@@ -34,7 +34,7 @@ class InventoryRepository extends HashRepository {
         return this.ctx.appConfiguration.getItemCacheTtlSeconds();
     }
 
-    getOwnerKey(model) {
+    getGroupKey(model) {
         return model.ownerId;
     }
 
@@ -47,7 +47,7 @@ class InventoryRepository extends HashRepository {
         return `${keyPrefix}fm:w${worldId}:inventory:${ownerId}`;
     }
 
-    onSelectByOwner(ownerId, _worldId) {
+    onSelect(ownerId, _worldId) {
         return {
             text: `SELECT ${SELECT_COLS} FROM inventory WHERE owner_id = $1 AND NOT deleted`,
             values: [Number(ownerId)],
@@ -103,6 +103,60 @@ class InventoryRepository extends HashRepository {
             skill_bonus:    model.skillBonus ?? null,
             owner_name:     model.ownerName ?? null,
         };
+    }
+
+    _syntheticUniqueId(ownerId, slot) {
+        const owner = BigInt(Number(ownerId) >>> 0);
+        const slot16 = BigInt((Number(slot) + 0x8000) & 0xffff);
+        return String(-((owner << 16n) + slot16 + 1n));
+    }
+
+    async replaceBySnapshot(worldId, ownerId, models) {
+        const pool = this._pool(worldId, ownerId);
+        const { text: selectText, values: selectValues } = this.onSelect(ownerId, worldId);
+        const existingRes = await pool.query(selectText, selectValues);
+        const existingRows = existingRes.rows ?? [];
+        const existingBySlot = new Map(existingRows.map((r) => [Number(r.slot), r]));
+
+        const normalized = models.map((m) => {
+            const row = this.modelToRow(m);
+            const hasUnique = row.unique_id != null && String(row.unique_id) !== "0" && String(row.unique_id) !== "";
+            if (!hasUnique) {
+                const bySlot = existingBySlot.get(Number(row.slot));
+                row.unique_id = bySlot ? String(bySlot.unique_id) : this._syntheticUniqueId(ownerId, row.slot);
+            } else {
+                row.unique_id = String(row.unique_id);
+            }
+            row.owner_id = Number(ownerId);
+            return row;
+        });
+
+        await pool.query("BEGIN");
+        try {
+            if (normalized.length > 0) {
+                const upsert = this.onBulkUpsert(normalized);
+                if (upsert.text) {
+                    await pool.query(upsert.text, upsert.values);
+                }
+            }
+
+            const incomingIds = new Set(normalized.map((r) => String(r.unique_id)));
+            const deleteIds = existingRows
+                .map((r) => String(r.unique_id))
+                .filter((id) => !incomingIds.has(id));
+            if (deleteIds.length > 0) {
+                const delQuery = this.onBulkDelete(deleteIds, ownerId, worldId);
+                await pool.query(delQuery.text, delQuery.values);
+            }
+
+            await pool.query("COMMIT");
+        } catch (err) {
+            await pool.query("ROLLBACK");
+            throw err;
+        }
+
+        const redis = this._redis(worldId, ownerId);
+        await redis.del(this.getRedisHashKey(worldId, ownerId)).catch(() => {});
     }
 
 }

@@ -9,6 +9,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/util"
 )
 
 func equipmentLooks(ch *entity.Character) (baseLooks, overlays map[int32]uint32) {
@@ -81,11 +82,116 @@ func characterToSaveEntry(ch *entity.Character, worldId uint32) *internal.Charac
 		UpdatedAtUnixMs: time.Now().UnixMilli(),
 	}
 
+	inventory := characterInventoryToPersisted(ch)
+	skills := characterSkillsToPersisted(ch)
+
 	return &internal.CharacterSaveEntry{
 		Character: persisted,
 		BaseLooks: baseLooks,
 		Overlays:  overlays,
+		Inventory: inventory,
+		Skills:    skills,
 	}
+}
+
+func itemPersistMeta(item entity.Item) (uniqueID int64, ownerName string, flag uint16, enchantChance uint8, skillBonus uint16) {
+	switch v := item.(type) {
+	case entity.Equipment:
+		core := v.GetEquipmentCore()
+		return core.ItemCore.UniqueId, core.OwnerName, core.Flag, core.EnchantChance, core.SkillBonus
+	case *entity.Consume:
+		return v.ItemCore.UniqueId, v.OwnerName, v.Flags, 0, 0
+	case *entity.Installation:
+		return v.ItemCore.UniqueId, v.OwnerName, v.Flags, 0, 0
+	case *entity.MiscItem:
+		return v.ItemCore.UniqueId, v.OwnerName, v.Flags, 0, 0
+	case *entity.CashItem:
+		return v.ItemCore.UniqueId, v.OwnerName, v.Flags, 0, 0
+	case *entity.Pet:
+		return v.ItemCore.UniqueId, "", v.Flags, 0, 0
+	default:
+		return 0, "", 0, 0, 0
+	}
+}
+
+func expirationUnixMs(t time.Time) int64 {
+	if t.IsZero() || t.Equal(util.TimeMax) {
+		return 0
+	}
+	return t.UnixMilli()
+}
+
+func characterInventoryToPersisted(ch *entity.Character) []*internal.InventoryPersisted {
+	items := make([]*internal.InventoryPersisted, 0, len(ch.Equipments)+64)
+
+	for parts, item := range ch.Equipments {
+		if item == nil {
+			continue
+		}
+		uniqueID, ownerName, flag, enchantChance, skillBonus := itemPersistMeta(item)
+		items = append(items, &internal.InventoryPersisted{
+			UniqueId:         uniqueID,
+			OwnerId:          ch.GetID(),
+			ItemId:           item.GetModel().GetID(),
+			Slot:             int32(parts),
+			Count:            uint32(item.GetCount()),
+			ExpirationUnixMs: expirationUnixMs(item.GetExpiration()),
+			EnchantChance:    uint32(enchantChance),
+			Flag:             uint32(flag),
+			SkillBonus:       uint32(skillBonus),
+			OwnerName:        ownerName,
+			UpdatedAtUnixMs:  time.Now().UnixMilli(),
+		})
+	}
+
+	for _, inv := range ch.Inventory {
+		if inv == nil {
+			continue
+		}
+		for slot, item := range inv.Items {
+			if item == nil {
+				continue
+			}
+			uniqueID, ownerName, flag, enchantChance, skillBonus := itemPersistMeta(item)
+			items = append(items, &internal.InventoryPersisted{
+				UniqueId:         uniqueID,
+				OwnerId:          ch.GetID(),
+				ItemId:           item.GetModel().GetID(),
+				Slot:             int32(slot),
+				Count:            uint32(item.GetCount()),
+				ExpirationUnixMs: expirationUnixMs(item.GetExpiration()),
+				EnchantChance:    uint32(enchantChance),
+				Flag:             uint32(flag),
+				SkillBonus:       uint32(skillBonus),
+				OwnerName:        ownerName,
+				UpdatedAtUnixMs:  time.Now().UnixMilli(),
+			})
+		}
+	}
+
+	return items
+}
+
+func characterSkillsToPersisted(ch *entity.Character) []*internal.SkillPersisted {
+	skills := make([]*internal.SkillPersisted, 0, 64)
+	ch.Skills.ForEach(func(skillID uint32, entry *entity.SkillEntry) {
+		if entry == nil {
+			return
+		}
+		cooldownEnd := int64(0)
+		if entry.CooldownEnd != nil {
+			cooldownEnd = entry.CooldownEnd.UnixMilli()
+		}
+		skills = append(skills, &internal.SkillPersisted{
+			CharacterId:      ch.GetID(),
+			SkillId:          skillID,
+			Level:            int32(entry.Level()),
+			MasterLevel:      int32(entry.MasterLevel),
+			CooldownEndUnixMs: cooldownEnd,
+			UpdatedAtUnixMs:  time.Now().UnixMilli(),
+		})
+	})
+	return skills
 }
 
 func saveCharactersRPC(ctx context.Context, client internal.InternalClient, worldId uint32, chars []*entity.Character) error {

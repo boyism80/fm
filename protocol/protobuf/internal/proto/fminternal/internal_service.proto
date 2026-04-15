@@ -11,9 +11,6 @@ service Internal {
   rpc BeginGameTransition (BeginGameTransitionRequest) returns (BeginGameTransitionReply);
   rpc SaveCharacter (SaveCharacterRequest) returns (SaveCharacterReply);
   rpc SaveCharacters (SaveCharactersRequest) returns (SaveCharactersReply);
-  rpc GetInventory (GetInventoryRequest) returns (GetInventoryReply);
-  rpc SaveInventory (SaveInventoryRequest) returns (SaveInventoryReply);
-  rpc DeleteInventory (DeleteInventoryRequest) returns (DeleteInventoryReply);
   rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
   rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
   rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
@@ -120,6 +117,8 @@ message CharacterSaveEntry {
   CharacterPersisted     character  = 1;
   map<int32, uint32>     base_looks = 2;
   map<int32, uint32>     overlays   = 3;
+  repeated InventoryPersisted inventory = 4;
+  repeated SkillPersisted     skills    = 5;
 }
 
 message SaveCharactersRequest {
@@ -142,34 +141,6 @@ message InventoryPersisted {
   uint32 skill_bonus        = 9;
   string owner_name         = 10;
   int64  updated_at_unix_ms = 11;
-}
-
-message GetInventoryRequest {
-  uint32 world_id  = 1;
-  uint32 owner_id  = 2;
-}
-
-message GetInventoryReply {
-  repeated InventoryPersisted items = 1;
-}
-
-message SaveInventoryRequest {
-  uint32 world_id                  = 1;
-  repeated InventoryPersisted items = 2;
-}
-
-message SaveInventoryReply {
-  bool ok = 1;
-}
-
-message DeleteInventoryRequest {
-  uint32 world_id          = 1;
-  uint32 owner_id          = 2;
-  repeated int64 unique_ids = 3;
-}
-
-message DeleteInventoryReply {
-  bool ok = 1;
 }
 
 message SkillPersisted {

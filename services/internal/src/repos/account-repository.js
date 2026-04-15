@@ -1,8 +1,8 @@
 "use strict";
 
-const { BaseRepository } = require("./base-repository");
+const { ValueRepository } = require("./value-repository");
 
-class AccountRepository extends BaseRepository {
+class AccountRepository extends ValueRepository {
     constructor(internalContext) {
         super(internalContext);
     }

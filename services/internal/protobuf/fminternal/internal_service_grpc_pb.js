@@ -92,28 +92,6 @@ function deserialize_fm_internal_DeleteCharacterRequest(buffer_arg) {
   return fminternal_internal_service_pb.DeleteCharacterRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
-function serialize_fm_internal_DeleteInventoryReply(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.DeleteInventoryReply)) {
-    throw new Error('Expected argument of type fm.internal.DeleteInventoryReply');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_DeleteInventoryReply(buffer_arg) {
-  return fminternal_internal_service_pb.DeleteInventoryReply.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
-function serialize_fm_internal_DeleteInventoryRequest(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.DeleteInventoryRequest)) {
-    throw new Error('Expected argument of type fm.internal.DeleteInventoryRequest');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_DeleteInventoryRequest(buffer_arg) {
-  return fminternal_internal_service_pb.DeleteInventoryRequest.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
 function serialize_fm_internal_EnterGameReply(arg) {
   if (!(arg instanceof fminternal_internal_service_pb.EnterGameReply)) {
     throw new Error('Expected argument of type fm.internal.EnterGameReply');
@@ -156,28 +134,6 @@ function serialize_fm_internal_GetCharacterListRequest(arg) {
 
 function deserialize_fm_internal_GetCharacterListRequest(buffer_arg) {
   return fminternal_internal_service_pb.GetCharacterListRequest.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
-function serialize_fm_internal_GetInventoryReply(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.GetInventoryReply)) {
-    throw new Error('Expected argument of type fm.internal.GetInventoryReply');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_GetInventoryReply(buffer_arg) {
-  return fminternal_internal_service_pb.GetInventoryReply.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
-function serialize_fm_internal_GetInventoryRequest(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.GetInventoryRequest)) {
-    throw new Error('Expected argument of type fm.internal.GetInventoryRequest');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_GetInventoryRequest(buffer_arg) {
-  return fminternal_internal_service_pb.GetInventoryRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 function serialize_fm_internal_GetServerCatalogReply(arg) {
@@ -334,28 +290,6 @@ function deserialize_fm_internal_SaveCharactersRequest(buffer_arg) {
   return fminternal_internal_service_pb.SaveCharactersRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
-function serialize_fm_internal_SaveInventoryReply(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.SaveInventoryReply)) {
-    throw new Error('Expected argument of type fm.internal.SaveInventoryReply');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_SaveInventoryReply(buffer_arg) {
-  return fminternal_internal_service_pb.SaveInventoryReply.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
-function serialize_fm_internal_SaveInventoryRequest(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.SaveInventoryRequest)) {
-    throw new Error('Expected argument of type fm.internal.SaveInventoryRequest');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_SaveInventoryRequest(buffer_arg) {
-  return fminternal_internal_service_pb.SaveInventoryRequest.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
 
 var InternalService = exports.InternalService = {
   ping: {
@@ -423,39 +357,6 @@ var InternalService = exports.InternalService = {
     requestDeserialize: deserialize_fm_internal_SaveCharactersRequest,
     responseSerialize: serialize_fm_internal_SaveCharactersReply,
     responseDeserialize: deserialize_fm_internal_SaveCharactersReply,
-  },
-  getInventory: {
-    path: '/fm.internal.Internal/GetInventory',
-    requestStream: false,
-    responseStream: false,
-    requestType: fminternal_internal_service_pb.GetInventoryRequest,
-    responseType: fminternal_internal_service_pb.GetInventoryReply,
-    requestSerialize: serialize_fm_internal_GetInventoryRequest,
-    requestDeserialize: deserialize_fm_internal_GetInventoryRequest,
-    responseSerialize: serialize_fm_internal_GetInventoryReply,
-    responseDeserialize: deserialize_fm_internal_GetInventoryReply,
-  },
-  saveInventory: {
-    path: '/fm.internal.Internal/SaveInventory',
-    requestStream: false,
-    responseStream: false,
-    requestType: fminternal_internal_service_pb.SaveInventoryRequest,
-    responseType: fminternal_internal_service_pb.SaveInventoryReply,
-    requestSerialize: serialize_fm_internal_SaveInventoryRequest,
-    requestDeserialize: deserialize_fm_internal_SaveInventoryRequest,
-    responseSerialize: serialize_fm_internal_SaveInventoryReply,
-    responseDeserialize: deserialize_fm_internal_SaveInventoryReply,
-  },
-  deleteInventory: {
-    path: '/fm.internal.Internal/DeleteInventory',
-    requestStream: false,
-    responseStream: false,
-    requestType: fminternal_internal_service_pb.DeleteInventoryRequest,
-    responseType: fminternal_internal_service_pb.DeleteInventoryReply,
-    requestSerialize: serialize_fm_internal_DeleteInventoryRequest,
-    requestDeserialize: deserialize_fm_internal_DeleteInventoryRequest,
-    responseSerialize: serialize_fm_internal_DeleteInventoryReply,
-    responseDeserialize: deserialize_fm_internal_DeleteInventoryReply,
   },
   loginAccount: {
     path: '/fm.internal.Internal/LoginAccount',

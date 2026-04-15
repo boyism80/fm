@@ -45,7 +45,7 @@ class CharacterOverviewRepository extends HashRepository {
         return this.ctx.appConfiguration.getCharacterCacheTtlSeconds();
     }
 
-    getOwnerKey(model) {
+    getGroupKey(model) {
         return model.accountId;
     }
 
@@ -58,7 +58,7 @@ class CharacterOverviewRepository extends HashRepository {
         return `${keyPrefix}fm:w${worldId}:overview:${accountId}`;
     }
 
-    onSelectByOwner(accountId, worldId) {
+    onSelect(accountId, worldId) {
         return {
             text: `SELECT ${SELECT_COLS} FROM character_overview WHERE account_id = $1 AND world_id = $2 AND NOT deleted`,
             values: [Number(accountId), Number(worldId)],

@@ -6,7 +6,7 @@ const { makeSkillMessage } = require("../skill-persisted");
 
 function createSessionHandlers(
     characterService,
-    inventoryService,
+    inventoryRepository,
     skillService,
     sessionService,
     internalConfig,
@@ -69,7 +69,7 @@ function createSessionHandlers(
                 }
 
                 const [inventoryList, skillList] = await Promise.all([
-                    inventoryService.getInventory(worldId, characterId),
+                    inventoryRepository.getAll(worldId, characterId).then((map) => [...map.values()]),
                     skillService.getSkills(worldId, characterId),
                 ]);
                 reply.setFound(true);

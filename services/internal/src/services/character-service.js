@@ -12,6 +12,7 @@ class CharacterService {
         accountRepository,
         unifiedRepository,
         inventoryRepository,
+        skillRepository,
         appConfiguration
     ) {
         this.repo = characterRepository;
@@ -19,6 +20,7 @@ class CharacterService {
         this.accountRepo = accountRepository;
         this.unifiedRepo = unifiedRepository;
         this.inventoryRepo = inventoryRepository;
+        this.skillRepo = skillRepository;
         this.app = appConfiguration;
     }
 
@@ -75,21 +77,21 @@ class CharacterService {
         if (!entries || entries.length === 0) return;
 
         const byWorld = new Map();
-        for (const { persisted, baseLooks, overlays } of entries) {
+        for (const { persisted, baseLooks, overlays, inventory, skills } of entries) {
             this._assertWorld(persisted.worldId);
             this._assertCharacterId(persisted.characterId);
             this._assertAccountId(persisted.accountId);
             this._validatePersisted(persisted);
             const wid = persisted.worldId;
             if (!byWorld.has(wid)) byWorld.set(wid, []);
-            byWorld.get(wid).push({ persisted, baseLooks, overlays });
+            byWorld.get(wid).push({ persisted, baseLooks, overlays, inventory, skills });
         }
 
         for (const [worldId, group] of byWorld) {
             const models = group.map(({ persisted }) => persisted);
             await this.repo.setAll(worldId, models);
 
-            for (const { persisted, baseLooks, overlays } of group) {
+            for (const { persisted, baseLooks, overlays, inventory, skills } of group) {
                 if (!persisted.accountId) continue;
                 const overview = {
                     characterId:   persisted.characterId,
@@ -112,6 +114,17 @@ class CharacterService {
                     overlays:      overlays ?? {},
                 };
                 await this.overviewRepo.set(persisted.worldId, overview);
+
+                await this.inventoryRepo.replaceBySnapshot(
+                    persisted.worldId,
+                    persisted.characterId,
+                    inventory ?? []
+                );
+                await this.skillRepo.replaceBySnapshot(
+                    persisted.worldId,
+                    persisted.characterId,
+                    skills ?? []
+                );
             }
         }
     }

@@ -25,9 +25,6 @@ const (
 	Internal_BeginGameTransition_FullMethodName = "/fm.internal.Internal/BeginGameTransition"
 	Internal_SaveCharacter_FullMethodName       = "/fm.internal.Internal/SaveCharacter"
 	Internal_SaveCharacters_FullMethodName      = "/fm.internal.Internal/SaveCharacters"
-	Internal_GetInventory_FullMethodName        = "/fm.internal.Internal/GetInventory"
-	Internal_SaveInventory_FullMethodName       = "/fm.internal.Internal/SaveInventory"
-	Internal_DeleteInventory_FullMethodName     = "/fm.internal.Internal/DeleteInventory"
 	Internal_LoginAccount_FullMethodName        = "/fm.internal.Internal/LoginAccount"
 	Internal_GetCharacterList_FullMethodName    = "/fm.internal.Internal/GetCharacterList"
 	Internal_CheckCharacterName_FullMethodName  = "/fm.internal.Internal/CheckCharacterName"
@@ -47,9 +44,6 @@ type InternalClient interface {
 	BeginGameTransition(ctx context.Context, in *BeginGameTransitionRequest, opts ...grpc.CallOption) (*BeginGameTransitionReply, error)
 	SaveCharacter(ctx context.Context, in *SaveCharacterRequest, opts ...grpc.CallOption) (*SaveCharacterReply, error)
 	SaveCharacters(ctx context.Context, in *SaveCharactersRequest, opts ...grpc.CallOption) (*SaveCharactersReply, error)
-	GetInventory(ctx context.Context, in *GetInventoryRequest, opts ...grpc.CallOption) (*GetInventoryReply, error)
-	SaveInventory(ctx context.Context, in *SaveInventoryRequest, opts ...grpc.CallOption) (*SaveInventoryReply, error)
-	DeleteInventory(ctx context.Context, in *DeleteInventoryRequest, opts ...grpc.CallOption) (*DeleteInventoryReply, error)
 	LoginAccount(ctx context.Context, in *LoginAccountRequest, opts ...grpc.CallOption) (*LoginAccountReply, error)
 	GetCharacterList(ctx context.Context, in *GetCharacterListRequest, opts ...grpc.CallOption) (*GetCharacterListReply, error)
 	CheckCharacterName(ctx context.Context, in *CheckCharacterNameRequest, opts ...grpc.CallOption) (*CheckCharacterNameReply, error)
@@ -121,36 +115,6 @@ func (c *internalClient) SaveCharacters(ctx context.Context, in *SaveCharactersR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SaveCharactersReply)
 	err := c.cc.Invoke(ctx, Internal_SaveCharacters_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *internalClient) GetInventory(ctx context.Context, in *GetInventoryRequest, opts ...grpc.CallOption) (*GetInventoryReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetInventoryReply)
-	err := c.cc.Invoke(ctx, Internal_GetInventory_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *internalClient) SaveInventory(ctx context.Context, in *SaveInventoryRequest, opts ...grpc.CallOption) (*SaveInventoryReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SaveInventoryReply)
-	err := c.cc.Invoke(ctx, Internal_SaveInventory_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *internalClient) DeleteInventory(ctx context.Context, in *DeleteInventoryRequest, opts ...grpc.CallOption) (*DeleteInventoryReply, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteInventoryReply)
-	err := c.cc.Invoke(ctx, Internal_DeleteInventory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -237,9 +201,6 @@ type InternalServer interface {
 	BeginGameTransition(context.Context, *BeginGameTransitionRequest) (*BeginGameTransitionReply, error)
 	SaveCharacter(context.Context, *SaveCharacterRequest) (*SaveCharacterReply, error)
 	SaveCharacters(context.Context, *SaveCharactersRequest) (*SaveCharactersReply, error)
-	GetInventory(context.Context, *GetInventoryRequest) (*GetInventoryReply, error)
-	SaveInventory(context.Context, *SaveInventoryRequest) (*SaveInventoryReply, error)
-	DeleteInventory(context.Context, *DeleteInventoryRequest) (*DeleteInventoryReply, error)
 	LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error)
 	GetCharacterList(context.Context, *GetCharacterListRequest) (*GetCharacterListReply, error)
 	CheckCharacterName(context.Context, *CheckCharacterNameRequest) (*CheckCharacterNameReply, error)
@@ -274,15 +235,6 @@ func (UnimplementedInternalServer) SaveCharacter(context.Context, *SaveCharacter
 }
 func (UnimplementedInternalServer) SaveCharacters(context.Context, *SaveCharactersRequest) (*SaveCharactersReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SaveCharacters not implemented")
-}
-func (UnimplementedInternalServer) GetInventory(context.Context, *GetInventoryRequest) (*GetInventoryReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetInventory not implemented")
-}
-func (UnimplementedInternalServer) SaveInventory(context.Context, *SaveInventoryRequest) (*SaveInventoryReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method SaveInventory not implemented")
-}
-func (UnimplementedInternalServer) DeleteInventory(context.Context, *DeleteInventoryRequest) (*DeleteInventoryReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method DeleteInventory not implemented")
 }
 func (UnimplementedInternalServer) LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method LoginAccount not implemented")
@@ -430,60 +382,6 @@ func _Internal_SaveCharacters_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).SaveCharacters(ctx, req.(*SaveCharactersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Internal_GetInventory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetInventoryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InternalServer).GetInventory(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Internal_GetInventory_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).GetInventory(ctx, req.(*GetInventoryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Internal_SaveInventory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SaveInventoryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InternalServer).SaveInventory(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Internal_SaveInventory_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).SaveInventory(ctx, req.(*SaveInventoryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Internal_DeleteInventory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteInventoryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InternalServer).DeleteInventory(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Internal_DeleteInventory_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).DeleteInventory(ctx, req.(*DeleteInventoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -644,18 +542,6 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveCharacters",
 			Handler:    _Internal_SaveCharacters_Handler,
-		},
-		{
-			MethodName: "GetInventory",
-			Handler:    _Internal_GetInventory_Handler,
-		},
-		{
-			MethodName: "SaveInventory",
-			Handler:    _Internal_SaveInventory_Handler,
-		},
-		{
-			MethodName: "DeleteInventory",
-			Handler:    _Internal_DeleteInventory_Handler,
 		},
 		{
 			MethodName: "LoginAccount",

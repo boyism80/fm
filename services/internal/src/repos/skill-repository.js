@@ -30,7 +30,7 @@ class SkillRepository extends HashRepository {
         return this.ctx.appConfiguration.getCharacterCacheTtlSeconds();
     }
 
-    getOwnerKey(model) {
+    getGroupKey(model) {
         return model.characterId;
     }
 
@@ -43,7 +43,7 @@ class SkillRepository extends HashRepository {
         return `${keyPrefix}fm:w${worldId}:skills:${characterId}`;
     }
 
-    onSelectByOwner(characterId, _worldId) {
+    onSelect(characterId, _worldId) {
         return {
             text:   `SELECT ${SELECT_COLS} FROM character_skills WHERE character_id = $1`,
             values: [Number(characterId)],
@@ -89,6 +89,46 @@ class SkillRepository extends HashRepository {
             master_level:         model.masterLevel,
             cooldown_end_unix_ms: model.cooldownEndUnixMs ?? null,
         };
+    }
+
+    async replaceBySnapshot(worldId, characterId, models) {
+        const pool = this._pool(worldId, characterId);
+        const { text: selectText, values: selectValues } = this.onSelect(characterId, worldId);
+        const existingRes = await pool.query(selectText, selectValues);
+        const existingRows = existingRes.rows ?? [];
+
+        const normalized = models.map((m) => {
+            const row = this.modelToRow(m);
+            row.character_id = Number(characterId);
+            return row;
+        });
+
+        await pool.query("BEGIN");
+        try {
+            if (normalized.length > 0) {
+                const upsert = this.onBulkUpsert(normalized);
+                if (upsert.text) {
+                    await pool.query(upsert.text, upsert.values);
+                }
+            }
+
+            const incomingSkillIds = new Set(normalized.map((r) => String(r.skill_id)));
+            const deleteSkillIds = existingRows
+                .map((r) => String(r.skill_id))
+                .filter((id) => !incomingSkillIds.has(id));
+            if (deleteSkillIds.length > 0) {
+                const delQuery = this.onBulkDelete(deleteSkillIds, characterId, worldId);
+                await pool.query(delQuery.text, delQuery.values);
+            }
+
+            await pool.query("COMMIT");
+        } catch (err) {
+            await pool.query("ROLLBACK");
+            throw err;
+        }
+
+        const redis = this._redis(worldId, characterId);
+        await redis.del(this.getRedisHashKey(worldId, characterId)).catch(() => {});
     }
 
 }

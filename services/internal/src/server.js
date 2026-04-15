@@ -10,11 +10,10 @@ const { createCatalogHandlers } = require("./grpc/handlers/catalog-handlers");
 const { createAuthHandlers } = require("./grpc/handlers/auth-handlers");
 const { createSessionHandlers } = require("./grpc/handlers/session-handlers");
 const { createCharacterHandlers } = require("./grpc/handlers/character-handlers");
-const { createInventoryHandlers } = require("./grpc/handlers/inventory-handlers");
 
 const INVALID_CODES = new Set([
-    "UNKNOWN_WORLD", "INVALID_CHARACTER_ID", "INVALID_OWNER_ID",
-    "INVALID_UNIQUE_ID", "INVALID_PAYLOAD", "UNKNOWN_CHANNEL",
+    "UNKNOWN_WORLD", "INVALID_CHARACTER_ID",
+    "INVALID_PAYLOAD", "UNKNOWN_CHANNEL",
 ]);
 
 function grpcError(err, callback) {
@@ -53,21 +52,18 @@ async function main() {
         authHandlers: awilix.asFunction(createAuthHandlers).singleton(),
         sessionHandlers: awilix.asFunction(createSessionHandlers).singleton(),
         characterHandlers: awilix.asFunction(createCharacterHandlers).singleton(),
-        inventoryHandlers: awilix.asFunction(createInventoryHandlers).singleton(),
     });
 
     const catalogHandlers = container.resolve("catalogHandlers");
     const authHandlers = container.resolve("authHandlers");
     const sessionHandlers = container.resolve("sessionHandlers");
     const characterHandlers = container.resolve("characterHandlers");
-    const inventoryHandlers = container.resolve("inventoryHandlers");
 
     server.addService(InternalService, {
         ...catalogHandlers,
         ...authHandlers,
         ...sessionHandlers,
         ...characterHandlers,
-        ...inventoryHandlers,
     });
 
     const addr = `${internalConfig.grpc.host}:${internalConfig.grpc.port}`;

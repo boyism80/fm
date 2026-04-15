@@ -1,6 +1,6 @@
 "use strict";
 
-class BaseRepository {
+class Repository {
     constructor(internalContext) {
         this.ctx = internalContext;
     }
@@ -112,7 +112,7 @@ class BaseRepository {
                         const row = JSON.parse(cached[i]);
                         if (!row.deleted) results.set(key, this.rowToModel(row));
                     } catch {
-                        // corrupted cache entry → fall through to DB
+                        // corrupted cache entry -> fall through to DB
                     }
                 }
                 if (!results.has(key)) {
@@ -203,4 +203,4 @@ class BaseRepository {
     }
 }
 
-module.exports = { BaseRepository };
+module.exports = { Repository };

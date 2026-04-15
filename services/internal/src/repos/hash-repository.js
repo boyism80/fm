@@ -1,36 +1,36 @@
 "use strict";
 
-class HashRepository {
-    constructor(internalContext) {
-        this.ctx = internalContext;
-    }
+const { Repository } = require("./repository");
 
-    getOwnerKey(_model) { throw new Error(`${this.constructor.name}.getOwnerKey not implemented`); }
+class HashRepository extends Repository {
+
+    getGroupKey(_model) { throw new Error(`${this.constructor.name}.getGroupKey not implemented`); }
     getItemKey(_model) { throw new Error(`${this.constructor.name}.getItemKey not implemented`); }
-    getRedisHashKey(_worldId, _ownerKey) { throw new Error(`${this.constructor.name}.getRedisHashKey not implemented`); }
-    onSelectByOwner(_ownerKey, _worldId) { throw new Error(`${this.constructor.name}.onSelectByOwner not implemented`); }
+    getRedisHashKey(_worldId, _groupKey) { throw new Error(`${this.constructor.name}.getRedisHashKey not implemented`); }
+    getRedisKey(worldId, key) { return this.getRedisHashKey(worldId, key); }
+    onSelect(_groupKey, _worldId) { throw new Error(`${this.constructor.name}.onSelect not implemented`); }
     onBulkUpsert(_rows) { throw new Error(`${this.constructor.name}.onBulkUpsert not implemented`); }
-    onBulkDelete(_itemKeys, _ownerKey, _worldId) { throw new Error(`${this.constructor.name}.onBulkDelete not implemented`); }
+    onBulkDelete(_itemKeys, _groupKey, _worldId) { throw new Error(`${this.constructor.name}.onBulkDelete not implemented`); }
     onDelete(row, worldId) {
-        return this.onBulkDelete([String(this.getItemKey(row))], this.getOwnerKey(row), worldId);
+        return this.onBulkDelete([String(this.getItemKey(row))], this.getGroupKey(row), worldId);
     }
     rowToModel(_row) { throw new Error(`${this.constructor.name}.rowToModel not implemented`); }
     modelToRow(_model) { throw new Error(`${this.constructor.name}.modelToRow not implemented`); }
 
     getTtlSeconds() { return 300; }
-    getShardHash(ownerKey) { return ownerKey; }
+    getShardHash(groupKey) { return groupKey; }
 
-    _pool(worldId, ownerKey) {
-        return this.ctx.getPgDataPool(worldId, this.getShardHash(ownerKey));
+    async get() {
+        throw new Error(`${this.constructor.name}.get is not supported for hash repositories`);
     }
 
-    _redis(worldId, ownerKey) {
-        return this.ctx.getRedisDataAccess(worldId, this.getShardHash(ownerKey)).client;
+    async getMany() {
+        throw new Error(`${this.constructor.name}.getMany is not supported for hash repositories`);
     }
 
-    async getAll(worldId, ownerKey) {
-        const hashKey = this.getRedisHashKey(worldId, ownerKey);
-        const redis = this._redis(worldId, ownerKey);
+    async getAll(worldId, groupKey) {
+        const hashKey = this.getRedisHashKey(worldId, groupKey);
+        const redis = this._redis(worldId, groupKey);
 
         if (await redis.exists(hashKey)) {
             const fields = await redis.hgetall(hashKey);
@@ -45,8 +45,8 @@ class HashRepository {
             return result;
         }
 
-        const pool = this._pool(worldId, ownerKey);
-        const { text, values } = this.onSelectByOwner(ownerKey, worldId);
+        const pool = this._pool(worldId, groupKey);
+        const { text, values } = this.onSelect(groupKey, worldId);
         const res = await pool.query(text, values);
 
         const pipeline = redis.pipeline();
@@ -72,7 +72,7 @@ class HashRepository {
     async setAll(worldId, models) {
         const dbGroups = new Map();
         for (const model of models) {
-            const pool = this._pool(worldId, this.getOwnerKey(model));
+            const pool = this._pool(worldId, this.getGroupKey(model));
             if (!dbGroups.has(pool)) dbGroups.set(pool, []);
             dbGroups.get(pool).push(model);
         }
@@ -83,25 +83,25 @@ class HashRepository {
             const { text, values } = this.onBulkUpsert(rows);
             const res = await pool.query(text, values);
 
-            const byOwner = new Map();
+            const byGroup = new Map();
             for (const savedRow of res.rows) {
                 const model = this.rowToModel(savedRow);
-                const ownerKey = this.getOwnerKey(model);
-                if (!byOwner.has(ownerKey)) byOwner.set(ownerKey, []);
-                byOwner.get(ownerKey).push({ row: savedRow, model });
+                const groupKey = this.getGroupKey(model);
+                if (!byGroup.has(groupKey)) byGroup.set(groupKey, []);
+                byGroup.get(groupKey).push({ row: savedRow, model });
             }
 
-            for (const [ownerKey, ownerItems] of byOwner) {
-                const hashKey = this.getRedisHashKey(worldId, ownerKey);
-                const redis = this._redis(worldId, ownerKey);
+            for (const [groupKey, groupItems] of byGroup) {
+                const hashKey = this.getRedisHashKey(worldId, groupKey);
+                const redis = this._redis(worldId, groupKey);
                 if (await redis.exists(hashKey)) {
                     const pipeline = redis.pipeline();
-                    for (const { row, model } of ownerItems) {
+                    for (const { row, model } of groupItems) {
                         pipeline.hset(hashKey, String(this.getItemKey(model)), JSON.stringify(row));
                     }
                     await pipeline.exec();
                 }
-                saved.push(...ownerItems.map(i => i.model));
+                saved.push(...groupItems.map(i => i.model));
             }
         }
 
@@ -113,26 +113,26 @@ class HashRepository {
         return result[0];
     }
 
-    async delAll(worldId, ownerKey, itemKeys) {
+    async delAll(worldId, groupKey, itemKeys) {
         if (!itemKeys.length) return;
-        const pool = this._pool(worldId, ownerKey);
-        const { text, values } = this.onBulkDelete(itemKeys, ownerKey, worldId);
+        const pool = this._pool(worldId, groupKey);
+        const { text, values } = this.onBulkDelete(itemKeys, groupKey, worldId);
         await pool.query(text, values);
 
-        const hashKey = this.getRedisHashKey(worldId, ownerKey);
-        const redis = this._redis(worldId, ownerKey);
+        const hashKey = this.getRedisHashKey(worldId, groupKey);
+        const redis = this._redis(worldId, groupKey);
         if (await redis.exists(hashKey)) {
             await redis.hdel(hashKey, ...itemKeys.map(String));
         }
     }
 
-    async del(worldId, ownerKey, itemKey) {
-        return this.delAll(worldId, ownerKey, [itemKey]);
+    async del(worldId, groupKey, itemKey) {
+        return this.delAll(worldId, groupKey, [itemKey]);
     }
 
     async delete(row) {
         const worldId = Number(row.worldId);
-        return this.del(worldId, this.getOwnerKey(row), String(this.getItemKey(row)));
+        return this.del(worldId, this.getGroupKey(row), String(this.getItemKey(row)));
     }
 }
 

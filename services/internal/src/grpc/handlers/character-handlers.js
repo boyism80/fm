@@ -1,6 +1,8 @@
 "use strict";
 
 const { persistedFromMessage: characterFromMessage } = require("../character-persisted");
+const { persistedFromMessage: inventoryFromMessage } = require("../inventory-persisted");
+const { persistedFromMessage: skillFromMessage } = require("../skill-persisted");
 
 function _protoMapToObject(protoMap) {
     const obj = {};
@@ -82,6 +84,8 @@ function createCharacterHandlers(
                         persisted: characterFromMessage(msgChar),
                         baseLooks: _protoMapToObject(entry.getBaseLooksMap()),
                         overlays: _protoMapToObject(entry.getOverlaysMap()),
+                        inventory: entry.getInventoryList().map(inventoryFromMessage),
+                        skills: entry.getSkillsList().map(skillFromMessage),
                     };
                 });
                 await characterService.saveCharacters(entries);
