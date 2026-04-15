@@ -6,11 +6,12 @@ class SkillService {
     }
 
     async getSkills(worldId, characterId) {
-        return this.repo.getByCharacter(worldId, characterId);
+        const map = await this.repo.getAll(worldId, characterId);
+        return [...map.values()];
     }
 
     async saveSkills(worldId, models) {
-        return this.repo.saveAll(worldId, models);
+        return this.repo.setAll(worldId, models);
     }
 }
 

@@ -72,10 +72,12 @@ func (e InternalEndpoint) GRPCAddr() string {
 }
 
 type Login struct {
-	Host        string           `yaml:"host"`
-	Port        int              `yaml:"port"`
-	InitialRole int              `yaml:"initial_role"`
-	Internal    InternalEndpoint `yaml:"internal"`
+	Host                         string           `yaml:"host"`
+	Port                         int              `yaml:"port"`
+	InitialRole                  int              `yaml:"initial_role"`
+	Internal                     InternalEndpoint `yaml:"internal"`
+	CatalogRetryIntervalSeconds  int              `yaml:"catalog_retry_interval_seconds"`
+	CatalogRetryMaxAttempts      int              `yaml:"catalog_retry_max_attempts"`
 }
 
 type Game struct {
@@ -111,6 +113,12 @@ func LoadLogin(path string) (*Login, error) {
 	}
 	if l.Port == 0 {
 		l.Port = 8484
+	}
+	if l.CatalogRetryIntervalSeconds <= 0 {
+		l.CatalogRetryIntervalSeconds = 2
+	}
+	if l.CatalogRetryMaxAttempts <= 0 {
+		l.CatalogRetryMaxAttempts = 30
 	}
 	return &l, nil
 }

@@ -50,7 +50,7 @@ class InventoryService {
     async getInventory(worldId, ownerId) {
         this._assertWorld(worldId);
         this._assertOwnerId(ownerId);
-        const map = await this.repo.getInventory(worldId, ownerId);
+        const map = await this.repo.getAll(worldId, ownerId);
         return [...map.values()];
     }
 
@@ -68,7 +68,7 @@ class InventoryService {
             this._assertUniqueId(item.uniqueId);
             this._validateItem(item);
         }
-        return this.repo.saveAll(worldId, items);
+        return this.repo.setAll(worldId, items);
     }
 
     async deleteInventory(worldId, ownerId, uniqueIds) {
@@ -78,7 +78,7 @@ class InventoryService {
         for (const uid of uniqueIds) {
             this._assertUniqueId(uid);
         }
-        return this.repo.deleteAll(worldId, ownerId, uniqueIds);
+        return this.repo.delAll(worldId, ownerId, uniqueIds);
     }
 }
 

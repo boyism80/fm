@@ -123,7 +123,7 @@ function createCharacterHandlers(
 
         async createCharacter(call, callback) {
             try {
-                const result = await characterOverviewService.createCharacter(
+                const result = await characterService.createCharacter(
                     call.request.getAccountId(),
                     call.request.getWorldId(),
                     {
@@ -151,7 +151,7 @@ function createCharacterHandlers(
 
         async deleteCharacter(call, callback) {
             try {
-                const result = await characterOverviewService.deleteCharacter(
+                const result = await characterService.deleteCharacter(
                     call.request.getAccountId(),
                     call.request.getCharacterId()
                 );

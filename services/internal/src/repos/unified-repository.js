@@ -43,7 +43,7 @@ class UnifiedRepository {
         return rows[0];
     }
 
-    async softDeleteCharacterName(characterId) {
+    async deleteCharacterName(characterId) {
         await this._pool().query(
             "UPDATE character_name_registry SET deleted_at = NOW() WHERE character_id = $1",
             [characterId]

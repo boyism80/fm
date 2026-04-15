@@ -91,22 +91,6 @@ class SkillRepository extends HashRepository {
         };
     }
 
-    async getByCharacter(worldId, characterId) {
-        const map = await this.getAll(worldId, characterId);
-        return [...map.values()];
-    }
-
-    async saveAll(worldId, models) {
-        return this.setAll(worldId, models);
-    }
-
-    async save(worldId, model) {
-        return this.set(worldId, model);
-    }
-
-    async deleteAll(worldId, characterId, skillIds) {
-        return this.delAll(worldId, characterId, skillIds.map(String));
-    }
 }
 
 module.exports = { SkillRepository };

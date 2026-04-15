@@ -29,6 +29,8 @@ func main() {
 host: "0.0.0.0"
 port: 8484
 initial_role: 1
+catalog_retry_interval_seconds: 2
+catalog_retry_max_attempts: 30
 internal:
   host: "127.0.0.1"
   port: 50051
@@ -53,11 +55,13 @@ internal:
 	}
 
 	srvCfg := &server.LoginConfig{
-		Host:         l.Host,
-		Port:         l.Port,
-		InitialRole:  uint32(l.InitialRole),
-		InternalHost: l.Internal.Host,
-		InternalPort: l.Internal.Port,
+		Host:                        l.Host,
+		Port:                        l.Port,
+		InitialRole:                 uint32(l.InitialRole),
+		InternalHost:                l.Internal.Host,
+		InternalPort:                l.Internal.Port,
+		CatalogRetryIntervalSeconds: l.CatalogRetryIntervalSeconds,
+		CatalogRetryMaxAttempts:     l.CatalogRetryMaxAttempts,
 	}
 
 	ls, err := server.NewLoginServer(srvCfg)

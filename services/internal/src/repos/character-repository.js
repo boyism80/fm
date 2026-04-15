@@ -87,6 +87,13 @@ class CharacterRepository extends BaseRepository {
         };
     }
 
+    onDelete(row) {
+        return {
+            text: "UPDATE characters SET deleted = true, updated_at = NOW() WHERE id = $1 AND account_id = $2 AND world_id = $3 AND deleted = false",
+            values: [Number(row.characterId), Number(row.accountId), Number(row.worldId)],
+        };
+    }
+
     rowToModel(row) {
         return {
             characterId:  Number(row.id),
@@ -154,21 +161,6 @@ class CharacterRepository extends BaseRepository {
         };
     }
 
-    async getById(worldId, characterId) {
-        return this.get(worldId, characterId);
-    }
-
-    async getManyById(worldId, characterIds) {
-        return this.getMany(worldId, characterIds);
-    }
-
-    async save(worldId, model) {
-        return this.set(worldId, model);
-    }
-
-    async saveAll(worldId, models) {
-        return this.setAll(worldId, models);
-    }
 }
 
 module.exports = { CharacterRepository };

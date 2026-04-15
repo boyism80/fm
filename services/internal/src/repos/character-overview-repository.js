@@ -131,18 +131,6 @@ class CharacterOverviewRepository extends HashRepository {
         };
     }
 
-    async getByAccount(worldId, accountId) {
-        const map = await this.getAll(worldId, accountId);
-        return [...map.values()];
-    }
-
-    async upsert(worldId, model) {
-        return this.set(worldId, model);
-    }
-
-    async remove(worldId, accountId, characterId) {
-        return this.del(worldId, accountId, characterId);
-    }
 }
 
 module.exports = { CharacterOverviewRepository };

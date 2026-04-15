@@ -46,7 +46,7 @@ class AccountService {
                 lastLoginIp: ipAddress ?? null,
                 macAddress: macAddress ?? null,
             };
-            const saved = await this.accountRepo.save(worldId, newAccount);
+            const saved = await this.accountRepo.set(worldId, newAccount);
 
             return {
                 status: LoginStatus.REGISTERED,
@@ -59,7 +59,7 @@ class AccountService {
             };
         }
 
-        const account = await this.accountRepo.getById(worldId, identity.id);
+        const account = await this.accountRepo.get(worldId, identity.id);
         if (!account) {
             throw new Error(`Account identity found but world data missing for id=${identity.id}`);
         }
@@ -75,7 +75,7 @@ class AccountService {
 
         if (macAddress || ipAddress) {
             const updated = { ...account, macAddress: macAddress ?? account.macAddress, lastLoginIp: ipAddress ?? account.lastLoginIp };
-            await this.accountRepo.save(worldId, updated);
+            await this.accountRepo.set(worldId, updated);
         }
 
         return {

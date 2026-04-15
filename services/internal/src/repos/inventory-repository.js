@@ -105,25 +105,6 @@ class InventoryRepository extends HashRepository {
         };
     }
 
-    async getInventory(worldId, ownerId) {
-        return this.getAll(worldId, ownerId);
-    }
-
-    async saveAll(worldId, models) {
-        return this.setAll(worldId, models);
-    }
-
-    async save(worldId, model) {
-        return this.set(worldId, model);
-    }
-
-    async deleteAll(worldId, ownerId, itemKeys) {
-        return this.delAll(worldId, ownerId, itemKeys);
-    }
-
-    async delete(worldId, ownerId, itemKey) {
-        return this.del(worldId, ownerId, itemKey);
-    }
 }
 
 module.exports = { InventoryRepository };

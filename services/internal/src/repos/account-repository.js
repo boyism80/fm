@@ -64,6 +64,13 @@ class AccountRepository extends BaseRepository {
         };
     }
 
+    onDelete(row) {
+        return {
+            text: "DELETE FROM accounts WHERE id = $1",
+            values: [Number(row.accountId)],
+        };
+    }
+
     rowToModel(row) {
         return {
             accountId: row.id,
@@ -98,13 +105,6 @@ class AccountRepository extends BaseRepository {
         };
     }
 
-    async getById(worldId, accountId) {
-        return this.get(worldId, accountId);
-    }
-
-    async save(worldId, model) {
-        return this.set(worldId, model);
-    }
 }
 
 module.exports = { AccountRepository };

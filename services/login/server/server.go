@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
@@ -61,12 +62,14 @@ func (ls *LoginServer) handleClient(c core.Client) {
 }
 
 type LoginConfig struct {
-	Host         string
-	Port         int
-	WorldId      uint32
-	InitialRole  uint32
-	InternalHost string
-	InternalPort int
+	Host                        string
+	Port                        int
+	WorldId                     uint32
+	InitialRole                 uint32
+	InternalHost                string
+	InternalPort                int
+	CatalogRetryIntervalSeconds int
+	CatalogRetryMaxAttempts     int
 }
 
 func (c *LoginConfig) internalAddr() string {
@@ -77,6 +80,13 @@ func (c *LoginConfig) internalAddr() string {
 }
 
 func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
+	if config.CatalogRetryIntervalSeconds <= 0 {
+		config.CatalogRetryIntervalSeconds = 2
+	}
+	if config.CatalogRetryMaxAttempts <= 0 {
+		config.CatalogRetryMaxAttempts = 30
+	}
+
 	if config.internalAddr() == "" {
 		return nil, fmt.Errorf("login server requires internal gRPC endpoint")
 	}
@@ -139,26 +149,52 @@ func (ls *LoginServer) loadServerCatalog() error {
 	if ls.context.InternalClient == nil {
 		return fmt.Errorf("internal gRPC client is required")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-	defer cancel()
-	reply, err := ls.context.InternalClient.GetServerCatalog(ctx, &internal.GetServerCatalogRequest{})
-	if err != nil {
-		return fmt.Errorf("GetServerCatalog failed: %w", err)
-	}
-	if len(reply.GetWorlds()) == 0 {
-		return fmt.Errorf("GetServerCatalog returned no world definitions")
-	}
-	ls.worldCatalog = reply.GetWorlds()
-	for _, world := range ls.worldCatalog {
-		wid := world.GetWorldId()
-		if ls.channelRoutes[wid] == nil {
-			ls.channelRoutes[wid] = make(map[uint32]*internal.ChannelCatalog)
+	interval := time.Duration(ls.config.CatalogRetryIntervalSeconds) * time.Second
+	maxAttempts := ls.config.CatalogRetryMaxAttempts
+
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+		reply, err := ls.context.InternalClient.GetServerCatalog(ctx, &internal.GetServerCatalogRequest{})
+		cancel()
+		if err == nil {
+			worlds := reply.GetWorlds()
+			if len(worlds) == 0 {
+				lastErr = fmt.Errorf("GetServerCatalog returned no world definitions")
+			} else {
+				ls.worldCatalog = worlds
+				ls.channelRoutes = make(map[uint32]map[uint32]*internal.ChannelCatalog)
+				for _, world := range ls.worldCatalog {
+					wid := world.GetWorldId()
+					if ls.channelRoutes[wid] == nil {
+						ls.channelRoutes[wid] = make(map[uint32]*internal.ChannelCatalog)
+					}
+					for _, ch := range world.GetChannels() {
+						ls.channelRoutes[wid][ch.GetChannelId()] = ch
+					}
+				}
+				if attempt > 1 {
+					log.Printf("GetServerCatalog succeeded after retry (%d/%d)", attempt, maxAttempts)
+				}
+				return nil
+			}
+		} else {
+			lastErr = fmt.Errorf("GetServerCatalog failed: %w", err)
 		}
-		for _, ch := range world.GetChannels() {
-			ls.channelRoutes[wid][ch.GetChannelId()] = ch
+
+		if attempt < maxAttempts {
+			log.Printf(
+				"GetServerCatalog attempt %d/%d failed: %v (retrying in %s)",
+				attempt,
+				maxAttempts,
+				lastErr,
+				interval,
+			)
+			time.Sleep(interval)
 		}
 	}
-	return nil
+
+	return fmt.Errorf("GetServerCatalog failed after %d attempts: %w", maxAttempts, lastErr)
 }
 
 func (ls *LoginServer) GetWorldCatalog() []*internal.WorldCatalog {

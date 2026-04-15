@@ -11,6 +11,9 @@ class HashRepository {
     onSelectByOwner(_ownerKey, _worldId) { throw new Error(`${this.constructor.name}.onSelectByOwner not implemented`); }
     onBulkUpsert(_rows) { throw new Error(`${this.constructor.name}.onBulkUpsert not implemented`); }
     onBulkDelete(_itemKeys, _ownerKey, _worldId) { throw new Error(`${this.constructor.name}.onBulkDelete not implemented`); }
+    onDelete(row, worldId) {
+        return this.onBulkDelete([String(this.getItemKey(row))], this.getOwnerKey(row), worldId);
+    }
     rowToModel(_row) { throw new Error(`${this.constructor.name}.rowToModel not implemented`); }
     modelToRow(_model) { throw new Error(`${this.constructor.name}.modelToRow not implemented`); }
 
@@ -125,6 +128,11 @@ class HashRepository {
 
     async del(worldId, ownerKey, itemKey) {
         return this.delAll(worldId, ownerKey, [itemKey]);
+    }
+
+    async delete(row) {
+        const worldId = Number(row.worldId);
+        return this.del(worldId, this.getOwnerKey(row), String(this.getItemKey(row)));
     }
 }
 

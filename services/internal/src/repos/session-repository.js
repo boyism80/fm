@@ -7,7 +7,7 @@ class SessionRepository {
 
     _accountKey(worldId, accountId) {
         const { keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
-        return `${keyPrefix}fm:w${worldId}:session:account:${accountId}`;
+        return `${keyPrefix}fm:session:account:${accountId}`;
     }
 
     _characterKey(worldId, characterId) {
@@ -15,15 +15,10 @@ class SessionRepository {
         return `${keyPrefix}fm:w${worldId}:session:character:${characterId}`;
     }
 
-    _characterToAccountKey(worldId, characterId) {
-        const { keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
-        return `${keyPrefix}fm:w${worldId}:session:index:character_to_account:${characterId}`;
-    }
-
     _accountSessionToHash(session) {
         return {
             version: String(session.version ?? 1),
-            world_id: String(session.worldId ?? 0),
+            world_id: session.worldId == null ? "" : String(session.worldId),
             account_id: String(session.accountId ?? 0),
             state: String(session.state ?? ""),
             character_id: session.character?.id == null ? "" : String(session.character.id),
@@ -47,7 +42,7 @@ class SessionRepository {
         const toNumberOrNull = (v) => (v === "" || v == null ? null : Number(v));
         return {
             version: Number(hash.version ?? 1),
-            worldId: Number(hash.world_id ?? 0),
+            worldId: toNumberOrNull(hash.world_id),
             accountId: Number(hash.account_id ?? 0),
             state: hash.state ?? "",
             character: {
@@ -119,17 +114,16 @@ class SessionRepository {
         const accountKey = this._accountKey(worldId, accountId);
         const script = `
 local key = KEYS[1]
-local world_id = tonumber(ARGV[1])
-local account_id = tonumber(ARGV[2])
-local login_server_id = ARGV[3]
-local now = ARGV[4]
-local ttl = tonumber(ARGV[5])
+local account_id = tonumber(ARGV[1])
+local login_server_id = ARGV[2]
+local now = ARGV[3]
+local ttl = tonumber(ARGV[4])
 if redis.call("EXISTS", key) == 1 then
   return {0, "ALREADY_LOGGED_IN"}
 end
 redis.call("HSET", key,
   "version", "1",
-  "world_id", tostring(world_id),
+  "world_id", "",
   "account_id", tostring(account_id),
   "state", "LOGIN",
   "character_id", "",
@@ -151,7 +145,6 @@ return {1, ""}
             script,
             1,
             accountKey,
-            String(worldId),
             String(accountId),
             String(loginServerId),
             String(now),
@@ -164,10 +157,11 @@ return {1, ""}
         const accountKey = this._accountKey(worldId, accountId);
         const script = `
 local key = KEYS[1]
-local character_id = tonumber(ARGV[1])
-local character_name = ARGV[2]
-local now = ARGV[3]
-local ttl = tonumber(ARGV[4])
+local world_id = tonumber(ARGV[1])
+local character_id = tonumber(ARGV[2])
+local character_name = ARGV[3]
+local now = ARGV[4]
+local ttl = tonumber(ARGV[5])
 if redis.call("EXISTS", key) == 0 then
   return {0, "SESSION_NOT_FOUND"}
 end
@@ -176,6 +170,7 @@ if state ~= "LOGIN" and state ~= "TRANSITION" then
   return {0, "INVALID_STATE"}
 end
 redis.call("HSET", key,
+  "world_id", tostring(world_id),
   "state", "TRANSITION",
   "character_id", tostring(character_id),
   "character_name", character_name,
@@ -189,6 +184,7 @@ return {1, ""}
             script,
             1,
             accountKey,
+            String(worldId),
             String(characterId),
             String(characterName),
             String(now),
@@ -200,11 +196,9 @@ return {1, ""}
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this._accountKey(worldId, accountId);
         const characterKey = this._characterKey(worldId, 0);
-        const indexKey = this._characterToAccountKey(worldId, 0);
         const script = `
 local account_key = KEYS[1]
 local character_key_prefix = KEYS[2]
-local index_key_prefix = KEYS[3]
 local channel_id = tonumber(ARGV[1])
 local now = ARGV[2]
 local ttl = tonumber(ARGV[3])
@@ -224,7 +218,6 @@ local world_id = tonumber(redis.call("HGET", account_key, "world_id") or "0")
 local account_id = tonumber(redis.call("HGET", account_key, "account_id") or "0")
 local game_server_id = "w" .. tostring(world_id) .. ":ch" .. tostring(channel_id)
 local character_key = string.gsub(character_key_prefix, ":0$", ":" .. tostring(character_id))
-local index_key = string.gsub(index_key_prefix, ":0$", ":" .. tostring(character_id))
 
 redis.call("HSET", account_key,
   "state", "GAME",
@@ -253,15 +246,13 @@ redis.call("HSET", character_key,
   "updated_at", now
 )
 redis.call("EXPIRE", character_key, ttl)
-redis.call("SET", index_key, tostring(account_id), "EX", ttl)
 return {1, ""}
 `;
         return client.eval(
             script,
-            3,
+            2,
             accountKey,
             characterKey,
-            indexKey,
             String(channelId),
             String(now),
             String(ttlSeconds)
@@ -274,7 +265,6 @@ return {1, ""}
         const script = `
 local account_key = KEYS[1]
 local character_key_prefix = KEYS[2]
-local index_key_prefix = KEYS[3]
 local login_ttl = tonumber(ARGV[1])
 local transition_ttl = tonumber(ARGV[2])
 local game_ttl = tonumber(ARGV[3])
@@ -293,19 +283,16 @@ if state == "GAME" then
   local character_id = redis.call("HGET", account_key, "character_id")
   if character_id and character_id ~= "" then
     local character_key = string.gsub(character_key_prefix, ":0$", ":" .. tostring(character_id))
-    local index_key = string.gsub(index_key_prefix, ":0$", ":" .. tostring(character_id))
     redis.call("EXPIRE", character_key, ttl)
-    redis.call("EXPIRE", index_key, ttl)
   end
 end
 return {1, ""}
 `;
         return client.eval(
             script,
-            3,
+            2,
             accountKey,
             this._characterKey(worldId, 0),
-            this._characterToAccountKey(worldId, 0),
             String(loginTtl),
             String(transitionTtl),
             String(gameTtl)
@@ -318,7 +305,6 @@ return {1, ""}
         const script = `
 local account_key = KEYS[1]
 local character_key_prefix = KEYS[2]
-local index_key_prefix = KEYS[3]
 local transition_ttl = tonumber(ARGV[1])
 if redis.call("EXISTS", account_key) == 1 then
   local state = redis.call("HGET", account_key, "state")
@@ -329,8 +315,7 @@ if redis.call("EXISTS", account_key) == 1 then
   local character_id = redis.call("HGET", account_key, "character_id")
   if character_id and character_id ~= "" then
     local character_key = string.gsub(character_key_prefix, ":0$", ":" .. tostring(character_id))
-    local index_key = string.gsub(index_key_prefix, ":0$", ":" .. tostring(character_id))
-    redis.call("DEL", character_key, index_key)
+    redis.call("DEL", character_key)
   end
 end
 redis.call("DEL", account_key)
@@ -338,10 +323,9 @@ return {1, ""}
 `;
         return client.eval(
             script,
-            3,
+            2,
             accountKey,
             this._characterKey(worldId, 0),
-            this._characterToAccountKey(worldId, 0),
             String(transitionTtl)
         );
     }
@@ -379,24 +363,17 @@ return {1, ""}
         const multi = client.multi();
         multi.hset(this._characterKey(worldId, characterId), this._characterSessionToHash(session));
         multi.expire(this._characterKey(worldId, characterId), ttlSeconds);
-        multi.set(this._characterToAccountKey(worldId, characterId), String(session.accountId), "EX", ttlSeconds);
         await multi.exec();
     }
 
     async delCharacterSession(worldId, characterId) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        await client.del(
-            this._characterKey(worldId, characterId),
-            this._characterToAccountKey(worldId, characterId)
-        );
+        await client.del(this._characterKey(worldId, characterId));
     }
 
     async refreshCharacterSession(worldId, characterId, ttlSeconds) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        const multi = client.multi();
-        multi.expire(this._characterKey(worldId, characterId), ttlSeconds);
-        multi.expire(this._characterToAccountKey(worldId, characterId), ttlSeconds);
-        await multi.exec();
+        await client.expire(this._characterKey(worldId, characterId), ttlSeconds);
     }
 }
 

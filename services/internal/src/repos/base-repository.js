@@ -8,6 +8,7 @@ class BaseRepository {
     getKey(_model) { throw new Error(`${this.constructor.name}.getKey not implemented`); }
     onSelect(_key, _worldId) { throw new Error(`${this.constructor.name}.onSelect not implemented`); }
     onUpsert(_row) { throw new Error(`${this.constructor.name}.onUpsert not implemented`); }
+    onDelete(_row) { throw new Error(`${this.constructor.name}.onDelete not implemented`); }
     getRedisKey(_worldId, _key) { throw new Error(`${this.constructor.name}.getRedisKey not implemented`); }
     rowToModel(_row) { throw new Error(`${this.constructor.name}.rowToModel not implemented`); }
     modelToRow(_model) { throw new Error(`${this.constructor.name}.modelToRow not implemented`); }
@@ -16,6 +17,7 @@ class BaseRepository {
     getShardHash(key) { return key; }
     onSelectMany(_keys, _worldId) { return null; }
     onBulkUpsert(_rows) { return null; }
+    getDeleteKey(row) { return this.getKey(row); }
 
     _pool(worldId, key) {
         return this.ctx.getPgDataPool(worldId, this.getShardHash(key));
@@ -184,6 +186,20 @@ class BaseRepository {
         }
 
         return saved;
+    }
+
+    async delete(row) {
+        const worldId = row.worldId;
+        const key = this.getDeleteKey(row);
+        const pool = this._pool(worldId, key);
+        const { text, values } = this.onDelete(row);
+        const res = await pool.query(text, values);
+        const deleted = Number(res.rowCount || 0) > 0;
+        if (deleted) {
+            const redis = this._redis(worldId, key);
+            await redis.del(this.getRedisKey(worldId, key)).catch(() => {});
+        }
+        return deleted;
     }
 }
 
