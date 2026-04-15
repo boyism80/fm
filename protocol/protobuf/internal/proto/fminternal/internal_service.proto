@@ -6,7 +6,9 @@ option go_package = "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal;f
 
 service Internal {
   rpc Ping (PingRequest) returns (PingReply);
-  rpc GetCharacter (GetCharacterRequest) returns (GetCharacterReply);
+  rpc GetServerCatalog (GetServerCatalogRequest) returns (GetServerCatalogReply);
+  rpc EnterGame (EnterGameRequest) returns (EnterGameReply);
+  rpc BeginGameTransition (BeginGameTransitionRequest) returns (BeginGameTransitionReply);
   rpc SaveCharacter (SaveCharacterRequest) returns (SaveCharacterReply);
   rpc SaveCharacters (SaveCharactersRequest) returns (SaveCharactersReply);
   rpc GetInventory (GetInventoryRequest) returns (GetInventoryReply);
@@ -17,6 +19,8 @@ service Internal {
   rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
   rpc CreateCharacter (CreateCharacterRequest) returns (CreateCharacterReply);
   rpc DeleteCharacter (DeleteCharacterRequest) returns (DeleteCharacterReply);
+  rpc RefreshSession (RefreshSessionRequest) returns (RefreshSessionReply);
+  rpc LogoutSession (LogoutSessionRequest) returns (LogoutSessionReply);
 }
 
 message PingRequest {}
@@ -25,9 +29,31 @@ message PingReply {
   string message = 1;
 }
 
-message GetCharacterRequest {
+message GetServerCatalogRequest {}
+
+message ChannelCatalog {
+  uint32 channel_id = 1;
+  string host = 2;
+  uint32 port = 3;
+  string name = 4;
+}
+
+message WorldCatalog {
+  uint32 world_id = 1;
+  string world_name = 2;
+  uint32 flag = 3;
+  string event_message = 4;
+  repeated ChannelCatalog channels = 5;
+}
+
+message GetServerCatalogReply {
+  repeated WorldCatalog worlds = 1;
+}
+
+message EnterGameRequest {
   uint32 world_id = 1;
   uint32 character_id = 2;
+  uint32 channel_id = 3;
 }
 
 message CharacterPersisted {
@@ -62,11 +88,22 @@ message CharacterPersisted {
   uint32 role              = 29;
 }
 
-message GetCharacterReply {
+message EnterGameReply {
   bool                        found     = 1;
   CharacterPersisted          character = 2;
   repeated InventoryPersisted inventory = 3;
   repeated SkillPersisted     skills    = 4;
+}
+
+message BeginGameTransitionRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+}
+
+message BeginGameTransitionReply {
+  bool ok = 1;
+  string error_code = 2;
 }
 
 message SaveCharacterRequest {
@@ -158,6 +195,7 @@ message LoginAccountReply {
     WRONG_PASSWORD = 1;
     BANNED         = 2;
     REGISTERED     = 3;
+    ALREADY_LOGGED_IN = 4;
   }
   Status  status                     = 1;
   uint32  account_id                 = 2;
@@ -233,4 +271,23 @@ message DeleteCharacterRequest {
 
 message DeleteCharacterReply {
   bool success = 1;
+}
+
+message RefreshSessionRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+}
+
+message RefreshSessionReply {
+  bool ok = 1;
+  string error_code = 2;
+}
+
+message LogoutSessionRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+}
+
+message LogoutSessionReply {
+  bool ok = 1;
 }

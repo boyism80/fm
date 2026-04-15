@@ -129,6 +129,19 @@ class InternalContext {
         return { client, keyPrefix };
     }
 
+    /**
+     * Global redis is used for account/session coordination keys.
+     * @param {number|string} worldId
+     * @returns {{ client: import('ioredis'), keyPrefix: string }}
+     */
+    getRedisGlobalAccess(worldId) {
+        const wid = String(worldId);
+        const worldRedis = getRedisWorld(this.config, wid);
+        const client = this._redisGlobal[wid][0];
+        const keyPrefix = worldRedis.global.key_prefix || "";
+        return { client, keyPrefix };
+    }
+
     async close() {
         const pools = [];
         if (this._pgUnified) {

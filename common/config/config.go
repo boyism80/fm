@@ -74,8 +74,6 @@ func (e InternalEndpoint) GRPCAddr() string {
 type Login struct {
 	Host        string           `yaml:"host"`
 	Port        int              `yaml:"port"`
-	GameHost    string           `yaml:"game_host"`
-	GamePort    int              `yaml:"game_port"`
 	InitialRole int              `yaml:"initial_role"`
 	Internal    InternalEndpoint `yaml:"internal"`
 }
@@ -83,6 +81,7 @@ type Login struct {
 type Game struct {
 	Host       string           `yaml:"host"`
 	Port       int              `yaml:"port"`
+	ChannelId  int              `yaml:"channel_id"`
 	WzPath     string           `yaml:"wz_path"`
 	World      string           `yaml:"world"`
 	WorldId    int              `yaml:"world_id"`
@@ -112,12 +111,6 @@ func LoadLogin(path string) (*Login, error) {
 	}
 	if l.Port == 0 {
 		l.Port = 8484
-	}
-	if l.GameHost == "" {
-		l.GameHost = "localhost"
-	}
-	if l.GamePort == 0 {
-		l.GamePort = 8485
 	}
 	return &l, nil
 }

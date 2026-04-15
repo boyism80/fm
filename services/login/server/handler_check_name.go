@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
-	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/core/async"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/types"
@@ -32,21 +34,35 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
 	ic := h.ls.context.InternalClient
-	exists := false
-	if ic != nil {
-		reply, err := ic.CheckCharacterName(context.Background(), &fminternalpb.CheckCharacterNameRequest{
-			Name: req.Name,
-		})
-		if err != nil {
-			log.Printf("CheckCharacterName RPC error: %v", err)
-		} else {
-			exists = reply.Exists
-		}
+	if ic == nil {
+		checkResp := &response.CheckName{Name: req.Name, Exists: false}
+		return ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
 	}
 
-	checkResp := &response.CheckName{
-		Name:   req.Name,
-		Exists: exists,
+	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name}
+
+	if ctx.ActorContext == nil {
+		log.Printf("CheckName: no actor context, cannot run internal RPC")
+		checkResp := &response.CheckName{Name: req.Name, Exists: false}
+		_ = ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
+		return fmt.Errorf("check name: actor context required for internal RPC")
 	}
-	return ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
+
+	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.CheckCharacterNameReply, error) {
+			return ic.CheckCharacterName(c, reqMsg)
+		}, func(reply *internal.CheckCharacterNameReply) error {
+			checkResp := &response.CheckName{
+				Name:   req.Name,
+				Exists: reply.Exists,
+			}
+			return ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
+		}).
+		OnError(func(err error) {
+			log.Printf("CheckName (async): %v", err)
+			checkResp := &response.CheckName{Name: req.Name, Exists: false}
+			_ = ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
+		}).
+		Run()
+	return nil
 }

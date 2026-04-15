@@ -13,6 +13,8 @@ const DEFAULT_REDIS = {
     key_prefix: "cache:",
 };
 
+const DEFAULT_CHANNEL_NAME_PREFIX = "Channel";
+
 function normalizePgEndpoint(ep, defaults = {}) {
     if (!ep || typeof ep !== "object") {
         return null;
@@ -172,6 +174,42 @@ function normalizeRedis(rawRedis, worldIdStr) {
     return { unified, worlds };
 }
 
+function normalizeGameServers(rawGameServers) {
+    const gameServers = rawGameServers && typeof rawGameServers === "object" ? rawGameServers : {};
+    const worldsIn = gameServers.worlds && typeof gameServers.worlds === "object" ? gameServers.worlds : {};
+    const worlds = {};
+    for (const worldKey of Object.keys(worldsIn)) {
+        const world = worldsIn[worldKey] || {};
+        const channelsRaw = Array.isArray(world.channels) ? world.channels : [];
+        const channels = channelsRaw.map((ch, idx) => {
+            if (!ch || typeof ch !== "object") {
+                throw new Error(`game_servers.worlds[${worldKey}].channels[${idx}] must be an object`);
+            }
+            if (typeof ch.host !== "string" || !ch.host) {
+                throw new Error(`game_servers.worlds[${worldKey}].channels[${idx}].host is required`);
+            }
+            const port = Number(ch.port);
+            if (!Number.isFinite(port) || port <= 0) {
+                throw new Error(`game_servers.worlds[${worldKey}].channels[${idx}].port must be > 0`);
+            }
+            const channelId = Number.isFinite(Number(ch.channel_id)) ? Number(ch.channel_id) : idx;
+            return {
+                channel_id: channelId,
+                host: ch.host,
+                port,
+                name: ch.name || `${DEFAULT_CHANNEL_NAME_PREFIX} ${channelId + 1}`,
+            };
+        });
+        worlds[worldKey] = {
+            world_name: world.world_name || `World-${worldKey}`,
+            flag: Number.isFinite(Number(world.flag)) ? Number(world.flag) : 0,
+            event_message: world.event_message || "",
+            channels,
+        };
+    }
+    return { worlds };
+}
+
 function withDefaults(raw) {
     const d = raw && typeof raw === "object" ? raw : {};
     const app = {
@@ -188,6 +226,7 @@ function withDefaults(raw) {
         },
         postgresql: normalizePostgresql(d.postgresql, worldIdStr),
         redis: normalizeRedis(d.redis, worldIdStr),
+        game_servers: normalizeGameServers(d.game_servers),
         cache: {
             write_strategy: d.cache?.write_strategy ?? "write-through",
             character_ttl_seconds: d.cache?.character_ttl_seconds ?? 300,

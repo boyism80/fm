@@ -30,7 +30,7 @@ func (a *MapActor) Receive(ctx actor.Context) {
 	case *actor.Stopped:
 		a.onStopped(ctx)
 	case *c_actor.HandlePacket:
-		a.handlePacket(msg)
+		a.handlePacket(ctx, msg)
 	case *c_actor.ScheduleTimer:
 		a.scheduleTimer(ctx, msg)
 	case *c_actor.ExecuteTimer:
@@ -65,8 +65,8 @@ func (a *MapActor) resumeLua(msg *ResumeLua) {
 	}
 }
 
-func (a *MapActor) handlePacket(msg *c_actor.HandlePacket) {
-	err := core.ExecutePacketHandler(a.Context, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)
+func (a *MapActor) handlePacket(ctx actor.Context, msg *c_actor.HandlePacket) {
+	err := core.ExecutePacketHandler(ctx, a.Context, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)
 	if err != nil {
 		log.Printf("Error handling packet 0x%02X: %v", msg.Opcode, err)
 	}
@@ -197,6 +197,7 @@ func (a *MapActor) registerTimers() {
 	RegisterTimer[*timers.MobSpawnTimer](a.timerReg)
 	RegisterTimer[*timers.ItemCleanupTimer](a.timerReg)
 	RegisterTimer[*timers.CooldownCheckTimer](a.timerReg)
+	RegisterTimer[*timers.ClientPingTimer](a.timerReg)
 	RegisterTimer[*timers.BuffExpireTimer](a.timerReg)
 	RegisterTimer[*timers.MobBuffExpireTimer](a.timerReg)
 	RegisterTimer[*timers.MobPoisonTickTimer](a.timerReg)

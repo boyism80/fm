@@ -30,6 +30,7 @@ func main() {
 		log.Println(strings.TrimSpace(`
 host: "0.0.0.0"
 port: 8485
+channel_id: 0
 wz_path: "resources/wz"
 world: "Scania"
 max_players: 1000
@@ -85,6 +86,7 @@ high_rate: false
 	srvCfg := &server.GameConfig{
 		Host:         g.Host,
 		Port:         g.Port,
+		ChannelId:    uint32(g.ChannelId),
 		WzPath:       g.WzPath,
 		WorldName:    g.World,
 		WorldId:      uint32(g.WorldId),

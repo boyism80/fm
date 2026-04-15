@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/dto"
-	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/login/client"
@@ -40,6 +42,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 
 	worldId := uint32(req.Server)
 	loginClient.SetWorldId(worldId)
+	loginClient.SetChannelId(req.Channel)
 	accountId := loginClient.GetAccountId()
 
 	ic := h.ls.context.InternalClient
@@ -48,16 +51,34 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 		return ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
 	}
 
-	reply, err := ic.GetCharacterList(context.Background(), &fminternalpb.GetCharacterListRequest{
+	reqMsg := &internal.GetCharacterListRequest{
 		AccountId: accountId,
 		WorldId:   worldId,
-	})
-	if err != nil {
-		log.Printf("GetCharacterList RPC error: %v", err)
-		charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
-		return ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
 	}
 
+	if ctx.ActorContext == nil {
+		log.Printf("CharacterList: no actor context, cannot run internal RPC")
+		charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
+		_ = ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
+		return fmt.Errorf("character list: actor context required for internal RPC")
+	}
+
+	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.GetCharacterListReply, error) {
+			return ic.GetCharacterList(c, reqMsg)
+		}, func(reply *internal.GetCharacterListReply) error {
+			return h.sendCharacterList(ctx, reply)
+		}).
+		OnError(func(err error) {
+			log.Printf("CharacterList (async): %v", err)
+			charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
+			_ = ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
+		}).
+		Run()
+	return nil
+}
+
+func (h *CharacterList) sendCharacterList(ctx *core.ClientContext, reply *internal.GetCharacterListReply) error {
 	characters := make([]dto.Character, 0, len(reply.Characters))
 	for _, ov := range reply.Characters {
 		characters = append(characters, overviewToDto(ov))
@@ -70,7 +91,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 	return ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
 }
 
-func overviewToDto(ov *fminternalpb.CharacterOverview) dto.Character {
+func overviewToDto(ov *internal.CharacterOverview) dto.Character {
 	baseLooks := make(map[int8]uint32)
 	for k, v := range ov.BaseLooks {
 		baseLooks[int8(k)] = v

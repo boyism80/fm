@@ -15,6 +15,7 @@ type LoginClient struct {
 	pidMutex      sync.RWMutex
 	accountId     uint32
 	worldId       uint32
+	channelId     uint8
 	accountMutex  sync.RWMutex
 }
 
@@ -54,6 +55,18 @@ func (c *LoginClient) SetWorldId(id uint32) {
 	c.accountMutex.Lock()
 	defer c.accountMutex.Unlock()
 	c.worldId = id
+}
+
+func (c *LoginClient) GetChannelId() uint8 {
+	c.accountMutex.RLock()
+	defer c.accountMutex.RUnlock()
+	return c.channelId
+}
+
+func (c *LoginClient) SetChannelId(id uint8) {
+	c.accountMutex.Lock()
+	defer c.accountMutex.Unlock()
+	c.channelId = id
 }
 
 func NewLoginClient(conn net.Conn, clientID int) (*LoginClient, error) {

@@ -28,15 +28,13 @@ func main() {
 		log.Println(strings.TrimSpace(`
 host: "0.0.0.0"
 port: 8484
-game_host: "localhost"
-game_port: 8485
 initial_role: 1
 internal:
-  host: ""
-  port: 0
+  host: "127.0.0.1"
+  port: 50051
 `))
 		log.Println("Notes:")
-		log.Println("  - internal: reserved for future internal gRPC settings; use host \"\" or port: 0 when unused.")
+		log.Println("  - internal is required; login server fetches world/channel routing from internal at startup.")
 		log.Println("\nExample usage:")
 		log.Println("  ./login-server")
 		log.Println("  ./login-server -config=config/login.yaml")
@@ -55,13 +53,11 @@ internal:
 	}
 
 	srvCfg := &server.LoginConfig{
-		Host:           l.Host,
-		Port:           l.Port,
-		GameServerHost: l.GameHost,
-		GameServerPort: l.GamePort,
-		InitialRole:    uint32(l.InitialRole),
-		InternalHost:   l.Internal.Host,
-		InternalPort:   l.Internal.Port,
+		Host:         l.Host,
+		Port:         l.Port,
+		InitialRole:  uint32(l.InitialRole),
+		InternalHost: l.Internal.Host,
+		InternalPort: l.Internal.Port,
 	}
 
 	ls, err := server.NewLoginServer(srvCfg)

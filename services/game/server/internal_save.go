@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
 )
@@ -41,7 +41,7 @@ func equipmentLooks(ch *entity.Character) (baseLooks, overlays map[int32]uint32)
 	return
 }
 
-func characterToSaveEntry(ch *entity.Character, worldId uint32) *fminternalpb.CharacterSaveEntry {
+func characterToSaveEntry(ch *entity.Character, worldId uint32) *internal.CharacterSaveEntry {
 	mapID := uint32(0)
 	if m := ch.GetMap(); m != nil {
 		mapID = m.GetMapID()
@@ -49,7 +49,7 @@ func characterToSaveEntry(ch *entity.Character, worldId uint32) *fminternalpb.Ch
 
 	baseLooks, overlays := equipmentLooks(ch)
 
-	persisted := &fminternalpb.CharacterPersisted{
+	persisted := &internal.CharacterPersisted{
 		CharacterId:     ch.GetID(),
 		AccountId:       ch.AccountID,
 		WorldId:         worldId,
@@ -81,19 +81,19 @@ func characterToSaveEntry(ch *entity.Character, worldId uint32) *fminternalpb.Ch
 		UpdatedAtUnixMs: time.Now().UnixMilli(),
 	}
 
-	return &fminternalpb.CharacterSaveEntry{
+	return &internal.CharacterSaveEntry{
 		Character: persisted,
 		BaseLooks: baseLooks,
 		Overlays:  overlays,
 	}
 }
 
-func saveCharactersRPC(ctx context.Context, client fminternalpb.InternalClient, worldId uint32, chars []*entity.Character) error {
+func saveCharactersRPC(ctx context.Context, client internal.InternalClient, worldId uint32, chars []*entity.Character) error {
 	if len(chars) == 0 {
 		return nil
 	}
 
-	entries := make([]*fminternalpb.CharacterSaveEntry, 0, len(chars))
+	entries := make([]*internal.CharacterSaveEntry, 0, len(chars))
 	for _, ch := range chars {
 		if ch == nil {
 			continue
@@ -105,7 +105,7 @@ func saveCharactersRPC(ctx context.Context, client fminternalpb.InternalClient, 
 		return nil
 	}
 
-	req := &fminternalpb.SaveCharactersRequest{
+	req := &internal.SaveCharactersRequest{
 		Entries: entries,
 	}
 	_, err := client.SaveCharacters(ctx, req)

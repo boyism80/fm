@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v7.34.1
-// source: fminternal/ping.proto
+// source: fminternal/internal_service.proto
 
 package fminternalpb
 
@@ -19,18 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Internal_Ping_FullMethodName               = "/fm.internal.Internal/Ping"
-	Internal_GetCharacter_FullMethodName       = "/fm.internal.Internal/GetCharacter"
-	Internal_SaveCharacter_FullMethodName      = "/fm.internal.Internal/SaveCharacter"
-	Internal_SaveCharacters_FullMethodName     = "/fm.internal.Internal/SaveCharacters"
-	Internal_GetInventory_FullMethodName       = "/fm.internal.Internal/GetInventory"
-	Internal_SaveInventory_FullMethodName      = "/fm.internal.Internal/SaveInventory"
-	Internal_DeleteInventory_FullMethodName    = "/fm.internal.Internal/DeleteInventory"
-	Internal_LoginAccount_FullMethodName       = "/fm.internal.Internal/LoginAccount"
-	Internal_GetCharacterList_FullMethodName   = "/fm.internal.Internal/GetCharacterList"
-	Internal_CheckCharacterName_FullMethodName = "/fm.internal.Internal/CheckCharacterName"
-	Internal_CreateCharacter_FullMethodName    = "/fm.internal.Internal/CreateCharacter"
-	Internal_DeleteCharacter_FullMethodName    = "/fm.internal.Internal/DeleteCharacter"
+	Internal_Ping_FullMethodName                = "/fm.internal.Internal/Ping"
+	Internal_GetServerCatalog_FullMethodName    = "/fm.internal.Internal/GetServerCatalog"
+	Internal_EnterGame_FullMethodName           = "/fm.internal.Internal/EnterGame"
+	Internal_BeginGameTransition_FullMethodName = "/fm.internal.Internal/BeginGameTransition"
+	Internal_SaveCharacter_FullMethodName       = "/fm.internal.Internal/SaveCharacter"
+	Internal_SaveCharacters_FullMethodName      = "/fm.internal.Internal/SaveCharacters"
+	Internal_GetInventory_FullMethodName        = "/fm.internal.Internal/GetInventory"
+	Internal_SaveInventory_FullMethodName       = "/fm.internal.Internal/SaveInventory"
+	Internal_DeleteInventory_FullMethodName     = "/fm.internal.Internal/DeleteInventory"
+	Internal_LoginAccount_FullMethodName        = "/fm.internal.Internal/LoginAccount"
+	Internal_GetCharacterList_FullMethodName    = "/fm.internal.Internal/GetCharacterList"
+	Internal_CheckCharacterName_FullMethodName  = "/fm.internal.Internal/CheckCharacterName"
+	Internal_CreateCharacter_FullMethodName     = "/fm.internal.Internal/CreateCharacter"
+	Internal_DeleteCharacter_FullMethodName     = "/fm.internal.Internal/DeleteCharacter"
+	Internal_RefreshSession_FullMethodName      = "/fm.internal.Internal/RefreshSession"
+	Internal_LogoutSession_FullMethodName       = "/fm.internal.Internal/LogoutSession"
 )
 
 // InternalClient is the client API for Internal service.
@@ -38,7 +42,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InternalClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error)
-	GetCharacter(ctx context.Context, in *GetCharacterRequest, opts ...grpc.CallOption) (*GetCharacterReply, error)
+	GetServerCatalog(ctx context.Context, in *GetServerCatalogRequest, opts ...grpc.CallOption) (*GetServerCatalogReply, error)
+	EnterGame(ctx context.Context, in *EnterGameRequest, opts ...grpc.CallOption) (*EnterGameReply, error)
+	BeginGameTransition(ctx context.Context, in *BeginGameTransitionRequest, opts ...grpc.CallOption) (*BeginGameTransitionReply, error)
 	SaveCharacter(ctx context.Context, in *SaveCharacterRequest, opts ...grpc.CallOption) (*SaveCharacterReply, error)
 	SaveCharacters(ctx context.Context, in *SaveCharactersRequest, opts ...grpc.CallOption) (*SaveCharactersReply, error)
 	GetInventory(ctx context.Context, in *GetInventoryRequest, opts ...grpc.CallOption) (*GetInventoryReply, error)
@@ -49,6 +55,8 @@ type InternalClient interface {
 	CheckCharacterName(ctx context.Context, in *CheckCharacterNameRequest, opts ...grpc.CallOption) (*CheckCharacterNameReply, error)
 	CreateCharacter(ctx context.Context, in *CreateCharacterRequest, opts ...grpc.CallOption) (*CreateCharacterReply, error)
 	DeleteCharacter(ctx context.Context, in *DeleteCharacterRequest, opts ...grpc.CallOption) (*DeleteCharacterReply, error)
+	RefreshSession(ctx context.Context, in *RefreshSessionRequest, opts ...grpc.CallOption) (*RefreshSessionReply, error)
+	LogoutSession(ctx context.Context, in *LogoutSessionRequest, opts ...grpc.CallOption) (*LogoutSessionReply, error)
 }
 
 type internalClient struct {
@@ -69,10 +77,30 @@ func (c *internalClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc
 	return out, nil
 }
 
-func (c *internalClient) GetCharacter(ctx context.Context, in *GetCharacterRequest, opts ...grpc.CallOption) (*GetCharacterReply, error) {
+func (c *internalClient) GetServerCatalog(ctx context.Context, in *GetServerCatalogRequest, opts ...grpc.CallOption) (*GetServerCatalogReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetCharacterReply)
-	err := c.cc.Invoke(ctx, Internal_GetCharacter_FullMethodName, in, out, cOpts...)
+	out := new(GetServerCatalogReply)
+	err := c.cc.Invoke(ctx, Internal_GetServerCatalog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) EnterGame(ctx context.Context, in *EnterGameRequest, opts ...grpc.CallOption) (*EnterGameReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EnterGameReply)
+	err := c.cc.Invoke(ctx, Internal_EnterGame_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) BeginGameTransition(ctx context.Context, in *BeginGameTransitionRequest, opts ...grpc.CallOption) (*BeginGameTransitionReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BeginGameTransitionReply)
+	err := c.cc.Invoke(ctx, Internal_BeginGameTransition_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -179,12 +207,34 @@ func (c *internalClient) DeleteCharacter(ctx context.Context, in *DeleteCharacte
 	return out, nil
 }
 
+func (c *internalClient) RefreshSession(ctx context.Context, in *RefreshSessionRequest, opts ...grpc.CallOption) (*RefreshSessionReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RefreshSessionReply)
+	err := c.cc.Invoke(ctx, Internal_RefreshSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) LogoutSession(ctx context.Context, in *LogoutSessionRequest, opts ...grpc.CallOption) (*LogoutSessionReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LogoutSessionReply)
+	err := c.cc.Invoke(ctx, Internal_LogoutSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InternalServer is the server API for Internal service.
 // All implementations must embed UnimplementedInternalServer
 // for forward compatibility.
 type InternalServer interface {
 	Ping(context.Context, *PingRequest) (*PingReply, error)
-	GetCharacter(context.Context, *GetCharacterRequest) (*GetCharacterReply, error)
+	GetServerCatalog(context.Context, *GetServerCatalogRequest) (*GetServerCatalogReply, error)
+	EnterGame(context.Context, *EnterGameRequest) (*EnterGameReply, error)
+	BeginGameTransition(context.Context, *BeginGameTransitionRequest) (*BeginGameTransitionReply, error)
 	SaveCharacter(context.Context, *SaveCharacterRequest) (*SaveCharacterReply, error)
 	SaveCharacters(context.Context, *SaveCharactersRequest) (*SaveCharactersReply, error)
 	GetInventory(context.Context, *GetInventoryRequest) (*GetInventoryReply, error)
@@ -195,6 +245,8 @@ type InternalServer interface {
 	CheckCharacterName(context.Context, *CheckCharacterNameRequest) (*CheckCharacterNameReply, error)
 	CreateCharacter(context.Context, *CreateCharacterRequest) (*CreateCharacterReply, error)
 	DeleteCharacter(context.Context, *DeleteCharacterRequest) (*DeleteCharacterReply, error)
+	RefreshSession(context.Context, *RefreshSessionRequest) (*RefreshSessionReply, error)
+	LogoutSession(context.Context, *LogoutSessionRequest) (*LogoutSessionReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
 
@@ -208,8 +260,14 @@ type UnimplementedInternalServer struct{}
 func (UnimplementedInternalServer) Ping(context.Context, *PingRequest) (*PingReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedInternalServer) GetCharacter(context.Context, *GetCharacterRequest) (*GetCharacterReply, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetCharacter not implemented")
+func (UnimplementedInternalServer) GetServerCatalog(context.Context, *GetServerCatalogRequest) (*GetServerCatalogReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetServerCatalog not implemented")
+}
+func (UnimplementedInternalServer) EnterGame(context.Context, *EnterGameRequest) (*EnterGameReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method EnterGame not implemented")
+}
+func (UnimplementedInternalServer) BeginGameTransition(context.Context, *BeginGameTransitionRequest) (*BeginGameTransitionReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method BeginGameTransition not implemented")
 }
 func (UnimplementedInternalServer) SaveCharacter(context.Context, *SaveCharacterRequest) (*SaveCharacterReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SaveCharacter not implemented")
@@ -240,6 +298,12 @@ func (UnimplementedInternalServer) CreateCharacter(context.Context, *CreateChara
 }
 func (UnimplementedInternalServer) DeleteCharacter(context.Context, *DeleteCharacterRequest) (*DeleteCharacterReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteCharacter not implemented")
+}
+func (UnimplementedInternalServer) RefreshSession(context.Context, *RefreshSessionRequest) (*RefreshSessionReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RefreshSession not implemented")
+}
+func (UnimplementedInternalServer) LogoutSession(context.Context, *LogoutSessionRequest) (*LogoutSessionReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method LogoutSession not implemented")
 }
 func (UnimplementedInternalServer) mustEmbedUnimplementedInternalServer() {}
 func (UnimplementedInternalServer) testEmbeddedByValue()                  {}
@@ -280,20 +344,56 @@ func _Internal_Ping_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Internal_GetCharacter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCharacterRequest)
+func _Internal_GetServerCatalog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServerCatalogRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InternalServer).GetCharacter(ctx, in)
+		return srv.(InternalServer).GetServerCatalog(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Internal_GetCharacter_FullMethodName,
+		FullMethod: Internal_GetServerCatalog_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).GetCharacter(ctx, req.(*GetCharacterRequest))
+		return srv.(InternalServer).GetServerCatalog(ctx, req.(*GetServerCatalogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_EnterGame_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnterGameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).EnterGame(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_EnterGame_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).EnterGame(ctx, req.(*EnterGameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_BeginGameTransition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BeginGameTransitionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).BeginGameTransition(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_BeginGameTransition_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).BeginGameTransition(ctx, req.(*BeginGameTransitionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -478,6 +578,42 @@ func _Internal_DeleteCharacter_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_RefreshSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).RefreshSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_RefreshSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).RefreshSession(ctx, req.(*RefreshSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_LogoutSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).LogoutSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_LogoutSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).LogoutSession(ctx, req.(*LogoutSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Internal_ServiceDesc is the grpc.ServiceDesc for Internal service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -490,8 +626,16 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Internal_Ping_Handler,
 		},
 		{
-			MethodName: "GetCharacter",
-			Handler:    _Internal_GetCharacter_Handler,
+			MethodName: "GetServerCatalog",
+			Handler:    _Internal_GetServerCatalog_Handler,
+		},
+		{
+			MethodName: "EnterGame",
+			Handler:    _Internal_EnterGame_Handler,
+		},
+		{
+			MethodName: "BeginGameTransition",
+			Handler:    _Internal_BeginGameTransition_Handler,
 		},
 		{
 			MethodName: "SaveCharacter",
@@ -533,7 +677,15 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "DeleteCharacter",
 			Handler:    _Internal_DeleteCharacter_Handler,
 		},
+		{
+			MethodName: "RefreshSession",
+			Handler:    _Internal_RefreshSession_Handler,
+		},
+		{
+			MethodName: "LogoutSession",
+			Handler:    _Internal_LogoutSession_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "fminternal/ping.proto",
+	Metadata: "fminternal/internal_service.proto",
 }

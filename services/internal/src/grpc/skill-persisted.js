@@ -1,6 +1,6 @@
 "use strict";
 
-const messages = require("../../protobuf/fminternal/ping_pb");
+const messages = require("../../protobuf/fminternal/internal_service_pb");
 
 function fillMessageFromPersisted(msg, model) {
     msg.setCharacterId(model.characterId >>> 0);

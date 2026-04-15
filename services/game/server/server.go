@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -13,7 +14,7 @@ import (
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
-	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
@@ -35,7 +36,7 @@ type GameServer struct {
 	actorRegistry     *c_actor.ActorRegistry
 	nilMapActorPID    *actor.PID
 	characterListener entity.CharacterListener
-	internalClient    fminternalpb.InternalClient
+	internalClient    internal.InternalClient
 	internalConn      *grpc.ClientConn
 }
 
@@ -63,6 +64,7 @@ type GameContext interface {
 type GameConfig struct {
 	Host         string
 	Port         int
+	ChannelId    uint32
 	WzPath       string
 	WorldName    string
 	WorldId      uint32
@@ -114,7 +116,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 			log.Printf("internal grpc dial %q failed: %v", config.InternalAddr, err)
 		} else {
 			gs.internalConn = conn
-			gs.internalClient = fminternalpb.NewInternalClient(conn)
+			gs.internalClient = internal.NewInternalClient(conn)
 		}
 	}
 
@@ -338,6 +340,17 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	character := client.GetCharacter()
 	if character == nil {
 		return
+	}
+	if gs.internalClient != nil && character.AccountID != 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+		_, err := gs.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
+			WorldId:   gs.config.WorldId,
+			AccountId: character.AccountID,
+		})
+		cancel()
+		if err != nil {
+			log.Printf("LogoutSession (game disconnect) failed for account %d: %v", character.AccountID, err)
+		}
 	}
 	gs.saveCharacterAsync(character)
 	gs.runCharacterLogoutScript(character)

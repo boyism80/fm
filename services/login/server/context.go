@@ -2,15 +2,15 @@ package server
 
 import (
 	"github.com/boyism80/fm/core"
-	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
 type LoginServerContext struct {
 	packetHandler  *core.PacketHandler
-	InternalClient fminternalpb.InternalClient
+	InternalClient internal.InternalClient
 }
 
-func NewLoginServerContext(internalClient fminternalpb.InternalClient) *LoginServerContext {
+func NewLoginServerContext(internalClient internal.InternalClient) *LoginServerContext {
 	return &LoginServerContext{
 		packetHandler:  core.NewPacketHandler(),
 		InternalClient: internalClient,

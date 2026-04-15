@@ -1,14 +1,16 @@
 package response
 
-import (
-	"fmt"
+import "github.com/boyism80/fm/stream"
 
-	"github.com/boyism80/fm/stream"
-)
+type ServerChannel struct {
+	ChannelID uint16
+	Name      string
+	Load      uint32
+}
 
 type ServerList struct {
 	ServerId     uint8
-	ChannelSize  uint8
+	Channels     []ServerChannel
 	WorldName    string
 	Flag         byte
 	EventMessage string
@@ -25,14 +27,13 @@ func (s *ServerList) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteStr16(s.EventMessage)
 	writer.WriteU16(100)
 	writer.WriteU16(100)
-	writer.WriteU8(s.ChannelSize)
+	writer.WriteU8(uint8(len(s.Channels)))
 
-	for i := 1; i <= int(s.ChannelSize); i++ {
-		channelName := fmt.Sprintf("%s-%d", s.WorldName, i)
-		writer.WriteStr16(channelName)
-		writer.WriteU32(1200)
+	for _, ch := range s.Channels {
+		writer.WriteStr16(ch.Name)
+		writer.WriteU32(ch.Load)
 		writer.WriteU8(s.ServerId)
-		writer.WriteU16(uint16(i - 1))
+		writer.WriteU16(ch.ChannelID)
 	}
 
 	writer.WriteU16(1)

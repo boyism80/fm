@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/boyism80/fm/core"
-	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/core/async"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
@@ -36,16 +36,37 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		return fmt.Errorf("internal client not configured")
 	}
 
-	grpcCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	worldId := h.gs.config.WorldId
+	ic := h.gs.internalClient
 
-	reply, err := h.gs.internalClient.GetCharacter(grpcCtx, &fminternalpb.GetCharacterRequest{
-		WorldId:     h.gs.config.WorldId,
+	reqMsg := &internal.EnterGameRequest{
+		WorldId:     worldId,
 		CharacterId: req.PlayerId,
-	})
-	if err != nil {
-		return fmt.Errorf("GetCharacter rpc: %w", err)
+		ChannelId:   h.gs.config.ChannelId,
 	}
+
+	if ctx.ActorContext == nil {
+		log.Printf("LoginGame: no actor context, cannot run internal RPC")
+		return fmt.Errorf("login game: actor context required for internal RPC")
+	}
+
+	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.EnterGameReply, error) {
+			return ic.EnterGame(c, reqMsg)
+		}, func(reply *internal.EnterGameReply) error {
+			if !reply.GetFound() || reply.GetCharacter() == nil {
+				return fmt.Errorf("character %d not found", req.PlayerId)
+			}
+			return h.finishLoginGame(ctx, req, reply)
+		}).
+		OnError(func(err error) {
+			log.Printf("LoginGame (async): %v", err)
+		}).
+		Run()
+	return nil
+}
+
+func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginGame, reply *internal.EnterGameReply) error {
 	if !reply.GetFound() {
 		return fmt.Errorf("character %d not found", req.PlayerId)
 	}
@@ -120,7 +141,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	mapInstance := h.gs.GetMap(mapID)
 	if mapInstance == nil {
 		log.Printf("saved map %d not found, falling back to default", mapID)
-		defaultMapID, ok := h.gs.resources.NameToMap("헤네시스")
+		defaultMapID, ok := h.gs.resources.NameToMap("\xed\x97\xa4\xeb\x84\xa4\xec\x8b\x9c\xec\x8a\xa4")
 		if !ok {
 			return fmt.Errorf("default map not found")
 		}

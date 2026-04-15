@@ -10,11 +10,13 @@ const { AccountRepository } = require("./repos/account-repository");
 const { UnifiedRepository } = require("./repos/unified-repository");
 const { CharacterOverviewRepository } = require("./repos/character-overview-repository");
 const { SkillRepository } = require("./repos/skill-repository");
+const { SessionRepository } = require("./repos/session-repository");
 const { CharacterService } = require("./services/character-service");
 const { InventoryService } = require("./services/inventory-service");
 const { SkillService } = require("./services/skill-service");
 const { AccountService } = require("./services/account-service");
 const { CharacterOverviewService } = require("./services/character-overview-service");
+const { SessionService } = require("./services/session-service");
 
 function createAppContainer() {
     const internalConfig = loadConfig();
@@ -31,11 +33,13 @@ function createAppContainer() {
         unifiedRepository:           awilix.asClass(UnifiedRepository).singleton(),
         characterOverviewRepository: awilix.asClass(CharacterOverviewRepository).singleton(),
         skillRepository:             awilix.asClass(SkillRepository).singleton(),
+        sessionRepository:           awilix.asClass(SessionRepository).singleton(),
         characterService:            awilix.asClass(CharacterService).singleton(),
         inventoryService:            awilix.asClass(InventoryService).singleton(),
         skillService:                awilix.asClass(SkillService).singleton(),
         accountService:              awilix.asClass(AccountService).singleton(),
         characterOverviewService:    awilix.asClass(CharacterOverviewService).singleton(),
+        sessionService:              awilix.asClass(SessionService).singleton(),
     });
     return container;
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -11,7 +12,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
-	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	loginactor "github.com/boyism80/fm/services/login/actor"
 	"github.com/boyism80/fm/services/login/client"
 	"google.golang.org/grpc"
@@ -25,6 +26,8 @@ type LoginServer struct {
 	context        *LoginServerContext
 	actorSystem    *c_actor.ActorSystem
 	actorRegistry  *c_actor.ActorRegistry
+	worldCatalog   []*internal.WorldCatalog
+	channelRoutes  map[uint32]map[uint32]*internal.ChannelCatalog
 }
 
 func (ls *LoginServer) GetServer() *core.Server {
@@ -58,13 +61,12 @@ func (ls *LoginServer) handleClient(c core.Client) {
 }
 
 type LoginConfig struct {
-	Host           string
-	Port           int
-	GameServerHost string
-	GameServerPort int
-	InitialRole    uint32
-	InternalHost   string
-	InternalPort   int
+	Host         string
+	Port         int
+	WorldId      uint32
+	InitialRole  uint32
+	InternalHost string
+	InternalPort int
 }
 
 func (c *LoginConfig) internalAddr() string {
@@ -75,13 +77,16 @@ func (c *LoginConfig) internalAddr() string {
 }
 
 func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
-	var internalClient fminternalpb.InternalClient
+	if config.internalAddr() == "" {
+		return nil, fmt.Errorf("login server requires internal gRPC endpoint")
+	}
+	var internalClient internal.InternalClient
 	if addr := config.internalAddr(); addr != "" {
 		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, fmt.Errorf("internal gRPC dial %s: %w", addr, err)
 		}
-		internalClient = fminternalpb.NewInternalClient(conn)
+		internalClient = internal.NewInternalClient(conn)
 		log.Printf("Internal gRPC client connected to %s", addr)
 	}
 
@@ -115,14 +120,83 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		context:        context,
 		actorSystem:    actorSystem,
 		actorRegistry:  actorRegistry,
+		channelRoutes:  make(map[uint32]map[uint32]*internal.ChannelCatalog),
 	}
 	ls.packetHandlers.ls = ls
 
 	serverConfig.OnClientConnect = ls.handleClient
+	server.SetOnClientDisconnect(ls.handleClientDisconnect)
 
 	ls.registerPacketHandlers()
+	if err := ls.loadServerCatalog(); err != nil {
+		return nil, err
+	}
 
 	return ls, nil
+}
+
+func (ls *LoginServer) loadServerCatalog() error {
+	if ls.context.InternalClient == nil {
+		return fmt.Errorf("internal gRPC client is required")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+	defer cancel()
+	reply, err := ls.context.InternalClient.GetServerCatalog(ctx, &internal.GetServerCatalogRequest{})
+	if err != nil {
+		return fmt.Errorf("GetServerCatalog failed: %w", err)
+	}
+	if len(reply.GetWorlds()) == 0 {
+		return fmt.Errorf("GetServerCatalog returned no world definitions")
+	}
+	ls.worldCatalog = reply.GetWorlds()
+	for _, world := range ls.worldCatalog {
+		wid := world.GetWorldId()
+		if ls.channelRoutes[wid] == nil {
+			ls.channelRoutes[wid] = make(map[uint32]*internal.ChannelCatalog)
+		}
+		for _, ch := range world.GetChannels() {
+			ls.channelRoutes[wid][ch.GetChannelId()] = ch
+		}
+	}
+	return nil
+}
+
+func (ls *LoginServer) GetWorldCatalog() []*internal.WorldCatalog {
+	return ls.worldCatalog
+}
+
+func (ls *LoginServer) ResolveChannelRoute(worldId uint32, channelId uint32) (*internal.ChannelCatalog, bool) {
+	worldRoutes, ok := ls.channelRoutes[worldId]
+	if !ok {
+		return nil, false
+	}
+	route, ok := worldRoutes[channelId]
+	return route, ok
+}
+
+func (ls *LoginServer) handleClientDisconnect(c core.Client) {
+	ic := ls.context.InternalClient
+	if ic == nil {
+		return
+	}
+	loginClient, ok := c.(*client.LoginClient)
+	if !ok {
+		return
+	}
+	accountId := loginClient.GetAccountId()
+	if accountId == 0 {
+		return
+	}
+	worldId := loginClient.GetWorldId()
+	ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+	defer cancel()
+	_, err := ic.LogoutSession(ctx, &internal.LogoutSessionRequest{
+		WorldId:   worldId,
+		AccountId: accountId,
+	})
+	if err != nil {
+		log.Printf("LogoutSession (login disconnect) failed for world=%d account=%d: %v", worldId, accountId, err)
+	}
 }
 
 func (ls *LoginServer) Start() error {
@@ -133,7 +207,7 @@ func (ls *LoginServer) Start() error {
 	}
 
 	log.Printf("Login server started on %s:%d", ls.config.Host, ls.config.Port)
-	log.Printf("Game server redirect: %s:%d", ls.config.GameServerHost, ls.config.GameServerPort)
+	log.Printf("Loaded server catalog: worlds=%d", len(ls.worldCatalog))
 
 	return nil
 }
@@ -147,18 +221,16 @@ func (ls *LoginServer) GetStats() map[string]interface{} {
 	stats := ls.server.GetStats()
 
 	stats["server_type"] = "login"
-	stats["game_server_host"] = ls.config.GameServerHost
-	stats["game_server_port"] = ls.config.GameServerPort
+	stats["catalog_world_count"] = len(ls.worldCatalog)
 
 	return stats
 }
 
 func RunLoginServer() {
 	config := &LoginConfig{
-		Host:           "0.0.0.0",
-		Port:           8484,
-		GameServerHost: "localhost",
-		GameServerPort: 8485,
+		Host:    "0.0.0.0",
+		Port:    8484,
+		WorldId: 0,
 	}
 
 	ls, err := NewLoginServer(config)

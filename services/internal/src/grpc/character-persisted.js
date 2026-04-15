@@ -1,6 +1,6 @@
 "use strict";
 
-/** @param {import("../../protobuf/fminternal/ping_pb.js").CharacterPersisted} msg */
+/** @param {import("../../protobuf/fminternal/internal_service_pb.js").CharacterPersisted} msg */
 function fillMessageFromPersisted(msg, p) {
     msg.setCharacterId(p.characterId >>> 0);
     msg.setWorldId(p.worldId >>> 0);
@@ -33,7 +33,7 @@ function fillMessageFromPersisted(msg, p) {
     msg.setAccountId(p.accountId >>> 0);
 }
 
-/** @param {import("../../protobuf/fminternal/ping_pb.js").CharacterPersisted} msg */
+/** @param {import("../../protobuf/fminternal/internal_service_pb.js").CharacterPersisted} msg */
 function persistedFromMessage(msg) {
     return {
         characterId: msg.getCharacterId() >>> 0,

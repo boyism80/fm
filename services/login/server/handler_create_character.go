@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/dto"
-	fminternalpb "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/login/client"
@@ -44,7 +46,7 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 		return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
 	}
 
-	reply, err := ic.CreateCharacter(context.Background(), &fminternalpb.CreateCharacterRequest{
+	reqProto := &internal.CreateCharacterRequest{
 		AccountId:    loginClient.GetAccountId(),
 		WorldId:      loginClient.GetWorldId(),
 		Name:         req.Name,
@@ -55,13 +57,31 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 		BottomItemId: req.Bottom,
 		ShoesItemId:  req.Shoes,
 		WeaponItemId: req.Weapon,
-	})
-	if err != nil {
-		log.Printf("CreateCharacter RPC error: %v", err)
-		createResp := &response.CreateCharacter{Success: false}
-		return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
 	}
 
+	if ctx.ActorContext == nil {
+		log.Printf("CreateCharacter: no actor context, cannot run internal RPC")
+		createResp := &response.CreateCharacter{Success: false}
+		_ = ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
+		return fmt.Errorf("create character: actor context required for internal RPC")
+	}
+
+	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.CreateCharacterReply, error) {
+			return ic.CreateCharacter(c, reqProto)
+		}, func(reply *internal.CreateCharacterReply) error {
+			return h.sendCreateCharacterResult(ctx, reply)
+		}).
+		OnError(func(err error) {
+			log.Printf("CreateCharacter (async): %v", err)
+			createResp := &response.CreateCharacter{Success: false}
+			_ = ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
+		}).
+		Run()
+	return nil
+}
+
+func (h *CreateCharacter) sendCreateCharacterResult(ctx *core.ClientContext, reply *internal.CreateCharacterReply) error {
 	createResp := &response.CreateCharacter{
 		Success: reply.Success,
 	}
