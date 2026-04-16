@@ -61,6 +61,7 @@ type Character struct {
 	Equipments       map[constant.EquipmentPartsType]Equipment
 	Rings            RingContainer
 	Skills           *SkillContainer
+	keyLayout        *KeyLayout
 	CurrentShopID    uint32
 	Chair            uint32
 	LastHealHPTime   time.Time
@@ -883,8 +884,16 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 	}
 	ch.Buffs = NewBuffContainer(ch)
 	ch.Skills = NewSkillContainer(ch)
+	ch.keyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
 	return ch
+}
+
+func (ch *Character) KeyLayout() *KeyLayout {
+	if ch == nil {
+		return nil
+	}
+	return ch.keyLayout
 }
 
 func (ch *Character) GetCurrentDialog() *lua.LState {

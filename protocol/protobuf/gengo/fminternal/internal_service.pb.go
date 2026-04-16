@@ -73,7 +73,7 @@ func (x LoginAccountReply_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LoginAccountReply_Status.Descriptor instead.
 func (LoginAccountReply_Status) EnumDescriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{19, 0}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{20, 0}
 }
 
 type PingRequest struct {
@@ -700,19 +700,80 @@ func (x *CharacterPersisted) GetRole() uint32 {
 	return 0
 }
 
+type KeyLayoutBinding struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Slot          int32                  `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty"`
+	Type          uint32                 `protobuf:"varint,2,opt,name=type,proto3" json:"type,omitempty"`
+	Action        int32                  `protobuf:"varint,3,opt,name=action,proto3" json:"action,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *KeyLayoutBinding) Reset() {
+	*x = KeyLayoutBinding{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *KeyLayoutBinding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KeyLayoutBinding) ProtoMessage() {}
+
+func (x *KeyLayoutBinding) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KeyLayoutBinding.ProtoReflect.Descriptor instead.
+func (*KeyLayoutBinding) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *KeyLayoutBinding) GetSlot() int32 {
+	if x != nil {
+		return x.Slot
+	}
+	return 0
+}
+
+func (x *KeyLayoutBinding) GetType() uint32 {
+	if x != nil {
+		return x.Type
+	}
+	return 0
+}
+
+func (x *KeyLayoutBinding) GetAction() int32 {
+	if x != nil {
+		return x.Action
+	}
+	return 0
+}
+
 type EnterGameReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Found         bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
 	Character     *CharacterPersisted    `protobuf:"bytes,2,opt,name=character,proto3" json:"character,omitempty"`
 	Inventory     []*InventoryPersisted  `protobuf:"bytes,3,rep,name=inventory,proto3" json:"inventory,omitempty"`
 	Skills        []*SkillPersisted      `protobuf:"bytes,4,rep,name=skills,proto3" json:"skills,omitempty"`
+	KeyLayout     []*KeyLayoutBinding    `protobuf:"bytes,5,rep,name=key_layout,json=keyLayout,proto3" json:"key_layout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EnterGameReply) Reset() {
 	*x = EnterGameReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[8]
+	mi := &file_fminternal_internal_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -724,7 +785,7 @@ func (x *EnterGameReply) String() string {
 func (*EnterGameReply) ProtoMessage() {}
 
 func (x *EnterGameReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[8]
+	mi := &file_fminternal_internal_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -737,7 +798,7 @@ func (x *EnterGameReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnterGameReply.ProtoReflect.Descriptor instead.
 func (*EnterGameReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{8}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *EnterGameReply) GetFound() bool {
@@ -768,6 +829,13 @@ func (x *EnterGameReply) GetSkills() []*SkillPersisted {
 	return nil
 }
 
+func (x *EnterGameReply) GetKeyLayout() []*KeyLayoutBinding {
+	if x != nil {
+		return x.KeyLayout
+	}
+	return nil
+}
+
 type BeginGameTransitionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
@@ -779,7 +847,7 @@ type BeginGameTransitionRequest struct {
 
 func (x *BeginGameTransitionRequest) Reset() {
 	*x = BeginGameTransitionRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[9]
+	mi := &file_fminternal_internal_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -791,7 +859,7 @@ func (x *BeginGameTransitionRequest) String() string {
 func (*BeginGameTransitionRequest) ProtoMessage() {}
 
 func (x *BeginGameTransitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[9]
+	mi := &file_fminternal_internal_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -804,7 +872,7 @@ func (x *BeginGameTransitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BeginGameTransitionRequest.ProtoReflect.Descriptor instead.
 func (*BeginGameTransitionRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{9}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *BeginGameTransitionRequest) GetWorldId() uint32 {
@@ -838,7 +906,7 @@ type BeginGameTransitionReply struct {
 
 func (x *BeginGameTransitionReply) Reset() {
 	*x = BeginGameTransitionReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[10]
+	mi := &file_fminternal_internal_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -850,7 +918,7 @@ func (x *BeginGameTransitionReply) String() string {
 func (*BeginGameTransitionReply) ProtoMessage() {}
 
 func (x *BeginGameTransitionReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[10]
+	mi := &file_fminternal_internal_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -863,7 +931,7 @@ func (x *BeginGameTransitionReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BeginGameTransitionReply.ProtoReflect.Descriptor instead.
 func (*BeginGameTransitionReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{10}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *BeginGameTransitionReply) GetOk() bool {
@@ -891,7 +959,7 @@ type SaveCharacterRequest struct {
 
 func (x *SaveCharacterRequest) Reset() {
 	*x = SaveCharacterRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[11]
+	mi := &file_fminternal_internal_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -903,7 +971,7 @@ func (x *SaveCharacterRequest) String() string {
 func (*SaveCharacterRequest) ProtoMessage() {}
 
 func (x *SaveCharacterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[11]
+	mi := &file_fminternal_internal_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -916,7 +984,7 @@ func (x *SaveCharacterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveCharacterRequest.ProtoReflect.Descriptor instead.
 func (*SaveCharacterRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{11}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SaveCharacterRequest) GetCharacter() *CharacterPersisted {
@@ -949,7 +1017,7 @@ type SaveCharacterReply struct {
 
 func (x *SaveCharacterReply) Reset() {
 	*x = SaveCharacterReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[12]
+	mi := &file_fminternal_internal_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -961,7 +1029,7 @@ func (x *SaveCharacterReply) String() string {
 func (*SaveCharacterReply) ProtoMessage() {}
 
 func (x *SaveCharacterReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[12]
+	mi := &file_fminternal_internal_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -974,7 +1042,7 @@ func (x *SaveCharacterReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveCharacterReply.ProtoReflect.Descriptor instead.
 func (*SaveCharacterReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{12}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SaveCharacterReply) GetOk() bool {
@@ -991,13 +1059,14 @@ type CharacterSaveEntry struct {
 	Overlays      map[int32]uint32       `protobuf:"bytes,3,rep,name=overlays,proto3" json:"overlays,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	Inventory     []*InventoryPersisted  `protobuf:"bytes,4,rep,name=inventory,proto3" json:"inventory,omitempty"`
 	Skills        []*SkillPersisted      `protobuf:"bytes,5,rep,name=skills,proto3" json:"skills,omitempty"`
+	KeyLayout     []*KeyLayoutBinding    `protobuf:"bytes,6,rep,name=key_layout,json=keyLayout,proto3" json:"key_layout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CharacterSaveEntry) Reset() {
 	*x = CharacterSaveEntry{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[13]
+	mi := &file_fminternal_internal_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1009,7 +1078,7 @@ func (x *CharacterSaveEntry) String() string {
 func (*CharacterSaveEntry) ProtoMessage() {}
 
 func (x *CharacterSaveEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[13]
+	mi := &file_fminternal_internal_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1022,7 +1091,7 @@ func (x *CharacterSaveEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CharacterSaveEntry.ProtoReflect.Descriptor instead.
 func (*CharacterSaveEntry) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{13}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CharacterSaveEntry) GetCharacter() *CharacterPersisted {
@@ -1060,6 +1129,13 @@ func (x *CharacterSaveEntry) GetSkills() []*SkillPersisted {
 	return nil
 }
 
+func (x *CharacterSaveEntry) GetKeyLayout() []*KeyLayoutBinding {
+	if x != nil {
+		return x.KeyLayout
+	}
+	return nil
+}
+
 type SaveCharactersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Entries       []*CharacterSaveEntry  `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
@@ -1069,7 +1145,7 @@ type SaveCharactersRequest struct {
 
 func (x *SaveCharactersRequest) Reset() {
 	*x = SaveCharactersRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[14]
+	mi := &file_fminternal_internal_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1081,7 +1157,7 @@ func (x *SaveCharactersRequest) String() string {
 func (*SaveCharactersRequest) ProtoMessage() {}
 
 func (x *SaveCharactersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[14]
+	mi := &file_fminternal_internal_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1094,7 +1170,7 @@ func (x *SaveCharactersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveCharactersRequest.ProtoReflect.Descriptor instead.
 func (*SaveCharactersRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{14}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SaveCharactersRequest) GetEntries() []*CharacterSaveEntry {
@@ -1113,7 +1189,7 @@ type SaveCharactersReply struct {
 
 func (x *SaveCharactersReply) Reset() {
 	*x = SaveCharactersReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[15]
+	mi := &file_fminternal_internal_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1125,7 +1201,7 @@ func (x *SaveCharactersReply) String() string {
 func (*SaveCharactersReply) ProtoMessage() {}
 
 func (x *SaveCharactersReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[15]
+	mi := &file_fminternal_internal_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1138,7 +1214,7 @@ func (x *SaveCharactersReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveCharactersReply.ProtoReflect.Descriptor instead.
 func (*SaveCharactersReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{15}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SaveCharactersReply) GetOk() bool {
@@ -1166,7 +1242,7 @@ type InventoryPersisted struct {
 
 func (x *InventoryPersisted) Reset() {
 	*x = InventoryPersisted{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[16]
+	mi := &file_fminternal_internal_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1178,7 +1254,7 @@ func (x *InventoryPersisted) String() string {
 func (*InventoryPersisted) ProtoMessage() {}
 
 func (x *InventoryPersisted) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[16]
+	mi := &file_fminternal_internal_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1191,7 +1267,7 @@ func (x *InventoryPersisted) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InventoryPersisted.ProtoReflect.Descriptor instead.
 func (*InventoryPersisted) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{16}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *InventoryPersisted) GetUniqueId() int64 {
@@ -1277,7 +1353,7 @@ type SkillPersisted struct {
 
 func (x *SkillPersisted) Reset() {
 	*x = SkillPersisted{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[17]
+	mi := &file_fminternal_internal_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1289,7 +1365,7 @@ func (x *SkillPersisted) String() string {
 func (*SkillPersisted) ProtoMessage() {}
 
 func (x *SkillPersisted) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[17]
+	mi := &file_fminternal_internal_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1302,7 +1378,7 @@ func (x *SkillPersisted) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SkillPersisted.ProtoReflect.Descriptor instead.
 func (*SkillPersisted) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{17}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SkillPersisted) GetCharacterId() uint32 {
@@ -1353,7 +1429,7 @@ type LoginAccountRequest struct {
 
 func (x *LoginAccountRequest) Reset() {
 	*x = LoginAccountRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[18]
+	mi := &file_fminternal_internal_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1365,7 +1441,7 @@ func (x *LoginAccountRequest) String() string {
 func (*LoginAccountRequest) ProtoMessage() {}
 
 func (x *LoginAccountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[18]
+	mi := &file_fminternal_internal_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1378,7 +1454,7 @@ func (x *LoginAccountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginAccountRequest.ProtoReflect.Descriptor instead.
 func (*LoginAccountRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{18}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *LoginAccountRequest) GetLoginId() string {
@@ -1431,7 +1507,7 @@ type LoginAccountReply struct {
 
 func (x *LoginAccountReply) Reset() {
 	*x = LoginAccountReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[19]
+	mi := &file_fminternal_internal_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1443,7 +1519,7 @@ func (x *LoginAccountReply) String() string {
 func (*LoginAccountReply) ProtoMessage() {}
 
 func (x *LoginAccountReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[19]
+	mi := &file_fminternal_internal_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1456,7 +1532,7 @@ func (x *LoginAccountReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginAccountReply.ProtoReflect.Descriptor instead.
 func (*LoginAccountReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{19}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *LoginAccountReply) GetStatus() LoginAccountReply_Status {
@@ -1534,7 +1610,7 @@ type CharacterOverview struct {
 
 func (x *CharacterOverview) Reset() {
 	*x = CharacterOverview{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[20]
+	mi := &file_fminternal_internal_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1546,7 +1622,7 @@ func (x *CharacterOverview) String() string {
 func (*CharacterOverview) ProtoMessage() {}
 
 func (x *CharacterOverview) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[20]
+	mi := &file_fminternal_internal_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1559,7 +1635,7 @@ func (x *CharacterOverview) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CharacterOverview.ProtoReflect.Descriptor instead.
 func (*CharacterOverview) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{20}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *CharacterOverview) GetCharacterId() uint32 {
@@ -1698,7 +1774,7 @@ type GetCharacterListRequest struct {
 
 func (x *GetCharacterListRequest) Reset() {
 	*x = GetCharacterListRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[21]
+	mi := &file_fminternal_internal_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1710,7 +1786,7 @@ func (x *GetCharacterListRequest) String() string {
 func (*GetCharacterListRequest) ProtoMessage() {}
 
 func (x *GetCharacterListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[21]
+	mi := &file_fminternal_internal_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1723,7 +1799,7 @@ func (x *GetCharacterListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCharacterListRequest.ProtoReflect.Descriptor instead.
 func (*GetCharacterListRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{21}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *GetCharacterListRequest) GetAccountId() uint32 {
@@ -1750,7 +1826,7 @@ type GetCharacterListReply struct {
 
 func (x *GetCharacterListReply) Reset() {
 	*x = GetCharacterListReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[22]
+	mi := &file_fminternal_internal_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1762,7 +1838,7 @@ func (x *GetCharacterListReply) String() string {
 func (*GetCharacterListReply) ProtoMessage() {}
 
 func (x *GetCharacterListReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[22]
+	mi := &file_fminternal_internal_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1775,7 +1851,7 @@ func (x *GetCharacterListReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCharacterListReply.ProtoReflect.Descriptor instead.
 func (*GetCharacterListReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{22}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetCharacterListReply) GetCharacters() []*CharacterOverview {
@@ -1801,7 +1877,7 @@ type CheckCharacterNameRequest struct {
 
 func (x *CheckCharacterNameRequest) Reset() {
 	*x = CheckCharacterNameRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[23]
+	mi := &file_fminternal_internal_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1813,7 +1889,7 @@ func (x *CheckCharacterNameRequest) String() string {
 func (*CheckCharacterNameRequest) ProtoMessage() {}
 
 func (x *CheckCharacterNameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[23]
+	mi := &file_fminternal_internal_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1826,7 +1902,7 @@ func (x *CheckCharacterNameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckCharacterNameRequest.ProtoReflect.Descriptor instead.
 func (*CheckCharacterNameRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{23}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *CheckCharacterNameRequest) GetName() string {
@@ -1845,7 +1921,7 @@ type CheckCharacterNameReply struct {
 
 func (x *CheckCharacterNameReply) Reset() {
 	*x = CheckCharacterNameReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[24]
+	mi := &file_fminternal_internal_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1857,7 +1933,7 @@ func (x *CheckCharacterNameReply) String() string {
 func (*CheckCharacterNameReply) ProtoMessage() {}
 
 func (x *CheckCharacterNameReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[24]
+	mi := &file_fminternal_internal_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1870,7 +1946,7 @@ func (x *CheckCharacterNameReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckCharacterNameReply.ProtoReflect.Descriptor instead.
 func (*CheckCharacterNameReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{24}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *CheckCharacterNameReply) GetExists() bool {
@@ -1898,7 +1974,7 @@ type CreateCharacterRequest struct {
 
 func (x *CreateCharacterRequest) Reset() {
 	*x = CreateCharacterRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[25]
+	mi := &file_fminternal_internal_service_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1910,7 +1986,7 @@ func (x *CreateCharacterRequest) String() string {
 func (*CreateCharacterRequest) ProtoMessage() {}
 
 func (x *CreateCharacterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[25]
+	mi := &file_fminternal_internal_service_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1923,7 +1999,7 @@ func (x *CreateCharacterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCharacterRequest.ProtoReflect.Descriptor instead.
 func (*CreateCharacterRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{25}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *CreateCharacterRequest) GetAccountId() uint32 {
@@ -2007,7 +2083,7 @@ type CreateCharacterReply struct {
 
 func (x *CreateCharacterReply) Reset() {
 	*x = CreateCharacterReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[26]
+	mi := &file_fminternal_internal_service_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2019,7 +2095,7 @@ func (x *CreateCharacterReply) String() string {
 func (*CreateCharacterReply) ProtoMessage() {}
 
 func (x *CreateCharacterReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[26]
+	mi := &file_fminternal_internal_service_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2032,7 +2108,7 @@ func (x *CreateCharacterReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateCharacterReply.ProtoReflect.Descriptor instead.
 func (*CreateCharacterReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{26}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *CreateCharacterReply) GetSuccess() bool {
@@ -2066,7 +2142,7 @@ type DeleteCharacterRequest struct {
 
 func (x *DeleteCharacterRequest) Reset() {
 	*x = DeleteCharacterRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[27]
+	mi := &file_fminternal_internal_service_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2078,7 +2154,7 @@ func (x *DeleteCharacterRequest) String() string {
 func (*DeleteCharacterRequest) ProtoMessage() {}
 
 func (x *DeleteCharacterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[27]
+	mi := &file_fminternal_internal_service_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2091,7 +2167,7 @@ func (x *DeleteCharacterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCharacterRequest.ProtoReflect.Descriptor instead.
 func (*DeleteCharacterRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{27}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *DeleteCharacterRequest) GetAccountId() uint32 {
@@ -2117,7 +2193,7 @@ type DeleteCharacterReply struct {
 
 func (x *DeleteCharacterReply) Reset() {
 	*x = DeleteCharacterReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[28]
+	mi := &file_fminternal_internal_service_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2129,7 +2205,7 @@ func (x *DeleteCharacterReply) String() string {
 func (*DeleteCharacterReply) ProtoMessage() {}
 
 func (x *DeleteCharacterReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[28]
+	mi := &file_fminternal_internal_service_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2142,7 +2218,7 @@ func (x *DeleteCharacterReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCharacterReply.ProtoReflect.Descriptor instead.
 func (*DeleteCharacterReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{28}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *DeleteCharacterReply) GetSuccess() bool {
@@ -2162,7 +2238,7 @@ type RefreshSessionRequest struct {
 
 func (x *RefreshSessionRequest) Reset() {
 	*x = RefreshSessionRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[29]
+	mi := &file_fminternal_internal_service_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2174,7 +2250,7 @@ func (x *RefreshSessionRequest) String() string {
 func (*RefreshSessionRequest) ProtoMessage() {}
 
 func (x *RefreshSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[29]
+	mi := &file_fminternal_internal_service_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2187,7 +2263,7 @@ func (x *RefreshSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshSessionRequest.ProtoReflect.Descriptor instead.
 func (*RefreshSessionRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{29}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *RefreshSessionRequest) GetWorldId() uint32 {
@@ -2214,7 +2290,7 @@ type RefreshSessionReply struct {
 
 func (x *RefreshSessionReply) Reset() {
 	*x = RefreshSessionReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[30]
+	mi := &file_fminternal_internal_service_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2226,7 +2302,7 @@ func (x *RefreshSessionReply) String() string {
 func (*RefreshSessionReply) ProtoMessage() {}
 
 func (x *RefreshSessionReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[30]
+	mi := &file_fminternal_internal_service_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2239,7 +2315,7 @@ func (x *RefreshSessionReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshSessionReply.ProtoReflect.Descriptor instead.
 func (*RefreshSessionReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{30}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *RefreshSessionReply) GetOk() bool {
@@ -2266,7 +2342,7 @@ type LogoutSessionRequest struct {
 
 func (x *LogoutSessionRequest) Reset() {
 	*x = LogoutSessionRequest{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[31]
+	mi := &file_fminternal_internal_service_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2278,7 +2354,7 @@ func (x *LogoutSessionRequest) String() string {
 func (*LogoutSessionRequest) ProtoMessage() {}
 
 func (x *LogoutSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[31]
+	mi := &file_fminternal_internal_service_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2291,7 +2367,7 @@ func (x *LogoutSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutSessionRequest.ProtoReflect.Descriptor instead.
 func (*LogoutSessionRequest) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{31}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *LogoutSessionRequest) GetWorldId() uint32 {
@@ -2317,7 +2393,7 @@ type LogoutSessionReply struct {
 
 func (x *LogoutSessionReply) Reset() {
 	*x = LogoutSessionReply{}
-	mi := &file_fminternal_internal_service_proto_msgTypes[32]
+	mi := &file_fminternal_internal_service_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2329,7 +2405,7 @@ func (x *LogoutSessionReply) String() string {
 func (*LogoutSessionReply) ProtoMessage() {}
 
 func (x *LogoutSessionReply) ProtoReflect() protoreflect.Message {
-	mi := &file_fminternal_internal_service_proto_msgTypes[32]
+	mi := &file_fminternal_internal_service_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2342,7 +2418,7 @@ func (x *LogoutSessionReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutSessionReply.ProtoReflect.Descriptor instead.
 func (*LogoutSessionReply) Descriptor() ([]byte, []int) {
-	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{32}
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *LogoutSessionReply) GetOk() bool {
@@ -2416,12 +2492,18 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"skillPoint\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x1b \x01(\rR\taccountId\x12\x12\n" +
-	"\x04role\x18\x1c \x01(\rR\x04role\"\xd9\x01\n" +
+	"\x04role\x18\x1c \x01(\rR\x04role\"R\n" +
+	"\x10KeyLayoutBinding\x12\x12\n" +
+	"\x04slot\x18\x01 \x01(\x05R\x04slot\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\rR\x04type\x12\x16\n" +
+	"\x06action\x18\x03 \x01(\x05R\x06action\"\x97\x02\n" +
 	"\x0eEnterGameReply\x12\x14\n" +
 	"\x05found\x18\x01 \x01(\bR\x05found\x12=\n" +
 	"\tcharacter\x18\x02 \x01(\v2\x1f.fm.internal.CharacterPersistedR\tcharacter\x12=\n" +
 	"\tinventory\x18\x03 \x03(\v2\x1f.fm.internal.InventoryPersistedR\tinventory\x123\n" +
-	"\x06skills\x18\x04 \x03(\v2\x1b.fm.internal.SkillPersistedR\x06skills\"y\n" +
+	"\x06skills\x18\x04 \x03(\v2\x1b.fm.internal.SkillPersistedR\x06skills\x12<\n" +
+	"\n" +
+	"key_layout\x18\x05 \x03(\v2\x1d.fm.internal.KeyLayoutBindingR\tkeyLayout\"y\n" +
 	"\x1aBeginGameTransitionRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x1d\n" +
 	"\n" +
@@ -2443,14 +2525,16 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01\"$\n" +
 	"\x12SaveCharacterReply\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xdc\x03\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x9a\x04\n" +
 	"\x12CharacterSaveEntry\x12=\n" +
 	"\tcharacter\x18\x01 \x01(\v2\x1f.fm.internal.CharacterPersistedR\tcharacter\x12M\n" +
 	"\n" +
 	"base_looks\x18\x02 \x03(\v2..fm.internal.CharacterSaveEntry.BaseLooksEntryR\tbaseLooks\x12I\n" +
 	"\boverlays\x18\x03 \x03(\v2-.fm.internal.CharacterSaveEntry.OverlaysEntryR\boverlays\x12=\n" +
 	"\tinventory\x18\x04 \x03(\v2\x1f.fm.internal.InventoryPersistedR\tinventory\x123\n" +
-	"\x06skills\x18\x05 \x03(\v2\x1b.fm.internal.SkillPersistedR\x06skills\x1a<\n" +
+	"\x06skills\x18\x05 \x03(\v2\x1b.fm.internal.SkillPersistedR\x06skills\x12<\n" +
+	"\n" +
+	"key_layout\x18\x06 \x03(\v2\x1d.fm.internal.KeyLayoutBindingR\tkeyLayout\x1a<\n" +
 	"\x0eBaseLooksEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01\x1a;\n" +
@@ -2617,7 +2701,7 @@ func file_fminternal_internal_service_proto_rawDescGZIP() []byte {
 }
 
 var file_fminternal_internal_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_fminternal_internal_service_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
+var file_fminternal_internal_service_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
 var file_fminternal_internal_service_proto_goTypes = []any{
 	(LoginAccountReply_Status)(0),      // 0: fm.internal.LoginAccountReply.Status
 	(*PingRequest)(nil),                // 1: fm.internal.PingRequest
@@ -2628,89 +2712,92 @@ var file_fminternal_internal_service_proto_goTypes = []any{
 	(*GetServerCatalogReply)(nil),      // 6: fm.internal.GetServerCatalogReply
 	(*EnterGameRequest)(nil),           // 7: fm.internal.EnterGameRequest
 	(*CharacterPersisted)(nil),         // 8: fm.internal.CharacterPersisted
-	(*EnterGameReply)(nil),             // 9: fm.internal.EnterGameReply
-	(*BeginGameTransitionRequest)(nil), // 10: fm.internal.BeginGameTransitionRequest
-	(*BeginGameTransitionReply)(nil),   // 11: fm.internal.BeginGameTransitionReply
-	(*SaveCharacterRequest)(nil),       // 12: fm.internal.SaveCharacterRequest
-	(*SaveCharacterReply)(nil),         // 13: fm.internal.SaveCharacterReply
-	(*CharacterSaveEntry)(nil),         // 14: fm.internal.CharacterSaveEntry
-	(*SaveCharactersRequest)(nil),      // 15: fm.internal.SaveCharactersRequest
-	(*SaveCharactersReply)(nil),        // 16: fm.internal.SaveCharactersReply
-	(*InventoryPersisted)(nil),         // 17: fm.internal.InventoryPersisted
-	(*SkillPersisted)(nil),             // 18: fm.internal.SkillPersisted
-	(*LoginAccountRequest)(nil),        // 19: fm.internal.LoginAccountRequest
-	(*LoginAccountReply)(nil),          // 20: fm.internal.LoginAccountReply
-	(*CharacterOverview)(nil),          // 21: fm.internal.CharacterOverview
-	(*GetCharacterListRequest)(nil),    // 22: fm.internal.GetCharacterListRequest
-	(*GetCharacterListReply)(nil),      // 23: fm.internal.GetCharacterListReply
-	(*CheckCharacterNameRequest)(nil),  // 24: fm.internal.CheckCharacterNameRequest
-	(*CheckCharacterNameReply)(nil),    // 25: fm.internal.CheckCharacterNameReply
-	(*CreateCharacterRequest)(nil),     // 26: fm.internal.CreateCharacterRequest
-	(*CreateCharacterReply)(nil),       // 27: fm.internal.CreateCharacterReply
-	(*DeleteCharacterRequest)(nil),     // 28: fm.internal.DeleteCharacterRequest
-	(*DeleteCharacterReply)(nil),       // 29: fm.internal.DeleteCharacterReply
-	(*RefreshSessionRequest)(nil),      // 30: fm.internal.RefreshSessionRequest
-	(*RefreshSessionReply)(nil),        // 31: fm.internal.RefreshSessionReply
-	(*LogoutSessionRequest)(nil),       // 32: fm.internal.LogoutSessionRequest
-	(*LogoutSessionReply)(nil),         // 33: fm.internal.LogoutSessionReply
-	nil,                                // 34: fm.internal.SaveCharacterRequest.BaseLooksEntry
-	nil,                                // 35: fm.internal.SaveCharacterRequest.OverlaysEntry
-	nil,                                // 36: fm.internal.CharacterSaveEntry.BaseLooksEntry
-	nil,                                // 37: fm.internal.CharacterSaveEntry.OverlaysEntry
-	nil,                                // 38: fm.internal.CharacterOverview.BaseLooksEntry
-	nil,                                // 39: fm.internal.CharacterOverview.OverlaysEntry
+	(*KeyLayoutBinding)(nil),           // 9: fm.internal.KeyLayoutBinding
+	(*EnterGameReply)(nil),             // 10: fm.internal.EnterGameReply
+	(*BeginGameTransitionRequest)(nil), // 11: fm.internal.BeginGameTransitionRequest
+	(*BeginGameTransitionReply)(nil),   // 12: fm.internal.BeginGameTransitionReply
+	(*SaveCharacterRequest)(nil),       // 13: fm.internal.SaveCharacterRequest
+	(*SaveCharacterReply)(nil),         // 14: fm.internal.SaveCharacterReply
+	(*CharacterSaveEntry)(nil),         // 15: fm.internal.CharacterSaveEntry
+	(*SaveCharactersRequest)(nil),      // 16: fm.internal.SaveCharactersRequest
+	(*SaveCharactersReply)(nil),        // 17: fm.internal.SaveCharactersReply
+	(*InventoryPersisted)(nil),         // 18: fm.internal.InventoryPersisted
+	(*SkillPersisted)(nil),             // 19: fm.internal.SkillPersisted
+	(*LoginAccountRequest)(nil),        // 20: fm.internal.LoginAccountRequest
+	(*LoginAccountReply)(nil),          // 21: fm.internal.LoginAccountReply
+	(*CharacterOverview)(nil),          // 22: fm.internal.CharacterOverview
+	(*GetCharacterListRequest)(nil),    // 23: fm.internal.GetCharacterListRequest
+	(*GetCharacterListReply)(nil),      // 24: fm.internal.GetCharacterListReply
+	(*CheckCharacterNameRequest)(nil),  // 25: fm.internal.CheckCharacterNameRequest
+	(*CheckCharacterNameReply)(nil),    // 26: fm.internal.CheckCharacterNameReply
+	(*CreateCharacterRequest)(nil),     // 27: fm.internal.CreateCharacterRequest
+	(*CreateCharacterReply)(nil),       // 28: fm.internal.CreateCharacterReply
+	(*DeleteCharacterRequest)(nil),     // 29: fm.internal.DeleteCharacterRequest
+	(*DeleteCharacterReply)(nil),       // 30: fm.internal.DeleteCharacterReply
+	(*RefreshSessionRequest)(nil),      // 31: fm.internal.RefreshSessionRequest
+	(*RefreshSessionReply)(nil),        // 32: fm.internal.RefreshSessionReply
+	(*LogoutSessionRequest)(nil),       // 33: fm.internal.LogoutSessionRequest
+	(*LogoutSessionReply)(nil),         // 34: fm.internal.LogoutSessionReply
+	nil,                                // 35: fm.internal.SaveCharacterRequest.BaseLooksEntry
+	nil,                                // 36: fm.internal.SaveCharacterRequest.OverlaysEntry
+	nil,                                // 37: fm.internal.CharacterSaveEntry.BaseLooksEntry
+	nil,                                // 38: fm.internal.CharacterSaveEntry.OverlaysEntry
+	nil,                                // 39: fm.internal.CharacterOverview.BaseLooksEntry
+	nil,                                // 40: fm.internal.CharacterOverview.OverlaysEntry
 }
 var file_fminternal_internal_service_proto_depIdxs = []int32{
 	4,  // 0: fm.internal.WorldCatalog.channels:type_name -> fm.internal.ChannelCatalog
 	5,  // 1: fm.internal.GetServerCatalogReply.worlds:type_name -> fm.internal.WorldCatalog
 	8,  // 2: fm.internal.EnterGameReply.character:type_name -> fm.internal.CharacterPersisted
-	17, // 3: fm.internal.EnterGameReply.inventory:type_name -> fm.internal.InventoryPersisted
-	18, // 4: fm.internal.EnterGameReply.skills:type_name -> fm.internal.SkillPersisted
-	8,  // 5: fm.internal.SaveCharacterRequest.character:type_name -> fm.internal.CharacterPersisted
-	34, // 6: fm.internal.SaveCharacterRequest.base_looks:type_name -> fm.internal.SaveCharacterRequest.BaseLooksEntry
-	35, // 7: fm.internal.SaveCharacterRequest.overlays:type_name -> fm.internal.SaveCharacterRequest.OverlaysEntry
-	8,  // 8: fm.internal.CharacterSaveEntry.character:type_name -> fm.internal.CharacterPersisted
-	36, // 9: fm.internal.CharacterSaveEntry.base_looks:type_name -> fm.internal.CharacterSaveEntry.BaseLooksEntry
-	37, // 10: fm.internal.CharacterSaveEntry.overlays:type_name -> fm.internal.CharacterSaveEntry.OverlaysEntry
-	17, // 11: fm.internal.CharacterSaveEntry.inventory:type_name -> fm.internal.InventoryPersisted
-	18, // 12: fm.internal.CharacterSaveEntry.skills:type_name -> fm.internal.SkillPersisted
-	14, // 13: fm.internal.SaveCharactersRequest.entries:type_name -> fm.internal.CharacterSaveEntry
-	0,  // 14: fm.internal.LoginAccountReply.status:type_name -> fm.internal.LoginAccountReply.Status
-	38, // 15: fm.internal.CharacterOverview.base_looks:type_name -> fm.internal.CharacterOverview.BaseLooksEntry
-	39, // 16: fm.internal.CharacterOverview.overlays:type_name -> fm.internal.CharacterOverview.OverlaysEntry
-	21, // 17: fm.internal.GetCharacterListReply.characters:type_name -> fm.internal.CharacterOverview
-	21, // 18: fm.internal.CreateCharacterReply.character:type_name -> fm.internal.CharacterOverview
-	1,  // 19: fm.internal.Internal.Ping:input_type -> fm.internal.PingRequest
-	3,  // 20: fm.internal.Internal.GetServerCatalog:input_type -> fm.internal.GetServerCatalogRequest
-	7,  // 21: fm.internal.Internal.EnterGame:input_type -> fm.internal.EnterGameRequest
-	10, // 22: fm.internal.Internal.BeginGameTransition:input_type -> fm.internal.BeginGameTransitionRequest
-	12, // 23: fm.internal.Internal.SaveCharacter:input_type -> fm.internal.SaveCharacterRequest
-	15, // 24: fm.internal.Internal.SaveCharacters:input_type -> fm.internal.SaveCharactersRequest
-	19, // 25: fm.internal.Internal.LoginAccount:input_type -> fm.internal.LoginAccountRequest
-	22, // 26: fm.internal.Internal.GetCharacterList:input_type -> fm.internal.GetCharacterListRequest
-	24, // 27: fm.internal.Internal.CheckCharacterName:input_type -> fm.internal.CheckCharacterNameRequest
-	26, // 28: fm.internal.Internal.CreateCharacter:input_type -> fm.internal.CreateCharacterRequest
-	28, // 29: fm.internal.Internal.DeleteCharacter:input_type -> fm.internal.DeleteCharacterRequest
-	30, // 30: fm.internal.Internal.RefreshSession:input_type -> fm.internal.RefreshSessionRequest
-	32, // 31: fm.internal.Internal.LogoutSession:input_type -> fm.internal.LogoutSessionRequest
-	2,  // 32: fm.internal.Internal.Ping:output_type -> fm.internal.PingReply
-	6,  // 33: fm.internal.Internal.GetServerCatalog:output_type -> fm.internal.GetServerCatalogReply
-	9,  // 34: fm.internal.Internal.EnterGame:output_type -> fm.internal.EnterGameReply
-	11, // 35: fm.internal.Internal.BeginGameTransition:output_type -> fm.internal.BeginGameTransitionReply
-	13, // 36: fm.internal.Internal.SaveCharacter:output_type -> fm.internal.SaveCharacterReply
-	16, // 37: fm.internal.Internal.SaveCharacters:output_type -> fm.internal.SaveCharactersReply
-	20, // 38: fm.internal.Internal.LoginAccount:output_type -> fm.internal.LoginAccountReply
-	23, // 39: fm.internal.Internal.GetCharacterList:output_type -> fm.internal.GetCharacterListReply
-	25, // 40: fm.internal.Internal.CheckCharacterName:output_type -> fm.internal.CheckCharacterNameReply
-	27, // 41: fm.internal.Internal.CreateCharacter:output_type -> fm.internal.CreateCharacterReply
-	29, // 42: fm.internal.Internal.DeleteCharacter:output_type -> fm.internal.DeleteCharacterReply
-	31, // 43: fm.internal.Internal.RefreshSession:output_type -> fm.internal.RefreshSessionReply
-	33, // 44: fm.internal.Internal.LogoutSession:output_type -> fm.internal.LogoutSessionReply
-	32, // [32:45] is the sub-list for method output_type
-	19, // [19:32] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	18, // 3: fm.internal.EnterGameReply.inventory:type_name -> fm.internal.InventoryPersisted
+	19, // 4: fm.internal.EnterGameReply.skills:type_name -> fm.internal.SkillPersisted
+	9,  // 5: fm.internal.EnterGameReply.key_layout:type_name -> fm.internal.KeyLayoutBinding
+	8,  // 6: fm.internal.SaveCharacterRequest.character:type_name -> fm.internal.CharacterPersisted
+	35, // 7: fm.internal.SaveCharacterRequest.base_looks:type_name -> fm.internal.SaveCharacterRequest.BaseLooksEntry
+	36, // 8: fm.internal.SaveCharacterRequest.overlays:type_name -> fm.internal.SaveCharacterRequest.OverlaysEntry
+	8,  // 9: fm.internal.CharacterSaveEntry.character:type_name -> fm.internal.CharacterPersisted
+	37, // 10: fm.internal.CharacterSaveEntry.base_looks:type_name -> fm.internal.CharacterSaveEntry.BaseLooksEntry
+	38, // 11: fm.internal.CharacterSaveEntry.overlays:type_name -> fm.internal.CharacterSaveEntry.OverlaysEntry
+	18, // 12: fm.internal.CharacterSaveEntry.inventory:type_name -> fm.internal.InventoryPersisted
+	19, // 13: fm.internal.CharacterSaveEntry.skills:type_name -> fm.internal.SkillPersisted
+	9,  // 14: fm.internal.CharacterSaveEntry.key_layout:type_name -> fm.internal.KeyLayoutBinding
+	15, // 15: fm.internal.SaveCharactersRequest.entries:type_name -> fm.internal.CharacterSaveEntry
+	0,  // 16: fm.internal.LoginAccountReply.status:type_name -> fm.internal.LoginAccountReply.Status
+	39, // 17: fm.internal.CharacterOverview.base_looks:type_name -> fm.internal.CharacterOverview.BaseLooksEntry
+	40, // 18: fm.internal.CharacterOverview.overlays:type_name -> fm.internal.CharacterOverview.OverlaysEntry
+	22, // 19: fm.internal.GetCharacterListReply.characters:type_name -> fm.internal.CharacterOverview
+	22, // 20: fm.internal.CreateCharacterReply.character:type_name -> fm.internal.CharacterOverview
+	1,  // 21: fm.internal.Internal.Ping:input_type -> fm.internal.PingRequest
+	3,  // 22: fm.internal.Internal.GetServerCatalog:input_type -> fm.internal.GetServerCatalogRequest
+	7,  // 23: fm.internal.Internal.EnterGame:input_type -> fm.internal.EnterGameRequest
+	11, // 24: fm.internal.Internal.BeginGameTransition:input_type -> fm.internal.BeginGameTransitionRequest
+	13, // 25: fm.internal.Internal.SaveCharacter:input_type -> fm.internal.SaveCharacterRequest
+	16, // 26: fm.internal.Internal.SaveCharacters:input_type -> fm.internal.SaveCharactersRequest
+	20, // 27: fm.internal.Internal.LoginAccount:input_type -> fm.internal.LoginAccountRequest
+	23, // 28: fm.internal.Internal.GetCharacterList:input_type -> fm.internal.GetCharacterListRequest
+	25, // 29: fm.internal.Internal.CheckCharacterName:input_type -> fm.internal.CheckCharacterNameRequest
+	27, // 30: fm.internal.Internal.CreateCharacter:input_type -> fm.internal.CreateCharacterRequest
+	29, // 31: fm.internal.Internal.DeleteCharacter:input_type -> fm.internal.DeleteCharacterRequest
+	31, // 32: fm.internal.Internal.RefreshSession:input_type -> fm.internal.RefreshSessionRequest
+	33, // 33: fm.internal.Internal.LogoutSession:input_type -> fm.internal.LogoutSessionRequest
+	2,  // 34: fm.internal.Internal.Ping:output_type -> fm.internal.PingReply
+	6,  // 35: fm.internal.Internal.GetServerCatalog:output_type -> fm.internal.GetServerCatalogReply
+	10, // 36: fm.internal.Internal.EnterGame:output_type -> fm.internal.EnterGameReply
+	12, // 37: fm.internal.Internal.BeginGameTransition:output_type -> fm.internal.BeginGameTransitionReply
+	14, // 38: fm.internal.Internal.SaveCharacter:output_type -> fm.internal.SaveCharacterReply
+	17, // 39: fm.internal.Internal.SaveCharacters:output_type -> fm.internal.SaveCharactersReply
+	21, // 40: fm.internal.Internal.LoginAccount:output_type -> fm.internal.LoginAccountReply
+	24, // 41: fm.internal.Internal.GetCharacterList:output_type -> fm.internal.GetCharacterListReply
+	26, // 42: fm.internal.Internal.CheckCharacterName:output_type -> fm.internal.CheckCharacterNameReply
+	28, // 43: fm.internal.Internal.CreateCharacter:output_type -> fm.internal.CreateCharacterReply
+	30, // 44: fm.internal.Internal.DeleteCharacter:output_type -> fm.internal.DeleteCharacterReply
+	32, // 45: fm.internal.Internal.RefreshSession:output_type -> fm.internal.RefreshSessionReply
+	34, // 46: fm.internal.Internal.LogoutSession:output_type -> fm.internal.LogoutSessionReply
+	34, // [34:47] is the sub-list for method output_type
+	21, // [21:34] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_fminternal_internal_service_proto_init() }
@@ -2724,7 +2811,7 @@ func file_fminternal_internal_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_fminternal_internal_service_proto_rawDesc), len(file_fminternal_internal_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   39,
+			NumMessages:   40,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

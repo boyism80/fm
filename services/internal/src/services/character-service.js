@@ -4,6 +4,8 @@ const MAX_NAME_LEN = 32;
 const DEFAULT_MAP_ID = 10000;
 const DEFAULT_SPAWN = 3;
 const { EQUIP_SLOT, LOOK_SLOT } = require("../constants/equipment-slots");
+const { jsonStringToBindings, bindingsToJsonString } = require("../grpc/key-layout-io");
+const { getDefaultKeyLayoutBindings } = require("../constants/default-key-layout-bindings");
 
 class CharacterService {
     constructor(
@@ -13,6 +15,7 @@ class CharacterService {
         unifiedRepository,
         inventoryRepository,
         skillRepository,
+        keyLayoutRepository,
         appConfiguration
     ) {
         this.repo = characterRepository;
@@ -21,6 +24,7 @@ class CharacterService {
         this.unifiedRepo = unifiedRepository;
         this.inventoryRepo = inventoryRepository;
         this.skillRepo = skillRepository;
+        this.keyLayoutRepo = keyLayoutRepository;
         this.app = appConfiguration;
     }
 
@@ -69,6 +73,13 @@ class CharacterService {
         return this.repo.get(worldId, characterId);
     }
 
+    async getKeyLayoutBindings(worldId, characterId) {
+        this._assertWorld(worldId);
+        this._assertCharacterId(characterId);
+        const keyLayout = await this.keyLayoutRepo.get(worldId, characterId);
+        return jsonStringToBindings(keyLayout?.keyLayoutJson ?? "{}");
+    }
+
     async saveCharacter(persisted, baseLooks, overlays) {
         return this.saveCharacters([{ persisted, baseLooks, overlays }]);
     }
@@ -77,21 +88,21 @@ class CharacterService {
         if (!entries || entries.length === 0) return;
 
         const byWorld = new Map();
-        for (const { persisted, baseLooks, overlays, inventory, skills } of entries) {
+        for (const { persisted, baseLooks, overlays, inventory, skills, keyLayout } of entries) {
             this._assertWorld(persisted.worldId);
             this._assertCharacterId(persisted.characterId);
             this._assertAccountId(persisted.accountId);
             this._validatePersisted(persisted);
             const wid = persisted.worldId;
             if (!byWorld.has(wid)) byWorld.set(wid, []);
-            byWorld.get(wid).push({ persisted, baseLooks, overlays, inventory, skills });
+            byWorld.get(wid).push({ persisted, baseLooks, overlays, inventory, skills, keyLayout });
         }
 
         for (const [worldId, group] of byWorld) {
             const models = group.map(({ persisted }) => persisted);
             await this.repo.setAll(worldId, models);
 
-            for (const { persisted, baseLooks, overlays, inventory, skills } of group) {
+            for (const { persisted, baseLooks, overlays, inventory, skills, keyLayout } of group) {
                 if (!persisted.accountId) continue;
                 const overview = {
                     characterId:   persisted.characterId,
@@ -125,6 +136,11 @@ class CharacterService {
                     persisted.characterId,
                     skills ?? []
                 );
+                await this.keyLayoutRepo.set(persisted.worldId, {
+                    characterId: persisted.characterId,
+                    worldId: persisted.worldId,
+                    keyLayoutJson: bindingsToJsonString(keyLayout ?? []),
+                });
             }
         }
     }
@@ -185,6 +201,11 @@ class CharacterService {
             skillPoint: 0,
         };
         await this.repo.set(wid, persisted);
+        await this.keyLayoutRepo.set(wid, {
+            characterId,
+            worldId: Number(wid),
+            keyLayoutJson: bindingsToJsonString(getDefaultKeyLayoutBindings()),
+        });
 
         const equips = [
             { itemId: topItemId, slot: EQUIP_SLOT.TOP, lookSlot: LOOK_SLOT.TOP, offset: 1n },
@@ -254,6 +275,7 @@ class CharacterService {
 
         await this.unifiedRepo.deleteCharacterName(characterId);
         await this.overviewRepo.delete({ worldId, accountId, characterId });
+        await this.keyLayoutRepo.delete({ worldId, characterId });
         return { success: true };
     }
 }

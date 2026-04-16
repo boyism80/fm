@@ -76,7 +76,6 @@ func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint
 	return
 }
 
-// ToPersisted builds internal.CharacterSaveEntry (character row, looks, inventory, skills). DB updated_at is set on write.
 func (ch *Character) ToPersisted(worldID uint32) *internal.CharacterSaveEntry {
 	if ch == nil {
 		return nil
@@ -122,10 +121,10 @@ func (ch *Character) ToPersisted(worldID uint32) *internal.CharacterSaveEntry {
 		Overlays:  overlays,
 		Inventory: ch.InventoryPersisted(),
 		Skills:    ch.SkillsPersisted(),
+		KeyLayout: ch.KeyLayout().ToPersisted(),
 	}
 }
 
-// InventoryPersisted returns inventory and equipment as internal.InventoryPersisted rows.
 func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {
 	items := make([]*internal.InventoryPersisted, 0, len(ch.Equipments)+64)
 	ownerID := ch.GetID()
@@ -143,7 +142,6 @@ func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {
 	return items
 }
 
-// SkillsPersisted returns skills as internal.SkillPersisted rows.
 func (ch *Character) SkillsPersisted() []*internal.SkillPersisted {
 	skills := make([]*internal.SkillPersisted, 0, 64)
 	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {

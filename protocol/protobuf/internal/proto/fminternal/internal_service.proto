@@ -84,11 +84,18 @@ message CharacterPersisted {
   uint32 role              = 28;
 }
 
+message KeyLayoutBinding {
+  int32  slot  = 1;
+  uint32 type  = 2;
+  int32  action = 3;
+}
+
 message EnterGameReply {
   bool                        found     = 1;
   CharacterPersisted          character = 2;
   repeated InventoryPersisted inventory = 3;
   repeated SkillPersisted     skills    = 4;
+  repeated KeyLayoutBinding   key_layout = 5;
 }
 
 message BeginGameTransitionRequest {
@@ -118,6 +125,7 @@ message CharacterSaveEntry {
   map<int32, uint32>     overlays   = 3;
   repeated InventoryPersisted inventory = 4;
   repeated SkillPersisted     skills    = 5;
+  repeated KeyLayoutBinding   key_layout = 6;
 }
 
 message SaveCharactersRequest {

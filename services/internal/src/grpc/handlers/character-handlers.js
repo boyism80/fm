@@ -1,6 +1,7 @@
 "use strict";
 
 const { persistedFromMessage: characterFromMessage } = require("../character-persisted");
+const { bindingsFromProtoList } = require("../key-layout-io");
 const { persistedFromMessage: inventoryFromMessage } = require("../inventory-persisted");
 const { persistedFromMessage: skillFromMessage } = require("../skill-persisted");
 
@@ -86,6 +87,7 @@ function createCharacterHandlers(
                         overlays: _protoMapToObject(entry.getOverlaysMap()),
                         inventory: entry.getInventoryList().map(inventoryFromMessage),
                         skills: entry.getSkillsList().map(skillFromMessage),
+                        keyLayout: bindingsFromProtoList(entry.getKeyLayoutList()),
                     };
                 });
                 await characterService.saveCharacters(entries);

@@ -41,6 +41,10 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}
 
+	if kl := character.KeyLayout(); kl != nil {
+		character.Send(&response.KeyMap{Slots: kl.Bindings()}, types.SEND_POLICY_ENCRYPT)
+	}
+
 	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
 		if viewer, ok := obj.(*entity.Character); ok {
 			character.SendSpawnSyncToViewer(viewer)

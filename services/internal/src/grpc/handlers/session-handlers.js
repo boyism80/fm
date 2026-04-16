@@ -1,6 +1,7 @@
 "use strict";
 
 const { fillMessageFromPersisted: fillCharacterMessage } = require("../character-persisted");
+const { makeKeyLayoutProtoList } = require("../key-layout-io");
 const { makeInventoryMessage } = require("../inventory-persisted");
 const { makeSkillMessage } = require("../skill-persisted");
 
@@ -68,9 +69,10 @@ function createSessionHandlers(
                     throw new Error(`attach game session failed: ${attach.code}`);
                 }
 
-                const [inventoryList, skillList] = await Promise.all([
+                const [inventoryList, skillList, keyLayoutBindings] = await Promise.all([
                     inventoryRepository.getAll(worldId, characterId).then((map) => [...map.values()]),
                     skillService.getSkills(worldId, characterId),
+                    characterService.getKeyLayoutBindings(worldId, characterId),
                 ]);
                 reply.setFound(true);
                 const ch = new messages.CharacterPersisted();
@@ -78,6 +80,7 @@ function createSessionHandlers(
                 reply.setCharacter(ch);
                 reply.setInventoryList(inventoryList.map(makeInventoryMessage));
                 reply.setSkillsList(skillList.map(makeSkillMessage));
+                reply.setKeyLayoutList(makeKeyLayoutProtoList(messages, keyLayoutBindings));
                 callback(null, reply);
             } catch (err) {
                 grpcError(err, callback);

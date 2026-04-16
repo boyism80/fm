@@ -105,6 +105,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	}
 
 	character := entity.NewCharacter(ctx.Client, h.gs.characterListener, initData, h.gs)
+	character.KeyLayout().LoadKeyLayoutProto(reply.GetKeyLayout())
 
 	character.LoadInventory(reply.GetInventory())
 	character.LoadSkills(reply.GetSkills())
