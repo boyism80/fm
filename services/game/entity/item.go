@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
@@ -34,6 +35,7 @@ type Item interface {
 	Clone(count uint16) Item
 	BindDrop(drop *Drop)
 	ToDTO() dto.Item
+	ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted
 }
 
 type Drop struct {
@@ -130,101 +132,6 @@ func (drop *Drop) ShouldExpire(now time.Time) bool {
 }
 func (drop *Drop) ShouldFFA(now time.Time) bool {
 	return drop.DropType != constant.DROP_TYPE_FFA && !drop.nextFFA.IsZero() && now.After(drop.nextFFA)
-}
-
-type PersistedItemData struct {
-	ItemId           uint32
-	UniqueId         int64
-	Count            uint16
-	Slot             int16
-	ExpirationUnixMs int64
-	EnchantChance    uint8
-	Flag             uint16
-	SkillBonus       uint16
-	OwnerName        string
-}
-
-func NewItemFromPersisted(data PersistedItemData, ctx GameContext) (Item, error) {
-	model, ok := ctx.GetResources().Items[data.ItemId]
-	if !ok {
-		return nil, fmt.Errorf("item model not found for ID: %d", data.ItemId)
-	}
-
-	expiration := util.TimeMax
-	if data.ExpirationUnixMs > 0 {
-		expiration = time.UnixMilli(data.ExpirationUnixMs)
-	}
-
-	switch m := model.(type) {
-	case wz.Equipment:
-		if !constant.IsEquipment(data.ItemId) {
-			return nil, fmt.Errorf("item %d: not equippable", data.ItemId)
-		}
-		core := &EquipmentCore{
-			ItemCore: &ItemCore{
-				Wz:         m,
-				Count:      1,
-				UniqueId:   data.UniqueId,
-				Expiration: expiration,
-			},
-			EnchantChance: data.EnchantChance,
-			OwnerName:     data.OwnerName,
-			Flag:          data.Flag,
-			SkillBonus:    data.SkillBonus,
-		}
-		switch constant.GetEquipmentType(data.ItemId) {
-		case constant.EquipmentTypeWeapon:
-			return &Weapon{EquipmentCore: core}, nil
-		case constant.EquipmentTypeShield:
-			return &Shield{EquipmentCore: core}, nil
-		case constant.EquipmentTypeCap:
-			return &Cap{EquipmentCore: core}, nil
-		case constant.EquipmentTypeCoat, constant.EquipmentTypeLongcoat:
-			return &Top{EquipmentCore: core}, nil
-		case constant.EquipmentTypePants:
-			return &Pants{EquipmentCore: core}, nil
-		case constant.EquipmentTypeShoes:
-			return &Shoes{EquipmentCore: core}, nil
-		case constant.EquipmentTypeGlove:
-			return &Glove{EquipmentCore: core}, nil
-		case constant.EquipmentTypeCape:
-			return &Cape{EquipmentCore: core}, nil
-		case constant.EquipmentTypeRing:
-			return &RingEquip{EquipmentCore: core}, nil
-		case constant.EquipmentTypeFace:
-			return &Face{EquipmentCore: core}, nil
-		case constant.EquipmentTypeAccessory:
-			return &Accessory{EquipmentCore: core}, nil
-		default:
-			return nil, fmt.Errorf("item %d: unsupported equipment type", data.ItemId)
-		}
-	case *wz.Consume:
-		return &Consume{
-			ItemCore:  &ItemCore{Wz: m, Count: data.Count, UniqueId: data.UniqueId, Expiration: expiration},
-			OwnerName: data.OwnerName,
-			Flags:     data.Flag,
-		}, nil
-	case *wz.Installation:
-		return &Installation{
-			ItemCore:  &ItemCore{Wz: m, Count: data.Count, UniqueId: data.UniqueId, Expiration: expiration},
-			OwnerName: data.OwnerName,
-			Flags:     data.Flag,
-		}, nil
-	case *wz.MiscItem:
-		return &MiscItem{
-			ItemCore:  &ItemCore{Wz: m, Count: data.Count, UniqueId: data.UniqueId, Expiration: expiration},
-			OwnerName: data.OwnerName,
-			Flags:     data.Flag,
-		}, nil
-	case *wz.CashItem:
-		return &CashItem{
-			ItemCore:  &ItemCore{Wz: m, Count: data.Count, UniqueId: data.UniqueId, Expiration: expiration},
-			OwnerName: data.OwnerName,
-			Flags:     data.Flag,
-		}, nil
-	default:
-		return nil, fmt.Errorf("item %d: unsupported item type", data.ItemId)
-	}
 }
 
 func NewItem(itemId uint32, count uint16, context GameContext) (Item, error) {

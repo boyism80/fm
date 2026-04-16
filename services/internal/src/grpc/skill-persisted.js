@@ -8,7 +8,6 @@ function fillMessageFromPersisted(msg, model) {
     msg.setLevel(model.level | 0);
     msg.setMasterLevel(model.masterLevel | 0);
     msg.setCooldownEndUnixMs(model.cooldownEndUnixMs ?? 0);
-    msg.setUpdatedAtUnixMs(model.updatedAt ? model.updatedAt.getTime() : 0);
 }
 
 function persistedFromMessage(msg) {
@@ -19,7 +18,6 @@ function persistedFromMessage(msg) {
         level:             msg.getLevel() | 0,
         masterLevel:       msg.getMasterLevel() | 0,
         cooldownEndUnixMs: cooldownMs > 0 ? cooldownMs : null,
-        updatedAt:         new Date(msg.getUpdatedAtUnixMs()),
     };
 }
 

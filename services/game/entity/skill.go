@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/boyism80/fm/services/game/wz"
@@ -14,35 +13,6 @@ type SkillEntry struct {
 	Expiration  time.Time
 	CooldownEnd *time.Time
 	Owner       *Character
-}
-
-type PersistedSkillData struct {
-	SkillId           uint32
-	Level             int
-	MasterLevel       int
-	CooldownEndUnixMs int64
-}
-
-func NewSkillEntryFromData(owner *Character, data PersistedSkillData, ctx GameContext) (*SkillEntry, error) {
-	if ctx == nil {
-		return nil, fmt.Errorf("nil GameContext")
-	}
-	resources := ctx.GetResources()
-	if resources == nil {
-		return nil, fmt.Errorf("nil resources")
-	}
-	w, ok := resources.Skills[data.SkillId]
-	if !ok {
-		return nil, fmt.Errorf("skill %d not found in resources", data.SkillId)
-	}
-	entry := NewSkillEntry(owner, w, data.Level, data.MasterLevel)
-	if data.CooldownEndUnixMs > 0 {
-		t := time.UnixMilli(data.CooldownEndUnixMs)
-		if time.Now().Before(t) {
-			entry.CooldownEnd = &t
-		}
-	}
-	return entry, nil
 }
 
 func NewSkillEntry(owner *Character, w *wz.Skill, level, masterLevel int) *SkillEntry {

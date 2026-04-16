@@ -887,36 +887,6 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 	return ch
 }
 
-func (ch *Character) LoadInventory(items []PersistedItemData) {
-	for _, data := range items {
-		item, err := NewItemFromPersisted(data, ch.Context)
-		if err != nil {
-			continue
-		}
-		if data.Slot < 0 {
-			parts := constant.EquipmentPartsType(data.Slot)
-			if eq, ok := item.(Equipment); ok {
-				ch.Equipments[parts] = eq
-			}
-		} else {
-			invType := constant.GetInventoryTypeByItemID(data.ItemId)
-			if inv, ok := ch.Inventory[invType]; ok {
-				inv.Items[data.Slot] = item
-			}
-		}
-	}
-}
-
-func (ch *Character) LoadSkills(skills []PersistedSkillData) {
-	for _, data := range skills {
-		entry, err := NewSkillEntryFromData(ch, data, ch.Context)
-		if err != nil {
-			continue
-		}
-		ch.Skills.Bind(data.SkillId, entry)
-	}
-}
-
 func (ch *Character) GetCurrentDialog() *lua.LState {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()

@@ -29,7 +29,6 @@ function fillMessageFromPersisted(msg, p) {
     msg.setStance(p.stance >>> 0);
     msg.setMeso(p.meso | 0);
     msg.setSkillPoint(p.skillPoint >>> 0);
-    msg.setUpdatedAtUnixMs(p.updatedAt ? new Date(p.updatedAt).getTime() : 0);
     msg.setAccountId(p.accountId >>> 0);
 }
 

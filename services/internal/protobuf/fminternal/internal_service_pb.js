@@ -1988,9 +1988,8 @@ proto.fm.internal.CharacterPersisted.toObject = function(includeInstance, msg) {
     stance: jspb.Message.getFieldWithDefault(msg, 24, 0),
     meso: jspb.Message.getFieldWithDefault(msg, 25, 0),
     skillPoint: jspb.Message.getFieldWithDefault(msg, 26, 0),
-    updatedAtUnixMs: jspb.Message.getFieldWithDefault(msg, 27, 0),
-    accountId: jspb.Message.getFieldWithDefault(msg, 28, 0),
-    role: jspb.Message.getFieldWithDefault(msg, 29, 0)
+    accountId: jspb.Message.getFieldWithDefault(msg, 27, 0),
+    role: jspb.Message.getFieldWithDefault(msg, 28, 0)
   };
 
   if (includeInstance) {
@@ -2132,14 +2131,10 @@ proto.fm.internal.CharacterPersisted.deserializeBinaryFromReader = function(msg,
       msg.setSkillPoint(value);
       break;
     case 27:
-      var value = /** @type {number} */ (reader.readInt64());
-      msg.setUpdatedAtUnixMs(value);
-      break;
-    case 28:
       var value = /** @type {number} */ (reader.readUint32());
       msg.setAccountId(value);
       break;
-    case 29:
+    case 28:
       var value = /** @type {number} */ (reader.readUint32());
       msg.setRole(value);
       break;
@@ -2354,24 +2349,17 @@ proto.fm.internal.CharacterPersisted.serializeBinaryToWriter = function(message,
       f
     );
   }
-  f = message.getUpdatedAtUnixMs();
-  if (f !== 0) {
-    writer.writeInt64(
-      27,
-      f
-    );
-  }
   f = message.getAccountId();
   if (f !== 0) {
     writer.writeUint32(
-      28,
+      27,
       f
     );
   }
   f = message.getRole();
   if (f !== 0) {
     writer.writeUint32(
-      29,
+      28,
       f
     );
   }
@@ -2847,10 +2835,10 @@ proto.fm.internal.CharacterPersisted.prototype.setSkillPoint = function(value) {
 
 
 /**
- * optional int64 updated_at_unix_ms = 27;
+ * optional uint32 account_id = 27;
  * @return {number}
  */
-proto.fm.internal.CharacterPersisted.prototype.getUpdatedAtUnixMs = function() {
+proto.fm.internal.CharacterPersisted.prototype.getAccountId = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 27, 0));
 };
 
@@ -2859,16 +2847,16 @@ proto.fm.internal.CharacterPersisted.prototype.getUpdatedAtUnixMs = function() {
  * @param {number} value
  * @return {!proto.fm.internal.CharacterPersisted} returns this
  */
-proto.fm.internal.CharacterPersisted.prototype.setUpdatedAtUnixMs = function(value) {
+proto.fm.internal.CharacterPersisted.prototype.setAccountId = function(value) {
   return jspb.Message.setProto3IntField(this, 27, value);
 };
 
 
 /**
- * optional uint32 account_id = 28;
+ * optional uint32 role = 28;
  * @return {number}
  */
-proto.fm.internal.CharacterPersisted.prototype.getAccountId = function() {
+proto.fm.internal.CharacterPersisted.prototype.getRole = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 28, 0));
 };
 
@@ -2877,26 +2865,8 @@ proto.fm.internal.CharacterPersisted.prototype.getAccountId = function() {
  * @param {number} value
  * @return {!proto.fm.internal.CharacterPersisted} returns this
  */
-proto.fm.internal.CharacterPersisted.prototype.setAccountId = function(value) {
-  return jspb.Message.setProto3IntField(this, 28, value);
-};
-
-
-/**
- * optional uint32 role = 29;
- * @return {number}
- */
-proto.fm.internal.CharacterPersisted.prototype.getRole = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 29, 0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.fm.internal.CharacterPersisted} returns this
- */
 proto.fm.internal.CharacterPersisted.prototype.setRole = function(value) {
-  return jspb.Message.setProto3IntField(this, 29, value);
+  return jspb.Message.setProto3IntField(this, 28, value);
 };
 
 
@@ -4552,8 +4522,7 @@ proto.fm.internal.InventoryPersisted.toObject = function(includeInstance, msg) {
     enchantChance: jspb.Message.getFieldWithDefault(msg, 7, 0),
     flag: jspb.Message.getFieldWithDefault(msg, 8, 0),
     skillBonus: jspb.Message.getFieldWithDefault(msg, 9, 0),
-    ownerName: jspb.Message.getFieldWithDefault(msg, 10, ""),
-    updatedAtUnixMs: jspb.Message.getFieldWithDefault(msg, 11, 0)
+    ownerName: jspb.Message.getFieldWithDefault(msg, 10, "")
   };
 
   if (includeInstance) {
@@ -4629,10 +4598,6 @@ proto.fm.internal.InventoryPersisted.deserializeBinaryFromReader = function(msg,
     case 10:
       var value = /** @type {string} */ (reader.readString());
       msg.setOwnerName(value);
-      break;
-    case 11:
-      var value = /** @type {number} */ (reader.readInt64());
-      msg.setUpdatedAtUnixMs(value);
       break;
     default:
       reader.skipField();
@@ -4730,13 +4695,6 @@ proto.fm.internal.InventoryPersisted.serializeBinaryToWriter = function(message,
   if (f.length > 0) {
     writer.writeString(
       10,
-      f
-    );
-  }
-  f = message.getUpdatedAtUnixMs();
-  if (f !== 0) {
-    writer.writeInt64(
-      11,
       f
     );
   }
@@ -4923,24 +4881,6 @@ proto.fm.internal.InventoryPersisted.prototype.setOwnerName = function(value) {
 };
 
 
-/**
- * optional int64 updated_at_unix_ms = 11;
- * @return {number}
- */
-proto.fm.internal.InventoryPersisted.prototype.getUpdatedAtUnixMs = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 11, 0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.fm.internal.InventoryPersisted} returns this
- */
-proto.fm.internal.InventoryPersisted.prototype.setUpdatedAtUnixMs = function(value) {
-  return jspb.Message.setProto3IntField(this, 11, value);
-};
-
-
 
 
 
@@ -4977,8 +4917,7 @@ proto.fm.internal.SkillPersisted.toObject = function(includeInstance, msg) {
     skillId: jspb.Message.getFieldWithDefault(msg, 2, 0),
     level: jspb.Message.getFieldWithDefault(msg, 3, 0),
     masterLevel: jspb.Message.getFieldWithDefault(msg, 4, 0),
-    cooldownEndUnixMs: jspb.Message.getFieldWithDefault(msg, 5, 0),
-    updatedAtUnixMs: jspb.Message.getFieldWithDefault(msg, 6, 0)
+    cooldownEndUnixMs: jspb.Message.getFieldWithDefault(msg, 5, 0)
   };
 
   if (includeInstance) {
@@ -5034,10 +4973,6 @@ proto.fm.internal.SkillPersisted.deserializeBinaryFromReader = function(msg, rea
     case 5:
       var value = /** @type {number} */ (reader.readInt64());
       msg.setCooldownEndUnixMs(value);
-      break;
-    case 6:
-      var value = /** @type {number} */ (reader.readInt64());
-      msg.setUpdatedAtUnixMs(value);
       break;
     default:
       reader.skipField();
@@ -5100,13 +5035,6 @@ proto.fm.internal.SkillPersisted.serializeBinaryToWriter = function(message, wri
   if (f !== 0) {
     writer.writeInt64(
       5,
-      f
-    );
-  }
-  f = message.getUpdatedAtUnixMs();
-  if (f !== 0) {
-    writer.writeInt64(
-      6,
       f
     );
   }
@@ -5200,24 +5128,6 @@ proto.fm.internal.SkillPersisted.prototype.getCooldownEndUnixMs = function() {
  */
 proto.fm.internal.SkillPersisted.prototype.setCooldownEndUnixMs = function(value) {
   return jspb.Message.setProto3IntField(this, 5, value);
-};
-
-
-/**
- * optional int64 updated_at_unix_ms = 6;
- * @return {number}
- */
-proto.fm.internal.SkillPersisted.prototype.getUpdatedAtUnixMs = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 6, 0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.fm.internal.SkillPersisted} returns this
- */
-proto.fm.internal.SkillPersisted.prototype.setUpdatedAtUnixMs = function(value) {
-  return jspb.Message.setProto3IntField(this, 6, value);
 };
 
 

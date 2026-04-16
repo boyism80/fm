@@ -13,7 +13,6 @@ function fillMessageFromPersisted(msg, model) {
     msg.setFlag((model.flag ?? 0) >>> 0);
     msg.setSkillBonus((model.skillBonus ?? 0) >>> 0);
     msg.setOwnerName(model.ownerName ?? "");
-    msg.setUpdatedAtUnixMs(model.updatedAt ? model.updatedAt.getTime() : 0);
 }
 
 function persistedFromMessage(msg) {
@@ -29,7 +28,6 @@ function persistedFromMessage(msg) {
         flag:          msg.getFlag() || null,
         skillBonus:    msg.getSkillBonus() || null,
         ownerName:     msg.getOwnerName() || null,
-        updatedAt:     new Date(msg.getUpdatedAtUnixMs()),
     };
 }
 

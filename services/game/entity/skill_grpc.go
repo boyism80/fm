@@ -1,0 +1,52 @@
+package entity
+
+import (
+	"fmt"
+	"time"
+
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+)
+
+// ToPersisted builds internal.SkillPersisted (skillID is the map key from SkillContainer).
+func (e *SkillEntry) ToPersisted(characterID uint32, skillID uint32) *internal.SkillPersisted {
+	if e == nil {
+		return nil
+	}
+	cooldownEnd := int64(0)
+	if e.CooldownEnd != nil {
+		cooldownEnd = e.CooldownEnd.UnixMilli()
+	}
+	return &internal.SkillPersisted{
+		CharacterId:       characterID,
+		SkillId:           skillID,
+		Level:             int32(e.Level()),
+		MasterLevel:       int32(e.MasterLevel),
+		CooldownEndUnixMs: cooldownEnd,
+	}
+}
+
+func NewSkillEntryFromInternalProto(owner *Character, pb *internal.SkillPersisted, ctx GameContext) (*SkillEntry, error) {
+	if pb == nil {
+		return nil, fmt.Errorf("nil SkillPersisted")
+	}
+	if ctx == nil {
+		return nil, fmt.Errorf("nil GameContext")
+	}
+	resources := ctx.GetResources()
+	if resources == nil {
+		return nil, fmt.Errorf("nil resources")
+	}
+	skillID := pb.GetSkillId()
+	w, ok := resources.Skills[skillID]
+	if !ok {
+		return nil, fmt.Errorf("skill %d not found in resources", skillID)
+	}
+	entry := NewSkillEntry(owner, w, int(pb.GetLevel()), int(pb.GetMasterLevel()))
+	if cd := pb.GetCooldownEndUnixMs(); cd > 0 {
+		t := time.UnixMilli(cd)
+		if time.Now().Before(t) {
+			entry.CooldownEnd = &t
+		}
+	}
+	return entry, nil
+}

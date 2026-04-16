@@ -441,38 +441,37 @@ func (x *EnterGameRequest) GetChannelId() uint32 {
 }
 
 type CharacterPersisted struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	CharacterId     uint32                 `protobuf:"varint,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
-	WorldId         uint32                 `protobuf:"varint,2,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
-	Name            string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Gender          uint32                 `protobuf:"varint,4,opt,name=gender,proto3" json:"gender,omitempty"`
-	SkinColor       uint32                 `protobuf:"varint,5,opt,name=skin_color,json=skinColor,proto3" json:"skin_color,omitempty"`
-	Face            uint32                 `protobuf:"varint,6,opt,name=face,proto3" json:"face,omitempty"`
-	Hair            uint32                 `protobuf:"varint,7,opt,name=hair,proto3" json:"hair,omitempty"`
-	Level           uint32                 `protobuf:"varint,8,opt,name=level,proto3" json:"level,omitempty"`
-	ClassId         uint32                 `protobuf:"varint,9,opt,name=class_id,json=classId,proto3" json:"class_id,omitempty"`
-	Str             uint32                 `protobuf:"varint,10,opt,name=str,proto3" json:"str,omitempty"`
-	Dex             uint32                 `protobuf:"varint,11,opt,name=dex,proto3" json:"dex,omitempty"`
-	IntStat         uint32                 `protobuf:"varint,12,opt,name=int_stat,json=intStat,proto3" json:"int_stat,omitempty"`
-	Luk             uint32                 `protobuf:"varint,13,opt,name=luk,proto3" json:"luk,omitempty"`
-	Hp              uint32                 `protobuf:"varint,14,opt,name=hp,proto3" json:"hp,omitempty"`
-	MaxHp           uint32                 `protobuf:"varint,15,opt,name=max_hp,json=maxHp,proto3" json:"max_hp,omitempty"`
-	Mp              uint32                 `protobuf:"varint,16,opt,name=mp,proto3" json:"mp,omitempty"`
-	MaxMp           uint32                 `protobuf:"varint,17,opt,name=max_mp,json=maxMp,proto3" json:"max_mp,omitempty"`
-	AbilityPoint    uint32                 `protobuf:"varint,18,opt,name=ability_point,json=abilityPoint,proto3" json:"ability_point,omitempty"`
-	Exp             uint32                 `protobuf:"varint,19,opt,name=exp,proto3" json:"exp,omitempty"`
-	MapId           uint32                 `protobuf:"varint,20,opt,name=map_id,json=mapId,proto3" json:"map_id,omitempty"`
-	SpawnPoint      uint32                 `protobuf:"varint,21,opt,name=spawn_point,json=spawnPoint,proto3" json:"spawn_point,omitempty"`
-	PositionX       int32                  `protobuf:"varint,22,opt,name=position_x,json=positionX,proto3" json:"position_x,omitempty"`
-	PositionY       int32                  `protobuf:"varint,23,opt,name=position_y,json=positionY,proto3" json:"position_y,omitempty"`
-	Stance          uint32                 `protobuf:"varint,24,opt,name=stance,proto3" json:"stance,omitempty"`
-	Meso            int32                  `protobuf:"varint,25,opt,name=meso,proto3" json:"meso,omitempty"`
-	SkillPoint      uint32                 `protobuf:"varint,26,opt,name=skill_point,json=skillPoint,proto3" json:"skill_point,omitempty"`
-	UpdatedAtUnixMs int64                  `protobuf:"varint,27,opt,name=updated_at_unix_ms,json=updatedAtUnixMs,proto3" json:"updated_at_unix_ms,omitempty"`
-	AccountId       uint32                 `protobuf:"varint,28,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
-	Role            uint32                 `protobuf:"varint,29,opt,name=role,proto3" json:"role,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CharacterId   uint32                 `protobuf:"varint,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	WorldId       uint32                 `protobuf:"varint,2,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Gender        uint32                 `protobuf:"varint,4,opt,name=gender,proto3" json:"gender,omitempty"`
+	SkinColor     uint32                 `protobuf:"varint,5,opt,name=skin_color,json=skinColor,proto3" json:"skin_color,omitempty"`
+	Face          uint32                 `protobuf:"varint,6,opt,name=face,proto3" json:"face,omitempty"`
+	Hair          uint32                 `protobuf:"varint,7,opt,name=hair,proto3" json:"hair,omitempty"`
+	Level         uint32                 `protobuf:"varint,8,opt,name=level,proto3" json:"level,omitempty"`
+	ClassId       uint32                 `protobuf:"varint,9,opt,name=class_id,json=classId,proto3" json:"class_id,omitempty"`
+	Str           uint32                 `protobuf:"varint,10,opt,name=str,proto3" json:"str,omitempty"`
+	Dex           uint32                 `protobuf:"varint,11,opt,name=dex,proto3" json:"dex,omitempty"`
+	IntStat       uint32                 `protobuf:"varint,12,opt,name=int_stat,json=intStat,proto3" json:"int_stat,omitempty"`
+	Luk           uint32                 `protobuf:"varint,13,opt,name=luk,proto3" json:"luk,omitempty"`
+	Hp            uint32                 `protobuf:"varint,14,opt,name=hp,proto3" json:"hp,omitempty"`
+	MaxHp         uint32                 `protobuf:"varint,15,opt,name=max_hp,json=maxHp,proto3" json:"max_hp,omitempty"`
+	Mp            uint32                 `protobuf:"varint,16,opt,name=mp,proto3" json:"mp,omitempty"`
+	MaxMp         uint32                 `protobuf:"varint,17,opt,name=max_mp,json=maxMp,proto3" json:"max_mp,omitempty"`
+	AbilityPoint  uint32                 `protobuf:"varint,18,opt,name=ability_point,json=abilityPoint,proto3" json:"ability_point,omitempty"`
+	Exp           uint32                 `protobuf:"varint,19,opt,name=exp,proto3" json:"exp,omitempty"`
+	MapId         uint32                 `protobuf:"varint,20,opt,name=map_id,json=mapId,proto3" json:"map_id,omitempty"`
+	SpawnPoint    uint32                 `protobuf:"varint,21,opt,name=spawn_point,json=spawnPoint,proto3" json:"spawn_point,omitempty"`
+	PositionX     int32                  `protobuf:"varint,22,opt,name=position_x,json=positionX,proto3" json:"position_x,omitempty"`
+	PositionY     int32                  `protobuf:"varint,23,opt,name=position_y,json=positionY,proto3" json:"position_y,omitempty"`
+	Stance        uint32                 `protobuf:"varint,24,opt,name=stance,proto3" json:"stance,omitempty"`
+	Meso          int32                  `protobuf:"varint,25,opt,name=meso,proto3" json:"meso,omitempty"`
+	SkillPoint    uint32                 `protobuf:"varint,26,opt,name=skill_point,json=skillPoint,proto3" json:"skill_point,omitempty"`
+	AccountId     uint32                 `protobuf:"varint,27,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	Role          uint32                 `protobuf:"varint,28,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CharacterPersisted) Reset() {
@@ -683,13 +682,6 @@ func (x *CharacterPersisted) GetMeso() int32 {
 func (x *CharacterPersisted) GetSkillPoint() uint32 {
 	if x != nil {
 		return x.SkillPoint
-	}
-	return 0
-}
-
-func (x *CharacterPersisted) GetUpdatedAtUnixMs() int64 {
-	if x != nil {
-		return x.UpdatedAtUnixMs
 	}
 	return 0
 }
@@ -1168,7 +1160,6 @@ type InventoryPersisted struct {
 	Flag             uint32                 `protobuf:"varint,8,opt,name=flag,proto3" json:"flag,omitempty"`
 	SkillBonus       uint32                 `protobuf:"varint,9,opt,name=skill_bonus,json=skillBonus,proto3" json:"skill_bonus,omitempty"`
 	OwnerName        string                 `protobuf:"bytes,10,opt,name=owner_name,json=ownerName,proto3" json:"owner_name,omitempty"`
-	UpdatedAtUnixMs  int64                  `protobuf:"varint,11,opt,name=updated_at_unix_ms,json=updatedAtUnixMs,proto3" json:"updated_at_unix_ms,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1273,13 +1264,6 @@ func (x *InventoryPersisted) GetOwnerName() string {
 	return ""
 }
 
-func (x *InventoryPersisted) GetUpdatedAtUnixMs() int64 {
-	if x != nil {
-		return x.UpdatedAtUnixMs
-	}
-	return 0
-}
-
 type SkillPersisted struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	CharacterId       uint32                 `protobuf:"varint,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
@@ -1287,7 +1271,6 @@ type SkillPersisted struct {
 	Level             int32                  `protobuf:"varint,3,opt,name=level,proto3" json:"level,omitempty"`
 	MasterLevel       int32                  `protobuf:"varint,4,opt,name=master_level,json=masterLevel,proto3" json:"master_level,omitempty"`
 	CooldownEndUnixMs int64                  `protobuf:"varint,5,opt,name=cooldown_end_unix_ms,json=cooldownEndUnixMs,proto3" json:"cooldown_end_unix_ms,omitempty"`
-	UpdatedAtUnixMs   int64                  `protobuf:"varint,6,opt,name=updated_at_unix_ms,json=updatedAtUnixMs,proto3" json:"updated_at_unix_ms,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1353,13 +1336,6 @@ func (x *SkillPersisted) GetMasterLevel() int32 {
 func (x *SkillPersisted) GetCooldownEndUnixMs() int64 {
 	if x != nil {
 		return x.CooldownEndUnixMs
-	}
-	return 0
-}
-
-func (x *SkillPersisted) GetUpdatedAtUnixMs() int64 {
-	if x != nil {
-		return x.UpdatedAtUnixMs
 	}
 	return 0
 }
@@ -2404,7 +2380,7 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12!\n" +
 	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\x12\x1d\n" +
 	"\n" +
-	"channel_id\x18\x03 \x01(\rR\tchannelId\"\xef\x05\n" +
+	"channel_id\x18\x03 \x01(\rR\tchannelId\"\xc2\x05\n" +
 	"\x12CharacterPersisted\x12!\n" +
 	"\fcharacter_id\x18\x01 \x01(\rR\vcharacterId\x12\x19\n" +
 	"\bworld_id\x18\x02 \x01(\rR\aworldId\x12\x12\n" +
@@ -2437,11 +2413,10 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\x06stance\x18\x18 \x01(\rR\x06stance\x12\x12\n" +
 	"\x04meso\x18\x19 \x01(\x05R\x04meso\x12\x1f\n" +
 	"\vskill_point\x18\x1a \x01(\rR\n" +
-	"skillPoint\x12+\n" +
-	"\x12updated_at_unix_ms\x18\x1b \x01(\x03R\x0fupdatedAtUnixMs\x12\x1d\n" +
+	"skillPoint\x12\x1d\n" +
 	"\n" +
-	"account_id\x18\x1c \x01(\rR\taccountId\x12\x12\n" +
-	"\x04role\x18\x1d \x01(\rR\x04role\"\xd9\x01\n" +
+	"account_id\x18\x1b \x01(\rR\taccountId\x12\x12\n" +
+	"\x04role\x18\x1c \x01(\rR\x04role\"\xd9\x01\n" +
 	"\x0eEnterGameReply\x12\x14\n" +
 	"\x05found\x18\x01 \x01(\bR\x05found\x12=\n" +
 	"\tcharacter\x18\x02 \x01(\v2\x1f.fm.internal.CharacterPersistedR\tcharacter\x12=\n" +
@@ -2485,7 +2460,7 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\x15SaveCharactersRequest\x129\n" +
 	"\aentries\x18\x01 \x03(\v2\x1f.fm.internal.CharacterSaveEntryR\aentries\"%\n" +
 	"\x13SaveCharactersReply\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xe5\x02\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xb8\x02\n" +
 	"\x12InventoryPersisted\x12\x1b\n" +
 	"\tunique_id\x18\x01 \x01(\x03R\buniqueId\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\rR\aownerId\x12\x17\n" +
@@ -2499,15 +2474,13 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"skillBonus\x12\x1d\n" +
 	"\n" +
 	"owner_name\x18\n" +
-	" \x01(\tR\townerName\x12+\n" +
-	"\x12updated_at_unix_ms\x18\v \x01(\x03R\x0fupdatedAtUnixMs\"\xe5\x01\n" +
+	" \x01(\tR\townerName\"\xb8\x01\n" +
 	"\x0eSkillPersisted\x12!\n" +
 	"\fcharacter_id\x18\x01 \x01(\rR\vcharacterId\x12\x19\n" +
 	"\bskill_id\x18\x02 \x01(\rR\askillId\x12\x14\n" +
 	"\x05level\x18\x03 \x01(\x05R\x05level\x12!\n" +
 	"\fmaster_level\x18\x04 \x01(\x05R\vmasterLevel\x12/\n" +
-	"\x14cooldown_end_unix_ms\x18\x05 \x01(\x03R\x11cooldownEndUnixMs\x12+\n" +
-	"\x12updated_at_unix_ms\x18\x06 \x01(\x03R\x0fupdatedAtUnixMs\"\xaf\x01\n" +
+	"\x14cooldown_end_unix_ms\x18\x05 \x01(\x03R\x11cooldownEndUnixMs\"\xaf\x01\n" +
 	"\x13LoginAccountRequest\x12\x19\n" +
 	"\blogin_id\x18\x01 \x01(\tR\aloginId\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1f\n" +

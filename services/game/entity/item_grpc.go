@@ -1,0 +1,205 @@
+package entity
+
+import (
+	"fmt"
+	"time"
+
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/util"
+)
+
+func expirationUnixMs(t time.Time) int64 {
+	if t.IsZero() || t.Equal(util.TimeMax) {
+		return 0
+	}
+	return t.UnixMilli()
+}
+
+func buildInventoryPersisted(item Item, ownerID uint32, slot int32, uniqueID int64, ownerName string, flag uint16, enchantChance uint8, skillBonus uint16) *internal.InventoryPersisted {
+	if item == nil {
+		return nil
+	}
+	return &internal.InventoryPersisted{
+		UniqueId:         uniqueID,
+		OwnerId:          ownerID,
+		ItemId:           item.GetModel().GetID(),
+		Slot:             slot,
+		Count:            uint32(item.GetCount()),
+		ExpirationUnixMs: expirationUnixMs(item.GetExpiration()),
+		EnchantChance:    uint32(enchantChance),
+		Flag:             uint32(flag),
+		SkillBonus:       uint32(skillBonus),
+		OwnerName:        ownerName,
+	}
+}
+
+func equipmentToInventoryPersisted(e Equipment, ownerID uint32, slot int32) *internal.InventoryPersisted {
+	if e == nil {
+		return nil
+	}
+	c := e.GetEquipmentCore()
+	if c == nil {
+		return nil
+	}
+	return buildInventoryPersisted(e, ownerID, slot, c.UniqueId, c.OwnerName, c.Flag, c.EnchantChance, c.SkillBonus)
+}
+
+func (item *Weapon) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Shield) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Cap) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Face) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Accessory) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Top) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Pants) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Shoes) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Glove) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Cape) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *RingEquip) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryPersisted(item, ownerID, slot)
+}
+
+func (item *Consume) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, item.OwnerName, item.Flags, 0, 0)
+}
+
+func (item *Installation) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, item.OwnerName, item.Flags, 0, 0)
+}
+
+func (item *MiscItem) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, item.OwnerName, item.Flags, 0, 0)
+}
+
+func (item *CashItem) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, item.OwnerName, item.Flags, 0, 0)
+}
+
+func (item *Pet) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, "", item.Flags, 0, 0)
+}
+
+func NewItemFromInternalProto(pb *internal.InventoryPersisted, ctx GameContext) (Item, error) {
+	if pb == nil {
+		return nil, fmt.Errorf("nil InventoryPersisted")
+	}
+	itemID := pb.GetItemId()
+	model, ok := ctx.GetResources().Items[itemID]
+	if !ok {
+		return nil, fmt.Errorf("item model not found for ID: %d", itemID)
+	}
+
+	expiration := util.TimeMax
+	if exp := pb.GetExpirationUnixMs(); exp > 0 {
+		expiration = time.UnixMilli(exp)
+	}
+
+	count := uint16(pb.GetCount())
+	uniqueID := pb.GetUniqueId()
+	ownerName := pb.GetOwnerName()
+	flag := uint16(pb.GetFlag())
+	enchantChance := uint8(pb.GetEnchantChance())
+	skillBonus := uint16(pb.GetSkillBonus())
+
+	switch m := model.(type) {
+	case wz.Equipment:
+		if !constant.IsEquipment(itemID) {
+			return nil, fmt.Errorf("item %d: not equippable", itemID)
+		}
+		core := &EquipmentCore{
+			ItemCore: &ItemCore{
+				Wz:         m,
+				Count:      1,
+				UniqueId:   uniqueID,
+				Expiration: expiration,
+			},
+			EnchantChance: enchantChance,
+			OwnerName:     ownerName,
+			Flag:          flag,
+			SkillBonus:    skillBonus,
+		}
+		switch constant.GetEquipmentType(itemID) {
+		case constant.EquipmentTypeWeapon:
+			return &Weapon{EquipmentCore: core}, nil
+		case constant.EquipmentTypeShield:
+			return &Shield{EquipmentCore: core}, nil
+		case constant.EquipmentTypeCap:
+			return &Cap{EquipmentCore: core}, nil
+		case constant.EquipmentTypeCoat, constant.EquipmentTypeLongcoat:
+			return &Top{EquipmentCore: core}, nil
+		case constant.EquipmentTypePants:
+			return &Pants{EquipmentCore: core}, nil
+		case constant.EquipmentTypeShoes:
+			return &Shoes{EquipmentCore: core}, nil
+		case constant.EquipmentTypeGlove:
+			return &Glove{EquipmentCore: core}, nil
+		case constant.EquipmentTypeCape:
+			return &Cape{EquipmentCore: core}, nil
+		case constant.EquipmentTypeRing:
+			return &RingEquip{EquipmentCore: core}, nil
+		case constant.EquipmentTypeFace:
+			return &Face{EquipmentCore: core}, nil
+		case constant.EquipmentTypeAccessory:
+			return &Accessory{EquipmentCore: core}, nil
+		default:
+			return nil, fmt.Errorf("item %d: unsupported equipment type", itemID)
+		}
+	case *wz.Consume:
+		return &Consume{
+			ItemCore:  &ItemCore{Wz: m, Count: count, UniqueId: uniqueID, Expiration: expiration},
+			OwnerName: ownerName,
+			Flags:     flag,
+		}, nil
+	case *wz.Installation:
+		return &Installation{
+			ItemCore:  &ItemCore{Wz: m, Count: count, UniqueId: uniqueID, Expiration: expiration},
+			OwnerName: ownerName,
+			Flags:     flag,
+		}, nil
+	case *wz.MiscItem:
+		return &MiscItem{
+			ItemCore:  &ItemCore{Wz: m, Count: count, UniqueId: uniqueID, Expiration: expiration},
+			OwnerName: ownerName,
+			Flags:     flag,
+		}, nil
+	case *wz.CashItem:
+		return &CashItem{
+			ItemCore:  &ItemCore{Wz: m, Count: count, UniqueId: uniqueID, Expiration: expiration},
+			OwnerName: ownerName,
+			Flags:     flag,
+		}, nil
+	default:
+		return nil, fmt.Errorf("item %d: unsupported item type", itemID)
+	}
+}

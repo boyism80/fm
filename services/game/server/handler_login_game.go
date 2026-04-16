@@ -106,32 +106,8 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	character := entity.NewCharacter(ctx.Client, h.gs.characterListener, initData, h.gs)
 
-	inventoryData := make([]entity.PersistedItemData, 0, len(reply.GetInventory()))
-	for _, inv := range reply.GetInventory() {
-		inventoryData = append(inventoryData, entity.PersistedItemData{
-			ItemId:           inv.GetItemId(),
-			UniqueId:         inv.GetUniqueId(),
-			Count:            uint16(inv.GetCount()),
-			Slot:             int16(inv.GetSlot()),
-			ExpirationUnixMs: inv.GetExpirationUnixMs(),
-			EnchantChance:    uint8(inv.GetEnchantChance()),
-			Flag:             uint16(inv.GetFlag()),
-			SkillBonus:       uint16(inv.GetSkillBonus()),
-			OwnerName:        inv.GetOwnerName(),
-		})
-	}
-	character.LoadInventory(inventoryData)
-
-	skillData := make([]entity.PersistedSkillData, 0, len(reply.GetSkills()))
-	for _, sk := range reply.GetSkills() {
-		skillData = append(skillData, entity.PersistedSkillData{
-			SkillId:           sk.GetSkillId(),
-			Level:             int(sk.GetLevel()),
-			MasterLevel:       int(sk.GetMasterLevel()),
-			CooldownEndUnixMs: sk.GetCooldownEndUnixMs(),
-		})
-	}
-	character.LoadSkills(skillData)
+	character.LoadInventory(reply.GetInventory())
+	character.LoadSkills(reply.GetSkills())
 
 	gameClient, ok := ctx.Client.(*client.GameClient)
 	if !ok {
