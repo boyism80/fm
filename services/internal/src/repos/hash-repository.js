@@ -28,11 +28,12 @@ class HashRepository extends Repository {
         throw new Error(`${this.constructor.name}.getMany is not supported for hash repositories`);
     }
 
-    async getAll(worldId, groupKey) {
+    async getAll(worldId, groupKey, options = undefined) {
         const hashKey = this.getRedisHashKey(worldId, groupKey);
         const redis = this._redis(worldId, groupKey);
+        const useCache = !options?.txClient;
 
-        if (await redis.exists(hashKey)) {
+        if (useCache && await redis.exists(hashKey)) {
             const fields = await redis.hgetall(hashKey);
             const result = new Map();
             if (fields) {
@@ -47,17 +48,19 @@ class HashRepository extends Repository {
 
         const pool = this._pool(worldId, groupKey);
         const { text, values } = this.onSelect(groupKey, worldId);
-        const res = await pool.query(text, values);
+        const res = await this._query(pool, text, values, options);
 
-        const pipeline = redis.pipeline();
-        pipeline.hset(hashKey, "_loaded", "1");
-        for (const row of res.rows) {
-            if (!row.deleted) {
-                pipeline.hset(hashKey, String(this.getItemKey(this.rowToModel(row))), JSON.stringify(row));
+        if (useCache) {
+            const pipeline = redis.pipeline();
+            pipeline.hset(hashKey, "_loaded", "1");
+            for (const row of res.rows) {
+                if (!row.deleted) {
+                    pipeline.hset(hashKey, String(this.getItemKey(this.rowToModel(row))), JSON.stringify(row));
+                }
             }
+            pipeline.expire(hashKey, this.getTtlSeconds());
+            await pipeline.exec();
         }
-        pipeline.expire(hashKey, this.getTtlSeconds());
-        await pipeline.exec();
 
         const result = new Map();
         for (const row of res.rows) {
@@ -69,19 +72,22 @@ class HashRepository extends Repository {
         return result;
     }
 
-    async setAll(worldId, models) {
+    async setAll(worldId, models, options = undefined) {
         const dbGroups = new Map();
         for (const model of models) {
             const pool = this._pool(worldId, this.getGroupKey(model));
             if (!dbGroups.has(pool)) dbGroups.set(pool, []);
             dbGroups.get(pool).push(model);
         }
+        if (options?.txClient && dbGroups.size > 1) {
+            throw new Error(`${this.constructor.name}.setAll with txClient supports only single data shard`);
+        }
 
         const saved = [];
         for (const [pool, groupModels] of dbGroups) {
             const rows = groupModels.map(m => this.modelToRow(m));
             const { text, values } = this.onBulkUpsert(rows);
-            const res = await pool.query(text, values);
+            const res = await this._query(pool, text, values, options);
 
             const byGroup = new Map();
             for (const savedRow of res.rows) {
@@ -94,7 +100,7 @@ class HashRepository extends Repository {
             for (const [groupKey, groupItems] of byGroup) {
                 const hashKey = this.getRedisHashKey(worldId, groupKey);
                 const redis = this._redis(worldId, groupKey);
-                if (await redis.exists(hashKey)) {
+                if (!options?.txClient && await redis.exists(hashKey)) {
                     const pipeline = redis.pipeline();
                     for (const { row, model } of groupItems) {
                         pipeline.hset(hashKey, String(this.getItemKey(model)), JSON.stringify(row));
@@ -108,31 +114,37 @@ class HashRepository extends Repository {
         return saved;
     }
 
-    async set(worldId, model) {
-        const result = await this.setAll(worldId, [model]);
+    async set(worldId, model, options = undefined) {
+        const result = await this.setAll(worldId, [model], options);
         return result[0];
     }
 
-    async delAll(worldId, groupKey, itemKeys) {
+    async delAll(worldId, groupKey, itemKeys, options = undefined) {
         if (!itemKeys.length) return;
         const pool = this._pool(worldId, groupKey);
         const { text, values } = this.onBulkDelete(itemKeys, groupKey, worldId);
-        await pool.query(text, values);
+        await this._query(pool, text, values, options);
 
         const hashKey = this.getRedisHashKey(worldId, groupKey);
         const redis = this._redis(worldId, groupKey);
-        if (await redis.exists(hashKey)) {
+        if (!options?.txClient && await redis.exists(hashKey)) {
             await redis.hdel(hashKey, ...itemKeys.map(String));
         }
     }
 
-    async del(worldId, groupKey, itemKey) {
-        return this.delAll(worldId, groupKey, [itemKey]);
+    async del(worldId, groupKey, itemKey, options = undefined) {
+        return this.delAll(worldId, groupKey, [itemKey], options);
     }
 
-    async delete(row) {
+    async delete(row, options = undefined) {
         const worldId = Number(row.worldId);
-        return this.del(worldId, this.getGroupKey(row), String(this.getItemKey(row)));
+        return this.del(worldId, this.getGroupKey(row), String(this.getItemKey(row)), options);
+    }
+
+    async evictGroupCache(worldId, groupKey) {
+        const hashKey = this.getRedisHashKey(worldId, groupKey);
+        const redis = this._redis(worldId, groupKey);
+        await redis.del(hashKey).catch(() => {});
     }
 }
 

@@ -41,6 +41,12 @@ rate:
 internal:
   host: "127.0.0.1"
   port: 50051
+rabbitmq:
+  ip: "127.0.0.1"
+  port: 5672
+  uid: "guest"
+  pwd: "guest"
+  vhost: "/fm"
 high_rate: false
 `))
 		log.Println("Notes:")
@@ -95,6 +101,7 @@ high_rate: false
 		DropRate:     g.Rate.Drop,
 		MesoRate:     g.Rate.Meso,
 		InternalAddr: g.Internal.GRPCAddr(),
+		RabbitMQ:     g.RabbitMQ,
 	}
 
 	gs, err := server.NewGameServer(srvCfg)

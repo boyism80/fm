@@ -1,0 +1,825 @@
+"use strict";
+
+const messages = require("../../protobuf/fminternal/internal_service_pb");
+
+const MAX_PARTY_MEMBERS = 6;
+const PARTY_STATE_ACTIVE = "ACTIVE";
+const EVT = {
+    CREATED: "created",
+    MEMBER_JOINED: "member_joined",
+    MEMBER_LEFT: "member_left",
+    DISBANDED: "disbanded",
+    LEADER_CHANGED: "leader_changed",
+    PARTY_SNAPSHOT: "party_snapshot",
+    LOG_ONOFF: "log_onoff",
+};
+
+const INVITE_PENDING_TTL_SEC = 300;
+
+class PartyService {
+    constructor(
+        internalContext,
+        appConfiguration,
+        partyRepository,
+        partyMemberRepository,
+        characterRealtimeStateRepository,
+        characterRepository,
+        unifiedRepository,
+        sessionRepository,
+        partyEventPublisher
+    ) {
+        this.ctx = internalContext;
+        this.app = appConfiguration;
+        this.partyRepo = partyRepository;
+        this.partyMemberRepo = partyMemberRepository;
+        this.characterRealtimeStateRepo = characterRealtimeStateRepository;
+        this.characterRepo = characterRepository;
+        this.unifiedRepo = unifiedRepository;
+        this.sessionRepo = sessionRepository;
+        this.partyEventPublisher = partyEventPublisher;
+    }
+
+    _invitePendingKey(keyPrefix, worldId, characterId) {
+        return `${keyPrefix}fm:w${worldId}:party:invite_pending:${characterId}`;
+    }
+
+    _assertWorld(worldId) {
+        const wid = String(worldId);
+        if (!this.app.postgresql.worlds[wid]) {
+            const err = new Error(`Unknown world_id: ${worldId}`);
+            err.code = "UNKNOWN_WORLD";
+            throw err;
+        }
+    }
+
+    _assertCharacterId(characterId) {
+        const n = Number(characterId);
+        if (!Number.isInteger(n) || n <= 0 || n > 0xffffffff) {
+            const err = new Error("character_id must be a positive uint32");
+            err.code = "INVALID_CHARACTER_ID";
+            throw err;
+        }
+    }
+
+    _assertPartyId(partyId) {
+        const n = Number(partyId);
+        if (!Number.isInteger(n) || n <= 0 || n > Number.MAX_SAFE_INTEGER) {
+            const err = new Error("party_id must be a positive integer");
+            err.code = "INVALID_PAYLOAD";
+            throw err;
+        }
+    }
+
+    _assertName(name) {
+        if (typeof name !== "string" || name.length <= 0 || name.length > 32) {
+            const err = new Error("character_name must be non-empty and <= 32 chars");
+            err.code = "INVALID_PAYLOAD";
+            throw err;
+        }
+    }
+
+    _assertUInt16(value, fieldName) {
+        const n = Number(value);
+        if (!Number.isInteger(n) || n < 0 || n > 0xffff) {
+            const err = new Error(`${fieldName} must be uint16`);
+            err.code = "INVALID_PAYLOAD";
+            throw err;
+        }
+    }
+
+    async _nextPartyId(worldId) {
+        const { client, keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
+        const key = `${keyPrefix}fm:w${worldId}:party:id:seq`;
+        return Number(await client.incr(key));
+    }
+
+    async _getCharacterSnapshot(worldId, characterId, fallback = {}, options = undefined) {
+        const character = await this.characterRepo.get(worldId, characterId, options);
+        return {
+            characterId: Number(characterId),
+            characterName: character?.name ?? fallback.characterName ?? "",
+            level: Number(character?.level ?? fallback.level ?? 1),
+            classId: Number(character?.classId ?? fallback.classId ?? 0),
+            mapId: Number(character?.mapId ?? fallback.mapId ?? 0),
+        };
+    }
+
+    async _publishPartyEvent(eventType, worldId, partyId, revision, extraPayload = {}) {
+        await this.partyEventPublisher.publish(eventType, worldId, partyId, revision, {
+            world_id: Number(worldId),
+            ...extraPayload,
+        });
+    }
+
+    _computePartyUiChannelIndex(sess) {
+        const ch = sess?.gameServer?.channelId;
+        const n = Number(ch);
+        if (ch == null || !Number.isFinite(n) || n < 0) {
+            return -2;
+        }
+        return n;
+    }
+
+    async _sessionChannelIndex(worldId, characterId) {
+        const sess = await this.sessionRepo.getCharacterSession(worldId, characterId);
+        return this._computePartyUiChannelIndex(sess);
+    }
+
+    _partySnapshotToPb(worldId, party, memberModels) {
+        const list = Array.isArray(memberModels) ? memberModels : [...memberModels.values()];
+        const p = new messages.PartySnapshot();
+        p.setWorldId(Number(worldId));
+        p.setPartyId(party.partyId);
+        p.setLeaderCharacterId(party.leaderCharacterId);
+        p.setRevision(Number(party.revision));
+        p.setState(String(party.state ?? ""));
+        p.setMembersList(
+            list.map((m) => {
+                const mm = new messages.PartyMemberSnapshot();
+                mm.setCharacterId(m.characterId);
+                mm.setCharacterName(String(m.characterName ?? ""));
+                mm.setLevel(Number(m.level ?? 0));
+                mm.setClassId(Number(m.classId ?? 0));
+                mm.setRole(String(m.role ?? ""));
+                mm.setMapId(Number(m.mapId ?? 0));
+                mm.setChannelIndex(Number(m.channelIndex ?? -2));
+                const d = m.door;
+                if (
+                    d &&
+                    typeof d === "object" &&
+                    Number.isFinite(Number(d.town)) &&
+                    Number.isFinite(Number(d.target)) &&
+                    Number.isFinite(Number(d.x)) &&
+                    Number.isFinite(Number(d.y))
+                ) {
+                    const pd = new messages.PartyDoor();
+                    pd.setTown(Number(d.town));
+                    pd.setTarget(Number(d.target));
+                    pd.setX(Number(d.x));
+                    pd.setY(Number(d.y));
+                    mm.setDoor(pd);
+                } else {
+                    mm.clearDoor();
+                }
+                return mm;
+            })
+        );
+        return p;
+    }
+
+    async reportPartyMemberSnapshot(worldId, characterId, level, classId, mapId, doorPayload) {
+        this._assertWorld(worldId);
+        this._assertCharacterId(characterId);
+        this._assertUInt16(level, "level");
+        this._assertUInt16(classId, "class_id");
+
+        let doorJson = null;
+        if (doorPayload != null) {
+            const town = Number(doorPayload.town);
+            const target = Number(doorPayload.target);
+            const x = Number(doorPayload.x);
+            const y = Number(doorPayload.y);
+            if (
+                Number.isFinite(town) &&
+                Number.isFinite(target) &&
+                Number.isFinite(x) &&
+                Number.isFinite(y)
+            ) {
+                doorJson = { town, target, x, y };
+            }
+        }
+
+        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
+            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
+            const partyId = Number(state?.partyId);
+            if (!Number.isFinite(partyId) || partyId <= 0) {
+                return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+            }
+            const party = await this.partyRepo.get(worldId, partyId, { txClient });
+            if (!party || party.state !== PARTY_STATE_ACTIVE) {
+                return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
+            }
+            const members = await this.partyMemberRepo.getAll(worldId, partyId, { txClient });
+            const self = members.get(String(characterId));
+            if (!self) {
+                return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+            }
+            await this.partyMemberRepo.set(
+                worldId,
+                {
+                    ...self,
+                    level: Number(level),
+                    classId: Number(classId),
+                    mapId: Number(mapId ?? 0),
+                    door: doorJson,
+                },
+                { txClient }
+            );
+            const nextRevision = Number(party.revision) + 1;
+            const updatedParty = await this.partyRepo.set(
+                worldId,
+                {
+                    ...party,
+                    revision: nextRevision,
+                },
+                { txClient }
+            );
+            return { ok: true, party: updatedParty, triggerCharacterId: characterId };
+        });
+        if (!result.ok) {
+            return result;
+        }
+
+        await this.partyRepo.evictCache(worldId, result.party.partyId);
+        await this.partyMemberRepo.evictGroupCache(worldId, result.party.partyId);
+
+        const membersMap = await this.partyMemberRepo.getAll(worldId, result.party.partyId);
+        const partyPb = this._partySnapshotToPb(worldId, result.party, [...membersMap.values()]);
+        const wire = partyPb.serializeBinary();
+        await this._publishPartyEvent(EVT.PARTY_SNAPSHOT, worldId, result.party.partyId, result.party.revision, {
+            trigger_character_id: Number(result.triggerCharacterId),
+            party_snapshot_pb: Buffer.from(wire).toString("base64"),
+        });
+
+        return { ok: true, partyId: result.party.partyId, revision: result.party.revision };
+    }
+
+    async applyMemberChannelIndex(worldId, characterId, channelIndex) {
+        this._assertWorld(worldId);
+        this._assertCharacterId(characterId);
+        const ch = Number(channelIndex);
+        if (!Number.isInteger(ch) || ch < -2) {
+            return;
+        }
+
+        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
+            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
+            const partyId = Number(state?.partyId);
+            if (!Number.isFinite(partyId) || partyId <= 0) {
+                return { skip: true };
+            }
+            const party = await this.partyRepo.get(worldId, partyId, { txClient });
+            if (!party || party.state !== PARTY_STATE_ACTIVE) {
+                return { skip: true };
+            }
+            const members = await this.partyMemberRepo.getAll(worldId, partyId, { txClient });
+            const self = members.get(String(characterId));
+            if (!self) {
+                return { skip: true };
+            }
+            if (Number(self.channelIndex) === ch) {
+                return { skip: true };
+            }
+            await this.partyMemberRepo.set(worldId, { ...self, channelIndex: ch }, { txClient });
+            const nextRevision = Number(party.revision) + 1;
+            const updatedParty = await this.partyRepo.set(
+                worldId,
+                {
+                    ...party,
+                    revision: nextRevision,
+                },
+                { txClient }
+            );
+            return { skip: false, party: updatedParty };
+        });
+
+        if (result.skip) {
+            return;
+        }
+
+        await this.partyRepo.evictCache(worldId, result.party.partyId);
+        await this.partyMemberRepo.evictGroupCache(worldId, result.party.partyId);
+
+        const membersMap = await this.partyMemberRepo.getAll(worldId, result.party.partyId);
+        const partyPb = this._partySnapshotToPb(worldId, result.party, [...membersMap.values()]);
+        const wire = partyPb.serializeBinary();
+        await this._publishPartyEvent(EVT.LOG_ONOFF, worldId, result.party.partyId, result.party.revision, {
+            character_id: Number(characterId),
+            party_snapshot_pb: Buffer.from(wire).toString("base64"),
+        });
+    }
+
+    async createParty(worldId, leaderCharacterId) {
+        this._assertWorld(worldId);
+        this._assertCharacterId(leaderCharacterId);
+        const partyId = await this._nextPartyId(worldId);
+        const leaderChannelIndex = await this._sessionChannelIndex(worldId, leaderCharacterId);
+        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
+            const state = await this.characterRealtimeStateRepo.get(worldId, leaderCharacterId, { txClient });
+            if (state?.partyId != null) {
+                return { ok: false, code: messages.PartyErrorCode.ALREADY_IN_PARTY };
+            }
+
+            const leader = await this._getCharacterSnapshot(worldId, leaderCharacterId, undefined, { txClient });
+            if (!leader.characterName) {
+                return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
+            }
+
+            const party = await this.partyRepo.set(worldId, {
+                worldId,
+                partyId,
+                leaderCharacterId,
+                state: PARTY_STATE_ACTIVE,
+                revision: 1,
+            }, { txClient });
+            await this.partyMemberRepo.set(worldId, {
+                worldId,
+                partyId,
+                characterId: leader.characterId,
+                characterName: leader.characterName,
+                level: leader.level,
+                classId: leader.classId,
+                role: "LEADER",
+                mapId: leader.mapId,
+                channelIndex: leaderChannelIndex,
+                door: null,
+            }, { txClient });
+            await this.characterRealtimeStateRepo.set(worldId, {
+                worldId,
+                characterId: leader.characterId,
+                partyId,
+                guildId: state?.guildId ?? null,
+            }, { txClient });
+            return { ok: true, partyId: party.partyId, revision: party.revision };
+        });
+        if (!result.ok) {
+            return result;
+        }
+        await this.partyRepo.evictCache(worldId, partyId);
+        await this.partyMemberRepo.evictGroupCache(worldId, partyId);
+        await this.characterRealtimeStateRepo.evictCache(worldId, leaderCharacterId);
+
+        await this._publishPartyEvent(EVT.CREATED, worldId, result.partyId, result.revision, {
+            leader_character_id: Number(leaderCharacterId),
+        });
+
+        return result;
+    }
+
+    async inviteParty(worldId, inviterCharacterId, targetCharacterName) {
+        this._assertWorld(worldId);
+        this._assertCharacterId(inviterCharacterId);
+        const trimmed = String(targetCharacterName ?? "").trim();
+        this._assertName(trimmed);
+
+        const inviterState = await this.characterRealtimeStateRepo.get(worldId, inviterCharacterId);
+        const partyId = Number(inviterState?.partyId);
+        if (!Number.isFinite(partyId) || partyId <= 0) {
+            return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
+        }
+        const party = await this.partyRepo.get(worldId, partyId);
+        if (!party || party.state !== PARTY_STATE_ACTIVE) {
+            return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
+        }
+        const members = await this.partyMemberRepo.getAll(worldId, partyId);
+        if (!members.has(String(inviterCharacterId))) {
+            return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
+        }
+        if (members.size >= MAX_PARTY_MEMBERS) {
+            return { ok: false, code: messages.PartyErrorCode.PARTY_FULL };
+        }
+
+        const entry = await this.unifiedRepo.findCharacterNameEntry(trimmed);
+        if (!entry || Number(entry.world_id) !== Number(worldId)) {
+            return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
+        }
+        const targetCharacterId = Number(entry.character_id);
+        if (targetCharacterId === Number(inviterCharacterId)) {
+            return { ok: false, code: messages.PartyErrorCode.CANNOT_INVITE_SELF };
+        }
+
+        const targetRt = await this.characterRealtimeStateRepo.get(worldId, targetCharacterId);
+        if (targetRt?.partyId != null) {
+            return { ok: false, code: messages.PartyErrorCode.TARGET_ALREADY_IN_PARTY };
+        }
+
+        const sess = await this.sessionRepo.getCharacterSession(worldId, targetCharacterId);
+        const ch = sess?.gameServer?.channelId;
+        const online =
+            sess?.state === "ONLINE" && Boolean(sess?.gameServer?.connected);
+        const chNum = Number(ch);
+        if (!online || ch == null || !Number.isFinite(chNum) || chNum < 0) {
+            return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
+        }
+
+        const inviterRow = await this.characterRepo.get(worldId, inviterCharacterId);
+        const inviterName = inviterRow?.name ? String(inviterRow.name) : "";
+        if (!inviterName) {
+            return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
+        }
+
+        const { client, keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
+        const inviteKey = this._invitePendingKey(keyPrefix, worldId, targetCharacterId);
+        await client.set(inviteKey, String(partyId), "EX", INVITE_PENDING_TTL_SEC);
+
+        await this.partyEventPublisher.publishToGameChannel(worldId, Number(ch), {
+            event_type: "party_invite",
+            world_id: Number(worldId),
+            party_id: partyId,
+            target_character_id: targetCharacterId,
+            inviter_name: inviterName,
+            party_search: false,
+        });
+
+        return {
+            ok: true,
+            partyId,
+            targetCharacterId,
+            targetChannelId: Number(ch),
+        };
+    }
+
+    async denyParty(worldId, deniedCharacterId, inviterCharacterName, action) {
+        this._assertWorld(worldId);
+        this._assertCharacterId(deniedCharacterId);
+        const inviterName = String(inviterCharacterName ?? "").trim();
+        this._assertName(inviterName);
+
+        const { client, keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
+        const inviteKey = this._invitePendingKey(keyPrefix, worldId, deniedCharacterId);
+        const pending = await client.get(inviteKey);
+        if (pending == null || Number(pending) <= 0) {
+            return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };
+        }
+
+        const inviterEntry = await this.unifiedRepo.findCharacterNameEntry(inviterName);
+        if (!inviterEntry || Number(inviterEntry.world_id) !== Number(worldId)) {
+            await client.del(inviteKey);
+            return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
+        }
+        const inviterCharacterId = Number(inviterEntry.character_id);
+        const inviterSession = await this.sessionRepo.getCharacterSession(worldId, inviterCharacterId);
+        const inviterChRaw = inviterSession?.gameServer?.channelId;
+        const inviterChannelID = Number(inviterChRaw);
+        const inviterOnline =
+            inviterSession?.state === "ONLINE" && Boolean(inviterSession?.gameServer?.connected);
+        if (!inviterOnline || inviterChRaw == null || !Number.isFinite(inviterChannelID) || inviterChannelID < 0) {
+            await client.del(inviteKey);
+            return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
+        }
+
+        const deniedRow = await this.characterRepo.get(worldId, deniedCharacterId);
+        const deniedName = deniedRow?.name ? String(deniedRow.name) : "";
+        if (!deniedName) {
+            await client.del(inviteKey);
+            return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
+        }
+
+        await client.del(inviteKey);
+        await this.partyEventPublisher.publishToGameChannel(worldId, inviterChannelID, {
+            event_type: "party_invite_denied",
+            world_id: Number(worldId),
+            inviter_character_id: inviterCharacterId,
+            denied_character_name: deniedName,
+            action: Number(action ?? 0),
+        });
+        return { ok: true };
+    }
+
+    async joinParty(worldId, partyId, characterId, characterName, level, classId) {
+        this._assertWorld(worldId);
+        this._assertPartyId(partyId);
+        this._assertCharacterId(characterId);
+        this._assertName(characterName);
+        this._assertUInt16(level, "level");
+        this._assertUInt16(classId, "class_id");
+
+        const { client, keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
+        const inviteKey = this._invitePendingKey(keyPrefix, worldId, characterId);
+        const pending = await client.get(inviteKey);
+        if (pending == null || Number(pending) !== Number(partyId)) {
+            return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };
+        }
+
+        const joinChannelIndex = await this._sessionChannelIndex(worldId, characterId);
+        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
+            const party = await this.partyRepo.get(worldId, partyId, { txClient });
+            if (!party || party.state !== PARTY_STATE_ACTIVE) {
+                return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
+            }
+
+            const members = await this.partyMemberRepo.getAll(worldId, partyId, { txClient });
+            if (members.size >= MAX_PARTY_MEMBERS) {
+                return { ok: false, code: messages.PartyErrorCode.PARTY_FULL };
+            }
+
+            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
+            if (state?.partyId != null) {
+                return { ok: false, code: messages.PartyErrorCode.ALREADY_IN_PARTY };
+            }
+            const memberSnapshot = await this._getCharacterSnapshot(worldId, characterId, {
+                characterName,
+                level,
+                classId,
+            }, { txClient });
+            if (!memberSnapshot.characterName) {
+                return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
+            }
+
+            await this.partyMemberRepo.set(worldId, {
+                worldId,
+                partyId,
+                characterId: memberSnapshot.characterId,
+                characterName: memberSnapshot.characterName,
+                level: memberSnapshot.level,
+                classId: memberSnapshot.classId,
+                role: "MEMBER",
+                mapId: memberSnapshot.mapId,
+                channelIndex: joinChannelIndex,
+                door: null,
+            }, { txClient });
+            const nextRevision = Number(party.revision) + 1;
+            const updatedParty = await this.partyRepo.set(worldId, {
+                ...party,
+                revision: nextRevision,
+            }, { txClient });
+            await this.characterRealtimeStateRepo.set(worldId, {
+                worldId,
+                characterId,
+                partyId,
+                guildId: state?.guildId ?? null,
+            }, { txClient });
+            return { ok: true, partyId: updatedParty.partyId, revision: updatedParty.revision };
+        });
+        if (!result.ok) {
+            return result;
+        }
+        await client.del(inviteKey);
+        await this.partyRepo.evictCache(worldId, partyId);
+        await this.partyMemberRepo.evictGroupCache(worldId, partyId);
+        await this.characterRealtimeStateRepo.evictCache(worldId, characterId);
+
+        await this._publishPartyEvent(EVT.MEMBER_JOINED, worldId, result.partyId, result.revision, {
+            character_id: Number(characterId),
+        });
+
+        return result;
+    }
+
+    async leaveParty(worldId, characterId) {
+        this._assertWorld(worldId);
+        this._assertCharacterId(characterId);
+
+        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
+            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
+            if (!state?.partyId) {
+                return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+            }
+            const partyId = state.partyId;
+            const party = await this.partyRepo.get(worldId, partyId, { txClient });
+            if (!party) {
+                await this.characterRealtimeStateRepo.set(worldId, {
+                    worldId,
+                    characterId,
+                    partyId: null,
+                    guildId: state.guildId ?? null,
+                }, { txClient });
+                return { ok: true, partyId, revision: 0, disbanded: false };
+            }
+
+            await this.partyMemberRepo.del(worldId, partyId, characterId, { txClient });
+            await this.characterRealtimeStateRepo.set(worldId, {
+                worldId,
+                characterId,
+                partyId: null,
+                guildId: state.guildId ?? null,
+            }, { txClient });
+
+            const remaining = await this.partyMemberRepo.getAll(worldId, partyId, { txClient });
+            if (remaining.size === 0) {
+                await this.partyRepo.delete({ worldId, partyId }, { txClient });
+                return {
+                    ok: true,
+                    partyId,
+                    revision: Number(party.revision) + 1,
+                    disbanded: true,
+                    realtimeStateCharacterIds: [Number(characterId)],
+                };
+            }
+
+            const remainingMembers = [...remaining.values()];
+            if (Number(party.leaderCharacterId) === Number(characterId) && remainingMembers.length === 1) {
+                const disbandCharacterIds = [Number(characterId), Number(remainingMembers[0].characterId)];
+                for (const memberCharacterId of disbandCharacterIds) {
+                    const memberState = await this.characterRealtimeStateRepo.get(worldId, memberCharacterId, { txClient });
+                    await this.characterRealtimeStateRepo.set(worldId, {
+                        worldId,
+                        characterId: memberCharacterId,
+                        partyId: null,
+                        guildId: memberState?.guildId ?? null,
+                    }, { txClient });
+                }
+                await this.partyMemberRepo.del(worldId, partyId, remainingMembers[0].characterId, { txClient });
+                await this.partyRepo.delete({ worldId, partyId }, { txClient });
+                return {
+                    ok: true,
+                    partyId,
+                    revision: Number(party.revision) + 1,
+                    disbanded: true,
+                    realtimeStateCharacterIds: disbandCharacterIds,
+                };
+            }
+
+            const previousLeaderCharacterId = Number(party.leaderCharacterId);
+            let nextLeaderCharacterId = previousLeaderCharacterId;
+            if (Number(party.leaderCharacterId) === Number(characterId)) {
+                const sorted = remainingMembers.sort((a, b) => Number(b.level) - Number(a.level));
+                nextLeaderCharacterId = sorted[0].characterId;
+                await this.partyMemberRepo.set(worldId, { ...sorted[0], role: "LEADER" }, { txClient });
+            }
+            const nextRevision = Number(party.revision) + 1;
+            const updatedParty = await this.partyRepo.set(worldId, {
+                ...party,
+                leaderCharacterId: nextLeaderCharacterId,
+                revision: nextRevision,
+            }, { txClient });
+            return {
+                ok: true,
+                partyId: updatedParty.partyId,
+                revision: updatedParty.revision,
+                disbanded: false,
+                leaderChanged: previousLeaderCharacterId !== Number(nextLeaderCharacterId),
+                oldLeaderCharacterId: previousLeaderCharacterId,
+                newLeaderCharacterId: Number(nextLeaderCharacterId),
+                realtimeStateCharacterIds: [Number(characterId)],
+            };
+        });
+        if (!result.ok) {
+            return result;
+        }
+        await this.partyRepo.evictCache(worldId, result.partyId);
+        await this.partyMemberRepo.evictGroupCache(worldId, result.partyId);
+        for (const affectedCharacterId of result.realtimeStateCharacterIds ?? [Number(characterId)]) {
+            await this.characterRealtimeStateRepo.evictCache(worldId, affectedCharacterId);
+        }
+
+        if (result.disbanded) {
+            await this._publishPartyEvent(EVT.DISBANDED, worldId, result.partyId, result.revision, {
+                character_id: Number(characterId),
+            });
+        } else {
+            await this._publishPartyEvent(EVT.MEMBER_LEFT, worldId, result.partyId, result.revision, {
+                character_id: Number(characterId),
+                leader_changed: Boolean(result.leaderChanged),
+                old_leader_character_id: Number(result.oldLeaderCharacterId ?? 0),
+                new_leader_character_id: Number(result.newLeaderCharacterId ?? 0),
+            });
+        }
+
+        return result;
+    }
+
+    async expelParty(worldId, requesterCharacterId, targetCharacterId) {
+        this._assertWorld(worldId);
+        this._assertCharacterId(requesterCharacterId);
+        this._assertCharacterId(targetCharacterId);
+        if (Number(requesterCharacterId) === Number(targetCharacterId)) {
+            return { ok: false, code: messages.PartyErrorCode.CANNOT_EXPEL_SELF };
+        }
+
+        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
+            const requesterState = await this.characterRealtimeStateRepo.get(worldId, requesterCharacterId, { txClient });
+            if (!requesterState?.partyId) {
+                return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+            }
+            const partyId = requesterState.partyId;
+            const party = await this.partyRepo.get(worldId, partyId, { txClient });
+            if (!party || party.state !== PARTY_STATE_ACTIVE) {
+                return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
+            }
+            if (Number(party.leaderCharacterId) !== Number(requesterCharacterId)) {
+                return { ok: false, code: messages.PartyErrorCode.NOT_PARTY_LEADER };
+            }
+
+            const members = await this.partyMemberRepo.getAll(worldId, partyId, { txClient });
+            const targetMember = members.get(String(targetCharacterId));
+            if (!targetMember) {
+                return { ok: false, code: messages.PartyErrorCode.TARGET_NOT_IN_PARTY };
+            }
+
+            const targetState = await this.characterRealtimeStateRepo.get(worldId, targetCharacterId, { txClient });
+            await this.partyMemberRepo.del(worldId, partyId, targetCharacterId, { txClient });
+            await this.characterRealtimeStateRepo.set(worldId, {
+                worldId,
+                characterId: targetCharacterId,
+                partyId: null,
+                guildId: targetState?.guildId ?? null,
+            }, { txClient });
+
+            const remaining = await this.partyMemberRepo.getAll(worldId, partyId, { txClient });
+            if (remaining.size === 0) {
+                await this.partyRepo.delete({ worldId, partyId }, { txClient });
+                return {
+                    ok: true,
+                    partyId,
+                    revision: Number(party.revision) + 1,
+                    disbanded: true,
+                    realtimeStateCharacterIds: [Number(targetCharacterId)],
+                };
+            }
+
+            const nextRevision = Number(party.revision) + 1;
+            const updatedParty = await this.partyRepo.set(worldId, {
+                ...party,
+                revision: nextRevision,
+            }, { txClient });
+            return {
+                ok: true,
+                partyId: updatedParty.partyId,
+                revision: updatedParty.revision,
+                disbanded: false,
+                realtimeStateCharacterIds: [Number(targetCharacterId)],
+            };
+        });
+        if (!result.ok) {
+            return result;
+        }
+
+        await this.partyRepo.evictCache(worldId, result.partyId);
+        await this.partyMemberRepo.evictGroupCache(worldId, result.partyId);
+        for (const affectedCharacterId of result.realtimeStateCharacterIds ?? [Number(targetCharacterId)]) {
+            await this.characterRealtimeStateRepo.evictCache(worldId, affectedCharacterId);
+        }
+
+        if (result.disbanded) {
+            await this._publishPartyEvent(EVT.DISBANDED, worldId, result.partyId, result.revision, {
+                character_id: Number(targetCharacterId),
+                expelled_by_character_id: Number(requesterCharacterId),
+            });
+        } else {
+            await this._publishPartyEvent(EVT.MEMBER_LEFT, worldId, result.partyId, result.revision, {
+                character_id: Number(targetCharacterId),
+                expelled_by_character_id: Number(requesterCharacterId),
+            });
+        }
+
+        return result;
+    }
+
+    async changePartyLeader(worldId, partyId, requesterCharacterId, newLeaderCharacterId) {
+        this._assertWorld(worldId);
+        this._assertPartyId(partyId);
+        this._assertCharacterId(requesterCharacterId);
+        this._assertCharacterId(newLeaderCharacterId);
+
+        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
+            const party = await this.partyRepo.get(worldId, partyId, { txClient });
+            if (!party || party.state !== PARTY_STATE_ACTIVE) {
+                return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
+            }
+            if (Number(party.leaderCharacterId) !== Number(requesterCharacterId)) {
+                return { ok: false, code: messages.PartyErrorCode.NOT_PARTY_LEADER };
+            }
+            if (Number(requesterCharacterId) === Number(newLeaderCharacterId)) {
+                return { ok: false, code: messages.PartyErrorCode.TARGET_ALREADY_LEADER };
+            }
+
+            const members = await this.partyMemberRepo.getAll(worldId, partyId, { txClient });
+            const newLeader = members.get(String(newLeaderCharacterId));
+            if (!newLeader) {
+                return { ok: false, code: messages.PartyErrorCode.TARGET_NOT_IN_PARTY };
+            }
+
+            await this.partyMemberRepo.set(worldId, { ...newLeader, role: "LEADER" }, { txClient });
+            const requester = members.get(String(requesterCharacterId));
+            if (requester) {
+                await this.partyMemberRepo.set(worldId, { ...requester, role: "MEMBER" }, { txClient });
+            }
+            const nextRevision = Number(party.revision) + 1;
+            const updatedParty = await this.partyRepo.set(worldId, {
+                ...party,
+                leaderCharacterId: newLeaderCharacterId,
+                revision: nextRevision,
+            }, { txClient });
+            return { ok: true, partyId: updatedParty.partyId, revision: updatedParty.revision };
+        });
+        if (!result.ok) {
+            return result;
+        }
+        await this.partyRepo.evictCache(worldId, partyId);
+        await this.partyMemberRepo.evictGroupCache(worldId, partyId);
+
+        await this._publishPartyEvent(EVT.LEADER_CHANGED, worldId, result.partyId, result.revision, {
+            old_leader_character_id: Number(requesterCharacterId),
+            new_leader_character_id: Number(newLeaderCharacterId),
+        });
+
+        return result;
+    }
+
+    async getParty(worldId, partyId) {
+        this._assertWorld(worldId);
+        const party = await this.partyRepo.get(worldId, partyId);
+        if (!party) {
+            return { found: false };
+        }
+        const members = await this.partyMemberRepo.getAll(worldId, partyId);
+        return {
+            found: true,
+            party,
+            members: [...members.values()],
+        };
+    }
+}
+
+module.exports = { PartyService };

@@ -1,4 +1,3 @@
--- Main script entry: loads sub modules via run_script, defines all on_* hooks called from Go.
 run_script("script/script_common.lua")
 run_script("script/script_heal_recovery.lua")
 run_script("script/script_level_stat.lua")
@@ -60,9 +59,6 @@ end
 
 function on_start(me)
 	local npc = 9001000
-	-- me:dialog_list("안녕하세요", {"hello1", "hello2", "hello3"})
-	-- me:dialog_accept('안녕하세요', true)
-	-- me:dialog_yes_no('안녕하세요', true, true)
 	local text = me:dialog_input(npc,'안녕하세요')
 	me:dialog(npc, string.format("반갑습니다. %s님", me:name()))
 	for i=1, 10 do
@@ -106,7 +102,7 @@ function on_script(me)
     me:base_int(4)
     me:base_luk(4)
     me:level(200)
-    me:map('헤네시스사냥터1')
+    me:map('헤네시스')
 end
 
 function on_damaged(me, attacker, skill, damage, params)

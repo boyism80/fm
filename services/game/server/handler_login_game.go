@@ -15,6 +15,14 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
+func optionalUint32(value uint32) *uint32 {
+	if value == 0 {
+		return nil
+	}
+	v := value
+	return &v
+}
+
 type LoginGame struct {
 	gs     *GameServer
 	opcode byte
@@ -50,15 +58,32 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		return fmt.Errorf("login game: actor context required for internal RPC")
 	}
 
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
-		func(c context.Context) (*internal.EnterGameReply, error) {
-			return ic.EnterGame(c, reqMsg)
-		}, func(reply *internal.EnterGameReply) error {
-			if !reply.GetFound() || reply.GetCharacter() == nil {
-				return fmt.Errorf("character %d not found", req.PlayerId)
-			}
-			return h.finishLoginGame(ctx, req, reply)
-		}).
+	var enterReply *internal.EnterGameReply
+	var partyReply *internal.GetPartyReply
+
+	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise = async.ThenRPC(promise, func(c context.Context) (*internal.EnterGameReply, error) {
+		return ic.EnterGame(c, reqMsg)
+	}, func(reply *internal.EnterGameReply) error {
+		if !reply.GetFound() || reply.GetCharacter() == nil {
+			return fmt.Errorf("character %d not found", req.PlayerId)
+		}
+		enterReply = reply
+		return nil
+	})
+	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetPartyReply, error) {
+		if enterReply == nil || enterReply.GetPartyId() == 0 {
+			return &internal.GetPartyReply{Found: false}, nil
+		}
+		return ic.GetParty(c, &internal.GetPartyRequest{
+			WorldId: h.gs.config.WorldId,
+			PartyId: enterReply.GetPartyId(),
+		})
+	}, func(reply *internal.GetPartyReply) error {
+		partyReply = reply
+		return h.finishLoginGame(ctx, req, enterReply, partyReply)
+	})
+	promise.
 		OnError(func(err error) {
 			log.Printf("LoginGame (async): %v", err)
 		}).
@@ -66,7 +91,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	return nil
 }
 
-func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginGame, reply *internal.EnterGameReply) error {
+func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginGame, reply *internal.EnterGameReply, partyReply *internal.GetPartyReply) error {
 	if !reply.GetFound() {
 		return fmt.Errorf("character %d not found", req.PlayerId)
 	}
@@ -102,6 +127,8 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		PositionX:    int16(p.GetPositionX()),
 		PositionY:    int16(p.GetPositionY()),
 		Stance:       uint8(p.GetStance()),
+		PartyID:      optionalUint32(reply.GetPartyId()),
+		GuildID:      optionalUint32(reply.GetGuildId()),
 	}
 
 	character := entity.NewCharacter(ctx.Client, h.gs.characterListener, initData, h.gs)
@@ -115,6 +142,13 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		return fmt.Errorf("client is not a GameClient")
 	}
 	gameClient.SetCharacter(character)
+
+	if h.gs.partyEventConsumer != nil {
+		partyID := reply.GetPartyId()
+		if partyID != 0 && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
+			h.gs.partyEventConsumer.ApplyPartySnapshot(partyReply.GetParty())
+		}
+	}
 
 	mapID := p.GetMapId()
 	spawnPoint := uint8(p.GetSpawnPoint())
@@ -144,6 +178,10 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	targetMapPID := mapInstance.GetActorPID()
 	if targetMapPID == nil {
 		return fmt.Errorf("MapActor PID not found for map %d", mapID)
+	}
+
+	if err := h.gs.characterRuntime.RegisterCharacter(character.GetID(), character.GetName()); err != nil {
+		return fmt.Errorf("runtime register: %w", err)
 	}
 
 	rootContext := h.gs.GetServer().GetRootContext()

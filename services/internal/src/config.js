@@ -14,6 +14,13 @@ const DEFAULT_REDIS = {
 };
 
 const DEFAULT_CHANNEL_NAME_PREFIX = "Channel";
+const DEFAULT_RABBITMQ = {
+    ip: "127.0.0.1",
+    port: 5672,
+    uid: "guest",
+    pwd: "guest",
+    vhost: "fm",
+};
 
 function normalizePgEndpoint(ep, defaults = {}) {
     if (!ep || typeof ep !== "object") {
@@ -227,6 +234,13 @@ function withDefaults(raw) {
         postgresql: normalizePostgresql(d.postgresql, worldIdStr),
         redis: normalizeRedis(d.redis, worldIdStr),
         game_servers: normalizeGameServers(d.game_servers),
+        rabbitmq: {
+            ip: d.rabbitmq?.ip ?? DEFAULT_RABBITMQ.ip,
+            port: d.rabbitmq?.port ?? DEFAULT_RABBITMQ.port,
+            uid: d.rabbitmq?.uid ?? DEFAULT_RABBITMQ.uid,
+            pwd: d.rabbitmq?.pwd ?? DEFAULT_RABBITMQ.pwd,
+            vhost: d.rabbitmq?.vhost ?? DEFAULT_RABBITMQ.vhost,
+        },
         cache: {
             write_strategy: d.cache?.write_strategy ?? "write-through",
             character_ttl_seconds: d.cache?.character_ttl_seconds ?? 300,

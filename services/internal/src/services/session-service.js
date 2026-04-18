@@ -1,11 +1,12 @@
 "use strict";
 
+const messages = require("../../protobuf/fminternal/internal_service_pb");
+
 const SessionState = {
     LOGIN: "LOGIN",
     TRANSITION: "TRANSITION",
     GAME: "GAME",
 };
-
 function formatDateTime(date = new Date()) {
     const pad = (v) => String(v).padStart(2, "0");
     const yyyy = date.getFullYear();
@@ -18,9 +19,16 @@ function formatDateTime(date = new Date()) {
 }
 
 class SessionService {
-    constructor(internalContext, sessionRepository) {
+    constructor(
+        internalContext,
+        sessionRepository,
+        characterRealtimeStateRepository,
+        partyService
+    ) {
         this.ctx = internalContext;
         this.repo = sessionRepository;
+        this.characterRealtimeStateRepo = characterRealtimeStateRepository;
+        this.partyService = partyService;
     }
 
     _now() {
@@ -50,7 +58,7 @@ class SessionService {
             this._ttlByState(SessionState.LOGIN)
         );
         if (Number(ok) !== 1) {
-            return { ok: false, code: code || "ALREADY_LOGGED_IN" };
+            return { ok: false, code: Number.isInteger(code) ? code : messages.SessionErrorCode.SESSION_ALREADY_LOGGED_IN };
         }
         return { ok: true };
     }
@@ -66,13 +74,14 @@ class SessionService {
             this._ttlByState(SessionState.TRANSITION)
         );
         if (Number(ok) !== 1) {
-            return { ok: false, code: code || "SESSION_NOT_FOUND" };
+            return { ok: false, code: Number.isInteger(code) ? code : messages.SessionErrorCode.SESSION_NOT_FOUND };
         }
         return { ok: true };
     }
 
     async attachGameSession(worldId, accountId, channelId) {
         const now = this._now();
+        const sessionBeforeAttach = await this.repo.getAccountSession(worldId, accountId);
         const [ok, code] = await this.repo.attachGameSessionAtomic(
             worldId,
             accountId,
@@ -81,7 +90,11 @@ class SessionService {
             this._ttlByState(SessionState.GAME)
         );
         if (Number(ok) !== 1) {
-            return { ok: false, code: code || "SESSION_NOT_FOUND" };
+            return { ok: false, code: Number.isInteger(code) ? code : messages.SessionErrorCode.SESSION_NOT_FOUND };
+        }
+        const cid = sessionBeforeAttach?.character?.id;
+        if (cid != null && this.partyService) {
+            await this.partyService.applyMemberChannelIndex(worldId, cid, channelId);
         }
         return { ok: true };
     }
@@ -95,21 +108,26 @@ class SessionService {
             this._ttlByState(SessionState.GAME)
         );
         if (Number(ok) !== 1) {
-            return { ok: false, code: code || "SESSION_NOT_FOUND" };
+            return { ok: false, code: Number.isInteger(code) ? code : messages.SessionErrorCode.SESSION_NOT_FOUND };
         }
         return { ok: true };
     }
 
     async logout(worldId, accountId) {
+        const sessionBeforeLogout = await this.repo.getAccountSession(worldId, accountId);
         const [ok, code] = await this.repo.logoutAtomic(
             worldId,
             accountId,
             this._ttlByState(SessionState.TRANSITION)
         );
         if (Number(ok) !== 1) {
-            return { ok: false, code: code || "LOGOUT_FAILED" };
+            return { ok: false, code: Number.isInteger(code) ? code : messages.SessionErrorCode.SESSION_LOGOUT_FAILED };
         }
-        return { ok: true, code: code || "" };
+        const cid = sessionBeforeLogout?.character?.id;
+        if (cid != null && this.partyService) {
+            await this.partyService.applyMemberChannelIndex(worldId, cid, -2);
+        }
+        return { ok: true, code: messages.SessionErrorCode.SESSION_NONE };
     }
 }
 

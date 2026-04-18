@@ -6,6 +6,13 @@ grpc:
   host: "0.0.0.0"
   port: 50051
 
+rabbitmq:
+  ip: "127.0.0.1"
+  port: 5672
+  uid: "guest"
+  pwd: "guest"
+  vhost: "/fm"
+
 postgresql:
   unified:
     host: "127.0.0.1"

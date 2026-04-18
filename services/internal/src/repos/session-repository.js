@@ -118,8 +118,10 @@ local account_id = tonumber(ARGV[1])
 local login_server_id = ARGV[2]
 local now = ARGV[3]
 local ttl = tonumber(ARGV[4])
+local ERR_SESSION_NONE = 0
+local ERR_SESSION_ALREADY_LOGGED_IN = 2
 if redis.call("EXISTS", key) == 1 then
-  return {0, "ALREADY_LOGGED_IN"}
+  return {0, ERR_SESSION_ALREADY_LOGGED_IN}
 end
 redis.call("HSET", key,
   "version", "1",
@@ -139,7 +141,7 @@ redis.call("HSET", key,
   "state_changed_at", now
 )
 redis.call("EXPIRE", key, ttl)
-return {1, ""}
+return {1, ERR_SESSION_NONE}
 `;
         return client.eval(
             script,
@@ -162,12 +164,15 @@ local character_id = tonumber(ARGV[2])
 local character_name = ARGV[3]
 local now = ARGV[4]
 local ttl = tonumber(ARGV[5])
+local ERR_SESSION_NONE = 0
+local ERR_SESSION_UNKNOWN = 1
+local ERR_SESSION_NOT_FOUND = 3
 if redis.call("EXISTS", key) == 0 then
-  return {0, "SESSION_NOT_FOUND"}
+  return {0, ERR_SESSION_NOT_FOUND}
 end
 local state = redis.call("HGET", key, "state")
 if state ~= "LOGIN" and state ~= "TRANSITION" then
-  return {0, "INVALID_STATE"}
+  return {0, ERR_SESSION_UNKNOWN}
 end
 redis.call("HSET", key,
   "world_id", tostring(world_id),
@@ -178,7 +183,7 @@ redis.call("HSET", key,
   "state_changed_at", now
 )
 redis.call("EXPIRE", key, ttl)
-return {1, ""}
+return {1, ERR_SESSION_NONE}
 `;
         return client.eval(
             script,
@@ -202,17 +207,20 @@ local character_key_prefix = KEYS[2]
 local channel_id = tonumber(ARGV[1])
 local now = ARGV[2]
 local ttl = tonumber(ARGV[3])
+local ERR_SESSION_NONE = 0
+local ERR_SESSION_UNKNOWN = 1
+local ERR_SESSION_NOT_FOUND = 3
 if redis.call("EXISTS", account_key) == 0 then
-  return {0, "SESSION_NOT_FOUND"}
+  return {0, ERR_SESSION_NOT_FOUND}
 end
 local state = redis.call("HGET", account_key, "state")
 if state ~= "TRANSITION" and state ~= "GAME" then
-  return {0, "INVALID_STATE"}
+  return {0, ERR_SESSION_UNKNOWN}
 end
 local character_id = tonumber(redis.call("HGET", account_key, "character_id"))
 local character_name = redis.call("HGET", account_key, "character_name") or ""
 if not character_id or character_id == 0 then
-  return {0, "CHARACTER_NOT_SELECTED"}
+  return {0, ERR_SESSION_UNKNOWN}
 end
 local world_id = tonumber(redis.call("HGET", account_key, "world_id") or "0")
 local account_id = tonumber(redis.call("HGET", account_key, "account_id") or "0")
@@ -246,7 +254,7 @@ redis.call("HSET", character_key,
   "updated_at", now
 )
 redis.call("EXPIRE", character_key, ttl)
-return {1, ""}
+return {1, ERR_SESSION_NONE}
 `;
         return client.eval(
             script,
@@ -268,8 +276,10 @@ local character_key_prefix = KEYS[2]
 local login_ttl = tonumber(ARGV[1])
 local transition_ttl = tonumber(ARGV[2])
 local game_ttl = tonumber(ARGV[3])
+local ERR_SESSION_NONE = 0
+local ERR_SESSION_NOT_FOUND = 3
 if redis.call("EXISTS", account_key) == 0 then
-  return {0, "SESSION_NOT_FOUND"}
+  return {0, ERR_SESSION_NOT_FOUND}
 end
 local state = redis.call("HGET", account_key, "state")
 local ttl = login_ttl
@@ -286,7 +296,7 @@ if state == "GAME" then
     redis.call("EXPIRE", character_key, ttl)
   end
 end
-return {1, ""}
+return {1, ERR_SESSION_NONE}
 `;
         return client.eval(
             script,
@@ -306,11 +316,12 @@ return {1, ""}
 local account_key = KEYS[1]
 local character_key_prefix = KEYS[2]
 local transition_ttl = tonumber(ARGV[1])
+local ERR_SESSION_NONE = 0
 if redis.call("EXISTS", account_key) == 1 then
   local state = redis.call("HGET", account_key, "state")
   if state == "TRANSITION" then
     redis.call("EXPIRE", account_key, transition_ttl)
-    return {1, "DEFERRED_TRANSITION"}
+    return {1, ERR_SESSION_NONE}
   end
   local character_id = redis.call("HGET", account_key, "character_id")
   if character_id and character_id ~= "" then
@@ -319,7 +330,7 @@ if redis.call("EXISTS", account_key) == 1 then
   end
 end
 redis.call("DEL", account_key)
-return {1, ""}
+return {1, ERR_SESSION_NONE}
 `;
         return client.eval(
             script,

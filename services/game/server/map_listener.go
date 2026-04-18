@@ -54,6 +54,10 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeObject) {
 		obj.SendSpawnSyncToViewer(character)
 	}
+
+	if l.gs != nil && character != nil && l.gs.characterRuntime != nil {
+		_ = l.gs.characterRuntime.SetMapPID(character.GetID(), mapInstance.GetActorPID())
+	}
 }
 
 func (l *MapListenerImpl) OnPlayerRemoved(mapInstance *entity.Map, character *entity.Character) {
@@ -65,6 +69,10 @@ func (l *MapListenerImpl) OnPlayerRemoved(mapInstance *entity.Map, character *en
 		ID: character.GetID(),
 	}
 	mapInstance.Broadcast(leavePacket, nil)
+
+	if l.gs != nil && character != nil && l.gs.characterRuntime != nil {
+		_ = l.gs.characterRuntime.SetMapPID(character.GetID(), nil)
+	}
 }
 
 func (l *MapListenerImpl) OnPlayerMoved(mapInstance *entity.Map, character *entity.Character) {

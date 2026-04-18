@@ -21,6 +21,149 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type SessionErrorCode int32
+
+const (
+	SessionErrorCode_SESSION_NONE              SessionErrorCode = 0
+	SessionErrorCode_SESSION_UNKNOWN           SessionErrorCode = 1
+	SessionErrorCode_SESSION_ALREADY_LOGGED_IN SessionErrorCode = 2
+	SessionErrorCode_SESSION_NOT_FOUND         SessionErrorCode = 3
+	SessionErrorCode_SESSION_LOGOUT_FAILED     SessionErrorCode = 4
+)
+
+// Enum value maps for SessionErrorCode.
+var (
+	SessionErrorCode_name = map[int32]string{
+		0: "SESSION_NONE",
+		1: "SESSION_UNKNOWN",
+		2: "SESSION_ALREADY_LOGGED_IN",
+		3: "SESSION_NOT_FOUND",
+		4: "SESSION_LOGOUT_FAILED",
+	}
+	SessionErrorCode_value = map[string]int32{
+		"SESSION_NONE":              0,
+		"SESSION_UNKNOWN":           1,
+		"SESSION_ALREADY_LOGGED_IN": 2,
+		"SESSION_NOT_FOUND":         3,
+		"SESSION_LOGOUT_FAILED":     4,
+	}
+)
+
+func (x SessionErrorCode) Enum() *SessionErrorCode {
+	p := new(SessionErrorCode)
+	*p = x
+	return p
+}
+
+func (x SessionErrorCode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SessionErrorCode) Descriptor() protoreflect.EnumDescriptor {
+	return file_fminternal_internal_service_proto_enumTypes[0].Descriptor()
+}
+
+func (SessionErrorCode) Type() protoreflect.EnumType {
+	return &file_fminternal_internal_service_proto_enumTypes[0]
+}
+
+func (x SessionErrorCode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SessionErrorCode.Descriptor instead.
+func (SessionErrorCode) EnumDescriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{0}
+}
+
+type PartyErrorCode int32
+
+const (
+	PartyErrorCode_NONE                      PartyErrorCode = 0
+	PartyErrorCode_UNKNOWN                   PartyErrorCode = 1
+	PartyErrorCode_ALREADY_IN_PARTY          PartyErrorCode = 2
+	PartyErrorCode_CHARACTER_NOT_FOUND       PartyErrorCode = 3
+	PartyErrorCode_PARTY_NOT_FOUND           PartyErrorCode = 4
+	PartyErrorCode_PARTY_FULL                PartyErrorCode = 5
+	PartyErrorCode_NOT_IN_PARTY              PartyErrorCode = 6
+	PartyErrorCode_NOT_PARTY_LEADER          PartyErrorCode = 7
+	PartyErrorCode_TARGET_NOT_IN_PARTY       PartyErrorCode = 8
+	PartyErrorCode_TARGET_ALREADY_LEADER     PartyErrorCode = 9
+	PartyErrorCode_CANNOT_EXPEL_SELF         PartyErrorCode = 10
+	PartyErrorCode_INVITE_EXPIRED_OR_INVALID PartyErrorCode = 11
+	PartyErrorCode_TARGET_OFFLINE            PartyErrorCode = 12
+	PartyErrorCode_INVITER_NOT_IN_PARTY      PartyErrorCode = 13
+	PartyErrorCode_CANNOT_INVITE_SELF        PartyErrorCode = 14
+	PartyErrorCode_TARGET_ALREADY_IN_PARTY   PartyErrorCode = 15
+)
+
+// Enum value maps for PartyErrorCode.
+var (
+	PartyErrorCode_name = map[int32]string{
+		0:  "NONE",
+		1:  "UNKNOWN",
+		2:  "ALREADY_IN_PARTY",
+		3:  "CHARACTER_NOT_FOUND",
+		4:  "PARTY_NOT_FOUND",
+		5:  "PARTY_FULL",
+		6:  "NOT_IN_PARTY",
+		7:  "NOT_PARTY_LEADER",
+		8:  "TARGET_NOT_IN_PARTY",
+		9:  "TARGET_ALREADY_LEADER",
+		10: "CANNOT_EXPEL_SELF",
+		11: "INVITE_EXPIRED_OR_INVALID",
+		12: "TARGET_OFFLINE",
+		13: "INVITER_NOT_IN_PARTY",
+		14: "CANNOT_INVITE_SELF",
+		15: "TARGET_ALREADY_IN_PARTY",
+	}
+	PartyErrorCode_value = map[string]int32{
+		"NONE":                      0,
+		"UNKNOWN":                   1,
+		"ALREADY_IN_PARTY":          2,
+		"CHARACTER_NOT_FOUND":       3,
+		"PARTY_NOT_FOUND":           4,
+		"PARTY_FULL":                5,
+		"NOT_IN_PARTY":              6,
+		"NOT_PARTY_LEADER":          7,
+		"TARGET_NOT_IN_PARTY":       8,
+		"TARGET_ALREADY_LEADER":     9,
+		"CANNOT_EXPEL_SELF":         10,
+		"INVITE_EXPIRED_OR_INVALID": 11,
+		"TARGET_OFFLINE":            12,
+		"INVITER_NOT_IN_PARTY":      13,
+		"CANNOT_INVITE_SELF":        14,
+		"TARGET_ALREADY_IN_PARTY":   15,
+	}
+)
+
+func (x PartyErrorCode) Enum() *PartyErrorCode {
+	p := new(PartyErrorCode)
+	*p = x
+	return p
+}
+
+func (x PartyErrorCode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PartyErrorCode) Descriptor() protoreflect.EnumDescriptor {
+	return file_fminternal_internal_service_proto_enumTypes[1].Descriptor()
+}
+
+func (PartyErrorCode) Type() protoreflect.EnumType {
+	return &file_fminternal_internal_service_proto_enumTypes[1]
+}
+
+func (x PartyErrorCode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PartyErrorCode.Descriptor instead.
+func (PartyErrorCode) EnumDescriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{1}
+}
+
 type LoginAccountReply_Status int32
 
 const (
@@ -60,11 +203,11 @@ func (x LoginAccountReply_Status) String() string {
 }
 
 func (LoginAccountReply_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_fminternal_internal_service_proto_enumTypes[0].Descriptor()
+	return file_fminternal_internal_service_proto_enumTypes[2].Descriptor()
 }
 
 func (LoginAccountReply_Status) Type() protoreflect.EnumType {
-	return &file_fminternal_internal_service_proto_enumTypes[0]
+	return &file_fminternal_internal_service_proto_enumTypes[2]
 }
 
 func (x LoginAccountReply_Status) Number() protoreflect.EnumNumber {
@@ -767,6 +910,8 @@ type EnterGameReply struct {
 	Inventory     []*InventoryPersisted  `protobuf:"bytes,3,rep,name=inventory,proto3" json:"inventory,omitempty"`
 	Skills        []*SkillPersisted      `protobuf:"bytes,4,rep,name=skills,proto3" json:"skills,omitempty"`
 	KeyLayout     []*KeyLayoutBinding    `protobuf:"bytes,5,rep,name=key_layout,json=keyLayout,proto3" json:"key_layout,omitempty"`
+	PartyId       uint32                 `protobuf:"varint,6,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	GuildId       uint32                 `protobuf:"varint,7,opt,name=guild_id,json=guildId,proto3" json:"guild_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -836,6 +981,20 @@ func (x *EnterGameReply) GetKeyLayout() []*KeyLayoutBinding {
 	return nil
 }
 
+func (x *EnterGameReply) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *EnterGameReply) GetGuildId() uint32 {
+	if x != nil {
+		return x.GuildId
+	}
+	return 0
+}
+
 type BeginGameTransitionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
@@ -899,7 +1058,7 @@ func (x *BeginGameTransitionRequest) GetCharacterId() uint32 {
 type BeginGameTransitionReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
-	ErrorCode     string                 `protobuf:"bytes,2,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	ErrorCode     SessionErrorCode       `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.SessionErrorCode" json:"error_code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -941,11 +1100,11 @@ func (x *BeginGameTransitionReply) GetOk() bool {
 	return false
 }
 
-func (x *BeginGameTransitionReply) GetErrorCode() string {
+func (x *BeginGameTransitionReply) GetErrorCode() SessionErrorCode {
 	if x != nil {
 		return x.ErrorCode
 	}
-	return ""
+	return SessionErrorCode_SESSION_NONE
 }
 
 type SaveCharacterRequest struct {
@@ -2283,7 +2442,7 @@ func (x *RefreshSessionRequest) GetAccountId() uint32 {
 type RefreshSessionReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
-	ErrorCode     string                 `protobuf:"bytes,2,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	ErrorCode     SessionErrorCode       `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.SessionErrorCode" json:"error_code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2325,11 +2484,11 @@ func (x *RefreshSessionReply) GetOk() bool {
 	return false
 }
 
-func (x *RefreshSessionReply) GetErrorCode() string {
+func (x *RefreshSessionReply) GetErrorCode() SessionErrorCode {
 	if x != nil {
 		return x.ErrorCode
 	}
-	return ""
+	return SessionErrorCode_SESSION_NONE
 }
 
 type LogoutSessionRequest struct {
@@ -2428,6 +2587,1443 @@ func (x *LogoutSessionReply) GetOk() bool {
 	return false
 }
 
+type CreatePartyRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	WorldId           uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	LeaderCharacterId uint32                 `protobuf:"varint,2,opt,name=leader_character_id,json=leaderCharacterId,proto3" json:"leader_character_id,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *CreatePartyRequest) Reset() {
+	*x = CreatePartyRequest{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatePartyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatePartyRequest) ProtoMessage() {}
+
+func (x *CreatePartyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatePartyRequest.ProtoReflect.Descriptor instead.
+func (*CreatePartyRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *CreatePartyRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *CreatePartyRequest) GetLeaderCharacterId() uint32 {
+	if x != nil {
+		return x.LeaderCharacterId
+	}
+	return 0
+}
+
+type CreatePartyReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
+	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreatePartyReply) Reset() {
+	*x = CreatePartyReply{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatePartyReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatePartyReply) ProtoMessage() {}
+
+func (x *CreatePartyReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatePartyReply.ProtoReflect.Descriptor instead.
+func (*CreatePartyReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *CreatePartyReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *CreatePartyReply) GetErrorCode() PartyErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return PartyErrorCode_NONE
+}
+
+func (x *CreatePartyReply) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *CreatePartyReply) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+type JoinPartyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	PartyId       uint32                 `protobuf:"varint,2,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	CharacterId   uint32                 `protobuf:"varint,3,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	CharacterName string                 `protobuf:"bytes,4,opt,name=character_name,json=characterName,proto3" json:"character_name,omitempty"`
+	Level         uint32                 `protobuf:"varint,5,opt,name=level,proto3" json:"level,omitempty"`
+	ClassId       uint32                 `protobuf:"varint,6,opt,name=class_id,json=classId,proto3" json:"class_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JoinPartyRequest) Reset() {
+	*x = JoinPartyRequest{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JoinPartyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinPartyRequest) ProtoMessage() {}
+
+func (x *JoinPartyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinPartyRequest.ProtoReflect.Descriptor instead.
+func (*JoinPartyRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *JoinPartyRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *JoinPartyRequest) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *JoinPartyRequest) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+func (x *JoinPartyRequest) GetCharacterName() string {
+	if x != nil {
+		return x.CharacterName
+	}
+	return ""
+}
+
+func (x *JoinPartyRequest) GetLevel() uint32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *JoinPartyRequest) GetClassId() uint32 {
+	if x != nil {
+		return x.ClassId
+	}
+	return 0
+}
+
+type JoinPartyReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
+	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JoinPartyReply) Reset() {
+	*x = JoinPartyReply{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JoinPartyReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinPartyReply) ProtoMessage() {}
+
+func (x *JoinPartyReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinPartyReply.ProtoReflect.Descriptor instead.
+func (*JoinPartyReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *JoinPartyReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *JoinPartyReply) GetErrorCode() PartyErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return PartyErrorCode_NONE
+}
+
+func (x *JoinPartyReply) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *JoinPartyReply) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+type LeavePartyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	CharacterId   uint32                 `protobuf:"varint,2,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeavePartyRequest) Reset() {
+	*x = LeavePartyRequest{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeavePartyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeavePartyRequest) ProtoMessage() {}
+
+func (x *LeavePartyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeavePartyRequest.ProtoReflect.Descriptor instead.
+func (*LeavePartyRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *LeavePartyRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *LeavePartyRequest) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+type LeavePartyReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
+	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	Disbanded     bool                   `protobuf:"varint,5,opt,name=disbanded,proto3" json:"disbanded,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LeavePartyReply) Reset() {
+	*x = LeavePartyReply{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LeavePartyReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LeavePartyReply) ProtoMessage() {}
+
+func (x *LeavePartyReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LeavePartyReply.ProtoReflect.Descriptor instead.
+func (*LeavePartyReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *LeavePartyReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *LeavePartyReply) GetErrorCode() PartyErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return PartyErrorCode_NONE
+}
+
+func (x *LeavePartyReply) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *LeavePartyReply) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *LeavePartyReply) GetDisbanded() bool {
+	if x != nil {
+		return x.Disbanded
+	}
+	return false
+}
+
+type ExpelPartyRequest struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	WorldId              uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	RequesterCharacterId uint32                 `protobuf:"varint,2,opt,name=requester_character_id,json=requesterCharacterId,proto3" json:"requester_character_id,omitempty"`
+	TargetCharacterId    uint32                 `protobuf:"varint,3,opt,name=target_character_id,json=targetCharacterId,proto3" json:"target_character_id,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ExpelPartyRequest) Reset() {
+	*x = ExpelPartyRequest{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExpelPartyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpelPartyRequest) ProtoMessage() {}
+
+func (x *ExpelPartyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpelPartyRequest.ProtoReflect.Descriptor instead.
+func (*ExpelPartyRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *ExpelPartyRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *ExpelPartyRequest) GetRequesterCharacterId() uint32 {
+	if x != nil {
+		return x.RequesterCharacterId
+	}
+	return 0
+}
+
+func (x *ExpelPartyRequest) GetTargetCharacterId() uint32 {
+	if x != nil {
+		return x.TargetCharacterId
+	}
+	return 0
+}
+
+type ExpelPartyReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
+	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	Disbanded     bool                   `protobuf:"varint,5,opt,name=disbanded,proto3" json:"disbanded,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExpelPartyReply) Reset() {
+	*x = ExpelPartyReply{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExpelPartyReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExpelPartyReply) ProtoMessage() {}
+
+func (x *ExpelPartyReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExpelPartyReply.ProtoReflect.Descriptor instead.
+func (*ExpelPartyReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *ExpelPartyReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *ExpelPartyReply) GetErrorCode() PartyErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return PartyErrorCode_NONE
+}
+
+func (x *ExpelPartyReply) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *ExpelPartyReply) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *ExpelPartyReply) GetDisbanded() bool {
+	if x != nil {
+		return x.Disbanded
+	}
+	return false
+}
+
+type ChangePartyLeaderRequest struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	WorldId              uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	PartyId              uint32                 `protobuf:"varint,2,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	RequesterCharacterId uint32                 `protobuf:"varint,3,opt,name=requester_character_id,json=requesterCharacterId,proto3" json:"requester_character_id,omitempty"`
+	NewLeaderCharacterId uint32                 `protobuf:"varint,4,opt,name=new_leader_character_id,json=newLeaderCharacterId,proto3" json:"new_leader_character_id,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ChangePartyLeaderRequest) Reset() {
+	*x = ChangePartyLeaderRequest{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangePartyLeaderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangePartyLeaderRequest) ProtoMessage() {}
+
+func (x *ChangePartyLeaderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangePartyLeaderRequest.ProtoReflect.Descriptor instead.
+func (*ChangePartyLeaderRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *ChangePartyLeaderRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *ChangePartyLeaderRequest) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *ChangePartyLeaderRequest) GetRequesterCharacterId() uint32 {
+	if x != nil {
+		return x.RequesterCharacterId
+	}
+	return 0
+}
+
+func (x *ChangePartyLeaderRequest) GetNewLeaderCharacterId() uint32 {
+	if x != nil {
+		return x.NewLeaderCharacterId
+	}
+	return 0
+}
+
+type ChangePartyLeaderReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
+	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChangePartyLeaderReply) Reset() {
+	*x = ChangePartyLeaderReply{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangePartyLeaderReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangePartyLeaderReply) ProtoMessage() {}
+
+func (x *ChangePartyLeaderReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangePartyLeaderReply.ProtoReflect.Descriptor instead.
+func (*ChangePartyLeaderReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *ChangePartyLeaderReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *ChangePartyLeaderReply) GetErrorCode() PartyErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return PartyErrorCode_NONE
+}
+
+func (x *ChangePartyLeaderReply) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *ChangePartyLeaderReply) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+// Party UI door / portal hint when present on the member row; omitted = no door.
+type PartyDoor struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Town          uint32                 `protobuf:"varint,1,opt,name=town,proto3" json:"town,omitempty"`
+	Target        uint32                 `protobuf:"varint,2,opt,name=target,proto3" json:"target,omitempty"`
+	X             int32                  `protobuf:"varint,3,opt,name=x,proto3" json:"x,omitempty"`
+	Y             int32                  `protobuf:"varint,4,opt,name=y,proto3" json:"y,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PartyDoor) Reset() {
+	*x = PartyDoor{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PartyDoor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PartyDoor) ProtoMessage() {}
+
+func (x *PartyDoor) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PartyDoor.ProtoReflect.Descriptor instead.
+func (*PartyDoor) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *PartyDoor) GetTown() uint32 {
+	if x != nil {
+		return x.Town
+	}
+	return 0
+}
+
+func (x *PartyDoor) GetTarget() uint32 {
+	if x != nil {
+		return x.Target
+	}
+	return 0
+}
+
+func (x *PartyDoor) GetX() int32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *PartyDoor) GetY() int32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+type PartyMemberSnapshot struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CharacterId   uint32                 `protobuf:"varint,1,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	CharacterName string                 `protobuf:"bytes,2,opt,name=character_name,json=characterName,proto3" json:"character_name,omitempty"`
+	Level         uint32                 `protobuf:"varint,3,opt,name=level,proto3" json:"level,omitempty"`
+	ClassId       uint32                 `protobuf:"varint,4,opt,name=class_id,json=classId,proto3" json:"class_id,omitempty"`
+	Role          string                 `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`
+	MapId         uint32                 `protobuf:"varint,6,opt,name=map_id,json=mapId,proto3" json:"map_id,omitempty"`
+	ChannelIndex  *int32                 `protobuf:"varint,7,opt,name=channel_index,json=channelIndex,proto3,oneof" json:"channel_index,omitempty"`
+	Door          *PartyDoor             `protobuf:"bytes,8,opt,name=door,proto3,oneof" json:"door,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PartyMemberSnapshot) Reset() {
+	*x = PartyMemberSnapshot{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PartyMemberSnapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PartyMemberSnapshot) ProtoMessage() {}
+
+func (x *PartyMemberSnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PartyMemberSnapshot.ProtoReflect.Descriptor instead.
+func (*PartyMemberSnapshot) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *PartyMemberSnapshot) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+func (x *PartyMemberSnapshot) GetCharacterName() string {
+	if x != nil {
+		return x.CharacterName
+	}
+	return ""
+}
+
+func (x *PartyMemberSnapshot) GetLevel() uint32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *PartyMemberSnapshot) GetClassId() uint32 {
+	if x != nil {
+		return x.ClassId
+	}
+	return 0
+}
+
+func (x *PartyMemberSnapshot) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *PartyMemberSnapshot) GetMapId() uint32 {
+	if x != nil {
+		return x.MapId
+	}
+	return 0
+}
+
+func (x *PartyMemberSnapshot) GetChannelIndex() int32 {
+	if x != nil && x.ChannelIndex != nil {
+		return *x.ChannelIndex
+	}
+	return 0
+}
+
+func (x *PartyMemberSnapshot) GetDoor() *PartyDoor {
+	if x != nil {
+		return x.Door
+	}
+	return nil
+}
+
+type PartySnapshot struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	WorldId           uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	PartyId           uint32                 `protobuf:"varint,2,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	LeaderCharacterId uint32                 `protobuf:"varint,3,opt,name=leader_character_id,json=leaderCharacterId,proto3" json:"leader_character_id,omitempty"`
+	Revision          uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	State             string                 `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
+	Members           []*PartyMemberSnapshot `protobuf:"bytes,6,rep,name=members,proto3" json:"members,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *PartySnapshot) Reset() {
+	*x = PartySnapshot{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PartySnapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PartySnapshot) ProtoMessage() {}
+
+func (x *PartySnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PartySnapshot.ProtoReflect.Descriptor instead.
+func (*PartySnapshot) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *PartySnapshot) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *PartySnapshot) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *PartySnapshot) GetLeaderCharacterId() uint32 {
+	if x != nil {
+		return x.LeaderCharacterId
+	}
+	return 0
+}
+
+func (x *PartySnapshot) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *PartySnapshot) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *PartySnapshot) GetMembers() []*PartyMemberSnapshot {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
+type GetPartyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	PartyId       uint32                 `protobuf:"varint,2,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPartyRequest) Reset() {
+	*x = GetPartyRequest{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPartyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPartyRequest) ProtoMessage() {}
+
+func (x *GetPartyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPartyRequest.ProtoReflect.Descriptor instead.
+func (*GetPartyRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *GetPartyRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *GetPartyRequest) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+type GetPartyReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Found         bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
+	Party         *PartySnapshot         `protobuf:"bytes,2,opt,name=party,proto3" json:"party,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPartyReply) Reset() {
+	*x = GetPartyReply{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPartyReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPartyReply) ProtoMessage() {}
+
+func (x *GetPartyReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPartyReply.ProtoReflect.Descriptor instead.
+func (*GetPartyReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *GetPartyReply) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
+}
+
+func (x *GetPartyReply) GetParty() *PartySnapshot {
+	if x != nil {
+		return x.Party
+	}
+	return nil
+}
+
+type ReportPartyMemberSnapshotRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorldId       uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	CharacterId   uint32                 `protobuf:"varint,2,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
+	Level         uint32                 `protobuf:"varint,3,opt,name=level,proto3" json:"level,omitempty"`
+	ClassId       uint32                 `protobuf:"varint,4,opt,name=class_id,json=classId,proto3" json:"class_id,omitempty"`
+	MapId         uint32                 `protobuf:"varint,5,opt,name=map_id,json=mapId,proto3" json:"map_id,omitempty"`
+	Door          *PartyDoor             `protobuf:"bytes,6,opt,name=door,proto3,oneof" json:"door,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReportPartyMemberSnapshotRequest) Reset() {
+	*x = ReportPartyMemberSnapshotRequest{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReportPartyMemberSnapshotRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReportPartyMemberSnapshotRequest) ProtoMessage() {}
+
+func (x *ReportPartyMemberSnapshotRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReportPartyMemberSnapshotRequest.ProtoReflect.Descriptor instead.
+func (*ReportPartyMemberSnapshotRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *ReportPartyMemberSnapshotRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *ReportPartyMemberSnapshotRequest) GetCharacterId() uint32 {
+	if x != nil {
+		return x.CharacterId
+	}
+	return 0
+}
+
+func (x *ReportPartyMemberSnapshotRequest) GetLevel() uint32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *ReportPartyMemberSnapshotRequest) GetClassId() uint32 {
+	if x != nil {
+		return x.ClassId
+	}
+	return 0
+}
+
+func (x *ReportPartyMemberSnapshotRequest) GetMapId() uint32 {
+	if x != nil {
+		return x.MapId
+	}
+	return 0
+}
+
+func (x *ReportPartyMemberSnapshotRequest) GetDoor() *PartyDoor {
+	if x != nil {
+		return x.Door
+	}
+	return nil
+}
+
+type ReportPartyMemberSnapshotReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
+	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReportPartyMemberSnapshotReply) Reset() {
+	*x = ReportPartyMemberSnapshotReply{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReportPartyMemberSnapshotReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReportPartyMemberSnapshotReply) ProtoMessage() {}
+
+func (x *ReportPartyMemberSnapshotReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReportPartyMemberSnapshotReply.ProtoReflect.Descriptor instead.
+func (*ReportPartyMemberSnapshotReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *ReportPartyMemberSnapshotReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *ReportPartyMemberSnapshotReply) GetErrorCode() PartyErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return PartyErrorCode_NONE
+}
+
+func (x *ReportPartyMemberSnapshotReply) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+func (x *ReportPartyMemberSnapshotReply) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+type InvitePartyRequest struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	WorldId             uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	InviterCharacterId  uint32                 `protobuf:"varint,2,opt,name=inviter_character_id,json=inviterCharacterId,proto3" json:"inviter_character_id,omitempty"`
+	TargetCharacterName string                 `protobuf:"bytes,3,opt,name=target_character_name,json=targetCharacterName,proto3" json:"target_character_name,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *InvitePartyRequest) Reset() {
+	*x = InvitePartyRequest{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InvitePartyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InvitePartyRequest) ProtoMessage() {}
+
+func (x *InvitePartyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InvitePartyRequest.ProtoReflect.Descriptor instead.
+func (*InvitePartyRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{51}
+}
+
+func (x *InvitePartyRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *InvitePartyRequest) GetInviterCharacterId() uint32 {
+	if x != nil {
+		return x.InviterCharacterId
+	}
+	return 0
+}
+
+func (x *InvitePartyRequest) GetTargetCharacterName() string {
+	if x != nil {
+		return x.TargetCharacterName
+	}
+	return ""
+}
+
+type InvitePartyReply struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Ok                bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	ErrorCode         PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
+	TargetCharacterId uint32                 `protobuf:"varint,3,opt,name=target_character_id,json=targetCharacterId,proto3" json:"target_character_id,omitempty"`
+	TargetChannelId   uint32                 `protobuf:"varint,4,opt,name=target_channel_id,json=targetChannelId,proto3" json:"target_channel_id,omitempty"`
+	PartyId           uint32                 `protobuf:"varint,5,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *InvitePartyReply) Reset() {
+	*x = InvitePartyReply{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InvitePartyReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InvitePartyReply) ProtoMessage() {}
+
+func (x *InvitePartyReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InvitePartyReply.ProtoReflect.Descriptor instead.
+func (*InvitePartyReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{52}
+}
+
+func (x *InvitePartyReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *InvitePartyReply) GetErrorCode() PartyErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return PartyErrorCode_NONE
+}
+
+func (x *InvitePartyReply) GetTargetCharacterId() uint32 {
+	if x != nil {
+		return x.TargetCharacterId
+	}
+	return 0
+}
+
+func (x *InvitePartyReply) GetTargetChannelId() uint32 {
+	if x != nil {
+		return x.TargetChannelId
+	}
+	return 0
+}
+
+func (x *InvitePartyReply) GetPartyId() uint32 {
+	if x != nil {
+		return x.PartyId
+	}
+	return 0
+}
+
+type DenyPartyRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	WorldId           uint32                 `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	DeniedCharacterId uint32                 `protobuf:"varint,2,opt,name=denied_character_id,json=deniedCharacterId,proto3" json:"denied_character_id,omitempty"`
+	InviterName       string                 `protobuf:"bytes,3,opt,name=inviter_name,json=inviterName,proto3" json:"inviter_name,omitempty"`
+	Action            uint32                 `protobuf:"varint,4,opt,name=action,proto3" json:"action,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *DenyPartyRequest) Reset() {
+	*x = DenyPartyRequest{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DenyPartyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DenyPartyRequest) ProtoMessage() {}
+
+func (x *DenyPartyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DenyPartyRequest.ProtoReflect.Descriptor instead.
+func (*DenyPartyRequest) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *DenyPartyRequest) GetWorldId() uint32 {
+	if x != nil {
+		return x.WorldId
+	}
+	return 0
+}
+
+func (x *DenyPartyRequest) GetDeniedCharacterId() uint32 {
+	if x != nil {
+		return x.DeniedCharacterId
+	}
+	return 0
+}
+
+func (x *DenyPartyRequest) GetInviterName() string {
+	if x != nil {
+		return x.InviterName
+	}
+	return ""
+}
+
+func (x *DenyPartyRequest) GetAction() uint32 {
+	if x != nil {
+		return x.Action
+	}
+	return 0
+}
+
+type DenyPartyReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DenyPartyReply) Reset() {
+	*x = DenyPartyReply{}
+	mi := &file_fminternal_internal_service_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DenyPartyReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DenyPartyReply) ProtoMessage() {}
+
+func (x *DenyPartyReply) ProtoReflect() protoreflect.Message {
+	mi := &file_fminternal_internal_service_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DenyPartyReply.ProtoReflect.Descriptor instead.
+func (*DenyPartyReply) Descriptor() ([]byte, []int) {
+	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *DenyPartyReply) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *DenyPartyReply) GetErrorCode() PartyErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return PartyErrorCode_NONE
+}
+
 var File_fminternal_internal_service_proto protoreflect.FileDescriptor
 
 const file_fminternal_internal_service_proto_rawDesc = "" +
@@ -2496,23 +4092,25 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\x10KeyLayoutBinding\x12\x12\n" +
 	"\x04slot\x18\x01 \x01(\x05R\x04slot\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\rR\x04type\x12\x16\n" +
-	"\x06action\x18\x03 \x01(\x05R\x06action\"\x97\x02\n" +
+	"\x06action\x18\x03 \x01(\x05R\x06action\"\xcd\x02\n" +
 	"\x0eEnterGameReply\x12\x14\n" +
 	"\x05found\x18\x01 \x01(\bR\x05found\x12=\n" +
 	"\tcharacter\x18\x02 \x01(\v2\x1f.fm.internal.CharacterPersistedR\tcharacter\x12=\n" +
 	"\tinventory\x18\x03 \x03(\v2\x1f.fm.internal.InventoryPersistedR\tinventory\x123\n" +
 	"\x06skills\x18\x04 \x03(\v2\x1b.fm.internal.SkillPersistedR\x06skills\x12<\n" +
 	"\n" +
-	"key_layout\x18\x05 \x03(\v2\x1d.fm.internal.KeyLayoutBindingR\tkeyLayout\"y\n" +
+	"key_layout\x18\x05 \x03(\v2\x1d.fm.internal.KeyLayoutBindingR\tkeyLayout\x12\x19\n" +
+	"\bparty_id\x18\x06 \x01(\rR\apartyId\x12\x19\n" +
+	"\bguild_id\x18\a \x01(\rR\aguildId\"y\n" +
 	"\x1aBeginGameTransitionRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x02 \x01(\rR\taccountId\x12!\n" +
-	"\fcharacter_id\x18\x03 \x01(\rR\vcharacterId\"I\n" +
+	"\fcharacter_id\x18\x03 \x01(\rR\vcharacterId\"h\n" +
 	"\x18BeginGameTransitionReply\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x1d\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12<\n" +
 	"\n" +
-	"error_code\x18\x02 \x01(\tR\terrorCode\"\xee\x02\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1d.fm.internal.SessionErrorCodeR\terrorCode\"\xee\x02\n" +
 	"\x14SaveCharacterRequest\x12=\n" +
 	"\tcharacter\x18\x01 \x01(\v2\x1f.fm.internal.CharacterPersistedR\tcharacter\x12O\n" +
 	"\n" +
@@ -2662,17 +4260,159 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\x15RefreshSessionRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x1d\n" +
 	"\n" +
-	"account_id\x18\x02 \x01(\rR\taccountId\"D\n" +
+	"account_id\x18\x02 \x01(\rR\taccountId\"c\n" +
 	"\x13RefreshSessionReply\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x1d\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12<\n" +
 	"\n" +
-	"error_code\x18\x02 \x01(\tR\terrorCode\"P\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1d.fm.internal.SessionErrorCodeR\terrorCode\"P\n" +
 	"\x14LogoutSessionRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x02 \x01(\rR\taccountId\"$\n" +
 	"\x12LogoutSessionReply\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok2\xf6\b\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"_\n" +
+	"\x12CreatePartyRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12.\n" +
+	"\x13leader_character_id\x18\x02 \x01(\rR\x11leaderCharacterId\"\x95\x01\n" +
+	"\x10CreatePartyReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
+	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevision\"\xc3\x01\n" +
+	"\x10JoinPartyRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x19\n" +
+	"\bparty_id\x18\x02 \x01(\rR\apartyId\x12!\n" +
+	"\fcharacter_id\x18\x03 \x01(\rR\vcharacterId\x12%\n" +
+	"\x0echaracter_name\x18\x04 \x01(\tR\rcharacterName\x12\x14\n" +
+	"\x05level\x18\x05 \x01(\rR\x05level\x12\x19\n" +
+	"\bclass_id\x18\x06 \x01(\rR\aclassId\"\x93\x01\n" +
+	"\x0eJoinPartyReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
+	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevision\"Q\n" +
+	"\x11LeavePartyRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12!\n" +
+	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\"\xb2\x01\n" +
+	"\x0fLeavePartyReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
+	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevision\x12\x1c\n" +
+	"\tdisbanded\x18\x05 \x01(\bR\tdisbanded\"\x94\x01\n" +
+	"\x11ExpelPartyRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x124\n" +
+	"\x16requester_character_id\x18\x02 \x01(\rR\x14requesterCharacterId\x12.\n" +
+	"\x13target_character_id\x18\x03 \x01(\rR\x11targetCharacterId\"\xb2\x01\n" +
+	"\x0fExpelPartyReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
+	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevision\x12\x1c\n" +
+	"\tdisbanded\x18\x05 \x01(\bR\tdisbanded\"\xbd\x01\n" +
+	"\x18ChangePartyLeaderRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x19\n" +
+	"\bparty_id\x18\x02 \x01(\rR\apartyId\x124\n" +
+	"\x16requester_character_id\x18\x03 \x01(\rR\x14requesterCharacterId\x125\n" +
+	"\x17new_leader_character_id\x18\x04 \x01(\rR\x14newLeaderCharacterId\"\x9b\x01\n" +
+	"\x16ChangePartyLeaderReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
+	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevision\"S\n" +
+	"\tPartyDoor\x12\x12\n" +
+	"\x04town\x18\x01 \x01(\rR\x04town\x12\x16\n" +
+	"\x06target\x18\x02 \x01(\rR\x06target\x12\f\n" +
+	"\x01x\x18\x03 \x01(\x05R\x01x\x12\f\n" +
+	"\x01y\x18\x04 \x01(\x05R\x01y\"\xb1\x02\n" +
+	"\x13PartyMemberSnapshot\x12!\n" +
+	"\fcharacter_id\x18\x01 \x01(\rR\vcharacterId\x12%\n" +
+	"\x0echaracter_name\x18\x02 \x01(\tR\rcharacterName\x12\x14\n" +
+	"\x05level\x18\x03 \x01(\rR\x05level\x12\x19\n" +
+	"\bclass_id\x18\x04 \x01(\rR\aclassId\x12\x12\n" +
+	"\x04role\x18\x05 \x01(\tR\x04role\x12\x15\n" +
+	"\x06map_id\x18\x06 \x01(\rR\x05mapId\x12(\n" +
+	"\rchannel_index\x18\a \x01(\x05H\x00R\fchannelIndex\x88\x01\x01\x12/\n" +
+	"\x04door\x18\b \x01(\v2\x16.fm.internal.PartyDoorH\x01R\x04door\x88\x01\x01B\x10\n" +
+	"\x0e_channel_indexB\a\n" +
+	"\x05_door\"\xe3\x01\n" +
+	"\rPartySnapshot\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x19\n" +
+	"\bparty_id\x18\x02 \x01(\rR\apartyId\x12.\n" +
+	"\x13leader_character_id\x18\x03 \x01(\rR\x11leaderCharacterId\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevision\x12\x14\n" +
+	"\x05state\x18\x05 \x01(\tR\x05state\x12:\n" +
+	"\amembers\x18\x06 \x03(\v2 .fm.internal.PartyMemberSnapshotR\amembers\"G\n" +
+	"\x0fGetPartyRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x19\n" +
+	"\bparty_id\x18\x02 \x01(\rR\apartyId\"W\n" +
+	"\rGetPartyReply\x12\x14\n" +
+	"\x05found\x18\x01 \x01(\bR\x05found\x120\n" +
+	"\x05party\x18\x02 \x01(\v2\x1a.fm.internal.PartySnapshotR\x05party\"\xe2\x01\n" +
+	" ReportPartyMemberSnapshotRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12!\n" +
+	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\x12\x14\n" +
+	"\x05level\x18\x03 \x01(\rR\x05level\x12\x19\n" +
+	"\bclass_id\x18\x04 \x01(\rR\aclassId\x12\x15\n" +
+	"\x06map_id\x18\x05 \x01(\rR\x05mapId\x12/\n" +
+	"\x04door\x18\x06 \x01(\v2\x16.fm.internal.PartyDoorH\x00R\x04door\x88\x01\x01B\a\n" +
+	"\x05_door\"\xa3\x01\n" +
+	"\x1eReportPartyMemberSnapshotReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
+	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevision\"\x95\x01\n" +
+	"\x12InvitePartyRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x120\n" +
+	"\x14inviter_character_id\x18\x02 \x01(\rR\x12inviterCharacterId\x122\n" +
+	"\x15target_character_name\x18\x03 \x01(\tR\x13targetCharacterName\"\xd5\x01\n" +
+	"\x10InvitePartyReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12.\n" +
+	"\x13target_character_id\x18\x03 \x01(\rR\x11targetCharacterId\x12*\n" +
+	"\x11target_channel_id\x18\x04 \x01(\rR\x0ftargetChannelId\x12\x19\n" +
+	"\bparty_id\x18\x05 \x01(\rR\apartyId\"\x98\x01\n" +
+	"\x10DenyPartyRequest\x12\x19\n" +
+	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12.\n" +
+	"\x13denied_character_id\x18\x02 \x01(\rR\x11deniedCharacterId\x12!\n" +
+	"\finviter_name\x18\x03 \x01(\tR\vinviterName\x12\x16\n" +
+	"\x06action\x18\x04 \x01(\rR\x06action\"\\\n" +
+	"\x0eDenyPartyReply\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode*\x8a\x01\n" +
+	"\x10SessionErrorCode\x12\x10\n" +
+	"\fSESSION_NONE\x10\x00\x12\x13\n" +
+	"\x0fSESSION_UNKNOWN\x10\x01\x12\x1d\n" +
+	"\x19SESSION_ALREADY_LOGGED_IN\x10\x02\x12\x15\n" +
+	"\x11SESSION_NOT_FOUND\x10\x03\x12\x19\n" +
+	"\x15SESSION_LOGOUT_FAILED\x10\x04*\xf0\x02\n" +
+	"\x0ePartyErrorCode\x12\b\n" +
+	"\x04NONE\x10\x00\x12\v\n" +
+	"\aUNKNOWN\x10\x01\x12\x14\n" +
+	"\x10ALREADY_IN_PARTY\x10\x02\x12\x17\n" +
+	"\x13CHARACTER_NOT_FOUND\x10\x03\x12\x13\n" +
+	"\x0fPARTY_NOT_FOUND\x10\x04\x12\x0e\n" +
+	"\n" +
+	"PARTY_FULL\x10\x05\x12\x10\n" +
+	"\fNOT_IN_PARTY\x10\x06\x12\x14\n" +
+	"\x10NOT_PARTY_LEADER\x10\a\x12\x17\n" +
+	"\x13TARGET_NOT_IN_PARTY\x10\b\x12\x19\n" +
+	"\x15TARGET_ALREADY_LEADER\x10\t\x12\x15\n" +
+	"\x11CANNOT_EXPEL_SELF\x10\n" +
+	"\x12\x1d\n" +
+	"\x19INVITE_EXPIRED_OR_INVALID\x10\v\x12\x12\n" +
+	"\x0eTARGET_OFFLINE\x10\f\x12\x18\n" +
+	"\x14INVITER_NOT_IN_PARTY\x10\r\x12\x16\n" +
+	"\x12CANNOT_INVITE_SELF\x10\x0e\x12\x1b\n" +
+	"\x17TARGET_ALREADY_IN_PARTY\x10\x0f2\xde\x0e\n" +
 	"\bInternal\x128\n" +
 	"\x04Ping\x12\x18.fm.internal.PingRequest\x1a\x16.fm.internal.PingReply\x12\\\n" +
 	"\x10GetServerCatalog\x12$.fm.internal.GetServerCatalogRequest\x1a\".fm.internal.GetServerCatalogReply\x12G\n" +
@@ -2686,7 +4426,18 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\x0fCreateCharacter\x12#.fm.internal.CreateCharacterRequest\x1a!.fm.internal.CreateCharacterReply\x12Y\n" +
 	"\x0fDeleteCharacter\x12#.fm.internal.DeleteCharacterRequest\x1a!.fm.internal.DeleteCharacterReply\x12V\n" +
 	"\x0eRefreshSession\x12\".fm.internal.RefreshSessionRequest\x1a .fm.internal.RefreshSessionReply\x12S\n" +
-	"\rLogoutSession\x12!.fm.internal.LogoutSessionRequest\x1a\x1f.fm.internal.LogoutSessionReplyBHZFgithub.com/boyism80/fm/protocol/protobuf/gengo/fminternal;fminternalpbb\x06proto3"
+	"\rLogoutSession\x12!.fm.internal.LogoutSessionRequest\x1a\x1f.fm.internal.LogoutSessionReply\x12M\n" +
+	"\vCreateParty\x12\x1f.fm.internal.CreatePartyRequest\x1a\x1d.fm.internal.CreatePartyReply\x12G\n" +
+	"\tJoinParty\x12\x1d.fm.internal.JoinPartyRequest\x1a\x1b.fm.internal.JoinPartyReply\x12J\n" +
+	"\n" +
+	"LeaveParty\x12\x1e.fm.internal.LeavePartyRequest\x1a\x1c.fm.internal.LeavePartyReply\x12J\n" +
+	"\n" +
+	"ExpelParty\x12\x1e.fm.internal.ExpelPartyRequest\x1a\x1c.fm.internal.ExpelPartyReply\x12_\n" +
+	"\x11ChangePartyLeader\x12%.fm.internal.ChangePartyLeaderRequest\x1a#.fm.internal.ChangePartyLeaderReply\x12D\n" +
+	"\bGetParty\x12\x1c.fm.internal.GetPartyRequest\x1a\x1a.fm.internal.GetPartyReply\x12w\n" +
+	"\x19ReportPartyMemberSnapshot\x12-.fm.internal.ReportPartyMemberSnapshotRequest\x1a+.fm.internal.ReportPartyMemberSnapshotReply\x12M\n" +
+	"\vInviteParty\x12\x1f.fm.internal.InvitePartyRequest\x1a\x1d.fm.internal.InvitePartyReply\x12G\n" +
+	"\tDenyParty\x12\x1d.fm.internal.DenyPartyRequest\x1a\x1b.fm.internal.DenyPartyReplyBHZFgithub.com/boyism80/fm/protocol/protobuf/gengo/fminternal;fminternalpbb\x06proto3"
 
 var (
 	file_fminternal_internal_service_proto_rawDescOnce sync.Once
@@ -2700,104 +4451,159 @@ func file_fminternal_internal_service_proto_rawDescGZIP() []byte {
 	return file_fminternal_internal_service_proto_rawDescData
 }
 
-var file_fminternal_internal_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_fminternal_internal_service_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
+var file_fminternal_internal_service_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_fminternal_internal_service_proto_msgTypes = make([]protoimpl.MessageInfo, 61)
 var file_fminternal_internal_service_proto_goTypes = []any{
-	(LoginAccountReply_Status)(0),      // 0: fm.internal.LoginAccountReply.Status
-	(*PingRequest)(nil),                // 1: fm.internal.PingRequest
-	(*PingReply)(nil),                  // 2: fm.internal.PingReply
-	(*GetServerCatalogRequest)(nil),    // 3: fm.internal.GetServerCatalogRequest
-	(*ChannelCatalog)(nil),             // 4: fm.internal.ChannelCatalog
-	(*WorldCatalog)(nil),               // 5: fm.internal.WorldCatalog
-	(*GetServerCatalogReply)(nil),      // 6: fm.internal.GetServerCatalogReply
-	(*EnterGameRequest)(nil),           // 7: fm.internal.EnterGameRequest
-	(*CharacterPersisted)(nil),         // 8: fm.internal.CharacterPersisted
-	(*KeyLayoutBinding)(nil),           // 9: fm.internal.KeyLayoutBinding
-	(*EnterGameReply)(nil),             // 10: fm.internal.EnterGameReply
-	(*BeginGameTransitionRequest)(nil), // 11: fm.internal.BeginGameTransitionRequest
-	(*BeginGameTransitionReply)(nil),   // 12: fm.internal.BeginGameTransitionReply
-	(*SaveCharacterRequest)(nil),       // 13: fm.internal.SaveCharacterRequest
-	(*SaveCharacterReply)(nil),         // 14: fm.internal.SaveCharacterReply
-	(*CharacterSaveEntry)(nil),         // 15: fm.internal.CharacterSaveEntry
-	(*SaveCharactersRequest)(nil),      // 16: fm.internal.SaveCharactersRequest
-	(*SaveCharactersReply)(nil),        // 17: fm.internal.SaveCharactersReply
-	(*InventoryPersisted)(nil),         // 18: fm.internal.InventoryPersisted
-	(*SkillPersisted)(nil),             // 19: fm.internal.SkillPersisted
-	(*LoginAccountRequest)(nil),        // 20: fm.internal.LoginAccountRequest
-	(*LoginAccountReply)(nil),          // 21: fm.internal.LoginAccountReply
-	(*CharacterOverview)(nil),          // 22: fm.internal.CharacterOverview
-	(*GetCharacterListRequest)(nil),    // 23: fm.internal.GetCharacterListRequest
-	(*GetCharacterListReply)(nil),      // 24: fm.internal.GetCharacterListReply
-	(*CheckCharacterNameRequest)(nil),  // 25: fm.internal.CheckCharacterNameRequest
-	(*CheckCharacterNameReply)(nil),    // 26: fm.internal.CheckCharacterNameReply
-	(*CreateCharacterRequest)(nil),     // 27: fm.internal.CreateCharacterRequest
-	(*CreateCharacterReply)(nil),       // 28: fm.internal.CreateCharacterReply
-	(*DeleteCharacterRequest)(nil),     // 29: fm.internal.DeleteCharacterRequest
-	(*DeleteCharacterReply)(nil),       // 30: fm.internal.DeleteCharacterReply
-	(*RefreshSessionRequest)(nil),      // 31: fm.internal.RefreshSessionRequest
-	(*RefreshSessionReply)(nil),        // 32: fm.internal.RefreshSessionReply
-	(*LogoutSessionRequest)(nil),       // 33: fm.internal.LogoutSessionRequest
-	(*LogoutSessionReply)(nil),         // 34: fm.internal.LogoutSessionReply
-	nil,                                // 35: fm.internal.SaveCharacterRequest.BaseLooksEntry
-	nil,                                // 36: fm.internal.SaveCharacterRequest.OverlaysEntry
-	nil,                                // 37: fm.internal.CharacterSaveEntry.BaseLooksEntry
-	nil,                                // 38: fm.internal.CharacterSaveEntry.OverlaysEntry
-	nil,                                // 39: fm.internal.CharacterOverview.BaseLooksEntry
-	nil,                                // 40: fm.internal.CharacterOverview.OverlaysEntry
+	(SessionErrorCode)(0),                    // 0: fm.internal.SessionErrorCode
+	(PartyErrorCode)(0),                      // 1: fm.internal.PartyErrorCode
+	(LoginAccountReply_Status)(0),            // 2: fm.internal.LoginAccountReply.Status
+	(*PingRequest)(nil),                      // 3: fm.internal.PingRequest
+	(*PingReply)(nil),                        // 4: fm.internal.PingReply
+	(*GetServerCatalogRequest)(nil),          // 5: fm.internal.GetServerCatalogRequest
+	(*ChannelCatalog)(nil),                   // 6: fm.internal.ChannelCatalog
+	(*WorldCatalog)(nil),                     // 7: fm.internal.WorldCatalog
+	(*GetServerCatalogReply)(nil),            // 8: fm.internal.GetServerCatalogReply
+	(*EnterGameRequest)(nil),                 // 9: fm.internal.EnterGameRequest
+	(*CharacterPersisted)(nil),               // 10: fm.internal.CharacterPersisted
+	(*KeyLayoutBinding)(nil),                 // 11: fm.internal.KeyLayoutBinding
+	(*EnterGameReply)(nil),                   // 12: fm.internal.EnterGameReply
+	(*BeginGameTransitionRequest)(nil),       // 13: fm.internal.BeginGameTransitionRequest
+	(*BeginGameTransitionReply)(nil),         // 14: fm.internal.BeginGameTransitionReply
+	(*SaveCharacterRequest)(nil),             // 15: fm.internal.SaveCharacterRequest
+	(*SaveCharacterReply)(nil),               // 16: fm.internal.SaveCharacterReply
+	(*CharacterSaveEntry)(nil),               // 17: fm.internal.CharacterSaveEntry
+	(*SaveCharactersRequest)(nil),            // 18: fm.internal.SaveCharactersRequest
+	(*SaveCharactersReply)(nil),              // 19: fm.internal.SaveCharactersReply
+	(*InventoryPersisted)(nil),               // 20: fm.internal.InventoryPersisted
+	(*SkillPersisted)(nil),                   // 21: fm.internal.SkillPersisted
+	(*LoginAccountRequest)(nil),              // 22: fm.internal.LoginAccountRequest
+	(*LoginAccountReply)(nil),                // 23: fm.internal.LoginAccountReply
+	(*CharacterOverview)(nil),                // 24: fm.internal.CharacterOverview
+	(*GetCharacterListRequest)(nil),          // 25: fm.internal.GetCharacterListRequest
+	(*GetCharacterListReply)(nil),            // 26: fm.internal.GetCharacterListReply
+	(*CheckCharacterNameRequest)(nil),        // 27: fm.internal.CheckCharacterNameRequest
+	(*CheckCharacterNameReply)(nil),          // 28: fm.internal.CheckCharacterNameReply
+	(*CreateCharacterRequest)(nil),           // 29: fm.internal.CreateCharacterRequest
+	(*CreateCharacterReply)(nil),             // 30: fm.internal.CreateCharacterReply
+	(*DeleteCharacterRequest)(nil),           // 31: fm.internal.DeleteCharacterRequest
+	(*DeleteCharacterReply)(nil),             // 32: fm.internal.DeleteCharacterReply
+	(*RefreshSessionRequest)(nil),            // 33: fm.internal.RefreshSessionRequest
+	(*RefreshSessionReply)(nil),              // 34: fm.internal.RefreshSessionReply
+	(*LogoutSessionRequest)(nil),             // 35: fm.internal.LogoutSessionRequest
+	(*LogoutSessionReply)(nil),               // 36: fm.internal.LogoutSessionReply
+	(*CreatePartyRequest)(nil),               // 37: fm.internal.CreatePartyRequest
+	(*CreatePartyReply)(nil),                 // 38: fm.internal.CreatePartyReply
+	(*JoinPartyRequest)(nil),                 // 39: fm.internal.JoinPartyRequest
+	(*JoinPartyReply)(nil),                   // 40: fm.internal.JoinPartyReply
+	(*LeavePartyRequest)(nil),                // 41: fm.internal.LeavePartyRequest
+	(*LeavePartyReply)(nil),                  // 42: fm.internal.LeavePartyReply
+	(*ExpelPartyRequest)(nil),                // 43: fm.internal.ExpelPartyRequest
+	(*ExpelPartyReply)(nil),                  // 44: fm.internal.ExpelPartyReply
+	(*ChangePartyLeaderRequest)(nil),         // 45: fm.internal.ChangePartyLeaderRequest
+	(*ChangePartyLeaderReply)(nil),           // 46: fm.internal.ChangePartyLeaderReply
+	(*PartyDoor)(nil),                        // 47: fm.internal.PartyDoor
+	(*PartyMemberSnapshot)(nil),              // 48: fm.internal.PartyMemberSnapshot
+	(*PartySnapshot)(nil),                    // 49: fm.internal.PartySnapshot
+	(*GetPartyRequest)(nil),                  // 50: fm.internal.GetPartyRequest
+	(*GetPartyReply)(nil),                    // 51: fm.internal.GetPartyReply
+	(*ReportPartyMemberSnapshotRequest)(nil), // 52: fm.internal.ReportPartyMemberSnapshotRequest
+	(*ReportPartyMemberSnapshotReply)(nil),   // 53: fm.internal.ReportPartyMemberSnapshotReply
+	(*InvitePartyRequest)(nil),               // 54: fm.internal.InvitePartyRequest
+	(*InvitePartyReply)(nil),                 // 55: fm.internal.InvitePartyReply
+	(*DenyPartyRequest)(nil),                 // 56: fm.internal.DenyPartyRequest
+	(*DenyPartyReply)(nil),                   // 57: fm.internal.DenyPartyReply
+	nil,                                      // 58: fm.internal.SaveCharacterRequest.BaseLooksEntry
+	nil,                                      // 59: fm.internal.SaveCharacterRequest.OverlaysEntry
+	nil,                                      // 60: fm.internal.CharacterSaveEntry.BaseLooksEntry
+	nil,                                      // 61: fm.internal.CharacterSaveEntry.OverlaysEntry
+	nil,                                      // 62: fm.internal.CharacterOverview.BaseLooksEntry
+	nil,                                      // 63: fm.internal.CharacterOverview.OverlaysEntry
 }
 var file_fminternal_internal_service_proto_depIdxs = []int32{
-	4,  // 0: fm.internal.WorldCatalog.channels:type_name -> fm.internal.ChannelCatalog
-	5,  // 1: fm.internal.GetServerCatalogReply.worlds:type_name -> fm.internal.WorldCatalog
-	8,  // 2: fm.internal.EnterGameReply.character:type_name -> fm.internal.CharacterPersisted
-	18, // 3: fm.internal.EnterGameReply.inventory:type_name -> fm.internal.InventoryPersisted
-	19, // 4: fm.internal.EnterGameReply.skills:type_name -> fm.internal.SkillPersisted
-	9,  // 5: fm.internal.EnterGameReply.key_layout:type_name -> fm.internal.KeyLayoutBinding
-	8,  // 6: fm.internal.SaveCharacterRequest.character:type_name -> fm.internal.CharacterPersisted
-	35, // 7: fm.internal.SaveCharacterRequest.base_looks:type_name -> fm.internal.SaveCharacterRequest.BaseLooksEntry
-	36, // 8: fm.internal.SaveCharacterRequest.overlays:type_name -> fm.internal.SaveCharacterRequest.OverlaysEntry
-	8,  // 9: fm.internal.CharacterSaveEntry.character:type_name -> fm.internal.CharacterPersisted
-	37, // 10: fm.internal.CharacterSaveEntry.base_looks:type_name -> fm.internal.CharacterSaveEntry.BaseLooksEntry
-	38, // 11: fm.internal.CharacterSaveEntry.overlays:type_name -> fm.internal.CharacterSaveEntry.OverlaysEntry
-	18, // 12: fm.internal.CharacterSaveEntry.inventory:type_name -> fm.internal.InventoryPersisted
-	19, // 13: fm.internal.CharacterSaveEntry.skills:type_name -> fm.internal.SkillPersisted
-	9,  // 14: fm.internal.CharacterSaveEntry.key_layout:type_name -> fm.internal.KeyLayoutBinding
-	15, // 15: fm.internal.SaveCharactersRequest.entries:type_name -> fm.internal.CharacterSaveEntry
-	0,  // 16: fm.internal.LoginAccountReply.status:type_name -> fm.internal.LoginAccountReply.Status
-	39, // 17: fm.internal.CharacterOverview.base_looks:type_name -> fm.internal.CharacterOverview.BaseLooksEntry
-	40, // 18: fm.internal.CharacterOverview.overlays:type_name -> fm.internal.CharacterOverview.OverlaysEntry
-	22, // 19: fm.internal.GetCharacterListReply.characters:type_name -> fm.internal.CharacterOverview
-	22, // 20: fm.internal.CreateCharacterReply.character:type_name -> fm.internal.CharacterOverview
-	1,  // 21: fm.internal.Internal.Ping:input_type -> fm.internal.PingRequest
-	3,  // 22: fm.internal.Internal.GetServerCatalog:input_type -> fm.internal.GetServerCatalogRequest
-	7,  // 23: fm.internal.Internal.EnterGame:input_type -> fm.internal.EnterGameRequest
-	11, // 24: fm.internal.Internal.BeginGameTransition:input_type -> fm.internal.BeginGameTransitionRequest
-	13, // 25: fm.internal.Internal.SaveCharacter:input_type -> fm.internal.SaveCharacterRequest
-	16, // 26: fm.internal.Internal.SaveCharacters:input_type -> fm.internal.SaveCharactersRequest
-	20, // 27: fm.internal.Internal.LoginAccount:input_type -> fm.internal.LoginAccountRequest
-	23, // 28: fm.internal.Internal.GetCharacterList:input_type -> fm.internal.GetCharacterListRequest
-	25, // 29: fm.internal.Internal.CheckCharacterName:input_type -> fm.internal.CheckCharacterNameRequest
-	27, // 30: fm.internal.Internal.CreateCharacter:input_type -> fm.internal.CreateCharacterRequest
-	29, // 31: fm.internal.Internal.DeleteCharacter:input_type -> fm.internal.DeleteCharacterRequest
-	31, // 32: fm.internal.Internal.RefreshSession:input_type -> fm.internal.RefreshSessionRequest
-	33, // 33: fm.internal.Internal.LogoutSession:input_type -> fm.internal.LogoutSessionRequest
-	2,  // 34: fm.internal.Internal.Ping:output_type -> fm.internal.PingReply
-	6,  // 35: fm.internal.Internal.GetServerCatalog:output_type -> fm.internal.GetServerCatalogReply
-	10, // 36: fm.internal.Internal.EnterGame:output_type -> fm.internal.EnterGameReply
-	12, // 37: fm.internal.Internal.BeginGameTransition:output_type -> fm.internal.BeginGameTransitionReply
-	14, // 38: fm.internal.Internal.SaveCharacter:output_type -> fm.internal.SaveCharacterReply
-	17, // 39: fm.internal.Internal.SaveCharacters:output_type -> fm.internal.SaveCharactersReply
-	21, // 40: fm.internal.Internal.LoginAccount:output_type -> fm.internal.LoginAccountReply
-	24, // 41: fm.internal.Internal.GetCharacterList:output_type -> fm.internal.GetCharacterListReply
-	26, // 42: fm.internal.Internal.CheckCharacterName:output_type -> fm.internal.CheckCharacterNameReply
-	28, // 43: fm.internal.Internal.CreateCharacter:output_type -> fm.internal.CreateCharacterReply
-	30, // 44: fm.internal.Internal.DeleteCharacter:output_type -> fm.internal.DeleteCharacterReply
-	32, // 45: fm.internal.Internal.RefreshSession:output_type -> fm.internal.RefreshSessionReply
-	34, // 46: fm.internal.Internal.LogoutSession:output_type -> fm.internal.LogoutSessionReply
-	34, // [34:47] is the sub-list for method output_type
-	21, // [21:34] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	6,  // 0: fm.internal.WorldCatalog.channels:type_name -> fm.internal.ChannelCatalog
+	7,  // 1: fm.internal.GetServerCatalogReply.worlds:type_name -> fm.internal.WorldCatalog
+	10, // 2: fm.internal.EnterGameReply.character:type_name -> fm.internal.CharacterPersisted
+	20, // 3: fm.internal.EnterGameReply.inventory:type_name -> fm.internal.InventoryPersisted
+	21, // 4: fm.internal.EnterGameReply.skills:type_name -> fm.internal.SkillPersisted
+	11, // 5: fm.internal.EnterGameReply.key_layout:type_name -> fm.internal.KeyLayoutBinding
+	0,  // 6: fm.internal.BeginGameTransitionReply.error_code:type_name -> fm.internal.SessionErrorCode
+	10, // 7: fm.internal.SaveCharacterRequest.character:type_name -> fm.internal.CharacterPersisted
+	58, // 8: fm.internal.SaveCharacterRequest.base_looks:type_name -> fm.internal.SaveCharacterRequest.BaseLooksEntry
+	59, // 9: fm.internal.SaveCharacterRequest.overlays:type_name -> fm.internal.SaveCharacterRequest.OverlaysEntry
+	10, // 10: fm.internal.CharacterSaveEntry.character:type_name -> fm.internal.CharacterPersisted
+	60, // 11: fm.internal.CharacterSaveEntry.base_looks:type_name -> fm.internal.CharacterSaveEntry.BaseLooksEntry
+	61, // 12: fm.internal.CharacterSaveEntry.overlays:type_name -> fm.internal.CharacterSaveEntry.OverlaysEntry
+	20, // 13: fm.internal.CharacterSaveEntry.inventory:type_name -> fm.internal.InventoryPersisted
+	21, // 14: fm.internal.CharacterSaveEntry.skills:type_name -> fm.internal.SkillPersisted
+	11, // 15: fm.internal.CharacterSaveEntry.key_layout:type_name -> fm.internal.KeyLayoutBinding
+	17, // 16: fm.internal.SaveCharactersRequest.entries:type_name -> fm.internal.CharacterSaveEntry
+	2,  // 17: fm.internal.LoginAccountReply.status:type_name -> fm.internal.LoginAccountReply.Status
+	62, // 18: fm.internal.CharacterOverview.base_looks:type_name -> fm.internal.CharacterOverview.BaseLooksEntry
+	63, // 19: fm.internal.CharacterOverview.overlays:type_name -> fm.internal.CharacterOverview.OverlaysEntry
+	24, // 20: fm.internal.GetCharacterListReply.characters:type_name -> fm.internal.CharacterOverview
+	24, // 21: fm.internal.CreateCharacterReply.character:type_name -> fm.internal.CharacterOverview
+	0,  // 22: fm.internal.RefreshSessionReply.error_code:type_name -> fm.internal.SessionErrorCode
+	1,  // 23: fm.internal.CreatePartyReply.error_code:type_name -> fm.internal.PartyErrorCode
+	1,  // 24: fm.internal.JoinPartyReply.error_code:type_name -> fm.internal.PartyErrorCode
+	1,  // 25: fm.internal.LeavePartyReply.error_code:type_name -> fm.internal.PartyErrorCode
+	1,  // 26: fm.internal.ExpelPartyReply.error_code:type_name -> fm.internal.PartyErrorCode
+	1,  // 27: fm.internal.ChangePartyLeaderReply.error_code:type_name -> fm.internal.PartyErrorCode
+	47, // 28: fm.internal.PartyMemberSnapshot.door:type_name -> fm.internal.PartyDoor
+	48, // 29: fm.internal.PartySnapshot.members:type_name -> fm.internal.PartyMemberSnapshot
+	49, // 30: fm.internal.GetPartyReply.party:type_name -> fm.internal.PartySnapshot
+	47, // 31: fm.internal.ReportPartyMemberSnapshotRequest.door:type_name -> fm.internal.PartyDoor
+	1,  // 32: fm.internal.ReportPartyMemberSnapshotReply.error_code:type_name -> fm.internal.PartyErrorCode
+	1,  // 33: fm.internal.InvitePartyReply.error_code:type_name -> fm.internal.PartyErrorCode
+	1,  // 34: fm.internal.DenyPartyReply.error_code:type_name -> fm.internal.PartyErrorCode
+	3,  // 35: fm.internal.Internal.Ping:input_type -> fm.internal.PingRequest
+	5,  // 36: fm.internal.Internal.GetServerCatalog:input_type -> fm.internal.GetServerCatalogRequest
+	9,  // 37: fm.internal.Internal.EnterGame:input_type -> fm.internal.EnterGameRequest
+	13, // 38: fm.internal.Internal.BeginGameTransition:input_type -> fm.internal.BeginGameTransitionRequest
+	15, // 39: fm.internal.Internal.SaveCharacter:input_type -> fm.internal.SaveCharacterRequest
+	18, // 40: fm.internal.Internal.SaveCharacters:input_type -> fm.internal.SaveCharactersRequest
+	22, // 41: fm.internal.Internal.LoginAccount:input_type -> fm.internal.LoginAccountRequest
+	25, // 42: fm.internal.Internal.GetCharacterList:input_type -> fm.internal.GetCharacterListRequest
+	27, // 43: fm.internal.Internal.CheckCharacterName:input_type -> fm.internal.CheckCharacterNameRequest
+	29, // 44: fm.internal.Internal.CreateCharacter:input_type -> fm.internal.CreateCharacterRequest
+	31, // 45: fm.internal.Internal.DeleteCharacter:input_type -> fm.internal.DeleteCharacterRequest
+	33, // 46: fm.internal.Internal.RefreshSession:input_type -> fm.internal.RefreshSessionRequest
+	35, // 47: fm.internal.Internal.LogoutSession:input_type -> fm.internal.LogoutSessionRequest
+	37, // 48: fm.internal.Internal.CreateParty:input_type -> fm.internal.CreatePartyRequest
+	39, // 49: fm.internal.Internal.JoinParty:input_type -> fm.internal.JoinPartyRequest
+	41, // 50: fm.internal.Internal.LeaveParty:input_type -> fm.internal.LeavePartyRequest
+	43, // 51: fm.internal.Internal.ExpelParty:input_type -> fm.internal.ExpelPartyRequest
+	45, // 52: fm.internal.Internal.ChangePartyLeader:input_type -> fm.internal.ChangePartyLeaderRequest
+	50, // 53: fm.internal.Internal.GetParty:input_type -> fm.internal.GetPartyRequest
+	52, // 54: fm.internal.Internal.ReportPartyMemberSnapshot:input_type -> fm.internal.ReportPartyMemberSnapshotRequest
+	54, // 55: fm.internal.Internal.InviteParty:input_type -> fm.internal.InvitePartyRequest
+	56, // 56: fm.internal.Internal.DenyParty:input_type -> fm.internal.DenyPartyRequest
+	4,  // 57: fm.internal.Internal.Ping:output_type -> fm.internal.PingReply
+	8,  // 58: fm.internal.Internal.GetServerCatalog:output_type -> fm.internal.GetServerCatalogReply
+	12, // 59: fm.internal.Internal.EnterGame:output_type -> fm.internal.EnterGameReply
+	14, // 60: fm.internal.Internal.BeginGameTransition:output_type -> fm.internal.BeginGameTransitionReply
+	16, // 61: fm.internal.Internal.SaveCharacter:output_type -> fm.internal.SaveCharacterReply
+	19, // 62: fm.internal.Internal.SaveCharacters:output_type -> fm.internal.SaveCharactersReply
+	23, // 63: fm.internal.Internal.LoginAccount:output_type -> fm.internal.LoginAccountReply
+	26, // 64: fm.internal.Internal.GetCharacterList:output_type -> fm.internal.GetCharacterListReply
+	28, // 65: fm.internal.Internal.CheckCharacterName:output_type -> fm.internal.CheckCharacterNameReply
+	30, // 66: fm.internal.Internal.CreateCharacter:output_type -> fm.internal.CreateCharacterReply
+	32, // 67: fm.internal.Internal.DeleteCharacter:output_type -> fm.internal.DeleteCharacterReply
+	34, // 68: fm.internal.Internal.RefreshSession:output_type -> fm.internal.RefreshSessionReply
+	36, // 69: fm.internal.Internal.LogoutSession:output_type -> fm.internal.LogoutSessionReply
+	38, // 70: fm.internal.Internal.CreateParty:output_type -> fm.internal.CreatePartyReply
+	40, // 71: fm.internal.Internal.JoinParty:output_type -> fm.internal.JoinPartyReply
+	42, // 72: fm.internal.Internal.LeaveParty:output_type -> fm.internal.LeavePartyReply
+	44, // 73: fm.internal.Internal.ExpelParty:output_type -> fm.internal.ExpelPartyReply
+	46, // 74: fm.internal.Internal.ChangePartyLeader:output_type -> fm.internal.ChangePartyLeaderReply
+	51, // 75: fm.internal.Internal.GetParty:output_type -> fm.internal.GetPartyReply
+	53, // 76: fm.internal.Internal.ReportPartyMemberSnapshot:output_type -> fm.internal.ReportPartyMemberSnapshotReply
+	55, // 77: fm.internal.Internal.InviteParty:output_type -> fm.internal.InvitePartyReply
+	57, // 78: fm.internal.Internal.DenyParty:output_type -> fm.internal.DenyPartyReply
+	57, // [57:79] is the sub-list for method output_type
+	35, // [35:57] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_fminternal_internal_service_proto_init() }
@@ -2805,13 +4611,15 @@ func file_fminternal_internal_service_proto_init() {
 	if File_fminternal_internal_service_proto != nil {
 		return
 	}
+	file_fminternal_internal_service_proto_msgTypes[45].OneofWrappers = []any{}
+	file_fminternal_internal_service_proto_msgTypes[49].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_fminternal_internal_service_proto_rawDesc), len(file_fminternal_internal_service_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   40,
+			NumEnums:      3,
+			NumMessages:   61,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

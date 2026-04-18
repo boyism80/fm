@@ -48,7 +48,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 				})
 			}, func(reply *internal.RefreshSessionReply) error {
 				if !reply.GetOk() {
-					return fmt.Errorf("refresh session failed: %s", reply.GetErrorCode())
+					return fmt.Errorf("refresh session failed: %v", reply.GetErrorCode())
 				}
 				return nil
 			}).

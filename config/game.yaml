@@ -12,4 +12,10 @@ rate:
 internal:
   host: "127.0.0.1"
   port: 50051
+rabbitmq:
+  ip: "127.0.0.1"
+  port: 5672
+  uid: "guest"
+  pwd: "guest"
+  vhost: "/fm"
 high_rate: false

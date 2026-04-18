@@ -1,0 +1,234 @@
+package server
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/protocol/constant"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game/client"
+)
+
+type PartyOperation struct {
+	gs     *GameServer
+	opcode byte
+}
+
+func (PartyOperation) New(gs *GameServer) *PartyOperation {
+	return &PartyOperation{
+		gs:     gs,
+		opcode: 0x66,
+	}
+}
+
+func (h *PartyOperation) GetOpcode() byte {
+	return h.opcode
+}
+
+func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOperation) error {
+	if h.gs.internalClient == nil {
+		return fmt.Errorf("internal client not configured")
+	}
+	if ctx.ActorContext == nil {
+		return fmt.Errorf("party operation: actor context required")
+	}
+
+	gameClient, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		return fmt.Errorf("client is not a GameClient")
+	}
+	character := gameClient.GetCharacter()
+	if character == nil {
+		return fmt.Errorf("character not found")
+	}
+
+	worldID := h.gs.config.WorldId
+	charID := character.GetID()
+
+	switch req.Operation {
+	case constant.PartyC2SCreate:
+		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+			func(c context.Context) (*internal.CreatePartyReply, error) {
+				return h.gs.internalClient.CreateParty(c, &internal.CreatePartyRequest{
+					WorldId:           worldID,
+					LeaderCharacterId: charID,
+				})
+			},
+			func(reply *internal.CreatePartyReply) error {
+				if !reply.GetOk() {
+					character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SCreate, int32(reply.GetErrorCode())))
+					log.Printf("PartyOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
+					return nil
+				}
+				character.Listener.OnPartyCreated(character, reply.GetPartyId())
+				return nil
+			},
+		).OnError(func(err error) {
+			log.Printf("PartyOperation(create) async error: %v", err)
+		}).Run()
+		return nil
+
+	case constant.PartyC2SLeave:
+		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+			func(c context.Context) (*internal.LeavePartyReply, error) {
+				return h.gs.internalClient.LeaveParty(c, &internal.LeavePartyRequest{
+					WorldId:     worldID,
+					CharacterId: charID,
+				})
+			},
+			func(reply *internal.LeavePartyReply) error {
+				if !reply.GetOk() {
+					character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SLeave, int32(reply.GetErrorCode())))
+					log.Printf("PartyOperation(leave): failed character=%d code=%v", charID, reply.GetErrorCode())
+				}
+				return nil
+			},
+		).OnError(func(err error) {
+			log.Printf("PartyOperation(leave) async error: %v", err)
+		}).Run()
+		return nil
+
+	case constant.PartyC2SAcceptInvite:
+		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+			func(c context.Context) (*internal.JoinPartyReply, error) {
+				return h.gs.internalClient.JoinParty(c, &internal.JoinPartyRequest{
+					WorldId:       worldID,
+					PartyId:       req.PartyID,
+					CharacterId:   charID,
+					CharacterName: character.GetName(),
+					Level:         uint32(character.GetLevel()),
+					ClassId:       uint32(character.Class),
+				})
+			},
+			func(reply *internal.JoinPartyReply) error {
+				if !reply.GetOk() {
+					character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SAcceptInvite, int32(reply.GetErrorCode())))
+					log.Printf("PartyOperation(join): failed character=%d party=%d code=%v", charID, req.PartyID, reply.GetErrorCode())
+				}
+				return nil
+			},
+		).OnError(func(err error) {
+			log.Printf("PartyOperation(join) async error: %v", err)
+		}).Run()
+		return nil
+
+	case constant.PartyC2SChangeLeader:
+		partyID, hasParty := character.GetPartyID()
+		if !hasParty || partyID == 0 || req.TargetCharacterID == 0 {
+			return nil
+		}
+		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+			func(c context.Context) (*internal.ChangePartyLeaderReply, error) {
+				return h.gs.internalClient.ChangePartyLeader(c, &internal.ChangePartyLeaderRequest{
+					WorldId:              worldID,
+					PartyId:              partyID,
+					RequesterCharacterId: charID,
+					NewLeaderCharacterId: req.TargetCharacterID,
+				})
+			},
+			func(reply *internal.ChangePartyLeaderReply) error {
+				if !reply.GetOk() {
+					character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SChangeLeader, int32(reply.GetErrorCode())))
+					log.Printf("PartyOperation(change leader): failed character=%d party=%d target=%d code=%v", charID, partyID, req.TargetCharacterID, reply.GetErrorCode())
+				}
+				return nil
+			},
+		).OnError(func(err error) {
+			log.Printf("PartyOperation(change leader) async error: %v", err)
+		}).Run()
+		return nil
+
+	case constant.PartyC2SInvite:
+		targetName := req.TargetName
+		_, hasParty := character.GetPartyID()
+		var inv *internal.InvitePartyReply
+		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		if !hasParty {
+			promise = async.ThenRPC(promise,
+				func(c context.Context) (*internal.CreatePartyReply, error) {
+					return h.gs.internalClient.CreateParty(c, &internal.CreatePartyRequest{
+						WorldId:           worldID,
+						LeaderCharacterId: charID,
+					})
+				},
+				func(reply *internal.CreatePartyReply) error {
+					if reply.GetOk() {
+						character.Listener.OnPartyCreated(character, reply.GetPartyId())
+						return nil
+					}
+					character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SCreate, int32(reply.GetErrorCode())))
+					log.Printf("PartyOperation(invite pre-create): failed character=%d target=%q code=%v", charID, targetName, reply.GetErrorCode())
+					return fmt.Errorf("party create before invite failed")
+				},
+			)
+		}
+		promise = async.ThenRPC(promise,
+			func(c context.Context) (*internal.InvitePartyReply, error) {
+				return h.gs.internalClient.InviteParty(c, &internal.InvitePartyRequest{
+					WorldId:             worldID,
+					InviterCharacterId:  charID,
+					TargetCharacterName: targetName,
+				})
+			},
+			func(reply *internal.InvitePartyReply) error {
+				inv = reply
+				if reply.GetOk() {
+					return nil
+				}
+				code := reply.GetErrorCode()
+				character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SInvite, int32(code)))
+				log.Printf("PartyOperation(invite): failed inviter=%d target=%q code=%v", charID, targetName, code)
+				return nil
+			},
+		)
+		promise = async.ThenRPC(promise,
+			func(c context.Context) (*internal.GetPartyReply, error) {
+				if inv == nil || !inv.GetOk() || inv.GetPartyId() == 0 {
+					return &internal.GetPartyReply{Found: false}, nil
+				}
+				return h.gs.internalClient.GetParty(c, &internal.GetPartyRequest{
+					WorldId: worldID,
+					PartyId: inv.GetPartyId(),
+				})
+			},
+			func(gp *internal.GetPartyReply) error {
+				if gp.GetFound() && gp.GetParty() != nil && h.gs.partyEventConsumer != nil {
+					h.gs.partyEventConsumer.ApplyPartySnapshot(gp.GetParty())
+				}
+				return nil
+			},
+		)
+		promise.OnError(func(err error) {
+			log.Printf("PartyOperation(invite) async error: %v", err)
+		}).Run()
+		return nil
+
+	case constant.PartyC2SExpel:
+		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+			func(c context.Context) (*internal.ExpelPartyReply, error) {
+				return h.gs.internalClient.ExpelParty(c, &internal.ExpelPartyRequest{
+					WorldId:              worldID,
+					RequesterCharacterId: charID,
+					TargetCharacterId:    req.TargetCharacterID,
+				})
+			},
+			func(reply *internal.ExpelPartyReply) error {
+				if !reply.GetOk() {
+					character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SExpel, int32(reply.GetErrorCode())))
+					log.Printf("PartyOperation(expel): failed requester=%d target=%d code=%v", charID, req.TargetCharacterID, reply.GetErrorCode())
+				}
+				return nil
+			},
+		).OnError(func(err error) {
+			log.Printf("PartyOperation(expel) async error: %v", err)
+		}).Run()
+		return nil
+
+	default:
+		return nil
+	}
+}

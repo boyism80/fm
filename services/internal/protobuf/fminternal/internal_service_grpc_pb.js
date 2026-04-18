@@ -26,6 +26,28 @@ function deserialize_fm_internal_BeginGameTransitionRequest(buffer_arg) {
   return fminternal_internal_service_pb.BeginGameTransitionRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_fm_internal_ChangePartyLeaderReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.ChangePartyLeaderReply)) {
+    throw new Error('Expected argument of type fm.internal.ChangePartyLeaderReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_ChangePartyLeaderReply(buffer_arg) {
+  return fminternal_internal_service_pb.ChangePartyLeaderReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_ChangePartyLeaderRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.ChangePartyLeaderRequest)) {
+    throw new Error('Expected argument of type fm.internal.ChangePartyLeaderRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_ChangePartyLeaderRequest(buffer_arg) {
+  return fminternal_internal_service_pb.ChangePartyLeaderRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_fm_internal_CheckCharacterNameReply(arg) {
   if (!(arg instanceof fminternal_internal_service_pb.CheckCharacterNameReply)) {
     throw new Error('Expected argument of type fm.internal.CheckCharacterNameReply');
@@ -70,6 +92,28 @@ function deserialize_fm_internal_CreateCharacterRequest(buffer_arg) {
   return fminternal_internal_service_pb.CreateCharacterRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_fm_internal_CreatePartyReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.CreatePartyReply)) {
+    throw new Error('Expected argument of type fm.internal.CreatePartyReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_CreatePartyReply(buffer_arg) {
+  return fminternal_internal_service_pb.CreatePartyReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_CreatePartyRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.CreatePartyRequest)) {
+    throw new Error('Expected argument of type fm.internal.CreatePartyRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_CreatePartyRequest(buffer_arg) {
+  return fminternal_internal_service_pb.CreatePartyRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_fm_internal_DeleteCharacterReply(arg) {
   if (!(arg instanceof fminternal_internal_service_pb.DeleteCharacterReply)) {
     throw new Error('Expected argument of type fm.internal.DeleteCharacterReply');
@@ -90,6 +134,28 @@ function serialize_fm_internal_DeleteCharacterRequest(arg) {
 
 function deserialize_fm_internal_DeleteCharacterRequest(buffer_arg) {
   return fminternal_internal_service_pb.DeleteCharacterRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_DenyPartyReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.DenyPartyReply)) {
+    throw new Error('Expected argument of type fm.internal.DenyPartyReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_DenyPartyReply(buffer_arg) {
+  return fminternal_internal_service_pb.DenyPartyReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_DenyPartyRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.DenyPartyRequest)) {
+    throw new Error('Expected argument of type fm.internal.DenyPartyRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_DenyPartyRequest(buffer_arg) {
+  return fminternal_internal_service_pb.DenyPartyRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 function serialize_fm_internal_EnterGameReply(arg) {
@@ -114,6 +180,28 @@ function deserialize_fm_internal_EnterGameRequest(buffer_arg) {
   return fminternal_internal_service_pb.EnterGameRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_fm_internal_ExpelPartyReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.ExpelPartyReply)) {
+    throw new Error('Expected argument of type fm.internal.ExpelPartyReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_ExpelPartyReply(buffer_arg) {
+  return fminternal_internal_service_pb.ExpelPartyReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_ExpelPartyRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.ExpelPartyRequest)) {
+    throw new Error('Expected argument of type fm.internal.ExpelPartyRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_ExpelPartyRequest(buffer_arg) {
+  return fminternal_internal_service_pb.ExpelPartyRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_fm_internal_GetCharacterListReply(arg) {
   if (!(arg instanceof fminternal_internal_service_pb.GetCharacterListReply)) {
     throw new Error('Expected argument of type fm.internal.GetCharacterListReply');
@@ -136,6 +224,28 @@ function deserialize_fm_internal_GetCharacterListRequest(buffer_arg) {
   return fminternal_internal_service_pb.GetCharacterListRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_fm_internal_GetPartyReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.GetPartyReply)) {
+    throw new Error('Expected argument of type fm.internal.GetPartyReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_GetPartyReply(buffer_arg) {
+  return fminternal_internal_service_pb.GetPartyReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_GetPartyRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.GetPartyRequest)) {
+    throw new Error('Expected argument of type fm.internal.GetPartyRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_GetPartyRequest(buffer_arg) {
+  return fminternal_internal_service_pb.GetPartyRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_fm_internal_GetServerCatalogReply(arg) {
   if (!(arg instanceof fminternal_internal_service_pb.GetServerCatalogReply)) {
     throw new Error('Expected argument of type fm.internal.GetServerCatalogReply');
@@ -156,6 +266,72 @@ function serialize_fm_internal_GetServerCatalogRequest(arg) {
 
 function deserialize_fm_internal_GetServerCatalogRequest(buffer_arg) {
   return fminternal_internal_service_pb.GetServerCatalogRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_InvitePartyReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.InvitePartyReply)) {
+    throw new Error('Expected argument of type fm.internal.InvitePartyReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_InvitePartyReply(buffer_arg) {
+  return fminternal_internal_service_pb.InvitePartyReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_InvitePartyRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.InvitePartyRequest)) {
+    throw new Error('Expected argument of type fm.internal.InvitePartyRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_InvitePartyRequest(buffer_arg) {
+  return fminternal_internal_service_pb.InvitePartyRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_JoinPartyReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.JoinPartyReply)) {
+    throw new Error('Expected argument of type fm.internal.JoinPartyReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_JoinPartyReply(buffer_arg) {
+  return fminternal_internal_service_pb.JoinPartyReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_JoinPartyRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.JoinPartyRequest)) {
+    throw new Error('Expected argument of type fm.internal.JoinPartyRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_JoinPartyRequest(buffer_arg) {
+  return fminternal_internal_service_pb.JoinPartyRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_LeavePartyReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.LeavePartyReply)) {
+    throw new Error('Expected argument of type fm.internal.LeavePartyReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_LeavePartyReply(buffer_arg) {
+  return fminternal_internal_service_pb.LeavePartyReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_LeavePartyRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.LeavePartyRequest)) {
+    throw new Error('Expected argument of type fm.internal.LeavePartyRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_LeavePartyRequest(buffer_arg) {
+  return fminternal_internal_service_pb.LeavePartyRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 function serialize_fm_internal_LoginAccountReply(arg) {
@@ -244,6 +420,28 @@ function serialize_fm_internal_RefreshSessionRequest(arg) {
 
 function deserialize_fm_internal_RefreshSessionRequest(buffer_arg) {
   return fminternal_internal_service_pb.RefreshSessionRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_ReportPartyMemberSnapshotReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.ReportPartyMemberSnapshotReply)) {
+    throw new Error('Expected argument of type fm.internal.ReportPartyMemberSnapshotReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_ReportPartyMemberSnapshotReply(buffer_arg) {
+  return fminternal_internal_service_pb.ReportPartyMemberSnapshotReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_ReportPartyMemberSnapshotRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.ReportPartyMemberSnapshotRequest)) {
+    throw new Error('Expected argument of type fm.internal.ReportPartyMemberSnapshotRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_ReportPartyMemberSnapshotRequest(buffer_arg) {
+  return fminternal_internal_service_pb.ReportPartyMemberSnapshotRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 function serialize_fm_internal_SaveCharacterReply(arg) {
@@ -434,6 +632,105 @@ var InternalService = exports.InternalService = {
     requestDeserialize: deserialize_fm_internal_LogoutSessionRequest,
     responseSerialize: serialize_fm_internal_LogoutSessionReply,
     responseDeserialize: deserialize_fm_internal_LogoutSessionReply,
+  },
+  createParty: {
+    path: '/fm.internal.Internal/CreateParty',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.CreatePartyRequest,
+    responseType: fminternal_internal_service_pb.CreatePartyReply,
+    requestSerialize: serialize_fm_internal_CreatePartyRequest,
+    requestDeserialize: deserialize_fm_internal_CreatePartyRequest,
+    responseSerialize: serialize_fm_internal_CreatePartyReply,
+    responseDeserialize: deserialize_fm_internal_CreatePartyReply,
+  },
+  joinParty: {
+    path: '/fm.internal.Internal/JoinParty',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.JoinPartyRequest,
+    responseType: fminternal_internal_service_pb.JoinPartyReply,
+    requestSerialize: serialize_fm_internal_JoinPartyRequest,
+    requestDeserialize: deserialize_fm_internal_JoinPartyRequest,
+    responseSerialize: serialize_fm_internal_JoinPartyReply,
+    responseDeserialize: deserialize_fm_internal_JoinPartyReply,
+  },
+  leaveParty: {
+    path: '/fm.internal.Internal/LeaveParty',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.LeavePartyRequest,
+    responseType: fminternal_internal_service_pb.LeavePartyReply,
+    requestSerialize: serialize_fm_internal_LeavePartyRequest,
+    requestDeserialize: deserialize_fm_internal_LeavePartyRequest,
+    responseSerialize: serialize_fm_internal_LeavePartyReply,
+    responseDeserialize: deserialize_fm_internal_LeavePartyReply,
+  },
+  expelParty: {
+    path: '/fm.internal.Internal/ExpelParty',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.ExpelPartyRequest,
+    responseType: fminternal_internal_service_pb.ExpelPartyReply,
+    requestSerialize: serialize_fm_internal_ExpelPartyRequest,
+    requestDeserialize: deserialize_fm_internal_ExpelPartyRequest,
+    responseSerialize: serialize_fm_internal_ExpelPartyReply,
+    responseDeserialize: deserialize_fm_internal_ExpelPartyReply,
+  },
+  changePartyLeader: {
+    path: '/fm.internal.Internal/ChangePartyLeader',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.ChangePartyLeaderRequest,
+    responseType: fminternal_internal_service_pb.ChangePartyLeaderReply,
+    requestSerialize: serialize_fm_internal_ChangePartyLeaderRequest,
+    requestDeserialize: deserialize_fm_internal_ChangePartyLeaderRequest,
+    responseSerialize: serialize_fm_internal_ChangePartyLeaderReply,
+    responseDeserialize: deserialize_fm_internal_ChangePartyLeaderReply,
+  },
+  getParty: {
+    path: '/fm.internal.Internal/GetParty',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.GetPartyRequest,
+    responseType: fminternal_internal_service_pb.GetPartyReply,
+    requestSerialize: serialize_fm_internal_GetPartyRequest,
+    requestDeserialize: deserialize_fm_internal_GetPartyRequest,
+    responseSerialize: serialize_fm_internal_GetPartyReply,
+    responseDeserialize: deserialize_fm_internal_GetPartyReply,
+  },
+  reportPartyMemberSnapshot: {
+    path: '/fm.internal.Internal/ReportPartyMemberSnapshot',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.ReportPartyMemberSnapshotRequest,
+    responseType: fminternal_internal_service_pb.ReportPartyMemberSnapshotReply,
+    requestSerialize: serialize_fm_internal_ReportPartyMemberSnapshotRequest,
+    requestDeserialize: deserialize_fm_internal_ReportPartyMemberSnapshotRequest,
+    responseSerialize: serialize_fm_internal_ReportPartyMemberSnapshotReply,
+    responseDeserialize: deserialize_fm_internal_ReportPartyMemberSnapshotReply,
+  },
+  inviteParty: {
+    path: '/fm.internal.Internal/InviteParty',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.InvitePartyRequest,
+    responseType: fminternal_internal_service_pb.InvitePartyReply,
+    requestSerialize: serialize_fm_internal_InvitePartyRequest,
+    requestDeserialize: deserialize_fm_internal_InvitePartyRequest,
+    responseSerialize: serialize_fm_internal_InvitePartyReply,
+    responseDeserialize: deserialize_fm_internal_InvitePartyReply,
+  },
+  denyParty: {
+    path: '/fm.internal.Internal/DenyParty',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.DenyPartyRequest,
+    responseType: fminternal_internal_service_pb.DenyPartyReply,
+    requestSerialize: serialize_fm_internal_DenyPartyRequest,
+    requestDeserialize: deserialize_fm_internal_DenyPartyRequest,
+    responseSerialize: serialize_fm_internal_DenyPartyReply,
+    responseDeserialize: deserialize_fm_internal_DenyPartyReply,
   },
 };
 

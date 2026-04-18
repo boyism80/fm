@@ -105,6 +105,48 @@ class InternalContext {
         return this._pgData[wid][idx];
     }
 
+    async withPgDataTransaction(worldId, hash, fn) {
+        const pool = this.getPgDataPool(worldId, hash);
+        const client = await pool.connect();
+        try {
+            await client.query("BEGIN");
+            const result = await fn(client);
+            await client.query("COMMIT");
+            return result;
+        } catch (err) {
+            try {
+                await client.query("ROLLBACK");
+            } catch {
+            }
+            throw err;
+        } finally {
+            client.release();
+        }
+    }
+
+    async withPgGlobalTransaction(worldId, fn) {
+        const wid = String(worldId);
+        const pool = this._pgGlobal[wid];
+        if (!pool) {
+            throw new Error(`Unknown world_id for global transaction: ${worldId}`);
+        }
+        const client = await pool.connect();
+        try {
+            await client.query("BEGIN");
+            const result = await fn(client);
+            await client.query("COMMIT");
+            return result;
+        } catch (err) {
+            try {
+                await client.query("ROLLBACK");
+            } catch {
+            }
+            throw err;
+        } finally {
+            client.release();
+        }
+    }
+
     getPgUnifiedPool() {
         if (!this._pgUnified) {
             throw new Error("Unified PostgreSQL pool is not configured (postgresql.unified missing)");

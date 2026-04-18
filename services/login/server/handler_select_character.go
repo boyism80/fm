@@ -69,7 +69,7 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 			})
 		}, func(reply *internal.BeginGameTransitionReply) error {
 			if !reply.GetOk() {
-				return fmt.Errorf("begin game transition failed: %s", reply.GetErrorCode())
+				return fmt.Errorf("begin game transition failed: %v", reply.GetErrorCode())
 			}
 			if err := ctx.Client.Send(transferResp, types.SEND_POLICY_ENCRYPT); err != nil {
 				log.Printf("Failed to send transfer response: %v", err)

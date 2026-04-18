@@ -3,6 +3,7 @@ package server
 import (
 	"time"
 
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
@@ -90,6 +91,22 @@ func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType cons
 		Type:    messageType,
 	}
 	ch.Send(noticePacket, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPartyCreated(ch *entity.Character, partyID uint32) {
+	if ch == nil {
+		return
+	}
+	ch.Send(&response.PartyCreated{
+		PartyID: partyID,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *entity.Character, code pconst.PartyStatusCode) {
+	if ch == nil {
+		return
+	}
+	ch.Send(&response.PartyStatusMessage{Code: code}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnExpGain(ch *entity.Character, exp uint32) {
@@ -359,6 +376,11 @@ func (l *CharacterListenerImpl) OnClassChange(ch *entity.Character, oldClass uin
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
+	l.gs.ReportPartyMemberSnapshotAsync(ch)
+}
+
+func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *entity.Character) {
+	l.gs.ReportPartyMemberSnapshotAsync(ch)
 }
 
 func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32) {

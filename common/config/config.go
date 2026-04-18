@@ -71,13 +71,36 @@ func (e InternalEndpoint) GRPCAddr() string {
 	return e.Host + ":" + strconv.Itoa(e.Port)
 }
 
+type RabbitMQEndpoint struct {
+	IP    string `yaml:"ip"`
+	Port  int    `yaml:"port"`
+	UID   string `yaml:"uid"`
+	PWD   string `yaml:"pwd"`
+	VHost string `yaml:"vhost"`
+}
+
+func (e RabbitMQEndpoint) Enabled() bool {
+	return e.IP != "" && e.Port > 0
+}
+
+func (e RabbitMQEndpoint) AMQPURL() string {
+	if !e.Enabled() {
+		return ""
+	}
+	vhost := e.VHost
+	if vhost == "" {
+		vhost = "/"
+	}
+	return "amqp://" + e.UID + ":" + e.PWD + "@" + e.IP + ":" + strconv.Itoa(e.Port) + "/" + vhost
+}
+
 type Login struct {
-	Host                         string           `yaml:"host"`
-	Port                         int              `yaml:"port"`
-	InitialRole                  int              `yaml:"initial_role"`
-	Internal                     InternalEndpoint `yaml:"internal"`
-	CatalogRetryIntervalSeconds  int              `yaml:"catalog_retry_interval_seconds"`
-	CatalogRetryMaxAttempts      int              `yaml:"catalog_retry_max_attempts"`
+	Host                        string           `yaml:"host"`
+	Port                        int              `yaml:"port"`
+	InitialRole                 int              `yaml:"initial_role"`
+	Internal                    InternalEndpoint `yaml:"internal"`
+	CatalogRetryIntervalSeconds int              `yaml:"catalog_retry_interval_seconds"`
+	CatalogRetryMaxAttempts     int              `yaml:"catalog_retry_max_attempts"`
 }
 
 type Game struct {
@@ -90,6 +113,7 @@ type Game struct {
 	MaxPlayers int              `yaml:"max_players"`
 	Rate       GameRates        `yaml:"rate"`
 	Internal   InternalEndpoint `yaml:"internal"`
+	RabbitMQ   RabbitMQEndpoint `yaml:"rabbitmq"`
 	HighRate   bool             `yaml:"high_rate"`
 }
 
@@ -155,6 +179,21 @@ func LoadGame(path string) (*Game, error) {
 	}
 	if g.Rate.Meso == 0 {
 		g.Rate.Meso = 1
+	}
+	if g.RabbitMQ.IP == "" {
+		g.RabbitMQ.IP = "127.0.0.1"
+	}
+	if g.RabbitMQ.Port == 0 {
+		g.RabbitMQ.Port = 5672
+	}
+	if g.RabbitMQ.UID == "" {
+		g.RabbitMQ.UID = "guest"
+	}
+	if g.RabbitMQ.PWD == "" {
+		g.RabbitMQ.PWD = "guest"
+	}
+	if g.RabbitMQ.VHost == "" {
+		g.RabbitMQ.VHost = "fm"
 	}
 	return &g, nil
 }

@@ -12,11 +12,17 @@ const { CharacterOverviewRepository } = require("./repos/character-overview-repo
 const { SkillRepository } = require("./repos/skill-repository");
 const { SessionRepository } = require("./repos/session-repository");
 const { KeyLayoutRepository } = require("./repos/key-layout-repository");
+const { PartyRepository } = require("./repos/party-repository");
+const { PartyMemberRepository } = require("./repos/party-member-repository");
+const { CharacterRealtimeStateRepository } = require("./repos/character-realtime-state-repository");
 const { CharacterService } = require("./services/character-service");
 const { SkillService } = require("./services/skill-service");
 const { AccountService } = require("./services/account-service");
 const { CharacterOverviewService } = require("./services/character-overview-service");
 const { SessionService } = require("./services/session-service");
+const { RabbitMQService } = require("./services/rabbitmq-service");
+const { PartyEventPublisher } = require("./services/party-event-publisher");
+const { PartyService } = require("./services/party-service");
 
 function createAppContainer() {
     const internalConfig = loadConfig();
@@ -35,11 +41,17 @@ function createAppContainer() {
         skillRepository:             awilix.asClass(SkillRepository).singleton(),
         sessionRepository:           awilix.asClass(SessionRepository).singleton(),
         keyLayoutRepository:         awilix.asClass(KeyLayoutRepository).singleton(),
+        partyRepository:             awilix.asClass(PartyRepository).singleton(),
+        partyMemberRepository:       awilix.asClass(PartyMemberRepository).singleton(),
+        characterRealtimeStateRepository: awilix.asClass(CharacterRealtimeStateRepository).singleton(),
         characterService:            awilix.asClass(CharacterService).singleton(),
         skillService:                awilix.asClass(SkillService).singleton(),
         accountService:              awilix.asClass(AccountService).singleton(),
         characterOverviewService:    awilix.asClass(CharacterOverviewService).singleton(),
         sessionService:              awilix.asClass(SessionService).singleton(),
+        rabbitmqService:             awilix.asClass(RabbitMQService).singleton(),
+        partyEventPublisher:         awilix.asClass(PartyEventPublisher).singleton(),
+        partyService:                awilix.asClass(PartyService).singleton(),
     });
     return container;
 }

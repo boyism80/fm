@@ -23,6 +23,14 @@ class Repository {
         return this.ctx.getPgDataPool(worldId, this.getShardHash(key));
     }
 
+    _query(pool, text, values, options = undefined) {
+        const txClient = options?.txClient;
+        if (txClient) {
+            return txClient.query(text, values);
+        }
+        return pool.query(text, values);
+    }
+
     _redis(worldId, key) {
         return this.ctx.getRedisDataAccess(worldId, this.getShardHash(key)).client;
     }
@@ -57,57 +65,79 @@ class Repository {
         return [...groups.values()];
     }
 
-    async get(worldId, key) {
+    async evictCache(worldId, key) {
+        const redis = this._redis(worldId, key);
+        await redis.del(this.getRedisKey(worldId, key)).catch(() => {});
+    }
+
+    async get(worldId, key, options = undefined) {
         const redis = this._redis(worldId, key);
         const redisKey = this.getRedisKey(worldId, key);
+        const useCache = !options?.txClient;
 
-        const cached = await redis.get(redisKey);
-        if (cached) {
-            try {
-                const row = JSON.parse(cached);
-                if (row.deleted) return null;
-                return this.rowToModel(row);
-            } catch {
-                await redis.del(redisKey).catch(() => {});
+        if (useCache) {
+            const cached = await redis.get(redisKey);
+            if (cached) {
+                try {
+                    const row = JSON.parse(cached);
+                    if (row.deleted) return null;
+                    return this.rowToModel(row);
+                } catch {
+                    await redis.del(redisKey).catch(() => {});
+                }
             }
         }
 
         const pool = this._pool(worldId, key);
         const { text, values } = this.onSelect(key, worldId);
-        const res = await pool.query(text, values);
+        const res = await this._query(pool, text, values, options);
         if (!res.rows.length) return null;
         const row = res.rows[0];
         if (row.deleted) return null;
 
-        await redis.set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds()).catch(() => {});
+        if (useCache) {
+            await redis.set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds()).catch(() => {});
+        }
         return this.rowToModel(row);
     }
 
-    async set(worldId, model) {
+    async set(worldId, model, options = undefined) {
         const key = this.getKey(model);
         const row = this.modelToRow(model);
         const pool = this._pool(worldId, key);
         const { text, values } = this.onUpsert(row);
-        const res = await pool.query(text, values);
+        const res = await this._query(pool, text, values, options);
         const savedRow = res.rows[0];
-        const redis = this._redis(worldId, key);
-        const redisKey = this.getRedisKey(worldId, key);
-        await redis.set(redisKey, JSON.stringify(savedRow), "EX", this.getTtlSeconds());
+        if (!options?.txClient) {
+            const redis = this._redis(worldId, key);
+            const redisKey = this.getRedisKey(worldId, key);
+            await redis.set(redisKey, JSON.stringify(savedRow), "EX", this.getTtlSeconds());
+        }
         return this.rowToModel(savedRow);
     }
 
-    async getMany(worldId, keys) {
+    async getMany(worldId, keys, options = undefined) {
         const results = new Map();
+        const useCache = !options?.txClient;
+        if (options?.txClient) {
+            const pgGroups = this._groupByPgShard(worldId, keys);
+            if (pgGroups.size > 1) {
+                throw new Error(`${this.constructor.name}.getMany with txClient supports only single data shard`);
+            }
+        }
         const redisGroups = this._groupByRedisShard(worldId, keys);
         const dbMissByPool = new Map();
 
         for (const { client, keys: groupKeys } of redisGroups) {
-            const redisKeys = groupKeys.map(k => this.getRedisKey(worldId, k));
-            const cached = await client.mget(...redisKeys);
+            let cached = [];
+            if (useCache) {
+                const redisKeys = groupKeys.map(k => this.getRedisKey(worldId, k));
+                cached = await client.mget(...redisKeys);
+            }
 
             for (let i = 0; i < groupKeys.length; i++) {
                 const key = groupKeys[i];
-                if (cached[i]) {
+                if (useCache && cached[i]) {
                     try {
                         const row = JSON.parse(cached[i]);
                         if (!row.deleted) results.set(key, this.rowToModel(row));
@@ -128,13 +158,13 @@ class Repository {
             let rows;
 
             if (bulkQuery) {
-                const res = await pool.query(bulkQuery.text, bulkQuery.values);
+                const res = await this._query(pool, bulkQuery.text, bulkQuery.values, options);
                 rows = res.rows;
             } else {
                 rows = [];
                 for (const key of missedKeys) {
                     const { text, values } = this.onSelect(key, worldId);
-                    const res = await pool.query(text, values);
+                    const res = await this._query(pool, text, values, options);
                     rows.push(...res.rows);
                 }
             }
@@ -143,9 +173,11 @@ class Repository {
                 if (!row.deleted) {
                     const model = this.rowToModel(row);
                     const key = this.getKey(model);
-                    const redis = this._redis(worldId, key);
-                    const redisKey = this.getRedisKey(worldId, key);
-                    await redis.set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds()).catch(() => {});
+                    if (useCache) {
+                        const redis = this._redis(worldId, key);
+                        const redisKey = this.getRedisKey(worldId, key);
+                        await redis.set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds()).catch(() => {});
+                    }
                     results.set(key, model);
                 }
             }
@@ -154,9 +186,12 @@ class Repository {
         return results;
     }
 
-    async setAll(worldId, models) {
+    async setAll(worldId, models, options = undefined) {
         const saved = [];
         const pgGroups = this._groupModelsByPgShard(worldId, models);
+        if (options?.txClient && pgGroups.size > 1) {
+            throw new Error(`${this.constructor.name}.setAll with txClient supports only single data shard`);
+        }
 
         for (const [pool, groupModels] of pgGroups) {
             const rows = groupModels.map(m => this.modelToRow(m));
@@ -164,13 +199,13 @@ class Repository {
             let savedRows;
 
             if (bulkQuery) {
-                const res = await pool.query(bulkQuery.text, bulkQuery.values);
+                const res = await this._query(pool, bulkQuery.text, bulkQuery.values, options);
                 savedRows = res.rows;
             } else {
                 savedRows = [];
                 for (const row of rows) {
                     const { text, values } = this.onUpsert(row);
-                    const res = await pool.query(text, values);
+                    const res = await this._query(pool, text, values, options);
                     savedRows.push(...res.rows);
                 }
             }
@@ -178,9 +213,11 @@ class Repository {
             for (const savedRow of savedRows) {
                 const model = this.rowToModel(savedRow);
                 const key = this.getKey(model);
-                const redis = this._redis(worldId, key);
-                const redisKey = this.getRedisKey(worldId, key);
-                await redis.set(redisKey, JSON.stringify(savedRow), "EX", this.getTtlSeconds());
+                if (!options?.txClient) {
+                    const redis = this._redis(worldId, key);
+                    const redisKey = this.getRedisKey(worldId, key);
+                    await redis.set(redisKey, JSON.stringify(savedRow), "EX", this.getTtlSeconds());
+                }
                 saved.push(model);
             }
         }
@@ -188,14 +225,14 @@ class Repository {
         return saved;
     }
 
-    async delete(row) {
+    async delete(row, options = undefined) {
         const worldId = row.worldId;
         const key = this.getDeleteKey(row);
         const pool = this._pool(worldId, key);
         const { text, values } = this.onDelete(row);
-        const res = await pool.query(text, values);
+        const res = await this._query(pool, text, values, options);
         const deleted = Number(res.rowCount || 0) > 0;
-        if (deleted) {
+        if (deleted && !options?.txClient) {
             const redis = this._redis(worldId, key);
             await redis.del(this.getRedisKey(worldId, key)).catch(() => {});
         }

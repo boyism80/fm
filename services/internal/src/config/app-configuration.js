@@ -13,7 +13,7 @@ class AppConfiguration {
         this._c = internalConfig;
     }
 
-    /** Full normalized root (includes configPath, app, grpc, postgresql, redis, cache, sequelize). */
+    /** Full normalized root (includes configPath, app, grpc, postgresql, redis, rabbitmq, cache, sequelize). */
     get raw() {
         return this._c;
     }
@@ -38,6 +38,10 @@ class AppConfiguration {
         return this._c.redis;
     }
 
+    get rabbitmq() {
+        return this._c.rabbitmq;
+    }
+
     get cache() {
         return this._c.cache;
     }
@@ -59,7 +63,7 @@ class AppConfiguration {
     }
 
     /**
-     * @param {"app"|"grpc"|"postgresql"|"redis"|"cache"|"sequelize"} section
+     * @param {"app"|"grpc"|"postgresql"|"redis"|"rabbitmq"|"cache"|"sequelize"} section
      */
     getSection(section) {
         return this._c[section];

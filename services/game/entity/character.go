@@ -74,6 +74,8 @@ type Character struct {
 	summons          map[constant.SkillID]*Summon
 	doors            map[constant.SkillID]*Door
 	HomingTargetOID  *uint32
+	partyID          *uint32
+	guildID          *uint32
 }
 
 type DiseaseValueHolder struct {
@@ -382,6 +384,7 @@ func (ch *Character) SpawnDoor(skillID constant.SkillID) *Door {
 	}
 	ch.doors[skillID] = door
 	m.AddDoor(door)
+	ch.Listener.OnPartyMemberFieldsChanged(ch)
 	if skillID == constant.SkillMysticDoor && destMapID != 0 && destMapID != uint32(m.Wz.ID) && ch.Context != nil {
 		ch.Context.NotifyDoorSpawn(destMapID, DoorSpawn{
 			OwnerID:        ch.GetID(),
@@ -438,6 +441,7 @@ func (ch *Character) RemoveDoor(target *Door, animated bool) {
 	if ch.doors != nil {
 		delete(ch.doors, constant.SkillID(target.SkillID))
 	}
+	ch.Listener.OnPartyMemberFieldsChanged(ch)
 }
 
 func (ch *Character) RemoveDoorBySkill(skillID constant.SkillID, animated bool) {
@@ -747,6 +751,28 @@ func (ch *Character) GetName() string {
 	return ch.name
 }
 
+func (ch *Character) GetPartyID() (uint32, bool) {
+	if ch == nil || ch.partyID == nil {
+		return 0, false
+	}
+	return *ch.partyID, true
+}
+
+func (ch *Character) SetPartyID(partyID *uint32) {
+	ch.partyID = partyID
+}
+
+func (ch *Character) GetGuildID() (uint32, bool) {
+	if ch == nil || ch.guildID == nil {
+		return 0, false
+	}
+	return *ch.guildID, true
+}
+
+func (ch *Character) SetGuildID(guildID *uint32) {
+	ch.guildID = guildID
+}
+
 func (ch *Character) Message(message string) {
 	ch.Listener.OnMessage(ch, constant.MSG_LIGHT_BLUE_TEXT, message)
 }
@@ -821,6 +847,8 @@ type CharacterInitData struct {
 	PositionX    int16
 	PositionY    int16
 	Stance       uint8
+	PartyID      *uint32
+	GuildID      *uint32
 }
 
 func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterInitData, ctx GameContext) *Character {
@@ -860,6 +888,8 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		exp:          data.Exp,
 		spawnPoint:   data.SpawnPoint,
 		Meso:         data.Meso,
+		partyID:      data.PartyID,
+		guildID:      data.GuildID,
 
 		random1: stream.NewRandomStream(),
 		random2: stream.NewRandomStream(),
@@ -1006,6 +1036,7 @@ func (ch *Character) SetLevel(newLevel uint8) {
 
 	oldLevel := ch.level
 	ch.level = newLevel
+	ch.Listener.OnPartyMemberFieldsChanged(ch)
 	if newLevel < oldLevel {
 		if ch.Context != nil {
 			resources := ch.Context.GetResources()

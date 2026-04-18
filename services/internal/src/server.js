@@ -10,6 +10,7 @@ const { createCatalogHandlers } = require("./grpc/handlers/catalog-handlers");
 const { createAuthHandlers } = require("./grpc/handlers/auth-handlers");
 const { createSessionHandlers } = require("./grpc/handlers/session-handlers");
 const { createCharacterHandlers } = require("./grpc/handlers/character-handlers");
+const { createPartyHandlers } = require("./grpc/handlers/party-handlers");
 
 const INVALID_CODES = new Set([
     "UNKNOWN_WORLD", "INVALID_CHARACTER_ID",
@@ -29,6 +30,8 @@ async function main() {
     const internalConfig = appConfiguration.raw;
     await autoMigrateAllIfEnabled(internalConfig);
     const internalContext = container.resolve("internalContext");
+    const rabbitmqService = container.resolve("rabbitmqService");
+    const partyEventPublisher = container.resolve("partyEventPublisher");
 
     const wid = String(internalConfig.app.world_id);
     const pgw = internalConfig.postgresql.worlds[wid];
@@ -40,8 +43,12 @@ async function main() {
             `redis global ${rgw.global.host}:${rgw.global.port} | redis_data_shards ${rgw.data.length} | ` +
             `character_cache_ttl_s ${appConfiguration.getCharacterCacheTtlSeconds()} | item_cache_ttl_s ${appConfiguration.getItemCacheTtlSeconds()}` +
             (pgUnified ? ` | pg_unified ${pgUnified.host}:${pgUnified.port}/${pgUnified.database}` : "") +
-            ` | game_catalog_worlds ${Object.keys(internalConfig.game_servers?.worlds ?? {}).length}`
+            ` | game_catalog_worlds ${Object.keys(internalConfig.game_servers?.worlds ?? {}).length}` +
+            ` | rabbitmq ${internalConfig.rabbitmq?.ip}:${internalConfig.rabbitmq?.port}/${internalConfig.rabbitmq?.vhost}`
     );
+
+    await rabbitmqService.start();
+    await partyEventPublisher.initialize();
 
     const server = new grpc.Server();
 
@@ -52,18 +59,21 @@ async function main() {
         authHandlers: awilix.asFunction(createAuthHandlers).singleton(),
         sessionHandlers: awilix.asFunction(createSessionHandlers).singleton(),
         characterHandlers: awilix.asFunction(createCharacterHandlers).singleton(),
+        partyHandlers: awilix.asFunction(createPartyHandlers).singleton(),
     });
 
     const catalogHandlers = container.resolve("catalogHandlers");
     const authHandlers = container.resolve("authHandlers");
     const sessionHandlers = container.resolve("sessionHandlers");
     const characterHandlers = container.resolve("characterHandlers");
+    const partyHandlers = container.resolve("partyHandlers");
 
     server.addService(InternalService, {
         ...catalogHandlers,
         ...authHandlers,
         ...sessionHandlers,
         ...characterHandlers,
+        ...partyHandlers,
     });
 
     const addr = `${internalConfig.grpc.host}:${internalConfig.grpc.port}`;
@@ -79,10 +89,12 @@ async function main() {
 
     async function shutdown() {
         server.tryShutdown(async () => {
+            await rabbitmqService.close().catch(() => {});
             await internalContext.close().catch(() => {});
             process.exit(0);
         });
         setTimeout(() => {
+            rabbitmqService.close().catch(() => {});
             internalContext.close().catch(() => {});
             process.exit(1);
         }, 10_000).unref();

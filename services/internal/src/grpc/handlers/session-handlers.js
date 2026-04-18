@@ -11,6 +11,7 @@ function createSessionHandlers(
     skillService,
     sessionService,
     internalConfig,
+    characterRealtimeStateRepository,
     messages,
     grpcError
 ) {
@@ -35,7 +36,7 @@ function createSessionHandlers(
                 );
                 const reply = new messages.BeginGameTransitionReply();
                 reply.setOk(Boolean(transition.ok));
-                reply.setErrorCode(transition.code ?? "");
+                reply.setErrorCode(transition.code ?? messages.SessionErrorCode.SESSION_UNKNOWN);
                 callback(null, reply);
             } catch (err) {
                 grpcError(err, callback);
@@ -74,6 +75,11 @@ function createSessionHandlers(
                     skillService.getSkills(worldId, characterId),
                     characterService.getKeyLayoutBindings(worldId, characterId),
                 ]);
+
+                const realtime = await characterRealtimeStateRepository.get(worldId, characterId);
+                const partyId = realtime?.partyId ?? 0;
+                const guildId = realtime?.guildId ?? 0;
+
                 reply.setFound(true);
                 const ch = new messages.CharacterPersisted();
                 fillCharacterMessage(ch, row);
@@ -81,6 +87,8 @@ function createSessionHandlers(
                 reply.setInventoryList(inventoryList.map(makeInventoryMessage));
                 reply.setSkillsList(skillList.map(makeSkillMessage));
                 reply.setKeyLayoutList(makeKeyLayoutProtoList(messages, keyLayoutBindings));
+                reply.setPartyId(partyId);
+                reply.setGuildId(guildId);
                 callback(null, reply);
             } catch (err) {
                 grpcError(err, callback);
@@ -95,7 +103,7 @@ function createSessionHandlers(
                 );
                 const reply = new messages.RefreshSessionReply();
                 reply.setOk(Boolean(result.ok));
-                reply.setErrorCode(result.code ?? "");
+                reply.setErrorCode(result.code ?? messages.SessionErrorCode.SESSION_UNKNOWN);
                 callback(null, reply);
             } catch (err) {
                 grpcError(err, callback);

@@ -3,6 +3,7 @@ package entity
 import (
 	"time"
 
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
@@ -17,6 +18,8 @@ type CharacterListener interface {
 	OnChat(ch *Character, message string, highlight bool, dontRecordHistory bool)
 	OnMesoChanged(ch *Character, meso int32)
 	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
+	OnPartyCreated(ch *Character, partyID uint32)
+	OnPartyStatusMessage(ch *Character, code pconst.PartyStatusCode)
 	OnExpGain(ch *Character, exp uint32)
 	OnControlMoveMob(ch *Character, mob *Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8)
 	OnShowMobHp(ch *Character, mob *Mob, percentage uint8)
@@ -41,6 +44,7 @@ type CharacterListener interface {
 	OnUpdateCharacterLook(ch *Character)
 	OnNpcAction(ch *Character, bytes []byte)
 	OnClassChange(ch *Character, oldClass uint16, newClass uint16)
+	OnPartyMemberFieldsChanged(ch *Character)
 	OnBuffAdded(ch *Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32)
 	OnBuffRemoved(ch *Character, flags []constant.BuffFlag)
 	OnDebuffAdded(ch *Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32)

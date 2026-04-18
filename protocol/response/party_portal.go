@@ -1,6 +1,7 @@
 package response
 
 import (
+	"github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
@@ -18,7 +19,7 @@ func (p *PartyPortal) Opcode() uint16 {
 }
 
 func (p *PartyPortal) Serialize(w *stream.StreamWriter) error {
-	w.WriteU8(34)
+	w.WriteU8(uint8(constant.PartyS2CPartyPortal))
 	if p.Animated {
 		w.WriteU8(0)
 	} else {
