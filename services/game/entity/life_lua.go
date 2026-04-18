@@ -130,7 +130,7 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			case 2:
 				v := int32(L.CheckInt(2))
-				acc.SetBonusHp(v)
+				acc.SetBonusHp(v, true)
 				return 0
 			default:
 				L.ArgError(2, "bonus_hp() requires 0 or 1 arguments")
@@ -151,7 +151,7 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			case 2:
 				v := int32(L.CheckInt(2))
-				acc.SetBonusMp(v)
+				acc.SetBonusMp(v, true)
 				return 0
 			default:
 				L.ArgError(2, "bonus_mp() requires 0 or 1 arguments")

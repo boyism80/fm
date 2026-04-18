@@ -195,6 +195,13 @@ func (l *CharacterListenerImpl) OnUpdateStats(ch *entity.Character, stats map[co
 		Stats:        stats,
 		UnlockAction: unlock,
 	}, types.SEND_POLICY_ENCRYPT)
+	if stats != nil {
+		_, hasHP := stats[constant.STAT_HP]
+		_, hasMaxHP := stats[constant.STAT_MAX_HP]
+		if hasHP || hasMaxHP {
+			l.OnPartyMemberHPChanged(ch, nil)
+		}
+	}
 }
 
 func (l *CharacterListenerImpl) OnShowBuffEffect(ch *entity.Character, effectID uint8, skillID uint32, skillLevel uint8, additional *uint8) {
@@ -381,6 +388,50 @@ func (l *CharacterListenerImpl) OnClassChange(ch *entity.Character, oldClass uin
 
 func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *entity.Character) {
 	l.gs.ReportPartyMemberSnapshotAsync(ch)
+}
+
+func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, recipient *entity.Character) {
+	if ch == nil {
+		return
+	}
+	partyID, inParty := ch.GetPartyID()
+	if !inParty || partyID == 0 {
+		return
+	}
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	pkt := &response.UpdatePartyMemberHP{
+		CharacterID: ch.GetID(),
+		CurrentHP:   int32(ch.GetHp()),
+		MaxHP:       int32(ch.GetMaxHp()),
+	}
+	if recipient != nil {
+		if recipient.GetID() == ch.GetID() {
+			return
+		}
+		if recipient.GetMap() != mapInstance {
+			return
+		}
+		rPID, rInParty := recipient.GetPartyID()
+		if !rInParty || rPID != partyID {
+			return
+		}
+		_ = recipient.Send(pkt, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
+		peer, ok := obj.(*entity.Character)
+		if !ok || peer == nil || peer.GetID() == ch.GetID() {
+			continue
+		}
+		pid, peerInParty := peer.GetPartyID()
+		if !peerInParty || pid != partyID {
+			continue
+		}
+		_ = peer.Send(pkt, types.SEND_POLICY_ENCRYPT)
+	}
 }
 
 func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32) {

@@ -43,8 +43,8 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 	stats := map[constant.Stat]int32{}
 
 	if req.Target != 0xFFFFFFFF {
-		if character.Hp == 0 {
-			character.Hp = 50
+		if character.GetHp() == 0 {
+			character.SetHp(50, false)
 			character.Stance = constant.StanceDefaultValue
 
 			currentMap := character.GetMap()
@@ -59,7 +59,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 
 			targetMapId = uint32(wz.ReturnMapId)
 			spawnPoint = 0
-			stats[constant.STAT_HP] = int32(character.Hp)
+			stats[constant.STAT_HP] = int32(character.GetHp())
 
 			character.Listener.OnUpdateStats(character, stats, true)
 		} else {

@@ -39,7 +39,7 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
-	if ch.Hp <= 0 {
+	if ch.GetHp() <= 0 {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
@@ -116,32 +116,32 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 	actualMPChange := 0
 
 	if hpChange != 0 {
-		newHP := int(ch.Hp) + hpChange
+		newHP := int(ch.GetHp()) + hpChange
 		if newHP < 1 {
 			newHP = 1
 		}
 		if newHP > int(maxHp) {
 			newHP = int(maxHp)
 		}
-		actualHPChange = newHP - int(ch.Hp)
+		actualHPChange = newHP - int(ch.GetHp())
 		if actualHPChange != 0 {
-			ch.Hp = uint32(newHP)
-			stats[constant.STAT_HP] = int32(ch.Hp)
+			ch.SetHp(uint32(newHP), false)
+			stats[constant.STAT_HP] = int32(ch.GetHp())
 		}
 	}
 
 	if mpChange != 0 {
-		newMP := int(ch.Mp) + mpChange
+		newMP := int(ch.GetMp()) + mpChange
 		if newMP < 0 {
 			newMP = 0
 		}
 		if newMP > int(maxMp) {
 			newMP = int(maxMp)
 		}
-		actualMPChange = newMP - int(ch.Mp)
+		actualMPChange = newMP - int(ch.GetMp())
 		if actualMPChange != 0 {
-			ch.Mp = uint32(newMP)
-			stats[constant.STAT_MP] = int32(ch.Mp)
+			ch.SetMp(uint32(newMP), false)
+			stats[constant.STAT_MP] = int32(ch.GetMp())
 		}
 	}
 

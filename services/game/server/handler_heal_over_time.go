@@ -47,7 +47,7 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 		return nil
 	}
 
-	if character.Hp <= 0 {
+	if character.GetHp() <= 0 {
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 	}
 
 	if healHP > 0 {
-		newHP := character.Hp + uint32(healHP)
+		newHP := character.GetHp() + uint32(healHP)
 		maxHp := character.GetMaxHp()
 		if newHP > maxHp {
 			newHP = maxHp
@@ -91,7 +91,7 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 	}
 
 	if healMP > 0 {
-		newMP := character.Mp + uint32(healMP)
+		newMP := character.GetMp() + uint32(healMP)
 		maxMp := character.GetMaxMp()
 		if newMP > maxMp {
 			newMP = maxMp
@@ -101,8 +101,8 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 
 	if healHP > 0 || healMP > 0 {
 		stats := map[constant.Stat]int32{
-			constant.STAT_HP: int32(character.Hp),
-			constant.STAT_MP: int32(character.Mp),
+			constant.STAT_HP: int32(character.GetHp()),
+			constant.STAT_MP: int32(character.GetMp()),
 		}
 		character.Listener.OnUpdateStats(character, stats, false)
 	}

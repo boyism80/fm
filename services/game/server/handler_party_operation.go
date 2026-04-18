@@ -108,7 +108,9 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 				if !reply.GetOk() {
 					character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SAcceptInvite, int32(reply.GetErrorCode())))
 					log.Printf("PartyOperation(join): failed character=%d party=%d code=%v", charID, req.PartyID, reply.GetErrorCode())
+					return nil
 				}
+				SyncPartyMemberHPOnMapEnter(character.GetMap(), character, reply.GetPartyId())
 				return nil
 			},
 		).OnError(func(err error) {

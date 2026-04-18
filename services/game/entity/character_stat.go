@@ -132,11 +132,11 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 	case constant.STAT_LUK:
 		return int32(ch.GetTotalLuk()), true
 	case constant.STAT_HP:
-		return int32(ch.Hp), true
+		return int32(ch.GetHp()), true
 	case constant.STAT_MAX_HP:
 		return int32(ch.GetMaxHp()), true
 	case constant.STAT_MP:
-		return int32(ch.Mp), true
+		return int32(ch.GetMp()), true
 	case constant.STAT_MAX_MP:
 		return int32(ch.GetMaxMp()), true
 	case constant.STAT_AVAILABLE_AP:
@@ -173,23 +173,23 @@ func (ch *Character) notifyStatChange(stat constant.Stat) {
 }
 
 func (ch *Character) ConsumeMP(amount uint32) bool {
-	if ch.Mp < amount {
+	if ch.GetMp() < amount {
 		return false
 	}
-	ch.Mp -= amount
+	ch.SetMp(ch.GetMp()-amount, false)
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.STAT_MP: int32(ch.Mp),
+		constant.STAT_MP: int32(ch.GetMp()),
 	}, false)
 	return true
 }
 
 func (ch *Character) ConsumeHP(amount uint32) bool {
-	if ch.Hp <= amount {
+	if ch.GetHp() <= amount {
 		return false
 	}
-	ch.Hp -= amount
+	ch.SetHp(ch.GetHp()-amount, false)
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.STAT_HP: int32(ch.Hp),
+		constant.STAT_HP: int32(ch.GetHp()),
 	}, false)
 	return true
 }

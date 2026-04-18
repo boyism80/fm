@@ -337,17 +337,17 @@ func (m *Mob) dropItems(attacker *Character) {
 }
 
 func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
-	if amount == 0 || m.Hp == 0 {
+	if amount == 0 || m.GetHp() == 0 {
 		return false
 	}
 
 	damage := amount
-	if damage > uint32(m.Hp) {
-		damage = uint32(m.Hp)
+	if damage > m.GetHp() {
+		damage = m.GetHp()
 	}
 
-	m.Hp -= damage
-	isDead := m.Hp == 0
+	m.AddHp(-int(damage))
+	isDead := m.GetHp() == 0
 
 	if !isDead {
 		if attacker != nil {
@@ -355,7 +355,7 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 			if maxHp == 0 {
 				return false
 			}
-			percent := min(uint32(m.Hp)*100/uint32(maxHp), 100)
+			percent := min(m.GetHp()*100/maxHp, 100)
 			attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
 		}
 		return false

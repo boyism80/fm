@@ -39,7 +39,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		return fmt.Errorf("character is nil")
 	}
 
-	if character.Hp <= 0 {
+	if character.GetHp() <= 0 {
 		return nil
 	}
 

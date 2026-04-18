@@ -255,7 +255,7 @@ func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, mov
 				Context:  m.context,
 				Map:      nil,
 			},
-			Hp:     1,
+			hp:     1,
 			BaseHp: 1,
 			BaseMp: 1,
 		},
@@ -558,12 +558,9 @@ func (ch *Character) ResumeTimers(pid *actor.PID) {
 	}
 }
 
-func (ch *Character) GetHp() uint32        { return ch.Hp }
-func (ch *Character) GetMp() uint32        { return ch.Mp }
 func (ch *Character) GetBonusHp() int32    { return ch.BonusHp }
 func (ch *Character) GetBonusMp() int32    { return ch.BonusMp }
 func (ch *Character) GetInvincible() bool  { return ch.Invincible }
-func (ch *Character) IsAlive() bool        { return ch.Hp > 0 }
 func (ch *Character) GetGender() uint8     { return ch.gender }
 func (ch *Character) GetSkinColor() uint8  { return ch.skinColor }
 func (ch *Character) GetFace() uint32      { return ch.face }
@@ -573,47 +570,71 @@ func (ch *Character) GetExp() uint32       { return ch.exp }
 func (ch *Character) GetSpawnPoint() uint8 { return ch.spawnPoint }
 
 func (ch *Character) SetHp(v uint32, notify bool) {
-	maxHp := ch.GetMaxHp()
-	if v > maxHp {
-		v = maxHp
+	ch.LifeCore.setHp(v)
+	if !notify {
+		return
 	}
-	ch.Hp = v
-	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
-	}
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.GetHp())}, false)
 }
 
 func (ch *Character) SetMp(v uint32, notify bool) {
-	maxMp := ch.GetMaxMp()
-	if v > maxMp {
-		v = maxMp
+	ch.LifeCore.setMp(v)
+	if !notify {
+		return
 	}
-	ch.Mp = v
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.GetMp())}, false)
+}
+
+func (ch *Character) SetBonusHp(v int32, notify bool) {
+	ch.LifeCore.SetBonusHp(v, false)
 	if notify {
-		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_HP:     int32(ch.GetHp()),
+			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+		}, false)
 	}
 }
 
-func (ch *Character) SetBonusHp(v int32) {
-	ch.BonusHp = v
-	if ch.Hp > ch.GetMaxHp() {
-		ch.Hp = ch.GetMaxHp()
+func (ch *Character) SetBonusMp(v int32, notify bool) {
+	ch.LifeCore.SetBonusMp(v, false)
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_MP:     int32(ch.GetMp()),
+			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+		}, false)
 	}
-	ch.notifyStatChange(constant.STAT_MAX_HP)
 }
 
-func (ch *Character) SetBonusMp(v int32) {
-	ch.BonusMp = v
-	if ch.Mp > ch.GetMaxMp() {
-		ch.Mp = ch.GetMaxMp()
+func (ch *Character) SetMaxHpPercent(p int16, notify bool) {
+	ch.BonusStats.MaxHpPercent = p
+	if ch.GetHp() > ch.GetMaxHp() {
+		ch.SetHp(ch.GetMaxHp(), false)
 	}
-	ch.notifyStatChange(constant.STAT_MAX_MP)
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_HP:     int32(ch.GetHp()),
+			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+		}, false)
+	}
+}
+
+func (ch *Character) SetMaxMpPercent(p int16, notify bool) {
+	ch.BonusStats.MaxMpPercent = p
+	if ch.GetMp() > ch.GetMaxMp() {
+		ch.SetMp(ch.GetMaxMp(), false)
+	}
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_MP:     int32(ch.GetMp()),
+			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+		}, false)
+	}
 }
 
 func (ch *Character) SetInvincible(b bool) { ch.Invincible = b }
 
 func (ch *Character) AddHp(amount int) {
-	n := int(ch.Hp) + amount
+	n := int(ch.GetHp()) + amount
 	if n < 0 {
 		n = 0
 	}
@@ -621,12 +642,12 @@ func (ch *Character) AddHp(amount int) {
 	if n > maxHp {
 		n = maxHp
 	}
-	ch.Hp = uint32(n)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.Hp)}, false)
+	ch.SetHp(uint32(n), false)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.GetHp())}, false)
 }
 
 func (ch *Character) AddMp(amount int) {
-	n := int(ch.Mp) + amount
+	n := int(ch.GetMp()) + amount
 	if n < 0 {
 		n = 0
 	}
@@ -634,12 +655,12 @@ func (ch *Character) AddMp(amount int) {
 	if n > maxMp {
 		n = maxMp
 	}
-	ch.Mp = uint32(n)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.Mp)}, false)
+	ch.SetMp(uint32(n), false)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.GetMp())}, false)
 }
 
 func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
-	nh := int(ch.Hp) + hpDelta
+	nh := int(ch.GetHp()) + hpDelta
 	if nh < 0 {
 		nh = 0
 	}
@@ -647,8 +668,7 @@ func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
 	if nh > maxHp {
 		nh = maxHp
 	}
-	ch.Hp = uint32(nh)
-	nm := int(ch.Mp) + mpDelta
+	nm := int(ch.GetMp()) + mpDelta
 	if nm < 0 {
 		nm = 0
 	}
@@ -656,10 +676,11 @@ func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
 	if nm > maxMp {
 		nm = maxMp
 	}
-	ch.Mp = uint32(nm)
+	ch.SetHp(uint32(nh), false)
+	ch.SetMp(uint32(nm), false)
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.STAT_HP: int32(ch.Hp),
-		constant.STAT_MP: int32(ch.Mp),
+		constant.STAT_HP: int32(ch.GetHp()),
+		constant.STAT_MP: int32(ch.GetMp()),
 	}, false)
 }
 
@@ -668,12 +689,12 @@ func (ch *Character) SetBaseHp(v uint32, notify bool) {
 		v = constant.STAT_MAX_HP_MP
 	}
 	ch.BaseHp = v
-	if ch.Hp > ch.GetMaxHp() {
-		ch.Hp = ch.GetMaxHp()
+	if ch.GetHp() > ch.GetMaxHp() {
+		ch.SetHp(ch.GetMaxHp(), false)
 	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_HP:     int32(ch.Hp),
+			constant.STAT_HP:     int32(ch.GetHp()),
 			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
 		}, false)
 	}
@@ -684,12 +705,38 @@ func (ch *Character) SetBaseMp(v uint32, notify bool) {
 		v = constant.STAT_MAX_HP_MP
 	}
 	ch.BaseMp = v
-	if ch.Mp > ch.GetMaxMp() {
-		ch.Mp = ch.GetMaxMp()
+	if ch.GetMp() > ch.GetMaxMp() {
+		ch.SetMp(ch.GetMaxMp(), false)
 	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_MP:     int32(ch.Mp),
+			constant.STAT_MP:     int32(ch.GetMp()),
+			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+		}, false)
+	}
+}
+
+func (ch *Character) AddBaseHp(amount uint32, notify bool) {
+	ch.LifeCore.AddBaseHp(amount)
+	if ch.GetHp() > ch.GetMaxHp() {
+		ch.SetHp(ch.GetMaxHp(), false)
+	}
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_HP:     int32(ch.GetHp()),
+			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+		}, false)
+	}
+}
+
+func (ch *Character) AddBaseMp(amount uint32, notify bool) {
+	ch.LifeCore.AddBaseMp(amount)
+	if ch.GetMp() > ch.GetMaxMp() {
+		ch.SetMp(ch.GetMaxMp(), false)
+	}
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+			constant.STAT_MP:     int32(ch.GetMp()),
 			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
 		}, false)
 	}
@@ -866,8 +913,6 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 					Y: data.PositionY,
 				},
 			},
-			Hp:     data.Hp,
-			Mp:     data.Mp,
 			BaseHp: data.MaxHp,
 			BaseMp: data.MaxMp,
 			Stance: data.Stance,
@@ -916,6 +961,8 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 	ch.Skills = NewSkillContainer(ch)
 	ch.keyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
+	ch.LifeCore.setHp(data.Hp)
+	ch.LifeCore.setMp(data.Mp)
 	return ch
 }
 
@@ -1009,8 +1056,8 @@ func (ch *Character) tryLevelUp() bool {
 			constant.STAT_EXP:          int32(ch.exp),
 			constant.STAT_MAX_HP:       int32(ch.GetMaxHp()),
 			constant.STAT_MAX_MP:       int32(ch.GetMaxMp()),
-			constant.STAT_HP:           int32(ch.Hp),
-			constant.STAT_MP:           int32(ch.Mp),
+			constant.STAT_HP:           int32(ch.GetHp()),
+			constant.STAT_MP:           int32(ch.GetMp()),
 			constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
 			constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
 		}

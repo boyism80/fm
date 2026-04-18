@@ -42,7 +42,6 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 		return fmt.Errorf("character not found")
 	}
 
-	stats := map[constant.Stat]int32{}
 	isBlock := req.Damage == -1 && req.Type == constant.IncomingHitCollide
 	var damage int32
 	if isBlock {
@@ -53,7 +52,7 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 	}
 
 	if !character.Invincible {
-		n := int(character.Hp) - int(damage)
+		n := int(character.GetHp()) - int(damage)
 		if n < 0 {
 			n = 0
 		}
@@ -61,12 +60,13 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 		if n > maxHp {
 			n = maxHp
 		}
-
-		character.Hp = uint32(n)
-		stats[constant.STAT_HP] = int32(character.Hp)
+		character.SetHp(uint32(n), false)
+		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{
+			constant.STAT_HP: int32(character.GetHp()),
+		}, true)
+	} else {
+		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)
 	}
-
-	character.Listener.OnUpdateStats(character, stats, true)
 
 	return nil
 }

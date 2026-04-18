@@ -1542,27 +1542,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(ch.BonusStats.MaxHpPercent))
 				return 2
 			case 2:
-				ch.SetBonusHp(int32(L.CheckInt(2)))
-				if ch.Hp > ch.GetMaxHp() {
-					ch.Hp = ch.GetMaxHp()
-				}
-				stats := map[constant.Stat]int32{
-					constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
-					constant.STAT_HP:     int32(ch.Hp),
-				}
-				ch.Listener.OnUpdateStats(ch, stats, false)
+				ch.SetBonusHp(int32(L.CheckInt(2)), true)
 				return 0
 			case 3:
-				ch.SetBonusHp(int32(L.CheckInt(2)))
-				ch.BonusStats.MaxHpPercent = int16(L.CheckInt(3))
-				if ch.Hp > ch.GetMaxHp() {
-					ch.Hp = ch.GetMaxHp()
-				}
-				stats := map[constant.Stat]int32{
-					constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
-					constant.STAT_HP:     int32(ch.Hp),
-				}
-				ch.Listener.OnUpdateStats(ch, stats, false)
+				ch.SetBonusHp(int32(L.CheckInt(2)), false)
+				ch.SetMaxHpPercent(int16(L.CheckInt(3)), true)
 				return 0
 			default:
 				L.ArgError(2, "bonus_max_hp() requires 0, 1 or 2 arguments")
@@ -1583,27 +1567,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(ch.BonusStats.MaxMpPercent))
 				return 2
 			case 2:
-				ch.SetBonusMp(int32(L.CheckInt(2)))
-				if ch.Mp > ch.GetMaxMp() {
-					ch.Mp = ch.GetMaxMp()
-				}
-				stats := map[constant.Stat]int32{
-					constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
-					constant.STAT_MP:     int32(ch.Mp),
-				}
-				ch.Listener.OnUpdateStats(ch, stats, false)
+				ch.SetBonusMp(int32(L.CheckInt(2)), true)
 				return 0
 			case 3:
-				ch.SetBonusMp(int32(L.CheckInt(2)))
-				ch.BonusStats.MaxMpPercent = int16(L.CheckInt(3))
-				if ch.Mp > ch.GetMaxMp() {
-					ch.Mp = ch.GetMaxMp()
-				}
-				stats := map[constant.Stat]int32{
-					constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
-					constant.STAT_MP:     int32(ch.Mp),
-				}
-				ch.Listener.OnUpdateStats(ch, stats, false)
+				ch.SetBonusMp(int32(L.CheckInt(2)), false)
+				ch.SetMaxMpPercent(int16(L.CheckInt(3)), true)
 				return 0
 			default:
 				L.ArgError(2, "bonus_max_mp() requires 0, 1 or 2 arguments")
@@ -1625,17 +1593,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 2, 3:
 				v := int32(L.CheckInt(2))
 				notify := argc == 2 || L.ToBool(3)
-				ch.BonusHp = v
-				if ch.Hp > ch.GetMaxHp() {
-					ch.Hp = ch.GetMaxHp()
-				}
-				if notify {
-					stats := map[constant.Stat]int32{
-						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
-						constant.STAT_HP:     int32(ch.Hp),
-					}
-					ch.Listener.OnUpdateStats(ch, stats, false)
-				}
+				ch.SetBonusHp(v, notify)
 				return 0
 			default:
 				L.ArgError(2, "bonus_max_hp_fixed() requires 0, 1 or 2 arguments")
@@ -1657,17 +1615,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 2, 3:
 				p := int16(L.CheckInt(2))
 				notify := argc == 2 || L.ToBool(3)
-				ch.BonusStats.MaxHpPercent = p
-				if ch.Hp > ch.GetMaxHp() {
-					ch.Hp = ch.GetMaxHp()
-				}
-				if notify {
-					stats := map[constant.Stat]int32{
-						constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
-						constant.STAT_HP:     int32(ch.Hp),
-					}
-					ch.Listener.OnUpdateStats(ch, stats, false)
-				}
+				ch.SetMaxHpPercent(p, notify)
 				return 0
 			default:
 				L.ArgError(2, "bonus_max_hp_ratio() requires 0, 1 or 2 arguments")
@@ -1689,17 +1637,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 2, 3:
 				v := int32(L.CheckInt(2))
 				notify := argc == 2 || L.ToBool(3)
-				ch.BonusMp = v
-				if ch.Mp > ch.GetMaxMp() {
-					ch.Mp = ch.GetMaxMp()
-				}
-				if notify {
-					stats := map[constant.Stat]int32{
-						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
-						constant.STAT_MP:     int32(ch.Mp),
-					}
-					ch.Listener.OnUpdateStats(ch, stats, false)
-				}
+				ch.SetBonusMp(v, notify)
 				return 0
 			default:
 				L.ArgError(2, "bonus_max_mp_fixed() requires 0, 1 or 2 arguments")
@@ -1721,17 +1659,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 2, 3:
 				p := int16(L.CheckInt(2))
 				notify := argc == 2 || L.ToBool(3)
-				ch.BonusStats.MaxMpPercent = p
-				if ch.Mp > ch.GetMaxMp() {
-					ch.Mp = ch.GetMaxMp()
-				}
-				if notify {
-					stats := map[constant.Stat]int32{
-						constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
-						constant.STAT_MP:     int32(ch.Mp),
-					}
-					ch.Listener.OnUpdateStats(ch, stats, false)
-				}
+				ch.SetMaxMpPercent(p, notify)
 				return 0
 			default:
 				L.ArgError(2, "bonus_max_mp_ratio() requires 0, 1 or 2 arguments")
