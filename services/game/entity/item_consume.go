@@ -32,7 +32,6 @@ func (item *Consume) Clone(count uint16) Item {
 			Drop:       nil,
 			Count:      count,
 			Wz:         item.Wz,
-			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
 		OwnerName: item.OwnerName,

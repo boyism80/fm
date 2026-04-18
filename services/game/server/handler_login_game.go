@@ -143,13 +143,6 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	}
 	gameClient.SetCharacter(character)
 
-	if h.gs.partyEventConsumer != nil {
-		partyID := reply.GetPartyId()
-		if partyID != 0 && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
-			h.gs.partyEventConsumer.ApplyPartySnapshot(partyReply.GetParty())
-		}
-	}
-
 	mapID := p.GetMapId()
 	spawnPoint := uint8(p.GetSpawnPoint())
 	mapInstance := h.gs.GetMap(mapID)
@@ -182,6 +175,13 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	if err := h.gs.characterRuntime.RegisterCharacter(character.GetID(), character.GetName()); err != nil {
 		return fmt.Errorf("runtime register: %w", err)
+	}
+
+	if h.gs.partyEventConsumer != nil {
+		partyID := reply.GetPartyId()
+		if partyID != 0 && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
+			h.gs.partyEventConsumer.ApplyPartySnapshot(partyReply.GetParty())
+		}
 	}
 
 	rootContext := h.gs.GetServer().GetRootContext()

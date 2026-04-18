@@ -1,5 +1,6 @@
 "use strict";
 
+const { redisCacheKey } = require("../redis-cache-key");
 const { ValueRepository } = require("./value-repository");
 
 class AccountRepository extends ValueRepository {
@@ -16,8 +17,7 @@ class AccountRepository extends ValueRepository {
     }
 
     getRedisKey(worldId, accountId) {
-        const { keyPrefix } = this.ctx.getRedisDataAccess(worldId, accountId);
-        return `${keyPrefix}fm:w${worldId}:account:${accountId}`;
+        return redisCacheKey(`w${worldId}:account:${accountId}`);
     }
 
     onSelect(accountId, _worldId) {

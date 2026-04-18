@@ -6,6 +6,7 @@ import (
 
 type CashItem struct {
 	*ItemCore
+	UniqueId  *uint64
 	OwnerName string
 	Flags     uint16
 }
@@ -30,9 +31,9 @@ func (item *CashItem) Clone(count uint16) Item {
 			Drop:       nil,
 			Count:      count,
 			Wz:         item.Wz,
-			UniqueId:   item.UniqueId,
 			Expiration: item.Expiration,
 		},
+		UniqueId:  copyUint64Ptr(item.UniqueId),
 		OwnerName: item.OwnerName,
 		Flags:     item.Flags,
 	}

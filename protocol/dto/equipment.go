@@ -9,7 +9,7 @@ import (
 
 type Equipment struct {
 	ItemId        uint32
-	UniqueId      int64
+	UniqueId      *uint64
 	Expiration    time.Time
 	EnchantChance uint8
 	EnchantCount  uint8
@@ -53,10 +53,10 @@ func (e *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int1
 	writer.WriteU8(1)
 	writer.WriteU32(e.ItemId)
 
-	hasUID := e.UniqueId > 0
+	hasUID := e.UniqueId != nil
 	writer.WriteBoolean(hasUID)
 	if hasUID {
-		writer.Write64(e.UniqueId)
+		writer.WriteU64(*e.UniqueId)
 	}
 
 	writer.WriteDateTime(e.Expiration)
@@ -82,7 +82,7 @@ func (e *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int1
 	writer.WriteBoolean(e.SkillBonus > 0)
 	writer.WriteU8(1)
 	writer.WriteU32(0)
-	if e.UniqueId <= 0 {
+	if e.UniqueId == nil {
 		writer.Write64(-1)
 	}
 	writer.WriteDateTime(util.TimeZero)

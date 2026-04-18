@@ -17,12 +17,11 @@ func expirationUnixMs(t time.Time) int64 {
 	return t.UnixMilli()
 }
 
-func buildInventoryPersisted(item Item, ownerID uint32, slot int32, uniqueID int64, ownerName string, flag uint16, enchantChance uint8, skillBonus uint16) *internal.InventoryPersisted {
+func buildInventoryPersisted(item Item, ownerID uint32, slot int32, uniqueID *uint64, ownerName string, flag uint16, enchantChance uint8, skillBonus uint16) *internal.InventoryPersisted {
 	if item == nil {
 		return nil
 	}
-	return &internal.InventoryPersisted{
-		UniqueId:         uniqueID,
+	out := &internal.InventoryPersisted{
 		OwnerId:          ownerID,
 		ItemId:           item.GetModel().GetID(),
 		Slot:             slot,
@@ -32,7 +31,13 @@ func buildInventoryPersisted(item Item, ownerID uint32, slot int32, uniqueID int
 		Flag:             uint32(flag),
 		SkillBonus:       uint32(skillBonus),
 		OwnerName:        ownerName,
+		InventoryType:    uint32(item.GetInventoryType()),
 	}
+	if uniqueID != nil {
+		v := *uniqueID
+		out.UniqueId = &v
+	}
+	return out
 }
 
 func equipmentToInventoryPersisted(e Equipment, ownerID uint32, slot int32) *internal.InventoryPersisted {
@@ -91,23 +96,23 @@ func (item *RingEquip) ToPersisted(ownerID uint32, slot int32) *internal.Invento
 }
 
 func (item *Consume) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, item.OwnerName, item.Flags, 0, 0)
+	return buildInventoryPersisted(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
 }
 
 func (item *Installation) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, item.OwnerName, item.Flags, 0, 0)
+	return buildInventoryPersisted(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
 }
 
 func (item *MiscItem) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, item.OwnerName, item.Flags, 0, 0)
+	return buildInventoryPersisted(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
 }
 
 func (item *CashItem) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, item.OwnerName, item.Flags, 0, 0)
+	return buildInventoryPersisted(item, ownerID, slot, item.UniqueId, item.OwnerName, item.Flags, 0, 0)
 }
 
 func (item *Pet) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, item.ItemCore.UniqueId, "", item.Flags, 0, 0)
+	return buildInventoryPersisted(item, ownerID, slot, item.UniqueId, "", item.Flags, 0, 0)
 }
 
 func NewItemFromInternalProto(pb *internal.InventoryPersisted, ctx GameContext) (Item, error) {
@@ -126,7 +131,11 @@ func NewItemFromInternalProto(pb *internal.InventoryPersisted, ctx GameContext) 
 	}
 
 	count := uint16(pb.GetCount())
-	uniqueID := pb.GetUniqueId()
+	var uniqueID *uint64
+	if pb.UniqueId != nil {
+		v := *pb.UniqueId
+		uniqueID = &v
+	}
 	ownerName := pb.GetOwnerName()
 	flag := uint16(pb.GetFlag())
 	enchantChance := uint8(pb.GetEnchantChance())
@@ -141,13 +150,13 @@ func NewItemFromInternalProto(pb *internal.InventoryPersisted, ctx GameContext) 
 			ItemCore: &ItemCore{
 				Wz:         m,
 				Count:      1,
-				UniqueId:   uniqueID,
 				Expiration: expiration,
 			},
 			EnchantChance: enchantChance,
 			OwnerName:     ownerName,
 			Flag:          flag,
 			SkillBonus:    skillBonus,
+			UniqueId:      uniqueID,
 		}
 		switch constant.GetEquipmentType(itemID) {
 		case constant.EquipmentTypeWeapon:
@@ -177,27 +186,38 @@ func NewItemFromInternalProto(pb *internal.InventoryPersisted, ctx GameContext) 
 		}
 	case *wz.Consume:
 		return &Consume{
-			ItemCore:  &ItemCore{Wz: m, Count: count, UniqueId: uniqueID, Expiration: expiration},
+			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration},
 			OwnerName: ownerName,
 			Flags:     flag,
 		}, nil
 	case *wz.Installation:
 		return &Installation{
-			ItemCore:  &ItemCore{Wz: m, Count: count, UniqueId: uniqueID, Expiration: expiration},
+			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration},
 			OwnerName: ownerName,
 			Flags:     flag,
 		}, nil
 	case *wz.MiscItem:
 		return &MiscItem{
-			ItemCore:  &ItemCore{Wz: m, Count: count, UniqueId: uniqueID, Expiration: expiration},
+			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration},
 			OwnerName: ownerName,
 			Flags:     flag,
 		}, nil
 	case *wz.CashItem:
 		return &CashItem{
-			ItemCore:  &ItemCore{Wz: m, Count: count, UniqueId: uniqueID, Expiration: expiration},
+			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration},
+			UniqueId:  uniqueID,
 			OwnerName: ownerName,
 			Flags:     flag,
+		}, nil
+	case *wz.Pet:
+		petExpiration, _ := time.ParseInLocation("2006-01-02 15:04:05", "2025-05-30 09:30:00", util.KST)
+		if exp := pb.GetExpirationUnixMs(); exp > 0 {
+			petExpiration = time.UnixMilli(exp)
+		}
+		return &Pet{
+			ItemCore:   &ItemCore{Wz: m, Count: 1, Expiration: expiration},
+			UniqueId:   uniqueID,
+			Expiration: petExpiration,
 		}, nil
 	default:
 		return nil, fmt.Errorf("item %d: unsupported item type", itemID)

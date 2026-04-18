@@ -1,5 +1,6 @@
 "use strict";
 
+const { redisCacheKey } = require("../redis-cache-key");
 const { ValueRepository } = require("./value-repository");
 
 const SELECT_COLS = "world_id, party_id, leader_character_id, state, revision, disbanded_at, created_at, updated_at";
@@ -14,8 +15,7 @@ class PartyRepository extends ValueRepository {
     }
 
     getRedisKey(worldId, partyId) {
-        const { keyPrefix } = this.ctx.getRedisDataAccess(worldId, partyId);
-        return `${keyPrefix}fm:w${worldId}:party:${partyId}`;
+        return redisCacheKey(`w${worldId}:party:${partyId}`);
     }
 
     onSelect(partyId, worldId) {

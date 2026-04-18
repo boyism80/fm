@@ -8,6 +8,7 @@ import (
 
 type Pet struct {
 	*ItemCore
+	UniqueId    *uint64
 	Level       uint8
 	Closeness   uint16
 	Fullness    uint8
@@ -27,9 +28,9 @@ func (item *Pet) Clone(count uint16) Item {
 			Drop:       nil,
 			Count:      count,
 			Wz:         item.Wz,
-			UniqueId:   item.UniqueId,
 			Expiration: item.ItemCore.Expiration,
 		},
+		UniqueId:    copyUint64Ptr(item.UniqueId),
 		Flags:       item.Flags,
 		Level:       item.Level,
 		Closeness:   item.Closeness,

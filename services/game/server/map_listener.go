@@ -60,6 +60,10 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 	if l.gs != nil && character != nil && l.gs.characterRuntime != nil {
 		_ = l.gs.characterRuntime.SetMapPID(character.GetID(), mapInstance.GetActorPID())
 	}
+
+	if l.gs != nil {
+		l.gs.SendPartySilentOnMapEnter(character)
+	}
 }
 
 func SyncPartyMemberHPOnMapEnter(mapInstance *entity.Map, character *entity.Character, effectivePartyID uint32) {

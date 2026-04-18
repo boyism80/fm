@@ -1,5 +1,6 @@
 "use strict";
 
+const { redisCacheKey } = require("../redis-cache-key");
 const { ValueRepository } = require("./value-repository");
 
 const SELECT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
@@ -49,8 +50,7 @@ class CharacterRepository extends ValueRepository {
     }
 
     getRedisKey(worldId, characterId) {
-        const { keyPrefix } = this.ctx.getRedisDataAccess(worldId, characterId);
-        return `${keyPrefix}fm:w${worldId}:character:${characterId}`;
+        return redisCacheKey(`w${worldId}:character:${characterId}`);
     }
 
     onSelect(characterId, worldId) {

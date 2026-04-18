@@ -27,7 +27,7 @@ class UnifiedRepository {
 
     async findCharacterNameEntry(name) {
         const { rows } = await this._pool().query(
-            "SELECT character_id, name, account_id, world_id, status FROM character_name_registry WHERE LOWER(name) = LOWER($1) AND deleted_at IS NULL",
+            "SELECT character_id, name, account_id, world_id, status FROM character_name_registry WHERE LOWER(name) = LOWER($1)",
             [name]
         );
         return rows[0] ?? null;
@@ -45,7 +45,7 @@ class UnifiedRepository {
 
     async deleteCharacterName(characterId) {
         await this._pool().query(
-            "UPDATE character_name_registry SET deleted_at = NOW() WHERE character_id = $1",
+            "DELETE FROM character_name_registry WHERE character_id = $1",
             [characterId]
         );
     }

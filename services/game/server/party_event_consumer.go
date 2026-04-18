@@ -531,3 +531,20 @@ func (c *PartyEventConsumer) ApplyPartySnapshot(snapshot *internal.PartySnapshot
 	}
 	log.Printf("party consumer: hydrated from login party_id=%d revision=%d", partyID, snapshot.GetRevision())
 }
+
+func (c *PartyEventConsumer) CachedPartySnapshot(partyID uint32) *internal.PartySnapshot {
+	if c == nil || c.state == nil || partyID == 0 {
+		return nil
+	}
+	c.state.mu.Lock()
+	s := c.state.snapshots[partyID]
+	c.state.mu.Unlock()
+	if s == nil {
+		return nil
+	}
+	cloned, ok := proto.Clone(s).(*internal.PartySnapshot)
+	if !ok || cloned == nil {
+		return nil
+	}
+	return cloned
+}

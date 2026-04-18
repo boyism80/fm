@@ -20,7 +20,6 @@ func (item *Consume) ToDTO() dto.Item {
 	}
 	return &dto.ConsumeItem{
 		ItemId:     cons.GetID(),
-		UniqueId:   item.UniqueId,
 		Count:      item.GetCount(),
 		Expiration: item.GetExpiration(),
 		OwnerName:  item.OwnerName,
@@ -31,7 +30,6 @@ func (item *Consume) ToDTO() dto.Item {
 func (item *MiscItem) ToDTO() dto.Item {
 	return &dto.MiscItem{
 		ItemId:     item.GetModel().GetID(),
-		UniqueId:   item.UniqueId,
 		Count:      item.GetCount(),
 		Expiration: item.GetExpiration(),
 		OwnerName:  item.OwnerName,
@@ -42,7 +40,7 @@ func (item *MiscItem) ToDTO() dto.Item {
 func (item *CashItem) ToDTO() dto.Item {
 	return &dto.CashItem{
 		ItemId:     item.GetModel().GetID(),
-		UniqueId:   item.UniqueId,
+		UniqueId:   copyUint64Ptr(item.UniqueId),
 		Count:      item.GetCount(),
 		Expiration: item.GetExpiration(),
 		OwnerName:  item.OwnerName,
@@ -53,7 +51,6 @@ func (item *CashItem) ToDTO() dto.Item {
 func (item *Installation) ToDTO() dto.Item {
 	return &dto.InstallationItem{
 		ItemId:     item.GetModel().GetID(),
-		UniqueId:   item.UniqueId,
 		Expiration: item.GetExpiration(),
 		OwnerName:  item.OwnerName,
 		Flags:      item.Flags,
@@ -69,7 +66,7 @@ func (pet *Pet) ToDTO() dto.Item {
 	}
 	return &dto.PetItem{
 		ItemId:         model.GetID(),
-		UniqueId:       pet.UniqueId,
+		UniqueId:       copyUint64Ptr(pet.UniqueId),
 		Expiration:     pet.GetExpiration(),
 		PetName:        petName,
 		PetLevel:       pet.Level,
@@ -90,7 +87,7 @@ func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.Equipment) *dto.Equipm
 	maxEnchantChance := model.GetEnchantChance()
 	return &dto.Equipment{
 		ItemId:        model.GetID(),
-		UniqueId:      core.UniqueId,
+		UniqueId:      copyUint64Ptr(core.UniqueId),
 		Expiration:    core.Expiration,
 		EnchantChance: maxEnchantChance,
 		EnchantCount:  maxEnchantChance - model.GetEnchantChance(),

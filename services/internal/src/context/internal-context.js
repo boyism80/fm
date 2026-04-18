@@ -155,33 +155,29 @@ class InternalContext {
     }
 
     /**
-     * Returns the ioredis client and key prefix for the data shard that owns `hash`.
-     * Key construction is left to the caller (repository layer).
+     * Returns the ioredis client for the data shard that owns `hash`.
      * @param {number|string} worldId
      * @param {number|string} hash  – used only for shard routing (e.g. character id)
-     * @returns {{ client: import('ioredis'), keyPrefix: string }}
+     * @returns {{ client: import('ioredis') }}
      */
     getRedisDataAccess(worldId, hash) {
         const wid = String(worldId);
         const worldRedis = getRedisWorld(this.config, wid);
         const idx = shardIndex(hash, worldRedis.data.length);
         const client = this._redisData[wid][idx];
-        const ep = worldRedis.data[idx];
-        const keyPrefix = ep.key_prefix || "";
-        return { client, keyPrefix };
+        return { client };
     }
 
     /**
      * Global redis is used for account/session coordination keys.
      * @param {number|string} worldId
-     * @returns {{ client: import('ioredis'), keyPrefix: string }}
+     * @returns {{ client: import('ioredis') }}
      */
     getRedisGlobalAccess(worldId) {
         const wid = String(worldId);
         const worldRedis = getRedisWorld(this.config, wid);
         const client = this._redisGlobal[wid][0];
-        const keyPrefix = worldRedis.global.key_prefix || "";
-        return { client, keyPrefix };
+        return { client };
     }
 
     async close() {

@@ -208,19 +208,19 @@ class CharacterService {
         });
 
         const equips = [
-            { itemId: topItemId, slot: EQUIP_SLOT.TOP, lookSlot: LOOK_SLOT.TOP, offset: 1n },
-            { itemId: bottomItemId, slot: EQUIP_SLOT.BOTTOM, lookSlot: LOOK_SLOT.BOTTOM, offset: 2n },
-            { itemId: shoesItemId, slot: EQUIP_SLOT.SHOES, lookSlot: LOOK_SLOT.SHOES, offset: 3n },
-            { itemId: weaponItemId, slot: EQUIP_SLOT.WEAPON, lookSlot: LOOK_SLOT.WEAPON, offset: 4n },
+            { itemId: topItemId, slot: EQUIP_SLOT.TOP, lookSlot: LOOK_SLOT.TOP },
+            { itemId: bottomItemId, slot: EQUIP_SLOT.BOTTOM, lookSlot: LOOK_SLOT.BOTTOM },
+            { itemId: shoesItemId, slot: EQUIP_SLOT.SHOES, lookSlot: LOOK_SLOT.SHOES },
+            { itemId: weaponItemId, slot: EQUIP_SLOT.WEAPON, lookSlot: LOOK_SLOT.WEAPON },
         ].filter((e) => Number(e.itemId) > 0);
 
         if (equips.length) {
-            const baseUniqueId = BigInt(characterId) * 100n;
             await this.inventoryRepo.setAll(
                 wid,
                 equips.map((e) => ({
-                    uniqueId: String(baseUniqueId + e.offset),
+                    uniqueId: null,
                     ownerId: characterId,
+                    inventoryType: 1,
                     itemId: Number(e.itemId),
                     slot: e.slot,
                     count: 1,

@@ -23,7 +23,10 @@ func (ch *Character) LoadInventory(items []*internal.InventoryPersisted) {
 				ch.Equipments[parts] = eq
 			}
 		} else {
-			invType := constant.GetInventoryTypeByItemID(itemID)
+			invType := constant.InventoryType(pb.GetInventoryType())
+			if invType == 0 {
+				invType = constant.GetInventoryTypeByItemID(itemID)
+			}
 			if inv, ok := ch.Inventory[invType]; ok {
 				inv.Items[slot] = item
 			}

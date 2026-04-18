@@ -8,7 +8,7 @@ import (
 
 type PetItem struct {
 	ItemId         uint32
-	UniqueId       int64
+	UniqueId       *uint64
 	Expiration     time.Time
 	PetName        string
 	PetLevel       uint8
@@ -29,10 +29,10 @@ func (i *PetItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16)
 	writer.WriteU8(3)
 	writer.WriteU32(i.ItemId)
 
-	hasUID := i.UniqueId > 0
+	hasUID := i.UniqueId != nil
 	writer.WriteBoolean(hasUID)
 	if hasUID {
-		writer.Write64(i.UniqueId)
+		writer.WriteU64(*i.UniqueId)
 	}
 
 	writer.WriteDateTime(i.Expiration)

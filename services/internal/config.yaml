@@ -66,20 +66,17 @@ redis:
         password: ""
         db: 0
         tls: false
-        key_prefix: "cache:"
       data:
         - host: "127.0.0.1"
           port: 6379
           password: ""
           db: 0
           tls: false
-          key_prefix: "cache:"
         - host: "127.0.0.1"
           port: 6379
           password: ""
           db: 1
           tls: false
-          key_prefix: "cache:"
 
 cache:
   write_strategy: "write-through"

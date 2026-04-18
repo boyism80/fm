@@ -10,7 +10,6 @@ const DEFAULT_REDIS = {
     password: "",
     db: 0,
     tls: false,
-    key_prefix: "cache:",
 };
 
 const DEFAULT_CHANNEL_NAME_PREFIX = "Channel";
@@ -51,7 +50,6 @@ function normalizeRedisEndpoint(ep, defaults = {}) {
         password: ep.password ?? defaults.password ?? DEFAULT_REDIS.password,
         db: ep.db ?? defaults.db ?? DEFAULT_REDIS.db,
         tls: ep.tls ?? defaults.tls ?? DEFAULT_REDIS.tls,
-        key_prefix: ep.key_prefix ?? defaults.key_prefix ?? DEFAULT_REDIS.key_prefix,
     };
 }
 

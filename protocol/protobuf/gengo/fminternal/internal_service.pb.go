@@ -1385,7 +1385,7 @@ func (x *SaveCharactersReply) GetOk() bool {
 
 type InventoryPersisted struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	UniqueId         int64                  `protobuf:"varint,1,opt,name=unique_id,json=uniqueId,proto3" json:"unique_id,omitempty"`
+	UniqueId         *uint64                `protobuf:"varint,1,opt,name=unique_id,json=uniqueId,proto3,oneof" json:"unique_id,omitempty"`
 	OwnerId          uint32                 `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 	ItemId           uint32                 `protobuf:"varint,3,opt,name=item_id,json=itemId,proto3" json:"item_id,omitempty"`
 	Slot             int32                  `protobuf:"varint,4,opt,name=slot,proto3" json:"slot,omitempty"`
@@ -1395,6 +1395,7 @@ type InventoryPersisted struct {
 	Flag             uint32                 `protobuf:"varint,8,opt,name=flag,proto3" json:"flag,omitempty"`
 	SkillBonus       uint32                 `protobuf:"varint,9,opt,name=skill_bonus,json=skillBonus,proto3" json:"skill_bonus,omitempty"`
 	OwnerName        string                 `protobuf:"bytes,10,opt,name=owner_name,json=ownerName,proto3" json:"owner_name,omitempty"`
+	InventoryType    uint32                 `protobuf:"varint,11,opt,name=inventory_type,json=inventoryType,proto3" json:"inventory_type,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1429,9 +1430,9 @@ func (*InventoryPersisted) Descriptor() ([]byte, []int) {
 	return file_fminternal_internal_service_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *InventoryPersisted) GetUniqueId() int64 {
-	if x != nil {
-		return x.UniqueId
+func (x *InventoryPersisted) GetUniqueId() uint64 {
+	if x != nil && x.UniqueId != nil {
+		return *x.UniqueId
 	}
 	return 0
 }
@@ -1497,6 +1498,13 @@ func (x *InventoryPersisted) GetOwnerName() string {
 		return x.OwnerName
 	}
 	return ""
+}
+
+func (x *InventoryPersisted) GetInventoryType() uint32 {
+	if x != nil {
+		return x.InventoryType
+	}
+	return 0
 }
 
 type SkillPersisted struct {
@@ -3259,7 +3267,6 @@ func (x *ChangePartyLeaderReply) GetRevision() uint64 {
 	return 0
 }
 
-// Party UI door / portal hint when present on the member row; omitted = no door.
 type PartyDoor struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Town          uint32                 `protobuf:"varint,1,opt,name=town,proto3" json:"town,omitempty"`
@@ -4142,9 +4149,9 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\x15SaveCharactersRequest\x129\n" +
 	"\aentries\x18\x01 \x03(\v2\x1f.fm.internal.CharacterSaveEntryR\aentries\"%\n" +
 	"\x13SaveCharactersReply\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xb8\x02\n" +
-	"\x12InventoryPersisted\x12\x1b\n" +
-	"\tunique_id\x18\x01 \x01(\x03R\buniqueId\x12\x19\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xf2\x02\n" +
+	"\x12InventoryPersisted\x12 \n" +
+	"\tunique_id\x18\x01 \x01(\x04H\x00R\buniqueId\x88\x01\x01\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\rR\aownerId\x12\x17\n" +
 	"\aitem_id\x18\x03 \x01(\rR\x06itemId\x12\x12\n" +
 	"\x04slot\x18\x04 \x01(\x05R\x04slot\x12\x14\n" +
@@ -4156,7 +4163,10 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"skillBonus\x12\x1d\n" +
 	"\n" +
 	"owner_name\x18\n" +
-	" \x01(\tR\townerName\"\xb8\x01\n" +
+	" \x01(\tR\townerName\x12%\n" +
+	"\x0einventory_type\x18\v \x01(\rR\rinventoryTypeB\f\n" +
+	"\n" +
+	"_unique_id\"\xb8\x01\n" +
 	"\x0eSkillPersisted\x12!\n" +
 	"\fcharacter_id\x18\x01 \x01(\rR\vcharacterId\x12\x19\n" +
 	"\bskill_id\x18\x02 \x01(\rR\askillId\x12\x14\n" +
@@ -4611,6 +4621,7 @@ func file_fminternal_internal_service_proto_init() {
 	if File_fminternal_internal_service_proto != nil {
 		return
 	}
+	file_fminternal_internal_service_proto_msgTypes[17].OneofWrappers = []any{}
 	file_fminternal_internal_service_proto_msgTypes[45].OneofWrappers = []any{}
 	file_fminternal_internal_service_proto_msgTypes[49].OneofWrappers = []any{}
 	type x struct{}

@@ -58,13 +58,9 @@ module.exports = {
                 allowNull: false,
                 defaultValue: Sequelize.literal("NOW()"),
             },
-            deleted_at: {
-                type: Sequelize.DATE,
-                allowNull: true,
-            },
         });
         await queryInterface.sequelize.query(
-            "CREATE UNIQUE INDEX idx_character_name_lower ON character_name_registry (LOWER(name)) WHERE deleted_at IS NULL;"
+            "CREATE UNIQUE INDEX idx_character_name_lower ON character_name_registry (LOWER(name));"
         );
 
         await queryInterface.createTable("accounts", {

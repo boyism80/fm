@@ -1,5 +1,6 @@
 "use strict";
 
+const { redisCacheKey } = require("../redis-cache-key");
 const { ValueRepository } = require("./value-repository");
 
 const SELECT_COLS = "character_id, world_id, key_layout_json, updated_at";
@@ -20,8 +21,7 @@ class KeyLayoutRepository extends ValueRepository {
     }
 
     getRedisKey(worldId, characterId) {
-        const { keyPrefix } = this.ctx.getRedisDataAccess(worldId, characterId);
-        return `${keyPrefix}fm:w${worldId}:keylayout:${characterId}`;
+        return redisCacheKey(`w${worldId}:keylayout:${characterId}`);
     }
 
     onSelect(characterId, worldId) {

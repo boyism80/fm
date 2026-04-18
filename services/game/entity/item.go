@@ -54,7 +54,6 @@ func (d *Drop) GetObjectType() constant.ObjectType {
 type ItemCore struct {
 	*Drop
 	Wz         wz.Item
-	UniqueId   int64
 	Expiration time.Time
 	Count      uint16
 }
@@ -65,6 +64,7 @@ type EquipmentCore struct {
 	OwnerName     string
 	Flag          uint16
 	SkillBonus    uint16
+	UniqueId      *uint64
 }
 
 func (e *EquipmentCore) GetEquipmentCore() *EquipmentCore { return e }
@@ -75,19 +75,35 @@ type Equipment interface {
 	ToEquipmentDTO() *dto.Equipment
 }
 
+func copyStringPtr(p *string) *string {
+	if p == nil {
+		return nil
+	}
+	v := *p
+	return &v
+}
+
+func copyUint64Ptr(p *uint64) *uint64 {
+	if p == nil {
+		return nil
+	}
+	v := *p
+	return &v
+}
+
 func cloneEquipmentCore(c *EquipmentCore, count uint16) *EquipmentCore {
 	return &EquipmentCore{
 		ItemCore: &ItemCore{
 			Drop:       nil,
 			Count:      count,
 			Wz:         c.Wz,
-			UniqueId:   c.UniqueId,
 			Expiration: c.Expiration,
 		},
 		EnchantChance: c.EnchantChance,
 		OwnerName:     c.OwnerName,
 		Flag:          c.Flag,
 		SkillBonus:    c.SkillBonus,
+		UniqueId:      copyUint64Ptr(c.UniqueId),
 	}
 }
 

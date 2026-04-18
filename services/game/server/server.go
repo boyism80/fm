@@ -562,6 +562,52 @@ func (gs *GameServer) DeliverPartySilentFromSnapshot(snapshot *internal.PartySna
 	}
 }
 
+func (gs *GameServer) partySnapshotForMapEnter(partyID uint32) *internal.PartySnapshot {
+	if partyID == 0 {
+		return nil
+	}
+	if gs.partyEventConsumer != nil {
+		if s := gs.partyEventConsumer.CachedPartySnapshot(partyID); s != nil {
+			return s
+		}
+	}
+	if gs.internalClient == nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+	defer cancel()
+	reply, err := gs.internalClient.GetParty(ctx, &internal.GetPartyRequest{
+		WorldId: gs.config.WorldId,
+		PartyId: partyID,
+	})
+	if err != nil || !reply.GetFound() || reply.GetParty() == nil {
+		return nil
+	}
+	return reply.GetParty()
+}
+
+func (gs *GameServer) SendPartySilentOnMapEnter(ch *entity.Character) {
+	if gs == nil || ch == nil {
+		return
+	}
+	partyID, ok := ch.GetPartyID()
+	if !ok || partyID == 0 {
+		return
+	}
+	snap := gs.partySnapshotForMapEnter(partyID)
+	if snap == nil || snap.GetPartyId() == 0 {
+		return
+	}
+	members := partyMembersToResponse(snap.GetMembers())
+	gs.EnsureSend(nil, ch.GetID(), &g_actor.DeliverPartyUpdateSilent{
+		CharacterID: ch.GetID(),
+		ForChannel:  int32(gs.config.ChannelId),
+		PartyID:     snap.GetPartyId(),
+		LeaderID:    snap.GetLeaderCharacterId(),
+		Members:     members,
+	})
+}
+
 func (gs *GameServer) NotifyDoorSpawn(returnMapWZID uint32, spawn entity.DoorSpawn) {
 	returnMap := gs.GetMap(returnMapWZID)
 	if returnMap == nil {

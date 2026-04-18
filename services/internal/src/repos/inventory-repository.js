@@ -1,27 +1,33 @@
 "use strict";
 
+const { redisCacheKey } = require("../redis-cache-key");
 const { HashRepository } = require("./hash-repository");
 
-const SELECT_COLS = `unique_id, owner_id, item_id, slot, count, expiration,
-  enchant_chance, flag, skill_bonus, owner_name, deleted, created_at, updated_at`;
+const SELECT_COLS = `unique_id, owner_id, inventory_type, item_id, slot, count, expiration,
+  enchant_chance, flag, skill_bonus, owner_name, created_at, updated_at`;
 
-const INSERT_COLS = `unique_id, owner_id, item_id, slot, count, expiration,
-  enchant_chance, flag, skill_bonus, owner_name, deleted, updated_at`;
-
-const ON_CONFLICT_SET = `
-  owner_id = EXCLUDED.owner_id, item_id = EXCLUDED.item_id, slot = EXCLUDED.slot,
-  count = EXCLUDED.count, expiration = EXCLUDED.expiration,
-  enchant_chance = EXCLUDED.enchant_chance, flag = EXCLUDED.flag,
-  skill_bonus = EXCLUDED.skill_bonus, owner_name = EXCLUDED.owner_name,
-  deleted = FALSE, updated_at = NOW()`;
+const INSERT_COLS = `unique_id, owner_id, inventory_type, item_id, slot, count, expiration,
+  enchant_chance, flag, skill_bonus, owner_name, updated_at`;
 
 const PER_ROW_PARAMS = 11;
 
 function rowValues(row) {
+    let uid = row.unique_id;
+    if (uid === "" || uid === undefined) {
+        uid = null;
+    }
     return [
-        row.unique_id, row.owner_id,  row.item_id,       row.slot,
-        row.count,     row.expiration, row.enchant_chance, row.flag,
-        row.skill_bonus, row.owner_name, false,
+        uid,
+        row.owner_id,
+        row.inventory_type,
+        row.item_id,
+        row.slot,
+        row.count,
+        row.expiration,
+        row.enchant_chance,
+        row.flag,
+        row.skill_bonus,
+        row.owner_name,
     ];
 }
 
@@ -39,116 +45,118 @@ class InventoryRepository extends HashRepository {
     }
 
     getItemKey(model) {
-        return String(model.uniqueId);
+        return `${model.inventoryType}:${model.slot}`;
     }
 
     getRedisHashKey(worldId, ownerId) {
-        const { keyPrefix } = this.ctx.getRedisDataAccess(worldId, ownerId);
-        return `${keyPrefix}fm:w${worldId}:inventory:${ownerId}`;
+        return redisCacheKey(`w${worldId}:inventory:${ownerId}`);
     }
 
     onSelect(ownerId, _worldId) {
         return {
-            text: `SELECT ${SELECT_COLS} FROM inventory WHERE owner_id = $1 AND NOT deleted`,
+            text: `SELECT ${SELECT_COLS} FROM inventory WHERE owner_id = $1`,
             values: [Number(ownerId)],
         };
     }
 
     onBulkUpsert(rows) {
-        if (!rows.length) return { text: "", values: [] };
+        if (!rows.length) {
+            return { text: "", values: [] };
+        }
         const placeholders = rows
-            .map((_, ri) =>
-                `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${ri * PER_ROW_PARAMS + ci + 1}`).join(",")},NOW())`
-            )
+            .map((_, ri) => {
+                const base = ri * PER_ROW_PARAMS + 1;
+                return `(${Array.from({ length: PER_ROW_PARAMS }, (_, ci) => `$${base + ci}`).join(",")},NOW())`;
+            })
             .join(",\n");
         return {
-            text: `INSERT INTO inventory (${INSERT_COLS}) VALUES\n${placeholders}\nON CONFLICT (unique_id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
+            text: `INSERT INTO inventory (${INSERT_COLS}) VALUES\n${placeholders}\nRETURNING ${SELECT_COLS}`,
             values: rows.flatMap(rowValues),
         };
     }
 
     onBulkDelete(itemKeys, ownerId, _worldId) {
+        if (!itemKeys.length) {
+            return { text: "", values: [] };
+        }
+        const tuples = itemKeys.map((k) => {
+            const [t, s] = String(k).split(":");
+            return [Number(t), Number(s)];
+        });
+        const values = [Number(ownerId), ...tuples.flat()];
+        const conds = tuples
+            .map((_, i) => `(inventory_type = $${2 + i * 2} AND slot = $${3 + i * 2})`)
+            .join(" OR ");
         return {
-            text: `UPDATE inventory SET deleted = TRUE, updated_at = NOW() WHERE unique_id = ANY($1::bigint[]) AND owner_id = $2`,
-            values: [itemKeys.map(String), Number(ownerId)],
+            text: `DELETE FROM inventory WHERE owner_id = $1 AND (${conds})`,
+            values,
         };
     }
 
     rowToModel(row) {
         return {
-            uniqueId:      String(row.unique_id),
-            ownerId:       Number(row.owner_id),
-            itemId:        Number(row.item_id),
-            slot:          Number(row.slot),
-            count:         Number(row.count),
-            expiration:    row.expiration ? new Date(row.expiration) : null,
-            enchantChance: row.enchant_chance != null ? Number(row.enchant_chance) : null,
-            flag:          row.flag != null ? Number(row.flag) : null,
-            skillBonus:    row.skill_bonus != null ? Number(row.skill_bonus) : null,
-            ownerName:     row.owner_name ?? null,
-            updatedAt:     row.updated_at instanceof Date ? row.updated_at : new Date(row.updated_at),
+            uniqueId:
+                row.unique_id != null && row.unique_id !== ""
+                    ? Number(row.unique_id)
+                    : null,
+            ownerId: Number(row.owner_id),
+            inventoryType: Number(row.inventory_type),
+            itemId: Number(row.item_id),
+            slot: Number(row.slot),
+            count: Number(row.count),
+            expiration: row.expiration ? new Date(row.expiration) : null,
+            enchantChance:
+                row.enchant_chance != null ? Number(row.enchant_chance) : null,
+            flag: row.flag != null ? Number(row.flag) : null,
+            skillBonus:
+                row.skill_bonus != null ? Number(row.skill_bonus) : null,
+            ownerName: row.owner_name ?? null,
+            updatedAt:
+                row.updated_at instanceof Date
+                    ? row.updated_at
+                    : new Date(row.updated_at),
         };
     }
 
     modelToRow(model) {
+        let uniqueId = model.uniqueId;
+        if (uniqueId === "" || uniqueId === 0 || uniqueId === "0") {
+            uniqueId = null;
+        }
         return {
-            unique_id:      String(model.uniqueId),
-            owner_id:       model.ownerId,
-            item_id:        model.itemId,
-            slot:           model.slot,
-            count:          model.count,
-            expiration:     model.expiration ?? null,
+            unique_id: uniqueId != null ? uniqueId : null,
+            owner_id: model.ownerId,
+            inventory_type: model.inventoryType,
+            item_id: model.itemId,
+            slot: model.slot,
+            count: model.count,
+            expiration: model.expiration ?? null,
             enchant_chance: model.enchantChance ?? null,
-            flag:           model.flag ?? null,
-            skill_bonus:    model.skillBonus ?? null,
-            owner_name:     model.ownerName ?? null,
+            flag: model.flag ?? null,
+            skill_bonus: model.skillBonus ?? null,
+            owner_name: model.ownerName ?? null,
         };
-    }
-
-    _syntheticUniqueId(ownerId, slot) {
-        const owner = BigInt(Number(ownerId) >>> 0);
-        const slot16 = BigInt((Number(slot) + 0x8000) & 0xffff);
-        return String(-((owner << 16n) + slot16 + 1n));
     }
 
     async replaceBySnapshot(worldId, ownerId, models) {
         const pool = this._pool(worldId, ownerId);
-        const { text: selectText, values: selectValues } = this.onSelect(ownerId, worldId);
-        const existingRes = await pool.query(selectText, selectValues);
-        const existingRows = existingRes.rows ?? [];
-        const existingBySlot = new Map(existingRows.map((r) => [Number(r.slot), r]));
-
         const normalized = models.map((m) => {
             const row = this.modelToRow(m);
-            const hasUnique = row.unique_id != null && String(row.unique_id) !== "0" && String(row.unique_id) !== "";
-            if (!hasUnique) {
-                const bySlot = existingBySlot.get(Number(row.slot));
-                row.unique_id = bySlot ? String(bySlot.unique_id) : this._syntheticUniqueId(ownerId, row.slot);
-            } else {
-                row.unique_id = String(row.unique_id);
-            }
             row.owner_id = Number(ownerId);
             return row;
         });
 
         await pool.query("BEGIN");
         try {
+            await pool.query(`DELETE FROM inventory WHERE owner_id = $1`, [
+                Number(ownerId),
+            ]);
             if (normalized.length > 0) {
-                const upsert = this.onBulkUpsert(normalized);
-                if (upsert.text) {
-                    await pool.query(upsert.text, upsert.values);
+                const insert = this.onBulkUpsert(normalized);
+                if (insert.text) {
+                    await pool.query(insert.text, insert.values);
                 }
             }
-
-            const incomingIds = new Set(normalized.map((r) => String(r.unique_id)));
-            const deleteIds = existingRows
-                .map((r) => String(r.unique_id))
-                .filter((id) => !incomingIds.has(id));
-            if (deleteIds.length > 0) {
-                const delQuery = this.onBulkDelete(deleteIds, ownerId, worldId);
-                await pool.query(delQuery.text, delQuery.values);
-            }
-
             await pool.query("COMMIT");
         } catch (err) {
             await pool.query("ROLLBACK");
@@ -158,7 +166,6 @@ class InventoryRepository extends HashRepository {
         const redis = this._redis(worldId, ownerId);
         await redis.del(this.getRedisHashKey(worldId, ownerId)).catch(() => {});
     }
-
 }
 
 module.exports = { InventoryRepository };

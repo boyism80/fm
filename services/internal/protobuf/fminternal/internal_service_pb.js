@@ -5364,7 +5364,8 @@ proto.fm.internal.InventoryPersisted.toObject = function(includeInstance, msg) {
     enchantChance: jspb.Message.getFieldWithDefault(msg, 7, 0),
     flag: jspb.Message.getFieldWithDefault(msg, 8, 0),
     skillBonus: jspb.Message.getFieldWithDefault(msg, 9, 0),
-    ownerName: jspb.Message.getFieldWithDefault(msg, 10, "")
+    ownerName: jspb.Message.getFieldWithDefault(msg, 10, ""),
+    inventoryType: jspb.Message.getFieldWithDefault(msg, 11, 0)
   };
 
   if (includeInstance) {
@@ -5402,7 +5403,7 @@ proto.fm.internal.InventoryPersisted.deserializeBinaryFromReader = function(msg,
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readInt64());
+      var value = /** @type {number} */ (reader.readUint64());
       msg.setUniqueId(value);
       break;
     case 2:
@@ -5441,6 +5442,10 @@ proto.fm.internal.InventoryPersisted.deserializeBinaryFromReader = function(msg,
       var value = /** @type {string} */ (reader.readString());
       msg.setOwnerName(value);
       break;
+    case 11:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setInventoryType(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -5470,9 +5475,9 @@ proto.fm.internal.InventoryPersisted.prototype.serializeBinary = function() {
  */
 proto.fm.internal.InventoryPersisted.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getUniqueId();
-  if (f !== 0) {
-    writer.writeInt64(
+  f = /** @type {number} */ (jspb.Message.getField(message, 1));
+  if (f != null) {
+    writer.writeUint64(
       1,
       f
     );
@@ -5540,11 +5545,18 @@ proto.fm.internal.InventoryPersisted.serializeBinaryToWriter = function(message,
       f
     );
   }
+  f = message.getInventoryType();
+  if (f !== 0) {
+    writer.writeUint32(
+      11,
+      f
+    );
+  }
 };
 
 
 /**
- * optional int64 unique_id = 1;
+ * optional uint64 unique_id = 1;
  * @return {number}
  */
 proto.fm.internal.InventoryPersisted.prototype.getUniqueId = function() {
@@ -5557,7 +5569,25 @@ proto.fm.internal.InventoryPersisted.prototype.getUniqueId = function() {
  * @return {!proto.fm.internal.InventoryPersisted} returns this
  */
 proto.fm.internal.InventoryPersisted.prototype.setUniqueId = function(value) {
-  return jspb.Message.setProto3IntField(this, 1, value);
+  return jspb.Message.setField(this, 1, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.fm.internal.InventoryPersisted} returns this
+ */
+proto.fm.internal.InventoryPersisted.prototype.clearUniqueId = function() {
+  return jspb.Message.setField(this, 1, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.fm.internal.InventoryPersisted.prototype.hasUniqueId = function() {
+  return jspb.Message.getField(this, 1) != null;
 };
 
 
@@ -5720,6 +5750,24 @@ proto.fm.internal.InventoryPersisted.prototype.getOwnerName = function() {
  */
 proto.fm.internal.InventoryPersisted.prototype.setOwnerName = function(value) {
   return jspb.Message.setProto3StringField(this, 10, value);
+};
+
+
+/**
+ * optional uint32 inventory_type = 11;
+ * @return {number}
+ */
+proto.fm.internal.InventoryPersisted.prototype.getInventoryType = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 11, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.fm.internal.InventoryPersisted} returns this
+ */
+proto.fm.internal.InventoryPersisted.prototype.setInventoryType = function(value) {
+  return jspb.Message.setProto3IntField(this, 11, value);
 };
 
 

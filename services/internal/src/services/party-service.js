@@ -1,5 +1,6 @@
 "use strict";
 
+const { redisCacheKey } = require("../redis-cache-key");
 const messages = require("../../protobuf/fminternal/internal_service_pb");
 
 const MAX_PARTY_MEMBERS = 6;
@@ -39,8 +40,8 @@ class PartyService {
         this.partyEventPublisher = partyEventPublisher;
     }
 
-    _invitePendingKey(keyPrefix, worldId, characterId) {
-        return `${keyPrefix}fm:w${worldId}:party:invite_pending:${characterId}`;
+    _invitePendingKey(worldId, characterId) {
+        return redisCacheKey(`w${worldId}:party:invite_pending:${characterId}`);
     }
 
     _assertWorld(worldId) {
@@ -88,8 +89,8 @@ class PartyService {
     }
 
     async _nextPartyId(worldId) {
-        const { client, keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
-        const key = `${keyPrefix}fm:w${worldId}:party:id:seq`;
+        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const key = redisCacheKey(`w${worldId}:party:id:seq`);
         return Number(await client.incr(key));
     }
 
@@ -408,8 +409,8 @@ class PartyService {
             return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
         }
 
-        const { client, keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
-        const inviteKey = this._invitePendingKey(keyPrefix, worldId, targetCharacterId);
+        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const inviteKey = this._invitePendingKey(worldId, targetCharacterId);
         await client.set(inviteKey, String(partyId), "EX", INVITE_PENDING_TTL_SEC);
 
         await this.partyEventPublisher.publishToGameChannel(worldId, Number(ch), {
@@ -435,8 +436,8 @@ class PartyService {
         const inviterName = String(inviterCharacterName ?? "").trim();
         this._assertName(inviterName);
 
-        const { client, keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
-        const inviteKey = this._invitePendingKey(keyPrefix, worldId, deniedCharacterId);
+        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const inviteKey = this._invitePendingKey(worldId, deniedCharacterId);
         const pending = await client.get(inviteKey);
         if (pending == null || Number(pending) <= 0) {
             return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };
@@ -484,8 +485,8 @@ class PartyService {
         this._assertUInt16(level, "level");
         this._assertUInt16(classId, "class_id");
 
-        const { client, keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
-        const inviteKey = this._invitePendingKey(keyPrefix, worldId, characterId);
+        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const inviteKey = this._invitePendingKey(worldId, characterId);
         const pending = await client.get(inviteKey);
         if (pending == null || Number(pending) !== Number(partyId)) {
             return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };

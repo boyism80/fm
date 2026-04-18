@@ -1,5 +1,6 @@
 "use strict";
 
+const { redisCacheKey } = require("../redis-cache-key");
 const { HashRepository } = require("./hash-repository");
 
 const SELECT_COLS =
@@ -19,8 +20,7 @@ class PartyMemberRepository extends HashRepository {
     }
 
     getRedisHashKey(worldId, partyId) {
-        const { keyPrefix } = this.ctx.getRedisDataAccess(worldId, partyId);
-        return `${keyPrefix}fm:w${worldId}:party-member:${partyId}`;
+        return redisCacheKey(`w${worldId}:party-member:${partyId}`);
     }
 
     onSelect(partyId, worldId) {

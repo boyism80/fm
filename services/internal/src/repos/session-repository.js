@@ -1,18 +1,18 @@
 "use strict";
 
+const { redisCacheKey } = require("../redis-cache-key");
+
 class SessionRepository {
     constructor(internalContext) {
         this.ctx = internalContext;
     }
 
     _accountKey(worldId, accountId) {
-        const { keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
-        return `${keyPrefix}fm:session:account:${accountId}`;
+        return redisCacheKey(`session:account:${accountId}`);
     }
 
     _characterKey(worldId, characterId) {
-        const { keyPrefix } = this.ctx.getRedisGlobalAccess(worldId);
-        return `${keyPrefix}fm:w${worldId}:session:character:${characterId}`;
+        return redisCacheKey(`w${worldId}:session:character:${characterId}`);
     }
 
     _accountSessionToHash(session) {

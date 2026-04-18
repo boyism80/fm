@@ -58,8 +58,8 @@ class Repository {
     _groupByRedisShard(worldId, keys) {
         const groups = new Map();
         for (const key of keys) {
-            const { client, keyPrefix } = this.ctx.getRedisDataAccess(worldId, this.getShardHash(key));
-            if (!groups.has(client)) groups.set(client, { client, keyPrefix, keys: [] });
+            const { client } = this.ctx.getRedisDataAccess(worldId, this.getShardHash(key));
+            if (!groups.has(client)) groups.set(client, { client, keys: [] });
             groups.get(client).keys.push(key);
         }
         return [...groups.values()];

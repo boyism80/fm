@@ -17,8 +17,15 @@ type PartyMemberStatus struct {
 
 func normalizePartyMembersSix(members []PartyMemberStatus) []PartyMemberStatus {
 	out := make([]PartyMemberStatus, 6)
-	for i := 0; i < len(out) && i < len(members); i++ {
+	n := len(members)
+	if n > len(out) {
+		n = len(out)
+	}
+	for i := 0; i < n; i++ {
 		out[i] = members[i]
+	}
+	for i := n; i < len(out); i++ {
+		out[i].Channel = -1
 	}
 	return out
 }

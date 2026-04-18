@@ -1,5 +1,6 @@
 "use strict";
 
+const { redisCacheKey } = require("../redis-cache-key");
 const { HashRepository } = require("./hash-repository");
 
 const SELECT_COLS = `character_id, account_id, world_id, name, gender, skin_color, face, hair,
@@ -54,8 +55,7 @@ class CharacterOverviewRepository extends HashRepository {
     }
 
     getRedisHashKey(worldId, accountId) {
-        const { keyPrefix } = this.ctx.getRedisDataAccess(worldId, accountId);
-        return `${keyPrefix}fm:w${worldId}:overview:${accountId}`;
+        return redisCacheKey(`w${worldId}:overview:${accountId}`);
     }
 
     onSelect(accountId, worldId) {
