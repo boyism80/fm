@@ -31,7 +31,6 @@ async function main() {
     await autoMigrateAllIfEnabled(internalConfig);
     const internalContext = container.resolve("internalContext");
     const rabbitmqService = container.resolve("rabbitmqService");
-    const partyEventPublisher = container.resolve("partyEventPublisher");
 
     const wid = String(internalConfig.app.world_id);
     const pgw = internalConfig.postgresql.worlds[wid];
@@ -48,7 +47,6 @@ async function main() {
     );
 
     await rabbitmqService.start();
-    await partyEventPublisher.initialize();
 
     const server = new grpc.Server();
 

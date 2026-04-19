@@ -16,6 +16,7 @@ import (
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/core/mq"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
@@ -31,20 +32,21 @@ import (
 )
 
 type GameServer struct {
-	server             *core.Server
-	config             *GameConfig
-	resources          *wz.Resources
-	maps               map[uint32]*entity.Map
-	mapsMutex          sync.RWMutex
-	packetHandlers     *PacketHandlerRegistry
-	context            *GameServerContext
-	actorSystem        *c_actor.ActorSystem
-	actorRegistry      *c_actor.ActorRegistry
-	nilMapActorPID     *actor.PID
-	characterListener  entity.CharacterListener
-	internalClient     internal.InternalClient
-	internalConn       *grpc.ClientConn
-	partyEventConsumer *PartyEventConsumer
+	server            *core.Server
+	config            *GameConfig
+	resources         *wz.Resources
+	maps              map[uint32]*entity.Map
+	mapsMutex         sync.RWMutex
+	packetHandlers    *PacketHandlerRegistry
+	context           *GameServerContext
+	actorSystem       *c_actor.ActorSystem
+	actorRegistry     *c_actor.ActorRegistry
+	nilMapActorPID    *actor.PID
+	characterListener entity.CharacterListener
+	internalClient    internal.InternalClient
+	internalConn      *grpc.ClientConn
+	party             *PartyContainer
+	consumerParty     *mq.JSONConsumer[*GameServer]
 
 	characterRuntime *ServerCharacterRuntime
 
@@ -136,31 +138,31 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		}
 	}
 
+	gs.party = NewPartyContainer(gs, config.WorldId, gs.internalClient)
+
 	if config.RabbitMQ.Enabled() {
-		gs.partyEventConsumer = NewPartyEventConsumer(
-			config.RabbitMQ,
-			config.WorldId,
-			config.ChannelId,
-			gs.internalClient,
-			gs.SyncPartySnapshot,
-			gs.ClearPartyMembers,
-			gs.DeliverPartyJoinUpdate,
-			gs.DeliverPartyLeaveUpdate,
-			gs.DeliverPartyDisbandUpdate,
-			gs.DeliverPartyLeaderChange,
-			gs.DeliverPartyLogOnOff,
-			gs.DeliverPartySilentFromSnapshot,
-			gs.DeliverPartyInviteToCharacter,
-			gs.DeliverPartyDenyStatusToCharacter,
-		)
+		queueName := fmt.Sprintf("fm.game.w%d.c%d.party.events", config.WorldId, config.ChannelId)
+		consumerTag := fmt.Sprintf("fm-game-w%d-c%d-party", config.WorldId, config.ChannelId)
+		routeAll := fmt.Sprintf("fm.%d.all.party", config.WorldId)
+		routeGame := fmt.Sprintf("fm.%d.%d.party", config.WorldId, config.ChannelId)
+		consumerParty := mq.NewJSONConsumer(config.RabbitMQ, gs, queueName, consumerTag)
+		consumerParty.Route(routeAll).Route(routeGame)
+
+		mq.BindOn[*GameServer, partyMqCreated](consumerParty)
+		mq.BindOn[*GameServer, partyMqMemberJoined](consumerParty)
+		mq.BindOn[*GameServer, partyMqMemberLeft](consumerParty)
+		mq.BindOn[*GameServer, partyMqLeaderChanged](consumerParty)
+		mq.BindOn[*GameServer, partyMqLogOnOff](consumerParty)
+		mq.BindOn[*GameServer, partyMqDisbanded](consumerParty)
+		mq.BindOn[*GameServer, partyMqPartySnapshot](consumerParty)
+		mq.BindOn[*GameServer, partyMqPartyInvite](consumerParty)
+		mq.BindOn[*GameServer, partyMqPartyInviteDenied](consumerParty)
+		gs.consumerParty = consumerParty
 	}
 
 	gs.characterListener = &CharacterListenerImpl{gs: gs}
-
 	context.gs = gs
-
 	gs.packetHandlers = NewPacketHandlerRegistry(gs)
-
 	luax.RegisterOnCreateHook(func(luaState *lua.LState) {
 		registerGameLuaState(gs, luaState)
 	})
@@ -249,11 +251,11 @@ func (gs *GameServer) Start() error {
 	log.Printf("World: %s, Max Players: %d", gs.config.WorldName, gs.config.MaxPlayers)
 	log.Printf("Rates: Exp=%dx, Drop=%dx, Meso=%dx",
 		gs.config.ExpRate, gs.config.DropRate, gs.config.MesoRate)
-	if gs.partyEventConsumer != nil {
-		if err := gs.partyEventConsumer.Start(); err != nil {
-			return fmt.Errorf("party event consumer start failed: %w", err)
+	if gs.consumerParty != nil {
+		if err := gs.consumerParty.Start(); err != nil {
+			return fmt.Errorf("party mq start failed: %w", err)
 		}
-		log.Printf("Party event consumer started (%s)", gs.partyEventConsumer.QueueName())
+		log.Printf("Party MQ started (%s)", gs.consumerParty.QueueName())
 	}
 
 	if gs.resources != nil {
@@ -271,8 +273,8 @@ func (gs *GameServer) Start() error {
 
 func (gs *GameServer) Stop() error {
 	log.Println("Shutting down game server...")
-	if gs.partyEventConsumer != nil {
-		_ = gs.partyEventConsumer.Close()
+	if gs.consumerParty != nil {
+		_ = gs.consumerParty.Close()
 	}
 	if gs.internalConn != nil {
 		_ = gs.internalConn.Close()
@@ -563,8 +565,8 @@ func (gs *GameServer) DeliverPartySilentFromSnapshot(snapshot *internal.PartySna
 }
 
 func (gs *GameServer) partySnapshotForMapEnter(partyID uint32) *internal.PartySnapshot {
-	if gs.partyEventConsumer != nil {
-		if s := gs.partyEventConsumer.CachedPartySnapshot(partyID); s != nil {
+	if gs.party != nil {
+		if s := gs.party.CachedSnapshot(partyID); s != nil {
 			return s
 		}
 	}
@@ -658,10 +660,10 @@ func (gs *GameServer) RequestSpawnReturnMapDoor(ch *entity.Character, skillID ga
 }
 
 func (gs *GameServer) PartyMemberIndex(characterID uint32, partyID *uint32) int {
-	if partyID == nil || *partyID == 0 || gs.partyEventConsumer == nil {
+	if partyID == nil || *partyID == 0 || gs.party == nil {
 		return 0
 	}
-	snap := gs.partyEventConsumer.CachedPartySnapshot(*partyID)
+	snap := gs.party.CachedSnapshot(*partyID)
 	if snap == nil {
 		return 0
 	}

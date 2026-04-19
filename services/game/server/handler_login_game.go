@@ -187,8 +187,8 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		return fmt.Errorf("runtime register: %w", err)
 	}
 
-	if h.gs.partyEventConsumer != nil && reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
-		h.gs.partyEventConsumer.ApplyPartySnapshot(partyReply.GetParty())
+	if h.gs.party != nil && reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
+		h.gs.party.ApplySnapshotFromLogin(partyReply.GetParty())
 	}
 
 	rootContext := h.gs.GetServer().GetRootContext()

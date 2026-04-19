@@ -215,8 +215,8 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 				})
 			},
 			func(gp *internal.GetPartyReply) error {
-				if gp.GetFound() && gp.GetParty() != nil && h.gs.partyEventConsumer != nil {
-					h.gs.partyEventConsumer.ApplyPartySnapshot(gp.GetParty())
+				if gp.GetFound() && gp.GetParty() != nil && h.gs.party != nil {
+					h.gs.party.ApplySnapshotFromLogin(gp.GetParty())
 				}
 				return nil
 			},

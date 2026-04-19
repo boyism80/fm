@@ -21,7 +21,6 @@ const { AccountService } = require("./services/account-service");
 const { CharacterOverviewService } = require("./services/character-overview-service");
 const { SessionService } = require("./services/session-service");
 const { RabbitMQService } = require("./services/rabbitmq-service");
-const { PartyEventPublisher } = require("./services/party-event-publisher");
 const { PartyService } = require("./services/party-service");
 
 function createAppContainer() {
@@ -50,7 +49,6 @@ function createAppContainer() {
         characterOverviewService:    awilix.asClass(CharacterOverviewService).singleton(),
         sessionService:              awilix.asClass(SessionService).singleton(),
         rabbitmqService:             awilix.asClass(RabbitMQService).singleton(),
-        partyEventPublisher:         awilix.asClass(PartyEventPublisher).singleton(),
         partyService:                awilix.asClass(PartyService).singleton(),
     });
     return container;

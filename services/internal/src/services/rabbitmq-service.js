@@ -40,11 +40,18 @@ class RabbitMQService {
         await this.channel.assertExchange(exchange, "direct", { durable: true });
     }
 
-    async publish(exchange, routingKey, payload) {
+    async publish(exchange, routingKey, eventType, payload = {}) {
         if (!this.started || !this.channel) {
             throw new Error("rabbitmq service is not started");
         }
-        const body = Buffer.from(JSON.stringify(payload));
+        if (typeof eventType !== "string" || eventType.trim() === "") {
+            throw new Error("rabbitmq publish: eventType is required (non-empty string)");
+        }
+        const bodyObj = {
+            ...payload,
+            event_type: eventType,
+        };
+        const body = Buffer.from(JSON.stringify(bodyObj));
         return this.channel.publish(exchange, routingKey, body, {
             contentType: "application/json",
             persistent: true,

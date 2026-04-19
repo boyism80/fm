@@ -1,4 +1,4 @@
-package server
+package mq
 
 import (
 	"sync"
@@ -7,9 +7,11 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type RabbitMQDeliveryHandler func(msg amqp.Delivery) error
+const DirectExchange = "amq.direct"
 
-type RabbitMQConsumer struct {
+type DeliveryHandler func(msg amqp.Delivery) error
+
+type Consumer struct {
 	cfg config.RabbitMQEndpoint
 
 	conn        *amqp.Connection
@@ -18,15 +20,15 @@ type RabbitMQConsumer struct {
 	routingKeys []string
 	queueName   string
 	consumerTag string
-	handler     RabbitMQDeliveryHandler
+	handler     DeliveryHandler
 
 	stopOnce sync.Once
 	stopped  chan struct{}
 }
 
-func NewRabbitMQConsumer(cfg config.RabbitMQEndpoint, exchange, queueName, consumerTag string, handler RabbitMQDeliveryHandler, routingKeys ...string) *RabbitMQConsumer {
+func NewConsumer(cfg config.RabbitMQEndpoint, exchange, queueName, consumerTag string, handler DeliveryHandler, routingKeys ...string) *Consumer {
 	keys := append([]string(nil), routingKeys...)
-	return &RabbitMQConsumer{
+	return &Consumer{
 		cfg:         cfg,
 		exchange:    exchange,
 		routingKeys: keys,
@@ -37,11 +39,11 @@ func NewRabbitMQConsumer(cfg config.RabbitMQEndpoint, exchange, queueName, consu
 	}
 }
 
-func (c *RabbitMQConsumer) QueueName() string {
+func (c *Consumer) QueueName() string {
 	return c.queueName
 }
 
-func (c *RabbitMQConsumer) Start() error {
+func (c *Consumer) Start() error {
 	url := c.cfg.AMQPURL()
 	if url == "" {
 		return nil
@@ -55,7 +57,13 @@ func (c *RabbitMQConsumer) Start() error {
 		_ = conn.Close()
 		return err
 	}
-	if err := ch.ExchangeDeclare(c.exchange, "direct", true, false, false, false, nil); err != nil {
+	if c.exchange == DirectExchange {
+		if err := ch.ExchangeDeclarePassive(c.exchange, "direct", true, false, false, false, nil); err != nil {
+			_ = ch.Close()
+			_ = conn.Close()
+			return err
+		}
+	} else if err := ch.ExchangeDeclare(c.exchange, "direct", true, false, false, false, nil); err != nil {
 		_ = ch.Close()
 		_ = conn.Close()
 		return err
@@ -90,7 +98,7 @@ func (c *RabbitMQConsumer) Start() error {
 	return nil
 }
 
-func (c *RabbitMQConsumer) consumeLoop(deliveries <-chan amqp.Delivery) {
+func (c *Consumer) consumeLoop(deliveries <-chan amqp.Delivery) {
 	defer close(c.stopped)
 	for msg := range deliveries {
 		if c.handler == nil {
@@ -105,7 +113,7 @@ func (c *RabbitMQConsumer) consumeLoop(deliveries <-chan amqp.Delivery) {
 	}
 }
 
-func (c *RabbitMQConsumer) Close() error {
+func (c *Consumer) Close() error {
 	var closeErr error
 	c.stopOnce.Do(func() {
 		if c.ch != nil {

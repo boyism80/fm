@@ -17,6 +17,8 @@ const EVT = {
 
 const INVITE_PENDING_TTL_SEC = 300;
 
+const AMQ_DIRECT_EXCHANGE = "amq.direct";
+
 class PartyService {
     constructor(
         internalContext,
@@ -27,7 +29,7 @@ class PartyService {
         characterRepository,
         unifiedRepository,
         sessionRepository,
-        partyEventPublisher
+        rabbitmqService
     ) {
         this.ctx = internalContext;
         this.app = appConfiguration;
@@ -37,7 +39,37 @@ class PartyService {
         this.characterRepo = characterRepository;
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
-        this.partyEventPublisher = partyEventPublisher;
+        this.rabbitmqService = rabbitmqService;
+        this._mqDirectReady = false;
+    }
+
+    async _ensurePartyMqExchange() {
+        if (this._mqDirectReady) {
+            return;
+        }
+        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
+        this._mqDirectReady = true;
+    }
+
+    async _publishToPartyRoutes(eventType, worldId, partyId, revision, extraPayload = {}) {
+        await this._ensurePartyMqExchange();
+        const routingKey = `fm.${worldId}.all.party`;
+        return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
+            event_id: extraPayload.event_id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            party_id: partyId,
+            revision: Number(revision),
+            occurred_at: new Date().toISOString(),
+            ...extraPayload,
+        });
+    }
+
+    async _publishToPartyGameChannel(worldId, channelId, eventType, payload = {}) {
+        await this._ensurePartyMqExchange();
+        const routingKey = `fm.${worldId}.${channelId}.party`;
+        return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
+            occurred_at: new Date().toISOString(),
+            ...payload,
+        });
     }
 
     _invitePendingKey(worldId, characterId) {
@@ -106,7 +138,7 @@ class PartyService {
     }
 
     async _publishPartyEvent(eventType, worldId, partyId, revision, extraPayload = {}) {
-        await this.partyEventPublisher.publish(eventType, worldId, partyId, revision, {
+        await this._publishToPartyRoutes(eventType, worldId, partyId, revision, {
             world_id: Number(worldId),
             ...extraPayload,
         });
@@ -446,8 +478,7 @@ class PartyService {
         const inviteKey = this._invitePendingKey(worldId, targetCharacterId);
         await client.set(inviteKey, String(partyId), "EX", INVITE_PENDING_TTL_SEC);
 
-        await this.partyEventPublisher.publishToGameChannel(worldId, Number(ch), {
-            event_type: "party_invite",
+        await this._publishToPartyGameChannel(worldId, Number(ch), "party_invite", {
             world_id: Number(worldId),
             party_id: partyId,
             target_character_id: targetCharacterId,
@@ -504,8 +535,7 @@ class PartyService {
         }
 
         await client.del(inviteKey);
-        await this.partyEventPublisher.publishToGameChannel(worldId, inviterChannelID, {
-            event_type: "party_invite_denied",
+        await this._publishToPartyGameChannel(worldId, inviterChannelID, "party_invite_denied", {
             world_id: Number(worldId),
             inviter_character_id: inviterCharacterId,
             denied_character_name: deniedName,
