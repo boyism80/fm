@@ -806,13 +806,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			skillID := uint32(L.CheckInt(2))
-			door := ch.SpawnDoor(constant.SkillID(skillID))
-			if door == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			L.Push(luax.NewLuable(L, door))
-			return 1
+			ch.SpawnDoor(constant.SkillID(skillID))
+			return 0
 		},
 		"remove_summon": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

@@ -218,6 +218,15 @@ func (model *Map) buildDoorReturnPortal() {
 	model.doorReturnPortals = out
 }
 
+func (model *Map) DoorReturnPortalSlots() []Portal {
+	if model == nil || len(model.doorReturnPortals) == 0 {
+		return nil
+	}
+	out := make([]Portal, len(model.doorReturnPortals))
+	copy(out, model.doorReturnPortals)
+	return out
+}
+
 func (model *Map) GetDoorReturnPosition(partyOwnerSlot int) (types.Point[int16], bool) {
 	if model == nil {
 		return types.Point[int16]{}, false

@@ -64,8 +64,8 @@ class PartyService {
 
     _assertPartyId(partyId) {
         const n = Number(partyId);
-        if (!Number.isInteger(n) || n <= 0 || n > Number.MAX_SAFE_INTEGER) {
-            const err = new Error("party_id must be a positive integer");
+        if (!Number.isInteger(n) || n < 0 || n > Number.MAX_SAFE_INTEGER) {
+            const err = new Error("party_id must be a non-negative integer");
             err.code = "INVALID_PAYLOAD";
             throw err;
         }
@@ -126,8 +126,32 @@ class PartyService {
         return this._computePartyUiChannelIndex(sess);
     }
 
+    _sortPartyMemberModels(memberModels, leaderCharacterId) {
+        const arr = Array.isArray(memberModels) ? [...memberModels] : [...memberModels.values()];
+        const leaderId = Number(leaderCharacterId ?? 0);
+        return arr.sort((a, b) => {
+            const aLead = Number(a.characterId) === leaderId ? 0 : 1;
+            const bLead = Number(b.characterId) === leaderId ? 0 : 1;
+            if (aLead !== bLead) {
+                return aLead - bLead;
+            }
+            const ta =
+                a.joinedAt instanceof Date
+                    ? a.joinedAt.getTime()
+                    : new Date(a.joinedAt || 0).getTime();
+            const tb =
+                b.joinedAt instanceof Date
+                    ? b.joinedAt.getTime()
+                    : new Date(b.joinedAt || 0).getTime();
+            if (ta !== tb) {
+                return ta - tb;
+            }
+            return Number(a.characterId) - Number(b.characterId);
+        });
+    }
+
     _partySnapshotToPb(worldId, party, memberModels) {
-        const list = Array.isArray(memberModels) ? memberModels : [...memberModels.values()];
+        const list = this._sortPartyMemberModels(memberModels, party.leaderCharacterId);
         const p = new messages.PartySnapshot();
         p.setWorldId(Number(worldId));
         p.setPartyId(party.partyId);
@@ -192,8 +216,11 @@ class PartyService {
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
             const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            const partyId = Number(state?.partyId);
-            if (!Number.isFinite(partyId) || partyId <= 0) {
+            if (state?.partyId == null) {
+                return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+            }
+            const partyId = Number(state.partyId);
+            if (!Number.isInteger(partyId) || partyId < 0) {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
@@ -255,8 +282,11 @@ class PartyService {
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
             const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            const partyId = Number(state?.partyId);
-            if (!Number.isFinite(partyId) || partyId <= 0) {
+            if (state?.partyId == null) {
+                return { skip: true };
+            }
+            const partyId = Number(state.partyId);
+            if (!Number.isInteger(partyId) || partyId < 0) {
                 return { skip: true };
             }
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
@@ -364,8 +394,11 @@ class PartyService {
         this._assertName(trimmed);
 
         const inviterState = await this.characterRealtimeStateRepo.get(worldId, inviterCharacterId);
-        const partyId = Number(inviterState?.partyId);
-        if (!Number.isFinite(partyId) || partyId <= 0) {
+        if (inviterState?.partyId == null) {
+            return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
+        }
+        const partyId = Number(inviterState.partyId);
+        if (!Number.isInteger(partyId) || partyId < 0) {
             return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
         }
         const party = await this.partyRepo.get(worldId, partyId);
@@ -439,7 +472,11 @@ class PartyService {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const inviteKey = this._invitePendingKey(worldId, deniedCharacterId);
         const pending = await client.get(inviteKey);
-        if (pending == null || Number(pending) <= 0) {
+        if (pending == null) {
+            return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };
+        }
+        const pendingPartyId = Number(pending);
+        if (!Number.isInteger(pendingPartyId) || pendingPartyId < 0) {
             return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };
         }
 
@@ -563,7 +600,7 @@ class PartyService {
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
             const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            if (!state?.partyId) {
+            if (state?.partyId == null) {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const partyId = state.partyId;
@@ -680,7 +717,7 @@ class PartyService {
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
             const requesterState = await this.characterRealtimeStateRepo.get(worldId, requesterCharacterId, { txClient });
-            if (!requesterState?.partyId) {
+            if (requesterState?.partyId == null) {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const partyId = requesterState.partyId;
@@ -810,6 +847,7 @@ class PartyService {
 
     async getParty(worldId, partyId) {
         this._assertWorld(worldId);
+        this._assertPartyId(partyId);
         const party = await this.partyRepo.get(worldId, partyId);
         if (!party) {
             return { found: false };
@@ -818,7 +856,7 @@ class PartyService {
         return {
             found: true,
             party,
-            members: [...members.values()],
+            members: this._sortPartyMemberModels(members, party.leaderCharacterId),
         };
     }
 }

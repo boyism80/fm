@@ -110,9 +110,6 @@ type PartyEventConsumer struct {
 }
 
 func (s *partyEventState) apply(evt PartyEventEnvelope) error {
-	if evt.PartyID == 0 {
-		return nil
-	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	current := s.revisions[evt.PartyID]
@@ -200,7 +197,7 @@ func (s *partyEventState) rehydrateLocked(partyID uint32) error {
 }
 
 func (s *partyEventState) applyEmbeddedPartySnapshot(evt PartyEventEnvelope, snap *internal.PartySnapshot, notifySilent bool) (bool, error) {
-	if s == nil || snap == nil || evt.PartyID == 0 {
+	if s == nil || snap == nil {
 		return false, nil
 	}
 	partyID := evt.PartyID
@@ -329,7 +326,7 @@ func registerPartySnapshotHandler(dispatcher *PartyEventDispatcher, state *party
 			if err := proto.Unmarshal(wire, &snap); err != nil {
 				return fmt.Errorf("party_snapshot unmarshal: %w", err)
 			}
-			if snap.GetPartyId() != 0 && snap.GetPartyId() != evt.PartyID {
+			if snap.GetPartyId() != evt.PartyID {
 				log.Printf("party_snapshot: party_id mismatch envelope=%d snapshot=%d", evt.PartyID, snap.GetPartyId())
 			}
 			_, err = s.applyEmbeddedPartySnapshot(evt, &snap, true)
@@ -355,7 +352,7 @@ func registerPartyInviteHandler(dispatcher *PartyEventDispatcher, state *partyEv
 			if err := json.Unmarshal(raw, &payload); err != nil {
 				return err
 			}
-			if payload.TargetCharacterID == 0 || payload.PartyID == 0 {
+			if payload.TargetCharacterID == 0 {
 				return nil
 			}
 			s.onPartyInvite(payload.TargetCharacterID, payload.PartyID, payload.InviterName, payload.PartySearch)
@@ -518,9 +515,6 @@ func (c *PartyEventConsumer) ApplyPartySnapshot(snapshot *internal.PartySnapshot
 		return
 	}
 	partyID := snapshot.GetPartyId()
-	if partyID == 0 {
-		return
-	}
 	state := c.state
 	state.mu.Lock()
 	defer state.mu.Unlock()
@@ -533,7 +527,7 @@ func (c *PartyEventConsumer) ApplyPartySnapshot(snapshot *internal.PartySnapshot
 }
 
 func (c *PartyEventConsumer) CachedPartySnapshot(partyID uint32) *internal.PartySnapshot {
-	if c == nil || c.state == nil || partyID == 0 {
+	if c == nil || c.state == nil {
 		return nil
 	}
 	c.state.mu.Lock()

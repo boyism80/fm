@@ -37,6 +37,7 @@ type Object interface {
 	SendSpawnSyncToViewer(viewer *Character)
 	Nears(filter constant.ObjectType) []Object
 	Broadcast(message types.Packet, option *ObjectBroadcastOption)
+	BroadcastCall(fn func(Object), option *ObjectBroadcastOption)
 }
 
 func (obj *ObjectCore) GetOID() uint32 {
@@ -105,39 +106,58 @@ func (o *ObjectCore) Nears(filter constant.ObjectType) []Object {
 	return out
 }
 
-func (o *ObjectCore) Broadcast(message types.Packet, option *ObjectBroadcastOption) {
-
-	if o.Map == nil {
+func (o *ObjectCore) BroadcastCall(fn func(Object), option *ObjectBroadcastOption) {
+	if o.Map == nil || fn == nil {
 		return
 	}
-
 	pivot := o.self
 	if pivot == nil {
 		return
 	}
-
-	policy := types.SEND_POLICY_ENCRYPT
 	withMe := false
 	roleBelow := false
 	if option != nil {
-		if option.SendRaw {
-			policy = types.SEND_POLICY_RAW
-		}
 		withMe = option.WithMe
 		roleBelow = option.RecipientsRoleBelowPivot
 	}
 	pivotRole := pivot.GetRole()
-	for _, oc := range pivot.Nears(constant.ObjectTypeCharacter) {
+	for _, oc := range pivot.Nears(constant.ObjectTypeObject) {
 		if oc == nil {
 			continue
 		}
 		if roleBelow && oc.GetRole() >= pivotRole {
 			continue
 		}
-		_ = oc.Send(message, policy)
+		fn(oc)
 	}
 	if withMe {
-		pivot.Send(message, policy)
+		fn(pivot)
+	}
+}
+
+func (o *ObjectCore) Broadcast(message types.Packet, option *ObjectBroadcastOption) {
+	if o.Map == nil {
+		return
+	}
+	pivot := o.self
+	if pivot == nil {
+		return
+	}
+	policy := types.SEND_POLICY_ENCRYPT
+	if option != nil && option.SendRaw {
+		policy = types.SEND_POLICY_RAW
+	}
+	o.BroadcastCall(func(oc Object) {
+		ch, ok := oc.(*Character)
+		if !ok || ch == nil {
+			return
+		}
+		_ = ch.Send(message, policy)
+	}, option)
+	if option != nil && option.WithMe {
+		if _, ok := pivot.(*Character); !ok {
+			_ = pivot.Send(message, policy)
+		}
 	}
 }
 

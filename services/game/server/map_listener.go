@@ -70,12 +70,17 @@ func SyncPartyMemberHPOnMapEnter(mapInstance *entity.Map, character *entity.Char
 	if mapInstance == nil || character == nil {
 		return
 	}
-	partyID, inParty := character.GetPartyID()
+	var partyID uint32
+	inParty := false
+	if pid := character.GetPartyID(); pid != nil {
+		partyID = *pid
+		inParty = true
+	}
 	if effectivePartyID != 0 {
 		partyID = effectivePartyID
 		inParty = true
 	}
-	if !inParty || partyID == 0 {
+	if !inParty {
 		return
 	}
 	character.Listener.OnPartyMemberHPChanged(character, nil)
@@ -84,8 +89,8 @@ func SyncPartyMemberHPOnMapEnter(mapInstance *entity.Map, character *entity.Char
 		if !ok || peer == nil || peer.GetID() == character.GetID() {
 			continue
 		}
-		pid, peerInParty := peer.GetPartyID()
-		if !peerInParty || pid != partyID {
+		pPeer := peer.GetPartyID()
+		if pPeer == nil || *pPeer != partyID {
 			continue
 		}
 		peer.Listener.OnPartyMemberHPChanged(peer, character)
@@ -350,24 +355,6 @@ func (l *MapListenerImpl) OnMistRemoved(mapInstance *entity.Map, mist *entity.Mi
 		Eruption: false,
 	}
 	mist.Broadcast(pkt, nil)
-}
-
-func (l *MapListenerImpl) OnDoorSpawned(mapInstance *entity.Map, door *entity.Door) {
-	if mapInstance == nil || door == nil {
-		return
-	}
-	door.Broadcast(&response.SpawnDoor{
-		OwnerID:  door.OwnerID,
-		Position: door.Position,
-		Animated: true,
-	}, nil)
-	pos := door.Position
-	door.Broadcast(&response.SpawnPortal{
-		DestMapID:   door.ReturnMapID,
-		SourceMapID: door.FieldMapID,
-		SkillID:     uint32(door.SkillID),
-		Position:    &pos,
-	}, nil)
 }
 
 func (l *MapListenerImpl) OnDoorRemoved(mapInstance *entity.Map, door *entity.Door, animated bool) {

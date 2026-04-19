@@ -25,7 +25,7 @@ func normalizePartyMembersSix(members []PartyMemberStatus) []PartyMemberStatus {
 		out[i] = members[i]
 	}
 	for i := n; i < len(out); i++ {
-		out[i].Channel = -1
+		out[i].Channel = -2
 	}
 	return out
 }
@@ -67,10 +67,10 @@ func writePartyStatusBlock(w *stream.StreamWriter, forChannel int32, leaderChara
 			w.WriteU32(999999999)
 			w.WriteU32(999999999)
 			w.Write64(-1)
-			continue
+		} else {
+			w.WriteU32(0)
+			w.WriteU32(0)
+			w.Write64(0)
 		}
-		w.WriteU32(0)
-		w.WriteU32(0)
-		w.Write64(0)
 	}
 }

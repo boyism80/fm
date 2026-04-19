@@ -222,10 +222,10 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.context == nil {
+			if mapInstance.Context == nil {
 				return 0
 			}
-			resources := mapInstance.context.GetResources()
+			resources := mapInstance.Context.GetResources()
 			if resources == nil {
 				return 0
 			}
@@ -285,7 +285,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 
-			item, err := NewItem(itemId, count, mapInstance.context)
+			item, err := NewItem(itemId, count, mapInstance.Context)
 			if err != nil {
 				return 0
 			}
@@ -318,11 +318,11 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.context == nil {
+			if mapInstance.Context == nil {
 				L.RaiseError("spawn_mob: map has no context")
 				return 0
 			}
-			resources := mapInstance.context.GetResources()
+			resources := mapInstance.Context.GetResources()
 			if resources == nil {
 				L.RaiseError("spawn_mob: no resources")
 				return 0
@@ -360,11 +360,11 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.context == nil {
+			if mapInstance.Context == nil {
 				L.RaiseError("spawn_npc: map has no context")
 				return 0
 			}
-			resources := mapInstance.context.GetResources()
+			resources := mapInstance.Context.GetResources()
 			if resources == nil {
 				L.RaiseError("spawn_npc: no resources")
 				return 0

@@ -1,6 +1,19 @@
 "use strict";
 
 function createPartyHandlers(partyService, messages, grpcError) {
+    function setOptionalPartyId(reply, partyId) {
+        if (partyId == null) {
+            reply.clearPartyId();
+            return;
+        }
+        const n = Number(partyId);
+        if (Number.isInteger(n) && n >= 0) {
+            reply.setPartyId(n);
+        } else {
+            reply.clearPartyId();
+        }
+    }
+
     function setPartyMemberDoor(mm, doorRow) {
         const d = doorRow;
         if (
@@ -32,7 +45,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const reply = new messages.CreatePartyReply();
                 reply.setOk(Boolean(result.ok));
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
-                reply.setPartyId(result.partyId ?? 0);
+                setOptionalPartyId(reply, result.partyId);
                 reply.setRevision(result.revision ?? 0);
                 callback(null, reply);
             } catch (err) {
@@ -53,7 +66,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const reply = new messages.JoinPartyReply();
                 reply.setOk(Boolean(result.ok));
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
-                reply.setPartyId(result.partyId ?? 0);
+                setOptionalPartyId(reply, result.partyId);
                 reply.setRevision(result.revision ?? 0);
                 callback(null, reply);
             } catch (err) {
@@ -73,7 +86,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
                 reply.setTargetCharacterId(result.targetCharacterId ?? 0);
                 reply.setTargetChannelId(result.targetChannelId ?? 0);
-                reply.setPartyId(result.partyId ?? 0);
+                setOptionalPartyId(reply, result.partyId);
                 callback(null, reply);
             } catch (err) {
                 grpcError(err, callback);
@@ -89,7 +102,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const reply = new messages.LeavePartyReply();
                 reply.setOk(Boolean(result.ok));
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
-                reply.setPartyId(result.partyId ?? 0);
+                setOptionalPartyId(reply, result.partyId);
                 reply.setRevision(result.revision ?? 0);
                 reply.setDisbanded(Boolean(result.disbanded));
                 callback(null, reply);
@@ -108,7 +121,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const reply = new messages.ExpelPartyReply();
                 reply.setOk(Boolean(result.ok));
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
-                reply.setPartyId(result.partyId ?? 0);
+                setOptionalPartyId(reply, result.partyId);
                 reply.setRevision(result.revision ?? 0);
                 reply.setDisbanded(Boolean(result.disbanded));
                 callback(null, reply);
@@ -128,7 +141,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const reply = new messages.ChangePartyLeaderReply();
                 reply.setOk(Boolean(result.ok));
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
-                reply.setPartyId(result.partyId ?? 0);
+                setOptionalPartyId(reply, result.partyId);
                 reply.setRevision(result.revision ?? 0);
                 callback(null, reply);
             } catch (err) {
@@ -199,7 +212,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const reply = new messages.ReportPartyMemberSnapshotReply();
                 reply.setOk(Boolean(result.ok));
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
-                reply.setPartyId(result.partyId ?? 0);
+                setOptionalPartyId(reply, result.partyId);
                 reply.setRevision(result.revision ?? 0);
                 callback(null, reply);
             } catch (err) {

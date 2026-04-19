@@ -77,7 +77,6 @@ function createSessionHandlers(
                 ]);
 
                 const realtime = await characterRealtimeStateRepository.get(worldId, characterId);
-                const partyId = realtime?.partyId ?? 0;
                 const guildId = realtime?.guildId ?? 0;
 
                 reply.setFound(true);
@@ -87,7 +86,9 @@ function createSessionHandlers(
                 reply.setInventoryList(inventoryList.map(makeInventoryMessage));
                 reply.setSkillsList(skillList.map(makeSkillMessage));
                 reply.setKeyLayoutList(makeKeyLayoutProtoList(messages, keyLayoutBindings));
-                reply.setPartyId(partyId);
+                if (realtime != null && realtime.partyId != null) {
+                    reply.setPartyId(Number(realtime.partyId));
+                }
                 reply.setGuildId(guildId);
                 callback(null, reply);
             } catch (err) {

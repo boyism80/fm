@@ -252,7 +252,7 @@ func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, mov
 		LifeCore: LifeCore{
 			ObjectCore: ObjectCore{
 				Position: position,
-				Context:  m.context,
+				Context:  m.Context,
 				Map:      nil,
 			},
 			hp:     1,
@@ -307,7 +307,7 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	mist := &Mist{
 		ObjectCore: ObjectCore{
 			Position: position,
-			Context:  m.context,
+			Context:  m.Context,
 			Map:      nil,
 		},
 		Causer:               ch.GetID(),
@@ -332,13 +332,13 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	return mist
 }
 
-func (ch *Character) SpawnDoor(skillID constant.SkillID) *Door {
+func (ch *Character) SpawnDoor(skillID constant.SkillID) {
 	if ch == nil {
-		return nil
+		return
 	}
 	m := ch.GetMap()
 	if m == nil || m.Wz == nil {
-		return nil
+		return
 	}
 	if ch.doors != nil {
 		if current, ok := ch.doors[skillID]; ok && current != nil {
@@ -346,37 +346,41 @@ func (ch *Character) SpawnDoor(skillID constant.SkillID) *Door {
 		}
 	}
 
-	destMapID := uint32(m.Wz.ReturnMapId)
-	fieldAnchor := types.Point[int16]{X: ch.Position.X, Y: ch.Position.Y}
-	var destPortalID uint8
-	var closestPortalID uint8
-	if ch.Context != nil {
-		if destMapWz, ok := ch.Context.GetResources().Maps[destMapID]; ok {
-			if id, ok := destMapWz.DoorReturnPortalSpawnID(0); ok {
-				destPortalID = id
-			} else if _, ok := destMapWz.GetSpawnPosition(0); ok {
-				destPortalID = 0
-			}
-		}
-		if id, ok := m.Wz.FindClosestDoorReturnPortalSpawnID(fieldAnchor); ok {
-			closestPortalID = id
-		} else {
-			closestPortalID = m.Wz.FindClosestPortalSpawnID(fieldAnchor)
-		}
+	if skillID != constant.SkillMysticDoor {
+		return
 	}
+	destMapID := uint32(m.Wz.ReturnMapId)
+	if destMapID == 0 || destMapID == uint32(m.Wz.ID) || ch.Context == nil {
+		return
+	}
+	ch.Context.RequestSpawnReturnMapDoor(ch, skillID)
+}
 
+func (ch *Character) SpawnFieldMapDoor(skillID constant.SkillID, returnPortalID uint8, townPortalPos types.Vector2[int16], fieldPortalID uint8) *Door {
+	if ch == nil {
+		return nil
+	}
+	m := ch.GetMap()
+	if m == nil || m.Wz == nil {
+		return nil
+	}
+	destMapID := uint32(m.Wz.ReturnMapId)
+	fieldPos := ch.Position
 	door := &Door{
 		ObjectCore: ObjectCore{
 			Position: ch.Position,
-			Context:  m.context,
+			Context:  m.Context,
 			Map:      nil,
 		},
-		OwnerID:        ch.GetID(),
-		SkillID:        skillID,
-		ReturnMapID:    destMapID,
-		FieldMapID:     uint32(m.Wz.ID),
-		ReturnPortalID: destPortalID,
-		FieldPortalID:  closestPortalID,
+		OwnerID:            ch.GetID(),
+		SkillID:            skillID,
+		ReturnMapID:        destMapID,
+		FieldMapID:         uint32(m.Wz.ID),
+		ReturnPortalID:     returnPortalID,
+		FieldPortalID:      fieldPortalID,
+		PartyID:            ch.partyID,
+		FieldPosition:      fieldPos,
+		TownPortalPosition: townPortalPos,
 	}
 	door.ObjectCore.self = door
 	if ch.doors == nil {
@@ -385,15 +389,6 @@ func (ch *Character) SpawnDoor(skillID constant.SkillID) *Door {
 	ch.doors[skillID] = door
 	m.AddDoor(door)
 	ch.Listener.OnPartyMemberFieldsChanged(ch)
-	if skillID == constant.SkillMysticDoor && destMapID != 0 && destMapID != uint32(m.Wz.ID) && ch.Context != nil {
-		ch.Context.NotifyDoorSpawn(destMapID, DoorSpawn{
-			OwnerID:        ch.GetID(),
-			SkillID:        skillID,
-			FieldMapID:     uint32(m.Wz.ID),
-			ReturnPortalID: destPortalID,
-			FieldPortalID:  closestPortalID,
-		})
-	}
 	return door
 }
 
@@ -798,15 +793,25 @@ func (ch *Character) GetName() string {
 	return ch.name
 }
 
-func (ch *Character) GetPartyID() (uint32, bool) {
+func (ch *Character) GetPartyID() *uint32 {
 	if ch == nil || ch.partyID == nil {
-		return 0, false
+		return nil
 	}
-	return *ch.partyID, true
+	p := new(uint32)
+	*p = *ch.partyID
+	return p
 }
 
 func (ch *Character) SetPartyID(partyID *uint32) {
 	ch.partyID = partyID
+	if ch.doors == nil {
+		return
+	}
+	for _, d := range ch.doors {
+		if d != nil {
+			d.PartyID = partyID
+		}
+	}
 }
 
 func (ch *Character) GetGuildID() (uint32, bool) {

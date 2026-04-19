@@ -394,8 +394,8 @@ func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, rec
 	if ch == nil {
 		return
 	}
-	partyID, inParty := ch.GetPartyID()
-	if !inParty || partyID == 0 {
+	partyIDPtr := ch.GetPartyID()
+	if partyIDPtr == nil {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -414,8 +414,8 @@ func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, rec
 		if recipient.GetMap() != mapInstance {
 			return
 		}
-		rPID, rInParty := recipient.GetPartyID()
-		if !rInParty || rPID != partyID {
+		rPID := recipient.GetPartyID()
+		if rPID == nil || *rPID != *partyIDPtr {
 			return
 		}
 		_ = recipient.Send(pkt, types.SEND_POLICY_ENCRYPT)
@@ -426,8 +426,8 @@ func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, rec
 		if !ok || peer == nil || peer.GetID() == ch.GetID() {
 			continue
 		}
-		pid, peerInParty := peer.GetPartyID()
-		if !peerInParty || pid != partyID {
+		pid := peer.GetPartyID()
+		if pid == nil || *pid != *partyIDPtr {
 			continue
 		}
 		_ = peer.Send(pkt, types.SEND_POLICY_ENCRYPT)

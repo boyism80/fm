@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strings"
@@ -220,9 +222,12 @@ func (s *Server) handleClient(client Client) {
 
 			_, err := s.readPacket(client)
 			if err != nil {
-				if err.Error() == "EOF" {
-
+				if errors.Is(err, io.EOF) {
 					log.Printf("Client disconnected normally: %s", client.GetConnection().RemoteAddr())
+					return
+				}
+				if errors.Is(err, net.ErrClosed) {
+					log.Printf("Client disconnected (connection closed): %s", client.GetConnection().RemoteAddr())
 					return
 				}
 
@@ -232,7 +237,7 @@ func (s *Server) handleClient(client Client) {
 				}
 
 				log.Printf("Error reading packet from %s: %v", client.GetConnection().RemoteAddr(), err)
-				continue
+				return
 			}
 		}
 	}

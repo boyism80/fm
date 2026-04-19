@@ -21,8 +21,10 @@ import (
 	"github.com/boyism80/fm/protocol/response"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
+	gameconst "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -377,8 +379,6 @@ func (gs *GameServer) ClearPartyMembers(memberIDs []uint32) {
 	}
 }
 
-const partyUnusedDoorMapID = uint32(999999999)
-
 func partyMembersToResponse(members []*internal.PartyMemberSnapshot) []response.PartyMemberStatus {
 	out := make([]response.PartyMemberStatus, 0, len(members))
 	for _, m := range members {
@@ -389,8 +389,8 @@ func partyMembersToResponse(members []*internal.PartyMemberSnapshot) []response.
 		if m.ChannelIndex != nil {
 			ch = *m.ChannelIndex
 		}
-		doorTown := partyUnusedDoorMapID
-		doorTarget := partyUnusedDoorMapID
+		doorTown := uint32(999999999)
+		doorTarget := uint32(999999999)
 		doorX := int32(0)
 		doorY := int32(0)
 		if d := m.GetDoor(); d != nil {
@@ -493,7 +493,7 @@ func (gs *GameServer) DeliverPartyLeaveUpdate(prev, current *internal.PartySnaps
 }
 
 func (gs *GameServer) DeliverPartyDisbandUpdate(prev *internal.PartySnapshot, leaderCharacterID uint32) {
-	if gs == nil || prev == nil || prev.GetPartyId() == 0 || leaderCharacterID == 0 {
+	if gs == nil || prev == nil || leaderCharacterID == 0 {
 		return
 	}
 	for _, m := range prev.GetMembers() {
@@ -525,7 +525,7 @@ func (gs *GameServer) DeliverPartyLeaderChange(snapshot *internal.PartySnapshot,
 }
 
 func (gs *GameServer) DeliverPartyLogOnOff(snapshot *internal.PartySnapshot, _ uint32) {
-	if gs == nil || snapshot == nil || snapshot.GetPartyId() == 0 {
+	if gs == nil || snapshot == nil {
 		return
 	}
 	respMembers := partyMembersToResponse(snapshot.GetMembers())
@@ -544,7 +544,7 @@ func (gs *GameServer) DeliverPartyLogOnOff(snapshot *internal.PartySnapshot, _ u
 }
 
 func (gs *GameServer) DeliverPartySilentFromSnapshot(snapshot *internal.PartySnapshot) {
-	if gs == nil || snapshot == nil || snapshot.GetPartyId() == 0 {
+	if gs == nil || snapshot == nil {
 		return
 	}
 	respMembers := partyMembersToResponse(snapshot.GetMembers())
@@ -563,9 +563,6 @@ func (gs *GameServer) DeliverPartySilentFromSnapshot(snapshot *internal.PartySna
 }
 
 func (gs *GameServer) partySnapshotForMapEnter(partyID uint32) *internal.PartySnapshot {
-	if partyID == 0 {
-		return nil
-	}
 	if gs.partyEventConsumer != nil {
 		if s := gs.partyEventConsumer.CachedPartySnapshot(partyID); s != nil {
 			return s
@@ -590,12 +587,12 @@ func (gs *GameServer) SendPartySilentOnMapEnter(ch *entity.Character) {
 	if gs == nil || ch == nil {
 		return
 	}
-	partyID, ok := ch.GetPartyID()
-	if !ok || partyID == 0 {
+	partyIDPtr := ch.GetPartyID()
+	if partyIDPtr == nil {
 		return
 	}
-	snap := gs.partySnapshotForMapEnter(partyID)
-	if snap == nil || snap.GetPartyId() == 0 {
+	snap := gs.partySnapshotForMapEnter(*partyIDPtr)
+	if snap == nil {
 		return
 	}
 	members := partyMembersToResponse(snap.GetMembers())
@@ -608,39 +605,87 @@ func (gs *GameServer) SendPartySilentOnMapEnter(ch *entity.Character) {
 	})
 }
 
-func (gs *GameServer) NotifyDoorSpawn(returnMapWZID uint32, spawn entity.DoorSpawn) {
-	returnMap := gs.GetMap(returnMapWZID)
-	if returnMap == nil {
+func (gs *GameServer) RequestSpawnReturnMapDoor(ch *entity.Character, skillID gameconst.SkillID) {
+	if ch == nil {
 		return
 	}
-	pid := returnMap.GetActorPID()
-	if pid == nil {
+	m := ch.GetMap()
+	if m == nil || m.Wz == nil {
 		return
 	}
-	if root := gs.GetRootContext(); root != nil {
-		root.Send(pid, &g_actor.SpawnDoor{
-			OwnerID:        spawn.OwnerID,
-			SkillID:        spawn.SkillID,
-			FieldMapID:     spawn.FieldMapID,
-			ReturnPortalID: spawn.ReturnPortalID,
-			FieldPortalID:  spawn.FieldPortalID,
-		})
+	destMapID := uint32(m.Wz.ReturnMapId)
+	if destMapID == 0 || destMapID == uint32(m.Wz.ID) {
+		return
 	}
+	destMap := gs.GetMap(destMapID)
+	if destMap == nil {
+		ch.Listener.OnMessage(ch, gameconst.MSG_PINK_TEXT, gameconst.DoorNoTownPortalMessage)
+		return
+	}
+	destPID := destMap.GetActorPID()
+	if destPID == nil {
+		ch.Listener.OnMessage(ch, gameconst.MSG_PINK_TEXT, gameconst.DoorNoTownPortalMessage)
+		return
+	}
+	srcPID := m.GetActorPID()
+	if srcPID == nil {
+		ch.Listener.OnMessage(ch, gameconst.MSG_PINK_TEXT, gameconst.DoorNoTownPortalMessage)
+		return
+	}
+	root := gs.GetRootContext()
+	if root == nil {
+		return
+	}
+	fieldAnchorPt := types.Point[int16]{X: ch.Position.X, Y: ch.Position.Y}
+	var closestPortalID uint8
+	if id, ok := m.Wz.FindClosestDoorReturnPortalSpawnID(fieldAnchorPt); ok {
+		closestPortalID = id
+	} else {
+		closestPortalID = m.Wz.FindClosestPortalSpawnID(fieldAnchorPt)
+	}
+	slot := gs.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
+	root.Send(destPID, &g_actor.RequestSpawnDoor{
+		ReplyTo:        srcPID,
+		CharacterID:    ch.GetID(),
+		OwnerID:        ch.GetID(),
+		SkillID:        skillID,
+		FieldMapID:     uint32(m.Wz.ID),
+		FieldPortalID:  closestPortalID,
+		PartyOwnerSlot: slot,
+		PartyID:        ch.GetPartyID(),
+		FieldAnchor:    ch.Position,
+	})
 }
 
-func (gs *GameServer) NotifyDoorRemove(removal entity.DoorRemove) {
-	counterpartMap := gs.GetMap(removal.CounterpartMapWZID)
-	if counterpartMap == nil {
+func (gs *GameServer) PartyMemberIndex(characterID uint32, partyID *uint32) int {
+	if partyID == nil || *partyID == 0 || gs.partyEventConsumer == nil {
+		return 0
+	}
+	snap := gs.partyEventConsumer.CachedPartySnapshot(*partyID)
+	if snap == nil {
+		return 0
+	}
+	for i, mem := range snap.GetMembers() {
+		if mem.GetCharacterId() == characterID {
+			return i
+		}
+	}
+	return 0
+}
+
+func (gs *GameServer) NotifyDoorRemove(ownerID uint32, skillID uint32, counterpartMapWZID uint32) {
+	mapInstance := gs.GetMap(counterpartMapWZID)
+	if mapInstance == nil {
 		return
 	}
-	pid := counterpartMap.GetActorPID()
+	pid := mapInstance.GetActorPID()
 	if pid == nil {
 		return
 	}
 	if root := gs.GetRootContext(); root != nil {
 		root.Send(pid, &g_actor.RemoveDoor{
-			OwnerID: removal.OwnerID,
-			SkillID: removal.SkillID,
+			OwnerID: ownerID,
+			SkillID: skillID,
 		})
 	}
 }

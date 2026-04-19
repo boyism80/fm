@@ -25,7 +25,7 @@ class PartyMemberRepository extends HashRepository {
 
     onSelect(partyId, worldId) {
         return {
-            text: `SELECT ${SELECT_COLS} FROM party_members WHERE world_id = $1 AND party_id = $2`,
+            text: `SELECT ${SELECT_COLS} FROM party_members WHERE world_id = $1 AND party_id = $2 ORDER BY joined_at ASC, character_id ASC`,
             values: [Number(worldId), Number(partyId)],
         };
     }

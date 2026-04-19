@@ -64,7 +64,11 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
 					return nil
 				}
-				character.Listener.OnPartyCreated(character, reply.GetPartyId())
+				if reply.PartyId == nil {
+					log.Printf("PartyOperation(create): ok but missing party_id character=%d", charID)
+					return nil
+				}
+				character.Listener.OnPartyCreated(character, *reply.PartyId)
 				return nil
 			},
 		).OnError(func(err error) {
@@ -110,7 +114,11 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(join): failed character=%d party=%d code=%v", charID, req.PartyID, reply.GetErrorCode())
 					return nil
 				}
-				SyncPartyMemberHPOnMapEnter(character.GetMap(), character, reply.GetPartyId())
+				if reply.PartyId == nil {
+					log.Printf("PartyOperation(join): ok but missing party_id character=%d", charID)
+					return nil
+				}
+				SyncPartyMemberHPOnMapEnter(character.GetMap(), character, *reply.PartyId)
 				return nil
 			},
 		).OnError(func(err error) {
@@ -119,15 +127,15 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		return nil
 
 	case constant.PartyC2SChangeLeader:
-		partyID, hasParty := character.GetPartyID()
-		if !hasParty || partyID == 0 || req.TargetCharacterID == 0 {
+		partyIDPtr := character.GetPartyID()
+		if partyIDPtr == nil || req.TargetCharacterID == 0 {
 			return nil
 		}
 		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 			func(c context.Context) (*internal.ChangePartyLeaderReply, error) {
 				return h.gs.internalClient.ChangePartyLeader(c, &internal.ChangePartyLeaderRequest{
 					WorldId:              worldID,
-					PartyId:              partyID,
+					PartyId:              *partyIDPtr,
 					RequesterCharacterId: charID,
 					NewLeaderCharacterId: req.TargetCharacterID,
 				})
@@ -135,7 +143,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			func(reply *internal.ChangePartyLeaderReply) error {
 				if !reply.GetOk() {
 					character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SChangeLeader, int32(reply.GetErrorCode())))
-					log.Printf("PartyOperation(change leader): failed character=%d party=%d target=%d code=%v", charID, partyID, req.TargetCharacterID, reply.GetErrorCode())
+					log.Printf("PartyOperation(change leader): failed character=%d party=%d target=%d code=%v", charID, *partyIDPtr, req.TargetCharacterID, reply.GetErrorCode())
 				}
 				return nil
 			},
@@ -146,7 +154,8 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 
 	case constant.PartyC2SInvite:
 		targetName := req.TargetName
-		_, hasParty := character.GetPartyID()
+		pid := character.GetPartyID()
+		hasParty := pid != nil
 		var inv *internal.InvitePartyReply
 		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		if !hasParty {
@@ -159,7 +168,11 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 				},
 				func(reply *internal.CreatePartyReply) error {
 					if reply.GetOk() {
-						character.Listener.OnPartyCreated(character, reply.GetPartyId())
+						if reply.PartyId == nil {
+							log.Printf("PartyOperation(invite pre-create): ok but missing party_id character=%d", charID)
+							return fmt.Errorf("party create before invite failed")
+						}
+						character.Listener.OnPartyCreated(character, *reply.PartyId)
 						return nil
 					}
 					character.Listener.OnPartyStatusMessage(character, constant.PartyStatusForInternalError(constant.PartyC2SCreate, int32(reply.GetErrorCode())))
@@ -189,12 +202,16 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		)
 		promise = async.ThenRPC(promise,
 			func(c context.Context) (*internal.GetPartyReply, error) {
-				if inv == nil || !inv.GetOk() || inv.GetPartyId() == 0 {
+				if inv == nil || !inv.GetOk() {
+					return &internal.GetPartyReply{Found: false}, nil
+				}
+				if inv.PartyId == nil {
+					log.Printf("PartyOperation(invite): ok but missing party_id inviter=%d", charID)
 					return &internal.GetPartyReply{Found: false}, nil
 				}
 				return h.gs.internalClient.GetParty(c, &internal.GetPartyRequest{
 					WorldId: worldID,
-					PartyId: inv.GetPartyId(),
+					PartyId: *inv.PartyId,
 				})
 			},
 			func(gp *internal.GetPartyReply) error {

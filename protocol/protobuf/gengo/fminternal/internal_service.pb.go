@@ -910,7 +910,7 @@ type EnterGameReply struct {
 	Inventory     []*InventoryPersisted  `protobuf:"bytes,3,rep,name=inventory,proto3" json:"inventory,omitempty"`
 	Skills        []*SkillPersisted      `protobuf:"bytes,4,rep,name=skills,proto3" json:"skills,omitempty"`
 	KeyLayout     []*KeyLayoutBinding    `protobuf:"bytes,5,rep,name=key_layout,json=keyLayout,proto3" json:"key_layout,omitempty"`
-	PartyId       uint32                 `protobuf:"varint,6,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	PartyId       *uint32                `protobuf:"varint,6,opt,name=party_id,json=partyId,proto3,oneof" json:"party_id,omitempty"`
 	GuildId       uint32                 `protobuf:"varint,7,opt,name=guild_id,json=guildId,proto3" json:"guild_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -982,8 +982,8 @@ func (x *EnterGameReply) GetKeyLayout() []*KeyLayoutBinding {
 }
 
 func (x *EnterGameReply) GetPartyId() uint32 {
-	if x != nil {
-		return x.PartyId
+	if x != nil && x.PartyId != nil {
+		return *x.PartyId
 	}
 	return 0
 }
@@ -2651,7 +2651,7 @@ type CreatePartyReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
 	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
-	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	PartyId       *uint32                `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3,oneof" json:"party_id,omitempty"`
 	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2702,8 +2702,8 @@ func (x *CreatePartyReply) GetErrorCode() PartyErrorCode {
 }
 
 func (x *CreatePartyReply) GetPartyId() uint32 {
-	if x != nil {
-		return x.PartyId
+	if x != nil && x.PartyId != nil {
+		return *x.PartyId
 	}
 	return 0
 }
@@ -2803,7 +2803,7 @@ type JoinPartyReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
 	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
-	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	PartyId       *uint32                `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3,oneof" json:"party_id,omitempty"`
 	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2854,8 +2854,8 @@ func (x *JoinPartyReply) GetErrorCode() PartyErrorCode {
 }
 
 func (x *JoinPartyReply) GetPartyId() uint32 {
-	if x != nil {
-		return x.PartyId
+	if x != nil && x.PartyId != nil {
+		return *x.PartyId
 	}
 	return 0
 }
@@ -2923,7 +2923,7 @@ type LeavePartyReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
 	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
-	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	PartyId       *uint32                `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3,oneof" json:"party_id,omitempty"`
 	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
 	Disbanded     bool                   `protobuf:"varint,5,opt,name=disbanded,proto3" json:"disbanded,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2975,8 +2975,8 @@ func (x *LeavePartyReply) GetErrorCode() PartyErrorCode {
 }
 
 func (x *LeavePartyReply) GetPartyId() uint32 {
-	if x != nil {
-		return x.PartyId
+	if x != nil && x.PartyId != nil {
+		return *x.PartyId
 	}
 	return 0
 }
@@ -3059,7 +3059,7 @@ type ExpelPartyReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
 	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
-	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	PartyId       *uint32                `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3,oneof" json:"party_id,omitempty"`
 	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
 	Disbanded     bool                   `protobuf:"varint,5,opt,name=disbanded,proto3" json:"disbanded,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -3111,8 +3111,8 @@ func (x *ExpelPartyReply) GetErrorCode() PartyErrorCode {
 }
 
 func (x *ExpelPartyReply) GetPartyId() uint32 {
-	if x != nil {
-		return x.PartyId
+	if x != nil && x.PartyId != nil {
+		return *x.PartyId
 	}
 	return 0
 }
@@ -3203,7 +3203,7 @@ type ChangePartyLeaderReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
 	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
-	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	PartyId       *uint32                `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3,oneof" json:"party_id,omitempty"`
 	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3254,8 +3254,8 @@ func (x *ChangePartyLeaderReply) GetErrorCode() PartyErrorCode {
 }
 
 func (x *ChangePartyLeaderReply) GetPartyId() uint32 {
-	if x != nil {
-		return x.PartyId
+	if x != nil && x.PartyId != nil {
+		return *x.PartyId
 	}
 	return 0
 }
@@ -3711,7 +3711,7 @@ type ReportPartyMemberSnapshotReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
 	ErrorCode     PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
-	PartyId       uint32                 `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	PartyId       *uint32                `protobuf:"varint,3,opt,name=party_id,json=partyId,proto3,oneof" json:"party_id,omitempty"`
 	Revision      uint64                 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3762,8 +3762,8 @@ func (x *ReportPartyMemberSnapshotReply) GetErrorCode() PartyErrorCode {
 }
 
 func (x *ReportPartyMemberSnapshotReply) GetPartyId() uint32 {
-	if x != nil {
-		return x.PartyId
+	if x != nil && x.PartyId != nil {
+		return *x.PartyId
 	}
 	return 0
 }
@@ -3841,7 +3841,7 @@ type InvitePartyReply struct {
 	ErrorCode         PartyErrorCode         `protobuf:"varint,2,opt,name=error_code,json=errorCode,proto3,enum=fm.internal.PartyErrorCode" json:"error_code,omitempty"`
 	TargetCharacterId uint32                 `protobuf:"varint,3,opt,name=target_character_id,json=targetCharacterId,proto3" json:"target_character_id,omitempty"`
 	TargetChannelId   uint32                 `protobuf:"varint,4,opt,name=target_channel_id,json=targetChannelId,proto3" json:"target_channel_id,omitempty"`
-	PartyId           uint32                 `protobuf:"varint,5,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
+	PartyId           *uint32                `protobuf:"varint,5,opt,name=party_id,json=partyId,proto3,oneof" json:"party_id,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3905,8 +3905,8 @@ func (x *InvitePartyReply) GetTargetChannelId() uint32 {
 }
 
 func (x *InvitePartyReply) GetPartyId() uint32 {
-	if x != nil {
-		return x.PartyId
+	if x != nil && x.PartyId != nil {
+		return *x.PartyId
 	}
 	return 0
 }
@@ -4099,16 +4099,17 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\x10KeyLayoutBinding\x12\x12\n" +
 	"\x04slot\x18\x01 \x01(\x05R\x04slot\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\rR\x04type\x12\x16\n" +
-	"\x06action\x18\x03 \x01(\x05R\x06action\"\xcd\x02\n" +
+	"\x06action\x18\x03 \x01(\x05R\x06action\"\xdf\x02\n" +
 	"\x0eEnterGameReply\x12\x14\n" +
 	"\x05found\x18\x01 \x01(\bR\x05found\x12=\n" +
 	"\tcharacter\x18\x02 \x01(\v2\x1f.fm.internal.CharacterPersistedR\tcharacter\x12=\n" +
 	"\tinventory\x18\x03 \x03(\v2\x1f.fm.internal.InventoryPersistedR\tinventory\x123\n" +
 	"\x06skills\x18\x04 \x03(\v2\x1b.fm.internal.SkillPersistedR\x06skills\x12<\n" +
 	"\n" +
-	"key_layout\x18\x05 \x03(\v2\x1d.fm.internal.KeyLayoutBindingR\tkeyLayout\x12\x19\n" +
-	"\bparty_id\x18\x06 \x01(\rR\apartyId\x12\x19\n" +
-	"\bguild_id\x18\a \x01(\rR\aguildId\"y\n" +
+	"key_layout\x18\x05 \x03(\v2\x1d.fm.internal.KeyLayoutBindingR\tkeyLayout\x12\x1e\n" +
+	"\bparty_id\x18\x06 \x01(\rH\x00R\apartyId\x88\x01\x01\x12\x19\n" +
+	"\bguild_id\x18\a \x01(\rR\aguildIdB\v\n" +
+	"\t_party_id\"y\n" +
 	"\x1aBeginGameTransitionRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x1d\n" +
 	"\n" +
@@ -4283,58 +4284,63 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"_\n" +
 	"\x12CreatePartyRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12.\n" +
-	"\x13leader_character_id\x18\x02 \x01(\rR\x11leaderCharacterId\"\x95\x01\n" +
+	"\x13leader_character_id\x18\x02 \x01(\rR\x11leaderCharacterId\"\xa7\x01\n" +
 	"\x10CreatePartyReply\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
 	"\n" +
-	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
-	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
-	"\brevision\x18\x04 \x01(\x04R\brevision\"\xc3\x01\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x1e\n" +
+	"\bparty_id\x18\x03 \x01(\rH\x00R\apartyId\x88\x01\x01\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevisionB\v\n" +
+	"\t_party_id\"\xc3\x01\n" +
 	"\x10JoinPartyRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x19\n" +
 	"\bparty_id\x18\x02 \x01(\rR\apartyId\x12!\n" +
 	"\fcharacter_id\x18\x03 \x01(\rR\vcharacterId\x12%\n" +
 	"\x0echaracter_name\x18\x04 \x01(\tR\rcharacterName\x12\x14\n" +
 	"\x05level\x18\x05 \x01(\rR\x05level\x12\x19\n" +
-	"\bclass_id\x18\x06 \x01(\rR\aclassId\"\x93\x01\n" +
+	"\bclass_id\x18\x06 \x01(\rR\aclassId\"\xa5\x01\n" +
 	"\x0eJoinPartyReply\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
 	"\n" +
-	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
-	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
-	"\brevision\x18\x04 \x01(\x04R\brevision\"Q\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x1e\n" +
+	"\bparty_id\x18\x03 \x01(\rH\x00R\apartyId\x88\x01\x01\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevisionB\v\n" +
+	"\t_party_id\"Q\n" +
 	"\x11LeavePartyRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12!\n" +
-	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\"\xb2\x01\n" +
+	"\fcharacter_id\x18\x02 \x01(\rR\vcharacterId\"\xc4\x01\n" +
 	"\x0fLeavePartyReply\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
 	"\n" +
-	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
-	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x1e\n" +
+	"\bparty_id\x18\x03 \x01(\rH\x00R\apartyId\x88\x01\x01\x12\x1a\n" +
 	"\brevision\x18\x04 \x01(\x04R\brevision\x12\x1c\n" +
-	"\tdisbanded\x18\x05 \x01(\bR\tdisbanded\"\x94\x01\n" +
+	"\tdisbanded\x18\x05 \x01(\bR\tdisbandedB\v\n" +
+	"\t_party_id\"\x94\x01\n" +
 	"\x11ExpelPartyRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x124\n" +
 	"\x16requester_character_id\x18\x02 \x01(\rR\x14requesterCharacterId\x12.\n" +
-	"\x13target_character_id\x18\x03 \x01(\rR\x11targetCharacterId\"\xb2\x01\n" +
+	"\x13target_character_id\x18\x03 \x01(\rR\x11targetCharacterId\"\xc4\x01\n" +
 	"\x0fExpelPartyReply\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
 	"\n" +
-	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
-	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x1e\n" +
+	"\bparty_id\x18\x03 \x01(\rH\x00R\apartyId\x88\x01\x01\x12\x1a\n" +
 	"\brevision\x18\x04 \x01(\x04R\brevision\x12\x1c\n" +
-	"\tdisbanded\x18\x05 \x01(\bR\tdisbanded\"\xbd\x01\n" +
+	"\tdisbanded\x18\x05 \x01(\bR\tdisbandedB\v\n" +
+	"\t_party_id\"\xbd\x01\n" +
 	"\x18ChangePartyLeaderRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12\x19\n" +
 	"\bparty_id\x18\x02 \x01(\rR\apartyId\x124\n" +
 	"\x16requester_character_id\x18\x03 \x01(\rR\x14requesterCharacterId\x125\n" +
-	"\x17new_leader_character_id\x18\x04 \x01(\rR\x14newLeaderCharacterId\"\x9b\x01\n" +
+	"\x17new_leader_character_id\x18\x04 \x01(\rR\x14newLeaderCharacterId\"\xad\x01\n" +
 	"\x16ChangePartyLeaderReply\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
 	"\n" +
-	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
-	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
-	"\brevision\x18\x04 \x01(\x04R\brevision\"S\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x1e\n" +
+	"\bparty_id\x18\x03 \x01(\rH\x00R\apartyId\x88\x01\x01\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevisionB\v\n" +
+	"\t_party_id\"S\n" +
 	"\tPartyDoor\x12\x12\n" +
 	"\x04town\x18\x01 \x01(\rR\x04town\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\rR\x06target\x12\f\n" +
@@ -4371,24 +4377,26 @@ const file_fminternal_internal_service_proto_rawDesc = "" +
 	"\bclass_id\x18\x04 \x01(\rR\aclassId\x12\x15\n" +
 	"\x06map_id\x18\x05 \x01(\rR\x05mapId\x12/\n" +
 	"\x04door\x18\x06 \x01(\v2\x16.fm.internal.PartyDoorH\x00R\x04door\x88\x01\x01B\a\n" +
-	"\x05_door\"\xa3\x01\n" +
+	"\x05_door\"\xb5\x01\n" +
 	"\x1eReportPartyMemberSnapshotReply\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
 	"\n" +
-	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x19\n" +
-	"\bparty_id\x18\x03 \x01(\rR\apartyId\x12\x1a\n" +
-	"\brevision\x18\x04 \x01(\x04R\brevision\"\x95\x01\n" +
+	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12\x1e\n" +
+	"\bparty_id\x18\x03 \x01(\rH\x00R\apartyId\x88\x01\x01\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x04R\brevisionB\v\n" +
+	"\t_party_id\"\x95\x01\n" +
 	"\x12InvitePartyRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x120\n" +
 	"\x14inviter_character_id\x18\x02 \x01(\rR\x12inviterCharacterId\x122\n" +
-	"\x15target_character_name\x18\x03 \x01(\tR\x13targetCharacterName\"\xd5\x01\n" +
+	"\x15target_character_name\x18\x03 \x01(\tR\x13targetCharacterName\"\xe7\x01\n" +
 	"\x10InvitePartyReply\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12:\n" +
 	"\n" +
 	"error_code\x18\x02 \x01(\x0e2\x1b.fm.internal.PartyErrorCodeR\terrorCode\x12.\n" +
 	"\x13target_character_id\x18\x03 \x01(\rR\x11targetCharacterId\x12*\n" +
-	"\x11target_channel_id\x18\x04 \x01(\rR\x0ftargetChannelId\x12\x19\n" +
-	"\bparty_id\x18\x05 \x01(\rR\apartyId\"\x98\x01\n" +
+	"\x11target_channel_id\x18\x04 \x01(\rR\x0ftargetChannelId\x12\x1e\n" +
+	"\bparty_id\x18\x05 \x01(\rH\x00R\apartyId\x88\x01\x01B\v\n" +
+	"\t_party_id\"\x98\x01\n" +
 	"\x10DenyPartyRequest\x12\x19\n" +
 	"\bworld_id\x18\x01 \x01(\rR\aworldId\x12.\n" +
 	"\x13denied_character_id\x18\x02 \x01(\rR\x11deniedCharacterId\x12!\n" +
@@ -4621,9 +4629,17 @@ func file_fminternal_internal_service_proto_init() {
 	if File_fminternal_internal_service_proto != nil {
 		return
 	}
+	file_fminternal_internal_service_proto_msgTypes[9].OneofWrappers = []any{}
 	file_fminternal_internal_service_proto_msgTypes[17].OneofWrappers = []any{}
+	file_fminternal_internal_service_proto_msgTypes[35].OneofWrappers = []any{}
+	file_fminternal_internal_service_proto_msgTypes[37].OneofWrappers = []any{}
+	file_fminternal_internal_service_proto_msgTypes[39].OneofWrappers = []any{}
+	file_fminternal_internal_service_proto_msgTypes[41].OneofWrappers = []any{}
+	file_fminternal_internal_service_proto_msgTypes[43].OneofWrappers = []any{}
 	file_fminternal_internal_service_proto_msgTypes[45].OneofWrappers = []any{}
 	file_fminternal_internal_service_proto_msgTypes[49].OneofWrappers = []any{}
+	file_fminternal_internal_service_proto_msgTypes[50].OneofWrappers = []any{}
+	file_fminternal_internal_service_proto_msgTypes[52].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

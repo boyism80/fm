@@ -20,3 +20,5 @@ const (
 	MSG_RED_GACHAPON_BOX      ServerMessageType = 15
 	MSG_BLUE_NOTICE           ServerMessageType = 18
 )
+
+const DoorNoTownPortalMessage = "마을의 미스틱 도어 지점이 꽉 차서 지금은 사용할 수 없습니다."

@@ -105,7 +105,7 @@ message EnterGameReply {
   repeated InventoryPersisted inventory = 3;
   repeated SkillPersisted     skills    = 4;
   repeated KeyLayoutBinding   key_layout = 5;
-  uint32                       party_id  = 6;
+  optional uint32              party_id  = 6;
   uint32                       guild_id  = 7;
 }
 
@@ -315,7 +315,7 @@ enum PartyErrorCode {
 message CreatePartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
-  uint32 party_id = 3;
+  optional uint32 party_id = 3;
   uint64 revision = 4;
 }
 
@@ -331,7 +331,7 @@ message JoinPartyRequest {
 message JoinPartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
-  uint32 party_id = 3;
+  optional uint32 party_id = 3;
   uint64 revision = 4;
 }
 
@@ -343,7 +343,7 @@ message LeavePartyRequest {
 message LeavePartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
-  uint32 party_id = 3;
+  optional uint32 party_id = 3;
   uint64 revision = 4;
   bool disbanded = 5;
 }
@@ -357,7 +357,7 @@ message ExpelPartyRequest {
 message ExpelPartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
-  uint32 party_id = 3;
+  optional uint32 party_id = 3;
   uint64 revision = 4;
   bool disbanded = 5;
 }
@@ -372,7 +372,7 @@ message ChangePartyLeaderRequest {
 message ChangePartyLeaderReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
-  uint32 party_id = 3;
+  optional uint32 party_id = 3;
   uint64 revision = 4;
 }
 
@@ -425,7 +425,7 @@ message ReportPartyMemberSnapshotRequest {
 message ReportPartyMemberSnapshotReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
-  uint32 party_id = 3;
+  optional uint32 party_id = 3;
   uint64 revision = 4;
 }
 
@@ -440,7 +440,7 @@ message InvitePartyReply {
   PartyErrorCode error_code = 2;
   uint32 target_character_id = 3;
   uint32 target_channel_id = 4;
-  uint32 party_id = 5;
+  optional uint32 party_id = 5;
 }
 
 message DenyPartyRequest {

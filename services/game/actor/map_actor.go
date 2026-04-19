@@ -42,49 +42,51 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 	case *actor.Stopped:
 		a.onStopped(ctx)
 	case *c_actor.HandlePacket:
-		a.handlePacket(ctx, m)
+		a.onHandlerPacket(ctx, m)
 	case *c_actor.ScheduleTimer:
-		a.scheduleTimer(ctx, m)
+		a.onScheduleTimer(ctx, m)
 	case *c_actor.ExecuteTimer:
-		a.executeTimer(m)
+		a.onExecuteTimer(m)
 	case *AddCharacter:
-		a.addCharacter(ctx, m)
+		a.onAddCharacter(ctx, m)
 	case *RemoveCharacter:
-		a.removeCharacter(m)
+		a.onRemoveCharacter(m)
 	case *WarpCharacter:
-		a.warpCharacter(ctx, m)
-	case *SpawnDoor:
-		a.spawnTownMysticDoor(m)
+		a.onWarpCharacter(ctx, m)
+	case *RequestSpawnDoor:
+		a.onRequestSpawnDoor(ctx, m)
+	case *ResponseSpawnDoor:
+		a.onResponseSpawnDoor(m)
 	case *RemoveDoor:
-		a.removeMysticDoor(m)
+		a.onRemoveDoor(m)
 	case *ResumeLua:
-		a.resumeLua(m)
+		a.onResumeLua(m)
 	case *c_actor.RunCharacterTimer:
-		a.runCharacterTimer(ctx, m)
+		a.onRunCharacterTimer(ctx, m)
 	case *TimerTick:
 		a.onTimerTick(ctx, m)
 	case *SyncPartySnapshot:
-		a.syncPartySnapshot(m)
+		a.onSyncPartySnapshot(m)
 	case *ClearPartyByPartyID:
-		a.clearPartyByPartyID(m)
+		a.onClearPartyByPartyID(m)
 	case *SyncCharacterPartyState:
-		a.handleSyncCharacterPartyState(m)
+		a.onSyncCharacterPartyState(m)
 	case *DeliverPartyInvite:
-		a.handleDeliverPartyInvite(m)
+		a.onDeliverPartyInvite(m)
 	case *DeliverPartyStatusMessage:
-		a.handleDeliverPartyStatusMessage(m)
+		a.onDeliverPartyStatusMessage(m)
 	case *DeliverPartyUpdateJoin:
-		a.handleDeliverPartyUpdateJoin(m)
+		a.onDeliverPartyUpdateJoin(m)
 	case *DeliverPartyUpdateLeave:
-		a.handleDeliverPartyUpdateLeave(m)
+		a.onDeliverPartyUpdateLeave(m)
 	case *DeliverPartyUpdateDisband:
-		a.handleDeliverPartyUpdateDisband(m)
+		a.onDeliverPartyUpdateDisband(m)
 	case *DeliverPartyUpdateLeaderChange:
-		a.handleDeliverPartyUpdateLeaderChange(m)
+		a.onDeliverPartyUpdateLeaderChange(m)
 	case *DeliverPartyUpdateLogOnOff:
-		a.handleDeliverPartyUpdateLogOnOff(m)
+		a.onDeliverPartyUpdateLogOnOff(m)
 	case *DeliverPartyUpdateSilent:
-		a.handleDeliverPartyUpdateSilent(m)
+		a.onDeliverPartyUpdateSilent(m)
 	default:
 		return
 	}
@@ -114,7 +116,7 @@ func (a *MapActor) hasCharacterOnMap(characterID uint32) bool {
 	return a.MapData.GetPlayer(characterID) != nil
 }
 
-func (a *MapActor) resumeLua(msg *ResumeLua) {
+func (a *MapActor) onResumeLua(msg *ResumeLua) {
 	if msg.Root == nil || msg.Thread == nil {
 		return
 	}
@@ -125,14 +127,14 @@ func (a *MapActor) resumeLua(msg *ResumeLua) {
 	}
 }
 
-func (a *MapActor) handlePacket(ctx actor.Context, msg *c_actor.HandlePacket) {
+func (a *MapActor) onHandlerPacket(ctx actor.Context, msg *c_actor.HandlePacket) {
 	err := core.ExecutePacketHandler(ctx, a.Context, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)
 	if err != nil {
 		log.Printf("Error handling packet 0x%02X: %v", msg.Opcode, err)
 	}
 }
 
-func (a *MapActor) scheduleTimer(ctx actor.Context, msg *c_actor.ScheduleTimer) {
+func (a *MapActor) onScheduleTimer(ctx actor.Context, msg *c_actor.ScheduleTimer) {
 	if msg.Logic == nil {
 		return
 	}
@@ -145,7 +147,7 @@ func (a *MapActor) scheduleTimer(ctx actor.Context, msg *c_actor.ScheduleTimer) 
 	}()
 }
 
-func (a *MapActor) executeTimer(msg *c_actor.ExecuteTimer) {
+func (a *MapActor) onExecuteTimer(msg *c_actor.ExecuteTimer) {
 	if msg.Logic == nil {
 		return
 	}
@@ -155,7 +157,7 @@ func (a *MapActor) executeTimer(msg *c_actor.ExecuteTimer) {
 	}
 }
 
-func (a *MapActor) addCharacter(ctx actor.Context, msg *AddCharacter) {
+func (a *MapActor) onAddCharacter(ctx actor.Context, msg *AddCharacter) {
 	if a.MapData == nil {
 		return
 	}
@@ -164,14 +166,14 @@ func (a *MapActor) addCharacter(ctx actor.Context, msg *AddCharacter) {
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 }
 
-func (a *MapActor) removeCharacter(msg *RemoveCharacter) {
+func (a *MapActor) onRemoveCharacter(msg *RemoveCharacter) {
 	if a.MapData == nil {
 		return
 	}
 	a.MapData.RemovePlayer(msg.CharacterID)
 }
 
-func (a *MapActor) warpCharacter(ctx actor.Context, msg *WarpCharacter) {
+func (a *MapActor) onWarpCharacter(ctx actor.Context, msg *WarpCharacter) {
 	if a.MapData == nil {
 		return
 	}
@@ -180,31 +182,93 @@ func (a *MapActor) warpCharacter(ctx actor.Context, msg *WarpCharacter) {
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 }
 
-func (a *MapActor) spawnTownMysticDoor(msg *SpawnDoor) {
-	if a.MapData == nil || msg == nil || a.MapData.Wz == nil {
-		return
-	}
-	wz := a.MapData.Wz
-	position, ok := wz.GetSpawnPosition(msg.ReturnPortalID)
-	if !ok {
-		if p, ok2 := wz.Portals[msg.ReturnPortalID]; ok2 {
-			position = p.Position
-		} else {
-			return
-		}
-	}
-	door := entity.NewDoor(position, msg.OwnerID, msg.SkillID, wz.ID, msg.FieldMapID, msg.ReturnPortalID, msg.FieldPortalID)
-	a.MapData.AddDoor(door)
-}
-
-func (a *MapActor) removeMysticDoor(msg *RemoveDoor) {
+func (a *MapActor) onRemoveDoor(msg *RemoveDoor) {
 	if a.MapData == nil || msg == nil {
 		return
 	}
-	a.MapData.RemoveMysticDoorByOwnerSkill(msg.OwnerID, constant.SkillID(msg.SkillID), true)
+	a.MapData.RemoveDoorByOwnerSkill(msg.OwnerID, constant.SkillID(msg.SkillID), true)
 }
 
-func (a *MapActor) runCharacterTimer(ctx actor.Context, msg *c_actor.RunCharacterTimer) {
+func (a *MapActor) onRequestSpawnDoor(ctx actor.Context, msg *RequestSpawnDoor) {
+	if msg == nil || msg.ReplyTo == nil || a.MapData == nil || a.MapData.Wz == nil {
+		return
+	}
+	portalID, townPos, ok := a.MapData.TryAcquireMysticReturnPortal(msg.PartyOwnerSlot)
+	if !ok {
+		ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
+			Ok:                 false,
+			CharacterID:        msg.CharacterID,
+			OwnerID:            msg.OwnerID,
+			SkillID:            msg.SkillID,
+			FieldMapID:         msg.FieldMapID,
+			FieldPortalID:      msg.FieldPortalID,
+			PartyID:            msg.PartyID,
+			FieldAnchor:        msg.FieldAnchor,
+			ReturnPortalID:     0,
+			TownPortalPosition: types.Vector2[int16]{},
+		})
+		return
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			a.MapData.ReleaseMysticReturnPortal(portalID)
+		}
+	}()
+	wz := a.MapData.Wz
+	door := entity.NewDoor(
+		townPos,
+		msg.OwnerID,
+		msg.SkillID,
+		uint32(wz.ID),
+		msg.FieldMapID,
+		portalID,
+		msg.FieldPortalID,
+		msg.PartyID,
+		msg.FieldAnchor,
+		townPos,
+	)
+	a.MapData.AddDoor(door)
+	committed = true
+	ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
+		Ok:                 true,
+		CharacterID:        msg.CharacterID,
+		OwnerID:            msg.OwnerID,
+		SkillID:            msg.SkillID,
+		ReturnPortalID:     portalID,
+		TownPortalPosition: townPos,
+		FieldMapID:         msg.FieldMapID,
+		FieldPortalID:      msg.FieldPortalID,
+		PartyID:            msg.PartyID,
+		FieldAnchor:        msg.FieldAnchor,
+	})
+}
+
+func (a *MapActor) onResponseSpawnDoor(msg *ResponseSpawnDoor) {
+	if msg == nil || a.MapData == nil {
+		return
+	}
+	ch := a.MapData.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		if msg.Ok && a.MapData.Wz != nil && a.MapData.Context != nil {
+			a.MapData.Context.NotifyDoorRemove(msg.OwnerID, uint32(msg.SkillID), uint32(a.MapData.Wz.ReturnMapId))
+		}
+		return
+	}
+	gc := ch.Context
+	if !msg.Ok {
+		if gc != nil {
+			ch.Listener.OnMessage(ch, constant.MSG_PINK_TEXT, constant.DoorNoTownPortalMessage)
+		}
+		return
+	}
+	door := ch.SpawnFieldMapDoor(msg.SkillID, msg.ReturnPortalID, msg.TownPortalPosition, msg.FieldPortalID)
+	if door == nil && gc != nil {
+		gc.NotifyDoorRemove(msg.OwnerID, uint32(msg.SkillID), uint32(ch.GetMap().Wz.ReturnMapId))
+	}
+}
+
+func (a *MapActor) onRunCharacterTimer(ctx actor.Context, msg *c_actor.RunCharacterTimer) {
 	if a.MapData == nil {
 		return
 	}
@@ -283,14 +347,11 @@ func (a *MapActor) onTimerTick(ctx actor.Context, msg *TimerTick) {
 	}
 }
 
-func (a *MapActor) syncPartySnapshot(msg *SyncPartySnapshot) {
+func (a *MapActor) onSyncPartySnapshot(msg *SyncPartySnapshot) {
 	if a.MapData == nil || msg == nil || msg.Snapshot == nil {
 		return
 	}
 	partyID := msg.Snapshot.GetPartyId()
-	if partyID == 0 {
-		return
-	}
 	memberSet := make(map[uint32]struct{}, len(msg.Snapshot.GetMembers()))
 	for _, member := range msg.Snapshot.GetMembers() {
 		memberSet[member.GetCharacterId()] = struct{}{}
@@ -305,14 +366,14 @@ func (a *MapActor) syncPartySnapshot(msg *SyncPartySnapshot) {
 			ch.SetPartyID(&id)
 			continue
 		}
-		if currentPartyID, ok := ch.GetPartyID(); ok && currentPartyID == partyID {
+		if cur := ch.GetPartyID(); cur != nil && *cur == partyID {
 			ch.SetPartyID(nil)
 		}
 	}
 }
 
-func (a *MapActor) clearPartyByPartyID(msg *ClearPartyByPartyID) {
-	if a.MapData == nil || msg == nil || msg.PartyID == 0 {
+func (a *MapActor) onClearPartyByPartyID(msg *ClearPartyByPartyID) {
+	if a.MapData == nil || msg == nil {
 		return
 	}
 	for _, obj := range a.MapData.GetAllPlayers() {
@@ -320,13 +381,13 @@ func (a *MapActor) clearPartyByPartyID(msg *ClearPartyByPartyID) {
 		if !ok || ch == nil {
 			continue
 		}
-		if currentPartyID, ok := ch.GetPartyID(); ok && currentPartyID == msg.PartyID {
+		if cur := ch.GetPartyID(); cur != nil && *cur == msg.PartyID {
 			ch.SetPartyID(nil)
 		}
 	}
 }
 
-func (a *MapActor) handleSyncCharacterPartyState(msg *SyncCharacterPartyState) {
+func (a *MapActor) onSyncCharacterPartyState(msg *SyncCharacterPartyState) {
 	if a.MapData == nil || msg == nil {
 		return
 	}
@@ -365,7 +426,7 @@ func (a *MapActor) ensureFinish(ctx actor.Context, msg *EnsureDeliver, ok bool, 
 	})
 }
 
-func (a *MapActor) handleDeliverPartyInvite(msg *DeliverPartyInvite) {
+func (a *MapActor) onDeliverPartyInvite(msg *DeliverPartyInvite) {
 	if a.MapData == nil || msg == nil {
 		return
 	}
@@ -380,7 +441,7 @@ func (a *MapActor) handleDeliverPartyInvite(msg *DeliverPartyInvite) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (a *MapActor) handleDeliverPartyStatusMessage(msg *DeliverPartyStatusMessage) {
+func (a *MapActor) onDeliverPartyStatusMessage(msg *DeliverPartyStatusMessage) {
 	if a.MapData == nil || msg == nil {
 		return
 	}
@@ -394,7 +455,7 @@ func (a *MapActor) handleDeliverPartyStatusMessage(msg *DeliverPartyStatusMessag
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (a *MapActor) handleDeliverPartyUpdateJoin(msg *DeliverPartyUpdateJoin) {
+func (a *MapActor) onDeliverPartyUpdateJoin(msg *DeliverPartyUpdateJoin) {
 	if a.MapData == nil || msg == nil {
 		return
 	}
@@ -411,7 +472,7 @@ func (a *MapActor) handleDeliverPartyUpdateJoin(msg *DeliverPartyUpdateJoin) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (a *MapActor) handleDeliverPartyUpdateLeave(msg *DeliverPartyUpdateLeave) {
+func (a *MapActor) onDeliverPartyUpdateLeave(msg *DeliverPartyUpdateLeave) {
 	if a.MapData == nil || msg == nil {
 		return
 	}
@@ -440,7 +501,7 @@ func (a *MapActor) handleDeliverPartyUpdateLeave(msg *DeliverPartyUpdateLeave) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (a *MapActor) handleDeliverPartyUpdateDisband(msg *DeliverPartyUpdateDisband) {
+func (a *MapActor) onDeliverPartyUpdateDisband(msg *DeliverPartyUpdateDisband) {
 	if a.MapData == nil || msg == nil {
 		return
 	}
@@ -454,7 +515,7 @@ func (a *MapActor) handleDeliverPartyUpdateDisband(msg *DeliverPartyUpdateDisban
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (a *MapActor) handleDeliverPartyUpdateLeaderChange(msg *DeliverPartyUpdateLeaderChange) {
+func (a *MapActor) onDeliverPartyUpdateLeaderChange(msg *DeliverPartyUpdateLeaderChange) {
 	if a.MapData == nil || msg == nil || msg.NewLeaderCharacterID == 0 {
 		return
 	}
@@ -468,7 +529,7 @@ func (a *MapActor) handleDeliverPartyUpdateLeaderChange(msg *DeliverPartyUpdateL
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (a *MapActor) handleDeliverPartyUpdateLogOnOff(msg *DeliverPartyUpdateLogOnOff) {
+func (a *MapActor) onDeliverPartyUpdateLogOnOff(msg *DeliverPartyUpdateLogOnOff) {
 	if a.MapData == nil || msg == nil {
 		return
 	}
@@ -484,7 +545,7 @@ func (a *MapActor) handleDeliverPartyUpdateLogOnOff(msg *DeliverPartyUpdateLogOn
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (a *MapActor) handleDeliverPartyUpdateSilent(msg *DeliverPartyUpdateSilent) {
+func (a *MapActor) onDeliverPartyUpdateSilent(msg *DeliverPartyUpdateSilent) {
 	if a.MapData == nil || msg == nil {
 		return
 	}

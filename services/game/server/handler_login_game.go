@@ -23,6 +23,16 @@ func optionalUint32(value uint32) *uint32 {
 	return &v
 }
 
+func enterGameReplyPartyPtr(reply *internal.EnterGameReply) *uint32 {
+	if reply == nil || reply.PartyId == nil {
+		return nil
+	}
+	v := *reply.PartyId
+	p := new(uint32)
+	*p = v
+	return p
+}
+
 type LoginGame struct {
 	gs     *GameServer
 	opcode byte
@@ -72,12 +82,12 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		return nil
 	})
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetPartyReply, error) {
-		if enterReply == nil || enterReply.GetPartyId() == 0 {
+		if enterReply == nil || enterReply.PartyId == nil {
 			return &internal.GetPartyReply{Found: false}, nil
 		}
 		return ic.GetParty(c, &internal.GetPartyRequest{
 			WorldId: h.gs.config.WorldId,
-			PartyId: enterReply.GetPartyId(),
+			PartyId: *enterReply.PartyId,
 		})
 	}, func(reply *internal.GetPartyReply) error {
 		partyReply = reply
@@ -127,7 +137,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		PositionX:    int16(p.GetPositionX()),
 		PositionY:    int16(p.GetPositionY()),
 		Stance:       uint8(p.GetStance()),
-		PartyID:      optionalUint32(reply.GetPartyId()),
+		PartyID:      enterGameReplyPartyPtr(reply),
 		GuildID:      optionalUint32(reply.GetGuildId()),
 	}
 
@@ -177,11 +187,8 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		return fmt.Errorf("runtime register: %w", err)
 	}
 
-	if h.gs.partyEventConsumer != nil {
-		partyID := reply.GetPartyId()
-		if partyID != 0 && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
-			h.gs.partyEventConsumer.ApplyPartySnapshot(partyReply.GetParty())
-		}
+	if h.gs.partyEventConsumer != nil && reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
+		h.gs.partyEventConsumer.ApplyPartySnapshot(partyReply.GetParty())
 	}
 
 	rootContext := h.gs.GetServer().GetRootContext()

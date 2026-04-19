@@ -13,8 +13,8 @@ func reportPartyMemberSnapshotRequest(worldID uint32, ch *entity.Character) (*in
 	if ch == nil {
 		return nil, false
 	}
-	partyID, inParty := ch.GetPartyID()
-	if !inParty || partyID == 0 {
+	partyIDPtr := ch.GetPartyID()
+	if partyIDPtr == nil {
 		return nil, false
 	}
 	mapID := uint32(0)

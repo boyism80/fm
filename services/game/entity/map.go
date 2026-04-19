@@ -37,7 +37,6 @@ type MapListener interface {
 	OnMobMobBuffCancelled(mapInstance *Map, mob *Mob, buff constant.MobBuffFlag)
 	OnMistSpawned(mapInstance *Map, mist *Mist)
 	OnMistRemoved(mapInstance *Map, mist *Mist)
-	OnDoorSpawned(mapInstance *Map, door *Door)
 	OnDoorRemoved(mapInstance *Map, door *Door, animated bool)
 }
 
@@ -48,18 +47,18 @@ type MobSpawn struct {
 }
 
 type Map struct {
-	Wz *wz.Map
-
-	id              uint32
-	objects         map[constant.ObjectType]map[uint32]Object
-	controllerTable *ControllerTable
-	MobSpawns       map[uint32]*MobSpawn
-	listener        MapListener
-	sequence        uint32
-	availableOIDs   []uint32
-	context         GameContext
-	actorPID        *actor.PID
-	pidMutex        sync.RWMutex
+	Wz                *wz.Map
+	id                uint32
+	objects           map[constant.ObjectType]map[uint32]Object
+	controllerTable   *ControllerTable
+	MobSpawns         map[uint32]*MobSpawn
+	listener          MapListener
+	sequence          uint32
+	availableOIDs     []uint32
+	Context           GameContext
+	actorPID          *actor.PID
+	pidMutex          sync.RWMutex
+	UsedDoorPortalIDs map[uint8]struct{}
 }
 
 type BroadcastOption struct {
@@ -88,7 +87,7 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 		Wz:              wz,
 		sequence:        0,
 		availableOIDs:   make([]uint32, 0),
-		context:         context,
+		Context:         context,
 	}
 
 	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
@@ -264,7 +263,7 @@ func (m *Map) initializeNpcs() {
 			ObjectCore: ObjectCore{
 				OID:      oid,
 				Position: types.Point[int16]{X: wz.BaseSpawn.Position.X, Y: wz.BaseSpawn.Position.Y},
-				Context:  m.context,
+				Context:  m.Context,
 				Map:      m,
 			},
 			Wz: &wz,
@@ -292,7 +291,7 @@ func (m *Map) AddSummon(s *Summon) {
 	if s.Map != nil && s.Map != m {
 		return
 	}
-	s.ObjectCore.Context = m.context
+	s.ObjectCore.Context = m.Context
 	if m.objects[constant.ObjectTypeSummon] == nil {
 		m.objects[constant.ObjectTypeSummon] = make(map[uint32]Object)
 	}
@@ -358,7 +357,7 @@ func (m *Map) AddMist(mist *Mist) {
 	if mist.Map != nil && mist.Map != m {
 		return
 	}
-	mist.ObjectCore.Context = m.context
+	mist.ObjectCore.Context = m.Context
 	if m.objects[constant.ObjectTypeMist] == nil {
 		m.objects[constant.ObjectTypeMist] = make(map[uint32]Object)
 	}
@@ -423,7 +422,7 @@ func (m *Map) AddDoor(door *Door) {
 	if door.Map != nil && door.Map != m {
 		return
 	}
-	door.ObjectCore.Context = m.context
+	door.ObjectCore.Context = m.Context
 	if m.objects[constant.ObjectTypeDoor] == nil {
 		m.objects[constant.ObjectTypeDoor] = make(map[uint32]Object)
 	}
@@ -434,14 +433,20 @@ func (m *Map) AddDoor(door *Door) {
 		door.Map = m
 	}
 	m.objects[constant.ObjectTypeDoor][door.OID] = door
-	m.listener.OnDoorSpawned(m, door)
+	door.BroadcastCall(func(obj Object) {
+		ch, ok := obj.(*Character)
+		if !ok || ch == nil {
+			return
+		}
+		door.SendSpawnSyncToViewer(ch)
+	}, nil)
 }
 
 func (m *Map) RemoveDoor(oid uint32, animated bool) {
 	m.removeDoorInternal(oid, animated, true)
 }
 
-func (m *Map) RemoveMysticDoorByOwnerSkill(ownerID uint32, skillID constant.SkillID, animated bool) {
+func (m *Map) RemoveDoorByOwnerSkill(ownerID uint32, skillID constant.SkillID, animated bool) {
 	if m == nil {
 		return
 	}
@@ -490,6 +495,10 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 
 	m.listener.OnDoorRemoved(m, door, animated)
 
+	if door.SkillID == constant.SkillMysticDoor && m.Wz != nil && uint32(m.Wz.ID) == door.ReturnMapID {
+		m.ReleaseMysticReturnPortal(door.ReturnPortalID)
+	}
+
 	delete(m.objects[constant.ObjectTypeDoor], oid)
 	m.releaseOID(oid)
 	if door.Map == m {
@@ -497,12 +506,8 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 		door.OID = 0
 	}
 
-	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpartMapWZID != 0 && m.context != nil {
-		m.context.NotifyDoorRemove(DoorRemove{
-			OwnerID:            ownerID,
-			SkillID:            uint32(skillID),
-			CounterpartMapWZID: counterpartMapWZID,
-		})
+	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpartMapWZID != 0 && m.Context != nil {
+		m.Context.NotifyDoorRemove(ownerID, uint32(skillID), counterpartMapWZID)
 	}
 }
 
@@ -589,7 +594,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 		ObjectCore: ObjectCore{
 			OID:      oid,
 			Position: spawnPosition,
-			Context:  m.context,
+			Context:  m.Context,
 			Map:      m,
 		},
 		Wz: &npcSpawn,
@@ -621,7 +626,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn) (*Mob, error) {
 	oid := m.allocateOID()
 
-	mobSpec, ok := m.context.GetResources().Monsters[mobId]
+	mobSpec, ok := m.Context.GetResources().Monsters[mobId]
 	if !ok {
 		return nil, fmt.Errorf("mob model not found for ID: %d", mobId)
 	}
@@ -647,7 +652,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 			ObjectCore: ObjectCore{
 				OID:      oid,
 				Position: spawnPoint,
-				Context:  m.context,
+				Context:  m.Context,
 				Map:      m,
 			},
 			hp:     uint32(max(0, mobSpec.MaxHP)),
@@ -801,7 +806,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 		dropPoint = position
 	}
 
-	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.context, m)
+	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.Context, m)
 
 	drop := meso.GetDrop()
 	if drop != nil {

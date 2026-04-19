@@ -44,8 +44,8 @@ func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPart
 	if character == nil {
 		return fmt.Errorf("deny party request: character not found")
 	}
-	if partyID, inParty := character.GetPartyID(); inParty && partyID != 0 {
-		log.Printf("DenyPartyRequest: ignored, character=%d already in party=%d", character.GetID(), partyID)
+	if pid := character.GetPartyID(); pid != nil {
+		log.Printf("DenyPartyRequest: ignored, character=%d already in party=%d", character.GetID(), *pid)
 		return nil
 	}
 

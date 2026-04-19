@@ -7,15 +7,33 @@ import (
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
-type SpawnDoor struct {
+type RequestSpawnDoor struct {
+	ReplyTo        *actor.PID
+	CharacterID    uint32
 	OwnerID        uint32
 	SkillID        constant.SkillID
 	FieldMapID     uint32
-	ReturnPortalID uint8
 	FieldPortalID  uint8
+	PartyOwnerSlot int
+	PartyID        *uint32
+	FieldAnchor    types.Vector2[int16]
+}
+
+type ResponseSpawnDoor struct {
+	Ok                 bool
+	CharacterID        uint32
+	OwnerID            uint32
+	SkillID            constant.SkillID
+	ReturnPortalID     uint8
+	TownPortalPosition types.Vector2[int16]
+	FieldMapID         uint32
+	FieldPortalID      uint8
+	PartyID            *uint32
+	FieldAnchor        types.Vector2[int16]
 }
 
 type RemoveDoor struct {

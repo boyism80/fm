@@ -3731,8 +3731,8 @@ proto.fm.internal.EnterGameReply.serializeBinaryToWriter = function(message, wri
       proto.fm.internal.KeyLayoutBinding.serializeBinaryToWriter
     );
   }
-  f = message.getPartyId();
-  if (f !== 0) {
+  f = /** @type {number} */ (jspb.Message.getField(message, 6));
+  if (f != null) {
     writer.writeUint32(
       6,
       f
@@ -3931,7 +3931,25 @@ proto.fm.internal.EnterGameReply.prototype.getPartyId = function() {
  * @return {!proto.fm.internal.EnterGameReply} returns this
  */
 proto.fm.internal.EnterGameReply.prototype.setPartyId = function(value) {
-  return jspb.Message.setProto3IntField(this, 6, value);
+  return jspb.Message.setField(this, 6, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.fm.internal.EnterGameReply} returns this
+ */
+proto.fm.internal.EnterGameReply.prototype.clearPartyId = function() {
+  return jspb.Message.setField(this, 6, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.fm.internal.EnterGameReply.prototype.hasPartyId = function() {
+  return jspb.Message.getField(this, 6) != null;
 };
 
 
@@ -9650,8 +9668,8 @@ proto.fm.internal.CreatePartyReply.serializeBinaryToWriter = function(message, w
       f
     );
   }
-  f = message.getPartyId();
-  if (f !== 0) {
+  f = /** @type {number} */ (jspb.Message.getField(message, 3));
+  if (f != null) {
     writer.writeUint32(
       3,
       f
@@ -9717,7 +9735,25 @@ proto.fm.internal.CreatePartyReply.prototype.getPartyId = function() {
  * @return {!proto.fm.internal.CreatePartyReply} returns this
  */
 proto.fm.internal.CreatePartyReply.prototype.setPartyId = function(value) {
-  return jspb.Message.setProto3IntField(this, 3, value);
+  return jspb.Message.setField(this, 3, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.fm.internal.CreatePartyReply} returns this
+ */
+proto.fm.internal.CreatePartyReply.prototype.clearPartyId = function() {
+  return jspb.Message.setField(this, 3, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.fm.internal.CreatePartyReply.prototype.hasPartyId = function() {
+  return jspb.Message.getField(this, 3) != null;
 };
 
 
@@ -10150,8 +10186,8 @@ proto.fm.internal.JoinPartyReply.serializeBinaryToWriter = function(message, wri
       f
     );
   }
-  f = message.getPartyId();
-  if (f !== 0) {
+  f = /** @type {number} */ (jspb.Message.getField(message, 3));
+  if (f != null) {
     writer.writeUint32(
       3,
       f
@@ -10217,7 +10253,25 @@ proto.fm.internal.JoinPartyReply.prototype.getPartyId = function() {
  * @return {!proto.fm.internal.JoinPartyReply} returns this
  */
 proto.fm.internal.JoinPartyReply.prototype.setPartyId = function(value) {
-  return jspb.Message.setProto3IntField(this, 3, value);
+  return jspb.Message.setField(this, 3, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.fm.internal.JoinPartyReply} returns this
+ */
+proto.fm.internal.JoinPartyReply.prototype.clearPartyId = function() {
+  return jspb.Message.setField(this, 3, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.fm.internal.JoinPartyReply.prototype.hasPartyId = function() {
+  return jspb.Message.getField(this, 3) != null;
 };
 
 
@@ -10535,8 +10589,8 @@ proto.fm.internal.LeavePartyReply.serializeBinaryToWriter = function(message, wr
       f
     );
   }
-  f = message.getPartyId();
-  if (f !== 0) {
+  f = /** @type {number} */ (jspb.Message.getField(message, 3));
+  if (f != null) {
     writer.writeUint32(
       3,
       f
@@ -10609,7 +10663,25 @@ proto.fm.internal.LeavePartyReply.prototype.getPartyId = function() {
  * @return {!proto.fm.internal.LeavePartyReply} returns this
  */
 proto.fm.internal.LeavePartyReply.prototype.setPartyId = function(value) {
-  return jspb.Message.setProto3IntField(this, 3, value);
+  return jspb.Message.setField(this, 3, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.fm.internal.LeavePartyReply} returns this
+ */
+proto.fm.internal.LeavePartyReply.prototype.clearPartyId = function() {
+  return jspb.Message.setField(this, 3, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.fm.internal.LeavePartyReply.prototype.hasPartyId = function() {
+  return jspb.Message.getField(this, 3) != null;
 };
 
 
@@ -10975,8 +11047,8 @@ proto.fm.internal.ExpelPartyReply.serializeBinaryToWriter = function(message, wr
       f
     );
   }
-  f = message.getPartyId();
-  if (f !== 0) {
+  f = /** @type {number} */ (jspb.Message.getField(message, 3));
+  if (f != null) {
     writer.writeUint32(
       3,
       f
@@ -11049,7 +11121,25 @@ proto.fm.internal.ExpelPartyReply.prototype.getPartyId = function() {
  * @return {!proto.fm.internal.ExpelPartyReply} returns this
  */
 proto.fm.internal.ExpelPartyReply.prototype.setPartyId = function(value) {
-  return jspb.Message.setProto3IntField(this, 3, value);
+  return jspb.Message.setField(this, 3, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.fm.internal.ExpelPartyReply} returns this
+ */
+proto.fm.internal.ExpelPartyReply.prototype.clearPartyId = function() {
+  return jspb.Message.setField(this, 3, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.fm.internal.ExpelPartyReply.prototype.hasPartyId = function() {
+  return jspb.Message.getField(this, 3) != null;
 };
 
 
@@ -11440,8 +11530,8 @@ proto.fm.internal.ChangePartyLeaderReply.serializeBinaryToWriter = function(mess
       f
     );
   }
-  f = message.getPartyId();
-  if (f !== 0) {
+  f = /** @type {number} */ (jspb.Message.getField(message, 3));
+  if (f != null) {
     writer.writeUint32(
       3,
       f
@@ -11507,7 +11597,25 @@ proto.fm.internal.ChangePartyLeaderReply.prototype.getPartyId = function() {
  * @return {!proto.fm.internal.ChangePartyLeaderReply} returns this
  */
 proto.fm.internal.ChangePartyLeaderReply.prototype.setPartyId = function(value) {
-  return jspb.Message.setProto3IntField(this, 3, value);
+  return jspb.Message.setField(this, 3, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.fm.internal.ChangePartyLeaderReply} returns this
+ */
+proto.fm.internal.ChangePartyLeaderReply.prototype.clearPartyId = function() {
+  return jspb.Message.setField(this, 3, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.fm.internal.ChangePartyLeaderReply.prototype.hasPartyId = function() {
+  return jspb.Message.getField(this, 3) != null;
 };
 
 
@@ -13211,8 +13319,8 @@ proto.fm.internal.ReportPartyMemberSnapshotReply.serializeBinaryToWriter = funct
       f
     );
   }
-  f = message.getPartyId();
-  if (f !== 0) {
+  f = /** @type {number} */ (jspb.Message.getField(message, 3));
+  if (f != null) {
     writer.writeUint32(
       3,
       f
@@ -13278,7 +13386,25 @@ proto.fm.internal.ReportPartyMemberSnapshotReply.prototype.getPartyId = function
  * @return {!proto.fm.internal.ReportPartyMemberSnapshotReply} returns this
  */
 proto.fm.internal.ReportPartyMemberSnapshotReply.prototype.setPartyId = function(value) {
-  return jspb.Message.setProto3IntField(this, 3, value);
+  return jspb.Message.setField(this, 3, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.fm.internal.ReportPartyMemberSnapshotReply} returns this
+ */
+proto.fm.internal.ReportPartyMemberSnapshotReply.prototype.clearPartyId = function() {
+  return jspb.Message.setField(this, 3, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.fm.internal.ReportPartyMemberSnapshotReply.prototype.hasPartyId = function() {
+  return jspb.Message.getField(this, 3) != null;
 };
 
 
@@ -13640,8 +13766,8 @@ proto.fm.internal.InvitePartyReply.serializeBinaryToWriter = function(message, w
       f
     );
   }
-  f = message.getPartyId();
-  if (f !== 0) {
+  f = /** @type {number} */ (jspb.Message.getField(message, 5));
+  if (f != null) {
     writer.writeUint32(
       5,
       f
@@ -13736,7 +13862,25 @@ proto.fm.internal.InvitePartyReply.prototype.getPartyId = function() {
  * @return {!proto.fm.internal.InvitePartyReply} returns this
  */
 proto.fm.internal.InvitePartyReply.prototype.setPartyId = function(value) {
-  return jspb.Message.setProto3IntField(this, 5, value);
+  return jspb.Message.setField(this, 5, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.fm.internal.InvitePartyReply} returns this
+ */
+proto.fm.internal.InvitePartyReply.prototype.clearPartyId = function() {
+  return jspb.Message.setField(this, 5, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.fm.internal.InvitePartyReply.prototype.hasPartyId = function() {
+  return jspb.Message.getField(this, 5) != null;
 };
 
 
