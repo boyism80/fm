@@ -15,9 +15,10 @@ func (partyMqPartyInviteDenied) New(gs *GameServer) *partyMqPartyInviteDenied {
 func (*partyMqPartyInviteDenied) EventType() string { return "party_invite_denied" }
 func (h *partyMqPartyInviteDenied) Handle(_ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
-	if gs == nil {
+	if gs == nil || gs.party == nil {
 		return nil
 	}
+	pc := gs.party
 	var payload struct {
 		InviterCharacterID  uint32 `json:"inviter_character_id"`
 		DeniedCharacterName string `json:"denied_character_name"`
@@ -30,6 +31,6 @@ func (h *partyMqPartyInviteDenied) Handle(_ amqp.Delivery, _ string, raw json.Ra
 	if payload.InviterCharacterID == 0 {
 		return nil
 	}
-	gs.DeliverPartyDenyStatusToCharacter(payload.InviterCharacterID, payload.Action, payload.DeniedCharacterName)
+	pc.DeliverPartyDenyStatusToCharacter(payload.InviterCharacterID, payload.Action, payload.DeniedCharacterName)
 	return nil
 }

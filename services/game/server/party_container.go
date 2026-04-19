@@ -8,7 +8,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/protocol/response"
+	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/services/game/entity"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -43,13 +48,12 @@ func NewPartyContainer(gs *GameServer, worldID uint32, ic internal.InternalClien
 func (pc *PartyContainer) apply(evt PartyEventEnvelope) error {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
-	gs := pc.gs
 	if evt.EventType == "log_onoff" {
 		if err := pc.rehydrateLocked(evt.PartyID); err != nil {
 			return err
 		}
-		if snapshot := pc.snapshots[evt.PartyID]; snapshot != nil && gs != nil {
-			gs.SyncPartySnapshot(snapshot)
+		if snapshot := pc.snapshots[evt.PartyID]; snapshot != nil {
+			pc.SyncPartySnapshot(snapshot)
 		}
 		log.Printf("party consumer: applied type=log_onoff party_id=%d revision=%d", evt.PartyID, pc.revisions[evt.PartyID])
 		return nil
@@ -73,16 +77,14 @@ func (pc *PartyContainer) apply(evt PartyEventEnvelope) error {
 		}
 		delete(pc.revisions, evt.PartyID)
 		delete(pc.snapshots, evt.PartyID)
-		if gs != nil {
-			gs.ClearPartyMembers(memberIDs)
-		}
+		pc.ClearPartyMembers(memberIDs)
 		log.Printf("party consumer: disbanded applied party_id=%d revision=%d", evt.PartyID, evt.Revision)
 	default:
 		if err := pc.rehydrateLocked(evt.PartyID); err != nil {
 			return err
 		}
-		if snapshot := pc.snapshots[evt.PartyID]; snapshot != nil && gs != nil {
-			gs.SyncPartySnapshot(snapshot)
+		if snapshot := pc.snapshots[evt.PartyID]; snapshot != nil {
+			pc.SyncPartySnapshot(snapshot)
 		}
 		log.Printf("party consumer: applied type=%s party_id=%d revision=%d", evt.EventType, evt.PartyID, pc.revisions[evt.PartyID])
 	}
@@ -129,12 +131,9 @@ func (pc *PartyContainer) applyEmbeddedPartySnapshot(evt PartyEventEnvelope, sna
 	pc.snapshots[partyID] = cloned
 	pc.mu.Unlock()
 
-	gs := pc.gs
-	if gs != nil {
-		gs.SyncPartySnapshot(cloned)
-	}
-	if notifySilent && gs != nil {
-		gs.DeliverPartySilentFromSnapshot(cloned)
+	pc.SyncPartySnapshot(cloned)
+	if notifySilent {
+		pc.DeliverPartySilentFromSnapshot(cloned)
 	}
 	log.Printf("party consumer: applied embedded party snapshot party_id=%d revision=%d silent=%v", partyID, rev, notifySilent)
 	return true, nil
@@ -149,9 +148,7 @@ func (pc *PartyContainer) ApplySnapshotFromLogin(snapshot *internal.PartySnapsho
 	defer pc.mu.Unlock()
 	pc.revisions[partyID] = snapshot.GetRevision()
 	pc.snapshots[partyID] = snapshot
-	if pc.gs != nil {
-		pc.gs.SyncPartySnapshot(snapshot)
-	}
+	pc.SyncPartySnapshot(snapshot)
 	log.Printf("party consumer: hydrated from login party_id=%d revision=%d", partyID, snapshot.GetRevision())
 }
 
@@ -170,4 +167,385 @@ func (pc *PartyContainer) CachedSnapshot(partyID uint32) *internal.PartySnapshot
 		return nil
 	}
 	return cloned
+}
+
+func partySnapshotMemberIDs(members []*internal.PartyMemberSnapshot) []uint32 {
+	out := make([]uint32, 0, len(members))
+	for _, m := range members {
+		if m == nil || m.GetCharacterId() == 0 {
+			continue
+		}
+		out = append(out, m.GetCharacterId())
+	}
+	return out
+}
+
+func partyMembersToResponse(members []*internal.PartyMemberSnapshot) []response.PartyMemberStatus {
+	out := make([]response.PartyMemberStatus, 0, len(members))
+	for _, m := range members {
+		if m == nil {
+			continue
+		}
+		ch := int32(-2)
+		if m.ChannelIndex != nil {
+			ch = *m.ChannelIndex
+		}
+		doorTown := uint32(999999999)
+		doorTarget := uint32(999999999)
+		doorX := int32(0)
+		doorY := int32(0)
+		if d := m.GetDoor(); d != nil {
+			doorTown = d.GetTown()
+			doorTarget = d.GetTarget()
+			doorX = d.GetX()
+			doorY = d.GetY()
+		}
+		out = append(out, response.PartyMemberStatus{
+			CharacterID: m.GetCharacterId(),
+			Name:        m.GetCharacterName(),
+			Class:       m.GetClassId(),
+			Level:       m.GetLevel(),
+			Channel:     ch,
+			MapID:       m.GetMapId(),
+			DoorTown:    doorTown,
+			DoorTarget:  doorTarget,
+			DoorX:       doorX,
+			DoorY:       doorY,
+		})
+	}
+	return out
+}
+
+func (pc *PartyContainer) SyncCharacterPartyState(characterID uint32, partyID *uint32) {
+	if pc == nil || characterID == 0 || pc.gs == nil {
+		return
+	}
+	pc.gs.EnsureSend(nil, characterID, &g_actor.SyncCharacterPartyState{
+		CharacterID: characterID,
+		PartyID:     partyID,
+	})
+}
+
+func (pc *PartyContainer) SyncPartySnapshot(snapshot *internal.PartySnapshot) {
+	if pc == nil || snapshot == nil || pc.gs == nil {
+		return
+	}
+	partyID := snapshot.GetPartyId()
+	for _, member := range snapshot.GetMembers() {
+		cid := member.GetCharacterId()
+		pid := partyID
+		pc.SyncCharacterPartyState(cid, &pid)
+	}
+}
+
+func (pc *PartyContainer) ClearCharacterPartyID(characterID uint32) {
+	if pc == nil || characterID == 0 || pc.gs == nil {
+		return
+	}
+	pc.SyncCharacterPartyState(characterID, nil)
+}
+
+func (pc *PartyContainer) ClearPartyMembers(memberIDs []uint32) {
+	if pc == nil || len(memberIDs) == 0 || pc.gs == nil {
+		return
+	}
+	for _, cid := range memberIDs {
+		pc.ClearCharacterPartyID(cid)
+	}
+}
+
+func (pc *PartyContainer) DeliverPartyInviteToCharacter(targetCharacterID uint32, partyID uint32, inviterName string, partySearch bool) {
+	if pc == nil || pc.gs == nil {
+		return
+	}
+	pc.gs.EnsureSend(nil, targetCharacterID, &g_actor.DeliverPartyInvite{
+		CharacterID: targetCharacterID,
+		PartyID:     partyID,
+		InviterName: inviterName,
+		PartySearch: partySearch,
+	})
+}
+
+func (pc *PartyContainer) DeliverPartyDenyStatusToCharacter(targetCharacterID uint32, action uint8, deniedCharacterName string) {
+	if pc == nil || pc.gs == nil || targetCharacterID == 0 {
+		return
+	}
+	pc.gs.EnsureSend(nil, targetCharacterID, &g_actor.DeliverPartyStatusMessage{
+		CharacterID: targetCharacterID,
+		Code:        constant.PartyStatusCode(action),
+		Name:        deniedCharacterName,
+	})
+}
+
+func (pc *PartyContainer) deliverPartyMemberLeftToMaps(leaverID uint32, prev *internal.PartySnapshot) {
+	if pc == nil || pc.gs == nil || pc.gs.characterRuntime == nil || leaverID == 0 || prev == nil {
+		return
+	}
+	gs := pc.gs
+	oldIDs := partySnapshotMemberIDs(prev.GetMembers())
+	root := gs.GetRootContext()
+	if root == nil {
+		return
+	}
+	seen := make(map[string]struct{})
+	for _, cid := range oldIDs {
+		mapPID, ok := gs.characterRuntime.GetMapPID(cid)
+		if !ok || mapPID == nil {
+			continue
+		}
+		key := mapPID.String()
+		if _, dup := seen[key]; dup {
+			continue
+		}
+		seen[key] = struct{}{}
+		root.Send(mapPID, &g_actor.PartyMemberLeft{
+			LeaverID: leaverID,
+		})
+	}
+}
+
+func (pc *PartyContainer) deliverPartyDisbandToMaps(prev *internal.PartySnapshot) {
+	if pc == nil || pc.gs == nil || pc.gs.characterRuntime == nil || prev == nil {
+		return
+	}
+	gs := pc.gs
+	formerIDs := partySnapshotMemberIDs(prev.GetMembers())
+	if len(formerIDs) == 0 {
+		return
+	}
+	root := gs.GetRootContext()
+	if root == nil {
+		return
+	}
+	seen := make(map[string]struct{})
+	for _, cid := range formerIDs {
+		mapPID, ok := gs.characterRuntime.GetMapPID(cid)
+		if !ok || mapPID == nil {
+			continue
+		}
+		key := mapPID.String()
+		if _, dup := seen[key]; dup {
+			continue
+		}
+		seen[key] = struct{}{}
+		root.Send(mapPID, &g_actor.PartyDisband{
+			FormerMemberIDs: formerIDs,
+		})
+	}
+}
+
+func (pc *PartyContainer) DeliverPartyJoinUpdate(snapshot *internal.PartySnapshot, joinedCharacterID uint32) {
+	if pc == nil || pc.gs == nil || snapshot == nil || joinedCharacterID == 0 {
+		return
+	}
+	gs := pc.gs
+	members := snapshot.GetMembers()
+	if len(members) == 0 {
+		return
+	}
+	joinName := ""
+	for _, m := range members {
+		if m != nil && m.GetCharacterId() == joinedCharacterID {
+			joinName = m.GetCharacterName()
+			break
+		}
+	}
+	respMembers := partyMembersToResponse(members)
+	if joinName == "" {
+		return
+	}
+	for _, m := range members {
+		if m == nil || m.GetCharacterId() == 0 {
+			continue
+		}
+		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateJoin{
+			CharacterID: m.GetCharacterId(),
+			ForChannel:  int32(gs.config.ChannelId),
+			PartyID:     snapshot.GetPartyId(),
+			JoinName:    joinName,
+			LeaderID:    snapshot.GetLeaderCharacterId(),
+			Members:     respMembers,
+		})
+	}
+}
+
+func (pc *PartyContainer) DeliverPartyLeaveUpdate(prev, current *internal.PartySnapshot, targetCharacterID uint32, expelled bool) {
+	if pc == nil || pc.gs == nil || prev == nil || targetCharacterID == 0 {
+		return
+	}
+	gs := pc.gs
+	targetName := ""
+	oldMembers := prev.GetMembers()
+	for _, m := range oldMembers {
+		if m != nil && m.GetCharacterId() == targetCharacterID {
+			targetName = m.GetCharacterName()
+			break
+		}
+	}
+	if targetName == "" {
+		return
+	}
+	var (
+		partyID  = prev.GetPartyId()
+		leaderID = prev.GetLeaderCharacterId()
+		members  []*internal.PartyMemberSnapshot
+	)
+	if current != nil {
+		partyID = current.GetPartyId()
+		leaderID = current.GetLeaderCharacterId()
+		members = current.GetMembers()
+	}
+	respMembers := partyMembersToResponse(members)
+	pc.deliverPartyMemberLeftToMaps(targetCharacterID, prev)
+	for _, m := range oldMembers {
+		if m == nil || m.GetCharacterId() == 0 {
+			continue
+		}
+		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeave{
+			CharacterID: m.GetCharacterId(),
+			ForChannel:  int32(gs.config.ChannelId),
+			PartyID:     partyID,
+			TargetID:    targetCharacterID,
+			TargetName:  targetName,
+			LeaderID:    leaderID,
+			Members:     respMembers,
+			Expelled:    expelled,
+		})
+	}
+}
+
+func (pc *PartyContainer) DeliverPartyDisbandUpdate(prev *internal.PartySnapshot, leaderCharacterID uint32) {
+	if pc == nil || pc.gs == nil || prev == nil || leaderCharacterID == 0 {
+		return
+	}
+	gs := pc.gs
+	pc.deliverPartyDisbandToMaps(prev)
+	for _, m := range prev.GetMembers() {
+		if m == nil || m.GetCharacterId() == 0 {
+			continue
+		}
+		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateDisband{
+			CharacterID: m.GetCharacterId(),
+			PartyID:     prev.GetPartyId(),
+			LeaderID:    leaderCharacterID,
+		})
+	}
+}
+
+func (pc *PartyContainer) DeliverPartyLeaderChange(snapshot *internal.PartySnapshot, newLeaderCharacterID uint32, byDisconnect bool) {
+	if pc == nil || pc.gs == nil || snapshot == nil || newLeaderCharacterID == 0 {
+		return
+	}
+	gs := pc.gs
+	for _, m := range snapshot.GetMembers() {
+		if m == nil || m.GetCharacterId() == 0 {
+			continue
+		}
+		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeaderChange{
+			CharacterID:          m.GetCharacterId(),
+			NewLeaderCharacterID: newLeaderCharacterID,
+			ByDisconnect:         byDisconnect,
+		})
+	}
+}
+
+func (pc *PartyContainer) DeliverPartyLogOnOff(snapshot *internal.PartySnapshot, _ uint32) {
+	if pc == nil || pc.gs == nil || snapshot == nil {
+		return
+	}
+	gs := pc.gs
+	respMembers := partyMembersToResponse(snapshot.GetMembers())
+	for _, m := range snapshot.GetMembers() {
+		if m == nil || m.GetCharacterId() == 0 {
+			continue
+		}
+		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLogOnOff{
+			CharacterID: m.GetCharacterId(),
+			ForChannel:  int32(gs.config.ChannelId),
+			PartyID:     snapshot.GetPartyId(),
+			LeaderID:    snapshot.GetLeaderCharacterId(),
+			Members:     respMembers,
+		})
+	}
+}
+
+func (pc *PartyContainer) DeliverPartySilentFromSnapshot(snapshot *internal.PartySnapshot) {
+	if pc == nil || pc.gs == nil || snapshot == nil {
+		return
+	}
+	gs := pc.gs
+	respMembers := partyMembersToResponse(snapshot.GetMembers())
+	for _, m := range snapshot.GetMembers() {
+		if m == nil || m.GetCharacterId() == 0 {
+			continue
+		}
+		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateSilent{
+			CharacterID: m.GetCharacterId(),
+			ForChannel:  int32(gs.config.ChannelId),
+			PartyID:     snapshot.GetPartyId(),
+			LeaderID:    snapshot.GetLeaderCharacterId(),
+			Members:     respMembers,
+		})
+	}
+}
+
+func (pc *PartyContainer) snapshotForMapEnter(partyID uint32) *internal.PartySnapshot {
+	if pc == nil {
+		return nil
+	}
+	if s := pc.CachedSnapshot(partyID); s != nil {
+		return s
+	}
+	if pc.internalClient == nil || pc.gs == nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+	defer cancel()
+	reply, err := pc.internalClient.GetParty(ctx, &internal.GetPartyRequest{
+		WorldId: pc.worldID,
+		PartyId: partyID,
+	})
+	if err != nil || !reply.GetFound() || reply.GetParty() == nil {
+		return nil
+	}
+	return reply.GetParty()
+}
+
+func (pc *PartyContainer) SendPartySilentOnMapEnter(ch *entity.Character) {
+	if pc == nil || ch == nil || pc.gs == nil {
+		return
+	}
+	gs := pc.gs
+	partyIDPtr := ch.GetPartyID()
+	if partyIDPtr == nil {
+		return
+	}
+	snap := pc.snapshotForMapEnter(*partyIDPtr)
+	if snap == nil {
+		return
+	}
+	members := partyMembersToResponse(snap.GetMembers())
+	gs.EnsureSend(nil, ch.GetID(), &g_actor.DeliverPartyUpdateSilent{
+		CharacterID: ch.GetID(),
+		ForChannel:  int32(gs.config.ChannelId),
+		PartyID:     snap.GetPartyId(),
+		LeaderID:    snap.GetLeaderCharacterId(),
+		Members:     members,
+	})
+}
+
+func (pc *PartyContainer) PartyMemberIndex(characterID uint32, partyID *uint32) int {
+	if partyID == nil || *partyID == 0 || pc == nil {
+		return 0
+	}
+	snap := pc.CachedSnapshot(*partyID)
+	if snap == nil {
+		return 0
+	}
+	for i, mem := range snap.GetMembers() {
+		if mem.GetCharacterId() == characterID {
+			return i
+		}
+	}
+	return 0
 }

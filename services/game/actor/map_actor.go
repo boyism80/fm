@@ -50,7 +50,7 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 	case *AddCharacter:
 		a.onAddCharacter(ctx, m)
 	case *RemoveCharacter:
-		a.onRemoveCharacter(m)
+		a.onRemoveCharacter(ctx, m)
 	case *WarpCharacter:
 		a.onWarpCharacter(ctx, m)
 	case *RequestSpawnDoor:
@@ -71,6 +71,10 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onClearPartyByPartyID(m)
 	case *SyncCharacterPartyState:
 		a.onSyncCharacterPartyState(m)
+	case *PartyMemberLeft:
+		a.onPartyMemberLeft(m)
+	case *PartyDisband:
+		a.onPartyDisband(m)
 	case *DeliverPartyInvite:
 		a.onDeliverPartyInvite(m)
 	case *DeliverPartyStatusMessage:
@@ -166,11 +170,17 @@ func (a *MapActor) onAddCharacter(ctx actor.Context, msg *AddCharacter) {
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 }
 
-func (a *MapActor) onRemoveCharacter(msg *RemoveCharacter) {
+func (a *MapActor) onRemoveCharacter(ctx actor.Context, msg *RemoveCharacter) {
 	if a.MapData == nil {
+		if ctx.Sender() != nil {
+			ctx.Respond(struct{}{})
+		}
 		return
 	}
-	a.MapData.RemovePlayer(msg.CharacterID)
+	_ = a.MapData.RemovePlayer(msg.CharacterID)
+	if ctx.Sender() != nil {
+		ctx.Respond(struct{}{})
+	}
 }
 
 func (a *MapActor) onWarpCharacter(ctx actor.Context, msg *WarpCharacter) {
@@ -401,6 +411,20 @@ func (a *MapActor) onSyncCharacterPartyState(msg *SyncCharacterPartyState) {
 		id := *msg.PartyID
 		ch.SetPartyID(&id)
 	}
+}
+
+func (a *MapActor) onPartyMemberLeft(msg *PartyMemberLeft) {
+	if a.MapData == nil || msg == nil {
+		return
+	}
+	a.MapData.ApplyPartyLeaveDoorSync(msg.LeaverID)
+}
+
+func (a *MapActor) onPartyDisband(msg *PartyDisband) {
+	if a.MapData == nil || msg == nil {
+		return
+	}
+	a.MapData.ApplyPartyDisbandDoorSync(msg.FormerMemberIDs)
 }
 
 func (a *MapActor) ensureNotOnMap(msg *EnsureDeliver) {

@@ -48,7 +48,7 @@ func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
-	if character.GetID() != door.OwnerID {
+	if !door.UsableBy(character) {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}

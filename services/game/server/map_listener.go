@@ -61,8 +61,8 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 		_ = l.gs.characterRuntime.SetMapPID(character.GetID(), mapInstance.GetActorPID())
 	}
 
-	if l.gs != nil {
-		l.gs.SendPartySilentOnMapEnter(character)
+	if l.gs != nil && l.gs.party != nil {
+		l.gs.party.SendPartySilentOnMapEnter(character)
 	}
 }
 

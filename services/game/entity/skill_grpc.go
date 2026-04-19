@@ -7,8 +7,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-// ToPersisted builds internal.SkillPersisted (skillID is the map key from SkillContainer).
-func (e *SkillEntry) ToPersisted(characterID uint32, skillID uint32) *internal.SkillPersisted {
+func (e *SkillEntry) ToGrpcDTO(characterID uint32, skillID uint32) *internal.SkillPersisted {
 	if e == nil {
 		return nil
 	}

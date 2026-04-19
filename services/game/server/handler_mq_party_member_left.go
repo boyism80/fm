@@ -41,9 +41,9 @@ func (h *partyMqMemberLeft) Handle(_ amqp.Delivery, _ string, raw json.RawMessag
 		return nil
 	}
 	snapshot := pc.CachedSnapshot(evt.PartyID)
-	gs.DeliverPartyLeaveUpdate(prevSnapshot, snapshot, extra.CharacterID, extra.ExpelledByCharacter != 0)
+	pc.DeliverPartyLeaveUpdate(prevSnapshot, snapshot, extra.CharacterID, extra.ExpelledByCharacter != 0)
 	if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && snapshot != nil {
-		gs.DeliverPartyLeaderChange(snapshot, extra.NewLeaderCharacterID, true)
+		pc.DeliverPartyLeaderChange(snapshot, extra.NewLeaderCharacterID, true)
 	}
 	return nil
 }

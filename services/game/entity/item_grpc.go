@@ -51,67 +51,67 @@ func equipmentToInventoryPersisted(e Equipment, ownerID uint32, slot int32) *int
 	return buildInventoryPersisted(e, ownerID, slot, c.UniqueId, c.OwnerName, c.Flag, c.EnchantChance, c.SkillBonus)
 }
 
-func (item *Weapon) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Weapon) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Shield) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Shield) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Cap) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Cap) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Face) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Face) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Accessory) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Accessory) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Top) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Top) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Pants) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Pants) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Shoes) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Shoes) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Glove) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Glove) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Cape) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Cape) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *RingEquip) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *RingEquip) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return equipmentToInventoryPersisted(item, ownerID, slot)
 }
 
-func (item *Consume) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Consume) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return buildInventoryPersisted(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
 }
 
-func (item *Installation) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Installation) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return buildInventoryPersisted(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
 }
 
-func (item *MiscItem) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *MiscItem) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return buildInventoryPersisted(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
 }
 
-func (item *CashItem) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *CashItem) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return buildInventoryPersisted(item, ownerID, slot, item.UniqueId, item.OwnerName, item.Flags, 0, 0)
 }
 
-func (item *Pet) ToPersisted(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Pet) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
 	return buildInventoryPersisted(item, ownerID, slot, item.UniqueId, "", item.Flags, 0, 0)
 }
 

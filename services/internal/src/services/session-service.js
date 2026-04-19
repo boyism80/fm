@@ -113,7 +113,7 @@ class SessionService {
         return { ok: true };
     }
 
-    async logout(worldId, accountId) {
+    async logout(worldId, accountId, options = {}) {
         const sessionBeforeLogout = await this.repo.getAccountSession(worldId, accountId);
         const [ok, code] = await this.repo.logoutAtomic(
             worldId,
@@ -123,8 +123,12 @@ class SessionService {
         if (Number(ok) !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : messages.SessionErrorCode.SESSION_LOGOUT_FAILED };
         }
+        const src = Number(options.disconnectSource ?? messages.SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_UNSPECIFIED);
+        const transferDisconnect = Boolean(options.transferDisconnect);
+        const gameNormalDisconnect =
+            src === messages.SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER && !transferDisconnect;
         const cid = sessionBeforeLogout?.character?.id;
-        if (cid != null && this.partyService) {
+        if (cid != null && this.partyService && gameNormalDisconnect) {
             await this.partyService.applyMemberChannelIndex(worldId, cid, -2);
         }
         return { ok: true, code: messages.SessionErrorCode.SESSION_NONE };

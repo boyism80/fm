@@ -226,9 +226,12 @@ func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 	worldId := loginClient.GetWorldId()
 	ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
 	defer cancel()
+	transfer := loginClient.TakeTransferDisconnect()
 	_, err := ic.LogoutSession(ctx, &internal.LogoutSessionRequest{
-		WorldId:   worldId,
-		AccountId: accountId,
+		WorldId:            worldId,
+		AccountId:          accountId,
+		DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_LOGIN_SERVER,
+		TransferDisconnect: transfer,
 	})
 	if err != nil {
 		log.Printf("LogoutSession (login disconnect) failed for world=%d account=%d: %v", worldId, accountId, err)

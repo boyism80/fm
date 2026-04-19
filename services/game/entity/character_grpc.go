@@ -79,7 +79,7 @@ func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint
 	return
 }
 
-func (ch *Character) ToPersisted(worldID uint32) *internal.CharacterSaveEntry {
+func (ch *Character) ToGrpcDTO(worldID uint32) *internal.CharacterSaveEntry {
 	if ch == nil {
 		return nil
 	}
@@ -124,7 +124,7 @@ func (ch *Character) ToPersisted(worldID uint32) *internal.CharacterSaveEntry {
 		Overlays:  overlays,
 		Inventory: ch.InventoryPersisted(),
 		Skills:    ch.SkillsPersisted(),
-		KeyLayout: ch.KeyLayout().ToPersisted(),
+		KeyLayout: ch.KeyLayout().ToGrpcDTO(),
 	}
 }
 
@@ -135,12 +135,12 @@ func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {
 		if item == nil {
 			continue
 		}
-		if pb := item.ToPersisted(ownerID, int32(parts)); pb != nil {
+		if pb := item.ToGrpcDTO(ownerID, int32(parts)); pb != nil {
 			items = append(items, pb)
 		}
 	}
 	for _, inv := range ch.Inventory {
-		items = append(items, inv.ToPersisted(ownerID)...)
+		items = append(items, inv.ToGrpcDTO(ownerID)...)
 	}
 	return items
 }
@@ -151,7 +151,7 @@ func (ch *Character) SkillsPersisted() []*internal.SkillPersisted {
 		if entry == nil {
 			return
 		}
-		if pb := entry.ToPersisted(ch.GetID(), skillID); pb != nil {
+		if pb := entry.ToGrpcDTO(ch.GetID(), skillID); pb != nil {
 			skills = append(skills, pb)
 		}
 	})

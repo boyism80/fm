@@ -115,7 +115,11 @@ function createSessionHandlers(
             try {
                 const result = await sessionService.logout(
                     call.request.getWorldId(),
-                    call.request.getAccountId()
+                    call.request.getAccountId(),
+                    {
+                        disconnectSource: call.request.getDisconnectSource(),
+                        transferDisconnect: call.request.getTransferDisconnect(),
+                    }
                 );
                 const reply = new messages.LogoutSessionReply();
                 reply.setOk(Boolean(result.ok));

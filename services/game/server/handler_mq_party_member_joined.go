@@ -38,7 +38,7 @@ func (h *partyMqMemberJoined) Handle(_ amqp.Delivery, _ string, raw json.RawMess
 	}
 	snapshot := pc.CachedSnapshot(evt.PartyID)
 	if snapshot != nil {
-		gs.DeliverPartyJoinUpdate(snapshot, extra.CharacterID)
+		pc.DeliverPartyJoinUpdate(snapshot, extra.CharacterID)
 	}
 	return nil
 }

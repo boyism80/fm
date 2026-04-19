@@ -10,6 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/config"
@@ -17,9 +18,7 @@ import (
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/mq"
-	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/protocol/response"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
 	gameconst "github.com/boyism80/fm/services/game/constant"
@@ -30,6 +29,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+const mapActorCallTimeout = 30 * time.Second
 
 type GameServer struct {
 	server            *core.Server
@@ -47,12 +48,10 @@ type GameServer struct {
 	internalConn      *grpc.ClientConn
 	party             *PartyContainer
 	consumerParty     *mq.JSONConsumer[*GameServer]
-
-	characterRuntime *ServerCharacterRuntime
-
-	ensureMu      sync.Mutex
-	ensurePending map[uint64]*g_actor.EnsureDeliver
-	ensureNext    atomic.Uint64
+	characterRuntime  *ServerCharacterRuntime
+	ensureMu          sync.Mutex
+	ensurePending     map[uint64]*g_actor.EnsureDeliver
+	ensureNext        atomic.Uint64
 }
 
 func (gs *GameServer) GetServer() *core.Server {
@@ -319,294 +318,6 @@ func (gs *GameServer) DispatchRunCharacterTimer(pid *actor.PID, payload *c_actor
 	}
 }
 
-func (gs *GameServer) DeliverPartyInviteToCharacter(targetCharacterID uint32, partyID uint32, inviterName string, partySearch bool) {
-	if gs == nil {
-		return
-	}
-	gs.EnsureSend(nil, targetCharacterID, &g_actor.DeliverPartyInvite{
-		CharacterID: targetCharacterID,
-		PartyID:     partyID,
-		InviterName: inviterName,
-		PartySearch: partySearch,
-	})
-}
-
-func (gs *GameServer) DeliverPartyDenyStatusToCharacter(targetCharacterID uint32, action uint8, deniedCharacterName string) {
-	if gs == nil || targetCharacterID == 0 {
-		return
-	}
-	gs.EnsureSend(nil, targetCharacterID, &g_actor.DeliverPartyStatusMessage{
-		CharacterID: targetCharacterID,
-		Code:        constant.PartyStatusCode(action),
-		Name:        deniedCharacterName,
-	})
-}
-
-func (gs *GameServer) SyncCharacterPartyState(characterID uint32, partyID *uint32) {
-	if gs == nil || characterID == 0 {
-		return
-	}
-
-	gs.EnsureSend(nil, characterID, &g_actor.SyncCharacterPartyState{
-		CharacterID: characterID,
-		PartyID:     partyID,
-	})
-}
-
-func (gs *GameServer) SyncPartySnapshot(snapshot *internal.PartySnapshot) {
-	if gs == nil || snapshot == nil {
-		return
-	}
-	partyID := snapshot.GetPartyId()
-	for _, member := range snapshot.GetMembers() {
-		cid := member.GetCharacterId()
-		pid := partyID
-		gs.SyncCharacterPartyState(cid, &pid)
-	}
-}
-
-func (gs *GameServer) ClearCharacterPartyID(characterID uint32) {
-	if gs == nil || characterID == 0 {
-		return
-	}
-	gs.SyncCharacterPartyState(characterID, nil)
-}
-
-func (gs *GameServer) ClearPartyMembers(memberIDs []uint32) {
-	if gs == nil || len(memberIDs) == 0 {
-		return
-	}
-	for _, cid := range memberIDs {
-		gs.ClearCharacterPartyID(cid)
-	}
-}
-
-func partyMembersToResponse(members []*internal.PartyMemberSnapshot) []response.PartyMemberStatus {
-	out := make([]response.PartyMemberStatus, 0, len(members))
-	for _, m := range members {
-		if m == nil {
-			continue
-		}
-		ch := int32(-2)
-		if m.ChannelIndex != nil {
-			ch = *m.ChannelIndex
-		}
-		doorTown := uint32(999999999)
-		doorTarget := uint32(999999999)
-		doorX := int32(0)
-		doorY := int32(0)
-		if d := m.GetDoor(); d != nil {
-			doorTown = d.GetTown()
-			doorTarget = d.GetTarget()
-			doorX = d.GetX()
-			doorY = d.GetY()
-		}
-		out = append(out, response.PartyMemberStatus{
-			CharacterID: m.GetCharacterId(),
-			Name:        m.GetCharacterName(),
-			Class:       m.GetClassId(),
-			Level:       m.GetLevel(),
-			Channel:     ch,
-			MapID:       m.GetMapId(),
-			DoorTown:    doorTown,
-			DoorTarget:  doorTarget,
-			DoorX:       doorX,
-			DoorY:       doorY,
-		})
-	}
-	return out
-}
-
-func (gs *GameServer) DeliverPartyJoinUpdate(snapshot *internal.PartySnapshot, joinedCharacterID uint32) {
-	if gs == nil || snapshot == nil || joinedCharacterID == 0 {
-		return
-	}
-	members := snapshot.GetMembers()
-	if len(members) == 0 {
-		return
-	}
-	joinName := ""
-	for _, m := range members {
-		if m != nil && m.GetCharacterId() == joinedCharacterID {
-			joinName = m.GetCharacterName()
-			break
-		}
-	}
-	respMembers := partyMembersToResponse(members)
-	if joinName == "" {
-		return
-	}
-	for _, m := range members {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateJoin{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(gs.config.ChannelId),
-			PartyID:     snapshot.GetPartyId(),
-			JoinName:    joinName,
-			LeaderID:    snapshot.GetLeaderCharacterId(),
-			Members:     respMembers,
-		})
-	}
-}
-
-func (gs *GameServer) DeliverPartyLeaveUpdate(prev, current *internal.PartySnapshot, targetCharacterID uint32, expelled bool) {
-	if gs == nil || prev == nil || targetCharacterID == 0 {
-		return
-	}
-	targetName := ""
-	oldMembers := prev.GetMembers()
-	for _, m := range oldMembers {
-		if m != nil && m.GetCharacterId() == targetCharacterID {
-			targetName = m.GetCharacterName()
-			break
-		}
-	}
-	if targetName == "" {
-		return
-	}
-	var (
-		partyID  = prev.GetPartyId()
-		leaderID = prev.GetLeaderCharacterId()
-		members  []*internal.PartyMemberSnapshot
-	)
-	if current != nil {
-		partyID = current.GetPartyId()
-		leaderID = current.GetLeaderCharacterId()
-		members = current.GetMembers()
-	}
-	respMembers := partyMembersToResponse(members)
-	for _, m := range oldMembers {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeave{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(gs.config.ChannelId),
-			PartyID:     partyID,
-			TargetID:    targetCharacterID,
-			TargetName:  targetName,
-			LeaderID:    leaderID,
-			Members:     respMembers,
-			Expelled:    expelled,
-		})
-	}
-}
-
-func (gs *GameServer) DeliverPartyDisbandUpdate(prev *internal.PartySnapshot, leaderCharacterID uint32) {
-	if gs == nil || prev == nil || leaderCharacterID == 0 {
-		return
-	}
-	for _, m := range prev.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateDisband{
-			CharacterID: m.GetCharacterId(),
-			PartyID:     prev.GetPartyId(),
-			LeaderID:    leaderCharacterID,
-		})
-	}
-}
-
-func (gs *GameServer) DeliverPartyLeaderChange(snapshot *internal.PartySnapshot, newLeaderCharacterID uint32, byDisconnect bool) {
-	if gs == nil || snapshot == nil || newLeaderCharacterID == 0 {
-		return
-	}
-	for _, m := range snapshot.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeaderChange{
-			CharacterID:          m.GetCharacterId(),
-			NewLeaderCharacterID: newLeaderCharacterID,
-			ByDisconnect:         byDisconnect,
-		})
-	}
-}
-
-func (gs *GameServer) DeliverPartyLogOnOff(snapshot *internal.PartySnapshot, _ uint32) {
-	if gs == nil || snapshot == nil {
-		return
-	}
-	respMembers := partyMembersToResponse(snapshot.GetMembers())
-	for _, m := range snapshot.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLogOnOff{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(gs.config.ChannelId),
-			PartyID:     snapshot.GetPartyId(),
-			LeaderID:    snapshot.GetLeaderCharacterId(),
-			Members:     respMembers,
-		})
-	}
-}
-
-func (gs *GameServer) DeliverPartySilentFromSnapshot(snapshot *internal.PartySnapshot) {
-	if gs == nil || snapshot == nil {
-		return
-	}
-	respMembers := partyMembersToResponse(snapshot.GetMembers())
-	for _, m := range snapshot.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateSilent{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(gs.config.ChannelId),
-			PartyID:     snapshot.GetPartyId(),
-			LeaderID:    snapshot.GetLeaderCharacterId(),
-			Members:     respMembers,
-		})
-	}
-}
-
-func (gs *GameServer) partySnapshotForMapEnter(partyID uint32) *internal.PartySnapshot {
-	if gs.party != nil {
-		if s := gs.party.CachedSnapshot(partyID); s != nil {
-			return s
-		}
-	}
-	if gs.internalClient == nil {
-		return nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-	defer cancel()
-	reply, err := gs.internalClient.GetParty(ctx, &internal.GetPartyRequest{
-		WorldId: gs.config.WorldId,
-		PartyId: partyID,
-	})
-	if err != nil || !reply.GetFound() || reply.GetParty() == nil {
-		return nil
-	}
-	return reply.GetParty()
-}
-
-func (gs *GameServer) SendPartySilentOnMapEnter(ch *entity.Character) {
-	if gs == nil || ch == nil {
-		return
-	}
-	partyIDPtr := ch.GetPartyID()
-	if partyIDPtr == nil {
-		return
-	}
-	snap := gs.partySnapshotForMapEnter(*partyIDPtr)
-	if snap == nil {
-		return
-	}
-	members := partyMembersToResponse(snap.GetMembers())
-	gs.EnsureSend(nil, ch.GetID(), &g_actor.DeliverPartyUpdateSilent{
-		CharacterID: ch.GetID(),
-		ForChannel:  int32(gs.config.ChannelId),
-		PartyID:     snap.GetPartyId(),
-		LeaderID:    snap.GetLeaderCharacterId(),
-		Members:     members,
-	})
-}
-
 func (gs *GameServer) RequestSpawnReturnMapDoor(ch *entity.Character, skillID gameconst.SkillID) {
 	if ch == nil {
 		return
@@ -645,7 +356,10 @@ func (gs *GameServer) RequestSpawnReturnMapDoor(ch *entity.Character, skillID ga
 	} else {
 		closestPortalID = m.Wz.FindClosestPortalSpawnID(fieldAnchorPt)
 	}
-	slot := gs.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
+	slot := 0
+	if gs.party != nil {
+		slot = gs.party.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
+	}
 	root.Send(destPID, &g_actor.RequestSpawnDoor{
 		ReplyTo:        srcPID,
 		CharacterID:    ch.GetID(),
@@ -657,22 +371,6 @@ func (gs *GameServer) RequestSpawnReturnMapDoor(ch *entity.Character, skillID ga
 		PartyID:        ch.GetPartyID(),
 		FieldAnchor:    ch.Position,
 	})
-}
-
-func (gs *GameServer) PartyMemberIndex(characterID uint32, partyID *uint32) int {
-	if partyID == nil || *partyID == 0 || gs.party == nil {
-		return 0
-	}
-	snap := gs.party.CachedSnapshot(*partyID)
-	if snap == nil {
-		return 0
-	}
-	for i, mem := range snap.GetMembers() {
-		if mem.GetCharacterId() == characterID {
-			return i
-		}
-	}
-	return 0
 }
 
 func (gs *GameServer) NotifyDoorRemove(ownerID uint32, skillID uint32, counterpartMapWZID uint32) {
@@ -730,9 +428,12 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	}
 	if gs.internalClient != nil && character.AccountID != 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+		transfer := client.TakeTransferDisconnect()
 		_, err := gs.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
-			WorldId:   gs.config.WorldId,
-			AccountId: character.AccountID,
+			WorldId:            gs.config.WorldId,
+			AccountId:          character.AccountID,
+			DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
+			TransferDisconnect: transfer,
 		})
 		cancel()
 		if err != nil {
@@ -743,7 +444,16 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	gs.runCharacterLogoutScript(character)
 	mapInstance := character.GetMap()
 	if mapInstance != nil {
-		mapInstance.RemovePlayer(character.GetID())
+		pid := mapInstance.GetActorPID()
+		root := gs.GetRootContext()
+		if pid != nil && root != nil {
+			_, err := root.RequestFuture(pid, &g_actor.RemoveCharacter{CharacterID: character.GetID()}, mapActorCallTimeout).Result()
+			if err != nil {
+				log.Printf("RemoveCharacter on disconnect (char %d): %v", character.GetID(), err)
+			}
+		} else {
+			log.Printf("disconnect: map actor missing for char %d; map remove skipped", character.GetID())
+		}
 	}
 	if gs.characterRuntime != nil {
 		gs.ensureAbandonCharacter(character.GetID())

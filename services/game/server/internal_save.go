@@ -20,7 +20,7 @@ func saveCharactersRPC(ctx context.Context, client internal.InternalClient, worl
 		if ch == nil {
 			continue
 		}
-		if entry := ch.ToPersisted(worldId); entry != nil {
+		if entry := ch.ToGrpcDTO(worldId); entry != nil {
 			entries = append(entries, entry)
 		}
 	}

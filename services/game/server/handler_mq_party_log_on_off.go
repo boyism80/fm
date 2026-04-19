@@ -41,7 +41,7 @@ func (h *partyMqLogOnOff) Handle(_ amqp.Delivery, _ string, raw json.RawMessage)
 					}
 					if applied && payload.CharacterID != 0 {
 						if snapshot := pc.CachedSnapshot(evt.PartyID); snapshot != nil {
-							gs.DeliverPartyLogOnOff(snapshot, payload.CharacterID)
+							pc.DeliverPartyLogOnOff(snapshot, payload.CharacterID)
 						}
 					}
 					return nil
@@ -64,7 +64,7 @@ func (h *partyMqLogOnOff) Handle(_ amqp.Delivery, _ string, raw json.RawMessage)
 	}
 	snapshot := pc.CachedSnapshot(evt.PartyID)
 	if snapshot != nil {
-		gs.DeliverPartyLogOnOff(snapshot, extra.CharacterID)
+		pc.DeliverPartyLogOnOff(snapshot, extra.CharacterID)
 	}
 	return nil
 }

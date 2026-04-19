@@ -17,5 +17,4 @@ type GameContext interface {
 	DispatchRunCharacterTimer(pid *actor.PID, payload *c_actor.RunCharacterTimer)
 	NotifyDoorRemove(ownerID uint32, skillID uint32, counterpartMapWZID uint32)
 	RequestSpawnReturnMapDoor(ch *Character, skillID constant.SkillID)
-	PartyMemberIndex(characterID uint32, partyID *uint32) int
 }

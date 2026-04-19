@@ -78,6 +78,14 @@ type SyncCharacterPartyState struct {
 	PartyID     *uint32
 }
 
+type PartyMemberLeft struct {
+	LeaverID uint32
+}
+
+type PartyDisband struct {
+	FormerMemberIDs []uint32
+}
+
 type EnsureDeliver struct {
 	CorrelationID    uint64
 	CharacterID      uint32

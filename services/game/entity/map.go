@@ -537,6 +537,53 @@ func (m *Map) FindDoorByOwner(ownerID uint32) *Door {
 	return nil
 }
 
+func (m *Map) ApplyPartyLeaveDoorSync(leaverID uint32) {
+	if m == nil || leaverID == 0 {
+		return
+	}
+	ch := m.GetPlayer(leaverID)
+	if ch == nil {
+		return
+	}
+	m.resyncOwnerDoorPortals(ch)
+}
+
+func (m *Map) ApplyPartyDisbandDoorSync(formerMemberIDs []uint32) {
+	if m == nil || len(formerMemberIDs) == 0 {
+		return
+	}
+	former := make(map[uint32]struct{}, len(formerMemberIDs))
+	for _, id := range formerMemberIDs {
+		if id != 0 {
+			former[id] = struct{}{}
+		}
+	}
+	for _, obj := range m.GetAllPlayers() {
+		ch, ok := obj.(*Character)
+		if !ok || ch == nil {
+			continue
+		}
+		if _, in := former[ch.GetID()]; !in {
+			continue
+		}
+		m.resyncOwnerDoorPortals(ch)
+	}
+}
+
+func (m *Map) resyncOwnerDoorPortals(owner *Character) {
+	if m == nil || owner == nil {
+		return
+	}
+	oid := owner.GetID()
+	for _, obj := range m.GetObjects(constant.ObjectTypeDoor) {
+		d, ok := obj.(*Door)
+		if !ok || d == nil || d.OwnerID != oid {
+			continue
+		}
+		d.SendOwnerPortalResync(owner)
+	}
+}
+
 func (m *Map) initializeMobs() {
 	for spawnId, mobSpawnSpec := range m.Wz.MobSpawns {
 		m.MobSpawns[spawnId] = &MobSpawn{

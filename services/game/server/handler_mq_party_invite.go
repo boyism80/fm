@@ -15,9 +15,10 @@ func (partyMqPartyInvite) New(gs *GameServer) *partyMqPartyInvite {
 func (*partyMqPartyInvite) EventType() string { return "party_invite" }
 func (h *partyMqPartyInvite) Handle(_ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
-	if gs == nil {
+	if gs == nil || gs.party == nil {
 		return nil
 	}
+	pc := gs.party
 	var payload struct {
 		TargetCharacterID uint32 `json:"target_character_id"`
 		PartyID           uint32 `json:"party_id"`
@@ -31,6 +32,6 @@ func (h *partyMqPartyInvite) Handle(_ amqp.Delivery, _ string, raw json.RawMessa
 	if payload.TargetCharacterID == 0 {
 		return nil
 	}
-	gs.DeliverPartyInviteToCharacter(payload.TargetCharacterID, payload.PartyID, payload.InviterName, payload.PartySearch)
+	pc.DeliverPartyInviteToCharacter(payload.TargetCharacterID, payload.PartyID, payload.InviterName, payload.PartySearch)
 	return nil
 }

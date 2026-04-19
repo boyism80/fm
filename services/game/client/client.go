@@ -4,6 +4,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/crypt"
 	"github.com/boyism80/fm/services/game/entity"
@@ -11,8 +12,9 @@ import (
 
 type GameClient struct {
 	core.BaseClient
-	character *entity.Character
-	mu        sync.Mutex
+	character          *entity.Character
+	transferDisconnect bool
+	mu                 sync.Mutex
 }
 
 var _ core.Client = (*GameClient)(nil)
@@ -41,4 +43,34 @@ func (c *GameClient) GetCharacter() *entity.Character {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.character
+}
+
+// GetLogicActorPID is the packet mailbox for the map the character stands on;
+// nil falls back to core.Server's nil MapActor (login / between-maps).
+func (c *GameClient) GetLogicActorPID() *actor.PID {
+	c.mu.Lock()
+	ch := c.character
+	c.mu.Unlock()
+	if ch == nil {
+		return nil
+	}
+	m := ch.GetMap()
+	if m == nil {
+		return nil
+	}
+	return m.GetActorPID()
+}
+
+func (c *GameClient) SetTransferDisconnect(v bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.transferDisconnect = v
+}
+
+func (c *GameClient) TakeTransferDisconnect() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	v := c.transferDisconnect
+	c.transferDisconnect = false
+	return v
 }

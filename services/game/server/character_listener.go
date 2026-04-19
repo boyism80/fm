@@ -383,11 +383,11 @@ func (l *CharacterListenerImpl) OnClassChange(ch *entity.Character, oldClass uin
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
-	l.gs.ReportPartyMemberSnapshotAsync(ch)
+	l.gs.UpdatePartyMemberAsync(ch)
 }
 
 func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *entity.Character) {
-	l.gs.ReportPartyMemberSnapshotAsync(ch)
+	l.gs.UpdatePartyMemberAsync(ch)
 }
 
 func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, recipient *entity.Character) {

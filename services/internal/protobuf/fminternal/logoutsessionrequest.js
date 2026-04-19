@@ -71,7 +71,9 @@ proto.fm.internal.LogoutSessionRequest.prototype.toObject = function(opt_include
 proto.fm.internal.LogoutSessionRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
     worldId: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    accountId: jspb.Message.getFieldWithDefault(msg, 2, 0)
+    accountId: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    disconnectSource: jspb.Message.getFieldWithDefault(msg, 3, 0),
+    transferDisconnect: jspb.Message.getBooleanFieldWithDefault(msg, 4, false)
   };
 
   if (includeInstance) {
@@ -116,6 +118,14 @@ proto.fm.internal.LogoutSessionRequest.deserializeBinaryFromReader = function(ms
       var value = /** @type {number} */ (reader.readUint32());
       msg.setAccountId(value);
       break;
+    case 3:
+      var value = /** @type {!proto.fm.internal.SessionDisconnectSource} */ (reader.readEnum());
+      msg.setDisconnectSource(value);
+      break;
+    case 4:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setTransferDisconnect(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -159,6 +169,20 @@ proto.fm.internal.LogoutSessionRequest.serializeBinaryToWriter = function(messag
       f
     );
   }
+  f = message.getDisconnectSource();
+  if (f !== 0.0) {
+    writer.writeEnum(
+      3,
+      /** @type {!proto.fm.internal.SessionDisconnectSource} */ (f)
+    );
+  }
+  f = message.getTransferDisconnect();
+  if (f) {
+    writer.writeBool(
+      4,
+      f
+    );
+  }
 };
 
 
@@ -195,6 +219,42 @@ proto.fm.internal.LogoutSessionRequest.prototype.getAccountId = function() {
  */
 proto.fm.internal.LogoutSessionRequest.prototype.setAccountId = function(value) {
   return jspb.Message.setProto3IntField(this, 2, value);
+};
+
+
+/**
+ * optional SessionDisconnectSource disconnect_source = 3;
+ * @return {!proto.fm.internal.SessionDisconnectSource}
+ */
+proto.fm.internal.LogoutSessionRequest.prototype.getDisconnectSource = function() {
+  return /** @type {!proto.fm.internal.SessionDisconnectSource} */ (jspb.Message.getFieldWithDefault(this, 3, 0));
+};
+
+
+/**
+ * @param {!proto.fm.internal.SessionDisconnectSource} value
+ * @return {!proto.fm.internal.LogoutSessionRequest} returns this
+ */
+proto.fm.internal.LogoutSessionRequest.prototype.setDisconnectSource = function(value) {
+  return jspb.Message.setProto3EnumField(this, 3, value);
+};
+
+
+/**
+ * optional bool transfer_disconnect = 4;
+ * @return {boolean}
+ */
+proto.fm.internal.LogoutSessionRequest.prototype.getTransferDisconnect = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 4, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.fm.internal.LogoutSessionRequest} returns this
+ */
+proto.fm.internal.LogoutSessionRequest.prototype.setTransferDisconnect = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 4, value);
 };
 
 

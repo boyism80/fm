@@ -37,6 +37,6 @@ func (h *partyMqDisbanded) Handle(_ amqp.Delivery, _ string, raw json.RawMessage
 	if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 || prevSnapshot == nil {
 		return nil
 	}
-	gs.DeliverPartyDisbandUpdate(prevSnapshot, extra.CharacterID)
+	pc.DeliverPartyDisbandUpdate(prevSnapshot, extra.CharacterID)
 	return nil
 }

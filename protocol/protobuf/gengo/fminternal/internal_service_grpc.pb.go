@@ -19,28 +19,28 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Internal_Ping_FullMethodName                      = "/fm.internal.Internal/Ping"
-	Internal_GetServerCatalog_FullMethodName          = "/fm.internal.Internal/GetServerCatalog"
-	Internal_EnterGame_FullMethodName                 = "/fm.internal.Internal/EnterGame"
-	Internal_BeginGameTransition_FullMethodName       = "/fm.internal.Internal/BeginGameTransition"
-	Internal_SaveCharacter_FullMethodName             = "/fm.internal.Internal/SaveCharacter"
-	Internal_SaveCharacters_FullMethodName            = "/fm.internal.Internal/SaveCharacters"
-	Internal_LoginAccount_FullMethodName              = "/fm.internal.Internal/LoginAccount"
-	Internal_GetCharacterList_FullMethodName          = "/fm.internal.Internal/GetCharacterList"
-	Internal_CheckCharacterName_FullMethodName        = "/fm.internal.Internal/CheckCharacterName"
-	Internal_CreateCharacter_FullMethodName           = "/fm.internal.Internal/CreateCharacter"
-	Internal_DeleteCharacter_FullMethodName           = "/fm.internal.Internal/DeleteCharacter"
-	Internal_RefreshSession_FullMethodName            = "/fm.internal.Internal/RefreshSession"
-	Internal_LogoutSession_FullMethodName             = "/fm.internal.Internal/LogoutSession"
-	Internal_CreateParty_FullMethodName               = "/fm.internal.Internal/CreateParty"
-	Internal_JoinParty_FullMethodName                 = "/fm.internal.Internal/JoinParty"
-	Internal_LeaveParty_FullMethodName                = "/fm.internal.Internal/LeaveParty"
-	Internal_ExpelParty_FullMethodName                = "/fm.internal.Internal/ExpelParty"
-	Internal_ChangePartyLeader_FullMethodName         = "/fm.internal.Internal/ChangePartyLeader"
-	Internal_GetParty_FullMethodName                  = "/fm.internal.Internal/GetParty"
-	Internal_ReportPartyMemberSnapshot_FullMethodName = "/fm.internal.Internal/ReportPartyMemberSnapshot"
-	Internal_InviteParty_FullMethodName               = "/fm.internal.Internal/InviteParty"
-	Internal_DenyParty_FullMethodName                 = "/fm.internal.Internal/DenyParty"
+	Internal_Ping_FullMethodName                = "/fm.internal.Internal/Ping"
+	Internal_GetServerCatalog_FullMethodName    = "/fm.internal.Internal/GetServerCatalog"
+	Internal_EnterGame_FullMethodName           = "/fm.internal.Internal/EnterGame"
+	Internal_BeginGameTransition_FullMethodName = "/fm.internal.Internal/BeginGameTransition"
+	Internal_SaveCharacter_FullMethodName       = "/fm.internal.Internal/SaveCharacter"
+	Internal_SaveCharacters_FullMethodName      = "/fm.internal.Internal/SaveCharacters"
+	Internal_LoginAccount_FullMethodName        = "/fm.internal.Internal/LoginAccount"
+	Internal_GetCharacterList_FullMethodName    = "/fm.internal.Internal/GetCharacterList"
+	Internal_CheckCharacterName_FullMethodName  = "/fm.internal.Internal/CheckCharacterName"
+	Internal_CreateCharacter_FullMethodName     = "/fm.internal.Internal/CreateCharacter"
+	Internal_DeleteCharacter_FullMethodName     = "/fm.internal.Internal/DeleteCharacter"
+	Internal_RefreshSession_FullMethodName      = "/fm.internal.Internal/RefreshSession"
+	Internal_LogoutSession_FullMethodName       = "/fm.internal.Internal/LogoutSession"
+	Internal_CreateParty_FullMethodName         = "/fm.internal.Internal/CreateParty"
+	Internal_JoinParty_FullMethodName           = "/fm.internal.Internal/JoinParty"
+	Internal_LeaveParty_FullMethodName          = "/fm.internal.Internal/LeaveParty"
+	Internal_ExpelParty_FullMethodName          = "/fm.internal.Internal/ExpelParty"
+	Internal_ChangePartyLeader_FullMethodName   = "/fm.internal.Internal/ChangePartyLeader"
+	Internal_GetParty_FullMethodName            = "/fm.internal.Internal/GetParty"
+	Internal_UpdatePartyMember_FullMethodName   = "/fm.internal.Internal/UpdatePartyMember"
+	Internal_InviteParty_FullMethodName         = "/fm.internal.Internal/InviteParty"
+	Internal_DenyParty_FullMethodName           = "/fm.internal.Internal/DenyParty"
 )
 
 // InternalClient is the client API for Internal service.
@@ -66,7 +66,7 @@ type InternalClient interface {
 	ExpelParty(ctx context.Context, in *ExpelPartyRequest, opts ...grpc.CallOption) (*ExpelPartyReply, error)
 	ChangePartyLeader(ctx context.Context, in *ChangePartyLeaderRequest, opts ...grpc.CallOption) (*ChangePartyLeaderReply, error)
 	GetParty(ctx context.Context, in *GetPartyRequest, opts ...grpc.CallOption) (*GetPartyReply, error)
-	ReportPartyMemberSnapshot(ctx context.Context, in *ReportPartyMemberSnapshotRequest, opts ...grpc.CallOption) (*ReportPartyMemberSnapshotReply, error)
+	UpdatePartyMember(ctx context.Context, in *UpdatePartyMemberRequest, opts ...grpc.CallOption) (*UpdatePartyMemberReply, error)
 	InviteParty(ctx context.Context, in *InvitePartyRequest, opts ...grpc.CallOption) (*InvitePartyReply, error)
 	DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error)
 }
@@ -269,10 +269,10 @@ func (c *internalClient) GetParty(ctx context.Context, in *GetPartyRequest, opts
 	return out, nil
 }
 
-func (c *internalClient) ReportPartyMemberSnapshot(ctx context.Context, in *ReportPartyMemberSnapshotRequest, opts ...grpc.CallOption) (*ReportPartyMemberSnapshotReply, error) {
+func (c *internalClient) UpdatePartyMember(ctx context.Context, in *UpdatePartyMemberRequest, opts ...grpc.CallOption) (*UpdatePartyMemberReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ReportPartyMemberSnapshotReply)
-	err := c.cc.Invoke(ctx, Internal_ReportPartyMemberSnapshot_FullMethodName, in, out, cOpts...)
+	out := new(UpdatePartyMemberReply)
+	err := c.cc.Invoke(ctx, Internal_UpdatePartyMember_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ type InternalServer interface {
 	ExpelParty(context.Context, *ExpelPartyRequest) (*ExpelPartyReply, error)
 	ChangePartyLeader(context.Context, *ChangePartyLeaderRequest) (*ChangePartyLeaderReply, error)
 	GetParty(context.Context, *GetPartyRequest) (*GetPartyReply, error)
-	ReportPartyMemberSnapshot(context.Context, *ReportPartyMemberSnapshotRequest) (*ReportPartyMemberSnapshotReply, error)
+	UpdatePartyMember(context.Context, *UpdatePartyMemberRequest) (*UpdatePartyMemberReply, error)
 	InviteParty(context.Context, *InvitePartyRequest) (*InvitePartyReply, error)
 	DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error)
 	mustEmbedUnimplementedInternalServer()
@@ -392,8 +392,8 @@ func (UnimplementedInternalServer) ChangePartyLeader(context.Context, *ChangePar
 func (UnimplementedInternalServer) GetParty(context.Context, *GetPartyRequest) (*GetPartyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetParty not implemented")
 }
-func (UnimplementedInternalServer) ReportPartyMemberSnapshot(context.Context, *ReportPartyMemberSnapshotRequest) (*ReportPartyMemberSnapshotReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ReportPartyMemberSnapshot not implemented")
+func (UnimplementedInternalServer) UpdatePartyMember(context.Context, *UpdatePartyMemberRequest) (*UpdatePartyMemberReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdatePartyMember not implemented")
 }
 func (UnimplementedInternalServer) InviteParty(context.Context, *InvitePartyRequest) (*InvitePartyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InviteParty not implemented")
@@ -764,20 +764,20 @@ func _Internal_GetParty_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Internal_ReportPartyMemberSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReportPartyMemberSnapshotRequest)
+func _Internal_UpdatePartyMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdatePartyMemberRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InternalServer).ReportPartyMemberSnapshot(ctx, in)
+		return srv.(InternalServer).UpdatePartyMember(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Internal_ReportPartyMemberSnapshot_FullMethodName,
+		FullMethod: Internal_UpdatePartyMember_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).ReportPartyMemberSnapshot(ctx, req.(*ReportPartyMemberSnapshotRequest))
+		return srv.(InternalServer).UpdatePartyMember(ctx, req.(*UpdatePartyMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -902,8 +902,8 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Internal_GetParty_Handler,
 		},
 		{
-			MethodName: "ReportPartyMemberSnapshot",
-			Handler:    _Internal_ReportPartyMemberSnapshot_Handler,
+			MethodName: "UpdatePartyMember",
+			Handler:    _Internal_UpdatePartyMember_Handler,
 		},
 		{
 			MethodName: "InviteParty",

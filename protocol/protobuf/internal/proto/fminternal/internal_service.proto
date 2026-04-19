@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+// After editing this file, regenerate Go + JS: run protocol/protobuf/gen.bat from the repo (requires protoc, protoc-gen-go, protoc-gen-go-grpc, and npm install in services/internal).
+
 package fm.internal;
 
 option go_package = "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal;fminternalpb";
@@ -24,7 +26,7 @@ service Internal {
   rpc ExpelParty (ExpelPartyRequest) returns (ExpelPartyReply);
   rpc ChangePartyLeader (ChangePartyLeaderRequest) returns (ChangePartyLeaderReply);
   rpc GetParty (GetPartyRequest) returns (GetPartyReply);
-  rpc ReportPartyMemberSnapshot (ReportPartyMemberSnapshotRequest) returns (ReportPartyMemberSnapshotReply);
+  rpc UpdatePartyMember (UpdatePartyMemberRequest) returns (UpdatePartyMemberReply);
   rpc InviteParty (InvitePartyRequest) returns (InvitePartyReply);
   rpc DenyParty (DenyPartyRequest) returns (DenyPartyReply);
 }
@@ -279,18 +281,47 @@ message RefreshSessionReply {
   SessionErrorCode error_code = 2;
 }
 
+// Which service initiated LogoutSession (drives party channel side-effects).
+enum SessionDisconnectSource {
+  SESSION_DISCONNECT_SOURCE_UNSPECIFIED = 0;
+  SESSION_DISCONNECT_SOURCE_LOGIN_SERVER = 1;
+  SESSION_DISCONNECT_SOURCE_GAME_SERVER = 2;
+}
+
 message LogoutSessionRequest {
   uint32 world_id = 1;
   uint32 account_id = 2;
+  SessionDisconnectSource disconnect_source = 3;
+  bool transfer_disconnect = 4;
 }
 
 message LogoutSessionReply {
   bool ok = 1;
 }
 
+message PartyDoor {
+  uint32 town = 1;
+  uint32 target = 2;
+  int32 x = 3;
+  int32 y = 4;
+}
+
+// Realtime party member fields (game server is source of truth).
+message PartyMemberSnapshot {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  string character_name = 3;
+  uint32 level = 4;
+  uint32 class_id = 5;
+  string role = 6;
+  uint32 map_id = 7;
+  optional int32 channel_index = 8;
+  optional PartyDoor door = 9;
+}
+
 message CreatePartyRequest {
   uint32 world_id = 1;
-  uint32 leader_character_id = 2;
+  PartyMemberSnapshot leader = 2;
 }
 
 enum PartyErrorCode {
@@ -322,10 +353,7 @@ message CreatePartyReply {
 message JoinPartyRequest {
   uint32 world_id = 1;
   uint32 party_id = 2;
-  uint32 character_id = 3;
-  string character_name = 4;
-  uint32 level = 5;
-  uint32 class_id = 6;
+  PartyMemberSnapshot member = 3;
 }
 
 message JoinPartyReply {
@@ -376,24 +404,6 @@ message ChangePartyLeaderReply {
   uint64 revision = 4;
 }
 
-message PartyDoor {
-  uint32 town = 1;
-  uint32 target = 2;
-  int32 x = 3;
-  int32 y = 4;
-}
-
-message PartyMemberSnapshot {
-  uint32 character_id = 1;
-  string character_name = 2;
-  uint32 level = 3;
-  uint32 class_id = 4;
-  string role = 5;
-  uint32 map_id = 6;
-  optional int32 channel_index = 7;
-  optional PartyDoor door = 8;
-}
-
 message PartySnapshot {
   uint32 world_id = 1;
   uint32 party_id = 2;
@@ -413,16 +423,11 @@ message GetPartyReply {
   PartySnapshot party = 2;
 }
 
-message ReportPartyMemberSnapshotRequest {
-  uint32 world_id = 1;
-  uint32 character_id = 2;
-  uint32 level = 3;
-  uint32 class_id = 4;
-  uint32 map_id = 5;
-  optional PartyDoor door = 6;
+message UpdatePartyMemberRequest {
+  PartyMemberSnapshot member = 1;
 }
 
-message ReportPartyMemberSnapshotReply {
+message UpdatePartyMemberReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;

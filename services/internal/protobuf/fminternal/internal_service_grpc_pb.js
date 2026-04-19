@@ -422,28 +422,6 @@ function deserialize_fm_internal_RefreshSessionRequest(buffer_arg) {
   return fminternal_internal_service_pb.RefreshSessionRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
-function serialize_fm_internal_ReportPartyMemberSnapshotReply(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.ReportPartyMemberSnapshotReply)) {
-    throw new Error('Expected argument of type fm.internal.ReportPartyMemberSnapshotReply');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_ReportPartyMemberSnapshotReply(buffer_arg) {
-  return fminternal_internal_service_pb.ReportPartyMemberSnapshotReply.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
-function serialize_fm_internal_ReportPartyMemberSnapshotRequest(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.ReportPartyMemberSnapshotRequest)) {
-    throw new Error('Expected argument of type fm.internal.ReportPartyMemberSnapshotRequest');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_ReportPartyMemberSnapshotRequest(buffer_arg) {
-  return fminternal_internal_service_pb.ReportPartyMemberSnapshotRequest.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
 function serialize_fm_internal_SaveCharacterReply(arg) {
   if (!(arg instanceof fminternal_internal_service_pb.SaveCharacterReply)) {
     throw new Error('Expected argument of type fm.internal.SaveCharacterReply');
@@ -486,6 +464,28 @@ function serialize_fm_internal_SaveCharactersRequest(arg) {
 
 function deserialize_fm_internal_SaveCharactersRequest(buffer_arg) {
   return fminternal_internal_service_pb.SaveCharactersRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_UpdatePartyMemberReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.UpdatePartyMemberReply)) {
+    throw new Error('Expected argument of type fm.internal.UpdatePartyMemberReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_UpdatePartyMemberReply(buffer_arg) {
+  return fminternal_internal_service_pb.UpdatePartyMemberReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_UpdatePartyMemberRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.UpdatePartyMemberRequest)) {
+    throw new Error('Expected argument of type fm.internal.UpdatePartyMemberRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_UpdatePartyMemberRequest(buffer_arg) {
+  return fminternal_internal_service_pb.UpdatePartyMemberRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 
@@ -699,16 +699,16 @@ var InternalService = exports.InternalService = {
     responseSerialize: serialize_fm_internal_GetPartyReply,
     responseDeserialize: deserialize_fm_internal_GetPartyReply,
   },
-  reportPartyMemberSnapshot: {
-    path: '/fm.internal.Internal/ReportPartyMemberSnapshot',
+  updatePartyMember: {
+    path: '/fm.internal.Internal/UpdatePartyMember',
     requestStream: false,
     responseStream: false,
-    requestType: fminternal_internal_service_pb.ReportPartyMemberSnapshotRequest,
-    responseType: fminternal_internal_service_pb.ReportPartyMemberSnapshotReply,
-    requestSerialize: serialize_fm_internal_ReportPartyMemberSnapshotRequest,
-    requestDeserialize: deserialize_fm_internal_ReportPartyMemberSnapshotRequest,
-    responseSerialize: serialize_fm_internal_ReportPartyMemberSnapshotReply,
-    responseDeserialize: deserialize_fm_internal_ReportPartyMemberSnapshotReply,
+    requestType: fminternal_internal_service_pb.UpdatePartyMemberRequest,
+    responseType: fminternal_internal_service_pb.UpdatePartyMemberReply,
+    requestSerialize: serialize_fm_internal_UpdatePartyMemberRequest,
+    requestDeserialize: deserialize_fm_internal_UpdatePartyMemberRequest,
+    responseSerialize: serialize_fm_internal_UpdatePartyMemberReply,
+    responseDeserialize: deserialize_fm_internal_UpdatePartyMemberReply,
   },
   inviteParty: {
     path: '/fm.internal.Internal/InviteParty',

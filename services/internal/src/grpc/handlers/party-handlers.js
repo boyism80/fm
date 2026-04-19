@@ -35,13 +35,46 @@ function createPartyHandlers(partyService, messages, grpcError) {
         }
     }
 
+    function partyMemberPlainFromPb(mm) {
+        if (!mm) {
+            return null;
+        }
+        let doorPayload = null;
+        if (typeof mm.hasDoor === "function" && mm.hasDoor()) {
+            const d = mm.getDoor();
+            if (d) {
+                doorPayload = {
+                    town: d.getTown(),
+                    target: d.getTarget(),
+                    x: d.getX(),
+                    y: d.getY(),
+                };
+            }
+        }
+        let channelIndex = null;
+        if (typeof mm.hasChannelIndex === "function" && mm.hasChannelIndex()) {
+            channelIndex = Number(mm.getChannelIndex());
+        }
+        return {
+            worldId: Number(mm.getWorldId()),
+            characterId: Number(mm.getCharacterId()),
+            characterName: String(mm.getCharacterName() ?? ""),
+            level: Number(mm.getLevel()),
+            classId: Number(mm.getClassId()),
+            role: String(mm.getRole() ?? ""),
+            mapId: Number(mm.getMapId()),
+            channelIndex:
+                channelIndex == null || !Number.isFinite(channelIndex) ? null : channelIndex,
+            door: doorPayload,
+        };
+    }
+
     return {
         async createParty(call, callback) {
             try {
-                const result = await partyService.createParty(
-                    call.request.getWorldId(),
-                    call.request.getLeaderCharacterId()
-                );
+                const req = call.request;
+                const leader = partyMemberPlainFromPb(req.getLeader());
+                const result = await partyService.createParty(req.getWorldId(), leader);
                 const reply = new messages.CreatePartyReply();
                 reply.setOk(Boolean(result.ok));
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
@@ -55,13 +88,12 @@ function createPartyHandlers(partyService, messages, grpcError) {
 
         async joinParty(call, callback) {
             try {
+                const req = call.request;
+                const member = partyMemberPlainFromPb(req.getMember());
                 const result = await partyService.joinParty(
-                    call.request.getWorldId(),
-                    call.request.getPartyId(),
-                    call.request.getCharacterId(),
-                    call.request.getCharacterName(),
-                    call.request.getLevel(),
-                    call.request.getClassId()
+                    req.getWorldId(),
+                    req.getPartyId(),
+                    member
                 );
                 const reply = new messages.JoinPartyReply();
                 reply.setOk(Boolean(result.ok));
@@ -151,10 +183,8 @@ function createPartyHandlers(partyService, messages, grpcError) {
 
         async getParty(call, callback) {
             try {
-                const result = await partyService.getParty(
-                    call.request.getWorldId(),
-                    call.request.getPartyId()
-                );
+                const worldId = call.request.getWorldId();
+                const result = await partyService.getParty(worldId, call.request.getPartyId());
                 const reply = new messages.GetPartyReply();
                 reply.setFound(Boolean(result.found));
                 if (result.found) {
@@ -167,6 +197,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                     p.setMembersList(
                         result.members.map((m) => {
                             const mm = new messages.PartyMemberSnapshot();
+                            mm.setWorldId(Number(worldId));
                             mm.setCharacterId(m.characterId);
                             mm.setCharacterName(m.characterName);
                             mm.setLevel(m.level);
@@ -186,30 +217,11 @@ function createPartyHandlers(partyService, messages, grpcError) {
             }
         },
 
-        async reportPartyMemberSnapshot(call, callback) {
+        async updatePartyMember(call, callback) {
             try {
-                const req = call.request;
-                let doorPayload = null;
-                if (typeof req.hasDoor === "function" && req.hasDoor()) {
-                    const d = req.getDoor();
-                    if (d) {
-                        doorPayload = {
-                            town: d.getTown(),
-                            target: d.getTarget(),
-                            x: d.getX(),
-                            y: d.getY(),
-                        };
-                    }
-                }
-                const result = await partyService.reportPartyMemberSnapshot(
-                    req.getWorldId(),
-                    req.getCharacterId(),
-                    req.getLevel(),
-                    req.getClassId(),
-                    req.getMapId(),
-                    doorPayload
-                );
-                const reply = new messages.ReportPartyMemberSnapshotReply();
+                const member = partyMemberPlainFromPb(call.request.getMember());
+                const result = await partyService.updatePartyMember(member);
+                const reply = new messages.UpdatePartyMemberReply();
                 reply.setOk(Boolean(result.ok));
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
                 setOptionalPartyId(reply, result.partyId);

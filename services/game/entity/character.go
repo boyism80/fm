@@ -9,6 +9,7 @@ import (
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
@@ -493,6 +494,17 @@ func (ch *Character) GetDoors() []*Door {
 	return out
 }
 
+func (ch *Character) GetDoor(index int) *Door {
+	if ch.doors == nil {
+		return nil
+	}
+	doors := ch.GetDoors()
+	if doors == nil || index < 0 || index >= len(doors) {
+		return nil
+	}
+	return doors[index]
+}
+
 func (ch *Character) ClearDoors() {
 	if len(ch.doors) == 0 {
 		return
@@ -791,6 +803,33 @@ func (ch *Character) GetRole() constant.CharacterRole {
 
 func (ch *Character) GetName() string {
 	return ch.name
+}
+
+func (ch *Character) ToGrpcPartyMember(worldID uint32, channelID int32, role string) *internal.PartyMemberSnapshot {
+	if ch == nil {
+		return nil
+	}
+	mapID := uint32(0)
+	if m := ch.GetMap(); m != nil {
+		mapID = m.GetMapID()
+	}
+	mm := &internal.PartyMemberSnapshot{
+		WorldId:       worldID,
+		CharacterId:   ch.GetID(),
+		CharacterName: ch.GetName(),
+		Level:         uint32(ch.GetLevel()),
+		ClassId:       uint32(ch.Class),
+		Role:          role,
+		MapId:         mapID,
+	}
+	if channelID >= 0 {
+		ci := channelID
+		mm.ChannelIndex = &ci
+	}
+	if door := ch.GetDoor(0); door != nil {
+		mm.Door = door.ToGrpcDTO()
+	}
+	return mm
 }
 
 func (ch *Character) GetPartyID() *uint32 {

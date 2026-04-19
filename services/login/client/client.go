@@ -11,12 +11,14 @@ import (
 
 type LoginClient struct {
 	core.BaseClient
-	logicActorPID *actor.PID
-	pidMutex      sync.RWMutex
-	accountId     uint32
-	worldId       uint32
-	channelId     uint8
-	accountMutex  sync.RWMutex
+	logicActorPID      *actor.PID
+	pidMutex           sync.RWMutex
+	accountId          uint32
+	worldId            uint32
+	channelId          uint8
+	accountMutex       sync.RWMutex
+	transferDisconnect bool
+	transferMu         sync.Mutex
 }
 
 var _ core.Client = (*LoginClient)(nil)
@@ -67,6 +69,20 @@ func (c *LoginClient) SetChannelId(id uint8) {
 	c.accountMutex.Lock()
 	defer c.accountMutex.Unlock()
 	c.channelId = id
+}
+
+func (c *LoginClient) SetTransferDisconnect(v bool) {
+	c.transferMu.Lock()
+	defer c.transferMu.Unlock()
+	c.transferDisconnect = v
+}
+
+func (c *LoginClient) TakeTransferDisconnect() bool {
+	c.transferMu.Lock()
+	defer c.transferMu.Unlock()
+	v := c.transferDisconnect
+	c.transferDisconnect = false
+	return v
 }
 
 func NewLoginClient(conn net.Conn, clientID int) (*LoginClient, error) {

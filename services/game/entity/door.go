@@ -1,6 +1,7 @@
 package entity
 
 import (
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
@@ -53,6 +54,26 @@ func (d *Door) GetObjectType() constant.ObjectType {
 
 func (d *Door) Is(typ constant.ObjectType) bool {
 	return d.GetObjectType().Has(typ)
+}
+
+func (d *Door) UsableBy(ch *Character) bool {
+	if d == nil || ch == nil {
+		return false
+	}
+	if ch.GetID() == d.OwnerID {
+		return true
+	}
+	if d.SkillID != constant.SkillMysticDoor {
+		return false
+	}
+	if d.PartyID == nil {
+		return false
+	}
+	vParty := ch.GetPartyID()
+	if vParty == nil || *d.PartyID == 0 || *vParty == 0 {
+		return false
+	}
+	return *vParty == *d.PartyID
 }
 
 func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
@@ -126,4 +147,38 @@ func (d *Door) Remove(animated bool) {
 		return
 	}
 	m.RemoveDoor(d.OID, animated)
+}
+
+func (d *Door) SendOwnerPortalResync(viewer *Character) {
+	if d == nil || viewer == nil {
+		return
+	}
+	if viewer.GetID() != d.OwnerID {
+		return
+	}
+	vm := viewer.GetMap()
+	if vm == nil || vm.Wz == nil {
+		return
+	}
+	var portalPoint types.Vector2[int16]
+	if vm.Wz.ID == d.FieldMapID {
+		portalPoint = d.FieldPosition
+	} else {
+		portalPoint = d.TownPortalPosition
+	}
+	_ = viewer.Send(&response.SpawnPortal{
+		DestMapID:   d.ReturnMapID,
+		SourceMapID: d.FieldMapID,
+		SkillID:     uint32(d.SkillID),
+		Position:    &portalPoint,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (d *Door) ToGrpcDTO() *internal.PartyDoor {
+	return &internal.PartyDoor{
+		Town:   d.ReturnMapID,
+		Target: d.FieldMapID,
+		X:      int32(d.FieldPosition.X),
+		Y:      int32(d.FieldPosition.Y),
+	}
 }

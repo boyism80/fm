@@ -38,7 +38,7 @@ func (h *partyMqLeaderChanged) Handle(_ amqp.Delivery, _ string, raw json.RawMes
 	}
 	snapshot := pc.CachedSnapshot(evt.PartyID)
 	if snapshot != nil {
-		gs.DeliverPartyLeaderChange(snapshot, extra.NewLeaderCharacterID, false)
+		pc.DeliverPartyLeaderChange(snapshot, extra.NewLeaderCharacterID, false)
 	}
 	return nil
 }
