@@ -7,40 +7,79 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-var threadPIDs = struct {
+type Configuration struct {
+	ActorContext actor.Context
+	KeepAlive    bool
+}
+
+var threadConfig = struct {
 	sync.RWMutex
-	m map[*lua.LState]*actor.PID
+	m map[*lua.LState]Configuration
 }{
-	m: make(map[*lua.LState]*actor.PID),
+	m: make(map[*lua.LState]Configuration),
+}
+
+func SetConfiguration(L *lua.LState, cfg Configuration) {
+	if L == nil {
+		return
+	}
+	threadConfig.Lock()
+	defer threadConfig.Unlock()
+	threadConfig.m[L] = cfg
+}
+
+func GetConfiguration(L *lua.LState) (Configuration, bool) {
+	if L == nil {
+		return Configuration{}, false
+	}
+	threadConfig.RLock()
+	defer threadConfig.RUnlock()
+	cfg, ok := threadConfig.m[L]
+	return cfg, ok
+}
+
+func ClearConfiguration(L *lua.LState) {
+	if L == nil {
+		return
+	}
+	threadConfig.Lock()
+	defer threadConfig.Unlock()
+	delete(threadConfig.m, L)
 }
 
 func SetThreadPID(L *lua.LState, pid *actor.PID) {
-	if L == nil {
-		return
-	}
-	threadPIDs.Lock()
-	defer threadPIDs.Unlock()
+
 	if pid == nil {
-		delete(threadPIDs.m, L)
 		return
 	}
-	threadPIDs.m[L] = pid
 }
 
 func GetThreadPID(L *lua.LState) *actor.PID {
-	if L == nil {
+	cfg, ok := GetConfiguration(L)
+	if !ok {
 		return nil
 	}
-	threadPIDs.RLock()
-	defer threadPIDs.RUnlock()
-	return threadPIDs.m[L]
+	if cfg.ActorContext == nil {
+		return nil
+	}
+	return cfg.ActorContext.Self()
+}
+
+func SetThreadActorContext(L *lua.LState, ctx actor.Context) {
+	cfg, _ := GetConfiguration(L)
+	cfg.ActorContext = ctx
+	SetConfiguration(L, cfg)
+}
+
+func GetThreadActorContext(L *lua.LState) actor.Context {
+	cfg, ok := GetConfiguration(L)
+	if !ok {
+		return nil
+	}
+	return cfg.ActorContext
 }
 
 func ClearThreadPID(L *lua.LState) {
-	if L == nil {
-		return
-	}
-	threadPIDs.Lock()
-	defer threadPIDs.Unlock()
-	delete(threadPIDs.m, L)
+
+	ClearConfiguration(L)
 }

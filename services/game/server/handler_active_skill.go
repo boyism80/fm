@@ -48,8 +48,8 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	}
 
 	var wzSkill *wz.Skill
-	if ch.Context != nil {
-		resources := ch.Context.GetResources()
+	if ch.GameWorld != nil {
+		resources := ch.GameWorld.GetResources()
 		if resources != nil {
 			wzSkill = resources.GetSkill(req.SkillID)
 		}
@@ -146,15 +146,13 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	resumeState, err := luax.Execute(root, thread, ctx.LogicActorPID, luax.SkillScriptHookName("on_activated", req.SkillID), ch, skillEntry, params)
-	if err != nil {
-		thread.Close()
+	luax.SetConfiguration(thread, luax.Configuration{
+		ActorContext: ctx.ActorContext,
+	})
+	if _, err := luax.CallThread(thread, luax.SkillScriptHookName("on_activated", req.SkillID), ch, skillEntry, params); err != nil {
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return err
-	}
-	if resumeState == lua.ResumeOK {
-		thread.Close()
 	}
 
 	if !ch.IsHidden() {

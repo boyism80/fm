@@ -16,7 +16,7 @@ import (
 )
 
 type MapListener interface {
-	OnPlayerAdded(mapInstance *Map, character *Character, init bool)
+	OnPlayerAdded(ctx actor.Context, mapInstance *Map, character *Character, init bool)
 	OnPlayerRemoved(mapInstance *Map, character *Character)
 	OnPlayerMoved(mapInstance *Map, character *Character)
 	OnPlayerMove(mapInstance *Map, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
@@ -55,7 +55,7 @@ type Map struct {
 	listener          MapListener
 	sequence          uint32
 	availableOIDs     []uint32
-	Context           GameContext
+	GameWorld         GameWorld
 	actorPID          *actor.PID
 	pidMutex          sync.RWMutex
 	UsedDoorPortalIDs map[uint8]struct{}
@@ -65,15 +65,15 @@ type BroadcastOption struct {
 	SendRaw bool
 }
 
-func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) *Map {
+func NewMap(id uint32, listener MapListener, mapId uint32, gw GameWorld) *Map {
 	if listener == nil {
 		panic("MapListener cannot be nil")
 	}
-	if context == nil {
-		panic("GameContext cannot be nil")
+	if gw == nil {
+		panic("GameWorld cannot be nil")
 	}
 
-	wz, ok := context.GetResources().Maps[mapId]
+	wz, ok := gw.GetResources().Maps[mapId]
 	if !ok {
 		panic(fmt.Sprintf("Wz not found for ID: %d", mapId))
 	}
@@ -87,7 +87,7 @@ func NewMap(id uint32, listener MapListener, mapId uint32, context GameContext) 
 		Wz:              wz,
 		sequence:        0,
 		availableOIDs:   make([]uint32, 0),
-		Context:         context,
+		GameWorld:       gw,
 	}
 
 	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
@@ -122,7 +122,7 @@ func (m *Map) releaseOID(oid uint32) {
 func OnMobControllerChange(mob *Mob, before *Character, after *Character) {
 }
 
-func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8, init bool) error {
+func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character, spawnPoint uint8, init bool) error {
 	if m.objects[constant.ObjectTypeCharacter] == nil {
 		m.objects[constant.ObjectTypeCharacter] = make(map[uint32]Object)
 	}
@@ -136,7 +136,7 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8,
 
 	m.objects[constant.ObjectTypeCharacter][playerID] = character
 
-	m.listener.OnPlayerAdded(m, character, init)
+	m.listener.OnPlayerAdded(ctx, m, character, init)
 	m.controllerTable.EnterPlayer(character)
 
 	for _, summon := range character.GetSummons() {
@@ -153,7 +153,7 @@ func (m *Map) AddPlayer(playerID uint32, character *Character, spawnPoint uint8,
 }
 
 func (m *Map) callMapLifecycleScript(character *Character, hook string) {
-	if m == nil || character == nil || character.Context == nil {
+	if m == nil || character == nil || character.GameWorld == nil {
 		return
 	}
 	if character.GetMap() != m {
@@ -261,10 +261,10 @@ func (m *Map) initializeNpcs() {
 		oid := m.allocateOID()
 		npc := &Npc{
 			ObjectCore: ObjectCore{
-				OID:      oid,
-				Position: types.Point[int16]{X: wz.BaseSpawn.Position.X, Y: wz.BaseSpawn.Position.Y},
-				Context:  m.Context,
-				Map:      m,
+				OID:       oid,
+				Position:  types.Point[int16]{X: wz.BaseSpawn.Position.X, Y: wz.BaseSpawn.Position.Y},
+				GameWorld: m.GameWorld,
+				Map:       m,
 			},
 			Wz: &wz,
 		}
@@ -291,7 +291,7 @@ func (m *Map) AddSummon(s *Summon) {
 	if s.Map != nil && s.Map != m {
 		return
 	}
-	s.ObjectCore.Context = m.Context
+	s.ObjectCore.GameWorld = m.GameWorld
 	if m.objects[constant.ObjectTypeSummon] == nil {
 		m.objects[constant.ObjectTypeSummon] = make(map[uint32]Object)
 	}
@@ -357,7 +357,7 @@ func (m *Map) AddMist(mist *Mist) {
 	if mist.Map != nil && mist.Map != m {
 		return
 	}
-	mist.ObjectCore.Context = m.Context
+	mist.ObjectCore.GameWorld = m.GameWorld
 	if m.objects[constant.ObjectTypeMist] == nil {
 		m.objects[constant.ObjectTypeMist] = make(map[uint32]Object)
 	}
@@ -422,7 +422,7 @@ func (m *Map) AddDoor(door *Door) {
 	if door.Map != nil && door.Map != m {
 		return
 	}
-	door.ObjectCore.Context = m.Context
+	door.ObjectCore.GameWorld = m.GameWorld
 	if m.objects[constant.ObjectTypeDoor] == nil {
 		m.objects[constant.ObjectTypeDoor] = make(map[uint32]Object)
 	}
@@ -506,8 +506,8 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 		door.OID = 0
 	}
 
-	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpartMapWZID != 0 && m.Context != nil {
-		m.Context.NotifyDoorRemove(ownerID, uint32(skillID), counterpartMapWZID)
+	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpartMapWZID != 0 && m.GameWorld != nil {
+		m.GameWorld.NotifyDoorRemove(ownerID, uint32(skillID), counterpartMapWZID)
 	}
 }
 
@@ -639,10 +639,10 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 
 	npc := &Npc{
 		ObjectCore: ObjectCore{
-			OID:      oid,
-			Position: spawnPosition,
-			Context:  m.Context,
-			Map:      m,
+			OID:       oid,
+			Position:  spawnPosition,
+			GameWorld: m.GameWorld,
+			Map:       m,
 		},
 		Wz: &npcSpawn,
 	}
@@ -673,7 +673,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn) (*Mob, error) {
 	oid := m.allocateOID()
 
-	mobSpec, ok := m.Context.GetResources().Monsters[mobId]
+	mobSpec, ok := m.GameWorld.GetResources().Monsters[mobId]
 	if !ok {
 		return nil, fmt.Errorf("mob model not found for ID: %d", mobId)
 	}
@@ -697,10 +697,10 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	mob := &Mob{
 		LifeCore: LifeCore{
 			ObjectCore: ObjectCore{
-				OID:      oid,
-				Position: spawnPoint,
-				Context:  m.Context,
-				Map:      m,
+				OID:       oid,
+				Position:  spawnPoint,
+				GameWorld: m.GameWorld,
+				Map:       m,
 			},
 			hp:     uint32(max(0, mobSpec.MaxHP)),
 			mp:     uint32(max(0, mobSpec.MaxMP)),
@@ -853,7 +853,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 		dropPoint = position
 	}
 
-	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.Context, m)
+	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.GameWorld, m)
 
 	drop := meso.GetDrop()
 	if drop != nil {

@@ -56,8 +56,8 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 
 	skillID := req.Skill
 	var wzSkill *wz.Skill
-	if character.Context != nil {
-		resources := character.Context.GetResources()
+	if character.GameWorld != nil {
+		resources := character.GameWorld.GetResources()
 		if resources != nil {
 			wzSkill = resources.GetSkill(skillID)
 		}

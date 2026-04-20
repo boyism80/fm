@@ -72,7 +72,7 @@ func (e *SkillBuff) GetBuffID() int32 {
 }
 
 func (e *SkillBuff) CallOnBuffScript(ch *Character) {
-	if e == nil || ch == nil || ch.Context == nil {
+	if e == nil || ch == nil || ch.GameWorld == nil {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -100,7 +100,7 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 }
 
 func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
-	if e == nil || ch == nil || ch.Context == nil {
+	if e == nil || ch == nil || ch.GameWorld == nil {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -135,7 +135,7 @@ func (e *ItemBuff) GetBuffID() int32 {
 }
 
 func (e *ItemBuff) CallOnBuffScript(ch *Character) {
-	if e == nil || ch == nil || ch.Context == nil {
+	if e == nil || ch == nil || ch.GameWorld == nil {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -154,7 +154,7 @@ func (e *ItemBuff) CallOnBuffScript(ch *Character) {
 	itemWzID := e.Wz.ID
 	scriptPath := fmt.Sprintf("script/item/%d.lua", itemWzID)
 
-	tempItem, err := NewItem(itemWzID, 1, ch.Context)
+	tempItem, err := NewItem(itemWzID, 1, ch.GameWorld)
 	if err != nil {
 		log.Printf("Failed to create temp item %d: %v", itemWzID, err)
 		return
@@ -174,7 +174,7 @@ func (e *ItemBuff) CallOnBuffScript(ch *Character) {
 }
 
 func (e *ItemBuff) CallOnUnbuffScript(ch *Character) {
-	if e == nil || ch == nil || ch.Context == nil {
+	if e == nil || ch == nil || ch.GameWorld == nil {
 		return
 	}
 	mapInstance := ch.GetMap()
@@ -193,7 +193,7 @@ func (e *ItemBuff) CallOnUnbuffScript(ch *Character) {
 	itemWzID := e.Wz.ID
 	scriptPath := fmt.Sprintf("script/item/%d.lua", itemWzID)
 
-	tempItem, err := NewItem(itemWzID, 1, ch.Context)
+	tempItem, err := NewItem(itemWzID, 1, ch.GameWorld)
 	if err != nil {
 		log.Printf("Failed to create temp item %d: %v", itemWzID, err)
 		return

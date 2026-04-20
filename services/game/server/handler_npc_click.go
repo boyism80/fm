@@ -99,7 +99,10 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		log.Printf("Failed to create NPC script thread: %v", err)
 		return err
 	}
-	_, err = luax.Execute(root, luaThread, ctx.LogicActorPID, "on_start", character)
+	luax.SetConfiguration(luaThread, luax.Configuration{
+		ActorContext: ctx.ActorContext,
+	})
+	_, err = luax.CallThread(luaThread, "on_start", character)
 	if err != nil {
 		log.Printf("Failed to execute NPC script: %v", err)
 		return err

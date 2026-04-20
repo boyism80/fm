@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
-	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/core/ensure"
 )
 
 const (
@@ -12,7 +12,7 @@ const (
 	ensureRetryDelay  = 50 * time.Millisecond
 )
 
-func (gs *GameServer) EnsureRedispatch(d *g_actor.EnsureDeliver) {
+func (gs *GameServer) EnsureRedispatch(d *ensure.EnsureDeliver) {
 	if gs == nil || d == nil {
 		return
 	}
@@ -43,7 +43,7 @@ func (gs *GameServer) EnsureSend(caller *actor.PID, characterID uint32, inner in
 		return
 	}
 
-	d := &g_actor.EnsureDeliver{
+	d := &ensure.EnsureDeliver{
 		CorrelationID:    corr,
 		CharacterID:      characterID,
 		DeadlineUnixNano: time.Now().Add(ensureWallTimeout).UnixNano(),
@@ -73,13 +73,13 @@ func (gs *GameServer) EnsureSend(caller *actor.PID, characterID uint32, inner in
 	}
 }
 
-func (gs *GameServer) ensureRegisterPending(d *g_actor.EnsureDeliver) {
+func (gs *GameServer) ensureRegisterPending(d *ensure.EnsureDeliver) {
 	if d == nil {
 		return
 	}
 	gs.ensureMu.Lock()
 	if gs.ensurePending == nil {
-		gs.ensurePending = make(map[uint64]*g_actor.EnsureDeliver)
+		gs.ensurePending = make(map[uint64]*ensure.EnsureDeliver)
 	}
 	gs.ensurePending[d.CorrelationID] = d
 	gs.ensureMu.Unlock()
@@ -109,7 +109,7 @@ func (gs *GameServer) ensureFailIfPending(correlation uint64, reason string) {
 	gs.tellEnsureResult(d.Caller, correlation, false, reason)
 }
 
-func (gs *GameServer) ensureRetryAttempt(d *g_actor.EnsureDeliver) {
+func (gs *GameServer) ensureRetryAttempt(d *ensure.EnsureDeliver) {
 	if gs == nil || d == nil || gs.characterRuntime == nil {
 		return
 	}
@@ -164,7 +164,7 @@ func (gs *GameServer) ensureAbandonCharacter(characterID uint32) {
 	if gs == nil || characterID == 0 {
 		return
 	}
-	var buffered []*g_actor.EnsureDeliver
+	var buffered []*ensure.EnsureDeliver
 	if gs.characterRuntime != nil {
 		buffered = gs.characterRuntime.takeEnsureBuffer(characterID)
 	}
@@ -174,7 +174,7 @@ func (gs *GameServer) ensureAbandonCharacter(characterID uint32) {
 		}
 	}
 	gs.ensureMu.Lock()
-	var rest []*g_actor.EnsureDeliver
+	var rest []*ensure.EnsureDeliver
 	for corr, d := range gs.ensurePending {
 		if d != nil && d.CharacterID == characterID {
 			rest = append(rest, d)
@@ -195,7 +195,7 @@ func (gs *GameServer) tellEnsureResult(caller *actor.PID, correlation uint64, ok
 	if root == nil {
 		return
 	}
-	root.Send(caller, &g_actor.EnsureResult{
+	root.Send(caller, &ensure.EnsureResult{
 		CorrelationID: correlation,
 		OK:            ok,
 		Reason:        reason,

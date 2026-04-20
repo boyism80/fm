@@ -140,10 +140,10 @@ func (h *Damaged) resolveDamageAttackerArg(character *entity.Character, req *req
 }
 
 func (h *Damaged) resolveDamageSkillArg(character *entity.Character, req *request.Damaged) interface{} {
-	if character.Context == nil || req.SkillID == 0 {
+	if character.GameWorld == nil || req.SkillID == 0 {
 		return lua.LNil
 	}
-	resources := character.Context.GetResources()
+	resources := character.GameWorld.GetResources()
 	if resources == nil {
 		return lua.LNil
 	}

@@ -24,14 +24,14 @@ func (e *SkillEntry) ToGrpcDTO(characterID uint32, skillID uint32) *internal.Ski
 	}
 }
 
-func NewSkillEntryFromInternalProto(owner *Character, pb *internal.SkillPersisted, ctx GameContext) (*SkillEntry, error) {
+func NewSkillEntryFromInternalProto(owner *Character, pb *internal.SkillPersisted, gw GameWorld) (*SkillEntry, error) {
 	if pb == nil {
 		return nil, fmt.Errorf("nil SkillPersisted")
 	}
-	if ctx == nil {
-		return nil, fmt.Errorf("nil GameContext")
+	if gw == nil {
+		return nil, fmt.Errorf("nil GameWorld")
 	}
-	resources := ctx.GetResources()
+	resources := gw.GetResources()
 	if resources == nil {
 		return nil, fmt.Errorf("nil resources")
 	}

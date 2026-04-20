@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/asynkron/protoactor-go/actor"
-	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/core/ensure"
 )
 
 type ServerCharacterRuntime struct {
@@ -19,7 +19,7 @@ type ServerCharacterRuntime struct {
 type characterRuntimeEntry struct {
 	name      string
 	mapPID    *actor.PID
-	ensureBuf []*g_actor.EnsureDeliver
+	ensureBuf []*ensure.EnsureDeliver
 }
 
 func NewServerCharacterRuntime(gs *GameServer) *ServerCharacterRuntime {
@@ -131,7 +131,7 @@ func (r *ServerCharacterRuntime) GetCharacterIDByName(name string) (uint32, bool
 	return id, ok
 }
 
-func (r *ServerCharacterRuntime) enqueueEnsure(characterID uint32, d *g_actor.EnsureDeliver) error {
+func (r *ServerCharacterRuntime) enqueueEnsure(characterID uint32, d *ensure.EnsureDeliver) error {
 	if r == nil || d == nil {
 		return fmt.Errorf("runtime: nil receiver or deliver")
 	}
@@ -148,7 +148,7 @@ func (r *ServerCharacterRuntime) enqueueEnsure(characterID uint32, d *g_actor.En
 	return nil
 }
 
-func (r *ServerCharacterRuntime) takeEnsureBuffer(characterID uint32) []*g_actor.EnsureDeliver {
+func (r *ServerCharacterRuntime) takeEnsureBuffer(characterID uint32) []*ensure.EnsureDeliver {
 	if r == nil || characterID == 0 {
 		return nil
 	}

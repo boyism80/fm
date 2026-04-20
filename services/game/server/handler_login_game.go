@@ -191,7 +191,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		h.gs.party.ApplySnapshotFromLogin(partyReply.GetParty())
 	}
 
-	rootContext := h.gs.GetServer().GetRootContext()
+	rootContext := h.gs.GetRootContext()
 	if rootContext == nil {
 		return fmt.Errorf("rootContext not set")
 	}

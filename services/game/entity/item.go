@@ -150,8 +150,8 @@ func (drop *Drop) ShouldFFA(now time.Time) bool {
 	return drop.DropType != constant.DROP_TYPE_FFA && !drop.nextFFA.IsZero() && now.After(drop.nextFFA)
 }
 
-func NewItem(itemId uint32, count uint16, context GameContext) (Item, error) {
-	model, ok := context.GetResources().Items[itemId]
+func NewItem(itemId uint32, count uint16, gw GameWorld) (Item, error) {
+	model, ok := gw.GetResources().Items[itemId]
 	if !ok {
 		return nil, fmt.Errorf("item model not found for ID: %d", itemId)
 	}

@@ -60,7 +60,7 @@ func (h *ChangeKeymap) allowBinding(ch *entity.Character, typ byte, action int32
 	if ch == nil {
 		return true
 	}
-	res := ch.Context.GetResources()
+	res := ch.GameWorld.GetResources()
 	if res == nil {
 		return true
 	}

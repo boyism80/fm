@@ -4,6 +4,8 @@
 // 	protoc        v7.34.1
 // source: fminternal/internal_service.proto
 
+// After editing this file, regenerate Go + JS: run protocol/protobuf/gen.bat from the repo (requires protoc, protoc-gen-go, protoc-gen-go-grpc, and npm install in services/internal).
+
 package fminternalpb
 
 import (
@@ -2550,13 +2552,11 @@ func (x *RefreshSessionReply) GetErrorCode() SessionErrorCode {
 }
 
 type LogoutSessionRequest struct {
-	state            protoimpl.MessageState  `protogen:"open.v1"`
-	WorldId          uint32                  `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
-	AccountId        uint32                  `protobuf:"varint,2,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
-	DisconnectSource SessionDisconnectSource `protobuf:"varint,3,opt,name=disconnect_source,json=disconnectSource,proto3,enum=fm.internal.SessionDisconnectSource" json:"disconnect_source,omitempty"`
-	// True when the disconnect follows a client transfer handoff (e.g. login pick character -> game,
-	// or game channel move). Party channel_index must not be forced to offline (-2) on game disconnect.
-	TransferDisconnect bool `protobuf:"varint,4,opt,name=transfer_disconnect,json=transferDisconnect,proto3" json:"transfer_disconnect,omitempty"`
+	state              protoimpl.MessageState  `protogen:"open.v1"`
+	WorldId            uint32                  `protobuf:"varint,1,opt,name=world_id,json=worldId,proto3" json:"world_id,omitempty"`
+	AccountId          uint32                  `protobuf:"varint,2,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	DisconnectSource   SessionDisconnectSource `protobuf:"varint,3,opt,name=disconnect_source,json=disconnectSource,proto3,enum=fm.internal.SessionDisconnectSource" json:"disconnect_source,omitempty"`
+	TransferDisconnect bool                    `protobuf:"varint,4,opt,name=transfer_disconnect,json=transferDisconnect,proto3" json:"transfer_disconnect,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }

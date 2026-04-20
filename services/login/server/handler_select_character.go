@@ -38,7 +38,7 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 	if !ok {
 		return fmt.Errorf("select character: invalid client type")
 	}
-	if h.ls.context.InternalClient == nil {
+	if h.ls.internalClient == nil {
 		return fmt.Errorf("select character: internal client not configured")
 	}
 	accountId := loginClient.GetAccountId()
@@ -62,7 +62,7 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 	}
 	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 		func(c context.Context) (*internal.BeginGameTransitionReply, error) {
-			return h.ls.context.InternalClient.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
+			return h.ls.internalClient.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
 				WorldId:     worldId,
 				AccountId:   accountId,
 				CharacterId: req.CharacterId,

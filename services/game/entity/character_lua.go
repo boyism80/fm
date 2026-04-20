@@ -874,7 +874,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			ch.Listener.OnDialog(ch, uint32(npc), message, prev, next)
-			ch.SetCurrentDialog(L)
+			ch.SetDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_yes_no": func(L *lua.LState) int {
@@ -905,7 +905,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			ch.Listener.OnDialogYesNo(ch, uint32(npc), message, prev, next)
-			ch.SetCurrentDialog(L)
+			ch.SetDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_list": func(L *lua.LState) int {
@@ -937,7 +937,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			ch.Listener.OnDialogList(ch, uint32(npc), message, selections)
-			ch.SetCurrentDialog(L)
+			ch.SetDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_accept": func(L *lua.LState) int {
@@ -964,7 +964,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			ch.Listener.OnDialogAccept(ch, uint32(npc), message, enableEscape)
-			ch.SetCurrentDialog(L)
+			ch.SetDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_input": func(L *lua.LState) int {
@@ -987,7 +987,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			ch.Listener.OnDialogInput(ch, uint32(npc), message)
-			ch.SetCurrentDialog(L)
+			ch.SetDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"notice": func(L *lua.LState) int {
@@ -1120,11 +1120,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 
-			if ch.Context == nil {
+			if ch.GameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			resources := ch.Context.GetResources()
+			resources := ch.GameWorld.GetResources()
 			if resources == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -1708,11 +1708,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Context == nil {
+			if ch.GameWorld == nil {
 				L.Push(lua.LNumber(1))
 				return 1
 			}
-			L.Push(lua.LNumber(ch.Context.GetDropRate()))
+			L.Push(lua.LNumber(ch.GameWorld.GetDropRate()))
 			return 1
 		},
 		"bonus_exp_rate": func(L *lua.LState) int {
@@ -1804,11 +1804,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						return 0
 					}
 				case lua.LString:
-					if ch.Context == nil {
+					if ch.GameWorld == nil {
 						L.RaiseError("map: no context to resolve map name")
 						return 0
 					}
-					resources := ch.Context.GetResources()
+					resources := ch.GameWorld.GetResources()
 					if resources == nil {
 						L.RaiseError("map: no resources to resolve map name")
 						return 0
@@ -1818,7 +1818,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						L.RaiseError("map: unknown map name %q", string(v))
 						return 0
 					}
-					targetMap = ch.Context.GetMap(mapId)
+					targetMap = ch.GameWorld.GetMap(mapId)
 					if targetMap == nil {
 						L.RaiseError("map: map %q (id %d) not found", string(v), mapId)
 						return 0
@@ -2034,11 +2034,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case lua.LNumber:
 				slot = int16(lv)
 			case lua.LString:
-				if ch.Context == nil {
+				if ch.GameWorld == nil {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				resources := ch.Context.GetResources()
+				resources := ch.GameWorld.GetResources()
 				if resources == nil {
 					L.Push(lua.LBool(false))
 					return 1
@@ -2089,11 +2089,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case lua.LNumber:
 				parts = constant.EquipmentPartsType(lv)
 			case lua.LString:
-				if ch.Context == nil {
+				if ch.GameWorld == nil {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				resources := ch.Context.GetResources()
+				resources := ch.GameWorld.GetResources()
 				if resources == nil {
 					L.Push(lua.LBool(false))
 					return 1
@@ -2154,11 +2154,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				case lua.LNumber:
 					itemID = uint32(lv)
 				case lua.LString:
-					if ch.Context == nil {
+					if ch.GameWorld == nil {
 						L.Push(L.NewTable())
 						return 1
 					}
-					resources := ch.Context.GetResources()
+					resources := ch.GameWorld.GetResources()
 					if resources == nil {
 						L.Push(L.NewTable())
 						return 1
@@ -2253,11 +2253,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Context == nil {
+			if ch.GameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			resources := ch.Context.GetResources()
+			resources := ch.GameWorld.GetResources()
 			if resources == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -2304,7 +2304,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			item, err := NewItem(itemId, count, ch.Context)
+			item, err := NewItem(itemId, count, ch.GameWorld)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -2326,11 +2326,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if ch.Context == nil {
+			if ch.GameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			resources := ch.Context.GetResources()
+			resources := ch.GameWorld.GetResources()
 			if resources == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -2371,7 +2371,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 
-			item, err := NewItem(itemId, count, ch.Context)
+			item, err := NewItem(itemId, count, ch.GameWorld)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -2410,11 +2410,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(ok))
 				return 1
 			case 2, 3:
-				if ch.Context == nil {
+				if ch.GameWorld == nil {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				resources := ch.Context.GetResources()
+				resources := ch.GameWorld.GetResources()
 				if resources == nil {
 					L.Push(lua.LBool(false))
 					return 1

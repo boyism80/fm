@@ -1,7 +1,6 @@
 package timers
 
 import (
-	"log"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -9,14 +8,11 @@ import (
 )
 
 const CharacterSaveTimerName = "CharacterSave"
-const characterSaveChunkSize = 100
 
-type CharacterSaveTimer struct {
-	saver func([]*entity.Character) error
-}
+type CharacterSaveTimer struct{}
 
-func NewCharacterSaveTimer(saver func([]*entity.Character) error) *CharacterSaveTimer {
-	return &CharacterSaveTimer{saver: saver}
+func (*CharacterSaveTimer) New() *CharacterSaveTimer {
+	return &CharacterSaveTimer{}
 }
 
 func (t *CharacterSaveTimer) GetName() string {
@@ -31,7 +27,10 @@ func (t *CharacterSaveTimer) GetInitialDelay() time.Duration {
 	return 5 * time.Minute
 }
 
-func (t *CharacterSaveTimer) Handle(_ actor.Context, mapData *entity.Map) error {
+func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
+	if mapData == nil || mapData.GameWorld == nil {
+		return nil
+	}
 	allPlayers := mapData.GetAllPlayers()
 	if len(allPlayers) == 0 {
 		return nil
@@ -44,14 +43,9 @@ func (t *CharacterSaveTimer) Handle(_ actor.Context, mapData *entity.Map) error 
 		}
 	}
 
-	for i := 0; i < len(chars); i += characterSaveChunkSize {
-		end := i + characterSaveChunkSize
-		if end > len(chars) {
-			end = len(chars)
-		}
-		if err := t.saver(chars[i:end]); err != nil {
-			log.Printf("CharacterSave: chunk %d-%d: %v", i, end, err)
-		}
+	p := mapData.GameWorld.SaveCharactersAsync(ctx, chars)
+	if p != nil {
+		p.Run()
 	}
 	return nil
 }

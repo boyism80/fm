@@ -47,7 +47,7 @@ type Character struct {
 	monsterBookCover uint32
 	monsterBook      *MonsterBook
 	quests           map[uint16]string
-	currentDialog    *lua.LState
+	luaDialog        *lua.LState
 	dialogMutex      sync.Mutex
 	hidden           bool
 	Listener         CharacterListener
@@ -172,7 +172,7 @@ func (ch *Character) addTimer(key string, interval time.Duration, repeat bool, c
 	if _, exists := ch.timers[key]; exists {
 		ch.RemoveTimer(key)
 	}
-	if ch.Context == nil {
+	if ch.GameWorld == nil {
 		return false
 	}
 	m := ch.GetMap()
@@ -191,7 +191,7 @@ func (ch *Character) addTimer(key string, interval time.Duration, repeat bool, c
 		NextFireAt: time.Now().Add(interval),
 	}
 	entry.Timer = time.AfterFunc(interval, func() {
-		ch.Context.DispatchRunCharacterTimer(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: key})
+		ch.GameWorld.DispatchRunCharacterTimer(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: key})
 	})
 	ch.timers[key] = entry
 	return true
@@ -252,9 +252,9 @@ func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, mov
 	s := &Summon{
 		LifeCore: LifeCore{
 			ObjectCore: ObjectCore{
-				Position: position,
-				Context:  m.Context,
-				Map:      nil,
+				Position:  position,
+				GameWorld: m.GameWorld,
+				Map:       nil,
 			},
 			hp:     1,
 			BaseHp: 1,
@@ -282,7 +282,7 @@ func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, mov
 }
 
 func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
-	if ch == nil || ch.Context == nil {
+	if ch == nil || ch.GameWorld == nil {
 		return nil
 	}
 	if skill == nil {
@@ -292,7 +292,7 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	if m == nil {
 		return nil
 	}
-	wzSkill := ch.Context.GetResources().GetSkill(skill.Wz.ID)
+	wzSkill := ch.GameWorld.GetResources().GetSkill(skill.Wz.ID)
 	if wzSkill == nil {
 		return nil
 	}
@@ -307,9 +307,9 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	}
 	mist := &Mist{
 		ObjectCore: ObjectCore{
-			Position: position,
-			Context:  m.Context,
-			Map:      nil,
+			Position:  position,
+			GameWorld: m.GameWorld,
+			Map:       nil,
 		},
 		Causer:               ch.GetID(),
 		SkillWz:              wzSkill,
@@ -351,10 +351,10 @@ func (ch *Character) SpawnDoor(skillID constant.SkillID) {
 		return
 	}
 	destMapID := uint32(m.Wz.ReturnMapId)
-	if destMapID == 0 || destMapID == uint32(m.Wz.ID) || ch.Context == nil {
+	if destMapID == 0 || destMapID == uint32(m.Wz.ID) || ch.GameWorld == nil {
 		return
 	}
-	ch.Context.RequestSpawnReturnMapDoor(ch, skillID)
+	ch.GameWorld.RequestSpawnReturnMapDoor(ch, skillID)
 }
 
 func (ch *Character) SpawnFieldMapDoor(skillID constant.SkillID, returnPortalID uint8, townPortalPos types.Vector2[int16], fieldPortalID uint8) *Door {
@@ -369,9 +369,9 @@ func (ch *Character) SpawnFieldMapDoor(skillID constant.SkillID, returnPortalID 
 	fieldPos := ch.Position
 	door := &Door{
 		ObjectCore: ObjectCore{
-			Position: ch.Position,
-			Context:  m.Context,
-			Map:      nil,
+			Position:  ch.Position,
+			GameWorld: m.GameWorld,
+			Map:       nil,
 		},
 		OwnerID:            ch.GetID(),
 		SkillID:            skillID,
@@ -544,7 +544,7 @@ func (ch *Character) SuspendTimers() {
 }
 
 func (ch *Character) ResumeTimers(pid *actor.PID) {
-	if ch.timers == nil || pid == nil || ch.Context == nil {
+	if ch.timers == nil || pid == nil || ch.GameWorld == nil {
 		return
 	}
 	characterID := ch.GetID()
@@ -560,7 +560,7 @@ func (ch *Character) ResumeTimers(pid *actor.PID) {
 		entry.NextFireAt = time.Now().Add(duration)
 		k := key
 		entry.Timer = time.AfterFunc(duration, func() {
-			ch.Context.DispatchRunCharacterTimer(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: k})
+			ch.GameWorld.DispatchRunCharacterTimer(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: k})
 		})
 	}
 }
@@ -768,10 +768,10 @@ func (ch *Character) SetSkillPoint(v uint16, notify bool) {
 }
 
 func (ch *Character) Warp(targetMap *Map, spawnPoint uint8) error {
-	if ch.Context == nil {
-		return fmt.Errorf("no game context")
+	if ch.GameWorld == nil {
+		return fmt.Errorf("no game world")
 	}
-	return ch.Context.RequestWarp(ch, targetMap, spawnPoint)
+	return ch.GameWorld.RequestWarp(ch, targetMap, spawnPoint)
 }
 
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
@@ -894,8 +894,8 @@ func (ch *Character) IsRanked() bool {
 
 func (ch *Character) AddExp(exp uint32) {
 
-	if ch.Context != nil {
-		expRate := ch.Context.GetExpRate()
+	if ch.GameWorld != nil {
+		expRate := ch.GameWorld.GetExpRate()
 		if expRate > 0 {
 			exp = exp * uint32(expRate)
 		}
@@ -942,7 +942,7 @@ type CharacterInitData struct {
 	GuildID      *uint32
 }
 
-func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterInitData, ctx GameContext) *Character {
+func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterInitData, gw GameWorld) *Character {
 	if listener == nil {
 		panic("NewCharacter: listener must not be nil")
 	}
@@ -951,7 +951,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		Listener: listener,
 		LifeCore: LifeCore{
 			ObjectCore: ObjectCore{
-				Context: ctx,
+				GameWorld: gw,
 				Position: types.Vector2[int16]{
 					X: data.PositionX,
 					Y: data.PositionY,
@@ -1017,30 +1017,30 @@ func (ch *Character) KeyLayout() *KeyLayout {
 	return ch.keyLayout
 }
 
-func (ch *Character) GetCurrentDialog() *lua.LState {
+func (ch *Character) GetDialog() *lua.LState {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
-	return ch.currentDialog
+	return ch.luaDialog
 }
 
-func (ch *Character) SetCurrentDialog(dialog *lua.LState) {
+func (ch *Character) SetDialog(lua *lua.LState) {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
-	ch.currentDialog = dialog
+	ch.luaDialog = lua
 }
 
 func (ch *Character) ClearCurrentDialog() {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
-	ch.currentDialog = nil
+	ch.luaDialog = nil
 }
 
 func (ch *Character) tryLevelUp() bool {
-	if ch.Context == nil {
+	if ch.GameWorld == nil {
 		return false
 	}
 
-	resources := ch.Context.GetResources()
+	resources := ch.GameWorld.GetResources()
 	if resources == nil {
 		return false
 	}
@@ -1129,8 +1129,8 @@ func (ch *Character) SetLevel(newLevel uint8) {
 	ch.level = newLevel
 	ch.Listener.OnPartyMemberFieldsChanged(ch)
 	if newLevel < oldLevel {
-		if ch.Context != nil {
-			resources := ch.Context.GetResources()
+		if ch.GameWorld != nil {
+			resources := ch.GameWorld.GetResources()
 			if resources != nil {
 				if newLevel > 1 {
 					ch.exp = resources.GetExpNeededForLevel(newLevel - 1)

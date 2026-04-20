@@ -48,7 +48,7 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 	if root == nil {
 		return fmt.Errorf("lua state not available")
 	}
-	thread := character.GetCurrentDialog()
+	thread := character.GetDialog()
 	if thread == nil {
 		log.Printf("No active dialog for character %d", character.GetID())
 		return fmt.Errorf("no active dialog")
@@ -77,25 +77,25 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		args = append(args, lua.LBool(req.Next))
 	}
 
-	resumeState, err, _ := root.Resume(thread, nil, args...)
+	luax.SetConfiguration(thread, luax.Configuration{
+		ActorContext: ctx.ActorContext,
+	})
+	resumeState, err := luax.Resume(root, thread, args...)
 	if err != nil {
 		log.Printf("Failed to resume dialog: %v", err)
-		thread.Close()
 		character.ClearCurrentDialog()
 		return fmt.Errorf("failed to resume dialog: %w", err)
 	}
 
 	switch resumeState {
 	case lua.ResumeOK:
-		thread.Close()
 		character.ClearCurrentDialog()
 	case lua.ResumeYield:
 
 	case lua.ResumeError:
-		log.Printf("Dialog error for character %d: %v", character.GetID(), err)
-		thread.Close()
+		log.Printf("Dialog error for character %d", character.GetID())
 		character.ClearCurrentDialog()
-		return fmt.Errorf("dialog error: %w", err)
+		return fmt.Errorf("dialog error")
 	}
 
 	return nil

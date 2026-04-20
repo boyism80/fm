@@ -16,6 +16,8 @@ import (
 	"github.com/boyism80/fm/common/config"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/ensure"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/mq"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -32,14 +34,39 @@ import (
 
 const mapActorCallTimeout = 30 * time.Second
 
+// grpcSaveCharacters performs one SaveCharacters RPC (used by persist promises).
+func (gs *GameServer) grpcSaveCharacters(ctx context.Context, chars []*entity.Character) (*internal.SaveCharactersReply, error) {
+	if gs == nil || gs.internalClient == nil || len(chars) == 0 {
+		return &internal.SaveCharactersReply{}, nil
+	}
+	worldID := uint32(gs.config.WorldId)
+	entries := make([]*internal.CharacterSaveEntry, 0, len(chars))
+	for _, ch := range chars {
+		if ch == nil {
+			continue
+		}
+		if entry := ch.ToGrpcDTO(worldID); entry != nil {
+			entries = append(entries, entry)
+		}
+	}
+	if len(entries) == 0 {
+		return &internal.SaveCharactersReply{}, nil
+	}
+	reply, err := gs.internalClient.SaveCharacters(ctx, &internal.SaveCharactersRequest{Entries: entries})
+	if err != nil {
+		return nil, fmt.Errorf("SaveCharacters rpc: %w", err)
+	}
+	return reply, nil
+}
+
 type GameServer struct {
-	server            *core.Server
+	*core.ServerCore
 	config            *GameConfig
 	resources         *wz.Resources
 	maps              map[uint32]*entity.Map
 	mapsMutex         sync.RWMutex
+	packetHandler     *core.PacketHandler
 	packetHandlers    *PacketHandlerRegistry
-	context           *GameServerContext
 	actorSystem       *c_actor.ActorSystem
 	actorRegistry     *c_actor.ActorRegistry
 	nilMapActorPID    *actor.PID
@@ -47,32 +74,22 @@ type GameServer struct {
 	internalClient    internal.InternalClient
 	internalConn      *grpc.ClientConn
 	party             *PartyContainer
-	consumerParty     *mq.JSONConsumer[*GameServer]
+	rabbitPartyPID    *actor.PID
 	characterRuntime  *ServerCharacterRuntime
 	ensureMu          sync.Mutex
-	ensurePending     map[uint64]*g_actor.EnsureDeliver
+	ensurePending     map[uint64]*ensure.EnsureDeliver
 	ensureNext        atomic.Uint64
 }
 
-func (gs *GameServer) GetServer() *core.Server {
-	return gs.server
-}
-
-func (gs *GameServer) GetServerContext() core.ServerContext {
-	return gs.context
-}
-
 func (gs *GameServer) GetRootContext() *actor.RootContext {
-	return gs.server.GetRootContext()
+	return gs.ServerCore.GetRootContext()
 }
 
-type GameContext interface {
-	GetResources() *wz.Resources
-	GetMap(mapId uint32) *entity.Map
-	GetExpRate() int
-	GetDropRate() int
-	GetMesoRate() int
-	RequestWarp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error
+func (gs *GameServer) GetPacketHandler() *core.PacketHandler {
+	if gs == nil {
+		return nil
+	}
+	return gs.packetHandler
 }
 
 type GameConfig struct {
@@ -108,19 +125,17 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		return nil, fmt.Errorf("failed to load game resources")
 	}
 
-	context := NewGameServerContext(config.WzPath, nil)
-
 	actorSystem := c_actor.NewActorSystem()
 	actorRegistry := c_actor.NewActorRegistry(actorSystem)
 
 	server.SetRootContext(actorSystem.GetRoot())
 
 	gs := &GameServer{
-		server:           server,
+		ServerCore:       server,
 		config:           config,
 		resources:        resources,
 		maps:             make(map[uint32]*entity.Map),
-		context:          context,
+		packetHandler:    core.NewPacketHandler(),
 		actorSystem:      actorSystem,
 		actorRegistry:    actorRegistry,
 		characterRuntime: nil,
@@ -144,23 +159,37 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		consumerTag := fmt.Sprintf("fm-game-w%d-c%d-party", config.WorldId, config.ChannelId)
 		routeAll := fmt.Sprintf("fm.%d.all.party", config.WorldId)
 		routeGame := fmt.Sprintf("fm.%d.%d.party", config.WorldId, config.ChannelId)
-		consumerParty := mq.NewJSONConsumer(config.RabbitMQ, gs, queueName, consumerTag)
-		consumerParty.Route(routeAll).Route(routeGame)
 
-		mq.BindOn[*GameServer, partyMqCreated](consumerParty)
-		mq.BindOn[*GameServer, partyMqMemberJoined](consumerParty)
-		mq.BindOn[*GameServer, partyMqMemberLeft](consumerParty)
-		mq.BindOn[*GameServer, partyMqLeaderChanged](consumerParty)
-		mq.BindOn[*GameServer, partyMqLogOnOff](consumerParty)
-		mq.BindOn[*GameServer, partyMqDisbanded](consumerParty)
-		mq.BindOn[*GameServer, partyMqPartySnapshot](consumerParty)
-		mq.BindOn[*GameServer, partyMqPartyInvite](consumerParty)
-		mq.BindOn[*GameServer, partyMqPartyInviteDenied](consumerParty)
-		gs.consumerParty = consumerParty
+		partyDisp := mq.NewDispatcher()
+		mq.Bind[*GameServer, partyMqCreated](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqMemberJoined](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqMemberLeft](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqLeaderChanged](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqLogOnOff](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqDisbanded](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqPartySnapshot](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqPartyInvite](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqPartyInviteDenied](gs, partyDisp)
+
+		rabbitCfg := mq.RabbitActorConfig{
+			Root:        gs.GetRootContext(),
+			Broker:      config.RabbitMQ,
+			Exchange:    mq.DirectExchange,
+			QueueName:   queueName,
+			ConsumerTag: consumerTag,
+			RoutingKeys: []string{routeAll, routeGame},
+			Dispatcher:  partyDisp,
+		}
+		rabbitProps := actor.PropsFromProducer(func() actor.Actor {
+			return mq.NewRabbitActor(rabbitCfg)
+		})
+		gs.rabbitPartyPID = gs.actorRegistry.GetOrCreateActor(
+			fmt.Sprintf("rabbitmq_party_w%d_c%d", config.WorldId, config.ChannelId),
+			rabbitProps,
+		)
 	}
 
 	gs.characterListener = &CharacterListenerImpl{gs: gs}
-	context.gs = gs
 	gs.packetHandlers = NewPacketHandlerRegistry(gs)
 	luax.RegisterOnCreateHook(func(luaState *lua.LState) {
 		registerGameLuaState(gs, luaState)
@@ -199,10 +228,8 @@ func (gs *GameServer) preCreateMaps() {
 
 	nilMapProps := actor.PropsFromProducer(func() actor.Actor {
 		return &g_actor.MapActor{
-			MapData:        nil,
-			Context:        gs.context,
-			SaveCharacters: gs.saveCharactersChunked,
-			Ensure:         gs,
+			Map:       nil,
+			GameWorld: gs,
 		}
 	})
 
@@ -212,7 +239,7 @@ func (gs *GameServer) preCreateMaps() {
 	)
 	gs.nilMapActorPID = nilMapPID
 
-	gs.server.SetNilMapActorPID(nilMapPID)
+	gs.ServerCore.SetNilMapActorPID(nilMapPID)
 
 	log.Println("Pre-creating map instances...")
 	for mapID := range gs.resources.Maps {
@@ -221,10 +248,8 @@ func (gs *GameServer) preCreateMaps() {
 
 		props := actor.PropsFromProducer(func() actor.Actor {
 			return &g_actor.MapActor{
-				MapData:        mapInstance,
-				Context:        gs.context,
-				SaveCharacters: gs.saveCharactersChunked,
-				Ensure:         gs,
+				Map:       mapInstance,
+				GameWorld: gs,
 			}
 		})
 
@@ -242,7 +267,7 @@ func (gs *GameServer) preCreateMaps() {
 func (gs *GameServer) Start() error {
 	log.Println("Starting MapleStory Game Server...")
 
-	if err := gs.server.Start(gs.config.Host, gs.config.Port); err != nil {
+	if err := gs.ServerCore.Start(gs.config.Host, gs.config.Port); err != nil {
 		return err
 	}
 
@@ -250,11 +275,8 @@ func (gs *GameServer) Start() error {
 	log.Printf("World: %s, Max Players: %d", gs.config.WorldName, gs.config.MaxPlayers)
 	log.Printf("Rates: Exp=%dx, Drop=%dx, Meso=%dx",
 		gs.config.ExpRate, gs.config.DropRate, gs.config.MesoRate)
-	if gs.consumerParty != nil {
-		if err := gs.consumerParty.Start(); err != nil {
-			return fmt.Errorf("party mq start failed: %w", err)
-		}
-		log.Printf("Party MQ started (%s)", gs.consumerParty.QueueName())
+	if gs.rabbitPartyPID != nil {
+		log.Printf("Party MQ RabbitActor running (%s)", fmt.Sprintf("fm.game.w%d.c%d.party.events", gs.config.WorldId, gs.config.ChannelId))
 	}
 
 	if gs.resources != nil {
@@ -272,13 +294,16 @@ func (gs *GameServer) Start() error {
 
 func (gs *GameServer) Stop() error {
 	log.Println("Shutting down game server...")
-	if gs.consumerParty != nil {
-		_ = gs.consumerParty.Close()
+	if gs.rabbitPartyPID != nil {
+		root := gs.GetRootContext()
+		if root != nil {
+			root.Poison(gs.rabbitPartyPID)
+		}
 	}
 	if gs.internalConn != nil {
 		_ = gs.internalConn.Close()
 	}
-	return gs.server.Stop()
+	return gs.ServerCore.Stop()
 }
 
 func (gs *GameServer) GetMap(mapID uint32) *entity.Map {
@@ -426,44 +451,69 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	if character == nil {
 		return
 	}
+
+	p := async.NewPromise(nil, saveCharactersPromiseTimeout)
+	p.OnError(func(err error) {
+		log.Printf("disconnect async: %v", err)
+	})
+
 	if gs.internalClient != nil && character.AccountID != 0 {
-		ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
 		transfer := client.TakeTransferDisconnect()
-		_, err := gs.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
-			WorldId:            gs.config.WorldId,
-			AccountId:          character.AccountID,
-			DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
-			TransferDisconnect: transfer,
-		})
-		cancel()
-		if err != nil {
-			log.Printf("LogoutSession (game disconnect) failed for account %d: %v", character.AccountID, err)
-		}
-	}
-	gs.saveCharacterAsync(character)
-	gs.runCharacterLogoutScript(character)
-	mapInstance := character.GetMap()
-	if mapInstance != nil {
-		pid := mapInstance.GetActorPID()
-		root := gs.GetRootContext()
-		if pid != nil && root != nil {
-			_, err := root.RequestFuture(pid, &g_actor.RemoveCharacter{CharacterID: character.GetID()}, mapActorCallTimeout).Result()
-			if err != nil {
-				log.Printf("RemoveCharacter on disconnect (char %d): %v", character.GetID(), err)
+		accID := character.AccountID
+		wid := gs.config.WorldId
+		p.Then(func() (interface{}, error) {
+			ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+			defer cancel()
+			_, err := gs.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
+				WorldId:            wid,
+				AccountId:          accID,
+				DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
+				TransferDisconnect: transfer,
+			})
+			return err, nil
+		}, func(v interface{}) error {
+			if err, _ := v.(error); err != nil {
+				log.Printf("LogoutSession (game disconnect) failed for account %d: %v", accID, err)
 			}
-		} else {
-			log.Printf("disconnect: map actor missing for char %d; map remove skipped", character.GetID())
+			return nil
+		})
+	}
+
+	toSave := []*entity.Character{character}
+	async.ThenRPC(p, func(c context.Context) (*internal.SaveCharactersReply, error) {
+		return gs.grpcSaveCharacters(c, toSave)
+	}, func(*internal.SaveCharactersReply) error {
+		return nil
+	})
+
+	charID := character.GetID()
+	p.Finally(func() {
+		gs.runCharacterLogoutScript(character)
+		mapInstance := character.GetMap()
+		if mapInstance != nil {
+			pid := mapInstance.GetActorPID()
+			root := gs.GetRootContext()
+			if pid != nil && root != nil {
+				_, err := root.RequestFuture(pid, &g_actor.RemoveCharacter{CharacterID: charID}, mapActorCallTimeout).Result()
+				if err != nil {
+					log.Printf("RemoveCharacter on disconnect (char %d): %v", charID, err)
+				}
+			} else {
+				log.Printf("disconnect: map actor missing for char %d; map remove skipped", charID)
+			}
 		}
-	}
-	if gs.characterRuntime != nil {
-		gs.ensureAbandonCharacter(character.GetID())
-		gs.characterRuntime.UnregisterCharacter(character.GetID())
-	}
-	character.ClearTimers()
+		if gs.characterRuntime != nil {
+			gs.ensureAbandonCharacter(charID)
+			gs.characterRuntime.UnregisterCharacter(charID)
+		}
+		character.ClearTimers()
+	})
+
+	p.Run()
 }
 
 func (gs *GameServer) GetStats() map[string]interface{} {
-	stats := gs.server.GetStats()
+	stats := gs.ServerCore.GetStats()
 
 	stats["server_type"] = "game"
 	stats["world_name"] = gs.config.WorldName

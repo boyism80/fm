@@ -5,10 +5,12 @@ import (
 	"log"
 	"sync"
 
+	"github.com/asynkron/protoactor-go/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type Handler func(msg amqp.Delivery, eventType string, payload json.RawMessage) error
+// Handler processes one JSON event. ctx is the RabbitActor mailbox context when dispatched from AMQP.
+type Handler func(ctx actor.Context, msg amqp.Delivery, eventType string, payload json.RawMessage) error
 
 type Dispatcher struct {
 	mu      sync.RWMutex
@@ -30,19 +32,20 @@ func (d *Dispatcher) Register(eventType string, h Handler) {
 	d.mu.Unlock()
 }
 
-func (d *Dispatcher) HandleDelivery(msg amqp.Delivery) error {
+// Dispatch invokes the handler for the JSON body (RabbitActor only).
+func (d *Dispatcher) Dispatch(ctx actor.Context, body []byte) error {
 	if d == nil {
 		return nil
 	}
 	var head struct {
 		EventType string `json:"event_type"`
 	}
-	if err := json.Unmarshal(msg.Body, &head); err != nil {
-		log.Printf("mq: invalid JSON (ack): %v", err)
+	if err := json.Unmarshal(body, &head); err != nil {
+		log.Printf("mq: invalid JSON: %v", err)
 		return nil
 	}
 	if head.EventType == "" {
-		log.Printf("mq: missing event_type (ack)")
+		log.Printf("mq: missing event_type")
 		return nil
 	}
 
@@ -50,16 +53,13 @@ func (d *Dispatcher) HandleDelivery(msg amqp.Delivery) error {
 	h, ok := d.byEvent[head.EventType]
 	d.mu.RUnlock()
 	if !ok {
-		log.Printf("mq: unknown event_type=%s (ack)", head.EventType)
+		log.Printf("mq: unknown event_type=%s", head.EventType)
 		return nil
 	}
-	raw := json.RawMessage(msg.Body)
-	if err := h(msg, head.EventType, raw); err != nil {
-		log.Printf("mq: handler event_type=%s (ack): %v", head.EventType, err)
+	raw := json.RawMessage(body)
+	var zero amqp.Delivery
+	if err := h(ctx, zero, head.EventType, raw); err != nil {
+		log.Printf("mq: handler event_type=%s: %v", head.EventType, err)
 	}
 	return nil
-}
-
-func (d *Dispatcher) AsDeliveryHandler() DeliveryHandler {
-	return d.HandleDelivery
 }

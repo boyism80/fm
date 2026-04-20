@@ -33,7 +33,7 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 	log.Printf("Check name packet received from %s - Name: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
-	ic := h.ls.context.InternalClient
+	ic := h.ls.internalClient
 	if ic == nil {
 		checkResp := &response.CheckName{Name: req.Name, Exists: false}
 		return ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)

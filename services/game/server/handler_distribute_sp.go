@@ -53,8 +53,8 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 	if skillEntry == nil {
 		isFirstPoint = true
 		var wzSkill *wz.Skill
-		if character.Context != nil {
-			resources := character.Context.GetResources()
+		if character.GameWorld != nil {
+			resources := character.GameWorld.GetResources()
 			if resources != nil {
 				wzSkill = resources.GetSkill(skillID)
 			}

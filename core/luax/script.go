@@ -3,40 +3,62 @@ package luax
 import (
 	"fmt"
 
-	"github.com/asynkron/protoactor-go/actor"
 	lua "github.com/yuin/gopher-lua"
 )
 
 func Call(root *lua.LState, scriptPath string, funcName string, args ...interface{}) (lua.LValue, *lua.LState, error) {
-	return CallWithPID(root, nil, scriptPath, funcName, args...)
-}
-
-func CallWithPID(root *lua.LState, pid *actor.PID, scriptPath string, funcName string, args ...interface{}) (lua.LValue, *lua.LState, error) {
 	thread, err := NewThread(root, scriptPath)
 	if err != nil {
 		return nil, nil, err
 	}
-	if pid != nil {
-		SetThreadPID(thread, pid)
-		defer ClearThreadPID(thread)
+	ret, err := CallThread(thread, funcName, args...)
+	return ret, thread, err
+}
+
+func Close(thread *lua.LState) {
+	if thread == nil {
+		return
+	}
+	ClearConfiguration(thread)
+	thread.Close()
+}
+
+func shouldAutoClose(thread *lua.LState) bool {
+	cfg, ok := GetConfiguration(thread)
+	if !ok {
+		return true
+	}
+	return !cfg.KeepAlive
+}
+
+func CallThread(thread *lua.LState, funcName string, args ...interface{}) (lua.LValue, error) {
+	if thread == nil {
+		return nil, fmt.Errorf("nil lua thread")
 	}
 	f := thread.GetGlobal(funcName)
 	if f.Type() != lua.LTFunction {
-		return nil, thread, nil
+		return nil, nil
 	}
 	lvArgs, err := toLValues(thread, args)
 	if err != nil {
-		return nil, thread, err
+		return nil, err
 	}
 	thread.Push(f)
 	for _, lv := range lvArgs {
 		thread.Push(lv)
 	}
 	if err := thread.PCall(len(lvArgs), 1, nil); err != nil {
-		return nil, thread, fmt.Errorf("%s: %w", funcName, err)
+		if shouldAutoClose(thread) {
+			Close(thread)
+		}
+		return nil, fmt.Errorf("%s: %w", funcName, err)
 	}
-	defer thread.Pop(1)
-	return thread.Get(-1), thread, nil
+	ret := thread.Get(-1)
+	thread.Pop(1)
+	if shouldAutoClose(thread) {
+		Close(thread)
+	}
+	return ret, nil
 }
 
 func CallFunction(root *lua.LState, fn *lua.LFunction, args ...interface{}) (lua.LValue, error) {
@@ -108,26 +130,19 @@ func toLValues(L *lua.LState, args []interface{}) ([]lua.LValue, error) {
 	return out, nil
 }
 
-func Execute(root *lua.LState, thread *lua.LState, pid *actor.PID, funcName string, args ...interface{}) (lua.ResumeState, error) {
-	if pid == nil {
-		return lua.ResumeOK, fmt.Errorf("script requires map actor PID")
+func Resume(root *lua.LState, thread *lua.LState, args ...lua.LValue) (lua.ResumeState, error) {
+	if root == nil || thread == nil {
+		return lua.ResumeOK, fmt.Errorf("nil lua root/thread")
 	}
-	f := thread.GetGlobal(funcName)
-	if f.Type() != lua.LTFunction {
-		return lua.ResumeOK, fmt.Errorf("function %s not found in script", funcName)
-	}
-	lvArgs, err := toLValues(thread, args)
-	if err != nil {
-		return lua.ResumeOK, err
-	}
-
-	SetThreadPID(thread, pid)
-	state, resumeErr, _ := root.Resume(thread, f.(*lua.LFunction), lvArgs...)
-	if state == lua.ResumeOK || resumeErr != nil {
-		ClearThreadPID(thread)
-	}
+	state, resumeErr, _ := root.Resume(thread, nil, args...)
 	if resumeErr != nil {
-		return lua.ResumeOK, fmt.Errorf("failed to call %s: %w", funcName, resumeErr)
+		if shouldAutoClose(thread) {
+			Close(thread)
+		}
+		return lua.ResumeOK, resumeErr
+	}
+	if state != lua.ResumeYield && shouldAutoClose(thread) {
+		Close(thread)
 	}
 	return state, nil
 }

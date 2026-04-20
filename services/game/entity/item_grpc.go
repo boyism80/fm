@@ -115,12 +115,15 @@ func (item *Pet) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersis
 	return buildInventoryPersisted(item, ownerID, slot, item.UniqueId, "", item.Flags, 0, 0)
 }
 
-func NewItemFromInternalProto(pb *internal.InventoryPersisted, ctx GameContext) (Item, error) {
+func NewItemFromInternalProto(pb *internal.InventoryPersisted, gw GameWorld) (Item, error) {
 	if pb == nil {
 		return nil, fmt.Errorf("nil InventoryPersisted")
 	}
+	if gw == nil {
+		return nil, fmt.Errorf("nil GameWorld")
+	}
 	itemID := pb.GetItemId()
-	model, ok := ctx.GetResources().Items[itemID]
+	model, ok := gw.GetResources().Items[itemID]
 	if !ok {
 		return nil, fmt.Errorf("item model not found for ID: %d", itemID)
 	}

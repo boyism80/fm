@@ -44,6 +44,7 @@ type RemoveDoor struct {
 type ResumeLua struct {
 	Root   *lua.LState
 	Thread *lua.LState
+	Args   []lua.LValue
 }
 
 type AddCharacter struct {
@@ -86,23 +87,12 @@ type PartyDisband struct {
 	FormerMemberIDs []uint32
 }
 
-type EnsureDeliver struct {
-	CorrelationID    uint64
-	CharacterID      uint32
-	DeadlineUnixNano int64
-	Caller           *actor.PID
-	Inner            interface{}
-}
+type SaveMapCharacters struct{}
 
-type EnsureResult struct {
-	CorrelationID uint64
-	OK            bool
-	Reason        string
-}
-
-type EnsureCoordinator interface {
-	EnsureRedispatch(d *EnsureDeliver)
-	EnsureComplete(correlationID uint64)
+type SaveMapCharactersAck struct {
+	MapID uint32
+	Saved int
+	Err   string
 }
 
 type DeliverPartyInvite struct {

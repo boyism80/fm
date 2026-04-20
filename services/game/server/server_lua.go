@@ -483,6 +483,56 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 		return 0
 	})
 
+	luax.RegisterFunc(luaState, "save", func(L *lua.LState) int {
+		actorCtx := luax.GetThreadActorContext(L)
+		if actorCtx == nil {
+			L.Push(lua.LBool(false))
+			L.Push(lua.LString("save: actor context not found"))
+			return 2
+		}
+		pid := actorCtx.Self()
+		if pid == nil {
+			L.Push(lua.LBool(false))
+			L.Push(lua.LString("save: actor PID not found"))
+			return 2
+		}
+		root := luax.GetRootLuaState(pid.String())
+		if root == nil {
+			L.Push(lua.LBool(false))
+			L.Push(lua.LString("save: root lua state not found"))
+			return 2
+		}
+		cfg, _ := luax.GetConfiguration(L)
+		cfg.ActorContext = actorCtx
+		cfg.KeepAlive = true
+		luax.SetConfiguration(L, cfg)
+
+		p := gs.SaveAllCharactersAsync(actorCtx)
+		if p == nil {
+			L.Push(lua.LBool(false))
+			L.Push(lua.LString("save: promise creation failed"))
+			return 2
+		}
+		var ok = true
+		var errMsg string
+		p.OnError(func(err error) {
+			ok = false
+			if err != nil {
+				errMsg = err.Error()
+				log.Printf("save: %v", err)
+			}
+		}).Finally(func() {
+			args := []lua.LValue{lua.LBool(ok)}
+			if errMsg != "" {
+				args = append(args, lua.LString(errMsg))
+			} else {
+				args = append(args, lua.LNil)
+			}
+			gs.GetRootContext().Send(pid, &g_actor.ResumeLua{Root: root, Thread: L, Args: args})
+		}).Run()
+		return L.Yield(lua.LNil, lua.LNil)
+	})
+
 	luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
 		duration := L.CheckNumber(1)
 		pid := luax.GetThreadPID(L)

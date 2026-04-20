@@ -212,7 +212,7 @@ func (m *Mob) dropItems(attacker *Character) {
 		return
 	}
 
-	resources := m.Context.GetResources()
+	resources := m.GameWorld.GetResources()
 	mobDrops, ok := resources.Drops[m.Wz.ID]
 	if !ok {
 		return
@@ -224,8 +224,8 @@ func (m *Mob) dropItems(attacker *Character) {
 		item   Item
 	}
 
-	dropRate := float32(m.Context.GetDropRate())
-	mesoRate := float32(m.Context.GetMesoRate())
+	dropRate := float32(m.GameWorld.GetDropRate())
+	mesoRate := float32(m.GameWorld.GetMesoRate())
 	dropRateMul := int16(100)
 	mesoAmountMul := int16(100)
 	if attacker.BonusStats.DropRate > 0 {
@@ -283,7 +283,7 @@ func (m *Mob) dropItems(attacker *Character) {
 				count = uint16(rand.Intn(int(drop.Max-drop.Min)+1) + int(drop.Min))
 			}
 
-			item, err := NewItem(drop.Item, count, m.Context)
+			item, err := NewItem(drop.Item, count, m.GameWorld)
 			if err != nil {
 				continue
 			}
@@ -318,9 +318,9 @@ func (m *Mob) dropItems(attacker *Character) {
 
 			d := &Drop{
 				ObjectCore: &ObjectCore{
-					OID:      0,
-					Position: destPoint,
-					Context:  m.Context,
+					OID:       0,
+					Position:  destPoint,
+					GameWorld: m.GameWorld,
 				},
 				Owner:        attacker.GetID(),
 				SpawnedPoint: spawnPoint,

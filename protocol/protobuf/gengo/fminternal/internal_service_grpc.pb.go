@@ -4,6 +4,8 @@
 // - protoc             v7.34.1
 // source: fminternal/internal_service.proto
 
+// After editing this file, regenerate Go + JS: run protocol/protobuf/gen.bat from the repo (requires protoc, protoc-gen-go, protoc-gen-go-grpc, and npm install in services/internal).
+
 package fminternalpb
 
 import (

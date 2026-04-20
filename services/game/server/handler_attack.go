@@ -151,8 +151,8 @@ func readDamagesFromLuaTableInto(damagesTable *lua.LTable, damages []dto.AttackP
 
 func (h *Attack) validateSkillForAttack(character *entity.Character, skillID uint32) bool {
 	var wzSkill *wz.Skill
-	if character.Context != nil {
-		resources := character.Context.GetResources()
+	if character.GameWorld != nil {
+		resources := character.GameWorld.GetResources()
 		if resources != nil {
 			wzSkill = resources.GetSkill(skillID)
 		}

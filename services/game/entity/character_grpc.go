@@ -11,7 +11,7 @@ func (ch *Character) LoadInventory(items []*internal.InventoryPersisted) {
 		if pb == nil {
 			continue
 		}
-		item, err := NewItemFromInternalProto(pb, ch.Context)
+		item, err := NewItemFromInternalProto(pb, ch.GameWorld)
 		if err != nil {
 			continue
 		}
@@ -39,7 +39,7 @@ func (ch *Character) LoadSkills(skills []*internal.SkillPersisted) {
 		if pb == nil {
 			continue
 		}
-		entry, err := NewSkillEntryFromInternalProto(ch, pb, ch.Context)
+		entry, err := NewSkillEntryFromInternalProto(ch, pb, ch.GameWorld)
 		if err != nil {
 			continue
 		}

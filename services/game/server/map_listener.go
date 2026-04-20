@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
@@ -18,7 +19,7 @@ func NewGameMapListener(gs *GameServer) *MapListenerImpl {
 	}
 }
 
-func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *entity.Character, init bool) {
+func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.Map, character *entity.Character, init bool) {
 	if mapInstance == nil {
 		return
 	}
@@ -62,7 +63,7 @@ func (l *MapListenerImpl) OnPlayerAdded(mapInstance *entity.Map, character *enti
 	}
 
 	if l.gs != nil && l.gs.party != nil {
-		l.gs.party.SendPartySilentOnMapEnter(character)
+		l.gs.party.SendPartySilentAsync(ctx, character).Run()
 	}
 }
 

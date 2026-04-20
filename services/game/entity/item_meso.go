@@ -40,14 +40,14 @@ func (meso *Meso) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, context GameContext, mapInstance *Map) *Meso {
+func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, gw GameWorld, mapInstance *Map) *Meso {
 	m := &Meso{
 		Drop: &Drop{
 			ObjectCore: &ObjectCore{
-				OID:      sequence,
-				Position: position,
-				Context:  context,
-				Map:      mapInstance,
+				OID:       sequence,
+				Position:  position,
+				GameWorld: gw,
+				Map:       mapInstance,
 			},
 			SpawnedPoint: position,
 			DropType:     dropType,

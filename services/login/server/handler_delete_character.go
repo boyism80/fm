@@ -39,7 +39,7 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 		return nil
 	}
 
-	ic := h.ls.context.InternalClient
+	ic := h.ls.internalClient
 	if ic == nil {
 		deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
 		return ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)

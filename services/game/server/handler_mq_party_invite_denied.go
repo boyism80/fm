@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/asynkron/protoactor-go/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -13,7 +14,7 @@ func (partyMqPartyInviteDenied) New(gs *GameServer) *partyMqPartyInviteDenied {
 	return &partyMqPartyInviteDenied{gs: gs}
 }
 func (*partyMqPartyInviteDenied) EventType() string { return "party_invite_denied" }
-func (h *partyMqPartyInviteDenied) Handle(_ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *partyMqPartyInviteDenied) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil || gs.party == nil {
 		return nil

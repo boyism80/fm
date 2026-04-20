@@ -1,5 +1,5 @@
--- Command dispatch for / commands. Loaded by handler_normal_chat via luax.Call.
--- Commands not in command_funcs fall back to Go commandHandler (e.g. 스크립트).
+
+
 
 local function string_split(s, sep)
 	sep = sep or " "
@@ -165,6 +165,19 @@ command_funcs = {
 				map_name = tostring(wz_t.name or "?")
 			end
 			me:chat(string.format("맵: %s (%d), 좌표: %d, %d", map_name, map_id, x, y))
+			return true
+		end,
+	},
+	["서버저장"] = {
+		privilege = ROLE.Admin,
+		usage = "- 온라인 유저 저장 요청",
+		command = function(me, args)
+			local ok, err = save()
+			if ok then
+				me:notice("서버 저장이 완료되었습니다.")
+			else
+				me:notice("서버 저장 실패: " .. tostring(err))
+			end
 			return true
 		end,
 	},

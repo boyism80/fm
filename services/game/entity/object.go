@@ -6,11 +6,11 @@ import (
 )
 
 type ObjectCore struct {
-	self     Object
-	OID      uint32
-	Position types.Vector2[int16]
-	Context  GameContext
-	Map      *Map
+	self      Object
+	OID       uint32
+	Position  types.Vector2[int16]
+	GameWorld GameWorld
+	Map       *Map
 }
 
 type ObjectBroadcastOption struct {
@@ -27,7 +27,7 @@ type Object interface {
 	GetOID() uint32
 	GetPosition() types.Vector2[int16]
 	SetPosition(x, y int16)
-	GetContext() GameContext
+	GetGameWorld() GameWorld
 	GetMap() *Map
 	GetObjectType() constant.ObjectType
 	Is(typ constant.ObjectType) bool
@@ -53,8 +53,8 @@ func (obj *ObjectCore) SetPosition(x, y int16) {
 	obj.Position.Y = y
 }
 
-func (obj *ObjectCore) GetContext() GameContext {
-	return obj.Context
+func (obj *ObjectCore) GetGameWorld() GameWorld {
+	return obj.GameWorld
 }
 
 func (obj *ObjectCore) Is(typ constant.ObjectType) bool {

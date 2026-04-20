@@ -45,7 +45,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 	loginClient.SetChannelId(req.Channel)
 	accountId := loginClient.GetAccountId()
 
-	ic := h.ls.context.InternalClient
+	ic := h.ls.internalClient
 	if ic == nil {
 		charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
 		return ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)

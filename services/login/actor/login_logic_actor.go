@@ -14,9 +14,9 @@ import (
 )
 
 type LoginLogicActor struct {
-	Client  core.Client
-	Context core.ServerContext
-	timer   *scheduler.TimerScheduler
+	Client core.Client
+	Server core.Server
+	timer  *scheduler.TimerScheduler
 }
 
 type pingTick struct{}
@@ -49,7 +49,7 @@ func (a *LoginLogicActor) onStarted(ctx actor.Context) {
 }
 
 func (a *LoginLogicActor) handlePacket(ctx actor.Context, msg *c_actor.HandlePacket) {
-	err := core.ExecutePacketHandler(ctx, a.Context, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)
+	err := core.ExecutePacketHandler(ctx, a.Server, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)
 	if err != nil {
 		log.Printf("Error handling packet 0x%02X: %v", msg.Opcode, err)
 	}

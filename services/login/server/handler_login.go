@@ -34,7 +34,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 	log.Printf("Login packet received from %s - ID: %s, MAC: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.ID, req.Mac)
 
-	ic := h.ls.context.InternalClient
+	ic := h.ls.internalClient
 	if ic == nil {
 		log.Printf("Internal gRPC client not configured, rejecting login")
 		failedResp := &response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}

@@ -319,11 +319,11 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			t := L.NewTable()
-			if mob.Context == nil || mob.Wz == nil {
+			if mob.GameWorld == nil || mob.Wz == nil {
 				L.Push(t)
 				return 1
 			}
-			resources := mob.Context.GetResources()
+			resources := mob.GameWorld.GetResources()
 			if resources == nil {
 				L.Push(t)
 				return 1

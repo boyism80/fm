@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/protobuf/proto"
@@ -16,7 +17,7 @@ func (partyMqPartySnapshot) New(gs *GameServer) *partyMqPartySnapshot {
 	return &partyMqPartySnapshot{gs: gs}
 }
 func (*partyMqPartySnapshot) EventType() string { return "party_snapshot" }
-func (h *partyMqPartySnapshot) Handle(_ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *partyMqPartySnapshot) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil || gs.party == nil {
 		return nil

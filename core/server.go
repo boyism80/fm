@@ -28,7 +28,7 @@ func GetPacketLogEnabled() bool {
 	return packetLogEnabled.Load()
 }
 
-type Server struct {
+type ServerCore struct {
 	listener           net.Listener
 	clients            map[net.Conn]Client
 	clientsMutex       sync.RWMutex
@@ -54,10 +54,10 @@ type ServerConfig struct {
 	ClientFactory      func(net.Conn, int) (Client, error)
 }
 
-func NewServer(config *ServerConfig) (*Server, error) {
+func NewServer(config *ServerConfig) (*ServerCore, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	server := &Server{
+	server := &ServerCore{
 		clients:       make(map[net.Conn]Client),
 		shutdownChan:  make(chan struct{}),
 		ctx:           ctx,
@@ -76,19 +76,19 @@ func NewServer(config *ServerConfig) (*Server, error) {
 	return server, nil
 }
 
-func (s *Server) SetRootContext(root *actor.RootContext) {
+func (s *ServerCore) SetRootContext(root *actor.RootContext) {
 	s.rootContext = root
 }
 
-func (s *Server) SetNilMapActorPID(pid *actor.PID) {
+func (s *ServerCore) SetNilMapActorPID(pid *actor.PID) {
 	s.nilMapActorPID = pid
 }
 
-func (s *Server) GetRootContext() *actor.RootContext {
+func (s *ServerCore) GetRootContext() *actor.RootContext {
 	return s.rootContext
 }
 
-func (s *Server) Start(host string, port int) error {
+func (s *ServerCore) Start(host string, port int) error {
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
@@ -104,7 +104,7 @@ func (s *Server) Start(host string, port int) error {
 	return nil
 }
 
-func (s *Server) Stop() error {
+func (s *ServerCore) Stop() error {
 	log.Println("Shutting down server...")
 
 	close(s.shutdownChan)
@@ -127,7 +127,7 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func (s *Server) acceptConnections() {
+func (s *ServerCore) acceptConnections() {
 	defer s.wg.Done()
 
 	for {
@@ -173,14 +173,14 @@ func (s *Server) acceptConnections() {
 	}
 }
 
-func (s *Server) createClient(conn net.Conn, clientID int) (Client, error) {
+func (s *ServerCore) createClient(conn net.Conn, clientID int) (Client, error) {
 	if s.clientFactory != nil {
 		return s.clientFactory(conn, clientID)
 	}
 	return nil, fmt.Errorf("no client factory provided")
 }
 
-func (s *Server) handleClient(client Client) {
+func (s *ServerCore) handleClient(client Client) {
 	defer func() {
 
 		if s.onClientDisconnect != nil {
@@ -243,7 +243,7 @@ func (s *Server) handleClient(client Client) {
 	}
 }
 
-func (s *Server) readPacket(client Client) (bool, error) {
+func (s *ServerCore) readPacket(client Client) (bool, error) {
 
 	headerBytes := make([]byte, 4)
 	if _, err := client.GetConnection().Read(headerBytes); err != nil {
@@ -271,7 +271,7 @@ func (s *Server) readPacket(client Client) (bool, error) {
 	return s.processPacket(client, encryptedData)
 }
 
-func (s *Server) processPacket(client Client, encryptedData []byte) (bool, error) {
+func (s *ServerCore) processPacket(client Client, encryptedData []byte) (bool, error) {
 
 	packetData := client.GetRecvEncryption().Decrypt(encryptedData)
 
@@ -311,15 +311,15 @@ func (s *Server) processPacket(client Client, encryptedData []byte) (bool, error
 	return true, nil
 }
 
-func (s *Server) RegisterPacketHandler(opcode int, handler func(ctx *ClientContext, data []byte) error) {
+func (s *ServerCore) RegisterPacketHandler(opcode int, handler func(ctx *ClientContext, data []byte) error) {
 	s.packetHandler.RegisterHandler(opcode, handler)
 }
 
-func (s *Server) GetPacketHandler() *PacketHandler {
+func (s *ServerCore) GetPacketHandler() *PacketHandler {
 	return s.packetHandler
 }
 
-func (s *Server) GetStats() map[string]interface{} {
+func (s *ServerCore) GetStats() map[string]interface{} {
 	s.clientsMutex.RLock()
 	clientCount := len(s.clients)
 	s.clientsMutex.RUnlock()
@@ -331,6 +331,6 @@ func (s *Server) GetStats() map[string]interface{} {
 	}
 }
 
-func (s *Server) SetOnClientDisconnect(callback func(Client)) {
+func (s *ServerCore) SetOnClientDisconnect(callback func(Client)) {
 	s.onClientDisconnect = callback
 }

@@ -13,6 +13,8 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/ensure"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	loginactor "github.com/boyism80/fm/services/login/actor"
 	"github.com/boyism80/fm/services/login/client"
@@ -21,23 +23,27 @@ import (
 )
 
 type LoginServer struct {
-	server         *core.Server
+	*core.ServerCore
 	config         *LoginConfig
+	packetHandler  *core.PacketHandler
+	internalClient internal.InternalClient
 	packetHandlers *PacketHandlerRegistry
-	context        *LoginServerContext
 	actorSystem    *c_actor.ActorSystem
 	actorRegistry  *c_actor.ActorRegistry
 	worldCatalog   []*internal.WorldCatalog
 	channelRoutes  map[uint32]map[uint32]*internal.ChannelCatalog
 }
 
-func (ls *LoginServer) GetServer() *core.Server {
-	return ls.server
+func (ls *LoginServer) GetPacketHandler() *core.PacketHandler {
+	if ls == nil {
+		return nil
+	}
+	return ls.packetHandler
 }
 
-func (ls *LoginServer) GetServerContext() core.ServerContext {
-	return ls.context
-}
+func (ls *LoginServer) EnsureRedispatch(_ *ensure.EnsureDeliver) {}
+
+func (ls *LoginServer) EnsureComplete(_ uint64) {}
 
 func (ls *LoginServer) handleClient(c core.Client) {
 	loginClient, ok := c.(*client.LoginClient)
@@ -48,8 +54,8 @@ func (ls *LoginServer) handleClient(c core.Client) {
 
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return &loginactor.LoginLogicActor{
-			Client:  loginClient,
-			Context: ls.context,
+			Client: loginClient,
+			Server: ls,
 		}
 	})
 
@@ -100,8 +106,6 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		log.Printf("Internal gRPC client connected to %s", addr)
 	}
 
-	context := NewLoginServerContext(internalClient)
-
 	actorSystem := c_actor.NewActorSystem()
 	actorRegistry := c_actor.NewActorRegistry(actorSystem)
 
@@ -124,10 +128,11 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 	server.SetRootContext(actorSystem.GetRoot())
 
 	ls := &LoginServer{
-		server:         server,
+		ServerCore:     server,
 		config:         config,
+		packetHandler:  core.NewPacketHandler(),
+		internalClient: internalClient,
 		packetHandlers: NewPacketHandlerRegistry(nil),
-		context:        context,
 		actorSystem:    actorSystem,
 		actorRegistry:  actorRegistry,
 		channelRoutes:  make(map[uint32]map[uint32]*internal.ChannelCatalog),
@@ -146,7 +151,7 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 }
 
 func (ls *LoginServer) loadServerCatalog() error {
-	if ls.context.InternalClient == nil {
+	if ls.internalClient == nil {
 		return fmt.Errorf("internal gRPC client is required")
 	}
 	interval := time.Duration(ls.config.CatalogRetryIntervalSeconds) * time.Second
@@ -155,7 +160,7 @@ func (ls *LoginServer) loadServerCatalog() error {
 	var lastErr error
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-		reply, err := ls.context.InternalClient.GetServerCatalog(ctx, &internal.GetServerCatalogRequest{})
+		reply, err := ls.internalClient.GetServerCatalog(ctx, &internal.GetServerCatalogRequest{})
 		cancel()
 		if err == nil {
 			worlds := reply.GetWorlds()
@@ -211,7 +216,7 @@ func (ls *LoginServer) ResolveChannelRoute(worldId uint32, channelId uint32) (*i
 }
 
 func (ls *LoginServer) handleClientDisconnect(c core.Client) {
-	ic := ls.context.InternalClient
+	ic := ls.internalClient
 	if ic == nil {
 		return
 	}
@@ -224,24 +229,29 @@ func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 		return
 	}
 	worldId := loginClient.GetWorldId()
-	ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-	defer cancel()
 	transfer := loginClient.TakeTransferDisconnect()
-	_, err := ic.LogoutSession(ctx, &internal.LogoutSessionRequest{
-		WorldId:            worldId,
-		AccountId:          accountId,
-		DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_LOGIN_SERVER,
-		TransferDisconnect: transfer,
-	})
-	if err != nil {
+
+	p := async.NewPromise(nil, core.InternalRPCPerStepTimeout)
+	p.OnError(func(err error) {
 		log.Printf("LogoutSession (login disconnect) failed for world=%d account=%d: %v", worldId, accountId, err)
-	}
+	})
+	async.ThenRPC(p, func(ctx context.Context) (*internal.LogoutSessionReply, error) {
+		return ic.LogoutSession(ctx, &internal.LogoutSessionRequest{
+			WorldId:            worldId,
+			AccountId:          accountId,
+			DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_LOGIN_SERVER,
+			TransferDisconnect: transfer,
+		})
+	}, func(*internal.LogoutSessionReply) error {
+		return nil
+	})
+	p.Run()
 }
 
 func (ls *LoginServer) Start() error {
 	log.Println("Starting MapleStory Login Server...")
 
-	if err := ls.server.Start(ls.config.Host, ls.config.Port); err != nil {
+	if err := ls.ServerCore.Start(ls.config.Host, ls.config.Port); err != nil {
 		return err
 	}
 
@@ -253,11 +263,11 @@ func (ls *LoginServer) Start() error {
 
 func (ls *LoginServer) Stop() error {
 	log.Println("Shutting down login server...")
-	return ls.server.Stop()
+	return ls.ServerCore.Stop()
 }
 
 func (ls *LoginServer) GetStats() map[string]interface{} {
-	stats := ls.server.GetStats()
+	stats := ls.ServerCore.GetStats()
 
 	stats["server_type"] = "login"
 	stats["catalog_world_count"] = len(ls.worldCatalog)

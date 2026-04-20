@@ -45,10 +45,15 @@ func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) er
 		if ctx.LogicActorPID != nil {
 			root := luax.GetRootLuaState(ctx.LogicActorPID.String())
 			if root != nil {
-				result, thread, err := luax.CallWithPID(root, ctx.LogicActorPID, "script/command.lua", "on_chat", character, req.Message, false)
-				if thread != nil {
-					thread.Close()
+				thread, err := luax.NewThread(root, "script/command.lua")
+				if err != nil {
+					log.Printf("Command Lua thread error: %v", err)
+					return nil
 				}
+				luax.SetConfiguration(thread, luax.Configuration{
+					ActorContext: ctx.ActorContext,
+				})
+				result, err := luax.CallThread(thread, "on_chat", character, req.Message, false)
 				if err != nil {
 					log.Printf("Command Lua error: %v", err)
 				} else if result != nil && result.Type() == lua.LTBool && lua.LVAsBool(result) {

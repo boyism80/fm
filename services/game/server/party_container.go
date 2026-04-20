@@ -3,12 +3,12 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"sync"
-	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
@@ -45,73 +45,98 @@ func NewPartyContainer(gs *GameServer, worldID uint32, ic internal.InternalClien
 	}
 }
 
-func (pc *PartyContainer) apply(evt PartyEventEnvelope) error {
-	pc.mu.Lock()
-	defer pc.mu.Unlock()
-	if evt.EventType == "log_onoff" {
-		if err := pc.rehydrateLocked(evt.PartyID); err != nil {
-			return err
-		}
-		if snapshot := pc.snapshots[evt.PartyID]; snapshot != nil {
-			pc.SyncPartySnapshot(snapshot)
-		}
-		log.Printf("party consumer: applied type=log_onoff party_id=%d revision=%d", evt.PartyID, pc.revisions[evt.PartyID])
-		return nil
+// UpdateAsync builds a Promise for party-event reconciliation. Chain .Then(...) for follow-up work on the
+// same actor, then .Run(). GetParty runs off the actor mailbox; merge and state updates run in ThenRPC's use on ctx's actor.
+func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *async.Promise {
+	p := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+	if pc == nil {
+		return p
 	}
-	switch evt.EventType {
-	case "disbanded":
+	partyID := evt.PartyID
+	p.OnError(func(err error) {
+		log.Printf("party consumer: apply type=%s party_id=%d: %v", evt.EventType, partyID, err)
+	})
+
+	if evt.EventType == "disbanded" {
+		pc.mu.Lock()
 		var memberIDs []uint32
 		if snapshot, ok := pc.snapshots[evt.PartyID]; ok && snapshot != nil {
 			for _, m := range snapshot.GetMembers() {
 				memberIDs = append(memberIDs, m.GetCharacterId())
 			}
 		}
-		if len(memberIDs) == 0 {
-			if err := pc.rehydrateLocked(evt.PartyID); err == nil {
-				if snapshot, ok := pc.snapshots[evt.PartyID]; ok && snapshot != nil {
-					for _, m := range snapshot.GetMembers() {
-						memberIDs = append(memberIDs, m.GetCharacterId())
-					}
-				}
-			}
+		if len(memberIDs) > 0 {
+			delete(pc.revisions, evt.PartyID)
+			delete(pc.snapshots, evt.PartyID)
+			pc.ClearPartyMembers(memberIDs)
+			log.Printf("party consumer: disbanded applied party_id=%d revision=%d", evt.PartyID, evt.Revision)
+			pc.mu.Unlock()
+			return p
 		}
-		delete(pc.revisions, evt.PartyID)
-		delete(pc.snapshots, evt.PartyID)
-		pc.ClearPartyMembers(memberIDs)
-		log.Printf("party consumer: disbanded applied party_id=%d revision=%d", evt.PartyID, evt.Revision)
-	default:
-		if err := pc.rehydrateLocked(evt.PartyID); err != nil {
-			return err
-		}
-		if snapshot := pc.snapshots[evt.PartyID]; snapshot != nil {
-			pc.SyncPartySnapshot(snapshot)
-		}
-		log.Printf("party consumer: applied type=%s party_id=%d revision=%d", evt.EventType, evt.PartyID, pc.revisions[evt.PartyID])
+		pc.mu.Unlock()
 	}
-	return nil
+
+	if pc.internalClient == nil {
+		p.Then(func() (interface{}, error) {
+			return nil, errors.New("party apply: internal client unavailable")
+		}, func(interface{}) error { return nil })
+		return p
+	}
+
+	async.ThenRPC(p,
+		func(c context.Context) (*internal.GetPartyReply, error) {
+			return pc.internalClient.GetParty(c, &internal.GetPartyRequest{
+				WorldId: pc.worldID,
+				PartyId: partyID,
+			})
+		},
+		func(reply *internal.GetPartyReply) error {
+			pc.mu.Lock()
+			defer pc.mu.Unlock()
+			pc.mergeGetPartyReplyLocked(partyID, reply)
+			return pc.applyStateAfterRehydrateLocked(evt)
+		},
+	)
+	return p
 }
 
-func (pc *PartyContainer) rehydrateLocked(partyID uint32) error {
-	if pc.internalClient == nil {
-		return errors.New("internal client unavailable for rehydrate")
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	reply, err := pc.internalClient.GetParty(ctx, &internal.GetPartyRequest{
-		WorldId: pc.worldID,
-		PartyId: partyID,
-	})
-	if err != nil {
-		return fmt.Errorf("GetParty rehydrate failed: %w", err)
-	}
-	if !reply.GetFound() || reply.GetParty() == nil {
+func (pc *PartyContainer) mergeGetPartyReplyLocked(partyID uint32, reply *internal.GetPartyReply) {
+	if reply == nil || !reply.GetFound() || reply.GetParty() == nil {
 		delete(pc.revisions, partyID)
 		delete(pc.snapshots, partyID)
-		return nil
+		return
 	}
 	pc.revisions[partyID] = reply.GetParty().GetRevision()
 	pc.snapshots[partyID] = reply.GetParty()
 	log.Printf("party consumer: rehydrated party_id=%d revision=%d", partyID, pc.revisions[partyID])
+}
+
+func (pc *PartyContainer) applyStateAfterRehydrateLocked(evt PartyEventEnvelope) error {
+	partyID := evt.PartyID
+	if evt.EventType == "log_onoff" {
+		if snapshot := pc.snapshots[partyID]; snapshot != nil {
+			pc.SyncPartySnapshot(snapshot)
+		}
+		log.Printf("party consumer: applied type=log_onoff party_id=%d revision=%d", partyID, pc.revisions[partyID])
+		return nil
+	}
+	if evt.EventType == "disbanded" {
+		var memberIDs []uint32
+		if snapshot, ok := pc.snapshots[partyID]; ok && snapshot != nil {
+			for _, m := range snapshot.GetMembers() {
+				memberIDs = append(memberIDs, m.GetCharacterId())
+			}
+		}
+		delete(pc.revisions, partyID)
+		delete(pc.snapshots, partyID)
+		pc.ClearPartyMembers(memberIDs)
+		log.Printf("party consumer: disbanded applied party_id=%d revision=%d", partyID, evt.Revision)
+		return nil
+	}
+	if snapshot := pc.snapshots[partyID]; snapshot != nil {
+		pc.SyncPartySnapshot(snapshot)
+	}
+	log.Printf("party consumer: applied type=%s party_id=%d revision=%d", evt.EventType, partyID, pc.revisions[partyID])
 	return nil
 }
 
@@ -489,41 +514,54 @@ func (pc *PartyContainer) DeliverPartySilentFromSnapshot(snapshot *internal.Part
 	}
 }
 
-func (pc *PartyContainer) snapshotForMapEnter(partyID uint32) *internal.PartySnapshot {
-	if pc == nil {
-		return nil
+// SendPartySilentAsync builds a Promise that sends party silent UI state to the character. Uses cache
+// when warm; otherwise schedules GetParty via ThenRPC. Caller must .Run() (from map actor Receive).
+func (pc *PartyContainer) SendPartySilentAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
+	p := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+	if pc == nil || ch == nil || pc.gs == nil || ctx == nil {
+		return p
 	}
-	if s := pc.CachedSnapshot(partyID); s != nil {
-		return s
+	partyIDPtr := ch.GetPartyID()
+	if partyIDPtr == nil {
+		return p
 	}
-	if pc.internalClient == nil || pc.gs == nil {
-		return nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-	defer cancel()
-	reply, err := pc.internalClient.GetParty(ctx, &internal.GetPartyRequest{
-		WorldId: pc.worldID,
-		PartyId: partyID,
+	partyID := *partyIDPtr
+	p.OnError(func(err error) {
+		log.Printf("SendPartySilentAsync: GetParty char %d party %d: %v", ch.GetID(), partyID, err)
 	})
-	if err != nil || !reply.GetFound() || reply.GetParty() == nil {
-		return nil
+	if snap := pc.CachedSnapshot(partyID); snap != nil {
+		p.Then(func() (interface{}, error) { return nil, nil }, func(interface{}) error {
+			pc.sendPartySilentSnapshotToCharacter(ch, snap)
+			return nil
+		})
+		return p
 	}
-	return reply.GetParty()
+	if pc.internalClient == nil {
+		return p
+	}
+	async.ThenRPC(p,
+		func(c context.Context) (*internal.GetPartyReply, error) {
+			return pc.internalClient.GetParty(c, &internal.GetPartyRequest{
+				WorldId: pc.worldID,
+				PartyId: partyID,
+			})
+		},
+		func(reply *internal.GetPartyReply) error {
+			if reply == nil || !reply.GetFound() || reply.GetParty() == nil {
+				return nil
+			}
+			pc.sendPartySilentSnapshotToCharacter(ch, reply.GetParty())
+			return nil
+		},
+	)
+	return p
 }
 
-func (pc *PartyContainer) SendPartySilentOnMapEnter(ch *entity.Character) {
-	if pc == nil || ch == nil || pc.gs == nil {
+func (pc *PartyContainer) sendPartySilentSnapshotToCharacter(ch *entity.Character, snap *internal.PartySnapshot) {
+	if pc == nil || ch == nil || snap == nil || pc.gs == nil {
 		return
 	}
 	gs := pc.gs
-	partyIDPtr := ch.GetPartyID()
-	if partyIDPtr == nil {
-		return
-	}
-	snap := pc.snapshotForMapEnter(*partyIDPtr)
-	if snap == nil {
-		return
-	}
 	members := partyMembersToResponse(snap.GetMembers())
 	gs.EnsureSend(nil, ch.GetID(), &g_actor.DeliverPartyUpdateSilent{
 		CharacterID: ch.GetID(),

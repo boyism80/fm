@@ -4,25 +4,20 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/asynkron/protoactor-go/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type JSONHandler interface {
 	EventType() string
-	Handle(msg amqp.Delivery, eventType string, payload json.RawMessage) error
+	Handle(ctx actor.Context, msg amqp.Delivery, eventType string, payload json.RawMessage) error
 }
 
 type JSONHandlerConstructor[S any, H JSONHandler] interface {
 	New(S) H
 }
 
-func BindOn[S any, C JSONHandlerConstructor[S, H], H JSONHandler](j *JSONConsumer[S]) {
-	if j == nil {
-		return
-	}
-	Bind[S, C, H](j.Reg, j.Dispatcher)
-}
-
+// Bind registers a JSON event handler on d for use with RabbitActor.Dispatcher.
 func Bind[S any, C JSONHandlerConstructor[S, H], H JSONHandler](registry S, d *Dispatcher) {
 	if d == nil {
 		return
@@ -33,8 +28,8 @@ func Bind[S any, C JSONHandlerConstructor[S, H], H JSONHandler](registry S, d *D
 	if et == "" {
 		return
 	}
-	d.Register(et, func(msg amqp.Delivery, eventType string, raw json.RawMessage) error {
-		return h.Handle(msg, eventType, raw)
+	d.Register(et, func(ctx actor.Context, msg amqp.Delivery, eventType string, raw json.RawMessage) error {
+		return h.Handle(ctx, msg, eventType, raw)
 	})
 	log.Printf("mq: registered handler for event_type=%s %T", et, h)
 }

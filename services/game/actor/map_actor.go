@@ -8,6 +8,7 @@ import (
 	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/core/ensure"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/actor/timers"
@@ -18,17 +19,15 @@ import (
 )
 
 type MapActor struct {
-	MapData        *entity.Map
-	Context        core.ServerContext
-	SaveCharacters func([]*entity.Character) error
-	Ensure         EnsureCoordinator
-	scheduler      *scheduler.TimerScheduler
-	timerReg       *TimerRegistry
+	Map       *entity.Map
+	GameWorld entity.GameWorld
+	scheduler *scheduler.TimerScheduler
+	timerReg  *TimerRegistry
 }
 
 func (a *MapActor) Receive(ctx actor.Context) {
 	msg := ctx.Message()
-	if env, ok := msg.(*EnsureDeliver); ok {
+	if env, ok := msg.(*ensure.EnsureDeliver); ok {
 		a.handleEnsureDeliver(ctx, env)
 		return
 	}
@@ -91,12 +90,14 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onDeliverPartyUpdateLogOnOff(m)
 	case *DeliverPartyUpdateSilent:
 		a.onDeliverPartyUpdateSilent(m)
+	case *SaveMapCharacters:
+		a.onSaveMapCharacters(ctx)
 	default:
 		return
 	}
 }
 
-func (a *MapActor) handleEnsureDeliver(ctx actor.Context, env *EnsureDeliver) {
+func (a *MapActor) handleEnsureDeliver(ctx actor.Context, env *ensure.EnsureDeliver) {
 	if env == nil {
 		return
 	}
@@ -114,25 +115,27 @@ func (a *MapActor) handleEnsureDeliver(ctx actor.Context, env *EnsureDeliver) {
 }
 
 func (a *MapActor) hasCharacterOnMap(characterID uint32) bool {
-	if a.MapData == nil || characterID == 0 {
+	if a.Map == nil || characterID == 0 {
 		return false
 	}
-	return a.MapData.GetPlayer(characterID) != nil
+	return a.Map.GetPlayer(characterID) != nil
 }
 
 func (a *MapActor) onResumeLua(msg *ResumeLua) {
 	if msg.Root == nil || msg.Thread == nil {
 		return
 	}
-	state, _, _ := msg.Root.Resume(msg.Thread, nil)
+	state, _ := luax.Resume(msg.Root, msg.Thread, msg.Args...)
 	if state == lua.ResumeOK {
-		luax.ClearThreadPID(msg.Thread)
-		msg.Thread.Close()
+		cfg, ok := luax.GetConfiguration(msg.Thread)
+		if ok && cfg.KeepAlive {
+			luax.Close(msg.Thread)
+		}
 	}
 }
 
 func (a *MapActor) onHandlerPacket(ctx actor.Context, msg *c_actor.HandlePacket) {
-	err := core.ExecutePacketHandler(ctx, a.Context, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)
+	err := core.ExecutePacketHandler(ctx, a.GameWorld, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)
 	if err != nil {
 		log.Printf("Error handling packet 0x%02X: %v", msg.Opcode, err)
 	}
@@ -162,48 +165,48 @@ func (a *MapActor) onExecuteTimer(msg *c_actor.ExecuteTimer) {
 }
 
 func (a *MapActor) onAddCharacter(ctx actor.Context, msg *AddCharacter) {
-	if a.MapData == nil {
+	if a.Map == nil {
 		return
 	}
-	a.MapData.AddPlayer(msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
+	a.Map.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 }
 
 func (a *MapActor) onRemoveCharacter(ctx actor.Context, msg *RemoveCharacter) {
-	if a.MapData == nil {
+	if a.Map == nil {
 		if ctx.Sender() != nil {
 			ctx.Respond(struct{}{})
 		}
 		return
 	}
-	_ = a.MapData.RemovePlayer(msg.CharacterID)
+	_ = a.Map.RemovePlayer(msg.CharacterID)
 	if ctx.Sender() != nil {
 		ctx.Respond(struct{}{})
 	}
 }
 
 func (a *MapActor) onWarpCharacter(ctx actor.Context, msg *WarpCharacter) {
-	if a.MapData == nil {
+	if a.Map == nil {
 		return
 	}
-	a.MapData.AddPlayer(msg.Character.GetID(), msg.Character, msg.Portal, false)
+	a.Map.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.Portal, false)
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 }
 
 func (a *MapActor) onRemoveDoor(msg *RemoveDoor) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	a.MapData.RemoveDoorByOwnerSkill(msg.OwnerID, constant.SkillID(msg.SkillID), true)
+	a.Map.RemoveDoorByOwnerSkill(msg.OwnerID, constant.SkillID(msg.SkillID), true)
 }
 
 func (a *MapActor) onRequestSpawnDoor(ctx actor.Context, msg *RequestSpawnDoor) {
-	if msg == nil || msg.ReplyTo == nil || a.MapData == nil || a.MapData.Wz == nil {
+	if msg == nil || msg.ReplyTo == nil || a.Map == nil || a.Map.Wz == nil {
 		return
 	}
-	portalID, townPos, ok := a.MapData.TryAcquireMysticReturnPortal(msg.PartyOwnerSlot)
+	portalID, townPos, ok := a.Map.TryAcquireMysticReturnPortal(msg.PartyOwnerSlot)
 	if !ok {
 		ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
 			Ok:                 false,
@@ -222,10 +225,10 @@ func (a *MapActor) onRequestSpawnDoor(ctx actor.Context, msg *RequestSpawnDoor) 
 	committed := false
 	defer func() {
 		if !committed {
-			a.MapData.ReleaseMysticReturnPortal(portalID)
+			a.Map.ReleaseMysticReturnPortal(portalID)
 		}
 	}()
-	wz := a.MapData.Wz
+	wz := a.Map.Wz
 	door := entity.NewDoor(
 		townPos,
 		msg.OwnerID,
@@ -238,7 +241,7 @@ func (a *MapActor) onRequestSpawnDoor(ctx actor.Context, msg *RequestSpawnDoor) 
 		msg.FieldAnchor,
 		townPos,
 	)
-	a.MapData.AddDoor(door)
+	a.Map.AddDoor(door)
 	committed = true
 	ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
 		Ok:                 true,
@@ -255,34 +258,34 @@ func (a *MapActor) onRequestSpawnDoor(ctx actor.Context, msg *RequestSpawnDoor) 
 }
 
 func (a *MapActor) onResponseSpawnDoor(msg *ResponseSpawnDoor) {
-	if msg == nil || a.MapData == nil {
+	if msg == nil || a.Map == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
-		if msg.Ok && a.MapData.Wz != nil && a.MapData.Context != nil {
-			a.MapData.Context.NotifyDoorRemove(msg.OwnerID, uint32(msg.SkillID), uint32(a.MapData.Wz.ReturnMapId))
+		if msg.Ok && a.Map.Wz != nil && a.Map.GameWorld != nil {
+			a.Map.GameWorld.NotifyDoorRemove(msg.OwnerID, uint32(msg.SkillID), uint32(a.Map.Wz.ReturnMapId))
 		}
 		return
 	}
-	gc := ch.Context
+	gw := ch.GameWorld
 	if !msg.Ok {
-		if gc != nil {
+		if gw != nil {
 			ch.Listener.OnMessage(ch, constant.MSG_PINK_TEXT, constant.DoorNoTownPortalMessage)
 		}
 		return
 	}
 	door := ch.SpawnFieldMapDoor(msg.SkillID, msg.ReturnPortalID, msg.TownPortalPosition, msg.FieldPortalID)
-	if door == nil && gc != nil {
-		gc.NotifyDoorRemove(msg.OwnerID, uint32(msg.SkillID), uint32(ch.GetMap().Wz.ReturnMapId))
+	if door == nil && gw != nil {
+		gw.NotifyDoorRemove(msg.OwnerID, uint32(msg.SkillID), uint32(ch.GetMap().Wz.ReturnMapId))
 	}
 }
 
 func (a *MapActor) onRunCharacterTimer(ctx actor.Context, msg *c_actor.RunCharacterTimer) {
-	if a.MapData == nil {
+	if a.Map == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -339,26 +342,24 @@ func (a *MapActor) registerTimers() {
 	RegisterTimer[*timers.MobPoisonTickTimer](a.timerReg)
 	RegisterTimer[*timers.MistExpireTimer](a.timerReg)
 	RegisterTimer[*timers.MistPoisonTickTimer](a.timerReg)
-	if a.SaveCharacters != nil {
-		a.timerReg.handlers[timers.CharacterSaveTimerName] = timers.NewCharacterSaveTimer(a.SaveCharacters)
-	}
+	RegisterTimer[*timers.CharacterSaveTimer](a.timerReg)
 }
 
 func (a *MapActor) onTimerTick(ctx actor.Context, msg *TimerTick) {
-	if a.MapData == nil {
+	if a.Map == nil {
 		return
 	}
 	handler := a.timerReg.GetHandler(msg.HandlerName)
 	if handler == nil {
 		return
 	}
-	if err := handler.Handle(ctx, a.MapData); err != nil {
+	if err := handler.Handle(ctx, a.Map); err != nil {
 		log.Printf("Timer handler %s error: %v", handler.GetName(), err)
 	}
 }
 
 func (a *MapActor) onSyncPartySnapshot(msg *SyncPartySnapshot) {
-	if a.MapData == nil || msg == nil || msg.Snapshot == nil {
+	if a.Map == nil || msg == nil || msg.Snapshot == nil {
 		return
 	}
 	partyID := msg.Snapshot.GetPartyId()
@@ -366,7 +367,7 @@ func (a *MapActor) onSyncPartySnapshot(msg *SyncPartySnapshot) {
 	for _, member := range msg.Snapshot.GetMembers() {
 		memberSet[member.GetCharacterId()] = struct{}{}
 	}
-	for _, obj := range a.MapData.GetAllPlayers() {
+	for _, obj := range a.Map.GetAllPlayers() {
 		ch, ok := obj.(*entity.Character)
 		if !ok || ch == nil {
 			continue
@@ -383,10 +384,10 @@ func (a *MapActor) onSyncPartySnapshot(msg *SyncPartySnapshot) {
 }
 
 func (a *MapActor) onClearPartyByPartyID(msg *ClearPartyByPartyID) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	for _, obj := range a.MapData.GetAllPlayers() {
+	for _, obj := range a.Map.GetAllPlayers() {
 		ch, ok := obj.(*entity.Character)
 		if !ok || ch == nil {
 			continue
@@ -398,10 +399,10 @@ func (a *MapActor) onClearPartyByPartyID(msg *ClearPartyByPartyID) {
 }
 
 func (a *MapActor) onSyncCharacterPartyState(msg *SyncCharacterPartyState) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -414,36 +415,82 @@ func (a *MapActor) onSyncCharacterPartyState(msg *SyncCharacterPartyState) {
 }
 
 func (a *MapActor) onPartyMemberLeft(msg *PartyMemberLeft) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	a.MapData.ApplyPartyLeaveDoorSync(msg.LeaverID)
+	a.Map.ApplyPartyLeaveDoorSync(msg.LeaverID)
 }
 
 func (a *MapActor) onPartyDisband(msg *PartyDisband) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	a.MapData.ApplyPartyDisbandDoorSync(msg.FormerMemberIDs)
+	a.Map.ApplyPartyDisbandDoorSync(msg.FormerMemberIDs)
 }
 
-func (a *MapActor) ensureNotOnMap(msg *EnsureDeliver) {
-	if a.Ensure != nil {
-		a.Ensure.EnsureRedispatch(msg)
+func (a *MapActor) onSaveMapCharacters(ctx actor.Context) {
+	sender := ctx.Sender()
+	if sender == nil {
+		return
+	}
+	ack := &SaveMapCharactersAck{}
+	if a.Map == nil || a.GameWorld == nil {
+		ctx.Respond(ack)
+		return
+	}
+	if a.Map.Wz != nil {
+		ack.MapID = uint32(a.Map.Wz.ID)
+	}
+	allPlayers := a.Map.GetAllPlayers()
+	if len(allPlayers) == 0 {
+		ctx.Respond(ack)
+		return
+	}
+	chars := make([]*entity.Character, 0, len(allPlayers))
+	for _, obj := range allPlayers {
+		if ch, ok := obj.(*entity.Character); ok && ch != nil {
+			chars = append(chars, ch)
+		}
+	}
+	ack.Saved = len(chars)
+	if len(chars) == 0 {
+		ctx.Respond(ack)
+		return
+	}
+	p := a.GameWorld.SaveCharactersAsync(ctx, chars)
+	if p == nil {
+		ack.Err = "nil save promise"
+		ctx.Respond(ack)
+		return
+	}
+	var saveErr error
+	p.OnError(func(err error) {
+		saveErr = err
+	}).Finally(func() {
+		if saveErr != nil {
+			ack.Err = saveErr.Error()
+		}
+		ctx.Respond(ack)
+	}).Run()
+}
+
+func (a *MapActor) ensureNotOnMap(msg *ensure.EnsureDeliver) {
+	if a.GameWorld != nil {
+		a.GameWorld.EnsureRedispatch(msg)
 	}
 }
 
-func (a *MapActor) ensureFinish(ctx actor.Context, msg *EnsureDeliver, ok bool, reason string) {
+func (a *MapActor) ensureFinish(ctx actor.Context, msg *ensure.EnsureDeliver, ok bool, reason string) {
 	if msg == nil {
 		return
 	}
-	if a.Ensure != nil {
-		a.Ensure.EnsureComplete(msg.CorrelationID)
+	if a.GameWorld != nil {
+		a.GameWorld.EnsureComplete(msg.CorrelationID)
 	}
 	if msg.Caller == nil {
 		return
 	}
-	ctx.Send(msg.Caller, &EnsureResult{
+	ctx.Send(msg.Caller, &ensure.EnsureResult{
 		CorrelationID: msg.CorrelationID,
 		OK:            ok,
 		Reason:        reason,
@@ -451,10 +498,10 @@ func (a *MapActor) ensureFinish(ctx actor.Context, msg *EnsureDeliver, ok bool, 
 }
 
 func (a *MapActor) onDeliverPartyInvite(msg *DeliverPartyInvite) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -466,10 +513,10 @@ func (a *MapActor) onDeliverPartyInvite(msg *DeliverPartyInvite) {
 }
 
 func (a *MapActor) onDeliverPartyStatusMessage(msg *DeliverPartyStatusMessage) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -480,10 +527,10 @@ func (a *MapActor) onDeliverPartyStatusMessage(msg *DeliverPartyStatusMessage) {
 }
 
 func (a *MapActor) onDeliverPartyUpdateJoin(msg *DeliverPartyUpdateJoin) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -497,10 +544,10 @@ func (a *MapActor) onDeliverPartyUpdateJoin(msg *DeliverPartyUpdateJoin) {
 }
 
 func (a *MapActor) onDeliverPartyUpdateLeave(msg *DeliverPartyUpdateLeave) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -526,10 +573,10 @@ func (a *MapActor) onDeliverPartyUpdateLeave(msg *DeliverPartyUpdateLeave) {
 }
 
 func (a *MapActor) onDeliverPartyUpdateDisband(msg *DeliverPartyUpdateDisband) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -540,10 +587,10 @@ func (a *MapActor) onDeliverPartyUpdateDisband(msg *DeliverPartyUpdateDisband) {
 }
 
 func (a *MapActor) onDeliverPartyUpdateLeaderChange(msg *DeliverPartyUpdateLeaderChange) {
-	if a.MapData == nil || msg == nil || msg.NewLeaderCharacterID == 0 {
+	if a.Map == nil || msg == nil || msg.NewLeaderCharacterID == 0 {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -554,10 +601,10 @@ func (a *MapActor) onDeliverPartyUpdateLeaderChange(msg *DeliverPartyUpdateLeade
 }
 
 func (a *MapActor) onDeliverPartyUpdateLogOnOff(msg *DeliverPartyUpdateLogOnOff) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -570,10 +617,10 @@ func (a *MapActor) onDeliverPartyUpdateLogOnOff(msg *DeliverPartyUpdateLogOnOff)
 }
 
 func (a *MapActor) onDeliverPartyUpdateSilent(msg *DeliverPartyUpdateSilent) {
-	if a.MapData == nil || msg == nil {
+	if a.Map == nil || msg == nil {
 		return
 	}
-	ch := a.MapData.GetPlayer(msg.CharacterID)
+	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

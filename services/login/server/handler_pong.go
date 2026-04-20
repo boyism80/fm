@@ -36,13 +36,13 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 	c.MarkPongReceived()
 	accountId := c.GetAccountId()
 	worldId := c.GetWorldId()
-	if accountId != 0 && h.ls.context.InternalClient != nil {
+	if accountId != 0 && h.ls.internalClient != nil {
 		if ctx.ActorContext == nil {
 			return fmt.Errorf("login pong: actor context required for internal RPC")
 		}
 		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 			func(cctx context.Context) (*internal.RefreshSessionReply, error) {
-				return h.ls.context.InternalClient.RefreshSession(cctx, &internal.RefreshSessionRequest{
+				return h.ls.internalClient.RefreshSession(cctx, &internal.RefreshSessionRequest{
 					WorldId:   worldId,
 					AccountId: accountId,
 				})

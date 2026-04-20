@@ -40,7 +40,7 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 		return nil
 	}
 
-	ic := h.ls.context.InternalClient
+	ic := h.ls.internalClient
 	if ic == nil {
 		createResp := &response.CreateCharacter{Success: false}
 		return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)

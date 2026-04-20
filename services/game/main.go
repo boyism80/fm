@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/boyism80/fm/common/config"
 	"github.com/boyism80/fm/services/game/server"
@@ -80,11 +78,15 @@ high_rate: false
 
 	internalAddr := g.Internal.GRPCAddr()
 	if internalAddr != "" {
-		pingCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		err := server.PingInternalService(pingCtx, internalAddr)
-		cancel()
-		if err != nil {
-			log.Fatalf("Internal server not reachable (%s): %v", internalAddr, err)
+		done := make(chan struct{})
+		var pingErr error
+		p := server.InternalPingAsync(internalAddr)
+		p.OnError(func(err error) { pingErr = err })
+		p.Finally(func() { close(done) })
+		p.Run()
+		<-done
+		if pingErr != nil {
+			log.Fatalf("Internal server not reachable (%s): %v", internalAddr, pingErr)
 		}
 		log.Printf("Internal server ping ok (%s)", internalAddr)
 	}
