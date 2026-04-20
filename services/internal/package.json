@@ -1,0 +1,30 @@
+{
+  "name": "@fm/internal-server",
+  "private": true,
+  "version": "0.0.1",
+  "description": "FM internal gRPC service (persistence/cache gateway — scaffold only)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "migrate": "sequelize-cli db:migrate --env development",
+    "migrate:undo": "sequelize-cli db:migrate:undo --env development"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.12.4",
+    "amqplib": "^1.0.3",
+    "awilix": "^13.0.3",
+    "bcrypt": "^6.0.0",
+    "google-protobuf": "^3.21.4",
+    "ioredis": "^5.10.1",
+    "js-yaml": "^4.1.0",
+    "pg": "^8.20.0",
+    "sequelize": "^6.37.8"
+  },
+  "devDependencies": {
+    "grpc-tools": "^1.12.4",
+    "sequelize-cli": "^6.6.5"
+  }
+}

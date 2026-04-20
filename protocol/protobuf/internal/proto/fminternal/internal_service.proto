@@ -1,0 +1,462 @@
+syntax = "proto3";
+
+// After editing this file, regenerate Go + JS: run protocol/protobuf/gen.bat from the repo (requires protoc, protoc-gen-go, protoc-gen-go-grpc, and npm install in services/internal).
+
+package fm.internal;
+
+option go_package = "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal;fminternalpb";
+
+service Internal {
+  rpc Ping (PingRequest) returns (PingReply);
+  rpc GetServerCatalog (GetServerCatalogRequest) returns (GetServerCatalogReply);
+  rpc EnterGame (EnterGameRequest) returns (EnterGameReply);
+  rpc BeginGameTransition (BeginGameTransitionRequest) returns (BeginGameTransitionReply);
+  rpc SaveCharacter (SaveCharacterRequest) returns (SaveCharacterReply);
+  rpc SaveCharacters (SaveCharactersRequest) returns (SaveCharactersReply);
+  rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
+  rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
+  rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
+  rpc CreateCharacter (CreateCharacterRequest) returns (CreateCharacterReply);
+  rpc DeleteCharacter (DeleteCharacterRequest) returns (DeleteCharacterReply);
+  rpc RefreshSession (RefreshSessionRequest) returns (RefreshSessionReply);
+  rpc LogoutSession (LogoutSessionRequest) returns (LogoutSessionReply);
+  rpc CreateParty (CreatePartyRequest) returns (CreatePartyReply);
+  rpc JoinParty (JoinPartyRequest) returns (JoinPartyReply);
+  rpc LeaveParty (LeavePartyRequest) returns (LeavePartyReply);
+  rpc ExpelParty (ExpelPartyRequest) returns (ExpelPartyReply);
+  rpc ChangePartyLeader (ChangePartyLeaderRequest) returns (ChangePartyLeaderReply);
+  rpc GetParty (GetPartyRequest) returns (GetPartyReply);
+  rpc UpdatePartyMember (UpdatePartyMemberRequest) returns (UpdatePartyMemberReply);
+  rpc InviteParty (InvitePartyRequest) returns (InvitePartyReply);
+  rpc DenyParty (DenyPartyRequest) returns (DenyPartyReply);
+}
+
+message PingRequest {}
+
+message PingReply {
+  string message = 1;
+}
+
+message GetServerCatalogRequest {}
+
+message ChannelCatalog {
+  uint32 channel_id = 1;
+  string host = 2;
+  uint32 port = 3;
+  string name = 4;
+}
+
+message WorldCatalog {
+  uint32 world_id = 1;
+  string world_name = 2;
+  uint32 flag = 3;
+  string event_message = 4;
+  repeated ChannelCatalog channels = 5;
+}
+
+message GetServerCatalogReply {
+  repeated WorldCatalog worlds = 1;
+}
+
+message EnterGameRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 channel_id = 3;
+}
+
+message CharacterPersisted {
+  uint32 character_id      = 1;
+  uint32 world_id          = 2;
+  string name              = 3;
+  uint32 gender            = 4;
+  uint32 skin_color        = 5;
+  uint32 face              = 6;
+  uint32 hair              = 7;
+  uint32 level             = 8;
+  uint32 class_id          = 9;
+  uint32 str               = 10;
+  uint32 dex               = 11;
+  uint32 int_stat          = 12;
+  uint32 luk               = 13;
+  uint32 hp                = 14;
+  uint32 max_hp            = 15;
+  uint32 mp                = 16;
+  uint32 max_mp            = 17;
+  uint32 ability_point     = 18;
+  uint32 exp               = 19;
+  uint32 map_id            = 20;
+  uint32 spawn_point       = 21;
+  int32  position_x        = 22;
+  int32  position_y        = 23;
+  uint32 stance            = 24;
+  int32  meso              = 25;
+  uint32 skill_point       = 26;
+  uint32 account_id        = 27;
+  uint32 role              = 28;
+  bool   hidden            = 29;
+}
+
+message KeyLayoutBinding {
+  int32  slot  = 1;
+  uint32 type  = 2;
+  int32  action = 3;
+}
+
+message EnterGameReply {
+  bool                        found     = 1;
+  CharacterPersisted          character = 2;
+  repeated InventoryPersisted inventory = 3;
+  repeated SkillPersisted     skills    = 4;
+  repeated KeyLayoutBinding   key_layout = 5;
+  optional uint32              party_id  = 6;
+  uint32                       guild_id  = 7;
+}
+
+message BeginGameTransitionRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+}
+
+enum SessionErrorCode {
+  SESSION_NONE = 0;
+  SESSION_UNKNOWN = 1;
+  SESSION_ALREADY_LOGGED_IN = 2;
+  SESSION_NOT_FOUND = 3;
+  SESSION_LOGOUT_FAILED = 4;
+}
+
+message BeginGameTransitionReply {
+  bool ok = 1;
+  SessionErrorCode error_code = 2;
+}
+
+message SaveCharacterRequest {
+  CharacterPersisted     character  = 1;
+  map<int32, uint32>     base_looks = 2;
+  map<int32, uint32>     overlays   = 3;
+}
+
+message SaveCharacterReply {
+  bool ok = 1;
+}
+
+message CharacterSaveEntry {
+  CharacterPersisted     character  = 1;
+  map<int32, uint32>     base_looks = 2;
+  map<int32, uint32>     overlays   = 3;
+  repeated InventoryPersisted inventory = 4;
+  repeated SkillPersisted     skills    = 5;
+  repeated KeyLayoutBinding   key_layout = 6;
+}
+
+message SaveCharactersRequest {
+  repeated CharacterSaveEntry entries = 1;
+}
+
+message SaveCharactersReply {
+  bool ok = 1;
+}
+
+message InventoryPersisted {
+  optional uint64 unique_id = 1;
+  uint32 owner_id           = 2;
+  uint32 item_id            = 3;
+  int32  slot               = 4;
+  uint32 count              = 5;
+  int64  expiration_unix_ms = 6;
+  uint32 enchant_chance     = 7;
+  uint32 flag               = 8;
+  uint32 skill_bonus        = 9;
+  string owner_name         = 10;
+  uint32 inventory_type     = 11;
+}
+
+message SkillPersisted {
+  uint32 character_id         = 1;
+  uint32 skill_id             = 2;
+  int32  level                = 3;
+  int32  master_level         = 4;
+  int64  cooldown_end_unix_ms = 5;
+}
+
+message LoginAccountRequest {
+  string login_id    = 1;
+  string password    = 2;
+  string mac_address = 3;
+  string ip_address  = 4;
+  uint32 initial_role = 5;
+}
+
+message LoginAccountReply {
+  enum Status {
+    SUCCESS        = 0;
+    WRONG_PASSWORD = 1;
+    BANNED         = 2;
+    REGISTERED     = 3;
+    ALREADY_LOGGED_IN = 4;
+  }
+  Status  status                     = 1;
+  uint32  account_id                 = 2;
+  uint32  gender                     = 3;
+  bool    is_chat_blocked            = 4;
+  int64   chat_blocked_until_unix_ms = 5;
+  uint32  character_slot_count       = 6;
+  uint32  role                       = 7;
+}
+
+message CharacterOverview {
+  uint32             character_id    = 1;
+  string             name            = 2;
+  uint32             gender          = 3;
+  uint32             skin_color      = 4;
+  uint32             face            = 5;
+  uint32             hair            = 6;
+  uint32             level           = 7;
+  uint32             class_id        = 8;
+  uint32             map_id          = 9;
+  uint32             spawn_point     = 10;
+  uint32             account_id      = 11;
+  uint32             world_id        = 12;
+  int32              rank            = 13;
+  int32              rank_diff       = 14;
+  int32              class_rank      = 15;
+  int32              class_rank_diff = 16;
+  map<int32, uint32> base_looks      = 17;
+  map<int32, uint32> overlays        = 18;
+}
+
+message GetCharacterListRequest {
+  uint32 account_id = 1;
+  uint32 world_id   = 2;
+}
+
+message GetCharacterListReply {
+  repeated CharacterOverview characters = 1;
+  uint32                     slot_count = 2;
+}
+
+message CheckCharacterNameRequest {
+  string name = 1;
+}
+
+message CheckCharacterNameReply {
+  bool exists = 1;
+}
+
+message CreateCharacterRequest {
+  uint32 account_id     = 1;
+  uint32 world_id       = 2;
+  string name           = 3;
+  uint32 face           = 4;
+  uint32 hair           = 5;
+  uint32 skin_color     = 6;
+  uint32 top_item_id    = 7;
+  uint32 bottom_item_id = 8;
+  uint32 shoes_item_id  = 9;
+  uint32 weapon_item_id = 10;
+}
+
+message CreateCharacterReply {
+  bool              success   = 1;
+  string            error_msg = 2;
+  CharacterOverview character = 3;
+}
+
+message DeleteCharacterRequest {
+  uint32 account_id   = 1;
+  uint32 character_id = 2;
+}
+
+message DeleteCharacterReply {
+  bool success = 1;
+}
+
+message RefreshSessionRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+}
+
+message RefreshSessionReply {
+  bool ok = 1;
+  SessionErrorCode error_code = 2;
+}
+
+// Which service initiated LogoutSession (drives party channel side-effects).
+enum SessionDisconnectSource {
+  SESSION_DISCONNECT_SOURCE_UNSPECIFIED = 0;
+  SESSION_DISCONNECT_SOURCE_LOGIN_SERVER = 1;
+  SESSION_DISCONNECT_SOURCE_GAME_SERVER = 2;
+}
+
+message LogoutSessionRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  SessionDisconnectSource disconnect_source = 3;
+  bool transfer_disconnect = 4;
+}
+
+message LogoutSessionReply {
+  bool ok = 1;
+}
+
+message PartyDoor {
+  uint32 town = 1;
+  uint32 target = 2;
+  int32 x = 3;
+  int32 y = 4;
+}
+
+// Realtime party member fields (game server is source of truth).
+message PartyMemberSnapshot {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  string character_name = 3;
+  uint32 level = 4;
+  uint32 class_id = 5;
+  string role = 6;
+  uint32 map_id = 7;
+  optional int32 channel_index = 8;
+  optional PartyDoor door = 9;
+}
+
+message CreatePartyRequest {
+  uint32 world_id = 1;
+  PartyMemberSnapshot leader = 2;
+}
+
+enum PartyErrorCode {
+  NONE = 0;
+  UNKNOWN = 1;
+  ALREADY_IN_PARTY = 2;
+  CHARACTER_NOT_FOUND = 3;
+  PARTY_NOT_FOUND = 4;
+  PARTY_FULL = 5;
+  NOT_IN_PARTY = 6;
+  NOT_PARTY_LEADER = 7;
+  TARGET_NOT_IN_PARTY = 8;
+  TARGET_ALREADY_LEADER = 9;
+  CANNOT_EXPEL_SELF = 10;
+  INVITE_EXPIRED_OR_INVALID = 11;
+  TARGET_OFFLINE = 12;
+  INVITER_NOT_IN_PARTY = 13;
+  CANNOT_INVITE_SELF = 14;
+  TARGET_ALREADY_IN_PARTY = 15;
+}
+
+message CreatePartyReply {
+  bool ok = 1;
+  PartyErrorCode error_code = 2;
+  optional uint32 party_id = 3;
+  uint64 revision = 4;
+}
+
+message JoinPartyRequest {
+  uint32 world_id = 1;
+  uint32 party_id = 2;
+  PartyMemberSnapshot member = 3;
+}
+
+message JoinPartyReply {
+  bool ok = 1;
+  PartyErrorCode error_code = 2;
+  optional uint32 party_id = 3;
+  uint64 revision = 4;
+}
+
+message LeavePartyRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+}
+
+message LeavePartyReply {
+  bool ok = 1;
+  PartyErrorCode error_code = 2;
+  optional uint32 party_id = 3;
+  uint64 revision = 4;
+  bool disbanded = 5;
+}
+
+message ExpelPartyRequest {
+  uint32 world_id = 1;
+  uint32 requester_character_id = 2;
+  uint32 target_character_id = 3;
+}
+
+message ExpelPartyReply {
+  bool ok = 1;
+  PartyErrorCode error_code = 2;
+  optional uint32 party_id = 3;
+  uint64 revision = 4;
+  bool disbanded = 5;
+}
+
+message ChangePartyLeaderRequest {
+  uint32 world_id = 1;
+  uint32 party_id = 2;
+  uint32 requester_character_id = 3;
+  uint32 new_leader_character_id = 4;
+}
+
+message ChangePartyLeaderReply {
+  bool ok = 1;
+  PartyErrorCode error_code = 2;
+  optional uint32 party_id = 3;
+  uint64 revision = 4;
+}
+
+message PartySnapshot {
+  uint32 world_id = 1;
+  uint32 party_id = 2;
+  uint32 leader_character_id = 3;
+  uint64 revision = 4;
+  string state = 5;
+  repeated PartyMemberSnapshot members = 6;
+}
+
+message GetPartyRequest {
+  uint32 world_id = 1;
+  uint32 party_id = 2;
+}
+
+message GetPartyReply {
+  bool found = 1;
+  PartySnapshot party = 2;
+}
+
+message UpdatePartyMemberRequest {
+  PartyMemberSnapshot member = 1;
+}
+
+message UpdatePartyMemberReply {
+  bool ok = 1;
+  PartyErrorCode error_code = 2;
+  optional uint32 party_id = 3;
+  uint64 revision = 4;
+}
+
+message InvitePartyRequest {
+  uint32 world_id = 1;
+  uint32 inviter_character_id = 2;
+  string target_character_name = 3;
+}
+
+message InvitePartyReply {
+  bool ok = 1;
+  PartyErrorCode error_code = 2;
+  uint32 target_character_id = 3;
+  uint32 target_channel_id = 4;
+  optional uint32 party_id = 5;
+}
+
+message DenyPartyRequest {
+  uint32 world_id = 1;
+  uint32 denied_character_id = 2;
+  string inviter_name = 3;
+  uint32 action = 4;
+}
+
+message DenyPartyReply {
+  bool ok = 1;
+  PartyErrorCode error_code = 2;
+}

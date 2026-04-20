@@ -1,7 +1,7 @@
 package request
 
 import (
-	"github.com/boyism80/fm/game/constant"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 )
 

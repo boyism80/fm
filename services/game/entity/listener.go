@@ -1,0 +1,64 @@
+package entity
+
+import (
+	"time"
+
+	pconst "github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/types"
+)
+
+type CharacterListener interface {
+	OnDialog(ch *Character, npc uint32, message string, prev bool, next bool)
+	OnDialogYesNo(ch *Character, npc uint32, message string, prev bool, next bool)
+	OnDialogAccept(ch *Character, npc uint32, message string, enableEscape bool)
+	OnDialogList(ch *Character, npc uint32, message string, selections []string)
+	OnDialogInput(ch *Character, npc uint32, message string)
+	OnChat(ch *Character, message string, highlight bool, dontRecordHistory bool)
+	OnMesoChanged(ch *Character, meso int32)
+	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
+	OnPartyCreated(ch *Character, partyID uint32)
+	OnPartyStatusMessage(ch *Character, code pconst.PartyStatusCode)
+	OnExpGain(ch *Character, exp uint32)
+	OnControlMoveMob(ch *Character, mob *Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8)
+	OnShowMobHp(ch *Character, mob *Mob, percentage uint8)
+	OnUnlockAction(ch *Character)
+	OnItemGainFailed(ch *Character, mode constant.ItemGainFailedType)
+	OnInventorySlotUpdated(ch *Character, inventoryType constant.InventoryType, slot int16, item Item)
+	OnInventorySlotAdded(ch *Character, inventoryType constant.InventoryType, slot int16, item Item)
+	OnShowItemGain(ch *Character, itemId uint32, count uint32, mode constant.ShowItemGainType)
+	OnShowMesoGain(ch *Character, count int32, mode constant.ShowMesoGainType)
+	OnUpdateStats(ch *Character, stats map[constant.Stat]int32, unlock bool)
+	OnMobMoved(ch *Character, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
+	OnPlayerMove(ch *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
+	OnAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnRangedAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnMagicAttack(ch *Character, attackPayload dto.AttackPayload, skillLevel uint8)
+	OnEndSortInventory(ch *Character, inventoryType constant.InventoryType)
+	OnSwapInventorySlot(ch *Character, inventoryType constant.InventoryType, source int16, dest int16, equipmentAction int8)
+	OnRemoveInventorySlot(ch *Character, inventoryType constant.InventoryType, slot int16)
+	OnUpdateInventorySlot(ch *Character, inventoryType constant.InventoryType, slot int16, item Item)
+	OnFullMergeInventorySlot(ch *Character, inventoryType constant.InventoryType, source int16, dest int16, count uint16)
+	OnPartialMergeInventorySlot(ch *Character, inventoryType constant.InventoryType, source int16, dest int16, sourceCount uint16, destCount uint16)
+	OnUpdateCharacterLook(ch *Character)
+	OnNpcAction(ch *Character, bytes []byte)
+	OnClassChange(ch *Character, oldClass uint16, newClass uint16)
+	OnPartyMemberFieldsChanged(ch *Character)
+	OnPartyMemberHPChanged(ch *Character, recipient *Character)
+	OnBuffAdded(ch *Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32)
+	OnBuffRemoved(ch *Character, flags []constant.BuffFlag)
+	OnDebuffAdded(ch *Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32)
+	OnDebuffRemoved(ch *Character, flags []constant.DebuffFlag)
+	OnSkillCooldown(ch *Character, skillID uint32, remainingSec uint16)
+	OnUpdateSkill(ch *Character, skillID uint32, level int32, masterLevel int32)
+	OnSkillPassiveHook(ch *Character, skillID uint32, hook string)
+	OnHiddenChanged(ch *Character, hidden bool)
+	OnShowBuffEffect(ch *Character, effectID uint8, skillID uint32, skillLevel uint8, additional *uint8)
+	OnSummonSpawn(ch *Character, summon *Summon)
+	OnSummonRemove(ch *Character, summon *Summon, animated bool)
+	OnSummonMove(ch *Character, summon *Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment)
+	OnSummonAttack(ch *Character, summon *Summon, animation uint8, targets []SummonAttackTarget)
+	OnSummonSkill(ch *Character, summon *Summon, newStance uint8)
+	OnSummonDamaged(ch *Character, summon *Summon, unknown uint8, damage uint32, monsterIdFrom uint32)
+}

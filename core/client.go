@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/boyism80/fm/core/client"
 	"github.com/boyism80/fm/core/crypt"
@@ -20,6 +21,8 @@ type BaseClient struct {
 	fd             int
 	sendEncryption *crypt.Encryption
 	recvEncryption *crypt.Encryption
+	lastPingAt     time.Time
+	pongReceived   bool
 }
 
 func (c *BaseClient) GetConnection() net.Conn {
@@ -69,6 +72,30 @@ func (c *BaseClient) Send(packet types.Packet, policy types.SendPolicy) error {
 	}
 
 	return fmt.Errorf("unsupported send policy: %d", policy)
+}
+
+func (c *BaseClient) MarkPongReceived() {
+	c.pongReceived = true
+}
+
+func (c *BaseClient) NextPingAction(now time.Time, interval time.Duration) (sendPing bool, disconnect bool) {
+	if c.lastPingAt.IsZero() {
+		c.lastPingAt = now
+		c.pongReceived = false
+		return true, false
+	}
+
+	if now.Sub(c.lastPingAt) < interval {
+		return false, false
+	}
+
+	if !c.pongReceived {
+		return false, true
+	}
+
+	c.lastPingAt = now
+	c.pongReceived = false
+	return true, false
 }
 
 func GetFileDescriptor(conn net.Conn) (int, error) {

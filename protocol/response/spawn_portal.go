@@ -26,10 +26,10 @@ func (p *SpawnPortal) Serialize(w *stream.StreamWriter) error {
 		if p.Position == nil {
 			w.Write16(0)
 			w.Write16(0)
-			return nil
+		} else {
+			w.Write16(p.Position.X)
+			w.Write16(p.Position.Y)
 		}
-		w.Write16(p.Position.X)
-		w.Write16(p.Position.Y)
 	}
 	return nil
 }

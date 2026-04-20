@@ -13,8 +13,9 @@ type PacketHandler struct {
 
 type ClientContext struct {
 	Client        Client
-	Server        *Server
+	Server        *ServerCore
 	LogicActorPID *actor.PID
+	ActorContext  actor.Context
 }
 
 func NewPacketHandler() *PacketHandler {
