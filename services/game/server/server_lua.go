@@ -615,9 +615,9 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.RaiseError("run_on_script: root lua state not found")
 			return 0
 		}
-		_, thread, err := luax.Call(root, "script/script.lua", "on_script", ch)
-		if thread != nil {
-			thread.Close()
+		thread, err := luax.NewThread(root, "script/script.lua")
+		if err == nil {
+			_, err = luax.Call(thread, "on_script", ch)
 		}
 		if err != nil {
 			L.RaiseError("run_on_script: %v", err)

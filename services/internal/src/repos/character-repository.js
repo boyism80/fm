@@ -5,7 +5,7 @@ const { ValueRepository } = require("./value-repository");
 
 const SELECT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, deleted, created_at, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, hidden, deleted, created_at, updated_at`;
 
 const ON_CONFLICT_SET = `
   account_id = EXCLUDED.account_id, world_id = EXCLUDED.world_id, name = EXCLUDED.name, gender = EXCLUDED.gender,
@@ -15,14 +15,14 @@ const ON_CONFLICT_SET = `
   hp = EXCLUDED.hp, max_hp = EXCLUDED.max_hp, mp = EXCLUDED.mp, max_mp = EXCLUDED.max_mp,
   ability_point = EXCLUDED.ability_point, exp = EXCLUDED.exp, map_id = EXCLUDED.map_id,
   spawn_point = EXCLUDED.spawn_point, pos_x = EXCLUDED.pos_x, pos_y = EXCLUDED.pos_y,
-  stance = EXCLUDED.stance, meso = EXCLUDED.meso, skill_point = EXCLUDED.skill_point,
+  stance = EXCLUDED.stance, meso = EXCLUDED.meso, skill_point = EXCLUDED.skill_point, hidden = EXCLUDED.hidden,
   deleted = FALSE, updated_at = NOW()`;
 
 const INSERT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, deleted, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, hidden, deleted, updated_at`;
 
-const PER_ROW_PARAMS = 28;
+const PER_ROW_PARAMS = 29;
 
 function rowValues(row) {
     return [
@@ -33,6 +33,7 @@ function rowValues(row) {
         row.max_hp,       row.mp,             row.max_mp,        row.ability_point,
         row.exp,          row.map_id,         row.spawn_point,   row.pos_x,
         row.pos_y,        row.stance,         row.meso,          row.skill_point,
+        row.hidden,
     ];
 }
 
@@ -69,7 +70,7 @@ class CharacterRepository extends ValueRepository {
 
     onUpsert(row) {
         return {
-            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
+            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
             values: rowValues(row),
         };
     }
@@ -124,6 +125,7 @@ class CharacterRepository extends ValueRepository {
             stance:       Number(row.stance),
             meso:         Number(row.meso),
             skillPoint:   Number(row.skill_point),
+            hidden:       Boolean(row.hidden),
             updatedAt:    row.updated_at instanceof Date ? row.updated_at : new Date(row.updated_at),
         };
     }
@@ -158,6 +160,7 @@ class CharacterRepository extends ValueRepository {
             stance:        model.stance,
             meso:          model.meso,
             skill_point:   model.skillPoint,
+            hidden:        Boolean(model.hidden),
         };
     }
 

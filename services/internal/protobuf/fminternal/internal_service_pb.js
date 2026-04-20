@@ -2476,7 +2476,8 @@ proto.fm.internal.CharacterPersisted.toObject = function(includeInstance, msg) {
     meso: jspb.Message.getFieldWithDefault(msg, 25, 0),
     skillPoint: jspb.Message.getFieldWithDefault(msg, 26, 0),
     accountId: jspb.Message.getFieldWithDefault(msg, 27, 0),
-    role: jspb.Message.getFieldWithDefault(msg, 28, 0)
+    role: jspb.Message.getFieldWithDefault(msg, 28, 0),
+    hidden: jspb.Message.getBooleanFieldWithDefault(msg, 29, false)
   };
 
   if (includeInstance) {
@@ -2624,6 +2625,10 @@ proto.fm.internal.CharacterPersisted.deserializeBinaryFromReader = function(msg,
     case 28:
       var value = /** @type {number} */ (reader.readUint32());
       msg.setRole(value);
+      break;
+    case 29:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setHidden(value);
       break;
     default:
       reader.skipField();
@@ -2847,6 +2852,13 @@ proto.fm.internal.CharacterPersisted.serializeBinaryToWriter = function(message,
   if (f !== 0) {
     writer.writeUint32(
       28,
+      f
+    );
+  }
+  f = message.getHidden();
+  if (f) {
+    writer.writeBool(
+      29,
       f
     );
   }
@@ -3354,6 +3366,24 @@ proto.fm.internal.CharacterPersisted.prototype.getRole = function() {
  */
 proto.fm.internal.CharacterPersisted.prototype.setRole = function(value) {
   return jspb.Message.setProto3IntField(this, 28, value);
+};
+
+
+/**
+ * optional bool hidden = 29;
+ * @return {boolean}
+ */
+proto.fm.internal.CharacterPersisted.prototype.getHidden = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 29, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.fm.internal.CharacterPersisted} returns this
+ */
+proto.fm.internal.CharacterPersisted.prototype.setHidden = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 29, value);
 };
 
 

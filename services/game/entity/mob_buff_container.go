@@ -57,12 +57,13 @@ func (e *MobSkillBuff) callMobSkillHook(mob *Mob, hookPrefix string) {
 	}
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
 	hookName := luax.SkillScriptHookName(hookPrefix, skillID)
-	_, thread, err := luax.Call(root, scriptPath, hookName, mob, e, causer)
+	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("mob skill hook %s %d: %v", hookPrefix, skillID, err)
+		return
 	}
-	if thread != nil {
-		thread.Close()
+	if _, err := luax.Call(thread, hookName, mob, e, causer); err != nil {
+		log.Printf("mob skill hook %s %d: %v", hookPrefix, skillID, err)
 	}
 }
 

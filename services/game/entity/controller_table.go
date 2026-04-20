@@ -8,6 +8,18 @@ type ControllerTable struct {
 	onControllerChange func(mob *Mob, before *Character, after *Character)
 }
 
+func (t *ControllerTable) choiceControllablePlayer(excludeID uint32) *Character {
+	for id, controller := range t.controllers {
+		if id == excludeID {
+			continue
+		}
+		if controller != nil && !controller.IsHidden() {
+			return controller
+		}
+	}
+	return nil
+}
+
 func NewControllerTable(onControllerChange func(mob *Mob, before *Character, after *Character)) *ControllerTable {
 	return &ControllerTable{
 		onControllerChange: onControllerChange,
@@ -23,6 +35,10 @@ func (t *ControllerTable) EnterPlayer(character *Character) {
 	t.controllers[playerID] = character
 	t.controller2mob[playerID] = make(map[uint32]struct{})
 
+	if character == nil || character.IsHidden() {
+		return
+	}
+
 	for mobOID, mob := range t.mobs {
 		if t.mob2controller[mobOID] == 0 {
 			t.assign(mob, nil, character)
@@ -32,14 +48,7 @@ func (t *ControllerTable) EnterPlayer(character *Character) {
 
 func (t *ControllerTable) LeavePlayer(character *Character) {
 	playerID := character.GetID()
-
-	var next *Character
-	for id, controller := range t.controllers {
-		if id != playerID {
-			next = controller
-			break
-		}
-	}
+	next := t.choiceControllablePlayer(playerID)
 
 	for mobOID := range t.controller2mob[playerID] {
 		if mob, exists := t.mobs[mobOID]; exists {
@@ -57,6 +66,9 @@ func (t *ControllerTable) EnterMob(mob *Mob) {
 	t.mob2controller[mobOID] = 0
 
 	for _, controller := range t.controllers {
+		if controller == nil || controller.IsHidden() {
+			continue
+		}
 		t.assign(mob, nil, controller)
 		break
 	}
@@ -115,9 +127,36 @@ func (t *ControllerTable) GetController(mob *Mob) (*Character, bool) {
 }
 
 func (t *ControllerTable) SwitchController(mob *Mob, newController *Character) {
+	if newController == nil || newController.IsHidden() {
+		return
+	}
 	before, _ := t.GetController(mob)
 	if before == newController {
 		return
 	}
 	t.assign(mob, before, newController)
+}
+
+func (t *ControllerTable) Update(character *Character) {
+	if character == nil {
+		return
+	}
+	playerID := character.GetID()
+	if _, exists := t.controllers[playerID]; !exists {
+		return
+	}
+	if character.IsHidden() {
+		next := t.choiceControllablePlayer(playerID)
+		for mobOID := range t.controller2mob[playerID] {
+			if mob, exists := t.mobs[mobOID]; exists {
+				t.assign(mob, character, next)
+			}
+		}
+		return
+	}
+	for mobOID, mob := range t.mobs {
+		if t.mob2controller[mobOID] == 0 {
+			t.assign(mob, nil, character)
+		}
+	}
 }

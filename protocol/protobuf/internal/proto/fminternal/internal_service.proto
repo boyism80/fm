@@ -93,6 +93,7 @@ message CharacterPersisted {
   uint32 skill_point       = 26;
   uint32 account_id        = 27;
   uint32 role              = 28;
+  bool   hidden            = 29;
 }
 
 message KeyLayoutBinding {

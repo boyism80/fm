@@ -96,23 +96,30 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 
 	params := buildActiveSkillParams(root, mapInstance, req)
 
-	if commonResult, commonThread, commonErr := luax.Call(root, commonSkillScriptPath, "on_activating", ch, skillEntry, params); commonErr == nil {
-		defer commonThread.Close()
-		if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
+	if commonThread, commonErr := luax.NewThread(root, commonSkillScriptPath); commonErr == nil {
+		commonResult, commonErr := luax.Call(commonThread, "on_activating", ch, skillEntry, params)
+		if commonErr != nil {
+			log.Printf("Skill common on_activating: %v", commonErr)
+		} else if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
 			ch.Listener.OnUpdateStats(ch, nil, true)
 			return nil
 		}
 	}
 
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
-	result, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_activating", req.SkillID), ch, skillEntry, params)
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+	result, err := luax.Call(thread, luax.SkillScriptHookName("on_activating", req.SkillID), ch, skillEntry, params)
 	if err != nil {
 		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
 	if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
-		thread.Close()
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
@@ -126,18 +133,19 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
-	commonActivatedResult, commonActivatedThread, commonActivatedErr := luax.Call(root, commonSkillScriptPath, "on_activated", ch, skillEntry, params)
+	commonActivatedThread, commonActivatedErr := luax.NewThread(root, commonSkillScriptPath)
 	if commonActivatedErr != nil {
 		log.Printf("common on_activated: %v", commonActivatedErr)
-		thread.Close()
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	if commonActivatedThread != nil {
-		defer commonActivatedThread.Close()
+	commonActivatedResult, commonActivatedErr := luax.Call(commonActivatedThread, "on_activated", ch, skillEntry, params)
+	if commonActivatedErr != nil {
+		log.Printf("common on_activated: %v", commonActivatedErr)
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
 	}
 	if commonActivatedResult != nil && commonActivatedResult.Type() == lua.LTBool && !lua.LVAsBool(commonActivatedResult) {
-		thread.Close()
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
@@ -145,7 +153,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorContext: ctx.ActorContext,
 	})
-	if _, err := luax.CallThread(thread, luax.SkillScriptHookName("on_activated", req.SkillID), ch, skillEntry, params); err != nil {
+	if _, err := luax.Call(thread, luax.SkillScriptHookName("on_activated", req.SkillID), ch, skillEntry, params); err != nil {
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return err

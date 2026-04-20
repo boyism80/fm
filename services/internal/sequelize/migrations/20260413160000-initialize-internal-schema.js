@@ -173,6 +173,7 @@ module.exports = {
             stance: { type: Sequelize.SMALLINT, allowNull: false, defaultValue: 0 },
             meso: { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
             skill_point: { type: Sequelize.SMALLINT, allowNull: false, defaultValue: 0 },
+            hidden: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
             deleted: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
             created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal("NOW()") },
             updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal("NOW()") },

@@ -100,6 +100,7 @@ func (ch *Character) ToGrpcDTO(worldID uint32) *internal.CharacterSaveEntry {
 		Level:        uint32(ch.GetLevel()),
 		ClassId:      uint32(ch.Class),
 		Role:         uint32(ch.Role),
+		Hidden:       ch.IsHidden(),
 		Str:          uint32(ch.BaseStats.Str),
 		Dex:          uint32(ch.BaseStats.Dex),
 		IntStat:      uint32(ch.BaseStats.Int),

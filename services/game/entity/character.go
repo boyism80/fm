@@ -938,6 +938,7 @@ type CharacterInitData struct {
 	PositionX    int16
 	PositionY    int16
 	Stance       uint8
+	Hidden       bool
 	PartyID      *uint32
 	GuildID      *uint32
 }
@@ -971,6 +972,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		level:        data.Level,
 		Class:        data.Class,
 		Role:         constant.CharacterRole(data.Role),
+		hidden:       data.Hidden,
 		BaseStats:    BaseStats{Str: data.Str, Dex: data.Dex, Int: data.Int, Luk: data.Luk},
 		AbilityPoint: data.AbilityPoint,
 		SkillPoint:   data.SkillPoint,
@@ -1085,9 +1087,8 @@ func (ch *Character) tryLevelUp() bool {
 	ch.SetLevel(targetLevel)
 	levelDiff := int(targetLevel) - int(oldLevel)
 	if levelDiff >= 1 {
-		_, thread, _ := luax.Call(root, "script/script.lua", "on_level_up", ch, int32(oldLevel), int32(targetLevel))
-		if thread != nil {
-			thread.Close()
+		if thread, err := luax.NewThread(root, "script/script.lua"); err == nil {
+			_, _ = luax.Call(thread, "on_level_up", ch, int32(oldLevel), int32(targetLevel))
 		}
 
 		stats := map[constant.Stat]int32{

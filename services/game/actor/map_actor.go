@@ -469,7 +469,13 @@ func (a *MapActor) onSaveMapCharacters(ctx actor.Context) {
 		if saveErr != nil {
 			ack.Err = saveErr.Error()
 		}
-		ctx.Respond(ack)
+		// Finally runs outside the actor receive turn, so ctx.Respond can lose the original sender/future context.
+		// Send ack explicitly to the captured sender PID.
+		system := ctx.ActorSystem()
+		if system == nil || system.Root == nil {
+			return
+		}
+		system.Root.Send(sender, ack)
 	}).Run()
 }
 

@@ -88,10 +88,12 @@ func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *enti
 	params.RawSetString("hit_type", lua.LNumber(int32(req.Type)))
 	params.RawSetString("reflect_ratio", lua.LNumber(int32(req.Reflect)))
 
-	result, thread, err := luax.Call(root, "script/script.lua", "on_damaged", character, attackerArg, skillArg, damage, params)
-	if thread != nil {
-		thread.Close()
+	thread, err := luax.NewThread(root, "script/script.lua")
+	if err != nil {
+		log.Printf("Failed to call script on_damaged: %v", err)
+		return damage
 	}
+	result, err := luax.Call(thread, "on_damaged", character, attackerArg, skillArg, damage, params)
 	if err != nil {
 		log.Printf("Failed to call script on_damaged: %v", err)
 		return damage
@@ -117,10 +119,12 @@ func (h *Damaged) callOnBlocked(ctx *core.ClientContext, character *entity.Chara
 		return
 	}
 	attackerArg := h.resolveDamageAttackerArg(character, req)
-	_, thread, err := luax.Call(root, "script/script.lua", "on_blocked", character, attackerArg)
-	if thread != nil {
-		thread.Close()
+	thread, err := luax.NewThread(root, "script/script.lua")
+	if err != nil {
+		log.Printf("Failed to call script on_blocked: %v", err)
+		return
 	}
+	_, err = luax.Call(thread, "on_blocked", character, attackerArg)
 	if err != nil {
 		log.Printf("Failed to call script on_blocked: %v", err)
 	}

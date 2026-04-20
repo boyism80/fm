@@ -162,10 +162,11 @@ func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character *en
 	if root == nil {
 		return 0
 	}
-	result, thread, err := luax.Call(root, "script/script.lua", funcName, character)
-	if thread != nil {
-		thread.Close()
+	thread, err := luax.NewThread(root, "script/script.lua")
+	if err != nil {
+		return 0
 	}
+	result, err := luax.Call(thread, funcName, character)
 	if err != nil || result == nil || result.Type() != lua.LTNumber {
 		return 0
 	}

@@ -119,10 +119,11 @@ func (h *HealOverTime) getHealCap(ctx *core.ClientContext, character *entity.Cha
 	if root == nil {
 		return 0, 0
 	}
-	result, thread, err := luax.Call(root, "script/script.lua", "get_heal_over_time_cap", character)
-	if thread != nil {
-		thread.Close()
+	thread, err := luax.NewThread(root, "script/script.lua")
+	if err != nil {
+		return 0, 0
 	}
+	result, err := luax.Call(thread, "get_heal_over_time_cap", character)
 	if err != nil || result == nil || result.Type() != lua.LTTable {
 		return 0, 0
 	}
@@ -147,10 +148,11 @@ func (h *HealOverTime) getEndureHPInterval(ctx *core.ClientContext, character *e
 	if root == nil {
 		return 0
 	}
-	result, thread, err := luax.Call(root, "script/script.lua", "get_endure_hp_interval", character)
-	if thread != nil {
-		thread.Close()
+	thread, err := luax.NewThread(root, "script/script.lua")
+	if err != nil {
+		return 0
 	}
+	result, err := luax.Call(thread, "get_endure_hp_interval", character)
 	if err != nil || result == nil || result.Type() != lua.LTNumber {
 		return 0
 	}

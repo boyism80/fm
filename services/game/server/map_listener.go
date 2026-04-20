@@ -41,6 +41,9 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		}
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}
+	if character.IsHidden() {
+		character.Send(&response.SuperHide{Hidden: true}, types.SEND_POLICY_ENCRYPT)
+	}
 
 	if kl := character.KeyLayout(); kl != nil {
 		character.Send(&response.KeyMap{Slots: kl.Bindings()}, types.SEND_POLICY_ENCRYPT)

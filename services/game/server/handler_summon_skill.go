@@ -57,10 +57,12 @@ func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) 
 	}
 	params := buildSummonSkillParams(root, req)
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SubSkillID)
-	_, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_summon_skill", req.SubSkillID), character, summon, skillEntry, params)
-	if thread != nil {
-		thread.Close()
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		log.Printf("summon skill script %s: %v", scriptPath, err)
+		return nil
 	}
+	_, err = luax.Call(thread, luax.SkillScriptHookName("on_summon_skill", req.SubSkillID), character, summon, skillEntry, params)
 	if err != nil {
 		log.Printf("summon skill script %s: %v", scriptPath, err)
 	}

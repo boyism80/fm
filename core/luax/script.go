@@ -6,15 +6,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func Call(root *lua.LState, scriptPath string, funcName string, args ...interface{}) (lua.LValue, *lua.LState, error) {
-	thread, err := NewThread(root, scriptPath)
-	if err != nil {
-		return nil, nil, err
-	}
-	ret, err := CallThread(thread, funcName, args...)
-	return ret, thread, err
-}
-
 func Close(thread *lua.LState) {
 	if thread == nil {
 		return
@@ -31,7 +22,7 @@ func shouldAutoClose(thread *lua.LState) bool {
 	return !cfg.KeepAlive
 }
 
-func CallThread(thread *lua.LState, funcName string, args ...interface{}) (lua.LValue, error) {
+func Call(thread *lua.LState, funcName string, args ...interface{}) (lua.LValue, error) {
 	if thread == nil {
 		return nil, fmt.Errorf("nil lua thread")
 	}
@@ -59,6 +50,36 @@ func CallThread(thread *lua.LState, funcName string, args ...interface{}) (lua.L
 		Close(thread)
 	}
 	return ret, nil
+}
+
+func Execute(root *lua.LState, thread *lua.LState, funcName string, args ...interface{}) (lua.ResumeState, lua.LValue, error) {
+	if root == nil || thread == nil {
+		return lua.ResumeOK, nil, fmt.Errorf("nil lua root/thread")
+	}
+	f := thread.GetGlobal(funcName)
+	if f.Type() != lua.LTFunction {
+		return lua.ResumeOK, nil, nil
+	}
+	lvArgs, err := toLValues(thread, args)
+	if err != nil {
+		return lua.ResumeOK, nil, err
+	}
+	thread.Push(f)
+	state, resumeErr, values := root.Resume(thread, f.(*lua.LFunction), lvArgs...)
+	if resumeErr != nil {
+		if shouldAutoClose(thread) {
+			Close(thread)
+		}
+		return lua.ResumeOK, nil, fmt.Errorf("%s: %w", funcName, resumeErr)
+	}
+	var ret lua.LValue
+	if len(values) > 0 {
+		ret = values[0]
+	}
+	if state != lua.ResumeYield && shouldAutoClose(thread) {
+		Close(thread)
+	}
+	return state, ret, nil
 }
 
 func CallFunction(root *lua.LState, fn *lua.LFunction, args ...interface{}) (lua.LValue, error) {

@@ -31,23 +31,27 @@ func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID
 		return false
 	}
 
-	commonResult, commonThread, commonErr := luax.Call(root, commonSkillScriptPath, hook, character, skillEntry)
+	commonThread, commonErr := luax.NewThread(root, commonSkillScriptPath)
 	if commonErr != nil {
 		log.Printf("Skill common %s: %v", hook, commonErr)
 		return false
 	}
-	if commonThread != nil {
-		defer commonThread.Close()
+	commonResult, commonErr := luax.Call(commonThread, hook, character, skillEntry)
+	if commonErr != nil {
+		log.Printf("Skill common %s: %v", hook, commonErr)
+		return false
 	}
 	if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
 		return false
 	}
 
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	result, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName(hook, skillID), character, skillEntry)
-	if thread != nil {
-		defer thread.Close()
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
+		return true
 	}
+	result, err := luax.Call(thread, luax.SkillScriptHookName(hook, skillID), character, skillEntry)
 	if err != nil {
 		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
 		return true
@@ -73,22 +77,26 @@ func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, 
 	if skillEntry == nil {
 		return
 	}
-	commonResult, commonThread, commonErr := luax.Call(root, commonSkillScriptPath, hook, character, skillEntry)
+	commonThread, commonErr := luax.NewThread(root, commonSkillScriptPath)
 	if commonErr != nil {
 		log.Printf("Skill common %s: %v", hook, commonErr)
 		return
 	}
-	if commonThread != nil {
-		defer commonThread.Close()
+	commonResult, commonErr := luax.Call(commonThread, hook, character, skillEntry)
+	if commonErr != nil {
+		log.Printf("Skill common %s: %v", hook, commonErr)
+		return
 	}
 	if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
 		return
 	}
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	result, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName(hook, skillID), character, skillEntry)
-	if thread != nil {
-		defer thread.Close()
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
+		return
 	}
+	result, err := luax.Call(thread, luax.SkillScriptHookName(hook, skillID), character, skillEntry)
 	if err != nil {
 		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
 		return

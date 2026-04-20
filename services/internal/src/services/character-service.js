@@ -199,6 +199,7 @@ class CharacterService {
             stance: 0,
             meso: 0,
             skillPoint: 0,
+            hidden: false,
         };
         await this.repo.set(wid, persisted);
         await this.keyLayoutRepo.set(wid, {

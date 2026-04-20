@@ -30,6 +30,7 @@ function fillMessageFromPersisted(msg, p) {
     msg.setMeso(p.meso | 0);
     msg.setSkillPoint(p.skillPoint >>> 0);
     msg.setAccountId(p.accountId >>> 0);
+    msg.setHidden(Boolean(p.hidden));
 }
 
 /** @param {import("../../protobuf/fminternal/internal_service_pb.js").CharacterPersisted} msg */
@@ -63,6 +64,7 @@ function persistedFromMessage(msg) {
         meso: msg.getMeso(),
         skillPoint: msg.getSkillPoint() >>> 0,
         accountId: msg.getAccountId() >>> 0,
+        hidden: msg.getHidden(),
     };
 }
 

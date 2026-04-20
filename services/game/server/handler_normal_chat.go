@@ -53,9 +53,12 @@ func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) er
 				luax.SetConfiguration(thread, luax.Configuration{
 					ActorContext: ctx.ActorContext,
 				})
-				result, err := luax.CallThread(thread, "on_chat", character, req.Message, false)
+				state, result, err := luax.Execute(root, thread, "on_chat", character, req.Message, false)
 				if err != nil {
 					log.Printf("Command Lua error: %v", err)
+				} else if state == lua.ResumeYield {
+					// async command path (e.g. save/sleep): completion continues via ResumeLua
+					return nil
 				} else if result != nil && result.Type() == lua.LTBool && lua.LVAsBool(result) {
 					return nil
 				} else if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {

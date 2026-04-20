@@ -555,6 +555,9 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 			}
 		}
 	}
+	if controllerTable := mapInstance.GetControllerTable(); controllerTable != nil {
+		controllerTable.Update(ch)
+	}
 }
 
 func (l *CharacterListenerImpl) OnSummonSpawn(ch *entity.Character, summon *entity.Summon) {

@@ -1082,10 +1082,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.RaiseError("script: root lua state not found")
 				return 0
 			}
-			result, thread, err := luax.Call(root, scriptPath, funcName, args...)
-			if thread != nil {
-				thread.Close()
+			thread, err := luax.NewThread(root, scriptPath)
+			if err != nil {
+				L.RaiseError("script: %v", err)
+				return 0
 			}
+			result, err := luax.Call(thread, funcName, args...)
 			if err != nil {
 				L.RaiseError("script: %v", err)
 				return 0

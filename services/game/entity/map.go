@@ -195,10 +195,11 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 	if root == nil {
 		return
 	}
-	_, thread, _ := luax.Call(root, "script/script.lua", hook, character, m)
-	if thread != nil {
-		thread.Close()
+	thread, err := luax.NewThread(root, "script/script.lua")
+	if err != nil {
+		return
 	}
+	_, _ = luax.Call(thread, hook, character, m)
 }
 
 func (m *Map) RemovePlayer(playerID uint32) error {

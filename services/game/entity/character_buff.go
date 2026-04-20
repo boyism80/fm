@@ -86,12 +86,13 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 
 	skillID := e.Wz.ID
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	_, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_buff", skillID), ch, e)
+	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
+		return
 	}
-	if thread != nil {
-		thread.Close()
+	if _, err := luax.Call(thread, luax.SkillScriptHookName("on_buff", skillID), ch, e); err != nil {
+		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
 	}
 }
 
@@ -110,12 +111,13 @@ func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
 
 	skillID := e.Wz.ID
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	_, thread, err := luax.Call(root, scriptPath, luax.SkillScriptHookName("on_unbuff", skillID), ch, e)
+	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
+		return
 	}
-	if thread != nil {
-		thread.Close()
+	if _, err := luax.Call(thread, luax.SkillScriptHookName("on_unbuff", skillID), ch, e); err != nil {
+		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
 	}
 }
 
@@ -152,12 +154,13 @@ func (e *ItemBuff) CallOnBuffScript(ch *Character) {
 		return
 	}
 
-	_, thread, callErr := luax.Call(root, scriptPath, "on_buff", ch, consume)
+	thread, callErr := luax.NewThread(root, scriptPath)
 	if callErr != nil {
 		log.Printf("Failed to call on_buff for item %d: %v", itemWzID, callErr)
+		return
 	}
-	if thread != nil {
-		thread.Close()
+	if _, callErr := luax.Call(thread, "on_buff", ch, consume); callErr != nil {
+		log.Printf("Failed to call on_buff for item %d: %v", itemWzID, callErr)
 	}
 }
 
@@ -187,12 +190,13 @@ func (e *ItemBuff) CallOnUnbuffScript(ch *Character) {
 		return
 	}
 
-	_, thread, callErr := luax.Call(root, scriptPath, "on_unbuff", ch, consume)
+	thread, callErr := luax.NewThread(root, scriptPath)
 	if callErr != nil {
 		log.Printf("Failed to call on_unbuff for item %d: %v", itemWzID, callErr)
+		return
 	}
-	if thread != nil {
-		thread.Close()
+	if _, callErr := luax.Call(thread, "on_unbuff", ch, consume); callErr != nil {
+		log.Printf("Failed to call on_unbuff for item %d: %v", itemWzID, callErr)
 	}
 }
 

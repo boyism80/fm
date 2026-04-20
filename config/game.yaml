@@ -20,4 +20,4 @@ rabbitmq:
   vhost: "/fm"
 high_rate: false
 lua:
-  always_reload: false
+  always_reload: true

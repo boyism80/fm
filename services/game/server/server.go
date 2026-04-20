@@ -429,12 +429,13 @@ func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
 	if root == nil {
 		return
 	}
-	_, thread, err := luax.Call(root, "script/script.lua", "on_logout", ch)
+	thread, err := luax.NewThread(root, "script/script.lua")
 	if err != nil {
 		log.Printf("on_logout: %v", err)
+		return
 	}
-	if thread != nil {
-		thread.Close()
+	if _, err := luax.Call(thread, "on_logout", ch); err != nil {
+		log.Printf("on_logout: %v", err)
 	}
 }
 

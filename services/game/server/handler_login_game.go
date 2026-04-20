@@ -137,6 +137,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		PositionX:    int16(p.GetPositionX()),
 		PositionY:    int16(p.GetPositionY()),
 		Stance:       uint8(p.GetStance()),
+		Hidden:       p.GetHidden(),
 		PartyID:      enterGameReplyPartyPtr(reply),
 		GuildID:      optionalUint32(reply.GetGuildId()),
 	}
