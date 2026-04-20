@@ -14,10 +14,14 @@ import (
 const commonSkillScriptPath = "script/skill/common.lua"
 
 func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) bool {
-	if skillID == 0 || ctx.LogicActorPID == nil {
+	if skillID == 0 || character == nil {
 		return true
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
+		return true
+	}
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return false
 	}
@@ -60,12 +64,7 @@ func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, 
 	}
 	var root *lua.LState
 	if m := character.GetMap(); m != nil {
-		if pid := m.GetActorPID(); pid != nil {
-			root = luax.GetRootLuaState(pid.String())
-		}
-	}
-	if root == nil && ctx != nil && ctx.LogicActorPID != nil {
-		root = luax.GetRootLuaState(ctx.LogicActorPID.String())
+		root = m.GetLuaRoot()
 	}
 	if root == nil {
 		return
@@ -100,10 +99,10 @@ func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, 
 }
 
 func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32, ranged bool, consumeSlot uint16) {
-	if ctx.LogicActorPID == nil {
+	if mapInstance == nil {
 		return
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}
@@ -165,13 +164,13 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, map
 }
 
 func CallSummonOnAttackHooks(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32) {
-	if ctx == nil || ctx.LogicActorPID == nil || character == nil || mapInstance == nil {
+	if ctx == nil || character == nil || mapInstance == nil {
 		return
 	}
 	if skillID == 0 {
 		return
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}

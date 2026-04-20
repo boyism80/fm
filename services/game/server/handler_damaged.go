@@ -72,10 +72,11 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 }
 
 func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *entity.Character, req *request.Damaged, damage int32) int32 {
-	if ctx.LogicActorPID == nil {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
 		return damage
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return damage
 	}
@@ -107,10 +108,11 @@ func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *enti
 }
 
 func (h *Damaged) callOnBlocked(ctx *core.ClientContext, character *entity.Character, req *request.Damaged) {
-	if ctx.LogicActorPID == nil {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
 		return
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}

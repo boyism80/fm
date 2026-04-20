@@ -41,10 +41,11 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		return fmt.Errorf("character not found")
 	}
 
-	if ctx.LogicActorPID == nil {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
 		return fmt.Errorf("lua state not available")
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return fmt.Errorf("lua state not available")
 	}

@@ -79,11 +79,7 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 	if mapInstance == nil {
 		return
 	}
-	pid := mapInstance.GetActorPID()
-	if pid == nil {
-		return
-	}
-	root := luax.GetRootLuaState(pid.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}
@@ -107,11 +103,7 @@ func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
 	if mapInstance == nil {
 		return
 	}
-	pid := mapInstance.GetActorPID()
-	if pid == nil {
-		return
-	}
-	root := luax.GetRootLuaState(pid.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}
@@ -142,11 +134,7 @@ func (e *ItemBuff) CallOnBuffScript(ch *Character) {
 	if mapInstance == nil {
 		return
 	}
-	pid := mapInstance.GetActorPID()
-	if pid == nil {
-		return
-	}
-	root := luax.GetRootLuaState(pid.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}
@@ -181,11 +169,7 @@ func (e *ItemBuff) CallOnUnbuffScript(ch *Character) {
 	if mapInstance == nil {
 		return
 	}
-	pid := mapInstance.GetActorPID()
-	if pid == nil {
-		return
-	}
-	root := luax.GetRootLuaState(pid.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}

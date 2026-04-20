@@ -111,10 +111,11 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 }
 
 func (h *HealOverTime) getHealCap(ctx *core.ClientContext, character *entity.Character) (uint16, uint16) {
-	if ctx.LogicActorPID == nil {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
 		return 0, 0
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return 0, 0
 	}
@@ -138,10 +139,11 @@ func (h *HealOverTime) getHealCap(ctx *core.ClientContext, character *entity.Cha
 }
 
 func (h *HealOverTime) getEndureHPInterval(ctx *core.ClientContext, character *entity.Character) float64 {
-	if ctx.LogicActorPID == nil {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
 		return 0
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return 0
 	}

@@ -484,7 +484,13 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	})
 
 	luax.RegisterFunc(luaState, "save", func(L *lua.LState) int {
-		actorCtx := luax.GetThreadActorContext(L)
+		cfg, ok := luax.GetConfiguration(L)
+		if !ok || cfg.ActorContext == nil {
+			L.Push(lua.LBool(false))
+			L.Push(lua.LString("save: actor context not found"))
+			return 2
+		}
+		actorCtx := cfg.ActorContext
 		if actorCtx == nil {
 			L.Push(lua.LBool(false))
 			L.Push(lua.LString("save: actor context not found"))
@@ -496,13 +502,19 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LString("save: actor PID not found"))
 			return 2
 		}
-		root := luax.GetRootLuaState(pid.String())
+		mapInstance := gs.getMapByActorPID(pid)
+		if mapInstance == nil {
+			L.Push(lua.LBool(false))
+			L.Push(lua.LString("save: map not found"))
+			return 2
+		}
+		root := mapInstance.GetLuaRoot()
 		if root == nil {
 			L.Push(lua.LBool(false))
 			L.Push(lua.LString("save: root lua state not found"))
 			return 2
 		}
-		cfg, _ := luax.GetConfiguration(L)
+		cfg, _ = luax.GetConfiguration(L)
 		cfg.ActorContext = actorCtx
 		cfg.KeepAlive = true
 		luax.SetConfiguration(L, cfg)
@@ -513,16 +525,16 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LString("save: promise creation failed"))
 			return 2
 		}
-		var ok = true
+		var succeeded = true
 		var errMsg string
 		p.OnError(func(err error) {
-			ok = false
+			succeeded = false
 			if err != nil {
 				errMsg = err.Error()
 				log.Printf("save: %v", err)
 			}
 		}).Finally(func() {
-			args := []lua.LValue{lua.LBool(ok)}
+			args := []lua.LValue{lua.LBool(succeeded)}
 			if errMsg != "" {
 				args = append(args, lua.LString(errMsg))
 			} else {
@@ -535,11 +547,19 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
 		duration := L.CheckNumber(1)
-		pid := luax.GetThreadPID(L)
+		cfg, ok := luax.GetConfiguration(L)
+		if !ok || cfg.ActorContext == nil {
+			return 0
+		}
+		pid := cfg.ActorContext.Self()
 		if pid == nil {
 			return 0
 		}
-		root := luax.GetRootLuaState(pid.String())
+		mapInstance := gs.getMapByActorPID(pid)
+		if mapInstance == nil {
+			return 0
+		}
+		root := mapInstance.GetLuaRoot()
 		if root == nil {
 			return 0
 		}
@@ -574,12 +594,23 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.RaiseError("run_on_script: Character expected")
 			return 0
 		}
-		pid := luax.GetThreadPID(L)
-		if pid == nil {
+		cfg, ok := luax.GetConfiguration(L)
+		if !ok || cfg.ActorContext == nil {
 			L.RaiseError("run_on_script: thread has no actor PID (call from command context)")
 			return 0
 		}
-		root := luax.GetRootLuaState(pid.String())
+		actorCtx := cfg.ActorContext
+		pid := actorCtx.Self()
+		if pid == nil {
+			L.RaiseError("run_on_script: thread has no actor PID")
+			return 0
+		}
+		mapInstance := ch.GetMap()
+		if mapInstance == nil {
+			L.RaiseError("run_on_script: character map not found")
+			return 0
+		}
+		root := mapInstance.GetLuaRoot()
 		if root == nil {
 			L.RaiseError("run_on_script: root lua state not found")
 			return 0

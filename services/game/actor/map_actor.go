@@ -309,9 +309,6 @@ func (a *MapActor) onRunCharacterTimer(ctx actor.Context, msg *c_actor.RunCharac
 }
 
 func (a *MapActor) onStarted(ctx actor.Context) {
-	L := luax.NewState()
-	luax.RegisterRootLuaState(ctx.Self().String(), L)
-
 	a.scheduler = scheduler.NewTimerScheduler(ctx)
 	a.timerReg = NewTimerRegistry()
 	a.registerTimers()
@@ -329,7 +326,9 @@ func (a *MapActor) onStarted(ctx actor.Context) {
 }
 
 func (a *MapActor) onStopped(ctx actor.Context) {
-	luax.UnregisterRootLuaState(ctx.Self().String())
+	if a.Map != nil {
+		a.Map.ClearLuaRoot()
+	}
 }
 
 func (a *MapActor) registerTimers() {

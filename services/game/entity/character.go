@@ -1076,12 +1076,7 @@ func (ch *Character) tryLevelUp() bool {
 		return false
 	}
 
-	pid := mapInstance.GetActorPID()
-	if pid == nil {
-		return false
-	}
-
-	root := luax.GetRootLuaState(pid.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return false
 	}

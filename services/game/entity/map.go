@@ -13,6 +13,7 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type MapListener interface {
@@ -57,6 +58,7 @@ type Map struct {
 	availableOIDs     []uint32
 	GameWorld         GameWorld
 	actorPID          *actor.PID
+	luaRoot           *lua.LState
 	pidMutex          sync.RWMutex
 	UsedDoorPortalIDs map[uint8]struct{}
 }
@@ -98,6 +100,35 @@ func NewMap(id uint32, listener MapListener, mapId uint32, gw GameWorld) *Map {
 	return mapInstance
 }
 
+func (m *Map) GetLuaRoot() *lua.LState {
+	if m == nil {
+		return nil
+	}
+	return m.luaRoot
+}
+
+func (m *Map) EnsureLuaRoot(ctx actor.Context) *lua.LState {
+	if m == nil {
+		return nil
+	}
+	if m.luaRoot == nil {
+		m.luaRoot = luax.NewState()
+	}
+	root := m.luaRoot
+
+	if root == nil {
+		return nil
+	}
+	return root
+}
+
+func (m *Map) ClearLuaRoot() {
+	if m == nil {
+		return
+	}
+	m.luaRoot = nil
+}
+
 func (m *Map) onMobControllerChange(mob *Mob, before *Character, after *Character) {
 
 	m.listener.OnMobControllerChange(mob, before, after)
@@ -135,6 +166,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	character.Stance = constant.StanceDefaultValue
 
 	m.objects[constant.ObjectTypeCharacter][playerID] = character
+	m.EnsureLuaRoot(ctx)
 
 	m.listener.OnPlayerAdded(ctx, m, character, init)
 	m.controllerTable.EnterPlayer(character)
@@ -159,11 +191,7 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 	if character.GetMap() != m {
 		return
 	}
-	pid := m.GetActorPID()
-	if pid == nil {
-		return
-	}
-	root := luax.GetRootLuaState(pid.String())
+	root := m.GetLuaRoot()
 	if root == nil {
 		return
 	}

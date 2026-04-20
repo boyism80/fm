@@ -66,7 +66,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 			candidates = append(candidates, mob)
 		}
 		if len(candidates) > 0 {
-			root := luax.GetRootLuaState(ctx.Self().String())
+			root := mapData.GetLuaRoot()
 			if root != nil {
 				if _, _, err := luax.Call(root, "script/script.lua", "on_poison", mist, candidates); err != nil {
 					log.Printf("on_poison failed: %v", err)

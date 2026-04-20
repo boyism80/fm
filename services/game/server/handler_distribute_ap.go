@@ -9,6 +9,7 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/entity"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -145,19 +146,19 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	return nil
 }
 
-func (h *DistributeAP) scriptAPToHP(ctx *core.ClientContext, character interface{}) uint32 {
+func (h *DistributeAP) scriptAPToHP(ctx *core.ClientContext, character *entity.Character) uint32 {
 	return h.callAPToStatScript(ctx, character, "on_ap_to_hp")
 }
 
-func (h *DistributeAP) scriptAPToMP(ctx *core.ClientContext, character interface{}) uint32 {
+func (h *DistributeAP) scriptAPToMP(ctx *core.ClientContext, character *entity.Character) uint32 {
 	return h.callAPToStatScript(ctx, character, "on_ap_to_mp")
 }
 
-func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character interface{}, funcName string) uint32 {
-	if ctx.LogicActorPID == nil {
+func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character *entity.Character, funcName string) uint32 {
+	if character == nil || character.GetMap() == nil {
 		return 0
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := character.GetMap().GetLuaRoot()
 	if root == nil {
 		return 0
 	}

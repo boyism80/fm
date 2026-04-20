@@ -2,7 +2,6 @@ package luax
 
 import (
 	"fmt"
-	"os"
 	"sync"
 
 	lua "github.com/yuin/gopher-lua"
@@ -13,36 +12,13 @@ var (
 	onCreateHooksMu sync.Mutex
 	compileMu       sync.Mutex
 	compiledFuncs   = make(map[string]*lua.LFunction)
-	useCache        = os.Getenv("GO_ENV") != "development"
-	rootStates      sync.Map
+	alwaysReload    = false
 )
 
-func RegisterRootLuaState(pid string, L *lua.LState) {
-	rootStates.Store(pid, L)
-}
-
-func GetRootLuaState(pid string) *lua.LState {
-	v, ok := rootStates.Load(pid)
-	if !ok {
-		return nil
-	}
-	return v.(*lua.LState)
-}
-
-func UnregisterRootLuaState(pid string) {
-	if v, ok := rootStates.LoadAndDelete(pid); ok {
-		if L, ok := v.(*lua.LState); ok && L != nil {
-			L.Close()
-		}
-	}
-}
-
-func init() {
-	env, ok := os.LookupEnv("GO_ENV")
-	if !ok || env == "" {
-		env = "development"
-	}
-	useCache = env != "development"
+func SetAlwaysReload(enabled bool) {
+	compileMu.Lock()
+	defer compileMu.Unlock()
+	alwaysReload = enabled
 }
 
 type Luable interface {
@@ -65,7 +41,7 @@ func preloadScript(root *lua.LState, path string) (*lua.LFunction, error) {
 	compileMu.Lock()
 	defer compileMu.Unlock()
 
-	if fn, ok := compiledFuncs[path]; ok && useCache {
+	if fn, ok := compiledFuncs[path]; ok && !alwaysReload {
 		return fn, nil
 	}
 

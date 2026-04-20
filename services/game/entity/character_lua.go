@@ -1062,12 +1062,22 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					args = append(args, v)
 				}
 			}
-			pid := luax.GetThreadPID(L)
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.RaiseError("script: thread has no actor PID (call from command context)")
+				return 0
+			}
+			pid := cfg.ActorContext.Self()
 			if pid == nil {
 				L.RaiseError("script: thread has no actor PID (call from command context)")
 				return 0
 			}
-			root := luax.GetRootLuaState(pid.String())
+			mapInstance := ch.GetMap()
+			if mapInstance == nil {
+				L.RaiseError("script: character map not found")
+				return 0
+			}
+			root := mapInstance.GetLuaRoot()
 			if root == nil {
 				L.RaiseError("script: root lua state not found")
 				return 0
@@ -2476,11 +2486,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if m == nil {
 					return
 				}
-				pid := m.GetActorPID()
-				if pid == nil {
-					return
-				}
-				root := luax.GetRootLuaState(pid.String())
+				root := m.GetLuaRoot()
 				if root == nil {
 					return
 				}

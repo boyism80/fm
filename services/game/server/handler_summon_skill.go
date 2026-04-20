@@ -51,10 +51,7 @@ func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) 
 	if skillEntry == nil {
 		return nil
 	}
-	if ctx.LogicActorPID == nil {
-		return nil
-	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return nil
 	}

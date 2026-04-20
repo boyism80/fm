@@ -93,18 +93,19 @@ func (gs *GameServer) GetPacketHandler() *core.PacketHandler {
 }
 
 type GameConfig struct {
-	Host         string
-	Port         int
-	ChannelId    uint32
-	WzPath       string
-	WorldName    string
-	WorldId      uint32
-	MaxPlayers   int
-	ExpRate      int
-	DropRate     int
-	MesoRate     int
-	InternalAddr string
-	RabbitMQ     config.RabbitMQEndpoint
+	Host            string
+	Port            int
+	ChannelId       uint32
+	WzPath          string
+	WorldName       string
+	WorldId         uint32
+	MaxPlayers      int
+	ExpRate         int
+	DropRate        int
+	MesoRate        int
+	InternalAddr    string
+	RabbitMQ        config.RabbitMQEndpoint
+	LuaAlwaysReload bool
 }
 
 func NewGameServer(config *GameConfig) (*GameServer, error) {
@@ -127,6 +128,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 	actorSystem := c_actor.NewActorSystem()
 	actorRegistry := c_actor.NewActorRegistry(actorSystem)
+	luax.SetAlwaysReload(config.LuaAlwaysReload)
 
 	server.SetRootContext(actorSystem.GetRoot())
 
@@ -419,17 +421,11 @@ func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
 	if ch == nil {
 		return
 	}
-	var pid *actor.PID
-	if m := ch.GetMap(); m != nil {
-		pid = m.GetActorPID()
-	}
-	if pid == nil && gs.nilMapActorPID != nil {
-		pid = gs.nilMapActorPID
-	}
-	if pid == nil {
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
 		return
 	}
-	root := luax.GetRootLuaState(pid.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}
@@ -440,6 +436,25 @@ func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
 	if thread != nil {
 		thread.Close()
 	}
+}
+
+func (gs *GameServer) getMapByActorPID(pid *actor.PID) *entity.Map {
+	if gs == nil || pid == nil {
+		return nil
+	}
+	key := pid.String()
+	gs.mapsMutex.RLock()
+	defer gs.mapsMutex.RUnlock()
+	for _, m := range gs.maps {
+		if m == nil {
+			continue
+		}
+		actorPID := m.GetActorPID()
+		if actorPID != nil && actorPID.String() == key {
+			return m
+		}
+	}
+	return nil
 }
 
 func (gs *GameServer) handleClientDisconnect(c core.Client) {
@@ -542,13 +557,14 @@ func RunGameServer() {
 
 	config := &GameConfig{
 
-		Host:       "0.0.0.0",
-		Port:       8485,
-		WorldName:  "Scania",
-		MaxPlayers: 1000,
-		ExpRate:    1,
-		DropRate:   1,
-		MesoRate:   1,
+		Host:            "0.0.0.0",
+		Port:            8485,
+		WorldName:       "Scania",
+		MaxPlayers:      1000,
+		ExpRate:         1,
+		DropRate:        1,
+		MesoRate:        1,
+		LuaAlwaysReload: false,
 	}
 
 	gs, err := NewGameServer(config)
@@ -574,13 +590,14 @@ func RunGameServer() {
 func RunHighRateGameServer() {
 	config := &GameConfig{
 
-		Host:       "0.0.0.0",
-		Port:       8485,
-		WorldName:  "HighRate",
-		MaxPlayers: 2000,
-		ExpRate:    10,
-		DropRate:   5,
-		MesoRate:   5,
+		Host:            "0.0.0.0",
+		Port:            8485,
+		WorldName:       "HighRate",
+		MaxPlayers:      2000,
+		ExpRate:         10,
+		DropRate:        5,
+		MesoRate:        5,
+		LuaAlwaysReload: false,
 	}
 
 	gs, err := NewGameServer(config)

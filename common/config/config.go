@@ -115,12 +115,17 @@ type Game struct {
 	Internal   InternalEndpoint `yaml:"internal"`
 	RabbitMQ   RabbitMQEndpoint `yaml:"rabbitmq"`
 	HighRate   bool             `yaml:"high_rate"`
+	Lua        GameLuaConfig    `yaml:"lua"`
 }
 
 type GameRates struct {
 	Exp  int `yaml:"exp"`
 	Drop int `yaml:"drop"`
 	Meso int `yaml:"meso"`
+}
+
+type GameLuaConfig struct {
+	AlwaysReload bool `yaml:"always_reload"`
 }
 
 func LoadLogin(path string) (*Login, error) {

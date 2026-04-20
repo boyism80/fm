@@ -87,13 +87,9 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
-	if ctx.LogicActorPID == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
-		log.Printf("No lua root state for actor %s", ctx.LogicActorPID.String())
+		log.Printf("No lua root state for map %d", mapInstance.GetMapID())
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}

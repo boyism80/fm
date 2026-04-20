@@ -140,10 +140,11 @@ func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *
 }
 
 func callOnEquipmentChanged(ctx *core.ClientContext, character *entity.Character, parts constant.EquipmentPartsType, before, after entity.Equipment) {
-	if ctx.LogicActorPID == nil {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
 		return
 	}
-	root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}

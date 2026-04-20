@@ -46,6 +46,8 @@ rabbitmq:
   pwd: "guest"
   vhost: "/fm"
 high_rate: false
+lua:
+  always_reload: false
 `))
 		log.Println("Notes:")
 		log.Println("  - internal: omit host or set port: 0 to skip the pre-start internal gRPC ping.")
@@ -92,18 +94,19 @@ high_rate: false
 	}
 
 	srvCfg := &server.GameConfig{
-		Host:         g.Host,
-		Port:         g.Port,
-		ChannelId:    uint32(g.ChannelId),
-		WzPath:       g.WzPath,
-		WorldName:    g.World,
-		WorldId:      uint32(g.WorldId),
-		MaxPlayers:   g.MaxPlayers,
-		ExpRate:      g.Rate.Exp,
-		DropRate:     g.Rate.Drop,
-		MesoRate:     g.Rate.Meso,
-		InternalAddr: g.Internal.GRPCAddr(),
-		RabbitMQ:     g.RabbitMQ,
+		Host:            g.Host,
+		Port:            g.Port,
+		ChannelId:       uint32(g.ChannelId),
+		WzPath:          g.WzPath,
+		WorldName:       g.World,
+		WorldId:         uint32(g.WorldId),
+		MaxPlayers:      g.MaxPlayers,
+		ExpRate:         g.Rate.Exp,
+		DropRate:        g.Rate.Drop,
+		MesoRate:        g.Rate.Meso,
+		InternalAddr:    g.Internal.GRPCAddr(),
+		RabbitMQ:        g.RabbitMQ,
+		LuaAlwaysReload: g.Lua.AlwaysReload,
 	}
 
 	gs, err := server.NewGameServer(srvCfg)

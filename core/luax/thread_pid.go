@@ -47,39 +47,3 @@ func ClearConfiguration(L *lua.LState) {
 	delete(threadConfig.m, L)
 }
 
-func SetThreadPID(L *lua.LState, pid *actor.PID) {
-
-	if pid == nil {
-		return
-	}
-}
-
-func GetThreadPID(L *lua.LState) *actor.PID {
-	cfg, ok := GetConfiguration(L)
-	if !ok {
-		return nil
-	}
-	if cfg.ActorContext == nil {
-		return nil
-	}
-	return cfg.ActorContext.Self()
-}
-
-func SetThreadActorContext(L *lua.LState, ctx actor.Context) {
-	cfg, _ := GetConfiguration(L)
-	cfg.ActorContext = ctx
-	SetConfiguration(L, cfg)
-}
-
-func GetThreadActorContext(L *lua.LState) actor.Context {
-	cfg, ok := GetConfiguration(L)
-	if !ok {
-		return nil
-	}
-	return cfg.ActorContext
-}
-
-func ClearThreadPID(L *lua.LState) {
-
-	ClearConfiguration(L)
-}

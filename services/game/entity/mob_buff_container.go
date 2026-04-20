@@ -43,11 +43,7 @@ func (e *MobSkillBuff) callMobSkillHook(mob *Mob, hookPrefix string) {
 	if mapInstance == nil {
 		return
 	}
-	pid := mapInstance.GetActorPID()
-	if pid == nil {
-		return
-	}
-	root := luax.GetRootLuaState(pid.String())
+	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return
 	}

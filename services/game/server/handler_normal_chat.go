@@ -42,8 +42,8 @@ func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) er
 	}
 
 	if strings.HasPrefix(req.Message, "/") {
-		if ctx.LogicActorPID != nil {
-			root := luax.GetRootLuaState(ctx.LogicActorPID.String())
+		if mapInstance := character.GetMap(); mapInstance != nil {
+			root := mapInstance.GetLuaRoot()
 			if root != nil {
 				thread, err := luax.NewThread(root, "script/command.lua")
 				if err != nil {
