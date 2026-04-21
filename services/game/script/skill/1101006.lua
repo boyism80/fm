@@ -1,12 +1,16 @@
 -- Skill name (String.wz/Skill.img.xml): 분노
 
 function on_activated_1101006(me, skill, params)
-    local effect = skill:effect()
-    if effect == nil then
-        return
-    end
+	local effect = skill:effect()
+	if effect == nil then
+		return
+	end
 
-    me:buff(skill, BuffFlag.WeaponAtk, effect.pad)
-    -- TODO: Apply this buff to nearby party members when party system is implemented.
+	local vals = { [BuffFlag.WeaponAtk] = effect.pad }
+	if effect.pdd ~= nil and effect.pdd > 0 then
+		vals[BuffFlag.WeaponDef] = -effect.pdd
+	end
+	for_each_near_party_member(me, skill, function(ch)
+		ch:buff(skill, vals)
+	end)
 end
-

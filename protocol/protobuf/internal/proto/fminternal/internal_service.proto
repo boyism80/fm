@@ -308,7 +308,7 @@ message PartyDoor {
 }
 
 // Realtime party member fields (game server is source of truth).
-message PartyMemberSnapshot {
+message PartyMember {
   uint32 world_id = 1;
   uint32 character_id = 2;
   string character_name = 3;
@@ -322,7 +322,7 @@ message PartyMemberSnapshot {
 
 message CreatePartyRequest {
   uint32 world_id = 1;
-  PartyMemberSnapshot leader = 2;
+  PartyMember leader = 2;
 }
 
 enum PartyErrorCode {
@@ -354,7 +354,7 @@ message CreatePartyReply {
 message JoinPartyRequest {
   uint32 world_id = 1;
   uint32 party_id = 2;
-  PartyMemberSnapshot member = 3;
+  PartyMember member = 3;
 }
 
 message JoinPartyReply {
@@ -405,13 +405,13 @@ message ChangePartyLeaderReply {
   uint64 revision = 4;
 }
 
-message PartySnapshot {
+message Party {
   uint32 world_id = 1;
   uint32 party_id = 2;
   uint32 leader_character_id = 3;
   uint64 revision = 4;
   string state = 5;
-  repeated PartyMemberSnapshot members = 6;
+  repeated PartyMember members = 6;
 }
 
 message GetPartyRequest {
@@ -421,11 +421,11 @@ message GetPartyRequest {
 
 message GetPartyReply {
   bool found = 1;
-  PartySnapshot party = 2;
+  Party party = 2;
 }
 
 message UpdatePartyMemberRequest {
-  PartyMemberSnapshot member = 1;
+  PartyMember member = 1;
 }
 
 message UpdatePartyMemberReply {

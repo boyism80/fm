@@ -45,7 +45,7 @@ func (gs *GameServer) grpcSaveCharacters(ctx context.Context, chars []*entity.Ch
 		if ch == nil {
 			continue
 		}
-		if entry := ch.ToGrpcDTO(worldID); entry != nil {
+		if entry := ch.ToProto(worldID); entry != nil {
 			entries = append(entries, entry)
 		}
 	}
@@ -169,7 +169,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		mq.Bind[*GameServer, partyMqLeaderChanged](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqLogOnOff](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqDisbanded](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqPartySnapshot](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqPartySync](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqPartyInvite](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqPartyInviteDenied](gs, partyDisp)
 
@@ -306,6 +306,13 @@ func (gs *GameServer) Stop() error {
 		_ = gs.internalConn.Close()
 	}
 	return gs.ServerCore.Stop()
+}
+
+func (gs *GameServer) GetPartyByID(partyID uint32) *entity.Party {
+	if gs == nil || gs.party == nil {
+		return nil
+	}
+	return gs.party.Get(partyID)
 }
 
 func (gs *GameServer) GetMap(mapID uint32) *entity.Map {

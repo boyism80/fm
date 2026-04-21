@@ -64,8 +64,8 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onRunCharacterTimer(ctx, m)
 	case *TimerTick:
 		a.onTimerTick(ctx, m)
-	case *SyncPartySnapshot:
-		a.onSyncPartySnapshot(m)
+	case *SyncParty:
+		a.onSyncParty(m)
 	case *ClearPartyByPartyID:
 		a.onClearPartyByPartyID(m)
 	case *SyncCharacterPartyState:
@@ -357,13 +357,16 @@ func (a *MapActor) onTimerTick(ctx actor.Context, msg *TimerTick) {
 	}
 }
 
-func (a *MapActor) onSyncPartySnapshot(msg *SyncPartySnapshot) {
-	if a.Map == nil || msg == nil || msg.Snapshot == nil {
+func (a *MapActor) onSyncParty(msg *SyncParty) {
+	if a.Map == nil || msg == nil || msg.Party == nil {
 		return
 	}
-	partyID := msg.Snapshot.GetPartyId()
-	memberSet := make(map[uint32]struct{}, len(msg.Snapshot.GetMembers()))
-	for _, member := range msg.Snapshot.GetMembers() {
+	partyID := msg.Party.GetPartyId()
+	memberSet := make(map[uint32]struct{}, len(msg.Party.GetMembers()))
+	for _, member := range msg.Party.GetMembers() {
+		if member == nil {
+			continue
+		}
 		memberSet[member.GetCharacterId()] = struct{}{}
 	}
 	for _, obj := range a.Map.GetAllPlayers() {

@@ -7,7 +7,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-func (e *SkillEntry) ToGrpcDTO(characterID uint32, skillID uint32) *internal.SkillPersisted {
+func (e *SkillEntry) ToProto(characterID uint32, skillID uint32) *internal.SkillPersisted {
 	if e == nil {
 		return nil
 	}

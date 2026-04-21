@@ -5,5 +5,7 @@ function on_activated_2301002(me, skill, params)
 	if amount == 0 then
 		return
 	end
-	me:add_hp(amount)
+	for_each_near_party_member(me, skill, function(ch)
+		ch:add_hp(amount)
+	end)
 end

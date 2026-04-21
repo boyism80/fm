@@ -27,22 +27,22 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 	}
 	if raw != nil {
 		var payload struct {
-			PartySnapshotPB string `json:"party_snapshot_pb"`
-			CharacterID     uint32 `json:"character_id"`
+			PartyPB     string `json:"party_pb"`
+			CharacterID uint32 `json:"character_id"`
 		}
-		if err := json.Unmarshal(raw, &payload); err == nil && payload.PartySnapshotPB != "" {
-			wire, err := base64.StdEncoding.DecodeString(payload.PartySnapshotPB)
+		if err := json.Unmarshal(raw, &payload); err == nil && payload.PartyPB != "" {
+			wire, err := base64.StdEncoding.DecodeString(payload.PartyPB)
 			if err == nil {
-				var snap internal.PartySnapshot
-				if err := proto.Unmarshal(wire, &snap); err == nil {
-					applied, err := pc.applyEmbeddedPartySnapshot(evt, &snap, false)
+				var partyPb internal.Party
+				if err := proto.Unmarshal(wire, &partyPb); err == nil {
+					applied, err := pc.applyEmbeddedParty(evt, &partyPb, false)
 					if err != nil {
-						log.Printf("party consumer: log_onoff embedded snapshot: %v", err)
+						log.Printf("party consumer: log_onoff embedded party: %v", err)
 						return nil
 					}
 					if applied && payload.CharacterID != 0 {
-						if snapshot := pc.CachedSnapshot(evt.PartyID); snapshot != nil {
-							pc.DeliverPartyLogOnOff(snapshot, payload.CharacterID)
+						if party := pc.Get(evt.PartyID); party != nil {
+							pc.DeliverPartyLogOnOff(party, payload.CharacterID)
 						}
 					}
 					return nil
@@ -61,9 +61,9 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 			if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
 				return nil
 			}
-			snapshot := pc.CachedSnapshot(evt.PartyID)
-			if snapshot != nil {
-				pc.DeliverPartyLogOnOff(snapshot, extra.CharacterID)
+			party := pc.Get(evt.PartyID)
+			if party != nil {
+				pc.DeliverPartyLogOnOff(party, extra.CharacterID)
 			}
 			return nil
 		}).

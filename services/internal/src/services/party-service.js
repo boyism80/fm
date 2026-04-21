@@ -11,7 +11,7 @@ const EVT = {
     MEMBER_LEFT: "member_left",
     DISBANDED: "disbanded",
     LEADER_CHANGED: "leader_changed",
-    PARTY_SNAPSHOT: "party_snapshot",
+    PARTY_SYNC: "party_sync",
     LOG_ONOFF: "log_onoff",
 };
 
@@ -171,9 +171,9 @@ class PartyService {
         });
     }
 
-    _partySnapshotToPb(worldId, party, memberModels) {
+    _partyToPb(worldId, party, memberModels) {
         const list = this._sortPartyMemberModels(memberModels, party.leaderCharacterId);
-        const p = new messages.PartySnapshot();
+        const p = new messages.Party();
         p.setWorldId(Number(worldId));
         p.setPartyId(party.partyId);
         p.setLeaderCharacterId(party.leaderCharacterId);
@@ -181,7 +181,7 @@ class PartyService {
         p.setState(String(party.state ?? ""));
         p.setMembersList(
             list.map((m) => {
-                const mm = new messages.PartyMemberSnapshot();
+                const mm = new messages.PartyMember();
                 mm.setWorldId(Number(worldId));
                 mm.setCharacterId(m.characterId);
                 mm.setCharacterName(String(m.characterName ?? ""));
@@ -298,11 +298,11 @@ class PartyService {
         await this.partyMemberRepo.evictGroupCache(worldId, result.party.partyId);
 
         const membersMap = await this.partyMemberRepo.getAll(worldId, result.party.partyId);
-        const partyPb = this._partySnapshotToPb(worldId, result.party, [...membersMap.values()]);
+        const partyPb = this._partyToPb(worldId, result.party, [...membersMap.values()]);
         const wire = partyPb.serializeBinary();
-        await this._publishPartyEvent(EVT.PARTY_SNAPSHOT, worldId, result.party.partyId, result.party.revision, {
+        await this._publishPartyEvent(EVT.PARTY_SYNC, worldId, result.party.partyId, result.party.revision, {
             trigger_character_id: Number(result.triggerCharacterId),
-            party_snapshot_pb: Buffer.from(wire).toString("base64"),
+            party_pb: Buffer.from(wire).toString("base64"),
         });
 
         return { ok: true, partyId: result.party.partyId, revision: result.party.revision };
@@ -358,11 +358,11 @@ class PartyService {
         await this.partyMemberRepo.evictGroupCache(worldId, result.party.partyId);
 
         const membersMap = await this.partyMemberRepo.getAll(worldId, result.party.partyId);
-        const partyPb = this._partySnapshotToPb(worldId, result.party, [...membersMap.values()]);
+        const partyPb = this._partyToPb(worldId, result.party, [...membersMap.values()]);
         const wire = partyPb.serializeBinary();
         await this._publishPartyEvent(EVT.LOG_ONOFF, worldId, result.party.partyId, result.party.revision, {
             character_id: Number(characterId),
-            party_snapshot_pb: Buffer.from(wire).toString("base64"),
+            party_pb: Buffer.from(wire).toString("base64"),
         });
     }
 

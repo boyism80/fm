@@ -188,7 +188,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const reply = new messages.GetPartyReply();
                 reply.setFound(Boolean(result.found));
                 if (result.found) {
-                    const p = new messages.PartySnapshot();
+                    const p = new messages.Party();
                     p.setWorldId(result.party.worldId);
                     p.setPartyId(result.party.partyId);
                     p.setLeaderCharacterId(result.party.leaderCharacterId);
@@ -196,7 +196,7 @@ function createPartyHandlers(partyService, messages, grpcError) {
                     p.setState(result.party.state);
                     p.setMembersList(
                         result.members.map((m) => {
-                            const mm = new messages.PartyMemberSnapshot();
+                            const mm = new messages.PartyMember();
                             mm.setWorldId(Number(worldId));
                             mm.setCharacterId(m.characterId);
                             mm.setCharacterName(m.characterName);

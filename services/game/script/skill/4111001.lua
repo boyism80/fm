@@ -2,14 +2,20 @@
 
 function on_activated_4111001(me, skill, params)
 	local effect = skill:effect()
-	if effect == nil then return end
+	if effect == nil then
+		return
+	end
 	local percent = effect.x or 100
-	me:buff(skill, BuffFlag.MesoUp, percent)
+	for_each_near_party_member(me, skill, function(ch)
+		ch:buff(skill, BuffFlag.MesoUp, percent)
+	end)
 end
 
 function on_buff_4111001(me, skill)
 	local effect = skill:effect()
-	if effect == nil then return end
+	if effect == nil then
+		return
+	end
 	local percent = effect.x or 100
 	local current = me:bonus_meso_multiplier()
 	if current <= 0 then
@@ -20,7 +26,9 @@ end
 
 function on_unbuff_4111001(me, skill)
 	local effect = skill:effect()
-	if effect == nil then return end
+	if effect == nil then
+		return
+	end
 	local percent = effect.x or 100
 	local current = me:bonus_meso_multiplier()
 	me:bonus_meso_multiplier(current - (percent - 100))

@@ -260,6 +260,31 @@ func (m *Map) GetAllPlayers() map[uint32]Object {
 	return m.objects[constant.ObjectTypeCharacter]
 }
 
+func (m *Map) GetPartyMembers(partyID uint32) []*Character {
+	if m == nil || partyID == 0 {
+		return nil
+	}
+	players := m.GetAllPlayers()
+	if len(players) == 0 {
+		return nil
+	}
+	out := make([]*Character, 0, len(players))
+	for _, obj := range players {
+		ch, ok := obj.(*Character)
+		if !ok || ch == nil {
+			continue
+		}
+		pid := ch.GetPartyID()
+		if pid != nil && *pid == partyID {
+			out = append(out, ch)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 func (m *Map) GetControllerTable() *ControllerTable {
 	return m.controllerTable
 }
@@ -737,12 +762,13 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 			BaseMp: uint32(max(0, mobSpec.MaxMP)),
 			Stance: 5,
 		},
-		Foothold: footholdID,
-		Wz:       mobSpec,
-		Spawn:    mobSpawn,
-		ExpRate:  100,
-		DropRate: 100,
-		Homing:   make(map[uint32]*Homing),
+		Foothold:  footholdID,
+		Wz:        mobSpec,
+		Spawn:     mobSpawn,
+		ExpRate:   100,
+		DropRate:  100,
+		Homing:    make(map[uint32]*Homing),
+		accDamage: make(map[int64]map[uint32]uint64),
 	}
 	mob.LifeCore.ObjectCore.self = mob
 

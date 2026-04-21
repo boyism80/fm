@@ -1,7 +1,9 @@
 -- Skill name (String.wz/Skill.img.xml): 하이퍼 바디
 
 function on_activated_1301007(me, skill, params)
-	apply_hyper_body(me, skill)
+	for_each_near_party_member(me, skill, function(ch)
+		apply_hyper_body(ch, skill)
+	end)
 end
 
 function on_buff_1301007(me, skill)

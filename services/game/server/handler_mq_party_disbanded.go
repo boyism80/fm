@@ -23,7 +23,7 @@ func (h *partyMqDisbanded) Handle(ctx actor.Context, _ amqp.Delivery, _ string, 
 	if !ok {
 		return nil
 	}
-	prevSnapshot := pc.CachedSnapshot(evt.PartyID)
+	prevParty := pc.Get(evt.PartyID)
 	pc.UpdateAsync(ctx, evt).
 		Then(func() (interface{}, error) { return nil, nil }, func(interface{}) error {
 			if raw == nil {
@@ -32,10 +32,10 @@ func (h *partyMqDisbanded) Handle(ctx actor.Context, _ amqp.Delivery, _ string, 
 			var extra struct {
 				CharacterID uint32 `json:"character_id"`
 			}
-			if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 || prevSnapshot == nil {
+			if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 || prevParty == nil {
 				return nil
 			}
-			pc.DeliverPartyDisbandUpdate(prevSnapshot, extra.CharacterID)
+			pc.DeliverPartyDisbandUpdate(prevParty, extra.CharacterID)
 			return nil
 		}).
 		Run()

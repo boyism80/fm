@@ -46,4 +46,3 @@ func ClearConfiguration(L *lua.LState) {
 	defer threadConfig.Unlock()
 	delete(threadConfig.m, L)
 }
-

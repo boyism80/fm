@@ -2,7 +2,7 @@ package entity
 
 import internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 
-func (k *KeyLayout) ToGrpcDTO() []*internal.KeyLayoutBinding {
+func (k *KeyLayout) ToProto() []*internal.KeyLayoutBinding {
 	if k == nil || len(k.slots) == 0 {
 		return nil
 	}

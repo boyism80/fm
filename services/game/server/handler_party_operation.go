@@ -53,7 +53,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 	case constant.PartyC2SCreate:
 		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 			func(c context.Context) (*internal.CreatePartyReply, error) {
-				leader := ch.ToGrpcPartyMember(worldID, int32(h.gs.config.ChannelId), "LEADER")
+				leader := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), "LEADER")
 				req := &internal.CreatePartyRequest{
 					WorldId: worldID,
 					Leader:  leader,
@@ -101,7 +101,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 	case constant.PartyC2SAcceptInvite:
 		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 			func(c context.Context) (*internal.JoinPartyReply, error) {
-				member := ch.ToGrpcPartyMember(worldID, int32(h.gs.config.ChannelId), "MEMBER")
+				member := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), "MEMBER")
 				return h.gs.internalClient.JoinParty(c, &internal.JoinPartyRequest{
 					WorldId: worldID,
 					PartyId: req.PartyID,
@@ -161,7 +161,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		if !hasParty {
 			promise = async.ThenRPC(promise,
 				func(c context.Context) (*internal.CreatePartyReply, error) {
-					leader := ch.ToGrpcPartyMember(worldID, int32(h.gs.config.ChannelId), "LEADER")
+					leader := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), "LEADER")
 					req := &internal.CreatePartyRequest{
 						WorldId: worldID,
 						Leader:  leader,
@@ -218,7 +218,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 			func(gp *internal.GetPartyReply) error {
 				if gp.GetFound() && gp.GetParty() != nil && h.gs.party != nil {
-					h.gs.party.ApplySnapshotFromLogin(gp.GetParty())
+					h.gs.party.Update(gp.GetParty())
 				}
 				return nil
 			},

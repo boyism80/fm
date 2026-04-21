@@ -34,9 +34,9 @@ func (h *partyMqLeaderChanged) Handle(ctx actor.Context, _ amqp.Delivery, _ stri
 			if err := json.Unmarshal(raw, &extra); err != nil || extra.NewLeaderCharacterID == 0 {
 				return nil
 			}
-			snapshot := pc.CachedSnapshot(evt.PartyID)
-			if snapshot != nil {
-				pc.DeliverPartyLeaderChange(snapshot, extra.NewLeaderCharacterID, false)
+			party := pc.Get(evt.PartyID)
+			if party != nil {
+				pc.DeliverPartyLeaderChange(party, extra.NewLeaderCharacterID, false)
 			}
 			return nil
 		}).

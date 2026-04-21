@@ -26,6 +26,7 @@ type Mob struct {
 	DropRate     int32
 	stealOutcome *uint32
 	Homing       map[uint32]*Homing
+	accDamage    map[int64]map[uint32]uint64
 }
 
 func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
@@ -347,6 +348,18 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 	}
 
 	m.AddHp(-int(damage))
+	if attacker != nil {
+		bucketID := int64(-1)
+		if pid := attacker.GetPartyID(); pid != nil {
+			bucketID = int64(*pid)
+		}
+		bucket := m.accDamage[bucketID]
+		if bucket == nil {
+			bucket = make(map[uint32]uint64)
+			m.accDamage[bucketID] = bucket
+		}
+		bucket[attacker.GetID()] += uint64(damage)
+	}
 	isDead := m.GetHp() == 0
 
 	if !isDead {
@@ -361,26 +374,18 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		return false
 	}
 
+	mapInstance := m.GetMap()
+	if mapInstance != nil {
+		m.distributeKillExperience()
+	}
+
 	if attacker != nil {
 		log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
-
-		exp := uint32(m.Wz.EXP)
-		if attacker.BonusStats.ExpRate > 0 {
-			exp = exp * uint32(attacker.BonusStats.ExpRate) / 100
-		}
-		mobExp := m.ExpRate
-		if mobExp <= 0 {
-			mobExp = 100
-		}
-		exp = exp * uint32(mobExp) / 100
-		attacker.AddExp(exp)
-
 		m.dropItems(attacker)
 	} else {
 		log.Printf("Mob %d (ID: %d) killed with no attacker", m.OID, m.Wz.ID)
 	}
 
-	mapInstance := m.GetMap()
 	if mapInstance != nil {
 		mapInstance.RemoveMob(m.OID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT)
 	}
@@ -390,4 +395,26 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 	}
 
 	return true
+}
+
+func (m *Mob) ExpForDamage(damage uint64) uint32 {
+	if m == nil || m.Wz == nil || damage == 0 {
+		return 0
+	}
+	maxHp := uint64(m.GetMaxHp())
+	if maxHp == 0 {
+		return 0
+	}
+	if damage > maxHp {
+		damage = maxHp
+	}
+	base := uint64(m.Wz.EXP)
+	num := base * damage
+	den := maxHp
+	exp := (num + den - 1) / den
+	const maxU32 = uint64(0xffffffff)
+	if exp > maxU32 {
+		return ^uint32(0)
+	}
+	return uint32(exp)
 }

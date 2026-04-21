@@ -231,6 +231,8 @@ func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
 }
 
 func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
+	luax.RegisterLuaType[*entity.PartyMember](luaState)
+	luax.RegisterLuaType[*entity.Party](luaState)
 	luax.RegisterLuaType[*entity.ObjectCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Drop, *entity.ObjectCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Meso, *entity.Drop](luaState)

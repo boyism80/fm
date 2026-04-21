@@ -194,6 +194,38 @@ function for_each_character_in_skill_area(me, skill, callback)
 	end
 end
 
+function for_each_near_party_member(me, skill, callback, opts)
+	if callback == nil or me == nil then
+		return
+	end
+	opts = opts or {}
+	local party = me:party()
+	if party == nil then
+		return
+	end
+	local id_set = {}
+	for _, pm in ipairs(party:members()) do
+		if pm ~= nil then
+			id_set[pm:id()] = true
+		end
+	end
+	if opts.exclude_caster then
+		id_set[me:id()] = nil
+	end
+	local allow_dead = opts.allow_dead == true
+	for_each_character_in_skill_area(me, skill, function(ch)
+		if ch == nil then
+			return
+		end
+		if not allow_dead and not ch:is_alive() then
+			return
+		end
+		if id_set[ch:id()] then
+			callback(ch)
+		end
+	end)
+end
+
 local poison_pdam_cap = 30000
 local poison_denominator_base = 70
 

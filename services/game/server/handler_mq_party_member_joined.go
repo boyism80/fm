@@ -34,9 +34,9 @@ func (h *partyMqMemberJoined) Handle(ctx actor.Context, _ amqp.Delivery, _ strin
 			if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
 				return nil
 			}
-			snapshot := pc.CachedSnapshot(evt.PartyID)
-			if snapshot != nil {
-				pc.DeliverPartyJoinUpdate(snapshot, extra.CharacterID)
+			party := pc.Get(evt.PartyID)
+			if party != nil {
+				pc.DeliverPartyJoinUpdate(party, extra.CharacterID)
 			}
 			return nil
 		}).

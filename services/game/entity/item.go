@@ -35,7 +35,7 @@ type Item interface {
 	Clone(count uint16) Item
 	BindDrop(drop *Drop)
 	ToDTO() dto.Item
-	ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted
+	ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted
 }
 
 type Drop struct {

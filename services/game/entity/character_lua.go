@@ -1298,6 +1298,31 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, mob))
 			return 1
 		},
+		"party": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "party() takes no arguments")
+				return 0
+			}
+			pid := ch.GetPartyID()
+			gw := ch.GetGameWorld()
+			if pid == nil || gw == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			p := gw.GetPartyByID(*pid)
+			if p == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, p))
+			return 1
+		},
 		"hidden": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

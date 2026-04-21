@@ -805,31 +805,11 @@ func (ch *Character) GetName() string {
 	return ch.name
 }
 
-func (ch *Character) ToGrpcPartyMember(worldID uint32, channelID int32, role string) *internal.PartyMemberSnapshot {
-	if ch == nil {
-		return nil
+func (ch *Character) ToProtoPartyMember(worldID uint32, channelID int32, role string) *internal.PartyMember {
+	if m := PartyMemberFromCharacter(ch, worldID, channelID, role); m != nil {
+		return m.ToProto()
 	}
-	mapID := uint32(0)
-	if m := ch.GetMap(); m != nil {
-		mapID = m.GetMapID()
-	}
-	mm := &internal.PartyMemberSnapshot{
-		WorldId:       worldID,
-		CharacterId:   ch.GetID(),
-		CharacterName: ch.GetName(),
-		Level:         uint32(ch.GetLevel()),
-		ClassId:       uint32(ch.Class),
-		Role:          role,
-		MapId:         mapID,
-	}
-	if channelID >= 0 {
-		ci := channelID
-		mm.ChannelIndex = &ci
-	}
-	if door := ch.GetDoor(0); door != nil {
-		mm.Door = door.ToGrpcDTO()
-	}
-	return mm
+	return nil
 }
 
 func (ch *Character) GetPartyID() *uint32 {
@@ -893,14 +873,6 @@ func (ch *Character) IsRanked() bool {
 }
 
 func (ch *Character) AddExp(exp uint32) {
-
-	if ch.GameWorld != nil {
-		expRate := ch.GameWorld.GetExpRate()
-		if expRate > 0 {
-			exp = exp * uint32(expRate)
-		}
-	}
-
 	ch.exp += exp
 	ch.Listener.OnExpGain(ch, exp)
 
@@ -909,6 +881,51 @@ func (ch *Character) AddExp(exp uint32) {
 			constant.STAT_EXP: int32(ch.exp),
 		}, false)
 	}
+}
+
+func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
+	if ch == nil || raw == 0 {
+		return 0
+	}
+	exp := raw
+	if ch.BonusStats.ExpRate > 0 {
+		exp = exp * uint32(ch.BonusStats.ExpRate) / 100
+	}
+	exp = exp * uint32(ch.GetHolySymbolExpRate()) / 100
+	if ch.HasDebuff(constant.DebuffFlagCurse) {
+		exp /= 2
+	}
+	if gw := ch.GameWorld; gw != nil {
+		if r := gw.GetExpRate(); r > 0 {
+			exp = exp * uint32(r)
+		}
+	}
+	return exp
+}
+
+func (ch *Character) GetHolySymbolExpRate() int32 {
+	if ch == nil || ch.Buffs == nil {
+		return 100
+	}
+	ent := ch.Buffs.GetEntity(constant.BuffFlagHolySymbol)
+	sb, typeOk := ent.(*SkillBuff)
+	if !typeOk || sb == nil || sb.Wz == nil {
+		return 100
+	}
+	x, valOk := sb.Values[constant.BuffFlagHolySymbol]
+	if !valOk || x <= 0 {
+		return 100
+	}
+	full := sb.Wz.ID == uint32(constant.SkillGmHolySymbol)
+	if !full {
+		pid := ch.GetPartyID()
+		m := ch.GetMap()
+		full = pid != nil && m != nil && len(m.GetPartyMembers(*pid)) >= 2
+	}
+	if full {
+		return 100 + x
+	}
+	return int32(100 * int64(150+x) / 150)
 }
 
 type CharacterInitData struct {

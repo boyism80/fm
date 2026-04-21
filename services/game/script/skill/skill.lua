@@ -1,8 +1,3 @@
--- Shared skill logic. Loaded once per root Lua state.
--- Individual skill scripts call apply_*(me, skill) etc. as global functions.
--- Skill (Endure, ImprovingHpRecovery, etc.) is injected by Go.
-
--- Applies a buff using value from effect[value_key] (e.g. "x" or "prop").
 function apply_buff_from_effect(me, skill, flag, value_key)
 	value_key = value_key or "x"
 	local effect = skill:effect()
@@ -16,7 +11,6 @@ function apply_buff_from_effect(me, skill, flag, value_key)
 	me:buff(skill, flag, val)
 end
 
--- Buff with fixed value (e.g. 1 for Darksight, Soul Arrow, WkCharge, Combo).
 function apply_buff_fixed(me, skill, flag, value)
 	value = value or 1
 	me:buff(skill, flag, value)
@@ -31,29 +25,9 @@ function apply_sharp_eyes(me, skill)
 		return
 	end
 	local packed = effect.x * 256 + (effect.y % 256)
-	for_each_character_in_skill_area(me, skill, function(ch)
-		if ch == nil or not ch:is_alive() then
-			return
-		end
+	for_each_near_party_member(me, skill, function(ch)
 		ch:buff(skill, BuffFlag.SharpEyes, packed)
 	end)
-end
-
-function add_holy_symbol_bonus(me, skill)
-	local effect = skill:effect()
-	if effect == nil then return end
-	local current = me:bonus_exp_rate()
-	if current <= 0 then
-		current = 100
-	end
-	me:bonus_exp_rate(current + effect.x)
-end
-
-function remove_holy_symbol_bonus(me, skill)
-	local effect = skill:effect()
-	if effect == nil then return end
-	local current = me:bonus_exp_rate()
-	me:bonus_exp_rate(current - effect.x)
 end
 
 function apply_hyper_body(me, skill)
@@ -128,8 +102,6 @@ function apply_monster_magnet(me, skill, params)
 	end
 end
 
--- Consumes combo orbs from the ComboAttack buff.
--- If howmany is nil, consumes all orbs except leaves at least 1 (matching old server behavior).
 function consume_combo_orbs(me, howmany)
 	local current = me:buff_value(BuffFlag.Combo)
 	if current == nil or current <= 1 then
@@ -222,14 +194,11 @@ function apply_mana_reflection(me, skill)
 end
 
 function apply_resurrection(me, skill)
-	for_each_character_in_skill_area(me, skill, function(ch)
-		if ch == nil or ch:is_alive() then
-			return
-		end
+	for_each_near_party_member(me, skill, function(ch)
 		ch:stance(0)
 		ch:hp(ch:max_hp())
 		ch:mp(ch:max_mp())
-	end)
+	end, { allow_dead = true })
 end
 
 local archer_puppet_offset_x = 180

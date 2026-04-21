@@ -17,7 +17,7 @@ func expirationUnixMs(t time.Time) int64 {
 	return t.UnixMilli()
 }
 
-func buildInventoryPersisted(item Item, ownerID uint32, slot int32, uniqueID *uint64, ownerName string, flag uint16, enchantChance uint8, skillBonus uint16) *internal.InventoryPersisted {
+func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64, ownerName string, flag uint16, enchantChance uint8, skillBonus uint16) *internal.InventoryPersisted {
 	if item == nil {
 		return nil
 	}
@@ -40,7 +40,7 @@ func buildInventoryPersisted(item Item, ownerID uint32, slot int32, uniqueID *ui
 	return out
 }
 
-func equipmentToInventoryPersisted(e Equipment, ownerID uint32, slot int32) *internal.InventoryPersisted {
+func equipmentToInventoryProto(e Equipment, ownerID uint32, slot int32) *internal.InventoryPersisted {
 	if e == nil {
 		return nil
 	}
@@ -48,71 +48,71 @@ func equipmentToInventoryPersisted(e Equipment, ownerID uint32, slot int32) *int
 	if c == nil {
 		return nil
 	}
-	return buildInventoryPersisted(e, ownerID, slot, c.UniqueId, c.OwnerName, c.Flag, c.EnchantChance, c.SkillBonus)
+	return buildInventoryProto(e, ownerID, slot, c.UniqueId, c.OwnerName, c.Flag, c.EnchantChance, c.SkillBonus)
 }
 
-func (item *Weapon) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Weapon) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Shield) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Shield) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Cap) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Cap) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Face) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Face) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Accessory) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Accessory) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Top) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Top) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Pants) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Pants) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Shoes) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Shoes) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Glove) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Glove) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Cape) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *Cape) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *RingEquip) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryPersisted(item, ownerID, slot)
+func (item *RingEquip) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
-func (item *Consume) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
+func (item *Consume) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
 }
 
-func (item *Installation) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
+func (item *Installation) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
 }
 
-func (item *MiscItem) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
+func (item *MiscItem) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
 }
 
-func (item *CashItem) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, item.UniqueId, item.OwnerName, item.Flags, 0, 0)
+func (item *CashItem) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryProto(item, ownerID, slot, item.UniqueId, item.OwnerName, item.Flags, 0, 0)
 }
 
-func (item *Pet) ToGrpcDTO(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryPersisted(item, ownerID, slot, item.UniqueId, "", item.Flags, 0, 0)
+func (item *Pet) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	return buildInventoryProto(item, ownerID, slot, item.UniqueId, "", item.Flags, 0, 0)
 }
 
 func NewItemFromInternalProto(pb *internal.InventoryPersisted, gw GameWorld) (Item, error) {

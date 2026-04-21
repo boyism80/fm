@@ -3,7 +3,6 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
-	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -66,8 +65,8 @@ type TimerTick struct {
 	HandlerName string
 }
 
-type SyncPartySnapshot struct {
-	Snapshot *internal.PartySnapshot
+type SyncParty struct {
+	Party *entity.Party
 }
 
 type ClearPartyByPartyID struct {

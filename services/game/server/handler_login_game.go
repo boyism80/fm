@@ -189,7 +189,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	}
 
 	if h.gs.party != nil && reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
-		h.gs.party.ApplySnapshotFromLogin(partyReply.GetParty())
+		h.gs.party.Update(partyReply.GetParty())
 	}
 
 	rootContext := h.gs.GetRootContext()

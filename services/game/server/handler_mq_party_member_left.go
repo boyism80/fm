@@ -23,7 +23,7 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ string,
 	if !ok {
 		return nil
 	}
-	prevSnapshot := pc.CachedSnapshot(evt.PartyID)
+	prevParty := pc.Get(evt.PartyID)
 	pc.UpdateAsync(ctx, evt).
 		Then(func() (interface{}, error) { return nil, nil }, func(interface{}) error {
 			if raw == nil {
@@ -38,10 +38,10 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ string,
 			if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
 				return nil
 			}
-			snapshot := pc.CachedSnapshot(evt.PartyID)
-			pc.DeliverPartyLeaveUpdate(prevSnapshot, snapshot, extra.CharacterID, extra.ExpelledByCharacter != 0)
-			if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && snapshot != nil {
-				pc.DeliverPartyLeaderChange(snapshot, extra.NewLeaderCharacterID, true)
+			party := pc.Get(evt.PartyID)
+			pc.DeliverPartyLeaveUpdate(prevParty, party, extra.CharacterID, extra.ExpelledByCharacter != 0)
+			if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && party != nil {
+				pc.DeliverPartyLeaderChange(party, extra.NewLeaderCharacterID, true)
 			}
 			return nil
 		}).
