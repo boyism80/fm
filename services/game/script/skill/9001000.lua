@@ -17,5 +17,8 @@ function on_activated_9001000(me, skill, params)
 		end
 		apply_dispel(ch, skill)
 		ch:hp(ch:max_hp())
+		if ch ~= me then
+			ch:show_buff_effect(skill, 2)
+		end
 	end)
 end

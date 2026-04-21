@@ -125,6 +125,25 @@ function createPartyHandlers(partyService, messages, grpcError) {
             }
         },
 
+        async autoInviteParty(call, callback) {
+            try {
+                const result = await partyService.autoInviteParty(
+                    call.request.getWorldId(),
+                    call.request.getInviterCharacterId(),
+                    call.request.getTargetCharacterIdsList()
+                );
+                const reply = new messages.AutoInvitePartyReply();
+                reply.setOk(Boolean(result.ok));
+                reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
+                setOptionalPartyId(reply, result.partyId);
+                reply.setInvitedCharacterIdsList((result.invitedCharacterIds ?? []).map((v) => Number(v)));
+                reply.setInvitedCount(Number(result.invitedCount ?? 0));
+                callback(null, reply);
+            } catch (err) {
+                grpcError(err, callback);
+            }
+        },
+
         async leaveParty(call, callback) {
             try {
                 const result = await partyService.leaveParty(

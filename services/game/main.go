@@ -7,8 +7,10 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/boyism80/fm/common/config"
+	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/services/game/server"
 )
 
@@ -39,6 +41,7 @@ rate:
 internal:
   host: "127.0.0.1"
   port: 50051
+  timeout: 10
 rabbitmq:
   ip: "127.0.0.1"
   port: 5672
@@ -76,6 +79,11 @@ lua:
 		g.Rate.Drop = 5
 		g.Rate.Meso = 5
 		log.Println("High-rate server configuration enabled (from config)")
+	}
+	if g.Internal.TimeoutSeconds > 0 {
+		core.InternalRPCPerStepTimeout = time.Duration(g.Internal.TimeoutSeconds) * time.Second
+	} else {
+		core.InternalRPCPerStepTimeout = 10 * time.Second
 	}
 
 	internalAddr := g.Internal.GRPCAddr()

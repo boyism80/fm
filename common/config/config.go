@@ -60,8 +60,9 @@ func ResolvePath(p string) (string, error) {
 }
 
 type InternalEndpoint struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
+	Host           string `yaml:"host"`
+	Port           int    `yaml:"port"`
+	TimeoutSeconds int    `yaml:"timeout"`
 }
 
 func (e InternalEndpoint) GRPCAddr() string {

@@ -12,6 +12,18 @@ func (obj *ObjectCore) LuaTypeName() string {
 
 func (obj *ObjectCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
+		"__eq": func(L *lua.LState) int {
+			leftUD := L.CheckUserData(1)
+			rightUD := L.CheckUserData(2)
+			leftObj, leftOk := leftUD.Value.(Object)
+			rightObj, rightOk := rightUD.Value.(Object)
+			if !leftOk || !rightOk || leftObj == nil || rightObj == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LBool(leftObj.GetOID() == rightObj.GetOID()))
+			return 1
+		},
 		"position": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			obj, ok := ud.Value.(Object)

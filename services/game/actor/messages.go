@@ -108,12 +108,13 @@ type DeliverPartyStatusMessage struct {
 }
 
 type DeliverPartyUpdateJoin struct {
-	CharacterID uint32
-	ForChannel  int32
-	PartyID     uint32
-	JoinName    string
-	LeaderID    uint32
-	Members     []response.PartyMemberStatus
+	CharacterID     uint32
+	ForChannel      int32
+	PartyID         uint32
+	JoinCharacterID uint32
+	JoinName        string
+	LeaderID        uint32
+	Members         []response.PartyMemberStatus
 }
 
 type DeliverPartyUpdateLeave struct {

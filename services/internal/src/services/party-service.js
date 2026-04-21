@@ -514,6 +514,70 @@ class PartyService {
         };
     }
 
+    async autoInviteParty(worldId, inviterCharacterId, targetCharacterIds) {
+        this._assertWorld(worldId);
+        this._assertCharacterId(inviterCharacterId);
+        const inviterState = await this.characterRealtimeStateRepo.get(worldId, inviterCharacterId);
+        if (inviterState?.partyId == null) {
+            return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
+        }
+        const partyId = Number(inviterState.partyId);
+        if (!Number.isInteger(partyId) || partyId < 0) {
+            return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
+        }
+        const party = await this.partyRepo.get(worldId, partyId);
+        if (!party || party.state !== PARTY_STATE_ACTIVE) {
+            return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
+        }
+        const members = await this.partyMemberRepo.getAll(worldId, partyId);
+        if (!members.has(String(inviterCharacterId))) {
+            return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
+        }
+        if (members.size >= MAX_PARTY_MEMBERS) {
+            return { ok: false, code: messages.PartyErrorCode.PARTY_FULL };
+        }
+        const inviterRow = await this.characterRepo.get(worldId, inviterCharacterId);
+        const inviterName = inviterRow?.name ? String(inviterRow.name) : "";
+        if (!inviterName) {
+            return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
+        }
+        const openSlots = Math.max(0, MAX_PARTY_MEMBERS - members.size);
+        const dedup = [...new Set((Array.isArray(targetCharacterIds) ? targetCharacterIds : []).map((v) => Number(v)))];
+        const validTargets = dedup.filter((v) => Number.isInteger(v) && v > 0 && v !== Number(inviterCharacterId)).slice(0, openSlots);
+        const invitedCharacterIds = [];
+        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+
+        for (const targetCharacterId of validTargets) {
+            const targetRt = await this.characterRealtimeStateRepo.get(worldId, targetCharacterId);
+            if (targetRt?.partyId != null) {
+                continue;
+            }
+            const sess = await this.sessionRepo.getCharacterSession(worldId, targetCharacterId);
+            const ch = sess?.gameServer?.channelId;
+            const online = sess?.state === "ONLINE" && Boolean(sess?.gameServer?.connected);
+            const chNum = Number(ch);
+            if (!online || ch == null || !Number.isFinite(chNum) || chNum < 0) {
+                continue;
+            }
+            const inviteKey = this._invitePendingKey(worldId, targetCharacterId);
+            await client.set(inviteKey, String(partyId), "EX", INVITE_PENDING_TTL_SEC);
+            await this._publishToPartyGameChannel(worldId, chNum, "party_invite", {
+                world_id: Number(worldId),
+                party_id: partyId,
+                target_character_id: targetCharacterId,
+                inviter_name: inviterName,
+                party_search: true,
+            });
+            invitedCharacterIds.push(targetCharacterId);
+        }
+        return {
+            ok: true,
+            partyId,
+            invitedCharacterIds,
+            invitedCount: invitedCharacterIds.length,
+        };
+    }
+
     async denyParty(worldId, deniedCharacterId, inviterCharacterName, action) {
         this._assertWorld(worldId);
         this._assertCharacterId(deniedCharacterId);

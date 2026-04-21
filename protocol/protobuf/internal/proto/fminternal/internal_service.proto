@@ -28,6 +28,7 @@ service Internal {
   rpc GetParty (GetPartyRequest) returns (GetPartyReply);
   rpc UpdatePartyMember (UpdatePartyMemberRequest) returns (UpdatePartyMemberReply);
   rpc InviteParty (InvitePartyRequest) returns (InvitePartyReply);
+  rpc AutoInviteParty (AutoInvitePartyRequest) returns (AutoInvitePartyReply);
   rpc DenyParty (DenyPartyRequest) returns (DenyPartyReply);
 }
 
@@ -447,6 +448,20 @@ message InvitePartyReply {
   uint32 target_character_id = 3;
   uint32 target_channel_id = 4;
   optional uint32 party_id = 5;
+}
+
+message AutoInvitePartyRequest {
+  uint32 world_id = 1;
+  uint32 inviter_character_id = 2;
+  repeated uint32 target_character_ids = 3;
+}
+
+message AutoInvitePartyReply {
+  bool ok = 1;
+  PartyErrorCode error_code = 2;
+  optional uint32 party_id = 3;
+  repeated uint32 invited_character_ids = 4;
+  uint32 invited_count = 5;
 }
 
 message DenyPartyRequest {

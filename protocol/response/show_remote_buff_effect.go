@@ -4,7 +4,7 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-type ShowBuffeffect struct {
+type ShowRemoteBuffEffect struct {
 	CharacterID uint32
 	EffectID    uint8
 	SkillID     uint32
@@ -12,11 +12,11 @@ type ShowBuffeffect struct {
 	Additional  *uint8
 }
 
-func (p *ShowBuffeffect) Opcode() uint16 {
+func (p *ShowRemoteBuffEffect) Opcode() uint16 {
 	return 0x8F
 }
 
-func (p *ShowBuffeffect) Serialize(writer *stream.StreamWriter) error {
+func (p *ShowRemoteBuffEffect) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.CharacterID)
 	writer.WriteU8(p.EffectID)
 	writer.WriteU32(p.SkillID)
@@ -27,5 +27,5 @@ func (p *ShowBuffeffect) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowBuffeffect) Deserialize(reader *stream.StreamReader) {
+func (p *ShowRemoteBuffEffect) Deserialize(reader *stream.StreamReader) {
 }

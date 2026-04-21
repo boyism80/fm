@@ -102,6 +102,17 @@ func (l *CharacterListenerImpl) OnPartyCreated(ch *entity.Character, partyID uin
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnPartyInvite(ch *entity.Character, partyID uint32, inviterName string, partySearch bool) {
+	if ch == nil {
+		return
+	}
+	ch.Send(&response.PartyInvite{
+		PartyID:     partyID,
+		InviterName: inviterName,
+		PartySearch: partySearch,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *entity.Character, code pconst.PartyStatusCode) {
 	if ch == nil {
 		return
@@ -209,14 +220,22 @@ func (l *CharacterListenerImpl) OnShowBuffEffect(ch *entity.Character, effectID 
 		return
 	}
 
-	ch.Send(&response.ShowOwnBuffeffect{
+	ch.Send(&response.ShowOwnBuffEffect{
 		EffectID:   effectID,
 		SkillID:    skillID,
 		SkillLevel: skillLevel,
 		Additional: additional,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	ch.Broadcast(&response.ShowBuffeffect{
+	l.OnShowRemoteBuffEffect(ch, effectID, skillID, skillLevel, additional)
+}
+
+func (l *CharacterListenerImpl) OnShowRemoteBuffEffect(ch *entity.Character, effectID uint8, skillID uint32, skillLevel uint8, additional *uint8) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Broadcast(&response.ShowRemoteBuffEffect{
 		CharacterID: ch.GetID(),
 		EffectID:    effectID,
 		SkillID:     skillID,

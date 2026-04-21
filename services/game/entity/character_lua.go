@@ -41,6 +41,18 @@ func (ch *Character) LuaTypeName() string {
 
 func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
+		"__eq": func(L *lua.LState) int {
+			leftUD := L.CheckUserData(1)
+			rightUD := L.CheckUserData(2)
+			leftCh, leftOk := leftUD.Value.(*Character)
+			rightCh, rightOk := rightUD.Value.(*Character)
+			if !leftOk || !rightOk || leftCh == nil || rightCh == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LBool(leftCh.GetID() == rightCh.GetID()))
+			return 1
+		},
 		"id": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -602,6 +614,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.Listener.OnShowBuffEffect(ch, effectID, skillEntry.Wz.ID, skillLevel, nil)
 			return 0
 		},
+
 		"unbuff": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1266,7 +1279,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			classCode := uint16(L.CheckInt(2))
+			classCode := constant.ClassType(L.CheckInt(2))
 			L.Push(lua.LBool(ch.ClassOf(classCode)))
 			return 1
 		},

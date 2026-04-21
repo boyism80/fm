@@ -7,8 +7,10 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/boyism80/fm/common/config"
+	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/services/login/server"
 )
 
@@ -34,6 +36,7 @@ catalog_retry_max_attempts: 30
 internal:
   host: "127.0.0.1"
   port: 50051
+  timeout: 10
 `))
 		log.Println("Notes:")
 		log.Println("  - internal is required; login server fetches world/channel routing from internal at startup.")
@@ -52,6 +55,11 @@ internal:
 	l, err := config.LoadLogin(cfgFile)
 	if err != nil {
 		log.Fatalf("Config: %v", err)
+	}
+	if l.Internal.TimeoutSeconds > 0 {
+		core.InternalRPCPerStepTimeout = time.Duration(l.Internal.TimeoutSeconds) * time.Second
+	} else {
+		core.InternalRPCPerStepTimeout = 10 * time.Second
 	}
 
 	srvCfg := &server.LoginConfig{

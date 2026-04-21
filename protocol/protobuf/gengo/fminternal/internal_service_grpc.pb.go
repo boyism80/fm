@@ -42,6 +42,7 @@ const (
 	Internal_GetParty_FullMethodName            = "/fm.internal.Internal/GetParty"
 	Internal_UpdatePartyMember_FullMethodName   = "/fm.internal.Internal/UpdatePartyMember"
 	Internal_InviteParty_FullMethodName         = "/fm.internal.Internal/InviteParty"
+	Internal_AutoInviteParty_FullMethodName     = "/fm.internal.Internal/AutoInviteParty"
 	Internal_DenyParty_FullMethodName           = "/fm.internal.Internal/DenyParty"
 )
 
@@ -70,6 +71,7 @@ type InternalClient interface {
 	GetParty(ctx context.Context, in *GetPartyRequest, opts ...grpc.CallOption) (*GetPartyReply, error)
 	UpdatePartyMember(ctx context.Context, in *UpdatePartyMemberRequest, opts ...grpc.CallOption) (*UpdatePartyMemberReply, error)
 	InviteParty(ctx context.Context, in *InvitePartyRequest, opts ...grpc.CallOption) (*InvitePartyReply, error)
+	AutoInviteParty(ctx context.Context, in *AutoInvitePartyRequest, opts ...grpc.CallOption) (*AutoInvitePartyReply, error)
 	DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error)
 }
 
@@ -291,6 +293,16 @@ func (c *internalClient) InviteParty(ctx context.Context, in *InvitePartyRequest
 	return out, nil
 }
 
+func (c *internalClient) AutoInviteParty(ctx context.Context, in *AutoInvitePartyRequest, opts ...grpc.CallOption) (*AutoInvitePartyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AutoInvitePartyReply)
+	err := c.cc.Invoke(ctx, Internal_AutoInviteParty_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DenyPartyReply)
@@ -326,6 +338,7 @@ type InternalServer interface {
 	GetParty(context.Context, *GetPartyRequest) (*GetPartyReply, error)
 	UpdatePartyMember(context.Context, *UpdatePartyMemberRequest) (*UpdatePartyMemberReply, error)
 	InviteParty(context.Context, *InvitePartyRequest) (*InvitePartyReply, error)
+	AutoInviteParty(context.Context, *AutoInvitePartyRequest) (*AutoInvitePartyReply, error)
 	DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
@@ -399,6 +412,9 @@ func (UnimplementedInternalServer) UpdatePartyMember(context.Context, *UpdatePar
 }
 func (UnimplementedInternalServer) InviteParty(context.Context, *InvitePartyRequest) (*InvitePartyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InviteParty not implemented")
+}
+func (UnimplementedInternalServer) AutoInviteParty(context.Context, *AutoInvitePartyRequest) (*AutoInvitePartyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AutoInviteParty not implemented")
 }
 func (UnimplementedInternalServer) DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DenyParty not implemented")
@@ -802,6 +818,24 @@ func _Internal_InviteParty_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_AutoInviteParty_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AutoInvitePartyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AutoInviteParty(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AutoInviteParty_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AutoInviteParty(ctx, req.(*AutoInvitePartyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_DenyParty_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DenyPartyRequest)
 	if err := dec(in); err != nil {
@@ -910,6 +944,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "InviteParty",
 			Handler:    _Internal_InviteParty_Handler,
+		},
+		{
+			MethodName: "AutoInviteParty",
+			Handler:    _Internal_AutoInviteParty_Handler,
 		},
 		{
 			MethodName: "DenyParty",

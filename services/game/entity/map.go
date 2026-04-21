@@ -225,6 +225,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	delete(m.objects[constant.ObjectTypeCharacter], playerID)
 
 	character.SuspendTimers()
+	character.SetPartySearchConfig(nil)
 	character.Map = nil
 	m.controllerTable.LeavePlayer(character)
 

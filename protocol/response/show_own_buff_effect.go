@@ -4,18 +4,18 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-type ShowOwnBuffeffect struct {
+type ShowOwnBuffEffect struct {
 	EffectID   uint8
 	SkillID    uint32
 	SkillLevel uint8
 	Additional *uint8
 }
 
-func (p *ShowOwnBuffeffect) Opcode() uint16 {
+func (p *ShowOwnBuffEffect) Opcode() uint16 {
 	return 0x97
 }
 
-func (p *ShowOwnBuffeffect) Serialize(writer *stream.StreamWriter) error {
+func (p *ShowOwnBuffEffect) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(p.EffectID)
 	writer.WriteU32(p.SkillID)
 	writer.WriteU8(p.SkillLevel)
@@ -25,5 +25,5 @@ func (p *ShowOwnBuffeffect) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowOwnBuffeffect) Deserialize(reader *stream.StreamReader) {
+func (p *ShowOwnBuffEffect) Deserialize(reader *stream.StreamReader) {
 }

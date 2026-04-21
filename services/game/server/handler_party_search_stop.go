@@ -32,10 +32,11 @@ func (h *PartySearchStop) Handle(ctx *core.ClientContext, req *request.PartySear
 		return fmt.Errorf("client is not a GameClient")
 	}
 
-	character := client.GetCharacter()
-	if character == nil {
+	ch := client.GetCharacter()
+	if ch == nil {
 		return nil
 	}
 
+	ch.SetPartySearchConfig(nil)
 	return nil
 }

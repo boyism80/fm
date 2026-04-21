@@ -30,6 +30,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, UseItem](gs)
 	core.Bind[*GameServer, UseInnerPortal](gs)
 	core.Bind[*GameServer, UseDoor](gs)
+	core.Bind[*GameServer, PartySearchStart](gs)
 	core.Bind[*GameServer, PartySearchStop](gs)
 	core.Bind[*GameServer, PartyOperation](gs)
 	core.Bind[*GameServer, DenyPartyRequest](gs)
