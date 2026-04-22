@@ -93,7 +93,8 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const result = await partyService.joinParty(
                     req.getWorldId(),
                     req.getPartyId(),
-                    member
+                    member,
+                    req.getSkipInvitePendingCheck()
                 );
                 const reply = new messages.JoinPartyReply();
                 reply.setOk(Boolean(result.ok));
@@ -119,25 +120,6 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 reply.setTargetCharacterId(result.targetCharacterId ?? 0);
                 reply.setTargetChannelId(result.targetChannelId ?? 0);
                 setOptionalPartyId(reply, result.partyId);
-                callback(null, reply);
-            } catch (err) {
-                grpcError(err, callback);
-            }
-        },
-
-        async autoInviteParty(call, callback) {
-            try {
-                const result = await partyService.autoInviteParty(
-                    call.request.getWorldId(),
-                    call.request.getInviterCharacterId(),
-                    call.request.getTargetCharacterIdsList()
-                );
-                const reply = new messages.AutoInvitePartyReply();
-                reply.setOk(Boolean(result.ok));
-                reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
-                setOptionalPartyId(reply, result.partyId);
-                reply.setInvitedCharacterIdsList((result.invitedCharacterIds ?? []).map((v) => Number(v)));
-                reply.setInvitedCount(Number(result.invitedCount ?? 0));
                 callback(null, reply);
             } catch (err) {
                 grpcError(err, callback);

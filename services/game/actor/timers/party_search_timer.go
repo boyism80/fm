@@ -1,8 +1,6 @@
 package timers
 
 import (
-	"log"
-	"math/rand"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -11,8 +9,6 @@ import (
 )
 
 type PartySearchTimer struct{}
-
-const partySearchInviteBatchLimit = 100
 
 func (*PartySearchTimer) New() *PartySearchTimer {
 	return &PartySearchTimer{}
@@ -79,19 +75,14 @@ func (t *PartySearchTimer) Handle(ctx actor.Context, mapData *entity.Map) error 
 		if len(targetIDs) == 0 {
 			continue
 		}
-		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-		rng.Shuffle(len(targetIDs), func(i, j int) {
-			targetIDs[i], targetIDs[j] = targetIDs[j], targetIDs[i]
-		})
-		if len(targetIDs) > partySearchInviteBatchLimit {
-			targetIDs = targetIDs[:partySearchInviteBatchLimit]
+		inviterName := ch.GetName()
+		for _, targetID := range targetIDs {
+			target := mapData.GetPlayer(targetID)
+			if target == nil {
+				continue
+			}
+			target.Listener.OnPartyInvite(target, *pid, inviterName, true)
 		}
-		if ch.GameWorld == nil {
-			continue
-		}
-		ch.GameWorld.RequestAutoInvitePartyAsync(ctx, ch.GetID(), targetIDs).OnError(func(err error) {
-			log.Printf("PartySearchTimer auto invite error: %v", err)
-		}).Run()
 		if reachedPartySearchTarget(mapData, *pid, cfg) {
 			ch.SetPartySearchConfig(nil)
 		}

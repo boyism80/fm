@@ -22,5 +22,4 @@ type GameWorld interface {
 	NotifyDoorRemove(ownerID uint32, skillID uint32, counterpartMapWZID uint32)
 	RequestSpawnReturnMapDoor(ch *Character, skillID constant.SkillID)
 	GetPartyByID(partyID uint32) *Party
-	RequestAutoInvitePartyAsync(ctx actor.Context, inviterCharacterID uint32, targetCharacterIDs []uint32) *async.Promise
 }

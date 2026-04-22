@@ -23,6 +23,50 @@ func (ch *Character) GetPartySearchConfig() *PartySearchConfig {
 	return ch.partySearchConfig
 }
 
+func (accepter *Character) ShouldSkipInvitePendingForPartySearch(partyID uint32) bool {
+	if accepter == nil || partyID == 0 || accepter.GameWorld == nil {
+		return false
+	}
+	p := accepter.GameWorld.GetPartyByID(partyID)
+	if p == nil {
+		return false
+	}
+	mapInst := accepter.GetMap()
+	if mapInst == nil {
+		return false
+	}
+	leaderID := p.GetLeaderCharacterId()
+	if leaderID == 0 {
+		return false
+	}
+	leader := mapInst.GetPlayer(leaderID)
+	if leader == nil {
+		return false
+	}
+	lpid := leader.GetPartyID()
+	if lpid == nil || *lpid != partyID {
+		return false
+	}
+	cfg := leader.GetPartySearchConfig()
+	if cfg == nil {
+		return false
+	}
+	if accepter.GetPartyID() != nil {
+		return false
+	}
+	lvl := int32(accepter.GetLevel())
+	if lvl < cfg.MinLevel || lvl > cfg.MaxLevel {
+		return false
+	}
+	if !leader.HasRoleAtLeast(constant.RoleAdmin) && accepter.HasRoleAtLeast(constant.RoleAdmin) {
+		return false
+	}
+	if !MatchesPartySearchClassMask(accepter, cfg.ClassMask) {
+		return false
+	}
+	return true
+}
+
 func MatchesPartySearchClassMask(ch *Character, classMask int32) bool {
 	if ch == nil {
 		return false

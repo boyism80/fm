@@ -99,13 +99,15 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		return nil
 
 	case constant.PartyC2SAcceptInvite:
+		skipPending := ch.ShouldSkipInvitePendingForPartySearch(req.PartyID)
 		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 			func(c context.Context) (*internal.JoinPartyReply, error) {
 				member := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), "MEMBER")
 				return h.gs.internalClient.JoinParty(c, &internal.JoinPartyRequest{
-					WorldId: worldID,
-					PartyId: req.PartyID,
-					Member:  member,
+					WorldId:                worldID,
+					PartyId:                req.PartyID,
+					Member:                 member,
+					SkipInvitePendingCheck: skipPending,
 				})
 			},
 			func(reply *internal.JoinPartyReply) error {

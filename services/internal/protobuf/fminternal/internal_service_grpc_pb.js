@@ -4,28 +4,6 @@
 var grpc = require('@grpc/grpc-js');
 var fminternal_internal_service_pb = require('../fminternal/internal_service_pb.js');
 
-function serialize_fm_internal_AutoInvitePartyReply(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.AutoInvitePartyReply)) {
-    throw new Error('Expected argument of type fm.internal.AutoInvitePartyReply');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_AutoInvitePartyReply(buffer_arg) {
-  return fminternal_internal_service_pb.AutoInvitePartyReply.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
-function serialize_fm_internal_AutoInvitePartyRequest(arg) {
-  if (!(arg instanceof fminternal_internal_service_pb.AutoInvitePartyRequest)) {
-    throw new Error('Expected argument of type fm.internal.AutoInvitePartyRequest');
-  }
-  return Buffer.from(arg.serializeBinary());
-}
-
-function deserialize_fm_internal_AutoInvitePartyRequest(buffer_arg) {
-  return fminternal_internal_service_pb.AutoInvitePartyRequest.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
 function serialize_fm_internal_BeginGameTransitionReply(arg) {
   if (!(arg instanceof fminternal_internal_service_pb.BeginGameTransitionReply)) {
     throw new Error('Expected argument of type fm.internal.BeginGameTransitionReply');
@@ -742,17 +720,6 @@ var InternalService = exports.InternalService = {
     requestDeserialize: deserialize_fm_internal_InvitePartyRequest,
     responseSerialize: serialize_fm_internal_InvitePartyReply,
     responseDeserialize: deserialize_fm_internal_InvitePartyReply,
-  },
-  autoInviteParty: {
-    path: '/fm.internal.Internal/AutoInviteParty',
-    requestStream: false,
-    responseStream: false,
-    requestType: fminternal_internal_service_pb.AutoInvitePartyRequest,
-    responseType: fminternal_internal_service_pb.AutoInvitePartyReply,
-    requestSerialize: serialize_fm_internal_AutoInvitePartyRequest,
-    requestDeserialize: deserialize_fm_internal_AutoInvitePartyRequest,
-    responseSerialize: serialize_fm_internal_AutoInvitePartyReply,
-    responseDeserialize: deserialize_fm_internal_AutoInvitePartyReply,
   },
   denyParty: {
     path: '/fm.internal.Internal/DenyParty',
