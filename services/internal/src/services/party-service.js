@@ -564,7 +564,7 @@ class PartyService {
         return { ok: true };
     }
 
-    async joinParty(worldId, partyId, member) {
+    async joinParty(worldId, partyId, member, skipInvitePendingCheck = false) {
         this._assertWorld(worldId);
         this._assertPartyId(partyId);
         if (!member || Number(member.worldId) !== Number(worldId)) {
@@ -590,9 +590,11 @@ class PartyService {
 
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const inviteKey = this._invitePendingKey(worldId, characterId);
-        const pending = await client.get(inviteKey);
-        if (pending == null || Number(pending) !== Number(partyId)) {
-            return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };
+        if (!skipInvitePendingCheck) {
+            const pending = await client.get(inviteKey);
+            if (pending == null || Number(pending) !== Number(partyId)) {
+                return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };
+            }
         }
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
@@ -857,6 +859,17 @@ class PartyService {
         this._assertCharacterId(requesterCharacterId);
         this._assertCharacterId(newLeaderCharacterId);
 
+        const newLeaderSession = await this.sessionRepo.getCharacterSession(
+            worldId,
+            newLeaderCharacterId
+        );
+        const newLeaderOnline =
+            newLeaderSession?.state === "ONLINE" &&
+            Boolean(newLeaderSession?.gameServer?.connected);
+        if (!newLeaderOnline) {
+            return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
+        }
+
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
             if (!party || party.state !== PARTY_STATE_ACTIVE) {
@@ -900,6 +913,31 @@ class PartyService {
         });
 
         return result;
+    }
+
+    async broadcastMultiChat(worldId, memberId, senderCharacterId, chatMode, senderName, message) {
+        this._assertWorld(worldId);
+        this._assertPartyId(memberId);
+        this._assertCharacterId(senderCharacterId);
+        const trimmedMsg = String(message ?? "");
+        if (trimmedMsg.length <= 0 || trimmedMsg.length > 500) {
+            return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
+        }
+        const name = String(senderName ?? "").trim();
+        this._assertName(name);
+        const mode = Number(chatMode);
+        if (!Number.isInteger(mode) || mode < 0 || mode > 255) {
+            return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
+        }
+        await this._publishToPartyRoutes("multi_chat", worldId, Number(memberId), 0, {
+            world_id: Number(worldId),
+            member_id: Number(memberId),
+            sender_character_id: Number(senderCharacterId),
+            chat_mode: mode,
+            sender_name: name,
+            message: trimmedMsg,
+        });
+        return { ok: true, deliveredCount: 1 };
     }
 
     async getParty(worldId, partyId) {

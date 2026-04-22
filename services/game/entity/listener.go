@@ -5,6 +5,7 @@ import (
 
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 )
@@ -19,6 +20,8 @@ type CharacterListener interface {
 	OnMesoChanged(ch *Character, meso int32)
 	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
 	OnPartyCreated(ch *Character, partyID uint32)
+	OnPartyInvite(ch *Character, partyID uint32, inviterName string, partySearch bool)
+	OnMultiChat(ch *Character, mode pconst.MultiChatMode, senderName string, message string)
 	OnPartyStatusMessage(ch *Character, code pconst.PartyStatusCode)
 	OnExpGain(ch *Character, exp uint32)
 	OnControlMoveMob(ch *Character, mob *Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8)
@@ -54,7 +57,22 @@ type CharacterListener interface {
 	OnUpdateSkill(ch *Character, skillID uint32, level int32, masterLevel int32)
 	OnSkillPassiveHook(ch *Character, skillID uint32, hook string)
 	OnHiddenChanged(ch *Character, hidden bool)
-	OnShowBuffEffect(ch *Character, effectID uint8, skillID uint32, skillLevel uint8, additional *uint8)
+	OnShowSelfSkillEffect(ch *Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8)
+	OnShowSkillEffect(ch *Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8)
+	OnShowSelfEffect(ch *Character, effectType response.EffectType)
+	OnShowEffect(ch *Character, effectType response.EffectType)
+	OnShowSelfDragonBloodEffect(ch *Character, skillID uint32, skillLevel uint8)
+	OnShowDragonBloodEffect(ch *Character, skillID uint32, skillLevel uint8)
+	OnShowSelfHPHealedEffect(ch *Character, amount int32)
+	OnShowHPHealedEffect(ch *Character, amount int32)
+	OnShowSelfRewardItemAnimation(ch *Character, itemID uint32, effect string)
+	OnShowRewardItemAnimation(ch *Character, itemID uint32, effect string)
+	OnShowSelfItemMakerSuccessEffect(ch *Character)
+	OnShowItemMakerSuccessEffect(ch *Character)
+	OnShowSelfCraftingEffect(ch *Character, effect string, time int32, mode int32)
+	OnShowCraftingEffect(ch *Character, effect string, time int32, mode int32)
+	OnShowSelfDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
+	OnShowDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
 	OnSummonSpawn(ch *Character, summon *Summon)
 	OnSummonRemove(ch *Character, summon *Summon, animated bool)
 	OnSummonMove(ch *Character, summon *Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment)

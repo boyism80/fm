@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
@@ -159,14 +160,12 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return err
 	}
 
-	if !ch.IsHidden() {
-		var dir *uint8
-		if req.MagnetMobData != nil {
-			d := req.MagnetMobData.Direction
-			dir = &d
-		}
-		ch.Listener.OnShowBuffEffect(ch, 1, req.SkillID, req.SkillLevel, dir)
+	var dir *uint8
+	if req.MagnetMobData != nil {
+		d := req.MagnetMobData.Direction
+		dir = &d
 	}
+	ch.Listener.OnShowSkillEffect(ch, pconst.SkillEffectTypeCast, req.SkillID, req.SkillLevel, dir)
 	ch.Listener.OnUpdateStats(ch, nil, true)
 	return nil
 }

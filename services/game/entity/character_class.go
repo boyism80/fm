@@ -1,5 +1,7 @@
 package entity
 
+import "github.com/boyism80/fm/services/game/constant"
+
 func getClassParent(class uint16) (parent uint16, ok bool) {
 	if class == 0 {
 		return 0, false
@@ -23,10 +25,10 @@ func getClassParent(class uint16) (parent uint16, ok bool) {
 	}
 }
 
-func (ch *Character) ClassOf(classCode uint16) bool {
+func (ch *Character) ClassOf(classCode constant.ClassType) bool {
 	c := ch.Class
 	for c != 0 {
-		if c == classCode {
+		if c == uint16(classCode) {
 			return true
 		}
 		var ok bool
@@ -35,7 +37,7 @@ func (ch *Character) ClassOf(classCode uint16) bool {
 			break
 		}
 	}
-	return c == classCode
+	return c == uint16(classCode)
 }
 
 func (ch *Character) IsAdventurer() bool {

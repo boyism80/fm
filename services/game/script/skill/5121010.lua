@@ -11,5 +11,8 @@ function on_activated_5121010(me, skill, params)
 				sk:cooldown(0)
 			end
 		end
+		if ch ~= me then
+			ch:show_skill_effect(skill, SkillEffectType.Affected)
+		end
 	end)
 end

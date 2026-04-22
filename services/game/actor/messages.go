@@ -101,6 +101,13 @@ type DeliverPartyInvite struct {
 	PartySearch bool
 }
 
+type DeliverMultiChat struct {
+	CharacterID uint32
+	Mode        pconst.MultiChatMode
+	SenderName  string
+	Message     string
+}
+
 type DeliverPartyStatusMessage struct {
 	CharacterID uint32
 	Code        pconst.PartyStatusCode
@@ -108,12 +115,13 @@ type DeliverPartyStatusMessage struct {
 }
 
 type DeliverPartyUpdateJoin struct {
-	CharacterID uint32
-	ForChannel  int32
-	PartyID     uint32
-	JoinName    string
-	LeaderID    uint32
-	Members     []response.PartyMemberStatus
+	CharacterID     uint32
+	ForChannel      int32
+	PartyID         uint32
+	JoinCharacterID uint32
+	JoinName        string
+	LeaderID        uint32
+	Members         []response.PartyMemberStatus
 }
 
 type DeliverPartyUpdateLeave struct {

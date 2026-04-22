@@ -143,14 +143,14 @@ func loadEquipmentFiles(root string, workerCount int, items map[uint32]Item) err
 	if total == 0 {
 		return nil
 	}
-	jobs := make(chan string, total)
+	classes := make(chan string, total)
 	results := make(chan Item, total)
 	var wg sync.WaitGroup
 	for range workerCount {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for path := range jobs {
+			for path := range classes {
 				item, loadErr := loadWeapons(path)
 				if loadErr == nil && item != nil {
 					results <- item
@@ -162,9 +162,9 @@ func loadEquipmentFiles(root string, workerCount int, items map[uint32]Item) err
 	}
 	go func() {
 		for _, path := range allFiles {
-			jobs <- path
+			classes <- path
 		}
-		close(jobs)
+		close(classes)
 		wg.Wait()
 		close(results)
 	}()
@@ -197,7 +197,7 @@ func loadResourceFiles[T any](root string, workerCount int, action func(path str
 		return nil
 	}
 
-	jobs := make(chan string, total)
+	classes := make(chan string, total)
 	results := make(chan *T, total)
 	var wg sync.WaitGroup
 
@@ -205,7 +205,7 @@ func loadResourceFiles[T any](root string, workerCount int, action func(path str
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for path := range jobs {
+			for path := range classes {
 				m, err := action(path)
 
 				if err == nil {
@@ -218,9 +218,9 @@ func loadResourceFiles[T any](root string, workerCount int, action func(path str
 	}
 
 	for _, path := range allFiles {
-		jobs <- path
+		classes <- path
 	}
-	close(jobs)
+	close(classes)
 
 	go func() {
 		wg.Wait()

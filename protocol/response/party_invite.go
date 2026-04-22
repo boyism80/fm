@@ -19,11 +19,7 @@ func (p *PartyInvite) Serialize(w *stream.StreamWriter) error {
 	w.WriteU8(uint8(constant.PartyS2CInvite))
 	w.WriteU32(p.PartyID)
 	w.WriteStr16(p.InviterName)
-	if p.PartySearch {
-		w.WriteU8(1)
-	} else {
-		w.WriteU8(0)
-	}
+	w.WriteBoolean(p.PartySearch)
 	return nil
 }
 

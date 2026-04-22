@@ -11,6 +11,103 @@ local function string_split(s, sep)
 	return t
 end
 
+local function resolve_skill_entry(me, skill_arg)
+	if skill_arg == nil or skill_arg == "" then
+		return nil, "스킬ID 또는 스킬이름이 필요합니다."
+	end
+	local skill_id = tonumber(skill_arg)
+	if skill_id == nil then
+		local wz = name2skill(skill_arg)
+		if wz == nil then
+			return nil, "존재하지 않는 스킬입니다: " .. tostring(skill_arg)
+		end
+		skill_id = wz.id
+	end
+	local skill = me:skill(skill_id)
+	if skill == nil then
+		return nil, string.format("배운 스킬이 아닙니다: %d", skill_id)
+	end
+	return skill, nil
+end
+
+function effect_show_skill(me, skill_arg, skill_effect_type)
+	local skill, err = resolve_skill_entry(me, skill_arg)
+	if skill == nil then
+		me:notice(err)
+		return true
+	end
+	if skill_effect_type == nil then
+		skill_effect_type = SkillEffectType.Cast
+	end
+	me:show_skill_effect(skill, skill_effect_type)
+	return true
+end
+
+function effect_show_basic(me, effect_type)
+	if effect_type == nil then
+		effect_type = EffectType.LevelUp
+	end
+	me:show_effect(effect_type)
+	return true
+end
+
+function effect_show_dragon_blood(me, skill_arg)
+	local skill, err = resolve_skill_entry(me, skill_arg)
+	if skill == nil then
+		me:notice(err)
+		return true
+	end
+	me:show_dragon_blood_effect(skill)
+	return true
+end
+
+function effect_show_hp_healed(me, amount)
+	if amount == nil then
+		amount = 1
+	end
+	me:show_hp_healed_effect(tonumber(amount) or 1)
+	return true
+end
+
+function effect_show_reward_item_animation(me, item_id, effect_text)
+	local id = tonumber(item_id)
+	if id == nil or id <= 0 then
+		me:notice("item_id는 1 이상의 숫자여야 합니다.")
+		return true
+	end
+	if effect_text == nil or effect_text == "" then
+		effect_text = "Effect/BasicEff.img/LevelUp"
+	end
+	me:show_reward_item_animation(id, effect_text)
+	return true
+end
+
+function effect_show_item_maker_success(me)
+	me:show_item_maker_success_effect()
+	return true
+end
+
+function effect_show_crafting(me, effect_text, time_value, mode_value)
+	if effect_text == nil or effect_text == "" then
+		effect_text = "Effect/BasicEff.img/LevelUp"
+	end
+	time_value = tonumber(time_value) or 0
+	mode_value = tonumber(mode_value) or 0
+	me:show_crafting_effect(effect_text, time_value, mode_value)
+	return true
+end
+
+function effect_show_dice(me, effect_id, skill_arg)
+	local skill, err = resolve_skill_entry(me, skill_arg)
+	if skill == nil then
+		me:notice(err)
+		return true
+	end
+	effect_id = tonumber(effect_id) or 1
+	me:show_dice_effect(effect_id, skill)
+	return true
+end
+
 command_funcs = {
 	["명령어"] = {
 		privilege = ROLE.User,
@@ -606,6 +703,46 @@ command_funcs = {
 			end
 			set_packet_log(enable)
 			me:notice("packet log set to " .. tostring(enable))
+			return true
+		end,
+	},
+	["이펙트테스트"] = {
+		privilege = ROLE.Admin,
+		usage = "<종류> [args] - 이펙트 패킷 테스트 (종류: skill, basic, dragon, hp, reward, maker, crafting, dice)",
+		command = function(me, args)
+			local kind = args[1]
+			if kind == nil or kind == "" then
+				me:notice("사용법: /이펙트테스트 <skill|basic|dragon|hp|reward|maker|crafting|dice> ...")
+				return true
+			end
+			if kind == "skill" then
+				local skill_arg = args[2]
+				local effect_type = tonumber(args[3]) or SkillEffectType.Cast
+				return effect_show_skill(me, skill_arg, effect_type)
+			end
+			if kind == "basic" then
+				local effect_type = tonumber(args[2]) or EffectType.LevelUp
+				return effect_show_basic(me, effect_type)
+			end
+			if kind == "dragon" then
+				return effect_show_dragon_blood(me, args[2])
+			end
+			if kind == "hp" then
+				return effect_show_hp_healed(me, args[2])
+			end
+			if kind == "reward" then
+				return effect_show_reward_item_animation(me, args[2], args[3])
+			end
+			if kind == "maker" then
+				return effect_show_item_maker_success(me)
+			end
+			if kind == "crafting" then
+				return effect_show_crafting(me, args[2], args[3], args[4])
+			end
+			if kind == "dice" then
+				return effect_show_dice(me, args[2], args[3])
+			end
+			me:notice("알 수 없는 종류입니다. skill, basic, dragon, hp, reward, maker, crafting, dice 중에서 선택하세요.")
 			return true
 		end,
 	},

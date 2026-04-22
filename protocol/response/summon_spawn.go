@@ -32,10 +32,8 @@ func (p *SpawnSummon) Serialize(w *stream.StreamWriter) error {
 	w.Write16(0)
 	w.WriteU8(uint8(p.MovementType))
 	w.WriteU8(uint8(p.SummonType))
-	if p.Animated {
-		w.WriteU8(1)
-	} else {
-		w.WriteU8(0)
+	w.WriteBoolean(p.Animated)
+	if !p.Animated {
 		w.Write(make([]byte, 16))
 	}
 	return nil

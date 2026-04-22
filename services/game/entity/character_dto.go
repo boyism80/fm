@@ -70,7 +70,7 @@ func (ch *Character) ToDTO() *dto.Character {
 		Exp:           ch.exp,
 		FamePoint:     ch.famePoint,
 		Map:           mapID,
-		SpawnPoint:    ch.spawnPoint,
+		SpawnPoint:    ch.GetSpawnPoint(),
 		Rank:          ch.rank,
 		RankDiff:      ch.rankDiff,
 		ClassRank:     ch.classRank,

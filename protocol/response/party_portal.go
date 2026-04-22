@@ -20,11 +20,7 @@ func (p *PartyPortal) Opcode() uint16 {
 
 func (p *PartyPortal) Serialize(w *stream.StreamWriter) error {
 	w.WriteU8(uint8(constant.PartyS2CPartyPortal))
-	if p.Animated {
-		w.WriteU8(0)
-	} else {
-		w.WriteU8(1)
-	}
+	w.WriteBoolean(!p.Animated)
 	w.WriteU32(p.TownMapID)
 	w.WriteU32(p.TargetMapID)
 	w.WriteU32(p.SkillID)

@@ -93,7 +93,8 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const result = await partyService.joinParty(
                     req.getWorldId(),
                     req.getPartyId(),
-                    member
+                    member,
+                    req.getSkipInvitePendingCheck()
                 );
                 const reply = new messages.JoinPartyReply();
                 reply.setOk(Boolean(result.ok));
@@ -243,6 +244,27 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 const reply = new messages.DenyPartyReply();
                 reply.setOk(Boolean(result.ok));
                 reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
+                callback(null, reply);
+            } catch (err) {
+                grpcError(err, callback);
+            }
+        },
+
+        async broadcastMultiChat(call, callback) {
+            try {
+                const req = call.request;
+                const result = await partyService.broadcastMultiChat(
+                    req.getWorldId(),
+                    req.getMemberId(),
+                    req.getSenderCharacterId(),
+                    req.getChatMode(),
+                    req.getSenderName(),
+                    req.getMessage()
+                );
+                const reply = new messages.BroadcastMultiChatReply();
+                reply.setOk(Boolean(result.ok));
+                reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
+                reply.setDeliveredCount(result.deliveredCount ?? 0);
                 callback(null, reply);
             } catch (err) {
                 grpcError(err, callback);

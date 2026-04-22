@@ -16,11 +16,7 @@ func (p *SpawnDoor) Opcode() uint16 {
 }
 
 func (p *SpawnDoor) Serialize(w *stream.StreamWriter) error {
-	if p.Animated {
-		w.WriteU8(0)
-	} else {
-		w.WriteU8(1)
-	}
+	w.WriteBoolean(!p.Animated)
 	w.WriteU32(p.OwnerID)
 	w.Write16(p.Position.X)
 	w.Write16(p.Position.Y)

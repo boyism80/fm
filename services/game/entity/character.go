@@ -21,62 +21,62 @@ type Character struct {
 	LifeCore
 	Sendable
 
-	dialog           *lua.LState
-	id               uint32
-	name             string
-	gender           uint8
-	skinColor        uint8
-	face             uint32
-	hair             uint32
-	level            uint8
-	rank             uint32
-	rankDiff         int32
-	classRank        uint32
-	classRankDiff    int32
-	exp              uint32
-	famePoint        uint16
-	spawnPoint       uint8
-	mega             bool
-	random1          stream.RandomStream
-	random2          stream.RandomStream
-	random3          stream.RandomStream
-	questStatuses    map[int]*QuestStatus
-	marriageId       uint32
-	regRocks         []uint32
-	rocks            []uint32
-	monsterBookCover uint32
-	monsterBook      *MonsterBook
-	quests           map[uint16]string
-	luaDialog        *lua.LState
-	dialogMutex      sync.Mutex
-	hidden           bool
-	Listener         CharacterListener
-	Class            uint16
-	Role             constant.CharacterRole
-	AccountID        uint32
-	AbilityPoint     uint16
-	SkillPoint       uint16
-	HpApUsed         uint16
-	Meso             int32
-	Inventory        map[constant.InventoryType]*Inventory
-	Equipments       map[constant.EquipmentPartsType]Equipment
-	Rings            RingContainer
-	Skills           *SkillContainer
-	keyLayout        *KeyLayout
-	CurrentShopID    uint32
-	Chair            uint32
-	LastHealHPTime   time.Time
-	LastHealMPTime   time.Time
-	BaseStats        BaseStats
-	BonusStats       BonusStats
-	Buffs            *BuffContainer
-	diseases         map[constant.DebuffFlag]*DiseaseValueHolder
-	timers           map[string]*CharacterTimer
-	summons          map[constant.SkillID]*Summon
-	doors            map[constant.SkillID]*Door
-	HomingTargetOID  *uint32
-	partyID          *uint32
-	guildID          *uint32
+	dialog            *lua.LState
+	id                uint32
+	name              string
+	gender            uint8
+	skinColor         uint8
+	face              uint32
+	hair              uint32
+	level             uint8
+	rank              uint32
+	rankDiff          int32
+	classRank         uint32
+	classRankDiff     int32
+	exp               uint32
+	famePoint         uint16
+	mega              bool
+	random1           stream.RandomStream
+	random2           stream.RandomStream
+	random3           stream.RandomStream
+	questStatuses     map[int]*QuestStatus
+	marriageId        uint32
+	regRocks          []uint32
+	rocks             []uint32
+	monsterBookCover  uint32
+	monsterBook       *MonsterBook
+	quests            map[uint16]string
+	luaDialog         *lua.LState
+	dialogMutex       sync.Mutex
+	hidden            bool
+	Listener          CharacterListener
+	Class             uint16
+	Role              constant.CharacterRole
+	AccountID         uint32
+	AbilityPoint      uint16
+	SkillPoint        uint16
+	HpApUsed          uint16
+	Meso              int32
+	Inventory         map[constant.InventoryType]*Inventory
+	Equipments        map[constant.EquipmentPartsType]Equipment
+	Rings             RingContainer
+	Skills            *SkillContainer
+	keyLayout         *KeyLayout
+	CurrentShopID     uint32
+	Chair             uint32
+	LastHealHPTime    time.Time
+	LastHealMPTime    time.Time
+	BaseStats         BaseStats
+	BonusStats        BonusStats
+	Buffs             *BuffContainer
+	diseases          map[constant.DebuffFlag]*DiseaseValueHolder
+	timers            map[string]*CharacterTimer
+	summons           map[constant.SkillID]*Summon
+	doors             map[constant.SkillID]*Door
+	HomingTargetOID   *uint32
+	partyID           *uint32
+	guildID           *uint32
+	partySearchConfig *PartySearchConfig
 }
 
 type DiseaseValueHolder struct {
@@ -131,7 +131,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 
 	if mountID, active := ch.GetRiddingInfo(); active {
-		viewer.Send(&response.UpdateRemoteRidding{
+		viewer.Send(&response.UpdateRidding{
 			CharacterID: int32(ch.GetID()),
 			MountID:     mountID,
 			Buffs:       []dto.BuffEntry{{Buff: constant.BuffFlagMonsterRiding, Value: mountID}},
@@ -139,7 +139,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	}
 
 	if buff, _, active := ch.Buffs.GetBuffValue(constant.BuffFlagEnergyCharge); active {
-		viewer.Send(&response.UpdateRemoteBuff{
+		viewer.Send(&response.UpdateBuff{
 			CharacterID: int32(ch.GetID()),
 			BuffID:      buff.GetBuffID(),
 			Duration:    50 * time.Second,
@@ -152,7 +152,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		if _, dashJumpValue, hasDashJump := ch.Buffs.GetBuffValue(constant.BuffFlagDashJump); hasDashJump {
 			buffs = append(buffs, dto.BuffEntry{Buff: constant.BuffFlagDashJump, Value: dashJumpValue})
 		}
-		viewer.Send(&response.UpdateRemoteBuff{
+		viewer.Send(&response.UpdateBuff{
 			CharacterID: int32(ch.GetID()),
 			BuffID:      dashBuff.GetBuffID(),
 			Duration:    dashBuff.RemainingDuration(time.Now()),
@@ -565,16 +565,22 @@ func (ch *Character) ResumeTimers(pid *actor.PID) {
 	}
 }
 
-func (ch *Character) GetBonusHp() int32    { return ch.BonusHp }
-func (ch *Character) GetBonusMp() int32    { return ch.BonusMp }
-func (ch *Character) GetInvincible() bool  { return ch.Invincible }
-func (ch *Character) GetGender() uint8     { return ch.gender }
-func (ch *Character) GetSkinColor() uint8  { return ch.skinColor }
-func (ch *Character) GetFace() uint32      { return ch.face }
-func (ch *Character) GetHair() uint32      { return ch.hair }
-func (ch *Character) GetLevel() uint8      { return ch.level }
-func (ch *Character) GetExp() uint32       { return ch.exp }
-func (ch *Character) GetSpawnPoint() uint8 { return ch.spawnPoint }
+func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
+func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
+func (ch *Character) GetInvincible() bool { return ch.Invincible }
+func (ch *Character) GetGender() uint8    { return ch.gender }
+func (ch *Character) GetSkinColor() uint8 { return ch.skinColor }
+func (ch *Character) GetFace() uint32     { return ch.face }
+func (ch *Character) GetHair() uint32     { return ch.hair }
+func (ch *Character) GetLevel() uint8     { return ch.level }
+func (ch *Character) GetExp() uint32      { return ch.exp }
+func (ch *Character) GetSpawnPoint() uint8 {
+	mapInstance := ch.GetMap()
+	if mapInstance != nil && mapInstance.Wz != nil {
+		return mapInstance.Wz.FindClosestPortalSpawnID(ch.Position)
+	}
+	return 0
+}
 
 func (ch *Character) SetHp(v uint32, notify bool) {
 	ch.LifeCore.setHp(v)
@@ -951,7 +957,6 @@ type CharacterInitData struct {
 	SkillPoint   uint16
 	Exp          uint32
 	Meso         int32
-	SpawnPoint   uint8
 	PositionX    int16
 	PositionY    int16
 	Stance       uint8
@@ -994,7 +999,6 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		AbilityPoint: data.AbilityPoint,
 		SkillPoint:   data.SkillPoint,
 		exp:          data.Exp,
-		spawnPoint:   data.SpawnPoint,
 		Meso:         data.Meso,
 		partyID:      data.PartyID,
 		guildID:      data.GuildID,
@@ -1166,9 +1170,9 @@ func (ch *Character) broadcastLevelUpEffect() {
 		return
 	}
 
-	ch.Broadcast(&response.ShowForeignEffect{
+	ch.Broadcast(&response.ShowEffect{
 		CharacterID: ch.id,
-		EffectID:    0,
+		Type:        response.EffectTypeLevelUp,
 	}, nil)
 }
 
@@ -1294,7 +1298,7 @@ func (ch *Character) GetSpawnPlayerBuffData() SpawnPlayerBuffData {
 			if idx < 0 || idx >= constant.MaxBuffFlag {
 				continue
 			}
-			if constant.IsRemoteStatFlag(flag) {
+			if constant.IsTargetStatFlag(flag) {
 				data.BuffStates[idx] |= flag.Mask
 			}
 			switch flag {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
@@ -41,6 +42,18 @@ func (ch *Character) LuaTypeName() string {
 
 func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
+		"__eq": func(L *lua.LState) int {
+			leftUD := L.CheckUserData(1)
+			rightUD := L.CheckUserData(2)
+			leftCh, leftOk := leftUD.Value.(*Character)
+			rightCh, rightOk := rightUD.Value.(*Character)
+			if !leftOk || !rightOk || leftCh == nil || rightCh == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LBool(leftCh.GetID() == rightCh.GetID()))
+			return 1
+		},
 		"id": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -573,7 +586,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			)
 			return 0
 		},
-		"show_buff_effect": func(L *lua.LState) int {
+		"show_skill_effect": func(L *lua.LState) int {
 			argc := L.GetTop()
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -589,19 +602,133 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 
-			effectID := uint8(1)
-			if argc >= 3 {
-				effectID = uint8(L.CheckInt(3))
-			}
 			skillLevelInt := skillEntry.Level()
 			if skillLevelInt < 0 {
 				skillLevelInt = 0
 			}
 			skillLevel := uint8(skillLevelInt)
+			if argc >= 3 {
+				effectType := L.CheckInt(3)
+				if effectType == int(pconst.SkillEffectTypeCast) || effectType == int(pconst.SkillEffectTypeAffected) {
+					ch.Listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectType(effectType), skillEntry.Wz.ID, skillLevel, nil)
+					return 0
+				}
+				L.ArgError(3, "show_skill_effect() supports SkillEffectType.Cast or SkillEffectType.Affected")
+				return 0
+			}
 
-			ch.Listener.OnShowBuffEffect(ch, effectID, skillEntry.Wz.ID, skillLevel, nil)
+			ch.Listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectTypeCast, skillEntry.Wz.ID, skillLevel, nil)
 			return 0
 		},
+		"show_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			effectType := response.EffectType(L.CheckInt(2))
+			switch effectType {
+			case response.EffectTypeLevelUp,
+				response.EffectTypeClassChange,
+				response.EffectTypeQuestCompletion,
+				response.EffectTypeRegisterCard,
+				response.EffectTypeItemLevelUp:
+				ch.Listener.OnShowSelfEffect(ch, effectType)
+				return 0
+			default:
+				L.ArgError(2, "show_effect() supports EffectType.LevelUp, ClassChange, QuestCompletion, RegisterCard, or ItemLevelUp")
+				return 0
+			}
+		},
+		"show_dragon_blood_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			skillUD := L.CheckUserData(2)
+			skillEntry, ok := skillUD.Value.(*SkillEntry)
+			if !ok || skillEntry == nil || skillEntry.Wz == nil {
+				L.ArgError(2, "SkillEntry with Wz expected")
+				return 0
+			}
+			skillLevelInt := skillEntry.Level()
+			if skillLevelInt < 0 {
+				skillLevelInt = 0
+			}
+			ch.Listener.OnShowSelfDragonBloodEffect(ch, skillEntry.Wz.ID, uint8(skillLevelInt))
+			return 0
+		},
+		"show_hp_healed_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			amount := int32(L.CheckInt(2))
+			ch.Listener.OnShowSelfHPHealedEffect(ch, amount)
+			return 0
+		},
+		"show_reward_item_animation": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			itemID := uint32(L.CheckInt(2))
+			effectText := L.CheckString(3)
+			ch.Listener.OnShowSelfRewardItemAnimation(ch, itemID, effectText)
+			return 0
+		},
+		"show_item_maker_success_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Listener.OnShowSelfItemMakerSuccessEffect(ch)
+			return 0
+		},
+		"show_crafting_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			effectText := L.CheckString(2)
+			timeValue := int32(L.CheckInt(3))
+			modeValue := int32(L.CheckInt(4))
+			ch.Listener.OnShowSelfCraftingEffect(ch, effectText, timeValue, modeValue)
+			return 0
+		},
+		"show_dice_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			effectID := int32(L.CheckInt(2))
+			skillUD := L.CheckUserData(3)
+			skillEntry, ok := skillUD.Value.(*SkillEntry)
+			if !ok || skillEntry == nil || skillEntry.Wz == nil {
+				L.ArgError(3, "SkillEntry with Wz expected")
+				return 0
+			}
+			skillLevelInt := skillEntry.Level()
+			if skillLevelInt < 0 {
+				skillLevelInt = 0
+			}
+			ch.Listener.OnShowSelfDiceEffect(ch, effectID, skillEntry.Wz.ID, uint8(skillLevelInt))
+			return 0
+		},
+
 		"unbuff": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1266,7 +1393,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			classCode := uint16(L.CheckInt(2))
+			classCode := constant.ClassType(L.CheckInt(2))
 			L.Push(lua.LBool(ch.ClassOf(classCode)))
 			return 1
 		},

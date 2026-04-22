@@ -159,7 +159,6 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	}
 
 	character.Map = m
-	character.spawnPoint = spawnPoint
 	if pos, ok := m.Wz.GetSpawnPosition(spawnPoint); ok {
 		character.Position = pos
 	}
@@ -225,6 +224,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	delete(m.objects[constant.ObjectTypeCharacter], playerID)
 
 	character.SuspendTimers()
+	character.SetPartySearchConfig(nil)
 	character.Map = nil
 	m.controllerTable.LeavePlayer(character)
 

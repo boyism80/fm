@@ -6,17 +6,18 @@ import (
 )
 
 type CancelBuff struct {
-	Buffs []constant.BuffFlag
+	CharacterID int32
+	Buffs       []constant.BuffFlag
 }
 
-func (p *CancelBuff) Opcode() uint16 { return 0x16 }
+func (p *CancelBuff) Opcode() uint16 { return 0x91 }
 
 func (p *CancelBuff) Serialize(writer *stream.StreamWriter) error {
 	if p.Buffs == nil {
 		p.Buffs = []constant.BuffFlag{}
 	}
+	writer.Write32(p.CharacterID)
 	WriteBuffs(writer, p.Buffs)
-	writer.WriteU8(1)
 	return nil
 }
 

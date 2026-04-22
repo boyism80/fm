@@ -347,12 +347,13 @@ func (pc *PartyContainer) DeliverPartyJoinUpdate(party *entity.Party, joinedChar
 			continue
 		}
 		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateJoin{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(gs.config.ChannelId),
-			PartyID:     party.GetPartyId(),
-			JoinName:    joinName,
-			LeaderID:    party.GetLeaderCharacterId(),
-			Members:     respMembers,
+			CharacterID:     m.GetCharacterId(),
+			ForChannel:      int32(gs.config.ChannelId),
+			PartyID:         party.GetPartyId(),
+			JoinCharacterID: joinedCharacterID,
+			JoinName:        joinName,
+			LeaderID:        party.GetLeaderCharacterId(),
+			Members:         respMembers,
 		})
 	}
 }

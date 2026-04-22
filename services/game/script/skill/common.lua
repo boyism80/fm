@@ -176,7 +176,7 @@ function handle_mp_eater(me, damages)
 
 	if total_absorb_mp > 0 then
 		me:add_mp(total_absorb_mp)
-		me:show_buff_effect(mp_eater_skill)
+		me:show_skill_effect(mp_eater_skill)
 	end
 end
 

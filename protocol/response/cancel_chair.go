@@ -13,10 +13,8 @@ func (c *CancelChair) Opcode() uint16 {
 }
 
 func (c *CancelChair) Serialize(writer *stream.StreamWriter) error {
-	if c.ChairID == -1 {
-		writer.WriteU8(0)
-	} else {
-		writer.WriteU8(1)
+	writer.WriteBoolean(c.ChairID != -1)
+	if c.ChairID != -1 {
 		writer.Write16(c.ChairID)
 	}
 	return nil

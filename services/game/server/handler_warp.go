@@ -43,29 +43,29 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 	stats := map[constant.Stat]int32{}
 
 	if req.Target != 0xFFFFFFFF {
-		if character.GetHp() == 0 {
-			character.SetHp(50, false)
-			character.Stance = constant.StanceDefaultValue
-
-			currentMap := character.GetMap()
-			if currentMap == nil {
-				return fmt.Errorf("current map not found")
-			}
-
-			wz := currentMap.Wz
-			if wz == nil {
-				return fmt.Errorf("map model not found")
-			}
-
-			targetMapId = uint32(wz.ReturnMapId)
-			spawnPoint = 0
-			stats[constant.STAT_HP] = int32(character.GetHp())
-
-			character.Listener.OnUpdateStats(character, stats, true)
-		} else {
+		if character.GetHp() > 0 {
 			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
+
+		character.SetHp(50, false)
+		character.Stance = constant.StanceDefaultValue
+
+		currentMap := character.GetMap()
+		if currentMap == nil {
+			return fmt.Errorf("current map not found")
+		}
+
+		wz := currentMap.Wz
+		if wz == nil {
+			return fmt.Errorf("map model not found")
+		}
+
+		targetMapId = uint32(wz.ReturnMapId)
+		spawnPoint = 0
+		stats[constant.STAT_HP] = int32(character.GetHp())
+
+		character.Listener.OnUpdateStats(character, stats, true)
 	} else {
 		currentMap := character.GetMap()
 		if currentMap == nil {

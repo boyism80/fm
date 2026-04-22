@@ -1,8 +1,18 @@
 -- Skill name (String.wz/Skill.img.xml): 하이퍼 바디
 
 function on_activated_1301007(me, skill, params)
+	local effect = skill:effect()
+	if effect == nil then
+		return
+	end
 	for_each_near_party_member(me, skill, function(ch)
-		apply_hyper_body(ch, skill)
+		ch:buff(skill, {
+			[BuffFlag.MaxHp] = effect.x,
+			[BuffFlag.MaxMp] = effect.x,
+		})
+		if ch ~= me then
+			ch:show_skill_effect(skill, SkillEffectType.Affected)
+		end
 	end)
 end
 

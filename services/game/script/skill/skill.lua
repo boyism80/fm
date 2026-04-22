@@ -16,29 +16,6 @@ function apply_buff_fixed(me, skill, flag, value)
 	me:buff(skill, flag, value)
 end
 
-function apply_sharp_eyes(me, skill)
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	if effect.x <= 0 or effect.y <= 0 then
-		return
-	end
-	local packed = effect.x * 256 + (effect.y % 256)
-	for_each_near_party_member(me, skill, function(ch)
-		ch:buff(skill, BuffFlag.SharpEyes, packed)
-	end)
-end
-
-function apply_hyper_body(me, skill)
-	local effect = skill:effect()
-	if effect == nil then return end
-	me:buff(skill, {
-		[BuffFlag.MaxHp] = effect.x,
-		[BuffFlag.MaxMp] = effect.x,
-	})
-end
-
 function add_hyper_body_bonus(me, skill)
 	local effect = skill:effect()
 	if effect == nil then return end
@@ -198,6 +175,9 @@ function apply_resurrection(me, skill)
 		ch:stance(0)
 		ch:hp(ch:max_hp())
 		ch:mp(ch:max_mp())
+		if ch ~= me then
+			ch:show_skill_effect(skill, SkillEffectType.Affected)
+		end
 	end, { allow_dead = true })
 end
 

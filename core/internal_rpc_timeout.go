@@ -2,4 +2,4 @@ package core
 
 import "time"
 
-const InternalRPCPerStepTimeout = 10 * time.Second
+var InternalRPCPerStepTimeout = 10 * time.Second

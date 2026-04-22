@@ -12,11 +12,7 @@ func (p *RemoveDoor) Opcode() uint16 {
 }
 
 func (p *RemoveDoor) Serialize(w *stream.StreamWriter) error {
-	if p.Animated {
-		w.WriteU8(0)
-	} else {
-		w.WriteU8(1)
-	}
+	w.WriteBoolean(!p.Animated)
 	w.WriteU32(p.OwnerID)
 	return nil
 }

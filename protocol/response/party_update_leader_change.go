@@ -17,11 +17,7 @@ func (p *PartyUpdateLeaderChange) Opcode() uint16 {
 func (p *PartyUpdateLeaderChange) Serialize(w *stream.StreamWriter) error {
 	w.WriteU8(uint8(constant.PartyS2CLeaderChange))
 	w.WriteU32(p.NewLeaderCharacterID)
-	if p.ByDisconnect {
-		w.WriteU8(1)
-	} else {
-		w.WriteU8(0)
-	}
+	w.WriteBoolean(p.ByDisconnect)
 	return nil
 }
 
