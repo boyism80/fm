@@ -15,7 +15,7 @@ function on_activated_1301006(me, skill, params)
 	for_each_near_party_member(me, skill, function(ch)
 		ch:buff(skill, vals)
 		if ch ~= me then
-			ch:show_buff_effect(skill, 2)
+			ch:show_skill_effect(skill, SkillEffectType.Affected)
 		end
 	end)
 end

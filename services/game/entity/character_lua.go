@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
@@ -585,7 +586,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			)
 			return 0
 		},
-		"show_buff_effect": func(L *lua.LState) int {
+		"show_skill_effect": func(L *lua.LState) int {
 			argc := L.GetTop()
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -601,17 +602,22 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 
-			effectID := uint8(1)
-			if argc >= 3 {
-				effectID = uint8(L.CheckInt(3))
-			}
 			skillLevelInt := skillEntry.Level()
 			if skillLevelInt < 0 {
 				skillLevelInt = 0
 			}
 			skillLevel := uint8(skillLevelInt)
+			if argc >= 3 {
+				effectType := L.CheckInt(3)
+				if effectType == int(pconst.SkillEffectTypeCast) || effectType == int(pconst.SkillEffectTypeAffected) {
+					ch.Listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectType(effectType), skillEntry.Wz.ID, skillLevel, nil)
+					return 0
+				}
+				L.ArgError(3, "show_skill_effect() supports SkillEffectType.Cast or SkillEffectType.Affected")
+				return 0
+			}
 
-			ch.Listener.OnShowBuffEffect(ch, effectID, skillEntry.Wz.ID, skillLevel, nil)
+			ch.Listener.OnShowSelfSkillEffect(ch, pconst.SkillEffectTypeCast, skillEntry.Wz.ID, skillLevel, nil)
 			return 0
 		},
 

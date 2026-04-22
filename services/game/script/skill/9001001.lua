@@ -16,7 +16,7 @@ function on_activated_9001001(me, skill, params)
 		end
 		ch:buff(skill, vals)
 		if ch ~= me then
-			ch:show_buff_effect(skill, 2)
+			ch:show_skill_effect(skill, SkillEffectType.Affected)
 		end
 	end)
 end

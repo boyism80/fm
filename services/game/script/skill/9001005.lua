@@ -9,7 +9,7 @@ function on_activated_9001005(me, skill, params)
 		ch:hp(ch:max_hp())
 		ch:mp(ch:max_mp())
 		if ch ~= me then
-			ch:show_buff_effect(skill, 2)
+			ch:show_skill_effect(skill, SkillEffectType.Affected)
 		end
 	end)
 end

@@ -18,7 +18,7 @@ function on_activated_9001000(me, skill, params)
 		apply_dispel(ch, skill)
 		ch:hp(ch:max_hp())
 		if ch ~= me then
-			ch:show_buff_effect(skill, 2)
+			ch:show_skill_effect(skill, SkillEffectType.Affected)
 		end
 	end)
 end

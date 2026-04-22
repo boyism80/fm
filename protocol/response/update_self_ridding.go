@@ -6,17 +6,15 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-type UpdateRemoteRidding struct {
-	CharacterID int32
-	MountID     int32
-	Buffs       []dto.BuffEntry
+type UpdateSelfRidding struct {
+	BuffID  int32
+	MountID int32
+	Buffs   []dto.BuffEntry
 }
 
-func (p *UpdateRemoteRidding) Opcode() uint16 { return 0x90 }
+func (p *UpdateSelfRidding) Opcode() uint16 { return 0x15 }
 
-func (p *UpdateRemoteRidding) Serialize(writer *stream.StreamWriter) error {
-	writer.Write32(p.CharacterID)
-
+func (p *UpdateSelfRidding) Serialize(writer *stream.StreamWriter) error {
 	buffs := p.Buffs
 	if buffs == nil {
 		buffs = []dto.BuffEntry{}
@@ -28,13 +26,16 @@ func (p *UpdateRemoteRidding) Serialize(writer *stream.StreamWriter) error {
 	}
 	WriteBuffs(writer, flags)
 
-	writer.WriteU16(0)
+	ridingLevel := max(int32(1), p.MountID-1902000+1)
+
+	writer.WriteU16(uint16(ridingLevel))
 	writer.Write32(p.MountID)
-	writer.Write32(int32(constant.SkillMonsterRider))
-	writer.Write32(0)
+	writer.Write32(p.BuffID)
+	writer.WriteU16(0)
+	writer.WriteU16(0)
 	writer.Write32(0)
 	writer.WriteU8(0)
 	return nil
 }
 
-func (p *UpdateRemoteRidding) Deserialize(_ *stream.StreamReader) {}
+func (p *UpdateSelfRidding) Deserialize(_ *stream.StreamReader) {}

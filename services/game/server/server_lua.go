@@ -7,6 +7,8 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/protocol/response"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -220,6 +222,23 @@ func registerMistTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("MistType", t)
 }
 
+func registerSkillEffectTypeConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	t.RawSetString("Cast", lua.LNumber(pconst.SkillEffectTypeCast))
+	t.RawSetString("Affected", lua.LNumber(pconst.SkillEffectTypeAffected))
+	luaState.SetGlobal("SkillEffectType", t)
+}
+
+func registerEffectTypeConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	t.RawSetString("LevelUp", lua.LNumber(response.EffectTypeLevelUp))
+	t.RawSetString("JobChange", lua.LNumber(response.EffectTypeJobChange))
+	t.RawSetString("QuestCompletion", lua.LNumber(response.EffectTypeQuestCompletion))
+	t.RawSetString("RegisterCard", lua.LNumber(response.EffectTypeRegisterCard))
+	t.RawSetString("ItemLevelUp", lua.LNumber(response.EffectTypeItemLevelUp))
+	luaState.SetGlobal("EffectType", t)
+}
+
 func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
 	skillTable := luaState.NewTable()
 	skillTable.RawSetString("id", lua.LNumber(skill.ID))
@@ -290,6 +309,8 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerSummonConstants(luaState)
 	registerIncomingHitConstants(luaState)
 	registerMistTypeConstants(luaState)
+	registerSkillEffectTypeConstants(luaState)
+	registerEffectTypeConstants(luaState)
 
 	luax.RegisterFunc(luaState, "name2map", func(L *lua.LState) int {
 		name := L.CheckString(1)

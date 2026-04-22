@@ -226,32 +226,173 @@ func (l *CharacterListenerImpl) OnUpdateStats(ch *entity.Character, stats map[co
 	}
 }
 
-func (l *CharacterListenerImpl) OnShowBuffEffect(ch *entity.Character, effectID uint8, skillID uint32, skillLevel uint8, additional *uint8) {
+func (l *CharacterListenerImpl) OnShowSelfSkillEffect(ch *entity.Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
 
-	ch.Send(&response.ShowOwnBuffEffect{
-		EffectID:   effectID,
+	ch.Send(&response.ShowSelfSkillEffect{
+		Type:       effectType,
 		SkillID:    skillID,
 		SkillLevel: skillLevel,
 		Additional: additional,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	l.OnShowRemoteBuffEffect(ch, effectID, skillID, skillLevel, additional)
+	l.OnShowSkillEffect(ch, effectType, skillID, skillLevel, additional)
 }
 
-func (l *CharacterListenerImpl) OnShowRemoteBuffEffect(ch *entity.Character, effectID uint8, skillID uint32, skillLevel uint8, additional *uint8) {
+func (l *CharacterListenerImpl) OnShowSkillEffect(ch *entity.Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
 
-	ch.Broadcast(&response.ShowRemoteBuffEffect{
+	ch.Broadcast(&response.ShowSkillEffect{
+		CharacterID: ch.GetID(),
+		Type:        effectType,
+		SkillID:     skillID,
+		SkillLevel:  skillLevel,
+		Additional:  additional,
+	}, nil)
+}
+
+func (l *CharacterListenerImpl) OnShowSelfDragonBloodEffect(ch *entity.Character, skillID uint32, skillLevel uint8) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Send(&response.ShowSelfDragonBloodEffect{
+		SkillID:    skillID,
+		SkillLevel: skillLevel,
+	}, types.SEND_POLICY_ENCRYPT)
+	l.OnShowDragonBloodEffect(ch, skillID, skillLevel)
+}
+
+func (l *CharacterListenerImpl) OnShowDragonBloodEffect(ch *entity.Character, skillID uint32, skillLevel uint8) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Broadcast(&response.ShowDragonBloodEffect{
+		CharacterID: ch.GetID(),
+		SkillID:     skillID,
+		SkillLevel:  skillLevel,
+	}, nil)
+}
+
+func (l *CharacterListenerImpl) OnShowSelfHPHealedEffect(ch *entity.Character, amount int32) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Send(&response.ShowSelfHPHealedEffect{
+		Amount: amount,
+	}, types.SEND_POLICY_ENCRYPT)
+	l.OnShowHPHealedEffect(ch, amount)
+}
+
+func (l *CharacterListenerImpl) OnShowHPHealedEffect(ch *entity.Character, amount int32) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Broadcast(&response.ShowHPHealedEffect{
+		CharacterID: ch.GetID(),
+		Amount:      amount,
+	}, nil)
+}
+
+func (l *CharacterListenerImpl) OnShowSelfRewardItemAnimation(ch *entity.Character, itemID uint32, effect string) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Send(&response.ShowSelfRewardItemAnimation{
+		ItemID: itemID,
+		Effect: effect,
+	}, types.SEND_POLICY_ENCRYPT)
+	l.OnShowRewardItemAnimation(ch, itemID, effect)
+}
+
+func (l *CharacterListenerImpl) OnShowRewardItemAnimation(ch *entity.Character, itemID uint32, effect string) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Broadcast(&response.ShowRewardItemAnimation{
+		CharacterID: ch.GetID(),
+		ItemID:      itemID,
+		Effect:      effect,
+	}, nil)
+}
+
+func (l *CharacterListenerImpl) OnShowSelfItemMakerSuccessEffect(ch *entity.Character) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Send(&response.ShowSelfItemMakerSuccessEffect{}, types.SEND_POLICY_ENCRYPT)
+	l.OnShowItemMakerSuccessEffect(ch)
+}
+
+func (l *CharacterListenerImpl) OnShowItemMakerSuccessEffect(ch *entity.Character) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Broadcast(&response.ShowItemMakerSuccessEffect{
+		CharacterID: ch.GetID(),
+	}, nil)
+}
+
+func (l *CharacterListenerImpl) OnShowSelfCraftingEffect(ch *entity.Character, effect string, time int32, mode int32) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Send(&response.ShowSelfCraftingEffect{
+		Effect: effect,
+		Time:   time,
+		Mode:   mode,
+	}, types.SEND_POLICY_ENCRYPT)
+	l.OnShowCraftingEffect(ch, effect, time, mode)
+}
+
+func (l *CharacterListenerImpl) OnShowCraftingEffect(ch *entity.Character, effect string, time int32, mode int32) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Broadcast(&response.ShowCraftingEffect{
+		CharacterID: ch.GetID(),
+		Effect:      effect,
+		Time:        time,
+		Mode:        mode,
+	}, nil)
+}
+
+func (l *CharacterListenerImpl) OnShowSelfDiceEffect(ch *entity.Character, effectID int32, skillID uint32, skillLevel uint8) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Send(&response.ShowSelfDiceEffect{
+		EffectID:   effectID,
+		SkillID:    skillID,
+		SkillLevel: skillLevel,
+	}, types.SEND_POLICY_ENCRYPT)
+	l.OnShowDiceEffect(ch, effectID, skillID, skillLevel)
+}
+
+func (l *CharacterListenerImpl) OnShowDiceEffect(ch *entity.Character, effectID int32, skillID uint32, skillLevel uint8) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Broadcast(&response.ShowDiceEffect{
 		CharacterID: ch.GetID(),
 		EffectID:    effectID,
 		SkillID:     skillID,
 		SkillLevel:  skillLevel,
-		Additional:  additional,
 	}, nil)
 }
 
@@ -477,23 +618,23 @@ func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, 
 	var selfPacket types.Packet
 	var remotePacket types.Packet
 	if mountID, ok := values[constant.BuffFlagMonsterRiding]; ok {
-		selfPacket = &response.UpdateRidding{
+		selfPacket = &response.UpdateSelfRidding{
 			BuffID:  buffID,
 			MountID: mountID,
 			Buffs:   dtoBuffs,
 		}
-		remotePacket = &response.UpdateRemoteRidding{
+		remotePacket = &response.UpdateRidding{
 			CharacterID: int32(ch.GetID()),
 			MountID:     mountID,
 			Buffs:       dtoBuffs,
 		}
 	} else {
-		selfPacket = &response.UpdateBuff{
+		selfPacket = &response.UpdateSelfBuff{
 			BuffID:   buffID,
 			Duration: remainingDuration,
 			Buffs:    dtoBuffs,
 		}
-		remotePacket = &response.UpdateRemoteBuff{
+		remotePacket = &response.UpdateBuff{
 			CharacterID: int32(ch.GetID()),
 			BuffID:      buffID,
 			Duration:    remainingDuration,
@@ -506,16 +647,16 @@ func (l *CharacterListenerImpl) OnBuffAdded(ch *entity.Character, buffID int32, 
 }
 
 func (l *CharacterListenerImpl) OnBuffRemoved(ch *entity.Character, flags []constant.BuffFlag) {
-	ch.Send(&response.CancelBuff{Buffs: flags}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.CancelSelfBuff{Buffs: flags}, types.SEND_POLICY_ENCRYPT)
 
-	ch.Broadcast(&response.CancelRemoteBuff{
+	ch.Broadcast(&response.CancelBuff{
 		CharacterID: int32(ch.GetID()),
 		Buffs:       flags,
 	}, nil)
 }
 
 func (l *CharacterListenerImpl) OnDebuffAdded(ch *entity.Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32) {
-	ch.Send(&response.GiveDebuff{
+	ch.Send(&response.GiveSelfDebuff{
 		Disease:    disease,
 		X:          x,
 		SkillID:    skillID,
@@ -523,7 +664,7 @@ func (l *CharacterListenerImpl) OnDebuffAdded(ch *entity.Character, disease cons
 		DurationMs: durationMs,
 	}, types.SEND_POLICY_ENCRYPT)
 
-	ch.Broadcast(&response.GiveRemoteDebuff{
+	ch.Broadcast(&response.GiveDebuff{
 		CharacterID: int32(ch.GetID()),
 		Disease:     disease,
 		X:           x,
@@ -533,9 +674,9 @@ func (l *CharacterListenerImpl) OnDebuffAdded(ch *entity.Character, disease cons
 }
 
 func (l *CharacterListenerImpl) OnDebuffRemoved(ch *entity.Character, flags []constant.DebuffFlag) {
-	ch.Send(&response.RemoveDebuff{Diseases: flags}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.RemoveSelfDebuff{Diseases: flags}, types.SEND_POLICY_ENCRYPT)
 
-	ch.Broadcast(&response.RemoveRemoteDebuff{
+	ch.Broadcast(&response.RemoveDebuff{
 		CharacterID: int32(ch.GetID()),
 		Diseases:    flags,
 	}, nil)

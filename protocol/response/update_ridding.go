@@ -7,14 +7,16 @@ import (
 )
 
 type UpdateRidding struct {
-	BuffID  int32
-	MountID int32
-	Buffs   []dto.BuffEntry
+	CharacterID int32
+	MountID     int32
+	Buffs       []dto.BuffEntry
 }
 
-func (p *UpdateRidding) Opcode() uint16 { return 0x15 }
+func (p *UpdateRidding) Opcode() uint16 { return 0x90 }
 
 func (p *UpdateRidding) Serialize(writer *stream.StreamWriter) error {
+	writer.Write32(p.CharacterID)
+
 	buffs := p.Buffs
 	if buffs == nil {
 		buffs = []dto.BuffEntry{}
@@ -25,16 +27,13 @@ func (p *UpdateRidding) Serialize(writer *stream.StreamWriter) error {
 		flags = append(flags, buffs[i].Buff)
 	}
 	WriteBuffs(writer, flags)
-
-	ridingLevel := max(int32(1), p.MountID-1902000+1)
-
-	writer.WriteU16(uint16(ridingLevel))
+	writer.WriteU16(0)
 	writer.Write32(p.MountID)
-	writer.Write32(p.BuffID)
-	writer.WriteU16(0)
-	writer.WriteU16(0)
+	writer.Write32(int32(constant.SkillMonsterRider))
+	writer.Write32(0)
 	writer.Write32(0)
 	writer.WriteU8(0)
+	writer.WriteU16(0)
 	return nil
 }
 

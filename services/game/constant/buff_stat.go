@@ -80,7 +80,7 @@ var (
 	BuffFlagSoaring       = BuffFlag{0x40000, 2}
 )
 
-func IsRemoteStatFlag(flag BuffFlag) bool {
+func IsTargetStatFlag(flag BuffFlag) bool {
 	return flag == BuffFlagSpeed ||
 		flag == BuffFlagCombo ||
 		flag == BuffFlagWkCharge ||

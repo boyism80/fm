@@ -6,16 +6,19 @@ import (
 )
 
 type RemoveDebuff struct {
-	Diseases []constant.DebuffFlag
+	CharacterID int32
+	Diseases    []constant.DebuffFlag
 }
 
-func (p *RemoveDebuff) Opcode() uint16 { return 0x16 }
+func (p *RemoveDebuff) Opcode() uint16 { return 0x91 }
 
 func (p *RemoveDebuff) Serialize(writer *stream.StreamWriter) error {
 	if p.Diseases == nil {
 		p.Diseases = []constant.DebuffFlag{}
 	}
+	writer.Write32(p.CharacterID)
 	WriteDebuffs(writer, p.Diseases)
+	writer.WriteU8(3)
 	writer.WriteU8(1)
 	return nil
 }

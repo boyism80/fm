@@ -6,6 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
@@ -164,7 +165,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		d := req.MagnetMobData.Direction
 		dir = &d
 	}
-	ch.Listener.OnShowRemoteBuffEffect(ch, 1, req.SkillID, req.SkillLevel, dir)
+	ch.Listener.OnShowSkillEffect(ch, pconst.SkillEffectTypeCast, req.SkillID, req.SkillLevel, dir)
 	ch.Listener.OnUpdateStats(ch, nil, true)
 	return nil
 }

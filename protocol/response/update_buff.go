@@ -9,14 +9,17 @@ import (
 )
 
 type UpdateBuff struct {
-	BuffID   int32
-	Duration time.Duration
-	Buffs    []dto.BuffEntry
+	CharacterID int32
+	BuffID      int32
+	Duration    time.Duration
+	Buffs       []dto.BuffEntry
 }
 
-func (p *UpdateBuff) Opcode() uint16 { return 0x15 }
+func (p *UpdateBuff) Opcode() uint16 { return 0x90 }
 
 func (p *UpdateBuff) Serialize(writer *stream.StreamWriter) error {
+	writer.Write32(p.CharacterID)
+
 	if p.Buffs == nil {
 		p.Buffs = []dto.BuffEntry{}
 	}
@@ -85,15 +88,11 @@ func (p *UpdateBuff) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU16(0)
 		return nil
 	default:
-		for _, buff := range buffs {
-			writer.WriteU16(uint16(buff.Value))
-			writer.Write32(p.BuffID)
-			writer.Write32(int32(p.Duration.Milliseconds()))
+		for _, e := range buffs {
+			writer.WriteU16(uint16(e.Value))
 		}
 		writer.WriteU16(0)
 		writer.WriteU16(0)
-		writer.Write32(0)
-		writer.WriteU8(0)
 		return nil
 	}
 }

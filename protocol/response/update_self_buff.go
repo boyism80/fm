@@ -8,23 +8,21 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-type UpdateRemoteBuff struct {
-	CharacterID int32
-	BuffID      int32
-	Duration    time.Duration
-	Buffs       []dto.BuffEntry
+type UpdateSelfBuff struct {
+	BuffID   int32
+	Duration time.Duration
+	Buffs    []dto.BuffEntry
 }
 
-func (p *UpdateRemoteBuff) Opcode() uint16 { return 0x90 }
+func (p *UpdateSelfBuff) Opcode() uint16 { return 0x15 }
 
-func (p *UpdateRemoteBuff) Serialize(writer *stream.StreamWriter) error {
+func (p *UpdateSelfBuff) Serialize(writer *stream.StreamWriter) error {
 	if p.Buffs == nil {
 		p.Buffs = []dto.BuffEntry{}
 	}
 	buffs := make([]dto.BuffEntry, len(p.Buffs))
 	copy(buffs, p.Buffs)
 	SortBuffEntries(buffs)
-	writer.Write32(p.CharacterID)
 	buffFlags := make([]constant.BuffFlag, len(buffs))
 	for i := range buffs {
 		buffFlags[i] = buffs[i].Buff
@@ -72,8 +70,6 @@ func (p *UpdateRemoteBuff) Serialize(writer *stream.StreamWriter) error {
 		}
 		writer.WriteU16(0)
 		writer.WriteU16(0)
-		writer.WriteU8(1)
-		writer.WriteU8(1)
 		return nil
 	case constant.SkillWindBooster, constant.SkillWindBoosterCygnus, constant.SkillTimeLeap:
 		writer.WriteU16(0)
@@ -84,19 +80,22 @@ func (p *UpdateRemoteBuff) Serialize(writer *stream.StreamWriter) error {
 			writer.Write(make([]byte, 6))
 			writer.WriteU16(durSec)
 		}
+
 		writer.WriteU16(0)
 		writer.WriteU16(0)
-		writer.WriteU8(1)
-		writer.WriteU8(1)
 		return nil
 	default:
-		for _, e := range buffs {
-			writer.WriteU16(uint16(e.Value))
+		for _, buff := range buffs {
+			writer.WriteU16(uint16(buff.Value))
+			writer.Write32(p.BuffID)
+			writer.Write32(int32(p.Duration.Milliseconds()))
 		}
 		writer.WriteU16(0)
 		writer.WriteU16(0)
+		writer.Write32(0)
+		writer.WriteU8(0)
 		return nil
 	}
 }
 
-func (p *UpdateRemoteBuff) Deserialize(_ *stream.StreamReader) {}
+func (p *UpdateSelfBuff) Deserialize(_ *stream.StreamReader) {}

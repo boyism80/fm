@@ -132,7 +132,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 
 	if mountID, active := ch.GetRiddingInfo(); active {
-		viewer.Send(&response.UpdateRemoteRidding{
+		viewer.Send(&response.UpdateRidding{
 			CharacterID: int32(ch.GetID()),
 			MountID:     mountID,
 			Buffs:       []dto.BuffEntry{{Buff: constant.BuffFlagMonsterRiding, Value: mountID}},
@@ -140,7 +140,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	}
 
 	if buff, _, active := ch.Buffs.GetBuffValue(constant.BuffFlagEnergyCharge); active {
-		viewer.Send(&response.UpdateRemoteBuff{
+		viewer.Send(&response.UpdateBuff{
 			CharacterID: int32(ch.GetID()),
 			BuffID:      buff.GetBuffID(),
 			Duration:    50 * time.Second,
@@ -153,7 +153,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		if _, dashJumpValue, hasDashJump := ch.Buffs.GetBuffValue(constant.BuffFlagDashJump); hasDashJump {
 			buffs = append(buffs, dto.BuffEntry{Buff: constant.BuffFlagDashJump, Value: dashJumpValue})
 		}
-		viewer.Send(&response.UpdateRemoteBuff{
+		viewer.Send(&response.UpdateBuff{
 			CharacterID: int32(ch.GetID()),
 			BuffID:      dashBuff.GetBuffID(),
 			Duration:    dashBuff.RemainingDuration(time.Now()),
@@ -1167,9 +1167,9 @@ func (ch *Character) broadcastLevelUpEffect() {
 		return
 	}
 
-	ch.Broadcast(&response.ShowForeignEffect{
+	ch.Broadcast(&response.ShowEffect{
 		CharacterID: ch.id,
-		EffectID:    0,
+		Type:        response.EffectTypeLevelUp,
 	}, nil)
 }
 
@@ -1295,7 +1295,7 @@ func (ch *Character) GetSpawnPlayerBuffData() SpawnPlayerBuffData {
 			if idx < 0 || idx >= constant.MaxBuffFlag {
 				continue
 			}
-			if constant.IsRemoteStatFlag(flag) {
+			if constant.IsTargetStatFlag(flag) {
 				data.BuffStates[idx] |= flag.Mask
 			}
 			switch flag {
