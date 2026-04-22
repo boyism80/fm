@@ -113,6 +113,17 @@ func (l *CharacterListenerImpl) OnPartyInvite(ch *entity.Character, partyID uint
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnPartyMultiChat(ch *entity.Character, mode byte, senderName string, message string) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.MultiChat{
+		Mode:    mode,
+		Name:    senderName,
+		Message: message,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *entity.Character, code pconst.PartyStatusCode) {
 	if ch == nil {
 		return

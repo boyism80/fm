@@ -249,6 +249,27 @@ function createPartyHandlers(partyService, messages, grpcError) {
                 grpcError(err, callback);
             }
         },
+
+        async broadcastPartyChat(call, callback) {
+            try {
+                const req = call.request;
+                const result = await partyService.broadcastPartyChat(
+                    req.getWorldId(),
+                    req.getPartyId(),
+                    req.getSenderCharacterId(),
+                    req.getChatMode(),
+                    req.getSenderName(),
+                    req.getMessage()
+                );
+                const reply = new messages.BroadcastPartyChatReply();
+                reply.setOk(Boolean(result.ok));
+                reply.setErrorCode(result.code ?? messages.PartyErrorCode.UNKNOWN);
+                reply.setDeliveredCount(result.deliveredCount ?? 0);
+                callback(null, reply);
+            } catch (err) {
+                grpcError(err, callback);
+            }
+        },
     };
 }
 

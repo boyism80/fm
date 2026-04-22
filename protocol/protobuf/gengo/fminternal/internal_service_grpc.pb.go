@@ -43,6 +43,7 @@ const (
 	Internal_UpdatePartyMember_FullMethodName   = "/fm.internal.Internal/UpdatePartyMember"
 	Internal_InviteParty_FullMethodName         = "/fm.internal.Internal/InviteParty"
 	Internal_DenyParty_FullMethodName           = "/fm.internal.Internal/DenyParty"
+	Internal_BroadcastPartyChat_FullMethodName  = "/fm.internal.Internal/BroadcastPartyChat"
 )
 
 // InternalClient is the client API for Internal service.
@@ -71,6 +72,7 @@ type InternalClient interface {
 	UpdatePartyMember(ctx context.Context, in *UpdatePartyMemberRequest, opts ...grpc.CallOption) (*UpdatePartyMemberReply, error)
 	InviteParty(ctx context.Context, in *InvitePartyRequest, opts ...grpc.CallOption) (*InvitePartyReply, error)
 	DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error)
+	BroadcastPartyChat(ctx context.Context, in *BroadcastPartyChatRequest, opts ...grpc.CallOption) (*BroadcastPartyChatReply, error)
 }
 
 type internalClient struct {
@@ -301,6 +303,16 @@ func (c *internalClient) DenyParty(ctx context.Context, in *DenyPartyRequest, op
 	return out, nil
 }
 
+func (c *internalClient) BroadcastPartyChat(ctx context.Context, in *BroadcastPartyChatRequest, opts ...grpc.CallOption) (*BroadcastPartyChatReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BroadcastPartyChatReply)
+	err := c.cc.Invoke(ctx, Internal_BroadcastPartyChat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InternalServer is the server API for Internal service.
 // All implementations must embed UnimplementedInternalServer
 // for forward compatibility.
@@ -327,6 +339,7 @@ type InternalServer interface {
 	UpdatePartyMember(context.Context, *UpdatePartyMemberRequest) (*UpdatePartyMemberReply, error)
 	InviteParty(context.Context, *InvitePartyRequest) (*InvitePartyReply, error)
 	DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error)
+	BroadcastPartyChat(context.Context, *BroadcastPartyChatRequest) (*BroadcastPartyChatReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
 
@@ -402,6 +415,9 @@ func (UnimplementedInternalServer) InviteParty(context.Context, *InvitePartyRequ
 }
 func (UnimplementedInternalServer) DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DenyParty not implemented")
+}
+func (UnimplementedInternalServer) BroadcastPartyChat(context.Context, *BroadcastPartyChatRequest) (*BroadcastPartyChatReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BroadcastPartyChat not implemented")
 }
 func (UnimplementedInternalServer) mustEmbedUnimplementedInternalServer() {}
 func (UnimplementedInternalServer) testEmbeddedByValue()                  {}
@@ -820,6 +836,24 @@ func _Internal_DenyParty_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_BroadcastPartyChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BroadcastPartyChatRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).BroadcastPartyChat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_BroadcastPartyChat_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).BroadcastPartyChat(ctx, req.(*BroadcastPartyChatRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Internal_ServiceDesc is the grpc.ServiceDesc for Internal service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -914,6 +948,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DenyParty",
 			Handler:    _Internal_DenyParty_Handler,
+		},
+		{
+			MethodName: "BroadcastPartyChat",
+			Handler:    _Internal_BroadcastPartyChat_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

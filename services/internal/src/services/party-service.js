@@ -859,6 +859,17 @@ class PartyService {
         this._assertCharacterId(requesterCharacterId);
         this._assertCharacterId(newLeaderCharacterId);
 
+        const newLeaderSession = await this.sessionRepo.getCharacterSession(
+            worldId,
+            newLeaderCharacterId
+        );
+        const newLeaderOnline =
+            newLeaderSession?.state === "ONLINE" &&
+            Boolean(newLeaderSession?.gameServer?.connected);
+        if (!newLeaderOnline) {
+            return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
+        }
+
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
             if (!party || party.state !== PARTY_STATE_ACTIVE) {
@@ -902,6 +913,63 @@ class PartyService {
         });
 
         return result;
+    }
+
+    async broadcastPartyChat(worldId, partyId, senderCharacterId, chatMode, senderName, message) {
+        this._assertWorld(worldId);
+        this._assertPartyId(partyId);
+        this._assertCharacterId(senderCharacterId);
+        const trimmedMsg = String(message ?? "");
+        if (trimmedMsg.length <= 0 || trimmedMsg.length > 500) {
+            return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
+        }
+        const name = String(senderName ?? "").trim();
+        this._assertName(name);
+        const mode = Number(chatMode);
+        if (!Number.isInteger(mode) || mode < 0 || mode > 255) {
+            return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
+        }
+
+        const senderState = await this.characterRealtimeStateRepo.get(worldId, senderCharacterId);
+        if (senderState?.partyId == null || Number(senderState.partyId) !== Number(partyId)) {
+            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+        }
+        const party = await this.partyRepo.get(worldId, partyId);
+        if (!party || party.state !== PARTY_STATE_ACTIVE) {
+            return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
+        }
+        const members = await this.partyMemberRepo.getAll(worldId, partyId);
+        if (!members.has(String(senderCharacterId))) {
+            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+        }
+
+        let delivered = 0;
+        for (const [, row] of members) {
+            const cid = Number(row?.characterId);
+            if (!Number.isFinite(cid) || cid <= 0) {
+                continue;
+            }
+            if (cid === Number(senderCharacterId)) {
+                continue;
+            }
+            const sess = await this.sessionRepo.getCharacterSession(worldId, cid);
+            const ch = sess?.gameServer?.channelId;
+            const online =
+                sess?.state === "ONLINE" && Boolean(sess?.gameServer?.connected);
+            const chNum = Number(ch);
+            if (!online || ch == null || !Number.isFinite(chNum) || chNum < 0) {
+                continue;
+            }
+            await this._publishToPartyGameChannel(worldId, chNum, "party_chat", {
+                world_id: Number(worldId),
+                target_character_id: cid,
+                chat_mode: mode,
+                sender_name: name,
+                message: trimmedMsg,
+            });
+            delivered += 1;
+        }
+        return { ok: true, deliveredCount: delivered };
     }
 
     async getParty(worldId, partyId) {

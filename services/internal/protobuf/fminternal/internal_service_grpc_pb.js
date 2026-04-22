@@ -26,6 +26,28 @@ function deserialize_fm_internal_BeginGameTransitionRequest(buffer_arg) {
   return fminternal_internal_service_pb.BeginGameTransitionRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_fm_internal_BroadcastPartyChatReply(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.BroadcastPartyChatReply)) {
+    throw new Error('Expected argument of type fm.internal.BroadcastPartyChatReply');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_BroadcastPartyChatReply(buffer_arg) {
+  return fminternal_internal_service_pb.BroadcastPartyChatReply.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_fm_internal_BroadcastPartyChatRequest(arg) {
+  if (!(arg instanceof fminternal_internal_service_pb.BroadcastPartyChatRequest)) {
+    throw new Error('Expected argument of type fm.internal.BroadcastPartyChatRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_fm_internal_BroadcastPartyChatRequest(buffer_arg) {
+  return fminternal_internal_service_pb.BroadcastPartyChatRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_fm_internal_ChangePartyLeaderReply(arg) {
   if (!(arg instanceof fminternal_internal_service_pb.ChangePartyLeaderReply)) {
     throw new Error('Expected argument of type fm.internal.ChangePartyLeaderReply');
@@ -731,6 +753,17 @@ var InternalService = exports.InternalService = {
     requestDeserialize: deserialize_fm_internal_DenyPartyRequest,
     responseSerialize: serialize_fm_internal_DenyPartyReply,
     responseDeserialize: deserialize_fm_internal_DenyPartyReply,
+  },
+  broadcastPartyChat: {
+    path: '/fm.internal.Internal/BroadcastPartyChat',
+    requestStream: false,
+    responseStream: false,
+    requestType: fminternal_internal_service_pb.BroadcastPartyChatRequest,
+    responseType: fminternal_internal_service_pb.BroadcastPartyChatReply,
+    requestSerialize: serialize_fm_internal_BroadcastPartyChatRequest,
+    requestDeserialize: deserialize_fm_internal_BroadcastPartyChatRequest,
+    responseSerialize: serialize_fm_internal_BroadcastPartyChatReply,
+    responseDeserialize: deserialize_fm_internal_BroadcastPartyChatReply,
   },
 };
 

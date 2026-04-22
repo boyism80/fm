@@ -76,6 +76,8 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onPartyDisband(m)
 	case *DeliverPartyInvite:
 		a.onDeliverPartyInvite(m)
+	case *DeliverPartyMultiChat:
+		a.onDeliverPartyMultiChat(m)
 	case *DeliverPartyStatusMessage:
 		a.onDeliverPartyStatusMessage(m)
 	case *DeliverPartyUpdateJoin:
@@ -515,6 +517,17 @@ func (a *MapActor) onDeliverPartyInvite(msg *DeliverPartyInvite) {
 		return
 	}
 	ch.Listener.OnPartyInvite(ch, msg.PartyID, msg.InviterName, msg.PartySearch)
+}
+
+func (a *MapActor) onDeliverPartyMultiChat(msg *DeliverPartyMultiChat) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnPartyMultiChat(ch, msg.Mode, msg.SenderName, msg.Message)
 }
 
 func (a *MapActor) onDeliverPartyStatusMessage(msg *DeliverPartyStatusMessage) {

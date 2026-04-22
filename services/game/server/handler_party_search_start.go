@@ -58,6 +58,13 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 		ClassMask:     req.ClassMask,
 	}
 
+	if pid := ch.GetPartyID(); pid != nil {
+		party := h.gs.GetPartyByID(*pid)
+		if party == nil || party.GetLeaderCharacterId() != ch.GetID() {
+			return nil
+		}
+	}
+
 	if ch.GetPartyID() == nil {
 		p := async.ThenRPC(
 			async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
