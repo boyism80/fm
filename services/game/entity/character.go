@@ -35,7 +35,6 @@ type Character struct {
 	classRankDiff     int32
 	exp               uint32
 	famePoint         uint16
-	spawnPoint        uint8
 	mega              bool
 	random1           stream.RandomStream
 	random2           stream.RandomStream
@@ -566,16 +565,22 @@ func (ch *Character) ResumeTimers(pid *actor.PID) {
 	}
 }
 
-func (ch *Character) GetBonusHp() int32    { return ch.BonusHp }
-func (ch *Character) GetBonusMp() int32    { return ch.BonusMp }
-func (ch *Character) GetInvincible() bool  { return ch.Invincible }
-func (ch *Character) GetGender() uint8     { return ch.gender }
-func (ch *Character) GetSkinColor() uint8  { return ch.skinColor }
-func (ch *Character) GetFace() uint32      { return ch.face }
-func (ch *Character) GetHair() uint32      { return ch.hair }
-func (ch *Character) GetLevel() uint8      { return ch.level }
-func (ch *Character) GetExp() uint32       { return ch.exp }
-func (ch *Character) GetSpawnPoint() uint8 { return ch.spawnPoint }
+func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
+func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
+func (ch *Character) GetInvincible() bool { return ch.Invincible }
+func (ch *Character) GetGender() uint8    { return ch.gender }
+func (ch *Character) GetSkinColor() uint8 { return ch.skinColor }
+func (ch *Character) GetFace() uint32     { return ch.face }
+func (ch *Character) GetHair() uint32     { return ch.hair }
+func (ch *Character) GetLevel() uint8     { return ch.level }
+func (ch *Character) GetExp() uint32      { return ch.exp }
+func (ch *Character) GetSpawnPoint() uint8 {
+	mapInstance := ch.GetMap()
+	if mapInstance != nil && mapInstance.Wz != nil {
+		return mapInstance.Wz.FindClosestPortalSpawnID(ch.Position)
+	}
+	return 0
+}
 
 func (ch *Character) SetHp(v uint32, notify bool) {
 	ch.LifeCore.setHp(v)
@@ -952,7 +957,6 @@ type CharacterInitData struct {
 	SkillPoint   uint16
 	Exp          uint32
 	Meso         int32
-	SpawnPoint   uint8
 	PositionX    int16
 	PositionY    int16
 	Stance       uint8
@@ -995,7 +999,6 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		AbilityPoint: data.AbilityPoint,
 		SkillPoint:   data.SkillPoint,
 		exp:          data.Exp,
-		spawnPoint:   data.SpawnPoint,
 		Meso:         data.Meso,
 		partyID:      data.PartyID,
 		guildID:      data.GuildID,

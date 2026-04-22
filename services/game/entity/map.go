@@ -159,7 +159,6 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	}
 
 	character.Map = m
-	character.spawnPoint = spawnPoint
 	if pos, ok := m.Wz.GetSpawnPosition(spawnPoint); ok {
 		character.Position = pos
 	}
