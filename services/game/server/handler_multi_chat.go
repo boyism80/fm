@@ -9,29 +9,30 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	lua "github.com/yuin/gopher-lua"
 )
 
-type PartyChat struct {
+type MultiChat struct {
 	gs     *GameServer
 	opcode byte
 }
 
-func (PartyChat) New(gs *GameServer) *PartyChat {
-	return &PartyChat{
+func (MultiChat) New(gs *GameServer) *MultiChat {
+	return &MultiChat{
 		gs:     gs,
 		opcode: 0x62,
 	}
 }
 
-func (h *PartyChat) GetOpcode() byte {
+func (h *MultiChat) GetOpcode() byte {
 	return h.opcode
 }
 
-func (h *PartyChat) Handle(ctx *core.ClientContext, req *request.PartyChat) error {
+func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) error {
 	gc, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")
@@ -74,41 +75,54 @@ func (h *PartyChat) Handle(ctx *core.ClientContext, req *request.PartyChat) erro
 	if len(strings.TrimSpace(req.Message)) == 0 {
 		return nil
 	}
-	if req.Type != 1 {
-		return nil
-	}
 	if h.gs.internalClient == nil {
 		return fmt.Errorf("internal client not configured")
 	}
 	if ctx.ActorContext == nil {
-		return fmt.Errorf("party chat: actor context required")
+		return fmt.Errorf("multi chat: actor context required")
 	}
-	pid := ch.GetPartyID()
-	if pid == nil {
+	mode := pconst.MultiChatMode(req.Type)
+	if mode > pconst.MultiChatModeAlliance {
+		return nil
+	}
+	memberID := uint32(0)
+	if mode == pconst.MultiChatModeParty {
+		pid := ch.GetPartyID()
+		if pid == nil {
+			return nil
+		}
+		memberID = *pid
+	} else if len(req.Recipients) > 0 {
+		first := req.Recipients[0]
+		if first > 0 {
+			memberID = uint32(first)
+		}
+	}
+	if memberID == 0 {
 		return nil
 	}
 	senderID := ch.GetID()
 	senderName := ch.GetName()
 	worldID := h.gs.config.WorldId
 	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
-		func(c context.Context) (*internal.BroadcastPartyChatReply, error) {
-			return h.gs.internalClient.BroadcastPartyChat(c, &internal.BroadcastPartyChatRequest{
+		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
+			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
 				WorldId:           worldID,
-				PartyId:           *pid,
+				MemberId:          memberID,
 				SenderCharacterId: senderID,
-				ChatMode:          1,
+				ChatMode:          uint32(mode),
 				SenderName:        senderName,
 				Message:           req.Message,
 			})
 		},
-		func(reply *internal.BroadcastPartyChatReply) error {
+		func(reply *internal.BroadcastMultiChatReply) error {
 			if !reply.GetOk() {
-				log.Printf("PartyChat: broadcast failed character=%d code=%v", senderID, reply.GetErrorCode())
+				log.Printf("MultiChat: broadcast failed character=%d code=%v", senderID, reply.GetErrorCode())
 			}
 			return nil
 		},
 	).OnError(func(err error) {
-		log.Printf("PartyChat async error: %v", err)
+		log.Printf("MultiChat async error: %v", err)
 	}).Run()
 	return nil
 }

@@ -232,7 +232,7 @@ func registerSkillEffectTypeConstants(luaState *lua.LState) {
 func registerEffectTypeConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("LevelUp", lua.LNumber(response.EffectTypeLevelUp))
-	t.RawSetString("JobChange", lua.LNumber(response.EffectTypeJobChange))
+	t.RawSetString("ClassChange", lua.LNumber(response.EffectTypeClassChange))
 	t.RawSetString("QuestCompletion", lua.LNumber(response.EffectTypeQuestCompletion))
 	t.RawSetString("RegisterCard", lua.LNumber(response.EffectTypeRegisterCard))
 	t.RawSetString("ItemLevelUp", lua.LNumber(response.EffectTypeItemLevelUp))

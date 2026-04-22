@@ -29,7 +29,7 @@ service Internal {
   rpc UpdatePartyMember (UpdatePartyMemberRequest) returns (UpdatePartyMemberReply);
   rpc InviteParty (InvitePartyRequest) returns (InvitePartyReply);
   rpc DenyParty (DenyPartyRequest) returns (DenyPartyReply);
-  rpc BroadcastPartyChat (BroadcastPartyChatRequest) returns (BroadcastPartyChatReply);
+  rpc BroadcastMultiChat (BroadcastMultiChatRequest) returns (BroadcastMultiChatReply);
 }
 
 message PingRequest {}
@@ -463,16 +463,16 @@ message DenyPartyReply {
   PartyErrorCode error_code = 2;
 }
 
-message BroadcastPartyChatRequest {
+message BroadcastMultiChatRequest {
   uint32 world_id = 1;
-  uint32 party_id = 2;
+  uint32 member_id = 2;
   uint32 sender_character_id = 3;
   uint32 chat_mode = 4;
   string sender_name = 5;
   string message = 6;
 }
 
-message BroadcastPartyChatReply {
+message BroadcastMultiChatReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   uint32 delivered_count = 3;

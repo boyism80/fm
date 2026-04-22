@@ -171,7 +171,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		mq.Bind[*GameServer, partyMqDisbanded](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqPartySync](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqPartyInvite](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqPartyChat](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqMultiChat](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqPartyInviteDenied](gs, partyDisp)
 
 		rabbitCfg := mq.RabbitActorConfig{

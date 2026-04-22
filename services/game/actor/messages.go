@@ -101,9 +101,9 @@ type DeliverPartyInvite struct {
 	PartySearch bool
 }
 
-type DeliverPartyMultiChat struct {
+type DeliverMultiChat struct {
 	CharacterID uint32
-	Mode        byte
+	Mode        pconst.MultiChatMode
 	SenderName  string
 	Message     string
 }

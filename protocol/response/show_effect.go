@@ -8,7 +8,7 @@ type EffectType uint8
 
 const (
 	EffectTypeLevelUp         EffectType = 0
-	EffectTypeJobChange       EffectType = 8
+	EffectTypeClassChange     EffectType = 8
 	EffectTypeQuestCompletion EffectType = 9
 	EffectTypeRegisterCard    EffectType = 13
 	EffectTypeItemLevelUp     EffectType = 15

@@ -43,7 +43,7 @@ const (
 	Internal_UpdatePartyMember_FullMethodName   = "/fm.internal.Internal/UpdatePartyMember"
 	Internal_InviteParty_FullMethodName         = "/fm.internal.Internal/InviteParty"
 	Internal_DenyParty_FullMethodName           = "/fm.internal.Internal/DenyParty"
-	Internal_BroadcastPartyChat_FullMethodName  = "/fm.internal.Internal/BroadcastPartyChat"
+	Internal_BroadcastMultiChat_FullMethodName  = "/fm.internal.Internal/BroadcastMultiChat"
 )
 
 // InternalClient is the client API for Internal service.
@@ -72,7 +72,7 @@ type InternalClient interface {
 	UpdatePartyMember(ctx context.Context, in *UpdatePartyMemberRequest, opts ...grpc.CallOption) (*UpdatePartyMemberReply, error)
 	InviteParty(ctx context.Context, in *InvitePartyRequest, opts ...grpc.CallOption) (*InvitePartyReply, error)
 	DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error)
-	BroadcastPartyChat(ctx context.Context, in *BroadcastPartyChatRequest, opts ...grpc.CallOption) (*BroadcastPartyChatReply, error)
+	BroadcastMultiChat(ctx context.Context, in *BroadcastMultiChatRequest, opts ...grpc.CallOption) (*BroadcastMultiChatReply, error)
 }
 
 type internalClient struct {
@@ -303,10 +303,10 @@ func (c *internalClient) DenyParty(ctx context.Context, in *DenyPartyRequest, op
 	return out, nil
 }
 
-func (c *internalClient) BroadcastPartyChat(ctx context.Context, in *BroadcastPartyChatRequest, opts ...grpc.CallOption) (*BroadcastPartyChatReply, error) {
+func (c *internalClient) BroadcastMultiChat(ctx context.Context, in *BroadcastMultiChatRequest, opts ...grpc.CallOption) (*BroadcastMultiChatReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BroadcastPartyChatReply)
-	err := c.cc.Invoke(ctx, Internal_BroadcastPartyChat_FullMethodName, in, out, cOpts...)
+	out := new(BroadcastMultiChatReply)
+	err := c.cc.Invoke(ctx, Internal_BroadcastMultiChat_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +339,7 @@ type InternalServer interface {
 	UpdatePartyMember(context.Context, *UpdatePartyMemberRequest) (*UpdatePartyMemberReply, error)
 	InviteParty(context.Context, *InvitePartyRequest) (*InvitePartyReply, error)
 	DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error)
-	BroadcastPartyChat(context.Context, *BroadcastPartyChatRequest) (*BroadcastPartyChatReply, error)
+	BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
 
@@ -416,8 +416,8 @@ func (UnimplementedInternalServer) InviteParty(context.Context, *InvitePartyRequ
 func (UnimplementedInternalServer) DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DenyParty not implemented")
 }
-func (UnimplementedInternalServer) BroadcastPartyChat(context.Context, *BroadcastPartyChatRequest) (*BroadcastPartyChatReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BroadcastPartyChat not implemented")
+func (UnimplementedInternalServer) BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BroadcastMultiChat not implemented")
 }
 func (UnimplementedInternalServer) mustEmbedUnimplementedInternalServer() {}
 func (UnimplementedInternalServer) testEmbeddedByValue()                  {}
@@ -836,20 +836,20 @@ func _Internal_DenyParty_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Internal_BroadcastPartyChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BroadcastPartyChatRequest)
+func _Internal_BroadcastMultiChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BroadcastMultiChatRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InternalServer).BroadcastPartyChat(ctx, in)
+		return srv.(InternalServer).BroadcastMultiChat(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Internal_BroadcastPartyChat_FullMethodName,
+		FullMethod: Internal_BroadcastMultiChat_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).BroadcastPartyChat(ctx, req.(*BroadcastPartyChatRequest))
+		return srv.(InternalServer).BroadcastMultiChat(ctx, req.(*BroadcastMultiChatRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -950,8 +950,8 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Internal_DenyParty_Handler,
 		},
 		{
-			MethodName: "BroadcastPartyChat",
-			Handler:    _Internal_BroadcastPartyChat_Handler,
+			MethodName: "BroadcastMultiChat",
+			Handler:    _Internal_BroadcastMultiChat_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

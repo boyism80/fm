@@ -5,6 +5,7 @@ import (
 
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 )
@@ -20,7 +21,7 @@ type CharacterListener interface {
 	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
 	OnPartyCreated(ch *Character, partyID uint32)
 	OnPartyInvite(ch *Character, partyID uint32, inviterName string, partySearch bool)
-	OnPartyMultiChat(ch *Character, mode byte, senderName string, message string)
+	OnMultiChat(ch *Character, mode pconst.MultiChatMode, senderName string, message string)
 	OnPartyStatusMessage(ch *Character, code pconst.PartyStatusCode)
 	OnExpGain(ch *Character, exp uint32)
 	OnControlMoveMob(ch *Character, mob *Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8)
@@ -58,6 +59,8 @@ type CharacterListener interface {
 	OnHiddenChanged(ch *Character, hidden bool)
 	OnShowSelfSkillEffect(ch *Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8)
 	OnShowSkillEffect(ch *Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8)
+	OnShowSelfEffect(ch *Character, effectType response.EffectType)
+	OnShowEffect(ch *Character, effectType response.EffectType)
 	OnShowSelfDragonBloodEffect(ch *Character, skillID uint32, skillLevel uint8)
 	OnShowDragonBloodEffect(ch *Character, skillID uint32, skillLevel uint8)
 	OnShowSelfHPHealedEffect(ch *Character, amount int32)
