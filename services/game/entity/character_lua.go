@@ -2429,15 +2429,22 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 
 			argc := L.GetTop()
 			count := uint16(1)
+			isRandomizeStats := false
 			switch argc {
 			case 1:
-				L.ArgError(2, "mkitem(itemIdOrName [, count]) requires at least one argument")
+				L.ArgError(2, "mkitem(itemIdOrName [, count] [, isRandomizeStats]) requires at least one argument")
 				return 0
 			case 2:
-
+			case 3:
+				if n := int(L.CheckInt(3)); n >= 1 {
+					count = uint16(n)
+				}
 			default:
 				if n := L.CheckInt(3); n >= 1 {
 					count = uint16(n)
+				}
+				if argc >= 4 {
+					isRandomizeStats = lua.LVAsBool(L.Get(4))
 				}
 			}
 
@@ -2462,9 +2469,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 
-			_ = count
-			model := resources.Items[itemId]
-			if model == nil {
+			if resources.Items[itemId] == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -2472,6 +2477,13 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
+			}
+			if isRandomizeStats {
+				if eq, ok := item.(Equipment); ok {
+					if em, ok := eq.GetModel().(wz.Equipment); ok {
+						eq.GetEquipmentCore().RandomizeStats(em)
+					}
+				}
 			}
 
 			added, err := ch.AddItem(item, true)
@@ -2481,73 +2493,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			L.Push(luax.NewLuable(L, added[0]))
-			return 1
-		},
-		"item_wz": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			if ch.GameWorld == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			resources := ch.GameWorld.GetResources()
-			if resources == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-
-			argc := L.GetTop()
-			count := uint16(1)
-			switch argc {
-			case 1:
-				L.ArgError(2, "item_wz(itemIdOrName [, count]) requires at least one argument")
-				return 0
-			case 2:
-
-			default:
-				if n := L.CheckInt(3); n >= 1 {
-					count = uint16(n)
-				}
-			}
-
-			var itemId uint32
-			switch lv := L.Get(2).(type) {
-			case lua.LString:
-				id, ok := resources.NameToItem(string(lv))
-				if !ok {
-					L.Push(lua.LNil)
-					return 1
-				}
-				itemId = id
-			case lua.LNumber:
-				itemId = uint32(lv)
-			default:
-				L.ArgError(2, "item id (number) or item name (string) expected")
-				return 0
-			}
-
-			if _, ok := resources.Items[itemId]; !ok {
-				L.Push(lua.LNil)
-				return 1
-			}
-
-			item, err := NewItem(itemId, count, ch.GameWorld)
-			if err != nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-
-			consume, ok := item.(*Consume)
-			if !ok || consume == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-
-			L.Push(luax.NewLuable(L, consume))
 			return 1
 		},
 		"rmitem": func(L *lua.LState) int {

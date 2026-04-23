@@ -120,10 +120,17 @@ class PartyService {
         }
     }
 
-    async _nextPartyId(worldId) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        const key = redisCacheKey(`w${worldId}:party:id:seq`);
-        return Number(await client.incr(key));
+    
+    async _nextPartyId(txClient, worldId) {
+        this._assertWorld(worldId);
+        const res = await txClient.query("SELECT nextval('party_id_seq') AS id");
+        const id = res.rows?.[0]?.id;
+        if (id == null) {
+            const err = new Error("nextval('party_id_seq') returned no id");
+            err.code = "PARTY_ID_SEQ_ERROR";
+            throw err;
+        }
+        return Number(id);
     }
 
     async _publishPartyEvent(eventType, worldId, partyId, revision, extraPayload = {}) {
@@ -391,13 +398,13 @@ class PartyService {
             leaderChannelIndex = Number(leaderChannelIndex);
         }
 
-        const partyId = await this._nextPartyId(worldId);
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient) => {
             const state = await this.characterRealtimeStateRepo.get(worldId, leaderCharacterId, { txClient });
             if (state?.partyId != null) {
                 return { ok: false, code: messages.PartyErrorCode.ALREADY_IN_PARTY };
             }
 
+            const partyId = await this._nextPartyId(txClient, worldId);
             const party = await this.partyRepo.set(worldId, {
                 worldId,
                 partyId,
@@ -428,8 +435,8 @@ class PartyService {
         if (!result.ok) {
             return result;
         }
-        await this.partyRepo.evictCache(worldId, partyId);
-        await this.partyMemberRepo.evictGroupCache(worldId, partyId);
+        await this.partyRepo.evictCache(worldId, result.partyId);
+        await this.partyMemberRepo.evictGroupCache(worldId, result.partyId);
         await this.characterRealtimeStateRepo.evictCache(worldId, leaderCharacterId);
 
         await this._publishPartyEvent(EVT.CREATED, worldId, result.partyId, result.revision, {

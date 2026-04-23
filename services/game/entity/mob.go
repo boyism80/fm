@@ -288,6 +288,11 @@ func (m *Mob) dropItems(attacker *Character) {
 			if err != nil {
 				continue
 			}
+			if eq, ok := item.(Equipment); ok {
+				if em, ok := eq.GetModel().(wz.Equipment); ok {
+					eq.GetEquipmentCore().RandomizeStats(em)
+				}
+			}
 			drops = append(drops, struct {
 				isMeso bool
 				count  int32

@@ -65,6 +65,7 @@ type EquipmentCore struct {
 	Flag          uint16
 	SkillBonus    uint16
 	UniqueId      *uint64
+	BonusStats    *EquipmentBonusStats
 }
 
 func (e *EquipmentCore) GetEquipmentCore() *EquipmentCore { return e }
@@ -92,6 +93,11 @@ func copyUint64Ptr(p *uint64) *uint64 {
 }
 
 func cloneEquipmentCore(c *EquipmentCore, count uint16) *EquipmentCore {
+	var bonus *EquipmentBonusStats
+	if c.BonusStats != nil {
+		v := *c.BonusStats
+		bonus = &v
+	}
 	return &EquipmentCore{
 		ItemCore: &ItemCore{
 			Drop:       nil,
@@ -104,6 +110,7 @@ func cloneEquipmentCore(c *EquipmentCore, count uint16) *EquipmentCore {
 		Flag:          c.Flag,
 		SkillBonus:    c.SkillBonus,
 		UniqueId:      copyUint64Ptr(c.UniqueId),
+		BonusStats:    bonus,
 	}
 }
 

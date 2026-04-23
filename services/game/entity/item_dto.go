@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/util"
 )
 
 func ItemToDTO(item Item) dto.Item {
@@ -84,6 +85,10 @@ func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.Equipment) *dto.Equipm
 		return nil
 	}
 	ability := model.GetAbility()
+	b := core.BonusStats
+	if b == nil {
+		b = &EquipmentBonusStats{}
+	}
 	maxEnchantChance := model.GetEnchantChance()
 	return &dto.Equipment{
 		ItemId:        model.GetID(),
@@ -91,21 +96,21 @@ func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.Equipment) *dto.Equipm
 		Expiration:    core.Expiration,
 		EnchantChance: maxEnchantChance,
 		EnchantCount:  maxEnchantChance - model.GetEnchantChance(),
-		Str:           ability.Str,
-		Dex:           ability.Dex,
-		Int:           ability.Int,
-		Luk:           ability.Luk,
-		MaxHP:         ability.MaxHP,
-		MaxMP:         ability.MaxMP,
-		PAD:           ability.PAD,
-		MAD:           ability.MAD,
-		PDD:           ability.PDD,
-		MDD:           ability.MDD,
-		ACC:           ability.ACC,
-		Avoid:         ability.Avoid,
-		Hands:         ability.Hands,
-		Speed:         ability.Speed,
-		Jump:          ability.Jump,
+		Str:           uint16(util.ClampInt32(int32(ability.Str)+int32(b.Str), 0, 0xffff)),
+		Dex:           uint16(util.ClampInt32(int32(ability.Dex)+int32(b.Dex), 0, 0xffff)),
+		Int:           uint16(util.ClampInt32(int32(ability.Int)+int32(b.Int), 0, 0xffff)),
+		Luk:           uint16(util.ClampInt32(int32(ability.Luk)+int32(b.Luk), 0, 0xffff)),
+		MaxHP:         uint16(util.ClampInt32(int32(ability.MaxHP)+int32(b.MaxHP), 0, 0xffff)),
+		MaxMP:         uint16(util.ClampInt32(int32(ability.MaxMP)+int32(b.MaxMP), 0, 0xffff)),
+		PAD:           uint16(util.ClampInt32(int32(ability.PAD)+int32(b.PAD), 0, 0xffff)),
+		MAD:           uint16(util.ClampInt32(int32(ability.MAD)+int32(b.MAD), 0, 0xffff)),
+		PDD:           uint16(util.ClampInt32(int32(ability.PDD)+int32(b.PDD), 0, 0xffff)),
+		MDD:           uint16(util.ClampInt32(int32(ability.MDD)+int32(b.MDD), 0, 0xffff)),
+		ACC:           uint16(util.ClampInt32(int32(ability.ACC)+int32(b.ACC), 0, 0xffff)),
+		Avoid:         uint16(util.ClampInt32(int32(ability.Avoid)+int32(b.Avoid), 0, 0xffff)),
+		Hands:         uint16(util.ClampInt32(int32(ability.Hands)+int32(b.Hands), 0, 0xffff)),
+		Speed:         uint16(util.ClampInt32(int32(ability.Speed)+int32(b.Speed), 0, 0xffff)),
+		Jump:          uint16(util.ClampInt32(int32(ability.Jump)+int32(b.Jump), 0, 0xffff)),
 		OwnerName:     core.OwnerName,
 		Flag:          core.Flag,
 		SkillBonus:    uint8(core.SkillBonus),

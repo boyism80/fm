@@ -1,6 +1,5 @@
 syntax = "proto3";
 
-// After editing this file, regenerate Go + JS: run protocol/protobuf/gen.bat from the repo (requires protoc, protoc-gen-go, protoc-gen-go-grpc, and npm install in services/internal).
 
 package fm.internal;
 
@@ -159,6 +158,24 @@ message SaveCharactersReply {
   bool ok = 1;
 }
 
+message EquipmentBonusStatsPersisted {
+  int32 str    = 1;
+  int32 dex    = 2;
+  int32 int_stat = 3;
+  int32 luk    = 4;
+  int32 max_hp = 5;
+  int32 max_mp = 6;
+  int32 pad    = 7;
+  int32 mad    = 8;
+  int32 pdd    = 9;
+  int32 mdd    = 10;
+  int32 acc    = 11;
+  int32 avoid  = 12;
+  int32 hands  = 13;
+  int32 speed  = 14;
+  int32 jump   = 15;
+}
+
 message InventoryPersisted {
   optional uint64 unique_id = 1;
   uint32 owner_id           = 2;
@@ -171,6 +188,7 @@ message InventoryPersisted {
   uint32 skill_bonus        = 9;
   string owner_name         = 10;
   uint32 inventory_type     = 11;
+  optional EquipmentBonusStatsPersisted equip_bonus_stats = 12;
 }
 
 message SkillPersisted {
@@ -283,7 +301,6 @@ message RefreshSessionReply {
   SessionErrorCode error_code = 2;
 }
 
-// Which service initiated LogoutSession (drives party channel side-effects).
 enum SessionDisconnectSource {
   SESSION_DISCONNECT_SOURCE_UNSPECIFIED = 0;
   SESSION_DISCONNECT_SOURCE_LOGIN_SERVER = 1;
@@ -308,7 +325,6 @@ message PartyDoor {
   int32 y = 4;
 }
 
-// Realtime party member fields (game server is source of truth).
 message PartyMember {
   uint32 world_id = 1;
   uint32 character_id = 2;

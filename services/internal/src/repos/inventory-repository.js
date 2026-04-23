@@ -4,12 +4,12 @@ const { redisCacheKey } = require("../redis-cache-key");
 const { HashRepository } = require("./hash-repository");
 
 const SELECT_COLS = `unique_id, owner_id, inventory_type, item_id, slot, count, expiration,
-  enchant_chance, flag, skill_bonus, owner_name, created_at, updated_at`;
+  enchant_chance, flag, skill_bonus, owner_name, equip_bonus_stats, created_at, updated_at`;
 
 const INSERT_COLS = `unique_id, owner_id, inventory_type, item_id, slot, count, expiration,
-  enchant_chance, flag, skill_bonus, owner_name, updated_at`;
+  enchant_chance, flag, skill_bonus, owner_name, equip_bonus_stats, updated_at`;
 
-const PER_ROW_PARAMS = 11;
+const PER_ROW_PARAMS = 12;
 
 function rowValues(row) {
     let uid = row.unique_id;
@@ -28,6 +28,7 @@ function rowValues(row) {
         row.flag,
         row.skill_bonus,
         row.owner_name,
+        row.equip_bonus_stats,
     ];
 }
 
@@ -111,6 +112,7 @@ class InventoryRepository extends HashRepository {
             skillBonus:
                 row.skill_bonus != null ? Number(row.skill_bonus) : null,
             ownerName: row.owner_name ?? null,
+            equipBonusStats: JSON.parse(row.equip_bonus_stats),
             updatedAt:
                 row.updated_at instanceof Date
                     ? row.updated_at
@@ -135,6 +137,7 @@ class InventoryRepository extends HashRepository {
             flag: model.flag ?? null,
             skill_bonus: model.skillBonus ?? null,
             owner_name: model.ownerName ?? null,
+            equip_bonus_stats: JSON.stringify(model.equipBonusStats),
         };
     }
 

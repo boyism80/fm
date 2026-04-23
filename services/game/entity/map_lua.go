@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -231,8 +232,8 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			argc := L.GetTop()
-			if argc < 3 {
-				L.ArgError(2, "spawn_item(itemIdOrName, count, position [, owner]) requires at least 3 arguments")
+			if argc < 4 {
+				L.ArgError(2, "spawn_item(itemIdOrName, count, position [, owner] [, isRandomizeStats]) requires item, count, and position")
 				return 0
 			}
 
@@ -275,19 +276,28 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			pos := types.Point[int16]{X: x, Y: y}
 
 			var owner *Character
-			if argc >= 5 {
-				if ownerLV := L.Get(5); ownerLV != lua.LNil {
-					if ownerUd, ok := ownerLV.(*lua.LUserData); ok {
-						if ch, ok := ownerUd.Value.(*Character); ok {
-							owner = ch
-						}
+			if argc >= 5 && L.Get(5) != lua.LNil {
+				if ownerUd, ok := L.Get(5).(*lua.LUserData); ok {
+					if ch, ok := ownerUd.Value.(*Character); ok {
+						owner = ch
 					}
 				}
+			}
+			isRandomizeStats := false
+			if argc >= 6 {
+				isRandomizeStats = lua.LVAsBool(L.Get(6))
 			}
 
 			item, err := NewItem(itemId, count, mapInstance.GameWorld)
 			if err != nil {
 				return 0
+			}
+			if isRandomizeStats {
+				if eq, ok := item.(Equipment); ok {
+					if em, ok := eq.GetModel().(wz.Equipment); ok {
+						eq.GetEquipmentCore().RandomizeStats(em)
+					}
+				}
 			}
 			dropType := constant.DROP_TYPE_FFA
 			ownerID := uint32(0)

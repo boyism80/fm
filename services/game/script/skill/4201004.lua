@@ -1,4 +1,3 @@
--- Skill name (String.wz/Skill.img.xml): 스틸
 
 function on_activated_4201004(me, skill, params)
 end
@@ -82,7 +81,7 @@ function on_attack_4201004(me, skill, damages)
 					if e.max > 0 and e.min >= 1 and e.max >= e.min then
 						count = math.random(e.min, e.max)
 					end
-					map:spawn_item(stolen_id, count, pos, me)
+					map:spawn_item(stolen_id, count, pos, me, true)
 					mob:record_stolen_item(stolen_id)
 					break
 				end

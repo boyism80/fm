@@ -48,7 +48,11 @@ func equipmentToInventoryProto(e Equipment, ownerID uint32, slot int32) *interna
 	if c == nil {
 		return nil
 	}
-	return buildInventoryProto(e, ownerID, slot, c.UniqueId, c.OwnerName, c.Flag, c.EnchantChance, c.SkillBonus)
+	pb := buildInventoryProto(e, ownerID, slot, c.UniqueId, c.OwnerName, c.Flag, c.EnchantChance, c.SkillBonus)
+	if bonus := c.BonusStats.ToProto(); bonus != nil {
+		pb.EquipBonusStats = bonus
+	}
+	return pb
 }
 
 func (item *Weapon) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
@@ -160,6 +164,7 @@ func NewItemFromInternalProto(pb *internal.InventoryPersisted, gw GameWorld) (It
 			Flag:          flag,
 			SkillBonus:    skillBonus,
 			UniqueId:      uniqueID,
+			BonusStats:    EquipmentBonusStatsFromProto(pb.GetEquipBonusStats()),
 		}
 		switch constant.GetEquipmentType(itemID) {
 		case constant.EquipmentTypeWeapon:
