@@ -222,6 +222,15 @@ func loadConsumes(path string) (*[]*Consume, error) {
 					model.ActiveEffect.HPRate = intField.Value
 				case "mpR":
 					model.ActiveEffect.MPRate = intField.Value
+				case "time":
+					model.BuffDuration = time.Duration(intField.Value) * time.Millisecond
+				default:
+					if buffFlag, ok := consumeSpecKeyToBuffFlag(intField.Name); ok {
+						if model.BuffValues == nil {
+							model.BuffValues = make(map[constant.BuffFlag]int32)
+						}
+						model.BuffValues[buffFlag] = int32(intField.Value)
+					}
 				}
 			}
 		}
@@ -326,6 +335,37 @@ func loadConsumes(path string) (*[]*Consume, error) {
 	}
 
 	return &specs, nil
+}
+
+func consumeSpecKeyToBuffFlag(specKey string) (constant.BuffFlag, bool) {
+	switch specKey {
+	case "acc":
+		return constant.BuffFlagAcc, true
+	case "eva":
+		return constant.BuffFlagAvoid, true
+	case "jump":
+		return constant.BuffFlagJump, true
+	case "mad":
+		return constant.BuffFlagMagicAtk, true
+	case "mdd":
+		return constant.BuffFlagMagicDef, true
+	case "morph":
+		return constant.BuffFlagMorph, true
+	case "pad":
+		return constant.BuffFlagWeaponAtk, true
+	case "pdd":
+		return constant.BuffFlagWeaponDef, true
+	case "speed":
+		return constant.BuffFlagSpeed, true
+	case "expinc":
+		return constant.BuffFlagExpRate, true
+	case "itemupbyitem":
+		return constant.BuffFlagDropRate, true
+	case "mesoupbyitem":
+		return constant.BuffFlagMesoRate, true
+	default:
+		return constant.BuffFlag{}, false
+	}
 }
 
 func loadWeapons(path string) (Item, error) {

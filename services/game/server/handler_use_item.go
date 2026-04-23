@@ -5,9 +5,11 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
 )
 
@@ -78,74 +80,11 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
-	healMul := ch.PotionHealMultiplierPercent()
-	flatHP := int(consumeItem.ActiveEffect.HP) * healMul / 100
-	flatMP := int(consumeItem.ActiveEffect.MP) * healMul / 100
-	hpRate := int(consumeItem.ActiveEffect.HPRate)
-	mpRate := int(consumeItem.ActiveEffect.MPRate)
-
-	hpChange := flatHP
-	mpChange := flatMP
-
-	if hpChange == 0 && mpChange == 0 && hpRate == 0 && mpRate == 0 {
+	appliedItemBuff := h.applyConsumeBuff(ch, consumeItem)
+	appliedRecovery := h.applyConsumeRecovery(ch, consumeItem)
+	if !appliedRecovery && !appliedItemBuff {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
-	}
-
-	stats := make(map[constant.Stat]int32)
-
-	maxHp := ch.GetMaxHp()
-	maxMp := ch.GetMaxMp()
-	if hpRate > 0 {
-		hpRecovery := int(maxHp) * hpRate / 100
-		hpChange += hpRecovery
-	}
-
-	if mpRate > 0 {
-		mpRecovery := int(maxMp) * mpRate / 100
-		mpChange += mpRecovery
-	}
-
-	actualHPChange := 0
-	actualMPChange := 0
-
-	if hpChange != 0 {
-		newHP := int(ch.GetHp()) + hpChange
-		if newHP < 1 {
-			newHP = 1
-		}
-		if newHP > int(maxHp) {
-			newHP = int(maxHp)
-		}
-		actualHPChange = newHP - int(ch.GetHp())
-		if actualHPChange != 0 {
-			ch.SetHp(uint32(newHP), false)
-			stats[constant.STAT_HP] = int32(ch.GetHp())
-		}
-	}
-
-	if mpChange != 0 {
-		newMP := int(ch.GetMp()) + mpChange
-		if newMP < 0 {
-			newMP = 0
-		}
-		if newMP > int(maxMp) {
-			newMP = int(maxMp)
-		}
-		actualMPChange = newMP - int(ch.GetMp())
-		if actualMPChange != 0 {
-			ch.SetMp(uint32(newMP), false)
-			stats[constant.STAT_MP] = int32(ch.GetMp())
-		}
-	}
-
-	if actualHPChange == 0 && actualMPChange == 0 {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
-	if len(stats) > 0 {
-		ch.Listener.OnUpdateStats(ch, stats, false)
 	}
 
 	item.Reduce(1)
@@ -156,6 +95,117 @@ func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		ch.Listener.OnInventorySlotUpdated(ch, constant.INVENTORY_TYPE_CONSUME, int16(req.Slot), item)
 	}
 	ch.Listener.OnUpdateStats(ch, nil, true)
+	h.callActiveItemScript(ch, item)
 
 	return nil
+}
+
+func (h *UseItem) applyConsumeBuff(ch *entity.Character, consumeItem *wz.Consume) bool {
+	if ch == nil || consumeItem == nil {
+		return false
+	}
+	buffValues := consumeItem.BuffSpecValues()
+	if len(buffValues) == 0 {
+		return false
+	}
+	ch.Buffs.AddItemBuff(consumeItem, consumeItem.BuffDuration, buffValues)
+	return true
+}
+
+func (h *UseItem) applyConsumeRecovery(ch *entity.Character, consumeItem *wz.Consume) bool {
+	if ch == nil || consumeItem == nil {
+		return false
+	}
+	healMul := ch.PotionHealMultiplierPercent()
+	hpChange := int(consumeItem.ActiveEffect.HP) * healMul / 100
+	mpChange := int(consumeItem.ActiveEffect.MP) * healMul / 100
+	hpRate := int(consumeItem.ActiveEffect.HPRate)
+	mpRate := int(consumeItem.ActiveEffect.MPRate)
+	if hpRate > 0 {
+		hpChange += int(ch.GetMaxHp()) * hpRate / 100
+	}
+	if mpRate > 0 {
+		mpChange += int(ch.GetMaxMp()) * mpRate / 100
+	}
+	if hpChange == 0 && mpChange == 0 {
+		return false
+	}
+
+	stats := make(map[constant.Stat]int32)
+	if hpChange != 0 {
+		newHP := int(ch.GetHp()) + hpChange
+		if newHP < 1 {
+			newHP = 1
+		}
+		maxHp := int(ch.GetMaxHp())
+		if newHP > maxHp {
+			newHP = maxHp
+		}
+		if newHP != int(ch.GetHp()) {
+			ch.SetHp(uint32(newHP), false)
+			stats[constant.STAT_HP] = int32(ch.GetHp())
+		}
+	}
+	if mpChange != 0 {
+		newMP := int(ch.GetMp()) + mpChange
+		if newMP < 0 {
+			newMP = 0
+		}
+		maxMp := int(ch.GetMaxMp())
+		if newMP > maxMp {
+			newMP = maxMp
+		}
+		if newMP != int(ch.GetMp()) {
+			ch.SetMp(uint32(newMP), false)
+			stats[constant.STAT_MP] = int32(ch.GetMp())
+		}
+	}
+	if len(stats) == 0 {
+		return false
+	}
+	ch.Listener.OnUpdateStats(ch, stats, false)
+	return true
+}
+
+func (h *UseItem) callActiveItemScript(ch *entity.Character, item entity.Item) {
+	if ch == nil || item == nil {
+		return
+	}
+
+	consumeEntity, ok := item.(*entity.Consume)
+	if !ok || consumeEntity == nil {
+		return
+	}
+
+	consumeWz, ok := consumeEntity.GetModel().(*wz.Consume)
+	if !ok || consumeWz == nil {
+		return
+	}
+	itemID := consumeWz.ID
+	if itemID == 0 {
+		return
+	}
+
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return
+	}
+
+	root := mapInstance.GetLuaRoot()
+	if root == nil {
+		return
+	}
+
+	scriptPath := fmt.Sprintf("script/item/%d.lua", itemID)
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		return
+	}
+
+	hookName := fmt.Sprintf("on_active_item_%d", itemID)
+	_, err = luax.Call(thread, hookName, ch, consumeEntity)
+	if err != nil {
+		log.Printf("item script failed %s: %v", scriptPath, err)
+		return
+	}
 }

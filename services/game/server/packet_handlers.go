@@ -28,6 +28,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, DistributeSP](gs)
 	core.Bind[*GameServer, HealOverTime](gs)
 	core.Bind[*GameServer, CancelBuff](gs)
+	core.Bind[*GameServer, CancelItemEffect](gs)
 	core.Bind[*GameServer, UseItem](gs)
 	core.Bind[*GameServer, UseInnerPortal](gs)
 	core.Bind[*GameServer, UseDoor](gs)
