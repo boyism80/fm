@@ -11,6 +11,8 @@ type ItemLoot struct {
 	OID      uint32
 }
 
+func (*ItemLoot) Opcode() byte { return 0xA3 }
+
 func (p *ItemLoot) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

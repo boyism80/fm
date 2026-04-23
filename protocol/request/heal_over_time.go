@@ -11,6 +11,8 @@ type HealOverTime struct {
 	PRate  uint8
 }
 
+func (*HealOverTime) Opcode() byte { return 0x48 }
+
 func (p *HealOverTime) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

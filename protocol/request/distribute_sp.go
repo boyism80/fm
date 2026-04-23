@@ -9,6 +9,8 @@ type DistributeSP struct {
 	SkillID uint32
 }
 
+func (*DistributeSP) Opcode() byte { return 0x49 }
+
 func (p *DistributeSP) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

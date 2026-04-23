@@ -11,9 +11,7 @@ type Secure struct {
 	Payload []byte
 }
 
-func (p *Secure) Opcode() uint16 {
-	return 0x0C
-}
+func (*Secure) Opcode() byte { return 0x0C }
 
 func (p *Secure) Serialize(writer *stream.StreamWriter) error {
 	return nil

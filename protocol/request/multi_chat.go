@@ -12,6 +12,8 @@ type MultiChat struct {
 	Message       string
 }
 
+func (*MultiChat) Opcode() byte { return 0x62 }
+
 func (m *MultiChat) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

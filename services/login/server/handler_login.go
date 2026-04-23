@@ -15,19 +15,13 @@ import (
 )
 
 type Login struct {
-	ls     *LoginServer
-	opcode byte
+	ls *LoginServer
 }
 
 func (Login) New(ls *LoginServer) *Login {
 	return &Login{
-		ls:     ls,
-		opcode: 0x01,
+		ls: ls,
 	}
-}
-
-func (h *Login) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {

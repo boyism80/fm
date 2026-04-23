@@ -8,19 +8,13 @@ import (
 )
 
 type MoveSummon struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (MoveSummon) New(gs *GameServer) *MoveSummon {
 	return &MoveSummon{
-		gs:     gs,
-		opcode: 0x8C,
+		gs: gs,
 	}
-}
-
-func (h *MoveSummon) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *MoveSummon) Handle(ctx *core.ClientContext, req *request.MoveSummon) error {

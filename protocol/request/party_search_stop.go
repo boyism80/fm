@@ -7,6 +7,8 @@ import (
 type PartySearchStop struct {
 }
 
+func (*PartySearchStop) Opcode() byte { return 0xB6 }
+
 func (p *PartySearchStop) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

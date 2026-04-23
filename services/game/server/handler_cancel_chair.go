@@ -12,19 +12,13 @@ import (
 )
 
 type CancelChair struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (CancelChair) New(gs *GameServer) *CancelChair {
 	return &CancelChair{
-		gs:     gs,
-		opcode: 0x19,
+		gs: gs,
 	}
-}
-
-func (h *CancelChair) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *CancelChair) Handle(ctx *core.ClientContext, req *request.CancelChair) error {

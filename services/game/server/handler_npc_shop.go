@@ -16,19 +16,13 @@ import (
 )
 
 type NpcShop struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (NpcShop) New(gs *GameServer) *NpcShop {
 	return &NpcShop{
-		gs:     gs,
-		opcode: 0x2C,
+		gs: gs,
 	}
-}
-
-func (h *NpcShop) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {

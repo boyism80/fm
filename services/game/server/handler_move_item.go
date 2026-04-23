@@ -14,19 +14,13 @@ import (
 )
 
 type MoveItem struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (MoveItem) New(gs *GameServer) *MoveItem {
 	return &MoveItem{
-		gs:     gs,
-		opcode: 0x36,
+		gs: gs,
 	}
-}
-
-func (h *MoveItem) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error {

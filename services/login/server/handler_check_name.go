@@ -14,19 +14,13 @@ import (
 )
 
 type CheckName struct {
-	ls     *LoginServer
-	opcode byte
+	ls *LoginServer
 }
 
 func (CheckName) New(ls *LoginServer) *CheckName {
 	return &CheckName{
-		ls:     ls,
-		opcode: 0x07,
+		ls: ls,
 	}
-}
-
-func (h *CheckName) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) error {

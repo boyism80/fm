@@ -9,6 +9,8 @@ type UseDoor struct {
 	ToTown           bool
 }
 
+func (*UseDoor) Opcode() byte { return 0x6F }
+
 func (p *UseDoor) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

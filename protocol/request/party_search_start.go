@@ -11,6 +11,8 @@ type PartySearchStart struct {
 	ClassMask     int32
 }
 
+func (*PartySearchStart) Opcode() byte { return 0xB5 }
+
 func (p *PartySearchStart) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

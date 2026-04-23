@@ -16,19 +16,13 @@ import (
 )
 
 type CharacterList struct {
-	ls     *LoginServer
-	opcode byte
+	ls *LoginServer
 }
 
 func (CharacterList) New(ls *LoginServer) *CharacterList {
 	return &CharacterList{
-		ls:     ls,
-		opcode: 0x04,
+		ls: ls,
 	}
-}
-
-func (h *CharacterList) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterList) error {

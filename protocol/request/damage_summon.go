@@ -9,6 +9,8 @@ type DamageSummon struct {
 	MonsterIdFrom uint32
 }
 
+func (*DamageSummon) Opcode() byte { return 0x8E }
+
 func (d *DamageSummon) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

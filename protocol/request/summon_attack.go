@@ -12,6 +12,8 @@ type SummonAttack struct {
 	Damages   []dto.AttackPair
 }
 
+func (*SummonAttack) Opcode() byte { return 0x8D }
+
 func (a *SummonAttack) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

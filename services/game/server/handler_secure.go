@@ -6,19 +6,13 @@ import (
 )
 
 type Secure struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (Secure) New(gs *GameServer) *Secure {
 	return &Secure{
-		gs:     gs,
-		opcode: 0x0C,
+		gs: gs,
 	}
-}
-
-func (h *Secure) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *Secure) Handle(ctx *core.ClientContext, req *request.Secure) error {

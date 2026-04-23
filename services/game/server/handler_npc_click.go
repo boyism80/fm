@@ -14,19 +14,13 @@ import (
 )
 
 type NpcClick struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (NpcClick) New(gs *GameServer) *NpcClick {
 	return &NpcClick{
-		gs:     gs,
-		opcode: 0x29,
+		gs: gs,
 	}
-}
-
-func (h *NpcClick) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error {

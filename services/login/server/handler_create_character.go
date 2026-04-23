@@ -16,19 +16,13 @@ import (
 )
 
 type CreateCharacter struct {
-	ls     *LoginServer
-	opcode byte
+	ls *LoginServer
 }
 
 func (CreateCharacter) New(ls *LoginServer) *CreateCharacter {
 	return &CreateCharacter{
-		ls:     ls,
-		opcode: 0x08,
+		ls: ls,
 	}
-}
-
-func (h *CreateCharacter) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCharacter) error {

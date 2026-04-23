@@ -6,6 +6,8 @@ import (
 
 type Aggro struct{}
 
+func (*Aggro) Opcode() byte { return 0x96 }
+
 func (p *Aggro) Serialize(writer *stream.StreamWriter) error {
 
 	return nil

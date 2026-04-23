@@ -7,19 +7,13 @@ import (
 )
 
 type DamageSummon struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (DamageSummon) New(gs *GameServer) *DamageSummon {
 	return &DamageSummon{
-		gs:     gs,
-		opcode: 0x8E,
+		gs: gs,
 	}
-}
-
-func (h *DamageSummon) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *DamageSummon) Handle(ctx *core.ClientContext, req *request.DamageSummon) error {

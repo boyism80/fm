@@ -6,6 +6,8 @@ type NpcClick struct {
 	OID uint32
 }
 
+func (*NpcClick) Opcode() byte { return 0x29 }
+
 func (n *NpcClick) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

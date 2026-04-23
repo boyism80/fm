@@ -18,6 +18,8 @@ type MoveMob struct {
 	Movements   []dto.MoveFragment
 }
 
+func (*MoveMob) Opcode() byte { return 0x95 }
+
 func (m *MoveMob) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

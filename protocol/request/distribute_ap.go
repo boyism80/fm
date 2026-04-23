@@ -9,6 +9,8 @@ type DistributeAP struct {
 	StatType uint32
 }
 
+func (*DistributeAP) Opcode() byte { return 0x46 }
+
 func (p *DistributeAP) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

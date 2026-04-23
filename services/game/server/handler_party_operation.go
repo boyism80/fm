@@ -14,19 +14,13 @@ import (
 )
 
 type PartyOperation struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (PartyOperation) New(gs *GameServer) *PartyOperation {
 	return &PartyOperation{
-		gs:     gs,
-		opcode: 0x66,
+		gs: gs,
 	}
-}
-
-func (h *PartyOperation) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOperation) error {

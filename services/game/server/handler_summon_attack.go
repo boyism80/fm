@@ -8,19 +8,13 @@ import (
 )
 
 type SummonAttack struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (SummonAttack) New(gs *GameServer) *SummonAttack {
 	return &SummonAttack{
-		gs:     gs,
-		opcode: 0x8D,
+		gs: gs,
 	}
-}
-
-func (h *SummonAttack) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack) error {

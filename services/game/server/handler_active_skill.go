@@ -15,19 +15,13 @@ import (
 )
 
 type ActiveSkill struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (ActiveSkill) New(gs *GameServer) *ActiveSkill {
 	return &ActiveSkill{
-		gs:     gs,
-		opcode: 0x4A,
+		gs: gs,
 	}
-}
-
-func (h *ActiveSkill) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) error {

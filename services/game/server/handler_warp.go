@@ -11,19 +11,13 @@ import (
 )
 
 type Warp struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (Warp) New(gs *GameServer) *Warp {
 	return &Warp{
-		gs:     gs,
-		opcode: 0x15,
+		gs: gs,
 	}
-}
-
-func (h *Warp) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {

@@ -13,6 +13,8 @@ type AutoAssignAP struct {
 	Amount2       uint32
 }
 
+func (*AutoAssignAP) Opcode() byte { return 0x47 }
+
 func (p *AutoAssignAP) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

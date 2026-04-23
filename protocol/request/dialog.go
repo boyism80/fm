@@ -14,6 +14,8 @@ type Dialog struct {
 	Text       string
 }
 
+func (*Dialog) Opcode() byte { return 0x2B }
+
 func (p *Dialog) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

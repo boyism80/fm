@@ -12,6 +12,8 @@ type MoveSummon struct {
 	Fragments []dto.MoveFragment
 }
 
+func (*MoveSummon) Opcode() byte { return 0x8C }
+
 func (m *MoveSummon) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

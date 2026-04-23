@@ -9,6 +9,7 @@ import (
 
 type Request interface {
 	Deserialize(reader *stream.StreamReader)
+	Opcode() byte
 }
 
 type RequestPtr[T any] interface {
@@ -18,7 +19,6 @@ type RequestPtr[T any] interface {
 
 type Handler[T Request] interface {
 	Handle(ctx *ClientContext, req T) error
-	GetOpcode() byte
 }
 
 type HandlerConstructor[S any, H Handler[T], T RequestPtr[U], U any] interface {
@@ -29,7 +29,8 @@ func Bind[S Server, C HandlerConstructor[S, H, T, U], H Handler[T], T RequestPtr
 	var constructor C
 	handler := constructor.New(server)
 
-	opcode := handler.GetOpcode()
+	var proto T = new(U)
+	opcode := int(proto.Opcode())
 
 	handlerFunc := func(ctx *ClientContext, data []byte) (err error) {
 		defer func() {

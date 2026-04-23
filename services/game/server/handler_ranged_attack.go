@@ -10,19 +10,13 @@ import (
 )
 
 type RangedAttack struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (RangedAttack) New(gs *GameServer) *RangedAttack {
 	return &RangedAttack{
-		gs:     gs,
-		opcode: 0x1C,
+		gs: gs,
 	}
-}
-
-func (h *RangedAttack) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack) error {

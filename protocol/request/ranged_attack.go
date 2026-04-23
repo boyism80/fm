@@ -9,6 +9,8 @@ type RangedAttack struct {
 	dto.RangedAttackInfo
 }
 
+func (*RangedAttack) Opcode() byte { return 0x1C }
+
 func (r *RangedAttack) Serialize(writer *stream.StreamWriter) error {
 
 	return nil

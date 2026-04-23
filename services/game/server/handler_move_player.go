@@ -11,19 +11,13 @@ import (
 )
 
 type MovePlayer struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (MovePlayer) New(gs *GameServer) *MovePlayer {
 	return &MovePlayer{
-		gs:     gs,
-		opcode: 0x18,
+		gs: gs,
 	}
-}
-
-func (h *MovePlayer) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *MovePlayer) Handle(ctx *core.ClientContext, req *request.MovePlayer) error {

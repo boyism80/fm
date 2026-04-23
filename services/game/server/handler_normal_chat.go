@@ -13,19 +13,13 @@ import (
 )
 
 type NormalChat struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (NormalChat) New(gs *GameServer) *NormalChat {
 	return &NormalChat{
-		gs:     gs,
-		opcode: 0x20,
+		gs: gs,
 	}
-}
-
-func (h *NormalChat) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) error {

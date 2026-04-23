@@ -6,6 +6,8 @@ type DeleteCharacter struct {
 	ID uint32
 }
 
+func (*DeleteCharacter) Opcode() byte { return 0x09 }
+
 func (a *DeleteCharacter) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

@@ -13,19 +13,13 @@ import (
 )
 
 type Pong struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (Pong) New(gs *GameServer) *Pong {
 	return &Pong{
-		gs:     gs,
-		opcode: 0x0A,
+		gs: gs,
 	}
-}
-
-func (h *Pong) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {

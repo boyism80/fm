@@ -6,19 +6,13 @@ import (
 )
 
 type UseInnerPortal struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (UseInnerPortal) New(gs *GameServer) *UseInnerPortal {
 	return &UseInnerPortal{
-		gs:     gs,
-		opcode: 0x54,
+		gs: gs,
 	}
-}
-
-func (h *UseInnerPortal) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *UseInnerPortal) Handle(ctx *core.ClientContext, req *request.UseInnerPortal) error {

@@ -7,6 +7,8 @@ import (
 type Pong struct {
 }
 
+func (*Pong) Opcode() byte { return 0x0A }
+
 func (a *Pong) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

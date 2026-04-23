@@ -13,19 +13,13 @@ import (
 )
 
 type DistributeSP struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (DistributeSP) New(gs *GameServer) *DistributeSP {
 	return &DistributeSP{
-		gs:     gs,
-		opcode: 0x49,
+		gs: gs,
 	}
-}
-
-func (h *DistributeSP) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP) error {

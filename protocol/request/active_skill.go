@@ -24,6 +24,8 @@ type ActiveSkill struct {
 	Position      *types.Vector2[int16]
 }
 
+func (*ActiveSkill) Opcode() byte { return 0x4A }
+
 func (s *ActiveSkill) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

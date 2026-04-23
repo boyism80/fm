@@ -9,6 +9,8 @@ type Attack struct {
 	dto.CloseAttackInfo
 }
 
+func (*Attack) Opcode() byte { return 0x1B }
+
 func (a *Attack) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

@@ -12,19 +12,13 @@ import (
 )
 
 type ItemLoot struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (ItemLoot) New(gs *GameServer) *ItemLoot {
 	return &ItemLoot{
-		gs:     gs,
-		opcode: 0xA3,
+		gs: gs,
 	}
-}
-
-func (h *ItemLoot) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error {

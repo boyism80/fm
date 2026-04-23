@@ -10,19 +10,13 @@ import (
 )
 
 type PartySearchStop struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (PartySearchStop) New(gs *GameServer) *PartySearchStop {
 	return &PartySearchStop{
-		gs:     gs,
-		opcode: 0xB6,
+		gs: gs,
 	}
-}
-
-func (h *PartySearchStop) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *PartySearchStop) Handle(ctx *core.ClientContext, req *request.PartySearchStop) error {

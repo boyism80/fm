@@ -10,19 +10,13 @@ import (
 )
 
 type ChangeKeymap struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (ChangeKeymap) New(gs *GameServer) *ChangeKeymap {
 	return &ChangeKeymap{
-		gs:     gs,
-		opcode: 0x71,
+		gs: gs,
 	}
-}
-
-func (h *ChangeKeymap) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap) error {

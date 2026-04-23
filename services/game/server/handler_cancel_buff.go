@@ -8,19 +8,13 @@ import (
 )
 
 type CancelBuff struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (CancelBuff) New(gs *GameServer) *CancelBuff {
 	return &CancelBuff{
-		gs:     gs,
-		opcode: 0x4B,
+		gs: gs,
 	}
-}
-
-func (h *CancelBuff) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *CancelBuff) Handle(ctx *core.ClientContext, req *request.CancelBuff) error {

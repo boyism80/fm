@@ -13,6 +13,8 @@ type MoveItem struct {
 	Count         uint16
 }
 
+func (*MoveItem) Opcode() byte { return 0x36 }
+
 func (p *MoveItem) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

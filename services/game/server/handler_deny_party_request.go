@@ -14,19 +14,13 @@ import (
 )
 
 type DenyPartyRequest struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (DenyPartyRequest) New(gs *GameServer) *DenyPartyRequest {
 	return &DenyPartyRequest{
-		gs:     gs,
-		opcode: 0x67,
+		gs: gs,
 	}
-}
-
-func (h *DenyPartyRequest) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPartyRequest) error {

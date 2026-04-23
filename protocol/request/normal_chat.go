@@ -9,6 +9,8 @@ type NormalChat struct {
 	DontRecordHistory bool
 }
 
+func (*NormalChat) Opcode() byte { return 0x20 }
+
 func (m *NormalChat) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

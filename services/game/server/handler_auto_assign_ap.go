@@ -12,19 +12,13 @@ import (
 )
 
 type AutoAssignAP struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (AutoAssignAP) New(gs *GameServer) *AutoAssignAP {
 	return &AutoAssignAP{
-		gs:     gs,
-		opcode: 0x47,
+		gs: gs,
 	}
-}
-
-func (h *AutoAssignAP) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP) error {

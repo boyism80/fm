@@ -12,19 +12,13 @@ import (
 )
 
 type SummonSkill struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (SummonSkill) New(gs *GameServer) *SummonSkill {
 	return &SummonSkill{
-		gs:     gs,
-		opcode: 0x8F,
+		gs: gs,
 	}
-}
-
-func (h *SummonSkill) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) error {

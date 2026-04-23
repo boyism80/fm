@@ -13,19 +13,13 @@ import (
 )
 
 type Dialog struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (Dialog) New(gs *GameServer) *Dialog {
 	return &Dialog{
-		gs:     gs,
-		opcode: 0x2B,
+		gs: gs,
 	}
-}
-
-func (h *Dialog) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {

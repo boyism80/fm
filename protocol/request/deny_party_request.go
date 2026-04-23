@@ -7,6 +7,8 @@ type DenyPartyRequest struct {
 	InviterName string
 }
 
+func (*DenyPartyRequest) Opcode() byte { return 0x67 }
+
 func (p *DenyPartyRequest) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

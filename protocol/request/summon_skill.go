@@ -17,6 +17,8 @@ type SummonSkill struct {
 	BuffEffectIndex uint8
 }
 
+func (*SummonSkill) Opcode() byte { return 0x8F }
+
 func (m *SummonSkill) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

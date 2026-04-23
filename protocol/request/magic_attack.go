@@ -9,6 +9,8 @@ type MagicAttack struct {
 	dto.MagicAttackInfo
 }
 
+func (*MagicAttack) Opcode() byte { return 0x1D }
+
 func (m *MagicAttack) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

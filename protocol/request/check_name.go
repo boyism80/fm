@@ -6,6 +6,8 @@ type CheckName struct {
 	Name string
 }
 
+func (*CheckName) Opcode() byte { return 0x07 }
+
 func (a *CheckName) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

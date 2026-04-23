@@ -10,19 +10,13 @@ import (
 )
 
 type UseDoor struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (UseDoor) New(gs *GameServer) *UseDoor {
 	return &UseDoor{
-		gs:     gs,
-		opcode: 0x6F,
+		gs: gs,
 	}
-}
-
-func (h *UseDoor) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {

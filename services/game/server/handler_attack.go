@@ -16,19 +16,13 @@ import (
 )
 
 type Attack struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (Attack) New(gs *GameServer) *Attack {
 	return &Attack{
-		gs:     gs,
-		opcode: 0x1B,
+		gs: gs,
 	}
-}
-
-func (h *Attack) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {

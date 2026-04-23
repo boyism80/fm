@@ -13,19 +13,13 @@ import (
 )
 
 type SortInventory struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (SortInventory) New(gs *GameServer) *SortInventory {
 	return &SortInventory{
-		gs:     gs,
-		opcode: 0x34,
+		gs: gs,
 	}
-}
-
-func (h *SortInventory) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *SortInventory) Handle(ctx *core.ClientContext, req *request.SortInventory) error {

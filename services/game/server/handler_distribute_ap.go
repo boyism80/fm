@@ -14,19 +14,13 @@ import (
 )
 
 type DistributeAP struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (DistributeAP) New(gs *GameServer) *DistributeAP {
 	return &DistributeAP{
-		gs:     gs,
-		opcode: 0x46,
+		gs: gs,
 	}
-}
-
-func (h *DistributeAP) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP) error {

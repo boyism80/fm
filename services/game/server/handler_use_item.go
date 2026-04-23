@@ -12,19 +12,13 @@ import (
 )
 
 type UseItem struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (UseItem) New(gs *GameServer) *UseItem {
 	return &UseItem{
-		gs:     gs,
-		opcode: 0x37,
+		gs: gs,
 	}
-}
-
-func (h *UseItem) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {

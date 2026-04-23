@@ -14,19 +14,13 @@ import (
 )
 
 type Damaged struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (Damaged) New(gs *GameServer) *Damaged {
 	return &Damaged{
-		gs:     gs,
-		opcode: 0x1F,
+		gs: gs,
 	}
-}
-
-func (h *Damaged) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {

@@ -12,6 +12,8 @@ type CreateCharacter struct {
 	Weapon uint32
 }
 
+func (*CreateCharacter) Opcode() byte { return 0x08 }
+
 func (a *CreateCharacter) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

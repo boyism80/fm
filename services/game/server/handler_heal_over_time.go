@@ -20,19 +20,13 @@ const (
 )
 
 type HealOverTime struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (HealOverTime) New(gs *GameServer) *HealOverTime {
 	return &HealOverTime{
-		gs:     gs,
-		opcode: 0x48,
+		gs: gs,
 	}
-}
-
-func (h *HealOverTime) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime) error {

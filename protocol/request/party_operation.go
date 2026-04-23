@@ -12,6 +12,8 @@ type PartyOperation struct {
 	TargetCharacterID uint32
 }
 
+func (*PartyOperation) Opcode() byte { return 0x66 }
+
 func (p *PartyOperation) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

@@ -9,6 +9,8 @@ type DropMeso struct {
 	Count int32
 }
 
+func (*DropMeso) Opcode() byte { return 0x4D }
+
 func (p *DropMeso) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

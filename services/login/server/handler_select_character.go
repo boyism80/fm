@@ -15,19 +15,13 @@ import (
 )
 
 type SelectCharacter struct {
-	ls     *LoginServer
-	opcode byte
+	ls *LoginServer
 }
 
 func (SelectCharacter) New(ls *LoginServer) *SelectCharacter {
 	return &SelectCharacter{
-		ls:     ls,
-		opcode: 0x05,
+		ls: ls,
 	}
-}
-
-func (h *SelectCharacter) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCharacter) error {

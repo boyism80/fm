@@ -11,19 +11,13 @@ import (
 )
 
 type DropMeso struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (DropMeso) New(gs *GameServer) *DropMeso {
 	return &DropMeso{
-		gs:     gs,
-		opcode: 0x4D,
+		gs: gs,
 	}
-}
-
-func (h *DropMeso) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *DropMeso) Handle(ctx *core.ClientContext, req *request.DropMeso) error {

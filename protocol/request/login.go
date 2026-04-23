@@ -13,6 +13,8 @@ type Login struct {
 	Mac string
 }
 
+func (*Login) Opcode() byte { return 0x01 }
+
 func (a *Login) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

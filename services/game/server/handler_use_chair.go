@@ -12,19 +12,13 @@ import (
 )
 
 type UseChair struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (UseChair) New(gs *GameServer) *UseChair {
 	return &UseChair{
-		gs:     gs,
-		opcode: 0x1A,
+		gs: gs,
 	}
-}
-
-func (h *UseChair) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error {

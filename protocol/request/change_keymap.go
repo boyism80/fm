@@ -19,6 +19,8 @@ type KeymapChange struct {
 	Action int32
 }
 
+func (*ChangeKeymap) Opcode() byte { return 0x71 }
+
 func (c *ChangeKeymap) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

@@ -10,19 +10,13 @@ import (
 )
 
 type NpcControl struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (NpcControl) New(gs *GameServer) *NpcControl {
 	return &NpcControl{
-		gs:     gs,
-		opcode: 0x9E,
+		gs: gs,
 	}
-}
-
-func (h *NpcControl) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *NpcControl) Handle(ctx *core.ClientContext, req *request.NpcAction) error {

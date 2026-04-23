@@ -59,6 +59,8 @@ func (t *RechargeTransaction) Deserialize(reader *stream.StreamReader) {
 
 }
 
+func (*NpcShop) Opcode() byte { return 0x2C }
+
 func (n *NpcShop) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

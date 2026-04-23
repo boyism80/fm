@@ -34,19 +34,13 @@ func enterGameReplyPartyPtr(reply *internal.EnterGameReply) *uint32 {
 }
 
 type LoginGame struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (LoginGame) New(gs *GameServer) *LoginGame {
 	return &LoginGame{
-		gs:     gs,
-		opcode: 0x06,
+		gs: gs,
 	}
-}
-
-func (h *LoginGame) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) error {

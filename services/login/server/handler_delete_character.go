@@ -15,19 +15,13 @@ import (
 )
 
 type DeleteCharacter struct {
-	ls     *LoginServer
-	opcode byte
+	ls *LoginServer
 }
 
 func (DeleteCharacter) New(ls *LoginServer) *DeleteCharacter {
 	return &DeleteCharacter{
-		ls:     ls,
-		opcode: 0x09,
+		ls: ls,
 	}
-}
-
-func (h *DeleteCharacter) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCharacter) error {

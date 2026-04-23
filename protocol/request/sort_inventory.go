@@ -10,6 +10,8 @@ type SortInventory struct {
 	InventoryType constant.InventoryType
 }
 
+func (*SortInventory) Opcode() byte { return 0x34 }
+
 func (p *SortInventory) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

@@ -11,6 +11,8 @@ type Warp struct {
 	Wheel      bool
 }
 
+func (*Warp) Opcode() byte { return 0x15 }
+
 func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

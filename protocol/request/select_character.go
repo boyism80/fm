@@ -8,6 +8,8 @@ type SelectCharacter struct {
 	CharacterId uint32
 }
 
+func (*SelectCharacter) Opcode() byte { return 0x05 }
+
 func (a *SelectCharacter) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

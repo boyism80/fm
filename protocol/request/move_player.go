@@ -9,6 +9,8 @@ type MovePlayer struct {
 	Fragments []dto.MoveFragment
 }
 
+func (*MovePlayer) Opcode() byte { return 0x18 }
+
 func (m *MovePlayer) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

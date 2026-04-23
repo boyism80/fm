@@ -18,6 +18,8 @@ type Damaged struct {
 	SkillID    uint8
 }
 
+func (*Damaged) Opcode() byte { return 0x1F }
+
 func (p *Damaged) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

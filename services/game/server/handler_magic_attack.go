@@ -11,19 +11,13 @@ import (
 )
 
 type MagicAttack struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (MagicAttack) New(gs *GameServer) *MagicAttack {
 	return &MagicAttack{
-		gs:     gs,
-		opcode: 0x1D,
+		gs: gs,
 	}
-}
-
-func (h *MagicAttack) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) error {

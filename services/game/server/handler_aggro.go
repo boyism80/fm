@@ -6,19 +6,13 @@ import (
 )
 
 type Aggro struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (Aggro) New(gs *GameServer) *Aggro {
 	return &Aggro{
-		gs:     gs,
-		opcode: 0x96,
+		gs: gs,
 	}
-}
-
-func (h *Aggro) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *Aggro) Handle(ctx *core.ClientContext, req *request.Aggro) error {

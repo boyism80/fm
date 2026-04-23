@@ -6,6 +6,8 @@ type NpcAction struct {
 	Bytes []byte
 }
 
+func (*NpcAction) Opcode() byte { return 0x9E }
+
 func (p *NpcAction) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }

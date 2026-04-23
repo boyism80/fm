@@ -17,19 +17,13 @@ import (
 )
 
 type MultiChat struct {
-	gs     *GameServer
-	opcode byte
+	gs *GameServer
 }
 
 func (MultiChat) New(gs *GameServer) *MultiChat {
 	return &MultiChat{
-		gs:     gs,
-		opcode: 0x62,
+		gs: gs,
 	}
-}
-
-func (h *MultiChat) GetOpcode() byte {
-	return h.opcode
 }
 
 func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) error {
