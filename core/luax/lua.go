@@ -41,12 +41,20 @@ func preloadScript(root *lua.LState, path string) (*lua.LFunction, error) {
 	compileMu.Lock()
 	defer compileMu.Unlock()
 
-	if fn, ok := compiledFuncs[path]; ok && !alwaysReload {
+	optimize := !alwaysReload
+
+	if fn, ok := compiledFuncs[path]; ok && optimize {
+		if fn == nil {
+			return nil, fmt.Errorf("failed to compile %s: cached missing script", path)
+		}
 		return fn, nil
 	}
 
 	fn, err := root.LoadFile(path)
 	if err != nil {
+		if optimize {
+			compiledFuncs[path] = nil
+		}
 		return nil, fmt.Errorf("failed to compile %s: %w", path, err)
 	}
 	compiledFuncs[path] = fn
