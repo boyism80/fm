@@ -130,7 +130,7 @@ func (m *Mob) distributePartyKillExp(mapInst *Map, partyID uint32, damagers map[
 					continue
 				}
 				dl := int(damager.GetLevel())
-				if dl-pl <= 5 || mobLv-pl <= 5 {
+				if math.Abs(float64(dl-pl)) <= 5 || math.Abs(float64(mobLv-pl)) <= 5 {
 					eligible = true
 					break
 				}
@@ -161,7 +161,7 @@ func (m *Mob) distributePartyKillExp(mapInst *Map, partyID uint32, damagers map[
 
 	expBonus := 1.0
 	if n > 1 {
-		expBonus = 1.10 + 0.05*float64(n)
+		expBonus = 1.0 + 0.05*float64(n)
 	}
 
 	rawAcc := make(map[uint32]float64)
