@@ -47,44 +47,10 @@ func (ch *Character) ApplyConsumeEffect(consume *Consume) bool {
 			character.applyConsumeBuff(wzConsume)
 			character.applyConsumeRecovery(wzConsume)
 			character.applyConsumeExp(wzConsume)
-			if err := character.applyConsumeWarp(wzConsume); err != nil {
-				log.Printf("applyConsumeWarp failed character=%d: %v", character.GetID(), err)
-			}
 		}
 	}
 
 	return true
-}
-
-func (ch *Character) applyConsumeWarp(consumeItem *wz.Consume) error {
-	if ch == nil || consumeItem == nil || consumeItem.MoveTo == -1 {
-		return nil
-	}
-	if ch.GameWorld == nil {
-		return fmt.Errorf("no game world")
-	}
-	var targetID uint32
-	switch {
-	case consumeItem.MoveTo == wz.ConsumeMoveToReturnMap:
-		m := ch.GetMap()
-		if m == nil || m.Wz == nil || m.Wz.ReturnMapId <= 0 {
-			return fmt.Errorf("no return map")
-		}
-		targetID = uint32(m.Wz.ReturnMapId)
-	default:
-		if consumeItem.MoveTo <= 0 {
-			return fmt.Errorf("invalid moveTo %d", consumeItem.MoveTo)
-		}
-		targetID = uint32(consumeItem.MoveTo)
-	}
-	target := ch.GameWorld.GetMap(targetID)
-	if target == nil {
-		return fmt.Errorf("map %d not loaded", targetID)
-	}
-	if err := ch.Warp(target, 0); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (ch *Character) applyConsumeCureDebuffs(consumeItem *wz.Consume) {
