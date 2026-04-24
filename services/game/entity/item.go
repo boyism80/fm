@@ -14,16 +14,16 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
-type Dropable interface {
-	GetDrop() *Drop
-	BindDrop(drop *Drop)
+type FieldPlaceable interface {
+	GetFieldPlacement() *FieldPlacement
+	BindFieldPlacement(placement *FieldPlacement)
 	GetCount32() int32
 	IsMeso() bool
 }
 
 type Item interface {
 	luax.Luable
-	GetDrop() *Drop
+	GetFieldPlacement() *FieldPlacement
 	GetModel() wz.Item
 	GetInventoryType() constant.InventoryType
 	GetExpiration() time.Time
@@ -33,12 +33,12 @@ type Item interface {
 	Increase(count uint16) uint16
 	Reduce(count uint16) uint16
 	Clone(count uint16) Item
-	BindDrop(drop *Drop)
+	BindFieldPlacement(placement *FieldPlacement)
 	ToDTO() dto.Item
 	ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted
 }
 
-type Drop struct {
+type FieldPlacement struct {
 	*ObjectCore
 	Owner        uint32
 	SpawnedPoint types.Point[int16]
@@ -47,12 +47,12 @@ type Drop struct {
 	nextExpiry   time.Time
 }
 
-func (d *Drop) GetObjectType() constant.ObjectType {
+func (fp *FieldPlacement) GetObjectType() constant.ObjectType {
 	return constant.ObjectTypeItem
 }
 
 type ItemCore struct {
-	*Drop
+	*FieldPlacement
 	Wz         wz.Item
 	Expiration time.Time
 	Count      uint16
@@ -100,10 +100,10 @@ func cloneEquipmentCore(c *EquipmentCore, count uint16) *EquipmentCore {
 	}
 	return &EquipmentCore{
 		ItemCore: &ItemCore{
-			Drop:       nil,
-			Count:      count,
-			Wz:         c.Wz,
-			Expiration: c.Expiration,
+			FieldPlacement: nil,
+			Count:          count,
+			Wz:             c.Wz,
+			Expiration:     c.Expiration,
 		},
 		EnchantChance: c.EnchantChance,
 		OwnerName:     c.OwnerName,
@@ -122,39 +122,43 @@ func (item *ItemCore) SendSpawnSyncToViewer(viewer *Character) {
 	if item == nil || viewer == nil {
 		return
 	}
-	drop := item.GetDrop()
-	if drop == nil {
+	fp := item.GetFieldPlacement()
+	if fp == nil {
 		return
 	}
 	viewer.Send(&response.SpawnItem{
-		ID:           drop.OID,
+		ID:           fp.OID,
 		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
-		DropType:     drop.DropType,
+		DropType:     fp.DropType,
 		ItemModel:    item.GetModel(),
 		Expiration:   item.GetExpiration(),
-		Position:     drop.Position,
-		OwnerID:      drop.Owner,
-		SpawnedPoint: drop.SpawnedPoint,
+		Position:     fp.Position,
+		OwnerID:      fp.Owner,
+		SpawnedPoint: fp.SpawnedPoint,
 		IsPlayerDrop: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (item *ItemCore) GetDrop() *Drop           { return item.Drop }
-func (item *ItemCore) Getcount() uint16         { return item.Count }
-func (item *ItemCore) GetCount32() int32        { return int32(item.Count) }
-func (item *ItemCore) IsMeso() bool             { return false }
-func (item *ItemCore) SetCount(count uint16)    { item.Count = count }
-func (item *ItemCore) GetModel() wz.Item        { return item.Wz }
-func (item *ItemCore) GetExpiration() time.Time { return item.Expiration }
-func (item *ItemCore) BindDrop(drop *Drop)      { item.Drop = drop }
+func (item *ItemCore) GetFieldPlacement() *FieldPlacement           { return item.FieldPlacement }
+func (item *ItemCore) Getcount() uint16                             { return item.Count }
+func (item *ItemCore) GetCount32() int32                            { return int32(item.Count) }
+func (item *ItemCore) IsMeso() bool                                 { return false }
+func (item *ItemCore) SetCount(count uint16)                        { item.Count = count }
+func (item *ItemCore) GetModel() wz.Item                            { return item.Wz }
+func (item *ItemCore) GetExpiration() time.Time                     { return item.Expiration }
+func (item *ItemCore) BindFieldPlacement(placement *FieldPlacement) { item.FieldPlacement = placement }
 
-func (drop *Drop) RegisterExpire(duration time.Duration) { drop.nextExpiry = time.Now().Add(duration) }
-func (drop *Drop) RegisterFFA(duration time.Duration)    { drop.nextFFA = time.Now().Add(duration) }
-func (drop *Drop) ShouldExpire(now time.Time) bool {
-	return !drop.nextExpiry.IsZero() && now.After(drop.nextExpiry)
+func (fp *FieldPlacement) RegisterExpire(duration time.Duration) {
+	fp.nextExpiry = time.Now().Add(duration)
 }
-func (drop *Drop) ShouldFFA(now time.Time) bool {
-	return drop.DropType != constant.DROP_TYPE_FFA && !drop.nextFFA.IsZero() && now.After(drop.nextFFA)
+func (fp *FieldPlacement) RegisterFFA(duration time.Duration) {
+	fp.nextFFA = time.Now().Add(duration)
+}
+func (fp *FieldPlacement) ShouldExpire(now time.Time) bool {
+	return !fp.nextExpiry.IsZero() && now.After(fp.nextExpiry)
+}
+func (fp *FieldPlacement) ShouldFFA(now time.Time) bool {
+	return fp.DropType != constant.DROP_TYPE_FFA && !fp.nextFFA.IsZero() && now.After(fp.nextFFA)
 }
 
 func NewItem(itemId uint32, count uint16, gw GameWorld) (Item, error) {

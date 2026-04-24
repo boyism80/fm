@@ -19,10 +19,10 @@ func (item *Installation) Increase(count uint16) uint16 { return 0 }
 func (item *Installation) Clone(count uint16) Item {
 	return &Installation{
 		ItemCore: &ItemCore{
-			Drop:       nil,
-			Count:      count,
-			Wz:         item.Wz,
-			Expiration: item.Expiration,
+			FieldPlacement: nil,
+			Count:          count,
+			Wz:             item.Wz,
+			Expiration:     item.Expiration,
 		},
 		OwnerName: item.OwnerName,
 		Flags:     item.Flags,

@@ -29,10 +29,10 @@ func (item *MiscItem) Increase(count uint16) uint16 {
 func (item *MiscItem) Clone(count uint16) Item {
 	return &MiscItem{
 		ItemCore: &ItemCore{
-			Drop:       nil,
-			Count:      count,
-			Wz:         item.Wz,
-			Expiration: item.Expiration,
+			FieldPlacement: nil,
+			Count:          count,
+			Wz:             item.Wz,
+			Expiration:     item.Expiration,
 		},
 		OwnerName: item.OwnerName,
 		Flags:     item.Flags,

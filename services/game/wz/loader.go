@@ -120,6 +120,7 @@ func loadConsumes(path string) (*[]*Consume, error) {
 	for _, v := range root.Children {
 		model := Consume{
 			ItemCore: &ItemCore{},
+			MoveTo:   -1,
 		}
 
 		id, err := strconv.Atoi(v.Name)
@@ -224,8 +225,18 @@ func loadConsumes(path string) (*[]*Consume, error) {
 					model.ActiveEffect.MPRate = intField.Value
 				case "time":
 					model.BuffDuration = time.Duration(intField.Value) * time.Millisecond
+				case "consumeOnPickup":
+					model.ConsumeOnPickup = intField.Value != 0
+				case "party":
+					model.Party = intField.Value != 0
+				case "moveTo":
+					model.MoveTo = int32(intField.Value)
+				case "expinc":
+					model.ExpInc = int32(intField.Value)
 				default:
-					if buffFlag, ok := consumeSpecKeyToBuffFlag(intField.Name); ok {
+					if debuffFlag, ok := consumeSpecKeyToCureDebuffFlag(intField.Name); ok && intField.Value > 0 {
+						model.CureDebuffs = append(model.CureDebuffs, debuffFlag)
+					} else if buffFlag, ok := consumeSpecKeyToBuffFlag(intField.Name); ok {
 						if model.BuffValues == nil {
 							model.BuffValues = make(map[constant.BuffFlag]int32)
 						}
@@ -337,6 +348,23 @@ func loadConsumes(path string) (*[]*Consume, error) {
 	return &specs, nil
 }
 
+func consumeSpecKeyToCureDebuffFlag(specKey string) (constant.DebuffFlag, bool) {
+	switch specKey {
+	case "poison":
+		return constant.DebuffFlagPoison, true
+	case "seal":
+		return constant.DebuffFlagSeal, true
+	case "darkness":
+		return constant.DebuffFlagDarkness, true
+	case "weakness":
+		return constant.DebuffFlagWeaken, true
+	case "curse":
+		return constant.DebuffFlagCurse, true
+	default:
+		return constant.DebuffFlag{}, false
+	}
+}
+
 func consumeSpecKeyToBuffFlag(specKey string) (constant.BuffFlag, bool) {
 	switch specKey {
 	case "acc":
@@ -357,8 +385,6 @@ func consumeSpecKeyToBuffFlag(specKey string) (constant.BuffFlag, bool) {
 		return constant.BuffFlagWeaponDef, true
 	case "speed":
 		return constant.BuffFlagSpeed, true
-	case "expinc":
-		return constant.BuffFlagExpRate, true
 	case "itemupbyitem":
 		return constant.BuffFlagDropRate, true
 	case "mesoupbyitem":

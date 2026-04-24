@@ -35,22 +35,22 @@ func (t *ItemCleanupTimer) Handle(ctx actor.Context, mapData *entity.Map) error 
 	items := mapData.GetItems()
 
 	for itemID, item := range items {
-		dropable, ok := item.(entity.Dropable)
+		placeable, ok := item.(entity.FieldPlaceable)
 		if !ok {
 			continue
 		}
 
-		drop := dropable.GetDrop()
-		if drop == nil {
+		fp := placeable.GetFieldPlacement()
+		if fp == nil {
 			continue
 		}
 
-		if drop.ShouldFFA(now) {
-			drop.DropType = constant.DROP_TYPE_FFA
-			drop.Owner = 0
+		if fp.ShouldFFA(now) {
+			fp.DropType = constant.DROP_TYPE_FFA
+			fp.Owner = 0
 		}
 
-		if drop.ShouldExpire(now) {
+		if fp.ShouldExpire(now) {
 			mapData.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_EXPIRED, 0)
 		}
 	}

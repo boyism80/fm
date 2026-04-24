@@ -161,8 +161,8 @@ func (o *ObjectCore) Broadcast(message types.Packet, option *ObjectBroadcastOpti
 	}
 }
 
-func (d *Drop) Is(typ constant.ObjectType) bool {
-	return d.GetObjectType().Has(typ)
+func (fp *FieldPlacement) Is(typ constant.ObjectType) bool {
+	return fp.GetObjectType().Has(typ)
 }
 
 var (
@@ -171,7 +171,7 @@ var (
 	_ Object = (*Character)(nil)
 	_ Object = (*Mob)(nil)
 	_ Object = (*Npc)(nil)
-	_ Object = (*Drop)(nil)
+	_ Object = (*FieldPlacement)(nil)
 	_ Object = (*Mist)(nil)
 	_ Object = (*Door)(nil)
 	_ Object = (*Summon)(nil)

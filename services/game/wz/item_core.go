@@ -37,3 +37,7 @@ func (model *ItemCore) GetCapacity() uint16 {
 func (model *ItemCore) IsTradeAvailable() int {
 	return model.TradeAvailable
 }
+
+func (model *ItemCore) IsConsumeOnPickup() bool {
+	return false
+}

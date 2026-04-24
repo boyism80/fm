@@ -6,11 +6,19 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 )
 
+const ConsumeMoveToReturnMap int32 = 999999999
+
 type Consume struct {
 	*ItemCore
-	ActiveEffect ActiveEffect
-	BuffDuration time.Duration
-	BuffValues   map[constant.BuffFlag]int32
+	ActiveEffect    ActiveEffect
+	BuffDuration    time.Duration
+	BuffValues      map[constant.BuffFlag]int32
+	ConsumeOnPickup bool
+	Party           bool
+	MoveTo          int32
+	ExpInc          int32
+
+	CureDebuffs []constant.DebuffFlag
 }
 
 func (c *Consume) IsShuriken() bool {
@@ -27,6 +35,10 @@ func (c *Consume) IsArrowForBow() bool {
 
 func (c *Consume) IsArrowForCrossBow() bool {
 	return constant.GetConsumeType(c.ItemCore.ID) == constant.ConsumeTypeArrowCrossBow
+}
+
+func (c *Consume) IsConsumeOnPickup() bool {
+	return c != nil && c.ConsumeOnPickup
 }
 
 func (c *Consume) BuffSpecValues() map[constant.BuffFlag]int32 {

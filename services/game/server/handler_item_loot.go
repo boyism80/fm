@@ -41,37 +41,44 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		return fmt.Errorf("map not found")
 	}
 
-	lootedObject, reason := mapInstance.LootItem(req.OID, character, req.Position)
-	if reason != constant.LOOT_SUCCESS {
-		log.Printf("Failed to loot item %d for character %d, reason: %d", req.OID, character.GetID(), reason)
-
-		if reason == constant.LOOT_FAILED_INVENTORY_FULL || reason == constant.LOOT_FAILED_MESO_FULL {
-			character.Listener.OnItemGainFailed(character, constant.ITEM_GAIN_FAILED_TYPE_FULL)
-		}
-
+	obj := mapInstance.GetItems()[req.OID]
+	if obj == nil {
+		log.Printf("Loot object not found for OID %d", req.OID)
 		character.Listener.OnUpdateStats(character, nil, true)
-		return nil
+		return fmt.Errorf("item not found")
 	}
 
-	switch obj := lootedObject.(type) {
-	case entity.Item:
-		item := obj
-		_, err := character.AddItem(item, false)
-		if err != nil {
-			log.Printf("Failed to add item: %v", err)
+	if item, ok := obj.(entity.Item); ok && item.GetModel().IsConsumeOnPickup() {
+		consume, ok := item.(*entity.Consume)
+		if !ok {
+			log.Printf("Item is not a Consume for OID %d", req.OID)
+			character.Listener.OnUpdateStats(character, nil, true)
+			return fmt.Errorf("item is not a Consume for OID %d", req.OID)
 		}
 
-	case *entity.Meso:
-		mesoCount := obj.GetCount32()
-		character.GainMeso(int32(mesoCount))
+		if !character.ApplyConsumeEffect(consume) {
+			log.Printf("Failed to apply consume effect for OID %d", req.OID)
+			character.Listener.OnUpdateStats(character, nil, true)
+			return fmt.Errorf("failed to apply consume effect for OID %d", req.OID)
+		}
+	} else {
+		reason := mapInstance.LootItem(obj, character, req.Position)
+		if reason != constant.LOOT_SUCCESS {
+			log.Printf("Failed to loot item %d for character %d, reason: %d", req.OID, character.GetID(), reason)
+			if reason == constant.LOOT_FAILED_INVENTORY_FULL || reason == constant.LOOT_FAILED_MESO_FULL {
+				character.Listener.OnItemGainFailed(character, constant.ITEM_GAIN_FAILED_TYPE_FULL)
+			}
+			character.Listener.OnUpdateStats(character, nil, true)
+			return fmt.Errorf("failed to loot item for OID %d", req.OID)
+		}
+	}
 
-	default:
-		log.Printf("Unknown looted object type for OID %d", req.OID)
+	if err := mapInstance.RemoveItem(req.OID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
+		log.Printf("Failed to remove item %d for character %d, reason: %v", req.OID, character.GetID(), err)
 		character.Listener.OnUpdateStats(character, nil, true)
-		return nil
+		return fmt.Errorf("failed to remove item")
 	}
 
 	character.Listener.OnUpdateStats(character, nil, true)
-
 	return nil
 }

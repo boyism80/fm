@@ -131,9 +131,9 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			tbl := L.NewTable()
 			for _, item := range items {
 				if itemObj, ok := item.(Item); ok {
-					drop := itemObj.GetDrop()
-					if drop != nil && drop.ObjectCore != nil {
-						tbl.RawSetInt(int(drop.OID), luax.NewLuable(L, itemObj))
+					fp := itemObj.GetFieldPlacement()
+					if fp != nil && fp.ObjectCore != nil {
+						tbl.RawSetInt(int(fp.OID), luax.NewLuable(L, itemObj))
 					}
 				}
 			}
@@ -305,14 +305,14 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				dropType = constant.DROP_TYPE_OWNED
 				ownerID = owner.GetID()
 			}
-			d := &Drop{
+			fp := &FieldPlacement{
 				ObjectCore:   &ObjectCore{Position: pos},
 				Owner:        ownerID,
 				SpawnedPoint: pos,
 				DropType:     dropType,
 			}
-			d.ObjectCore.self = d
-			item.BindDrop(d)
+			fp.ObjectCore.self = fp
+			item.BindFieldPlacement(fp)
 
 			if err := mapInstance.SpawnItem(item, ownerID, dropType); err != nil {
 				L.Push(lua.LNil)

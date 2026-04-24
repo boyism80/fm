@@ -82,7 +82,7 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 	}
 
 	spawned := item.Clone(count)
-	spawned.BindDrop(&entity.Drop{
+	spawned.BindFieldPlacement(&entity.FieldPlacement{
 		ObjectCore: &entity.ObjectCore{
 			Position: character.Position,
 		},

@@ -244,11 +244,11 @@ func (m *Mob) dropItems(attacker *Character) {
 	}
 	mobDropF := float32(mobDrop) / 100.0
 
-	for _, drop := range mobDrops {
-		if m.stealOutcome != nil && drop.Item != 0 && *m.stealOutcome == drop.Item {
+	for _, entry := range mobDrops {
+		if m.stealOutcome != nil && entry.Item != 0 && *m.stealOutcome == entry.Item {
 			continue
 		}
-		adjustedProb := drop.Prob * dropRate * dropRateMulF * mobDropF
+		adjustedProb := entry.Prob * dropRate * dropRateMulF * mobDropF
 		if adjustedProb > 1.0 {
 			adjustedProb = 1.0
 		}
@@ -257,9 +257,9 @@ func (m *Mob) dropItems(attacker *Character) {
 			continue
 		}
 
-		if drop.Item == 0 {
-			min := float64(drop.Money) * 0.75
-			max := float64(drop.Money)
+		if entry.Item == 0 {
+			min := float64(entry.Money) * 0.75
+			max := float64(entry.Money)
 			count := int32(min + rand.Float64()*(max-min))
 			if count == 0 {
 				continue
@@ -280,11 +280,11 @@ func (m *Mob) dropItems(attacker *Character) {
 		} else {
 
 			count := uint16(1)
-			if drop.Max != 0 && drop.Min != 0 {
-				count = uint16(rand.Intn(int(drop.Max-drop.Min)+1) + int(drop.Min))
+			if entry.Max != 0 && entry.Min != 0 {
+				count = uint16(rand.Intn(int(entry.Max-entry.Min)+1) + int(entry.Min))
 			}
 
-			item, err := NewItem(drop.Item, count, m.GameWorld)
+			item, err := NewItem(entry.Item, count, m.GameWorld)
 			if err != nil {
 				continue
 			}
@@ -304,7 +304,7 @@ func (m *Mob) dropItems(attacker *Character) {
 	spawnPoint := m.Position
 	spacing := int16(15)
 
-	for i, drop := range drops {
+	for i, spawn := range drops {
 		destPoint := spawnPoint
 		if len(drops) > 1 {
 			offset := spacing * int16(i/2+1)
@@ -315,14 +315,14 @@ func (m *Mob) dropItems(attacker *Character) {
 			}
 		}
 
-		if drop.isMeso {
+		if spawn.isMeso {
 
-			if _, err := mapInstance.SpawnMeso(drop.count, destPoint, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
+			if _, err := mapInstance.SpawnMeso(spawn.count, destPoint, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
 				log.Printf("Failed to spawn meso drop: %v", err)
 			}
 		} else {
 
-			d := &Drop{
+			fp := &FieldPlacement{
 				ObjectCore: &ObjectCore{
 					OID:       0,
 					Position:  destPoint,
@@ -332,10 +332,10 @@ func (m *Mob) dropItems(attacker *Character) {
 				SpawnedPoint: spawnPoint,
 				DropType:     constant.DROP_TYPE_OWNED,
 			}
-			d.ObjectCore.self = d
-			drop.item.BindDrop(d)
+			fp.ObjectCore.self = fp
+			spawn.item.BindFieldPlacement(fp)
 
-			if err := mapInstance.SpawnItem(drop.item, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
+			if err := mapInstance.SpawnItem(spawn.item, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}
 		}

@@ -25,10 +25,10 @@ func (item *Pet) Increase(count uint16) uint16             { return 0 }
 func (item *Pet) Clone(count uint16) Item {
 	return &Pet{
 		ItemCore: &ItemCore{
-			Drop:       nil,
-			Count:      count,
-			Wz:         item.Wz,
-			Expiration: item.ItemCore.Expiration,
+			FieldPlacement: nil,
+			Count:          count,
+			Wz:             item.Wz,
+			Expiration:     item.ItemCore.Expiration,
 		},
 		UniqueId:    copyUint64Ptr(item.UniqueId),
 		Flags:       item.Flags,

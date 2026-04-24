@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"sync"
 	"time"
@@ -22,7 +23,7 @@ type MapListener interface {
 	OnPlayerMoved(mapInstance *Map, character *Character)
 	OnPlayerMove(mapInstance *Map, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
 	OnPlayerChat(mapInstance *Map, character *Character, message string)
-	OnItemSpawned(mapInstance *Map, item Item, drop *Drop)
+	OnItemSpawned(mapInstance *Map, item Item, placement *FieldPlacement)
 	OnMesoSpawned(mapInstance *Map, meso *Meso)
 	OnItemRemoved(mapInstance *Map, itemID uint32, looterID uint32, mode constant.RemoveItemType)
 	OnMobSpawned(mapInstance *Map, mob *Mob)
@@ -864,24 +865,24 @@ func (m *Map) Broadcast(message types.Packet, option *BroadcastOption) {
 func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) error {
 	oid := m.allocateOID()
 
-	drop := item.GetDrop()
-	if drop == nil {
-		return fmt.Errorf("item has no drop information")
+	fp := item.GetFieldPlacement()
+	if fp == nil {
+		return fmt.Errorf("item has no field placement")
 	}
 
-	dropPoint, ok := m.Wz.DropPoint(drop.Position)
+	dropPoint, ok := m.Wz.DropPoint(fp.Position)
 	if !ok {
-		dropPoint = drop.SpawnedPoint
+		dropPoint = fp.SpawnedPoint
 	}
 
-	drop.Position = dropPoint
-	drop.OID = oid
-	drop.Owner = ownerID
-	drop.DropType = dropType
-	drop.Map = m
-	drop.RegisterExpire(constant.ITEM_EXPIRE_TIME)
+	fp.Position = dropPoint
+	fp.OID = oid
+	fp.Owner = ownerID
+	fp.DropType = dropType
+	fp.Map = m
+	fp.RegisterExpire(constant.ITEM_EXPIRE_TIME)
 	if dropType == constant.DROP_TYPE_OWNED || dropType == constant.DROP_TYPE_PARTY {
-		drop.RegisterFFA(constant.ITEM_FFA_TIME)
+		fp.RegisterFFA(constant.ITEM_FFA_TIME)
 	}
 
 	if m.objects[constant.ObjectTypeItem] == nil {
@@ -891,11 +892,11 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	if !ok {
 		return fmt.Errorf("item must implement Object")
 	}
-	if drop.ObjectCore != nil {
-		drop.ObjectCore.self = mapObj
+	if fp.ObjectCore != nil {
+		fp.ObjectCore.self = mapObj
 	}
 	m.objects[constant.ObjectTypeItem][oid] = mapObj
-	m.listener.OnItemSpawned(m, item, drop)
+	m.listener.OnItemSpawned(m, item, fp)
 
 	return nil
 }
@@ -910,11 +911,11 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 
 	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.GameWorld, m)
 
-	drop := meso.GetDrop()
-	if drop != nil {
-		drop.RegisterExpire(constant.ITEM_EXPIRE_TIME)
+	fp := meso.GetFieldPlacement()
+	if fp != nil {
+		fp.RegisterExpire(constant.ITEM_EXPIRE_TIME)
 		if dropType == constant.DROP_TYPE_OWNED || dropType == constant.DROP_TYPE_PARTY {
-			drop.RegisterFFA(constant.ITEM_FFA_TIME)
+			fp.RegisterFFA(constant.ITEM_FFA_TIME)
 		}
 	}
 
@@ -965,25 +966,20 @@ func (m *Map) GetItems() map[uint32]Object {
 	return m.objects[constant.ObjectTypeItem]
 }
 
-func (m *Map) LootItem(itemID uint32, character *Character, position types.Point[int16]) (interface{}, constant.LootResult) {
+func (m *Map) LootItem(obj Object, character *Character, position types.Point[int16]) constant.LootResult {
 	if m.objects[constant.ObjectTypeItem] == nil {
-		return nil, constant.LOOT_FAILED_ITEM_NOT_FOUND
+		return constant.LOOT_FAILED_ITEM_NOT_FOUND
 	}
 
-	itemInterface, exists := m.objects[constant.ObjectTypeItem][itemID]
-	if !exists {
-		return nil, constant.LOOT_FAILED_ITEM_NOT_FOUND
-	}
-
-	switch item := itemInterface.(type) {
+	switch item := obj.(type) {
 	case Item:
-		drop := item.GetDrop()
-		if drop == nil {
-			return nil, constant.LOOT_FAILED_INVALID_ITEM
+		fp := item.GetFieldPlacement()
+		if fp == nil {
+			return constant.LOOT_FAILED_INVALID_ITEM
 		}
 
-		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.GetID() {
-			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
+		if fp.DropType == constant.DROP_TYPE_OWNED && fp.Owner != character.GetID() {
+			return constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
 		invenType := item.GetInventoryType()
@@ -991,39 +987,35 @@ func (m *Map) LootItem(itemID uint32, character *Character, position types.Point
 		model := item.GetModel()
 
 		if !inven.IsFree(model, item.GetCount()) {
-			return nil, constant.LOOT_FAILED_INVENTORY_FULL
+			return constant.LOOT_FAILED_INVENTORY_FULL
 		}
 
-		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
-			return nil, constant.LOOT_FAILED_INVALID_ITEM
+		if _, err := character.AddItem(item, false); err != nil {
+			log.Printf("Failed to add item: %v", err)
 		}
-
-		return item, constant.LOOT_SUCCESS
+		return constant.LOOT_SUCCESS
 
 	case *Meso:
-		drop := item.GetDrop()
-		if drop == nil {
-			return nil, constant.LOOT_FAILED_INVALID_ITEM
+		fp := item.GetFieldPlacement()
+		if fp == nil {
+			return constant.LOOT_FAILED_INVALID_ITEM
 		}
 
-		if drop.DropType == constant.DROP_TYPE_OWNED && drop.Owner != character.GetID() {
-			return nil, constant.LOOT_FAILED_NO_OWNERSHIP
+		if fp.DropType == constant.DROP_TYPE_OWNED && fp.Owner != character.GetID() {
+			return constant.LOOT_FAILED_NO_OWNERSHIP
 		}
 
 		mesoCount := item.GetCount32()
 		cap := math.MaxInt32 - character.Meso
 		if int32(mesoCount) > cap {
-			return nil, constant.LOOT_FAILED_MESO_FULL
+			return constant.LOOT_FAILED_MESO_FULL
 		}
 
-		if err := m.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
-			return nil, constant.LOOT_FAILED_INVALID_ITEM
-		}
-
-		return item, constant.LOOT_SUCCESS
+		character.GainMeso(int32(mesoCount))
+		return constant.LOOT_SUCCESS
 
 	default:
-		return nil, constant.LOOT_FAILED_INVALID_ITEM
+		return constant.LOOT_FAILED_INVALID_ITEM
 	}
 }
 

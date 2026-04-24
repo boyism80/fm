@@ -29,10 +29,10 @@ func (item *Consume) Increase(count uint16) uint16 {
 func (item *Consume) Clone(count uint16) Item {
 	return &Consume{
 		ItemCore: &ItemCore{
-			Drop:       nil,
-			Count:      count,
-			Wz:         item.Wz,
-			Expiration: item.Expiration,
+			FieldPlacement: nil,
+			Count:          count,
+			Wz:             item.Wz,
+			Expiration:     item.Expiration,
 		},
 		OwnerName: item.OwnerName,
 		Flags:     item.Flags,

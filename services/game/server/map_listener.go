@@ -146,22 +146,22 @@ func (l *MapListenerImpl) OnPlayerChat(mapInstance *entity.Map, character *entit
 
 }
 
-func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Item, drop *entity.Drop) {
+func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Item, placement *entity.FieldPlacement) {
 	if mapInstance == nil {
 		return
 	}
 
-	dropObj := item.GetDrop()
+	placementObj := item.GetFieldPlacement()
 
 	spawnPacket := &response.SpawnItem{
-		ID:           drop.OID,
+		ID:           placement.OID,
 		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
-		DropType:     drop.DropType,
+		DropType:     placement.DropType,
 		ItemModel:    item.GetModel(),
 		Expiration:   item.GetExpiration(),
-		Position:     dropObj.Position,
-		OwnerID:      drop.Owner,
-		SpawnedPoint: drop.SpawnedPoint,
+		Position:     placementObj.Position,
+		OwnerID:      placement.Owner,
+		SpawnedPoint: placement.SpawnedPoint,
 		IsPlayerDrop: true,
 	}
 
@@ -173,16 +173,16 @@ func (l *MapListenerImpl) OnMesoSpawned(mapInstance *entity.Map, meso *entity.Me
 		return
 	}
 
-	drop := meso.GetDrop()
+	fp := meso.GetFieldPlacement()
 
 	spawnPacket := &response.SpawnMeso{
-		ID:           drop.OID,
+		ID:           fp.OID,
 		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
-		DropType:     drop.DropType,
+		DropType:     fp.DropType,
 		Count:        meso.Count,
-		OwnerID:      drop.Owner,
-		Position:     drop.Position,
-		SpawnedPoint: drop.SpawnedPoint,
+		OwnerID:      fp.Owner,
+		Position:     fp.Position,
+		SpawnedPoint: fp.SpawnedPoint,
 		IsPlayerDrop: true,
 	}
 

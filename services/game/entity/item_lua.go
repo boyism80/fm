@@ -16,7 +16,7 @@ var (
 	_ luax.Luable = (*Glove)(nil)
 	_ luax.Luable = (*Cape)(nil)
 	_ luax.Luable = (*RingEquip)(nil)
-	_ luax.Luable = (*Drop)(nil)
+	_ luax.Luable = (*FieldPlacement)(nil)
 	_ luax.Luable = (*Meso)(nil)
 	_ luax.Luable = (*Consume)(nil)
 	_ luax.Luable = (*CashItem)(nil)

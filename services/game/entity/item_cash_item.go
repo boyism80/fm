@@ -28,10 +28,10 @@ func (item *CashItem) Increase(count uint16) uint16 {
 func (item *CashItem) Clone(count uint16) Item {
 	return &CashItem{
 		ItemCore: &ItemCore{
-			Drop:       nil,
-			Count:      count,
-			Wz:         item.Wz,
-			Expiration: item.Expiration,
+			FieldPlacement: nil,
+			Count:          count,
+			Wz:             item.Wz,
+			Expiration:     item.Expiration,
 		},
 		UniqueId:  copyUint64Ptr(item.UniqueId),
 		OwnerName: item.OwnerName,
