@@ -212,9 +212,14 @@ module.exports = {
                 type: Sequelize.DATE,
                 allowNull: true,
             },
-            enchant_chance: {
+            enhance_chance: {
                 type: Sequelize.SMALLINT,
                 allowNull: true,
+            },
+            enhance_count: {
+                type: Sequelize.SMALLINT,
+                allowNull: true,
+                defaultValue: 0,
             },
             flag: {
                 type: Sequelize.SMALLINT,

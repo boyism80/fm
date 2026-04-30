@@ -13,6 +13,23 @@ type Consume struct {
 	ActiveEffect    ActiveEffect
 	BuffDuration    time.Duration
 	BuffValues      map[constant.BuffFlag]int32
+	ScrollSuccess   int32
+	ScrollCursed    int32
+	ScrollIncStr    int16
+	ScrollIncDex    int16
+	ScrollIncInt    int16
+	ScrollIncLuk    int16
+	ScrollIncMaxHP  int16
+	ScrollIncMaxMP  int16
+	ScrollIncPAD    int16
+	ScrollIncMAD    int16
+	ScrollIncPDD    int16
+	ScrollIncMDD    int16
+	ScrollIncACC    int16
+	ScrollIncAvoid  int16
+	ScrollIncHands  int16
+	ScrollIncSpeed  int16
+	ScrollIncJump   int16
 	ConsumeOnPickup bool
 	Party           bool
 	MoveTo          int32

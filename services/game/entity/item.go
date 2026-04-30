@@ -60,7 +60,8 @@ type ItemCore struct {
 
 type EquipmentCore struct {
 	*ItemCore
-	EnchantChance uint8
+	EnhanceChance uint8
+	EnhanceCount  uint8
 	OwnerName     string
 	Flag          uint16
 	SkillBonus    uint16
@@ -105,7 +106,8 @@ func cloneEquipmentCore(c *EquipmentCore, count uint16) *EquipmentCore {
 			Wz:             c.Wz,
 			Expiration:     c.Expiration,
 		},
-		EnchantChance: c.EnchantChance,
+		EnhanceChance: c.EnhanceChance,
+		EnhanceCount:  c.EnhanceCount,
 		OwnerName:     c.OwnerName,
 		Flag:          c.Flag,
 		SkillBonus:    c.SkillBonus,
@@ -177,7 +179,7 @@ func NewItem(itemId uint32, count uint16, gw GameWorld) (Item, error) {
 				Count:      1,
 				Expiration: util.TimeMax,
 			},
-			EnchantChance: m.GetEnchantChance(),
+			EnhanceChance: m.GetEnhanceChance(),
 		}
 		switch constant.GetEquipmentType(itemId) {
 		case constant.EquipmentTypeWeapon:

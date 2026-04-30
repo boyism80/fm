@@ -4,12 +4,12 @@ const { redisCacheKey } = require("../redis-cache-key");
 const { HashRepository } = require("./hash-repository");
 
 const SELECT_COLS = `unique_id, owner_id, inventory_type, item_id, slot, count, expiration,
-  enchant_chance, flag, skill_bonus, owner_name, equip_bonus_stats, created_at, updated_at`;
+  enhance_chance, enhance_count, flag, skill_bonus, owner_name, equip_bonus_stats, created_at, updated_at`;
 
 const INSERT_COLS = `unique_id, owner_id, inventory_type, item_id, slot, count, expiration,
-  enchant_chance, flag, skill_bonus, owner_name, equip_bonus_stats, updated_at`;
+  enhance_chance, enhance_count, flag, skill_bonus, owner_name, equip_bonus_stats, updated_at`;
 
-const PER_ROW_PARAMS = 12;
+const PER_ROW_PARAMS = 13;
 
 function rowValues(row) {
     let uid = row.unique_id;
@@ -24,7 +24,8 @@ function rowValues(row) {
         row.slot,
         row.count,
         row.expiration,
-        row.enchant_chance,
+        row.enhance_chance,
+        row.enhance_count,
         row.flag,
         row.skill_bonus,
         row.owner_name,
@@ -106,8 +107,10 @@ class InventoryRepository extends HashRepository {
             slot: Number(row.slot),
             count: Number(row.count),
             expiration: row.expiration ? new Date(row.expiration) : null,
-            enchantChance:
-                row.enchant_chance != null ? Number(row.enchant_chance) : null,
+            enhanceChance:
+                row.enhance_chance != null ? Number(row.enhance_chance) : null,
+            enhanceCount:
+                row.enhance_count != null ? Number(row.enhance_count) : null,
             flag: row.flag != null ? Number(row.flag) : null,
             skillBonus:
                 row.skill_bonus != null ? Number(row.skill_bonus) : null,
@@ -133,7 +136,8 @@ class InventoryRepository extends HashRepository {
             slot: model.slot,
             count: model.count,
             expiration: model.expiration ?? null,
-            enchant_chance: model.enchantChance ?? null,
+            enhance_chance: model.enhanceChance ?? null,
+            enhance_count: model.enhanceCount ?? 0,
             flag: model.flag ?? null,
             skill_bonus: model.skillBonus ?? null,
             owner_name: model.ownerName ?? null,

@@ -4,7 +4,7 @@ type EquipmentCore struct {
 	*ItemCore
 	Required        RequiredStats
 	Ability         AbilityStats
-	EnchantChance   uint8
+	EnhanceChance   uint8
 	EquipTradeBlock bool
 	RoyalSpecial    bool
 	MasterSpecial   bool
@@ -12,7 +12,7 @@ type EquipmentCore struct {
 	AttackSpeed     int
 }
 
-func (core *EquipmentCore) GetEnchantChance() uint8 { return core.EnchantChance }
+func (core *EquipmentCore) GetEnhanceChance() uint8 { return core.EnhanceChance }
 func (core *EquipmentCore) GetRequired() RequiredStats {
 	return core.Required
 }

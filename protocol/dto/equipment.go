@@ -11,8 +11,8 @@ type Equipment struct {
 	ItemId        uint32
 	UniqueId      *uint64
 	Expiration    time.Time
-	EnchantChance uint8
-	EnchantCount  uint8
+	EnhanceChance uint8
+	EnhanceCount  uint8
 	Str           uint16
 	Dex           uint16
 	Int           uint16
@@ -37,16 +37,22 @@ func (e *Equipment) GetCount() uint16 {
 	return 1
 }
 
-func (e *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	if slot <= -1 {
-		slot *= -1
+func (e *Equipment) Serialize(writer *stream.StreamWriter, opt ItemSerializeOption) {
+	slot := opt.Slot
+	if slot < 0 {
+		slot = -slot
 		if slot > 100 && slot < 1000 {
 			slot -= 100
 		}
 	}
-	if slot != 0 && !trade {
-		writer.WriteU16(uint16(slot))
-	} else {
+	switch opt.SlotMode {
+	case SlotEncodeActual:
+		if slot != 0 && !opt.Trade {
+			writer.Write16(slot)
+			break
+		}
+		writer.WriteU8(uint8(slot))
+	case SlotEncodeZero:
 		writer.WriteU8(uint8(slot))
 	}
 
@@ -60,8 +66,8 @@ func (e *Equipment) Serialize(writer *stream.StreamWriter, trade bool, slot int1
 	}
 
 	writer.WriteDateTime(e.Expiration)
-	writer.WriteU8(e.EnchantChance)
-	writer.WriteU8(e.EnchantCount)
+	writer.WriteU8(e.EnhanceChance)
+	writer.WriteU8(e.EnhanceCount)
 	writer.WriteU16(e.Str)
 	writer.WriteU16(e.Dex)
 	writer.WriteU16(e.Int)

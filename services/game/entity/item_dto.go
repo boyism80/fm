@@ -80,8 +80,12 @@ func (pet *Pet) ToDTO() dto.Item {
 	}
 }
 
-func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.Equipment) *dto.Equipment {
-	if core == nil || model == nil {
+func ToEquipmentDTOFromCore(core *EquipmentCore) *dto.Equipment {
+	if core == nil || core.Wz == nil {
+		return nil
+	}
+	model, ok := core.Wz.(wz.Equipment)
+	if !ok || model == nil {
 		return nil
 	}
 	ability := model.GetAbility()
@@ -89,13 +93,12 @@ func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.Equipment) *dto.Equipm
 	if b == nil {
 		b = &EquipmentBonusStats{}
 	}
-	maxEnchantChance := model.GetEnchantChance()
 	return &dto.Equipment{
 		ItemId:        model.GetID(),
 		UniqueId:      copyUint64Ptr(core.UniqueId),
 		Expiration:    core.Expiration,
-		EnchantChance: maxEnchantChance,
-		EnchantCount:  maxEnchantChance - model.GetEnchantChance(),
+		EnhanceChance: core.EnhanceChance,
+		EnhanceCount:  core.EnhanceCount,
 		Str:           uint16(util.ClampInt32(int32(ability.Str)+int32(b.Str), 0, 0xffff)),
 		Dex:           uint16(util.ClampInt32(int32(ability.Dex)+int32(b.Dex), 0, 0xffff)),
 		Int:           uint16(util.ClampInt32(int32(ability.Int)+int32(b.Int), 0, 0xffff)),
@@ -118,34 +121,18 @@ func ToEquipmentDTOFromCore(core *EquipmentCore, model wz.Equipment) *dto.Equipm
 }
 
 func (e *Weapon) ToDTO() dto.Item {
-	model, ok := e.GetModel().(wz.Equipment)
-	if !ok {
-		return nil
-	}
-	return ToEquipmentDTOFromCore(e.EquipmentCore, model)
+	return ToEquipmentDTOFromCore(e.EquipmentCore)
 }
 func (e *Weapon) ToEquipmentDTO() *dto.Equipment {
-	model, ok := e.GetModel().(wz.Equipment)
-	if !ok {
-		return nil
-	}
-	return ToEquipmentDTOFromCore(e.EquipmentCore, model)
+	return ToEquipmentDTOFromCore(e.EquipmentCore)
 }
 
 func equipToDTO(e Equipment) dto.Item {
-	model, ok := e.GetModel().(wz.Equipment)
-	if !ok {
-		return nil
-	}
-	return ToEquipmentDTOFromCore(e.GetEquipmentCore(), model)
+	return ToEquipmentDTOFromCore(e.GetEquipmentCore())
 }
 
 func equipToEquipmentDTO(e Equipment) *dto.Equipment {
-	model, ok := e.GetModel().(wz.Equipment)
-	if !ok {
-		return nil
-	}
-	return ToEquipmentDTOFromCore(e.GetEquipmentCore(), model)
+	return ToEquipmentDTOFromCore(e.GetEquipmentCore())
 }
 
 func (e *Shield) ToDTO() dto.Item                   { return equipToDTO(e) }

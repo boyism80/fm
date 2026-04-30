@@ -99,7 +99,8 @@ function fillMessageFromPersisted(msg, model) {
     msg.setSlot(model.slot | 0);
     msg.setCount(model.count >>> 0);
     msg.setExpirationUnixMs(model.expiration ? model.expiration.getTime() : 0);
-    msg.setEnchantChance((model.enchantChance ?? 0) >>> 0);
+    msg.setEnhanceChance((model.enhanceChance ?? 0) >>> 0);
+    msg.setEnhanceCount((model.enhanceCount ?? 0) >>> 0);
     msg.setFlag((model.flag ?? 0) >>> 0);
     msg.setSkillBonus((model.skillBonus ?? 0) >>> 0);
     msg.setOwnerName(model.ownerName ?? "");
@@ -124,7 +125,8 @@ function persistedFromMessage(msg) {
         slot,
         count:         msg.getCount() >>> 0,
         expiration:    expirationMs > 0 ? new Date(expirationMs) : null,
-        enchantChance: msg.getEnchantChance() || null,
+        enhanceChance: msg.getEnhanceChance() || null,
+        enhanceCount: msg.getEnhanceCount() || null,
         flag:          msg.getFlag() || null,
         skillBonus:    msg.getSkillBonus() || null,
         ownerName:     msg.getOwnerName() || null,

@@ -73,6 +73,8 @@ type CharacterListener interface {
 	OnShowCraftingEffect(ch *Character, effect string, time int32, mode int32)
 	OnShowSelfDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
 	OnShowDiceEffect(ch *Character, effectID int32, skillID uint32, skillLevel uint8)
+	OnShowScrollEffect(ch *Character, success bool, destroyedByCurse bool)
+	OnScrolledItem(ch *Character, scrollInventoryType constant.InventoryType, scrollSlot int16, scrollCount uint16, upgradedSlot int16, destroyed bool, potential bool, upgradedItem Item)
 	OnSummonSpawn(ch *Character, summon *Summon)
 	OnSummonRemove(ch *Character, summon *Summon, animated bool)
 	OnSummonMove(ch *Character, summon *Summon, startPoint types.Vector2[int16], movements []dto.MoveFragment)

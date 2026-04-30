@@ -91,7 +91,11 @@ func (p *AddInventorySlot) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(INVENTORY_MODE_ADD))
 	writer.WriteU8(uint8(p.InventoryType))
 	writer.WriteU8(uint8(p.Slot))
-	p.Item.Serialize(writer, false, 0)
+	p.Item.Serialize(writer, dto.ItemSerializeOption{
+		Trade:    false,
+		Slot:     0,
+		SlotMode: dto.SlotEncodeZero,
+	})
 	return nil
 }
 

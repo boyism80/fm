@@ -6026,12 +6026,13 @@ proto.fm.internal.InventoryPersisted.toObject = function(includeInstance, msg) {
     slot: jspb.Message.getFieldWithDefault(msg, 4, 0),
     count: jspb.Message.getFieldWithDefault(msg, 5, 0),
     expirationUnixMs: jspb.Message.getFieldWithDefault(msg, 6, 0),
-    enchantChance: jspb.Message.getFieldWithDefault(msg, 7, 0),
+    enhanceChance: jspb.Message.getFieldWithDefault(msg, 7, 0),
     flag: jspb.Message.getFieldWithDefault(msg, 8, 0),
     skillBonus: jspb.Message.getFieldWithDefault(msg, 9, 0),
     ownerName: jspb.Message.getFieldWithDefault(msg, 10, ""),
     inventoryType: jspb.Message.getFieldWithDefault(msg, 11, 0),
-    equipBonusStats: (f = msg.getEquipBonusStats()) && proto.fm.internal.EquipmentBonusStatsPersisted.toObject(includeInstance, f)
+    equipBonusStats: (f = msg.getEquipBonusStats()) && proto.fm.internal.EquipmentBonusStatsPersisted.toObject(includeInstance, f),
+    enhanceCount: jspb.Message.getFieldWithDefault(msg, 13, 0)
   };
 
   if (includeInstance) {
@@ -6094,7 +6095,7 @@ proto.fm.internal.InventoryPersisted.deserializeBinaryFromReader = function(msg,
       break;
     case 7:
       var value = /** @type {number} */ (reader.readUint32());
-      msg.setEnchantChance(value);
+      msg.setEnhanceChance(value);
       break;
     case 8:
       var value = /** @type {number} */ (reader.readUint32());
@@ -6116,6 +6117,10 @@ proto.fm.internal.InventoryPersisted.deserializeBinaryFromReader = function(msg,
       var value = new proto.fm.internal.EquipmentBonusStatsPersisted;
       reader.readMessage(value,proto.fm.internal.EquipmentBonusStatsPersisted.deserializeBinaryFromReader);
       msg.setEquipBonusStats(value);
+      break;
+    case 13:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setEnhanceCount(value);
       break;
     default:
       reader.skipField();
@@ -6188,7 +6193,7 @@ proto.fm.internal.InventoryPersisted.serializeBinaryToWriter = function(message,
       f
     );
   }
-  f = message.getEnchantChance();
+  f = message.getEnhanceChance();
   if (f !== 0) {
     writer.writeUint32(
       7,
@@ -6229,6 +6234,13 @@ proto.fm.internal.InventoryPersisted.serializeBinaryToWriter = function(message,
       12,
       f,
       proto.fm.internal.EquipmentBonusStatsPersisted.serializeBinaryToWriter
+    );
+  }
+  f = message.getEnhanceCount();
+  if (f !== 0) {
+    writer.writeUint32(
+      13,
+      f
     );
   }
 };
@@ -6361,10 +6373,10 @@ proto.fm.internal.InventoryPersisted.prototype.setExpirationUnixMs = function(va
 
 
 /**
- * optional uint32 enchant_chance = 7;
+ * optional uint32 enhance_chance = 7;
  * @return {number}
  */
-proto.fm.internal.InventoryPersisted.prototype.getEnchantChance = function() {
+proto.fm.internal.InventoryPersisted.prototype.getEnhanceChance = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 7, 0));
 };
 
@@ -6373,7 +6385,7 @@ proto.fm.internal.InventoryPersisted.prototype.getEnchantChance = function() {
  * @param {number} value
  * @return {!proto.fm.internal.InventoryPersisted} returns this
  */
-proto.fm.internal.InventoryPersisted.prototype.setEnchantChance = function(value) {
+proto.fm.internal.InventoryPersisted.prototype.setEnhanceChance = function(value) {
   return jspb.Message.setProto3IntField(this, 7, value);
 };
 
@@ -6484,6 +6496,24 @@ proto.fm.internal.InventoryPersisted.prototype.clearEquipBonusStats = function()
  */
 proto.fm.internal.InventoryPersisted.prototype.hasEquipBonusStats = function() {
   return jspb.Message.getField(this, 12) != null;
+};
+
+
+/**
+ * optional uint32 enhance_count = 13;
+ * @return {number}
+ */
+proto.fm.internal.InventoryPersisted.prototype.getEnhanceCount = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 13, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.fm.internal.InventoryPersisted} returns this
+ */
+proto.fm.internal.InventoryPersisted.prototype.setEnhanceCount = function(value) {
+  return jspb.Message.setProto3IntField(this, 13, value);
 };
 
 

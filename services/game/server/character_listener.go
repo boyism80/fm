@@ -418,6 +418,33 @@ func (l *CharacterListenerImpl) OnShowDiceEffect(ch *entity.Character, effectID 
 	}, nil)
 }
 
+func (l *CharacterListenerImpl) OnShowScrollEffect(ch *entity.Character, success bool, destroyedByCurse bool) {
+	if ch.GetMap() == nil {
+		return
+	}
+
+	ch.Broadcast(&response.ShowScrollEffect{
+		CharacterID:      ch.GetID(),
+		Success:          success,
+		DestroyedByCurse: destroyedByCurse,
+	}, &entity.ObjectBroadcastOption{
+		WithMe: true,
+	})
+}
+
+func (l *CharacterListenerImpl) OnScrolledItem(ch *entity.Character, scrollInventoryType constant.InventoryType, scrollSlot int16, scrollCount uint16, upgradedSlot int16, destroyed bool, potential bool, upgradedItem entity.Item) {
+	upgradedItemDTO := entity.ItemToDTO(upgradedItem)
+	ch.Send(&response.ScrolledItem{
+		ScrollInventoryType: scrollInventoryType,
+		ScrollSlot:          scrollSlot,
+		ScrollCount:         scrollCount,
+		UpgradedSlot:        upgradedSlot,
+		Destroyed:           destroyed,
+		Potential:           potential,
+		UpgradedItem:        upgradedItemDTO,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnMobMoved(ch *entity.Character, mob *entity.Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
 	mapInstance := mob.GetMap()
 	if mapInstance == nil {

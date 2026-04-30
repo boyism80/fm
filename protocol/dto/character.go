@@ -188,7 +188,11 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 		return equipParts1[i] > equipParts1[j]
 	})
 	for _, parts := range equipParts1 {
-		c.Equipments[parts].Serialize(writer, true, int16(parts))
+		c.Equipments[parts].Serialize(writer, ItemSerializeOption{
+			Trade:    true,
+			Slot:     int16(parts),
+			SlotMode: SlotEncodeActual,
+		})
 	}
 	writer.WriteU8(0)
 
@@ -202,7 +206,11 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 		return equipParts2[i] > equipParts2[j]
 	})
 	for _, parts := range equipParts2 {
-		c.Equipments[parts].Serialize(writer, true, int16(parts))
+		c.Equipments[parts].Serialize(writer, ItemSerializeOption{
+			Trade:    true,
+			Slot:     int16(parts),
+			SlotMode: SlotEncodeActual,
+		})
 	}
 	writer.WriteU8(0)
 

@@ -183,12 +183,13 @@ message InventoryPersisted {
   int32  slot               = 4;
   uint32 count              = 5;
   int64  expiration_unix_ms = 6;
-  uint32 enchant_chance     = 7;
+  uint32 enhance_chance     = 7;
   uint32 flag               = 8;
   uint32 skill_bonus        = 9;
   string owner_name         = 10;
   uint32 inventory_type     = 11;
   optional EquipmentBonusStatsPersisted equip_bonus_stats = 12;
+  uint32 enhance_count      = 13;
 }
 
 message SkillPersisted {

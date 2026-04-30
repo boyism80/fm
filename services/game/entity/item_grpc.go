@@ -17,7 +17,7 @@ func expirationUnixMs(t time.Time) int64 {
 	return t.UnixMilli()
 }
 
-func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64, ownerName string, flag uint16, enchantChance uint8, skillBonus uint16) *internal.InventoryPersisted {
+func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64, ownerName string, flag uint16, enhanceChance uint8, enhanceCount uint8, skillBonus uint16) *internal.InventoryPersisted {
 	if item == nil {
 		return nil
 	}
@@ -27,7 +27,8 @@ func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64
 		Slot:             slot,
 		Count:            uint32(item.GetCount()),
 		ExpirationUnixMs: expirationUnixMs(item.GetExpiration()),
-		EnchantChance:    uint32(enchantChance),
+		EnhanceChance:    uint32(enhanceChance),
+		EnhanceCount:     uint32(enhanceCount),
 		Flag:             uint32(flag),
 		SkillBonus:       uint32(skillBonus),
 		OwnerName:        ownerName,
@@ -48,7 +49,7 @@ func equipmentToInventoryProto(e Equipment, ownerID uint32, slot int32) *interna
 	if c == nil {
 		return nil
 	}
-	pb := buildInventoryProto(e, ownerID, slot, c.UniqueId, c.OwnerName, c.Flag, c.EnchantChance, c.SkillBonus)
+	pb := buildInventoryProto(e, ownerID, slot, c.UniqueId, c.OwnerName, c.Flag, c.EnhanceChance, c.EnhanceCount, c.SkillBonus)
 	if bonus := c.BonusStats.ToProto(); bonus != nil {
 		pb.EquipBonusStats = bonus
 	}
@@ -100,23 +101,23 @@ func (item *RingEquip) ToProto(ownerID uint32, slot int32) *internal.InventoryPe
 }
 
 func (item *Consume) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
+	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
 func (item *Installation) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
+	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
 func (item *MiscItem) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0)
+	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
 func (item *CashItem) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryProto(item, ownerID, slot, item.UniqueId, item.OwnerName, item.Flags, 0, 0)
+	return buildInventoryProto(item, ownerID, slot, item.UniqueId, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
 func (item *Pet) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return buildInventoryProto(item, ownerID, slot, item.UniqueId, "", item.Flags, 0, 0)
+	return buildInventoryProto(item, ownerID, slot, item.UniqueId, "", item.Flags, 0, 0, 0)
 }
 
 func NewItemFromInternalProto(pb *internal.InventoryPersisted, gw GameWorld) (Item, error) {
@@ -145,7 +146,8 @@ func NewItemFromInternalProto(pb *internal.InventoryPersisted, gw GameWorld) (It
 	}
 	ownerName := pb.GetOwnerName()
 	flag := uint16(pb.GetFlag())
-	enchantChance := uint8(pb.GetEnchantChance())
+	enhanceChance := uint8(pb.GetEnhanceChance())
+	enhanceCount := uint8(pb.GetEnhanceCount())
 	skillBonus := uint16(pb.GetSkillBonus())
 
 	switch m := model.(type) {
@@ -159,7 +161,8 @@ func NewItemFromInternalProto(pb *internal.InventoryPersisted, gw GameWorld) (It
 				Count:      1,
 				Expiration: expiration,
 			},
-			EnchantChance: enchantChance,
+			EnhanceChance: enhanceChance,
+			EnhanceCount:  enhanceCount,
 			OwnerName:     ownerName,
 			Flag:          flag,
 			SkillBonus:    skillBonus,

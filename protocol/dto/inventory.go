@@ -31,7 +31,11 @@ func (inv *Inventory) Serialize(writer *stream.StreamWriter) {
 
 	for _, slot := range slots {
 		if item := inv.Items[slot]; item != nil {
-			item.Serialize(writer, true, slot)
+			item.Serialize(writer, ItemSerializeOption{
+				Trade:    true,
+				Slot:     slot,
+				SlotMode: SlotEncodeActual,
+			})
 		}
 	}
 	writer.WriteU8(0)

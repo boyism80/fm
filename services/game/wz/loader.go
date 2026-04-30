@@ -142,26 +142,43 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "timeLimited":
 				case "quest":
 				case "incPAD":
+					model.ScrollIncPAD = int16(intField.Value)
 				case "reqLevel":
 				case "tradeAvailable":
 				case "incPDD":
+					model.ScrollIncPDD = int16(intField.Value)
 				case "incMDD":
+					model.ScrollIncMDD = int16(intField.Value)
 				case "incACC":
+					model.ScrollIncACC = int16(intField.Value)
 				case "incMHP":
+					model.ScrollIncMaxHP = int16(intField.Value)
 				case "incINT":
+					model.ScrollIncInt = int16(intField.Value)
 				case "incMAD":
+					model.ScrollIncMAD = int16(intField.Value)
 				case "incDEX":
+					model.ScrollIncDex = int16(intField.Value)
 				case "incLUK":
+					model.ScrollIncLuk = int16(intField.Value)
 				case "incSTR":
+					model.ScrollIncStr = int16(intField.Value)
 				case "incSpeed":
+					model.ScrollIncSpeed = int16(intField.Value)
 				case "incMMP":
+					model.ScrollIncMaxMP = int16(intField.Value)
 				case "incEVA":
+					model.ScrollIncAvoid = int16(intField.Value)
 				case "incJump":
+					model.ScrollIncJump = int16(intField.Value)
+				case "incCraft":
+					model.ScrollIncHands = int16(intField.Value)
 				case "tradBlock":
 				case "bigSize":
 				case "scanTradeBlock":
 				case "mcType":
 				case "cursed":
+					model.ScrollCursed = int32(intField.Value)
 				case "preventslip":
 				case "warmsupport":
 				case "reqRUC":
@@ -172,6 +189,7 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "delayMsg":
 				case "reqSkillLevel":
 				case "success":
+					model.ScrollSuccess = int32(intField.Value)
 				case "masterLevel":
 				case "mobHP":
 				case "bridleMsgType":
@@ -465,7 +483,7 @@ func loadWeapons(path string) (Item, error) {
 		case "incMMP":
 			model.Ability.MaxMP = uint16(intField.Value)
 		case "tuc":
-			model.EnchantChance = uint8(intField.Value)
+			model.EnhanceChance = uint8(intField.Value)
 		case "price":
 			model.Price = intField.Value
 		case "attackSpeed":

@@ -24,8 +24,10 @@ func (i *PetItem) GetCount() uint16 {
 	return 1
 }
 
-func (i *PetItem) Serialize(writer *stream.StreamWriter, trade bool, slot int16) {
-	writer.WriteU8(uint8(slot))
+func (i *PetItem) Serialize(writer *stream.StreamWriter, opt ItemSerializeOption) {
+	if opt.SlotMode != SlotEncodeOmit {
+		writer.WriteU8(uint8(opt.Slot))
+	}
 	writer.WriteU8(3)
 	writer.WriteU32(i.ItemId)
 
