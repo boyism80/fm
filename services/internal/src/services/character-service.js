@@ -17,7 +17,7 @@ class CharacterService {
         skillRepository,
         keyLayoutRepository,
         appConfiguration,
-        starterEquipmentMetaService
+        wzService
     ) {
         this.repo = characterRepository;
         this.overviewRepo = characterOverviewRepository;
@@ -27,7 +27,7 @@ class CharacterService {
         this.skillRepo = skillRepository;
         this.keyLayoutRepo = keyLayoutRepository;
         this.app = appConfiguration;
-        this.starterEquipmentMetaService = starterEquipmentMetaService;
+        this.wzService = wzService;
     }
 
     _worldId() {
@@ -219,7 +219,7 @@ class CharacterService {
 
         if (equips.length) {
             const enhances = await Promise.all(
-                equips.map((e) => this.starterEquipmentMetaService.getEnhanceChance(Number(e.itemId)))
+                equips.map((e) => this.wzService.getEnhanceChance(Number(e.itemId)))
             );
             await this.inventoryRepo.setAll(
                 wid,

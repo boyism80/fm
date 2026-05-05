@@ -16,7 +16,7 @@ const { PartyRepository } = require("./repos/party-repository");
 const { PartyMemberRepository } = require("./repos/party-member-repository");
 const { CharacterRealtimeStateRepository } = require("./repos/character-realtime-state-repository");
 const { CharacterService } = require("./services/character-service");
-const { StarterEquipmentMetaService } = require("./services/starter-equipment-meta-service");
+const { WzService } = require("./services/wz-service");
 const { SkillService } = require("./services/skill-service");
 const { AccountService } = require("./services/account-service");
 const { CharacterOverviewService } = require("./services/character-overview-service");
@@ -45,7 +45,7 @@ function createAppContainer() {
         partyMemberRepository:       awilix.asClass(PartyMemberRepository).singleton(),
         characterRealtimeStateRepository: awilix.asClass(CharacterRealtimeStateRepository).singleton(),
         characterService:            awilix.asClass(CharacterService).singleton(),
-        starterEquipmentMetaService: awilix.asClass(StarterEquipmentMetaService).singleton(),
+        wzService:                   awilix.asClass(WzService).singleton(),
         skillService:                awilix.asClass(SkillService).singleton(),
         accountService:              awilix.asClass(AccountService).singleton(),
         characterOverviewService:    awilix.asClass(CharacterOverviewService).singleton(),
