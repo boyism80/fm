@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "allowJs": false,
+    "checkJs": false,
+    "resolveJsonModule": true,
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "include": [
+    "src/**/*.ts",
+    "sequelize/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "protobuf"
+  ]
+}

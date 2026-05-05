@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Internal Server (tsx)",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "runtimeExecutable": "node",
+            "runtimeArgs": [
+                "--import",
+                "tsx"
+            ],
+            "program": "${workspaceFolder}/src/server.ts",
+            "console": "integratedTerminal",
+            "protocol": "inspector",
+            "internalConsoleOptions": "neverOpen",
+            "skipFiles": [
+                "<node_internals>/**",
+                "${workspaceFolder}/node_modules/**"
+            ]
+        }
+    ]
+}
