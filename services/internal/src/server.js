@@ -31,6 +31,7 @@ async function main() {
     await autoMigrateAllIfEnabled(internalConfig);
     const internalContext = container.resolve("internalContext");
     const rabbitmqService = container.resolve("rabbitmqService");
+    const starterEquipmentMetaService = container.resolve("starterEquipmentMetaService");
 
     const wid = String(internalConfig.app.world_id);
     const pgw = internalConfig.postgresql.worlds[wid];
@@ -46,6 +47,7 @@ async function main() {
             ` | rabbitmq ${internalConfig.rabbitmq?.ip}:${internalConfig.rabbitmq?.port}/${internalConfig.rabbitmq?.vhost}`
     );
 
+    await starterEquipmentMetaService.preload();
     await rabbitmqService.start();
 
     const server = new grpc.Server();

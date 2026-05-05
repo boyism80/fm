@@ -183,7 +183,9 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "warmsupport":
 				case "reqRUC":
 				case "recover":
+					model.ScrollRecover = int32(intField.Value)
 				case "randstat":
+					model.ScrollRandStat = int32(intField.Value)
 				case "unitPrice":
 				case "useDelay":
 				case "delayMsg":

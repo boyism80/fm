@@ -250,6 +250,9 @@ function withDefaults(raw) {
             auto_migrate_on_startup: d.sequelize?.auto_migrate_on_startup ?? false,
             define: d.sequelize?.define ?? { underscored: true },
         },
+        resources: {
+            wz_root: d.resources?.wz_root ?? path.resolve(__dirname, "..", "..", "..", "resources", "wz"),
+        },
     };
 }
 

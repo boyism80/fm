@@ -15,6 +15,8 @@ type Consume struct {
 	BuffValues      map[constant.BuffFlag]int32
 	ScrollSuccess   int32
 	ScrollCursed    int32
+	ScrollRandStat  int32
+	ScrollRecover   int32
 	ScrollIncStr    int16
 	ScrollIncDex    int16
 	ScrollIncInt    int16

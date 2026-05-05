@@ -50,6 +50,10 @@ class AppConfiguration {
         return this._c.sequelize;
     }
 
+    get resources() {
+        return this._c.resources;
+    }
+
     getCharacterCacheTtlSeconds() {
         const v = this._c.cache?.character_ttl_seconds;
         const n = Number(v);
@@ -63,7 +67,7 @@ class AppConfiguration {
     }
 
     /**
-     * @param {"app"|"grpc"|"postgresql"|"redis"|"rabbitmq"|"cache"|"sequelize"} section
+     * @param {"app"|"grpc"|"postgresql"|"redis"|"rabbitmq"|"cache"|"sequelize"|"resources"} section
      */
     getSection(section) {
         return this._c[section];

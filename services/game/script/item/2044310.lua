@@ -1,0 +1,7 @@
+-- Item name (String.wz/Consume.img.xml): 창 명중률 주문서 100%
+
+function on_scroll(me, scroll_slot, target_slot)
+    return me:enhance(scroll_slot, target_slot, EquipmentPart.Weapon, WeaponType.Spear, function(target, scroll)
+        target:add_bonus_stats(scroll:wz():bonus_stats())
+    end)
+end

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/boyism80/fm/core/luax"
@@ -2558,6 +2559,160 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "rmitem(itemIdOrName [, count]) or rmitem(inv_type, slot, count)")
 				return 0
 			}
+		},
+		"enhance": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			scrollSlot := int16(L.CheckInt(2))
+			targetSlot := int16(L.CheckInt(3))
+			var requiredPart *constant.EquipmentPartsType
+			if L.Get(4) != lua.LNil {
+				part := constant.EquipmentPartsType(L.CheckInt(4))
+				requiredPart = &part
+			}
+			var requiredWeaponType *constant.WeaponType
+			if L.Get(5) != lua.LNil {
+				wt := constant.WeaponType(L.CheckInt(5))
+				requiredWeaponType = &wt
+			}
+			callback := L.CheckFunction(6)
+			if scrollSlot <= 0 {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			useInventory := ch.Inventory[constant.INVENTORY_TYPE_CONSUME]
+			if useInventory == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			scrollItem := useInventory.GetItem(uint8(scrollSlot))
+			if scrollItem == nil || scrollItem.GetCount() < 1 {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			scrollConsume, ok := scrollItem.(*Consume)
+			if !ok || scrollConsume == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			scrollWz, ok := scrollConsume.GetModel().(*wz.Consume)
+			if !ok || scrollWz == nil || scrollWz.ScrollSuccess <= 0 {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			var targetEquip Equipment
+			equipInventory := ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+			if targetSlot < 0 {
+				targetEquip = ch.Equipments[constant.EquipmentPartsType(targetSlot)]
+			} else {
+				if equipInventory == nil {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				if item := equipInventory.Items[targetSlot]; item != nil {
+					targetEquip, _ = item.(Equipment)
+				}
+			}
+			if targetEquip == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			if requiredPart != nil {
+				actualPart := constant.GetEquipmentPartsType(targetEquip.GetModel().GetID())
+				if actualPart != *requiredPart {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+			}
+			if requiredPart != nil && *requiredPart == constant.EQUIPMENT_PARTS_WEAPON && requiredWeaponType != nil {
+				actualWeaponType := constant.GetWeaponType(targetEquip.GetModel().GetID())
+				if actualWeaponType != *requiredWeaponType {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+			}
+			targetCore := targetEquip.GetEquipmentCore()
+			if targetCore == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			isRecoverScroll := scrollWz.ScrollRecover > 0
+			if targetCore.EnhanceChance == 0 && !isRecoverScroll {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			successRate := scrollWz.ScrollSuccess
+			if successRate < 0 {
+				successRate = 0
+			}
+			if successRate > 100 {
+				successRate = 100
+			}
+			success := rand.Intn(100) < int(successRate)
+			destroyed := false
+			if !success && scrollWz.ScrollCursed > 0 {
+				curseRate := scrollWz.ScrollCursed
+				if curseRate < 0 {
+					curseRate = 0
+				}
+				if curseRate > 100 {
+					curseRate = 100
+				}
+				destroyed = rand.Intn(100) < int(curseRate)
+			}
+			if success {
+				if err := L.CallByParam(lua.P{
+					Fn:      callback,
+					NRet:    0,
+					Protect: true,
+				}, luax.NewLuable(L, targetEquip), luax.NewLuable(L, scrollConsume)); err != nil {
+					log.Printf("enhance callback failed: %v", err)
+					L.Push(lua.LBool(false))
+					return 1
+				}
+				if !isRecoverScroll {
+					targetCore.EnhanceCount++
+				}
+			}
+			if targetCore.EnhanceChance > 0 && !isRecoverScroll {
+				targetCore.EnhanceChance--
+			}
+			scrollItem.Reduce(1)
+			if scrollItem.GetCount() == 0 {
+				if err := useInventory.RemoveItem(uint8(scrollSlot)); err != nil {
+					L.Push(lua.LBool(false))
+					return 1
+				}
+			}
+			if destroyed {
+				if targetSlot < 0 {
+					delete(ch.Equipments, constant.EquipmentPartsType(targetSlot))
+					ch.Listener.OnUpdateCharacterLook(ch)
+				} else {
+					if err := equipInventory.RemoveItem(uint8(targetSlot)); err != nil {
+						L.Push(lua.LBool(false))
+						return 1
+					}
+				}
+			}
+			ch.Listener.OnScrolledItem(
+				ch,
+				scrollItem.GetInventoryType(),
+				scrollSlot,
+				scrollItem.GetCount(),
+				targetSlot,
+				destroyed,
+				false,
+				targetEquip,
+			)
+			ch.Listener.OnShowScrollEffect(ch, success, destroyed)
+			ch.Listener.OnUpdateStats(ch, nil, true)
+			L.Push(lua.LBool(true))
+			return 1
 		},
 		"mktimer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

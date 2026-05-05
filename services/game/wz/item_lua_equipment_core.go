@@ -11,6 +11,16 @@ func (*EquipmentCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			pushWzItemID(L, ud.Value)
 			return 1
 		},
+		"enhance_chance": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			equip, ok := ud.Value.(Equipment)
+			if !ok || equip == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(lua.LNumber(equip.GetEnhanceChance()))
+			return 1
+		},
 	}
 }
 
