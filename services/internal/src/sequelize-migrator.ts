@@ -1,8 +1,11 @@
 import fs from "fs";
 import path from "path";
-import { pathToFileURL } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { Sequelize } from "sequelize";
 import type { MigrationModule } from "./sequelize-migration";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface MigrationEntry {
     canonicalName: string;

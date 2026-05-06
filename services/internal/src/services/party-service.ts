@@ -1,4 +1,4 @@
-const { redisCacheKey } = require("../redis-cache-key");
+import { redisCacheKey } from "../redis-cache-key";
 import { Party, type Party as PartyMessage, type PartyDoor, type PartyMember, PartyErrorCode } from "../protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
 import type { PartyModel } from "../repos/party-repository";
@@ -467,7 +467,7 @@ export class PartyService {
 
         const sess = await this.sessionRepo.getCharacterSession(worldId, targetCharacterId);
         const ch = sess?.gameServer?.channelId;
-        const online = sess?.state === "ONLINE" && Boolean(sess?.gameServer?.connected);
+        const online = sess?.state === "ONLINE" && sess?.gameServer?.connected === true;
         const chNum = Number(ch);
         if (!online || ch == null || !Number.isFinite(chNum) || chNum < 0) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
@@ -515,7 +515,7 @@ export class PartyService {
         const inviterSession = await this.sessionRepo.getCharacterSession(worldId, inviterCharacterId);
         const inviterChRaw = inviterSession?.gameServer?.channelId;
         const inviterChannelID = Number(inviterChRaw);
-        const inviterOnline = inviterSession?.state === "ONLINE" && Boolean(inviterSession?.gameServer?.connected);
+        const inviterOnline = inviterSession?.state === "ONLINE" && inviterSession?.gameServer?.connected === true;
         if (!inviterOnline || inviterChRaw == null || !Number.isFinite(inviterChannelID) || inviterChannelID < 0) {
             await client.del(inviteKey);
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
@@ -685,7 +685,7 @@ export class PartyService {
         } else {
             await this.publishPartyEvent(EVT.MEMBER_LEFT, worldId, result.partyId, result.revision, {
                 character_id: characterId,
-                leader_changed: Boolean(result.leaderChanged),
+                leader_changed: result.leaderChanged ?? false,
                 old_leader_character_id: result.oldLeaderCharacterId ?? 0,
                 new_leader_character_id: result.newLeaderCharacterId ?? 0,
             });
@@ -769,7 +769,7 @@ export class PartyService {
         this.assertCharacterId(newLeaderCharacterId);
 
         const newLeaderSession = await this.sessionRepo.getCharacterSession(worldId, newLeaderCharacterId);
-        const newLeaderOnline = newLeaderSession?.state === "ONLINE" && Boolean(newLeaderSession?.gameServer?.connected);
+        const newLeaderOnline = newLeaderSession?.state === "ONLINE" && newLeaderSession?.gameServer?.connected === true;
         if (!newLeaderOnline) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }

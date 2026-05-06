@@ -1,4 +1,4 @@
-const { redisCacheKey } = require("../redis-cache-key");
+import { redisCacheKey } from "../redis-cache-key";
 import type { InternalContext } from "../context/internal-context";
 
 type SessionHash = Record<string, string>;

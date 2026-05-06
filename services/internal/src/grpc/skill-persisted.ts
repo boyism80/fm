@@ -1,22 +1,29 @@
 import type { SkillPersisted } from "../protobuf/generated/fminternal/internal_service";
+import type { SkillModel } from "../repos/skill-repository";
+import { createMap, forMember, mapFrom } from "@automapper/core";
+import { grpcMapper } from "./mappers";
 
-export function persistedFromMessage(msg: SkillPersisted) {
-    const cooldownMs = msg.cooldownEndUnixMs;
-    return {
-        characterId: msg.characterId >>> 0,
-        skillId: msg.skillId >>> 0,
-        level: msg.level | 0,
-        masterLevel: msg.masterLevel | 0,
-        cooldownEndUnixMs: cooldownMs > 0 ? cooldownMs : null,
-    };
-}
+export const SKILL_MODEL = "SkillModel";
+export const SKILL_PERSISTED = "SkillPersisted";
 
-export function makeSkillMessage(model: any) {
-    return {
-        characterId: model.characterId >>> 0,
-        skillId: model.skillId >>> 0,
-        level: model.level | 0,
-        masterLevel: model.masterLevel | 0,
-        cooldownEndUnixMs: model.cooldownEndUnixMs ?? 0,
-    } as SkillPersisted;
-}
+createMap(
+    grpcMapper,
+    SKILL_PERSISTED,
+    SKILL_MODEL,
+    forMember((destination: any) => destination.characterId, mapFrom((source: SkillPersisted) => source.characterId >>> 0)),
+    forMember((destination: any) => destination.skillId, mapFrom((source: SkillPersisted) => source.skillId >>> 0)),
+    forMember((destination: any) => destination.level, mapFrom((source: SkillPersisted) => source.level | 0)),
+    forMember((destination: any) => destination.masterLevel, mapFrom((source: SkillPersisted) => source.masterLevel | 0)),
+    forMember((destination: any) => destination.cooldownEndUnixMs, mapFrom((source: SkillPersisted) => source.cooldownEndUnixMs > 0 ? source.cooldownEndUnixMs : null))
+);
+
+createMap(
+    grpcMapper,
+    SKILL_MODEL,
+    SKILL_PERSISTED,
+    forMember((destination: any) => destination.characterId, mapFrom((source: SkillModel) => source.characterId >>> 0)),
+    forMember((destination: any) => destination.skillId, mapFrom((source: SkillModel) => source.skillId >>> 0)),
+    forMember((destination: any) => destination.level, mapFrom((source: SkillModel) => source.level | 0)),
+    forMember((destination: any) => destination.masterLevel, mapFrom((source: SkillModel) => source.masterLevel | 0)),
+    forMember((destination: any) => destination.cooldownEndUnixMs, mapFrom((source: SkillModel) => source.cooldownEndUnixMs ?? 0))
+);

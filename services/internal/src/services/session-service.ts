@@ -115,7 +115,7 @@ export class SessionService {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_LOGOUT_FAILED };
         }
         const src = Number(options.disconnectSource ?? SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_UNSPECIFIED);
-        const transferDisconnect = Boolean(options.transferDisconnect);
+        const transferDisconnect = options.transferDisconnect ?? false;
         const gameNormalDisconnect = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER && !transferDisconnect;
         const cid = sessionBeforeLogout?.character?.id;
         if (cid != null && this.partyService && gameNormalDisconnect) await this.partyService.applyMemberChannelIndex(worldId, cid, -2);

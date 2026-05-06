@@ -1,9 +1,14 @@
 import fs from "fs";
 import path from "path";
+import { createRequire } from "module";
+import { fileURLToPath } from "url";
 import { DataTypes, Sequelize } from "sequelize";
 import type { InternalConfig, PgEndpoint } from "./types/internal-config";
 
 type MigrationQueryInterface = ReturnType<Sequelize["getQueryInterface"]>;
+const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface TargetEndpoint {
     name: string;
@@ -94,7 +99,7 @@ async function runMigrationsOnEndpoint(baseDir: string, target: TargetEndpoint):
 }
 
 export async function autoMigrateAllIfEnabled(internalConfig: InternalConfig): Promise<void> {
-    const enabled = Boolean(internalConfig.sequelize?.auto_migrate_on_startup);
+    const enabled = internalConfig.sequelize?.auto_migrate_on_startup ?? false;
     if (!enabled) {
         return;
     }

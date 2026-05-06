@@ -1,4 +1,4 @@
-const { redisCacheKey } = require("../redis-cache-key");
+import { redisCacheKey } from "../redis-cache-key";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { PartyDeleteRow, PartyModel, PartyRow } from "../types/repository-models";

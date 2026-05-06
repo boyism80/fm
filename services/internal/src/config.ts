@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import yaml from "js-yaml";
 import type {
     GameServerWorldConfig,
@@ -16,6 +17,8 @@ const DEFAULT_PG_POOL: PgPoolConfig = { min: 0, max: 10 };
 const DEFAULT_REDIS = { password: "", db: 0, tls: false };
 const DEFAULT_CHANNEL_NAME_PREFIX = "Channel";
 const DEFAULT_RABBITMQ = { ip: "127.0.0.1", port: 5672, uid: "guest", pwd: "guest", vhost: "fm" };
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 type RawPgEndpoint = Partial<PgEndpoint> & { pool?: Partial<PgPoolConfig> };
 type RawRedisEndpoint = Partial<RedisEndpoint>;
@@ -217,7 +220,7 @@ export function withDefaults(raw: RawConfig): Omit<InternalConfig, "configPath">
         sequelize: {
             dialect: sequelizeObject.dialect ?? "postgres",
             migration_storage: sequelizeObject.migration_storage ?? "sequelize",
-            auto_migrate_on_startup: Boolean(sequelizeObject.auto_migrate_on_startup),
+            auto_migrate_on_startup: sequelizeObject.auto_migrate_on_startup ?? false,
             define: sequelizeObject.define ?? {},
         },
         resources: {

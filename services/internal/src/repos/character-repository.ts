@@ -1,4 +1,4 @@
-const { redisCacheKey } = require("../redis-cache-key");
+import { redisCacheKey } from "../redis-cache-key";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { CharacterDeleteModel, CharacterModel, CharacterRow } from "../types/repository-models";
@@ -123,7 +123,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             stance: Number(row.stance),
             meso: Number(row.meso),
             skillPoint: Number(row.skill_point),
-            hidden: Boolean(row.hidden),
+            hidden: row.hidden,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
@@ -158,7 +158,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             stance: model.stance ?? 0,
             meso: model.meso ?? 0,
             skill_point: model.skillPoint ?? 0,
-            hidden: Boolean(model.hidden),
+            hidden: model.hidden ?? false,
         };
     }
 }

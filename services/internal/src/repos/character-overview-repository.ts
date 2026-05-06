@@ -1,4 +1,4 @@
-const { redisCacheKey } = require("../redis-cache-key");
+import { redisCacheKey } from "../redis-cache-key";
 import { HashRepository } from "./hash-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { CharacterOverviewModel, CharacterOverviewRow } from "../types/repository-models";

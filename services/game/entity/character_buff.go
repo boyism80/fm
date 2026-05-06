@@ -349,7 +349,7 @@ func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLeve
 	ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
 }
 
-func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32) {
+func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32, applyPotionDurationScale bool) {
 	if bc == nil {
 		return
 	}
@@ -372,7 +372,7 @@ func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Durati
 	now := time.Now()
 
 	scaledDuration := duration
-	if duration > 0 {
+	if applyPotionDurationScale && duration > 0 {
 		mul := ch.PotionDurationMultiplierPercent()
 		scaledDuration = time.Duration(int64(duration) * int64(mul) / 100)
 	}

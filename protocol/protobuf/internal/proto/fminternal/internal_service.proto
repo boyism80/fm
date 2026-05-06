@@ -110,6 +110,7 @@ message EnterGameReply {
   repeated KeyLayoutBinding   key_layout = 5;
   optional uint32              party_id  = 6;
   uint32                       guild_id  = 7;
+  repeated BuffPersisted      buffs     = 8;
 }
 
 message BeginGameTransitionRequest {
@@ -148,6 +149,7 @@ message CharacterSaveEntry {
   repeated InventoryPersisted inventory = 4;
   repeated SkillPersisted     skills    = 5;
   repeated KeyLayoutBinding   key_layout = 6;
+  repeated BuffPersisted      buffs     = 7;
 }
 
 message SaveCharactersRequest {
@@ -198,6 +200,27 @@ message SkillPersisted {
   int32  level                = 3;
   int32  master_level         = 4;
   int64  cooldown_end_unix_ms = 5;
+}
+
+enum BuffKind {
+  BUFF_KIND_SKILL = 0;
+  BUFF_KIND_ITEM  = 1;
+}
+
+message BuffFlagValuePersisted {
+  uint32 mask     = 1;
+  int32  position = 2;
+  int32  value    = 3;
+}
+
+message BuffPersisted {
+  uint32 character_id                 = 1;
+  int32  buff_source_id               = 2;
+  BuffKind kind                       = 3;
+  repeated BuffFlagValuePersisted flag_values = 4;
+  optional uint64 remaining_duration_ms = 5;
+  uint32 skill_level                  = 6;
+  uint32 causer_id                    = 7;
 }
 
 message LoginAccountRequest {

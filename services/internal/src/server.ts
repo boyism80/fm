@@ -1,13 +1,13 @@
-const grpc = require("@grpc/grpc-js");
-const awilix = require("awilix");
-const { InternalService } = require("./protobuf/generated/fminternal/internal_service");
-const { createAppContainer } = require("./container");
-const { autoMigrateAllIfEnabled } = require("./auto-migrate");
-const { createCatalogHandlers } = require("./grpc/handlers/catalog-handlers");
-const { createAuthHandlers } = require("./grpc/handlers/auth-handlers");
-const { createSessionHandlers } = require("./grpc/handlers/session-handlers");
-const { createCharacterHandlers } = require("./grpc/handlers/character-handlers");
-const { createPartyHandlers } = require("./grpc/handlers/party-handlers");
+import grpc from "@grpc/grpc-js";
+import * as awilix from "awilix";
+import { InternalService } from "./protobuf/generated/fminternal/internal_service";
+import { createAppContainer } from "./container";
+import { autoMigrateAllIfEnabled } from "./auto-migrate";
+import { createCatalogHandlers } from "./grpc/handlers/catalog-handlers";
+import { createAuthHandlers } from "./grpc/handlers/auth-handlers";
+import { createSessionHandlers } from "./grpc/handlers/session-handlers";
+import { createCharacterHandlers } from "./grpc/handlers/character-handlers";
+import { createPartyHandlers } from "./grpc/handlers/party-handlers";
 
 const INVALID_CODES = new Set([
     "UNKNOWN_WORLD", "INVALID_CHARACTER_ID",
@@ -22,7 +22,7 @@ function grpcError(err: { code?: string; message?: string }, callback: (error: {
 }
 
 async function main() {
-    const container = createAppContainer();
+    const container = createAppContainer() as any;
     const appConfiguration = container.resolve("appConfiguration");
     const internalConfig = appConfiguration.raw;
     await autoMigrateAllIfEnabled(internalConfig);

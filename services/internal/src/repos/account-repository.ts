@@ -1,4 +1,4 @@
-const { redisCacheKey } = require("../redis-cache-key");
+import { redisCacheKey } from "../redis-cache-key";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { AccountDeleteModel, AccountModel, AccountRow } from "../types/repository-models";
@@ -76,9 +76,9 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
             passwordHash: row.password_hash,
             gender: Number(row.gender),
             role: Number(row.role),
-            isBanned: Boolean(row.is_banned),
+            isBanned: row.is_banned,
             banReason: row.ban_reason ?? null,
-            isChatBlocked: Boolean(row.is_chat_blocked),
+            isChatBlocked: row.is_chat_blocked,
             chatBlockedUntil: row.chat_blocked_until ?? null,
             characterSlotCount: Number(row.character_slot_count),
             lastLoginIp: row.last_login_ip ?? null,

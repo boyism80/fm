@@ -75,7 +75,7 @@ func (ch *Character) applyConsumeBuff(consumeItem *wz.Consume) bool {
 	if len(buffValues) == 0 {
 		return false
 	}
-	ch.Buffs.AddItemBuff(consumeItem, consumeItem.BuffDuration, buffValues)
+	ch.Buffs.AddItemBuff(consumeItem, consumeItem.BuffDuration, buffValues, true)
 	return true
 }
 

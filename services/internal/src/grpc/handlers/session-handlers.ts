@@ -1,10 +1,13 @@
-import { makeCharacterMessage } from "../character-persisted";
+import { CHARACTER_MODEL, CHARACTER_PERSISTED } from "../character-persisted";
 import { makeKeyLayoutProtoList } from "../key-layout-io";
-import { makeInventoryMessage } from "../inventory-persisted";
-import { makeSkillMessage } from "../skill-persisted";
+import { INVENTORY_MODEL, INVENTORY_PERSISTED } from "../inventory-persisted";
+import { SKILL_MODEL, SKILL_PERSISTED } from "../skill-persisted";
+import { BUFF_MODEL, BUFF_PERSISTED } from "../buff-persisted";
+import { grpcMapper } from "../mappers";
 import { SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
 import type { CharacterService } from "../../services/character-service";
 import type { SkillService } from "../../services/skill-service";
+import type { BuffService } from "../../services/buff-service";
 import type { SessionService } from "../../services/session-service";
 import type { InventoryRepository } from "../../repos/inventory-repository";
 import type { CharacterRealtimeStateRepository } from "../../repos/character-realtime-state-repository";
@@ -20,11 +23,17 @@ import type {
     RefreshSessionRequest,
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
+import type { CharacterPersisted, InventoryPersisted, SkillPersisted, BuffPersisted } from "../../protobuf/generated/fminternal/internal_service";
+import type { CharacterModel } from "../../repos/character-repository";
+import type { InventoryModel } from "../../repos/inventory-repository";
+import type { SkillModel } from "../../repos/skill-repository";
+import type { BuffModel } from "../../repos/buff-repository";
 
 export function createSessionHandlers(
     characterService: CharacterService,
     inventoryRepository: InventoryRepository,
     skillService: SkillService,
+    buffService: BuffService,
     sessionService: SessionService,
     internalConfig: Pick<InternalConfig, "game_servers">,
     characterRealtimeStateRepository: CharacterRealtimeStateRepository,
@@ -45,7 +54,7 @@ export function createSessionHandlers(
                 }
                 const transition = await sessionService.beginTransition(worldId, row.accountId, row.characterId, row.name);
                 callback(null, {
-                    ok: Boolean(transition.ok),
+                    ok: transition.ok,
                     errorCode: transition.code ?? SessionErrorCode.SESSION_UNKNOWN,
                 });
             } catch (err) {
@@ -73,6 +82,7 @@ export function createSessionHandlers(
                         character: undefined,
                         inventory: [],
                         skills: [],
+                        buffs: [],
                         keyLayout: [],
                         partyId: undefined,
                         guildId: 0,
@@ -85,18 +95,42 @@ export function createSessionHandlers(
                     throw new Error(`attach game session failed: ${attach.code}`);
                 }
 
-                const [inventoryList, skillList, keyLayoutBindings] = await Promise.all([
+                const [inventoryList, skillList, buffList, keyLayoutBindings] = await Promise.all([
                     inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
                     skillService.getSkills(worldId, characterId),
+                    buffService.getBuffs(worldId, characterId),
                     characterService.getKeyLayoutBindings(worldId, characterId),
                 ]);
                 const realtime = await characterRealtimeStateRepository.get(worldId, characterId);
                 const guildId = realtime?.guildId ?? 0;
                 callback(null, {
                     found: true,
-                    character: makeCharacterMessage(row),
-                    inventory: inventoryList.map(makeInventoryMessage),
-                    skills: skillList.map(makeSkillMessage),
+                    character: grpcMapper.map<CharacterModel, CharacterPersisted>(
+                        row,
+                        CHARACTER_MODEL,
+                        CHARACTER_PERSISTED
+                    ),
+                    inventory: inventoryList.map((inventory) =>
+                        grpcMapper.map<InventoryModel, InventoryPersisted>(
+                            inventory,
+                            INVENTORY_MODEL,
+                            INVENTORY_PERSISTED
+                        )
+                    ),
+                    skills: skillList.map((skill) =>
+                        grpcMapper.map<SkillModel, SkillPersisted>(
+                            skill,
+                            SKILL_MODEL,
+                            SKILL_PERSISTED
+                        )
+                    ),
+                    buffs: buffList.map((buff) =>
+                        grpcMapper.map<BuffModel, BuffPersisted>(
+                            buff,
+                            BUFF_MODEL,
+                            BUFF_PERSISTED
+                        )
+                    ),
                     keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),
                     partyId: realtime != null ? realtime.partyId ?? undefined : undefined,
                     guildId,
@@ -109,7 +143,7 @@ export function createSessionHandlers(
             try {
                 const result = await sessionService.refresh(call.request.worldId, call.request.accountId);
                 callback(null, {
-                    ok: Boolean(result.ok),
+                    ok: result.ok,
                     errorCode: result.code ?? SessionErrorCode.SESSION_UNKNOWN,
                 });
             } catch (err) {
@@ -122,7 +156,7 @@ export function createSessionHandlers(
                     disconnectSource: call.request.disconnectSource,
                     transferDisconnect: call.request.transferDisconnect,
                 });
-                callback(null, { ok: Boolean(result.ok) });
+                callback(null, { ok: result.ok });
             } catch (err) {
                 grpcError(err, callback);
             }

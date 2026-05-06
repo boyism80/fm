@@ -72,6 +72,39 @@ export function sessionErrorCodeToJSON(object: SessionErrorCode): string {
   }
 }
 
+export enum BuffKind {
+  BUFF_KIND_SKILL = 0,
+  BUFF_KIND_ITEM = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function buffKindFromJSON(object: any): BuffKind {
+  switch (object) {
+    case 0:
+    case "BUFF_KIND_SKILL":
+      return BuffKind.BUFF_KIND_SKILL;
+    case 1:
+    case "BUFF_KIND_ITEM":
+      return BuffKind.BUFF_KIND_ITEM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return BuffKind.UNRECOGNIZED;
+  }
+}
+
+export function buffKindToJSON(object: BuffKind): string {
+  switch (object) {
+    case BuffKind.BUFF_KIND_SKILL:
+      return "BUFF_KIND_SKILL";
+    case BuffKind.BUFF_KIND_ITEM:
+      return "BUFF_KIND_ITEM";
+    case BuffKind.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum SessionDisconnectSource {
   SESSION_DISCONNECT_SOURCE_UNSPECIFIED = 0,
   SESSION_DISCONNECT_SOURCE_LOGIN_SERVER = 1,
@@ -309,6 +342,7 @@ export interface EnterGameReply {
   keyLayout: KeyLayoutBinding[];
   partyId?: number | undefined;
   guildId: number;
+  buffs: BuffPersisted[];
 }
 
 export interface BeginGameTransitionRequest {
@@ -349,6 +383,7 @@ export interface CharacterSaveEntry {
   inventory: InventoryPersisted[];
   skills: SkillPersisted[];
   keyLayout: KeyLayoutBinding[];
+  buffs: BuffPersisted[];
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -409,6 +444,22 @@ export interface SkillPersisted {
   level: number;
   masterLevel: number;
   cooldownEndUnixMs: number;
+}
+
+export interface BuffFlagValuePersisted {
+  mask: number;
+  position: number;
+  value: number;
+}
+
+export interface BuffPersisted {
+  characterId: number;
+  buffSourceId: number;
+  kind: BuffKind;
+  flagValues: BuffFlagValuePersisted[];
+  remainingDurationMs?: number | undefined;
+  skillLevel: number;
+  causerId: number;
 }
 
 export interface LoginAccountRequest {
@@ -1988,6 +2039,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     keyLayout: [],
     partyId: undefined,
     guildId: 0,
+    buffs: [],
   };
 }
 
@@ -2013,6 +2065,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     if (message.guildId !== 0) {
       writer.uint32(56).uint32(message.guildId);
+    }
+    for (const v of message.buffs) {
+      BuffPersisted.encode(v!, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -2080,6 +2135,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.guildId = reader.uint32();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.buffs.push(BuffPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2112,6 +2175,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : 0,
+      buffs: globalThis.Array.isArray(object?.buffs) ? object.buffs.map((e: any) => BuffPersisted.fromJSON(e)) : [],
     };
   },
 
@@ -2138,6 +2202,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.guildId !== 0) {
       obj.guildId = Math.round(message.guildId);
     }
+    if (message.buffs?.length) {
+      obj.buffs = message.buffs.map((e) => BuffPersisted.toJSON(e));
+    }
     return obj;
   },
 
@@ -2155,6 +2222,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.keyLayout = object.keyLayout?.map((e) => KeyLayoutBinding.fromPartial(e)) || [];
     message.partyId = object.partyId ?? undefined;
     message.guildId = object.guildId ?? 0;
+    message.buffs = object.buffs?.map((e) => BuffPersisted.fromPartial(e)) || [];
     return message;
   },
 };
@@ -2714,7 +2782,7 @@ export const SaveCharacterReply: MessageFns<SaveCharacterReply> = {
 };
 
 function createBaseCharacterSaveEntry(): CharacterSaveEntry {
-  return { character: undefined, baseLooks: {}, overlays: {}, inventory: [], skills: [], keyLayout: [] };
+  return { character: undefined, baseLooks: {}, overlays: {}, inventory: [], skills: [], keyLayout: [], buffs: [] };
 }
 
 export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
@@ -2736,6 +2804,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     }
     for (const v of message.keyLayout) {
       KeyLayoutBinding.encode(v!, writer.uint32(50).fork()).join();
+    }
+    for (const v of message.buffs) {
+      BuffPersisted.encode(v!, writer.uint32(58).fork()).join();
     }
     return writer;
   },
@@ -2801,6 +2872,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.keyLayout.push(KeyLayoutBinding.decode(reader, reader.uint32()));
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.buffs.push(BuffPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2848,6 +2927,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : globalThis.Array.isArray(object?.key_layout)
         ? object.key_layout.map((e: any) => KeyLayoutBinding.fromJSON(e))
         : [],
+      buffs: globalThis.Array.isArray(object?.buffs) ? object.buffs.map((e: any) => BuffPersisted.fromJSON(e)) : [],
     };
   },
 
@@ -2883,6 +2963,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.keyLayout?.length) {
       obj.keyLayout = message.keyLayout.map((e) => KeyLayoutBinding.toJSON(e));
     }
+    if (message.buffs?.length) {
+      obj.buffs = message.buffs.map((e) => BuffPersisted.toJSON(e));
+    }
     return obj;
   },
 
@@ -2915,6 +2998,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     message.inventory = object.inventory?.map((e) => InventoryPersisted.fromPartial(e)) || [];
     message.skills = object.skills?.map((e) => SkillPersisted.fromPartial(e)) || [];
     message.keyLayout = object.keyLayout?.map((e) => KeyLayoutBinding.fromPartial(e)) || [];
+    message.buffs = object.buffs?.map((e) => BuffPersisted.fromPartial(e)) || [];
     return message;
   },
 };
@@ -3955,6 +4039,286 @@ export const SkillPersisted: MessageFns<SkillPersisted> = {
     message.level = object.level ?? 0;
     message.masterLevel = object.masterLevel ?? 0;
     message.cooldownEndUnixMs = object.cooldownEndUnixMs ?? 0;
+    return message;
+  },
+};
+
+function createBaseBuffFlagValuePersisted(): BuffFlagValuePersisted {
+  return { mask: 0, position: 0, value: 0 };
+}
+
+export const BuffFlagValuePersisted: MessageFns<BuffFlagValuePersisted> = {
+  encode(message: BuffFlagValuePersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.mask !== 0) {
+      writer.uint32(8).uint32(message.mask);
+    }
+    if (message.position !== 0) {
+      writer.uint32(16).int32(message.position);
+    }
+    if (message.value !== 0) {
+      writer.uint32(24).int32(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BuffFlagValuePersisted {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBuffFlagValuePersisted();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.mask = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.position = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.value = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BuffFlagValuePersisted {
+    return {
+      mask: isSet(object.mask) ? globalThis.Number(object.mask) : 0,
+      position: isSet(object.position) ? globalThis.Number(object.position) : 0,
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
+  },
+
+  toJSON(message: BuffFlagValuePersisted): unknown {
+    const obj: any = {};
+    if (message.mask !== 0) {
+      obj.mask = Math.round(message.mask);
+    }
+    if (message.position !== 0) {
+      obj.position = Math.round(message.position);
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BuffFlagValuePersisted>, I>>(base?: I): BuffFlagValuePersisted {
+    return BuffFlagValuePersisted.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BuffFlagValuePersisted>, I>>(object: I): BuffFlagValuePersisted {
+    const message = createBaseBuffFlagValuePersisted();
+    message.mask = object.mask ?? 0;
+    message.position = object.position ?? 0;
+    message.value = object.value ?? 0;
+    return message;
+  },
+};
+
+function createBaseBuffPersisted(): BuffPersisted {
+  return {
+    characterId: 0,
+    buffSourceId: 0,
+    kind: 0,
+    flagValues: [],
+    remainingDurationMs: undefined,
+    skillLevel: 0,
+    causerId: 0,
+  };
+}
+
+export const BuffPersisted: MessageFns<BuffPersisted> = {
+  encode(message: BuffPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.characterId !== 0) {
+      writer.uint32(8).uint32(message.characterId);
+    }
+    if (message.buffSourceId !== 0) {
+      writer.uint32(16).int32(message.buffSourceId);
+    }
+    if (message.kind !== 0) {
+      writer.uint32(24).int32(message.kind);
+    }
+    for (const v of message.flagValues) {
+      BuffFlagValuePersisted.encode(v!, writer.uint32(34).fork()).join();
+    }
+    if (message.remainingDurationMs !== undefined) {
+      writer.uint32(40).uint64(message.remainingDurationMs);
+    }
+    if (message.skillLevel !== 0) {
+      writer.uint32(48).uint32(message.skillLevel);
+    }
+    if (message.causerId !== 0) {
+      writer.uint32(56).uint32(message.causerId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BuffPersisted {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBuffPersisted();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.buffSourceId = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.flagValues.push(BuffFlagValuePersisted.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.remainingDurationMs = longToNumber(reader.uint64());
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.skillLevel = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.causerId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BuffPersisted {
+    return {
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      buffSourceId: isSet(object.buffSourceId)
+        ? globalThis.Number(object.buffSourceId)
+        : isSet(object.buff_source_id)
+        ? globalThis.Number(object.buff_source_id)
+        : 0,
+      kind: isSet(object.kind) ? buffKindFromJSON(object.kind) : 0,
+      flagValues: globalThis.Array.isArray(object?.flagValues)
+        ? object.flagValues.map((e: any) => BuffFlagValuePersisted.fromJSON(e))
+        : globalThis.Array.isArray(object?.flag_values)
+        ? object.flag_values.map((e: any) => BuffFlagValuePersisted.fromJSON(e))
+        : [],
+      remainingDurationMs: isSet(object.remainingDurationMs)
+        ? globalThis.Number(object.remainingDurationMs)
+        : isSet(object.remaining_duration_ms)
+        ? globalThis.Number(object.remaining_duration_ms)
+        : undefined,
+      skillLevel: isSet(object.skillLevel)
+        ? globalThis.Number(object.skillLevel)
+        : isSet(object.skill_level)
+        ? globalThis.Number(object.skill_level)
+        : 0,
+      causerId: isSet(object.causerId)
+        ? globalThis.Number(object.causerId)
+        : isSet(object.causer_id)
+        ? globalThis.Number(object.causer_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: BuffPersisted): unknown {
+    const obj: any = {};
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.buffSourceId !== 0) {
+      obj.buffSourceId = Math.round(message.buffSourceId);
+    }
+    if (message.kind !== 0) {
+      obj.kind = buffKindToJSON(message.kind);
+    }
+    if (message.flagValues?.length) {
+      obj.flagValues = message.flagValues.map((e) => BuffFlagValuePersisted.toJSON(e));
+    }
+    if (message.remainingDurationMs !== undefined) {
+      obj.remainingDurationMs = Math.round(message.remainingDurationMs);
+    }
+    if (message.skillLevel !== 0) {
+      obj.skillLevel = Math.round(message.skillLevel);
+    }
+    if (message.causerId !== 0) {
+      obj.causerId = Math.round(message.causerId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BuffPersisted>, I>>(base?: I): BuffPersisted {
+    return BuffPersisted.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BuffPersisted>, I>>(object: I): BuffPersisted {
+    const message = createBaseBuffPersisted();
+    message.characterId = object.characterId ?? 0;
+    message.buffSourceId = object.buffSourceId ?? 0;
+    message.kind = object.kind ?? 0;
+    message.flagValues = object.flagValues?.map((e) => BuffFlagValuePersisted.fromPartial(e)) || [];
+    message.remainingDurationMs = object.remainingDurationMs ?? undefined;
+    message.skillLevel = object.skillLevel ?? 0;
+    message.causerId = object.causerId ?? 0;
     return message;
   },
 };

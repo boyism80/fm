@@ -21,6 +21,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, MoveMob](gs)
 	core.Bind[*GameServer, Damaged](gs)
 	core.Bind[*GameServer, Warp](gs)
+	core.Bind[*GameServer, DirectWarp](gs)
 	core.Bind[*GameServer, MoveItem](gs)
 	core.Bind[*GameServer, SortInventory](gs)
 	core.Bind[*GameServer, DistributeAP](gs)

@@ -81,7 +81,7 @@ export function createPartyHandlers(partyService: PartyService, grpcError: GrpcE
             try {
                 const result = await partyService.inviteParty(call.request.worldId, call.request.inviterCharacterId, call.request.targetCharacterName) as InvitePartyResult;
                 callback(null, {
-                    ok: Boolean(result.ok),
+                    ok: result.ok,
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
                     targetCharacterId: result.targetCharacterId ?? 0,
                     targetChannelId: result.targetChannelId ?? 0,
@@ -98,7 +98,7 @@ export function createPartyHandlers(partyService: PartyService, grpcError: GrpcE
                         errorCode: PartyErrorCode.NONE,
                         partyId: result.partyId,
                         revision: result.revision ?? 0,
-                        disbanded: Boolean(result.disbanded),
+                        disbanded: result.disbanded ?? false,
                     });
                 } else {
                     callback(null, {
@@ -120,7 +120,7 @@ export function createPartyHandlers(partyService: PartyService, grpcError: GrpcE
                         errorCode: PartyErrorCode.NONE,
                         partyId: result.partyId,
                         revision: result.revision ?? 0,
-                        disbanded: Boolean(result.disbanded),
+                        disbanded: result.disbanded ?? false,
                     });
                 } else {
                     callback(null, {
@@ -215,7 +215,7 @@ export function createPartyHandlers(partyService: PartyService, grpcError: GrpcE
         async denyParty(call: GrpcCall<DenyPartyRequest>, callback: GrpcCallback<DenyPartyReply>) {
             try {
                 const result = await partyService.denyParty(call.request.worldId, call.request.deniedCharacterId, call.request.inviterName, call.request.action) as DenyPartyResult;
-                callback(null, { ok: Boolean(result.ok), errorCode: result.code ?? PartyErrorCode.UNKNOWN });
+                callback(null, { ok: result.ok, errorCode: result.code ?? PartyErrorCode.UNKNOWN });
             } catch (err) { grpcError(err, callback); }
         },
         async broadcastMultiChat(call: GrpcCall<BroadcastMultiChatRequest>, callback: GrpcCallback<BroadcastMultiChatReply>) {
@@ -223,7 +223,7 @@ export function createPartyHandlers(partyService: PartyService, grpcError: GrpcE
                 const req = call.request;
                 const result = await partyService.broadcastMultiChat(req.worldId, req.memberId, req.senderCharacterId, req.chatMode, req.senderName, req.message) as BroadcastMultiChatResult;
                 callback(null, {
-                    ok: Boolean(result.ok),
+                    ok: result.ok,
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
                     deliveredCount: result.deliveredCount ?? 0,
                 });

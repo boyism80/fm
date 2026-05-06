@@ -140,6 +140,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	character.LoadInventory(reply.GetInventory())
 	character.LoadSkills(reply.GetSkills())
+	character.LoadBuffs(reply.GetBuffs())
 
 	gameClient, ok := ctx.Client.(*client.GameClient)
 	if !ok {

@@ -19,9 +19,9 @@ export type AccountRow = {
     password_hash: string;
     gender: number;
     role: number;
-    is_banned: boolean | number;
+    is_banned: boolean;
     ban_reason?: string | null;
-    is_chat_blocked: boolean | number;
+    is_chat_blocked: boolean;
     chat_blocked_until?: string | null;
     character_slot_count: number;
     last_login_ip?: string | null;
@@ -92,7 +92,7 @@ export type CharacterRow = {
     stance: number;
     meso: number;
     skill_point: number;
-    hidden: boolean | number;
+    hidden: boolean;
     deleted?: boolean;
     created_at?: Date | string;
     updated_at?: Date | string;
@@ -288,4 +288,39 @@ export type SkillRow = {
     cooldown_end_unix_ms: number | null;
     updated_at?: Date | string;
     deleted?: boolean;
+};
+
+export type BuffFlagValueModel = {
+    mask: number;
+    position: number;
+    value: number;
+};
+
+export interface BuffModel {
+    characterId: number;
+    buffSourceId: number;
+    kind: number;
+    flagValues: BuffFlagValueModel[];
+    remainingDurationMs: number | null;
+    skillLevel: number | null;
+    causerId: number | null;
+    updatedAt?: Date;
+}
+
+export type BuffRow = {
+    character_id: number;
+    buff_source_id: number;
+    kind: number;
+    remaining_duration_ms: number | null;
+    skill_level: number | null;
+    causer_id: number | null;
+    flag_values: BuffFlagValueRow[] | string;
+    updated_at?: Date | string;
+    deleted?: boolean;
+};
+
+export type BuffFlagValueRow = {
+    mask: number;
+    position: number;
+    value: number;
 };

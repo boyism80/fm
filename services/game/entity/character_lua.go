@@ -555,7 +555,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.Level()), ch.GetID(), values)
 				} else {
-					ch.Buffs.AddItemBuff(consumeWz, duration, values)
+					ch.Buffs.AddItemBuff(consumeWz, duration, values, true)
 				}
 				return 0
 			}
