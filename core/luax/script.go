@@ -167,3 +167,11 @@ func Resume(root *lua.LState, thread *lua.LState, args ...lua.LValue) (lua.Resum
 	}
 	return state, nil
 }
+
+func InlineCall(root *lua.LState, scriptPath string, funcName string, args ...interface{}) (lua.LValue, error) {
+	thread, err := NewThread(root, scriptPath)
+	if err != nil {
+		return nil, err
+	}
+	return Call(thread, funcName, args...)
+}

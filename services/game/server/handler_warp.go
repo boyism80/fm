@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
@@ -32,6 +33,16 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 		return fmt.Errorf("character not found")
 	}
 
+	currentMap := character.GetMap()
+	if currentMap == nil {
+		return fmt.Errorf("current map not found")
+	}
+
+	wz := currentMap.Wz
+	if wz == nil {
+		return fmt.Errorf("map model not found")
+	}
+
 	var targetMapId uint32
 	var spawnPoint uint8
 	stats := map[constant.Stat]int32{}
@@ -45,32 +56,12 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 		character.SetHp(50, false)
 		character.Stance = constant.StanceDefaultValue
 
-		currentMap := character.GetMap()
-		if currentMap == nil {
-			return fmt.Errorf("current map not found")
-		}
-
-		wz := currentMap.Wz
-		if wz == nil {
-			return fmt.Errorf("map model not found")
-		}
-
 		targetMapId = uint32(wz.ReturnMapId)
 		spawnPoint = 0
 		stats[constant.STAT_HP] = int32(character.GetHp())
 
 		character.Listener.OnUpdateStats(character, stats, true)
 	} else {
-		currentMap := character.GetMap()
-		if currentMap == nil {
-			return fmt.Errorf("current map not found")
-		}
-
-		wz := currentMap.Wz
-		if wz == nil {
-			return fmt.Errorf("map model not found")
-		}
-
 		portal, ok := wz.FindPortal(req.PortalName)
 		if !ok {
 			character.Listener.OnUpdateStats(character, nil, true)
@@ -91,6 +82,19 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 
 		targetMapId = uint32(portal.TargetMapId)
 		spawnPoint = targetPortal.ID
+
+		if portal.ScriptName != "" {
+			root := currentMap.GetLuaRoot()
+			if root == nil {
+				return fmt.Errorf("root lua state not found")
+			}
+			scriptPath := fmt.Sprintf("script/portal/%s.lua", portal.ScriptName)
+			if _, err := luax.InlineCall(root, scriptPath, "on_enter", character); err != nil {
+				return err
+			}
+			character.Listener.OnUpdateStats(character, nil, true)
+			return nil
+		}
 	}
 
 	targetMap := h.gs.GetMap(targetMapId)
@@ -100,5 +104,6 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 	if err := character.Warp(targetMap, spawnPoint); err != nil {
 		return err
 	}
+
 	return nil
 }
