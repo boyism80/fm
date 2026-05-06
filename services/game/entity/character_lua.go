@@ -553,9 +553,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 							}
 						}
 					}
-					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.Level()), ch.GetID(), values)
+					ch.Buffs.AddBuff(skillEntry.Wz, duration, uint8(skillEntry.Level()), ch.GetID(), values, true)
 				} else {
-					ch.Buffs.AddItemBuff(consumeWz, duration, values, true)
+					ch.Buffs.AddItemBuff(consumeWz, duration, values, true, true)
 				}
 				return 0
 			}
@@ -584,6 +584,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				uint8(skillEntry.Level()),
 				ch.GetID(),
 				map[constant.BuffFlag]int32{constant.BuffFlagMonsterRiding: mountID},
+				true,
 			)
 			return 0
 		},

@@ -88,7 +88,7 @@ func (ch *Character) LoadBuffs(persisted []*internal.BuffPersisted) {
 			if wzSkill == nil {
 				continue
 			}
-			ch.Buffs.AddBuff(wzSkill, dur, uint8(pb.GetSkillLevel()), pb.GetCauserId(), values)
+			ch.Buffs.AddBuff(wzSkill, dur, uint8(pb.GetSkillLevel()), pb.GetCauserId(), values, false)
 		case internal.BuffKind_BUFF_KIND_ITEM:
 			itemID := uint32(-pb.GetBuffSourceId())
 			model, ok := res.Items[itemID]
@@ -99,7 +99,7 @@ func (ch *Character) LoadBuffs(persisted []*internal.BuffPersisted) {
 			if !ok || cw == nil {
 				continue
 			}
-			ch.Buffs.AddItemBuff(cw, dur, values, false)
+			ch.Buffs.AddItemBuff(cw, dur, values, false, false)
 		default:
 			continue
 		}

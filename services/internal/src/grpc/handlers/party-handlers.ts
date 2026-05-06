@@ -32,6 +32,7 @@ import type {
     UpdatePartyMemberRequest,
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
+import { GrpcController, GrpcMethod } from "../grpc-method-decorator";
 
 export function createPartyHandlers(partyService: PartyService, grpcError: GrpcErrorHandler) {
     return {
@@ -230,4 +231,63 @@ export function createPartyHandlers(partyService: PartyService, grpcError: GrpcE
             } catch (err) { grpcError(err, callback); }
         },
     };
+}
+
+@GrpcController("partyController")
+export class PartyGrpcController {
+    private readonly handlers: ReturnType<typeof createPartyHandlers>;
+
+    constructor(partyService: PartyService, grpcError: GrpcErrorHandler) {
+        this.handlers = createPartyHandlers(partyService, grpcError);
+    }
+
+    @GrpcMethod("createParty")
+    async createParty(call: GrpcCall<CreatePartyRequest>, callback: GrpcCallback<CreatePartyReply>) {
+        return this.handlers.createParty(call, callback);
+    }
+
+    @GrpcMethod("joinParty")
+    async joinParty(call: GrpcCall<JoinPartyRequest>, callback: GrpcCallback<JoinPartyReply>) {
+        return this.handlers.joinParty(call, callback);
+    }
+
+    @GrpcMethod("inviteParty")
+    async inviteParty(call: GrpcCall<InvitePartyRequest>, callback: GrpcCallback<InvitePartyReply>) {
+        return this.handlers.inviteParty(call, callback);
+    }
+
+    @GrpcMethod("leaveParty")
+    async leaveParty(call: GrpcCall<LeavePartyRequest>, callback: GrpcCallback<LeavePartyReply>) {
+        return this.handlers.leaveParty(call, callback);
+    }
+
+    @GrpcMethod("expelParty")
+    async expelParty(call: GrpcCall<ExpelPartyRequest>, callback: GrpcCallback<ExpelPartyReply>) {
+        return this.handlers.expelParty(call, callback);
+    }
+
+    @GrpcMethod("changePartyLeader")
+    async changePartyLeader(call: GrpcCall<ChangePartyLeaderRequest>, callback: GrpcCallback<ChangePartyLeaderReply>) {
+        return this.handlers.changePartyLeader(call, callback);
+    }
+
+    @GrpcMethod("getParty")
+    async getParty(call: GrpcCall<GetPartyRequest>, callback: GrpcCallback<GetPartyReply>) {
+        return this.handlers.getParty(call, callback);
+    }
+
+    @GrpcMethod("updatePartyMember")
+    async updatePartyMember(call: GrpcCall<UpdatePartyMemberRequest>, callback: GrpcCallback<UpdatePartyMemberReply>) {
+        return this.handlers.updatePartyMember(call, callback);
+    }
+
+    @GrpcMethod("denyParty")
+    async denyParty(call: GrpcCall<DenyPartyRequest>, callback: GrpcCallback<DenyPartyReply>) {
+        return this.handlers.denyParty(call, callback);
+    }
+
+    @GrpcMethod("broadcastMultiChat")
+    async broadcastMultiChat(call: GrpcCall<BroadcastMultiChatRequest>, callback: GrpcCallback<BroadcastMultiChatReply>) {
+        return this.handlers.broadcastMultiChat(call, callback);
+    }
 }

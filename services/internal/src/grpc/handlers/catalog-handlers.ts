@@ -5,6 +5,7 @@ import type {
     PingRequest,
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
+import { GrpcController, GrpcMethod } from "../grpc-method-decorator";
 
 type ChannelConfig = { channel_id: number; host: string; port: number; name?: string };
 type WorldConfig = { world_name?: string; flag?: number; event_message?: string; channels?: ChannelConfig[] };
@@ -45,4 +46,23 @@ export function createCatalogHandlers(internalConfig: InternalConfig, grpcError:
             }
         },
     };
+}
+
+@GrpcController("catalogController")
+export class CatalogGrpcController {
+    private readonly handlers: ReturnType<typeof createCatalogHandlers>;
+
+    constructor(internalConfig: InternalConfig, grpcError: GrpcErrorHandler) {
+        this.handlers = createCatalogHandlers(internalConfig, grpcError);
+    }
+
+    @GrpcMethod("ping")
+    async ping(call: GrpcCall<PingRequest>, callback: GrpcCallback<PingReply>) {
+        return this.handlers.ping(call, callback);
+    }
+
+    @GrpcMethod("getServerCatalog")
+    async getServerCatalog(call: GrpcCall<GetServerCatalogRequest>, callback: GrpcCallback<GetServerCatalogReply>) {
+        return this.handlers.getServerCatalog(call, callback);
+    }
 }

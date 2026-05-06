@@ -30,6 +30,7 @@ import type {
     SaveCharactersRequest,
     SkillPersisted,
 } from "../../protobuf/generated/fminternal/internal_service";
+import { GrpcController, GrpcMethod } from "../grpc-method-decorator";
 
 type CharacterListResult = Awaited<ReturnType<CharacterOverviewService["getCharacterList"]>>;
 type CharacterListItem = CharacterListResult["characters"][number];
@@ -174,4 +175,47 @@ export function createCharacterHandlers(
             }
         },
     };
+}
+
+@GrpcController("characterController")
+export class CharacterGrpcController {
+    private readonly handlers: ReturnType<typeof createCharacterHandlers>;
+
+    constructor(
+        characterService: CharacterService,
+        characterOverviewService: CharacterOverviewService,
+        grpcError: GrpcErrorHandler
+    ) {
+        this.handlers = createCharacterHandlers(characterService, characterOverviewService, grpcError);
+    }
+
+    @GrpcMethod("saveCharacter")
+    async saveCharacter(call: GrpcCall<SaveCharacterRequest>, callback: GrpcCallback<SaveCharacterReply>) {
+        return this.handlers.saveCharacter(call, callback);
+    }
+
+    @GrpcMethod("saveCharacters")
+    async saveCharacters(call: GrpcCall<SaveCharactersRequest>, callback: GrpcCallback<SaveCharactersReply>) {
+        return this.handlers.saveCharacters(call, callback);
+    }
+
+    @GrpcMethod("getCharacterList")
+    async getCharacterList(call: GrpcCall<GetCharacterListRequest>, callback: GrpcCallback<GetCharacterListReply>) {
+        return this.handlers.getCharacterList(call, callback);
+    }
+
+    @GrpcMethod("checkCharacterName")
+    async checkCharacterName(call: GrpcCall<CheckCharacterNameRequest>, callback: GrpcCallback<CheckCharacterNameReply>) {
+        return this.handlers.checkCharacterName(call, callback);
+    }
+
+    @GrpcMethod("createCharacter")
+    async createCharacter(call: GrpcCall<CreateCharacterRequest>, callback: GrpcCallback<CreateCharacterReply>) {
+        return this.handlers.createCharacter(call, callback);
+    }
+
+    @GrpcMethod("deleteCharacter")
+    async deleteCharacter(call: GrpcCall<DeleteCharacterRequest>, callback: GrpcCallback<DeleteCharacterReply>) {
+        return this.handlers.deleteCharacter(call, callback);
+    }
 }

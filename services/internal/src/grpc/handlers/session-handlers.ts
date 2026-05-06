@@ -28,6 +28,7 @@ import type { CharacterModel } from "../../repos/character-repository";
 import type { InventoryModel } from "../../repos/inventory-repository";
 import type { SkillModel } from "../../repos/skill-repository";
 import type { BuffModel } from "../../repos/buff-repository";
+import { GrpcController, GrpcMethod } from "../grpc-method-decorator";
 
 export function createSessionHandlers(
     characterService: CharacterService,
@@ -162,4 +163,51 @@ export function createSessionHandlers(
             }
         },
     };
+}
+
+@GrpcController("sessionController")
+export class SessionGrpcController {
+    private readonly handlers: ReturnType<typeof createSessionHandlers>;
+
+    constructor(
+        characterService: CharacterService,
+        inventoryRepository: InventoryRepository,
+        skillService: SkillService,
+        buffService: BuffService,
+        sessionService: SessionService,
+        internalConfig: Pick<InternalConfig, "game_servers">,
+        characterRealtimeStateRepository: CharacterRealtimeStateRepository,
+        grpcError: GrpcErrorHandler
+    ) {
+        this.handlers = createSessionHandlers(
+            characterService,
+            inventoryRepository,
+            skillService,
+            buffService,
+            sessionService,
+            internalConfig,
+            characterRealtimeStateRepository,
+            grpcError
+        );
+    }
+
+    @GrpcMethod("beginGameTransition")
+    async beginGameTransition(call: GrpcCall<BeginGameTransitionRequest>, callback: GrpcCallback<BeginGameTransitionReply>) {
+        return this.handlers.beginGameTransition(call, callback);
+    }
+
+    @GrpcMethod("enterGame")
+    async enterGame(call: GrpcCall<EnterGameRequest>, callback: GrpcCallback<EnterGameReply>) {
+        return this.handlers.enterGame(call, callback);
+    }
+
+    @GrpcMethod("refreshSession")
+    async refreshSession(call: GrpcCall<RefreshSessionRequest>, callback: GrpcCallback<RefreshSessionReply>) {
+        return this.handlers.refreshSession(call, callback);
+    }
+
+    @GrpcMethod("logoutSession")
+    async logoutSession(call: GrpcCall<LogoutSessionRequest>, callback: GrpcCallback<LogoutSessionReply>) {
+        return this.handlers.logoutSession(call, callback);
+    }
 }

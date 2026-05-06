@@ -309,7 +309,7 @@ func (bc *BuffContainer) removeEntity(entity Buff) {
 	}
 }
 
-func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLevel uint8, causerID uint32, values map[constant.BuffFlag]int32) {
+func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLevel uint8, causerID uint32, values map[constant.BuffFlag]int32, notify bool) {
 	if bc == nil {
 		return
 	}
@@ -346,10 +346,12 @@ func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLeve
 
 	entity.CallOnBuffScript(ch)
 
-	ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
+	if notify {
+		ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
+	}
 }
 
-func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32, applyPotionDurationScale bool) {
+func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32, applyPotionDurationScale bool, notify bool) {
 	if bc == nil {
 		return
 	}
@@ -394,7 +396,9 @@ func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Durati
 
 	entity.CallOnBuffScript(ch)
 
-	ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
+	if notify {
+		ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
+	}
 }
 
 func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {
@@ -476,6 +480,28 @@ func (bc *BuffContainer) SetBuffValue(flag constant.BuffFlag, value int32) (Buff
 		bc.owner.Listener.OnBuffAdded(bc.owner, entity.GetBuffID(), entity.RemainingDuration(time.Now()), map[constant.BuffFlag]int32{flag: value})
 	}
 	return entity, true
+}
+
+func (bc *BuffContainer) EmitAllBuffAddedEvents() {
+	if bc == nil || bc.owner == nil {
+		return
+	}
+	now := time.Now()
+	ch := bc.owner
+	for entity := range bc.entities {
+		if entity == nil {
+			continue
+		}
+		values := entity.GetValues()
+		if len(values) == 0 {
+			continue
+		}
+		entityValues := make(map[constant.BuffFlag]int32, len(values))
+		for flag, value := range values {
+			entityValues[flag] = value
+		}
+		ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
+	}
 }
 
 func (ch *Character) handleRemovedBuffEntities(removed []Buff) {

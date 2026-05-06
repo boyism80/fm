@@ -3,11 +3,28 @@ import * as awilix from "awilix";
 import { InternalService } from "./protobuf/generated/fminternal/internal_service";
 import { createAppContainer } from "./container";
 import { autoMigrateAllIfEnabled } from "./auto-migrate";
-import { createCatalogHandlers } from "./grpc/handlers/catalog-handlers";
-import { createAuthHandlers } from "./grpc/handlers/auth-handlers";
-import { createSessionHandlers } from "./grpc/handlers/session-handlers";
-import { createCharacterHandlers } from "./grpc/handlers/character-handlers";
-import { createPartyHandlers } from "./grpc/handlers/party-handlers";
+import { CatalogGrpcController } from "./grpc/handlers/catalog-handlers";
+import { AuthGrpcController } from "./grpc/handlers/auth-handlers";
+import { SessionGrpcController } from "./grpc/handlers/session-handlers";
+import { CharacterGrpcController } from "./grpc/handlers/character-handlers";
+import { PartyGrpcController } from "./grpc/handlers/party-handlers";
+import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
+import type { AppConfiguration } from "./config/app-configuration";
+import type { InternalContext } from "./context/internal-context";
+import type { RabbitMQService } from "./services/rabbitmq-service";
+import type { WzService } from "./services/wz-service";
+type ServerContainerCradle = {
+    catalogController: CatalogGrpcController;
+    authController: AuthGrpcController;
+    sessionController: SessionGrpcController;
+    characterController: CharacterGrpcController;
+    partyController: PartyGrpcController;
+    appConfiguration: AppConfiguration;
+    internalContext: InternalContext;
+    rabbitmqService: RabbitMQService;
+    wzService: WzService;
+    grpcError: typeof grpcError;
+};
 
 const INVALID_CODES = new Set([
     "UNKNOWN_WORLD", "INVALID_CHARACTER_ID",
@@ -21,8 +38,32 @@ function grpcError(err: { code?: string; message?: string }, callback: (error: {
     callback({ code, message: err.message || String(err) });
 }
 
+function validateGrpcRouteCoverage(routes: Array<{ grpcMethod: string }>) {
+    const expectedMethods = new Set(Object.keys(InternalService));
+    const registeredMethods = routes.map((route) => route.grpcMethod);
+    const duplicateMethods = registeredMethods.filter((method, index) => registeredMethods.indexOf(method) !== index);
+    const uniqueRegisteredMethods = new Set(registeredMethods);
+
+    const missingMethods = [...expectedMethods].filter((method) => !uniqueRegisteredMethods.has(method));
+    const unknownMethods = [...uniqueRegisteredMethods].filter((method) => !expectedMethods.has(method));
+
+    if (missingMethods.length > 0 || unknownMethods.length > 0 || duplicateMethods.length > 0) {
+        const parts: string[] = [];
+        if (missingMethods.length > 0) {
+            parts.push(`missing=[${missingMethods.sort().join(", ")}]`);
+        }
+        if (unknownMethods.length > 0) {
+            parts.push(`unknown=[${unknownMethods.sort().join(", ")}]`);
+        }
+        if (duplicateMethods.length > 0) {
+            parts.push(`duplicate=[${[...new Set(duplicateMethods)].sort().join(", ")}]`);
+        }
+        throw new Error(`gRPC route registration mismatch: ${parts.join(" | ")}`);
+    }
+}
+
 async function main() {
-    const container = createAppContainer() as any;
+    const container = createAppContainer() as awilix.AwilixContainer<ServerContainerCradle>;
     const appConfiguration = container.resolve("appConfiguration");
     const internalConfig = appConfiguration.raw;
     await autoMigrateAllIfEnabled(internalConfig);
@@ -33,6 +74,9 @@ async function main() {
     const wid = String(internalConfig.app.world_id);
     const pgw = internalConfig.postgresql.worlds[wid];
     const rgw = internalConfig.redis.worlds[wid];
+    if (!pgw || !rgw) {
+        throw new Error(`world configuration not found for world_id=${wid}`);
+    }
     const pgUnified = internalConfig.postgresql.unified;
     console.log(
         `fm internal: loaded ${internalConfig.configPath} | grpc ${internalConfig.grpc.host}:${internalConfig.grpc.port} | world ${wid} | ` +
@@ -51,26 +95,33 @@ async function main() {
 
     container.register({
         grpcError: awilix.asValue(grpcError),
-        catalogHandlers: awilix.asFunction(createCatalogHandlers).singleton(),
-        authHandlers: awilix.asFunction(createAuthHandlers).singleton(),
-        sessionHandlers: awilix.asFunction(createSessionHandlers).singleton(),
-        characterHandlers: awilix.asFunction(createCharacterHandlers).singleton(),
-        partyHandlers: awilix.asFunction(createPartyHandlers).singleton(),
+        catalogController: awilix.asClass(CatalogGrpcController).scoped(),
+        authController: awilix.asClass(AuthGrpcController).scoped(),
+        sessionController: awilix.asClass(SessionGrpcController).scoped(),
+        characterController: awilix.asClass(CharacterGrpcController).scoped(),
+        partyController: awilix.asClass(PartyGrpcController).scoped(),
     });
 
-    const catalogHandlers = container.resolve("catalogHandlers");
-    const authHandlers = container.resolve("authHandlers");
-    const sessionHandlers = container.resolve("sessionHandlers");
-    const characterHandlers = container.resolve("characterHandlers");
-    const partyHandlers = container.resolve("partyHandlers");
+    const serviceImplementation: Record<string, (call: unknown, callback: unknown) => Promise<void>> = {};
+    const routes = getGrpcRoutes();
+    validateGrpcRouteCoverage(routes);
+    for (const route of routes) {
+        serviceImplementation[route.grpcMethod] = async (call: unknown, callback: unknown) => {
+            const scope = container.createScope();
+            try {
+                const controller = scope.resolve(route.resolverName) as unknown as Record<string, (callArg: unknown, callbackArg: unknown) => Promise<unknown> | unknown>;
+                const method = controller[route.methodName];
+                if (typeof method !== "function") {
+                    throw new Error(`gRPC method not found: ${route.resolverName}.${route.methodName}`);
+                }
+                await method.call(controller, call, callback);
+            } finally {
+                await scope.dispose();
+            }
+        };
+    }
 
-    server.addService(InternalService, {
-        ...catalogHandlers,
-        ...authHandlers,
-        ...sessionHandlers,
-        ...characterHandlers,
-        ...partyHandlers,
-    });
+    server.addService(InternalService, serviceImplementation);
 
     const addr = `${internalConfig.grpc.host}:${internalConfig.grpc.port}`;
 

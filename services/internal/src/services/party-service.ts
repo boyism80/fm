@@ -54,7 +54,6 @@ export class PartyService {
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
-    private mqDirectReady: boolean;
 
     constructor(
         internalContext: InternalContext,
@@ -76,15 +75,6 @@ export class PartyService {
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
-        this.mqDirectReady = false;
-    }
-
-    private async ensurePartyMqExchange() {
-        if (this.mqDirectReady) {
-            return;
-        }
-        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-        this.mqDirectReady = true;
     }
 
     private async publishToPartyRoutes(
@@ -94,7 +84,7 @@ export class PartyService {
         revision: number,
         extraPayload: Record<string, unknown> = {}
     ) {
-        await this.ensurePartyMqExchange();
+        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.all.party`;
         return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
             event_id: extraPayload.event_id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -106,7 +96,7 @@ export class PartyService {
     }
 
     private async publishToPartyGameChannel(worldId: number, channelId: number, eventType: string, payload: Record<string, unknown> = {}) {
-        await this.ensurePartyMqExchange();
+        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
         const routingKey = `fm.${worldId}.${channelId}.party`;
         return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
             occurred_at: new Date().toISOString(),

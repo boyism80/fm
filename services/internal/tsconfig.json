@@ -3,6 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "experimentalDecorators": true,
     "strict": true,
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,

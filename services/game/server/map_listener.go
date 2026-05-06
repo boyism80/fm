@@ -32,6 +32,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 			Character: characterDTO,
 		}
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
+		character.Buffs.EmitAllBuffAddedEvents()
 	} else {
 
 		characterDTO := character.ToDTO()

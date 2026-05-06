@@ -3,6 +3,7 @@ import type { AccountService } from "../../services/account-service";
 import type { SessionService } from "../../services/session-service";
 import type { LoginAccountReply, LoginAccountRequest } from "../../protobuf/generated/fminternal/internal_service";
 import type { GrpcCallback, GrpcErrorHandler } from "./types";
+import { GrpcController, GrpcMethod } from "../grpc-method-decorator";
 
 type LoginAccountCall = { request: LoginAccountRequest };
 
@@ -68,4 +69,23 @@ export function createAuthHandlers(
             }
         },
     };
+}
+
+@GrpcController("authController")
+export class AuthGrpcController {
+    private readonly handlers: ReturnType<typeof createAuthHandlers>;
+
+    constructor(
+        accountService: AccountService,
+        sessionService: SessionService,
+        internalConfig: InternalConfig,
+        grpcError: GrpcErrorHandler
+    ) {
+        this.handlers = createAuthHandlers(accountService, sessionService, internalConfig, grpcError);
+    }
+
+    @GrpcMethod("loginAccount")
+    async loginAccount(call: LoginAccountCall, callback: GrpcCallback<LoginAccountReply>) {
+        return this.handlers.loginAccount(call, callback);
+    }
 }
