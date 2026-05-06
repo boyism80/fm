@@ -8,26 +8,26 @@ const SELECT_COLS = "world_id, party_id, character_id, character_name, level, cl
 export type { PartyMemberModel };
 
 export class PartyMemberRepository extends HashRepository<PartyMemberModel, PartyMemberRow> {
-    getGroupKey(model: PartyMemberModel) {
+    override getGroupKey(model: PartyMemberModel) {
         return String(model.partyId);
     }
 
-    getItemKey(model: PartyMemberModel) {
-        return model.characterId;
+    override getItemKey(model: PartyMemberModel) {
+        return String(model.characterId);
     }
 
-    getRedisHashKey(worldId: number, partyId: string) {
+    override getRedisHashKey(worldId: number, partyId: string) {
         return redisCacheKey(`w${worldId}:party-member:${partyId}`);
     }
 
-    onSelect(partyId: string, worldId: number): RepositoryQuery {
+    override onSelect(partyId: string, worldId: number): RepositoryQuery {
         return {
             text: `SELECT ${SELECT_COLS} FROM party_members WHERE world_id = $1 AND party_id = $2 ORDER BY joined_at ASC, character_id ASC`,
-            values: [Number(worldId), Number(partyId)],
+            values: [worldId, Number(partyId)],
         };
     }
 
-    onBulkUpsert(rows: PartyMemberRow[]): RepositoryQuery {
+    override onBulkUpsert(rows: PartyMemberRow[]): RepositoryQuery {
         if (!rows.length) {
             return { text: "", values: [] };
         }
@@ -49,24 +49,24 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
                        updated_at = NOW()
                    RETURNING ${SELECT_COLS}`,
             values: rows.flatMap((r) => [
-                Number(r.world_id),
-                Number(r.party_id),
-                Number(r.character_id),
-                String(r.character_name),
-                Number(r.level),
-                Number(r.class_id),
+                r.world_id,
+                r.party_id,
+                r.character_id,
+                r.character_name,
+                r.level,
+                r.class_id,
                 r.role ?? "MEMBER",
-                Number(r.map_id ?? 0),
-                Number(r.channel_index ?? -2),
+                r.map_id ?? 0,
+                r.channel_index ?? -2,
                 r.door == null ? null : r.door,
             ]),
         };
     }
 
-    onBulkDelete(itemKeys: string[], partyId: string, worldId: number): RepositoryQuery {
+    override onBulkDelete(itemKeys: string[], partyId: string, worldId: number): RepositoryQuery {
         return {
             text: "DELETE FROM party_members WHERE world_id = $1 AND party_id = $2 AND character_id = ANY($3::int[])",
-            values: [Number(worldId), Number(partyId), itemKeys.map(Number)],
+            values: [worldId, Number(partyId), itemKeys.map(Number)],
         };
     }
 
@@ -89,24 +89,24 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
         }
     }
 
-    rowToModel(row: PartyMemberRow): PartyMemberModel {
+    override rowToModel(row: PartyMemberRow): PartyMemberModel {
         return {
-            worldId: Number(row.world_id),
-            partyId: Number(row.party_id),
-            characterId: Number(row.character_id),
+            worldId: row.world_id,
+            partyId: row.party_id,
+            characterId: row.character_id,
             characterName: row.character_name,
-            level: Number(row.level),
-            classId: Number(row.class_id),
+            level: row.level,
+            classId: row.class_id,
             role: row.role ?? "MEMBER",
-            mapId: Number(row.map_id ?? 0),
-            channelIndex: Number(row.channel_index ?? -2),
+            mapId: row.map_id ?? 0,
+            channelIndex: row.channel_index ?? -2,
             door: this.doorFromRow(row.door),
             joinedAt: row.joined_at instanceof Date ? row.joined_at : new Date(row.joined_at),
             updatedAt: row.updated_at instanceof Date ? row.updated_at : new Date(row.updated_at),
         };
     }
 
-    modelToRow(model: PartyMemberModel): PartyMemberRow {
+    override modelToRow(model: PartyMemberModel): PartyMemberRow {
         return {
             world_id: model.worldId,
             party_id: model.partyId,

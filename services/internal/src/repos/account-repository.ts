@@ -6,26 +6,26 @@ import type { AccountDeleteModel, AccountModel, AccountRow } from "../types/repo
 export type { AccountModel };
 
 export class AccountRepository extends ValueRepository<AccountModel, AccountRow, number> {
-    getKey(model: AccountModel) {
+    override getKey(model: AccountModel) {
         return model.accountId;
     }
 
-    getTtlSeconds() {
+    override getTtlSeconds() {
         return 300;
     }
 
-    getRedisKey(worldId: number, accountId: number) {
+    override getRedisKey(worldId: number, accountId: number) {
         return redisCacheKey(`w${worldId}:account:${accountId}`);
     }
 
-    onSelect(accountId: number): RepositoryQuery {
+    override onSelect(accountId: number): RepositoryQuery {
         return {
             text: "SELECT * FROM accounts WHERE id = $1",
             values: [accountId],
         };
     }
 
-    onUpsert(row: AccountRow): RepositoryQuery {
+    override onUpsert(row: AccountRow): RepositoryQuery {
         return {
             text: `INSERT INTO accounts
                      (id, login_id, password_hash, gender, role, is_banned, ban_reason,
@@ -62,31 +62,31 @@ export class AccountRepository extends ValueRepository<AccountModel, AccountRow,
         };
     }
 
-    onDelete(row: AccountDeleteModel): RepositoryQuery {
+    override onDelete(row: AccountDeleteModel): RepositoryQuery {
         return {
             text: "DELETE FROM accounts WHERE id = $1",
-            values: [Number(row.accountId)],
+            values: [row.accountId],
         };
     }
 
-    rowToModel(row: AccountRow): AccountModel {
+    override rowToModel(row: AccountRow): AccountModel {
         return {
-            accountId: Number(row.id),
+            accountId: row.id,
             loginId: row.login_id,
             passwordHash: row.password_hash,
-            gender: Number(row.gender),
-            role: Number(row.role),
+            gender: row.gender,
+            role: row.role,
             isBanned: row.is_banned,
             banReason: row.ban_reason ?? null,
             isChatBlocked: row.is_chat_blocked,
             chatBlockedUntil: row.chat_blocked_until ?? null,
-            characterSlotCount: Number(row.character_slot_count),
+            characterSlotCount: row.character_slot_count,
             lastLoginIp: row.last_login_ip ?? null,
             macAddress: row.mac_address ?? null,
         };
     }
 
-    modelToRow(model: AccountModel): AccountRow {
+    override modelToRow(model: AccountModel): AccountRow {
         return {
             id: model.accountId,
             login_id: model.loginId,

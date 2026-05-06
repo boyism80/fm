@@ -40,40 +40,40 @@ function rowValues(row: CharacterRow) {
 }
 
 export class CharacterRepository extends ValueRepository<CharacterModel, CharacterRow, number> {
-    getKey(model: CharacterModel) {
+    override getKey(model: CharacterModel) {
         return model.characterId;
     }
 
-    getTtlSeconds() {
+    override getTtlSeconds() {
         return this.ctx.appConfiguration.getCharacterCacheTtlSeconds();
     }
 
-    getRedisKey(worldId: number, characterId: number) {
+    override getRedisKey(worldId: number, characterId: number) {
         return redisCacheKey(`w${worldId}:character:${characterId}`);
     }
 
-    onSelect(characterId: number, worldId: number): RepositoryQuery {
+    override onSelect(characterId: number, worldId: number): RepositoryQuery {
         return {
             text: `SELECT ${SELECT_COLS} FROM characters WHERE id = $1 AND world_id = $2 AND NOT deleted`,
-            values: [Number(characterId), Number(worldId)],
+            values: [characterId, worldId],
         };
     }
 
-    onSelectMany(characterIds: number[], worldId: number): RepositoryQuery {
+    override onSelectMany(characterIds: number[], worldId: number): RepositoryQuery {
         return {
             text: `SELECT ${SELECT_COLS} FROM characters WHERE id = ANY($1::int[]) AND world_id = $2 AND NOT deleted`,
-            values: [characterIds.map(Number), Number(worldId)],
+            values: [characterIds, worldId],
         };
     }
 
-    onUpsert(row: CharacterRow): RepositoryQuery {
+    override onUpsert(row: CharacterRow): RepositoryQuery {
         return {
             text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
             values: rowValues(row),
         };
     }
 
-    onBulkUpsert(rows: CharacterRow[]): RepositoryQuery | null {
+    override onBulkUpsert(rows: CharacterRow[]): RepositoryQuery | null {
         if (!rows.length) {
             return null;
         }
@@ -86,49 +86,49 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
         };
     }
 
-    onDelete(row: CharacterDeleteModel): RepositoryQuery {
+    override onDelete(row: CharacterDeleteModel): RepositoryQuery {
         return {
             text: "UPDATE characters SET deleted = true, updated_at = NOW() WHERE id = $1 AND account_id = $2 AND world_id = $3 AND deleted = false",
-            values: [Number(row.characterId), Number(row.accountId), Number(row.worldId)],
+            values: [row.characterId, row.accountId, row.worldId],
         };
     }
 
-    rowToModel(row: CharacterRow): CharacterModel {
+    override rowToModel(row: CharacterRow): CharacterModel {
         return {
-            characterId: Number(row.id),
-            accountId: Number(row.account_id),
-            worldId: Number(row.world_id),
+            characterId: row.id,
+            accountId: row.account_id,
+            worldId: row.world_id,
             name: row.name,
-            gender: Number(row.gender),
-            skinColor: Number(row.skin_color),
-            face: Number(row.face),
-            hair: Number(row.hair),
-            level: Number(row.level),
-            classId: Number(row.class_id),
-            role: Number(row.role),
-            str: Number(row.str),
-            dex: Number(row.dex),
-            intStat: Number(row.int_stat),
-            luk: Number(row.luk),
-            hp: Number(row.hp),
-            maxHp: Number(row.max_hp),
-            mp: Number(row.mp),
-            maxMp: Number(row.max_mp),
-            abilityPoint: Number(row.ability_point),
-            exp: Number(row.exp),
-            mapId: Number(row.map_id),
-            spawnPoint: Number(row.spawn_point),
-            positionX: Number(row.pos_x),
-            positionY: Number(row.pos_y),
-            stance: Number(row.stance),
-            meso: Number(row.meso),
-            skillPoint: Number(row.skill_point),
+            gender: row.gender,
+            skinColor: row.skin_color,
+            face: row.face,
+            hair: row.hair,
+            level: row.level,
+            classId: row.class_id,
+            role: row.role,
+            str: row.str,
+            dex: row.dex,
+            intStat: row.int_stat,
+            luk: row.luk,
+            hp: row.hp,
+            maxHp: row.max_hp,
+            mp: row.mp,
+            maxMp: row.max_mp,
+            abilityPoint: row.ability_point,
+            exp: row.exp,
+            mapId: row.map_id,
+            spawnPoint: row.spawn_point,
+            positionX: row.pos_x,
+            positionY: row.pos_y,
+            stance: row.stance,
+            meso: row.meso,
+            skillPoint: row.skill_point,
             hidden: row.hidden,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 
-    modelToRow(model: CharacterModel): CharacterRow {
+    override modelToRow(model: CharacterModel): CharacterRow {
         return {
             id: model.characterId,
             account_id: model.accountId,

@@ -22,30 +22,30 @@ function rowValues(row: SkillRow) {
 }
 
 export class SkillRepository extends HashRepository<SkillModel, SkillRow> {
-    getTtlSeconds() {
+    override getTtlSeconds() {
         return this.ctx.appConfiguration.getCharacterCacheTtlSeconds();
     }
 
-    getGroupKey(model: SkillModel) {
+    override getGroupKey(model: SkillModel) {
         return String(model.characterId);
     }
 
-    getItemKey(model: SkillModel) {
+    override getItemKey(model: SkillModel) {
         return String(model.skillId);
     }
 
-    getRedisHashKey(worldId: number, characterId: string) {
+    override getRedisHashKey(worldId: number, characterId: string) {
         return redisCacheKey(`w${worldId}:skills:${characterId}`);
     }
 
-    onSelect(characterId: string): RepositoryQuery {
+    override onSelect(characterId: string): RepositoryQuery {
         return {
             text: `SELECT ${SELECT_COLS} FROM character_skills WHERE character_id = $1`,
             values: [Number(characterId)],
         };
     }
 
-    onBulkUpsert(rows: SkillRow[]): RepositoryQuery {
+    override onBulkUpsert(rows: SkillRow[]): RepositoryQuery {
         if (!rows.length) {
             return { text: "", values: [] };
         }
@@ -58,25 +58,25 @@ export class SkillRepository extends HashRepository<SkillModel, SkillRow> {
         };
     }
 
-    onBulkDelete(itemKeys: string[], characterId: string): RepositoryQuery {
+    override onBulkDelete(itemKeys: string[], characterId: string): RepositoryQuery {
         return {
             text: "DELETE FROM character_skills WHERE skill_id = ANY($1::bigint[]) AND character_id = $2",
             values: [itemKeys.map(Number), Number(characterId)],
         };
     }
 
-    rowToModel(row: SkillRow): SkillModel {
+    override rowToModel(row: SkillRow): SkillModel {
         return {
-            characterId: Number(row.character_id),
-            skillId: Number(row.skill_id),
-            level: Number(row.level),
-            masterLevel: Number(row.master_level),
-            cooldownEndUnixMs: row.cooldown_end_unix_ms != null ? Number(row.cooldown_end_unix_ms) : null,
+            characterId: row.character_id,
+            skillId: row.skill_id,
+            level: row.level,
+            masterLevel: row.master_level,
+            cooldownEndUnixMs: row.cooldown_end_unix_ms,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 
-    modelToRow(model: SkillModel): SkillRow {
+    override modelToRow(model: SkillModel): SkillRow {
         return {
             character_id: model.characterId,
             skill_id: model.skillId,
@@ -95,7 +95,7 @@ export class SkillRepository extends HashRepository<SkillModel, SkillRow> {
 
         const normalized = models.map((m) => {
             const row = this.modelToRow(m);
-            row.character_id = Number(characterId);
+            row.character_id = characterId;
             return row;
         });
 

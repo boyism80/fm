@@ -45,18 +45,18 @@ export class SessionRepository {
             version: String(session.version ?? 1),
             world_id: session.worldId == null ? "" : String(session.worldId),
             account_id: String(session.accountId ?? 0),
-            state: String(session.state ?? ""),
+            state: session.state ?? "",
             character_id: session.character?.id == null ? "" : String(session.character.id),
-            character_name: session.character?.name == null ? "" : String(session.character.name),
-            login_server_id: session.loginServer?.id == null ? "" : String(session.loginServer.id),
+            character_name: session.character?.name ?? "",
+            login_server_id: session.loginServer?.id ?? "",
             login_server_connected: session.loginServer?.connected ? "1" : "0",
-            game_server_id: session.gameServer?.id == null ? "" : String(session.gameServer.id),
+            game_server_id: session.gameServer?.id ?? "",
             game_server_world_id: session.gameServer?.worldId == null ? "" : String(session.gameServer.worldId),
             game_server_channel_id: session.gameServer?.channelId == null ? "" : String(session.gameServer.channelId),
             game_server_connected: session.gameServer?.connected ? "1" : "0",
-            created_at: session.timestamps?.createdAt == null ? "" : String(session.timestamps.createdAt),
-            updated_at: session.timestamps?.updatedAt == null ? "" : String(session.timestamps.updatedAt),
-            state_changed_at: session.timestamps?.stateChangedAt == null ? "" : String(session.timestamps.stateChangedAt),
+            created_at: session.timestamps?.createdAt ?? "",
+            updated_at: session.timestamps?.updatedAt ?? "",
+            state_changed_at: session.timestamps?.stateChangedAt ?? "",
         };
     }
 
@@ -76,13 +76,13 @@ export class SessionRepository {
             },
             loginServer: {
                 id: hash.login_server_id || null,
-                connected: String(hash.login_server_connected || "0") === "1",
+                connected: (hash.login_server_connected || "0") === "1",
             },
             gameServer: {
                 id: hash.game_server_id || null,
                 worldId: toNumberOrNull(hash.game_server_world_id),
                 channelId: toNumberOrNull(hash.game_server_channel_id),
-                connected: String(hash.game_server_connected || "0") === "1",
+                connected: (hash.game_server_connected || "0") === "1",
             },
             timestamps: {
                 createdAt: hash.created_at || null,
@@ -98,14 +98,14 @@ export class SessionRepository {
             world_id: String(session.worldId ?? 0),
             account_id: String(session.accountId ?? 0),
             character_id: String(session.characterId ?? 0),
-            character_name: session.characterName == null ? "" : String(session.characterName),
-            state: session.state == null ? "" : String(session.state),
-            game_server_id: session.gameServer?.id == null ? "" : String(session.gameServer.id),
+            character_name: session.characterName ?? "",
+            state: session.state ?? "",
+            game_server_id: session.gameServer?.id ?? "",
             game_server_world_id: session.gameServer?.worldId == null ? "" : String(session.gameServer.worldId),
             game_server_channel_id: session.gameServer?.channelId == null ? "" : String(session.gameServer.channelId),
             game_server_connected: session.gameServer?.connected ? "1" : "0",
-            created_at: session.timestamps?.createdAt == null ? "" : String(session.timestamps.createdAt),
-            updated_at: session.timestamps?.updatedAt == null ? "" : String(session.timestamps.updatedAt),
+            created_at: session.timestamps?.createdAt ?? "",
+            updated_at: session.timestamps?.updatedAt ?? "",
         };
     }
 
@@ -125,7 +125,7 @@ export class SessionRepository {
                 id: hash.game_server_id || null,
                 worldId: toNumberOrNull(hash.game_server_world_id),
                 channelId: toNumberOrNull(hash.game_server_channel_id),
-                connected: String(hash.game_server_connected || "0") === "1",
+                connected: (hash.game_server_connected || "0") === "1",
             },
             timestamps: {
                 createdAt: hash.created_at || null,

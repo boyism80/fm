@@ -8,29 +8,29 @@ const SELECT_COLS = "world_id, party_id, leader_character_id, state, revision, d
 export type { PartyModel };
 
 export class PartyRepository extends ValueRepository<PartyModel, PartyRow, number> {
-    getKey(model: PartyModel) {
+    override getKey(model: PartyModel) {
         return model.partyId;
     }
 
-    getRedisKey(worldId: number, partyId: number) {
+    override getRedisKey(worldId: number, partyId: number) {
         return redisCacheKey(`w${worldId}:party:${partyId}`);
     }
 
-    onSelect(partyId: number, worldId: number): RepositoryQuery {
+    override onSelect(partyId: number, worldId: number): RepositoryQuery {
         return {
             text: `SELECT ${SELECT_COLS} FROM parties WHERE world_id = $1 AND party_id = $2`,
-            values: [Number(worldId), Number(partyId)],
+            values: [worldId, partyId],
         };
     }
 
-    onSelectMany(partyIds: number[], worldId: number): RepositoryQuery {
+    override onSelectMany(partyIds: number[], worldId: number): RepositoryQuery {
         return {
             text: `SELECT ${SELECT_COLS} FROM parties WHERE world_id = $1 AND party_id = ANY($2::bigint[])`,
-            values: [Number(worldId), partyIds.map(Number)],
+            values: [worldId, partyIds],
         };
     }
 
-    onUpsert(row: PartyRow): RepositoryQuery {
+    override onUpsert(row: PartyRow): RepositoryQuery {
         return {
             text: `INSERT INTO parties (world_id, party_id, leader_character_id, state, revision, disbanded_at, created_at, updated_at)
                    VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())
@@ -42,37 +42,37 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
                        updated_at = NOW()
                    RETURNING ${SELECT_COLS}`,
             values: [
-                Number(row.world_id),
-                Number(row.party_id),
-                Number(row.leader_character_id),
+                row.world_id,
+                row.party_id,
+                row.leader_character_id,
                 row.state,
-                Number(row.revision),
+                row.revision,
                 row.disbanded_at ?? null,
             ],
         };
     }
 
-    onDelete(row: PartyDeleteRow): RepositoryQuery {
+    override onDelete(row: PartyDeleteRow): RepositoryQuery {
         return {
             text: "DELETE FROM parties WHERE world_id = $1 AND party_id = $2",
-            values: [Number(row.worldId), Number(row.partyId)],
+            values: [row.worldId, row.partyId],
         };
     }
 
-    rowToModel(row: PartyRow): PartyModel {
+    override rowToModel(row: PartyRow): PartyModel {
         return {
-            worldId: Number(row.world_id),
-            partyId: Number(row.party_id),
-            leaderCharacterId: Number(row.leader_character_id),
+            worldId: row.world_id,
+            partyId: row.party_id,
+            leaderCharacterId: row.leader_character_id,
             state: row.state,
-            revision: Number(row.revision),
+            revision: row.revision,
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 
-    modelToRow(model: PartyModel): PartyRow {
+    override modelToRow(model: PartyModel): PartyRow {
         return {
             world_id: model.worldId,
             party_id: model.partyId,

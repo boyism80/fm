@@ -36,30 +36,30 @@ function rowValues(row: InventoryRow) {
 }
 
 export class InventoryRepository extends HashRepository<InventoryModel, InventoryRow> {
-    getTtlSeconds() {
+    override getTtlSeconds() {
         return this.ctx.appConfiguration.getItemCacheTtlSeconds();
     }
 
-    getGroupKey(model: InventoryModel) {
+    override getGroupKey(model: InventoryModel) {
         return String(model.ownerId);
     }
 
-    getItemKey(model: InventoryModel) {
+    override getItemKey(model: InventoryModel) {
         return `${model.inventoryType}:${model.slot}`;
     }
 
-    getRedisHashKey(worldId: number, ownerId: string) {
+    override getRedisHashKey(worldId: number, ownerId: string) {
         return redisCacheKey(`w${worldId}:inventory:${ownerId}`);
     }
 
-    onSelect(ownerId: string): RepositoryQuery {
+    override onSelect(ownerId: string): RepositoryQuery {
         return {
             text: `SELECT ${SELECT_COLS} FROM inventory WHERE owner_id = $1`,
             values: [Number(ownerId)],
         };
     }
 
-    onBulkUpsert(rows: InventoryRow[]): RepositoryQuery {
+    override onBulkUpsert(rows: InventoryRow[]): RepositoryQuery {
         if (!rows.length) {
             return { text: "", values: [] };
         }
@@ -75,12 +75,12 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
         };
     }
 
-    onBulkDelete(itemKeys: string[], ownerId: string): RepositoryQuery {
+    override onBulkDelete(itemKeys: string[], ownerId: string): RepositoryQuery {
         if (!itemKeys.length) {
             return { text: "", values: [] };
         }
         const tuples = itemKeys.map((k) => {
-            const [t, s] = String(k).split(":");
+            const [t, s] = k.split(":");
             return [Number(t), Number(s)];
         });
         const values = [Number(ownerId), ...tuples.flat()];
@@ -91,26 +91,26 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
         };
     }
 
-    rowToModel(row: InventoryRow): InventoryModel {
+    override rowToModel(row: InventoryRow): InventoryModel {
         return {
-            uniqueId: row.unique_id != null ? Number(row.unique_id) : null,
-            ownerId: Number(row.owner_id),
-            inventoryType: Number(row.inventory_type),
-            itemId: Number(row.item_id),
-            slot: Number(row.slot),
-            count: Number(row.count),
+            uniqueId: row.unique_id,
+            ownerId: row.owner_id,
+            inventoryType: row.inventory_type,
+            itemId: row.item_id,
+            slot: row.slot,
+            count: row.count,
             expiration: row.expiration ? new Date(row.expiration) : null,
-            enhanceChance: row.enhance_chance != null ? Number(row.enhance_chance) : null,
-            enhanceCount: row.enhance_count != null ? Number(row.enhance_count) : null,
-            flag: row.flag != null ? Number(row.flag) : null,
-            skillBonus: row.skill_bonus != null ? Number(row.skill_bonus) : null,
+            enhanceChance: row.enhance_chance,
+            enhanceCount: row.enhance_count,
+            flag: row.flag,
+            skillBonus: row.skill_bonus,
             ownerName: row.owner_name ?? null,
             equipBonusStats: typeof row.equip_bonus_stats === "string" ? JSON.parse(row.equip_bonus_stats) : (row.equip_bonus_stats ?? {}),
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 
-    modelToRow(model: InventoryModel): InventoryRow {
+    override modelToRow(model: InventoryModel): InventoryRow {
         let uniqueId = model.uniqueId;
         if (uniqueId === 0) {
             uniqueId = null;
@@ -137,13 +137,13 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
         const pool = this.pool(worldId, groupKey);
         const normalized = models.map((m) => {
             const row = this.modelToRow(m);
-            row.owner_id = Number(ownerId);
+            row.owner_id = ownerId;
             return row;
         });
 
         await pool.query("BEGIN");
         try {
-            await pool.query("DELETE FROM inventory WHERE owner_id = $1", [Number(ownerId)]);
+            await pool.query("DELETE FROM inventory WHERE owner_id = $1", [ownerId]);
             if (normalized.length > 0) {
                 const insert = this.onBulkUpsert(normalized);
                 if (insert.text) {

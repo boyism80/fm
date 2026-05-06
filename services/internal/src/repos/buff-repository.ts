@@ -46,30 +46,30 @@ function rowValues(row: BuffRow) {
 }
 
 export class BuffRepository extends HashRepository<BuffModel, BuffRow> {
-    getTtlSeconds() {
+    override getTtlSeconds() {
         return this.ctx.appConfiguration.getCharacterCacheTtlSeconds();
     }
 
-    getGroupKey(model: BuffModel) {
+    override getGroupKey(model: BuffModel) {
         return String(model.characterId);
     }
 
-    getItemKey(model: BuffModel) {
+    override getItemKey(model: BuffModel) {
         return String(model.buffSourceId);
     }
 
-    getRedisHashKey(worldId: number, characterId: string) {
+    override getRedisHashKey(worldId: number, characterId: string) {
         return redisCacheKey(`w${worldId}:buffs:${characterId}`);
     }
 
-    onSelect(characterId: string): RepositoryQuery {
+    override onSelect(characterId: string): RepositoryQuery {
         return {
             text: `SELECT ${SELECT_COLS} FROM character_buffs WHERE character_id = $1`,
             values: [Number(characterId)],
         };
     }
 
-    onBulkUpsert(rows: BuffRow[]): RepositoryQuery {
+    override onBulkUpsert(rows: BuffRow[]): RepositoryQuery {
         if (!rows.length) {
             return { text: "", values: [] };
         }
@@ -85,33 +85,32 @@ export class BuffRepository extends HashRepository<BuffModel, BuffRow> {
         };
     }
 
-    onBulkDelete(itemKeys: string[], characterId: string): RepositoryQuery {
+    override onBulkDelete(itemKeys: string[], characterId: string): RepositoryQuery {
         return {
             text: "DELETE FROM character_buffs WHERE buff_source_id = ANY($1::int[]) AND character_id = $2",
             values: [itemKeys.map((k) => Number(k)), Number(characterId)],
         };
     }
 
-    rowToModel(row: BuffRow): BuffModel {
+    override rowToModel(row: BuffRow): BuffModel {
         const flags = parseFlagValues(row.flag_values);
         return {
-            characterId: Number(row.character_id),
-            buffSourceId: Number(row.buff_source_id),
-            kind: Number(row.kind),
+            characterId: row.character_id,
+            buffSourceId: row.buff_source_id,
+            kind: row.kind,
             flagValues: flags.map((f) => ({
-                mask: Number(f.mask),
-                position: Number(f.position),
-                value: Number(f.value),
+                mask: f.mask,
+                position: f.position,
+                value: f.value,
             })),
-            remainingDurationMs:
-                row.remaining_duration_ms != null ? Number(row.remaining_duration_ms) : null,
-            skillLevel: row.skill_level != null ? Number(row.skill_level) : null,
-            causerId: row.causer_id != null ? Number(row.causer_id) : null,
+            remainingDurationMs: row.remaining_duration_ms,
+            skillLevel: row.skill_level,
+            causerId: row.causer_id,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
 
-    modelToRow(model: BuffModel): BuffRow {
+    override modelToRow(model: BuffModel): BuffRow {
         return {
             character_id: model.characterId,
             buff_source_id: model.buffSourceId,
@@ -136,7 +135,7 @@ export class BuffRepository extends HashRepository<BuffModel, BuffRow> {
 
         const normalized = models.map((m) => {
             const row = this.modelToRow(m);
-            row.character_id = Number(characterId);
+            row.character_id = characterId;
             return row;
         });
 

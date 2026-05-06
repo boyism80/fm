@@ -2,23 +2,30 @@ import type { Pool } from "pg";
 import { Repository } from "./repository";
 import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-contracts";
 
-export class HashRepository<TModel = Record<string, unknown>, TRow = Record<string, unknown>> extends Repository<TModel, TRow, string> {
-    getGroupKey(_model: TModel): string { throw new Error(`${this.constructor.name}.getGroupKey not implemented`); }
-    getItemKey(_model: TModel): string | number { throw new Error(`${this.constructor.name}.getItemKey not implemented`); }
-    getRedisHashKey(_worldId: number, _groupKey: string): string { throw new Error(`${this.constructor.name}.getRedisHashKey not implemented`); }
-    getRedisKey(worldId: number, key: string): string { return this.getRedisHashKey(worldId, key); }
-    onSelect(_groupKey: string, _worldId: number): RepositoryQuery { throw new Error(`${this.constructor.name}.onSelect not implemented`); }
-    onBulkUpsert(_rows: TRow[]): RepositoryQuery { throw new Error(`${this.constructor.name}.onBulkUpsert not implemented`); }
-    onBulkDelete(_itemKeys: string[], _groupKey: string, _worldId: number): RepositoryQuery { throw new Error(`${this.constructor.name}.onBulkDelete not implemented`); }
-    onDelete(row: unknown): RepositoryQuery {
+export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Record<string, unknown>> extends Repository<TModel, TRow, string> {
+    abstract getGroupKey(_model: TModel): string;
+    abstract getItemKey(_model: TModel): string;
+    abstract getRedisHashKey(_worldId: number, _groupKey: string): string;
+    override getRedisKey(worldId: number, key: string): string {
+        return this.getRedisHashKey(worldId, key);
+    }
+    abstract onSelect(_groupKey: string, _worldId: number): RepositoryQuery;
+    abstract onBulkUpsert(_rows: TRow[]): RepositoryQuery;
+    abstract onBulkDelete(_itemKeys: string[], _groupKey: string, _worldId: number): RepositoryQuery;
+    override onDelete(row: unknown): RepositoryQuery {
         const model = row as TModel & { worldId?: number };
         const worldId = Number((row as { worldId: number }).worldId ?? model.worldId ?? 0);
-        return this.onBulkDelete([String(this.getItemKey(model))], this.getGroupKey(model), worldId);
+        return this.onBulkDelete([this.getItemKey(model)], this.getGroupKey(model), worldId);
     }
-    rowToModel(_row: TRow): TModel { throw new Error(`${this.constructor.name}.rowToModel not implemented`); }
-    modelToRow(_model: TModel): TRow { throw new Error(`${this.constructor.name}.modelToRow not implemented`); }
-    getTtlSeconds(): number { return 300; }
-    getShardHash(groupKey: string): number { return Number(groupKey); }
+    abstract rowToModel(_row: TRow): TModel;
+    abstract modelToRow(_model: TModel): TRow;
+    override getTtlSeconds(): number {
+        return 300;
+    }
+
+    override getShardHash(groupKey: string): number {
+        return Number(groupKey);
+    }
 
     async get(): Promise<never> {
         throw new Error(`${this.constructor.name}.get is not supported for hash repositories`);
@@ -60,7 +67,7 @@ export class HashRepository<TModel = Record<string, unknown>, TRow = Record<stri
             pipeline.hset(hashKey, "_loaded", "1");
             for (const row of rows) {
                 if (!row.deleted) {
-                    pipeline.hset(hashKey, String(this.getItemKey(this.rowToModel(row))), JSON.stringify(row));
+                    pipeline.hset(hashKey, this.getItemKey(this.rowToModel(row)), JSON.stringify(row));
                 }
             }
             pipeline.expire(hashKey, this.getTtlSeconds());
@@ -71,7 +78,7 @@ export class HashRepository<TModel = Record<string, unknown>, TRow = Record<stri
         for (const row of rows) {
             if (!row.deleted) {
                 const model = this.rowToModel(row);
-                result.set(String(this.getItemKey(model)), model);
+                result.set(this.getItemKey(model), model);
             }
         }
         return result;
@@ -112,7 +119,7 @@ export class HashRepository<TModel = Record<string, unknown>, TRow = Record<stri
                 if (!options.txClient && await redis.exists(hashKey)) {
                     const pipeline = redis.pipeline();
                     for (const { row, model } of groupItems) {
-                        pipeline.hset(hashKey, String(this.getItemKey(model)), JSON.stringify(row));
+                        pipeline.hset(hashKey, this.getItemKey(model), JSON.stringify(row));
                     }
                     await pipeline.exec();
                 }
@@ -152,8 +159,9 @@ export class HashRepository<TModel = Record<string, unknown>, TRow = Record<stri
     }
 
     async delete(row: { worldId: number } & Record<string, unknown>, options: RepositoryTxOptions = {}): Promise<boolean> {
-        const worldId = Number(row.worldId);
-        await this.del(worldId, this.getGroupKey(row as unknown as TModel), String(this.getItemKey(row as unknown as TModel)), options);
+        const worldId = row.worldId;
+        const model = row as TModel;
+        await this.del(worldId, this.getGroupKey(model), this.getItemKey(model), options);
         return true;
     }
 

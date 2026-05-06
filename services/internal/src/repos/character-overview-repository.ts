@@ -36,34 +36,34 @@ function rowValues(row: CharacterOverviewRow) {
 }
 
 export class CharacterOverviewRepository extends HashRepository<CharacterOverviewModel, CharacterOverviewRow> {
-    getShardHash(ownerKey: string): number {
+    override getShardHash(ownerKey: string): number {
         return Number(ownerKey);
     }
 
-    getTtlSeconds() {
+    override getTtlSeconds() {
         return this.ctx.appConfiguration.getCharacterCacheTtlSeconds();
     }
 
-    getGroupKey(model: CharacterOverviewModel) {
+    override getGroupKey(model: CharacterOverviewModel) {
         return String(model.accountId);
     }
 
-    getItemKey(model: CharacterOverviewModel) {
+    override getItemKey(model: CharacterOverviewModel) {
         return String(model.characterId);
     }
 
-    getRedisHashKey(worldId: number, accountId: string) {
+    override getRedisHashKey(worldId: number, accountId: string) {
         return redisCacheKey(`w${worldId}:overview:${accountId}`);
     }
 
-    onSelect(accountId: string, worldId: number): RepositoryQuery {
+    override onSelect(accountId: string, worldId: number): RepositoryQuery {
         return {
             text: `SELECT ${SELECT_COLS} FROM character_overview WHERE account_id = $1 AND world_id = $2 AND NOT deleted`,
-            values: [Number(accountId), Number(worldId)],
+            values: [Number(accountId), worldId],
         };
     }
 
-    onBulkUpsert(rows: CharacterOverviewRow[]): RepositoryQuery {
+    override onBulkUpsert(rows: CharacterOverviewRow[]): RepositoryQuery {
         if (!rows.length) {
             return { text: "", values: [] };
         }
@@ -76,37 +76,37 @@ export class CharacterOverviewRepository extends HashRepository<CharacterOvervie
         };
     }
 
-    onBulkDelete(itemKeys: string[], accountId: string): RepositoryQuery {
+    override onBulkDelete(itemKeys: string[], accountId: string): RepositoryQuery {
         return {
             text: `UPDATE character_overview SET deleted = TRUE, updated_at = NOW() WHERE character_id = ANY($1::integer[]) AND account_id = $2`,
             values: [itemKeys.map(Number), Number(accountId)],
         };
     }
 
-    rowToModel(row: CharacterOverviewRow): CharacterOverviewModel {
+    override rowToModel(row: CharacterOverviewRow): CharacterOverviewModel {
         return {
-            characterId: Number(row.character_id),
-            accountId: Number(row.account_id),
-            worldId: Number(row.world_id),
+            characterId: row.character_id,
+            accountId: row.account_id,
+            worldId: row.world_id,
             name: row.name,
-            gender: Number(row.gender),
-            skinColor: Number(row.skin_color),
-            face: Number(row.face),
-            hair: Number(row.hair),
-            level: Number(row.level),
-            classId: Number(row.class_id),
-            mapId: Number(row.map_id),
-            spawnPoint: Number(row.spawn_point),
-            rank: Number(row.rank),
-            rankDiff: Number(row.rank_diff),
-            classRank: Number(row.class_rank),
-            classRankDiff: Number(row.class_rank_diff),
+            gender: row.gender,
+            skinColor: row.skin_color,
+            face: row.face,
+            hair: row.hair,
+            level: row.level,
+            classId: row.class_id,
+            mapId: row.map_id,
+            spawnPoint: row.spawn_point,
+            rank: row.rank,
+            rankDiff: row.rank_diff,
+            classRank: row.class_rank,
+            classRankDiff: row.class_rank_diff,
             baseLooks: typeof row.base_looks === "string" ? JSON.parse(row.base_looks) : (row.base_looks ?? {}),
             overlays: typeof row.overlays === "string" ? JSON.parse(row.overlays) : (row.overlays ?? {}),
         };
     }
 
-    modelToRow(model: CharacterOverviewModel): CharacterOverviewRow {
+    override modelToRow(model: CharacterOverviewModel): CharacterOverviewRow {
         return {
             character_id: model.characterId,
             account_id: model.accountId,

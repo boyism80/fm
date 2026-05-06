@@ -458,13 +458,13 @@ export class PartyService {
         const sess = await this.sessionRepo.getCharacterSession(worldId, targetCharacterId);
         const ch = sess?.gameServer?.channelId;
         const online = sess?.state === "ONLINE" && sess?.gameServer?.connected === true;
-        const chNum = Number(ch);
-        if (!online || ch == null || !Number.isFinite(chNum) || chNum < 0) {
+        if (!online || ch == null || !Number.isFinite(ch) || ch < 0) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }
+        const chNum = ch;
 
         const inviterRow = await this.characterRepo.get(worldId, inviterCharacterId);
-        const inviterName = inviterRow?.name ? String(inviterRow.name) : "";
+        const inviterName = inviterRow?.name ?? "";
         if (!inviterName) {
             return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
         }
@@ -504,15 +504,15 @@ export class PartyService {
         const inviterCharacterId = inviterEntry.character_id;
         const inviterSession = await this.sessionRepo.getCharacterSession(worldId, inviterCharacterId);
         const inviterChRaw = inviterSession?.gameServer?.channelId;
-        const inviterChannelID = Number(inviterChRaw);
         const inviterOnline = inviterSession?.state === "ONLINE" && inviterSession?.gameServer?.connected === true;
-        if (!inviterOnline || inviterChRaw == null || !Number.isFinite(inviterChannelID) || inviterChannelID < 0) {
+        if (!inviterOnline || inviterChRaw == null || !Number.isFinite(inviterChRaw) || inviterChRaw < 0) {
             await client.del(inviteKey);
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }
+        const inviterChannelID = inviterChRaw;
 
         const deniedRow = await this.characterRepo.get(worldId, deniedCharacterId);
-        const deniedName = deniedRow?.name ? String(deniedRow.name) : "";
+        const deniedName = deniedRow?.name ?? "";
         if (!deniedName) {
             await client.del(inviteKey);
             return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };

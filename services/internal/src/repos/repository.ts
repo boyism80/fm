@@ -5,25 +5,39 @@ import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-c
 
 export type { RepositoryQuery, RepositoryTxOptions };
 
-export class Repository<TModel = Record<string, unknown>, TRow = Record<string, unknown>, TKey = unknown> {
+export abstract class Repository<TModel = Record<string, unknown>, TRow = Record<string, unknown>, TKey = unknown> {
     protected readonly ctx: InternalContext;
 
     constructor(internalContext: InternalContext) {
         this.ctx = internalContext;
     }
 
-    getKey(_model: TModel): TKey { throw new Error(`${this.constructor.name}.getKey not implemented`); }
-    onSelect(_key: TKey, _worldId: number): RepositoryQuery { throw new Error(`${this.constructor.name}.onSelect not implemented`); }
-    onUpsert(_row: TRow): RepositoryQuery { throw new Error(`${this.constructor.name}.onUpsert not implemented`); }
-    onDelete(_row: unknown): RepositoryQuery { throw new Error(`${this.constructor.name}.onDelete not implemented`); }
-    getRedisKey(_worldId: number, _key: TKey): string { throw new Error(`${this.constructor.name}.getRedisKey not implemented`); }
-    rowToModel(_row: TRow): TModel { throw new Error(`${this.constructor.name}.rowToModel not implemented`); }
-    modelToRow(_model: TModel): TRow { throw new Error(`${this.constructor.name}.modelToRow not implemented`); }
-    getTtlSeconds(): number { return 300; }
-    getShardHash(key: TKey): number { return Number(key); }
-    onSelectMany(_keys: TKey[], _worldId: number): RepositoryQuery | null { return null; }
-    onBulkUpsert(_rows: TRow[]): RepositoryQuery | null { return null; }
-    getDeleteKey(row: unknown): TKey { return this.getKey(row as TModel); }
+    abstract getKey(_model: TModel): TKey;
+    abstract onSelect(_key: TKey, _worldId: number): RepositoryQuery;
+    abstract onUpsert(_row: TRow): RepositoryQuery;
+    abstract onDelete(_row: unknown): RepositoryQuery;
+    abstract getRedisKey(_worldId: number, _key: TKey): string;
+    abstract rowToModel(_row: TRow): TModel;
+    abstract modelToRow(_model: TModel): TRow;
+    getTtlSeconds(): number {
+        return 300;
+    }
+
+    getShardHash(key: TKey): number {
+        return Number(key);
+    }
+
+    onSelectMany(_keys: TKey[], _worldId: number): RepositoryQuery | null {
+        return null;
+    }
+
+    onBulkUpsert(_rows: TRow[]): RepositoryQuery | null {
+        return null;
+    }
+
+    getDeleteKey(row: unknown): TKey {
+        return this.getKey(row as TModel);
+    }
 
     protected pool(worldId: number, key: TKey): Pool {
         return this.ctx.getPgDataPool(worldId, this.getShardHash(key));
@@ -251,7 +265,7 @@ export class Repository<TModel = Record<string, unknown>, TRow = Record<string, 
         const pool = this.pool(worldId, key);
         const del = this.onDelete(row);
         const res = await this.query(pool, del.text, del.values, options);
-        const deleted = Number(res.rowCount || 0) > 0;
+        const deleted = (res.rowCount ?? 0) > 0;
         if (deleted && !options.txClient) {
             const redis = this.redis(worldId, key);
             await redis.del(this.getRedisKey(worldId, key)).catch(() => {});

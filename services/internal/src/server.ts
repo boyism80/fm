@@ -109,7 +109,7 @@ async function main() {
         serviceImplementation[route.grpcMethod] = async (call: unknown, callback: unknown) => {
             const scope = container.createScope();
             try {
-                const controller = scope.resolve(route.resolverName) as unknown as Record<string, (callArg: unknown, callbackArg: unknown) => Promise<unknown> | unknown>;
+                const controller = scope.resolve(route.resolverName) as Record<string, (callArg: unknown, callbackArg: unknown) => Promise<unknown> | unknown>;
                 const method = controller[route.methodName];
                 if (typeof method !== "function") {
                     throw new Error(`gRPC method not found: ${route.resolverName}.${route.methodName}`);
