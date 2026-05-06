@@ -1,8 +1,24 @@
 import type { Pool } from "pg";
 import { Repository } from "./repository";
 import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-contracts";
+import type { InternalContext } from "../context/internal-context";
 
 export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Record<string, unknown>> extends Repository<TModel, TRow, string> {
+    private readonly localGroupCache: Map<string, Map<string, TRow>>;
+
+    constructor(internalContext: InternalContext) {
+        super(internalContext);
+        this.localGroupCache = new Map();
+    }
+
+    protected logL1Group(method: string, result: "hit" | "miss", hashKey: string): void {
+        console.log(`[L1][${this.constructor.name}][${method}] ${result} hash=${hashKey}`);
+    }
+
+    override async evictCache(worldId: number, key: string): Promise<void> {
+        await this.evictGroupCache(worldId, key);
+    }
+
     abstract getGroupKey(_model: TModel): string;
     abstract getItemKey(_model: TModel): string;
     abstract getRedisHashKey(_worldId: number, _groupKey: string): string;
@@ -27,22 +43,33 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         return Number(groupKey);
     }
 
-    async get(): Promise<never> {
+    override async get(_worldId: number, _key: string, _options: RepositoryTxOptions = {}): Promise<never> {
         throw new Error(`${this.constructor.name}.get is not supported for hash repositories`);
     }
 
-    async getMany(): Promise<never> {
+    override async getMany(_worldId: number, _keys: string[], _options: RepositoryTxOptions = {}): Promise<never> {
         throw new Error(`${this.constructor.name}.getMany is not supported for hash repositories`);
     }
 
-    async getAll(worldId: number, groupKey: string, options: RepositoryTxOptions = {}): Promise<Map<string, TModel>> {
+    override async getAll(worldId: number, groupKey: string, options: RepositoryTxOptions = {}): Promise<Map<string, TModel>> {
         const hashKey = this.getRedisHashKey(worldId, groupKey);
         const redis = this.redis(worldId, groupKey);
         const useCache = !options.txClient;
+        const localCached = this.localGroupCache.get(hashKey);
+        if (localCached) {
+            this.logL1Group("getAll", "hit", hashKey);
+            const result = new Map<string, TModel>();
+            for (const [itemKey, row] of localCached) {
+                result.set(itemKey, this.rowToModel(row));
+            }
+            return result;
+        }
+        this.logL1Group("getAll", "miss", hashKey);
 
         if (useCache && await redis.exists(hashKey)) {
             const fields = await redis.hgetall(hashKey);
             const result = new Map<string, TModel>();
+            const localRows = new Map<string, TRow>();
             if (fields) {
                 for (const [field, json] of Object.entries(fields)) {
                     if (field === "_loaded") {
@@ -50,10 +77,13 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
                     }
                     const row = JSON.parse(json) as TRow & { deleted?: boolean };
                     if (!row.deleted) {
-                        result.set(field, this.rowToModel(row));
+                        const typedRow = row as TRow;
+                        localRows.set(field, typedRow);
+                        result.set(field, this.rowToModel(typedRow));
                     }
                 }
             }
+            this.localGroupCache.set(hashKey, localRows);
             return result;
         }
 
@@ -75,16 +105,20 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         }
 
         const result = new Map<string, TModel>();
+        const localRows = new Map<string, TRow>();
         for (const row of rows) {
             if (!row.deleted) {
-                const model = this.rowToModel(row);
+                const typedRow = row as TRow;
+                const model = this.rowToModel(typedRow);
                 result.set(this.getItemKey(model), model);
+                localRows.set(this.getItemKey(model), typedRow);
             }
         }
+        this.localGroupCache.set(hashKey, localRows);
         return result;
     }
 
-    async setAll(worldId: number, models: TModel[], options: RepositoryTxOptions = {}): Promise<TModel[]> {
+    override async setAll(worldId: number, models: TModel[], options: RepositoryTxOptions = {}): Promise<TModel[]> {
         const dbGroups = new Map<Pool, TModel[]>();
         for (const model of models) {
             const pool = this.pool(worldId, this.getGroupKey(model));
@@ -123,6 +157,12 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
                     }
                     await pipeline.exec();
                 }
+                const localCached = this.localGroupCache.get(hashKey);
+                if (localCached) {
+                    for (const { row, model } of groupItems) {
+                        localCached.set(this.getItemKey(model), row);
+                    }
+                }
                 saved.push(...groupItems.map((i) => i.model));
             }
         }
@@ -130,7 +170,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         return saved;
     }
 
-    async set(worldId: number, model: TModel, options: RepositoryTxOptions = {}): Promise<TModel> {
+    override async set(worldId: number, model: TModel, options: RepositoryTxOptions = {}): Promise<TModel> {
         const result = await this.setAll(worldId, [model], options);
         const first = result[0];
         if (!first) {
@@ -139,7 +179,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         return first;
     }
 
-    async delAll(worldId: number, groupKey: string, itemKeys: Array<string | number>, options: RepositoryTxOptions = {}): Promise<void> {
+    override async delAll(worldId: number, groupKey: string, itemKeys: Array<string | number>, options: RepositoryTxOptions = {}): Promise<void> {
         if (!itemKeys.length) {
             return;
         }
@@ -149,8 +189,15 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
 
         const hashKey = this.getRedisHashKey(worldId, groupKey);
         const redis = this.redis(worldId, groupKey);
+        const keyStrings = itemKeys.map(String);
         if (!options.txClient && await redis.exists(hashKey)) {
-            await redis.hdel(hashKey, ...itemKeys.map(String));
+            await redis.hdel(hashKey, ...keyStrings);
+        }
+        const localCached = this.localGroupCache.get(hashKey);
+        if (localCached) {
+            for (const itemKey of keyStrings) {
+                localCached.delete(itemKey);
+            }
         }
     }
 
@@ -158,7 +205,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         return this.delAll(worldId, groupKey, [itemKey], options);
     }
 
-    async delete(row: { worldId: number } & Record<string, unknown>, options: RepositoryTxOptions = {}): Promise<boolean> {
+    override async delete(row: { worldId: number } & Record<string, unknown>, options: RepositoryTxOptions = {}): Promise<boolean> {
         const worldId = row.worldId;
         const model = row as TModel;
         await this.del(worldId, this.getGroupKey(model), this.getItemKey(model), options);
@@ -167,6 +214,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
 
     async evictGroupCache(worldId: number, groupKey: string): Promise<void> {
         const hashKey = this.getRedisHashKey(worldId, groupKey);
+        this.localGroupCache.delete(hashKey);
         const redis = this.redis(worldId, groupKey);
         await redis.del(hashKey).catch(() => {});
     }
