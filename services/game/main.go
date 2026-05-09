@@ -42,6 +42,7 @@ internal:
   host: "127.0.0.1"
   port: 50051
   timeout: 10
+  heartbeat_interval_seconds: 15
 rabbitmq:
   ip: "127.0.0.1"
   port: 5672
@@ -53,7 +54,8 @@ lua:
   always_reload: false
 `))
 		log.Println("Notes:")
-		log.Println("  - internal: omit host or set port: 0 to skip the pre-start internal gRPC ping.")
+		log.Println("  - internal.heartbeat_interval_seconds: periodic Ping to internal (seconds); omit or 0 to disable loop.")
+		log.Println("  - internal: omit host or set port: 0 if no internal gRPC (limited functionality).")
 		log.Println("  - high_rate: when true, overrides world, max_players, and rate (exp/drop/meso).")
 		log.Println("\nExample usage:")
 		log.Println("  ./game-server")
@@ -86,35 +88,21 @@ lua:
 		core.InternalRPCPerStepTimeout = 10 * time.Second
 	}
 
-	internalAddr := g.Internal.GRPCAddr()
-	if internalAddr != "" {
-		done := make(chan struct{})
-		var pingErr error
-		p := server.InternalPingAsync(internalAddr)
-		p.OnError(func(err error) { pingErr = err })
-		p.Finally(func() { close(done) })
-		p.Run()
-		<-done
-		if pingErr != nil {
-			log.Fatalf("Internal server not reachable (%s): %v", internalAddr, pingErr)
-		}
-		log.Printf("Internal server ping ok (%s)", internalAddr)
-	}
-
 	srvCfg := &server.GameConfig{
-		Host:            g.Host,
-		Port:            g.Port,
-		ChannelId:       uint32(g.ChannelId),
-		WzPath:          g.WzPath,
-		WorldName:       g.World,
-		WorldId:         uint32(g.WorldId),
-		MaxPlayers:      g.MaxPlayers,
-		ExpRate:         g.Rate.Exp,
-		DropRate:        g.Rate.Drop,
-		MesoRate:        g.Rate.Meso,
-		InternalAddr:    g.Internal.GRPCAddr(),
-		RabbitMQ:        g.RabbitMQ,
-		LuaAlwaysReload: g.Lua.AlwaysReload,
+		Host:                             g.Host,
+		Port:                             g.Port,
+		ChannelId:                        uint32(g.ChannelId),
+		WzPath:                           g.WzPath,
+		WorldName:                        g.World,
+		WorldId:                          uint32(g.WorldId),
+		MaxPlayers:                       g.MaxPlayers,
+		ExpRate:                          g.Rate.Exp,
+		DropRate:                         g.Rate.Drop,
+		MesoRate:                         g.Rate.Meso,
+		InternalAddr:                     g.Internal.GRPCAddr(),
+		InternalHeartbeatIntervalSeconds: g.Internal.HeartbeatIntervalSeconds,
+		RabbitMQ:                         g.RabbitMQ,
+		LuaAlwaysReload:                  g.Lua.AlwaysReload,
 	}
 
 	gs, err := server.NewGameServer(srvCfg)

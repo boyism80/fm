@@ -39,6 +39,7 @@ export interface InternalConfig {
     app: {
         log_level: string;
         world_id: number;
+        server_alive_ttl_seconds?: number;
     };
     grpc: {
         host: string;

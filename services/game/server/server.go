@@ -21,10 +21,12 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/mq"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/common/globaltimer"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
 	gameconst "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
+	gamegtimers "github.com/boyism80/fm/services/game/gtimers"
 	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
@@ -79,6 +81,7 @@ type GameServer struct {
 	ensureMu          sync.Mutex
 	ensurePending     map[uint64]*ensure.EnsureDeliver
 	ensureNext        atomic.Uint64
+	internalHBCancel  context.CancelFunc
 }
 
 func (gs *GameServer) GetRootContext() *actor.RootContext {
@@ -103,9 +106,10 @@ type GameConfig struct {
 	ExpRate         int
 	DropRate        int
 	MesoRate        int
-	InternalAddr    string
-	RabbitMQ        config.RabbitMQEndpoint
-	LuaAlwaysReload bool
+	InternalAddr                     string
+	InternalHeartbeatIntervalSeconds int
+	RabbitMQ                         config.RabbitMQEndpoint
+	LuaAlwaysReload                  bool
 }
 
 func NewGameServer(config *GameConfig) (*GameServer, error) {
@@ -274,6 +278,18 @@ func (gs *GameServer) Start() error {
 		return err
 	}
 
+	if gs.internalClient != nil && gs.config.InternalHeartbeatIntervalSeconds > 0 {
+		hbCtx, cancel := context.WithCancel(context.Background())
+		gs.internalHBCancel = cancel
+		wid := gs.config.WorldId
+		ch := gs.config.ChannelId
+		iv := gs.config.InternalHeartbeatIntervalSeconds
+		gamegtimers.WireInternalPing(gs.internalClient, time.Duration(iv)*time.Second, wid, ch)
+		reg := globaltimer.NewRegistry()
+		globaltimer.RegisterTimer[*gamegtimers.InternalPingTimer](reg)
+		reg.Start(hbCtx)
+	}
+
 	log.Printf("Game server started on %s:%d", gs.config.Host, gs.config.Port)
 	log.Printf("World: %s, Max Players: %d", gs.config.WorldName, gs.config.MaxPlayers)
 	log.Printf("Rates: Exp=%dx, Drop=%dx, Meso=%dx",
@@ -297,6 +313,10 @@ func (gs *GameServer) Start() error {
 
 func (gs *GameServer) Stop() error {
 	log.Println("Shutting down game server...")
+	if gs.internalHBCancel != nil {
+		gs.internalHBCancel()
+		gs.internalHBCancel = nil
+	}
 	if gs.rabbitPartyPID != nil {
 		root := gs.GetRootContext()
 		if root != nil {

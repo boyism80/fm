@@ -21,6 +21,45 @@ import {
 
 export const protobufPackage = "fm.internal";
 
+export enum ServerRole {
+  SERVER_ROLE_UNSPECIFIED = 0,
+  SERVER_ROLE_LOGIN = 1,
+  SERVER_ROLE_GAME = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function serverRoleFromJSON(object: any): ServerRole {
+  switch (object) {
+    case 0:
+    case "SERVER_ROLE_UNSPECIFIED":
+      return ServerRole.SERVER_ROLE_UNSPECIFIED;
+    case 1:
+    case "SERVER_ROLE_LOGIN":
+      return ServerRole.SERVER_ROLE_LOGIN;
+    case 2:
+    case "SERVER_ROLE_GAME":
+      return ServerRole.SERVER_ROLE_GAME;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ServerRole.UNRECOGNIZED;
+  }
+}
+
+export function serverRoleToJSON(object: ServerRole): string {
+  switch (object) {
+    case ServerRole.SERVER_ROLE_UNSPECIFIED:
+      return "SERVER_ROLE_UNSPECIFIED";
+    case ServerRole.SERVER_ROLE_LOGIN:
+      return "SERVER_ROLE_LOGIN";
+    case ServerRole.SERVER_ROLE_GAME:
+      return "SERVER_ROLE_GAME";
+    case ServerRole.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum SessionErrorCode {
   SESSION_NONE = 0,
   SESSION_UNKNOWN = 1,
@@ -262,10 +301,23 @@ export function partyErrorCodeToJSON(object: PartyErrorCode): string {
 }
 
 export interface PingRequest {
+  role: ServerRole;
+  worldId: number;
+  channelId: number;
+  loginInstanceId: string;
 }
 
 export interface PingReply {
   message: string;
+}
+
+export interface CheckGameChannelAliveRequest {
+  worldId: number;
+  channelId: number;
+}
+
+export interface CheckGameChannelAliveReply {
+  alive: boolean;
 }
 
 export interface GetServerCatalogRequest {
@@ -787,11 +839,23 @@ export interface BroadcastMultiChatReply {
 }
 
 function createBasePingRequest(): PingRequest {
-  return {};
+  return { role: 0, worldId: 0, channelId: 0, loginInstanceId: "" };
 }
 
 export const PingRequest: MessageFns<PingRequest> = {
-  encode(_: PingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(message: PingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.role !== 0) {
+      writer.uint32(8).int32(message.role);
+    }
+    if (message.worldId !== 0) {
+      writer.uint32(16).uint32(message.worldId);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(24).uint32(message.channelId);
+    }
+    if (message.loginInstanceId !== "") {
+      writer.uint32(34).string(message.loginInstanceId);
+    }
     return writer;
   },
 
@@ -802,6 +866,38 @@ export const PingRequest: MessageFns<PingRequest> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.role = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.channelId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.loginInstanceId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -811,20 +907,53 @@ export const PingRequest: MessageFns<PingRequest> = {
     return message;
   },
 
-  fromJSON(_: any): PingRequest {
-    return {};
+  fromJSON(object: any): PingRequest {
+    return {
+      role: isSet(object.role) ? serverRoleFromJSON(object.role) : 0,
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      loginInstanceId: isSet(object.loginInstanceId)
+        ? globalThis.String(object.loginInstanceId)
+        : isSet(object.login_instance_id)
+        ? globalThis.String(object.login_instance_id)
+        : "",
+    };
   },
 
-  toJSON(_: PingRequest): unknown {
+  toJSON(message: PingRequest): unknown {
     const obj: any = {};
+    if (message.role !== 0) {
+      obj.role = serverRoleToJSON(message.role);
+    }
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.loginInstanceId !== "") {
+      obj.loginInstanceId = message.loginInstanceId;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<PingRequest>, I>>(base?: I): PingRequest {
     return PingRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PingRequest>, I>>(_: I): PingRequest {
+  fromPartial<I extends Exact<DeepPartial<PingRequest>, I>>(object: I): PingRequest {
     const message = createBasePingRequest();
+    message.role = object.role ?? 0;
+    message.worldId = object.worldId ?? 0;
+    message.channelId = object.channelId ?? 0;
+    message.loginInstanceId = object.loginInstanceId ?? "";
     return message;
   },
 };
@@ -883,6 +1012,148 @@ export const PingReply: MessageFns<PingReply> = {
   fromPartial<I extends Exact<DeepPartial<PingReply>, I>>(object: I): PingReply {
     const message = createBasePingReply();
     message.message = object.message ?? "";
+    return message;
+  },
+};
+
+function createBaseCheckGameChannelAliveRequest(): CheckGameChannelAliveRequest {
+  return { worldId: 0, channelId: 0 };
+}
+
+export const CheckGameChannelAliveRequest: MessageFns<CheckGameChannelAliveRequest> = {
+  encode(message: CheckGameChannelAliveRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(16).uint32(message.channelId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckGameChannelAliveRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckGameChannelAliveRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.channelId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckGameChannelAliveRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CheckGameChannelAliveRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckGameChannelAliveRequest>, I>>(base?: I): CheckGameChannelAliveRequest {
+    return CheckGameChannelAliveRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckGameChannelAliveRequest>, I>>(object: I): CheckGameChannelAliveRequest {
+    const message = createBaseCheckGameChannelAliveRequest();
+    message.worldId = object.worldId ?? 0;
+    message.channelId = object.channelId ?? 0;
+    return message;
+  },
+};
+
+function createBaseCheckGameChannelAliveReply(): CheckGameChannelAliveReply {
+  return { alive: false };
+}
+
+export const CheckGameChannelAliveReply: MessageFns<CheckGameChannelAliveReply> = {
+  encode(message: CheckGameChannelAliveReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.alive !== false) {
+      writer.uint32(8).bool(message.alive);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckGameChannelAliveReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckGameChannelAliveReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.alive = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckGameChannelAliveReply {
+    return { alive: isSet(object.alive) ? globalThis.Boolean(object.alive) : false };
+  },
+
+  toJSON(message: CheckGameChannelAliveReply): unknown {
+    const obj: any = {};
+    if (message.alive !== false) {
+      obj.alive = message.alive;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckGameChannelAliveReply>, I>>(base?: I): CheckGameChannelAliveReply {
+    return CheckGameChannelAliveReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckGameChannelAliveReply>, I>>(object: I): CheckGameChannelAliveReply {
+    const message = createBaseCheckGameChannelAliveReply();
+    message.alive = object.alive ?? false;
     return message;
   },
 };
@@ -9022,6 +9293,17 @@ export const InternalService = {
     responseSerialize: (value: PingReply): Buffer => Buffer.from(PingReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): PingReply => PingReply.decode(value),
   },
+  checkGameChannelAlive: {
+    path: "/fm.internal.Internal/CheckGameChannelAlive" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CheckGameChannelAliveRequest): Buffer =>
+      Buffer.from(CheckGameChannelAliveRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CheckGameChannelAliveRequest => CheckGameChannelAliveRequest.decode(value),
+    responseSerialize: (value: CheckGameChannelAliveReply): Buffer =>
+      Buffer.from(CheckGameChannelAliveReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CheckGameChannelAliveReply => CheckGameChannelAliveReply.decode(value),
+  },
   getServerCatalog: {
     path: "/fm.internal.Internal/GetServerCatalog" as const,
     requestStream: false as const,
@@ -9244,6 +9526,7 @@ export const InternalService = {
 
 export interface InternalServer extends UntypedServiceImplementation {
   ping: handleUnaryCall<PingRequest, PingReply>;
+  checkGameChannelAlive: handleUnaryCall<CheckGameChannelAliveRequest, CheckGameChannelAliveReply>;
   getServerCatalog: handleUnaryCall<GetServerCatalogRequest, GetServerCatalogReply>;
   enterGame: handleUnaryCall<EnterGameRequest, EnterGameReply>;
   beginGameTransition: handleUnaryCall<BeginGameTransitionRequest, BeginGameTransitionReply>;
@@ -9280,6 +9563,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: PingReply) => void,
+  ): ClientUnaryCall;
+  checkGameChannelAlive(
+    request: CheckGameChannelAliveRequest,
+    callback: (error: ServiceError | null, response: CheckGameChannelAliveReply) => void,
+  ): ClientUnaryCall;
+  checkGameChannelAlive(
+    request: CheckGameChannelAliveRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CheckGameChannelAliveReply) => void,
+  ): ClientUnaryCall;
+  checkGameChannelAlive(
+    request: CheckGameChannelAliveRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CheckGameChannelAliveReply) => void,
   ): ClientUnaryCall;
   getServerCatalog(
     request: GetServerCatalogRequest,

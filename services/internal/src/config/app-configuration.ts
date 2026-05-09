@@ -60,6 +60,14 @@ export class AppConfiguration {
         return Number.isFinite(n) && n > 0 ? n : 300;
     }
 
+    getServerAliveTtlSeconds(): number {
+        const n = this.config.app?.server_alive_ttl_seconds;
+        if (typeof n === "number" && Number.isFinite(n) && n > 0) {
+            return Math.floor(n);
+        }
+        return 45;
+    }
+
     getSection(
         section: "app" | "grpc" | "postgresql" | "redis" | "rabbitmq" | "cache" | "sequelize" | "resources"
     ) {

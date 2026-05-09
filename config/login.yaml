@@ -1,7 +1,9 @@
 host: "0.0.0.0"
 port: 8484
 initial_role: 1
+login_instance_id: "login-1"
 internal:
   host: "localhost"
   port: 50051
   timeout: 3600
+  heartbeat_interval_seconds: 15

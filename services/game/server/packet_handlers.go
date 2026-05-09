@@ -8,6 +8,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, Pong](gs)
 	core.Bind[*GameServer, Secure](gs)
 	core.Bind[*GameServer, LoginGame](gs)
+	core.Bind[*GameServer, SwitchChannel](gs)
 	core.Bind[*GameServer, MovePlayer](gs)
 	core.Bind[*GameServer, NormalChat](gs)
 	core.Bind[*GameServer, MultiChat](gs)

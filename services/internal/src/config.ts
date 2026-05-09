@@ -189,6 +189,7 @@ export function withDefaults(raw: RawConfig): Omit<InternalConfig, "configPath">
     const app = {
         log_level: appObject.log_level ?? "info",
         world_id: appObject.world_id ?? 0,
+        server_alive_ttl_seconds: appObject.server_alive_ttl_seconds ?? 45,
     };
     const worldId = app.world_id;
     const grpcObject = doc.grpc ?? {};

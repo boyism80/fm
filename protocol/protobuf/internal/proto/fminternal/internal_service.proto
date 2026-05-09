@@ -7,6 +7,7 @@ option go_package = "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal;f
 
 service Internal {
   rpc Ping (PingRequest) returns (PingReply);
+  rpc CheckGameChannelAlive (CheckGameChannelAliveRequest) returns (CheckGameChannelAliveReply);
   rpc GetServerCatalog (GetServerCatalogRequest) returns (GetServerCatalogReply);
   rpc EnterGame (EnterGameRequest) returns (EnterGameReply);
   rpc BeginGameTransition (BeginGameTransitionRequest) returns (BeginGameTransitionReply);
@@ -31,10 +32,30 @@ service Internal {
   rpc BroadcastMultiChat (BroadcastMultiChatRequest) returns (BroadcastMultiChatReply);
 }
 
-message PingRequest {}
+enum ServerRole {
+  SERVER_ROLE_UNSPECIFIED = 0;
+  SERVER_ROLE_LOGIN = 1;
+  SERVER_ROLE_GAME = 2;
+}
+
+message PingRequest {
+  ServerRole role = 1;
+  uint32 world_id = 2;
+  uint32 channel_id = 3;
+  string login_instance_id = 4;
+}
 
 message PingReply {
   string message = 1;
+}
+
+message CheckGameChannelAliveRequest {
+  uint32 world_id = 1;
+  uint32 channel_id = 2;
+}
+
+message CheckGameChannelAliveReply {
+  bool alive = 1;
 }
 
 message GetServerCatalogRequest {}

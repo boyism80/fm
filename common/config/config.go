@@ -60,9 +60,10 @@ func ResolvePath(p string) (string, error) {
 }
 
 type InternalEndpoint struct {
-	Host           string `yaml:"host"`
-	Port           int    `yaml:"port"`
-	TimeoutSeconds int    `yaml:"timeout"`
+	Host                     string `yaml:"host"`
+	Port                     int    `yaml:"port"`
+	TimeoutSeconds           int    `yaml:"timeout"`
+	HeartbeatIntervalSeconds int    `yaml:"heartbeat_interval_seconds"`
 }
 
 func (e InternalEndpoint) GRPCAddr() string {
@@ -99,24 +100,25 @@ type Login struct {
 	Host                        string           `yaml:"host"`
 	Port                        int              `yaml:"port"`
 	InitialRole                 int              `yaml:"initial_role"`
+	LoginInstanceID             string           `yaml:"login_instance_id"`
 	Internal                    InternalEndpoint `yaml:"internal"`
 	CatalogRetryIntervalSeconds int              `yaml:"catalog_retry_interval_seconds"`
 	CatalogRetryMaxAttempts     int              `yaml:"catalog_retry_max_attempts"`
 }
 
 type Game struct {
-	Host       string           `yaml:"host"`
-	Port       int              `yaml:"port"`
-	ChannelId  int              `yaml:"channel_id"`
-	WzPath     string           `yaml:"wz_path"`
-	World      string           `yaml:"world"`
-	WorldId    int              `yaml:"world_id"`
-	MaxPlayers int              `yaml:"max_players"`
-	Rate       GameRates        `yaml:"rate"`
-	Internal   InternalEndpoint `yaml:"internal"`
-	RabbitMQ   RabbitMQEndpoint `yaml:"rabbitmq"`
-	HighRate   bool             `yaml:"high_rate"`
-	Lua        GameLuaConfig    `yaml:"lua"`
+	Host        string           `yaml:"host"`
+	Port        int              `yaml:"port"`
+	ChannelId   int              `yaml:"channel_id"`
+	WzPath      string           `yaml:"wz_path"`
+	World       string           `yaml:"world"`
+	WorldId     int              `yaml:"world_id"`
+	MaxPlayers  int              `yaml:"max_players"`
+	Rate        GameRates        `yaml:"rate"`
+	Internal    InternalEndpoint `yaml:"internal"`
+	RabbitMQ    RabbitMQEndpoint `yaml:"rabbitmq"`
+	HighRate    bool             `yaml:"high_rate"`
+	Lua         GameLuaConfig    `yaml:"lua"`
 }
 
 type GameRates struct {

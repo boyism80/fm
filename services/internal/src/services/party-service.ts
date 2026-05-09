@@ -1,4 +1,4 @@
-import { redisCacheKey } from "../redis-cache-key";
+import { redisPartyKey } from "../redis-party-key";
 import { Party, type Party as PartyMessage, type PartyDoor, type PartyMember, PartyErrorCode } from "../protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
 import type { PartyModel } from "../repos/party-repository";
@@ -105,7 +105,7 @@ export class PartyService {
     }
 
     private invitePendingKey(worldId: number, characterId: number) {
-        return redisCacheKey(`w${worldId}:party:invite_pending:${characterId}`);
+        return redisPartyKey(`w${worldId}:invite_pending:${characterId}`);
     }
 
     private assertWorld(worldId: number) {

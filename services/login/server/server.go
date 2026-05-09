@@ -16,22 +16,26 @@ import (
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/ensure"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/common/globaltimer"
 	loginactor "github.com/boyism80/fm/services/login/actor"
 	"github.com/boyism80/fm/services/login/client"
+	logingtimers "github.com/boyism80/fm/services/login/gtimers"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 type LoginServer struct {
 	*core.ServerCore
-	config         *LoginConfig
-	packetHandler  *core.PacketHandler
-	internalClient internal.InternalClient
-	packetHandlers *PacketHandlerRegistry
-	actorSystem    *c_actor.ActorSystem
-	actorRegistry  *c_actor.ActorRegistry
-	worldCatalog   []*internal.WorldCatalog
-	channelRoutes  map[uint32]map[uint32]*internal.ChannelCatalog
+	config                *LoginConfig
+	packetHandler         *core.PacketHandler
+	internalClient        internal.InternalClient
+	internalConn          *grpc.ClientConn
+	internalHBCancel      context.CancelFunc
+	packetHandlers        *PacketHandlerRegistry
+	actorSystem           *c_actor.ActorSystem
+	actorRegistry         *c_actor.ActorRegistry
+	worldCatalog          []*internal.WorldCatalog
+	channelRoutes         map[uint32]map[uint32]*internal.ChannelCatalog
 }
 
 func (ls *LoginServer) GetPacketHandler() *core.PacketHandler {
@@ -68,14 +72,15 @@ func (ls *LoginServer) handleClient(c core.Client) {
 }
 
 type LoginConfig struct {
-	Host                        string
-	Port                        int
-	WorldId                     uint32
-	InitialRole                 uint32
-	InternalHost                string
-	InternalPort                int
-	CatalogRetryIntervalSeconds int
-	CatalogRetryMaxAttempts     int
+	Host                             string
+	Port                             int
+	InitialRole                      uint32
+	LoginInstanceID                  string
+	InternalHeartbeatIntervalSeconds int
+	InternalHost                     string
+	InternalPort                     int
+	CatalogRetryIntervalSeconds      int
+	CatalogRetryMaxAttempts          int
 }
 
 func (c *LoginConfig) internalAddr() string {
@@ -97,11 +102,13 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		return nil, fmt.Errorf("login server requires internal gRPC endpoint")
 	}
 	var internalClient internal.InternalClient
+	var internalConn *grpc.ClientConn
 	if addr := config.internalAddr(); addr != "" {
 		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, fmt.Errorf("internal gRPC dial %s: %w", addr, err)
 		}
+		internalConn = conn
 		internalClient = internal.NewInternalClient(conn)
 		log.Printf("Internal gRPC client connected to %s", addr)
 	}
@@ -132,6 +139,7 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		config:         config,
 		packetHandler:  core.NewPacketHandler(),
 		internalClient: internalClient,
+		internalConn:   internalConn,
 		packetHandlers: NewPacketHandlerRegistry(nil),
 		actorSystem:    actorSystem,
 		actorRegistry:  actorRegistry,
@@ -255,6 +263,19 @@ func (ls *LoginServer) Start() error {
 		return err
 	}
 
+	if ls.internalClient != nil && ls.config.InternalHeartbeatIntervalSeconds > 0 && ls.config.LoginInstanceID != "" {
+		hbCtx, cancel := context.WithCancel(context.Background())
+		ls.internalHBCancel = cancel
+		instanceID := ls.config.LoginInstanceID
+		iv := ls.config.InternalHeartbeatIntervalSeconds
+		logingtimers.WireInternalPing(ls.internalClient, time.Duration(iv)*time.Second, instanceID)
+		reg := globaltimer.NewRegistry()
+		globaltimer.RegisterTimer[*logingtimers.InternalPingTimer](reg)
+		reg.Start(hbCtx)
+	} else if ls.internalClient != nil && ls.config.LoginInstanceID == "" {
+		log.Printf("login_instance_id empty: internal heartbeat disabled")
+	}
+
 	log.Printf("Login server started on %s:%d", ls.config.Host, ls.config.Port)
 	log.Printf("Loaded server catalog: worlds=%d", len(ls.worldCatalog))
 
@@ -263,6 +284,14 @@ func (ls *LoginServer) Start() error {
 
 func (ls *LoginServer) Stop() error {
 	log.Println("Shutting down login server...")
+	if ls.internalHBCancel != nil {
+		ls.internalHBCancel()
+		ls.internalHBCancel = nil
+	}
+	if ls.internalConn != nil {
+		_ = ls.internalConn.Close()
+		ls.internalConn = nil
+	}
 	return ls.ServerCore.Stop()
 }
 
@@ -277,9 +306,9 @@ func (ls *LoginServer) GetStats() map[string]interface{} {
 
 func RunLoginServer() {
 	config := &LoginConfig{
-		Host:    "0.0.0.0",
-		Port:    8484,
-		WorldId: 0,
+		Host:            "0.0.0.0",
+		Port:            8484,
+		LoginInstanceID: "dev-login",
 	}
 
 	ls, err := NewLoginServer(config)

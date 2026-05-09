@@ -57,14 +57,32 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 		return fmt.Errorf("character list: actor context required for internal RPC")
 	}
 
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
-		func(c context.Context) (*internal.GetCharacterListReply, error) {
-			return ic.GetCharacterList(c, reqMsg)
-		}, func(reply *internal.GetCharacterListReply) error {
-			return h.sendCharacterList(ctx, reply)
-		}).
+	sendCharListFallback := true
+	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise = async.ThenRPC(promise, func(c context.Context) (*internal.CheckGameChannelAliveReply, error) {
+		return ic.CheckGameChannelAlive(c, &internal.CheckGameChannelAliveRequest{
+			WorldId:   worldId,
+			ChannelId: uint32(req.Channel),
+		})
+	}, func(aliveReply *internal.CheckGameChannelAliveReply) error {
+		if aliveReply == nil || !aliveReply.GetAlive() {
+			sendCharListFallback = false
+			_ = ctx.Client.Send(&response.LoginFailed{Reason: response.LoginFailedReasonTooManyConnections}, types.SEND_POLICY_ENCRYPT)
+			return fmt.Errorf("game channel not alive (world=%d channel=%d)", worldId, req.Channel)
+		}
+		return nil
+	})
+	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetCharacterListReply, error) {
+		return ic.GetCharacterList(c, reqMsg)
+	}, func(reply *internal.GetCharacterListReply) error {
+		return h.sendCharacterList(ctx, reply)
+	})
+	promise.
 		OnError(func(err error) {
 			log.Printf("CharacterList (async): %v", err)
+			if !sendCharListFallback {
+				return
+			}
 			charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
 			_ = ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
 		}).

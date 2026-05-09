@@ -31,14 +31,18 @@ func main() {
 host: "0.0.0.0"
 port: 8484
 initial_role: 1
+login_instance_id: "login-1"
 catalog_retry_interval_seconds: 2
 catalog_retry_max_attempts: 30
 internal:
   host: "127.0.0.1"
   port: 50051
   timeout: 10
+  heartbeat_interval_seconds: 15
 `))
 		log.Println("Notes:")
+		log.Println("  - internal.heartbeat_interval_seconds: periodic Ping to internal (seconds); omit or 0 to disable heartbeat loop.")
+		log.Println("  - login_instance_id: unique id per login process (internal periodic Ping / Redis alive).")
 		log.Println("  - internal is required; login server fetches world/channel routing from internal at startup.")
 		log.Println("\nExample usage:")
 		log.Println("  ./login-server")
@@ -63,13 +67,15 @@ internal:
 	}
 
 	srvCfg := &server.LoginConfig{
-		Host:                        l.Host,
-		Port:                        l.Port,
-		InitialRole:                 uint32(l.InitialRole),
-		InternalHost:                l.Internal.Host,
-		InternalPort:                l.Internal.Port,
-		CatalogRetryIntervalSeconds: l.CatalogRetryIntervalSeconds,
-		CatalogRetryMaxAttempts:     l.CatalogRetryMaxAttempts,
+		Host:                             l.Host,
+		Port:                             l.Port,
+		InitialRole:                      uint32(l.InitialRole),
+		LoginInstanceID:                  l.LoginInstanceID,
+		InternalHeartbeatIntervalSeconds: l.Internal.HeartbeatIntervalSeconds,
+		InternalHost:                     l.Internal.Host,
+		InternalPort:                     l.Internal.Port,
+		CatalogRetryIntervalSeconds:      l.CatalogRetryIntervalSeconds,
+		CatalogRetryMaxAttempts:          l.CatalogRetryMaxAttempts,
 	}
 
 	ls, err := server.NewLoginServer(srvCfg)
