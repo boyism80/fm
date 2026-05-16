@@ -82,6 +82,7 @@ export interface GameServerChannelConfig {
     host: string;
     port: number;
     name: string;
+    max_concurrent_users: number;
 }
 
 export interface GameServerWorldConfig {

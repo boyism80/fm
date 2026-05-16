@@ -26,16 +26,16 @@ import (
 
 type LoginServer struct {
 	*core.ServerCore
-	config                *LoginConfig
-	packetHandler         *core.PacketHandler
-	internalClient        internal.InternalClient
-	internalConn          *grpc.ClientConn
-	internalHBCancel      context.CancelFunc
-	packetHandlers        *PacketHandlerRegistry
-	actorSystem           *c_actor.ActorSystem
-	actorRegistry         *c_actor.ActorRegistry
-	worldCatalog          []*internal.WorldCatalog
-	channelRoutes         map[uint32]map[uint32]*internal.ChannelCatalog
+	config           *LoginConfig
+	packetHandler    *core.PacketHandler
+	internalClient   internal.InternalClient
+	internalConn     *grpc.ClientConn
+	internalHBCancel context.CancelFunc
+	packetHandlers   *PacketHandlerRegistry
+	actorSystem      *c_actor.ActorSystem
+	actorRegistry    *c_actor.ActorRegistry
+	worldCatalog     []*internal.WorldCatalog
+	channelRoutes    map[uint32]map[uint32]*internal.ChannelCatalog
 }
 
 func (ls *LoginServer) GetPacketHandler() *core.PacketHandler {

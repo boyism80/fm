@@ -2,6 +2,7 @@ import { SessionDisconnectSource, SessionErrorCode } from "../protobuf/generated
 import type { InternalContext } from "../context/internal-context";
 import type { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
 import type { SessionRepository } from "../repos/session-repository";
+import type { CharacterService } from "./character-service";
 import type { PartyService } from "./party-service";
 
 export const SessionState = {
@@ -23,17 +24,20 @@ export function formatDateTime(date = new Date()) {
 
 export class SessionService {
     private readonly repo: SessionRepository;
+    private readonly characterService: CharacterService;
     private readonly partyService: PartyService | null;
 
     constructor(
         internalContext: InternalContext,
         sessionRepository: SessionRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
+        characterService: CharacterService,
         partyService: PartyService | null
     ) {
         void internalContext;
         void characterRealtimeStateRepository;
         this.repo = sessionRepository;
+        this.characterService = characterService;
         this.partyService = partyService;
     }
 
@@ -79,22 +83,41 @@ export class SessionService {
         return { ok: true };
     }
 
-    async attachGameSession(worldId: number, accountId: number, channelId: number) {
-        const sessionBeforeAttach = await this.repo.getAccountSession(worldId, accountId);
+    async attachGameSession(
+        worldId: number,
+        accountId: number,
+        characterId: number,
+        characterName: string,
+        channelId: number
+    ) {
         const [ok, code] = this.atomicResultTuple(
-            await this.repo.attachGameSessionAtomic(worldId, accountId, channelId, this.now(), this.ttlByState(SessionState.GAME))
+            await this.repo.attachGameSessionAtomic(
+                worldId,
+                accountId,
+                characterId,
+                characterName,
+                channelId,
+                this.now(),
+                this.ttlByState(SessionState.GAME)
+            )
         );
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
-        const cid = sessionBeforeAttach?.character?.id;
-        if (cid != null && this.partyService) await this.partyService.applyMemberChannelIndex(worldId, cid, channelId);
+        if (this.partyService) await this.partyService.applyMemberChannelIndex(worldId, characterId, channelId);
         return { ok: true };
     }
 
-    async refresh(worldId: number, accountId: number) {
+    async refresh(worldId: number, accountId: number, characterId?: number) {
         const [ok, code] = this.atomicResultTuple(
-            await this.repo.refreshAtomic(worldId, accountId, this.ttlByState(SessionState.LOGIN), this.ttlByState(SessionState.TRANSITION), this.ttlByState(SessionState.GAME))
+            await this.repo.refreshAtomic(
+                worldId,
+                accountId,
+                this.ttlByState(SessionState.LOGIN),
+                this.ttlByState(SessionState.TRANSITION),
+                this.ttlByState(SessionState.GAME),
+                characterId
+            )
         );
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
@@ -105,11 +128,46 @@ export class SessionService {
     async logout(
         worldId: number,
         accountId: number,
-        options: { disconnectSource?: SessionDisconnectSource; transferDisconnect?: boolean } = {}
+        options: {
+            disconnectSource?: SessionDisconnectSource;
+            transferDisconnect?: boolean;
+            characterId?: number;
+            characterName?: string;
+            channelId?: number;
+        } = {}
     ) {
-        const sessionBeforeLogout = await this.repo.getAccountSession(worldId, accountId);
+        let characterName = options.characterName;
+        if (
+            (characterName == null || characterName === "") &&
+            options.characterId != null &&
+            options.characterId > 0
+        ) {
+            const row = await this.characterService.getCharacter(worldId, options.characterId);
+            characterName = row?.name;
+        }
+        let channelId = options.channelId;
+        if (
+            (channelId === undefined || !Number.isInteger(channelId) || channelId < 0) &&
+            characterName != null &&
+            characterName !== "" &&
+            options.disconnectSource === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER
+        ) {
+            const sess = await this.repo.getCharacterSessionByName(worldId, characterName);
+            const sch = sess?.gameServer?.channelId;
+            if (sch != null && Number.isInteger(sch) && sch >= 0) {
+                channelId = sch;
+            }
+        }
+        const chForRepo =
+            channelId !== undefined && Number.isInteger(channelId) && channelId >= 0 ? channelId : undefined;
         const [ok, code] = this.atomicResultTuple(
-            await this.repo.logoutAtomic(worldId, accountId, this.ttlByState(SessionState.TRANSITION))
+            await this.repo.logoutAtomic(
+                worldId,
+                accountId,
+                this.ttlByState(SessionState.TRANSITION),
+                characterName,
+                chForRepo
+            )
         );
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_LOGOUT_FAILED };
@@ -117,7 +175,7 @@ export class SessionService {
         const src = options.disconnectSource ?? SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_UNSPECIFIED;
         const transferDisconnect = options.transferDisconnect ?? false;
         const gameNormalDisconnect = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER && !transferDisconnect;
-        const cid = sessionBeforeLogout?.character?.id;
+        const cid = options.characterId ?? null;
         if (cid != null && this.partyService && gameNormalDisconnect) await this.partyService.applyMemberChannelIndex(worldId, cid, -2);
         return { ok: true, code: SessionErrorCode.SESSION_NONE };
     }

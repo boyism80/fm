@@ -102,22 +102,27 @@ game_servers:
           name: "Scania-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Scania-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Scania-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Scania-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Scania-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
     "1":
       world_name: "Bera"
       flag: 0
@@ -127,22 +132,27 @@ game_servers:
           name: "Bera-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Bera-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Bera-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Bera-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Bera-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
     "2":
       world_name: "Broa"
       flag: 0
@@ -152,22 +162,27 @@ game_servers:
           name: "Broa-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Broa-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Broa-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Broa-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Broa-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
     "3":
       world_name: "Windia"
       flag: 0
@@ -177,22 +192,27 @@ game_servers:
           name: "Windia-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Windia-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Windia-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Windia-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Windia-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
     "4":
       world_name: "Khaini"
       flag: 0
@@ -202,22 +222,27 @@ game_servers:
           name: "Khaini-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Khaini-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Khaini-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Khaini-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Khaini-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
     "5":
       world_name: "Bellocan"
       flag: 0
@@ -227,22 +252,27 @@ game_servers:
           name: "Bellocan-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Bellocan-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Bellocan-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Bellocan-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Bellocan-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
     "6":
       world_name: "Mardia"
       flag: 0
@@ -252,22 +282,27 @@ game_servers:
           name: "Mardia-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Mardia-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Mardia-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Mardia-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Mardia-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
     "7":
       world_name: "Kradia"
       flag: 0
@@ -277,22 +312,27 @@ game_servers:
           name: "Kradia-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Kradia-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Kradia-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Kradia-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Kradia-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
     "8":
       world_name: "Yellonde"
       flag: 0
@@ -302,22 +342,27 @@ game_servers:
           name: "Yellonde-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Yellonde-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Yellonde-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Yellonde-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Yellonde-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
     "9":
       world_name: "Demethos"
       flag: 0
@@ -327,19 +372,24 @@ game_servers:
           name: "Demethos-1"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 1
           name: "Demethos-2"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 2
           name: "Demethos-3"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 3
           name: "Demethos-4"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000
         - channel_id: 4
           name: "Demethos-5"
           host: "127.0.0.1"
           port: 8485
+          max_concurrent_users: 1000

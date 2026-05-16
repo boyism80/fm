@@ -19,30 +19,30 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Internal_Ping_FullMethodName                  = "/fm.internal.Internal/Ping"
-	Internal_CheckGameChannelAlive_FullMethodName = "/fm.internal.Internal/CheckGameChannelAlive"
-	Internal_GetServerCatalog_FullMethodName      = "/fm.internal.Internal/GetServerCatalog"
-	Internal_EnterGame_FullMethodName             = "/fm.internal.Internal/EnterGame"
-	Internal_BeginGameTransition_FullMethodName   = "/fm.internal.Internal/BeginGameTransition"
-	Internal_SaveCharacter_FullMethodName         = "/fm.internal.Internal/SaveCharacter"
-	Internal_SaveCharacters_FullMethodName        = "/fm.internal.Internal/SaveCharacters"
-	Internal_LoginAccount_FullMethodName          = "/fm.internal.Internal/LoginAccount"
-	Internal_GetCharacterList_FullMethodName      = "/fm.internal.Internal/GetCharacterList"
-	Internal_CheckCharacterName_FullMethodName    = "/fm.internal.Internal/CheckCharacterName"
-	Internal_CreateCharacter_FullMethodName       = "/fm.internal.Internal/CreateCharacter"
-	Internal_DeleteCharacter_FullMethodName       = "/fm.internal.Internal/DeleteCharacter"
-	Internal_RefreshSession_FullMethodName        = "/fm.internal.Internal/RefreshSession"
-	Internal_LogoutSession_FullMethodName         = "/fm.internal.Internal/LogoutSession"
-	Internal_CreateParty_FullMethodName           = "/fm.internal.Internal/CreateParty"
-	Internal_JoinParty_FullMethodName             = "/fm.internal.Internal/JoinParty"
-	Internal_LeaveParty_FullMethodName            = "/fm.internal.Internal/LeaveParty"
-	Internal_ExpelParty_FullMethodName            = "/fm.internal.Internal/ExpelParty"
-	Internal_ChangePartyLeader_FullMethodName     = "/fm.internal.Internal/ChangePartyLeader"
-	Internal_GetParty_FullMethodName              = "/fm.internal.Internal/GetParty"
-	Internal_UpdatePartyMember_FullMethodName     = "/fm.internal.Internal/UpdatePartyMember"
-	Internal_InviteParty_FullMethodName           = "/fm.internal.Internal/InviteParty"
-	Internal_DenyParty_FullMethodName             = "/fm.internal.Internal/DenyParty"
-	Internal_BroadcastMultiChat_FullMethodName    = "/fm.internal.Internal/BroadcastMultiChat"
+	Internal_Ping_FullMethodName                 = "/fm.internal.Internal/Ping"
+	Internal_GetGameChannelStatus_FullMethodName = "/fm.internal.Internal/GetGameChannelStatus"
+	Internal_GetServerCatalog_FullMethodName     = "/fm.internal.Internal/GetServerCatalog"
+	Internal_EnterGame_FullMethodName            = "/fm.internal.Internal/EnterGame"
+	Internal_BeginGameTransition_FullMethodName  = "/fm.internal.Internal/BeginGameTransition"
+	Internal_SaveCharacter_FullMethodName        = "/fm.internal.Internal/SaveCharacter"
+	Internal_SaveCharacters_FullMethodName       = "/fm.internal.Internal/SaveCharacters"
+	Internal_LoginAccount_FullMethodName         = "/fm.internal.Internal/LoginAccount"
+	Internal_GetCharacterList_FullMethodName     = "/fm.internal.Internal/GetCharacterList"
+	Internal_CheckCharacterName_FullMethodName   = "/fm.internal.Internal/CheckCharacterName"
+	Internal_CreateCharacter_FullMethodName      = "/fm.internal.Internal/CreateCharacter"
+	Internal_DeleteCharacter_FullMethodName      = "/fm.internal.Internal/DeleteCharacter"
+	Internal_RefreshSession_FullMethodName       = "/fm.internal.Internal/RefreshSession"
+	Internal_LogoutSession_FullMethodName        = "/fm.internal.Internal/LogoutSession"
+	Internal_CreateParty_FullMethodName          = "/fm.internal.Internal/CreateParty"
+	Internal_JoinParty_FullMethodName            = "/fm.internal.Internal/JoinParty"
+	Internal_LeaveParty_FullMethodName           = "/fm.internal.Internal/LeaveParty"
+	Internal_ExpelParty_FullMethodName           = "/fm.internal.Internal/ExpelParty"
+	Internal_ChangePartyLeader_FullMethodName    = "/fm.internal.Internal/ChangePartyLeader"
+	Internal_GetParty_FullMethodName             = "/fm.internal.Internal/GetParty"
+	Internal_UpdatePartyMember_FullMethodName    = "/fm.internal.Internal/UpdatePartyMember"
+	Internal_InviteParty_FullMethodName          = "/fm.internal.Internal/InviteParty"
+	Internal_DenyParty_FullMethodName            = "/fm.internal.Internal/DenyParty"
+	Internal_BroadcastMultiChat_FullMethodName   = "/fm.internal.Internal/BroadcastMultiChat"
 )
 
 // InternalClient is the client API for Internal service.
@@ -50,7 +50,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InternalClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error)
-	CheckGameChannelAlive(ctx context.Context, in *CheckGameChannelAliveRequest, opts ...grpc.CallOption) (*CheckGameChannelAliveReply, error)
+	GetGameChannelStatus(ctx context.Context, in *GetGameChannelStatusRequest, opts ...grpc.CallOption) (*GetGameChannelStatusReply, error)
 	GetServerCatalog(ctx context.Context, in *GetServerCatalogRequest, opts ...grpc.CallOption) (*GetServerCatalogReply, error)
 	EnterGame(ctx context.Context, in *EnterGameRequest, opts ...grpc.CallOption) (*EnterGameReply, error)
 	BeginGameTransition(ctx context.Context, in *BeginGameTransitionRequest, opts ...grpc.CallOption) (*BeginGameTransitionReply, error)
@@ -93,10 +93,10 @@ func (c *internalClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc
 	return out, nil
 }
 
-func (c *internalClient) CheckGameChannelAlive(ctx context.Context, in *CheckGameChannelAliveRequest, opts ...grpc.CallOption) (*CheckGameChannelAliveReply, error) {
+func (c *internalClient) GetGameChannelStatus(ctx context.Context, in *GetGameChannelStatusRequest, opts ...grpc.CallOption) (*GetGameChannelStatusReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CheckGameChannelAliveReply)
-	err := c.cc.Invoke(ctx, Internal_CheckGameChannelAlive_FullMethodName, in, out, cOpts...)
+	out := new(GetGameChannelStatusReply)
+	err := c.cc.Invoke(ctx, Internal_GetGameChannelStatus_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +328,7 @@ func (c *internalClient) BroadcastMultiChat(ctx context.Context, in *BroadcastMu
 // for forward compatibility.
 type InternalServer interface {
 	Ping(context.Context, *PingRequest) (*PingReply, error)
-	CheckGameChannelAlive(context.Context, *CheckGameChannelAliveRequest) (*CheckGameChannelAliveReply, error)
+	GetGameChannelStatus(context.Context, *GetGameChannelStatusRequest) (*GetGameChannelStatusReply, error)
 	GetServerCatalog(context.Context, *GetServerCatalogRequest) (*GetServerCatalogReply, error)
 	EnterGame(context.Context, *EnterGameRequest) (*EnterGameReply, error)
 	BeginGameTransition(context.Context, *BeginGameTransitionRequest) (*BeginGameTransitionReply, error)
@@ -364,8 +364,8 @@ type UnimplementedInternalServer struct{}
 func (UnimplementedInternalServer) Ping(context.Context, *PingRequest) (*PingReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedInternalServer) CheckGameChannelAlive(context.Context, *CheckGameChannelAliveRequest) (*CheckGameChannelAliveReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CheckGameChannelAlive not implemented")
+func (UnimplementedInternalServer) GetGameChannelStatus(context.Context, *GetGameChannelStatusRequest) (*GetGameChannelStatusReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGameChannelStatus not implemented")
 }
 func (UnimplementedInternalServer) GetServerCatalog(context.Context, *GetServerCatalogRequest) (*GetServerCatalogReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetServerCatalog not implemented")
@@ -472,20 +472,20 @@ func _Internal_Ping_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Internal_CheckGameChannelAlive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CheckGameChannelAliveRequest)
+func _Internal_GetGameChannelStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGameChannelStatusRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InternalServer).CheckGameChannelAlive(ctx, in)
+		return srv.(InternalServer).GetGameChannelStatus(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Internal_CheckGameChannelAlive_FullMethodName,
+		FullMethod: Internal_GetGameChannelStatus_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InternalServer).CheckGameChannelAlive(ctx, req.(*CheckGameChannelAliveRequest))
+		return srv.(InternalServer).GetGameChannelStatus(ctx, req.(*GetGameChannelStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -898,8 +898,8 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Internal_Ping_Handler,
 		},
 		{
-			MethodName: "CheckGameChannelAlive",
-			Handler:    _Internal_CheckGameChannelAlive_Handler,
+			MethodName: "GetGameChannelStatus",
+			Handler:    _Internal_GetGameChannelStatus_Handler,
 		},
 		{
 			MethodName: "GetServerCatalog",

@@ -24,7 +24,13 @@ type RawPgEndpoint = Partial<PgEndpoint> & { pool?: Partial<PgPoolConfig> };
 type RawRedisEndpoint = Partial<RedisEndpoint>;
 type RawWorldPgConfig = { global: RawPgEndpoint; data: RawPgEndpoint[] };
 type RawWorldRedisConfig = { global: RawRedisEndpoint; data: RawRedisEndpoint[] };
-type RawGameServerChannel = Partial<{ channel_id: number; host: string; port: number; name: string }>;
+type RawGameServerChannel = Partial<{
+    channel_id: number;
+    host: string;
+    port: number;
+    name: string;
+    max_concurrent_users: number;
+}>;
 type RawGameServerWorld = Partial<{ world_name: string; flag: number; event_message: string; channels: RawGameServerChannel[] }>;
 type RawSequelize = Partial<Omit<InternalConfig["sequelize"], "define"> & { define: SequelizeDefineConfig }>;
 type RawConfig = Partial<{
@@ -166,11 +172,15 @@ function normalizeGameServers(rawGameServers: RawConfig["game_servers"]): Intern
                 throw new Error(`game_servers.worlds[${worldKey}].channels[${idx}].port must be > 0`);
             }
             const channelId = ch.channel_id ?? idx;
+            const maxRaw = ch.max_concurrent_users;
+            const maxConcurrentUsers =
+                typeof maxRaw === "number" && Number.isFinite(maxRaw) && maxRaw >= 0 ? Math.floor(maxRaw) : 0;
             return {
                 channel_id: channelId,
                 host: ch.host,
                 port,
                 name: ch.name || `${DEFAULT_CHANNEL_NAME_PREFIX} ${channelId + 1}`,
+                max_concurrent_users: maxConcurrentUsers,
             };
         });
         worlds[worldKey] = {

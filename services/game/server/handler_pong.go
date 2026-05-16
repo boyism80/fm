@@ -37,10 +37,15 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 	}
 	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 		func(cctx context.Context) (*internal.RefreshSessionReply, error) {
-			return h.gs.internalClient.RefreshSession(cctx, &internal.RefreshSessionRequest{
+			req := &internal.RefreshSessionRequest{
 				WorldId:   h.gs.config.WorldId,
 				AccountId: character.AccountID,
-			})
+			}
+			if cid := character.GetID(); cid != 0 {
+				v := cid
+				req.CharacterId = &v
+			}
+			return h.gs.internalClient.RefreshSession(cctx, req)
 		}, func(reply *internal.RefreshSessionReply) error {
 			if !reply.GetOk() {
 				return fmt.Errorf("refresh session failed: %s", reply.GetErrorCode())

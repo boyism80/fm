@@ -59,16 +59,21 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 
 	sendCharListFallback := true
 	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.CheckGameChannelAliveReply, error) {
-		return ic.CheckGameChannelAlive(c, &internal.CheckGameChannelAliveRequest{
+	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
+		return ic.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
 			WorldId:   worldId,
 			ChannelId: uint32(req.Channel),
 		})
-	}, func(aliveReply *internal.CheckGameChannelAliveReply) error {
-		if aliveReply == nil || !aliveReply.GetAlive() {
+	}, func(statusReply *internal.GetGameChannelStatusReply) error {
+		if statusReply == nil || !statusReply.GetAlive() {
 			sendCharListFallback = false
 			_ = ctx.Client.Send(&response.LoginFailed{Reason: response.LoginFailedReasonTooManyConnections}, types.SEND_POLICY_ENCRYPT)
 			return fmt.Errorf("game channel not alive (world=%d channel=%d)", worldId, req.Channel)
+		}
+		if statusReply.GetChannelFull() {
+			sendCharListFallback = false
+			_ = ctx.Client.Send(&response.LoginFailed{Reason: response.LoginFailedReasonTooManyConnections}, types.SEND_POLICY_ENCRYPT)
+			return fmt.Errorf("game channel at capacity (world=%d channel=%d)", worldId, req.Channel)
 		}
 		return nil
 	})

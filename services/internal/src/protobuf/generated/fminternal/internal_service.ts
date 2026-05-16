@@ -311,13 +311,14 @@ export interface PingReply {
   message: string;
 }
 
-export interface CheckGameChannelAliveRequest {
+export interface GetGameChannelStatusRequest {
   worldId: number;
   channelId: number;
 }
 
-export interface CheckGameChannelAliveReply {
+export interface GetGameChannelStatusReply {
   alive: boolean;
+  channelFull: boolean;
 }
 
 export interface GetServerCatalogRequest {
@@ -663,6 +664,7 @@ export interface DeleteCharacterReply {
 export interface RefreshSessionRequest {
   worldId: number;
   accountId: number;
+  characterId?: number | undefined;
 }
 
 export interface RefreshSessionReply {
@@ -675,6 +677,8 @@ export interface LogoutSessionRequest {
   accountId: number;
   disconnectSource: SessionDisconnectSource;
   transferDisconnect: boolean;
+  characterId?: number | undefined;
+  channelId?: number | undefined;
 }
 
 export interface LogoutSessionReply {
@@ -1016,12 +1020,12 @@ export const PingReply: MessageFns<PingReply> = {
   },
 };
 
-function createBaseCheckGameChannelAliveRequest(): CheckGameChannelAliveRequest {
+function createBaseGetGameChannelStatusRequest(): GetGameChannelStatusRequest {
   return { worldId: 0, channelId: 0 };
 }
 
-export const CheckGameChannelAliveRequest: MessageFns<CheckGameChannelAliveRequest> = {
-  encode(message: CheckGameChannelAliveRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const GetGameChannelStatusRequest: MessageFns<GetGameChannelStatusRequest> = {
+  encode(message: GetGameChannelStatusRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.worldId !== 0) {
       writer.uint32(8).uint32(message.worldId);
     }
@@ -1031,10 +1035,10 @@ export const CheckGameChannelAliveRequest: MessageFns<CheckGameChannelAliveReque
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CheckGameChannelAliveRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGameChannelStatusRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCheckGameChannelAliveRequest();
+    const message = createBaseGetGameChannelStatusRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1063,7 +1067,7 @@ export const CheckGameChannelAliveRequest: MessageFns<CheckGameChannelAliveReque
     return message;
   },
 
-  fromJSON(object: any): CheckGameChannelAliveRequest {
+  fromJSON(object: any): GetGameChannelStatusRequest {
     return {
       worldId: isSet(object.worldId)
         ? globalThis.Number(object.worldId)
@@ -1078,7 +1082,7 @@ export const CheckGameChannelAliveRequest: MessageFns<CheckGameChannelAliveReque
     };
   },
 
-  toJSON(message: CheckGameChannelAliveRequest): unknown {
+  toJSON(message: GetGameChannelStatusRequest): unknown {
     const obj: any = {};
     if (message.worldId !== 0) {
       obj.worldId = Math.round(message.worldId);
@@ -1089,33 +1093,36 @@ export const CheckGameChannelAliveRequest: MessageFns<CheckGameChannelAliveReque
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CheckGameChannelAliveRequest>, I>>(base?: I): CheckGameChannelAliveRequest {
-    return CheckGameChannelAliveRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<GetGameChannelStatusRequest>, I>>(base?: I): GetGameChannelStatusRequest {
+    return GetGameChannelStatusRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CheckGameChannelAliveRequest>, I>>(object: I): CheckGameChannelAliveRequest {
-    const message = createBaseCheckGameChannelAliveRequest();
+  fromPartial<I extends Exact<DeepPartial<GetGameChannelStatusRequest>, I>>(object: I): GetGameChannelStatusRequest {
+    const message = createBaseGetGameChannelStatusRequest();
     message.worldId = object.worldId ?? 0;
     message.channelId = object.channelId ?? 0;
     return message;
   },
 };
 
-function createBaseCheckGameChannelAliveReply(): CheckGameChannelAliveReply {
-  return { alive: false };
+function createBaseGetGameChannelStatusReply(): GetGameChannelStatusReply {
+  return { alive: false, channelFull: false };
 }
 
-export const CheckGameChannelAliveReply: MessageFns<CheckGameChannelAliveReply> = {
-  encode(message: CheckGameChannelAliveReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const GetGameChannelStatusReply: MessageFns<GetGameChannelStatusReply> = {
+  encode(message: GetGameChannelStatusReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.alive !== false) {
       writer.uint32(8).bool(message.alive);
+    }
+    if (message.channelFull !== false) {
+      writer.uint32(16).bool(message.channelFull);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CheckGameChannelAliveReply {
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGameChannelStatusReply {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCheckGameChannelAliveReply();
+    const message = createBaseGetGameChannelStatusReply();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1127,6 +1134,14 @@ export const CheckGameChannelAliveReply: MessageFns<CheckGameChannelAliveReply> 
           message.alive = reader.bool();
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.channelFull = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1136,24 +1151,35 @@ export const CheckGameChannelAliveReply: MessageFns<CheckGameChannelAliveReply> 
     return message;
   },
 
-  fromJSON(object: any): CheckGameChannelAliveReply {
-    return { alive: isSet(object.alive) ? globalThis.Boolean(object.alive) : false };
+  fromJSON(object: any): GetGameChannelStatusReply {
+    return {
+      alive: isSet(object.alive) ? globalThis.Boolean(object.alive) : false,
+      channelFull: isSet(object.channelFull)
+        ? globalThis.Boolean(object.channelFull)
+        : isSet(object.channel_full)
+        ? globalThis.Boolean(object.channel_full)
+        : false,
+    };
   },
 
-  toJSON(message: CheckGameChannelAliveReply): unknown {
+  toJSON(message: GetGameChannelStatusReply): unknown {
     const obj: any = {};
     if (message.alive !== false) {
       obj.alive = message.alive;
     }
+    if (message.channelFull !== false) {
+      obj.channelFull = message.channelFull;
+    }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CheckGameChannelAliveReply>, I>>(base?: I): CheckGameChannelAliveReply {
-    return CheckGameChannelAliveReply.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<GetGameChannelStatusReply>, I>>(base?: I): GetGameChannelStatusReply {
+    return GetGameChannelStatusReply.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CheckGameChannelAliveReply>, I>>(object: I): CheckGameChannelAliveReply {
-    const message = createBaseCheckGameChannelAliveReply();
+  fromPartial<I extends Exact<DeepPartial<GetGameChannelStatusReply>, I>>(object: I): GetGameChannelStatusReply {
+    const message = createBaseGetGameChannelStatusReply();
     message.alive = object.alive ?? false;
+    message.channelFull = object.channelFull ?? false;
     return message;
   },
 };
@@ -6287,7 +6313,7 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
 };
 
 function createBaseRefreshSessionRequest(): RefreshSessionRequest {
-  return { worldId: 0, accountId: 0 };
+  return { worldId: 0, accountId: 0, characterId: undefined };
 }
 
 export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
@@ -6297,6 +6323,9 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
     }
     if (message.accountId !== 0) {
       writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.characterId !== undefined) {
+      writer.uint32(24).uint32(message.characterId);
     }
     return writer;
   },
@@ -6324,6 +6353,14 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
           message.accountId = reader.uint32();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6345,6 +6382,11 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
         : isSet(object.account_id)
         ? globalThis.Number(object.account_id)
         : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : undefined,
     };
   },
 
@@ -6356,6 +6398,9 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
     if (message.accountId !== 0) {
       obj.accountId = Math.round(message.accountId);
     }
+    if (message.characterId !== undefined) {
+      obj.characterId = Math.round(message.characterId);
+    }
     return obj;
   },
 
@@ -6366,6 +6411,7 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
     const message = createBaseRefreshSessionRequest();
     message.worldId = object.worldId ?? 0;
     message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? undefined;
     return message;
   },
 };
@@ -6451,7 +6497,14 @@ export const RefreshSessionReply: MessageFns<RefreshSessionReply> = {
 };
 
 function createBaseLogoutSessionRequest(): LogoutSessionRequest {
-  return { worldId: 0, accountId: 0, disconnectSource: 0, transferDisconnect: false };
+  return {
+    worldId: 0,
+    accountId: 0,
+    disconnectSource: 0,
+    transferDisconnect: false,
+    characterId: undefined,
+    channelId: undefined,
+  };
 }
 
 export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
@@ -6467,6 +6520,12 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
     }
     if (message.transferDisconnect !== false) {
       writer.uint32(32).bool(message.transferDisconnect);
+    }
+    if (message.characterId !== undefined) {
+      writer.uint32(40).uint32(message.characterId);
+    }
+    if (message.channelId !== undefined) {
+      writer.uint32(48).uint32(message.channelId);
     }
     return writer;
   },
@@ -6510,6 +6569,22 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
           message.transferDisconnect = reader.bool();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.channelId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6541,6 +6616,16 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
         : isSet(object.transfer_disconnect)
         ? globalThis.Boolean(object.transfer_disconnect)
         : false,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : undefined,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : undefined,
     };
   },
 
@@ -6558,6 +6643,12 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
     if (message.transferDisconnect !== false) {
       obj.transferDisconnect = message.transferDisconnect;
     }
+    if (message.characterId !== undefined) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.channelId !== undefined) {
+      obj.channelId = Math.round(message.channelId);
+    }
     return obj;
   },
 
@@ -6570,6 +6661,8 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
     message.accountId = object.accountId ?? 0;
     message.disconnectSource = object.disconnectSource ?? 0;
     message.transferDisconnect = object.transferDisconnect ?? false;
+    message.characterId = object.characterId ?? undefined;
+    message.channelId = object.channelId ?? undefined;
     return message;
   },
 };
@@ -9293,16 +9386,16 @@ export const InternalService = {
     responseSerialize: (value: PingReply): Buffer => Buffer.from(PingReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): PingReply => PingReply.decode(value),
   },
-  checkGameChannelAlive: {
-    path: "/fm.internal.Internal/CheckGameChannelAlive" as const,
+  getGameChannelStatus: {
+    path: "/fm.internal.Internal/GetGameChannelStatus" as const,
     requestStream: false as const,
     responseStream: false as const,
-    requestSerialize: (value: CheckGameChannelAliveRequest): Buffer =>
-      Buffer.from(CheckGameChannelAliveRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer): CheckGameChannelAliveRequest => CheckGameChannelAliveRequest.decode(value),
-    responseSerialize: (value: CheckGameChannelAliveReply): Buffer =>
-      Buffer.from(CheckGameChannelAliveReply.encode(value).finish()),
-    responseDeserialize: (value: Buffer): CheckGameChannelAliveReply => CheckGameChannelAliveReply.decode(value),
+    requestSerialize: (value: GetGameChannelStatusRequest): Buffer =>
+      Buffer.from(GetGameChannelStatusRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetGameChannelStatusRequest => GetGameChannelStatusRequest.decode(value),
+    responseSerialize: (value: GetGameChannelStatusReply): Buffer =>
+      Buffer.from(GetGameChannelStatusReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetGameChannelStatusReply => GetGameChannelStatusReply.decode(value),
   },
   getServerCatalog: {
     path: "/fm.internal.Internal/GetServerCatalog" as const,
@@ -9526,7 +9619,7 @@ export const InternalService = {
 
 export interface InternalServer extends UntypedServiceImplementation {
   ping: handleUnaryCall<PingRequest, PingReply>;
-  checkGameChannelAlive: handleUnaryCall<CheckGameChannelAliveRequest, CheckGameChannelAliveReply>;
+  getGameChannelStatus: handleUnaryCall<GetGameChannelStatusRequest, GetGameChannelStatusReply>;
   getServerCatalog: handleUnaryCall<GetServerCatalogRequest, GetServerCatalogReply>;
   enterGame: handleUnaryCall<EnterGameRequest, EnterGameReply>;
   beginGameTransition: handleUnaryCall<BeginGameTransitionRequest, BeginGameTransitionReply>;
@@ -9564,20 +9657,20 @@ export interface InternalClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: PingReply) => void,
   ): ClientUnaryCall;
-  checkGameChannelAlive(
-    request: CheckGameChannelAliveRequest,
-    callback: (error: ServiceError | null, response: CheckGameChannelAliveReply) => void,
+  getGameChannelStatus(
+    request: GetGameChannelStatusRequest,
+    callback: (error: ServiceError | null, response: GetGameChannelStatusReply) => void,
   ): ClientUnaryCall;
-  checkGameChannelAlive(
-    request: CheckGameChannelAliveRequest,
+  getGameChannelStatus(
+    request: GetGameChannelStatusRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: CheckGameChannelAliveReply) => void,
+    callback: (error: ServiceError | null, response: GetGameChannelStatusReply) => void,
   ): ClientUnaryCall;
-  checkGameChannelAlive(
-    request: CheckGameChannelAliveRequest,
+  getGameChannelStatus(
+    request: GetGameChannelStatusRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: CheckGameChannelAliveReply) => void,
+    callback: (error: ServiceError | null, response: GetGameChannelStatusReply) => void,
   ): ClientUnaryCall;
   getServerCatalog(
     request: GetServerCatalogRequest,

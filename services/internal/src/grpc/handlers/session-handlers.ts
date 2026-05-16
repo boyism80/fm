@@ -40,6 +40,26 @@ export function createSessionHandlers(
     characterRealtimeStateRepository: CharacterRealtimeStateRepository,
     grpcError: GrpcErrorHandler
 ) {
+    type OwnedCharacterResult =
+        | { kind: "skip" }
+        | { kind: "bad"; code: SessionErrorCode }
+        | { kind: "ok"; row: CharacterModel };
+
+    async function ownedCharacterForSessionRpc(
+        worldId: number,
+        accountId: number,
+        characterId: number | undefined,
+    ): Promise<OwnedCharacterResult> {
+        if (characterId == null || characterId === 0) {
+            return { kind: "skip" };
+        }
+        const row = await characterService.getCharacter(worldId, characterId);
+        if (!row || row.accountId !== accountId) {
+            return { kind: "bad", code: SessionErrorCode.SESSION_NOT_FOUND };
+        }
+        return { kind: "ok", row };
+    }
+
     return {
         async beginGameTransition(call: GrpcCall<BeginGameTransitionRequest>, callback: GrpcCallback<BeginGameTransitionReply>) {
             try {
@@ -91,7 +111,13 @@ export function createSessionHandlers(
                     return;
                 }
 
-                const attach = await sessionService.attachGameSession(worldId, row.accountId, channelId);
+                const attach = await sessionService.attachGameSession(
+                    worldId,
+                    row.accountId,
+                    row.characterId,
+                    row.name,
+                    channelId
+                );
                 if (!attach.ok) {
                     throw new Error(`attach game session failed: ${attach.code}`);
                 }
@@ -142,7 +168,23 @@ export function createSessionHandlers(
         },
         async refreshSession(call: GrpcCall<RefreshSessionRequest>, callback: GrpcCallback<RefreshSessionReply>) {
             try {
-                const result = await sessionService.refresh(call.request.worldId, call.request.accountId);
+                const oc = await ownedCharacterForSessionRpc(
+                    call.request.worldId,
+                    call.request.accountId,
+                    call.request.characterId,
+                );
+                if (oc.kind === "bad") {
+                    callback(null, {
+                        ok: false,
+                        errorCode: oc.code,
+                    });
+                    return;
+                }
+                const result = await sessionService.refresh(
+                    call.request.worldId,
+                    call.request.accountId,
+                    call.request.characterId
+                );
                 callback(null, {
                     ok: result.ok,
                     errorCode: result.code ?? SessionErrorCode.SESSION_UNKNOWN,
@@ -153,9 +195,22 @@ export function createSessionHandlers(
         },
         async logoutSession(call: GrpcCall<LogoutSessionRequest>, callback: GrpcCallback<LogoutSessionReply>) {
             try {
+                const oc = await ownedCharacterForSessionRpc(
+                    call.request.worldId,
+                    call.request.accountId,
+                    call.request.characterId,
+                );
+                if (oc.kind === "bad") {
+                    callback(null, { ok: false });
+                    return;
+                }
+                const characterName = oc.kind === "ok" ? oc.row.name : undefined;
                 const result = await sessionService.logout(call.request.worldId, call.request.accountId, {
                     disconnectSource: call.request.disconnectSource,
                     transferDisconnect: call.request.transferDisconnect,
+                    characterId: call.request.characterId,
+                    characterName,
+                    channelId: call.request.channelId,
                 });
                 callback(null, { ok: result.ok });
             } catch (err) {

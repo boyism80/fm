@@ -96,16 +96,16 @@ func (gs *GameServer) GetPacketHandler() *core.PacketHandler {
 }
 
 type GameConfig struct {
-	Host            string
-	Port            int
-	ChannelId       uint32
-	WzPath          string
-	WorldName       string
-	WorldId         uint32
-	MaxPlayers      int
-	ExpRate         int
-	DropRate        int
-	MesoRate        int
+	Host                             string
+	Port                             int
+	ChannelId                        uint32
+	WzPath                           string
+	WorldName                        string
+	WorldId                          uint32
+	MaxPlayers                       int
+	ExpRate                          int
+	DropRate                         int
+	MesoRate                         int
 	InternalAddr                     string
 	InternalHeartbeatIntervalSeconds int
 	RabbitMQ                         config.RabbitMQEndpoint
@@ -508,12 +508,19 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		p.Then(func() (interface{}, error) {
 			ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
 			defer cancel()
-			_, err := gs.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
+			req := &internal.LogoutSessionRequest{
 				WorldId:            wid,
 				AccountId:          accID,
 				DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
 				TransferDisconnect: transfer,
-			})
+			}
+			if cid := character.GetID(); cid != 0 {
+				v := cid
+				req.CharacterId = &v
+			}
+			ch := gs.config.ChannelId
+			req.ChannelId = &ch
+			_, err := gs.internalClient.LogoutSession(ctx, req)
 			return err, nil
 		}, func(v interface{}) error {
 			if err, _ := v.(error); err != nil {

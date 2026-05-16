@@ -7,7 +7,7 @@ option go_package = "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal;f
 
 service Internal {
   rpc Ping (PingRequest) returns (PingReply);
-  rpc CheckGameChannelAlive (CheckGameChannelAliveRequest) returns (CheckGameChannelAliveReply);
+  rpc GetGameChannelStatus (GetGameChannelStatusRequest) returns (GetGameChannelStatusReply);
   rpc GetServerCatalog (GetServerCatalogRequest) returns (GetServerCatalogReply);
   rpc EnterGame (EnterGameRequest) returns (EnterGameReply);
   rpc BeginGameTransition (BeginGameTransitionRequest) returns (BeginGameTransitionReply);
@@ -49,13 +49,14 @@ message PingReply {
   string message = 1;
 }
 
-message CheckGameChannelAliveRequest {
+message GetGameChannelStatusRequest {
   uint32 world_id = 1;
   uint32 channel_id = 2;
 }
 
-message CheckGameChannelAliveReply {
+message GetGameChannelStatusReply {
   bool alive = 1;
+  bool channel_full = 2;
 }
 
 message GetServerCatalogRequest {}
@@ -339,6 +340,7 @@ message DeleteCharacterReply {
 message RefreshSessionRequest {
   uint32 world_id = 1;
   uint32 account_id = 2;
+  optional uint32 character_id = 3;
 }
 
 message RefreshSessionReply {
@@ -357,6 +359,8 @@ message LogoutSessionRequest {
   uint32 account_id = 2;
   SessionDisconnectSource disconnect_source = 3;
   bool transfer_disconnect = 4;
+  optional uint32 character_id = 5;
+  optional uint32 channel_id = 6;
 }
 
 message LogoutSessionReply {

@@ -185,8 +185,16 @@ export class PartyService {
         return ch;
     }
 
+    private async getCharacterSession(worldId: number, characterId: number): Promise<CharacterSession | null> {
+        const row = await this.characterRepo.get(worldId, characterId);
+        if (!row) {
+            return null;
+        }
+        return this.sessionRepo.getCharacterSessionByName(worldId, row.name);
+    }
+
     private async sessionChannelIndex(worldId: number, characterId: number) {
-        const sess = await this.sessionRepo.getCharacterSession(worldId, characterId);
+        const sess = await this.getCharacterSession(worldId, characterId);
         return this.computePartyUiChannelIndex(sess);
     }
 
@@ -455,7 +463,7 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.TARGET_ALREADY_IN_PARTY };
         }
 
-        const sess = await this.sessionRepo.getCharacterSession(worldId, targetCharacterId);
+        const sess = await this.getCharacterSession(worldId, targetCharacterId);
         const ch = sess?.gameServer?.channelId;
         const online = sess?.state === "ONLINE" && sess?.gameServer?.connected === true;
         if (!online || ch == null || !Number.isFinite(ch) || ch < 0) {
@@ -502,7 +510,7 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
         }
         const inviterCharacterId = inviterEntry.character_id;
-        const inviterSession = await this.sessionRepo.getCharacterSession(worldId, inviterCharacterId);
+        const inviterSession = await this.getCharacterSession(worldId, inviterCharacterId);
         const inviterChRaw = inviterSession?.gameServer?.channelId;
         const inviterOnline = inviterSession?.state === "ONLINE" && inviterSession?.gameServer?.connected === true;
         if (!inviterOnline || inviterChRaw == null || !Number.isFinite(inviterChRaw) || inviterChRaw < 0) {
@@ -758,7 +766,7 @@ export class PartyService {
         this.assertCharacterId(requesterCharacterId);
         this.assertCharacterId(newLeaderCharacterId);
 
-        const newLeaderSession = await this.sessionRepo.getCharacterSession(worldId, newLeaderCharacterId);
+        const newLeaderSession = await this.getCharacterSession(worldId, newLeaderCharacterId);
         const newLeaderOnline = newLeaderSession?.state === "ONLINE" && newLeaderSession?.gameServer?.connected === true;
         if (!newLeaderOnline) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
