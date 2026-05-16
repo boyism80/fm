@@ -79,10 +79,14 @@ export class CatalogGrpcController {
         this.grpcError = grpcError;
     }
 
-    private resolveChannelMaxConcurrentUsers(worldId: number, channelId: number): number {
+    private resolveChannel(worldId: number, channelId: number): ChannelConfig | undefined {
         const world = this.internalConfig.game_servers?.worlds?.[String(worldId)];
         const list = world?.channels ?? [];
-        const row = list.find((c) => c.channel_id === channelId);
+        return list.find((c) => c.channel_id === channelId);
+    }
+
+    private resolveChannelMaxConcurrentUsers(worldId: number, channelId: number): number {
+        const row = this.resolveChannel(worldId, channelId);
         if (!row) {
             return 0;
         }
@@ -126,14 +130,31 @@ export class CatalogGrpcController {
     ) {
         const req = call.request;
         try {
+            const row = this.resolveChannel(req.worldId, req.channelId);
+            if (!row) {
+                callback(null, {
+                    alive: false,
+                    channelFull: false,
+                    found: false,
+                    host: "",
+                    port: 0,
+                });
+                return;
+            }
             const { client } = this.internalContext.getRedisGlobalAccess(req.worldId);
             const key = redisAliveKey(`game:w${req.worldId}:c${req.channelId}`);
             const v = await client.get(key);
             const alive = v != null && v !== "";
             const onlineUserCount = await this.sessionRepository.getChannelOnlineUserCount(req.worldId, req.channelId);
             const maxConcurrentUsers = this.resolveChannelMaxConcurrentUsers(req.worldId, req.channelId);
-            const channelFull = onlineUserCount >= maxConcurrentUsers;
-            callback(null, { alive, channelFull });
+            const channelFull = maxConcurrentUsers > 0 && onlineUserCount >= maxConcurrentUsers;
+            callback(null, {
+                alive,
+                channelFull,
+                found: true,
+                host: row.host,
+                port: row.port,
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }

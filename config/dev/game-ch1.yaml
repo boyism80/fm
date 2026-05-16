@@ -1,0 +1,24 @@
+host: "0.0.0.0"
+port: 8486
+channel_id: 1
+wz_path: "resources/wz"
+world: "Scania"
+world_id: 0
+rate:
+  exp: 100
+  drop: 10
+  meso: 1
+internal:
+  host: "127.0.0.1"
+  port: 50051
+  timeout: 3600
+  heartbeat_interval_seconds: 15
+rabbitmq:
+  ip: "127.0.0.1"
+  port: 5672
+  uid: "guest"
+  pwd: "guest"
+  vhost: "/fm"
+high_rate: false
+lua:
+  always_reload: true

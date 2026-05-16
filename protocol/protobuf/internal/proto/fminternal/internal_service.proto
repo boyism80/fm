@@ -57,6 +57,9 @@ message GetGameChannelStatusRequest {
 message GetGameChannelStatusReply {
   bool alive = 1;
   bool channel_full = 2;
+  bool found = 3;
+  string host = 4;
+  uint32 port = 5;
 }
 
 message GetServerCatalogRequest {}

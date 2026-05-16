@@ -106,17 +106,17 @@ game_servers:
         - channel_id: 1
           name: "Scania-2"
           host: "127.0.0.1"
-          port: 8485
+          port: 8486
           max_concurrent_users: 1000
         - channel_id: 2
           name: "Scania-3"
           host: "127.0.0.1"
-          port: 8485
+          port: 8487
           max_concurrent_users: 1000
         - channel_id: 3
           name: "Scania-4"
           host: "127.0.0.1"
-          port: 8485
+          port: 8488
           max_concurrent_users: 1000
         - channel_id: 4
           name: "Scania-5"

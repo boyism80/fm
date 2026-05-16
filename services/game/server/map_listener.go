@@ -29,6 +29,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		characterDTO := character.ToFullDTO()
 
 		loginPacket := &response.Login{
+			Channel:   l.gs.config.ChannelId,
 			Character: characterDTO,
 		}
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)

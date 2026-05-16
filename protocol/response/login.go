@@ -9,6 +9,7 @@ import (
 )
 
 type Login struct {
+	Channel   uint32
 	Character *dto.Character
 }
 
@@ -20,7 +21,7 @@ func (p *Login) Serialize(writer *stream.StreamWriter) error {
 		}
 	}
 
-	writer.WriteU32(0)
+	writer.WriteU32(p.Channel)
 	writer.WriteU8(0)
 	writer.WriteU8(1)
 

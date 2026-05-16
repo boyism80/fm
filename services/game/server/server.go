@@ -508,23 +508,47 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		p.Then(func() (interface{}, error) {
 			ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
 			defer cancel()
-			req := &internal.LogoutSessionRequest{
-				WorldId:            wid,
-				AccountId:          accID,
-				DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
-				TransferDisconnect: transfer,
+
+			if transfer {
+				req := &internal.BeginGameTransitionRequest{
+					WorldId:     wid,
+					AccountId:   accID,
+					CharacterId: character.GetID(),
+				}
+				reply, err := gs.internalClient.BeginGameTransition(ctx, req)
+				if err != nil {
+					return fmt.Errorf("BeginGameTransition: %w", err), nil
+				}
+				if reply == nil || !reply.GetOk() {
+					code := internal.SessionErrorCode_SESSION_NONE
+					if reply != nil {
+						code = reply.GetErrorCode()
+					}
+					return fmt.Errorf("BeginGameTransition: ok=false code=%v", code), nil
+				}
+				return nil, nil
+			} else {
+				req := &internal.LogoutSessionRequest{
+					WorldId:            wid,
+					AccountId:          accID,
+					DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
+					TransferDisconnect: transfer,
+				}
+				if cid := character.GetID(); cid != 0 {
+					v := cid
+					req.CharacterId = &v
+				}
+				ch := gs.config.ChannelId
+				req.ChannelId = &ch
+				_, err := gs.internalClient.LogoutSession(ctx, req)
+				if err != nil {
+					return fmt.Errorf("LogoutSession: %w", err), nil
+				}
+				return nil, nil
 			}
-			if cid := character.GetID(); cid != 0 {
-				v := cid
-				req.CharacterId = &v
-			}
-			ch := gs.config.ChannelId
-			req.ChannelId = &ch
-			_, err := gs.internalClient.LogoutSession(ctx, req)
-			return err, nil
 		}, func(v interface{}) error {
 			if err, _ := v.(error); err != nil {
-				log.Printf("LogoutSession (game disconnect) failed for account %d: %v", accID, err)
+				log.Printf("session RPC on game disconnect failed for account %d: %v", accID, err)
 			}
 			return nil
 		})

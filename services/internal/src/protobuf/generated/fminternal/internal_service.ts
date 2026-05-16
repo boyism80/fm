@@ -319,6 +319,9 @@ export interface GetGameChannelStatusRequest {
 export interface GetGameChannelStatusReply {
   alive: boolean;
   channelFull: boolean;
+  found: boolean;
+  host: string;
+  port: number;
 }
 
 export interface GetServerCatalogRequest {
@@ -1105,7 +1108,7 @@ export const GetGameChannelStatusRequest: MessageFns<GetGameChannelStatusRequest
 };
 
 function createBaseGetGameChannelStatusReply(): GetGameChannelStatusReply {
-  return { alive: false, channelFull: false };
+  return { alive: false, channelFull: false, found: false, host: "", port: 0 };
 }
 
 export const GetGameChannelStatusReply: MessageFns<GetGameChannelStatusReply> = {
@@ -1115,6 +1118,15 @@ export const GetGameChannelStatusReply: MessageFns<GetGameChannelStatusReply> = 
     }
     if (message.channelFull !== false) {
       writer.uint32(16).bool(message.channelFull);
+    }
+    if (message.found !== false) {
+      writer.uint32(24).bool(message.found);
+    }
+    if (message.host !== "") {
+      writer.uint32(34).string(message.host);
+    }
+    if (message.port !== 0) {
+      writer.uint32(40).uint32(message.port);
     }
     return writer;
   },
@@ -1142,6 +1154,30 @@ export const GetGameChannelStatusReply: MessageFns<GetGameChannelStatusReply> = 
           message.channelFull = reader.bool();
           continue;
         }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.found = reader.bool();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.host = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.port = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1159,6 +1195,9 @@ export const GetGameChannelStatusReply: MessageFns<GetGameChannelStatusReply> = 
         : isSet(object.channel_full)
         ? globalThis.Boolean(object.channel_full)
         : false,
+      found: isSet(object.found) ? globalThis.Boolean(object.found) : false,
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      port: isSet(object.port) ? globalThis.Number(object.port) : 0,
     };
   },
 
@@ -1170,6 +1209,15 @@ export const GetGameChannelStatusReply: MessageFns<GetGameChannelStatusReply> = 
     if (message.channelFull !== false) {
       obj.channelFull = message.channelFull;
     }
+    if (message.found !== false) {
+      obj.found = message.found;
+    }
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.port !== 0) {
+      obj.port = Math.round(message.port);
+    }
     return obj;
   },
 
@@ -1180,6 +1228,9 @@ export const GetGameChannelStatusReply: MessageFns<GetGameChannelStatusReply> = 
     const message = createBaseGetGameChannelStatusReply();
     message.alive = object.alive ?? false;
     message.channelFull = object.channelFull ?? false;
+    message.found = object.found ?? false;
+    message.host = object.host ?? "";
+    message.port = object.port ?? 0;
     return message;
   },
 };

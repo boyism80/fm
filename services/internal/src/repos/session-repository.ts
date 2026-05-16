@@ -159,9 +159,6 @@ if redis.call("EXISTS", account_key) == 0 then
   return {0, ERR_SESSION_NOT_FOUND}
 end
 local state = redis.call("HGET", account_key, "state")
-if state ~= "LOGIN" and state ~= "TRANSITION" then
-  return {0, ERR_SESSION_UNKNOWN}
-end
 redis.call("HSET", account_key,
   "world_id", tostring(world_id),
   "state", "TRANSITION",
