@@ -60,7 +60,7 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
             this.logL1Group("getAll", "hit", hashKey);
             const result = new Map<string, TModel>();
             for (const [itemKey, row] of localCached) {
-                result.set(itemKey, this.rowToModel(row));
+                result.set(itemKey, this.rowToModel(this.normalizeRow(row)));
             }
             return result;
         }
@@ -75,9 +75,9 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
                     if (field === "_loaded") {
                         continue;
                     }
-                    const row = JSON.parse(json) as TRow & { deleted?: boolean };
-                    if (!row.deleted) {
-                        const typedRow = row as TRow;
+                    const parsed = JSON.parse(json) as TRow & { deleted?: boolean };
+                    if (!parsed.deleted) {
+                        const typedRow = this.normalizeRow(parsed);
                         localRows.set(field, typedRow);
                         result.set(field, this.rowToModel(typedRow));
                     }
@@ -95,8 +95,9 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         if (useCache) {
             const pipeline = redis.pipeline();
             pipeline.hset(hashKey, "_loaded", "1");
-            for (const row of rows) {
-                if (!row.deleted) {
+            for (const raw of rows) {
+                if (!raw.deleted) {
+                    const row = this.normalizeRow(raw);
                     pipeline.hset(hashKey, this.getItemKey(this.rowToModel(row)), JSON.stringify(row));
                 }
             }
@@ -106,9 +107,9 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
 
         const result = new Map<string, TModel>();
         const localRows = new Map<string, TRow>();
-        for (const row of rows) {
-            if (!row.deleted) {
-                const typedRow = row as TRow;
+        for (const raw of rows) {
+            if (!raw.deleted) {
+                const typedRow = this.normalizeRow(raw);
                 const model = this.rowToModel(typedRow);
                 result.set(this.getItemKey(model), model);
                 localRows.set(this.getItemKey(model), typedRow);
@@ -138,7 +139,8 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
             const res = await this.query(pool, bulkUpsert.text, bulkUpsert.values, options);
 
             const byGroup = new Map<string, Array<{ row: TRow; model: TModel }>>();
-            for (const savedRow of res.rows as TRow[]) {
+            for (const raw of res.rows as TRow[]) {
+                const savedRow = this.normalizeRow(raw);
                 const model = this.rowToModel(savedRow);
                 const key = this.getGroupKey(model);
                 if (!byGroup.has(key)) {

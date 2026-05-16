@@ -1,4 +1,5 @@
 import { redisCacheKey } from "../redis-cache-key";
+import { toPgInt } from "./pg-int";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { PartyDeleteRow, PartyModel, PartyRow } from "../types/repository-models";
@@ -59,13 +60,21 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
         };
     }
 
+    override normalizeRow(row: PartyRow): PartyRow {
+        return {
+            ...row,
+            party_id: toPgInt(row.party_id),
+            revision: toPgInt(row.revision),
+        };
+    }
+
     override rowToModel(row: PartyRow): PartyModel {
         return {
             worldId: row.world_id,
-            partyId: row.party_id,
+            partyId: toPgInt(row.party_id),
             leaderCharacterId: row.leader_character_id,
             state: row.state,
-            revision: row.revision,
+            revision: toPgInt(row.revision),
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,

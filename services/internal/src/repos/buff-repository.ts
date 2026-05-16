@@ -1,4 +1,5 @@
 import { redisCacheKey } from "../redis-cache-key";
+import { toPgIntOrNull } from "./pg-int";
 import { HashRepository } from "./hash-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { BuffModel, BuffRow, BuffFlagValueRow } from "../types/repository-models";
@@ -92,6 +93,13 @@ export class BuffRepository extends HashRepository<BuffModel, BuffRow> {
         };
     }
 
+    override normalizeRow(row: BuffRow): BuffRow {
+        return {
+            ...row,
+            remaining_duration_ms: toPgIntOrNull(row.remaining_duration_ms),
+        };
+    }
+
     override rowToModel(row: BuffRow): BuffModel {
         const flags = parseFlagValues(row.flag_values);
         return {
@@ -103,7 +111,7 @@ export class BuffRepository extends HashRepository<BuffModel, BuffRow> {
                 position: f.position,
                 value: f.value,
             })),
-            remainingDurationMs: row.remaining_duration_ms,
+            remainingDurationMs: toPgIntOrNull(row.remaining_duration_ms),
             skillLevel: row.skill_level,
             causerId: row.causer_id,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,

@@ -19,6 +19,11 @@ export abstract class Repository<TModel = Record<string, unknown>, TRow = Record
     abstract getRedisKey(_worldId: number, _key: TKey): string;
     abstract rowToModel(_row: TRow): TModel;
     abstract modelToRow(_model: TModel): TRow;
+
+    protected normalizeRow(row: TRow): TRow {
+        return row;
+    }
+
     getTtlSeconds(): number {
         return 300;
     }

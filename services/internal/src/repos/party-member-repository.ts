@@ -1,4 +1,5 @@
 import { redisCacheKey } from "../redis-cache-key";
+import { toPgInt } from "./pg-int";
 import { HashRepository } from "./hash-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { PartyMemberModel, PartyMemberRow } from "../types/repository-models";
@@ -89,10 +90,17 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
         }
     }
 
+    override normalizeRow(row: PartyMemberRow): PartyMemberRow {
+        return {
+            ...row,
+            party_id: toPgInt(row.party_id),
+        };
+    }
+
     override rowToModel(row: PartyMemberRow): PartyMemberModel {
         return {
             worldId: row.world_id,
-            partyId: row.party_id,
+            partyId: toPgInt(row.party_id),
             characterId: row.character_id,
             characterName: row.character_name,
             level: row.level,

@@ -1,4 +1,5 @@
 import { redisCacheKey } from "../redis-cache-key";
+import { toPgIntOrNull } from "./pg-int";
 import { HashRepository } from "./hash-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { InventoryModel, InventoryRow } from "../types/repository-models";
@@ -91,9 +92,16 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
         };
     }
 
+    override normalizeRow(row: InventoryRow): InventoryRow {
+        return {
+            ...row,
+            unique_id: toPgIntOrNull(row.unique_id),
+        };
+    }
+
     override rowToModel(row: InventoryRow): InventoryModel {
         return {
-            uniqueId: row.unique_id,
+            uniqueId: toPgIntOrNull(row.unique_id),
             ownerId: row.owner_id,
             inventoryType: row.inventory_type,
             itemId: row.item_id,

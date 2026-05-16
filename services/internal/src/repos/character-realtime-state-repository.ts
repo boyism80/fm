@@ -1,4 +1,5 @@
 import { redisCacheKey } from "../redis-cache-key";
+import { toPgIntOrNull } from "./pg-int";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type {
@@ -59,11 +60,18 @@ export class CharacterRealtimeStateRepository extends ValueRepository<CharacterR
         };
     }
 
+    override normalizeRow(row: CharacterRealtimeStateRow): CharacterRealtimeStateRow {
+        return {
+            ...row,
+            party_id: toPgIntOrNull(row.party_id),
+        };
+    }
+
     override rowToModel(row: CharacterRealtimeStateRow): CharacterRealtimeStateModel {
         return {
             worldId: row.world_id,
             characterId: row.character_id,
-            partyId: row.party_id,
+            partyId: toPgIntOrNull(row.party_id),
             guildId: row.guild_id,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };

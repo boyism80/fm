@@ -1,4 +1,5 @@
 import { redisCacheKey } from "../redis-cache-key";
+import { toPgInt, toPgIntOrNull } from "./pg-int";
 import { HashRepository } from "./hash-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { SkillModel, SkillRow } from "../types/repository-models";
@@ -65,13 +66,21 @@ export class SkillRepository extends HashRepository<SkillModel, SkillRow> {
         };
     }
 
+    override normalizeRow(row: SkillRow): SkillRow {
+        return {
+            ...row,
+            skill_id: toPgInt(row.skill_id),
+            cooldown_end_unix_ms: toPgIntOrNull(row.cooldown_end_unix_ms),
+        };
+    }
+
     override rowToModel(row: SkillRow): SkillModel {
         return {
             characterId: row.character_id,
-            skillId: row.skill_id,
+            skillId: toPgInt(row.skill_id),
             level: row.level,
             masterLevel: row.master_level,
-            cooldownEndUnixMs: row.cooldown_end_unix_ms,
+            cooldownEndUnixMs: toPgIntOrNull(row.cooldown_end_unix_ms),
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
