@@ -69,23 +69,18 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
         };
     }
 
-    doorFromRow(door: string | null): PartyMemberModel["door"] {
-        if (door == null) {
+    doorFromRow(door: PartyMemberRow["door"]): PartyMemberModel["door"] {
+        if (door == null || typeof door !== "object") {
             return null;
         }
-        try {
-            const parsed = JSON.parse(door) as Record<string, unknown>;
-            const town = Number(parsed.town);
-            const target = Number(parsed.target);
-            const x = Number(parsed.x);
-            const y = Number(parsed.y);
-            if (Number.isFinite(town) && Number.isFinite(target) && Number.isFinite(x) && Number.isFinite(y)) {
-                return { town, target, x, y };
-            }
-            return null;
-        } catch {
-            return null;
+        const town = Number(door.town);
+        const target = Number(door.target);
+        const x = Number(door.x);
+        const y = Number(door.y);
+        if (Number.isFinite(town) && Number.isFinite(target) && Number.isFinite(x) && Number.isFinite(y)) {
+            return { town, target, x, y };
         }
+        return null;
     }
 
     override normalizeRow(row: PartyMemberRow): PartyMemberRow {
@@ -121,7 +116,7 @@ export class PartyMemberRepository extends HashRepository<PartyMemberModel, Part
             class_id: model.classId,
             role: model.role ?? "MEMBER",
             map_id: model.mapId ?? 0,
-            door: model.door == null ? null : JSON.stringify(model.door),
+            door: model.door,
             joined_at: model.joinedAt ?? new Date(),
             updated_at: model.updatedAt ?? new Date(),
         };

@@ -265,7 +265,7 @@ export type PartyMemberRow = {
     class_id: number;
     role: string | null;
     map_id: number | null;
-    door: string | null;
+    door: { town: number; target: number; x: number; y: number } | null;
     joined_at: Date | string;
     updated_at: Date | string;
     deleted?: boolean;
