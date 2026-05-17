@@ -1,10 +1,12 @@
 import { CHARACTER_MODEL, CHARACTER_PERSISTED } from "../character-persisted";
+import { BUDDY_ENTRY, BUDDY_LIST_ENTRY } from "../buddy-persisted";
 import { makeKeyLayoutProtoList } from "../key-layout-io";
 import { INVENTORY_MODEL, INVENTORY_PERSISTED } from "../inventory-persisted";
 import { SKILL_MODEL, SKILL_PERSISTED } from "../skill-persisted";
 import { BUFF_MODEL, BUFF_PERSISTED } from "../buff-persisted";
 import { grpcMapper } from "../mappers";
 import { SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
+import type { BuddyService, BuddyListEntry } from "../../services/buddy-service";
 import type { CharacterService } from "../../services/character-service";
 import type { SkillService } from "../../services/skill-service";
 import type { BuffService } from "../../services/buff-service";
@@ -23,7 +25,13 @@ import type {
     RefreshSessionRequest,
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
-import type { CharacterPersisted, InventoryPersisted, SkillPersisted, BuffPersisted } from "../../protobuf/generated/fminternal/internal_service";
+import type {
+    BuddyEntry,
+    CharacterPersisted,
+    InventoryPersisted,
+    SkillPersisted,
+    BuffPersisted,
+} from "../../protobuf/generated/fminternal/internal_service";
 import type { CharacterModel } from "../../repos/character-repository";
 import type { InventoryModel } from "../../repos/inventory-repository";
 import type { SkillModel } from "../../repos/skill-repository";
@@ -36,6 +44,7 @@ export function createSessionHandlers(
     skillService: SkillService,
     buffService: BuffService,
     sessionService: SessionService,
+    buddyService: BuddyService,
     internalConfig: Pick<InternalConfig, "game_servers">,
     characterRealtimeStateRepository: CharacterRealtimeStateRepository,
     grpcError: GrpcErrorHandler
@@ -107,6 +116,8 @@ export function createSessionHandlers(
                         keyLayout: [],
                         partyId: undefined,
                         guildId: 0,
+                        buddies: [],
+                        buddyCapacity: 0,
                     });
                     return;
                 }
@@ -122,11 +133,12 @@ export function createSessionHandlers(
                     throw new Error(`attach game session failed: ${attach.code}`);
                 }
 
-                const [inventoryList, skillList, buffList, keyLayoutBindings] = await Promise.all([
+                const [inventoryList, skillList, buffList, keyLayoutBindings, buddyPack] = await Promise.all([
                     inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
                     skillService.getSkills(worldId, characterId),
                     buffService.getBuffs(worldId, characterId),
                     characterService.getKeyLayoutBindings(worldId, characterId),
+                    buddyService.getAll(worldId, characterId),
                 ]);
                 const realtime = await characterRealtimeStateRepository.get(worldId, characterId);
                 const guildId = realtime?.guildId ?? 0;
@@ -161,6 +173,10 @@ export function createSessionHandlers(
                     keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),
                     partyId: realtime != null ? realtime.partyId ?? undefined : undefined,
                     guildId,
+                    buddies: buddyPack.buddies.map((buddy) =>
+                        grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY)
+                    ),
+                    buddyCapacity: buddyPack.capacity >>> 0,
                 });
             } catch (err) {
                 grpcError(err, callback);
@@ -230,6 +246,7 @@ export class SessionGrpcController {
         skillService: SkillService,
         buffService: BuffService,
         sessionService: SessionService,
+        buddyService: BuddyService,
         internalConfig: Pick<InternalConfig, "game_servers">,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         grpcError: GrpcErrorHandler
@@ -240,6 +257,7 @@ export class SessionGrpcController {
             skillService,
             buffService,
             sessionService,
+            buddyService,
             internalConfig,
             characterRealtimeStateRepository,
             grpcError

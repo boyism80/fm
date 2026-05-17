@@ -131,6 +131,23 @@ func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *entity.Character, code 
 	ch.Send(&response.PartyStatusMessage{Code: code}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnBuddyStatusMessage(ch *entity.Character, code pconst.BuddyStatusCode) {
+	if ch == nil {
+		return
+	}
+	ch.Send(&response.BuddyStatus{Code: code}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnBuddyListUpdate(ch *entity.Character, action pconst.BuddyListSyncAction, entries []response.BuddyEntry) {
+	if ch == nil {
+		return
+	}
+	ch.Send(&response.BuddyListUpdate{
+		Action:  action,
+		Entries: entries,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnExpGain(ch *entity.Character, exp uint32) {
 	expPacket := &response.GainExp{
 		Gain:  exp,

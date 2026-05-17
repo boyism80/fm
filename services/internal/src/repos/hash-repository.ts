@@ -19,6 +19,14 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         await this.evictGroupCache(worldId, key);
     }
 
+    override getKey(model: TModel): string {
+        return this.getGroupKey(model);
+    }
+
+    override onUpsert(row: TRow): RepositoryQuery {
+        return this.onBulkUpsert([row]);
+    }
+
     abstract getGroupKey(_model: TModel): string;
     abstract getItemKey(_model: TModel): string;
     abstract getRedisHashKey(_worldId: number, _groupKey: string): string;
@@ -117,6 +125,16 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         }
         this.localGroupCache.set(hashKey, localRows);
         return result;
+    }
+
+    async getItem(
+        worldId: number,
+        groupKey: string,
+        itemKey: string | number,
+        options: RepositoryTxOptions = {}
+    ): Promise<TModel | null> {
+        const all = await this.getAll(worldId, groupKey, options);
+        return all.get(String(itemKey)) ?? null;
     }
 
     override async setAll(worldId: number, models: TModel[], options: RepositoryTxOptions = {}): Promise<TModel[]> {

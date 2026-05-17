@@ -10,6 +10,7 @@ import (
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/ensure"
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/actor/timers"
 	"github.com/boyism80/fm/services/game/constant"
@@ -92,6 +93,12 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onDeliverPartyUpdateLogOnOff(m)
 	case *DeliverPartyUpdateSilent:
 		a.onDeliverPartyUpdateSilent(m)
+	case *DeliverBuddyChannelUpdate:
+		a.onDeliverBuddyChannelUpdate(m)
+	case *DeliverBuddyListUpdate:
+		a.onDeliverBuddyListUpdate(m)
+	case *DeliverBuddyAddRequest:
+		a.onDeliverBuddyAddRequest(m)
 	case *SaveMapCharacters:
 		a.onSaveMapCharacters(ctx)
 	default:
@@ -173,6 +180,9 @@ func (a *MapActor) onAddCharacter(ctx actor.Context, msg *AddCharacter) {
 	a.Map.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
+	if msg.Init {
+		msg.Character.SendBuddyLoginSync()
+	}
 }
 
 func (a *MapActor) onRemoveCharacter(ctx actor.Context, msg *RemoveCharacter) {
@@ -662,5 +672,69 @@ func (a *MapActor) onDeliverPartyUpdateSilent(msg *DeliverPartyUpdateSilent) {
 		PartyID:           msg.PartyID,
 		LeaderCharacterID: msg.LeaderID,
 		Members:           msg.Members,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (a *MapActor) onDeliverBuddyChannelUpdate(msg *DeliverBuddyChannelUpdate) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.RecipientCharacterID)
+	if ch == nil {
+		return
+	}
+	ch.BuddyList().SetChannel(msg.BuddyCharacterID, msg.Channel)
+	_ = ch.Send(&response.BuddyChannelUpdate{
+		CharacterID: msg.BuddyCharacterID,
+		Channel:     msg.Channel,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (a *MapActor) onDeliverBuddyListUpdate(msg *DeliverBuddyListUpdate) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.RecipientCharacterID)
+	if ch == nil {
+		return
+	}
+	action := pconst.BuddyListSyncAction(msg.SyncAction)
+	bl := ch.BuddyList()
+	if action == pconst.BuddyListSyncDelete {
+		bl.Clear()
+	}
+	for _, entry := range msg.Entries {
+		if entry.CharacterID == 0 {
+			continue
+		}
+		channel := entry.Channel
+		if channel < 0 {
+			channel = -1
+		}
+		bl.Upsert(entity.BuddyListEntry{
+			CharacterID: entry.CharacterID,
+			Name:        entry.Name,
+			Group:       entry.Group,
+			Pending:     entry.Pending,
+			Channel:     channel,
+		})
+	}
+	_ = ch.Send(&response.BuddyListUpdate{
+		Action:  action,
+		Entries: msg.Entries,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (a *MapActor) onDeliverBuddyAddRequest(msg *DeliverBuddyAddRequest) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.RecipientCharacterID)
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.BuddyAddRequest{
+		FromCharacterID: msg.FromCharacterID,
+		FromName:        msg.FromName,
 	}, types.SEND_POLICY_ENCRYPT)
 }

@@ -300,6 +300,81 @@ export function partyErrorCodeToJSON(object: PartyErrorCode): string {
   }
 }
 
+export enum BuddyErrorCode {
+  BUDDY_ERROR_NONE = 0,
+  BUDDY_ERROR_UNKNOWN = 1,
+  BUDDY_ERROR_CHARACTER_NOT_FOUND = 2,
+  BUDDY_ERROR_LIST_FULL = 3,
+  BUDDY_ERROR_TARGET_LIST_FULL = 4,
+  BUDDY_ERROR_ALREADY_ON_LIST = 5,
+  BUDDY_ERROR_NOT_PENDING = 6,
+  BUDDY_ERROR_CANNOT_ADD_SELF = 7,
+  BUDDY_ERROR_TARGET_IS_HIDDEN_GM = 8,
+  UNRECOGNIZED = -1,
+}
+
+export function buddyErrorCodeFromJSON(object: any): BuddyErrorCode {
+  switch (object) {
+    case 0:
+    case "BUDDY_ERROR_NONE":
+      return BuddyErrorCode.BUDDY_ERROR_NONE;
+    case 1:
+    case "BUDDY_ERROR_UNKNOWN":
+      return BuddyErrorCode.BUDDY_ERROR_UNKNOWN;
+    case 2:
+    case "BUDDY_ERROR_CHARACTER_NOT_FOUND":
+      return BuddyErrorCode.BUDDY_ERROR_CHARACTER_NOT_FOUND;
+    case 3:
+    case "BUDDY_ERROR_LIST_FULL":
+      return BuddyErrorCode.BUDDY_ERROR_LIST_FULL;
+    case 4:
+    case "BUDDY_ERROR_TARGET_LIST_FULL":
+      return BuddyErrorCode.BUDDY_ERROR_TARGET_LIST_FULL;
+    case 5:
+    case "BUDDY_ERROR_ALREADY_ON_LIST":
+      return BuddyErrorCode.BUDDY_ERROR_ALREADY_ON_LIST;
+    case 6:
+    case "BUDDY_ERROR_NOT_PENDING":
+      return BuddyErrorCode.BUDDY_ERROR_NOT_PENDING;
+    case 7:
+    case "BUDDY_ERROR_CANNOT_ADD_SELF":
+      return BuddyErrorCode.BUDDY_ERROR_CANNOT_ADD_SELF;
+    case 8:
+    case "BUDDY_ERROR_TARGET_IS_HIDDEN_GM":
+      return BuddyErrorCode.BUDDY_ERROR_TARGET_IS_HIDDEN_GM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return BuddyErrorCode.UNRECOGNIZED;
+  }
+}
+
+export function buddyErrorCodeToJSON(object: BuddyErrorCode): string {
+  switch (object) {
+    case BuddyErrorCode.BUDDY_ERROR_NONE:
+      return "BUDDY_ERROR_NONE";
+    case BuddyErrorCode.BUDDY_ERROR_UNKNOWN:
+      return "BUDDY_ERROR_UNKNOWN";
+    case BuddyErrorCode.BUDDY_ERROR_CHARACTER_NOT_FOUND:
+      return "BUDDY_ERROR_CHARACTER_NOT_FOUND";
+    case BuddyErrorCode.BUDDY_ERROR_LIST_FULL:
+      return "BUDDY_ERROR_LIST_FULL";
+    case BuddyErrorCode.BUDDY_ERROR_TARGET_LIST_FULL:
+      return "BUDDY_ERROR_TARGET_LIST_FULL";
+    case BuddyErrorCode.BUDDY_ERROR_ALREADY_ON_LIST:
+      return "BUDDY_ERROR_ALREADY_ON_LIST";
+    case BuddyErrorCode.BUDDY_ERROR_NOT_PENDING:
+      return "BUDDY_ERROR_NOT_PENDING";
+    case BuddyErrorCode.BUDDY_ERROR_CANNOT_ADD_SELF:
+      return "BUDDY_ERROR_CANNOT_ADD_SELF";
+    case BuddyErrorCode.BUDDY_ERROR_TARGET_IS_HIDDEN_GM:
+      return "BUDDY_ERROR_TARGET_IS_HIDDEN_GM";
+    case BuddyErrorCode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface PingRequest {
   role: ServerRole;
   worldId: number;
@@ -399,6 +474,8 @@ export interface EnterGameReply {
   partyId?: number | undefined;
   guildId: number;
   buffs: BuffPersisted[];
+  buddies: BuddyEntry[];
+  buddyCapacity: number;
 }
 
 export interface BeginGameTransitionRequest {
@@ -843,6 +920,59 @@ export interface BroadcastMultiChatReply {
   ok: boolean;
   errorCode: PartyErrorCode;
   deliveredCount: number;
+}
+
+export interface BuddyEntry {
+  characterId: number;
+  name: string;
+  groupName: string;
+  pending: boolean;
+  channelIndex: number;
+}
+
+export interface RequestBuddyRequest {
+  worldId: number;
+  requesterCharacterId: number;
+  targetCharacterName: string;
+  groupName: string;
+}
+
+export interface RequestBuddyReply {
+  ok: boolean;
+  errorCode: BuddyErrorCode;
+  targetCharacterId: number;
+  targetChannelId: number;
+  requesterView: BuddyEntry | undefined;
+}
+
+export interface AcceptBuddyRequest {
+  worldId: number;
+  accepterCharacterId: number;
+  requesterCharacterId: number;
+}
+
+export interface AcceptBuddyReply {
+  ok: boolean;
+  errorCode: BuddyErrorCode;
+  requesterCharacterId: number;
+  requesterChannelId: number;
+  accepterView: BuddyEntry | undefined;
+  requesterView: BuddyEntry | undefined;
+}
+
+export interface RemoveBuddyRequest {
+  worldId: number;
+  characterId: number;
+  buddyCharacterId: number;
+}
+
+export interface RemoveBuddyReply {
+  ok: boolean;
+  errorCode: BuddyErrorCode;
+  buddyCharacterId: number;
+  buddyChannelId: number;
+  buddyWasAccepted: boolean;
+  removedFromOwner: boolean;
 }
 
 function createBasePingRequest(): PingRequest {
@@ -2388,6 +2518,8 @@ function createBaseEnterGameReply(): EnterGameReply {
     partyId: undefined,
     guildId: 0,
     buffs: [],
+    buddies: [],
+    buddyCapacity: 0,
   };
 }
 
@@ -2416,6 +2548,12 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     for (const v of message.buffs) {
       BuffPersisted.encode(v!, writer.uint32(66).fork()).join();
+    }
+    for (const v of message.buddies) {
+      BuddyEntry.encode(v!, writer.uint32(74).fork()).join();
+    }
+    if (message.buddyCapacity !== 0) {
+      writer.uint32(80).uint32(message.buddyCapacity);
     }
     return writer;
   },
@@ -2491,6 +2629,22 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.buffs.push(BuffPersisted.decode(reader, reader.uint32()));
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.buddies.push(BuddyEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.buddyCapacity = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2524,6 +2678,12 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         ? globalThis.Number(object.guild_id)
         : 0,
       buffs: globalThis.Array.isArray(object?.buffs) ? object.buffs.map((e: any) => BuffPersisted.fromJSON(e)) : [],
+      buddies: globalThis.Array.isArray(object?.buddies) ? object.buddies.map((e: any) => BuddyEntry.fromJSON(e)) : [],
+      buddyCapacity: isSet(object.buddyCapacity)
+        ? globalThis.Number(object.buddyCapacity)
+        : isSet(object.buddy_capacity)
+        ? globalThis.Number(object.buddy_capacity)
+        : 0,
     };
   },
 
@@ -2553,6 +2713,12 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.buffs?.length) {
       obj.buffs = message.buffs.map((e) => BuffPersisted.toJSON(e));
     }
+    if (message.buddies?.length) {
+      obj.buddies = message.buddies.map((e) => BuddyEntry.toJSON(e));
+    }
+    if (message.buddyCapacity !== 0) {
+      obj.buddyCapacity = Math.round(message.buddyCapacity);
+    }
     return obj;
   },
 
@@ -2571,6 +2737,8 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.partyId = object.partyId ?? undefined;
     message.guildId = object.guildId ?? 0;
     message.buffs = object.buffs?.map((e) => BuffPersisted.fromPartial(e)) || [];
+    message.buddies = object.buddies?.map((e) => BuddyEntry.fromPartial(e)) || [];
+    message.buddyCapacity = object.buddyCapacity ?? 0;
     return message;
   },
 };
@@ -9426,6 +9594,954 @@ export const BroadcastMultiChatReply: MessageFns<BroadcastMultiChatReply> = {
   },
 };
 
+function createBaseBuddyEntry(): BuddyEntry {
+  return { characterId: 0, name: "", groupName: "", pending: false, channelIndex: 0 };
+}
+
+export const BuddyEntry: MessageFns<BuddyEntry> = {
+  encode(message: BuddyEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.characterId !== 0) {
+      writer.uint32(8).uint32(message.characterId);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.groupName !== "") {
+      writer.uint32(26).string(message.groupName);
+    }
+    if (message.pending !== false) {
+      writer.uint32(32).bool(message.pending);
+    }
+    if (message.channelIndex !== 0) {
+      writer.uint32(40).int32(message.channelIndex);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BuddyEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBuddyEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.groupName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.pending = reader.bool();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.channelIndex = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BuddyEntry {
+    return {
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      groupName: isSet(object.groupName)
+        ? globalThis.String(object.groupName)
+        : isSet(object.group_name)
+        ? globalThis.String(object.group_name)
+        : "",
+      pending: isSet(object.pending) ? globalThis.Boolean(object.pending) : false,
+      channelIndex: isSet(object.channelIndex)
+        ? globalThis.Number(object.channelIndex)
+        : isSet(object.channel_index)
+        ? globalThis.Number(object.channel_index)
+        : 0,
+    };
+  },
+
+  toJSON(message: BuddyEntry): unknown {
+    const obj: any = {};
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.groupName !== "") {
+      obj.groupName = message.groupName;
+    }
+    if (message.pending !== false) {
+      obj.pending = message.pending;
+    }
+    if (message.channelIndex !== 0) {
+      obj.channelIndex = Math.round(message.channelIndex);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BuddyEntry>, I>>(base?: I): BuddyEntry {
+    return BuddyEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BuddyEntry>, I>>(object: I): BuddyEntry {
+    const message = createBaseBuddyEntry();
+    message.characterId = object.characterId ?? 0;
+    message.name = object.name ?? "";
+    message.groupName = object.groupName ?? "";
+    message.pending = object.pending ?? false;
+    message.channelIndex = object.channelIndex ?? 0;
+    return message;
+  },
+};
+
+function createBaseRequestBuddyRequest(): RequestBuddyRequest {
+  return { worldId: 0, requesterCharacterId: 0, targetCharacterName: "", groupName: "" };
+}
+
+export const RequestBuddyRequest: MessageFns<RequestBuddyRequest> = {
+  encode(message: RequestBuddyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.requesterCharacterId !== 0) {
+      writer.uint32(16).uint32(message.requesterCharacterId);
+    }
+    if (message.targetCharacterName !== "") {
+      writer.uint32(26).string(message.targetCharacterName);
+    }
+    if (message.groupName !== "") {
+      writer.uint32(34).string(message.groupName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RequestBuddyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRequestBuddyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.requesterCharacterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.targetCharacterName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.groupName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RequestBuddyRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      requesterCharacterId: isSet(object.requesterCharacterId)
+        ? globalThis.Number(object.requesterCharacterId)
+        : isSet(object.requester_character_id)
+        ? globalThis.Number(object.requester_character_id)
+        : 0,
+      targetCharacterName: isSet(object.targetCharacterName)
+        ? globalThis.String(object.targetCharacterName)
+        : isSet(object.target_character_name)
+        ? globalThis.String(object.target_character_name)
+        : "",
+      groupName: isSet(object.groupName)
+        ? globalThis.String(object.groupName)
+        : isSet(object.group_name)
+        ? globalThis.String(object.group_name)
+        : "",
+    };
+  },
+
+  toJSON(message: RequestBuddyRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.requesterCharacterId !== 0) {
+      obj.requesterCharacterId = Math.round(message.requesterCharacterId);
+    }
+    if (message.targetCharacterName !== "") {
+      obj.targetCharacterName = message.targetCharacterName;
+    }
+    if (message.groupName !== "") {
+      obj.groupName = message.groupName;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RequestBuddyRequest>, I>>(base?: I): RequestBuddyRequest {
+    return RequestBuddyRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RequestBuddyRequest>, I>>(object: I): RequestBuddyRequest {
+    const message = createBaseRequestBuddyRequest();
+    message.worldId = object.worldId ?? 0;
+    message.requesterCharacterId = object.requesterCharacterId ?? 0;
+    message.targetCharacterName = object.targetCharacterName ?? "";
+    message.groupName = object.groupName ?? "";
+    return message;
+  },
+};
+
+function createBaseRequestBuddyReply(): RequestBuddyReply {
+  return { ok: false, errorCode: 0, targetCharacterId: 0, targetChannelId: 0, requesterView: undefined };
+}
+
+export const RequestBuddyReply: MessageFns<RequestBuddyReply> = {
+  encode(message: RequestBuddyReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.targetCharacterId !== 0) {
+      writer.uint32(24).uint32(message.targetCharacterId);
+    }
+    if (message.targetChannelId !== 0) {
+      writer.uint32(32).uint32(message.targetChannelId);
+    }
+    if (message.requesterView !== undefined) {
+      BuddyEntry.encode(message.requesterView, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RequestBuddyReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRequestBuddyReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.targetCharacterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.targetChannelId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.requesterView = BuddyEntry.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RequestBuddyReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? buddyErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? buddyErrorCodeFromJSON(object.error_code)
+        : 0,
+      targetCharacterId: isSet(object.targetCharacterId)
+        ? globalThis.Number(object.targetCharacterId)
+        : isSet(object.target_character_id)
+        ? globalThis.Number(object.target_character_id)
+        : 0,
+      targetChannelId: isSet(object.targetChannelId)
+        ? globalThis.Number(object.targetChannelId)
+        : isSet(object.target_channel_id)
+        ? globalThis.Number(object.target_channel_id)
+        : 0,
+      requesterView: isSet(object.requesterView)
+        ? BuddyEntry.fromJSON(object.requesterView)
+        : isSet(object.requester_view)
+        ? BuddyEntry.fromJSON(object.requester_view)
+        : undefined,
+    };
+  },
+
+  toJSON(message: RequestBuddyReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = buddyErrorCodeToJSON(message.errorCode);
+    }
+    if (message.targetCharacterId !== 0) {
+      obj.targetCharacterId = Math.round(message.targetCharacterId);
+    }
+    if (message.targetChannelId !== 0) {
+      obj.targetChannelId = Math.round(message.targetChannelId);
+    }
+    if (message.requesterView !== undefined) {
+      obj.requesterView = BuddyEntry.toJSON(message.requesterView);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RequestBuddyReply>, I>>(base?: I): RequestBuddyReply {
+    return RequestBuddyReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RequestBuddyReply>, I>>(object: I): RequestBuddyReply {
+    const message = createBaseRequestBuddyReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.targetCharacterId = object.targetCharacterId ?? 0;
+    message.targetChannelId = object.targetChannelId ?? 0;
+    message.requesterView = (object.requesterView !== undefined && object.requesterView !== null)
+      ? BuddyEntry.fromPartial(object.requesterView)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAcceptBuddyRequest(): AcceptBuddyRequest {
+  return { worldId: 0, accepterCharacterId: 0, requesterCharacterId: 0 };
+}
+
+export const AcceptBuddyRequest: MessageFns<AcceptBuddyRequest> = {
+  encode(message: AcceptBuddyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accepterCharacterId !== 0) {
+      writer.uint32(16).uint32(message.accepterCharacterId);
+    }
+    if (message.requesterCharacterId !== 0) {
+      writer.uint32(24).uint32(message.requesterCharacterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AcceptBuddyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAcceptBuddyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accepterCharacterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requesterCharacterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AcceptBuddyRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accepterCharacterId: isSet(object.accepterCharacterId)
+        ? globalThis.Number(object.accepterCharacterId)
+        : isSet(object.accepter_character_id)
+        ? globalThis.Number(object.accepter_character_id)
+        : 0,
+      requesterCharacterId: isSet(object.requesterCharacterId)
+        ? globalThis.Number(object.requesterCharacterId)
+        : isSet(object.requester_character_id)
+        ? globalThis.Number(object.requester_character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: AcceptBuddyRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accepterCharacterId !== 0) {
+      obj.accepterCharacterId = Math.round(message.accepterCharacterId);
+    }
+    if (message.requesterCharacterId !== 0) {
+      obj.requesterCharacterId = Math.round(message.requesterCharacterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AcceptBuddyRequest>, I>>(base?: I): AcceptBuddyRequest {
+    return AcceptBuddyRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AcceptBuddyRequest>, I>>(object: I): AcceptBuddyRequest {
+    const message = createBaseAcceptBuddyRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accepterCharacterId = object.accepterCharacterId ?? 0;
+    message.requesterCharacterId = object.requesterCharacterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseAcceptBuddyReply(): AcceptBuddyReply {
+  return {
+    ok: false,
+    errorCode: 0,
+    requesterCharacterId: 0,
+    requesterChannelId: 0,
+    accepterView: undefined,
+    requesterView: undefined,
+  };
+}
+
+export const AcceptBuddyReply: MessageFns<AcceptBuddyReply> = {
+  encode(message: AcceptBuddyReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.requesterCharacterId !== 0) {
+      writer.uint32(24).uint32(message.requesterCharacterId);
+    }
+    if (message.requesterChannelId !== 0) {
+      writer.uint32(32).uint32(message.requesterChannelId);
+    }
+    if (message.accepterView !== undefined) {
+      BuddyEntry.encode(message.accepterView, writer.uint32(42).fork()).join();
+    }
+    if (message.requesterView !== undefined) {
+      BuddyEntry.encode(message.requesterView, writer.uint32(50).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AcceptBuddyReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAcceptBuddyReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requesterCharacterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requesterChannelId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.accepterView = BuddyEntry.decode(reader, reader.uint32());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.requesterView = BuddyEntry.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AcceptBuddyReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? buddyErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? buddyErrorCodeFromJSON(object.error_code)
+        : 0,
+      requesterCharacterId: isSet(object.requesterCharacterId)
+        ? globalThis.Number(object.requesterCharacterId)
+        : isSet(object.requester_character_id)
+        ? globalThis.Number(object.requester_character_id)
+        : 0,
+      requesterChannelId: isSet(object.requesterChannelId)
+        ? globalThis.Number(object.requesterChannelId)
+        : isSet(object.requester_channel_id)
+        ? globalThis.Number(object.requester_channel_id)
+        : 0,
+      accepterView: isSet(object.accepterView)
+        ? BuddyEntry.fromJSON(object.accepterView)
+        : isSet(object.accepter_view)
+        ? BuddyEntry.fromJSON(object.accepter_view)
+        : undefined,
+      requesterView: isSet(object.requesterView)
+        ? BuddyEntry.fromJSON(object.requesterView)
+        : isSet(object.requester_view)
+        ? BuddyEntry.fromJSON(object.requester_view)
+        : undefined,
+    };
+  },
+
+  toJSON(message: AcceptBuddyReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = buddyErrorCodeToJSON(message.errorCode);
+    }
+    if (message.requesterCharacterId !== 0) {
+      obj.requesterCharacterId = Math.round(message.requesterCharacterId);
+    }
+    if (message.requesterChannelId !== 0) {
+      obj.requesterChannelId = Math.round(message.requesterChannelId);
+    }
+    if (message.accepterView !== undefined) {
+      obj.accepterView = BuddyEntry.toJSON(message.accepterView);
+    }
+    if (message.requesterView !== undefined) {
+      obj.requesterView = BuddyEntry.toJSON(message.requesterView);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AcceptBuddyReply>, I>>(base?: I): AcceptBuddyReply {
+    return AcceptBuddyReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AcceptBuddyReply>, I>>(object: I): AcceptBuddyReply {
+    const message = createBaseAcceptBuddyReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.requesterCharacterId = object.requesterCharacterId ?? 0;
+    message.requesterChannelId = object.requesterChannelId ?? 0;
+    message.accepterView = (object.accepterView !== undefined && object.accepterView !== null)
+      ? BuddyEntry.fromPartial(object.accepterView)
+      : undefined;
+    message.requesterView = (object.requesterView !== undefined && object.requesterView !== null)
+      ? BuddyEntry.fromPartial(object.requesterView)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRemoveBuddyRequest(): RemoveBuddyRequest {
+  return { worldId: 0, characterId: 0, buddyCharacterId: 0 };
+}
+
+export const RemoveBuddyRequest: MessageFns<RemoveBuddyRequest> = {
+  encode(message: RemoveBuddyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.buddyCharacterId !== 0) {
+      writer.uint32(24).uint32(message.buddyCharacterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoveBuddyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveBuddyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.buddyCharacterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveBuddyRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      buddyCharacterId: isSet(object.buddyCharacterId)
+        ? globalThis.Number(object.buddyCharacterId)
+        : isSet(object.buddy_character_id)
+        ? globalThis.Number(object.buddy_character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: RemoveBuddyRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.buddyCharacterId !== 0) {
+      obj.buddyCharacterId = Math.round(message.buddyCharacterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RemoveBuddyRequest>, I>>(base?: I): RemoveBuddyRequest {
+    return RemoveBuddyRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RemoveBuddyRequest>, I>>(object: I): RemoveBuddyRequest {
+    const message = createBaseRemoveBuddyRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.buddyCharacterId = object.buddyCharacterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseRemoveBuddyReply(): RemoveBuddyReply {
+  return {
+    ok: false,
+    errorCode: 0,
+    buddyCharacterId: 0,
+    buddyChannelId: 0,
+    buddyWasAccepted: false,
+    removedFromOwner: false,
+  };
+}
+
+export const RemoveBuddyReply: MessageFns<RemoveBuddyReply> = {
+  encode(message: RemoveBuddyReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.buddyCharacterId !== 0) {
+      writer.uint32(24).uint32(message.buddyCharacterId);
+    }
+    if (message.buddyChannelId !== 0) {
+      writer.uint32(32).uint32(message.buddyChannelId);
+    }
+    if (message.buddyWasAccepted !== false) {
+      writer.uint32(40).bool(message.buddyWasAccepted);
+    }
+    if (message.removedFromOwner !== false) {
+      writer.uint32(48).bool(message.removedFromOwner);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoveBuddyReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveBuddyReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.buddyCharacterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.buddyChannelId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.buddyWasAccepted = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.removedFromOwner = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveBuddyReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? buddyErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? buddyErrorCodeFromJSON(object.error_code)
+        : 0,
+      buddyCharacterId: isSet(object.buddyCharacterId)
+        ? globalThis.Number(object.buddyCharacterId)
+        : isSet(object.buddy_character_id)
+        ? globalThis.Number(object.buddy_character_id)
+        : 0,
+      buddyChannelId: isSet(object.buddyChannelId)
+        ? globalThis.Number(object.buddyChannelId)
+        : isSet(object.buddy_channel_id)
+        ? globalThis.Number(object.buddy_channel_id)
+        : 0,
+      buddyWasAccepted: isSet(object.buddyWasAccepted)
+        ? globalThis.Boolean(object.buddyWasAccepted)
+        : isSet(object.buddy_was_accepted)
+        ? globalThis.Boolean(object.buddy_was_accepted)
+        : false,
+      removedFromOwner: isSet(object.removedFromOwner)
+        ? globalThis.Boolean(object.removedFromOwner)
+        : isSet(object.removed_from_owner)
+        ? globalThis.Boolean(object.removed_from_owner)
+        : false,
+    };
+  },
+
+  toJSON(message: RemoveBuddyReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = buddyErrorCodeToJSON(message.errorCode);
+    }
+    if (message.buddyCharacterId !== 0) {
+      obj.buddyCharacterId = Math.round(message.buddyCharacterId);
+    }
+    if (message.buddyChannelId !== 0) {
+      obj.buddyChannelId = Math.round(message.buddyChannelId);
+    }
+    if (message.buddyWasAccepted !== false) {
+      obj.buddyWasAccepted = message.buddyWasAccepted;
+    }
+    if (message.removedFromOwner !== false) {
+      obj.removedFromOwner = message.removedFromOwner;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RemoveBuddyReply>, I>>(base?: I): RemoveBuddyReply {
+    return RemoveBuddyReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RemoveBuddyReply>, I>>(object: I): RemoveBuddyReply {
+    const message = createBaseRemoveBuddyReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.buddyCharacterId = object.buddyCharacterId ?? 0;
+    message.buddyChannelId = object.buddyChannelId ?? 0;
+    message.buddyWasAccepted = object.buddyWasAccepted ?? false;
+    message.removedFromOwner = object.removedFromOwner ?? false;
+    return message;
+  },
+};
+
 export type InternalService = typeof InternalService;
 export const InternalService = {
   ping: {
@@ -9655,6 +10771,33 @@ export const InternalService = {
     responseSerialize: (value: DenyPartyReply): Buffer => Buffer.from(DenyPartyReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): DenyPartyReply => DenyPartyReply.decode(value),
   },
+  requestBuddy: {
+    path: "/fm.internal.Internal/RequestBuddy" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: RequestBuddyRequest): Buffer => Buffer.from(RequestBuddyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): RequestBuddyRequest => RequestBuddyRequest.decode(value),
+    responseSerialize: (value: RequestBuddyReply): Buffer => Buffer.from(RequestBuddyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): RequestBuddyReply => RequestBuddyReply.decode(value),
+  },
+  acceptBuddy: {
+    path: "/fm.internal.Internal/AcceptBuddy" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: AcceptBuddyRequest): Buffer => Buffer.from(AcceptBuddyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): AcceptBuddyRequest => AcceptBuddyRequest.decode(value),
+    responseSerialize: (value: AcceptBuddyReply): Buffer => Buffer.from(AcceptBuddyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): AcceptBuddyReply => AcceptBuddyReply.decode(value),
+  },
+  removeBuddy: {
+    path: "/fm.internal.Internal/RemoveBuddy" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: RemoveBuddyRequest): Buffer => Buffer.from(RemoveBuddyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): RemoveBuddyRequest => RemoveBuddyRequest.decode(value),
+    responseSerialize: (value: RemoveBuddyReply): Buffer => Buffer.from(RemoveBuddyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): RemoveBuddyReply => RemoveBuddyReply.decode(value),
+  },
   broadcastMultiChat: {
     path: "/fm.internal.Internal/BroadcastMultiChat" as const,
     requestStream: false as const,
@@ -9692,6 +10835,9 @@ export interface InternalServer extends UntypedServiceImplementation {
   updatePartyMember: handleUnaryCall<UpdatePartyMemberRequest, UpdatePartyMemberReply>;
   inviteParty: handleUnaryCall<InvitePartyRequest, InvitePartyReply>;
   denyParty: handleUnaryCall<DenyPartyRequest, DenyPartyReply>;
+  requestBuddy: handleUnaryCall<RequestBuddyRequest, RequestBuddyReply>;
+  acceptBuddy: handleUnaryCall<AcceptBuddyRequest, AcceptBuddyReply>;
+  removeBuddy: handleUnaryCall<RemoveBuddyRequest, RemoveBuddyReply>;
   broadcastMultiChat: handleUnaryCall<BroadcastMultiChatRequest, BroadcastMultiChatReply>;
 }
 
@@ -10037,6 +11183,51 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: DenyPartyReply) => void,
+  ): ClientUnaryCall;
+  requestBuddy(
+    request: RequestBuddyRequest,
+    callback: (error: ServiceError | null, response: RequestBuddyReply) => void,
+  ): ClientUnaryCall;
+  requestBuddy(
+    request: RequestBuddyRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: RequestBuddyReply) => void,
+  ): ClientUnaryCall;
+  requestBuddy(
+    request: RequestBuddyRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: RequestBuddyReply) => void,
+  ): ClientUnaryCall;
+  acceptBuddy(
+    request: AcceptBuddyRequest,
+    callback: (error: ServiceError | null, response: AcceptBuddyReply) => void,
+  ): ClientUnaryCall;
+  acceptBuddy(
+    request: AcceptBuddyRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: AcceptBuddyReply) => void,
+  ): ClientUnaryCall;
+  acceptBuddy(
+    request: AcceptBuddyRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: AcceptBuddyReply) => void,
+  ): ClientUnaryCall;
+  removeBuddy(
+    request: RemoveBuddyRequest,
+    callback: (error: ServiceError | null, response: RemoveBuddyReply) => void,
+  ): ClientUnaryCall;
+  removeBuddy(
+    request: RemoveBuddyRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: RemoveBuddyReply) => void,
+  ): ClientUnaryCall;
+  removeBuddy(
+    request: RemoveBuddyRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: RemoveBuddyReply) => void,
   ): ClientUnaryCall;
   broadcastMultiChat(
     request: BroadcastMultiChatRequest,

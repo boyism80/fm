@@ -1,0 +1,1 @@
+export const DEFAULT_BUDDY_CAPACITY = 20;

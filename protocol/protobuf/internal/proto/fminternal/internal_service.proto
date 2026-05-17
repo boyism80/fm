@@ -29,6 +29,9 @@ service Internal {
   rpc UpdatePartyMember (UpdatePartyMemberRequest) returns (UpdatePartyMemberReply);
   rpc InviteParty (InvitePartyRequest) returns (InvitePartyReply);
   rpc DenyParty (DenyPartyRequest) returns (DenyPartyReply);
+  rpc RequestBuddy (RequestBuddyRequest) returns (RequestBuddyReply);
+  rpc AcceptBuddy (AcceptBuddyRequest) returns (AcceptBuddyReply);
+  rpc RemoveBuddy (RemoveBuddyRequest) returns (RemoveBuddyReply);
   rpc BroadcastMultiChat (BroadcastMultiChatRequest) returns (BroadcastMultiChatReply);
 }
 
@@ -136,6 +139,8 @@ message EnterGameReply {
   optional uint32              party_id  = 6;
   uint32                       guild_id  = 7;
   repeated BuffPersisted      buffs     = 8;
+  repeated BuddyEntry         buddies   = 9;
+  uint32                       buddy_capacity = 10;
 }
 
 message BeginGameTransitionRequest {
@@ -544,4 +549,69 @@ message BroadcastMultiChatReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
   uint32 delivered_count = 3;
+}
+
+enum BuddyErrorCode {
+  BUDDY_ERROR_NONE = 0;
+  BUDDY_ERROR_UNKNOWN = 1;
+  BUDDY_ERROR_CHARACTER_NOT_FOUND = 2;
+  BUDDY_ERROR_LIST_FULL = 3;
+  BUDDY_ERROR_TARGET_LIST_FULL = 4;
+  BUDDY_ERROR_ALREADY_ON_LIST = 5;
+  BUDDY_ERROR_NOT_PENDING = 6;
+  BUDDY_ERROR_CANNOT_ADD_SELF = 7;
+  BUDDY_ERROR_TARGET_IS_HIDDEN_GM = 8;
+}
+
+message BuddyEntry {
+  uint32 character_id = 1;
+  string name = 2;
+  string group_name = 3;
+  bool pending = 4;
+  int32 channel_index = 5;
+}
+
+message RequestBuddyRequest {
+  uint32 world_id = 1;
+  uint32 requester_character_id = 2;
+  string target_character_name = 3;
+  string group_name = 4;
+}
+
+message RequestBuddyReply {
+  bool ok = 1;
+  BuddyErrorCode error_code = 2;
+  uint32 target_character_id = 3;
+  uint32 target_channel_id = 4;
+  BuddyEntry requester_view = 5;
+}
+
+message AcceptBuddyRequest {
+  uint32 world_id = 1;
+  uint32 accepter_character_id = 2;
+  uint32 requester_character_id = 3;
+}
+
+message AcceptBuddyReply {
+  bool ok = 1;
+  BuddyErrorCode error_code = 2;
+  uint32 requester_character_id = 3;
+  uint32 requester_channel_id = 4;
+  BuddyEntry accepter_view = 5;
+  BuddyEntry requester_view = 6;
+}
+
+message RemoveBuddyRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 buddy_character_id = 3;
+}
+
+message RemoveBuddyReply {
+  bool ok = 1;
+  BuddyErrorCode error_code = 2;
+  uint32 buddy_character_id = 3;
+  uint32 buddy_channel_id = 4;
+  bool buddy_was_accepted = 5;
+  bool removed_from_owner = 6;
 }

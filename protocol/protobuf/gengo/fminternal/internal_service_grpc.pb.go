@@ -42,6 +42,9 @@ const (
 	Internal_UpdatePartyMember_FullMethodName    = "/fm.internal.Internal/UpdatePartyMember"
 	Internal_InviteParty_FullMethodName          = "/fm.internal.Internal/InviteParty"
 	Internal_DenyParty_FullMethodName            = "/fm.internal.Internal/DenyParty"
+	Internal_RequestBuddy_FullMethodName         = "/fm.internal.Internal/RequestBuddy"
+	Internal_AcceptBuddy_FullMethodName          = "/fm.internal.Internal/AcceptBuddy"
+	Internal_RemoveBuddy_FullMethodName          = "/fm.internal.Internal/RemoveBuddy"
 	Internal_BroadcastMultiChat_FullMethodName   = "/fm.internal.Internal/BroadcastMultiChat"
 )
 
@@ -72,6 +75,9 @@ type InternalClient interface {
 	UpdatePartyMember(ctx context.Context, in *UpdatePartyMemberRequest, opts ...grpc.CallOption) (*UpdatePartyMemberReply, error)
 	InviteParty(ctx context.Context, in *InvitePartyRequest, opts ...grpc.CallOption) (*InvitePartyReply, error)
 	DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error)
+	RequestBuddy(ctx context.Context, in *RequestBuddyRequest, opts ...grpc.CallOption) (*RequestBuddyReply, error)
+	AcceptBuddy(ctx context.Context, in *AcceptBuddyRequest, opts ...grpc.CallOption) (*AcceptBuddyReply, error)
+	RemoveBuddy(ctx context.Context, in *RemoveBuddyRequest, opts ...grpc.CallOption) (*RemoveBuddyReply, error)
 	BroadcastMultiChat(ctx context.Context, in *BroadcastMultiChatRequest, opts ...grpc.CallOption) (*BroadcastMultiChatReply, error)
 }
 
@@ -313,6 +319,36 @@ func (c *internalClient) DenyParty(ctx context.Context, in *DenyPartyRequest, op
 	return out, nil
 }
 
+func (c *internalClient) RequestBuddy(ctx context.Context, in *RequestBuddyRequest, opts ...grpc.CallOption) (*RequestBuddyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestBuddyReply)
+	err := c.cc.Invoke(ctx, Internal_RequestBuddy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) AcceptBuddy(ctx context.Context, in *AcceptBuddyRequest, opts ...grpc.CallOption) (*AcceptBuddyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptBuddyReply)
+	err := c.cc.Invoke(ctx, Internal_AcceptBuddy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) RemoveBuddy(ctx context.Context, in *RemoveBuddyRequest, opts ...grpc.CallOption) (*RemoveBuddyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveBuddyReply)
+	err := c.cc.Invoke(ctx, Internal_RemoveBuddy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) BroadcastMultiChat(ctx context.Context, in *BroadcastMultiChatRequest, opts ...grpc.CallOption) (*BroadcastMultiChatReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BroadcastMultiChatReply)
@@ -350,6 +386,9 @@ type InternalServer interface {
 	UpdatePartyMember(context.Context, *UpdatePartyMemberRequest) (*UpdatePartyMemberReply, error)
 	InviteParty(context.Context, *InvitePartyRequest) (*InvitePartyReply, error)
 	DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error)
+	RequestBuddy(context.Context, *RequestBuddyRequest) (*RequestBuddyReply, error)
+	AcceptBuddy(context.Context, *AcceptBuddyRequest) (*AcceptBuddyReply, error)
+	RemoveBuddy(context.Context, *RemoveBuddyRequest) (*RemoveBuddyReply, error)
 	BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
@@ -429,6 +468,15 @@ func (UnimplementedInternalServer) InviteParty(context.Context, *InvitePartyRequ
 }
 func (UnimplementedInternalServer) DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DenyParty not implemented")
+}
+func (UnimplementedInternalServer) RequestBuddy(context.Context, *RequestBuddyRequest) (*RequestBuddyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestBuddy not implemented")
+}
+func (UnimplementedInternalServer) AcceptBuddy(context.Context, *AcceptBuddyRequest) (*AcceptBuddyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AcceptBuddy not implemented")
+}
+func (UnimplementedInternalServer) RemoveBuddy(context.Context, *RemoveBuddyRequest) (*RemoveBuddyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveBuddy not implemented")
 }
 func (UnimplementedInternalServer) BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BroadcastMultiChat not implemented")
@@ -868,6 +916,60 @@ func _Internal_DenyParty_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_RequestBuddy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestBuddyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).RequestBuddy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_RequestBuddy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).RequestBuddy(ctx, req.(*RequestBuddyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_AcceptBuddy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptBuddyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AcceptBuddy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AcceptBuddy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AcceptBuddy(ctx, req.(*AcceptBuddyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_RemoveBuddy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveBuddyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).RemoveBuddy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_RemoveBuddy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).RemoveBuddy(ctx, req.(*RemoveBuddyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_BroadcastMultiChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BroadcastMultiChatRequest)
 	if err := dec(in); err != nil {
@@ -984,6 +1086,18 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DenyParty",
 			Handler:    _Internal_DenyParty_Handler,
+		},
+		{
+			MethodName: "RequestBuddy",
+			Handler:    _Internal_RequestBuddy_Handler,
+		},
+		{
+			MethodName: "AcceptBuddy",
+			Handler:    _Internal_AcceptBuddy_Handler,
+		},
+		{
+			MethodName: "RemoveBuddy",
+			Handler:    _Internal_RemoveBuddy_Handler,
 		},
 		{
 			MethodName: "BroadcastMultiChat",

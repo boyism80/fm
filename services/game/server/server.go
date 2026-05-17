@@ -77,6 +77,7 @@ type GameServer struct {
 	internalConn      *grpc.ClientConn
 	party             *PartyContainer
 	rabbitPartyPID    *actor.PID
+	rabbitBuddyPID    *actor.PID
 	characterRuntime  *ServerCharacterRuntime
 	ensureMu          sync.Mutex
 	ensurePending     map[uint64]*ensure.EnsureDeliver
@@ -194,6 +195,32 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 			fmt.Sprintf("rabbitmq_party_w%d_c%d", config.WorldId, config.ChannelId),
 			rabbitProps,
 		)
+
+		buddyQueueName := fmt.Sprintf("fm.game.w%d.c%d.buddy.events", config.WorldId, config.ChannelId)
+		buddyConsumerTag := fmt.Sprintf("fm-game-w%d-c%d-buddy", config.WorldId, config.ChannelId)
+		buddyRouteAll := fmt.Sprintf("fm.%d.all.buddy", config.WorldId)
+
+		buddyDisp := mq.NewDispatcher()
+		mq.Bind[*GameServer, buddyMqChannelUpdate](gs, buddyDisp)
+		mq.Bind[*GameServer, buddyMqListUpdate](gs, buddyDisp)
+		mq.Bind[*GameServer, buddyMqAddRequest](gs, buddyDisp)
+
+		buddyRabbitCfg := mq.RabbitActorConfig{
+			Root:        gs.GetRootContext(),
+			Broker:      config.RabbitMQ,
+			Exchange:    mq.DirectExchange,
+			QueueName:   buddyQueueName,
+			ConsumerTag: buddyConsumerTag,
+			RoutingKeys: []string{buddyRouteAll},
+			Dispatcher:  buddyDisp,
+		}
+		buddyRabbitProps := actor.PropsFromProducer(func() actor.Actor {
+			return mq.NewRabbitActor(buddyRabbitCfg)
+		})
+		gs.rabbitBuddyPID = gs.actorRegistry.GetOrCreateActor(
+			fmt.Sprintf("rabbitmq_buddy_w%d_c%d", config.WorldId, config.ChannelId),
+			buddyRabbitProps,
+		)
 	}
 
 	gs.characterListener = &CharacterListenerImpl{gs: gs}
@@ -297,6 +324,9 @@ func (gs *GameServer) Start() error {
 	if gs.rabbitPartyPID != nil {
 		log.Printf("Party MQ RabbitActor running (%s)", fmt.Sprintf("fm.game.w%d.c%d.party.events", gs.config.WorldId, gs.config.ChannelId))
 	}
+	if gs.rabbitBuddyPID != nil {
+		log.Printf("Buddy MQ RabbitActor running (%s)", fmt.Sprintf("fm.game.w%d.c%d.buddy.events", gs.config.WorldId, gs.config.ChannelId))
+	}
 
 	if gs.resources != nil {
 		stringCount := 0
@@ -321,6 +351,12 @@ func (gs *GameServer) Stop() error {
 		root := gs.GetRootContext()
 		if root != nil {
 			root.Poison(gs.rabbitPartyPID)
+		}
+	}
+	if gs.rabbitBuddyPID != nil {
+		root := gs.GetRootContext()
+		if root != nil {
+			root.Poison(gs.rabbitBuddyPID)
 		}
 	}
 	if gs.internalConn != nil {

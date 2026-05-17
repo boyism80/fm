@@ -23,6 +23,8 @@ type CharacterListener interface {
 	OnPartyInvite(ch *Character, partyID uint32, inviterName string, partySearch bool)
 	OnMultiChat(ch *Character, mode pconst.MultiChatMode, senderName string, message string)
 	OnPartyStatusMessage(ch *Character, code pconst.PartyStatusCode)
+	OnBuddyStatusMessage(ch *Character, code pconst.BuddyStatusCode)
+	OnBuddyListUpdate(ch *Character, action pconst.BuddyListSyncAction, entries []response.BuddyEntry)
 	OnExpGain(ch *Character, exp uint32)
 	OnControlMoveMob(ch *Character, mob *Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8)
 	OnShowMobHp(ch *Character, mob *Mob, percentage uint8)

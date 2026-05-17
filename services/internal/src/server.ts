@@ -8,6 +8,7 @@ import { AuthGrpcController } from "./grpc/handlers/auth-handlers";
 import { SessionGrpcController } from "./grpc/handlers/session-handlers";
 import { CharacterGrpcController } from "./grpc/handlers/character-handlers";
 import { PartyGrpcController } from "./grpc/handlers/party-handlers";
+import { BuddyGrpcController } from "./grpc/handlers/buddy-handlers";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
 import type { AppConfiguration } from "./config/app-configuration";
 import type { InternalContext } from "./context/internal-context";
@@ -19,6 +20,7 @@ type ServerContainerCradle = {
     sessionController: SessionGrpcController;
     characterController: CharacterGrpcController;
     partyController: PartyGrpcController;
+    buddyController: BuddyGrpcController;
     appConfiguration: AppConfiguration;
     internalContext: InternalContext;
     rabbitmqService: RabbitMQService;
@@ -100,6 +102,7 @@ async function main() {
         sessionController: awilix.asClass(SessionGrpcController).scoped(),
         characterController: awilix.asClass(CharacterGrpcController).scoped(),
         partyController: awilix.asClass(PartyGrpcController).scoped(),
+        buddyController: awilix.asClass(BuddyGrpcController).scoped(),
     });
 
     const serviceImplementation: Record<string, (call: unknown, callback: unknown) => Promise<void>> = {};

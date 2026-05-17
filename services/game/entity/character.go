@@ -8,6 +8,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
@@ -77,6 +78,7 @@ type Character struct {
 	partyID           *uint32
 	guildID           *uint32
 	partySearchConfig *PartySearchConfig
+	buddyList         *BuddyList
 }
 
 type DiseaseValueHolder struct {
@@ -839,6 +841,28 @@ func (ch *Character) SetPartyID(partyID *uint32) {
 	}
 }
 
+func (ch *Character) BuddyList() *BuddyList {
+	if ch == nil {
+		return nil
+	}
+	if ch.buddyList == nil {
+		ch.buddyList = NewBuddyList()
+	}
+	return ch.buddyList
+}
+
+func (ch *Character) LoadBuddyList(entries []*internal.BuddyEntry, capacity uint32) {
+	ch.BuddyList().LoadFromProto(entries, capacity)
+}
+
+func (ch *Character) SendBuddyLoginSync() {
+	if ch == nil || ch.Listener == nil {
+		return
+	}
+	entries := ch.BuddyList().SnapshotForClient()
+	ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncLogin, entries)
+}
+
 func (ch *Character) GetGuildID() (uint32, bool) {
 	if ch == nil || ch.guildID == nil {
 		return 0, false
@@ -1002,6 +1026,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		Meso:         data.Meso,
 		partyID:      data.PartyID,
 		guildID:      data.GuildID,
+		buddyList:    NewBuddyList(),
 
 		random1: stream.NewRandomStream(),
 		random2: stream.NewRandomStream(),

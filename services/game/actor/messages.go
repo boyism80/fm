@@ -162,3 +162,21 @@ type DeliverPartyUpdateSilent struct {
 	LeaderID    uint32
 	Members     []response.PartyMemberStatus
 }
+
+type DeliverBuddyChannelUpdate struct {
+	RecipientCharacterID uint32
+	BuddyCharacterID     uint32
+	Channel              int32
+}
+
+type DeliverBuddyListUpdate struct {
+	RecipientCharacterID uint32
+	SyncAction           uint8
+	Entries              []response.BuddyEntry
+}
+
+type DeliverBuddyAddRequest struct {
+	RecipientCharacterID uint32
+	FromCharacterID      uint32
+	FromName             string
+}

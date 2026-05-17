@@ -149,6 +149,7 @@ export interface CharacterRealtimeStateModel {
     characterId: number;
     partyId?: number | null;
     guildId?: number | null;
+    buddyCapacity?: number;
     updatedAt?: Date;
 }
 
@@ -157,6 +158,7 @@ export type CharacterRealtimeStateRow = {
     character_id: number;
     party_id: number | null;
     guild_id: number | null;
+    buddy_capacity?: number | null;
     updated_at?: Date | string;
 };
 
@@ -249,7 +251,6 @@ export interface PartyMemberModel {
     classId: number;
     role: string;
     mapId: number;
-    channelIndex: number;
     door: { town: number; target: number; x: number; y: number } | null;
     joinedAt?: Date;
     updatedAt?: Date;
@@ -264,7 +265,6 @@ export type PartyMemberRow = {
     class_id: number;
     role: string | null;
     map_id: number | null;
-    channel_index: number | null;
     door: string | null;
     joined_at: Date | string;
     updated_at: Date | string;
@@ -323,4 +323,22 @@ export type BuffFlagValueRow = {
     mask: number;
     position: number;
     value: number;
+};
+
+export interface CharacterBuddyModel {
+    characterId: number;
+    buddyCharacterId: number;
+    groupName: string;
+    pending: boolean;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+export type CharacterBuddyRow = {
+    character_id: number;
+    buddy_character_id: number;
+    group_name: string;
+    pending: boolean;
+    created_at?: Date | string;
+    updated_at?: Date | string;
 };

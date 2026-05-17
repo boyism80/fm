@@ -216,15 +216,15 @@ export class PartyService {
         });
     }
 
-    private partyToPb(worldId: number, party: PartyModel, memberModels: PartyMemberModel[] | Map<string, PartyMemberModel>): PartyMessage {
+    private async partyToPb(
+        worldId: number,
+        party: PartyModel,
+        memberModels: PartyMemberModel[] | Map<string, PartyMemberModel>
+    ): Promise<PartyMessage> {
         const list = this.sortPartyMemberModels(memberModels, party.leaderCharacterId);
-        return {
-            worldId,
-            partyId: party.partyId,
-            leaderCharacterId: party.leaderCharacterId,
-            revision: party.revision,
-            state: party.state,
-            members: list.map((m): PartyMember => {
+        const members = await Promise.all(
+            list.map(async (m): Promise<PartyMember> => {
+                const channelIndex = await this.sessionChannelIndex(worldId, m.characterId);
                 const member: PartyMember = {
                     worldId,
                     characterId: m.characterId,
@@ -233,7 +233,7 @@ export class PartyService {
                     classId: m.classId,
                     role: m.role,
                     mapId: m.mapId,
-                    channelIndex: m.channelIndex,
+                    channelIndex,
                     door: undefined,
                 };
                 const d = m.door;
@@ -247,8 +247,20 @@ export class PartyService {
                     member.door = door;
                 }
                 return member;
-            }),
+            })
+        );
+        return {
+            worldId,
+            partyId: party.partyId,
+            leaderCharacterId: party.leaderCharacterId,
+            revision: party.revision,
+            state: party.state,
+            members,
         };
+    }
+
+    async buildPartyMessage(worldId: number, party: PartyModel, memberModels: PartyMemberModel[]) {
+        return this.partyToPb(worldId, party, memberModels);
     }
 
     private doorJsonFromPayload(doorPayload: PartyDoor | null | undefined): PartyDoor | null {
@@ -317,7 +329,7 @@ export class PartyService {
         await this.partyRepo.evictCache(worldId, result.party.partyId);
         await this.partyMemberRepo.evictGroupCache(worldId, String(result.party.partyId));
         const membersMap = await this.partyMemberRepo.getAll(worldId, String(result.party.partyId));
-        const partyPb = this.partyToPb(worldId, result.party, [...membersMap.values()]);
+        const partyPb = await this.partyToPb(worldId, result.party, [...membersMap.values()]);
         const wire = Party.encode(partyPb).finish();
         await this.publishPartyEvent(EVT.PARTY_SYNC, worldId, result.party.partyId, result.party.revision, {
             trigger_character_id: result.triggerCharacterId,
@@ -326,50 +338,30 @@ export class PartyService {
         return { ok: true, partyId: result.party.partyId, revision: result.party.revision };
     }
 
-    async applyMemberChannelIndex(worldId: number, characterId: number, channelIndex: number) {
+    async applyMemberChannelIndex(worldId: number, characterId: number, _channelIndex?: number) {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
-        const ch = channelIndex;
-        if (!Number.isInteger(ch) || ch < -2) {
+
+        const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
+        if (state?.partyId == null) {
+            return;
+        }
+        const partyId = state.partyId;
+        if (!Number.isInteger(partyId) || partyId < 0) {
+            return;
+        }
+        const party = await this.partyRepo.get(worldId, partyId);
+        if (!party || party.state !== PARTY_STATE_ACTIVE) {
+            return;
+        }
+        const membersMap = await this.partyMemberRepo.getAll(worldId, String(partyId));
+        if (!membersMap.has(String(characterId))) {
             return;
         }
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            if (state?.partyId == null) {
-                return { skip: true };
-            }
-            const partyId = state.partyId;
-            if (!Number.isInteger(partyId) || partyId < 0) {
-                return { skip: true };
-            }
-            const party = await this.partyRepo.get(worldId, partyId, { txClient });
-            if (!party || party.state !== PARTY_STATE_ACTIVE) {
-                return { skip: true };
-            }
-            const members = await this.partyMemberRepo.getAll(worldId, String(partyId), { txClient });
-            const self = members.get(String(characterId));
-            if (!self) {
-                return { skip: true };
-            }
-            if (self.channelIndex === ch) {
-                return { skip: true };
-            }
-            await this.partyMemberRepo.set(worldId, { ...self, channelIndex: ch }, { txClient });
-            const nextRevision = party.revision + 1;
-            const updatedParty = await this.partyRepo.set(worldId, { ...party, revision: nextRevision }, { txClient });
-            return { skip: false, party: updatedParty };
-        });
-        if (result.skip || !result.party) {
-            return;
-        }
-
-        await this.partyRepo.evictCache(worldId, result.party.partyId);
-        await this.partyMemberRepo.evictGroupCache(worldId, String(result.party.partyId));
-        const membersMap = await this.partyMemberRepo.getAll(worldId, String(result.party.partyId));
-        const partyPb = this.partyToPb(worldId, result.party, [...membersMap.values()]);
+        const partyPb = await this.partyToPb(worldId, party, [...membersMap.values()]);
         const wire = Party.encode(partyPb).finish();
-        await this.publishPartyEvent(EVT.LOG_ONOFF, worldId, result.party.partyId, result.party.revision, {
+        await this.publishPartyEvent(EVT.LOG_ONOFF, worldId, party.partyId, party.revision, {
             character_id: characterId,
             party_pb: Buffer.from(wire).toString("base64"),
         });
@@ -391,12 +383,6 @@ export class PartyService {
         this.assertUInt16(leaderLevel, "level");
         this.assertUInt16(leaderClassId, "class_id");
         const doorJson = this.doorJsonFromPayload(leader.door);
-        let leaderChannelIndex = leader.channelIndex;
-        if (leaderChannelIndex == null || !Number.isFinite(leaderChannelIndex) || leaderChannelIndex < -2) {
-            leaderChannelIndex = await this.sessionChannelIndex(worldId, leaderCharacterId);
-        } else {
-            leaderChannelIndex = leaderChannelIndex;
-        }
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const state = await this.characterRealtimeStateRepo.get(worldId, leaderCharacterId, { txClient });
@@ -408,7 +394,7 @@ export class PartyService {
             const party = await this.partyRepo.set(worldId, { worldId, partyId, leaderCharacterId, state: PARTY_STATE_ACTIVE, revision: 1 }, { txClient });
             await this.partyMemberRepo.set(worldId, {
                 worldId, partyId, characterId: leaderCharacterId, characterName: name, level: leaderLevel,
-                classId: leaderClassId, role: "LEADER", mapId: leader.mapId ?? 0, channelIndex: leaderChannelIndex, door: doorJson,
+                classId: leaderClassId, role: "LEADER", mapId: leader.mapId ?? 0, door: doorJson,
             }, { txClient });
             await this.characterRealtimeStateRepo.set(worldId, { worldId, characterId: leaderCharacterId, partyId, guildId: state?.guildId ?? null }, { txClient });
             return { ok: true, partyId: party.partyId, revision: party.revision };
@@ -551,12 +537,6 @@ export class PartyService {
         this.assertUInt16(memberLevel, "level");
         this.assertUInt16(memberClassId, "class_id");
         const doorJson = this.doorJsonFromPayload(member.door);
-        let joinChannelIndex = member.channelIndex;
-        if (joinChannelIndex == null || !Number.isFinite(joinChannelIndex) || joinChannelIndex < -2) {
-            joinChannelIndex = await this.sessionChannelIndex(worldId, characterId);
-        } else {
-            joinChannelIndex = joinChannelIndex;
-        }
 
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const inviteKey = this.invitePendingKey(worldId, characterId);
@@ -583,7 +563,7 @@ export class PartyService {
 
             await this.partyMemberRepo.set(worldId, {
                 worldId, partyId, characterId, characterName: name, level: memberLevel, classId: memberClassId, role: "MEMBER",
-                mapId: member.mapId ?? 0, channelIndex: joinChannelIndex, door: doorJson,
+                mapId: member.mapId ?? 0, door: doorJson,
             }, { txClient });
             const nextRevision = party.revision + 1;
             const updatedParty = await this.partyRepo.set(worldId, { ...party, revision: nextRevision }, { txClient });

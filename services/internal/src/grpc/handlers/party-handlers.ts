@@ -164,29 +164,7 @@ export function createPartyHandlers(partyService: PartyService, grpcError: GrpcE
                 const worldId = call.request.worldId;
                 const result = await partyService.getParty(worldId, call.request.partyId) as GetPartyResult;
                 if (result.found && result.party) {
-                    const party: Party = {
-                        worldId: result.party.worldId,
-                        partyId: result.party.partyId,
-                        leaderCharacterId: result.party.leaderCharacterId,
-                        revision: result.party.revision,
-                        state: result.party.state,
-                        members: (result.members ?? []).map((m): PartyMember => ({
-                            worldId,
-                            characterId: m.characterId,
-                            characterName: m.characterName,
-                            level: m.level,
-                            classId: m.classId,
-                            role: m.role,
-                            mapId: m.mapId ?? 0,
-                            channelIndex: m.channelIndex ?? -2,
-                            door: m.door ? {
-                                town: m.door.town,
-                                target: m.door.target,
-                                x: m.door.x,
-                                y: m.door.y,
-                            } : undefined,
-                        })),
-                    };
+                    const party = await partyService.buildPartyMessage(worldId, result.party, result.members ?? []);
                     callback(null, { found: true, party });
                 } else {
                     callback(null, { found: false, party: undefined });

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
@@ -391,7 +392,7 @@ func (c *Character) Serialize(writer *stream.StreamWriter) {
 
 	c.SerializeStats(writer)
 	if c.BuddyCapacity == 0 {
-		c.BuddyCapacity = 20
+		c.BuddyCapacity = pconst.DefaultBuddyCapacity
 	}
 	writer.WriteU8(c.BuddyCapacity)
 

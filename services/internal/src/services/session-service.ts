@@ -4,6 +4,7 @@ import type { CharacterRealtimeStateRepository } from "../repos/character-realti
 import type { SessionRepository } from "../repos/session-repository";
 import type { CharacterService } from "./character-service";
 import type { PartyService } from "./party-service";
+import type { BuddyService } from "./buddy-service";
 
 export const SessionState = {
     LOGIN: "LOGIN",
@@ -26,19 +27,22 @@ export class SessionService {
     private readonly repo: SessionRepository;
     private readonly characterService: CharacterService;
     private readonly partyService: PartyService | null;
+    private readonly buddyService: BuddyService | null;
 
     constructor(
         internalContext: InternalContext,
         sessionRepository: SessionRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         characterService: CharacterService,
-        partyService: PartyService | null
+        partyService: PartyService | null,
+        buddyService: BuddyService | null
     ) {
         void internalContext;
         void characterRealtimeStateRepository;
         this.repo = sessionRepository;
         this.characterService = characterService;
         this.partyService = partyService;
+        this.buddyService = buddyService;
     }
 
     private now() {
@@ -104,7 +108,12 @@ export class SessionService {
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
-        if (this.partyService) await this.partyService.applyMemberChannelIndex(worldId, characterId, channelId);
+        if (this.partyService) {
+            await this.partyService.applyMemberChannelIndex(worldId, characterId, channelId);
+        }
+        if (this.buddyService) {
+            await this.buddyService.applyBuddyChannelIndex(worldId, characterId, channelId);
+        }
         return { ok: true };
     }
 
@@ -176,7 +185,14 @@ export class SessionService {
         const transferDisconnect = options.transferDisconnect ?? false;
         const gameNormalDisconnect = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER && !transferDisconnect;
         const cid = options.characterId ?? null;
-        if (cid != null && this.partyService && gameNormalDisconnect) await this.partyService.applyMemberChannelIndex(worldId, cid, -2);
+        if (cid != null && gameNormalDisconnect) {
+            if (this.partyService) {
+                await this.partyService.applyMemberChannelIndex(worldId, cid, -2);
+            }
+            if (this.buddyService) {
+                await this.buddyService.applyBuddyChannelIndex(worldId, cid, -1);
+            }
+        }
         return { ok: true, code: SessionErrorCode.SESSION_NONE };
     }
 }
