@@ -543,6 +543,7 @@ message BroadcastMultiChatRequest {
   uint32 chat_mode = 4;
   string sender_name = 5;
   string message = 6;
+  repeated uint32 recipient_character_ids = 7;
 }
 
 message BroadcastMultiChatReply {

@@ -11,15 +11,15 @@ import (
 	g_actor "github.com/boyism80/fm/services/game/actor"
 )
 
-type partyMqMultiChat struct{ gs *GameServer }
+type partyMqChat struct{ gs *GameServer }
 
-func (partyMqMultiChat) New(gs *GameServer) *partyMqMultiChat {
-	return &partyMqMultiChat{gs: gs}
+func (partyMqChat) New(gs *GameServer) *partyMqChat {
+	return &partyMqChat{gs: gs}
 }
 
-func (*partyMqMultiChat) EventType() string { return "multi_chat" }
+func (*partyMqChat) EventType() string { return "multi_chat" }
 
-func (h *partyMqMultiChat) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *partyMqChat) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil
@@ -51,7 +51,7 @@ func (h *partyMqMultiChat) Handle(_ actor.Context, _ amqp.Delivery, _ string, ra
 	return nil
 }
 
-func (h *partyMqMultiChat) handlePartyMultiChat(gs *GameServer, memberID uint32, senderCharacterID uint32, mode pconst.MultiChatMode, senderName string, message string) {
+func (h *partyMqChat) handlePartyMultiChat(gs *GameServer, memberID uint32, senderCharacterID uint32, mode pconst.MultiChatMode, senderName string, message string) {
 	party := gs.GetPartyByID(memberID)
 	if party == nil {
 		return

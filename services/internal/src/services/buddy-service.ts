@@ -15,7 +15,10 @@ const AMQ_DIRECT_EXCHANGE = "amq.direct";
 const BUDDY_EVT_CHANNEL_UPDATE = "channel_update";
 const BUDDY_EVT_LIST_UPDATE = "list_update";
 const BUDDY_EVT_ADD_REQUEST = "add_request";
+const BUDDY_EVT_MULTI_CHAT = "multi_chat";
 const BUDDY_SYNC_ACTION_UPDATE = 10;
+const MAX_MULTI_CHAT_MSG_LEN = 500;
+const MAX_MULTI_CHAT_NAME_LEN = 32;
 const MAX_BUDDY_NAME_LEN = 13;
 const MAX_BUDDY_GROUP_LEN = 16;
 
@@ -48,6 +51,8 @@ export type RemoveBuddyResult = BuddyMutationResult & {
     buddyWasAccepted?: boolean;
     removedFromOwner?: boolean;
 };
+
+export type BroadcastBuddyMultiChatResult = { ok: boolean; code?: BuddyErrorCode; deliveredCount?: number };
 
 export class BuddyService {
     private readonly ctx: InternalContext;
@@ -444,6 +449,49 @@ export class BuddyService {
             return -1;
         }
         return channelIndex;
+    }
+
+    async broadcastBuddyMultiChat(
+        worldId: number,
+        senderCharacterId: number,
+        recipientCharacterIds: number[],
+        senderName: string,
+        message: string
+    ): Promise<BroadcastBuddyMultiChatResult> {
+        this.assertWorld(worldId);
+        this.assertCharacterId(senderCharacterId);
+        const trimmedMsg = message;
+        if (trimmedMsg.length <= 0 || trimmedMsg.length > MAX_MULTI_CHAT_MSG_LEN) {
+            return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_UNKNOWN };
+        }
+        const name = senderName.trim();
+        if (name.length <= 0 || name.length > MAX_MULTI_CHAT_NAME_LEN) {
+            return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_UNKNOWN };
+        }
+
+        const accepted = new Set(await this.buddyRepo.listAcceptedBuddyCharacterIds(worldId, senderCharacterId));
+        let targets: number[];
+        if (recipientCharacterIds.length > 0) {
+            targets = recipientCharacterIds.filter((id) => id !== senderCharacterId && accepted.has(id));
+        } else {
+            targets = [...accepted].filter((id) => id !== senderCharacterId);
+        }
+        if (targets.length === 0) {
+            return { ok: true, deliveredCount: 0 };
+        }
+
+        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
+        const routingKey = `fm.${worldId}.all.buddy`;
+        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, BUDDY_EVT_MULTI_CHAT, {
+            event_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            occurred_at: new Date().toISOString(),
+            sender_character_id: senderCharacterId,
+            chat_mode: 0,
+            sender_name: name,
+            message: trimmedMsg,
+            notify_character_ids: targets,
+        });
+        return { ok: true, deliveredCount: targets.length };
     }
 
     private async buildEntry(worldId: number, buddy: CharacterBuddyModel): Promise<BuddyListEntry> {

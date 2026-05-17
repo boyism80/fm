@@ -176,7 +176,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		mq.Bind[*GameServer, partyMqDisbanded](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqPartySync](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqPartyInvite](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqMultiChat](gs, partyDisp)
+		mq.Bind[*GameServer, partyMqChat](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqPartyInviteDenied](gs, partyDisp)
 
 		rabbitCfg := mq.RabbitActorConfig{
@@ -202,8 +202,9 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 		buddyDisp := mq.NewDispatcher()
 		mq.Bind[*GameServer, buddyMqChannelUpdate](gs, buddyDisp)
-		mq.Bind[*GameServer, buddyMqListUpdate](gs, buddyDisp)
+		mq.Bind[*GameServer, buddyMqUpdate](gs, buddyDisp)
 		mq.Bind[*GameServer, buddyMqAddRequest](gs, buddyDisp)
+		mq.Bind[*GameServer, buddyMqChat](gs, buddyDisp)
 
 		buddyRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),

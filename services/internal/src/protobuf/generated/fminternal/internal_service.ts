@@ -914,6 +914,7 @@ export interface BroadcastMultiChatRequest {
   chatMode: number;
   senderName: string;
   message: string;
+  recipientCharacterIds: number[];
 }
 
 export interface BroadcastMultiChatReply {
@@ -9335,7 +9336,15 @@ export const DenyPartyReply: MessageFns<DenyPartyReply> = {
 };
 
 function createBaseBroadcastMultiChatRequest(): BroadcastMultiChatRequest {
-  return { worldId: 0, memberId: 0, senderCharacterId: 0, chatMode: 0, senderName: "", message: "" };
+  return {
+    worldId: 0,
+    memberId: 0,
+    senderCharacterId: 0,
+    chatMode: 0,
+    senderName: "",
+    message: "",
+    recipientCharacterIds: [],
+  };
 }
 
 export const BroadcastMultiChatRequest: MessageFns<BroadcastMultiChatRequest> = {
@@ -9358,6 +9367,11 @@ export const BroadcastMultiChatRequest: MessageFns<BroadcastMultiChatRequest> = 
     if (message.message !== "") {
       writer.uint32(50).string(message.message);
     }
+    writer.uint32(58).fork();
+    for (const v of message.recipientCharacterIds) {
+      writer.uint32(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -9416,6 +9430,24 @@ export const BroadcastMultiChatRequest: MessageFns<BroadcastMultiChatRequest> = 
           message.message = reader.string();
           continue;
         }
+        case 7: {
+          if (tag === 56) {
+            message.recipientCharacterIds.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 58) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.recipientCharacterIds.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -9453,6 +9485,11 @@ export const BroadcastMultiChatRequest: MessageFns<BroadcastMultiChatRequest> = 
         ? globalThis.String(object.sender_name)
         : "",
       message: isSet(object.message) ? globalThis.String(object.message) : "",
+      recipientCharacterIds: globalThis.Array.isArray(object?.recipientCharacterIds)
+        ? object.recipientCharacterIds.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.recipient_character_ids)
+        ? object.recipient_character_ids.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
@@ -9476,6 +9513,9 @@ export const BroadcastMultiChatRequest: MessageFns<BroadcastMultiChatRequest> = 
     if (message.message !== "") {
       obj.message = message.message;
     }
+    if (message.recipientCharacterIds?.length) {
+      obj.recipientCharacterIds = message.recipientCharacterIds.map((e) => Math.round(e));
+    }
     return obj;
   },
 
@@ -9490,6 +9530,7 @@ export const BroadcastMultiChatRequest: MessageFns<BroadcastMultiChatRequest> = 
     message.chatMode = object.chatMode ?? 0;
     message.senderName = object.senderName ?? "";
     message.message = object.message ?? "";
+    message.recipientCharacterIds = object.recipientCharacterIds?.map((e) => e) || [];
     return message;
   },
 };

@@ -13,6 +13,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/entity"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -36,9 +37,6 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 	if ch == nil {
 		log.Printf("Character is nil for client")
 		return fmt.Errorf("character is nil")
-	}
-	if req.NumRecipients <= 0 {
-		return nil
 	}
 	if strings.HasPrefix(req.Message, "/") {
 		if mapInstance := ch.GetMap(); mapInstance != nil {
@@ -69,29 +67,32 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 	if len(strings.TrimSpace(req.Message)) == 0 {
 		return nil
 	}
-	if h.gs.internalClient == nil {
-		return fmt.Errorf("internal client not configured")
-	}
-	if ctx.ActorContext == nil {
-		return fmt.Errorf("multi chat: actor context required")
-	}
 	mode := pconst.MultiChatMode(req.Type)
 	if mode > pconst.MultiChatModeAlliance {
 		return nil
 	}
-	memberID := uint32(0)
-	if mode == pconst.MultiChatModeParty {
-		pid := ch.GetPartyID()
-		if pid == nil {
-			return nil
-		}
-		memberID = *pid
-	} else if len(req.Recipients) > 0 {
-		first := req.Recipients[0]
-		if first > 0 {
-			memberID = uint32(first)
-		}
+	switch mode {
+	case pconst.MultiChatModeParty:
+		return h.handlePartyMultiChat(ctx, ch, req)
+	case pconst.MultiChatModeBuddy:
+		return h.handleBuddyMultiChat(ctx, ch, req)
+	default:
+		return nil
 	}
+}
+
+func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *entity.Character, req *request.MultiChat) error {
+	if h.gs.internalClient == nil {
+		return fmt.Errorf("internal client not configured")
+	}
+	if ctx.ActorContext == nil {
+		return fmt.Errorf("party multi chat: actor context required")
+	}
+	pid := ch.GetPartyID()
+	if pid == nil {
+		return nil
+	}
+	memberID := *pid
 	if memberID == 0 {
 		return nil
 	}
@@ -104,19 +105,58 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 				WorldId:           worldID,
 				MemberId:          memberID,
 				SenderCharacterId: senderID,
-				ChatMode:          uint32(mode),
+				ChatMode:          uint32(pconst.MultiChatModeParty),
 				SenderName:        senderName,
 				Message:           req.Message,
 			})
 		},
 		func(reply *internal.BroadcastMultiChatReply) error {
 			if !reply.GetOk() {
-				log.Printf("MultiChat: broadcast failed character=%d code=%v", senderID, reply.GetErrorCode())
+				log.Printf("PartyMultiChat: broadcast failed character=%d code=%v", senderID, reply.GetErrorCode())
 			}
 			return nil
 		},
 	).OnError(func(err error) {
-		log.Printf("MultiChat async error: %v", err)
+		log.Printf("PartyMultiChat async error: %v", err)
+	}).Run()
+	return nil
+}
+
+func (h *MultiChat) handleBuddyMultiChat(ctx *core.ClientContext, ch *entity.Character, req *request.MultiChat) error {
+	if h.gs.internalClient == nil {
+		return fmt.Errorf("internal client not configured")
+	}
+	if ctx.ActorContext == nil {
+		return fmt.Errorf("buddy multi chat: actor context required")
+	}
+	recipientIDs := make([]uint32, 0, len(req.Recipients))
+	for _, rid := range req.Recipients {
+		if rid > 0 {
+			recipientIDs = append(recipientIDs, uint32(rid))
+		}
+	}
+	senderID := ch.GetID()
+	senderName := ch.GetName()
+	worldID := h.gs.config.WorldId
+	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
+			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
+				WorldId:               worldID,
+				SenderCharacterId:     senderID,
+				ChatMode:              uint32(pconst.MultiChatModeBuddy),
+				SenderName:            senderName,
+				Message:               req.Message,
+				RecipientCharacterIds: recipientIDs,
+			})
+		},
+		func(reply *internal.BroadcastMultiChatReply) error {
+			if !reply.GetOk() {
+				log.Printf("BuddyMultiChat: broadcast failed character=%d code=%v", senderID, reply.GetErrorCode())
+			}
+			return nil
+		},
+	).OnError(func(err error) {
+		log.Printf("BuddyMultiChat async error: %v", err)
 	}).Run()
 	return nil
 }

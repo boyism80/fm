@@ -11,19 +11,19 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type buddyMqListUpdate struct {
+type buddyMqUpdate struct {
 	gs *GameServer
 }
 
-func (buddyMqListUpdate) New(gs *GameServer) *buddyMqListUpdate {
-	return &buddyMqListUpdate{gs: gs}
+func (buddyMqUpdate) New(gs *GameServer) *buddyMqUpdate {
+	return &buddyMqUpdate{gs: gs}
 }
 
-func (*buddyMqListUpdate) EventType() string {
+func (*buddyMqUpdate) EventType() string {
 	return "list_update"
 }
 
-func (h *buddyMqListUpdate) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *buddyMqUpdate) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil

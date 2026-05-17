@@ -1,6 +1,5 @@
-import { PartyErrorCode, type Party, type PartyMember } from "../../protobuf/generated/fminternal/internal_service";
+import { PartyErrorCode, type Party } from "../../protobuf/generated/fminternal/internal_service";
 import type {
-    BroadcastMultiChatResult,
     DenyPartyResult,
     ExpelPartyResult,
     GetPartyResult,
@@ -10,8 +9,6 @@ import type {
     PartyService,
 } from "../../services/party-service";
 import type {
-    BroadcastMultiChatReply,
-    BroadcastMultiChatRequest,
     ChangePartyLeaderReply,
     ChangePartyLeaderRequest,
     CreatePartyReply,
@@ -197,17 +194,6 @@ export function createPartyHandlers(partyService: PartyService, grpcError: GrpcE
                 callback(null, { ok: result.ok, errorCode: result.code ?? PartyErrorCode.UNKNOWN });
             } catch (err) { grpcError(err, callback); }
         },
-        async broadcastMultiChat(call: GrpcCall<BroadcastMultiChatRequest>, callback: GrpcCallback<BroadcastMultiChatReply>) {
-            try {
-                const req = call.request;
-                const result = await partyService.broadcastMultiChat(req.worldId, req.memberId, req.senderCharacterId, req.chatMode, req.senderName, req.message) as BroadcastMultiChatResult;
-                callback(null, {
-                    ok: result.ok,
-                    errorCode: result.code ?? PartyErrorCode.UNKNOWN,
-                    deliveredCount: result.deliveredCount ?? 0,
-                });
-            } catch (err) { grpcError(err, callback); }
-        },
     };
 }
 
@@ -262,10 +248,5 @@ export class PartyGrpcController {
     @GrpcMethod("denyParty")
     async denyParty(call: GrpcCall<DenyPartyRequest>, callback: GrpcCallback<DenyPartyReply>) {
         return this.handlers.denyParty(call, callback);
-    }
-
-    @GrpcMethod("broadcastMultiChat")
-    async broadcastMultiChat(call: GrpcCall<BroadcastMultiChatRequest>, callback: GrpcCallback<BroadcastMultiChatReply>) {
-        return this.handlers.broadcastMultiChat(call, callback);
     }
 }
