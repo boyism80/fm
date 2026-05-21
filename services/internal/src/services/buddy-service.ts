@@ -1,5 +1,5 @@
 import type { PoolClient } from "pg";
-import { BuddyErrorCode } from "../protobuf/generated/fminternal/internal_service";
+import { BuddyErrorCode, CharacterSessionState } from "../protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "../context/internal-context";
 import type { AppConfiguration } from "../config/app-configuration";
 import { CharacterBuddyRepository } from "../repos/character-buddy-repository";
@@ -367,7 +367,7 @@ export class BuddyService {
             return -1;
         }
         const sess = await this.sessionRepo.getCharacterSessionByName(worldId, row.name);
-        if (sess?.state !== "ONLINE" || sess?.gameServer?.connected !== true) {
+        if (sess?.state !== CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE || sess?.gameServer?.connected !== true) {
             return -1;
         }
         const ch = sess.gameServer?.channelId;

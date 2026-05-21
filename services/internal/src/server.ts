@@ -1,4 +1,4 @@
-import grpc from "@grpc/grpc-js";
+import grpc, { type handleUnaryCall } from "@grpc/grpc-js";
 import * as awilix from "awilix";
 import { InternalService } from "./protobuf/generated/fminternal/internal_service";
 import { createAppContainer } from "./container";
@@ -108,14 +108,14 @@ async function main() {
         chatController: awilix.asClass(ChatGrpcController).scoped(),
     });
 
-    const serviceImplementation: Record<string, (call: unknown, callback: unknown) => Promise<void>> = {};
+    const serviceImplementation: Record<string, handleUnaryCall<unknown, unknown>> = {};
     const routes = getGrpcRoutes();
     validateGrpcRouteCoverage(routes);
     for (const route of routes) {
-        serviceImplementation[route.grpcMethod] = async (call: unknown, callback: unknown) => {
+        serviceImplementation[route.grpcMethod] = async (call, callback) => {
             const scope = container.createScope();
             try {
-                const controller = scope.resolve(route.resolverName) as Record<string, (callArg: unknown, callbackArg: unknown) => Promise<unknown> | unknown>;
+                const controller = scope.resolve(route.resolverName) as Record<string, handleUnaryCall<unknown, unknown>>;
                 const method = controller[route.methodName];
                 if (typeof method !== "function") {
                     throw new Error(`gRPC method not found: ${route.resolverName}.${route.methodName}`);
@@ -131,7 +131,7 @@ async function main() {
 
     const addr = `${internalConfig.grpc.host}:${internalConfig.grpc.port}`;
 
-    server.bindAsync(addr, grpc.ServerCredentials.createInsecure(), (err: unknown, boundPort: number) => {
+    server.bindAsync(addr, grpc.ServerCredentials.createInsecure(), (err: Error | null, boundPort: number) => {
         if (err) {
             console.error(err);
             process.exit(1);

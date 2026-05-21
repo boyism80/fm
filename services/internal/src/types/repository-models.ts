@@ -1,3 +1,7 @@
+import type { PartyMemberRole, PartyState } from "../protobuf/generated/fminternal/internal_service";
+import type { EquipmentBonusStatsJson } from "./equipment-bonus-stats";
+import type { KeyLayoutJsonRecord } from "./key-layout-json";
+
 export interface AccountModel {
     accountId: number;
     loginId: string;
@@ -177,7 +181,7 @@ export interface InventoryModel {
     flag: number | null;
     skillBonus: number | null;
     ownerName: string | null;
-    equipBonusStats?: Record<string, unknown>;
+    equipBonusStats?: EquipmentBonusStatsJson;
     updatedAt?: Date;
 }
 
@@ -194,7 +198,7 @@ export type InventoryRow = {
     flag: number | null;
     skill_bonus: number | null;
     owner_name: string | null;
-    equip_bonus_stats: string | Record<string, unknown>;
+    equip_bonus_stats: string | EquipmentBonusStatsJson;
     created_at?: Date | string;
     updated_at?: Date | string;
     deleted?: boolean;
@@ -210,7 +214,7 @@ export interface KeyLayoutModel {
 export type KeyLayoutRow = {
     character_id: number;
     world_id: number;
-    key_layout_json: string | Record<string, unknown>;
+    key_layout_json: string | KeyLayoutJsonRecord;
     updated_at?: Date | string;
     deleted?: boolean;
 };
@@ -221,7 +225,7 @@ export interface PartyModel {
     worldId: number;
     partyId: number;
     leaderCharacterId: number;
-    state: string;
+    state: PartyState;
     revision: number;
     disbandedAt?: Date | null;
     createdAt?: Date;
@@ -232,7 +236,7 @@ export type PartyRow = {
     world_id: number;
     party_id: number;
     leader_character_id: number;
-    state: string;
+    state: number | null;
     revision: number;
     disbanded_at?: Date | string | null;
     created_at?: Date | string;
@@ -249,7 +253,7 @@ export interface PartyMemberModel {
     characterName: string;
     level: number;
     classId: number;
-    role: string;
+    role: PartyMemberRole;
     mapId: number;
     door: { town: number; target: number; x: number; y: number } | null;
     joinedAt?: Date;
@@ -263,7 +267,7 @@ export type PartyMemberRow = {
     character_name: string;
     level: number;
     class_id: number;
-    role: string | null;
+    role: PartyMemberRole | null;
     map_id: number | null;
     door: { town: number; target: number; x: number; y: number } | null;
     joined_at: Date | string;

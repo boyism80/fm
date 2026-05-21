@@ -1,5 +1,14 @@
 import { redisPartyKey } from "../redis-party-key";
-import { Party, type Party as PartyMessage, type PartyDoor, type PartyMember, PartyErrorCode } from "../protobuf/generated/fminternal/internal_service";
+import {
+    Party,
+    type Party as PartyMessage,
+    type PartyDoor,
+    type PartyMember,
+    PartyErrorCode,
+    PartyMemberRole,
+    PartyState,
+    CharacterSessionState,
+} from "../protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
 import type { PartyModel } from "../repos/party-repository";
 import type { PartyMemberModel } from "../repos/party-member-repository";
@@ -16,7 +25,7 @@ import { RabbitMQService } from "./rabbitmq-service";
 const messages = { PartyErrorCode };
 
 const MAX_PARTY_MEMBERS = 6;
-const PARTY_STATE_ACTIVE = "ACTIVE";
+
 const EVT = {
     CREATED: "created",
     MEMBER_JOINED: "member_joined",
@@ -25,7 +34,7 @@ const EVT = {
     LEADER_CHANGED: "leader_changed",
     PARTY_SYNC: "party_sync",
     LOG_ONOFF: "log_onoff",
-};
+} as const;
 
 const INVITE_PENDING_TTL_SEC = 300;
 const AMQ_DIRECT_EXCHANGE = "amq.direct";
@@ -301,7 +310,7 @@ export class PartyService {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
-            if (!party || party.state !== PARTY_STATE_ACTIVE) {
+            if (!party || party.state !== PartyState.PARTY_STATE_ACTIVE) {
                 return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
             }
             const members = await this.partyMemberRepo.getAll(worldId, String(partyId), { txClient });
@@ -351,7 +360,7 @@ export class PartyService {
             return;
         }
         const party = await this.partyRepo.get(worldId, partyId);
-        if (!party || party.state !== PARTY_STATE_ACTIVE) {
+        if (!party || party.state !== PartyState.PARTY_STATE_ACTIVE) {
             return;
         }
         const membersMap = await this.partyMemberRepo.getAll(worldId, String(partyId));
@@ -391,10 +400,10 @@ export class PartyService {
             }
 
             const partyId = await this.nextPartyId(txClient, worldId);
-            const party = await this.partyRepo.set(worldId, { worldId, partyId, leaderCharacterId, state: PARTY_STATE_ACTIVE, revision: 1 }, { txClient });
+            const party = await this.partyRepo.set(worldId, { worldId, partyId, leaderCharacterId, state: PartyState.PARTY_STATE_ACTIVE, revision: 1 }, { txClient });
             await this.partyMemberRepo.set(worldId, {
                 worldId, partyId, characterId: leaderCharacterId, characterName: name, level: leaderLevel,
-                classId: leaderClassId, role: "LEADER", mapId: leader.mapId ?? 0, door: doorJson,
+                classId: leaderClassId, role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER, mapId: leader.mapId ?? 0, door: doorJson,
             }, { txClient });
             await this.characterRealtimeStateRepo.set(worldId, { worldId, characterId: leaderCharacterId, partyId, guildId: state?.guildId ?? null }, { txClient });
             return { ok: true, partyId: party.partyId, revision: party.revision };
@@ -424,7 +433,7 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
         }
         const party = await this.partyRepo.get(worldId, partyId);
-        if (!party || party.state !== PARTY_STATE_ACTIVE) {
+        if (!party || party.state !== PartyState.PARTY_STATE_ACTIVE) {
             return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
         }
         const members = await this.partyMemberRepo.getAll(worldId, String(partyId));
@@ -451,7 +460,7 @@ export class PartyService {
 
         const sess = await this.getCharacterSession(worldId, targetCharacterId);
         const ch = sess?.gameServer?.channelId;
-        const online = sess?.state === "ONLINE" && sess?.gameServer?.connected === true;
+        const online = sess?.state === CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE && sess?.gameServer?.connected === true;
         if (!online || ch == null || !Number.isFinite(ch) || ch < 0) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }
@@ -498,7 +507,7 @@ export class PartyService {
         const inviterCharacterId = inviterEntry.character_id;
         const inviterSession = await this.getCharacterSession(worldId, inviterCharacterId);
         const inviterChRaw = inviterSession?.gameServer?.channelId;
-        const inviterOnline = inviterSession?.state === "ONLINE" && inviterSession?.gameServer?.connected === true;
+        const inviterOnline = inviterSession?.state === CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE && inviterSession?.gameServer?.connected === true;
         if (!inviterOnline || inviterChRaw == null || !Number.isFinite(inviterChRaw) || inviterChRaw < 0) {
             await client.del(inviteKey);
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
@@ -549,7 +558,7 @@ export class PartyService {
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
-            if (!party || party.state !== PARTY_STATE_ACTIVE) {
+            if (!party || party.state !== PartyState.PARTY_STATE_ACTIVE) {
                 return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
             }
             const members = await this.partyMemberRepo.getAll(worldId, String(partyId), { txClient });
@@ -562,7 +571,7 @@ export class PartyService {
             }
 
             await this.partyMemberRepo.set(worldId, {
-                worldId, partyId, characterId, characterName: name, level: memberLevel, classId: memberClassId, role: "MEMBER",
+                worldId, partyId, characterId, characterName: name, level: memberLevel, classId: memberClassId, role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER,
                 mapId: member.mapId ?? 0, door: doorJson,
             }, { txClient });
             const nextRevision = party.revision + 1;
@@ -634,7 +643,7 @@ export class PartyService {
                     return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
                 }
                 nextLeaderCharacterId = topMember.characterId;
-                await this.partyMemberRepo.set(worldId, { ...topMember, role: "LEADER" }, { txClient });
+                await this.partyMemberRepo.set(worldId, { ...topMember, role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER }, { txClient });
             }
             const nextRevision = party.revision + 1;
             const updatedParty = await this.partyRepo.set(worldId, { ...party, leaderCharacterId: nextLeaderCharacterId, revision: nextRevision }, { txClient });
@@ -689,7 +698,7 @@ export class PartyService {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
-            if (!party || party.state !== PARTY_STATE_ACTIVE) {
+            if (!party || party.state !== PartyState.PARTY_STATE_ACTIVE) {
                 return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
             }
             if (party.leaderCharacterId !== requesterCharacterId) {
@@ -747,14 +756,14 @@ export class PartyService {
         this.assertCharacterId(newLeaderCharacterId);
 
         const newLeaderSession = await this.getCharacterSession(worldId, newLeaderCharacterId);
-        const newLeaderOnline = newLeaderSession?.state === "ONLINE" && newLeaderSession?.gameServer?.connected === true;
+        const newLeaderOnline = newLeaderSession?.state === CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE && newLeaderSession?.gameServer?.connected === true;
         if (!newLeaderOnline) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
-            if (!party || party.state !== PARTY_STATE_ACTIVE) {
+            if (!party || party.state !== PartyState.PARTY_STATE_ACTIVE) {
                 return { ok: false, code: messages.PartyErrorCode.PARTY_NOT_FOUND };
             }
             if (party.leaderCharacterId !== requesterCharacterId) {
@@ -770,9 +779,11 @@ export class PartyService {
                 return { ok: false, code: messages.PartyErrorCode.TARGET_NOT_IN_PARTY };
             }
 
-            await this.partyMemberRepo.set(worldId, { ...newLeader, role: "LEADER" }, { txClient });
+            await this.partyMemberRepo.set(worldId, { ...newLeader, role: PartyMemberRole.PARTY_MEMBER_ROLE_LEADER }, { txClient });
             const requester = members.get(String(requesterCharacterId));
-            if (requester) await this.partyMemberRepo.set(worldId, { ...requester, role: "MEMBER" }, { txClient });
+            if (requester) {
+                await this.partyMemberRepo.set(worldId, { ...requester, role: PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER }, { txClient });
+            }
             const nextRevision = party.revision + 1;
             const updatedParty = await this.partyRepo.set(worldId, { ...party, leaderCharacterId: newLeaderCharacterId, revision: nextRevision }, { txClient });
             return { ok: true, partyId: updatedParty.partyId, revision: updatedParty.revision };

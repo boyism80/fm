@@ -1,7 +1,6 @@
 import amqp from "amqplib";
 import type { AppConfiguration } from "../config/app-configuration";
 import type { InternalConfig } from "../types/internal-config";
-
 export class RabbitMQService {
     private readonly cfg: InternalConfig["rabbitmq"];
     private connection: amqp.ChannelModel | null;
@@ -63,8 +62,8 @@ export class RabbitMQService {
         if (!this.started || !this.channel) {
             throw new Error("rabbitmq service is not started");
         }
-        if (typeof eventType !== "string" || eventType.trim() === "") {
-            throw new Error("rabbitmq publish: eventType is required (non-empty string)");
+        if (typeof eventType !== "string" || eventType.length === 0) {
+            throw new Error("rabbitmq publish: eventType must be a non-empty string");
         }
         const bodyObj = { ...payload, event_type: eventType };
         const body = Buffer.from(JSON.stringify(bodyObj));

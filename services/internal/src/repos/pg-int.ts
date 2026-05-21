@@ -1,4 +1,6 @@
-export function toPgInt(value: unknown): number {
+export type PgIntInput = string | number | null | undefined;
+
+export function toPgInt(value: PgIntInput): number {
     if (value == null || value === "") {
         return 0;
     }
@@ -12,7 +14,7 @@ export function toPgInt(value: unknown): number {
     return Math.trunc(n);
 }
 
-export function toPgIntOrNull(value: unknown): number | null {
+export function toPgIntOrNull(value: PgIntInput): number | null {
     if (value == null || value === "") {
         return null;
     }

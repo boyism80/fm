@@ -26,25 +26,16 @@ func (m *MoveMob) Serialize(writer *stream.StreamWriter) error {
 
 func (m *MoveMob) Deserialize(reader *stream.StreamReader) {
 	m.OID = reader.ReadU32()
-
 	m.MovementId = reader.ReadU16()
-
 	flag := reader.ReadU8()
-
 	m.IsAggroed = flag&0xF != 0
 	m.Unknown2 = flag&0xF0 != 0
 	m.CenterSplit = reader.Read8()
 	m.Skill1 = reader.ReadU8()
-
 	m.Skill2 = reader.ReadU8()
 	m.Skill3 = reader.ReadU8()
-
 	m.Skill4 = reader.ReadU8()
-
 	reader.Skip(9)
-
 	m.Movements = dto.ReadMovements(reader)
-
 	reader.Skip(9)
-
 }

@@ -1,16 +1,10 @@
 import bcrypt from "bcrypt";
+import { LoginAccountReply_Status } from "../protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "../context/internal-context";
 import type { AccountRepository } from "../repos/account-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
 
 const BCRYPT_ROUNDS = 10;
-
-export const LoginStatus = {
-    SUCCESS: 0,
-    WRONG_PASSWORD: 1,
-    BANNED: 2,
-    REGISTERED: 3,
-};
 
 export class AccountService {
     private readonly ctx: InternalContext;
@@ -56,7 +50,7 @@ export class AccountService {
             };
             const saved = await this.accountRepo.set(worldId, newAccount);
             return {
-                status: LoginStatus.REGISTERED,
+                status: LoginAccountReply_Status.REGISTERED,
                 accountId: saved.accountId,
                 gender: saved.gender,
                 role: saved.role,
@@ -71,12 +65,12 @@ export class AccountService {
             throw new Error(`Account identity found but world data missing for id=${identity.id}`);
         }
         if (account.isBanned) {
-            return { status: LoginStatus.BANNED, accountId: account.accountId, role: account.role ?? 0 };
+            return { status: LoginAccountReply_Status.BANNED, accountId: account.accountId, role: account.role ?? 0 };
         }
 
         const match = await bcrypt.compare(password, account.passwordHash);
         if (!match) {
-            return { status: LoginStatus.WRONG_PASSWORD, role: account.role ?? 0 };
+            return { status: LoginAccountReply_Status.WRONG_PASSWORD, role: account.role ?? 0 };
         }
         if (macAddress || ipAddress) {
             const updated = { ...account, macAddress: macAddress ?? account.macAddress, lastLoginIp: ipAddress ?? account.lastLoginIp };
@@ -84,7 +78,7 @@ export class AccountService {
         }
 
         return {
-            status: LoginStatus.SUCCESS,
+            status: LoginAccountReply_Status.SUCCESS,
             accountId: account.accountId,
             gender: account.gender,
             role: account.role,

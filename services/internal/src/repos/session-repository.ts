@@ -1,5 +1,12 @@
 import { deserializeCharacterSession, serializeCharacterSession } from "../character-session-json";
 import { redisSessionKey } from "../redis-session-key";
+import {
+    AccountSessionState,
+    CharacterSessionState,
+    accountSessionStateFromRedisHash,
+    accountSessionStateToRedisHash,
+} from "../session-state";
+import { isRedisLogoutEvalArray, isRedisRefreshEvalArray } from "../types/redis-eval";
 import type { InternalContext } from "../context/internal-context";
 import type { AccountSession, CharacterSession } from "../session-types";
 
@@ -7,33 +14,36 @@ export type { AccountSession, CharacterSession } from "../session-types";
 
 type SessionHash = Record<string, string>;
 
+const AS = AccountSessionState;
+const CS = CharacterSessionState;
+
 export class SessionRepository {
     private readonly ctx: InternalContext;
-    
+
     constructor(internalContext: InternalContext) {
         this.ctx = internalContext;
     }
-    
+
     private accountKey(accountId: number) {
         return redisSessionKey(`account:${accountId}`);
     }
-    
+
     private worldCharacterSessionsKey(worldId: number) {
         return redisSessionKey(`w${worldId}`);
     }
-    
+
     private transitionCharacterPointerKey(accountId: number) {
         return redisSessionKey(`account:${accountId}:transition_character_id`);
     }
-    
+
     private channelOnlineUsersKey(worldId: number, channelId: number) {
         return redisSessionKey(`w${worldId}:ch${channelId}:online_users`);
     }
-    
+
     private channelOnlineUsersNoopKey(worldId: number) {
         return redisSessionKey(`w${worldId}:ch_:online_users_noop`);
     }
-    
+
     async touchChannelOnlineUsersTtl(worldId: number, channelId: number) {
         if (!Number.isInteger(channelId) || channelId < 0) {
             return;
@@ -64,7 +74,7 @@ export class SessionRepository {
             version: String(session.version ?? 1),
             world_id: session.worldId == null ? "" : String(session.worldId),
             account_id: String(session.accountId ?? 0),
-            state: session.state ?? "",
+            state: accountSessionStateToRedisHash(session.state),
             login_server_id: session.loginServer?.id ?? "",
             login_server_connected: session.loginServer?.connected ? "1" : "0",
             created_at: session.timestamps?.createdAt ?? "",
@@ -72,17 +82,17 @@ export class SessionRepository {
             state_changed_at: session.timestamps?.stateChangedAt ?? "",
         };
     }
-    
+
     private accountHashToSession(hash: SessionHash): AccountSession | null {
         if (!hash || Object.keys(hash).length === 0) {
             return null;
         }
-        const toNumberOrNull = (v: unknown) => (v === "" || v == null ? null : Number(v));
+        const toNumberOrNull = (v: string | undefined) => (v === "" || v == null ? null : Number(v));
         return {
             version: Number(hash.version ?? 1),
             worldId: toNumberOrNull(hash.world_id),
             accountId: Number(hash.account_id ?? 0),
-            state: hash.state ?? "",
+            state: accountSessionStateFromRedisHash(hash.state),
             loginServer: {
                 id: hash.login_server_id || null,
                 connected: (hash.login_server_connected || "0") === "1",
@@ -94,7 +104,7 @@ export class SessionRepository {
             },
         };
     }
-    
+
     async beginLoginAtomic(worldId: number, accountId: number, loginServerId: string, now: string, ttlSeconds: number) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
@@ -113,7 +123,7 @@ redis.call("HSET", key,
   "version", "1",
   "world_id", "",
   "account_id", tostring(account_id),
-  "state", "LOGIN",
+  "state", "${AS.ACCOUNT_SESSION_STATE_LOGIN}",
   "login_server_id", login_server_id,
   "login_server_connected", "1",
   "created_at", now,
@@ -123,9 +133,11 @@ redis.call("HSET", key,
 redis.call("EXPIRE", key, ttl)
 return {1, ERR_SESSION_NONE}
 `;
-        return client.eval(script, 1, accountKey, String(accountId), String(loginServerId), String(now), String(ttlSeconds));
+        return (await client.eval(script, 1, accountKey, String(accountId), String(loginServerId), String(now), String(ttlSeconds))) as Array<
+            number | string
+        >;
     }
-    
+
     async beginTransitionAtomic(worldId: number, accountId: number, characterId: number, characterName: string, now: string, ttlSeconds: number) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
@@ -137,7 +149,7 @@ return {1, ERR_SESSION_NONE}
             accountId,
             characterId,
             characterName,
-            state: "TRANSITION",
+            state: CS.CHARACTER_SESSION_STATE_TRANSITION,
             gameServer: { id: null, worldId: null, channelId: null, connected: false },
             timestamps: { createdAt: now, updatedAt: now },
         });
@@ -158,10 +170,9 @@ local ERR_SESSION_NOT_FOUND = 3
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ERR_SESSION_NOT_FOUND}
 end
-local state = redis.call("HGET", account_key, "state")
 redis.call("HSET", account_key,
   "world_id", tostring(world_id),
-  "state", "TRANSITION",
+  "state", "${AS.ACCOUNT_SESSION_STATE_TRANSITION}",
   "updated_at", now,
   "state_changed_at", now
 )
@@ -172,7 +183,7 @@ redis.call("EXPIRE", world_key, ttl)
 redis.call("SET", pointer_key, tostring(character_id), "EX", ttl)
 return {1, ERR_SESSION_NONE}
 `;
-        return client.eval(
+        return (await client.eval(
             script,
             3,
             accountKey,
@@ -185,9 +196,9 @@ return {1, ERR_SESSION_NONE}
             String(now),
             String(ttlSeconds),
             transitionSessionJson
-        );
+        )) as Array<number | string>;
     }
-    
+
     async attachGameSessionAtomic(
         worldId: number,
         accountId: number,
@@ -211,7 +222,7 @@ return {1, ERR_SESSION_NONE}
             accountId,
             characterId,
             characterName,
-            state: "ONLINE",
+            state: CS.CHARACTER_SESSION_STATE_ONLINE,
             gameServer: {
                 id: gameServerId,
                 worldId,
@@ -226,13 +237,13 @@ return {1, ERR_SESSION_NONE}
         let decrF = "0";
         let touchTtlF = "0";
         if (
-            prev?.state === "ONLINE" &&
+            prev?.state === CS.CHARACTER_SESSION_STATE_ONLINE &&
             prev.gameServer?.connected === true &&
             prev.gameServer.channelId === channelId
         ) {
             touchTtlF = "1";
         } else if (
-            prev?.state === "ONLINE" &&
+            prev?.state === CS.CHARACTER_SESSION_STATE_ONLINE &&
             prev.gameServer?.connected === true &&
             prev.gameServer.channelId != null &&
             prev.gameServer.channelId !== channelId
@@ -269,8 +280,8 @@ end
 if redis.call("HEXISTS", world_key, character_name) ~= 1 then
   return {0, ERR_SESSION_UNKNOWN}
 end
-local state = redis.call("HGET", account_key, "state")
-if state ~= "TRANSITION" and state ~= "GAME" then
+local state = tonumber(redis.call("HGET", account_key, "state") or "0")
+if state ~= ${AS.ACCOUNT_SESSION_STATE_TRANSITION} and state ~= ${AS.ACCOUNT_SESSION_STATE_GAME} then
   return {0, ERR_SESSION_UNKNOWN}
 end
 local acc_acc = tonumber(redis.call("HGET", account_key, "account_id") or "0")
@@ -278,9 +289,9 @@ local world_id = tonumber(redis.call("HGET", account_key, "world_id") or "0")
 if acc_acc ~= expected_account_id or world_id ~= expected_world_id then
   return {0, ERR_SESSION_UNKNOWN}
 end
-        
+
 redis.call("HSET", account_key,
-  "state", "GAME",
+  "state", "${AS.ACCOUNT_SESSION_STATE_GAME}",
   "login_server_connected", "0",
   "updated_at", now,
   "state_changed_at", now
@@ -308,7 +319,7 @@ if decr_f == "1" and old_ch_key ~= new_ch_key then
 end
 return {1, ERR_SESSION_NONE}
 `;
-        return client.eval(
+        return (await client.eval(
             script,
             5,
             accountKey,
@@ -326,9 +337,9 @@ return {1, ERR_SESSION_NONE}
             decrF,
             touchTtlF,
             String(channelUsersTtl)
-        );
+        )) as Array<number | string>;
     }
-    
+
     async refreshAtomic(
         worldId: number,
         accountId: number,
@@ -351,26 +362,26 @@ local request_character_id = ARGV[4] or ""
 local ERR_SESSION_NONE = 0
 local ERR_SESSION_NOT_FOUND = 3
 if redis.call("EXISTS", account_key) == 0 then
-  return {0, ERR_SESSION_NOT_FOUND, 0, ""}
+  return {0, ERR_SESSION_NOT_FOUND, 0, "0"}
 end
-local state = redis.call("HGET", account_key, "state")
+local state = tonumber(redis.call("HGET", account_key, "state") or "0")
 local ttl = login_ttl
-if state == "TRANSITION" then
+if state == ${AS.ACCOUNT_SESSION_STATE_TRANSITION} then
   ttl = transition_ttl
-elseif state == "GAME" then
+elseif state == ${AS.ACCOUNT_SESSION_STATE_GAME} then
   ttl = game_ttl
 end
 redis.call("EXPIRE", account_key, ttl)
-if state == "TRANSITION" and (not request_character_id or request_character_id == "") then
+if state == ${AS.ACCOUNT_SESSION_STATE_TRANSITION} and (not request_character_id or request_character_id == "") then
   if redis.call("EXISTS", pointer_key) == 1 then
     redis.call("EXPIRE", pointer_key, ttl)
   end
 end
-return {1, ERR_SESSION_NONE, ttl, state}
+return {1, ERR_SESSION_NONE, ttl, tostring(state)}
 `;
         const reqCid =
-        requestCharacterId != null && requestCharacterId > 0 ? String(requestCharacterId) : "";
-        const raw = (await client.eval(
+            requestCharacterId != null && requestCharacterId > 0 ? String(requestCharacterId) : "";
+        const raw = await client.eval(
             script,
             2,
             accountKey,
@@ -379,18 +390,21 @@ return {1, ERR_SESSION_NONE, ttl, state}
             String(transitionTtl),
             String(gameTtl),
             reqCid
-        )) as unknown;
-        if (!Array.isArray(raw) || Number(raw[0] ?? 0) !== 1) {
-            return raw;
+        );
+        if (!Array.isArray(raw) || !isRedisRefreshEvalArray(raw) || Number(raw[0]) !== 1) {
+            return raw as Array<number | string>;
         }
-        const ttl = Number(raw[2] ?? 0);
-        const state = String(raw[3] ?? "");
-        if (state === "TRANSITION" || state === "GAME") {
+        const ttl = Number(raw[2]);
+        const state = Number(raw[3]);
+        if (
+            state === AS.ACCOUNT_SESSION_STATE_TRANSITION ||
+            state === AS.ACCOUNT_SESSION_STATE_GAME
+        ) {
             await client.expire(worldKey, ttl);
         }
-        return raw;
+        return raw as Array<number | string>;
     }
-    
+
     async logoutAtomic(
         worldId: number,
         accountId: number,
@@ -404,11 +418,11 @@ return {1, ERR_SESSION_NONE, ttl, state}
         const worldKey = this.worldCharacterSessionsKey(worldId);
         const usersTtl = this.ctx.appConfiguration.getServerAliveTtlSeconds();
         const ch =
-        requestChannelId != null && Number.isInteger(requestChannelId) && requestChannelId >= 0
-        ? requestChannelId
-        : -1;
+            requestChannelId != null && Number.isInteger(requestChannelId) && requestChannelId >= 0
+                ? requestChannelId
+                : -1;
         const channelUsersKey =
-        ch >= 0 ? this.channelOnlineUsersKey(worldId, ch) : this.channelOnlineUsersNoopKey(worldId);
+            ch >= 0 ? this.channelOnlineUsersKey(worldId, ch) : this.channelOnlineUsersNoopKey(worldId);
         const charName = requestCharacterName ?? "";
         const script = `
 local account_key = KEYS[1]
@@ -420,10 +434,10 @@ local char_name = ARGV[2]
 local channel_id = tonumber(ARGV[3])
 local users_ttl = tonumber(ARGV[4])
 local ERR_SESSION_NONE = 0
-local prev_state = ""
+local prev_state = 0
 if redis.call("EXISTS", account_key) == 1 then
-  prev_state = redis.call("HGET", account_key, "state") or ""
-  if prev_state == "TRANSITION" then
+  prev_state = tonumber(redis.call("HGET", account_key, "state") or "0")
+  if prev_state == ${AS.ACCOUNT_SESSION_STATE_TRANSITION} then
     redis.call("DEL", pointer_key)
     redis.call("EXPIRE", account_key, transition_ttl)
     return {1, ERR_SESSION_NONE, prev_state}
@@ -431,10 +445,10 @@ if redis.call("EXISTS", account_key) == 1 then
 end
 redis.call("DEL", pointer_key)
 redis.call("DEL", account_key)
-if prev_state == "GAME" and char_name ~= "" then
+if prev_state == ${AS.ACCOUNT_SESSION_STATE_GAME} and char_name ~= "" then
   redis.call("HDEL", world_key, char_name)
 end
-if prev_state == "GAME" and channel_id >= 0 then
+if prev_state == ${AS.ACCOUNT_SESSION_STATE_GAME} and channel_id >= 0 then
   local v = redis.call("GET", channel_users_key)
   if v and tonumber(v) > 0 then
     redis.call("DECR", channel_users_key)
@@ -445,7 +459,7 @@ if prev_state == "GAME" and channel_id >= 0 then
 end
 return {1, ERR_SESSION_NONE, prev_state}
 `;
-        const raw = (await client.eval(
+        const raw = await client.eval(
             script,
             4,
             accountKey,
@@ -456,32 +470,32 @@ return {1, ERR_SESSION_NONE, prev_state}
             charName,
             String(ch),
             String(usersTtl)
-        )) as unknown;
-        return raw;
+        );
+        return raw as Array<number | string>;
     }
-    
+
     async getAccountSession(worldId: number, accountId: number): Promise<AccountSession | null> {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const raw = await client.hgetall(this.accountKey(accountId));
         return this.accountHashToSession(raw);
     }
-    
+
     async setAccountSession(worldId: number, accountId: number, session: AccountSession, ttlSeconds: number) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         await client.hset(this.accountKey(accountId), this.accountSessionToHash(session));
         await client.expire(this.accountKey(accountId), ttlSeconds);
     }
-    
+
     async delAccountSession(worldId: number, accountId: number) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         await client.del(this.accountKey(accountId));
     }
-    
+
     async refreshAccountSession(worldId: number, accountId: number, ttlSeconds: number) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         await client.expire(this.accountKey(accountId), ttlSeconds);
     }
-    
+
     async getCharacterSessionByName(worldId: number, characterName: string): Promise<CharacterSession | null> {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const raw = await client.hget(this.worldCharacterSessionsKey(worldId), characterName);
@@ -490,7 +504,7 @@ return {1, ERR_SESSION_NONE, prev_state}
         }
         return deserializeCharacterSession(raw);
     }
-    
+
     async setCharacterSession(worldId: number, _characterId: number, session: CharacterSession, ttlSeconds: number) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const name = session.characterName ?? "";
@@ -502,12 +516,12 @@ return {1, ERR_SESSION_NONE, prev_state}
         await client.hset(key, name, sessionJson);
         await client.expire(key, ttlSeconds);
     }
-    
+
     async delCharacterSessionByName(worldId: number, characterName: string) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         await client.hdel(this.worldCharacterSessionsKey(worldId), characterName);
     }
-    
+
     async refreshCharacterSessionByName(worldId: number, characterName: string, ttlSeconds: number) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         await client.expire(this.worldCharacterSessionsKey(worldId), ttlSeconds);

@@ -144,6 +144,90 @@ export function buffKindToJSON(object: BuffKind): string {
   }
 }
 
+export enum AccountSessionState {
+  ACCOUNT_SESSION_STATE_UNSPECIFIED = 0,
+  ACCOUNT_SESSION_STATE_LOGIN = 1,
+  ACCOUNT_SESSION_STATE_TRANSITION = 2,
+  ACCOUNT_SESSION_STATE_GAME = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function accountSessionStateFromJSON(object: any): AccountSessionState {
+  switch (object) {
+    case 0:
+    case "ACCOUNT_SESSION_STATE_UNSPECIFIED":
+      return AccountSessionState.ACCOUNT_SESSION_STATE_UNSPECIFIED;
+    case 1:
+    case "ACCOUNT_SESSION_STATE_LOGIN":
+      return AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN;
+    case 2:
+    case "ACCOUNT_SESSION_STATE_TRANSITION":
+      return AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION;
+    case 3:
+    case "ACCOUNT_SESSION_STATE_GAME":
+      return AccountSessionState.ACCOUNT_SESSION_STATE_GAME;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AccountSessionState.UNRECOGNIZED;
+  }
+}
+
+export function accountSessionStateToJSON(object: AccountSessionState): string {
+  switch (object) {
+    case AccountSessionState.ACCOUNT_SESSION_STATE_UNSPECIFIED:
+      return "ACCOUNT_SESSION_STATE_UNSPECIFIED";
+    case AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN:
+      return "ACCOUNT_SESSION_STATE_LOGIN";
+    case AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION:
+      return "ACCOUNT_SESSION_STATE_TRANSITION";
+    case AccountSessionState.ACCOUNT_SESSION_STATE_GAME:
+      return "ACCOUNT_SESSION_STATE_GAME";
+    case AccountSessionState.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum CharacterSessionState {
+  CHARACTER_SESSION_STATE_UNSPECIFIED = 0,
+  CHARACTER_SESSION_STATE_TRANSITION = 1,
+  CHARACTER_SESSION_STATE_ONLINE = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function characterSessionStateFromJSON(object: any): CharacterSessionState {
+  switch (object) {
+    case 0:
+    case "CHARACTER_SESSION_STATE_UNSPECIFIED":
+      return CharacterSessionState.CHARACTER_SESSION_STATE_UNSPECIFIED;
+    case 1:
+    case "CHARACTER_SESSION_STATE_TRANSITION":
+      return CharacterSessionState.CHARACTER_SESSION_STATE_TRANSITION;
+    case 2:
+    case "CHARACTER_SESSION_STATE_ONLINE":
+      return CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CharacterSessionState.UNRECOGNIZED;
+  }
+}
+
+export function characterSessionStateToJSON(object: CharacterSessionState): string {
+  switch (object) {
+    case CharacterSessionState.CHARACTER_SESSION_STATE_UNSPECIFIED:
+      return "CHARACTER_SESSION_STATE_UNSPECIFIED";
+    case CharacterSessionState.CHARACTER_SESSION_STATE_TRANSITION:
+      return "CHARACTER_SESSION_STATE_TRANSITION";
+    case CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE:
+      return "CHARACTER_SESSION_STATE_ONLINE";
+    case CharacterSessionState.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum SessionDisconnectSource {
   SESSION_DISCONNECT_SOURCE_UNSPECIFIED = 0,
   SESSION_DISCONNECT_SOURCE_LOGIN_SERVER = 1,
@@ -178,6 +262,45 @@ export function sessionDisconnectSourceToJSON(object: SessionDisconnectSource): 
     case SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER:
       return "SESSION_DISCONNECT_SOURCE_GAME_SERVER";
     case SessionDisconnectSource.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum PartyMemberRole {
+  PARTY_MEMBER_ROLE_UNSPECIFIED = 0,
+  PARTY_MEMBER_ROLE_MEMBER = 1,
+  PARTY_MEMBER_ROLE_LEADER = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function partyMemberRoleFromJSON(object: any): PartyMemberRole {
+  switch (object) {
+    case 0:
+    case "PARTY_MEMBER_ROLE_UNSPECIFIED":
+      return PartyMemberRole.PARTY_MEMBER_ROLE_UNSPECIFIED;
+    case 1:
+    case "PARTY_MEMBER_ROLE_MEMBER":
+      return PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER;
+    case 2:
+    case "PARTY_MEMBER_ROLE_LEADER":
+      return PartyMemberRole.PARTY_MEMBER_ROLE_LEADER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PartyMemberRole.UNRECOGNIZED;
+  }
+}
+
+export function partyMemberRoleToJSON(object: PartyMemberRole): string {
+  switch (object) {
+    case PartyMemberRole.PARTY_MEMBER_ROLE_UNSPECIFIED:
+      return "PARTY_MEMBER_ROLE_UNSPECIFIED";
+    case PartyMemberRole.PARTY_MEMBER_ROLE_MEMBER:
+      return "PARTY_MEMBER_ROLE_MEMBER";
+    case PartyMemberRole.PARTY_MEMBER_ROLE_LEADER:
+      return "PARTY_MEMBER_ROLE_LEADER";
+    case PartyMemberRole.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -295,6 +418,39 @@ export function partyErrorCodeToJSON(object: PartyErrorCode): string {
     case PartyErrorCode.TARGET_ALREADY_IN_PARTY:
       return "TARGET_ALREADY_IN_PARTY";
     case PartyErrorCode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum PartyState {
+  PARTY_STATE_UNSPECIFIED = 0,
+  PARTY_STATE_ACTIVE = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function partyStateFromJSON(object: any): PartyState {
+  switch (object) {
+    case 0:
+    case "PARTY_STATE_UNSPECIFIED":
+      return PartyState.PARTY_STATE_UNSPECIFIED;
+    case 1:
+    case "PARTY_STATE_ACTIVE":
+      return PartyState.PARTY_STATE_ACTIVE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PartyState.UNRECOGNIZED;
+  }
+}
+
+export function partyStateToJSON(object: PartyState): string {
+  switch (object) {
+    case PartyState.PARTY_STATE_UNSPECIFIED:
+      return "PARTY_STATE_UNSPECIFIED";
+    case PartyState.PARTY_STATE_ACTIVE:
+      return "PARTY_STATE_ACTIVE";
+    case PartyState.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -778,7 +934,7 @@ export interface PartyMember {
   characterName: string;
   level: number;
   classId: number;
-  role: string;
+  role: PartyMemberRole;
   mapId: number;
   channelIndex?: number | undefined;
   door?: PartyDoor | undefined;
@@ -856,7 +1012,7 @@ export interface Party {
   partyId: number;
   leaderCharacterId: number;
   revision: number;
-  state: string;
+  state: PartyState;
   members: PartyMember[];
 }
 
@@ -7060,7 +7216,7 @@ function createBasePartyMember(): PartyMember {
     characterName: "",
     level: 0,
     classId: 0,
-    role: "",
+    role: 0,
     mapId: 0,
     channelIndex: undefined,
     door: undefined,
@@ -7084,8 +7240,8 @@ export const PartyMember: MessageFns<PartyMember> = {
     if (message.classId !== 0) {
       writer.uint32(40).uint32(message.classId);
     }
-    if (message.role !== "") {
-      writer.uint32(50).string(message.role);
+    if (message.role !== 0) {
+      writer.uint32(48).int32(message.role);
     }
     if (message.mapId !== 0) {
       writer.uint32(56).uint32(message.mapId);
@@ -7147,11 +7303,11 @@ export const PartyMember: MessageFns<PartyMember> = {
           continue;
         }
         case 6: {
-          if (tag !== 50) {
+          if (tag !== 48) {
             break;
           }
 
-          message.role = reader.string();
+          message.role = reader.int32() as any;
           continue;
         }
         case 7: {
@@ -7210,7 +7366,7 @@ export const PartyMember: MessageFns<PartyMember> = {
         : isSet(object.class_id)
         ? globalThis.Number(object.class_id)
         : 0,
-      role: isSet(object.role) ? globalThis.String(object.role) : "",
+      role: isSet(object.role) ? partyMemberRoleFromJSON(object.role) : 0,
       mapId: isSet(object.mapId)
         ? globalThis.Number(object.mapId)
         : isSet(object.map_id)
@@ -7242,8 +7398,8 @@ export const PartyMember: MessageFns<PartyMember> = {
     if (message.classId !== 0) {
       obj.classId = Math.round(message.classId);
     }
-    if (message.role !== "") {
-      obj.role = message.role;
+    if (message.role !== 0) {
+      obj.role = partyMemberRoleToJSON(message.role);
     }
     if (message.mapId !== 0) {
       obj.mapId = Math.round(message.mapId);
@@ -7267,7 +7423,7 @@ export const PartyMember: MessageFns<PartyMember> = {
     message.characterName = object.characterName ?? "";
     message.level = object.level ?? 0;
     message.classId = object.classId ?? 0;
-    message.role = object.role ?? "";
+    message.role = object.role ?? 0;
     message.mapId = object.mapId ?? 0;
     message.channelIndex = object.channelIndex ?? undefined;
     message.door = (object.door !== undefined && object.door !== null) ? PartyDoor.fromPartial(object.door) : undefined;
@@ -8404,7 +8560,7 @@ export const ChangePartyLeaderReply: MessageFns<ChangePartyLeaderReply> = {
 };
 
 function createBaseParty(): Party {
-  return { worldId: 0, partyId: 0, leaderCharacterId: 0, revision: 0, state: "", members: [] };
+  return { worldId: 0, partyId: 0, leaderCharacterId: 0, revision: 0, state: 0, members: [] };
 }
 
 export const Party: MessageFns<Party> = {
@@ -8421,8 +8577,8 @@ export const Party: MessageFns<Party> = {
     if (message.revision !== 0) {
       writer.uint32(32).uint64(message.revision);
     }
-    if (message.state !== "") {
-      writer.uint32(42).string(message.state);
+    if (message.state !== 0) {
+      writer.uint32(40).int32(message.state);
     }
     for (const v of message.members) {
       PartyMember.encode(v!, writer.uint32(50).fork()).join();
@@ -8470,11 +8626,11 @@ export const Party: MessageFns<Party> = {
           continue;
         }
         case 5: {
-          if (tag !== 42) {
+          if (tag !== 40) {
             break;
           }
 
-          message.state = reader.string();
+          message.state = reader.int32() as any;
           continue;
         }
         case 6: {
@@ -8512,7 +8668,7 @@ export const Party: MessageFns<Party> = {
         ? globalThis.Number(object.leader_character_id)
         : 0,
       revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
-      state: isSet(object.state) ? globalThis.String(object.state) : "",
+      state: isSet(object.state) ? partyStateFromJSON(object.state) : 0,
       members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => PartyMember.fromJSON(e)) : [],
     };
   },
@@ -8531,8 +8687,8 @@ export const Party: MessageFns<Party> = {
     if (message.revision !== 0) {
       obj.revision = Math.round(message.revision);
     }
-    if (message.state !== "") {
-      obj.state = message.state;
+    if (message.state !== 0) {
+      obj.state = partyStateToJSON(message.state);
     }
     if (message.members?.length) {
       obj.members = message.members.map((e) => PartyMember.toJSON(e));
@@ -8549,7 +8705,7 @@ export const Party: MessageFns<Party> = {
     message.partyId = object.partyId ?? 0;
     message.leaderCharacterId = object.leaderCharacterId ?? 0;
     message.revision = object.revision ?? 0;
-    message.state = object.state ?? "";
+    message.state = object.state ?? 0;
     message.members = object.members?.map((e) => PartyMember.fromPartial(e)) || [];
     return message;
   },

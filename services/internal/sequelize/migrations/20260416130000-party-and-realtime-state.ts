@@ -16,9 +16,9 @@ const migration: MigrationModule = {
                 allowNull: false,
             },
             state: {
-                type: Sequelize.STRING(16),
+                type: Sequelize.SMALLINT,
                 allowNull: false,
-                defaultValue: "ACTIVE",
+                defaultValue: 1,
             },
             revision: {
                 type: Sequelize.BIGINT,
@@ -57,7 +57,7 @@ const migration: MigrationModule = {
             character_name: { type: Sequelize.STRING(32), allowNull: false },
             level: { type: Sequelize.SMALLINT, allowNull: false, defaultValue: 1 },
             class_id: { type: Sequelize.SMALLINT, allowNull: false, defaultValue: 0 },
-            role: { type: Sequelize.STRING(16), allowNull: false, defaultValue: "MEMBER" },
+            role: { type: Sequelize.SMALLINT, allowNull: false, defaultValue: 1 },
             joined_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal("NOW()") },
             updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal("NOW()") },
         });

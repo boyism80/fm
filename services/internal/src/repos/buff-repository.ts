@@ -25,8 +25,8 @@ function parseFlagValues(raw: BuffRow["flag_values"]): BuffFlagValueRow[] {
     }
     if (typeof raw === "string") {
         try {
-            const parsed = JSON.parse(raw) as unknown;
-            return Array.isArray(parsed) ? (parsed as BuffFlagValueRow[]) : [];
+            const parsed = JSON.parse(raw) as BuffFlagValueRow[];
+            return Array.isArray(parsed) ? parsed : [];
         } catch {
             return [];
         }

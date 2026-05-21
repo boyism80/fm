@@ -1,7 +1,7 @@
 import type { Pool, QueryResult } from "pg";
 import type Redis from "ioredis";
 import type { InternalContext } from "../context/internal-context";
-import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-contracts";
+import type { RepositoryQuery, RepositoryQueryValue, RepositoryTxOptions } from "../types/repository-contracts";
 
 export type { RepositoryQuery, RepositoryTxOptions };
 
@@ -48,7 +48,7 @@ export abstract class Repository<TModel = Record<string, unknown>, TRow = Record
         return this.ctx.getPgDataPool(worldId, this.getShardHash(key));
     }
 
-    protected query(pool: Pool, text: string, values: unknown[], options: RepositoryTxOptions = {}): Promise<QueryResult> {
+    protected query(pool: Pool, text: string, values: RepositoryQueryValue[], options: RepositoryTxOptions = {}): Promise<QueryResult> {
         const txClient = options.txClient;
         if (txClient) {
             return txClient.query(text, values);

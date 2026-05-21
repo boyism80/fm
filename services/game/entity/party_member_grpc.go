@@ -47,7 +47,7 @@ func (m *PartyMember) ToProto() *internal.PartyMember {
 }
 
 // PartyMemberFromCharacter builds a PartyMember snapshot from an online character.
-func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32, role string) *PartyMember {
+func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32, role internal.PartyMemberRole) *PartyMember {
 	if ch == nil {
 		return nil
 	}

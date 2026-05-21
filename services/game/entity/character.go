@@ -813,7 +813,7 @@ func (ch *Character) GetName() string {
 	return ch.name
 }
 
-func (ch *Character) ToProtoPartyMember(worldID uint32, channelID int32, role string) *internal.PartyMember {
+func (ch *Character) ToProtoPartyMember(worldID uint32, channelID int32, role internal.PartyMemberRole) *internal.PartyMember {
 	if m := PartyMemberFromCharacter(ch, worldID, channelID, role); m != nil {
 		return m.ToProto()
 	}

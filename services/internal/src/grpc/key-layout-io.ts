@@ -1,4 +1,5 @@
 import type { KeyLayoutBinding } from "../protobuf/generated/fminternal/internal_service";
+import type { KeyLayoutJsonRecord, KeyLayoutSlotJson } from "../types/key-layout-json";
 
 export type KeyLayoutBindingModel = { slot: number; type: number; action: number };
 
@@ -6,9 +7,9 @@ export function jsonStringToBindings(jsonStr: string): KeyLayoutBindingModel[] {
     if (jsonStr === "" || jsonStr === "{}") {
         return [];
     }
-    let obj: Record<string, unknown>;
+    let obj: KeyLayoutJsonRecord;
     try {
-        obj = JSON.parse(jsonStr) as Record<string, unknown>;
+        obj = JSON.parse(jsonStr) as KeyLayoutJsonRecord;
     } catch {
         return [];
     }
@@ -16,7 +17,7 @@ export function jsonStringToBindings(jsonStr: string): KeyLayoutBindingModel[] {
     for (const [k, v] of Object.entries(obj)) {
         const slot = Number(k);
         if (!Number.isInteger(slot)) continue;
-        const value = v as { type?: number; action?: number };
+        const value: KeyLayoutSlotJson = v;
         out.push({ slot, type: Number(value.type) >>> 0, action: Number(value.action) | 0 });
     }
     out.sort((a, b) => a.slot - b.slot);

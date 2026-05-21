@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { toPgInt, toPgIntOrNull } from "./pg-int.ts";
+import { toPgInt, toPgIntOrNull } from "./pg-int";
 
 test("toPgInt coerces pg bigint strings", () => {
     assert.equal(toPgInt("42"), 42);

@@ -356,6 +356,19 @@ message RefreshSessionReply {
   SessionErrorCode error_code = 2;
 }
 
+enum AccountSessionState {
+  ACCOUNT_SESSION_STATE_UNSPECIFIED = 0;
+  ACCOUNT_SESSION_STATE_LOGIN = 1;
+  ACCOUNT_SESSION_STATE_TRANSITION = 2;
+  ACCOUNT_SESSION_STATE_GAME = 3;
+}
+
+enum CharacterSessionState {
+  CHARACTER_SESSION_STATE_UNSPECIFIED = 0;
+  CHARACTER_SESSION_STATE_TRANSITION = 1;
+  CHARACTER_SESSION_STATE_ONLINE = 2;
+}
+
 enum SessionDisconnectSource {
   SESSION_DISCONNECT_SOURCE_UNSPECIFIED = 0;
   SESSION_DISCONNECT_SOURCE_LOGIN_SERVER = 1;
@@ -382,13 +395,19 @@ message PartyDoor {
   int32 y = 4;
 }
 
+enum PartyMemberRole {
+  PARTY_MEMBER_ROLE_UNSPECIFIED = 0;
+  PARTY_MEMBER_ROLE_MEMBER = 1;
+  PARTY_MEMBER_ROLE_LEADER = 2;
+}
+
 message PartyMember {
   uint32 world_id = 1;
   uint32 character_id = 2;
   string character_name = 3;
   uint32 level = 4;
   uint32 class_id = 5;
-  string role = 6;
+  PartyMemberRole role = 6;
   uint32 map_id = 7;
   optional int32 channel_index = 8;
   optional PartyDoor door = 9;
@@ -480,12 +499,17 @@ message ChangePartyLeaderReply {
   uint64 revision = 4;
 }
 
+enum PartyState {
+  PARTY_STATE_UNSPECIFIED = 0;
+  PARTY_STATE_ACTIVE = 1;
+}
+
 message Party {
   uint32 world_id = 1;
   uint32 party_id = 2;
   uint32 leader_character_id = 3;
   uint64 revision = 4;
-  string state = 5;
+  PartyState state = 5;
   repeated PartyMember members = 6;
 }
 

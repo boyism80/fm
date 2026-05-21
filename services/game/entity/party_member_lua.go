@@ -75,7 +75,7 @@ func (m *PartyMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "role() is read-only")
 				return 0
 			}
-			L.Push(lua.LString(mm.Role))
+			L.Push(lua.LNumber(mm.Role))
 			return 1
 		},
 		"map_id": func(L *lua.LState) int {

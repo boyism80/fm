@@ -3,14 +3,15 @@ import type {
     InventoryPersisted,
 } from "../protobuf/generated/fminternal/internal_service";
 import type { InventoryModel } from "../repos/inventory-repository";
+import type { EquipmentBonusStatsJson } from "../types/equipment-bonus-stats";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 
 export const INVENTORY_MODEL = "InventoryModel";
 export const INVENTORY_PERSISTED = "InventoryPersisted";
 
-function plainObjectToBonusProto(input: unknown): EquipmentBonusStatsPersisted | undefined {
-    const o = input as Record<string, unknown>;
+function plainObjectToBonusProto(input: EquipmentBonusStatsJson | undefined): EquipmentBonusStatsPersisted | undefined {
+    const o = input;
     if (o == null || typeof o !== "object") {
         return undefined;
     }
@@ -19,8 +20,8 @@ function plainObjectToBonusProto(input: unknown): EquipmentBonusStatsPersisted |
         acc: 0, avoid: 0, hands: 0, speed: 0, jump: 0,
     };
     let hasAny = false;
-    const setIfHas = (key: string, setter: (v: number) => void) => {
-        if (!Object.prototype.hasOwnProperty.call(o, key)) {
+    const setIfHas = (key: keyof EquipmentBonusStatsJson, setter: (v: number) => void) => {
+        if (o[key] == null) {
             return;
         }
         hasAny = true;

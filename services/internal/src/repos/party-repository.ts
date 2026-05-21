@@ -3,6 +3,7 @@ import { toPgInt } from "./pg-int";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { PartyDeleteRow, PartyModel, PartyRow } from "../types/repository-models";
+import { DEFAULT_PARTY_STATE, partyStateFromDb, partyStateToDb } from "../types/party-state";
 
 const SELECT_COLS = "world_id, party_id, leader_character_id, state, revision, disbanded_at, created_at, updated_at";
 
@@ -46,7 +47,7 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
                 row.world_id,
                 row.party_id,
                 row.leader_character_id,
-                row.state,
+                partyStateToDb(row.state ?? DEFAULT_PARTY_STATE),
                 row.revision,
                 row.disbanded_at ?? null,
             ],
@@ -73,7 +74,7 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
             worldId: row.world_id,
             partyId: toPgInt(row.party_id),
             leaderCharacterId: row.leader_character_id,
-            state: row.state,
+            state: partyStateFromDb(row.state),
             revision: toPgInt(row.revision),
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
@@ -86,7 +87,7 @@ export class PartyRepository extends ValueRepository<PartyModel, PartyRow, numbe
             world_id: model.worldId,
             party_id: model.partyId,
             leader_character_id: model.leaderCharacterId,
-            state: model.state ?? "ACTIVE",
+            state: partyStateToDb(model.state ?? DEFAULT_PARTY_STATE),
             revision: model.revision ?? 1,
             disbanded_at: model.disbandedAt ?? null,
         };

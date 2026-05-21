@@ -20,7 +20,7 @@ func (gs *GameServer) UpdatePartyMemberAsync(ctx actor.Context, ch *entity.Chara
 	if ch.GetPartyID() == nil {
 		return p
 	}
-	mm := ch.ToProtoPartyMember(uint32(gs.config.WorldId), int32(gs.config.ChannelId), "MEMBER")
+	mm := ch.ToProtoPartyMember(uint32(gs.config.WorldId), int32(gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)
 	if mm == nil {
 		return p
 	}

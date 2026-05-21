@@ -1,16 +1,11 @@
-import { SessionDisconnectSource, SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
+import { AccountSessionState, SessionDisconnectSource, SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
+import { isRedisEvalArray } from "../types/redis-eval";
 import type { InternalContext } from "../context/internal-context";
 import type { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
 import type { SessionRepository } from "../repos/session-repository";
 import type { CharacterService } from "./character-service";
 import type { PartyService } from "./party-service";
 import type { BuddyService } from "./buddy-service";
-
-export const SessionState = {
-    LOGIN: "LOGIN",
-    TRANSITION: "TRANSITION",
-    GAME: "GAME",
-};
 
 export function formatDateTime(date = new Date()) {
     const pad = (v: number) => String(v).padStart(2, "0");
@@ -49,17 +44,21 @@ export class SessionService {
         return formatDateTime(new Date());
     }
 
-    private ttlByState(state: string) {
+    private ttlByState(state: AccountSessionState) {
         switch (state) {
-            case SessionState.LOGIN: return 120;
-            case SessionState.TRANSITION: return 30;
-            case SessionState.GAME: return 180;
-            default: return 120;
+            case AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN:
+                return 120;
+            case AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION:
+                return 30;
+            case AccountSessionState.ACCOUNT_SESSION_STATE_GAME:
+                return 180;
+            default:
+                return 120;
         }
     }
 
-    private atomicResultTuple(raw: unknown): [number, number] {
-        if (Array.isArray(raw)) {
+    private atomicResultTuple(raw: Array<number | string> | null | undefined): [number, number] {
+        if (raw != null && isRedisEvalArray(raw)) {
             const ok = Number(raw[0] ?? 0);
             const code = Number(raw[1] ?? SessionErrorCode.SESSION_UNKNOWN);
             return [ok, code];
@@ -69,7 +68,13 @@ export class SessionService {
 
     async beginLogin(worldId: number, accountId: number, loginServerId: string) {
         const [ok, code] = this.atomicResultTuple(
-            await this.repo.beginLoginAtomic(worldId, accountId, loginServerId, this.now(), this.ttlByState(SessionState.LOGIN))
+            await this.repo.beginLoginAtomic(
+                worldId,
+                accountId,
+                loginServerId,
+                this.now(),
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN)
+            )
         );
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_ALREADY_LOGGED_IN };
@@ -79,7 +84,14 @@ export class SessionService {
 
     async beginTransition(worldId: number, accountId: number, characterId: number, characterName: string) {
         const [ok, code] = this.atomicResultTuple(
-            await this.repo.beginTransitionAtomic(worldId, accountId, characterId, characterName, this.now(), this.ttlByState(SessionState.TRANSITION))
+            await this.repo.beginTransitionAtomic(
+                worldId,
+                accountId,
+                characterId,
+                characterName,
+                this.now(),
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION)
+            )
         );
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
@@ -102,7 +114,7 @@ export class SessionService {
                 characterName,
                 channelId,
                 this.now(),
-                this.ttlByState(SessionState.GAME)
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME)
             )
         );
         if (ok !== 1) {
@@ -122,9 +134,9 @@ export class SessionService {
             await this.repo.refreshAtomic(
                 worldId,
                 accountId,
-                this.ttlByState(SessionState.LOGIN),
-                this.ttlByState(SessionState.TRANSITION),
-                this.ttlByState(SessionState.GAME),
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN),
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME),
                 characterId
             )
         );
@@ -173,7 +185,7 @@ export class SessionService {
             await this.repo.logoutAtomic(
                 worldId,
                 accountId,
-                this.ttlByState(SessionState.TRANSITION),
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
                 characterName,
                 chForRepo
             )

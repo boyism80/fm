@@ -78,7 +78,7 @@ func (p *Party) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "state() is read-only")
 				return 0
 			}
-			L.Push(lua.LString(party.State))
+			L.Push(lua.LNumber(party.State))
 			return 1
 		},
 		"members": func(L *lua.LState) int {
