@@ -236,6 +236,17 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 
 func (m *Map) GetMapID() uint32 { return m.id }
 
+func (m *Map) GetObject(objectType constant.ObjectType, id uint32) Object {
+	if m == nil {
+		return nil
+	}
+	bucket := m.objects[objectType]
+	if bucket == nil {
+		return nil
+	}
+	return bucket[id]
+}
+
 func (m *Map) GetPlayer(playerID uint32) *Character {
 	if m.objects[constant.ObjectTypeCharacter] == nil {
 		return nil
@@ -324,6 +335,7 @@ func (m *Map) initializeNpcs() {
 			Wz: &wz,
 		}
 		npc.ObjectCore.self = npc
+		npc.initTimers()
 		m.objects[constant.ObjectTypeNpc][oid] = npc
 	}
 }
@@ -356,6 +368,7 @@ func (m *Map) AddSummon(s *Summon) {
 	if s.Map == nil {
 		s.Map = m
 	}
+	s.initTimers()
 	m.objects[constant.ObjectTypeSummon][s.OID] = s
 
 	s.Owner.Listener.OnSummonSpawn(s.Owner, s)
@@ -422,6 +435,7 @@ func (m *Map) AddMist(mist *Mist) {
 	if mist.Map == nil {
 		mist.Map = m
 	}
+	mist.initTimers()
 	m.objects[constant.ObjectTypeMist][mist.OID] = mist
 	m.listener.OnMistSpawned(m, mist)
 }
@@ -487,6 +501,7 @@ func (m *Map) AddDoor(door *Door) {
 	if door.Map == nil {
 		door.Map = m
 	}
+	door.initTimers()
 	m.objects[constant.ObjectTypeDoor][door.OID] = door
 	door.BroadcastCall(func(obj Object) {
 		ch, ok := obj.(*Character)
@@ -702,6 +717,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 		Wz: &npcSpawn,
 	}
 	npc.ObjectCore.self = npc
+	npc.initTimers()
 
 	if m.objects[constant.ObjectTypeNpc] == nil {
 		m.objects[constant.ObjectTypeNpc] = make(map[uint32]Object)
@@ -772,6 +788,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		accDamage: make(map[int64]map[uint32]uint64),
 	}
 	mob.LifeCore.ObjectCore.self = mob
+	mob.initTimers()
 
 	if m.objects[constant.ObjectTypeMob] == nil {
 		m.objects[constant.ObjectTypeMob] = make(map[uint32]Object)
@@ -795,6 +812,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 
 	mob := m.objects[constant.ObjectTypeMob][mobID].(*Mob)
 	mob.ClearAllHoming()
+	mob.ClearTimers()
 	delete(m.objects[constant.ObjectTypeMob], mobID)
 
 	mob.ClearAllMobBuffTimers()
@@ -894,6 +912,7 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	}
 	if fp.ObjectCore != nil {
 		fp.ObjectCore.self = mapObj
+		fp.initTimers()
 	}
 	m.objects[constant.ObjectTypeItem][oid] = mapObj
 	m.listener.OnItemSpawned(m, item, fp)

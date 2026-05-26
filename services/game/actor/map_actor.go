@@ -61,8 +61,8 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onRemoveDoor(m)
 	case *ResumeLua:
 		a.onResumeLua(m)
-	case *c_actor.RunCharacterTimer:
-		a.onRunCharacterTimer(ctx, m)
+	case *c_actor.RunObjectTimer:
+		a.onRunObjectTimer(ctx, m)
 	case *TimerTick:
 		a.onTimerTick(ctx, m)
 	case *SyncParty:
@@ -293,30 +293,33 @@ func (a *MapActor) onResponseSpawnDoor(msg *ResponseSpawnDoor) {
 	}
 }
 
-func (a *MapActor) onRunCharacterTimer(ctx actor.Context, msg *c_actor.RunCharacterTimer) {
+func (a *MapActor) onRunObjectTimer(ctx actor.Context, msg *c_actor.RunObjectTimer) {
 	if a.Map == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
-	if ch == nil {
+	obj := a.Map.GetObject(constant.ObjectType(msg.ObjectType), msg.ID)
+	if obj == nil {
 		return
 	}
-	entry := ch.GetTimerEntry(msg.Key)
+	entry := obj.GetTimerEntry(msg.Key)
 	if entry == nil {
 		return
 	}
 	if entry.Callback != nil {
 		entry.Callback()
 	}
-	if entry.Repeat && ch.GetTimerEntry(msg.Key) != nil {
-		characterID := msg.CharacterID
+	if entry.Repeat && obj.GetTimerEntry(msg.Key) != nil {
 		key := msg.Key
 		entry.NextFireAt = time.Now().Add(entry.Interval)
 		entry.Timer = time.AfterFunc(entry.Interval, func() {
-			ctx.Send(ctx.Self(), &c_actor.RunCharacterTimer{CharacterID: characterID, Key: key})
+			ctx.Send(ctx.Self(), &c_actor.RunObjectTimer{
+				ObjectType: msg.ObjectType,
+				ID:         msg.ID,
+				Key:        key,
+			})
 		})
 	} else if !entry.Repeat {
-		ch.RemoveTimer(msg.Key)
+		obj.RemoveTimer(msg.Key)
 	}
 }
 

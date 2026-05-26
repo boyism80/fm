@@ -310,7 +310,7 @@ func (l *MapListenerImpl) OnMobMobBuffApplied(mapInstance *entity.Map, mob *enti
 		OID:        mob.OID,
 		Status:     int32(buff),
 		X:          int16(value),
-		SkillID:    skillID,
+		SkillID:    uint16(skillID),
 		BuffTime:   buffTime,
 		Delay:      0,
 		StatusSize: 1,

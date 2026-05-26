@@ -5,6 +5,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/client"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 )
 
@@ -24,9 +25,10 @@ type ExecuteTimer struct {
 	Logic func() error
 }
 
-type RunCharacterTimer struct {
-	CharacterID uint32
-	Key         string
+type RunObjectTimer struct {
+	ObjectType constant.ObjectType
+	ID         uint32
+	Key        string
 }
 
 type PacketResponse struct {

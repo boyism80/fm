@@ -8,13 +8,14 @@ import (
 type MoveMob struct {
 	OID         uint32
 	MovementId  uint16
-	IsAggroed   bool
+	ActiveSkill bool
 	Unknown2    bool
+	Action      int
 	CenterSplit int8
 	Skill1      uint8
 	Skill2      uint8
 	Skill3      uint8
-	Skill4      uint8
+	SkillDelay  uint8
 	Movements   []dto.MoveFragment
 }
 
@@ -28,13 +29,19 @@ func (m *MoveMob) Deserialize(reader *stream.StreamReader) {
 	m.OID = reader.ReadU32()
 	m.MovementId = reader.ReadU16()
 	flag := reader.ReadU8()
-	m.IsAggroed = flag&0xF != 0
+	m.ActiveSkill = flag&0xF != 0
 	m.Unknown2 = flag&0xF0 != 0
-	m.CenterSplit = reader.Read8()
+	centerSplit := reader.Read8()
+	m.CenterSplit = centerSplit
+	if centerSplit < 0 {
+		m.Action = -1
+	} else {
+		m.Action = int(centerSplit >> 1)
+	}
 	m.Skill1 = reader.ReadU8()
 	m.Skill2 = reader.ReadU8()
 	m.Skill3 = reader.ReadU8()
-	m.Skill4 = reader.ReadU8()
+	m.SkillDelay = reader.ReadU8()
 	reader.Skip(9)
 	m.Movements = dto.ReadMovements(reader)
 	reader.Skip(9)

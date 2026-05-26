@@ -6,8 +6,9 @@ import (
 )
 
 type MobBuffEntry struct {
-	X       int16
-	SkillID uint32
+	X          int16
+	SkillID    uint16
+	SkillLevel uint16
 }
 
 type Mob struct {
@@ -32,9 +33,8 @@ func (m *Mob) Serialize(writer *stream.StreamWriter) error {
 	writer.Write32(m.StatusMask)
 	for _, s := range m.Statuses {
 		writer.Write16(s.X)
-		if s.SkillID > 0 {
-			writer.WriteU32(s.SkillID)
-		}
+		writer.WriteU16(s.SkillID)
+		writer.WriteU16(s.SkillLevel)
 		writer.Write16(32767)
 	}
 	return nil

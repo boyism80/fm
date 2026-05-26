@@ -22,4 +22,7 @@ type Mob struct {
 	MobType    uint8
 	Link       string
 	ElemResist map[string]int
+	Skills     []MobSkillSlot
+	Attacks    []MobAttack
+	Banish     *MobBanish
 }

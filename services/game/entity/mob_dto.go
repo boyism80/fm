@@ -18,8 +18,9 @@ func (m *Mob) ToDTO() *dto.Mob {
 	statuses := make([]dto.MobBuffEntry, 0, len(buffEntries))
 	for _, e := range buffEntries {
 		statuses = append(statuses, dto.MobBuffEntry{
-			X:       int16(e.Value),
-			SkillID: e.SkillID,
+			X:          int16(e.Value),
+			SkillID:    uint16(e.SkillID),
+			SkillLevel: 0,
 		})
 	}
 

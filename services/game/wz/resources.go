@@ -96,14 +96,15 @@ type Resources struct {
 	itemNameToId  map[string]uint32
 	skillNameToId map[string]uint32
 
-	Maps     map[uint32]*Map
-	Monsters map[uint32]*Mob
-	Items    map[uint32]Item
-	Drops    map[uint32][]Drop
-	Skills   map[uint32]*Skill
-	Strings  *StringData
-	ExpTable []uint32
-	Shops    map[uint32]*Shop
+	Maps      map[uint32]*Map
+	Monsters  map[uint32]*Mob
+	Items     map[uint32]Item
+	Drops     map[uint32][]Drop
+	Skills    map[uint32]*Skill
+	MobSkills map[uint32]map[uint8]*MobSkillLevelData
+	Strings   *StringData
+	ExpTable  []uint32
+	Shops     map[uint32]*Shop
 }
 
 func (node *node) find(name string) *node {
@@ -631,6 +632,15 @@ func NewResources(wzPath string) *Resources {
 		}
 	}
 
+	mobSkills := map[uint32]map[uint8]*MobSkillLevelData{}
+	mobSkillPath := filepath.Join(wzPath, "Skill.wz", "MobSkill.img.xml")
+	if loadedMobSkills, loadMobSkillErr := loadMobSkillData(mobSkillPath); loadMobSkillErr != nil {
+		log.Printf("Failed to load MobSkill.img.xml: %v", loadMobSkillErr)
+	} else {
+		mobSkills = loadedMobSkills
+		fmt.Printf("Loaded MobSkill definitions: %d skill ids\n", len(mobSkills))
+	}
+
 	fmt.Println("\nAll files loaded.")
 
 	expTable := getHardcodedExpTable()
@@ -648,6 +658,7 @@ func NewResources(wzPath string) *Resources {
 		Strings:       stringData,
 		ExpTable:      expTable,
 		Skills:        skills,
+		MobSkills:     mobSkills,
 		Shops:         shops,
 	}
 
@@ -666,6 +677,17 @@ func (r *Resources) buildNameIndexes() {
 
 func (r *Resources) GetSkill(skillID uint32) *Skill {
 	return r.Skills[skillID]
+}
+
+func (r *Resources) GetMobSkill(skillID uint32, level uint8) *MobSkillLevelData {
+	if r == nil || r.MobSkills == nil {
+		return nil
+	}
+	levels, ok := r.MobSkills[skillID]
+	if !ok {
+		return nil
+	}
+	return levels[level]
 }
 
 func (r *Resources) GetShop(npcID uint32) *Shop {

@@ -1612,6 +1612,7 @@ func loadMob(path string) (*Mob, error) {
 		case "firstAttack":
 		case "link":
 		case "skill":
+			model.Skills = parseMobInfoSkills(iv)
 		case "attack":
 		case "fixedDamage":
 		case "flySpeed":
@@ -1634,6 +1635,7 @@ func loadMob(path string) (*Mob, error) {
 		case "explosiveReward":
 		case "wp":
 		case "ban":
+			model.Banish = parseMobBanish(&iv)
 		case "chaseSpeed":
 		case "default":
 		case "noregen":
@@ -1702,6 +1704,8 @@ func loadMob(path string) (*Mob, error) {
 			mutex.Unlock()
 		}
 	}
+
+	model.Attacks = parseMobAttacks(root)
 
 	return model, nil
 }

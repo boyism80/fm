@@ -61,6 +61,7 @@ func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType 
 	}
 	if m.FieldPlacement != nil && m.FieldPlacement.ObjectCore != nil {
 		m.FieldPlacement.ObjectCore.self = m
+		m.FieldPlacement.initTimers()
 	}
 	return m
 }

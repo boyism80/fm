@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asynkron/protoactor-go/actor"
-	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
@@ -71,7 +69,6 @@ type Character struct {
 	BonusStats        BonusStats
 	Buffs             *BuffContainer
 	diseases          map[constant.DebuffFlag]*DiseaseValueHolder
-	timers            map[string]*CharacterTimer
 	summons           map[constant.SkillID]*Summon
 	doors             map[constant.SkillID]*Door
 	HomingTargetOID   *uint32
@@ -85,15 +82,6 @@ type DiseaseValueHolder struct {
 	Disease   constant.DebuffFlag
 	StartTime time.Time
 	Duration  time.Duration
-}
-
-type CharacterTimer struct {
-	Timer      *time.Timer
-	Interval   time.Duration
-	Repeat     bool
-	Callback   func()
-	NextFireAt time.Time
-	Remaining  time.Duration
 }
 
 func (ch *Character) GetObjectType() constant.ObjectType {
@@ -163,76 +151,6 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	}
 }
 
-func (ch *Character) AddTimerWithCallback(key string, interval time.Duration, repeat bool, callback func()) bool {
-	return ch.addTimer(key, interval, repeat, callback)
-}
-
-func (ch *Character) addTimer(key string, interval time.Duration, repeat bool, callback func()) bool {
-	if ch.timers == nil {
-		ch.timers = make(map[string]*CharacterTimer)
-	}
-	if _, exists := ch.timers[key]; exists {
-		ch.RemoveTimer(key)
-	}
-	if ch.GameWorld == nil {
-		return false
-	}
-	m := ch.GetMap()
-	if m == nil {
-		return false
-	}
-	pid := m.GetActorPID()
-	if pid == nil {
-		return false
-	}
-	characterID := ch.GetID()
-	entry := &CharacterTimer{
-		Interval:   interval,
-		Repeat:     repeat,
-		Callback:   callback,
-		NextFireAt: time.Now().Add(interval),
-	}
-	entry.Timer = time.AfterFunc(interval, func() {
-		ch.GameWorld.DispatchRunCharacterTimer(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: key})
-	})
-	ch.timers[key] = entry
-	return true
-}
-
-func (ch *Character) RemoveTimer(key string) bool {
-	if ch.timers == nil {
-		return false
-	}
-	entry := ch.timers[key]
-	if entry == nil {
-		return false
-	}
-	if entry.Timer != nil {
-		entry.Timer.Stop()
-	}
-	delete(ch.timers, key)
-	return true
-}
-
-func (ch *Character) GetTimerEntry(key string) *CharacterTimer {
-	if ch.timers == nil {
-		return nil
-	}
-	return ch.timers[key]
-}
-
-func (ch *Character) ClearTimers() {
-	if ch.timers == nil {
-		return
-	}
-	for key, entry := range ch.timers {
-		if entry != nil && entry.Timer != nil {
-			entry.Timer.Stop()
-		}
-		delete(ch.timers, key)
-	}
-}
-
 func summonTimerKey(skillID constant.SkillID) string {
 	return fmt.Sprintf("summon:%d", skillID)
 }
@@ -276,7 +194,7 @@ func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, mov
 	ch.summons[skillID] = s
 	m.AddSummon(s)
 	if duration > 0 {
-		_ = ch.AddTimerWithCallback(summonTimerKey(s.SkillID), duration, false, func() {
+		_ = ch.AddTimer(summonTimerKey(s.SkillID), duration, false, func() {
 			ch.handleSummonExpireBySkill(s.SkillID)
 		})
 	}
@@ -527,46 +445,6 @@ func (ch *Character) handleSummonExpireBySkill(skillID constant.SkillID) {
 	ch.RemoveSummon(s, true)
 }
 
-func (ch *Character) SuspendTimers() {
-	if ch.timers == nil {
-		return
-	}
-	now := time.Now()
-	for _, entry := range ch.timers {
-		if entry == nil || entry.Timer == nil {
-			continue
-		}
-		entry.Remaining = entry.NextFireAt.Sub(now)
-		if entry.Remaining < 0 {
-			entry.Remaining = 0
-		}
-		entry.Timer.Stop()
-		entry.Timer = nil
-	}
-}
-
-func (ch *Character) ResumeTimers(pid *actor.PID) {
-	if ch.timers == nil || pid == nil || ch.GameWorld == nil {
-		return
-	}
-	characterID := ch.GetID()
-	for key, entry := range ch.timers {
-		if entry == nil || entry.Timer != nil {
-			continue
-		}
-		duration := entry.Remaining
-		if duration <= 0 {
-			duration = entry.Interval
-		}
-		entry.Remaining = 0
-		entry.NextFireAt = time.Now().Add(duration)
-		k := key
-		entry.Timer = time.AfterFunc(duration, func() {
-			ch.GameWorld.DispatchRunCharacterTimer(pid, &c_actor.RunCharacterTimer{CharacterID: characterID, Key: k})
-		})
-	}
-}
-
 func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
 func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
 func (ch *Character) GetInvincible() bool { return ch.Invincible }
@@ -802,6 +680,10 @@ func (ch *Character) SetHidden(hidden bool) {
 }
 
 func (ch *Character) GetID() uint32 {
+	return ch.id
+}
+
+func (ch *Character) GetPK() uint32 {
 	return ch.id
 }
 
@@ -1053,6 +935,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 	ch.Skills = NewSkillContainer(ch)
 	ch.keyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
+	ch.LifeCore.ObjectCore.initTimers()
 	ch.LifeCore.setHp(data.Hp)
 	ch.LifeCore.setMp(data.Mp)
 	return ch
@@ -1224,7 +1107,7 @@ func (ch *Character) AddDebuff(holder *DiseaseValueHolder) {
 	ch.diseases[holder.Disease] = holder
 	if holder.Duration > 0 {
 		flag := holder.Disease
-		ch.addTimer(debuffTimerKey(flag), holder.Duration, false, func() {
+		ch.AddTimer(debuffTimerKey(flag), holder.Duration, false, func() {
 			ch.RemoveTimer(debuffTimerKey(flag))
 			if _, ok := ch.diseases[flag]; ok {
 				delete(ch.diseases, flag)

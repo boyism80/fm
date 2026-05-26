@@ -401,9 +401,14 @@ func (gs *GameServer) RequestWarp(character *entity.Character, targetMap *entity
 	return nil
 }
 
-func (gs *GameServer) DispatchRunCharacterTimer(pid *actor.PID, payload *c_actor.RunCharacterTimer) {
-	if pid == nil || payload == nil {
+func (gs *GameServer) DispatchRunObjectTimer(pid *actor.PID, obj entity.Object, key string) {
+	if pid == nil || obj == nil || key == "" {
 		return
+	}
+	payload := &c_actor.RunObjectTimer{
+		ObjectType: obj.GetObjectType(),
+		ID:         obj.GetPK(),
+		Key:        key,
 	}
 	if root := gs.GetRootContext(); root != nil {
 		root.Send(pid, payload)

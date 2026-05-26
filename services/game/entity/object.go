@@ -11,6 +11,7 @@ type ObjectCore struct {
 	Position  types.Vector2[int16]
 	GameWorld GameWorld
 	Map       *Map
+	timers    map[string]*ObjectTimer
 }
 
 type ObjectBroadcastOption struct {
@@ -25,6 +26,7 @@ func (obj *ObjectCore) GetObjectType() constant.ObjectType {
 
 type Object interface {
 	GetOID() uint32
+	GetPK() uint32
 	GetPosition() types.Vector2[int16]
 	SetPosition(x, y int16)
 	GetGameWorld() GameWorld
@@ -38,9 +40,15 @@ type Object interface {
 	Nears(filter constant.ObjectType) []Object
 	Broadcast(message types.Packet, option *ObjectBroadcastOption)
 	BroadcastCall(fn func(Object), option *ObjectBroadcastOption)
+	GetTimerEntry(key string) *ObjectTimer
+	RemoveTimer(key string) bool
 }
 
 func (obj *ObjectCore) GetOID() uint32 {
+	return obj.OID
+}
+
+func (obj *ObjectCore) GetPK() uint32 {
 	return obj.OID
 }
 

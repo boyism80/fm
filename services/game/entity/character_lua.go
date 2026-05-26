@@ -2749,10 +2749,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				fullArgs = append(fullArgs, ch)
 				fullArgs = append(fullArgs, args...)
 				if _, err := luax.CallFunction(root, fn, fullArgs...); err != nil {
-					log.Printf("RunCharacterTimer %s: %v", key, err)
+					log.Printf("RunObjectTimer %s: %v", key, err)
 				}
 			}
-			added := ch.AddTimerWithCallback(key, time.Duration(intervalMs)*time.Millisecond, repeat, callback)
+			added := ch.AddTimer(key, time.Duration(intervalMs)*time.Millisecond, repeat, callback)
 			L.Push(lua.LBool(added))
 			return 1
 		},

@@ -6,6 +6,28 @@ type Rect[T constraints.Integer] struct {
 	Left, Top, Right, Bottom T
 }
 
+func NewRect[T constraints.Integer](lt, rb Point[T]) Rect[T] {
+	return Rect[T]{
+		Left:   min(lt.X, rb.X),
+		Top:    min(lt.Y, rb.Y),
+		Right:  max(lt.X, rb.X),
+		Bottom: max(lt.Y, rb.Y),
+	}
+}
+
+func (r Rect[T]) Valid() bool {
+	return r.Left != 0 || r.Top != 0 || r.Right != 0 || r.Bottom != 0
+}
+
+func (r Rect[T]) AtOrigin(origin Point[T]) Rect[T] {
+	return Rect[T]{
+		Left:   origin.X + r.Left,
+		Top:    origin.Y + r.Top,
+		Right:  origin.X + r.Right,
+		Bottom: origin.Y + r.Bottom,
+	}
+}
+
 func (r Rect[T]) ContainsPoint(pos Point[T]) bool {
 	return pos.X >= r.Left && pos.X <= r.Right &&
 		pos.Y >= r.Top && pos.Y <= r.Bottom
