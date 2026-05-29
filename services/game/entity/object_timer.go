@@ -35,16 +35,44 @@ func (obj *ObjectCore) AddTimer(key string, interval time.Duration, repeat bool,
 		return false
 	}
 	entry := &ObjectTimer{
-		Interval:   interval,
-		Repeat:     repeat,
-		Callback:   callback,
-		NextFireAt: time.Now().Add(interval),
+		Interval: interval,
+		Repeat:   repeat,
+		Callback: callback,
+	}
+	obj.timers[key] = entry
+	obj.armTimer(key, entry, interval, pid)
+	return true
+}
+
+func (obj *ObjectCore) armTimer(key string, entry *ObjectTimer, delay time.Duration, pid *actor.PID) {
+	if entry == nil || obj.GameWorld == nil || obj.self == nil {
+		return
 	}
 	k := key
-	entry.Timer = time.AfterFunc(interval, func() {
+	entry.NextFireAt = time.Now().Add(delay)
+	entry.Timer = time.AfterFunc(delay, func() {
 		obj.GameWorld.DispatchRunObjectTimer(pid, obj.self, k)
 	})
-	obj.timers[key] = entry
+}
+
+func (obj *ObjectCore) RescheduleTimer(key string) bool {
+	entry := obj.timers[key]
+	if entry == nil || !entry.Repeat {
+		return false
+	}
+	mapInstance := obj.Map
+	if mapInstance == nil {
+		return false
+	}
+	pid := mapInstance.GetActorPID()
+	if pid == nil {
+		return false
+	}
+	if entry.Timer != nil {
+		entry.Timer.Stop()
+		entry.Timer = nil
+	}
+	obj.armTimer(key, entry, entry.Interval, pid)
 	return true
 }
 
@@ -101,10 +129,6 @@ func (obj *ObjectCore) ResumeTimers(pid *actor.PID) {
 			duration = entry.Interval
 		}
 		entry.Remaining = 0
-		entry.NextFireAt = time.Now().Add(duration)
-		k := key
-		entry.Timer = time.AfterFunc(duration, func() {
-			obj.GameWorld.DispatchRunObjectTimer(pid, obj.self, k)
-		})
+		obj.armTimer(key, entry, duration, pid)
 	}
 }

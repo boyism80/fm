@@ -768,6 +768,56 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 0
 		},
+		"buffs": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil || ch.Buffs == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			includeItem := true
+			includeSkill := true
+			if L.GetTop() >= 2 {
+				lv := L.Get(2)
+				if lv != lua.LNil {
+					buffType := constant.BuffType(lua.LVAsNumber(lv))
+					switch buffType {
+					case constant.BuffTypeAll:
+					case constant.BuffTypeItem:
+						includeSkill = false
+					case constant.BuffTypeSkill:
+						includeItem = false
+					default:
+						L.ArgError(2, "buffs filter must be nil or BuffType")
+						return 0
+					}
+				}
+			}
+
+			tbl := L.NewTable()
+			idx := 1
+			for _, entity := range ch.Buffs.Entities() {
+				if entity == nil {
+					continue
+				}
+				if includeSkill {
+					if skillBuff, ok := entity.(*SkillBuff); ok && skillBuff != nil {
+						tbl.RawSetInt(idx, luax.NewLuable(L, skillBuff))
+						idx++
+						continue
+					}
+				}
+				if includeItem {
+					if itemBuff, ok := entity.(*ItemBuff); ok && itemBuff != nil {
+						tbl.RawSetInt(idx, luax.NewLuable(L, itemBuff))
+						idx++
+					}
+				}
+			}
+			L.Push(tbl)
+			return 1
+		},
 		"summons": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

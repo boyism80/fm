@@ -3,7 +3,6 @@ package entity
 import (
 	"time"
 
-	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -66,8 +65,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 
-			wzTable := skillToLuaTable(L, skill.Wz)
-			L.Push(wzTable)
+			L.Push(skill.Wz.ToLuaTable(L))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
@@ -86,7 +84,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(skillLevelDataToLuaTable(L, ld))
+			L.Push(ld.ToLuaTable(L))
 			return 1
 		},
 		"is_cooling": func(L *lua.LState) int {
@@ -133,95 +131,4 @@ func (s *SkillEntry) String() string {
 
 func (s *SkillEntry) Type() lua.LValueType {
 	return lua.LTUserData
-}
-
-func skillToLuaTable(L *lua.LState, skill *wz.Skill) *lua.LTable {
-	tbl := L.NewTable()
-
-	tbl.RawSetString("id", lua.LNumber(skill.ID))
-	tbl.RawSetString("max_level", lua.LNumber(skill.MaxLevel))
-	tbl.RawSetString("master_level", lua.LNumber(skill.MasterLevel))
-	tbl.RawSetString("invisible", lua.LBool(skill.Invisible))
-	tbl.RawSetString("time_limited", lua.LBool(skill.TimeLimited))
-	tbl.RawSetString("combat_orders", lua.LBool(skill.CombatOrders))
-	if skill.ElemAttr != "" {
-		tbl.RawSetString("elem_attr", lua.LString(skill.ElemAttr))
-	}
-
-	effectsTable := L.NewTable()
-	if skill.LevelData != nil {
-		for level, levelData := range skill.LevelData {
-			if levelData != nil {
-				levelTable := skillLevelDataToLuaTable(L, levelData)
-				effectsTable.RawSetInt(level, levelTable)
-			}
-		}
-	}
-	tbl.RawSetString("effects", effectsTable)
-
-	return tbl
-}
-
-func skillLevelDataToLuaTable(L *lua.LState, data *wz.SkillLevelData) *lua.LTable {
-	tbl := L.NewTable()
-
-	tbl.RawSetString("mp_con", lua.LNumber(data.MPCon))
-	tbl.RawSetString("hp_con", lua.LNumber(data.HPCon))
-	tbl.RawSetString("money_con", lua.LNumber(data.MoneyCon))
-
-	tbl.RawSetString("item_con", lua.LNumber(data.ItemCon))
-	tbl.RawSetString("item_con_no", lua.LNumber(data.ItemConNo))
-	tbl.RawSetString("item_consume", lua.LNumber(data.ItemConsume))
-	tbl.RawSetString("bullet_consume", lua.LNumber(data.BulletConsume))
-	tbl.RawSetString("bullet_count", lua.LNumber(data.BulletCount))
-
-	tbl.RawSetString("damage", lua.LNumber(data.Damage))
-	tbl.RawSetString("damage_pc", lua.LNumber(data.DamagePC))
-	tbl.RawSetString("fix_damage", lua.LNumber(data.FixDamage))
-	tbl.RawSetString("critical_damage", lua.LNumber(data.CriticalDamage))
-	tbl.RawSetString("attack_count", lua.LNumber(data.AttackCount))
-	tbl.RawSetString("mob_count", lua.LNumber(data.MobCount))
-
-	tbl.RawSetString("pad", lua.LNumber(data.PAD))
-	tbl.RawSetString("mad", lua.LNumber(data.MAD))
-	tbl.RawSetString("pdd", lua.LNumber(data.PDD))
-	tbl.RawSetString("mdd", lua.LNumber(data.MDD))
-	tbl.RawSetString("eva", lua.LNumber(data.EVA))
-	tbl.RawSetString("acc", lua.LNumber(data.ACC))
-
-	tbl.RawSetString("str", lua.LNumber(data.STR))
-	tbl.RawSetString("hp", lua.LNumber(data.HP))
-	tbl.RawSetString("mp", lua.LNumber(data.MP))
-	tbl.RawSetString("jump", lua.LNumber(data.Jump))
-	tbl.RawSetString("speed", lua.LNumber(data.Speed))
-
-	tbl.RawSetString("mastery", lua.LNumber(data.Mastery))
-	tbl.RawSetString("prop", lua.LNumber(data.Prop))
-	tbl.RawSetString("range", lua.LNumber(data.Range))
-	tbl.RawSetString("time", lua.LNumber(data.Time.Milliseconds()))
-	tbl.RawSetString("cooldown", lua.LNumber(data.Cooldown.Milliseconds()))
-
-	tbl.RawSetString("morph", lua.LNumber(data.Morph))
-	tbl.RawSetString("x", lua.LNumber(data.X))
-	tbl.RawSetString("y", lua.LNumber(data.Y))
-	tbl.RawSetString("z", lua.LNumber(data.Z))
-
-	ltTable := L.NewTable()
-	ltTable.RawSetString("x", lua.LNumber(data.LT.X))
-	ltTable.RawSetString("y", lua.LNumber(data.LT.Y))
-	tbl.RawSetString("lt", ltTable)
-
-	rbTable := L.NewTable()
-	rbTable.RawSetString("x", lua.LNumber(data.RB.X))
-	rbTable.RawSetString("y", lua.LNumber(data.RB.Y))
-	tbl.RawSetString("rb", rbTable)
-
-	if data.HS != "" {
-		tbl.RawSetString("hs", lua.LString(data.HS))
-	}
-	if data.Action != "" {
-		tbl.RawSetString("action", lua.LString(data.Action))
-	}
-
-	return tbl
 }

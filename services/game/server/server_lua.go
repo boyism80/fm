@@ -70,6 +70,11 @@ func registerBuffFlagAndMobBuff(luaState *lua.LState) {
 		mobBuffTable.RawSetString(name, entry)
 	}
 	luaState.SetGlobal("MobBuff", mobBuffTable)
+	buffTypeTable := luaState.NewTable()
+	for name, buffType := range constant.AllBuffTypes() {
+		buffTypeTable.RawSetString(name, lua.LNumber(buffType))
+	}
+	luaState.SetGlobal("BuffType", buffTypeTable)
 }
 
 func registerWeaponTypeAndConsumeType(luaState *lua.LState) {
@@ -263,8 +268,10 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Npc, *entity.ObjectCore](luaState)
 	luax.RegisterLuaType[*entity.Map](luaState)
 	luax.RegisterLuaType[*entity.SkillEntry](luaState)
+	luax.RegisterLuaType[*entity.MobSkill](luaState)
 	luax.RegisterLuaType[*entity.SkillBuff](luaState)
-	luax.RegisterLuaType[*entity.MobSkillBuff](luaState)
+	luax.RegisterLuaType[*entity.ItemBuff](luaState)
+	luax.RegisterLuaType[*entity.MobBuff](luaState)
 	luax.RegisterLuaType[*entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.EquipmentCore, *entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Weapon, *entity.EquipmentCore](luaState)
@@ -318,17 +325,38 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		mapID, ok := gs.resources.NameToMap(name)
+		id, ok := gs.resources.NameToMap(name)
 		if !ok {
 			L.Push(lua.LNil)
 			return 1
 		}
-		m := gs.GetMap(mapID)
-		if m == nil {
+		spec := gs.resources.Maps[id]
+		if spec == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		L.Push(luax.NewLuable(L, m))
+		tbl := L.NewTable()
+		tbl.RawSetString("id", lua.LNumber(spec.ID))
+		tbl.RawSetString("name", lua.LString(spec.Name))
+		L.Push(tbl)
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "id2map", func(L *lua.LState) int {
+		id := uint32(L.CheckNumber(1))
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		spec := gs.resources.Maps[id]
+		if spec == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		tbl := L.NewTable()
+		tbl.RawSetString("id", lua.LNumber(spec.ID))
+		tbl.RawSetString("name", lua.LString(spec.Name))
+		L.Push(tbl)
 		return 1
 	})
 
@@ -343,7 +371,35 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		L.Push(lua.LNumber(id))
+		mob := gs.resources.Monsters[id]
+		if mob == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		tbl := L.NewTable()
+		tbl.RawSetString("id", lua.LNumber(mob.ID))
+		L.Push(tbl)
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "id2mob", func(L *lua.LState) int {
+		id := uint32(L.CheckNumber(1))
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		mob := gs.resources.Monsters[id]
+		if mob == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		tbl := L.NewTable()
+		tbl.RawSetString("id", lua.LNumber(mob.ID))
+		name := gs.resources.GetMobName(mob.ID)
+		if name != "" {
+			tbl.RawSetString("name", lua.LString(name))
+		}
+		L.Push(tbl)
 		return 1
 	})
 

@@ -56,7 +56,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 			if !ok || mob == nil || !mob.IsAlive() {
 				continue
 			}
-			if mob.HasBuff(constant.MobBuffPoison) {
+			if mob.Buffs.Has(constant.MobBuffPoison) {
 				continue
 			}
 			pos := mob.GetPosition()

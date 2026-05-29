@@ -4,23 +4,23 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (e *MobSkillBuff) LuaTypeName() string {
+func (e *MobBuff) LuaTypeName() string {
 	return "LuaMobSkillBuff"
 }
 
-func (e *MobSkillBuff) String() string {
+func (e *MobBuff) String() string {
 	return e.LuaTypeName()
 }
 
-func (e *MobSkillBuff) Type() lua.LValueType {
+func (e *MobBuff) Type() lua.LValueType {
 	return lua.LTUserData
 }
 
-func (e *MobSkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
+func (e *MobBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
 		"causer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			mb, ok := ud.Value.(*MobSkillBuff)
+			mb, ok := ud.Value.(*MobBuff)
 			if !ok {
 				L.ArgError(1, "MobSkillBuff expected")
 				return 0
@@ -34,7 +34,7 @@ func (e *MobSkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"level": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			mb, ok := ud.Value.(*MobSkillBuff)
+			mb, ok := ud.Value.(*MobBuff)
 			if !ok {
 				L.ArgError(1, "MobSkillBuff expected")
 				return 0
@@ -48,7 +48,7 @@ func (e *MobSkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"wz": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			mb, ok := ud.Value.(*MobSkillBuff)
+			mb, ok := ud.Value.(*MobBuff)
 			if !ok {
 				L.ArgError(1, "MobSkillBuff expected")
 				return 0
@@ -57,13 +57,12 @@ func (e *MobSkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() is read-only")
 				return 0
 			}
-			wzTable := skillToLuaTable(L, mb.Wz)
-			L.Push(wzTable)
+			L.Push(mb.Wz.ToLuaTable(L))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
-			mb, ok := ud.Value.(*MobSkillBuff)
+			mb, ok := ud.Value.(*MobBuff)
 			if !ok {
 				L.ArgError(1, "MobSkillBuff expected")
 				return 0
@@ -77,7 +76,7 @@ func (e *MobSkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(skillLevelDataToLuaTable(L, ld))
+			L.Push(ld.ToLuaTable(L))
 			return 1
 		},
 	}

@@ -1,0 +1,105 @@
+package server
+
+import (
+	"slices"
+	"time"
+
+	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/entity"
+)
+
+type MobListenerImpl struct{}
+
+func (l *MobListenerImpl) OnMobBuffApplied(mob *entity.Mob, ent *entity.MobBuff, addedReflections []int32, remaining time.Duration) {
+	if mob == nil || ent == nil || len(ent.Values) == 0 {
+		return
+	}
+	mapInstance := mob.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	buffTime := int16(32767)
+	if remaining > 0 {
+		sec := remaining / time.Second
+		if sec < 32767 {
+			buffTime = int16(sec)
+		}
+	}
+	skillID := uint16(0)
+	if ent.Wz != nil {
+		skillID = uint16(ent.Wz.ID)
+	}
+	flags := make([]constant.MobBuffFlag, 0, len(ent.Values))
+	for f := range ent.Values {
+		flags = append(flags, f)
+	}
+	slices.Sort(flags)
+	if len(addedReflections) > 0 {
+		var mask int32
+		entries := make([]response.ApplyMobBuffReflectEntry, 0, len(flags))
+		for _, flag := range flags {
+			mask |= int32(flag)
+			entries = append(entries, response.ApplyMobBuffReflectEntry{
+				X:          int16(ent.Values[flag]),
+				SkillID:    skillID,
+				SkillLevel: uint16(ent.SkillLevel),
+				BuffTime:   buffTime,
+			})
+		}
+		pkt := &response.ApplyMobBuffReflect{
+			OID:         mob.OID,
+			StatusMask:  mask,
+			Entries:     entries,
+			Reflections: addedReflections,
+			Delay:       0,
+			StatusSize:  byte(len(flags)),
+		}
+		mapInstance.Broadcast(pkt, nil)
+		return
+	}
+	for _, flag := range flags {
+		pkt := &response.ApplyMobBuff{
+			OID:        mob.OID,
+			Status:     int32(flag),
+			X:          int16(ent.Values[flag]),
+			SkillID:    skillID,
+			SkillLevel: uint16(ent.SkillLevel),
+			BuffTime:   buffTime,
+			Delay:      0,
+			StatusSize: 1,
+		}
+		mapInstance.Broadcast(pkt, nil)
+	}
+}
+
+func (l *MobListenerImpl) OnMobBuffCancelled(mob *entity.Mob, buff constant.MobBuffFlag) {
+	if mob == nil {
+		return
+	}
+	mapInstance := mob.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	pkt := &response.CancelMobBuff{
+		OID:    mob.OID,
+		Status: int32(buff),
+		Size:   1,
+	}
+	mapInstance.Broadcast(pkt, nil)
+}
+
+func (l *MobListenerImpl) OnMobDamaged(mob *entity.Mob, amount int32) {
+	if mob == nil {
+		return
+	}
+	mapInstance := mob.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	pkt := &response.DamageMob{
+		OID:    mob.OID,
+		Damage: amount,
+	}
+	mapInstance.Broadcast(pkt, nil)
+}

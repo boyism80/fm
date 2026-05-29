@@ -73,6 +73,7 @@ type GameServer struct {
 	actorRegistry     *c_actor.ActorRegistry
 	nilMapActorPID    *actor.PID
 	characterListener entity.CharacterListener
+	mobListener       entity.MobListener
 	internalClient    internal.InternalClient
 	internalConn      *grpc.ClientConn
 	party             *PartyContainer
@@ -225,6 +226,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	}
 
 	gs.characterListener = &CharacterListenerImpl{gs: gs}
+	gs.mobListener = &MobListenerImpl{}
 	gs.packetHandlers = NewPacketHandlerRegistry(gs)
 	luax.RegisterOnCreateHook(func(luaState *lua.LState) {
 		registerGameLuaState(gs, luaState)
@@ -278,7 +280,7 @@ func (gs *GameServer) preCreateMaps() {
 
 	log.Println("Pre-creating map instances...")
 	for mapID := range gs.resources.Maps {
-		mapInstance := entity.NewMap(mapID, gameMapListener, mapID, gs)
+		mapInstance := entity.NewMap(mapID, gameMapListener, gs.mobListener, mapID, gs)
 		gs.maps[mapID] = mapInstance
 
 		props := actor.PropsFromProducer(func() actor.Actor {

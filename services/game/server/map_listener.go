@@ -205,7 +205,7 @@ func (l *MapListenerImpl) OnItemRemoved(mapInstance *entity.Map, itemID uint32, 
 	mapInstance.Broadcast(removePacket, nil)
 }
 
-func (l *MapListenerImpl) OnMobSpawned(mapInstance *entity.Map, mob *entity.Mob) {
+func (l *MapListenerImpl) OnMobSpawned(mapInstance *entity.Map, mob *entity.Mob, spawnType constant.MobSpawnType, link uint32) {
 	if mapInstance == nil {
 		return
 	}
@@ -214,7 +214,8 @@ func (l *MapListenerImpl) OnMobSpawned(mapInstance *entity.Map, mob *entity.Mob)
 
 	spawnPacket := &response.SpawnMob{
 		Mob:       mobDTO,
-		SpawnType: constant.MOB_SPAWN_TYPE_ANIMATE,
+		SpawnType: spawnType,
+		Link:      link,
 	}
 
 	mapInstance.Broadcast(spawnPacket, nil)
@@ -233,15 +234,15 @@ func (l *MapListenerImpl) OnMobRemoved(mapInstance *entity.Map, mob *entity.Mob,
 	mapInstance.Broadcast(removePacket, nil)
 }
 
-func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character) {
+func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character, aggro bool) {
 	switch {
 	case before == nil && after != nil:
-		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: false}, types.SEND_POLICY_ENCRYPT)
+		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: aggro}, types.SEND_POLICY_ENCRYPT)
 	case before != nil && after == nil:
 		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
 	case before != nil && after != nil:
 		before.Send(&response.StopControlMob{OID: mob.OID}, types.SEND_POLICY_ENCRYPT)
-		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: false}, types.SEND_POLICY_ENCRYPT)
+		after.Send(&response.StartControlMob{Mob: mob.ToDTO(), Aggro: aggro}, types.SEND_POLICY_ENCRYPT)
 	}
 }
 
@@ -296,38 +297,6 @@ func (l *MapListenerImpl) OnMagicAttack(mapInstance *entity.Map, character *enti
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		SkillLevel:  skillLevel,
 	})
-}
-
-func (l *MapListenerImpl) OnMobMobBuffApplied(mapInstance *entity.Map, mob *entity.Mob, buff constant.MobBuffFlag, value int32, skillID uint32, durationMs int64) {
-	if mapInstance == nil {
-		return
-	}
-	buffTime := int16(32767)
-	if durationMs > 0 && durationMs/1000 < 32767 {
-		buffTime = int16(durationMs / 1000)
-	}
-	pkt := &response.ApplyMobBuff{
-		OID:        mob.OID,
-		Status:     int32(buff),
-		X:          int16(value),
-		SkillID:    uint16(skillID),
-		BuffTime:   buffTime,
-		Delay:      0,
-		StatusSize: 1,
-	}
-	mapInstance.Broadcast(pkt, nil)
-}
-
-func (l *MapListenerImpl) OnMobMobBuffCancelled(mapInstance *entity.Map, mob *entity.Mob, buff constant.MobBuffFlag) {
-	if mapInstance == nil {
-		return
-	}
-	pkt := &response.CancelMobBuff{
-		OID:    mob.OID,
-		Status: int32(buff),
-		Size:   1,
-	}
-	mapInstance.Broadcast(pkt, nil)
 }
 
 func (l *MapListenerImpl) OnMistSpawned(mapInstance *entity.Map, mist *entity.Mist) {

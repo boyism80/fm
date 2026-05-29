@@ -12,17 +12,18 @@ type MobBuffEntry struct {
 }
 
 type Mob struct {
-	OID        uint32
-	MobId      uint32
-	Position   types.Vector2[int16]
-	Stance     uint8
-	Foothold   int16
-	Hp         uint32
-	MaxHp      uint32
-	Mp         uint32
-	MaxMp      uint32
-	StatusMask int32
-	Statuses   []MobBuffEntry
+	OID         uint32
+	MobId       uint32
+	Position    types.Vector2[int16]
+	Stance      uint8
+	Foothold    int16
+	Hp          uint32
+	MaxHp       uint32
+	Mp          uint32
+	MaxMp       uint32
+	StatusMask  int32
+	Statuses    []MobBuffEntry
+	Reflections []int32
 }
 
 func (m *Mob) Serialize(writer *stream.StreamWriter) error {
@@ -36,6 +37,9 @@ func (m *Mob) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU16(s.SkillID)
 		writer.WriteU16(s.SkillLevel)
 		writer.Write16(32767)
+	}
+	for _, r := range m.Reflections {
+		writer.Write32(r)
 	}
 	return nil
 }

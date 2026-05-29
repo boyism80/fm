@@ -7,7 +7,7 @@ import (
 
 type GiveDebuff struct {
 	CharacterID int32
-	Disease     constant.DebuffFlag
+	Debuff      constant.DebuffFlag
 	X           int16
 	SkillID     uint16
 	SkillLevel  uint16
@@ -18,8 +18,8 @@ func (p *GiveDebuff) Opcode() uint16 { return 0x90 }
 
 func (p *GiveDebuff) Serialize(writer *stream.StreamWriter) error {
 	writer.Write32(p.CharacterID)
-	WriteDebuff(writer, p.Disease)
-	if p.Disease == constant.DebuffFlagPoison {
+	WriteDebuff(writer, p.Debuff)
+	if p.Debuff == constant.DebuffFlagPoison {
 		writer.Write16(p.X)
 	}
 	writer.Write16(int16(p.SkillID))

@@ -5,7 +5,7 @@ type ControllerTable struct {
 	mobs               map[uint32]*Mob
 	controller2mob     map[uint32]map[uint32]struct{}
 	mob2controller     map[uint32]uint32
-	onControllerChange func(mob *Mob, before *Character, after *Character)
+	onControllerChange func(mob *Mob, before *Character, after *Character, aggro bool)
 }
 
 func (t *ControllerTable) choiceControllablePlayer(excludeID uint32) *Character {
@@ -20,7 +20,7 @@ func (t *ControllerTable) choiceControllablePlayer(excludeID uint32) *Character 
 	return nil
 }
 
-func NewControllerTable(onControllerChange func(mob *Mob, before *Character, after *Character)) *ControllerTable {
+func NewControllerTable(onControllerChange func(mob *Mob, before *Character, after *Character, aggro bool)) *ControllerTable {
 	return &ControllerTable{
 		onControllerChange: onControllerChange,
 		controllers:        make(map[uint32]*Character),
@@ -41,7 +41,7 @@ func (t *ControllerTable) EnterPlayer(character *Character) {
 
 	for mobOID, mob := range t.mobs {
 		if t.mob2controller[mobOID] == 0 {
-			t.assign(mob, nil, character)
+			t.assign(mob, nil, character, false)
 		}
 	}
 }
@@ -52,7 +52,7 @@ func (t *ControllerTable) LeavePlayer(character *Character) {
 
 	for mobOID := range t.controller2mob[playerID] {
 		if mob, exists := t.mobs[mobOID]; exists {
-			t.assign(mob, character, next)
+			t.assign(mob, character, next, false)
 		}
 	}
 
@@ -69,7 +69,7 @@ func (t *ControllerTable) EnterMob(mob *Mob) {
 		if controller == nil || controller.IsHidden() {
 			continue
 		}
-		t.assign(mob, nil, controller)
+		t.assign(mob, nil, controller, false)
 		break
 	}
 }
@@ -83,7 +83,7 @@ func (t *ControllerTable) LeaveMob(mob *Mob) *Character {
 		controller = t.controllers[controllerID]
 		delete(t.controller2mob[controllerID], mobOID)
 		if t.onControllerChange != nil {
-			t.onControllerChange(mob, controller, nil)
+			t.onControllerChange(mob, controller, nil, false)
 		}
 	}
 
@@ -92,7 +92,7 @@ func (t *ControllerTable) LeaveMob(mob *Mob) *Character {
 	return controller
 }
 
-func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character) {
+func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character, aggro bool) {
 	mobOID := mob.OID
 
 	prevControllerID := t.mob2controller[mobOID]
@@ -112,7 +112,7 @@ func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character) 
 	}
 
 	if t.onControllerChange != nil {
-		t.onControllerChange(mob, before, after)
+		t.onControllerChange(mob, before, after, aggro)
 	}
 }
 
@@ -126,7 +126,7 @@ func (t *ControllerTable) GetController(mob *Mob) (*Character, bool) {
 	return controller, exists
 }
 
-func (t *ControllerTable) SwitchController(mob *Mob, newController *Character) {
+func (t *ControllerTable) SwitchController(mob *Mob, newController *Character, aggro bool) {
 	if newController == nil || newController.IsHidden() {
 		return
 	}
@@ -134,7 +134,7 @@ func (t *ControllerTable) SwitchController(mob *Mob, newController *Character) {
 	if before == newController {
 		return
 	}
-	t.assign(mob, before, newController)
+	t.assign(mob, before, newController, aggro)
 }
 
 func (t *ControllerTable) Update(character *Character) {
@@ -149,14 +149,14 @@ func (t *ControllerTable) Update(character *Character) {
 		next := t.choiceControllablePlayer(playerID)
 		for mobOID := range t.controller2mob[playerID] {
 			if mob, exists := t.mobs[mobOID]; exists {
-				t.assign(mob, character, next)
+				t.assign(mob, character, next, false)
 			}
 		}
 		return
 	}
 	for mobOID, mob := range t.mobs {
 		if t.mob2controller[mobOID] == 0 {
-			t.assign(mob, nil, character)
+			t.assign(mob, nil, character, false)
 		}
 	}
 }

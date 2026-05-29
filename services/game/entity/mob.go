@@ -18,10 +18,12 @@ type Homing struct {
 
 type Mob struct {
 	LifeCore
+	Listener     MobListener
 	Wz           *wz.Mob
 	Foothold     int16
 	Spawn        *MobSpawn
-	mobBuffs     *MobBuffContainer
+	Buffs        *MobBuffContainer
+	Skills       *MobSkillContainer
 	ExpRate      int32
 	DropRate     int32
 	stealOutcome *uint32
@@ -130,81 +132,74 @@ func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (m *Mob) ensureMobBuffs() *MobBuffContainer {
-	if m.mobBuffs == nil {
-		m.mobBuffs = NewMobBuffContainer(m)
+func (m *Mob) ApplyMobBuff(flag constant.MobBuffFlag, value int32, duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
+	if m == nil || m.Buffs == nil {
+		return
 	}
-	return m.mobBuffs
-}
-
-func (m *Mob) GetMobBuffValue(flag constant.MobBuffFlag) int32 {
-	if m.mobBuffs == nil {
-		return 0
-	}
-	return m.mobBuffs.getValue(flag)
-}
-
-func (m *Mob) GetMobBuffStack(flag constant.MobBuffFlag) uint8 {
-	if m.mobBuffs == nil {
-		return 0
-	}
-	return m.mobBuffs.getStack(flag)
-}
-
-func (m *Mob) SetMobBuffStack(flag constant.MobBuffFlag, stack uint8) bool {
-	if m.mobBuffs == nil {
-		return false
-	}
-	return m.mobBuffs.setStack(flag, stack)
-}
-
-func (m *Mob) ApplyMobBuff(flag constant.MobBuffFlag, value int32, durationMs int64, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
 	if stack < 1 {
 		stack = 1
 	}
-	now := time.Now()
-	m.ensureMobBuffs().AddSkillBuff(now, durationMs, skillWz, skillLevel, causerOID,
+	m.Buffs.Add(duration, skillWz, skillLevel, causerOID,
 		map[constant.MobBuffFlag]int32{flag: value},
 		map[constant.MobBuffFlag]uint8{flag: stack})
 }
 
-func (m *Mob) CancelMobBuff(flag constant.MobBuffFlag) {
-	if m.mobBuffs == nil {
-		return
+func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
+	if m == nil || m.GameWorld == nil || skill == nil || skill.LevelData == nil || skill.LevelData.SkillWz == nil {
+		return nil
 	}
-	m.mobBuffs.RemoveBuffForFlag(flag)
-}
-
-func (m *Mob) HasBuff(flag constant.MobBuffFlag) bool {
-	if m.mobBuffs == nil {
-		return false
+	mapInstance := m.GetMap()
+	if mapInstance == nil {
+		return nil
 	}
-	return m.mobBuffs.hasFlag(flag)
-}
-
-func (m *Mob) GetCauserCharacterID(flag constant.MobBuffFlag) uint32 {
-	if m.mobBuffs == nil {
-		return 0
+	b := bounds
+	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
+		px := int32(position.X)
+		py := int32(position.Y)
+		x1 := px + skill.LevelData.Bounds.Left
+		x2 := px + skill.LevelData.Bounds.Right
+		y1 := py + skill.LevelData.Bounds.Top
+		y2 := py + skill.LevelData.Bounds.Bottom
+		b = types.Rect[int32]{
+			Left:   min(x1, x2),
+			Top:    min(y1, y2),
+			Right:  max(x1, x2),
+			Bottom: max(y1, y2),
+		}
 	}
-	return m.mobBuffs.causerForFlag(flag)
-}
-
-func (m *Mob) ClearAllMobBuffTimers() {
-	m.mobBuffs = nil
-}
-
-func (m *Mob) RemoveExpiredMobBuffs(now time.Time) {
-	if m == nil || m.mobBuffs == nil {
-		return
+	if poisonTickMultiplier <= 0 {
+		poisonTickMultiplier = 1.0
 	}
-	m.mobBuffs.removeExpiredEntities(now)
-}
-
-func (m *Mob) getMobBuffMaskAndEntries() (mask uint32, entries []mobBuffForPacket) {
-	if m.mobBuffs == nil {
-		return 0, nil
+	causer := uint32(0)
+	if m.Wz != nil {
+		causer = m.Wz.ID
 	}
-	return m.mobBuffs.flattenForSpawnPacket()
+	mist := &Mist{
+		ObjectCore: ObjectCore{
+			Position:  position,
+			GameWorld: mapInstance.GameWorld,
+			Map:       nil,
+		},
+		Causer:               causer,
+		SkillWz:              skill.LevelData.SkillWz,
+		SkillLevel:           skill.Slot.Level,
+		MistType:             mistType,
+		MobMist:              true,
+		MobSkill:             true,
+		SkillDelay:           0,
+		Bounds:               b,
+		ExpiresAt:            time.Time{},
+		PoisonTickMultiplier: poisonTickMultiplier,
+	}
+	mist.ObjectCore.self = mist
+	if initialDelay > 0 {
+		mist.NextPoisonTickAt = time.Now().Add(initialDelay)
+	}
+	if duration > 0 {
+		mist.ExpiresAt = time.Now().Add(duration)
+	}
+	mapInstance.AddMist(mist)
+	return mist
 }
 
 func (m *Mob) dropItems(attacker *Character) {
@@ -400,6 +395,28 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 	}
 
 	return true
+}
+
+func (m *Mob) AddHp(amount int) {
+	if m == nil || amount == 0 {
+		return
+	}
+
+	before := m.GetHp()
+	m.LifeCore.AddHp(amount)
+	after := m.GetHp()
+	if after <= before {
+		return
+	}
+	if m.Listener == nil {
+		return
+	}
+
+	recovered := after - before
+	if recovered > uint32(2147483647) {
+		recovered = uint32(2147483647)
+	}
+	m.Listener.OnMobDamaged(m, -int32(recovered))
 }
 
 func (m *Mob) ExpForDamage(damage uint64) uint32 {

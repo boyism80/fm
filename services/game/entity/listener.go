@@ -53,7 +53,7 @@ type CharacterListener interface {
 	OnPartyMemberHPChanged(ch *Character, recipient *Character)
 	OnBuffAdded(ch *Character, buffID int32, remainingDuration time.Duration, values map[constant.BuffFlag]int32)
 	OnBuffRemoved(ch *Character, flags []constant.BuffFlag)
-	OnDebuffAdded(ch *Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32)
+	OnDebuffAdded(ch *Character, debuff constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32)
 	OnDebuffRemoved(ch *Character, flags []constant.DebuffFlag)
 	OnSkillCooldown(ch *Character, skillID uint32, remainingSec uint16)
 	OnUpdateSkill(ch *Character, skillID uint32, level int32, masterLevel int32)
@@ -83,4 +83,10 @@ type CharacterListener interface {
 	OnSummonAttack(ch *Character, summon *Summon, animation uint8, targets []SummonAttackTarget)
 	OnSummonSkill(ch *Character, summon *Summon, newStance uint8)
 	OnSummonDamaged(ch *Character, summon *Summon, unknown uint8, damage uint32, monsterIdFrom uint32)
+}
+
+type MobListener interface {
+	OnMobBuffApplied(mob *Mob, ent *MobBuff, addedReflections []int32, remaining time.Duration)
+	OnMobBuffCancelled(mob *Mob, buff constant.MobBuffFlag)
+	OnMobDamaged(mob *Mob, amount int32)
 }

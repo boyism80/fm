@@ -57,8 +57,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() is read-only")
 				return 0
 			}
-			wzTable := skillToLuaTable(L, sk.Wz)
-			L.Push(wzTable)
+			L.Push(sk.Wz.ToLuaTable(L))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
@@ -77,7 +76,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(skillLevelDataToLuaTable(L, ld))
+			L.Push(ld.ToLuaTable(L))
 			return 1
 		},
 	}

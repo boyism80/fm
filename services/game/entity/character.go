@@ -68,7 +68,7 @@ type Character struct {
 	BaseStats         BaseStats
 	BonusStats        BonusStats
 	Buffs             *BuffContainer
-	diseases          map[constant.DebuffFlag]*DiseaseValueHolder
+	debuffs           map[constant.DebuffFlag]*Debuff
 	summons           map[constant.SkillID]*Summon
 	doors             map[constant.SkillID]*Door
 	HomingTargetOID   *uint32
@@ -78,8 +78,8 @@ type Character struct {
 	buddyList         *BuddyList
 }
 
-type DiseaseValueHolder struct {
-	Disease   constant.DebuffFlag
+type Debuff struct {
+	Flag      constant.DebuffFlag
 	StartTime time.Time
 	Duration  time.Duration
 }
@@ -1089,28 +1089,28 @@ func debuffTimerKey(flag constant.DebuffFlag) string {
 }
 
 func (ch *Character) HasDebuff(flag constant.DebuffFlag) bool {
-	if ch.diseases == nil {
+	if ch.debuffs == nil {
 		return false
 	}
-	_, ok := ch.diseases[flag]
+	_, ok := ch.debuffs[flag]
 	return ok
 }
 
-func (ch *Character) AddDebuff(holder *DiseaseValueHolder) {
+func (ch *Character) AddDebuff(holder *Debuff) {
 	if holder == nil {
 		return
 	}
-	if ch.diseases == nil {
-		ch.diseases = make(map[constant.DebuffFlag]*DiseaseValueHolder)
+	if ch.debuffs == nil {
+		ch.debuffs = make(map[constant.DebuffFlag]*Debuff)
 	}
-	ch.RemoveTimer(debuffTimerKey(holder.Disease))
-	ch.diseases[holder.Disease] = holder
+	ch.RemoveTimer(debuffTimerKey(holder.Flag))
+	ch.debuffs[holder.Flag] = holder
 	if holder.Duration > 0 {
-		flag := holder.Disease
+		flag := holder.Flag
 		ch.AddTimer(debuffTimerKey(flag), holder.Duration, false, func() {
 			ch.RemoveTimer(debuffTimerKey(flag))
-			if _, ok := ch.diseases[flag]; ok {
-				delete(ch.diseases, flag)
+			if _, ok := ch.debuffs[flag]; ok {
+				delete(ch.debuffs, flag)
 				ch.Listener.OnDebuffRemoved(ch, []constant.DebuffFlag{flag})
 			}
 		})
@@ -1124,8 +1124,8 @@ func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration
 	if skillLevel == 0 {
 		skillLevel = 1
 	}
-	holder := &DiseaseValueHolder{
-		Disease:   flag,
+	holder := &Debuff{
+		Flag:      flag,
 		StartTime: time.Now(),
 		Duration:  duration,
 	}
@@ -1135,11 +1135,11 @@ func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration
 
 func (ch *Character) RemoveDebuff(flags ...constant.DebuffFlag) {
 	var removed []constant.DebuffFlag
-	if ch.diseases != nil {
+	if ch.debuffs != nil {
 		for _, flag := range flags {
 			ch.RemoveTimer(debuffTimerKey(flag))
-			if _, ok := ch.diseases[flag]; ok {
-				delete(ch.diseases, flag)
+			if _, ok := ch.debuffs[flag]; ok {
+				delete(ch.debuffs, flag)
 				removed = append(removed, flag)
 			}
 		}
@@ -1151,10 +1151,10 @@ func (ch *Character) RemoveDebuff(flags ...constant.DebuffFlag) {
 
 func (ch *Character) GetDiseaseMask() [4]uint32 {
 	var mask [4]uint32
-	if ch.diseases == nil {
+	if ch.debuffs == nil {
 		return mask
 	}
-	for flag := range ch.diseases {
+	for flag := range ch.debuffs {
 		idx := flag.Position - 1
 		if idx >= 0 && idx < constant.MaxBuffFlag {
 			mask[idx] |= flag.Mask

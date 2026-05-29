@@ -26,17 +26,15 @@ type MapListener interface {
 	OnItemSpawned(mapInstance *Map, item Item, placement *FieldPlacement)
 	OnMesoSpawned(mapInstance *Map, meso *Meso)
 	OnItemRemoved(mapInstance *Map, itemID uint32, looterID uint32, mode constant.RemoveItemType)
-	OnMobSpawned(mapInstance *Map, mob *Mob)
+	OnMobSpawned(mapInstance *Map, mob *Mob, spawnType constant.MobSpawnType, link uint32)
 	OnMobRemoved(mapInstance *Map, mob *Mob, animationType constant.MobDieAnimationType)
 	OnMobHomingRemoved(mapInstance *Map, mob *Mob, removed *Homing, causer *Character)
 	OnMobHomingSet(mapInstance *Map, mob *Mob, homing *Homing, causer *Character)
-	OnMobControllerChange(mob *Mob, before *Character, after *Character)
+	OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool)
 	OnMobMoved(mapInstance *Map, mob *Mob, isAggroed bool, centerSplit int8, skill1 uint8, skill2 uint8, skill3 uint8, skill4 uint8, startPoint types.Vector2[int16], movements []dto.MoveFragment)
 	OnAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
 	OnRangedAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
 	OnMagicAttack(mapInstance *Map, character *Character, attackPayload dto.AttackPayload, skillLevel uint8)
-	OnMobMobBuffApplied(mapInstance *Map, mob *Mob, buff constant.MobBuffFlag, value int32, skillID uint32, durationMs int64)
-	OnMobMobBuffCancelled(mapInstance *Map, mob *Mob, buff constant.MobBuffFlag)
 	OnMistSpawned(mapInstance *Map, mist *Mist)
 	OnMistRemoved(mapInstance *Map, mist *Mist)
 	OnDoorRemoved(mapInstance *Map, door *Door, animated bool)
@@ -55,6 +53,7 @@ type Map struct {
 	controllerTable   *ControllerTable
 	MobSpawns         map[uint32]*MobSpawn
 	listener          MapListener
+	mobListener       MobListener
 	sequence          uint32
 	availableOIDs     []uint32
 	GameWorld         GameWorld
@@ -68,9 +67,12 @@ type BroadcastOption struct {
 	SendRaw bool
 }
 
-func NewMap(id uint32, listener MapListener, mapId uint32, gw GameWorld) *Map {
+func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint32, gw GameWorld) *Map {
 	if listener == nil {
 		panic("MapListener cannot be nil")
+	}
+	if mobListener == nil {
+		panic("MobListener cannot be nil")
 	}
 	if gw == nil {
 		panic("GameWorld cannot be nil")
@@ -87,6 +89,7 @@ func NewMap(id uint32, listener MapListener, mapId uint32, gw GameWorld) *Map {
 		controllerTable: nil,
 		MobSpawns:       make(map[uint32]*MobSpawn),
 		listener:        listener,
+		mobListener:     mobListener,
 		Wz:              wz,
 		sequence:        0,
 		availableOIDs:   make([]uint32, 0),
@@ -130,9 +133,9 @@ func (m *Map) ClearLuaRoot() {
 	m.luaRoot = nil
 }
 
-func (m *Map) onMobControllerChange(mob *Mob, before *Character, after *Character) {
+func (m *Map) onMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool) {
 
-	m.listener.OnMobControllerChange(mob, before, after)
+	m.listener.OnMobControllerChange(mob, before, after, aggro)
 }
 
 func (m *Map) allocateOID() uint32 {
@@ -151,7 +154,7 @@ func (m *Map) releaseOID(oid uint32) {
 	m.availableOIDs = append(m.availableOIDs, oid)
 }
 
-func OnMobControllerChange(mob *Mob, before *Character, after *Character) {
+func OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool) {
 }
 
 func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character, spawnPoint uint8, init bool) error {
@@ -741,7 +744,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	return npc, nil
 }
 
-func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn) (*Mob, error) {
+func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn, spawnType constant.MobSpawnType, link uint32) (*Mob, error) {
 	oid := m.allocateOID()
 
 	mobSpec, ok := m.GameWorld.GetResources().Monsters[mobId]
@@ -766,6 +769,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	}
 
 	mob := &Mob{
+		Listener: m.mobListener,
 		LifeCore: LifeCore{
 			ObjectCore: ObjectCore{
 				OID:       oid,
@@ -787,6 +791,11 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		Homing:    make(map[uint32]*Homing),
 		accDamage: make(map[int64]map[uint32]uint64),
 	}
+	if mob.Listener == nil {
+		panic("SpawnMob: mob listener must not be nil")
+	}
+	mob.Skills = NewMobSkillContainer(mob)
+	mob.Buffs = NewMobBuffContainer(mob)
 	mob.LifeCore.ObjectCore.self = mob
 	mob.initTimers()
 
@@ -795,7 +804,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	}
 
 	m.objects[constant.ObjectTypeMob][oid] = mob
-	m.listener.OnMobSpawned(m, mob)
+	m.listener.OnMobSpawned(m, mob, spawnType, link)
 	m.controllerTable.EnterMob(mob)
 
 	return mob, nil
@@ -815,7 +824,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	mob.ClearTimers()
 	delete(m.objects[constant.ObjectTypeMob], mobID)
 
-	mob.ClearAllMobBuffTimers()
+	mob.Buffs.Clear()
 	if mob.Spawn != nil {
 		mob.Spawn.Spawned = false
 	}

@@ -45,13 +45,13 @@ func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID
 		return false
 	}
 
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
 		return true
 	}
-	result, err := luax.Call(thread, luax.SkillScriptHookName(hook, skillID), character, skillEntry)
+	result, err := luax.Call(thread, fmt.Sprintf("%s_%d", hook, skillID), character, skillEntry)
 	if err != nil {
 		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
 		return true
@@ -90,13 +90,13 @@ func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, 
 	if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
 		return
 	}
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
 		return
 	}
-	result, err := luax.Call(thread, luax.SkillScriptHookName(hook, skillID), character, skillEntry)
+	result, err := luax.Call(thread, fmt.Sprintf("%s_%d", hook, skillID), character, skillEntry)
 	if err != nil {
 		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
 		return
@@ -152,12 +152,12 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, map
 		return
 	}
 
-	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/%d.lua", skillID))
+	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/character/%d.lua", skillID))
 	if err != nil {
 		return
 	}
 	defer skillThread.Close()
-	f2 := skillThread.GetGlobal(luax.SkillScriptHookName("on_attack", skillID))
+	f2 := skillThread.GetGlobal(fmt.Sprintf("on_attack_%d", skillID))
 	if f2.Type() != lua.LTFunction {
 		return
 	}
@@ -186,13 +186,13 @@ func CallSummonOnAttackHooks(ctx *core.ClientContext, character *entity.Characte
 	if skillEntry == nil {
 		return
 	}
-	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/%d.lua", skillID))
+	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/character/%d.lua", skillID))
 	if err != nil {
 		log.Printf("summon on_attack thread %d: %v", skillID, err)
 		return
 	}
 	defer skillThread.Close()
-	f := skillThread.GetGlobal(luax.SkillScriptHookName("on_attack", skillID))
+	f := skillThread.GetGlobal(fmt.Sprintf("on_attack_%d", skillID))
 	if f.Type() != lua.LTFunction {
 		return
 	}

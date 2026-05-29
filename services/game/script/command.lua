@@ -455,8 +455,11 @@ command_funcs = {
 				return true
 			end
 			local x, y = me:position()
-			local id = name2mob(args[1])
-			if id == nil then
+			local mob_wz = name2mob(args[1])
+			local id = nil
+			if mob_wz ~= nil then
+				id = mob_wz.id
+			else
 				id = tonumber(args[1])
 			end
 			if id == nil then

@@ -30,13 +30,12 @@ func (t *MobBuffExpireTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 	if mapData.GetPlayerCount() == 0 {
 		return nil
 	}
-	now := time.Now()
 	for _, obj := range mapData.GetMobs() {
 		mob, ok := obj.(*entity.Mob)
 		if !ok || mob == nil || !mob.IsAlive() {
 			continue
 		}
-		mob.RemoveExpiredMobBuffs(now)
+		mob.Buffs.RemoveExpired()
 	}
 	return nil
 }

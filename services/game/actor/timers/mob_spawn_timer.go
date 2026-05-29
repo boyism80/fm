@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/types"
 )
@@ -49,7 +50,7 @@ func (t *MobSpawnTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
 			Y: mobSpawn.Wz.Position.Y,
 		}
 
-		_, err := mapData.SpawnMob(mobSpawn.Wz.ID, position, mobSpawn)
+		_, err := mapData.SpawnMob(mobSpawn.Wz.ID, position, mobSpawn, constant.MOB_SPAWN_TYPE_ANIMATE, 0)
 		if err != nil {
 			continue
 		}

@@ -342,8 +342,8 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case lua.LString:
 				id, ok := resources.NameToMob(string(lv))
 				if !ok {
-					L.RaiseError("spawn_mob: unknown mob name %q", string(lv))
-					return 0
+					L.Push(lua.LNil)
+					return 1
 				}
 				mobID = id
 			case lua.LNumber:
@@ -355,10 +355,18 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			x := int16(L.CheckInt(3))
 			y := int16(L.CheckInt(4))
 			pos := types.Point[int16]{X: x, Y: y}
-			mob, err := mapInstance.SpawnMob(mobID, pos, nil)
+			spawnType := constant.MOB_SPAWN_TYPE_ANIMATE
+			link := uint32(0)
+			if L.GetTop() >= 5 {
+				spawnType = constant.MobSpawnType(L.CheckInt(5))
+			}
+			if L.GetTop() >= 6 {
+				link = uint32(L.CheckInt(6))
+			}
+			mob, err := mapInstance.SpawnMob(mobID, pos, nil, spawnType, link)
 			if err != nil {
-				L.RaiseError("spawn_mob: %v", err)
-				return 0
+				L.Push(lua.LNil)
+				return 1
 			}
 			L.Push(luax.NewLuable(L, mob))
 			return 1

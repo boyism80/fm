@@ -55,8 +55,7 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() is read-only")
 				return 0
 			}
-			wzTable := skillToLuaTable(L, m.SkillWz)
-			L.Push(wzTable)
+			L.Push(m.SkillWz.ToLuaTable(L))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {
@@ -75,7 +74,7 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(skillLevelDataToLuaTable(L, ld))
+			L.Push(ld.ToLuaTable(L))
 			return 1
 		},
 		"poison_tick_multiplier": func(L *lua.LState) int {

@@ -308,17 +308,9 @@ func (a *MapActor) onRunObjectTimer(ctx actor.Context, msg *c_actor.RunObjectTim
 	if entry.Callback != nil {
 		entry.Callback()
 	}
-	if entry.Repeat && obj.GetTimerEntry(msg.Key) != nil {
-		key := msg.Key
-		entry.NextFireAt = time.Now().Add(entry.Interval)
-		entry.Timer = time.AfterFunc(entry.Interval, func() {
-			ctx.Send(ctx.Self(), &c_actor.RunObjectTimer{
-				ObjectType: msg.ObjectType,
-				ID:         msg.ID,
-				Key:        key,
-			})
-		})
-	} else if !entry.Repeat {
+	if entry.Repeat {
+		obj.RescheduleTimer(msg.Key)
+	} else {
 		obj.RemoveTimer(msg.Key)
 	}
 }

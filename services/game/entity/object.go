@@ -42,6 +42,7 @@ type Object interface {
 	BroadcastCall(fn func(Object), option *ObjectBroadcastOption)
 	GetTimerEntry(key string) *ObjectTimer
 	RemoveTimer(key string) bool
+	RescheduleTimer(key string) bool
 }
 
 func (obj *ObjectCore) GetOID() uint32 {

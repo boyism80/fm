@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -130,58 +131,94 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				return constant.MobBuffFlag(uint32(lua.LVAsNumber(m))), true
 			}
+			argc := L.GetTop()
+			parseSource := func(argIndex int) (*wz.Skill, uint8) {
+				if argIndex > argc {
+					return nil, 0
+				}
+				lv, ok := L.Get(argIndex).(*lua.LUserData)
+				if !ok || lv == nil {
+					return nil, 0
+				}
+				switch source := lv.Value.(type) {
+				case *SkillEntry:
+					if source != nil && source.Wz != nil {
+						return source.Wz, uint8(source.Level())
+					}
+				case *MobSkill:
+					if source != nil && source.LevelData != nil && source.LevelData.SkillWz != nil {
+						return source.LevelData.SkillWz, source.Slot.Level
+					}
+				case *Mist:
+					if source != nil && source.SkillWz != nil {
+						return source.SkillWz, source.SkillLevel
+					}
+				case *SkillBuff:
+					if source != nil && source.Wz != nil {
+						return source.Wz, source.SkillLevel
+					}
+				case *MobBuff:
+					if source != nil && source.Wz != nil {
+						return source.Wz, source.SkillLevel
+					}
+				}
+				return nil, 0
+			}
+			parseCauser := func(argIndex int) (uint32, bool) {
+				if argIndex > argc || L.Get(argIndex) == lua.LNil {
+					return 0, true
+				}
+				switch cv := L.Get(argIndex).(type) {
+				case *lua.LUserData:
+					if ch, ok := cv.Value.(*Character); ok && ch != nil {
+						return ch.GetID(), true
+					}
+					L.ArgError(argIndex, "causer must be Character, OID(number), or nil")
+					return 0, false
+				case lua.LNumber:
+					oid := int64(lua.LVAsNumber(cv))
+					if oid < 0 {
+						L.ArgError(argIndex, "causer OID must be >= 0")
+						return 0, false
+					}
+					return uint32(oid), true
+				default:
+					L.ArgError(argIndex, "causer must be Character, OID(number), or nil")
+					return 0, false
+				}
+			}
+			durationMs := L.CheckInt64(3)
+			if durationMs < 0 {
+				durationMs = 0
+			}
+			var duration time.Duration
+			if durationMs > 0 {
+				duration = time.Duration(durationMs) * time.Millisecond
+			}
 			if maskLV.Type() == lua.LTNumber {
+				offset := 3
 				buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
-				value := int32(L.CheckInt(3))
-				durationMs := L.CheckInt64(4)
+				value := int32(L.CheckInt(offset))
+				offset++
+				durationMs = L.CheckInt64(offset)
 				if durationMs < 0 {
 					durationMs = 0
 				}
-				var skillWz *wz.Skill
-				var skillLevel uint8
-				if L.GetTop() >= 5 {
-					if lv, ok := L.Get(5).(*lua.LUserData); ok {
-						if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Wz != nil {
-							skillWz = se.Wz
-							skillLevel = uint8(se.Level())
-						} else if m, ok := lv.Value.(*Mist); ok && m != nil && m.SkillWz != nil {
-							skillWz = m.SkillWz
-							skillLevel = m.SkillLevel
-						} else if sb, ok := lv.Value.(*SkillBuff); ok && sb != nil && sb.Wz != nil {
-							skillWz = sb.Wz
-							skillLevel = sb.SkillLevel
-						} else if mb, ok := lv.Value.(*MobSkillBuff); ok && mb != nil && mb.Wz != nil {
-							skillWz = mb.Wz
-							skillLevel = mb.SkillLevel
-						}
-					}
+				duration = 0
+				if durationMs > 0 {
+					duration = time.Duration(durationMs) * time.Millisecond
 				}
-				var causerOID uint32
-				if L.GetTop() >= 6 && L.Get(6) != lua.LNil {
-					switch cv := L.Get(6).(type) {
-					case *lua.LUserData:
-						cud := cv
-						if ch, ok := cud.Value.(*Character); ok && ch != nil {
-							causerOID = ch.GetID()
-						} else {
-							L.ArgError(6, "causer must be Character, OID(number), or nil")
-							return 0
-						}
-					case lua.LNumber:
-						oid := int64(lua.LVAsNumber(cv))
-						if oid < 0 {
-							L.ArgError(6, "causer OID must be >= 0")
-							return 0
-						}
-						causerOID = uint32(oid)
-					default:
-						L.ArgError(6, "causer must be Character, OID(number), or nil")
-						return 0
-					}
+				offset++
+				skillWz, skillLevel := parseSource(offset)
+				offset++
+				causerOID, ok := parseCauser(offset)
+				if !ok {
+					return 0
 				}
+				offset++
 				stack := uint8(1)
-				if L.GetTop() >= 7 && L.Get(7) != lua.LNil {
-					s := L.CheckInt(7)
+				if offset <= argc && L.Get(offset) != lua.LNil {
+					s := L.CheckInt(offset)
 					if s < 1 {
 						s = 1
 					}
@@ -190,57 +227,17 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 					stack = uint8(s)
 				}
-				now := time.Now()
-				mob.ensureMobBuffs().AddSkillBuff(now, durationMs, skillWz, skillLevel, causerOID,
+				mob.Buffs.Add(duration, skillWz, skillLevel, causerOID,
 					map[constant.MobBuffFlag]int32{buff: value},
 					map[constant.MobBuffFlag]uint8{buff: stack})
 				return 0
 			}
-			durationMs := L.CheckInt64(3)
-			if durationMs < 0 {
-				durationMs = 0
-			}
-			var skillWz *wz.Skill
-			var skillLevel uint8
-			if L.GetTop() >= 4 {
-				if lv, ok := L.Get(4).(*lua.LUserData); ok {
-					if se, ok := lv.Value.(*SkillEntry); ok && se != nil && se.Wz != nil {
-						skillWz = se.Wz
-						skillLevel = uint8(se.Level())
-					} else if m, ok := lv.Value.(*Mist); ok && m != nil && m.SkillWz != nil {
-						skillWz = m.SkillWz
-						skillLevel = m.SkillLevel
-					} else if sb, ok := lv.Value.(*SkillBuff); ok && sb != nil && sb.Wz != nil {
-						skillWz = sb.Wz
-						skillLevel = sb.SkillLevel
-					} else if mb, ok := lv.Value.(*MobSkillBuff); ok && mb != nil && mb.Wz != nil {
-						skillWz = mb.Wz
-						skillLevel = mb.SkillLevel
-					}
-				}
-			}
-			var causerOID uint32
-			if L.GetTop() >= 5 && L.Get(5) != lua.LNil {
-				switch cv := L.Get(5).(type) {
-				case *lua.LUserData:
-					cud := cv
-					if ch, ok := cud.Value.(*Character); ok && ch != nil {
-						causerOID = ch.GetID()
-					} else {
-						L.ArgError(5, "causer must be Character, OID(number), or nil")
-						return 0
-					}
-				case lua.LNumber:
-					oid := int64(lua.LVAsNumber(cv))
-					if oid < 0 {
-						L.ArgError(5, "causer OID must be >= 0")
-						return 0
-					}
-					causerOID = uint32(oid)
-				default:
-					L.ArgError(5, "causer must be Character, OID(number), or nil")
-					return 0
-				}
+			offset := 4
+			skillWz, skillLevel := parseSource(offset)
+			offset++
+			causerOID, ok := parseCauser(offset)
+			if !ok {
+				return 0
 			}
 			values := make(map[constant.MobBuffFlag]int32)
 			buffTable.ForEach(func(key lua.LValue, value lua.LValue) {
@@ -254,8 +251,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				values[buff] = int32(lua.LVAsNumber(value))
 			})
 			if len(values) > 0 {
-				now := time.Now()
-				mob.ensureMobBuffs().AddSkillBuff(now, durationMs, skillWz, skillLevel, causerOID, values, nil)
+				mob.Buffs.Add(duration, skillWz, skillLevel, causerOID, values, nil)
 			}
 			return 0
 		},
@@ -437,7 +433,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
-			mob.CancelMobBuff(buff)
+			mob.Buffs.Remove(buff)
 			return 0
 		},
 		"has_buff": func(L *lua.LState) int {
@@ -449,12 +445,37 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			buffTable := L.CheckTable(2)
 			maskLV := buffTable.RawGetString("mask")
-			if maskLV.Type() != lua.LTNumber {
-				L.ArgError(2, "MobBuff table with numeric mask expected")
+			if maskLV.Type() == lua.LTNumber {
+				buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
+				L.Push(lua.LBool(mob.Buffs.Has(buff)))
+				return 1
+			}
+			hasAny := false
+			invalid := false
+			buffTable.ForEach(func(_ lua.LValue, value lua.LValue) {
+				if invalid || hasAny {
+					return
+				}
+				entry, ok := value.(*lua.LTable)
+				if !ok {
+					invalid = true
+					return
+				}
+				entryMask := entry.RawGetString("mask")
+				if entryMask.Type() != lua.LTNumber {
+					invalid = true
+					return
+				}
+				buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(entryMask)))
+				if mob.Buffs.Has(buff) {
+					hasAny = true
+				}
+			})
+			if invalid {
+				L.ArgError(2, "MobBuff table or array of MobBuff tables expected")
 				return 0
 			}
-			buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
-			L.Push(lua.LBool(mob.HasBuff(buff)))
+			L.Push(lua.LBool(hasAny))
 			return 1
 		},
 		"buff_value": func(L *lua.LState) int {
@@ -471,7 +492,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			buff := constant.MobBuffFlag(uint32(lua.LVAsNumber(maskLV)))
-			L.Push(lua.LNumber(mob.GetMobBuffValue(buff)))
+			L.Push(lua.LNumber(mob.Buffs.GetValue(buff)))
 			return 1
 		},
 
@@ -494,10 +515,55 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if stack < 1 {
 					stack = 1
 				}
-				L.Push(lua.LBool(mob.SetMobBuffStack(buff, stack)))
+				L.Push(lua.LBool(mob.Buffs.SetStack(buff, stack)))
 				return 1
 			}
-			L.Push(lua.LNumber(mob.GetMobBuffStack(buff)))
+			L.Push(lua.LNumber(mob.Buffs.GetStack(buff)))
+			return 1
+		},
+		"banish": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "banish(character) expected")
+				return 0
+			}
+			chUD := L.CheckUserData(2)
+			ch, ok := chUD.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(2, "Character expected")
+				return 0
+			}
+			if mob.Wz == nil || mob.Wz.Banish == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			b := mob.Wz.Banish
+			if b.Message != "" && ch.Listener != nil {
+				ch.Listener.OnMessage(ch, constant.MSG_PINK_TEXT, b.Message)
+			}
+			if ch.GameWorld == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			targetMap := ch.GameWorld.GetMap(uint32(b.MapID))
+			if targetMap == nil || targetMap.Wz == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			spawnPoint := uint8(0)
+			if portal, ok := targetMap.Wz.FindPortal(b.Portal); ok {
+				spawnPoint = portal.ID
+			}
+			if err := ch.Warp(targetMap, spawnPoint); err != nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			L.Push(lua.LBool(true))
 			return 1
 		},
 		"wz": func(L *lua.LState) int {
@@ -609,11 +675,58 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				ct := mapInstance.GetControllerTable()
-				ct.SwitchController(mob, ch)
+				ct.SwitchController(mob, ch, false)
 				return 0
 			}
 			L.ArgError(2, "controller() requires 0 or 1 arguments")
 			return 0
+		},
+		"create_mist": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			skillUD := L.CheckUserData(2)
+			skill, ok := skillUD.Value.(*MobSkill)
+			if !ok || skill == nil {
+				L.ArgError(2, "MobSkill expected")
+				return 0
+			}
+			durationMs := L.CheckInt(3)
+			if durationMs < 0 {
+				durationMs = 0
+			}
+			mistType := constant.MistType(L.CheckInt(4))
+			boundsTable := L.CheckTable(5)
+			left := int32(lua.LVAsNumber(boundsTable.RawGetString("left")))
+			top := int32(lua.LVAsNumber(boundsTable.RawGetString("top")))
+			right := int32(lua.LVAsNumber(boundsTable.RawGetString("right")))
+			bottom := int32(lua.LVAsNumber(boundsTable.RawGetString("bottom")))
+			duration := time.Duration(durationMs) * time.Millisecond
+			initialDelay := time.Duration(0)
+			if L.GetTop() >= 6 {
+				initialDelayMs := L.CheckInt(6)
+				if initialDelayMs > 0 {
+					initialDelay = time.Duration(initialDelayMs) * time.Millisecond
+				}
+			}
+			poisonTickMultiplier := 1.0
+			if L.GetTop() >= 7 {
+				poisonTickMultiplier = float64(L.CheckNumber(7))
+				if poisonTickMultiplier <= 0 {
+					poisonTickMultiplier = 1.0
+				}
+			}
+			bounds := types.Rect[int32]{Left: left, Top: top, Right: right, Bottom: bottom}
+			mist := mob.SpawnMist(skill, mob.Position, mistType, bounds, duration, initialDelay, poisonTickMultiplier)
+			if mist == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, mist))
+			return 1
 		},
 	}
 }

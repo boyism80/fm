@@ -85,13 +85,13 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 	}
 
 	skillID := e.Wz.ID
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
 		return
 	}
-	if _, err := luax.Call(thread, luax.SkillScriptHookName("on_buff", skillID), ch, e); err != nil {
+	if _, err := luax.Call(thread, fmt.Sprintf("on_buff_%d", skillID), ch, e); err != nil {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
 	}
 }
@@ -110,13 +110,13 @@ func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
 	}
 
 	skillID := e.Wz.ID
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
+	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
 		return
 	}
-	if _, err := luax.Call(thread, luax.SkillScriptHookName("on_unbuff", skillID), ch, e); err != nil {
+	if _, err := luax.Call(thread, fmt.Sprintf("on_unbuff_%d", skillID), ch, e); err != nil {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
 	}
 }
@@ -210,6 +210,9 @@ func NewBuffContainer(owner *Character) *BuffContainer {
 	if owner == nil {
 		panic("buff container owner is nil")
 	}
+	if owner.Listener == nil {
+		panic("BuffContainer: character listener must not be nil")
+	}
 	return &BuffContainer{
 		owner:    owner,
 		byFlag:   make(map[constant.BuffFlag]Buff),
@@ -217,8 +220,38 @@ func NewBuffContainer(owner *Character) *BuffContainer {
 	}
 }
 
+func copyBuffValues(values map[constant.BuffFlag]int32) ([]constant.BuffFlag, map[constant.BuffFlag]int32) {
+	flags := make([]constant.BuffFlag, 0, len(values))
+	valCopy := make(map[constant.BuffFlag]int32, len(values))
+	for flag, value := range values {
+		flags = append(flags, flag)
+		valCopy[flag] = value
+	}
+	return flags, valCopy
+}
+
+func (bc *BuffContainer) callUnbuffScripts(removed []Buff) {
+	ch := bc.owner
+	for _, entity := range removed {
+		if entity == nil {
+			continue
+		}
+		entity.CallOnUnbuffScript(ch)
+	}
+}
+
+func (bc *BuffContainer) notifyAdded(entity Buff, now time.Time) {
+	ch := bc.owner
+	values := entity.GetValues()
+	entityValues := make(map[constant.BuffFlag]int32, len(values))
+	for flag, value := range values {
+		entityValues[flag] = value
+	}
+	ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
+}
+
 func (bc *BuffContainer) add(entity Buff) (removed []Buff) {
-	if bc == nil || entity == nil || len(entity.GetFlags()) == 0 {
+	if entity == nil || len(entity.GetFlags()) == 0 {
 		return nil
 	}
 
@@ -231,15 +264,23 @@ func (bc *BuffContainer) add(entity Buff) (removed []Buff) {
 
 	for existing := range conflicts {
 		removed = append(removed, existing)
-		bc.removeEntity(existing)
+		delete(bc.entities, existing)
+		for _, flag := range existing.GetFlags() {
+			if current := bc.byFlag[flag]; current == existing {
+				delete(bc.byFlag, flag)
+			}
+		}
 	}
 
-	bc.addEntity(entity)
+	bc.entities[entity] = struct{}{}
+	for _, flag := range entity.GetFlags() {
+		bc.byFlag[flag] = entity
+	}
 	return removed
 }
 
 func (bc *BuffContainer) remove(flags []constant.BuffFlag) (removed []Buff, removedFlags []constant.BuffFlag) {
-	if bc == nil || len(flags) == 0 {
+	if len(flags) == 0 {
 		return nil, nil
 	}
 
@@ -256,7 +297,12 @@ func (bc *BuffContainer) remove(flags []constant.BuffFlag) (removed []Buff, remo
 		for _, flag := range entity.GetFlags() {
 			removedFlagSet[flag] = struct{}{}
 		}
-		bc.removeEntity(entity)
+		delete(bc.entities, entity)
+		for _, flag := range entity.GetFlags() {
+			if current := bc.byFlag[flag]; current == entity {
+				delete(bc.byFlag, flag)
+			}
+		}
 	}
 
 	removedFlags = make([]constant.BuffFlag, 0, len(removedFlagSet))
@@ -267,25 +313,25 @@ func (bc *BuffContainer) remove(flags []constant.BuffFlag) (removed []Buff, remo
 	return removed, removedFlags
 }
 
-func (bc *BuffContainer) Has(flag constant.BuffFlag) bool {
-	if bc == nil {
-		return false
+func (bc *BuffContainer) applyAdded(entity Buff, now time.Time, notify bool) {
+	removed := bc.add(entity)
+	bc.callUnbuffScripts(removed)
+	entity.CallOnBuffScript(bc.owner)
+	if notify {
+		bc.notifyAdded(entity, now)
 	}
+}
+
+func (bc *BuffContainer) Has(flag constant.BuffFlag) bool {
 	_, exists := bc.byFlag[flag]
 	return exists
 }
 
 func (bc *BuffContainer) GetEntity(flag constant.BuffFlag) Buff {
-	if bc == nil {
-		return nil
-	}
 	return bc.byFlag[flag]
 }
 
 func (bc *BuffContainer) Entities() []Buff {
-	if bc == nil {
-		return nil
-	}
 	entities := make([]Buff, 0, len(bc.entities))
 	for entity := range bc.entities {
 		entities = append(entities, entity)
@@ -293,136 +339,64 @@ func (bc *BuffContainer) Entities() []Buff {
 	return entities
 }
 
-func (bc *BuffContainer) addEntity(entity Buff) {
-	bc.entities[entity] = struct{}{}
-	for _, flag := range entity.GetFlags() {
-		bc.byFlag[flag] = entity
-	}
-}
-
-func (bc *BuffContainer) removeEntity(entity Buff) {
-	delete(bc.entities, entity)
-	for _, flag := range entity.GetFlags() {
-		if current := bc.byFlag[flag]; current == entity {
-			delete(bc.byFlag, flag)
-		}
-	}
-}
-
 func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLevel uint8, causerID uint32, values map[constant.BuffFlag]int32, notify bool) {
-	if bc == nil {
-		return
-	}
 	if len(values) == 0 {
 		return
 	}
-	ch := bc.owner
-
-	entityFlags := make([]constant.BuffFlag, 0, len(values))
-	entityValues := make(map[constant.BuffFlag]int32, len(values))
-	for flag, value := range values {
-		entityFlags = append(entityFlags, flag)
-		entityValues[flag] = value
-	}
-
 	now := time.Now()
-
+	flags, valCopy := copyBuffValues(values)
 	entity := &SkillBuff{
 		BaseBuff: &BaseBuff{
 			StartTime: now,
 			Duration:  duration,
-			Flags:     entityFlags,
-			Values:    entityValues,
+			Flags:     flags,
+			Values:    valCopy,
 		},
 		Wz:         wz,
 		SkillLevel: skillLevel,
 		CauserID:   causerID,
 	}
-
-	removed := bc.add(entity)
-	if len(removed) > 0 {
-		ch.handleRemovedBuffEntities(removed)
-	}
-
-	entity.CallOnBuffScript(ch)
-
-	if notify {
-		ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
-	}
+	bc.applyAdded(entity, now, notify)
 }
 
 func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32, applyPotionDurationScale bool, notify bool) {
-	if bc == nil {
+	if len(values) == 0 || consumeWz == nil {
 		return
 	}
-	if len(values) == 0 {
-		return
-	}
-	if consumeWz == nil {
-		return
-	}
-
-	ch := bc.owner
-
-	entityFlags := make([]constant.BuffFlag, 0, len(values))
-	entityValues := make(map[constant.BuffFlag]int32, len(values))
-	for flag, value := range values {
-		entityFlags = append(entityFlags, flag)
-		entityValues[flag] = value
-	}
-
 	now := time.Now()
-
+	flags, valCopy := copyBuffValues(values)
 	scaledDuration := duration
 	if applyPotionDurationScale && duration > 0 {
-		mul := ch.PotionDurationMultiplierPercent()
+		mul := bc.owner.PotionDurationMultiplierPercent()
 		scaledDuration = time.Duration(int64(duration) * int64(mul) / 100)
 	}
-
 	entity := &ItemBuff{
 		BaseBuff: &BaseBuff{
 			StartTime: now,
 			Duration:  scaledDuration,
-			Flags:     entityFlags,
-			Values:    entityValues,
+			Flags:     flags,
+			Values:    valCopy,
 		},
 		Wz: consumeWz,
 	}
-
-	removed := bc.add(entity)
-	if len(removed) > 0 {
-		ch.handleRemovedBuffEntities(removed)
-	}
-
-	entity.CallOnBuffScript(ch)
-
-	if notify {
-		ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
-	}
+	bc.applyAdded(entity, now, notify)
 }
 
 func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {
-	if bc == nil {
-		return
-	}
 	if len(flags) == 0 {
 		return
 	}
-	ch := bc.owner
 	removed, removedFlags := bc.remove(flags)
 	if len(removed) == 0 {
 		return
 	}
-	ch.handleRemovedBuffEntities(removed)
+	bc.callUnbuffScripts(removed)
 	if len(removedFlags) > 0 {
-		ch.Listener.OnBuffRemoved(ch, removedFlags)
+		bc.owner.Listener.OnBuffRemoved(bc.owner, removedFlags)
 	}
 }
 
 func (bc *BuffContainer) RemoveSkillBuff(skillID uint32) {
-	if bc == nil {
-		return
-	}
 	var target Buff
 	for entity := range bc.entities {
 		skillBuff, ok := entity.(*SkillBuff)
@@ -445,9 +419,6 @@ func (bc *BuffContainer) RemoveSkillBuff(skillID uint32) {
 }
 
 func (bc *BuffContainer) GetBuffValue(flag constant.BuffFlag) (Buff, int32, bool) {
-	if bc == nil {
-		return nil, 0, false
-	}
 	entity := bc.GetEntity(flag)
 	if entity == nil {
 		return nil, 0, false
@@ -464,9 +435,6 @@ func (bc *BuffContainer) GetBuffValue(flag constant.BuffFlag) (Buff, int32, bool
 }
 
 func (bc *BuffContainer) SetBuffValue(flag constant.BuffFlag, value int32) (Buff, bool) {
-	if bc == nil {
-		return nil, false
-	}
 	entity := bc.GetEntity(flag)
 	if entity == nil {
 		return nil, false
@@ -476,18 +444,12 @@ func (bc *BuffContainer) SetBuffValue(flag constant.BuffFlag, value int32) (Buff
 		return nil, false
 	}
 	values[flag] = value
-	if bc.owner != nil {
-		bc.owner.Listener.OnBuffAdded(bc.owner, entity.GetBuffID(), entity.RemainingDuration(time.Now()), map[constant.BuffFlag]int32{flag: value})
-	}
+	bc.owner.Listener.OnBuffAdded(bc.owner, entity.GetBuffID(), entity.RemainingDuration(time.Now()), map[constant.BuffFlag]int32{flag: value})
 	return entity, true
 }
 
 func (bc *BuffContainer) EmitAllBuffAddedEvents() {
-	if bc == nil || bc.owner == nil {
-		return
-	}
 	now := time.Now()
-	ch := bc.owner
 	for entity := range bc.entities {
 		if entity == nil {
 			continue
@@ -496,22 +458,6 @@ func (bc *BuffContainer) EmitAllBuffAddedEvents() {
 		if len(values) == 0 {
 			continue
 		}
-		entityValues := make(map[constant.BuffFlag]int32, len(values))
-		for flag, value := range values {
-			entityValues[flag] = value
-		}
-		ch.Listener.OnBuffAdded(ch, entity.GetBuffID(), entity.RemainingDuration(now), entityValues)
-	}
-}
-
-func (ch *Character) handleRemovedBuffEntities(removed []Buff) {
-	if len(removed) == 0 {
-		return
-	}
-	for _, entity := range removed {
-		if entity == nil {
-			continue
-		}
-		entity.CallOnUnbuffScript(ch)
+		bc.notifyAdded(entity, now)
 	}
 }

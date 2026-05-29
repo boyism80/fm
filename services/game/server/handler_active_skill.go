@@ -101,14 +101,14 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
+	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", req.SkillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	result, err := luax.Call(thread, luax.SkillScriptHookName("on_activating", req.SkillID), ch, skillEntry, params)
+	result, err := luax.Call(thread, fmt.Sprintf("on_activating_%d", req.SkillID), ch, skillEntry, params)
 	if err != nil {
 		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
 		ch.Listener.OnUpdateStats(ch, nil, true)
@@ -148,7 +148,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorContext: ctx.ActorContext,
 	})
-	if _, err := luax.Call(thread, luax.SkillScriptHookName("on_activated", req.SkillID), ch, skillEntry, params); err != nil {
+	if _, err := luax.Call(thread, fmt.Sprintf("on_activated_%d", req.SkillID), ch, skillEntry, params); err != nil {
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return err

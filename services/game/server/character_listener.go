@@ -721,9 +721,9 @@ func (l *CharacterListenerImpl) OnBuffRemoved(ch *entity.Character, flags []cons
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnDebuffAdded(ch *entity.Character, disease constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32) {
+func (l *CharacterListenerImpl) OnDebuffAdded(ch *entity.Character, debuff constant.DebuffFlag, x int16, skillID uint16, skillLevel uint16, durationMs int32) {
 	ch.Send(&response.GiveSelfDebuff{
-		Disease:    disease,
+		Debuff:     debuff,
 		X:          x,
 		SkillID:    skillID,
 		SkillLevel: skillLevel,
@@ -732,7 +732,7 @@ func (l *CharacterListenerImpl) OnDebuffAdded(ch *entity.Character, disease cons
 
 	ch.Broadcast(&response.GiveDebuff{
 		CharacterID: int32(ch.GetID()),
-		Disease:     disease,
+		Debuff:      debuff,
 		X:           x,
 		SkillID:     skillID,
 		SkillLevel:  skillLevel,
