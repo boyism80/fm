@@ -35,6 +35,8 @@ type Life interface {
 	GetInvincible() bool
 	SetInvincible(bool)
 	IsAlive() bool
+	GetStance() uint8
+	SetStance(uint8)
 }
 
 func (life *LifeCore) GetObjectType() constant.ObjectType {
@@ -97,6 +99,14 @@ func (life *LifeCore) GetBonusHp() int32   { return life.BonusHp }
 func (life *LifeCore) GetBonusMp() int32   { return life.BonusMp }
 func (life *LifeCore) GetInvincible() bool { return life.Invincible }
 func (life *LifeCore) IsAlive() bool       { return life.hp > 0 }
+
+func (life *LifeCore) GetStance() uint8 {
+	return life.Stance
+}
+
+func (life *LifeCore) SetStance(v uint8) {
+	life.Stance = v
+}
 
 func (life *LifeCore) setHp(v uint32) {
 	maxHp := life.GetMaxHp()

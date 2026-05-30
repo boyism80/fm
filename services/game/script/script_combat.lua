@@ -28,6 +28,57 @@ local function total_damage_to_mob(hits)
 	return total
 end
 
+local MOB_ATTACK_REFLECT_DAMAGE_MIN = 7000
+local MOB_ATTACK_REFLECT_DAMAGE_RANGE = 8000
+
+local function mob_attack_reflect_damage()
+	return MOB_ATTACK_REFLECT_DAMAGE_MIN + math.random(0, MOB_ATTACK_REFLECT_DAMAGE_RANGE - 1)
+end
+
+local function apply_mob_attack_immunity(hits, immunity)
+	if not immunity or hits == nil then
+		return total_damage_to_mob(hits)
+	end
+	local total = 0
+	for i, amount in ipairs(hits) do
+		amount = amount or 0
+		if amount > 0 then
+			if amount > 1 then
+				amount = 1
+				hits[i] = 1
+			end
+			total = total + amount
+		end
+	end
+	return total
+end
+
+function handle_mob_attack_reflect_immunity(me, damages, attack_info)
+	if me == nil or damages == nil or attack_info == nil then
+		return
+	end
+	local magic = attack_info.magic == true
+	for mob, hits in pairs(damages) do
+		local immunity = false
+		local reflect = false
+		if magic then
+			immunity = mob:has_buff({ MobBuff.MagicImmunity, MobBuff.MagicDamageReflect })
+			reflect = mob:has_buff(MobBuff.MagicDamageReflect)
+		else
+			immunity = mob:has_buff({
+				MobBuff.WeaponDamageReflect,
+				MobBuff.DamageImmunity,
+				MobBuff.WeaponImmunity,
+			})
+			reflect = mob:has_buff(MobBuff.WeaponDamageReflect)
+		end
+		local total = apply_mob_attack_immunity(hits, immunity)
+		if total > 0 and reflect and not me:invincible() then
+			me:add_hp(-mob_attack_reflect_damage())
+		end
+	end
+end
+
 function apply_skill_drain_on_attack(me, skill, damages)
 	local effect = skill:effect()
 	if effect == nil then

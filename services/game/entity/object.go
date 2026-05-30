@@ -38,6 +38,7 @@ type Object interface {
 	Send(p types.Packet, policy types.SendPolicy) error
 	SendSpawnSyncToViewer(viewer *Character)
 	Nears(filter constant.ObjectType) []Object
+	ObjectsIn(filter constant.ObjectType, bounds types.Rect[int32]) []Object
 	Broadcast(message types.Packet, option *ObjectBroadcastOption)
 	BroadcastCall(fn func(Object), option *ObjectBroadcastOption)
 	GetTimerEntry(key string) *ObjectTimer
@@ -111,6 +112,27 @@ func (o *ObjectCore) Nears(filter constant.ObjectType) []Object {
 			continue
 		}
 		out = append(out, cand)
+	}
+	return out
+}
+
+func (o *ObjectCore) ObjectsIn(filter constant.ObjectType, bounds types.Rect[int32]) []Object {
+	pivot := o.self
+	if pivot == nil {
+		return nil
+	}
+	m := pivot.GetMap()
+	if m == nil || !bounds.Valid() {
+		return nil
+	}
+	pos := pivot.GetPosition()
+	world := bounds.AtOrigin(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)})
+	out := make([]Object, 0)
+	for _, obj := range m.GetObjectsIn(filter, world) {
+		if obj == nil || obj == pivot {
+			continue
+		}
+		out = append(out, obj)
 	}
 	return out
 }

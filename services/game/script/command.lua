@@ -506,6 +506,77 @@ command_funcs = {
 			return true
 		end,
 	},
+	["몬스터체력"] = {
+		privilege = ROLE.Admin,
+		usage = "<체력값|체력%> - 맵 내 모든 몬스터 체력 조정 (데미지/회복)",
+		command = function(me, args)
+			if not args[1] or args[1] == "" then
+				me:notice("사용법: /몬스터체력 <체력값|체력%>")
+				return true
+			end
+			local raw = args[1]
+			if args[2] == "%" then
+				raw = raw .. "%"
+			end
+			local percent = false
+			local num_str = raw
+			if string.sub(raw, -1) == "%" then
+				percent = true
+				num_str = string.sub(raw, 1, -2)
+				if num_str == "" then
+					me:notice("사용법: /몬스터체력 <체력값|체력%>")
+					return true
+				end
+			end
+			local value = tonumber(num_str)
+			if value == nil or value < 0 then
+				me:notice("체력 값이 올바르지 않습니다.")
+				return true
+			end
+			if percent and value > 100 then
+				me:notice("체력 %는 0~100 사이여야 합니다.")
+				return true
+			end
+			local m = me:map()
+			if m == nil then
+				me:notice("맵 정보 없음")
+				return true
+			end
+			local changed = 0
+			local skipped = 0
+			for _, mob in pairs(m:mobs()) do
+				local max_hp = mob:max_hp()
+				if max_hp ~= nil and max_hp > 0 then
+					local target_hp
+					if percent then
+						target_hp = math.floor(max_hp * value / 100)
+					elseif value > max_hp then
+						target_hp = max_hp
+					else
+						target_hp = math.floor(value)
+					end
+					local current = mob:hp()
+					if current > target_hp then
+						mob:damage(me, current - target_hp)
+						changed = changed + 1
+					elseif current < target_hp then
+						mob:add_hp(target_hp - current)
+						changed = changed + 1
+					else
+						skipped = skipped + 1
+					end
+				else
+					skipped = skipped + 1
+				end
+			end
+			if percent then
+				me:notice(string.format("몬스터 체력 %.0f%% 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
+			else
+				me:notice(string.format("몬스터 체력 %d 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
+			end
+			return true
+		end,
+	},
 	["스킬마스터"] = {
 		privilege = ROLE.Admin,
 		usage = "- 모든 배운 스킬의 레벨을 최대치로 올림",

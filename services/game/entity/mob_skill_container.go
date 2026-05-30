@@ -173,7 +173,7 @@ func (sc *MobSkillContainer) chooseByScript(controller *Character, skill *MobSki
 	if root == nil {
 		return true
 	}
-	scriptPath := fmt.Sprintf("script/skill/mob/%d.lua", skill.Slot.SkillID)
+	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skill.Slot.SkillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		return true

@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -93,6 +94,42 @@ func (obj *ObjectCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			typeArg := constant.ObjectType(L.CheckInt(2))
 			L.Push(lua.LBool(obj.Is(typeArg)))
+			return 1
+		},
+		"objects_in": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			obj, ok := ud.Value.(Object)
+			if !ok {
+				L.ArgError(1, "Object expected")
+				return 0
+			}
+			boundsTable := L.CheckTable(2)
+			left := int32(lua.LVAsNumber(boundsTable.RawGetString("left")))
+			top := int32(lua.LVAsNumber(boundsTable.RawGetString("top")))
+			right := int32(lua.LVAsNumber(boundsTable.RawGetString("right")))
+			bottom := int32(lua.LVAsNumber(boundsTable.RawGetString("bottom")))
+			bounds := types.Rect[int32]{
+				Left:   left,
+				Top:    top,
+				Right:  right,
+				Bottom: bottom,
+			}
+			filter := constant.ObjectTypeObject
+			if L.GetTop() >= 3 {
+				if lv := L.Get(3); lv.Type() == lua.LTNumber {
+					filter = constant.ObjectType(lua.LVAsNumber(lv))
+				}
+			}
+			objs := obj.ObjectsIn(filter, bounds)
+			result := L.NewTable()
+			idx := 0
+			for _, v := range objs {
+				if luable, ok := v.(luax.Luable); ok {
+					idx++
+					result.RawSetInt(idx, luax.NewLuable(L, luable))
+				}
+			}
+			L.Push(result)
 			return 1
 		},
 	}

@@ -112,31 +112,50 @@ function on_damaged(me, attacker, skill, damage, params)
     return d
 end
 
-function on_poison(mist, mobs)
-    if mist == nil or mobs == nil then
+function on_poison(mist, targets)
+    if mist == nil or targets == nil then
         return
     end
-    local wz = mist:wz()
-    local level = mist:level()
     local effect = mist:effect()
-    local multiplier = mist:poison_tick_multiplier() or 1.0
-    if multiplier <= 0 then
-        multiplier = 1.0
+    if effect == nil then
+        return
     end
     local prop = effect.prop or 0
     if prop <= 0 then
         prop = 100
     end
-    local duration_ms = effect.time or 0
-    if duration_ms <= 0 then
-        return
-    end
-    for _, mob in ipairs(mobs) do
-        if mob ~= nil and not mob:has_buff(MobBuff.Poison) then
-            if math.random(1, 100) <= prop then
-                local value = compute_poison_tick_damage_wz_level(wz, level, mob, multiplier)
-                if value > 0 then
-                    mob:buff(MobBuff.Poison, value, duration_ms, mist, mist:causer())
+    if mist:from_mob() then
+        local skill_id = effect.skill_id
+        local skill_level = effect.level or mist:level()
+        local time = effect.time or 0
+        local x = 30
+        if time > 0 then
+            for _, ch in ipairs(targets) do
+                if ch ~= nil and not ch:has_debuff(DebuffFlag.Poison) then
+                    if math.random(1, 100) <= prop then
+                        ch:debuff(DebuffFlag.Poison, time, x, skill_id, skill_level)
+                        ch:add_hp(-x)
+                    end
+                end
+            end
+        end
+    else
+        local wz = mist:wz()
+        local level = mist:level()
+        local multiplier = mist:poison_tick_multiplier() or 1.0
+        if multiplier <= 0 then
+            multiplier = 1.0
+        end
+        local time = effect.time or 0
+        if time > 0 then
+            for _, mob in ipairs(targets) do
+                if mob ~= nil and not mob:has_buff(MobBuff.Poison) then
+                    if math.random(1, 100) <= prop then
+                        local value = compute_poison_tick_damage_wz_level(wz, level, mob, multiplier)
+                        if value > 0 then
+                            mob:buff(MobBuff.Poison, value, time, mist, mist:causer())
+                        end
+                    end
                 end
             end
         end
@@ -162,12 +181,12 @@ function on_blocked(me, attacker)
     end
     local effect = skill:effect()
     local prop = effect.prop or 0
-    local duration_ms = effect.time or 0
-    if prop <= 0 or duration_ms <= 0 then
+    local time = effect.time or 0
+    if prop <= 0 or time <= 0 then
         return
     end
     if math.random(1, 100) <= math.min(100, prop) then
-        attacker:buff(MobBuff.Stun, 1, duration_ms, skill, me)
+        attacker:buff(MobBuff.Stun, 1, time, skill, me)
     end
 end
 

@@ -8,11 +8,12 @@ type DamageMob struct {
 }
 
 func (p *DamageMob) Opcode() uint16 {
-	return 0xAC
+	return 0xB3
 }
 
 func (p *DamageMob) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.OID)
+	writer.WriteU8(0)
 	writer.Write32(p.Damage)
 	return nil
 }

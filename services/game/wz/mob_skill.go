@@ -41,6 +41,7 @@ type MobSkillLevelData struct {
 	CooltimeMs  int64
 	Prop        float32
 	Limit       int16
+	ElemAttr    string
 	SpawnEffect int
 	SummonOnce  bool
 	Summons     []uint32
@@ -193,6 +194,18 @@ func parseMobSkillSummons(levelNode *node) []uint32 {
 	return summons
 }
 
+func nodeString(n *node, name string) string {
+	if n == nil {
+		return ""
+	}
+	for _, f := range n.Strings {
+		if f.Name == name {
+			return f.Value
+		}
+	}
+	return ""
+}
+
 func parseMobSkillLevel(skillID uint32, level uint8, levelNode *node) *MobSkillLevelData {
 	if levelNode == nil {
 		return nil
@@ -208,6 +221,7 @@ func parseMobSkillLevel(skillID uint32, level uint8, levelNode *node) *MobSkillL
 		CooltimeMs:  int64(nodeInt(levelNode, "interval", 0)) * 1000,
 		Prop:        float32(nodeInt(levelNode, "prop", 100)) / 100,
 		Limit:       int16(nodeInt(levelNode, "limit", 0)),
+		ElemAttr:    nodeString(levelNode, "elemAttr"),
 		SpawnEffect: nodeInt(levelNode, "summonEffect", 0),
 		SummonOnce:  nodeInt(levelNode, "summonOnce", 0) > 0,
 		Summons:     parseMobSkillSummons(levelNode),

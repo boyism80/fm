@@ -133,7 +133,7 @@ func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
 }
 
 func (m *Mob) ApplyMobBuff(flag constant.MobBuffFlag, value int32, duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
-	if m == nil || m.Buffs == nil {
+	if m == nil {
 		return
 	}
 	if stack < 1 {
@@ -154,18 +154,8 @@ func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType c
 	}
 	b := bounds
 	if b.Left == 0 && b.Right == 0 && b.Top == 0 && b.Bottom == 0 {
-		px := int32(position.X)
-		py := int32(position.Y)
-		x1 := px + skill.LevelData.Bounds.Left
-		x2 := px + skill.LevelData.Bounds.Right
-		y1 := py + skill.LevelData.Bounds.Top
-		y2 := py + skill.LevelData.Bounds.Bottom
-		b = types.Rect[int32]{
-			Left:   min(x1, x2),
-			Top:    min(y1, y2),
-			Right:  max(x1, x2),
-			Bottom: max(y1, y2),
-		}
+		pos := m.GetPosition()
+		b = skill.LevelData.Bounds.AtOrigin(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)})
 	}
 	if poisonTickMultiplier <= 0 {
 		poisonTickMultiplier = 1.0
@@ -182,6 +172,7 @@ func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType c
 		},
 		Causer:               causer,
 		SkillWz:              skill.LevelData.SkillWz,
+		MobLevelData:         skill.LevelData,
 		SkillLevel:           skill.Slot.Level,
 		MistType:             mistType,
 		MobMist:              true,

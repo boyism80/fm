@@ -85,7 +85,7 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 	}
 
 	skillID := e.Wz.ID
-	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", skillID)
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
@@ -110,7 +110,7 @@ func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
 	}
 
 	skillID := e.Wz.ID
-	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", skillID)
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)

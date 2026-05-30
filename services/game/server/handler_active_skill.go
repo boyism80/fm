@@ -101,7 +101,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
-	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", req.SkillID)
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)

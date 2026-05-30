@@ -53,8 +53,20 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 	}
 
 	damages := req.Damages
-	CallOnAttackHooks(ctx, character, mapInstance, damages, skillID, true, req.Slot)
-	ApplyDamageToMobs(character, mapInstance, damages)
+	CallOnAttackHooks(ctx, character, damages, skillID, false, true, req.Slot)
+	for _, damage := range damages {
+		mob := mapInstance.GetMob(damage.OID)
+		if mob == nil {
+			log.Printf("Mob not found for OID: %d", damage.OID)
+			continue
+		}
+		for _, damagePair := range damage.DamagePairs {
+			if damagePair.Damage == 0 {
+				continue
+			}
+			mob.ApplyDamage(character, damagePair.Damage)
+		}
+	}
 
 	character.Listener.OnRangedAttack(character, req, skillLevel)
 

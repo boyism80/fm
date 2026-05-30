@@ -58,8 +58,20 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	}
 
 	damages := req.Damages
-	CallOnAttackHooks(ctx, character, mapInstance, damages, skillID, false, 0)
-	ApplyDamageToMobs(character, mapInstance, damages)
+	CallOnAttackHooks(ctx, character, damages, skillID, false, false, 0)
+	for _, damage := range damages {
+		mob := mapInstance.GetMob(damage.OID)
+		if mob == nil {
+			log.Printf("Mob not found for OID: %d", damage.OID)
+			continue
+		}
+		for _, damagePair := range damage.DamagePairs {
+			if damagePair.Damage == 0 {
+				continue
+			}
+			mob.ApplyDamage(character, damagePair.Damage)
+		}
+	}
 
 	if len(req.MesoOIDs) > 0 {
 		items := mapInstance.GetItems()
@@ -87,15 +99,23 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	return nil
 }
 
-func buildAttackInfoTable(L *lua.LState, ranged bool, consumeSlot uint16) *lua.LTable {
+func buildAttackInfoTable(L *lua.LState, magicAttack bool, ranged bool, consumeSlot uint16) *lua.LTable {
 	tbl := L.NewTable()
+	tbl.RawSetString("magic", lua.LBool(magicAttack))
 	tbl.RawSetString("ranged", lua.LBool(ranged))
 	tbl.RawSetString("consume_slot", lua.LNumber(consumeSlot))
 	return tbl
 }
 
-func buildDamagesTable(L *lua.LState, mapInstance *entity.Map, damages []dto.AttackPair) *lua.LTable {
+func buildDamagesTable(L *lua.LState, character *entity.Character, damages []dto.AttackPair) *lua.LTable {
 	tbl := L.NewTable()
+	if character == nil {
+		return tbl
+	}
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
+		return tbl
+	}
 	for _, ap := range damages {
 		mob := mapInstance.GetMob(ap.OID)
 		if mob == nil {

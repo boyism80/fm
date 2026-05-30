@@ -45,7 +45,7 @@ func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID
 		return false
 	}
 
-	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", skillID)
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
@@ -90,7 +90,7 @@ func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, 
 	if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
 		return
 	}
-	scriptPath := fmt.Sprintf("script/skill/character/%d.lua", skillID)
+	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
@@ -106,7 +106,11 @@ func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, 
 	}
 }
 
-func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32, ranged bool, consumeSlot uint16) {
+func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, damages []dto.AttackPair, skillID uint32, magicAttack bool, ranged bool, consumeSlot uint16) {
+	if character == nil {
+		return
+	}
+	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return
 	}
@@ -128,8 +132,8 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, map
 			skillLV = luax.NewLuable(commonThread, skillEntry)
 		}
 	}
-	damagesTable := buildDamagesTable(commonThread, mapInstance, damages)
-	attackInfoTable := buildAttackInfoTable(commonThread, ranged, consumeSlot)
+	damagesTable := buildDamagesTable(commonThread, character, damages)
+	attackInfoTable := buildAttackInfoTable(commonThread, magicAttack, ranged, consumeSlot)
 	f := commonThread.GetGlobal("on_attack")
 	if f.Type() == lua.LTFunction {
 		commonThread.Push(f)
@@ -152,7 +156,7 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, map
 		return
 	}
 
-	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/character/%d.lua", skillID))
+	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/%d.lua", skillID))
 	if err != nil {
 		return
 	}
@@ -161,7 +165,7 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, map
 	if f2.Type() != lua.LTFunction {
 		return
 	}
-	damagesTable2 := buildDamagesTable(skillThread, mapInstance, damages)
+	damagesTable2 := buildDamagesTable(skillThread, character, damages)
 	skillThread.Push(f2)
 	skillThread.Push(luax.NewLuable(skillThread, character))
 	skillThread.Push(luax.NewLuable(skillThread, skillEntry))
@@ -186,7 +190,7 @@ func CallSummonOnAttackHooks(ctx *core.ClientContext, character *entity.Characte
 	if skillEntry == nil {
 		return
 	}
-	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/character/%d.lua", skillID))
+	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/%d.lua", skillID))
 	if err != nil {
 		log.Printf("summon on_attack thread %d: %v", skillID, err)
 		return
@@ -196,25 +200,12 @@ func CallSummonOnAttackHooks(ctx *core.ClientContext, character *entity.Characte
 	if f.Type() != lua.LTFunction {
 		return
 	}
-	damagesTable := buildDamagesTable(skillThread, mapInstance, damages)
+	damagesTable := buildDamagesTable(skillThread, character, damages)
 	skillThread.Push(f)
 	skillThread.Push(luax.NewLuable(skillThread, character))
 	skillThread.Push(luax.NewLuable(skillThread, skillEntry))
 	skillThread.Push(damagesTable)
 	if err := skillThread.PCall(3, 0, nil); err != nil {
 		log.Printf("summon on_attack %d: %v", skillID, err)
-	}
-}
-
-func ApplyDamageToMobs(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair) {
-	for _, damage := range damages {
-		mob := mapInstance.GetMob(damage.OID)
-		if mob == nil {
-			log.Printf("Mob not found for OID: %d", damage.OID)
-			continue
-		}
-		for _, damagePair := range damage.DamagePairs {
-			mob.ApplyDamage(character, uint32(damagePair.Damage))
-		}
 	}
 }

@@ -218,6 +218,26 @@ func (life *LifeCore) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(acc.IsAlive()))
 			return 1
 		},
+		"stance": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			acc, ok := ud.Value.(Life)
+			if !ok {
+				L.ArgError(1, "Life expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(acc.GetStance()))
+				return 1
+			case 2:
+				acc.SetStance(uint8(L.CheckInt(2)))
+				return 0
+			default:
+				L.ArgError(2, "stance() requires 0 or 1 argument")
+				return 0
+			}
+		},
 	}
 }
 

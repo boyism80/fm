@@ -124,7 +124,7 @@ func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *entity.Map, mo
 	if root == nil {
 		return
 	}
-	scriptPath := fmt.Sprintf("script/skill/mob/%d.lua", req.SkillId)
+	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", req.SkillId)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("mob skill script %s: %v", scriptPath, err)

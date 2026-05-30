@@ -51,19 +51,32 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 			continue
 		}
 		candidates := make([]luax.Luable, 0)
-		for _, mobObj := range mapData.GetMobs() {
-			mob, ok := mobObj.(*entity.Mob)
-			if !ok || mob == nil || !mob.IsAlive() {
-				continue
+		if mist.MobMist {
+			for _, obj := range mapData.GetObjectsIn(constant.ObjectTypeCharacter, mist.Bounds) {
+				ch, ok := obj.(*entity.Character)
+				if !ok || ch == nil || !ch.IsAlive() {
+					continue
+				}
+				if ch.HasDebuff(constant.DebuffFlagPoison) {
+					continue
+				}
+				candidates = append(candidates, ch)
 			}
-			if mob.Buffs.Has(constant.MobBuffPoison) {
-				continue
+		} else {
+			for _, mobObj := range mapData.GetMobs() {
+				mob, ok := mobObj.(*entity.Mob)
+				if !ok || mob == nil || !mob.IsAlive() {
+					continue
+				}
+				if mob.Buffs.Has(constant.MobBuffPoison) {
+					continue
+				}
+				pos := mob.GetPosition()
+				if !mist.Bounds.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}) {
+					continue
+				}
+				candidates = append(candidates, mob)
 			}
-			pos := mob.GetPosition()
-			if !mist.Bounds.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}) {
-				continue
-			}
-			candidates = append(candidates, mob)
 		}
 		if len(candidates) > 0 {
 			root := mapData.GetLuaRoot()

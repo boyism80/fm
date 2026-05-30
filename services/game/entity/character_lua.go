@@ -2119,7 +2119,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			durationMs := L.CheckNumber(3)
 			if durationMs <= 0 {
-				L.ArgError(3, "duration_ms must be positive")
+				L.ArgError(3, "time must be positive")
 				return 0
 			}
 			x := int16(1)

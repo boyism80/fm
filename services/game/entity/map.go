@@ -870,6 +870,21 @@ func (m *Map) GetObjects(filter constant.ObjectType) []Object {
 	return out
 }
 
+func (m *Map) GetObjectsIn(filter constant.ObjectType, bounds types.Rect[int32]) []Object {
+	out := make([]Object, 0)
+	for _, obj := range m.GetObjects(filter) {
+		if obj == nil {
+			continue
+		}
+		pos := obj.GetPosition()
+		point := types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}
+		if bounds.ContainsPoint(point) {
+			out = append(out, obj)
+		}
+	}
+	return out
+}
+
 func (m *Map) Broadcast(message types.Packet, option *BroadcastOption) {
 	if m.objects[constant.ObjectTypeCharacter] == nil {
 		return

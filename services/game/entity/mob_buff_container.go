@@ -91,7 +91,7 @@ func (e *MobBuff) callMobSkillHook(mob *Mob, hookPrefix string) {
 	if causer == nil {
 		return
 	}
-	scriptPath := fmt.Sprintf("script/skill/mob/%d.lua", skillID)
+	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skillID)
 	hookName := fmt.Sprintf("%s_%d", hookPrefix, skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {

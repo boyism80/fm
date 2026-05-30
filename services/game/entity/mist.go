@@ -13,6 +13,7 @@ type Mist struct {
 	ObjectCore
 	Causer               uint32
 	SkillWz              *wz.Skill
+	MobLevelData         *wz.MobSkillLevelData
 	SkillLevel           uint8
 	MistType             constant.MistType
 	MobMist              bool
