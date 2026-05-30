@@ -11,7 +11,6 @@ import (
 	"github.com/boyism80/fm/core/ensure"
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
-	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/actor/timers"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -99,6 +98,12 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onDeliverBuddyListUpdate(m)
 	case *DeliverBuddyAddRequest:
 		a.onDeliverBuddyAddRequest(m)
+	case *DeliverGuildInvite:
+		a.onDeliverGuildInvite(m)
+	case *DeliverGuildMessage:
+		a.onDeliverGuildMessage(m)
+	case *DeliverMessage:
+		a.onDeliverMessage(m)
 	case *SaveMapCharacters:
 		a.onSaveMapCharacters(ctx)
 	default:
@@ -543,10 +548,7 @@ func (a *MapActor) onDeliverPartyStatusMessage(msg *DeliverPartyStatusMessage) {
 	if ch == nil {
 		return
 	}
-	_ = ch.Send(&response.PartyStatusMessage{
-		Code: msg.Code,
-		Name: msg.Name,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnPartyStatusMessage(ch, msg.Code, msg.Name)
 }
 
 func (a *MapActor) onDeliverPartyUpdateJoin(msg *DeliverPartyUpdateJoin) {
@@ -557,13 +559,7 @@ func (a *MapActor) onDeliverPartyUpdateJoin(msg *DeliverPartyUpdateJoin) {
 	if ch == nil {
 		return
 	}
-	_ = ch.Send(&response.PartyUpdateJoin{
-		ForChannel:           msg.ForChannel,
-		PartyID:              msg.PartyID,
-		JoiningCharacterName: msg.JoinName,
-		LeaderCharacterID:    msg.LeaderID,
-		Members:              msg.Members,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnPartyUpdateJoin(ch, msg.ForChannel, msg.PartyID, msg.JoinName, msg.LeaderID, msg.Members)
 	if ch.GetID() != msg.JoinCharacterID {
 		return
 	}
@@ -590,24 +586,10 @@ func (a *MapActor) onDeliverPartyUpdateLeave(msg *DeliverPartyUpdateLeave) {
 		return
 	}
 	if msg.Expelled {
-		_ = ch.Send(&response.PartyUpdateExpel{
-			ForChannel:          msg.ForChannel,
-			PartyID:             msg.PartyID,
-			TargetCharacterID:   msg.TargetID,
-			TargetCharacterName: msg.TargetName,
-			LeaderCharacterID:   msg.LeaderID,
-			Members:             msg.Members,
-		}, types.SEND_POLICY_ENCRYPT)
+		ch.Listener.OnPartyUpdateExpel(ch, msg.ForChannel, msg.PartyID, msg.TargetID, msg.TargetName, msg.LeaderID, msg.Members)
 		return
 	}
-	_ = ch.Send(&response.PartyUpdateLeave{
-		ForChannel:          msg.ForChannel,
-		PartyID:             msg.PartyID,
-		TargetCharacterID:   msg.TargetID,
-		TargetCharacterName: msg.TargetName,
-		LeaderCharacterID:   msg.LeaderID,
-		Members:             msg.Members,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnPartyUpdateLeave(ch, msg.ForChannel, msg.PartyID, msg.TargetID, msg.TargetName, msg.LeaderID, msg.Members)
 }
 
 func (a *MapActor) onDeliverPartyUpdateDisband(msg *DeliverPartyUpdateDisband) {
@@ -618,10 +600,7 @@ func (a *MapActor) onDeliverPartyUpdateDisband(msg *DeliverPartyUpdateDisband) {
 	if ch == nil {
 		return
 	}
-	_ = ch.Send(&response.PartyUpdateDisband{
-		PartyID:           msg.PartyID,
-		LeaderCharacterID: msg.LeaderID,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnPartyUpdateDisband(ch, msg.PartyID, msg.LeaderID)
 }
 
 func (a *MapActor) onDeliverPartyUpdateLeaderChange(msg *DeliverPartyUpdateLeaderChange) {
@@ -632,10 +611,7 @@ func (a *MapActor) onDeliverPartyUpdateLeaderChange(msg *DeliverPartyUpdateLeade
 	if ch == nil {
 		return
 	}
-	_ = ch.Send(&response.PartyUpdateLeaderChange{
-		NewLeaderCharacterID: msg.NewLeaderCharacterID,
-		ByDisconnect:         msg.ByDisconnect,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnPartyUpdateLeaderChange(ch, msg.NewLeaderCharacterID, msg.ByDisconnect)
 }
 
 func (a *MapActor) onDeliverPartyUpdateLogOnOff(msg *DeliverPartyUpdateLogOnOff) {
@@ -646,12 +622,7 @@ func (a *MapActor) onDeliverPartyUpdateLogOnOff(msg *DeliverPartyUpdateLogOnOff)
 	if ch == nil {
 		return
 	}
-	_ = ch.Send(&response.PartyUpdateLogOnOff{
-		ForChannel:        msg.ForChannel,
-		PartyID:           msg.PartyID,
-		LeaderCharacterID: msg.LeaderID,
-		Members:           msg.Members,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnPartyUpdateLogOnOff(ch, msg.ForChannel, msg.PartyID, msg.LeaderID, msg.Members)
 }
 
 func (a *MapActor) onDeliverPartyUpdateSilent(msg *DeliverPartyUpdateSilent) {
@@ -662,12 +633,7 @@ func (a *MapActor) onDeliverPartyUpdateSilent(msg *DeliverPartyUpdateSilent) {
 	if ch == nil {
 		return
 	}
-	_ = ch.Send(&response.PartyUpdateSilent{
-		ForChannel:        msg.ForChannel,
-		PartyID:           msg.PartyID,
-		LeaderCharacterID: msg.LeaderID,
-		Members:           msg.Members,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnPartyUpdateSilent(ch, msg.ForChannel, msg.PartyID, msg.LeaderID, msg.Members)
 }
 
 func (a *MapActor) onDeliverBuddyChannelUpdate(msg *DeliverBuddyChannelUpdate) {
@@ -679,10 +645,7 @@ func (a *MapActor) onDeliverBuddyChannelUpdate(msg *DeliverBuddyChannelUpdate) {
 		return
 	}
 	ch.BuddyList().SetChannel(msg.BuddyCharacterID, msg.Channel)
-	_ = ch.Send(&response.BuddyChannelUpdate{
-		CharacterID: msg.BuddyCharacterID,
-		Channel:     msg.Channel,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnBuddyChannelUpdate(ch, msg.BuddyCharacterID, msg.Channel)
 }
 
 func (a *MapActor) onDeliverBuddyListUpdate(msg *DeliverBuddyListUpdate) {
@@ -714,10 +677,7 @@ func (a *MapActor) onDeliverBuddyListUpdate(msg *DeliverBuddyListUpdate) {
 			Channel:     channel,
 		})
 	}
-	_ = ch.Send(&response.BuddyListUpdate{
-		Action:  action,
-		Entries: msg.Entries,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnBuddyListUpdate(ch, action, msg.Entries)
 }
 
 func (a *MapActor) onDeliverBuddyAddRequest(msg *DeliverBuddyAddRequest) {
@@ -728,8 +688,64 @@ func (a *MapActor) onDeliverBuddyAddRequest(msg *DeliverBuddyAddRequest) {
 	if ch == nil {
 		return
 	}
-	_ = ch.Send(&response.BuddyAddRequest{
-		FromCharacterID: msg.FromCharacterID,
-		FromName:        msg.FromName,
-	}, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnBuddyAddRequest(ch, msg.FromCharacterID, msg.FromName)
+}
+
+func (a *MapActor) onDeliverGuildInvite(msg *DeliverGuildInvite) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	if _, inGuild := ch.GetGuildID(); inGuild {
+		if a.GameWorld != nil {
+			a.GameWorld.EnsureSendCharacter(msg.InviterCharacterID, &DeliverGuildMessage{
+				CharacterID: msg.InviterCharacterID,
+				Code:        pconst.GuildResponseAlreadyInGuild,
+			})
+		}
+		return
+	}
+	now := time.Now()
+	for id, expiresAt := range ch.GuildInvites {
+		if !now.Before(expiresAt) {
+			delete(ch.GuildInvites, id)
+		}
+	}
+	if len(ch.GuildInvites) > 0 {
+		if a.GameWorld != nil {
+			a.GameWorld.EnsureSendCharacter(msg.InviterCharacterID, &DeliverMessage{
+				CharacterID: msg.InviterCharacterID,
+				MessageType: constant.MSG_PINK_TEXT,
+				Message:     constant.GuildInviteTargetBusyMessage,
+			})
+		}
+		return
+	}
+	ch.GuildInvites[msg.GuildID] = now.Add(constant.GuildInviteDuration)
+	ch.Listener.OnGuildInvite(ch, msg.GuildID, msg.InviterName)
+}
+
+func (a *MapActor) onDeliverGuildMessage(msg *DeliverGuildMessage) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildMessage(ch, msg.Code)
+}
+
+func (a *MapActor) onDeliverMessage(msg *DeliverMessage) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnMessage(ch, msg.MessageType, msg.Message)
 }

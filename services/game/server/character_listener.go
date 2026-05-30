@@ -166,6 +166,16 @@ func (l *CharacterListenerImpl) OnPartyInvite(ch *entity.Character, partyID uint
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnGuildInvite(ch *entity.Character, guildID uint32, inviterName string) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildInvite{
+		GuildID:     guildID,
+		InviterName: inviterName,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnMultiChat(ch *entity.Character, mode pconst.MultiChatMode, senderName string, message string) {
 	if ch == nil {
 		return
@@ -177,11 +187,99 @@ func (l *CharacterListenerImpl) OnMultiChat(ch *entity.Character, mode pconst.Mu
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *entity.Character, code pconst.PartyStatusCode) {
+func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *entity.Character, code pconst.PartyStatusCode, name string) {
 	if ch == nil {
 		return
 	}
-	ch.Send(&response.PartyStatusMessage{Code: code}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.PartyStatusMessage{
+		Code: code,
+		Name: name,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPartyUpdateJoin(ch *entity.Character, forChannel int32, partyID uint32, joinName string, leaderID uint32, members []response.PartyMemberStatus) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.PartyUpdateJoin{
+		ForChannel:           forChannel,
+		PartyID:              partyID,
+		JoiningCharacterName: joinName,
+		LeaderCharacterID:    leaderID,
+		Members:              members,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPartyUpdateExpel(ch *entity.Character, forChannel int32, partyID uint32, targetID uint32, targetName string, leaderID uint32, members []response.PartyMemberStatus) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.PartyUpdateExpel{
+		ForChannel:          forChannel,
+		PartyID:             partyID,
+		TargetCharacterID:   targetID,
+		TargetCharacterName: targetName,
+		LeaderCharacterID:   leaderID,
+		Members:             members,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPartyUpdateLeave(ch *entity.Character, forChannel int32, partyID uint32, targetID uint32, targetName string, leaderID uint32, members []response.PartyMemberStatus) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.PartyUpdateLeave{
+		ForChannel:          forChannel,
+		PartyID:             partyID,
+		TargetCharacterID:   targetID,
+		TargetCharacterName: targetName,
+		LeaderCharacterID:   leaderID,
+		Members:             members,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPartyUpdateDisband(ch *entity.Character, partyID uint32, leaderID uint32) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.PartyUpdateDisband{
+		PartyID:           partyID,
+		LeaderCharacterID: leaderID,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPartyUpdateLeaderChange(ch *entity.Character, newLeaderID uint32, byDisconnect bool) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.PartyUpdateLeaderChange{
+		NewLeaderCharacterID: newLeaderID,
+		ByDisconnect:         byDisconnect,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPartyUpdateLogOnOff(ch *entity.Character, forChannel int32, partyID uint32, leaderID uint32, members []response.PartyMemberStatus) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.PartyUpdateLogOnOff{
+		ForChannel:        forChannel,
+		PartyID:           partyID,
+		LeaderCharacterID: leaderID,
+		Members:           members,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPartyUpdateSilent(ch *entity.Character, forChannel int32, partyID uint32, leaderID uint32, members []response.PartyMemberStatus) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.PartyUpdateSilent{
+		ForChannel:        forChannel,
+		PartyID:           partyID,
+		LeaderCharacterID: leaderID,
+		Members:           members,
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnBuddyStatusMessage(ch *entity.Character, code pconst.BuddyStatusCode) {
@@ -198,6 +296,35 @@ func (l *CharacterListenerImpl) OnBuddyListUpdate(ch *entity.Character, action p
 	ch.Send(&response.BuddyListUpdate{
 		Action:  action,
 		Entries: entries,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnBuddyChannelUpdate(ch *entity.Character, buddyCharacterID uint32, channel int32) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.BuddyChannelUpdate{
+		CharacterID: buddyCharacterID,
+		Channel:     channel,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnBuddyAddRequest(ch *entity.Character, fromCharacterID uint32, fromName string) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.BuddyAddRequest{
+		FromCharacterID: fromCharacterID,
+		FromName:        fromName,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnGuildMessage(ch *entity.Character, code pconst.GuildResponseCode) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildMessage{
+		Code: code,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

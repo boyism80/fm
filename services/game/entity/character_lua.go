@@ -1529,7 +1529,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			code := pconst.GuildResponseCode(L.CheckInt(2))
-			err := ch.Send(&response.GuildGenericMessage{
+			err := ch.Send(&response.GuildMessage{
 				Code: code,
 			}, types.SEND_POLICY_ENCRYPT)
 			if err != nil {

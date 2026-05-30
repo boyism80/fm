@@ -56,7 +56,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 			func(reply *internal.CreatePartyReply) error {
 				if !reply.GetOk() {
-					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SCreate, int32(reply.GetErrorCode())))
+					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SCreate, int32(reply.GetErrorCode())), "")
 					log.Printf("PartyOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
 					return nil
 				}
@@ -82,7 +82,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 			func(reply *internal.LeavePartyReply) error {
 				if !reply.GetOk() {
-					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SLeave, int32(reply.GetErrorCode())))
+					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SLeave, int32(reply.GetErrorCode())), "")
 					log.Printf("PartyOperation(leave): failed character=%d code=%v", charID, reply.GetErrorCode())
 				}
 				return nil
@@ -106,7 +106,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 			func(reply *internal.JoinPartyReply) error {
 				if !reply.GetOk() {
-					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SAcceptInvite, int32(reply.GetErrorCode())))
+					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SAcceptInvite, int32(reply.GetErrorCode())), "")
 					log.Printf("PartyOperation(join): failed character=%d party=%d code=%v", charID, req.PartyID, reply.GetErrorCode())
 					return nil
 				}
@@ -137,7 +137,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 			func(reply *internal.ChangePartyLeaderReply) error {
 				if !reply.GetOk() {
-					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SChangeLeader, int32(reply.GetErrorCode())))
+					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SChangeLeader, int32(reply.GetErrorCode())), "")
 					log.Printf("PartyOperation(change leader): failed character=%d party=%d target=%d code=%v", charID, *partyIDPtr, req.TargetCharacterID, reply.GetErrorCode())
 				}
 				return nil
@@ -172,7 +172,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 						ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 						return nil
 					}
-					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SCreate, int32(reply.GetErrorCode())))
+					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SCreate, int32(reply.GetErrorCode())), "")
 					log.Printf("PartyOperation(invite pre-create): failed character=%d target=%q code=%v", charID, targetName, reply.GetErrorCode())
 					return fmt.Errorf("party create before invite failed")
 				},
@@ -192,7 +192,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					return nil
 				}
 				code := reply.GetErrorCode()
-				ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SInvite, int32(code)))
+				ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SInvite, int32(code)), "")
 				log.Printf("PartyOperation(invite): failed inviter=%d target=%q code=%v", charID, targetName, code)
 				return nil
 			},
@@ -234,7 +234,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 			func(reply *internal.ExpelPartyReply) error {
 				if !reply.GetOk() {
-					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SExpel, int32(reply.GetErrorCode())))
+					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SExpel, int32(reply.GetErrorCode())), "")
 					log.Printf("PartyOperation(expel): failed requester=%d target=%d code=%v", charID, req.TargetCharacterID, reply.GetErrorCode())
 				}
 				return nil

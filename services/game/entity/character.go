@@ -74,6 +74,7 @@ type Character struct {
 	HomingTargetOID   *uint32
 	partyID           *uint32
 	guildID           *uint32
+	GuildInvites      map[uint32]time.Time
 	partySearchConfig *PartySearchConfig
 	buddyList         *BuddyList
 }
@@ -927,6 +928,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		Meso:         data.Meso,
 		partyID:      data.PartyID,
 		guildID:      data.GuildID,
+		GuildInvites: make(map[uint32]time.Time),
 		buddyList:    NewBuddyList(),
 
 		random1: stream.NewRandomStream(),

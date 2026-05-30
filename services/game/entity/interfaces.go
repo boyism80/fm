@@ -22,4 +22,5 @@ type GameWorld interface {
 	RequestSpawnReturnMapDoor(ch *Character, skillID constant.SkillID)
 	GetPartyByID(partyID uint32) *Party
 	GetGuildByID(guildID uint32) *Guild
+	EnsureSendCharacter(characterID uint32, inner interface{})
 }

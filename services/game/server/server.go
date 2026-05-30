@@ -418,6 +418,13 @@ func (gs *GameServer) GetGuildByID(guildID uint32) *entity.Guild {
 	return gs.guild.Get(guildID)
 }
 
+func (gs *GameServer) EnsureSendCharacter(characterID uint32, inner interface{}) {
+	if gs == nil || characterID == 0 || inner == nil {
+		return
+	}
+	gs.EnsureSend(nil, characterID, inner)
+}
+
 func (gs *GameServer) GetMap(mapID uint32) *entity.Map {
 	gs.mapsMutex.RLock()
 	defer gs.mapsMutex.RUnlock()

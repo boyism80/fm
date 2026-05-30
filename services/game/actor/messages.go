@@ -180,3 +180,21 @@ type DeliverBuddyAddRequest struct {
 	FromCharacterID      uint32
 	FromName             string
 }
+
+type DeliverMessage struct {
+	CharacterID uint32
+	MessageType constant.ServerMessageType
+	Message     string
+}
+
+type DeliverGuildInvite struct {
+	CharacterID        uint32
+	InviterCharacterID uint32
+	GuildID            uint32
+	InviterName        string
+}
+
+type DeliverGuildMessage struct {
+	CharacterID uint32
+	Code        pconst.GuildResponseCode
+}
