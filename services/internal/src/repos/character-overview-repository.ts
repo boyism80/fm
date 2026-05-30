@@ -1,6 +1,6 @@
 import { redisCacheKey } from "../redis-cache-key";
 import { HashRepository } from "./hash-repository";
-import type { RepositoryQuery } from "../types/repository-contracts";
+import type { RepositoryQuery, CharacterLooksQuery } from "../types/repository-contracts";
 import type { CharacterOverviewModel, CharacterOverviewRow } from "../types/repository-models";
 
 const SELECT_COLS = `character_id, account_id, world_id, name, gender, skin_color, face, hair,
@@ -24,14 +24,30 @@ const PER_ROW_PARAMS = 18;
 
 export type { CharacterOverviewModel };
 
+function looksFromRow(value: CharacterOverviewRow["base_looks"]): CharacterLooksQuery {
+    if (value != null && typeof value === "object") {
+        return value as CharacterLooksQuery;
+    }
+    if (typeof value === "string") {
+        try {
+            const parsed = JSON.parse(value) as CharacterLooksQuery;
+            if (parsed != null && typeof parsed === "object") {
+                return parsed;
+            }
+        } catch {
+        }
+    }
+    return {};
+}
+
 function rowValues(row: CharacterOverviewRow) {
     return [
         row.character_id, row.account_id, row.world_id, row.name,
         row.gender, row.skin_color, row.face, row.hair,
         row.level, row.class_id, row.map_id, row.spawn_point,
         row.rank, row.rank_diff, row.class_rank, row.class_rank_diff,
-        JSON.stringify(row.base_looks ?? {}),
-        JSON.stringify(row.overlays ?? {}),
+        looksFromRow(row.base_looks),
+        looksFromRow(row.overlays),
     ];
 }
 

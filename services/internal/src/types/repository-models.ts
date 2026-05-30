@@ -1,6 +1,7 @@
-import type { PartyMemberRole, PartyState } from "../protobuf/generated/fminternal/internal_service";
+import type { PartyMemberRole, PartyState, GuildMemberRank } from "../protobuf/generated/fminternal/internal_service";
 import type { EquipmentBonusStatsJson } from "./equipment-bonus-stats";
 import type { KeyLayoutJsonRecord } from "./key-layout-json";
+import type { GuildLogo as GuildLogoModel, GuildRankTitles as GuildRankTitlesModel } from "./guild-json";
 
 export interface AccountModel {
     accountId: number;
@@ -270,6 +271,66 @@ export type PartyMemberRow = {
     role: PartyMemberRole | null;
     map_id: number | null;
     door: { town: number; target: number; x: number; y: number } | null;
+    joined_at: Date | string;
+    updated_at: Date | string;
+    deleted?: boolean;
+};
+
+export interface GuildModel {
+    worldId: number;
+    guildId: number;
+    name: string;
+    leaderCharacterId: number;
+    gp: number;
+    capacity: number;
+    notice: string;
+    logo: GuildLogoModel;
+    rankTitles: GuildRankTitlesModel;
+    revision: number;
+    disbandedAt?: Date | null;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+export type GuildRow = {
+    world_id: number;
+    guild_id: number;
+    name: string;
+    leader_character_id: number;
+    gp: number;
+    capacity: number;
+    notice: string;
+    logo: GuildLogoModel | null;
+    rank_titles: GuildRankTitlesModel;
+    revision: number;
+    disbanded_at?: Date | string | null;
+    created_at?: Date | string;
+    updated_at?: Date | string;
+    deleted?: boolean;
+};
+
+export type GuildDeleteRow = { worldId: number; guildId: number };
+
+export interface GuildMemberModel {
+    worldId: number;
+    guildId: number;
+    characterId: number;
+    characterName: string;
+    level: number;
+    classId: number;
+    guildRank: GuildMemberRank;
+    joinedAt?: Date;
+    updatedAt?: Date;
+}
+
+export type GuildMemberRow = {
+    world_id: number;
+    guild_id: number;
+    character_id: number;
+    character_name: string;
+    level: number;
+    class_id: number;
+    guild_rank: GuildMemberRank | number;
     joined_at: Date | string;
     updated_at: Date | string;
     deleted?: boolean;

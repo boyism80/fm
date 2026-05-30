@@ -20,6 +20,8 @@ type CharacterListener interface {
 	OnMesoChanged(ch *Character, meso int32)
 	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
 	OnPartyCreated(ch *Character, partyID uint32)
+	OnShowGuildInfo(ch *Character)
+	OnBroadcastGuildAppearance(ch *Character)
 	OnPartyInvite(ch *Character, partyID uint32, inviterName string, partySearch bool)
 	OnMultiChat(ch *Character, mode pconst.MultiChatMode, senderName string, message string)
 	OnPartyStatusMessage(ch *Character, code pconst.PartyStatusCode)

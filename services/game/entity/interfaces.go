@@ -21,4 +21,5 @@ type GameWorld interface {
 	NotifyDoorRemove(ownerID uint32, skillID uint32, counterpartMapWZID uint32)
 	RequestSpawnReturnMapDoor(ch *Character, skillID constant.SkillID)
 	GetPartyByID(partyID uint32) *Party
+	GetGuildByID(guildID uint32) *Guild
 }

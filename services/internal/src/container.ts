@@ -13,6 +13,8 @@ import { SessionRepository } from "./repos/session-repository";
 import { KeyLayoutRepository } from "./repos/key-layout-repository";
 import { PartyRepository } from "./repos/party-repository";
 import { PartyMemberRepository } from "./repos/party-member-repository";
+import { GuildRepository } from "./repos/guild-repository";
+import { GuildMemberRepository } from "./repos/guild-member-repository";
 import { CharacterBuddyRepository } from "./repos/character-buddy-repository";
 import { CharacterRealtimeStateRepository } from "./repos/character-realtime-state-repository";
 import { CharacterService } from "./services/character-service";
@@ -24,6 +26,7 @@ import { CharacterOverviewService } from "./services/character-overview-service"
 import { SessionService } from "./services/session-service";
 import { RabbitMQService } from "./services/rabbitmq-service";
 import { PartyService } from "./services/party-service";
+import { GuildService } from "./services/guild-service";
 import { BuddyService } from "./services/buddy-service";
 
 export function createAppContainer() {
@@ -46,6 +49,8 @@ export function createAppContainer() {
         keyLayoutRepository: awilix.asClass(KeyLayoutRepository).scoped(),
         partyRepository: awilix.asClass(PartyRepository).scoped(),
         partyMemberRepository: awilix.asClass(PartyMemberRepository).scoped(),
+        guildRepository: awilix.asClass(GuildRepository).scoped(),
+        guildMemberRepository: awilix.asClass(GuildMemberRepository).scoped(),
         characterBuddyRepository: awilix.asClass(CharacterBuddyRepository).scoped(),
         characterRealtimeStateRepository: awilix.asClass(CharacterRealtimeStateRepository).scoped(),
         characterService: awilix.asClass(CharacterService).transient(),
@@ -57,6 +62,7 @@ export function createAppContainer() {
         sessionService: awilix.asClass(SessionService).transient(),
         rabbitmqService: awilix.asClass(RabbitMQService).singleton(),
         partyService: awilix.asClass(PartyService).transient(),
+        guildService: awilix.asClass(GuildService).transient(),
         buddyService: awilix.asClass(BuddyService).transient(),
     });
     return container;

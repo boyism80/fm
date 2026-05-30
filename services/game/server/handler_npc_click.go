@@ -11,6 +11,7 @@ import (
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/types"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type NpcClick struct {
@@ -93,10 +94,20 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 	luax.SetConfiguration(luaThread, luax.Configuration{
 		ActorContext: ctx.ActorContext,
 	})
-	_, err = luax.Call(luaThread, "on_start", character)
+	state, _, err := luax.Execute(root, luaThread, "on_start", character)
 	if err != nil {
 		log.Printf("Failed to execute NPC script: %v", err)
+		character.ClearCurrentDialog()
 		return err
+	}
+	switch state {
+	case lua.ResumeYield:
+	case lua.ResumeOK:
+		character.ClearCurrentDialog()
+	case lua.ResumeError:
+		log.Printf("NPC script error for character %d npc %d", character.GetID(), npcID)
+		character.ClearCurrentDialog()
+		return fmt.Errorf("npc script error")
 	}
 	return nil
 }

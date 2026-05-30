@@ -42,6 +42,8 @@ const (
 	Internal_UpdatePartyMember_FullMethodName    = "/fm.internal.Internal/UpdatePartyMember"
 	Internal_InviteParty_FullMethodName          = "/fm.internal.Internal/InviteParty"
 	Internal_DenyParty_FullMethodName            = "/fm.internal.Internal/DenyParty"
+	Internal_CreateGuild_FullMethodName          = "/fm.internal.Internal/CreateGuild"
+	Internal_GetGuild_FullMethodName             = "/fm.internal.Internal/GetGuild"
 	Internal_RequestBuddy_FullMethodName         = "/fm.internal.Internal/RequestBuddy"
 	Internal_AcceptBuddy_FullMethodName          = "/fm.internal.Internal/AcceptBuddy"
 	Internal_RemoveBuddy_FullMethodName          = "/fm.internal.Internal/RemoveBuddy"
@@ -75,6 +77,8 @@ type InternalClient interface {
 	UpdatePartyMember(ctx context.Context, in *UpdatePartyMemberRequest, opts ...grpc.CallOption) (*UpdatePartyMemberReply, error)
 	InviteParty(ctx context.Context, in *InvitePartyRequest, opts ...grpc.CallOption) (*InvitePartyReply, error)
 	DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error)
+	CreateGuild(ctx context.Context, in *CreateGuildRequest, opts ...grpc.CallOption) (*CreateGuildReply, error)
+	GetGuild(ctx context.Context, in *GetGuildRequest, opts ...grpc.CallOption) (*GetGuildReply, error)
 	RequestBuddy(ctx context.Context, in *RequestBuddyRequest, opts ...grpc.CallOption) (*RequestBuddyReply, error)
 	AcceptBuddy(ctx context.Context, in *AcceptBuddyRequest, opts ...grpc.CallOption) (*AcceptBuddyReply, error)
 	RemoveBuddy(ctx context.Context, in *RemoveBuddyRequest, opts ...grpc.CallOption) (*RemoveBuddyReply, error)
@@ -319,6 +323,26 @@ func (c *internalClient) DenyParty(ctx context.Context, in *DenyPartyRequest, op
 	return out, nil
 }
 
+func (c *internalClient) CreateGuild(ctx context.Context, in *CreateGuildRequest, opts ...grpc.CallOption) (*CreateGuildReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGuildReply)
+	err := c.cc.Invoke(ctx, Internal_CreateGuild_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) GetGuild(ctx context.Context, in *GetGuildRequest, opts ...grpc.CallOption) (*GetGuildReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGuildReply)
+	err := c.cc.Invoke(ctx, Internal_GetGuild_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) RequestBuddy(ctx context.Context, in *RequestBuddyRequest, opts ...grpc.CallOption) (*RequestBuddyReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RequestBuddyReply)
@@ -386,6 +410,8 @@ type InternalServer interface {
 	UpdatePartyMember(context.Context, *UpdatePartyMemberRequest) (*UpdatePartyMemberReply, error)
 	InviteParty(context.Context, *InvitePartyRequest) (*InvitePartyReply, error)
 	DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error)
+	CreateGuild(context.Context, *CreateGuildRequest) (*CreateGuildReply, error)
+	GetGuild(context.Context, *GetGuildRequest) (*GetGuildReply, error)
 	RequestBuddy(context.Context, *RequestBuddyRequest) (*RequestBuddyReply, error)
 	AcceptBuddy(context.Context, *AcceptBuddyRequest) (*AcceptBuddyReply, error)
 	RemoveBuddy(context.Context, *RemoveBuddyRequest) (*RemoveBuddyReply, error)
@@ -468,6 +494,12 @@ func (UnimplementedInternalServer) InviteParty(context.Context, *InvitePartyRequ
 }
 func (UnimplementedInternalServer) DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DenyParty not implemented")
+}
+func (UnimplementedInternalServer) CreateGuild(context.Context, *CreateGuildRequest) (*CreateGuildReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGuild not implemented")
+}
+func (UnimplementedInternalServer) GetGuild(context.Context, *GetGuildRequest) (*GetGuildReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGuild not implemented")
 }
 func (UnimplementedInternalServer) RequestBuddy(context.Context, *RequestBuddyRequest) (*RequestBuddyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestBuddy not implemented")
@@ -916,6 +948,42 @@ func _Internal_DenyParty_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_CreateGuild_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGuildRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CreateGuild(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CreateGuild_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CreateGuild(ctx, req.(*CreateGuildRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_GetGuild_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGuildRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).GetGuild(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_GetGuild_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).GetGuild(ctx, req.(*GetGuildRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_RequestBuddy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestBuddyRequest)
 	if err := dec(in); err != nil {
@@ -1086,6 +1154,14 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DenyParty",
 			Handler:    _Internal_DenyParty_Handler,
+		},
+		{
+			MethodName: "CreateGuild",
+			Handler:    _Internal_CreateGuild_Handler,
+		},
+		{
+			MethodName: "GetGuild",
+			Handler:    _Internal_GetGuild_Handler,
 		},
 		{
 			MethodName: "RequestBuddy",

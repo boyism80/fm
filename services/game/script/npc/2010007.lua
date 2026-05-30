@@ -1,60 +1,33 @@
 function on_start(me)
 	local npc = 2010007
-	local function reject()
-		me:dialog(npc, '실망이에요')
-	end
-
-	if not me:dialog(npc, string.format('안녕하세요 %s님', me:name())) then
-		return
-	end
-
-	if not me:dialog(npc, '제가 할말이 있는데요') then
-		return
-	end
-
-	local selected = me:dialog_list(npc, '음...', {'뭔데 뜸을 들여?', '이녀석 굉장히 소심한 녀석이군'})
+	local selected = me:dialog_list(npc,
+		'길드를 만들고 싶은가? 혹은 길드 관련 업무를 위해서 찾아왔는가? 원하는 것을 말해보게.',
+		{
+			'길드를 만들고 싶습니다.',
+			'길드를 해체합니다.',
+			'길드 최대인원을 늘리고 싶습니다. (최대 100명)',
+			'길드 최대인원을 늘리고 싶습니다. (최대 200명)',
+		})
 	if selected == nil then
 		return
 	end
 
 	if selected == 0 then
-		if not me:dialog_accept(npc, '저의 부탁을 들어주세요.') then
-			return reject()
+		if me:guild_id() then
+			me:dialog(npc, '흐음.. 이미 길드에 가입되어 있는 것 같은데?')
+			return
+		end
+		if not me:dialog_yes_no(npc, '길드 제작 수수료는 #b1,500,000 메소#k라네, 정말 만들어 보고 싶은가?') then
+			return
+		end
+		if me:generic_guild_message(1) then
+			me:dialog(npc, '길드가 성공적으로 생성되었습니다.')
 		end
 	elseif selected == 1 then
-		me:dialog(npc, '날 함부로 판단하지마')
-		return
-	else
-		return
+		me:dialog(npc, '아직 지원하지 않습니다.')
+	elseif selected == 2 then
+		me:dialog(npc, '아직 지원하지 않습니다.')
+	elseif selected == 3 then
+		me:dialog(npc, '아직 지원하지 않습니다.')
 	end
-
-	me:dialog(npc, '당신은 정말 착한 사람이군요...')
-	selected = me:dialog_list(npc, '당신은 절 위해 100만메소를 기꺼이 사용하실 수 있나요?', {'물론이지', '그건 좀...'})
-	if selected == nil then
-		return reject()
-	end
-
-	if selected ~= 0 then
-		return reject()
-	end
-
-	me:dialog(npc, '좋아요. 당신의 주머니를 뒤져볼게요. 돈이 있는지 검사를 좀...')
-	local meso = me:meso() -- Getter: returns current meso
-	if meso >= 1000000 then
-		me:dialog(npc, '돈은 충분하군요..')
-		me:meso(0) -- Setter: sets meso to 0
-		selected = me:dialog_list(npc, '에라 모르겠다 돈 다 훔쳐버리기 ㅋㅋ', {'...!!!', '뭐하는새끼야 이거'})
-		if selected == nil then
-
-		elseif selected == 0 then
-			me:dialog(npc, string.format('놀라셨죠.. 장난이었어요.. 다시 %d메소를 돌려드릴게요..', meso))
-		else
-			me:dialog(npc, '말하는 뽄새보소? 장난이었어 임마 ㅋ')
-		end
-		me:meso(meso) -- Setter: restores original meso amount
-	else
-		me:dialog(npc, '당신은 너무 가난해서 대화를 그만두고 싶군요.')
-	end
-	me:dialog(npc, '그럼 이만...')
-	me:chat('별 미친놈을 다 보겠네')
 end

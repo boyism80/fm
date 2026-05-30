@@ -136,7 +136,7 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
             flag: model.flag ?? null,
             skill_bonus: model.skillBonus ?? null,
             owner_name: model.ownerName ?? null,
-            equip_bonus_stats: JSON.stringify(model.equipBonusStats),
+            equip_bonus_stats: model.equipBonusStats ?? {},
         };
     }
 

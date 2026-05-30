@@ -102,6 +102,59 @@ func (l *CharacterListenerImpl) OnPartyCreated(ch *entity.Character, partyID uin
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnShowGuildInfo(ch *entity.Character) {
+	if l == nil || l.gs == nil || ch == nil {
+		return
+	}
+	guildID, ok := ch.GetGuildID()
+	if !ok || l.gs.guild == nil {
+		return
+	}
+	ent := l.gs.guild.Get(guildID)
+	if ent == nil {
+		return
+	}
+	info := entity.GuildToDTO(ent)
+	if info == nil {
+		return
+	}
+	ch.Send(&response.GuildShowInfo{
+		InGuild: true,
+		Info:    info,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *entity.Character) {
+	if l == nil || ch == nil {
+		return
+	}
+	guildID, ok := ch.GetGuildID()
+	if !ok || l.gs == nil || l.gs.guild == nil {
+		return
+	}
+	ent := l.gs.guild.Get(guildID)
+	if ent == nil {
+		return
+	}
+	characterID := ch.GetID()
+	broadcastOpt := &entity.ObjectBroadcastOption{WithMe: true}
+	ch.Broadcast(&response.LoadGuildName{
+		CharacterID: characterID,
+		GuildName:   ent.Name,
+	}, broadcastOpt)
+	iconPkt := &response.LoadGuildIcon{
+		CharacterID: characterID,
+	}
+	if ent.Logo != nil {
+		iconPkt.HasGuildIcon = true
+		iconPkt.LogoBG = uint16(ent.Logo.LogoBG)
+		iconPkt.LogoBGColor = uint8(ent.Logo.LogoBGColor)
+		iconPkt.Logo = uint16(ent.Logo.Logo)
+		iconPkt.LogoColor = uint8(ent.Logo.LogoColor)
+	}
+	ch.Broadcast(iconPkt, broadcastOpt)
+}
+
 func (l *CharacterListenerImpl) OnPartyInvite(ch *entity.Character, partyID uint32, inviterName string, partySearch bool) {
 	if ch == nil {
 		return

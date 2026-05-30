@@ -14,6 +14,13 @@ export interface CharacterNameRegistryRow {
     status?: string;
 }
 
+export interface GuildNameRegistryRow {
+    guild_id: number;
+    name: string;
+    world_id: number;
+    created_at?: Date | string;
+}
+
 export class UnifiedRepository {
     private readonly ctx: InternalContext;
 
@@ -63,6 +70,31 @@ export class UnifiedRepository {
         await this.pool().query(
             "DELETE FROM character_name_registry WHERE character_id = $1",
             [characterId]
+        );
+    }
+
+    async findGuildNameEntry(name: string): Promise<GuildNameRegistryRow | null> {
+        const { rows } = await this.pool().query(
+            "SELECT guild_id, name, world_id, created_at FROM guild_name_registry WHERE LOWER(name) = LOWER($1)",
+            [name]
+        );
+        return rows[0] ?? null;
+    }
+
+    async reserveGuildName(name: string, worldId: number): Promise<GuildNameRegistryRow> {
+        const { rows } = await this.pool().query(
+            `INSERT INTO guild_name_registry (name, world_id)
+             VALUES ($1, $2)
+             RETURNING guild_id, name, world_id, created_at`,
+            [name, worldId]
+        );
+        return rows[0];
+    }
+
+    async deleteGuildName(guildId: number) {
+        await this.pool().query(
+            "DELETE FROM guild_name_registry WHERE guild_id = $1",
+            [guildId]
         );
     }
 }

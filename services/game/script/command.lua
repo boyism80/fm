@@ -205,21 +205,29 @@ command_funcs = {
 	},
 	["맵이동"] = {
 		privilege = ROLE.Admin,
-		usage = "<맵이름> [스폰포인트] - 맵 이동",
+		usage = "<맵이름|맵ID> [스폰포인트] - 맵 이동",
 		command = function(me, args)
 			if not args[1] or args[1] == "" then
-				me:notice("사용법: /맵이동 <맵이름> [스폰포인트]")
+				me:notice("사용법: /맵이동 <맵이름|맵ID> [스폰포인트]")
 				return true
 			end
 			local spawn = 1
 			if args[2] then
 				spawn = tonumber(args[2]) or 1
 			end
-			if name2map(args[1]) == nil then
-				me:notice("존재하지 않는 맵입니다: " .. args[1])
+			local map_arg = args[1]
+			local map_id = tonumber(map_arg)
+			local map_info
+			if map_id ~= nil then
+				map_info = id2map(map_id)
+			else
+				map_info = name2map(map_arg)
+			end
+			if map_info == nil then
+				me:notice("존재하지 않는 맵입니다: " .. tostring(map_arg))
 				return true
 			end
-			me:map(args[1], spawn)
+			me:map(map_info.id, spawn)
 			return true
 		end,
 	},

@@ -8,6 +8,7 @@ import { AuthGrpcController } from "./grpc/handlers/auth-handlers";
 import { SessionGrpcController } from "./grpc/handlers/session-handlers";
 import { CharacterGrpcController } from "./grpc/handlers/character-handlers";
 import { PartyGrpcController } from "./grpc/handlers/party-handlers";
+import { GuildGrpcController } from "./grpc/handlers/guild-handlers";
 import { BuddyGrpcController } from "./grpc/handlers/buddy-handlers";
 import { ChatGrpcController } from "./grpc/handlers/chat-handlers";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
@@ -21,6 +22,7 @@ type ServerContainerCradle = {
     sessionController: SessionGrpcController;
     characterController: CharacterGrpcController;
     partyController: PartyGrpcController;
+    guildController: GuildGrpcController;
     buddyController: BuddyGrpcController;
     chatController: ChatGrpcController;
     appConfiguration: AppConfiguration;
@@ -104,6 +106,7 @@ async function main() {
         sessionController: awilix.asClass(SessionGrpcController).scoped(),
         characterController: awilix.asClass(CharacterGrpcController).scoped(),
         partyController: awilix.asClass(PartyGrpcController).scoped(),
+        guildController: awilix.asClass(GuildGrpcController).scoped(),
         buddyController: awilix.asClass(BuddyGrpcController).scoped(),
         chatController: awilix.asClass(ChatGrpcController).scoped(),
     });

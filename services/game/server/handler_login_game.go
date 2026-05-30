@@ -64,6 +64,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 
 	var enterReply *internal.EnterGameReply
 	var partyReply *internal.GetPartyReply
+	var guildReply *internal.GetGuildReply
 
 	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.EnterGameReply, error) {
@@ -85,7 +86,23 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		})
 	}, func(reply *internal.GetPartyReply) error {
 		partyReply = reply
-		return h.finishLoginGame(ctx, req, enterReply, partyReply)
+		return nil
+	})
+	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGuildReply, error) {
+		if enterReply == nil || enterReply.GetGuildId() == 0 {
+			return &internal.GetGuildReply{Found: false}, nil
+		}
+		guildID := enterReply.GetGuildId()
+		if h.gs.guild != nil && h.gs.guild.Get(guildID) != nil {
+			return &internal.GetGuildReply{Found: true}, nil
+		}
+		return ic.GetGuild(c, &internal.GetGuildRequest{
+			WorldId: h.gs.config.WorldId,
+			GuildId: guildID,
+		})
+	}, func(reply *internal.GetGuildReply) error {
+		guildReply = reply
+		return h.finishLoginGame(ctx, req, enterReply, partyReply, guildReply)
 	})
 	promise.
 		OnError(func(err error) {
@@ -95,7 +112,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	return nil
 }
 
-func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginGame, reply *internal.EnterGameReply, partyReply *internal.GetPartyReply) error {
+func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginGame, reply *internal.EnterGameReply, partyReply *internal.GetPartyReply, guildReply *internal.GetGuildReply) error {
 	if !reply.GetFound() {
 		return fmt.Errorf("character %d not found", req.PlayerId)
 	}
@@ -185,6 +202,10 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	if h.gs.party != nil && reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
 		h.gs.party.Update(partyReply.GetParty())
+	}
+
+	if h.gs.guild != nil && guildReply != nil && guildReply.GetFound() && guildReply.GetGuild() != nil {
+		h.gs.guild.Update(guildReply.GetGuild())
 	}
 
 	rootContext := h.gs.GetRootContext()

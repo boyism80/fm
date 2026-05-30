@@ -1502,6 +1502,43 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, p))
 			return 1
 		},
+		"guild_id": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "guild_id() takes no arguments")
+				return 0
+			}
+			guildID, inGuild := ch.GetGuildID()
+			if !inGuild {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(lua.LNumber(guildID))
+			return 1
+		},
+		"generic_guild_message": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			code := pconst.GuildResponseCode(L.CheckInt(2))
+			err := ch.Send(&response.GuildGenericMessage{
+				Code: code,
+			}, types.SEND_POLICY_ENCRYPT)
+			if err != nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			ch.SetDialog(L)
+			return L.Yield(lua.LNumber(0))
+		},
 		"hidden": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -2016,7 +2053,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					var ok bool
 					targetMap, ok = v.Value.(*Map)
 					if !ok || targetMap == nil {
-						L.ArgError(2, "Map or map name (string) expected")
+						L.ArgError(2, "Map, map name (string), or map id (number) expected")
 						return 0
 					}
 				case lua.LString:
@@ -2039,8 +2076,19 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						L.RaiseError("map: map %q (id %d) not found", string(v), mapId)
 						return 0
 					}
+				case lua.LNumber:
+					if ch.GameWorld == nil {
+						L.RaiseError("map: no context to resolve map id")
+						return 0
+					}
+					mapId := uint32(v)
+					targetMap = ch.GameWorld.GetMap(mapId)
+					if targetMap == nil {
+						L.RaiseError("map: map id %d not found", mapId)
+						return 0
+					}
 				default:
-					L.ArgError(2, "Map or map name (string) expected")
+					L.ArgError(2, "Map, map name (string), or map id (number) expected")
 					return 0
 				}
 				spawnPoint := uint8(1)
@@ -2053,7 +2101,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				return 0
 			default:
-				L.ArgError(2, "map() getter: 0 args; setter: map or name (string), optional spawnPoint")
+				L.ArgError(2, "map() getter: 0 args; setter: map, name (string), or id (number), optional spawnPoint")
 				return 0
 			}
 		},

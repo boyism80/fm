@@ -76,6 +76,8 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 		return h.handlePartyMultiChat(ctx, ch, req)
 	case pconst.MultiChatModeBuddy:
 		return h.handleBuddyMultiChat(ctx, ch, req)
+	case pconst.MultiChatModeGuild:
+		return nil
 	default:
 		return nil
 	}

@@ -77,8 +77,10 @@ type GameServer struct {
 	internalClient    internal.InternalClient
 	internalConn      *grpc.ClientConn
 	party             *PartyContainer
+	guild             *GuildContainer
 	rabbitPartyPID    *actor.PID
 	rabbitBuddyPID    *actor.PID
+	rabbitGuildPID    *actor.PID
 	characterRuntime  *ServerCharacterRuntime
 	ensureMu          sync.Mutex
 	ensurePending     map[uint64]*ensure.EnsureDeliver
@@ -161,6 +163,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	}
 
 	gs.party = NewPartyContainer(gs, config.WorldId, gs.internalClient)
+	gs.guild = NewGuildContainer(gs, config.WorldId, gs.internalClient)
 
 	if config.RabbitMQ.Enabled() {
 		queueName := fmt.Sprintf("fm.game.w%d.c%d.party.events", config.WorldId, config.ChannelId)
@@ -222,6 +225,30 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		gs.rabbitBuddyPID = gs.actorRegistry.GetOrCreateActor(
 			fmt.Sprintf("rabbitmq_buddy_w%d_c%d", config.WorldId, config.ChannelId),
 			buddyRabbitProps,
+		)
+
+		guildQueueName := fmt.Sprintf("fm.game.w%d.c%d.guild.events", config.WorldId, config.ChannelId)
+		guildConsumerTag := fmt.Sprintf("fm-game-w%d-c%d-guild", config.WorldId, config.ChannelId)
+		guildRouteAll := fmt.Sprintf("fm.%d.all.guild", config.WorldId)
+
+		guildDisp := mq.NewDispatcher()
+		mq.Bind[*GameServer, guildMqCreated](gs, guildDisp)
+
+		guildRabbitCfg := mq.RabbitActorConfig{
+			Root:        gs.GetRootContext(),
+			Broker:      config.RabbitMQ,
+			Exchange:    mq.DirectExchange,
+			QueueName:   guildQueueName,
+			ConsumerTag: guildConsumerTag,
+			RoutingKeys: []string{guildRouteAll},
+			Dispatcher:  guildDisp,
+		}
+		guildRabbitProps := actor.PropsFromProducer(func() actor.Actor {
+			return mq.NewRabbitActor(guildRabbitCfg)
+		})
+		gs.rabbitGuildPID = gs.actorRegistry.GetOrCreateActor(
+			fmt.Sprintf("rabbitmq_guild_w%d_c%d", config.WorldId, config.ChannelId),
+			guildRabbitProps,
 		)
 	}
 
@@ -330,6 +357,9 @@ func (gs *GameServer) Start() error {
 	if gs.rabbitBuddyPID != nil {
 		log.Printf("Buddy MQ RabbitActor running (%s)", fmt.Sprintf("fm.game.w%d.c%d.buddy.events", gs.config.WorldId, gs.config.ChannelId))
 	}
+	if gs.rabbitGuildPID != nil {
+		log.Printf("Guild MQ RabbitActor running (%s)", fmt.Sprintf("fm.game.w%d.c%d.guild.events", gs.config.WorldId, gs.config.ChannelId))
+	}
 
 	if gs.resources != nil {
 		stringCount := 0
@@ -362,6 +392,12 @@ func (gs *GameServer) Stop() error {
 			root.Poison(gs.rabbitBuddyPID)
 		}
 	}
+	if gs.rabbitGuildPID != nil {
+		root := gs.GetRootContext()
+		if root != nil {
+			root.Poison(gs.rabbitGuildPID)
+		}
+	}
 	if gs.internalConn != nil {
 		_ = gs.internalConn.Close()
 	}
@@ -373,6 +409,13 @@ func (gs *GameServer) GetPartyByID(partyID uint32) *entity.Party {
 		return nil
 	}
 	return gs.party.Get(partyID)
+}
+
+func (gs *GameServer) GetGuildByID(guildID uint32) *entity.Guild {
+	if gs == nil || gs.guild == nil {
+		return nil
+	}
+	return gs.guild.Get(guildID)
 }
 
 func (gs *GameServer) GetMap(mapID uint32) *entity.Map {

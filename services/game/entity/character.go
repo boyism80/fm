@@ -103,7 +103,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	spawnBuffData := ch.GetSpawnPlayerBuffData()
-	viewer.Send(&response.SpawnPlayer{
+	spawnPacket := &response.SpawnPlayer{
 		Character:         ch.ToDTO(),
 		BuffStates:        spawnBuffData.BuffStates,
 		Diseases:          ch.GetDiseaseMask(),
@@ -118,7 +118,19 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		CrushRings:        RingsToDTO(ch.Rings.Left),
 		FriendshipRings:   RingsToDTO(ch.Rings.Mid),
 		MarriageRings:     RingsToDTO(ch.Rings.Right),
-	}, types.SEND_POLICY_ENCRYPT)
+	}
+	if guildID, ok := ch.GetGuildID(); ok && ch.GameWorld != nil {
+		if guild := ch.GameWorld.GetGuildByID(guildID); guild != nil {
+			spawnPacket.GuildName = guild.Name
+			if guild.Logo != nil {
+				spawnPacket.GuildLogoBG = uint16(guild.Logo.LogoBG)
+				spawnPacket.GuildLogoBGColor = uint8(guild.Logo.LogoBGColor)
+				spawnPacket.GuildLogo = uint16(guild.Logo.Logo)
+				spawnPacket.GuildLogoColor = uint8(guild.Logo.LogoColor)
+			}
+		}
+	}
+	viewer.Send(spawnPacket, types.SEND_POLICY_ENCRYPT)
 
 	if mountID, active := ch.GetRiddingInfo(); active {
 		viewer.Send(&response.UpdateRidding{
@@ -697,6 +709,13 @@ func (ch *Character) GetName() string {
 
 func (ch *Character) ToProtoPartyMember(worldID uint32, channelID int32, role internal.PartyMemberRole) *internal.PartyMember {
 	if m := PartyMemberFromCharacter(ch, worldID, channelID, role); m != nil {
+		return m.ToProto()
+	}
+	return nil
+}
+
+func (ch *Character) ToProtoGuildMember(worldID uint32, channelID int32, rank internal.GuildMemberRank) *internal.GuildMember {
+	if m := GuildMemberFromCharacter(ch, worldID, channelID, rank); m != nil {
 		return m.ToProto()
 	}
 	return nil

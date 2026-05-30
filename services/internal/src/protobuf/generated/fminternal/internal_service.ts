@@ -456,6 +456,126 @@ export function partyStateToJSON(object: PartyState): string {
   }
 }
 
+export enum GuildMemberRank {
+  GUILD_MEMBER_RANK_UNSPECIFIED = 0,
+  GUILD_MEMBER_RANK_MASTER = 1,
+  GUILD_MEMBER_RANK_JUNIOR = 2,
+  GUILD_MEMBER_RANK_SENIOR = 3,
+  GUILD_MEMBER_RANK_MEMBER = 4,
+  GUILD_MEMBER_RANK_NEW = 5,
+  UNRECOGNIZED = -1,
+}
+
+export function guildMemberRankFromJSON(object: any): GuildMemberRank {
+  switch (object) {
+    case 0:
+    case "GUILD_MEMBER_RANK_UNSPECIFIED":
+      return GuildMemberRank.GUILD_MEMBER_RANK_UNSPECIFIED;
+    case 1:
+    case "GUILD_MEMBER_RANK_MASTER":
+      return GuildMemberRank.GUILD_MEMBER_RANK_MASTER;
+    case 2:
+    case "GUILD_MEMBER_RANK_JUNIOR":
+      return GuildMemberRank.GUILD_MEMBER_RANK_JUNIOR;
+    case 3:
+    case "GUILD_MEMBER_RANK_SENIOR":
+      return GuildMemberRank.GUILD_MEMBER_RANK_SENIOR;
+    case 4:
+    case "GUILD_MEMBER_RANK_MEMBER":
+      return GuildMemberRank.GUILD_MEMBER_RANK_MEMBER;
+    case 5:
+    case "GUILD_MEMBER_RANK_NEW":
+      return GuildMemberRank.GUILD_MEMBER_RANK_NEW;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return GuildMemberRank.UNRECOGNIZED;
+  }
+}
+
+export function guildMemberRankToJSON(object: GuildMemberRank): string {
+  switch (object) {
+    case GuildMemberRank.GUILD_MEMBER_RANK_UNSPECIFIED:
+      return "GUILD_MEMBER_RANK_UNSPECIFIED";
+    case GuildMemberRank.GUILD_MEMBER_RANK_MASTER:
+      return "GUILD_MEMBER_RANK_MASTER";
+    case GuildMemberRank.GUILD_MEMBER_RANK_JUNIOR:
+      return "GUILD_MEMBER_RANK_JUNIOR";
+    case GuildMemberRank.GUILD_MEMBER_RANK_SENIOR:
+      return "GUILD_MEMBER_RANK_SENIOR";
+    case GuildMemberRank.GUILD_MEMBER_RANK_MEMBER:
+      return "GUILD_MEMBER_RANK_MEMBER";
+    case GuildMemberRank.GUILD_MEMBER_RANK_NEW:
+      return "GUILD_MEMBER_RANK_NEW";
+    case GuildMemberRank.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum GuildErrorCode {
+  GUILD_ERROR_NONE = 0,
+  GUILD_ERROR_UNKNOWN = 1,
+  GUILD_ERROR_ALREADY_IN_GUILD = 2,
+  GUILD_ERROR_CHARACTER_NOT_FOUND = 3,
+  GUILD_ERROR_GUILD_NAME_INVALID = 4,
+  GUILD_ERROR_GUILD_NAME_TAKEN = 5,
+  GUILD_ERROR_LEADER_MISMATCH = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function guildErrorCodeFromJSON(object: any): GuildErrorCode {
+  switch (object) {
+    case 0:
+    case "GUILD_ERROR_NONE":
+      return GuildErrorCode.GUILD_ERROR_NONE;
+    case 1:
+    case "GUILD_ERROR_UNKNOWN":
+      return GuildErrorCode.GUILD_ERROR_UNKNOWN;
+    case 2:
+    case "GUILD_ERROR_ALREADY_IN_GUILD":
+      return GuildErrorCode.GUILD_ERROR_ALREADY_IN_GUILD;
+    case 3:
+    case "GUILD_ERROR_CHARACTER_NOT_FOUND":
+      return GuildErrorCode.GUILD_ERROR_CHARACTER_NOT_FOUND;
+    case 4:
+    case "GUILD_ERROR_GUILD_NAME_INVALID":
+      return GuildErrorCode.GUILD_ERROR_GUILD_NAME_INVALID;
+    case 5:
+    case "GUILD_ERROR_GUILD_NAME_TAKEN":
+      return GuildErrorCode.GUILD_ERROR_GUILD_NAME_TAKEN;
+    case 6:
+    case "GUILD_ERROR_LEADER_MISMATCH":
+      return GuildErrorCode.GUILD_ERROR_LEADER_MISMATCH;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return GuildErrorCode.UNRECOGNIZED;
+  }
+}
+
+export function guildErrorCodeToJSON(object: GuildErrorCode): string {
+  switch (object) {
+    case GuildErrorCode.GUILD_ERROR_NONE:
+      return "GUILD_ERROR_NONE";
+    case GuildErrorCode.GUILD_ERROR_UNKNOWN:
+      return "GUILD_ERROR_UNKNOWN";
+    case GuildErrorCode.GUILD_ERROR_ALREADY_IN_GUILD:
+      return "GUILD_ERROR_ALREADY_IN_GUILD";
+    case GuildErrorCode.GUILD_ERROR_CHARACTER_NOT_FOUND:
+      return "GUILD_ERROR_CHARACTER_NOT_FOUND";
+    case GuildErrorCode.GUILD_ERROR_GUILD_NAME_INVALID:
+      return "GUILD_ERROR_GUILD_NAME_INVALID";
+    case GuildErrorCode.GUILD_ERROR_GUILD_NAME_TAKEN:
+      return "GUILD_ERROR_GUILD_NAME_TAKEN";
+    case GuildErrorCode.GUILD_ERROR_LEADER_MISMATCH:
+      return "GUILD_ERROR_LEADER_MISMATCH";
+    case GuildErrorCode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum BuddyErrorCode {
   BUDDY_ERROR_NONE = 0,
   BUDDY_ERROR_UNKNOWN = 1,
@@ -1061,6 +1181,61 @@ export interface DenyPartyRequest {
 export interface DenyPartyReply {
   ok: boolean;
   errorCode: PartyErrorCode;
+}
+
+export interface GuildMember {
+  worldId: number;
+  characterId: number;
+  characterName: string;
+  level: number;
+  classId: number;
+  rank: GuildMemberRank;
+  channelIndex?: number | undefined;
+}
+
+export interface CreateGuildRequest {
+  worldId: number;
+  guildName: string;
+  leader: GuildMember | undefined;
+}
+
+export interface CreateGuildReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+  guildId?: number | undefined;
+  revision: number;
+  guild?: Guild | undefined;
+}
+
+export interface GuildLogo {
+  logo: number;
+  logoColor: number;
+  logoBg: number;
+  logoBgColor: number;
+}
+
+export interface Guild {
+  worldId: number;
+  guildId: number;
+  name: string;
+  leaderCharacterId: number;
+  revision: number;
+  gp: number;
+  capacity: number;
+  notice: string;
+  logo: GuildLogo | undefined;
+  rankTitles: string[];
+  members: GuildMember[];
+}
+
+export interface GetGuildRequest {
+  worldId: number;
+  guildId: number;
+}
+
+export interface GetGuildReply {
+  found: boolean;
+  guild: Guild | undefined;
 }
 
 export interface BroadcastMultiChatRequest {
@@ -9491,6 +9666,946 @@ export const DenyPartyReply: MessageFns<DenyPartyReply> = {
   },
 };
 
+function createBaseGuildMember(): GuildMember {
+  return { worldId: 0, characterId: 0, characterName: "", level: 0, classId: 0, rank: 0, channelIndex: undefined };
+}
+
+export const GuildMember: MessageFns<GuildMember> = {
+  encode(message: GuildMember, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.characterName !== "") {
+      writer.uint32(26).string(message.characterName);
+    }
+    if (message.level !== 0) {
+      writer.uint32(32).uint32(message.level);
+    }
+    if (message.classId !== 0) {
+      writer.uint32(40).uint32(message.classId);
+    }
+    if (message.rank !== 0) {
+      writer.uint32(48).int32(message.rank);
+    }
+    if (message.channelIndex !== undefined) {
+      writer.uint32(56).int32(message.channelIndex);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GuildMember {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGuildMember();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.characterName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.level = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.classId = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.rank = reader.int32() as any;
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.channelIndex = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GuildMember {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      characterName: isSet(object.characterName)
+        ? globalThis.String(object.characterName)
+        : isSet(object.character_name)
+        ? globalThis.String(object.character_name)
+        : "",
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      classId: isSet(object.classId)
+        ? globalThis.Number(object.classId)
+        : isSet(object.class_id)
+        ? globalThis.Number(object.class_id)
+        : 0,
+      rank: isSet(object.rank) ? guildMemberRankFromJSON(object.rank) : 0,
+      channelIndex: isSet(object.channelIndex)
+        ? globalThis.Number(object.channelIndex)
+        : isSet(object.channel_index)
+        ? globalThis.Number(object.channel_index)
+        : undefined,
+    };
+  },
+
+  toJSON(message: GuildMember): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.characterName !== "") {
+      obj.characterName = message.characterName;
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.classId !== 0) {
+      obj.classId = Math.round(message.classId);
+    }
+    if (message.rank !== 0) {
+      obj.rank = guildMemberRankToJSON(message.rank);
+    }
+    if (message.channelIndex !== undefined) {
+      obj.channelIndex = Math.round(message.channelIndex);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GuildMember>, I>>(base?: I): GuildMember {
+    return GuildMember.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GuildMember>, I>>(object: I): GuildMember {
+    const message = createBaseGuildMember();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.characterName = object.characterName ?? "";
+    message.level = object.level ?? 0;
+    message.classId = object.classId ?? 0;
+    message.rank = object.rank ?? 0;
+    message.channelIndex = object.channelIndex ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCreateGuildRequest(): CreateGuildRequest {
+  return { worldId: 0, guildName: "", leader: undefined };
+}
+
+export const CreateGuildRequest: MessageFns<CreateGuildRequest> = {
+  encode(message: CreateGuildRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.guildName !== "") {
+      writer.uint32(18).string(message.guildName);
+    }
+    if (message.leader !== undefined) {
+      GuildMember.encode(message.leader, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateGuildRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateGuildRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.guildName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.leader = GuildMember.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateGuildRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      guildName: isSet(object.guildName)
+        ? globalThis.String(object.guildName)
+        : isSet(object.guild_name)
+        ? globalThis.String(object.guild_name)
+        : "",
+      leader: isSet(object.leader) ? GuildMember.fromJSON(object.leader) : undefined,
+    };
+  },
+
+  toJSON(message: CreateGuildRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.guildName !== "") {
+      obj.guildName = message.guildName;
+    }
+    if (message.leader !== undefined) {
+      obj.leader = GuildMember.toJSON(message.leader);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateGuildRequest>, I>>(base?: I): CreateGuildRequest {
+    return CreateGuildRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateGuildRequest>, I>>(object: I): CreateGuildRequest {
+    const message = createBaseCreateGuildRequest();
+    message.worldId = object.worldId ?? 0;
+    message.guildName = object.guildName ?? "";
+    message.leader = (object.leader !== undefined && object.leader !== null)
+      ? GuildMember.fromPartial(object.leader)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCreateGuildReply(): CreateGuildReply {
+  return { ok: false, errorCode: 0, guildId: undefined, revision: 0, guild: undefined };
+}
+
+export const CreateGuildReply: MessageFns<CreateGuildReply> = {
+  encode(message: CreateGuildReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.guildId !== undefined) {
+      writer.uint32(24).uint32(message.guildId);
+    }
+    if (message.revision !== 0) {
+      writer.uint32(32).uint64(message.revision);
+    }
+    if (message.guild !== undefined) {
+      Guild.encode(message.guild, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateGuildReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateGuildReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.revision = longToNumber(reader.uint64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.guild = Guild.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateGuildReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : undefined,
+      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      guild: isSet(object.guild) ? Guild.fromJSON(object.guild) : undefined,
+    };
+  },
+
+  toJSON(message: CreateGuildReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    if (message.guildId !== undefined) {
+      obj.guildId = Math.round(message.guildId);
+    }
+    if (message.revision !== 0) {
+      obj.revision = Math.round(message.revision);
+    }
+    if (message.guild !== undefined) {
+      obj.guild = Guild.toJSON(message.guild);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateGuildReply>, I>>(base?: I): CreateGuildReply {
+    return CreateGuildReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateGuildReply>, I>>(object: I): CreateGuildReply {
+    const message = createBaseCreateGuildReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.guildId = object.guildId ?? undefined;
+    message.revision = object.revision ?? 0;
+    message.guild = (object.guild !== undefined && object.guild !== null) ? Guild.fromPartial(object.guild) : undefined;
+    return message;
+  },
+};
+
+function createBaseGuildLogo(): GuildLogo {
+  return { logo: 0, logoColor: 0, logoBg: 0, logoBgColor: 0 };
+}
+
+export const GuildLogo: MessageFns<GuildLogo> = {
+  encode(message: GuildLogo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.logo !== 0) {
+      writer.uint32(8).uint32(message.logo);
+    }
+    if (message.logoColor !== 0) {
+      writer.uint32(16).uint32(message.logoColor);
+    }
+    if (message.logoBg !== 0) {
+      writer.uint32(24).uint32(message.logoBg);
+    }
+    if (message.logoBgColor !== 0) {
+      writer.uint32(32).uint32(message.logoBgColor);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GuildLogo {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGuildLogo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.logo = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.logoColor = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.logoBg = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.logoBgColor = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GuildLogo {
+    return {
+      logo: isSet(object.logo) ? globalThis.Number(object.logo) : 0,
+      logoColor: isSet(object.logoColor)
+        ? globalThis.Number(object.logoColor)
+        : isSet(object.logo_color)
+        ? globalThis.Number(object.logo_color)
+        : 0,
+      logoBg: isSet(object.logoBg)
+        ? globalThis.Number(object.logoBg)
+        : isSet(object.logo_bg)
+        ? globalThis.Number(object.logo_bg)
+        : 0,
+      logoBgColor: isSet(object.logoBgColor)
+        ? globalThis.Number(object.logoBgColor)
+        : isSet(object.logo_bg_color)
+        ? globalThis.Number(object.logo_bg_color)
+        : 0,
+    };
+  },
+
+  toJSON(message: GuildLogo): unknown {
+    const obj: any = {};
+    if (message.logo !== 0) {
+      obj.logo = Math.round(message.logo);
+    }
+    if (message.logoColor !== 0) {
+      obj.logoColor = Math.round(message.logoColor);
+    }
+    if (message.logoBg !== 0) {
+      obj.logoBg = Math.round(message.logoBg);
+    }
+    if (message.logoBgColor !== 0) {
+      obj.logoBgColor = Math.round(message.logoBgColor);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GuildLogo>, I>>(base?: I): GuildLogo {
+    return GuildLogo.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GuildLogo>, I>>(object: I): GuildLogo {
+    const message = createBaseGuildLogo();
+    message.logo = object.logo ?? 0;
+    message.logoColor = object.logoColor ?? 0;
+    message.logoBg = object.logoBg ?? 0;
+    message.logoBgColor = object.logoBgColor ?? 0;
+    return message;
+  },
+};
+
+function createBaseGuild(): Guild {
+  return {
+    worldId: 0,
+    guildId: 0,
+    name: "",
+    leaderCharacterId: 0,
+    revision: 0,
+    gp: 0,
+    capacity: 0,
+    notice: "",
+    logo: undefined,
+    rankTitles: [],
+    members: [],
+  };
+}
+
+export const Guild: MessageFns<Guild> = {
+  encode(message: Guild, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      writer.uint32(16).uint32(message.guildId);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.leaderCharacterId !== 0) {
+      writer.uint32(32).uint32(message.leaderCharacterId);
+    }
+    if (message.revision !== 0) {
+      writer.uint32(40).uint64(message.revision);
+    }
+    if (message.gp !== 0) {
+      writer.uint32(48).uint32(message.gp);
+    }
+    if (message.capacity !== 0) {
+      writer.uint32(56).uint32(message.capacity);
+    }
+    if (message.notice !== "") {
+      writer.uint32(66).string(message.notice);
+    }
+    if (message.logo !== undefined) {
+      GuildLogo.encode(message.logo, writer.uint32(74).fork()).join();
+    }
+    for (const v of message.rankTitles) {
+      writer.uint32(82).string(v!);
+    }
+    for (const v of message.members) {
+      GuildMember.encode(v!, writer.uint32(90).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Guild {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGuild();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.leaderCharacterId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.revision = longToNumber(reader.uint64());
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.gp = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.capacity = reader.uint32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.notice = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.logo = GuildLogo.decode(reader, reader.uint32());
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.rankTitles.push(reader.string());
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.members.push(GuildMember.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Guild {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      leaderCharacterId: isSet(object.leaderCharacterId)
+        ? globalThis.Number(object.leaderCharacterId)
+        : isSet(object.leader_character_id)
+        ? globalThis.Number(object.leader_character_id)
+        : 0,
+      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      gp: isSet(object.gp) ? globalThis.Number(object.gp) : 0,
+      capacity: isSet(object.capacity) ? globalThis.Number(object.capacity) : 0,
+      notice: isSet(object.notice) ? globalThis.String(object.notice) : "",
+      logo: isSet(object.logo) ? GuildLogo.fromJSON(object.logo) : undefined,
+      rankTitles: globalThis.Array.isArray(object?.rankTitles)
+        ? object.rankTitles.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.rank_titles)
+        ? object.rank_titles.map((e: any) => globalThis.String(e))
+        : [],
+      members: globalThis.Array.isArray(object?.members)
+        ? object.members.map((e: any) => GuildMember.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: Guild): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      obj.guildId = Math.round(message.guildId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.leaderCharacterId !== 0) {
+      obj.leaderCharacterId = Math.round(message.leaderCharacterId);
+    }
+    if (message.revision !== 0) {
+      obj.revision = Math.round(message.revision);
+    }
+    if (message.gp !== 0) {
+      obj.gp = Math.round(message.gp);
+    }
+    if (message.capacity !== 0) {
+      obj.capacity = Math.round(message.capacity);
+    }
+    if (message.notice !== "") {
+      obj.notice = message.notice;
+    }
+    if (message.logo !== undefined) {
+      obj.logo = GuildLogo.toJSON(message.logo);
+    }
+    if (message.rankTitles?.length) {
+      obj.rankTitles = message.rankTitles;
+    }
+    if (message.members?.length) {
+      obj.members = message.members.map((e) => GuildMember.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Guild>, I>>(base?: I): Guild {
+    return Guild.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Guild>, I>>(object: I): Guild {
+    const message = createBaseGuild();
+    message.worldId = object.worldId ?? 0;
+    message.guildId = object.guildId ?? 0;
+    message.name = object.name ?? "";
+    message.leaderCharacterId = object.leaderCharacterId ?? 0;
+    message.revision = object.revision ?? 0;
+    message.gp = object.gp ?? 0;
+    message.capacity = object.capacity ?? 0;
+    message.notice = object.notice ?? "";
+    message.logo = (object.logo !== undefined && object.logo !== null) ? GuildLogo.fromPartial(object.logo) : undefined;
+    message.rankTitles = object.rankTitles?.map((e) => e) || [];
+    message.members = object.members?.map((e) => GuildMember.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseGetGuildRequest(): GetGuildRequest {
+  return { worldId: 0, guildId: 0 };
+}
+
+export const GetGuildRequest: MessageFns<GetGuildRequest> = {
+  encode(message: GetGuildRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      writer.uint32(16).uint32(message.guildId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGuildRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetGuildRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetGuildRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetGuildRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      obj.guildId = Math.round(message.guildId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetGuildRequest>, I>>(base?: I): GetGuildRequest {
+    return GetGuildRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetGuildRequest>, I>>(object: I): GetGuildRequest {
+    const message = createBaseGetGuildRequest();
+    message.worldId = object.worldId ?? 0;
+    message.guildId = object.guildId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetGuildReply(): GetGuildReply {
+  return { found: false, guild: undefined };
+}
+
+export const GetGuildReply: MessageFns<GetGuildReply> = {
+  encode(message: GetGuildReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.found !== false) {
+      writer.uint32(8).bool(message.found);
+    }
+    if (message.guild !== undefined) {
+      Guild.encode(message.guild, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGuildReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetGuildReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.found = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.guild = Guild.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetGuildReply {
+    return {
+      found: isSet(object.found) ? globalThis.Boolean(object.found) : false,
+      guild: isSet(object.guild) ? Guild.fromJSON(object.guild) : undefined,
+    };
+  },
+
+  toJSON(message: GetGuildReply): unknown {
+    const obj: any = {};
+    if (message.found !== false) {
+      obj.found = message.found;
+    }
+    if (message.guild !== undefined) {
+      obj.guild = Guild.toJSON(message.guild);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetGuildReply>, I>>(base?: I): GetGuildReply {
+    return GetGuildReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetGuildReply>, I>>(object: I): GetGuildReply {
+    const message = createBaseGetGuildReply();
+    message.found = object.found ?? false;
+    message.guild = (object.guild !== undefined && object.guild !== null) ? Guild.fromPartial(object.guild) : undefined;
+    return message;
+  },
+};
+
 function createBaseBroadcastMultiChatRequest(): BroadcastMultiChatRequest {
   return {
     worldId: 0,
@@ -10968,6 +12083,24 @@ export const InternalService = {
     responseSerialize: (value: DenyPartyReply): Buffer => Buffer.from(DenyPartyReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): DenyPartyReply => DenyPartyReply.decode(value),
   },
+  createGuild: {
+    path: "/fm.internal.Internal/CreateGuild" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CreateGuildRequest): Buffer => Buffer.from(CreateGuildRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CreateGuildRequest => CreateGuildRequest.decode(value),
+    responseSerialize: (value: CreateGuildReply): Buffer => Buffer.from(CreateGuildReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CreateGuildReply => CreateGuildReply.decode(value),
+  },
+  getGuild: {
+    path: "/fm.internal.Internal/GetGuild" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: GetGuildRequest): Buffer => Buffer.from(GetGuildRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetGuildRequest => GetGuildRequest.decode(value),
+    responseSerialize: (value: GetGuildReply): Buffer => Buffer.from(GetGuildReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetGuildReply => GetGuildReply.decode(value),
+  },
   requestBuddy: {
     path: "/fm.internal.Internal/RequestBuddy" as const,
     requestStream: false as const,
@@ -11032,6 +12165,8 @@ export interface InternalServer extends UntypedServiceImplementation {
   updatePartyMember: handleUnaryCall<UpdatePartyMemberRequest, UpdatePartyMemberReply>;
   inviteParty: handleUnaryCall<InvitePartyRequest, InvitePartyReply>;
   denyParty: handleUnaryCall<DenyPartyRequest, DenyPartyReply>;
+  createGuild: handleUnaryCall<CreateGuildRequest, CreateGuildReply>;
+  getGuild: handleUnaryCall<GetGuildRequest, GetGuildReply>;
   requestBuddy: handleUnaryCall<RequestBuddyRequest, RequestBuddyReply>;
   acceptBuddy: handleUnaryCall<AcceptBuddyRequest, AcceptBuddyReply>;
   removeBuddy: handleUnaryCall<RemoveBuddyRequest, RemoveBuddyReply>;
@@ -11380,6 +12515,36 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: DenyPartyReply) => void,
+  ): ClientUnaryCall;
+  createGuild(
+    request: CreateGuildRequest,
+    callback: (error: ServiceError | null, response: CreateGuildReply) => void,
+  ): ClientUnaryCall;
+  createGuild(
+    request: CreateGuildRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CreateGuildReply) => void,
+  ): ClientUnaryCall;
+  createGuild(
+    request: CreateGuildRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CreateGuildReply) => void,
+  ): ClientUnaryCall;
+  getGuild(
+    request: GetGuildRequest,
+    callback: (error: ServiceError | null, response: GetGuildReply) => void,
+  ): ClientUnaryCall;
+  getGuild(
+    request: GetGuildRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GetGuildReply) => void,
+  ): ClientUnaryCall;
+  getGuild(
+    request: GetGuildRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GetGuildReply) => void,
   ): ClientUnaryCall;
   requestBuddy(
     request: RequestBuddyRequest,

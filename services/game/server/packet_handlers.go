@@ -40,6 +40,8 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, PartySearchStop](gs)
 	core.Bind[*GameServer, PartyOperation](gs)
 	core.Bind[*GameServer, DenyPartyRequest](gs)
+	core.Bind[*GameServer, GuildOperation](gs)
+	core.Bind[*GameServer, DenyGuildRequest](gs)
 	core.Bind[*GameServer, Buddy](gs)
 	core.Bind[*GameServer, NpcShop](gs)
 	core.Bind[*GameServer, MagicAttack](gs)

@@ -29,6 +29,8 @@ service Internal {
   rpc UpdatePartyMember (UpdatePartyMemberRequest) returns (UpdatePartyMemberReply);
   rpc InviteParty (InvitePartyRequest) returns (InvitePartyReply);
   rpc DenyParty (DenyPartyRequest) returns (DenyPartyReply);
+  rpc CreateGuild (CreateGuildRequest) returns (CreateGuildReply);
+  rpc GetGuild (GetGuildRequest) returns (GetGuildReply);
   rpc RequestBuddy (RequestBuddyRequest) returns (RequestBuddyReply);
   rpc AcceptBuddy (AcceptBuddyRequest) returns (AcceptBuddyReply);
   rpc RemoveBuddy (RemoveBuddyRequest) returns (RemoveBuddyReply);
@@ -558,6 +560,80 @@ message DenyPartyRequest {
 message DenyPartyReply {
   bool ok = 1;
   PartyErrorCode error_code = 2;
+}
+
+enum GuildMemberRank {
+  GUILD_MEMBER_RANK_UNSPECIFIED = 0;
+  GUILD_MEMBER_RANK_MASTER = 1;
+  GUILD_MEMBER_RANK_JUNIOR = 2;
+  GUILD_MEMBER_RANK_SENIOR = 3;
+  GUILD_MEMBER_RANK_MEMBER = 4;
+  GUILD_MEMBER_RANK_NEW = 5;
+}
+
+message GuildMember {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  string character_name = 3;
+  uint32 level = 4;
+  uint32 class_id = 5;
+  GuildMemberRank rank = 6;
+  optional int32 channel_index = 7;
+}
+
+message CreateGuildRequest {
+  uint32 world_id = 1;
+  string guild_name = 2;
+  GuildMember leader = 3;
+}
+
+enum GuildErrorCode {
+  GUILD_ERROR_NONE = 0;
+  GUILD_ERROR_UNKNOWN = 1;
+  GUILD_ERROR_ALREADY_IN_GUILD = 2;
+  GUILD_ERROR_CHARACTER_NOT_FOUND = 3;
+  GUILD_ERROR_GUILD_NAME_INVALID = 4;
+  GUILD_ERROR_GUILD_NAME_TAKEN = 5;
+  GUILD_ERROR_LEADER_MISMATCH = 6;
+}
+
+message CreateGuildReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
+  optional Guild guild = 5;
+}
+
+message GuildLogo {
+  uint32 logo = 1;
+  uint32 logo_color = 2;
+  uint32 logo_bg = 3;
+  uint32 logo_bg_color = 4;
+}
+
+message Guild {
+  uint32 world_id = 1;
+  uint32 guild_id = 2;
+  string name = 3;
+  uint32 leader_character_id = 4;
+  uint64 revision = 5;
+  uint32 gp = 6;
+  uint32 capacity = 7;
+  string notice = 8;
+  GuildLogo logo = 9;
+  repeated string rank_titles = 10;
+  repeated GuildMember members = 11;
+}
+
+message GetGuildRequest {
+  uint32 world_id = 1;
+  uint32 guild_id = 2;
+}
+
+message GetGuildReply {
+  bool found = 1;
+  Guild guild = 2;
 }
 
 message BroadcastMultiChatRequest {

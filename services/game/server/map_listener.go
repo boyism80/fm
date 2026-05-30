@@ -25,17 +25,17 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 	}
 
 	if init {
-
 		characterDTO := character.ToFullDTO()
-
 		loginPacket := &response.Login{
 			Channel:   l.gs.config.ChannelId,
 			Character: characterDTO,
 		}
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
+		if character.Listener != nil {
+			character.Listener.OnShowGuildInfo(character)
+		}
 		character.Buffs.EmitAllBuffAddedEvents()
 	} else {
-
 		characterDTO := character.ToDTO()
 		warpPacket := &response.Warp{
 			Character: characterDTO,
