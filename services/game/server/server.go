@@ -163,7 +163,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	}
 
 	gs.party = NewPartyContainer(gs, config.WorldId, gs.internalClient)
-	gs.guild = NewGuildContainer(gs, config.WorldId, gs.internalClient)
+	gs.guild = NewGuildContainer(config.WorldId, gs.internalClient)
 
 	if config.RabbitMQ.Enabled() {
 		queueName := fmt.Sprintf("fm.game.w%d.c%d.party.events", config.WorldId, config.ChannelId)
@@ -233,6 +233,14 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 		guildDisp := mq.NewDispatcher()
 		mq.Bind[*GameServer, guildMqCreated](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqMemberJoined](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqMemberLeft](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqRankTitlesChanged](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqMemberRankChanged](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqEmblemChanged](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqNoticeChanged](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqMemberOnlineChanged](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqDisbanded](gs, guildDisp)
 
 		guildRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),

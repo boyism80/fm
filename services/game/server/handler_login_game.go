@@ -93,9 +93,6 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 			return &internal.GetGuildReply{Found: false}, nil
 		}
 		guildID := enterReply.GetGuildId()
-		if h.gs.guild != nil && h.gs.guild.Get(guildID) != nil {
-			return &internal.GetGuildReply{Found: true}, nil
-		}
 		return ic.GetGuild(c, &internal.GetGuildRequest{
 			WorldId: h.gs.config.WorldId,
 			GuildId: guildID,

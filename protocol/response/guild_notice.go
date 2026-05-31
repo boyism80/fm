@@ -11,7 +11,7 @@ type GuildNotice struct {
 }
 
 func (p *GuildNotice) Opcode() uint16 {
-	return guildOperationOpcode()
+	return 0x30
 }
 
 func (p *GuildNotice) Serialize(w *stream.StreamWriter) error {

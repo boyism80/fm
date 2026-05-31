@@ -13,13 +13,13 @@ type PendingGrpcRouteEntry = {
 const pendingGrpcRouteEntries: PendingGrpcRouteEntry[] = [];
 const controllerResolverByConstructor = new WeakMap<object, string>();
 
-export function GrpcController(resolverName: string) {
+export function Controller(resolverName: string) {
     return function (constructor: object) {
         controllerResolverByConstructor.set(constructor, resolverName);
     };
 }
 
-export function GrpcMethod(grpcMethod: string) {
+export function Method(grpcMethod: string) {
     return function (target: object, propertyKey: string, _descriptor: PropertyDescriptor) {
         pendingGrpcRouteEntries.push({
             grpcMethod,
@@ -33,7 +33,7 @@ export function getGrpcRoutes(): GrpcRouteEntry[] {
     return pendingGrpcRouteEntries.map((entry) => {
         const resolverName = controllerResolverByConstructor.get(entry.controllerConstructor);
         if (!resolverName) {
-            throw new Error(`@GrpcMethod used without @GrpcController on ${entry.methodName}`);
+            throw new Error(`@Method used without @Controller on ${entry.methodName}`);
         }
         return {
             grpcMethod: entry.grpcMethod,

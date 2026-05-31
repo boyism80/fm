@@ -17,8 +17,6 @@ const (
 	GuildC2SChangeLeader     GuildOperationCode = 0x1F
 )
 
-const GuildOperationOpcode uint16 = 0x30
-
 type GuildSubOpcode uint8
 
 const (

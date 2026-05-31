@@ -3,6 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -192,6 +193,69 @@ type DeliverGuildInvite struct {
 	InviterCharacterID uint32
 	GuildID            uint32
 	InviterName        string
+}
+
+type DeliverGuildNewMember struct {
+	CharacterID uint32
+	GuildID     uint32
+	Member      dto.GuildMemberStatus
+}
+
+type DeliverGuildLeaveSelf struct {
+	CharacterID uint32
+}
+
+type DeliverGuildExpelSelf struct {
+	CharacterID uint32
+	GuildID     uint32
+}
+
+type DeliverGuildMemberLeft struct {
+	CharacterID uint32
+	GuildID     uint32
+	TargetID    uint32
+	TargetName  string
+	WasExpelled bool
+}
+
+type DeliverGuildRankTitleChange struct {
+	CharacterID uint32
+	GuildID     uint32
+	RankTitles  [5]string
+}
+
+type DeliverGuildMemberRankChange struct {
+	CharacterID uint32
+	GuildID     uint32
+	TargetID    uint32
+	GuildRank   uint8
+}
+
+type DeliverGuildEmblemChange struct {
+	CharacterID uint32
+	GuildID     uint32
+	LogoBG      uint16
+	LogoBGColor uint8
+	Logo        uint16
+	LogoColor   uint8
+}
+
+type DeliverGuildNoticeChange struct {
+	CharacterID uint32
+	GuildID     uint32
+	Notice      string
+}
+
+type DeliverGuildMemberOnlineChange struct {
+	CharacterID uint32
+	GuildID     uint32
+	SubjectID   uint32
+	Online      bool
+}
+
+type DeliverGuildDisbandSelf struct {
+	CharacterID uint32
+	GuildID     uint32
 }
 
 type DeliverGuildMessage struct {

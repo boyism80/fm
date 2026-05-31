@@ -6,6 +6,7 @@ import type { SessionRepository } from "../repos/session-repository";
 import type { CharacterService } from "./character-service";
 import type { PartyService } from "./party-service";
 import type { BuddyService } from "./buddy-service";
+import type { GuildService } from "./guild-service";
 
 export function formatDateTime(date = new Date()) {
     const pad = (v: number) => String(v).padStart(2, "0");
@@ -23,6 +24,7 @@ export class SessionService {
     private readonly characterService: CharacterService;
     private readonly partyService: PartyService | null;
     private readonly buddyService: BuddyService | null;
+    private readonly guildService: GuildService | null;
 
     constructor(
         internalContext: InternalContext,
@@ -30,7 +32,8 @@ export class SessionService {
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         characterService: CharacterService,
         partyService: PartyService | null,
-        buddyService: BuddyService | null
+        buddyService: BuddyService | null,
+        guildService: GuildService | null
     ) {
         void internalContext;
         void characterRealtimeStateRepository;
@@ -38,6 +41,7 @@ export class SessionService {
         this.characterService = characterService;
         this.partyService = partyService;
         this.buddyService = buddyService;
+        this.guildService = guildService;
     }
 
     private now() {
@@ -126,6 +130,9 @@ export class SessionService {
         if (this.buddyService) {
             await this.buddyService.applyBuddyChannelIndex(worldId, characterId, channelId);
         }
+        if (this.guildService) {
+            await this.guildService.applyMemberOnlineState(worldId, characterId, true);
+        }
         return { ok: true };
     }
 
@@ -203,6 +210,9 @@ export class SessionService {
             }
             if (this.buddyService) {
                 await this.buddyService.applyBuddyChannelIndex(worldId, cid, -1);
+            }
+            if (this.guildService) {
+                await this.guildService.applyMemberOnlineState(worldId, cid, false);
             }
         }
         return { ok: true, code: SessionErrorCode.SESSION_NONE };

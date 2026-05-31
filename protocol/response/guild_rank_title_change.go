@@ -11,7 +11,7 @@ type GuildRankTitleChange struct {
 }
 
 func (p *GuildRankTitleChange) Opcode() uint16 {
-	return guildOperationOpcode()
+	return 0x30
 }
 
 func (p *GuildRankTitleChange) Serialize(w *stream.StreamWriter) error {

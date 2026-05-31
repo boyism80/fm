@@ -31,6 +31,14 @@ service Internal {
   rpc DenyParty (DenyPartyRequest) returns (DenyPartyReply);
   rpc CreateGuild (CreateGuildRequest) returns (CreateGuildReply);
   rpc GetGuild (GetGuildRequest) returns (GetGuildReply);
+  rpc AcceptGuildInvite (AcceptGuildInviteRequest) returns (AcceptGuildInviteReply);
+  rpc LeaveGuild (LeaveGuildRequest) returns (LeaveGuildReply);
+  rpc ExpelGuild (ExpelGuildRequest) returns (ExpelGuildReply);
+  rpc ChangeGuildRankTitles (ChangeGuildRankTitlesRequest) returns (ChangeGuildRankTitlesReply);
+  rpc ChangeGuildMemberRank (ChangeGuildMemberRankRequest) returns (ChangeGuildMemberRankReply);
+  rpc ChangeGuildEmblem (ChangeGuildEmblemRequest) returns (ChangeGuildEmblemReply);
+  rpc ChangeGuildNotice (ChangeGuildNoticeRequest) returns (ChangeGuildNoticeReply);
+  rpc DisbandGuild (DisbandGuildRequest) returns (DisbandGuildReply);
   rpc RequestBuddy (RequestBuddyRequest) returns (RequestBuddyReply);
   rpc AcceptBuddy (AcceptBuddyRequest) returns (AcceptBuddyReply);
   rpc RemoveBuddy (RemoveBuddyRequest) returns (RemoveBuddyReply);
@@ -595,6 +603,16 @@ enum GuildErrorCode {
   GUILD_ERROR_GUILD_NAME_INVALID = 4;
   GUILD_ERROR_GUILD_NAME_TAKEN = 5;
   GUILD_ERROR_LEADER_MISMATCH = 6;
+  GUILD_ERROR_GUILD_NOT_FOUND = 7;
+  GUILD_ERROR_GUILD_FULL = 8;
+  GUILD_ERROR_NOT_IN_GUILD = 9;
+  GUILD_ERROR_LEADER_CANNOT_LEAVE = 10;
+  GUILD_ERROR_NOT_AUTHORIZED = 11;
+  GUILD_ERROR_CANNOT_EXPEL_TARGET = 12;
+  GUILD_ERROR_TARGET_NOT_IN_GUILD = 13;
+  GUILD_ERROR_INVALID_RANK_TITLES = 14;
+  GUILD_ERROR_INVALID_MEMBER_RANK = 15;
+  GUILD_ERROR_INVALID_NOTICE = 16;
 }
 
 message CreateGuildReply {
@@ -603,6 +621,108 @@ message CreateGuildReply {
   optional uint32 guild_id = 3;
   uint64 revision = 4;
   optional Guild guild = 5;
+}
+
+message AcceptGuildInviteRequest {
+  uint32 world_id = 1;
+  uint32 guild_id = 2;
+  GuildMember member = 3;
+}
+
+message AcceptGuildInviteReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional Guild guild = 3;
+}
+
+message LeaveGuildRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+}
+
+message LeaveGuildReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
+}
+
+message ExpelGuildRequest {
+  uint32 world_id = 1;
+  uint32 requester_character_id = 2;
+  uint32 target_character_id = 3;
+}
+
+message ExpelGuildReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
+}
+
+message ChangeGuildRankTitlesRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  repeated string rank_titles = 3;
+}
+
+message ChangeGuildRankTitlesReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
+}
+
+message ChangeGuildMemberRankRequest {
+  uint32 world_id = 1;
+  uint32 requester_character_id = 2;
+  uint32 target_character_id = 3;
+  GuildMemberRank new_rank = 4;
+}
+
+message ChangeGuildMemberRankReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
+}
+
+message ChangeGuildEmblemRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  GuildLogo logo = 3;
+}
+
+message ChangeGuildEmblemReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
+}
+
+message ChangeGuildNoticeRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  string notice = 3;
+}
+
+message ChangeGuildNoticeReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
+}
+
+message DisbandGuildRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+}
+
+message DisbandGuildReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
 }
 
 message GuildLogo {

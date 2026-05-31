@@ -1,14 +1,9 @@
 package response
 
 import (
-	"github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/stream"
 )
-
-func guildOperationOpcode() uint16 {
-	return constant.GuildOperationOpcode
-}
 
 func writeGuildMemberData(w *stream.StreamWriter, members []dto.GuildMemberStatus) {
 	w.WriteU8(uint8(len(members)))

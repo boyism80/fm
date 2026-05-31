@@ -20,6 +20,7 @@ import { BuffRepository } from "../repos/buff-repository";
 import type { BuffModel } from "../repos/buff-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { WzService } from "./wz-service";
+import { DistributedLockService } from "./distributed-lock-service";
 
 type CharacterPersistedInput = {
     worldId: number;
@@ -76,6 +77,7 @@ export class CharacterService {
     private readonly keyLayoutRepo: KeyLayoutRepository;
     private readonly app: AppConfiguration;
     private readonly wzService: WzService;
+    private readonly distributedLockService: DistributedLockService;
 
     constructor(
         characterRepository: CharacterRepository,
@@ -87,7 +89,8 @@ export class CharacterService {
         buffRepository: BuffRepository,
         keyLayoutRepository: KeyLayoutRepository,
         appConfiguration: AppConfiguration,
-        wzService: WzService
+        wzService: WzService,
+        distributedLockService: DistributedLockService
     ) {
         this.repo = characterRepository;
         this.overviewRepo = characterOverviewRepository;
@@ -99,6 +102,7 @@ export class CharacterService {
         this.keyLayoutRepo = keyLayoutRepository;
         this.app = appConfiguration;
         this.wzService = wzService;
+        this.distributedLockService = distributedLockService;
     }
 
     private worldId() {
@@ -231,9 +235,13 @@ export class CharacterService {
         this.assertAccountId(accountId);
         this.validatePersisted({ name });
 
-        const existing = await this.unifiedRepo.findCharacterNameEntry(name);
-        if (existing) {
-            return { success: false, errorMsg: "이미 사용 중인 이름입니다." };
+        await using _createCharacterLock = await this.distributedLockService.acquireWorldDataLock(wid, `create_character:a${accountId}`);
+
+        const overviewMap = await this.overviewRepo.getAll(wid, String(accountId));
+        const account = await this.accountRepo.get(wid, accountId);
+        const slotCount = account?.characterSlotCount ?? 6;
+        if (overviewMap.size >= slotCount) {
+            return { success: false, errorMsg: "캐릭터 슬롯이 부족합니다." };
         }
 
         let nameEntry;
@@ -248,8 +256,8 @@ export class CharacterService {
         }
 
         const characterId = nameEntry.character_id;
-        const account = await this.accountRepo.get(wid, accountId);
         const role = account?.role ?? 0;
+
         const persisted = {
             characterId,
             accountId,

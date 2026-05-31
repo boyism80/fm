@@ -19,35 +19,43 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Internal_Ping_FullMethodName                 = "/fm.internal.Internal/Ping"
-	Internal_GetGameChannelStatus_FullMethodName = "/fm.internal.Internal/GetGameChannelStatus"
-	Internal_GetServerCatalog_FullMethodName     = "/fm.internal.Internal/GetServerCatalog"
-	Internal_EnterGame_FullMethodName            = "/fm.internal.Internal/EnterGame"
-	Internal_BeginGameTransition_FullMethodName  = "/fm.internal.Internal/BeginGameTransition"
-	Internal_SaveCharacter_FullMethodName        = "/fm.internal.Internal/SaveCharacter"
-	Internal_SaveCharacters_FullMethodName       = "/fm.internal.Internal/SaveCharacters"
-	Internal_LoginAccount_FullMethodName         = "/fm.internal.Internal/LoginAccount"
-	Internal_GetCharacterList_FullMethodName     = "/fm.internal.Internal/GetCharacterList"
-	Internal_CheckCharacterName_FullMethodName   = "/fm.internal.Internal/CheckCharacterName"
-	Internal_CreateCharacter_FullMethodName      = "/fm.internal.Internal/CreateCharacter"
-	Internal_DeleteCharacter_FullMethodName      = "/fm.internal.Internal/DeleteCharacter"
-	Internal_RefreshSession_FullMethodName       = "/fm.internal.Internal/RefreshSession"
-	Internal_LogoutSession_FullMethodName        = "/fm.internal.Internal/LogoutSession"
-	Internal_CreateParty_FullMethodName          = "/fm.internal.Internal/CreateParty"
-	Internal_JoinParty_FullMethodName            = "/fm.internal.Internal/JoinParty"
-	Internal_LeaveParty_FullMethodName           = "/fm.internal.Internal/LeaveParty"
-	Internal_ExpelParty_FullMethodName           = "/fm.internal.Internal/ExpelParty"
-	Internal_ChangePartyLeader_FullMethodName    = "/fm.internal.Internal/ChangePartyLeader"
-	Internal_GetParty_FullMethodName             = "/fm.internal.Internal/GetParty"
-	Internal_UpdatePartyMember_FullMethodName    = "/fm.internal.Internal/UpdatePartyMember"
-	Internal_InviteParty_FullMethodName          = "/fm.internal.Internal/InviteParty"
-	Internal_DenyParty_FullMethodName            = "/fm.internal.Internal/DenyParty"
-	Internal_CreateGuild_FullMethodName          = "/fm.internal.Internal/CreateGuild"
-	Internal_GetGuild_FullMethodName             = "/fm.internal.Internal/GetGuild"
-	Internal_RequestBuddy_FullMethodName         = "/fm.internal.Internal/RequestBuddy"
-	Internal_AcceptBuddy_FullMethodName          = "/fm.internal.Internal/AcceptBuddy"
-	Internal_RemoveBuddy_FullMethodName          = "/fm.internal.Internal/RemoveBuddy"
-	Internal_BroadcastMultiChat_FullMethodName   = "/fm.internal.Internal/BroadcastMultiChat"
+	Internal_Ping_FullMethodName                  = "/fm.internal.Internal/Ping"
+	Internal_GetGameChannelStatus_FullMethodName  = "/fm.internal.Internal/GetGameChannelStatus"
+	Internal_GetServerCatalog_FullMethodName      = "/fm.internal.Internal/GetServerCatalog"
+	Internal_EnterGame_FullMethodName             = "/fm.internal.Internal/EnterGame"
+	Internal_BeginGameTransition_FullMethodName   = "/fm.internal.Internal/BeginGameTransition"
+	Internal_SaveCharacter_FullMethodName         = "/fm.internal.Internal/SaveCharacter"
+	Internal_SaveCharacters_FullMethodName        = "/fm.internal.Internal/SaveCharacters"
+	Internal_LoginAccount_FullMethodName          = "/fm.internal.Internal/LoginAccount"
+	Internal_GetCharacterList_FullMethodName      = "/fm.internal.Internal/GetCharacterList"
+	Internal_CheckCharacterName_FullMethodName    = "/fm.internal.Internal/CheckCharacterName"
+	Internal_CreateCharacter_FullMethodName       = "/fm.internal.Internal/CreateCharacter"
+	Internal_DeleteCharacter_FullMethodName       = "/fm.internal.Internal/DeleteCharacter"
+	Internal_RefreshSession_FullMethodName        = "/fm.internal.Internal/RefreshSession"
+	Internal_LogoutSession_FullMethodName         = "/fm.internal.Internal/LogoutSession"
+	Internal_CreateParty_FullMethodName           = "/fm.internal.Internal/CreateParty"
+	Internal_JoinParty_FullMethodName             = "/fm.internal.Internal/JoinParty"
+	Internal_LeaveParty_FullMethodName            = "/fm.internal.Internal/LeaveParty"
+	Internal_ExpelParty_FullMethodName            = "/fm.internal.Internal/ExpelParty"
+	Internal_ChangePartyLeader_FullMethodName     = "/fm.internal.Internal/ChangePartyLeader"
+	Internal_GetParty_FullMethodName              = "/fm.internal.Internal/GetParty"
+	Internal_UpdatePartyMember_FullMethodName     = "/fm.internal.Internal/UpdatePartyMember"
+	Internal_InviteParty_FullMethodName           = "/fm.internal.Internal/InviteParty"
+	Internal_DenyParty_FullMethodName             = "/fm.internal.Internal/DenyParty"
+	Internal_CreateGuild_FullMethodName           = "/fm.internal.Internal/CreateGuild"
+	Internal_GetGuild_FullMethodName              = "/fm.internal.Internal/GetGuild"
+	Internal_AcceptGuildInvite_FullMethodName     = "/fm.internal.Internal/AcceptGuildInvite"
+	Internal_LeaveGuild_FullMethodName            = "/fm.internal.Internal/LeaveGuild"
+	Internal_ExpelGuild_FullMethodName            = "/fm.internal.Internal/ExpelGuild"
+	Internal_ChangeGuildRankTitles_FullMethodName = "/fm.internal.Internal/ChangeGuildRankTitles"
+	Internal_ChangeGuildMemberRank_FullMethodName = "/fm.internal.Internal/ChangeGuildMemberRank"
+	Internal_ChangeGuildEmblem_FullMethodName     = "/fm.internal.Internal/ChangeGuildEmblem"
+	Internal_ChangeGuildNotice_FullMethodName     = "/fm.internal.Internal/ChangeGuildNotice"
+	Internal_DisbandGuild_FullMethodName          = "/fm.internal.Internal/DisbandGuild"
+	Internal_RequestBuddy_FullMethodName          = "/fm.internal.Internal/RequestBuddy"
+	Internal_AcceptBuddy_FullMethodName           = "/fm.internal.Internal/AcceptBuddy"
+	Internal_RemoveBuddy_FullMethodName           = "/fm.internal.Internal/RemoveBuddy"
+	Internal_BroadcastMultiChat_FullMethodName    = "/fm.internal.Internal/BroadcastMultiChat"
 )
 
 // InternalClient is the client API for Internal service.
@@ -79,6 +87,14 @@ type InternalClient interface {
 	DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error)
 	CreateGuild(ctx context.Context, in *CreateGuildRequest, opts ...grpc.CallOption) (*CreateGuildReply, error)
 	GetGuild(ctx context.Context, in *GetGuildRequest, opts ...grpc.CallOption) (*GetGuildReply, error)
+	AcceptGuildInvite(ctx context.Context, in *AcceptGuildInviteRequest, opts ...grpc.CallOption) (*AcceptGuildInviteReply, error)
+	LeaveGuild(ctx context.Context, in *LeaveGuildRequest, opts ...grpc.CallOption) (*LeaveGuildReply, error)
+	ExpelGuild(ctx context.Context, in *ExpelGuildRequest, opts ...grpc.CallOption) (*ExpelGuildReply, error)
+	ChangeGuildRankTitles(ctx context.Context, in *ChangeGuildRankTitlesRequest, opts ...grpc.CallOption) (*ChangeGuildRankTitlesReply, error)
+	ChangeGuildMemberRank(ctx context.Context, in *ChangeGuildMemberRankRequest, opts ...grpc.CallOption) (*ChangeGuildMemberRankReply, error)
+	ChangeGuildEmblem(ctx context.Context, in *ChangeGuildEmblemRequest, opts ...grpc.CallOption) (*ChangeGuildEmblemReply, error)
+	ChangeGuildNotice(ctx context.Context, in *ChangeGuildNoticeRequest, opts ...grpc.CallOption) (*ChangeGuildNoticeReply, error)
+	DisbandGuild(ctx context.Context, in *DisbandGuildRequest, opts ...grpc.CallOption) (*DisbandGuildReply, error)
 	RequestBuddy(ctx context.Context, in *RequestBuddyRequest, opts ...grpc.CallOption) (*RequestBuddyReply, error)
 	AcceptBuddy(ctx context.Context, in *AcceptBuddyRequest, opts ...grpc.CallOption) (*AcceptBuddyReply, error)
 	RemoveBuddy(ctx context.Context, in *RemoveBuddyRequest, opts ...grpc.CallOption) (*RemoveBuddyReply, error)
@@ -343,6 +359,86 @@ func (c *internalClient) GetGuild(ctx context.Context, in *GetGuildRequest, opts
 	return out, nil
 }
 
+func (c *internalClient) AcceptGuildInvite(ctx context.Context, in *AcceptGuildInviteRequest, opts ...grpc.CallOption) (*AcceptGuildInviteReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptGuildInviteReply)
+	err := c.cc.Invoke(ctx, Internal_AcceptGuildInvite_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) LeaveGuild(ctx context.Context, in *LeaveGuildRequest, opts ...grpc.CallOption) (*LeaveGuildReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaveGuildReply)
+	err := c.cc.Invoke(ctx, Internal_LeaveGuild_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ExpelGuild(ctx context.Context, in *ExpelGuildRequest, opts ...grpc.CallOption) (*ExpelGuildReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExpelGuildReply)
+	err := c.cc.Invoke(ctx, Internal_ExpelGuild_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ChangeGuildRankTitles(ctx context.Context, in *ChangeGuildRankTitlesRequest, opts ...grpc.CallOption) (*ChangeGuildRankTitlesReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeGuildRankTitlesReply)
+	err := c.cc.Invoke(ctx, Internal_ChangeGuildRankTitles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ChangeGuildMemberRank(ctx context.Context, in *ChangeGuildMemberRankRequest, opts ...grpc.CallOption) (*ChangeGuildMemberRankReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeGuildMemberRankReply)
+	err := c.cc.Invoke(ctx, Internal_ChangeGuildMemberRank_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ChangeGuildEmblem(ctx context.Context, in *ChangeGuildEmblemRequest, opts ...grpc.CallOption) (*ChangeGuildEmblemReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeGuildEmblemReply)
+	err := c.cc.Invoke(ctx, Internal_ChangeGuildEmblem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ChangeGuildNotice(ctx context.Context, in *ChangeGuildNoticeRequest, opts ...grpc.CallOption) (*ChangeGuildNoticeReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeGuildNoticeReply)
+	err := c.cc.Invoke(ctx, Internal_ChangeGuildNotice_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) DisbandGuild(ctx context.Context, in *DisbandGuildRequest, opts ...grpc.CallOption) (*DisbandGuildReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisbandGuildReply)
+	err := c.cc.Invoke(ctx, Internal_DisbandGuild_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) RequestBuddy(ctx context.Context, in *RequestBuddyRequest, opts ...grpc.CallOption) (*RequestBuddyReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RequestBuddyReply)
@@ -412,6 +508,14 @@ type InternalServer interface {
 	DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error)
 	CreateGuild(context.Context, *CreateGuildRequest) (*CreateGuildReply, error)
 	GetGuild(context.Context, *GetGuildRequest) (*GetGuildReply, error)
+	AcceptGuildInvite(context.Context, *AcceptGuildInviteRequest) (*AcceptGuildInviteReply, error)
+	LeaveGuild(context.Context, *LeaveGuildRequest) (*LeaveGuildReply, error)
+	ExpelGuild(context.Context, *ExpelGuildRequest) (*ExpelGuildReply, error)
+	ChangeGuildRankTitles(context.Context, *ChangeGuildRankTitlesRequest) (*ChangeGuildRankTitlesReply, error)
+	ChangeGuildMemberRank(context.Context, *ChangeGuildMemberRankRequest) (*ChangeGuildMemberRankReply, error)
+	ChangeGuildEmblem(context.Context, *ChangeGuildEmblemRequest) (*ChangeGuildEmblemReply, error)
+	ChangeGuildNotice(context.Context, *ChangeGuildNoticeRequest) (*ChangeGuildNoticeReply, error)
+	DisbandGuild(context.Context, *DisbandGuildRequest) (*DisbandGuildReply, error)
 	RequestBuddy(context.Context, *RequestBuddyRequest) (*RequestBuddyReply, error)
 	AcceptBuddy(context.Context, *AcceptBuddyRequest) (*AcceptBuddyReply, error)
 	RemoveBuddy(context.Context, *RemoveBuddyRequest) (*RemoveBuddyReply, error)
@@ -500,6 +604,30 @@ func (UnimplementedInternalServer) CreateGuild(context.Context, *CreateGuildRequ
 }
 func (UnimplementedInternalServer) GetGuild(context.Context, *GetGuildRequest) (*GetGuildReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGuild not implemented")
+}
+func (UnimplementedInternalServer) AcceptGuildInvite(context.Context, *AcceptGuildInviteRequest) (*AcceptGuildInviteReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AcceptGuildInvite not implemented")
+}
+func (UnimplementedInternalServer) LeaveGuild(context.Context, *LeaveGuildRequest) (*LeaveGuildReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaveGuild not implemented")
+}
+func (UnimplementedInternalServer) ExpelGuild(context.Context, *ExpelGuildRequest) (*ExpelGuildReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExpelGuild not implemented")
+}
+func (UnimplementedInternalServer) ChangeGuildRankTitles(context.Context, *ChangeGuildRankTitlesRequest) (*ChangeGuildRankTitlesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeGuildRankTitles not implemented")
+}
+func (UnimplementedInternalServer) ChangeGuildMemberRank(context.Context, *ChangeGuildMemberRankRequest) (*ChangeGuildMemberRankReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeGuildMemberRank not implemented")
+}
+func (UnimplementedInternalServer) ChangeGuildEmblem(context.Context, *ChangeGuildEmblemRequest) (*ChangeGuildEmblemReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeGuildEmblem not implemented")
+}
+func (UnimplementedInternalServer) ChangeGuildNotice(context.Context, *ChangeGuildNoticeRequest) (*ChangeGuildNoticeReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeGuildNotice not implemented")
+}
+func (UnimplementedInternalServer) DisbandGuild(context.Context, *DisbandGuildRequest) (*DisbandGuildReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisbandGuild not implemented")
 }
 func (UnimplementedInternalServer) RequestBuddy(context.Context, *RequestBuddyRequest) (*RequestBuddyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestBuddy not implemented")
@@ -984,6 +1112,150 @@ func _Internal_GetGuild_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_AcceptGuildInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptGuildInviteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AcceptGuildInvite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AcceptGuildInvite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AcceptGuildInvite(ctx, req.(*AcceptGuildInviteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_LeaveGuild_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveGuildRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).LeaveGuild(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_LeaveGuild_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).LeaveGuild(ctx, req.(*LeaveGuildRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ExpelGuild_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExpelGuildRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ExpelGuild(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ExpelGuild_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ExpelGuild(ctx, req.(*ExpelGuildRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ChangeGuildRankTitles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeGuildRankTitlesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ChangeGuildRankTitles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ChangeGuildRankTitles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ChangeGuildRankTitles(ctx, req.(*ChangeGuildRankTitlesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ChangeGuildMemberRank_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeGuildMemberRankRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ChangeGuildMemberRank(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ChangeGuildMemberRank_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ChangeGuildMemberRank(ctx, req.(*ChangeGuildMemberRankRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ChangeGuildEmblem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeGuildEmblemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ChangeGuildEmblem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ChangeGuildEmblem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ChangeGuildEmblem(ctx, req.(*ChangeGuildEmblemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ChangeGuildNotice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeGuildNoticeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ChangeGuildNotice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ChangeGuildNotice_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ChangeGuildNotice(ctx, req.(*ChangeGuildNoticeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_DisbandGuild_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisbandGuildRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).DisbandGuild(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_DisbandGuild_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).DisbandGuild(ctx, req.(*DisbandGuildRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_RequestBuddy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestBuddyRequest)
 	if err := dec(in); err != nil {
@@ -1162,6 +1434,38 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGuild",
 			Handler:    _Internal_GetGuild_Handler,
+		},
+		{
+			MethodName: "AcceptGuildInvite",
+			Handler:    _Internal_AcceptGuildInvite_Handler,
+		},
+		{
+			MethodName: "LeaveGuild",
+			Handler:    _Internal_LeaveGuild_Handler,
+		},
+		{
+			MethodName: "ExpelGuild",
+			Handler:    _Internal_ExpelGuild_Handler,
+		},
+		{
+			MethodName: "ChangeGuildRankTitles",
+			Handler:    _Internal_ChangeGuildRankTitles_Handler,
+		},
+		{
+			MethodName: "ChangeGuildMemberRank",
+			Handler:    _Internal_ChangeGuildMemberRank_Handler,
+		},
+		{
+			MethodName: "ChangeGuildEmblem",
+			Handler:    _Internal_ChangeGuildEmblem_Handler,
+		},
+		{
+			MethodName: "ChangeGuildNotice",
+			Handler:    _Internal_ChangeGuildNotice_Handler,
+		},
+		{
+			MethodName: "DisbandGuild",
+			Handler:    _Internal_DisbandGuild_Handler,
 		},
 		{
 			MethodName: "RequestBuddy",

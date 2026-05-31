@@ -22,7 +22,6 @@ type GuildEventEnvelope struct {
 }
 
 type GuildContainer struct {
-	gs             *GameServer
 	worldID        uint32
 	internalClient internal.InternalClient
 	mu             sync.Mutex
@@ -30,9 +29,8 @@ type GuildContainer struct {
 	guilds         map[uint32]*entity.Guild
 }
 
-func NewGuildContainer(gs *GameServer, worldID uint32, ic internal.InternalClient) *GuildContainer {
+func NewGuildContainer(worldID uint32, ic internal.InternalClient) *GuildContainer {
 	return &GuildContainer{
-		gs:             gs,
 		worldID:        worldID,
 		internalClient: ic,
 		revisions:      make(map[uint32]uint64),
@@ -111,22 +109,4 @@ func (gc *GuildContainer) Get(guildID uint32) *entity.Guild {
 		return nil
 	}
 	return s.Clone()
-}
-
-func (gc *GuildContainer) OnGuildCreated(ch *entity.Character, guildPb *internal.Guild) {
-	if gc == nil || ch == nil || guildPb == nil {
-		return
-	}
-	guildID := guildPb.GetGuildId()
-	if guildID == 0 {
-		return
-	}
-	id := guildID
-	ch.SetGuildID(&id)
-	gc.Update(guildPb)
-	if ch.Listener == nil {
-		return
-	}
-	ch.Listener.OnShowGuildInfo(ch)
-	ch.Listener.OnBroadcastGuildAppearance(ch)
 }

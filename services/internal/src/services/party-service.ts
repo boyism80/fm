@@ -22,6 +22,7 @@ import { CharacterRepository } from "../repos/character-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { RabbitMQService } from "./rabbitmq-service";
+import { DistributedLockService } from "./distributed-lock-service";
 const messages = { PartyErrorCode };
 
 const MAX_PARTY_MEMBERS = 6;
@@ -63,6 +64,7 @@ export class PartyService {
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
+    private readonly distributedLockService: DistributedLockService;
 
     constructor(
         internalContext: InternalContext,
@@ -73,7 +75,8 @@ export class PartyService {
         characterRepository: CharacterRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
-        rabbitmqService: RabbitMQService
+        rabbitmqService: RabbitMQService,
+        distributedLockService: DistributedLockService
     ) {
         this.ctx = internalContext;
         this.app = appConfiguration;
@@ -84,6 +87,7 @@ export class PartyService {
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
+        this.distributedLockService = distributedLockService;
     }
 
     private async publishToPartyRoutes(
@@ -300,6 +304,25 @@ export class PartyService {
         this.assertUInt16(memberClassId, "class_id");
         const doorJson = this.doorJsonFromPayload(member.door);
 
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `character_realtime:${characterId}`,
+        );
+
+        const lockedState = await this.characterRealtimeStateRepo.get(worldId, characterId);
+        if (lockedState?.partyId == null) {
+            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+        }
+        const lockedPartyId = lockedState.partyId;
+        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 0) {
+            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+        }
+
+        await using _partyLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `party:${lockedPartyId}`,
+        );
+
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
             if (state?.partyId == null) {
@@ -392,6 +415,11 @@ export class PartyService {
         this.assertUInt16(leaderLevel, "level");
         this.assertUInt16(leaderClassId, "class_id");
         const doorJson = this.doorJsonFromPayload(leader.door);
+
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `character_realtime:${leaderCharacterId}`,
+        );
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const state = await this.characterRealtimeStateRepo.get(worldId, leaderCharacterId, { txClient });
@@ -556,6 +584,16 @@ export class PartyService {
             }
         }
 
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `character_realtime:${characterId}`,
+        );
+
+        await using _partyLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `party:${partyId}`,
+        );
+
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
             if (!party || party.state !== PartyState.PARTY_STATE_ACTIVE) {
@@ -593,6 +631,46 @@ export class PartyService {
     async leaveParty(worldId: number, characterId: number): Promise<LeavePartyResult> {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
+
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `character_realtime:${characterId}`,
+        );
+
+        const lockedState = await this.characterRealtimeStateRepo.get(worldId, characterId);
+        if (lockedState?.partyId == null) {
+            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+        }
+        const lockedPartyId = lockedState.partyId;
+        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 0) {
+            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+        }
+
+        await using _partyLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `party:${lockedPartyId}`,
+        );
+
+        const partyPreview = await this.partyRepo.get(worldId, lockedPartyId);
+        const membersPreview = await this.partyMemberRepo.getAll(worldId, String(lockedPartyId));
+        const coMemberKeyRests: string[] = [];
+        if (
+            partyPreview
+            && partyPreview.leaderCharacterId === characterId
+            && membersPreview.size === 2
+        ) {
+            for (const member of membersPreview.values()) {
+                if (member.characterId !== characterId) {
+                    coMemberKeyRests.push(`character_realtime:${member.characterId}`);
+                    break;
+                }
+            }
+        }
+
+        await using _coMemberLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+            worldId,
+            coMemberKeyRests,
+        );
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
@@ -688,6 +766,33 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.CANNOT_EXPEL_SELF };
         }
 
+        const firstCharacterId = requesterCharacterId < targetCharacterId ? requesterCharacterId : targetCharacterId;
+        const secondCharacterId = requesterCharacterId < targetCharacterId ? targetCharacterId : requesterCharacterId;
+
+        await using _firstCharacterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `character_realtime:${firstCharacterId}`,
+        );
+
+        await using _secondCharacterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `character_realtime:${secondCharacterId}`,
+        );
+
+        const requesterLockedState = await this.characterRealtimeStateRepo.get(worldId, requesterCharacterId);
+        if (requesterLockedState?.partyId == null) {
+            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+        }
+        const lockedPartyId = requesterLockedState.partyId;
+        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 0) {
+            return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
+        }
+
+        await using _partyLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `party:${lockedPartyId}`,
+        );
+
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const requesterState = await this.characterRealtimeStateRepo.get(worldId, requesterCharacterId, { txClient });
             if (requesterState?.partyId == null) {
@@ -760,6 +865,11 @@ export class PartyService {
         if (!newLeaderOnline) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }
+
+        await using _partyLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `party:${partyId}`,
+        );
 
         const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
             const party = await this.partyRepo.get(worldId, partyId, { txClient });

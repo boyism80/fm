@@ -14,7 +14,7 @@ type GuildEmblemChange struct {
 }
 
 func (p *GuildEmblemChange) Opcode() uint16 {
-	return guildOperationOpcode()
+	return 0x30
 }
 
 func (p *GuildEmblemChange) Serialize(w *stream.StreamWriter) error {

@@ -119,8 +119,7 @@ func (l *CharacterListenerImpl) OnShowGuildInfo(ch *entity.Character) {
 		return
 	}
 	ch.Send(&response.GuildShowInfo{
-		InGuild: true,
-		Info:    info,
+		Info: info,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -174,6 +173,149 @@ func (l *CharacterListenerImpl) OnGuildInvite(ch *entity.Character, guildID uint
 		GuildID:     guildID,
 		InviterName: inviterName,
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnGuildNewMember(ch *entity.Character, guildID uint32, member dto.GuildMemberStatus) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildNewMember{
+		GuildID: guildID,
+		Member:  member,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnGuildLeaveSelf(ch *entity.Character) {
+	if l == nil || ch == nil {
+		return
+	}
+	ch.SetGuildID(nil)
+	_ = ch.Send(&response.GuildShowInfo{
+		Info: nil,
+	}, types.SEND_POLICY_ENCRYPT)
+	characterID := ch.GetID()
+	broadcastOpt := &entity.ObjectBroadcastOption{WithMe: true}
+	ch.Broadcast(&response.LoadGuildName{
+		CharacterID: characterID,
+		GuildName:   "",
+	}, broadcastOpt)
+	ch.Broadcast(&response.LoadGuildIcon{
+		CharacterID: characterID,
+	}, broadcastOpt)
+}
+
+func (l *CharacterListenerImpl) OnGuildExpelledSelf(ch *entity.Character, guildID uint32) {
+	if l == nil || ch == nil {
+		return
+	}
+	ch.SetGuildID(nil)
+	_ = ch.Send(&response.GuildMemberLeft{
+		GuildID:     guildID,
+		CharacterID: ch.GetID(),
+		Name:        ch.GetName(),
+		WasExpelled: true,
+	}, types.SEND_POLICY_ENCRYPT)
+	characterID := ch.GetID()
+	broadcastOpt := &entity.ObjectBroadcastOption{WithMe: true}
+	ch.Broadcast(&response.LoadGuildName{
+		CharacterID: characterID,
+		GuildName:   "",
+	}, broadcastOpt)
+	ch.Broadcast(&response.LoadGuildIcon{
+		CharacterID: characterID,
+	}, broadcastOpt)
+}
+
+func (l *CharacterListenerImpl) OnGuildMemberLeft(ch *entity.Character, guildID uint32, targetID uint32, targetName string, wasExpelled bool) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildMemberLeft{
+		GuildID:     guildID,
+		CharacterID: targetID,
+		Name:        targetName,
+		WasExpelled: wasExpelled,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnGuildRankTitleChange(ch *entity.Character, guildID uint32, rankTitles [5]string) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildRankTitleChange{
+		GuildID:    guildID,
+		RankTitles: rankTitles,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnGuildMemberRankChange(ch *entity.Character, guildID uint32, targetID uint32, guildRank uint8) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildChangeRank{
+		GuildID:     guildID,
+		CharacterID: targetID,
+		GuildRank:   guildRank,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnGuildEmblemChange(ch *entity.Character, guildID uint32, logoBG uint16, logoBGColor uint8, logo uint16, logoColor uint8) {
+	if l == nil || ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildEmblemChange{
+		GuildID:     guildID,
+		LogoBG:      logoBG,
+		LogoBGColor: logoBGColor,
+		Logo:        logo,
+		LogoColor:   logoColor,
+	}, types.SEND_POLICY_ENCRYPT)
+	l.OnBroadcastGuildAppearance(ch)
+}
+
+func (l *CharacterListenerImpl) OnGuildNoticeChange(ch *entity.Character, guildID uint32, notice string) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildNotice{
+		GuildID: guildID,
+		Notice:  notice,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *entity.Character, guildID uint32, subjectCharacterID uint32, online bool) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildMemberOnline{
+		GuildID:     guildID,
+		CharacterID: subjectCharacterID,
+		Online:      online,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnGuildDisbandSelf(ch *entity.Character, guildID uint32) {
+	if l == nil || ch == nil {
+		return
+	}
+	if gid, ok := ch.GetGuildID(); ok && gid == guildID {
+		_ = ch.Send(&response.GuildDisband{
+			GuildID: guildID,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+	ch.SetGuildID(nil)
+	_ = ch.Send(&response.GuildShowInfo{
+		Info: nil,
+	}, types.SEND_POLICY_ENCRYPT)
+	characterID := ch.GetID()
+	broadcastOpt := &entity.ObjectBroadcastOption{WithMe: true}
+	ch.Broadcast(&response.LoadGuildName{
+		CharacterID: characterID,
+		GuildName:   "",
+	}, broadcastOpt)
+	ch.Broadcast(&response.LoadGuildIcon{
+		CharacterID: characterID,
+	}, broadcastOpt)
 }
 
 func (l *CharacterListenerImpl) OnMultiChat(ch *entity.Character, mode pconst.MultiChatMode, senderName string, message string) {

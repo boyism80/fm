@@ -8,7 +8,7 @@ type GuildDenyInvitation struct {
 }
 
 func (p *GuildDenyInvitation) Opcode() uint16 {
-	return guildOperationOpcode()
+	return 0x30
 }
 
 func (p *GuildDenyInvitation) Serialize(w *stream.StreamWriter) error {

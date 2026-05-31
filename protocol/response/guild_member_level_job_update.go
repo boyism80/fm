@@ -13,7 +13,7 @@ type GuildMemberLevelJobUpdate struct {
 }
 
 func (p *GuildMemberLevelJobUpdate) Opcode() uint16 {
-	return guildOperationOpcode()
+	return 0x30
 }
 
 func (p *GuildMemberLevelJobUpdate) Serialize(w *stream.StreamWriter) error {

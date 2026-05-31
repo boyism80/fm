@@ -23,6 +23,7 @@ export class InternalContext {
     private readonly pgUnified: Pool | null;
     private readonly pgGlobal: Record<string, Pool>;
     private readonly pgData: Record<string, Pool[]>;
+    private readonly redisUnified: Redis | null;
     private readonly redisGlobal: Record<string, Redis[]>;
     private readonly redisData: Record<string, Redis[]>;
 
@@ -40,6 +41,7 @@ export class InternalContext {
         this.pgUnified = this.config.postgresql.unified ? InternalContext.createPool(this.config.postgresql.unified) : null;
         this.pgGlobal = {};
         this.pgData = {};
+        this.redisUnified = this.config.redis.unified ? InternalContext.createRedis(this.config.redis.unified) : null;
         this.redisGlobal = {};
         this.redisData = {};
 
@@ -165,6 +167,13 @@ export class InternalContext {
         return { client };
     }
 
+    getRedisUnifiedAccess(): { client: Redis } {
+        if (!this.redisUnified) {
+            throw new Error("Unified Redis client is not configured (redis.unified missing)");
+        }
+        return { client: this.redisUnified };
+    }
+
     async close(): Promise<void> {
         const pools: Pool[] = [];
         if (this.pgUnified) {
@@ -183,6 +192,9 @@ export class InternalContext {
         await Promise.all(pools.map((pool) => pool.end().catch(() => {})));
 
         const clients: Redis[] = [];
+        if (this.redisUnified) {
+            clients.push(this.redisUnified);
+        }
         for (const worldId of Object.keys(this.redisData)) {
             const worldGlobalClients = this.redisGlobal[worldId] ?? [];
             for (const client of worldGlobalClients) {

@@ -7,17 +7,16 @@ import (
 )
 
 type GuildShowInfo struct {
-	InGuild bool
-	Info    *dto.GuildInfo
+	Info *dto.GuildInfo
 }
 
 func (p *GuildShowInfo) Opcode() uint16 {
-	return guildOperationOpcode()
+	return 0x30
 }
 
 func (p *GuildShowInfo) Serialize(w *stream.StreamWriter) error {
 	w.WriteU8(uint8(constant.GuildS2CShowInfo))
-	if !p.InGuild || p.Info == nil {
+	if p.Info == nil {
 		w.WriteU8(0)
 		return nil
 	}

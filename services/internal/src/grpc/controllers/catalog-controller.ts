@@ -13,7 +13,7 @@ import { redisAliveKey } from "../../redis-alive-key";
 import type { SessionRepository } from "../../repos/session-repository";
 import type { InternalConfig } from "../../types/internal-config";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
-import { GrpcController, GrpcMethod } from "../grpc-method-decorator";
+import { Controller, Method } from "../grpc-method-decorator";
 
 type ChannelConfig = {
     channel_id: number;
@@ -23,41 +23,9 @@ type ChannelConfig = {
     max_concurrent_users?: number;
 };
 type WorldConfig = { world_name?: string; flag?: number; event_message?: string; channels?: ChannelConfig[] };
-type GameServersConfig = { worlds?: Record<string, WorldConfig> };
-type CatalogInternalConfig = { game_servers?: GameServersConfig };
 
-export function createCatalogHandlers(internalConfig: CatalogInternalConfig, grpcError: GrpcErrorHandler) {
-    return {
-        getServerCatalog(_call: GrpcCall<GetServerCatalogRequest>, callback: GrpcCallback<GetServerCatalogReply>) {
-            try {
-                const worlds = internalConfig.game_servers?.worlds ?? {};
-                const worldMsgs = [];
-                for (const [worldId, world] of Object.entries(worlds)) {
-                    const channels = Array.isArray(world.channels) ? world.channels : [];
-                    worldMsgs.push({
-                        worldId: Number(worldId),
-                        worldName: world.world_name || `World-${worldId}`,
-                        flag: world.flag ?? 0,
-                        eventMessage: world.event_message || "",
-                        channels: channels.map((ch) => ({
-                            channelId: ch.channel_id,
-                            host: ch.host,
-                            port: ch.port,
-                            name: ch.name || `Channel ${ch.channel_id + 1}`,
-                        })),
-                    });
-                }
-                callback(null, { worlds: worldMsgs });
-            } catch (err) {
-                grpcError(err, callback);
-            }
-        },
-    };
-}
-
-@GrpcController("catalogController")
+@Controller("catalogController")
 export class CatalogGrpcController {
-    private readonly handlers: ReturnType<typeof createCatalogHandlers>;
     private readonly internalContext: InternalContext;
     private readonly appConfiguration: AppConfiguration;
     private readonly internalConfig: InternalConfig;
@@ -71,7 +39,6 @@ export class CatalogGrpcController {
         sessionRepository: SessionRepository,
         grpcError: GrpcErrorHandler,
     ) {
-        this.handlers = createCatalogHandlers(internalConfig, grpcError);
         this.internalContext = internalContext;
         this.appConfiguration = appConfiguration;
         this.internalConfig = internalConfig;
@@ -93,7 +60,7 @@ export class CatalogGrpcController {
         return row.max_concurrent_users ?? 0;
     }
 
-    @GrpcMethod("ping")
+    @Method("ping")
     async ping(call: GrpcCall<PingRequest>, callback: GrpcCallback<PingReply>) {
         const req = call.request;
         const ttl = this.appConfiguration.getServerAliveTtlSeconds();
@@ -123,7 +90,7 @@ export class CatalogGrpcController {
         }
     }
 
-    @GrpcMethod("getGameChannelStatus")
+    @Method("getGameChannelStatus")
     async getGameChannelStatus(
         call: GrpcCall<GetGameChannelStatusRequest>,
         callback: GrpcCallback<GetGameChannelStatusReply>,
@@ -160,8 +127,29 @@ export class CatalogGrpcController {
         }
     }
 
-    @GrpcMethod("getServerCatalog")
-    async getServerCatalog(call: GrpcCall<GetServerCatalogRequest>, callback: GrpcCallback<GetServerCatalogReply>) {
-        return this.handlers.getServerCatalog(call, callback);
+    @Method("getServerCatalog")
+    getServerCatalog(_call: GrpcCall<GetServerCatalogRequest>, callback: GrpcCallback<GetServerCatalogReply>) {
+        try {
+            const worlds = this.internalConfig.game_servers?.worlds ?? {};
+            const worldMsgs = [];
+            for (const [worldId, world] of Object.entries(worlds)) {
+                const channels = Array.isArray(world.channels) ? world.channels : [];
+                worldMsgs.push({
+                    worldId: Number(worldId),
+                    worldName: world.world_name || `World-${worldId}`,
+                    flag: world.flag ?? 0,
+                    eventMessage: world.event_message || "",
+                    channels: channels.map((ch) => ({
+                        channelId: ch.channel_id,
+                        host: ch.host,
+                        port: ch.port,
+                        name: ch.name || `Channel ${ch.channel_id + 1}`,
+                    })),
+                });
+            }
+            callback(null, { worlds: worldMsgs });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
     }
 }

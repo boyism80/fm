@@ -28,6 +28,8 @@ import { RabbitMQService } from "./services/rabbitmq-service";
 import { PartyService } from "./services/party-service";
 import { GuildService } from "./services/guild-service";
 import { BuddyService } from "./services/buddy-service";
+import { DistributedLock } from "./system/distributed-lock";
+import { DistributedLockService } from "./services/distributed-lock-service";
 
 export function createAppContainer() {
     const internalConfig = loadConfig();
@@ -38,6 +40,8 @@ export function createAppContainer() {
         internalConfig: awilix.asValue(internalConfig),
         appConfiguration: awilix.asClass(AppConfiguration).singleton(),
         internalContext: awilix.asClass(InternalContext).singleton(),
+        distributedLock: awilix.asClass(DistributedLock).singleton(),
+        distributedLockService: awilix.asClass(DistributedLockService).singleton(),
         characterRepository: awilix.asClass(CharacterRepository).scoped(),
         inventoryRepository: awilix.asClass(InventoryRepository).scoped(),
         accountRepository: awilix.asClass(AccountRepository).scoped(),

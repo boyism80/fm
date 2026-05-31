@@ -100,6 +100,26 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onDeliverBuddyAddRequest(m)
 	case *DeliverGuildInvite:
 		a.onDeliverGuildInvite(m)
+	case *DeliverGuildNewMember:
+		a.onDeliverGuildNewMember(m)
+	case *DeliverGuildLeaveSelf:
+		a.onDeliverGuildLeaveSelf(m)
+	case *DeliverGuildExpelSelf:
+		a.onDeliverGuildExpelSelf(m)
+	case *DeliverGuildMemberLeft:
+		a.onDeliverGuildMemberLeft(m)
+	case *DeliverGuildRankTitleChange:
+		a.onDeliverGuildRankTitleChange(m)
+	case *DeliverGuildMemberRankChange:
+		a.onDeliverGuildMemberRankChange(m)
+	case *DeliverGuildEmblemChange:
+		a.onDeliverGuildEmblemChange(m)
+	case *DeliverGuildNoticeChange:
+		a.onDeliverGuildNoticeChange(m)
+	case *DeliverGuildMemberOnlineChange:
+		a.onDeliverGuildMemberOnlineChange(m)
+	case *DeliverGuildDisbandSelf:
+		a.onDeliverGuildDisbandSelf(m)
 	case *DeliverGuildMessage:
 		a.onDeliverGuildMessage(m)
 	case *DeliverMessage:
@@ -726,6 +746,116 @@ func (a *MapActor) onDeliverGuildInvite(msg *DeliverGuildInvite) {
 	}
 	ch.GuildInvites[msg.GuildID] = now.Add(constant.GuildInviteDuration)
 	ch.Listener.OnGuildInvite(ch, msg.GuildID, msg.InviterName)
+}
+
+func (a *MapActor) onDeliverGuildNewMember(msg *DeliverGuildNewMember) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildNewMember(ch, msg.GuildID, msg.Member)
+}
+
+func (a *MapActor) onDeliverGuildLeaveSelf(msg *DeliverGuildLeaveSelf) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildLeaveSelf(ch)
+}
+
+func (a *MapActor) onDeliverGuildExpelSelf(msg *DeliverGuildExpelSelf) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildExpelledSelf(ch, msg.GuildID)
+}
+
+func (a *MapActor) onDeliverGuildMemberLeft(msg *DeliverGuildMemberLeft) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildMemberLeft(ch, msg.GuildID, msg.TargetID, msg.TargetName, msg.WasExpelled)
+}
+
+func (a *MapActor) onDeliverGuildRankTitleChange(msg *DeliverGuildRankTitleChange) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildRankTitleChange(ch, msg.GuildID, msg.RankTitles)
+}
+
+func (a *MapActor) onDeliverGuildMemberRankChange(msg *DeliverGuildMemberRankChange) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildMemberRankChange(ch, msg.GuildID, msg.TargetID, msg.GuildRank)
+}
+
+func (a *MapActor) onDeliverGuildEmblemChange(msg *DeliverGuildEmblemChange) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildEmblemChange(ch, msg.GuildID, msg.LogoBG, msg.LogoBGColor, msg.Logo, msg.LogoColor)
+}
+
+func (a *MapActor) onDeliverGuildNoticeChange(msg *DeliverGuildNoticeChange) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildNoticeChange(ch, msg.GuildID, msg.Notice)
+}
+
+func (a *MapActor) onDeliverGuildMemberOnlineChange(msg *DeliverGuildMemberOnlineChange) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildMemberOnlineChange(ch, msg.GuildID, msg.SubjectID, msg.Online)
+}
+
+func (a *MapActor) onDeliverGuildDisbandSelf(msg *DeliverGuildDisbandSelf) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildDisbandSelf(ch, msg.GuildID)
 }
 
 func (a *MapActor) onDeliverGuildMessage(msg *DeliverGuildMessage) {

@@ -1521,6 +1521,43 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(guildID))
 			return 1
 		},
+		"guild_rank": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "guild_rank() takes no arguments")
+				return 0
+			}
+			guildID, inGuild := ch.GetGuildID()
+			if !inGuild {
+				L.Push(lua.LNil)
+				return 1
+			}
+			gw := ch.GetGameWorld()
+			if gw == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			g := gw.GetGuildByID(guildID)
+			if g == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			charID := ch.GetID()
+			for _, m := range g.GetMembers() {
+				if m == nil || m.GetCharacterId() != charID {
+					continue
+				}
+				L.Push(lua.LNumber(guildRankToUint32(m.GetRank())))
+				return 1
+			}
+			L.Push(lua.LNil)
+			return 1
+		},
 		"generic_guild_message": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1533,7 +1570,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				Code: code,
 			}, types.SEND_POLICY_ENCRYPT)
 			if err != nil {
-				L.Push(lua.LBool(false))
+				L.Push(lua.LNumber(constant.GuildCreateResultSendFailed))
 				return 1
 			}
 			ch.SetDialog(L)

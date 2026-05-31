@@ -10,7 +10,7 @@ type GuildDisband struct {
 }
 
 func (p *GuildDisband) Opcode() uint16 {
-	return guildOperationOpcode()
+	return 0x30
 }
 
 func (p *GuildDisband) Serialize(w *stream.StreamWriter) error {

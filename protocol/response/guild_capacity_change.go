@@ -11,7 +11,7 @@ type GuildCapacityChange struct {
 }
 
 func (p *GuildCapacityChange) Opcode() uint16 {
-	return guildOperationOpcode()
+	return 0x30
 }
 
 func (p *GuildCapacityChange) Serialize(w *stream.StreamWriter) error {
