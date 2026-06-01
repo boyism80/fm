@@ -15,6 +15,7 @@ import { PartyRepository } from "./repos/party-repository";
 import { PartyMemberRepository } from "./repos/party-member-repository";
 import { GuildRepository } from "./repos/guild-repository";
 import { GuildMemberRepository } from "./repos/guild-member-repository";
+import { GuildBulletinBoardRepository } from "./repos/guild-bulletin-board-repository";
 import { CharacterBuddyRepository } from "./repos/character-buddy-repository";
 import { CharacterRealtimeStateRepository } from "./repos/character-realtime-state-repository";
 import { CharacterService } from "./services/character-service";
@@ -55,6 +56,7 @@ export function createAppContainer() {
         partyMemberRepository: awilix.asClass(PartyMemberRepository).scoped(),
         guildRepository: awilix.asClass(GuildRepository).scoped(),
         guildMemberRepository: awilix.asClass(GuildMemberRepository).scoped(),
+        guildBulletinBoardRepository: awilix.asClass(GuildBulletinBoardRepository).scoped(),
         characterBuddyRepository: awilix.asClass(CharacterBuddyRepository).scoped(),
         characterRealtimeStateRepository: awilix.asClass(CharacterRealtimeStateRepository).scoped(),
         characterService: awilix.asClass(CharacterService).transient(),

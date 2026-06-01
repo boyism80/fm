@@ -336,6 +336,57 @@ export type GuildMemberRow = {
     deleted?: boolean;
 };
 
+export interface GuildBulletinBoardThreadModel {
+    worldId: number;
+    guildId: number;
+    localThreadId: number;
+    posterCharacterId: number;
+    title: string;
+    body: string;
+    icon: number;
+    createdAt: Date;
+    updatedAt: Date;
+    replyCount?: number;
+}
+
+export type GuildBulletinBoardThreadRow = {
+    world_id: number;
+    guild_id: number;
+    local_thread_id: number;
+    poster_character_id: number;
+    title: string;
+    body: string;
+    icon: number;
+    created_at: Date | string;
+    updated_at: Date | string;
+    reply_count?: number | string;
+};
+
+export interface GuildBulletinBoardReplyModel {
+    worldId: number;
+    guildId: number;
+    localThreadId: number;
+    replyId: number;
+    posterCharacterId: number;
+    content: string;
+    createdAt: Date;
+}
+
+export interface GuildBulletinBoardThreadWithRepliesModel {
+    thread: GuildBulletinBoardThreadModel;
+    replies: GuildBulletinBoardReplyModel[];
+}
+
+export type GuildBulletinBoardReplyRow = {
+    world_id: number;
+    guild_id: number;
+    local_thread_id: number;
+    reply_id: number;
+    poster_character_id: number;
+    content: string;
+    created_at: Date | string;
+};
+
 export interface SkillModel {
     characterId: number;
     skillId: number;

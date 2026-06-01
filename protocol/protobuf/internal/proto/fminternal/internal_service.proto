@@ -38,6 +38,13 @@ service Internal {
   rpc ChangeGuildMemberRank (ChangeGuildMemberRankRequest) returns (ChangeGuildMemberRankReply);
   rpc ChangeGuildEmblem (ChangeGuildEmblemRequest) returns (ChangeGuildEmblemReply);
   rpc ChangeGuildNotice (ChangeGuildNoticeRequest) returns (ChangeGuildNoticeReply);
+  rpc ListGuildBulletinBoardThreads (ListGuildBulletinBoardThreadsRequest) returns (ListGuildBulletinBoardThreadsReply);
+  rpc ShowGuildBulletinBoardThread (ShowGuildBulletinBoardThreadRequest) returns (ShowGuildBulletinBoardThreadReply);
+  rpc CreateGuildBulletinBoardThread (CreateGuildBulletinBoardThreadRequest) returns (CreateGuildBulletinBoardThreadReply);
+  rpc UpdateGuildBulletinBoardThread (UpdateGuildBulletinBoardThreadRequest) returns (UpdateGuildBulletinBoardThreadReply);
+  rpc DeleteGuildBulletinBoardThread (DeleteGuildBulletinBoardThreadRequest) returns (DeleteGuildBulletinBoardThreadReply);
+  rpc CreateGuildBulletinBoardReply (CreateGuildBulletinBoardReplyRequest) returns (CreateGuildBulletinBoardReplyReply);
+  rpc DeleteGuildBulletinBoardReply (DeleteGuildBulletinBoardReplyRequest) returns (DeleteGuildBulletinBoardReplyReply);
   rpc DisbandGuild (DisbandGuildRequest) returns (DisbandGuildReply);
   rpc RequestBuddy (RequestBuddyRequest) returns (RequestBuddyReply);
   rpc AcceptBuddy (AcceptBuddyRequest) returns (AcceptBuddyReply);
@@ -613,6 +620,134 @@ enum GuildErrorCode {
   GUILD_ERROR_INVALID_RANK_TITLES = 14;
   GUILD_ERROR_INVALID_MEMBER_RANK = 15;
   GUILD_ERROR_INVALID_NOTICE = 16;
+  GUILD_ERROR_INVALID_BULLETIN_CONTENT = 17;
+  GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND = 18;
+  GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND = 19;
+  GUILD_ERROR_BULLETIN_COOLDOWN = 20;
+}
+
+message GuildBulletinBoardThreadEntry {
+  int32 local_thread_id = 1;
+  uint32 poster_character_id = 2;
+  string title = 3;
+  int64 timestamp_unix_ms = 4;
+  int32 icon = 5;
+  int32 reply_count = 6;
+}
+
+message GuildBulletinBoardReplyEntry {
+  int32 reply_id = 1;
+  uint32 poster_character_id = 2;
+  int64 timestamp_unix_ms = 3;
+  string content = 4;
+}
+
+message GuildBulletinBoardThreadDetail {
+  int32 local_thread_id = 1;
+  uint32 poster_character_id = 2;
+  int64 timestamp_unix_ms = 3;
+  string title = 4;
+  string body = 5;
+  int32 icon = 6;
+  repeated GuildBulletinBoardReplyEntry replies = 7;
+}
+
+message ListGuildBulletinBoardThreadsRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  int32 page = 3;
+}
+
+message ListGuildBulletinBoardThreadsReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  repeated GuildBulletinBoardThreadEntry threads = 3;
+  int32 list_start = 4;
+  int32 thread_count = 5;
+  GuildBulletinBoardThreadEntry notice = 6;
+}
+
+message ShowGuildBulletinBoardThreadRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  int32 local_thread_id = 3;
+}
+
+message ShowGuildBulletinBoardThreadReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  GuildBulletinBoardThreadDetail thread = 3;
+}
+
+message CreateGuildBulletinBoardThreadRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  bool notice = 3;
+  string title = 4;
+  string body = 5;
+  int32 icon = 6;
+}
+
+message CreateGuildBulletinBoardThreadReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  GuildBulletinBoardThreadDetail thread = 3;
+  repeated GuildBulletinBoardThreadEntry threads = 4;
+  int32 list_start = 5;
+  int32 thread_count = 6;
+  GuildBulletinBoardThreadEntry notice = 7;
+}
+
+message UpdateGuildBulletinBoardThreadRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  int32 local_thread_id = 3;
+  string title = 4;
+  string body = 5;
+  int32 icon = 6;
+}
+
+message UpdateGuildBulletinBoardThreadReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  GuildBulletinBoardThreadDetail thread = 3;
+}
+
+message DeleteGuildBulletinBoardThreadRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  int32 local_thread_id = 3;
+}
+
+message DeleteGuildBulletinBoardThreadReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+}
+
+message CreateGuildBulletinBoardReplyRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  int32 local_thread_id = 3;
+  string content = 4;
+}
+
+message CreateGuildBulletinBoardReplyReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  GuildBulletinBoardThreadDetail thread = 3;
+}
+
+message DeleteGuildBulletinBoardReplyRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  int32 local_thread_id = 3;
+  int32 reply_id = 4;
+}
+
+message DeleteGuildBulletinBoardReplyReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  GuildBulletinBoardThreadDetail thread = 3;
 }
 
 message CreateGuildReply {

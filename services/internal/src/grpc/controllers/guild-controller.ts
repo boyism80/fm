@@ -6,6 +6,20 @@ import type {
     ChangeGuildEmblemRequest,
     ChangeGuildNoticeReply,
     ChangeGuildNoticeRequest,
+    CreateGuildBulletinBoardReplyReply,
+    CreateGuildBulletinBoardReplyRequest,
+    CreateGuildBulletinBoardThreadReply,
+    CreateGuildBulletinBoardThreadRequest,
+    DeleteGuildBulletinBoardReplyReply,
+    DeleteGuildBulletinBoardReplyRequest,
+    DeleteGuildBulletinBoardThreadReply,
+    DeleteGuildBulletinBoardThreadRequest,
+    ListGuildBulletinBoardThreadsReply,
+    ListGuildBulletinBoardThreadsRequest,
+    ShowGuildBulletinBoardThreadReply,
+    ShowGuildBulletinBoardThreadRequest,
+    UpdateGuildBulletinBoardThreadReply,
+    UpdateGuildBulletinBoardThreadRequest,
     ChangeGuildMemberRankReply,
     ChangeGuildMemberRankRequest,
     ChangeGuildRankTitlesReply,
@@ -25,6 +39,13 @@ import type {
     AcceptGuildInviteResult,
     ChangeGuildEmblemResult,
     ChangeGuildNoticeResult,
+    CreateGuildBulletinBoardReplyResult,
+    CreateGuildBulletinBoardThreadResult,
+    DeleteGuildBulletinBoardReplyResult,
+    DeleteGuildBulletinBoardThreadResult,
+    ListGuildBulletinBoardThreadsResult,
+    ShowGuildBulletinBoardThreadResult,
+    UpdateGuildBulletinBoardThreadResult,
     ChangeGuildMemberRankResult,
     ChangeGuildRankTitlesResult,
     CreateGuildResult,
@@ -281,6 +302,236 @@ export class GuildGrpcController {
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
                     revision: 0,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("listGuildBulletinBoardThreads")
+    async listGuildBulletinBoardThreads(
+        call: GrpcCall<ListGuildBulletinBoardThreadsRequest>,
+        callback: GrpcCallback<ListGuildBulletinBoardThreadsReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.listGuildBulletinBoardThreads(
+                req.worldId,
+                req.characterId,
+                req.page
+            ) as ListGuildBulletinBoardThreadsResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: GuildErrorCode.GUILD_ERROR_NONE,
+                    threads: result.threads ?? [],
+                    listStart: result.listStart ?? 0,
+                    threadCount: result.threadCount ?? 0,
+                    notice: result.notice,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
+                    threads: [],
+                    listStart: 0,
+                    threadCount: 0,
+                    notice: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("showGuildBulletinBoardThread")
+    async showGuildBulletinBoardThread(
+        call: GrpcCall<ShowGuildBulletinBoardThreadRequest>,
+        callback: GrpcCallback<ShowGuildBulletinBoardThreadReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.showGuildBulletinBoardThread(
+                req.worldId,
+                req.characterId,
+                req.localThreadId
+            ) as ShowGuildBulletinBoardThreadResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: GuildErrorCode.GUILD_ERROR_NONE,
+                    thread: result.thread,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
+                    thread: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("createGuildBulletinBoardThread")
+    async createGuildBulletinBoardThread(
+        call: GrpcCall<CreateGuildBulletinBoardThreadRequest>,
+        callback: GrpcCallback<CreateGuildBulletinBoardThreadReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.createGuildBulletinBoardThread(
+                req.worldId,
+                req.characterId,
+                req.notice,
+                req.title,
+                req.body,
+                req.icon
+            ) as CreateGuildBulletinBoardThreadResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: GuildErrorCode.GUILD_ERROR_NONE,
+                    thread: result.thread,
+                    threads: result.threads ?? [],
+                    listStart: result.listStart ?? 0,
+                    threadCount: result.threadCount ?? 0,
+                    notice: result.notice,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
+                    thread: undefined,
+                    threads: [],
+                    listStart: 0,
+                    threadCount: 0,
+                    notice: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("updateGuildBulletinBoardThread")
+    async updateGuildBulletinBoardThread(
+        call: GrpcCall<UpdateGuildBulletinBoardThreadRequest>,
+        callback: GrpcCallback<UpdateGuildBulletinBoardThreadReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.updateGuildBulletinBoardThread(
+                req.worldId,
+                req.characterId,
+                req.localThreadId,
+                req.title,
+                req.body,
+                req.icon
+            ) as UpdateGuildBulletinBoardThreadResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: GuildErrorCode.GUILD_ERROR_NONE,
+                    thread: result.thread,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
+                    thread: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("deleteGuildBulletinBoardThread")
+    async deleteGuildBulletinBoardThread(
+        call: GrpcCall<DeleteGuildBulletinBoardThreadRequest>,
+        callback: GrpcCallback<DeleteGuildBulletinBoardThreadReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.deleteGuildBulletinBoardThread(
+                req.worldId,
+                req.characterId,
+                req.localThreadId
+            ) as DeleteGuildBulletinBoardThreadResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: GuildErrorCode.GUILD_ERROR_NONE,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("createGuildBulletinBoardReply")
+    async createGuildBulletinBoardReply(
+        call: GrpcCall<CreateGuildBulletinBoardReplyRequest>,
+        callback: GrpcCallback<CreateGuildBulletinBoardReplyReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.createGuildBulletinBoardReply(
+                req.worldId,
+                req.characterId,
+                req.localThreadId,
+                req.content
+            ) as CreateGuildBulletinBoardReplyResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: GuildErrorCode.GUILD_ERROR_NONE,
+                    thread: result.thread,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
+                    thread: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("deleteGuildBulletinBoardReply")
+    async deleteGuildBulletinBoardReply(
+        call: GrpcCall<DeleteGuildBulletinBoardReplyRequest>,
+        callback: GrpcCallback<DeleteGuildBulletinBoardReplyReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.deleteGuildBulletinBoardReply(
+                req.worldId,
+                req.characterId,
+                req.localThreadId,
+                req.replyId
+            ) as DeleteGuildBulletinBoardReplyResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: GuildErrorCode.GUILD_ERROR_NONE,
+                    thread: result.thread,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
+                    thread: undefined,
                 });
             }
         } catch (err) {

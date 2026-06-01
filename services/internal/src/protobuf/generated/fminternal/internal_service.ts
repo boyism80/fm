@@ -531,6 +531,10 @@ export enum GuildErrorCode {
   GUILD_ERROR_INVALID_RANK_TITLES = 14,
   GUILD_ERROR_INVALID_MEMBER_RANK = 15,
   GUILD_ERROR_INVALID_NOTICE = 16,
+  GUILD_ERROR_INVALID_BULLETIN_CONTENT = 17,
+  GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND = 18,
+  GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND = 19,
+  GUILD_ERROR_BULLETIN_COOLDOWN = 20,
   UNRECOGNIZED = -1,
 }
 
@@ -587,6 +591,18 @@ export function guildErrorCodeFromJSON(object: any): GuildErrorCode {
     case 16:
     case "GUILD_ERROR_INVALID_NOTICE":
       return GuildErrorCode.GUILD_ERROR_INVALID_NOTICE;
+    case 17:
+    case "GUILD_ERROR_INVALID_BULLETIN_CONTENT":
+      return GuildErrorCode.GUILD_ERROR_INVALID_BULLETIN_CONTENT;
+    case 18:
+    case "GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND":
+      return GuildErrorCode.GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND;
+    case 19:
+    case "GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND":
+      return GuildErrorCode.GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND;
+    case 20:
+    case "GUILD_ERROR_BULLETIN_COOLDOWN":
+      return GuildErrorCode.GUILD_ERROR_BULLETIN_COOLDOWN;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -630,6 +646,14 @@ export function guildErrorCodeToJSON(object: GuildErrorCode): string {
       return "GUILD_ERROR_INVALID_MEMBER_RANK";
     case GuildErrorCode.GUILD_ERROR_INVALID_NOTICE:
       return "GUILD_ERROR_INVALID_NOTICE";
+    case GuildErrorCode.GUILD_ERROR_INVALID_BULLETIN_CONTENT:
+      return "GUILD_ERROR_INVALID_BULLETIN_CONTENT";
+    case GuildErrorCode.GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND:
+      return "GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND";
+    case GuildErrorCode.GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND:
+      return "GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND";
+    case GuildErrorCode.GUILD_ERROR_BULLETIN_COOLDOWN:
+      return "GUILD_ERROR_BULLETIN_COOLDOWN";
     case GuildErrorCode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -1257,6 +1281,130 @@ export interface CreateGuildRequest {
   worldId: number;
   guildName: string;
   leader: GuildMember | undefined;
+}
+
+export interface GuildBulletinBoardThreadEntry {
+  localThreadId: number;
+  posterCharacterId: number;
+  title: string;
+  timestampUnixMs: number;
+  icon: number;
+  replyCount: number;
+}
+
+export interface GuildBulletinBoardReplyEntry {
+  replyId: number;
+  posterCharacterId: number;
+  timestampUnixMs: number;
+  content: string;
+}
+
+export interface GuildBulletinBoardThreadDetail {
+  localThreadId: number;
+  posterCharacterId: number;
+  timestampUnixMs: number;
+  title: string;
+  body: string;
+  icon: number;
+  replies: GuildBulletinBoardReplyEntry[];
+}
+
+export interface ListGuildBulletinBoardThreadsRequest {
+  worldId: number;
+  characterId: number;
+  page: number;
+}
+
+export interface ListGuildBulletinBoardThreadsReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+  threads: GuildBulletinBoardThreadEntry[];
+  listStart: number;
+  threadCount: number;
+  notice: GuildBulletinBoardThreadEntry | undefined;
+}
+
+export interface ShowGuildBulletinBoardThreadRequest {
+  worldId: number;
+  characterId: number;
+  localThreadId: number;
+}
+
+export interface ShowGuildBulletinBoardThreadReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+  thread: GuildBulletinBoardThreadDetail | undefined;
+}
+
+export interface CreateGuildBulletinBoardThreadRequest {
+  worldId: number;
+  characterId: number;
+  notice: boolean;
+  title: string;
+  body: string;
+  icon: number;
+}
+
+export interface CreateGuildBulletinBoardThreadReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+  thread: GuildBulletinBoardThreadDetail | undefined;
+  threads: GuildBulletinBoardThreadEntry[];
+  listStart: number;
+  threadCount: number;
+  notice: GuildBulletinBoardThreadEntry | undefined;
+}
+
+export interface UpdateGuildBulletinBoardThreadRequest {
+  worldId: number;
+  characterId: number;
+  localThreadId: number;
+  title: string;
+  body: string;
+  icon: number;
+}
+
+export interface UpdateGuildBulletinBoardThreadReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+  thread: GuildBulletinBoardThreadDetail | undefined;
+}
+
+export interface DeleteGuildBulletinBoardThreadRequest {
+  worldId: number;
+  characterId: number;
+  localThreadId: number;
+}
+
+export interface DeleteGuildBulletinBoardThreadReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+}
+
+export interface CreateGuildBulletinBoardReplyRequest {
+  worldId: number;
+  characterId: number;
+  localThreadId: number;
+  content: string;
+}
+
+export interface CreateGuildBulletinBoardReplyReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+  thread: GuildBulletinBoardThreadDetail | undefined;
+}
+
+export interface DeleteGuildBulletinBoardReplyRequest {
+  worldId: number;
+  characterId: number;
+  localThreadId: number;
+  replyId: number;
+}
+
+export interface DeleteGuildBulletinBoardReplyReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+  thread: GuildBulletinBoardThreadDetail | undefined;
 }
 
 export interface CreateGuildReply {
@@ -10106,6 +10254,2166 @@ export const CreateGuildRequest: MessageFns<CreateGuildRequest> = {
   },
 };
 
+function createBaseGuildBulletinBoardThreadEntry(): GuildBulletinBoardThreadEntry {
+  return { localThreadId: 0, posterCharacterId: 0, title: "", timestampUnixMs: 0, icon: 0, replyCount: 0 };
+}
+
+export const GuildBulletinBoardThreadEntry: MessageFns<GuildBulletinBoardThreadEntry> = {
+  encode(message: GuildBulletinBoardThreadEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.localThreadId !== 0) {
+      writer.uint32(8).int32(message.localThreadId);
+    }
+    if (message.posterCharacterId !== 0) {
+      writer.uint32(16).uint32(message.posterCharacterId);
+    }
+    if (message.title !== "") {
+      writer.uint32(26).string(message.title);
+    }
+    if (message.timestampUnixMs !== 0) {
+      writer.uint32(32).int64(message.timestampUnixMs);
+    }
+    if (message.icon !== 0) {
+      writer.uint32(40).int32(message.icon);
+    }
+    if (message.replyCount !== 0) {
+      writer.uint32(48).int32(message.replyCount);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GuildBulletinBoardThreadEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGuildBulletinBoardThreadEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.localThreadId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.posterCharacterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.timestampUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.icon = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.replyCount = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GuildBulletinBoardThreadEntry {
+    return {
+      localThreadId: isSet(object.localThreadId)
+        ? globalThis.Number(object.localThreadId)
+        : isSet(object.local_thread_id)
+        ? globalThis.Number(object.local_thread_id)
+        : 0,
+      posterCharacterId: isSet(object.posterCharacterId)
+        ? globalThis.Number(object.posterCharacterId)
+        : isSet(object.poster_character_id)
+        ? globalThis.Number(object.poster_character_id)
+        : 0,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      timestampUnixMs: isSet(object.timestampUnixMs)
+        ? globalThis.Number(object.timestampUnixMs)
+        : isSet(object.timestamp_unix_ms)
+        ? globalThis.Number(object.timestamp_unix_ms)
+        : 0,
+      icon: isSet(object.icon) ? globalThis.Number(object.icon) : 0,
+      replyCount: isSet(object.replyCount)
+        ? globalThis.Number(object.replyCount)
+        : isSet(object.reply_count)
+        ? globalThis.Number(object.reply_count)
+        : 0,
+    };
+  },
+
+  toJSON(message: GuildBulletinBoardThreadEntry): unknown {
+    const obj: any = {};
+    if (message.localThreadId !== 0) {
+      obj.localThreadId = Math.round(message.localThreadId);
+    }
+    if (message.posterCharacterId !== 0) {
+      obj.posterCharacterId = Math.round(message.posterCharacterId);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.timestampUnixMs !== 0) {
+      obj.timestampUnixMs = Math.round(message.timestampUnixMs);
+    }
+    if (message.icon !== 0) {
+      obj.icon = Math.round(message.icon);
+    }
+    if (message.replyCount !== 0) {
+      obj.replyCount = Math.round(message.replyCount);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GuildBulletinBoardThreadEntry>, I>>(base?: I): GuildBulletinBoardThreadEntry {
+    return GuildBulletinBoardThreadEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GuildBulletinBoardThreadEntry>, I>>(
+    object: I,
+  ): GuildBulletinBoardThreadEntry {
+    const message = createBaseGuildBulletinBoardThreadEntry();
+    message.localThreadId = object.localThreadId ?? 0;
+    message.posterCharacterId = object.posterCharacterId ?? 0;
+    message.title = object.title ?? "";
+    message.timestampUnixMs = object.timestampUnixMs ?? 0;
+    message.icon = object.icon ?? 0;
+    message.replyCount = object.replyCount ?? 0;
+    return message;
+  },
+};
+
+function createBaseGuildBulletinBoardReplyEntry(): GuildBulletinBoardReplyEntry {
+  return { replyId: 0, posterCharacterId: 0, timestampUnixMs: 0, content: "" };
+}
+
+export const GuildBulletinBoardReplyEntry: MessageFns<GuildBulletinBoardReplyEntry> = {
+  encode(message: GuildBulletinBoardReplyEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.replyId !== 0) {
+      writer.uint32(8).int32(message.replyId);
+    }
+    if (message.posterCharacterId !== 0) {
+      writer.uint32(16).uint32(message.posterCharacterId);
+    }
+    if (message.timestampUnixMs !== 0) {
+      writer.uint32(24).int64(message.timestampUnixMs);
+    }
+    if (message.content !== "") {
+      writer.uint32(34).string(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GuildBulletinBoardReplyEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGuildBulletinBoardReplyEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.replyId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.posterCharacterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.timestampUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.content = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GuildBulletinBoardReplyEntry {
+    return {
+      replyId: isSet(object.replyId)
+        ? globalThis.Number(object.replyId)
+        : isSet(object.reply_id)
+        ? globalThis.Number(object.reply_id)
+        : 0,
+      posterCharacterId: isSet(object.posterCharacterId)
+        ? globalThis.Number(object.posterCharacterId)
+        : isSet(object.poster_character_id)
+        ? globalThis.Number(object.poster_character_id)
+        : 0,
+      timestampUnixMs: isSet(object.timestampUnixMs)
+        ? globalThis.Number(object.timestampUnixMs)
+        : isSet(object.timestamp_unix_ms)
+        ? globalThis.Number(object.timestamp_unix_ms)
+        : 0,
+      content: isSet(object.content) ? globalThis.String(object.content) : "",
+    };
+  },
+
+  toJSON(message: GuildBulletinBoardReplyEntry): unknown {
+    const obj: any = {};
+    if (message.replyId !== 0) {
+      obj.replyId = Math.round(message.replyId);
+    }
+    if (message.posterCharacterId !== 0) {
+      obj.posterCharacterId = Math.round(message.posterCharacterId);
+    }
+    if (message.timestampUnixMs !== 0) {
+      obj.timestampUnixMs = Math.round(message.timestampUnixMs);
+    }
+    if (message.content !== "") {
+      obj.content = message.content;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GuildBulletinBoardReplyEntry>, I>>(base?: I): GuildBulletinBoardReplyEntry {
+    return GuildBulletinBoardReplyEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GuildBulletinBoardReplyEntry>, I>>(object: I): GuildBulletinBoardReplyEntry {
+    const message = createBaseGuildBulletinBoardReplyEntry();
+    message.replyId = object.replyId ?? 0;
+    message.posterCharacterId = object.posterCharacterId ?? 0;
+    message.timestampUnixMs = object.timestampUnixMs ?? 0;
+    message.content = object.content ?? "";
+    return message;
+  },
+};
+
+function createBaseGuildBulletinBoardThreadDetail(): GuildBulletinBoardThreadDetail {
+  return { localThreadId: 0, posterCharacterId: 0, timestampUnixMs: 0, title: "", body: "", icon: 0, replies: [] };
+}
+
+export const GuildBulletinBoardThreadDetail: MessageFns<GuildBulletinBoardThreadDetail> = {
+  encode(message: GuildBulletinBoardThreadDetail, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.localThreadId !== 0) {
+      writer.uint32(8).int32(message.localThreadId);
+    }
+    if (message.posterCharacterId !== 0) {
+      writer.uint32(16).uint32(message.posterCharacterId);
+    }
+    if (message.timestampUnixMs !== 0) {
+      writer.uint32(24).int64(message.timestampUnixMs);
+    }
+    if (message.title !== "") {
+      writer.uint32(34).string(message.title);
+    }
+    if (message.body !== "") {
+      writer.uint32(42).string(message.body);
+    }
+    if (message.icon !== 0) {
+      writer.uint32(48).int32(message.icon);
+    }
+    for (const v of message.replies) {
+      GuildBulletinBoardReplyEntry.encode(v!, writer.uint32(58).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GuildBulletinBoardThreadDetail {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGuildBulletinBoardThreadDetail();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.localThreadId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.posterCharacterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.timestampUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.body = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.icon = reader.int32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.replies.push(GuildBulletinBoardReplyEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GuildBulletinBoardThreadDetail {
+    return {
+      localThreadId: isSet(object.localThreadId)
+        ? globalThis.Number(object.localThreadId)
+        : isSet(object.local_thread_id)
+        ? globalThis.Number(object.local_thread_id)
+        : 0,
+      posterCharacterId: isSet(object.posterCharacterId)
+        ? globalThis.Number(object.posterCharacterId)
+        : isSet(object.poster_character_id)
+        ? globalThis.Number(object.poster_character_id)
+        : 0,
+      timestampUnixMs: isSet(object.timestampUnixMs)
+        ? globalThis.Number(object.timestampUnixMs)
+        : isSet(object.timestamp_unix_ms)
+        ? globalThis.Number(object.timestamp_unix_ms)
+        : 0,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      body: isSet(object.body) ? globalThis.String(object.body) : "",
+      icon: isSet(object.icon) ? globalThis.Number(object.icon) : 0,
+      replies: globalThis.Array.isArray(object?.replies)
+        ? object.replies.map((e: any) => GuildBulletinBoardReplyEntry.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GuildBulletinBoardThreadDetail): unknown {
+    const obj: any = {};
+    if (message.localThreadId !== 0) {
+      obj.localThreadId = Math.round(message.localThreadId);
+    }
+    if (message.posterCharacterId !== 0) {
+      obj.posterCharacterId = Math.round(message.posterCharacterId);
+    }
+    if (message.timestampUnixMs !== 0) {
+      obj.timestampUnixMs = Math.round(message.timestampUnixMs);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.body !== "") {
+      obj.body = message.body;
+    }
+    if (message.icon !== 0) {
+      obj.icon = Math.round(message.icon);
+    }
+    if (message.replies?.length) {
+      obj.replies = message.replies.map((e) => GuildBulletinBoardReplyEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GuildBulletinBoardThreadDetail>, I>>(base?: I): GuildBulletinBoardThreadDetail {
+    return GuildBulletinBoardThreadDetail.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GuildBulletinBoardThreadDetail>, I>>(
+    object: I,
+  ): GuildBulletinBoardThreadDetail {
+    const message = createBaseGuildBulletinBoardThreadDetail();
+    message.localThreadId = object.localThreadId ?? 0;
+    message.posterCharacterId = object.posterCharacterId ?? 0;
+    message.timestampUnixMs = object.timestampUnixMs ?? 0;
+    message.title = object.title ?? "";
+    message.body = object.body ?? "";
+    message.icon = object.icon ?? 0;
+    message.replies = object.replies?.map((e) => GuildBulletinBoardReplyEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseListGuildBulletinBoardThreadsRequest(): ListGuildBulletinBoardThreadsRequest {
+  return { worldId: 0, characterId: 0, page: 0 };
+}
+
+export const ListGuildBulletinBoardThreadsRequest: MessageFns<ListGuildBulletinBoardThreadsRequest> = {
+  encode(message: ListGuildBulletinBoardThreadsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.page !== 0) {
+      writer.uint32(24).int32(message.page);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListGuildBulletinBoardThreadsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListGuildBulletinBoardThreadsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.page = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListGuildBulletinBoardThreadsRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
+    };
+  },
+
+  toJSON(message: ListGuildBulletinBoardThreadsRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.page !== 0) {
+      obj.page = Math.round(message.page);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListGuildBulletinBoardThreadsRequest>, I>>(
+    base?: I,
+  ): ListGuildBulletinBoardThreadsRequest {
+    return ListGuildBulletinBoardThreadsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListGuildBulletinBoardThreadsRequest>, I>>(
+    object: I,
+  ): ListGuildBulletinBoardThreadsRequest {
+    const message = createBaseListGuildBulletinBoardThreadsRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.page = object.page ?? 0;
+    return message;
+  },
+};
+
+function createBaseListGuildBulletinBoardThreadsReply(): ListGuildBulletinBoardThreadsReply {
+  return { ok: false, errorCode: 0, threads: [], listStart: 0, threadCount: 0, notice: undefined };
+}
+
+export const ListGuildBulletinBoardThreadsReply: MessageFns<ListGuildBulletinBoardThreadsReply> = {
+  encode(message: ListGuildBulletinBoardThreadsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    for (const v of message.threads) {
+      GuildBulletinBoardThreadEntry.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.listStart !== 0) {
+      writer.uint32(32).int32(message.listStart);
+    }
+    if (message.threadCount !== 0) {
+      writer.uint32(40).int32(message.threadCount);
+    }
+    if (message.notice !== undefined) {
+      GuildBulletinBoardThreadEntry.encode(message.notice, writer.uint32(50).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListGuildBulletinBoardThreadsReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListGuildBulletinBoardThreadsReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.threads.push(GuildBulletinBoardThreadEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.listStart = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.threadCount = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.notice = GuildBulletinBoardThreadEntry.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListGuildBulletinBoardThreadsReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+      threads: globalThis.Array.isArray(object?.threads)
+        ? object.threads.map((e: any) => GuildBulletinBoardThreadEntry.fromJSON(e))
+        : [],
+      listStart: isSet(object.listStart)
+        ? globalThis.Number(object.listStart)
+        : isSet(object.list_start)
+        ? globalThis.Number(object.list_start)
+        : 0,
+      threadCount: isSet(object.threadCount)
+        ? globalThis.Number(object.threadCount)
+        : isSet(object.thread_count)
+        ? globalThis.Number(object.thread_count)
+        : 0,
+      notice: isSet(object.notice) ? GuildBulletinBoardThreadEntry.fromJSON(object.notice) : undefined,
+    };
+  },
+
+  toJSON(message: ListGuildBulletinBoardThreadsReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    if (message.threads?.length) {
+      obj.threads = message.threads.map((e) => GuildBulletinBoardThreadEntry.toJSON(e));
+    }
+    if (message.listStart !== 0) {
+      obj.listStart = Math.round(message.listStart);
+    }
+    if (message.threadCount !== 0) {
+      obj.threadCount = Math.round(message.threadCount);
+    }
+    if (message.notice !== undefined) {
+      obj.notice = GuildBulletinBoardThreadEntry.toJSON(message.notice);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListGuildBulletinBoardThreadsReply>, I>>(
+    base?: I,
+  ): ListGuildBulletinBoardThreadsReply {
+    return ListGuildBulletinBoardThreadsReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ListGuildBulletinBoardThreadsReply>, I>>(
+    object: I,
+  ): ListGuildBulletinBoardThreadsReply {
+    const message = createBaseListGuildBulletinBoardThreadsReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.threads = object.threads?.map((e) => GuildBulletinBoardThreadEntry.fromPartial(e)) || [];
+    message.listStart = object.listStart ?? 0;
+    message.threadCount = object.threadCount ?? 0;
+    message.notice = (object.notice !== undefined && object.notice !== null)
+      ? GuildBulletinBoardThreadEntry.fromPartial(object.notice)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseShowGuildBulletinBoardThreadRequest(): ShowGuildBulletinBoardThreadRequest {
+  return { worldId: 0, characterId: 0, localThreadId: 0 };
+}
+
+export const ShowGuildBulletinBoardThreadRequest: MessageFns<ShowGuildBulletinBoardThreadRequest> = {
+  encode(message: ShowGuildBulletinBoardThreadRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      writer.uint32(24).int32(message.localThreadId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ShowGuildBulletinBoardThreadRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseShowGuildBulletinBoardThreadRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.localThreadId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ShowGuildBulletinBoardThreadRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      localThreadId: isSet(object.localThreadId)
+        ? globalThis.Number(object.localThreadId)
+        : isSet(object.local_thread_id)
+        ? globalThis.Number(object.local_thread_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ShowGuildBulletinBoardThreadRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      obj.localThreadId = Math.round(message.localThreadId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ShowGuildBulletinBoardThreadRequest>, I>>(
+    base?: I,
+  ): ShowGuildBulletinBoardThreadRequest {
+    return ShowGuildBulletinBoardThreadRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ShowGuildBulletinBoardThreadRequest>, I>>(
+    object: I,
+  ): ShowGuildBulletinBoardThreadRequest {
+    const message = createBaseShowGuildBulletinBoardThreadRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.localThreadId = object.localThreadId ?? 0;
+    return message;
+  },
+};
+
+function createBaseShowGuildBulletinBoardThreadReply(): ShowGuildBulletinBoardThreadReply {
+  return { ok: false, errorCode: 0, thread: undefined };
+}
+
+export const ShowGuildBulletinBoardThreadReply: MessageFns<ShowGuildBulletinBoardThreadReply> = {
+  encode(message: ShowGuildBulletinBoardThreadReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      GuildBulletinBoardThreadDetail.encode(message.thread, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ShowGuildBulletinBoardThreadReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseShowGuildBulletinBoardThreadReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.thread = GuildBulletinBoardThreadDetail.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ShowGuildBulletinBoardThreadReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+      thread: isSet(object.thread) ? GuildBulletinBoardThreadDetail.fromJSON(object.thread) : undefined,
+    };
+  },
+
+  toJSON(message: ShowGuildBulletinBoardThreadReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      obj.thread = GuildBulletinBoardThreadDetail.toJSON(message.thread);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ShowGuildBulletinBoardThreadReply>, I>>(
+    base?: I,
+  ): ShowGuildBulletinBoardThreadReply {
+    return ShowGuildBulletinBoardThreadReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ShowGuildBulletinBoardThreadReply>, I>>(
+    object: I,
+  ): ShowGuildBulletinBoardThreadReply {
+    const message = createBaseShowGuildBulletinBoardThreadReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.thread = (object.thread !== undefined && object.thread !== null)
+      ? GuildBulletinBoardThreadDetail.fromPartial(object.thread)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCreateGuildBulletinBoardThreadRequest(): CreateGuildBulletinBoardThreadRequest {
+  return { worldId: 0, characterId: 0, notice: false, title: "", body: "", icon: 0 };
+}
+
+export const CreateGuildBulletinBoardThreadRequest: MessageFns<CreateGuildBulletinBoardThreadRequest> = {
+  encode(message: CreateGuildBulletinBoardThreadRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.notice !== false) {
+      writer.uint32(24).bool(message.notice);
+    }
+    if (message.title !== "") {
+      writer.uint32(34).string(message.title);
+    }
+    if (message.body !== "") {
+      writer.uint32(42).string(message.body);
+    }
+    if (message.icon !== 0) {
+      writer.uint32(48).int32(message.icon);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateGuildBulletinBoardThreadRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateGuildBulletinBoardThreadRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.notice = reader.bool();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.body = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.icon = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateGuildBulletinBoardThreadRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      notice: isSet(object.notice) ? globalThis.Boolean(object.notice) : false,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      body: isSet(object.body) ? globalThis.String(object.body) : "",
+      icon: isSet(object.icon) ? globalThis.Number(object.icon) : 0,
+    };
+  },
+
+  toJSON(message: CreateGuildBulletinBoardThreadRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.notice !== false) {
+      obj.notice = message.notice;
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.body !== "") {
+      obj.body = message.body;
+    }
+    if (message.icon !== 0) {
+      obj.icon = Math.round(message.icon);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateGuildBulletinBoardThreadRequest>, I>>(
+    base?: I,
+  ): CreateGuildBulletinBoardThreadRequest {
+    return CreateGuildBulletinBoardThreadRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateGuildBulletinBoardThreadRequest>, I>>(
+    object: I,
+  ): CreateGuildBulletinBoardThreadRequest {
+    const message = createBaseCreateGuildBulletinBoardThreadRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.notice = object.notice ?? false;
+    message.title = object.title ?? "";
+    message.body = object.body ?? "";
+    message.icon = object.icon ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateGuildBulletinBoardThreadReply(): CreateGuildBulletinBoardThreadReply {
+  return { ok: false, errorCode: 0, thread: undefined, threads: [], listStart: 0, threadCount: 0, notice: undefined };
+}
+
+export const CreateGuildBulletinBoardThreadReply: MessageFns<CreateGuildBulletinBoardThreadReply> = {
+  encode(message: CreateGuildBulletinBoardThreadReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      GuildBulletinBoardThreadDetail.encode(message.thread, writer.uint32(26).fork()).join();
+    }
+    for (const v of message.threads) {
+      GuildBulletinBoardThreadEntry.encode(v!, writer.uint32(34).fork()).join();
+    }
+    if (message.listStart !== 0) {
+      writer.uint32(40).int32(message.listStart);
+    }
+    if (message.threadCount !== 0) {
+      writer.uint32(48).int32(message.threadCount);
+    }
+    if (message.notice !== undefined) {
+      GuildBulletinBoardThreadEntry.encode(message.notice, writer.uint32(58).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateGuildBulletinBoardThreadReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateGuildBulletinBoardThreadReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.thread = GuildBulletinBoardThreadDetail.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.threads.push(GuildBulletinBoardThreadEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.listStart = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.threadCount = reader.int32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.notice = GuildBulletinBoardThreadEntry.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateGuildBulletinBoardThreadReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+      thread: isSet(object.thread) ? GuildBulletinBoardThreadDetail.fromJSON(object.thread) : undefined,
+      threads: globalThis.Array.isArray(object?.threads)
+        ? object.threads.map((e: any) => GuildBulletinBoardThreadEntry.fromJSON(e))
+        : [],
+      listStart: isSet(object.listStart)
+        ? globalThis.Number(object.listStart)
+        : isSet(object.list_start)
+        ? globalThis.Number(object.list_start)
+        : 0,
+      threadCount: isSet(object.threadCount)
+        ? globalThis.Number(object.threadCount)
+        : isSet(object.thread_count)
+        ? globalThis.Number(object.thread_count)
+        : 0,
+      notice: isSet(object.notice) ? GuildBulletinBoardThreadEntry.fromJSON(object.notice) : undefined,
+    };
+  },
+
+  toJSON(message: CreateGuildBulletinBoardThreadReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      obj.thread = GuildBulletinBoardThreadDetail.toJSON(message.thread);
+    }
+    if (message.threads?.length) {
+      obj.threads = message.threads.map((e) => GuildBulletinBoardThreadEntry.toJSON(e));
+    }
+    if (message.listStart !== 0) {
+      obj.listStart = Math.round(message.listStart);
+    }
+    if (message.threadCount !== 0) {
+      obj.threadCount = Math.round(message.threadCount);
+    }
+    if (message.notice !== undefined) {
+      obj.notice = GuildBulletinBoardThreadEntry.toJSON(message.notice);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateGuildBulletinBoardThreadReply>, I>>(
+    base?: I,
+  ): CreateGuildBulletinBoardThreadReply {
+    return CreateGuildBulletinBoardThreadReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateGuildBulletinBoardThreadReply>, I>>(
+    object: I,
+  ): CreateGuildBulletinBoardThreadReply {
+    const message = createBaseCreateGuildBulletinBoardThreadReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.thread = (object.thread !== undefined && object.thread !== null)
+      ? GuildBulletinBoardThreadDetail.fromPartial(object.thread)
+      : undefined;
+    message.threads = object.threads?.map((e) => GuildBulletinBoardThreadEntry.fromPartial(e)) || [];
+    message.listStart = object.listStart ?? 0;
+    message.threadCount = object.threadCount ?? 0;
+    message.notice = (object.notice !== undefined && object.notice !== null)
+      ? GuildBulletinBoardThreadEntry.fromPartial(object.notice)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateGuildBulletinBoardThreadRequest(): UpdateGuildBulletinBoardThreadRequest {
+  return { worldId: 0, characterId: 0, localThreadId: 0, title: "", body: "", icon: 0 };
+}
+
+export const UpdateGuildBulletinBoardThreadRequest: MessageFns<UpdateGuildBulletinBoardThreadRequest> = {
+  encode(message: UpdateGuildBulletinBoardThreadRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      writer.uint32(24).int32(message.localThreadId);
+    }
+    if (message.title !== "") {
+      writer.uint32(34).string(message.title);
+    }
+    if (message.body !== "") {
+      writer.uint32(42).string(message.body);
+    }
+    if (message.icon !== 0) {
+      writer.uint32(48).int32(message.icon);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateGuildBulletinBoardThreadRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateGuildBulletinBoardThreadRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.localThreadId = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.body = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.icon = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateGuildBulletinBoardThreadRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      localThreadId: isSet(object.localThreadId)
+        ? globalThis.Number(object.localThreadId)
+        : isSet(object.local_thread_id)
+        ? globalThis.Number(object.local_thread_id)
+        : 0,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      body: isSet(object.body) ? globalThis.String(object.body) : "",
+      icon: isSet(object.icon) ? globalThis.Number(object.icon) : 0,
+    };
+  },
+
+  toJSON(message: UpdateGuildBulletinBoardThreadRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      obj.localThreadId = Math.round(message.localThreadId);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.body !== "") {
+      obj.body = message.body;
+    }
+    if (message.icon !== 0) {
+      obj.icon = Math.round(message.icon);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateGuildBulletinBoardThreadRequest>, I>>(
+    base?: I,
+  ): UpdateGuildBulletinBoardThreadRequest {
+    return UpdateGuildBulletinBoardThreadRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateGuildBulletinBoardThreadRequest>, I>>(
+    object: I,
+  ): UpdateGuildBulletinBoardThreadRequest {
+    const message = createBaseUpdateGuildBulletinBoardThreadRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.localThreadId = object.localThreadId ?? 0;
+    message.title = object.title ?? "";
+    message.body = object.body ?? "";
+    message.icon = object.icon ?? 0;
+    return message;
+  },
+};
+
+function createBaseUpdateGuildBulletinBoardThreadReply(): UpdateGuildBulletinBoardThreadReply {
+  return { ok: false, errorCode: 0, thread: undefined };
+}
+
+export const UpdateGuildBulletinBoardThreadReply: MessageFns<UpdateGuildBulletinBoardThreadReply> = {
+  encode(message: UpdateGuildBulletinBoardThreadReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      GuildBulletinBoardThreadDetail.encode(message.thread, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateGuildBulletinBoardThreadReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateGuildBulletinBoardThreadReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.thread = GuildBulletinBoardThreadDetail.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateGuildBulletinBoardThreadReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+      thread: isSet(object.thread) ? GuildBulletinBoardThreadDetail.fromJSON(object.thread) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateGuildBulletinBoardThreadReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      obj.thread = GuildBulletinBoardThreadDetail.toJSON(message.thread);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateGuildBulletinBoardThreadReply>, I>>(
+    base?: I,
+  ): UpdateGuildBulletinBoardThreadReply {
+    return UpdateGuildBulletinBoardThreadReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateGuildBulletinBoardThreadReply>, I>>(
+    object: I,
+  ): UpdateGuildBulletinBoardThreadReply {
+    const message = createBaseUpdateGuildBulletinBoardThreadReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.thread = (object.thread !== undefined && object.thread !== null)
+      ? GuildBulletinBoardThreadDetail.fromPartial(object.thread)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDeleteGuildBulletinBoardThreadRequest(): DeleteGuildBulletinBoardThreadRequest {
+  return { worldId: 0, characterId: 0, localThreadId: 0 };
+}
+
+export const DeleteGuildBulletinBoardThreadRequest: MessageFns<DeleteGuildBulletinBoardThreadRequest> = {
+  encode(message: DeleteGuildBulletinBoardThreadRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      writer.uint32(24).int32(message.localThreadId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteGuildBulletinBoardThreadRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteGuildBulletinBoardThreadRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.localThreadId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteGuildBulletinBoardThreadRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      localThreadId: isSet(object.localThreadId)
+        ? globalThis.Number(object.localThreadId)
+        : isSet(object.local_thread_id)
+        ? globalThis.Number(object.local_thread_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: DeleteGuildBulletinBoardThreadRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      obj.localThreadId = Math.round(message.localThreadId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteGuildBulletinBoardThreadRequest>, I>>(
+    base?: I,
+  ): DeleteGuildBulletinBoardThreadRequest {
+    return DeleteGuildBulletinBoardThreadRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteGuildBulletinBoardThreadRequest>, I>>(
+    object: I,
+  ): DeleteGuildBulletinBoardThreadRequest {
+    const message = createBaseDeleteGuildBulletinBoardThreadRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.localThreadId = object.localThreadId ?? 0;
+    return message;
+  },
+};
+
+function createBaseDeleteGuildBulletinBoardThreadReply(): DeleteGuildBulletinBoardThreadReply {
+  return { ok: false, errorCode: 0 };
+}
+
+export const DeleteGuildBulletinBoardThreadReply: MessageFns<DeleteGuildBulletinBoardThreadReply> = {
+  encode(message: DeleteGuildBulletinBoardThreadReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteGuildBulletinBoardThreadReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteGuildBulletinBoardThreadReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteGuildBulletinBoardThreadReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+    };
+  },
+
+  toJSON(message: DeleteGuildBulletinBoardThreadReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteGuildBulletinBoardThreadReply>, I>>(
+    base?: I,
+  ): DeleteGuildBulletinBoardThreadReply {
+    return DeleteGuildBulletinBoardThreadReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteGuildBulletinBoardThreadReply>, I>>(
+    object: I,
+  ): DeleteGuildBulletinBoardThreadReply {
+    const message = createBaseDeleteGuildBulletinBoardThreadReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateGuildBulletinBoardReplyRequest(): CreateGuildBulletinBoardReplyRequest {
+  return { worldId: 0, characterId: 0, localThreadId: 0, content: "" };
+}
+
+export const CreateGuildBulletinBoardReplyRequest: MessageFns<CreateGuildBulletinBoardReplyRequest> = {
+  encode(message: CreateGuildBulletinBoardReplyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      writer.uint32(24).int32(message.localThreadId);
+    }
+    if (message.content !== "") {
+      writer.uint32(34).string(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateGuildBulletinBoardReplyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateGuildBulletinBoardReplyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.localThreadId = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.content = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateGuildBulletinBoardReplyRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      localThreadId: isSet(object.localThreadId)
+        ? globalThis.Number(object.localThreadId)
+        : isSet(object.local_thread_id)
+        ? globalThis.Number(object.local_thread_id)
+        : 0,
+      content: isSet(object.content) ? globalThis.String(object.content) : "",
+    };
+  },
+
+  toJSON(message: CreateGuildBulletinBoardReplyRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      obj.localThreadId = Math.round(message.localThreadId);
+    }
+    if (message.content !== "") {
+      obj.content = message.content;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateGuildBulletinBoardReplyRequest>, I>>(
+    base?: I,
+  ): CreateGuildBulletinBoardReplyRequest {
+    return CreateGuildBulletinBoardReplyRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateGuildBulletinBoardReplyRequest>, I>>(
+    object: I,
+  ): CreateGuildBulletinBoardReplyRequest {
+    const message = createBaseCreateGuildBulletinBoardReplyRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.localThreadId = object.localThreadId ?? 0;
+    message.content = object.content ?? "";
+    return message;
+  },
+};
+
+function createBaseCreateGuildBulletinBoardReplyReply(): CreateGuildBulletinBoardReplyReply {
+  return { ok: false, errorCode: 0, thread: undefined };
+}
+
+export const CreateGuildBulletinBoardReplyReply: MessageFns<CreateGuildBulletinBoardReplyReply> = {
+  encode(message: CreateGuildBulletinBoardReplyReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      GuildBulletinBoardThreadDetail.encode(message.thread, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateGuildBulletinBoardReplyReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateGuildBulletinBoardReplyReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.thread = GuildBulletinBoardThreadDetail.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateGuildBulletinBoardReplyReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+      thread: isSet(object.thread) ? GuildBulletinBoardThreadDetail.fromJSON(object.thread) : undefined,
+    };
+  },
+
+  toJSON(message: CreateGuildBulletinBoardReplyReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      obj.thread = GuildBulletinBoardThreadDetail.toJSON(message.thread);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateGuildBulletinBoardReplyReply>, I>>(
+    base?: I,
+  ): CreateGuildBulletinBoardReplyReply {
+    return CreateGuildBulletinBoardReplyReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateGuildBulletinBoardReplyReply>, I>>(
+    object: I,
+  ): CreateGuildBulletinBoardReplyReply {
+    const message = createBaseCreateGuildBulletinBoardReplyReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.thread = (object.thread !== undefined && object.thread !== null)
+      ? GuildBulletinBoardThreadDetail.fromPartial(object.thread)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDeleteGuildBulletinBoardReplyRequest(): DeleteGuildBulletinBoardReplyRequest {
+  return { worldId: 0, characterId: 0, localThreadId: 0, replyId: 0 };
+}
+
+export const DeleteGuildBulletinBoardReplyRequest: MessageFns<DeleteGuildBulletinBoardReplyRequest> = {
+  encode(message: DeleteGuildBulletinBoardReplyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      writer.uint32(24).int32(message.localThreadId);
+    }
+    if (message.replyId !== 0) {
+      writer.uint32(32).int32(message.replyId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteGuildBulletinBoardReplyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteGuildBulletinBoardReplyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.localThreadId = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.replyId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteGuildBulletinBoardReplyRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      localThreadId: isSet(object.localThreadId)
+        ? globalThis.Number(object.localThreadId)
+        : isSet(object.local_thread_id)
+        ? globalThis.Number(object.local_thread_id)
+        : 0,
+      replyId: isSet(object.replyId)
+        ? globalThis.Number(object.replyId)
+        : isSet(object.reply_id)
+        ? globalThis.Number(object.reply_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: DeleteGuildBulletinBoardReplyRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.localThreadId !== 0) {
+      obj.localThreadId = Math.round(message.localThreadId);
+    }
+    if (message.replyId !== 0) {
+      obj.replyId = Math.round(message.replyId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteGuildBulletinBoardReplyRequest>, I>>(
+    base?: I,
+  ): DeleteGuildBulletinBoardReplyRequest {
+    return DeleteGuildBulletinBoardReplyRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteGuildBulletinBoardReplyRequest>, I>>(
+    object: I,
+  ): DeleteGuildBulletinBoardReplyRequest {
+    const message = createBaseDeleteGuildBulletinBoardReplyRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.localThreadId = object.localThreadId ?? 0;
+    message.replyId = object.replyId ?? 0;
+    return message;
+  },
+};
+
+function createBaseDeleteGuildBulletinBoardReplyReply(): DeleteGuildBulletinBoardReplyReply {
+  return { ok: false, errorCode: 0, thread: undefined };
+}
+
+export const DeleteGuildBulletinBoardReplyReply: MessageFns<DeleteGuildBulletinBoardReplyReply> = {
+  encode(message: DeleteGuildBulletinBoardReplyReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      GuildBulletinBoardThreadDetail.encode(message.thread, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteGuildBulletinBoardReplyReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteGuildBulletinBoardReplyReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.thread = GuildBulletinBoardThreadDetail.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteGuildBulletinBoardReplyReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+      thread: isSet(object.thread) ? GuildBulletinBoardThreadDetail.fromJSON(object.thread) : undefined,
+    };
+  },
+
+  toJSON(message: DeleteGuildBulletinBoardReplyReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    if (message.thread !== undefined) {
+      obj.thread = GuildBulletinBoardThreadDetail.toJSON(message.thread);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteGuildBulletinBoardReplyReply>, I>>(
+    base?: I,
+  ): DeleteGuildBulletinBoardReplyReply {
+    return DeleteGuildBulletinBoardReplyReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteGuildBulletinBoardReplyReply>, I>>(
+    object: I,
+  ): DeleteGuildBulletinBoardReplyReply {
+    const message = createBaseDeleteGuildBulletinBoardReplyReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.thread = (object.thread !== undefined && object.thread !== null)
+      ? GuildBulletinBoardThreadDetail.fromPartial(object.thread)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseCreateGuildReply(): CreateGuildReply {
   return { ok: false, errorCode: 0, guildId: undefined, revision: 0, guild: undefined };
 }
@@ -14046,6 +16354,97 @@ export const InternalService = {
       Buffer.from(ChangeGuildNoticeReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): ChangeGuildNoticeReply => ChangeGuildNoticeReply.decode(value),
   },
+  listGuildBulletinBoardThreads: {
+    path: "/fm.internal.Internal/ListGuildBulletinBoardThreads" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ListGuildBulletinBoardThreadsRequest): Buffer =>
+      Buffer.from(ListGuildBulletinBoardThreadsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ListGuildBulletinBoardThreadsRequest =>
+      ListGuildBulletinBoardThreadsRequest.decode(value),
+    responseSerialize: (value: ListGuildBulletinBoardThreadsReply): Buffer =>
+      Buffer.from(ListGuildBulletinBoardThreadsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ListGuildBulletinBoardThreadsReply =>
+      ListGuildBulletinBoardThreadsReply.decode(value),
+  },
+  showGuildBulletinBoardThread: {
+    path: "/fm.internal.Internal/ShowGuildBulletinBoardThread" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ShowGuildBulletinBoardThreadRequest): Buffer =>
+      Buffer.from(ShowGuildBulletinBoardThreadRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ShowGuildBulletinBoardThreadRequest =>
+      ShowGuildBulletinBoardThreadRequest.decode(value),
+    responseSerialize: (value: ShowGuildBulletinBoardThreadReply): Buffer =>
+      Buffer.from(ShowGuildBulletinBoardThreadReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ShowGuildBulletinBoardThreadReply =>
+      ShowGuildBulletinBoardThreadReply.decode(value),
+  },
+  createGuildBulletinBoardThread: {
+    path: "/fm.internal.Internal/CreateGuildBulletinBoardThread" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CreateGuildBulletinBoardThreadRequest): Buffer =>
+      Buffer.from(CreateGuildBulletinBoardThreadRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CreateGuildBulletinBoardThreadRequest =>
+      CreateGuildBulletinBoardThreadRequest.decode(value),
+    responseSerialize: (value: CreateGuildBulletinBoardThreadReply): Buffer =>
+      Buffer.from(CreateGuildBulletinBoardThreadReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CreateGuildBulletinBoardThreadReply =>
+      CreateGuildBulletinBoardThreadReply.decode(value),
+  },
+  updateGuildBulletinBoardThread: {
+    path: "/fm.internal.Internal/UpdateGuildBulletinBoardThread" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: UpdateGuildBulletinBoardThreadRequest): Buffer =>
+      Buffer.from(UpdateGuildBulletinBoardThreadRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): UpdateGuildBulletinBoardThreadRequest =>
+      UpdateGuildBulletinBoardThreadRequest.decode(value),
+    responseSerialize: (value: UpdateGuildBulletinBoardThreadReply): Buffer =>
+      Buffer.from(UpdateGuildBulletinBoardThreadReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): UpdateGuildBulletinBoardThreadReply =>
+      UpdateGuildBulletinBoardThreadReply.decode(value),
+  },
+  deleteGuildBulletinBoardThread: {
+    path: "/fm.internal.Internal/DeleteGuildBulletinBoardThread" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: DeleteGuildBulletinBoardThreadRequest): Buffer =>
+      Buffer.from(DeleteGuildBulletinBoardThreadRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): DeleteGuildBulletinBoardThreadRequest =>
+      DeleteGuildBulletinBoardThreadRequest.decode(value),
+    responseSerialize: (value: DeleteGuildBulletinBoardThreadReply): Buffer =>
+      Buffer.from(DeleteGuildBulletinBoardThreadReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): DeleteGuildBulletinBoardThreadReply =>
+      DeleteGuildBulletinBoardThreadReply.decode(value),
+  },
+  createGuildBulletinBoardReply: {
+    path: "/fm.internal.Internal/CreateGuildBulletinBoardReply" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CreateGuildBulletinBoardReplyRequest): Buffer =>
+      Buffer.from(CreateGuildBulletinBoardReplyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CreateGuildBulletinBoardReplyRequest =>
+      CreateGuildBulletinBoardReplyRequest.decode(value),
+    responseSerialize: (value: CreateGuildBulletinBoardReplyReply): Buffer =>
+      Buffer.from(CreateGuildBulletinBoardReplyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CreateGuildBulletinBoardReplyReply =>
+      CreateGuildBulletinBoardReplyReply.decode(value),
+  },
+  deleteGuildBulletinBoardReply: {
+    path: "/fm.internal.Internal/DeleteGuildBulletinBoardReply" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: DeleteGuildBulletinBoardReplyRequest): Buffer =>
+      Buffer.from(DeleteGuildBulletinBoardReplyRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): DeleteGuildBulletinBoardReplyRequest =>
+      DeleteGuildBulletinBoardReplyRequest.decode(value),
+    responseSerialize: (value: DeleteGuildBulletinBoardReplyReply): Buffer =>
+      Buffer.from(DeleteGuildBulletinBoardReplyReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): DeleteGuildBulletinBoardReplyReply =>
+      DeleteGuildBulletinBoardReplyReply.decode(value),
+  },
   disbandGuild: {
     path: "/fm.internal.Internal/DisbandGuild" as const,
     requestStream: false as const,
@@ -14128,6 +16527,31 @@ export interface InternalServer extends UntypedServiceImplementation {
   changeGuildMemberRank: handleUnaryCall<ChangeGuildMemberRankRequest, ChangeGuildMemberRankReply>;
   changeGuildEmblem: handleUnaryCall<ChangeGuildEmblemRequest, ChangeGuildEmblemReply>;
   changeGuildNotice: handleUnaryCall<ChangeGuildNoticeRequest, ChangeGuildNoticeReply>;
+  listGuildBulletinBoardThreads: handleUnaryCall<
+    ListGuildBulletinBoardThreadsRequest,
+    ListGuildBulletinBoardThreadsReply
+  >;
+  showGuildBulletinBoardThread: handleUnaryCall<ShowGuildBulletinBoardThreadRequest, ShowGuildBulletinBoardThreadReply>;
+  createGuildBulletinBoardThread: handleUnaryCall<
+    CreateGuildBulletinBoardThreadRequest,
+    CreateGuildBulletinBoardThreadReply
+  >;
+  updateGuildBulletinBoardThread: handleUnaryCall<
+    UpdateGuildBulletinBoardThreadRequest,
+    UpdateGuildBulletinBoardThreadReply
+  >;
+  deleteGuildBulletinBoardThread: handleUnaryCall<
+    DeleteGuildBulletinBoardThreadRequest,
+    DeleteGuildBulletinBoardThreadReply
+  >;
+  createGuildBulletinBoardReply: handleUnaryCall<
+    CreateGuildBulletinBoardReplyRequest,
+    CreateGuildBulletinBoardReplyReply
+  >;
+  deleteGuildBulletinBoardReply: handleUnaryCall<
+    DeleteGuildBulletinBoardReplyRequest,
+    DeleteGuildBulletinBoardReplyReply
+  >;
   disbandGuild: handleUnaryCall<DisbandGuildRequest, DisbandGuildReply>;
   requestBuddy: handleUnaryCall<RequestBuddyRequest, RequestBuddyReply>;
   acceptBuddy: handleUnaryCall<AcceptBuddyRequest, AcceptBuddyReply>;
@@ -14612,6 +17036,111 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: ChangeGuildNoticeReply) => void,
+  ): ClientUnaryCall;
+  listGuildBulletinBoardThreads(
+    request: ListGuildBulletinBoardThreadsRequest,
+    callback: (error: ServiceError | null, response: ListGuildBulletinBoardThreadsReply) => void,
+  ): ClientUnaryCall;
+  listGuildBulletinBoardThreads(
+    request: ListGuildBulletinBoardThreadsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ListGuildBulletinBoardThreadsReply) => void,
+  ): ClientUnaryCall;
+  listGuildBulletinBoardThreads(
+    request: ListGuildBulletinBoardThreadsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ListGuildBulletinBoardThreadsReply) => void,
+  ): ClientUnaryCall;
+  showGuildBulletinBoardThread(
+    request: ShowGuildBulletinBoardThreadRequest,
+    callback: (error: ServiceError | null, response: ShowGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  showGuildBulletinBoardThread(
+    request: ShowGuildBulletinBoardThreadRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ShowGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  showGuildBulletinBoardThread(
+    request: ShowGuildBulletinBoardThreadRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ShowGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  createGuildBulletinBoardThread(
+    request: CreateGuildBulletinBoardThreadRequest,
+    callback: (error: ServiceError | null, response: CreateGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  createGuildBulletinBoardThread(
+    request: CreateGuildBulletinBoardThreadRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CreateGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  createGuildBulletinBoardThread(
+    request: CreateGuildBulletinBoardThreadRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CreateGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  updateGuildBulletinBoardThread(
+    request: UpdateGuildBulletinBoardThreadRequest,
+    callback: (error: ServiceError | null, response: UpdateGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  updateGuildBulletinBoardThread(
+    request: UpdateGuildBulletinBoardThreadRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: UpdateGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  updateGuildBulletinBoardThread(
+    request: UpdateGuildBulletinBoardThreadRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: UpdateGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  deleteGuildBulletinBoardThread(
+    request: DeleteGuildBulletinBoardThreadRequest,
+    callback: (error: ServiceError | null, response: DeleteGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  deleteGuildBulletinBoardThread(
+    request: DeleteGuildBulletinBoardThreadRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: DeleteGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  deleteGuildBulletinBoardThread(
+    request: DeleteGuildBulletinBoardThreadRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: DeleteGuildBulletinBoardThreadReply) => void,
+  ): ClientUnaryCall;
+  createGuildBulletinBoardReply(
+    request: CreateGuildBulletinBoardReplyRequest,
+    callback: (error: ServiceError | null, response: CreateGuildBulletinBoardReplyReply) => void,
+  ): ClientUnaryCall;
+  createGuildBulletinBoardReply(
+    request: CreateGuildBulletinBoardReplyRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CreateGuildBulletinBoardReplyReply) => void,
+  ): ClientUnaryCall;
+  createGuildBulletinBoardReply(
+    request: CreateGuildBulletinBoardReplyRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CreateGuildBulletinBoardReplyReply) => void,
+  ): ClientUnaryCall;
+  deleteGuildBulletinBoardReply(
+    request: DeleteGuildBulletinBoardReplyRequest,
+    callback: (error: ServiceError | null, response: DeleteGuildBulletinBoardReplyReply) => void,
+  ): ClientUnaryCall;
+  deleteGuildBulletinBoardReply(
+    request: DeleteGuildBulletinBoardReplyRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: DeleteGuildBulletinBoardReplyReply) => void,
+  ): ClientUnaryCall;
+  deleteGuildBulletinBoardReply(
+    request: DeleteGuildBulletinBoardReplyRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: DeleteGuildBulletinBoardReplyReply) => void,
   ): ClientUnaryCall;
   disbandGuild(
     request: DisbandGuildRequest,

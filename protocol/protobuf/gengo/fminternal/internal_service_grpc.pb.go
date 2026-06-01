@@ -19,43 +19,50 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Internal_Ping_FullMethodName                  = "/fm.internal.Internal/Ping"
-	Internal_GetGameChannelStatus_FullMethodName  = "/fm.internal.Internal/GetGameChannelStatus"
-	Internal_GetServerCatalog_FullMethodName      = "/fm.internal.Internal/GetServerCatalog"
-	Internal_EnterGame_FullMethodName             = "/fm.internal.Internal/EnterGame"
-	Internal_BeginGameTransition_FullMethodName   = "/fm.internal.Internal/BeginGameTransition"
-	Internal_SaveCharacter_FullMethodName         = "/fm.internal.Internal/SaveCharacter"
-	Internal_SaveCharacters_FullMethodName        = "/fm.internal.Internal/SaveCharacters"
-	Internal_LoginAccount_FullMethodName          = "/fm.internal.Internal/LoginAccount"
-	Internal_GetCharacterList_FullMethodName      = "/fm.internal.Internal/GetCharacterList"
-	Internal_CheckCharacterName_FullMethodName    = "/fm.internal.Internal/CheckCharacterName"
-	Internal_CreateCharacter_FullMethodName       = "/fm.internal.Internal/CreateCharacter"
-	Internal_DeleteCharacter_FullMethodName       = "/fm.internal.Internal/DeleteCharacter"
-	Internal_RefreshSession_FullMethodName        = "/fm.internal.Internal/RefreshSession"
-	Internal_LogoutSession_FullMethodName         = "/fm.internal.Internal/LogoutSession"
-	Internal_CreateParty_FullMethodName           = "/fm.internal.Internal/CreateParty"
-	Internal_JoinParty_FullMethodName             = "/fm.internal.Internal/JoinParty"
-	Internal_LeaveParty_FullMethodName            = "/fm.internal.Internal/LeaveParty"
-	Internal_ExpelParty_FullMethodName            = "/fm.internal.Internal/ExpelParty"
-	Internal_ChangePartyLeader_FullMethodName     = "/fm.internal.Internal/ChangePartyLeader"
-	Internal_GetParty_FullMethodName              = "/fm.internal.Internal/GetParty"
-	Internal_UpdatePartyMember_FullMethodName     = "/fm.internal.Internal/UpdatePartyMember"
-	Internal_InviteParty_FullMethodName           = "/fm.internal.Internal/InviteParty"
-	Internal_DenyParty_FullMethodName             = "/fm.internal.Internal/DenyParty"
-	Internal_CreateGuild_FullMethodName           = "/fm.internal.Internal/CreateGuild"
-	Internal_GetGuild_FullMethodName              = "/fm.internal.Internal/GetGuild"
-	Internal_AcceptGuildInvite_FullMethodName     = "/fm.internal.Internal/AcceptGuildInvite"
-	Internal_LeaveGuild_FullMethodName            = "/fm.internal.Internal/LeaveGuild"
-	Internal_ExpelGuild_FullMethodName            = "/fm.internal.Internal/ExpelGuild"
-	Internal_ChangeGuildRankTitles_FullMethodName = "/fm.internal.Internal/ChangeGuildRankTitles"
-	Internal_ChangeGuildMemberRank_FullMethodName = "/fm.internal.Internal/ChangeGuildMemberRank"
-	Internal_ChangeGuildEmblem_FullMethodName     = "/fm.internal.Internal/ChangeGuildEmblem"
-	Internal_ChangeGuildNotice_FullMethodName     = "/fm.internal.Internal/ChangeGuildNotice"
-	Internal_DisbandGuild_FullMethodName          = "/fm.internal.Internal/DisbandGuild"
-	Internal_RequestBuddy_FullMethodName          = "/fm.internal.Internal/RequestBuddy"
-	Internal_AcceptBuddy_FullMethodName           = "/fm.internal.Internal/AcceptBuddy"
-	Internal_RemoveBuddy_FullMethodName           = "/fm.internal.Internal/RemoveBuddy"
-	Internal_BroadcastMultiChat_FullMethodName    = "/fm.internal.Internal/BroadcastMultiChat"
+	Internal_Ping_FullMethodName                           = "/fm.internal.Internal/Ping"
+	Internal_GetGameChannelStatus_FullMethodName           = "/fm.internal.Internal/GetGameChannelStatus"
+	Internal_GetServerCatalog_FullMethodName               = "/fm.internal.Internal/GetServerCatalog"
+	Internal_EnterGame_FullMethodName                      = "/fm.internal.Internal/EnterGame"
+	Internal_BeginGameTransition_FullMethodName            = "/fm.internal.Internal/BeginGameTransition"
+	Internal_SaveCharacter_FullMethodName                  = "/fm.internal.Internal/SaveCharacter"
+	Internal_SaveCharacters_FullMethodName                 = "/fm.internal.Internal/SaveCharacters"
+	Internal_LoginAccount_FullMethodName                   = "/fm.internal.Internal/LoginAccount"
+	Internal_GetCharacterList_FullMethodName               = "/fm.internal.Internal/GetCharacterList"
+	Internal_CheckCharacterName_FullMethodName             = "/fm.internal.Internal/CheckCharacterName"
+	Internal_CreateCharacter_FullMethodName                = "/fm.internal.Internal/CreateCharacter"
+	Internal_DeleteCharacter_FullMethodName                = "/fm.internal.Internal/DeleteCharacter"
+	Internal_RefreshSession_FullMethodName                 = "/fm.internal.Internal/RefreshSession"
+	Internal_LogoutSession_FullMethodName                  = "/fm.internal.Internal/LogoutSession"
+	Internal_CreateParty_FullMethodName                    = "/fm.internal.Internal/CreateParty"
+	Internal_JoinParty_FullMethodName                      = "/fm.internal.Internal/JoinParty"
+	Internal_LeaveParty_FullMethodName                     = "/fm.internal.Internal/LeaveParty"
+	Internal_ExpelParty_FullMethodName                     = "/fm.internal.Internal/ExpelParty"
+	Internal_ChangePartyLeader_FullMethodName              = "/fm.internal.Internal/ChangePartyLeader"
+	Internal_GetParty_FullMethodName                       = "/fm.internal.Internal/GetParty"
+	Internal_UpdatePartyMember_FullMethodName              = "/fm.internal.Internal/UpdatePartyMember"
+	Internal_InviteParty_FullMethodName                    = "/fm.internal.Internal/InviteParty"
+	Internal_DenyParty_FullMethodName                      = "/fm.internal.Internal/DenyParty"
+	Internal_CreateGuild_FullMethodName                    = "/fm.internal.Internal/CreateGuild"
+	Internal_GetGuild_FullMethodName                       = "/fm.internal.Internal/GetGuild"
+	Internal_AcceptGuildInvite_FullMethodName              = "/fm.internal.Internal/AcceptGuildInvite"
+	Internal_LeaveGuild_FullMethodName                     = "/fm.internal.Internal/LeaveGuild"
+	Internal_ExpelGuild_FullMethodName                     = "/fm.internal.Internal/ExpelGuild"
+	Internal_ChangeGuildRankTitles_FullMethodName          = "/fm.internal.Internal/ChangeGuildRankTitles"
+	Internal_ChangeGuildMemberRank_FullMethodName          = "/fm.internal.Internal/ChangeGuildMemberRank"
+	Internal_ChangeGuildEmblem_FullMethodName              = "/fm.internal.Internal/ChangeGuildEmblem"
+	Internal_ChangeGuildNotice_FullMethodName              = "/fm.internal.Internal/ChangeGuildNotice"
+	Internal_ListGuildBulletinBoardThreads_FullMethodName  = "/fm.internal.Internal/ListGuildBulletinBoardThreads"
+	Internal_ShowGuildBulletinBoardThread_FullMethodName   = "/fm.internal.Internal/ShowGuildBulletinBoardThread"
+	Internal_CreateGuildBulletinBoardThread_FullMethodName = "/fm.internal.Internal/CreateGuildBulletinBoardThread"
+	Internal_UpdateGuildBulletinBoardThread_FullMethodName = "/fm.internal.Internal/UpdateGuildBulletinBoardThread"
+	Internal_DeleteGuildBulletinBoardThread_FullMethodName = "/fm.internal.Internal/DeleteGuildBulletinBoardThread"
+	Internal_CreateGuildBulletinBoardReply_FullMethodName  = "/fm.internal.Internal/CreateGuildBulletinBoardReply"
+	Internal_DeleteGuildBulletinBoardReply_FullMethodName  = "/fm.internal.Internal/DeleteGuildBulletinBoardReply"
+	Internal_DisbandGuild_FullMethodName                   = "/fm.internal.Internal/DisbandGuild"
+	Internal_RequestBuddy_FullMethodName                   = "/fm.internal.Internal/RequestBuddy"
+	Internal_AcceptBuddy_FullMethodName                    = "/fm.internal.Internal/AcceptBuddy"
+	Internal_RemoveBuddy_FullMethodName                    = "/fm.internal.Internal/RemoveBuddy"
+	Internal_BroadcastMultiChat_FullMethodName             = "/fm.internal.Internal/BroadcastMultiChat"
 )
 
 // InternalClient is the client API for Internal service.
@@ -94,6 +101,13 @@ type InternalClient interface {
 	ChangeGuildMemberRank(ctx context.Context, in *ChangeGuildMemberRankRequest, opts ...grpc.CallOption) (*ChangeGuildMemberRankReply, error)
 	ChangeGuildEmblem(ctx context.Context, in *ChangeGuildEmblemRequest, opts ...grpc.CallOption) (*ChangeGuildEmblemReply, error)
 	ChangeGuildNotice(ctx context.Context, in *ChangeGuildNoticeRequest, opts ...grpc.CallOption) (*ChangeGuildNoticeReply, error)
+	ListGuildBulletinBoardThreads(ctx context.Context, in *ListGuildBulletinBoardThreadsRequest, opts ...grpc.CallOption) (*ListGuildBulletinBoardThreadsReply, error)
+	ShowGuildBulletinBoardThread(ctx context.Context, in *ShowGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*ShowGuildBulletinBoardThreadReply, error)
+	CreateGuildBulletinBoardThread(ctx context.Context, in *CreateGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*CreateGuildBulletinBoardThreadReply, error)
+	UpdateGuildBulletinBoardThread(ctx context.Context, in *UpdateGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*UpdateGuildBulletinBoardThreadReply, error)
+	DeleteGuildBulletinBoardThread(ctx context.Context, in *DeleteGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*DeleteGuildBulletinBoardThreadReply, error)
+	CreateGuildBulletinBoardReply(ctx context.Context, in *CreateGuildBulletinBoardReplyRequest, opts ...grpc.CallOption) (*CreateGuildBulletinBoardReplyReply, error)
+	DeleteGuildBulletinBoardReply(ctx context.Context, in *DeleteGuildBulletinBoardReplyRequest, opts ...grpc.CallOption) (*DeleteGuildBulletinBoardReplyReply, error)
 	DisbandGuild(ctx context.Context, in *DisbandGuildRequest, opts ...grpc.CallOption) (*DisbandGuildReply, error)
 	RequestBuddy(ctx context.Context, in *RequestBuddyRequest, opts ...grpc.CallOption) (*RequestBuddyReply, error)
 	AcceptBuddy(ctx context.Context, in *AcceptBuddyRequest, opts ...grpc.CallOption) (*AcceptBuddyReply, error)
@@ -429,6 +443,76 @@ func (c *internalClient) ChangeGuildNotice(ctx context.Context, in *ChangeGuildN
 	return out, nil
 }
 
+func (c *internalClient) ListGuildBulletinBoardThreads(ctx context.Context, in *ListGuildBulletinBoardThreadsRequest, opts ...grpc.CallOption) (*ListGuildBulletinBoardThreadsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGuildBulletinBoardThreadsReply)
+	err := c.cc.Invoke(ctx, Internal_ListGuildBulletinBoardThreads_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ShowGuildBulletinBoardThread(ctx context.Context, in *ShowGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*ShowGuildBulletinBoardThreadReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ShowGuildBulletinBoardThreadReply)
+	err := c.cc.Invoke(ctx, Internal_ShowGuildBulletinBoardThread_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) CreateGuildBulletinBoardThread(ctx context.Context, in *CreateGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*CreateGuildBulletinBoardThreadReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGuildBulletinBoardThreadReply)
+	err := c.cc.Invoke(ctx, Internal_CreateGuildBulletinBoardThread_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) UpdateGuildBulletinBoardThread(ctx context.Context, in *UpdateGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*UpdateGuildBulletinBoardThreadReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateGuildBulletinBoardThreadReply)
+	err := c.cc.Invoke(ctx, Internal_UpdateGuildBulletinBoardThread_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) DeleteGuildBulletinBoardThread(ctx context.Context, in *DeleteGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*DeleteGuildBulletinBoardThreadReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteGuildBulletinBoardThreadReply)
+	err := c.cc.Invoke(ctx, Internal_DeleteGuildBulletinBoardThread_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) CreateGuildBulletinBoardReply(ctx context.Context, in *CreateGuildBulletinBoardReplyRequest, opts ...grpc.CallOption) (*CreateGuildBulletinBoardReplyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGuildBulletinBoardReplyReply)
+	err := c.cc.Invoke(ctx, Internal_CreateGuildBulletinBoardReply_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) DeleteGuildBulletinBoardReply(ctx context.Context, in *DeleteGuildBulletinBoardReplyRequest, opts ...grpc.CallOption) (*DeleteGuildBulletinBoardReplyReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteGuildBulletinBoardReplyReply)
+	err := c.cc.Invoke(ctx, Internal_DeleteGuildBulletinBoardReply_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) DisbandGuild(ctx context.Context, in *DisbandGuildRequest, opts ...grpc.CallOption) (*DisbandGuildReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DisbandGuildReply)
@@ -515,6 +599,13 @@ type InternalServer interface {
 	ChangeGuildMemberRank(context.Context, *ChangeGuildMemberRankRequest) (*ChangeGuildMemberRankReply, error)
 	ChangeGuildEmblem(context.Context, *ChangeGuildEmblemRequest) (*ChangeGuildEmblemReply, error)
 	ChangeGuildNotice(context.Context, *ChangeGuildNoticeRequest) (*ChangeGuildNoticeReply, error)
+	ListGuildBulletinBoardThreads(context.Context, *ListGuildBulletinBoardThreadsRequest) (*ListGuildBulletinBoardThreadsReply, error)
+	ShowGuildBulletinBoardThread(context.Context, *ShowGuildBulletinBoardThreadRequest) (*ShowGuildBulletinBoardThreadReply, error)
+	CreateGuildBulletinBoardThread(context.Context, *CreateGuildBulletinBoardThreadRequest) (*CreateGuildBulletinBoardThreadReply, error)
+	UpdateGuildBulletinBoardThread(context.Context, *UpdateGuildBulletinBoardThreadRequest) (*UpdateGuildBulletinBoardThreadReply, error)
+	DeleteGuildBulletinBoardThread(context.Context, *DeleteGuildBulletinBoardThreadRequest) (*DeleteGuildBulletinBoardThreadReply, error)
+	CreateGuildBulletinBoardReply(context.Context, *CreateGuildBulletinBoardReplyRequest) (*CreateGuildBulletinBoardReplyReply, error)
+	DeleteGuildBulletinBoardReply(context.Context, *DeleteGuildBulletinBoardReplyRequest) (*DeleteGuildBulletinBoardReplyReply, error)
 	DisbandGuild(context.Context, *DisbandGuildRequest) (*DisbandGuildReply, error)
 	RequestBuddy(context.Context, *RequestBuddyRequest) (*RequestBuddyReply, error)
 	AcceptBuddy(context.Context, *AcceptBuddyRequest) (*AcceptBuddyReply, error)
@@ -625,6 +716,27 @@ func (UnimplementedInternalServer) ChangeGuildEmblem(context.Context, *ChangeGui
 }
 func (UnimplementedInternalServer) ChangeGuildNotice(context.Context, *ChangeGuildNoticeRequest) (*ChangeGuildNoticeReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangeGuildNotice not implemented")
+}
+func (UnimplementedInternalServer) ListGuildBulletinBoardThreads(context.Context, *ListGuildBulletinBoardThreadsRequest) (*ListGuildBulletinBoardThreadsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGuildBulletinBoardThreads not implemented")
+}
+func (UnimplementedInternalServer) ShowGuildBulletinBoardThread(context.Context, *ShowGuildBulletinBoardThreadRequest) (*ShowGuildBulletinBoardThreadReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ShowGuildBulletinBoardThread not implemented")
+}
+func (UnimplementedInternalServer) CreateGuildBulletinBoardThread(context.Context, *CreateGuildBulletinBoardThreadRequest) (*CreateGuildBulletinBoardThreadReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGuildBulletinBoardThread not implemented")
+}
+func (UnimplementedInternalServer) UpdateGuildBulletinBoardThread(context.Context, *UpdateGuildBulletinBoardThreadRequest) (*UpdateGuildBulletinBoardThreadReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateGuildBulletinBoardThread not implemented")
+}
+func (UnimplementedInternalServer) DeleteGuildBulletinBoardThread(context.Context, *DeleteGuildBulletinBoardThreadRequest) (*DeleteGuildBulletinBoardThreadReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteGuildBulletinBoardThread not implemented")
+}
+func (UnimplementedInternalServer) CreateGuildBulletinBoardReply(context.Context, *CreateGuildBulletinBoardReplyRequest) (*CreateGuildBulletinBoardReplyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGuildBulletinBoardReply not implemented")
+}
+func (UnimplementedInternalServer) DeleteGuildBulletinBoardReply(context.Context, *DeleteGuildBulletinBoardReplyRequest) (*DeleteGuildBulletinBoardReplyReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteGuildBulletinBoardReply not implemented")
 }
 func (UnimplementedInternalServer) DisbandGuild(context.Context, *DisbandGuildRequest) (*DisbandGuildReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DisbandGuild not implemented")
@@ -1238,6 +1350,132 @@ func _Internal_ChangeGuildNotice_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_ListGuildBulletinBoardThreads_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGuildBulletinBoardThreadsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ListGuildBulletinBoardThreads(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ListGuildBulletinBoardThreads_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ListGuildBulletinBoardThreads(ctx, req.(*ListGuildBulletinBoardThreadsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ShowGuildBulletinBoardThread_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShowGuildBulletinBoardThreadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ShowGuildBulletinBoardThread(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ShowGuildBulletinBoardThread_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ShowGuildBulletinBoardThread(ctx, req.(*ShowGuildBulletinBoardThreadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_CreateGuildBulletinBoardThread_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGuildBulletinBoardThreadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CreateGuildBulletinBoardThread(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CreateGuildBulletinBoardThread_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CreateGuildBulletinBoardThread(ctx, req.(*CreateGuildBulletinBoardThreadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_UpdateGuildBulletinBoardThread_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGuildBulletinBoardThreadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).UpdateGuildBulletinBoardThread(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_UpdateGuildBulletinBoardThread_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).UpdateGuildBulletinBoardThread(ctx, req.(*UpdateGuildBulletinBoardThreadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_DeleteGuildBulletinBoardThread_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteGuildBulletinBoardThreadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).DeleteGuildBulletinBoardThread(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_DeleteGuildBulletinBoardThread_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).DeleteGuildBulletinBoardThread(ctx, req.(*DeleteGuildBulletinBoardThreadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_CreateGuildBulletinBoardReply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGuildBulletinBoardReplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CreateGuildBulletinBoardReply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CreateGuildBulletinBoardReply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CreateGuildBulletinBoardReply(ctx, req.(*CreateGuildBulletinBoardReplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_DeleteGuildBulletinBoardReply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteGuildBulletinBoardReplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).DeleteGuildBulletinBoardReply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_DeleteGuildBulletinBoardReply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).DeleteGuildBulletinBoardReply(ctx, req.(*DeleteGuildBulletinBoardReplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_DisbandGuild_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DisbandGuildRequest)
 	if err := dec(in); err != nil {
@@ -1462,6 +1700,34 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ChangeGuildNotice",
 			Handler:    _Internal_ChangeGuildNotice_Handler,
+		},
+		{
+			MethodName: "ListGuildBulletinBoardThreads",
+			Handler:    _Internal_ListGuildBulletinBoardThreads_Handler,
+		},
+		{
+			MethodName: "ShowGuildBulletinBoardThread",
+			Handler:    _Internal_ShowGuildBulletinBoardThread_Handler,
+		},
+		{
+			MethodName: "CreateGuildBulletinBoardThread",
+			Handler:    _Internal_CreateGuildBulletinBoardThread_Handler,
+		},
+		{
+			MethodName: "UpdateGuildBulletinBoardThread",
+			Handler:    _Internal_UpdateGuildBulletinBoardThread_Handler,
+		},
+		{
+			MethodName: "DeleteGuildBulletinBoardThread",
+			Handler:    _Internal_DeleteGuildBulletinBoardThread_Handler,
+		},
+		{
+			MethodName: "CreateGuildBulletinBoardReply",
+			Handler:    _Internal_CreateGuildBulletinBoardReply_Handler,
+		},
+		{
+			MethodName: "DeleteGuildBulletinBoardReply",
+			Handler:    _Internal_DeleteGuildBulletinBoardReply_Handler,
 		},
 		{
 			MethodName: "DisbandGuild",
