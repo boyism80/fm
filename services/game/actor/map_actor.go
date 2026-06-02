@@ -116,6 +116,8 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onDeliverGuildEmblemChange(m)
 	case *DeliverGuildNoticeChange:
 		a.onDeliverGuildNoticeChange(m)
+	case *DeliverGuildCapacityChange:
+		a.onDeliverGuildCapacityChange(m)
 	case *DeliverGuildMemberOnlineChange:
 		a.onDeliverGuildMemberOnlineChange(m)
 	case *DeliverGuildDisbandSelf:
@@ -301,7 +303,7 @@ func (a *MapActor) onResponseSpawnDoor(msg *ResponseSpawnDoor) {
 	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		if msg.Ok && a.Map.Wz != nil && a.Map.GameWorld != nil {
-			a.Map.GameWorld.NotifyDoorRemove(msg.OwnerID, uint32(msg.SkillID), uint32(a.Map.Wz.ReturnMapId))
+			a.Map.GameWorld.GetMapSystem().RemoveReturnDoor(msg.OwnerID, uint32(msg.SkillID), uint32(a.Map.Wz.ReturnMapId))
 		}
 		return
 	}
@@ -314,7 +316,7 @@ func (a *MapActor) onResponseSpawnDoor(msg *ResponseSpawnDoor) {
 	}
 	door := ch.SpawnFieldMapDoor(msg.SkillID, msg.ReturnPortalID, msg.TownPortalPosition, msg.FieldPortalID)
 	if door == nil && gw != nil {
-		gw.NotifyDoorRemove(msg.OwnerID, uint32(msg.SkillID), uint32(ch.GetMap().Wz.ReturnMapId))
+		gw.GetMapSystem().RemoveReturnDoor(msg.OwnerID, uint32(msg.SkillID), uint32(ch.GetMap().Wz.ReturnMapId))
 	}
 }
 
@@ -492,7 +494,7 @@ func (a *MapActor) onSaveMapCharacters(ctx actor.Context) {
 		ctx.Respond(ack)
 		return
 	}
-	p := a.GameWorld.SaveCharactersAsync(ctx, chars)
+	p := a.GameWorld.SaveAsync(ctx, chars)
 	if p == nil {
 		ack.Err = "nil save promise"
 		ctx.Respond(ack)
@@ -721,7 +723,7 @@ func (a *MapActor) onDeliverGuildInvite(msg *DeliverGuildInvite) {
 	}
 	if _, inGuild := ch.GetGuildID(); inGuild {
 		if a.GameWorld != nil {
-			a.GameWorld.EnsureSendCharacter(msg.InviterCharacterID, &DeliverGuildMessage{
+			a.GameWorld.GetDispatchSystem().SendTo(msg.InviterCharacterID, &DeliverGuildMessage{
 				CharacterID: msg.InviterCharacterID,
 				Code:        pconst.GuildResponseAlreadyInGuild,
 			})
@@ -736,7 +738,7 @@ func (a *MapActor) onDeliverGuildInvite(msg *DeliverGuildInvite) {
 	}
 	if len(ch.GuildInvites) > 0 {
 		if a.GameWorld != nil {
-			a.GameWorld.EnsureSendCharacter(msg.InviterCharacterID, &DeliverMessage{
+			a.GameWorld.GetDispatchSystem().SendTo(msg.InviterCharacterID, &DeliverMessage{
 				CharacterID: msg.InviterCharacterID,
 				MessageType: constant.MsgPinkText,
 				Message:     constant.GuildInviteTargetBusyMessage,
@@ -834,6 +836,17 @@ func (a *MapActor) onDeliverGuildNoticeChange(msg *DeliverGuildNoticeChange) {
 		return
 	}
 	ch.Listener.OnGuildNoticeChange(ch, msg.GuildID, msg.Notice)
+}
+
+func (a *MapActor) onDeliverGuildCapacityChange(msg *DeliverGuildCapacityChange) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildCapacityChange(ch, msg.GuildID, msg.Capacity)
 }
 
 func (a *MapActor) onDeliverGuildMemberOnlineChange(msg *DeliverGuildMemberOnlineChange) {

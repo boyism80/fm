@@ -535,6 +535,8 @@ export enum GuildErrorCode {
   GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND = 18,
   GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND = 19,
   GUILD_ERROR_BULLETIN_COOLDOWN = 20,
+  GUILD_ERROR_CAPACITY_REACHED = 21,
+  GUILD_ERROR_INSUFFICIENT_GUILD_GP = 22,
   UNRECOGNIZED = -1,
 }
 
@@ -603,6 +605,12 @@ export function guildErrorCodeFromJSON(object: any): GuildErrorCode {
     case 20:
     case "GUILD_ERROR_BULLETIN_COOLDOWN":
       return GuildErrorCode.GUILD_ERROR_BULLETIN_COOLDOWN;
+    case 21:
+    case "GUILD_ERROR_CAPACITY_REACHED":
+      return GuildErrorCode.GUILD_ERROR_CAPACITY_REACHED;
+    case 22:
+    case "GUILD_ERROR_INSUFFICIENT_GUILD_GP":
+      return GuildErrorCode.GUILD_ERROR_INSUFFICIENT_GUILD_GP;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -654,6 +662,10 @@ export function guildErrorCodeToJSON(object: GuildErrorCode): string {
       return "GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND";
     case GuildErrorCode.GUILD_ERROR_BULLETIN_COOLDOWN:
       return "GUILD_ERROR_BULLETIN_COOLDOWN";
+    case GuildErrorCode.GUILD_ERROR_CAPACITY_REACHED:
+      return "GUILD_ERROR_CAPACITY_REACHED";
+    case GuildErrorCode.GUILD_ERROR_INSUFFICIENT_GUILD_GP:
+      return "GUILD_ERROR_INSUFFICIENT_GUILD_GP";
     case GuildErrorCode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -1503,6 +1515,21 @@ export interface ChangeGuildNoticeReply {
   errorCode: GuildErrorCode;
   guildId?: number | undefined;
   revision: number;
+}
+
+export interface IncreaseGuildCapacityRequest {
+  worldId: number;
+  characterId: number;
+  extendedCap: boolean;
+}
+
+export interface IncreaseGuildCapacityReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+  guildId?: number | undefined;
+  revision: number;
+  capacity: number;
+  gp: number;
 }
 
 export interface DisbandGuildRequest {
@@ -14056,6 +14083,258 @@ export const ChangeGuildNoticeReply: MessageFns<ChangeGuildNoticeReply> = {
   },
 };
 
+function createBaseIncreaseGuildCapacityRequest(): IncreaseGuildCapacityRequest {
+  return { worldId: 0, characterId: 0, extendedCap: false };
+}
+
+export const IncreaseGuildCapacityRequest: MessageFns<IncreaseGuildCapacityRequest> = {
+  encode(message: IncreaseGuildCapacityRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.extendedCap !== false) {
+      writer.uint32(24).bool(message.extendedCap);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): IncreaseGuildCapacityRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIncreaseGuildCapacityRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.extendedCap = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IncreaseGuildCapacityRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      extendedCap: isSet(object.extendedCap)
+        ? globalThis.Boolean(object.extendedCap)
+        : isSet(object.extended_cap)
+        ? globalThis.Boolean(object.extended_cap)
+        : false,
+    };
+  },
+
+  toJSON(message: IncreaseGuildCapacityRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.extendedCap !== false) {
+      obj.extendedCap = message.extendedCap;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IncreaseGuildCapacityRequest>, I>>(base?: I): IncreaseGuildCapacityRequest {
+    return IncreaseGuildCapacityRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<IncreaseGuildCapacityRequest>, I>>(object: I): IncreaseGuildCapacityRequest {
+    const message = createBaseIncreaseGuildCapacityRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.extendedCap = object.extendedCap ?? false;
+    return message;
+  },
+};
+
+function createBaseIncreaseGuildCapacityReply(): IncreaseGuildCapacityReply {
+  return { ok: false, errorCode: 0, guildId: undefined, revision: 0, capacity: 0, gp: 0 };
+}
+
+export const IncreaseGuildCapacityReply: MessageFns<IncreaseGuildCapacityReply> = {
+  encode(message: IncreaseGuildCapacityReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.guildId !== undefined) {
+      writer.uint32(24).uint32(message.guildId);
+    }
+    if (message.revision !== 0) {
+      writer.uint32(32).uint64(message.revision);
+    }
+    if (message.capacity !== 0) {
+      writer.uint32(40).uint32(message.capacity);
+    }
+    if (message.gp !== 0) {
+      writer.uint32(48).uint32(message.gp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): IncreaseGuildCapacityReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIncreaseGuildCapacityReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.revision = longToNumber(reader.uint64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.capacity = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.gp = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IncreaseGuildCapacityReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : undefined,
+      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      capacity: isSet(object.capacity) ? globalThis.Number(object.capacity) : 0,
+      gp: isSet(object.gp) ? globalThis.Number(object.gp) : 0,
+    };
+  },
+
+  toJSON(message: IncreaseGuildCapacityReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    if (message.guildId !== undefined) {
+      obj.guildId = Math.round(message.guildId);
+    }
+    if (message.revision !== 0) {
+      obj.revision = Math.round(message.revision);
+    }
+    if (message.capacity !== 0) {
+      obj.capacity = Math.round(message.capacity);
+    }
+    if (message.gp !== 0) {
+      obj.gp = Math.round(message.gp);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<IncreaseGuildCapacityReply>, I>>(base?: I): IncreaseGuildCapacityReply {
+    return IncreaseGuildCapacityReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<IncreaseGuildCapacityReply>, I>>(object: I): IncreaseGuildCapacityReply {
+    const message = createBaseIncreaseGuildCapacityReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.guildId = object.guildId ?? undefined;
+    message.revision = object.revision ?? 0;
+    message.capacity = object.capacity ?? 0;
+    message.gp = object.gp ?? 0;
+    return message;
+  },
+};
+
 function createBaseDisbandGuildRequest(): DisbandGuildRequest {
   return { worldId: 0, characterId: 0 };
 }
@@ -16354,6 +16633,17 @@ export const InternalService = {
       Buffer.from(ChangeGuildNoticeReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): ChangeGuildNoticeReply => ChangeGuildNoticeReply.decode(value),
   },
+  increaseGuildCapacity: {
+    path: "/fm.internal.Internal/IncreaseGuildCapacity" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: IncreaseGuildCapacityRequest): Buffer =>
+      Buffer.from(IncreaseGuildCapacityRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): IncreaseGuildCapacityRequest => IncreaseGuildCapacityRequest.decode(value),
+    responseSerialize: (value: IncreaseGuildCapacityReply): Buffer =>
+      Buffer.from(IncreaseGuildCapacityReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): IncreaseGuildCapacityReply => IncreaseGuildCapacityReply.decode(value),
+  },
   listGuildBulletinBoardThreads: {
     path: "/fm.internal.Internal/ListGuildBulletinBoardThreads" as const,
     requestStream: false as const,
@@ -16527,6 +16817,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   changeGuildMemberRank: handleUnaryCall<ChangeGuildMemberRankRequest, ChangeGuildMemberRankReply>;
   changeGuildEmblem: handleUnaryCall<ChangeGuildEmblemRequest, ChangeGuildEmblemReply>;
   changeGuildNotice: handleUnaryCall<ChangeGuildNoticeRequest, ChangeGuildNoticeReply>;
+  increaseGuildCapacity: handleUnaryCall<IncreaseGuildCapacityRequest, IncreaseGuildCapacityReply>;
   listGuildBulletinBoardThreads: handleUnaryCall<
     ListGuildBulletinBoardThreadsRequest,
     ListGuildBulletinBoardThreadsReply
@@ -17036,6 +17327,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: ChangeGuildNoticeReply) => void,
+  ): ClientUnaryCall;
+  increaseGuildCapacity(
+    request: IncreaseGuildCapacityRequest,
+    callback: (error: ServiceError | null, response: IncreaseGuildCapacityReply) => void,
+  ): ClientUnaryCall;
+  increaseGuildCapacity(
+    request: IncreaseGuildCapacityRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: IncreaseGuildCapacityReply) => void,
+  ): ClientUnaryCall;
+  increaseGuildCapacity(
+    request: IncreaseGuildCapacityRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: IncreaseGuildCapacityReply) => void,
   ): ClientUnaryCall;
   listGuildBulletinBoardThreads(
     request: ListGuildBulletinBoardThreadsRequest,

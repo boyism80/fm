@@ -71,7 +71,7 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 			return nil
 		}
 
-		targetMap := h.gs.GetMap(uint32(portal.TargetMapId))
+		targetMap := h.gs.GetMapSystem().Get(uint32(portal.TargetMapId))
 		if targetMap == nil {
 			return fmt.Errorf("target map not found")
 		}

@@ -9,6 +9,14 @@ local guild_disband_not_in_guild = 1
 local guild_disband_not_master = 2
 local guild_disband_failed = 3
 
+local guild_capacity_increase_ok = 0
+local guild_capacity_increase_not_in_guild = 1
+local guild_capacity_increase_not_master = 2
+local guild_capacity_increase_insufficient_meso = 3
+local guild_capacity_increase_insufficient_gp = 4
+local guild_capacity_increase_capacity_reached = 5
+local guild_capacity_increase_failed = 6
+
 function on_start(me)
 	local npc = 2010007
 	local selected = me:dialog_list(npc,
@@ -24,7 +32,7 @@ function on_start(me)
 	end
 
 	if selected == 0 then
-		if me:guild_id() then
+		if me:guild() then
 			me:dialog(npc, '흐음.. 이미 길드에 가입되어 있는 것 같은데?')
 			return
 		end
@@ -42,14 +50,15 @@ function on_start(me)
 			me:dialog(npc, '흐음.. 이미 길드에 가입되어 있는 것 같은데?')
 		end
 	elseif selected == 1 then
-		if not me:guild_id() or me:guild_rank() ~= 1 then
+		local g = me:guild()
+		if not g or g:rank(me) ~= 1 then
 			me:dialog(npc, '길드장만이 길드를 해체할 수 있다네.')
 			return
 		end
 		if not me:dialog_yes_no(npc, '길드를 해체하고 싶은가....? 지금 해체하게 된다면 절대 되돌릴 수 없다네.. 또, 모아뒀던 GP는 모두 사라지게 된다네. 길드 해체는 신중하게 선택하도록 하게나. 다시 한번 생각해보기 바라네. 정말 길드를 해체하고 싶은가?') then
 			return
 		end
-		local result = disband_guild(me)
+		local result = g:disband(me)
 		if result == guild_disband_not_master then
 			me:dialog(npc, '길드장만이 길드를 해체할 수 있다네.')
 		elseif result == guild_disband_not_in_guild then
@@ -58,8 +67,52 @@ function on_start(me)
 			me:dialog(npc, '길드 해체에 실패했습니다.')
 		end
 	elseif selected == 2 then
-		me:dialog(npc, '아직 지원하지 않습니다.')
+		local g = me:guild()
+		if not g or g:rank(me) ~= 1 then
+			me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
+			return
+		end
+		local extendedCap = false
+		if not me:dialog_yes_no(npc, '길드 최대 인원 추가 비용은 #b50만#k 메소 라네. 지금 추가하면 최대 인원이 5명 만큼 더 늘어날걸세. 정말 최대 인원을 늘려보고 싶은가?') then
+			return
+		end
+		local result = g:inc_capacity(me, extendedCap)
+		if result == guild_capacity_increase_ok then
+			-- me:dialog(npc, '길드 최대 인원이 증가했습니다.')
+		elseif result == guild_capacity_increase_insufficient_meso then
+			me:dialog(npc, '자네.. 메소는 충분히 갖고 있는건가?')
+		elseif result == guild_capacity_increase_not_master then
+			me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
+		elseif result == guild_capacity_increase_not_in_guild then
+			me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
+		elseif result == guild_capacity_increase_capacity_reached then
+			me:dialog(npc, '이미 길드 최대 인원 제한인 100 명이 된 것 같군.')
+		else
+			me:dialog(npc, '길드 최대 인원 증가에 실패했습니다.')
+		end
 	elseif selected == 3 then
-		me:dialog(npc, '아직 지원하지 않습니다.')
+		local g = me:guild()
+		if not g or g:rank(me) ~= 1 then
+			me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
+			return
+		end
+		local extendedCap = true
+		if not me:dialog_yes_no(npc, '길드 최대 인원 추가 비용은 #b2,000#k 길드포인트 라네. 지금 추가하면 최대 인원이 5명 만큼 더 늘어날걸세. 정말 최대 인원을 늘려보고 싶은가?') then
+			return
+		end
+		local result = g:inc_capacity(me, extendedCap)
+		if result == guild_capacity_increase_ok then
+			-- me:dialog(npc, '길드 최대 인원이 증가했습니다.')
+		elseif result == guild_capacity_increase_not_master then
+			me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
+		elseif result == guild_capacity_increase_not_in_guild then
+			me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
+		elseif result == guild_capacity_increase_insufficient_gp then
+			me:dialog(npc, '길드 포인트가 충분하지 않다네.')
+		elseif result == guild_capacity_increase_capacity_reached then
+			me:dialog(npc, '이미 길드 최대 인원 제한인 200 명이 된 것 같군.')
+		else
+			me:dialog(npc, '길드 최대 인원 증가에 실패했습니다.')
+		end
 	end
 end

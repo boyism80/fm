@@ -121,7 +121,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		MarriageRings:     RingsToDTO(ch.Rings.Right),
 	}
 	if guildID, ok := ch.GetGuildID(); ok && ch.GameWorld != nil {
-		if guild := ch.GameWorld.GetGuildByID(guildID); guild != nil {
+		if guild := ch.GameWorld.GetGuildSystem().Get(guildID); guild != nil {
 			spawnPacket.GuildName = guild.Name
 			if guild.Logo != nil {
 				spawnPacket.GuildLogoBG = uint16(guild.Logo.LogoBG)
@@ -287,7 +287,9 @@ func (ch *Character) SpawnDoor(skillID constant.SkillID) {
 	if destMapID == 0 || destMapID == uint32(m.Wz.ID) || ch.GameWorld == nil {
 		return
 	}
-	ch.GameWorld.RequestSpawnReturnMapDoor(ch, skillID)
+	if gw := ch.GameWorld; gw != nil {
+		gw.GetMapSystem().CreateReturnDoor(ch, skillID)
+	}
 }
 
 func (ch *Character) SpawnFieldMapDoor(skillID constant.SkillID, returnPortalID uint8, townPortalPos types.Vector2[int16], fieldPortalID uint8) *Door {
@@ -670,7 +672,7 @@ func (ch *Character) Warp(targetMap *Map, spawnPoint uint8) error {
 	if ch.GameWorld == nil {
 		return fmt.Errorf("no game world")
 	}
-	return ch.GameWorld.RequestWarp(ch, targetMap, spawnPoint)
+	return ch.GameWorld.GetMapSystem().Warp(ch, targetMap, spawnPoint)
 }
 
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {

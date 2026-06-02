@@ -580,7 +580,9 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 	}
 
 	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpartMapWZID != 0 && m.GameWorld != nil {
-		m.GameWorld.NotifyDoorRemove(ownerID, uint32(skillID), counterpartMapWZID)
+		if gw := m.GameWorld; gw != nil {
+			gw.GetMapSystem().RemoveReturnDoor(ownerID, uint32(skillID), counterpartMapWZID)
+		}
 	}
 }
 

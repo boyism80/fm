@@ -1,31 +1,25 @@
+local guild_emblem_dialog = 17
+
 function on_start(me)
 	local npc = 2010008
-	
-	me:dialog(npc, string.format('안녕하세요 %s님! 현재 메소: %d, 경험치: %d', me:name(), me:meso(), me:exp()))
-	
-	-- Demonstrate arithmetic operations with meso() and exp()
-	me:dialog(npc, '메소와 경험치 연산을 테스트해볼게요!')
-	
-	-- Add 1000 meso (setter: new total = current + amount)
-	me:meso(me:meso() + 1000)
-	me:dialog(npc, string.format('1000 메소를 추가했습니다! 현재 메소: %d', me:meso()))
-	
-	-- Add 500 exp (setter: new total = current + amount)
-	me:exp(me:exp() + 500)
-	me:dialog(npc, string.format('500 경험치를 추가했습니다! 현재 경험치: %d', me:exp()))
-	
-	-- Set meso to 500 (absolute)
-	me:meso(500)
-	me:dialog(npc, string.format('메소를 500으로 설정했습니다! 현재 메소: %d', me:meso()))
-	
-	-- Set exp to 1000 using positive value
-	me:exp(1000) -- This will set exp to 1000 (direct set)
-	me:dialog(npc, string.format('경험치를 1000으로 설정했습니다! 현재 경험치: %d', me:exp()))
-	
-	-- Add more meso and exp
-	me:meso(me:meso() + 2000)
-	me:exp(me:exp() + 1500)
-	me:dialog(npc, string.format('2000 메소와 1500 경험치를 추가했습니다! 현재 메소: %d, 경험치: %d', me:meso(), me:exp()))
-	
-	me:dialog(npc, '테스트 완료!')
+	local selected = me:dialog_list(npc,
+		'저는 길드 마크 제작 업무를 맡고 있습니다. 길드 마크는 길드장만 변경할 수 있답니다. 원하는 것이 있으세요?',
+		{
+			'길드마크 추가/변경',
+		})
+	if selected == nil or selected ~= 0 then
+		return
+	end
+
+	local g = me:guild()
+	if not g or g:rank(me) ~= 1 then
+		me:dialog(npc, '길드장만 길드 마크를 추가하거나 변경할 수 있답니다. 당신은 길드장이 아닌 것 같군요.')
+		return
+	end
+
+	if not me:dialog_yes_no(npc, '길드마크 추가/변경 수수료는 #b500만 메소#k 입니다. 길드 마크를 제작해 보시고 싶으신가요?') then
+		return
+	end
+
+	me:generic_guild_message(guild_emblem_dialog)
 end

@@ -1489,12 +1489,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			pid := ch.GetPartyID()
-			gw := ch.GetGameWorld()
-			if pid == nil || gw == nil {
+			if pid == nil || ch.GameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			p := gw.GetPartyByID(*pid)
+			p := ch.GameWorld.GetPartySystem().Get(*pid)
 			if p == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -1502,7 +1501,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, p))
 			return 1
 		},
-		"guild_id": func(L *lua.LState) int {
+		"guild": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok || ch == nil {
@@ -1510,52 +1509,20 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() != 1 {
-				L.ArgError(2, "guild_id() takes no arguments")
+				L.ArgError(2, "guild() takes no arguments")
 				return 0
 			}
 			guildID, inGuild := ch.GetGuildID()
-			if !inGuild {
+			if !inGuild || ch.GameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(lua.LNumber(guildID))
-			return 1
-		},
-		"guild_rank": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok || ch == nil {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			if L.GetTop() != 1 {
-				L.ArgError(2, "guild_rank() takes no arguments")
-				return 0
-			}
-			guildID, inGuild := ch.GetGuildID()
-			if !inGuild {
-				L.Push(lua.LNil)
-				return 1
-			}
-			gw := ch.GetGameWorld()
-			if gw == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			g := gw.GetGuildByID(guildID)
+			g := ch.GameWorld.GetGuildSystem().Get(guildID)
 			if g == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			charID := ch.GetID()
-			for _, m := range g.GetMembers() {
-				if m == nil || m.GetCharacterId() != charID {
-					continue
-				}
-				L.Push(lua.LNumber(guildRankToUint32(m.GetRank())))
-				return 1
-			}
-			L.Push(lua.LNil)
+			L.Push(luax.NewLuable(L, g))
 			return 1
 		},
 		"generic_guild_message": func(L *lua.LState) int {
@@ -1572,6 +1539,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if err != nil {
 				L.Push(lua.LNumber(constant.GuildCreateResultSendFailed))
 				return 1
+			}
+			if code == pconst.GuildResponseEmblemDialog {
+				return 0
 			}
 			ch.SetDialog(L)
 			return L.Yield(lua.LNumber(0))
@@ -2108,7 +2078,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						L.RaiseError("map: unknown map name %q", string(v))
 						return 0
 					}
-					targetMap = ch.GameWorld.GetMap(mapId)
+					targetMap = ch.GameWorld.GetMapSystem().Get(mapId)
 					if targetMap == nil {
 						L.RaiseError("map: map %q (id %d) not found", string(v), mapId)
 						return 0
@@ -2119,7 +2089,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						return 0
 					}
 					mapId := uint32(v)
-					targetMap = ch.GameWorld.GetMap(mapId)
+					targetMap = ch.GameWorld.GetMapSystem().Get(mapId)
 					if targetMap == nil {
 						L.RaiseError("map: map id %d not found", mapId)
 						return 0

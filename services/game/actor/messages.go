@@ -246,6 +246,12 @@ type DeliverGuildNoticeChange struct {
 	Notice      string
 }
 
+type DeliverGuildCapacityChange struct {
+	CharacterID uint32
+	GuildID     uint32
+	Capacity    uint8
+}
+
 type DeliverGuildMemberOnlineChange struct {
 	CharacterID uint32
 	GuildID     uint32

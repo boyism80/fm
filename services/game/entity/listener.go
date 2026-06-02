@@ -32,6 +32,7 @@ type CharacterListener interface {
 	OnGuildMemberRankChange(ch *Character, guildID uint32, targetID uint32, guildRank uint8)
 	OnGuildEmblemChange(ch *Character, guildID uint32, logoBG uint16, logoBGColor uint8, logo uint16, logoColor uint8)
 	OnGuildNoticeChange(ch *Character, guildID uint32, notice string)
+	OnGuildCapacityChange(ch *Character, guildID uint32, capacity uint8)
 	OnGuildMemberOnlineChange(ch *Character, guildID uint32, subjectCharacterID uint32, online bool)
 	OnGuildDisbandSelf(ch *Character, guildID uint32)
 	OnMultiChat(ch *Character, mode pconst.MultiChatMode, senderName string, message string)

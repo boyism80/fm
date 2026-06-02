@@ -24,11 +24,9 @@ import (
 	"github.com/boyism80/fm/services/common/globaltimer"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
-	gameconst "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	gamegtimers "github.com/boyism80/fm/services/game/gtimers"
 	"github.com/boyism80/fm/services/game/wz"
-	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -239,6 +237,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		mq.Bind[*GameServer, guildMqMemberRankChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqEmblemChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqNoticeChanged](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqCapacityChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqMemberOnlineChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqDisbanded](gs, guildDisp)
 
@@ -410,141 +409,6 @@ func (gs *GameServer) Stop() error {
 		_ = gs.internalConn.Close()
 	}
 	return gs.ServerCore.Stop()
-}
-
-func (gs *GameServer) GetPartyByID(partyID uint32) *entity.Party {
-	if gs == nil || gs.party == nil {
-		return nil
-	}
-	return gs.party.Get(partyID)
-}
-
-func (gs *GameServer) GetGuildByID(guildID uint32) *entity.Guild {
-	if gs == nil || gs.guild == nil {
-		return nil
-	}
-	return gs.guild.Get(guildID)
-}
-
-func (gs *GameServer) EnsureSendCharacter(characterID uint32, inner interface{}) {
-	if gs == nil || characterID == 0 || inner == nil {
-		return
-	}
-	gs.EnsureSend(nil, characterID, inner)
-}
-
-func (gs *GameServer) GetMap(mapID uint32) *entity.Map {
-	gs.mapsMutex.RLock()
-	defer gs.mapsMutex.RUnlock()
-	return gs.maps[mapID]
-}
-
-func (gs *GameServer) RequestWarp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {
-	if targetMap == nil {
-		return fmt.Errorf("target map is nil")
-	}
-	if character == nil {
-		return fmt.Errorf("character is nil")
-	}
-	currentMap := character.GetMap()
-	if currentMap != nil {
-		currentMap.RemovePlayer(character.GetID())
-	}
-	targetPID := targetMap.GetActorPID()
-	if targetPID == nil {
-		return fmt.Errorf("target map actor not found")
-	}
-	gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
-		Character: character,
-		Portal:    spawnPoint,
-	})
-	return nil
-}
-
-func (gs *GameServer) DispatchRunObjectTimer(pid *actor.PID, obj entity.Object, key string) {
-	if pid == nil || obj == nil || key == "" {
-		return
-	}
-	payload := &c_actor.RunObjectTimer{
-		ObjectType: obj.GetObjectType(),
-		ID:         obj.GetPK(),
-		Key:        key,
-	}
-	if root := gs.GetRootContext(); root != nil {
-		root.Send(pid, payload)
-	}
-}
-
-func (gs *GameServer) RequestSpawnReturnMapDoor(ch *entity.Character, skillID gameconst.SkillID) {
-	if ch == nil {
-		return
-	}
-	m := ch.GetMap()
-	if m == nil || m.Wz == nil {
-		return
-	}
-	destMapID := uint32(m.Wz.ReturnMapId)
-	if destMapID == 0 || destMapID == uint32(m.Wz.ID) {
-		return
-	}
-	destMap := gs.GetMap(destMapID)
-	if destMap == nil {
-		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
-		return
-	}
-	destPID := destMap.GetActorPID()
-	if destPID == nil {
-		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
-		return
-	}
-	srcPID := m.GetActorPID()
-	if srcPID == nil {
-		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
-		return
-	}
-	root := gs.GetRootContext()
-	if root == nil {
-		return
-	}
-	fieldAnchorPt := types.Point[int16]{X: ch.Position.X, Y: ch.Position.Y}
-	var closestPortalID uint8
-	if id, ok := m.Wz.FindClosestDoorReturnPortalSpawnID(fieldAnchorPt); ok {
-		closestPortalID = id
-	} else {
-		closestPortalID = m.Wz.FindClosestPortalSpawnID(fieldAnchorPt)
-	}
-	slot := 0
-	if gs.party != nil {
-		slot = gs.party.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
-	}
-	root.Send(destPID, &g_actor.RequestSpawnDoor{
-		ReplyTo:        srcPID,
-		CharacterID:    ch.GetID(),
-		OwnerID:        ch.GetID(),
-		SkillID:        skillID,
-		FieldMapID:     uint32(m.Wz.ID),
-		FieldPortalID:  closestPortalID,
-		PartyOwnerSlot: slot,
-		PartyID:        ch.GetPartyID(),
-		FieldAnchor:    ch.Position,
-	})
-}
-
-func (gs *GameServer) NotifyDoorRemove(ownerID uint32, skillID uint32, counterpartMapWZID uint32) {
-	mapInstance := gs.GetMap(counterpartMapWZID)
-	if mapInstance == nil {
-		return
-	}
-	pid := mapInstance.GetActorPID()
-	if pid == nil {
-		return
-	}
-	if root := gs.GetRootContext(); root != nil {
-		root.Send(pid, &g_actor.RemoveDoor{
-			OwnerID: ownerID,
-			SkillID: skillID,
-		})
-	}
 }
 
 func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {

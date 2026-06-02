@@ -1,0 +1,205 @@
+package server
+
+import (
+	"fmt"
+
+	"github.com/asynkron/protoactor-go/actor"
+	c_actor "github.com/boyism80/fm/core/actor"
+	g_actor "github.com/boyism80/fm/services/game/actor"
+	gameconst "github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/types"
+)
+
+type mapSystem struct {
+	gs *GameServer
+}
+
+type schedulerSystem struct {
+	gs *GameServer
+}
+
+type partySystem struct {
+	gs *GameServer
+}
+
+type guildSystem struct {
+	gs *GameServer
+}
+
+type dispatchSystem struct {
+	gs *GameServer
+}
+
+func (gs *GameServer) GetMapSystem() entity.MapSystem {
+	if gs == nil {
+		return nil
+	}
+	return mapSystem{gs}
+}
+
+func (gs *GameServer) GetSchedulerSystem() entity.SchedulerSystem {
+	if gs == nil {
+		return nil
+	}
+	return schedulerSystem{gs}
+}
+
+func (gs *GameServer) GetPartySystem() entity.PartySystem {
+	if gs == nil {
+		return nil
+	}
+	return partySystem{gs}
+}
+
+func (gs *GameServer) GetGuildSystem() entity.GuildSystem {
+	if gs == nil {
+		return nil
+	}
+	return guildSystem{gs}
+}
+
+func (gs *GameServer) GetDispatchSystem() entity.DispatchSystem {
+	if gs == nil {
+		return nil
+	}
+	return dispatchSystem{gs}
+}
+
+func (s mapSystem) Get(mapID uint32) *entity.Map {
+	if s.gs == nil {
+		return nil
+	}
+	s.gs.mapsMutex.RLock()
+	defer s.gs.mapsMutex.RUnlock()
+	return s.gs.maps[mapID]
+}
+
+func (s mapSystem) Warp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {
+	if targetMap == nil {
+		return fmt.Errorf("target map is nil")
+	}
+	if character == nil {
+		return fmt.Errorf("character is nil")
+	}
+	currentMap := character.GetMap()
+	if currentMap != nil {
+		currentMap.RemovePlayer(character.GetID())
+	}
+	targetPID := targetMap.GetActorPID()
+	if targetPID == nil {
+		return fmt.Errorf("target map actor not found")
+	}
+	s.gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
+		Character: character,
+		Portal:    spawnPoint,
+	})
+	return nil
+}
+
+func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.SkillID) {
+	if s.gs == nil || ch == nil {
+		return
+	}
+	m := ch.GetMap()
+	if m == nil || m.Wz == nil {
+		return
+	}
+	destMapID := uint32(m.Wz.ReturnMapId)
+	if destMapID == 0 || destMapID == uint32(m.Wz.ID) {
+		return
+	}
+	destMap := s.Get(destMapID)
+	if destMap == nil {
+		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
+		return
+	}
+	destPID := destMap.GetActorPID()
+	if destPID == nil {
+		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
+		return
+	}
+	srcPID := m.GetActorPID()
+	if srcPID == nil {
+		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
+		return
+	}
+	root := s.gs.GetRootContext()
+	if root == nil {
+		return
+	}
+	fieldAnchorPt := types.Point[int16]{X: ch.Position.X, Y: ch.Position.Y}
+	var closestPortalID uint8
+	if id, ok := m.Wz.FindClosestDoorReturnPortalSpawnID(fieldAnchorPt); ok {
+		closestPortalID = id
+	} else {
+		closestPortalID = m.Wz.FindClosestPortalSpawnID(fieldAnchorPt)
+	}
+	slot := 0
+	if s.gs.party != nil {
+		slot = s.gs.party.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
+	}
+	root.Send(destPID, &g_actor.RequestSpawnDoor{
+		ReplyTo:        srcPID,
+		CharacterID:    ch.GetID(),
+		OwnerID:        ch.GetID(),
+		SkillID:        skillID,
+		FieldMapID:     uint32(m.Wz.ID),
+		FieldPortalID:  closestPortalID,
+		PartyOwnerSlot: slot,
+		PartyID:        ch.GetPartyID(),
+		FieldAnchor:    ch.Position,
+	})
+}
+
+func (s mapSystem) RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartMapWZID uint32) {
+	mapInstance := s.Get(counterpartMapWZID)
+	if mapInstance == nil {
+		return
+	}
+	pid := mapInstance.GetActorPID()
+	if pid == nil {
+		return
+	}
+	if root := s.gs.GetRootContext(); root != nil {
+		root.Send(pid, &g_actor.RemoveDoor{
+			OwnerID: ownerID,
+			SkillID: skillID,
+		})
+	}
+}
+
+func (s schedulerSystem) RunObjectTimer(pid *actor.PID, obj entity.Object, key string) {
+	if s.gs == nil || pid == nil || obj == nil || key == "" {
+		return
+	}
+	payload := &c_actor.RunObjectTimer{
+		ObjectType: obj.GetObjectType(),
+		ID:         obj.GetPK(),
+		Key:        key,
+	}
+	if root := s.gs.GetRootContext(); root != nil {
+		root.Send(pid, payload)
+	}
+}
+
+func (s partySystem) Get(partyID uint32) *entity.Party {
+	if s.gs == nil || s.gs.party == nil {
+		return nil
+	}
+	return s.gs.party.Get(partyID)
+}
+
+func (s guildSystem) Get(guildID uint32) *entity.Guild {
+	if s.gs == nil || s.gs.guild == nil {
+		return nil
+	}
+	return s.gs.guild.Get(guildID)
+}
+
+func (s dispatchSystem) SendTo(characterID uint32, msg interface{}) {
+	if s.gs == nil || characterID == 0 || msg == nil {
+		return
+	}
+	s.gs.EnsureSend(nil, characterID, msg)
+}

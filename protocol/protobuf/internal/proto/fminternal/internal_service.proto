@@ -38,6 +38,7 @@ service Internal {
   rpc ChangeGuildMemberRank (ChangeGuildMemberRankRequest) returns (ChangeGuildMemberRankReply);
   rpc ChangeGuildEmblem (ChangeGuildEmblemRequest) returns (ChangeGuildEmblemReply);
   rpc ChangeGuildNotice (ChangeGuildNoticeRequest) returns (ChangeGuildNoticeReply);
+  rpc IncreaseGuildCapacity (IncreaseGuildCapacityRequest) returns (IncreaseGuildCapacityReply);
   rpc ListGuildBulletinBoardThreads (ListGuildBulletinBoardThreadsRequest) returns (ListGuildBulletinBoardThreadsReply);
   rpc ShowGuildBulletinBoardThread (ShowGuildBulletinBoardThreadRequest) returns (ShowGuildBulletinBoardThreadReply);
   rpc CreateGuildBulletinBoardThread (CreateGuildBulletinBoardThreadRequest) returns (CreateGuildBulletinBoardThreadReply);
@@ -624,6 +625,8 @@ enum GuildErrorCode {
   GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND = 18;
   GUILD_ERROR_BULLETIN_REPLY_NOT_FOUND = 19;
   GUILD_ERROR_BULLETIN_COOLDOWN = 20;
+  GUILD_ERROR_CAPACITY_REACHED = 21;
+  GUILD_ERROR_INSUFFICIENT_GUILD_GP = 22;
 }
 
 message GuildBulletinBoardThreadEntry {
@@ -846,6 +849,21 @@ message ChangeGuildNoticeReply {
   GuildErrorCode error_code = 2;
   optional uint32 guild_id = 3;
   uint64 revision = 4;
+}
+
+message IncreaseGuildCapacityRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  bool extended_cap = 3;
+}
+
+message IncreaseGuildCapacityReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
+  uint32 capacity = 5;
+  uint32 gp = 6;
 }
 
 message DisbandGuildRequest {

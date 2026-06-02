@@ -53,7 +53,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 	}
 
 	if pid := ch.GetPartyID(); pid != nil {
-		party := h.gs.GetPartyByID(*pid)
+		party := h.gs.GetPartySystem().Get(*pid)
 		if party == nil || party.GetLeaderCharacterId() != ch.GetID() {
 			return nil
 		}

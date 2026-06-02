@@ -45,8 +45,8 @@ func (gs *GameServer) saveCharacterAsync(ctx actor.Context, ch *entity.Character
 	return gs.saveCharactersAsync(ctx, []*entity.Character{ch})
 }
 
-// SaveCharactersAsync builds a Promise that saves chars in parallel chunks of saveCharactersChunkSize. Caller must Run().
-func (gs *GameServer) SaveCharactersAsync(ctx actor.Context, chars []*entity.Character) *async.Promise {
+// SaveAsync builds a Promise that saves chars in parallel chunks of saveCharactersChunkSize. Caller must Run().
+func (gs *GameServer) SaveAsync(ctx actor.Context, chars []*entity.Character) *async.Promise {
 	p := async.NewPromise(ctx, saveCharactersPromiseTimeout)
 	if gs == nil || gs.internalClient == nil || len(chars) == 0 {
 		return p

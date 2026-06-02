@@ -165,7 +165,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	mapID := p.GetMapId()
 	spawnPoint := uint8(p.GetSpawnPoint())
-	mapInstance := h.gs.GetMap(mapID)
+	mapInstance := h.gs.GetMapSystem().Get(mapID)
 	if mapInstance == nil {
 		log.Printf("saved map %d not found, falling back to default", mapID)
 		defaultMapID, ok := h.gs.resources.NameToMap("\xed\x97\xa4\xeb\x84\xa4\xec\x8b\x9c\xec\x8a\xa4")
@@ -174,7 +174,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		}
 		mapID = defaultMapID
 		spawnPoint = 0
-		mapInstance = h.gs.GetMap(mapID)
+		mapInstance = h.gs.GetMapSystem().Get(mapID)
 		if mapInstance == nil {
 			return fmt.Errorf("default map %d not found", mapID)
 		}

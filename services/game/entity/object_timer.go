@@ -51,7 +51,9 @@ func (obj *ObjectCore) armTimer(key string, entry *ObjectTimer, delay time.Durat
 	k := key
 	entry.NextFireAt = time.Now().Add(delay)
 	entry.Timer = time.AfterFunc(delay, func() {
-		obj.GameWorld.DispatchRunObjectTimer(pid, obj.self, k)
+		if gw := obj.GameWorld; gw != nil {
+			gw.GetSchedulerSystem().RunObjectTimer(pid, obj.self, k)
+		}
 	})
 }
 

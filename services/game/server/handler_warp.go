@@ -97,7 +97,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 		}
 	}
 
-	targetMap := h.gs.GetMap(targetMapId)
+	targetMap := h.gs.GetMapSystem().Get(targetMapId)
 	if targetMap == nil {
 		return fmt.Errorf("target map not found")
 	}

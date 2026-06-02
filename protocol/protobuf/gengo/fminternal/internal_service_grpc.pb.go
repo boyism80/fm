@@ -51,6 +51,7 @@ const (
 	Internal_ChangeGuildMemberRank_FullMethodName          = "/fm.internal.Internal/ChangeGuildMemberRank"
 	Internal_ChangeGuildEmblem_FullMethodName              = "/fm.internal.Internal/ChangeGuildEmblem"
 	Internal_ChangeGuildNotice_FullMethodName              = "/fm.internal.Internal/ChangeGuildNotice"
+	Internal_IncreaseGuildCapacity_FullMethodName          = "/fm.internal.Internal/IncreaseGuildCapacity"
 	Internal_ListGuildBulletinBoardThreads_FullMethodName  = "/fm.internal.Internal/ListGuildBulletinBoardThreads"
 	Internal_ShowGuildBulletinBoardThread_FullMethodName   = "/fm.internal.Internal/ShowGuildBulletinBoardThread"
 	Internal_CreateGuildBulletinBoardThread_FullMethodName = "/fm.internal.Internal/CreateGuildBulletinBoardThread"
@@ -101,6 +102,7 @@ type InternalClient interface {
 	ChangeGuildMemberRank(ctx context.Context, in *ChangeGuildMemberRankRequest, opts ...grpc.CallOption) (*ChangeGuildMemberRankReply, error)
 	ChangeGuildEmblem(ctx context.Context, in *ChangeGuildEmblemRequest, opts ...grpc.CallOption) (*ChangeGuildEmblemReply, error)
 	ChangeGuildNotice(ctx context.Context, in *ChangeGuildNoticeRequest, opts ...grpc.CallOption) (*ChangeGuildNoticeReply, error)
+	IncreaseGuildCapacity(ctx context.Context, in *IncreaseGuildCapacityRequest, opts ...grpc.CallOption) (*IncreaseGuildCapacityReply, error)
 	ListGuildBulletinBoardThreads(ctx context.Context, in *ListGuildBulletinBoardThreadsRequest, opts ...grpc.CallOption) (*ListGuildBulletinBoardThreadsReply, error)
 	ShowGuildBulletinBoardThread(ctx context.Context, in *ShowGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*ShowGuildBulletinBoardThreadReply, error)
 	CreateGuildBulletinBoardThread(ctx context.Context, in *CreateGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*CreateGuildBulletinBoardThreadReply, error)
@@ -443,6 +445,16 @@ func (c *internalClient) ChangeGuildNotice(ctx context.Context, in *ChangeGuildN
 	return out, nil
 }
 
+func (c *internalClient) IncreaseGuildCapacity(ctx context.Context, in *IncreaseGuildCapacityRequest, opts ...grpc.CallOption) (*IncreaseGuildCapacityReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IncreaseGuildCapacityReply)
+	err := c.cc.Invoke(ctx, Internal_IncreaseGuildCapacity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) ListGuildBulletinBoardThreads(ctx context.Context, in *ListGuildBulletinBoardThreadsRequest, opts ...grpc.CallOption) (*ListGuildBulletinBoardThreadsReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListGuildBulletinBoardThreadsReply)
@@ -599,6 +611,7 @@ type InternalServer interface {
 	ChangeGuildMemberRank(context.Context, *ChangeGuildMemberRankRequest) (*ChangeGuildMemberRankReply, error)
 	ChangeGuildEmblem(context.Context, *ChangeGuildEmblemRequest) (*ChangeGuildEmblemReply, error)
 	ChangeGuildNotice(context.Context, *ChangeGuildNoticeRequest) (*ChangeGuildNoticeReply, error)
+	IncreaseGuildCapacity(context.Context, *IncreaseGuildCapacityRequest) (*IncreaseGuildCapacityReply, error)
 	ListGuildBulletinBoardThreads(context.Context, *ListGuildBulletinBoardThreadsRequest) (*ListGuildBulletinBoardThreadsReply, error)
 	ShowGuildBulletinBoardThread(context.Context, *ShowGuildBulletinBoardThreadRequest) (*ShowGuildBulletinBoardThreadReply, error)
 	CreateGuildBulletinBoardThread(context.Context, *CreateGuildBulletinBoardThreadRequest) (*CreateGuildBulletinBoardThreadReply, error)
@@ -716,6 +729,9 @@ func (UnimplementedInternalServer) ChangeGuildEmblem(context.Context, *ChangeGui
 }
 func (UnimplementedInternalServer) ChangeGuildNotice(context.Context, *ChangeGuildNoticeRequest) (*ChangeGuildNoticeReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangeGuildNotice not implemented")
+}
+func (UnimplementedInternalServer) IncreaseGuildCapacity(context.Context, *IncreaseGuildCapacityRequest) (*IncreaseGuildCapacityReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IncreaseGuildCapacity not implemented")
 }
 func (UnimplementedInternalServer) ListGuildBulletinBoardThreads(context.Context, *ListGuildBulletinBoardThreadsRequest) (*ListGuildBulletinBoardThreadsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGuildBulletinBoardThreads not implemented")
@@ -1350,6 +1366,24 @@ func _Internal_ChangeGuildNotice_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_IncreaseGuildCapacity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IncreaseGuildCapacityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).IncreaseGuildCapacity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_IncreaseGuildCapacity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).IncreaseGuildCapacity(ctx, req.(*IncreaseGuildCapacityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_ListGuildBulletinBoardThreads_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListGuildBulletinBoardThreadsRequest)
 	if err := dec(in); err != nil {
@@ -1700,6 +1734,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ChangeGuildNotice",
 			Handler:    _Internal_ChangeGuildNotice_Handler,
+		},
+		{
+			MethodName: "IncreaseGuildCapacity",
+			Handler:    _Internal_IncreaseGuildCapacity_Handler,
 		},
 		{
 			MethodName: "ListGuildBulletinBoardThreads",

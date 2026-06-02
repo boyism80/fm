@@ -38,6 +38,10 @@ const DEFAULT_GUILD_CAPACITY = 10;
 const MIN_GUILD_NAME_LEN = 3;
 const MAX_GUILD_NAME_LEN = 12;
 const MAX_GUILD_NOTICE_LEN = 100;
+const GUILD_CAPACITY_STEP = 5;
+const GUILD_CAPACITY_STANDARD_MAX = 100;
+const GUILD_CAPACITY_EXTENDED_MAX = 200;
+const GUILD_CAPACITY_EXTENDED_GP_COST = 2000;
 const MAX_GUILD_BULLETIN_TITLE_LEN = 25;
 const MAX_GUILD_BULLETIN_BODY_LEN = 600;
 const MAX_GUILD_BULLETIN_REPLY_LEN = 25;
@@ -56,6 +60,7 @@ const EVT = {
     MEMBER_RANK_CHANGED: "member_rank_changed",
     EMBLEM_CHANGED: "emblem_changed",
     NOTICE_CHANGED: "notice_changed",
+    CAPACITY_CHANGED: "capacity_changed",
     MEMBER_ONLINE_CHANGED: "member_online_changed",
     DISBANDED: "disbanded",
 } as const;
@@ -123,6 +128,15 @@ export type DisbandGuildResult = {
     code?: GuildErrorCode;
     guildId?: number;
     revision?: number;
+};
+
+export type IncreaseGuildCapacityResult = {
+    ok: boolean;
+    code?: GuildErrorCode;
+    guildId?: number;
+    revision?: number;
+    capacity?: number;
+    gp?: number;
 };
 
 export type ListGuildBulletinBoardThreadsResult = {
@@ -1148,6 +1162,110 @@ export class GuildService {
         await this.publishToGuildRoutes(EVT.NOTICE_CHANGED, worldId, result.guildId, result.revision, {});
 
         return { ok: true, guildId: result.guildId, revision: result.revision };
+    }
+
+    async increaseGuildCapacity(
+        worldId: number,
+        characterId: number,
+        extendedCap: boolean
+    ): Promise<IncreaseGuildCapacityResult> {
+        this.assertWorld(worldId);
+        this.assertCharacterId(characterId);
+
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `character_realtime:${characterId}`,
+        );
+
+        const lockedState = await this.characterRealtimeStateRepo.get(worldId, characterId);
+        if (lockedState?.guildId == null || lockedState.guildId <= 0) {
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
+        }
+        const lockedGuildId = lockedState.guildId;
+        if (!Number.isInteger(lockedGuildId) || lockedGuildId <= 0) {
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
+        }
+
+        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `guild:${lockedGuildId}`,
+        );
+
+        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
+            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
+            if (state?.guildId == null || state.guildId <= 0) {
+                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
+            }
+            const guildId = state.guildId;
+            if (!Number.isInteger(guildId) || guildId <= 0) {
+                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
+            }
+
+            const guild = await this.guildRepo.get(worldId, guildId, { txClient });
+            if (!guild) {
+                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
+            }
+
+            const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
+            const requesterMember = members.get(String(characterId));
+            if (!requesterMember) {
+                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
+            }
+            if (requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
+                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
+            }
+
+            const maxCapacity = extendedCap ? GUILD_CAPACITY_EXTENDED_MAX : GUILD_CAPACITY_STANDARD_MAX;
+            if (guild.capacity + GUILD_CAPACITY_STEP > maxCapacity) {
+                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_CAPACITY_REACHED };
+            }
+
+            let nextGP = guild.gp;
+            if (extendedCap) {
+                if (nextGP < GUILD_CAPACITY_EXTENDED_GP_COST) {
+                    return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_INSUFFICIENT_GUILD_GP };
+                }
+                nextGP -= GUILD_CAPACITY_EXTENDED_GP_COST;
+            }
+
+            const nextRevision = guild.revision + 1;
+            const updatedGuild = await this.guildRepo.set(
+                worldId,
+                {
+                    ...guild,
+                    capacity: guild.capacity + GUILD_CAPACITY_STEP,
+                    gp: nextGP,
+                    revision: nextRevision,
+                },
+                { txClient }
+            );
+            return {
+                ok: true as const,
+                guildId: updatedGuild.guildId,
+                revision: updatedGuild.revision,
+                capacity: updatedGuild.capacity,
+                gp: updatedGuild.gp,
+            };
+        });
+
+        if (!result.ok || result.guildId == null || result.revision == null) {
+            return result;
+        }
+
+        await this.guildRepo.evictCache(worldId, result.guildId);
+
+        await this.publishToGuildRoutes(EVT.CAPACITY_CHANGED, worldId, result.guildId, result.revision, {
+            capacity: result.capacity,
+            gp: result.gp,
+        });
+
+        return {
+            ok: true,
+            guildId: result.guildId,
+            revision: result.revision,
+            capacity: result.capacity,
+            gp: result.gp,
+        };
     }
 
     async disbandGuild(worldId: number, characterId: number): Promise<DisbandGuildResult> {

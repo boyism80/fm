@@ -283,6 +283,16 @@ func (l *CharacterListenerImpl) OnGuildNoticeChange(ch *entity.Character, guildI
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnGuildCapacityChange(ch *entity.Character, guildID uint32, capacity uint8) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildCapacityChange{
+		GuildID:  guildID,
+		Capacity: capacity,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *entity.Character, guildID uint32, subjectCharacterID uint32, online bool) {
 	if ch == nil {
 		return

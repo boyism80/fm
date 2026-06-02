@@ -52,7 +52,7 @@ func (h *partyMqChat) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw jso
 }
 
 func (h *partyMqChat) handlePartyMultiChat(gs *GameServer, memberID uint32, senderCharacterID uint32, mode pconst.MultiChatMode, senderName string, message string) {
-	party := gs.GetPartyByID(memberID)
+	party := gs.GetPartySystem().Get(memberID)
 	if party == nil {
 		return
 	}

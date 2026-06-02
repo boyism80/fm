@@ -82,7 +82,7 @@ func (m *Mob) distributePartyKillExp(mapInst *Map, partyID uint32, damagers map[
 	if gw == nil {
 		return nil, fmt.Errorf("nil GameWorld")
 	}
-	party := gw.GetPartyByID(partyID)
+	party := gw.GetPartySystem().Get(partyID)
 
 	var totDamage uint64
 	for _, dmg := range damagers {

@@ -11,6 +11,8 @@ const GuildInviteDuration = 20 * time.Minute
 const GuildEmblemMapID uint32 = 200000301
 
 const GuildCreateMesoCost int32 = 1_500_000
+const GuildCapacityIncreaseMesoCost int32 = 500_000
+const GuildCapacityIncreaseGPCost uint32 = 2_000
 
 const GuildEmblemChangeMesoCost int32 = 5_000_000
 
@@ -35,6 +37,19 @@ const (
 	GuildDisbandResultNotMaster  GuildDisbandResult = 2
 	GuildDisbandResultFailed     GuildDisbandResult = 3
 	GuildDisbandResultSendFailed GuildDisbandResult = -1
+)
+
+type GuildIncreaseCapacityResult int
+
+const (
+	GuildIncreaseCapacityResultOK               GuildIncreaseCapacityResult = 0
+	GuildIncreaseCapacityResultNotInGuild       GuildIncreaseCapacityResult = 1
+	GuildIncreaseCapacityResultNotMaster        GuildIncreaseCapacityResult = 2
+	GuildIncreaseCapacityResultInsufficientMeso GuildIncreaseCapacityResult = 3
+	GuildIncreaseCapacityResultInsufficientGP   GuildIncreaseCapacityResult = 4
+	GuildIncreaseCapacityResultCapacityReached  GuildIncreaseCapacityResult = 5
+	GuildIncreaseCapacityResultFailed           GuildIncreaseCapacityResult = 6
+	GuildIncreaseCapacityResultSendFailed       GuildIncreaseCapacityResult = -1
 )
 
 const GuildEmblemChangeInsufficientCostMessage = "길드마크를 변경할 메소가 부족합니다."

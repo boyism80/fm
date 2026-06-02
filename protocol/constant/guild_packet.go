@@ -41,6 +41,7 @@ type GuildResponseCode uint8
 
 const (
 	GuildResponseCreateDialog   GuildResponseCode = 0x01
+	GuildResponseEmblemDialog   GuildResponseCode = 0x11
 	GuildResponseAlreadyInGuild GuildResponseCode = 0x28
 	GuildResponseNotInChannel   GuildResponseCode = 0x2A
 	GuildResponseNotInGuild     GuildResponseCode = 0x2D

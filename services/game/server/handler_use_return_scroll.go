@@ -75,7 +75,7 @@ func (*UseReturnScroll) Handle(ctx *core.ClientContext, req *request.UseReturnSc
 		targetID = uint32(consumeModel.MoveTo)
 	}
 
-	target := ch.GameWorld.GetMap(targetID)
+	target := ch.GameWorld.GetMapSystem().Get(targetID)
 	if target == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil

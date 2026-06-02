@@ -56,7 +56,7 @@ func (h *GuildOperation) inviterCanInvite(characterID, guildID uint32) bool {
 	if characterID == 0 || guildID == 0 {
 		return false
 	}
-	g := h.gs.GetGuildByID(guildID)
+	g := h.gs.GetGuildSystem().Get(guildID)
 	if g == nil {
 		return false
 	}
@@ -80,7 +80,7 @@ func (h *GuildOperation) isGuildMaster(characterID, guildID uint32) bool {
 	if characterID == 0 || guildID == 0 {
 		return false
 	}
-	g := h.gs.GetGuildByID(guildID)
+	g := h.gs.GetGuildSystem().Get(guildID)
 	if g == nil {
 		return false
 	}

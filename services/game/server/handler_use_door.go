@@ -67,7 +67,7 @@ func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
 		return nil
 	}
 
-	targetMap := h.gs.GetMap(targetMapID)
+	targetMap := h.gs.GetMapSystem().Get(targetMapID)
 	if targetMap == nil || targetMap.Wz == nil {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil

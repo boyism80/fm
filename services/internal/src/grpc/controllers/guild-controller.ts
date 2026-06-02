@@ -6,6 +6,8 @@ import type {
     ChangeGuildEmblemRequest,
     ChangeGuildNoticeReply,
     ChangeGuildNoticeRequest,
+    IncreaseGuildCapacityReply,
+    IncreaseGuildCapacityRequest,
     CreateGuildBulletinBoardReplyReply,
     CreateGuildBulletinBoardReplyRequest,
     CreateGuildBulletinBoardThreadReply,
@@ -54,6 +56,7 @@ import type {
     GetGuildResult,
     GuildService,
     LeaveGuildResult,
+    IncreaseGuildCapacityResult,
 } from "../../services/guild-service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
@@ -302,6 +305,42 @@ export class GuildGrpcController {
                     errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
                     guildId: undefined,
                     revision: 0,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("increaseGuildCapacity")
+    async increaseGuildCapacity(
+        call: GrpcCall<IncreaseGuildCapacityRequest>,
+        callback: GrpcCallback<IncreaseGuildCapacityReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.increaseGuildCapacity(
+                req.worldId,
+                req.characterId,
+                req.extendedCap
+            ) as IncreaseGuildCapacityResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: GuildErrorCode.GUILD_ERROR_NONE,
+                    guildId: result.guildId,
+                    revision: result.revision ?? 0,
+                    capacity: result.capacity ?? 0,
+                    gp: result.gp ?? 0,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
+                    guildId: undefined,
+                    revision: 0,
+                    capacity: 0,
+                    gp: 0,
                 });
             }
         } catch (err) {

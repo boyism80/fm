@@ -1,16 +1,13 @@
 package server
 
 import (
-	"context"
 	"log"
 	"sort"
 	"time"
 
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
-	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/constant"
@@ -260,6 +257,8 @@ func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
 func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaType[*entity.PartyMember](luaState)
 	luax.RegisterLuaType[*entity.Party](luaState)
+	luax.RegisterLuaType[*entity.GuildMember](luaState)
+	luax.RegisterLuaType[*entity.Guild](luaState)
 	luax.RegisterLuaType[*entity.ObjectCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.FieldPlacement, *entity.ObjectCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Meso, *entity.FieldPlacement](luaState)
@@ -625,85 +624,6 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			gs.GetRootContext().Send(pid, &g_actor.ResumeLua{Root: root, Thread: L, Args: args})
 		}).Run()
 		return L.Yield(lua.LNil, lua.LNil)
-	})
-
-	luax.RegisterFunc(luaState, "disband_guild", func(L *lua.LState) int {
-		ud := L.CheckUserData(1)
-		ch, ok := ud.Value.(*entity.Character)
-		if !ok || ch == nil {
-			L.ArgError(1, "Character expected")
-			return 0
-		}
-		if L.GetTop() != 1 {
-			L.ArgError(2, "disband_guild(me) takes exactly one argument")
-			return 0
-		}
-		cfg, ok := luax.GetConfiguration(L)
-		if !ok || cfg.ActorContext == nil {
-			L.Push(lua.LNumber(constant.GuildDisbandResultFailed))
-			return 1
-		}
-		actorCtx := cfg.ActorContext
-		pid := actorCtx.Self()
-		if pid == nil {
-			L.Push(lua.LNumber(constant.GuildDisbandResultFailed))
-			return 1
-		}
-		mapInstance := ch.GetMap()
-		if mapInstance == nil {
-			L.Push(lua.LNumber(constant.GuildDisbandResultFailed))
-			return 1
-		}
-		root := mapInstance.GetLuaRoot()
-		if root == nil {
-			L.Push(lua.LNumber(constant.GuildDisbandResultFailed))
-			return 1
-		}
-		if gs.internalClient == nil {
-			L.Push(lua.LNumber(constant.GuildDisbandResultFailed))
-			return 1
-		}
-		ch.SetDialog(L)
-		thread := L
-		worldID := gs.config.WorldId
-		charID := ch.GetID()
-		result := constant.GuildDisbandResultFailed
-		promise := async.NewPromise(actorCtx, core.InternalRPCPerStepTimeout)
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.DisbandGuildReply, error) {
-			return gs.internalClient.DisbandGuild(c, &internal.DisbandGuildRequest{
-				WorldId:     worldID,
-				CharacterId: charID,
-			})
-		}, func(reply *internal.DisbandGuildReply) error {
-			if reply == nil {
-				result = constant.GuildDisbandResultFailed
-				return nil
-			}
-			if reply.GetOk() {
-				result = constant.GuildDisbandResultOK
-				return nil
-			}
-			switch reply.GetErrorCode() {
-			case internal.GuildErrorCode_GUILD_ERROR_NOT_IN_GUILD:
-				result = constant.GuildDisbandResultNotInGuild
-			case internal.GuildErrorCode_GUILD_ERROR_NOT_AUTHORIZED:
-				result = constant.GuildDisbandResultNotMaster
-			default:
-				result = constant.GuildDisbandResultFailed
-			}
-			return nil
-		})
-		promise.OnError(func(err error) {
-			log.Printf("disband_guild: character=%d: %v", charID, err)
-			result = constant.GuildDisbandResultFailed
-		}).Finally(func() {
-			gs.GetRootContext().Send(pid, &g_actor.ResumeLua{
-				Root:   root,
-				Thread: thread,
-				Args:   []lua.LValue{lua.LNumber(result)},
-			})
-		}).Run()
-		return L.Yield(lua.LNumber(0))
 	})
 
 	luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {

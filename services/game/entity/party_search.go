@@ -27,7 +27,10 @@ func (accepter *Character) ShouldSkipInvitePendingForPartySearch(partyID uint32)
 	if accepter == nil || partyID == 0 || accepter.GameWorld == nil {
 		return false
 	}
-	p := accepter.GameWorld.GetPartyByID(partyID)
+	var p *Party
+	if gw := accepter.GameWorld; gw != nil {
+		p = gw.GetPartySystem().Get(partyID)
+	}
 	if p == nil {
 		return false
 	}
