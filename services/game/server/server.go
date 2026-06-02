@@ -489,17 +489,17 @@ func (gs *GameServer) RequestSpawnReturnMapDoor(ch *entity.Character, skillID ga
 	}
 	destMap := gs.GetMap(destMapID)
 	if destMap == nil {
-		ch.Listener.OnMessage(ch, gameconst.MSG_PINK_TEXT, gameconst.DoorNoTownPortalMessage)
+		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
 		return
 	}
 	destPID := destMap.GetActorPID()
 	if destPID == nil {
-		ch.Listener.OnMessage(ch, gameconst.MSG_PINK_TEXT, gameconst.DoorNoTownPortalMessage)
+		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
 		return
 	}
 	srcPID := m.GetActorPID()
 	if srcPID == nil {
-		ch.Listener.OnMessage(ch, gameconst.MSG_PINK_TEXT, gameconst.DoorNoTownPortalMessage)
+		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
 		return
 	}
 	root := gs.GetRootContext()

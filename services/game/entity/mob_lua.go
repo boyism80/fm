@@ -544,7 +544,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			b := mob.Wz.Banish
 			if b.Message != "" && ch.Listener != nil {
-				ch.Listener.OnMessage(ch, constant.MSG_PINK_TEXT, b.Message)
+				ch.Listener.OnMessage(ch, constant.MsgPinkText, b.Message)
 			}
 			if ch.GameWorld == nil {
 				L.Push(lua.LBool(false))

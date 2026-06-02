@@ -230,7 +230,7 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 }
 
 func (h *NpcShop) handleRecharge(ch *entity.Character, shop *wz.Shop, tx *request.RechargeTransaction, resources *wz.Resources) error {
-	inventory := ch.Inventory[constant.INVENTORY_TYPE_CONSUME]
+	inventory := ch.Inventory[constant.InventoryTypeConsume]
 	if inventory == nil {
 		return nil
 	}
@@ -259,7 +259,7 @@ func (h *NpcShop) handleRecharge(ch *entity.Character, shop *wz.Shop, tx *reques
 	}
 
 	item.SetCount(slotMax)
-	ch.Listener.OnUpdateInventorySlot(ch, constant.INVENTORY_TYPE_CONSUME, tx.Slot, item)
+	ch.Listener.OnUpdateInventorySlot(ch, constant.InventoryTypeConsume, tx.Slot, item)
 
 	ch.RemoveMeso(int32(price))
 
@@ -291,31 +291,31 @@ func (h *NpcShop) getItemInventoryType(itemID uint32, itemModel wz.Item) constan
 	if itemModel != nil {
 		switch itemModel.(type) {
 		case *wz.Weapon, *wz.Armor:
-			return constant.INVENTORY_TYPE_EQUIPMENT
+			return constant.InventoryTypeEquipment
 		case *wz.Consume:
-			return constant.INVENTORY_TYPE_CONSUME
+			return constant.InventoryTypeConsume
 		case *wz.Installation:
-			return constant.INVENTORY_TYPE_INSTALLATION
+			return constant.InventoryTypeInstallation
 		case *wz.MiscItem:
-			return constant.INVENTORY_TYPE_ETC
+			return constant.InventoryTypeETC
 		case *wz.CashItem:
-			return constant.INVENTORY_TYPE_CASH
+			return constant.InventoryTypeCash
 		}
 	}
 
 	itemType := itemID / 10000
 	switch {
 	case itemType >= 100 && itemType < 200:
-		return constant.INVENTORY_TYPE_EQUIPMENT
+		return constant.InventoryTypeEquipment
 	case itemType >= 200 && itemType < 300:
-		return constant.INVENTORY_TYPE_CONSUME
+		return constant.InventoryTypeConsume
 	case itemType >= 300 && itemType < 400:
-		return constant.INVENTORY_TYPE_INSTALLATION
+		return constant.InventoryTypeInstallation
 	case itemType >= 400 && itemType < 500:
-		return constant.INVENTORY_TYPE_ETC
+		return constant.InventoryTypeETC
 	case itemType >= 500 && itemType < 600:
-		return constant.INVENTORY_TYPE_CASH
+		return constant.InventoryTypeCash
 	default:
-		return constant.INVENTORY_TYPE_ETC
+		return constant.InventoryTypeETC
 	}
 }

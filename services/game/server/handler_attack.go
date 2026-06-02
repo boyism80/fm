@@ -85,7 +85,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 				log.Printf("non-meso object used in meso explosion: %d", oid)
 				return nil
 			}
-			if err := mapInstance.RemoveItem(oid, constant.REMOVE_ITEM_TYPE_EXPLOSION, character.GetID()); err != nil {
+			if err := mapInstance.RemoveItem(oid, constant.RemoveItemTypeExplosion, character.GetID()); err != nil {
 				log.Printf("failed to remove meso oid %d for explosion: %v", oid, err)
 				return nil
 			}

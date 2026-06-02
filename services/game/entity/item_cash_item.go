@@ -11,7 +11,7 @@ type CashItem struct {
 	Flags     uint16
 }
 
-func (item *CashItem) GetInventoryType() constant.InventoryType { return constant.INVENTORY_TYPE_CASH }
+func (item *CashItem) GetInventoryType() constant.InventoryType { return constant.InventoryTypeCash }
 func (item *CashItem) GetCount() uint16                         { return item.Count }
 func (item *CashItem) Reduce(count uint16) uint16 {
 	if count > item.Count {

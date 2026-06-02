@@ -246,7 +246,7 @@ func (ch *Character) GainMeso(amount int32) {
 	ch.Listener.OnMesoChanged(ch, ch.Meso)
 	ch.Listener.OnShowMesoGain(ch, amount, constant.ShowMesoGainTypeStatus)
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.STAT_MESO: ch.Meso,
+		constant.StatMeso: ch.Meso,
 	}, false)
 }
 
@@ -269,19 +269,19 @@ func (ch *Character) UnequipToSlot(parts constant.EquipmentPartsType, destSlot i
 	if equipments[parts] == nil {
 		return nil
 	}
-	inven := inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	inven := inventory[constant.InventoryTypeEquipment]
 	if inven == nil || inven.Items[destSlot] != nil {
 		return ErrSlotAlreadyOccupied
 	}
 	inven.Items[destSlot] = equipments[parts]
 	delete(equipments, parts)
-	ch.Listener.OnSwapInventorySlot(ch, constant.INVENTORY_TYPE_EQUIPMENT, int16(parts), destSlot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
+	ch.Listener.OnSwapInventorySlot(ch, constant.InventoryTypeEquipment, int16(parts), destSlot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
 	ch.Listener.OnUpdateCharacterLook(ch)
 	return nil
 }
 
 func (ch *Character) Unequip(parts constant.EquipmentPartsType) error {
-	inven := ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	inven := ch.Inventory[constant.InventoryTypeEquipment]
 	if inven == nil {
 		return errors.New("equipment inventory not found")
 	}
@@ -295,7 +295,7 @@ func (ch *Character) Unequip(parts constant.EquipmentPartsType) error {
 func (ch *Character) Equip(slot int16) error {
 	equipments := ch.Equipments
 	inventory := ch.Inventory
-	inven := inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+	inven := inventory[constant.InventoryTypeEquipment]
 	if inven == nil {
 		return errors.New("equipment inventory not found")
 	}
@@ -315,27 +315,27 @@ func (ch *Character) Equip(slot int16) error {
 	old, swap := equipments[parts]
 
 	switch parts {
-	case constant.EQUIPMENT_PARTS_TOP:
+	case constant.EquipmentPartsTop:
 		if topNew, ok := newEq.(*Top); ok && topNew.IsOverall() {
-			if equipments[constant.EQUIPMENT_PARTS_PANTS] != nil {
+			if equipments[constant.EquipmentPartsPants] != nil {
 				storageSlot, isFree := inven.NextSlot()
 				if !isFree {
 					return ErrInventoryFull
 				}
-				if err := ch.UnequipToSlot(constant.EQUIPMENT_PARTS_PANTS, int16(storageSlot)); err != nil {
+				if err := ch.UnequipToSlot(constant.EquipmentPartsPants, int16(storageSlot)); err != nil {
 					return err
 				}
 			}
 		}
-	case constant.EQUIPMENT_PARTS_PANTS:
-		topEq := equipments[constant.EQUIPMENT_PARTS_TOP]
+	case constant.EquipmentPartsPants:
+		topEq := equipments[constant.EquipmentPartsTop]
 		if topEq != nil {
 			if top, ok := topEq.(*Top); ok && top.IsOverall() {
 				storageSlot, isFree := inven.NextSlot()
 				if swap && !isFree {
 					return ErrInventoryFull
 				}
-				if err := ch.UnequipToSlot(constant.EQUIPMENT_PARTS_TOP, int16(storageSlot)); err != nil {
+				if err := ch.UnequipToSlot(constant.EquipmentPartsTop, int16(storageSlot)); err != nil {
 					return err
 				}
 			}
@@ -349,7 +349,7 @@ func (ch *Character) Equip(slot int16) error {
 		inven.Items[slot] = old
 	}
 
-	ch.Listener.OnSwapInventorySlot(ch, constant.INVENTORY_TYPE_EQUIPMENT, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
+	ch.Listener.OnSwapInventorySlot(ch, constant.InventoryTypeEquipment, slot, int16(parts), int8(response.EQUIPMENT_ACTION_TYPE_ON))
 	ch.Listener.OnUpdateCharacterLook(ch)
 	return nil
 }

@@ -101,7 +101,7 @@ func (h *DistributeSP) Handle(ctx *core.ClientContext, req *request.DistributeSP
 	}
 
 	stats := map[constant.Stat]int32{
-		constant.STAT_AVAILABLE_SP: int32(character.SkillPoint),
+		constant.StatAvailableSP: int32(character.SkillPoint),
 	}
 	character.Listener.OnUpdateStats(character, stats, false)
 

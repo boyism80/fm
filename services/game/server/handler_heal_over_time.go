@@ -95,8 +95,8 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 
 	if healHP > 0 || healMP > 0 {
 		stats := map[constant.Stat]int32{
-			constant.STAT_HP: int32(character.GetHp()),
-			constant.STAT_MP: int32(character.GetMp()),
+			constant.StatHP: int32(character.GetHp()),
+			constant.StatMP: int32(character.GetMp()),
 		}
 		character.Listener.OnUpdateStats(character, stats, false)
 	}

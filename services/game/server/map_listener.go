@@ -157,7 +157,7 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Ite
 
 	spawnPacket := &response.SpawnItem{
 		ID:           placement.OID,
-		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
+		Animation:    constant.DropItemAnimationTypeLooting,
 		DropType:     placement.DropType,
 		ItemModel:    item.GetModel(),
 		Expiration:   item.GetExpiration(),
@@ -179,7 +179,7 @@ func (l *MapListenerImpl) OnMesoSpawned(mapInstance *entity.Map, meso *entity.Me
 
 	spawnPacket := &response.SpawnMeso{
 		ID:           fp.OID,
-		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_LOOTING,
+		Animation:    constant.DropItemAnimationTypeLooting,
 		DropType:     fp.DropType,
 		Count:        meso.Count,
 		OwnerID:      fp.Owner,

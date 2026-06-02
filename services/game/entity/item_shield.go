@@ -9,7 +9,7 @@ type Shield struct {
 }
 
 func (item *Shield) GetInventoryType() constant.InventoryType {
-	return constant.INVENTORY_TYPE_EQUIPMENT
+	return constant.InventoryTypeEquipment
 }
 func (item *Shield) GetCount() uint16             { return 1 }
 func (item *Shield) Reduce(count uint16) uint16   { return 0 }

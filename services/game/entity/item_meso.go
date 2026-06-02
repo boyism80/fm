@@ -34,7 +34,7 @@ func (meso *Meso) SendSpawnSyncToViewer(viewer *Character) {
 	}
 	viewer.Send(&response.SpawnMeso{
 		ID:           fp.OID,
-		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
+		Animation:    constant.DropItemAnimationTypeNone,
 		DropType:     fp.DropType,
 		Count:        meso.Count,
 		OwnerID:      fp.Owner,

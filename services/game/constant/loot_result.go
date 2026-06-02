@@ -3,10 +3,10 @@ package constant
 type LootResult uint8
 
 const (
-	LOOT_SUCCESS               LootResult = 0
-	LOOT_FAILED_ITEM_NOT_FOUND LootResult = 1
-	LOOT_FAILED_NO_OWNERSHIP   LootResult = 2
-	LOOT_FAILED_INVENTORY_FULL LootResult = 3
-	LOOT_FAILED_MESO_FULL      LootResult = 4
-	LOOT_FAILED_INVALID_ITEM   LootResult = 5
+	LootSuccess             LootResult = 0
+	LootFailedItemNotFound  LootResult = 1
+	LootFailedNoOwnership   LootResult = 2
+	LootFailedInventoryFull LootResult = 3
+	LootFailedMesoFull      LootResult = 4
+	LootFailedInvalidItem   LootResult = 5
 )

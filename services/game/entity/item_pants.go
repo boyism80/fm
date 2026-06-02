@@ -9,7 +9,7 @@ type Pants struct {
 }
 
 func (item *Pants) GetInventoryType() constant.InventoryType {
-	return constant.INVENTORY_TYPE_EQUIPMENT
+	return constant.InventoryTypeEquipment
 }
 func (item *Pants) GetCount() uint16             { return 1 }
 func (item *Pants) Reduce(count uint16) uint16   { return 0 }

@@ -25,17 +25,17 @@ func (p *Dialog) Deserialize(reader *stream.StreamReader) {
 	p.Next = reader.ReadU8() == 1
 
 	switch p.DialogType {
-	case constant.DIALOG_TYPE_DEFAULT:
-	case constant.DIALOG_TYPE_YES_NO:
+	case constant.DialogTypeDefault:
+	case constant.DialogTypeYesNo:
 
-	case constant.DIALOG_TYPE_LIST:
+	case constant.DialogTypeList:
 		p.Selected = reader.ReadU32()
 
-	case constant.DIALOG_TYPE_INPUT:
+	case constant.DialogTypeInput:
 		p.Text = reader.ReadStr16()
 
-	case constant.DIALOG_TYPE_ACCEPT_ESCAPE:
-	case constant.DIALOG_TYPE_ACCEPT:
+	case constant.DialogTypeAcceptEscape:
+	case constant.DialogTypeAccept:
 	default:
 		panic(fmt.Errorf("invalid dialog type: %d", p.DialogType))
 	}

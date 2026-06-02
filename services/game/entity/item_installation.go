@@ -11,7 +11,7 @@ type Installation struct {
 }
 
 func (item *Installation) GetInventoryType() constant.InventoryType {
-	return constant.INVENTORY_TYPE_INSTALLATION
+	return constant.InventoryTypeInstallation
 }
 func (item *Installation) GetCount() uint16             { return 1 }
 func (item *Installation) Reduce(count uint16) uint16   { return 0 }

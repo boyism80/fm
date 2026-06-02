@@ -11,7 +11,7 @@ type Consume struct {
 }
 
 func (item *Consume) GetInventoryType() constant.InventoryType {
-	return constant.INVENTORY_TYPE_CONSUME
+	return constant.InventoryTypeConsume
 }
 func (item *Consume) GetCount() uint16 { return item.Count }
 func (item *Consume) Reduce(count uint16) uint16 {

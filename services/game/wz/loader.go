@@ -1484,7 +1484,7 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 			}
 
 			if item.ItemID > 0 {
-				if item.ItemID/10000 == constant.ITEM_CATEGORY_SHURIKEN && item.ItemID != constant.ITEM_SHURIKEN_BASE {
+				if item.ItemID/10000 == constant.ItemCategoryShuriken && item.ItemID != constant.ItemShurikenBase {
 					continue
 				}
 				shop.Items = append(shop.Items, item)
@@ -1498,7 +1498,7 @@ func loadNpcShops(path string) (*map[uint32]*Shop, error) {
 		existingRechargeable := make(map[uint32]bool)
 		for _, existingItem := range shop.Items {
 			category := existingItem.ItemID / 10000
-			if category == constant.ITEM_CATEGORY_SHURIKEN || category == constant.ITEM_CATEGORY_BULLET {
+			if category == constant.ItemCategoryShuriken || category == constant.ItemCategoryBullet {
 				existingRechargeable[existingItem.ItemID] = true
 			}
 		}

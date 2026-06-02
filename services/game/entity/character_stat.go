@@ -36,8 +36,8 @@ func (ch *Character) GetTotalStr() uint16 {
 	if total < 0 {
 		return 0
 	}
-	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
-		return constant.STAT_MAX_STR_DEX_INT_LUK
+	if total > int32(constant.StatMaxStrDexIntLuk) {
+		return constant.StatMaxStrDexIntLuk
 	}
 	return uint16(total)
 }
@@ -47,8 +47,8 @@ func (ch *Character) GetTotalDex() uint16 {
 	if total < 0 {
 		return 0
 	}
-	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
-		return constant.STAT_MAX_STR_DEX_INT_LUK
+	if total > int32(constant.StatMaxStrDexIntLuk) {
+		return constant.StatMaxStrDexIntLuk
 	}
 	return uint16(total)
 }
@@ -58,8 +58,8 @@ func (ch *Character) GetTotalInt() uint16 {
 	if total < 0 {
 		return 0
 	}
-	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
-		return constant.STAT_MAX_STR_DEX_INT_LUK
+	if total > int32(constant.StatMaxStrDexIntLuk) {
+		return constant.StatMaxStrDexIntLuk
 	}
 	return uint16(total)
 }
@@ -69,8 +69,8 @@ func (ch *Character) GetTotalLuk() uint16 {
 	if total < 0 {
 		return 0
 	}
-	if total > int32(constant.STAT_MAX_STR_DEX_INT_LUK) {
-		return constant.STAT_MAX_STR_DEX_INT_LUK
+	if total > int32(constant.StatMaxStrDexIntLuk) {
+		return constant.StatMaxStrDexIntLuk
 	}
 	return uint16(total)
 }
@@ -81,8 +81,8 @@ func (ch *Character) GetMaxHp() uint32 {
 	if total < 1 {
 		return 1
 	}
-	if total > int32(constant.STAT_MAX_HP_MP) {
-		return constant.STAT_MAX_HP_MP
+	if total > int32(constant.StatMaxHPMP) {
+		return constant.StatMaxHPMP
 	}
 	return uint32(total)
 }
@@ -109,43 +109,43 @@ func (ch *Character) GetMaxMp() uint32 {
 	if total < 0 {
 		return 0
 	}
-	if total > int32(constant.STAT_MAX_HP_MP) {
-		return constant.STAT_MAX_HP_MP
+	if total > int32(constant.StatMaxHPMP) {
+		return constant.StatMaxHPMP
 	}
 	return uint32(total)
 }
 
 func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 	switch stat {
-	case constant.STAT_LEVEL:
+	case constant.StatLevel:
 		return int32(ch.level), true
-	case constant.STAT_EXP:
+	case constant.StatEXP:
 		return int32(ch.exp), true
-	case constant.STAT_CLASS:
+	case constant.StatClass:
 		return int32(ch.Class), true
-	case constant.STAT_STR:
+	case constant.StatStr:
 		return int32(ch.GetTotalStr()), true
-	case constant.STAT_DEX:
+	case constant.StatDex:
 		return int32(ch.GetTotalDex()), true
-	case constant.STAT_INT:
+	case constant.StatInt:
 		return int32(ch.GetTotalInt()), true
-	case constant.STAT_LUK:
+	case constant.StatLuk:
 		return int32(ch.GetTotalLuk()), true
-	case constant.STAT_HP:
+	case constant.StatHP:
 		return int32(ch.GetHp()), true
-	case constant.STAT_MAX_HP:
+	case constant.StatMaxHP:
 		return int32(ch.GetMaxHp()), true
-	case constant.STAT_MP:
+	case constant.StatMP:
 		return int32(ch.GetMp()), true
-	case constant.STAT_MAX_MP:
+	case constant.StatMaxMP:
 		return int32(ch.GetMaxMp()), true
-	case constant.STAT_AVAILABLE_AP:
+	case constant.StatAvailableAP:
 		return int32(ch.AbilityPoint), true
-	case constant.STAT_AVAILABLE_SP:
+	case constant.StatAvailableSP:
 		return int32(ch.SkillPoint), true
-	case constant.STAT_FAME:
+	case constant.StatFame:
 		return int32(ch.famePoint), true
-	case constant.STAT_MESO:
+	case constant.StatMeso:
 		return ch.Meso, true
 	default:
 		return 0, false
@@ -155,18 +155,18 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 func (ch *Character) notifyStatChange(stat constant.Stat) {
 	stats := make(map[constant.Stat]int32)
 	switch stat {
-	case constant.STAT_STR:
-		stats[constant.STAT_STR] = int32(ch.GetTotalStr())
-	case constant.STAT_DEX:
-		stats[constant.STAT_DEX] = int32(ch.GetTotalDex())
-	case constant.STAT_INT:
-		stats[constant.STAT_INT] = int32(ch.GetTotalInt())
-	case constant.STAT_LUK:
-		stats[constant.STAT_LUK] = int32(ch.GetTotalLuk())
-	case constant.STAT_MAX_HP:
-		stats[constant.STAT_MAX_HP] = int32(ch.GetMaxHp())
-	case constant.STAT_MAX_MP:
-		stats[constant.STAT_MAX_MP] = int32(ch.GetMaxMp())
+	case constant.StatStr:
+		stats[constant.StatStr] = int32(ch.GetTotalStr())
+	case constant.StatDex:
+		stats[constant.StatDex] = int32(ch.GetTotalDex())
+	case constant.StatInt:
+		stats[constant.StatInt] = int32(ch.GetTotalInt())
+	case constant.StatLuk:
+		stats[constant.StatLuk] = int32(ch.GetTotalLuk())
+	case constant.StatMaxHP:
+		stats[constant.StatMaxHP] = int32(ch.GetMaxHp())
+	case constant.StatMaxMP:
+		stats[constant.StatMaxMP] = int32(ch.GetMaxMp())
 	}
 
 	ch.Listener.OnUpdateStats(ch, stats, false)
@@ -178,7 +178,7 @@ func (ch *Character) ConsumeMP(amount uint32) bool {
 	}
 	ch.SetMp(ch.GetMp()-amount, false)
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.STAT_MP: int32(ch.GetMp()),
+		constant.StatMP: int32(ch.GetMp()),
 	}, false)
 	return true
 }
@@ -189,7 +189,7 @@ func (ch *Character) ConsumeHP(amount uint32) bool {
 	}
 	ch.SetHp(ch.GetHp()-amount, false)
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.STAT_HP: int32(ch.GetHp()),
+		constant.StatHP: int32(ch.GetHp()),
 	}, false)
 	return true
 }

@@ -8,7 +8,7 @@ type Top struct {
 	*EquipmentCore
 }
 
-func (item *Top) GetInventoryType() constant.InventoryType { return constant.INVENTORY_TYPE_EQUIPMENT }
+func (item *Top) GetInventoryType() constant.InventoryType { return constant.InventoryTypeEquipment }
 func (item *Top) GetCount() uint16                         { return 1 }
 func (item *Top) Reduce(count uint16) uint16               { return 0 }
 func (item *Top) Increase(count uint16) uint16             { return 0 }

@@ -15,9 +15,9 @@ func (p *RemoveItem) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(p.Mode))
 	writer.WriteU32(p.OID)
 	switch p.Mode {
-	case constant.REMOVE_ITEM_TYPE_EXPLOSION:
+	case constant.RemoveItemTypeExplosion:
 		writer.Write16(655)
-	case constant.REMOVE_ITEM_TYPE_ANIMATED, constant.REMOVE_ITEM_TYPE_LOOT_BY_PET:
+	case constant.RemoveItemTypeAnimated, constant.RemoveItemTypeLootByPet:
 		writer.WriteU32(p.CharacterId)
 	}
 	return nil

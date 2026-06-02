@@ -26,35 +26,35 @@ func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 		mask = mask | uint32(k)
 	}
 	writer.WriteU32(mask)
-	order := []constant.Stat{constant.STAT_SKIN, constant.STAT_FACE, constant.STAT_HAIR, constant.STAT_PET, constant.STAT_LEVEL, constant.STAT_CLASS, constant.STAT_STR, constant.STAT_DEX, constant.STAT_INT, constant.STAT_LUK, constant.STAT_HP, constant.STAT_MAX_HP, constant.STAT_MP, constant.STAT_MAX_MP, constant.STAT_AVAILABLE_AP, constant.STAT_AVAILABLE_SP, constant.STAT_EXP, constant.STAT_FAME, constant.STAT_MESO}
+	order := []constant.Stat{constant.StatSkin, constant.StatFace, constant.StatHair, constant.StatPet, constant.StatLevel, constant.StatClass, constant.StatStr, constant.StatDex, constant.StatInt, constant.StatLuk, constant.StatHP, constant.StatMaxHP, constant.StatMP, constant.StatMaxMP, constant.StatAvailableAP, constant.StatAvailableSP, constant.StatEXP, constant.StatFame, constant.StatMeso}
 	for _, stat := range order {
 		if val, ok := p.Stats[stat]; ok {
 			switch stat {
-			case constant.STAT_SKIN:
+			case constant.StatSkin:
 				writer.WriteU16(uint16(val))
 
-			case constant.STAT_FACE, constant.STAT_HAIR:
+			case constant.StatFace, constant.StatHair:
 				writer.WriteU32(uint32(val))
 
-			case constant.STAT_PET:
+			case constant.StatPet:
 				writer.WriteU64(uint64(val))
 
-			case constant.STAT_LEVEL:
+			case constant.StatLevel:
 				writer.WriteU8(uint8(val))
 
-			case constant.STAT_CLASS, constant.STAT_STR, constant.STAT_DEX,
-				constant.STAT_INT, constant.STAT_LUK, constant.STAT_HP,
-				constant.STAT_MAX_HP, constant.STAT_MP, constant.STAT_MAX_MP,
-				constant.STAT_AVAILABLE_AP, constant.STAT_AVAILABLE_SP:
+			case constant.StatClass, constant.StatStr, constant.StatDex,
+				constant.StatInt, constant.StatLuk, constant.StatHP,
+				constant.StatMaxHP, constant.StatMP, constant.StatMaxMP,
+				constant.StatAvailableAP, constant.StatAvailableSP:
 				writer.WriteU16(uint16(val))
 
-			case constant.STAT_EXP, constant.STAT_FAME, constant.STAT_MESO:
+			case constant.StatEXP, constant.StatFame, constant.StatMeso:
 				writer.WriteU32(uint32(val))
 			}
 		}
 	}
 
-	if mask&uint32(constant.STAT_PET) != 0 {
+	if mask&uint32(constant.StatPet) != 0 {
 		writer.WriteU8(1)
 	}
 

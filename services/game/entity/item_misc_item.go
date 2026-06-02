@@ -11,7 +11,7 @@ type MiscItem struct {
 }
 
 func (item *MiscItem) GetInventoryType() constant.InventoryType {
-	return constant.INVENTORY_TYPE_ETC
+	return constant.InventoryTypeETC
 }
 func (item *MiscItem) GetCount() uint16 { return item.Count }
 func (item *MiscItem) Reduce(count uint16) uint16 {

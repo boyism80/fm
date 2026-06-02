@@ -480,7 +480,7 @@ func (ch *Character) SetHp(v uint32, notify bool) {
 	if !notify {
 		return
 	}
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.GetHp())}, false)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
 }
 
 func (ch *Character) SetMp(v uint32, notify bool) {
@@ -488,15 +488,15 @@ func (ch *Character) SetMp(v uint32, notify bool) {
 	if !notify {
 		return
 	}
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.GetMp())}, false)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatMP: int32(ch.GetMp())}, false)
 }
 
 func (ch *Character) SetBonusHp(v int32, notify bool) {
 	ch.LifeCore.SetBonusHp(v, false)
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_HP:     int32(ch.GetHp()),
-			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+			constant.StatHP:    int32(ch.GetHp()),
+			constant.StatMaxHP: int32(ch.GetMaxHp()),
 		}, false)
 	}
 }
@@ -505,8 +505,8 @@ func (ch *Character) SetBonusMp(v int32, notify bool) {
 	ch.LifeCore.SetBonusMp(v, false)
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_MP:     int32(ch.GetMp()),
-			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+			constant.StatMP:    int32(ch.GetMp()),
+			constant.StatMaxMP: int32(ch.GetMaxMp()),
 		}, false)
 	}
 }
@@ -518,8 +518,8 @@ func (ch *Character) SetMaxHpPercent(p int16, notify bool) {
 	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_HP:     int32(ch.GetHp()),
-			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+			constant.StatHP:    int32(ch.GetHp()),
+			constant.StatMaxHP: int32(ch.GetMaxHp()),
 		}, false)
 	}
 }
@@ -531,8 +531,8 @@ func (ch *Character) SetMaxMpPercent(p int16, notify bool) {
 	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_MP:     int32(ch.GetMp()),
-			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+			constant.StatMP:    int32(ch.GetMp()),
+			constant.StatMaxMP: int32(ch.GetMaxMp()),
 		}, false)
 	}
 }
@@ -549,7 +549,7 @@ func (ch *Character) AddHp(amount int) {
 		n = maxHp
 	}
 	ch.SetHp(uint32(n), false)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_HP: int32(ch.GetHp())}, false)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
 }
 
 func (ch *Character) AddMp(amount int) {
@@ -562,7 +562,7 @@ func (ch *Character) AddMp(amount int) {
 		n = maxMp
 	}
 	ch.SetMp(uint32(n), false)
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.STAT_MP: int32(ch.GetMp())}, false)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatMP: int32(ch.GetMp())}, false)
 }
 
 func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
@@ -585,14 +585,14 @@ func (ch *Character) AddHpMp(hpDelta, mpDelta int) {
 	ch.SetHp(uint32(nh), false)
 	ch.SetMp(uint32(nm), false)
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.STAT_HP: int32(ch.GetHp()),
-		constant.STAT_MP: int32(ch.GetMp()),
+		constant.StatHP: int32(ch.GetHp()),
+		constant.StatMP: int32(ch.GetMp()),
 	}, false)
 }
 
 func (ch *Character) SetBaseHp(v uint32, notify bool) {
-	if v > constant.STAT_MAX_HP_MP {
-		v = constant.STAT_MAX_HP_MP
+	if v > constant.StatMaxHPMP {
+		v = constant.StatMaxHPMP
 	}
 	ch.BaseHp = v
 	if ch.GetHp() > ch.GetMaxHp() {
@@ -600,15 +600,15 @@ func (ch *Character) SetBaseHp(v uint32, notify bool) {
 	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_HP:     int32(ch.GetHp()),
-			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+			constant.StatHP:    int32(ch.GetHp()),
+			constant.StatMaxHP: int32(ch.GetMaxHp()),
 		}, false)
 	}
 }
 
 func (ch *Character) SetBaseMp(v uint32, notify bool) {
-	if v > constant.STAT_MAX_HP_MP {
-		v = constant.STAT_MAX_HP_MP
+	if v > constant.StatMaxHPMP {
+		v = constant.StatMaxHPMP
 	}
 	ch.BaseMp = v
 	if ch.GetMp() > ch.GetMaxMp() {
@@ -616,8 +616,8 @@ func (ch *Character) SetBaseMp(v uint32, notify bool) {
 	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_MP:     int32(ch.GetMp()),
-			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+			constant.StatMP:    int32(ch.GetMp()),
+			constant.StatMaxMP: int32(ch.GetMaxMp()),
 		}, false)
 	}
 }
@@ -629,8 +629,8 @@ func (ch *Character) AddBaseHp(amount uint32, notify bool) {
 	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_HP:     int32(ch.GetHp()),
-			constant.STAT_MAX_HP: int32(ch.GetMaxHp()),
+			constant.StatHP:    int32(ch.GetHp()),
+			constant.StatMaxHP: int32(ch.GetMaxHp()),
 		}, false)
 	}
 }
@@ -642,8 +642,8 @@ func (ch *Character) AddBaseMp(amount uint32, notify bool) {
 	}
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_MP:     int32(ch.GetMp()),
-			constant.STAT_MAX_MP: int32(ch.GetMaxMp()),
+			constant.StatMP:    int32(ch.GetMp()),
+			constant.StatMaxMP: int32(ch.GetMaxMp()),
 		}, false)
 	}
 }
@@ -652,7 +652,7 @@ func (ch *Character) SetAbilityPoint(v uint16, notify bool) {
 	ch.AbilityPoint = v
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
+			constant.StatAvailableAP: int32(ch.AbilityPoint),
 		}, false)
 	}
 }
@@ -661,7 +661,7 @@ func (ch *Character) SetSkillPoint(v uint16, notify bool) {
 	ch.SkillPoint = v
 	if notify {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
+			constant.StatAvailableSP: int32(ch.SkillPoint),
 		}, false)
 	}
 }
@@ -777,7 +777,7 @@ func (ch *Character) SetGuildID(guildID *uint32) {
 }
 
 func (ch *Character) Message(message string) {
-	ch.Listener.OnMessage(ch, constant.MSG_LIGHT_BLUE_TEXT, message)
+	ch.Listener.OnMessage(ch, constant.MsgLightBlueText, message)
 }
 
 func (ch *Character) HasRoleAtLeast(role constant.CharacterRole) bool {
@@ -810,7 +810,7 @@ func (ch *Character) AddExp(exp uint32) {
 
 	if !ch.tryLevelUp() {
 		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-			constant.STAT_EXP: int32(ch.exp),
+			constant.StatEXP: int32(ch.exp),
 		}, false)
 	}
 }
@@ -936,11 +936,11 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		random3: stream.NewRandomStream(),
 
 		Inventory: map[constant.InventoryType]*Inventory{
-			constant.INVENTORY_TYPE_EQUIPMENT:    NewInventory(constant.INVENTORY_TYPE_EQUIPMENT),
-			constant.INVENTORY_TYPE_CONSUME:      NewInventory(constant.INVENTORY_TYPE_CONSUME),
-			constant.INVENTORY_TYPE_INSTALLATION: NewInventory(constant.INVENTORY_TYPE_INSTALLATION),
-			constant.INVENTORY_TYPE_ETC:          NewInventory(constant.INVENTORY_TYPE_ETC),
-			constant.INVENTORY_TYPE_CASH:         NewInventory(constant.INVENTORY_TYPE_CASH),
+			constant.InventoryTypeEquipment:    NewInventory(constant.InventoryTypeEquipment),
+			constant.InventoryTypeConsume:      NewInventory(constant.InventoryTypeConsume),
+			constant.InventoryTypeInstallation: NewInventory(constant.InventoryTypeInstallation),
+			constant.InventoryTypeETC:          NewInventory(constant.InventoryTypeETC),
+			constant.InventoryTypeCash:         NewInventory(constant.InventoryTypeCash),
 		},
 		Rings: RingContainer{
 			Left:  []*Ring{},
@@ -1042,14 +1042,14 @@ func (ch *Character) tryLevelUp() bool {
 		}
 
 		stats := map[constant.Stat]int32{
-			constant.STAT_LEVEL:        int32(ch.level),
-			constant.STAT_EXP:          int32(ch.exp),
-			constant.STAT_MAX_HP:       int32(ch.GetMaxHp()),
-			constant.STAT_MAX_MP:       int32(ch.GetMaxMp()),
-			constant.STAT_HP:           int32(ch.GetHp()),
-			constant.STAT_MP:           int32(ch.GetMp()),
-			constant.STAT_AVAILABLE_AP: int32(ch.AbilityPoint),
-			constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
+			constant.StatLevel:       int32(ch.level),
+			constant.StatEXP:         int32(ch.exp),
+			constant.StatMaxHP:       int32(ch.GetMaxHp()),
+			constant.StatMaxMP:       int32(ch.GetMaxMp()),
+			constant.StatHP:          int32(ch.GetHp()),
+			constant.StatMP:          int32(ch.GetMp()),
+			constant.StatAvailableAP: int32(ch.AbilityPoint),
+			constant.StatAvailableSP: int32(ch.SkillPoint),
 		}
 		ch.Listener.OnUpdateStats(ch, stats, false)
 		for i := 0; i < levelDiff; i++ {
@@ -1088,8 +1088,8 @@ func (ch *Character) SetLevel(newLevel uint8) {
 	}
 
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.STAT_LEVEL: int32(ch.level),
-		constant.STAT_EXP:   int32(ch.exp),
+		constant.StatLevel: int32(ch.level),
+		constant.StatEXP:   int32(ch.exp),
 	}, false)
 }
 

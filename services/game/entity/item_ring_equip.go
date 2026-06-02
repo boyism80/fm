@@ -9,7 +9,7 @@ type RingEquip struct {
 }
 
 func (item *RingEquip) GetInventoryType() constant.InventoryType {
-	return constant.INVENTORY_TYPE_EQUIPMENT
+	return constant.InventoryTypeEquipment
 }
 func (item *RingEquip) GetCount() uint16             { return 1 }
 func (item *RingEquip) Reduce(count uint16) uint16   { return 0 }

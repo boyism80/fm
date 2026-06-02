@@ -7,8 +7,8 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
-	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	pconst "github.com/boyism80/fm/protocol/constant"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"

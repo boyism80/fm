@@ -38,7 +38,7 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 		return nil
 	}
 
-	setupInventory := character.Inventory[constant.INVENTORY_TYPE_INSTALLATION]
+	setupInventory := character.Inventory[constant.InventoryTypeInstallation]
 	if setupInventory == nil {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil

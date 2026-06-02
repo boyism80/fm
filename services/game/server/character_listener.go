@@ -18,7 +18,7 @@ type CharacterListenerImpl struct {
 func (l *CharacterListenerImpl) OnDialog(ch *entity.Character, npc uint32, message string, prev bool, next bool) {
 	dialogPacket := &response.Dialog{
 		NPC:  npc,
-		Type: constant.DIALOG_TYPE_DEFAULT,
+		Type: constant.DialogTypeDefault,
 		Text: message,
 		Prev: prev,
 		Next: next,
@@ -80,7 +80,7 @@ func (l *CharacterListenerImpl) OnChat(ch *entity.Character, message string, hig
 func (l *CharacterListenerImpl) OnMesoChanged(ch *entity.Character, meso int32) {
 	ch.Send(&response.UpdateStats{
 		Stats: map[constant.Stat]int32{
-			constant.STAT_MESO: meso,
+			constant.StatMeso: meso,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -557,8 +557,8 @@ func (l *CharacterListenerImpl) OnUpdateStats(ch *entity.Character, stats map[co
 		UnlockAction: unlock,
 	}, types.SEND_POLICY_ENCRYPT)
 	if stats != nil {
-		_, hasHP := stats[constant.STAT_HP]
-		_, hasMaxHP := stats[constant.STAT_MAX_HP]
+		_, hasHP := stats[constant.StatHP]
+		_, hasMaxHP := stats[constant.StatMaxHP]
 		if hasHP || hasMaxHP {
 			l.OnPartyMemberHPChanged(ch, nil)
 		}
@@ -934,8 +934,8 @@ func (l *CharacterListenerImpl) OnNpcAction(ch *entity.Character, bytes []byte) 
 
 func (l *CharacterListenerImpl) OnClassChange(ch *entity.Character, oldClass uint16, newClass uint16) {
 	stats := map[constant.Stat]int32{
-		constant.STAT_CLASS:        int32(newClass),
-		constant.STAT_AVAILABLE_SP: int32(ch.SkillPoint),
+		constant.StatClass:       int32(newClass),
+		constant.StatAvailableSP: int32(ch.SkillPoint),
 	}
 
 	ch.Send(&response.UpdateStats{

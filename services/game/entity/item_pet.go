@@ -18,7 +18,7 @@ type Pet struct {
 	Expiration  time.Time
 }
 
-func (item *Pet) GetInventoryType() constant.InventoryType { return constant.INVENTORY_TYPE_CASH }
+func (item *Pet) GetInventoryType() constant.InventoryType { return constant.InventoryTypeCash }
 func (item *Pet) GetCount() uint16                         { return 1 }
 func (item *Pet) Reduce(count uint16) uint16               { return 0 }
 func (item *Pet) Increase(count uint16) uint16             { return 0 }

@@ -296,7 +296,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				ch.exp = newExp
 				ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-					constant.STAT_EXP: int32(ch.exp),
+					constant.StatEXP: int32(ch.exp),
 				}, false)
 				return 0
 			default:
@@ -1177,7 +1177,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			message := L.CheckString(2)
-			ch.Listener.OnMessage(ch, constant.MSG_LIGHT_BLUE_TEXT, message)
+			ch.Listener.OnMessage(ch, constant.MsgLightBlueText, message)
 			return 0
 		},
 		"role": func(L *lua.LState) int {
@@ -1614,11 +1614,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v < 0 {
 					v = 0
 				}
-				if v > int(constant.STAT_MAX_STR_DEX_INT_LUK) {
-					v = int(constant.STAT_MAX_STR_DEX_INT_LUK)
+				if v > int(constant.StatMaxStrDexIntLuk) {
+					v = int(constant.StatMaxStrDexIntLuk)
 				}
 				ch.BaseStats.Str = uint16(v)
-				ch.notifyStatChange(constant.STAT_STR)
+				ch.notifyStatChange(constant.StatStr)
 				return 0
 			default:
 				L.ArgError(2, "base_str() requires 0 or 1 arguments")
@@ -1642,11 +1642,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v < 0 {
 					v = 0
 				}
-				if v > int(constant.STAT_MAX_STR_DEX_INT_LUK) {
-					v = int(constant.STAT_MAX_STR_DEX_INT_LUK)
+				if v > int(constant.StatMaxStrDexIntLuk) {
+					v = int(constant.StatMaxStrDexIntLuk)
 				}
 				ch.BaseStats.Dex = uint16(v)
-				ch.notifyStatChange(constant.STAT_DEX)
+				ch.notifyStatChange(constant.StatDex)
 				return 0
 			default:
 				L.ArgError(2, "base_dex() requires 0 or 1 arguments")
@@ -1670,11 +1670,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v < 0 {
 					v = 0
 				}
-				if v > int(constant.STAT_MAX_STR_DEX_INT_LUK) {
-					v = int(constant.STAT_MAX_STR_DEX_INT_LUK)
+				if v > int(constant.StatMaxStrDexIntLuk) {
+					v = int(constant.StatMaxStrDexIntLuk)
 				}
 				ch.BaseStats.Int = uint16(v)
-				ch.notifyStatChange(constant.STAT_INT)
+				ch.notifyStatChange(constant.StatInt)
 				return 0
 			default:
 				L.ArgError(2, "base_int() requires 0 or 1 arguments")
@@ -1698,11 +1698,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v < 0 {
 					v = 0
 				}
-				if v > int(constant.STAT_MAX_STR_DEX_INT_LUK) {
-					v = int(constant.STAT_MAX_STR_DEX_INT_LUK)
+				if v > int(constant.StatMaxStrDexIntLuk) {
+					v = int(constant.StatMaxStrDexIntLuk)
 				}
 				ch.BaseStats.Luk = uint16(v)
-				ch.notifyStatChange(constant.STAT_LUK)
+				ch.notifyStatChange(constant.StatLuk)
 				return 0
 			default:
 				L.ArgError(2, "base_luk() requires 0 or 1 arguments")
@@ -1723,7 +1723,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			case 2:
 				ch.BonusStats.Str = int16(L.CheckInt(2))
-				ch.notifyStatChange(constant.STAT_STR)
+				ch.notifyStatChange(constant.StatStr)
 				return 0
 			default:
 				L.ArgError(2, "bonus_str() requires 0 or 1 arguments")
@@ -1744,7 +1744,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			case 2:
 				ch.BonusStats.Dex = int16(L.CheckInt(2))
-				ch.notifyStatChange(constant.STAT_DEX)
+				ch.notifyStatChange(constant.StatDex)
 				return 0
 			default:
 				L.ArgError(2, "bonus_dex() requires 0 or 1 arguments")
@@ -1765,7 +1765,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			case 2:
 				ch.BonusStats.Int = int16(L.CheckInt(2))
-				ch.notifyStatChange(constant.STAT_INT)
+				ch.notifyStatChange(constant.StatInt)
 				return 0
 			default:
 				L.ArgError(2, "bonus_int() requires 0 or 1 arguments")
@@ -1786,7 +1786,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			case 2:
 				ch.BonusStats.Luk = int16(L.CheckInt(2))
-				ch.notifyStatChange(constant.STAT_LUK)
+				ch.notifyStatChange(constant.StatLuk)
 				return 0
 			default:
 				L.ArgError(2, "bonus_luk() requires 0 or 1 arguments")
@@ -2350,7 +2350,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 1
 				}
 				invType, slots := ch.FindSlots(itemID)
-				if invType != constant.INVENTORY_TYPE_EQUIPMENT || len(slots) == 0 {
+				if invType != constant.InventoryTypeEquipment || len(slots) == 0 {
 					L.Push(lua.LBool(false))
 					return 1
 				}
@@ -2359,7 +2359,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if itemUD, ok := L.Get(2).(*lua.LUserData); ok && itemUD.Value != nil {
 					if item, ok := itemUD.Value.(Item); ok {
 						var found bool
-						slot, found = ch.FindSlot(constant.INVENTORY_TYPE_EQUIPMENT, item)
+						slot, found = ch.FindSlot(constant.InventoryTypeEquipment, item)
 						if !found {
 							L.Push(lua.LBool(false))
 							return 1
@@ -2720,7 +2720,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			useInventory := ch.Inventory[constant.INVENTORY_TYPE_CONSUME]
+			useInventory := ch.Inventory[constant.InventoryTypeConsume]
 			if useInventory == nil {
 				L.Push(lua.LBool(false))
 				return 1
@@ -2741,7 +2741,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			var targetEquip Equipment
-			equipInventory := ch.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+			equipInventory := ch.Inventory[constant.InventoryTypeEquipment]
 			if targetSlot < 0 {
 				targetEquip = ch.Equipments[constant.EquipmentPartsType(targetSlot)]
 			} else {
@@ -2764,7 +2764,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 1
 				}
 			}
-			if requiredPart != nil && *requiredPart == constant.EQUIPMENT_PARTS_WEAPON && requiredWeaponType != nil {
+			if requiredPart != nil && *requiredPart == constant.EquipmentPartsWeapon && requiredWeaponType != nil {
 				actualWeaponType := constant.GetWeaponType(targetEquip.GetModel().GetID())
 				if actualWeaponType != *requiredWeaponType {
 					L.Push(lua.LBool(false))

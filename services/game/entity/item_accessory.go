@@ -9,7 +9,7 @@ type Accessory struct {
 }
 
 func (item *Accessory) GetInventoryType() constant.InventoryType {
-	return constant.INVENTORY_TYPE_EQUIPMENT
+	return constant.InventoryTypeEquipment
 }
 func (item *Accessory) GetCount() uint16             { return 1 }
 func (item *Accessory) Reduce(count uint16) uint16   { return 0 }

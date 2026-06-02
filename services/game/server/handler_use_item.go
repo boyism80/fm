@@ -34,7 +34,7 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
-	useInventory := ch.Inventory[constant.INVENTORY_TYPE_CONSUME]
+	useInventory := ch.Inventory[constant.InventoryTypeConsume]
 	if useInventory == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
@@ -70,9 +70,9 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 	item.Reduce(1)
 	if item.GetCount() == 0 {
 		useInventory.RemoveItem(uint8(req.Slot))
-		ch.Listener.OnRemoveInventorySlot(ch, constant.INVENTORY_TYPE_CONSUME, int16(req.Slot))
+		ch.Listener.OnRemoveInventorySlot(ch, constant.InventoryTypeConsume, int16(req.Slot))
 	} else {
-		ch.Listener.OnInventorySlotUpdated(ch, constant.INVENTORY_TYPE_CONSUME, int16(req.Slot), item)
+		ch.Listener.OnInventorySlotUpdated(ch, constant.InventoryTypeConsume, int16(req.Slot), item)
 	}
 	ch.Listener.OnUpdateStats(ch, nil, true)
 

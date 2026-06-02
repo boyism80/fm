@@ -42,7 +42,7 @@ func (ch *Character) ToDTO() *dto.Character {
 	}
 
 	var weapon uint32
-	if weaponEquip := ch.Equipments[constant.EQUIPMENT_PARTS_WEAPON]; weaponEquip != nil {
+	if weaponEquip := ch.Equipments[constant.EquipmentPartsWeapon]; weaponEquip != nil {
 		weapon = weaponEquip.GetModel().GetID()
 	}
 

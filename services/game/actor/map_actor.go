@@ -308,7 +308,7 @@ func (a *MapActor) onResponseSpawnDoor(msg *ResponseSpawnDoor) {
 	gw := ch.GameWorld
 	if !msg.Ok {
 		if gw != nil {
-			ch.Listener.OnMessage(ch, constant.MSG_PINK_TEXT, constant.DoorNoTownPortalMessage)
+			ch.Listener.OnMessage(ch, constant.MsgPinkText, constant.DoorNoTownPortalMessage)
 		}
 		return
 	}
@@ -738,7 +738,7 @@ func (a *MapActor) onDeliverGuildInvite(msg *DeliverGuildInvite) {
 		if a.GameWorld != nil {
 			a.GameWorld.EnsureSendCharacter(msg.InviterCharacterID, &DeliverMessage{
 				CharacterID: msg.InviterCharacterID,
-				MessageType: constant.MSG_PINK_TEXT,
+				MessageType: constant.MsgPinkText,
 				Message:     constant.GuildInviteTargetBusyMessage,
 			})
 		}

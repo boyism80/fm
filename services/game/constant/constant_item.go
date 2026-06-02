@@ -1,13 +1,13 @@
 package constant
 
 const (
-	ITEM_CATEGORY_SHURIKEN uint32 = 207
-	ITEM_CATEGORY_BULLET   uint32 = 233
+	ItemCategoryShuriken uint32 = 207
+	ItemCategoryBullet   uint32 = 233
 )
 
 const (
-	ITEM_SHURIKEN_BASE uint32 = 2070000
-	ITEM_BULLET_BASE   uint32 = 2330000
+	ItemShurikenBase uint32 = 2070000
+	ItemBulletBase   uint32 = 2330000
 )
 
 var RechargeableShurikens = []uint32{
@@ -75,27 +75,27 @@ func IsEquipment(itemID uint32) bool {
 func GetEquipmentPartsType(itemID uint32) EquipmentPartsType {
 	switch GetEquipmentType(itemID) {
 	case EquipmentTypeWeapon:
-		return EQUIPMENT_PARTS_WEAPON
+		return EquipmentPartsWeapon
 	case EquipmentTypeShield:
-		return EQUIPMENT_PARTS_SHIELD
+		return EquipmentPartsShield
 	case EquipmentTypeCap:
-		return EQUIPMENT_PARTS_CAP
+		return EquipmentPartsCap
 	case EquipmentTypeCoat, EquipmentTypeLongcoat:
-		return EQUIPMENT_PARTS_TOP
+		return EquipmentPartsTop
 	case EquipmentTypePants:
-		return EQUIPMENT_PARTS_PANTS
+		return EquipmentPartsPants
 	case EquipmentTypeShoes:
-		return EQUIPMENT_PARTS_SHOES
+		return EquipmentPartsShoes
 	case EquipmentTypeGlove:
-		return EQUIPMENT_PARTS_GLOVE
+		return EquipmentPartsGlove
 	case EquipmentTypeCape:
-		return EQUIPMENT_PARTS_CAPE
+		return EquipmentPartsCape
 	case EquipmentTypeRing:
-		return EQUIPMENT_PARTS_RING
+		return EquipmentPartsRing
 	case EquipmentTypeFace:
-		return EQUIPMENT_PARTS_FACE
+		return EquipmentPartsFace
 	case EquipmentTypeAccessory:
-		return EQUIPMENT_PARTS_EYE
+		return EquipmentPartsEye
 	default:
 		return 0
 	}

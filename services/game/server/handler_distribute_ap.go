@@ -47,56 +47,56 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	success := false
 
 	switch constant.StatType(req.StatType) {
-	case constant.STAT_TYPE_STR:
-		if character.GetTotalStr() >= constant.STAT_MAX_STR_DEX_INT_LUK {
+	case constant.StatTypeStr:
+		if character.GetTotalStr() >= constant.StatMaxStrDexIntLuk {
 			return nil
 		}
 		newStr := character.BaseStats.Str + 1
-		if newStr > constant.STAT_MAX_STR_DEX_INT_LUK {
-			newStr = constant.STAT_MAX_STR_DEX_INT_LUK
+		if newStr > constant.StatMaxStrDexIntLuk {
+			newStr = constant.StatMaxStrDexIntLuk
 		}
 		character.BaseStats.Str = newStr
-		statUpdate[constant.STAT_STR] = int32(character.GetTotalStr())
+		statUpdate[constant.StatStr] = int32(character.GetTotalStr())
 		success = true
 
-	case constant.STAT_TYPE_DEX:
-		if character.GetTotalDex() >= constant.STAT_MAX_STR_DEX_INT_LUK {
+	case constant.StatTypeDex:
+		if character.GetTotalDex() >= constant.StatMaxStrDexIntLuk {
 			return nil
 		}
 		newDex := character.BaseStats.Dex + 1
-		if newDex > constant.STAT_MAX_STR_DEX_INT_LUK {
-			newDex = constant.STAT_MAX_STR_DEX_INT_LUK
+		if newDex > constant.StatMaxStrDexIntLuk {
+			newDex = constant.StatMaxStrDexIntLuk
 		}
 		character.BaseStats.Dex = newDex
-		statUpdate[constant.STAT_DEX] = int32(character.GetTotalDex())
+		statUpdate[constant.StatDex] = int32(character.GetTotalDex())
 		success = true
 
-	case constant.STAT_TYPE_INT:
-		if character.GetTotalInt() >= constant.STAT_MAX_STR_DEX_INT_LUK {
+	case constant.StatTypeInt:
+		if character.GetTotalInt() >= constant.StatMaxStrDexIntLuk {
 			return nil
 		}
 		newInt := character.BaseStats.Int + 1
-		if newInt > constant.STAT_MAX_STR_DEX_INT_LUK {
-			newInt = constant.STAT_MAX_STR_DEX_INT_LUK
+		if newInt > constant.StatMaxStrDexIntLuk {
+			newInt = constant.StatMaxStrDexIntLuk
 		}
 		character.BaseStats.Int = newInt
-		statUpdate[constant.STAT_INT] = int32(character.GetTotalInt())
+		statUpdate[constant.StatInt] = int32(character.GetTotalInt())
 		success = true
 
-	case constant.STAT_TYPE_LUK:
-		if character.GetTotalLuk() >= constant.STAT_MAX_STR_DEX_INT_LUK {
+	case constant.StatTypeLuk:
+		if character.GetTotalLuk() >= constant.StatMaxStrDexIntLuk {
 			return nil
 		}
 		newLuk := character.BaseStats.Luk + 1
-		if newLuk > constant.STAT_MAX_STR_DEX_INT_LUK {
-			newLuk = constant.STAT_MAX_STR_DEX_INT_LUK
+		if newLuk > constant.StatMaxStrDexIntLuk {
+			newLuk = constant.StatMaxStrDexIntLuk
 		}
 		character.BaseStats.Luk = newLuk
-		statUpdate[constant.STAT_LUK] = int32(character.GetTotalLuk())
+		statUpdate[constant.StatLuk] = int32(character.GetTotalLuk())
 		success = true
 
-	case constant.STAT_TYPE_HP:
-		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.GetMaxHp() >= constant.STAT_MAX_HP_MP {
+	case constant.StatTypeHP:
+		if character.HpApUsed >= constant.HpAPUsedMax || character.GetMaxHp() >= constant.StatMaxHPMP {
 			return nil
 		}
 		hpIncrease := h.scriptAPToHP(ctx, character)
@@ -105,12 +105,12 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		}
 		character.AddBaseHp(hpIncrease, false)
 		character.HpApUsed++
-		statUpdate[constant.STAT_HP] = int32(character.GetHp())
-		statUpdate[constant.STAT_MAX_HP] = int32(character.GetMaxHp())
+		statUpdate[constant.StatHP] = int32(character.GetHp())
+		statUpdate[constant.StatMaxHP] = int32(character.GetMaxHp())
 		success = true
 
-	case constant.STAT_TYPE_MP:
-		if character.HpApUsed >= constant.HP_AP_USED_MAX || character.GetMaxMp() >= constant.STAT_MAX_HP_MP {
+	case constant.StatTypeMP:
+		if character.HpApUsed >= constant.HpAPUsedMax || character.GetMaxMp() >= constant.StatMaxHPMP {
 			return nil
 		}
 		mpIncrease := h.scriptAPToMP(ctx, character)
@@ -119,8 +119,8 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		}
 		character.AddBaseMp(mpIncrease, false)
 		character.HpApUsed++
-		statUpdate[constant.STAT_MP] = int32(character.GetMp())
-		statUpdate[constant.STAT_MAX_MP] = int32(character.GetMaxMp())
+		statUpdate[constant.StatMP] = int32(character.GetMp())
+		statUpdate[constant.StatMaxMP] = int32(character.GetMaxMp())
 		success = true
 
 	default:
@@ -132,7 +132,7 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	if success {
 
 		character.AbilityPoint = character.AbilityPoint - 1
-		statUpdate[constant.STAT_AVAILABLE_AP] = int32(character.AbilityPoint)
+		statUpdate[constant.StatAvailableAP] = int32(character.AbilityPoint)
 
 		character.Listener.OnUpdateStats(character, statUpdate, true)
 	}

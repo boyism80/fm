@@ -298,7 +298,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 					}
 				}
 				if len(target.GuildInvites) > 0 {
-					ch.Listener.OnMessage(ch, gameconst.MSG_PINK_TEXT, gameconst.GuildInviteTargetBusyMessage)
+					ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.GuildInviteTargetBusyMessage)
 					return nil
 				}
 				target.GuildInvites[guildID] = now.Add(gameconst.GuildInviteDuration)
@@ -343,7 +343,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}, func(reply *internal.AcceptGuildInviteReply) error {
 			if !reply.GetOk() {
 				if reply.GetErrorCode() == internal.GuildErrorCode_GUILD_ERROR_GUILD_FULL {
-					ch.Listener.OnMessage(ch, gameconst.MSG_POPUP, gameconst.GuildFullMessage)
+					ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildFullMessage)
 				} else if reply.GetErrorCode() != internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD {
 					log.Printf("GuildOperation(accept invite): failed character=%d guild=%d code=%v", charID, req.GuildID, reply.GetErrorCode())
 				}
@@ -505,12 +505,12 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 		if !h.canPayGuildEmblemChangeCost(ch) {
-			ch.Listener.OnMessage(ch, gameconst.MSG_POPUP, gameconst.GuildEmblemChangeInsufficientCostMessage)
+			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildEmblemChangeInsufficientCostMessage)
 			return nil
 		}
 		payment, paid := h.chargeGuildEmblemChangeCost(ch)
 		if !paid {
-			ch.Listener.OnMessage(ch, gameconst.MSG_POPUP, gameconst.GuildEmblemChangeInsufficientCostMessage)
+			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildEmblemChangeInsufficientCostMessage)
 			return nil
 		}
 		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)

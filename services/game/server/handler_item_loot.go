@@ -63,17 +63,17 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		}
 	} else {
 		reason := mapInstance.LootItem(obj, character, req.Position)
-		if reason != constant.LOOT_SUCCESS {
+		if reason != constant.LootSuccess {
 			log.Printf("Failed to loot item %d for character %d, reason: %d", req.OID, character.GetID(), reason)
-			if reason == constant.LOOT_FAILED_INVENTORY_FULL || reason == constant.LOOT_FAILED_MESO_FULL {
-				character.Listener.OnItemGainFailed(character, constant.ITEM_GAIN_FAILED_TYPE_FULL)
+			if reason == constant.LootFailedInventoryFull || reason == constant.LootFailedMesoFull {
+				character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
 			}
 			character.Listener.OnUpdateStats(character, nil, true)
 			return fmt.Errorf("failed to loot item for OID %d", req.OID)
 		}
 	}
 
-	if err := mapInstance.RemoveItem(req.OID, constant.REMOVE_ITEM_TYPE_ANIMATED, character.GetID()); err != nil {
+	if err := mapInstance.RemoveItem(req.OID, constant.RemoveItemTypeAnimated, character.GetID()); err != nil {
 		log.Printf("Failed to remove item %d for character %d, reason: %v", req.OID, character.GetID(), err)
 		character.Listener.OnUpdateStats(character, nil, true)
 		return fmt.Errorf("failed to remove item")

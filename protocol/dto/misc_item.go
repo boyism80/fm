@@ -23,7 +23,7 @@ func (i *MiscItem) Serialize(writer *stream.StreamWriter, opt ItemSerializeOptio
 	if opt.SlotMode != SlotEncodeOmit {
 		writer.WriteU8(uint8(opt.Slot))
 	}
-	writer.WriteU8(uint8(constant.ITEM_TYPE_ETC))
+	writer.WriteU8(uint8(constant.ItemTypeETC))
 	writer.WriteU32(i.ItemId)
 
 	writer.WriteBoolean(false)

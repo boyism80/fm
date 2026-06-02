@@ -27,7 +27,7 @@ func (p *SpawnMeso) Serialize(writer *stream.StreamWriter) error {
 	writer.Write16(p.Position.X)
 	writer.Write16(p.Position.Y)
 	writer.WriteU32(0)
-	if p.Animation != constant.DROP_ITEM_ANIMATION_TYPE_NONE {
+	if p.Animation != constant.DropItemAnimationTypeNone {
 		writer.Write16(p.SpawnedPoint.X)
 		writer.Write16(p.SpawnedPoint.Y)
 		writer.WriteU16(0)

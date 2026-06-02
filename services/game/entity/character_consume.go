@@ -110,7 +110,7 @@ func (ch *Character) applyConsumeRecovery(consumeItem *wz.Consume) bool {
 		}
 		if newHP != int(ch.GetHp()) {
 			ch.SetHp(uint32(newHP), false)
-			stats[constant.STAT_HP] = int32(ch.GetHp())
+			stats[constant.StatHP] = int32(ch.GetHp())
 		}
 	}
 	if mpChange != 0 {
@@ -124,7 +124,7 @@ func (ch *Character) applyConsumeRecovery(consumeItem *wz.Consume) bool {
 		}
 		if newMP != int(ch.GetMp()) {
 			ch.SetMp(uint32(newMP), false)
-			stats[constant.STAT_MP] = int32(ch.GetMp())
+			stats[constant.StatMP] = int32(ch.GetMp())
 		}
 	}
 	if len(stats) == 0 {

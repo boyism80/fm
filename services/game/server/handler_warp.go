@@ -58,7 +58,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 
 		targetMapId = uint32(wz.ReturnMapId)
 		spawnPoint = 0
-		stats[constant.STAT_HP] = int32(character.GetHp())
+		stats[constant.StatHP] = int32(character.GetHp())
 
 		character.Listener.OnUpdateStats(character, stats, true)
 	} else {

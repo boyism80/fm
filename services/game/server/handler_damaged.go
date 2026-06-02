@@ -56,7 +56,7 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 		}
 		character.SetHp(uint32(n), false)
 		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{
-			constant.STAT_HP: int32(character.GetHp()),
+			constant.StatHP: int32(character.GetHp()),
 		}, true)
 	} else {
 		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)

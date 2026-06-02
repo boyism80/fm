@@ -51,24 +51,24 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 
 	var args []lua.LValue
 	switch req.DialogType {
-	case constant.DIALOG_TYPE_DEFAULT:
+	case constant.DialogTypeDefault:
 		args = append(args, lua.LBool(req.Next))
-	case constant.DIALOG_TYPE_YES_NO:
+	case constant.DialogTypeYesNo:
 		args = append(args, lua.LBool(req.Next))
-	case constant.DIALOG_TYPE_LIST:
+	case constant.DialogTypeList:
 		if req.Next {
 			args = append(args, lua.LNumber(req.Selected))
 		} else {
 			args = append(args, lua.LNil)
 		}
-	case constant.DIALOG_TYPE_INPUT:
+	case constant.DialogTypeInput:
 		if req.Next {
 			args = append(args, lua.LString(req.Text))
 		} else {
 			args = append(args, lua.LNil)
 		}
-	case constant.DIALOG_TYPE_ACCEPT_ESCAPE:
-	case constant.DIALOG_TYPE_ACCEPT:
+	case constant.DialogTypeAcceptEscape:
+	case constant.DialogTypeAccept:
 		args = append(args, lua.LBool(req.Next))
 	}
 

@@ -39,11 +39,11 @@ func (p *ScrolledItem) Serialize(writer *stream.StreamWriter) error {
 	}
 	writer.WriteU8(3)
 	if !p.Destroyed {
-		writer.WriteU8(uint8(constant.INVENTORY_TYPE_EQUIPMENT))
+		writer.WriteU8(uint8(constant.InventoryTypeEquipment))
 		writer.Write16(p.UpgradedSlot)
 		writer.WriteU8(0)
 	}
-	writer.WriteU8(uint8(constant.INVENTORY_TYPE_EQUIPMENT))
+	writer.WriteU8(uint8(constant.InventoryTypeEquipment))
 	writer.Write16(p.UpgradedSlot)
 	if !p.Destroyed && p.UpgradedItem != nil {
 		p.UpgradedItem.Serialize(writer, dto.ItemSerializeOption{

@@ -19,11 +19,11 @@ const (
 )
 
 const (
-	GuildBulletinBoardTitleMaxLen  = 25
-	GuildBulletinBoardBodyMaxLen   = 600
-	GuildBulletinBoardReplyMaxLen  = 25
-	GuildBulletinBoardThreadsPerPage = 10
+	GuildBulletinBoardTitleMaxLen         = 25
+	GuildBulletinBoardBodyMaxLen          = 600
+	GuildBulletinBoardReplyMaxLen         = 25
+	GuildBulletinBoardThreadsPerPage      = 10
 	GuildBulletinBoardNoticeLocalThreadID = 0
-	GuildBulletinBoardIconCashMin = 0x64
-	GuildBulletinBoardIconCashMax = 0x6a
+	GuildBulletinBoardIconCashMin         = 0x64
+	GuildBulletinBoardIconCashMax         = 0x6a
 )

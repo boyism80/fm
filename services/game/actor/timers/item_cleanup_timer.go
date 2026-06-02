@@ -46,12 +46,12 @@ func (t *ItemCleanupTimer) Handle(ctx actor.Context, mapData *entity.Map) error 
 		}
 
 		if fp.ShouldFFA(now) {
-			fp.DropType = constant.DROP_TYPE_FFA
+			fp.DropType = constant.DropTypeFFA
 			fp.Owner = 0
 		}
 
 		if fp.ShouldExpire(now) {
-			mapData.RemoveItem(itemID, constant.REMOVE_ITEM_TYPE_EXPIRED, 0)
+			mapData.RemoveItem(itemID, constant.RemoveItemTypeExpired, 0)
 		}
 	}
 

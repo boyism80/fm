@@ -128,7 +128,7 @@ func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
 	}
 	viewer.Send(&response.SpawnMob{
 		Mob:       m.ToDTO(),
-		SpawnType: constant.MOB_SPAWN_TYPE_NONE,
+		SpawnType: constant.MobSpawnTypeNone,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -303,7 +303,7 @@ func (m *Mob) dropItems(attacker *Character) {
 
 		if spawn.isMeso {
 
-			if _, err := mapInstance.SpawnMeso(spawn.count, destPoint, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
+			if _, err := mapInstance.SpawnMeso(spawn.count, destPoint, attacker.GetID(), constant.DropTypeOwned); err != nil {
 				log.Printf("Failed to spawn meso drop: %v", err)
 			}
 		} else {
@@ -316,12 +316,12 @@ func (m *Mob) dropItems(attacker *Character) {
 				},
 				Owner:        attacker.GetID(),
 				SpawnedPoint: spawnPoint,
-				DropType:     constant.DROP_TYPE_OWNED,
+				DropType:     constant.DropTypeOwned,
 			}
 			fp.ObjectCore.self = fp
 			spawn.item.BindFieldPlacement(fp)
 
-			if err := mapInstance.SpawnItem(spawn.item, attacker.GetID(), constant.DROP_TYPE_OWNED); err != nil {
+			if err := mapInstance.SpawnItem(spawn.item, attacker.GetID(), constant.DropTypeOwned); err != nil {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}
 		}
@@ -378,7 +378,7 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 	}
 
 	if mapInstance != nil {
-		mapInstance.RemoveMob(m.OID, constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT)
+		mapInstance.RemoveMob(m.OID, constant.MobDieAnimationTypeFadeOut)
 	}
 
 	if attacker != nil {

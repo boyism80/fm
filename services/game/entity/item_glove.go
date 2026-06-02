@@ -9,7 +9,7 @@ type Glove struct {
 }
 
 func (item *Glove) GetInventoryType() constant.InventoryType {
-	return constant.INVENTORY_TYPE_EQUIPMENT
+	return constant.InventoryTypeEquipment
 }
 func (item *Glove) GetCount() uint16             { return 1 }
 func (item *Glove) Reduce(count uint16) uint16   { return 0 }

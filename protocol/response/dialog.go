@@ -73,7 +73,7 @@ func (p *Dialog) Serialize(writer *stream.StreamWriter) error {
 func (p *DialogYesNo) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(4)
 	writer.WriteU32(p.NPC)
-	writer.WriteU8(uint8(constant.DIALOG_TYPE_YES_NO))
+	writer.WriteU8(uint8(constant.DialogTypeYesNo))
 	writer.WriteStr16(p.Text)
 	writer.WriteBoolean(p.Prev)
 	writer.WriteBoolean(p.Next)
@@ -83,7 +83,7 @@ func (p *DialogYesNo) Serialize(writer *stream.StreamWriter) error {
 func (p *DialogList) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(4)
 	writer.WriteU32(p.NPC)
-	writer.WriteU8(uint8(constant.DIALOG_TYPE_LIST))
+	writer.WriteU8(uint8(constant.DialogTypeList))
 
 	var builder strings.Builder
 	builder.WriteString(p.Text)
@@ -99,9 +99,9 @@ func (p *DialogAccept) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(4)
 	writer.WriteU32(p.NPC)
 	if p.EnableEscape {
-		writer.WriteU8(uint8(constant.DIALOG_TYPE_ACCEPT_ESCAPE))
+		writer.WriteU8(uint8(constant.DialogTypeAcceptEscape))
 	} else {
-		writer.WriteU8(uint8(constant.DIALOG_TYPE_ACCEPT))
+		writer.WriteU8(uint8(constant.DialogTypeAccept))
 	}
 	writer.WriteStr16(p.Text)
 	return nil
@@ -110,7 +110,7 @@ func (p *DialogAccept) Serialize(writer *stream.StreamWriter) error {
 func (p *DialogInput) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(4)
 	writer.WriteU32(p.NPC)
-	writer.WriteU8(uint8(constant.DIALOG_TYPE_INPUT))
+	writer.WriteU8(uint8(constant.DialogTypeInput))
 	writer.WriteStr16(p.Text)
 	writer.WriteU32(0)
 	writer.WriteU32(0)

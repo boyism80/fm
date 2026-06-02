@@ -130,7 +130,7 @@ func (item *ItemCore) SendSpawnSyncToViewer(viewer *Character) {
 	}
 	viewer.Send(&response.SpawnItem{
 		ID:           fp.OID,
-		Animation:    constant.DROP_ITEM_ANIMATION_TYPE_NONE,
+		Animation:    constant.DropItemAnimationTypeNone,
 		DropType:     fp.DropType,
 		ItemModel:    item.GetModel(),
 		Expiration:   item.GetExpiration(),
@@ -160,7 +160,7 @@ func (fp *FieldPlacement) ShouldExpire(now time.Time) bool {
 	return !fp.nextExpiry.IsZero() && now.After(fp.nextExpiry)
 }
 func (fp *FieldPlacement) ShouldFFA(now time.Time) bool {
-	return fp.DropType != constant.DROP_TYPE_FFA && !fp.nextFFA.IsZero() && now.After(fp.nextFFA)
+	return fp.DropType != constant.DropTypeFFA && !fp.nextFFA.IsZero() && now.After(fp.nextFFA)
 }
 
 func NewItem(itemId uint32, count uint16, gw GameWorld) (Item, error) {

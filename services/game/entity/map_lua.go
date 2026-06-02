@@ -202,10 +202,10 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			pos := types.Point[int16]{X: x, Y: y}
-			dropType := constant.DROP_TYPE_FFA
+			dropType := constant.DropTypeFFA
 			ownerID := uint32(0)
 			if owner != nil {
-				dropType = constant.DROP_TYPE_OWNED
+				dropType = constant.DropTypeOwned
 				ownerID = owner.GetID()
 			}
 			meso, err := mapInstance.SpawnMeso(count, pos, ownerID, dropType)
@@ -299,10 +299,10 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 				}
 			}
-			dropType := constant.DROP_TYPE_FFA
+			dropType := constant.DropTypeFFA
 			ownerID := uint32(0)
 			if owner != nil {
-				dropType = constant.DROP_TYPE_OWNED
+				dropType = constant.DropTypeOwned
 				ownerID = owner.GetID()
 			}
 			fp := &FieldPlacement{
@@ -355,7 +355,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			x := int16(L.CheckInt(3))
 			y := int16(L.CheckInt(4))
 			pos := types.Point[int16]{X: x, Y: y}
-			spawnType := constant.MOB_SPAWN_TYPE_ANIMATE
+			spawnType := constant.MobSpawnTypeAnimate
 			link := uint32(0)
 			if L.GetTop() >= 5 {
 				spawnType = constant.MobSpawnType(L.CheckInt(5))
@@ -421,7 +421,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			oid := uint32(L.CheckInt(2))
-			animType := constant.MOB_DIE_ANIMATION_TYPE_FADE_OUT
+			animType := constant.MobDieAnimationTypeFadeOut
 			if L.GetTop() >= 3 {
 				animType = constant.MobDieAnimationType(L.CheckInt(3))
 			}

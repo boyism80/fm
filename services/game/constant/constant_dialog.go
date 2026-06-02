@@ -3,10 +3,10 @@ package constant
 type DialogType uint8
 
 const (
-	DIALOG_TYPE_DEFAULT       DialogType = 0
-	DIALOG_TYPE_YES_NO        DialogType = 1
-	DIALOG_TYPE_INPUT         DialogType = 2
-	DIALOG_TYPE_LIST          DialogType = 4
-	DIALOG_TYPE_ACCEPT_ESCAPE DialogType = 11
-	DIALOG_TYPE_ACCEPT        DialogType = 12
+	DialogTypeDefault      DialogType = 0
+	DialogTypeYesNo        DialogType = 1
+	DialogTypeInput        DialogType = 2
+	DialogTypeList         DialogType = 4
+	DialogTypeAcceptEscape DialogType = 11
+	DialogTypeAccept       DialogType = 12
 )

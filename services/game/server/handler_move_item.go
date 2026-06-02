@@ -46,14 +46,14 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 	} else if req.Dest < 0 {
 		parts := constant.EquipmentPartsType(req.Dest)
 		before := character.Equipments[parts]
-		inven := character.Inventory[constant.INVENTORY_TYPE_EQUIPMENT]
+		inven := character.Inventory[constant.InventoryTypeEquipment]
 		var after entity.Equipment
 		if item := inven.Items[req.Source]; item != nil {
 			after, _ = item.(entity.Equipment)
 		}
 		if err := character.Equip(req.Source); err != nil {
 			if errors.Is(err, entity.ErrInventoryFull) {
-				character.Listener.OnItemGainFailed(character, constant.ITEM_GAIN_FAILED_TYPE_FULL)
+				character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
 			}
 			return nil
 		}
@@ -88,12 +88,12 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 		},
 		Owner:        character.GetID(),
 		SpawnedPoint: character.Position,
-		DropType:     constant.DROP_TYPE_FFA,
+		DropType:     constant.DropTypeFFA,
 	})
 
 	mapInstance := character.GetMap()
 	if mapInstance != nil {
-		if err := mapInstance.SpawnItem(spawned, character.GetID(), constant.DROP_TYPE_FFA); err != nil {
+		if err := mapInstance.SpawnItem(spawned, character.GetID(), constant.DropTypeFFA); err != nil {
 			log.Printf("Failed to spawn item on map: %v", err)
 		}
 	}

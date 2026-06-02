@@ -50,7 +50,7 @@ func (t *MobSpawnTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
 			Y: mobSpawn.Wz.Position.Y,
 		}
 
-		_, err := mapData.SpawnMob(mobSpawn.Wz.ID, position, mobSpawn, constant.MOB_SPAWN_TYPE_ANIMATE, 0)
+		_, err := mapData.SpawnMob(mobSpawn.Wz.ID, position, mobSpawn, constant.MobSpawnTypeAnimate, 0)
 		if err != nil {
 			continue
 		}

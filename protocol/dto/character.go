@@ -173,11 +173,11 @@ func (c *Character) SerializeStats(writer *stream.StreamWriter) {
 func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.Write32(c.Meso)
 
-	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].SlotLimit)
-	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_CONSUME].SlotLimit)
-	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_INSTALLATION].SlotLimit)
-	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_ETC].SlotLimit)
-	writer.WriteU8(c.Inventory[constant.INVENTORY_TYPE_CASH].SlotLimit)
+	writer.WriteU8(c.Inventory[constant.InventoryTypeEquipment].SlotLimit)
+	writer.WriteU8(c.Inventory[constant.InventoryTypeConsume].SlotLimit)
+	writer.WriteU8(c.Inventory[constant.InventoryTypeInstallation].SlotLimit)
+	writer.WriteU8(c.Inventory[constant.InventoryTypeETC].SlotLimit)
+	writer.WriteU8(c.Inventory[constant.InventoryTypeCash].SlotLimit)
 
 	equipParts1 := make([]constant.EquipmentPartsType, 0)
 	for parts := range c.Equipments {
@@ -215,11 +215,11 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0)
 
-	c.Inventory[constant.INVENTORY_TYPE_EQUIPMENT].Serialize(writer)
-	c.Inventory[constant.INVENTORY_TYPE_CONSUME].Serialize(writer)
-	c.Inventory[constant.INVENTORY_TYPE_INSTALLATION].Serialize(writer)
-	c.Inventory[constant.INVENTORY_TYPE_ETC].Serialize(writer)
-	c.Inventory[constant.INVENTORY_TYPE_CASH].Serialize(writer)
+	c.Inventory[constant.InventoryTypeEquipment].Serialize(writer)
+	c.Inventory[constant.InventoryTypeConsume].Serialize(writer)
+	c.Inventory[constant.InventoryTypeInstallation].Serialize(writer)
+	c.Inventory[constant.InventoryTypeETC].Serialize(writer)
+	c.Inventory[constant.InventoryTypeCash].Serialize(writer)
 }
 
 func (c *Character) SerializeSkills(writer *stream.StreamWriter) {

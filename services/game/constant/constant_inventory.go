@@ -3,27 +3,27 @@ package constant
 type InventoryType int8
 
 const (
-	INVENTORY_TYPE_EQUIPMENT    InventoryType = 1
-	INVENTORY_TYPE_CONSUME      InventoryType = 2
-	INVENTORY_TYPE_INSTALLATION InventoryType = 3
-	INVENTORY_TYPE_ETC          InventoryType = 4
-	INVENTORY_TYPE_CASH         InventoryType = 5
+	InventoryTypeEquipment    InventoryType = 1
+	InventoryTypeConsume      InventoryType = 2
+	InventoryTypeInstallation InventoryType = 3
+	InventoryTypeETC          InventoryType = 4
+	InventoryTypeCash         InventoryType = 5
 )
 
 func GetInventoryTypeByItemID(itemID uint32) InventoryType {
 	itemType := itemID / 10000
 	switch {
 	case itemType >= 100 && itemType < 200:
-		return INVENTORY_TYPE_EQUIPMENT
+		return InventoryTypeEquipment
 	case itemType >= 200 && itemType < 300:
-		return INVENTORY_TYPE_CONSUME
+		return InventoryTypeConsume
 	case itemType >= 300 && itemType < 400:
-		return INVENTORY_TYPE_INSTALLATION
+		return InventoryTypeInstallation
 	case itemType >= 400 && itemType < 500:
-		return INVENTORY_TYPE_ETC
+		return InventoryTypeETC
 	case itemType >= 500 && itemType < 600:
-		return INVENTORY_TYPE_CASH
+		return InventoryTypeCash
 	default:
-		return INVENTORY_TYPE_ETC
+		return InventoryTypeETC
 	}
 }

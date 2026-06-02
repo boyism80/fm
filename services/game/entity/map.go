@@ -922,9 +922,9 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	fp.Owner = ownerID
 	fp.DropType = dropType
 	fp.Map = m
-	fp.RegisterExpire(constant.ITEM_EXPIRE_TIME)
-	if dropType == constant.DROP_TYPE_OWNED || dropType == constant.DROP_TYPE_PARTY {
-		fp.RegisterFFA(constant.ITEM_FFA_TIME)
+	fp.RegisterExpire(constant.ItemExpireTime)
+	if dropType == constant.DropTypeOwned || dropType == constant.DropTypeParty {
+		fp.RegisterFFA(constant.ItemFFATime)
 	}
 
 	if m.objects[constant.ObjectTypeItem] == nil {
@@ -956,9 +956,9 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 
 	fp := meso.GetFieldPlacement()
 	if fp != nil {
-		fp.RegisterExpire(constant.ITEM_EXPIRE_TIME)
-		if dropType == constant.DROP_TYPE_OWNED || dropType == constant.DROP_TYPE_PARTY {
-			fp.RegisterFFA(constant.ITEM_FFA_TIME)
+		fp.RegisterExpire(constant.ItemExpireTime)
+		if dropType == constant.DropTypeOwned || dropType == constant.DropTypeParty {
+			fp.RegisterFFA(constant.ItemFFATime)
 		}
 	}
 
@@ -1011,18 +1011,18 @@ func (m *Map) GetItems() map[uint32]Object {
 
 func (m *Map) LootItem(obj Object, character *Character, position types.Point[int16]) constant.LootResult {
 	if m.objects[constant.ObjectTypeItem] == nil {
-		return constant.LOOT_FAILED_ITEM_NOT_FOUND
+		return constant.LootFailedItemNotFound
 	}
 
 	switch item := obj.(type) {
 	case Item:
 		fp := item.GetFieldPlacement()
 		if fp == nil {
-			return constant.LOOT_FAILED_INVALID_ITEM
+			return constant.LootFailedInvalidItem
 		}
 
-		if fp.DropType == constant.DROP_TYPE_OWNED && fp.Owner != character.GetID() {
-			return constant.LOOT_FAILED_NO_OWNERSHIP
+		if fp.DropType == constant.DropTypeOwned && fp.Owner != character.GetID() {
+			return constant.LootFailedNoOwnership
 		}
 
 		invenType := item.GetInventoryType()
@@ -1030,35 +1030,35 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		model := item.GetModel()
 
 		if !inven.IsFree(model, item.GetCount()) {
-			return constant.LOOT_FAILED_INVENTORY_FULL
+			return constant.LootFailedInventoryFull
 		}
 
 		if _, err := character.AddItem(item, false); err != nil {
 			log.Printf("Failed to add item: %v", err)
 		}
-		return constant.LOOT_SUCCESS
+		return constant.LootSuccess
 
 	case *Meso:
 		fp := item.GetFieldPlacement()
 		if fp == nil {
-			return constant.LOOT_FAILED_INVALID_ITEM
+			return constant.LootFailedInvalidItem
 		}
 
-		if fp.DropType == constant.DROP_TYPE_OWNED && fp.Owner != character.GetID() {
-			return constant.LOOT_FAILED_NO_OWNERSHIP
+		if fp.DropType == constant.DropTypeOwned && fp.Owner != character.GetID() {
+			return constant.LootFailedNoOwnership
 		}
 
 		mesoCount := item.GetCount32()
 		cap := math.MaxInt32 - character.Meso
 		if int32(mesoCount) > cap {
-			return constant.LOOT_FAILED_MESO_FULL
+			return constant.LootFailedMesoFull
 		}
 
 		character.GainMeso(int32(mesoCount))
-		return constant.LOOT_SUCCESS
+		return constant.LootSuccess
 
 	default:
-		return constant.LOOT_FAILED_INVALID_ITEM
+		return constant.LootFailedInvalidItem
 	}
 }
 
