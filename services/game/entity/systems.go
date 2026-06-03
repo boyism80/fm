@@ -25,6 +25,7 @@ type GuildSystem interface {
 	Get(guildID uint32) *Guild
 	DisbandAsync(ctx actor.Context, ch *Character, result *int) *async.Promise
 	IncCapacityAsync(ctx actor.Context, ch *Character, extendedCap bool, result *int) *async.Promise
+	CreateAllianceAsync(ctx actor.Context, ch *Character, allianceName string, result *int) *async.Promise
 }
 
 type DispatchSystem interface {

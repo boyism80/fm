@@ -672,6 +672,81 @@ export function guildErrorCodeToJSON(object: GuildErrorCode): string {
   }
 }
 
+export enum AllianceErrorCode {
+  ALLIANCE_ERROR_NONE = 0,
+  ALLIANCE_ERROR_UNKNOWN = 1,
+  ALLIANCE_ERROR_ALREADY_IN_ALLIANCE = 2,
+  ALLIANCE_ERROR_GUILD_NOT_FOUND = 3,
+  ALLIANCE_ERROR_NOT_GUILD_MASTER = 4,
+  ALLIANCE_ERROR_ALLIANCE_NAME_INVALID = 5,
+  ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN = 6,
+  ALLIANCE_ERROR_PARTNER_INVALID = 7,
+  ALLIANCE_ERROR_GUILD_ALREADY_IN_ALLIANCE = 8,
+  UNRECOGNIZED = -1,
+}
+
+export function allianceErrorCodeFromJSON(object: any): AllianceErrorCode {
+  switch (object) {
+    case 0:
+    case "ALLIANCE_ERROR_NONE":
+      return AllianceErrorCode.ALLIANCE_ERROR_NONE;
+    case 1:
+    case "ALLIANCE_ERROR_UNKNOWN":
+      return AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN;
+    case 2:
+    case "ALLIANCE_ERROR_ALREADY_IN_ALLIANCE":
+      return AllianceErrorCode.ALLIANCE_ERROR_ALREADY_IN_ALLIANCE;
+    case 3:
+    case "ALLIANCE_ERROR_GUILD_NOT_FOUND":
+      return AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND;
+    case 4:
+    case "ALLIANCE_ERROR_NOT_GUILD_MASTER":
+      return AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER;
+    case 5:
+    case "ALLIANCE_ERROR_ALLIANCE_NAME_INVALID":
+      return AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_INVALID;
+    case 6:
+    case "ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN":
+      return AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN;
+    case 7:
+    case "ALLIANCE_ERROR_PARTNER_INVALID":
+      return AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID;
+    case 8:
+    case "ALLIANCE_ERROR_GUILD_ALREADY_IN_ALLIANCE":
+      return AllianceErrorCode.ALLIANCE_ERROR_GUILD_ALREADY_IN_ALLIANCE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AllianceErrorCode.UNRECOGNIZED;
+  }
+}
+
+export function allianceErrorCodeToJSON(object: AllianceErrorCode): string {
+  switch (object) {
+    case AllianceErrorCode.ALLIANCE_ERROR_NONE:
+      return "ALLIANCE_ERROR_NONE";
+    case AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN:
+      return "ALLIANCE_ERROR_UNKNOWN";
+    case AllianceErrorCode.ALLIANCE_ERROR_ALREADY_IN_ALLIANCE:
+      return "ALLIANCE_ERROR_ALREADY_IN_ALLIANCE";
+    case AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND:
+      return "ALLIANCE_ERROR_GUILD_NOT_FOUND";
+    case AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER:
+      return "ALLIANCE_ERROR_NOT_GUILD_MASTER";
+    case AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_INVALID:
+      return "ALLIANCE_ERROR_ALLIANCE_NAME_INVALID";
+    case AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN:
+      return "ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN";
+    case AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID:
+      return "ALLIANCE_ERROR_PARTNER_INVALID";
+    case AllianceErrorCode.ALLIANCE_ERROR_GUILD_ALREADY_IN_ALLIANCE:
+      return "ALLIANCE_ERROR_GUILD_ALREADY_IN_ALLIANCE";
+    case AllianceErrorCode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum BuddyErrorCode {
   BUDDY_ERROR_NONE = 0,
   BUDDY_ERROR_UNKNOWN = 1,
@@ -1287,6 +1362,7 @@ export interface GuildMember {
   classId: number;
   rank: GuildMemberRank;
   channelIndex?: number | undefined;
+  allianceRank?: number | undefined;
 }
 
 export interface CreateGuildRequest {
@@ -1563,6 +1639,45 @@ export interface Guild {
   logo: GuildLogo | undefined;
   rankTitles: string[];
   members: GuildMember[];
+  allianceId?: number | undefined;
+}
+
+export interface Alliance {
+  worldId: number;
+  allianceId: number;
+  name: string;
+  leaderCharacterId: number;
+  revision: number;
+  capacity: number;
+  notice: string;
+  rankTitles: string[];
+  guildIds: number[];
+  guilds: Guild[];
+}
+
+export interface CreateAllianceRequest {
+  worldId: number;
+  allianceName: string;
+  leaderCharacterId: number;
+  partnerCharacterId: number;
+}
+
+export interface CreateAllianceReply {
+  ok: boolean;
+  errorCode: AllianceErrorCode;
+  allianceId: number;
+  revision: number;
+  alliance: Alliance | undefined;
+}
+
+export interface GetAllianceRequest {
+  worldId: number;
+  allianceId: number;
+}
+
+export interface GetAllianceReply {
+  found: boolean;
+  alliance: Alliance | undefined;
 }
 
 export interface GetGuildRequest {
@@ -10004,7 +10119,16 @@ export const DenyPartyReply: MessageFns<DenyPartyReply> = {
 };
 
 function createBaseGuildMember(): GuildMember {
-  return { worldId: 0, characterId: 0, characterName: "", level: 0, classId: 0, rank: 0, channelIndex: undefined };
+  return {
+    worldId: 0,
+    characterId: 0,
+    characterName: "",
+    level: 0,
+    classId: 0,
+    rank: 0,
+    channelIndex: undefined,
+    allianceRank: undefined,
+  };
 }
 
 export const GuildMember: MessageFns<GuildMember> = {
@@ -10029,6 +10153,9 @@ export const GuildMember: MessageFns<GuildMember> = {
     }
     if (message.channelIndex !== undefined) {
       writer.uint32(56).int32(message.channelIndex);
+    }
+    if (message.allianceRank !== undefined) {
+      writer.uint32(64).uint32(message.allianceRank);
     }
     return writer;
   },
@@ -10096,6 +10223,14 @@ export const GuildMember: MessageFns<GuildMember> = {
           message.channelIndex = reader.int32();
           continue;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.allianceRank = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10134,6 +10269,11 @@ export const GuildMember: MessageFns<GuildMember> = {
         : isSet(object.channel_index)
         ? globalThis.Number(object.channel_index)
         : undefined,
+      allianceRank: isSet(object.allianceRank)
+        ? globalThis.Number(object.allianceRank)
+        : isSet(object.alliance_rank)
+        ? globalThis.Number(object.alliance_rank)
+        : undefined,
     };
   },
 
@@ -10160,6 +10300,9 @@ export const GuildMember: MessageFns<GuildMember> = {
     if (message.channelIndex !== undefined) {
       obj.channelIndex = Math.round(message.channelIndex);
     }
+    if (message.allianceRank !== undefined) {
+      obj.allianceRank = Math.round(message.allianceRank);
+    }
     return obj;
   },
 
@@ -10175,6 +10318,7 @@ export const GuildMember: MessageFns<GuildMember> = {
     message.classId = object.classId ?? 0;
     message.rank = object.rank ?? 0;
     message.channelIndex = object.channelIndex ?? undefined;
+    message.allianceRank = object.allianceRank ?? undefined;
     return message;
   },
 };
@@ -14668,6 +14812,7 @@ function createBaseGuild(): Guild {
     logo: undefined,
     rankTitles: [],
     members: [],
+    allianceId: undefined,
   };
 }
 
@@ -14705,6 +14850,9 @@ export const Guild: MessageFns<Guild> = {
     }
     for (const v of message.members) {
       GuildMember.encode(v!, writer.uint32(90).fork()).join();
+    }
+    if (message.allianceId !== undefined) {
+      writer.uint32(96).uint32(message.allianceId);
     }
     return writer;
   },
@@ -14804,6 +14952,14 @@ export const Guild: MessageFns<Guild> = {
           message.members.push(GuildMember.decode(reader, reader.uint32()));
           continue;
         }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.allianceId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14844,6 +15000,11 @@ export const Guild: MessageFns<Guild> = {
       members: globalThis.Array.isArray(object?.members)
         ? object.members.map((e: any) => GuildMember.fromJSON(e))
         : [],
+      allianceId: isSet(object.allianceId)
+        ? globalThis.Number(object.allianceId)
+        : isSet(object.alliance_id)
+        ? globalThis.Number(object.alliance_id)
+        : undefined,
     };
   },
 
@@ -14882,6 +15043,9 @@ export const Guild: MessageFns<Guild> = {
     if (message.members?.length) {
       obj.members = message.members.map((e) => GuildMember.toJSON(e));
     }
+    if (message.allianceId !== undefined) {
+      obj.allianceId = Math.round(message.allianceId);
+    }
     return obj;
   },
 
@@ -14901,6 +15065,674 @@ export const Guild: MessageFns<Guild> = {
     message.logo = (object.logo !== undefined && object.logo !== null) ? GuildLogo.fromPartial(object.logo) : undefined;
     message.rankTitles = object.rankTitles?.map((e) => e) || [];
     message.members = object.members?.map((e) => GuildMember.fromPartial(e)) || [];
+    message.allianceId = object.allianceId ?? undefined;
+    return message;
+  },
+};
+
+function createBaseAlliance(): Alliance {
+  return {
+    worldId: 0,
+    allianceId: 0,
+    name: "",
+    leaderCharacterId: 0,
+    revision: 0,
+    capacity: 0,
+    notice: "",
+    rankTitles: [],
+    guildIds: [],
+    guilds: [],
+  };
+}
+
+export const Alliance: MessageFns<Alliance> = {
+  encode(message: Alliance, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.allianceId !== 0) {
+      writer.uint32(16).uint32(message.allianceId);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.leaderCharacterId !== 0) {
+      writer.uint32(32).uint32(message.leaderCharacterId);
+    }
+    if (message.revision !== 0) {
+      writer.uint32(40).uint64(message.revision);
+    }
+    if (message.capacity !== 0) {
+      writer.uint32(48).uint32(message.capacity);
+    }
+    if (message.notice !== "") {
+      writer.uint32(58).string(message.notice);
+    }
+    for (const v of message.rankTitles) {
+      writer.uint32(66).string(v!);
+    }
+    writer.uint32(74).fork();
+    for (const v of message.guildIds) {
+      writer.uint32(v);
+    }
+    writer.join();
+    for (const v of message.guilds) {
+      Guild.encode(v!, writer.uint32(82).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Alliance {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAlliance();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.allianceId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.leaderCharacterId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.revision = longToNumber(reader.uint64());
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.capacity = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.notice = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.rankTitles.push(reader.string());
+          continue;
+        }
+        case 9: {
+          if (tag === 72) {
+            message.guildIds.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 74) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.guildIds.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.guilds.push(Guild.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Alliance {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      allianceId: isSet(object.allianceId)
+        ? globalThis.Number(object.allianceId)
+        : isSet(object.alliance_id)
+        ? globalThis.Number(object.alliance_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      leaderCharacterId: isSet(object.leaderCharacterId)
+        ? globalThis.Number(object.leaderCharacterId)
+        : isSet(object.leader_character_id)
+        ? globalThis.Number(object.leader_character_id)
+        : 0,
+      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      capacity: isSet(object.capacity) ? globalThis.Number(object.capacity) : 0,
+      notice: isSet(object.notice) ? globalThis.String(object.notice) : "",
+      rankTitles: globalThis.Array.isArray(object?.rankTitles)
+        ? object.rankTitles.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.rank_titles)
+        ? object.rank_titles.map((e: any) => globalThis.String(e))
+        : [],
+      guildIds: globalThis.Array.isArray(object?.guildIds)
+        ? object.guildIds.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.guild_ids)
+        ? object.guild_ids.map((e: any) => globalThis.Number(e))
+        : [],
+      guilds: globalThis.Array.isArray(object?.guilds) ? object.guilds.map((e: any) => Guild.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: Alliance): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.allianceId !== 0) {
+      obj.allianceId = Math.round(message.allianceId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.leaderCharacterId !== 0) {
+      obj.leaderCharacterId = Math.round(message.leaderCharacterId);
+    }
+    if (message.revision !== 0) {
+      obj.revision = Math.round(message.revision);
+    }
+    if (message.capacity !== 0) {
+      obj.capacity = Math.round(message.capacity);
+    }
+    if (message.notice !== "") {
+      obj.notice = message.notice;
+    }
+    if (message.rankTitles?.length) {
+      obj.rankTitles = message.rankTitles;
+    }
+    if (message.guildIds?.length) {
+      obj.guildIds = message.guildIds.map((e) => Math.round(e));
+    }
+    if (message.guilds?.length) {
+      obj.guilds = message.guilds.map((e) => Guild.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Alliance>, I>>(base?: I): Alliance {
+    return Alliance.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Alliance>, I>>(object: I): Alliance {
+    const message = createBaseAlliance();
+    message.worldId = object.worldId ?? 0;
+    message.allianceId = object.allianceId ?? 0;
+    message.name = object.name ?? "";
+    message.leaderCharacterId = object.leaderCharacterId ?? 0;
+    message.revision = object.revision ?? 0;
+    message.capacity = object.capacity ?? 0;
+    message.notice = object.notice ?? "";
+    message.rankTitles = object.rankTitles?.map((e) => e) || [];
+    message.guildIds = object.guildIds?.map((e) => e) || [];
+    message.guilds = object.guilds?.map((e) => Guild.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCreateAllianceRequest(): CreateAllianceRequest {
+  return { worldId: 0, allianceName: "", leaderCharacterId: 0, partnerCharacterId: 0 };
+}
+
+export const CreateAllianceRequest: MessageFns<CreateAllianceRequest> = {
+  encode(message: CreateAllianceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.allianceName !== "") {
+      writer.uint32(18).string(message.allianceName);
+    }
+    if (message.leaderCharacterId !== 0) {
+      writer.uint32(24).uint32(message.leaderCharacterId);
+    }
+    if (message.partnerCharacterId !== 0) {
+      writer.uint32(32).uint32(message.partnerCharacterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateAllianceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateAllianceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.allianceName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.leaderCharacterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.partnerCharacterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateAllianceRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      allianceName: isSet(object.allianceName)
+        ? globalThis.String(object.allianceName)
+        : isSet(object.alliance_name)
+        ? globalThis.String(object.alliance_name)
+        : "",
+      leaderCharacterId: isSet(object.leaderCharacterId)
+        ? globalThis.Number(object.leaderCharacterId)
+        : isSet(object.leader_character_id)
+        ? globalThis.Number(object.leader_character_id)
+        : 0,
+      partnerCharacterId: isSet(object.partnerCharacterId)
+        ? globalThis.Number(object.partnerCharacterId)
+        : isSet(object.partner_character_id)
+        ? globalThis.Number(object.partner_character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CreateAllianceRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.allianceName !== "") {
+      obj.allianceName = message.allianceName;
+    }
+    if (message.leaderCharacterId !== 0) {
+      obj.leaderCharacterId = Math.round(message.leaderCharacterId);
+    }
+    if (message.partnerCharacterId !== 0) {
+      obj.partnerCharacterId = Math.round(message.partnerCharacterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateAllianceRequest>, I>>(base?: I): CreateAllianceRequest {
+    return CreateAllianceRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateAllianceRequest>, I>>(object: I): CreateAllianceRequest {
+    const message = createBaseCreateAllianceRequest();
+    message.worldId = object.worldId ?? 0;
+    message.allianceName = object.allianceName ?? "";
+    message.leaderCharacterId = object.leaderCharacterId ?? 0;
+    message.partnerCharacterId = object.partnerCharacterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateAllianceReply(): CreateAllianceReply {
+  return { ok: false, errorCode: 0, allianceId: 0, revision: 0, alliance: undefined };
+}
+
+export const CreateAllianceReply: MessageFns<CreateAllianceReply> = {
+  encode(message: CreateAllianceReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.allianceId !== 0) {
+      writer.uint32(24).uint32(message.allianceId);
+    }
+    if (message.revision !== 0) {
+      writer.uint32(32).uint64(message.revision);
+    }
+    if (message.alliance !== undefined) {
+      Alliance.encode(message.alliance, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateAllianceReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateAllianceReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.allianceId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.revision = longToNumber(reader.uint64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.alliance = Alliance.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateAllianceReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? allianceErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? allianceErrorCodeFromJSON(object.error_code)
+        : 0,
+      allianceId: isSet(object.allianceId)
+        ? globalThis.Number(object.allianceId)
+        : isSet(object.alliance_id)
+        ? globalThis.Number(object.alliance_id)
+        : 0,
+      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      alliance: isSet(object.alliance) ? Alliance.fromJSON(object.alliance) : undefined,
+    };
+  },
+
+  toJSON(message: CreateAllianceReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = allianceErrorCodeToJSON(message.errorCode);
+    }
+    if (message.allianceId !== 0) {
+      obj.allianceId = Math.round(message.allianceId);
+    }
+    if (message.revision !== 0) {
+      obj.revision = Math.round(message.revision);
+    }
+    if (message.alliance !== undefined) {
+      obj.alliance = Alliance.toJSON(message.alliance);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateAllianceReply>, I>>(base?: I): CreateAllianceReply {
+    return CreateAllianceReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateAllianceReply>, I>>(object: I): CreateAllianceReply {
+    const message = createBaseCreateAllianceReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.allianceId = object.allianceId ?? 0;
+    message.revision = object.revision ?? 0;
+    message.alliance = (object.alliance !== undefined && object.alliance !== null)
+      ? Alliance.fromPartial(object.alliance)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetAllianceRequest(): GetAllianceRequest {
+  return { worldId: 0, allianceId: 0 };
+}
+
+export const GetAllianceRequest: MessageFns<GetAllianceRequest> = {
+  encode(message: GetAllianceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.allianceId !== 0) {
+      writer.uint32(16).uint32(message.allianceId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetAllianceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetAllianceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.allianceId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetAllianceRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      allianceId: isSet(object.allianceId)
+        ? globalThis.Number(object.allianceId)
+        : isSet(object.alliance_id)
+        ? globalThis.Number(object.alliance_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetAllianceRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.allianceId !== 0) {
+      obj.allianceId = Math.round(message.allianceId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetAllianceRequest>, I>>(base?: I): GetAllianceRequest {
+    return GetAllianceRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetAllianceRequest>, I>>(object: I): GetAllianceRequest {
+    const message = createBaseGetAllianceRequest();
+    message.worldId = object.worldId ?? 0;
+    message.allianceId = object.allianceId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetAllianceReply(): GetAllianceReply {
+  return { found: false, alliance: undefined };
+}
+
+export const GetAllianceReply: MessageFns<GetAllianceReply> = {
+  encode(message: GetAllianceReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.found !== false) {
+      writer.uint32(8).bool(message.found);
+    }
+    if (message.alliance !== undefined) {
+      Alliance.encode(message.alliance, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetAllianceReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetAllianceReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.found = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.alliance = Alliance.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetAllianceReply {
+    return {
+      found: isSet(object.found) ? globalThis.Boolean(object.found) : false,
+      alliance: isSet(object.alliance) ? Alliance.fromJSON(object.alliance) : undefined,
+    };
+  },
+
+  toJSON(message: GetAllianceReply): unknown {
+    const obj: any = {};
+    if (message.found !== false) {
+      obj.found = message.found;
+    }
+    if (message.alliance !== undefined) {
+      obj.alliance = Alliance.toJSON(message.alliance);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetAllianceReply>, I>>(base?: I): GetAllianceReply {
+    return GetAllianceReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetAllianceReply>, I>>(object: I): GetAllianceReply {
+    const message = createBaseGetAllianceReply();
+    message.found = object.found ?? false;
+    message.alliance = (object.alliance !== undefined && object.alliance !== null)
+      ? Alliance.fromPartial(object.alliance)
+      : undefined;
     return message;
   },
 };
@@ -16560,6 +17392,25 @@ export const InternalService = {
     responseSerialize: (value: GetGuildReply): Buffer => Buffer.from(GetGuildReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): GetGuildReply => GetGuildReply.decode(value),
   },
+  createAlliance: {
+    path: "/fm.internal.Internal/CreateAlliance" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CreateAllianceRequest): Buffer =>
+      Buffer.from(CreateAllianceRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CreateAllianceRequest => CreateAllianceRequest.decode(value),
+    responseSerialize: (value: CreateAllianceReply): Buffer => Buffer.from(CreateAllianceReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CreateAllianceReply => CreateAllianceReply.decode(value),
+  },
+  getAlliance: {
+    path: "/fm.internal.Internal/GetAlliance" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: GetAllianceRequest): Buffer => Buffer.from(GetAllianceRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetAllianceRequest => GetAllianceRequest.decode(value),
+    responseSerialize: (value: GetAllianceReply): Buffer => Buffer.from(GetAllianceReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetAllianceReply => GetAllianceReply.decode(value),
+  },
   acceptGuildInvite: {
     path: "/fm.internal.Internal/AcceptGuildInvite" as const,
     requestStream: false as const,
@@ -16810,6 +17661,8 @@ export interface InternalServer extends UntypedServiceImplementation {
   denyParty: handleUnaryCall<DenyPartyRequest, DenyPartyReply>;
   createGuild: handleUnaryCall<CreateGuildRequest, CreateGuildReply>;
   getGuild: handleUnaryCall<GetGuildRequest, GetGuildReply>;
+  createAlliance: handleUnaryCall<CreateAllianceRequest, CreateAllianceReply>;
+  getAlliance: handleUnaryCall<GetAllianceRequest, GetAllianceReply>;
   acceptGuildInvite: handleUnaryCall<AcceptGuildInviteRequest, AcceptGuildInviteReply>;
   leaveGuild: handleUnaryCall<LeaveGuildRequest, LeaveGuildReply>;
   expelGuild: handleUnaryCall<ExpelGuildRequest, ExpelGuildReply>;
@@ -17222,6 +18075,36 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GetGuildReply) => void,
+  ): ClientUnaryCall;
+  createAlliance(
+    request: CreateAllianceRequest,
+    callback: (error: ServiceError | null, response: CreateAllianceReply) => void,
+  ): ClientUnaryCall;
+  createAlliance(
+    request: CreateAllianceRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CreateAllianceReply) => void,
+  ): ClientUnaryCall;
+  createAlliance(
+    request: CreateAllianceRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CreateAllianceReply) => void,
+  ): ClientUnaryCall;
+  getAlliance(
+    request: GetAllianceRequest,
+    callback: (error: ServiceError | null, response: GetAllianceReply) => void,
+  ): ClientUnaryCall;
+  getAlliance(
+    request: GetAllianceRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GetAllianceReply) => void,
+  ): ClientUnaryCall;
+  getAlliance(
+    request: GetAllianceRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GetAllianceReply) => void,
   ): ClientUnaryCall;
   acceptGuildInvite(
     request: AcceptGuildInviteRequest,

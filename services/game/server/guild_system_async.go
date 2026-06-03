@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"log"
+	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
@@ -105,5 +106,71 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 	}).OnError(func(err error) {
 		log.Printf("guild inc_capacity: character=%d: %v", charID, err)
 		*result = int(constant.GuildIncreaseCapacityResultFailed)
+	})
+}
+
+func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character, allianceName string, result *int) *async.Promise {
+	fail := int(constant.AllianceCreateResultFailed)
+	if result == nil {
+		result = &fail
+	}
+	if s.gs == nil || s.gs.internalClient == nil || ch == nil {
+		*result = fail
+		return nil
+	}
+	partnerID, ok := s.gs.ValidateCreateAlliance(ch)
+	if !ok || partnerID == 0 {
+		*result = int(constant.AllianceCreateResultInvalidRequirements)
+		return nil
+	}
+	trimmed := strings.TrimSpace(allianceName)
+	if len(trimmed) < 3 || len(trimmed) > 12 {
+		*result = int(constant.AllianceCreateResultInvalidName)
+		return nil
+	}
+	if ch.Meso < constant.AllianceCreateMesoCost {
+		*result = int(constant.AllianceCreateResultInsufficientMeso)
+		return nil
+	}
+	*result = fail
+	worldID := s.gs.config.WorldId
+	charID := ch.GetID()
+	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+	return async.ThenRPC(promise, func(c context.Context) (*internal.CreateAllianceReply, error) {
+		return s.gs.internalClient.CreateAlliance(c, &internal.CreateAllianceRequest{
+			WorldId:            worldID,
+			AllianceName:       trimmed,
+			LeaderCharacterId:  charID,
+			PartnerCharacterId: partnerID,
+		})
+	}, func(reply *internal.CreateAllianceReply) error {
+		if reply == nil {
+			*result = int(constant.AllianceCreateResultFailed)
+			return nil
+		}
+		if !reply.GetOk() {
+			switch reply.GetErrorCode() {
+			case internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NAME_INVALID:
+				*result = int(constant.AllianceCreateResultInvalidName)
+			case internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN:
+				*result = int(constant.AllianceCreateResultNameTaken)
+			default:
+				*result = int(constant.AllianceCreateResultFailed)
+			}
+			return nil
+		}
+		alliancePb := reply.GetAlliance()
+		if alliancePb == nil || alliancePb.GetAllianceId() == 0 {
+			*result = int(constant.AllianceCreateResultFailed)
+			return nil
+		}
+		ch.RemoveMeso(constant.AllianceCreateMesoCost)
+		s.gs.applyAllianceFromProto(alliancePb)
+		s.gs.broadcastAllianceCreate(alliancePb)
+		*result = int(constant.AllianceCreateResultOK)
+		return nil
+	}).OnError(func(err error) {
+		log.Printf("alliance create: character=%d: %v", charID, err)
+		*result = int(constant.AllianceCreateResultFailed)
 	})
 }

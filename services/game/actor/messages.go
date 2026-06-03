@@ -268,3 +268,16 @@ type DeliverGuildMessage struct {
 	CharacterID uint32
 	Code        pconst.GuildResponseCode
 }
+
+type DeliverAllianceMemberOnlineChange struct {
+	CharacterID uint32
+	AllianceID  uint32
+	GuildID     uint32
+	SubjectID   uint32
+	Online      bool
+}
+
+type DeliverAllianceCreate struct {
+	CharacterID uint32
+	Packets     []types.Packet
+}

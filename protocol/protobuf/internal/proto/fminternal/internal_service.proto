@@ -31,6 +31,8 @@ service Internal {
   rpc DenyParty (DenyPartyRequest) returns (DenyPartyReply);
   rpc CreateGuild (CreateGuildRequest) returns (CreateGuildReply);
   rpc GetGuild (GetGuildRequest) returns (GetGuildReply);
+  rpc CreateAlliance (CreateAllianceRequest) returns (CreateAllianceReply);
+  rpc GetAlliance (GetAllianceRequest) returns (GetAllianceReply);
   rpc AcceptGuildInvite (AcceptGuildInviteRequest) returns (AcceptGuildInviteReply);
   rpc LeaveGuild (LeaveGuildRequest) returns (LeaveGuildReply);
   rpc ExpelGuild (ExpelGuildRequest) returns (ExpelGuildReply);
@@ -595,6 +597,7 @@ message GuildMember {
   uint32 class_id = 5;
   GuildMemberRank rank = 6;
   optional int32 channel_index = 7;
+  optional uint32 alliance_rank = 8;
 }
 
 message CreateGuildRequest {
@@ -897,6 +900,57 @@ message Guild {
   GuildLogo logo = 9;
   repeated string rank_titles = 10;
   repeated GuildMember members = 11;
+  optional uint32 alliance_id = 12;
+}
+
+enum AllianceErrorCode {
+  ALLIANCE_ERROR_NONE = 0;
+  ALLIANCE_ERROR_UNKNOWN = 1;
+  ALLIANCE_ERROR_ALREADY_IN_ALLIANCE = 2;
+  ALLIANCE_ERROR_GUILD_NOT_FOUND = 3;
+  ALLIANCE_ERROR_NOT_GUILD_MASTER = 4;
+  ALLIANCE_ERROR_ALLIANCE_NAME_INVALID = 5;
+  ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN = 6;
+  ALLIANCE_ERROR_PARTNER_INVALID = 7;
+  ALLIANCE_ERROR_GUILD_ALREADY_IN_ALLIANCE = 8;
+}
+
+message Alliance {
+  uint32 world_id = 1;
+  uint32 alliance_id = 2;
+  string name = 3;
+  uint32 leader_character_id = 4;
+  uint64 revision = 5;
+  uint32 capacity = 6;
+  string notice = 7;
+  repeated string rank_titles = 8;
+  repeated uint32 guild_ids = 9;
+  repeated Guild guilds = 10;
+}
+
+message CreateAllianceRequest {
+  uint32 world_id = 1;
+  string alliance_name = 2;
+  uint32 leader_character_id = 3;
+  uint32 partner_character_id = 4;
+}
+
+message CreateAllianceReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+  Alliance alliance = 5;
+}
+
+message GetAllianceRequest {
+  uint32 world_id = 1;
+  uint32 alliance_id = 2;
+}
+
+message GetAllianceReply {
+  bool found = 1;
+  Alliance alliance = 2;
 }
 
 message GetGuildRequest {

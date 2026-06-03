@@ -44,7 +44,7 @@ func GuildMemberToDTO(m *GuildMember) dto.GuildMemberStatus {
 		Level:        m.Level,
 		GuildRank:    guildRankToUint32(m.Rank),
 		Online:       guildMemberOnline(m.ChannelIndex),
-		AllianceRank: 0,
+		AllianceRank: m.AllianceRank,
 	}
 }
 
@@ -56,6 +56,10 @@ func GuildMemberStatusFromProto(m *internal.GuildMember) dto.GuildMemberStatus {
 	if m.ChannelIndex != nil && *m.ChannelIndex >= 0 {
 		online = true
 	}
+	allianceRank := uint32(0)
+	if m.AllianceRank != nil {
+		allianceRank = m.GetAllianceRank()
+	}
 	return dto.GuildMemberStatus{
 		CharacterID:  m.GetCharacterId(),
 		Name:         m.GetCharacterName(),
@@ -63,7 +67,7 @@ func GuildMemberStatusFromProto(m *internal.GuildMember) dto.GuildMemberStatus {
 		Level:        m.GetLevel(),
 		GuildRank:    guildRankToUint32(m.GetRank()),
 		Online:       online,
-		AllianceRank: 0,
+		AllianceRank: allianceRank,
 	}
 }
 
@@ -104,6 +108,6 @@ func GuildToDTO(g *Guild) *dto.GuildInfo {
 		LogoColor:   logoColor,
 		Notice:      g.Notice,
 		GP:          g.GP,
-		AllianceID:  0,
+		AllianceID:  g.AllianceID,
 	}
 }

@@ -124,6 +124,10 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onDeliverGuildDisbandSelf(m)
 	case *DeliverGuildMessage:
 		a.onDeliverGuildMessage(m)
+	case *DeliverAllianceCreate:
+		a.onDeliverAllianceCreate(m)
+	case *DeliverAllianceMemberOnlineChange:
+		a.onDeliverAllianceMemberOnlineChange(m)
 	case *DeliverMessage:
 		a.onDeliverMessage(m)
 	case *SaveMapCharacters:
@@ -869,6 +873,33 @@ func (a *MapActor) onDeliverGuildDisbandSelf(msg *DeliverGuildDisbandSelf) {
 		return
 	}
 	ch.Listener.OnGuildDisbandSelf(ch, msg.GuildID)
+}
+
+func (a *MapActor) onDeliverAllianceCreate(msg *DeliverAllianceCreate) {
+	if a.Map == nil || msg == nil || len(msg.Packets) == 0 {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	for _, pkt := range msg.Packets {
+		if pkt == nil {
+			continue
+		}
+		_ = ch.Send(pkt, types.SEND_POLICY_ENCRYPT)
+	}
+}
+
+func (a *MapActor) onDeliverAllianceMemberOnlineChange(msg *DeliverAllianceMemberOnlineChange) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnAllianceMemberOnlineChange(ch, msg.AllianceID, msg.GuildID, msg.SubjectID, msg.Online)
 }
 
 func (a *MapActor) onDeliverGuildMessage(msg *DeliverGuildMessage) {

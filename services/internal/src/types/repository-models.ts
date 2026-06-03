@@ -286,6 +286,7 @@ export interface GuildModel {
     notice: string;
     logo: GuildLogoModel;
     rankTitles: GuildRankTitlesModel;
+    allianceId?: number | null;
     revision: number;
     disbandedAt?: Date | null;
     createdAt?: Date;
@@ -302,6 +303,7 @@ export type GuildRow = {
     notice: string;
     logo: GuildLogoModel | null;
     rank_titles: GuildRankTitlesModel;
+    alliance_id?: number | null;
     revision: number;
     disbanded_at?: Date | string | null;
     created_at?: Date | string;
@@ -319,6 +321,7 @@ export interface GuildMemberModel {
     level: number;
     classId: number;
     guildRank: GuildMemberRank;
+    allianceRank?: number | null;
     joinedAt?: Date;
     updatedAt?: Date;
 }
@@ -331,8 +334,40 @@ export type GuildMemberRow = {
     level: number;
     class_id: number;
     guild_rank: GuildMemberRank | number;
+    alliance_rank?: number | null;
     joined_at: Date | string;
     updated_at: Date | string;
+    deleted?: boolean;
+};
+
+export interface AllianceModel {
+    worldId: number;
+    allianceId: number;
+    name: string;
+    leaderCharacterId: number;
+    guildIds: number[];
+    rankTitles: import("./alliance-json").AllianceRankTitles;
+    capacity: number;
+    notice: string;
+    revision: number;
+    disbandedAt?: Date | null;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+export type AllianceRow = {
+    world_id: number;
+    alliance_id: number;
+    name: string;
+    leader_character_id: number;
+    guild_ids: number[];
+    rank_titles: import("./alliance-json").AllianceRankTitles;
+    capacity: number;
+    notice: string;
+    revision: number;
+    disbanded_at?: Date | string | null;
+    created_at?: Date | string;
+    updated_at?: Date | string;
     deleted?: boolean;
 };
 

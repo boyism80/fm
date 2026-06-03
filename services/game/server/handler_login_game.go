@@ -65,6 +65,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	var enterReply *internal.EnterGameReply
 	var partyReply *internal.GetPartyReply
 	var guildReply *internal.GetGuildReply
+	var allianceReply *internal.GetAllianceReply
 
 	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.EnterGameReply, error) {
@@ -99,7 +100,23 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		})
 	}, func(reply *internal.GetGuildReply) error {
 		guildReply = reply
-		return h.finishLoginGame(ctx, req, enterReply, partyReply, guildReply)
+		return nil
+	})
+	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetAllianceReply, error) {
+		if guildReply == nil || !guildReply.GetFound() || guildReply.GetGuild() == nil {
+			return &internal.GetAllianceReply{Found: false}, nil
+		}
+		allianceID := guildReply.GetGuild().GetAllianceId()
+		if allianceID == 0 {
+			return &internal.GetAllianceReply{Found: false}, nil
+		}
+		return ic.GetAlliance(c, &internal.GetAllianceRequest{
+			WorldId:    h.gs.config.WorldId,
+			AllianceId: allianceID,
+		})
+	}, func(reply *internal.GetAllianceReply) error {
+		allianceReply = reply
+		return h.finishLoginGame(ctx, req, enterReply, partyReply, guildReply, allianceReply)
 	})
 	promise.
 		OnError(func(err error) {
@@ -109,7 +126,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	return nil
 }
 
-func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginGame, reply *internal.EnterGameReply, partyReply *internal.GetPartyReply, guildReply *internal.GetGuildReply) error {
+func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginGame, reply *internal.EnterGameReply, partyReply *internal.GetPartyReply, guildReply *internal.GetGuildReply, allianceReply *internal.GetAllianceReply) error {
 	if !reply.GetFound() {
 		return fmt.Errorf("character %d not found", req.PlayerId)
 	}
@@ -203,6 +220,10 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	if h.gs.guild != nil && guildReply != nil && guildReply.GetFound() && guildReply.GetGuild() != nil {
 		h.gs.guild.Update(guildReply.GetGuild())
+	}
+
+	if allianceReply != nil && allianceReply.GetFound() && allianceReply.GetAlliance() != nil {
+		h.gs.applyAllianceFromProto(allianceReply.GetAlliance())
 	}
 
 	rootContext := h.gs.GetRootContext()

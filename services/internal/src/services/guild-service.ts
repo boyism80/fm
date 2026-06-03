@@ -1,6 +1,9 @@
 import {
+    Alliance,
+    AllianceErrorCode,
     GuildErrorCode,
     GuildMemberRank,
+    type Alliance as AllianceMessage,
     type GuildBulletinBoardReplyEntry,
     type GuildBulletinBoardThreadDetail,
     type GuildBulletinBoardThreadEntry,
@@ -12,6 +15,7 @@ import type { PoolClient } from "pg";
 import { AppConfiguration } from "../config/app-configuration";
 import { InternalContext } from "../context/internal-context";
 import { UnifiedRepository } from "../repos/unified-repository";
+import { AllianceRepository } from "../repos/alliance-repository";
 import { GuildRepository } from "../repos/guild-repository";
 import { GuildMemberRepository } from "../repos/guild-member-repository";
 import { GuildBulletinBoardRepository } from "../repos/guild-bulletin-board-repository";
@@ -19,6 +23,7 @@ import { CharacterRealtimeStateRepository } from "../repos/character-realtime-st
 import { CharacterRepository } from "../repos/character-repository";
 import { SessionRepository } from "../repos/session-repository";
 import type { CharacterSession } from "../repos/session-repository";
+import type { AllianceModel } from "../repos/alliance-repository";
 import type { GuildModel } from "../repos/guild-repository";
 import type { GuildMemberModel } from "../repos/guild-member-repository";
 import type { GuildBulletinBoardThreadModel } from "../types/repository-models";
@@ -26,13 +31,17 @@ import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
 import { redisCacheKey } from "../redis-cache-key";
 import {
+    DEFAULT_ALLIANCE_CAPACITY,
+    DEFAULT_ALLIANCE_RANK_TITLES,
+} from "../types/alliance-json";
+import {
     DEFAULT_GUILD_LOGO,
     DEFAULT_GUILD_RANK_TITLES,
     type GuildLogo,
     type GuildRankTitles,
 } from "../types/guild-json";
 
-const messages = { GuildErrorCode };
+const messages = { GuildErrorCode, AllianceErrorCode };
 
 const DEFAULT_GUILD_CAPACITY = 10;
 const MIN_GUILD_NAME_LEN = 3;
@@ -49,8 +58,14 @@ const GUILD_BULLETIN_THREADS_PER_PAGE = 10;
 const GUILD_BULLETIN_ICON_CASH_MIN = 0x64;
 const GUILD_BULLETIN_ICON_CASH_MAX = 0x6a;
 const GUILD_BULLETIN_COOLDOWN_SEC = 60;
+const MIN_ALLIANCE_NAME_LEN = 3;
+const MAX_ALLIANCE_NAME_LEN = 12;
 
 const AMQ_DIRECT_EXCHANGE = "amq.direct";
+
+const ALLIANCE_EVT = {
+    CREATED: "created",
+} as const;
 
 const EVT = {
     CREATED: "created",
@@ -74,6 +89,16 @@ export type CreateGuildResult = {
 };
 
 export type GetGuildResult = { found: boolean; guild?: GuildModel; members?: GuildMemberModel[] };
+
+export type CreateAllianceResult = {
+    ok: boolean;
+    code?: AllianceErrorCode;
+    allianceId?: number;
+    revision?: number;
+    alliance?: AllianceMessage;
+};
+
+export type GetAllianceResult = { found: boolean; alliance?: AllianceMessage };
 
 export type AcceptGuildInviteResult = {
     ok: boolean;
@@ -195,6 +220,7 @@ export class GuildService {
     private readonly ctx: InternalContext;
     private readonly app: AppConfiguration;
     private readonly unifiedRepo: UnifiedRepository;
+    private readonly allianceRepo: AllianceRepository;
     private readonly guildRepo: GuildRepository;
     private readonly guildMemberRepo: GuildMemberRepository;
     private readonly guildBulletinBoardRepo: GuildBulletinBoardRepository;
@@ -208,6 +234,7 @@ export class GuildService {
         internalContext: InternalContext,
         appConfiguration: AppConfiguration,
         unifiedRepository: UnifiedRepository,
+        allianceRepository: AllianceRepository,
         guildRepository: GuildRepository,
         guildMemberRepository: GuildMemberRepository,
         guildBulletinBoardRepository: GuildBulletinBoardRepository,
@@ -220,6 +247,7 @@ export class GuildService {
         this.ctx = internalContext;
         this.app = appConfiguration;
         this.unifiedRepo = unifiedRepository;
+        this.allianceRepo = allianceRepository;
         this.guildRepo = guildRepository;
         this.guildMemberRepo = guildMemberRepository;
         this.guildBulletinBoardRepo = guildBulletinBoardRepository;
@@ -1470,7 +1498,7 @@ export class GuildService {
         const members = await Promise.all(
             list.map(async (m): Promise<GuildMember> => {
                 const channelIndex = await this.sessionChannelIndex(worldId, m.characterId);
-                return {
+                const memberPb: GuildMember = {
                     worldId,
                     characterId: m.characterId,
                     characterName: m.characterName,
@@ -1479,9 +1507,13 @@ export class GuildService {
                     rank: m.guildRank,
                     channelIndex,
                 };
+                if (m.allianceRank != null) {
+                    memberPb.allianceRank = m.allianceRank;
+                }
+                return memberPb;
             })
         );
-        return {
+        const guildPb: GuildMessage = {
             worldId,
             guildId: guild.guildId,
             name: guild.name,
@@ -1499,6 +1531,10 @@ export class GuildService {
             rankTitles: [...guild.rankTitles],
             members,
         };
+        if (guild.allianceId != null && guild.allianceId > 0) {
+            guildPb.allianceId = guild.allianceId;
+        }
+        return guildPb;
     }
 
     async buildGuildMessage(worldId: number, guild: GuildModel, memberModels: GuildMemberModel[]) {
@@ -1907,5 +1943,273 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND };
         }
         return { ok: true, thread };
+    }
+
+    private validateAllianceName(name: string): AllianceErrorCode | null {
+        if (typeof name !== "string") {
+            return messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_INVALID;
+        }
+        const trimmed = name.trim();
+        if (trimmed.length < MIN_ALLIANCE_NAME_LEN || trimmed.length > MAX_ALLIANCE_NAME_LEN) {
+            return messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_INVALID;
+        }
+        return null;
+    }
+
+    private async publishToAllianceRoutes(
+        eventType: string,
+        worldId: number,
+        allianceId: number,
+        revision: number,
+        extraPayload: Record<string, unknown> = {}
+    ) {
+        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
+        const routingKey = `fm.${worldId}.all.alliance`;
+        return this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, routingKey, eventType, {
+            event_id: extraPayload.event_id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            world_id: worldId,
+            alliance_id: allianceId,
+            revision,
+            occurred_at: new Date().toISOString(),
+            ...extraPayload,
+        });
+    }
+
+    private async allianceToPb(worldId: number, alliance: AllianceModel): Promise<AllianceMessage> {
+        const guildIds = alliance.guildIds;
+        const guilds: GuildMessage[] = [];
+        for (const guildId of guildIds) {
+            const loaded = await this.getGuild(worldId, guildId);
+            if (loaded.found && loaded.guild) {
+                guilds.push(await this.buildGuildMessage(worldId, loaded.guild, loaded.members ?? []));
+            }
+        }
+        return {
+            worldId,
+            allianceId: alliance.allianceId,
+            name: alliance.name,
+            leaderCharacterId: alliance.leaderCharacterId,
+            revision: alliance.revision,
+            capacity: alliance.capacity,
+            notice: alliance.notice,
+            rankTitles: [...alliance.rankTitles],
+            guildIds,
+            guilds,
+        };
+    }
+
+    async getAlliance(worldId: number, allianceId: number): Promise<GetAllianceResult> {
+        this.assertWorld(worldId);
+        if (!Number.isInteger(allianceId) || allianceId <= 0) {
+            return { found: false };
+        }
+        const alliance = await this.allianceRepo.get(worldId, allianceId);
+        if (!alliance) {
+            return { found: false };
+        }
+        return { found: true, alliance: await this.allianceToPb(worldId, alliance) };
+    }
+
+    private async assignAllianceRanks(
+        worldId: number,
+        guildId: number,
+        masterAllianceRank: number,
+        dataTx: PoolClient
+    ) {
+        const members = [...(await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient: dataTx })).values()];
+        if (members.length === 0) {
+            return;
+        }
+        const updated = members.map((member) => {
+            const allianceRank =
+                member.guildRank === GuildMemberRank.GUILD_MEMBER_RANK_MASTER
+                    ? masterAllianceRank
+                    : 3;
+            return {
+                ...member,
+                allianceRank,
+            };
+        });
+        await this.guildMemberRepo.setAll(worldId, updated, { txClient: dataTx });
+    }
+
+    private async rollbackCreateAlliance(worldId: number, allianceId: number, guildIds: number[]) {
+        await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
+            for (const guildId of guildIds) {
+                const guild = await this.guildRepo.get(worldId, guildId, { txClient: dataTx });
+                if (guild) {
+                    await this.guildRepo.set(
+                        worldId,
+                        { ...guild, allianceId: null, revision: guild.revision + 1 },
+                        { txClient: dataTx }
+                    );
+                }
+                const members = [...(await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient: dataTx })).values()];
+                if (members.length > 0) {
+                    const cleared = members.map((member) => ({
+                        ...member,
+                        allianceRank: null,
+                    }));
+                    await this.guildMemberRepo.setAll(worldId, cleared, { txClient: dataTx });
+                }
+            }
+            await this.allianceRepo.delete({ worldId, allianceId }, { txClient: dataTx });
+        }).catch(() => {});
+        await this.allianceRepo.evictCache(worldId, allianceId).catch(() => {});
+        for (const guildId of guildIds) {
+            await this.guildRepo.evictCache(worldId, guildId).catch(() => {});
+            await this.guildMemberRepo.evictGroupCache(worldId, String(guildId)).catch(() => {});
+        }
+    }
+
+    async createAlliance(
+        worldId: number,
+        allianceName: string,
+        leaderCharacterId: number,
+        partnerCharacterId: number
+    ): Promise<CreateAllianceResult> {
+        this.assertWorld(worldId);
+        this.assertCharacterId(leaderCharacterId);
+        this.assertCharacterId(partnerCharacterId);
+
+        if (leaderCharacterId === partnerCharacterId) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID };
+        }
+
+        const nameError = this.validateAllianceName(allianceName);
+        if (nameError != null) {
+            return { ok: false, code: nameError };
+        }
+        const trimmedName = allianceName.trim();
+
+        await using _leaderLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `character_realtime:${leaderCharacterId}`,
+        );
+        await using _partnerLock = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `character_realtime:${partnerCharacterId}`,
+        );
+
+        const leaderState = await this.characterRealtimeStateRepo.get(worldId, leaderCharacterId);
+        const partnerState = await this.characterRealtimeStateRepo.get(worldId, partnerCharacterId);
+        const guildId = leaderState?.guildId;
+        const partnerGuildId = partnerState?.guildId;
+        if (
+            guildId == null ||
+            guildId <= 0 ||
+            partnerGuildId == null ||
+            partnerGuildId <= 0
+        ) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        }
+        if (guildId === partnerGuildId) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID };
+        }
+
+        await using _guildLock1 = await this.distributedLockService.acquireWorldGlobalLock(worldId, `guild:${guildId}`);
+        await using _guildLock2 = await this.distributedLockService.acquireWorldGlobalLock(
+            worldId,
+            `guild:${partnerGuildId}`,
+        );
+
+        const guild1 = await this.guildRepo.get(worldId, guildId);
+        const guild2 = await this.guildRepo.get(worldId, partnerGuildId);
+        if (!guild1 || !guild2) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        }
+        if (guild1.allianceId != null || guild2.allianceId != null) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_ALREADY_IN_ALLIANCE };
+        }
+        if (guild1.leaderCharacterId !== leaderCharacterId) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
+        }
+
+        const guild1Members = [...(await this.guildMemberRepo.getAll(worldId, String(guildId))).values()];
+        const leaderMember = guild1Members.find((m) => m.characterId === leaderCharacterId);
+        if (!leaderMember || leaderMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
+        }
+
+        const guild2Members = [...(await this.guildMemberRepo.getAll(worldId, String(partnerGuildId))).values()];
+        if (guild2.leaderCharacterId !== partnerCharacterId) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID };
+        }
+        const partnerMember = guild2Members.find((m) => m.characterId === partnerCharacterId);
+        if (!partnerMember || partnerMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
+            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID };
+        }
+
+        const initialGuildIds: number[] = [guildId, partnerGuildId];
+        let savedAlliance: AllianceModel;
+        let allianceId = 0;
+
+        try {
+            savedAlliance = await this.ctx.withPgDataTransaction(worldId, guildId, async (dataTx: PoolClient) => {
+                const inserted = await this.allianceRepo.set(
+                    worldId,
+                    {
+                        worldId,
+                        allianceId: 0,
+                        name: trimmedName,
+                        leaderCharacterId,
+                        guildIds: initialGuildIds,
+                        rankTitles: [...DEFAULT_ALLIANCE_RANK_TITLES],
+                        capacity: DEFAULT_ALLIANCE_CAPACITY,
+                        notice: "",
+                        revision: 1,
+                    },
+                    { txClient: dataTx }
+                );
+                allianceId = inserted.allianceId;
+
+                await this.guildRepo.set(
+                    worldId,
+                    { ...guild1, allianceId, revision: guild1.revision + 1 },
+                    { txClient: dataTx }
+                );
+                await this.guildRepo.set(
+                    worldId,
+                    { ...guild2, allianceId, revision: guild2.revision + 1 },
+                    { txClient: dataTx }
+                );
+
+                await this.assignAllianceRanks(worldId, guildId, 1, dataTx);
+                await this.assignAllianceRanks(worldId, partnerGuildId, 2, dataTx);
+
+                return inserted;
+            });
+        } catch (err: unknown) {
+            const code = (err as { code?: string })?.code;
+            if (code === "23505") {
+                return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN };
+            }
+            if (allianceId > 0) {
+                await this.rollbackCreateAlliance(worldId, allianceId, [guildId, partnerGuildId]);
+            }
+            throw err;
+        }
+
+        await this.allianceRepo.evictCache(worldId, allianceId);
+        await this.guildRepo.evictCache(worldId, guildId);
+        await this.guildRepo.evictCache(worldId, partnerGuildId);
+        await this.guildMemberRepo.evictGroupCache(worldId, String(guildId));
+        await this.guildMemberRepo.evictGroupCache(worldId, String(partnerGuildId));
+
+        const allianceMessage = await this.allianceToPb(worldId, savedAlliance);
+        const wire = Alliance.encode(allianceMessage).finish();
+        await this.publishToAllianceRoutes(ALLIANCE_EVT.CREATED, worldId, allianceId, savedAlliance.revision, {
+            alliance_name: trimmedName,
+            guild_ids: [guildId, partnerGuildId],
+            leader_character_id: leaderCharacterId,
+            alliance_pb: Buffer.from(wire).toString("base64"),
+        });
+
+        return {
+            ok: true,
+            allianceId,
+            revision: savedAlliance.revision,
+            alliance: allianceMessage,
+        };
     }
 }

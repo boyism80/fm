@@ -9,6 +9,7 @@ type GuildMember struct {
 	Level         uint32
 	ClassID       uint32
 	Rank          internal.GuildMemberRank
+	AllianceRank  uint32
 	ChannelIndex  *int32
 }
 
@@ -47,6 +48,7 @@ func (m *GuildMember) Clone() *GuildMember {
 		Level:         m.Level,
 		ClassID:       m.ClassID,
 		Rank:          m.Rank,
+		AllianceRank:  m.AllianceRank,
 	}
 	if m.ChannelIndex != nil {
 		c := *m.ChannelIndex
@@ -71,6 +73,9 @@ func GuildMemberFromProto(pb *internal.GuildMember) *GuildMember {
 		c := pb.GetChannelIndex()
 		m.ChannelIndex = &c
 	}
+	if pb.AllianceRank != nil {
+		m.AllianceRank = pb.GetAllianceRank()
+	}
 	return m
 }
 
@@ -89,6 +94,10 @@ func (m *GuildMember) ToProto() *internal.GuildMember {
 	if m.ChannelIndex != nil {
 		c := *m.ChannelIndex
 		pm.ChannelIndex = &c
+	}
+	if m.AllianceRank > 0 {
+		ar := m.AllianceRank
+		pm.AllianceRank = &ar
 	}
 	return pm
 }

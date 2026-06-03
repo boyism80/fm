@@ -7,7 +7,7 @@ import { GuildMemberRank } from "../protobuf/generated/fminternal/internal_servi
 
 const DEFAULT_GUILD_MEMBER_RANK = GuildMemberRank.GUILD_MEMBER_RANK_MEMBER;
 
-const SELECT_COLS = "world_id, guild_id, character_id, character_name, level, class_id, guild_rank, joined_at, updated_at";
+const SELECT_COLS = "world_id, guild_id, character_id, character_name, level, class_id, guild_rank, alliance_rank, joined_at, updated_at";
 
 export type { GuildMemberModel };
 
@@ -36,10 +36,10 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
             return { text: "", values: [] };
         }
         const placeholders = rows
-            .map((_, i) => `($${i * 7 + 1},$${i * 7 + 2},$${i * 7 + 3},$${i * 7 + 4},$${i * 7 + 5},$${i * 7 + 6},$${i * 7 + 7},NOW(),NOW())`)
+            .map((_, i) => `($${i * 8 + 1},$${i * 8 + 2},$${i * 8 + 3},$${i * 8 + 4},$${i * 8 + 5},$${i * 8 + 6},$${i * 8 + 7},$${i * 8 + 8},NOW(),NOW())`)
             .join(",\n");
         return {
-            text: `INSERT INTO guild_members (world_id, guild_id, character_id, character_name, level, class_id, guild_rank, joined_at, updated_at)
+            text: `INSERT INTO guild_members (world_id, guild_id, character_id, character_name, level, class_id, guild_rank, alliance_rank, joined_at, updated_at)
                    VALUES
                    ${placeholders}
                    ON CONFLICT (world_id, guild_id, character_id) DO UPDATE
@@ -47,6 +47,7 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
                        level = EXCLUDED.level,
                        class_id = EXCLUDED.class_id,
                        guild_rank = EXCLUDED.guild_rank,
+                       alliance_rank = EXCLUDED.alliance_rank,
                        updated_at = NOW()
                    RETURNING ${SELECT_COLS}`,
             values: rows.flatMap((r) => [
@@ -57,6 +58,7 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
                 r.level,
                 r.class_id,
                 r.guild_rank ?? DEFAULT_GUILD_MEMBER_RANK,
+                r.alliance_rank ?? null,
             ]),
         };
     }
@@ -98,6 +100,7 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
             level: row.level,
             classId: row.class_id,
             guildRank: (row.guild_rank ?? DEFAULT_GUILD_MEMBER_RANK) as GuildMemberRank,
+            allianceRank: row.alliance_rank ?? null,
             joinedAt: row.joined_at instanceof Date ? row.joined_at : new Date(row.joined_at),
             updatedAt: row.updated_at instanceof Date ? row.updated_at : new Date(row.updated_at),
         };
@@ -112,6 +115,7 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
             level: model.level,
             class_id: model.classId,
             guild_rank: model.guildRank ?? DEFAULT_GUILD_MEMBER_RANK,
+            alliance_rank: model.allianceRank ?? null,
             joined_at: model.joinedAt ?? new Date(),
             updated_at: model.updatedAt ?? new Date(),
         };

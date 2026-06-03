@@ -110,3 +110,22 @@ func (gc *GuildContainer) Get(guildID uint32) *entity.Guild {
 	}
 	return s.Clone()
 }
+
+func (gc *GuildContainer) GuildIDForCharacter(characterID uint32) (uint32, bool) {
+	if gc == nil || characterID == 0 {
+		return 0, false
+	}
+	gc.mu.Lock()
+	defer gc.mu.Unlock()
+	for guildID, g := range gc.guilds {
+		if g == nil {
+			continue
+		}
+		for _, m := range g.Members {
+			if m != nil && m.CharacterID == characterID {
+				return guildID, true
+			}
+		}
+	}
+	return 0, false
+}

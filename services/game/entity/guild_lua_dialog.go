@@ -91,3 +91,26 @@ func luaGuildIncCapacity(L *lua.LState, ch *Character, extendedCap bool) int {
 	promise := ch.GameWorld.GetGuildSystem().IncCapacityAsync(cfg.ActorContext, ch, extendedCap, &result)
 	return luaYieldGuildRPC(L, ch, result, &result, promise)
 }
+
+func luaCreateAlliance(L *lua.LState, ch *Character) int {
+	if ch == nil {
+		return 0
+	}
+	if L.GetTop() != 2 {
+		L.ArgError(3, "create_alliance(name) takes exactly one argument")
+		return 0
+	}
+	allianceName := L.CheckString(2)
+	result := int(constant.AllianceCreateResultFailed)
+	if ch.GameWorld == nil {
+		L.Push(lua.LNumber(result))
+		return 1
+	}
+	cfg, ok := luax.GetConfiguration(L)
+	if !ok || cfg.ActorContext == nil {
+		L.Push(lua.LNumber(result))
+		return 1
+	}
+	promise := ch.GameWorld.GetGuildSystem().CreateAllianceAsync(cfg.ActorContext, ch, allianceName, &result)
+	return luaYieldGuildRPC(L, ch, result, &result, promise)
+}

@@ -45,6 +45,7 @@ func (h *guildMqMemberOnlineChanged) Handle(ctx actor.Context, _ amqp.Delivery, 
 			guildID := g.GetGuildId()
 			subjectID := extra.CharacterID
 			online := extra.Online
+			allianceID := g.AllianceID
 			for _, m := range g.GetMembers() {
 				if m == nil {
 					continue
@@ -62,6 +63,9 @@ func (h *guildMqMemberOnlineChanged) Handle(ctx actor.Context, _ amqp.Delivery, 
 					SubjectID:   subjectID,
 					Online:      online,
 				})
+			}
+			if allianceID > 0 {
+				gs.deliverAllianceMemberOnlineChange(allianceID, guildID, subjectID, online)
 			}
 			return nil
 		}).

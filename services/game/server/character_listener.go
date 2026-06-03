@@ -123,6 +123,18 @@ func (l *CharacterListenerImpl) OnShowGuildInfo(ch *entity.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnShowAllianceInfo(ch *entity.Character) {
+	if l == nil || l.gs == nil || ch == nil {
+		return
+	}
+	for _, pkt := range l.gs.allianceShowPacketsForCharacter(ch) {
+		if pkt == nil {
+			continue
+		}
+		_ = ch.Send(pkt, types.SEND_POLICY_ENCRYPT)
+	}
+}
+
 func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *entity.Character) {
 	if l == nil || ch == nil {
 		return
@@ -298,6 +310,18 @@ func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *entity.Character, 
 		return
 	}
 	_ = ch.Send(&response.GuildMemberOnline{
+		GuildID:     guildID,
+		CharacterID: subjectCharacterID,
+		Online:      online,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceMemberOnlineChange(ch *entity.Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, online bool) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceMemberOnline{
+		AllianceID:  allianceID,
 		GuildID:     guildID,
 		CharacterID: subjectCharacterID,
 		Online:      online,

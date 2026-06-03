@@ -33,6 +33,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
 		if character.Listener != nil {
 			character.Listener.OnShowGuildInfo(character)
+			character.Listener.OnShowAllianceInfo(character)
 		}
 		character.Buffs.EmitAllBuffAddedEvents()
 	} else {

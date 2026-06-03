@@ -13,6 +13,7 @@ import { SessionRepository } from "./repos/session-repository";
 import { KeyLayoutRepository } from "./repos/key-layout-repository";
 import { PartyRepository } from "./repos/party-repository";
 import { PartyMemberRepository } from "./repos/party-member-repository";
+import { AllianceRepository } from "./repos/alliance-repository";
 import { GuildRepository } from "./repos/guild-repository";
 import { GuildMemberRepository } from "./repos/guild-member-repository";
 import { GuildBulletinBoardRepository } from "./repos/guild-bulletin-board-repository";
@@ -54,6 +55,7 @@ export function createAppContainer() {
         keyLayoutRepository: awilix.asClass(KeyLayoutRepository).scoped(),
         partyRepository: awilix.asClass(PartyRepository).scoped(),
         partyMemberRepository: awilix.asClass(PartyMemberRepository).scoped(),
+        allianceRepository: awilix.asClass(AllianceRepository).scoped(),
         guildRepository: awilix.asClass(GuildRepository).scoped(),
         guildMemberRepository: awilix.asClass(GuildMemberRepository).scoped(),
         guildBulletinBoardRepository: awilix.asClass(GuildBulletinBoardRepository).scoped(),

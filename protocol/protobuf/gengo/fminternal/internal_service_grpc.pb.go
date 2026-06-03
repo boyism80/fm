@@ -44,6 +44,8 @@ const (
 	Internal_DenyParty_FullMethodName                      = "/fm.internal.Internal/DenyParty"
 	Internal_CreateGuild_FullMethodName                    = "/fm.internal.Internal/CreateGuild"
 	Internal_GetGuild_FullMethodName                       = "/fm.internal.Internal/GetGuild"
+	Internal_CreateAlliance_FullMethodName                 = "/fm.internal.Internal/CreateAlliance"
+	Internal_GetAlliance_FullMethodName                    = "/fm.internal.Internal/GetAlliance"
 	Internal_AcceptGuildInvite_FullMethodName              = "/fm.internal.Internal/AcceptGuildInvite"
 	Internal_LeaveGuild_FullMethodName                     = "/fm.internal.Internal/LeaveGuild"
 	Internal_ExpelGuild_FullMethodName                     = "/fm.internal.Internal/ExpelGuild"
@@ -95,6 +97,8 @@ type InternalClient interface {
 	DenyParty(ctx context.Context, in *DenyPartyRequest, opts ...grpc.CallOption) (*DenyPartyReply, error)
 	CreateGuild(ctx context.Context, in *CreateGuildRequest, opts ...grpc.CallOption) (*CreateGuildReply, error)
 	GetGuild(ctx context.Context, in *GetGuildRequest, opts ...grpc.CallOption) (*GetGuildReply, error)
+	CreateAlliance(ctx context.Context, in *CreateAllianceRequest, opts ...grpc.CallOption) (*CreateAllianceReply, error)
+	GetAlliance(ctx context.Context, in *GetAllianceRequest, opts ...grpc.CallOption) (*GetAllianceReply, error)
 	AcceptGuildInvite(ctx context.Context, in *AcceptGuildInviteRequest, opts ...grpc.CallOption) (*AcceptGuildInviteReply, error)
 	LeaveGuild(ctx context.Context, in *LeaveGuildRequest, opts ...grpc.CallOption) (*LeaveGuildReply, error)
 	ExpelGuild(ctx context.Context, in *ExpelGuildRequest, opts ...grpc.CallOption) (*ExpelGuildReply, error)
@@ -375,6 +379,26 @@ func (c *internalClient) GetGuild(ctx context.Context, in *GetGuildRequest, opts
 	return out, nil
 }
 
+func (c *internalClient) CreateAlliance(ctx context.Context, in *CreateAllianceRequest, opts ...grpc.CallOption) (*CreateAllianceReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAllianceReply)
+	err := c.cc.Invoke(ctx, Internal_CreateAlliance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) GetAlliance(ctx context.Context, in *GetAllianceRequest, opts ...grpc.CallOption) (*GetAllianceReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAllianceReply)
+	err := c.cc.Invoke(ctx, Internal_GetAlliance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) AcceptGuildInvite(ctx context.Context, in *AcceptGuildInviteRequest, opts ...grpc.CallOption) (*AcceptGuildInviteReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AcceptGuildInviteReply)
@@ -604,6 +628,8 @@ type InternalServer interface {
 	DenyParty(context.Context, *DenyPartyRequest) (*DenyPartyReply, error)
 	CreateGuild(context.Context, *CreateGuildRequest) (*CreateGuildReply, error)
 	GetGuild(context.Context, *GetGuildRequest) (*GetGuildReply, error)
+	CreateAlliance(context.Context, *CreateAllianceRequest) (*CreateAllianceReply, error)
+	GetAlliance(context.Context, *GetAllianceRequest) (*GetAllianceReply, error)
 	AcceptGuildInvite(context.Context, *AcceptGuildInviteRequest) (*AcceptGuildInviteReply, error)
 	LeaveGuild(context.Context, *LeaveGuildRequest) (*LeaveGuildReply, error)
 	ExpelGuild(context.Context, *ExpelGuildRequest) (*ExpelGuildReply, error)
@@ -708,6 +734,12 @@ func (UnimplementedInternalServer) CreateGuild(context.Context, *CreateGuildRequ
 }
 func (UnimplementedInternalServer) GetGuild(context.Context, *GetGuildRequest) (*GetGuildReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGuild not implemented")
+}
+func (UnimplementedInternalServer) CreateAlliance(context.Context, *CreateAllianceRequest) (*CreateAllianceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAlliance not implemented")
+}
+func (UnimplementedInternalServer) GetAlliance(context.Context, *GetAllianceRequest) (*GetAllianceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlliance not implemented")
 }
 func (UnimplementedInternalServer) AcceptGuildInvite(context.Context, *AcceptGuildInviteRequest) (*AcceptGuildInviteReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AcceptGuildInvite not implemented")
@@ -1240,6 +1272,42 @@ func _Internal_GetGuild_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_CreateAlliance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAllianceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CreateAlliance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CreateAlliance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CreateAlliance(ctx, req.(*CreateAllianceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_GetAlliance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllianceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).GetAlliance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_GetAlliance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).GetAlliance(ctx, req.(*GetAllianceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_AcceptGuildInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AcceptGuildInviteRequest)
 	if err := dec(in); err != nil {
@@ -1706,6 +1774,14 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGuild",
 			Handler:    _Internal_GetGuild_Handler,
+		},
+		{
+			MethodName: "CreateAlliance",
+			Handler:    _Internal_CreateAlliance_Handler,
+		},
+		{
+			MethodName: "GetAlliance",
+			Handler:    _Internal_GetAlliance_Handler,
 		},
 		{
 			MethodName: "AcceptGuildInvite",

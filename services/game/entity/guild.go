@@ -28,6 +28,7 @@ type Guild struct {
 	Notice            string
 	Logo              *GuildLogo
 	RankTitles        [5]string
+	AllianceID        uint32
 	Members           []*GuildMember
 }
 
@@ -66,6 +67,7 @@ func (g *Guild) Clone() *Guild {
 		Notice:            g.Notice,
 		Logo:              g.Logo.Clone(),
 		RankTitles:        g.RankTitles,
+		AllianceID:        g.AllianceID,
 		Members:           make([]*GuildMember, 0, len(g.Members)),
 	}
 	for _, m := range g.Members {
@@ -137,6 +139,7 @@ func GuildFromProto(pb *internal.Guild) *Guild {
 		Notice:            pb.GetNotice(),
 		Logo:              GuildLogoFromProto(pb.GetLogo()),
 		RankTitles:        rankTitles,
+		AllianceID:        pb.GetAllianceId(),
 		Members:           members,
 	}
 }

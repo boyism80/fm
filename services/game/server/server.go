@@ -79,11 +79,14 @@ type GameServer struct {
 	rabbitPartyPID    *actor.PID
 	rabbitBuddyPID    *actor.PID
 	rabbitGuildPID    *actor.PID
+	rabbitAlliancePID *actor.PID
 	characterRuntime  *ServerCharacterRuntime
 	ensureMu          sync.Mutex
 	ensurePending     map[uint64]*ensure.EnsureDeliver
 	ensureNext        atomic.Uint64
 	internalHBCancel  context.CancelFunc
+	allianceMu        sync.RWMutex
+	allianceCache     map[uint32]allianceCacheEntry
 }
 
 func (gs *GameServer) GetRootContext() *actor.RootContext {
@@ -257,6 +260,30 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 			fmt.Sprintf("rabbitmq_guild_w%d_c%d", config.WorldId, config.ChannelId),
 			guildRabbitProps,
 		)
+
+		allianceQueueName := fmt.Sprintf("fm.game.w%d.c%d.alliance.events", config.WorldId, config.ChannelId)
+		allianceConsumerTag := fmt.Sprintf("fm-game-w%d-c%d-alliance", config.WorldId, config.ChannelId)
+		allianceRouteAll := fmt.Sprintf("fm.%d.all.alliance", config.WorldId)
+
+		allianceDisp := mq.NewDispatcher()
+		mq.Bind[*GameServer, allianceMqCreated](gs, allianceDisp)
+
+		allianceRabbitCfg := mq.RabbitActorConfig{
+			Root:        gs.GetRootContext(),
+			Broker:      config.RabbitMQ,
+			Exchange:    mq.DirectExchange,
+			QueueName:   allianceQueueName,
+			ConsumerTag: allianceConsumerTag,
+			RoutingKeys: []string{allianceRouteAll},
+			Dispatcher:  allianceDisp,
+		}
+		allianceRabbitProps := actor.PropsFromProducer(func() actor.Actor {
+			return mq.NewRabbitActor(allianceRabbitCfg)
+		})
+		gs.rabbitAlliancePID = gs.actorRegistry.GetOrCreateActor(
+			fmt.Sprintf("rabbitmq_alliance_w%d_c%d", config.WorldId, config.ChannelId),
+			allianceRabbitProps,
+		)
 	}
 
 	gs.characterListener = &CharacterListenerImpl{gs: gs}
@@ -367,6 +394,9 @@ func (gs *GameServer) Start() error {
 	if gs.rabbitGuildPID != nil {
 		log.Printf("Guild MQ RabbitActor running (%s)", fmt.Sprintf("fm.game.w%d.c%d.guild.events", gs.config.WorldId, gs.config.ChannelId))
 	}
+	if gs.rabbitAlliancePID != nil {
+		log.Printf("Alliance MQ RabbitActor running (%s)", fmt.Sprintf("fm.game.w%d.c%d.alliance.events", gs.config.WorldId, gs.config.ChannelId))
+	}
 
 	if gs.resources != nil {
 		stringCount := 0
@@ -403,6 +433,12 @@ func (gs *GameServer) Stop() error {
 		root := gs.GetRootContext()
 		if root != nil {
 			root.Poison(gs.rabbitGuildPID)
+		}
+	}
+	if gs.rabbitAlliancePID != nil {
+		root := gs.GetRootContext()
+		if root != nil {
+			root.Poison(gs.rabbitAlliancePID)
 		}
 	}
 	if gs.internalConn != nil {
