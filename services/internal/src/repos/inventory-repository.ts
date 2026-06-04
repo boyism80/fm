@@ -124,7 +124,7 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
             uniqueId = null;
         }
         return {
-            unique_id: uniqueId != null ? uniqueId : null,
+            unique_id: uniqueId ?? null,
             owner_id: model.ownerId,
             inventory_type: model.inventoryType,
             item_id: model.itemId,

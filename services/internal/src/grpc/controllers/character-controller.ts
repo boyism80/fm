@@ -179,7 +179,7 @@ export class CharacterGrpcController {
             callback(null, {
                 success: result.success,
                 errorMsg: result.errorMsg ?? "",
-                character: result.success && result.character ? makeCharacterOverview(result.character) : undefined,
+                character: result.character ? makeCharacterOverview(result.character) : undefined,
             });
         } catch (err) {
             this.grpcError(err, callback);

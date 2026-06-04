@@ -7,7 +7,7 @@ type GuildMemberStatus struct {
 	Level        uint32
 	GuildRank    uint32
 	Online       bool
-	AllianceRank uint32
+	AllianceRank *uint32
 }
 
 type GuildInfo struct {
@@ -22,7 +22,7 @@ type GuildInfo struct {
 	LogoColor   uint8
 	Notice      string
 	GP          uint32
-	AllianceID  uint32
+	AllianceID  *uint32
 }
 
 type GuildRankingEntry struct {

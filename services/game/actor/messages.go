@@ -1,6 +1,8 @@
 package actor
 
 import (
+	"time"
+
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
@@ -259,6 +261,14 @@ type DeliverGuildMemberOnlineChange struct {
 	Online      bool
 }
 
+type DeliverGuildMemberFieldsChange struct {
+	CharacterID uint32
+	GuildID     uint32
+	SubjectID   uint32
+	Level       uint32
+	ClassID     uint32
+}
+
 type DeliverGuildDisbandSelf struct {
 	CharacterID uint32
 	GuildID     uint32
@@ -277,7 +287,81 @@ type DeliverAllianceMemberOnlineChange struct {
 	Online      bool
 }
 
-type DeliverAllianceCreate struct {
+type DeliverAllianceMemberFieldsChange struct {
 	CharacterID uint32
-	Packets     []types.Packet
+	AllianceID  uint32
+	GuildID     uint32
+	SubjectID   uint32
+	Level       uint32
+	ClassID     uint32
+}
+
+type DeliverAllianceCreate struct {
+	CharacterID      uint32
+	Info             *dto.AllianceInfo
+	Guilds           []*dto.GuildInfo
+	MembershipGuilds []dto.AllianceMembershipChangeGuild
+}
+
+type DeliverAllianceDisband struct {
+	CharacterID uint32
+	AllianceID  uint32
+}
+
+type DeliverAllianceInfoBroadcast struct {
+	CharacterID uint32
+	Info        *dto.AllianceInfo
+}
+
+type DeliverAllianceNoticeChanged struct {
+	CharacterID uint32
+	Info        *dto.AllianceInfo
+}
+
+type DeliverAllianceLeaderChanged struct {
+	CharacterID uint32
+	AllianceID  uint32
+	OldLeaderID uint32
+	NewLeaderID uint32
+	Info        *dto.AllianceInfo
+	Guilds      []*dto.GuildInfo
+}
+
+type DeliverAllianceMemberRankChanged struct {
+	CharacterID uint32
+	Info        *dto.AllianceInfo
+	Guilds      []*dto.GuildInfo
+}
+
+type DeliverAllianceGuildAdded struct {
+	CharacterID     uint32
+	Info            *dto.AllianceInfo
+	Guilds          []*dto.GuildInfo
+	NewGuildID      uint32
+	AddedGuild      *dto.GuildInfo
+	Members         []dto.AllianceGuildMemberRank
+	Joining         bool
+	MembershipGuild dto.AllianceMembershipChangeGuild
+	HasMembership   bool
+}
+
+type DeliverAllianceGuildLeft struct {
+	CharacterID    uint32
+	Info           *dto.AllianceInfo
+	RemovedGuildID uint32
+	RemovedGuild   *dto.GuildInfo
+	RemovedMembers []dto.AllianceGuildMemberRank
+	Expelled       bool
+	Leaving        bool
+}
+
+type DeliverAllianceInvite struct {
+	CharacterID        uint32
+	TargetGuildID      uint32
+	AllianceID         uint32
+	InviterCharacterID uint32
+	InviterGuildID     uint32
+	InviterName        string
+	AllianceName       string
+	ExpiresAt          time.Time
 }

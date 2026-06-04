@@ -31,24 +31,31 @@ func (p *AllianceOperation) Deserialize(reader *stream.StreamReader) {
 	switch p.Operation {
 	case constant.AllianceC2SCreate:
 		p.AllianceName = reader.ReadStr16()
+
 	case constant.AllianceC2SInvite:
 		p.TargetGuildLeaderName = reader.ReadStr16()
+
 	case constant.AllianceC2SExpel:
 		p.TargetGuildID = reader.ReadU32()
 		if reader.Remaining() >= 4 {
 			p.AllianceID = reader.ReadU32()
 		}
+
 	case constant.AllianceC2SChangeLeader:
 		p.NewLeaderID = reader.ReadU32()
+
 	case constant.AllianceC2SChangeRankTitles:
 		for i := range 5 {
 			p.RankTitles[i] = reader.ReadStr16()
 		}
+
 	case constant.AllianceC2SChangeMemberRank:
 		p.TargetCharacterID = reader.ReadU32()
 		p.RankChangePromote = reader.ReadBool()
+
 	case constant.AllianceC2SChangeNotice:
 		p.Notice = reader.ReadStr16()
+
 	case constant.AllianceC2SLoadInfo, constant.AllianceC2SLeave, constant.AllianceC2SAcceptInvite, constant.AllianceC2SDenyInvite:
 	default:
 	}

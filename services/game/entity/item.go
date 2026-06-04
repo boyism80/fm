@@ -77,14 +77,6 @@ type Equipment interface {
 	ToEquipmentDTO() *dto.Equipment
 }
 
-func copyStringPtr(p *string) *string {
-	if p == nil {
-		return nil
-	}
-	v := *p
-	return &v
-}
-
 func copyUint64Ptr(p *uint64) *uint64 {
 	if p == nil {
 		return nil

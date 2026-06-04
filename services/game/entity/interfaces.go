@@ -17,6 +17,7 @@ type GameWorld interface {
 	GetMapSystem() MapSystem
 	GetSchedulerSystem() SchedulerSystem
 	GetGuildSystem() GuildSystem
+	GetAllianceSystem() AllianceSystem
 	GetPartySystem() PartySystem
 	GetDispatchSystem() DispatchSystem
 }

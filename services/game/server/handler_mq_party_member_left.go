@@ -7,25 +7,32 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type partyMqMemberLeft struct{ gs *GameServer }
+type partyMqMemberLeft struct {
+	partyMqHandler
+}
 
 func (partyMqMemberLeft) New(gs *GameServer) *partyMqMemberLeft {
-	return &partyMqMemberLeft{gs: gs}
+	return &partyMqMemberLeft{partyMqHandler: partyMqHandler{gs: gs}}
 }
-func (*partyMqMemberLeft) EventType() string { return "member_left" }
+
+func (*partyMqMemberLeft) EventType() string {
+	return "member_left"
+}
+
 func (h *partyMqMemberLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
-	gs := h.gs
-	if gs == nil || gs.party == nil {
+	if h.gs == nil {
 		return nil
 	}
-	pc := gs.party
+	pc := h.gs.party
 	evt, ok := decodePartyEventEnvelope(raw)
 	if !ok {
 		return nil
 	}
 	prevParty := pc.Get(evt.PartyID)
 	pc.UpdateAsync(ctx, evt).
-		Then(func() (interface{}, error) { return nil, nil }, func(interface{}) error {
+		Then(func() (interface{}, error) {
+			return nil, nil
+		}, func(interface{}) error {
 			if raw == nil {
 				return nil
 			}
@@ -39,9 +46,9 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ string,
 				return nil
 			}
 			party := pc.Get(evt.PartyID)
-			pc.DeliverPartyLeaveUpdate(prevParty, party, extra.CharacterID, extra.ExpelledByCharacter != 0)
+			h.sendLeaveUpdate(prevParty, party, extra.CharacterID, extra.ExpelledByCharacter != 0)
 			if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && party != nil {
-				pc.DeliverPartyLeaderChange(party, extra.NewLeaderCharacterID, true)
+				h.sendLeaderChange(party, extra.NewLeaderCharacterID, true)
 			}
 			return nil
 		}).

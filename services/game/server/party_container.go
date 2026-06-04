@@ -9,7 +9,6 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/entity"
@@ -100,7 +99,7 @@ func (pc *PartyContainer) mergeGetPartyReplyLocked(partyID uint32, reply *intern
 		delete(pc.parties, partyID)
 		return
 	}
-	ent := entity.PartyFromProto(reply.GetParty())
+	ent := entity.PartyFromProto(pc.gs, reply.GetParty())
 	if ent == nil {
 		delete(pc.revisions, partyID)
 		delete(pc.parties, partyID)
@@ -149,7 +148,7 @@ func (pc *PartyContainer) applyEmbeddedParty(evt PartyEventEnvelope, partyPb *in
 		return false, nil
 	}
 	partyID := evt.PartyID
-	ent := entity.PartyFromProto(partyPb)
+	ent := entity.PartyFromProto(pc.gs, partyPb)
 	if ent == nil {
 		return false, nil
 	}
@@ -175,7 +174,7 @@ func (pc *PartyContainer) Update(partyPb *internal.Party) {
 	if pc == nil || partyPb == nil {
 		return
 	}
-	ent := entity.PartyFromProto(partyPb)
+	ent := entity.PartyFromProto(pc.gs, partyPb)
 	if ent == nil {
 		return
 	}
@@ -242,222 +241,6 @@ func (pc *PartyContainer) ClearPartyMembers(memberIDs []uint32) {
 	}
 }
 
-func (pc *PartyContainer) DeliverPartyInviteToCharacter(targetCharacterID uint32, partyID uint32, inviterName string, partySearch bool) {
-	if pc == nil || pc.gs == nil {
-		return
-	}
-	pc.gs.EnsureSend(nil, targetCharacterID, &g_actor.DeliverPartyInvite{
-		CharacterID: targetCharacterID,
-		PartyID:     partyID,
-		InviterName: inviterName,
-		PartySearch: partySearch,
-	})
-}
-
-func (pc *PartyContainer) DeliverPartyDenyStatusToCharacter(targetCharacterID uint32, action uint8, deniedCharacterName string) {
-	if pc == nil || pc.gs == nil || targetCharacterID == 0 {
-		return
-	}
-	pc.gs.EnsureSend(nil, targetCharacterID, &g_actor.DeliverPartyStatusMessage{
-		CharacterID: targetCharacterID,
-		Code:        constant.PartyStatusCode(action),
-		Name:        deniedCharacterName,
-	})
-}
-
-func (pc *PartyContainer) deliverPartyMemberLeftToMaps(leaverID uint32, prev *entity.Party) {
-	if pc == nil || pc.gs == nil || pc.gs.characterRuntime == nil || leaverID == 0 || prev == nil {
-		return
-	}
-	gs := pc.gs
-	oldIDs := entity.PartyMemberCharacterIDs(prev.GetMembers())
-	root := gs.GetRootContext()
-	if root == nil {
-		return
-	}
-	seen := make(map[string]struct{})
-	for _, cid := range oldIDs {
-		mapPID, ok := gs.characterRuntime.GetMapPID(cid)
-		if !ok || mapPID == nil {
-			continue
-		}
-		key := mapPID.String()
-		if _, dup := seen[key]; dup {
-			continue
-		}
-		seen[key] = struct{}{}
-		root.Send(mapPID, &g_actor.PartyMemberLeft{
-			LeaverID: leaverID,
-		})
-	}
-}
-
-func (pc *PartyContainer) deliverPartyDisbandToMaps(prev *entity.Party) {
-	if pc == nil || pc.gs == nil || pc.gs.characterRuntime == nil || prev == nil {
-		return
-	}
-	gs := pc.gs
-	formerIDs := entity.PartyMemberCharacterIDs(prev.GetMembers())
-	if len(formerIDs) == 0 {
-		return
-	}
-	root := gs.GetRootContext()
-	if root == nil {
-		return
-	}
-	seen := make(map[string]struct{})
-	for _, cid := range formerIDs {
-		mapPID, ok := gs.characterRuntime.GetMapPID(cid)
-		if !ok || mapPID == nil {
-			continue
-		}
-		key := mapPID.String()
-		if _, dup := seen[key]; dup {
-			continue
-		}
-		seen[key] = struct{}{}
-		root.Send(mapPID, &g_actor.PartyDisband{
-			FormerMemberIDs: formerIDs,
-		})
-	}
-}
-
-func (pc *PartyContainer) DeliverPartyJoinUpdate(party *entity.Party, joinedCharacterID uint32) {
-	if pc == nil || pc.gs == nil || party == nil || joinedCharacterID == 0 {
-		return
-	}
-	gs := pc.gs
-	members := party.GetMembers()
-	if len(members) == 0 {
-		return
-	}
-	joinName := ""
-	for _, m := range members {
-		if m != nil && m.GetCharacterId() == joinedCharacterID {
-			joinName = m.GetCharacterName()
-			break
-		}
-	}
-	respMembers := entity.PartyMembersToResponse(members)
-	if joinName == "" {
-		return
-	}
-	for _, m := range members {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateJoin{
-			CharacterID:     m.GetCharacterId(),
-			ForChannel:      int32(gs.config.ChannelId),
-			PartyID:         party.GetPartyId(),
-			JoinCharacterID: joinedCharacterID,
-			JoinName:        joinName,
-			LeaderID:        party.GetLeaderCharacterId(),
-			Members:         respMembers,
-		})
-	}
-}
-
-func (pc *PartyContainer) DeliverPartyLeaveUpdate(prev, current *entity.Party, targetCharacterID uint32, expelled bool) {
-	if pc == nil || pc.gs == nil || prev == nil || targetCharacterID == 0 {
-		return
-	}
-	gs := pc.gs
-	targetName := ""
-	oldMembers := prev.GetMembers()
-	for _, m := range oldMembers {
-		if m != nil && m.GetCharacterId() == targetCharacterID {
-			targetName = m.GetCharacterName()
-			break
-		}
-	}
-	if targetName == "" {
-		return
-	}
-	var (
-		partyID  = prev.GetPartyId()
-		leaderID = prev.GetLeaderCharacterId()
-		members  []*entity.PartyMember
-	)
-	if current != nil {
-		partyID = current.GetPartyId()
-		leaderID = current.GetLeaderCharacterId()
-		members = current.GetMembers()
-	}
-	respMembers := entity.PartyMembersToResponse(members)
-	pc.deliverPartyMemberLeftToMaps(targetCharacterID, prev)
-	for _, m := range oldMembers {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeave{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(gs.config.ChannelId),
-			PartyID:     partyID,
-			TargetID:    targetCharacterID,
-			TargetName:  targetName,
-			LeaderID:    leaderID,
-			Members:     respMembers,
-			Expelled:    expelled,
-		})
-	}
-}
-
-func (pc *PartyContainer) DeliverPartyDisbandUpdate(prev *entity.Party, leaderCharacterID uint32) {
-	if pc == nil || pc.gs == nil || prev == nil || leaderCharacterID == 0 {
-		return
-	}
-	gs := pc.gs
-	pc.deliverPartyDisbandToMaps(prev)
-	for _, m := range prev.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateDisband{
-			CharacterID: m.GetCharacterId(),
-			PartyID:     prev.GetPartyId(),
-			LeaderID:    leaderCharacterID,
-		})
-	}
-}
-
-func (pc *PartyContainer) DeliverPartyLeaderChange(party *entity.Party, newLeaderCharacterID uint32, byDisconnect bool) {
-	if pc == nil || pc.gs == nil || party == nil || newLeaderCharacterID == 0 {
-		return
-	}
-	gs := pc.gs
-	for _, m := range party.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLeaderChange{
-			CharacterID:          m.GetCharacterId(),
-			NewLeaderCharacterID: newLeaderCharacterID,
-			ByDisconnect:         byDisconnect,
-		})
-	}
-}
-
-func (pc *PartyContainer) DeliverPartyLogOnOff(party *entity.Party, _ uint32) {
-	if pc == nil || pc.gs == nil || party == nil {
-		return
-	}
-	gs := pc.gs
-	respMembers := entity.PartyMembersToResponse(party.GetMembers())
-	for _, m := range party.GetMembers() {
-		if m == nil || m.GetCharacterId() == 0 {
-			continue
-		}
-		gs.EnsureSend(nil, m.GetCharacterId(), &g_actor.DeliverPartyUpdateLogOnOff{
-			CharacterID: m.GetCharacterId(),
-			ForChannel:  int32(gs.config.ChannelId),
-			PartyID:     party.GetPartyId(),
-			LeaderID:    party.GetLeaderCharacterId(),
-			Members:     respMembers,
-		})
-	}
-}
-
 func (pc *PartyContainer) DeliverPartySilent(party *entity.Party) {
 	if pc == nil || pc.gs == nil || party == nil {
 		return
@@ -514,7 +297,7 @@ func (pc *PartyContainer) SendPartySilentAsync(ctx actor.Context, ch *entity.Cha
 			if reply == nil || !reply.GetFound() || reply.GetParty() == nil {
 				return nil
 			}
-			ent := entity.PartyFromProto(reply.GetParty())
+			ent := entity.PartyFromProto(pc.gs, reply.GetParty())
 			pc.sendPartySilentToCharacter(ch, ent)
 			return nil
 		},
@@ -538,7 +321,7 @@ func (pc *PartyContainer) sendPartySilentToCharacter(ch *entity.Character, party
 }
 
 func (pc *PartyContainer) PartyMemberIndex(characterID uint32, partyID *uint32) int {
-	if partyID == nil || *partyID == 0 || pc == nil {
+	if partyID == nil || pc == nil {
 		return 0
 	}
 	partyEnt := pc.Get(*partyID)

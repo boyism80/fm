@@ -107,7 +107,7 @@ func (l *CharacterListenerImpl) OnShowGuildInfo(ch *entity.Character) {
 		return
 	}
 	guildID, ok := ch.GetGuildID()
-	if !ok || l.gs.guild == nil {
+	if !ok {
 		return
 	}
 	ent := l.gs.guild.Get(guildID)
@@ -127,12 +127,43 @@ func (l *CharacterListenerImpl) OnShowAllianceInfo(ch *entity.Character) {
 	if l == nil || l.gs == nil || ch == nil {
 		return
 	}
-	for _, pkt := range l.gs.allianceShowPacketsForCharacter(ch) {
-		if pkt == nil {
-			continue
+	allianceID := uint32(0)
+	if guildID, ok := ch.GetGuildID(); ok {
+		if g := l.gs.guild.Get(guildID); g != nil {
+			if id, inAlliance := g.GetAllianceID(); inAlliance {
+				allianceID = id
+			}
 		}
-		_ = ch.Send(pkt, types.SEND_POLICY_ENCRYPT)
 	}
+	info, guilds := l.gs.alliance.ShowData(allianceID)
+	_ = ch.Send(&response.AllianceShowInfo{Info: info}, types.SEND_POLICY_ENCRYPT)
+	if info == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceShowGuilds{Guilds: guilds}, types.SEND_POLICY_ENCRYPT)
+	_ = ch.Send(&response.AllianceUpdateInfo{Info: info}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceUpdateInfo(ch *entity.Character) {
+	if l == nil || l.gs == nil || ch == nil {
+		return
+	}
+	allianceID := uint32(0)
+	if guildID, ok := ch.GetGuildID(); ok {
+		if g := l.gs.guild.Get(guildID); g != nil {
+			if id, inAlliance := g.GetAllianceID(); inAlliance {
+				allianceID = id
+			}
+		}
+	}
+	if allianceID == 0 {
+		return
+	}
+	info, _ := l.gs.alliance.ShowData(allianceID)
+	if info == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceUpdateInfo{Info: info}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *entity.Character) {
@@ -140,7 +171,7 @@ func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *entity.Character)
 		return
 	}
 	guildID, ok := ch.GetGuildID()
-	if !ok || l.gs == nil || l.gs.guild == nil {
+	if !ok || l.gs == nil {
 		return
 	}
 	ent := l.gs.guild.Get(guildID)
@@ -184,6 +215,177 @@ func (l *CharacterListenerImpl) OnGuildInvite(ch *entity.Character, guildID uint
 	_ = ch.Send(&response.GuildInvite{
 		GuildID:     guildID,
 		InviterName: inviterName,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceInvite(ch *entity.Character, inviterGuildID uint32, inviterName string, allianceName string) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceInvite{
+		InviterGuildID: inviterGuildID,
+		InviterName:    inviterName,
+		AllianceName:   allianceName,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceCreate(
+	ch *entity.Character,
+	info *dto.AllianceInfo,
+	guilds []*dto.GuildInfo,
+	membershipGuilds []dto.AllianceMembershipChangeGuild,
+) {
+	if ch == nil || info == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceCreate{
+		Info:   info,
+		Guilds: guilds,
+	}, types.SEND_POLICY_ENCRYPT)
+	_ = ch.Send(&response.AllianceShowInfo{
+		Info: info,
+	}, types.SEND_POLICY_ENCRYPT)
+	_ = ch.Send(&response.AllianceShowGuilds{
+		Guilds: guilds,
+	}, types.SEND_POLICY_ENCRYPT)
+	_ = ch.Send(&response.AllianceChangeMembership{
+		InAlliance: true,
+		AllianceID: info.AllianceID,
+		Guilds:     membershipGuilds,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceDisband(ch *entity.Character, allianceID uint32) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceDisband{
+		AllianceID: allianceID,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceInfoBroadcast(ch *entity.Character, info *dto.AllianceInfo) {
+	if ch == nil || info == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceUpdateInfo{
+		Info: info,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceNoticeChanged(ch *entity.Character, info *dto.AllianceInfo) {
+	l.OnAllianceInfoBroadcast(ch, info)
+}
+
+func (l *CharacterListenerImpl) OnAllianceLeaderChanged(
+	ch *entity.Character,
+	allianceID uint32,
+	oldLeaderID uint32,
+	newLeaderID uint32,
+	info *dto.AllianceInfo,
+	guilds []*dto.GuildInfo,
+) {
+	if ch == nil || info == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceChangeLeader{
+		AllianceID:  allianceID,
+		OldLeaderID: oldLeaderID,
+		NewLeaderID: newLeaderID,
+	}, types.SEND_POLICY_ENCRYPT)
+	_ = ch.Send(&response.AllianceUpdateLeader{
+		AllianceID:  allianceID,
+		OldLeaderID: oldLeaderID,
+		NewLeaderID: newLeaderID,
+	}, types.SEND_POLICY_ENCRYPT)
+	_ = ch.Send(&response.AllianceUpdateInfo{
+		Info: info,
+	}, types.SEND_POLICY_ENCRYPT)
+	_ = ch.Send(&response.AllianceShowGuilds{
+		Guilds: guilds,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceMemberRankChanged(ch *entity.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo) {
+	if ch == nil || info == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceUpdateInfo{
+		Info: info,
+	}, types.SEND_POLICY_ENCRYPT)
+	_ = ch.Send(&response.AllianceShowGuilds{
+		Guilds: guilds,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceGuildAdded(
+	ch *entity.Character,
+	info *dto.AllianceInfo,
+	guilds []*dto.GuildInfo,
+	newGuildID uint32,
+	addedGuild *dto.GuildInfo,
+	members []dto.AllianceGuildMemberRank,
+	joining bool,
+	membershipGuild *dto.AllianceMembershipChangeGuild,
+) {
+	if ch == nil || info == nil || addedGuild == nil {
+		return
+	}
+	if joining {
+		_ = ch.Send(&response.AllianceShowInfo{
+			Info: info,
+		}, types.SEND_POLICY_ENCRYPT)
+		_ = ch.Send(&response.AllianceShowGuilds{
+			Guilds: guilds,
+		}, types.SEND_POLICY_ENCRYPT)
+		if membershipGuild != nil {
+			_ = ch.Send(&response.AllianceChangeMembership{
+				InAlliance: true,
+				AllianceID: info.AllianceID,
+				Guilds:     []dto.AllianceMembershipChangeGuild{*membershipGuild},
+			}, types.SEND_POLICY_ENCRYPT)
+		}
+		return
+	}
+	_ = ch.Send(&response.AllianceAddGuild{
+		Info:       info,
+		NewGuildID: newGuildID,
+		Guild:      addedGuild,
+	}, types.SEND_POLICY_ENCRYPT)
+	_ = ch.Send(&response.AllianceChangeGuildMembers{
+		Added:      true,
+		AllianceID: info.AllianceID,
+		GuildID:    newGuildID,
+		Members:    members,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceGuildLeft(
+	ch *entity.Character,
+	info *dto.AllianceInfo,
+	removedGuildID uint32,
+	removedGuild *dto.GuildInfo,
+	removedMembers []dto.AllianceGuildMemberRank,
+	expelled bool,
+	leaving bool,
+) {
+	if ch == nil || info == nil || removedGuild == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceRemoveGuild{
+		Info:           info,
+		RemovedGuildID: removedGuildID,
+		Guild:          removedGuild,
+		Expelled:       expelled,
+	}, types.SEND_POLICY_ENCRYPT)
+	if leaving {
+		return
+	}
+	_ = ch.Send(&response.AllianceChangeGuildMembers{
+		Added:      false,
+		AllianceID: 0,
+		GuildID:    removedGuildID,
+		Members:    removedMembers,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -316,6 +518,18 @@ func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *entity.Character, 
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnGuildMemberFieldsChange(ch *entity.Character, guildID uint32, subjectCharacterID uint32, level uint32, classID uint32) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.GuildMemberLevelJobUpdate{
+		GuildID:     guildID,
+		CharacterID: subjectCharacterID,
+		Level:       level,
+		JobID:       classID,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnAllianceMemberOnlineChange(ch *entity.Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, online bool) {
 	if ch == nil {
 		return
@@ -325,6 +539,19 @@ func (l *CharacterListenerImpl) OnAllianceMemberOnlineChange(ch *entity.Characte
 		GuildID:     guildID,
 		CharacterID: subjectCharacterID,
 		Online:      online,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnAllianceMemberFieldsChange(ch *entity.Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, level uint32, classID uint32) {
+	if ch == nil {
+		return
+	}
+	_ = ch.Send(&response.AllianceUpdateMember{
+		AllianceID:  allianceID,
+		GuildID:     guildID,
+		CharacterID: subjectCharacterID,
+		Level:       level,
+		ClassID:     classID,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -976,11 +1203,13 @@ func (l *CharacterListenerImpl) OnClassChange(ch *entity.Character, oldClass uin
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
-	l.gs.UpdatePartyMemberAsync(nil, ch).Run()
+	l.gs.GetPartySystem().UpdateMemberAsync(nil, ch).Run()
+	l.gs.alliance.NotifyMemberFieldsChanged(ch)
 }
 
 func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *entity.Character) {
-	l.gs.UpdatePartyMemberAsync(nil, ch).Run()
+	l.gs.GetPartySystem().UpdateMemberAsync(nil, ch).Run()
+	l.gs.alliance.NotifyMemberFieldsChanged(ch)
 }
 
 func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, recipient *entity.Character) {

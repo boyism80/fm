@@ -212,7 +212,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 				})
 			},
 			func(gp *internal.GetPartyReply) error {
-				if gp.GetFound() && gp.GetParty() != nil && h.gs.party != nil {
+				if gp.GetFound() && gp.GetParty() != nil {
 					h.gs.party.Update(gp.GetParty())
 				}
 				return nil

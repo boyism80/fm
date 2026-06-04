@@ -19,7 +19,7 @@ func (partyMqPartySync) New(gs *GameServer) *partyMqPartySync {
 func (*partyMqPartySync) EventType() string { return "party_sync" }
 func (h *partyMqPartySync) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
-	if gs == nil || gs.party == nil {
+	if gs == nil {
 		return nil
 	}
 	pc := gs.party

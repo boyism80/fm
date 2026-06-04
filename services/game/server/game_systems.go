@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
@@ -27,6 +28,10 @@ type guildSystem struct {
 	gs *GameServer
 }
 
+type allianceSystem struct {
+	gs *GameServer
+}
+
 type dispatchSystem struct {
 	gs *GameServer
 }
@@ -35,35 +40,42 @@ func (gs *GameServer) GetMapSystem() entity.MapSystem {
 	if gs == nil {
 		return nil
 	}
-	return mapSystem{gs}
+	return gs.mapSystem
 }
 
 func (gs *GameServer) GetSchedulerSystem() entity.SchedulerSystem {
 	if gs == nil {
 		return nil
 	}
-	return schedulerSystem{gs}
+	return gs.schedulerSystem
 }
 
 func (gs *GameServer) GetPartySystem() entity.PartySystem {
 	if gs == nil {
 		return nil
 	}
-	return partySystem{gs}
+	return gs.partySystem
 }
 
 func (gs *GameServer) GetGuildSystem() entity.GuildSystem {
 	if gs == nil {
 		return nil
 	}
-	return guildSystem{gs}
+	return gs.guildSystem
+}
+
+func (gs *GameServer) GetAllianceSystem() entity.AllianceSystem {
+	if gs == nil {
+		return nil
+	}
+	return gs.allianceSystem
 }
 
 func (gs *GameServer) GetDispatchSystem() entity.DispatchSystem {
 	if gs == nil {
 		return nil
 	}
-	return dispatchSystem{gs}
+	return gs.dispatchSystem
 }
 
 func (s mapSystem) Get(mapID uint32) *entity.Map {
@@ -136,9 +148,7 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.Skil
 		closestPortalID = m.Wz.FindClosestPortalSpawnID(fieldAnchorPt)
 	}
 	slot := 0
-	if s.gs.party != nil {
-		slot = s.gs.party.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
-	}
+	slot = s.gs.party.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
 	root.Send(destPID, &g_actor.RequestSpawnDoor{
 		ReplyTo:        srcPID,
 		CharacterID:    ch.GetID(),
@@ -184,17 +194,31 @@ func (s schedulerSystem) RunObjectTimer(pid *actor.PID, obj entity.Object, key s
 }
 
 func (s partySystem) Get(partyID uint32) *entity.Party {
-	if s.gs == nil || s.gs.party == nil {
+	if s.gs == nil {
 		return nil
 	}
 	return s.gs.party.Get(partyID)
 }
 
 func (s guildSystem) Get(guildID uint32) *entity.Guild {
-	if s.gs == nil || s.gs.guild == nil {
+	if s.gs == nil {
 		return nil
 	}
 	return s.gs.guild.Get(guildID)
+}
+
+func (s guildSystem) TrySetAllianceInvite(guildID, allianceID uint32, expiresAt time.Time) bool {
+	if s.gs == nil {
+		return false
+	}
+	return s.gs.guild.TrySetAllianceInvite(guildID, allianceID, expiresAt)
+}
+
+func (s allianceSystem) Get(allianceID uint32) *entity.Alliance {
+	if s.gs == nil {
+		return nil
+	}
+	return s.gs.alliance.Get(allianceID)
 }
 
 func (s dispatchSystem) SendTo(characterID uint32, msg interface{}) {

@@ -19,32 +19,6 @@ const saveCharactersPromiseTimeout = 30 * time.Second
 
 const saveCharactersChunkSize = 100
 
-// saveCharactersAsync builds a Promise that saves the given characters in one RPC. Caller must Run().
-func (gs *GameServer) saveCharactersAsync(ctx actor.Context, chars []*entity.Character) *async.Promise {
-	p := async.NewPromise(ctx, saveCharactersPromiseTimeout)
-	if gs == nil || len(chars) == 0 {
-		return p
-	}
-	charsCopy := append([]*entity.Character(nil), chars...)
-	p.OnError(func(err error) {
-		log.Printf("saveCharacters failed: %v", err)
-	})
-	async.ThenRPC(p, func(c context.Context) (*internal.SaveCharactersReply, error) {
-		return gs.grpcSaveCharacters(c, charsCopy)
-	}, func(*internal.SaveCharactersReply) error {
-		return nil
-	})
-	return p
-}
-
-// saveCharacterAsync builds a Promise that saves one character. Caller must Run().
-func (gs *GameServer) saveCharacterAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
-	if ch == nil {
-		return async.NewPromise(ctx, saveCharactersPromiseTimeout)
-	}
-	return gs.saveCharactersAsync(ctx, []*entity.Character{ch})
-}
-
 // SaveAsync builds a Promise that saves chars in parallel chunks of saveCharactersChunkSize. Caller must Run().
 func (gs *GameServer) SaveAsync(ctx actor.Context, chars []*entity.Character) *async.Promise {
 	p := async.NewPromise(ctx, saveCharactersPromiseTimeout)

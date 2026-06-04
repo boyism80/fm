@@ -33,6 +33,15 @@ service Internal {
   rpc GetGuild (GetGuildRequest) returns (GetGuildReply);
   rpc CreateAlliance (CreateAllianceRequest) returns (CreateAllianceReply);
   rpc GetAlliance (GetAllianceRequest) returns (GetAllianceReply);
+  rpc DisbandAlliance (DisbandAllianceRequest) returns (DisbandAllianceReply);
+  rpc LeaveAlliance (LeaveAllianceRequest) returns (LeaveAllianceReply);
+  rpc ExpelAllianceGuild (ExpelAllianceGuildRequest) returns (ExpelAllianceGuildReply);
+  rpc AcceptAllianceInvite (AcceptAllianceInviteRequest) returns (AcceptAllianceInviteReply);
+  rpc IncreaseAllianceCapacity (IncreaseAllianceCapacityRequest) returns (IncreaseAllianceCapacityReply);
+  rpc ChangeAllianceRankTitles (ChangeAllianceRankTitlesRequest) returns (ChangeAllianceRankTitlesReply);
+  rpc ChangeAllianceMemberRank (ChangeAllianceMemberRankRequest) returns (ChangeAllianceMemberRankReply);
+  rpc ChangeAllianceLeader (ChangeAllianceLeaderRequest) returns (ChangeAllianceLeaderReply);
+  rpc ChangeAllianceNotice (ChangeAllianceNoticeRequest) returns (ChangeAllianceNoticeReply);
   rpc AcceptGuildInvite (AcceptGuildInviteRequest) returns (AcceptGuildInviteReply);
   rpc LeaveGuild (LeaveGuildRequest) returns (LeaveGuildReply);
   rpc ExpelGuild (ExpelGuildRequest) returns (ExpelGuildReply);
@@ -157,7 +166,7 @@ message EnterGameReply {
   repeated SkillPersisted     skills    = 4;
   repeated KeyLayoutBinding   key_layout = 5;
   optional uint32              party_id  = 6;
-  uint32                       guild_id  = 7;
+  optional uint32              guild_id  = 7;
   repeated BuffPersisted      buffs     = 8;
   repeated BuddyEntry         buddies   = 9;
   uint32                       buddy_capacity = 10;
@@ -913,6 +922,18 @@ enum AllianceErrorCode {
   ALLIANCE_ERROR_ALLIANCE_NAME_TAKEN = 6;
   ALLIANCE_ERROR_PARTNER_INVALID = 7;
   ALLIANCE_ERROR_GUILD_ALREADY_IN_ALLIANCE = 8;
+  ALLIANCE_ERROR_NOT_IN_ALLIANCE = 9;
+  ALLIANCE_ERROR_NOT_ALLIANCE_LEADER = 10;
+  ALLIANCE_ERROR_ALLIANCE_NOT_FOUND = 11;
+  ALLIANCE_ERROR_CAPACITY_FULL = 12;
+  ALLIANCE_ERROR_CAPACITY_MAX = 13;
+  ALLIANCE_ERROR_INVALID_RANK_TITLES = 14;
+  ALLIANCE_ERROR_NOT_AUTHORIZED = 15;
+  ALLIANCE_ERROR_INVALID_MEMBER_RANK = 16;
+  ALLIANCE_ERROR_TARGET_NOT_IN_ALLIANCE = 17;
+  ALLIANCE_ERROR_CANNOT_EXPEL_OWN_GUILD = 18;
+  ALLIANCE_ERROR_INVALID_NOTICE = 19;
+  ALLIANCE_ERROR_INVALID_LEADER_CANDIDATE = 20;
 }
 
 message Alliance {
@@ -951,6 +972,139 @@ message GetAllianceRequest {
 message GetAllianceReply {
   bool found = 1;
   Alliance alliance = 2;
+}
+
+message DisbandAllianceRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+}
+
+message DisbandAllianceReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+}
+
+message LeaveAllianceRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+}
+
+message LeaveAllianceReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+  bool disbanded = 5;
+  uint32 removed_guild_id = 6;
+  Alliance alliance = 7;
+}
+
+message ExpelAllianceGuildRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 target_guild_id = 3;
+  uint32 alliance_id = 4;
+}
+
+message ExpelAllianceGuildReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+  bool disbanded = 5;
+  uint32 removed_guild_id = 6;
+  Alliance alliance = 7;
+}
+
+message AcceptAllianceInviteRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 alliance_id = 3;
+  uint32 guild_id = 4;
+}
+
+message AcceptAllianceInviteReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+  Alliance alliance = 5;
+}
+
+message IncreaseAllianceCapacityRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+}
+
+message IncreaseAllianceCapacityReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+  Alliance alliance = 5;
+}
+
+message ChangeAllianceRankTitlesRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  repeated string rank_titles = 3;
+}
+
+message ChangeAllianceRankTitlesReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+  Alliance alliance = 5;
+}
+
+message ChangeAllianceMemberRankRequest {
+  uint32 world_id = 1;
+  uint32 requester_character_id = 2;
+  uint32 target_character_id = 3;
+  bool promote = 4;
+}
+
+message ChangeAllianceMemberRankReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+  uint32 target_character_id = 5;
+  uint32 new_alliance_rank = 6;
+  Alliance alliance = 7;
+}
+
+message ChangeAllianceLeaderRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 new_leader_character_id = 3;
+}
+
+message ChangeAllianceLeaderReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+  uint32 old_leader_character_id = 5;
+  uint32 new_leader_character_id = 6;
+  Alliance alliance = 7;
+}
+
+message ChangeAllianceNoticeRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  string notice = 3;
+}
+
+message ChangeAllianceNoticeReply {
+  bool ok = 1;
+  AllianceErrorCode error_code = 2;
+  uint32 alliance_id = 3;
+  uint64 revision = 4;
+  Alliance alliance = 5;
 }
 
 message GetGuildRequest {

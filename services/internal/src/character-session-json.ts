@@ -18,6 +18,7 @@ type CharacterSessionJson = {
         channelId: number | null;
         connected: boolean;
     };
+    gameToGameTransfer?: boolean;
     timestamps: {
         createdAt: string | null;
         updatedAt: string | null;
@@ -75,7 +76,7 @@ export function deserializeCharacterSession(raw: string): CharacterSession | nul
         if (!isCharacterSessionRecord(o)) {
             return null;
         }
-        return {
+        const out: CharacterSession = {
             version: o.version,
             worldId: o.worldId,
             accountId: o.accountId,
@@ -93,6 +94,10 @@ export function deserializeCharacterSession(raw: string): CharacterSession | nul
                 updatedAt: o.timestamps.updatedAt ?? null,
             },
         };
+        if (o.gameToGameTransfer === true) {
+            out.gameToGameTransfer = true;
+        }
+        return out;
     } catch {
         return null;
     }

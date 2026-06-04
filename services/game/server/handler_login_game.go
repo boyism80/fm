@@ -15,19 +15,21 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func optionalUint32(value uint32) *uint32 {
-	if value == 0 {
-		return nil
-	}
-	v := value
-	return &v
-}
-
 func enterGameReplyPartyPtr(reply *internal.EnterGameReply) *uint32 {
 	if reply == nil || reply.PartyId == nil {
 		return nil
 	}
 	v := *reply.PartyId
+	p := new(uint32)
+	*p = v
+	return p
+}
+
+func enterGameReplyGuildPtr(reply *internal.EnterGameReply) *uint32 {
+	if reply == nil || reply.GuildId == nil {
+		return nil
+	}
+	v := *reply.GuildId
 	p := new(uint32)
 	*p = v
 	return p
@@ -90,10 +92,10 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		return nil
 	})
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGuildReply, error) {
-		if enterReply == nil || enterReply.GetGuildId() == 0 {
+		if enterReply == nil || enterReply.GuildId == nil {
 			return &internal.GetGuildReply{Found: false}, nil
 		}
-		guildID := enterReply.GetGuildId()
+		guildID := *enterReply.GuildId
 		return ic.GetGuild(c, &internal.GetGuildRequest{
 			WorldId: h.gs.config.WorldId,
 			GuildId: guildID,
@@ -106,13 +108,13 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		if guildReply == nil || !guildReply.GetFound() || guildReply.GetGuild() == nil {
 			return &internal.GetAllianceReply{Found: false}, nil
 		}
-		allianceID := guildReply.GetGuild().GetAllianceId()
-		if allianceID == 0 {
+		g := guildReply.GetGuild()
+		if g.AllianceId == nil {
 			return &internal.GetAllianceReply{Found: false}, nil
 		}
 		return ic.GetAlliance(c, &internal.GetAllianceRequest{
 			WorldId:    h.gs.config.WorldId,
-			AllianceId: allianceID,
+			AllianceId: *g.AllianceId,
 		})
 	}, func(reply *internal.GetAllianceReply) error {
 		allianceReply = reply
@@ -163,7 +165,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		Stance:       uint8(p.GetStance()),
 		Hidden:       p.GetHidden(),
 		PartyID:      enterGameReplyPartyPtr(reply),
-		GuildID:      optionalUint32(reply.GetGuildId()),
+		GuildID:      enterGameReplyGuildPtr(reply),
 	}
 
 	character := entity.NewCharacter(ctx.Client, h.gs.characterListener, initData, h.gs)
@@ -214,16 +216,16 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		return fmt.Errorf("runtime register: %w", err)
 	}
 
-	if h.gs.party != nil && reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
+	if reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
 		h.gs.party.Update(partyReply.GetParty())
 	}
 
-	if h.gs.guild != nil && guildReply != nil && guildReply.GetFound() && guildReply.GetGuild() != nil {
+	if guildReply != nil && guildReply.GetFound() && guildReply.GetGuild() != nil {
 		h.gs.guild.Update(guildReply.GetGuild())
 	}
 
 	if allianceReply != nil && allianceReply.GetFound() && allianceReply.GetAlliance() != nil {
-		h.gs.applyAllianceFromProto(allianceReply.GetAlliance())
+		h.gs.alliance.Update(allianceReply.GetAlliance())
 	}
 
 	rootContext := h.gs.GetRootContext()

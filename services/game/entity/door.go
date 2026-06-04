@@ -70,7 +70,7 @@ func (d *Door) UsableBy(ch *Character) bool {
 		return false
 	}
 	vParty := ch.GetPartyID()
-	if vParty == nil || *d.PartyID == 0 || *vParty == 0 {
+	if vParty == nil {
 		return false
 	}
 	return *vParty == *d.PartyID

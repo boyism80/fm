@@ -5,6 +5,14 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
+func cloneU32Ptr(p *uint32) *uint32 {
+	if p == nil {
+		return nil
+	}
+	v := *p
+	return &v
+}
+
 func guildMemberOnline(channelIndex *int32) bool {
 	if channelIndex == nil {
 		return false
@@ -44,7 +52,7 @@ func GuildMemberToDTO(m *GuildMember) dto.GuildMemberStatus {
 		Level:        m.Level,
 		GuildRank:    guildRankToUint32(m.Rank),
 		Online:       guildMemberOnline(m.ChannelIndex),
-		AllianceRank: m.AllianceRank,
+		AllianceRank: cloneU32Ptr(m.AllianceRank),
 	}
 }
 
@@ -56,9 +64,10 @@ func GuildMemberStatusFromProto(m *internal.GuildMember) dto.GuildMemberStatus {
 	if m.ChannelIndex != nil && *m.ChannelIndex >= 0 {
 		online = true
 	}
-	allianceRank := uint32(0)
+	var allianceRank *uint32
 	if m.AllianceRank != nil {
-		allianceRank = m.GetAllianceRank()
+		ar := m.GetAllianceRank()
+		allianceRank = &ar
 	}
 	return dto.GuildMemberStatus{
 		CharacterID:  m.GetCharacterId(),
@@ -80,6 +89,52 @@ func GuildMembersToDTO(members []*GuildMember) []dto.GuildMemberStatus {
 		out = append(out, GuildMemberToDTO(m))
 	}
 	return out
+}
+
+func GuildInfoFromProto(pb *internal.Guild) *dto.GuildInfo {
+	if pb == nil {
+		return nil
+	}
+	logoBG := uint16(0)
+	logoBGColor := uint8(0)
+	logo := uint16(0)
+	logoColor := uint8(0)
+	if logoPb := pb.GetLogo(); logoPb != nil {
+		logoBG = uint16(logoPb.GetLogoBg())
+		logoBGColor = uint8(logoPb.GetLogoBgColor())
+		logo = uint16(logoPb.GetLogo())
+		logoColor = uint8(logoPb.GetLogoColor())
+	}
+	var rankTitles [5]string
+	titles := pb.GetRankTitles()
+	for i := 0; i < 5; i++ {
+		if i < len(titles) {
+			rankTitles[i] = titles[i]
+		}
+	}
+	members := make([]dto.GuildMemberStatus, 0, len(pb.GetMembers()))
+	for _, m := range pb.GetMembers() {
+		members = append(members, GuildMemberStatusFromProto(m))
+	}
+	var allianceID *uint32
+	if pb.AllianceId != nil {
+		id := pb.GetAllianceId()
+		allianceID = &id
+	}
+	return &dto.GuildInfo{
+		GuildID:     pb.GetGuildId(),
+		Name:        pb.GetName(),
+		RankTitles:  rankTitles,
+		Members:     members,
+		Capacity:    pb.GetCapacity(),
+		LogoBG:      logoBG,
+		LogoBGColor: logoBGColor,
+		Logo:        logo,
+		LogoColor:   logoColor,
+		Notice:      pb.GetNotice(),
+		GP:          pb.GetGp(),
+		AllianceID:  allianceID,
+	}
 }
 
 func GuildToDTO(g *Guild) *dto.GuildInfo {
@@ -108,6 +163,6 @@ func GuildToDTO(g *Guild) *dto.GuildInfo {
 		LogoColor:   logoColor,
 		Notice:      g.Notice,
 		GP:          g.GP,
-		AllianceID:  g.AllianceID,
+		AllianceID:  cloneU32Ptr(g.AllianceID),
 	}
 }

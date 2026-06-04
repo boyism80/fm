@@ -19,7 +19,7 @@ func (*guildMqCreated) EventType() string {
 
 func (h *guildMqCreated) Handle(ctx actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
-	if gs == nil || gs.guild == nil {
+	if gs == nil {
 		return nil
 	}
 	evt, ok := decodeGuildEventEnvelope(raw)

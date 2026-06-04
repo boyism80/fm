@@ -3,7 +3,7 @@ package entity
 import internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 
 // PartyFromProto builds an entity Party from an internal protobuf message.
-func PartyFromProto(pb *internal.Party) *Party {
+func PartyFromProto(gw GameWorld, pb *internal.Party) *Party {
 	if pb == nil {
 		return nil
 	}
@@ -14,6 +14,7 @@ func PartyFromProto(pb *internal.Party) *Party {
 		}
 	}
 	return &Party{
+		GameWorld:         gw,
 		WorldID:           pb.GetWorldId(),
 		PartyID:           pb.GetPartyId(),
 		LeaderCharacterID: pb.GetLeaderCharacterId(),

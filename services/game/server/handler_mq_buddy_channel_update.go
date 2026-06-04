@@ -42,21 +42,14 @@ func (h *buddyMqChannelUpdate) Handle(_ actor.Context, _ amqp.Delivery, _ string
 		if recipientID == 0 {
 			continue
 		}
-		gs.DeliverBuddyChannelUpdate(recipientID, payload.CharacterID, payload.ChannelIndex)
+		if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientID) {
+			continue
+		}
+		gs.EnsureSend(nil, recipientID, &g_actor.DeliverBuddyChannelUpdate{
+			RecipientCharacterID: recipientID,
+			BuddyCharacterID:     payload.CharacterID,
+			Channel:              payload.ChannelIndex,
+		})
 	}
 	return nil
-}
-
-func (gs *GameServer) DeliverBuddyChannelUpdate(recipientCharacterID uint32, buddyCharacterID uint32, channel int32) {
-	if gs == nil || recipientCharacterID == 0 || buddyCharacterID == 0 {
-		return
-	}
-	if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientCharacterID) {
-		return
-	}
-	gs.EnsureSend(nil, recipientCharacterID, &g_actor.DeliverBuddyChannelUpdate{
-		RecipientCharacterID: recipientCharacterID,
-		BuddyCharacterID:     buddyCharacterID,
-		Channel:              channel,
-	})
 }

@@ -48,31 +48,6 @@ func (ch *Character) IsBeginner() bool {
 	return ch.Class == 0
 }
 
-func (ch *Character) getClassAdvancementLevel() int {
-	class := ch.Class
-
-	if class == 0 {
-		return 0
-	}
-
-	if class >= 100 {
-		secondDigit := (class / 10) % 10
-		thirdDigit := class % 10
-
-		if secondDigit == 0 {
-			return 1
-		} else if thirdDigit == 0 {
-			return 2
-		} else if thirdDigit == 1 {
-			return 3
-		} else {
-			return 4
-		}
-	}
-
-	return 0
-}
-
 func (ch *Character) IsCannon() bool {
 	return ch.Class == 1 || ch.Class == 501 || (ch.Class >= 530 && ch.Class <= 532)
 }

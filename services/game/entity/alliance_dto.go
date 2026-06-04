@@ -16,12 +16,7 @@ func AllianceInfoFromProto(a *internal.Alliance) *dto.AllianceInfo {
 			rankTitles[i] = titles[i]
 		}
 	}
-	guildIDs := make([]uint32, 0, len(a.GetGuildIds()))
-	for _, id := range a.GetGuildIds() {
-		if id > 0 {
-			guildIDs = append(guildIDs, id)
-		}
-	}
+	guildIDs := append([]uint32(nil), a.GetGuildIds()...)
 	return &dto.AllianceInfo{
 		AllianceID: a.GetAllianceId(),
 		Name:       a.GetName(),
@@ -38,12 +33,58 @@ func AllianceCreateGuildsFromProto(a *internal.Alliance) []*dto.GuildInfo {
 	}
 	out := make([]*dto.GuildInfo, 0, len(a.GetGuilds()))
 	for _, g := range a.GetGuilds() {
-		ent := GuildFromProto(g)
-		if info := GuildToDTO(ent); info != nil {
+		if info := GuildInfoFromProto(g); info != nil {
 			out = append(out, info)
 		}
 	}
 	return out
+}
+
+func AllianceGuildMemberRanksFromProto(g *internal.Guild) []dto.AllianceGuildMemberRank {
+	if g == nil {
+		return nil
+	}
+	out := make([]dto.AllianceGuildMemberRank, 0, len(g.GetMembers()))
+	for _, m := range g.GetMembers() {
+		if m == nil || m.GetCharacterId() == 0 {
+			continue
+		}
+		rank := uint8(0)
+		if m.AllianceRank != nil {
+			rank = uint8(m.GetAllianceRank())
+		}
+		out = append(out, dto.AllianceGuildMemberRank{
+			CharacterID:  m.GetCharacterId(),
+			AllianceRank: rank,
+		})
+	}
+	return out
+}
+
+func allianceMembershipChangeGuildFromProto(g *internal.Guild) (dto.AllianceMembershipChangeGuild, bool) {
+	if g == nil {
+		return dto.AllianceMembershipChangeGuild{}, false
+	}
+	block := dto.AllianceMembershipChangeGuild{
+		GuildID: g.GetGuildId(),
+	}
+	for _, m := range g.GetMembers() {
+		if m == nil || m.GetCharacterId() == 0 {
+			continue
+		}
+		if m.AllianceRank == nil {
+			continue
+		}
+		block.Members = append(block.Members, dto.AllianceMembershipChangeMember{
+			CharacterID:  m.GetCharacterId(),
+			AllianceRank: uint8(m.GetAllianceRank()),
+		})
+	}
+	return block, true
+}
+
+func AllianceMembershipChangeGuildFromProto(g *internal.Guild) (dto.AllianceMembershipChangeGuild, bool) {
+	return allianceMembershipChangeGuildFromProto(g)
 }
 
 func AllianceMembershipChangeGuildsFromProto(a *internal.Alliance) []dto.AllianceMembershipChangeGuild {
@@ -52,26 +93,10 @@ func AllianceMembershipChangeGuildsFromProto(a *internal.Alliance) []dto.Allianc
 	}
 	out := make([]dto.AllianceMembershipChangeGuild, 0, len(a.GetGuilds()))
 	for _, g := range a.GetGuilds() {
-		if g == nil {
-			continue
+		block, ok := allianceMembershipChangeGuildFromProto(g)
+		if ok {
+			out = append(out, block)
 		}
-		ent := GuildFromProto(g)
-		if ent == nil {
-			continue
-		}
-		block := dto.AllianceMembershipChangeGuild{
-			GuildID: ent.GuildID,
-		}
-		for _, m := range ent.Members {
-			if m == nil || m.CharacterID == 0 {
-				continue
-			}
-			block.Members = append(block.Members, dto.AllianceMembershipChangeMember{
-				CharacterID:  m.CharacterID,
-				AllianceRank: uint8(m.AllianceRank),
-			})
-		}
-		out = append(out, block)
 	}
 	return out
 }

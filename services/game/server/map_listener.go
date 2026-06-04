@@ -62,29 +62,28 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		obj.SendSpawnSyncToViewer(character)
 	}
 
-	SyncPartyMemberHPOnMapEnter(mapInstance, character, 0)
+	SyncPartyMemberHPOnMapEnter(mapInstance, character, nil)
 
 	if l.gs != nil && character != nil && l.gs.characterRuntime != nil {
 		_ = l.gs.characterRuntime.SetMapPID(character.GetID(), mapInstance.GetActorPID())
 	}
 
-	if l.gs != nil && l.gs.party != nil {
+	if l.gs != nil {
 		l.gs.party.SendPartySilentAsync(ctx, character).Run()
 	}
 }
 
-func SyncPartyMemberHPOnMapEnter(mapInstance *entity.Map, character *entity.Character, effectivePartyID uint32) {
+func SyncPartyMemberHPOnMapEnter(mapInstance *entity.Map, character *entity.Character, effectivePartyID *uint32) {
 	if mapInstance == nil || character == nil {
 		return
 	}
 	var partyID uint32
 	inParty := false
-	if pid := character.GetPartyID(); pid != nil {
-		partyID = *pid
+	if effectivePartyID != nil {
+		partyID = *effectivePartyID
 		inParty = true
-	}
-	if effectivePartyID != 0 {
-		partyID = effectivePartyID
+	} else if pid := character.GetPartyID(); pid != nil {
+		partyID = *pid
 		inParty = true
 	}
 	if !inParty {

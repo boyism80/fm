@@ -33,7 +33,7 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
                 continue;
             }
             const n = Number(entry);
-            if (Number.isFinite(n) && n > 0) {
+            if (Number.isFinite(n) && n >= 1) {
                 out.push(n);
             }
         }
@@ -57,7 +57,7 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
     override onUpsert(row: AllianceRow): RepositoryQuery {
         return {
             text: `INSERT INTO alliances (world_id, alliance_id, name, leader_character_id, guild_ids, rank_titles, capacity, notice, revision, disbanded_at, created_at, updated_at)
-                   VALUES ($1, COALESCE($2, nextval('alliance_id_seq')), $3, $4, $5::bigint[], $6::text[], $7, $8, $9, $10, NOW(), NOW())
+                   VALUES ($1, CASE WHEN $2::bigint IS NULL OR $2::bigint < 1 THEN nextval('alliance_id_seq') ELSE $2::bigint END, $3, $4, $5::bigint[], $6::text[], $7, $8, $9, $10, NOW(), NOW())
                    ON CONFLICT (world_id, alliance_id) DO UPDATE
                    SET name = EXCLUDED.name,
                        leader_character_id = EXCLUDED.leader_character_id,
@@ -71,7 +71,7 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
                    RETURNING ${SELECT_COLS}`,
             values: [
                 row.world_id,
-                row.alliance_id > 0 ? row.alliance_id : null,
+                row.alliance_id,
                 row.name,
                 row.leader_character_id,
                 row.guild_ids,
@@ -119,7 +119,7 @@ export class AllianceRepository extends ValueRepository<AllianceModel, AllianceR
     override modelToRow(model: AllianceModel): AllianceRow {
         return {
             world_id: model.worldId,
-            alliance_id: model.allianceId,
+            alliance_id: model.allianceId >= 1 ? model.allianceId : null,
             name: model.name,
             leader_character_id: model.leaderCharacterId,
             guild_ids: model.guildIds,

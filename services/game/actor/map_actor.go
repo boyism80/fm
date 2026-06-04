@@ -11,6 +11,7 @@ import (
 	"github.com/boyism80/fm/core/ensure"
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/actor/timers"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -120,14 +121,34 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onDeliverGuildCapacityChange(m)
 	case *DeliverGuildMemberOnlineChange:
 		a.onDeliverGuildMemberOnlineChange(m)
+	case *DeliverGuildMemberFieldsChange:
+		a.onDeliverGuildMemberFieldsChange(m)
 	case *DeliverGuildDisbandSelf:
 		a.onDeliverGuildDisbandSelf(m)
 	case *DeliverGuildMessage:
 		a.onDeliverGuildMessage(m)
 	case *DeliverAllianceCreate:
 		a.onDeliverAllianceCreate(m)
+	case *DeliverAllianceDisband:
+		a.onDeliverAllianceDisband(m)
+	case *DeliverAllianceGuildLeft:
+		a.onDeliverAllianceGuildLeft(m)
+	case *DeliverAllianceInvite:
+		a.onDeliverAllianceInvite(m)
+	case *DeliverAllianceGuildAdded:
+		a.onDeliverAllianceGuildAdded(m)
+	case *DeliverAllianceInfoBroadcast:
+		a.onDeliverAllianceInfoBroadcast(m)
+	case *DeliverAllianceNoticeChanged:
+		a.onDeliverAllianceNoticeChanged(m)
+	case *DeliverAllianceLeaderChanged:
+		a.onDeliverAllianceLeaderChanged(m)
+	case *DeliverAllianceMemberRankChanged:
+		a.onDeliverAllianceMemberRankChanged(m)
 	case *DeliverAllianceMemberOnlineChange:
 		a.onDeliverAllianceMemberOnlineChange(m)
+	case *DeliverAllianceMemberFieldsChange:
+		a.onDeliverAllianceMemberFieldsChange(m)
 	case *DeliverMessage:
 		a.onDeliverMessage(m)
 	case *SaveMapCharacters:
@@ -864,6 +885,17 @@ func (a *MapActor) onDeliverGuildMemberOnlineChange(msg *DeliverGuildMemberOnlin
 	ch.Listener.OnGuildMemberOnlineChange(ch, msg.GuildID, msg.SubjectID, msg.Online)
 }
 
+func (a *MapActor) onDeliverGuildMemberFieldsChange(msg *DeliverGuildMemberFieldsChange) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnGuildMemberFieldsChange(ch, msg.GuildID, msg.SubjectID, msg.Level, msg.ClassID)
+}
+
 func (a *MapActor) onDeliverGuildDisbandSelf(msg *DeliverGuildDisbandSelf) {
 	if a.Map == nil || msg == nil {
 		return
@@ -876,19 +908,140 @@ func (a *MapActor) onDeliverGuildDisbandSelf(msg *DeliverGuildDisbandSelf) {
 }
 
 func (a *MapActor) onDeliverAllianceCreate(msg *DeliverAllianceCreate) {
-	if a.Map == nil || msg == nil || len(msg.Packets) == 0 {
+	if a.Map == nil || msg == nil {
 		return
 	}
 	ch := a.Map.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
-	for _, pkt := range msg.Packets {
-		if pkt == nil {
-			continue
-		}
-		_ = ch.Send(pkt, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnAllianceCreate(ch, msg.Info, msg.Guilds, msg.MembershipGuilds)
+}
+
+func (a *MapActor) onDeliverAllianceDisband(msg *DeliverAllianceDisband) {
+	if a.Map == nil || msg == nil {
+		return
 	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnAllianceDisband(ch, msg.AllianceID)
+}
+
+func (a *MapActor) onDeliverAllianceInfoBroadcast(msg *DeliverAllianceInfoBroadcast) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnAllianceInfoBroadcast(ch, msg.Info)
+}
+
+func (a *MapActor) onDeliverAllianceNoticeChanged(msg *DeliverAllianceNoticeChanged) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnAllianceNoticeChanged(ch, msg.Info)
+}
+
+func (a *MapActor) onDeliverAllianceLeaderChanged(msg *DeliverAllianceLeaderChanged) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnAllianceLeaderChanged(ch, msg.AllianceID, msg.OldLeaderID, msg.NewLeaderID, msg.Info, msg.Guilds)
+}
+
+func (a *MapActor) onDeliverAllianceMemberRankChanged(msg *DeliverAllianceMemberRankChanged) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnAllianceMemberRankChanged(ch, msg.Info, msg.Guilds)
+}
+
+func (a *MapActor) onDeliverAllianceGuildLeft(msg *DeliverAllianceGuildLeft) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnAllianceGuildLeft(
+		ch,
+		msg.Info,
+		msg.RemovedGuildID,
+		msg.RemovedGuild,
+		msg.RemovedMembers,
+		msg.Expelled,
+		msg.Leaving,
+	)
+}
+
+func (a *MapActor) onDeliverAllianceInvite(msg *DeliverAllianceInvite) {
+	if a.Map == nil || msg == nil || a.GameWorld == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	guildID, inGuild := ch.GetGuildID()
+	if !inGuild || guildID != msg.TargetGuildID {
+		return
+	}
+	if g := a.GameWorld.GetGuildSystem().Get(guildID); g != nil {
+		if _, joined := g.GetAllianceID(); joined {
+			return
+		}
+	}
+	if !a.GameWorld.GetGuildSystem().TrySetAllianceInvite(msg.TargetGuildID, msg.AllianceID, msg.ExpiresAt) {
+		a.GameWorld.GetDispatchSystem().SendTo(msg.InviterCharacterID, &DeliverMessage{
+			CharacterID: msg.InviterCharacterID,
+			MessageType: constant.MsgPinkText,
+			Message:     constant.GuildInviteTargetBusyMessage,
+		})
+		return
+	}
+	ch.Listener.OnAllianceInvite(ch, msg.InviterGuildID, msg.InviterName, msg.AllianceName)
+}
+
+func (a *MapActor) onDeliverAllianceGuildAdded(msg *DeliverAllianceGuildAdded) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	var membershipGuild *dto.AllianceMembershipChangeGuild
+	if msg.HasMembership {
+		membershipGuild = &msg.MembershipGuild
+	}
+	ch.Listener.OnAllianceGuildAdded(
+		ch,
+		msg.Info,
+		msg.Guilds,
+		msg.NewGuildID,
+		msg.AddedGuild,
+		msg.Members,
+		msg.Joining,
+		membershipGuild,
+	)
 }
 
 func (a *MapActor) onDeliverAllianceMemberOnlineChange(msg *DeliverAllianceMemberOnlineChange) {
@@ -900,6 +1053,17 @@ func (a *MapActor) onDeliverAllianceMemberOnlineChange(msg *DeliverAllianceMembe
 		return
 	}
 	ch.Listener.OnAllianceMemberOnlineChange(ch, msg.AllianceID, msg.GuildID, msg.SubjectID, msg.Online)
+}
+
+func (a *MapActor) onDeliverAllianceMemberFieldsChange(msg *DeliverAllianceMemberFieldsChange) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+	ch := a.Map.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	ch.Listener.OnAllianceMemberFieldsChange(ch, msg.AllianceID, msg.GuildID, msg.SubjectID, msg.Level, msg.ClassID)
 }
 
 func (a *MapActor) onDeliverGuildMessage(msg *DeliverGuildMessage) {

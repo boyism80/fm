@@ -95,16 +95,21 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(guild.Capacity))
 			return 1
 		},
-		"alliance_id": func(L *lua.LState) int {
+		"alliance": func(L *lua.LState) int {
 			guild, ok := LuaCheckGuild(L, 1)
 			if !ok {
 				return 0
 			}
 			if L.GetTop() != 1 {
-				L.ArgError(2, "alliance_id() is read-only")
+				L.ArgError(2, "alliance() takes no arguments")
 				return 0
 			}
-			L.Push(lua.LNumber(guild.AllianceID))
+			a := guild.Alliance()
+			if a == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, a))
 			return 1
 		},
 		"notice": func(L *lua.LState) int {

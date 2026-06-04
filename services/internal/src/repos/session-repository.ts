@@ -138,12 +138,20 @@ return {1, ERR_SESSION_NONE}
         >;
     }
 
-    async beginTransitionAtomic(worldId: number, accountId: number, characterId: number, characterName: string, now: string, ttlSeconds: number) {
+    async beginTransitionAtomic(
+        worldId: number,
+        accountId: number,
+        characterId: number,
+        characterName: string,
+        now: string,
+        ttlSeconds: number,
+        gameToGameTransfer: boolean
+    ) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
         const worldKey = this.worldCharacterSessionsKey(worldId);
         const pointerKey = this.transitionCharacterPointerKey(accountId);
-        const transitionSessionJson = serializeCharacterSession({
+        const transitionSession: CharacterSession = {
             version: 1,
             worldId,
             accountId,
@@ -152,7 +160,11 @@ return {1, ERR_SESSION_NONE}
             state: CS.CHARACTER_SESSION_STATE_TRANSITION,
             gameServer: { id: null, worldId: null, channelId: null, connected: false },
             timestamps: { createdAt: now, updatedAt: now },
-        });
+        };
+        if (gameToGameTransfer) {
+            transitionSession.gameToGameTransfer = true;
+        }
+        const transitionSessionJson = serializeCharacterSession(transitionSession);
         const script = `
 local account_key = KEYS[1]
 local world_key = KEYS[2]

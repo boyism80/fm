@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"time"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/services/game/constant"
@@ -19,13 +21,21 @@ type SchedulerSystem interface {
 
 type PartySystem interface {
 	Get(partyID uint32) *Party
+	UpdateMemberAsync(ctx actor.Context, ch *Character) *async.Promise
 }
 
 type GuildSystem interface {
 	Get(guildID uint32) *Guild
+	TrySetAllianceInvite(guildID, allianceID uint32, expiresAt time.Time) bool
 	DisbandAsync(ctx actor.Context, ch *Character, result *int) *async.Promise
 	IncCapacityAsync(ctx actor.Context, ch *Character, extendedCap bool, result *int) *async.Promise
 	CreateAllianceAsync(ctx actor.Context, ch *Character, allianceName string, result *int) *async.Promise
+	DisbandAllianceAsync(ctx actor.Context, ch *Character, result *int) *async.Promise
+}
+
+type AllianceSystem interface {
+	Get(allianceID uint32) *Alliance
+	IncCapacityAsync(ctx actor.Context, ch *Character, result *int) *async.Promise
 }
 
 type DispatchSystem interface {

@@ -114,3 +114,47 @@ func luaCreateAlliance(L *lua.LState, ch *Character) int {
 	promise := ch.GameWorld.GetGuildSystem().CreateAllianceAsync(cfg.ActorContext, ch, allianceName, &result)
 	return luaYieldGuildRPC(L, ch, result, &result, promise)
 }
+
+func luaIncAllianceCapacity(L *lua.LState, ch *Character) int {
+	if ch == nil {
+		return 0
+	}
+	if L.GetTop() != 1 {
+		L.ArgError(1, "inc_alliance_capacity() takes no arguments")
+		return 0
+	}
+	result := int(constant.AllianceIncreaseCapacityResultFailed)
+	if ch.GameWorld == nil {
+		L.Push(lua.LNumber(result))
+		return 1
+	}
+	cfg, ok := luax.GetConfiguration(L)
+	if !ok || cfg.ActorContext == nil {
+		L.Push(lua.LNumber(result))
+		return 1
+	}
+	promise := ch.GameWorld.GetAllianceSystem().IncCapacityAsync(cfg.ActorContext, ch, &result)
+	return luaYieldGuildRPC(L, ch, result, &result, promise)
+}
+
+func luaDisbandAlliance(L *lua.LState, ch *Character) int {
+	if ch == nil {
+		return 0
+	}
+	if L.GetTop() != 1 {
+		L.ArgError(1, "disband_alliance() takes no arguments")
+		return 0
+	}
+	result := int(constant.AllianceDisbandResultFailed)
+	if ch.GameWorld == nil {
+		L.Push(lua.LNumber(result))
+		return 1
+	}
+	cfg, ok := luax.GetConfiguration(L)
+	if !ok || cfg.ActorContext == nil {
+		L.Push(lua.LNumber(result))
+		return 1
+	}
+	promise := ch.GameWorld.GetGuildSystem().DisbandAllianceAsync(cfg.ActorContext, ch, &result)
+	return luaYieldGuildRPC(L, ch, result, &result, promise)
+}

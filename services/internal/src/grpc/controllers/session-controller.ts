@@ -140,7 +140,7 @@ export class SessionGrpcController {
                     buffs: [],
                     keyLayout: [],
                     partyId: undefined,
-                    guildId: 0,
+                    guildId: undefined,
                     buddies: [],
                     buddyCapacity: 0,
                 });
@@ -166,7 +166,6 @@ export class SessionGrpcController {
                 this.buddyService.getAll(worldId, characterId),
             ]);
             const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
-            const guildId = realtime?.guildId ?? 0;
             callback(null, {
                 found: true,
                 character: grpcMapper.map<CharacterModel, CharacterPersisted>(
@@ -196,8 +195,8 @@ export class SessionGrpcController {
                     )
                 ),
                 keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),
-                partyId: realtime != null ? realtime.partyId ?? undefined : undefined,
-                guildId,
+                partyId: realtime?.partyId != null ? realtime.partyId : undefined,
+                guildId: realtime?.guildId != null ? realtime.guildId : undefined,
                 buddies: buddyPack.buddies.map((buddy) =>
                     grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY)
                 ),

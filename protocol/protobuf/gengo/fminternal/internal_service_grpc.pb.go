@@ -46,6 +46,15 @@ const (
 	Internal_GetGuild_FullMethodName                       = "/fm.internal.Internal/GetGuild"
 	Internal_CreateAlliance_FullMethodName                 = "/fm.internal.Internal/CreateAlliance"
 	Internal_GetAlliance_FullMethodName                    = "/fm.internal.Internal/GetAlliance"
+	Internal_DisbandAlliance_FullMethodName                = "/fm.internal.Internal/DisbandAlliance"
+	Internal_LeaveAlliance_FullMethodName                  = "/fm.internal.Internal/LeaveAlliance"
+	Internal_ExpelAllianceGuild_FullMethodName             = "/fm.internal.Internal/ExpelAllianceGuild"
+	Internal_AcceptAllianceInvite_FullMethodName           = "/fm.internal.Internal/AcceptAllianceInvite"
+	Internal_IncreaseAllianceCapacity_FullMethodName       = "/fm.internal.Internal/IncreaseAllianceCapacity"
+	Internal_ChangeAllianceRankTitles_FullMethodName       = "/fm.internal.Internal/ChangeAllianceRankTitles"
+	Internal_ChangeAllianceMemberRank_FullMethodName       = "/fm.internal.Internal/ChangeAllianceMemberRank"
+	Internal_ChangeAllianceLeader_FullMethodName           = "/fm.internal.Internal/ChangeAllianceLeader"
+	Internal_ChangeAllianceNotice_FullMethodName           = "/fm.internal.Internal/ChangeAllianceNotice"
 	Internal_AcceptGuildInvite_FullMethodName              = "/fm.internal.Internal/AcceptGuildInvite"
 	Internal_LeaveGuild_FullMethodName                     = "/fm.internal.Internal/LeaveGuild"
 	Internal_ExpelGuild_FullMethodName                     = "/fm.internal.Internal/ExpelGuild"
@@ -99,6 +108,15 @@ type InternalClient interface {
 	GetGuild(ctx context.Context, in *GetGuildRequest, opts ...grpc.CallOption) (*GetGuildReply, error)
 	CreateAlliance(ctx context.Context, in *CreateAllianceRequest, opts ...grpc.CallOption) (*CreateAllianceReply, error)
 	GetAlliance(ctx context.Context, in *GetAllianceRequest, opts ...grpc.CallOption) (*GetAllianceReply, error)
+	DisbandAlliance(ctx context.Context, in *DisbandAllianceRequest, opts ...grpc.CallOption) (*DisbandAllianceReply, error)
+	LeaveAlliance(ctx context.Context, in *LeaveAllianceRequest, opts ...grpc.CallOption) (*LeaveAllianceReply, error)
+	ExpelAllianceGuild(ctx context.Context, in *ExpelAllianceGuildRequest, opts ...grpc.CallOption) (*ExpelAllianceGuildReply, error)
+	AcceptAllianceInvite(ctx context.Context, in *AcceptAllianceInviteRequest, opts ...grpc.CallOption) (*AcceptAllianceInviteReply, error)
+	IncreaseAllianceCapacity(ctx context.Context, in *IncreaseAllianceCapacityRequest, opts ...grpc.CallOption) (*IncreaseAllianceCapacityReply, error)
+	ChangeAllianceRankTitles(ctx context.Context, in *ChangeAllianceRankTitlesRequest, opts ...grpc.CallOption) (*ChangeAllianceRankTitlesReply, error)
+	ChangeAllianceMemberRank(ctx context.Context, in *ChangeAllianceMemberRankRequest, opts ...grpc.CallOption) (*ChangeAllianceMemberRankReply, error)
+	ChangeAllianceLeader(ctx context.Context, in *ChangeAllianceLeaderRequest, opts ...grpc.CallOption) (*ChangeAllianceLeaderReply, error)
+	ChangeAllianceNotice(ctx context.Context, in *ChangeAllianceNoticeRequest, opts ...grpc.CallOption) (*ChangeAllianceNoticeReply, error)
 	AcceptGuildInvite(ctx context.Context, in *AcceptGuildInviteRequest, opts ...grpc.CallOption) (*AcceptGuildInviteReply, error)
 	LeaveGuild(ctx context.Context, in *LeaveGuildRequest, opts ...grpc.CallOption) (*LeaveGuildReply, error)
 	ExpelGuild(ctx context.Context, in *ExpelGuildRequest, opts ...grpc.CallOption) (*ExpelGuildReply, error)
@@ -399,6 +417,96 @@ func (c *internalClient) GetAlliance(ctx context.Context, in *GetAllianceRequest
 	return out, nil
 }
 
+func (c *internalClient) DisbandAlliance(ctx context.Context, in *DisbandAllianceRequest, opts ...grpc.CallOption) (*DisbandAllianceReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisbandAllianceReply)
+	err := c.cc.Invoke(ctx, Internal_DisbandAlliance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) LeaveAlliance(ctx context.Context, in *LeaveAllianceRequest, opts ...grpc.CallOption) (*LeaveAllianceReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaveAllianceReply)
+	err := c.cc.Invoke(ctx, Internal_LeaveAlliance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ExpelAllianceGuild(ctx context.Context, in *ExpelAllianceGuildRequest, opts ...grpc.CallOption) (*ExpelAllianceGuildReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExpelAllianceGuildReply)
+	err := c.cc.Invoke(ctx, Internal_ExpelAllianceGuild_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) AcceptAllianceInvite(ctx context.Context, in *AcceptAllianceInviteRequest, opts ...grpc.CallOption) (*AcceptAllianceInviteReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptAllianceInviteReply)
+	err := c.cc.Invoke(ctx, Internal_AcceptAllianceInvite_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) IncreaseAllianceCapacity(ctx context.Context, in *IncreaseAllianceCapacityRequest, opts ...grpc.CallOption) (*IncreaseAllianceCapacityReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IncreaseAllianceCapacityReply)
+	err := c.cc.Invoke(ctx, Internal_IncreaseAllianceCapacity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ChangeAllianceRankTitles(ctx context.Context, in *ChangeAllianceRankTitlesRequest, opts ...grpc.CallOption) (*ChangeAllianceRankTitlesReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeAllianceRankTitlesReply)
+	err := c.cc.Invoke(ctx, Internal_ChangeAllianceRankTitles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ChangeAllianceMemberRank(ctx context.Context, in *ChangeAllianceMemberRankRequest, opts ...grpc.CallOption) (*ChangeAllianceMemberRankReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeAllianceMemberRankReply)
+	err := c.cc.Invoke(ctx, Internal_ChangeAllianceMemberRank_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ChangeAllianceLeader(ctx context.Context, in *ChangeAllianceLeaderRequest, opts ...grpc.CallOption) (*ChangeAllianceLeaderReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeAllianceLeaderReply)
+	err := c.cc.Invoke(ctx, Internal_ChangeAllianceLeader_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ChangeAllianceNotice(ctx context.Context, in *ChangeAllianceNoticeRequest, opts ...grpc.CallOption) (*ChangeAllianceNoticeReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeAllianceNoticeReply)
+	err := c.cc.Invoke(ctx, Internal_ChangeAllianceNotice_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) AcceptGuildInvite(ctx context.Context, in *AcceptGuildInviteRequest, opts ...grpc.CallOption) (*AcceptGuildInviteReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AcceptGuildInviteReply)
@@ -630,6 +738,15 @@ type InternalServer interface {
 	GetGuild(context.Context, *GetGuildRequest) (*GetGuildReply, error)
 	CreateAlliance(context.Context, *CreateAllianceRequest) (*CreateAllianceReply, error)
 	GetAlliance(context.Context, *GetAllianceRequest) (*GetAllianceReply, error)
+	DisbandAlliance(context.Context, *DisbandAllianceRequest) (*DisbandAllianceReply, error)
+	LeaveAlliance(context.Context, *LeaveAllianceRequest) (*LeaveAllianceReply, error)
+	ExpelAllianceGuild(context.Context, *ExpelAllianceGuildRequest) (*ExpelAllianceGuildReply, error)
+	AcceptAllianceInvite(context.Context, *AcceptAllianceInviteRequest) (*AcceptAllianceInviteReply, error)
+	IncreaseAllianceCapacity(context.Context, *IncreaseAllianceCapacityRequest) (*IncreaseAllianceCapacityReply, error)
+	ChangeAllianceRankTitles(context.Context, *ChangeAllianceRankTitlesRequest) (*ChangeAllianceRankTitlesReply, error)
+	ChangeAllianceMemberRank(context.Context, *ChangeAllianceMemberRankRequest) (*ChangeAllianceMemberRankReply, error)
+	ChangeAllianceLeader(context.Context, *ChangeAllianceLeaderRequest) (*ChangeAllianceLeaderReply, error)
+	ChangeAllianceNotice(context.Context, *ChangeAllianceNoticeRequest) (*ChangeAllianceNoticeReply, error)
 	AcceptGuildInvite(context.Context, *AcceptGuildInviteRequest) (*AcceptGuildInviteReply, error)
 	LeaveGuild(context.Context, *LeaveGuildRequest) (*LeaveGuildReply, error)
 	ExpelGuild(context.Context, *ExpelGuildRequest) (*ExpelGuildReply, error)
@@ -740,6 +857,33 @@ func (UnimplementedInternalServer) CreateAlliance(context.Context, *CreateAllian
 }
 func (UnimplementedInternalServer) GetAlliance(context.Context, *GetAllianceRequest) (*GetAllianceReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlliance not implemented")
+}
+func (UnimplementedInternalServer) DisbandAlliance(context.Context, *DisbandAllianceRequest) (*DisbandAllianceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisbandAlliance not implemented")
+}
+func (UnimplementedInternalServer) LeaveAlliance(context.Context, *LeaveAllianceRequest) (*LeaveAllianceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaveAlliance not implemented")
+}
+func (UnimplementedInternalServer) ExpelAllianceGuild(context.Context, *ExpelAllianceGuildRequest) (*ExpelAllianceGuildReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExpelAllianceGuild not implemented")
+}
+func (UnimplementedInternalServer) AcceptAllianceInvite(context.Context, *AcceptAllianceInviteRequest) (*AcceptAllianceInviteReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AcceptAllianceInvite not implemented")
+}
+func (UnimplementedInternalServer) IncreaseAllianceCapacity(context.Context, *IncreaseAllianceCapacityRequest) (*IncreaseAllianceCapacityReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IncreaseAllianceCapacity not implemented")
+}
+func (UnimplementedInternalServer) ChangeAllianceRankTitles(context.Context, *ChangeAllianceRankTitlesRequest) (*ChangeAllianceRankTitlesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeAllianceRankTitles not implemented")
+}
+func (UnimplementedInternalServer) ChangeAllianceMemberRank(context.Context, *ChangeAllianceMemberRankRequest) (*ChangeAllianceMemberRankReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeAllianceMemberRank not implemented")
+}
+func (UnimplementedInternalServer) ChangeAllianceLeader(context.Context, *ChangeAllianceLeaderRequest) (*ChangeAllianceLeaderReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeAllianceLeader not implemented")
+}
+func (UnimplementedInternalServer) ChangeAllianceNotice(context.Context, *ChangeAllianceNoticeRequest) (*ChangeAllianceNoticeReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChangeAllianceNotice not implemented")
 }
 func (UnimplementedInternalServer) AcceptGuildInvite(context.Context, *AcceptGuildInviteRequest) (*AcceptGuildInviteReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AcceptGuildInvite not implemented")
@@ -1308,6 +1452,168 @@ func _Internal_GetAlliance_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_DisbandAlliance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisbandAllianceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).DisbandAlliance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_DisbandAlliance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).DisbandAlliance(ctx, req.(*DisbandAllianceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_LeaveAlliance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveAllianceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).LeaveAlliance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_LeaveAlliance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).LeaveAlliance(ctx, req.(*LeaveAllianceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ExpelAllianceGuild_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExpelAllianceGuildRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ExpelAllianceGuild(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ExpelAllianceGuild_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ExpelAllianceGuild(ctx, req.(*ExpelAllianceGuildRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_AcceptAllianceInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptAllianceInviteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AcceptAllianceInvite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AcceptAllianceInvite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AcceptAllianceInvite(ctx, req.(*AcceptAllianceInviteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_IncreaseAllianceCapacity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IncreaseAllianceCapacityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).IncreaseAllianceCapacity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_IncreaseAllianceCapacity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).IncreaseAllianceCapacity(ctx, req.(*IncreaseAllianceCapacityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ChangeAllianceRankTitles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeAllianceRankTitlesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ChangeAllianceRankTitles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ChangeAllianceRankTitles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ChangeAllianceRankTitles(ctx, req.(*ChangeAllianceRankTitlesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ChangeAllianceMemberRank_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeAllianceMemberRankRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ChangeAllianceMemberRank(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ChangeAllianceMemberRank_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ChangeAllianceMemberRank(ctx, req.(*ChangeAllianceMemberRankRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ChangeAllianceLeader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeAllianceLeaderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ChangeAllianceLeader(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ChangeAllianceLeader_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ChangeAllianceLeader(ctx, req.(*ChangeAllianceLeaderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ChangeAllianceNotice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeAllianceNoticeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ChangeAllianceNotice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ChangeAllianceNotice_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ChangeAllianceNotice(ctx, req.(*ChangeAllianceNoticeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_AcceptGuildInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AcceptGuildInviteRequest)
 	if err := dec(in); err != nil {
@@ -1782,6 +2088,42 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAlliance",
 			Handler:    _Internal_GetAlliance_Handler,
+		},
+		{
+			MethodName: "DisbandAlliance",
+			Handler:    _Internal_DisbandAlliance_Handler,
+		},
+		{
+			MethodName: "LeaveAlliance",
+			Handler:    _Internal_LeaveAlliance_Handler,
+		},
+		{
+			MethodName: "ExpelAllianceGuild",
+			Handler:    _Internal_ExpelAllianceGuild_Handler,
+		},
+		{
+			MethodName: "AcceptAllianceInvite",
+			Handler:    _Internal_AcceptAllianceInvite_Handler,
+		},
+		{
+			MethodName: "IncreaseAllianceCapacity",
+			Handler:    _Internal_IncreaseAllianceCapacity_Handler,
+		},
+		{
+			MethodName: "ChangeAllianceRankTitles",
+			Handler:    _Internal_ChangeAllianceRankTitles_Handler,
+		},
+		{
+			MethodName: "ChangeAllianceMemberRank",
+			Handler:    _Internal_ChangeAllianceMemberRank_Handler,
+		},
+		{
+			MethodName: "ChangeAllianceLeader",
+			Handler:    _Internal_ChangeAllianceLeader_Handler,
+		},
+		{
+			MethodName: "ChangeAllianceNotice",
+			Handler:    _Internal_ChangeAllianceNotice_Handler,
 		},
 		{
 			MethodName: "AcceptGuildInvite",

@@ -21,7 +21,11 @@ func writeGuildMemberData(w *stream.StreamWriter, members []dto.GuildMemberStatu
 		}
 		w.WriteU32(online)
 		w.WriteU32(0)
-		w.WriteU32(member.AllianceRank)
+		if member.AllianceRank == nil {
+			w.WriteU32(0)
+		} else {
+			w.WriteU32(*member.AllianceRank)
+		}
 	}
 }
 
@@ -39,7 +43,11 @@ func writeGuildInfo(w *stream.StreamWriter, info *dto.GuildInfo) {
 	w.WriteU8(info.LogoColor)
 	w.WriteStr16(info.Notice)
 	w.WriteU32(info.GP)
-	w.WriteU32(info.AllianceID)
+	if info.AllianceID == nil {
+		w.WriteU32(0)
+	} else {
+		w.WriteU32(*info.AllianceID)
+	}
 }
 
 func writeGuildMemberJoinedPayload(w *stream.StreamWriter, guildID uint32, member dto.GuildMemberStatus) {
@@ -55,5 +63,9 @@ func writeGuildMemberJoinedPayload(w *stream.StreamWriter, guildID uint32, membe
 	}
 	w.WriteU32(online)
 	w.WriteU32(1)
-	w.WriteU32(member.AllianceRank)
+	if member.AllianceRank == nil {
+		w.WriteU32(0)
+	} else {
+		w.WriteU32(*member.AllianceRank)
+	}
 }

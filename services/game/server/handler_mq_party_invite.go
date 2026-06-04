@@ -8,18 +8,22 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type partyMqPartyInvite struct{ gs *GameServer }
+type partyMqPartyInvite struct {
+	partyMqHandler
+}
 
 func (partyMqPartyInvite) New(gs *GameServer) *partyMqPartyInvite {
-	return &partyMqPartyInvite{gs: gs}
+	return &partyMqPartyInvite{partyMqHandler: partyMqHandler{gs: gs}}
 }
-func (*partyMqPartyInvite) EventType() string { return "party_invite" }
+
+func (*partyMqPartyInvite) EventType() string {
+	return "party_invite"
+}
+
 func (h *partyMqPartyInvite) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
-	gs := h.gs
-	if gs == nil || gs.party == nil {
+	if h.gs == nil {
 		return nil
 	}
-	pc := gs.party
 	var payload struct {
 		TargetCharacterID uint32 `json:"target_character_id"`
 		PartyID           uint32 `json:"party_id"`
@@ -33,6 +37,6 @@ func (h *partyMqPartyInvite) Handle(_ actor.Context, _ amqp.Delivery, _ string, 
 	if payload.TargetCharacterID == 0 {
 		return nil
 	}
-	pc.DeliverPartyInviteToCharacter(payload.TargetCharacterID, payload.PartyID, payload.InviterName, payload.PartySearch)
+	h.sendInvite(payload.TargetCharacterID, payload.PartyID, payload.InviterName, payload.PartySearch)
 	return nil
 }

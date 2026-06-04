@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"log"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
@@ -22,6 +24,7 @@ type GuildEventEnvelope struct {
 }
 
 type GuildContainer struct {
+	gs             *GameServer
 	worldID        uint32
 	internalClient internal.InternalClient
 	mu             sync.Mutex
@@ -29,8 +32,9 @@ type GuildContainer struct {
 	guilds         map[uint32]*entity.Guild
 }
 
-func NewGuildContainer(worldID uint32, ic internal.InternalClient) *GuildContainer {
+func NewGuildContainer(gs *GameServer, worldID uint32, ic internal.InternalClient) *GuildContainer {
 	return &GuildContainer{
+		gs:             gs,
 		worldID:        worldID,
 		internalClient: ic,
 		revisions:      make(map[uint32]uint64),
@@ -82,7 +86,7 @@ func (gc *GuildContainer) Update(guildPb *internal.Guild) {
 	if gc == nil || guildPb == nil {
 		return
 	}
-	ent := entity.GuildFromProto(guildPb)
+	ent := entity.GuildFromProto(gc.gs, guildPb)
 	if ent == nil {
 		return
 	}
@@ -93,9 +97,51 @@ func (gc *GuildContainer) Update(guildPb *internal.Guild) {
 	guildID := stored.GuildID
 	gc.mu.Lock()
 	defer gc.mu.Unlock()
+	if prev := gc.guilds[guildID]; prev != nil {
+		if _, inAlliance := stored.GetAllianceID(); !inAlliance {
+			stored.AllianceInvites = entity.CloneAllianceInvites(prev.AllianceInvites)
+		}
+	}
 	gc.revisions[guildID] = stored.Revision
 	gc.guilds[guildID] = stored
+	if _, inAlliance := stored.GetAllianceID(); inAlliance {
+		stored.ClearAllianceInvites()
+	}
 	log.Printf("guild: hydrated guild_id=%d revision=%d", guildID, stored.Revision)
+}
+
+func (gc *GuildContainer) GuildIDByName(guildName string) (uint32, bool) {
+	if gc == nil || guildName == "" {
+		return 0, false
+	}
+	gc.mu.Lock()
+	defer gc.mu.Unlock()
+	for _, g := range gc.guilds {
+		if g != nil && strings.EqualFold(g.Name, guildName) {
+			return g.GuildID, true
+		}
+	}
+	return 0, false
+}
+
+func (gc *GuildContainer) TrySetAllianceInvite(targetGuildID, allianceID uint32, expiresAt time.Time) bool {
+	if gc == nil || targetGuildID == 0 || allianceID == 0 {
+		return false
+	}
+	gc.mu.Lock()
+	defer gc.mu.Unlock()
+	g := gc.guilds[targetGuildID]
+	if g == nil {
+		return false
+	}
+	if _, inAlliance := g.GetAllianceID(); inAlliance {
+		return false
+	}
+	if g.HasAllianceInvite() {
+		return false
+	}
+	g.SetAllianceInvite(allianceID, expiresAt)
+	return true
 }
 
 func (gc *GuildContainer) Get(guildID uint32) *entity.Guild {
@@ -128,4 +174,37 @@ func (gc *GuildContainer) GuildIDForCharacter(characterID uint32) (uint32, bool)
 		}
 	}
 	return 0, false
+}
+
+func (gc *GuildContainer) RefreshAsync(ctx actor.Context, guildID uint32) *async.Promise {
+	if guildID == 0 {
+		return async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+	}
+	return gc.RefreshGuildsAsync(ctx, []uint32{guildID})
+}
+
+func (gc *GuildContainer) RefreshGuildsAsync(ctx actor.Context, guildIDs []uint32) *async.Promise {
+	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+	if gc == nil || gc.internalClient == nil {
+		return promise
+	}
+	worldID := gc.worldID
+	for _, guildID := range guildIDs {
+		if guildID == 0 {
+			continue
+		}
+		gid := guildID
+		promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGuildReply, error) {
+			return gc.internalClient.GetGuild(c, &internal.GetGuildRequest{
+				WorldId: worldID,
+				GuildId: gid,
+			})
+		}, func(reply *internal.GetGuildReply) error {
+			if reply != nil && reply.GetFound() && reply.GetGuild() != nil {
+				gc.Update(reply.GetGuild())
+			}
+			return nil
+		})
+	}
+	return promise
 }

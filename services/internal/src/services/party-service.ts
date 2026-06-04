@@ -141,8 +141,8 @@ export class PartyService {
 
     private assertPartyId(partyId: number) {
         const n = partyId;
-        if (!Number.isInteger(n) || n < 0 || n > Number.MAX_SAFE_INTEGER) {
-            const err = new Error("party_id must be a non-negative integer") as Error & { code?: string };
+        if (!Number.isInteger(n) || n < 1 || n > Number.MAX_SAFE_INTEGER) {
+            const err = new Error("party_id must be a positive integer") as Error & { code?: string };
             err.code = "INVALID_PAYLOAD";
             throw err;
         }
@@ -314,7 +314,7 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
         }
         const lockedPartyId = lockedState.partyId;
-        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 0) {
+        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 1) {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
         }
 
@@ -329,7 +329,7 @@ export class PartyService {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const partyId = state.partyId;
-            if (!Number.isInteger(partyId) || partyId < 0) {
+            if (!Number.isInteger(partyId) || partyId < 1) {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
@@ -379,7 +379,7 @@ export class PartyService {
             return;
         }
         const partyId = state.partyId;
-        if (!Number.isInteger(partyId) || partyId < 0) {
+        if (!Number.isInteger(partyId) || partyId < 1) {
             return;
         }
         const party = await this.partyRepo.get(worldId, partyId);
@@ -457,7 +457,7 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
         }
         const partyId = inviterState.partyId;
-        if (!Number.isInteger(partyId) || partyId < 0) {
+        if (!Number.isInteger(partyId) || partyId < 1) {
             return { ok: false, code: messages.PartyErrorCode.INVITER_NOT_IN_PARTY };
         }
         const party = await this.partyRepo.get(worldId, partyId);
@@ -642,7 +642,7 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
         }
         const lockedPartyId = lockedState.partyId;
-        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 0) {
+        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 1) {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
         }
 
@@ -678,7 +678,7 @@ export class PartyService {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const partyId = state.partyId;
-            if (!Number.isInteger(partyId) || partyId < 0) {
+            if (!Number.isInteger(partyId) || partyId < 1) {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const party = await this.partyRepo.get(worldId, partyId, { txClient });
@@ -784,7 +784,7 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
         }
         const lockedPartyId = requesterLockedState.partyId;
-        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 0) {
+        if (!Number.isInteger(lockedPartyId) || lockedPartyId < 1) {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
         }
 
@@ -799,7 +799,7 @@ export class PartyService {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const partyId = requesterState.partyId;
-            if (!Number.isInteger(partyId) || partyId < 0) {
+            if (!Number.isInteger(partyId) || partyId < 1) {
                 return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
             }
             const party = await this.partyRepo.get(worldId, partyId, { txClient });

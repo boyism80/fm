@@ -74,21 +74,14 @@ func (h *buddyMqUpdate) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw j
 		if recipientID == 0 {
 			continue
 		}
-		gs.DeliverBuddyListUpdate(recipientID, uint8(action), entries)
+		if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientID) {
+			continue
+		}
+		gs.EnsureSend(nil, recipientID, &g_actor.DeliverBuddyListUpdate{
+			RecipientCharacterID: recipientID,
+			SyncAction:           uint8(action),
+			Entries:              entries,
+		})
 	}
 	return nil
-}
-
-func (gs *GameServer) DeliverBuddyListUpdate(recipientCharacterID uint32, syncAction uint8, entries []response.BuddyEntry) {
-	if gs == nil || recipientCharacterID == 0 || len(entries) == 0 {
-		return
-	}
-	if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientCharacterID) {
-		return
-	}
-	gs.EnsureSend(nil, recipientCharacterID, &g_actor.DeliverBuddyListUpdate{
-		RecipientCharacterID: recipientCharacterID,
-		SyncAction:           syncAction,
-		Entries:              entries,
-	})
 }

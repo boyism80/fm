@@ -17,5 +17,6 @@ export interface CharacterSession {
     characterName: string | null;
     state: CharacterSessionState;
     gameServer: { id: string | null; worldId: number | null; channelId: number | null; connected: boolean };
+    gameToGameTransfer?: boolean;
     timestamps: { createdAt: string | null; updatedAt: string | null };
 }

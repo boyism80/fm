@@ -1,31 +1,5 @@
 package entity
 
-func (ch *Character) getSkillBookIndexByLevel(level uint8) int {
-	if ch.IsBeginner() {
-		return -1
-	}
-
-	isMagician := ch.IsMagician()
-	minLevel := uint8(10)
-	if isMagician {
-		minLevel = 8
-	}
-
-	if level < minLevel {
-		return -1
-	}
-
-	if level <= 30 {
-		return 0
-	} else if level <= 70 {
-		return 1
-	} else if level <= 120 {
-		return 2
-	} else {
-		return 3
-	}
-}
-
 func (ch *Character) GetSkillBookIndex() int {
 	class := ch.Class
 

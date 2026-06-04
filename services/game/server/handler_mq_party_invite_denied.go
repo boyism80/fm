@@ -8,18 +8,22 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type partyMqPartyInviteDenied struct{ gs *GameServer }
+type partyMqPartyInviteDenied struct {
+	partyMqHandler
+}
 
 func (partyMqPartyInviteDenied) New(gs *GameServer) *partyMqPartyInviteDenied {
-	return &partyMqPartyInviteDenied{gs: gs}
+	return &partyMqPartyInviteDenied{partyMqHandler: partyMqHandler{gs: gs}}
 }
-func (*partyMqPartyInviteDenied) EventType() string { return "party_invite_denied" }
+
+func (*partyMqPartyInviteDenied) EventType() string {
+	return "party_invite_denied"
+}
+
 func (h *partyMqPartyInviteDenied) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
-	gs := h.gs
-	if gs == nil || gs.party == nil {
+	if h.gs == nil {
 		return nil
 	}
-	pc := gs.party
 	var payload struct {
 		InviterCharacterID  uint32 `json:"inviter_character_id"`
 		DeniedCharacterName string `json:"denied_character_name"`
@@ -32,6 +36,6 @@ func (h *partyMqPartyInviteDenied) Handle(_ actor.Context, _ amqp.Delivery, _ st
 	if payload.InviterCharacterID == 0 {
 		return nil
 	}
-	pc.DeliverPartyDenyStatusToCharacter(payload.InviterCharacterID, payload.Action, payload.DeniedCharacterName)
+	h.sendDenyStatus(payload.InviterCharacterID, payload.Action, payload.DeniedCharacterName)
 	return nil
 }

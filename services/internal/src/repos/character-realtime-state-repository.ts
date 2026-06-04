@@ -74,6 +74,7 @@ export class CharacterRealtimeStateRepository extends ValueRepository<CharacterR
         return {
             ...row,
             party_id: toPgIntOrNull(row.party_id),
+            guild_id: toPgIntOrNull(row.guild_id),
         };
     }
 
@@ -82,7 +83,7 @@ export class CharacterRealtimeStateRepository extends ValueRepository<CharacterR
             worldId: row.world_id,
             characterId: row.character_id,
             partyId: toPgIntOrNull(row.party_id),
-            guildId: row.guild_id,
+            guildId: toPgIntOrNull(row.guild_id),
             buddyCapacity: row.buddy_capacity == null ? undefined : Number(row.buddy_capacity),
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };

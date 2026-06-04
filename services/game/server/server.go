@@ -76,17 +76,22 @@ type GameServer struct {
 	internalConn      *grpc.ClientConn
 	party             *PartyContainer
 	guild             *GuildContainer
+	alliance          *AllianceContainer
 	rabbitPartyPID    *actor.PID
 	rabbitBuddyPID    *actor.PID
 	rabbitGuildPID    *actor.PID
 	rabbitAlliancePID *actor.PID
 	characterRuntime  *ServerCharacterRuntime
+	mapSystem         mapSystem
+	schedulerSystem   schedulerSystem
+	partySystem       partySystem
+	guildSystem       guildSystem
+	allianceSystem    allianceSystem
+	dispatchSystem    dispatchSystem
 	ensureMu          sync.Mutex
 	ensurePending     map[uint64]*ensure.EnsureDeliver
 	ensureNext        atomic.Uint64
 	internalHBCancel  context.CancelFunc
-	allianceMu        sync.RWMutex
-	allianceCache     map[uint32]allianceCacheEntry
 }
 
 func (gs *GameServer) GetRootContext() *actor.RootContext {
@@ -152,6 +157,12 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		characterRuntime: nil,
 	}
 	gs.characterRuntime = NewServerCharacterRuntime(gs)
+	gs.mapSystem = mapSystem{gs}
+	gs.schedulerSystem = schedulerSystem{gs}
+	gs.partySystem = partySystem{gs}
+	gs.guildSystem = guildSystem{gs}
+	gs.allianceSystem = allianceSystem{gs}
+	gs.dispatchSystem = dispatchSystem{gs}
 
 	if config.InternalAddr != "" {
 		conn, err := grpc.NewClient(config.InternalAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -164,7 +175,8 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	}
 
 	gs.party = NewPartyContainer(gs, config.WorldId, gs.internalClient)
-	gs.guild = NewGuildContainer(config.WorldId, gs.internalClient)
+	gs.guild = NewGuildContainer(gs, config.WorldId, gs.internalClient)
+	gs.alliance = NewAllianceContainer(gs, config.WorldId, gs.internalClient)
 
 	if config.RabbitMQ.Enabled() {
 		queueName := fmt.Sprintf("fm.game.w%d.c%d.party.events", config.WorldId, config.ChannelId)
@@ -243,6 +255,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		mq.Bind[*GameServer, guildMqCapacityChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqMemberOnlineChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqDisbanded](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqChat](gs, guildDisp)
 
 		guildRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),
@@ -267,6 +280,15 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 		allianceDisp := mq.NewDispatcher()
 		mq.Bind[*GameServer, allianceMqCreated](gs, allianceDisp)
+		mq.Bind[*GameServer, allianceMqDisbanded](gs, allianceDisp)
+		mq.Bind[*GameServer, allianceMqGuildLeft](gs, allianceDisp)
+		mq.Bind[*GameServer, allianceMqGuildAdded](gs, allianceDisp)
+		mq.Bind[*GameServer, allianceMqCapacityChanged](gs, allianceDisp)
+		mq.Bind[*GameServer, allianceMqRankTitlesChanged](gs, allianceDisp)
+		mq.Bind[*GameServer, allianceMqMemberRankChanged](gs, allianceDisp)
+		mq.Bind[*GameServer, allianceMqLeaderChanged](gs, allianceDisp)
+		mq.Bind[*GameServer, allianceMqNoticeChanged](gs, allianceDisp)
+		mq.Bind[*GameServer, allianceMqChat](gs, allianceDisp)
 
 		allianceRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),
@@ -507,34 +529,15 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		transfer := client.TakeTransferDisconnect()
 		accID := character.AccountID
 		wid := gs.config.WorldId
-		p.Then(func() (interface{}, error) {
-			ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-			defer cancel()
-
-			if transfer {
-				req := &internal.BeginGameTransitionRequest{
-					WorldId:     wid,
-					AccountId:   accID,
-					CharacterId: character.GetID(),
-				}
-				reply, err := gs.internalClient.BeginGameTransition(ctx, req)
-				if err != nil {
-					return fmt.Errorf("BeginGameTransition: %w", err), nil
-				}
-				if reply == nil || !reply.GetOk() {
-					code := internal.SessionErrorCode_SESSION_NONE
-					if reply != nil {
-						code = reply.GetErrorCode()
-					}
-					return fmt.Errorf("BeginGameTransition: ok=false code=%v", code), nil
-				}
-				return nil, nil
-			} else {
+		if !transfer {
+			p.Then(func() (interface{}, error) {
+				ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+				defer cancel()
 				req := &internal.LogoutSessionRequest{
 					WorldId:            wid,
 					AccountId:          accID,
 					DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
-					TransferDisconnect: transfer,
+					TransferDisconnect: false,
 				}
 				if cid := character.GetID(); cid != 0 {
 					v := cid
@@ -547,13 +550,13 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 					return fmt.Errorf("LogoutSession: %w", err), nil
 				}
 				return nil, nil
-			}
-		}, func(v interface{}) error {
-			if err, _ := v.(error); err != nil {
-				log.Printf("session RPC on game disconnect failed for account %d: %v", accID, err)
-			}
-			return nil
-		})
+			}, func(v interface{}) error {
+				if err, _ := v.(error); err != nil {
+					log.Printf("session RPC on game disconnect failed for account %d: %v", accID, err)
+				}
+				return nil
+			})
+		}
 	}
 
 	toSave := []*entity.Character{character}

@@ -11,16 +11,15 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-// UpdatePartyMemberAsync builds a Promise for UpdatePartyMember. Caller must Run(). Pass ctx nil when unavailable.
-func (gs *GameServer) UpdatePartyMemberAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
+func (s partySystem) UpdateMemberAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
 	p := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	if gs == nil || ch == nil || gs.internalClient == nil {
+	if s.gs == nil || ch == nil || s.gs.internalClient == nil {
 		return p
 	}
 	if ch.GetPartyID() == nil {
 		return p
 	}
-	mm := ch.ToProtoPartyMember(uint32(gs.config.WorldId), int32(gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)
+	mm := ch.ToProtoPartyMember(uint32(s.gs.config.WorldId), int32(s.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)
 	if mm == nil {
 		return p
 	}
@@ -30,7 +29,7 @@ func (gs *GameServer) UpdatePartyMemberAsync(ctx actor.Context, ch *entity.Chara
 		log.Printf("UpdatePartyMember async char %d: %v", cid, err)
 	})
 	async.ThenRPC(p, func(c context.Context) (*internal.UpdatePartyMemberReply, error) {
-		return gs.internalClient.UpdatePartyMember(c, req)
+		return s.gs.internalClient.UpdatePartyMember(c, req)
 	}, func(*internal.UpdatePartyMemberReply) error {
 		return nil
 	})

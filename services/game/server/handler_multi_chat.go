@@ -77,10 +77,94 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 	case pconst.MultiChatModeBuddy:
 		return h.handleBuddyMultiChat(ctx, ch, req)
 	case pconst.MultiChatModeGuild:
-		return nil
+		return h.handleGuildMultiChat(ctx, ch, req)
+	case pconst.MultiChatModeAlliance:
+		return h.handleAllianceMultiChat(ctx, ch, req)
 	default:
 		return nil
 	}
+}
+
+func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *entity.Character, req *request.MultiChat) error {
+	if h.gs.internalClient == nil {
+		return fmt.Errorf("internal client not configured")
+	}
+	if ctx.ActorContext == nil {
+		return fmt.Errorf("guild multi chat: actor context required")
+	}
+	guildID, inGuild := ch.GetGuildID()
+	if !inGuild {
+		return nil
+	}
+	senderID := ch.GetID()
+	senderName := ch.GetName()
+	worldID := h.gs.config.WorldId
+	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
+			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
+				WorldId:           worldID,
+				MemberId:          guildID,
+				SenderCharacterId: senderID,
+				ChatMode:          uint32(pconst.MultiChatModeGuild),
+				SenderName:        senderName,
+				Message:           req.Message,
+			})
+		},
+		func(reply *internal.BroadcastMultiChatReply) error {
+			if !reply.GetOk() {
+				log.Printf("GuildMultiChat: broadcast failed character=%d code=%v", senderID, reply.GetErrorCode())
+			}
+			return nil
+		},
+	).OnError(func(err error) {
+		log.Printf("GuildMultiChat async error: %v", err)
+	}).Run()
+	return nil
+}
+
+func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *entity.Character, req *request.MultiChat) error {
+	if h.gs.internalClient == nil {
+		return fmt.Errorf("internal client not configured")
+	}
+	if ctx.ActorContext == nil {
+		return fmt.Errorf("alliance multi chat: actor context required")
+	}
+	guildID, inGuild := ch.GetGuildID()
+	if !inGuild {
+		return nil
+	}
+	g := h.gs.guild.Get(guildID)
+	if g == nil {
+		return nil
+	}
+	allianceID, inAlliance := g.GetAllianceID()
+	if !inAlliance {
+		return nil
+	}
+	senderID := ch.GetID()
+	senderName := ch.GetName()
+	worldID := h.gs.config.WorldId
+	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
+			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
+				WorldId:           worldID,
+				MemberId:          allianceID,
+				SenderCharacterId: senderID,
+				ChatMode:          uint32(pconst.MultiChatModeAlliance),
+				SenderName:        senderName,
+				Message:           req.Message,
+			})
+		},
+		func(reply *internal.BroadcastMultiChatReply) error {
+			if !reply.GetOk() {
+				log.Printf("AllianceMultiChat: broadcast failed character=%d code=%v", senderID, reply.GetErrorCode())
+			}
+			return nil
+		},
+	).OnError(func(err error) {
+		log.Printf("AllianceMultiChat async error: %v", err)
+	}).Run()
+	return nil
 }
 
 func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *entity.Character, req *request.MultiChat) error {

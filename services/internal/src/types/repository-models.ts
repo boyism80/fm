@@ -357,7 +357,7 @@ export interface AllianceModel {
 
 export type AllianceRow = {
     world_id: number;
-    alliance_id: number;
+    alliance_id: number | null;
     name: string;
     leader_character_id: number;
     guild_ids: number[];

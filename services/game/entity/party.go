@@ -4,6 +4,7 @@ import internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 
 // Party is server-side party aggregate (decoupled from protobuf).
 type Party struct {
+	GameWorld         GameWorld
 	WorldID           uint32
 	PartyID           uint32
 	LeaderCharacterID uint32
@@ -25,6 +26,7 @@ func (p *Party) Clone() *Party {
 		return nil
 	}
 	out := &Party{
+		GameWorld:         p.GameWorld,
 		WorldID:           p.WorldID,
 		PartyID:           p.PartyID,
 		LeaderCharacterID: p.LeaderCharacterID,

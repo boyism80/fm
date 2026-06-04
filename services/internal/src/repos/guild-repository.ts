@@ -1,5 +1,5 @@
 import { redisCacheKey } from "../redis-cache-key";
-import { toPgInt } from "./pg-int";
+import { toPgInt, toPgIntOrNull } from "./pg-int";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { GuildDeleteRow, GuildModel, GuildRow } from "../types/repository-models";
@@ -114,6 +114,7 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
         return {
             ...row,
             guild_id: toPgInt(row.guild_id),
+            alliance_id: toPgIntOrNull(row.alliance_id),
             revision: toPgInt(row.revision),
         };
     }
@@ -129,7 +130,7 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
             notice: row.notice,
             logo: this.logoFromRow(row.logo),
             rankTitles: this.rankTitlesFromRow(row.rank_titles),
-            allianceId: row.alliance_id != null ? toPgInt(row.alliance_id) : null,
+            allianceId: toPgIntOrNull(row.alliance_id),
             revision: toPgInt(row.revision),
             disbandedAt: row.disbanded_at ? new Date(row.disbanded_at) : null,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,

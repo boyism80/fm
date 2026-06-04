@@ -39,9 +39,6 @@ func allianceFromMQPayload(raw json.RawMessage) (*internal.Alliance, bool) {
 	if err := proto.Unmarshal(wire, &alliancePb); err != nil {
 		return nil, false
 	}
-	if alliancePb.GetAllianceId() == 0 {
-		return nil, false
-	}
 	return &alliancePb, true
 }
 
@@ -51,7 +48,7 @@ func (h *allianceMqCreated) Handle(_ actor.Context, _ amqp.Delivery, _ string, r
 		return nil
 	}
 	evt, ok := decodeAllianceEventEnvelope(raw)
-	if !ok || evt.AllianceID == 0 {
+	if !ok {
 		return nil
 	}
 	alliancePb, ok := allianceFromMQPayload(raw)
@@ -59,8 +56,8 @@ func (h *allianceMqCreated) Handle(_ actor.Context, _ amqp.Delivery, _ string, r
 		log.Printf("alliance consumer: created alliance_id=%d missing alliance_pb", evt.AllianceID)
 		return nil
 	}
-	gs.applyAllianceFromProto(alliancePb)
-	gs.broadcastAllianceCreate(alliancePb)
+	gs.alliance.Update(alliancePb)
+	gs.alliance.BroadcastCreate(alliancePb)
 	log.Printf("alliance consumer: applied created alliance_id=%d revision=%d", evt.AllianceID, evt.Revision)
 	return nil
 }

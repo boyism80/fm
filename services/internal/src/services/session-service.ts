@@ -87,6 +87,8 @@ export class SessionService {
     }
 
     async beginTransition(worldId: number, accountId: number, characterId: number, characterName: string) {
+        const account = await this.repo.getAccountSession(worldId, accountId);
+        const gameToGameTransfer = account?.state === AccountSessionState.ACCOUNT_SESSION_STATE_GAME;
         const [ok, code] = this.atomicResultTuple(
             await this.repo.beginTransitionAtomic(
                 worldId,
@@ -94,7 +96,8 @@ export class SessionService {
                 characterId,
                 characterName,
                 this.now(),
-                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION)
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
+                gameToGameTransfer
             )
         );
         if (ok !== 1) {
@@ -110,6 +113,8 @@ export class SessionService {
         characterName: string,
         channelId: number
     ) {
+        const transitionSession = await this.repo.getCharacterSessionByName(worldId, characterName);
+        const gameToGameTransfer = transitionSession?.gameToGameTransfer === true;
         const [ok, code] = this.atomicResultTuple(
             await this.repo.attachGameSessionAtomic(
                 worldId,
@@ -130,7 +135,7 @@ export class SessionService {
         if (this.buddyService) {
             await this.buddyService.applyBuddyChannelIndex(worldId, characterId, channelId);
         }
-        if (this.guildService) {
+        if (this.guildService && !gameToGameTransfer) {
             await this.guildService.applyMemberOnlineState(worldId, characterId, true);
         }
         return { ok: true };

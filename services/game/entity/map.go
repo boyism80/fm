@@ -276,7 +276,7 @@ func (m *Map) GetAllPlayers() map[uint32]Object {
 }
 
 func (m *Map) GetPartyMembers(partyID uint32) []*Character {
-	if m == nil || partyID == 0 {
+	if m == nil {
 		return nil
 	}
 	players := m.GetAllPlayers()

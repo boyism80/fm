@@ -8,7 +8,7 @@ const migration: MigrationModule = {
         const rows = await queryInterface.sequelize.query(`SELECT COALESCE(MAX(party_id), 0)::bigint AS m FROM parties`, {
             type: Sequelize.QueryTypes.SELECT,
         });
-        const m = (rows[0] as { m?: string | number } | undefined)?.m != null ? String((rows[0] as { m: string | number }).m) : "0";
+        const m = String((rows[0] as { m?: string | number })?.m ?? 0);
         const isCalled = Number(m) > 0;
         await queryInterface.sequelize.query("SELECT setval('party_id_seq', $1::bigint, $2)", {
             bind: [m, isCalled],

@@ -11,16 +11,23 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type partyMqLogOnOff struct{ gs *GameServer }
+type partyMqLogOnOff struct {
+	partyMqHandler
+}
 
-func (partyMqLogOnOff) New(gs *GameServer) *partyMqLogOnOff { return &partyMqLogOnOff{gs: gs} }
-func (*partyMqLogOnOff) EventType() string                  { return "log_onoff" }
+func (partyMqLogOnOff) New(gs *GameServer) *partyMqLogOnOff {
+	return &partyMqLogOnOff{partyMqHandler: partyMqHandler{gs: gs}}
+}
+
+func (*partyMqLogOnOff) EventType() string {
+	return "log_onoff"
+}
+
 func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
-	gs := h.gs
-	if gs == nil || gs.party == nil {
+	if h.gs == nil {
 		return nil
 	}
-	pc := gs.party
+	pc := h.gs.party
 	evt, ok := decodePartyEventEnvelope(raw)
 	if !ok {
 		return nil
@@ -42,7 +49,7 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 					}
 					if applied && payload.CharacterID != 0 {
 						if party := pc.Get(evt.PartyID); party != nil {
-							pc.DeliverPartyLogOnOff(party, payload.CharacterID)
+							h.sendLogOnOff(party)
 						}
 					}
 					return nil
@@ -51,7 +58,9 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 		}
 	}
 	pc.UpdateAsync(ctx, evt).
-		Then(func() (interface{}, error) { return nil, nil }, func(interface{}) error {
+		Then(func() (interface{}, error) {
+			return nil, nil
+		}, func(interface{}) error {
 			if raw == nil {
 				return nil
 			}
@@ -63,7 +72,7 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 			}
 			party := pc.Get(evt.PartyID)
 			if party != nil {
-				pc.DeliverPartyLogOnOff(party, extra.CharacterID)
+				h.sendLogOnOff(party)
 			}
 			return nil
 		}).

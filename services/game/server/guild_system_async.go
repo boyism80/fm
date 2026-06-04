@@ -118,7 +118,7 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 		*result = fail
 		return nil
 	}
-	partnerID, ok := s.gs.ValidateCreateAlliance(ch)
+	partnerID, ok := s.gs.alliance.ValidateCreateAlliance(ch)
 	if !ok || partnerID == 0 {
 		*result = int(constant.AllianceCreateResultInvalidRequirements)
 		return nil
@@ -160,17 +160,91 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 			return nil
 		}
 		alliancePb := reply.GetAlliance()
-		if alliancePb == nil || alliancePb.GetAllianceId() == 0 {
+		if alliancePb == nil {
 			*result = int(constant.AllianceCreateResultFailed)
 			return nil
 		}
 		ch.RemoveMeso(constant.AllianceCreateMesoCost)
-		s.gs.applyAllianceFromProto(alliancePb)
-		s.gs.broadcastAllianceCreate(alliancePb)
+		s.gs.alliance.Update(alliancePb)
+		s.gs.alliance.BroadcastCreate(alliancePb)
 		*result = int(constant.AllianceCreateResultOK)
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("alliance create: character=%d: %v", charID, err)
 		*result = int(constant.AllianceCreateResultFailed)
+	})
+}
+
+func (s guildSystem) DisbandAllianceAsync(ctx actor.Context, ch *entity.Character, result *int) *async.Promise {
+	fail := int(constant.AllianceDisbandResultFailed)
+	if result == nil {
+		result = &fail
+	}
+	if s.gs == nil || s.gs.internalClient == nil || ch == nil {
+		*result = fail
+		return nil
+	}
+	*result = fail
+	guildID, ok := ch.GetGuildID()
+	if !ok {
+		*result = int(constant.AllianceDisbandResultNotInAlliance)
+		return nil
+	}
+	g := s.gs.guild.Get(guildID)
+	allianceID, inAlliance := g.GetAllianceID()
+	if g == nil || !inAlliance {
+		*result = int(constant.AllianceDisbandResultNotInAlliance)
+		return nil
+	}
+	charID := ch.GetID()
+	if g.LeaderCharacterID != charID {
+		*result = int(constant.AllianceDisbandResultNotGuildMaster)
+		return nil
+	}
+	m := g.FindMember(charID)
+	if m == nil {
+		*result = int(constant.AllianceDisbandResultNotLeader)
+		return nil
+	}
+	ar, isAllianceLeader := m.GetAllianceRank()
+	if !isAllianceLeader || ar != 1 {
+		*result = int(constant.AllianceDisbandResultNotLeader)
+		return nil
+	}
+	worldID := s.gs.config.WorldId
+	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+	return async.ThenRPC(promise, func(c context.Context) (*internal.DisbandAllianceReply, error) {
+		return s.gs.internalClient.DisbandAlliance(c, &internal.DisbandAllianceRequest{
+			WorldId:     worldID,
+			CharacterId: charID,
+		})
+	}, func(reply *internal.DisbandAllianceReply) error {
+		if reply == nil {
+			*result = int(constant.AllianceDisbandResultFailed)
+			return nil
+		}
+		if !reply.GetOk() {
+			switch reply.GetErrorCode() {
+			case internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_IN_ALLIANCE,
+				internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NOT_FOUND:
+				*result = int(constant.AllianceDisbandResultNotInAlliance)
+			case internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_ALLIANCE_LEADER,
+				internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_GUILD_MASTER:
+				*result = int(constant.AllianceDisbandResultNotLeader)
+			default:
+				*result = int(constant.AllianceDisbandResultFailed)
+			}
+			return nil
+		}
+		guildIDs := s.gs.alliance.GuildIDs(allianceID)
+		if len(guildIDs) == 0 {
+			guildIDs = []uint32{guildID}
+		}
+		s.gs.alliance.DisbandAfterGuildRefreshAsync(ctx, allianceID, guildIDs).Run()
+		*result = int(constant.AllianceDisbandResultOK)
+		return nil
+	}).OnError(func(err error) {
+		log.Printf("alliance disband: character=%d: %v", charID, err)
+		*result = int(constant.AllianceDisbandResultFailed)
 	})
 }

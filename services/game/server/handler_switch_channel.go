@@ -97,6 +97,31 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			}, types.SEND_POLICY_ENCRYPT)
 			return fmt.Errorf("switch channel: save failed (world=%d channel=%d)", worldID, targetChannel)
 		}
+		return nil
+	})
+	accID := character.AccountID
+	charID := character.GetID()
+	promise = async.ThenRPC(promise, func(c context.Context) (*internal.BeginGameTransitionReply, error) {
+		if accID == 0 || charID == 0 {
+			return nil, fmt.Errorf("switch channel: missing account or character id")
+		}
+		return ic.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
+			WorldId:     worldID,
+			AccountId:   accID,
+			CharacterId: charID,
+		})
+	}, func(transReply *internal.BeginGameTransitionReply) error {
+		if transReply == nil || !transReply.GetOk() {
+			_ = ctx.Client.Send(&response.ServerBlocked{
+				Reason: constant.ServerBlockedChannelMoveUnavailable,
+			}, types.SEND_POLICY_ENCRYPT)
+			code := internal.SessionErrorCode_SESSION_NONE
+			if transReply != nil {
+				code = transReply.GetErrorCode()
+			}
+			return fmt.Errorf("switch channel: begin transition failed (world=%d channel=%d code=%v)",
+				worldID, targetChannel, code)
+		}
 		if err := ctx.Client.Send(&response.SwitchChannel{
 			IP:   routeHost,
 			Port: routePort,

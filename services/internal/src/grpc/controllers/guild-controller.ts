@@ -26,10 +26,28 @@ import type {
     ChangeGuildMemberRankRequest,
     ChangeGuildRankTitlesReply,
     ChangeGuildRankTitlesRequest,
+    AcceptAllianceInviteReply,
+    AcceptAllianceInviteRequest,
+    IncreaseAllianceCapacityReply,
+    IncreaseAllianceCapacityRequest,
+    ChangeAllianceRankTitlesReply,
+    ChangeAllianceRankTitlesRequest,
+    ChangeAllianceMemberRankReply,
+    ChangeAllianceMemberRankRequest,
+    ChangeAllianceLeaderReply,
+    ChangeAllianceLeaderRequest,
+    ChangeAllianceNoticeReply,
+    ChangeAllianceNoticeRequest,
     CreateAllianceReply,
     CreateAllianceRequest,
     CreateGuildReply,
     CreateGuildRequest,
+    DisbandAllianceReply,
+    DisbandAllianceRequest,
+    LeaveAllianceReply,
+    LeaveAllianceRequest,
+    ExpelAllianceGuildReply,
+    ExpelAllianceGuildRequest,
     GetAllianceReply,
     GetAllianceRequest,
     DisbandGuildReply,
@@ -54,8 +72,17 @@ import type {
     UpdateGuildBulletinBoardThreadResult,
     ChangeGuildMemberRankResult,
     ChangeGuildRankTitlesResult,
+    AcceptAllianceInviteResult,
+    IncreaseAllianceCapacityResult,
+    ChangeAllianceRankTitlesResult,
+    ChangeAllianceMemberRankResult,
+    ChangeAllianceLeaderResult,
+    ChangeAllianceNoticeResult,
     CreateAllianceResult,
     CreateGuildResult,
+    DisbandAllianceResult,
+    LeaveAllianceResult,
+    ExpelAllianceGuildResult,
     DisbandGuildResult,
     GetAllianceResult,
     ExpelGuildResult,
@@ -108,12 +135,12 @@ export class GuildGrpcController {
         try {
             const worldId = call.request.worldId;
             const result = await this.guildService.getGuild(worldId, call.request.guildId) as GetGuildResult;
-            if (result.found && result.guild) {
-                const guild = await this.guildService.buildGuildMessage(worldId, result.guild, result.members ?? []);
-                callback(null, { found: true, guild });
-            } else {
+            if (!result.guild) {
                 callback(null, { found: false, guild: undefined });
+                return;
             }
+            const guild = await this.guildService.buildGuildMessage(worldId, result.guild, result.members ?? []);
+            callback(null, { found: true, guild });
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -616,16 +643,327 @@ export class GuildGrpcController {
         }
     }
 
+    @Method("leaveAlliance")
+    async leaveAlliance(call: GrpcCall<LeaveAllianceRequest>, callback: GrpcCallback<LeaveAllianceReply>) {
+        try {
+            const result = await this.guildService.leaveAlliance(
+                call.request.worldId,
+                call.request.characterId
+            ) as LeaveAllianceResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
+                    allianceId: result.allianceId ?? 0,
+                    revision: result.revision ?? 0,
+                    disbanded: result.disbanded ?? false,
+                    removedGuildId: result.removedGuildId ?? 0,
+                    alliance: result.alliance,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
+                    allianceId: 0,
+                    revision: 0,
+                    disbanded: false,
+                    removedGuildId: 0,
+                    alliance: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("expelAllianceGuild")
+    async expelAllianceGuild(
+        call: GrpcCall<ExpelAllianceGuildRequest>,
+        callback: GrpcCallback<ExpelAllianceGuildReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.expelAllianceGuild(
+                req.worldId,
+                req.characterId,
+                req.targetGuildId,
+                req.allianceId > 0 ? req.allianceId : undefined
+            ) as ExpelAllianceGuildResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
+                    allianceId: result.allianceId ?? 0,
+                    revision: result.revision ?? 0,
+                    disbanded: result.disbanded ?? false,
+                    removedGuildId: result.removedGuildId ?? 0,
+                    alliance: result.alliance,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
+                    allianceId: 0,
+                    revision: 0,
+                    disbanded: false,
+                    removedGuildId: 0,
+                    alliance: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("disbandAlliance")
+    async disbandAlliance(call: GrpcCall<DisbandAllianceRequest>, callback: GrpcCallback<DisbandAllianceReply>) {
+        try {
+            const result = await this.guildService.disbandAlliance(
+                call.request.worldId,
+                call.request.characterId
+            ) as DisbandAllianceResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
+                    allianceId: result.allianceId ?? 0,
+                    revision: result.revision ?? 0,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
+                    allianceId: 0,
+                    revision: 0,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("acceptAllianceInvite")
+    async acceptAllianceInvite(
+        call: GrpcCall<AcceptAllianceInviteRequest>,
+        callback: GrpcCallback<AcceptAllianceInviteReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.acceptAllianceInvite(
+                req.worldId,
+                req.characterId,
+                req.allianceId,
+                req.guildId
+            ) as AcceptAllianceInviteResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
+                    allianceId: result.allianceId ?? 0,
+                    revision: result.revision ?? 0,
+                    alliance: result.alliance,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
+                    allianceId: 0,
+                    revision: 0,
+                    alliance: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("increaseAllianceCapacity")
+    async increaseAllianceCapacity(
+        call: GrpcCall<IncreaseAllianceCapacityRequest>,
+        callback: GrpcCallback<IncreaseAllianceCapacityReply>
+    ) {
+        try {
+            const result = await this.guildService.increaseAllianceCapacity(
+                call.request.worldId,
+                call.request.characterId
+            ) as IncreaseAllianceCapacityResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
+                    allianceId: result.allianceId ?? 0,
+                    revision: result.revision ?? 0,
+                    alliance: result.alliance,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
+                    allianceId: 0,
+                    revision: 0,
+                    alliance: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("changeAllianceRankTitles")
+    async changeAllianceRankTitles(
+        call: GrpcCall<ChangeAllianceRankTitlesRequest>,
+        callback: GrpcCallback<ChangeAllianceRankTitlesReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.changeAllianceRankTitles(
+                req.worldId,
+                req.characterId,
+                req.rankTitles
+            ) as ChangeAllianceRankTitlesResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
+                    allianceId: result.allianceId ?? 0,
+                    revision: result.revision ?? 0,
+                    alliance: result.alliance,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
+                    allianceId: 0,
+                    revision: 0,
+                    alliance: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("changeAllianceLeader")
+    async changeAllianceLeader(
+        call: GrpcCall<ChangeAllianceLeaderRequest>,
+        callback: GrpcCallback<ChangeAllianceLeaderReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.changeAllianceLeader(
+                req.worldId,
+                req.characterId,
+                req.newLeaderCharacterId
+            ) as ChangeAllianceLeaderResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
+                    allianceId: result.allianceId ?? 0,
+                    revision: result.revision ?? 0,
+                    oldLeaderCharacterId: result.oldLeaderCharacterId ?? 0,
+                    newLeaderCharacterId: result.newLeaderCharacterId ?? 0,
+                    alliance: result.alliance,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
+                    allianceId: 0,
+                    revision: 0,
+                    oldLeaderCharacterId: 0,
+                    newLeaderCharacterId: 0,
+                    alliance: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("changeAllianceNotice")
+    async changeAllianceNotice(
+        call: GrpcCall<ChangeAllianceNoticeRequest>,
+        callback: GrpcCallback<ChangeAllianceNoticeReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.changeAllianceNotice(
+                req.worldId,
+                req.characterId,
+                req.notice
+            ) as ChangeAllianceNoticeResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
+                    allianceId: result.allianceId ?? 0,
+                    revision: result.revision ?? 0,
+                    alliance: result.alliance,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
+                    allianceId: 0,
+                    revision: 0,
+                    alliance: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("changeAllianceMemberRank")
+    async changeAllianceMemberRank(
+        call: GrpcCall<ChangeAllianceMemberRankRequest>,
+        callback: GrpcCallback<ChangeAllianceMemberRankReply>
+    ) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.changeAllianceMemberRank(
+                req.worldId,
+                req.requesterCharacterId,
+                req.targetCharacterId,
+                req.promote
+            ) as ChangeAllianceMemberRankResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: AllianceErrorCode.ALLIANCE_ERROR_NONE,
+                    allianceId: result.allianceId ?? 0,
+                    revision: result.revision ?? 0,
+                    targetCharacterId: result.targetCharacterId ?? 0,
+                    newAllianceRank: result.newAllianceRank ?? 0,
+                    alliance: result.alliance,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN,
+                    allianceId: 0,
+                    revision: 0,
+                    targetCharacterId: 0,
+                    newAllianceRank: 0,
+                    alliance: undefined,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
     @Method("getAlliance")
     async getAlliance(call: GrpcCall<GetAllianceRequest>, callback: GrpcCallback<GetAllianceReply>) {
         try {
             const worldId = call.request.worldId;
             const result = await this.guildService.getAlliance(worldId, call.request.allianceId) as GetAllianceResult;
-            if (result.found && result.alliance) {
-                callback(null, { found: true, alliance: result.alliance });
-            } else {
+            if (!result.alliance) {
                 callback(null, { found: false, alliance: undefined });
+                return;
             }
+            callback(null, { found: true, alliance: result.alliance });
         } catch (err) {
             this.grpcError(err, callback);
         }

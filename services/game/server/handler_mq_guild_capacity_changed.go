@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -20,42 +19,13 @@ func (*guildMqCapacityChanged) EventType() string {
 
 func (h *guildMqCapacityChanged) Handle(ctx actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
-	if gs == nil || gs.guild == nil {
+	if gs == nil {
 		return nil
 	}
 	evt, ok := decodeGuildEventEnvelope(raw)
 	if !ok {
 		return nil
 	}
-	gs.guild.UpdateAsync(ctx, evt).
-		Then(func() (interface{}, error) {
-			return nil, nil
-		}, func(interface{}) error {
-			g := gs.guild.Get(evt.GuildID)
-			if g == nil {
-				return nil
-			}
-			guildID := g.GetGuildId()
-			capacity := uint8(g.Capacity)
-			for _, m := range g.GetMembers() {
-				if m == nil {
-					continue
-				}
-				memberID := m.GetCharacterId()
-				if memberID == 0 {
-					continue
-				}
-				if gs.characterRuntime == nil || !gs.characterRuntime.Exists(memberID) {
-					continue
-				}
-				gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildCapacityChange{
-					CharacterID: memberID,
-					GuildID:     guildID,
-					Capacity:    capacity,
-				})
-			}
-			return nil
-		}).
-		Run()
+	gs.guild.ApplyEventAsync(ctx, evt, gs.guild.BroadcastCapacityChanged).Run()
 	return nil
 }

@@ -46,21 +46,14 @@ func (h *buddyMqAddRequest) Handle(_ actor.Context, _ amqp.Delivery, _ string, r
 		if recipientID == 0 {
 			continue
 		}
-		gs.DeliverBuddyAddRequest(recipientID, payload.FromCharacterID, payload.FromName)
+		if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientID) {
+			continue
+		}
+		gs.EnsureSend(nil, recipientID, &g_actor.DeliverBuddyAddRequest{
+			RecipientCharacterID: recipientID,
+			FromCharacterID:      payload.FromCharacterID,
+			FromName:             payload.FromName,
+		})
 	}
 	return nil
-}
-
-func (gs *GameServer) DeliverBuddyAddRequest(recipientCharacterID uint32, fromCharacterID uint32, fromName string) {
-	if gs == nil || recipientCharacterID == 0 || fromCharacterID == 0 {
-		return
-	}
-	if gs.characterRuntime != nil && !gs.characterRuntime.Exists(recipientCharacterID) {
-		return
-	}
-	gs.EnsureSend(nil, recipientCharacterID, &g_actor.DeliverBuddyAddRequest{
-		RecipientCharacterID: recipientCharacterID,
-		FromCharacterID:      fromCharacterID,
-		FromName:             fromName,
-	})
 }

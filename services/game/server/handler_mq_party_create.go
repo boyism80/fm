@@ -13,7 +13,7 @@ func (partyMqCreated) New(gs *GameServer) *partyMqCreated { return &partyMqCreat
 func (*partyMqCreated) EventType() string                 { return "created" }
 func (h *partyMqCreated) Handle(ctx actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
 	gs := h.gs
-	if gs == nil || gs.party == nil {
+	if gs == nil {
 		return nil
 	}
 	pc := gs.party

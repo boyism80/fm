@@ -24,7 +24,7 @@ func (ch *Character) GetPartySearchConfig() *PartySearchConfig {
 }
 
 func (accepter *Character) ShouldSkipInvitePendingForPartySearch(partyID uint32) bool {
-	if accepter == nil || partyID == 0 || accepter.GameWorld == nil {
+	if accepter == nil || accepter.GameWorld == nil {
 		return false
 	}
 	var p *Party

@@ -53,7 +53,7 @@ func (h *GuildOperation) resumeGuildCreate(ch *entity.Character, result gamecons
 }
 
 func (h *GuildOperation) inviterCanInvite(characterID, guildID uint32) bool {
-	if characterID == 0 || guildID == 0 {
+	if characterID == 0 {
 		return false
 	}
 	g := h.gs.GetGuildSystem().Get(guildID)
@@ -77,20 +77,14 @@ func (h *GuildOperation) inviterCanInvite(characterID, guildID uint32) bool {
 }
 
 func (h *GuildOperation) isGuildMaster(characterID, guildID uint32) bool {
-	if characterID == 0 || guildID == 0 {
+	if characterID == 0 {
 		return false
 	}
 	g := h.gs.GetGuildSystem().Get(guildID)
 	if g == nil {
 		return false
 	}
-	for _, m := range g.GetMembers() {
-		if m == nil || m.GetCharacterId() != characterID {
-			continue
-		}
-		return m.GetRank() == internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER
-	}
-	return false
+	return g.IsGuildMaster(characterID)
 }
 
 func (h *GuildOperation) isOnGuildEmblemMap(ch *entity.Character) bool {
@@ -171,13 +165,10 @@ func (h *GuildOperation) refundGuildEmblemChangeCost(ch *entity.Character, payme
 }
 
 func (h *GuildOperation) applyLocalGuildMembership(ch *entity.Character, guildPb *internal.Guild) {
-	if h == nil || h.gs == nil || ch == nil || guildPb == nil || h.gs.guild == nil {
+	if h == nil || h.gs == nil || ch == nil || guildPb == nil {
 		return
 	}
 	guildID := guildPb.GetGuildId()
-	if guildID == 0 {
-		return
-	}
 	id := guildID
 	ch.SetGuildID(&id)
 	h.gs.guild.Update(guildPb)
@@ -247,14 +238,12 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				return nil
 			}
 			guildPb := reply.GetGuild()
-			if guildPb == nil || guildPb.GetGuildId() == 0 {
+			if guildPb == nil {
 				log.Printf("GuildOperation(create): ok but missing guild character=%d", charID)
 				h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 				return nil
 			}
-			if h.gs.guild != nil {
-				h.applyLocalGuildMembership(ch, guildPb)
-			}
+			h.applyLocalGuildMembership(ch, guildPb)
 			h.chargeGuildCreateCost(ch)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultOK)
 			return nil
@@ -350,13 +339,11 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				return nil
 			}
 			guildPb := reply.GetGuild()
-			if guildPb == nil || guildPb.GetGuildId() == 0 {
+			if guildPb == nil {
 				log.Printf("GuildOperation(accept invite): ok but missing guild character=%d", charID)
 				return nil
 			}
-			if h.gs.guild != nil {
-				h.applyLocalGuildMembership(ch, guildPb)
-			}
+			h.applyLocalGuildMembership(ch, guildPb)
 			return nil
 		})
 		promise.OnError(func(err error) {
