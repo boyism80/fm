@@ -202,6 +202,7 @@ var (
 	_ Object = (*Character)(nil)
 	_ Object = (*Mob)(nil)
 	_ Object = (*Npc)(nil)
+	_ Object = (*Reactor)(nil)
 	_ Object = (*FieldPlacement)(nil)
 	_ Object = (*Mist)(nil)
 	_ Object = (*Door)(nil)

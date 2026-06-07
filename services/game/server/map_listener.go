@@ -164,7 +164,7 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Ite
 		Position:     placementObj.Position,
 		OwnerID:      placement.Owner,
 		SpawnedPoint: placement.SpawnedPoint,
-		IsPlayerDrop: true,
+		IsPlayerDrop: placement.PlayerDrop,
 	}
 
 	mapInstance.Broadcast(spawnPacket, nil)
@@ -185,7 +185,7 @@ func (l *MapListenerImpl) OnMesoSpawned(mapInstance *entity.Map, meso *entity.Me
 		OwnerID:      fp.Owner,
 		Position:     fp.Position,
 		SpawnedPoint: fp.SpawnedPoint,
-		IsPlayerDrop: true,
+		IsPlayerDrop: fp.PlayerDrop,
 	}
 
 	mapInstance.Broadcast(spawnPacket, nil)
@@ -232,6 +232,48 @@ func (l *MapListenerImpl) OnMobRemoved(mapInstance *entity.Map, mob *entity.Mob,
 	}
 
 	mapInstance.Broadcast(removePacket, nil)
+}
+
+func (l *MapListenerImpl) OnReactorSpawned(mapInstance *entity.Map, reactor *entity.Reactor) {
+	if mapInstance == nil || reactor == nil {
+		return
+	}
+
+	mapInstance.Broadcast(&response.SpawnReactor{
+		Reactor: reactor.ToDTO(),
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnReactorRemoved(mapInstance *entity.Map, reactor *entity.Reactor) {
+	if mapInstance == nil || reactor == nil {
+		return
+	}
+
+	mapInstance.Broadcast(&response.DestroyReactor{
+		Reactor: reactor.ToDTO(),
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnMusicChanged(mapInstance *entity.Map, song string) {
+	if mapInstance == nil || song == "" {
+		return
+	}
+
+	mapInstance.Broadcast(&response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeMusic,
+		Env:  song,
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnMapMessage(mapInstance *entity.Map, messageType constant.ServerMessageType, message string) {
+	if mapInstance == nil || message == "" {
+		return
+	}
+
+	mapInstance.Broadcast(&response.Notice{
+		Type:    messageType,
+		Message: message,
+	}, nil)
 }
 
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character, aggro bool) {

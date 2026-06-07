@@ -505,12 +505,39 @@ command_funcs = {
 				me:notice("맵 정보 없음")
 				return true
 			end
+			local mobs = {}
+			for _, mob in pairs(m:mobs()) do
+				mobs[#mobs + 1] = mob
+			end
 			local count = 0
-			for oid, _ in pairs(m:mobs()) do
-				m:remove_mob(oid, MobDieAnimation.FadeOut)
-				count = count + 1
+			for _, mob in ipairs(mobs) do
+				if mob:map() == nil then
+					goto continue
+				end
+				local hp = mob:hp()
+				if hp <= 0 then
+					goto continue
+				end
+				if mob:damage(me, hp) then
+					count = count + 1
+				end
+				::continue::
 			end
 			me:notice(string.format("몬스터 %d마리 제거", count))
+			return true
+		end,
+	},
+	["리액터초기화"] = {
+		privilege = ROLE.Admin,
+		usage = "- 현재 맵 리액터 초기화",
+		command = function(me, args)
+			local m = me:map()
+			if m == nil then
+				me:notice("맵 정보 없음")
+				return true
+			end
+			local count = m:reload_reactors()
+			me:notice(string.format("리액터 %d개 초기화", count))
 			return true
 		end,
 	},

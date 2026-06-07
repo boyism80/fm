@@ -98,6 +98,7 @@ type Resources struct {
 
 	Maps      map[uint32]*Map
 	Monsters  map[uint32]*Mob
+	Reactors  map[uint32]*Reactor
 	Items     map[uint32]Item
 	Drops     map[uint32][]Drop
 	Skills    map[uint32]*Skill
@@ -476,6 +477,18 @@ func NewResources(wzPath string) *Resources {
 		return nil
 	}
 
+	reactors := map[uint32]*Reactor{}
+	err = loadResourceFiles(filepath.Join(wzPath, "Reactor.wz"), workerCount, func(path string) (result *Reactor, err error) {
+		return loadReactor(path)
+	}, func(percent float32, value *Reactor) {
+		reactors[value.ID] = value
+		fmt.Printf("Loading reactor files: %.1f%%\n", percent)
+	})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
 	stringData := &StringData{
 		MapStrings:         make(map[string]map[uint32]map[string]string),
 		MobStrings:         make(map[uint32]map[string]string),
@@ -653,6 +666,7 @@ func NewResources(wzPath string) *Resources {
 		skillNameToId: make(map[string]uint32),
 		Maps:          maps,
 		Monsters:      mobs,
+		Reactors:      reactors,
 		Items:         items,
 		Drops:         drop,
 		Strings:       stringData,
@@ -692,6 +706,20 @@ func (r *Resources) GetMobSkill(skillID uint32, level uint8) *MobSkillLevelData 
 
 func (r *Resources) GetShop(npcID uint32) *Shop {
 	return r.Shops[npcID]
+}
+
+func (r *Resources) GetReactor(id uint32) *Reactor {
+	if r == nil || r.Reactors == nil {
+		return nil
+	}
+	def, ok := r.Reactors[id]
+	if !ok || def == nil {
+		return nil
+	}
+	if def.Info.Link != 0 {
+		return r.GetReactor(def.Info.Link)
+	}
+	return def
 }
 
 func (r *Resources) GetExpNeededForLevel(level uint8) uint32 {

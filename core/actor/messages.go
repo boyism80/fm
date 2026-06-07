@@ -31,6 +31,10 @@ type RunObjectTimer struct {
 	Key        string
 }
 
+type RunReactorRespawn struct {
+	SpawnID uint32
+}
+
 type PacketResponse struct {
 	Packet types.Packet
 	Policy types.SendPolicy

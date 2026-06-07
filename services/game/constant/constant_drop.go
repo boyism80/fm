@@ -14,9 +14,10 @@ const (
 type DropType uint8
 
 const (
-	DropTypeFFA   DropType = 0
-	DropTypeParty DropType = 1
-	DropTypeOwned DropType = 2
+	DropTypeOwnerOnly DropType = 0
+	DropTypeParty     DropType = 1
+	DropTypeFFA       DropType = 2
+	DropTypeExplosive DropType = 3
 )
 
 const (

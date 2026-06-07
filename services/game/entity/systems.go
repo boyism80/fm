@@ -17,6 +17,7 @@ type MapSystem interface {
 
 type SchedulerSystem interface {
 	RunObjectTimer(pid *actor.PID, obj Object, key string)
+	RunReactorRespawn(pid *actor.PID, spawnID uint32)
 }
 
 type PartySystem interface {

@@ -59,7 +59,7 @@ function on_mob_skill_200(mob, controller, skill)
     for i = 1, #summons do
         local summon_id = summons[i]
         local xpos, ypos, foothold = summon_position(mob, summon_id)
-        local ground = map:foothold_point({x = xpos, y = ypos - 1})
+        local ground = map:point_below({x = xpos, y = ypos - 1})
         if ground ~= nil then
             xpos = ground.x
             ypos = ground.y

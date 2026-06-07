@@ -28,6 +28,10 @@ type MapListener interface {
 	OnItemRemoved(mapInstance *Map, itemID uint32, looterID uint32, mode constant.RemoveItemType)
 	OnMobSpawned(mapInstance *Map, mob *Mob, spawnType constant.MobSpawnType, link uint32)
 	OnMobRemoved(mapInstance *Map, mob *Mob, animationType constant.MobDieAnimationType)
+	OnReactorSpawned(mapInstance *Map, reactor *Reactor)
+	OnReactorRemoved(mapInstance *Map, reactor *Reactor)
+	OnMusicChanged(mapInstance *Map, song string)
+	OnMapMessage(mapInstance *Map, messageType constant.ServerMessageType, message string)
 	OnMobHomingRemoved(mapInstance *Map, mob *Mob, removed *Homing, causer *Character)
 	OnMobHomingSet(mapInstance *Map, mob *Mob, homing *Homing, causer *Character)
 	OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool)
@@ -52,6 +56,7 @@ type Map struct {
 	objects           map[constant.ObjectType]map[uint32]Object
 	controllerTable   *ControllerTable
 	MobSpawns         map[uint32]*MobSpawn
+	ReactorSpawns     map[uint32]*ReactorSpawn
 	listener          MapListener
 	mobListener       MobListener
 	sequence          uint32
@@ -98,8 +103,9 @@ func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint
 
 	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
 
-	mapInstance.initializeNpcs()
-	mapInstance.initializeMobs()
+	mapInstance.initNpcs()
+	mapInstance.initReactors()
+	mapInstance.initMobs()
 
 	return mapInstance
 }
@@ -215,6 +221,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	}
 
 	character := m.objects[constant.ObjectTypeCharacter][playerID].(*Character)
+	m.collectOwnedFieldDrops(character)
 
 	m.callMapLifecycleScript(character, "on_map_leave")
 
@@ -314,14 +321,14 @@ func (m *Map) GetRecoveryRate() float32 {
 	return m.Wz.RecoveryRate
 }
 
-func (m *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
+func (m *Map) PointBelow(point types.Point[int16]) *types.Point[int16] {
 	if m == nil || m.Wz == nil {
 		return nil
 	}
-	return m.Wz.FootholdPoint(point)
+	return m.Wz.PointBelow(point)
 }
 
-func (m *Map) initializeNpcs() {
+func (m *Map) initNpcs() {
 	if m.objects[constant.ObjectTypeNpc] == nil {
 		m.objects[constant.ObjectTypeNpc] = make(map[uint32]Object)
 	}
@@ -341,6 +348,23 @@ func (m *Map) initializeNpcs() {
 		npc.initTimers()
 		m.objects[constant.ObjectTypeNpc][oid] = npc
 	}
+}
+
+func (m *Map) GetReactor(oid uint32) *Reactor {
+	if m.objects[constant.ObjectTypeReactor] == nil {
+		return nil
+	}
+	if reactor, ok := m.objects[constant.ObjectTypeReactor][oid].(*Reactor); ok {
+		return reactor
+	}
+	return nil
+}
+
+func (m *Map) GetReactors() map[uint32]Object {
+	if m.objects[constant.ObjectTypeReactor] == nil {
+		return make(map[uint32]Object)
+	}
+	return m.objects[constant.ObjectTypeReactor]
 }
 
 func (m *Map) AddSummon(s *Summon) {
@@ -659,7 +683,7 @@ func (m *Map) resyncOwnerDoorPortals(owner *Character) {
 	}
 }
 
-func (m *Map) initializeMobs() {
+func (m *Map) initMobs() {
 	for spawnId, mobSpawnSpec := range m.Wz.MobSpawns {
 		m.MobSpawns[spawnId] = &MobSpawn{
 			Wz:            &mobSpawnSpec,
@@ -685,10 +709,10 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 		footholdID = foothold.ID
 	}
 
-	footholdPoint := m.Wz.FootholdPoint(position)
+	pointBelow := m.Wz.PointBelow(position)
 	spawnPosition := position
-	if footholdPoint != nil {
-		spawnPosition = *footholdPoint
+	if pointBelow != nil {
+		spawnPosition = *pointBelow
 	}
 
 	baseSpawn := &wz.BaseSpawn{
@@ -765,9 +789,10 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		}
 	}
 
-	spawnPoint, ok := m.Wz.DropPoint(position)
-	if !ok {
-		spawnPoint = position
+	position.Y = position.Y - 1
+	spawnPoint := position
+	if pointBelow := m.Wz.PointBelow(position); pointBelow != nil {
+		spawnPoint = *pointBelow
 	}
 
 	mob := &Mob{
@@ -800,6 +825,9 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	mob.Buffs = NewMobBuffContainer(mob)
 	mob.LifeCore.ObjectCore.self = mob
 	mob.initTimers()
+	if spawnType == constant.MobSpawnTypeFake {
+		mob.Fake = true
+	}
 
 	if m.objects[constant.ObjectTypeMob] == nil {
 		m.objects[constant.ObjectTypeMob] = make(map[uint32]Object)
@@ -924,10 +952,7 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	fp.Owner = ownerID
 	fp.DropType = dropType
 	fp.Map = m
-	fp.RegisterExpire(constant.ItemExpireTime)
-	if dropType == constant.DropTypeOwned || dropType == constant.DropTypeParty {
-		fp.RegisterFFA(constant.ItemFFATime)
-	}
+	m.registerFieldDropTimers(fp, dropType)
 
 	if m.objects[constant.ObjectTypeItem] == nil {
 		m.objects[constant.ObjectTypeItem] = make(map[uint32]Object)
@@ -943,10 +968,13 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	m.objects[constant.ObjectTypeItem][oid] = mapObj
 	m.listener.OnItemSpawned(m, item, fp)
 
+	owner := m.GetPlayer(ownerID)
+	m.activateItemReactors(item, owner)
+
 	return nil
 }
 
-func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType) (*Meso, error) {
+func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, playerDrop bool) (*Meso, error) {
 	oid := m.allocateOID()
 
 	dropPoint, ok := m.Wz.DropPoint(position)
@@ -958,10 +986,8 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 
 	fp := meso.GetFieldPlacement()
 	if fp != nil {
-		fp.RegisterExpire(constant.ItemExpireTime)
-		if dropType == constant.DropTypeOwned || dropType == constant.DropTypeParty {
-			fp.RegisterFFA(constant.ItemFFATime)
-		}
+		fp.PlayerDrop = playerDrop
+		m.registerFieldDropTimers(fp, dropType)
 	}
 
 	if m.objects[constant.ObjectTypeItem] == nil {
@@ -1023,7 +1049,7 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootFailedInvalidItem
 		}
 
-		if fp.DropType == constant.DropTypeOwned && fp.Owner != character.GetID() {
+		if !m.canLootFieldDrop(fp, character) {
 			return constant.LootFailedNoOwnership
 		}
 
@@ -1046,7 +1072,7 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootFailedInvalidItem
 		}
 
-		if fp.DropType == constant.DropTypeOwned && fp.Owner != character.GetID() {
+		if !m.canLootFieldDrop(fp, character) {
 			return constant.LootFailedNoOwnership
 		}
 

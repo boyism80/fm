@@ -5,6 +5,8 @@ type MobSpawnType int8
 const (
 	MobSpawnTypeNone    MobSpawnType = -1
 	MobSpawnTypeAnimate MobSpawnType = -2
+	MobSpawnTypeRevive  MobSpawnType = -3
+	MobSpawnTypeFake    MobSpawnType = -4
 )
 
 type MobDieAnimationType uint8

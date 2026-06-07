@@ -14,7 +14,7 @@ func (m *Map) LuaTypeName() string {
 
 func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
-		"foothold_point": func(L *lua.LState) int {
+		"point_below": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)
 			if !ok {
@@ -33,7 +33,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
 				y = int16(lua.LVAsNumber(ly))
 			}
-			out := mapInstance.FootholdPoint(types.Point[int16]{X: x, Y: y})
+			out := mapInstance.PointBelow(types.Point[int16]{X: x, Y: y})
 			if out == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -205,10 +205,14 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			dropType := constant.DropTypeFFA
 			ownerID := uint32(0)
 			if owner != nil {
-				dropType = constant.DropTypeOwned
+				if owner.GetPartyID() != nil {
+					dropType = constant.DropTypeParty
+				} else {
+					dropType = constant.DropTypeOwnerOnly
+				}
 				ownerID = owner.GetID()
 			}
-			meso, err := mapInstance.SpawnMeso(count, pos, ownerID, dropType)
+			meso, err := mapInstance.SpawnMeso(count, pos, ownerID, dropType, false)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -302,7 +306,11 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			dropType := constant.DropTypeFFA
 			ownerID := uint32(0)
 			if owner != nil {
-				dropType = constant.DropTypeOwned
+				if owner.GetPartyID() != nil {
+					dropType = constant.DropTypeParty
+				} else {
+					dropType = constant.DropTypeOwnerOnly
+				}
 				ownerID = owner.GetID()
 			}
 			fp := &FieldPlacement{
@@ -431,6 +439,39 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			return 0
+		},
+		"music": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			song := L.CheckString(2)
+			mapInstance.ChangeMusic(song)
+			return 0
+		},
+		"message": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			message := L.CheckString(2)
+			mapInstance.MapMessage(message)
+			return 0
+		},
+		"reload_reactors": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			count := mapInstance.ReloadReactors()
+			L.Push(lua.LNumber(count))
+			return 1
 		},
 		"remove_mist": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

@@ -152,6 +152,26 @@ func (bc *MobBuffContainer) Add(duration time.Duration, skillWz *wz.Skill, skill
 	if bc == nil || len(values) == 0 {
 		return
 	}
+	if mob := bc.owner; mob != nil && mob.IsFake() {
+		filtered := make(map[constant.MobBuffFlag]int32, len(values))
+		filteredStacks := make(map[constant.MobBuffFlag]uint8, len(values))
+		for flag, value := range values {
+			if !mob.canReceiveMobBuff(flag) {
+				continue
+			}
+			filtered[flag] = value
+			if stacks != nil {
+				if stack, ok := stacks[flag]; ok {
+					filteredStacks[flag] = stack
+				}
+			}
+		}
+		values = filtered
+		stacks = filteredStacks
+		if len(values) == 0 {
+			return
+		}
+	}
 	now := time.Now()
 	if bc.refreshDuration(now, duration, skillWz, skillLevel, causer, values, stacks) {
 		return

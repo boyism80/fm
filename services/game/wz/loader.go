@@ -830,10 +830,11 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	}
 
 	model := Map{
-		ID:        mapId,
-		Portals:   map[uint8]Portal{},
-		NpcSpawns: map[uint32]NpcSpawn{},
-		MobSpawns: map[uint32]MobSpawn{},
+		ID:            mapId,
+		Portals:       map[uint8]Portal{},
+		NpcSpawns:     map[uint32]NpcSpawn{},
+		MobSpawns:     map[uint32]MobSpawn{},
+		ReactorSpawns: map[uint32]ReactorSpawn{},
 	}
 
 	info := root.find("info")
@@ -862,6 +863,8 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				model.HideMinimap = iv.Value != 0
 			case "town":
 				model.IsTown = iv.Value == 1
+			case "everlast":
+				model.Everlast = iv.Value > 0
 			case "mobRate":
 				model.MobRate = float32(iv.Value)
 			case "recoveryRate":
@@ -922,6 +925,8 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				model.HideMinimap = v.Value == "1"
 			case "town":
 				model.IsTown = v.Value == "1"
+			case "everlast":
+				model.Everlast = v.Value != "0" && v.Value != ""
 			case "mobRate":
 				f, err := strconv.ParseFloat(v.Value, 32)
 				if err == nil {
@@ -1263,6 +1268,91 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 		}
 	}
 
+	reactors := root.find("reactor")
+	if reactors != nil {
+		for _, reactorNode := range reactors.Children {
+			spawnId, err := strconv.Atoi(reactorNode.Name)
+			if err != nil {
+				log.Printf("Skipping non-numeric reactor node '%s' in map %d (file: %s)", reactorNode.Name, mapId, filepath.Base(path))
+				continue
+			}
+
+			spawn := ReactorSpawn{}
+			for _, strField := range reactorNode.Strings {
+				switch strField.Name {
+				case "id":
+					value, parseErr := strconv.Atoi(strField.Value)
+					if parseErr != nil {
+						return nil, parseErr
+					}
+					spawn.ReactorID = uint32(value)
+				case "name":
+					spawn.Name = strField.Value
+				}
+			}
+			for _, intField := range reactorNode.Ints {
+				switch intField.Name {
+				case "x":
+					spawn.Position.X = int16(intField.Value)
+				case "y":
+					spawn.Position.Y = int16(intField.Value)
+				case "f":
+					if intField.Value == 0 {
+						spawn.FacingDirection = FACING_DIRECTION_LEFT
+					} else {
+						spawn.FacingDirection = FACING_DIRECTION_RIGHT
+					}
+				case "reactorTime":
+					if intField.Value > 0 {
+						spawn.RespawnDelay = time.Duration(intField.Value) * time.Second
+					}
+				}
+			}
+			for _, field := range reactorNode.Children {
+				switch field.Name {
+				case "id":
+					if spawn.ReactorID == 0 {
+						value, parseErr := strconv.Atoi(field.Value)
+						if parseErr != nil {
+							return nil, parseErr
+						}
+						spawn.ReactorID = uint32(value)
+					}
+				case "name":
+					if spawn.Name == "" {
+						spawn.Name = field.Value
+					}
+				case "x":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+						spawn.Position.X = int16(val)
+					}
+				case "y":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+						spawn.Position.Y = int16(val)
+					}
+				case "f":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+						if val == 0 {
+							spawn.FacingDirection = FACING_DIRECTION_LEFT
+						} else {
+							spawn.FacingDirection = FACING_DIRECTION_RIGHT
+						}
+					}
+				case "reactorTime":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil && val > 0 {
+						spawn.RespawnDelay = time.Duration(val) * time.Second
+					}
+				}
+			}
+
+			if spawn.ReactorID == 0 {
+				log.Printf("Skipping reactor spawn %d with missing id in map %d (file: %s)", spawnId, mapId, filepath.Base(path))
+				continue
+			}
+			model.ReactorSpawns[uint32(spawnId)] = spawn
+		}
+	}
+
 	return &model, nil
 }
 
@@ -1582,6 +1672,10 @@ func loadMob(path string) (*Mob, error) {
 			model.MobType = uint8(intField.Value)
 		case "boss":
 			model.Boss = (intField.Value != 0)
+		case "publicReward":
+			model.FfaLoot = intField.Value > 0
+		case "explosiveReward":
+			model.ExplosiveReward = intField.Value > 0
 		}
 	}
 
@@ -1622,6 +1716,18 @@ func loadMob(path string) (*Mob, error) {
 		case "hpRecovery":
 		case "removeAfter":
 		case "revive":
+			for _, child := range iv.Children {
+				for _, intf := range child.Ints {
+					if intf.Value > 0 {
+						model.Revives = append(model.Revives, uint32(intf.Value))
+					}
+				}
+			}
+			for _, intf := range iv.Ints {
+				if intf.Value > 0 {
+					model.Revives = append(model.Revives, uint32(intf.Value))
+				}
+			}
 		case "hpTagColor":
 		case "hpTagBgcolor":
 		case "HPgaugeHide":
@@ -1632,7 +1738,13 @@ func loadMob(path string) (*Mob, error) {
 		case "changeableMob":
 		case "changeableMob_Type":
 		case "publicReward":
+			if v, err := strconv.Atoi(iv.Value); err == nil {
+				model.FfaLoot = v > 0
+			}
 		case "explosiveReward":
+			if v, err := strconv.Atoi(iv.Value); err == nil {
+				model.ExplosiveReward = v > 0
+			}
 		case "wp":
 		case "ban":
 			model.Banish = parseMobBanish(&iv)

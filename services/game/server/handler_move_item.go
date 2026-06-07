@@ -89,6 +89,7 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 		Owner:        character.GetID(),
 		SpawnedPoint: character.Position,
 		DropType:     constant.DropTypeFFA,
+		PlayerDrop:   true,
 	})
 
 	mapInstance := character.GetMap()

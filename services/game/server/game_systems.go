@@ -193,6 +193,18 @@ func (s schedulerSystem) RunObjectTimer(pid *actor.PID, obj entity.Object, key s
 	}
 }
 
+func (s schedulerSystem) RunReactorRespawn(pid *actor.PID, spawnID uint32) {
+	if s.gs == nil || pid == nil {
+		return
+	}
+	payload := &c_actor.RunReactorRespawn{
+		SpawnID: spawnID,
+	}
+	if root := s.gs.GetRootContext(); root != nil {
+		root.Send(pid, payload)
+	}
+}
+
 func (s partySystem) Get(partyID uint32) *entity.Party {
 	if s.gs == nil {
 		return nil

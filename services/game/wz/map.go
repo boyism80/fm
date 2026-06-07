@@ -25,6 +25,8 @@ type MobSpawn struct {
 	*BaseSpawn
 }
 
+const dropPointSearchOffset int16 = 50
+
 type Map struct {
 	ID                uint32
 	Name              string
@@ -39,6 +41,7 @@ type Map struct {
 	VRRight           int
 	HideMinimap       bool
 	IsTown            bool
+	Everlast          bool
 	MobRate           float32
 	RecoveryRate      float32
 	BGM               string
@@ -48,6 +51,7 @@ type Map struct {
 	Portals           map[uint8]Portal
 	NpcSpawns         map[uint32]NpcSpawn
 	MobSpawns         map[uint32]MobSpawn
+	ReactorSpawns     map[uint32]ReactorSpawn
 	Footholds         *types.QuadTreeNode[int16, Foothold]
 	doorReturnPortals []Portal
 }
@@ -112,7 +116,7 @@ func (model *Map) findBelow(p types.Point[int16]) (*Foothold, bool) {
 	return nil, false
 }
 
-func (model *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
+func (model *Map) PointBelow(point types.Point[int16]) *types.Point[int16] {
 	if model == nil || model.Footholds == nil {
 		return nil
 	}
@@ -130,8 +134,8 @@ func (model *Map) FootholdPoint(point types.Point[int16]) *types.Point[int16] {
 }
 
 func (model *Map) DropPoint(initial types.Point[int16]) (types.Point[int16], bool) {
-	highest := types.Point[int16]{X: initial.X, Y: initial.Y - int16(50)}
-	if result := model.FootholdPoint(highest); result != nil {
+	search := types.Point[int16]{X: initial.X, Y: initial.Y - dropPointSearchOffset}
+	if result := model.PointBelow(search); result != nil {
 		return *result, true
 	}
 	return initial, false
@@ -156,8 +160,8 @@ func (model *Map) GetSpawnPosition(spawnPoint uint8) (types.Point[int16], bool) 
 		return types.Point[int16]{}, false
 	}
 	position := portal.Position
-	if dropped, ok := model.DropPoint(position); ok {
-		position = dropped
+	if snapped := model.PointBelow(position); snapped != nil {
+		position = *snapped
 	}
 	return position, true
 }

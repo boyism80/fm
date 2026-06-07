@@ -70,6 +70,11 @@ func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *enti
 	if mapInstance == nil {
 		return damage
 	}
+	if req.OID != 0 {
+		if mob := mapInstance.GetMob(req.OID); mob != nil && mob.IsFake() {
+			return 0
+		}
+	}
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		return damage

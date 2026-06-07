@@ -43,6 +43,7 @@ type FieldPlacement struct {
 	Owner        uint32
 	SpawnedPoint types.Point[int16]
 	DropType     constant.DropType
+	PlayerDrop   bool
 	nextFFA      time.Time
 	nextExpiry   time.Time
 }
@@ -129,7 +130,7 @@ func (item *ItemCore) SendSpawnSyncToViewer(viewer *Character) {
 		Position:     fp.Position,
 		OwnerID:      fp.Owner,
 		SpawnedPoint: fp.SpawnedPoint,
-		IsPlayerDrop: true,
+		IsPlayerDrop: fp.PlayerDrop,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

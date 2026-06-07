@@ -63,6 +63,8 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onResumeLua(m)
 	case *c_actor.RunObjectTimer:
 		a.onRunObjectTimer(ctx, m)
+	case *c_actor.RunReactorRespawn:
+		a.onRunReactorRespawn(m)
 	case *TimerTick:
 		a.onTimerTick(ctx, m)
 	case *SyncParty:
@@ -343,6 +345,19 @@ func (a *MapActor) onResponseSpawnDoor(msg *ResponseSpawnDoor) {
 	if door == nil && gw != nil {
 		gw.GetMapSystem().RemoveReturnDoor(msg.OwnerID, uint32(msg.SkillID), uint32(ch.GetMap().Wz.ReturnMapId))
 	}
+}
+
+func (a *MapActor) onRunReactorRespawn(msg *c_actor.RunReactorRespawn) {
+	if a.Map == nil || msg == nil {
+		return
+	}
+
+	reactorSpawn := a.Map.GetReactorSpawn(msg.SpawnID)
+	if reactorSpawn == nil || reactorSpawn.Spawned {
+		return
+	}
+
+	_, _ = a.Map.SpawnReactor(reactorSpawn)
 }
 
 func (a *MapActor) onRunObjectTimer(ctx actor.Context, msg *c_actor.RunObjectTimer) {

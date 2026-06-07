@@ -40,7 +40,7 @@ func (meso *Meso) SendSpawnSyncToViewer(viewer *Character) {
 		OwnerID:      fp.Owner,
 		Position:     fp.Position,
 		SpawnedPoint: fp.SpawnedPoint,
-		IsPlayerDrop: true,
+		IsPlayerDrop: fp.PlayerDrop,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

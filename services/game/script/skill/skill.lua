@@ -221,7 +221,7 @@ function apply_archer_puppet_buff(me, skill)
 	if map == nil then
 		return
 	end
-	local grounded = map:foothold_point({ x = ox, y = py })
+	local grounded = map:point_below({ x = ox, y = py })
 	local spawn_pos
 	if grounded == nil then
 		spawn_pos = { x = ox, y = py }

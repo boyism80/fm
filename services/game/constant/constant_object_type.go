@@ -6,6 +6,7 @@ const (
 	ObjectTypeObject    ObjectType = 0x0001
 	ObjectTypeLife      ObjectType = ObjectTypeObject | 0x0010
 	ObjectTypeNpc       ObjectType = ObjectTypeObject | 0x0020
+	ObjectTypeReactor   ObjectType = ObjectTypeObject | 0x0200
 	ObjectTypeItem      ObjectType = ObjectTypeObject | 0x0040
 	ObjectTypeMist      ObjectType = ObjectTypeObject | 0x0080
 	ObjectTypeDoor      ObjectType = ObjectTypeObject | 0x0100
@@ -25,6 +26,7 @@ func AllObjectTypeConstants() map[string]ObjectType {
 		"Character": ObjectTypeCharacter,
 		"Mob":       ObjectTypeMob,
 		"Npc":       ObjectTypeNpc,
+		"Reactor":   ObjectTypeReactor,
 		"Item":      ObjectTypeItem,
 		"Summon":    ObjectTypeSummon,
 		"Mist":      ObjectTypeMist,

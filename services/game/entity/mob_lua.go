@@ -17,6 +17,25 @@ func (m *Mob) LuaTypeName() string {
 
 func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	return map[string]lua.LGFunction{
+		"fake": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			argc := L.GetTop()
+			if argc == 1 {
+				L.Push(lua.LBool(mob.IsFake()))
+				return 1
+			}
+			if argc == 2 {
+				mob.SetFake(lua.LVAsBool(L.Get(2)))
+				return 0
+			}
+			L.ArgError(2, "fake() get or set one value")
+			return 0
+		},
 		"id": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)

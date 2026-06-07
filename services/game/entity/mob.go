@@ -20,6 +20,7 @@ type Mob struct {
 	LifeCore
 	Listener     MobListener
 	Wz           *wz.Mob
+	Fake         bool
 	Foothold     int16
 	Spawn        *MobSpawn
 	Buffs        *MobBuffContainer
@@ -122,6 +123,37 @@ func (m *Mob) Is(typ constant.ObjectType) bool {
 	return m.GetObjectType().Has(typ)
 }
 
+func (m *Mob) IsFake() bool {
+	return m != nil && m.Fake
+}
+
+func (m *Mob) SetFake(fake bool) {
+	if m == nil || m.Fake == fake {
+		return
+	}
+	m.Fake = fake
+	if !fake {
+		return
+	}
+	mapInstance := m.GetMap()
+	if mapInstance == nil || mapInstance.listener == nil {
+		return
+	}
+	mapInstance.listener.OnMobSpawned(mapInstance, m, constant.MobSpawnTypeFake, 0)
+}
+
+func (m *Mob) canReceiveMobBuff(flag constant.MobBuffFlag) bool {
+	if !m.IsFake() {
+		return true
+	}
+	switch flag {
+	case constant.MobBuffStun, constant.MobBuffSpeed, constant.MobBuffPoison, constant.MobBuffVenom:
+		return false
+	default:
+		return true
+	}
+}
+
 func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
 	if m == nil || viewer == nil {
 		return
@@ -134,6 +166,9 @@ func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
 
 func (m *Mob) ApplyMobBuff(flag constant.MobBuffFlag, value int32, duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
 	if m == nil {
+		return
+	}
+	if !m.canReceiveMobBuff(flag) {
 		return
 	}
 	if stack < 1 {
@@ -191,6 +226,59 @@ func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType c
 	}
 	mapInstance.AddMist(mist)
 	return mist
+}
+
+func (m *Mob) highestDamageCharacter() *Character {
+	mapInstance := m.GetMap()
+	if mapInstance == nil {
+		return nil
+	}
+
+	var winBucketID int64 = soloDamageBucketID
+	var winTotal uint64
+	for bucketID, damagers := range m.accDamage {
+		var total uint64
+		for _, dmg := range damagers {
+			total += dmg
+		}
+		if total > winTotal {
+			winTotal = total
+			winBucketID = bucketID
+		}
+	}
+	if winTotal == 0 {
+		return nil
+	}
+
+	damagers := m.accDamage[winBucketID]
+	var topCID uint32
+	var topDamage uint64
+	for cid, dmg := range damagers {
+		if dmg > topDamage {
+			topDamage = dmg
+			topCID = cid
+		}
+	}
+	if topCID == 0 {
+		return nil
+	}
+	return mapInstance.GetPlayer(topCID)
+}
+
+func (m *Mob) mobDropType(dropChar *Character) constant.DropType {
+	if m == nil || m.Wz == nil {
+		return constant.DropTypeOwnerOnly
+	}
+	if m.Wz.ExplosiveReward {
+		return constant.DropTypeExplosive
+	}
+	if m.Wz.FfaLoot {
+		return constant.DropTypeFFA
+	}
+	if dropChar != nil && dropChar.GetPartyID() != nil {
+		return constant.DropTypeParty
+	}
+	return constant.DropTypeOwnerOnly
 }
 
 func (m *Mob) dropItems(attacker *Character) {
@@ -290,6 +378,16 @@ func (m *Mob) dropItems(attacker *Character) {
 	spawnPoint := m.Position
 	spacing := int16(15)
 
+	dropOwner := m.highestDamageCharacter()
+	if dropOwner == nil {
+		dropOwner = attacker
+	}
+	var ownerID uint32
+	if dropOwner != nil {
+		ownerID = dropOwner.GetID()
+	}
+	dropType := m.mobDropType(dropOwner)
+
 	for i, spawn := range drops {
 		destPoint := spawnPoint
 		if len(drops) > 1 {
@@ -303,7 +401,7 @@ func (m *Mob) dropItems(attacker *Character) {
 
 		if spawn.isMeso {
 
-			if _, err := mapInstance.SpawnMeso(spawn.count, destPoint, attacker.GetID(), constant.DropTypeOwned); err != nil {
+			if _, err := mapInstance.SpawnMeso(spawn.count, destPoint, ownerID, dropType, false); err != nil {
 				log.Printf("Failed to spawn meso drop: %v", err)
 			}
 		} else {
@@ -314,14 +412,14 @@ func (m *Mob) dropItems(attacker *Character) {
 					Position:  destPoint,
 					GameWorld: m.GameWorld,
 				},
-				Owner:        attacker.GetID(),
+				Owner:        ownerID,
 				SpawnedPoint: spawnPoint,
-				DropType:     constant.DropTypeOwned,
+				DropType:     dropType,
 			}
 			fp.ObjectCore.self = fp
 			spawn.item.BindFieldPlacement(fp)
 
-			if err := mapInstance.SpawnItem(spawn.item, attacker.GetID(), constant.DropTypeOwned); err != nil {
+			if err := mapInstance.SpawnItem(spawn.item, ownerID, dropType); err != nil {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}
 		}
@@ -378,6 +476,18 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 	}
 
 	if mapInstance != nil {
+		pos := m.Position
+		linkOID := m.OID
+		revives := []uint32(nil)
+		if !m.IsFake() && m.Wz != nil && len(m.Wz.Revives) > 0 {
+			revives = m.Wz.Revives
+		}
+
+		mapInstance.callMobDieScript(m, attacker)
+		if len(revives) > 0 {
+			m.handleRevives(mapInstance, pos, linkOID, revives)
+		}
+
 		mapInstance.RemoveMob(m.OID, constant.MobDieAnimationTypeFadeOut)
 	}
 
@@ -386,6 +496,31 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 	}
 
 	return true
+}
+
+func (m *Mob) handleRevives(mapInstance *Map, pos types.Point[int16], linkOID uint32, revives []uint32) {
+	if m == nil || mapInstance == nil || len(revives) == 0 {
+		return
+	}
+	if mapInstance.callMobReviveScript(m, pos, linkOID, revives) {
+		return
+	}
+	m.spawnRevivesDefault(mapInstance, pos, linkOID, revives)
+}
+
+func (m *Mob) spawnRevivesDefault(mapInstance *Map, pos types.Point[int16], linkOID uint32, revives []uint32) {
+	if m == nil || mapInstance == nil || len(revives) == 0 {
+		return
+	}
+	for _, reviveID := range revives {
+		if reviveID == 0 {
+			continue
+		}
+		_, err := mapInstance.SpawnMob(reviveID, pos, nil, constant.MobSpawnTypeRevive, linkOID)
+		if err != nil {
+			log.Printf("Failed to spawn revive mob %d from mob %d: %v", reviveID, m.Wz.ID, err)
+		}
+	}
 }
 
 func (m *Mob) AddHp(amount int) {
