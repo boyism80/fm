@@ -29,6 +29,7 @@ type Luable interface {
 
 func NewState() *lua.LState {
 	luaState := lua.NewState()
+	RegisterRequire(luaState)
 	onCreateHooksMu.Lock()
 	for _, hook := range onCreateHooks {
 		hook(luaState)
@@ -62,6 +63,13 @@ func preloadScript(root *lua.LState, path string) (*lua.LFunction, error) {
 }
 
 func NewThread(root *lua.LState, path string) (*lua.LState, error) {
+	compileMu.Lock()
+	reload := alwaysReload
+	compileMu.Unlock()
+	if reload {
+		clearRequireCache(root)
+	}
+
 	fn, err := preloadScript(root, path)
 	if err != nil {
 		return nil, err

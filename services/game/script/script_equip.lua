@@ -1,1 +1,0 @@
--- Sub functions for equipment (used by script.lua on_equipment_changed). No helpers yet.

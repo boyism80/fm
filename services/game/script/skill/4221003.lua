@@ -1,5 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 쇼다운
 
+local combat = require("script/lib/combat")
+
 function on_activated_4221003(me, skill, params)
 end
 
@@ -28,5 +30,5 @@ function on_mob_unbuff_4221003(mob, skill, causer)
 end
 
 function on_attack_4221003(me, skill, damages)
-	apply_showdown_on_attack(me, skill, damages)
+	combat.apply_showdown(me, skill, damages)
 end

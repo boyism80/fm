@@ -1039,7 +1039,7 @@ func (ch *Character) tryLevelUp() bool {
 	ch.SetLevel(targetLevel)
 	levelDiff := int(targetLevel) - int(oldLevel)
 	if levelDiff >= 1 {
-		if thread, err := luax.NewThread(root, "script/script.lua"); err == nil {
+		if thread, err := luax.NewThread(root, constant.CharacterHookScriptPath); err == nil {
 			_, _ = luax.Call(thread, "on_level_up", ch, int32(oldLevel), int32(targetLevel))
 		}
 

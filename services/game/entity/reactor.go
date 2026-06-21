@@ -24,13 +24,6 @@ func (r *Reactor) Is(typ constant.ObjectType) bool {
 	return r.GetObjectType().Has(typ)
 }
 
-func (r *Reactor) ReactorID() uint32 {
-	if r == nil || r.Spawn == nil || r.Spawn.Wz == nil {
-		return 0
-	}
-	return r.Spawn.Wz.ReactorID
-}
-
 func (r *Reactor) ToDTO() *dto.Reactor {
 	if r == nil {
 		return nil
@@ -39,8 +32,10 @@ func (r *Reactor) ToDTO() *dto.Reactor {
 	reactorID := uint32(0)
 	facing := uint8(0)
 	name := ""
+	if r.Wz != nil {
+		reactorID = r.Wz.ID
+	}
 	if r.Spawn != nil && r.Spawn.Wz != nil {
-		reactorID = r.Spawn.Wz.ReactorID
 		facing = uint8(r.Spawn.Wz.FacingDirection)
 		name = r.Spawn.Wz.Name
 	}

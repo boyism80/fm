@@ -1,5 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 인피니티
 
+local util = require("script/lib/skill")
+
 function on_activated_2221004(me, skill, params)
-	apply_buff_fixed(me, skill, BuffFlag.Infinity, 1)
+	util.apply_buff_fixed(me, skill, BuffFlag.Infinity, 1)
 end

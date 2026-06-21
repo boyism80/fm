@@ -334,14 +334,14 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		spec := gs.resources.Maps[id]
-		if spec == nil {
+		wz := gs.resources.Maps[id]
+		if wz == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
 		tbl := L.NewTable()
-		tbl.RawSetString("id", lua.LNumber(spec.ID))
-		tbl.RawSetString("name", lua.LString(spec.Name))
+		tbl.RawSetString("id", lua.LNumber(wz.ID))
+		tbl.RawSetString("name", lua.LString(wz.Name))
 		L.Push(tbl)
 		return 1
 	})
@@ -352,14 +352,14 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		spec := gs.resources.Maps[id]
-		if spec == nil {
+		wz := gs.resources.Maps[id]
+		if wz == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
 		tbl := L.NewTable()
-		tbl.RawSetString("id", lua.LNumber(spec.ID))
-		tbl.RawSetString("name", lua.LString(spec.Name))
+		tbl.RawSetString("id", lua.LNumber(wz.ID))
+		tbl.RawSetString("name", lua.LString(wz.Name))
 		L.Push(tbl)
 		return 1
 	})
@@ -698,7 +698,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.RaiseError("run_on_script: root lua state not found")
 			return 0
 		}
-		thread, err := luax.NewThread(root, "script/script.lua")
+		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 		if err == nil {
 			_, err = luax.Call(thread, "on_script", ch)
 		}
@@ -709,13 +709,4 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 		L.Push(lua.LBool(true))
 		return 1
 	})
-
-	if fn, err := luaState.LoadFile("script/skill/skill.lua"); err != nil {
-		log.Printf("Failed to load script/skill/skill.lua: %v", err)
-	} else {
-		luaState.Push(fn)
-		if err := luaState.PCall(0, 0, nil); err != nil {
-			log.Printf("Failed to run script/skill/skill.lua: %v", err)
-		}
-	}
 }

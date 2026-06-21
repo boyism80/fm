@@ -150,7 +150,7 @@ func callOnEquipmentChanged(ctx *core.ClientContext, character *entity.Character
 	if after != nil {
 		afterArg = luax.NewLuable(root, after.(luax.Luable))
 	}
-	thread, err := luax.NewThread(root, "script/script.lua")
+	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 	if err != nil {
 		log.Printf("Failed to call script on_equipment_changed: %v", err)
 		return

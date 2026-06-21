@@ -1,5 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 아이언 월
 
+local combat = require("script/lib/combat")
+
 function on_activated_1301006(me, skill, params)
 	local effect = skill:effect()
 	if effect == nil then
@@ -12,7 +14,7 @@ function on_activated_1301006(me, skill, params)
 		[BuffFlag.WeaponDef] = effect.pdd,
 		[BuffFlag.MagicDef] = effect.mdd,
 	}
-	for_each_near_party_member(me, skill, function(ch)
+	combat.for_each_near_party_member(me, skill, function(ch)
 		ch:buff(skill, vals)
 		if ch ~= me then
 			ch:show_skill_effect(skill, SkillEffectType.Affected)

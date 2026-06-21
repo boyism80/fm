@@ -141,11 +141,11 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 }
 
 func (h *DistributeAP) scriptAPToHP(ctx *core.ClientContext, character *entity.Character) uint32 {
-	return h.callAPToStatScript(ctx, character, "on_ap_to_hp")
+	return h.callAPToStatScript(ctx, character, "get_ap_to_hp")
 }
 
 func (h *DistributeAP) scriptAPToMP(ctx *core.ClientContext, character *entity.Character) uint32 {
-	return h.callAPToStatScript(ctx, character, "on_ap_to_mp")
+	return h.callAPToStatScript(ctx, character, "get_ap_to_mp")
 }
 
 func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character *entity.Character, funcName string) uint32 {
@@ -156,7 +156,7 @@ func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character *en
 	if root == nil {
 		return 0
 	}
-	thread, err := luax.NewThread(root, "script/script.lua")
+	thread, err := luax.NewThread(root, constant.CharacterQueryScriptPath)
 	if err != nil {
 		return 0
 	}

@@ -1,5 +1,4 @@
-run_script("script/script_common.lua")
-run_script("script/script_combat.lua")
+local combat = require("script/lib/combat")
 
 local function damages_has_positive_damage(hits)
 	if hits == nil then
@@ -23,7 +22,7 @@ local function roll_percent(prob)
 	return math.random(1, 100) <= prob
 end
 
-function handle_attack_consume_item(me, skill, attack_info)
+local function on_attack_consume_item(me, skill, attack_info)
 	if attack_info == nil or not attack_info.ranged then
 		return
 	end
@@ -123,7 +122,7 @@ local function get_mp_eater_skill(me)
 	return nil
 end
 
-function handle_mp_eater(me, damages)
+local function on_mp_eater(me, damages)
 	local mp_eater_skill = get_mp_eater_skill(me)
 	if mp_eater_skill == nil then
 		return
@@ -241,7 +240,7 @@ local function apply_concentrate_mp_cost(me, base_mp_con, mp_con_after_amp)
 	return out
 end
 
-function apply_default_skill_cost(me, skill)
+local function default_skill_cost(me, skill)
 	local effect = skill:effect()
 	if effect == nil then
 		return true
@@ -278,14 +277,14 @@ function on_unpassive(me, skill)
 end
 
 function on_activating(me, skill, params)
-	return apply_default_skill_cost(me, skill)
+	return default_skill_cost(me, skill)
 end
 
 function on_activated(me, skill, params)
 	return true
 end
 
-function handle_energy_charge(me, damages)
+local function on_energy_charge(me, damages)
 	local ec
 	if me:class_of(Class.Brawler) then
 		ec = me:skill(Skill.EnergyCharge)
@@ -322,22 +321,7 @@ function handle_energy_charge(me, damages)
 	end
 end
 
-function on_attack(me, skill, damages, attack_info)
-	local targets = damages_to_targets(damages)
-	handle_combo_attack(me, targets, skill)
-	handle_pickpocket(me, skill, damages)
-	handle_ice_charge_freeze(me, damages)
-	handle_attack_consume_item(me, skill, attack_info)
-	handle_mp_eater(me, damages)
-	handle_hamstring_slow(me, damages)
-	handle_blind_acc_debuff(me, damages)
-	handle_mortal_blow(me, damages)
-	handle_energy_charge(me, damages)
-	handle_dark_sight(me, damages)
-	handle_mob_attack_reflect_immunity(me, damages, attack_info)
-end
-
-function handle_blind_acc_debuff(me, damages)
+local function on_blind_acc_debuff(me, damages)
 	local blind_buff = me:buff(BuffFlag.Blind)
 	if blind_buff == nil then
 		return
@@ -368,7 +352,7 @@ function handle_blind_acc_debuff(me, damages)
 	end
 end
 
-function handle_hamstring_slow(me, damages)
+local function on_hamstring_slow(me, damages)
 	local ham_buff = me:buff(BuffFlag.Hamstring)
 	if ham_buff == nil then
 		return
@@ -404,7 +388,7 @@ function handle_hamstring_slow(me, damages)
 	end
 end
 
-function handle_dark_sight(me, damages)
+local function on_dark_sight(me, damages)
 	if not (me:class_of(Class.NightWalker1) or me:class_of(Class.WindArcher2)) then
 		return
 	end
@@ -427,4 +411,19 @@ function handle_dark_sight(me, damages)
     end
 
 	me:unbuff(BuffFlag.Darksight)
+end
+
+function on_attack(me, skill, damages, attack_info)
+	local targets = combat.damages_to_targets(damages)
+	combat.increment_combo_orbs(me, targets, skill)
+	combat.spawn_pickpocket_meso(me, skill, damages)
+	combat.freeze_from_ice_charge(me, damages)
+	on_attack_consume_item(me, skill, attack_info)
+	on_mp_eater(me, damages)
+	on_hamstring_slow(me, damages)
+	on_blind_acc_debuff(me, damages)
+	combat.roll_mortal_blow(me, damages)
+	on_energy_charge(me, damages)
+	on_dark_sight(me, damages)
+	combat.reflect_mob_attack_damage(me, damages, attack_info)
 end

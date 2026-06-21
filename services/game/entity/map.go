@@ -30,6 +30,7 @@ type MapListener interface {
 	OnMobRemoved(mapInstance *Map, mob *Mob, animationType constant.MobDieAnimationType)
 	OnReactorSpawned(mapInstance *Map, reactor *Reactor)
 	OnReactorRemoved(mapInstance *Map, reactor *Reactor)
+	OnReactorTriggered(mapInstance *Map, reactor *Reactor, stance int32)
 	OnMusicChanged(mapInstance *Map, song string)
 	OnMapMessage(mapInstance *Map, messageType constant.ServerMessageType, message string)
 	OnMobHomingRemoved(mapInstance *Map, mob *Mob, removed *Homing, causer *Character)
@@ -204,7 +205,7 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 	if root == nil {
 		return
 	}
-	thread, err := luax.NewThread(root, "script/script.lua")
+	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 	if err != nil {
 		return
 	}
@@ -684,9 +685,9 @@ func (m *Map) resyncOwnerDoorPortals(owner *Character) {
 }
 
 func (m *Map) initMobs() {
-	for spawnId, mobSpawnSpec := range m.Wz.MobSpawns {
+	for spawnId, spawnWz := range m.Wz.MobSpawns {
 		m.MobSpawns[spawnId] = &MobSpawn{
-			Wz:            &mobSpawnSpec,
+			Wz:            &spawnWz,
 			Spawned:       false,
 			LastSpawnedAt: time.Time{},
 		}
@@ -773,7 +774,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn, spawnType constant.MobSpawnType, link uint32) (*Mob, error) {
 	oid := m.allocateOID()
 
-	mobSpec, ok := m.GameWorld.GetResources().Monsters[mobId]
+	mobWz, ok := m.GameWorld.GetResources().Monsters[mobId]
 	if !ok {
 		return nil, fmt.Errorf("mob model not found for ID: %d", mobId)
 	}
@@ -804,14 +805,14 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 				GameWorld: m.GameWorld,
 				Map:       m,
 			},
-			hp:     uint32(max(0, mobSpec.MaxHP)),
-			mp:     uint32(max(0, mobSpec.MaxMP)),
-			BaseHp: uint32(max(0, mobSpec.MaxHP)),
-			BaseMp: uint32(max(0, mobSpec.MaxMP)),
+			hp:     uint32(max(0, mobWz.MaxHP)),
+			mp:     uint32(max(0, mobWz.MaxMP)),
+			BaseHp: uint32(max(0, mobWz.MaxHP)),
+			BaseMp: uint32(max(0, mobWz.MaxMP)),
 			Stance: 5,
 		},
 		Foothold:  footholdID,
-		Wz:        mobSpec,
+		Wz:        mobWz,
 		Spawn:     mobSpawn,
 		ExpRate:   100,
 		DropRate:  100,

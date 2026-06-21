@@ -9,6 +9,7 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
@@ -91,7 +92,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 
 	params := buildActiveSkillParams(root, mapInstance, req)
 
-	if commonThread, commonErr := luax.NewThread(root, commonSkillScriptPath); commonErr == nil {
+	if commonThread, commonErr := luax.NewThread(root, constant.SkillHookScriptPath); commonErr == nil {
 		commonResult, commonErr := luax.Call(commonThread, "on_activating", ch, skillEntry, params)
 		if commonErr != nil {
 			log.Printf("Skill common on_activating: %v", commonErr)
@@ -128,7 +129,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
-	commonActivatedThread, commonActivatedErr := luax.NewThread(root, commonSkillScriptPath)
+	commonActivatedThread, commonActivatedErr := luax.NewThread(root, constant.SkillHookScriptPath)
 	if commonActivatedErr != nil {
 		log.Printf("common on_activated: %v", commonActivatedErr)
 		ch.Listener.OnUpdateStats(ch, nil, true)

@@ -1,6 +1,4 @@
--- Heal-over-time and Endure (ladder/rope HP recovery) logic
-
-local function get_hp_recover_check(me)
+local function hp_recover_check(me)
     if me:class_of(Class.Warrior) then
         local s = me:skill(Skill.ImprovingHpRecovery)
         if s ~= nil then
@@ -31,7 +29,7 @@ local function get_hp_recover_check(me)
     return 0
 end
 
-local function get_mp_recover_check(me)
+local function mp_recover_check(me)
     if me:class_of(Class.Magician) then
         local s = me:skill(Skill.ImprovingMpRecovery2000000)
         if s ~= nil then
@@ -86,6 +84,38 @@ local function get_mp_recover_check(me)
     return 0
 end
 
+local function ap_to_hp_base(me)
+    if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+        return math.random(8, 12)
+    end
+    if me:class_of(Class.Warrior) then
+        return math.random(12, 20)
+    end
+    if me:class_of(Class.Magician) then
+        return math.random(6, 11)
+    end
+    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) then
+        return math.random(14, 18)
+    end
+    return math.random(50, 100)
+end
+
+local function ap_to_mp_base(me)
+    if me:class_of(Class.Beginner) or me:class_of(Class.Noblesse) or me:class_of(Class.Legend) then
+        return math.random(6, 8)
+    end
+    if me:class_of(Class.Magician) then
+        return math.random(10, 20)
+    end
+    if me:class_of(Class.Bowman) or me:class_of(Class.Thief) then
+        return math.random(8, 12)
+    end
+    if me:class_of(Class.Warrior) then
+        return math.random(4, 7)
+    end
+    return math.random(50, 100)
+end
+
 function get_endure_hp_interval(me)
     if me:class_of(Class.Warrior) then
         local s = me:skill(Skill.Endure)
@@ -126,7 +156,7 @@ function get_heal_over_time_cap(me)
     local stance_mult = me:stance_of(Stance.Sit) and 1.5 or 1.0
     local chair = me:chair()
 
-    local hp_check = get_hp_recover_check(me) + 10 * recovery_rate
+    local hp_check = hp_recover_check(me) + 10 * recovery_rate
     hp_check = hp_check * stance_mult
     if chair >= 3000000 then
         if chair == 3010000 then
@@ -140,7 +170,7 @@ function get_heal_over_time_cap(me)
         end
     end
 
-    local mp_check = get_mp_recover_check(me) + 3 * recovery_rate
+    local mp_check = mp_recover_check(me) + 3 * recovery_rate
     mp_check = mp_check * stance_mult
     if chair >= 3000000 then
         if chair == 3010008 then
@@ -154,4 +184,63 @@ function get_heal_over_time_cap(me)
         max_hp = math.floor(hp_check + 0.5),
         max_mp = math.floor(mp_check + 0.5),
     }
+end
+
+function get_ap_to_hp(me)
+    local base = ap_to_hp_base(me)
+    local bonus = 0
+    if me:class_of(Class.Warrior) then
+        local s = me:skill(Skill.ImprovingMaxhpIncrease)
+        if s ~= nil then
+            local effect = s:effect()
+            bonus = effect.y
+        end
+    elseif me:class_of(Class.Pirate) then
+        local s = me:skill(Skill.HpIncrease)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus = effect.y
+            end
+        end
+    elseif me:class_of(Class.ThunderBreaker1) then
+        local s = me:skill(Skill.HpIncreaseCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus = effect.y
+            end
+        end
+    elseif me:class_of(Class.DawnWarrior1) then
+        local s = me:skill(Skill.ImprovingMaxhpIncreaseCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus = effect.y
+            end
+        end
+    end
+    return base + bonus
+end
+
+function get_ap_to_mp(me)
+    local base = ap_to_mp_base(me)
+
+    local bonus = 0
+    if me:class_of(Class.Magician) then
+        local s = me:skill(Skill.ImprovingMaxMpIncrease)
+        if s ~= nil then
+            local effect = s:effect()
+            bonus = effect.y
+        end
+    elseif me:class_of(Class.BlazeWizard1) then
+        local s = me:skill(Skill.ImprovingMaxMpIncreaseCygnus)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect ~= nil then
+                bonus = effect.y
+            end
+        end
+    end
+    return base + bonus
 end

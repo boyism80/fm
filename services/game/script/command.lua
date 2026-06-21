@@ -789,9 +789,9 @@ command_funcs = {
 	},
 	["스크립트"] = {
 		privilege = ROLE.Admin,
-		usage = "- script/script.lua의 on_script(me) 실행 (또는 me:script(경로, 함수, ...) 형태로 사용)",
+		usage = "- script/character/hook.lua의 on_script(me) 실행 (또는 me:script(경로, 함수, ...) 형태로 사용)",
 		command = function(me, args)
-			me:script("script/script.lua", "on_script")
+			me:script("script/character/hook.lua", "on_script")
 			return true
 		end,
 	},

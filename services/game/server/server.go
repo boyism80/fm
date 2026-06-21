@@ -24,6 +24,7 @@ import (
 	"github.com/boyism80/fm/services/common/globaltimer"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	gamegtimers "github.com/boyism80/fm/services/game/gtimers"
 	"github.com/boyism80/fm/services/game/wz"
@@ -481,7 +482,7 @@ func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
 	if root == nil {
 		return
 	}
-	thread, err := luax.NewThread(root, "script/script.lua")
+	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 	if err != nil {
 		log.Printf("on_logout: %v", err)
 		return

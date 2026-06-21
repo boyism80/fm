@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/services/game/constant"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -31,7 +32,7 @@ func (m *Map) callMobDieScript(mob *Mob, attacker *Character) {
 		}
 	}
 
-	if thread, err := luax.NewThread(root, "script/script.lua"); err == nil {
+	if thread, err := luax.NewThread(root, constant.CharacterHookScriptPath); err == nil {
 		if _, err := luax.Call(thread, "on_mob_die", mob, attackerArg, m); err != nil {
 			log.Printf("on_mob_die script: %v", err)
 		}

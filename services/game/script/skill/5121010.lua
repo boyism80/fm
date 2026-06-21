@@ -1,7 +1,9 @@
 -- Skill name (String.wz/Skill.img.xml): 타임 리프
 
+local combat = require("script/lib/combat")
+
 function on_activated_5121010(me, skill, params)
-	for_each_near_party_member(me, skill, function(ch)
+	combat.for_each_near_party_member(me, skill, function(ch)
 		local skills = ch:skills()
 		if skills == nil then
 			return

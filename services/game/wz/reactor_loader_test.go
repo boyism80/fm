@@ -83,6 +83,42 @@ func TestLoadReactorRawWZNoSyntheticEvent(t *testing.T) {
 	}
 }
 
+func TestLoadReactorTerminalTypeNormalizedToNil(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "0100000.img.xml")
+	xmlData := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0100000.img">
+    <imgdir name="0">
+        <imgdir name="event">
+            <imgdir name="0">
+                <int name="type" value="0"/>
+                <int name="state" value="1"/>
+            </imgdir>
+        </imgdir>
+    </imgdir>
+    <imgdir name="1">
+        <imgdir name="event">
+            <imgdir name="0">
+                <int name="type" value="999"/>
+                <int name="state" value="1"/>
+            </imgdir>
+        </imgdir>
+    </imgdir>
+</imgdir>`
+	if err := os.WriteFile(path, []byte(xmlData), 0o644); err != nil {
+		t.Fatalf("write test xml: %v", err)
+	}
+
+	reactor, err := loadReactor(path)
+	if err != nil {
+		t.Fatalf("Failed to load reactor: %v", err)
+	}
+
+	if reactor.States[1] != nil {
+		t.Fatal("WZ terminal type 999 must normalize to nil event")
+	}
+}
+
 func TestResourcesGetReactorLink(t *testing.T) {
 	linked := &Reactor{
 		ID: 9908001,

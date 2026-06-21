@@ -68,6 +68,9 @@ func loadReactor(path string) (*Reactor, error) {
 			event0 := eventNode.find("0")
 			if event0 != nil {
 				event = parseReactorEvent(eventNode, event0)
+				if event != nil && int(event.Type) >= 999 {
+					event = nil
+				}
 			}
 		}
 		model.States[stateIndex] = event

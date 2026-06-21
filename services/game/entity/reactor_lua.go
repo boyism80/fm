@@ -21,7 +21,11 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "id() is read-only")
 				return 0
 			}
-			L.Push(lua.LNumber(reactor.ReactorID()))
+			if reactor.Wz == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
+			L.Push(lua.LNumber(reactor.Wz.ID))
 			return 1
 		},
 		"state": func(L *lua.LState) int {

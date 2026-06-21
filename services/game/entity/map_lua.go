@@ -147,16 +147,16 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			spec := mapInstance.Wz
-			if spec == nil {
+			wz := mapInstance.Wz
+			if wz == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
 			tbl := L.NewTable()
-			tbl.RawSetString("id", lua.LNumber(spec.ID))
-			tbl.RawSetString("name", lua.LString(spec.Name))
-			tbl.RawSetString("return_map_id", lua.LNumber(spec.ReturnMapId))
-			tbl.RawSetString("town", lua.LBool(spec.IsTown))
+			tbl.RawSetString("id", lua.LNumber(wz.ID))
+			tbl.RawSetString("name", lua.LString(wz.Name))
+			tbl.RawSetString("return_map_id", lua.LNumber(wz.ReturnMapId))
+			tbl.RawSetString("town", lua.LBool(wz.IsTown))
 			L.Push(tbl)
 			return 1
 		},

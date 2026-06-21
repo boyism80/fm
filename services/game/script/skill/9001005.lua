@@ -1,7 +1,9 @@
 -- Skill name (String.wz/Skill.img.xml): 부활
 
+local combat = require("script/lib/combat")
+
 function on_activated_9001005(me, skill, params)
-	for_each_character_in_skill_area(me, skill, function(ch)
+	combat.for_each_character_in_skill_area(me, skill, function(ch)
 		if ch == nil or ch:is_alive() then
 			return
 		end

@@ -7,11 +7,10 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	lua "github.com/yuin/gopher-lua"
 )
-
-const commonSkillScriptPath = "script/skill/common.lua"
 
 func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) bool {
 	if skillID == 0 || character == nil {
@@ -31,7 +30,7 @@ func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID
 		return false
 	}
 
-	commonThread, commonErr := luax.NewThread(root, commonSkillScriptPath)
+	commonThread, commonErr := luax.NewThread(root, constant.SkillHookScriptPath)
 	if commonErr != nil {
 		log.Printf("Skill common %s: %v", hook, commonErr)
 		return false
@@ -77,7 +76,7 @@ func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, 
 	if skillEntry == nil {
 		return
 	}
-	commonThread, commonErr := luax.NewThread(root, commonSkillScriptPath)
+	commonThread, commonErr := luax.NewThread(root, constant.SkillHookScriptPath)
 	if commonErr != nil {
 		log.Printf("Skill common %s: %v", hook, commonErr)
 		return
@@ -119,9 +118,9 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, dam
 		return
 	}
 
-	commonThread, err := luax.NewThread(root, commonSkillScriptPath)
+	commonThread, err := luax.NewThread(root, constant.SkillHookScriptPath)
 	if err != nil {
-		log.Printf("common.lua: %v", err)
+		log.Printf("skill hook: %v", err)
 		return
 	}
 	defer commonThread.Close()
@@ -142,7 +141,7 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, dam
 		commonThread.Push(damagesTable)
 		commonThread.Push(attackInfoTable)
 		if err := commonThread.PCall(4, 0, nil); err != nil {
-			log.Printf("common on_attack: %v", err)
+			log.Printf("skill hook on_attack: %v", err)
 			return
 		}
 		readDamagesFromLuaTableInto(damagesTable, damages)

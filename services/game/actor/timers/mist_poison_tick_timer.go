@@ -81,7 +81,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 		if len(candidates) > 0 {
 			root := mapData.GetLuaRoot()
 			if root != nil {
-				thread, err := luax.NewThread(root, "script/script.lua")
+				thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 				if err == nil {
 					_, err = luax.Call(thread, "on_poison", mist, candidates)
 				}

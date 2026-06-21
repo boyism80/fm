@@ -1,5 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 파이어 버너
 
+local combat = require("script/lib/combat")
+
 local function has_positive_hit(hits)
 	if hits == nil then
 		return false
@@ -28,7 +30,7 @@ function on_attack_5211004(me, skill, damages)
 	if prop <= 0 then
 		prop = 100
 	end
-	local multiplier = compute_poison_tick_multiplier(me, skill)
+	local multiplier = combat.compute_poison_tick_multiplier(me, skill)
 	local boost = me:skill(Skill.ElementBoost)
 	if boost ~= nil and boost:level() > 0 then
 		local boost_effect = boost:effect()
@@ -38,7 +40,7 @@ function on_attack_5211004(me, skill, damages)
 	end
 	for mob, hits in pairs(damages) do
 		if has_positive_hit(hits) and math.random(1, 100) <= prop then
-			local value = compute_poison_tick_damage(skill, mob, multiplier)
+			local value = combat.compute_poison_tick_damage(skill, mob, multiplier)
 			if value > 0 then
 				mob:buff(MobBuff.Poison, value, duration_ms, skill, me)
 			end

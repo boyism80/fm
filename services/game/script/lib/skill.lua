@@ -1,4 +1,7 @@
-function apply_buff_from_effect(me, skill, flag, value_key)
+local combat = require("script/lib/combat")
+local M = {}
+
+M.apply_buff_from_effect = function(me, skill, flag, value_key)
 	value_key = value_key or "x"
 	local effect = skill:effect()
 	if effect == nil then
@@ -11,12 +14,12 @@ function apply_buff_from_effect(me, skill, flag, value_key)
 	me:buff(skill, flag, val)
 end
 
-function apply_buff_fixed(me, skill, flag, value)
+M.apply_buff_fixed = function(me, skill, flag, value)
 	value = value or 1
 	me:buff(skill, flag, value)
 end
 
-function add_hyper_body_bonus(me, skill)
+M.add_hyper_body_bonus = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then return end
 	local hp_percent = me:bonus_max_hp_ratio()
@@ -35,7 +38,7 @@ function add_hyper_body_bonus(me, skill)
 	})
 end
 
-function remove_hyper_body_bonus(me, skill)
+M.remove_hyper_body_bonus = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then return end
 	local hp_percent = me:bonus_max_hp_ratio()
@@ -52,7 +55,7 @@ function remove_hyper_body_bonus(me, skill)
 	})
 end
 
-function apply_iron_body(me, skill)
+M.apply_iron_body = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -65,7 +68,7 @@ function apply_iron_body(me, skill)
 	me:buff(skill, BuffFlag.WeaponDef, effect.pdd)
 end
 
-function apply_monster_magnet(me, skill, params)
+M.apply_monster_magnet = function(me, skill, params)
 	if params == nil or params.magnet == nil then
 		return
 	end
@@ -79,7 +82,7 @@ function apply_monster_magnet(me, skill, params)
 	end
 end
 
-function consume_combo_orbs(me, howmany)
+M.consume_combo_orbs = function(me, howmany)
 	local current = me:buff_value(BuffFlag.Combo)
 	if current == nil or current <= 1 then
 		return
@@ -100,11 +103,11 @@ function consume_combo_orbs(me, howmany)
 	me:buff_value(BuffFlag.Combo, new_orbs)
 end
 
-function apply_hero_will(me)
+M.apply_hero_will = function(me)
 	me:remove_debuff(DebuffFlag.Seduce)
 end
 
-function apply_dispel(me, skill)
+M.apply_dispel = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -125,7 +128,7 @@ function apply_dispel(me, skill)
 	)
 end
 
-function get_heal_recovery_amount(me, skill)
+M.get_heal_recovery_amount = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then
 		return 0
@@ -156,7 +159,7 @@ function get_heal_recovery_amount(me, skill)
 	return heal
 end
 
-function apply_mana_reflection(me, skill)
+M.apply_mana_reflection = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -170,8 +173,8 @@ function apply_mana_reflection(me, skill)
 	me:buff(skill, BuffFlag.ManaReflection, val)
 end
 
-function apply_resurrection(me, skill)
-	for_each_near_party_member(me, skill, function(ch)
+M.apply_resurrection = function(me, skill)
+	combat.for_each_near_party_member(me, skill, function(ch)
 		ch:stance(0)
 		ch:hp(ch:max_hp())
 		ch:mp(ch:max_mp())
@@ -188,7 +191,7 @@ local function archer_puppet_facing_left(me)
 	return s % 2 ~= 0
 end
 
-function apply_archer_puppet_activated(me, skill, params)
+M.mark_archer_puppet = function(me, skill, params)
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -199,7 +202,7 @@ function apply_archer_puppet_activated(me, skill, params)
 	me:buff(skill, BuffFlag.Puppet, 1)
 end
 
-function apply_archer_puppet_buff(me, skill)
+M.apply_archer_puppet_buff = function(me, skill)
 	local wz = skill:wz()
 	local effect = skill:effect()
 	if effect == nil then
@@ -235,7 +238,74 @@ function apply_archer_puppet_buff(me, skill)
 	end
 end
 
-function apply_archer_puppet_unbuff(me, skill)
+M.apply_archer_puppet_unbuff = function(me, skill)
 	local wz = skill:wz()
 	me:remove_summon(wz.id)
 end
+
+M.absorb_magic_guard = function(me, attacker, skill, damage)
+	if damage == nil or damage <= 0 then
+		return damage
+	end
+
+	local guard_percent = me:buff_value(BuffFlag.MagicGuard)
+	if guard_percent == nil or guard_percent <= 0 then
+		return damage
+	end
+
+	local current_mp = me:mp()
+	if current_mp == nil or current_mp <= 0 then
+		return damage
+	end
+
+	local mp_loss = math.floor(damage * (guard_percent / 100.0))
+	if mp_loss < 0 then
+		mp_loss = 0
+	end
+	if mp_loss > current_mp then
+		mp_loss = current_mp
+	end
+
+	local hp_loss = damage - mp_loss
+	if hp_loss < 0 then
+		hp_loss = 0
+	end
+
+	if mp_loss > 0 then
+		me:add_mp(-mp_loss)
+	end
+
+	return hp_loss
+end
+
+M.absorb_meso_guard = function(me, attacker, skill, damage)
+	if damage == nil or damage <= 0 then
+		return damage
+	end
+
+	local guard_percent = me:buff_value(BuffFlag.MesoGuard)
+	if guard_percent == nil or guard_percent <= 0 then
+		return damage
+	end
+	local current_meso = me:meso()
+	if current_meso == nil or current_meso <= 0 then
+		return damage
+	end
+	local meso_loss = math.floor(damage * (guard_percent / 100.0))
+	if meso_loss < 0 then
+		meso_loss = 0
+	end
+	if meso_loss > current_meso then
+		meso_loss = current_meso
+	end
+	local hp_loss = damage - meso_loss
+	if hp_loss < 0 then
+		hp_loss = 0
+	end
+	if meso_loss > 0 then
+		me:meso(current_meso - meso_loss)
+	end
+	return hp_loss
+end
+
+return M

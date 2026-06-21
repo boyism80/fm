@@ -1,5 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 슬로우
 
+local combat = require("script/lib/combat")
+
 function on_activated_12101001(me, skill, params)
 	local effect = skill:effect()
 	if effect == nil then
@@ -8,7 +10,7 @@ function on_activated_12101001(me, skill, params)
 	if effect.time <= 0 then
 		return
 	end
-	for_each_mob_in_skill_area(me, skill, function(mob)
+	combat.for_each_mob_in_skill_area(me, skill, function(mob)
 		mob:buff(MobBuff.Speed, effect.x, effect.time, skill, me)
 	end)
 end

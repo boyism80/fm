@@ -1,5 +1,55 @@
 -- Attack handlers: combo, pickpocket, ice charge, ammo consume
 
+local M = {}
+
+local function element_amp_from_class(me)
+	local amp = 1.0
+	if me == nil then
+		return amp
+	end
+	local skill_id
+	if me:class_of(Class.FpWizard) then
+		skill_id = Skill.ElementAmplification
+	elseif me:class_of(Class.IlWizard) then
+		skill_id = Skill.ElementAmplification2210001
+	elseif me:class_of(Class.BlazeWizard1) then
+		skill_id = Skill.ElementAmplificationCygnus
+	end
+	if skill_id == nil then
+		return amp
+	end
+	local s = me:skill(skill_id)
+	if s == nil then
+		return amp
+	end
+	local e = s:effect()
+	amp = e.y / 100.0
+	return amp
+end
+
+local function element_weak_multiplier(swz, mwz)
+	local weak = 1.0
+	if mwz == nil or mwz.elem_resist == nil then
+		return weak
+	end
+	local attr = swz.elem_attr
+	if attr == nil or attr == "" then
+		return weak
+	end
+	local letter = string.lower(string.sub(tostring(attr), 1, 1))
+	local v = mwz.elem_resist[letter]
+	if v == nil then
+		return weak
+	end
+	if v == 1 or v == 2 then
+		return 0.5
+	end
+	if v == 3 then
+		return 1.5
+	end
+	return weak
+end
+
 local function skill_effect_mob_limit(effect)
 	if effect == nil then
 		return nil
@@ -53,7 +103,7 @@ local function apply_mob_attack_immunity(hits, immunity)
 	return total
 end
 
-function handle_mob_attack_reflect_immunity(me, damages, attack_info)
+M.reflect_mob_attack_damage = function(me, damages, attack_info)
 	if me == nil or damages == nil or attack_info == nil then
 		return
 	end
@@ -79,7 +129,7 @@ function handle_mob_attack_reflect_immunity(me, damages, attack_info)
 	end
 end
 
-function apply_skill_drain_on_attack(me, skill, damages)
+M.drain_hp_from_damage = function(me, skill, damages)
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -116,7 +166,7 @@ function apply_skill_drain_on_attack(me, skill, damages)
 	end
 end
 
-function for_each_mob_in_skill_area(me, skill, callback)
+M.for_each_mob_in_skill_area = function(me, skill, callback)
 	if callback == nil then
 		return
 	end
@@ -159,7 +209,7 @@ function for_each_mob_in_skill_area(me, skill, callback)
 	end
 end
 
-function apply_shadow_web_skill(me, skill)
+M.apply_shadow_web_skill = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -168,7 +218,7 @@ function apply_shadow_web_skill(me, skill)
 	if duration_ms <= 0 then
 		return
 	end
-	for_each_mob_in_skill_area(me, skill, function(mob)
+	M.for_each_mob_in_skill_area(me, skill, function(mob)
 		local mwz = mob:wz()
 		if mwz ~= nil and mwz.boss then
 			return false
@@ -178,7 +228,7 @@ function apply_shadow_web_skill(me, skill)
 	end)
 end
 
-function compute_ninja_ambush_tick_damage(me, skill)
+M.compute_ninja_ambush_tick_damage = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then
 		return 0
@@ -195,7 +245,7 @@ function compute_ninja_ambush_tick_damage(me, skill)
 	return pdam
 end
 
-function apply_ninja_ambush_skill(me, skill)
+M.apply_ninja_ambush_skill = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -204,8 +254,8 @@ function apply_ninja_ambush_skill(me, skill)
 	if duration_ms <= 0 then
 		return
 	end
-	for_each_mob_in_skill_area(me, skill, function(mob)
-		local value = compute_ninja_ambush_tick_damage(me, skill)
+	M.for_each_mob_in_skill_area(me, skill, function(mob)
+		local value = M.compute_ninja_ambush_tick_damage(me, skill)
 		if value <= 0 then
 			return true
 		end
@@ -214,7 +264,7 @@ function apply_ninja_ambush_skill(me, skill)
 	end)
 end
 
-function for_each_character_in_skill_area(me, skill, callback)
+M.for_each_character_in_skill_area = function(me, skill, callback)
 	if callback == nil then
 		return
 	end
@@ -245,7 +295,7 @@ function for_each_character_in_skill_area(me, skill, callback)
 	end
 end
 
-function for_each_near_party_member(me, skill, callback, opts)
+M.for_each_near_party_member = function(me, skill, callback, opts)
 	if callback == nil or me == nil then
 		return
 	end
@@ -264,7 +314,7 @@ function for_each_near_party_member(me, skill, callback, opts)
 		id_set[me:id()] = nil
 	end
 	local allow_dead = opts.allow_dead == true
-	for_each_character_in_skill_area(me, skill, function(ch)
+	M.for_each_character_in_skill_area(me, skill, function(ch)
 		if ch == nil then
 			return
 		end
@@ -280,7 +330,7 @@ end
 local poison_pdam_cap = 30000
 local poison_denominator_base = 70
 
-function compute_poison_tick_multiplier(me, skill)
+M.compute_poison_tick_multiplier = function(me, skill)
 	local mul = 1.0
 	if me ~= nil then
 		mul = mul * element_amp_from_class(me)
@@ -288,14 +338,14 @@ function compute_poison_tick_multiplier(me, skill)
 	return mul
 end
 
-function compute_poison_tick_damage(skill, mob, multiplier)
+M.compute_poison_tick_damage = function(skill, mob, multiplier)
 	if mob == nil or skill == nil then
 		return 0
 	end
-	return compute_poison_tick_damage_wz_level(skill:wz(), skill:level(), mob, multiplier)
+	return M.compute_poison_tick_damage_wz_level(skill:wz(), skill:level(), mob, multiplier)
 end
 
-function compute_poison_tick_damage_wz_level(wz, level, mob, multiplier)
+M.compute_poison_tick_damage_wz_level = function(wz, level, mob, multiplier)
 	if mob == nil then
 		return 0
 	end
@@ -321,7 +371,7 @@ function compute_poison_tick_damage_wz_level(wz, level, mob, multiplier)
 	return math.floor(clamped)
 end
 
-function apply_prob_status_on_skill_hit(me, skill, damages, status)
+M.apply_prob_status = function(me, skill, damages, status)
 	if damages == nil or skill == nil or status == nil then
 		return
 	end
@@ -342,8 +392,8 @@ function apply_prob_status_on_skill_hit(me, skill, damages, status)
 			if math.random(1, 100) <= prop then
 				local value = 1
 				if status == MobBuff.Poison then
-					local multiplier = compute_poison_tick_multiplier(me, skill)
-					value = compute_poison_tick_damage(skill, mob, multiplier)
+					local multiplier = M.compute_poison_tick_multiplier(me, skill)
+					value = M.compute_poison_tick_damage(skill, mob, multiplier)
 				end
 				mob:buff(status, value, duration_ms, skill, me)
 			end
@@ -351,7 +401,7 @@ function apply_prob_status_on_skill_hit(me, skill, damages, status)
 	end
 end
 
-function apply_showdown_on_attack(me, skill, damages)
+M.apply_showdown = function(me, skill, damages)
 	local effect = skill:effect()
 	if effect == nil then
 		return
@@ -403,7 +453,7 @@ do
     add(Skill.BoomerangStep)
 end
 
-function handle_combo_attack(me, targets, skill)
+M.increment_combo_orbs = function(me, targets, skill)
     if targets == nil or #targets == 0 then
         return
     end
@@ -475,7 +525,7 @@ function handle_combo_attack(me, targets, skill)
     me:buff_value(BuffFlag.Combo, new_orbs)
 end
 
-function handle_pickpocket(me, skill, damages)
+M.spawn_pickpocket_meso = function(me, skill, damages)
     local maxmeso = me:buff_value(BuffFlag.Pickpocket)
     if maxmeso == nil or maxmeso < 1 then
         return
@@ -512,7 +562,7 @@ function handle_pickpocket(me, skill, damages)
     end
 end
 
-function damages_to_targets(damages)
+M.damages_to_targets = function(damages)
     if damages == nil then
         return {}
     end
@@ -523,7 +573,7 @@ function damages_to_targets(damages)
     return targets
 end
 
-function handle_ice_charge_freeze(me, damages)
+M.freeze_from_ice_charge = function(me, damages)
     if damages == nil then
         return
     end
@@ -558,7 +608,7 @@ function handle_ice_charge_freeze(me, damages)
     end
 end
 
-function handle_mortal_blow(me, damages)
+M.roll_mortal_blow = function(me, damages)
     if damages == nil then
         return
     end
@@ -592,7 +642,7 @@ function handle_mortal_blow(me, damages)
 end
 
 -- v83 MapleMonster VENOM: matk * (dex + 5*v43) / 49, v43 = floor((rand[0,v55-1] + v55*0.8)), v55 = str+luk (min 1).
-function roll_venom_tick_damage(me, venom_skill)
+M.roll_venom_tick_damage = function(me, venom_skill)
 	if venom_skill == nil then
 		return 1
 	end
@@ -625,7 +675,7 @@ function roll_venom_tick_damage(me, venom_skill)
 end
 
 -- Passive venom: WZ prop, stack 1..3, tick = sum of rolls capped 30000, immediate hit, buff with stack (Lua drives value like poison mist).
-function apply_venom(me, damages, passive_skill_id)
+M.apply_venom = function(me, damages, passive_skill_id)
 	if damages == nil or passive_skill_id == nil then
 		return
 	end
@@ -667,7 +717,7 @@ function apply_venom(me, damages, passive_skill_id)
 		if mob:has_buff(MobBuff.Venom) then
 			old_tick = math.floor(tonumber(mob:buff_value(MobBuff.Venom)) or 0)
 		end
-		local roll = roll_venom_tick_damage(me, venom_skill)
+		local roll = M.roll_venom_tick_damage(me, venom_skill)
 		local new_tick = old_tick + roll
 		if new_tick < 1 then
 			new_tick = 1
@@ -680,3 +730,71 @@ function apply_venom(me, damages, passive_skill_id)
 		::venom_passive_continue::
 	end
 end
+
+local function incoming_reflect_cap(max_hp, divisor)
+	if max_hp == nil or max_hp <= 0 or divisor == nil or divisor <= 0 then
+		return 0
+	end
+	return math.floor(max_hp / divisor)
+end
+
+local function reflect_via_power_guard(me, attacker, damage, reflect_ratio)
+	if me:buff_value(BuffFlag.Powerguard) == nil then
+		return damage
+	end
+	local reduce = math.floor(damage * (reflect_ratio / 100.0))
+	if reduce < 0 then
+		reduce = 0
+	end
+	if reduce > damage then
+		reduce = damage
+	end
+	local hp_loss = damage - reduce
+	if hp_loss < 0 then
+		hp_loss = 0
+	end
+	if attacker ~= nil and attacker:is(ObjectType.Mob) then
+		local bounced = reduce
+		local cap = incoming_reflect_cap(attacker:max_hp(), 10)
+		bounced = math.min(bounced, cap)
+		if bounced > 0 then
+			attacker:damage(me, bounced)
+		end
+	end
+	return hp_loss
+end
+
+local function reflect_via_mana_reflection(me, attacker, damage, reflect_ratio)
+	if me:buff_value(BuffFlag.ManaReflection) == nil then
+		return damage
+	end
+	if attacker ~= nil and attacker:is(ObjectType.Mob) then
+		local bounce = math.floor(damage * (reflect_ratio / 100.0))
+		if bounce < 0 then
+			bounce = 0
+		end
+		local cap = incoming_reflect_cap(attacker:max_hp(), 20)
+		bounce = math.min(bounce, cap)
+		if bounce > 0 then
+			attacker:damage(me, bounce)
+		end
+	end
+	return damage
+end
+
+M.reflect_incoming_damage = function(me, attacker, skill, damage, params)
+	if damage == nil or damage <= 0 or params == nil then
+		return damage
+	end
+	local reflect_ratio = params.reflect_ratio
+	if reflect_ratio == nil or reflect_ratio <= 0 then
+		return damage
+	end
+	local hit_type = params.hit_type
+	if hit_type == IncomingHit.Collide then
+		return reflect_via_power_guard(me, attacker, damage, reflect_ratio)
+	end
+	return reflect_via_mana_reflection(me, attacker, damage, reflect_ratio)
+end
+
+return M

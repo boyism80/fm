@@ -254,6 +254,17 @@ func (l *MapListenerImpl) OnReactorRemoved(mapInstance *entity.Map, reactor *ent
 	}, nil)
 }
 
+func (l *MapListenerImpl) OnReactorTriggered(mapInstance *entity.Map, reactor *entity.Reactor, stance int32) {
+	if mapInstance == nil || reactor == nil {
+		return
+	}
+
+	mapInstance.Broadcast(&response.TriggerReactor{
+		Reactor: reactor.ToDTO(),
+		Stance:  stance,
+	}, nil)
+}
+
 func (l *MapListenerImpl) OnMusicChanged(mapInstance *entity.Map, song string) {
 	if mapInstance == nil || song == "" {
 		return

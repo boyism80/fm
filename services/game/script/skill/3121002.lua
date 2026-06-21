@@ -1,5 +1,7 @@
 -- Skill name (String.wz/Skill.img.xml): 샤프 아이즈
 
+local combat = require("script/lib/combat")
+
 function on_activated_3121002(me, skill, params)
 	local effect = skill:effect()
 	if effect == nil then
@@ -9,7 +11,7 @@ function on_activated_3121002(me, skill, params)
 		return
 	end
 	local packed = effect.x * 256 + (effect.y % 256)
-	for_each_near_party_member(me, skill, function(ch)
+	combat.for_each_near_party_member(me, skill, function(ch)
 		ch:buff(skill, BuffFlag.SharpEyes, packed)
 		if ch ~= me then
 			ch:show_skill_effect(skill, SkillEffectType.Affected)

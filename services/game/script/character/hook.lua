@@ -1,9 +1,5 @@
-run_script("script/script_common.lua")
-run_script("script/script_heal_recovery.lua")
-run_script("script/script_level_stat.lua")
-run_script("script/script_combat.lua")
-run_script("script/script_damage.lua")
-run_script("script/script_equip.lua")
+local combat = require("script/lib/combat")
+local skill_lib = require("script/lib/skill")
 
 function on_map_enter(me, map)
 end
@@ -106,60 +102,72 @@ function on_script(me)
 end
 
 function on_damaged(me, attacker, skill, damage, params)
-    local d = handle_magic_guard(me, attacker, skill, damage)
-    d = handle_meso_guard(me, attacker, skill, d)
-    d = handle_reflect_damage(me, attacker, skill, d, params)
+    local d = skill_lib.absorb_magic_guard(me, attacker, skill, damage)
+    d = skill_lib.absorb_meso_guard(me, attacker, skill, d)
+    d = combat.reflect_incoming_damage(me, attacker, skill, d, params)
     return d
 end
 
 function on_poison(mist, targets)
-    if mist == nil or targets == nil then
-        return
-    end
-    local effect = mist:effect()
-    if effect == nil then
-        return
-    end
-    local prop = effect.prop or 0
-    if prop <= 0 then
-        prop = 100
-    end
-    if mist:from_mob() then
-        local skill_id = effect.skill_id
-        local skill_level = effect.level or mist:level()
-        local time = effect.time or 0
-        local x = 30
-        if time > 0 then
-            for _, ch in ipairs(targets) do
-                if ch ~= nil and not ch:has_debuff(DebuffFlag.Poison) then
-                    if math.random(1, 100) <= prop then
-                        ch:debuff(DebuffFlag.Poison, time, x, skill_id, skill_level)
-                        ch:add_hp(-x)
-                    end
-                end
-            end
-        end
-    else
-        local wz = mist:wz()
-        local level = mist:level()
-        local multiplier = mist:poison_tick_multiplier() or 1.0
-        if multiplier <= 0 then
-            multiplier = 1.0
-        end
-        local time = effect.time or 0
-        if time > 0 then
-            for _, mob in ipairs(targets) do
-                if mob ~= nil and not mob:has_buff(MobBuff.Poison) then
-                    if math.random(1, 100) <= prop then
-                        local value = compute_poison_tick_damage_wz_level(wz, level, mob, multiplier)
-                        if value > 0 then
-                            mob:buff(MobBuff.Poison, value, time, mist, mist:causer())
-                        end
-                    end
-                end
-            end
-        end
-    end
+	if mist == nil or targets == nil then
+		return
+	end
+	local effect = mist:effect()
+	if effect == nil then
+		return
+	end
+	local prop = effect.prop or 0
+	if prop <= 0 then
+		prop = 100
+	end
+	local time = effect.time or 0
+	if time <= 0 then
+		return
+	end
+
+	if mist:from_mob() then
+		local skill_id = effect.skill_id
+		local skill_level = effect.level or mist:level()
+		local x = 30
+		for _, ch in ipairs(targets) do
+			if ch == nil then
+				goto continue_char
+			end
+			if ch:has_debuff(DebuffFlag.Poison) then
+				goto continue_char
+			end
+			if math.random(1, 100) > prop then
+				goto continue_char
+			end
+			ch:debuff(DebuffFlag.Poison, time, x, skill_id, skill_level)
+			ch:add_hp(-x)
+			::continue_char::
+		end
+	else
+		local wz = mist:wz()
+		local level = mist:level()
+		local multiplier = mist:poison_tick_multiplier() or 1.0
+		if multiplier <= 0 then
+			multiplier = 1.0
+		end
+		for _, mob in ipairs(targets) do
+			if mob == nil then
+				goto continue_mob
+			end
+			if mob:has_buff(MobBuff.Poison) then
+				goto continue_mob
+			end
+			if math.random(1, 100) > prop then
+				goto continue_mob
+			end
+			local value = combat.compute_poison_tick_damage_wz_level(wz, level, mob, multiplier)
+			if value <= 0 then
+				goto continue_mob
+			end
+			mob:buff(MobBuff.Poison, value, time, mist, mist:causer())
+			::continue_mob::
+		end
+	end
 end
 
 function on_blocked(me, attacker)
@@ -272,63 +280,4 @@ function on_level_up(me, old_level, new_level)
         STAT.AvailableAP,
         STAT.AvailableSP,
     })
-end
-
-function on_ap_to_hp(me)
-    local base = ap_to_hp_base(me)
-    local bonus = 0
-    if me:class_of(Class.Warrior) then
-        local s = me:skill(Skill.ImprovingMaxhpIncrease)
-        if s ~= nil then
-            local effect = s:effect()
-            bonus = effect.y
-        end
-    elseif me:class_of(Class.Pirate) then
-        local s = me:skill(Skill.HpIncrease)
-        if s ~= nil then
-            local effect = s:effect()
-            if effect ~= nil then
-                bonus = effect.y
-            end
-        end
-    elseif me:class_of(Class.ThunderBreaker1) then
-        local s = me:skill(Skill.HpIncreaseCygnus)
-        if s ~= nil then
-            local effect = s:effect()
-            if effect ~= nil then
-                bonus = effect.y
-            end
-        end
-    elseif me:class_of(Class.DawnWarrior1) then
-        local s = me:skill(Skill.ImprovingMaxhpIncreaseCygnus)
-        if s ~= nil then
-            local effect = s:effect()
-            if effect ~= nil then
-                bonus = effect.y
-            end
-        end
-    end
-    return base + bonus
-end
-
-function on_ap_to_mp(me)
-    local base = ap_to_mp_base(me)
-
-    local bonus = 0
-    if me:class_of(Class.Magician) then
-        local s = me:skill(Skill.ImprovingMaxMpIncrease)
-        if s ~= nil then
-            local effect = s:effect()
-            bonus = effect.y
-        end
-    elseif me:class_of(Class.BlazeWizard1) then
-        local s = me:skill(Skill.ImprovingMaxMpIncreaseCygnus)
-        if s ~= nil then
-            local effect = s:effect()
-            if effect ~= nil then
-                bonus = effect.y
-            end
-        end
-    end
-    return base + bonus
 end

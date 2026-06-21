@@ -11,10 +11,17 @@ import (
 )
 
 func (r *Reactor) currentEvent() *wz.ReactorEvent {
+	if r == nil {
+		return nil
+	}
+	return r.eventAt(r.State)
+}
+
+func (r *Reactor) eventAt(state byte) *wz.ReactorEvent {
 	if r == nil || r.Wz == nil {
 		return nil
 	}
-	return r.Wz.States[r.State]
+	return r.Wz.States[state]
 }
 
 func (r *Reactor) EventType() constant.ReactorEventType {
@@ -89,7 +96,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 			return
 		}
 		_ = mapInstance.RemoveItem(itemOID, constant.RemoveItemTypeExpired, 0)
-		r.Hit(owner)
+		r.Hit(owner, constant.ReactorHitAirLeft, 0)
 		if r.Spawn != nil && r.Spawn.RespawnDelay() > 0 {
 			r.ScheduleResetState(r.Spawn.RespawnDelay())
 		}
@@ -97,7 +104,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 }
 
 func (r *Reactor) matchesItemDrop(item Item, owner *Character) bool {
-	reactorID := r.ReactorID()
+	reactorID := r.Wz.ID
 	hook := fmt.Sprintf("on_item_drop_match_%d", reactorID)
 	result, err := r.callReactorScript(hook, r, item)
 	if err != nil || result == nil {
@@ -126,7 +133,7 @@ func (r *Reactor) callReactorScript(hook string, args ...interface{}) (lua.LValu
 	if root == nil {
 		return nil, fmt.Errorf("map has no lua root")
 	}
-	thread, err := luax.NewThread(root, fmt.Sprintf("script/reactor/%d.lua", r.ReactorID()))
+	thread, err := luax.NewThread(root, fmt.Sprintf("script/reactor/%d.lua", r.Wz.ID))
 	if err != nil {
 		return nil, err
 	}

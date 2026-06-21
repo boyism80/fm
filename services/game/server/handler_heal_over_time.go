@@ -113,7 +113,7 @@ func (h *HealOverTime) getHealCap(ctx *core.ClientContext, character *entity.Cha
 	if root == nil {
 		return 0, 0
 	}
-	thread, err := luax.NewThread(root, "script/script.lua")
+	thread, err := luax.NewThread(root, constant.CharacterQueryScriptPath)
 	if err != nil {
 		return 0, 0
 	}
@@ -142,7 +142,7 @@ func (h *HealOverTime) getEndureHPInterval(ctx *core.ClientContext, character *e
 	if root == nil {
 		return 0
 	}
-	thread, err := luax.NewThread(root, "script/script.lua")
+	thread, err := luax.NewThread(root, constant.CharacterQueryScriptPath)
 	if err != nil {
 		return 0
 	}
