@@ -8,7 +8,3 @@ function on_activated_12001001(me, skill, params)
 
     me:buff(skill, BuffFlag.MagicGuard, effect.x)
 end
-
-function on_unbuff_12001001(me, skill)
-end
-

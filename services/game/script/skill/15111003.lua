@@ -7,6 +7,3 @@ function on_activating_15111003(me, skill, params)
 	end
 	return false
 end
-
-function on_activated_15111003(me, skill, params)
-end

@@ -12,6 +12,3 @@ function on_activated_3121007(me, skill, params)
 
 	me:buff(skill, {[BuffFlag.Hamstring] = effect.x})
 end
-
-function on_unbuff_3121007(me, skill)
-end

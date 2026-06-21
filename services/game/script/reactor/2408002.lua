@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/2408002.img.xml): 나무뿌리 구멍
+
 function on_item_drop_match_2408002(reactor, item)
 	local wz = item:wz()
 	if wz == nil then

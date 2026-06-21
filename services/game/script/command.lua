@@ -498,7 +498,7 @@ command_funcs = {
 	},
 	["몬스터죽이기"] = {
 		privilege = ROLE.Admin,
-		usage = "- 모든 몬스터 제거",
+		usage = "- 맵 몬스터 제거 (스펀지 본체 제외)",
 		command = function(me, args)
 			local m = me:map()
 			if m == nil then
@@ -510,8 +510,13 @@ command_funcs = {
 				mobs[#mobs + 1] = mob
 			end
 			local count = 0
+			local skipped_sponge = 0
 			for _, mob in ipairs(mobs) do
 				if mob:map() == nil then
+					goto continue
+				end
+				if mob:sponge() then
+					skipped_sponge = skipped_sponge + 1
 					goto continue
 				end
 				local hp = mob:hp()
@@ -523,7 +528,7 @@ command_funcs = {
 				end
 				::continue::
 			end
-			me:notice(string.format("몬스터 %d마리 제거", count))
+			me:notice(string.format("몬스터 %d마리 제거 (스펀지 본체 %d마리 제외)", count, skipped_sponge))
 			return true
 		end,
 	},
@@ -543,7 +548,7 @@ command_funcs = {
 	},
 	["몬스터체력"] = {
 		privilege = ROLE.Admin,
-		usage = "<체력값|체력%> - 맵 내 모든 몬스터 체력 조정 (데미지/회복)",
+		usage = "<체력값|체력%> - 맵 몬스터 체력 조정 (스펀지 본체 제외)",
 		command = function(me, args)
 			if not args[1] or args[1] == "" then
 				me:notice("사용법: /몬스터체력 <체력값|체력%>")
@@ -580,6 +585,10 @@ command_funcs = {
 			local changed = 0
 			local skipped = 0
 			for _, mob in pairs(m:mobs()) do
+				if mob:sponge() then
+					skipped = skipped + 1
+					goto continue_mob_hp
+				end
 				local max_hp = mob:max_hp()
 				if max_hp ~= nil and max_hp > 0 then
 					local target_hp
@@ -603,6 +612,7 @@ command_funcs = {
 				else
 					skipped = skipped + 1
 				end
+				::continue_mob_hp::
 			end
 			if percent then
 				me:notice(string.format("몬스터 체력 %.0f%% 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))

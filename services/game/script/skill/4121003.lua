@@ -2,9 +2,6 @@
 
 local combat = require("script/lib/combat")
 
-function on_activated_4121003(me, skill, params)
-end
-
 function on_mob_buff_4121003(mob, skill, causer)
 	local effect = skill:effect()
 	if effect == nil then

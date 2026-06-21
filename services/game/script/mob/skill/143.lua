@@ -1,3 +1,5 @@
+-- Mob skill name (Skill.wz/MobSkill.img.xml): mob skill 143
+
 function on_mob_skill_choose_143(mob, skill)
     if mob:has_buff({MobBuff.DamageImmunity, MobBuff.MagicImmunity, MobBuff.WeaponImmunity}) then
         return false

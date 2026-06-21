@@ -18,6 +18,3 @@ function on_activating_5101005(me, skill, params)
 	me:update_stats({STAT.Hp, STAT.Mp})
 	return true
 end
-
-function on_activated_5101005(me, skill, params)
-end

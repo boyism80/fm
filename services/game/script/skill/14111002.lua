@@ -5,6 +5,3 @@ local combat = require("script/lib/combat")
 function on_attack_14111002(me, skill, damages)
 	combat.apply_venom(me, damages, Skill.VenomCygnus)
 end
-
-function on_activated_14111002(me, skill, params)
-end

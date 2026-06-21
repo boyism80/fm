@@ -8,7 +8,3 @@ function on_activated_4211003(me, skill, params)
 
     me:buff(skill, BuffFlag.Pickpocket, effect.x)
 end
-
-function on_unbuff_4211003(me, skill)
-end
-

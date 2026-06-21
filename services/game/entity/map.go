@@ -814,6 +814,8 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		Foothold:  footholdID,
 		Wz:        mobWz,
 		Spawn:     mobSpawn,
+		SpawnLink: link,
+		SpawnType: spawnType,
 		ExpRate:   100,
 		DropRate:  100,
 		Homing:    make(map[uint32]*Homing),
@@ -837,6 +839,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	m.objects[constant.ObjectTypeMob][oid] = mob
 	m.listener.OnMobSpawned(m, mob, spawnType, link)
 	m.controllerTable.EnterMob(mob)
+	mob.armRemoveAfter()
 
 	return mob, nil
 }
@@ -865,6 +868,65 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	m.listener.OnMobRemoved(m, mob, animationType)
 
 	return nil
+}
+
+func (m *Map) KillAllMonsters(animationType constant.MobDieAnimationType) {
+	if m == nil {
+		return
+	}
+	oids := make([]uint32, 0)
+	for oid, obj := range m.GetMobs() {
+		mob, ok := obj.(*Mob)
+		if !ok || !mob.IsAlive() {
+			continue
+		}
+		oids = append(oids, oid)
+	}
+	for _, oid := range oids {
+		mob := m.GetMob(oid)
+		if mob == nil || !mob.IsAlive() {
+			continue
+		}
+		mob.ClearTimers()
+		mob.SetSponge(nil)
+		_ = m.RemoveMob(oid, animationType)
+	}
+}
+
+func (m *Map) MobByTemplate(mobID uint32) *Mob {
+	for _, obj := range m.GetMobs() {
+		mob, ok := obj.(*Mob)
+		if !ok || mob.Wz == nil || !mob.IsAlive() {
+			continue
+		}
+		if mob.Wz.ID == mobID {
+			return mob
+		}
+	}
+	return nil
+}
+
+func (m *Map) spongePartsAlive(sponge *Mob, excludeOID uint32) bool {
+	if sponge == nil {
+		return false
+	}
+	for _, obj := range m.GetMobs() {
+		mob, ok := obj.(*Mob)
+		if !ok || !mob.IsAlive() {
+			continue
+		}
+		if mob.OID == sponge.OID || mob.OID == excludeOID {
+			continue
+		}
+		if mob.Wz != nil && mob.Wz.Level <= 1 {
+			continue
+		}
+		partSponge := mob.GetSponge()
+		if partSponge == sponge || mob.SpawnLink == sponge.OID {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Map) GetMob(mobID uint32) *Mob {

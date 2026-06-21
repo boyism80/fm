@@ -10,6 +10,3 @@ function on_activating_5111006(me, skill, params)
 	end
 	return false
 end
-
-function on_activated_5111006(me, skill, params)
-end

@@ -1676,6 +1676,12 @@ func loadMob(path string) (*Mob, error) {
 			model.FfaLoot = intField.Value > 0
 		case "explosiveReward":
 			model.ExplosiveReward = intField.Value > 0
+		case "removeAfter":
+			model.RemoveAfter = intField.Value
+		case "hpTagColor":
+			model.HpTagColor = uint8(intField.Value)
+		case "hpTagBgcolor":
+			model.HpTagBgColor = uint8(intField.Value)
 		}
 	}
 
@@ -1715,6 +1721,7 @@ func loadMob(path string) (*Mob, error) {
 			model.Boss = true
 		case "hpRecovery":
 		case "removeAfter":
+			model.RemoveAfter = nodeInt(&iv, "removeAfter", model.RemoveAfter)
 		case "revive":
 			for _, child := range iv.Children {
 				for _, intf := range child.Ints {
@@ -1729,7 +1736,9 @@ func loadMob(path string) (*Mob, error) {
 				}
 			}
 		case "hpTagColor":
+			model.HpTagColor = uint8(nodeInt(&iv, "hpTagColor", int(model.HpTagColor)))
 		case "hpTagBgcolor":
+			model.HpTagBgColor = uint8(nodeInt(&iv, "hpTagBgcolor", int(model.HpTagBgColor)))
 		case "HPgaugeHide":
 		case "rareItemDropLevel":
 		case "noFlip":
@@ -1756,6 +1765,14 @@ func loadMob(path string) (*Mob, error) {
 		case "ignoreMovable":
 		case "ignoreMoveImpact":
 		case "selfDestruction":
+			for _, sdf := range iv.Ints {
+				switch sdf.Name {
+				case "removeAfter":
+					model.RemoveAfter = sdf.Value
+				case "action":
+					model.SelfDestructionAction = int8(sdf.Value)
+				}
+			}
 		case "buff":
 		case "speak":
 		case "useReaction":

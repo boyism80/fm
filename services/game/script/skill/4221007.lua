@@ -6,6 +6,3 @@ function on_attack_4221007(me, skill, damages)
 	combat.apply_prob_status(me, skill, damages, MobBuff.Stun)
 	combat.apply_venom(me, damages, Skill.Venom4220005)
 end
-
-function on_activated_4221007(me, skill, params)
-end

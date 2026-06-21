@@ -103,3 +103,47 @@ func (l *MobListenerImpl) OnMobDamaged(mob *entity.Mob, amount int32) {
 	}
 	mapInstance.Broadcast(pkt, nil)
 }
+
+func (l *MobListenerImpl) OnShowBossHp(mob *entity.Mob, clear bool) {
+	if mob == nil {
+		return
+	}
+	mapInstance := mob.GetMap()
+	if mapInstance == nil {
+		return
+	}
+
+	mobID := uint32(0)
+	tagColor := uint8(0)
+	tagBgColor := uint8(0)
+	if mob.Wz != nil {
+		mobID = mob.Wz.ID
+		tagColor = mob.Wz.HpTagColor
+		tagBgColor = mob.Wz.HpTagBgColor
+	}
+
+	maxHpVal := mob.GetMaxHp()
+	maxHp := int32(maxHpVal)
+	if maxHpVal > 0x7fffffff {
+		maxHp = 0x7fffffff
+	}
+
+	currentHp := int32(-1)
+	if !clear {
+		hp := mob.GetHp()
+		if hp > 0x7fffffff {
+			ratio := float64(hp) / float64(maxHpVal)
+			currentHp = int32(ratio * float64(0x7fffffff))
+		} else {
+			currentHp = int32(hp)
+		}
+	}
+
+	mapInstance.Broadcast(&response.ShowBossHp{
+		MobID:      mobID,
+		CurrentHP:  currentHp,
+		MaxHP:      maxHp,
+		TagColor:   tagColor,
+		TagBgColor: tagBgColor,
+	}, nil)
+}

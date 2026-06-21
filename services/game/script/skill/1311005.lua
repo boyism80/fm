@@ -31,6 +31,3 @@ function on_attack_1311005(me, skill, damages)
 	local new_hp = math.max(cur - hp_loss, 1)
 	me:hp(new_hp, true)
 end
-
-function on_activated_1311005(me, skill, params)
-end

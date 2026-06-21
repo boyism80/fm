@@ -10,6 +10,3 @@ function on_activated_3221006(me, skill, params)
 	end
 	me:buff(skill, {[BuffFlag.Blind] = effect.x})
 end
-
-function on_unbuff_3221006(me, skill)
-end

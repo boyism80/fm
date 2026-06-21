@@ -1,3 +1,5 @@
+-- NPC name (String.wz/Npc.img.xml): 레아
+
 local guild_emblem_dialog = 17
 
 function on_start(me)

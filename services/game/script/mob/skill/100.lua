@@ -1,3 +1,5 @@
+-- Mob skill name (Skill.wz/MobSkill.img.xml): mob skill 100
+
 function on_mob_skill_choose_100(mob, skill)
     if mob:has_buff(MobBuff.WeaponAttackUp) then
         return false

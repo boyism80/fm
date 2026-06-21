@@ -10,6 +10,3 @@ end
 function on_attack_15111001(me, skill, damages)
 	combat.drain_hp_from_damage(me, skill, damages)
 end
-
-function on_activated_15111001(me, skill, params)
-end

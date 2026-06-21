@@ -1,8 +1,5 @@
 -- Skill name (String.wz/Skill.img.xml): 비홀더스 버프
 
-function on_activated_1320009(me, skill, params)
-end
-
 function on_summon_skill_1320009(me, summon, skill, params)
 	if params == nil or params.buff_effect_index == nil then
 		return

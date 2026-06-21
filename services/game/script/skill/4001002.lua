@@ -26,6 +26,3 @@ function on_attack_4001002(me, skill, damages)
 		end
 	end
 end
-
-function on_activated_4001002(me, skill, params)
-end

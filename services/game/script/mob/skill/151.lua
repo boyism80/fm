@@ -1,3 +1,5 @@
+-- Mob skill name (Skill.wz/MobSkill.img.xml): mob skill 151
+
 function on_mob_skill_choose_151(mob, skill)
     if mob:has_buff(MobBuff.MagicAttackUp) then
         return false

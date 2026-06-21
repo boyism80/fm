@@ -11,6 +11,3 @@ function on_activated_2101001(me, skill, params)
 		end
 	end)
 end
-
-function on_unbuff_2101001(me, skill)
-end

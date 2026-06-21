@@ -109,6 +109,10 @@ func toLValues(L *lua.LState, args []interface{}) ([]lua.LValue, error) {
 			continue
 		}
 		switch v := arg.(type) {
+		case int:
+			out[i] = lua.LNumber(v)
+		case int16:
+			out[i] = lua.LNumber(v)
 		case uint32:
 			out[i] = lua.LNumber(v)
 		case int32:

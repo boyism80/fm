@@ -105,19 +105,18 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
-		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-	result, err := luax.Call(thread, fmt.Sprintf("on_activating_%d", req.SkillID), ch, skillEntry, params)
-	if err != nil {
-		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-	if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
+		thread = nil
+	} else {
+		result, err := luax.Call(thread, fmt.Sprintf("on_activating_%d", req.SkillID), ch, skillEntry, params)
+		if err != nil {
+			log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
+			ch.Listener.OnUpdateStats(ch, nil, true)
+			return nil
+		}
+		if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
+			ch.Listener.OnUpdateStats(ch, nil, true)
+			return nil
+		}
 	}
 
 	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
@@ -146,13 +145,15 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	luax.SetConfiguration(thread, luax.Configuration{
-		ActorContext: ctx.ActorContext,
-	})
-	if _, err := luax.Call(thread, fmt.Sprintf("on_activated_%d", req.SkillID), ch, skillEntry, params); err != nil {
-		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return err
+	if thread != nil {
+		luax.SetConfiguration(thread, luax.Configuration{
+			ActorContext: ctx.ActorContext,
+		})
+		if _, err := luax.Call(thread, fmt.Sprintf("on_activated_%d", req.SkillID), ch, skillEntry, params); err != nil {
+			log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
+			ch.Listener.OnUpdateStats(ch, nil, true)
+			return err
+		}
 	}
 
 	var dir *uint8

@@ -23,6 +23,10 @@ type Mob struct {
 	Fake         bool
 	Foothold     int16
 	Spawn        *MobSpawn
+	SpawnLink    uint32
+	SpawnType    constant.MobSpawnType
+	SpongeOID    uint32
+	SpongeMob    bool
 	Buffs        *MobBuffContainer
 	Skills       *MobSkillContainer
 	ExpRate      int32
@@ -436,7 +440,6 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		damage = m.GetHp()
 	}
 
-	m.AddHp(-int(damage))
 	if attacker != nil {
 		bucketID := int64(-1)
 		if pid := attacker.GetPartyID(); pid != nil {
@@ -449,66 +452,41 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		}
 		bucket[attacker.GetID()] += uint64(damage)
 	}
-	isDead := m.GetHp() == 0
 
-	if !isDead {
+	sponge := m.GetSponge()
+	if sponge != nil && sponge.GetHp() > 0 {
+		m.damageSponge(attacker, damage)
+	}
+
+	m.AddHp(-int(damage))
+	if m.GetHp() > 0 {
 		if attacker != nil {
 			maxHp := m.GetMaxHp()
 			if maxHp == 0 {
 				return false
 			}
-			percent := min(m.GetHp()*100/maxHp, 100)
-			attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
+			if sponge == nil {
+				percent := min(m.GetHp()*100/maxHp, 100)
+				attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
+			}
 		}
 		return false
 	}
 
-	mapInstance := m.GetMap()
-	if mapInstance != nil {
-		m.distributeKillExperience()
-	}
-
-	if attacker != nil {
-		log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
-		m.dropItems(attacker)
-	} else {
-		log.Printf("Mob %d (ID: %d) killed with no attacker", m.OID, m.Wz.ID)
-	}
-
-	if mapInstance != nil {
-		pos := m.Position
-		linkOID := m.OID
-		revives := []uint32(nil)
-		if !m.IsFake() && m.Wz != nil && len(m.Wz.Revives) > 0 {
-			revives = m.Wz.Revives
-		}
-
-		mapInstance.callMobDieScript(m, attacker)
-		if len(revives) > 0 {
-			m.handleRevives(mapInstance, pos, linkOID, revives)
-		}
-
-		mapInstance.RemoveMob(m.OID, constant.MobDieAnimationTypeFadeOut)
-	}
-
-	if attacker != nil {
-		attacker.Listener.OnShowMobHp(attacker, m, 0)
-	}
-
-	return true
+	return m.onKill(attacker)
 }
 
 func (m *Mob) handleRevives(mapInstance *Map, pos types.Point[int16], linkOID uint32, revives []uint32) {
 	if m == nil || mapInstance == nil || len(revives) == 0 {
 		return
 	}
-	if mapInstance.callMobReviveScript(m, pos, linkOID, revives) {
+	if mapInstance.runReviveScript(m, pos, linkOID, revives) {
 		return
 	}
-	m.spawnRevivesDefault(mapInstance, pos, linkOID, revives)
+	m.spawnRevives(mapInstance, pos, linkOID, revives)
 }
 
-func (m *Mob) spawnRevivesDefault(mapInstance *Map, pos types.Point[int16], linkOID uint32, revives []uint32) {
+func (m *Mob) spawnRevives(mapInstance *Map, pos types.Point[int16], linkOID uint32, revives []uint32) {
 	if m == nil || mapInstance == nil || len(revives) == 0 {
 		return
 	}

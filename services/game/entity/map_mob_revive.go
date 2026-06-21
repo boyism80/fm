@@ -9,7 +9,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (m *Map) callMobReviveScript(mob *Mob, pos types.Point[int16], linkOID uint32, revives []uint32) bool {
+func (m *Map) runReviveScript(mob *Mob, pos types.Point[int16], linkOID uint32, revives []uint32) bool {
 	if m == nil || mob == nil || mob.Wz == nil {
 		return false
 	}

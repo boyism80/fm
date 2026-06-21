@@ -36,6 +36,70 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.ArgError(2, "fake() get or set one value")
 			return 0
 		},
+		"sponge": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			argc := L.GetTop()
+			if argc == 1 {
+				L.Push(lua.LBool(mob.IsSpongeMob()))
+				return 1
+			}
+			if argc == 2 {
+				if lua.LVAsBool(L.Get(2)) {
+					mob.MarkSponge()
+				} else {
+					mob.SpongeMob = false
+				}
+				return 0
+			}
+			L.ArgError(2, "sponge() get or set one value")
+			return 0
+		},
+		"linked_sponge": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			sponge := mob.GetSponge()
+			if sponge == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, sponge))
+			return 1
+		},
+		"set_sponge": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			spongeUD := L.CheckUserData(2)
+			sponge, ok := spongeUD.Value.(*Mob)
+			if !ok {
+				L.ArgError(2, "Mob expected")
+				return 0
+			}
+			mob.SetSponge(sponge)
+			return 0
+		},
+		"spawn_link": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			L.Push(lua.LNumber(mob.SpawnLink))
+			return 1
+		},
 		"id": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)

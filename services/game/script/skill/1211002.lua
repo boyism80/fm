@@ -17,6 +17,3 @@ function on_attack_1211002(me, skill, damages)
 		me:unbuff(BuffFlag.WkCharge)
 	end
 end
-
-function on_activated_1211002(me, skill, params)
-end

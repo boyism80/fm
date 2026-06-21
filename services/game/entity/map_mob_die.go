@@ -9,7 +9,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (m *Map) callMobDieScript(mob *Mob, attacker *Character) {
+func (m *Map) runDieScript(mob *Mob, attacker *Character) {
 	if m == nil || mob == nil || mob.Wz == nil {
 		return
 	}
@@ -25,16 +25,26 @@ func (m *Map) callMobDieScript(mob *Mob, attacker *Character) {
 
 	mobID := mob.Wz.ID
 	scriptPath := fmt.Sprintf("script/mob/%d.lua", mobID)
-	if thread, err := luax.NewThread(root, scriptPath); err == nil {
-		hook := fmt.Sprintf("on_mob_die_%d", mobID)
-		if _, err := luax.Call(thread, hook, mob, attackerArg, m); err != nil {
-			log.Printf("mob die script %s: %v", hook, err)
-		}
-	}
+	m.runMobLuaHook(root, scriptPath, fmt.Sprintf("on_mob_die_%d", mobID), mob, attackerArg, m)
+	m.runMobLuaHook(root, constant.CharacterHookScriptPath, "on_mob_die", mob, attackerArg, m)
+}
 
-	if thread, err := luax.NewThread(root, constant.CharacterHookScriptPath); err == nil {
-		if _, err := luax.Call(thread, "on_mob_die", mob, attackerArg, m); err != nil {
-			log.Printf("on_mob_die script: %v", err)
-		}
+func (m *Map) runMobLuaHook(root *lua.LState, scriptPath, hook string, args ...interface{}) {
+	if m == nil || root == nil || hook == "" {
+		return
+	}
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		return
+	}
+	luax.SetConfiguration(thread, luax.Configuration{
+		MapActorPID: m.GetActorPID(),
+	})
+	state, _, err := luax.Execute(root, thread, hook, args...)
+	if err != nil {
+		log.Printf("mob script %s: %v", hook, err)
+	}
+	if state == lua.ResumeYield {
+		return
 	}
 }

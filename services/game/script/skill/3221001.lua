@@ -1,4 +1,0 @@
--- Skill name (String.wz/Skill.img.xml): 피어싱
-
-function on_activated_3221001(me, skill, params)
-end

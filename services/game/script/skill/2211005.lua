@@ -5,7 +5,3 @@ local util = require("script/lib/skill")
 function on_activated_2211005(me, skill, params)
 	util.apply_buff_from_effect(me, skill, BuffFlag.Booster, "x")
 end
-
-function on_unbuff_2211005(me, skill)
-end
-

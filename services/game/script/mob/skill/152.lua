@@ -1,3 +1,5 @@
+-- Mob skill name (Skill.wz/MobSkill.img.xml): mob skill 152
+
 function on_mob_skill_choose_152(mob, skill)
     if mob:has_buff(MobBuff.WeaponDefenseUp) then
         return false

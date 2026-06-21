@@ -9,6 +9,7 @@ import (
 
 type Configuration struct {
 	ActorContext actor.Context
+	MapActorPID  *actor.PID
 	KeepAlive    bool
 }
 

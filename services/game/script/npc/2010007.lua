@@ -1,3 +1,5 @@
+-- NPC name (String.wz/Npc.img.xml): 헤라클
+
 local guild_create_ok = 0
 local guild_create_not_allowed = 1
 local guild_create_insufficient_meso = 2

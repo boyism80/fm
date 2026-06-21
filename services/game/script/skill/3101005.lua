@@ -5,6 +5,3 @@ local combat = require("script/lib/combat")
 function on_attack_3101005(me, skill, damages)
 	combat.apply_prob_status(me, skill, damages, MobBuff.Stun)
 end
-
-function on_activated_3101005(me, skill, params)
-end

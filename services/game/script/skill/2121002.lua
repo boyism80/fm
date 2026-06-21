@@ -5,6 +5,3 @@ local util = require("script/lib/skill")
 function on_activated_2121002(me, skill, params)
 	util.apply_mana_reflection(me, skill)
 end
-
-function on_unbuff_2121002(me, skill)
-end

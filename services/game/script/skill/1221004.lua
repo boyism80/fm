@@ -1,4 +1,4 @@
--- Skill name (String.wz/Skill.img.xml): 디바인 차지 : 둔기
+-- Skill name (String.wz/Skill.img.xml): 디바인 차지 : 둔기 
 
 local util = require("script/lib/skill")
 

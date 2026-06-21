@@ -1,3 +1,5 @@
+-- Mob name (String.wz/Mob.img.xml): 자쿰
+
 function on_mob_die_8800002(mob, attacker, map)
 	if map == nil then
 		return

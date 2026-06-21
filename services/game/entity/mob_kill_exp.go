@@ -8,9 +8,9 @@ import (
 
 const soloDamageBucketID int64 = -1
 
-// distributeKillExperience splits mob kill EXP among accDamage contributors on this mob's current map (alive).
+// grantKillExp splits mob kill EXP among accDamage contributors on this mob's current map (alive).
 // Party groups use Maple-style pool + bonus + per-damager splits; solos use ExpForDamage per row.
-func (m *Mob) distributeKillExperience() {
+func (m *Mob) grantKillExp() {
 	if m == nil || m.Wz == nil {
 		return
 	}
@@ -42,10 +42,9 @@ func (m *Mob) distributeKillExperience() {
 				rawByChar[cid] += uint64(raw)
 			}
 		} else {
-			partyRaw, err := m.distributePartyKillExp(mapInst, uint32(bucketID), damagers)
+			partyRaw, err := m.grantPartyKillExp(mapInst, uint32(bucketID), damagers)
 			if err != nil {
-				// Party snapshot consistency issue: caller logs and continues with other buckets.
-				log.Printf("distributeKillExperience: mob_oid=%d party_id=%d err=%v", m.GetOID(), uint32(bucketID), err)
+				log.Printf("grantKillExp: mob_oid=%d party_id=%d err=%v", m.GetOID(), uint32(bucketID), err)
 				continue
 			}
 			for cid, raw := range partyRaw {
@@ -73,7 +72,7 @@ func (m *Mob) distributeKillExperience() {
 	}
 }
 
-func (m *Mob) distributePartyKillExp(mapInst *Map, partyID uint32, damagers map[uint32]uint64) (map[uint32]uint64, error) {
+func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint32]uint64) (map[uint32]uint64, error) {
 	if len(damagers) == 0 {
 		return map[uint32]uint64{}, nil
 	}

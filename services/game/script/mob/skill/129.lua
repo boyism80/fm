@@ -1,3 +1,5 @@
+-- Mob skill name (Skill.wz/MobSkill.img.xml): mob skill 129
+
 function on_mob_skill_choose_129(mob, skill)
     return true
 end

@@ -78,6 +78,22 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(tbl)
 			return 1
 		},
+		"mob_by_template": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mobID := uint32(L.CheckInt(2))
+			mob := mapInstance.MobByTemplate(mobID)
+			if mob == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, mob))
+			return 1
+		},
 		"objects": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)
@@ -420,6 +436,20 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			L.Push(luax.NewLuable(L, npc))
 			return 1
+		},
+		"kill_all_mobs": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			animType := constant.MobDieAnimationTypeFadeOut
+			if L.GetTop() >= 2 {
+				animType = constant.MobDieAnimationType(L.CheckInt(2))
+			}
+			mapInstance.KillAllMonsters(animType)
+			return 0
 		},
 		"remove_mob": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

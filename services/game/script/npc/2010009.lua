@@ -1,3 +1,5 @@
+-- NPC name (String.wz/Npc.img.xml): 레나리우
+
 local alliance_create_ok = 0
 
 local alliance_disband_ok = 0

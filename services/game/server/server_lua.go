@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
@@ -551,21 +552,6 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 		return 1
 	})
 
-	luax.RegisterFunc(luaState, "run_script", func(L *lua.LState) int {
-		path := L.CheckString(1)
-		fn, err := L.LoadFile(path)
-		if err != nil {
-			L.RaiseError("run_script: %v", err)
-			return 0
-		}
-		L.Push(fn)
-		if err := L.PCall(0, 0, nil); err != nil {
-			L.RaiseError("run_script %s: %v", path, err)
-			return 0
-		}
-		return 0
-	})
-
 	luax.RegisterFunc(luaState, "save", func(L *lua.LState) int {
 		cfg, ok := luax.GetConfiguration(L)
 		if !ok || cfg.ActorContext == nil {
@@ -631,10 +617,16 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
 		duration := L.CheckNumber(1)
 		cfg, ok := luax.GetConfiguration(L)
-		if !ok || cfg.ActorContext == nil {
+		if !ok {
 			return 0
 		}
-		pid := cfg.ActorContext.Self()
+		var pid *actor.PID
+		if cfg.ActorContext != nil {
+			pid = cfg.ActorContext.Self()
+		}
+		if pid == nil {
+			pid = cfg.MapActorPID
+		}
 		if pid == nil {
 			return 0
 		}
@@ -647,8 +639,9 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			return 0
 		}
 		d := time.Duration(float64(duration) * float64(time.Millisecond))
+		resumePID := pid
 		time.AfterFunc(d, func() {
-			gs.GetRootContext().Send(pid, &g_actor.ResumeLua{Root: root, Thread: L})
+			gs.GetRootContext().Send(resumePID, &g_actor.ResumeLua{Root: root, Thread: L})
 		})
 		return L.Yield(lua.LNil)
 	})

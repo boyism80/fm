@@ -41,6 +41,3 @@ function on_attack_5211005(me, skill, damages)
 		end
 	end
 end
-
-function on_activated_5211005(me, skill, params)
-end

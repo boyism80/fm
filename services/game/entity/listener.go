@@ -127,4 +127,5 @@ type MobListener interface {
 	OnMobBuffApplied(mob *Mob, ent *MobBuff, addedReflections []int32, remaining time.Duration)
 	OnMobBuffCancelled(mob *Mob, buff constant.MobBuffFlag)
 	OnMobDamaged(mob *Mob, amount int32)
+	OnShowBossHp(mob *Mob, clear bool)
 }

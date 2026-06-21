@@ -42,6 +42,3 @@ end
 function on_activating_4111004(me, skill, params)
 	return apply_shadow_meso_cost(me, skill)
 end
-
-function on_activated_4111004(me, skill, params)
-end

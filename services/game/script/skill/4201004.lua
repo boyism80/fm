@@ -1,6 +1,4 @@
-
-function on_activated_4201004(me, skill, params)
-end
+-- Skill name (String.wz/Skill.img.xml): 스틸
 
 local function total_damage_steal(hits)
 	local total = 0

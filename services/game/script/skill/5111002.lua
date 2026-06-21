@@ -5,6 +5,3 @@ function on_activating_5111002(me, skill, params)
 	-- return energy >= 10000
 	return true
 end
-
-function on_activated_5111002(me, skill, params)
-end

@@ -1,4 +1,5 @@
 -- Skill name (String.wz/Skill.img.xml): 스탠스
+
 local util = require("script/lib/skill")
 
 function on_activated_1321002(me, skill, params)
