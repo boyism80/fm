@@ -11,7 +11,7 @@ function on_revive_8820010(mob, map, x, y, link_oid, revives)
 			if spawned_mob ~= nil then
 				if id == sponge_id then
 					sponge = spawned_mob
-					sponge:sponge(true)
+					sponge:parent(sponge)
 				else
 					parts[#parts + 1] = spawned_mob
 				end
@@ -22,6 +22,6 @@ function on_revive_8820010(mob, map, x, y, link_oid, revives)
 		return
 	end
 	for _, part in ipairs(parts) do
-		part:set_sponge(sponge)
+		part:parent(sponge)
 	end
 end

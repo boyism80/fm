@@ -1,14 +1,17 @@
 package entity
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"time"
 
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type Homing struct {
@@ -25,8 +28,6 @@ type Mob struct {
 	Spawn        *MobSpawn
 	SpawnLink    uint32
 	SpawnType    constant.MobSpawnType
-	SpongeOID    uint32
-	SpongeMob    bool
 	Buffs        *MobBuffContainer
 	Skills       *MobSkillContainer
 	ExpRate      int32
@@ -34,6 +35,7 @@ type Mob struct {
 	stealOutcome *uint32
 	Homing       map[uint32]*Homing
 	accDamage    map[int64]map[uint32]uint64
+	sponge       Sponge
 }
 
 func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
@@ -435,6 +437,10 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		return false
 	}
 
+	if attacker != nil && attacker.GetInstantKill() {
+		amount = m.GetHp()
+	}
+
 	damage := amount
 	if damage > m.GetHp() {
 		damage = m.GetHp()
@@ -453,43 +459,147 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		bucket[attacker.GetID()] += uint64(damage)
 	}
 
-	sponge := m.GetSponge()
-	if sponge != nil && sponge.GetHp() > 0 {
-		m.damageSponge(attacker, damage)
-	}
+	spongeParent := m.sponge.parent
 
 	m.AddHp(-int(damage))
-	if m.GetHp() > 0 {
-		if attacker != nil {
+	killed := m.GetHp() == 0
+
+	m.sponge.applyDamageFromHit(damage)
+
+	if !killed {
+		if attacker != nil && spongeParent == nil {
 			maxHp := m.GetMaxHp()
 			if maxHp == 0 {
 				return false
 			}
-			if sponge == nil {
-				percent := min(m.GetHp()*100/maxHp, 100)
-				attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
-			}
+			percent := min(m.GetHp()*100/maxHp, 100)
+			attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
 		}
 		return false
 	}
 
-	return m.onKill(attacker)
+	return m.onDead(attacker, constant.MobDieAnimationTypeFadeOut)
 }
 
-func (m *Mob) handleRevives(mapInstance *Map, pos types.Point[int16], linkOID uint32, revives []uint32) {
-	if m == nil || mapInstance == nil || len(revives) == 0 {
+func (m *Mob) runDieScript(attacker *Character) {
+	if m == nil || m.Wz == nil {
 		return
 	}
-	if mapInstance.runReviveScript(m, pos, linkOID, revives) {
+	mapInstance := m.GetMap()
+	if mapInstance == nil {
 		return
 	}
-	m.spawnRevives(mapInstance, pos, linkOID, revives)
+	root := mapInstance.GetLuaRoot()
+	if root == nil {
+		return
+	}
+
+	var attackerArg interface{} = lua.LNil
+	if attacker != nil {
+		attackerArg = attacker
+	}
+
+	mobID := m.Wz.ID
+	scriptPath := fmt.Sprintf("script/mob/%d.lua", mobID)
+	mapInstance.runMobLuaHook(root, scriptPath, fmt.Sprintf("on_mob_die_%d", mobID), m, attackerArg, mapInstance)
+	mapInstance.runMobLuaHook(root, constant.CharacterHookScriptPath, "on_mob_die", m, attackerArg, mapInstance)
 }
 
-func (m *Mob) spawnRevives(mapInstance *Map, pos types.Point[int16], linkOID uint32, revives []uint32) {
-	if m == nil || mapInstance == nil || len(revives) == 0 {
+func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) bool {
+	mapInstance := m.GetMap()
+	if mapInstance == nil {
+		return true
+	}
+
+	m.grantKillExp()
+	if attacker != nil {
+		if m.Wz != nil {
+			log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
+		}
+		m.dropItems(attacker)
+	} else if m.Wz != nil {
+		log.Printf("Mob %d (ID: %d) killed with no attacker", m.OID, m.Wz.ID)
+	}
+
+	pos := m.Position
+	revives := []uint32(nil)
+	if !m.IsFake() && m.Wz != nil && len(m.Wz.Revives) > 0 && m.SpawnLink == 0 {
+		revives = m.Wz.Revives
+	}
+
+	m.runDieScript(attacker)
+	m.sponge.onDead(attacker)
+	if len(revives) > 0 {
+		m.revive(pos, m.OID, revives)
+	}
+
+	mapInstance.RemoveMob(m.OID, dieAnim)
+
+	if attacker != nil {
+		attacker.Listener.OnShowMobHp(attacker, m, 0)
+	}
+	return true
+}
+
+func (m *Mob) removeAfterDieAnimation() constant.MobDieAnimationType {
+	if m == nil || m.Wz == nil || m.Wz.SelfDestructionAction < 0 {
+		return constant.MobDieAnimationTypeFadeOut
+	}
+	return constant.MobDieAnimationType(m.Wz.SelfDestructionAction)
+}
+
+func (m *Mob) runReviveScript(pos types.Point[int16], linkOID uint32, revives []uint32) bool {
+	if m == nil || m.Wz == nil {
+		return false
+	}
+	mapInstance := m.GetMap()
+	if mapInstance == nil {
+		return false
+	}
+	root := mapInstance.GetLuaRoot()
+	if root == nil {
+		return false
+	}
+
+	mobID := m.Wz.ID
+	scriptPath := fmt.Sprintf("script/mob/%d.lua", mobID)
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		return false
+	}
+
+	hook := fmt.Sprintf("on_revive_%d", mobID)
+	if thread.GetGlobal(hook).Type() != lua.LTFunction {
+		thread.Close()
+		return false
+	}
+
+	revivesTbl := thread.NewTable()
+	for i, id := range revives {
+		revivesTbl.RawSetInt(i+1, lua.LNumber(id))
+	}
+	luax.SetConfiguration(thread, luax.Configuration{
+		MapActorPID: mapInstance.GetActorPID(),
+	})
+	if _, err := luax.Call(thread, hook, m, mapInstance, pos.X, pos.Y, linkOID, revivesTbl); err != nil {
+		log.Printf("mob revive script %s: %v", hook, err)
+	}
+	return true
+}
+
+func (m *Mob) revive(pos types.Point[int16], linkOID uint32, revives []uint32) {
+	if m == nil || m.Wz == nil || len(revives) == 0 {
 		return
 	}
+	mapInstance := m.GetMap()
+	if mapInstance == nil {
+		return
+	}
+
+	if m.runReviveScript(pos, linkOID, revives) {
+		return
+	}
+
 	for _, reviveID := range revives {
 		if reviveID == 0 {
 			continue

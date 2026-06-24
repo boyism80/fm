@@ -11,6 +11,11 @@ local function string_split(s, sep)
 	return t
 end
 
+local function is_sponge_root(mob)
+	local children = mob:children()
+	return children ~= nil and #children > 0
+end
+
 local function resolve_skill_entry(me, skill_arg)
 	if skill_arg == nil or skill_arg == "" then
 		return nil, "스킬ID 또는 스킬이름이 필요합니다."
@@ -431,6 +436,16 @@ command_funcs = {
 			return true
 		end,
 	},
+	["즉사"] = {
+		privilege = ROLE.Admin,
+		usage = "- 즉사 상태 토글",
+		command = function(me, args)
+			me:instant_kill(not me:instant_kill())
+			local status = me:instant_kill() and "enabled" or "disabled"
+			me:notice("즉사 상태: " .. status)
+			return true
+		end,
+	},
 	["직업바꾸기"] = {
 		privilege = ROLE.Admin,
 		usage = "<직업코드> - 직업 변경",
@@ -515,7 +530,7 @@ command_funcs = {
 				if mob:map() == nil then
 					goto continue
 				end
-				if mob:sponge() then
+				if is_sponge_root(mob) then
 					skipped_sponge = skipped_sponge + 1
 					goto continue
 				end
@@ -528,7 +543,7 @@ command_funcs = {
 				end
 				::continue::
 			end
-			me:notice(string.format("몬스터 %d마리 제거 (스펀지 본체 %d마리 제외)", count, skipped_sponge))
+			me:notice(string.format("몬스터 %d마리 제거", count))
 			return true
 		end,
 	},
@@ -585,7 +600,7 @@ command_funcs = {
 			local changed = 0
 			local skipped = 0
 			for _, mob in pairs(m:mobs()) do
-				if mob:sponge() then
+				if is_sponge_root(mob) then
 					skipped = skipped + 1
 					goto continue_mob_hp
 				end
@@ -802,6 +817,18 @@ command_funcs = {
 		usage = "- script/character/hook.lua의 on_script(me) 실행 (또는 me:script(경로, 함수, ...) 형태로 사용)",
 		command = function(me, args)
 			me:script("script/character/hook.lua", "on_script")
+			return true
+		end,
+	},
+	["맵리셋"] = {
+		privilege = ROLE.Admin,
+		usage = "- 현재 맵 리셋",
+		command = function(me, args)
+			local m = me:map()
+			if m == nil then
+				return true
+			end
+			m:reset()
 			return true
 		end,
 	},

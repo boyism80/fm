@@ -36,60 +36,6 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.ArgError(2, "fake() get or set one value")
 			return 0
 		},
-		"sponge": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-			argc := L.GetTop()
-			if argc == 1 {
-				L.Push(lua.LBool(mob.IsSpongeMob()))
-				return 1
-			}
-			if argc == 2 {
-				if lua.LVAsBool(L.Get(2)) {
-					mob.MarkSponge()
-				} else {
-					mob.SpongeMob = false
-				}
-				return 0
-			}
-			L.ArgError(2, "sponge() get or set one value")
-			return 0
-		},
-		"linked_sponge": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-			sponge := mob.GetSponge()
-			if sponge == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			L.Push(luax.NewLuable(L, sponge))
-			return 1
-		},
-		"set_sponge": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-			spongeUD := L.CheckUserData(2)
-			sponge, ok := spongeUD.Value.(*Mob)
-			if !ok {
-				L.ArgError(2, "Mob expected")
-				return 0
-			}
-			mob.SetSponge(sponge)
-			return 0
-		},
 		"spawn_link": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
@@ -98,6 +44,68 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			L.Push(lua.LNumber(mob.SpawnLink))
+			return 1
+		},
+		"parent": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			argc := L.GetTop()
+			if argc == 1 {
+				if mob.sponge.parent != nil {
+					L.Push(luax.NewLuable(L, mob.sponge.parent))
+					return 1
+				}
+				L.Push(lua.LNil)
+				return 1
+			}
+			if argc == 2 {
+				if L.Get(2) == lua.LNil {
+					mob.sponge.SetParent(nil)
+					return 0
+				}
+				parentUD, ok := L.Get(2).(*lua.LUserData)
+				if !ok {
+					L.ArgError(2, "Mob or nil expected")
+					return 0
+				}
+				parent, ok := parentUD.Value.(*Mob)
+				if !ok {
+					L.ArgError(2, "Mob expected")
+					return 0
+				}
+				if mob.sponge.parent != nil {
+					mob.sponge.SetParent(nil)
+				}
+				mob.sponge.SetParent(parent)
+				return 0
+			}
+			L.ArgError(2, "parent() get or set one value")
+			return 0
+		},
+		"children": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(1, "children() takes no arguments")
+				return 0
+			}
+			t := L.NewTable()
+			idx := 1
+			for _, child := range mob.sponge.children {
+				if child != nil {
+					t.RawSetInt(idx, luax.NewLuable(L, child))
+					idx++
+				}
+			}
+			L.Push(t)
 			return 1
 		},
 		"id": func(L *lua.LState) int {

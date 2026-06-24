@@ -503,6 +503,20 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(count))
 			return 1
 		},
+		"reset": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			if mapInstance.GameWorld == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			cfg, _ := luax.GetConfiguration(L)
+			return mapInstance.GameWorld.GetMapSystem().ResetFromLua(L, mapInstance, cfg.ActorContext)
+		},
 		"remove_mist": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

@@ -61,6 +61,10 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onRemoveDoor(m)
 	case *ResumeLua:
 		a.onResumeLua(m)
+	case *ResetMap:
+		a.onResetMap(ctx, m)
+	case *ResetMapAck:
+		a.onResetMapAck(m)
 	case *c_actor.RunObjectTimer:
 		a.onRunObjectTimer(ctx, m)
 	case *c_actor.RunReactorRespawn:
@@ -195,6 +199,30 @@ func (a *MapActor) onResumeLua(msg *ResumeLua) {
 			luax.Close(msg.Thread)
 		}
 	}
+}
+
+func (a *MapActor) onResetMap(ctx actor.Context, msg *ResetMap) {
+	ok := false
+	if a.Map != nil {
+		a.Map.Reset()
+		ok = true
+	}
+	if msg == nil || msg.ReplyTo == nil {
+		return
+	}
+	ctx.Send(msg.ReplyTo, &ResetMapAck{
+		Ok:     ok,
+		Root:   msg.Root,
+		Thread: msg.Thread,
+	})
+}
+
+func (a *MapActor) onResetMapAck(msg *ResetMapAck) {
+	if msg == nil || msg.Root == nil || msg.Thread == nil {
+		return
+	}
+	args := []lua.LValue{lua.LBool(msg.Ok)}
+	a.onResumeLua(&ResumeLua{Root: msg.Root, Thread: msg.Thread, Args: args})
 }
 
 func (a *MapActor) onHandlerPacket(ctx actor.Context, msg *c_actor.HandlePacket) {

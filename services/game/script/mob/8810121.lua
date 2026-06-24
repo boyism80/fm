@@ -12,7 +12,7 @@ function on_mob_die_8810121(mob, attacker, map)
 	if new_sponge == nil then
 		return
 	end
-	new_sponge:sponge(true)
+	new_sponge:parent(new_sponge)
 	horntail.relink_sponge(map, mob, new_sponge)
 end
 

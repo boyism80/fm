@@ -66,6 +66,8 @@ type Map struct {
 	actorPID          *actor.PID
 	luaRoot           *lua.LState
 	pidMutex          sync.RWMutex
+	propertyMutex     sync.RWMutex
+	properties        map[string]interface{}
 	UsedDoorPortalIDs map[uint8]struct{}
 }
 
@@ -744,7 +746,8 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 			GameWorld: m.GameWorld,
 			Map:       m,
 		},
-		Wz: &npcSpawn,
+		Wz:           &npcSpawn,
+		RuntimeSpawn: true,
 	}
 	npc.ObjectCore.self = npc
 	npc.initTimers()
@@ -821,6 +824,8 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		Homing:    make(map[uint32]*Homing),
 		accDamage: make(map[int64]map[uint32]uint64),
 	}
+	mob.sponge.me = mob
+	mob.sponge.children = make([]*Mob, 0)
 	if mob.Listener == nil {
 		panic("SpawnMob: mob listener must not be nil")
 	}
@@ -854,6 +859,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	}
 
 	mob := m.objects[constant.ObjectTypeMob][mobID].(*Mob)
+	mob.sponge.Disconnect()
 	mob.ClearAllHoming()
 	mob.ClearTimers()
 	delete(m.objects[constant.ObjectTypeMob], mobID)
@@ -888,7 +894,6 @@ func (m *Map) KillAllMonsters(animationType constant.MobDieAnimationType) {
 			continue
 		}
 		mob.ClearTimers()
-		mob.SetSponge(nil)
 		_ = m.RemoveMob(oid, animationType)
 	}
 }
@@ -904,29 +909,6 @@ func (m *Map) MobByTemplate(mobID uint32) *Mob {
 		}
 	}
 	return nil
-}
-
-func (m *Map) spongePartsAlive(sponge *Mob, excludeOID uint32) bool {
-	if sponge == nil {
-		return false
-	}
-	for _, obj := range m.GetMobs() {
-		mob, ok := obj.(*Mob)
-		if !ok || !mob.IsAlive() {
-			continue
-		}
-		if mob.OID == sponge.OID || mob.OID == excludeOID {
-			continue
-		}
-		if mob.Wz != nil && mob.Wz.Level <= 1 {
-			continue
-		}
-		partSponge := mob.GetSponge()
-		if partSponge == sponge || mob.SpawnLink == sponge.OID {
-			return true
-		}
-	}
-	return false
 }
 
 func (m *Map) GetMob(mobID uint32) *Mob {

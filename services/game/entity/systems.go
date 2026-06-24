@@ -6,6 +6,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/services/game/constant"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type MapSystem interface {
@@ -13,6 +14,7 @@ type MapSystem interface {
 	Warp(character *Character, targetMap *Map, spawnPoint uint8) error
 	CreateReturnDoor(ch *Character, skillID constant.SkillID)
 	RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartMapWZID uint32)
+	ResetFromLua(L *lua.LState, mapInstance *Map, actorCtx actor.Context) int
 }
 
 type SchedulerSystem interface {

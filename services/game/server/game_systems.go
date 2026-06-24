@@ -6,10 +6,12 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/core/luax"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	gameconst "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/types"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type mapSystem struct {
@@ -85,6 +87,46 @@ func (s mapSystem) Get(mapID uint32) *entity.Map {
 	s.gs.mapsMutex.RLock()
 	defer s.gs.mapsMutex.RUnlock()
 	return s.gs.maps[mapID]
+}
+
+func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx actor.Context) int {
+	if mapInstance == nil {
+		if L != nil {
+			L.Push(lua.LBool(false))
+			return 1
+		}
+		return 0
+	}
+	targetPID := mapInstance.GetActorPID()
+	if targetPID == nil {
+		L.Push(lua.LBool(false))
+		return 1
+	}
+	cfg, _ := luax.GetConfiguration(L)
+	callerPID := cfg.MapActorPID
+	if actorCtx != nil {
+		callerPID = actorCtx.Self()
+	}
+	if callerPID != nil && callerPID.Equal(targetPID) {
+		mapInstance.Reset()
+		L.Push(lua.LBool(true))
+		return 1
+	}
+	if callerPID == nil || s.gs == nil {
+		L.Push(lua.LBool(false))
+		return 1
+	}
+	root := L.Parent
+	if root == nil {
+		L.Push(lua.LBool(false))
+		return 1
+	}
+	s.gs.GetRootContext().Send(targetPID, &g_actor.ResetMap{
+		ReplyTo: callerPID,
+		Root:    root,
+		Thread:  L,
+	})
+	return L.Yield(lua.LNil)
 }
 
 func (s mapSystem) Warp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {

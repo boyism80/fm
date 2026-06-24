@@ -49,6 +49,18 @@ type ResumeLua struct {
 	Args   []lua.LValue
 }
 
+type ResetMap struct {
+	ReplyTo *actor.PID
+	Root    *lua.LState
+	Thread  *lua.LState
+}
+
+type ResetMapAck struct {
+	Ok     bool
+	Root   *lua.LState
+	Thread *lua.LState
+}
+
 type AddCharacter struct {
 	Character  *entity.Character
 	SpawnPoint uint8

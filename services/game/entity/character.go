@@ -77,6 +77,7 @@ type Character struct {
 	GuildInvites      map[uint32]time.Time
 	partySearchConfig *PartySearchConfig
 	buddyList         *BuddyList
+	InstantKill       bool
 }
 
 type Debuff struct {
@@ -540,6 +541,10 @@ func (ch *Character) SetMaxMpPercent(p int16, notify bool) {
 }
 
 func (ch *Character) SetInvincible(b bool) { ch.Invincible = b }
+
+func (ch *Character) GetInstantKill() bool { return ch.InstantKill }
+
+func (ch *Character) SetInstantKill(b bool) { ch.InstantKill = b }
 
 func (ch *Character) AddHp(amount int) {
 	n := int(ch.GetHp()) + amount

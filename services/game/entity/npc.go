@@ -9,7 +9,8 @@ import (
 
 type Npc struct {
 	ObjectCore
-	Wz *wz.NpcSpawn
+	Wz           *wz.NpcSpawn
+	RuntimeSpawn bool
 }
 
 func (n *Npc) GetObjectType() constant.ObjectType {

@@ -36,23 +36,6 @@ func (m *Mob) expireRemoveAfter() {
 	}
 
 	m.RemoveTimer(mobTimerRemoveAfterKey)
-
-	mapInstance := m.GetMap()
-	if mapInstance == nil {
-		return
-	}
-
 	m.SetHp(0, false)
-
-	pos := m.Position
-	linkOID := m.OID
-	if !m.IsFake() && m.Wz != nil && len(m.Wz.Revives) > 0 && m.SpawnLink == 0 {
-		m.handleRevives(mapInstance, pos, linkOID, m.Wz.Revives)
-	}
-
-	dieAnim := constant.MobDieAnimationTypeFadeOut
-	if m.Wz != nil && m.Wz.SelfDestructionAction >= 0 {
-		dieAnim = constant.MobDieAnimationType(m.Wz.SelfDestructionAction)
-	}
-	_ = mapInstance.RemoveMob(m.OID, dieAnim)
+	m.onDead(nil, m.removeAfterDieAnimation())
 }

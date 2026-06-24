@@ -1,112 +1,135 @@
 package entity
 
 import (
-	"log"
-
 	"github.com/boyism80/fm/services/game/constant"
 )
 
-func (m *Mob) MarkSponge() {
-	if m == nil {
+type Sponge struct {
+	me       *Mob
+	parent   *Mob
+	children []*Mob
+}
+
+func (s *Sponge) SetParent(mob *Mob) bool {
+	if s == nil || s.me == nil {
+		return false
+	}
+	if mob == nil {
+		oldParent := s.parent
+		if oldParent != nil {
+			children := make([]*Mob, 0, len(oldParent.sponge.children))
+			for _, c := range oldParent.sponge.children {
+				if c != s.me {
+					children = append(children, c)
+				}
+			}
+			oldParent.sponge.children = children
+		}
+		s.parent = nil
+		return true
+	}
+	if mob == s.me {
+		if s.children == nil {
+			s.children = make([]*Mob, 0)
+		}
+		return true
+	}
+	if s.parent != nil {
+		return false
+	}
+	if mob.sponge.children == nil {
+		mob.sponge.children = make([]*Mob, 0)
+	}
+	s.parent = mob
+	mob.sponge.children = append(mob.sponge.children, s.me)
+	return true
+}
+
+func (s *Sponge) isFinish() bool {
+	if s == nil || len(s.children) == 0 {
+		return true
+	}
+	for _, child := range s.children {
+		if child == nil || child.Wz == nil || child.GetHp() == 0 {
+			continue
+		}
+		if child.Wz.Level > 1 {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Sponge) applyDamageFromHit(damage uint32) {
+	if s == nil || s.me == nil || damage == 0 {
 		return
 	}
-	m.SpongeMob = true
-}
-
-func (m *Mob) IsSpongeMob() bool {
-	return m != nil && m.SpongeMob
-}
-
-func (m *Mob) SetSponge(sponge *Mob) {
-	if m == nil {
-		return
-	}
-	if sponge == nil {
-		m.SpongeOID = 0
-		return
-	}
-	m.SpongeOID = sponge.OID
-	if m.SpawnLink == 0 {
-		m.SpawnLink = sponge.OID
-	}
-	sponge.MarkSponge()
-}
-
-func (m *Mob) GetSponge() *Mob {
-	if m == nil || m.SpongeOID == 0 {
-		return nil
-	}
-	mapInstance := m.GetMap()
-	if mapInstance == nil {
-		return nil
-	}
-	return mapInstance.GetMob(m.SpongeOID)
-}
-
-func (m *Mob) damageSponge(attacker *Character, damage uint32) {
-	sponge := m.GetSponge()
-	if sponge == nil || sponge.GetHp() == 0 {
+	parent := s.parent
+	if parent == nil {
 		return
 	}
 
 	spongeDamage := damage
-	if spongeDamage > sponge.GetHp() {
-		spongeDamage = sponge.GetHp()
+	if spongeDamage > parent.GetHp() {
+		spongeDamage = parent.GetHp()
 	}
-	sponge.AddHp(-int(spongeDamage))
+	if spongeDamage == 0 {
+		return
+	}
 
-	if sponge.GetHp() == 0 {
-		if sponge.Listener != nil {
-			sponge.Listener.OnShowBossHp(sponge, true)
+	parent.LifeCore.AddHp(-int(spongeDamage))
+	if parent.Listener == nil {
+		return
+	}
+	parent.Listener.OnShowBossHp(parent, parent.GetHp() == 0)
+}
+
+func (s *Sponge) removeAllChildren() {
+	if s == nil || len(s.children) == 0 {
+		return
+	}
+	children := append([]*Mob(nil), s.children...)
+	for _, child := range children {
+		if child == nil {
+			continue
 		}
-		sponge.onKill(attacker)
-	} else if sponge.Listener != nil {
-		sponge.Listener.OnShowBossHp(sponge, false)
+
+		if !child.IsAlive() {
+			continue
+		}
+
+		child.sponge.SetParent(nil)
+		child.onDead(nil, constant.MobDieAnimationTypeFadeOut)
 	}
 }
 
-func (m *Mob) onKill(attacker *Character) bool {
-	mapInstance := m.GetMap()
-	if mapInstance != nil {
-		m.grantKillExp()
+func (s *Sponge) Disconnect() {
+	if s == nil {
+		return
+	}
+	if s.parent != nil {
+		s.SetParent(nil)
+	}
+	for _, child := range s.children {
+		if child != nil {
+			child.sponge.SetParent(nil)
+		}
+	}
+	s.children = nil
+}
+
+func (s *Sponge) onDead(attacker *Character) {
+	if s == nil || s.me == nil {
+		return
 	}
 
-	if attacker != nil {
-		if m.Wz != nil {
-			log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
+	parent := s.parent
+	if parent != nil {
+		s.SetParent(nil)
+
+		if parent.sponge.isFinish() {
+			parent.onDead(attacker, constant.MobDieAnimationTypeFadeOut)
 		}
-		m.dropItems(attacker)
-	} else if m.Wz != nil {
-		log.Printf("Mob %d (ID: %d) killed with no attacker", m.OID, m.Wz.ID)
 	}
-
-	if mapInstance != nil {
-		pos := m.Position
-		linkOID := m.OID
-		revives := []uint32(nil)
-		if !m.IsFake() && m.Wz != nil && len(m.Wz.Revives) > 0 {
-			revives = m.Wz.Revives
-		}
-
-		mapInstance.runDieScript(m, attacker)
-		if len(revives) > 0 {
-			m.handleRevives(mapInstance, pos, linkOID, revives)
-		}
-
-		oldSponge := m.GetSponge()
-		m.SetSponge(nil)
-		if oldSponge != nil && oldSponge.GetHp() > 0 && !mapInstance.spongePartsAlive(oldSponge, m.OID) {
-			if remaining := oldSponge.GetHp(); remaining > 0 {
-				oldSponge.ApplyDamage(attacker, remaining)
-			}
-		}
-
-		mapInstance.RemoveMob(m.OID, constant.MobDieAnimationTypeFadeOut)
-	}
-
-	if attacker != nil {
-		attacker.Listener.OnShowMobHp(attacker, m, 0)
-	}
-
-	return true
+	s.removeAllChildren()
 }
