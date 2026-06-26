@@ -811,7 +811,38 @@ func (ch *Character) IsRanked() bool {
 	return true
 }
 
+func (ch *Character) remainingExpToMaxLevel() uint32 {
+	if ch == nil || ch.level >= 200 {
+		return 0
+	}
+	if ch.GameWorld == nil {
+		return ^uint32(0)
+	}
+	resources := ch.GameWorld.GetResources()
+	if resources == nil {
+		return ^uint32(0)
+	}
+
+	var cap uint32
+	if needed := resources.GetExpNeededForLevel(ch.level); needed > ch.exp {
+		cap = needed - ch.exp
+	}
+	for lvl := ch.level + 1; lvl < 200; lvl++ {
+		need := resources.GetExpNeededForLevel(lvl)
+		if cap > ^uint32(0)-need {
+			return ^uint32(0)
+		}
+		cap += need
+	}
+	return cap
+}
+
 func (ch *Character) AddExp(exp uint32) {
+	exp = min(exp, ^uint32(0)-ch.exp)
+	exp = min(exp, ch.remainingExpToMaxLevel())
+	if exp == 0 {
+		return
+	}
 	ch.exp += exp
 	ch.Listener.OnExpGain(ch, exp)
 
@@ -826,17 +857,27 @@ func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
 	if ch == nil || raw == 0 {
 		return 0
 	}
+	mulClamp := func(a, b uint32) uint32 {
+		if a == 0 || b == 0 {
+			return 0
+		}
+		if a > ^uint32(0)/b {
+			return ^uint32(0)
+		}
+		return a * b
+	}
+
 	exp := raw
 	if ch.BonusStats.ExpRate > 0 {
-		exp = exp * uint32(ch.BonusStats.ExpRate) / 100
+		exp = mulClamp(exp, uint32(ch.BonusStats.ExpRate)) / 100
 	}
-	exp = exp * uint32(ch.GetHolySymbolExpRate()) / 100
+	exp = mulClamp(exp, uint32(ch.GetHolySymbolExpRate())) / 100
 	if ch.HasDebuff(constant.DebuffFlagCurse) {
 		exp /= 2
 	}
 	if gw := ch.GameWorld; gw != nil {
 		if r := gw.GetExpRate(); r > 0 {
-			exp = exp * uint32(r)
+			exp = mulClamp(exp, uint32(r))
 		}
 	}
 	return exp

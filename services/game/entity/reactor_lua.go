@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/services/game/constant"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -69,6 +70,22 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			L.Push(lua.LNumber(reactor.ReactItemQuantity()))
 			return 1
+		},
+		"trigger": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			reactor, ok := ud.Value.(*Reactor)
+			if !ok || reactor == nil {
+				L.ArgError(1, "Reactor expected")
+				return 0
+			}
+			var trigger *Character
+			if L.GetTop() >= 2 {
+				if triggerUd, ok := L.Get(2).(*lua.LUserData); ok {
+					trigger, _ = triggerUd.Value.(*Character)
+				}
+			}
+			reactor.Hit(trigger, constant.ReactorHitAirLeft, 0)
+			return 0
 		},
 	}
 }

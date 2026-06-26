@@ -26,8 +26,6 @@ type Mob struct {
 	Fake         bool
 	Foothold     int16
 	Spawn        *MobSpawn
-	SpawnLink    uint32
-	SpawnType    constant.MobSpawnType
 	Buffs        *MobBuffContainer
 	Skills       *MobSkillContainer
 	ExpRate      int32
@@ -168,6 +166,18 @@ func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
 		Mob:       m.ToDTO(),
 		SpawnType: constant.MobSpawnTypeNone,
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (m *Mob) Relink(spawnType constant.MobSpawnType, link uint32) bool {
+	if m == nil || !m.IsAlive() {
+		return false
+	}
+	mapInstance := m.GetMap()
+	if mapInstance == nil || mapInstance.listener == nil {
+		return false
+	}
+	mapInstance.listener.OnMobSpawned(mapInstance, m, spawnType, link)
+	return true
 }
 
 func (m *Mob) ApplyMobBuff(flag constant.MobBuffFlag, value int32, duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
@@ -478,7 +488,7 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		return false
 	}
 
-	return m.onDead(attacker, constant.MobDieAnimationTypeFadeOut)
+	return m.Kill(attacker, constant.MobDieAnimationTypeFadeOut)
 }
 
 func (m *Mob) runDieScript(attacker *Character) {
@@ -523,15 +533,15 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) 
 
 	pos := m.Position
 	revives := []uint32(nil)
-	if !m.IsFake() && m.Wz != nil && len(m.Wz.Revives) > 0 && m.SpawnLink == 0 {
+	if !m.IsFake() && m.Wz != nil && len(m.Wz.Revives) > 0 {
 		revives = m.Wz.Revives
 	}
 
 	m.runDieScript(attacker)
-	m.sponge.onDead(attacker)
 	if len(revives) > 0 {
-		m.revive(pos, m.OID, revives)
+		m.revive(pos, revives)
 	}
+	m.sponge.onDead(attacker)
 
 	mapInstance.RemoveMob(m.OID, dieAnim)
 
@@ -541,6 +551,23 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) 
 	return true
 }
 
+func (m *Mob) Kill(attacker *Character, dieAnim constant.MobDieAnimationType) bool {
+	if m == nil {
+		return false
+	}
+	mapInstance := m.GetMap()
+	if mapInstance == nil {
+		return false
+	}
+	if mapInstance.GetMob(m.OID) == nil {
+		return false
+	}
+	if hp := m.GetHp(); hp > 0 {
+		m.LifeCore.AddHp(-int(hp))
+	}
+	return m.onDead(attacker, dieAnim)
+}
+
 func (m *Mob) removeAfterDieAnimation() constant.MobDieAnimationType {
 	if m == nil || m.Wz == nil || m.Wz.SelfDestructionAction < 0 {
 		return constant.MobDieAnimationTypeFadeOut
@@ -548,7 +575,29 @@ func (m *Mob) removeAfterDieAnimation() constant.MobDieAnimationType {
 	return constant.MobDieAnimationType(m.Wz.SelfDestructionAction)
 }
 
-func (m *Mob) runReviveScript(pos types.Point[int16], linkOID uint32, revives []uint32) bool {
+func (m *Mob) SpawnRevives(reviveIDs []uint32, pos types.Point[int16], spawnType constant.MobSpawnType, link uint32) map[uint32][]*Mob {
+	spawned := make(map[uint32][]*Mob)
+	if m == nil || len(reviveIDs) == 0 {
+		return spawned
+	}
+	mapInstance := m.GetMap()
+	if mapInstance == nil {
+		return spawned
+	}
+	for _, reviveID := range reviveIDs {
+		if reviveID == 0 {
+			continue
+		}
+		mob, err := mapInstance.SpawnMob(reviveID, pos, nil, spawnType, link)
+		if err != nil {
+			continue
+		}
+		spawned[reviveID] = append(spawned[reviveID], mob)
+	}
+	return spawned
+}
+
+func (m *Mob) runReviveScript(pos types.Point[int16], revives []uint32) bool {
 	if m == nil || m.Wz == nil {
 		return false
 	}
@@ -581,13 +630,13 @@ func (m *Mob) runReviveScript(pos types.Point[int16], linkOID uint32, revives []
 	luax.SetConfiguration(thread, luax.Configuration{
 		MapActorPID: mapInstance.GetActorPID(),
 	})
-	if _, err := luax.Call(thread, hook, m, mapInstance, pos.X, pos.Y, linkOID, revivesTbl); err != nil {
+	if _, err := luax.Call(thread, hook, m, mapInstance, pos.X, pos.Y, revivesTbl); err != nil {
 		log.Printf("mob revive script %s: %v", hook, err)
 	}
 	return true
 }
 
-func (m *Mob) revive(pos types.Point[int16], linkOID uint32, revives []uint32) {
+func (m *Mob) revive(pos types.Point[int16], revives []uint32) {
 	if m == nil || m.Wz == nil || len(revives) == 0 {
 		return
 	}
@@ -596,7 +645,7 @@ func (m *Mob) revive(pos types.Point[int16], linkOID uint32, revives []uint32) {
 		return
 	}
 
-	if m.runReviveScript(pos, linkOID, revives) {
+	if m.runReviveScript(pos, revives) {
 		return
 	}
 
@@ -604,7 +653,7 @@ func (m *Mob) revive(pos types.Point[int16], linkOID uint32, revives []uint32) {
 		if reviveID == 0 {
 			continue
 		}
-		_, err := mapInstance.SpawnMob(reviveID, pos, nil, constant.MobSpawnTypeRevive, linkOID)
+		_, err := mapInstance.SpawnMob(reviveID, pos, nil, constant.MobSpawnTypeRevive, m.OID)
 		if err != nil {
 			log.Printf("Failed to spawn revive mob %d from mob %d: %v", reviveID, m.Wz.ID, err)
 		}

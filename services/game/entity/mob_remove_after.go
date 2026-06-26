@@ -12,10 +12,7 @@ func (m *Mob) armRemoveAfter() {
 	if m == nil || m.Wz == nil {
 		return
 	}
-	if m.IsFake() || m.SpawnLink != 0 {
-		return
-	}
-	if m.SpawnType == constant.MobSpawnTypeRevive {
+	if m.IsFake() {
 		return
 	}
 	removeAfter := m.Wz.RemoveAfter
@@ -36,6 +33,6 @@ func (m *Mob) expireRemoveAfter() {
 	}
 
 	m.RemoveTimer(mobTimerRemoveAfterKey)
-	m.SetHp(0, false)
-	m.onDead(nil, m.removeAfterDieAnimation())
+	// removeAfterDieAnimation()로 처리하면 핑크빈에서 석상 스폰 이펙트가 발생안함
+	m.Kill(nil, constant.MobDieAnimationTypeFadeOut)
 }

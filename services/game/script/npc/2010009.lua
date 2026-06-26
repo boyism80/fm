@@ -145,7 +145,7 @@ local function try_inc_alliance_capacity(npc, me)
 	end
 end
 
-function on_start(me)
+function on_click(me, npc)
 	local npc = 2010009
 	local selected = me:dialog_list(npc,
 		' 안녕하세요? #b레나리우#k라고 해요.',

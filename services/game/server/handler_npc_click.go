@@ -93,8 +93,10 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 	}
 	luax.SetConfiguration(luaThread, luax.Configuration{
 		ActorContext: ctx.ActorContext,
+		MapActorPID:  mapInstance.GetActorPID(),
+		KeepAlive:    true,
 	})
-	state, _, err := luax.Execute(root, luaThread, "on_start", character)
+	state, _, err := luax.Execute(root, luaThread, "on_click", character, npc)
 	if err != nil {
 		log.Printf("Failed to execute NPC script: %v", err)
 		character.ClearCurrentDialog()

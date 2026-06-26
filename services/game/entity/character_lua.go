@@ -1286,11 +1286,20 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.RaiseError("script: %v", err)
 				return 0
 			}
-			result, err := luax.Call(thread, funcName, args...)
+			luax.SetConfiguration(thread, luax.Configuration{
+				ActorContext: cfg.ActorContext,
+				MapActorPID:  mapInstance.GetActorPID(),
+				KeepAlive:    true,
+			})
+			state, result, err := luax.Execute(root, thread, funcName, args...)
 			if err != nil {
 				L.RaiseError("script: %v", err)
 				return 0
 			}
+			if state == lua.ResumeYield {
+				return 0
+			}
+			luax.Close(thread)
 			if result != nil {
 				L.Push(result)
 				return 1

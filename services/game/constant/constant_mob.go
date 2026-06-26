@@ -9,6 +9,15 @@ const (
 	MobSpawnTypeFake    MobSpawnType = -4
 )
 
+func AllMobSpawnTypes() map[string]MobSpawnType {
+	return map[string]MobSpawnType{
+		"None":    MobSpawnTypeNone,
+		"Animate": MobSpawnTypeAnimate,
+		"Revive":  MobSpawnTypeRevive,
+		"Fake":    MobSpawnTypeFake,
+	}
+}
+
 type MobDieAnimationType uint8
 
 const (

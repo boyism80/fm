@@ -3,6 +3,7 @@ package server
 import (
 	"log"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -198,6 +199,14 @@ func registerMobDieAnimationConstants(luaState *lua.LState) {
 	luaState.SetGlobal("MobDieAnimation", t)
 }
 
+func registerMobSpawnTypeConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	for name, value := range constant.AllMobSpawnTypes() {
+		t.RawSetString(name, lua.LNumber(value))
+	}
+	luaState.SetGlobal("MobSpawnType", t)
+}
+
 func registerSummonConstants(luaState *lua.LState) {
 	moveTable := luaState.NewTable()
 	for name, value := range constant.AllSummonMovementTypes() {
@@ -318,11 +327,21 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerObjectTypeConstants(luaState)
 	registerRoleConstants(luaState)
 	registerMobDieAnimationConstants(luaState)
+	registerMobSpawnTypeConstants(luaState)
 	registerSummonConstants(luaState)
 	registerIncomingHitConstants(luaState)
 	registerMistTypeConstants(luaState)
 	registerSkillEffectTypeConstants(luaState)
 	registerEffectTypeConstants(luaState)
+
+	luax.RegisterFunc(luaState, "log", func(L *lua.LState) int {
+		parts := make([]string, L.GetTop())
+		for i := 1; i <= L.GetTop(); i++ {
+			parts[i-1] = L.Get(i).String()
+		}
+		log.Printf("[lua] %s", strings.Join(parts, " "))
+		return 0
+	})
 
 	luax.RegisterFunc(luaState, "name2map", func(L *lua.LState) int {
 		name := L.CheckString(1)

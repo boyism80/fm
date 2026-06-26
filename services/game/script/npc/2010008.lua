@@ -2,7 +2,7 @@
 
 local guild_emblem_dialog = 17
 
-function on_start(me)
+function on_click(me, npc)
 	local npc = 2010008
 	local selected = me:dialog_list(npc,
 		'저는 길드 마크 제작 업무를 맡고 있습니다. 길드 마크는 길드장만 변경할 수 있답니다. 원하는 것이 있으세요?',

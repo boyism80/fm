@@ -212,6 +212,20 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 		return
 	}
 	_, _ = luax.Call(thread, hook, character, m)
+
+	mapScriptPath := fmt.Sprintf("script/map/%d.lua", m.GetMapID())
+	mapThread, err := luax.NewThread(root, mapScriptPath)
+	if err != nil {
+		return
+	}
+	mapHook := fmt.Sprintf("%s_%d", hook, m.GetMapID())
+	if mapThread.GetGlobal(mapHook).Type() != lua.LTFunction {
+		return
+	}
+	luax.SetConfiguration(mapThread, luax.Configuration{
+		MapActorPID: m.GetActorPID(),
+	})
+	_, _ = luax.Call(mapThread, mapHook, character, m)
 }
 
 func (m *Map) RemovePlayer(playerID uint32) error {
@@ -817,8 +831,6 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		Foothold:  footholdID,
 		Wz:        mobWz,
 		Spawn:     mobSpawn,
-		SpawnLink: link,
-		SpawnType: spawnType,
 		ExpRate:   100,
 		DropRate:  100,
 		Homing:    make(map[uint32]*Homing),

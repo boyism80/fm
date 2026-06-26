@@ -19,7 +19,7 @@ local guild_capacity_increase_insufficient_gp = 4
 local guild_capacity_increase_capacity_reached = 5
 local guild_capacity_increase_failed = 6
 
-function on_start(me)
+function on_click(me, npc)
 	local npc = 2010007
 	local selected = me:dialog_list(npc,
 		'길드를 만들고 싶은가? 혹은 길드 관련 업무를 위해서 찾아왔는가? 원하는 것을 말해보게.',

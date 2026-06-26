@@ -4,11 +4,10 @@ function M.relink_sponge(map, dying_sponge, new_sponge)
 	if map == nil or dying_sponge == nil or new_sponge == nil then
 		return
 	end
-	local dying_oid = dying_sponge:oid()
 	for _, mob in pairs(map:mobs()) do
 		if mob:oid() ~= new_sponge:oid() then
 			local linked = mob:parent()
-			if linked == dying_sponge or mob:spawn_link() == dying_oid then
+			if linked == dying_sponge then
 				mob:parent(new_sponge)
 			end
 		end

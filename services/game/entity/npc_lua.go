@@ -24,6 +24,17 @@ func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 1
 		},
+		"show_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			npc, ok := ud.Value.(*Npc)
+			if !ok {
+				L.ArgError(1, "Npc expected")
+				return 0
+			}
+			action := L.CheckString(2)
+			npc.ShowEffect(action)
+			return 0
+		},
 		"wz": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			npc, ok := ud.Value.(*Npc)

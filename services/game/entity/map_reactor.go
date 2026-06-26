@@ -247,6 +247,22 @@ func (m *Map) ReloadReactors() int {
 	return count
 }
 
+func (m *Map) ReactorByTemplate(reactorID uint32) *Reactor {
+	if m == nil {
+		return nil
+	}
+	for _, obj := range m.GetReactors() {
+		reactor, ok := obj.(*Reactor)
+		if !ok || reactor == nil || reactor.Wz == nil {
+			continue
+		}
+		if reactor.Wz.ID == reactorID {
+			return reactor
+		}
+	}
+	return nil
+}
+
 func (m *Map) GetReactorSpawn(spawnID uint32) *ReactorSpawn {
 	if m == nil || m.ReactorSpawns == nil {
 		return nil

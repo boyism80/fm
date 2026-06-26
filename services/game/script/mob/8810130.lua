@@ -1,27 +1,20 @@
 -- Mob name (String.wz/Mob.img.xml): 카오스 혼테일 소환
 
-function on_revive_8810130(mob, map, x, y, link_oid, revives)
-	local sponge_id = 8810118
-	local sponge = nil
-	local parts = {}
-	for i = 1, #revives do
-		local id = revives[i]
-		if id ~= nil and id ~= 0 then
-			local spawned_mob = map:spawn_mob(id, x, y, -2)
-			if spawned_mob ~= nil then
-				if id == sponge_id then
-					sponge = spawned_mob
-					sponge:parent(sponge)
-				else
-					parts[#parts + 1] = spawned_mob
-				end
-			end
-		end
+function on_revive_8810130(mob, map, x, y, revives)
+	local spawned_mobs = mob:revive(revives, x, y)
+	local sponge_mobs = spawned_mobs[8810118]
+	if sponge_mobs == nil then
+		return
 	end
+	local sponge = sponge_mobs[1]
 	if sponge == nil then
 		return
 	end
-	for _, part in ipairs(parts) do
-		part:parent(sponge)
+	for _, mobs in pairs(spawned_mobs) do
+		for _, part in ipairs(mobs) do
+			if part ~= sponge then
+				part:parent(sponge)
+			end
+		end
 	end
 end

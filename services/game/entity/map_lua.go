@@ -437,6 +437,119 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, npc))
 			return 1
 		},
+		"property": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			key := L.CheckString(2)
+			if L.GetTop() == 2 {
+				val, exists := mapInstance.GetProperty(key)
+				if !exists {
+					L.Push(lua.LNil)
+					return 1
+				}
+				switch v := val.(type) {
+				case bool:
+					L.Push(lua.LBool(v))
+				case int:
+					L.Push(lua.LNumber(v))
+				case int32:
+					L.Push(lua.LNumber(v))
+				case int64:
+					L.Push(lua.LNumber(v))
+				case uint32:
+					L.Push(lua.LNumber(v))
+				case float64:
+					L.Push(lua.LNumber(v))
+				case string:
+					L.Push(lua.LString(v))
+				default:
+					L.Push(lua.LNil)
+				}
+				return 1
+			}
+			val := L.Get(3)
+			switch val.Type() {
+			case lua.LTNil:
+				mapInstance.SetProperty(key, nil)
+			case lua.LTBool:
+				mapInstance.SetProperty(key, lua.LVAsBool(val))
+			case lua.LTNumber:
+				mapInstance.SetProperty(key, float64(lua.LVAsNumber(val)))
+			case lua.LTString:
+				mapInstance.SetProperty(key, string(val.(lua.LString)))
+			default:
+				L.ArgError(3, "property value must be nil, bool, number, or string")
+				return 0
+			}
+			return 0
+		},
+		"respawn": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			includeNegativeMobTime := false
+			if L.GetTop() >= 2 {
+				includeNegativeMobTime = lua.LVAsBool(L.Get(2))
+			}
+			L.Push(lua.LNumber(mapInstance.Respawn(includeNegativeMobTime)))
+			return 1
+		},
+		"remove_npc": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			arg := L.Get(2)
+			var oid uint32
+			switch v := arg.(type) {
+			case *lua.LUserData:
+				npc, ok := v.Value.(*Npc)
+				if !ok || npc == nil {
+					L.ArgError(2, "Npc or npc OID expected")
+					return 0
+				}
+				oid = npc.OID
+			case lua.LNumber:
+				oid = uint32(v)
+			default:
+				L.ArgError(2, "Npc or npc OID expected")
+				return 0
+			}
+			if oid == 0 {
+				return 0
+			}
+			err := mapInstance.RemoveNpc(oid)
+			if err != nil {
+				L.RaiseError("remove_npc: %v", err)
+				return 0
+			}
+			return 0
+		},
+		"reactor": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			reactorID := uint32(L.CheckInt(2))
+			reactor := mapInstance.ReactorByTemplate(reactorID)
+			if reactor == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, reactor))
+			return 1
+		},
 		"kill_all_mobs": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

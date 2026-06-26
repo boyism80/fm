@@ -35,3 +35,13 @@ func (n *Npc) SendSpawnSyncToViewer(viewer *Character) {
 		MiniMap: true,
 	}, types.SEND_POLICY_ENCRYPT)
 }
+
+func (n *Npc) ShowEffect(action string) {
+	if n == nil || action == "" {
+		return
+	}
+	n.Broadcast(&response.ShowNpcEffect{
+		OID:    n.OID,
+		Action: action,
+	}, nil)
+}

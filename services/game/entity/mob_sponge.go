@@ -29,16 +29,10 @@ func (s *Sponge) SetParent(mob *Mob) bool {
 		return true
 	}
 	if mob == s.me {
-		if s.children == nil {
-			s.children = make([]*Mob, 0)
-		}
-		return true
+		return false
 	}
 	if s.parent != nil {
 		return false
-	}
-	if mob.sponge.children == nil {
-		mob.sponge.children = make([]*Mob, 0)
 	}
 	s.parent = mob
 	mob.sponge.children = append(mob.sponge.children, s.me)
@@ -99,7 +93,7 @@ func (s *Sponge) removeAllChildren() {
 		}
 
 		child.sponge.SetParent(nil)
-		child.onDead(nil, constant.MobDieAnimationTypeFadeOut)
+		child.Kill(nil, constant.MobDieAnimationTypeFadeOut)
 	}
 }
 
@@ -115,7 +109,7 @@ func (s *Sponge) Disconnect() {
 			child.sponge.SetParent(nil)
 		}
 	}
-	s.children = nil
+	s.children = make([]*Mob, 0)
 }
 
 func (s *Sponge) onDead(attacker *Character) {
@@ -128,7 +122,7 @@ func (s *Sponge) onDead(attacker *Character) {
 		s.SetParent(nil)
 
 		if parent.sponge.isFinish() {
-			parent.onDead(attacker, constant.MobDieAnimationTypeFadeOut)
+			parent.Kill(attacker, constant.MobDieAnimationTypeFadeOut)
 		}
 	}
 	s.removeAllChildren()

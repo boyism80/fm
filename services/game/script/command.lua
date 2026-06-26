@@ -511,6 +511,44 @@ command_funcs = {
 			return true
 		end,
 	},
+	["몬스터정보"] = {
+		privilege = ROLE.Admin,
+		usage = "- 현재 맵에 있는 몬스터 ID·이름 목록",
+		command = function(me, args)
+			local m = me:map()
+			if m == nil then
+				me:notice("맵 정보 없음")
+				return true
+			end
+			local entries = {}
+			for _, mob in pairs(m:mobs()) do
+				if mob:map() ~= nil and mob:hp() > 0 then
+					entries[#entries + 1] = mob
+				end
+			end
+			table.sort(entries, function(a, b)
+				if a:id() ~= b:id() then
+					return a:id() < b:id()
+				end
+				return a:oid() < b:oid()
+			end)
+			if #entries == 0 then
+				me:notice("맵에 몬스터가 없습니다.")
+				return true
+			end
+			me:notice(string.format("몬스터 %d마리", #entries))
+			for _, mob in ipairs(entries) do
+				local mob_id = mob:id()
+				local mob_name = tostring(mob_id)
+				local wz = id2mob(mob_id)
+				if wz ~= nil and wz.name ~= nil and wz.name ~= "" then
+					mob_name = wz.name
+				end
+				me:notice(string.format("  %d - %s", mob_id, mob_name))
+			end
+			return true
+		end,
+	},
 	["몬스터죽이기"] = {
 		privilege = ROLE.Admin,
 		usage = "- 맵 몬스터 제거 (스펀지 본체 제외)",

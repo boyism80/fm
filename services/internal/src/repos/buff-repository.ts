@@ -42,7 +42,7 @@ function rowValues(row: BuffRow) {
         row.remaining_duration_ms ?? null,
         row.skill_level ?? null,
         row.causer_id ?? null,
-        parseFlagValues(row.flag_values),
+        JSON.stringify(parseFlagValues(row.flag_values)),
     ];
 }
 

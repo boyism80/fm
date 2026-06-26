@@ -36,16 +36,6 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.ArgError(2, "fake() get or set one value")
 			return 0
 		},
-		"spawn_link": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mob, ok := ud.Value.(*Mob)
-			if !ok {
-				L.ArgError(1, "Mob expected")
-				return 0
-			}
-			L.Push(lua.LNumber(mob.SpawnLink))
-			return 1
-		},
 		"parent": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
@@ -77,10 +67,17 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(2, "Mob expected")
 					return 0
 				}
+				if parent == mob {
+					L.ArgError(2, "mob cannot be its own sponge parent")
+					return 0
+				}
 				if mob.sponge.parent != nil {
 					mob.sponge.SetParent(nil)
 				}
-				mob.sponge.SetParent(parent)
+				if !mob.sponge.SetParent(parent) {
+					L.RaiseError("parent: failed to link mob to sponge parent")
+					return 0
+				}
 				return 0
 			}
 			L.ArgError(2, "parent() get or set one value")
@@ -106,6 +103,87 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			L.Push(t)
+			return 1
+		},
+		"revive": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			revivesVal := L.CheckTable(2)
+			reviveIDs := make([]uint32, 0, revivesVal.Len())
+			for i := 1; i <= revivesVal.Len(); i++ {
+				val := revivesVal.RawGetInt(i)
+				if val == lua.LNil {
+					continue
+				}
+				id := uint32(lua.LVAsNumber(val))
+				if id == 0 {
+					continue
+				}
+				reviveIDs = append(reviveIDs, id)
+			}
+			pos := mob.GetPosition()
+			if L.GetTop() >= 4 {
+				pos.X = int16(L.CheckInt(3))
+				pos.Y = int16(L.CheckInt(4))
+			}
+			spawnType := constant.MobSpawnTypeRevive
+			link := mob.OID
+			if L.GetTop() >= 5 {
+				spawnType = constant.MobSpawnType(L.CheckInt(5))
+			}
+			if L.GetTop() >= 6 {
+				link = uint32(L.CheckInt(6))
+			}
+			spawned := mob.SpawnRevives(reviveIDs, pos, spawnType, link)
+			tbl := L.NewTable()
+			for id, mobs := range spawned {
+				arr := L.NewTable()
+				for i, spawnedMob := range mobs {
+					if spawnedMob != nil {
+						arr.RawSetInt(i+1, luax.NewLuable(L, spawnedMob))
+					}
+				}
+				tbl.RawSet(lua.LNumber(id), arr)
+			}
+			L.Push(tbl)
+			return 1
+		},
+		"kill": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			dieAnim := constant.MobDieAnimationTypeFadeOut
+			if L.GetTop() >= 2 {
+				dieAnim = constant.MobDieAnimationType(L.CheckInt(2))
+			}
+			killed := mob.Kill(nil, dieAnim)
+			L.Push(lua.LBool(killed))
+			return 1
+		},
+		"relink": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			if L.GetTop() < 2 {
+				L.ArgError(2, "link oid required")
+				return 0
+			}
+			link := uint32(L.CheckInt(2))
+			spawnType := constant.MobSpawnTypeRevive
+			if L.GetTop() >= 3 {
+				spawnType = constant.MobSpawnType(L.CheckInt(3))
+			}
+			L.Push(lua.LBool(mob.Relink(spawnType, link)))
 			return 1
 		},
 		"id": func(L *lua.LState) int {
