@@ -605,6 +605,19 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			mob.Buffs.Remove(buff)
 			return 0
 		},
+		"dispel": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			skillID := uint32(L.CheckInt(2))
+			if mob.Buffs != nil {
+				mob.Buffs.Dispel(skillID)
+			}
+			return 0
+		},
 		"has_buff": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)

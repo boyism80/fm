@@ -287,6 +287,25 @@ func (l *MapListenerImpl) OnMapMessage(mapInstance *entity.Map, messageType cons
 	}, nil)
 }
 
+func (l *MapListenerImpl) OnClearEffect(mapInstance *entity.Map) {
+	if mapInstance == nil {
+		return
+	}
+
+	mapInstance.Broadcast(&response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeMapEffect,
+		Env:  "quest/party/clear",
+	}, nil)
+	mapInstance.Broadcast(&response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeSound,
+		Env:  "Party1/Clear",
+	}, nil)
+	mapInstance.Broadcast(&response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeObjectState,
+		Env:  "gate",
+	}, nil)
+}
+
 func (l *MapListenerImpl) OnMobControllerChange(mob *entity.Mob, before *entity.Character, after *entity.Character, aggro bool) {
 	switch {
 	case before == nil && after != nil:

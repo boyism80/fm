@@ -511,6 +511,18 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(mapInstance.Respawn(includeNegativeMobTime)))
 			return 1
 		},
+		"block_gen": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mobWZID := uint32(L.CheckInt(2))
+			enabled := L.CheckBool(3)
+			mapInstance.SetMobGenEnabled(mobWZID, enabled)
+			return 0
+		},
 		"remove_npc": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)
@@ -629,6 +641,16 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			message := L.CheckString(2)
 			mapInstance.MapMessage(message)
+			return 0
+		},
+		"clear_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mapInstance.ClearEffect()
 			return 0
 		},
 		"reload_reactors": func(L *lua.LState) int {

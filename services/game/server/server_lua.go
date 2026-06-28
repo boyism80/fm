@@ -271,6 +271,14 @@ func registerEffectTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("EffectType", t)
 }
 
+func registerServerMessageConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	for name, value := range constant.AllServerMessageTypes() {
+		t.RawSetString(name, lua.LNumber(value))
+	}
+	luaState.SetGlobal("Msg", t)
+}
+
 func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
 	skillTable := luaState.NewTable()
 	skillTable.RawSetString("id", lua.LNumber(skill.ID))
@@ -350,6 +358,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerMistTypeConstants(luaState)
 	registerSkillEffectTypeConstants(luaState)
 	registerEffectTypeConstants(luaState)
+	registerServerMessageConstants(luaState)
 
 	luax.RegisterFunc(luaState, "log", func(L *lua.LState) int {
 		parts := make([]string, L.GetTop())

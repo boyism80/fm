@@ -37,6 +37,9 @@ func (m *Map) trySpawnMobRezen(mobSpawn *MobSpawn, now time.Time, includeNegativ
 	if m == nil || mobSpawn == nil || mobSpawn.Spawned || mobSpawn.Wz == nil {
 		return false
 	}
+	if m.IsMobGenBlocked(mobSpawn.Wz.ID) {
+		return false
+	}
 	if mobSpawn.Wz.MobTime < 0 && !includeNegativeMobTime {
 		return false
 	}
@@ -59,4 +62,33 @@ func (m *Map) trySpawnMobRezen(mobSpawn *MobSpawn, now time.Time, includeNegativ
 	mobSpawn.Spawned = true
 	mobSpawn.LastSpawnedAt = now
 	return true
+}
+
+func (m *Map) SetMobGenEnabled(mobWZID uint32, enabled bool) {
+	if m == nil || mobWZID == 0 {
+		return
+	}
+	if m.blockedMobGen == nil {
+		m.blockedMobGen = make(map[uint32]struct{})
+	}
+	if enabled {
+		delete(m.blockedMobGen, mobWZID)
+	} else {
+		m.blockedMobGen[mobWZID] = struct{}{}
+	}
+}
+
+func (m *Map) IsMobGenBlocked(mobWZID uint32) bool {
+	if m == nil || mobWZID == 0 || m.blockedMobGen == nil {
+		return false
+	}
+	_, ok := m.blockedMobGen[mobWZID]
+	return ok
+}
+
+func (m *Map) ClearBlockedMobGen() {
+	if m == nil {
+		return
+	}
+	m.blockedMobGen = make(map[uint32]struct{})
 }

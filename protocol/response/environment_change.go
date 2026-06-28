@@ -7,9 +7,10 @@ import (
 type EnvironmentChangeMode uint8
 
 const (
-	EnvironmentChangeModeMapEffect EnvironmentChangeMode = 3
-	EnvironmentChangeModeSound     EnvironmentChangeMode = 4
-	EnvironmentChangeModeMusic     EnvironmentChangeMode = 6
+	EnvironmentChangeModeObjectState EnvironmentChangeMode = 2
+	EnvironmentChangeModeMapEffect   EnvironmentChangeMode = 3
+	EnvironmentChangeModeSound       EnvironmentChangeMode = 4
+	EnvironmentChangeModeMusic       EnvironmentChangeMode = 6
 )
 
 type EnvironmentChange struct {

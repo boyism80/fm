@@ -14,6 +14,7 @@ func (m *Map) Reset() {
 	_ = m.ReloadReactors()
 	m.RemoveAllFieldDrops()
 	m.ClearProperties()
+	m.ClearBlockedMobGen()
 	m.RemoveRuntimeNpcs()
 	for _, spawn := range m.MobSpawns {
 		if spawn == nil {

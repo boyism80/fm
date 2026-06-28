@@ -237,6 +237,25 @@ func (bc *MobBuffContainer) Remove(flag constant.MobBuffFlag) {
 	ent.callMobSkillHook(mob, "on_mob_unbuff")
 }
 
+func (bc *MobBuffContainer) Dispel(skillID uint32) {
+	if bc == nil || skillID == 0 {
+		return
+	}
+	var ents []*MobBuff
+	for ent := range bc.entities {
+		if ent == nil || ent.Wz == nil || ent.Wz.ID != skillID {
+			continue
+		}
+		ents = append(ents, ent)
+	}
+	for _, ent := range ents {
+		for flag := range ent.Values {
+			bc.Remove(flag)
+			break
+		}
+	}
+}
+
 func (bc *MobBuffContainer) getExpired(now time.Time) []*MobBuff {
 	if bc == nil || len(bc.entities) == 0 {
 		return nil

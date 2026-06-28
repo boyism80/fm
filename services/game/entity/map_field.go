@@ -17,3 +17,10 @@ func (m *Map) MapMessage(message string) {
 	}
 	m.listener.OnMapMessage(m, constant.MsgPinkText, message)
 }
+
+func (m *Map) ClearEffect() {
+	if m == nil || m.listener == nil {
+		return
+	}
+	m.listener.OnClearEffect(m)
+}

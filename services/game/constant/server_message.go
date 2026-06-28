@@ -21,4 +21,25 @@ const (
 	MsgBlueNotice          ServerMessageType = 18
 )
 
+func AllServerMessageTypes() map[string]ServerMessageType {
+	return map[string]ServerMessageType{
+		"Notice":              MsgNotice,
+		"Popup":               MsgPopup,
+		"Megaphone":           MsgMegaphone,
+		"SuperMegaphone":      MsgSuperMegaphone,
+		"ScrollingTop":        MsgScrollingTop,
+		"PinkText":            MsgPinkText,
+		"LightBlueText":       MsgLightBlueText,
+		"ItemMegaphone":       MsgItemMegaphone,
+		"HeartMegaphone":      MsgHeartMegaphone,
+		"SkullSuperMegaphone": MsgSkullSuperMegaphone,
+		"GreenMegaphone":      MsgGreenMegaphone,
+		"ThreeMegaphoneLines": MsgThreeMegaphoneLines,
+		"EOF":                 MsgEOF,
+		"ANI":                 MsgANI,
+		"RedGachaponBox":      MsgRedGachaponBox,
+		"BlueNotice":          MsgBlueNotice,
+	}
+}
+
 const DoorNoTownPortalMessage = "마을의 미스틱 도어 지점이 꽉 차서 지금은 사용할 수 없습니다."

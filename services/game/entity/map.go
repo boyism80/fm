@@ -33,6 +33,7 @@ type MapListener interface {
 	OnReactorTriggered(mapInstance *Map, reactor *Reactor, stance int32)
 	OnMusicChanged(mapInstance *Map, song string)
 	OnMapMessage(mapInstance *Map, messageType constant.ServerMessageType, message string)
+	OnClearEffect(mapInstance *Map)
 	OnMobHomingRemoved(mapInstance *Map, mob *Mob, removed *Homing, causer *Character)
 	OnMobHomingSet(mapInstance *Map, mob *Mob, homing *Homing, causer *Character)
 	OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool)
@@ -58,6 +59,7 @@ type Map struct {
 	controllerTable   *ControllerTable
 	MobSpawns         map[uint32]*MobSpawn
 	ReactorSpawns     map[uint32]*ReactorSpawn
+	blockedMobGen     map[uint32]struct{}
 	listener          MapListener
 	mobListener       MobListener
 	sequence          uint32
@@ -96,6 +98,7 @@ func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint
 		objects:         make(map[constant.ObjectType]map[uint32]Object),
 		controllerTable: nil,
 		MobSpawns:       make(map[uint32]*MobSpawn),
+		blockedMobGen:   make(map[uint32]struct{}),
 		listener:        listener,
 		mobListener:     mobListener,
 		Wz:              wz,

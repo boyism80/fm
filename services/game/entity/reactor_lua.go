@@ -127,6 +127,18 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			reactor.DropItems()
 			return 0
 		},
+		"destroy": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			reactor, ok := ud.Value.(*Reactor)
+			if !ok || reactor == nil {
+				L.ArgError(1, "Reactor expected")
+				return 0
+			}
+			if reactor.Map != nil {
+				_ = reactor.Map.RemoveReactor(reactor.OID, true)
+			}
+			return 0
+		},
 	}
 }
 

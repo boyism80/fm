@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
@@ -14,14 +13,7 @@ func (r *Reactor) ForceHitState(state byte) {
 	}
 	r.State = state
 	r.TimerActive = false
-	r.triggerReactor(0)
-}
-
-func (r *Reactor) triggerReactor(stance int32) {
-	if r == nil || r.Map == nil {
-		return
-	}
-	r.Map.listener.OnReactorTriggered(r.Map, r, stance)
+	r.Map.listener.OnReactorTriggered(r.Map, r, 0)
 }
 
 func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stance int32) {
@@ -43,61 +35,36 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 	oldState := r.State
 	newState := event.NextState
 	r.State = newState
+	rid := r.Wz.ID
 
-	if r.isFinalState(newState) {
-		if r.shouldDestroyOnFinal(newState) {
+	if r.eventAt(newState) == nil {
+		if r.Spawn != nil && r.Spawn.RespawnDelay() > 0 {
 			_ = r.Map.RemoveReactor(r.OID, true)
 		} else {
-			r.triggerReactor(stance)
+			r.Map.listener.OnReactorTriggered(r.Map, r, stance)
 		}
-		r.runHitScript()
+		hook := fmt.Sprintf("on_reactor_%d", rid)
+		_, _ = r.callReactorScript(hook, true, r)
 		return
 	}
 
 	done := false
-	r.triggerReactor(stance)
-	rid := r.Wz.ID
+	r.Map.listener.OnReactorTriggered(r.Map, r, stance)
 	newEvent := r.eventAt(newState)
 	if newEvent != nil && (newEvent.NextState == newState || rid == 2618000 || rid == 2309000) {
 		if rid > 200011 {
-			r.runHitScript()
+			hook := fmt.Sprintf("on_reactor_%d", rid)
+			_, _ = r.callReactorScript(hook, true, r)
 		}
 		done = true
 	}
 	if timeout := r.StateTimeOut(newState); timeout > 0 {
 		if !done && rid > 200011 {
-			r.runHitScript()
+			hook := fmt.Sprintf("on_reactor_%d", rid)
+			_, _ = r.callReactorScript(hook, true, r)
 		}
 		r.ScheduleStateRevert(newState, oldState, timeout)
 	}
-}
-
-func (r *Reactor) isFinalState(state byte) bool {
-	return r.eventAt(state) == nil
-}
-
-func (r *Reactor) shouldDestroyOnFinal(state byte) bool {
-	delay := r.respawnDelay()
-	if delay <= 0 {
-		return false
-	}
-	event := r.eventAt(state)
-	if event == nil {
-		return true
-	}
-	return int(event.Type) < int(constant.ReactorEventTypeItem)
-}
-
-func (r *Reactor) respawnDelay() time.Duration {
-	if r == nil || r.Spawn == nil {
-		return 0
-	}
-	return r.Spawn.RespawnDelay()
-}
-
-func (r *Reactor) runHitScript() {
-	hook := fmt.Sprintf("on_reactor_%d", r.Wz.ID)
-	_, _ = r.callReactorScript(hook, true, r)
 }
 
 func (m *Map) activateItemReactors(item Item, owner *Character) {

@@ -7,7 +7,7 @@ function on_reactor_2111000(reactor)
 	end
 	local trigger = reactor:trigger()
 	if trigger ~= nil then
-		trigger:notice(5, '몬스터가 소환되었습니다!')
+		trigger:notice('몬스터가 소환되었습니다!', Msg.PinkText)
 	end
 	local x, y = reactor:position()
 	y = y - 10

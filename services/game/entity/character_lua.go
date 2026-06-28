@@ -1176,13 +1176,10 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
+			message := L.CheckString(2)
 			msgType := constant.MsgLightBlueText
-			var message string
-			if L.GetTop() == 2 {
-				message = L.CheckString(2)
-			} else {
-				msgType = constant.ServerMessageType(L.CheckInt(2))
-				message = L.CheckString(3)
+			if L.GetTop() >= 3 {
+				msgType = constant.ServerMessageType(L.CheckInt(3))
 			}
 			ch.Listener.OnMessage(ch, msgType, message)
 			return 0
