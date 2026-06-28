@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
 )
 
@@ -86,13 +87,16 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 
-	if !CallSkillHook(ctx, character, uint32(skillID), "on_activating") {
+	if !CallSkillHook(character, uint32(skillID), "on_activating") {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
+	return h.finishMagicAttack(ctx, character, mapInstance, req, uint8(skillLevel), uint32(skillID))
+}
 
+func (h *MagicAttack) finishMagicAttack(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, req *request.MagicAttack, skillLevel uint8, skillID uint32) error {
 	damages := req.Damages
-	CallOnAttackHooks(ctx, character, damages, uint32(skillID), true, false, 0)
+	CallOnAttackHooks(character, damages, skillID, true, false, 0)
 	for _, damage := range damages {
 		mob := mapInstance.GetMob(damage.OID)
 		if mob == nil {
@@ -106,10 +110,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 			mob.ApplyDamage(character, damagePair.Damage)
 		}
 	}
-
-	character.Listener.OnMagicAttack(character, req, uint8(skillLevel))
-
-	CallSkillHook(ctx, character, uint32(skillID), "on_activated")
-
+	character.Listener.OnMagicAttack(character, req, skillLevel)
+	CallSkillHook(character, skillID, "on_activated")
 	return nil
 }

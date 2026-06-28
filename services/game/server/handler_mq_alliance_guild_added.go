@@ -45,15 +45,11 @@ func (h *allianceMqGuildAdded) Handle(ctx actor.Context, _ amqp.Delivery, _ stri
 		log.Printf("alliance consumer: guild_added alliance_id=%d guild_id=%d not in alliance_pb", evt.AllianceID, payload.AddedGuildID)
 		return nil
 	}
-	gs.alliance.UpdateAsync(ctx, evt).
-		Then(func() (interface{}, error) {
-			return nil, nil
-		}, func(interface{}) error {
-			gs.alliance.Update(alliancePb)
-			gs.alliance.BroadcastGuildAdded(alliancePb, addedGuildPb)
-			return nil
-		}).
-		Run()
+	gs.alliance.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+		gs.alliance.Update(alliancePb)
+		gs.alliance.BroadcastGuildAdded(alliancePb, addedGuildPb)
+		return nil, nil
+	})
 	log.Printf("alliance consumer: applied guild_added alliance_id=%d revision=%d", evt.AllianceID, evt.Revision)
 	return nil
 }

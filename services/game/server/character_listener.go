@@ -1207,12 +1207,12 @@ func (l *CharacterListenerImpl) OnClassChange(ch *entity.Character, oldClass uin
 		Stats:        stats,
 		UnlockAction: true,
 	}, types.SEND_POLICY_ENCRYPT)
-	l.gs.GetPartySystem().UpdateMemberAsync(nil, ch).Run()
+	l.gs.GetPartySystem().UpdateMemberAsync(nil, ch)
 	l.gs.alliance.NotifyMemberFieldsChanged(ch)
 }
 
 func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *entity.Character) {
-	l.gs.GetPartySystem().UpdateMemberAsync(nil, ch).Run()
+	l.gs.GetPartySystem().UpdateMemberAsync(nil, ch)
 	l.gs.alliance.NotifyMemberFieldsChanged(ch)
 }
 
@@ -1341,7 +1341,7 @@ func (l *CharacterListenerImpl) OnSkillPassiveHook(ch *entity.Character, skillID
 	if ch == nil {
 		return
 	}
-	CallPassiveSkillHook(nil, ch, skillID, hook)
+	CallPassiveSkillHook(ch, skillID, hook)
 }
 
 func (l *CharacterListenerImpl) OnUpdateSkill(ch *entity.Character, skillID uint32, level int32, masterLevel int32) {

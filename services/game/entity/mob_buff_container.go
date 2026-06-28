@@ -98,9 +98,9 @@ func (e *MobBuff) callMobSkillHook(mob *Mob, hookPrefix string) {
 		log.Printf("mob skill hook %s %d: %v", hookPrefix, skillID, err)
 		return
 	}
-	if _, err := luax.Call(thread, hookName, mob, e, causer); err != nil {
+	luax.CallAsync(root, thread, hookName, mob, e, causer).OnError(func(err error) {
 		log.Printf("mob skill hook %s %d: %v", hookPrefix, skillID, err)
-	}
+	})
 }
 
 type MobBuffContainer struct {

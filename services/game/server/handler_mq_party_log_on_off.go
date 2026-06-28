@@ -57,25 +57,21 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 			}
 		}
 	}
-	pc.UpdateAsync(ctx, evt).
-		Then(func() (interface{}, error) {
+	pc.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+		if raw == nil {
 			return nil, nil
-		}, func(interface{}) error {
-			if raw == nil {
-				return nil
-			}
-			var extra struct {
-				CharacterID uint32 `json:"character_id"`
-			}
-			if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
-				return nil
-			}
-			party := pc.Get(evt.PartyID)
-			if party != nil {
-				h.sendLogOnOff(party)
-			}
-			return nil
-		}).
-		Run()
+		}
+		var extra struct {
+			CharacterID uint32 `json:"character_id"`
+		}
+		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+			return nil, nil
+		}
+		party := pc.Get(evt.PartyID)
+		if party != nil {
+			h.sendLogOnOff(party)
+		}
+		return nil, nil
+	})
 	return nil
 }

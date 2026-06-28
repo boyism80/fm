@@ -31,52 +31,69 @@ func (h *EnhanceEquipment) Handle(ctx *core.ClientContext, req *request.EnhanceE
 		return nil
 	}
 
-	if ok := h.runEnhanceScript(ch, req.ScrollSlot, req.TargetSlot); !ok {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-	}
+	h.runEnhanceScript(ch, req.ScrollSlot, req.TargetSlot, func(ok bool) {
+		if !ok {
+			ch.Listener.OnUpdateStats(ch, nil, true)
+		}
+	})
 	return nil
 }
 
-func (*EnhanceEquipment) runEnhanceScript(ch *entity.Character, scrollSlot int16, targetSlot int16) bool {
+func (*EnhanceEquipment) runEnhanceScript(ch *entity.Character, scrollSlot int16, targetSlot int16, fn func(bool)) {
 	if ch == nil || scrollSlot <= 0 {
-		return false
+		fn(false)
+		return
 	}
 	useInventory := ch.Inventory[constant.InventoryTypeConsume]
 	if useInventory == nil {
-		return false
+		fn(false)
+		return
 	}
 	scrollItem := useInventory.GetItem(uint8(scrollSlot))
 	if scrollItem == nil || scrollItem.GetCount() < 1 {
-		return false
+		fn(false)
+		return
 	}
 	scrollConsume, ok := scrollItem.(*entity.Consume)
 	if !ok || scrollConsume == nil {
-		return false
+		fn(false)
+		return
 	}
 	scrollWz := scrollConsume.GetModel()
 	if scrollWz == nil || scrollWz.GetID() == 0 {
-		return false
+		fn(false)
+		return
 	}
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
-		return false
+		fn(false)
+		return
 	}
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
-		return false
+		fn(false)
+		return
 	}
 	scriptPath := fmt.Sprintf("script/item/%d.lua", scrollWz.GetID())
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
-		return false
+		fn(false)
+		return
 	}
-	ret, err := luax.Call(thread, "on_scroll", ch, int32(scrollSlot), int32(targetSlot))
-	if err != nil {
+	luax.CallAsync(root, thread, "on_scroll", ch, int32(scrollSlot), int32(targetSlot)).Then(func(value interface{}) (interface{}, error) {
+		vals := luax.ResultValues(value)
+		if len(vals) == 0 || vals[0] == nil {
+			fn(false)
+			return nil, nil
+		}
+		if b, ok := vals[0].(lua.LBool); ok {
+			fn(bool(b))
+			return nil, nil
+		}
+		fn(false)
+		return nil, nil
+	}).OnError(func(err error) {
 		log.Printf("enhance script failed %s: %v", scriptPath, err)
-		return false
-	}
-	if b, ok := ret.(lua.LBool); ok {
-		return bool(b)
-	}
-	return false
+		fn(false)
+	})
 }

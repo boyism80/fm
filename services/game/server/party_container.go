@@ -70,9 +70,9 @@ func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope)
 	}
 
 	if pc.internalClient == nil {
-		p.Then(func() (interface{}, error) {
+		p.Then(func(interface{}) (interface{}, error) {
 			return nil, errors.New("party apply: internal client unavailable")
-		}, func(interface{}) error { return nil })
+		})
 		return p
 	}
 
@@ -262,7 +262,7 @@ func (pc *PartyContainer) DeliverPartySilent(party *entity.Party) {
 }
 
 // SendPartySilentAsync builds a Promise that sends party silent UI state to the character. Uses cache
-// when warm; otherwise schedules GetParty via ThenRPC. Caller must .Run() (from map actor Receive).
+// when warm; otherwise schedules GetParty via ThenRPC (from map actor Receive).
 func (pc *PartyContainer) SendPartySilentAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
 	p := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
 	if pc == nil || ch == nil || pc.gs == nil || ctx == nil {
@@ -277,9 +277,9 @@ func (pc *PartyContainer) SendPartySilentAsync(ctx actor.Context, ch *entity.Cha
 		log.Printf("SendPartySilentAsync: GetParty char %d party %d: %v", ch.GetID(), partyID, err)
 	})
 	if ent := pc.Get(partyID); ent != nil {
-		p.Then(func() (interface{}, error) { return nil, nil }, func(interface{}) error {
+		p.Then(func(interface{}) (interface{}, error) {
 			pc.sendPartySilentToCharacter(ch, ent)
-			return nil
+			return nil, nil
 		})
 		return p
 	}

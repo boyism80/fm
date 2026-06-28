@@ -55,12 +55,10 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 			return ic.LoginAccount(c, reqMsg)
 		}, func(reply *internal.LoginAccountReply) error {
 			return h.sendLoginAccountResult(ctx, req, reply)
-		}).
-		OnError(func(err error) {
-			log.Printf("Login (async): %v", err)
-			_ = ctx.Client.Send(&response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}, types.SEND_POLICY_ENCRYPT)
-		}).
-		Run()
+		}).OnError(func(err error) {
+		log.Printf("Login (async): %v", err)
+		_ = ctx.Client.Send(&response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}, types.SEND_POLICY_ENCRYPT)
+	})
 	return nil
 }
 

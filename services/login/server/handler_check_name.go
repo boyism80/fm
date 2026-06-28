@@ -51,12 +51,10 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 				Exists: reply.Exists,
 			}
 			return ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
-		}).
-		OnError(func(err error) {
-			log.Printf("CheckName (async): %v", err)
-			checkResp := &response.CheckName{Name: req.Name, Exists: false}
-			_ = ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
-		}).
-		Run()
+		}).OnError(func(err error) {
+		log.Printf("CheckName (async): %v", err)
+		checkResp := &response.CheckName{Name: req.Name, Exists: false}
+		_ = ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
+	})
 	return nil
 }

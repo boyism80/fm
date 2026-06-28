@@ -34,6 +34,6 @@ func (h *guildMqDisbanded) Handle(ctx actor.Context, _ amqp.Delivery, _ string, 
 	memberIDs := extra.MemberCharacterIDs
 	gs.guild.ApplyEventAsync(ctx, evt, func(uint32) {
 		gs.guild.BroadcastDisbanded(prevGuild, memberIDs)
-	}).Run()
+	})
 	return nil
 }

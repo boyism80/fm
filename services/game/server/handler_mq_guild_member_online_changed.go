@@ -37,6 +37,6 @@ func (h *guildMqMemberOnlineChanged) Handle(ctx actor.Context, _ amqp.Delivery, 
 	online := extra.Online
 	gs.guild.ApplyEventAsync(ctx, evt, func(guildID uint32) {
 		gs.guild.BroadcastMemberOnlineChanged(guildID, subjectID, online)
-	}).Run()
+	})
 	return nil
 }

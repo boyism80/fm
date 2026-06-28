@@ -630,9 +630,9 @@ func (m *Mob) runReviveScript(pos types.Point[int16], revives []uint32) bool {
 	luax.SetConfiguration(thread, luax.Configuration{
 		MapActorPID: mapInstance.GetActorPID(),
 	})
-	if _, err := luax.Call(thread, hook, m, mapInstance, pos.X, pos.Y, revivesTbl); err != nil {
+	luax.CallAsync(root, thread, hook, m, mapInstance, pos.X, pos.Y, revivesTbl).OnError(func(err error) {
 		log.Printf("mob revive script %s: %v", hook, err)
-	}
+	})
 	return true
 }
 

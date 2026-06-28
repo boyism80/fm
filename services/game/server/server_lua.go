@@ -646,7 +646,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 				args = append(args, lua.LNil)
 			}
 			gs.GetRootContext().Send(pid, &g_actor.ResumeLua{Root: root, Thread: L, Args: args})
-		}).Run()
+		})
 		return L.Yield(lua.LNil, lua.LNil)
 	})
 
@@ -745,14 +745,18 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			return 0
 		}
 		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
-		if err == nil {
-			_, err = luax.Call(thread, "on_script", ch)
-		}
 		if err != nil {
 			L.RaiseError("run_on_script: %v", err)
 			return 0
 		}
-		L.Push(lua.LBool(true))
-		return 1
+		resumePID := pid
+		luax.CallAsync(root, thread, "on_script", ch).Then(func(_ interface{}) (interface{}, error) {
+			gs.GetRootContext().Send(resumePID, &g_actor.ResumeLua{Root: root, Thread: L, Args: []lua.LValue{lua.LBool(true)}})
+			return nil, nil
+		}).OnError(func(err error) {
+			log.Printf("run_on_script: %v", err)
+			gs.GetRootContext().Send(resumePID, &g_actor.ResumeLua{Root: root, Thread: L, Args: []lua.LValue{lua.LNil}})
+		})
+		return L.Yield(lua.LNil)
 	})
 }

@@ -35,6 +35,6 @@ func (h *guildMqMemberRankChanged) Handle(ctx actor.Context, _ amqp.Delivery, _ 
 	targetID := extra.CharacterID
 	gs.guild.ApplyEventAsync(ctx, evt, func(guildID uint32) {
 		gs.guild.BroadcastMemberRankChanged(guildID, targetID)
-	}).Run()
+	})
 	return nil
 }

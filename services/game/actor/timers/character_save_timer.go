@@ -43,9 +43,6 @@ func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 		}
 	}
 
-	p := mapData.GameWorld.SaveAsync(ctx, chars)
-	if p != nil {
-		p.Run()
-	}
+	mapData.GameWorld.SaveAsync(ctx, chars)
 	return nil
 }

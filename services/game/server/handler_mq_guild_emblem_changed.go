@@ -26,6 +26,6 @@ func (h *guildMqEmblemChanged) Handle(ctx actor.Context, _ amqp.Delivery, _ stri
 	if !ok {
 		return nil
 	}
-	gs.guild.ApplyEventAsync(ctx, evt, gs.guild.BroadcastEmblemChanged).Run()
+	gs.guild.ApplyEventAsync(ctx, evt, gs.guild.BroadcastEmblemChanged)
 	return nil
 }

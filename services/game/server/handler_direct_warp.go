@@ -53,10 +53,16 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 			return fmt.Errorf("root lua state not found")
 		}
 		scriptPath := fmt.Sprintf("script/portal/%s.lua", portal.ScriptName)
-		if _, err := luax.InlineCall(root, scriptPath, "on_enter", character); err != nil {
-			log.Printf("portal script %s failed: %v", scriptPath, err)
+		thread, err := luax.NewThread(root, scriptPath)
+		if err != nil {
+			return fmt.Errorf("portal script thread: %w", err)
 		}
-		character.Listener.OnUpdateStats(character, nil, true)
+		luax.CallAsync(root, thread, "on_enter", character).Then(func(_ interface{}) (interface{}, error) {
+			character.Listener.OnUpdateStats(character, nil, true)
+			return nil, nil
+		}).OnError(func(err error) {
+			log.Printf("portal script %s failed: %v", scriptPath, err)
+		})
 		return nil
 	} else {
 		targetMapWz, ok := h.gs.resources.Maps[uint32(portal.TargetMapId)]

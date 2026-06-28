@@ -64,14 +64,10 @@ func (h *allianceMqGuildLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ strin
 		Expelled bool `json:"expelled"`
 	}
 	_ = json.Unmarshal(raw, &extra)
-	gs.alliance.UpdateAsync(ctx, evt).
-		Then(func() (interface{}, error) {
-			return nil, nil
-		}, func(interface{}) error {
-			gs.alliance.BroadcastGuildLeft(alliancePb, removedGuildPb, extra.Expelled)
-			return nil
-		}).
-		Run()
+	gs.alliance.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+		gs.alliance.BroadcastGuildLeft(alliancePb, removedGuildPb, extra.Expelled)
+		return nil, nil
+	})
 	log.Printf("alliance consumer: applied guild_left alliance_id=%d removed_guild_id=%d revision=%d", evt.AllianceID, removedGuildID, evt.Revision)
 	return nil
 }

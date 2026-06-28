@@ -99,29 +99,37 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 		if character.HpApUsed >= constant.HpAPUsedMax || character.GetMaxHp() >= constant.StatMaxHPMP {
 			return nil
 		}
-		hpIncrease := h.scriptAPToHP(ctx, character)
-		if hpIncrease == 0 {
-			hpIncrease = 10
-		}
-		character.AddBaseHp(hpIncrease, false)
-		character.HpApUsed++
-		statUpdate[constant.StatHP] = int32(character.GetHp())
-		statUpdate[constant.StatMaxHP] = int32(character.GetMaxHp())
-		success = true
+		h.callAPToStatScript(ctx, character, "get_ap_to_hp", func(hpIncrease uint32) {
+			if hpIncrease == 0 {
+				hpIncrease = 10
+			}
+			character.AddBaseHp(hpIncrease, false)
+			character.HpApUsed++
+			statUpdate := map[constant.Stat]int32{
+				constant.StatHP:    int32(character.GetHp()),
+				constant.StatMaxHP: int32(character.GetMaxHp()),
+			}
+			h.commitAP(character, statUpdate)
+		})
+		return nil
 
 	case constant.StatTypeMP:
 		if character.HpApUsed >= constant.HpAPUsedMax || character.GetMaxMp() >= constant.StatMaxHPMP {
 			return nil
 		}
-		mpIncrease := h.scriptAPToMP(ctx, character)
-		if mpIncrease == 0 {
-			mpIncrease = 5
-		}
-		character.AddBaseMp(mpIncrease, false)
-		character.HpApUsed++
-		statUpdate[constant.StatMP] = int32(character.GetMp())
-		statUpdate[constant.StatMaxMP] = int32(character.GetMaxMp())
-		success = true
+		h.callAPToStatScript(ctx, character, "get_ap_to_mp", func(mpIncrease uint32) {
+			if mpIncrease == 0 {
+				mpIncrease = 5
+			}
+			character.AddBaseMp(mpIncrease, false)
+			character.HpApUsed++
+			statUpdate := map[constant.Stat]int32{
+				constant.StatMP:    int32(character.GetMp()),
+				constant.StatMaxMP: int32(character.GetMaxMp()),
+			}
+			h.commitAP(character, statUpdate)
+		})
+		return nil
 
 	default:
 
@@ -140,36 +148,45 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	return nil
 }
 
-func (h *DistributeAP) scriptAPToHP(ctx *core.ClientContext, character *entity.Character) uint32 {
-	return h.callAPToStatScript(ctx, character, "get_ap_to_hp")
+func (h *DistributeAP) commitAP(character *entity.Character, statUpdate map[constant.Stat]int32) {
+	character.AbilityPoint = character.AbilityPoint - 1
+	statUpdate[constant.StatAvailableAP] = int32(character.AbilityPoint)
+	character.Listener.OnUpdateStats(character, statUpdate, true)
 }
 
-func (h *DistributeAP) scriptAPToMP(ctx *core.ClientContext, character *entity.Character) uint32 {
-	return h.callAPToStatScript(ctx, character, "get_ap_to_mp")
-}
-
-func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character *entity.Character, funcName string) uint32 {
+func (h *DistributeAP) callAPToStatScript(ctx *core.ClientContext, character *entity.Character, funcName string, fn func(uint32)) {
 	if character == nil || character.GetMap() == nil {
-		return 0
+		fn(0)
+		return
 	}
 	root := character.GetMap().GetLuaRoot()
 	if root == nil {
-		return 0
+		fn(0)
+		return
 	}
 	thread, err := luax.NewThread(root, constant.CharacterQueryScriptPath)
 	if err != nil {
-		return 0
+		fn(0)
+		return
 	}
-	result, err := luax.Call(thread, funcName, character)
-	if err != nil || result == nil || result.Type() != lua.LTNumber {
-		return 0
-	}
-	n := float64(lua.LVAsNumber(result))
-	if n <= 0 {
-		return 0
-	}
-	if n >= float64(0xffffffff) {
-		return 0xffffffff
-	}
-	return uint32(n)
+	luax.CallAsync(root, thread, funcName, character).Then(func(value interface{}) (interface{}, error) {
+		vals := luax.ResultValues(value)
+		if len(vals) == 0 || vals[0] == nil || vals[0].Type() != lua.LTNumber {
+			fn(0)
+			return nil, nil
+		}
+		n := float64(lua.LVAsNumber(vals[0]))
+		if n <= 0 {
+			fn(0)
+			return nil, nil
+		}
+		if n >= float64(0xffffffff) {
+			fn(0xffffffff)
+			return nil, nil
+		}
+		fn(uint32(n))
+		return nil, nil
+	}).OnError(func(err error) {
+		fn(0)
+	})
 }

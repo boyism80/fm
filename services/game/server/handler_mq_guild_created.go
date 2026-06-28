@@ -26,6 +26,6 @@ func (h *guildMqCreated) Handle(ctx actor.Context, _ amqp.Delivery, _ string, ra
 	if !ok {
 		return nil
 	}
-	gs.guild.UpdateAsync(ctx, evt).Run()
+	gs.guild.UpdateAsync(ctx, evt)
 	return nil
 }

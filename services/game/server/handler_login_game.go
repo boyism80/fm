@@ -120,11 +120,9 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		allianceReply = reply
 		return h.finishLoginGame(ctx, req, enterReply, partyReply, guildReply, allianceReply)
 	})
-	promise.
-		OnError(func(err error) {
-			log.Printf("LoginGame (async): %v", err)
-		}).
-		Run()
+	promise.OnError(func(err error) {
+		log.Printf("LoginGame (async): %v", err)
+	})
 	return nil
 }
 

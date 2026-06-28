@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/constant"
@@ -12,7 +11,21 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) bool {
+func skillHookAllowed(ret lua.LValue, err error, hook string, defaultAllow bool) bool {
+	if err != nil {
+		log.Printf("Skill hook %s: %v", hook, err)
+		return false
+	}
+	if ret == nil {
+		return defaultAllow
+	}
+	if ret.Type() == lua.LTBool && !lua.LVAsBool(ret) {
+		return false
+	}
+	return defaultAllow
+}
+
+func CallSkillHook(character *entity.Character, skillID uint32, hook string) bool {
 	if skillID == 0 || character == nil {
 		return true
 	}
@@ -24,44 +37,31 @@ func CallSkillHook(ctx *core.ClientContext, character *entity.Character, skillID
 	if root == nil {
 		return false
 	}
-
 	skillEntry := character.Skills.Get(skillID)
 	if skillEntry == nil {
 		return false
 	}
-
-	commonThread, commonErr := luax.NewThread(root, constant.SkillHookScriptPath)
-	if commonErr != nil {
-		log.Printf("Skill common %s: %v", hook, commonErr)
+	commonThread, err := luax.NewThread(root, constant.SkillHookScriptPath)
+	if err != nil {
+		log.Printf("Skill common %s: %v", hook, err)
 		return false
 	}
-	commonResult, commonErr := luax.Call(commonThread, hook, character, skillEntry)
-	if commonErr != nil {
-		log.Printf("Skill common %s: %v", hook, commonErr)
+	commonRet, err := luax.Call(commonThread, hook, character, skillEntry)
+	if !skillHookAllowed(commonRet, err, hook, true) {
 		return false
 	}
-	if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
-		return false
-	}
-
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
 		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
 		return true
 	}
-	result, err := luax.Call(thread, fmt.Sprintf("%s_%d", hook, skillID), character, skillEntry)
-	if err != nil {
-		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
-		return true
-	}
-	if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
-		return false
-	}
-	return true
+	skillHook := fmt.Sprintf("%s_%d", hook, skillID)
+	skillRet, err := luax.Call(thread, skillHook, character, skillEntry)
+	return skillHookAllowed(skillRet, err, skillHook, true)
 }
 
-func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, skillID uint32, hook string) {
+func CallPassiveSkillHook(character *entity.Character, skillID uint32, hook string) {
 	if skillID == 0 || character == nil {
 		return
 	}
@@ -76,17 +76,13 @@ func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, 
 	if skillEntry == nil {
 		return
 	}
-	commonThread, commonErr := luax.NewThread(root, constant.SkillHookScriptPath)
-	if commonErr != nil {
-		log.Printf("Skill common %s: %v", hook, commonErr)
+	commonThread, err := luax.NewThread(root, constant.SkillHookScriptPath)
+	if err != nil {
+		log.Printf("Skill common %s: %v", hook, err)
 		return
 	}
-	commonResult, commonErr := luax.Call(commonThread, hook, character, skillEntry)
-	if commonErr != nil {
-		log.Printf("Skill common %s: %v", hook, commonErr)
-		return
-	}
-	if commonResult != nil && commonResult.Type() == lua.LTBool && !lua.LVAsBool(commonResult) {
+	commonRet, err := luax.Call(commonThread, hook, character, skillEntry)
+	if !skillHookAllowed(commonRet, err, hook, true) {
 		return
 	}
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
@@ -95,17 +91,13 @@ func CallPassiveSkillHook(ctx *core.ClientContext, character *entity.Character, 
 		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
 		return
 	}
-	result, err := luax.Call(thread, fmt.Sprintf("%s_%d", hook, skillID), character, skillEntry)
-	if err != nil {
-		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
-		return
-	}
-	if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
-		return
+	skillHook := fmt.Sprintf("%s_%d", hook, skillID)
+	if _, err := luax.Call(thread, skillHook, character, skillEntry); err != nil {
+		log.Printf("Skill passive hook %s failed for %s: %v", skillHook, scriptPath, err)
 	}
 }
 
-func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, damages []dto.AttackPair, skillID uint32, magicAttack bool, ranged bool, consumeSlot uint16) {
+func CallOnAttackHooks(character *entity.Character, damages []dto.AttackPair, skillID uint32, magicAttack bool, ranged bool, consumeSlot uint16) {
 	if character == nil {
 		return
 	}
@@ -117,14 +109,11 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, dam
 	if root == nil {
 		return
 	}
-
 	commonThread, err := luax.NewThread(root, constant.SkillHookScriptPath)
 	if err != nil {
 		log.Printf("skill hook: %v", err)
 		return
 	}
-	defer commonThread.Close()
-
 	var skillLV lua.LValue = lua.LNil
 	if skillID != 0 {
 		if skillEntry := character.Skills.Get(skillID); skillEntry != nil {
@@ -133,20 +122,11 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, dam
 	}
 	damagesTable := buildDamagesTable(commonThread, character, damages)
 	attackInfoTable := buildAttackInfoTable(commonThread, magicAttack, ranged, consumeSlot)
-	f := commonThread.GetGlobal("on_attack")
-	if f.Type() == lua.LTFunction {
-		commonThread.Push(f)
-		commonThread.Push(luax.NewLuable(commonThread, character))
-		commonThread.Push(skillLV)
-		commonThread.Push(damagesTable)
-		commonThread.Push(attackInfoTable)
-		if err := commonThread.PCall(4, 0, nil); err != nil {
-			log.Printf("skill hook on_attack: %v", err)
-			return
-		}
-		readDamagesFromLuaTableInto(damagesTable, damages)
+	if _, err := luax.Call(commonThread, "on_attack", character, skillLV, damagesTable, attackInfoTable); err != nil {
+		log.Printf("skill hook on_attack: %v", err)
+		return
 	}
-
+	readDamagesFromLuaTableInto(damagesTable, damages)
 	if skillID == 0 {
 		return
 	}
@@ -154,31 +134,19 @@ func CallOnAttackHooks(ctx *core.ClientContext, character *entity.Character, dam
 	if skillEntry == nil {
 		return
 	}
-
 	skillThread, err := luax.NewThread(root, fmt.Sprintf("script/skill/%d.lua", skillID))
 	if err != nil {
 		return
 	}
-	defer skillThread.Close()
-	f2 := skillThread.GetGlobal(fmt.Sprintf("on_attack_%d", skillID))
-	if f2.Type() != lua.LTFunction {
-		return
-	}
 	damagesTable2 := buildDamagesTable(skillThread, character, damages)
-	skillThread.Push(f2)
-	skillThread.Push(luax.NewLuable(skillThread, character))
-	skillThread.Push(luax.NewLuable(skillThread, skillEntry))
-	skillThread.Push(damagesTable2)
-	if skillThread.PCall(3, 1, nil) == nil {
+	skillHook := fmt.Sprintf("on_attack_%d", skillID)
+	if _, err := luax.Call(skillThread, skillHook, character, skillEntry, damagesTable2); err == nil {
 		readDamagesFromLuaTableInto(damagesTable2, damages)
 	}
 }
 
-func CallSummonOnAttackHooks(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32) {
-	if ctx == nil || character == nil || mapInstance == nil {
-		return
-	}
-	if skillID == 0 {
+func CallSummonOnAttackHooks(character *entity.Character, mapInstance *entity.Map, damages []dto.AttackPair, skillID uint32) {
+	if character == nil || mapInstance == nil || skillID == 0 {
 		return
 	}
 	root := mapInstance.GetLuaRoot()
@@ -194,17 +162,9 @@ func CallSummonOnAttackHooks(ctx *core.ClientContext, character *entity.Characte
 		log.Printf("summon on_attack thread %d: %v", skillID, err)
 		return
 	}
-	defer skillThread.Close()
-	f := skillThread.GetGlobal(fmt.Sprintf("on_attack_%d", skillID))
-	if f.Type() != lua.LTFunction {
-		return
-	}
 	damagesTable := buildDamagesTable(skillThread, character, damages)
-	skillThread.Push(f)
-	skillThread.Push(luax.NewLuable(skillThread, character))
-	skillThread.Push(luax.NewLuable(skillThread, skillEntry))
-	skillThread.Push(damagesTable)
-	if err := skillThread.PCall(3, 0, nil); err != nil {
+	skillHook := fmt.Sprintf("on_attack_%d", skillID)
+	if _, err := luax.Call(skillThread, skillHook, character, skillEntry, damagesTable); err != nil {
 		log.Printf("summon on_attack %d: %v", skillID, err)
 	}
 }

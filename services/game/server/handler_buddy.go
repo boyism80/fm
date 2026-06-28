@@ -72,7 +72,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 			},
 		).OnError(func(err error) {
 			log.Printf("Buddy(add) async error: %v", err)
-		}).Run()
+		})
 		return nil
 
 	case pconst.BuddyAccept:
@@ -99,7 +99,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 			},
 		).OnError(func(err error) {
 			log.Printf("Buddy(accept) async error: %v", err)
-		}).Run()
+		})
 		return nil
 
 	case pconst.BuddyDelete:
@@ -124,7 +124,7 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 			},
 		).OnError(func(err error) {
 			log.Printf("Buddy(delete) async error: %v", err)
-		}).Run()
+		})
 		return nil
 
 	default:

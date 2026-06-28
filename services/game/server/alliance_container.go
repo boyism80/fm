@@ -47,11 +47,6 @@ func (ac *AllianceContainer) UpdateAsync(ctx actor.Context, evt AllianceEventEnv
 		log.Printf("alliance consumer: apply type=%s alliance_id=%d: %v", evt.EventType, allianceID, err)
 	})
 	if ac.internalClient == nil {
-		p.Then(func() (interface{}, error) {
-			return nil, nil
-		}, func(interface{}) error {
-			return nil
-		})
 		return p
 	}
 	async.ThenRPC(p,

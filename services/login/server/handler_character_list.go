@@ -82,16 +82,14 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 	}, func(reply *internal.GetCharacterListReply) error {
 		return h.sendCharacterList(ctx, reply)
 	})
-	promise.
-		OnError(func(err error) {
-			log.Printf("CharacterList (async): %v", err)
-			if !sendCharListFallback {
-				return
-			}
-			charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
-			_ = ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
-		}).
-		Run()
+	promise.OnError(func(err error) {
+		log.Printf("CharacterList (async): %v", err)
+		if !sendCharListFallback {
+			return
+		}
+		charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
+		_ = ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
+	})
 	return nil
 }
 

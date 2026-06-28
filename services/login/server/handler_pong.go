@@ -45,11 +45,9 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 					return fmt.Errorf("refresh session failed: %v", reply.GetErrorCode())
 				}
 				return nil
-			}).
-			OnError(func(err error) {
-				log.Printf("Login Pong refresh (async): %v", err)
-			}).
-			Run()
+			}).OnError(func(err error) {
+			log.Printf("Login Pong refresh (async): %v", err)
+		})
 	}
 	log.Printf("Pong packet received from %s", ctx.Client.GetConnection().RemoteAddr())
 	return nil

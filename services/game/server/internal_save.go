@@ -19,7 +19,7 @@ const saveCharactersPromiseTimeout = 30 * time.Second
 
 const saveCharactersChunkSize = 100
 
-// SaveAsync builds a Promise that saves chars in parallel chunks of saveCharactersChunkSize. Caller must Run().
+// SaveAsync builds a Promise that saves chars in parallel chunks of saveCharactersChunkSize.
 func (gs *GameServer) SaveAsync(ctx actor.Context, chars []*entity.Character) *async.Promise {
 	p := async.NewPromise(ctx, saveCharactersPromiseTimeout)
 	if gs == nil || gs.internalClient == nil || len(chars) == 0 {
@@ -28,8 +28,7 @@ func (gs *GameServer) SaveAsync(ctx actor.Context, chars []*entity.Character) *a
 	p.OnError(func(err error) {
 		log.Printf("saveCharactersChunked: %v", err)
 	})
-	p.Then(func() (interface{}, error) {
-		done := make(chan struct{})
+	p.ThenAsync(func(interface{}) (interface{}, error) {
 		var wg sync.WaitGroup
 		var mu sync.Mutex
 		var firstErr error
@@ -57,26 +56,13 @@ func (gs *GameServer) SaveAsync(ctx actor.Context, chars []*entity.Character) *a
 			cp.Finally(func() {
 				wg.Done()
 			})
-			go cp.Run()
 		}
 
-		go func() {
-			wg.Wait()
-			mu.Lock()
-			err := firstErr
-			mu.Unlock()
-			if err != nil {
-				p.SetError(err)
-			} else {
-				p.SetResult()
-			}
-			close(done)
-		}()
-
-		<-done
-		return nil, nil
-	}, func(interface{}) error {
-		return nil
+		wg.Wait()
+		mu.Lock()
+		err := firstErr
+		mu.Unlock()
+		return nil, err
 	})
 	return p
 }
@@ -87,13 +73,12 @@ type saveAllSummary struct {
 }
 
 // SaveAllCharactersAsync builds a Promise that asks all map actors to persist online characters in parallel.
-// Caller must Run().
 func (gs *GameServer) SaveAllCharactersAsync(ctx actor.Context) *async.Promise {
 	p := async.NewPromise(ctx, saveCharactersPromiseTimeout)
 	if gs == nil {
 		return p
 	}
-	p.Then(func() (interface{}, error) {
+	p.ThenAsync(func(interface{}) (interface{}, error) {
 		root := gs.GetRootContext()
 		if root == nil {
 			return nil, fmt.Errorf("save all: nil root context")
@@ -154,12 +139,12 @@ func (gs *GameServer) SaveAllCharactersAsync(ctx actor.Context) *async.Promise {
 			return summary, errors.Join(errs...)
 		}
 		return summary, nil
-	}, func(v interface{}) error {
+	}).Then(func(v interface{}) (interface{}, error) {
 		s, _ := v.(*saveAllSummary)
 		if s != nil {
 			log.Printf("save all complete: maps=%d saved=%d", s.Maps, s.Saved)
 		}
-		return nil
+		return v, nil
 	})
 	return p
 }

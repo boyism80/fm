@@ -1067,7 +1067,7 @@ func (ch *Character) SetDialog(lua *lua.LState) {
 	ch.luaDialog = lua
 }
 
-func (ch *Character) ClearCurrentDialog() {
+func (ch *Character) ResetDialog() {
 	ch.dialogMutex.Lock()
 	defer ch.dialogMutex.Unlock()
 	ch.luaDialog = nil
@@ -1124,7 +1124,7 @@ func (ch *Character) tryLevelUp() bool {
 	levelDiff := int(targetLevel) - int(oldLevel)
 	if levelDiff >= 1 {
 		if thread, err := luax.NewThread(root, constant.CharacterHookScriptPath); err == nil {
-			_, _ = luax.Call(thread, "on_level_up", ch, int32(oldLevel), int32(targetLevel))
+			luax.CallAsync(root, thread, "on_level_up", ch, int32(oldLevel), int32(targetLevel))
 		}
 
 		stats := map[constant.Stat]int32{

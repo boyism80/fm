@@ -1298,12 +1298,23 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				MapActorPID:  mapInstance.GetActorPID(),
 				KeepAlive:    true,
 			})
-			state, result, err := luax.Execute(root, thread, funcName, args...)
-			if err != nil {
-				L.RaiseError("script: %v", err)
+			p := luax.CallAsync(root, thread, funcName, args...)
+			if !p.Completed() {
 				return 0
 			}
-			if state == lua.ResumeYield {
+			var callErr error
+			var result lua.LValue
+			p.Then(func(value interface{}) (interface{}, error) {
+				vals := luax.ResultValues(value)
+				if len(vals) > 0 {
+					result = vals[0]
+				}
+				return nil, nil
+			}).OnError(func(err error) {
+				callErr = err
+			})
+			if callErr != nil {
+				L.RaiseError("script: %v", callErr)
 				return 0
 			}
 			luax.Close(thread)

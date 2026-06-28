@@ -21,6 +21,6 @@ func (h *partyMqCreated) Handle(ctx actor.Context, _ amqp.Delivery, _ string, ra
 	if !ok {
 		return nil
 	}
-	pc.UpdateAsync(ctx, evt).Run()
+	pc.UpdateAsync(ctx, evt)
 	return nil
 }

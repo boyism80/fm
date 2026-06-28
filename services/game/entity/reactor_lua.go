@@ -1,8 +1,6 @@
 package entity
 
 import (
-	"time"
-
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
 	lua "github.com/yuin/gopher-lua"
@@ -128,19 +126,6 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			reactor.DropItems()
 			return 0
-		},
-		"schedule_state_revert": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			reactor, ok := ud.Value.(*Reactor)
-			if !ok || reactor == nil {
-				L.ArgError(1, "Reactor expected")
-				return 0
-			}
-			oldState := byte(L.CheckInt(2))
-			newState := byte(L.CheckInt(3))
-			delay := time.Duration(L.CheckNumber(4)) * time.Millisecond
-			L.Push(lua.LBool(reactor.ScheduleStateRevert(oldState, newState, delay)))
-			return 1
 		},
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/async"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -11,6 +12,7 @@ type Configuration struct {
 	ActorContext actor.Context
 	MapActorPID  *actor.PID
 	KeepAlive    bool
+	CallPromise  *async.Promise
 }
 
 var threadConfig = struct {

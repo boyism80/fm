@@ -29,29 +29,25 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ string,
 		return nil
 	}
 	prevParty := pc.Get(evt.PartyID)
-	pc.UpdateAsync(ctx, evt).
-		Then(func() (interface{}, error) {
+	pc.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+		if raw == nil {
 			return nil, nil
-		}, func(interface{}) error {
-			if raw == nil {
-				return nil
-			}
-			var extra struct {
-				CharacterID          uint32 `json:"character_id"`
-				ExpelledByCharacter  uint32 `json:"expelled_by_character_id"`
-				LeaderChanged        bool   `json:"leader_changed"`
-				NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
-			}
-			if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
-				return nil
-			}
-			party := pc.Get(evt.PartyID)
-			h.sendLeaveUpdate(prevParty, party, extra.CharacterID, extra.ExpelledByCharacter != 0)
-			if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && party != nil {
-				h.sendLeaderChange(party, extra.NewLeaderCharacterID, true)
-			}
-			return nil
-		}).
-		Run()
+		}
+		var extra struct {
+			CharacterID          uint32 `json:"character_id"`
+			ExpelledByCharacter  uint32 `json:"expelled_by_character_id"`
+			LeaderChanged        bool   `json:"leader_changed"`
+			NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
+		}
+		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+			return nil, nil
+		}
+		party := pc.Get(evt.PartyID)
+		h.sendLeaveUpdate(prevParty, party, extra.CharacterID, extra.ExpelledByCharacter != 0)
+		if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && party != nil {
+			h.sendLeaderChange(party, extra.NewLeaderCharacterID, true)
+		}
+		return nil, nil
+	})
 	return nil
 }

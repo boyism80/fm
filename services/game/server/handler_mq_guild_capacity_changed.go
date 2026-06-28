@@ -26,6 +26,6 @@ func (h *guildMqCapacityChanged) Handle(ctx actor.Context, _ amqp.Delivery, _ st
 	if !ok {
 		return nil
 	}
-	gs.guild.ApplyEventAsync(ctx, evt, gs.guild.BroadcastCapacityChanged).Run()
+	gs.guild.ApplyEventAsync(ctx, evt, gs.guild.BroadcastCapacityChanged)
 	return nil
 }

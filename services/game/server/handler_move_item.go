@@ -155,8 +155,7 @@ func callOnEquipmentChanged(ctx *core.ClientContext, character *entity.Character
 		log.Printf("Failed to call script on_equipment_changed: %v", err)
 		return
 	}
-	_, err = luax.Call(thread, "on_equipment_changed", character, int32(parts), beforeArg, afterArg)
-	if err != nil {
+	luax.CallAsync(root, thread, "on_equipment_changed", character, int32(parts), beforeArg, afterArg).OnError(func(err error) {
 		log.Printf("Failed to call script on_equipment_changed: %v", err)
-	}
+	})
 }

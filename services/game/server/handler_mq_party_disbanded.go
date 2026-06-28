@@ -29,22 +29,18 @@ func (h *partyMqDisbanded) Handle(ctx actor.Context, _ amqp.Delivery, _ string, 
 		return nil
 	}
 	prevParty := pc.Get(evt.PartyID)
-	pc.UpdateAsync(ctx, evt).
-		Then(func() (interface{}, error) {
+	pc.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+		if raw == nil {
 			return nil, nil
-		}, func(interface{}) error {
-			if raw == nil {
-				return nil
-			}
-			var extra struct {
-				CharacterID uint32 `json:"character_id"`
-			}
-			if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 || prevParty == nil {
-				return nil
-			}
-			h.sendDisbandUpdate(prevParty, extra.CharacterID)
-			return nil
-		}).
-		Run()
+		}
+		var extra struct {
+			CharacterID uint32 `json:"character_id"`
+		}
+		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 || prevParty == nil {
+			return nil, nil
+		}
+		h.sendDisbandUpdate(prevParty, extra.CharacterID)
+		return nil, nil
+	})
 	return nil
 }

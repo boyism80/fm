@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type RangedAttack struct {
@@ -46,14 +47,17 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 			return nil
 		}
 		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
-		if !CallSkillHook(ctx, character, skillID, "on_activating") {
+		if !CallSkillHook(character, skillID, "on_activating") {
 			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 	}
+	return h.finishRangedAttack(ctx, character, mapInstance, req, skillLevel, skillID)
+}
 
+func (h *RangedAttack) finishRangedAttack(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, req *request.RangedAttack, skillLevel uint8, skillID uint32) error {
 	damages := req.Damages
-	CallOnAttackHooks(ctx, character, damages, skillID, false, true, req.Slot)
+	CallOnAttackHooks(character, damages, skillID, false, true, req.Slot)
 	for _, damage := range damages {
 		mob := mapInstance.GetMob(damage.OID)
 		if mob == nil {
@@ -67,12 +71,9 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 			mob.ApplyDamage(character, damagePair.Damage)
 		}
 	}
-
 	character.Listener.OnRangedAttack(character, req, skillLevel)
-
 	if skillID != 0 {
-		CallSkillHook(ctx, character, skillID, "on_activated")
+		CallSkillHook(character, skillID, "on_activated")
 	}
-
 	return nil
 }

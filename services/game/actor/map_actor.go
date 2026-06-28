@@ -196,7 +196,11 @@ func (a *MapActor) onResumeLua(msg *ResumeLua) {
 	if msg.Root == nil || msg.Thread == nil {
 		return
 	}
-	state, _ := luax.Resume(msg.Root, msg.Thread, msg.Args...)
+	resumeArgs := make([]interface{}, len(msg.Args))
+	for i, a := range msg.Args {
+		resumeArgs[i] = a
+	}
+	state, _, _ := luax.Resume(msg.Root, msg.Thread, "", resumeArgs...)
 	if state == lua.ResumeOK {
 		cfg, ok := luax.GetConfiguration(msg.Thread)
 		if ok && cfg.KeepAlive {
@@ -243,21 +247,41 @@ func (a *MapActor) onRunOnMap(ctx actor.Context, msg *RunOnMap) {
 	if msg == nil || msg.ReplyTo == nil {
 		return
 	}
-	var values []lua.LValue
+	system := ctx.ActorSystem()
 	if a.Map == nil {
-		values = runOnMapResumeValues(false, lua.LNil, "map not found")
-	} else {
-		result, err := a.Map.RunScript(ctx, msg.ScriptPath, msg.FuncName, msg.Args)
-		if err != nil {
-			values = runOnMapResumeValues(false, lua.LNil, err.Error())
-		} else {
-			values = runOnMapResumeValues(true, result, "")
-		}
+		ctx.Send(msg.ReplyTo, &RunOnMapAck{
+			Root:   msg.CallerRoot,
+			Thread: msg.CallerThread,
+			Values: runOnMapResumeValues(false, lua.LNil, "map not found"),
+		})
+		return
 	}
-	ctx.Send(msg.ReplyTo, &RunOnMapAck{
-		Root:   msg.CallerRoot,
-		Thread: msg.CallerThread,
-		Values: values,
+	a.Map.RunScript(ctx, msg.ScriptPath, msg.FuncName, msg.Args).Then(func(v interface{}) (interface{}, error) {
+		if system == nil || system.Root == nil {
+			return nil, nil
+		}
+		vals := luax.ResultValues(v)
+		result := lua.LNil
+		if len(vals) > 0 && vals[0] != nil {
+			result = vals[0]
+		}
+		values := runOnMapResumeValues(true, result, "")
+		system.Root.Send(msg.ReplyTo, &RunOnMapAck{
+			Root:   msg.CallerRoot,
+			Thread: msg.CallerThread,
+			Values: values,
+		})
+		return nil, nil
+	}).OnError(func(err error) {
+		if system == nil || system.Root == nil {
+			return
+		}
+		values := runOnMapResumeValues(false, lua.LNil, err.Error())
+		system.Root.Send(msg.ReplyTo, &RunOnMapAck{
+			Root:   msg.CallerRoot,
+			Thread: msg.CallerThread,
+			Values: values,
+		})
 	})
 }
 
@@ -629,7 +653,7 @@ func (a *MapActor) onSaveMapCharacters(ctx actor.Context) {
 			return
 		}
 		system.Root.Send(sender, ack)
-	}).Run()
+	})
 }
 
 func (a *MapActor) ensureNotOnMap(msg *ensure.EnsureDeliver) {

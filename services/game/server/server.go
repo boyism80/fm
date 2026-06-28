@@ -487,9 +487,9 @@ func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
 		log.Printf("on_logout: %v", err)
 		return
 	}
-	if _, err := luax.Call(thread, "on_logout", ch); err != nil {
+	luax.CallAsync(root, thread, "on_logout", ch).OnError(func(err error) {
 		log.Printf("on_logout: %v", err)
-	}
+	})
 }
 
 func (gs *GameServer) getMapByActorPID(pid *actor.PID) *entity.Map {
@@ -531,7 +531,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		accID := character.AccountID
 		wid := gs.config.WorldId
 		if !transfer {
-			p.Then(func() (interface{}, error) {
+			p.ThenAsync(func(interface{}) (interface{}, error) {
 				ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
 				defer cancel()
 				req := &internal.LogoutSessionRequest{
@@ -546,16 +546,10 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 				}
 				ch := gs.config.ChannelId
 				req.ChannelId = &ch
-				_, err := gs.internalClient.LogoutSession(ctx, req)
-				if err != nil {
-					return fmt.Errorf("LogoutSession: %w", err), nil
-				}
-				return nil, nil
-			}, func(v interface{}) error {
-				if err, _ := v.(error); err != nil {
+				if _, err := gs.internalClient.LogoutSession(ctx, req); err != nil {
 					log.Printf("session RPC on game disconnect failed for account %d: %v", accID, err)
 				}
-				return nil
+				return nil, nil
 			})
 		}
 	}
@@ -590,7 +584,6 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		character.ClearTimers()
 	})
 
-	p.Run()
 }
 
 func (gs *GameServer) GetStats() map[string]interface{} {

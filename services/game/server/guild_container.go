@@ -52,11 +52,6 @@ func (gc *GuildContainer) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope)
 		log.Printf("guild consumer: apply type=%s guild_id=%d: %v", evt.EventType, guildID, err)
 	})
 	if gc.internalClient == nil {
-		p.Then(func() (interface{}, error) {
-			return nil, nil
-		}, func(interface{}) error {
-			return nil
-		})
 		return p
 	}
 	async.ThenRPC(p,

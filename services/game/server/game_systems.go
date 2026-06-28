@@ -170,13 +170,6 @@ func (s mapSystem) RunOnMapFromLua(L *lua.LState, actorCtx actor.Context, mapID 
 	if callerPID == nil {
 		return pushRunOnMapResult(L, false, nil, "run_on_map: caller actor not found")
 	}
-	if callerPID.Equal(targetPID) {
-		result, err := targetMap.RunScript(actorCtx, scriptPath, funcName, args)
-		if err != nil {
-			return pushRunOnMapResult(L, false, nil, err.Error())
-		}
-		return pushRunOnMapResult(L, true, result, "")
-	}
 	if s.gs == nil {
 		return pushRunOnMapResult(L, false, nil, "run_on_map: game server not found")
 	}

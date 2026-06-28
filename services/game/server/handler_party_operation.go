@@ -69,7 +69,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 		).OnError(func(err error) {
 			log.Printf("PartyOperation(create) async error: %v", err)
-		}).Run()
+		})
 		return nil
 
 	case constant.PartyC2SLeave:
@@ -89,7 +89,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 		).OnError(func(err error) {
 			log.Printf("PartyOperation(leave) async error: %v", err)
-		}).Run()
+		})
 		return nil
 
 	case constant.PartyC2SAcceptInvite:
@@ -118,7 +118,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 		).OnError(func(err error) {
 			log.Printf("PartyOperation(join) async error: %v", err)
-		}).Run()
+		})
 		return nil
 
 	case constant.PartyC2SChangeLeader:
@@ -144,7 +144,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 		).OnError(func(err error) {
 			log.Printf("PartyOperation(change leader) async error: %v", err)
-		}).Run()
+		})
 		return nil
 
 	case constant.PartyC2SInvite:
@@ -220,7 +220,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		)
 		promise.OnError(func(err error) {
 			log.Printf("PartyOperation(invite) async error: %v", err)
-		}).Run()
+		})
 		return nil
 
 	case constant.PartyC2SExpel:
@@ -241,7 +241,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 			},
 		).OnError(func(err error) {
 			log.Printf("PartyOperation(expel) async error: %v", err)
-		}).Run()
+		})
 		return nil
 
 	default:

@@ -69,7 +69,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 	}
 
 	if l.gs != nil {
-		l.gs.party.SendPartySilentAsync(ctx, character).Run()
+		l.gs.party.SendPartySilentAsync(ctx, character)
 	}
 }
 

@@ -96,17 +96,17 @@ type Resources struct {
 	itemNameToId  map[string]uint32
 	skillNameToId map[string]uint32
 
-	Maps      map[uint32]*Map
-	Monsters  map[uint32]*Mob
-	Reactors  map[uint32]*Reactor
-	Items     map[uint32]Item
+	Maps         map[uint32]*Map
+	Monsters     map[uint32]*Mob
+	Reactors     map[uint32]*Reactor
+	Items        map[uint32]Item
 	MobDrops     map[uint32][]Drop
 	ReactorDrops map[uint32][]Drop
-	Skills    map[uint32]*Skill
-	MobSkills map[uint32]map[uint8]*MobSkillLevelData
-	Strings   *StringData
-	ExpTable  []uint32
-	Shops     map[uint32]*Shop
+	Skills       map[uint32]*Skill
+	MobSkills    map[uint32]map[uint8]*MobSkillLevelData
+	Strings      *StringData
+	ExpTable     []uint32
+	Shops        map[uint32]*Shop
 }
 
 func (node *node) find(name string) *node {

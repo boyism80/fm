@@ -133,6 +133,6 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 	})
 	promise.OnError(func(err error) {
 		log.Printf("SwitchChannel (async): %v", err)
-	}).Run()
+	})
 	return nil
 }

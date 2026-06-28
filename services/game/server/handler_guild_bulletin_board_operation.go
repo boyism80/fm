@@ -178,7 +178,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 
 	promise.OnError(func(err error) {
 		log.Printf("GuildBulletinBoardOperation async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 

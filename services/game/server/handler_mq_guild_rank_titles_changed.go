@@ -26,6 +26,6 @@ func (h *guildMqRankTitlesChanged) Handle(ctx actor.Context, _ amqp.Delivery, _ 
 	if !ok {
 		return nil
 	}
-	gs.guild.ApplyEventAsync(ctx, evt, gs.guild.BroadcastRankTitlesChanged).Run()
+	gs.guild.ApplyEventAsync(ctx, evt, gs.guild.BroadcastRankTitlesChanged)
 	return nil
 }

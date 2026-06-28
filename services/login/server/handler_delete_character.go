@@ -60,12 +60,10 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 				Success: reply.Success,
 			}
 			return ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)
-		}).
-		OnError(func(err error) {
-			log.Printf("DeleteCharacter (async): %v", err)
-			deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
-			_ = ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)
-		}).
-		Run()
+		}).OnError(func(err error) {
+		log.Printf("DeleteCharacter (async): %v", err)
+		deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
+		_ = ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)
+	})
 	return nil
 }

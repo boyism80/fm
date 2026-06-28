@@ -47,7 +47,7 @@ func (h *GuildOperation) resumeGuildCreate(ch *entity.Character, result gamecons
 	if root == nil {
 		return
 	}
-	if _, err := luax.Resume(root, thread, lua.LNumber(result)); err != nil {
+	if _, _, err := luax.Resume(root, thread, "", lua.LNumber(result)); err != nil {
 		log.Printf("GuildOperation(create): failed to resume npc script character=%d: %v", ch.GetID(), err)
 	}
 }
@@ -251,7 +251,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		promise.OnError(func(err error) {
 			log.Printf("GuildOperation(create) async error: %v", err)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
-		}).Run()
+		})
 		return nil
 	case pconst.GuildC2SInvite:
 		guildID, inGuild := ch.GetGuildID()
@@ -348,7 +348,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		promise.OnError(func(err error) {
 			log.Printf("GuildOperation(accept invite) async error: %v", err)
-		}).Run()
+		})
 		return nil
 	case pconst.GuildC2SLeave:
 		if req.CharacterID != charID {
@@ -378,7 +378,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		promise.OnError(func(err error) {
 			log.Printf("GuildOperation(leave) async error: %v", err)
-		}).Run()
+		})
 		return nil
 	case pconst.GuildC2SExpel:
 		targetID := req.CharacterID
@@ -410,7 +410,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		promise.OnError(func(err error) {
 			log.Printf("GuildOperation(expel) async error: %v", err)
-		}).Run()
+		})
 		return nil
 	case pconst.GuildC2SChangeRankTitles:
 		guildID, inGuild := ch.GetGuildID()
@@ -443,7 +443,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		promise.OnError(func(err error) {
 			log.Printf("GuildOperation(change rank titles) async error: %v", err)
-		}).Run()
+		})
 		return nil
 	case pconst.GuildC2SChangeMemberRank:
 		newRank := req.NewMemberRank
@@ -484,7 +484,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		promise.OnError(func(err error) {
 			log.Printf("GuildOperation(change member rank) async error: %v", err)
-		}).Run()
+		})
 		return nil
 	case pconst.GuildC2SChangeEmblem:
 		guildID, inGuild := ch.GetGuildID()
@@ -526,7 +526,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		promise.OnError(func(err error) {
 			h.refundGuildEmblemChangeCost(ch, payment)
 			log.Printf("GuildOperation(change emblem) async error: %v", err)
-		}).Run()
+		})
 		return nil
 	case pconst.GuildC2SChangeNotice:
 		guildID, inGuild := ch.GetGuildID()
@@ -553,7 +553,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		promise.OnError(func(err error) {
 			log.Printf("GuildOperation(change notice) async error: %v", err)
-		}).Run()
+		})
 		return nil
 	default:
 		return nil

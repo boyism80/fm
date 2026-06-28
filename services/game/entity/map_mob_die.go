@@ -18,11 +18,7 @@ func (m *Map) runMobLuaHook(root *lua.LState, scriptPath, hook string, args ...i
 	luax.SetConfiguration(thread, luax.Configuration{
 		MapActorPID: m.GetActorPID(),
 	})
-	state, _, err := luax.Execute(root, thread, hook, args...)
-	if err != nil {
+	luax.CallAsync(root, thread, hook, args...).OnError(func(err error) {
 		log.Printf("mob script %s: %v", hook, err)
-	}
-	if state == lua.ResumeYield {
-		return
-	}
+	})
 }

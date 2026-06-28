@@ -51,14 +51,17 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 			return nil
 		}
 		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
-		if !CallSkillHook(ctx, character, skillID, "on_activating") {
+		if !CallSkillHook(character, skillID, "on_activating") {
 			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 	}
+	return h.finishAttack(ctx, character, mapInstance, req, skillLevel, skillID)
+}
 
+func (h *Attack) finishAttack(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, req *request.Attack, skillLevel uint8, skillID uint32) error {
 	damages := req.Damages
-	CallOnAttackHooks(ctx, character, damages, skillID, false, false, 0)
+	CallOnAttackHooks(character, damages, skillID, false, false, 0)
 	for _, damage := range damages {
 		mob := mapInstance.GetMob(damage.OID)
 		if mob == nil {
@@ -93,9 +96,8 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	}
 	character.Listener.OnAttack(character, req, skillLevel)
 	if skillID != 0 {
-		CallSkillHook(ctx, character, skillID, "on_activated")
+		CallSkillHook(character, skillID, "on_activated")
 	}
-
 	return nil
 }
 

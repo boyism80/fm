@@ -28,25 +28,21 @@ func (h *partyMqMemberJoined) Handle(ctx actor.Context, _ amqp.Delivery, _ strin
 	if !ok {
 		return nil
 	}
-	pc.UpdateAsync(ctx, evt).
-		Then(func() (interface{}, error) {
+	pc.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+		if raw == nil {
 			return nil, nil
-		}, func(interface{}) error {
-			if raw == nil {
-				return nil
-			}
-			var extra struct {
-				CharacterID uint32 `json:"character_id"`
-			}
-			if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
-				return nil
-			}
-			party := pc.Get(evt.PartyID)
-			if party != nil {
-				h.sendJoinUpdate(party, extra.CharacterID)
-			}
-			return nil
-		}).
-		Run()
+		}
+		var extra struct {
+			CharacterID uint32 `json:"character_id"`
+		}
+		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
+			return nil, nil
+		}
+		party := pc.Get(evt.PartyID)
+		if party != nil {
+			h.sendJoinUpdate(party, extra.CharacterID)
+		}
+		return nil, nil
+	})
 	return nil
 }

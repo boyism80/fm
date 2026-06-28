@@ -15,17 +15,12 @@ func (gc *GuildContainer) ApplyEventAsync(ctx actor.Context, evt GuildEventEnvel
 	if gc == nil {
 		return promise
 	}
-	return gc.UpdateAsync(ctx, evt).Then(
-		func() (interface{}, error) {
-			return nil, nil
-		},
-		func(interface{}) error {
-			if after != nil {
-				after(evt.GuildID)
-			}
-			return nil
-		},
-	)
+	return gc.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+		if after != nil {
+			after(evt.GuildID)
+		}
+		return nil, nil
+	})
 }
 
 func (gc *GuildContainer) guildGet(guildID uint32) *entity.Guild {

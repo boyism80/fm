@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
@@ -79,7 +80,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	if fp == nil {
 		return false
 	}
-	if !r.matchesItemDrop(item, owner) {
+	if !r.matchesItemDrop(item) {
 		return false
 	}
 	if !r.ContainsPoint(fp.Position) {
@@ -103,10 +104,10 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	})
 }
 
-func (r *Reactor) matchesItemDrop(item Item, owner *Character) bool {
+func (r *Reactor) matchesItemDrop(item Item) bool {
 	reactorID := r.Wz.ID
 	hook := fmt.Sprintf("on_reactor_%d", reactorID)
-	result, err := r.callReactorScript(hook, r, item)
+	result, err := r.callReactorScript(hook, false, r, item)
 	if err != nil || result == nil {
 		event := r.currentEvent()
 		if event == nil || event.Type != constant.ReactorEventTypeItem {
@@ -124,7 +125,7 @@ func (r *Reactor) matchesItemDrop(item Item, owner *Character) bool {
 	return lua.LVAsBool(result)
 }
 
-func (r *Reactor) callReactorScript(hook string, args ...interface{}) (lua.LValue, error) {
+func (r *Reactor) callReactorScript(hook string, yield bool, args ...interface{}) (lua.LValue, error) {
 	mapInstance := r.GetMap()
 	if mapInstance == nil {
 		return nil, fmt.Errorf("reactor has no map")
@@ -146,8 +147,36 @@ func (r *Reactor) callReactorScript(hook string, args ...interface{}) (lua.LValu
 			filtered = append(filtered, arg)
 		}
 	}
-	if len(filtered) == 0 {
-		return luax.Call(thread, hook)
+	callArgs := filtered
+	if len(callArgs) == 0 {
+		callArgs = nil
 	}
-	return luax.Call(thread, hook, filtered...)
+	if yield && root.G != nil && root.G.CurrentThread == root.G.MainThread {
+		if len(callArgs) == 0 {
+			luax.CallAsync(root, thread, hook).OnError(func(err error) {
+				log.Printf("reactor script %s: %v", hook, err)
+			})
+		} else {
+			luax.CallAsync(root, thread, hook, callArgs...).OnError(func(err error) {
+				log.Printf("reactor script %s: %v", hook, err)
+			})
+		}
+		return nil, nil
+	}
+	var result lua.LValue
+	var callErr error
+	var promise = luax.CallAsync(root, thread, hook)
+	if len(callArgs) > 0 {
+		promise = luax.CallAsync(root, thread, hook, callArgs...)
+	}
+	promise.Then(func(value interface{}) (interface{}, error) {
+		vals := luax.ResultValues(value)
+		if len(vals) > 0 {
+			result = vals[0]
+		}
+		return nil, nil
+	}).OnError(func(err error) {
+		callErr = err
+	})
+	return result, callErr
 }

@@ -91,9 +91,9 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
 		return
 	}
-	if _, err := luax.Call(thread, fmt.Sprintf("on_buff_%d", skillID), ch, e); err != nil {
+	luax.CallAsync(root, thread, fmt.Sprintf("on_buff_%d", skillID), ch, e).OnError(func(err error) {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
-	}
+	})
 }
 
 func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
@@ -116,9 +116,9 @@ func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
 		return
 	}
-	if _, err := luax.Call(thread, fmt.Sprintf("on_unbuff_%d", skillID), ch, e); err != nil {
+	luax.CallAsync(root, thread, fmt.Sprintf("on_unbuff_%d", skillID), ch, e).OnError(func(err error) {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
-	}
+	})
 }
 
 func (e *ItemBuff) GetBuffID() int32 {
@@ -159,9 +159,9 @@ func (e *ItemBuff) CallOnBuffScript(ch *Character) {
 		log.Printf("Failed to call on_buff for item %d: %v", itemWzID, callErr)
 		return
 	}
-	if _, callErr := luax.Call(thread, "on_buff", ch, consume); callErr != nil {
-		log.Printf("Failed to call on_buff for item %d: %v", itemWzID, callErr)
-	}
+	luax.CallAsync(root, thread, "on_buff", ch, consume).OnError(func(err error) {
+		log.Printf("Failed to call on_buff for item %d: %v", itemWzID, err)
+	})
 }
 
 func (e *ItemBuff) CallOnUnbuffScript(ch *Character) {
@@ -195,9 +195,9 @@ func (e *ItemBuff) CallOnUnbuffScript(ch *Character) {
 		log.Printf("Failed to call on_unbuff for item %d: %v", itemWzID, callErr)
 		return
 	}
-	if _, callErr := luax.Call(thread, "on_unbuff", ch, consume); callErr != nil {
-		log.Printf("Failed to call on_unbuff for item %d: %v", itemWzID, callErr)
-	}
+	luax.CallAsync(root, thread, "on_unbuff", ch, consume).OnError(func(err error) {
+		log.Printf("Failed to call on_unbuff for item %d: %v", itemWzID, err)
+	})
 }
 
 type BuffContainer struct {

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -23,33 +24,41 @@ func validateScriptPath(path string) error {
 	return nil
 }
 
-func (m *Map) RunScript(ctx actor.Context, scriptPath string, funcName string, args []interface{}) (lua.LValue, error) {
+func (m *Map) RunScript(ctx actor.Context, scriptPath string, funcName string, args []interface{}) *async.Promise {
+	promise := async.NewPromise(nil, 0)
 	if m == nil {
-		return nil, fmt.Errorf("map is nil")
+		promise.SetError(fmt.Errorf("map is nil"))
+		return promise
 	}
 	if err := validateScriptPath(scriptPath); err != nil {
-		return nil, err
+		promise.SetError(err)
+		return promise
 	}
 	if funcName == "" {
-		return nil, fmt.Errorf("empty function name")
+		promise.SetError(fmt.Errorf("empty function name"))
+		return promise
 	}
 	root := m.EnsureLuaRoot(ctx)
 	if root == nil {
-		return nil, fmt.Errorf("lua root not found")
+		promise.SetError(fmt.Errorf("lua root not found"))
+		return promise
 	}
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
-		return nil, err
+		promise.SetError(err)
+		return promise
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
 		MapActorPID: m.GetActorPID(),
 	})
 	fn := thread.GetGlobal(funcName)
 	if fn.Type() != lua.LTFunction {
-		return nil, fmt.Errorf("function %q not found", funcName)
+		luax.Close(thread)
+		promise.SetError(fmt.Errorf("function %q not found", funcName))
+		return promise
 	}
 	callArgs := make([]interface{}, 0, len(args)+1)
 	callArgs = append(callArgs, m)
 	callArgs = append(callArgs, args...)
-	return luax.Call(thread, funcName, callArgs...)
+	return luax.CallAsync(root, thread, funcName, callArgs...)
 }

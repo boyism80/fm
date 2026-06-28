@@ -70,7 +70,7 @@ func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPart
 		},
 	).OnError(func(err error) {
 		log.Printf("DenyPartyRequest async error: %v", err)
-	}).Run()
+	})
 
 	log.Printf("DenyPartyRequest: action=%d inviter=%s denied_by=%s forwarded_internal=true", req.Action, inviterName, character.GetName())
 	return nil

@@ -97,7 +97,7 @@ func (r *Reactor) respawnDelay() time.Duration {
 
 func (r *Reactor) runHitScript() {
 	hook := fmt.Sprintf("on_reactor_%d", r.Wz.ID)
-	_, _ = r.callReactorScript(hook, r)
+	_, _ = r.callReactorScript(hook, true, r)
 }
 
 func (m *Map) activateItemReactors(item Item, owner *Character) {

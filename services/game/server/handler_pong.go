@@ -51,10 +51,8 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 				return fmt.Errorf("refresh session failed: %s", reply.GetErrorCode())
 			}
 			return nil
-		}).
-		OnError(func(err error) {
-			log.Printf("Game Pong refresh (async): %v", err)
-		}).
-		Run()
+		}).OnError(func(err error) {
+		log.Printf("Game Pong refresh (async): %v", err)
+	})
 	return nil
 }

@@ -83,10 +83,9 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 			if root != nil {
 				thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 				if err == nil {
-					_, err = luax.Call(thread, "on_poison", mist, candidates)
-				}
-				if err != nil {
-					log.Printf("on_poison failed: %v", err)
+					luax.CallAsync(root, thread, "on_poison", mist, candidates).OnError(func(err error) {
+						log.Printf("on_poison failed: %v", err)
+					})
 				}
 			} else {
 				log.Printf("on_poison skipped: root Lua state not found")

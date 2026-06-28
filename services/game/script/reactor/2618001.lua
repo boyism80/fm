@@ -4,11 +4,17 @@ function rnj32_out_hit(map, reactor_name)
 		return false
 	end
 	reactor:hit(1)
-	reactor:schedule_state_revert(1, 0, 2000)
+	sleep(2000)
+	if reactor:state() == 1 then
+		reactor:hit(0)
+	end
 	return true
 end
 
-function on_reactor_2618001(reactor)
+function on_reactor_2618001(reactor, item)
+	if item ~= nil then
+		return
+	end
 	local map = reactor:map()
 	if map == nil then
 		return

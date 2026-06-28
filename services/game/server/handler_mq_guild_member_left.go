@@ -38,6 +38,6 @@ func (h *guildMqMemberLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ string,
 	expelled := extra.Expelled
 	gs.guild.ApplyEventAsync(ctx, evt, func(uint32) {
 		gs.guild.BroadcastMemberLeft(prevGuild, leftID, expelled)
-	}).Run()
+	})
 	return nil
 }

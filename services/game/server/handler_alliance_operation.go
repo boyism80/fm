@@ -132,7 +132,7 @@ func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *entity.Char
 	})
 	promise.OnError(func(err error) {
 		log.Printf("AllianceOperation(expel) async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -192,7 +192,7 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *enti
 	})
 	promise.OnError(func(err error) {
 		log.Printf("AllianceOperation(change leader) async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -242,7 +242,7 @@ func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *enti
 	})
 	promise.OnError(func(err error) {
 		log.Printf("AllianceOperation(change notice) async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -303,7 +303,7 @@ func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *
 	})
 	promise.OnError(func(err error) {
 		log.Printf("AllianceOperation(change rank titles) async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -359,7 +359,7 @@ func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *
 	})
 	promise.OnError(func(err error) {
 		log.Printf("AllianceOperation(change member rank) async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -504,7 +504,7 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *enti
 	})
 	promise.OnError(func(err error) {
 		log.Printf("AllianceOperation(accept invite) async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -576,7 +576,7 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *entity.Char
 			if len(guildIDs) == 0 && reply.GetRemovedGuildId() != 0 {
 				guildIDs = []uint32{reply.GetRemovedGuildId()}
 			}
-			h.gs.alliance.DisbandAfterGuildRefreshAsync(ctx.ActorContext, allianceID, guildIDs).Run()
+			h.gs.alliance.DisbandAfterGuildRefreshAsync(ctx.ActorContext, allianceID, guildIDs)
 			return nil
 		}
 		alliancePb := reply.GetAlliance()
@@ -589,22 +589,19 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *entity.Char
 			h.gs.alliance.BroadcastGuildLeft(alliancePb, nil, false)
 			return nil
 		}
-		h.gs.guild.RefreshAsync(actorCtx, removedGuildID).
-			Then(func() (interface{}, error) {
-				var removedGuildPb *internal.Guild
-				if g := h.gs.guild.Get(removedGuildID); g != nil {
-					removedGuildPb = g.ToProto()
-				}
-				h.gs.alliance.BroadcastGuildLeft(alliancePb, removedGuildPb, false)
-				return nil, nil
-			}, func(interface{}) error {
-				return nil
-			}).Run()
+		h.gs.guild.RefreshAsync(actorCtx, removedGuildID).Then(func(interface{}) (interface{}, error) {
+			var removedGuildPb *internal.Guild
+			if g := h.gs.guild.Get(removedGuildID); g != nil {
+				removedGuildPb = g.ToProto()
+			}
+			h.gs.alliance.BroadcastGuildLeft(alliancePb, removedGuildPb, false)
+			return nil, nil
+		})
 		return nil
 	})
 	promise.OnError(func(err error) {
 		log.Printf("AllianceOperation(leave) async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -648,7 +645,7 @@ func (h *AllianceOperation) handleCreate(ctx *core.ClientContext, ch *entity.Cha
 	})
 	promise.OnError(func(err error) {
 		log.Printf("AllianceOperation(create) async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 

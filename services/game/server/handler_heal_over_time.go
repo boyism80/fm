@@ -53,11 +53,14 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 		hpInterval := healOverTimeHPInterval
 		isHanging := req.PRate&1 == 1
 		if isHanging {
-			intervalSec := h.getEndureHPInterval(ctx, character)
-			if intervalSec <= 0 {
-				return nil
-			}
-			hpInterval = time.Duration(intervalSec * float64(time.Second))
+			h.getEndureHPInterval(ctx, character, func(intervalSec float64) {
+				if intervalSec <= 0 {
+					return
+				}
+				hpInterval = time.Duration(intervalSec * float64(time.Second))
+				h.applyHealOverTime(ctx, character, req, healHP, healMP, hpInterval, now)
+			})
+			return nil
 		}
 		if !allowCooldown(&character.LastHealHPTime, hpInterval, now) {
 			return nil
@@ -67,7 +70,25 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 		return nil
 	}
 
-	maxHP, maxMP := h.getHealCap(ctx, character)
+	h.getHealCap(ctx, character, func(maxHP, maxMP uint16) {
+		h.applyHealAmounts(character, healHP, healMP, maxHP, maxMP)
+	})
+	return nil
+}
+
+func (h *HealOverTime) applyHealOverTime(ctx *core.ClientContext, character *entity.Character, req *request.HealOverTime, healHP, healMP uint16, hpInterval time.Duration, now time.Time) {
+	if !allowCooldown(&character.LastHealHPTime, hpInterval, now) {
+		return
+	}
+	if healMP > 0 && !allowCooldown(&character.LastHealMPTime, healOverTimeMPInterval, now) {
+		return
+	}
+	h.getHealCap(ctx, character, func(maxHP, maxMP uint16) {
+		h.applyHealAmounts(character, healHP, healMP, maxHP, maxMP)
+	})
+}
+
+func (h *HealOverTime) applyHealAmounts(character *entity.Character, healHP, healMP, maxHP, maxMP uint16) {
 	if healHP > maxHP {
 		healHP = maxHP
 	}
@@ -100,57 +121,73 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 		}
 		character.Listener.OnUpdateStats(character, stats, false)
 	}
-
-	return nil
 }
 
-func (h *HealOverTime) getHealCap(ctx *core.ClientContext, character *entity.Character) (uint16, uint16) {
+func (h *HealOverTime) getHealCap(ctx *core.ClientContext, character *entity.Character, fn func(uint16, uint16)) {
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
-		return 0, 0
+		fn(0, 0)
+		return
 	}
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
-		return 0, 0
+		fn(0, 0)
+		return
 	}
 	thread, err := luax.NewThread(root, constant.CharacterQueryScriptPath)
 	if err != nil {
-		return 0, 0
+		fn(0, 0)
+		return
 	}
-	result, err := luax.Call(thread, "get_heal_over_time_cap", character)
-	if err != nil || result == nil || result.Type() != lua.LTTable {
-		return 0, 0
-	}
-	tbl := result.(*lua.LTable)
-	maxHP := uint16(0)
-	maxMP := uint16(0)
-	if v := tbl.RawGetString("max_hp"); v != nil && v.Type() == lua.LTNumber {
-		maxHP = uint16(lua.LVAsNumber(v))
-	}
-	if v := tbl.RawGetString("max_mp"); v != nil && v.Type() == lua.LTNumber {
-		maxMP = uint16(lua.LVAsNumber(v))
-	}
-	return maxHP, maxMP
+	luax.CallAsync(root, thread, "get_heal_over_time_cap", character).Then(func(value interface{}) (interface{}, error) {
+		vals := luax.ResultValues(value)
+		if len(vals) == 0 || vals[0] == nil || vals[0].Type() != lua.LTTable {
+			fn(0, 0)
+			return nil, nil
+		}
+		tbl := vals[0].(*lua.LTable)
+		maxHP := uint16(0)
+		maxMP := uint16(0)
+		if v := tbl.RawGetString("max_hp"); v != nil && v.Type() == lua.LTNumber {
+			maxHP = uint16(lua.LVAsNumber(v))
+		}
+		if v := tbl.RawGetString("max_mp"); v != nil && v.Type() == lua.LTNumber {
+			maxMP = uint16(lua.LVAsNumber(v))
+		}
+		fn(maxHP, maxMP)
+		return nil, nil
+	}).OnError(func(err error) {
+		fn(0, 0)
+	})
 }
 
-func (h *HealOverTime) getEndureHPInterval(ctx *core.ClientContext, character *entity.Character) float64 {
+func (h *HealOverTime) getEndureHPInterval(ctx *core.ClientContext, character *entity.Character, fn func(float64)) {
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
-		return 0
+		fn(0)
+		return
 	}
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
-		return 0
+		fn(0)
+		return
 	}
 	thread, err := luax.NewThread(root, constant.CharacterQueryScriptPath)
 	if err != nil {
-		return 0
+		fn(0)
+		return
 	}
-	result, err := luax.Call(thread, "get_endure_hp_interval", character)
-	if err != nil || result == nil || result.Type() != lua.LTNumber {
-		return 0
-	}
-	return float64(lua.LVAsNumber(result))
+	luax.CallAsync(root, thread, "get_endure_hp_interval", character).Then(func(value interface{}) (interface{}, error) {
+		vals := luax.ResultValues(value)
+		if len(vals) == 0 || vals[0] == nil || vals[0].Type() != lua.LTNumber {
+			fn(0)
+			return nil, nil
+		}
+		fn(float64(lua.LVAsNumber(vals[0])))
+		return nil, nil
+	}).OnError(func(err error) {
+		fn(0)
+	})
 }
 
 func allowCooldown(last *time.Time, interval time.Duration, now time.Time) bool {

@@ -65,13 +65,11 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 			return ic.CreateCharacter(c, reqProto)
 		}, func(reply *internal.CreateCharacterReply) error {
 			return h.sendCreateCharacterResult(ctx, reply)
-		}).
-		OnError(func(err error) {
-			log.Printf("CreateCharacter (async): %v", err)
-			createResp := &response.CreateCharacter{Success: false}
-			_ = ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
-		}).
-		Run()
+		}).OnError(func(err error) {
+		log.Printf("CreateCharacter (async): %v", err)
+		createResp := &response.CreateCharacter{Success: false}
+		_ = ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
+	})
 	return nil
 }
 

@@ -48,7 +48,7 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 			mob.ApplyDamage(character, dp.Damage)
 		}
 	}
-	CallSummonOnAttackHooks(ctx, character, mapInstance, req.Damages, uint32(summon.SkillID))
+	CallSummonOnAttackHooks(character, mapInstance, req.Damages, uint32(summon.SkillID))
 
 	var targets []entity.SummonAttackTarget
 	for _, ap := range req.Damages {

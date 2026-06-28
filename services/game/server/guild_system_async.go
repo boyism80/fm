@@ -240,7 +240,7 @@ func (s guildSystem) DisbandAllianceAsync(ctx actor.Context, ch *entity.Characte
 		if len(guildIDs) == 0 {
 			guildIDs = []uint32{guildID}
 		}
-		s.gs.alliance.DisbandAfterGuildRefreshAsync(ctx, allianceID, guildIDs).Run()
+		s.gs.alliance.DisbandAfterGuildRefreshAsync(ctx, allianceID, guildIDs)
 		*result = int(constant.AllianceDisbandResultOK)
 		return nil
 	}).OnError(func(err error) {

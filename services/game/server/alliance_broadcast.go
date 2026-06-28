@@ -464,16 +464,11 @@ func (ac *AllianceContainer) DisbandAfterGuildRefreshAsync(ctx actor.Context, al
 	if ac.gs == nil {
 		return async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
 	}
-	return ac.gs.guild.RefreshGuildsAsync(ctx, guildIDs).Then(
-		func() (interface{}, error) {
-			return nil, nil
-		},
-		func(interface{}) error {
-			ac.Remove(allianceID)
-			ac.broadcastDisband(allianceID, guildIDs)
-			return nil
-		},
-	)
+	return ac.gs.guild.RefreshGuildsAsync(ctx, guildIDs).Then(func(interface{}) (interface{}, error) {
+		ac.Remove(allianceID)
+		ac.broadcastDisband(allianceID, guildIDs)
+		return nil, nil
+	})
 }
 
 func (ac *AllianceContainer) broadcastDisband(allianceID uint32, guildIDs []uint32) {

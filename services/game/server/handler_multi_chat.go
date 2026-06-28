@@ -50,16 +50,21 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 				luax.SetConfiguration(thread, luax.Configuration{
 					ActorContext: ctx.ActorContext,
 				})
-				state, result, err := luax.Execute(root, thread, "on_chat", ch, req.Message, false)
-				if err != nil {
+				luax.CallAsync(root, thread, "on_chat", ch, req.Message, false).Then(func(value interface{}) (interface{}, error) {
+					vals := luax.ResultValues(value)
+					if len(vals) == 0 || vals[0] == nil {
+						return nil, nil
+					}
+					if vals[0].Type() == lua.LTBool && lua.LVAsBool(vals[0]) {
+						return nil, nil
+					}
+					if vals[0].Type() == lua.LTBool && !lua.LVAsBool(vals[0]) {
+						log.Printf("Unknown command: %s", strings.TrimSpace(req.Message))
+					}
+					return nil, nil
+				}).OnError(func(err error) {
 					log.Printf("Command Lua error: %v", err)
-				} else if state == lua.ResumeYield {
-					return nil
-				} else if result != nil && result.Type() == lua.LTBool && lua.LVAsBool(result) {
-					return nil
-				} else if result != nil && result.Type() == lua.LTBool && !lua.LVAsBool(result) {
-					log.Printf("Unknown command: %s", strings.TrimSpace(req.Message))
-				}
+				})
 			}
 		}
 		return nil
@@ -118,7 +123,7 @@ func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *entity.Cha
 		},
 	).OnError(func(err error) {
 		log.Printf("GuildMultiChat async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -163,7 +168,7 @@ func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *entity.
 		},
 	).OnError(func(err error) {
 		log.Printf("AllianceMultiChat async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -204,7 +209,7 @@ func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *entity.Cha
 		},
 	).OnError(func(err error) {
 		log.Printf("PartyMultiChat async error: %v", err)
-	}).Run()
+	})
 	return nil
 }
 
@@ -243,6 +248,6 @@ func (h *MultiChat) handleBuddyMultiChat(ctx *core.ClientContext, ch *entity.Cha
 		},
 	).OnError(func(err error) {
 		log.Printf("BuddyMultiChat async error: %v", err)
-	}).Run()
+	})
 	return nil
 }

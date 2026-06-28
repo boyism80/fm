@@ -75,21 +75,25 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorContext: ctx.ActorContext,
 	})
-	resumeState, err := luax.Resume(root, thread, args...)
+	resumeArgs := make([]interface{}, len(args))
+	for i, a := range args {
+		resumeArgs[i] = a
+	}
+	resumeState, _, err := luax.Resume(root, thread, "", resumeArgs...)
 	if err != nil {
 		log.Printf("Failed to resume dialog: %v", err)
-		character.ClearCurrentDialog()
+		character.ResetDialog()
 		return fmt.Errorf("failed to resume dialog: %w", err)
 	}
 
 	switch resumeState {
 	case lua.ResumeOK:
-		character.ClearCurrentDialog()
+		character.ResetDialog()
 	case lua.ResumeYield:
 
 	case lua.ResumeError:
 		log.Printf("Dialog error for character %d", character.GetID())
-		character.ClearCurrentDialog()
+		character.ResetDialog()
 		return fmt.Errorf("dialog error")
 	}
 

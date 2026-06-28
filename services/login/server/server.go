@@ -253,7 +253,7 @@ func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 	}, func(*internal.LogoutSessionReply) error {
 		return nil
 	})
-	p.Run()
+
 }
 
 func (ls *LoginServer) Start() error {

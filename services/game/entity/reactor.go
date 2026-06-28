@@ -10,8 +10,8 @@ import (
 
 type Reactor struct {
 	ObjectCore
-	Wz          *wz.Reactor
-	Spawn       *ReactorSpawn
+	Wz                 *wz.Reactor
+	Spawn              *ReactorSpawn
 	State              byte
 	TimerActive        bool
 	TriggerCharacterID uint32
