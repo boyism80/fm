@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/1029000.img.xml): 엘리니아 꽃 리엑터
+
 function on_reactor_1029000(reactor)
 	local map = reactor:map()
 	if map == nil then

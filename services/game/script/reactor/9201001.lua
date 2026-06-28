@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/9201001.img.xml): 샤렌3세의 유골:NPC소환
+
 function on_reactor_9201001(reactor)
 	local map = reactor:map()
 	if map == nil then

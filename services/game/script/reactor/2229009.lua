@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/2229009.img.xml): 선비귀신 퇴치용
+
 function on_reactor_2229009(reactor)
 	local map = reactor:map()
 	if map == nil then

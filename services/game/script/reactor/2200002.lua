@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/2200002.img.xml): 922010201로 추방
+
 function on_reactor_2200002(reactor)
 	local map = reactor:map()
 	if map == nil then

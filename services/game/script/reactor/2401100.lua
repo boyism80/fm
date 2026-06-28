@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/2401100.img.xml): 카오스봉인된나인스피릿
+
 function on_reactor_2401100(reactor)
 	local map = reactor:map()
 	if map == nil then

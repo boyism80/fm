@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/2618002.img.xml): 메이플아일랜드 범용리엑터
+
 function on_reactor_2618002(reactor, item)
 	if item ~= nil then
 		return

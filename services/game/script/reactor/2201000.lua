@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/2201000.img.xml): 퀘스트용장난감목마를 최대 10마리까지 소환
+
 function on_reactor_2201000(reactor)
 	local map = reactor:map()
 	if map == nil then

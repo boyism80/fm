@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/2516000.img.xml): 투명리액터:우양소환
+
 function on_reactor_2516000(reactor)
 	local map = reactor:map()
 	if map == nil then

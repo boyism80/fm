@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/2200000.img.xml): 221024400
+
 function on_reactor_2200000(reactor)
 	local trigger = reactor:trigger()
 	if trigger == nil then

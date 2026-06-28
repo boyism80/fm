@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/2119006.img.xml): 사냥꾼의 제단2
+
 function on_reactor_2119006(reactor)
 	local map = reactor:map()
 	if map == nil then

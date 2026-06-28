@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/9201002.img.xml): 루비안:에레고스 소환
+
 function on_reactor_9201002(reactor)
 	local map = reactor:map()
 	if map == nil then

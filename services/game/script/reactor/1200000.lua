@@ -1,3 +1,5 @@
+-- Reactor name (Reactor.wz/1200000.img.xml): 가짜바트
+
 function on_reactor_1200000(reactor)
 	local trigger = reactor:trigger()
 	if trigger == nil then
