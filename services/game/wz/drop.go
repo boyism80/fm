@@ -1,7 +1,6 @@
 package wz
 
 type Drop struct {
-	Mob     uint32
 	Item    uint32
 	Money   uint32
 	Prob    float32

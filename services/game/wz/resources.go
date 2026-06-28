@@ -100,7 +100,8 @@ type Resources struct {
 	Monsters  map[uint32]*Mob
 	Reactors  map[uint32]*Reactor
 	Items     map[uint32]Item
-	Drops     map[uint32][]Drop
+	MobDrops     map[uint32][]Drop
+	ReactorDrops map[uint32][]Drop
 	Skills    map[uint32]*Skill
 	MobSkills map[uint32]map[uint8]*MobSkillLevelData
 	Strings   *StringData
@@ -332,14 +333,13 @@ func NewResources(wzPath string) *Resources {
 
 	workerCount := runtime.NumCPU() * 2
 
-	drop := map[uint32][]Drop{}
+	mobDrops := map[uint32][]Drop{}
+	reactorDrops := map[uint32][]Drop{}
 
 	rewardPath := filepath.Join(wzPath, "Reward.img.xml")
-	if dropData, err := loadDrops(rewardPath); err == nil && dropData != nil {
-
-		for mobID, drops := range *dropData {
-			drop[mobID] = drops
-		}
+	if loadedMob, loadedReactor, err := loadRewardDrops(rewardPath); err == nil {
+		mobDrops = loadedMob
+		reactorDrops = loadedReactor
 		fmt.Println("Drop files loaded.")
 	} else if err != nil {
 		log.Printf("Failed to load Reward.img.xml: %v", err)
@@ -668,7 +668,8 @@ func NewResources(wzPath string) *Resources {
 		Monsters:      mobs,
 		Reactors:      reactors,
 		Items:         items,
-		Drops:         drop,
+		MobDrops:      mobDrops,
+		ReactorDrops:  reactorDrops,
 		Strings:       stringData,
 		ExpTable:      expTable,
 		Skills:        skills,

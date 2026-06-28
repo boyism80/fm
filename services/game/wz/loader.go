@@ -1877,64 +1877,74 @@ type shopRoot struct {
 	Shops   []shopNode `xml:"imgdir"`
 }
 
-func loadDrops(path string) (*map[uint32][]Drop, error) {
+func parseDropEntry(entry dropEntry) Drop {
+	model := Drop{}
+
+	for _, intField := range entry.Ints {
+		switch intField.Name {
+		case "item":
+			model.Item = uint32(intField.Value)
+		case "money":
+			model.Money = uint32(intField.Value)
+		case "min":
+			model.Min = uint16(intField.Value)
+		case "max":
+			model.Max = uint16(intField.Value)
+		case "quest", "questid":
+			model.QuestID = uint32(intField.Value)
+		}
+	}
+
+	for _, stringField := range entry.Strings {
+		if stringField.Name == "prob" {
+			probStr := strings.TrimPrefix(stringField.Value, "[R8]")
+			value, err := strconv.ParseFloat(probStr, 32)
+			if err == nil {
+				model.Prob = float32(value)
+			}
+		}
+	}
+
+	return model
+}
+
+func loadRewardDrops(path string) (map[uint32][]Drop, map[uint32][]Drop, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer file.Close()
 
 	var root rewardRoot
 	if err := xml.NewDecoder(file).Decode(&root); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	specs := map[uint32][]Drop{}
-	for _, mobNode := range root.Mobs {
-		if !strings.HasPrefix(mobNode.Name, "m") {
-			continue
-		}
-		id, err := strconv.Atoi(strings.TrimPrefix(mobNode.Name, "m"))
-		if err != nil {
-			continue
-		}
-		mobID := uint32(id)
-
-		for _, entry := range mobNode.Entries {
-			model := Drop{
-				Mob: mobID,
+	mobDrops := map[uint32][]Drop{}
+	reactorDrops := map[uint32][]Drop{}
+	for _, node := range root.Mobs {
+		if strings.HasPrefix(node.Name, "m") {
+			id, err := strconv.Atoi(strings.TrimPrefix(node.Name, "m"))
+			if err != nil {
+				continue
 			}
-
-			for _, intField := range entry.Ints {
-				switch intField.Name {
-				case "item":
-					model.Item = uint32(intField.Value)
-				case "money":
-					model.Money = uint32(intField.Value)
-				case "min":
-					model.Min = uint16(intField.Value)
-				case "max":
-					model.Max = uint16(intField.Value)
-				case "quest", "questid":
-					model.QuestID = uint32(intField.Value)
-				}
+			mobID := uint32(id)
+			for _, entry := range node.Entries {
+				mobDrops[mobID] = append(mobDrops[mobID], parseDropEntry(entry))
 			}
-
-			for _, stringField := range entry.Strings {
-				if stringField.Name == "prob" {
-					probStr := strings.TrimPrefix(stringField.Value, "[R8]")
-					value, err := strconv.ParseFloat(probStr, 32)
-					if err == nil {
-						model.Prob = float32(value)
-					}
-				}
+		} else if strings.HasPrefix(node.Name, "r") {
+			id, err := strconv.Atoi(strings.TrimPrefix(node.Name, "r"))
+			if err != nil {
+				continue
 			}
-
-			specs[model.Mob] = append(specs[model.Mob], model)
+			reactorID := uint32(id)
+			for _, entry := range node.Entries {
+				reactorDrops[reactorID] = append(reactorDrops[reactorID], parseDropEntry(entry))
+			}
 		}
 	}
 
-	return &specs, nil
+	return mobDrops, reactorDrops, nil
 }
 
 func loadExpTable(path string) ([]uint32, error) {

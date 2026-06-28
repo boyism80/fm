@@ -680,6 +680,44 @@ func (ch *Character) Warp(targetMap *Map, spawnPoint uint8) error {
 	return ch.GameWorld.GetMapSystem().Warp(ch, targetMap, spawnPoint)
 }
 
+func (ch *Character) Relocate(spawnPoint uint8) error {
+	m := ch.GetMap()
+	if m == nil {
+		return fmt.Errorf("not on a map")
+	}
+	if m.Wz == nil {
+		return fmt.Errorf("map model not found")
+	}
+	pos, ok := m.Wz.GetSpawnPosition(spawnPoint)
+	if !ok {
+		return fmt.Errorf("invalid spawn point %d", spawnPoint)
+	}
+	beforePosition := ch.Position
+	ch.Position = pos
+	ch.Stance = constant.StanceDefaultValue
+	for _, summon := range ch.GetSummons() {
+		if summon == nil || summon.Owner != ch {
+			continue
+		}
+		summon.Position = ch.Position
+	}
+	if ch.Listener != nil {
+		ch.Listener.OnFieldRelocate(ch, spawnPoint)
+		ch.Listener.OnPlayerMove(ch, beforePosition, []dto.MoveFragment{
+			&dto.TeleportMovement{
+				BasicMovement: &dto.BasicMovement{
+					Command: 3,
+					Stance:  ch.Stance,
+				},
+				Position: ch.Position,
+				Velocity: types.Vector2[int16]{},
+			},
+		})
+		ch.Listener.OnUpdateStats(ch, nil, true)
+	}
+	return nil
+}
+
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
 	if ch.Sendable == nil {
 		return nil

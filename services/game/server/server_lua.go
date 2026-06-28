@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -37,6 +38,22 @@ func getClassAdvancementClasses(class uint16) []uint16 {
 		classes = append(classes, class)
 	}
 	return classes
+}
+
+func luaArgToInterface(v lua.LValue) (interface{}, error) {
+	if v == nil || v == lua.LNil {
+		return nil, nil
+	}
+	switch v.Type() {
+	case lua.LTBool:
+		return lua.LVAsBool(v), nil
+	case lua.LTNumber:
+		return float64(lua.LVAsNumber(v)), nil
+	case lua.LTString:
+		return string(v.(lua.LString)), nil
+	default:
+		return nil, fmt.Errorf("unsupported argument type %s", v.Type().String())
+	}
 }
 
 func registerSkillConstants(luaState *lua.LState) {
@@ -663,6 +680,23 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			gs.GetRootContext().Send(resumePID, &g_actor.ResumeLua{Root: root, Thread: L})
 		})
 		return L.Yield(lua.LNil)
+	})
+
+	luax.RegisterFunc(luaState, "run_on_map", func(L *lua.LState) int {
+		mapID := uint32(L.CheckInt(1))
+		scriptPath := L.CheckString(2)
+		funcName := L.CheckString(3)
+		args := make([]interface{}, 0, L.GetTop()-3)
+		for i := 4; i <= L.GetTop(); i++ {
+			arg, err := luaArgToInterface(L.Get(i))
+			if err != nil {
+				L.RaiseError("run_on_map: %v", err)
+				return 0
+			}
+			args = append(args, arg)
+		}
+		cfg, _ := luax.GetConfiguration(L)
+		return gs.GetMapSystem().RunOnMapFromLua(L, cfg.ActorContext, mapID, scriptPath, funcName, args)
 	})
 
 	luax.RegisterFunc(luaState, "set_packet_log_enabled", func(L *lua.LState) int {

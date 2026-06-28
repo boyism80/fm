@@ -1,6 +1,6 @@
 -- Reactor name (Reactor.wz/2401000.img.xml): 봉인된나인스피릿
 
-function on_reactor_hit_2401000(reactor)
+function on_reactor_2401000(reactor)
 	local map = reactor:map()
 	if map == nil then
 		return

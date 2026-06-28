@@ -426,9 +426,9 @@ func (gs *GameServer) Start() error {
 		if gs.resources.Strings != nil {
 			stringCount = gs.resources.Strings.CountStrings()
 		}
-		log.Printf("Resources loaded: %d maps, %d monsters, %d items, %d drops, %d strings",
+		log.Printf("Resources loaded: %d maps, %d monsters, %d items, %d mob drops, %d reactor drops, %d strings",
 			len(gs.resources.Maps), len(gs.resources.Monsters),
-			len(gs.resources.Items), len(gs.resources.Drops), stringCount)
+			len(gs.resources.Items), len(gs.resources.MobDrops), len(gs.resources.ReactorDrops), stringCount)
 	}
 
 	return nil
@@ -608,7 +608,8 @@ func (gs *GameServer) GetStats() map[string]interface{} {
 		stats["maps_loaded"] = len(gs.resources.Maps)
 		stats["monsters_loaded"] = len(gs.resources.Monsters)
 		stats["items_loaded"] = len(gs.resources.Items)
-		stats["drops_loaded"] = len(gs.resources.Drops)
+		stats["mob_drops_loaded"] = len(gs.resources.MobDrops)
+		stats["reactor_drops_loaded"] = len(gs.resources.ReactorDrops)
 		if gs.resources.Strings != nil {
 			stats["strings_loaded"] = gs.resources.Strings.CountStrings()
 		} else {

@@ -12,8 +12,16 @@ type Reactor struct {
 	ObjectCore
 	Wz          *wz.Reactor
 	Spawn       *ReactorSpawn
-	State       byte
-	TimerActive bool
+	State              byte
+	TimerActive        bool
+	TriggerCharacterID uint32
+}
+
+func (r *Reactor) GetTrigger() *Character {
+	if r == nil || r.Map == nil || r.TriggerCharacterID == 0 {
+		return nil
+	}
+	return r.Map.GetPlayer(r.TriggerCharacterID)
 }
 
 func (r *Reactor) GetObjectType() constant.ObjectType {

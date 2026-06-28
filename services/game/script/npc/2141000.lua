@@ -13,5 +13,5 @@ function on_click(me, npc)
 	if reactor == nil then
 		return
 	end
-	reactor:trigger()
+	reactor:hit()
 end

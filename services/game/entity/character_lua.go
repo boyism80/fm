@@ -1176,8 +1176,15 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			message := L.CheckString(2)
-			ch.Listener.OnMessage(ch, constant.MsgLightBlueText, message)
+			msgType := constant.MsgLightBlueText
+			var message string
+			if L.GetTop() == 2 {
+				message = L.CheckString(2)
+			} else {
+				msgType = constant.ServerMessageType(L.CheckInt(2))
+				message = L.CheckString(3)
+			}
+			ch.Listener.OnMessage(ch, msgType, message)
 			return 0
 		},
 		"role": func(L *lua.LState) int {
@@ -2108,7 +2115,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				L.Push(luax.NewLuable(L, m))
 				return 1
-			case 2, 3:
+			case 2, 3, 4:
 				var targetMap *Map
 				arg2 := L.Get(2)
 				switch v := arg2.(type) {
@@ -2155,16 +2162,31 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				spawnPoint := uint8(1)
-				if argc == 3 {
+				allowRelocate := false
+				if argc >= 3 {
 					spawnPoint = uint8(L.CheckInt(3))
 				}
-				if err := ch.Warp(targetMap, spawnPoint); err != nil {
+				if argc == 4 {
+					allowRelocate = L.CheckBool(4)
+				}
+				var err error
+				if allowRelocate {
+					currentMap := ch.GetMap()
+					if currentMap != nil && currentMap.GetMapID() == targetMap.GetMapID() {
+						err = ch.Relocate(spawnPoint)
+					} else {
+						err = ch.Warp(targetMap, spawnPoint)
+					}
+				} else {
+					err = ch.Warp(targetMap, spawnPoint)
+				}
+				if err != nil {
 					L.RaiseError("warp: %v", err)
 					return 0
 				}
 				return 0
 			default:
-				L.ArgError(2, "map() getter: 0 args; setter: map, name (string), or id (number), optional spawnPoint")
+				L.ArgError(2, "map() getter: 0 args; setter: map, name (string), or id (number), optional spawnPoint, optional relocateSameMap")
 				return 0
 			}
 		},

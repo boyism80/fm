@@ -910,17 +910,25 @@ func (m *Map) KillAllMonsters(animationType constant.MobDieAnimationType) {
 	}
 }
 
-func (m *Map) MobByTemplate(mobID uint32) *Mob {
+func (m *Map) MobsByTemplate(mobWZID uint32, limit int) []*Mob {
+	if m == nil {
+		return nil
+	}
+	out := make([]*Mob, 0)
 	for _, obj := range m.GetMobs() {
 		mob, ok := obj.(*Mob)
 		if !ok || mob.Wz == nil || !mob.IsAlive() {
 			continue
 		}
-		if mob.Wz.ID == mobID {
-			return mob
+		if mob.Wz.ID != mobWZID {
+			continue
+		}
+		out = append(out, mob)
+		if limit > 0 && len(out) >= limit {
+			break
 		}
 	}
-	return nil
+	return out
 }
 
 func (m *Map) GetMob(mobID uint32) *Mob {

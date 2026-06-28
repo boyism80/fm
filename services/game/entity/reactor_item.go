@@ -105,7 +105,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 
 func (r *Reactor) matchesItemDrop(item Item, owner *Character) bool {
 	reactorID := r.Wz.ID
-	hook := fmt.Sprintf("on_item_drop_match_%d", reactorID)
+	hook := fmt.Sprintf("on_reactor_%d", reactorID)
 	result, err := r.callReactorScript(hook, r, item)
 	if err != nil || result == nil {
 		event := r.currentEvent()
@@ -137,6 +137,9 @@ func (r *Reactor) callReactorScript(hook string, args ...interface{}) (lua.LValu
 	if err != nil {
 		return nil, err
 	}
+	luax.SetConfiguration(thread, luax.Configuration{
+		MapActorPID: mapInstance.GetActorPID(),
+	})
 	filtered := make([]interface{}, 0, len(args))
 	for _, arg := range args {
 		if arg != nil {

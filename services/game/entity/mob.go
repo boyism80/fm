@@ -304,7 +304,7 @@ func (m *Mob) dropItems(attacker *Character) {
 	}
 
 	resources := m.GameWorld.GetResources()
-	mobDrops, ok := resources.Drops[m.Wz.ID]
+	mobDrops, ok := resources.MobDrops[m.Wz.ID]
 	if !ok {
 		return
 	}

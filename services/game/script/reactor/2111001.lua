@@ -5,7 +5,7 @@ local zakum_arm_ids = {
 	8800007, 8800008, 8800009, 8800010,
 }
 
-function on_reactor_hit_2111001(reactor)
+function on_reactor_2111001(reactor)
 	local map = reactor:map()
 	if map == nil then
 		return

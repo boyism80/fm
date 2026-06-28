@@ -15,6 +15,7 @@ type MapSystem interface {
 	CreateReturnDoor(ch *Character, skillID constant.SkillID)
 	RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartMapWZID uint32)
 	ResetFromLua(L *lua.LState, mapInstance *Map, actorCtx actor.Context) int
+	RunOnMapFromLua(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int
 }
 
 type SchedulerSystem interface {

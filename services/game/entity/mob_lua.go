@@ -493,7 +493,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(t)
 				return 1
 			}
-			mobDrops, ok := resources.Drops[mob.Wz.ID]
+			mobDrops, ok := resources.MobDrops[mob.Wz.ID]
 			if !ok {
 				L.Push(t)
 				return 1

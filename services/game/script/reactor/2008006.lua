@@ -1,6 +1,6 @@
 -- Reactor name (Reactor.wz/2008006.img.xml): 전축
 
-function on_item_drop_match_2008006(reactor, item)
+function on_reactor_2008006(reactor, item)
 	local wz = item:wz()
 	if wz == nil then
 		return false

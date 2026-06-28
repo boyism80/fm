@@ -1,4 +1,4 @@
-function on_reactor_hit_2709000(reactor)
+function on_reactor_2709000(reactor)
 	local map = reactor:map()
 	if map == nil then
 		return

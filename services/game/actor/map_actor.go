@@ -65,6 +65,10 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onResetMap(ctx, m)
 	case *ResetMapAck:
 		a.onResetMapAck(m)
+	case *RunOnMap:
+		a.onRunOnMap(ctx, m)
+	case *RunOnMapAck:
+		a.onRunOnMapAck(m)
 	case *c_actor.RunObjectTimer:
 		a.onRunObjectTimer(ctx, m)
 	case *c_actor.RunReactorRespawn:
@@ -222,6 +226,49 @@ func (a *MapActor) onResetMapAck(msg *ResetMapAck) {
 		return
 	}
 	args := []lua.LValue{lua.LBool(msg.Ok)}
+	a.onResumeLua(&ResumeLua{Root: msg.Root, Thread: msg.Thread, Args: args})
+}
+
+func runOnMapResumeValues(ok bool, result lua.LValue, errMsg string) []lua.LValue {
+	if !ok {
+		return []lua.LValue{lua.LBool(false), lua.LNil, lua.LString(errMsg)}
+	}
+	if result == nil {
+		result = lua.LNil
+	}
+	return []lua.LValue{lua.LBool(true), result, lua.LNil}
+}
+
+func (a *MapActor) onRunOnMap(ctx actor.Context, msg *RunOnMap) {
+	if msg == nil || msg.ReplyTo == nil {
+		return
+	}
+	var values []lua.LValue
+	if a.Map == nil {
+		values = runOnMapResumeValues(false, lua.LNil, "map not found")
+	} else {
+		result, err := a.Map.RunScript(ctx, msg.ScriptPath, msg.FuncName, msg.Args)
+		if err != nil {
+			values = runOnMapResumeValues(false, lua.LNil, err.Error())
+		} else {
+			values = runOnMapResumeValues(true, result, "")
+		}
+	}
+	ctx.Send(msg.ReplyTo, &RunOnMapAck{
+		Root:   msg.CallerRoot,
+		Thread: msg.CallerThread,
+		Values: values,
+	})
+}
+
+func (a *MapActor) onRunOnMapAck(msg *RunOnMapAck) {
+	if msg == nil || msg.Root == nil || msg.Thread == nil {
+		return
+	}
+	args := msg.Values
+	if args == nil {
+		args = runOnMapResumeValues(false, lua.LNil, "run_on_map: empty response")
+	}
 	a.onResumeLua(&ResumeLua{Root: msg.Root, Thread: msg.Thread, Args: args})
 }
 

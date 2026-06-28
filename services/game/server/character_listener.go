@@ -1089,6 +1089,10 @@ func (l *CharacterListenerImpl) OnPlayerMove(ch *entity.Character, startPoint ty
 	ch.Broadcast(movePacket, nil)
 }
 
+func (l *CharacterListenerImpl) OnFieldRelocate(ch *entity.Character, spawnPoint uint8) {
+	ch.Send(&response.FieldRelocate{Portal: spawnPoint}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) broadcastAttack(ch *entity.Character, packet types.Packet) {
 	if ch.GetMap() == nil {
 		return

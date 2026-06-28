@@ -28,6 +28,10 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 	if r == nil || r.Wz == nil || r.Map == nil {
 		return
 	}
+	r.TriggerCharacterID = 0
+	if trigger != nil {
+		r.TriggerCharacterID = trigger.GetID()
+	}
 	event := r.currentEvent()
 	if event == nil {
 		return
@@ -92,7 +96,7 @@ func (r *Reactor) respawnDelay() time.Duration {
 }
 
 func (r *Reactor) runHitScript() {
-	hook := fmt.Sprintf("on_reactor_hit_%d", r.Wz.ID)
+	hook := fmt.Sprintf("on_reactor_%d", r.Wz.ID)
 	_, _ = r.callReactorScript(hook, r)
 }
 
@@ -257,6 +261,22 @@ func (m *Map) ReactorByTemplate(reactorID uint32) *Reactor {
 			continue
 		}
 		if reactor.Wz.ID == reactorID {
+			return reactor
+		}
+	}
+	return nil
+}
+
+func (m *Map) ReactorByName(name string) *Reactor {
+	if m == nil || name == "" {
+		return nil
+	}
+	for _, obj := range m.GetReactors() {
+		reactor, ok := obj.(*Reactor)
+		if !ok || reactor == nil || reactor.Spawn == nil || reactor.Spawn.Wz == nil {
+			continue
+		}
+		if reactor.Spawn.Wz.Name == name {
 			return reactor
 		}
 	}

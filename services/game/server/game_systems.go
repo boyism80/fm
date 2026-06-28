@@ -129,6 +129,72 @@ func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx
 	return L.Yield(lua.LNil)
 }
 
+func pushRunOnMapResult(L *lua.LState, ok bool, result lua.LValue, errMsg string) int {
+	if !ok {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LNil)
+		if errMsg == "" {
+			L.Push(lua.LNil)
+		} else {
+			L.Push(lua.LString(errMsg))
+		}
+		return 3
+	}
+	L.Push(lua.LBool(true))
+	if result == nil {
+		L.Push(lua.LNil)
+	} else {
+		L.Push(result)
+	}
+	L.Push(lua.LNil)
+	return 3
+}
+
+func (s mapSystem) RunOnMapFromLua(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int {
+	if L == nil {
+		return 0
+	}
+	targetMap := s.Get(mapID)
+	if targetMap == nil {
+		return pushRunOnMapResult(L, false, nil, "run_on_map: target map not found")
+	}
+	targetPID := targetMap.GetActorPID()
+	if targetPID == nil {
+		return pushRunOnMapResult(L, false, nil, "run_on_map: target map actor not found")
+	}
+	cfg, _ := luax.GetConfiguration(L)
+	callerPID := cfg.MapActorPID
+	if actorCtx != nil {
+		callerPID = actorCtx.Self()
+	}
+	if callerPID == nil {
+		return pushRunOnMapResult(L, false, nil, "run_on_map: caller actor not found")
+	}
+	if callerPID.Equal(targetPID) {
+		result, err := targetMap.RunScript(actorCtx, scriptPath, funcName, args)
+		if err != nil {
+			return pushRunOnMapResult(L, false, nil, err.Error())
+		}
+		return pushRunOnMapResult(L, true, result, "")
+	}
+	if s.gs == nil {
+		return pushRunOnMapResult(L, false, nil, "run_on_map: game server not found")
+	}
+	root := L.Parent
+	if root == nil {
+		return pushRunOnMapResult(L, false, nil, "run_on_map: root lua state not found")
+	}
+	s.gs.GetRootContext().Send(targetPID, &g_actor.RunOnMap{
+		ReplyTo:      callerPID,
+		CallerRoot:   root,
+		CallerThread: L,
+		ScriptPath:   scriptPath,
+		FuncName:     funcName,
+		Args:         args,
+	})
+	return L.Yield(lua.LNil)
+}
+
 func (s mapSystem) Warp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {
 	if targetMap == nil {
 		return fmt.Errorf("target map is nil")

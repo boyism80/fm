@@ -1,6 +1,9 @@
 package entity
 
 import (
+	"time"
+
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -71,7 +74,7 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(reactor.ReactItemQuantity()))
 			return 1
 		},
-		"trigger": func(L *lua.LState) int {
+		"hit": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			reactor, ok := ud.Value.(*Reactor)
 			if !ok || reactor == nil {
@@ -80,12 +83,64 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			var trigger *Character
 			if L.GetTop() >= 2 {
-				if triggerUd, ok := L.Get(2).(*lua.LUserData); ok {
+				arg := L.Get(2)
+				if state, ok := arg.(lua.LNumber); ok {
+					reactor.ForceHitState(byte(state))
+					return 0
+				}
+				if arg != lua.LNil {
+					triggerUd, ok := arg.(*lua.LUserData)
+					if !ok {
+						L.ArgError(2, "Character or state expected")
+						return 0
+					}
 					trigger, _ = triggerUd.Value.(*Character)
 				}
 			}
 			reactor.Hit(trigger, constant.ReactorHitAirLeft, 0)
 			return 0
+		},
+		"trigger": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			reactor, ok := ud.Value.(*Reactor)
+			if !ok || reactor == nil {
+				L.ArgError(1, "Reactor expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "trigger() is read-only")
+				return 0
+			}
+			trigger := reactor.GetTrigger()
+			if trigger == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, trigger))
+			return 1
+		},
+		"drop_items": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			reactor, ok := ud.Value.(*Reactor)
+			if !ok || reactor == nil {
+				L.ArgError(1, "Reactor expected")
+				return 0
+			}
+			reactor.DropItems()
+			return 0
+		},
+		"schedule_state_revert": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			reactor, ok := ud.Value.(*Reactor)
+			if !ok || reactor == nil {
+				L.ArgError(1, "Reactor expected")
+				return 0
+			}
+			oldState := byte(L.CheckInt(2))
+			newState := byte(L.CheckInt(3))
+			delay := time.Duration(L.CheckNumber(4)) * time.Millisecond
+			L.Push(lua.LBool(reactor.ScheduleStateRevert(oldState, newState, delay)))
+			return 1
 		},
 	}
 }

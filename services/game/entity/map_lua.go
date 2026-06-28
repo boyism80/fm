@@ -68,11 +68,21 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			mobs := mapInstance.GetMobs()
 			tbl := L.NewTable()
-			for _, mob := range mobs {
-				if mobObj, ok := mob.(*Mob); ok {
-					tbl.RawSetInt(int(mobObj.OID), luax.NewLuable(L, mobObj))
+			if L.GetTop() >= 2 {
+				mobWZID := uint32(L.CheckInt(2))
+				limit := 0
+				if v, ok := L.Get(3).(lua.LNumber); ok {
+					limit = int(v)
+				}
+				for _, mob := range mapInstance.MobsByTemplate(mobWZID, limit) {
+					tbl.RawSetInt(int(mob.OID), luax.NewLuable(L, mob))
+				}
+			} else {
+				for _, mob := range mapInstance.GetMobs() {
+					if mobObj, ok := mob.(*Mob); ok {
+						tbl.RawSetInt(int(mobObj.OID), luax.NewLuable(L, mobObj))
+					}
 				}
 			}
 			L.Push(tbl)
@@ -86,12 +96,12 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			mobID := uint32(L.CheckInt(2))
-			mob := mapInstance.MobByTemplate(mobID)
-			if mob == nil {
+			mobs := mapInstance.MobsByTemplate(mobID, 1)
+			if len(mobs) == 0 {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(luax.NewLuable(L, mob))
+			L.Push(luax.NewLuable(L, mobs[0]))
 			return 1
 		},
 		"objects": func(L *lua.LState) int {
@@ -543,6 +553,22 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			reactorID := uint32(L.CheckInt(2))
 			reactor := mapInstance.ReactorByTemplate(reactorID)
+			if reactor == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, reactor))
+			return 1
+		},
+		"reactor_by_name": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			name := L.CheckString(2)
+			reactor := mapInstance.ReactorByName(name)
 			if reactor == nil {
 				L.Push(lua.LNil)
 				return 1

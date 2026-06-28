@@ -61,6 +61,21 @@ type ResetMapAck struct {
 	Thread *lua.LState
 }
 
+type RunOnMap struct {
+	ReplyTo      *actor.PID
+	CallerRoot   *lua.LState
+	CallerThread *lua.LState
+	ScriptPath   string
+	FuncName     string
+	Args         []interface{}
+}
+
+type RunOnMapAck struct {
+	Root   *lua.LState
+	Thread *lua.LState
+	Values []lua.LValue
+}
+
 type AddCharacter struct {
 	Character  *entity.Character
 	SpawnPoint uint8

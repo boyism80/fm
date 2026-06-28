@@ -54,7 +54,7 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 		}
 		scriptPath := fmt.Sprintf("script/portal/%s.lua", portal.ScriptName)
 		if _, err := luax.InlineCall(root, scriptPath, "on_enter", character); err != nil {
-			return err
+			log.Printf("portal script %s failed: %v", scriptPath, err)
 		}
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
