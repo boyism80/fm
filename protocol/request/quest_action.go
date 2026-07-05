@@ -41,9 +41,14 @@ func (p *QuestAction) Deserialize(reader *stream.StreamReader) {
 
 	case QuestActionComplete:
 		p.NPCID = reader.ReadU32()
-		reader.ReadU32()
+		if reader.Remaining() >= 4 {
+			reader.ReadU32()
+		}
 		if reader.Remaining() >= 4 {
 			selection := reader.ReadU32()
+			p.Selection = &selection
+		} else if reader.Remaining() >= 2 {
+			selection := uint32(reader.ReadU16())
 			p.Selection = &selection
 		}
 

@@ -96,18 +96,20 @@ type Resources struct {
 	itemNameToId  map[string]uint32
 	skillNameToId map[string]uint32
 
-	Maps         map[uint32]*Map
-	Monsters     map[uint32]*Mob
-	Reactors     map[uint32]*Reactor
-	Items        map[uint32]Item
-	MobDrops     map[uint32][]Drop
-	ReactorDrops map[uint32][]Drop
-	Skills       map[uint32]*Skill
-	MobSkills    map[uint32]map[uint8]*MobSkillLevelData
-	Strings      *StringData
-	ExpTable     []uint32
-	Shops        map[uint32]*Shop
-	Quests       map[uint32]*Quest
+	Maps                    map[uint32]*Map
+	Monsters                map[uint32]*Mob
+	Reactors                map[uint32]*Reactor
+	Items                   map[uint32]Item
+	MobDrops                map[uint32][]Drop
+	ReactorDrops            map[uint32][]Drop
+	Skills                  map[uint32]*Skill
+	MobSkills               map[uint32]map[uint8]*MobSkillLevelData
+	Strings                 *StringData
+	ExpTable                []uint32
+	Shops                   map[uint32]*Shop
+	Quests                  map[uint32]*Quest
+	questsByStartFieldEnter map[uint32][]*Quest
+	questsByAutoStart       []*Quest
 }
 
 func (node *node) find(name string) *node {
@@ -692,6 +694,8 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	result.buildNameIndexes()
+	result.buildQuestFieldEnterIndex()
+	result.buildQuestAutoStartIndex()
 
 	return result
 }
@@ -728,6 +732,58 @@ func (r *Resources) GetQuest(questID uint32) *Quest {
 		return nil
 	}
 	return r.Quests[questID]
+}
+
+func (r *Resources) buildQuestFieldEnterIndex() {
+	if r == nil || r.Quests == nil {
+		return
+	}
+	index := make(map[uint32][]*Quest)
+	for _, quest := range r.Quests {
+		if quest == nil {
+			continue
+		}
+		mapID := quest.StartFieldEnterMapID()
+		if mapID == 0 {
+			continue
+		}
+		index[mapID] = append(index[mapID], quest)
+	}
+	r.questsByStartFieldEnter = index
+}
+
+func (r *Resources) GetQuestsByStartFieldEnter(mapID uint32) []*Quest {
+	if r == nil || mapID == 0 {
+		return nil
+	}
+	if r.questsByStartFieldEnter == nil {
+		r.buildQuestFieldEnterIndex()
+	}
+	return r.questsByStartFieldEnter[mapID]
+}
+
+func (r *Resources) buildQuestAutoStartIndex() {
+	if r == nil || r.Quests == nil {
+		return
+	}
+	list := make([]*Quest, 0)
+	for _, quest := range r.Quests {
+		if quest == nil || !quest.HasAutoStartMeta() {
+			continue
+		}
+		list = append(list, quest)
+	}
+	r.questsByAutoStart = list
+}
+
+func (r *Resources) GetQuestsByAutoStart() []*Quest {
+	if r == nil {
+		return nil
+	}
+	if r.questsByAutoStart == nil {
+		r.buildQuestAutoStartIndex()
+	}
+	return r.questsByAutoStart
 }
 
 func (r *Resources) GetReactor(id uint32) *Reactor {

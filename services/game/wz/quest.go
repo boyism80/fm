@@ -6,7 +6,7 @@ const (
 	QuestReqNPC             QuestRequirementKind = "npc"
 	QuestReqLvMin           QuestRequirementKind = "lvmin"
 	QuestReqLvMax           QuestRequirementKind = "lvmax"
-	QuestReqJob             QuestRequirementKind = "job"
+	QuestReqClass           QuestRequirementKind = "job"
 	QuestReqItem            QuestRequirementKind = "item"
 	QuestReqMob             QuestRequirementKind = "mob"
 	QuestReqQuest           QuestRequirementKind = "quest"
@@ -19,7 +19,7 @@ const (
 	QuestReqPetTamenessMin  QuestRequirementKind = "pettamenessmin"
 	QuestReqMBMin           QuestRequirementKind = "mbmin"
 	QuestReqMBCard          QuestRequirementKind = "mbcard"
-	QuestReqSubJobFlags     QuestRequirementKind = "subJobFlags"
+	QuestReqSubClassFlags   QuestRequirementKind = "subJobFlags"
 	QuestReqDayByDay        QuestRequirementKind = "dayByDay"
 	QuestReqNormalAutoStart QuestRequirementKind = "normalAutoStart"
 	QuestReqPartyQuestS     QuestRequirementKind = "partyQuest_S"
@@ -27,6 +27,8 @@ const (
 	QuestReqEndScript       QuestRequirementKind = "endscript"
 	QuestReqTimeStart       QuestRequirementKind = "start"
 	QuestReqTimeEnd         QuestRequirementKind = "end"
+	QuestReqInfo            QuestRequirementKind = "info"
+	QuestReqInfoNumber      QuestRequirementKind = "infoNumber"
 )
 
 type QuestActionKind string
@@ -63,6 +65,7 @@ type QuestMeta struct {
 	AutoPreComplete bool
 	AutoComplete    bool
 	AutoAccept      bool
+	Repeatable      bool
 	Blocked         bool
 	ViewMedalItem   int
 	SelectedSkillID int
@@ -74,25 +77,26 @@ type QuestPhase struct {
 }
 
 type QuestRequirement struct {
-	Kind     QuestRequirementKind
-	IntValue int
-	StrValue string
-	Jobs     []int
-	PetIDs   []uint32
-	Items    []QuestItemCount
-	Mobs     []QuestMobCount
-	Quests   []QuestStateRef
-	Skills   []QuestSkillRef
+	Kind        QuestRequirementKind
+	IntValue    int
+	StrValue    string
+	InfoStrings []string
+	Classes     []int
+	PetIDs      []uint32
+	Items       []QuestItemCount
+	Mobs        []QuestMobCount
+	Quests      []QuestStateRef
+	Skills      []QuestSkillRef
 }
 
 type QuestAction struct {
-	Kind           QuestActionKind
-	IntValue       int
-	StrValue       string
-	ApplicableJobs []int
-	Items          []QuestRewardItem
-	Skills         []QuestRewardSkill
-	Quests         []QuestStateRef
+	Kind              QuestActionKind
+	IntValue          int
+	StrValue          string
+	ApplicableClasses []int
+	Items             []QuestRewardItem
+	Skills            []QuestRewardSkill
+	Quests            []QuestStateRef
 }
 
 type QuestItemCount struct {
@@ -115,14 +119,40 @@ type QuestSkillRef struct {
 	Acquire int
 }
 
+type QuestRewardProp int
+
+const (
+	QuestRewardPropAlways QuestRewardProp = -2
+	QuestRewardPropSelect QuestRewardProp = -1
+)
+
+func (p QuestRewardProp) IsAlways() bool {
+	return p == QuestRewardPropAlways
+}
+
+func (p QuestRewardProp) IsSelection() bool {
+	return p == QuestRewardPropSelect
+}
+
+func (p QuestRewardProp) IsWeightedRandom() bool {
+	return p > 0
+}
+
+func (p QuestRewardProp) RandomWeight() int {
+	if p <= 0 {
+		return 0
+	}
+	return int(p)
+}
+
 type QuestRewardItem struct {
 	ItemID     uint32
 	Count      int
-	Job        int
-	JobEx      int
+	Class      int
+	ClassEx    int
 	Gender     int
 	Period     int
-	Prop       int
+	Prop       QuestRewardProp
 	DateExpire string
 }
 
@@ -130,7 +160,7 @@ type QuestRewardSkill struct {
 	SkillID     uint32
 	SkillLevel  int
 	MasterLevel int
-	Jobs        []int
+	Classes     []int
 }
 
 func (q *Quest) RelevantMobs() map[uint32]int {
@@ -138,8 +168,16 @@ func (q *Quest) RelevantMobs() map[uint32]int {
 		return nil
 	}
 	out := make(map[uint32]int)
-	q.collectRelevantMobs(out, q.Start.Requirements)
-	q.collectRelevantMobs(out, q.Complete.Requirements)
+	for _, reqs := range [][]QuestRequirement{q.Start.Requirements, q.Complete.Requirements} {
+		for _, req := range reqs {
+			if req.Kind != QuestReqMob {
+				continue
+			}
+			for _, mob := range req.Mobs {
+				out[mob.MobID] = mob.Count
+			}
+		}
+	}
 	return out
 }
 
@@ -149,33 +187,41 @@ func (q *Quest) OrderedMobIDs() []uint32 {
 	}
 	out := make([]uint32, 0)
 	seen := make(map[uint32]struct{})
-	q.appendOrderedMobIDs(&out, seen, q.Complete.Requirements)
-	q.appendOrderedMobIDs(&out, seen, q.Start.Requirements)
+	for _, reqs := range [][]QuestRequirement{q.Complete.Requirements, q.Start.Requirements} {
+		for _, req := range reqs {
+			if req.Kind != QuestReqMob {
+				continue
+			}
+			for _, mob := range req.Mobs {
+				if _, ok := seen[mob.MobID]; ok {
+					continue
+				}
+				seen[mob.MobID] = struct{}{}
+				out = append(out, mob.MobID)
+			}
+		}
+	}
 	return out
 }
 
-func (q *Quest) appendOrderedMobIDs(out *[]uint32, seen map[uint32]struct{}, reqs []QuestRequirement) {
-	for _, req := range reqs {
-		if req.Kind != QuestReqMob {
+func (q *Quest) StartFieldEnterMapID() uint32 {
+	if q == nil {
+		return 0
+	}
+	for _, req := range q.Start.Requirements {
+		if req.Kind != QuestReqFieldEnter {
 			continue
 		}
-		for _, mob := range req.Mobs {
-			if _, ok := seen[mob.MobID]; ok {
-				continue
-			}
-			seen[mob.MobID] = struct{}{}
-			*out = append(*out, mob.MobID)
+		if req.IntValue > 0 {
+			return uint32(req.IntValue)
 		}
 	}
+	return 0
 }
 
-func (q *Quest) collectRelevantMobs(out map[uint32]int, reqs []QuestRequirement) {
-	for _, req := range reqs {
-		if req.Kind != QuestReqMob {
-			continue
-		}
-		for _, mob := range req.Mobs {
-			out[mob.MobID] = mob.Count
-		}
+func (q *Quest) HasAutoStartMeta() bool {
+	if q == nil {
+		return false
 	}
+	return q.Meta.AutoStart || q.Meta.AutoAccept
 }

@@ -173,6 +173,33 @@ func (ch *Character) RemoveItemByID(itemID uint32) bool {
 	return ch.RemoveByItemIDCount(itemID, 1)
 }
 
+func (ch *Character) ClearInventory() int {
+	if ch == nil {
+		return 0
+	}
+	cleared := 0
+	for invType, inven := range ch.Inventory {
+		if inven == nil || inven.Items == nil {
+			continue
+		}
+		slots := make([]int16, 0, len(inven.Items))
+		for slot, item := range inven.Items {
+			if item == nil {
+				continue
+			}
+			slots = append(slots, slot)
+		}
+		for _, slot := range slots {
+			delete(inven.Items, slot)
+			if ch.Listener != nil {
+				ch.Listener.OnRemoveInventorySlot(ch, invType, slot)
+			}
+			cleared++
+		}
+	}
+	return cleared
+}
+
 func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
 	if item == nil {
 		return nil, fmt.Errorf("item is nil")

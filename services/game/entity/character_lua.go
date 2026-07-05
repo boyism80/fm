@@ -130,7 +130,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if level > 200 {
 					level = 200
 				}
+				oldLevel := ch.level
 				ch.SetLevel(uint8(level))
+				if ch.level > oldLevel && ch.Quests != nil {
+					ch.Quests.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
+				}
 				return 0
 			default:
 				L.ArgError(2, "level() requires 0 or 1 arguments")
@@ -332,6 +336,27 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			default:
 				L.ArgError(2, "meso() getter: meso(); setter: meso(value)")
+				return 0
+			}
+		},
+		"population": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.population))
+				return 1
+			case 2:
+				ch.setPopulationUnchecked(int32(L.CheckInt(2)))
+				return 0
+			default:
+				L.ArgError(2, "population() getter: population(); setter: population(value)")
 				return 0
 			}
 		},
@@ -1625,6 +1650,29 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, qp))
 			return 1
 		},
+		"quests": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "quests() takes no arguments")
+				return 0
+			}
+			tbl := L.NewTable()
+			if ch.Quests != nil {
+				ch.Quests.ForEach(func(questID uint32, qp *Quest) {
+					if qp == nil || !qp.IsStarted() {
+						return
+					}
+					tbl.RawSet(lua.LNumber(questID), luax.NewLuable(L, qp))
+				})
+			}
+			L.Push(tbl)
+			return 1
+		},
 		"start_quest": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1642,12 +1690,8 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			def := ch.GameWorld.GetResources().GetQuest(questID)
-			if def == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			_, err := ch.Quests.Start(def, npcID, QuestPrepareOpts{IgnoreScriptRequirement: true})
+			npc := npcID
+			_, err := ch.Quests.Start(questID, QuestPrepareOpts{NpcID: &npc})
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -1686,6 +1730,20 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			L.ArgError(2, "clear_quests() or clear_quests(quest_id)")
 			return 0
+		},
+		"clear_inventory": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "clear_inventory() takes no arguments")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.ClearInventory()))
+			return 1
 		},
 		"guild": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

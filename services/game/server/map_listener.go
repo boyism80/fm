@@ -71,6 +71,14 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 	if l.gs != nil {
 		l.gs.party.SendPartySilentAsync(ctx, character)
 	}
+
+	if mapInstance != nil && character != nil && character.Quests != nil {
+		mapID := mapInstance.GetMapID()
+		character.Quests.RunAutoTriggers(ctx, entity.AutoQuestTriggerMapEnter, mapID)
+		if init {
+			character.Quests.RunAutoTriggers(ctx, entity.AutoQuestTriggerLogin, mapID)
+		}
+	}
 }
 
 func SyncPartyMemberHPOnMapEnter(mapInstance *entity.Map, character *entity.Character, effectivePartyID *uint32) {

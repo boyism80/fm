@@ -122,19 +122,15 @@ func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
 		if status != QuestStatusStarted && status != QuestStatusCompleted {
 			continue
 		}
-		def := ch.GameWorld.GetResources().GetQuest(questID)
-		if def == nil {
-			continue
-		}
 		q := ch.Quests.Get(questID)
 		if q == nil {
-			q = ch.Quests.Create(def, status)
+			q = ch.Quests.Create(questID, status)
 		}
 		if q == nil {
 			continue
 		}
 		if q.Wz == nil {
-			q.Wz = def
+			q.Wz = ch.Quests.questDef(questID)
 		}
 		q.Status = status
 		q.MobKills = make(map[uint32]int, len(pb.GetMobKills()))
@@ -152,7 +148,6 @@ func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
 			q.CompletionTime = time.Time{}
 		}
 		q.Forfeited = int(pb.GetForfeited())
-		q.owner = ch
 	}
 }
 
@@ -227,6 +222,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Stance:       uint32(ch.Stance),
 		Meso:         ch.Meso,
 		SkillPoint:   uint32(ch.SkillPoint),
+		Population:   uint32(ch.population),
 	}
 	return &internal.CharacterSaveEntry{
 		Character: persisted,

@@ -18,7 +18,7 @@ const (
 )
 
 type Quest struct {
-	owner          *Character
+	container      *QuestContainer
 	Wz             *wz.Quest
 	QuestID        uint32
 	Status         QuestStatusType
@@ -29,8 +29,11 @@ type Quest struct {
 	Forfeited      int
 }
 
-func (qp *Quest) HasMobKills() bool {
-	return len(qp.MobKills) > 0
+func (qp *Quest) WiresToClient() bool {
+	if qp == nil {
+		return false
+	}
+	return qp.Wz != nil
 }
 
 func (qp *Quest) IsStarted() bool {
@@ -67,14 +70,17 @@ func (qp *Quest) IsCompletable(ch *Character) bool {
 	if qp.Wz.Meta.Blocked {
 		return false
 	}
-	return meetsPhaseRequirements(qp.Wz.Complete, ch, qp, ch.Quests, 0, true)
+	return qp.meetsPhaseRequirements(ch, qp.Wz.Complete, QuestPrepareOpts{NpcID: nil})
 }
 
-func (qp *Quest) HasMobRequirements() bool {
+func (qp *Quest) StartedWirePayload() string {
 	if qp == nil || qp.Wz == nil {
-		return false
+		return ""
 	}
-	return len(qp.Wz.OrderedMobIDs()) > 0
+	if len(qp.Wz.OrderedMobIDs()) > 0 {
+		return qp.mobKillEncodedString()
+	}
+	return qp.StatusRecord
 }
 
 func (qp *Quest) RecordMobKill(mobID uint32) bool {
@@ -94,16 +100,6 @@ func (qp *Quest) RecordMobKill(mobID uint32) bool {
 	}
 	qp.MobKills[mobID]++
 	return true
-}
-
-func (qp *Quest) StartedWirePayload() string {
-	if qp == nil || qp.Wz == nil {
-		return ""
-	}
-	if qp.HasMobRequirements() {
-		return qp.mobKillEncodedString()
-	}
-	return qp.StatusRecord
 }
 
 func (qp *Quest) mobKillEncodedString() string {
@@ -181,23 +177,22 @@ func (qp *Quest) ApplyPhaseMeta(meta questPhaseMeta, qc *QuestContainer) {
 	if len(meta.chainQuests) > 0 && qc != nil {
 		qc.applyQuestChainActions(meta.chainQuests)
 	}
+	if len(meta.infoNumberQuests) > 0 && qc != nil {
+		for _, refID := range meta.infoNumberQuests {
+			qc.applyInfoNumberAction(refID)
+		}
+	}
 }
 
 func (qp *Quest) CanForfeit() bool {
-	if qp == nil || !qp.IsStarted() {
+	if qp == nil || !qp.IsStarted() || qp.Wz == nil {
 		return false
 	}
-	return isQuestForfeitAllowed(qp.QuestID)
-}
-
-func (qp *Quest) ForfeitSnapshot() *Quest {
-	if qp == nil {
-		return nil
-	}
-	return &Quest{
-		QuestID:   qp.QuestID,
-		Status:    QuestStatusNotStarted,
-		Forfeited: qp.Forfeited + 1,
+	switch qp.QuestID {
+	case 20000, 20010, 20015, 20020:
+		return false
+	default:
+		return true
 	}
 }
 
@@ -211,8 +206,17 @@ func (qp *Quest) CanRestoreLostItem(ch *Character, itemID uint32) bool {
 	if ch.HasItem(itemID) {
 		return false
 	}
-	_, ok := startItemGrant(qp.Wz, itemID)
-	return ok
+	for _, act := range qp.Wz.Start.Actions {
+		if act.Kind != wz.QuestActItem {
+			continue
+		}
+		for _, item := range act.Items {
+			if item.ItemID == itemID && item.Count > 0 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
@@ -222,8 +226,24 @@ func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
 	if ch == nil || qp.Wz == nil {
 		return ErrQuestRestoreItem
 	}
-	count, ok := startItemGrant(qp.Wz, itemID)
-	if !ok {
+	var count uint16
+	found := false
+	for _, act := range qp.Wz.Start.Actions {
+		if act.Kind != wz.QuestActItem {
+			continue
+		}
+		for _, item := range act.Items {
+			if item.ItemID == itemID && item.Count > 0 {
+				count = uint16(item.Count)
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+	if !found {
 		return ErrQuestRestoreItem
 	}
 	spec := FlowSpec{
@@ -237,14 +257,17 @@ func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
 	return nil
 }
 
-func (qp *Quest) Complete(ch *Character, npcID uint32, selection *uint32, opts QuestPrepareOpts) error {
-	if qp == nil || ch == nil || ch.Quests == nil {
+func (qp *Quest) Complete(ch *Character, opts QuestPrepareOpts) error {
+	if qp == nil || ch == nil || ch.Quests == nil || qp.Wz == nil {
 		return ErrQuestNotCompletable
 	}
-	qc := ch.Quests
+	wireNPC := uint32(0)
+	if opts.NpcID != nil {
+		wireNPC = *opts.NpcID
+	}
 	var meta questPhaseMeta
 	if !opts.Force {
-		spec, m, err := qc.prepareComplete(qp, ch, npcID, selection, opts)
+		spec, m, err := ch.Quests.prepareComplete(qp, ch, opts)
 		if err != nil {
 			return err
 		}
@@ -252,7 +275,7 @@ func (qp *Quest) Complete(ch *Character, npcID uint32, selection *uint32, opts Q
 		if ch.Exchange(spec) != FlowOK {
 			return ErrQuestFlowFailed
 		}
-		qp.ApplyPhaseMeta(meta, qc)
+		qp.ApplyPhaseMeta(meta, ch.Quests)
 	} else if !qp.IsStarted() {
 		return ErrQuestNotCompletable
 	}
@@ -262,7 +285,7 @@ func (qp *Quest) Complete(ch *Character, npcID uint32, selection *uint32, opts Q
 	if qp.Wz != nil {
 		nextQuestID = qp.Wz.NextQuestID()
 	}
-	ch.Listener.OnQuestCompleted(ch, qp, npcID, nextQuestID)
+	ch.Listener.OnQuestCompleted(ch, qp, wireNPC, nextQuestID)
 	return nil
 }
 
@@ -273,9 +296,12 @@ func (qp *Quest) Forfeit(ch *Character) error {
 	if !qp.CanForfeit() {
 		return ErrQuestNotForfeitable
 	}
-	qc := ch.Quests
-	snapshot := qp.ForfeitSnapshot()
-	qc.Remove(qp.QuestID)
+	snapshot := &Quest{
+		QuestID:   qp.QuestID,
+		Status:    QuestStatusNotStarted,
+		Forfeited: qp.Forfeited + 1,
+	}
+	ch.Quests.Remove(qp.QuestID)
 	ch.Listener.OnQuestForfeited(ch, snapshot)
 	return nil
 }
@@ -310,22 +336,22 @@ func (qc *QuestContainer) questDef(questID uint32) *wz.Quest {
 	return resources.GetQuest(questID)
 }
 
-func (qc *QuestContainer) Create(def *wz.Quest, status QuestStatusType) *Quest {
-	if qc == nil || def == nil || def.ID == 0 {
+func (qc *QuestContainer) Create(questID uint32, status QuestStatusType) *Quest {
+	if qc == nil || questID == 0 {
 		return nil
 	}
-	if qc.progress[def.ID] != nil {
+	if qc.progress[questID] != nil {
 		return nil
 	}
 	qp := &Quest{
-		owner:    qc.owner,
-		Wz:       def,
-		QuestID:  def.ID,
-		Status:   status,
-		MobKills: make(map[uint32]int),
-		Unknown2: make(map[string]string),
+		container: qc,
+		Wz:        qc.questDef(questID),
+		QuestID:   questID,
+		Status:    status,
+		MobKills:  make(map[uint32]int),
+		Unknown2:  make(map[string]string),
 	}
-	qc.progress[def.ID] = qp
+	qc.progress[questID] = qp
 	return qp
 }
 
@@ -340,13 +366,13 @@ func (qc *QuestContainer) Clear(questID uint32) bool {
 	if qc == nil {
 		return false
 	}
-	if qc.progress[questID] == nil {
+	existing := qc.progress[questID]
+	if existing == nil {
 		return false
 	}
 	delete(qc.progress, questID)
-	ch := qc.owner
-	if ch != nil && ch.Listener != nil {
-		ch.Listener.OnQuestForfeited(ch, &Quest{
+	if qc.owner != nil && qc.owner.Listener != nil && existing.WiresToClient() {
+		qc.owner.Listener.OnQuestForfeited(qc.owner, &Quest{
 			QuestID: questID,
 			Status:  QuestStatusNotStarted,
 		})
@@ -358,21 +384,29 @@ func (qc *QuestContainer) ClearAll() int {
 	if qc == nil {
 		return 0
 	}
-	ch := qc.owner
 	snapshots := make([]*Quest, 0, len(qc.progress))
-	for id := range qc.progress {
+	for id, qp := range qc.progress {
+		if qp == nil {
+			continue
+		}
 		snapshots = append(snapshots, &Quest{
 			QuestID: id,
 			Status:  QuestStatusNotStarted,
+			Wz:      qp.Wz,
 		})
 	}
 	count := len(snapshots)
 	qc.progress = make(map[uint32]*Quest)
-	if ch == nil || ch.Listener == nil {
+	if qc.owner == nil || qc.owner.Listener == nil {
 		return count
 	}
 	for _, snap := range snapshots {
-		ch.Listener.OnQuestForfeited(ch, snap)
+		if snap.WiresToClient() {
+			qc.owner.Listener.OnQuestForfeited(qc.owner, &Quest{
+				QuestID: snap.QuestID,
+				Status:  QuestStatusNotStarted,
+			})
+		}
 	}
 	return count
 }

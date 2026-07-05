@@ -69,7 +69,7 @@ func (ch *Character) ToDTO() *dto.Character {
 		MaxMp:         uint16(ch.GetMaxMp()),
 		AbilityPoint:  ch.AbilityPoint,
 		Exp:           ch.exp,
-		FamePoint:     ch.famePoint,
+		Population:    ch.population,
 		Map:           mapID,
 		SpawnPoint:    ch.GetSpawnPoint(),
 		Rank:          ch.rank,
@@ -172,7 +172,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO.QuestsCompleted = make([]*dto.QuestStatus, 0)
 	if ch.Quests != nil {
 		ch.Quests.ForEach(func(questID uint32, qp *Quest) {
-			if questID > 0xFFFF {
+			if questID > 0xFFFF || qp.Wz == nil {
 				return
 			}
 			questDTO := &dto.QuestStatus{
@@ -181,7 +181,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 				CustomData:     qp.StatusRecord,
 				CompletionTime: qp.CompletionTime,
 			}
-			if qp.HasMobRequirements() {
+			if qp.Wz != nil && len(qp.Wz.OrderedMobIDs()) > 0 {
 				questDTO.MobKills = qp.MobKillCountsOrdered()
 			}
 			switch qp.Status {

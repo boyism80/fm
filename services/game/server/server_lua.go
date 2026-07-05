@@ -171,7 +171,7 @@ func registerStatConstants(luaState *lua.LState) {
 	t.RawSetString("MaxMp", lua.LNumber(constant.StatMaxMP))
 	t.RawSetString("AvailableAP", lua.LNumber(constant.StatAvailableAP))
 	t.RawSetString("AvailableSP", lua.LNumber(constant.StatAvailableSP))
-	t.RawSetString("Fame", lua.LNumber(constant.StatFame))
+	t.RawSetString("Population", lua.LNumber(constant.StatPopulation))
 	t.RawSetString("Meso", lua.LNumber(constant.StatMeso))
 	luaState.SetGlobal("STAT", t)
 }
@@ -501,6 +501,21 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			return 1
 		}
 		L.Push(skillToLuaWzTable(L, wzSkill))
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "id2quest", func(L *lua.LState) int {
+		id := uint32(L.CheckNumber(1))
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		wzQuest := gs.resources.GetQuest(id)
+		if wzQuest == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(wzQuest.ToLuaTable(L))
 		return 1
 	})
 

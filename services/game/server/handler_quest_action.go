@@ -67,13 +67,23 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 		character.Listener.OnUnlockAction(character)
 
 	case request.QuestActionStart:
-		if _, err := character.Quests.Start(questDef, req.NPCID, entity.QuestPrepareOpts{}); err != nil {
+		if questDef.HasStartScript() {
+			character.Listener.OnUnlockAction(character)
+			return nil
+		}
+		npc := req.NPCID
+		if _, err := character.Quests.Start(uint32(req.QuestID), entity.QuestPrepareOpts{NpcID: &npc}); err != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
 
 	case request.QuestActionComplete:
-		if err := quest.Complete(character, req.NPCID, req.Selection, entity.QuestPrepareOpts{}); err != nil {
+		if questDef.HasEndScript() {
+			character.Listener.OnUnlockAction(character)
+			return nil
+		}
+		npc := req.NPCID
+		if err := quest.Complete(character, entity.QuestPrepareOpts{NpcID: &npc, Selection: req.Selection}); err != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
@@ -92,14 +102,13 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
-		if !character.Quests.IsStartable(questDef, req.NPCID, entity.QuestPrepareOpts{
-			IgnoreScriptRequirement: true,
-			SkipNPCRequirement:      true,
+		if !character.Quests.IsStartable(uint32(req.QuestID), entity.QuestPrepareOpts{
+			NpcID: nil,
 		}) {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
-		if err := h.runQuestScript(ctx, character, questDef.ID, req.NPCID, "on_start"); err != nil {
+		if err := character.RunQuestScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_start"); err != nil {
 			log.Printf("scripted quest start %d: %v", questDef.ID, err)
 			character.Listener.OnUnlockAction(character)
 		}
@@ -113,7 +122,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
-		if err := h.runQuestScript(ctx, character, questDef.ID, req.NPCID, "on_end"); err != nil {
+		if err := character.RunQuestScript(ctx.ActorContext, questDef.ID, req.NPCID, "on_end"); err != nil {
 			log.Printf("scripted quest end %d: %v", questDef.ID, err)
 			character.Listener.OnUnlockAction(character)
 		}

@@ -33,7 +33,7 @@ type Character struct {
 	classRank         uint32
 	classRankDiff     int32
 	exp               uint32
-	famePoint         uint16
+	population        uint16
 	mega              bool
 	random1           stream.RandomStream
 	random2           stream.RandomStream
@@ -978,6 +978,7 @@ type CharacterInitData struct {
 	SkillPoint   uint16
 	Exp          uint32
 	Meso         int32
+	Population   uint16
 	PositionX    int16
 	PositionY    int16
 	Stance       uint8
@@ -1021,6 +1022,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		SkillPoint:   data.SkillPoint,
 		exp:          data.Exp,
 		Meso:         data.Meso,
+		population:   data.Population,
 		partyID:      data.PartyID,
 		guildID:      data.GuildID,
 		GuildInvites: make(map[uint32]time.Time),
@@ -1151,6 +1153,7 @@ func (ch *Character) tryLevelUp() bool {
 		for i := 0; i < levelDiff; i++ {
 			ch.broadcastLevelUpEffect()
 		}
+		ch.Quests.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
 	}
 	return true
 }

@@ -7,21 +7,18 @@ import (
 )
 
 func (ch *Character) LuaQuest(questID uint32) *Quest {
-	if ch == nil || ch.Quests == nil || ch.GameWorld == nil {
+	if ch == nil || ch.Quests == nil {
 		return nil
 	}
 	if qp := ch.Quests.Get(questID); qp != nil {
 		return qp
 	}
-	def := ch.GameWorld.GetResources().GetQuest(questID)
-	if def == nil {
-		return nil
-	}
+	def := ch.Quests.questDef(questID)
 	return &Quest{
-		owner:   ch,
-		Wz:      def,
-		QuestID: questID,
-		Status:  QuestStatusNotStarted,
+		container: ch.Quests,
+		Wz:        def,
+		QuestID:   questID,
+		Status:    QuestStatusNotStarted,
 	}
 }
 
@@ -89,7 +86,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "record() takes 0 or 1 arguments")
 				return 0
 			}
-			if q.owner == nil || q.owner.Quests.Get(q.QuestID) == nil {
+			if q.container == nil || q.container.Get(q.QuestID) == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
@@ -103,14 +100,16 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			npcID := uint32(0)
+			opts := QuestPrepareOpts{}
 			if L.GetTop() >= 2 {
 				npcID = uint32(L.CheckInt(2))
+				opts.NpcID = &npcID
 			}
-			if q.owner == nil || q.Wz == nil {
+			if q.container == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			L.Push(lua.LBool(q.owner.Quests.IsStartable(q.Wz, npcID, QuestPrepareOpts{IgnoreScriptRequirement: true})))
+			L.Push(lua.LBool(q.container.IsStartable(q.QuestID, opts)))
 			return 1
 		},
 		"is_completable": func(L *lua.LState) int {
@@ -122,11 +121,116 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "is_completable() takes no arguments")
 				return 0
 			}
-			if q.owner == nil {
+			if q.container == nil || q.container.owner == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			L.Push(lua.LBool(q.IsCompletable(q.owner)))
+			L.Push(lua.LBool(q.IsCompletable(q.container.owner)))
+			return 1
+		},
+		"started": func(L *lua.LState) int {
+			q, ok := LuaCheckQuest(L, 1)
+			if !ok {
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "started() takes no arguments")
+				return 0
+			}
+			L.Push(lua.LBool(q.IsStarted()))
+			return 1
+		},
+		"completed": func(L *lua.LState) int {
+			q, ok := LuaCheckQuest(L, 1)
+			if !ok {
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "completed() takes no arguments")
+				return 0
+			}
+			L.Push(lua.LBool(q != nil && q.Status == QuestStatusCompleted))
+			return 1
+		},
+		"wz": func(L *lua.LState) int {
+			q, ok := LuaCheckQuest(L, 1)
+			if !ok {
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "wz() takes no arguments")
+				return 0
+			}
+			if q.Wz == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(q.Wz.ToLuaTable(L))
+			return 1
+		},
+		"mob_kills": func(L *lua.LState) int {
+			q, ok := LuaCheckQuest(L, 1)
+			if !ok {
+				return 0
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "mob_kills(mob_id) requires mob id")
+				return 0
+			}
+			mobID := uint32(L.CheckInt(2))
+			kills := 0
+			if q.MobKills != nil {
+				kills = q.MobKills[mobID]
+			}
+			L.Push(lua.LNumber(kills))
+			return 1
+		},
+		"set_mob_kills": func(L *lua.LState) int {
+			q, ok := LuaCheckQuest(L, 1)
+			if !ok {
+				return 0
+			}
+			if L.GetTop() != 3 {
+				L.ArgError(2, "set_mob_kills(mob_id, count) requires mob id and count")
+				return 0
+			}
+			if q.container == nil || q.container.owner == nil || q.container.Get(q.QuestID) == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			if !q.IsStarted() {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			mobID := uint32(L.CheckInt(2))
+			count := int(L.CheckInt(3))
+			if count < 0 {
+				count = 0
+			}
+			if q.MobKills == nil {
+				q.MobKills = make(map[uint32]int)
+			}
+			q.MobKills[mobID] = count
+			L.Push(lua.LBool(true))
+			return 1
+		},
+		"sync_progress": func(L *lua.LState) int {
+			q, ok := LuaCheckQuest(L, 1)
+			if !ok {
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "sync_progress() takes no arguments")
+				return 0
+			}
+			if q.container == nil || q.container.owner == nil || q.container.Get(q.QuestID) == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			if q.container.owner.Listener != nil {
+				q.container.owner.Listener.OnQuestProgress(q.container.owner, q)
+			}
+			L.Push(lua.LBool(true))
 			return 1
 		},
 		"start": func(L *lua.LState) int {
@@ -139,11 +243,17 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			npcID := uint32(L.CheckInt(2))
-			if q.owner == nil || q.Wz == nil {
+			if q.container == nil || q.container.owner == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			_, err := q.owner.Quests.Start(q.Wz, npcID, QuestPrepareOpts{IgnoreScriptRequirement: true})
+			npc := npcID
+			qp, err := q.container.Start(q.QuestID, QuestPrepareOpts{NpcID: &npc})
+			if err == nil && qp != nil {
+				if ud, ok := L.Get(1).(*lua.LUserData); ok {
+					ud.Value = qp
+				}
+			}
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},
@@ -151,6 +261,25 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			q, ok := LuaCheckQuest(L, 1)
 			if !ok {
 				return 0
+			}
+			if q.container == nil || q.container.owner == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			if q.Wz == nil {
+				if L.GetTop() != 2 {
+					L.ArgError(2, "force_start(record) requires record when quest has no WZ definition")
+					return 0
+				}
+				record := L.CheckString(2)
+				qp, err := q.container.ForceStart(q.QuestID, record)
+				if err == nil && qp != nil {
+					if ud, ok := L.Get(1).(*lua.LUserData); ok {
+						ud.Value = qp
+					}
+				}
+				L.Push(lua.LBool(err == nil))
+				return 1
 			}
 			if L.GetTop() < 2 || L.GetTop() > 3 {
 				L.ArgError(2, "force_start(npc[, record]) requires npc id")
@@ -161,13 +290,15 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if L.GetTop() >= 3 {
 				record = L.CheckString(3)
 			}
-			if q.owner == nil || q.Wz == nil {
-				L.Push(lua.LBool(false))
-				return 1
-			}
-			qp, err := q.owner.Quests.Start(q.Wz, npcID, QuestPrepareOpts{Force: true})
-			if err == nil && record != "" && qp != nil {
-				qp.StatusRecord = record
+			npc := npcID
+			qp, err := q.container.Start(q.QuestID, QuestPrepareOpts{NpcID: &npc, Force: true})
+			if err == nil && qp != nil {
+				if record != "" {
+					qp.StatusRecord = record
+				}
+				if ud, ok := L.Get(1).(*lua.LUserData); ok {
+					ud.Value = qp
+				}
 			}
 			L.Push(lua.LBool(err == nil))
 			return 1
@@ -182,16 +313,19 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			npcID := uint32(L.CheckInt(2))
-			var selection *uint32
+			opts := QuestPrepareOpts{NpcID: &npcID}
 			if L.GetTop() >= 3 {
 				sel := uint32(L.CheckInt(3))
-				selection = &sel
+				opts.Selection = &sel
 			}
-			if q.owner == nil {
+			if q.container == nil || q.container.owner == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			err := q.Complete(q.owner, npcID, selection, QuestPrepareOpts{IgnoreScriptRequirement: true})
+			if stored := q.container.Get(q.QuestID); stored != nil {
+				q = stored
+			}
+			err := q.Complete(q.container.owner, opts)
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},
@@ -205,11 +339,15 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			npcID := uint32(L.CheckInt(2))
-			if q.owner == nil {
+			if q.container == nil || q.container.owner == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			err := q.Complete(q.owner, npcID, nil, QuestPrepareOpts{Force: true})
+			if stored := q.container.Get(q.QuestID); stored != nil {
+				q = stored
+			}
+			npc := npcID
+			err := q.Complete(q.container.owner, QuestPrepareOpts{NpcID: &npc, Force: true})
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},

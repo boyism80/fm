@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -36,6 +37,12 @@ func loadQuest(path string) (*Quest, error) {
 	if check := root.find("Check"); check != nil {
 		if start := check.find("0"); start != nil {
 			quest.Start.Requirements = parseQuestRequirements(start)
+			for _, req := range quest.Start.Requirements {
+				if req.Kind == QuestReqInterval || req.Kind == QuestReqDayByDay {
+					quest.Meta.Repeatable = true
+					break
+				}
+			}
 		}
 		if complete := check.find("1"); complete != nil {
 			quest.Complete.Requirements = parseQuestRequirements(complete)
@@ -90,8 +97,8 @@ func parseQuestRequirements(phase *node) []QuestRequirement {
 		req := QuestRequirement{Kind: kind}
 
 		switch kind {
-		case QuestReqJob:
-			req.Jobs = collectChildIntValues(&child)
+		case QuestReqClass:
+			req.Classes = collectChildIntValues(&child)
 		case QuestReqPet:
 			req.PetIDs = collectChildUint32IDs(&child)
 		case QuestReqItem, QuestReqMob, QuestReqMBCard:
@@ -113,6 +120,8 @@ func parseQuestRequirements(phase *node) []QuestRequirement {
 			if req.IntValue == 0 {
 				req.IntValue = firstChildIntValue(&child)
 			}
+		case QuestReqInfo:
+			req.InfoStrings = collectInfoStrings(&child)
 		default:
 			req.IntValue = firstIntValue(&child)
 		}
@@ -165,9 +174,9 @@ func parseQuestActions(phase *node) []QuestAction {
 		}
 
 		if kind == QuestActSP || kind == QuestActSkill {
-			act.ApplicableJobs = collectQuestActionJobs(&child)
-		} else if jobs := child.find("job"); jobs != nil {
-			act.ApplicableJobs = collectChildIntValues(jobs)
+			act.ApplicableClasses = collectQuestActionClasses(&child)
+		} else if classNode := child.find("job"); classNode != nil {
+			act.ApplicableClasses = collectChildIntValues(classNode)
 		}
 
 		acts = append(acts, act)
@@ -281,15 +290,15 @@ func parseQuestRewardItems(n *node) []QuestRewardItem {
 		item := QuestRewardItem{
 			ItemID:     uint32(nodeInt(&child, "id", 0)),
 			Count:      nodeInt(&child, "count", 0),
-			Job:        nodeInt(&child, "job", -1),
-			JobEx:      nodeInt(&child, "jobEx", -1),
+			Class:      nodeInt(&child, "job", -1),
+			ClassEx:    nodeInt(&child, "jobEx", -1),
 			Gender:     nodeInt(&child, "gender", 2),
 			Period:     nodeInt(&child, "period", 0),
-			Prop:       -2,
+			Prop:       QuestRewardPropAlways,
 			DateExpire: nodeString(&child, "dateExpire"),
 		}
-		if child.find("prop") != nil {
-			item.Prop = nodeInt(&child, "prop", -1)
+		if prop, ok := nodeIntOptional(&child, "prop"); ok {
+			item.Prop = QuestRewardProp(prop)
 		}
 		if item.ItemID == 0 && item.Count == 0 {
 			continue
@@ -310,8 +319,8 @@ func parseQuestRewardSkills(n *node) []QuestRewardSkill {
 			SkillLevel:  nodeInt(&child, "skillLevel", 0),
 			MasterLevel: nodeInt(&child, "masterLevel", 0),
 		}
-		if jobs := child.find("job"); jobs != nil {
-			skill.Jobs = collectChildIntValues(jobs)
+		if classes := child.find("job"); classes != nil {
+			skill.Classes = collectChildIntValues(classes)
 		}
 		if skill.SkillID == 0 {
 			continue
@@ -321,27 +330,27 @@ func parseQuestRewardSkills(n *node) []QuestRewardSkill {
 	return out
 }
 
-func collectQuestActionJobs(n *node) []int {
+func collectQuestActionClasses(n *node) []int {
 	if n == nil {
 		return nil
 	}
-	var jobs []int
+	var classes []int
 	index := 0
 	for {
 		entry := n.find(strconv.Itoa(index))
 		if entry == nil {
 			break
 		}
-		if jobNode := entry.find("job"); jobNode != nil {
-			jobs = append(jobs, collectChildIntValues(jobNode)...)
+		if classNode := entry.find("job"); classNode != nil {
+			classes = append(classes, collectChildIntValues(classNode)...)
 		}
 		index++
 	}
-	if len(jobs) > 0 {
-		return jobs
+	if len(classes) > 0 {
+		return classes
 	}
-	if jobNode := n.find("job"); jobNode != nil {
-		return collectChildIntValues(jobNode)
+	if classNode := n.find("job"); classNode != nil {
+		return collectChildIntValues(classNode)
 	}
 	return nil
 }
@@ -380,6 +389,43 @@ func collectChildIntValues(n *node) []int {
 	}
 	for _, intField := range n.Ints {
 		out = append(out, intField.Value)
+	}
+	return out
+}
+
+func collectInfoStrings(n *node) []string {
+	if n == nil {
+		return nil
+	}
+	type indexedString struct {
+		index int
+		value string
+	}
+	pairs := make([]indexedString, 0, len(n.Strings)+len(n.Children))
+	for _, strField := range n.Strings {
+		index, err := strconv.Atoi(strField.Name)
+		if err != nil {
+			continue
+		}
+		pairs = append(pairs, indexedString{index: index, value: strField.Value})
+	}
+	for _, child := range n.Children {
+		index, err := strconv.Atoi(child.Name)
+		if err != nil {
+			continue
+		}
+		value := nodeStringValue(&child)
+		pairs = append(pairs, indexedString{index: index, value: value})
+	}
+	if len(pairs) == 0 {
+		return nil
+	}
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].index < pairs[j].index
+	})
+	out := make([]string, len(pairs))
+	for i, pair := range pairs {
+		out[i] = pair.value
 	}
 	return out
 }

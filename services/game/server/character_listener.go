@@ -764,7 +764,7 @@ func (l *CharacterListenerImpl) OnUnlockAction(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.Quest, npcID uint32) {
-	if ch == nil || qp == nil {
+	if ch == nil || qp == nil || !qp.WiresToClient() {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -785,7 +785,7 @@ func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.
 }
 
 func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entity.Quest, npcID uint32, nextQuestID uint32) {
-	if ch == nil || qp == nil {
+	if ch == nil || qp == nil || !qp.WiresToClient() {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -803,7 +803,7 @@ func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entit
 }
 
 func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entity.Quest) {
-	if ch == nil || qp == nil {
+	if ch == nil || qp == nil || !qp.WiresToClient() {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -815,7 +815,7 @@ func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entit
 }
 
 func (l *CharacterListenerImpl) OnQuestProgress(ch *entity.Character, qp *entity.Quest) {
-	if ch == nil || qp == nil {
+	if ch == nil || qp == nil || !qp.WiresToClient() {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
