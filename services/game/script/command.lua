@@ -113,6 +113,152 @@ function effect_show_dice(me, effect_id, skill_arg)
 	return true
 end
 
+local function item_count(me, item_id)
+	local slots = me:item(item_id)
+	if slots == nil then
+		return 0
+	end
+	local total = 0
+	for _, it in pairs(slots) do
+		if it ~= nil then
+			total = total + it:count()
+		end
+	end
+	return total
+end
+
+local unsupported_quest_req_kinds = {
+	skill = true,
+	pet = true,
+	pettamenessmin = true,
+	mbmin = true,
+	mbcard = true,
+	subJobFlags = true,
+	dayByDay = true,
+	normalAutoStart = true,
+	partyQuest_S = true,
+	fieldEnter = true,
+	questComplete = true,
+	interval = true,
+	start = true,
+	["end"] = true,
+}
+
+local function prepare_quest_requirement(me, quest, req)
+	local kind = req.kind
+	if kind == "item" then
+		local items = req.items
+		if items == nil then
+			return true
+		end
+		for _, entry in ipairs(items) do
+			local item_id = entry.id
+			local need = entry.count or 0
+			if item_id ~= nil and need > 0 then
+				local have = item_count(me, item_id)
+				if have < need then
+					me:mkitem(item_id, need - have)
+				end
+			end
+		end
+		return true
+	end
+	if kind == "mob" then
+		local mobs = req.mobs
+		if mobs == nil then
+			return true
+		end
+		local changed = false
+		for _, entry in ipairs(mobs) do
+			local mob_id = entry.id
+			local need = entry.count or 0
+			if mob_id ~= nil and need > 0 then
+				local have = quest:mob_kills(mob_id)
+				if have < need then
+					quest:set_mob_kills(mob_id, need)
+					changed = true
+				end
+			end
+		end
+		if changed then
+			quest:sync_progress()
+		end
+		return true
+	end
+	if kind == "pop" then
+		local need = req.value or 0
+		if me:population() < need then
+			me:population(need)
+		end
+		return true
+	end
+	if kind == "lvmin" then
+		local need = req.value or 0
+		if me:level() < need then
+			me:level(need)
+		end
+		return true
+	end
+	if kind == "lvmax" then
+		local max_level = req.value or 0
+		if max_level > 0 and me:level() > max_level then
+			me:level(max_level)
+		end
+		return true
+	end
+	if kind == "npc" or kind == "startscript" or kind == "endscript" then
+		return true
+	end
+	if kind == "quest" then
+		local quests = req.quests
+		if quests == nil then
+			return true
+		end
+		for _, entry in ipairs(quests) do
+			local other = me:quest(entry.id)
+			if other == nil then
+				return false, kind
+			end
+			local state = entry.state or 0
+			if state == 2 and not other:completed() then
+				return false, kind
+			end
+			if state == 1 and other:status() ~= 1 then
+				return false, kind
+			end
+		end
+		return true
+	end
+	if kind == "class" then
+		return false, kind
+	end
+	if unsupported_quest_req_kinds[kind] then
+		return false, kind
+	end
+	if req.value ~= nil and req.value ~= 0 then
+		return false, kind
+	end
+	return true
+end
+
+local function prepare_quest_complete(me, quest)
+	local wz = quest:wz()
+	if wz == nil then
+		return false, "wz"
+	end
+	local reqs = wz.complete_requirements
+	if reqs == nil then
+		return true
+	end
+	for _, req in ipairs(reqs) do
+		local ok, reason = prepare_quest_requirement(me, quest, req)
+		if not ok then
+			return false, reason or req.kind
+		end
+	end
+	return true
+end
+
 command_funcs = {
 	["명령어"] = {
 		privilege = ROLE.User,
@@ -172,12 +318,41 @@ command_funcs = {
 			return true
 		end,
 	},
+	["인벤토리초기화"] = {
+		privilege = ROLE.Admin,
+		usage = "- 인벤토리 아이템 전부 제거 (착용 장비 제외)",
+		command = function(me, args)
+			local cleared = me:clear_inventory()
+			me:notice(string.format("인벤토리 %d슬롯 비움", cleared))
+			return true
+		end,
+	},
 	["메소초기화"] = {
 		privilege = ROLE.Admin,
 		usage = "- 메소 초기화",
 		command = function(me, args)
 			me:meso(0)
 			me:notice("메소를 초기화했습니다.")
+			return true
+		end,
+	},
+	["인기도"] = {
+		privilege = ROLE.Admin,
+		usage = "<값> - 인기도 설정",
+		command = function(me, args)
+			if not args[1] then
+				me:notice("사용법: /인기도 <값>")
+				return true
+			end
+			local v = tonumber(args[1])
+			if not v or v < 0 then
+				v = 0
+			end
+			if v > 65535 then
+				v = 65535
+			end
+			me:population(v)
+			me:notice(string.format("인기도 설정: %d", v))
 			return true
 		end,
 	},
@@ -199,6 +374,46 @@ command_funcs = {
 				else
 					me:notice(string.format("퀘스트 %d 없음", quest_id))
 				end
+			end
+			return true
+		end,
+	},
+	["퀘스트완료준비"] = {
+		privilege = ROLE.Admin,
+		usage = "[퀘스트ID] - 완료 조건 충족 (생략 시 진행 중 전체)",
+		command = function(me, args)
+			local targets = {}
+			if args[1] and args[1] ~= "" then
+				local quest_id = tonumber(args[1])
+				if not quest_id then
+					me:notice("사용법: /퀘스트완료준비 [퀘스트ID]")
+					return true
+				end
+				local quest = me:quest(quest_id)
+				if quest == nil or not quest:started() then
+					me:notice(string.format("퀘스트 %d 진행 중 아님", quest_id))
+					return true
+				end
+				targets[quest_id] = quest
+			else
+				targets = me:quests()
+			end
+			local prepared = 0
+			local skipped = 0
+			for quest_id, quest in pairs(targets) do
+				local ok, reason = prepare_quest_complete(me, quest)
+				if ok then
+					prepared = prepared + 1
+					me:notice(string.format("퀘스트 %d 준비 완료", quest_id))
+				else
+					skipped = skipped + 1
+					me:notice(string.format("퀘스트 %d 스킵 (%s)", quest_id, tostring(reason)))
+				end
+			end
+			if prepared == 0 and skipped == 0 then
+				me:notice("진행 중인 퀘스트 없음")
+			else
+				me:notice(string.format("완료 준비: %d개 성공, %d개 스킵", prepared, skipped))
 			end
 			return true
 		end,
