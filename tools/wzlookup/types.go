@@ -38,15 +38,16 @@ type QuestPhase struct {
 }
 
 type QuestRequirement struct {
-	Kind     string           `yaml:"kind"`
-	IntValue int              `yaml:"int_value,omitempty"`
-	StrValue string           `yaml:"str_value,omitempty"`
-	Jobs     []int            `yaml:"jobs,omitempty"`
-	PetIDs   []uint32         `yaml:"pet_ids,omitempty"`
-	Items    []QuestItemCount `yaml:"items,omitempty"`
-	Mobs     []QuestMobCount  `yaml:"mobs,omitempty"`
-	Quests   []QuestStateRef  `yaml:"quests,omitempty"`
-	Skills   []QuestSkillRef  `yaml:"skills,omitempty"`
+	Kind        string           `yaml:"kind"`
+	IntValue    int              `yaml:"int_value,omitempty"`
+	StrValue    string           `yaml:"str_value,omitempty"`
+	InfoStrings []string         `yaml:"info_strings,omitempty"`
+	Jobs        []int            `yaml:"jobs,omitempty"`
+	PetIDs      []uint32         `yaml:"pet_ids,omitempty"`
+	Items       []QuestItemCount `yaml:"items,omitempty"`
+	Mobs        []QuestMobCount  `yaml:"mobs,omitempty"`
+	Quests      []QuestStateRef  `yaml:"quests,omitempty"`
+	Skills      []QuestSkillRef  `yaml:"skills,omitempty"`
 }
 
 type QuestAction struct {

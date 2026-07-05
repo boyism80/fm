@@ -976,6 +976,7 @@ export interface CharacterPersisted {
   accountId: number;
   role: number;
   hidden: boolean;
+  population: number;
 }
 
 export interface KeyLayoutBinding {
@@ -2865,6 +2866,7 @@ function createBaseCharacterPersisted(): CharacterPersisted {
     accountId: 0,
     role: 0,
     hidden: false,
+    population: 0,
   };
 }
 
@@ -2956,6 +2958,9 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     }
     if (message.hidden !== false) {
       writer.uint32(232).bool(message.hidden);
+    }
+    if (message.population !== 0) {
+      writer.uint32(240).uint32(message.population);
     }
     return writer;
   },
@@ -3199,6 +3204,14 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
           message.hidden = reader.bool();
           continue;
         }
+        case 30: {
+          if (tag !== 240) {
+            break;
+          }
+
+          message.population = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3295,6 +3308,7 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
         : 0,
       role: isSet(object.role) ? globalThis.Number(object.role) : 0,
       hidden: isSet(object.hidden) ? globalThis.Boolean(object.hidden) : false,
+      population: isSet(object.population) ? globalThis.Number(object.population) : 0,
     };
   },
 
@@ -3387,6 +3401,9 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     if (message.hidden !== false) {
       obj.hidden = message.hidden;
     }
+    if (message.population !== 0) {
+      obj.population = Math.round(message.population);
+    }
     return obj;
   },
 
@@ -3424,6 +3441,7 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     message.accountId = object.accountId ?? 0;
     message.role = object.role ?? 0;
     message.hidden = object.hidden ?? false;
+    message.population = object.population ?? 0;
     return message;
   },
 };

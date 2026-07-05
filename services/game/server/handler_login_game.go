@@ -158,6 +158,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		SkillPoint:   uint16(p.GetSkillPoint()),
 		Exp:          p.GetExp(),
 		Meso:         p.GetMeso(),
+		Population:   uint16(p.GetPopulation()),
 		PositionX:    int16(p.GetPositionX()),
 		PositionY:    int16(p.GetPositionY()),
 		Stance:       uint8(p.GetStance()),

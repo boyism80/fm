@@ -38,6 +38,27 @@ func (ch *Character) validateMesoFlow(costMeso, rewardMeso int32) FlowResult {
 	return FlowOK
 }
 
+func (ch *Character) validatePopulationFlow(costPopulation, rewardPopulation int32) FlowResult {
+	if ch == nil {
+		return FlowLackCost
+	}
+	if costPopulation < 0 || rewardPopulation < 0 {
+		return FlowLackCost
+	}
+	if costPopulation == 0 && rewardPopulation == 0 {
+		return FlowOK
+	}
+	current := uint32(ch.population)
+	if uint32(costPopulation) > current {
+		return FlowLackCost
+	}
+	after := current - uint32(costPopulation)
+	if uint32(rewardPopulation) > 65535-after {
+		return FlowLackCapacity
+	}
+	return FlowOK
+}
+
 func (ch *Character) validateExpFlow(costExp, rewardExp uint32) FlowResult {
 	if ch == nil {
 		return FlowLackCost
@@ -66,6 +87,9 @@ func (ch *Character) ValidateFlow(spec FlowSpec) FlowResult {
 		return result
 	}
 	if result := ch.validateExpFlow(spec.Cost.Exp, spec.Reward.Exp); result != FlowOK {
+		return result
+	}
+	if result := ch.validatePopulationFlow(spec.Cost.Population, spec.Reward.Population); result != FlowOK {
 		return result
 	}
 
@@ -134,6 +158,9 @@ func (ch *Character) applyFlowCost(side FlowSide) {
 	if side.Meso > 0 {
 		ch.removeMesoUnchecked(side.Meso)
 	}
+	if side.Population > 0 {
+		ch.losePopulationUnchecked(side.Population)
+	}
 	for id, count := range side.Items {
 		if count == 0 {
 			continue
@@ -164,5 +191,8 @@ func (ch *Character) applyFlowReward(side FlowSide) {
 	}
 	if side.Exp > 0 {
 		ch.addExpUnchecked(side.Exp)
+	}
+	if side.Population > 0 {
+		ch.gainPopulationUnchecked(side.Population)
 	}
 }

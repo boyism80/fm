@@ -64,6 +64,7 @@ export interface CharacterModel {
     stance?: number;
     meso?: number;
     skillPoint?: number;
+    population?: number;
     hidden?: boolean;
     updatedAt?: Date;
 }
@@ -97,6 +98,7 @@ export type CharacterRow = {
     stance: number;
     meso: number;
     skill_point: number;
+    population: number;
     hidden: boolean;
     deleted?: boolean;
     created_at?: Date | string;

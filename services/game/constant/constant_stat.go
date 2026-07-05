@@ -20,7 +20,7 @@ const (
 	StatAvailableAP Stat = 0x4000
 	StatAvailableSP Stat = 0x8000
 	StatEXP         Stat = 0x10000
-	StatFame        Stat = 0x20000
+	StatPopulation  Stat = 0x20000
 	StatMeso        Stat = 0x40000
 )
 

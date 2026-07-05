@@ -143,13 +143,57 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 		return int32(ch.AbilityPoint), true
 	case constant.StatAvailableSP:
 		return int32(ch.SkillPoint), true
-	case constant.StatFame:
-		return int32(ch.famePoint), true
+	case constant.StatPopulation:
+		return int32(ch.population), true
 	case constant.StatMeso:
 		return ch.Meso, true
 	default:
 		return 0, false
 	}
+}
+
+func (ch *Character) setPopulationUnchecked(value int32) {
+	if ch == nil {
+		return
+	}
+	if value < 0 {
+		value = 0
+	}
+	if value > 65535 {
+		value = 65535
+	}
+	ch.population = uint16(value)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatPopulation: int32(ch.population),
+	}, false)
+}
+
+func (ch *Character) gainPopulationUnchecked(amount int32) {
+	if ch == nil || amount <= 0 {
+		return
+	}
+	sum := uint32(ch.population) + uint32(amount)
+	if sum > 65535 {
+		sum = 65535
+	}
+	ch.population = uint16(sum)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatPopulation: int32(ch.population),
+	}, false)
+}
+
+func (ch *Character) losePopulationUnchecked(amount int32) {
+	if ch == nil || amount <= 0 {
+		return
+	}
+	if uint32(amount) >= uint32(ch.population) {
+		ch.population = 0
+	} else {
+		ch.population -= uint16(amount)
+	}
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatPopulation: int32(ch.population),
+	}, false)
 }
 
 func (ch *Character) notifyStatChange(stat constant.Stat) {

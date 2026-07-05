@@ -20,6 +20,8 @@ import { BuffRepository } from "../repos/buff-repository";
 import type { BuffModel } from "../repos/buff-repository";
 import { QuestRepository } from "../repos/quest-repository";
 import type { QuestModel } from "../repos/quest-repository";
+import { CharacterBuddyRepository } from "../repos/character-buddy-repository";
+import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { WzService } from "./wz-service";
 import { DistributedLockService } from "./distributed-lock-service";
@@ -53,6 +55,7 @@ type CharacterPersistedInput = {
     stance?: number;
     meso?: number;
     skillPoint?: number;
+    population?: number;
     hidden?: boolean;
 };
 
@@ -79,6 +82,8 @@ export class CharacterService {
     private readonly buffRepo: BuffRepository;
     private readonly questRepo: QuestRepository;
     private readonly keyLayoutRepo: KeyLayoutRepository;
+    private readonly buddyRepo: CharacterBuddyRepository;
+    private readonly realtimeStateRepo: CharacterRealtimeStateRepository;
     private readonly app: AppConfiguration;
     private readonly wzService: WzService;
     private readonly distributedLockService: DistributedLockService;
@@ -93,6 +98,8 @@ export class CharacterService {
         buffRepository: BuffRepository,
         questRepository: QuestRepository,
         keyLayoutRepository: KeyLayoutRepository,
+        characterBuddyRepository: CharacterBuddyRepository,
+        characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         appConfiguration: AppConfiguration,
         wzService: WzService,
         distributedLockService: DistributedLockService
@@ -106,6 +113,8 @@ export class CharacterService {
         this.buffRepo = buffRepository;
         this.questRepo = questRepository;
         this.keyLayoutRepo = keyLayoutRepository;
+        this.buddyRepo = characterBuddyRepository;
+        this.realtimeStateRepo = characterRealtimeStateRepository;
         this.app = appConfiguration;
         this.wzService = wzService;
         this.distributedLockService = distributedLockService;
@@ -189,6 +198,12 @@ export class CharacterService {
         }
 
         for (const [worldId, group] of byWorld) {
+            const lockKeys = group
+                .map(({ persisted }) => persisted.characterId)
+                .sort((a, b) => a - b)
+                .map((characterId) => `character:${characterId}`);
+            await using _characterLocks = await this.distributedLockService.acquireWorldDataLocks(worldId, lockKeys);
+
             const models = group.map(({ persisted }) => persisted);
             await this.repo.setAll(worldId, models);
 
@@ -218,15 +233,25 @@ export class CharacterService {
                 };
                 await this.overviewRepo.set(persisted.worldId, overview);
 
-                await this.inventoryRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, inventory ?? []);
-                await this.skillRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, skills ?? []);
-                await this.buffRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, buffs ?? []);
-                await this.questRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, quests ?? []);
-                await this.keyLayoutRepo.set(persisted.worldId, {
-                    characterId: persisted.characterId,
-                    worldId: persisted.worldId,
-                    keyLayoutJson: bindingsToJsonString(keyLayout ?? []),
-                });
+                if (inventory !== undefined) {
+                    await this.inventoryRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, inventory);
+                }
+                if (skills !== undefined) {
+                    await this.skillRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, skills);
+                }
+                if (buffs !== undefined) {
+                    await this.buffRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, buffs);
+                }
+                if (quests !== undefined) {
+                    await this.questRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, quests);
+                }
+                if (keyLayout !== undefined) {
+                    await this.keyLayoutRepo.set(persisted.worldId, {
+                        characterId: persisted.characterId,
+                        worldId: persisted.worldId,
+                        keyLayoutJson: bindingsToJsonString(keyLayout),
+                    });
+                }
             }
         }
     }
@@ -294,6 +319,7 @@ export class CharacterService {
             stance: 0,
             meso: 0,
             skillPoint: 0,
+            population: 0,
             hidden: false,
         };
         await this.repo.set(wid, persisted);
@@ -363,8 +389,28 @@ export class CharacterService {
 
     async deleteCharacter(accountId: number, characterId: number) {
         const worldId = this.worldId();
+        this.assertWorld(worldId);
         this.assertAccountId(accountId);
         this.assertCharacterId(characterId);
+
+        await using _characterLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `character:${characterId}`,
+        );
+
+        const character = await this.repo.get(worldId, characterId);
+        if (!character || character.accountId !== accountId) {
+            return { success: false };
+        }
+
+        await this.inventoryRepo.replaceBySnapshot(worldId, characterId, []);
+        await this.skillRepo.replaceBySnapshot(worldId, characterId, []);
+        await this.buffRepo.replaceBySnapshot(worldId, characterId, []);
+        await this.questRepo.replaceBySnapshot(worldId, characterId, []);
+        await this.buddyRepo.deleteAllForOwner(worldId, characterId);
+        await this.buddyRepo.deleteAllReferencingBuddy(worldId, characterId);
+        await this.realtimeStateRepo.delete({ worldId, characterId });
+        await this.keyLayoutRepo.delete({ worldId, characterId });
 
         const characterDeleteModel = { worldId, characterId, accountId };
         const ok = await this.repo.delete(characterDeleteModel);
@@ -373,10 +419,7 @@ export class CharacterService {
         }
 
         await this.unifiedRepo.deleteCharacterName(characterId);
-        const overviewDeleteModel = { worldId, accountId, characterId };
-        const keyLayoutDeleteModel = { worldId, characterId };
-        await this.overviewRepo.delete(overviewDeleteModel);
-        await this.keyLayoutRepo.delete(keyLayoutDeleteModel);
+        await this.overviewRepo.delete({ worldId, accountId, characterId });
         return { success: true };
     }
 }

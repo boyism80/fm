@@ -102,15 +102,16 @@ func exportQuestRequirement(r wz.QuestRequirement) QuestRequirement {
 		skills = append(skills, QuestSkillRef{SkillID: s.SkillID, Acquire: s.Acquire})
 	}
 	return QuestRequirement{
-		Kind:     string(r.Kind),
-		IntValue: r.IntValue,
-		StrValue: r.StrValue,
-		Jobs:     r.Jobs,
-		PetIDs:   r.PetIDs,
-		Items:    items,
-		Mobs:     mobs,
-		Quests:   quests,
-		Skills:   skills,
+		Kind:        string(r.Kind),
+		IntValue:    r.IntValue,
+		StrValue:    r.StrValue,
+		InfoStrings: r.InfoStrings,
+		Jobs:        r.Classes,
+		PetIDs:      r.PetIDs,
+		Items:       items,
+		Mobs:        mobs,
+		Quests:      quests,
+		Skills:      skills,
 	}
 }
 

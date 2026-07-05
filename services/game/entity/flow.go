@@ -14,9 +14,10 @@ const (
 )
 
 type FlowSide struct {
-	Items map[uint32]uint16
-	Meso  int32
-	Exp   uint32
+	Items      map[uint32]uint16
+	Meso       int32
+	Exp        uint32
+	Population int32
 }
 
 type FlowSpec struct {
@@ -37,7 +38,7 @@ func flowItemsEmpty(items map[uint32]uint16) bool {
 }
 
 func (side FlowSide) isEmpty() bool {
-	return side.Meso <= 0 && side.Exp == 0 && flowItemsEmpty(side.Items)
+	return side.Meso <= 0 && side.Exp == 0 && side.Population <= 0 && flowItemsEmpty(side.Items)
 }
 
 func groupFlowItemsByInventory(

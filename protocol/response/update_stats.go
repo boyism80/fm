@@ -26,7 +26,7 @@ func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 		mask = mask | uint32(k)
 	}
 	writer.WriteU32(mask)
-	order := []constant.Stat{constant.StatSkin, constant.StatFace, constant.StatHair, constant.StatPet, constant.StatLevel, constant.StatClass, constant.StatStr, constant.StatDex, constant.StatInt, constant.StatLuk, constant.StatHP, constant.StatMaxHP, constant.StatMP, constant.StatMaxMP, constant.StatAvailableAP, constant.StatAvailableSP, constant.StatEXP, constant.StatFame, constant.StatMeso}
+	order := []constant.Stat{constant.StatSkin, constant.StatFace, constant.StatHair, constant.StatPet, constant.StatLevel, constant.StatClass, constant.StatStr, constant.StatDex, constant.StatInt, constant.StatLuk, constant.StatHP, constant.StatMaxHP, constant.StatMP, constant.StatMaxMP, constant.StatAvailableAP, constant.StatAvailableSP, constant.StatEXP, constant.StatPopulation, constant.StatMeso}
 	for _, stat := range order {
 		if val, ok := p.Stats[stat]; ok {
 			switch stat {
@@ -48,7 +48,7 @@ func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 				constant.StatAvailableAP, constant.StatAvailableSP:
 				writer.WriteU16(uint16(val))
 
-			case constant.StatEXP, constant.StatFame, constant.StatMeso:
+			case constant.StatEXP, constant.StatPopulation, constant.StatMeso:
 				writer.WriteU32(uint32(val))
 			}
 		}

@@ -151,6 +151,7 @@ message CharacterPersisted {
   uint32 account_id        = 27;
   uint32 role              = 28;
   bool   hidden            = 29;
+  uint32 population        = 30;
 }
 
 message KeyLayoutBinding {

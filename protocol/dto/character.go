@@ -32,7 +32,7 @@ type Character struct {
 	MaxMp            uint16
 	AbilityPoint     uint16
 	Exp              uint32
-	FamePoint        uint16
+	Population       uint16
 	Map              uint32
 	SpawnPoint       uint8
 	Rank             uint32
@@ -86,7 +86,7 @@ func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 	writer.WriteU16(c.AbilityPoint)
 	writer.WriteU16(0)
 	writer.WriteU32(c.Exp)
-	writer.WriteU16(c.FamePoint)
+	writer.WriteU16(c.Population)
 	writer.WriteU32(c.Map)
 	writer.WriteU8(c.SpawnPoint)
 
@@ -165,7 +165,7 @@ func (c *Character) SerializeStats(writer *stream.StreamWriter) {
 	writer.WriteU16(c.AbilityPoint)
 	writer.WriteU16(c.SkillPoint)
 	writer.WriteU32(c.Exp)
-	writer.WriteU16(c.FamePoint)
+	writer.WriteU16(c.Population)
 	writer.WriteU32(c.Map)
 	writer.WriteU8(c.SpawnPoint)
 }
