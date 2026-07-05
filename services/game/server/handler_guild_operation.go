@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
@@ -280,7 +281,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 					}, types.SEND_POLICY_ENCRYPT)
 					return nil
 				}
-				now := time.Now()
+				now := clock.Now()
 				for id, expiresAt := range target.GuildInvites {
 					if !now.Before(expiresAt) {
 						delete(target.GuildInvites, id)
@@ -309,7 +310,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if req.GuildID == 0 || req.CharacterID != charID {
 			return nil
 		}
-		now := time.Now()
+		now := clock.Now()
 		expiresAt, hasInvite := ch.GuildInvites[req.GuildID]
 		for id, exp := range ch.GuildInvites {
 			if !now.Before(exp) {

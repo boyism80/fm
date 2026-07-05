@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"log"
 	"time"
 
@@ -92,7 +93,7 @@ func (a *LoginLogicActor) onPingTick() {
 		return
 	}
 
-	sendPing, disconnect := loginClient.NextPingAction(time.Now(), 5*time.Second)
+	sendPing, disconnect := loginClient.NextPingAction(clock.Now(), 5*time.Second)
 	if disconnect {
 		_ = loginClient.GetConnection().Close()
 		return

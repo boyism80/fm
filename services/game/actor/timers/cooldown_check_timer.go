@@ -1,6 +1,7 @@
 package timers
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -30,7 +31,7 @@ func (t *CooldownCheckTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 	if mapData.GetPlayerCount() == 0 {
 		return nil
 	}
-	now := time.Now()
+	now := clock.Now()
 	players := mapData.GetAllPlayers()
 	for _, obj := range players {
 		ch, ok := obj.(*entity.Character)

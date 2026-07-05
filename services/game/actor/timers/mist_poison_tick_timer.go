@@ -1,6 +1,7 @@
 package timers
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"log"
 	"time"
 
@@ -33,7 +34,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 	if mapData.GetPlayerCount() == 0 {
 		return nil
 	}
-	now := time.Now()
+	now := clock.Now()
 	objects := mapData.GetObjects(constant.ObjectTypeMist)
 	for _, obj := range objects {
 		mist, ok := obj.(*entity.Mist)

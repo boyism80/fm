@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/boyism80/fm/services/game/wz"
@@ -109,11 +110,11 @@ func (s *SkillEntry) IsCooling() bool {
 	if s.CooldownEnd == nil {
 		return false
 	}
-	return time.Now().Before(*s.CooldownEnd)
+	return clock.Now().Before(*s.CooldownEnd)
 }
 
 func (s *SkillEntry) StartCooldown(duration time.Duration) {
-	end := time.Now().Add(duration)
+	end := clock.Now().Add(duration)
 	s.CooldownEnd = &end
 	sec := min(int(duration.Seconds()), 65535)
 	s.notifyCooldown(uint16(sec))
@@ -123,7 +124,7 @@ func (s *SkillEntry) CooldownRemaining() time.Duration {
 	if s.CooldownEnd == nil {
 		return 0
 	}
-	if !time.Now().Before(*s.CooldownEnd) {
+	if !clock.Now().Before(*s.CooldownEnd) {
 		return 0
 	}
 	return time.Until(*s.CooldownEnd)

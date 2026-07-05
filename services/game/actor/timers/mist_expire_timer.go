@@ -1,6 +1,7 @@
 package timers
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -27,7 +28,7 @@ func (t *MistExpireTimer) GetInitialDelay() time.Duration {
 }
 
 func (t *MistExpireTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
-	now := time.Now()
+	now := clock.Now()
 	objects := mapData.GetObjects(constant.ObjectTypeMist)
 	for _, obj := range objects {
 		mist, ok := obj.(*entity.Mist)

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"log"
 	"time"
 
@@ -172,7 +173,7 @@ func (bc *MobBuffContainer) Add(duration time.Duration, skillWz *wz.Skill, skill
 			return
 		}
 	}
-	now := time.Now()
+	now := clock.Now()
 	if bc.refreshDuration(now, duration, skillWz, skillLevel, causer, values, stacks) {
 		return
 	}
@@ -276,7 +277,7 @@ func (bc *MobBuffContainer) getExpired(now time.Time) []*MobBuff {
 }
 
 func (bc *MobBuffContainer) RemoveExpired() {
-	expired := bc.getExpired(time.Now())
+	expired := bc.getExpired(clock.Now())
 	for _, ent := range expired {
 		for flag := range ent.Values {
 			bc.Remove(flag)

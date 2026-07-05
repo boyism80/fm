@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"time"
+	"github.com/boyism80/fm/core/clock"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -105,7 +105,7 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "is_on_cooldown() takes no args")
 				return 0
 			}
-			L.Push(lua.LBool(skill.IsOnCooldown(time.Now())))
+			L.Push(lua.LBool(skill.IsOnCooldown(clock.Now())))
 			return 1
 		},
 	}

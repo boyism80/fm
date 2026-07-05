@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/boyism80/fm/core/luax"
@@ -144,10 +145,10 @@ func (item *ItemCore) GetExpiration() time.Time                     { return ite
 func (item *ItemCore) BindFieldPlacement(placement *FieldPlacement) { item.FieldPlacement = placement }
 
 func (fp *FieldPlacement) RegisterExpire(duration time.Duration) {
-	fp.nextExpiry = time.Now().Add(duration)
+	fp.nextExpiry = clock.Now().Add(duration)
 }
 func (fp *FieldPlacement) RegisterFFA(duration time.Duration) {
-	fp.nextFFA = time.Now().Add(duration)
+	fp.nextFFA = clock.Now().Add(duration)
 }
 func (fp *FieldPlacement) ShouldExpire(now time.Time) bool {
 	return !fp.nextExpiry.IsZero() && now.After(fp.nextExpiry)

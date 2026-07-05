@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"sync"
 	"time"
 
@@ -158,7 +159,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		viewer.Send(&response.UpdateBuff{
 			CharacterID: int32(ch.GetID()),
 			BuffID:      dashBuff.GetBuffID(),
-			Duration:    dashBuff.RemainingDuration(time.Now()),
+			Duration:    dashBuff.RemainingDuration(clock.Now()),
 			Buffs:       buffs,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
@@ -257,10 +258,10 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	}
 	mist.ObjectCore.self = mist
 	if initialDelay > 0 {
-		mist.NextPoisonTickAt = time.Now().Add(initialDelay)
+		mist.NextPoisonTickAt = clock.Now().Add(initialDelay)
 	}
 	if duration > 0 {
-		mist.ExpiresAt = time.Now().Add(duration)
+		mist.ExpiresAt = clock.Now().Add(duration)
 	}
 	m.AddMist(mist)
 	return mist
@@ -1246,7 +1247,7 @@ func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration
 	}
 	holder := &Debuff{
 		Flag:      flag,
-		StartTime: time.Now(),
+		StartTime: clock.Now(),
 		Duration:  duration,
 	}
 	ch.AddDebuff(holder)

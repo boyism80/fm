@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"sync"
 	"time"
 )
@@ -67,7 +68,7 @@ func (tm *TimerManager) Schedule(duration time.Duration, logic func() error, cal
 		Logic:      logic,
 		Callback:   callback,
 		CancelChan: make(chan struct{}),
-		CreatedAt:  time.Now(),
+		CreatedAt:  clock.Now(),
 	}
 	tm.nextTimerID++
 
@@ -86,7 +87,7 @@ func (tm *TimerManager) SetRepeatingTimer(interval time.Duration, logic func() e
 		Logic:      logic,
 		Callback:   callback,
 		CancelChan: make(chan struct{}),
-		CreatedAt:  time.Now(),
+		CreatedAt:  clock.Now(),
 		IsRunning:  true,
 	}
 	tm.nextRepeatingID++

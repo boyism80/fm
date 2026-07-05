@@ -3,11 +3,9 @@ package entity
 import (
 	"strconv"
 	"time"
-)
 
-var questRequirementNow = func() time.Time {
-	return time.Now()
-}
+	"github.com/boyism80/fm/core/clock"
+)
 
 func parseQuestEventTime(raw string) (time.Time, bool) {
 	if len(raw) != 10 {
@@ -39,4 +37,8 @@ func questSameCalendarDay(a, b time.Time) bool {
 	ay, am, ad := a.In(time.Local).Date()
 	by, bm, bd := b.In(time.Local).Date()
 	return ay == by && am == bm && ad == bd
+}
+
+func questRequirementNow() time.Time {
+	return clock.Now()
 }

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/boyism80/fm/services/game/constant"
@@ -12,7 +13,7 @@ func (m *Map) Respawn(includeNegativeMobTime bool) int {
 		return 0
 	}
 
-	now := time.Now()
+	now := clock.Now()
 	spawned := 0
 	for _, mobSpawn := range m.MobSpawns {
 		if m.trySpawnMobRezen(mobSpawn, now, includeNegativeMobTime, true) {
@@ -27,7 +28,7 @@ func (m *Map) TickMobSpawns() {
 		return
 	}
 
-	now := time.Now()
+	now := clock.Now()
 	for _, mobSpawn := range m.MobSpawns {
 		m.trySpawnMobRezen(mobSpawn, now, false, false)
 	}

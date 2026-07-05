@@ -1,6 +1,7 @@
 package timers
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -31,7 +32,7 @@ func (t *ItemCleanupTimer) Handle(ctx actor.Context, mapData *entity.Map) error 
 		return nil
 	}
 
-	now := time.Now()
+	now := clock.Now()
 	items := mapData.GetItems()
 
 	for itemID, item := range items {

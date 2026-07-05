@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/boyism80/fm/core/luax"
@@ -117,7 +118,7 @@ func (sc *MobSkillContainer) Choice(controller *Character) *MobSkill {
 	if sc == nil {
 		return nil
 	}
-	now := time.Now()
+	now := clock.Now()
 	for _, skill := range sc.ordered {
 		if skill == nil || skill.LevelData == nil {
 			continue

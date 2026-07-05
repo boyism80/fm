@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -46,7 +47,7 @@ func (gs *GameServer) EnsureSend(caller *actor.PID, characterID uint32, inner in
 	d := &ensure.EnsureDeliver{
 		CorrelationID:    corr,
 		CharacterID:      characterID,
-		DeadlineUnixNano: time.Now().Add(ensureWallTimeout).UnixNano(),
+		DeadlineUnixNano: clock.Now().Add(ensureWallTimeout).UnixNano(),
 		Caller:           caller,
 		Inner:            inner,
 	}
@@ -113,7 +114,7 @@ func (gs *GameServer) ensureRetryAttempt(d *ensure.EnsureDeliver) {
 	if gs == nil || d == nil || gs.characterRuntime == nil {
 		return
 	}
-	if time.Now().UnixNano() > d.DeadlineUnixNano {
+	if clock.Now().UnixNano() > d.DeadlineUnixNano {
 		gs.ensureFailIfPending(d.CorrelationID, "timeout")
 		return
 	}
@@ -152,7 +153,7 @@ func (gs *GameServer) flushEnsureBuffer(characterID uint32, mapPID *actor.PID) {
 		if d == nil {
 			continue
 		}
-		if time.Now().UnixNano() > d.DeadlineUnixNano {
+		if clock.Now().UnixNano() > d.DeadlineUnixNano {
 			gs.ensureFailIfPending(d.CorrelationID, "timeout")
 			continue
 		}

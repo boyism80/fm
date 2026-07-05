@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+	"github.com/boyism80/fm/core/clock"
 	"math/rand"
 	"time"
 
@@ -217,11 +218,11 @@ func (qc *QuestContainer) applyQuestChainActions(refs []wz.QuestStateRef) {
 				}
 				created := qc.Create(ref.QuestID, QuestStatusCompleted)
 				if created != nil {
-					created.CompletionTime = time.Now()
+					created.CompletionTime = clock.Now()
 				}
 			} else {
 				existing.Status = QuestStatusCompleted
-				existing.CompletionTime = time.Now()
+				existing.CompletionTime = clock.Now()
 			}
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/ensure"
 	"github.com/boyism80/fm/services/game/wz"
 )
@@ -115,13 +116,10 @@ func TestParseQuestEventTime(t *testing.T) {
 }
 
 func TestMeetsQuestEventTimeRequirement(t *testing.T) {
-
-	orig := questRequirementNow
-	t.Cleanup(func() {
-		questRequirementNow = orig
-	})
-	questRequirementNow = func() time.Time {
-		return time.Date(2007, 1, 1, 12, 0, 0, 0, time.Local)
+	clock.Reset()
+	t.Cleanup(clock.Reset)
+	if err := clock.SetAbsolute(time.Date(2007, 1, 1, 12, 0, 0, 0, time.Local)); err != nil {
+		t.Fatalf("SetAbsolute: %v", err)
 	}
 
 	qp := &Quest{}
@@ -140,13 +138,10 @@ func TestMeetsQuestEventTimeRequirement(t *testing.T) {
 }
 
 func TestMeetsDayByDayRequirement(t *testing.T) {
-
-	orig := questRequirementNow
-	t.Cleanup(func() {
-		questRequirementNow = orig
-	})
-	questRequirementNow = func() time.Time {
-		return time.Date(2007, 1, 2, 10, 0, 0, 0, time.Local)
+	clock.Reset()
+	t.Cleanup(clock.Reset)
+	if err := clock.SetAbsolute(time.Date(2007, 1, 2, 10, 0, 0, 0, time.Local)); err != nil {
+		t.Fatalf("SetAbsolute: %v", err)
 	}
 
 	started := &Quest{Status: QuestStatusStarted}

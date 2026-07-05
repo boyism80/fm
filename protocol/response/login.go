@@ -1,7 +1,7 @@
 package response
 
 import (
-	"time"
+	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/constant"
@@ -39,7 +39,7 @@ func (p *Login) Serialize(writer *stream.StreamWriter) error {
 	}
 
 	p.Character.Serialize(writer)
-	writer.WriteDateTime(time.Now())
+	writer.WriteDateTime(clock.Now())
 	return nil
 }
 

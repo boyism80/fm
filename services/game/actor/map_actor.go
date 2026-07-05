@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"log"
 	"time"
 
@@ -869,7 +870,7 @@ func (a *MapActor) onDeliverGuildInvite(msg *DeliverGuildInvite) {
 		}
 		return
 	}
-	now := time.Now()
+	now := clock.Now()
 	for id, expiresAt := range ch.GuildInvites {
 		if !now.Before(expiresAt) {
 			delete(ch.GuildInvites, id)

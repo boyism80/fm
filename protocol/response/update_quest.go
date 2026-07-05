@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boyism80/fm/core/clock"
+
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/util"
 )
@@ -56,7 +58,7 @@ func (p *UpdateQuest) Serialize(writer *stream.StreamWriter) error {
 	case QuestWireStatusCompleted:
 		completionTime := p.CompletionTime
 		if completionTime.IsZero() {
-			completionTime = time.Now()
+			completionTime = clock.Now()
 		}
 		writer.WriteU64(util.ToFileTime(completionTime))
 		writer.WriteU16(0)

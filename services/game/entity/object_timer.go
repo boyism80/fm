@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -49,7 +50,7 @@ func (obj *ObjectCore) armTimer(key string, entry *ObjectTimer, delay time.Durat
 		return
 	}
 	k := key
-	entry.NextFireAt = time.Now().Add(delay)
+	entry.NextFireAt = clock.Now().Add(delay)
 	entry.Timer = time.AfterFunc(delay, func() {
 		if gw := obj.GameWorld; gw != nil {
 			gw.GetSchedulerSystem().RunObjectTimer(pid, obj.self, k)
@@ -104,7 +105,7 @@ func (obj *ObjectCore) ClearTimers() {
 }
 
 func (obj *ObjectCore) SuspendTimers() {
-	now := time.Now()
+	now := clock.Now()
 	for _, entry := range obj.timers {
 		if entry == nil || entry.Timer == nil {
 			continue

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"log"
 	"time"
 
@@ -435,7 +436,7 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *entity.Cha
 		InviterGuildID:     guildID,
 		InviterName:        ch.GetName(),
 		AllianceName:       a.Name,
-		ExpiresAt:          time.Now().Add(gameconst.GuildInviteDuration),
+		ExpiresAt:          clock.Now().Add(gameconst.GuildInviteDuration),
 	})
 	return nil
 }
@@ -470,7 +471,7 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *enti
 		allianceID, expiresAt, hasInvite = sg.PendingAllianceInvite()
 		return true
 	})
-	if !hasInvite || !time.Now().Before(expiresAt) {
+	if !hasInvite || !clock.Now().Before(expiresAt) {
 		return nil
 	}
 	worldID := h.gs.config.WorldId

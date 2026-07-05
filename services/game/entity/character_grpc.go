@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -270,7 +271,7 @@ func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {
 	if ch == nil || ch.Buffs == nil {
 		return nil
 	}
-	now := time.Now()
+	now := clock.Now()
 	out := make([]*internal.BuffPersisted, 0)
 	for _, ent := range ch.Buffs.Entities() {
 		if ent == nil {

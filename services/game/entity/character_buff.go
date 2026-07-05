@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"log"
 	"time"
 
@@ -343,7 +344,7 @@ func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLeve
 	if len(values) == 0 {
 		return
 	}
-	now := time.Now()
+	now := clock.Now()
 	flags, valCopy := copyBuffValues(values)
 	entity := &SkillBuff{
 		BaseBuff: &BaseBuff{
@@ -363,7 +364,7 @@ func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Durati
 	if len(values) == 0 || consumeWz == nil {
 		return
 	}
-	now := time.Now()
+	now := clock.Now()
 	flags, valCopy := copyBuffValues(values)
 	scaledDuration := duration
 	if applyPotionDurationScale && duration > 0 {
@@ -444,12 +445,12 @@ func (bc *BuffContainer) SetBuffValue(flag constant.BuffFlag, value int32) (Buff
 		return nil, false
 	}
 	values[flag] = value
-	bc.owner.Listener.OnBuffAdded(bc.owner, entity.GetBuffID(), entity.RemainingDuration(time.Now()), map[constant.BuffFlag]int32{flag: value})
+	bc.owner.Listener.OnBuffAdded(bc.owner, entity.GetBuffID(), entity.RemainingDuration(clock.Now()), map[constant.BuffFlag]int32{flag: value})
 	return entity, true
 }
 
 func (bc *BuffContainer) EmitAllBuffAddedEvents() {
-	now := time.Now()
+	now := clock.Now()
 	for entity := range bc.entities {
 		if entity == nil {
 			continue

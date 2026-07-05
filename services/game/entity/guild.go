@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -53,7 +54,7 @@ func (g *Guild) PruneAllianceInvites() {
 	if g == nil || len(g.AllianceInvites) == 0 {
 		return
 	}
-	now := time.Now()
+	now := clock.Now()
 	for allianceID, expiresAt := range g.AllianceInvites {
 		if !now.Before(expiresAt) {
 			delete(g.AllianceInvites, allianceID)

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"log"
 	"math/rand"
 	"time"
@@ -235,10 +236,10 @@ func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType c
 	}
 	mist.ObjectCore.self = mist
 	if initialDelay > 0 {
-		mist.NextPoisonTickAt = time.Now().Add(initialDelay)
+		mist.NextPoisonTickAt = clock.Now().Add(initialDelay)
 	}
 	if duration > 0 {
-		mist.ExpiresAt = time.Now().Add(duration)
+		mist.ExpiresAt = clock.Now().Add(duration)
 	}
 	mapInstance.AddMist(mist)
 	return mist

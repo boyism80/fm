@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"sort"
 	"strings"
 	"time"
@@ -280,7 +281,7 @@ func (qp *Quest) Complete(ch *Character, opts QuestPrepareOpts) error {
 		return ErrQuestNotCompletable
 	}
 	qp.Status = QuestStatusCompleted
-	qp.CompletionTime = time.Now()
+	qp.CompletionTime = clock.Now()
 	nextQuestID := uint32(0)
 	if qp.Wz != nil {
 		nextQuestID = qp.Wz.NextQuestID()

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -43,7 +44,7 @@ func NewSkillEntryFromInternalProto(owner *Character, pb *internal.SkillPersiste
 	entry := NewSkillEntry(owner, w, int(pb.GetLevel()), int(pb.GetMasterLevel()))
 	if cd := pb.GetCooldownEndUnixMs(); cd > 0 {
 		t := time.UnixMilli(cd)
-		if time.Now().Before(t) {
+		if clock.Now().Before(t) {
 			entry.CooldownEnd = &t
 		}
 	}

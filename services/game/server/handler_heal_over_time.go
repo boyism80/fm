@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/boyism80/fm/core/clock"
 	"log"
 	"time"
 
@@ -48,7 +49,7 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 	healHP := req.HealHP
 	healMP := req.HealMP
 
-	now := time.Now()
+	now := clock.Now()
 	if healHP > 0 {
 		hpInterval := healOverTimeHPInterval
 		isHanging := req.PRate&1 == 1

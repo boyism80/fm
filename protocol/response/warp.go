@@ -1,7 +1,7 @@
 package response
 
 import (
-	"time"
+	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/stream"
@@ -19,7 +19,7 @@ func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.Character.Map)
 	writer.WriteU8(p.Character.SpawnPoint)
 	writer.WriteU16(p.Character.Hp)
-	writer.WriteDateTime(time.Now())
+	writer.WriteDateTime(clock.Now())
 	return nil
 }
 

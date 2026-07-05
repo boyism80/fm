@@ -1,6 +1,7 @@
 package timers
 
 import (
+	"github.com/boyism80/fm/core/clock"
 	"log"
 	"time"
 
@@ -35,7 +36,7 @@ func (t *ClientPingTimer) Handle(ctx actor.Context, mapData *entity.Map) error {
 		return nil
 	}
 
-	now := time.Now()
+	now := clock.Now()
 	for _, obj := range mapData.GetAllPlayers() {
 		ch, ok := obj.(*entity.Character)
 		if !ok || ch == nil || ch.Sendable == nil {
