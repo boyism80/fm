@@ -98,6 +98,11 @@ export class InternalContext {
         return pool;
     }
 
+    getPgDataPools(worldId: number): Pool[] {
+        const worldKey = String(worldId);
+        return this.pgData[worldKey] ?? [];
+    }
+
     async withPgDataTransaction<T>(worldId: number, hash: number, fn: TxFn<T>): Promise<T> {
         const pool = this.getPgDataPool(worldId, hash);
         const client = await pool.connect();

@@ -107,4 +107,23 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
         );
         return Number(res.rows[0]?.cnt ?? 0);
     }
+
+    async deleteAllForOwner(worldId: number, characterId: number, options: RepositoryTxOptions = {}) {
+        const groupKey = String(characterId);
+        const pool = this.pool(worldId, groupKey);
+        await this.query(pool, "DELETE FROM character_buddies WHERE character_id = $1", [characterId], options);
+        await this.evictGroupCache(worldId, groupKey);
+    }
+
+    async deleteAllReferencingBuddy(worldId: number, buddyCharacterId: number) {
+        for (const pool of this.ctx.getPgDataPools(worldId)) {
+            const res = await pool.query(
+                "DELETE FROM character_buddies WHERE buddy_character_id = $1 RETURNING character_id",
+                [buddyCharacterId]
+            );
+            for (const row of res.rows as Array<{ character_id: number }>) {
+                await this.evictGroupCache(worldId, String(row.character_id));
+            }
+        }
+    }
 }

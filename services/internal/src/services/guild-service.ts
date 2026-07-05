@@ -453,7 +453,7 @@ export class GuildService {
 
         const normalizedName = this.normalizeGuildName(guildName);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${leaderCharacterId}`,
         );
@@ -513,8 +513,8 @@ export class GuildService {
 
             revision = savedGuild.revision;
 
-            await this.ctx.withPgGlobalTransaction(worldId, async (globalTx: PoolClient) => {
-                const state = await this.characterRealtimeStateRepo.get(worldId, leaderCharacterId, { txClient: globalTx });
+            await this.ctx.withPgDataTransaction(worldId, leaderCharacterId, async (dataTx: PoolClient) => {
+                const state = await this.characterRealtimeStateRepo.get(worldId, leaderCharacterId, { txClient: dataTx });
                 if (state?.guildId != null) {
                     const err = new Error("leader already in guild") as Error & { guildRollback?: boolean };
                     err.guildRollback = true;
@@ -529,7 +529,7 @@ export class GuildService {
                         guildId,
                         buddyCapacity: state?.buddyCapacity,
                     },
-                    { txClient: globalTx }
+                    { txClient: dataTx }
                 );
             });
         } catch (err: unknown) {
@@ -587,17 +587,22 @@ export class GuildService {
         this.assertUInt16(memberLevel, "level");
         this.assertUInt16(memberClassId, "class_id");
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${guildId}`,
         );
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
+        const memberState = await this.characterRealtimeStateRepo.get(worldId, characterId);
+        if (memberState?.guildId != null) {
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_ALREADY_IN_GUILD };
+        }
+
+        const result = await this.ctx.withPgDataTransaction(worldId, guildId, async (txClient: PoolClient) => {
             const guild = await this.guildRepo.get(worldId, guildId, { txClient });
             if (!guild) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
@@ -606,11 +611,6 @@ export class GuildService {
             const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
             if (members.size >= guild.capacity) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_FULL };
-            }
-
-            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            if (state?.guildId != null) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_ALREADY_IN_GUILD };
             }
 
             if (members.has(String(characterId))) {
@@ -638,24 +638,26 @@ export class GuildService {
                 { txClient }
             );
 
+            return { ok: true as const, revision: updatedGuild.revision };
+        });
+
+        if (!result.ok || result.revision == null) {
+            return { ok: false, code: result.code ?? messages.GuildErrorCode.GUILD_ERROR_UNKNOWN };
+        }
+
+        await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient: PoolClient) => {
             await this.characterRealtimeStateRepo.set(
                 worldId,
                 {
                     worldId,
                     characterId,
-                    partyId: state?.partyId ?? null,
+                    partyId: memberState?.partyId ?? null,
                     guildId,
-                    buddyCapacity: state?.buddyCapacity,
+                    buddyCapacity: memberState?.buddyCapacity,
                 },
                 { txClient }
             );
-
-            return { ok: true as const, revision: updatedGuild.revision };
         });
-
-        if (!result.ok) {
-            return { ok: false, code: result.code ?? messages.GuildErrorCode.GUILD_ERROR_UNKNOWN };
-        }
 
         await this.guildRepo.evictCache(worldId, guildId);
         await this.guildMemberRepo.evictGroupCache(worldId, String(guildId));
@@ -678,7 +680,7 @@ export class GuildService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -692,55 +694,53 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${lockedGuildId}`,
         );
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            if (state?.guildId == null) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-            const guildId = state.guildId;
-            if (!Number.isInteger(guildId) || guildId < 1) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-
-            const guild = await this.guildRepo.get(worldId, guildId, { txClient });
+        const guildResult = await this.ctx.withPgDataTransaction(worldId, lockedGuildId, async (txClient: PoolClient) => {
+            const guild = await this.guildRepo.get(worldId, lockedGuildId, { txClient });
             if (!guild) {
-                await this.characterRealtimeStateRepo.set(
-                    worldId,
-                    { worldId, characterId, partyId: state.partyId ?? null, guildId: null, buddyCapacity: state.buddyCapacity },
-                    { txClient }
-                );
-                return { ok: true as const, guildId, revision: 0 };
+                return { ok: true as const, guildId: lockedGuildId, revision: 0, clearRealtime: true as const };
             }
 
             if (guild.leaderCharacterId === characterId) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_LEADER_CANNOT_LEAVE };
             }
 
-            const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
+            const members = await this.guildMemberRepo.getAll(worldId, String(lockedGuildId), { txClient });
             if (!members.has(String(characterId))) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
             }
 
-            await this.guildMemberRepo.del(worldId, String(guildId), characterId, { txClient });
-            await this.characterRealtimeStateRepo.set(
-                worldId,
-                { worldId, characterId, partyId: state.partyId ?? null, guildId: null, buddyCapacity: state.buddyCapacity },
-                { txClient }
-            );
+            await this.guildMemberRepo.del(worldId, String(lockedGuildId), characterId, { txClient });
 
             const nextRevision = guild.revision + 1;
             const updatedGuild = await this.guildRepo.set(worldId, { ...guild, revision: nextRevision }, { txClient });
-            return { ok: true as const, guildId: updatedGuild.guildId, revision: updatedGuild.revision };
+            return { ok: true as const, guildId: updatedGuild.guildId, revision: updatedGuild.revision, clearRealtime: true as const };
         });
 
-        if (!result.ok || result.guildId == null || result.revision == null) {
-            return result;
+        if (!guildResult.ok || guildResult.guildId == null || guildResult.revision == null) {
+            return guildResult;
         }
+
+        if (guildResult.clearRealtime) {
+            await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient: PoolClient) => {
+                await this.characterRealtimeStateRepo.set(
+                    worldId,
+                    {
+                        worldId,
+                        characterId,
+                        partyId: lockedState.partyId ?? null,
+                        guildId: null,
+                        buddyCapacity: lockedState.buddyCapacity,
+                    },
+                    { txClient }
+                );
+            });
+        }
+        const result = guildResult;
 
         await this.guildRepo.evictCache(worldId, result.guildId);
         await this.guildMemberRepo.evictGroupCache(worldId, String(result.guildId));
@@ -784,12 +784,12 @@ export class GuildService {
             ? targetCharacterId
             : requesterCharacterId;
 
-        await using _firstCharacterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _firstCharacterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${firstCharacterId}`,
         );
 
-        await using _secondCharacterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _secondCharacterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${secondCharacterId}`,
         );
@@ -803,32 +803,23 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${lockedGuildId}`,
         );
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const requesterState = await this.characterRealtimeStateRepo.get(worldId, requesterCharacterId, { txClient });
-            if (requesterState?.guildId == null) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-            const guildId = requesterState.guildId;
-            if (!Number.isInteger(guildId) || guildId < 1) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
+        const targetLockedState = await this.characterRealtimeStateRepo.get(worldId, targetCharacterId);
+        if (targetLockedState?.guildId !== lockedGuildId) {
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_TARGET_NOT_IN_GUILD };
+        }
 
-            const targetState = await this.characterRealtimeStateRepo.get(worldId, targetCharacterId, { txClient });
-            if (targetState?.guildId !== guildId) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_TARGET_NOT_IN_GUILD };
-            }
-
-            const guild = await this.guildRepo.get(worldId, guildId, { txClient });
+        const guildResult = await this.ctx.withPgDataTransaction(worldId, lockedGuildId, async (txClient: PoolClient) => {
+            const guild = await this.guildRepo.get(worldId, lockedGuildId, { txClient });
             if (!guild) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
             }
 
-            const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
+            const members = await this.guildMemberRepo.getAll(worldId, String(lockedGuildId), { txClient });
             const requesterMember = members.get(String(requesterCharacterId));
             if (!requesterMember) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
@@ -848,27 +839,31 @@ export class GuildService {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_CANNOT_EXPEL_TARGET };
             }
 
-            await this.guildMemberRepo.del(worldId, String(guildId), targetCharacterId, { txClient });
-            await this.characterRealtimeStateRepo.set(
-                worldId,
-                {
-                    worldId,
-                    characterId: targetCharacterId,
-                    partyId: targetState.partyId ?? null,
-                    guildId: null,
-                    buddyCapacity: targetState.buddyCapacity,
-                },
-                { txClient }
-            );
+            await this.guildMemberRepo.del(worldId, String(lockedGuildId), targetCharacterId, { txClient });
 
             const nextRevision = guild.revision + 1;
             const updatedGuild = await this.guildRepo.set(worldId, { ...guild, revision: nextRevision }, { txClient });
             return { ok: true as const, guildId: updatedGuild.guildId, revision: updatedGuild.revision };
         });
 
-        if (!result.ok || result.guildId == null || result.revision == null) {
-            return result;
+        if (!guildResult.ok || guildResult.guildId == null || guildResult.revision == null) {
+            return guildResult;
         }
+
+        await this.ctx.withPgDataTransaction(worldId, targetCharacterId, async (txClient: PoolClient) => {
+            await this.characterRealtimeStateRepo.set(
+                worldId,
+                {
+                    worldId,
+                    characterId: targetCharacterId,
+                    partyId: targetLockedState.partyId ?? null,
+                    guildId: null,
+                    buddyCapacity: targetLockedState.buddyCapacity,
+                },
+                { txClient }
+            );
+        });
+        const result = guildResult;
 
         await this.guildRepo.evictCache(worldId, result.guildId);
         await this.guildMemberRepo.evictGroupCache(worldId, String(result.guildId));
@@ -907,7 +902,7 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_INVALID_RANK_TITLES };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -921,22 +916,13 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${lockedGuildId}`,
         );
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            if (state?.guildId == null) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-            const guildId = state.guildId;
-            if (!Number.isInteger(guildId) || guildId < 1) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-
-            const guild = await this.guildRepo.get(worldId, guildId, { txClient });
+        const result = await this.ctx.withPgDataTransaction(worldId, lockedGuildId, async (txClient: PoolClient) => {
+            const guild = await this.guildRepo.get(worldId, lockedGuildId, { txClient });
             if (!guild) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
             }
@@ -944,7 +930,7 @@ export class GuildService {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
             }
 
-            const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
+            const members = await this.guildMemberRepo.getAll(worldId, String(lockedGuildId), { txClient });
             const requesterMember = members.get(String(characterId));
             if (!requesterMember) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
@@ -1010,12 +996,12 @@ export class GuildService {
             ? targetCharacterId
             : requesterCharacterId;
 
-        await using _firstCharacterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _firstCharacterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${firstCharacterId}`,
         );
 
-        await using _secondCharacterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _secondCharacterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${secondCharacterId}`,
         );
@@ -1029,32 +1015,23 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${lockedGuildId}`,
         );
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const requesterState = await this.characterRealtimeStateRepo.get(worldId, requesterCharacterId, { txClient });
-            if (requesterState?.guildId == null) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-            const guildId = requesterState.guildId;
-            if (!Number.isInteger(guildId) || guildId < 1) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
+        const targetLockedState = await this.characterRealtimeStateRepo.get(worldId, targetCharacterId);
+        if (targetLockedState?.guildId !== lockedGuildId) {
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_TARGET_NOT_IN_GUILD };
+        }
 
-            const targetState = await this.characterRealtimeStateRepo.get(worldId, targetCharacterId, { txClient });
-            if (targetState?.guildId !== guildId) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_TARGET_NOT_IN_GUILD };
-            }
-
-            const guild = await this.guildRepo.get(worldId, guildId, { txClient });
+        const result = await this.ctx.withPgDataTransaction(worldId, lockedGuildId, async (txClient: PoolClient) => {
+            const guild = await this.guildRepo.get(worldId, lockedGuildId, { txClient });
             if (!guild) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
             }
 
-            const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
+            const members = await this.guildMemberRepo.getAll(worldId, String(lockedGuildId), { txClient });
             const requesterMember = members.get(String(requesterCharacterId));
             if (!requesterMember) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
@@ -1132,7 +1109,7 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_UNKNOWN };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -1146,22 +1123,13 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${lockedGuildId}`,
         );
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            if (state?.guildId == null) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-            const guildId = state.guildId;
-            if (!Number.isInteger(guildId) || guildId < 1) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-
-            const guild = await this.guildRepo.get(worldId, guildId, { txClient });
+        const result = await this.ctx.withPgDataTransaction(worldId, lockedGuildId, async (txClient: PoolClient) => {
+            const guild = await this.guildRepo.get(worldId, lockedGuildId, { txClient });
             if (!guild) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
             }
@@ -1169,7 +1137,7 @@ export class GuildService {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
             }
 
-            const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
+            const members = await this.guildMemberRepo.getAll(worldId, String(lockedGuildId), { txClient });
             const requesterMember = members.get(String(characterId));
             if (!requesterMember) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
@@ -1221,7 +1189,7 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_INVALID_NOTICE };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -1235,27 +1203,18 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${lockedGuildId}`,
         );
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            if (state?.guildId == null) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-            const guildId = state.guildId;
-            if (!Number.isInteger(guildId) || guildId < 1) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-
-            const guild = await this.guildRepo.get(worldId, guildId, { txClient });
+        const result = await this.ctx.withPgDataTransaction(worldId, lockedGuildId, async (txClient: PoolClient) => {
+            const guild = await this.guildRepo.get(worldId, lockedGuildId, { txClient });
             if (!guild) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
             }
 
-            const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
+            const members = await this.guildMemberRepo.getAll(worldId, String(lockedGuildId), { txClient });
             const requesterMember = members.get(String(characterId));
             if (!requesterMember) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
@@ -1292,7 +1251,7 @@ export class GuildService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -1306,27 +1265,18 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${lockedGuildId}`,
         );
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            if (state?.guildId == null) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-            const guildId = state.guildId;
-            if (!Number.isInteger(guildId) || guildId < 1) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-
-            const guild = await this.guildRepo.get(worldId, guildId, { txClient });
+        const result = await this.ctx.withPgDataTransaction(worldId, lockedGuildId, async (txClient: PoolClient) => {
+            const guild = await this.guildRepo.get(worldId, lockedGuildId, { txClient });
             if (!guild) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
             }
 
-            const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
+            const members = await this.guildMemberRepo.getAll(worldId, String(lockedGuildId), { txClient });
             const requesterMember = members.get(String(characterId));
             if (!requesterMember) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
@@ -1392,7 +1342,7 @@ export class GuildService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -1406,7 +1356,7 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${lockedGuildId}`,
         );
@@ -1418,27 +1368,18 @@ export class GuildService {
             .sort((a, b) => a - b)
             .map((memberCharacterId) => `character_realtime:${memberCharacterId}`);
 
-        await using _otherMemberLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+        await using _otherMemberLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
             otherMemberKeyRests,
         );
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const state = await this.characterRealtimeStateRepo.get(worldId, characterId, { txClient });
-            if (state?.guildId == null) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-            const guildId = state.guildId;
-            if (!Number.isInteger(guildId) || guildId < 1) {
-                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD };
-            }
-
-            const guild = await this.guildRepo.get(worldId, guildId, { txClient });
+        const guildResult = await this.ctx.withPgDataTransaction(worldId, lockedGuildId, async (txClient: PoolClient) => {
+            const guild = await this.guildRepo.get(worldId, lockedGuildId, { txClient });
             if (!guild) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_GUILD_NOT_FOUND };
             }
 
-            const members = await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient });
+            const members = await this.guildMemberRepo.getAll(worldId, String(lockedGuildId), { txClient });
             const requesterMember = members.get(String(characterId));
             if (!requesterMember || requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
@@ -1451,12 +1392,25 @@ export class GuildService {
                 { ...guild, revision: nextRevision, disbandedAt: new Date() },
                 { txClient }
             );
-            await this.guildMemberRepo.deleteAllForGuild(worldId, guildId, { txClient });
+            await this.guildMemberRepo.deleteAllForGuild(worldId, lockedGuildId, { txClient });
 
-            for (const memberCharacterId of memberCharacterIds) {
+            return {
+                ok: true as const,
+                guildId: lockedGuildId,
+                revision: nextRevision,
+                memberCharacterIds,
+            };
+        });
+
+        if (!guildResult.ok || guildResult.guildId == null || guildResult.revision == null) {
+            return guildResult;
+        }
+
+        for (const memberCharacterId of guildResult.memberCharacterIds ?? []) {
+            await this.ctx.withPgDataTransaction(worldId, memberCharacterId, async (txClient: PoolClient) => {
                 const memberState = await this.characterRealtimeStateRepo.get(worldId, memberCharacterId, { txClient });
                 if (!memberState) {
-                    continue;
+                    return;
                 }
                 await this.characterRealtimeStateRepo.set(
                     worldId,
@@ -1469,19 +1423,9 @@ export class GuildService {
                     },
                     { txClient }
                 );
-            }
-
-            return {
-                ok: true as const,
-                guildId,
-                revision: nextRevision,
-                memberCharacterIds,
-            };
-        });
-
-        if (!result.ok || result.guildId == null || result.revision == null) {
-            return result;
+            });
         }
+        const result = guildResult;
 
         await this.guildBulletinBoardRepo.deleteAllForGuild(worldId, result.guildId);
 
@@ -1856,6 +1800,11 @@ export class GuildService {
         const normalizedTitle = this.truncateBulletinField(title, MAX_GUILD_BULLETIN_TITLE_LEN);
         const normalizedBody = this.truncateBulletinField(body, MAX_GUILD_BULLETIN_BODY_LEN);
 
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `guild:${membership.guildId}`,
+        );
+
         const isCooldown = await this.setBulletinBoardCooldown(worldId, characterId);
         if (!isCooldown) {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_COOLDOWN };
@@ -1972,6 +1921,11 @@ export class GuildService {
         }
 
         const normalizedContent = this.truncateBulletinField(content, MAX_GUILD_BULLETIN_REPLY_LEN);
+
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `guild:${membership.guildId}`,
+        );
 
         const isCooldown = await this.setBulletinBoardCooldown(worldId, characterId);
         if (!isCooldown) {
@@ -2105,23 +2059,6 @@ export class GuildService {
         return { found: true, alliance: await this.allianceToPb(worldId, alliance) };
     }
 
-    private async nextAllianceId(txClient: PoolClient) {
-        const res = await txClient.query("SELECT nextval('alliance_id_seq') AS id");
-        const id = res.rows?.[0]?.id;
-        if (id == null) {
-            const err = new Error("nextval('alliance_id_seq') returned no id") as Error & { code?: string };
-            err.code = "ALLIANCE_ID_SEQ_ERROR";
-            throw err;
-        }
-        const n = Number(id);
-        if (!Number.isInteger(n) || n < 1) {
-            const err = new Error("alliance_id_seq returned invalid id") as Error & { code?: string };
-            err.code = "ALLIANCE_ID_SEQ_ERROR";
-            throw err;
-        }
-        return n;
-    }
-
     private async assignAllianceRanks(
         worldId: number,
         guildId: number,
@@ -2194,11 +2131,11 @@ export class GuildService {
         }
         const trimmedName = allianceName.trim();
 
-        await using _leaderLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _leaderLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${leaderCharacterId}`,
         );
-        await using _partnerLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _partnerLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${partnerCharacterId}`,
         );
@@ -2214,8 +2151,8 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_PARTNER_INVALID };
         }
 
-        await using _guildLock1 = await this.distributedLockService.acquireWorldGlobalLock(worldId, `guild:${guildId}`);
-        await using _guildLock2 = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock1 = await this.distributedLockService.acquireWorldDataLock(worldId, `guild:${guildId}`);
+        await using _guildLock2 = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${partnerGuildId}`,
         );
@@ -2252,9 +2189,26 @@ export class GuildService {
         let allianceId: number | null = null;
 
         try {
-            savedAlliance = await this.ctx.withPgDataTransaction(worldId, guildId, async (dataTx: PoolClient) => {
-                const newAllianceId = await this.nextAllianceId(dataTx);
-                const inserted = await this.allianceRepo.set(
+            const newAllianceId = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
+                const res = await txClient.query("SELECT nextval('alliance_id_seq') AS id");
+                const id = res.rows?.[0]?.id;
+                if (id == null) {
+                    const err = new Error("nextval('alliance_id_seq') returned no id") as Error & { code?: string };
+                    err.code = "ALLIANCE_ID_SEQ_ERROR";
+                    throw err;
+                }
+                const n = Number(id);
+                if (!Number.isInteger(n) || n < 1) {
+                    const err = new Error("alliance_id_seq returned invalid id") as Error & { code?: string };
+                    err.code = "ALLIANCE_ID_SEQ_ERROR";
+                    throw err;
+                }
+                return n;
+            });
+            allianceId = newAllianceId;
+
+            savedAlliance = await this.ctx.withPgDataTransaction(worldId, newAllianceId, async (dataTx: PoolClient) => {
+                return this.allianceRepo.set(
                     worldId,
                     {
                         worldId,
@@ -2269,23 +2223,24 @@ export class GuildService {
                     },
                     { txClient: dataTx }
                 );
-                allianceId = newAllianceId;
+            });
 
+            await this.ctx.withPgDataTransaction(worldId, guildId, async (dataTx: PoolClient) => {
                 await this.guildRepo.set(
                     worldId,
-                    { ...guild1, allianceId, revision: guild1.revision + 1 },
+                    { ...guild1, allianceId: newAllianceId, revision: guild1.revision + 1 },
                     { txClient: dataTx }
                 );
-                await this.guildRepo.set(
-                    worldId,
-                    { ...guild2, allianceId, revision: guild2.revision + 1 },
-                    { txClient: dataTx }
-                );
-
                 await this.assignAllianceRanks(worldId, guildId, 1, dataTx);
-                await this.assignAllianceRanks(worldId, partnerGuildId, 2, dataTx);
+            });
 
-                return inserted;
+            await this.ctx.withPgDataTransaction(worldId, partnerGuildId, async (dataTx: PoolClient) => {
+                await this.guildRepo.set(
+                    worldId,
+                    { ...guild2, allianceId: newAllianceId, revision: guild2.revision + 1 },
+                    { txClient: dataTx }
+                );
+                await this.assignAllianceRanks(worldId, partnerGuildId, 2, dataTx);
             });
         } catch (err: unknown) {
             const code = (err as { code?: string })?.code;
@@ -2405,7 +2360,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -2415,7 +2370,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${guildId}`,
         );
@@ -2437,7 +2392,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
 
-        await using _allianceLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `alliance:${allianceId}`,
         );
@@ -2448,7 +2403,7 @@ export class GuildService {
         }
 
         const otherGuildIds = [...alliance.guildIds].sort((a, b) => a - b);
-        await using _otherGuildLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+        await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
             otherGuildIds.map((id) => `guild:${id}`),
         );
@@ -2539,7 +2494,7 @@ export class GuildService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -2553,7 +2508,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${guildId}`,
         );
@@ -2570,7 +2525,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
 
-        await using _allianceLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `alliance:${allianceId}`,
         );
@@ -2673,7 +2628,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_RANK_TITLES };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -2687,7 +2642,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${guildId}`,
         );
@@ -2701,7 +2656,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
         }
 
-        await using _allianceLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `alliance:${allianceId}`,
         );
@@ -2789,7 +2744,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_NOTICE };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -2803,7 +2758,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${guildId}`,
         );
@@ -2817,7 +2772,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
         }
 
-        await using _allianceLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `alliance:${allianceId}`,
         );
@@ -2901,11 +2856,11 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_LEADER_CANDIDATE };
         }
 
-        await using _requesterCharacterLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _requesterCharacterLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
-        await using _newLeaderCharacterLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _newLeaderCharacterLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${newLeaderCharacterId}`,
         );
@@ -2919,7 +2874,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _requesterGuildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _requesterGuildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${requesterGuildId}`,
         );
@@ -2933,7 +2888,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
         }
 
-        await using _allianceLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `alliance:${allianceId}`,
         );
@@ -2958,7 +2913,7 @@ export class GuildService {
         const otherGuildIds = alliance.guildIds
             .filter((id) => id !== requesterGuildId)
             .sort((a, b) => a - b);
-        await using _otherGuildLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+        await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
             otherGuildIds.map((id) => `guild:${id}`),
         );
@@ -3140,12 +3095,12 @@ export class GuildService {
             ? targetCharacterId
             : requesterCharacterId;
 
-        await using _firstCharacterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _firstCharacterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${firstCharacterId}`,
         );
 
-        await using _secondCharacterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _secondCharacterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${secondCharacterId}`,
         );
@@ -3159,7 +3114,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _requesterGuildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _requesterGuildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${requesterGuildId}`,
         );
@@ -3173,7 +3128,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
         }
 
-        await using _allianceLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `alliance:${allianceId}`,
         );
@@ -3186,7 +3141,7 @@ export class GuildService {
         const otherGuildIds = alliance.guildIds
             .filter((id) => id !== requesterGuildId)
             .sort((a, b) => a - b);
-        await using _otherGuildLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+        await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
             otherGuildIds.map((id) => `guild:${id}`),
         );
@@ -3318,7 +3273,7 @@ export class GuildService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -3332,7 +3287,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${guildId}`,
         );
@@ -3346,7 +3301,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
         }
 
-        await using _allianceLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `alliance:${allianceId}`,
         );
@@ -3372,7 +3327,7 @@ export class GuildService {
                 .filter((id) => id !== guildId)
                 .sort((a, b) => a - b)
                 .map((id) => `guild:${id}`);
-            await using _otherGuildLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+            await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
                 worldId,
                 guildLocks,
             );
@@ -3406,7 +3361,7 @@ export class GuildService {
         }
 
         const otherGuildIds = alliance.guildIds.filter((id) => id !== guildId);
-        await using _otherGuildLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+        await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
             otherGuildIds.sort((a, b) => a - b).map((id) => `guild:${id}`),
         );
@@ -3521,7 +3476,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -3538,7 +3493,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_CANNOT_EXPEL_OWN_GUILD };
         }
 
-        await using _requesterGuildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _requesterGuildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${requesterGuildId}`,
         );
@@ -3555,7 +3510,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
         }
 
-        await using _allianceLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `alliance:${allianceId}`,
         );
@@ -3584,7 +3539,7 @@ export class GuildService {
                 .filter((id) => id !== requesterGuildId)
                 .sort((a, b) => a - b)
                 .map((id) => `guild:${id}`);
-            await using _otherGuildLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+            await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
                 worldId,
                 guildLocks,
             );
@@ -3618,7 +3573,7 @@ export class GuildService {
         }
 
         const otherGuildIds = alliance.guildIds.filter((id) => id !== requesterGuildId);
-        await using _otherGuildLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+        await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
             otherGuildIds.sort((a, b) => a - b).map((id) => `guild:${id}`),
         );
@@ -3728,7 +3683,7 @@ export class GuildService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `character_realtime:${characterId}`,
         );
@@ -3742,7 +3697,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _guildLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `guild:${guildId}`,
         );
@@ -3756,7 +3711,7 @@ export class GuildService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
         }
 
-        await using _allianceLock = await this.distributedLockService.acquireWorldGlobalLock(
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,
             `alliance:${allianceId}`,
         );
@@ -3777,7 +3732,7 @@ export class GuildService {
             .filter((id) => id !== guildId)
             .sort((a, b) => a - b)
             .map((id) => `guild:${id}`);
-        await using _otherGuildLocks = await this.distributedLockService.acquireWorldGlobalLocks(
+        await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
             guildLocks,
         );

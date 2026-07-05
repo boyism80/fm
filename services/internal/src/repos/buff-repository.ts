@@ -136,23 +136,21 @@ export class BuffRepository extends HashRepository<BuffModel, BuffRow> {
 
     async replaceBySnapshot(worldId: number, characterId: number, models: BuffModel[]) {
         const groupKey = String(characterId);
-        const pool = this.pool(worldId, groupKey);
-        const { text: selectText, values: selectValues } = this.onSelect(groupKey);
-        const existingRes = await pool.query(selectText, selectValues);
-        const existingRows = existingRes.rows ?? [];
-
         const normalized = models.map((m) => {
             const row = this.modelToRow(m);
             row.character_id = characterId;
             return row;
         });
 
-        await pool.query("BEGIN");
-        try {
+        await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient) => {
+            const { text: selectText, values: selectValues } = this.onSelect(groupKey);
+            const existingRes = await txClient.query(selectText, selectValues);
+            const existingRows = existingRes.rows ?? [];
+
             if (normalized.length > 0) {
                 const upsert = this.onBulkUpsert(normalized);
                 if (upsert.text) {
-                    await pool.query(upsert.text, upsert.values);
+                    await txClient.query(upsert.text, upsert.values);
                 }
             }
 
@@ -162,14 +160,9 @@ export class BuffRepository extends HashRepository<BuffModel, BuffRow> {
                 .filter((id) => !incoming.has(id));
             if (deleteIds.length > 0) {
                 const delQuery = this.onBulkDelete(deleteIds, groupKey);
-                await pool.query(delQuery.text, delQuery.values);
+                await txClient.query(delQuery.text, delQuery.values);
             }
-
-            await pool.query("COMMIT");
-        } catch (err) {
-            await pool.query("ROLLBACK");
-            throw err;
-        }
+        });
 
         const redis = this.redis(worldId, groupKey);
         await redis.del(this.getRedisHashKey(worldId, String(characterId))).catch(() => {});

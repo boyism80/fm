@@ -256,6 +256,17 @@ export class GuildBulletinBoardRepository {
     ): Promise<GuildBulletinBoardThreadModel> {
         const createdAt = input.createdAt ?? new Date();
         return this.runInDataTransaction(worldId, input.guildId, options, async (client) => {
+            const guildRes = await client.query(
+                `SELECT guild_id
+                 FROM guilds
+                 WHERE world_id = $1 AND guild_id = $2 AND disbanded_at IS NULL
+                 FOR UPDATE`,
+                [worldId, input.guildId]
+            );
+            if ((guildRes.rowCount ?? 0) === 0) {
+                throw new Error(`guild not found for bulletin thread: world=${worldId} guild=${input.guildId}`);
+            }
+
             const nextRes = await client.query(
                 `SELECT
                     CASE
@@ -263,21 +274,13 @@ export class GuildBulletinBoardRepository {
                         ELSE GREATEST(1, COALESCE(MAX(local_thread_id), 0) + 1)
                     END AS next_local_thread_id
                  FROM guild_bulletin_board_threads
-                 WHERE world_id = $1 AND guild_id = $2
-                 FOR UPDATE`,
+                 WHERE world_id = $1 AND guild_id = $2`,
                 [worldId, input.guildId, input.isNotice, NOTICE_LOCAL_THREAD_ID]
             );
 
-            let localThreadId: number;
-            if ((nextRes.rowCount ?? 0) > 0) {
-                localThreadId = Number(
-                    (nextRes.rows[0] as { next_local_thread_id: number | string }).next_local_thread_id
-                );
-            } else if (input.isNotice) {
-                localThreadId = NOTICE_LOCAL_THREAD_ID;
-            } else {
-                localThreadId = 1;
-            }
+            const localThreadId = Number(
+                (nextRes.rows[0] as { next_local_thread_id: number | string }).next_local_thread_id
+            );
 
             const res = await client.query(
                 `INSERT INTO guild_bulletin_board_threads

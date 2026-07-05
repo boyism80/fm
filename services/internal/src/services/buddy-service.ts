@@ -9,6 +9,7 @@ import { CharacterRepository } from "../repos/character-repository";
 import { SessionRepository } from "../repos/session-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { RabbitMQService } from "./rabbitmq-service";
+import { DistributedLockService } from "./distributed-lock-service";
 
 const DEFAULT_BUDDY_GROUP = "그룹 미지정";
 const AMQ_DIRECT_EXCHANGE = "amq.direct";
@@ -63,6 +64,7 @@ export class BuddyService {
     private readonly unifiedRepo: UnifiedRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
+    private readonly distributedLockService: DistributedLockService;
 
     constructor(
         internalContext: InternalContext,
@@ -72,7 +74,8 @@ export class BuddyService {
         characterRepository: CharacterRepository,
         unifiedRepository: UnifiedRepository,
         sessionRepository: SessionRepository,
-        rabbitmqService: RabbitMQService
+        rabbitmqService: RabbitMQService,
+        distributedLockService: DistributedLockService
     ) {
         this.ctx = internalContext;
         this.app = appConfiguration;
@@ -82,6 +85,7 @@ export class BuddyService {
         this.unifiedRepo = unifiedRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
+        this.distributedLockService = distributedLockService;
     }
 
     async getAll(worldId: number, characterId: number) {
@@ -141,17 +145,67 @@ export class BuddyService {
             return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_CHARACTER_NOT_FOUND };
         }
 
+        const firstCharacterId = requesterCharacterId < targetCharacterId ? requesterCharacterId : targetCharacterId;
+        const secondCharacterId = requesterCharacterId < targetCharacterId ? targetCharacterId : requesterCharacterId;
+
+        await using _firstBuddyLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `character_buddy:${firstCharacterId}`,
+        );
+        await using _secondBuddyLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `character_buddy:${secondCharacterId}`,
+        );
+
         const existingEntry = await this.buddyRepo.getItem(worldId, String(requesterCharacterId), targetCharacterId);
         if (existingEntry) {
             if (existingEntry.groupName === trimmedGroup) {
                 return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_ALREADY_ON_LIST };
             }
-            const updated = await this.buddyRepo.set(worldId, {
-                ...existingEntry,
-                groupName: trimmedGroup,
+            const updated = await this.ctx.withPgDataTransaction(worldId, requesterCharacterId, async (txClient: PoolClient) => {
+                return this.buddyRepo.set(
+                    worldId,
+                    { ...existingEntry, groupName: trimmedGroup },
+                    { txClient }
+                );
             });
+            await this.buddyRepo.evictGroupCache(worldId, String(requesterCharacterId));
             const requesterView = await this.buildEntry(worldId, updated);
             const targetChannelIndex = await this.sessionChannelIndex(worldId, targetCharacterId);
+            return {
+                ok: true,
+                targetCharacterId,
+                targetChannelId: targetChannelIndex < 0 ? 0 : targetChannelIndex,
+                requesterView,
+            };
+        }
+
+        const reverse = await this.buddyRepo.getItem(worldId, String(targetCharacterId), requesterCharacterId);
+        if (reverse && !reverse.pending) {
+            const requesterCapacity = await this.realtimeStateRepo.getBuddyCapacity(worldId, requesterCharacterId);
+            const requesterCount = await this.buddyRepo.countAll(worldId, requesterCharacterId);
+            if (requesterCount >= requesterCapacity) {
+                return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_LIST_FULL };
+            }
+            const requesterBuddy = await this.ctx.withPgDataTransaction(worldId, requesterCharacterId, async (txClient: PoolClient) => {
+                return this.buddyRepo.set(
+                    worldId,
+                    {
+                        characterId: requesterCharacterId,
+                        buddyCharacterId: targetCharacterId,
+                        groupName: trimmedGroup,
+                        pending: false,
+                    },
+                    { txClient }
+                );
+            });
+            await this.buddyRepo.evictGroupCache(worldId, String(requesterCharacterId));
+            const requesterChannelIndex = await this.sessionChannelIndex(worldId, requesterCharacterId);
+            await this.publishBuddyChannelUpdate(worldId, requesterCharacterId, requesterChannelIndex, [
+                targetCharacterId,
+            ]);
+            const targetChannelIndex = await this.sessionChannelIndex(worldId, targetCharacterId);
+            const requesterView = await this.buildEntry(worldId, requesterBuddy);
             return {
                 ok: true,
                 targetCharacterId,
@@ -172,31 +226,8 @@ export class BuddyService {
             return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_TARGET_LIST_FULL };
         }
 
-        const reverse = await this.buddyRepo.getItem(worldId, String(targetCharacterId), requesterCharacterId);
-        if (reverse && !reverse.pending) {
-            const requesterBuddy = await this.buddyRepo.set(worldId, {
-                characterId: requesterCharacterId,
-                buddyCharacterId: targetCharacterId,
-                groupName: trimmedGroup,
-                pending: false,
-            });
-            await this.buddyRepo.evictGroupCache(worldId, String(requesterCharacterId));
-            const requesterChannelIndex = await this.sessionChannelIndex(worldId, requesterCharacterId);
-            await this.publishBuddyChannelUpdate(worldId, requesterCharacterId, requesterChannelIndex, [
-                targetCharacterId,
-            ]);
-            const targetChannelIndex = await this.sessionChannelIndex(worldId, targetCharacterId);
-            const requesterView = await this.buildEntry(worldId, requesterBuddy);
-            return {
-                ok: true,
-                targetCharacterId,
-                targetChannelId: targetChannelIndex < 0 ? 0 : targetChannelIndex,
-                requesterView,
-            };
-        }
-
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            if (!reverse) {
+        if (!reverse) {
+            await this.ctx.withPgDataTransaction(worldId, targetCharacterId, async (txClient: PoolClient) => {
                 await this.buddyRepo.set(
                     worldId,
                     {
@@ -207,8 +238,10 @@ export class BuddyService {
                     },
                     { txClient }
                 );
-            }
-            const requesterBuddy = await this.buddyRepo.set(
+            });
+        }
+        const requesterBuddy = await this.ctx.withPgDataTransaction(worldId, requesterCharacterId, async (txClient: PoolClient) => {
+            return this.buddyRepo.set(
                 worldId,
                 {
                     characterId: requesterCharacterId,
@@ -218,8 +251,8 @@ export class BuddyService {
                 },
                 { txClient }
             );
-            return { requesterBuddy };
         });
+        const result = { requesterBuddy };
 
         await this.buddyRepo.evictGroupCache(worldId, String(requesterCharacterId));
         await this.buddyRepo.evictGroupCache(worldId, String(targetCharacterId));
@@ -250,6 +283,18 @@ export class BuddyService {
         this.assertCharacterId(accepterCharacterId);
         this.assertCharacterId(requesterCharacterId);
 
+        const firstCharacterId = requesterCharacterId < accepterCharacterId ? requesterCharacterId : accepterCharacterId;
+        const secondCharacterId = requesterCharacterId < accepterCharacterId ? accepterCharacterId : requesterCharacterId;
+
+        await using _firstBuddyLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `character_buddy:${firstCharacterId}`,
+        );
+        await using _secondBuddyLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `character_buddy:${secondCharacterId}`,
+        );
+
         const incoming = await this.buddyRepo.getItem(worldId, String(accepterCharacterId), requesterCharacterId);
         if (!incoming) {
             return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_NOT_PENDING };
@@ -264,8 +309,8 @@ export class BuddyService {
             return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_LIST_FULL };
         }
 
-        const result = await this.ctx.withPgGlobalTransaction(worldId, async (txClient: PoolClient) => {
-            const accepterBuddy = await this.buddyRepo.set(
+        const accepterBuddy = await this.ctx.withPgDataTransaction(worldId, accepterCharacterId, async (txClient: PoolClient) => {
+            return this.buddyRepo.set(
                 worldId,
                 {
                     characterId: accepterCharacterId,
@@ -275,13 +320,15 @@ export class BuddyService {
                 },
                 { txClient }
             );
+        });
+        const requesterBuddy = await this.ctx.withPgDataTransaction(worldId, requesterCharacterId, async (txClient: PoolClient) => {
             const onRequester = await this.buddyRepo.getItem(
                 worldId,
                 String(requesterCharacterId),
                 accepterCharacterId,
                 { txClient }
             );
-            const requesterBuddy = await this.buddyRepo.set(
+            return this.buddyRepo.set(
                 worldId,
                 onRequester
                     ? { ...onRequester, pending: false }
@@ -293,8 +340,8 @@ export class BuddyService {
                       },
                 { txClient }
             );
-            return { accepterBuddy, requesterBuddy };
         });
+        const result = { accepterBuddy, requesterBuddy };
 
         await this.buddyRepo.evictGroupCache(worldId, String(accepterCharacterId));
         await this.buddyRepo.evictGroupCache(worldId, String(requesterCharacterId));
@@ -319,6 +366,11 @@ export class BuddyService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
         this.assertCharacterId(buddyCharacterId);
+
+        await using _buddyLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `character_buddy:${characterId}`,
+        );
 
         const row = await this.buddyRepo.getItem(worldId, String(characterId), buddyCharacterId);
         if (!row) {

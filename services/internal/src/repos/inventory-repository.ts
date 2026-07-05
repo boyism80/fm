@@ -142,27 +142,21 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
 
     async replaceBySnapshot(worldId: number, ownerId: number, models: InventoryModel[]) {
         const groupKey = String(ownerId);
-        const pool = this.pool(worldId, groupKey);
         const normalized = models.map((m) => {
             const row = this.modelToRow(m);
             row.owner_id = ownerId;
             return row;
         });
 
-        await pool.query("BEGIN");
-        try {
-            await pool.query("DELETE FROM inventory WHERE owner_id = $1", [ownerId]);
+        await this.ctx.withPgDataTransaction(worldId, ownerId, async (txClient) => {
+            await txClient.query("DELETE FROM inventory WHERE owner_id = $1", [ownerId]);
             if (normalized.length > 0) {
                 const insert = this.onBulkUpsert(normalized);
                 if (insert.text) {
-                    await pool.query(insert.text, insert.values);
+                    await txClient.query(insert.text, insert.values);
                 }
             }
-            await pool.query("COMMIT");
-        } catch (err) {
-            await pool.query("ROLLBACK");
-            throw err;
-        }
+        });
 
         const redis = this.redis(worldId, groupKey);
         await redis.del(this.getRedisHashKey(worldId, String(ownerId))).catch(() => {});
