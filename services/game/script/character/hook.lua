@@ -4,7 +4,7 @@ local skill_lib = require("script/lib/skill")
 function on_map_enter(me, map)
 end
 
-local function unbuff_stationary_summons_for_map(me, mapId)
+local function unbuff_stationary_summons_for_map(me, map_id)
 	if me == nil then
 		return
 	end
@@ -17,7 +17,7 @@ local function unbuff_stationary_summons_for_map(me, mapId)
 			goto continue
 		end
 		local swz = sm:wz()
-		if swz == nil or swz.id ~= mapId then
+		if swz == nil or swz.id ~= map_id then
 			goto continue
 		end
 		local mt = s:movement_type()

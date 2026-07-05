@@ -29,9 +29,9 @@ function on_activated_5221009(me, skill, params)
 	if mob_max <= 0 then
 		mob_max = 1
 	end
-	local minX, maxX, minY, maxY = mind_control_bounds(me, effect)
+	local min_x, max_x, min_y, max_y = mind_control_bounds(me, effect)
 	local mobs = map:objects(ObjectType.Mob, {
-		area = { minX = minX, minY = minY, maxX = maxX, maxY = maxY },
+		area = { minX = min_x, minY = min_y, maxX = max_x, maxY = max_y },
 	})
 	local checked = 0
 	for _, mob in ipairs(mobs) do

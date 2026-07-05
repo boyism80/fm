@@ -5,8 +5,8 @@ function on_reactor_2408002(reactor, item)
 	if wz == nil then
 		return false
 	end
-	local itemId = wz:id()
-	if itemId < 4001088 or itemId > 4001091 then
+	local item_id = wz:id()
+	if item_id < 4001088 or item_id > 4001091 then
 		return false
 	end
 	return item:count() == reactor:react_item_quantity()

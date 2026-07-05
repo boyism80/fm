@@ -74,11 +74,11 @@ function on_click(me, npc)
 			me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
 			return
 		end
-		local extendedCap = false
+		local extended_cap = false
 		if not me:dialog_yes_no(npc, '길드 최대 인원 추가 비용은 #b50만#k 메소 라네. 지금 추가하면 최대 인원이 5명 만큼 더 늘어날걸세. 정말 최대 인원을 늘려보고 싶은가?') then
 			return
 		end
-		local result = g:inc_capacity(me, extendedCap)
+		local result = g:inc_capacity(me, extended_cap)
 		if result == guild_capacity_increase_ok then
 			-- me:dialog(npc, '길드 최대 인원이 증가했습니다.')
 		elseif result == guild_capacity_increase_insufficient_meso then
@@ -98,11 +98,11 @@ function on_click(me, npc)
 			me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
 			return
 		end
-		local extendedCap = true
+		local extended_cap = true
 		if not me:dialog_yes_no(npc, '길드 최대 인원 추가 비용은 #b2,000#k 길드포인트 라네. 지금 추가하면 최대 인원이 5명 만큼 더 늘어날걸세. 정말 최대 인원을 늘려보고 싶은가?') then
 			return
 		end
-		local result = g:inc_capacity(me, extendedCap)
+		local result = g:inc_capacity(me, extended_cap)
 		if result == guild_capacity_increase_ok then
 			-- me:dialog(npc, '길드 최대 인원이 증가했습니다.')
 		elseif result == guild_capacity_increase_not_master then
