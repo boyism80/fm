@@ -4,6 +4,7 @@ import { makeKeyLayoutProtoList } from "../key-layout-io";
 import { INVENTORY_MODEL, INVENTORY_PERSISTED } from "../inventory-persisted";
 import { SKILL_MODEL, SKILL_PERSISTED } from "../skill-persisted";
 import { BUFF_MODEL, BUFF_PERSISTED } from "../buff-persisted";
+import { QUEST_MODEL, QUEST_PERSISTED } from "../quest-persisted";
 import { grpcMapper } from "../mappers";
 import { SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
 import type { BuddyService, BuddyListEntry } from "../../services/buddy-service";
@@ -12,6 +13,7 @@ import type { SkillService } from "../../services/skill-service";
 import type { BuffService } from "../../services/buff-service";
 import type { SessionService } from "../../services/session-service";
 import type { InventoryRepository } from "../../repos/inventory-repository";
+import type { QuestRepository } from "../../repos/quest-repository";
 import type { CharacterRealtimeStateRepository } from "../../repos/character-realtime-state-repository";
 import type { InternalConfig } from "../../types/internal-config";
 import type {
@@ -31,11 +33,13 @@ import type {
     InventoryPersisted,
     SkillPersisted,
     BuffPersisted,
+    QuestPersisted,
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { CharacterModel } from "../../repos/character-repository";
 import type { InventoryModel } from "../../repos/inventory-repository";
 import type { SkillModel } from "../../repos/skill-repository";
 import type { BuffModel } from "../../repos/buff-repository";
+import type { QuestModel } from "../../repos/quest-repository";
 import { Controller, Method } from "../grpc-method-decorator";
 
 type OwnedCharacterResult =
@@ -49,6 +53,7 @@ export class SessionGrpcController {
     private readonly inventoryRepository: InventoryRepository;
     private readonly skillService: SkillService;
     private readonly buffService: BuffService;
+    private readonly questRepository: QuestRepository;
     private readonly sessionService: SessionService;
     private readonly buddyService: BuddyService;
     private readonly internalConfig: Pick<InternalConfig, "game_servers">;
@@ -60,6 +65,7 @@ export class SessionGrpcController {
         inventoryRepository: InventoryRepository,
         skillService: SkillService,
         buffService: BuffService,
+        questRepository: QuestRepository,
         sessionService: SessionService,
         buddyService: BuddyService,
         internalConfig: Pick<InternalConfig, "game_servers">,
@@ -70,6 +76,7 @@ export class SessionGrpcController {
         this.inventoryRepository = inventoryRepository;
         this.skillService = skillService;
         this.buffService = buffService;
+        this.questRepository = questRepository;
         this.sessionService = sessionService;
         this.buddyService = buddyService;
         this.internalConfig = internalConfig;
@@ -138,6 +145,7 @@ export class SessionGrpcController {
                     inventory: [],
                     skills: [],
                     buffs: [],
+                    quests: [],
                     keyLayout: [],
                     partyId: undefined,
                     guildId: undefined,
@@ -158,10 +166,11 @@ export class SessionGrpcController {
                 throw new Error(`attach game session failed: ${attach.code}`);
             }
 
-            const [inventoryList, skillList, buffList, keyLayoutBindings, buddyPack] = await Promise.all([
+            const [inventoryList, skillList, buffList, questList, keyLayoutBindings, buddyPack] = await Promise.all([
                 this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
                 this.skillService.getSkills(worldId, characterId),
                 this.buffService.getBuffs(worldId, characterId),
+                this.questRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
                 this.characterService.getKeyLayoutBindings(worldId, characterId),
                 this.buddyService.getAll(worldId, characterId),
             ]);
@@ -192,6 +201,13 @@ export class SessionGrpcController {
                         buff,
                         BUFF_MODEL,
                         BUFF_PERSISTED
+                    )
+                ),
+                quests: questList.map((quest) =>
+                    grpcMapper.map<QuestModel, QuestPersisted>(
+                        quest,
+                        QUEST_MODEL,
+                        QUEST_PERSISTED
                     )
                 ),
                 keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),

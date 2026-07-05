@@ -1027,13 +1027,25 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"dialog": func(L *lua.LState) int {
 			argc := L.GetTop()
+			if argc == 1 {
+				switch L.Get(1).Type() {
+				case lua.LTBool:
+					b := lua.LVAsBool(L.Get(1))
+					L.SetTop(0)
+					L.Push(lua.LBool(b))
+					return 1
+				case lua.LTNil:
+					L.SetTop(0)
+					L.Push(lua.LBool(false))
+					return 1
+				}
+			}
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-
 			npc := 0
 			message := ""
 			prev := false
@@ -1051,20 +1063,31 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 2:
 				npc = L.CheckInt(2)
 			}
-
 			ch.Listener.OnDialog(ch, uint32(npc), message, prev, next)
 			ch.SetDialog(L)
-			return L.Yield(lua.LNumber(0))
+			return L.Yield()
 		},
 		"dialog_yes_no": func(L *lua.LState) int {
 			argc := L.GetTop()
+			if argc == 1 {
+				switch L.Get(1).Type() {
+				case lua.LTBool:
+					b := lua.LVAsBool(L.Get(1))
+					L.SetTop(0)
+					L.Push(lua.LBool(b))
+					return 1
+				case lua.LTNil:
+					L.SetTop(0)
+					L.Push(lua.LBool(false))
+					return 1
+				}
+			}
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-
 			npc := 0
 			message := ""
 			prev := false
@@ -1082,10 +1105,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 2:
 				npc = L.CheckInt(2)
 			}
-
 			ch.Listener.OnDialogYesNo(ch, uint32(npc), message, prev, next)
 			ch.SetDialog(L)
-			return L.Yield(lua.LNumber(0))
+			return L.Yield()
 		},
 		"dialog_list": func(L *lua.LState) int {
 			argc := L.GetTop()
@@ -1121,13 +1143,25 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		},
 		"dialog_accept": func(L *lua.LState) int {
 			argc := L.GetTop()
+			if argc == 1 {
+				switch L.Get(1).Type() {
+				case lua.LTBool:
+					b := lua.LVAsBool(L.Get(1))
+					L.SetTop(0)
+					L.Push(lua.LBool(b))
+					return 1
+				case lua.LTNil:
+					L.SetTop(0)
+					L.Push(lua.LBool(false))
+					return 1
+				}
+			}
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-
 			npc := 0
 			message := ""
 			enableEscape := false
@@ -1141,10 +1175,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 2:
 				npc = L.CheckInt(2)
 			}
-
 			ch.Listener.OnDialogAccept(ch, uint32(npc), message, enableEscape)
 			ch.SetDialog(L)
-			return L.Yield(lua.LNumber(0))
+			return L.Yield()
 		},
 		"dialog_input": func(L *lua.LState) int {
 			argc := L.GetTop()
@@ -1182,6 +1215,33 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				msgType = constant.ServerMessageType(L.CheckInt(3))
 			}
 			ch.Listener.OnMessage(ch, msgType, message)
+			return 0
+		},
+		"show_instruction": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() < 2 || L.GetTop() > 4 {
+				L.ArgError(2, "show_instruction(text[, width[, height]])")
+				return 0
+			}
+			text := L.CheckString(2)
+			width := uint16(0)
+			height := uint16(0)
+			if L.GetTop() >= 3 {
+				width = uint16(L.CheckInt(3))
+			}
+			if L.GetTop() >= 4 {
+				height = uint16(L.CheckInt(4))
+			}
+			ch.Send(&response.Hint{
+				Text:   text,
+				Width:  width,
+				Height: height,
+			}, types.SEND_POLICY_ENCRYPT)
 			return 0
 		},
 		"role": func(L *lua.LState) int {
@@ -1544,6 +1604,88 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			L.Push(luax.NewLuable(L, p))
 			return 1
+		},
+		"quest": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "quest(quest_id) requires quest id")
+				return 0
+			}
+			questID := uint32(L.CheckInt(2))
+			qp := ch.LuaQuest(questID)
+			if qp == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, qp))
+			return 1
+		},
+		"start_quest": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 3 {
+				L.ArgError(2, "start_quest(quest_id, npc) requires quest id and npc")
+				return 0
+			}
+			questID := uint32(L.CheckInt(2))
+			npcID := uint32(L.CheckInt(3))
+			if ch.Quests == nil || ch.GameWorld == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			def := ch.GameWorld.GetResources().GetQuest(questID)
+			if def == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			_, err := ch.Quests.Start(def, npcID, QuestPrepareOpts{IgnoreScriptRequirement: true})
+			if err != nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			qp := ch.Quests.Get(questID)
+			if qp == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, qp))
+			return 1
+		},
+		"clear_quests": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Quests == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
+			if L.GetTop() == 1 {
+				L.Push(lua.LNumber(ch.Quests.ClearAll()))
+				return 1
+			}
+			if L.GetTop() == 2 {
+				questID := uint32(L.CheckInt(2))
+				cleared := 0
+				if ch.Quests.Clear(questID) {
+					cleared = 1
+				}
+				L.Push(lua.LNumber(cleared))
+				return 1
+			}
+			L.ArgError(2, "clear_quests() or clear_quests(quest_id)")
+			return 0
 		},
 		"guild": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

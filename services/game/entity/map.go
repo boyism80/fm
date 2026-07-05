@@ -3,7 +3,6 @@ package entity
 import (
 	"fmt"
 	"log"
-	"math"
 	"sync"
 	"time"
 
@@ -1145,12 +1144,11 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		}
 
 		mesoCount := item.GetCount32()
-		cap := math.MaxInt32 - character.Meso
-		if int32(mesoCount) > cap {
+		beforeMeso := character.Meso
+		character.GainMeso(mesoCount)
+		if character.Meso == beforeMeso {
 			return constant.LootFailedMesoFull
 		}
-
-		character.GainMeso(int32(mesoCount))
 		return constant.LootSuccess
 
 	default:

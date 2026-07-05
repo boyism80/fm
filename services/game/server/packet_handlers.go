@@ -17,6 +17,7 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, ItemLoot](gs)
 	core.Bind[*GameServer, DropMeso](gs)
 	core.Bind[*GameServer, NpcControl](gs)
+	core.Bind[*GameServer, QuestAction](gs)
 	core.Bind[*GameServer, Dialog](gs)
 	core.Bind[*GameServer, NpcClick](gs)
 	core.Bind[*GameServer, MoveMob](gs)

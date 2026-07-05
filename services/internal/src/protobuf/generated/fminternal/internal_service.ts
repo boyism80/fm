@@ -995,6 +995,7 @@ export interface EnterGameReply {
   buffs: BuffPersisted[];
   buddies: BuddyEntry[];
   buddyCapacity: number;
+  quests: QuestPersisted[];
 }
 
 export interface BeginGameTransitionRequest {
@@ -1036,6 +1037,7 @@ export interface CharacterSaveEntry {
   skills: SkillPersisted[];
   keyLayout: KeyLayoutBinding[];
   buffs: BuffPersisted[];
+  quests: QuestPersisted[];
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -1112,6 +1114,27 @@ export interface BuffPersisted {
   remainingDurationMs?: number | undefined;
   skillLevel: number;
   causerId: number;
+}
+
+export interface QuestPersisted {
+  characterId: number;
+  questId: number;
+  status: number;
+  mobKills: { [key: number]: number };
+  statusRecord: string;
+  unknown2: { [key: string]: string };
+  completionTimeUnixMs: number;
+  forfeited: number;
+}
+
+export interface QuestPersisted_MobKillsEntry {
+  key: number;
+  value: number;
+}
+
+export interface QuestPersisted_Unknown2Entry {
+  key: string;
+  value: string;
 }
 
 export interface LoginAccountRequest {
@@ -3509,6 +3532,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     buffs: [],
     buddies: [],
     buddyCapacity: 0,
+    quests: [],
   };
 }
 
@@ -3543,6 +3567,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     if (message.buddyCapacity !== 0) {
       writer.uint32(80).uint32(message.buddyCapacity);
+    }
+    for (const v of message.quests) {
+      QuestPersisted.encode(v!, writer.uint32(90).fork()).join();
     }
     return writer;
   },
@@ -3634,6 +3661,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.buddyCapacity = reader.uint32();
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.quests.push(QuestPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3673,6 +3708,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : isSet(object.buddy_capacity)
         ? globalThis.Number(object.buddy_capacity)
         : 0,
+      quests: globalThis.Array.isArray(object?.quests) ? object.quests.map((e: any) => QuestPersisted.fromJSON(e)) : [],
     };
   },
 
@@ -3708,6 +3744,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.buddyCapacity !== 0) {
       obj.buddyCapacity = Math.round(message.buddyCapacity);
     }
+    if (message.quests?.length) {
+      obj.quests = message.quests.map((e) => QuestPersisted.toJSON(e));
+    }
     return obj;
   },
 
@@ -3728,6 +3767,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.buffs = object.buffs?.map((e) => BuffPersisted.fromPartial(e)) || [];
     message.buddies = object.buddies?.map((e) => BuddyEntry.fromPartial(e)) || [];
     message.buddyCapacity = object.buddyCapacity ?? 0;
+    message.quests = object.quests?.map((e) => QuestPersisted.fromPartial(e)) || [];
     return message;
   },
 };
@@ -4287,7 +4327,16 @@ export const SaveCharacterReply: MessageFns<SaveCharacterReply> = {
 };
 
 function createBaseCharacterSaveEntry(): CharacterSaveEntry {
-  return { character: undefined, baseLooks: {}, overlays: {}, inventory: [], skills: [], keyLayout: [], buffs: [] };
+  return {
+    character: undefined,
+    baseLooks: {},
+    overlays: {},
+    inventory: [],
+    skills: [],
+    keyLayout: [],
+    buffs: [],
+    quests: [],
+  };
 }
 
 export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
@@ -4312,6 +4361,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     }
     for (const v of message.buffs) {
       BuffPersisted.encode(v!, writer.uint32(58).fork()).join();
+    }
+    for (const v of message.quests) {
+      QuestPersisted.encode(v!, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -4385,6 +4437,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.buffs.push(BuffPersisted.decode(reader, reader.uint32()));
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.quests.push(QuestPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4433,6 +4493,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         ? object.key_layout.map((e: any) => KeyLayoutBinding.fromJSON(e))
         : [],
       buffs: globalThis.Array.isArray(object?.buffs) ? object.buffs.map((e: any) => BuffPersisted.fromJSON(e)) : [],
+      quests: globalThis.Array.isArray(object?.quests) ? object.quests.map((e: any) => QuestPersisted.fromJSON(e)) : [],
     };
   },
 
@@ -4471,6 +4532,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.buffs?.length) {
       obj.buffs = message.buffs.map((e) => BuffPersisted.toJSON(e));
     }
+    if (message.quests?.length) {
+      obj.quests = message.quests.map((e) => QuestPersisted.toJSON(e));
+    }
     return obj;
   },
 
@@ -4504,6 +4568,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     message.skills = object.skills?.map((e) => SkillPersisted.fromPartial(e)) || [];
     message.keyLayout = object.keyLayout?.map((e) => KeyLayoutBinding.fromPartial(e)) || [];
     message.buffs = object.buffs?.map((e) => BuffPersisted.fromPartial(e)) || [];
+    message.quests = object.quests?.map((e) => QuestPersisted.fromPartial(e)) || [];
     return message;
   },
 };
@@ -5824,6 +5889,413 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
     message.remainingDurationMs = object.remainingDurationMs ?? undefined;
     message.skillLevel = object.skillLevel ?? 0;
     message.causerId = object.causerId ?? 0;
+    return message;
+  },
+};
+
+function createBaseQuestPersisted(): QuestPersisted {
+  return {
+    characterId: 0,
+    questId: 0,
+    status: 0,
+    mobKills: {},
+    statusRecord: "",
+    unknown2: {},
+    completionTimeUnixMs: 0,
+    forfeited: 0,
+  };
+}
+
+export const QuestPersisted: MessageFns<QuestPersisted> = {
+  encode(message: QuestPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.characterId !== 0) {
+      writer.uint32(8).uint32(message.characterId);
+    }
+    if (message.questId !== 0) {
+      writer.uint32(16).uint32(message.questId);
+    }
+    if (message.status !== 0) {
+      writer.uint32(24).uint32(message.status);
+    }
+    globalThis.Object.entries(message.mobKills).forEach(([key, value]: [string, number]) => {
+      QuestPersisted_MobKillsEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).join();
+    });
+    if (message.statusRecord !== "") {
+      writer.uint32(42).string(message.statusRecord);
+    }
+    globalThis.Object.entries(message.unknown2).forEach(([key, value]: [string, string]) => {
+      QuestPersisted_Unknown2Entry.encode({ key: key as any, value }, writer.uint32(50).fork()).join();
+    });
+    if (message.completionTimeUnixMs !== 0) {
+      writer.uint32(56).int64(message.completionTimeUnixMs);
+    }
+    if (message.forfeited !== 0) {
+      writer.uint32(64).uint32(message.forfeited);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QuestPersisted {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQuestPersisted();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.questId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.status = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          const entry4 = QuestPersisted_MobKillsEntry.decode(reader, reader.uint32());
+          if (entry4.value !== undefined) {
+            message.mobKills[entry4.key] = entry4.value;
+          }
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.statusRecord = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          const entry6 = QuestPersisted_Unknown2Entry.decode(reader, reader.uint32());
+          if (entry6.value !== undefined) {
+            message.unknown2[entry6.key] = entry6.value;
+          }
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.completionTimeUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.forfeited = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QuestPersisted {
+    return {
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      questId: isSet(object.questId)
+        ? globalThis.Number(object.questId)
+        : isSet(object.quest_id)
+        ? globalThis.Number(object.quest_id)
+        : 0,
+      status: isSet(object.status) ? globalThis.Number(object.status) : 0,
+      mobKills: isObject(object.mobKills)
+        ? (globalThis.Object.entries(object.mobKills) as [string, any][]).reduce(
+          (acc: { [key: number]: number }, [key, value]: [string, any]) => {
+            acc[globalThis.Number(key)] = globalThis.Number(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.mob_kills)
+        ? (globalThis.Object.entries(object.mob_kills) as [string, any][]).reduce(
+          (acc: { [key: number]: number }, [key, value]: [string, any]) => {
+            acc[globalThis.Number(key)] = globalThis.Number(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+      statusRecord: isSet(object.statusRecord)
+        ? globalThis.String(object.statusRecord)
+        : isSet(object.status_record)
+        ? globalThis.String(object.status_record)
+        : "",
+      unknown2: isObject(object.unknown2)
+        ? (globalThis.Object.entries(object.unknown2) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+      completionTimeUnixMs: isSet(object.completionTimeUnixMs)
+        ? globalThis.Number(object.completionTimeUnixMs)
+        : isSet(object.completion_time_unix_ms)
+        ? globalThis.Number(object.completion_time_unix_ms)
+        : 0,
+      forfeited: isSet(object.forfeited) ? globalThis.Number(object.forfeited) : 0,
+    };
+  },
+
+  toJSON(message: QuestPersisted): unknown {
+    const obj: any = {};
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.questId !== 0) {
+      obj.questId = Math.round(message.questId);
+    }
+    if (message.status !== 0) {
+      obj.status = Math.round(message.status);
+    }
+    if (message.mobKills) {
+      const entries = globalThis.Object.entries(message.mobKills) as [string, number][];
+      if (entries.length > 0) {
+        obj.mobKills = {};
+        entries.forEach(([k, v]) => {
+          obj.mobKills[k] = Math.round(v);
+        });
+      }
+    }
+    if (message.statusRecord !== "") {
+      obj.statusRecord = message.statusRecord;
+    }
+    if (message.unknown2) {
+      const entries = globalThis.Object.entries(message.unknown2) as [string, string][];
+      if (entries.length > 0) {
+        obj.unknown2 = {};
+        entries.forEach(([k, v]) => {
+          obj.unknown2[k] = v;
+        });
+      }
+    }
+    if (message.completionTimeUnixMs !== 0) {
+      obj.completionTimeUnixMs = Math.round(message.completionTimeUnixMs);
+    }
+    if (message.forfeited !== 0) {
+      obj.forfeited = Math.round(message.forfeited);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<QuestPersisted>, I>>(base?: I): QuestPersisted {
+    return QuestPersisted.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<QuestPersisted>, I>>(object: I): QuestPersisted {
+    const message = createBaseQuestPersisted();
+    message.characterId = object.characterId ?? 0;
+    message.questId = object.questId ?? 0;
+    message.status = object.status ?? 0;
+    message.mobKills = (globalThis.Object.entries(object.mobKills ?? {}) as [string, number][]).reduce(
+      (acc: { [key: number]: number }, [key, value]: [string, number]) => {
+        if (value !== undefined) {
+          acc[globalThis.Number(key)] = globalThis.Number(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.statusRecord = object.statusRecord ?? "";
+    message.unknown2 = (globalThis.Object.entries(object.unknown2 ?? {}) as [string, string][]).reduce(
+      (acc: { [key: string]: string }, [key, value]: [string, string]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.completionTimeUnixMs = object.completionTimeUnixMs ?? 0;
+    message.forfeited = object.forfeited ?? 0;
+    return message;
+  },
+};
+
+function createBaseQuestPersisted_MobKillsEntry(): QuestPersisted_MobKillsEntry {
+  return { key: 0, value: 0 };
+}
+
+export const QuestPersisted_MobKillsEntry: MessageFns<QuestPersisted_MobKillsEntry> = {
+  encode(message: QuestPersisted_MobKillsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== 0) {
+      writer.uint32(8).uint32(message.key);
+    }
+    if (message.value !== 0) {
+      writer.uint32(16).uint32(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QuestPersisted_MobKillsEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQuestPersisted_MobKillsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.key = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.value = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QuestPersisted_MobKillsEntry {
+    return {
+      key: isSet(object.key) ? globalThis.Number(object.key) : 0,
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
+  },
+
+  toJSON(message: QuestPersisted_MobKillsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== 0) {
+      obj.key = Math.round(message.key);
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<QuestPersisted_MobKillsEntry>, I>>(base?: I): QuestPersisted_MobKillsEntry {
+    return QuestPersisted_MobKillsEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<QuestPersisted_MobKillsEntry>, I>>(object: I): QuestPersisted_MobKillsEntry {
+    const message = createBaseQuestPersisted_MobKillsEntry();
+    message.key = object.key ?? 0;
+    message.value = object.value ?? 0;
+    return message;
+  },
+};
+
+function createBaseQuestPersisted_Unknown2Entry(): QuestPersisted_Unknown2Entry {
+  return { key: "", value: "" };
+}
+
+export const QuestPersisted_Unknown2Entry: MessageFns<QuestPersisted_Unknown2Entry> = {
+  encode(message: QuestPersisted_Unknown2Entry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QuestPersisted_Unknown2Entry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQuestPersisted_Unknown2Entry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QuestPersisted_Unknown2Entry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: QuestPersisted_Unknown2Entry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<QuestPersisted_Unknown2Entry>, I>>(base?: I): QuestPersisted_Unknown2Entry {
+    return QuestPersisted_Unknown2Entry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<QuestPersisted_Unknown2Entry>, I>>(object: I): QuestPersisted_Unknown2Entry {
+    const message = createBaseQuestPersisted_Unknown2Entry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
     return message;
   },
 };

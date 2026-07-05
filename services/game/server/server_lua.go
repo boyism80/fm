@@ -294,6 +294,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaType[*entity.Party](luaState)
 	luax.RegisterLuaType[*entity.GuildMember](luaState)
 	luax.RegisterLuaType[*entity.Guild](luaState)
+	luax.RegisterLuaType[*entity.Quest](luaState)
 	luax.RegisterLuaType[*entity.Alliance](luaState)
 	luax.RegisterLuaType[*entity.ObjectCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.FieldPlacement, *entity.ObjectCore](luaState)

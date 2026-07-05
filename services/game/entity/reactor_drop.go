@@ -132,8 +132,7 @@ func questInProgress(ch *Character, questID uint32) bool {
 	if ch == nil {
 		return false
 	}
-	qs, ok := ch.questStatuses[int(questID)]
-	return ok && qs.Status == 1
+	return ch.Quests != nil && ch.Quests.Get(questID).IsStarted()
 }
 
 func reactorDropOwner(trigger *Character) (uint32, constant.DropType) {

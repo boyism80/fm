@@ -18,6 +18,8 @@ import { SkillRepository } from "../repos/skill-repository";
 import type { SkillModel } from "../repos/skill-repository";
 import { BuffRepository } from "../repos/buff-repository";
 import type { BuffModel } from "../repos/buff-repository";
+import { QuestRepository } from "../repos/quest-repository";
+import type { QuestModel } from "../repos/quest-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { WzService } from "./wz-service";
 import { DistributedLockService } from "./distributed-lock-service";
@@ -63,6 +65,7 @@ type SaveCharacterEntry = {
     inventory?: InventoryModel[];
     skills?: SkillModel[];
     buffs?: BuffModel[];
+    quests?: QuestModel[];
     keyLayout?: KeyLayoutBindingModel[];
 };
 
@@ -74,6 +77,7 @@ export class CharacterService {
     private readonly inventoryRepo: InventoryRepository;
     private readonly skillRepo: SkillRepository;
     private readonly buffRepo: BuffRepository;
+    private readonly questRepo: QuestRepository;
     private readonly keyLayoutRepo: KeyLayoutRepository;
     private readonly app: AppConfiguration;
     private readonly wzService: WzService;
@@ -87,6 +91,7 @@ export class CharacterService {
         inventoryRepository: InventoryRepository,
         skillRepository: SkillRepository,
         buffRepository: BuffRepository,
+        questRepository: QuestRepository,
         keyLayoutRepository: KeyLayoutRepository,
         appConfiguration: AppConfiguration,
         wzService: WzService,
@@ -99,6 +104,7 @@ export class CharacterService {
         this.inventoryRepo = inventoryRepository;
         this.skillRepo = skillRepository;
         this.buffRepo = buffRepository;
+        this.questRepo = questRepository;
         this.keyLayoutRepo = keyLayoutRepository;
         this.app = appConfiguration;
         this.wzService = wzService;
@@ -170,7 +176,7 @@ export class CharacterService {
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const { persisted, baseLooks, overlays, inventory, skills, buffs, keyLayout } of entries) {
+        for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, keyLayout } of entries) {
             this.assertWorld(persisted.worldId);
             this.assertCharacterId(persisted.characterId);
             this.assertAccountId(persisted.accountId);
@@ -179,14 +185,14 @@ export class CharacterService {
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld.get(wid)?.push({ persisted, baseLooks, overlays, inventory, skills, buffs, keyLayout });
+            byWorld.get(wid)?.push({ persisted, baseLooks, overlays, inventory, skills, buffs, quests, keyLayout });
         }
 
         for (const [worldId, group] of byWorld) {
             const models = group.map(({ persisted }) => persisted);
             await this.repo.setAll(worldId, models);
 
-            for (const { persisted, baseLooks, overlays, inventory, skills, buffs, keyLayout } of group) {
+            for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, keyLayout } of group) {
                 if (!persisted.accountId) {
                     continue;
                 }
@@ -215,6 +221,7 @@ export class CharacterService {
                 await this.inventoryRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, inventory ?? []);
                 await this.skillRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, skills ?? []);
                 await this.buffRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, buffs ?? []);
+                await this.questRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, quests ?? []);
                 await this.keyLayoutRepo.set(persisted.worldId, {
                     characterId: persisted.characterId,
                     worldId: persisted.worldId,

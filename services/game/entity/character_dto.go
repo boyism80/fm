@@ -94,7 +94,9 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO.RegRocks = ch.regRocks
 	charDTO.Rocks = ch.rocks
 	charDTO.MonsterBookCover = ch.monsterBookCover
-	charDTO.QuestInfo = ch.quests
+	if ch.Quests != nil {
+		charDTO.QuestInfo = ch.Quests.Unknown2QuestInfo()
+	}
 	if bl := ch.BuddyList(); bl != nil {
 		capacity := bl.Capacity()
 		if capacity > 255 {
@@ -168,27 +170,27 @@ func (ch *Character) ToFullDTO() *dto.Character {
 
 	charDTO.QuestsStarted = make([]*dto.QuestStatus, 0)
 	charDTO.QuestsCompleted = make([]*dto.QuestStatus, 0)
-	for _, qs := range ch.questStatuses {
-		if qs == nil {
-			continue
-		}
-		questDTO := &dto.QuestStatus{
-			QuestID:        uint16(qs.Quest.ID),
-			Status:         qs.Status,
-			CustomData:     qs.CustomData,
-			CompletionTime: qs.CompletionTime,
-		}
-		if len(qs.MobKills) > 0 {
-			questDTO.MobKills = make([]uint16, 0, len(qs.MobKills))
-			for _, kills := range qs.MobKills {
-				questDTO.MobKills = append(questDTO.MobKills, uint16(kills))
+	if ch.Quests != nil {
+		ch.Quests.ForEach(func(questID uint32, qp *Quest) {
+			if questID > 0xFFFF {
+				return
 			}
-		}
-		if qs.Status == 1 {
-			charDTO.QuestsStarted = append(charDTO.QuestsStarted, questDTO)
-		} else if qs.Status == 2 {
-			charDTO.QuestsCompleted = append(charDTO.QuestsCompleted, questDTO)
-		}
+			questDTO := &dto.QuestStatus{
+				QuestID:        uint16(questID),
+				Status:         uint8(qp.Status),
+				CustomData:     qp.StatusRecord,
+				CompletionTime: qp.CompletionTime,
+			}
+			if qp.HasMobRequirements() {
+				questDTO.MobKills = qp.MobKillCountsOrdered()
+			}
+			switch qp.Status {
+			case QuestStatusStarted:
+				charDTO.QuestsStarted = append(charDTO.QuestsStarted, questDTO)
+			case QuestStatusCompleted:
+				charDTO.QuestsCompleted = append(charDTO.QuestsCompleted, questDTO)
+			}
+		})
 	}
 
 	charDTO.Rings = dto.RingContainer{

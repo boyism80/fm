@@ -126,28 +126,25 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 		return nil
 	}
 
-	if !inventory.IsFree(itemModel, tx.Quantity) {
-		character.Message("인벤토리 공간이 부족합니다.")
-		return nil
-	}
-
 	quantity := tx.Quantity
 	if h.isRechargable(tx.ItemID) {
 		quantity = itemModel.GetCapacity()
 	}
 
-	item, err := entity.NewItem(tx.ItemID, quantity, h.gs)
-	if err != nil {
-		return nil
+	spec := entity.FlowSpec{
+		Cost: entity.FlowSide{
+			Meso: int32(price),
+		},
+		Reward: entity.FlowSide{
+			Items: map[uint32]uint16{
+				tx.ItemID: quantity,
+			},
+		},
 	}
-
-	_, err = character.AddItem(item, true)
-	if err != nil {
+	if character.Exchange(spec) != entity.FlowOK {
 		character.Message("인벤토리 공간이 부족합니다.")
 		return nil
 	}
-
-	character.RemoveMeso(int32(price))
 
 	confirmPacket := &response.ConfirmShopTransaction{
 		Code: 0,
@@ -208,6 +205,20 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 
 	recvMesos := int32(math.Max(math.Ceil(float64(price)*float64(quantity)), 0))
 	if price == -1 || recvMesos <= 0 {
+		return nil
+	}
+
+	spec := entity.FlowSpec{
+		Cost: entity.FlowSide{
+			Items: map[uint32]uint16{
+				tx.ItemID: quantity,
+			},
+		},
+		Reward: entity.FlowSide{
+			Meso: recvMesos,
+		},
+	}
+	if ch.ValidateFlow(spec) != entity.FlowOK {
 		return nil
 	}
 

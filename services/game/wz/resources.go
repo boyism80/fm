@@ -107,6 +107,7 @@ type Resources struct {
 	Strings      *StringData
 	ExpTable     []uint32
 	Shops        map[uint32]*Shop
+	Quests       map[uint32]*Quest
 }
 
 func (node *node) find(name string) *node {
@@ -489,6 +490,18 @@ func NewResources(wzPath string) *Resources {
 		return nil
 	}
 
+	quests := map[uint32]*Quest{}
+	err = loadResourceFiles(filepath.Join(wzPath, "Quest.wz", "QuestData"), workerCount, func(path string) (result *Quest, err error) {
+		return loadQuest(path)
+	}, func(percent float32, value *Quest) {
+		quests[value.ID] = value
+		fmt.Printf("Loading quest files: %.1f%%\n", percent)
+	})
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
 	stringData := &StringData{
 		MapStrings:         make(map[string]map[uint32]map[string]string),
 		MobStrings:         make(map[uint32]map[string]string),
@@ -675,6 +688,7 @@ func NewResources(wzPath string) *Resources {
 		Skills:        skills,
 		MobSkills:     mobSkills,
 		Shops:         shops,
+		Quests:        quests,
 	}
 
 	result.buildNameIndexes()
@@ -707,6 +721,13 @@ func (r *Resources) GetMobSkill(skillID uint32, level uint8) *MobSkillLevelData 
 
 func (r *Resources) GetShop(npcID uint32) *Shop {
 	return r.Shops[npcID]
+}
+
+func (r *Resources) GetQuest(questID uint32) *Quest {
+	if r == nil || r.Quests == nil {
+		return nil
+	}
+	return r.Quests[questID]
 }
 
 func (r *Resources) GetReactor(id uint32) *Reactor {

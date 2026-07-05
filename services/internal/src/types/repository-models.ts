@@ -470,6 +470,31 @@ export type BuffRow = {
     deleted?: boolean;
 };
 
+export interface QuestModel {
+    characterId: number;
+    questId: number;
+    status: number;
+    mobKills: Record<string, number>;
+    statusRecord: string;
+    unknown2: Record<string, string>;
+    completionTimeUnixMs: number;
+    forfeited: number;
+    updatedAt?: Date;
+}
+
+export type QuestRow = {
+    character_id: number;
+    quest_id: number;
+    status: number;
+    mob_kills: Record<string, number> | string;
+    status_record: string;
+    unknown2: Record<string, string> | string;
+    completion_time_unix_ms: number | null;
+    forfeited: number;
+    updated_at?: Date | string;
+    deleted?: boolean;
+};
+
 export type BuffFlagValueRow = {
     mask: number;
     position: number;

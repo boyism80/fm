@@ -74,19 +74,17 @@ func (m *Inventory) EmptySlotCount() uint16 {
 }
 
 func (m *Inventory) IsFree(model wz.Item, count uint16) bool {
-	space := uint16(0)
-	slot, ok := m.FindSlot(model)
-	if ok {
-		exists, ok := m.Items[int16(slot)]
-		if ok {
-			if model.GetCapacity() > exists.GetCount() {
-				space += model.GetCapacity() - exists.GetCount()
-			}
-		}
+	if model == nil || count == 0 {
+		return true
 	}
-
-	space += m.EmptySlotCount() * model.GetCapacity()
-	return space >= count
+	modelOf := func(id uint32) wz.Item {
+		if id == model.GetID() {
+			return model
+		}
+		return nil
+	}
+	reward := map[uint32]uint16{model.GetID(): count}
+	return m.validateItemFlow(nil, reward, modelOf) == FlowOK
 }
 
 func (m *Inventory) GetItem(slot uint8) Item {

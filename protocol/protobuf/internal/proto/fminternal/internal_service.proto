@@ -170,6 +170,7 @@ message EnterGameReply {
   repeated BuffPersisted      buffs     = 8;
   repeated BuddyEntry         buddies   = 9;
   uint32                       buddy_capacity = 10;
+  repeated QuestPersisted      quests    = 11;
 }
 
 message BeginGameTransitionRequest {
@@ -209,6 +210,7 @@ message CharacterSaveEntry {
   repeated SkillPersisted     skills    = 5;
   repeated KeyLayoutBinding   key_layout = 6;
   repeated BuffPersisted      buffs     = 7;
+  repeated QuestPersisted      quests    = 8;
 }
 
 message SaveCharactersRequest {
@@ -280,6 +282,17 @@ message BuffPersisted {
   optional uint64 remaining_duration_ms = 5;
   uint32 skill_level                  = 6;
   uint32 causer_id                    = 7;
+}
+
+message QuestPersisted {
+  uint32 character_id             = 1;
+  uint32 quest_id                 = 2;
+  uint32 status                   = 3;
+  map<uint32, uint32> mob_kills   = 4;
+  string status_record            = 5;
+  map<string, string> unknown2    = 6;
+  int64 completion_time_unix_ms   = 7;
+  uint32 forfeited                = 8;
 }
 
 message LoginAccountRequest {

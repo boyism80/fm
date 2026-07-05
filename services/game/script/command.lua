@@ -181,6 +181,28 @@ command_funcs = {
 			return true
 		end,
 	},
+	["퀘스트초기화"] = {
+		privilege = ROLE.Admin,
+		usage = "[퀘스트ID] - 진행·완료 퀘스트 제거 (생략 시 전체)",
+		command = function(me, args)
+			if not args[1] or args[1] == "" then
+				local count = me:clear_quests()
+				me:notice(string.format("퀘스트 %d개 초기화", count))
+			else
+				local quest_id = tonumber(args[1])
+				if not quest_id then
+					me:notice("사용법: /퀘스트초기화 [퀘스트ID]")
+					return true
+				end
+				if me:clear_quests(quest_id) == 1 then
+					me:notice(string.format("퀘스트 %d 초기화", quest_id))
+				else
+					me:notice(string.format("퀘스트 %d 없음", quest_id))
+				end
+			end
+			return true
+		end,
+	},
 	["메소얻기"] = {
 		privilege = ROLE.Admin,
 		usage = "<금액> - 메소 획득",

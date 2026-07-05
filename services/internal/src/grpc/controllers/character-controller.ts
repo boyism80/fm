@@ -3,6 +3,7 @@ import { bindingsFromProtoList } from "../key-layout-io";
 import { INVENTORY_MODEL, INVENTORY_PERSISTED } from "../inventory-persisted";
 import { SKILL_MODEL, SKILL_PERSISTED } from "../skill-persisted";
 import { BUFF_MODEL, BUFF_PERSISTED } from "../buff-persisted";
+import { QUEST_MODEL, QUEST_PERSISTED } from "../quest-persisted";
 import { grpcMapper } from "../mappers";
 import type { CharacterOverviewListItem, CharacterOverviewService } from "../../services/character-overview-service";
 import type { CharacterService } from "../../services/character-service";
@@ -11,6 +12,7 @@ import type { CharacterModel } from "../../repos/character-repository";
 import type { InventoryModel } from "../../repos/inventory-repository";
 import type { SkillModel } from "../../repos/skill-repository";
 import type { BuffModel } from "../../repos/buff-repository";
+import type { QuestModel } from "../../repos/quest-repository";
 import type {
     BuffPersisted,
     CharacterPersisted,
@@ -28,6 +30,7 @@ import type {
     SaveCharacterRequest,
     SaveCharactersReply,
     SaveCharactersRequest,
+    QuestPersisted,
     SkillPersisted,
 } from "../../protobuf/generated/fminternal/internal_service";
 import { Controller, Method } from "../grpc-method-decorator";
@@ -140,6 +143,13 @@ export class CharacterGrpcController {
                             buff,
                             BUFF_PERSISTED,
                             BUFF_MODEL
+                        )
+                    ),
+                    quests: (entry.quests ?? []).map((quest) =>
+                        grpcMapper.map<QuestPersisted, QuestModel>(
+                            quest,
+                            QUEST_PERSISTED,
+                            QUEST_MODEL
                         )
                     ),
                     keyLayout: bindingsFromProtoList(entry.keyLayout),

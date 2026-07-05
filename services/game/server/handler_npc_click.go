@@ -97,10 +97,12 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 	})
 	luax.CallAsync(root, luaThread, "on_click", character, npc).Then(func(_ interface{}) (interface{}, error) {
 		character.ResetDialog()
+		character.Listener.OnUnlockAction(character)
 		return nil, nil
 	}).OnError(func(err error) {
 		log.Printf("Failed to execute NPC script: %v", err)
 		character.ResetDialog()
+		character.Listener.OnUnlockAction(character)
 	})
 	return nil
 }

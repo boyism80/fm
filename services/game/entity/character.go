@@ -38,13 +38,12 @@ type Character struct {
 	random1           stream.RandomStream
 	random2           stream.RandomStream
 	random3           stream.RandomStream
-	questStatuses     map[int]*QuestStatus
+	Quests            *QuestContainer
 	marriageId        uint32
 	regRocks          []uint32
 	rocks             []uint32
 	monsterBookCover  uint32
 	monsterBook       *MonsterBook
-	quests            map[uint16]string
 	luaDialog         *lua.LState
 	dialogMutex       sync.Mutex
 	hidden            bool
@@ -876,6 +875,16 @@ func (ch *Character) remainingExpToMaxLevel() uint32 {
 }
 
 func (ch *Character) AddExp(exp uint32) {
+	if exp == 0 {
+		return
+	}
+	if ch.validateExpFlow(0, exp) != FlowOK {
+		return
+	}
+	ch.addExpUnchecked(exp)
+}
+
+func (ch *Character) addExpUnchecked(exp uint32) {
 	exp = min(exp, ^uint32(0)-ch.exp)
 	exp = min(exp, ch.remainingExpToMaxLevel())
 	if exp == 0 {
@@ -1040,6 +1049,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 	}
 	ch.Buffs = NewBuffContainer(ch)
 	ch.Skills = NewSkillContainer(ch)
+	ch.Quests = NewQuestContainer(ch)
 	ch.keyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
 	ch.LifeCore.ObjectCore.initTimers()

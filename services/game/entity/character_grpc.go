@@ -106,6 +106,56 @@ func (ch *Character) LoadBuffs(persisted []*internal.BuffPersisted) {
 	}
 }
 
+func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
+	if ch == nil || ch.Quests == nil {
+		return
+	}
+	for _, pb := range persisted {
+		if pb == nil {
+			continue
+		}
+		questID := pb.GetQuestId()
+		if questID == 0 {
+			continue
+		}
+		status := QuestStatusType(pb.GetStatus())
+		if status != QuestStatusStarted && status != QuestStatusCompleted {
+			continue
+		}
+		def := ch.GameWorld.GetResources().GetQuest(questID)
+		if def == nil {
+			continue
+		}
+		q := ch.Quests.Get(questID)
+		if q == nil {
+			q = ch.Quests.Create(def, status)
+		}
+		if q == nil {
+			continue
+		}
+		if q.Wz == nil {
+			q.Wz = def
+		}
+		q.Status = status
+		q.MobKills = make(map[uint32]int, len(pb.GetMobKills()))
+		for mobID, kills := range pb.GetMobKills() {
+			q.MobKills[mobID] = int(kills)
+		}
+		q.StatusRecord = pb.GetStatusRecord()
+		q.Unknown2 = make(map[string]string, len(pb.GetUnknown2()))
+		for key, value := range pb.GetUnknown2() {
+			q.Unknown2[key] = value
+		}
+		if ms := pb.GetCompletionTimeUnixMs(); ms > 0 {
+			q.CompletionTime = time.UnixMilli(ms)
+		} else {
+			q.CompletionTime = time.Time{}
+		}
+		q.Forfeited = int(pb.GetForfeited())
+		q.owner = ch
+	}
+}
+
 func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint32) {
 	baseLooks = make(map[int32]uint32)
 	overlays = make(map[int32]uint32)
@@ -186,6 +236,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Skills:    ch.SkillsPersisted(),
 		Buffs:     ch.BuffsPersisted(),
 		KeyLayout: ch.KeyLayout().ToProto(),
+		Quests:    ch.QuestsPersisted(),
 	}
 }
 
@@ -287,5 +338,46 @@ func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {
 			CauserId:            causerID,
 		})
 	}
+	return out
+}
+
+func (ch *Character) QuestsPersisted() []*internal.QuestPersisted {
+	if ch == nil || ch.Quests == nil {
+		return nil
+	}
+	out := make([]*internal.QuestPersisted, 0)
+	ch.Quests.ForEach(func(questID uint32, q *Quest) {
+		if q == nil {
+			return
+		}
+		if q.Status != QuestStatusStarted && q.Status != QuestStatusCompleted {
+			return
+		}
+		mobKills := make(map[uint32]uint32, len(q.MobKills))
+		for mobID, kills := range q.MobKills {
+			if kills < 0 {
+				continue
+			}
+			mobKills[mobID] = uint32(kills)
+		}
+		unknown2 := make(map[string]string, len(q.Unknown2))
+		for key, value := range q.Unknown2 {
+			unknown2[key] = value
+		}
+		var completionTimeUnixMs int64
+		if !q.CompletionTime.IsZero() {
+			completionTimeUnixMs = q.CompletionTime.UnixMilli()
+		}
+		out = append(out, &internal.QuestPersisted{
+			CharacterId:          ch.GetID(),
+			QuestId:              questID,
+			Status:               uint32(q.Status),
+			MobKills:             mobKills,
+			StatusRecord:         q.StatusRecord,
+			Unknown2:             unknown2,
+			CompletionTimeUnixMs: completionTimeUnixMs,
+			Forfeited:            uint32(q.Forfeited),
+		})
+	})
 	return out
 }

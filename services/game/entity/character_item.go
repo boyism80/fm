@@ -12,6 +12,16 @@ func (ch *Character) AddMeso(amount int32) {
 	if amount <= 0 {
 		return
 	}
+	if ch.validateMesoFlow(0, amount) != FlowOK {
+		return
+	}
+	ch.addMesoUnchecked(amount)
+}
+
+func (ch *Character) addMesoUnchecked(amount int32) {
+	if amount <= 0 {
+		return
+	}
 
 	if ch.Meso > 0 && amount > 0 && ch.Meso+amount < ch.Meso {
 		ch.Meso = int32(^uint32(0) >> 1)
@@ -23,6 +33,16 @@ func (ch *Character) AddMeso(amount int32) {
 }
 
 func (ch *Character) RemoveMeso(amount int32) {
+	if amount <= 0 {
+		return
+	}
+	if ch.validateMesoFlow(amount, 0) != FlowOK {
+		return
+	}
+	ch.removeMesoUnchecked(amount)
+}
+
+func (ch *Character) removeMesoUnchecked(amount int32) {
 	if amount <= 0 {
 		return
 	}
@@ -89,27 +109,6 @@ func (ch *Character) FindSlots(itemID uint32) (invType constant.InventoryType, s
 	return invType, slots
 }
 
-type SlotPredicate func(invType constant.InventoryType, slot int16, item Item) bool
-
-func (ch *Character) FindSlotsWhere(pred SlotPredicate) map[constant.InventoryType][]int16 {
-	out := make(map[constant.InventoryType][]int16)
-	if pred == nil {
-		return out
-	}
-	for invType, inven := range ch.Inventory {
-		if inven == nil {
-			continue
-		}
-		for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
-			item := inven.GetItem(uint8(slot))
-			if pred(invType, slot, item) {
-				out[invType] = append(out[invType], slot)
-			}
-		}
-	}
-	return out
-}
-
 func (ch *Character) GetCountByItemID(itemID uint32) uint16 {
 	invType, slots := ch.FindSlots(itemID)
 	var total uint16
@@ -136,16 +135,21 @@ func (ch *Character) RemoveByItemIDCount(itemID uint32, count uint16) bool {
 	if count == 0 {
 		return true
 	}
-	invType, slots := ch.FindSlots(itemID)
-	var total uint16
-	for _, slot := range slots {
-		if item := ch.GetItem(invType, slot); item != nil {
-			total += item.GetCount()
-		}
-	}
-	if total < count {
+	if ch.ValidateFlow(FlowSpec{
+		Cost: FlowSide{
+			Items: map[uint32]uint16{itemID: count},
+		},
+	}) != FlowOK {
 		return false
 	}
+	return ch.removeByItemIDCountUnchecked(itemID, count)
+}
+
+func (ch *Character) removeByItemIDCountUnchecked(itemID uint32, count uint16) bool {
+	if count == 0 {
+		return true
+	}
+	invType, slots := ch.FindSlots(itemID)
 	remaining := count
 	for _, slot := range slots {
 		if remaining == 0 {
@@ -162,7 +166,7 @@ func (ch *Character) RemoveByItemIDCount(itemID uint32, count uint16) bool {
 		remaining -= take
 		ch.RemoveItem(invType, slot, take)
 	}
-	return true
+	return remaining == 0
 }
 
 func (ch *Character) RemoveItemByID(itemID uint32) bool {
@@ -170,6 +174,24 @@ func (ch *Character) RemoveItemByID(itemID uint32) bool {
 }
 
 func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
+	if item == nil {
+		return nil, fmt.Errorf("item is nil")
+	}
+
+	if allOrNothing {
+		if ch.ValidateFlow(FlowSpec{
+			Reward: FlowSide{
+				Items: map[uint32]uint16{item.GetModel().GetID(): item.GetCount()},
+			},
+		}) != FlowOK {
+			return nil, fmt.Errorf("not enough inventory space for %d items", item.GetCount())
+		}
+	}
+
+	return ch.applyAddItem(item, allOrNothing)
+}
+
+func (ch *Character) applyAddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
 	if item == nil {
 		return nil, fmt.Errorf("item is nil")
 	}
@@ -182,12 +204,6 @@ func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, e
 
 	model := item.GetModel()
 	requestedCount := item.GetCount()
-
-	if allOrNothing {
-		if !inven.IsFree(model, requestedCount) {
-			return nil, fmt.Errorf("not enough inventory space for %d items", requestedCount)
-		}
-	}
 
 	remainingCount := requestedCount
 	var addedCount uint16
@@ -233,6 +249,16 @@ func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, e
 }
 
 func (ch *Character) GainMeso(amount int32) {
+	if amount <= 0 {
+		return
+	}
+	if ch.validateMesoFlow(0, amount) != FlowOK {
+		return
+	}
+	ch.gainMesoUnchecked(amount)
+}
+
+func (ch *Character) gainMesoUnchecked(amount int32) {
 	if amount <= 0 {
 		return
 	}

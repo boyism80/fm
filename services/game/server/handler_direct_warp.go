@@ -50,18 +50,21 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 	if portal.ScriptName != "" {
 		root := currentMap.GetLuaRoot()
 		if root == nil {
+			character.Listener.OnUnlockAction(character)
 			return fmt.Errorf("root lua state not found")
 		}
 		scriptPath := fmt.Sprintf("script/portal/%s.lua", portal.ScriptName)
 		thread, err := luax.NewThread(root, scriptPath)
 		if err != nil {
+			character.Listener.OnUnlockAction(character)
 			return fmt.Errorf("portal script thread: %w", err)
 		}
 		luax.CallAsync(root, thread, "on_enter", character).Then(func(_ interface{}) (interface{}, error) {
-			character.Listener.OnUpdateStats(character, nil, true)
+			character.Listener.OnUnlockAction(character)
 			return nil, nil
 		}).OnError(func(err error) {
 			log.Printf("portal script %s failed: %v", scriptPath, err)
+			character.Listener.OnUnlockAction(character)
 		})
 		return nil
 	} else {

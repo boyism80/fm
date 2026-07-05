@@ -72,9 +72,12 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		args = append(args, lua.LBool(req.Next))
 	}
 
-	luax.SetConfiguration(thread, luax.Configuration{
-		ActorContext: ctx.ActorContext,
-	})
+	cfg, ok := luax.GetConfiguration(thread)
+	if !ok {
+		cfg = luax.Configuration{}
+	}
+	cfg.ActorContext = ctx.ActorContext
+	luax.SetConfiguration(thread, cfg)
 	resumeArgs := make([]interface{}, len(args))
 	for i, a := range args {
 		resumeArgs[i] = a

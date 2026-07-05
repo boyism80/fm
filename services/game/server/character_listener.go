@@ -763,6 +763,75 @@ func (l *CharacterListenerImpl) OnUnlockAction(ch *entity.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.Quest, npcID uint32) {
+	if ch == nil || qp == nil {
+		return
+	}
+	ch.Send(&response.UpdateQuest{
+		QuestID:        uint16(qp.QuestID),
+		Status:         uint8(qp.Status),
+		StartedPayload: qp.StartedWirePayload(),
+		CompletionTime: qp.CompletionTime,
+	}, types.SEND_POLICY_ENCRYPT)
+	if npcID != 0 {
+		ch.Send(&response.UpdateQuestInfo{
+			Progress:    8,
+			QuestID:     uint16(qp.QuestID),
+			NPCID:       npcID,
+			NextQuestID: 0,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+	l.OnUnlockAction(ch)
+}
+
+func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entity.Quest, npcID uint32, nextQuestID uint32) {
+	if ch == nil || qp == nil {
+		return
+	}
+	ch.Send(&response.UpdateQuest{
+		QuestID:        uint16(qp.QuestID),
+		Status:         uint8(qp.Status),
+		CompletionTime: qp.CompletionTime,
+	}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.UpdateQuestInfo{
+		Progress:    8,
+		QuestID:     uint16(qp.QuestID),
+		NPCID:       npcID,
+		NextQuestID: nextQuestID,
+	}, types.SEND_POLICY_ENCRYPT)
+	l.OnUnlockAction(ch)
+}
+
+func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entity.Quest) {
+	if ch == nil || qp == nil {
+		return
+	}
+	ch.Send(&response.UpdateQuest{
+		QuestID:        uint16(qp.QuestID),
+		Status:         uint8(qp.Status),
+		CompletionTime: qp.CompletionTime,
+	}, types.SEND_POLICY_ENCRYPT)
+	l.OnUnlockAction(ch)
+}
+
+func (l *CharacterListenerImpl) OnQuestProgress(ch *entity.Character, qp *entity.Quest) {
+	if ch == nil || qp == nil {
+		return
+	}
+	ch.Send(&response.UpdateQuest{
+		QuestID:        uint16(qp.QuestID),
+		Status:         response.QuestWireStatusStarted,
+		StartedPayload: qp.StartedWirePayload(),
+		CompletionTime: qp.CompletionTime,
+	}, types.SEND_POLICY_ENCRYPT)
+
+	if qp.IsCompletable(ch) {
+		ch.Send(&response.ShowQuestCompletion{
+			QuestID: uint16(qp.QuestID),
+		}, types.SEND_POLICY_ENCRYPT)
+	}
+}
+
 func (l *CharacterListenerImpl) OnItemGainFailed(ch *entity.Character, mode constant.ItemGainFailedType) {
 	ch.Send(&response.ItemGainFailed{
 		Mode: mode,
