@@ -82,6 +82,7 @@ type GameServer struct {
 	rabbitBuddyPID    *actor.PID
 	rabbitGuildPID    *actor.PID
 	rabbitAlliancePID *actor.PID
+	rabbitGlobalPID   *actor.PID
 	characterRuntime  *ServerCharacterRuntime
 	mapSystem         mapSystem
 	schedulerSystem   schedulerSystem
@@ -307,6 +308,30 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 			fmt.Sprintf("rabbitmq_alliance_w%d_c%d", config.WorldId, config.ChannelId),
 			allianceRabbitProps,
 		)
+
+		globalQueueName := fmt.Sprintf("fm.game.w%d.c%d.global.events", config.WorldId, config.ChannelId)
+		globalConsumerTag := fmt.Sprintf("fm-game-w%d-c%d-global", config.WorldId, config.ChannelId)
+		globalRouteAll := fmt.Sprintf("fm.%d.all.global", config.WorldId)
+
+		globalDisp := mq.NewDispatcher()
+		mq.Bind[*GameServer, globalMqServerDatetime](gs, globalDisp)
+
+		globalRabbitCfg := mq.RabbitActorConfig{
+			Root:        gs.GetRootContext(),
+			Broker:      config.RabbitMQ,
+			Exchange:    mq.DirectExchange,
+			QueueName:   globalQueueName,
+			ConsumerTag: globalConsumerTag,
+			RoutingKeys: []string{globalRouteAll},
+			Dispatcher:  globalDisp,
+		}
+		globalRabbitProps := actor.PropsFromProducer(func() actor.Actor {
+			return mq.NewRabbitActor(globalRabbitCfg)
+		})
+		gs.rabbitGlobalPID = gs.actorRegistry.GetOrCreateActor(
+			fmt.Sprintf("rabbitmq_global_w%d_c%d", config.WorldId, config.ChannelId),
+			globalRabbitProps,
+		)
 	}
 
 	gs.characterListener = &CharacterListenerImpl{gs: gs}
@@ -420,6 +445,9 @@ func (gs *GameServer) Start() error {
 	if gs.rabbitAlliancePID != nil {
 		log.Printf("Alliance MQ RabbitActor running (%s)", fmt.Sprintf("fm.game.w%d.c%d.alliance.events", gs.config.WorldId, gs.config.ChannelId))
 	}
+	if gs.rabbitGlobalPID != nil {
+		log.Printf("Global MQ RabbitActor running (%s)", fmt.Sprintf("fm.game.w%d.c%d.global.events", gs.config.WorldId, gs.config.ChannelId))
+	}
 
 	if gs.resources != nil {
 		stringCount := 0
@@ -462,6 +490,12 @@ func (gs *GameServer) Stop() error {
 		root := gs.GetRootContext()
 		if root != nil {
 			root.Poison(gs.rabbitAlliancePID)
+		}
+	}
+	if gs.rabbitGlobalPID != nil {
+		root := gs.GetRootContext()
+		if root != nil {
+			root.Poison(gs.rabbitGlobalPID)
 		}
 	}
 	if gs.internalConn != nil {

@@ -11,6 +11,7 @@ import { PartyGrpcController } from "./grpc/controllers/party-controller";
 import { GuildGrpcController } from "./grpc/controllers/guild-controller";
 import { BuddyGrpcController } from "./grpc/controllers/buddy-controller";
 import { ChatGrpcController } from "./grpc/controllers/chat-controller";
+import { ServerTimeGrpcController } from "./grpc/controllers/server-time-controller";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
 import type { AppConfiguration } from "./config/app-configuration";
 import type { InternalContext } from "./context/internal-context";
@@ -109,6 +110,7 @@ async function main() {
         guildController: awilix.asClass(GuildGrpcController).scoped(),
         buddyController: awilix.asClass(BuddyGrpcController).scoped(),
         chatController: awilix.asClass(ChatGrpcController).scoped(),
+        serverTimeController: awilix.asClass(ServerTimeGrpcController).scoped(),
     });
 
     const serviceImplementation: Record<string, handleUnaryCall<unknown, unknown>> = {};

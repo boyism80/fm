@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/common/config"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/ensure"
+	"github.com/boyism80/fm/core/mq"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/common/globaltimer"
 	loginactor "github.com/boyism80/fm/services/login/actor"
@@ -36,6 +38,7 @@ type LoginServer struct {
 	actorRegistry    *c_actor.ActorRegistry
 	worldCatalog     []*internal.WorldCatalog
 	channelRoutes    map[uint32]map[uint32]*internal.ChannelCatalog
+	rabbitGlobalPID  *actor.PID
 }
 
 func (ls *LoginServer) GetPacketHandler() *core.PacketHandler {
@@ -79,6 +82,7 @@ type LoginConfig struct {
 	InternalHeartbeatIntervalSeconds int
 	InternalHost                     string
 	InternalPort                     int
+	RabbitMQ                         config.RabbitMQEndpoint
 	CatalogRetryIntervalSeconds      int
 	CatalogRetryMaxAttempts          int
 }
@@ -153,6 +157,41 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 	ls.registerPacketHandlers()
 	if err := ls.loadServerCatalog(); err != nil {
 		return nil, err
+	}
+
+	if config.RabbitMQ.Enabled() && len(ls.worldCatalog) > 0 {
+		routingKeys := make([]string, 0, len(ls.worldCatalog))
+		for _, world := range ls.worldCatalog {
+			routingKeys = append(routingKeys, fmt.Sprintf("fm.%d.all.global", world.GetWorldId()))
+		}
+		queueName := fmt.Sprintf("fm.login.%s.global.events", config.LoginInstanceID)
+		if queueName == "fm.login..global.events" {
+			queueName = "fm.login.global.events"
+		}
+		consumerTag := fmt.Sprintf("fm-login-%s-global", config.LoginInstanceID)
+		if consumerTag == "fm-login--global" {
+			consumerTag = "fm-login-global"
+		}
+
+		globalDisp := mq.NewDispatcher()
+		mq.Bind[*LoginServer, loginGlobalMqServerDatetime](ls, globalDisp)
+
+		globalRabbitCfg := mq.RabbitActorConfig{
+			Root:        ls.GetRootContext(),
+			Broker:      config.RabbitMQ,
+			Exchange:    mq.DirectExchange,
+			QueueName:   queueName,
+			ConsumerTag: consumerTag,
+			RoutingKeys: routingKeys,
+			Dispatcher:  globalDisp,
+		}
+		globalRabbitProps := actor.PropsFromProducer(func() actor.Actor {
+			return mq.NewRabbitActor(globalRabbitCfg)
+		})
+		ls.rabbitGlobalPID = ls.actorRegistry.GetOrCreateActor(
+			fmt.Sprintf("rabbitmq_login_global_%s", config.LoginInstanceID),
+			globalRabbitProps,
+		)
 	}
 
 	return ls, nil
@@ -287,6 +326,12 @@ func (ls *LoginServer) Stop() error {
 	if ls.internalHBCancel != nil {
 		ls.internalHBCancel()
 		ls.internalHBCancel = nil
+	}
+	if ls.rabbitGlobalPID != nil {
+		root := ls.GetRootContext()
+		if root != nil {
+			root.Poison(ls.rabbitGlobalPID)
+		}
 	}
 	if ls.internalConn != nil {
 		_ = ls.internalConn.Close()

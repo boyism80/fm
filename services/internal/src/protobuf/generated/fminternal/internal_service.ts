@@ -1988,6 +1988,16 @@ export interface RemoveBuddyReply {
   removedFromOwner: boolean;
 }
 
+export interface SetServerDateTimeRequest {
+  worldId: number;
+  datetime: string;
+  reset: boolean;
+}
+
+export interface SetServerDateTimeReply {
+  ok: boolean;
+}
+
 function createBasePingRequest(): PingRequest {
   return { role: 0, worldId: 0, channelId: 0, loginInstanceId: "" };
 }
@@ -20152,6 +20162,160 @@ export const RemoveBuddyReply: MessageFns<RemoveBuddyReply> = {
   },
 };
 
+function createBaseSetServerDateTimeRequest(): SetServerDateTimeRequest {
+  return { worldId: 0, datetime: "", reset: false };
+}
+
+export const SetServerDateTimeRequest: MessageFns<SetServerDateTimeRequest> = {
+  encode(message: SetServerDateTimeRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.datetime !== "") {
+      writer.uint32(18).string(message.datetime);
+    }
+    if (message.reset !== false) {
+      writer.uint32(24).bool(message.reset);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetServerDateTimeRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetServerDateTimeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.datetime = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.reset = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetServerDateTimeRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      datetime: isSet(object.datetime) ? globalThis.String(object.datetime) : "",
+      reset: isSet(object.reset) ? globalThis.Boolean(object.reset) : false,
+    };
+  },
+
+  toJSON(message: SetServerDateTimeRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.datetime !== "") {
+      obj.datetime = message.datetime;
+    }
+    if (message.reset !== false) {
+      obj.reset = message.reset;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetServerDateTimeRequest>, I>>(base?: I): SetServerDateTimeRequest {
+    return SetServerDateTimeRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetServerDateTimeRequest>, I>>(object: I): SetServerDateTimeRequest {
+    const message = createBaseSetServerDateTimeRequest();
+    message.worldId = object.worldId ?? 0;
+    message.datetime = object.datetime ?? "";
+    message.reset = object.reset ?? false;
+    return message;
+  },
+};
+
+function createBaseSetServerDateTimeReply(): SetServerDateTimeReply {
+  return { ok: false };
+}
+
+export const SetServerDateTimeReply: MessageFns<SetServerDateTimeReply> = {
+  encode(message: SetServerDateTimeReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetServerDateTimeReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetServerDateTimeReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetServerDateTimeReply {
+    return { ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false };
+  },
+
+  toJSON(message: SetServerDateTimeReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetServerDateTimeReply>, I>>(base?: I): SetServerDateTimeReply {
+    return SetServerDateTimeReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetServerDateTimeReply>, I>>(object: I): SetServerDateTimeReply {
+    const message = createBaseSetServerDateTimeReply();
+    message.ok = object.ok ?? false;
+    return message;
+  },
+};
+
 export type InternalService = typeof InternalService;
 export const InternalService = {
   ping: {
@@ -20740,6 +20904,17 @@ export const InternalService = {
       Buffer.from(BroadcastMultiChatReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): BroadcastMultiChatReply => BroadcastMultiChatReply.decode(value),
   },
+  setServerDateTime: {
+    path: "/fm.internal.Internal/SetServerDateTime" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SetServerDateTimeRequest): Buffer =>
+      Buffer.from(SetServerDateTimeRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SetServerDateTimeRequest => SetServerDateTimeRequest.decode(value),
+    responseSerialize: (value: SetServerDateTimeReply): Buffer =>
+      Buffer.from(SetServerDateTimeReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SetServerDateTimeReply => SetServerDateTimeReply.decode(value),
+  },
 } as const;
 
 export interface InternalServer extends UntypedServiceImplementation {
@@ -20817,6 +20992,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   acceptBuddy: handleUnaryCall<AcceptBuddyRequest, AcceptBuddyReply>;
   removeBuddy: handleUnaryCall<RemoveBuddyRequest, RemoveBuddyReply>;
   broadcastMultiChat: handleUnaryCall<BroadcastMultiChatRequest, BroadcastMultiChatReply>;
+  setServerDateTime: handleUnaryCall<SetServerDateTimeRequest, SetServerDateTimeReply>;
 }
 
 export interface InternalClient extends Client {
@@ -21656,6 +21832,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: BroadcastMultiChatReply) => void,
+  ): ClientUnaryCall;
+  setServerDateTime(
+    request: SetServerDateTimeRequest,
+    callback: (error: ServiceError | null, response: SetServerDateTimeReply) => void,
+  ): ClientUnaryCall;
+  setServerDateTime(
+    request: SetServerDateTimeRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SetServerDateTimeReply) => void,
+  ): ClientUnaryCall;
+  setServerDateTime(
+    request: SetServerDateTimeRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SetServerDateTimeReply) => void,
   ): ClientUnaryCall;
 }
 

@@ -75,6 +75,7 @@ const (
 	Internal_AcceptBuddy_FullMethodName                    = "/fm.internal.Internal/AcceptBuddy"
 	Internal_RemoveBuddy_FullMethodName                    = "/fm.internal.Internal/RemoveBuddy"
 	Internal_BroadcastMultiChat_FullMethodName             = "/fm.internal.Internal/BroadcastMultiChat"
+	Internal_SetServerDateTime_FullMethodName              = "/fm.internal.Internal/SetServerDateTime"
 )
 
 // InternalClient is the client API for Internal service.
@@ -137,6 +138,7 @@ type InternalClient interface {
 	AcceptBuddy(ctx context.Context, in *AcceptBuddyRequest, opts ...grpc.CallOption) (*AcceptBuddyReply, error)
 	RemoveBuddy(ctx context.Context, in *RemoveBuddyRequest, opts ...grpc.CallOption) (*RemoveBuddyReply, error)
 	BroadcastMultiChat(ctx context.Context, in *BroadcastMultiChatRequest, opts ...grpc.CallOption) (*BroadcastMultiChatReply, error)
+	SetServerDateTime(ctx context.Context, in *SetServerDateTimeRequest, opts ...grpc.CallOption) (*SetServerDateTimeReply, error)
 }
 
 type internalClient struct {
@@ -707,6 +709,16 @@ func (c *internalClient) BroadcastMultiChat(ctx context.Context, in *BroadcastMu
 	return out, nil
 }
 
+func (c *internalClient) SetServerDateTime(ctx context.Context, in *SetServerDateTimeRequest, opts ...grpc.CallOption) (*SetServerDateTimeReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetServerDateTimeReply)
+	err := c.cc.Invoke(ctx, Internal_SetServerDateTime_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InternalServer is the server API for Internal service.
 // All implementations must embed UnimplementedInternalServer
 // for forward compatibility.
@@ -767,6 +779,7 @@ type InternalServer interface {
 	AcceptBuddy(context.Context, *AcceptBuddyRequest) (*AcceptBuddyReply, error)
 	RemoveBuddy(context.Context, *RemoveBuddyRequest) (*RemoveBuddyReply, error)
 	BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error)
+	SetServerDateTime(context.Context, *SetServerDateTimeRequest) (*SetServerDateTimeReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
 
@@ -944,6 +957,9 @@ func (UnimplementedInternalServer) RemoveBuddy(context.Context, *RemoveBuddyRequ
 }
 func (UnimplementedInternalServer) BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BroadcastMultiChat not implemented")
+}
+func (UnimplementedInternalServer) SetServerDateTime(context.Context, *SetServerDateTimeRequest) (*SetServerDateTimeReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetServerDateTime not implemented")
 }
 func (UnimplementedInternalServer) mustEmbedUnimplementedInternalServer() {}
 func (UnimplementedInternalServer) testEmbeddedByValue()                  {}
@@ -1974,6 +1990,24 @@ func _Internal_BroadcastMultiChat_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_SetServerDateTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetServerDateTimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SetServerDateTime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SetServerDateTime_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SetServerDateTime(ctx, req.(*SetServerDateTimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Internal_ServiceDesc is the grpc.ServiceDesc for Internal service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2204,6 +2238,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BroadcastMultiChat",
 			Handler:    _Internal_BroadcastMultiChat_Handler,
+		},
+		{
+			MethodName: "SetServerDateTime",
+			Handler:    _Internal_SetServerDateTime_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

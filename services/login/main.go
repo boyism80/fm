@@ -74,6 +74,7 @@ internal:
 		InternalHeartbeatIntervalSeconds: l.Internal.HeartbeatIntervalSeconds,
 		InternalHost:                     l.Internal.Host,
 		InternalPort:                     l.Internal.Port,
+		RabbitMQ:                         l.RabbitMQ,
 		CatalogRetryIntervalSeconds:      l.CatalogRetryIntervalSeconds,
 		CatalogRetryMaxAttempts:          l.CatalogRetryMaxAttempts,
 	}

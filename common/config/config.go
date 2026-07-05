@@ -102,6 +102,7 @@ type Login struct {
 	InitialRole                 int              `yaml:"initial_role"`
 	LoginInstanceID             string           `yaml:"login_instance_id"`
 	Internal                    InternalEndpoint `yaml:"internal"`
+	RabbitMQ                    RabbitMQEndpoint `yaml:"rabbitmq"`
 	CatalogRetryIntervalSeconds int              `yaml:"catalog_retry_interval_seconds"`
 	CatalogRetryMaxAttempts     int              `yaml:"catalog_retry_max_attempts"`
 }
@@ -151,6 +152,21 @@ func LoadLogin(path string) (*Login, error) {
 	}
 	if l.CatalogRetryMaxAttempts <= 0 {
 		l.CatalogRetryMaxAttempts = 30
+	}
+	if l.RabbitMQ.IP == "" {
+		l.RabbitMQ.IP = "127.0.0.1"
+	}
+	if l.RabbitMQ.Port == 0 {
+		l.RabbitMQ.Port = 5672
+	}
+	if l.RabbitMQ.UID == "" {
+		l.RabbitMQ.UID = "guest"
+	}
+	if l.RabbitMQ.PWD == "" {
+		l.RabbitMQ.PWD = "guest"
+	}
+	if l.RabbitMQ.VHost == "" {
+		l.RabbitMQ.VHost = "fm"
 	}
 	return &l, nil
 }

@@ -33,6 +33,7 @@ import { GuildService } from "./services/guild-service";
 import { BuddyService } from "./services/buddy-service";
 import { DistributedLock } from "./system/distributed-lock";
 import { DistributedLockService } from "./services/distributed-lock-service";
+import { ServerTimeService } from "./services/server-time-service";
 
 export function createAppContainer() {
     const internalConfig = loadConfig();
@@ -74,6 +75,7 @@ export function createAppContainer() {
         partyService: awilix.asClass(PartyService).transient(),
         guildService: awilix.asClass(GuildService).transient(),
         buddyService: awilix.asClass(BuddyService).transient(),
+        serverTimeService: awilix.asClass(ServerTimeService).singleton(),
     });
     return container;
 }

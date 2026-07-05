@@ -360,6 +360,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerSkillEffectTypeConstants(luaState)
 	registerEffectTypeConstants(luaState)
 	registerServerMessageConstants(luaState)
+	registerClockLuaFuncs(gs, luaState)
 
 	luax.RegisterFunc(luaState, "log", func(L *lua.LState) int {
 		parts := make([]string, L.GetTop())

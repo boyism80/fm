@@ -62,6 +62,7 @@ service Internal {
   rpc AcceptBuddy (AcceptBuddyRequest) returns (AcceptBuddyReply);
   rpc RemoveBuddy (RemoveBuddyRequest) returns (RemoveBuddyReply);
   rpc BroadcastMultiChat (BroadcastMultiChatRequest) returns (BroadcastMultiChatReply);
+  rpc SetServerDateTime (SetServerDateTimeRequest) returns (SetServerDateTimeReply);
 }
 
 enum ServerRole {
@@ -1210,4 +1211,14 @@ message RemoveBuddyReply {
   uint32 buddy_channel_id = 4;
   bool buddy_was_accepted = 5;
   bool removed_from_owner = 6;
+}
+
+message SetServerDateTimeRequest {
+  uint32 world_id = 1;
+  string datetime = 2;
+  bool reset = 3;
+}
+
+message SetServerDateTimeReply {
+  bool ok = 1;
 }
