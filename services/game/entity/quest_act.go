@@ -15,6 +15,7 @@ var (
 	ErrQuestNotStartable   = errors.New("quest not startable")
 	ErrQuestNotCompletable = errors.New("quest not completable")
 	ErrQuestNotForfeitable = errors.New("quest not forfeitable")
+	ErrQuestExpired        = errors.New("quest expired")
 	ErrQuestRestoreItem    = errors.New("quest restore item unavailable")
 	ErrQuestFlowFailed     = errors.New("quest flow failed")
 )
@@ -96,7 +97,8 @@ func (qc *QuestContainer) Start(questID uint32, opts QuestPrepareOpts) (*Quest, 
 
 	qp.Status = QuestStatusStarted
 	qp.Forfeited = forfeited
-	qp.StatusRecord = ""
+	qp.StatusRecord.WriteString("")
+	qp.ClearDeadline()
 	qp.MobKills = make(map[uint32]int)
 	qp.InitMobKillCounters()
 	if !opts.Force {
@@ -174,6 +176,9 @@ func (qc *QuestContainer) prepareComplete(
 	}
 	if qp == nil || qp.Wz == nil || !qp.IsStarted() {
 		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotCompletable
+	}
+	if qp.IsDeadlineExpired() {
+		return FlowSpec{}, questPhaseMeta{}, ErrQuestExpired
 	}
 	if qp.Wz.Meta.Blocked {
 		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotCompletable

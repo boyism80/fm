@@ -768,10 +768,14 @@ func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.
 		return
 	}
 	ch.Send(&response.UpdateQuest{
-		QuestID:        uint16(qp.QuestID),
-		Status:         uint8(qp.Status),
-		StartedPayload: qp.StartedWirePayload(),
-		CompletionTime: qp.CompletionTime,
+		QuestStatus: dto.QuestStatus{
+			QuestID:        uint16(qp.QuestID),
+			Status:         uint8(qp.Status),
+			MobKills:       qp.StartedMobKills(),
+			Deadline:       qp.Deadline,
+			StatusRecord:   qp.StatusRecord.AsString(),
+			CompletionTime: qp.CompletionTime,
+		},
 	}, types.SEND_POLICY_ENCRYPT)
 	if npcID != 0 {
 		ch.Send(&response.UpdateQuestInfo{
@@ -789,9 +793,11 @@ func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entit
 		return
 	}
 	ch.Send(&response.UpdateQuest{
-		QuestID:        uint16(qp.QuestID),
-		Status:         uint8(qp.Status),
-		CompletionTime: qp.CompletionTime,
+		QuestStatus: dto.QuestStatus{
+			QuestID:        uint16(qp.QuestID),
+			Status:         uint8(qp.Status),
+			CompletionTime: qp.CompletionTime,
+		},
 	}, types.SEND_POLICY_ENCRYPT)
 	ch.Send(&response.UpdateQuestInfo{
 		Progress:    8,
@@ -807,9 +813,11 @@ func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entit
 		return
 	}
 	ch.Send(&response.UpdateQuest{
-		QuestID:        uint16(qp.QuestID),
-		Status:         uint8(qp.Status),
-		CompletionTime: qp.CompletionTime,
+		QuestStatus: dto.QuestStatus{
+			QuestID:        uint16(qp.QuestID),
+			Status:         uint8(qp.Status),
+			CompletionTime: qp.CompletionTime,
+		},
 	}, types.SEND_POLICY_ENCRYPT)
 	l.OnUnlockAction(ch)
 }
@@ -819,10 +827,14 @@ func (l *CharacterListenerImpl) OnQuestProgress(ch *entity.Character, qp *entity
 		return
 	}
 	ch.Send(&response.UpdateQuest{
-		QuestID:        uint16(qp.QuestID),
-		Status:         response.QuestWireStatusStarted,
-		StartedPayload: qp.StartedWirePayload(),
-		CompletionTime: qp.CompletionTime,
+		QuestStatus: dto.QuestStatus{
+			QuestID:        uint16(qp.QuestID),
+			Status:         response.QuestWireStatusStarted,
+			MobKills:       qp.StartedMobKills(),
+			Deadline:       qp.Deadline,
+			StatusRecord:   qp.StatusRecord.AsString(),
+			CompletionTime: qp.CompletionTime,
+		},
 	}, types.SEND_POLICY_ENCRYPT)
 
 	if qp.IsCompletable(ch) {

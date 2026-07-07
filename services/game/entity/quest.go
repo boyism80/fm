@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"fmt"
 	"github.com/boyism80/fm/core/clock"
 	"sort"
 	"strings"
@@ -24,7 +23,8 @@ type Quest struct {
 	QuestID        uint32
 	Status         QuestStatusType
 	MobKills       map[uint32]int
-	StatusRecord   string
+	Deadline       time.Time
+	StatusRecord   StatusRecord
 	Unknown2       map[string]string
 	CompletionTime time.Time
 	Forfeited      int
@@ -71,17 +71,17 @@ func (qp *Quest) IsCompletable(ch *Character) bool {
 	if qp.Wz.Meta.Blocked {
 		return false
 	}
+	if qp.IsDeadlineExpired() {
+		return false
+	}
 	return qp.meetsPhaseRequirements(ch, qp.Wz.Complete, QuestPrepareOpts{NpcID: nil})
 }
 
-func (qp *Quest) StartedWirePayload() string {
-	if qp == nil || qp.Wz == nil {
-		return ""
+func (qp *Quest) StartedMobKills() []uint16 {
+	if qp == nil || qp.Wz == nil || len(qp.Wz.OrderedMobIDs()) == 0 {
+		return nil
 	}
-	if len(qp.Wz.OrderedMobIDs()) > 0 {
-		return qp.mobKillEncodedString()
-	}
-	return qp.StatusRecord
+	return qp.MobKillCountsOrdered()
 }
 
 func (qp *Quest) RecordMobKill(mobID uint32) bool {
@@ -101,22 +101,6 @@ func (qp *Quest) RecordMobKill(mobID uint32) bool {
 	}
 	qp.MobKills[mobID]++
 	return true
-}
-
-func (qp *Quest) mobKillEncodedString() string {
-	if qp == nil || qp.Wz == nil {
-		return ""
-	}
-	ids := qp.Wz.OrderedMobIDs()
-	var b strings.Builder
-	for _, id := range ids {
-		kills := 0
-		if qp.MobKills != nil {
-			kills = qp.MobKills[id]
-		}
-		fmt.Fprintf(&b, "%03d", kills)
-	}
-	return b.String()
 }
 
 func (qp *Quest) MobKillCountsOrdered() []uint16 {
@@ -173,7 +157,7 @@ func (qp *Quest) ApplyPhaseMeta(meta questPhaseMeta, qc *QuestContainer) {
 		return
 	}
 	if meta.info != "" {
-		qp.StatusRecord = meta.info
+		qp.StatusRecord.WriteString(meta.info)
 	}
 	if len(meta.chainQuests) > 0 && qc != nil {
 		qc.applyQuestChainActions(meta.chainQuests)
@@ -261,6 +245,9 @@ func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
 func (qp *Quest) Complete(ch *Character, opts QuestPrepareOpts) error {
 	if qp == nil || ch == nil || ch.Quests == nil || qp.Wz == nil {
 		return ErrQuestNotCompletable
+	}
+	if qp.IsDeadlineExpired() {
+		return ErrQuestExpired
 	}
 	wireNPC := uint32(0)
 	if opts.NpcID != nil {

@@ -1,16 +1,12 @@
 package dto
 
 import (
-	"fmt"
 	"sort"
-	"strconv"
-	"strings"
 
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
-	"github.com/boyism80/fm/util"
 )
 
 type Character struct {
@@ -265,31 +261,7 @@ func (c *Character) SerializeQuests(writer *stream.StreamWriter) {
 	writer.WriteU16(uint16(len(started)))
 	for _, q := range started {
 		writer.WriteU16(q.QuestID)
-
-		if len(q.MobKills) > 0 {
-			var sb strings.Builder
-			for _, kills := range q.MobKills {
-				sb.WriteString(fmt.Sprintf("%03d", kills))
-			}
-			writer.WriteStr8(sb.String())
-		} else {
-			if q.CustomData != "" {
-				if strings.HasPrefix(q.CustomData, "time_") {
-					writer.WriteU16(9)
-					writer.WriteU8(1)
-
-					timeVal, err := strconv.ParseInt(q.CustomData[5:], 10, 64)
-					if err != nil {
-						timeVal = 0
-					}
-					writer.WriteDateTime(util.GetTime(timeVal))
-				} else {
-					writer.WriteStr8(q.CustomData)
-				}
-			} else {
-				writer.Write([]byte{0x00, 0x00})
-			}
-		}
+		q.WriteStartedPayload(writer)
 	}
 
 	completed := c.QuestsCompleted

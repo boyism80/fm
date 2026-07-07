@@ -1,12 +1,8 @@
 package response
 
 import (
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/boyism80/fm/core/clock"
-
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/util"
 )
@@ -18,10 +14,7 @@ const (
 )
 
 type UpdateQuest struct {
-	QuestID        uint16
-	Status         uint8
-	StartedPayload string
-	CompletionTime time.Time
+	dto.QuestStatus
 }
 
 func (p *UpdateQuest) Opcode() uint16 {
@@ -38,22 +31,7 @@ func (p *UpdateQuest) Serialize(writer *stream.StreamWriter) error {
 		writer.Write(make([]byte, 10))
 
 	case QuestWireStatusStarted:
-		if p.StartedPayload != "" {
-			if strings.HasPrefix(p.StartedPayload, "time_") {
-				writer.WriteU16(9)
-				writer.WriteU8(1)
-				timeVal, err := strconv.ParseInt(p.StartedPayload[5:], 10, 64)
-				if err != nil {
-					writer.WriteU64(util.ToFileTime(time.Time{}))
-				} else {
-					writer.WriteU64(util.ToFileTime(util.GetTime(timeVal)))
-				}
-			} else {
-				writer.WriteStr8(p.StartedPayload)
-			}
-		} else {
-			writer.Write([]byte{0x00, 0x00})
-		}
+		p.WriteStartedPayload(writer)
 
 	case QuestWireStatusCompleted:
 		completionTime := p.CompletionTime

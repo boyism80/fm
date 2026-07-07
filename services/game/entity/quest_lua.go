@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"time"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -79,7 +80,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() == 1 {
-				L.Push(lua.LString(q.StatusRecord))
+				L.Push(lua.LString(q.StatusRecord.AsString()))
 				return 1
 			}
 			if L.GetTop() != 2 {
@@ -90,7 +91,36 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			q.StatusRecord = L.CheckString(2)
+			q.StatusRecord.WriteString(L.CheckString(2))
+			L.Push(lua.LBool(true))
+			return 1
+		},
+		"deadline": func(L *lua.LState) int {
+			q, ok := LuaCheckQuest(L, 1)
+			if !ok {
+				return 0
+			}
+			if L.GetTop() == 1 {
+				if q.Deadline.IsZero() {
+					L.Push(lua.LNil)
+				} else {
+					L.Push(lua.LNumber(q.Deadline.UnixMilli()))
+				}
+				return 1
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "deadline() takes 0 or 1 arguments")
+				return 0
+			}
+			if q.container == nil || q.container.Get(q.QuestID) == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			if L.Get(2) == lua.LNil {
+				q.ClearDeadline()
+			} else {
+				q.SetDeadline(time.UnixMilli(L.CheckInt64(2)))
+			}
 			L.Push(lua.LBool(true))
 			return 1
 		},
@@ -294,7 +324,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			qp, err := q.container.Start(q.QuestID, QuestPrepareOpts{NpcID: &npc, Force: true})
 			if err == nil && qp != nil {
 				if record != "" {
-					qp.StatusRecord = record
+					qp.StatusRecord.WriteString(record)
 				}
 				if ud, ok := L.Get(1).(*lua.LUserData); ok {
 					ud.Value = qp

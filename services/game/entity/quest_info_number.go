@@ -29,9 +29,9 @@ func (qp *Quest) meetsInfoNumberRequirement(refID int, phase wz.QuestPhase) bool
 	}
 	expected := infoStringsFromPhase(phase)
 	if len(expected) == 0 {
-		return refQP.StatusRecord != ""
+		return !refQP.StatusRecord.IsEmpty()
 	}
-	record := refQP.StatusRecord
+	record := refQP.StatusRecord.AsString()
 	for _, want := range expected {
 		if want == "" {
 			continue

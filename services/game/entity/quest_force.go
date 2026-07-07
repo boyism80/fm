@@ -10,7 +10,7 @@ func (qc *QuestContainer) ForceStart(questID uint32, record string) (*Quest, err
 			return nil, err
 		}
 		if record != "" {
-			qp.StatusRecord = record
+			qp.StatusRecord.WriteString(record)
 			if qp.WiresToClient() && qc.owner != nil && qc.owner.Listener != nil {
 				qc.owner.Listener.OnQuestProgress(qc.owner, qp)
 			}
@@ -29,7 +29,8 @@ func (qc *QuestContainer) ForceStart(questID uint32, record string) (*Quest, err
 		return nil, ErrQuestInvalidState
 	}
 	qp.Status = QuestStatusStarted
-	qp.StatusRecord = record
+	qp.StatusRecord.WriteString(record)
+	qp.ClearDeadline()
 	if qp.MobKills == nil {
 		qp.MobKills = make(map[uint32]int)
 	}

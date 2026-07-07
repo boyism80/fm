@@ -138,7 +138,12 @@ func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
 		for mobID, kills := range pb.GetMobKills() {
 			q.MobKills[mobID] = int(kills)
 		}
-		q.StatusRecord = pb.GetStatusRecord()
+		q.StatusRecord.WriteString(pb.GetStatusRecord())
+		if ms := pb.GetDeadlineUnixMs(); ms > 0 {
+			q.Deadline = time.UnixMilli(ms)
+		} else {
+			q.Deadline = time.Time{}
+		}
 		q.Unknown2 = make(map[string]string, len(pb.GetUnknown2()))
 		for key, value := range pb.GetUnknown2() {
 			q.Unknown2[key] = value
@@ -365,14 +370,19 @@ func (ch *Character) QuestsPersisted() []*internal.QuestPersisted {
 		if !q.CompletionTime.IsZero() {
 			completionTimeUnixMs = q.CompletionTime.UnixMilli()
 		}
+		var deadlineUnixMs int64
+		if !q.Deadline.IsZero() {
+			deadlineUnixMs = q.Deadline.UnixMilli()
+		}
 		out = append(out, &internal.QuestPersisted{
 			CharacterId:          ch.GetID(),
 			QuestId:              questID,
 			Status:               uint32(q.Status),
 			MobKills:             mobKills,
-			StatusRecord:         q.StatusRecord,
+			StatusRecord:         q.StatusRecord.AsString(),
 			Unknown2:             unknown2,
 			CompletionTimeUnixMs: completionTimeUnixMs,
+			DeadlineUnixMs:       deadlineUnixMs,
 			Forfeited:            uint32(q.Forfeited),
 		})
 	})

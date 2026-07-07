@@ -178,7 +178,8 @@ func (ch *Character) ToFullDTO() *dto.Character {
 			questDTO := &dto.QuestStatus{
 				QuestID:        uint16(questID),
 				Status:         uint8(qp.Status),
-				CustomData:     qp.StatusRecord,
+				Deadline:       qp.Deadline,
+				StatusRecord:   qp.StatusRecord.AsString(),
 				CompletionTime: qp.CompletionTime,
 			}
 			if qp.Wz != nil && len(qp.Wz.OrderedMobIDs()) > 0 {

@@ -1126,6 +1126,7 @@ export interface QuestPersisted {
   unknown2: { [key: string]: string };
   completionTimeUnixMs: number;
   forfeited: number;
+  deadlineUnixMs: number;
 }
 
 export interface QuestPersisted_MobKillsEntry {
@@ -5931,6 +5932,7 @@ function createBaseQuestPersisted(): QuestPersisted {
     unknown2: {},
     completionTimeUnixMs: 0,
     forfeited: 0,
+    deadlineUnixMs: 0,
   };
 }
 
@@ -5959,6 +5961,9 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     }
     if (message.forfeited !== 0) {
       writer.uint32(64).uint32(message.forfeited);
+    }
+    if (message.deadlineUnixMs !== 0) {
+      writer.uint32(72).int64(message.deadlineUnixMs);
     }
     return writer;
   },
@@ -6040,6 +6045,14 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
           message.forfeited = reader.uint32();
           continue;
         }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.deadlineUnixMs = longToNumber(reader.int64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6099,6 +6112,11 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
         ? globalThis.Number(object.completion_time_unix_ms)
         : 0,
       forfeited: isSet(object.forfeited) ? globalThis.Number(object.forfeited) : 0,
+      deadlineUnixMs: isSet(object.deadlineUnixMs)
+        ? globalThis.Number(object.deadlineUnixMs)
+        : isSet(object.deadline_unix_ms)
+        ? globalThis.Number(object.deadline_unix_ms)
+        : 0,
     };
   },
 
@@ -6140,6 +6158,9 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     if (message.forfeited !== 0) {
       obj.forfeited = Math.round(message.forfeited);
     }
+    if (message.deadlineUnixMs !== 0) {
+      obj.deadlineUnixMs = Math.round(message.deadlineUnixMs);
+    }
     return obj;
   },
 
@@ -6172,6 +6193,7 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     );
     message.completionTimeUnixMs = object.completionTimeUnixMs ?? 0;
     message.forfeited = object.forfeited ?? 0;
+    message.deadlineUnixMs = object.deadlineUnixMs ?? 0;
     return message;
   },
 };

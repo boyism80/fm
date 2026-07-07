@@ -295,6 +295,7 @@ message QuestPersisted {
   map<string, string> unknown2    = 6;
   int64 completion_time_unix_ms   = 7;
   uint32 forfeited                = 8;
+  int64 deadline_unix_ms          = 9;
 }
 
 message LoginAccountRequest {

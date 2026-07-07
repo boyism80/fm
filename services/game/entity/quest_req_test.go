@@ -74,13 +74,16 @@ func newQuestContainerForTest(defs map[uint32]*wz.Quest) *QuestContainer {
 	world := &stubQuestGameWorld{
 		resources: &wz.Resources{Quests: defs},
 	}
-	return NewQuestContainer(&Character{
+	ch := &Character{
 		LifeCore: LifeCore{
 			ObjectCore: ObjectCore{
 				GameWorld: world,
 			},
 		},
-	})
+	}
+	qc := NewQuestContainer(ch)
+	ch.Quests = qc
+	return qc
 }
 
 func TestParseQuestEventTime(t *testing.T) {

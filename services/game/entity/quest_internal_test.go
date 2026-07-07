@@ -17,8 +17,8 @@ func TestForceStartInternalQuest(t *testing.T) {
 	if qp.Wz != nil {
 		t.Fatal("expected nil Wz")
 	}
-	if qp.StatusRecord != "100" {
-		t.Fatalf("record=%q", qp.StatusRecord)
+	if qp.StatusRecord.AsString() != "100" {
+		t.Fatalf("record=%q", qp.StatusRecord.AsString())
 	}
 	if qp.WiresToClient() {
 		t.Fatal("internal quest should not wire to client")
@@ -76,7 +76,7 @@ func TestMeetsInfoNumberRequirementChecksCatalogQuest(t *testing.T) {
 	}
 
 	ref := qc.Create(2166, QuestStatusStarted)
-	ref.StatusRecord = "1"
+	ref.StatusRecord.WriteString("1")
 	if !qp.meetsInfoNumberRequirement(2166, phase) {
 		t.Fatal("expected started ref with record to pass")
 	}
