@@ -114,6 +114,24 @@ type NpcSpawn struct {
 	MobTimeSec int    `yaml:"mob_time_sec,omitempty"`
 }
 
+type NpcSpawnsFile struct {
+	Meta   Meta                       `yaml:"_meta"`
+	Spawns map[uint32][]NpcSpawnEntry `yaml:"npc_spawns"`
+}
+
+type NpcSpawnEntry struct {
+	NpcID      uint32 `yaml:"npc_id"`
+	NpcName    string `yaml:"npc_name,omitempty"`
+	MapID      uint32 `yaml:"map_id"`
+	MapName    string `yaml:"map_name,omitempty"`
+	SpawnID    uint32 `yaml:"spawn_id"`
+	X          int16  `yaml:"x"`
+	Y          int16  `yaml:"y"`
+	Foothold   int16  `yaml:"foothold,omitempty"`
+	Hide       bool   `yaml:"hide,omitempty"`
+	MobTimeSec int    `yaml:"mob_time_sec,omitempty"`
+}
+
 type MobSpawn struct {
 	SpawnID    uint32 `yaml:"spawn_id"`
 	MobID      uint32 `yaml:"mob_id"`
@@ -256,6 +274,25 @@ type ShopItem struct {
 	Period    int     `yaml:"period,omitempty"`
 	Stock     int     `yaml:"stock,omitempty"`
 	UnitPrice float64 `yaml:"unit_price,omitempty"`
+}
+
+type NpcsFile struct {
+	Meta Meta           `yaml:"_meta"`
+	Npcs map[uint32]Npc `yaml:"npcs"`
+}
+
+type Npc struct {
+	ID      uint32      `yaml:"id"`
+	Name    string      `yaml:"name,omitempty"`
+	Func    string      `yaml:"func,omitempty"`
+	Script  string      `yaml:"script,omitempty"`
+	HasShop bool        `yaml:"has_shop,omitempty"`
+	Maps    []NpcMapRef `yaml:"maps,omitempty"`
+}
+
+type NpcMapRef struct {
+	ID   uint32 `yaml:"id"`
+	Name string `yaml:"name,omitempty"`
 }
 
 type StringsFile struct {

@@ -318,6 +318,7 @@ func (qp *Quest) Forfeit(ch *Character) error {
 	}
 	snapshot := &Quest{
 		QuestID:   qp.QuestID,
+		Wz:        qp.Wz,
 		Status:    QuestStatusNotStarted,
 		Forfeited: qp.Forfeited + 1,
 	}
@@ -441,6 +442,19 @@ func (qc *QuestContainer) ForEach(fn func(questID uint32, qp *Quest)) {
 		}
 		fn(id, qp)
 	}
+}
+
+func (qc *QuestContainer) CompletedCount() int {
+	if qc == nil {
+		return 0
+	}
+	n := 0
+	qc.ForEach(func(_ uint32, qp *Quest) {
+		if qp != nil && qp.Status == QuestStatusCompleted {
+			n++
+		}
+	})
+	return n
 }
 
 func (qc *QuestContainer) RecordExWireMap() map[uint16]string {

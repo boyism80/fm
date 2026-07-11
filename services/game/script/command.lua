@@ -142,6 +142,77 @@ local unsupported_quest_req_kinds = {
 	["end"] = true,
 }
 
+local function class_matches(class_id, codes)
+	if codes == nil then
+		return true
+	end
+	for _, code in ipairs(codes) do
+		if code == 0 and class_id == 0 then
+			return true
+		end
+		if code == class_id then
+			return true
+		end
+		if code % 100 == 0 and math.floor(class_id / 100) == math.floor(code / 100) then
+			return true
+		end
+	end
+	return false
+end
+
+local function pick_class(codes)
+	for _, code in ipairs(codes) do
+		if code % 100 ~= 0 then
+			return code
+		end
+	end
+	return codes[1]
+end
+
+local function ensure_quest_state(me, quest_id, state)
+	local other = me:quest(quest_id)
+	if other == nil then
+		return false
+	end
+	if state == 2 then
+		if other:completed() then
+			return true
+		end
+		if not other:started() then
+			if not other:start(0, true) then
+				return false
+			end
+			other = me:quest(quest_id)
+			if other == nil then
+				return false
+			end
+		end
+		return other:force_complete(0)
+	end
+	if state == 1 then
+		if other:status() == 1 then
+			return true
+		end
+		if other:completed() or other:started() then
+			me:clear_quests(quest_id)
+			other = me:quest(quest_id)
+			if other == nil then
+				return false
+			end
+		end
+		return other:start(0, true)
+	end
+	if state == 0 then
+		if other:status() == 0 then
+			return true
+		end
+		me:clear_quests(quest_id)
+		other = me:quest(quest_id)
+		return other ~= nil and other:status() == 0
+	end
+	return false
+end
+
 local function prepare_quest_requirement(me, quest, req)
 	local kind = req.kind
 	if kind == "item" then
@@ -213,22 +284,25 @@ local function prepare_quest_requirement(me, quest, req)
 			return true
 		end
 		for _, entry in ipairs(quests) do
-			local other = me:quest(entry.id)
-			if other == nil then
-				return false, kind
-			end
-			local state = entry.state or 0
-			if state == 2 and not other:completed() then
-				return false, kind
-			end
-			if state == 1 and other:status() ~= 1 then
+			if not ensure_quest_state(me, entry.id, entry.state or 0) then
 				return false, kind
 			end
 		end
 		return true
 	end
 	if kind == "class" then
-		return false, kind
+		local classes = req.classes
+		if classes == nil or #classes == 0 then
+			return true
+		end
+		if not class_matches(me:class(), classes) then
+			local target = pick_class(classes)
+			if target == nil then
+				return false, kind
+			end
+			me:class(target)
+		end
+		return true
 	end
 	if unsupported_quest_req_kinds[kind] then
 		return false, kind
@@ -255,6 +329,39 @@ local function prepare_quest_complete(me, quest)
 		end
 	end
 	return true
+end
+
+local function prepare_quest_start(me, quest)
+	local wz = quest:wz()
+	if wz == nil then
+		return false, "wz"
+	end
+	local reqs = wz.start_requirements
+	if reqs == nil then
+		return true
+	end
+	for _, req in ipairs(reqs) do
+		local ok, reason = prepare_quest_requirement(me, quest, req)
+		if not ok then
+			return false, reason or req.kind
+		end
+	end
+	return true
+end
+
+local function start_npc_id(wz)
+	if wz == nil or wz.start_requirements == nil then
+		return nil
+	end
+	for _, req in ipairs(wz.start_requirements) do
+		if req.kind == "npc" then
+			local npc_id = req.value or 0
+			if npc_id ~= 0 then
+				return npc_id
+			end
+		end
+	end
+	return nil
 end
 
 command_funcs = {
@@ -416,6 +523,56 @@ command_funcs = {
 			return true
 		end,
 	},
+	["퀘스트시작준비"] = {
+		privilege = ROLE.Admin,
+		usage = "<퀘스트ID> - 시작 조건 충족 후 시작 NPC 근처로 이동",
+		command = function(me, args)
+			local quest_id = tonumber(args[1])
+			if not quest_id then
+				me:notice("사용법: /퀘스트시작준비 <퀘스트ID>")
+				return true
+			end
+			local quest = me:quest(quest_id)
+			if quest == nil then
+				me:notice(string.format("퀘스트 %d 없음", quest_id))
+				return true
+			end
+			if quest:started() then
+				me:notice(string.format("퀘스트 %d 이미 진행 중", quest_id))
+				return true
+			end
+			if quest:completed() then
+				me:notice(string.format("퀘스트 %d 이미 완료됨 (필요 시 /퀘스트초기화)", quest_id))
+				return true
+			end
+			local ok, reason = prepare_quest_start(me, quest)
+			if not ok then
+				me:notice(string.format("퀘스트 %d 시작 준비 실패 (%s)", quest_id, tostring(reason)))
+				return true
+			end
+			me:notice(string.format("퀘스트 %d 시작 조건 준비 완료", quest_id))
+			local wz = quest:wz()
+			local npc_id = start_npc_id(wz)
+			if npc_id == nil then
+				me:notice("시작 NPC 없음")
+				return true
+			end
+			local spawns = npc_spawns(npc_id)
+			if spawns == nil or #spawns == 0 then
+				me:notice(string.format("시작 NPC %d 스폰을 찾지 못함", npc_id))
+				return true
+			end
+			local spawn = spawns[1]
+			local spawn_point = closest_spawn(spawn.map_id, spawn.x, spawn.y)
+			if spawn_point == nil then
+				me:map(spawn.map_id)
+			else
+				me:map(spawn.map_id, spawn_point)
+			end
+			me:notice(string.format("NPC %d → 맵 %d (%d, %d) 근처 스폰으로 이동", npc_id, spawn.map_id, spawn.x, spawn.y))
+			return true
+		end,
+	},
 	["메소얻기"] = {
 		privilege = ROLE.Admin,
 		usage = "<금액> - 메소 획득",
@@ -473,7 +630,7 @@ command_funcs = {
 	},
 	["좌표"] = {
 		privilege = ROLE.Admin,
-		usage = "- 현재 좌표 확인",
+		usage = "- 현재 좌표·저장 스폰포인트 확인",
 		command = function(me, args)
 			local m = me:map()
 			if m == nil then
@@ -488,7 +645,18 @@ command_funcs = {
 				map_id = wz_t.id or 0
 				map_name = tostring(wz_t.name or "?")
 			end
-			me:notice(string.format("Map: %s (%d), Position: %d, %d", map_name, map_id, x, y))
+			local spawn_id, spawn_name, sx, sy = me:spawn_point()
+			if spawn_name ~= nil then
+				me:notice(string.format(
+					"Map: %s (%d), Position: %d, %d, Spawn: %d (%s) @ %d, %d",
+					map_name, map_id, x, y, spawn_id, spawn_name, sx, sy
+				))
+			else
+				me:notice(string.format(
+					"Map: %s (%d), Position: %d, %d, Spawn: %d",
+					map_name, map_id, x, y, spawn_id or 0
+				))
+			end
 			return true
 		end,
 	},

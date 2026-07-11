@@ -424,6 +424,26 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},
+		"forfeit": func(L *lua.LState) int {
+			q, ok := LuaCheckQuest(L, 1)
+			if !ok {
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "forfeit() takes no arguments")
+				return 0
+			}
+			if q.container == nil || q.container.owner == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			if stored := q.container.Get(q.QuestID); stored != nil {
+				q = stored
+			}
+			err := q.Forfeit(q.container.owner)
+			L.Push(lua.LBool(err == nil))
+			return 1
+		},
 	}
 }
 
@@ -453,16 +473,20 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 		KeepAlive:    true,
 	})
 	luax.CallAsync(root, luaThread, entry, ch, npcID).Then(func(_ interface{}) (interface{}, error) {
-		ch.ResetDialog()
-		if ch.Listener != nil {
-			ch.Listener.OnUnlockAction(ch)
+		if ch.GetDialog() == nil {
+			ch.ResetDialog()
+			if ch.Listener != nil {
+				ch.Listener.OnUnlockAction(ch)
+			}
 		}
 		return nil, nil
 	}).OnError(func(err error) {
 		log.Printf("quest script %s quest=%d npc=%d: %v", entry, questID, npcID, err)
-		ch.ResetDialog()
-		if ch.Listener != nil {
-			ch.Listener.OnUnlockAction(ch)
+		if ch.GetDialog() == nil {
+			ch.ResetDialog()
+			if ch.Listener != nil {
+				ch.Listener.OnUnlockAction(ch)
+			}
 		}
 	})
 	return nil

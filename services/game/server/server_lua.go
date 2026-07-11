@@ -16,6 +16,7 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -271,6 +272,14 @@ func registerEffectTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("EffectType", t)
 }
 
+func registerExchangeResultConstants(luaState *lua.LState) {
+	t := luaState.NewTable()
+	t.RawSetString("OK", lua.LNumber(entity.ExchangeOK))
+	t.RawSetString("LackCost", lua.LNumber(entity.ExchangeLackCost))
+	t.RawSetString("LackCapacity", lua.LNumber(entity.ExchangeLackCapacity))
+	luaState.SetGlobal("ExchangeResult", t)
+}
+
 func registerServerMessageConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllServerMessageTypes() {
@@ -359,6 +368,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerMistTypeConstants(luaState)
 	registerSkillEffectTypeConstants(luaState)
 	registerEffectTypeConstants(luaState)
+	registerExchangeResultConstants(luaState)
 	registerServerMessageConstants(luaState)
 	registerClockLuaFuncs(gs, luaState)
 
@@ -409,6 +419,43 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 		tbl.RawSetString("id", lua.LNumber(wz.ID))
 		tbl.RawSetString("name", lua.LString(wz.Name))
 		L.Push(tbl)
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "npc_spawns", func(L *lua.LState) int {
+		npcID := uint32(L.CheckNumber(1))
+		out := L.NewTable()
+		if gs.resources == nil {
+			L.Push(out)
+			return 1
+		}
+		spawns := gs.resources.FindNpcSpawns(npcID)
+		for i, spawn := range spawns {
+			entry := L.NewTable()
+			entry.RawSetString("map_id", lua.LNumber(spawn.MapID))
+			entry.RawSetString("x", lua.LNumber(spawn.X))
+			entry.RawSetString("y", lua.LNumber(spawn.Y))
+			out.RawSetInt(i+1, entry)
+		}
+		L.Push(out)
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "closest_spawn", func(L *lua.LState) int {
+		mapID := uint32(L.CheckNumber(1))
+		x := int16(L.CheckNumber(2))
+		y := int16(L.CheckNumber(3))
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		mapWz := gs.resources.Maps[mapID]
+		if mapWz == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		spawnID := mapWz.FindClosestPortalSpawnID(types.Point[int16]{X: x, Y: y})
+		L.Push(lua.LNumber(spawnID))
 		return 1
 	})
 

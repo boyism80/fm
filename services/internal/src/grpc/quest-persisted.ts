@@ -34,6 +34,7 @@ createMap(
     forMember((destination: any) => destination.recordEx, mapFrom((source: QuestModel) => normalizeStringMap(source.recordEx))),
     forMember((destination: any) => destination.completionTimeUnixMs, mapFrom((source: QuestModel) => source.completionTimeUnixMs ?? 0)),
     forMember((destination: any) => destination.forfeited, mapFrom((source: QuestModel) => source.forfeited >>> 0)),
+    forMember((destination: any) => destination.deadlineUnixMs, mapFrom((source: QuestModel) => source.deadlineUnixMs ?? 0)),
     forMember((destination: any) => destination.startTimeUnixMs, mapFrom((source: QuestModel) => source.startTimeUnixMs ?? 0))
 );
 
@@ -49,5 +50,6 @@ createMap(
     forMember((destination: any) => destination.recordEx, mapFrom((source: QuestPersisted) => normalizeStringMap(source.recordEx))),
     forMember((destination: any) => destination.completionTimeUnixMs, mapFrom((source: QuestPersisted) => source.completionTimeUnixMs || 0)),
     forMember((destination: any) => destination.forfeited, mapFrom((source: QuestPersisted) => source.forfeited >>> 0)),
+    forMember((destination: any) => destination.deadlineUnixMs, mapFrom((source: QuestPersisted) => source.deadlineUnixMs || 0)),
     forMember((destination: any) => destination.startTimeUnixMs, mapFrom((source: QuestPersisted) => source.startTimeUnixMs || 0))
 );

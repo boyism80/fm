@@ -351,11 +351,7 @@ func (c *Character) SerializeRecordEx(writer *stream.StreamWriter) {
 	writer.WriteU16(uint16(len(c.RecordExByQuest)))
 	for questId, customData := range c.RecordExByQuest {
 		writer.WriteU16(questId)
-		if customData == "" {
-			writer.WriteStr8("")
-		} else {
-			writer.WriteStr8(customData)
-		}
+		writer.WriteStr16(customData)
 	}
 }
 

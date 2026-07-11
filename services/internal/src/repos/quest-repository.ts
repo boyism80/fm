@@ -5,9 +5,9 @@ import type { RepositoryQuery } from "../types/repository-contracts";
 import type { QuestModel, QuestRow } from "../types/repository-models";
 
 const SELECT_COLS =
-    "character_id, quest_id, status, mob_kills, status_record, record_ex, completion_time_unix_ms, forfeited, start_time_unix_ms, updated_at";
+    "character_id, quest_id, status, mob_kills, status_record, record_ex, completion_time_unix_ms, forfeited, deadline_unix_ms, start_time_unix_ms, updated_at";
 const INSERT_COLS =
-    "character_id, quest_id, status, mob_kills, status_record, record_ex, completion_time_unix_ms, forfeited, start_time_unix_ms, updated_at";
+    "character_id, quest_id, status, mob_kills, status_record, record_ex, completion_time_unix_ms, forfeited, deadline_unix_ms, start_time_unix_ms, updated_at";
 const ON_CONFLICT_SET = `
   status = EXCLUDED.status,
   mob_kills = EXCLUDED.mob_kills,
@@ -15,9 +15,10 @@ const ON_CONFLICT_SET = `
   record_ex = EXCLUDED.record_ex,
   completion_time_unix_ms = EXCLUDED.completion_time_unix_ms,
   forfeited = EXCLUDED.forfeited,
+  deadline_unix_ms = EXCLUDED.deadline_unix_ms,
   start_time_unix_ms = EXCLUDED.start_time_unix_ms,
   updated_at = NOW()`;
-const PER_ROW_PARAMS = 9;
+const PER_ROW_PARAMS = 10;
 
 export type { QuestModel };
 
@@ -55,6 +56,7 @@ function rowValues(row: QuestRow) {
         JSON.stringify(parseStringMap(row.record_ex)),
         row.completion_time_unix_ms ?? null,
         row.forfeited,
+        row.deadline_unix_ms ?? null,
         row.start_time_unix_ms ?? null,
     ];
 }
@@ -113,6 +115,7 @@ export class QuestRepository extends HashRepository<QuestModel, QuestRow> {
             status: toPgInt(row.status),
             completion_time_unix_ms: toPgIntOrNull(row.completion_time_unix_ms),
             forfeited: toPgInt(row.forfeited),
+            deadline_unix_ms: toPgIntOrNull(row.deadline_unix_ms),
             start_time_unix_ms: toPgIntOrNull(row.start_time_unix_ms),
         };
     }
@@ -127,6 +130,7 @@ export class QuestRepository extends HashRepository<QuestModel, QuestRow> {
             recordEx: parseStringMap(row.record_ex),
             completionTimeUnixMs: toPgInt(row.completion_time_unix_ms),
             forfeited: toPgInt(row.forfeited),
+            deadlineUnixMs: toPgInt(row.deadline_unix_ms),
             startTimeUnixMs: toPgInt(row.start_time_unix_ms),
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
@@ -142,6 +146,7 @@ export class QuestRepository extends HashRepository<QuestModel, QuestRow> {
             record_ex: model.recordEx ?? {},
             completion_time_unix_ms: model.completionTimeUnixMs || null,
             forfeited: model.forfeited ?? 0,
+            deadline_unix_ms: model.deadlineUnixMs || null,
             start_time_unix_ms: model.startTimeUnixMs || null,
         };
     }

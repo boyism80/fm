@@ -775,17 +775,22 @@ func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entit
 			CompletionTime: qp.CompletionTime,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
-	ch.Send(&response.UpdateQuestNPC{
-		Progress:    8,
-		QuestID:     uint16(qp.QuestID),
-		NPCID:       npcID,
-		NextQuestID: nextQuestID,
-	}, types.SEND_POLICY_ENCRYPT)
+	if npcID != 0 {
+		ch.Send(&response.UpdateQuestNPC{
+			Progress:    8,
+			QuestID:     uint16(qp.QuestID),
+			NPCID:       npcID,
+			NextQuestID: nextQuestID,
+		}, types.SEND_POLICY_ENCRYPT)
+	}
 	l.OnUnlockAction(ch)
 }
 
 func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entity.Quest) {
-	if ch == nil || qp == nil || qp.Wz == nil {
+	if ch == nil || qp == nil {
+		return
+	}
+	if qp.QuestID > 0xFFFF {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -796,6 +801,43 @@ func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entit
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 	l.OnUnlockAction(ch)
+}
+
+func (l *CharacterListenerImpl) OnShowQuestCompletion(ch *entity.Character, questID uint32) {
+	if ch == nil || questID == 0 || questID > 0xFFFF {
+		return
+	}
+	ch.Send(&response.ShowQuestCompletion{
+		QuestID: uint16(questID),
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPlaySound(ch *entity.Character, sound string, broadcast bool) {
+	if ch == nil || sound == "" {
+		return
+	}
+	pkt := &response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeSound,
+		Env:  sound,
+	}
+	if broadcast {
+		if m := ch.GetMap(); m != nil {
+			m.Broadcast(pkt, nil)
+			return
+		}
+	}
+	ch.Send(pkt, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPlayPortalSound(ch *entity.Character) {
+	if ch == nil {
+		return
+	}
+	ch.Send(&response.ShowSelfSkillEffect{
+		Type:       pconst.SkillEffectTypePortal,
+		SkillID:    0,
+		SkillLevel: 1,
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnQuestProgress(ch *entity.Character, qp *entity.Quest) {

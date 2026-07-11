@@ -481,6 +481,7 @@ export interface QuestModel {
     recordEx: Record<string, string>;
     completionTimeUnixMs: number;
     forfeited: number;
+    deadlineUnixMs: number;
     startTimeUnixMs: number;
     updatedAt?: Date;
 }
@@ -494,6 +495,7 @@ export type QuestRow = {
     record_ex: Record<string, string> | string;
     completion_time_unix_ms: number | null;
     forfeited: number;
+    deadline_unix_ms: number | null;
     start_time_unix_ms: number | null;
     updated_at?: Date | string;
     deleted?: boolean;

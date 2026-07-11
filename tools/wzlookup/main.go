@@ -12,7 +12,7 @@ import (
 func main() {
 	wzPath := flag.String("wz", "resources/wz", "path to WZ XML root")
 	outDir := flag.String("out", "wz_lookup", "output directory for YAML lookup files")
-	only := flag.String("only", "all", "all|quests|maps|mobs|reactors|shops|strings|drops")
+	only := flag.String("only", "all", "all|quests|maps|mobs|reactors|shops|npcs|npc_spawns|strings|drops")
 	flag.Parse()
 
 	resolvedWZ := wz.FindWzPath(*wzPath)

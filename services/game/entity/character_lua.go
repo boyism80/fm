@@ -37,6 +37,123 @@ func luaValuesToInterfaces(L *lua.LState, from, to int) []interface{} {
 	return out
 }
 
+func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem func(string) (uint32, bool)) (ExchangeSide, bool) {
+	if lv == nil || lv == lua.LNil {
+		return ExchangeSide{}, true
+	}
+	tbl, ok := lv.(*lua.LTable)
+	if !ok {
+		L.ArgError(argIndex, "exchange side table or nil expected")
+		return ExchangeSide{}, false
+	}
+
+	side := ExchangeSide{}
+
+	if itemLV := tbl.RawGetString("item"); itemLV != lua.LNil {
+		itemTbl, ok := itemLV.(*lua.LTable)
+		if !ok {
+			L.ArgError(argIndex, "exchange side.item must be a table")
+			return ExchangeSide{}, false
+		}
+		side.Items = make(map[uint32]uint16)
+		failed := false
+		itemTbl.ForEach(func(k, v lua.LValue) {
+			if failed {
+				return
+			}
+			countN, ok := v.(lua.LNumber)
+			if !ok {
+				L.ArgError(argIndex, "exchange side.item values must be numbers")
+				failed = true
+				return
+			}
+			if countN < 0 {
+				L.ArgError(argIndex, "exchange side.item count must be non-negative")
+				failed = true
+				return
+			}
+			if countN == 0 {
+				return
+			}
+			if countN > 65535 {
+				L.ArgError(argIndex, "exchange side.item count exceeds uint16")
+				failed = true
+				return
+			}
+			count := uint16(countN)
+
+			var itemID uint32
+			switch key := k.(type) {
+			case lua.LNumber:
+				if key < 0 {
+					L.ArgError(argIndex, "exchange side.item id must be non-negative")
+					failed = true
+					return
+				}
+				itemID = uint32(key)
+			case lua.LString:
+				if nameToItem == nil {
+					L.ArgError(argIndex, "exchange item name lookup unavailable")
+					failed = true
+					return
+				}
+				id, ok := nameToItem(string(key))
+				if !ok {
+					L.ArgError(argIndex, "unknown item name in exchange side.item")
+					failed = true
+					return
+				}
+				itemID = id
+			default:
+				L.ArgError(argIndex, "exchange side.item keys must be item id or name")
+				failed = true
+				return
+			}
+			side.Items[itemID] += count
+		})
+		if failed {
+			return ExchangeSide{}, false
+		}
+	}
+
+	if mesoLV := tbl.RawGetString("meso"); mesoLV != lua.LNil {
+		n, ok := mesoLV.(lua.LNumber)
+		if !ok || n < 0 {
+			L.ArgError(argIndex, "exchange side.meso must be a non-negative number")
+			return ExchangeSide{}, false
+		}
+		if n > 2147483647 {
+			L.ArgError(argIndex, "exchange side.meso exceeds int32")
+			return ExchangeSide{}, false
+		}
+		side.Meso = int32(n)
+	}
+
+	if expLV := tbl.RawGetString("exp"); expLV != lua.LNil {
+		n, ok := expLV.(lua.LNumber)
+		if !ok || n < 0 {
+			L.ArgError(argIndex, "exchange side.exp must be a non-negative number")
+			return ExchangeSide{}, false
+		}
+		side.Exp = uint32(n)
+	}
+
+	if popLV := tbl.RawGetString("population"); popLV != lua.LNil {
+		n, ok := popLV.(lua.LNumber)
+		if !ok || n < 0 {
+			L.ArgError(argIndex, "exchange side.population must be a non-negative number")
+			return ExchangeSide{}, false
+		}
+		if n > 2147483647 {
+			L.ArgError(argIndex, "exchange side.population exceeds int32")
+			return ExchangeSide{}, false
+		}
+		side.Population = int32(n)
+	}
+
+	return side, true
+}
+
 func (ch *Character) LuaTypeName() string {
 	return "LuaCharacter"
 }
@@ -360,6 +477,42 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"exchange": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			if argc < 2 || argc > 3 {
+				L.ArgError(2, "exchange(cost [, reward]) requires 1 or 2 side tables")
+				return 0
+			}
+
+			var nameToItem func(string) (uint32, bool)
+			if ch.GameWorld != nil {
+				if resources := ch.GameWorld.GetResources(); resources != nil {
+					nameToItem = resources.NameToItem
+				}
+			}
+
+			cost, ok := parseLuaExchangeSide(L, L.Get(2), 2, nameToItem)
+			if !ok {
+				return 0
+			}
+			var reward ExchangeSide
+			if argc >= 3 {
+				reward, ok = parseLuaExchangeSide(L, L.Get(3), 3, nameToItem)
+				if !ok {
+					return 0
+				}
+			}
+
+			result := ch.Exchange(ExchangeSpec{Cost: cost, Reward: reward})
+			L.Push(lua.LNumber(result))
+			return 1
+		},
 		"chat": func(L *lua.LState) int {
 			argc := L.GetTop()
 			ud := L.CheckUserData(1)
@@ -467,13 +620,25 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					Position: int(posLV.(lua.LNumber)),
 				}
 				buff := ch.Buffs.GetEntity(flag)
-				skillBuff, ok := buff.(*SkillBuff)
-				if !ok || skillBuff == nil {
+				switch entity := buff.(type) {
+				case *SkillBuff:
+					if entity == nil {
+						L.Push(lua.LNil)
+						return 1
+					}
+					L.Push(luax.NewLuable(L, entity))
+					return 1
+				case *ItemBuff:
+					if entity == nil {
+						L.Push(lua.LNil)
+						return 1
+					}
+					L.Push(luax.NewLuable(L, entity))
+					return 1
+				default:
 					L.Push(lua.LNil)
 					return 1
 				}
-				L.Push(luax.NewLuable(L, skillBuff))
-				return 1
 			} else {
 				if argc < 3 {
 					L.ArgError(3, "buff() requires (skill, {[flag]=value}), (skill, {[flag]=value}, option), (skill, flag, value), (skill, flag, value, option), (consume, durationMs, {[flag]=value}), or (consume, durationMs, flag, value)")
@@ -667,6 +832,61 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "show_effect() supports EffectType.LevelUp, ClassChange, QuestCompletion, RegisterCard, or ItemLevelUp")
 				return 0
 			}
+		},
+		"show_quest_completion": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "show_quest_completion(quest_id) requires quest id")
+				return 0
+			}
+			questID := uint32(L.CheckInt(2))
+			if ch.Listener != nil {
+				ch.Listener.OnShowQuestCompletion(ch, questID)
+			}
+			return 0
+		},
+		"play_sound": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			if argc < 2 || argc > 3 {
+				L.ArgError(2, "play_sound(name [, broadcast])")
+				return 0
+			}
+			sound := L.CheckString(2)
+			broadcast := false
+			if argc >= 3 {
+				broadcast = L.CheckBool(3)
+			}
+			if ch.Listener != nil {
+				ch.Listener.OnPlaySound(ch, sound, broadcast)
+			}
+			return 0
+		},
+		"play_portal_sound": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "play_portal_sound() takes no arguments")
+				return 0
+			}
+			if ch.Listener != nil {
+				ch.Listener.OnPlayPortalSound(ch)
+			}
+			return 0
 		},
 		"show_dragon_blood_effect": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -1329,6 +1549,29 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"open_npc": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "open_npc(npc_id) requires npc id")
+				return 0
+			}
+			npcID := uint32(L.CheckInt(2))
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.RaiseError("open_npc: thread has no actor context")
+				return 0
+			}
+			if err := ch.OpenNpc(cfg.ActorContext, npcID, L); err != nil {
+				L.RaiseError("open_npc: %v", err)
+				return 0
+			}
+			return 0
+		},
 		"script": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1746,6 +1989,24 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			L.ArgError(2, "clear_quests() or clear_quests(quest_id)")
 			return 0
+		},
+		"completed_quest_count": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "completed_quest_count() takes no arguments")
+				return 0
+			}
+			if ch.Quests == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
+			L.Push(lua.LNumber(ch.Quests.CompletedCount()))
+			return 1
 		},
 		"clear_inventory": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -2413,6 +2674,28 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "map() getter: 0 args; setter: map, name (string), or id (number), optional spawnPoint, optional relocateSameMap")
 				return 0
 			}
+		},
+		"spawn_point": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			spawnID := ch.GetSpawnPoint()
+			L.Push(lua.LNumber(spawnID))
+			m := ch.GetMap()
+			if m == nil || m.Wz == nil {
+				return 1
+			}
+			portal, ok := m.Wz.Portals[spawnID]
+			if !ok {
+				return 1
+			}
+			L.Push(lua.LString(portal.Name))
+			L.Push(lua.LNumber(portal.Position.X))
+			L.Push(lua.LNumber(portal.Position.Y))
+			return 4
 		},
 		"show_magnet": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

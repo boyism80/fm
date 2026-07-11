@@ -736,6 +736,44 @@ func (r *Resources) GetQuest(questID uint32) *Quest {
 	return r.Quests[questID]
 }
 
+type NpcSpawnLocation struct {
+	MapID uint32
+	X     int16
+	Y     int16
+}
+
+func (r *Resources) FindNpcSpawns(npcID uint32) []NpcSpawnLocation {
+	if r == nil || npcID == 0 || r.Maps == nil {
+		return nil
+	}
+	var out []NpcSpawnLocation
+	for mapID, mapData := range r.Maps {
+		if mapData == nil {
+			continue
+		}
+		for _, spawn := range mapData.NpcSpawns {
+			if spawn.BaseSpawn == nil || spawn.ID != npcID {
+				continue
+			}
+			out = append(out, NpcSpawnLocation{
+				MapID: mapID,
+				X:     spawn.Position.X,
+				Y:     spawn.Position.Y,
+			})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].MapID != out[j].MapID {
+			return out[i].MapID < out[j].MapID
+		}
+		if out[i].X != out[j].X {
+			return out[i].X < out[j].X
+		}
+		return out[i].Y < out[j].Y
+	})
+	return out
+}
+
 func (r *Resources) buildQuestFieldEnterIndex() {
 	if r == nil || r.Quests == nil {
 		return

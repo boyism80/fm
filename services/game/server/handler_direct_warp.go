@@ -59,12 +59,20 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 			character.Listener.OnUnlockAction(character)
 			return fmt.Errorf("portal script thread: %w", err)
 		}
+		luax.SetConfiguration(thread, luax.Configuration{
+			ActorContext: ctx.ActorContext,
+			MapActorPID:  currentMap.GetActorPID(),
+		})
 		luax.CallAsync(root, thread, "on_enter", character).Then(func(_ interface{}) (interface{}, error) {
-			character.Listener.OnUnlockAction(character)
+			if character.GetDialog() == nil {
+				character.Listener.OnUnlockAction(character)
+			}
 			return nil, nil
 		}).OnError(func(err error) {
 			log.Printf("portal script %s failed: %v", scriptPath, err)
-			character.Listener.OnUnlockAction(character)
+			if character.GetDialog() == nil {
+				character.Listener.OnUnlockAction(character)
+			}
 		})
 		return nil
 	} else {

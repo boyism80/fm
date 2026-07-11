@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/boyism80/fm/services/game/wz"
@@ -402,6 +406,169 @@ func exportReactor(r *wz.Reactor) Reactor {
 	}
 }
 
+func mapDisplayName(res *wz.Resources, mapID uint32, m *wz.Map) string {
+	street, mapName := mapStringNames(res, mapID)
+	if street != "" && mapName != "" {
+		return street + " : " + mapName
+	}
+	if mapName != "" {
+		return mapName
+	}
+	if street != "" {
+		return street
+	}
+	if m != nil && m.Name != "" {
+		return m.Name
+	}
+	return ""
+}
+
+func exportNpcSpawns(res *wz.Resources, wzPath, outDir string) error {
+	spawns := make(map[uint32][]NpcSpawnEntry)
+	for mapID, m := range res.Maps {
+		if m == nil || len(m.NpcSpawns) == 0 {
+			continue
+		}
+		mapLabel := mapDisplayName(res, mapID, m)
+		for spawnID, spawn := range m.NpcSpawns {
+			if spawn.BaseSpawn == nil {
+				continue
+			}
+			nid := spawn.ID
+			spawns[nid] = append(spawns[nid], NpcSpawnEntry{
+				NpcID:      nid,
+				NpcName:    npcName(res, nid),
+				MapID:      mapID,
+				MapName:    mapLabel,
+				SpawnID:    spawnID,
+				X:          spawn.Position.X,
+				Y:          spawn.Position.Y,
+				Foothold:   spawn.Foothold,
+				Hide:       spawn.Hide,
+				MobTimeSec: int(spawn.MobTime / time.Second),
+			})
+		}
+	}
+	for nid := range spawns {
+		sort.Slice(spawns[nid], func(i, j int) bool {
+			a, b := spawns[nid][i], spawns[nid][j]
+			if a.MapID != b.MapID {
+				return a.MapID < b.MapID
+			}
+			return a.SpawnID < b.SpawnID
+		})
+	}
+	return writeYAML(filepath.Join(outDir, "npc_spawns.yaml"), NpcSpawnsFile{
+		Meta:   meta(wzPath),
+		Spawns: spawns,
+	})
+}
+
+func exportNpcs(res *wz.Resources, wzPath, outDir string) error {
+	scripts, err := loadNpcScriptsFromWz(wzPath)
+	if err != nil {
+		return err
+	}
+
+	npcIDs := make(map[uint32]struct{})
+	if res.Strings != nil {
+		for id := range res.Strings.NpcStrings {
+			npcIDs[id] = struct{}{}
+		}
+	}
+	for id := range res.Shops {
+		npcIDs[id] = struct{}{}
+	}
+	for id := range scripts {
+		npcIDs[id] = struct{}{}
+	}
+
+	npcMaps := make(map[uint32][]NpcMapRef)
+	for mapID, m := range res.Maps {
+		if m == nil || len(m.NpcSpawns) == 0 {
+			continue
+		}
+		label := mapDisplayName(res, mapID, m)
+		seen := make(map[uint32]struct{})
+		for _, spawn := range m.NpcSpawns {
+			if spawn.BaseSpawn == nil {
+				continue
+			}
+			nid := spawn.ID
+			npcIDs[nid] = struct{}{}
+			if _, ok := seen[nid]; ok {
+				continue
+			}
+			seen[nid] = struct{}{}
+			npcMaps[nid] = append(npcMaps[nid], NpcMapRef{ID: mapID, Name: label})
+		}
+	}
+
+	npcs := make(map[uint32]Npc, len(npcIDs))
+	for id := range npcIDs {
+		entry := Npc{
+			ID:      id,
+			Name:    npcName(res, id),
+			Script:  scripts[id],
+			HasShop: res.Shops[id] != nil,
+			Maps:    npcMaps[id],
+		}
+		if res.Strings != nil {
+			if data, ok := res.Strings.NpcStrings[id]; ok {
+				entry.Func = data["func"]
+			}
+		}
+		npcs[id] = entry
+	}
+
+	return writeYAML(filepath.Join(outDir, "npcs.yaml"), NpcsFile{
+		Meta: meta(wzPath),
+		Npcs: npcs,
+	})
+}
+
+func loadNpcScriptsFromWz(wzPath string) (map[uint32]string, error) {
+	npcDir := filepath.Join(wzPath, "Npc.wz")
+	entries, err := os.ReadDir(npcDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return map[uint32]string{}, nil
+		}
+		return nil, err
+	}
+
+	out := make(map[uint32]string)
+	scriptRe := regexp.MustCompile(`<string\s+name="script"\s+value="([^"]*)"`)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".img.xml") {
+			continue
+		}
+		idPart := strings.TrimSuffix(name, ".img.xml")
+		id64, err := strconv.ParseUint(idPart, 10, 32)
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(npcDir, name))
+		if err != nil {
+			return nil, err
+		}
+		m := scriptRe.FindSubmatch(data)
+		if m == nil {
+			continue
+		}
+		script := string(m[1])
+		if script == "" {
+			continue
+		}
+		out[uint32(id64)] = script
+	}
+	return out, nil
+}
+
 func exportShops(res *wz.Resources, wzPath, outDir string) error {
 	shops := make(map[uint32]Shop, len(res.Shops))
 	for npcID, shop := range res.Shops {
@@ -516,6 +683,8 @@ func exportAll(res *wz.Resources, wzPath, outDir, only string) error {
 		{name: "mobs", fn: exportMobs},
 		{name: "reactors", fn: exportReactors},
 		{name: "shops", fn: exportShops},
+		{name: "npcs", fn: exportNpcs},
+		{name: "npc_spawns", fn: exportNpcSpawns},
 		{name: "strings", fn: exportStrings},
 		{name: "drops", fn: exportDropsFile},
 	}
@@ -523,7 +692,12 @@ func exportAll(res *wz.Resources, wzPath, outDir, only string) error {
 		if only != "all" && only != j.name {
 			continue
 		}
-		fmt.Printf("writing %s.yaml...\n", j.name)
+		fileName := j.name
+		switch j.name {
+		case "shops":
+			fileName = "npc_shops"
+		}
+		fmt.Printf("writing %s.yaml...\n", fileName)
 		if err := j.fn(res, wzPath, outDir); err != nil {
 			return fmt.Errorf("%s: %w", j.name, err)
 		}

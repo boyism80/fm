@@ -27,13 +27,13 @@ func (q *QuestStatus) WriteStartedPayload(writer *stream.StreamWriter) {
 		for _, kills := range q.MobKills {
 			sb.WriteString(fmt.Sprintf("%03d", kills))
 		}
-		writer.WriteStr8(sb.String())
+		writer.WriteStr16(sb.String())
 	} else if !q.Deadline.IsZero() {
 		writer.WriteU16(9)
 		writer.WriteU8(1)
 		writer.WriteDateTime(q.Deadline)
 	} else if q.StatusRecord != "" {
-		writer.WriteStr8(q.StatusRecord)
+		writer.WriteStr16(q.StatusRecord)
 	} else {
 		writer.Write([]byte{0x00, 0x00})
 	}

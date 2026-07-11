@@ -172,14 +172,22 @@ func (model *Map) FindClosestPortalSpawnID(pos types.Point[int16]) uint8 {
 	}
 	var best uint8
 	var bestDist int64 = -1
+	found := false
 	for id, p := range model.Portals {
+		if p.Type != 0 && p.Name != "sp" {
+			continue
+		}
 		dx := int64(p.Position.X - pos.X)
 		dy := int64(p.Position.Y - pos.Y)
 		d := dx*dx + dy*dy
-		if bestDist < 0 || d < bestDist {
+		if !found || d < bestDist {
 			bestDist = d
 			best = id
+			found = true
 		}
+	}
+	if !found {
+		return 0
 	}
 	return best
 }

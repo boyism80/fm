@@ -16,11 +16,7 @@ func (p *UpdateQuestRecordEx) Opcode() uint16 {
 func (p *UpdateQuestRecordEx) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(QuestWireRecordExSubOpcode)
 	writer.WriteU16(p.QuestID)
-	if p.Data == "" {
-		writer.WriteStr8("")
-	} else {
-		writer.WriteStr8(p.Data)
-	}
+	writer.WriteStr16(p.Data)
 	return nil
 }
 
