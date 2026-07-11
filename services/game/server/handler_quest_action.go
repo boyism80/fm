@@ -72,7 +72,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			return nil
 		}
 		npc := req.NPCID
-		if _, err := character.Quests.Start(uint32(req.QuestID), entity.QuestPrepareOpts{NpcID: &npc}); err != nil {
+		if _, err := character.Quests.Start(uint32(req.QuestID), entity.QuestPhaseOpts{NpcID: &npc}); err != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
@@ -83,7 +83,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			return nil
 		}
 		npc := req.NPCID
-		if err := quest.Complete(character, entity.QuestPrepareOpts{NpcID: &npc, Selection: req.Selection}); err != nil {
+		if err := quest.Complete(character, entity.QuestPhaseOpts{NpcID: &npc, Selection: req.Selection}); err != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
@@ -102,9 +102,9 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
-		if !character.Quests.IsStartable(uint32(req.QuestID), entity.QuestPrepareOpts{
+		if err := character.Quests.CanStart(uint32(req.QuestID), entity.QuestPhaseOpts{
 			NpcID: nil,
-		}) {
+		}); err != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
@@ -118,7 +118,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
-		if quest == nil || !quest.IsCompletable(character) {
+		if quest == nil || quest.CanComplete(character, entity.QuestPhaseOpts{}) != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}

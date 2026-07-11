@@ -208,12 +208,7 @@ func threadListFromCreateThreadReply(reply *internal.CreateGuildBulletinBoardThr
 	)
 }
 
-func threadListFromEntries(
-	threads []*internal.GuildBulletinBoardThreadEntry,
-	start int,
-	totalCount int,
-	notice *internal.GuildBulletinBoardThreadEntry,
-) *response.GuildBulletinBoardThreadList {
+func threadListFromEntries(threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry) *response.GuildBulletinBoardThreadList {
 	entries := make([]response.GuildBulletinBoardThreadEntry, 0, len(threads))
 	for _, t := range threads {
 		entries = append(entries, bulletinThreadEntryFromProto(t))

@@ -76,6 +76,8 @@ func parseQuestMeta(info *node) QuestMeta {
 	meta.Blocked = nodeInt(info, "blocked", 0) > 0
 	meta.ViewMedalItem = nodeInt(info, "viewMedalItem", 0)
 	meta.SelectedSkillID = nodeInt(info, "selectedSkillID", 0)
+	meta.TimeLimit = nodeInt(info, "timeLimit", 0)
+	meta.TimeLimit2 = nodeInt(info, "timeLimit2", 0)
 
 	for _, strField := range info.Strings {
 		if idx, err := strconv.Atoi(strField.Name); err == nil {
@@ -201,82 +203,82 @@ func parseQuestActions(phase *node) []QuestAction {
 	return acts
 }
 
-func parseQuestItemCounts(n *node) []QuestItemCount {
+func parseQuestItemCounts(n *node) map[uint32]int {
 	return parseQuestItemCountsWithField(n, "count")
 }
 
-func parseQuestItemCountsWithField(n *node, countField string) []QuestItemCount {
+func parseQuestItemCountsWithField(n *node, countField string) map[uint32]int {
 	if n == nil {
 		return nil
 	}
-	out := make([]QuestItemCount, 0, len(n.Children))
+	out := make(map[uint32]int, len(n.Children))
 	for _, child := range n.Children {
 		itemID := uint32(nodeInt(&child, "id", 0))
 		count := nodeInt(&child, countField, 0)
 		if itemID == 0 && count == 0 {
 			continue
 		}
-		out = append(out, QuestItemCount{
-			ItemID: itemID,
-			Count:  count,
-		})
+		out[itemID] = count
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }
 
-func parseQuestMobCounts(n *node) []QuestMobCount {
+func parseQuestMobCounts(n *node) map[uint32]int {
 	if n == nil {
 		return nil
 	}
-	out := make([]QuestMobCount, 0, len(n.Children))
+	out := make(map[uint32]int, len(n.Children))
 	for _, child := range n.Children {
 		mobID := uint32(nodeInt(&child, "id", 0))
 		count := nodeInt(&child, "count", 0)
 		if mobID == 0 && count == 0 {
 			continue
 		}
-		out = append(out, QuestMobCount{
-			MobID: mobID,
-			Count: count,
-		})
+		out[mobID] = count
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }
 
-func parseQuestStateRefs(n *node) []QuestStateRef {
+func parseQuestStateRefs(n *node) map[uint32]QuestStatus {
 	if n == nil {
 		return nil
 	}
-	out := make([]QuestStateRef, 0, len(n.Children))
+	out := make(map[uint32]QuestStatus, len(n.Children))
 	for _, child := range n.Children {
 		questID := uint32(nodeInt(&child, "id", 0))
 		state := nodeInt(&child, "state", 0)
 		if questID == 0 {
 			continue
 		}
-		out = append(out, QuestStateRef{
-			QuestID: questID,
-			State:   state,
-		})
+		out[questID] = QuestStatus(state)
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }
 
-func parseQuestSkillRefs(n *node) []QuestSkillRef {
+func parseQuestSkillRefs(n *node) map[uint32]int {
 	if n == nil {
 		return nil
 	}
-	out := make([]QuestSkillRef, 0, len(n.Children))
+	out := make(map[uint32]int, len(n.Children))
 	for _, child := range n.Children {
 		skillID := uint32(nodeInt(&child, "id", 0))
 		acquire := nodeInt(&child, "acquire", 0)
 		if skillID == 0 {
 			continue
 		}
-		out = append(out, QuestSkillRef{
-			SkillID: skillID,
-			Acquire: acquire,
-		})
+		out[skillID] = acquire
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }

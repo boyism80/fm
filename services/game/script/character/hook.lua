@@ -1,6 +1,33 @@
 local combat = require("script/lib/combat")
 local skill_lib = require("script/lib/skill")
 
+function on_mob_kill(attacker, mobs)
+	if attacker == nil or mobs == nil then
+		return
+	end
+	local quest = attacker:quest(29400)
+	if quest == nil or not quest:started() then
+		return
+	end
+	local char_level = attacker:level()
+	local count = 0
+	for _, mob in ipairs(mobs) do
+		if mob == nil then
+			goto continue
+		end
+		local wz = mob:wz()
+		if wz ~= nil and wz.level ~= nil and wz.level >= char_level then
+			count = count + 1
+		end
+		::continue::
+	end
+	if count <= 0 then
+		return
+	end
+	local mon = tonumber(quest:record_ex("mon")) or 0
+	quest:record_ex("mon", tostring(mon + count))
+end
+
 function on_map_enter(me, map)
 end
 

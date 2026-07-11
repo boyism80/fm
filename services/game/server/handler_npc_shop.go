@@ -131,17 +131,17 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 		quantity = itemModel.GetCapacity()
 	}
 
-	spec := entity.FlowSpec{
-		Cost: entity.FlowSide{
+	spec := entity.ExchangeSpec{
+		Cost: entity.ExchangeSide{
 			Meso: int32(price),
 		},
-		Reward: entity.FlowSide{
+		Reward: entity.ExchangeSide{
 			Items: map[uint32]uint16{
 				tx.ItemID: quantity,
 			},
 		},
 	}
-	if character.Exchange(spec) != entity.FlowOK {
+	if character.Exchange(spec) != entity.ExchangeOK {
 		character.Message("인벤토리 공간이 부족합니다.")
 		return nil
 	}
@@ -208,17 +208,17 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 		return nil
 	}
 
-	spec := entity.FlowSpec{
-		Cost: entity.FlowSide{
+	spec := entity.ExchangeSpec{
+		Cost: entity.ExchangeSide{
 			Items: map[uint32]uint16{
 				tx.ItemID: quantity,
 			},
 		},
-		Reward: entity.FlowSide{
+		Reward: entity.ExchangeSide{
 			Meso: recvMesos,
 		},
 	}
-	if ch.ValidateFlow(spec) != entity.FlowOK {
+	if spec.Valid(ch) != entity.ExchangeOK {
 		return nil
 	}
 

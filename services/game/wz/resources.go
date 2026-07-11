@@ -504,6 +504,8 @@ func NewResources(wzPath string) *Resources {
 		return nil
 	}
 
+	loadPartyQuestRules(quests, wzPath)
+
 	stringData := &StringData{
 		MapStrings:         make(map[string]map[uint32]map[string]string),
 		MobStrings:         make(map[uint32]map[string]string),
@@ -743,7 +745,16 @@ func (r *Resources) buildQuestFieldEnterIndex() {
 		if quest == nil {
 			continue
 		}
-		mapID := quest.StartFieldEnterMapID()
+		var mapID uint32
+		for _, req := range quest.Start.Requirements {
+			if req.Kind != QuestReqFieldEnter {
+				continue
+			}
+			if req.IntValue > 0 {
+				mapID = uint32(req.IntValue)
+				break
+			}
+		}
 		if mapID == 0 {
 			continue
 		}

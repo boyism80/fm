@@ -28,6 +28,17 @@ func meta(wzPath string) Meta {
 	}
 }
 
+func questStatesToIntMap(quests map[uint32]wz.QuestStatus) map[uint32]int {
+	if len(quests) == 0 {
+		return nil
+	}
+	out := make(map[uint32]int, len(quests))
+	for id, state := range quests {
+		out[id] = int(state)
+	}
+	return out
+}
+
 func exportQuests(res *wz.Resources, wzPath, outDir string) error {
 	quests := make(map[uint32]Quest, len(res.Quests))
 	for id, q := range res.Quests {
@@ -66,6 +77,8 @@ func exportQuestMeta(m wz.QuestMeta) QuestMeta {
 		Blocked:         m.Blocked,
 		ViewMedalItem:   m.ViewMedalItem,
 		SelectedSkillID: m.SelectedSkillID,
+		TimeLimit:       m.TimeLimit,
+		TimeLimit2:      m.TimeLimit2,
 	}
 }
 
@@ -85,33 +98,17 @@ func exportQuestPhase(p wz.QuestPhase) QuestPhase {
 }
 
 func exportQuestRequirement(r wz.QuestRequirement) QuestRequirement {
-	items := make([]QuestItemCount, 0, len(r.Items))
-	for _, item := range r.Items {
-		items = append(items, QuestItemCount{ItemID: item.ItemID, Count: item.Count})
-	}
-	mobs := make([]QuestMobCount, 0, len(r.Mobs))
-	for _, mob := range r.Mobs {
-		mobs = append(mobs, QuestMobCount{MobID: mob.MobID, Count: mob.Count})
-	}
-	quests := make([]QuestStateRef, 0, len(r.Quests))
-	for _, q := range r.Quests {
-		quests = append(quests, QuestStateRef{QuestID: q.QuestID, State: q.State})
-	}
-	skills := make([]QuestSkillRef, 0, len(r.Skills))
-	for _, s := range r.Skills {
-		skills = append(skills, QuestSkillRef{SkillID: s.SkillID, Acquire: s.Acquire})
-	}
 	return QuestRequirement{
 		Kind:        string(r.Kind),
 		IntValue:    r.IntValue,
 		StrValue:    r.StrValue,
 		InfoStrings: r.InfoStrings,
-		Jobs:        r.Classes,
+		Classes:     r.Classes,
 		PetIDs:      r.PetIDs,
-		Items:       items,
-		Mobs:        mobs,
-		Quests:      quests,
-		Skills:      skills,
+		Items:       r.Items,
+		Mobs:        r.Mobs,
+		Quests:      questStatesToIntMap(r.Quests),
+		Skills:      r.Skills,
 	}
 }
 
@@ -121,11 +118,11 @@ func exportQuestAction(a wz.QuestAction) QuestAction {
 		items = append(items, QuestRewardItem{
 			ItemID:     item.ItemID,
 			Count:      item.Count,
-			Job:        item.Job,
-			JobEx:      item.JobEx,
+			Class:      item.Class,
+			ClassEx:    item.ClassEx,
 			Gender:     item.Gender,
 			Period:     item.Period,
-			Prop:       item.Prop,
+			Prop:       int(item.Prop),
 			DateExpire: item.DateExpire,
 		})
 	}
@@ -135,21 +132,18 @@ func exportQuestAction(a wz.QuestAction) QuestAction {
 			SkillID:     s.SkillID,
 			SkillLevel:  s.SkillLevel,
 			MasterLevel: s.MasterLevel,
-			Jobs:        s.Jobs,
+			Classes:     s.Classes,
 		})
 	}
-	quests := make([]QuestStateRef, 0, len(a.Quests))
-	for _, q := range a.Quests {
-		quests = append(quests, QuestStateRef{QuestID: q.QuestID, State: q.State})
-	}
+	quests := questStatesToIntMap(a.Quests)
 	return QuestAction{
-		Kind:           string(a.Kind),
-		IntValue:       a.IntValue,
-		StrValue:       a.StrValue,
-		ApplicableJobs: a.ApplicableJobs,
-		Items:          items,
-		Skills:         skills,
-		Quests:         quests,
+		Kind:              string(a.Kind),
+		IntValue:          a.IntValue,
+		StrValue:          a.StrValue,
+		ApplicableClasses: a.ApplicableClasses,
+		Items:             items,
+		Skills:            skills,
+		Quests:            quests,
 	}
 }
 
@@ -512,11 +506,11 @@ func convertDrops(drops []wz.Drop) []Drop {
 }
 
 func exportAll(res *wz.Resources, wzPath, outDir, only string) error {
-	type job struct {
+	type class struct {
 		name string
 		fn   func(*wz.Resources, string, string) error
 	}
-	jobs := []job{
+	classes := []class{
 		{name: "quests", fn: exportQuests},
 		{name: "maps", fn: exportMaps},
 		{name: "mobs", fn: exportMobs},
@@ -525,7 +519,7 @@ func exportAll(res *wz.Resources, wzPath, outDir, only string) error {
 		{name: "strings", fn: exportStrings},
 		{name: "drops", fn: exportDropsFile},
 	}
-	for _, j := range jobs {
+	for _, j := range classes {
 		if only != "all" && only != j.name {
 			continue
 		}

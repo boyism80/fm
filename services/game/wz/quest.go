@@ -49,10 +49,25 @@ const (
 )
 
 type Quest struct {
-	ID       uint32
-	Meta     QuestMeta
-	Start    QuestPhase
-	Complete QuestPhase
+	ID         uint32
+	Meta       QuestMeta
+	Start      QuestPhase
+	Complete   QuestPhase
+	PartyRanks map[string][]PartyQuestRankCheck
+}
+
+type PartyQuestRankMode string
+
+const (
+	PartyQuestRankLess  PartyQuestRankMode = "less"
+	PartyQuestRankMore  PartyQuestRankMode = "more"
+	PartyQuestRankEqual PartyQuestRankMode = "equal"
+)
+
+type PartyQuestRankCheck struct {
+	Mode     PartyQuestRankMode
+	Property string
+	Value    int
 }
 
 type QuestMeta struct {
@@ -69,6 +84,8 @@ type QuestMeta struct {
 	Blocked         bool
 	ViewMedalItem   int
 	SelectedSkillID int
+	TimeLimit       int
+	TimeLimit2      int
 }
 
 type QuestPhase struct {
@@ -83,10 +100,10 @@ type QuestRequirement struct {
 	InfoStrings []string
 	Classes     []int
 	PetIDs      []uint32
-	Items       []QuestItemCount
-	Mobs        []QuestMobCount
-	Quests      []QuestStateRef
-	Skills      []QuestSkillRef
+	Items       map[uint32]int
+	Mobs        map[uint32]int
+	Quests      map[uint32]QuestStatus
+	Skills      map[uint32]int
 }
 
 type QuestAction struct {
@@ -96,28 +113,16 @@ type QuestAction struct {
 	ApplicableClasses []int
 	Items             []QuestRewardItem
 	Skills            []QuestRewardSkill
-	Quests            []QuestStateRef
+	Quests            map[uint32]QuestStatus
 }
 
-type QuestItemCount struct {
-	ItemID uint32
-	Count  int
-}
+type QuestStatus uint8
 
-type QuestMobCount struct {
-	MobID uint32
-	Count int
-}
-
-type QuestStateRef struct {
-	QuestID uint32
-	State   int
-}
-
-type QuestSkillRef struct {
-	SkillID uint32
-	Acquire int
-}
+const (
+	QuestStatusNotStarted QuestStatus = 0
+	QuestStatusStarted    QuestStatus = 1
+	QuestStatusCompleted  QuestStatus = 2
+)
 
 type QuestRewardProp int
 
@@ -173,8 +178,8 @@ func (q *Quest) RelevantMobs() map[uint32]int {
 			if req.Kind != QuestReqMob {
 				continue
 			}
-			for _, mob := range req.Mobs {
-				out[mob.MobID] = mob.Count
+			for mobID, count := range req.Mobs {
+				out[mobID] = count
 			}
 		}
 	}
@@ -192,31 +197,16 @@ func (q *Quest) OrderedMobIDs() []uint32 {
 			if req.Kind != QuestReqMob {
 				continue
 			}
-			for _, mob := range req.Mobs {
-				if _, ok := seen[mob.MobID]; ok {
+			for mobID := range req.Mobs {
+				if _, ok := seen[mobID]; ok {
 					continue
 				}
-				seen[mob.MobID] = struct{}{}
-				out = append(out, mob.MobID)
+				seen[mobID] = struct{}{}
+				out = append(out, mobID)
 			}
 		}
 	}
 	return out
-}
-
-func (q *Quest) StartFieldEnterMapID() uint32 {
-	if q == nil {
-		return 0
-	}
-	for _, req := range q.Start.Requirements {
-		if req.Kind != QuestReqFieldEnter {
-			continue
-		}
-		if req.IntValue > 0 {
-			return uint32(req.IntValue)
-		}
-	}
-	return 0
 }
 
 func (q *Quest) HasAutoStartMeta() bool {
@@ -224,4 +214,15 @@ func (q *Quest) HasAutoStartMeta() bool {
 		return false
 	}
 	return q.Meta.AutoStart || q.Meta.AutoAccept
+}
+
+func (q *Quest) IsPartyQuest() bool {
+	return q != nil && len(q.PartyRanks) > 0
+}
+
+func (q *Quest) PartyRankChecks(rank string) []PartyQuestRankCheck {
+	if q == nil || q.PartyRanks == nil {
+		return nil
+	}
+	return q.PartyRanks[rank]
 }

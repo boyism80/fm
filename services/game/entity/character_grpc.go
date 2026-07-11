@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/core/clock"
 	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/constant"
@@ -120,7 +121,8 @@ func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
 			continue
 		}
 		status := QuestStatusType(pb.GetStatus())
-		if status != QuestStatusStarted && status != QuestStatusCompleted {
+		hasRecordEx := len(pb.GetRecordEx()) > 0
+		if status != QuestStatusStarted && status != QuestStatusCompleted && !hasRecordEx {
 			continue
 		}
 		q := ch.Quests.Get(questID)
@@ -131,7 +133,7 @@ func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
 			continue
 		}
 		if q.Wz == nil {
-			q.Wz = ch.Quests.questDef(questID)
+			q.Wz = ch.Quests.wzDef(questID)
 		}
 		q.Status = status
 		q.MobKills = make(map[uint32]int, len(pb.GetMobKills()))
@@ -144,9 +146,14 @@ func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
 		} else {
 			q.Deadline = time.Time{}
 		}
-		q.Unknown2 = make(map[string]string, len(pb.GetUnknown2()))
-		for key, value := range pb.GetUnknown2() {
-			q.Unknown2[key] = value
+		if ms := pb.GetStartTimeUnixMs(); ms > 0 {
+			q.StartTime = time.UnixMilli(ms)
+		} else {
+			q.StartTime = time.Time{}
+		}
+		q.RecordEx = make(map[string]string, len(pb.GetRecordEx()))
+		for key, value := range pb.GetRecordEx() {
+			q.RecordEx[key] = value
 		}
 		if ms := pb.GetCompletionTimeUnixMs(); ms > 0 {
 			q.CompletionTime = time.UnixMilli(ms)
@@ -352,7 +359,7 @@ func (ch *Character) QuestsPersisted() []*internal.QuestPersisted {
 		if q == nil {
 			return
 		}
-		if q.Status != QuestStatusStarted && q.Status != QuestStatusCompleted {
+		if q.Status != QuestStatusStarted && q.Status != QuestStatusCompleted && len(q.RecordEx) == 0 {
 			return
 		}
 		mobKills := make(map[uint32]uint32, len(q.MobKills))
@@ -362,9 +369,9 @@ func (ch *Character) QuestsPersisted() []*internal.QuestPersisted {
 			}
 			mobKills[mobID] = uint32(kills)
 		}
-		unknown2 := make(map[string]string, len(q.Unknown2))
-		for key, value := range q.Unknown2 {
-			unknown2[key] = value
+		recordEx := make(map[string]string, len(q.RecordEx))
+		for key, value := range q.RecordEx {
+			recordEx[key] = value
 		}
 		var completionTimeUnixMs int64
 		if !q.CompletionTime.IsZero() {
@@ -374,15 +381,20 @@ func (ch *Character) QuestsPersisted() []*internal.QuestPersisted {
 		if !q.Deadline.IsZero() {
 			deadlineUnixMs = q.Deadline.UnixMilli()
 		}
+		var startTimeUnixMs int64
+		if !q.StartTime.IsZero() {
+			startTimeUnixMs = q.StartTime.UnixMilli()
+		}
 		out = append(out, &internal.QuestPersisted{
 			CharacterId:          ch.GetID(),
 			QuestId:              questID,
 			Status:               uint32(q.Status),
 			MobKills:             mobKills,
 			StatusRecord:         q.StatusRecord.AsString(),
-			Unknown2:             unknown2,
+			RecordEx:             recordEx,
 			CompletionTimeUnixMs: completionTimeUnixMs,
 			DeadlineUnixMs:       deadlineUnixMs,
+			StartTimeUnixMs:      startTimeUnixMs,
 			Forfeited:            uint32(q.Forfeited),
 		})
 	})

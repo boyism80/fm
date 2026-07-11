@@ -9,22 +9,18 @@ type itemSlotSnapshot struct {
 	count  uint16
 }
 
-func (inv *Inventory) validateItemFlow(
-	cost map[uint32]uint16,
-	reward map[uint32]uint16,
-	modelOf func(uint32) wz.Item,
-) FlowResult {
+func (inv *Inventory) validateItemExchange(cost map[uint32]uint16, reward map[uint32]uint16, modelOf func(uint32) wz.Item) ExchangeResult {
 	if inv == nil {
-		if !flowItemsEmpty(cost) {
-			return FlowLackCost
+		if !exchangeItemsEmpty(cost) {
+			return ExchangeLackCost
 		}
-		if !flowItemsEmpty(reward) {
-			return FlowLackCapacity
+		if !exchangeItemsEmpty(reward) {
+			return ExchangeLackCapacity
 		}
-		return FlowOK
+		return ExchangeOK
 	}
-	if flowItemsEmpty(cost) && flowItemsEmpty(reward) {
-		return FlowOK
+	if exchangeItemsEmpty(cost) && exchangeItemsEmpty(reward) {
+		return ExchangeOK
 	}
 
 	slots := make(map[int16]itemSlotSnapshot, inv.SlotLimit)
@@ -54,21 +50,21 @@ func (inv *Inventory) validateItemFlow(
 		}
 		model := modelOf(id)
 		if model == nil {
-			return FlowLackCost
+			return ExchangeLackCost
 		}
 		indices := slotsByID[id]
 		if len(indices) == 0 {
-			return FlowLackCost
+			return ExchangeLackCost
 		}
 
 		if model.GetCapacity() > 1 {
 			slot := indices[0]
 			snap, ok := slots[slot]
 			if !ok {
-				return FlowLackCost
+				return ExchangeLackCost
 			}
 			if snap.count < costCount {
-				return FlowLackCost
+				return ExchangeLackCost
 			}
 			remain := snap.count - costCount
 			if remain == 0 {
@@ -80,12 +76,12 @@ func (inv *Inventory) validateItemFlow(
 			}
 		} else {
 			if uint16(len(indices)) < costCount {
-				return FlowLackCost
+				return ExchangeLackCost
 			}
 			for i := uint16(0); i < costCount; i++ {
 				slot := indices[i]
 				if _, ok := slots[slot]; !ok {
-					return FlowLackCost
+					return ExchangeLackCost
 				}
 				delete(slots, slot)
 				effectiveFreeSlots++
@@ -111,7 +107,7 @@ func (inv *Inventory) validateItemFlow(
 		}
 		model := modelOf(id)
 		if model == nil {
-			return FlowLackCapacity
+			return ExchangeLackCapacity
 		}
 		if model.GetCapacity() > 1 {
 			requiredSlots++
@@ -127,21 +123,21 @@ func (inv *Inventory) validateItemFlow(
 		}
 		model := modelOf(id)
 		if model == nil {
-			return FlowLackCapacity
+			return ExchangeLackCapacity
 		}
 		if model.GetCapacity() <= 1 {
 			continue
 		}
 		existing := bundleRemaining[id]
 		if uint16(model.GetCapacity()) < existing+count {
-			return FlowLackCapacity
+			return ExchangeLackCapacity
 		}
 		availableSlots++
 	}
 
 	if availableSlots < requiredSlots {
-		return FlowLackCapacity
+		return ExchangeLackCapacity
 	}
 
-	return FlowOK
+	return ExchangeOK
 }

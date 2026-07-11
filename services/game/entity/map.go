@@ -547,6 +547,15 @@ func (m *Map) AddDoor(door *Door) {
 	if door.Map == nil {
 		door.Map = m
 	}
+	if m.Wz != nil {
+		mapID := uint32(m.Wz.ID)
+		switch mapID {
+		case door.Field.MapID:
+			door.Position = door.Field.Position
+		case door.Return.MapID:
+			door.Position = door.Return.Position
+		}
+	}
 	door.initTimers()
 	m.objects[constant.ObjectTypeDoor][door.OID] = door
 	door.BroadcastCall(func(obj Object) {
@@ -601,18 +610,18 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 
 	var counterpartMapWZID uint32
 	switch m.Wz.ID {
-	case door.FieldMapID:
-		counterpartMapWZID = door.ReturnMapID
-	case door.ReturnMapID:
-		counterpartMapWZID = door.FieldMapID
+	case door.Field.MapID:
+		counterpartMapWZID = door.Return.MapID
+	case door.Return.MapID:
+		counterpartMapWZID = door.Field.MapID
 	}
 	ownerID := door.OwnerID
 	skillID := door.SkillID
 
 	m.listener.OnDoorRemoved(m, door, animated)
 
-	if door.SkillID == constant.SkillMysticDoor && m.Wz != nil && uint32(m.Wz.ID) == door.ReturnMapID {
-		m.ReleaseMysticReturnPortal(door.ReturnPortalID)
+	if door.SkillID == constant.SkillMysticDoor && m.Wz != nil && uint32(m.Wz.ID) == door.Return.MapID {
+		m.ReleaseMysticReturnPortal(door.Return.PortalID)
 	}
 
 	delete(m.objects[constant.ObjectTypeDoor], oid)

@@ -251,15 +251,17 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.Skil
 	slot := 0
 	slot = s.gs.party.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
 	root.Send(destPID, &g_actor.RequestSpawnDoor{
-		ReplyTo:        srcPID,
-		CharacterID:    ch.GetID(),
-		OwnerID:        ch.GetID(),
-		SkillID:        skillID,
-		FieldMapID:     uint32(m.Wz.ID),
-		FieldPortalID:  closestPortalID,
+		ReplyTo:     srcPID,
+		CharacterID: ch.GetID(),
+		OwnerID:     ch.GetID(),
+		SkillID:     skillID,
+		Field: entity.DoorEndpoint{
+			MapID:    uint32(m.Wz.ID),
+			PortalID: closestPortalID,
+			Position: ch.Position,
+		},
 		PartyOwnerSlot: slot,
 		PartyID:        ch.GetPartyID(),
-		FieldAnchor:    ch.Position,
 	})
 }
 

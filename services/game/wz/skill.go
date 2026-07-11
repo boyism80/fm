@@ -58,6 +58,36 @@ type Skill struct {
 	LevelData    map[int]*SkillLevelData
 }
 
+func (s *Skill) IsBeginnerSkill() bool {
+	if s == nil {
+		return false
+	}
+	jobID := int(s.ID / 10000)
+	return jobID == 0 || jobID == 1 || jobID == 1000 || jobID == 2000 || jobID == 2001 || jobID == 3000 || jobID == 3001 || jobID == 2002
+}
+
+func (s *Skill) IsFourthJob() bool {
+	if s == nil {
+		return false
+	}
+	id := s.ID
+	if id/10000 == 2312 {
+		return true
+	}
+	if (s.MaxLevel <= 15 && !s.Invisible && s.MasterLevel <= 0) ||
+		id == 3220010 || id == 3120011 || id == 33120010 || id == 32120009 || id == 5321006 || id == 21120011 || id == 22181004 || id == 4340010 {
+		return false
+	}
+	block := id / 10000
+	if block >= 2212 && block < 3000 {
+		return (block % 10) >= 7
+	}
+	if block >= 430 && block <= 434 {
+		return (block%10) == 4 || s.MasterLevel > 0
+	}
+	return (block%10) == 2 && id < 90000000 && !s.IsBeginnerSkill()
+}
+
 func (s *Skill) GetLevelData(level int) *SkillLevelData {
 	if s.LevelData == nil {
 		return nil

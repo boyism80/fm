@@ -2,9 +2,10 @@ package entity
 
 import (
 	"fmt"
-	"github.com/boyism80/fm/core/clock"
 	"sync"
 	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
@@ -293,7 +294,7 @@ func (ch *Character) SpawnDoor(skillID constant.SkillID) {
 	}
 }
 
-func (ch *Character) SpawnFieldMapDoor(skillID constant.SkillID, returnPortalID uint8, townPortalPos types.Vector2[int16], fieldPortalID uint8) *Door {
+func (ch *Character) SpawnFieldMapDoor(skillID constant.SkillID, returnEp, fieldEp DoorEndpoint) *Door {
 	if ch == nil {
 		return nil
 	}
@@ -301,25 +302,7 @@ func (ch *Character) SpawnFieldMapDoor(skillID constant.SkillID, returnPortalID 
 	if m == nil || m.Wz == nil {
 		return nil
 	}
-	destMapID := uint32(m.Wz.ReturnMapId)
-	fieldPos := ch.Position
-	door := &Door{
-		ObjectCore: ObjectCore{
-			Position:  ch.Position,
-			GameWorld: m.GameWorld,
-			Map:       nil,
-		},
-		OwnerID:            ch.GetID(),
-		SkillID:            skillID,
-		ReturnMapID:        destMapID,
-		FieldMapID:         uint32(m.Wz.ID),
-		ReturnPortalID:     returnPortalID,
-		FieldPortalID:      fieldPortalID,
-		PartyID:            ch.partyID,
-		FieldPosition:      fieldPos,
-		TownPortalPosition: townPortalPos,
-	}
-	door.ObjectCore.self = door
+	door := NewDoor(ch.GetID(), skillID, fieldEp, returnEp, ch.partyID)
 	if ch.doors == nil {
 		ch.doors = make(map[constant.SkillID]*Door)
 	}
@@ -879,7 +862,7 @@ func (ch *Character) AddExp(exp uint32) {
 	if exp == 0 {
 		return
 	}
-	if ch.validateExpFlow(0, exp) != FlowOK {
+	if ch.validateExpExchange(0, exp) != ExchangeOK {
 		return
 	}
 	ch.addExpUnchecked(exp)

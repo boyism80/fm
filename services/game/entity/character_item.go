@@ -3,7 +3,9 @@ package entity
 import (
 	"errors"
 	"fmt"
+	"log"
 
+	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 )
@@ -12,7 +14,7 @@ func (ch *Character) AddMeso(amount int32) {
 	if amount <= 0 {
 		return
 	}
-	if ch.validateMesoFlow(0, amount) != FlowOK {
+	if ch.validateMesoExchange(0, amount) != ExchangeOK {
 		return
 	}
 	ch.addMesoUnchecked(amount)
@@ -36,7 +38,7 @@ func (ch *Character) RemoveMeso(amount int32) {
 	if amount <= 0 {
 		return
 	}
-	if ch.validateMesoFlow(amount, 0) != FlowOK {
+	if ch.validateMesoExchange(amount, 0) != ExchangeOK {
 		return
 	}
 	ch.removeMesoUnchecked(amount)
@@ -135,11 +137,12 @@ func (ch *Character) RemoveByItemIDCount(itemID uint32, count uint16) bool {
 	if count == 0 {
 		return true
 	}
-	if ch.ValidateFlow(FlowSpec{
-		Cost: FlowSide{
+	spec := ExchangeSpec{
+		Cost: ExchangeSide{
 			Items: map[uint32]uint16{itemID: count},
 		},
-	}) != FlowOK {
+	}
+	if spec.Valid(ch) != ExchangeOK {
 		return false
 	}
 	return ch.removeByItemIDCountUnchecked(itemID, count)
@@ -206,11 +209,12 @@ func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, e
 	}
 
 	if allOrNothing {
-		if ch.ValidateFlow(FlowSpec{
-			Reward: FlowSide{
+		spec := ExchangeSpec{
+			Reward: ExchangeSide{
 				Items: map[uint32]uint16{item.GetModel().GetID(): item.GetCount()},
 			},
-		}) != FlowOK {
+		}
+		if spec.Valid(ch) != ExchangeOK {
 			return nil, fmt.Errorf("not enough inventory space for %d items", item.GetCount())
 		}
 	}
@@ -269,17 +273,44 @@ func (ch *Character) applyAddItem(item Item, allOrNothing bool) (addedItems []It
 	}
 
 	if addedCount > 0 {
+		ch.NotifyItemGained(model.GetID())
 		ch.Listener.OnShowItemGain(ch, model.GetID(), uint32(addedCount), constant.ShowItemGainTypeStatus)
 	}
 
 	return addedItems, nil
 }
 
+func (ch *Character) NotifyItemGained(itemID uint32) {
+	if ch == nil || itemID == 0 {
+		return
+	}
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	root := mapInstance.GetLuaRoot()
+	if root == nil {
+		return
+	}
+	scriptPath := fmt.Sprintf("script/item/%d.lua", itemID)
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		return
+	}
+	luax.SetConfiguration(thread, luax.Configuration{
+		MapActorPID: mapInstance.GetActorPID(),
+	})
+	hook := fmt.Sprintf("on_item_gain_%d", itemID)
+	luax.CallAsync(root, thread, hook, ch, itemID).OnError(func(err error) {
+		log.Printf("item gain script %s: %v", hook, err)
+	})
+}
+
 func (ch *Character) GainMeso(amount int32) {
 	if amount <= 0 {
 		return
 	}
-	if ch.validateMesoFlow(0, amount) != FlowOK {
+	if ch.validateMesoExchange(0, amount) != ExchangeOK {
 		return
 	}
 	ch.gainMesoUnchecked(amount)

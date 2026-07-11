@@ -2,10 +2,11 @@ package entity
 
 import (
 	"fmt"
-	"github.com/boyism80/fm/core/clock"
 	"log"
 	"math/rand"
 	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/response"
@@ -513,7 +514,6 @@ func (m *Mob) runDieScript(attacker *Character) {
 	mobID := m.Wz.ID
 	scriptPath := fmt.Sprintf("script/mob/%d.lua", mobID)
 	mapInstance.runMobLuaHook(root, scriptPath, fmt.Sprintf("on_mob_die_%d", mobID), m, attackerArg, mapInstance)
-	mapInstance.runMobLuaHook(root, constant.CharacterHookScriptPath, "on_mob_die", m, attackerArg, mapInstance)
 }
 
 func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) bool {

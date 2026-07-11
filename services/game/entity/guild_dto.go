@@ -48,7 +48,7 @@ func GuildMemberToDTO(m *GuildMember) dto.GuildMemberStatus {
 	return dto.GuildMemberStatus{
 		CharacterID:  m.CharacterID,
 		Name:         m.CharacterName,
-		JobID:        m.ClassID,
+		ClassID:      m.ClassID,
 		Level:        m.Level,
 		GuildRank:    guildRankToUint32(m.Rank),
 		Online:       guildMemberOnline(m.ChannelIndex),
@@ -72,7 +72,7 @@ func GuildMemberStatusFromProto(m *internal.GuildMember) dto.GuildMemberStatus {
 	return dto.GuildMemberStatus{
 		CharacterID:  m.GetCharacterId(),
 		Name:         m.GetCharacterName(),
-		JobID:        m.GetClassId(),
+		ClassID:      m.GetClassId(),
 		Level:        m.GetLevel(),
 		GuildRank:    guildRankToUint32(m.GetRank()),
 		Online:       online,

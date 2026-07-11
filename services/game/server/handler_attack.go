@@ -62,19 +62,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 func (h *Attack) finishAttack(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, req *request.Attack, skillLevel uint8, skillID uint32) error {
 	damages := req.Damages
 	CallOnAttackHooks(character, damages, skillID, false, false, 0)
-	for _, damage := range damages {
-		mob := mapInstance.GetMob(damage.OID)
-		if mob == nil {
-			log.Printf("Mob not found for OID: %d", damage.OID)
-			continue
-		}
-		for _, damagePair := range damage.DamagePairs {
-			if damagePair.Damage == 0 {
-				continue
-			}
-			mob.ApplyDamage(character, damagePair.Damage)
-		}
-	}
+	character.DamageTo(damages)
 
 	if len(req.MesoOIDs) > 0 {
 		items := mapInstance.GetItems()

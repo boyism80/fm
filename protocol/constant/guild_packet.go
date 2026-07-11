@@ -20,21 +20,21 @@ const (
 type GuildSubOpcode uint8
 
 const (
-	GuildS2CInvite               GuildSubOpcode = 0x05
-	GuildS2CShowInfo             GuildSubOpcode = 0x1A
-	GuildS2CNewMember            GuildSubOpcode = 0x27
-	GuildS2CMemberLeft           GuildSubOpcode = 0x2C
-	GuildS2CMemberExpelled       GuildSubOpcode = 0x2F
-	GuildS2CDisband              GuildSubOpcode = 0x32
-	GuildS2CCapacityChange       GuildSubOpcode = 0x3A
-	GuildS2CMemberLevelJobUpdate GuildSubOpcode = 0x3C
-	GuildS2CMemberOnline         GuildSubOpcode = 0x3D
-	GuildS2CRankTitleChange      GuildSubOpcode = 0x3E
-	GuildS2CChangeRank           GuildSubOpcode = 0x40
-	GuildS2CEmblemChange         GuildSubOpcode = 0x42
-	GuildS2CNotice               GuildSubOpcode = 0x44
-	GuildS2CUpdateGP             GuildSubOpcode = 0x48
-	GuildS2CShowRanks            GuildSubOpcode = 0x49
+	GuildS2CInvite                 GuildSubOpcode = 0x05
+	GuildS2CShowInfo               GuildSubOpcode = 0x1A
+	GuildS2CNewMember              GuildSubOpcode = 0x27
+	GuildS2CMemberLeft             GuildSubOpcode = 0x2C
+	GuildS2CMemberExpelled         GuildSubOpcode = 0x2F
+	GuildS2CDisband                GuildSubOpcode = 0x32
+	GuildS2CCapacityChange         GuildSubOpcode = 0x3A
+	GuildS2CMemberLevelClassUpdate GuildSubOpcode = 0x3C
+	GuildS2CMemberOnline           GuildSubOpcode = 0x3D
+	GuildS2CRankTitleChange        GuildSubOpcode = 0x3E
+	GuildS2CChangeRank             GuildSubOpcode = 0x40
+	GuildS2CEmblemChange           GuildSubOpcode = 0x42
+	GuildS2CNotice                 GuildSubOpcode = 0x44
+	GuildS2CUpdateGP               GuildSubOpcode = 0x48
+	GuildS2CShowRanks              GuildSubOpcode = 0x49
 )
 
 type GuildResponseCode uint8

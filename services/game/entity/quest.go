@@ -1,20 +1,22 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/core/clock"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/services/game/wz"
 )
 
-type QuestStatusType uint8
+type QuestStatusType = wz.QuestStatus
 
 const (
-	QuestStatusNotStarted QuestStatusType = 0
-	QuestStatusStarted    QuestStatusType = 1
-	QuestStatusCompleted  QuestStatusType = 2
+	QuestStatusNotStarted = wz.QuestStatusNotStarted
+	QuestStatusStarted    = wz.QuestStatusStarted
+	QuestStatusCompleted  = wz.QuestStatusCompleted
 )
 
 type Quest struct {
@@ -24,17 +26,11 @@ type Quest struct {
 	Status         QuestStatusType
 	MobKills       map[uint32]int
 	Deadline       time.Time
+	StartTime      time.Time
 	StatusRecord   StatusRecord
-	Unknown2       map[string]string
+	RecordEx       map[string]string
 	CompletionTime time.Time
 	Forfeited      int
-}
-
-func (qp *Quest) WiresToClient() bool {
-	if qp == nil {
-		return false
-	}
-	return qp.Wz != nil
 }
 
 func (qp *Quest) IsStarted() bool {
@@ -44,37 +40,93 @@ func (qp *Quest) IsStarted() bool {
 	return qp.Status == QuestStatusStarted
 }
 
-func (qp *Quest) MatchesState(state int) bool {
-	if qp == nil {
-		return state == int(QuestStatusNotStarted)
+func (qp *Quest) Expired() bool {
+	if qp == nil || qp.Deadline.IsZero() {
+		return false
 	}
-	return int(qp.Status) == state
+	return !clock.Now().Before(qp.Deadline)
 }
 
-func (qp *Quest) MeetsMobCounts(mobs []wz.QuestMobCount) bool {
-	for _, mob := range mobs {
+func (qp *Quest) SetDeadline(t time.Time) {
+	if qp == nil {
+		return
+	}
+	qp.Deadline = t
+}
+
+func (qp *Quest) SetDeadlineAfter(d time.Duration) {
+	if qp == nil || d <= 0 {
+		return
+	}
+	qp.Deadline = clock.Now().Add(d)
+}
+
+func (qp *Quest) ResetDeadline() {
+	if qp == nil {
+		return
+	}
+	qp.Deadline = time.Time{}
+}
+
+func (qp *Quest) SetStartTime(t time.Time) {
+	if qp == nil {
+		return
+	}
+	qp.StartTime = t
+}
+
+func (qp *Quest) ResetStartTime() {
+	if qp == nil {
+		return
+	}
+	qp.StartTime = time.Time{}
+}
+
+func (qp *Quest) MatchesState(state wz.QuestStatus) bool {
+	if qp == nil {
+		return state == wz.QuestStatusNotStarted
+	}
+	return qp.Status == QuestStatusType(state)
+}
+
+func (qp *Quest) MeetsMobCounts(mobs map[uint32]int) bool {
+	for mobID, count := range mobs {
 		kills := 0
 		if qp != nil && qp.MobKills != nil {
-			kills = qp.MobKills[mob.MobID]
+			kills = qp.MobKills[mobID]
 		}
-		if kills < mob.Count {
+		if kills < count {
 			return false
 		}
 	}
 	return true
 }
 
-func (qp *Quest) IsCompletable(ch *Character) bool {
-	if qp == nil || ch == nil || ch.Quests == nil || !qp.IsStarted() || qp.Wz == nil {
-		return false
+func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
+	if qp == nil || ch == nil || ch.Quests == nil || qp.Wz == nil {
+		return ErrQuestNotCompletable
+	}
+	if !qp.IsStarted() {
+		return ErrQuestNotCompletable
+	}
+	if qp.Expired() {
+		return ErrQuestExpired
 	}
 	if qp.Wz.Meta.Blocked {
-		return false
+		return ErrQuestNotCompletable
 	}
-	if qp.IsDeadlineExpired() {
-		return false
+	checkOpts := opts
+	if qp.Wz.Meta.AutoPreComplete || qp.Wz.Meta.AutoComplete {
+		checkOpts.NpcID = nil
 	}
-	return qp.meetsPhaseRequirements(ch, qp.Wz.Complete, QuestPrepareOpts{NpcID: nil})
+	if !phaseRequirementsMet(qp.Wz.Complete, qp.container, qp, checkOpts) {
+		return ErrQuestNotCompletable
+	}
+	actions := ch.buildPhaseActions(qp.Wz.Complete, opts.Selection)
+	if actions.Exchange.Valid(ch) != ExchangeOK {
+		return ErrQuestNotCompletable
+	}
+	return nil
 }
 
 func (qp *Quest) StartedMobKills() []uint16 {
@@ -152,23 +204,6 @@ func (qp *Quest) InitMobKillCounters() {
 	}
 }
 
-func (qp *Quest) ApplyPhaseMeta(meta questPhaseMeta, qc *QuestContainer) {
-	if qp == nil {
-		return
-	}
-	if meta.info != "" {
-		qp.StatusRecord.WriteString(meta.info)
-	}
-	if len(meta.chainQuests) > 0 && qc != nil {
-		qc.applyQuestChainActions(meta.chainQuests)
-	}
-	if len(meta.infoNumberQuests) > 0 && qc != nil {
-		for _, refID := range meta.infoNumberQuests {
-			qc.applyInfoNumberAction(refID)
-		}
-	}
-}
-
 func (qp *Quest) CanForfeit() bool {
 	if qp == nil || !qp.IsStarted() || qp.Wz == nil {
 		return false
@@ -231,39 +266,36 @@ func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
 	if !found {
 		return ErrQuestRestoreItem
 	}
-	spec := FlowSpec{
-		Reward: FlowSide{
+	spec := ExchangeSpec{
+		Reward: ExchangeSide{
 			Items: map[uint32]uint16{itemID: count},
 		},
 	}
-	if ch.Exchange(spec) != FlowOK {
-		return ErrQuestFlowFailed
+	if ch.Exchange(spec) != ExchangeOK {
+		return ErrQuestExchangeFailed
 	}
 	return nil
 }
 
-func (qp *Quest) Complete(ch *Character, opts QuestPrepareOpts) error {
+func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
 	if qp == nil || ch == nil || ch.Quests == nil || qp.Wz == nil {
 		return ErrQuestNotCompletable
 	}
-	if qp.IsDeadlineExpired() {
+	if qp.Expired() {
 		return ErrQuestExpired
 	}
 	wireNPC := uint32(0)
 	if opts.NpcID != nil {
 		wireNPC = *opts.NpcID
 	}
-	var meta questPhaseMeta
 	if !opts.Force {
-		spec, m, err := ch.Quests.prepareComplete(qp, ch, opts)
-		if err != nil {
+		if err := qp.CanComplete(ch, opts); err != nil {
 			return err
 		}
-		meta = m
-		if ch.Exchange(spec) != FlowOK {
-			return ErrQuestFlowFailed
+		actions := ch.buildPhaseActions(qp.Wz.Complete, opts.Selection)
+		if err := actions.Apply(qp, wireNPC, true); err != nil {
+			return err
 		}
-		qp.ApplyPhaseMeta(meta, ch.Quests)
 	} else if !qp.IsStarted() {
 		return ErrQuestNotCompletable
 	}
@@ -313,7 +345,7 @@ func (qc *QuestContainer) Get(questID uint32) *Quest {
 	return qc.progress[questID]
 }
 
-func (qc *QuestContainer) questDef(questID uint32) *wz.Quest {
+func (qc *QuestContainer) wzDef(questID uint32) *wz.Quest {
 	if qc == nil || qc.owner == nil || qc.owner.GameWorld == nil {
 		return nil
 	}
@@ -333,11 +365,11 @@ func (qc *QuestContainer) Create(questID uint32, status QuestStatusType) *Quest 
 	}
 	qp := &Quest{
 		container: qc,
-		Wz:        qc.questDef(questID),
+		Wz:        qc.wzDef(questID),
 		QuestID:   questID,
 		Status:    status,
 		MobKills:  make(map[uint32]int),
-		Unknown2:  make(map[string]string),
+		RecordEx:  make(map[string]string),
 	}
 	qc.progress[questID] = qp
 	return qp
@@ -359,7 +391,7 @@ func (qc *QuestContainer) Clear(questID uint32) bool {
 		return false
 	}
 	delete(qc.progress, questID)
-	if qc.owner != nil && qc.owner.Listener != nil && existing.WiresToClient() {
+	if qc.owner != nil && qc.owner.Listener != nil && existing.Wz != nil {
 		qc.owner.Listener.OnQuestForfeited(qc.owner, &Quest{
 			QuestID: questID,
 			Status:  QuestStatusNotStarted,
@@ -389,7 +421,7 @@ func (qc *QuestContainer) ClearAll() int {
 		return count
 	}
 	for _, snap := range snapshots {
-		if snap.WiresToClient() {
+		if snap.Wz != nil {
 			qc.owner.Listener.OnQuestForfeited(qc.owner, &Quest{
 				QuestID: snap.QuestID,
 				Status:  QuestStatusNotStarted,
@@ -411,21 +443,21 @@ func (qc *QuestContainer) ForEach(fn func(questID uint32, qp *Quest)) {
 	}
 }
 
-func (qc *QuestContainer) Unknown2QuestInfo() map[uint16]string {
+func (qc *QuestContainer) RecordExWireMap() map[uint16]string {
 	result := make(map[uint16]string)
 	qc.ForEach(func(questID uint32, qp *Quest) {
-		if len(qp.Unknown2) == 0 {
+		if len(qp.RecordEx) == 0 {
 			return
 		}
 		if questID > 0xFFFF {
 			return
 		}
-		result[uint16(questID)] = serializeUnknown2(qp.Unknown2)
+		result[uint16(questID)] = formatRecordEx(qp.RecordEx)
 	})
 	return result
 }
 
-func serializeUnknown2(fields map[string]string) string {
+func formatRecordEx(fields map[string]string) string {
 	if len(fields) == 0 {
 		return ""
 	}
@@ -446,23 +478,65 @@ func serializeUnknown2(fields map[string]string) string {
 	return b.String()
 }
 
-func parseUnknown2(data string) map[string]string {
-	if data == "" {
-		return nil
+func (qp *Quest) RecordExWire() string {
+	if qp == nil {
+		return ""
 	}
-	fields := make(map[string]string)
-	for _, part := range strings.Split(data, ";") {
-		if part == "" {
-			continue
+	return formatRecordEx(qp.RecordEx)
+}
+
+func (qp *Quest) RecordExField(key string) (string, bool) {
+	if qp == nil || key == "" || qp.Wz == nil {
+		return "", false
+	}
+	if len(qp.RecordEx) == 0 {
+		return "", false
+	}
+	value, ok := qp.RecordEx[key]
+	return value, ok
+}
+
+func (qp *Quest) SetRecordExField(key, value string) bool {
+	if qp == nil || key == "" || value == "" || qp.Wz == nil {
+		return false
+	}
+	if qp.container == nil || qp.container.Get(qp.QuestID) == nil {
+		return false
+	}
+	if qp.RecordEx == nil {
+		qp.RecordEx = make(map[string]string)
+	}
+	qp.RecordEx[key] = value
+	qp.notifyRecordExChanged()
+	return true
+}
+
+func (qp *Quest) IncrementRecordExField(key string, delta int) bool {
+	if qp == nil || key == "" || delta == 0 {
+		return false
+	}
+	count := 0
+	if val, ok := qp.RecordExField(key); ok {
+		parsed, err := strconv.Atoi(val)
+		if err != nil {
+			return false
 		}
-		key, value, ok := strings.Cut(part, "=")
-		if !ok || key == "" {
-			continue
-		}
-		fields[key] = value
+		count = parsed
 	}
-	if len(fields) == 0 {
-		return nil
+	count += delta
+	if count < 0 {
+		count = 0
 	}
-	return fields
+	return qp.SetRecordExField(key, strconv.Itoa(count))
+}
+
+func (qp *Quest) notifyRecordExChanged() {
+	if qp == nil || qp.container == nil {
+		return
+	}
+	ch := qp.container.owner
+	if ch == nil || ch.Listener == nil {
+		return
+	}
+	ch.Listener.OnQuestRecordExChanged(ch, qp)
 }

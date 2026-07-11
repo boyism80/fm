@@ -2,9 +2,10 @@ package entity
 
 import (
 	"errors"
-	"github.com/boyism80/fm/core/clock"
 	"math/rand"
 	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/services/game/wz"
 )
@@ -17,211 +18,268 @@ var (
 	ErrQuestNotForfeitable = errors.New("quest not forfeitable")
 	ErrQuestExpired        = errors.New("quest expired")
 	ErrQuestRestoreItem    = errors.New("quest restore item unavailable")
-	ErrQuestFlowFailed     = errors.New("quest flow failed")
+	ErrQuestExchangeFailed = errors.New("quest exchange failed")
 )
 
-type questPhaseMeta struct {
-	info             string
-	chainQuests      []wz.QuestStateRef
-	infoNumberQuests []uint32
+type questPhaseActions struct {
+	Exchange               ExchangeSpec
+	info                   string
+	linkedQuests           map[uint32]wz.QuestStatus
+	linkedQuestsToComplete []uint32
+	skillGrants            []wz.QuestRewardSkill
+	npcActs                []string
 }
 
-type QuestPrepareOpts struct {
+func (a questPhaseActions) Apply(qp *Quest, npcID uint32, grantSkills bool) error {
+	if qp == nil {
+		return nil
+	}
+	qc := qp.container
+	if qc == nil {
+		return nil
+	}
+	ch := qc.owner
+	if ch != nil && ch.Exchange(a.Exchange) != ExchangeOK {
+		return ErrQuestExchangeFailed
+	}
+	if a.info != "" {
+		qp.StatusRecord.WriteString(a.info)
+	}
+	if len(a.linkedQuests) > 0 {
+		qc.updateLinkedQuests(a.linkedQuests)
+	}
+	for _, refID := range a.linkedQuestsToComplete {
+		qc.completeLinkedQuest(refID)
+	}
+	if grantSkills {
+		qc.grantSkillRewards(a.skillGrants)
+	}
+	qc.broadcastNpcActs(npcID, a.npcActs)
+	return nil
+}
+
+type QuestPhaseOpts struct {
 	NpcID     *uint32
 	Selection *uint32
 	Force     bool
+	Record    *string
 }
 
-func (qc *QuestContainer) Start(questID uint32, opts QuestPrepareOpts) (*Quest, error) {
+func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
 	if qc == nil || questID == 0 || qc.owner == nil {
 		return nil, ErrQuestNotStartable
 	}
-	def := qc.questDef(questID)
+	def := qc.wzDef(questID)
 	if def == nil {
-		return nil, ErrQuestNotStartable
+		if !opts.Force {
+			return nil, ErrQuestNotStartable
+		}
+		qp := qc.Get(questID)
+		if qp == nil {
+			qp = qc.Create(questID, QuestStatusStarted)
+			if qp == nil {
+				qp = qc.Get(questID)
+			}
+		}
+		if qp == nil {
+			return nil, ErrQuestInvalidState
+		}
+		qp.Status = QuestStatusStarted
+		if opts.Record != nil {
+			qp.StatusRecord.WriteString(*opts.Record)
+		}
+		qp.ResetDeadline()
+		if qp.MobKills == nil {
+			qp.MobKills = make(map[uint32]int)
+		}
+		qc.RunAutoTriggers(nil, AutoQuestTriggerLogin, 0)
+		qc.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
+		return qp, nil
+	} else {
+		wireNPC := uint32(0)
+		if opts.NpcID != nil {
+			wireNPC = *opts.NpcID
+		}
+		existing := qc.Get(def.ID)
+		if existing != nil && existing.IsStarted() {
+			if !opts.Force {
+				return nil, ErrQuestNotStartable
+			}
+			qc.notifyQuestStart(existing, wireNPC, opts)
+			return existing, nil
+		}
+		return qc.startWZQuest(def, existing, wireNPC, opts)
 	}
-	wireNPC := uint32(0)
-	if opts.NpcID != nil {
-		wireNPC = *opts.NpcID
-	}
+}
 
-	var meta questPhaseMeta
+func (qc *QuestContainer) startWZQuest(def *wz.Quest, existing *Quest, wireNPC uint32, opts QuestPhaseOpts) (*Quest, error) {
+	ch := qc.owner
+	var actions questPhaseActions
 	if !opts.Force {
-		spec, m, err := qc.prepareStart(def, qc.owner, opts)
-		if err != nil {
+		if err := qc.CanStart(def.ID, opts); err != nil {
 			return nil, err
 		}
-		meta = m
-		if qc.owner.Exchange(spec) != FlowOK {
-			return nil, ErrQuestFlowFailed
-		}
-	}
-
-	qp := qc.Get(def.ID)
-	if qp != nil && qp.IsStarted() {
-		if !opts.Force {
-			qp.ApplyPhaseMeta(meta, qc)
-		}
-		if qp.WiresToClient() {
-			qc.owner.Listener.OnQuestStarted(qc.owner, qp, wireNPC)
-		}
-		return qp, nil
+		actions = ch.buildPhaseActions(def.Start, nil)
 	}
 
 	forfeited := 0
-	if qp != nil {
-		if qp.Status == QuestStatusCompleted {
+	if existing != nil {
+		if existing.Status == QuestStatusCompleted {
 			if !def.Meta.Repeatable && !opts.Force {
 				return nil, ErrQuestInvalidState
 			}
-			forfeited = qp.Forfeited
+			forfeited = existing.Forfeited
 		} else if !opts.Force {
 			return nil, ErrQuestInvalidState
 		} else {
-			forfeited = qp.Forfeited
+			forfeited = existing.Forfeited
 		}
-	} else {
+	}
+
+	qp := existing
+	if qp == nil {
 		qp = qc.Create(def.ID, QuestStatusStarted)
 		if qp == nil {
-			existing := qc.Get(def.ID)
-			if existing != nil && existing.IsStarted() && !opts.Force {
-				existing.ApplyPhaseMeta(meta, qc)
-				if existing.WiresToClient() {
-					qc.owner.Listener.OnQuestStarted(qc.owner, existing, wireNPC)
-				}
-				return existing, nil
+			raced := qc.Get(def.ID)
+			if raced == nil || !raced.IsStarted() {
+				return nil, ErrQuestInvalidState
 			}
-			return nil, ErrQuestInvalidState
+			if !opts.Force {
+				if err := qc.CanStart(def.ID, opts); err != nil {
+					return nil, err
+				}
+				actions = ch.buildPhaseActions(def.Start, nil)
+				if err := actions.Apply(raced, wireNPC, raced.Forfeited == 0); err != nil {
+					return nil, err
+				}
+			}
+			qc.notifyQuestStart(raced, wireNPC, opts)
+			return raced, nil
 		}
 	}
 
 	qp.Status = QuestStatusStarted
 	qp.Forfeited = forfeited
 	qp.StatusRecord.WriteString("")
-	qp.ClearDeadline()
+	if def.Meta.TimeLimit2 > 0 {
+		qp.SetDeadlineAfter(time.Duration(def.Meta.TimeLimit2) * time.Second)
+	} else {
+		qp.ResetDeadline()
+	}
 	qp.MobKills = make(map[uint32]int)
 	qp.InitMobKillCounters()
 	if !opts.Force {
-		qp.ApplyPhaseMeta(meta, qc)
+		if err := actions.Apply(qp, wireNPC, forfeited == 0); err != nil {
+			return nil, err
+		}
 	}
-	if qp.WiresToClient() {
-		qc.owner.Listener.OnQuestStarted(qc.owner, qp, wireNPC)
-	}
+	qc.notifyQuestStart(qp, wireNPC, opts)
 	return qp, nil
 }
 
-func (qc *QuestContainer) IsStartable(questID uint32, opts QuestPrepareOpts) bool {
-	def := qc.questDef(questID)
-	if def == nil {
-		return false
+func (qc *QuestContainer) notifyQuestStart(qp *Quest, wireNPC uint32, opts QuestPhaseOpts) {
+	if qp == nil || qc.owner == nil {
+		return
 	}
-	_, _, err := qc.prepareStart(def, qc.owner, opts)
-	return err == nil
+	ch := qc.owner
+	if qp.Wz != nil && ch.Listener != nil {
+		ch.Listener.OnQuestStarted(ch, qp, wireNPC)
+	}
+	if opts.Record == nil || *opts.Record == "" {
+		return
+	}
+	qp.StatusRecord.WriteString(*opts.Record)
+	if qp.Wz != nil && ch.Listener != nil {
+		ch.Listener.OnQuestProgress(ch, qp)
+	}
 }
 
-func (qc *QuestContainer) prepareStart(
-	def *wz.Quest,
-	ch *Character,
-	opts QuestPrepareOpts,
-) (FlowSpec, questPhaseMeta, error) {
-	if qc == nil || def == nil || ch == nil {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotStartable
+func (qc *QuestContainer) CanStart(questID uint32, opts QuestPhaseOpts) error {
+	if qc == nil || qc.owner == nil {
+		return ErrQuestNotStartable
 	}
-	if def.Meta.Blocked {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotStartable
+	def := qc.wzDef(questID)
+	if def == nil {
+		return ErrQuestNotStartable
 	}
 	existing := qc.Get(def.ID)
+	if def.Meta.Blocked {
+		return ErrQuestNotStartable
+	}
 	if existing != nil {
 		switch existing.Status {
 		case QuestStatusStarted:
-			return FlowSpec{}, questPhaseMeta{}, ErrQuestNotStartable
+			return ErrQuestNotStartable
 		case QuestStatusCompleted:
 			if !def.Meta.Repeatable {
-				return FlowSpec{}, questPhaseMeta{}, ErrQuestNotStartable
+				return ErrQuestNotStartable
 			}
 		default:
-			return FlowSpec{}, questPhaseMeta{}, ErrQuestNotStartable
+			return ErrQuestNotStartable
 		}
 	}
 	checkOpts := opts
 	if def.Meta.AutoStart || def.Meta.AutoAccept {
 		checkOpts.NpcID = nil
 	}
-	view := existing
-	if view == nil {
-		view = &Quest{
-			container: qc,
-			Wz:        def,
-			QuestID:   def.ID,
-			Status:    QuestStatusNotStarted,
-		}
+	if !phaseRequirementsMet(def.Start, qc, existing, checkOpts) {
+		return ErrQuestNotStartable
 	}
-	if !view.meetsPhaseRequirements(ch, def.Start, checkOpts) {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotStartable
+	actions := qc.owner.buildPhaseActions(def.Start, nil)
+	if actions.Exchange.Valid(qc.owner) != ExchangeOK {
+		return ErrQuestNotStartable
 	}
-	spec, meta := ch.buildPhaseFlow(def.Start, nil)
-	if ch.ValidateFlow(spec) != FlowOK {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotStartable
-	}
-	return spec, meta, nil
+	return nil
 }
 
-func (qc *QuestContainer) prepareComplete(
-	qp *Quest,
-	ch *Character,
-	opts QuestPrepareOpts,
-) (FlowSpec, questPhaseMeta, error) {
-	if qc == nil || ch == nil {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotCompletable
-	}
-	if qp == nil || qp.Wz == nil || !qp.IsStarted() {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotCompletable
-	}
-	if qp.IsDeadlineExpired() {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestExpired
-	}
-	if qp.Wz.Meta.Blocked {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotCompletable
-	}
-	checkOpts := opts
-	if qp.Wz.Meta.AutoPreComplete || qp.Wz.Meta.AutoComplete {
-		checkOpts.NpcID = nil
-	}
-	if !qp.meetsPhaseRequirements(ch, qp.Wz.Complete, checkOpts) {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotCompletable
-	}
-	spec, meta := ch.buildPhaseFlow(qp.Wz.Complete, opts.Selection)
-	if ch.ValidateFlow(spec) != FlowOK {
-		return FlowSpec{}, questPhaseMeta{}, ErrQuestNotCompletable
-	}
-	return spec, meta, nil
-}
-
-func (qc *QuestContainer) applyQuestChainActions(refs []wz.QuestStateRef) {
-	if qc == nil {
+func (qc *QuestContainer) broadcastNpcActs(npcID uint32, acts []string) {
+	if qc == nil || qc.owner == nil || npcID == 0 || len(acts) == 0 {
 		return
 	}
-	for _, ref := range refs {
-		switch ref.State {
-		case 0:
-			qc.Remove(ref.QuestID)
-		case 1:
-			existing := qc.Get(ref.QuestID)
+	mapInst := qc.owner.GetMap()
+	if mapInst == nil {
+		return
+	}
+	for _, obj := range mapInst.GetNpcs() {
+		npc, ok := obj.(*Npc)
+		if !ok || npc.Wz == nil || npc.Wz.BaseSpawn == nil {
+			continue
+		}
+		if npc.Wz.ID != npcID {
+			continue
+		}
+		for _, act := range acts {
+			npc.ShowEffect(act)
+		}
+		return
+	}
+}
+
+func (qc *QuestContainer) updateLinkedQuests(quests map[uint32]wz.QuestStatus) {
+	if qc == nil || len(quests) == 0 {
+		return
+	}
+	for questID, state := range quests {
+		switch state {
+		case wz.QuestStatusNotStarted:
+			qc.Remove(questID)
+		case wz.QuestStatusStarted:
+			existing := qc.Get(questID)
 			if existing == nil {
-				if qc.questDef(ref.QuestID) == nil {
+				if qc.wzDef(questID) == nil {
 					continue
 				}
-				qc.Create(ref.QuestID, QuestStatusStarted)
+				qc.Create(questID, QuestStatusStarted)
 			} else {
 				existing.Status = QuestStatusStarted
 			}
-		case 2:
-			existing := qc.Get(ref.QuestID)
+		case wz.QuestStatusCompleted:
+			existing := qc.Get(questID)
 			if existing == nil {
-				if qc.questDef(ref.QuestID) == nil {
+				if qc.wzDef(questID) == nil {
 					continue
 				}
-				created := qc.Create(ref.QuestID, QuestStatusCompleted)
+				created := qc.Create(questID, QuestStatusCompleted)
 				if created != nil {
 					created.CompletionTime = clock.Now()
 				}
@@ -233,199 +291,87 @@ func (qc *QuestContainer) applyQuestChainActions(refs []wz.QuestStateRef) {
 	}
 }
 
-func (qp *Quest) meetsPhaseRequirements(
-	ch *Character,
-	phase wz.QuestPhase,
-	opts QuestPrepareOpts,
-) bool {
-	if qp == nil || ch == nil {
-		return false
+func (qc *QuestContainer) completeLinkedQuest(refID uint32) {
+	if qc == nil || refID == 0 {
+		return
 	}
-	if opts.Force {
-		return true
+	refQP := qc.Get(refID)
+	if refQP == nil || !refQP.IsStarted() {
+		return
 	}
-	for _, req := range phase.Requirements {
-		if !qp.meetsRequirement(ch, phase, req, opts) {
-			return false
-		}
-	}
-	return true
+	refQP.Status = QuestStatusCompleted
+	refQP.CompletionTime = clock.Now()
 }
 
-func (qp *Quest) meetsRequirement(
-	ch *Character,
-	phase wz.QuestPhase,
-	req wz.QuestRequirement,
-	opts QuestPrepareOpts,
-) bool {
-	if qp == nil || ch == nil {
-		return false
-	}
-	switch req.Kind {
-	case wz.QuestReqNPC:
-		if opts.NpcID == nil {
-			return true
-		}
-		required := uint32(req.IntValue)
-		if required == 0 {
-			return true
-		}
-		wireNPC := *opts.NpcID
-		if wireNPC != 0 && wireNPC != required {
-			return false
-		}
-		mapInst := ch.GetMap()
-		if mapInst == nil {
-			return false
-		}
-		for _, obj := range mapInst.GetNpcs() {
-			npc, ok := obj.(*Npc)
-			if !ok || npc.Wz == nil || npc.Wz.BaseSpawn == nil {
-				continue
-			}
-			if npc.Wz.ID == required {
-				return true
-			}
-		}
-		return false
-	case wz.QuestReqLvMin:
-		return int(ch.GetLevel()) >= req.IntValue
-	case wz.QuestReqLvMax:
-		return int(ch.GetLevel()) <= req.IntValue
-	case wz.QuestReqClass:
-		return ch.matchesQuestClass(req.Classes)
-	case wz.QuestReqItem:
-		for _, item := range req.Items {
-			if !ch.HasItemCount(item.ItemID, uint16(item.Count)) {
-				return false
-			}
-		}
-		return true
-	case wz.QuestReqMob:
-		return qp.MeetsMobCounts(req.Mobs)
-	case wz.QuestReqQuest:
-		if qp.container == nil {
-			return false
-		}
-		for _, ref := range req.Quests {
-			if !qp.container.Get(ref.QuestID).MatchesState(ref.State) {
-				return false
-			}
-		}
-		return true
-	case wz.QuestReqStartScript, wz.QuestReqEndScript:
-		return true
-	case wz.QuestReqPop:
-		return int(ch.population) >= req.IntValue
-	case wz.QuestReqFieldEnter:
-		mapID := req.IntValue
-		if mapID <= 0 {
-			return true
-		}
-		mapInst := ch.GetMap()
-		if mapInst == nil {
-			return false
-		}
-		return int(mapInst.GetMapID()) == mapID
-	case wz.QuestReqNormalAutoStart:
-		return true
-	case wz.QuestReqInterval:
-		if qp.Status != QuestStatusCompleted {
-			return true
-		}
-		if qp.CompletionTime.IsZero() {
-			return true
-		}
-		minutes := req.IntValue
-		if minutes <= 0 {
-			return true
-		}
-		return !questRequirementNow().Before(qp.CompletionTime.Add(time.Duration(minutes) * time.Minute))
-	case wz.QuestReqDayByDay:
-		return qp.meetsDayByDayRequirement()
-	case wz.QuestReqTimeStart, wz.QuestReqTimeEnd:
-		return qp.meetsQuestEventTimeRequirement(req.Kind, req.StrValue)
-	case wz.QuestReqInfoNumber:
-		return qp.meetsInfoNumberRequirement(req.IntValue, phase)
-	case wz.QuestReqInfo:
-		return true
-	case wz.QuestReqSkill, wz.QuestReqPet,
-		wz.QuestReqPetTamenessMin, wz.QuestReqMBMin, wz.QuestReqMBCard,
-		wz.QuestReqSubClassFlags,
-		wz.QuestReqPartyQuestS, wz.QuestReqQuestComplete:
-		return false
-	default:
-		if req.IntValue != 0 || req.StrValue != "" || len(req.Items) > 0 {
-			return false
-		}
-		return true
-	}
-}
-
-func (ch *Character) buildPhaseFlow(
-	phase wz.QuestPhase,
-	selection *uint32,
-) (FlowSpec, questPhaseMeta) {
-	spec := FlowSpec{}
-	meta := questPhaseMeta{}
+func (ch *Character) buildPhaseActions(phase wz.QuestPhase, selection *uint32) questPhaseActions {
+	actions := questPhaseActions{}
 	if ch == nil {
-		return spec, meta
+		return actions
 	}
 
 	for _, act := range phase.Actions {
-		if len(act.ApplicableClasses) > 0 && !ch.matchesQuestClass(act.ApplicableClasses) {
+		if len(act.ApplicableClasses) > 0 && !matchesQuestClass(ch.Class, act.ApplicableClasses) {
 			continue
 		}
 		switch act.Kind {
 		case wz.QuestActMoney:
 			if act.IntValue > 0 {
-				spec.Reward.Meso += int32(act.IntValue)
+				actions.Exchange.Reward.Meso += int32(act.IntValue)
 			} else if act.IntValue < 0 {
-				spec.Cost.Meso += int32(-act.IntValue)
+				actions.Exchange.Cost.Meso += int32(-act.IntValue)
 			}
 		case wz.QuestActEXP:
 			if act.IntValue > 0 {
-				spec.Reward.Exp += uint32(act.IntValue)
+				actions.Exchange.Reward.Exp += uint32(act.IntValue)
 			}
 		case wz.QuestActItem:
-			appendPhaseActItems(ch, &spec, act.Items, selection)
+			appendPhaseActItems(ch, &actions.Exchange, act.Items, selection)
 		case wz.QuestActInfo:
 			if act.StrValue != "" {
-				meta.info = act.StrValue
+				actions.info = act.StrValue
 			}
 		case wz.QuestActQuest:
-			meta.chainQuests = append(meta.chainQuests, act.Quests...)
+			if len(act.Quests) == 0 {
+				break
+			}
+			if actions.linkedQuests == nil {
+				actions.linkedQuests = make(map[uint32]wz.QuestStatus, len(act.Quests))
+			}
+			for questID, state := range act.Quests {
+				actions.linkedQuests[questID] = state
+			}
 		case wz.QuestActPop:
 			if act.IntValue > 0 {
-				spec.Reward.Population += int32(act.IntValue)
+				actions.Exchange.Reward.Population += int32(act.IntValue)
 			} else if act.IntValue < 0 {
-				spec.Cost.Population += int32(-act.IntValue)
+				actions.Exchange.Cost.Population += int32(-act.IntValue)
 			}
-		case wz.QuestActNextQuest, wz.QuestActSkill,
-			wz.QuestActBuffItemID, wz.QuestActSP, wz.QuestActNPCAct:
+		case wz.QuestActSkill:
+			actions.skillGrants = append(actions.skillGrants, act.Skills...)
+		case wz.QuestActNPCAct:
+			if act.StrValue != "" {
+				actions.npcActs = append(actions.npcActs, act.StrValue)
+			}
+		case wz.QuestActNextQuest,
+			wz.QuestActBuffItemID, wz.QuestActSP:
 		case wz.QuestActInfoNumber:
 			if act.IntValue > 0 {
-				meta.infoNumberQuests = append(meta.infoNumberQuests, uint32(act.IntValue))
+				actions.linkedQuestsToComplete = append(actions.linkedQuestsToComplete, uint32(act.IntValue))
 			}
 		}
 	}
 
-	return spec, meta
+	return actions
 }
 
-func appendPhaseActItems(
-	ch *Character,
-	spec *FlowSpec,
-	items []wz.QuestRewardItem,
-	selection *uint32,
-) {
+func appendPhaseActItems(ch *Character, spec *ExchangeSpec, items []wz.QuestRewardItem, selection *uint32) {
 	if spec == nil || ch == nil {
 		return
 	}
 
 	var randomPool []uint32
 	for _, item := range items {
-		if !ch.matchesQuestRewardItem(item) || item.Count <= 0 || !item.Prop.IsWeightedRandom() {
+		if ch.Quests == nil || !ch.Quests.matchesRewardItem(item) || item.Count <= 0 || !item.Prop.IsWeightedRandom() {
 			continue
 		}
 		for i := 0; i < item.Prop.RandomWeight(); i++ {
@@ -445,7 +391,7 @@ func appendPhaseActItems(
 
 	extNum := 0
 	for _, item := range items {
-		if !ch.matchesQuestRewardItem(item) || item.Count == 0 {
+		if ch.Quests == nil || !ch.Quests.matchesRewardItem(item) || item.Count == 0 {
 			continue
 		}
 		if item.Count < 0 {
@@ -480,29 +426,78 @@ func appendPhaseActItems(
 	}
 }
 
-func (ch *Character) matchesQuestClass(classes []int) bool {
-	if len(classes) == 0 {
+func matchesQuestClass(classID uint16, codes []int) bool {
+	if len(codes) == 0 {
 		return true
 	}
-	classCode := int(ch.Class)
-	for _, req := range classes {
-		if classCode == req {
+	class := int(classID)
+	for _, code := range codes {
+		if code == 0 && class == 0 {
 			return true
 		}
-		if req == 0 && classCode == 0 {
+		if code == class {
 			return true
 		}
-		if req%100 == 0 && classCode/100 == req/100 {
+		if code%100 == 0 && class/100 == code/100 {
 			return true
 		}
 	}
 	return false
 }
 
-func (ch *Character) matchesQuestRewardItem(item wz.QuestRewardItem) bool {
-	if ch == nil {
+func (ch *Character) meetsQuestSkillRequirement(skillID uint32, acquire int) bool {
+	if ch == nil || skillID == 0 {
+		return true
+	}
+	mustAcquire := acquire > 0
+	var wzSkill *wz.Skill
+	if ch.GameWorld != nil {
+		resources := ch.GameWorld.GetResources()
+		if resources != nil {
+			wzSkill = resources.GetSkill(skillID)
+		}
+	}
+	entry := (*SkillEntry)(nil)
+	if ch.Skills != nil {
+		entry = ch.Skills.Get(skillID)
+	}
+	skillLevel := 0
+	masterLevel := 0
+	if entry != nil {
+		skillLevel = entry.Level()
+		masterLevel = entry.MasterLevel
+	}
+	if mustAcquire {
+		if wzSkill != nil && wzSkill.IsFourthJob() {
+			return masterLevel > 0
+		}
+		return skillLevel > 0
+	}
+	return skillLevel == 0 && masterLevel == 0
+}
+
+func (qc *QuestContainer) completedQuestCount() int {
+	if qc == nil {
+		return 0
+	}
+	count := 0
+	qc.ForEach(func(questID uint32, qp *Quest) {
+		if qp == nil || qp.Status != QuestStatusCompleted {
+			return
+		}
+		if questID > 99999 {
+			return
+		}
+		count++
+	})
+	return count
+}
+
+func (qc *QuestContainer) matchesRewardItem(item wz.QuestRewardItem) bool {
+	if qc == nil || qc.owner == nil {
 		return false
 	}
+	ch := qc.owner
 	if item.Gender <= 1 && item.Gender != int(ch.gender) {
 		return false
 	}
@@ -510,13 +505,13 @@ func (ch *Character) matchesQuestRewardItem(item wz.QuestRewardItem) bool {
 		return true
 	}
 	classCode := int(ch.Class)
-	for _, codec := range questClassesBy5ByteEncoding(item.Class) {
+	for _, codec := range classesBy5ByteEncoding(item.Class) {
 		if codec/100 == classCode/100 {
 			return true
 		}
 	}
 	if item.ClassEx > 0 {
-		for _, codec := range questClassesBySimpleEncoding(item.ClassEx) {
+		for _, codec := range classesBySimpleEncoding(item.ClassEx) {
 			if (codec/100)%10 == (classCode/100)%10 {
 				return true
 			}
@@ -525,7 +520,7 @@ func (ch *Character) matchesQuestRewardItem(item wz.QuestRewardItem) bool {
 	return false
 }
 
-func questClassesBy5ByteEncoding(encoded int) []int {
+func classesBy5ByteEncoding(encoded int) []int {
 	ret := make([]int, 0, 8)
 	if encoded&0x1 != 0 {
 		ret = append(ret, 0)
@@ -581,7 +576,7 @@ func questClassesBy5ByteEncoding(encoded int) []int {
 	return ret
 }
 
-func questClassesBySimpleEncoding(encoded int) []int {
+func classesBySimpleEncoding(encoded int) []int {
 	ret := make([]int, 0, 4)
 	if encoded&0x1 != 0 {
 		ret = append(ret, 200)
@@ -596,4 +591,87 @@ func questClassesBySimpleEncoding(encoded int) []int {
 		ret = append(ret, 500)
 	}
 	return ret
+}
+
+func (qc *QuestContainer) grantSkillRewards(rewards []wz.QuestRewardSkill) {
+	if qc == nil || len(rewards) == 0 {
+		return
+	}
+	for _, reward := range rewards {
+		qc.grantSkill(reward)
+	}
+}
+
+func (qc *QuestContainer) grantSkill(reward wz.QuestRewardSkill) {
+	if qc == nil || qc.owner == nil || reward.SkillID == 0 {
+		return
+	}
+	if !qc.canGrantSkill(reward) {
+		return
+	}
+	ch := qc.owner
+	if ch.GameWorld == nil {
+		return
+	}
+	resources := ch.GameWorld.GetResources()
+	if resources == nil {
+		return
+	}
+	wzSkill := resources.GetSkill(reward.SkillID)
+	if wzSkill == nil {
+		return
+	}
+	targetLevel := skillTargetLevel(0, reward.SkillLevel)
+	targetMaster := skillTargetMaster(0, reward.MasterLevel, wzSkill)
+	entry := ch.Skills.Get(reward.SkillID)
+	if entry == nil {
+		entry = NewSkillEntry(ch, wzSkill, targetLevel, targetMaster)
+		entry.Expiration = time.Time{}
+		ch.Skills.Register(reward.SkillID, entry)
+	} else {
+		targetLevel = skillTargetLevel(entry.Level(), reward.SkillLevel)
+		targetMaster = skillTargetMaster(entry.MasterLevel, reward.MasterLevel, wzSkill)
+		if targetLevel != entry.Level() || targetMaster != entry.MasterLevel {
+			entry.SetLevelAndMaster(targetLevel, targetMaster)
+		}
+	}
+}
+
+func (qc *QuestContainer) canGrantSkill(reward wz.QuestRewardSkill) bool {
+	if qc == nil || qc.owner == nil {
+		return false
+	}
+	ch := qc.owner
+	if reward.SkillID/10000 == 0 && !ch.IsBeginner() {
+		return false
+	}
+	return matchesQuestClass(ch.Class, reward.Classes)
+}
+
+func skillTargetLevel(current int, rewardLevel int) int {
+	if rewardLevel <= 0 {
+		if current > 0 {
+			return current
+		}
+		return 1
+	}
+	if current > rewardLevel {
+		return current
+	}
+	return rewardLevel
+}
+
+func skillTargetMaster(current int, rewardMaster int, wzSkill *wz.Skill) int {
+	resolved := rewardMaster
+	if resolved <= 0 && wzSkill != nil {
+		if wzSkill.MasterLevel > 0 {
+			resolved = wzSkill.MasterLevel
+		} else if wzSkill.MaxLevel > 0 {
+			resolved = wzSkill.MaxLevel
+		}
+	}
+	if current > resolved {
+		return current
+	}
+	return resolved
 }

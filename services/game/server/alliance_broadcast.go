@@ -202,11 +202,7 @@ func (ac *AllianceContainer) BroadcastNoticeChanged(alliancePb *internal.Allianc
 	})
 }
 
-func (ac *AllianceContainer) BroadcastLeaderChanged(
-	alliancePb *internal.Alliance,
-	oldLeaderID uint32,
-	newLeaderID uint32,
-) {
+func (ac *AllianceContainer) BroadcastLeaderChanged(alliancePb *internal.Alliance, oldLeaderID uint32, newLeaderID uint32) {
 	if ac.gs == nil || alliancePb == nil {
 		return
 	}

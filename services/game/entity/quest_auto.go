@@ -24,7 +24,7 @@ func (qc *QuestContainer) RunAutoTriggers(actx actor.Context, trigger AutoQuestT
 	if resources == nil {
 		return
 	}
-	quests := qc.autoQuestCandidates(resources, trigger, mapID)
+	quests := qc.autoCandidates(resources, trigger, mapID)
 	if len(quests) == 0 {
 		return
 	}
@@ -32,11 +32,11 @@ func (qc *QuestContainer) RunAutoTriggers(actx actor.Context, trigger AutoQuestT
 		if def == nil {
 			continue
 		}
-		qc.tryAutoStartComplete(actx, def)
+		qc.tryRunAutoQuest(actx, def)
 	}
 }
 
-func (qc *QuestContainer) autoQuestCandidates(resources *wz.Resources, trigger AutoQuestTrigger, mapID uint32) []*wz.Quest {
+func (qc *QuestContainer) autoCandidates(resources *wz.Resources, trigger AutoQuestTrigger, mapID uint32) []*wz.Quest {
 	if resources == nil {
 		return nil
 	}
@@ -50,11 +50,11 @@ func (qc *QuestContainer) autoQuestCandidates(resources *wz.Resources, trigger A
 	}
 }
 
-func (qc *QuestContainer) tryAutoStartComplete(actx actor.Context, def *wz.Quest) {
+func (qc *QuestContainer) tryRunAutoQuest(actx actor.Context, def *wz.Quest) {
 	if qc == nil || def == nil || qc.owner == nil || def.Meta.Blocked {
 		return
 	}
-	autoOpts := QuestPrepareOpts{NpcID: nil}
+	autoOpts := QuestPhaseOpts{NpcID: nil}
 
 	if qp := qc.Get(def.ID); qp != nil && qp.IsStarted() {
 		if (def.Meta.AutoPreComplete || def.Meta.AutoComplete) && !def.HasEndScript() {
@@ -76,7 +76,7 @@ func (qc *QuestContainer) tryAutoStartComplete(actx actor.Context, def *wz.Quest
 		if qc.owner.GetDialog() != nil {
 			return
 		}
-		if !qc.IsStartable(def.ID, autoOpts) {
+		if err := qc.CanStart(def.ID, autoOpts); err != nil {
 			return
 		}
 		_ = qc.owner.RunQuestScript(actx, def.ID, scriptNpcID, "on_start")

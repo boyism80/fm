@@ -30,6 +30,8 @@ type QuestMeta struct {
 	Blocked         bool           `yaml:"blocked,omitempty"`
 	ViewMedalItem   int            `yaml:"view_medal_item,omitempty"`
 	SelectedSkillID int            `yaml:"selected_skill_id,omitempty"`
+	TimeLimit       int            `yaml:"time_limit,omitempty"`
+	TimeLimit2      int            `yaml:"time_limit2,omitempty"`
 }
 
 type QuestPhase struct {
@@ -38,53 +40,33 @@ type QuestPhase struct {
 }
 
 type QuestRequirement struct {
-	Kind        string           `yaml:"kind"`
-	IntValue    int              `yaml:"int_value,omitempty"`
-	StrValue    string           `yaml:"str_value,omitempty"`
-	InfoStrings []string         `yaml:"info_strings,omitempty"`
-	Jobs        []int            `yaml:"jobs,omitempty"`
-	PetIDs      []uint32         `yaml:"pet_ids,omitempty"`
-	Items       []QuestItemCount `yaml:"items,omitempty"`
-	Mobs        []QuestMobCount  `yaml:"mobs,omitempty"`
-	Quests      []QuestStateRef  `yaml:"quests,omitempty"`
-	Skills      []QuestSkillRef  `yaml:"skills,omitempty"`
+	Kind        string         `yaml:"kind"`
+	IntValue    int            `yaml:"int_value,omitempty"`
+	StrValue    string         `yaml:"str_value,omitempty"`
+	InfoStrings []string       `yaml:"info_strings,omitempty"`
+	Classes     []int          `yaml:"jobs,omitempty"`
+	PetIDs      []uint32       `yaml:"pet_ids,omitempty"`
+	Items       map[uint32]int `yaml:"items,omitempty"`
+	Mobs        map[uint32]int `yaml:"mobs,omitempty"`
+	Quests      map[uint32]int `yaml:"quests,omitempty"`
+	Skills      map[uint32]int `yaml:"skills,omitempty"`
 }
 
 type QuestAction struct {
-	Kind           string             `yaml:"kind"`
-	IntValue       int                `yaml:"int_value,omitempty"`
-	StrValue       string             `yaml:"str_value,omitempty"`
-	ApplicableJobs []int              `yaml:"applicable_jobs,omitempty"`
-	Items          []QuestRewardItem  `yaml:"items,omitempty"`
-	Skills         []QuestRewardSkill `yaml:"skills,omitempty"`
-	Quests         []QuestStateRef    `yaml:"quests,omitempty"`
-}
-
-type QuestItemCount struct {
-	ItemID uint32 `yaml:"item_id"`
-	Count  int    `yaml:"count"`
-}
-
-type QuestMobCount struct {
-	MobID uint32 `yaml:"mob_id"`
-	Count int    `yaml:"count"`
-}
-
-type QuestStateRef struct {
-	QuestID uint32 `yaml:"quest_id"`
-	State   int    `yaml:"state"`
-}
-
-type QuestSkillRef struct {
-	SkillID uint32 `yaml:"skill_id"`
-	Acquire int    `yaml:"acquire"`
+	Kind              string             `yaml:"kind"`
+	IntValue          int                `yaml:"int_value,omitempty"`
+	StrValue          string             `yaml:"str_value,omitempty"`
+	ApplicableClasses []int              `yaml:"applicable_jobs,omitempty"`
+	Items             []QuestRewardItem  `yaml:"items,omitempty"`
+	Skills            []QuestRewardSkill `yaml:"skills,omitempty"`
+	Quests            map[uint32]int     `yaml:"quests,omitempty"`
 }
 
 type QuestRewardItem struct {
 	ItemID     uint32 `yaml:"item_id"`
 	Count      int    `yaml:"count"`
-	Job        int    `yaml:"job,omitempty"`
-	JobEx      int    `yaml:"job_ex,omitempty"`
+	Class      int    `yaml:"job,omitempty"`
+	ClassEx    int    `yaml:"job_ex,omitempty"`
 	Gender     int    `yaml:"gender,omitempty"`
 	Period     int    `yaml:"period,omitempty"`
 	Prop       int    `yaml:"prop,omitempty"`
@@ -95,7 +77,7 @@ type QuestRewardSkill struct {
 	SkillID     uint32 `yaml:"skill_id"`
 	SkillLevel  int    `yaml:"skill_level"`
 	MasterLevel int    `yaml:"master_level"`
-	Jobs        []int  `yaml:"jobs,omitempty"`
+	Classes     []int  `yaml:"jobs,omitempty"`
 }
 
 type MapsFile struct {

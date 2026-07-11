@@ -478,9 +478,10 @@ export interface QuestModel {
     status: number;
     mobKills: Record<string, number>;
     statusRecord: string;
-    unknown2: Record<string, string>;
+    recordEx: Record<string, string>;
     completionTimeUnixMs: number;
     forfeited: number;
+    startTimeUnixMs: number;
     updatedAt?: Date;
 }
 
@@ -490,9 +491,10 @@ export type QuestRow = {
     status: number;
     mob_kills: Record<string, number> | string;
     status_record: string;
-    unknown2: Record<string, string> | string;
+    record_ex: Record<string, string> | string;
     completion_time_unix_ms: number | null;
     forfeited: number;
+    start_time_unix_ms: number | null;
     updated_at?: Date | string;
     deleted?: boolean;
 };

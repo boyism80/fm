@@ -71,6 +71,7 @@ type CharacterListener interface {
 	OnQuestCompleted(ch *Character, qp *Quest, npcID uint32, nextQuestID uint32)
 	OnQuestForfeited(ch *Character, qp *Quest)
 	OnQuestProgress(ch *Character, qp *Quest)
+	OnQuestRecordExChanged(ch *Character, qp *Quest)
 	OnItemGainFailed(ch *Character, mode constant.ItemGainFailedType)
 	OnInventorySlotUpdated(ch *Character, inventoryType constant.InventoryType, slot int16, item Item)
 	OnInventorySlotAdded(ch *Character, inventoryType constant.InventoryType, slot int16, item Item)

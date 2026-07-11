@@ -95,7 +95,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO.Rocks = ch.rocks
 	charDTO.MonsterBookCover = ch.monsterBookCover
 	if ch.Quests != nil {
-		charDTO.QuestInfo = ch.Quests.Unknown2QuestInfo()
+		charDTO.RecordExByQuest = ch.Quests.RecordExWireMap()
 	}
 	if bl := ch.BuddyList(); bl != nil {
 		capacity := bl.Capacity()

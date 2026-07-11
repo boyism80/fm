@@ -128,7 +128,6 @@ local function item_count(me, item_id)
 end
 
 local unsupported_quest_req_kinds = {
-	skill = true,
 	pet = true,
 	pettamenessmin = true,
 	mbmin = true,
@@ -138,7 +137,6 @@ local unsupported_quest_req_kinds = {
 	normalAutoStart = true,
 	partyQuest_S = true,
 	fieldEnter = true,
-	questComplete = true,
 	interval = true,
 	start = true,
 	["end"] = true,

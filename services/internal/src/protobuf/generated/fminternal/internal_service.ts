@@ -1123,10 +1123,11 @@ export interface QuestPersisted {
   status: number;
   mobKills: { [key: number]: number };
   statusRecord: string;
-  unknown2: { [key: string]: string };
+  recordEx: { [key: string]: string };
   completionTimeUnixMs: number;
   forfeited: number;
   deadlineUnixMs: number;
+  startTimeUnixMs: number;
 }
 
 export interface QuestPersisted_MobKillsEntry {
@@ -1134,7 +1135,7 @@ export interface QuestPersisted_MobKillsEntry {
   value: number;
 }
 
-export interface QuestPersisted_Unknown2Entry {
+export interface QuestPersisted_RecordExEntry {
   key: string;
   value: string;
 }
@@ -5929,10 +5930,11 @@ function createBaseQuestPersisted(): QuestPersisted {
     status: 0,
     mobKills: {},
     statusRecord: "",
-    unknown2: {},
+    recordEx: {},
     completionTimeUnixMs: 0,
     forfeited: 0,
     deadlineUnixMs: 0,
+    startTimeUnixMs: 0,
   };
 }
 
@@ -5953,8 +5955,8 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     if (message.statusRecord !== "") {
       writer.uint32(42).string(message.statusRecord);
     }
-    globalThis.Object.entries(message.unknown2).forEach(([key, value]: [string, string]) => {
-      QuestPersisted_Unknown2Entry.encode({ key: key as any, value }, writer.uint32(50).fork()).join();
+    globalThis.Object.entries(message.recordEx).forEach(([key, value]: [string, string]) => {
+      QuestPersisted_RecordExEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).join();
     });
     if (message.completionTimeUnixMs !== 0) {
       writer.uint32(56).int64(message.completionTimeUnixMs);
@@ -5964,6 +5966,9 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     }
     if (message.deadlineUnixMs !== 0) {
       writer.uint32(72).int64(message.deadlineUnixMs);
+    }
+    if (message.startTimeUnixMs !== 0) {
+      writer.uint32(80).int64(message.startTimeUnixMs);
     }
     return writer;
   },
@@ -6023,9 +6028,9 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
             break;
           }
 
-          const entry6 = QuestPersisted_Unknown2Entry.decode(reader, reader.uint32());
+          const entry6 = QuestPersisted_RecordExEntry.decode(reader, reader.uint32());
           if (entry6.value !== undefined) {
-            message.unknown2[entry6.key] = entry6.value;
+            message.recordEx[entry6.key] = entry6.value;
           }
           continue;
         }
@@ -6051,6 +6056,14 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
           }
 
           message.deadlineUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.startTimeUnixMs = longToNumber(reader.int64());
           continue;
         }
       }
@@ -6097,8 +6110,16 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
         : isSet(object.status_record)
         ? globalThis.String(object.status_record)
         : "",
-      unknown2: isObject(object.unknown2)
-        ? (globalThis.Object.entries(object.unknown2) as [string, any][]).reduce(
+      recordEx: isObject(object.recordEx)
+        ? (globalThis.Object.entries(object.recordEx) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.record_ex)
+        ? (globalThis.Object.entries(object.record_ex) as [string, any][]).reduce(
           (acc: { [key: string]: string }, [key, value]: [string, any]) => {
             acc[key] = globalThis.String(value);
             return acc;
@@ -6116,6 +6137,11 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
         ? globalThis.Number(object.deadlineUnixMs)
         : isSet(object.deadline_unix_ms)
         ? globalThis.Number(object.deadline_unix_ms)
+        : 0,
+      startTimeUnixMs: isSet(object.startTimeUnixMs)
+        ? globalThis.Number(object.startTimeUnixMs)
+        : isSet(object.start_time_unix_ms)
+        ? globalThis.Number(object.start_time_unix_ms)
         : 0,
     };
   },
@@ -6143,12 +6169,12 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     if (message.statusRecord !== "") {
       obj.statusRecord = message.statusRecord;
     }
-    if (message.unknown2) {
-      const entries = globalThis.Object.entries(message.unknown2) as [string, string][];
+    if (message.recordEx) {
+      const entries = globalThis.Object.entries(message.recordEx) as [string, string][];
       if (entries.length > 0) {
-        obj.unknown2 = {};
+        obj.recordEx = {};
         entries.forEach(([k, v]) => {
-          obj.unknown2[k] = v;
+          obj.recordEx[k] = v;
         });
       }
     }
@@ -6160,6 +6186,9 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     }
     if (message.deadlineUnixMs !== 0) {
       obj.deadlineUnixMs = Math.round(message.deadlineUnixMs);
+    }
+    if (message.startTimeUnixMs !== 0) {
+      obj.startTimeUnixMs = Math.round(message.startTimeUnixMs);
     }
     return obj;
   },
@@ -6182,7 +6211,7 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
       {},
     );
     message.statusRecord = object.statusRecord ?? "";
-    message.unknown2 = (globalThis.Object.entries(object.unknown2 ?? {}) as [string, string][]).reduce(
+    message.recordEx = (globalThis.Object.entries(object.recordEx ?? {}) as [string, string][]).reduce(
       (acc: { [key: string]: string }, [key, value]: [string, string]) => {
         if (value !== undefined) {
           acc[key] = globalThis.String(value);
@@ -6194,6 +6223,7 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     message.completionTimeUnixMs = object.completionTimeUnixMs ?? 0;
     message.forfeited = object.forfeited ?? 0;
     message.deadlineUnixMs = object.deadlineUnixMs ?? 0;
+    message.startTimeUnixMs = object.startTimeUnixMs ?? 0;
     return message;
   },
 };
@@ -6274,12 +6304,12 @@ export const QuestPersisted_MobKillsEntry: MessageFns<QuestPersisted_MobKillsEnt
   },
 };
 
-function createBaseQuestPersisted_Unknown2Entry(): QuestPersisted_Unknown2Entry {
+function createBaseQuestPersisted_RecordExEntry(): QuestPersisted_RecordExEntry {
   return { key: "", value: "" };
 }
 
-export const QuestPersisted_Unknown2Entry: MessageFns<QuestPersisted_Unknown2Entry> = {
-  encode(message: QuestPersisted_Unknown2Entry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const QuestPersisted_RecordExEntry: MessageFns<QuestPersisted_RecordExEntry> = {
+  encode(message: QuestPersisted_RecordExEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
@@ -6289,10 +6319,10 @@ export const QuestPersisted_Unknown2Entry: MessageFns<QuestPersisted_Unknown2Ent
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): QuestPersisted_Unknown2Entry {
+  decode(input: BinaryReader | Uint8Array, length?: number): QuestPersisted_RecordExEntry {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQuestPersisted_Unknown2Entry();
+    const message = createBaseQuestPersisted_RecordExEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -6321,14 +6351,14 @@ export const QuestPersisted_Unknown2Entry: MessageFns<QuestPersisted_Unknown2Ent
     return message;
   },
 
-  fromJSON(object: any): QuestPersisted_Unknown2Entry {
+  fromJSON(object: any): QuestPersisted_RecordExEntry {
     return {
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
     };
   },
 
-  toJSON(message: QuestPersisted_Unknown2Entry): unknown {
+  toJSON(message: QuestPersisted_RecordExEntry): unknown {
     const obj: any = {};
     if (message.key !== "") {
       obj.key = message.key;
@@ -6339,11 +6369,11 @@ export const QuestPersisted_Unknown2Entry: MessageFns<QuestPersisted_Unknown2Ent
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<QuestPersisted_Unknown2Entry>, I>>(base?: I): QuestPersisted_Unknown2Entry {
-    return QuestPersisted_Unknown2Entry.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<QuestPersisted_RecordExEntry>, I>>(base?: I): QuestPersisted_RecordExEntry {
+    return QuestPersisted_RecordExEntry.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<QuestPersisted_Unknown2Entry>, I>>(object: I): QuestPersisted_Unknown2Entry {
-    const message = createBaseQuestPersisted_Unknown2Entry();
+  fromPartial<I extends Exact<DeepPartial<QuestPersisted_RecordExEntry>, I>>(object: I): QuestPersisted_RecordExEntry {
+    const message = createBaseQuestPersisted_RecordExEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
     return message;

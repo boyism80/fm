@@ -16,7 +16,6 @@ import (
 	"github.com/boyism80/fm/services/game/actor/timers"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
-	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -375,16 +374,12 @@ func (a *MapActor) onRequestSpawnDoor(ctx actor.Context, msg *RequestSpawnDoor) 
 	portalID, townPos, ok := a.Map.TryAcquireMysticReturnPortal(msg.PartyOwnerSlot)
 	if !ok {
 		ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
-			Ok:                 false,
-			CharacterID:        msg.CharacterID,
-			OwnerID:            msg.OwnerID,
-			SkillID:            msg.SkillID,
-			FieldMapID:         msg.FieldMapID,
-			FieldPortalID:      msg.FieldPortalID,
-			PartyID:            msg.PartyID,
-			FieldAnchor:        msg.FieldAnchor,
-			ReturnPortalID:     0,
-			TownPortalPosition: types.Vector2[int16]{},
+			Ok:          false,
+			CharacterID: msg.CharacterID,
+			OwnerID:     msg.OwnerID,
+			SkillID:     msg.SkillID,
+			Field:       msg.Field,
+			PartyID:     msg.PartyID,
 		})
 		return
 	}
@@ -395,31 +390,28 @@ func (a *MapActor) onRequestSpawnDoor(ctx actor.Context, msg *RequestSpawnDoor) 
 		}
 	}()
 	wz := a.Map.Wz
+	returnEp := entity.DoorEndpoint{
+		MapID:    uint32(wz.ID),
+		PortalID: portalID,
+		Position: townPos,
+	}
 	door := entity.NewDoor(
-		townPos,
 		msg.OwnerID,
 		msg.SkillID,
-		uint32(wz.ID),
-		msg.FieldMapID,
-		portalID,
-		msg.FieldPortalID,
+		msg.Field,
+		returnEp,
 		msg.PartyID,
-		msg.FieldAnchor,
-		townPos,
 	)
 	a.Map.AddDoor(door)
 	committed = true
 	ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
-		Ok:                 true,
-		CharacterID:        msg.CharacterID,
-		OwnerID:            msg.OwnerID,
-		SkillID:            msg.SkillID,
-		ReturnPortalID:     portalID,
-		TownPortalPosition: townPos,
-		FieldMapID:         msg.FieldMapID,
-		FieldPortalID:      msg.FieldPortalID,
-		PartyID:            msg.PartyID,
-		FieldAnchor:        msg.FieldAnchor,
+		Ok:          true,
+		CharacterID: msg.CharacterID,
+		OwnerID:     msg.OwnerID,
+		SkillID:     msg.SkillID,
+		Return:      returnEp,
+		Field:       msg.Field,
+		PartyID:     msg.PartyID,
 	})
 }
 
@@ -441,7 +433,7 @@ func (a *MapActor) onResponseSpawnDoor(msg *ResponseSpawnDoor) {
 		}
 		return
 	}
-	door := ch.SpawnFieldMapDoor(msg.SkillID, msg.ReturnPortalID, msg.TownPortalPosition, msg.FieldPortalID)
+	door := ch.SpawnFieldMapDoor(msg.SkillID, msg.Return, msg.Field)
 	if door == nil && gw != nil {
 		gw.GetMapSystem().RemoveReturnDoor(msg.OwnerID, uint32(msg.SkillID), uint32(ch.GetMap().Wz.ReturnMapId))
 	}

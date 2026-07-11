@@ -7,29 +7,22 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-func NewDoor(
-	position types.Vector2[int16],
-	ownerID uint32,
-	skillID constant.SkillID,
-	returnMapID, fieldMapID uint32,
-	returnPortalID, fieldPortalID uint8,
-	partyID *uint32,
-	fieldPosition, townPortalPosition types.Vector2[int16],
-) *Door {
+type DoorEndpoint struct {
+	MapID    uint32
+	PortalID uint8
+	Position types.Vector2[int16]
+}
+
+func NewDoor(ownerID uint32, skillID constant.SkillID, field, returnEp DoorEndpoint, partyID *uint32) *Door {
 	door := &Door{
 		ObjectCore: ObjectCore{
-			Position: position,
-			Map:      nil,
+			Map: nil,
 		},
-		OwnerID:            ownerID,
-		SkillID:            skillID,
-		ReturnMapID:        returnMapID,
-		FieldMapID:         fieldMapID,
-		ReturnPortalID:     returnPortalID,
-		FieldPortalID:      fieldPortalID,
-		PartyID:            partyID,
-		FieldPosition:      fieldPosition,
-		TownPortalPosition: townPortalPosition,
+		OwnerID: ownerID,
+		SkillID: skillID,
+		Field:   field,
+		Return:  returnEp,
+		PartyID: partyID,
 	}
 	door.ObjectCore.self = door
 	return door
@@ -37,15 +30,11 @@ func NewDoor(
 
 type Door struct {
 	ObjectCore
-	OwnerID            uint32
-	SkillID            constant.SkillID
-	ReturnMapID        uint32
-	FieldMapID         uint32
-	ReturnPortalID     uint8
-	FieldPortalID      uint8
-	PartyID            *uint32
-	FieldPosition      types.Vector2[int16]
-	TownPortalPosition types.Vector2[int16]
+	OwnerID uint32
+	SkillID constant.SkillID
+	Field   DoorEndpoint
+	Return  DoorEndpoint
+	PartyID *uint32
 }
 
 func (d *Door) GetObjectType() constant.ObjectType {
@@ -89,7 +78,7 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	viewerMapID := vm.Wz.ID
-	onFieldMap := viewerMapID == d.FieldMapID
+	onFieldMap := viewerMapID == d.Field.MapID
 	isOwner := viewer.GetID() == d.OwnerID
 	sameParty := false
 	if d.PartyID != nil {
@@ -102,11 +91,11 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	}
 	var portalPoint types.Vector2[int16]
 	if onFieldMap {
-		portalPoint = d.FieldPosition
+		portalPoint = d.Field.Position
 	} else {
-		portalPoint = d.TownPortalPosition
+		portalPoint = d.Return.Position
 	}
-	if dm.Wz.ID == d.FieldMapID {
+	if dm.Wz.ID == d.Field.MapID {
 		viewer.Send(&response.SpawnDoor{
 			OwnerID:  d.OwnerID,
 			Position: portalPoint,
@@ -117,8 +106,8 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	usePartyPortal := d.PartyID != nil && vParty != nil && (isOwner || *vParty == *d.PartyID)
 	if usePartyPortal {
 		viewer.Send(&response.PartyPortal{
-			TownMapID:   d.ReturnMapID,
-			TargetMapID: d.FieldMapID,
+			TownMapID:   d.Return.MapID,
+			TargetMapID: d.Field.MapID,
 			SkillID:     uint32(d.SkillID),
 			Position:    portalPoint,
 			Animated:    false,
@@ -126,8 +115,8 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.SpawnPortal{
-		DestMapID:   d.ReturnMapID,
-		SourceMapID: d.FieldMapID,
+		DestMapID:   d.Return.MapID,
+		SourceMapID: d.Field.MapID,
 		SkillID:     uint32(d.SkillID),
 		Position:    &portalPoint,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -161,14 +150,14 @@ func (d *Door) SendOwnerPortalResync(viewer *Character) {
 		return
 	}
 	var portalPoint types.Vector2[int16]
-	if vm.Wz.ID == d.FieldMapID {
-		portalPoint = d.FieldPosition
+	if vm.Wz.ID == d.Field.MapID {
+		portalPoint = d.Field.Position
 	} else {
-		portalPoint = d.TownPortalPosition
+		portalPoint = d.Return.Position
 	}
 	_ = viewer.Send(&response.SpawnPortal{
-		DestMapID:   d.ReturnMapID,
-		SourceMapID: d.FieldMapID,
+		DestMapID:   d.Return.MapID,
+		SourceMapID: d.Field.MapID,
 		SkillID:     uint32(d.SkillID),
 		Position:    &portalPoint,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -176,9 +165,9 @@ func (d *Door) SendOwnerPortalResync(viewer *Character) {
 
 func (d *Door) ToProto() *internal.PartyDoor {
 	return &internal.PartyDoor{
-		Town:   d.ReturnMapID,
-		Target: d.FieldMapID,
-		X:      int32(d.FieldPosition.X),
-		Y:      int32(d.FieldPosition.Y),
+		Town:   d.Return.MapID,
+		Target: d.Field.MapID,
+		X:      int32(d.Field.Position.X),
+		Y:      int32(d.Field.Position.Y),
 	}
 }

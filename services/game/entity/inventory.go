@@ -84,7 +84,7 @@ func (m *Inventory) IsFree(model wz.Item, count uint16) bool {
 		return nil
 	}
 	reward := map[uint32]uint16{model.GetID(): count}
-	return m.validateItemFlow(nil, reward, modelOf) == FlowOK
+	return m.validateItemExchange(nil, reward, modelOf) == ExchangeOK
 }
 
 func (m *Inventory) GetItem(slot uint8) Item {

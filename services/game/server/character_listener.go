@@ -229,12 +229,7 @@ func (l *CharacterListenerImpl) OnAllianceInvite(ch *entity.Character, inviterGu
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceCreate(
-	ch *entity.Character,
-	info *dto.AllianceInfo,
-	guilds []*dto.GuildInfo,
-	membershipGuilds []dto.AllianceMembershipChangeGuild,
-) {
+func (l *CharacterListenerImpl) OnAllianceCreate(ch *entity.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, membershipGuilds []dto.AllianceMembershipChangeGuild) {
 	if ch == nil || info == nil {
 		return
 	}
@@ -277,14 +272,7 @@ func (l *CharacterListenerImpl) OnAllianceNoticeChanged(ch *entity.Character, in
 	l.OnAllianceInfoBroadcast(ch, info)
 }
 
-func (l *CharacterListenerImpl) OnAllianceLeaderChanged(
-	ch *entity.Character,
-	allianceID uint32,
-	oldLeaderID uint32,
-	newLeaderID uint32,
-	info *dto.AllianceInfo,
-	guilds []*dto.GuildInfo,
-) {
+func (l *CharacterListenerImpl) OnAllianceLeaderChanged(ch *entity.Character, allianceID uint32, oldLeaderID uint32, newLeaderID uint32, info *dto.AllianceInfo, guilds []*dto.GuildInfo) {
 	if ch == nil || info == nil {
 		return
 	}
@@ -318,16 +306,7 @@ func (l *CharacterListenerImpl) OnAllianceMemberRankChanged(ch *entity.Character
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceGuildAdded(
-	ch *entity.Character,
-	info *dto.AllianceInfo,
-	guilds []*dto.GuildInfo,
-	newGuildID uint32,
-	addedGuild *dto.GuildInfo,
-	members []dto.AllianceGuildMemberRank,
-	joining bool,
-	membershipGuild *dto.AllianceMembershipChangeGuild,
-) {
+func (l *CharacterListenerImpl) OnAllianceGuildAdded(ch *entity.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, newGuildID uint32, addedGuild *dto.GuildInfo, members []dto.AllianceGuildMemberRank, joining bool, membershipGuild *dto.AllianceMembershipChangeGuild) {
 	if ch == nil || info == nil || addedGuild == nil {
 		return
 	}
@@ -360,15 +339,7 @@ func (l *CharacterListenerImpl) OnAllianceGuildAdded(
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnAllianceGuildLeft(
-	ch *entity.Character,
-	info *dto.AllianceInfo,
-	removedGuildID uint32,
-	removedGuild *dto.GuildInfo,
-	removedMembers []dto.AllianceGuildMemberRank,
-	expelled bool,
-	leaving bool,
-) {
+func (l *CharacterListenerImpl) OnAllianceGuildLeft(ch *entity.Character, info *dto.AllianceInfo, removedGuildID uint32, removedGuild *dto.GuildInfo, removedMembers []dto.AllianceGuildMemberRank, expelled bool, leaving bool) {
 	if ch == nil || info == nil || removedGuild == nil {
 		return
 	}
@@ -522,11 +493,11 @@ func (l *CharacterListenerImpl) OnGuildMemberFieldsChange(ch *entity.Character, 
 	if ch == nil {
 		return
 	}
-	_ = ch.Send(&response.GuildMemberLevelJobUpdate{
+	_ = ch.Send(&response.GuildMemberLevelClassUpdate{
 		GuildID:     guildID,
 		CharacterID: subjectCharacterID,
 		Level:       level,
-		JobID:       classID,
+		ClassID:     classID,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
@@ -764,7 +735,7 @@ func (l *CharacterListenerImpl) OnUnlockAction(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.Quest, npcID uint32) {
-	if ch == nil || qp == nil || !qp.WiresToClient() {
+	if ch == nil || qp == nil || qp.Wz == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -778,18 +749,23 @@ func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 	if npcID != 0 {
-		ch.Send(&response.UpdateQuestInfo{
+		ch.Send(&response.UpdateQuestNPC{
 			Progress:    8,
 			QuestID:     uint16(qp.QuestID),
 			NPCID:       npcID,
 			NextQuestID: 0,
 		}, types.SEND_POLICY_ENCRYPT)
 	}
+	if qp.Wz != nil && qp.Wz.Meta.TimeLimit > 0 {
+		ch.Send(&response.Clock{
+			Seconds: int32(qp.Wz.Meta.TimeLimit),
+		}, types.SEND_POLICY_ENCRYPT)
+	}
 	l.OnUnlockAction(ch)
 }
 
 func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entity.Quest, npcID uint32, nextQuestID uint32) {
-	if ch == nil || qp == nil || !qp.WiresToClient() {
+	if ch == nil || qp == nil || qp.Wz == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -799,7 +775,7 @@ func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entit
 			CompletionTime: qp.CompletionTime,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
-	ch.Send(&response.UpdateQuestInfo{
+	ch.Send(&response.UpdateQuestNPC{
 		Progress:    8,
 		QuestID:     uint16(qp.QuestID),
 		NPCID:       npcID,
@@ -809,7 +785,7 @@ func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entit
 }
 
 func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entity.Quest) {
-	if ch == nil || qp == nil || !qp.WiresToClient() {
+	if ch == nil || qp == nil || qp.Wz == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -823,7 +799,7 @@ func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entit
 }
 
 func (l *CharacterListenerImpl) OnQuestProgress(ch *entity.Character, qp *entity.Quest) {
-	if ch == nil || qp == nil || !qp.WiresToClient() {
+	if ch == nil || qp == nil || qp.Wz == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -837,11 +813,24 @@ func (l *CharacterListenerImpl) OnQuestProgress(ch *entity.Character, qp *entity
 		},
 	}, types.SEND_POLICY_ENCRYPT)
 
-	if qp.IsCompletable(ch) {
+	if qp.CanComplete(ch, entity.QuestPhaseOpts{}) == nil {
 		ch.Send(&response.ShowQuestCompletion{
 			QuestID: uint16(qp.QuestID),
 		}, types.SEND_POLICY_ENCRYPT)
 	}
+}
+
+func (l *CharacterListenerImpl) OnQuestRecordExChanged(ch *entity.Character, qp *entity.Quest) {
+	if ch == nil || qp == nil {
+		return
+	}
+	if qp.QuestID > 0xFFFF {
+		return
+	}
+	ch.Send(&response.UpdateQuestRecordEx{
+		QuestID: uint16(qp.QuestID),
+		Data:    qp.RecordExWire(),
+	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnItemGainFailed(ch *entity.Character, mode constant.ItemGainFailedType) {

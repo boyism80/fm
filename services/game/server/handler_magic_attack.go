@@ -97,19 +97,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 func (h *MagicAttack) finishMagicAttack(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, req *request.MagicAttack, skillLevel uint8, skillID uint32) error {
 	damages := req.Damages
 	CallOnAttackHooks(character, damages, skillID, true, false, 0)
-	for _, damage := range damages {
-		mob := mapInstance.GetMob(damage.OID)
-		if mob == nil {
-			log.Printf("Mob not found for OID: %d", damage.OID)
-			continue
-		}
-		for _, damagePair := range damage.DamagePairs {
-			if damagePair.Damage == 0 {
-				continue
-			}
-			mob.ApplyDamage(character, damagePair.Damage)
-		}
-	}
+	character.DamageTo(damages)
 	character.Listener.OnMagicAttack(character, req, skillLevel)
 	CallSkillHook(character, skillID, "on_activated")
 	return nil

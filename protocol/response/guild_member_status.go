@@ -12,7 +12,7 @@ func writeGuildMemberData(w *stream.StreamWriter, members []dto.GuildMemberStatu
 	}
 	for _, member := range members {
 		w.WriteStaticStr(member.Name, 13)
-		w.WriteU32(member.JobID)
+		w.WriteU32(member.ClassID)
 		w.WriteU32(member.Level)
 		w.WriteU32(member.GuildRank)
 		online := uint32(0)
@@ -54,7 +54,7 @@ func writeGuildMemberJoinedPayload(w *stream.StreamWriter, guildID uint32, membe
 	w.WriteU32(guildID)
 	w.WriteU32(member.CharacterID)
 	w.WriteStaticStr(member.Name, 13)
-	w.WriteU32(member.JobID)
+	w.WriteU32(member.ClassID)
 	w.WriteU32(member.Level)
 	w.WriteU32(member.GuildRank)
 	online := uint32(0)

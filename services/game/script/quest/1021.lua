@@ -21,7 +21,7 @@ function on_start(me, npc)
 	me:dialog(npc, "놀랐지? HP가 0이 되면 큰일난다구. 자, #r로저의 사과#k를 줄 테니 먹어봐. 힘이 날거야. 아이템 창을 열어서 더블클릭해봐. 아이템창은 #bI키#k를 누르면 간단히 열린다구.", false, true)
 	me:dialog(npc, "내가 준 로저의 사과, 전부 먹어야 돼. 먹으면 바로 HP가 회복되는 것이 보일 거야. HP를 전부 회복한 후 다시 말을 걸어줘.", true, false)
 
-	q:force_start(npc)
+	q:start(npc, true)
 end
 
 function on_end(me, npc)

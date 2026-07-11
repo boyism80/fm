@@ -5,18 +5,19 @@ import type { RepositoryQuery } from "../types/repository-contracts";
 import type { QuestModel, QuestRow } from "../types/repository-models";
 
 const SELECT_COLS =
-    "character_id, quest_id, status, mob_kills, status_record, unknown2, completion_time_unix_ms, forfeited, updated_at";
+    "character_id, quest_id, status, mob_kills, status_record, record_ex, completion_time_unix_ms, forfeited, start_time_unix_ms, updated_at";
 const INSERT_COLS =
-    "character_id, quest_id, status, mob_kills, status_record, unknown2, completion_time_unix_ms, forfeited, updated_at";
+    "character_id, quest_id, status, mob_kills, status_record, record_ex, completion_time_unix_ms, forfeited, start_time_unix_ms, updated_at";
 const ON_CONFLICT_SET = `
   status = EXCLUDED.status,
   mob_kills = EXCLUDED.mob_kills,
   status_record = EXCLUDED.status_record,
-  unknown2 = EXCLUDED.unknown2,
+  record_ex = EXCLUDED.record_ex,
   completion_time_unix_ms = EXCLUDED.completion_time_unix_ms,
   forfeited = EXCLUDED.forfeited,
+  start_time_unix_ms = EXCLUDED.start_time_unix_ms,
   updated_at = NOW()`;
-const PER_ROW_PARAMS = 8;
+const PER_ROW_PARAMS = 9;
 
 export type { QuestModel };
 
@@ -32,7 +33,7 @@ function parseNumberMap(raw: QuestRow["mob_kills"]): Record<string, number> {
     return raw ?? {};
 }
 
-function parseStringMap(raw: QuestRow["unknown2"]): Record<string, string> {
+function parseStringMap(raw: QuestRow["record_ex"]): Record<string, string> {
     if (typeof raw === "string") {
         try {
             const parsed = JSON.parse(raw) as Record<string, string>;
@@ -51,9 +52,10 @@ function rowValues(row: QuestRow) {
         row.status,
         JSON.stringify(parseNumberMap(row.mob_kills)),
         row.status_record,
-        JSON.stringify(parseStringMap(row.unknown2)),
+        JSON.stringify(parseStringMap(row.record_ex)),
         row.completion_time_unix_ms ?? null,
         row.forfeited,
+        row.start_time_unix_ms ?? null,
     ];
 }
 
@@ -111,6 +113,7 @@ export class QuestRepository extends HashRepository<QuestModel, QuestRow> {
             status: toPgInt(row.status),
             completion_time_unix_ms: toPgIntOrNull(row.completion_time_unix_ms),
             forfeited: toPgInt(row.forfeited),
+            start_time_unix_ms: toPgIntOrNull(row.start_time_unix_ms),
         };
     }
 
@@ -121,9 +124,10 @@ export class QuestRepository extends HashRepository<QuestModel, QuestRow> {
             status: toPgInt(row.status),
             mobKills: parseNumberMap(row.mob_kills),
             statusRecord: row.status_record ?? "",
-            unknown2: parseStringMap(row.unknown2),
+            recordEx: parseStringMap(row.record_ex),
             completionTimeUnixMs: toPgInt(row.completion_time_unix_ms),
             forfeited: toPgInt(row.forfeited),
+            startTimeUnixMs: toPgInt(row.start_time_unix_ms),
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
@@ -135,9 +139,10 @@ export class QuestRepository extends HashRepository<QuestModel, QuestRow> {
             status: model.status,
             mob_kills: model.mobKills ?? {},
             status_record: model.statusRecord ?? "",
-            unknown2: model.unknown2 ?? {},
+            record_ex: model.recordEx ?? {},
             completion_time_unix_ms: model.completionTimeUnixMs || null,
             forfeited: model.forfeited ?? 0,
+            start_time_unix_ms: model.startTimeUnixMs || null,
         };
     }
 

@@ -11,6 +11,6 @@ function on_start(me, npc)
 	end
 
 	me:map(100000000)
-	q:force_start(npc)
+	q:start(npc, true)
 	q:force_complete(npc)
 end

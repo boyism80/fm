@@ -3,7 +3,7 @@ package dto
 type GuildMemberStatus struct {
 	CharacterID  uint32
 	Name         string
-	JobID        uint32
+	ClassID      uint32
 	Level        uint32
 	GuildRank    uint32
 	Online       bool

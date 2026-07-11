@@ -53,7 +53,7 @@ type Character struct {
 	RegRocks         []uint32
 	Rocks            []uint32
 	MonsterBookCover uint32
-	QuestInfo        map[uint16]string
+	RecordExByQuest  map[uint16]string
 	MarriageId       uint32
 	Random1          *stream.RandomStream
 	Random2          *stream.RandomStream
@@ -342,14 +342,14 @@ func (c *Character) SerializeMonsterBook(writer *stream.StreamWriter) {
 	writer.WriteU16(0)
 }
 
-func (c *Character) SerializeQuestInfo(writer *stream.StreamWriter) {
-	if c.QuestInfo == nil {
+func (c *Character) SerializeRecordEx(writer *stream.StreamWriter) {
+	if c.RecordExByQuest == nil {
 		writer.WriteU16(0)
 		return
 	}
 
-	writer.WriteU16(uint16(len(c.QuestInfo)))
-	for questId, customData := range c.QuestInfo {
+	writer.WriteU16(uint16(len(c.RecordExByQuest)))
+	for questId, customData := range c.RecordExByQuest {
 		writer.WriteU16(questId)
 		if customData == "" {
 			writer.WriteStr8("")
@@ -382,7 +382,7 @@ func (c *Character) Serialize(writer *stream.StreamWriter) {
 
 	c.SerializeMonsterBook(writer)
 
-	c.SerializeQuestInfo(writer)
+	c.SerializeRecordEx(writer)
 
 	writer.WriteU16(0)
 }

@@ -1650,6 +1650,22 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, qp))
 			return 1
 		},
+		"run_quest_hook": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 3 {
+				L.ArgError(2, "run_quest_hook(quest_id, hook) requires quest id and hook")
+				return 0
+			}
+			questID := uint32(L.CheckInt(2))
+			hook := L.CheckString(3)
+			ch.RunQuestHook(questID, hook)
+			return 0
+		},
 		"quests": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -1691,7 +1707,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			npc := npcID
-			_, err := ch.Quests.Start(questID, QuestPrepareOpts{NpcID: &npc})
+			_, err := ch.Quests.Start(questID, QuestPhaseOpts{NpcID: &npc})
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1

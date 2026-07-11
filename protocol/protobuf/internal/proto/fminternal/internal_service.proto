@@ -292,10 +292,11 @@ message QuestPersisted {
   uint32 status                   = 3;
   map<uint32, uint32> mob_kills   = 4;
   string status_record            = 5;
-  map<string, string> unknown2    = 6;
+  map<string, string> record_ex   = 6;
   int64 completion_time_unix_ms   = 7;
   uint32 forfeited                = 8;
   int64 deadline_unix_ms          = 9;
+  int64 start_time_unix_ms        = 10;
 }
 
 message LoginAccountRequest {

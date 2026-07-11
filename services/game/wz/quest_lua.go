@@ -1,6 +1,10 @@
 package wz
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"sort"
+
+	lua "github.com/yuin/gopher-lua"
+)
 
 func (q *Quest) ToLuaTable(L *lua.LState) *lua.LTable {
 	tbl := L.NewTable()
@@ -11,7 +15,35 @@ func (q *Quest) ToLuaTable(L *lua.LState) *lua.LTable {
 	tbl.RawSetString("name", lua.LString(q.Meta.Name))
 	tbl.RawSetString("complete_requirements", questRequirementsToLuaTable(L, q.Complete.Requirements))
 	tbl.RawSetString("start_requirements", questRequirementsToLuaTable(L, q.Start.Requirements))
+	if len(q.PartyRanks) > 0 {
+		tbl.RawSetString("party_ranks", partyRanksToLuaTable(L, q.PartyRanks))
+	}
 	return tbl
+}
+
+func partyRanksToLuaTable(L *lua.LState, ranks map[string][]PartyQuestRankCheck) *lua.LTable {
+	out := L.NewTable()
+	if len(ranks) == 0 {
+		return out
+	}
+	keys := make([]string, 0, len(ranks))
+	for rank := range ranks {
+		keys = append(keys, rank)
+	}
+	sort.Strings(keys)
+	for _, rank := range keys {
+		checks := ranks[rank]
+		arr := L.NewTable()
+		for i, check := range checks {
+			entry := L.NewTable()
+			entry.RawSetString("mode", lua.LString(check.Mode))
+			entry.RawSetString("property", lua.LString(check.Property))
+			entry.RawSetString("value", lua.LNumber(check.Value))
+			arr.RawSetInt(i+1, entry)
+		}
+		out.RawSetString(rank, arr)
+	}
+	return out
 }
 
 func questRequirementsToLuaTable(L *lua.LState, reqs []QuestRequirement) *lua.LTable {
@@ -35,11 +67,11 @@ func questRequirementToLuaTable(L *lua.LState, req QuestRequirement) *lua.LTable
 	case QuestReqMob:
 		tbl.RawSetString("mobs", questMobCountsToLuaTable(L, req.Mobs))
 	case QuestReqQuest:
-		tbl.RawSetString("quests", questStateRefsToLuaTable(L, req.Quests))
+		tbl.RawSetString("quests", questStatesToLuaTable(L, req.Quests))
 	case QuestReqClass:
 		tbl.RawSetString("classes", intSliceToLuaTable(L, req.Classes))
 	case QuestReqSkill:
-		tbl.RawSetString("skills", questSkillRefsToLuaTable(L, req.Skills))
+		tbl.RawSetString("skills", questSkillAcquiresToLuaTable(L, req.Skills))
 	case QuestReqPet:
 		tbl.RawSetString("pet_ids", uint32SliceToLuaTable(L, req.PetIDs))
 	case QuestReqTimeStart, QuestReqTimeEnd, QuestReqStartScript, QuestReqEndScript:
@@ -58,45 +90,77 @@ func questRequirementKindForLua(kind QuestRequirementKind) string {
 	return string(kind)
 }
 
-func questItemCountsToLuaTable(L *lua.LState, items []QuestItemCount) *lua.LTable {
+func questItemCountsToLuaTable(L *lua.LState, items map[uint32]int) *lua.LTable {
 	out := L.NewTable()
-	for i, item := range items {
+	if len(items) == 0 {
+		return out
+	}
+	ids := make([]uint32, 0, len(items))
+	for id := range items {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	for i, id := range ids {
 		entry := L.NewTable()
-		entry.RawSetString("id", lua.LNumber(item.ItemID))
-		entry.RawSetString("count", lua.LNumber(item.Count))
+		entry.RawSetString("id", lua.LNumber(id))
+		entry.RawSetString("count", lua.LNumber(items[id]))
 		out.RawSetInt(i+1, entry)
 	}
 	return out
 }
 
-func questMobCountsToLuaTable(L *lua.LState, mobs []QuestMobCount) *lua.LTable {
+func questMobCountsToLuaTable(L *lua.LState, mobs map[uint32]int) *lua.LTable {
 	out := L.NewTable()
-	for i, mob := range mobs {
+	if len(mobs) == 0 {
+		return out
+	}
+	ids := make([]uint32, 0, len(mobs))
+	for id := range mobs {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	for i, id := range ids {
 		entry := L.NewTable()
-		entry.RawSetString("id", lua.LNumber(mob.MobID))
-		entry.RawSetString("count", lua.LNumber(mob.Count))
+		entry.RawSetString("id", lua.LNumber(id))
+		entry.RawSetString("count", lua.LNumber(mobs[id]))
 		out.RawSetInt(i+1, entry)
 	}
 	return out
 }
 
-func questStateRefsToLuaTable(L *lua.LState, quests []QuestStateRef) *lua.LTable {
+func questStatesToLuaTable(L *lua.LState, quests map[uint32]QuestStatus) *lua.LTable {
 	out := L.NewTable()
-	for i, ref := range quests {
+	if len(quests) == 0 {
+		return out
+	}
+	ids := make([]uint32, 0, len(quests))
+	for id := range quests {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	for i, id := range ids {
 		entry := L.NewTable()
-		entry.RawSetString("id", lua.LNumber(ref.QuestID))
-		entry.RawSetString("state", lua.LNumber(ref.State))
+		entry.RawSetString("id", lua.LNumber(id))
+		entry.RawSetString("state", lua.LNumber(quests[id]))
 		out.RawSetInt(i+1, entry)
 	}
 	return out
 }
 
-func questSkillRefsToLuaTable(L *lua.LState, skills []QuestSkillRef) *lua.LTable {
+func questSkillAcquiresToLuaTable(L *lua.LState, skills map[uint32]int) *lua.LTable {
 	out := L.NewTable()
-	for i, skill := range skills {
+	if len(skills) == 0 {
+		return out
+	}
+	ids := make([]uint32, 0, len(skills))
+	for id := range skills {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	for i, id := range ids {
 		entry := L.NewTable()
-		entry.RawSetString("id", lua.LNumber(skill.SkillID))
-		entry.RawSetString("acquire", lua.LNumber(skill.Acquire))
+		entry.RawSetString("id", lua.LNumber(id))
+		entry.RawSetString("acquire", lua.LNumber(skills[id]))
 		out.RawSetInt(i+1, entry)
 	}
 	return out

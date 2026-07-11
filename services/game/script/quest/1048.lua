@@ -100,33 +100,33 @@ function on_start(me, npc)
 		score = score + 5
 	end
 
-	local job = '마법사'
+	local class = '마법사'
 	local tracker_record = '200'
 	if score <= 5 then
-		job = '마법사'
+		class = '마법사'
 		tracker_record = '200'
 	elseif score <= 9 then
-		job = '전사'
+		class = '전사'
 		tracker_record = '100'
 	elseif score <= 13 then
-		job = '도적'
+		class = '도적'
 		tracker_record = '400'
 	elseif score <= 17 then
-		job = '궁수'
+		class = '궁수'
 		tracker_record = '300'
 	elseif score <= 22 then
-		job = '해적'
+		class = '해적'
 		tracker_record = '500'
 	end
 
 	local msg = string.format(
 		'질문에 답해주셔서 감사합니다. #b%s#k님에게 추천해 드릴 직업은 %s 입니다. 전직 후 더 강한 모습으로 뵈었으면 합니다.',
-		name, job)
+		name, class)
 	if not me:dialog(npc, msg, false, true) then
 		return
 	end
 
-	q:force_start(npc)
+	q:start(npc, true)
 	q:force_complete(npc)
-	me:quest(7631):force_start(tracker_record)
+	me:quest(7631):start(tracker_record)
 end

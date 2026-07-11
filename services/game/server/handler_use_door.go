@@ -47,7 +47,7 @@ func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
 		return nil
 	}
 
-	if door.ReturnMapID == 0 || door.FieldMapID == 0 {
+	if door.Return.MapID == 0 || door.Field.MapID == 0 {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
@@ -56,12 +56,12 @@ func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
 	var targetMapID uint32
 	var spawnID uint8
 	switch fieldWZID {
-	case door.FieldMapID:
-		targetMapID = door.ReturnMapID
-		spawnID = door.ReturnPortalID
-	case door.ReturnMapID:
-		targetMapID = door.FieldMapID
-		spawnID = door.FieldPortalID
+	case door.Field.MapID:
+		targetMapID = door.Return.MapID
+		spawnID = door.Return.PortalID
+	case door.Return.MapID:
+		targetMapID = door.Field.MapID
+		spawnID = door.Field.PortalID
 	default:
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
