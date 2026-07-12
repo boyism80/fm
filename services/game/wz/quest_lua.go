@@ -46,48 +46,152 @@ func partyRanksToLuaTable(L *lua.LState, ranks map[string][]PartyQuestRankCheck)
 	return out
 }
 
-func questRequirementsToLuaTable(L *lua.LState, reqs []QuestRequirement) *lua.LTable {
+func questRequirementsToLuaTable(L *lua.LState, reqs QuestRequirements) *lua.LTable {
 	out := L.NewTable()
-	if len(reqs) == 0 {
-		return out
+	i := 1
+	appendReq := func(tbl *lua.LTable) {
+		out.RawSetInt(i, tbl)
+		i++
 	}
-	for i, req := range reqs {
-		out.RawSetInt(i+1, questRequirementToLuaTable(L, req))
+	if reqs.NPC != 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("npc"))
+		tbl.RawSetString("value", lua.LNumber(reqs.NPC))
+		appendReq(tbl)
+	}
+	if reqs.LevelMin != 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("lvmin"))
+		tbl.RawSetString("value", lua.LNumber(reqs.LevelMin))
+		appendReq(tbl)
+	}
+	if reqs.LevelMax != 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("lvmax"))
+		tbl.RawSetString("value", lua.LNumber(reqs.LevelMax))
+		appendReq(tbl)
+	}
+	if reqs.Level != 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("level"))
+		tbl.RawSetString("value", lua.LNumber(reqs.Level))
+		appendReq(tbl)
+	}
+	if len(reqs.Job) > 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("class"))
+		tbl.RawSetString("classes", intSliceToLuaTable(L, reqs.Job))
+		appendReq(tbl)
+	}
+	if len(reqs.Item) > 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("item"))
+		tbl.RawSetString("items", questItemCountsToLuaTable(L, reqs.Item))
+		appendReq(tbl)
+	}
+	if len(reqs.Mob) > 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("mob"))
+		tbl.RawSetString("mobs", questMobCountsToLuaTable(L, reqs.Mob))
+		appendReq(tbl)
+	}
+	if len(reqs.Quest) > 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("quest"))
+		tbl.RawSetString("quests", questStatesToLuaTable(L, reqs.Quest))
+		appendReq(tbl)
+	}
+	if len(reqs.Skill) > 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("skill"))
+		tbl.RawSetString("skills", questSkillAcquiresToLuaTable(L, reqs.Skill))
+		appendReq(tbl)
+	}
+	if len(reqs.Pet) > 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("pet"))
+		tbl.RawSetString("pet_ids", uint32SliceToLuaTable(L, reqs.Pet))
+		appendReq(tbl)
+	}
+	if reqs.Pop != 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("pop"))
+		tbl.RawSetString("value", lua.LNumber(reqs.Pop))
+		appendReq(tbl)
+	}
+	if reqs.HasInterval {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("interval"))
+		tbl.RawSetString("value", lua.LNumber(reqs.Interval))
+		appendReq(tbl)
+	}
+	if reqs.FieldEnter != 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("fieldEnter"))
+		tbl.RawSetString("value", lua.LNumber(reqs.FieldEnter))
+		appendReq(tbl)
+	}
+	if reqs.QuestComplete != 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("questComplete"))
+		tbl.RawSetString("value", lua.LNumber(reqs.QuestComplete))
+		appendReq(tbl)
+	}
+	if reqs.StartScript != "" {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("startscript"))
+		tbl.RawSetString("value", lua.LString(reqs.StartScript))
+		appendReq(tbl)
+	}
+	if reqs.EndScript != "" {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("endscript"))
+		tbl.RawSetString("value", lua.LString(reqs.EndScript))
+		appendReq(tbl)
+	}
+	if reqs.Start != "" {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("start"))
+		tbl.RawSetString("value", lua.LString(reqs.Start))
+		appendReq(tbl)
+	}
+	if reqs.End != "" {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("end"))
+		tbl.RawSetString("value", lua.LString(reqs.End))
+		appendReq(tbl)
+	}
+	if len(reqs.Info) > 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("info"))
+		tbl.RawSetString("value", lua.LNumber(0))
+		appendReq(tbl)
+	}
+	if reqs.InfoNumber != 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("infoNumber"))
+		tbl.RawSetString("value", lua.LNumber(reqs.InfoNumber))
+		appendReq(tbl)
+	}
+	if reqs.DayByDay {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("dayByDay"))
+		tbl.RawSetString("value", lua.LNumber(1))
+		appendReq(tbl)
+	}
+	if reqs.NormalAutoStart {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("normalAutoStart"))
+		tbl.RawSetString("value", lua.LNumber(1))
+		appendReq(tbl)
+	}
+	if reqs.PartyQuestS != 0 {
+		tbl := L.NewTable()
+		tbl.RawSetString("kind", lua.LString("partyQuest_S"))
+		tbl.RawSetString("value", lua.LNumber(reqs.PartyQuestS))
+		appendReq(tbl)
 	}
 	return out
-}
-
-func questRequirementToLuaTable(L *lua.LState, req QuestRequirement) *lua.LTable {
-	tbl := L.NewTable()
-	tbl.RawSetString("kind", lua.LString(questRequirementKindForLua(req.Kind)))
-
-	switch req.Kind {
-	case QuestReqItem:
-		tbl.RawSetString("items", questItemCountsToLuaTable(L, req.Items))
-	case QuestReqMob:
-		tbl.RawSetString("mobs", questMobCountsToLuaTable(L, req.Mobs))
-	case QuestReqQuest:
-		tbl.RawSetString("quests", questStatesToLuaTable(L, req.Quests))
-	case QuestReqClass:
-		tbl.RawSetString("classes", intSliceToLuaTable(L, req.Classes))
-	case QuestReqSkill:
-		tbl.RawSetString("skills", questSkillAcquiresToLuaTable(L, req.Skills))
-	case QuestReqPet:
-		tbl.RawSetString("pet_ids", uint32SliceToLuaTable(L, req.PetIDs))
-	case QuestReqTimeStart, QuestReqTimeEnd, QuestReqStartScript, QuestReqEndScript:
-		tbl.RawSetString("value", lua.LString(req.StrValue))
-	default:
-		tbl.RawSetString("value", lua.LNumber(req.IntValue))
-	}
-
-	return tbl
-}
-
-func questRequirementKindForLua(kind QuestRequirementKind) string {
-	if kind == QuestReqClass {
-		return "class"
-	}
-	return string(kind)
 }
 
 func questItemCountsToLuaTable(L *lua.LState, items map[uint32]int) *lua.LTable {

@@ -37,11 +37,8 @@ func loadQuest(path string) (*Quest, error) {
 	if check := root.find("Check"); check != nil {
 		if start := check.find("0"); start != nil {
 			quest.Start.Requirements = parseQuestRequirements(start)
-			for _, req := range quest.Start.Requirements {
-				if req.Kind == QuestReqInterval || req.Kind == QuestReqDayByDay {
-					quest.Meta.Repeatable = true
-					break
-				}
+			if quest.Start.Requirements.HasInterval || quest.Start.Requirements.DayByDay {
+				quest.Meta.Repeatable = true
 			}
 		}
 		if complete := check.find("1"); complete != nil {
@@ -88,119 +85,352 @@ func parseQuestMeta(info *node) QuestMeta {
 	return meta
 }
 
-func parseQuestRequirements(phase *node) []QuestRequirement {
+func parseQuestRequirements(phase *node) QuestRequirements {
+	var reqs QuestRequirements
 	if phase == nil {
-		return nil
+		return reqs
 	}
 
-	reqs := make([]QuestRequirement, 0, len(phase.Children))
 	for _, child := range phase.Children {
-		kind := QuestRequirementKind(child.Name)
-		req := QuestRequirement{Kind: kind}
-
-		switch kind {
-		case QuestReqClass:
-			req.Classes = collectChildIntValues(&child)
-		case QuestReqPet:
-			req.PetIDs = collectChildUint32IDs(&child)
-		case QuestReqItem, QuestReqMob, QuestReqMBCard:
-			if kind == QuestReqItem {
-				req.Items = parseQuestItemCounts(&child)
-			} else if kind == QuestReqMob {
-				req.Mobs = parseQuestMobCounts(&child)
-			} else {
-				req.Items = parseQuestItemCountsWithField(&child, "min")
-			}
-		case QuestReqQuest:
-			req.Quests = parseQuestStateRefs(&child)
-		case QuestReqSkill:
-			req.Skills = parseQuestSkillRefs(&child)
-		case QuestReqTimeStart, QuestReqTimeEnd, QuestReqStartScript, QuestReqEndScript:
-			req.StrValue = nodeStringValue(&child)
-		case QuestReqFieldEnter:
-			req.IntValue = nodeInt(&child, "0", nodeInt(&child, "", 0))
-			if req.IntValue == 0 {
-				req.IntValue = firstChildIntValue(&child)
-			}
-		case QuestReqInfo:
-			req.InfoStrings = collectInfoStrings(&child)
-		default:
-			req.IntValue = firstIntValue(&child)
-		}
-
-		reqs = append(reqs, req)
+		applyQuestRequirementChild(&reqs, &child)
 	}
-
 	for _, intField := range phase.Ints {
-		kind := QuestRequirementKind(intField.Name)
-		reqs = append(reqs, QuestRequirement{
-			Kind:     kind,
-			IntValue: intField.Value,
-		})
+		applyQuestRequirementInt(&reqs, intField.Name, intField.Value)
 	}
-
 	for _, strField := range phase.Strings {
-		kind := QuestRequirementKind(strField.Name)
-		reqs = append(reqs, QuestRequirement{
-			Kind:     kind,
-			StrValue: strField.Value,
-		})
+		applyQuestRequirementStr(&reqs, strField.Name, strField.Value)
 	}
-
 	return reqs
 }
 
-func parseQuestActions(phase *node) []QuestAction {
+func applyQuestRequirementChild(reqs *QuestRequirements, child *node) {
+	switch child.Name {
+	case "job":
+		reqs.Job = collectChildIntValues(child)
+	case "pet":
+		reqs.Pet = collectChildUint32IDs(child)
+	case "item":
+		reqs.Item = parseQuestItemCounts(child)
+	case "mob":
+		reqs.Mob = parseQuestMobCounts(child)
+	case "mbcard":
+		reqs.MBCard = parseQuestItemCountsWithField(child, "min")
+	case "quest":
+		reqs.Quest = parseQuestStateRefs(child)
+	case "skill":
+		reqs.Skill = parseQuestSkillRefs(child)
+	case "start":
+		reqs.Start = nodeStringValue(child)
+	case "end":
+		reqs.End = nodeStringValue(child)
+	case "startscript":
+		reqs.StartScript = nodeStringValue(child)
+	case "endscript":
+		reqs.EndScript = nodeStringValue(child)
+	case "fieldEnter":
+		reqs.FieldEnter = nodeInt(child, "0", nodeInt(child, "", 0))
+		if reqs.FieldEnter == 0 {
+			reqs.FieldEnter = firstChildIntValue(child)
+		}
+	case "info":
+		reqs.Info = collectInfoStrings(child)
+	case "npc":
+		reqs.NPC = uint32(firstIntValue(child))
+	case "lvmin":
+		reqs.LevelMin = firstIntValue(child)
+	case "lvmax":
+		reqs.LevelMax = firstIntValue(child)
+	case "level":
+		reqs.Level = firstIntValue(child)
+	case "pop":
+		reqs.Pop = firstIntValue(child)
+	case "interval":
+		reqs.HasInterval = true
+		reqs.Interval = firstIntValue(child)
+	case "questComplete":
+		reqs.QuestComplete = firstIntValue(child)
+	case "pettamenessmin":
+		reqs.PetTamenessMin = firstIntValue(child)
+	case "mbmin":
+		reqs.MBMin = firstIntValue(child)
+	case "subJobFlags":
+		reqs.SubJobFlags = firstIntValue(child)
+	case "dayByDay":
+		reqs.DayByDay = true
+	case "normalAutoStart":
+		reqs.NormalAutoStart = true
+	case "partyQuest_S":
+		reqs.PartyQuestS = firstIntValue(child)
+	case "infoNumber":
+		reqs.InfoNumber = firstIntValue(child)
+	case "endmeso":
+		reqs.EndMeso = firstIntValue(child)
+	case "equipAllNeed":
+		reqs.EquipAllNeed = firstIntValue(child)
+	case "equipSelectNeed":
+		reqs.EquipSelectNeed = firstIntValue(child)
+	case "premium":
+		reqs.Premium = firstIntValue(child) > 0
+	case "tamingmoblevelmin":
+		reqs.TamingMobLevelMin = firstIntValue(child)
+	case "worldmin":
+		reqs.WorldMin = nodeStringValue(child)
+		if reqs.WorldMin == "" {
+			reqs.WorldMin = strconv.Itoa(firstIntValue(child))
+		}
+	case "worldmax":
+		reqs.WorldMax = nodeStringValue(child)
+		if reqs.WorldMax == "" {
+			reqs.WorldMax = strconv.Itoa(firstIntValue(child))
+		}
+	case "buff":
+		reqs.Buff = nodeStringValue(child)
+		if reqs.Buff == "" {
+			reqs.Buff = strconv.Itoa(firstIntValue(child))
+		}
+	case "exceptbuff":
+		reqs.ExceptBuff = nodeStringValue(child)
+		if reqs.ExceptBuff == "" {
+			reqs.ExceptBuff = strconv.Itoa(firstIntValue(child))
+		}
+	default:
+		if str := nodeStringValue(child); str != "" {
+			applyQuestRequirementStr(reqs, child.Name, str)
+		} else {
+			applyQuestRequirementInt(reqs, child.Name, firstIntValue(child))
+		}
+	}
+}
+
+func applyQuestRequirementInt(reqs *QuestRequirements, kind string, value int) {
+	switch kind {
+	case "npc":
+		reqs.NPC = uint32(value)
+	case "lvmin":
+		reqs.LevelMin = value
+	case "lvmax":
+		reqs.LevelMax = value
+	case "level":
+		reqs.Level = value
+	case "pop":
+		reqs.Pop = value
+	case "interval":
+		reqs.HasInterval = true
+		reqs.Interval = value
+	case "fieldEnter":
+		reqs.FieldEnter = value
+	case "questComplete":
+		reqs.QuestComplete = value
+	case "pettamenessmin":
+		reqs.PetTamenessMin = value
+	case "mbmin":
+		reqs.MBMin = value
+	case "subJobFlags":
+		reqs.SubJobFlags = value
+	case "dayByDay":
+		reqs.DayByDay = true
+	case "normalAutoStart":
+		reqs.NormalAutoStart = true
+	case "partyQuest_S":
+		reqs.PartyQuestS = value
+	case "infoNumber":
+		reqs.InfoNumber = value
+	case "endmeso":
+		reqs.EndMeso = value
+	case "equipAllNeed":
+		reqs.EquipAllNeed = value
+	case "equipSelectNeed":
+		reqs.EquipSelectNeed = value
+	case "premium":
+		reqs.Premium = value > 0
+	case "tamingmoblevelmin":
+		reqs.TamingMobLevelMin = value
+	case "worldmin":
+		reqs.WorldMin = strconv.Itoa(value)
+	case "worldmax":
+		reqs.WorldMax = strconv.Itoa(value)
+	}
+}
+
+func applyQuestRequirementStr(reqs *QuestRequirements, kind string, value string) {
+	switch kind {
+	case "start":
+		reqs.Start = value
+	case "end":
+		reqs.End = value
+	case "startscript":
+		reqs.StartScript = value
+	case "endscript":
+		reqs.EndScript = value
+	case "worldmin":
+		reqs.WorldMin = value
+	case "worldmax":
+		reqs.WorldMax = value
+	case "buff":
+		reqs.Buff = value
+	case "exceptbuff":
+		reqs.ExceptBuff = value
+	}
+}
+
+func parseQuestActions(phase *node) QuestActions {
+	var actions QuestActions
 	if phase == nil {
-		return nil
+		return actions
 	}
 
-	acts := make([]QuestAction, 0, len(phase.Children))
 	for _, child := range phase.Children {
-		kind := QuestActionKind(child.Name)
-		act := QuestAction{Kind: kind}
-
+		kind := child.Name
 		switch kind {
-		case QuestActItem:
-			act.Items = parseQuestRewardItems(&child)
-		case QuestActSkill:
-			act.Skills = parseQuestRewardSkills(&child)
-		case QuestActQuest:
-			act.Quests = parseQuestStateRefs(&child)
-		case QuestActSP:
-			act.IntValue = nodeInt(child.find("0"), "sp_value", firstIntValue(&child))
-		case QuestActInfo, QuestActNPCAct:
-			act.StrValue = nodeStringValue(&child)
+		case "item":
+			actions.Item = append(actions.Item, parseQuestActionItems(&child)...)
+		case "skill":
+			actions.Skills = append(actions.Skills, parseQuestActionSkills(&child)...)
+			actions.SkillJobs = collectQuestActionClasses(&child)
+		case "quest":
+			actions.Quests = parseQuestStateRefs(&child)
+		case "sp":
+			actions.SP = nodeInt(child.find("0"), "sp_value", firstIntValue(&child))
+			actions.SPJobs = collectQuestActionClasses(&child)
+		case "info":
+			actions.Info = nodeStringValue(&child)
+		case "npcAct":
+			actions.NPCAct = nodeStringValue(&child)
+		case "exp":
+			actions.Exp = firstIntValue(&child)
+		case "money":
+			actions.Money = firstIntValue(&child)
+		case "pop":
+			actions.Pop = firstIntValue(&child)
+		case "nextQuest":
+			actions.NextQuest = uint32(firstIntValue(&child))
+		case "buffItemID":
+			actions.BuffItemID = uint32(firstIntValue(&child))
+		case "infoNumber":
+			actions.InfoNumber = uint32(firstIntValue(&child))
+		case "npc":
+			actions.NPC = firstIntValue(&child)
+		case "pettameness":
+			actions.PetTameness = firstIntValue(&child)
+		case "petspeed":
+			actions.PetSpeed = firstIntValue(&child)
+		case "map":
+			actions.Map = firstIntValue(&child)
+		case "job":
+			actions.Job = firstIntValue(&child)
+		case "lvmin":
+			actions.LvMin = firstIntValue(&child)
+		case "lvmax":
+			actions.LvMax = firstIntValue(&child)
+		case "fieldEnter":
+			actions.FieldEnter = firstIntValue(&child)
+		case "interval":
+			actions.Interval = firstIntValue(&child)
+		case "ask":
+			actions.Ask = firstIntValue(&child)
+		case "stop":
+			actions.Stop = firstIntValue(&child)
+		case "message":
+			actions.Message = nodeStringValue(&child)
+		case "start":
+			actions.Start = nodeStringValue(&child)
+		case "end":
+			actions.End = nodeStringValue(&child)
 		default:
-			act.IntValue = firstIntValue(&child)
+			if str := nodeStringValue(&child); str != "" {
+				if actions.Say == nil {
+					actions.Say = make(map[string]string)
+				}
+				actions.Say[kind] = str
+			} else if val := firstIntValue(&child); val != 0 {
+				if actions.Say == nil {
+					actions.Say = make(map[string]string)
+				}
+				actions.Say[kind] = strconv.Itoa(val)
+			} else {
+				if actions.Say == nil {
+					actions.Say = make(map[string]string)
+				}
+				actions.Say[kind] = ""
+			}
 		}
-
-		if kind == QuestActSP || kind == QuestActSkill {
-			act.ApplicableClasses = collectQuestActionClasses(&child)
-		} else if classNode := child.find("job"); classNode != nil {
-			act.ApplicableClasses = collectChildIntValues(classNode)
-		}
-
-		acts = append(acts, act)
 	}
 
 	for _, intField := range phase.Ints {
-		kind := QuestActionKind(intField.Name)
-		acts = append(acts, QuestAction{
-			Kind:     kind,
-			IntValue: intField.Value,
-		})
+		applyQuestActionInt(&actions, intField.Name, intField.Value)
 	}
 
 	for _, strField := range phase.Strings {
-		kind := QuestActionKind(strField.Name)
-		acts = append(acts, QuestAction{
-			Kind:     kind,
-			StrValue: strField.Value,
-		})
+		applyQuestActionStr(&actions, strField.Name, strField.Value)
 	}
 
-	return acts
+	return actions
+}
+
+func applyQuestActionInt(actions *QuestActions, kind string, value int) {
+	switch kind {
+	case "exp":
+		actions.Exp = value
+	case "money":
+		actions.Money = value
+	case "pop":
+		actions.Pop = value
+	case "nextQuest":
+		actions.NextQuest = uint32(value)
+	case "buffItemID":
+		actions.BuffItemID = uint32(value)
+	case "infoNumber":
+		actions.InfoNumber = uint32(value)
+	case "npc":
+		actions.NPC = value
+	case "sp":
+		actions.SP = value
+	case "pettameness":
+		actions.PetTameness = value
+	case "petspeed":
+		actions.PetSpeed = value
+	case "map":
+		actions.Map = value
+	case "job":
+		actions.Job = value
+	case "lvmin":
+		actions.LvMin = value
+	case "lvmax":
+		actions.LvMax = value
+	case "fieldEnter":
+		actions.FieldEnter = value
+	case "interval":
+		actions.Interval = value
+	case "ask":
+		actions.Ask = value
+	case "stop":
+		actions.Stop = value
+	default:
+		if actions.Say == nil {
+			actions.Say = make(map[string]string)
+		}
+		actions.Say[kind] = strconv.Itoa(value)
+	}
+}
+
+func applyQuestActionStr(actions *QuestActions, kind string, value string) {
+	switch kind {
+	case "info":
+		actions.Info = value
+	case "npcAct":
+		actions.NPCAct = value
+	case "message":
+		actions.Message = value
+	case "start":
+		actions.Start = value
+	case "end":
+		actions.End = value
+	default:
+		if actions.Say == nil {
+			actions.Say = make(map[string]string)
+		}
+		actions.Say[kind] = value
+	}
 }
 
 func parseQuestItemCounts(n *node) map[uint32]int {
@@ -283,13 +513,13 @@ func parseQuestSkillRefs(n *node) map[uint32]int {
 	return out
 }
 
-func parseQuestRewardItems(n *node) []QuestRewardItem {
+func parseQuestActionItems(n *node) []QuestActionItem {
 	if n == nil {
 		return nil
 	}
-	out := make([]QuestRewardItem, 0, len(n.Children))
+	out := make([]QuestActionItem, 0, len(n.Children))
 	for _, child := range n.Children {
-		item := QuestRewardItem{
+		item := QuestActionItem{
 			ItemID:     uint32(nodeInt(&child, "id", 0)),
 			Count:      nodeInt(&child, "count", 0),
 			Class:      nodeInt(&child, "job", -1),
@@ -310,13 +540,13 @@ func parseQuestRewardItems(n *node) []QuestRewardItem {
 	return out
 }
 
-func parseQuestRewardSkills(n *node) []QuestRewardSkill {
+func parseQuestActionSkills(n *node) []QuestActionSkill {
 	if n == nil {
 		return nil
 	}
-	out := make([]QuestRewardSkill, 0, len(n.Children))
+	out := make([]QuestActionSkill, 0, len(n.Children))
 	for _, child := range n.Children {
-		skill := QuestRewardSkill{
+		skill := QuestActionSkill{
 			SkillID:     uint32(nodeInt(&child, "id", 0)),
 			SkillLevel:  nodeInt(&child, "skillLevel", 0),
 			MasterLevel: nodeInt(&child, "masterLevel", 0),

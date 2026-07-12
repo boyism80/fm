@@ -13,11 +13,18 @@ const (
 	ExchangeLackCapacity
 )
 
+type ExchangeSkill struct {
+	SkillID     uint32
+	Level       int
+	MasterLevel int
+}
+
 type ExchangeSide struct {
 	Items      map[uint32]uint16
 	Meso       int32
 	Exp        uint32
 	Population int32
+	Skills     []ExchangeSkill
 }
 
 type ExchangeSpec struct {
@@ -38,7 +45,7 @@ func exchangeItemsEmpty(items map[uint32]uint16) bool {
 }
 
 func (side ExchangeSide) isEmpty() bool {
-	return side.Meso <= 0 && side.Exp == 0 && side.Population <= 0 && exchangeItemsEmpty(side.Items)
+	return side.Meso <= 0 && side.Exp == 0 && side.Population <= 0 && exchangeItemsEmpty(side.Items) && len(side.Skills) == 0
 }
 
 func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
@@ -104,6 +111,37 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 		}
 	}
 
+	return ExchangeOK
+}
+
+func (side ExchangeSide) ValidCost(ch *Character) ExchangeResult {
+	if ch == nil {
+		return ExchangeLackCost
+	}
+	if side.isEmpty() {
+		return ExchangeOK
+	}
+	if side.Meso > 0 && ch.Meso < side.Meso {
+		return ExchangeLackCost
+	}
+	if side.Population > 0 && uint32(side.Population) > uint32(ch.population) {
+		return ExchangeLackCost
+	}
+	if side.Exp > 0 && ch.exp < side.Exp {
+		return ExchangeLackCost
+	}
+	modelOf := ch.itemModel
+	for id, count := range side.Items {
+		if count == 0 {
+			continue
+		}
+		if modelOf(id) == nil {
+			return ExchangeLackCost
+		}
+		if !ch.HasItemCount(id, count) {
+			return ExchangeLackCost
+		}
+	}
 	return ExchangeOK
 }
 

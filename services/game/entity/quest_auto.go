@@ -64,12 +64,8 @@ func (qc *QuestContainer) tryRunAutoQuest(actx actor.Context, def *wz.Quest) {
 	}
 
 	scriptNpcID := uint32(0)
-	for _, req := range def.Start.Requirements {
-		if req.Kind != wz.QuestReqNPC || req.IntValue <= 0 {
-			continue
-		}
-		scriptNpcID = uint32(req.IntValue)
-		break
+	if def.Start.Requirements.NPC > 0 {
+		scriptNpcID = def.Start.Requirements.NPC
 	}
 
 	if def.HasStartScript() {

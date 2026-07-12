@@ -133,7 +133,7 @@ func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *entity.Character) (guil
 		return guildEmblemChangePayment{}, false
 	}
 	if ch.HasItem(gameconst.GuildEmblemChangeCashItemID) {
-		if !ch.RemoveItemByID(gameconst.GuildEmblemChangeCashItemID) {
+		if !ch.RemoveByItemIDCount(gameconst.GuildEmblemChangeCashItemID, 1) {
 			return guildEmblemChangePayment{}, false
 		}
 		return guildEmblemChangePayment{usedCashItem: true}, true

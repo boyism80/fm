@@ -783,15 +783,9 @@ func (r *Resources) buildQuestFieldEnterIndex() {
 		if quest == nil {
 			continue
 		}
-		var mapID uint32
-		for _, req := range quest.Start.Requirements {
-			if req.Kind != QuestReqFieldEnter {
-				continue
-			}
-			if req.IntValue > 0 {
-				mapID = uint32(req.IntValue)
-				break
-			}
+		mapID := uint32(0)
+		if quest.Start.Requirements.FieldEnter > 0 {
+			mapID = uint32(quest.Start.Requirements.FieldEnter)
 		}
 		if mapID == 0 {
 			continue

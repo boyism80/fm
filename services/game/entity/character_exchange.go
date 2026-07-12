@@ -2,6 +2,7 @@ package entity
 
 import (
 	"math"
+	"time"
 
 	"github.com/boyism80/fm/services/game/wz"
 )
@@ -100,6 +101,12 @@ func (ch *Character) applyExchangeCost(side ExchangeSide) {
 		}
 		ch.removeByItemIDCountUnchecked(id, count)
 	}
+	for _, skill := range side.Skills {
+		if skill.SkillID == 0 || ch.Skills == nil {
+			continue
+		}
+		ch.Skills.Remove(skill.SkillID)
+	}
 }
 
 func (ch *Character) applyExchangeReward(side ExchangeSide) {
@@ -128,4 +135,69 @@ func (ch *Character) applyExchangeReward(side ExchangeSide) {
 	if side.Population > 0 {
 		ch.gainPopulationUnchecked(side.Population)
 	}
+	for _, skill := range side.Skills {
+		ch.applyExchangeSkillGrant(skill)
+	}
+}
+
+func (ch *Character) applyExchangeSkillGrant(skill ExchangeSkill) {
+	if ch == nil || skill.SkillID == 0 || ch.Skills == nil {
+		return
+	}
+	if skill.SkillID/10000 == 0 && !ch.IsBeginner() {
+		return
+	}
+	if ch.GameWorld == nil {
+		return
+	}
+	resources := ch.GameWorld.GetResources()
+	if resources == nil {
+		return
+	}
+	wzSkill := resources.GetSkill(skill.SkillID)
+	if wzSkill == nil {
+		return
+	}
+	targetLevel := exchangeSkillTargetLevel(0, skill.Level)
+	targetMaster := exchangeSkillTargetMaster(0, skill.MasterLevel, wzSkill)
+	entry := ch.Skills.Get(skill.SkillID)
+	if entry == nil {
+		entry = NewSkillEntry(ch, wzSkill, targetLevel, targetMaster)
+		entry.Expiration = time.Time{}
+		ch.Skills.Register(skill.SkillID, entry)
+	} else {
+		targetLevel = exchangeSkillTargetLevel(entry.Level(), skill.Level)
+		targetMaster = exchangeSkillTargetMaster(entry.MasterLevel, skill.MasterLevel, wzSkill)
+		if targetLevel != entry.Level() || targetMaster != entry.MasterLevel {
+			entry.SetLevelAndMaster(targetLevel, targetMaster)
+		}
+	}
+}
+
+func exchangeSkillTargetLevel(current int, rewardLevel int) int {
+	if rewardLevel <= 0 {
+		if current > 0 {
+			return current
+		}
+		return 1
+	}
+	if current > rewardLevel {
+		return current
+	}
+	return rewardLevel
+}
+
+func exchangeSkillTargetMaster(current int, rewardMaster int, wzSkill *wz.Skill) int {
+	resolved := rewardMaster
+	if resolved <= 0 && wzSkill != nil {
+		if wzSkill.MasterLevel > 0 {
+			resolved = wzSkill.MasterLevel
+		} else if wzSkill.MaxLevel > 0 {
+			resolved = wzSkill.MaxLevel
+		}
+	}
+	if current > resolved {
+		return current
+	}
+	return resolved
 }

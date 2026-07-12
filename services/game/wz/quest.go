@@ -1,53 +1,5 @@
 package wz
 
-type QuestRequirementKind string
-
-const (
-	QuestReqNPC             QuestRequirementKind = "npc"
-	QuestReqLvMin           QuestRequirementKind = "lvmin"
-	QuestReqLvMax           QuestRequirementKind = "lvmax"
-	QuestReqClass           QuestRequirementKind = "job"
-	QuestReqItem            QuestRequirementKind = "item"
-	QuestReqMob             QuestRequirementKind = "mob"
-	QuestReqQuest           QuestRequirementKind = "quest"
-	QuestReqSkill           QuestRequirementKind = "skill"
-	QuestReqPop             QuestRequirementKind = "pop"
-	QuestReqInterval        QuestRequirementKind = "interval"
-	QuestReqFieldEnter      QuestRequirementKind = "fieldEnter"
-	QuestReqQuestComplete   QuestRequirementKind = "questComplete"
-	QuestReqPet             QuestRequirementKind = "pet"
-	QuestReqPetTamenessMin  QuestRequirementKind = "pettamenessmin"
-	QuestReqMBMin           QuestRequirementKind = "mbmin"
-	QuestReqMBCard          QuestRequirementKind = "mbcard"
-	QuestReqSubClassFlags   QuestRequirementKind = "subJobFlags"
-	QuestReqDayByDay        QuestRequirementKind = "dayByDay"
-	QuestReqNormalAutoStart QuestRequirementKind = "normalAutoStart"
-	QuestReqPartyQuestS     QuestRequirementKind = "partyQuest_S"
-	QuestReqStartScript     QuestRequirementKind = "startscript"
-	QuestReqEndScript       QuestRequirementKind = "endscript"
-	QuestReqTimeStart       QuestRequirementKind = "start"
-	QuestReqTimeEnd         QuestRequirementKind = "end"
-	QuestReqInfo            QuestRequirementKind = "info"
-	QuestReqInfoNumber      QuestRequirementKind = "infoNumber"
-)
-
-type QuestActionKind string
-
-const (
-	QuestActEXP        QuestActionKind = "exp"
-	QuestActItem       QuestActionKind = "item"
-	QuestActNextQuest  QuestActionKind = "nextQuest"
-	QuestActMoney      QuestActionKind = "money"
-	QuestActQuest      QuestActionKind = "quest"
-	QuestActSkill      QuestActionKind = "skill"
-	QuestActPop        QuestActionKind = "pop"
-	QuestActBuffItemID QuestActionKind = "buffItemID"
-	QuestActInfoNumber QuestActionKind = "infoNumber"
-	QuestActSP         QuestActionKind = "sp"
-	QuestActInfo       QuestActionKind = "info"
-	QuestActNPCAct     QuestActionKind = "npcAct"
-)
-
 type Quest struct {
 	ID         uint32
 	Meta       QuestMeta
@@ -89,31 +41,80 @@ type QuestMeta struct {
 }
 
 type QuestPhase struct {
-	Requirements []QuestRequirement
-	Actions      []QuestAction
+	Requirements QuestRequirements
+	Actions      QuestActions
 }
 
-type QuestRequirement struct {
-	Kind        QuestRequirementKind
-	IntValue    int
-	StrValue    string
-	InfoStrings []string
-	Classes     []int
-	PetIDs      []uint32
-	Items       map[uint32]int
-	Mobs        map[uint32]int
+type QuestRequirements struct {
+	NPC               uint32
+	LevelMin          int
+	LevelMax          int
+	Level             int
+	Job               []int
+	Item              map[uint32]int
+	Mob               map[uint32]int
+	Quest             map[uint32]QuestStatus
+	Skill             map[uint32]int
+	Pop               int
+	Interval          int
+	HasInterval       bool
+	FieldEnter        int
+	QuestComplete     int
+	Pet               []uint32
+	PetTamenessMin    int
+	MBMin             int
+	MBCard            map[uint32]int
+	SubJobFlags       int
+	DayByDay          bool
+	NormalAutoStart   bool
+	PartyQuestS       int
+	StartScript       string
+	EndScript         string
+	Start             string
+	End               string
+	Info              []string
+	InfoNumber        int
+	WorldMin          string
+	WorldMax          string
+	EndMeso           int
+	EquipAllNeed      int
+	EquipSelectNeed   int
+	Premium           bool
+	Buff              string
+	ExceptBuff        string
+	TamingMobLevelMin int
+}
+
+type QuestActions struct {
+	Item        []QuestActionItem
+	Exp         int
+	Money       int
+	Pop         int
+	NextQuest   uint32
+	BuffItemID  uint32
+	Info        string
+	NPCAct      string
+	NPC         int
 	Quests      map[uint32]QuestStatus
-	Skills      map[uint32]int
-}
-
-type QuestAction struct {
-	Kind              QuestActionKind
-	IntValue          int
-	StrValue          string
-	ApplicableClasses []int
-	Items             []QuestRewardItem
-	Skills            []QuestRewardSkill
-	Quests            map[uint32]QuestStatus
+	Skills      []QuestActionSkill
+	SkillJobs   []int
+	SP          int
+	SPJobs      []int
+	InfoNumber  uint32
+	PetTameness int
+	PetSpeed    int
+	Map         int
+	Job         int
+	LvMin       int
+	LvMax       int
+	FieldEnter  int
+	Interval    int
+	Message     string
+	Start       string
+	End         string
+	Ask         int
+	Stop        int
+	Say         map[string]string
 }
 
 type QuestStatus uint8
@@ -150,7 +151,7 @@ func (p QuestRewardProp) RandomWeight() int {
 	return int(p)
 }
 
-type QuestRewardItem struct {
+type QuestActionItem struct {
 	ItemID     uint32
 	Count      int
 	Class      int
@@ -161,27 +162,26 @@ type QuestRewardItem struct {
 	DateExpire string
 }
 
-type QuestRewardSkill struct {
+type QuestActionSkill struct {
 	SkillID     uint32
 	SkillLevel  int
 	MasterLevel int
 	Classes     []int
 }
 
+type QuestRewardItem = QuestActionItem
+type QuestRewardSkill = QuestActionSkill
+
 func (q *Quest) RelevantMobs() map[uint32]int {
 	if q == nil {
 		return nil
 	}
 	out := make(map[uint32]int)
-	for _, reqs := range [][]QuestRequirement{q.Start.Requirements, q.Complete.Requirements} {
-		for _, req := range reqs {
-			if req.Kind != QuestReqMob {
-				continue
-			}
-			for mobID, count := range req.Mobs {
-				out[mobID] = count
-			}
-		}
+	for mobID, count := range q.Start.Requirements.Mob {
+		out[mobID] = count
+	}
+	for mobID, count := range q.Complete.Requirements.Mob {
+		out[mobID] = count
 	}
 	return out
 }
@@ -192,18 +192,13 @@ func (q *Quest) OrderedMobIDs() []uint32 {
 	}
 	out := make([]uint32, 0)
 	seen := make(map[uint32]struct{})
-	for _, reqs := range [][]QuestRequirement{q.Complete.Requirements, q.Start.Requirements} {
-		for _, req := range reqs {
-			if req.Kind != QuestReqMob {
+	for _, mobs := range []map[uint32]int{q.Complete.Requirements.Mob, q.Start.Requirements.Mob} {
+		for mobID := range mobs {
+			if _, ok := seen[mobID]; ok {
 				continue
 			}
-			for mobID := range req.Mobs {
-				if _, ok := seen[mobID]; ok {
-					continue
-				}
-				seen[mobID] = struct{}{}
-				out = append(out, mobID)
-			}
+			seen[mobID] = struct{}{}
+			out = append(out, mobID)
 		}
 	}
 	return out

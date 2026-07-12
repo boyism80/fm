@@ -123,14 +123,41 @@ func (ch *Character) GetCountByItemID(itemID uint32) uint16 {
 }
 
 func (ch *Character) HasItem(itemID uint32) bool {
-	return ch.GetCountByItemID(itemID) >= 1
+	invType := constant.GetInventoryTypeByItemID(itemID)
+	inven := ch.Inventory[invType]
+	if inven == nil {
+		return false
+	}
+	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
+		item := inven.GetItem(uint8(slot))
+		if item != nil && item.GetModel().GetID() == itemID {
+			return true
+		}
+	}
+	return false
 }
 
 func (ch *Character) HasItemCount(itemID uint32, count uint16) bool {
 	if count == 0 {
 		return true
 	}
-	return ch.GetCountByItemID(itemID) >= count
+	invType := constant.GetInventoryTypeByItemID(itemID)
+	inven := ch.Inventory[invType]
+	if inven == nil {
+		return false
+	}
+	var total uint16
+	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
+		item := inven.GetItem(uint8(slot))
+		if item == nil || item.GetModel().GetID() != itemID {
+			continue
+		}
+		total += item.GetCount()
+		if total >= count {
+			return true
+		}
+	}
+	return false
 }
 
 func (ch *Character) RemoveByItemIDCount(itemID uint32, count uint16) bool {
@@ -170,10 +197,6 @@ func (ch *Character) removeByItemIDCountUnchecked(itemID uint32, count uint16) b
 		ch.RemoveItem(invType, slot, take)
 	}
 	return remaining == 0
-}
-
-func (ch *Character) RemoveItemByID(itemID uint32) bool {
-	return ch.RemoveByItemIDCount(itemID, 1)
 }
 
 func (ch *Character) ClearInventory() int {

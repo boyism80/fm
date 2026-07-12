@@ -122,8 +122,11 @@ func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
 	if !phaseRequirementsMet(qp.Wz.Complete, qp.container, qp, checkOpts) {
 		return ErrQuestNotCompletable
 	}
-	actions := ch.buildPhaseActions(qp.Wz.Complete, opts.Selection)
-	if actions.Exchange.Valid(ch) != ExchangeOK {
+	exchange := ch.Quests.buildPhaseExchange(qp.Wz.Complete.Actions, questActionOpts{
+		ClassID:   ch.Class,
+		Selection: opts.Selection,
+	})
+	if exchange.Cost.ValidCost(ch) != ExchangeOK {
 		return ErrQuestNotCompletable
 	}
 	return nil
@@ -226,14 +229,9 @@ func (qp *Quest) CanRestoreLostItem(ch *Character, itemID uint32) bool {
 	if ch.HasItem(itemID) {
 		return false
 	}
-	for _, act := range qp.Wz.Start.Actions {
-		if act.Kind != wz.QuestActItem {
-			continue
-		}
-		for _, item := range act.Items {
-			if item.ItemID == itemID && item.Count > 0 {
-				return true
-			}
+	for _, item := range qp.Wz.Start.Actions.Item {
+		if item.ItemID == itemID && item.Count > 0 {
+			return true
 		}
 	}
 	return false
@@ -248,18 +246,10 @@ func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
 	}
 	var count uint16
 	found := false
-	for _, act := range qp.Wz.Start.Actions {
-		if act.Kind != wz.QuestActItem {
-			continue
-		}
-		for _, item := range act.Items {
-			if item.ItemID == itemID && item.Count > 0 {
-				count = uint16(item.Count)
-				found = true
-				break
-			}
-		}
-		if found {
+	for _, item := range qp.Wz.Start.Actions.Item {
+		if item.ItemID == itemID && item.Count > 0 {
+			count = uint16(item.Count)
+			found = true
 			break
 		}
 	}
@@ -292,8 +282,12 @@ func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
 		if err := qp.CanComplete(ch, opts); err != nil {
 			return err
 		}
-		actions := ch.buildPhaseActions(qp.Wz.Complete, opts.Selection)
-		if err := actions.Apply(qp, wireNPC, true); err != nil {
+		if err := ch.Quests.applyActions(qp, qp.Wz.Complete.Actions, questActionOpts{
+			ClassID:       ch.Class,
+			Selection:     opts.Selection,
+			IncludeSkills: true,
+			NpcID:         wireNPC,
+		}); err != nil {
 			return err
 		}
 	} else if !qp.IsStarted() {

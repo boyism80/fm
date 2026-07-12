@@ -21,48 +21,88 @@ var (
 	ErrQuestExchangeFailed = errors.New("quest exchange failed")
 )
 
-type questPhaseActions struct {
-	Exchange               ExchangeSpec
-	info                   string
-	linkedQuests           map[uint32]wz.QuestStatus
-	linkedQuestsToComplete []uint32
-	skillGrants            []wz.QuestRewardSkill
-	npcActs                []string
-}
-
-func (a questPhaseActions) Apply(qp *Quest, npcID uint32, grantSkills bool) error {
-	if qp == nil {
-		return nil
-	}
-	qc := qp.container
-	if qc == nil {
-		return nil
-	}
-	ch := qc.owner
-	if ch != nil && ch.Exchange(a.Exchange) != ExchangeOK {
-		return ErrQuestExchangeFailed
-	}
-	if a.info != "" {
-		qp.StatusRecord.WriteString(a.info)
-	}
-	if len(a.linkedQuests) > 0 {
-		qc.updateLinkedQuests(a.linkedQuests)
-	}
-	for _, refID := range a.linkedQuestsToComplete {
-		qc.completeLinkedQuest(refID)
-	}
-	if grantSkills {
-		qc.grantSkillRewards(a.skillGrants)
-	}
-	qc.broadcastNpcActs(npcID, a.npcActs)
-	return nil
-}
-
 type QuestPhaseOpts struct {
 	NpcID     *uint32
 	Selection *uint32
 	Force     bool
 	Record    *string
+}
+
+type questActionOpts struct {
+	ClassID       uint16
+	Selection     *uint32
+	IncludeSkills bool
+	NpcID         uint32
+}
+
+func (qc *QuestContainer) applyActions(qp *Quest, actions wz.QuestActions, opts questActionOpts) error {
+	if qp == nil {
+		return nil
+	}
+	if qc == nil {
+		return nil
+	}
+	ch := qc.owner
+	exchange := qc.buildPhaseExchange(actions, opts)
+	if ch != nil && ch.Exchange(exchange) != ExchangeOK {
+		return ErrQuestExchangeFailed
+	}
+	if actions.Info != "" {
+		qp.StatusRecord.WriteString(actions.Info)
+	}
+	if len(actions.Quests) > 0 {
+		qc.updateLinkedQuests(actions.Quests)
+	}
+	if actions.InfoNumber > 0 {
+		qc.completeLinkedQuest(actions.InfoNumber)
+	}
+	if actions.NPCAct != "" {
+		qc.broadcastNpcAct(opts.NpcID, actions.NPCAct)
+	}
+	return nil
+}
+
+func (qc *QuestContainer) buildPhaseExchange(actions wz.QuestActions, opts questActionOpts) ExchangeSpec {
+	spec := ExchangeSpec{}
+	if qc == nil {
+		return spec
+	}
+	if actions.Money > 0 {
+		spec.Reward.Meso += int32(actions.Money)
+	} else if actions.Money < 0 {
+		spec.Cost.Meso += int32(-actions.Money)
+	}
+	if actions.Exp > 0 {
+		spec.Reward.Exp += uint32(actions.Exp)
+	}
+	if len(actions.Item) > 0 {
+		qc.appendPhaseActItems(&spec, opts.ClassID, actions.Item, opts.Selection)
+	}
+	if actions.Pop > 0 {
+		spec.Reward.Population += int32(actions.Pop)
+	} else if actions.Pop < 0 {
+		spec.Cost.Population += int32(-actions.Pop)
+	}
+	if !opts.IncludeSkills || len(actions.Skills) == 0 {
+		return spec
+	}
+	if len(actions.SkillJobs) > 0 && !matchesQuestClass(opts.ClassID, actions.SkillJobs) {
+		return spec
+	}
+	for _, skill := range actions.Skills {
+		if skill.SkillID == 0 {
+			continue
+		}
+		if len(skill.Classes) > 0 && !matchesQuestClass(opts.ClassID, skill.Classes) {
+			continue
+		}
+		spec.Reward.Skills = append(spec.Reward.Skills, ExchangeSkill{
+			SkillID:     skill.SkillID,
+			Level:       skill.SkillLevel,
+			MasterLevel: skill.MasterLevel,
+		})
+	}
+	return spec
 }
 
 func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, error) {
@@ -114,12 +154,10 @@ func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, er
 
 func (qc *QuestContainer) startWZQuest(def *wz.Quest, existing *Quest, wireNPC uint32, opts QuestPhaseOpts) (*Quest, error) {
 	ch := qc.owner
-	var actions questPhaseActions
 	if !opts.Force {
 		if err := qc.CanStart(def.ID, opts); err != nil {
 			return nil, err
 		}
-		actions = ch.buildPhaseActions(def.Start, nil)
 	}
 
 	forfeited := 0
@@ -148,8 +186,11 @@ func (qc *QuestContainer) startWZQuest(def *wz.Quest, existing *Quest, wireNPC u
 				if err := qc.CanStart(def.ID, opts); err != nil {
 					return nil, err
 				}
-				actions = ch.buildPhaseActions(def.Start, nil)
-				if err := actions.Apply(raced, wireNPC, raced.Forfeited == 0); err != nil {
+				if err := qc.applyActions(raced, def.Start.Actions, questActionOpts{
+					ClassID:       ch.Class,
+					IncludeSkills: raced.Forfeited == 0,
+					NpcID:         wireNPC,
+				}); err != nil {
 					return nil, err
 				}
 			}
@@ -169,7 +210,11 @@ func (qc *QuestContainer) startWZQuest(def *wz.Quest, existing *Quest, wireNPC u
 	qp.MobKills = make(map[uint32]int)
 	qp.InitMobKillCounters()
 	if !opts.Force {
-		if err := actions.Apply(qp, wireNPC, forfeited == 0); err != nil {
+		if err := qc.applyActions(qp, def.Start.Actions, questActionOpts{
+			ClassID:       ch.Class,
+			IncludeSkills: forfeited == 0,
+			NpcID:         wireNPC,
+		}); err != nil {
 			return nil, err
 		}
 	}
@@ -225,15 +270,15 @@ func (qc *QuestContainer) CanStart(questID uint32, opts QuestPhaseOpts) error {
 	if !phaseRequirementsMet(def.Start, qc, existing, checkOpts) {
 		return ErrQuestNotStartable
 	}
-	actions := qc.owner.buildPhaseActions(def.Start, nil)
-	if actions.Exchange.Valid(qc.owner) != ExchangeOK {
+	exchange := qc.buildPhaseExchange(def.Start.Actions, questActionOpts{ClassID: qc.owner.Class})
+	if exchange.Cost.ValidCost(qc.owner) != ExchangeOK {
 		return ErrQuestNotStartable
 	}
 	return nil
 }
 
-func (qc *QuestContainer) broadcastNpcActs(npcID uint32, acts []string) {
-	if qc == nil || qc.owner == nil || npcID == 0 || len(acts) == 0 {
+func (qc *QuestContainer) broadcastNpcAct(npcID uint32, act string) {
+	if qc == nil || qc.owner == nil || npcID == 0 || act == "" {
 		return
 	}
 	mapInst := qc.owner.GetMap()
@@ -248,9 +293,7 @@ func (qc *QuestContainer) broadcastNpcActs(npcID uint32, acts []string) {
 		if npc.Wz.ID != npcID {
 			continue
 		}
-		for _, act := range acts {
-			npc.ShowEffect(act)
-		}
+		npc.ShowEffect(act)
 		return
 	}
 }
@@ -303,75 +346,14 @@ func (qc *QuestContainer) completeLinkedQuest(refID uint32) {
 	refQP.CompletionTime = clock.Now()
 }
 
-func (ch *Character) buildPhaseActions(phase wz.QuestPhase, selection *uint32) questPhaseActions {
-	actions := questPhaseActions{}
-	if ch == nil {
-		return actions
-	}
-
-	for _, act := range phase.Actions {
-		if len(act.ApplicableClasses) > 0 && !matchesQuestClass(ch.Class, act.ApplicableClasses) {
-			continue
-		}
-		switch act.Kind {
-		case wz.QuestActMoney:
-			if act.IntValue > 0 {
-				actions.Exchange.Reward.Meso += int32(act.IntValue)
-			} else if act.IntValue < 0 {
-				actions.Exchange.Cost.Meso += int32(-act.IntValue)
-			}
-		case wz.QuestActEXP:
-			if act.IntValue > 0 {
-				actions.Exchange.Reward.Exp += uint32(act.IntValue)
-			}
-		case wz.QuestActItem:
-			appendPhaseActItems(ch, &actions.Exchange, act.Items, selection)
-		case wz.QuestActInfo:
-			if act.StrValue != "" {
-				actions.info = act.StrValue
-			}
-		case wz.QuestActQuest:
-			if len(act.Quests) == 0 {
-				break
-			}
-			if actions.linkedQuests == nil {
-				actions.linkedQuests = make(map[uint32]wz.QuestStatus, len(act.Quests))
-			}
-			for questID, state := range act.Quests {
-				actions.linkedQuests[questID] = state
-			}
-		case wz.QuestActPop:
-			if act.IntValue > 0 {
-				actions.Exchange.Reward.Population += int32(act.IntValue)
-			} else if act.IntValue < 0 {
-				actions.Exchange.Cost.Population += int32(-act.IntValue)
-			}
-		case wz.QuestActSkill:
-			actions.skillGrants = append(actions.skillGrants, act.Skills...)
-		case wz.QuestActNPCAct:
-			if act.StrValue != "" {
-				actions.npcActs = append(actions.npcActs, act.StrValue)
-			}
-		case wz.QuestActNextQuest,
-			wz.QuestActBuffItemID, wz.QuestActSP:
-		case wz.QuestActInfoNumber:
-			if act.IntValue > 0 {
-				actions.linkedQuestsToComplete = append(actions.linkedQuestsToComplete, uint32(act.IntValue))
-			}
-		}
-	}
-
-	return actions
-}
-
-func appendPhaseActItems(ch *Character, spec *ExchangeSpec, items []wz.QuestRewardItem, selection *uint32) {
-	if spec == nil || ch == nil {
+func (qc *QuestContainer) appendPhaseActItems(spec *ExchangeSpec, classID uint16, items []wz.QuestActionItem, selection *uint32) {
+	if qc == nil || spec == nil {
 		return
 	}
 
 	var randomPool []uint32
 	for _, item := range items {
-		if ch.Quests == nil || !ch.Quests.matchesRewardItem(item) || item.Count <= 0 || !item.Prop.IsWeightedRandom() {
+		if !qc.matchesRewardItem(item, classID) || item.Count <= 0 || !item.Prop.IsWeightedRandom() {
 			continue
 		}
 		for i := 0; i < item.Prop.RandomWeight(); i++ {
@@ -391,7 +373,7 @@ func appendPhaseActItems(ch *Character, spec *ExchangeSpec, items []wz.QuestRewa
 
 	extNum := 0
 	for _, item := range items {
-		if ch.Quests == nil || !ch.Quests.matchesRewardItem(item) || item.Count == 0 {
+		if !qc.matchesRewardItem(item, classID) || item.Count == 0 {
 			continue
 		}
 		if item.Count < 0 {
@@ -493,18 +475,17 @@ func (qc *QuestContainer) completedQuestCount() int {
 	return count
 }
 
-func (qc *QuestContainer) matchesRewardItem(item wz.QuestRewardItem) bool {
+func (qc *QuestContainer) matchesRewardItem(item wz.QuestRewardItem, classID uint16) bool {
 	if qc == nil || qc.owner == nil {
 		return false
 	}
-	ch := qc.owner
-	if item.Gender <= 1 && item.Gender != int(ch.gender) {
+	if item.Gender <= 1 && item.Gender != int(qc.owner.gender) {
 		return false
 	}
 	if item.Class <= 0 {
 		return true
 	}
-	classCode := int(ch.Class)
+	classCode := int(classID)
 	for _, codec := range classesBy5ByteEncoding(item.Class) {
 		if codec/100 == classCode/100 {
 			return true
@@ -591,87 +572,4 @@ func classesBySimpleEncoding(encoded int) []int {
 		ret = append(ret, 500)
 	}
 	return ret
-}
-
-func (qc *QuestContainer) grantSkillRewards(rewards []wz.QuestRewardSkill) {
-	if qc == nil || len(rewards) == 0 {
-		return
-	}
-	for _, reward := range rewards {
-		qc.grantSkill(reward)
-	}
-}
-
-func (qc *QuestContainer) grantSkill(reward wz.QuestRewardSkill) {
-	if qc == nil || qc.owner == nil || reward.SkillID == 0 {
-		return
-	}
-	if !qc.canGrantSkill(reward) {
-		return
-	}
-	ch := qc.owner
-	if ch.GameWorld == nil {
-		return
-	}
-	resources := ch.GameWorld.GetResources()
-	if resources == nil {
-		return
-	}
-	wzSkill := resources.GetSkill(reward.SkillID)
-	if wzSkill == nil {
-		return
-	}
-	targetLevel := skillTargetLevel(0, reward.SkillLevel)
-	targetMaster := skillTargetMaster(0, reward.MasterLevel, wzSkill)
-	entry := ch.Skills.Get(reward.SkillID)
-	if entry == nil {
-		entry = NewSkillEntry(ch, wzSkill, targetLevel, targetMaster)
-		entry.Expiration = time.Time{}
-		ch.Skills.Register(reward.SkillID, entry)
-	} else {
-		targetLevel = skillTargetLevel(entry.Level(), reward.SkillLevel)
-		targetMaster = skillTargetMaster(entry.MasterLevel, reward.MasterLevel, wzSkill)
-		if targetLevel != entry.Level() || targetMaster != entry.MasterLevel {
-			entry.SetLevelAndMaster(targetLevel, targetMaster)
-		}
-	}
-}
-
-func (qc *QuestContainer) canGrantSkill(reward wz.QuestRewardSkill) bool {
-	if qc == nil || qc.owner == nil {
-		return false
-	}
-	ch := qc.owner
-	if reward.SkillID/10000 == 0 && !ch.IsBeginner() {
-		return false
-	}
-	return matchesQuestClass(ch.Class, reward.Classes)
-}
-
-func skillTargetLevel(current int, rewardLevel int) int {
-	if rewardLevel <= 0 {
-		if current > 0 {
-			return current
-		}
-		return 1
-	}
-	if current > rewardLevel {
-		return current
-	}
-	return rewardLevel
-}
-
-func skillTargetMaster(current int, rewardMaster int, wzSkill *wz.Skill) int {
-	resolved := rewardMaster
-	if resolved <= 0 && wzSkill != nil {
-		if wzSkill.MasterLevel > 0 {
-			resolved = wzSkill.MasterLevel
-		} else if wzSkill.MaxLevel > 0 {
-			resolved = wzSkill.MaxLevel
-		}
-	}
-	if current > resolved {
-		return current
-	}
-	return resolved
 }

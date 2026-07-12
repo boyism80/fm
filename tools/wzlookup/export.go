@@ -87,68 +87,246 @@ func exportQuestMeta(m wz.QuestMeta) QuestMeta {
 }
 
 func exportQuestPhase(p wz.QuestPhase) QuestPhase {
-	reqs := make([]QuestRequirement, 0, len(p.Requirements))
-	for _, r := range p.Requirements {
-		reqs = append(reqs, exportQuestRequirement(r))
-	}
-	acts := make([]QuestAction, 0, len(p.Actions))
-	for _, a := range p.Actions {
-		acts = append(acts, exportQuestAction(a))
-	}
 	return QuestPhase{
-		Requirements: reqs,
-		Actions:      acts,
+		Requirements: exportQuestRequirements(p.Requirements),
+		Actions:      exportQuestActions(p.Actions),
 	}
 }
 
-func exportQuestRequirement(r wz.QuestRequirement) QuestRequirement {
-	return QuestRequirement{
-		Kind:        string(r.Kind),
-		IntValue:    r.IntValue,
-		StrValue:    r.StrValue,
-		InfoStrings: r.InfoStrings,
-		Classes:     r.Classes,
-		PetIDs:      r.PetIDs,
-		Items:       r.Items,
-		Mobs:        r.Mobs,
-		Quests:      questStatesToIntMap(r.Quests),
-		Skills:      r.Skills,
+func exportQuestRequirements(r wz.QuestRequirements) []QuestRequirement {
+	out := make([]QuestRequirement, 0)
+	if r.NPC != 0 {
+		out = append(out, QuestRequirement{Kind: "npc", IntValue: int(r.NPC)})
 	}
+	if r.LevelMin != 0 {
+		out = append(out, QuestRequirement{Kind: "lvmin", IntValue: r.LevelMin})
+	}
+	if r.LevelMax != 0 {
+		out = append(out, QuestRequirement{Kind: "lvmax", IntValue: r.LevelMax})
+	}
+	if r.Level != 0 {
+		out = append(out, QuestRequirement{Kind: "level", IntValue: r.Level})
+	}
+	if len(r.Job) > 0 {
+		out = append(out, QuestRequirement{Kind: "job", Classes: r.Job})
+	}
+	if len(r.Item) > 0 {
+		out = append(out, QuestRequirement{Kind: "item", Items: r.Item})
+	}
+	if len(r.Mob) > 0 {
+		out = append(out, QuestRequirement{Kind: "mob", Mobs: r.Mob})
+	}
+	if len(r.Quest) > 0 {
+		out = append(out, QuestRequirement{Kind: "quest", Quests: questStatesToIntMap(r.Quest)})
+	}
+	if len(r.Skill) > 0 {
+		out = append(out, QuestRequirement{Kind: "skill", Skills: r.Skill})
+	}
+	if len(r.Pet) > 0 {
+		out = append(out, QuestRequirement{Kind: "pet", PetIDs: r.Pet})
+	}
+	if r.Pop != 0 {
+		out = append(out, QuestRequirement{Kind: "pop", IntValue: r.Pop})
+	}
+	if r.HasInterval {
+		out = append(out, QuestRequirement{Kind: "interval", IntValue: r.Interval})
+	}
+	if r.FieldEnter != 0 {
+		out = append(out, QuestRequirement{Kind: "fieldEnter", IntValue: r.FieldEnter})
+	}
+	if r.QuestComplete != 0 {
+		out = append(out, QuestRequirement{Kind: "questComplete", IntValue: r.QuestComplete})
+	}
+	if r.PetTamenessMin != 0 {
+		out = append(out, QuestRequirement{Kind: "pettamenessmin", IntValue: r.PetTamenessMin})
+	}
+	if r.MBMin != 0 {
+		out = append(out, QuestRequirement{Kind: "mbmin", IntValue: r.MBMin})
+	}
+	if len(r.MBCard) > 0 {
+		out = append(out, QuestRequirement{Kind: "mbcard", Items: r.MBCard})
+	}
+	if r.SubJobFlags != 0 {
+		out = append(out, QuestRequirement{Kind: "subJobFlags", IntValue: r.SubJobFlags})
+	}
+	if r.DayByDay {
+		out = append(out, QuestRequirement{Kind: "dayByDay", IntValue: 1})
+	}
+	if r.NormalAutoStart {
+		out = append(out, QuestRequirement{Kind: "normalAutoStart", IntValue: 1})
+	}
+	if r.PartyQuestS != 0 {
+		out = append(out, QuestRequirement{Kind: "partyQuest_S", IntValue: r.PartyQuestS})
+	}
+	if r.StartScript != "" {
+		out = append(out, QuestRequirement{Kind: "startscript", StrValue: r.StartScript})
+	}
+	if r.EndScript != "" {
+		out = append(out, QuestRequirement{Kind: "endscript", StrValue: r.EndScript})
+	}
+	if r.Start != "" {
+		out = append(out, QuestRequirement{Kind: "start", StrValue: r.Start})
+	}
+	if r.End != "" {
+		out = append(out, QuestRequirement{Kind: "end", StrValue: r.End})
+	}
+	if len(r.Info) > 0 {
+		out = append(out, QuestRequirement{Kind: "info", InfoStrings: r.Info})
+	}
+	if r.InfoNumber != 0 {
+		out = append(out, QuestRequirement{Kind: "infoNumber", IntValue: r.InfoNumber})
+	}
+	if r.WorldMin != "" {
+		out = append(out, QuestRequirement{Kind: "worldmin", StrValue: r.WorldMin})
+	}
+	if r.WorldMax != "" {
+		out = append(out, QuestRequirement{Kind: "worldmax", StrValue: r.WorldMax})
+	}
+	if r.EndMeso != 0 {
+		out = append(out, QuestRequirement{Kind: "endmeso", IntValue: r.EndMeso})
+	}
+	if r.EquipAllNeed != 0 {
+		out = append(out, QuestRequirement{Kind: "equipAllNeed", IntValue: r.EquipAllNeed})
+	}
+	if r.EquipSelectNeed != 0 {
+		out = append(out, QuestRequirement{Kind: "equipSelectNeed", IntValue: r.EquipSelectNeed})
+	}
+	if r.Premium {
+		out = append(out, QuestRequirement{Kind: "premium", IntValue: 1})
+	}
+	if r.Buff != "" {
+		out = append(out, QuestRequirement{Kind: "buff", StrValue: r.Buff})
+	}
+	if r.ExceptBuff != "" {
+		out = append(out, QuestRequirement{Kind: "exceptbuff", StrValue: r.ExceptBuff})
+	}
+	if r.TamingMobLevelMin != 0 {
+		out = append(out, QuestRequirement{Kind: "tamingmoblevelmin", IntValue: r.TamingMobLevelMin})
+	}
+	return out
 }
 
-func exportQuestAction(a wz.QuestAction) QuestAction {
-	items := make([]QuestRewardItem, 0, len(a.Items))
-	for _, item := range a.Items {
-		items = append(items, QuestRewardItem{
-			ItemID:     item.ItemID,
-			Count:      item.Count,
-			Class:      item.Class,
-			ClassEx:    item.ClassEx,
-			Gender:     item.Gender,
-			Period:     item.Period,
-			Prop:       int(item.Prop),
-			DateExpire: item.DateExpire,
+func exportQuestActions(a wz.QuestActions) []QuestAction {
+	out := make([]QuestAction, 0)
+	if len(a.Item) > 0 {
+		items := make([]QuestRewardItem, 0, len(a.Item))
+		for _, item := range a.Item {
+			items = append(items, QuestRewardItem{
+				ItemID:     item.ItemID,
+				Count:      item.Count,
+				Class:      item.Class,
+				ClassEx:    item.ClassEx,
+				Gender:     item.Gender,
+				Period:     item.Period,
+				Prop:       int(item.Prop),
+				DateExpire: item.DateExpire,
+			})
+		}
+		out = append(out, QuestAction{Kind: "item", Items: items})
+	}
+	if a.Exp != 0 {
+		out = append(out, QuestAction{Kind: "exp", IntValue: a.Exp})
+	}
+	if a.Money != 0 {
+		out = append(out, QuestAction{Kind: "money", IntValue: a.Money})
+	}
+	if a.Pop != 0 {
+		out = append(out, QuestAction{Kind: "pop", IntValue: a.Pop})
+	}
+	if a.NextQuest != 0 {
+		out = append(out, QuestAction{Kind: "nextQuest", IntValue: int(a.NextQuest)})
+	}
+	if a.BuffItemID != 0 {
+		out = append(out, QuestAction{Kind: "buffItemID", IntValue: int(a.BuffItemID)})
+	}
+	if a.Info != "" {
+		out = append(out, QuestAction{Kind: "info", StrValue: a.Info})
+	}
+	if a.NPCAct != "" {
+		out = append(out, QuestAction{Kind: "npcAct", StrValue: a.NPCAct})
+	}
+	if a.NPC != 0 {
+		out = append(out, QuestAction{Kind: "npc", IntValue: a.NPC})
+	}
+	if len(a.Quests) > 0 {
+		out = append(out, QuestAction{Kind: "quest", Quests: questStatesToIntMap(a.Quests)})
+	}
+	if len(a.Skills) > 0 {
+		skills := make([]QuestRewardSkill, 0, len(a.Skills))
+		for _, s := range a.Skills {
+			skills = append(skills, QuestRewardSkill{
+				SkillID:     s.SkillID,
+				SkillLevel:  s.SkillLevel,
+				MasterLevel: s.MasterLevel,
+				Classes:     s.Classes,
+			})
+		}
+		out = append(out, QuestAction{
+			Kind:              "skill",
+			ApplicableClasses: a.SkillJobs,
+			Skills:            skills,
 		})
 	}
-	skills := make([]QuestRewardSkill, 0, len(a.Skills))
-	for _, s := range a.Skills {
-		skills = append(skills, QuestRewardSkill{
-			SkillID:     s.SkillID,
-			SkillLevel:  s.SkillLevel,
-			MasterLevel: s.MasterLevel,
-			Classes:     s.Classes,
+	if a.SP != 0 {
+		out = append(out, QuestAction{
+			Kind:              "sp",
+			IntValue:          a.SP,
+			ApplicableClasses: a.SPJobs,
 		})
 	}
-	quests := questStatesToIntMap(a.Quests)
-	return QuestAction{
-		Kind:              string(a.Kind),
-		IntValue:          a.IntValue,
-		StrValue:          a.StrValue,
-		ApplicableClasses: a.ApplicableClasses,
-		Items:             items,
-		Skills:            skills,
-		Quests:            quests,
+	if a.InfoNumber != 0 {
+		out = append(out, QuestAction{Kind: "infoNumber", IntValue: int(a.InfoNumber)})
 	}
+	if a.PetTameness != 0 {
+		out = append(out, QuestAction{Kind: "pettameness", IntValue: a.PetTameness})
+	}
+	if a.PetSpeed != 0 {
+		out = append(out, QuestAction{Kind: "petspeed", IntValue: a.PetSpeed})
+	}
+	if a.Map != 0 {
+		out = append(out, QuestAction{Kind: "map", IntValue: a.Map})
+	}
+	if a.Job != 0 {
+		out = append(out, QuestAction{Kind: "job", IntValue: a.Job})
+	}
+	if a.LvMin != 0 {
+		out = append(out, QuestAction{Kind: "lvmin", IntValue: a.LvMin})
+	}
+	if a.LvMax != 0 {
+		out = append(out, QuestAction{Kind: "lvmax", IntValue: a.LvMax})
+	}
+	if a.FieldEnter != 0 {
+		out = append(out, QuestAction{Kind: "fieldEnter", IntValue: a.FieldEnter})
+	}
+	if a.Interval != 0 {
+		out = append(out, QuestAction{Kind: "interval", IntValue: a.Interval})
+	}
+	if a.Message != "" {
+		out = append(out, QuestAction{Kind: "message", StrValue: a.Message})
+	}
+	if a.Start != "" {
+		out = append(out, QuestAction{Kind: "start", StrValue: a.Start})
+	}
+	if a.End != "" {
+		out = append(out, QuestAction{Kind: "end", StrValue: a.End})
+	}
+	if a.Ask != 0 {
+		out = append(out, QuestAction{Kind: "ask", IntValue: a.Ask})
+	}
+	if a.Stop != 0 {
+		out = append(out, QuestAction{Kind: "stop", IntValue: a.Stop})
+	}
+	if len(a.Say) > 0 {
+		keys := make([]string, 0, len(a.Say))
+		for k := range a.Say {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			out = append(out, QuestAction{Kind: k, StrValue: a.Say[k]})
+		}
+	}
+	return out
 }
 
 func exportMaps(res *wz.Resources, wzPath, outDir string) error {
