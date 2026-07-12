@@ -185,7 +185,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 func (h *GuildBulletinBoardOperation) validateBulletinIcon(ch *entity.Character, icon int32) bool {
 	if icon >= pconst.GuildBulletinBoardIconCashMin && icon <= pconst.GuildBulletinBoardIconCashMax {
 		itemID := uint32(5290000 + icon - pconst.GuildBulletinBoardIconCashMin)
-		return ch.HasItem(itemID)
+		return ch.Inventory.HasItem(itemID)
 	}
 	return icon >= 0 && icon <= 2
 }

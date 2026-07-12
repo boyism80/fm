@@ -116,12 +116,12 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 		price = shopItem.Price * int(tx.Quantity)
 	}
 
-	if character.Meso < int32(price) {
+	if character.Inventory.Meso < int32(price) {
 		return nil
 	}
 
 	inventoryType := h.getItemInventoryType(tx.ItemID, itemModel)
-	inventory := character.Inventory[inventoryType]
+	inventory := character.Inventory.Containers[inventoryType]
 	if inventory == nil {
 		return nil
 	}
@@ -161,7 +161,7 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 	}
 
 	inventoryType := h.getItemInventoryType(tx.ItemID, nil)
-	inventory := ch.Inventory[inventoryType]
+	inventory := ch.Inventory.Containers[inventoryType]
 	if inventory == nil {
 		return nil
 	}
@@ -230,7 +230,7 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 		ch.Listener.OnUpdateInventorySlot(ch, inventoryType, tx.Slot, item)
 	}
 
-	ch.GainMeso(recvMesos)
+	ch.Inventory.GainMeso(recvMesos)
 
 	confirmPacket := &response.ConfirmShopTransaction{
 		Code: 0x8,
@@ -241,7 +241,7 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 }
 
 func (h *NpcShop) handleRecharge(ch *entity.Character, shop *wz.Shop, tx *request.RechargeTransaction, resources *wz.Resources) error {
-	inventory := ch.Inventory[constant.InventoryTypeConsume]
+	inventory := ch.Inventory.Containers[constant.InventoryTypeConsume]
 	if inventory == nil {
 		return nil
 	}
@@ -265,14 +265,14 @@ func (h *NpcShop) handleRecharge(ch *entity.Character, shop *wz.Shop, tx *reques
 
 	price := int(math.Round(float64(itemModel.GetPrice()) * float64(slotMax-item.GetCount())))
 
-	if ch.Meso < int32(price) {
+	if ch.Inventory.Meso < int32(price) {
 		return nil
 	}
 
 	item.SetCount(slotMax)
 	ch.Listener.OnUpdateInventorySlot(ch, constant.InventoryTypeConsume, tx.Slot, item)
 
-	ch.RemoveMeso(int32(price))
+	ch.Inventory.RemoveMeso(int32(price))
 
 	confirmPacket := &response.ConfirmShopTransaction{
 		Code: 0x8,

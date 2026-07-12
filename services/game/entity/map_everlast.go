@@ -76,7 +76,7 @@ func (m *Map) collectOwnedFieldDrops(character *Character) {
 			if fp == nil || fp.Owner != character.GetID() {
 				continue
 			}
-			if _, err := character.AddItem(drop, false); err != nil {
+			if _, err := character.Inventory.AddItem(drop, false); err != nil {
 				log.Printf("collectOwnedFieldDropsOnLeave: failed to return item %d: %v", oid, err)
 				continue
 			}
@@ -86,7 +86,7 @@ func (m *Map) collectOwnedFieldDrops(character *Character) {
 			if fp == nil || fp.Owner != character.GetID() {
 				continue
 			}
-			character.GainMeso(drop.GetCount32())
+			character.Inventory.GainMeso(drop.GetCount32())
 			removeIDs = append(removeIDs, oid)
 		}
 	}

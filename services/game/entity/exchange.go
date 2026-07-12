@@ -79,9 +79,9 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 	}
 
 	for invType := range invTypes {
-		var inv *Inventory
+		var inv *ItemContainer
 		if ch.Inventory != nil {
-			inv = ch.Inventory[invType]
+			inv = ch.Inventory.Containers[invType]
 		}
 		cost := costByInv[invType]
 		reward := rewardByInv[invType]
@@ -121,7 +121,7 @@ func (side ExchangeSide) ValidCost(ch *Character) ExchangeResult {
 	if side.isEmpty() {
 		return ExchangeOK
 	}
-	if side.Meso > 0 && ch.Meso < side.Meso {
+	if side.Meso > 0 && (ch.Inventory == nil || ch.Inventory.Meso < side.Meso) {
 		return ExchangeLackCost
 	}
 	if side.Population > 0 && uint32(side.Population) > uint32(ch.population) {
@@ -138,7 +138,7 @@ func (side ExchangeSide) ValidCost(ch *Character) ExchangeResult {
 		if modelOf(id) == nil {
 			return ExchangeLackCost
 		}
-		if !ch.HasItemCount(id, count) {
+		if ch.Inventory == nil || !ch.Inventory.HasItemCount(id, count) {
 			return ExchangeLackCost
 		}
 	}

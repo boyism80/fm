@@ -97,7 +97,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	}
 
 	if levelData.ItemCon != 0 && levelData.ItemConNo > 0 {
-		if !ch.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
+		if !ch.Inventory.RemoveByItemIDCount(uint32(levelData.ItemCon), uint16(levelData.ItemConNo)) {
 			ch.Listener.OnUpdateStats(ch, nil, true)
 			return nil
 		}

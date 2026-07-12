@@ -45,7 +45,7 @@ func (h *SortInventory) Handle(ctx *core.ClientContext, req *request.SortInvento
 }
 
 func (h *SortInventory) handleMergeItems(client *client.GameClient, character *entity.Character, inventoryType constant.InventoryType) {
-	inven := character.Inventory[inventoryType]
+	inven := character.Inventory.Containers[inventoryType]
 	buckets := map[wz.Item]map[int16]entity.Item{}
 
 	for i := range inven.SlotLimit {
@@ -86,7 +86,7 @@ func (h *SortInventory) handleMergeItems(client *client.GameClient, character *e
 }
 
 func (h *SortInventory) handleSortInventoryInternal(client *client.GameClient, character *entity.Character, inventoryType constant.InventoryType) {
-	inven := character.Inventory[inventoryType]
+	inven := character.Inventory.Containers[inventoryType]
 	n := inven.SlotLimit
 	buffer := make([]entity.Item, n)
 	for i := range n {

@@ -436,7 +436,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			argc := L.GetTop()
 			switch argc {
 			case 1:
-				L.Push(lua.LNumber(ch.Meso))
+				L.Push(lua.LNumber(ch.Inventory.Meso))
 				return 1
 			case 2:
 				value := L.CheckNumber(2)
@@ -445,11 +445,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				if value <= 2147483647 {
-					ch.SetMeso(int32(value))
+					ch.Inventory.SetMeso(int32(value))
 				} else {
-					ch.SetMeso(2147483647)
+					ch.Inventory.SetMeso(2147483647)
 				}
-				ch.Listener.OnMesoChanged(ch, ch.Meso)
+				ch.Listener.OnMesoChanged(ch, ch.Inventory.Meso)
 				return 0
 			default:
 				L.ArgError(2, "meso() getter: meso(); setter: meso(value)")
@@ -2019,7 +2019,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "clear_inventory() takes no arguments")
 				return 0
 			}
-			L.Push(lua.LNumber(ch.ClearInventory()))
+			L.Push(lua.LNumber(ch.Inventory.ClearInventory()))
 			return 1
 		},
 		"guild": func(L *lua.LState) int {
@@ -2866,7 +2866,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			default:
 				part := constant.EquipmentPartsType(L.CheckInt(2))
-				if eq, ok := ch.Equipments[part]; ok && eq != nil {
+				if eq, ok := ch.Inventory.Equipped[part]; ok && eq != nil {
 					L.Push(luax.NewLuable(L, eq.(luax.Luable)))
 					return 1
 				}
@@ -2904,7 +2904,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				invType, slots := ch.FindSlots(itemID)
+				invType, slots := ch.Inventory.FindSlots(itemID)
 				if invType != constant.InventoryTypeEquipment || len(slots) == 0 {
 					L.Push(lua.LBool(false))
 					return 1
@@ -2914,7 +2914,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if itemUD, ok := L.Get(2).(*lua.LUserData); ok && itemUD.Value != nil {
 					if item, ok := itemUD.Value.(Item); ok {
 						var found bool
-						slot, found = ch.FindSlot(constant.InventoryTypeEquipment, item)
+						slot, found = ch.Inventory.FindSlot(constant.InventoryTypeEquipment, item)
 						if !found {
 							L.Push(lua.LBool(false))
 							return 1
@@ -2925,7 +2925,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "equip(slot | item | name): slot (number), item (equipment), or name (string) expected")
 				return 0
 			}
-			err := ch.Equip(slot)
+			err := ch.Inventory.Equip(slot)
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},
@@ -2960,7 +2960,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 1
 				}
 				var found bool
-				for p, eq := range ch.Equipments {
+				for p, eq := range ch.Inventory.Equipped {
 					if eq != nil && eq.GetModel().GetID() == itemID {
 						parts = p
 						found = true
@@ -2975,7 +2975,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if itemUD, ok := L.Get(2).(*lua.LUserData); ok && itemUD.Value != nil {
 					if item, ok := itemUD.Value.(Item); ok {
 						var found bool
-						for p, eq := range ch.Equipments {
+						for p, eq := range ch.Inventory.Equipped {
 							if eq == item {
 								parts = p
 								found = true
@@ -2992,7 +2992,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "unequip(parts | item | name): parts (EquipmentPart), item (equipment), or name (string) expected")
 				return 0
 			}
-			err := ch.Unequip(parts)
+			err := ch.Inventory.Unequip(parts)
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},
@@ -3031,7 +3031,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				invType := constant.GetInventoryTypeByItemID(itemID)
 				slotTbl := L.NewTable()
-				if inven := ch.Inventory[invType]; inven != nil {
+				if inven := ch.Inventory.Containers[invType]; inven != nil {
 					for slot, item := range inven.Items {
 						if item != nil && item.GetModel().GetID() == itemID {
 							L.Push(luax.NewLuable(L, item))
@@ -3045,7 +3045,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case 3:
 				invType := constant.InventoryType(L.CheckInt(2))
 				slot := int16(L.CheckInt(3))
-				item := ch.GetItem(invType, slot)
+				item := ch.Inventory.GetItem(invType, slot)
 				if item == nil {
 					L.Push(lua.LNil)
 				} else {
@@ -3068,7 +3068,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			switch argc {
 			case 1:
 				result := L.NewTable()
-				for invType, inven := range ch.Inventory {
+				for invType, inven := range ch.Inventory.Containers {
 					if inven == nil {
 						continue
 					}
@@ -3088,7 +3088,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			default:
 				invType := constant.InventoryType(L.CheckInt(2))
 				slotTbl := L.NewTable()
-				if inven := ch.Inventory[invType]; inven != nil {
+				if inven := ch.Inventory.Containers[invType]; inven != nil {
 					for slot, item := range inven.Items {
 						if item == nil {
 							continue
@@ -3178,7 +3178,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 
-			added, err := ch.AddItem(item, true)
+			added, err := ch.Inventory.AddItem(item, true)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -3207,7 +3207,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(lua.LBool(false))
 					return 1
 				}
-				ok := ch.RemoveItem(invType, slot, count)
+				ok := ch.Inventory.RemoveItem(invType, slot, count)
 				L.Push(lua.LBool(ok))
 				return 1
 			case 2, 3:
@@ -3243,7 +3243,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 					count = uint16(L.CheckInt(3))
 				}
-				removed := ch.RemoveByItemIDCount(itemId, count)
+				removed := ch.Inventory.RemoveByItemIDCount(itemId, count)
 				L.Push(lua.LBool(removed))
 				return 1
 			default:
@@ -3275,12 +3275,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			useInventory := ch.Inventory[constant.InventoryTypeConsume]
+			useInventory := ch.Inventory.Containers[constant.InventoryTypeConsume]
 			if useInventory == nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			scrollItem := useInventory.GetItem(uint8(scrollSlot))
+			scrollItem := useInventory.Get(uint8(scrollSlot))
 			if scrollItem == nil || scrollItem.GetCount() < 1 {
 				L.Push(lua.LBool(false))
 				return 1
@@ -3296,9 +3296,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			var targetEquip Equipment
-			equipInventory := ch.Inventory[constant.InventoryTypeEquipment]
+			equipInventory := ch.Inventory.Containers[constant.InventoryTypeEquipment]
 			if targetSlot < 0 {
-				targetEquip = ch.Equipments[constant.EquipmentPartsType(targetSlot)]
+				targetEquip = ch.Inventory.Equipped[constant.EquipmentPartsType(targetSlot)]
 			} else {
 				if equipInventory == nil {
 					L.Push(lua.LBool(false))
@@ -3374,17 +3374,17 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			scrollItem.Reduce(1)
 			if scrollItem.GetCount() == 0 {
-				if err := useInventory.RemoveItem(uint8(scrollSlot)); err != nil {
+				if err := useInventory.Remove(uint8(scrollSlot)); err != nil {
 					L.Push(lua.LBool(false))
 					return 1
 				}
 			}
 			if destroyed {
 				if targetSlot < 0 {
-					delete(ch.Equipments, constant.EquipmentPartsType(targetSlot))
+					delete(ch.Inventory.Equipped, constant.EquipmentPartsType(targetSlot))
 					ch.Listener.OnUpdateCharacterLook(ch)
 				} else {
-					if err := equipInventory.RemoveItem(uint8(targetSlot)); err != nil {
+					if err := equipInventory.Remove(uint8(targetSlot)); err != nil {
 						L.Push(lua.LBool(false))
 						return 1
 					}

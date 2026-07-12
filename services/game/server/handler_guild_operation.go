@@ -108,40 +108,40 @@ func (h *GuildOperation) canPayGuildCreateCost(ch *entity.Character) bool {
 	if ch == nil {
 		return false
 	}
-	return ch.Meso >= gameconst.GuildCreateMesoCost
+	return ch.Inventory.Meso >= gameconst.GuildCreateMesoCost
 }
 
 func (h *GuildOperation) chargeGuildCreateCost(ch *entity.Character) {
 	if ch == nil {
 		return
 	}
-	ch.RemoveMeso(gameconst.GuildCreateMesoCost)
+	ch.Inventory.RemoveMeso(gameconst.GuildCreateMesoCost)
 }
 
 func (h *GuildOperation) canPayGuildEmblemChangeCost(ch *entity.Character) bool {
 	if ch == nil {
 		return false
 	}
-	if ch.HasItem(gameconst.GuildEmblemChangeCashItemID) {
+	if ch.Inventory.HasItem(gameconst.GuildEmblemChangeCashItemID) {
 		return true
 	}
-	return ch.Meso >= gameconst.GuildEmblemChangeMesoCost
+	return ch.Inventory.Meso >= gameconst.GuildEmblemChangeMesoCost
 }
 
 func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *entity.Character) (guildEmblemChangePayment, bool) {
 	if ch == nil {
 		return guildEmblemChangePayment{}, false
 	}
-	if ch.HasItem(gameconst.GuildEmblemChangeCashItemID) {
-		if !ch.RemoveByItemIDCount(gameconst.GuildEmblemChangeCashItemID, 1) {
+	if ch.Inventory.HasItem(gameconst.GuildEmblemChangeCashItemID) {
+		if !ch.Inventory.RemoveByItemIDCount(gameconst.GuildEmblemChangeCashItemID, 1) {
 			return guildEmblemChangePayment{}, false
 		}
 		return guildEmblemChangePayment{usedCashItem: true}, true
 	}
-	if ch.Meso < gameconst.GuildEmblemChangeMesoCost {
+	if ch.Inventory.Meso < gameconst.GuildEmblemChangeMesoCost {
 		return guildEmblemChangePayment{}, false
 	}
-	ch.RemoveMeso(gameconst.GuildEmblemChangeMesoCost)
+	ch.Inventory.RemoveMeso(gameconst.GuildEmblemChangeMesoCost)
 	return guildEmblemChangePayment{mesoSpent: gameconst.GuildEmblemChangeMesoCost}, true
 }
 
@@ -155,13 +155,13 @@ func (h *GuildOperation) refundGuildEmblemChangeCost(ch *entity.Character, payme
 			log.Printf("GuildOperation(emblem): refund cash item failed character=%d: %v", ch.GetID(), err)
 			return
 		}
-		if _, err := ch.AddItem(item, false); err != nil {
+		if _, err := ch.Inventory.AddItem(item, false); err != nil {
 			log.Printf("GuildOperation(emblem): refund cash item failed character=%d: %v", ch.GetID(), err)
 		}
 		return
 	}
 	if payment.mesoSpent > 0 {
-		ch.AddMeso(payment.mesoSpent)
+		ch.Inventory.AddMeso(payment.mesoSpent)
 	}
 }
 

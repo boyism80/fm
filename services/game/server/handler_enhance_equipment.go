@@ -44,12 +44,12 @@ func (*EnhanceEquipment) runEnhanceScript(ch *entity.Character, scrollSlot int16
 		fn(false)
 		return
 	}
-	useInventory := ch.Inventory[constant.InventoryTypeConsume]
+	useInventory := ch.Inventory.Containers[constant.InventoryTypeConsume]
 	if useInventory == nil {
 		fn(false)
 		return
 	}
-	scrollItem := useInventory.GetItem(uint8(scrollSlot))
+	scrollItem := useInventory.Get(uint8(scrollSlot))
 	if scrollItem == nil || scrollItem.GetCount() < 1 {
 		fn(false)
 		return

@@ -56,16 +56,12 @@ type Character struct {
 	AbilityPoint      uint16
 	SkillPoint        uint16
 	HpApUsed          uint16
-	Meso              int32
-	Inventory         map[constant.InventoryType]*Inventory
-	Equipments        map[constant.EquipmentPartsType]Equipment
-	Rings             RingContainer
+	Inventory         *Inventory
 	Skills            *SkillContainer
 	keyLayout         *KeyLayout
 	CurrentShopID     uint32
 	Chair             uint32
-	LastHealHPTime    time.Time
-	LastHealMPTime    time.Time
+	LastHeal          LastHeal
 	BaseStats         BaseStats
 	BonusStats        BonusStats
 	Buffs             *BuffContainer
@@ -79,6 +75,11 @@ type Character struct {
 	partySearchConfig *PartySearchConfig
 	buddyList         *BuddyList
 	InstantKill       bool
+}
+
+type LastHeal struct {
+	HP time.Time
+	MP time.Time
 }
 
 type Debuff struct {
@@ -118,9 +119,9 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		MountLevel:        spawnBuffData.MountLevel,
 		MountExp:          spawnBuffData.MountExp,
 		MountFatigue:      spawnBuffData.MountFatigue,
-		CrushRings:        RingsToDTO(ch.Rings.Left),
-		FriendshipRings:   RingsToDTO(ch.Rings.Mid),
-		MarriageRings:     RingsToDTO(ch.Rings.Right),
+		CrushRings:        RingsToDTO(ch.Inventory.Rings.Left),
+		FriendshipRings:   RingsToDTO(ch.Inventory.Rings.Mid),
+		MarriageRings:     RingsToDTO(ch.Inventory.Rings.Right),
 	}
 	if guildID, ok := ch.GetGuildID(); ok && ch.GameWorld != nil {
 		if guild := ch.GameWorld.GetGuildSystem().Get(guildID); guild != nil {
@@ -812,12 +813,12 @@ func (ch *Character) HasRoleAtLeast(role constant.CharacterRole) bool {
 	return ch.Role >= role
 }
 
-func (ch *Character) SetMeso(meso int32) {
+func (inv *Inventory) SetMeso(meso int32) {
 	if meso < 0 {
-		ch.Meso = 0
+		inv.Meso = 0
 		return
 	}
-	ch.Meso = meso
+	inv.Meso = meso
 }
 
 func (ch *Character) IsRanked() bool {
@@ -1005,30 +1006,14 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 		AbilityPoint: data.AbilityPoint,
 		SkillPoint:   data.SkillPoint,
 		exp:          data.Exp,
-		Meso:         data.Meso,
 		population:   data.Population,
 		partyID:      data.PartyID,
 		guildID:      data.GuildID,
-		GuildInvites: make(map[uint32]time.Time),
 		buddyList:    NewBuddyList(),
 
 		random1: stream.NewRandomStream(),
 		random2: stream.NewRandomStream(),
 		random3: stream.NewRandomStream(),
-
-		Inventory: map[constant.InventoryType]*Inventory{
-			constant.InventoryTypeEquipment:    NewInventory(constant.InventoryTypeEquipment),
-			constant.InventoryTypeConsume:      NewInventory(constant.InventoryTypeConsume),
-			constant.InventoryTypeInstallation: NewInventory(constant.InventoryTypeInstallation),
-			constant.InventoryTypeETC:          NewInventory(constant.InventoryTypeETC),
-			constant.InventoryTypeCash:         NewInventory(constant.InventoryTypeCash),
-		},
-		Rings: RingContainer{
-			Left:  []*Ring{},
-			Right: []*Ring{},
-			Mid:   []*Ring{},
-		},
-		Equipments: map[constant.EquipmentPartsType]Equipment{},
 
 		regRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
 		rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
@@ -1036,6 +1021,9 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 	ch.Buffs = NewBuffContainer(ch)
 	ch.Skills = NewSkillContainer(ch)
 	ch.Quests = NewQuestContainer(ch)
+	ch.Inventory = NewInventory(ch)
+	ch.Inventory.Meso = data.Meso
+	ch.GuildInvites = make(map[uint32]time.Time)
 	ch.keyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
 	ch.LifeCore.ObjectCore.initTimers()

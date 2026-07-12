@@ -59,7 +59,7 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 		return false
 	}
 	for itemID, count := range req.Item {
-		if !ch.HasItemCount(itemID, uint16(count)) {
+		if !ch.Inventory.HasItemCount(itemID, uint16(count)) {
 			return false
 		}
 	}

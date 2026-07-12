@@ -39,15 +39,15 @@ func (h *DropMeso) Handle(ctx *core.ClientContext, req *request.DropMeso) error 
 		return nil
 	}
 
-	if req.Count > character.Meso {
-		log.Printf("Character doesn't have enough meso: %d < %d", character.Meso, req.Count)
+	if req.Count > character.Inventory.Meso {
+		log.Printf("Character doesn't have enough meso: %d < %d", character.Inventory.Meso, req.Count)
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	character.SetMeso(character.Meso - req.Count)
+	character.Inventory.SetMeso(character.Inventory.Meso - req.Count)
 	character.Listener.OnUpdateStats(character, map[constant.Stat]int32{
-		constant.StatMeso: character.Meso,
+		constant.StatMeso: character.Inventory.Meso,
 	}, true)
 
 	mapInstance := character.GetMap()

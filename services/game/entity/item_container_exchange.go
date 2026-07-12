@@ -9,7 +9,7 @@ type itemSlotSnapshot struct {
 	count  uint16
 }
 
-func (inv *Inventory) validateItemExchange(cost map[uint32]uint16, reward map[uint32]uint16, modelOf func(uint32) wz.Item) ExchangeResult {
+func (inv *ItemContainer) validateItemExchange(cost map[uint32]uint16, reward map[uint32]uint16, modelOf func(uint32) wz.Item) ExchangeResult {
 	if inv == nil {
 		if !exchangeItemsEmpty(cost) {
 			return ExchangeLackCost

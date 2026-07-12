@@ -38,20 +38,20 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 
 	if req.Source < 0 {
 		parts := constant.EquipmentPartsType(req.Source)
-		before := character.Equipments[parts]
-		if err := character.UnequipToSlot(parts, req.Dest); err != nil {
+		before := character.Inventory.Equipped[parts]
+		if err := character.Inventory.UnequipToSlot(parts, req.Dest); err != nil {
 			return nil
 		}
 		callOnEquipmentChanged(ctx, character, parts, before, nil)
 	} else if req.Dest < 0 {
 		parts := constant.EquipmentPartsType(req.Dest)
-		before := character.Equipments[parts]
-		inven := character.Inventory[constant.InventoryTypeEquipment]
+		before := character.Inventory.Equipped[parts]
+		inven := character.Inventory.Containers[constant.InventoryTypeEquipment]
 		var after entity.Equipment
 		if item := inven.Items[req.Source]; item != nil {
 			after, _ = item.(entity.Equipment)
 		}
-		if err := character.Equip(req.Source); err != nil {
+		if err := character.Inventory.Equip(req.Source); err != nil {
 			if errors.Is(err, entity.ErrInventoryFull) {
 				character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
 			}
@@ -68,7 +68,7 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 }
 
 func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Character, invenType constant.InventoryType, slot int16, count uint16) {
-	item, ok := character.Inventory[invenType].Items[slot]
+	item, ok := character.Inventory.Containers[invenType].Items[slot]
 	if !ok {
 		return
 	}
@@ -76,7 +76,7 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 	removed := (item.Reduce(count) == 0)
 	if removed {
 		character.Listener.OnRemoveInventorySlot(character, invenType, slot)
-		delete(character.Inventory[invenType].Items, slot)
+		delete(character.Inventory.Containers[invenType].Items, slot)
 	} else {
 		character.Listener.OnUpdateInventorySlot(character, invenType, slot, item)
 	}
@@ -101,7 +101,7 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 }
 
 func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *entity.Character, invenType constant.InventoryType, sourceSlot int16, destSlot int16) {
-	inven := character.Inventory[invenType]
+	inven := character.Inventory.Containers[invenType]
 	src, ok := inven.Items[sourceSlot]
 	if !ok {
 		return

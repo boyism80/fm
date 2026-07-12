@@ -226,7 +226,7 @@ func (qp *Quest) CanRestoreLostItem(ch *Character, itemID uint32) bool {
 	if !qp.IsStarted() {
 		return false
 	}
-	if ch.HasItem(itemID) {
+	if ch.Inventory.HasItem(itemID) {
 		return false
 	}
 	for _, item := range qp.Wz.Start.Actions.Item {

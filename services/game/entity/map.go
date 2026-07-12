@@ -1130,14 +1130,14 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		}
 
 		invenType := item.GetInventoryType()
-		inven := character.Inventory[invenType]
+		inven := character.Inventory.Containers[invenType]
 		model := item.GetModel()
 
 		if !inven.IsFree(model, item.GetCount()) {
 			return constant.LootFailedInventoryFull
 		}
 
-		if _, err := character.AddItem(item, false); err != nil {
+		if _, err := character.Inventory.AddItem(item, false); err != nil {
 			log.Printf("Failed to add item: %v", err)
 		}
 		return constant.LootSuccess
@@ -1153,9 +1153,9 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		}
 
 		mesoCount := item.GetCount32()
-		beforeMeso := character.Meso
-		character.GainMeso(mesoCount)
-		if character.Meso == beforeMeso {
+		beforeMeso := character.Inventory.Meso
+		character.Inventory.GainMeso(mesoCount)
+		if character.Inventory.Meso == beforeMeso {
 			return constant.LootFailedMesoFull
 		}
 		return constant.LootSuccess

@@ -24,14 +24,14 @@ func (ch *Character) LoadInventory(items []*internal.InventoryPersisted) {
 		if slot < 0 {
 			parts := constant.EquipmentPartsType(slot)
 			if eq, ok := item.(Equipment); ok {
-				ch.Equipments[parts] = eq
+				ch.Inventory.Equipped[parts] = eq
 			}
 		} else {
 			invType := constant.InventoryType(pb.GetInventoryType())
 			if invType == 0 {
 				invType = constant.GetInventoryTypeByItemID(itemID)
 			}
-			if inv, ok := ch.Inventory[invType]; ok {
+			if inv, ok := ch.Inventory.Containers[invType]; ok {
 				inv.Items[slot] = item
 			}
 		}
@@ -170,7 +170,7 @@ func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint
 	if ch == nil {
 		return
 	}
-	for parts, equipment := range ch.Equipments {
+	for parts, equipment := range ch.Inventory.Equipped {
 		if equipment == nil || parts < -127 {
 			continue
 		}
@@ -233,7 +233,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		PositionX:    int32(ch.Position.X),
 		PositionY:    int32(ch.Position.Y),
 		Stance:       uint32(ch.Stance),
-		Meso:         ch.Meso,
+		Meso:         ch.Inventory.Meso,
 		SkillPoint:   uint32(ch.SkillPoint),
 		Population:   uint32(ch.population),
 	}
@@ -250,9 +250,9 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 }
 
 func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {
-	items := make([]*internal.InventoryPersisted, 0, len(ch.Equipments)+64)
+	items := make([]*internal.InventoryPersisted, 0, len(ch.Inventory.Equipped)+64)
 	ownerID := ch.GetID()
-	for parts, item := range ch.Equipments {
+	for parts, item := range ch.Inventory.Equipped {
 		if item == nil {
 			continue
 		}
@@ -260,7 +260,7 @@ func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {
 			items = append(items, pb)
 		}
 	}
-	for _, inv := range ch.Inventory {
+	for _, inv := range ch.Inventory.Containers {
 		items = append(items, inv.ToProto(ownerID)...)
 	}
 	return items

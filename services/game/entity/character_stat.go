@@ -146,7 +146,7 @@ func (ch *Character) GetStatValue(stat constant.Stat) (int32, bool) {
 	case constant.StatPopulation:
 		return int32(ch.population), true
 	case constant.StatMeso:
-		return ch.Meso, true
+		return ch.Inventory.Meso, true
 	default:
 		return 0, false
 	}

@@ -11,7 +11,7 @@ func (ch *Character) ToDTO() *dto.Character {
 	equipments := make(map[int8]uint32)
 	overlays := make(map[int8]uint32)
 
-	for parts, equipment := range ch.Equipments {
+	for parts, equipment := range ch.Inventory.Equipped {
 		if equipment == nil {
 			continue
 		}
@@ -42,7 +42,7 @@ func (ch *Character) ToDTO() *dto.Character {
 	}
 
 	var weapon uint32
-	if weaponEquip := ch.Equipments[constant.EquipmentPartsWeapon]; weaponEquip != nil {
+	if weaponEquip := ch.Inventory.Equipped[constant.EquipmentPartsWeapon]; weaponEquip != nil {
 		weapon = weaponEquip.GetModel().GetID()
 	}
 
@@ -88,7 +88,6 @@ func (ch *Character) ToDTO() *dto.Character {
 func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO := ch.ToDTO()
 
-	charDTO.Meso = ch.Meso
 	charDTO.SkillPoint = ch.SkillPoint
 	charDTO.MarriageId = ch.marriageId
 	charDTO.RegRocks = ch.regRocks
@@ -112,12 +111,21 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO.Random2 = &ch.random2
 	charDTO.Random3 = &ch.random3
 
-	charDTO.Inventory = make(map[constant.InventoryType]*dto.Inventory)
-	for invType, inv := range ch.Inventory {
+	charDTO.Inventory = &dto.Inventory{
+		Containers: make(map[constant.InventoryType]*dto.ItemContainer),
+		Equipped:   make(map[constant.EquipmentPartsType]*dto.Equipment),
+		Rings: dto.RingContainer{
+			Left:  RingsToDTO(ch.Inventory.Rings.Left),
+			Mid:   RingsToDTO(ch.Inventory.Rings.Mid),
+			Right: RingsToDTO(ch.Inventory.Rings.Right),
+		},
+		Meso: ch.Inventory.Meso,
+	}
+	for invType, inv := range ch.Inventory.Containers {
 		if inv == nil {
 			continue
 		}
-		invDTO := &dto.Inventory{
+		invDTO := &dto.ItemContainer{
 			Type:      invType,
 			SlotLimit: inv.SlotLimit,
 		}
@@ -132,17 +140,16 @@ func (ch *Character) ToFullDTO() *dto.Character {
 				invDTO.Items[slot] = itemDTO
 			}
 		}
-		charDTO.Inventory[invType] = invDTO
+		charDTO.Inventory.Containers[invType] = invDTO
 	}
 
-	charDTO.Equipments = make(map[constant.EquipmentPartsType]*dto.Equipment)
-	for parts, equipment := range ch.Equipments {
+	for parts, equipment := range ch.Inventory.Equipped {
 		if equipment == nil {
 			continue
 		}
 		equipDTO := equipment.ToEquipmentDTO()
 		if equipDTO != nil {
-			charDTO.Equipments[parts] = equipDTO
+			charDTO.Inventory.Equipped[parts] = equipDTO
 		}
 	}
 
@@ -192,12 +199,6 @@ func (ch *Character) ToFullDTO() *dto.Character {
 				charDTO.QuestsCompleted = append(charDTO.QuestsCompleted, questDTO)
 			}
 		})
-	}
-
-	charDTO.Rings = dto.RingContainer{
-		Left:  RingsToDTO(ch.Rings.Left),
-		Mid:   RingsToDTO(ch.Rings.Mid),
-		Right: RingsToDTO(ch.Rings.Right),
 	}
 
 	return charDTO

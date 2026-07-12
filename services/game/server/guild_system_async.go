@@ -64,7 +64,7 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 		*result = fail
 		return nil
 	}
-	if !extendedCap && ch.Meso < constant.GuildCapacityIncreaseMesoCost {
+	if !extendedCap && ch.Inventory.Meso < constant.GuildCapacityIncreaseMesoCost {
 		*result = int(constant.GuildIncreaseCapacityResultInsufficientMeso)
 		return nil
 	}
@@ -85,7 +85,7 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 		}
 		if reply.GetOk() {
 			if !extendedCap {
-				ch.RemoveMeso(constant.GuildCapacityIncreaseMesoCost)
+				ch.Inventory.RemoveMeso(constant.GuildCapacityIncreaseMesoCost)
 			}
 			*result = int(constant.GuildIncreaseCapacityResultOK)
 			return nil
@@ -128,7 +128,7 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 		*result = int(constant.AllianceCreateResultInvalidName)
 		return nil
 	}
-	if ch.Meso < constant.AllianceCreateMesoCost {
+	if ch.Inventory.Meso < constant.AllianceCreateMesoCost {
 		*result = int(constant.AllianceCreateResultInsufficientMeso)
 		return nil
 	}
@@ -164,7 +164,7 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 			*result = int(constant.AllianceCreateResultFailed)
 			return nil
 		}
-		ch.RemoveMeso(constant.AllianceCreateMesoCost)
+		ch.Inventory.RemoveMeso(constant.AllianceCreateMesoCost)
 		s.gs.alliance.Update(alliancePb)
 		s.gs.alliance.BroadcastCreate(alliancePb)
 		*result = int(constant.AllianceCreateResultOK)

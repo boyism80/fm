@@ -38,13 +38,13 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 		return nil
 	}
 
-	setupInventory := character.Inventory[constant.InventoryTypeInstallation]
+	setupInventory := character.Inventory.Containers[constant.InventoryTypeInstallation]
 	if setupInventory == nil {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
 
-	item := setupInventory.FindById(req.ItemID)
+	item := setupInventory.Find(req.ItemID)
 	if item == nil {
 		log.Printf("Chair item not found: %d", req.ItemID)
 		character.Listener.OnUpdateStats(character, nil, true)

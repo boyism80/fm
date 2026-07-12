@@ -19,7 +19,7 @@ func (ch *Character) itemModel(itemID uint32) wz.Item {
 }
 
 func (ch *Character) validateMesoExchange(costMeso, rewardMeso int32) ExchangeResult {
-	if ch == nil {
+	if ch == nil || ch.Inventory == nil {
 		return ExchangeLackCost
 	}
 	if costMeso < 0 || rewardMeso < 0 {
@@ -28,10 +28,10 @@ func (ch *Character) validateMesoExchange(costMeso, rewardMeso int32) ExchangeRe
 	if costMeso == 0 && rewardMeso == 0 {
 		return ExchangeOK
 	}
-	if ch.Meso < costMeso {
+	if ch.Inventory.Meso < costMeso {
 		return ExchangeLackCost
 	}
-	after := ch.Meso - costMeso
+	after := ch.Inventory.Meso - costMeso
 	if rewardMeso > math.MaxInt32-after {
 		return ExchangeLackCapacity
 	}
@@ -90,7 +90,7 @@ func (ch *Character) applyExchangeCost(side ExchangeSide) {
 		return
 	}
 	if side.Meso > 0 {
-		ch.removeMesoUnchecked(side.Meso)
+		ch.Inventory.removeMesoUnchecked(side.Meso)
 	}
 	if side.Population > 0 {
 		ch.losePopulationUnchecked(side.Population)
@@ -99,7 +99,7 @@ func (ch *Character) applyExchangeCost(side ExchangeSide) {
 		if count == 0 {
 			continue
 		}
-		ch.removeByItemIDCountUnchecked(id, count)
+		ch.Inventory.removeByItemIDCountUnchecked(id, count)
 	}
 	for _, skill := range side.Skills {
 		if skill.SkillID == 0 || ch.Skills == nil {
@@ -114,7 +114,7 @@ func (ch *Character) applyExchangeReward(side ExchangeSide) {
 		return
 	}
 	if side.Meso > 0 {
-		ch.gainMesoUnchecked(side.Meso)
+		ch.Inventory.gainMesoUnchecked(side.Meso)
 	}
 	for id, count := range side.Items {
 		if count == 0 {
@@ -127,7 +127,7 @@ func (ch *Character) applyExchangeReward(side ExchangeSide) {
 		if err != nil {
 			continue
 		}
-		ch.applyAddItem(item, true)
+		ch.Inventory.applyAddItem(item, true)
 	}
 	if side.Exp > 0 {
 		ch.addExpUnchecked(side.Exp)

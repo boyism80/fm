@@ -10,74 +10,79 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 )
 
-func (ch *Character) AddMeso(amount int32) {
+func (inv *Inventory) AddMeso(amount int32) {
+	ch := inv.owner
 	if amount <= 0 {
 		return
 	}
 	if ch.validateMesoExchange(0, amount) != ExchangeOK {
 		return
 	}
-	ch.addMesoUnchecked(amount)
+	inv.addMesoUnchecked(amount)
 }
 
-func (ch *Character) addMesoUnchecked(amount int32) {
+func (inv *Inventory) addMesoUnchecked(amount int32) {
+	ch := inv.owner
 	if amount <= 0 {
 		return
 	}
 
-	if ch.Meso > 0 && amount > 0 && ch.Meso+amount < ch.Meso {
-		ch.Meso = int32(^uint32(0) >> 1)
+	if inv.Meso > 0 && amount > 0 && inv.Meso+amount < inv.Meso {
+		inv.Meso = int32(^uint32(0) >> 1)
 	} else {
-		ch.Meso += amount
+		inv.Meso += amount
 	}
 
-	ch.Listener.OnMesoChanged(ch, ch.Meso)
+	ch.Listener.OnMesoChanged(ch, inv.Meso)
 }
 
-func (ch *Character) RemoveMeso(amount int32) {
+func (inv *Inventory) RemoveMeso(amount int32) {
+	ch := inv.owner
 	if amount <= 0 {
 		return
 	}
 	if ch.validateMesoExchange(amount, 0) != ExchangeOK {
 		return
 	}
-	ch.removeMesoUnchecked(amount)
+	inv.removeMesoUnchecked(amount)
 }
 
-func (ch *Character) removeMesoUnchecked(amount int32) {
+func (inv *Inventory) removeMesoUnchecked(amount int32) {
+	ch := inv.owner
 	if amount <= 0 {
 		return
 	}
 
-	if ch.Meso < amount {
-		ch.Meso = 0
+	if inv.Meso < amount {
+		inv.Meso = 0
 	} else {
-		ch.Meso -= amount
+		inv.Meso -= amount
 	}
 
-	ch.Listener.OnMesoChanged(ch, ch.Meso)
+	ch.Listener.OnMesoChanged(ch, inv.Meso)
 }
 
-func (ch *Character) GetItem(invType constant.InventoryType, slot int16) Item {
-	inven := ch.Inventory[invType]
+func (inv *Inventory) GetItem(invType constant.InventoryType, slot int16) Item {
+	inven := inv.Containers[invType]
 	if inven == nil {
 		return nil
 	}
 	if slot < 1 || slot > int16(inven.SlotLimit) {
 		return nil
 	}
-	return inven.GetItem(uint8(slot))
+	return inven.Get(uint8(slot))
 }
 
-func (ch *Character) RemoveItem(invType constant.InventoryType, slot int16, count uint16) bool {
-	inven := ch.Inventory[invType]
+func (inv *Inventory) RemoveItem(invType constant.InventoryType, slot int16, count uint16) bool {
+	ch := inv.owner
+	inven := inv.Containers[invType]
 	if inven == nil {
 		return false
 	}
 	if slot < 1 || slot > int16(inven.SlotLimit) {
 		return false
 	}
-	item := inven.GetItem(uint8(slot))
+	item := inven.Get(uint8(slot))
 	if item == nil {
 		return false
 	}
@@ -86,7 +91,7 @@ func (ch *Character) RemoveItem(invType constant.InventoryType, slot int16, coun
 	}
 	item.Reduce(count)
 	if item.GetCount() == 0 {
-		if err := inven.RemoveItem(uint8(slot)); err != nil {
+		if err := inven.Remove(uint8(slot)); err != nil {
 			return false
 		}
 		ch.Listener.OnRemoveInventorySlot(ch, invType, slot)
@@ -96,14 +101,14 @@ func (ch *Character) RemoveItem(invType constant.InventoryType, slot int16, coun
 	return true
 }
 
-func (ch *Character) FindSlots(itemID uint32) (invType constant.InventoryType, slots []int16) {
+func (inv *Inventory) FindSlots(itemID uint32) (invType constant.InventoryType, slots []int16) {
 	invType = constant.GetInventoryTypeByItemID(itemID)
-	inven := ch.Inventory[invType]
+	inven := inv.Containers[invType]
 	if inven == nil {
 		return invType, nil
 	}
 	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
-		item := inven.GetItem(uint8(slot))
+		item := inven.Get(uint8(slot))
 		if item != nil && item.GetModel().GetID() == itemID {
 			slots = append(slots, slot)
 		}
@@ -111,25 +116,25 @@ func (ch *Character) FindSlots(itemID uint32) (invType constant.InventoryType, s
 	return invType, slots
 }
 
-func (ch *Character) GetCountByItemID(itemID uint32) uint16 {
-	invType, slots := ch.FindSlots(itemID)
+func (inv *Inventory) GetCountByItemID(itemID uint32) uint16 {
+	invType, slots := inv.FindSlots(itemID)
 	var total uint16
 	for _, slot := range slots {
-		if item := ch.GetItem(invType, slot); item != nil {
+		if item := inv.GetItem(invType, slot); item != nil {
 			total += item.GetCount()
 		}
 	}
 	return total
 }
 
-func (ch *Character) HasItem(itemID uint32) bool {
+func (inv *Inventory) HasItem(itemID uint32) bool {
 	invType := constant.GetInventoryTypeByItemID(itemID)
-	inven := ch.Inventory[invType]
+	inven := inv.Containers[invType]
 	if inven == nil {
 		return false
 	}
 	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
-		item := inven.GetItem(uint8(slot))
+		item := inven.Get(uint8(slot))
 		if item != nil && item.GetModel().GetID() == itemID {
 			return true
 		}
@@ -137,18 +142,18 @@ func (ch *Character) HasItem(itemID uint32) bool {
 	return false
 }
 
-func (ch *Character) HasItemCount(itemID uint32, count uint16) bool {
+func (inv *Inventory) HasItemCount(itemID uint32, count uint16) bool {
 	if count == 0 {
 		return true
 	}
 	invType := constant.GetInventoryTypeByItemID(itemID)
-	inven := ch.Inventory[invType]
+	inven := inv.Containers[invType]
 	if inven == nil {
 		return false
 	}
 	var total uint16
 	for slot := int16(1); slot <= int16(inven.SlotLimit); slot++ {
-		item := inven.GetItem(uint8(slot))
+		item := inven.Get(uint8(slot))
 		if item == nil || item.GetModel().GetID() != itemID {
 			continue
 		}
@@ -160,7 +165,8 @@ func (ch *Character) HasItemCount(itemID uint32, count uint16) bool {
 	return false
 }
 
-func (ch *Character) RemoveByItemIDCount(itemID uint32, count uint16) bool {
+func (inv *Inventory) RemoveByItemIDCount(itemID uint32, count uint16) bool {
+	ch := inv.owner
 	if count == 0 {
 		return true
 	}
@@ -172,20 +178,20 @@ func (ch *Character) RemoveByItemIDCount(itemID uint32, count uint16) bool {
 	if spec.Valid(ch) != ExchangeOK {
 		return false
 	}
-	return ch.removeByItemIDCountUnchecked(itemID, count)
+	return inv.removeByItemIDCountUnchecked(itemID, count)
 }
 
-func (ch *Character) removeByItemIDCountUnchecked(itemID uint32, count uint16) bool {
+func (inv *Inventory) removeByItemIDCountUnchecked(itemID uint32, count uint16) bool {
 	if count == 0 {
 		return true
 	}
-	invType, slots := ch.FindSlots(itemID)
+	invType, slots := inv.FindSlots(itemID)
 	remaining := count
 	for _, slot := range slots {
 		if remaining == 0 {
 			break
 		}
-		item := ch.GetItem(invType, slot)
+		item := inv.GetItem(invType, slot)
 		if item == nil {
 			continue
 		}
@@ -194,17 +200,18 @@ func (ch *Character) removeByItemIDCountUnchecked(itemID uint32, count uint16) b
 			take = remaining
 		}
 		remaining -= take
-		ch.RemoveItem(invType, slot, take)
+		inv.RemoveItem(invType, slot, take)
 	}
 	return remaining == 0
 }
 
-func (ch *Character) ClearInventory() int {
-	if ch == nil {
+func (inv *Inventory) ClearInventory() int {
+	if inv == nil || inv.owner == nil {
 		return 0
 	}
+	ch := inv.owner
 	cleared := 0
-	for invType, inven := range ch.Inventory {
+	for invType, inven := range inv.Containers {
 		if inven == nil || inven.Items == nil {
 			continue
 		}
@@ -226,7 +233,8 @@ func (ch *Character) ClearInventory() int {
 	return cleared
 }
 
-func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
+func (inv *Inventory) AddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
+	ch := inv.owner
 	if item == nil {
 		return nil, fmt.Errorf("item is nil")
 	}
@@ -242,16 +250,17 @@ func (ch *Character) AddItem(item Item, allOrNothing bool) (addedItems []Item, e
 		}
 	}
 
-	return ch.applyAddItem(item, allOrNothing)
+	return inv.applyAddItem(item, allOrNothing)
 }
 
-func (ch *Character) applyAddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
+func (inv *Inventory) applyAddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
+	ch := inv.owner
 	if item == nil {
 		return nil, fmt.Errorf("item is nil")
 	}
 
 	invenType := item.GetInventoryType()
-	inven := ch.Inventory[invenType]
+	inven := inv.Containers[invenType]
 	if inven == nil {
 		return nil, fmt.Errorf("inventory type %d not found", invenType)
 	}
@@ -329,36 +338,38 @@ func (ch *Character) NotifyItemGained(itemID uint32) {
 	})
 }
 
-func (ch *Character) GainMeso(amount int32) {
+func (inv *Inventory) GainMeso(amount int32) {
+	ch := inv.owner
 	if amount <= 0 {
 		return
 	}
 	if ch.validateMesoExchange(0, amount) != ExchangeOK {
 		return
 	}
-	ch.gainMesoUnchecked(amount)
+	inv.gainMesoUnchecked(amount)
 }
 
-func (ch *Character) gainMesoUnchecked(amount int32) {
+func (inv *Inventory) gainMesoUnchecked(amount int32) {
+	ch := inv.owner
 	if amount <= 0 {
 		return
 	}
 
-	if ch.Meso > 0 && amount > 0 && ch.Meso+amount < ch.Meso {
-		ch.Meso = int32(^uint32(0) >> 1)
+	if inv.Meso > 0 && amount > 0 && inv.Meso+amount < inv.Meso {
+		inv.Meso = int32(^uint32(0) >> 1)
 	} else {
-		ch.Meso += amount
+		inv.Meso += amount
 	}
 
-	ch.Listener.OnMesoChanged(ch, ch.Meso)
+	ch.Listener.OnMesoChanged(ch, inv.Meso)
 	ch.Listener.OnShowMesoGain(ch, amount, constant.ShowMesoGainTypeStatus)
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
-		constant.StatMeso: ch.Meso,
+		constant.StatMeso: inv.Meso,
 	}, false)
 }
 
-func (ch *Character) FindSlot(invType constant.InventoryType, item Item) (int16, bool) {
-	inven := ch.Inventory[invType]
+func (inv *Inventory) FindSlot(invType constant.InventoryType, item Item) (int16, bool) {
+	inven := inv.Containers[invType]
 	if inven == nil || item == nil {
 		return 0, false
 	}
@@ -370,9 +381,10 @@ func (ch *Character) FindSlot(invType constant.InventoryType, item Item) (int16,
 	return 0, false
 }
 
-func (ch *Character) UnequipToSlot(parts constant.EquipmentPartsType, destSlot int16) error {
-	equipments := ch.Equipments
-	inventory := ch.Inventory
+func (inv *Inventory) UnequipToSlot(parts constant.EquipmentPartsType, destSlot int16) error {
+	ch := inv.owner
+	equipments := inv.Equipped
+	inventory := inv.Containers
 	if equipments[parts] == nil {
 		return nil
 	}
@@ -387,8 +399,8 @@ func (ch *Character) UnequipToSlot(parts constant.EquipmentPartsType, destSlot i
 	return nil
 }
 
-func (ch *Character) Unequip(parts constant.EquipmentPartsType) error {
-	inven := ch.Inventory[constant.InventoryTypeEquipment]
+func (inv *Inventory) Unequip(parts constant.EquipmentPartsType) error {
+	inven := inv.Containers[constant.InventoryTypeEquipment]
 	if inven == nil {
 		return errors.New("equipment inventory not found")
 	}
@@ -396,12 +408,13 @@ func (ch *Character) Unequip(parts constant.EquipmentPartsType) error {
 	if !ok {
 		return ErrInventoryFull
 	}
-	return ch.UnequipToSlot(parts, int16(destSlot))
+	return inv.UnequipToSlot(parts, int16(destSlot))
 }
 
-func (ch *Character) Equip(slot int16) error {
-	equipments := ch.Equipments
-	inventory := ch.Inventory
+func (inv *Inventory) Equip(slot int16) error {
+	ch := inv.owner
+	equipments := inv.Equipped
+	inventory := inv.Containers
 	inven := inventory[constant.InventoryTypeEquipment]
 	if inven == nil {
 		return errors.New("equipment inventory not found")
@@ -429,7 +442,7 @@ func (ch *Character) Equip(slot int16) error {
 				if !isFree {
 					return ErrInventoryFull
 				}
-				if err := ch.UnequipToSlot(constant.EquipmentPartsPants, int16(storageSlot)); err != nil {
+				if err := inv.UnequipToSlot(constant.EquipmentPartsPants, int16(storageSlot)); err != nil {
 					return err
 				}
 			}
@@ -442,7 +455,7 @@ func (ch *Character) Equip(slot int16) error {
 				if swap && !isFree {
 					return ErrInventoryFull
 				}
-				if err := ch.UnequipToSlot(constant.EquipmentPartsTop, int16(storageSlot)); err != nil {
+				if err := inv.UnequipToSlot(constant.EquipmentPartsTop, int16(storageSlot)); err != nil {
 					return err
 				}
 			}

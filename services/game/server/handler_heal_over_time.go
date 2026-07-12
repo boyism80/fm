@@ -63,11 +63,11 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 			})
 			return nil
 		}
-		if !allowCooldown(&character.LastHealHPTime, hpInterval, now) {
+		if !allowCooldown(&character.LastHeal.HP, hpInterval, now) {
 			return nil
 		}
 	}
-	if healMP > 0 && !allowCooldown(&character.LastHealMPTime, healOverTimeMPInterval, now) {
+	if healMP > 0 && !allowCooldown(&character.LastHeal.MP, healOverTimeMPInterval, now) {
 		return nil
 	}
 
@@ -78,10 +78,10 @@ func (h *HealOverTime) Handle(ctx *core.ClientContext, req *request.HealOverTime
 }
 
 func (h *HealOverTime) applyHealOverTime(ctx *core.ClientContext, character *entity.Character, req *request.HealOverTime, healHP, healMP uint16, hpInterval time.Duration, now time.Time) {
-	if !allowCooldown(&character.LastHealHPTime, hpInterval, now) {
+	if !allowCooldown(&character.LastHeal.HP, hpInterval, now) {
 		return
 	}
-	if healMP > 0 && !allowCooldown(&character.LastHealMPTime, healOverTimeMPInterval, now) {
+	if healMP > 0 && !allowCooldown(&character.LastHeal.MP, healOverTimeMPInterval, now) {
 		return
 	}
 	h.getHealCap(ctx, character, func(maxHP, maxMP uint16) {

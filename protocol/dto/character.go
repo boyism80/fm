@@ -41,15 +41,12 @@ type Character struct {
 	Weapon           uint32
 	Position         types.Vector2[int16]
 	Stance           uint8
-	Meso             int32
 	SkillPoint       uint16
-	Inventory        map[constant.InventoryType]*Inventory
-	Equipments       map[constant.EquipmentPartsType]*Equipment
+	Inventory        *Inventory
 	Skills           []*Skill
 	Cooldowns        map[uint32]uint16
 	QuestsStarted    []*QuestStatus
 	QuestsCompleted  []*QuestStatus
-	Rings            RingContainer
 	RegRocks         []uint32
 	Rocks            []uint32
 	MonsterBookCover uint32
@@ -167,17 +164,17 @@ func (c *Character) SerializeStats(writer *stream.StreamWriter) {
 }
 
 func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
-	writer.Write32(c.Meso)
+	writer.Write32(c.Inventory.Meso)
 
-	writer.WriteU8(c.Inventory[constant.InventoryTypeEquipment].SlotLimit)
-	writer.WriteU8(c.Inventory[constant.InventoryTypeConsume].SlotLimit)
-	writer.WriteU8(c.Inventory[constant.InventoryTypeInstallation].SlotLimit)
-	writer.WriteU8(c.Inventory[constant.InventoryTypeETC].SlotLimit)
-	writer.WriteU8(c.Inventory[constant.InventoryTypeCash].SlotLimit)
+	writer.WriteU8(c.Inventory.Containers[constant.InventoryTypeEquipment].SlotLimit)
+	writer.WriteU8(c.Inventory.Containers[constant.InventoryTypeConsume].SlotLimit)
+	writer.WriteU8(c.Inventory.Containers[constant.InventoryTypeInstallation].SlotLimit)
+	writer.WriteU8(c.Inventory.Containers[constant.InventoryTypeETC].SlotLimit)
+	writer.WriteU8(c.Inventory.Containers[constant.InventoryTypeCash].SlotLimit)
 
 	equipParts1 := make([]constant.EquipmentPartsType, 0)
-	for parts := range c.Equipments {
-		if c.Equipments[parts] != nil && (parts <= 0 && parts > -100) {
+	for parts := range c.Inventory.Equipped {
+		if c.Inventory.Equipped[parts] != nil && (parts <= 0 && parts > -100) {
 			equipParts1 = append(equipParts1, parts)
 		}
 	}
@@ -185,7 +182,7 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 		return equipParts1[i] > equipParts1[j]
 	})
 	for _, parts := range equipParts1 {
-		c.Equipments[parts].Serialize(writer, ItemSerializeOption{
+		c.Inventory.Equipped[parts].Serialize(writer, ItemSerializeOption{
 			Trade:    true,
 			Slot:     int16(parts),
 			SlotMode: SlotEncodeActual,
@@ -194,8 +191,8 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.WriteU8(0)
 
 	equipParts2 := make([]constant.EquipmentPartsType, 0)
-	for parts := range c.Equipments {
-		if c.Equipments[parts] != nil && (parts <= -100 && parts > -1000) {
+	for parts := range c.Inventory.Equipped {
+		if c.Inventory.Equipped[parts] != nil && (parts <= -100 && parts > -1000) {
 			equipParts2 = append(equipParts2, parts)
 		}
 	}
@@ -203,7 +200,7 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 		return equipParts2[i] > equipParts2[j]
 	})
 	for _, parts := range equipParts2 {
-		c.Equipments[parts].Serialize(writer, ItemSerializeOption{
+		c.Inventory.Equipped[parts].Serialize(writer, ItemSerializeOption{
 			Trade:    true,
 			Slot:     int16(parts),
 			SlotMode: SlotEncodeActual,
@@ -211,11 +208,11 @@ func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 	}
 	writer.WriteU8(0)
 
-	c.Inventory[constant.InventoryTypeEquipment].Serialize(writer)
-	c.Inventory[constant.InventoryTypeConsume].Serialize(writer)
-	c.Inventory[constant.InventoryTypeInstallation].Serialize(writer)
-	c.Inventory[constant.InventoryTypeETC].Serialize(writer)
-	c.Inventory[constant.InventoryTypeCash].Serialize(writer)
+	c.Inventory.Containers[constant.InventoryTypeEquipment].Serialize(writer)
+	c.Inventory.Containers[constant.InventoryTypeConsume].Serialize(writer)
+	c.Inventory.Containers[constant.InventoryTypeInstallation].Serialize(writer)
+	c.Inventory.Containers[constant.InventoryTypeETC].Serialize(writer)
+	c.Inventory.Containers[constant.InventoryTypeCash].Serialize(writer)
 }
 
 func (c *Character) SerializeSkills(writer *stream.StreamWriter) {
@@ -279,7 +276,7 @@ func (c *Character) SerializeQuests(writer *stream.StreamWriter) {
 func (c *Character) SerializeRings(writer *stream.StreamWriter) {
 	writer.WriteU16(0)
 
-	left := c.Rings.Left
+	left := c.Inventory.Rings.Left
 	if left == nil {
 		left = []*Ring{}
 	}
@@ -291,7 +288,7 @@ func (c *Character) SerializeRings(writer *stream.StreamWriter) {
 		writer.WriteU64(ring.PartnerId)
 	}
 
-	mid := c.Rings.Mid
+	mid := c.Inventory.Rings.Mid
 	if mid == nil {
 		mid = []*Ring{}
 	}
@@ -304,7 +301,7 @@ func (c *Character) SerializeRings(writer *stream.StreamWriter) {
 		writer.WriteU32(ring.ItemId)
 	}
 
-	right := c.Rings.Right
+	right := c.Inventory.Rings.Right
 	if right == nil {
 		right = []*Ring{}
 	}
