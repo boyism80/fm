@@ -112,7 +112,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO.Random3 = &ch.random3
 
 	charDTO.Inventory = &dto.Inventory{
-		Containers: make(map[constant.InventoryType]*dto.ItemContainer),
+		Tabs: make(map[constant.InventoryType]*dto.ItemContainer),
 		Equipped:   make(map[constant.EquipmentPartsType]*dto.Equipment),
 		Rings: dto.RingContainer{
 			Left:  RingsToDTO(ch.Inventory.Rings.Left),
@@ -121,7 +121,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		},
 		Meso: ch.Inventory.Meso,
 	}
-	for invType, inv := range ch.Inventory.Containers {
+	for invType, inv := range ch.Inventory.Tabs {
 		if inv == nil {
 			continue
 		}
@@ -140,7 +140,7 @@ func (ch *Character) ToFullDTO() *dto.Character {
 				invDTO.Items[slot] = itemDTO
 			}
 		}
-		charDTO.Inventory.Containers[invType] = invDTO
+		charDTO.Inventory.Tabs[invType] = invDTO
 	}
 
 	for parts, equipment := range ch.Inventory.Equipped {

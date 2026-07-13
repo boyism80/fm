@@ -81,7 +81,7 @@ func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {
 	for invType := range invTypes {
 		var inv *ItemContainer
 		if ch.Inventory != nil {
-			inv = ch.Inventory.Containers[invType]
+			inv = ch.Inventory.Tabs[invType]
 		}
 		cost := costByInv[invType]
 		reward := rewardByInv[invType]

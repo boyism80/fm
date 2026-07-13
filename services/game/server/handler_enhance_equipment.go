@@ -44,7 +44,7 @@ func (*EnhanceEquipment) runEnhanceScript(ch *entity.Character, scrollSlot int16
 		fn(false)
 		return
 	}
-	useInventory := ch.Inventory.Containers[constant.InventoryTypeConsume]
+	useInventory := ch.Inventory.Tabs[constant.InventoryTypeConsume]
 	if useInventory == nil {
 		fn(false)
 		return

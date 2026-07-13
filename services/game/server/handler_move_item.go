@@ -46,7 +46,7 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 	} else if req.Dest < 0 {
 		parts := constant.EquipmentPartsType(req.Dest)
 		before := character.Inventory.Equipped[parts]
-		inven := character.Inventory.Containers[constant.InventoryTypeEquipment]
+		inven := character.Inventory.Tabs[constant.InventoryTypeEquipment]
 		var after entity.Equipment
 		if item := inven.Items[req.Source]; item != nil {
 			after, _ = item.(entity.Equipment)
@@ -68,7 +68,7 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 }
 
 func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Character, invenType constant.InventoryType, slot int16, count uint16) {
-	item, ok := character.Inventory.Containers[invenType].Items[slot]
+	item, ok := character.Inventory.Tabs[invenType].Items[slot]
 	if !ok {
 		return
 	}
@@ -76,7 +76,7 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 	removed := (item.Reduce(count) == 0)
 	if removed {
 		character.Listener.OnRemoveInventorySlot(character, invenType, slot)
-		delete(character.Inventory.Containers[invenType].Items, slot)
+		delete(character.Inventory.Tabs[invenType].Items, slot)
 	} else {
 		character.Listener.OnUpdateInventorySlot(character, invenType, slot, item)
 	}
@@ -101,7 +101,7 @@ func (h *MoveItem) handleDrop(client *client.GameClient, character *entity.Chara
 }
 
 func (h *MoveItem) handleMoveItemInternal(client *client.GameClient, character *entity.Character, invenType constant.InventoryType, sourceSlot int16, destSlot int16) {
-	inven := character.Inventory.Containers[invenType]
+	inven := character.Inventory.Tabs[invenType]
 	src, ok := inven.Items[sourceSlot]
 	if !ok {
 		return

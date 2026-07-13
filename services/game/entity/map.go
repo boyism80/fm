@@ -1130,7 +1130,7 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		}
 
 		invenType := item.GetInventoryType()
-		inven := character.Inventory.Containers[invenType]
+		inven := character.Inventory.Tabs[invenType]
 		model := item.GetModel()
 
 		if !inven.IsFree(model, item.GetCount()) {

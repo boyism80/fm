@@ -5,8 +5,8 @@ import (
 )
 
 type Inventory struct {
-	Containers map[constant.InventoryType]*ItemContainer
-	Equipped   map[constant.EquipmentPartsType]*Equipment
-	Rings      RingContainer
-	Meso       int32
+	Tabs     map[constant.InventoryType]*ItemContainer
+	Equipped map[constant.EquipmentPartsType]*Equipment
+	Rings    RingContainer
+	Meso     int32
 }

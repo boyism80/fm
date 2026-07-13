@@ -121,7 +121,7 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 	}
 
 	inventoryType := h.getItemInventoryType(tx.ItemID, itemModel)
-	inventory := character.Inventory.Containers[inventoryType]
+	inventory := character.Inventory.Tabs[inventoryType]
 	if inventory == nil {
 		return nil
 	}
@@ -161,7 +161,7 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 	}
 
 	inventoryType := h.getItemInventoryType(tx.ItemID, nil)
-	inventory := ch.Inventory.Containers[inventoryType]
+	inventory := ch.Inventory.Tabs[inventoryType]
 	if inventory == nil {
 		return nil
 	}
@@ -241,7 +241,7 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 }
 
 func (h *NpcShop) handleRecharge(ch *entity.Character, shop *wz.Shop, tx *request.RechargeTransaction, resources *wz.Resources) error {
-	inventory := ch.Inventory.Containers[constant.InventoryTypeConsume]
+	inventory := ch.Inventory.Tabs[constant.InventoryTypeConsume]
 	if inventory == nil {
 		return nil
 	}

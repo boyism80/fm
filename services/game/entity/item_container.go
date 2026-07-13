@@ -3,7 +3,6 @@ package entity
 import (
 	"errors"
 
-	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 )
 
@@ -19,12 +18,10 @@ var (
 type ItemContainer struct {
 	Items     map[int16]Item
 	SlotLimit uint8
-	Type      constant.InventoryType
 }
 
-func NewItemContainer(typ constant.InventoryType) *ItemContainer {
+func NewItemContainer() *ItemContainer {
 	return &ItemContainer{
-		Type:      typ,
 		SlotLimit: 32,
 		Items:     map[int16]Item{},
 	}

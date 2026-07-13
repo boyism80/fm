@@ -3031,7 +3031,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				invType := constant.GetInventoryTypeByItemID(itemID)
 				slotTbl := L.NewTable()
-				if inven := ch.Inventory.Containers[invType]; inven != nil {
+				if inven := ch.Inventory.Tabs[invType]; inven != nil {
 					for slot, item := range inven.Items {
 						if item != nil && item.GetModel().GetID() == itemID {
 							L.Push(luax.NewLuable(L, item))
@@ -3068,7 +3068,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			switch argc {
 			case 1:
 				result := L.NewTable()
-				for invType, inven := range ch.Inventory.Containers {
+				for invType, inven := range ch.Inventory.Tabs {
 					if inven == nil {
 						continue
 					}
@@ -3088,7 +3088,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			default:
 				invType := constant.InventoryType(L.CheckInt(2))
 				slotTbl := L.NewTable()
-				if inven := ch.Inventory.Containers[invType]; inven != nil {
+				if inven := ch.Inventory.Tabs[invType]; inven != nil {
 					for slot, item := range inven.Items {
 						if item == nil {
 							continue
@@ -3275,7 +3275,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			useInventory := ch.Inventory.Containers[constant.InventoryTypeConsume]
+			useInventory := ch.Inventory.Tabs[constant.InventoryTypeConsume]
 			if useInventory == nil {
 				L.Push(lua.LBool(false))
 				return 1
@@ -3296,7 +3296,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			var targetEquip Equipment
-			equipInventory := ch.Inventory.Containers[constant.InventoryTypeEquipment]
+			equipInventory := ch.Inventory.Tabs[constant.InventoryTypeEquipment]
 			if targetSlot < 0 {
 				targetEquip = ch.Inventory.Equipped[constant.EquipmentPartsType(targetSlot)]
 			} else {

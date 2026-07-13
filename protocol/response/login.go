@@ -16,7 +16,7 @@ type Login struct {
 func (p *Login) Serialize(writer *stream.StreamWriter) error {
 
 	if p.Character.Inventory != nil {
-		if cashInv := p.Character.Inventory.Containers[constant.InventoryTypeCash]; cashInv != nil {
+		if cashInv := p.Character.Inventory.Tabs[constant.InventoryTypeCash]; cashInv != nil {
 			cashInv.SlotLimit = 60
 		}
 	}

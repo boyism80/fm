@@ -30,7 +30,7 @@ func (*UseReturnScroll) Handle(ctx *core.ClientContext, req *request.UseReturnSc
 		return nil
 	}
 
-	useInventory := ch.Inventory.Containers[constant.InventoryTypeConsume]
+	useInventory := ch.Inventory.Tabs[constant.InventoryTypeConsume]
 	if useInventory == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil

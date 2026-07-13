@@ -63,7 +63,7 @@ func (inv *Inventory) removeMesoUnchecked(amount int32) {
 }
 
 func (inv *Inventory) GetItem(invType constant.InventoryType, slot int16) Item {
-	inven := inv.Containers[invType]
+	inven := inv.Tabs[invType]
 	if inven == nil {
 		return nil
 	}
@@ -75,7 +75,7 @@ func (inv *Inventory) GetItem(invType constant.InventoryType, slot int16) Item {
 
 func (inv *Inventory) RemoveItem(invType constant.InventoryType, slot int16, count uint16) bool {
 	ch := inv.owner
-	inven := inv.Containers[invType]
+	inven := inv.Tabs[invType]
 	if inven == nil {
 		return false
 	}
@@ -103,7 +103,7 @@ func (inv *Inventory) RemoveItem(invType constant.InventoryType, slot int16, cou
 
 func (inv *Inventory) FindSlots(itemID uint32) (invType constant.InventoryType, slots []int16) {
 	invType = constant.GetInventoryTypeByItemID(itemID)
-	inven := inv.Containers[invType]
+	inven := inv.Tabs[invType]
 	if inven == nil {
 		return invType, nil
 	}
@@ -129,7 +129,7 @@ func (inv *Inventory) GetCountByItemID(itemID uint32) uint16 {
 
 func (inv *Inventory) HasItem(itemID uint32) bool {
 	invType := constant.GetInventoryTypeByItemID(itemID)
-	inven := inv.Containers[invType]
+	inven := inv.Tabs[invType]
 	if inven == nil {
 		return false
 	}
@@ -147,7 +147,7 @@ func (inv *Inventory) HasItemCount(itemID uint32, count uint16) bool {
 		return true
 	}
 	invType := constant.GetInventoryTypeByItemID(itemID)
-	inven := inv.Containers[invType]
+	inven := inv.Tabs[invType]
 	if inven == nil {
 		return false
 	}
@@ -211,7 +211,7 @@ func (inv *Inventory) ClearInventory() int {
 	}
 	ch := inv.owner
 	cleared := 0
-	for invType, inven := range inv.Containers {
+	for invType, inven := range inv.Tabs {
 		if inven == nil || inven.Items == nil {
 			continue
 		}
@@ -260,7 +260,7 @@ func (inv *Inventory) applyAddItem(item Item, allOrNothing bool) (addedItems []I
 	}
 
 	invenType := item.GetInventoryType()
-	inven := inv.Containers[invenType]
+	inven := inv.Tabs[invenType]
 	if inven == nil {
 		return nil, fmt.Errorf("inventory type %d not found", invenType)
 	}
@@ -369,7 +369,7 @@ func (inv *Inventory) gainMesoUnchecked(amount int32) {
 }
 
 func (inv *Inventory) FindSlot(invType constant.InventoryType, item Item) (int16, bool) {
-	inven := inv.Containers[invType]
+	inven := inv.Tabs[invType]
 	if inven == nil || item == nil {
 		return 0, false
 	}
@@ -384,7 +384,7 @@ func (inv *Inventory) FindSlot(invType constant.InventoryType, item Item) (int16
 func (inv *Inventory) UnequipToSlot(parts constant.EquipmentPartsType, destSlot int16) error {
 	ch := inv.owner
 	equipments := inv.Equipped
-	inventory := inv.Containers
+	inventory := inv.Tabs
 	if equipments[parts] == nil {
 		return nil
 	}
@@ -400,7 +400,7 @@ func (inv *Inventory) UnequipToSlot(parts constant.EquipmentPartsType, destSlot 
 }
 
 func (inv *Inventory) Unequip(parts constant.EquipmentPartsType) error {
-	inven := inv.Containers[constant.InventoryTypeEquipment]
+	inven := inv.Tabs[constant.InventoryTypeEquipment]
 	if inven == nil {
 		return errors.New("equipment inventory not found")
 	}
@@ -414,7 +414,7 @@ func (inv *Inventory) Unequip(parts constant.EquipmentPartsType) error {
 func (inv *Inventory) Equip(slot int16) error {
 	ch := inv.owner
 	equipments := inv.Equipped
-	inventory := inv.Containers
+	inventory := inv.Tabs
 	inven := inventory[constant.InventoryTypeEquipment]
 	if inven == nil {
 		return errors.New("equipment inventory not found")

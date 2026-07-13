@@ -31,7 +31,7 @@ func (ch *Character) LoadInventory(items []*internal.InventoryPersisted) {
 			if invType == 0 {
 				invType = constant.GetInventoryTypeByItemID(itemID)
 			}
-			if inv, ok := ch.Inventory.Containers[invType]; ok {
+			if inv, ok := ch.Inventory.Tabs[invType]; ok {
 				inv.Items[slot] = item
 			}
 		}
@@ -260,7 +260,7 @@ func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {
 			items = append(items, pb)
 		}
 	}
-	for _, inv := range ch.Inventory.Containers {
+	for _, inv := range ch.Inventory.Tabs {
 		items = append(items, inv.ToProto(ownerID)...)
 	}
 	return items
