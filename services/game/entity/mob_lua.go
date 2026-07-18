@@ -738,8 +738,8 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			spawnPoint := uint8(0)
-			if portal, ok := targetMap.Wz.FindPortal(b.Portal); ok {
-				spawnPoint = portal.ID
+			if portal := targetMap.FindPortalByName(b.Portal); portal != nil && portal.Wz != nil {
+				spawnPoint = portal.Wz.ID
 			}
 			if err := ch.Warp(targetMap, spawnPoint); err != nil {
 				L.Push(lua.LBool(false))

@@ -55,6 +55,19 @@ type ResetMapAck struct {
 	Thread *lua.LState
 }
 
+type RespawnMap struct {
+	ReplyTo                *actor.PID
+	Root                   *lua.LState
+	Thread                 *lua.LState
+	IncludeNegativeMobTime bool
+}
+
+type RespawnMapAck struct {
+	Root    *lua.LState
+	Thread  *lua.LState
+	Spawned int
+}
+
 type RunOnMap struct {
 	ReplyTo      *actor.PID
 	CallerRoot   *lua.LState
@@ -82,6 +95,12 @@ type RemoveCharacter struct {
 
 type WarpCharacter struct {
 	Character *entity.Character
+	Portal    uint8
+}
+
+type TransferCharacter struct {
+	Character *entity.Character
+	TargetPID *actor.PID
 	Portal    uint8
 }
 

@@ -33,6 +33,8 @@ type MapListener interface {
 	OnMusicChanged(mapInstance *Map, song string)
 	OnMapMessage(mapInstance *Map, messageType constant.ServerMessageType, message string)
 	OnClearEffect(mapInstance *Map)
+	OnShowEffect(mapInstance *Map, path string)
+	OnPlaySound(mapInstance *Map, path string)
 	OnMobHomingRemoved(mapInstance *Map, mob *Mob, removed *Homing, causer *Character)
 	OnMobHomingSet(mapInstance *Map, mob *Mob, homing *Homing, causer *Character)
 	OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool)
@@ -69,7 +71,10 @@ type Map struct {
 	pidMutex          sync.RWMutex
 	propertyMutex     sync.RWMutex
 	properties        map[string]interface{}
-	UsedDoorPortalIDs map[uint8]struct{}
+	UsedDoorPortalIDs   map[uint8]struct{}
+	portals             map[uint8]*Portal
+	portalsByName       map[string]*Portal
+	doorReturnPortalIDs []uint8
 }
 
 type BroadcastOption struct {
@@ -108,6 +113,7 @@ func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint
 
 	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
 
+	mapInstance.initPortals()
 	mapInstance.initNpcs()
 	mapInstance.initReactors()
 	mapInstance.initMobs()
@@ -194,6 +200,9 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	}
 
 	m.callMapLifecycleScript(character, "on_map_enter")
+	if sm := character.StateMachine(); sm != nil {
+		sm.CallHook("on_changed_map", sm, character, m.GetMapID())
+	}
 
 	return nil
 }

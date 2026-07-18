@@ -53,6 +53,8 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onRemoveCharacter(ctx, m)
 	case *WarpCharacter:
 		a.onWarpCharacter(ctx, m)
+	case *TransferCharacter:
+		a.onTransferCharacter(ctx, m)
 	case *RequestSpawnDoor:
 		a.onRequestSpawnDoor(ctx, m)
 	case *ResponseSpawnDoor:
@@ -65,6 +67,10 @@ func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
 		a.onResetMap(ctx, m)
 	case *ResetMapAck:
 		a.onResetMapAck(m)
+	case *RespawnMap:
+		a.onRespawnMap(ctx, m)
+	case *RespawnMapAck:
+		a.onRespawnMapAck(m)
 	case *RunOnMap:
 		a.onRunOnMap(ctx, m)
 	case *RunOnMapAck:
@@ -233,6 +239,29 @@ func (a *MapActor) onResetMapAck(msg *ResetMapAck) {
 	a.onResumeLua(&ResumeLua{Root: msg.Root, Thread: msg.Thread, Args: args})
 }
 
+func (a *MapActor) onRespawnMap(ctx actor.Context, msg *RespawnMap) {
+	spawned := 0
+	if a.Map != nil && msg != nil {
+		spawned = a.Map.Respawn(msg.IncludeNegativeMobTime)
+	}
+	if msg == nil || msg.ReplyTo == nil {
+		return
+	}
+	ctx.Send(msg.ReplyTo, &RespawnMapAck{
+		Root:    msg.Root,
+		Thread:  msg.Thread,
+		Spawned: spawned,
+	})
+}
+
+func (a *MapActor) onRespawnMapAck(msg *RespawnMapAck) {
+	if msg == nil || msg.Root == nil || msg.Thread == nil {
+		return
+	}
+	args := []lua.LValue{lua.LNumber(msg.Spawned)}
+	a.onResumeLua(&ResumeLua{Root: msg.Root, Thread: msg.Thread, Args: args})
+}
+
 func runOnMapResumeValues(ok bool, result lua.LValue, errMsg string) []lua.LValue {
 	if !ok {
 		return []lua.LValue{lua.LBool(false), lua.LNil, lua.LString(errMsg)}
@@ -358,6 +387,19 @@ func (a *MapActor) onWarpCharacter(ctx actor.Context, msg *WarpCharacter) {
 	a.Map.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.Portal, false)
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
+}
+
+func (a *MapActor) onTransferCharacter(ctx actor.Context, msg *TransferCharacter) {
+	if msg == nil || msg.Character == nil || msg.TargetPID == nil {
+		return
+	}
+	if a.Map != nil {
+		_ = a.Map.RemovePlayer(msg.Character.GetID())
+	}
+	ctx.Send(msg.TargetPID, &WarpCharacter{
+		Character: msg.Character,
+		Portal:    msg.Portal,
+	})
 }
 
 func (a *MapActor) onRemoveDoor(msg *RemoveDoor) {
@@ -588,6 +630,13 @@ func (a *MapActor) onPartyMemberLeft(msg *PartyMemberLeft) {
 		return
 	}
 	a.Map.ApplyPartyLeaveDoorSync(msg.LeaverID)
+	ch := a.Map.GetPlayer(msg.LeaverID)
+	if ch == nil {
+		return
+	}
+	if sm := ch.StateMachine(); sm != nil {
+		sm.CallHook("on_left_party", sm, ch)
+	}
 }
 
 func (a *MapActor) onPartyDisband(msg *PartyDisband) {
@@ -595,6 +644,22 @@ func (a *MapActor) onPartyDisband(msg *PartyDisband) {
 		return
 	}
 	a.Map.ApplyPartyDisbandDoorSync(msg.FormerMemberIDs)
+	seen := make(map[*entity.StateMachine]struct{})
+	for _, id := range msg.FormerMemberIDs {
+		ch := a.Map.GetPlayer(id)
+		if ch == nil {
+			continue
+		}
+		sm := ch.StateMachine()
+		if sm == nil {
+			continue
+		}
+		if _, ok := seen[sm]; ok {
+			continue
+		}
+		seen[sm] = struct{}{}
+		sm.CallHook("on_disband_party", sm)
+	}
 }
 
 func (a *MapActor) onSaveMapCharacters(ctx actor.Context) {

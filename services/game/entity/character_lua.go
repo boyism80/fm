@@ -1306,7 +1306,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				message = L.CheckString(3)
 				fallthrough
 			case 2:
-				npc = L.CheckInt(2)
+				switch npcArg := L.Get(2).(type) {
+				case lua.LNumber:
+					npc = int(npcArg)
+				case *lua.LUserData:
+					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
+						npc = int(n.Wz.BaseSpawn.ID)
+					}
+				}
 			}
 			ch.Listener.OnDialog(ch, uint32(npc), message, prev, next)
 			ch.SetDialog(L)
@@ -1348,7 +1355,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				message = L.CheckString(3)
 				fallthrough
 			case 2:
-				npc = L.CheckInt(2)
+				switch npcArg := L.Get(2).(type) {
+				case lua.LNumber:
+					npc = int(npcArg)
+				case *lua.LUserData:
+					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
+						npc = int(n.Wz.BaseSpawn.ID)
+					}
+				}
 			}
 			ch.Listener.OnDialogYesNo(ch, uint32(npc), message, prev, next)
 			ch.SetDialog(L)
@@ -1379,7 +1393,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				message = L.CheckString(3)
 				fallthrough
 			case 2:
-				npc = L.CheckInt(2)
+				switch npcArg := L.Get(2).(type) {
+				case lua.LNumber:
+					npc = int(npcArg)
+				case *lua.LUserData:
+					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
+						npc = int(n.Wz.BaseSpawn.ID)
+					}
+				}
 			}
 
 			ch.Listener.OnDialogList(ch, uint32(npc), message, selections)
@@ -1418,7 +1439,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				message = L.CheckString(3)
 				fallthrough
 			case 2:
-				npc = L.CheckInt(2)
+				switch npcArg := L.Get(2).(type) {
+				case lua.LNumber:
+					npc = int(npcArg)
+				case *lua.LUserData:
+					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
+						npc = int(n.Wz.BaseSpawn.ID)
+					}
+				}
 			}
 			ch.Listener.OnDialogAccept(ch, uint32(npc), message, enableEscape)
 			ch.SetDialog(L)
@@ -1440,7 +1468,14 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				message = L.CheckString(3)
 				fallthrough
 			case 2:
-				npc = L.CheckInt(2)
+				switch npcArg := L.Get(2).(type) {
+				case lua.LNumber:
+					npc = int(npcArg)
+				case *lua.LUserData:
+					if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
+						npc = int(n.Wz.BaseSpawn.ID)
+					}
+				}
 			}
 
 			ch.Listener.OnDialogInput(ch, uint32(npc), message)
@@ -1872,6 +1907,43 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			L.Push(luax.NewLuable(L, p))
 			return 1
+		},
+		"state_machine": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			sm := ch.StateMachine()
+			if sm == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, sm))
+			return 1
+		},
+		"try_party_quest": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			questID := uint32(L.CheckInt(2))
+			ch.TryPartyQuest(questID)
+			return 0
+		},
+		"end_party_quest": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			questID := uint32(L.CheckInt(2))
+			ch.EndPartyQuest(questID)
+			return 0
 		},
 		"quest": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -2685,16 +2757,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			spawnID := ch.GetSpawnPoint()
 			L.Push(lua.LNumber(spawnID))
 			m := ch.GetMap()
-			if m == nil || m.Wz == nil {
+			if m == nil {
 				return 1
 			}
-			portal, ok := m.Wz.Portals[spawnID]
-			if !ok {
+			portal := m.FindPortal(spawnID)
+			if portal == nil || portal.Wz == nil {
 				return 1
 			}
-			L.Push(lua.LString(portal.Name))
-			L.Push(lua.LNumber(portal.Position.X))
-			L.Push(lua.LNumber(portal.Position.Y))
+			L.Push(lua.LString(portal.Wz.Name))
+			L.Push(lua.LNumber(portal.Wz.Position.X))
+			L.Push(lua.LNumber(portal.Wz.Position.Y))
 			return 4
 		},
 		"show_magnet": func(L *lua.LState) int {

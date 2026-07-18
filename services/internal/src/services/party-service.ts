@@ -39,6 +39,7 @@ const EVT = {
 
 const INVITE_PENDING_TTL_SEC = 300;
 const AMQ_DIRECT_EXCHANGE = "amq.direct";
+const PARTY_DENY_ACTION_TAKING_CARE_OF_ANOTHER_INVITE = 22;
 
 export type PartyMutationResult = { ok: boolean; code?: number; partyId?: number; revision?: number };
 export type InvitePartyResult = PartyMutationResult & { targetCharacterId?: number; targetChannelId?: number };
@@ -560,7 +561,9 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
         }
 
-        await client.del(inviteKey);
+        if (action !== PARTY_DENY_ACTION_TAKING_CARE_OF_ANOTHER_INVITE) {
+            await client.del(inviteKey);
+        }
         await this.publishToPartyGameChannel(worldId, inviterChannelID, "party_invite_denied", {
             world_id: worldId,
             inviter_character_id: inviterCharacterId,

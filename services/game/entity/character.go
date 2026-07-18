@@ -75,6 +75,7 @@ type Character struct {
 	partySearchConfig *PartySearchConfig
 	buddyList         *BuddyList
 	InstantKill       bool
+	stateMachine      *StateMachine
 }
 
 type LastHeal struct {

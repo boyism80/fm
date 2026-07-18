@@ -37,23 +37,23 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 		return fmt.Errorf("current map not found")
 	}
 
-	wz := currentMap.Wz
-	if wz == nil {
+	if currentMap.Wz == nil {
 		return fmt.Errorf("map model not found")
 	}
 
-	portal, ok := wz.FindPortal(req.PortalName)
-	if !ok {
+	portal := currentMap.FindPortalByName(req.PortalName)
+	if portal == nil || portal.Wz == nil {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
-	if portal.ScriptName != "" {
+	scriptName := portal.Script()
+	if scriptName != "" {
 		root := currentMap.GetLuaRoot()
 		if root == nil {
 			character.Listener.OnUnlockAction(character)
 			return fmt.Errorf("root lua state not found")
 		}
-		scriptPath := fmt.Sprintf("script/portal/%s.lua", portal.ScriptName)
+		scriptPath := fmt.Sprintf("script/portal/%s.lua", scriptName)
 		thread, err := luax.NewThread(root, scriptPath)
 		if err != nil {
 			character.Listener.OnUnlockAction(character)
@@ -76,24 +76,19 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 		})
 		return nil
 	} else {
-		targetMapWz, ok := h.gs.resources.Maps[uint32(portal.TargetMapId)]
-		if !ok {
-			character.Listener.OnUpdateStats(character, nil, true)
-			return nil
-		}
-
-		targetPortal, ok := targetMapWz.FindPortal(portal.Target)
-		if !ok {
-			character.Listener.OnUpdateStats(character, nil, true)
-			return nil
-		}
-
-		targetMap := h.gs.GetMapSystem().Get(uint32(portal.TargetMapId))
+		targetMap := h.gs.GetMapSystem().Get(uint32(portal.Wz.TargetMapId))
 		if targetMap == nil {
-			return fmt.Errorf("target map not found")
+			character.Listener.OnUpdateStats(character, nil, true)
+			return nil
 		}
 
-		if err := character.Warp(targetMap, targetPortal.ID); err != nil {
+		targetPortal := targetMap.FindPortalByName(portal.Wz.Target)
+		if targetPortal == nil || targetPortal.Wz == nil {
+			character.Listener.OnUpdateStats(character, nil, true)
+			return nil
+		}
+
+		if err := character.Warp(targetMap, targetPortal.Wz.ID); err != nil {
 			return err
 		}
 	}

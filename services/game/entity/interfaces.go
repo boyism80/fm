@@ -20,4 +20,9 @@ type GameWorld interface {
 	GetAllianceSystem() AllianceSystem
 	GetPartySystem() PartySystem
 	GetDispatchSystem() DispatchSystem
+	GetStateMachineRegistry() StateMachineRegistry
+}
+
+type StateMachineRegistry interface {
+	Get(name string) *StateMachineGroup
 }

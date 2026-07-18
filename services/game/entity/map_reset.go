@@ -16,6 +16,7 @@ func (m *Map) Reset() {
 	m.ClearProperties()
 	m.ClearBlockedMobGen()
 	m.RemoveRuntimeNpcs()
+	m.resetPortalScripts()
 	for _, spawn := range m.MobSpawns {
 		if spawn == nil {
 			continue

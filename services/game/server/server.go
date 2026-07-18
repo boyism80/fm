@@ -78,6 +78,7 @@ type GameServer struct {
 	party             *PartyContainer
 	guild             *GuildContainer
 	alliance          *AllianceContainer
+	stateMachines     *StateMachineRegistry
 	rabbitPartyPID    *actor.PID
 	rabbitBuddyPID    *actor.PID
 	rabbitGuildPID    *actor.PID
@@ -179,6 +180,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	gs.party = NewPartyContainer(gs, config.WorldId, gs.internalClient)
 	gs.guild = NewGuildContainer(gs, config.WorldId, gs.internalClient)
 	gs.alliance = NewAllianceContainer(gs, config.WorldId, gs.internalClient)
+	gs.stateMachines = NewStateMachineRegistry(gs)
 
 	if config.RabbitMQ.Enabled() {
 		queueName := fmt.Sprintf("fm.game.w%d.c%d.party.events", config.WorldId, config.ChannelId)
@@ -342,6 +344,9 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	})
 
 	gs.preCreateMaps()
+	if err := gs.stateMachines.LoadFromScripts("script/state_machine"); err != nil {
+		log.Printf("state machine load: %v", err)
+	}
 
 	gs.registerPacketHandlers()
 
@@ -507,6 +512,9 @@ func (gs *GameServer) Stop() error {
 func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
 	if ch == nil {
 		return
+	}
+	if sm := ch.StateMachine(); sm != nil {
+		sm.CallHook("on_player_disconnected", sm, ch)
 	}
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {

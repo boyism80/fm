@@ -300,17 +300,31 @@ func (l *MapListenerImpl) OnClearEffect(mapInstance *entity.Map) {
 		return
 	}
 
-	mapInstance.Broadcast(&response.EnvironmentChange{
-		Mode: response.EnvironmentChangeModeMapEffect,
-		Env:  "quest/party/clear",
-	}, nil)
-	mapInstance.Broadcast(&response.EnvironmentChange{
-		Mode: response.EnvironmentChangeModeSound,
-		Env:  "Party1/Clear",
-	}, nil)
+	mapInstance.ShowEffect("quest/party/clear")
+	mapInstance.PlaySound("Party1/Clear")
 	mapInstance.Broadcast(&response.EnvironmentChange{
 		Mode: response.EnvironmentChangeModeObjectState,
 		Env:  "gate",
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnShowEffect(mapInstance *entity.Map, path string) {
+	if mapInstance == nil || path == "" {
+		return
+	}
+	mapInstance.Broadcast(&response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeMapEffect,
+		Env:  path,
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnPlaySound(mapInstance *entity.Map, path string) {
+	if mapInstance == nil || path == "" {
+		return
+	}
+	mapInstance.Broadcast(&response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeSound,
+		Env:  path,
 	}, nil)
 }
 

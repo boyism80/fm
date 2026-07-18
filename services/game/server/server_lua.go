@@ -301,6 +301,9 @@ func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
 func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaType[*entity.PartyMember](luaState)
 	luax.RegisterLuaType[*entity.Party](luaState)
+	luax.RegisterLuaType[*entity.StateMachine](luaState)
+	luax.RegisterLuaType[*entity.StateMachineGroup](luaState)
+	luax.RegisterLuaType[*entity.Portal](luaState)
 	luax.RegisterLuaType[*entity.GuildMember](luaState)
 	luax.RegisterLuaType[*entity.Guild](luaState)
 	luax.RegisterLuaType[*entity.Quest](luaState)
@@ -379,6 +382,22 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 		}
 		log.Printf("[lua] %s", strings.Join(parts, " "))
 		return 0
+	})
+
+	luax.RegisterFunc(luaState, "state_machine", func(L *lua.LState) int {
+		name := L.CheckString(1)
+		reg := gs.GetStateMachineRegistry()
+		if reg == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		group := reg.Get(name)
+		if group == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(luax.NewLuable(L, group))
+		return 1
 	})
 
 	luax.RegisterFunc(luaState, "name2map", func(L *lua.LState) int {

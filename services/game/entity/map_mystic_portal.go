@@ -8,7 +8,7 @@ func (m *Map) TryAcquireMysticReturnPortal(preferredSlot int) (portalID uint8, p
 	if m == nil || m.Wz == nil {
 		return 0, types.Vector2[int16]{}, false
 	}
-	slots := m.Wz.DoorReturnPortalSlots()
+	slots := m.doorReturnPortalIDs
 	if len(slots) == 0 {
 		return 0, types.Vector2[int16]{}, false
 	}
@@ -22,31 +22,31 @@ func (m *Map) TryAcquireMysticReturnPortal(preferredSlot int) (portalID uint8, p
 	if idx >= len(slots) {
 		idx = len(slots) - 1
 	}
-	pref := slots[idx]
-	if _, used := m.UsedDoorPortalIDs[pref.ID]; !used {
-		m.UsedDoorPortalIDs[pref.ID] = struct{}{}
-		var v types.Vector2[int16]
-		if sp, ok2 := m.Wz.GetSpawnPosition(pref.ID); ok2 {
-			v.X, v.Y = sp.X, sp.Y
-		} else if pt, ok2 := m.Wz.Portals[pref.ID]; ok2 {
-			v.X, v.Y = pt.Position.X, pt.Position.Y
-		}
-		return pref.ID, v, true
+	prefID := slots[idx]
+	if _, used := m.UsedDoorPortalIDs[prefID]; !used {
+		m.UsedDoorPortalIDs[prefID] = struct{}{}
+		return prefID, m.mysticPortalPosition(prefID), true
 	}
-	for _, p := range slots {
-		if _, used := m.UsedDoorPortalIDs[p.ID]; used {
+	for _, id := range slots {
+		if _, used := m.UsedDoorPortalIDs[id]; used {
 			continue
 		}
-		m.UsedDoorPortalIDs[p.ID] = struct{}{}
-		var v types.Vector2[int16]
-		if sp, ok2 := m.Wz.GetSpawnPosition(p.ID); ok2 {
-			v.X, v.Y = sp.X, sp.Y
-		} else if pt, ok2 := m.Wz.Portals[p.ID]; ok2 {
-			v.X, v.Y = pt.Position.X, pt.Position.Y
-		}
-		return p.ID, v, true
+		m.UsedDoorPortalIDs[id] = struct{}{}
+		return id, m.mysticPortalPosition(id), true
 	}
 	return 0, types.Vector2[int16]{}, false
+}
+
+func (m *Map) mysticPortalPosition(portalID uint8) types.Vector2[int16] {
+	var v types.Vector2[int16]
+	if sp, ok := m.Wz.GetSpawnPosition(portalID); ok {
+		v.X, v.Y = sp.X, sp.Y
+		return v
+	}
+	if p := m.FindPortal(portalID); p != nil && p.Wz != nil {
+		v.X, v.Y = p.Wz.Position.X, p.Wz.Position.Y
+	}
+	return v
 }
 
 func (m *Map) ReleaseMysticReturnPortal(portalID uint8) {

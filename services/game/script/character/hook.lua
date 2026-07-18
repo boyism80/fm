@@ -107,12 +107,9 @@ function on_script(me)
         end
     end
     me:max_hp(20000)
-    me:hp(me:max_hp() * 0.3)
+    me:hp(me:max_hp())
     me:max_mp(20000)
     me:mp(me:max_mp())
-    me:mkitem('활전용화살', 200)
-    me:mkitem('석궁전용화살', 200)
-    me:mkitem('석궁')
     local weapon = me:mkitem('우드완드')
     if weapon ~= nil then
         me:equip(weapon)
@@ -122,10 +119,10 @@ function on_script(me)
     me:mkitem('마법의돌', 200)
     me:base_str(80)
     me:base_dex(300)
-    me:base_int(4)
-    me:base_luk(4)
+    me:base_int(900)
+    me:base_luk(900)
     me:level(200)
-    me:map('헤네시스')
+    me:map('커닝시티')
 end
 
 function on_damaged(me, attacker, skill, damage, params)

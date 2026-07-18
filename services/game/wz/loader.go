@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -1035,6 +1036,76 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 		}
 	}
 	model.buildDoorReturnPortal()
+
+	if areaNode := root.find("area"); areaNode != nil {
+		type areaEntry struct {
+			idx  int
+			rect types.Rect[int16]
+		}
+		entries := make([]areaEntry, 0, len(areaNode.Children))
+		for _, child := range areaNode.Children {
+			idx, err := strconv.Atoi(child.Name)
+			if err != nil || idx < 0 {
+				continue
+			}
+			var x1, y1, x2, y2 int
+			var foundX1, foundY1, foundX2, foundY2 bool
+			for _, intField := range child.Ints {
+				switch intField.Name {
+				case "x1":
+					x1, foundX1 = intField.Value, true
+				case "y1":
+					y1, foundY1 = intField.Value, true
+				case "x2":
+					x2, foundX2 = intField.Value, true
+				case "y2":
+					y2, foundY2 = intField.Value, true
+				}
+			}
+			for _, field := range child.Children {
+				switch field.Name {
+				case "x1":
+					if val, err := strconv.Atoi(field.Value); err == nil {
+						x1, foundX1 = val, true
+					}
+				case "y1":
+					if val, err := strconv.Atoi(field.Value); err == nil {
+						y1, foundY1 = val, true
+					}
+				case "x2":
+					if val, err := strconv.Atoi(field.Value); err == nil {
+						x2, foundX2 = val, true
+					}
+				case "y2":
+					if val, err := strconv.Atoi(field.Value); err == nil {
+						y2, foundY2 = val, true
+					}
+				}
+			}
+			if !foundX1 || !foundY1 || !foundX2 || !foundY2 {
+				continue
+			}
+			entries = append(entries, areaEntry{
+				idx: idx,
+				rect: types.Rect[int16]{
+					Left:   int16(x1),
+					Top:    int16(y1),
+					Right:  int16(x2),
+					Bottom: int16(y2),
+				},
+			})
+		}
+		if len(entries) > 0 {
+			sort.Slice(entries, func(i, j int) bool {
+				return entries[i].idx < entries[j].idx
+			})
+			maxIdx := entries[len(entries)-1].idx
+			model.Areas = make([]types.Rect[int16], maxIdx+1)
+			for _, e := range entries {
+				model.Areas[e.idx] = e.rect
+			}
+		}
+	}
 
 	bound := types.Rect[int16]{}
 	footholds := root.find("foothold")

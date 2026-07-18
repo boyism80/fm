@@ -504,12 +504,16 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
+			if mapInstance.GameWorld == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
 			includeNegativeMobTime := false
 			if L.GetTop() >= 2 {
 				includeNegativeMobTime = lua.LVAsBool(L.Get(2))
 			}
-			L.Push(lua.LNumber(mapInstance.Respawn(includeNegativeMobTime)))
-			return 1
+			cfg, _ := luax.GetConfiguration(L)
+			return mapInstance.GameWorld.GetMapSystem().RespawnFromLua(L, mapInstance, cfg.ActorContext, includeNegativeMobTime)
 		},
 		"block_gen": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -653,6 +657,39 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			mapInstance.ClearEffect()
 			return 0
 		},
+		"show_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			path := L.CheckString(2)
+			mapInstance.ShowEffect(path)
+			return 0
+		},
+		"play_sound": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			path := L.CheckString(2)
+			mapInstance.PlaySound(path)
+			return 0
+		},
+		"players_in_area": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			index := L.CheckInt(2)
+			L.Push(lua.LNumber(mapInstance.PlayersInArea(index)))
+			return 1
+		},
 		"reload_reactors": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)
@@ -677,6 +714,22 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			cfg, _ := luax.GetConfiguration(L)
 			return mapInstance.GameWorld.GetMapSystem().ResetFromLua(L, mapInstance, cfg.ActorContext)
+		},
+		"portal": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			name := L.CheckString(2)
+			portal := mapInstance.FindPortalByName(name)
+			if portal == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, portal))
+			return 1
 		},
 		"remove_mist": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

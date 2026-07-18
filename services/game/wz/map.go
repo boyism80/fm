@@ -52,6 +52,7 @@ type Map struct {
 	NpcSpawns         map[uint32]NpcSpawn
 	MobSpawns         map[uint32]MobSpawn
 	ReactorSpawns     map[uint32]ReactorSpawn
+	Areas             []types.Rect[int16]
 	Footholds         *types.QuadTreeNode[int16, Foothold]
 	doorReturnPortals []Portal
 }
@@ -139,16 +140,6 @@ func (model *Map) DropPoint(initial types.Point[int16]) (types.Point[int16], boo
 		return *result, true
 	}
 	return initial, false
-}
-
-func (model *Map) FindPortal(name string) (*Portal, bool) {
-	for _, portal := range model.Portals {
-		if portal.Name == name {
-			return &portal, true
-		}
-	}
-
-	return nil, false
 }
 
 func (model *Map) GetSpawnPosition(spawnPoint uint8) (types.Point[int16], bool) {

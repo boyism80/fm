@@ -80,6 +80,13 @@ func (gs *GameServer) GetDispatchSystem() entity.DispatchSystem {
 	return gs.dispatchSystem
 }
 
+func (gs *GameServer) GetStateMachineRegistry() entity.StateMachineRegistry {
+	if gs == nil {
+		return nil
+	}
+	return gs.stateMachines
+}
+
 func (s mapSystem) Get(mapID uint32) *entity.Map {
 	if s.gs == nil {
 		return nil
@@ -125,6 +132,46 @@ func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx
 		ReplyTo: callerPID,
 		Root:    root,
 		Thread:  L,
+	})
+	return L.Yield(lua.LNil)
+}
+
+func (s mapSystem) RespawnFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx actor.Context, includeNegativeMobTime bool) int {
+	if mapInstance == nil {
+		if L != nil {
+			L.Push(lua.LNumber(0))
+			return 1
+		}
+		return 0
+	}
+	targetPID := mapInstance.GetActorPID()
+	if targetPID == nil {
+		L.Push(lua.LNumber(0))
+		return 1
+	}
+	cfg, _ := luax.GetConfiguration(L)
+	callerPID := cfg.MapActorPID
+	if actorCtx != nil {
+		callerPID = actorCtx.Self()
+	}
+	if callerPID != nil && callerPID.Equal(targetPID) {
+		L.Push(lua.LNumber(mapInstance.Respawn(includeNegativeMobTime)))
+		return 1
+	}
+	if callerPID == nil || s.gs == nil {
+		L.Push(lua.LNumber(0))
+		return 1
+	}
+	root := L.Parent
+	if root == nil {
+		L.Push(lua.LNumber(0))
+		return 1
+	}
+	s.gs.GetRootContext().Send(targetPID, &g_actor.RespawnMap{
+		ReplyTo:                callerPID,
+		Root:                   root,
+		Thread:                 L,
+		IncludeNegativeMobTime: includeNegativeMobTime,
 	})
 	return L.Yield(lua.LNil)
 }
@@ -195,13 +242,21 @@ func (s mapSystem) Warp(character *entity.Character, targetMap *entity.Map, spaw
 	if character == nil {
 		return fmt.Errorf("character is nil")
 	}
-	currentMap := character.GetMap()
-	if currentMap != nil {
-		currentMap.RemovePlayer(character.GetID())
-	}
 	targetPID := targetMap.GetActorPID()
 	if targetPID == nil {
 		return fmt.Errorf("target map actor not found")
+	}
+	currentMap := character.GetMap()
+	if currentMap != nil {
+		if srcPID := currentMap.GetActorPID(); srcPID != nil {
+			s.gs.GetRootContext().Send(srcPID, &g_actor.TransferCharacter{
+				Character: character,
+				TargetPID: targetPID,
+				Portal:    spawnPoint,
+			})
+			return nil
+		}
+		currentMap.RemovePlayer(character.GetID())
 	}
 	s.gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
 		Character: character,

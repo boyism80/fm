@@ -199,10 +199,8 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		}
 	}
 
-	if mapInstance.Wz != nil {
-		if _, ok := mapInstance.Wz.Portals[spawnPoint]; !ok {
-			spawnPoint = 0
-		}
+	if mapInstance.FindPortal(spawnPoint) == nil {
+		spawnPoint = 0
 	}
 
 	character.Stance = constant.StanceDefaultValue
