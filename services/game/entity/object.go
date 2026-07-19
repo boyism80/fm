@@ -41,6 +41,7 @@ type Object interface {
 	IsHidden() bool
 	Send(p types.Packet, policy types.SendPolicy) error
 	SendSpawnSyncToViewer(viewer *Character)
+	SendDestroySyncToViewer(viewer *Character)
 	Nears(filter constant.ObjectType) []Object
 	ObjectsIn(filter constant.ObjectType, bounds types.Rect[int32]) []Object
 	Broadcast(message types.Packet, option *ObjectBroadcastOption)
@@ -65,10 +66,11 @@ func (obj *ObjectCore) GetPosition() types.Vector2[int16] {
 }
 
 func (obj *ObjectCore) SetPosition(x, y int16) {
+	before := obj.Position
 	obj.Position.X = x
 	obj.Position.Y = y
 	if obj.Map != nil && obj.self != nil {
-		obj.Map.MoveObject(obj.self)
+		obj.Map.MoveObject(obj.self, before)
 	}
 }
 
@@ -105,6 +107,8 @@ func (obj *ObjectCore) Send(types.Packet, types.SendPolicy) error {
 }
 
 func (obj *ObjectCore) SendSpawnSyncToViewer(viewer *Character) {}
+
+func (obj *ObjectCore) SendDestroySyncToViewer(viewer *Character) {}
 
 func (o *ObjectCore) Nears(filter constant.ObjectType) []Object {
 	pivot := o.self

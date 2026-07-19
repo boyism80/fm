@@ -122,6 +122,22 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (d *Door) SendDestroySyncToViewer(viewer *Character) {
+	if d == nil || viewer == nil {
+		return
+	}
+	viewer.Send(&response.RemoveDoor{
+		OwnerID:  d.OwnerID,
+		Animated: false,
+	}, types.SEND_POLICY_ENCRYPT)
+	viewer.Send(&response.SpawnPortal{
+		DestMapID:   response.DisabledPortalMapID,
+		SourceMapID: response.DisabledPortalMapID,
+		SkillID:     0,
+		Position:    nil,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (d *Door) Spawn(animated bool) {
 	m := d.GetMap()
 	if m == nil {

@@ -70,7 +70,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 
 		mob.Stance = mnt.GetStance()
 	}
-	mapInstance.MoveObject(mob)
+	mapInstance.MoveObject(mob, startPoint)
 
 	selectedSkillID := uint32(0)
 	selectedSkillLevel := uint8(0)

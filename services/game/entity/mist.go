@@ -75,3 +75,13 @@ func (mist *Mist) SendSpawnSyncToViewer(viewer *Character) {
 		MobSkill:   mist.MobSkill,
 	}, types.SEND_POLICY_ENCRYPT)
 }
+
+func (mist *Mist) SendDestroySyncToViewer(viewer *Character) {
+	if mist == nil || viewer == nil {
+		return
+	}
+	viewer.Send(&response.RemoveMist{
+		OID:      mist.OID,
+		Eruption: false,
+	}, types.SEND_POLICY_ENCRYPT)
+}

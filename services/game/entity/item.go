@@ -135,6 +135,21 @@ func (item *ItemCore) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (item *ItemCore) SendDestroySyncToViewer(viewer *Character) {
+	if item == nil || viewer == nil {
+		return
+	}
+	fp := item.GetFieldPlacement()
+	if fp == nil {
+		return
+	}
+	viewer.Send(&response.RemoveItem{
+		Mode:        constant.RemoveItemTypeNoAnimated,
+		OID:         fp.OID,
+		CharacterId: 0,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (item *ItemCore) GetFieldPlacement() *FieldPlacement           { return item.FieldPlacement }
 func (item *ItemCore) Getcount() uint16                             { return item.Count }
 func (item *ItemCore) GetCount32() int32                            { return int32(item.Count) }

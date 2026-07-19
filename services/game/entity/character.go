@@ -169,6 +169,16 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 	}
 }
 
+func (ch *Character) SendDestroySyncToViewer(viewer *Character) {
+	if ch == nil || viewer == nil {
+		return
+	}
+	if ch.GetID() == viewer.GetID() {
+		return
+	}
+	viewer.Send(&response.LeavePlayer{ID: ch.GetID()}, types.SEND_POLICY_ENCRYPT)
+}
+
 func summonTimerKey(skillID constant.SkillID) string {
 	return fmt.Sprintf("summon:%d", skillID)
 }
@@ -685,10 +695,11 @@ func (ch *Character) Relocate(spawnPoint uint8) error {
 		if summon == nil || summon.Owner != ch {
 			continue
 		}
+		summonBefore := summon.Position
 		summon.Position = ch.Position
-		m.MoveObject(summon)
+		m.MoveObject(summon, summonBefore)
 	}
-	m.MoveObject(ch)
+	m.MoveObject(ch, beforePosition)
 	if ch.Listener != nil {
 		ch.Listener.OnFieldRelocate(ch, spawnPoint)
 		ch.Listener.OnPlayerMove(ch, beforePosition, []dto.MoveFragment{

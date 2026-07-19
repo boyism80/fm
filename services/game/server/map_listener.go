@@ -52,13 +52,13 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		character.Send(&response.KeyMap{Slots: kl.Bindings()}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
+	for _, obj := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeCharacter) {
 		if viewer, ok := obj.(*entity.Character); ok {
 			character.SendSpawnSyncToViewer(viewer)
 		}
 	}
 
-	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeObject) {
+	for _, obj := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeObject) {
 		obj.SendSpawnSyncToViewer(character)
 	}
 
@@ -119,7 +119,7 @@ func (l *MapListenerImpl) OnPlayerRemoved(mapInstance *entity.Map, character *en
 	leavePacket := &response.LeavePlayer{
 		ID: character.GetID(),
 	}
-	mapInstance.Broadcast(leavePacket, nil)
+	mapInstance.BroadcastNear(character.GetPosition(), leavePacket, nil)
 
 	if l.gs != nil && character != nil && l.gs.characterRuntime != nil {
 		_ = l.gs.characterRuntime.SetMapPID(character.GetID(), nil)
@@ -175,7 +175,7 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Ite
 		IsPlayerDrop: placement.PlayerDrop,
 	}
 
-	mapInstance.Broadcast(spawnPacket, nil)
+	mapInstance.BroadcastNear(placementObj.Position, spawnPacket, nil)
 }
 
 func (l *MapListenerImpl) OnMesoSpawned(mapInstance *entity.Map, meso *entity.Meso) {
@@ -196,10 +196,10 @@ func (l *MapListenerImpl) OnMesoSpawned(mapInstance *entity.Map, meso *entity.Me
 		IsPlayerDrop: fp.PlayerDrop,
 	}
 
-	mapInstance.Broadcast(spawnPacket, nil)
+	mapInstance.BroadcastNear(fp.Position, spawnPacket, nil)
 }
 
-func (l *MapListenerImpl) OnItemRemoved(mapInstance *entity.Map, itemID uint32, looterID uint32, mode constant.RemoveItemType) {
+func (l *MapListenerImpl) OnItemRemoved(mapInstance *entity.Map, itemID uint32, looterID uint32, mode constant.RemoveItemType, position types.Vector2[int16]) {
 	if mapInstance == nil {
 		return
 	}
@@ -210,7 +210,7 @@ func (l *MapListenerImpl) OnItemRemoved(mapInstance *entity.Map, itemID uint32, 
 		CharacterId: looterID,
 	}
 
-	mapInstance.Broadcast(removePacket, nil)
+	mapInstance.BroadcastNear(position, removePacket, nil)
 }
 
 func (l *MapListenerImpl) OnMobSpawned(mapInstance *entity.Map, mob *entity.Mob, spawnType constant.MobSpawnType, link uint32) {
@@ -226,7 +226,7 @@ func (l *MapListenerImpl) OnMobSpawned(mapInstance *entity.Map, mob *entity.Mob,
 		Link:      link,
 	}
 
-	mapInstance.Broadcast(spawnPacket, nil)
+	mob.Broadcast(spawnPacket, nil)
 }
 
 func (l *MapListenerImpl) OnMobRemoved(mapInstance *entity.Map, mob *entity.Mob, animationType constant.MobDieAnimationType) {
@@ -239,7 +239,7 @@ func (l *MapListenerImpl) OnMobRemoved(mapInstance *entity.Map, mob *entity.Mob,
 		AnimationType: animationType,
 	}
 
-	mapInstance.Broadcast(removePacket, nil)
+	mapInstance.BroadcastNear(mob.GetPosition(), removePacket, nil)
 }
 
 func (l *MapListenerImpl) OnReactorSpawned(mapInstance *entity.Map, reactor *entity.Reactor) {
@@ -247,7 +247,7 @@ func (l *MapListenerImpl) OnReactorSpawned(mapInstance *entity.Map, reactor *ent
 		return
 	}
 
-	mapInstance.Broadcast(&response.SpawnReactor{
+	reactor.Broadcast(&response.SpawnReactor{
 		Reactor: reactor.ToDTO(),
 	}, nil)
 }
@@ -257,7 +257,7 @@ func (l *MapListenerImpl) OnReactorRemoved(mapInstance *entity.Map, reactor *ent
 		return
 	}
 
-	mapInstance.Broadcast(&response.DestroyReactor{
+	mapInstance.BroadcastNear(reactor.GetPosition(), &response.DestroyReactor{
 		Reactor: reactor.ToDTO(),
 	}, nil)
 }
@@ -267,7 +267,7 @@ func (l *MapListenerImpl) OnReactorTriggered(mapInstance *entity.Map, reactor *e
 		return
 	}
 
-	mapInstance.Broadcast(&response.TriggerReactor{
+	reactor.Broadcast(&response.TriggerReactor{
 		Reactor: reactor.ToDTO(),
 		Stance:  stance,
 	}, nil)

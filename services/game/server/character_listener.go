@@ -1163,9 +1163,6 @@ func (l *CharacterListenerImpl) OnMobMoved(ch *entity.Character, mob *entity.Mob
 		return
 	}
 
-	controllerTable := mapInstance.GetControllerTable()
-	controller, exists := controllerTable.GetController(mob)
-
 	movePacket := &response.MoveMob{
 		IsAggroed:   isAggroed,
 		CenterSplit: centerSplit,
@@ -1178,10 +1175,16 @@ func (l *CharacterListenerImpl) OnMobMoved(ch *entity.Character, mob *entity.Mob
 		Movements:   movements,
 	}
 
-	if exists {
-		controller.Broadcast(movePacket, nil)
-	} else {
-		mob.Broadcast(movePacket, nil)
+	controllerID := uint32(0)
+	if ch != nil {
+		controllerID = ch.GetID()
+	}
+	for _, obj := range mob.Nears(constant.ObjectTypeCharacter) {
+		peer, ok := obj.(*entity.Character)
+		if !ok || peer == nil || peer.GetID() == controllerID {
+			continue
+		}
+		_ = peer.Send(movePacket, types.SEND_POLICY_ENCRYPT)
 	}
 }
 
@@ -1487,7 +1490,7 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 			RecipientsRoleBelowPivot: true,
 		})
 	} else {
-		for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
+		for _, obj := range mapInstance.GetObjectsNear(ch.GetPosition(), constant.ObjectTypeCharacter) {
 			if viewer, ok := obj.(*entity.Character); ok {
 				ch.SendSpawnSyncToViewer(viewer)
 			}

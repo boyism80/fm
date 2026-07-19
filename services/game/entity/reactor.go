@@ -67,3 +67,12 @@ func (r *Reactor) SendSpawnSyncToViewer(viewer *Character) {
 		Reactor: r.ToDTO(),
 	}, types.SEND_POLICY_ENCRYPT)
 }
+
+func (r *Reactor) SendDestroySyncToViewer(viewer *Character) {
+	if r == nil || viewer == nil {
+		return
+	}
+	viewer.Send(&response.DestroyReactor{
+		Reactor: r.ToDTO(),
+	}, types.SEND_POLICY_ENCRYPT)
+}

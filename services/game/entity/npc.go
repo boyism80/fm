@@ -36,6 +36,14 @@ func (n *Npc) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (n *Npc) SendDestroySyncToViewer(viewer *Character) {
+	if n == nil || viewer == nil {
+		return
+	}
+	viewer.Send(&response.NpcRemoveControl{OID: n.OID}, types.SEND_POLICY_ENCRYPT)
+	viewer.Send(&response.RemoveNpc{OID: n.OID}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (n *Npc) ShowEffect(action string) {
 	if n == nil || action == "" {
 		return

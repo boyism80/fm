@@ -170,6 +170,16 @@ func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (m *Mob) SendDestroySyncToViewer(viewer *Character) {
+	if m == nil || viewer == nil {
+		return
+	}
+	viewer.Send(&response.DieMob{
+		OID:           m.OID,
+		AnimationType: constant.MobDieAnimationTypeDisappear,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (m *Mob) Relink(spawnType constant.MobSpawnType, link uint32) bool {
 	if m == nil || !m.IsAlive() {
 		return false

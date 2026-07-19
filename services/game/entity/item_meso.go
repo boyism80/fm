@@ -44,6 +44,21 @@ func (meso *Meso) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (meso *Meso) SendDestroySyncToViewer(viewer *Character) {
+	if meso == nil || viewer == nil {
+		return
+	}
+	fp := meso.GetFieldPlacement()
+	if fp == nil {
+		return
+	}
+	viewer.Send(&response.RemoveItem{
+		Mode:        constant.RemoveItemTypeNoAnimated,
+		OID:         fp.OID,
+		CharacterId: 0,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func NewMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, sequence uint32, gw GameWorld, mapInstance *Map) *Meso {
 	m := &Meso{
 		FieldPlacement: &FieldPlacement{

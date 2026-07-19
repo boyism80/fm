@@ -24,7 +24,7 @@ type MapListener interface {
 	OnPlayerChat(mapInstance *Map, character *Character, message string)
 	OnItemSpawned(mapInstance *Map, item Item, placement *FieldPlacement)
 	OnMesoSpawned(mapInstance *Map, meso *Meso)
-	OnItemRemoved(mapInstance *Map, itemID uint32, looterID uint32, mode constant.RemoveItemType)
+	OnItemRemoved(mapInstance *Map, itemID uint32, looterID uint32, mode constant.RemoveItemType, position types.Vector2[int16])
 	OnMobSpawned(mapInstance *Map, mob *Mob, spawnType constant.MobSpawnType, link uint32)
 	OnMobRemoved(mapInstance *Map, mob *Mob, animationType constant.MobDieAnimationType)
 	OnReactorSpawned(mapInstance *Map, reactor *Reactor)
@@ -812,18 +812,14 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	m.objects[constant.ObjectTypeNpc][oid] = npc
 	m.sections.add(npc)
 
-	npcDTO := npc.ToDTO()
-	spawnPacket := &response.SpawnNpc{
-		NPC:     npcDTO,
+	npc.Broadcast(&response.SpawnNpc{
+		NPC:     npc.ToDTO(),
 		Visible: true,
-	}
-	controlPacket := &response.NpcControl{
-		NPC:     npcDTO,
+	}, nil)
+	npc.Broadcast(&response.NpcControl{
+		NPC:     npc.ToDTO(),
 		MiniMap: true,
-	}
-
-	m.Broadcast(spawnPacket, nil)
-	m.Broadcast(controlPacket, nil)
+	}, nil)
 
 	return npc, nil
 }
@@ -1014,7 +1010,7 @@ func (m *Map) GetObjectsNear(position types.Vector2[int16], filter constant.Obje
 	return m.sections.objectsNear(position, filter)
 }
 
-func (m *Map) MoveObject(obj Object) {
+func (m *Map) MoveObject(obj Object, before types.Vector2[int16]) {
 	if m == nil || obj == nil || obj.GetMap() != m || m.sections == nil {
 		return
 	}
@@ -1025,6 +1021,7 @@ func (m *Map) MoveObject(obj Object) {
 	case *Mob:
 		m.controllerTable.MoveMob(value)
 	}
+	m.syncVisibilityAroundMove(obj, before)
 }
 
 func (m *Map) GetObjectsIn(filter constant.ObjectType, bounds types.Rect[int32]) []Object {
@@ -1055,6 +1052,23 @@ func (m *Map) Broadcast(message types.Packet, option *BroadcastOption) {
 	for _, player := range m.objects[constant.ObjectTypeCharacter] {
 		character, ok := player.(*Character)
 		if !ok {
+			continue
+		}
+		character.Send(message, policy)
+	}
+}
+
+func (m *Map) BroadcastNear(position types.Vector2[int16], message types.Packet, option *BroadcastOption) {
+	if m == nil {
+		return
+	}
+	policy := types.SEND_POLICY_ENCRYPT
+	if option != nil && option.SendRaw {
+		policy = types.SEND_POLICY_RAW
+	}
+	for _, obj := range m.GetObjectsNear(position, constant.ObjectTypeCharacter) {
+		character, ok := obj.(*Character)
+		if !ok || character == nil {
 			continue
 		}
 		character.Send(message, policy)
@@ -1139,12 +1153,14 @@ func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, play
 		return fmt.Errorf("item %d not found on map", itemID)
 	}
 
-	m.sections.remove(m.objects[constant.ObjectTypeItem][itemID])
+	obj := m.objects[constant.ObjectTypeItem][itemID]
+	position := obj.GetPosition()
+	m.sections.remove(obj)
 	delete(m.objects[constant.ObjectTypeItem], itemID)
 
 	m.releaseOID(itemID)
 
-	m.listener.OnItemRemoved(m, itemID, playerID, removeType)
+	m.listener.OnItemRemoved(m, itemID, playerID, removeType, position)
 
 	return nil
 }

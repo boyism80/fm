@@ -49,6 +49,8 @@ func (life *LifeCore) Is(typ constant.ObjectType) bool {
 
 func (life *LifeCore) SendSpawnSyncToViewer(viewer *Character) {}
 
+func (life *LifeCore) SendDestroySyncToViewer(viewer *Character) {}
+
 func (life *LifeCore) GetMaxHp() uint32 {
 	t := int64(life.BaseHp) + int64(life.BonusHp)
 	if t < 1 {

@@ -49,6 +49,17 @@ func (s *Summon) SendSpawnSyncToViewer(viewer *Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (s *Summon) SendDestroySyncToViewer(viewer *Character) {
+	if s == nil || viewer == nil || s.Owner == nil {
+		return
+	}
+	viewer.Send(&response.RemoveSummon{
+		OwnerID:  s.Owner.GetID(),
+		OID:      s.OID,
+		Animated: false,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 type SummonAttackTarget struct {
 	OID    uint32
 	Damage uint32
