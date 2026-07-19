@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
@@ -43,41 +44,26 @@ type ResumeLua struct {
 	Args   []lua.LValue
 }
 
-type ResetMap struct {
+type MapCallFunc func(ctx actor.Context, a *MapActor) []lua.LValue
+
+type MapCallAsyncFunc func(ctx actor.Context, a *MapActor) *async.Promise
+
+type MapCall struct {
+	Run     MapCallFunc
+	ReplyTo *actor.PID
+	Root    *lua.LState
+	Thread  *lua.LState
+	Values  []lua.LValue
+}
+
+type MapCallAsync struct {
+	Run     MapCallAsyncFunc
 	ReplyTo *actor.PID
 	Root    *lua.LState
 	Thread  *lua.LState
 }
 
-type ResetMapAck struct {
-	Ok     bool
-	Root   *lua.LState
-	Thread *lua.LState
-}
-
-type RespawnMap struct {
-	ReplyTo                *actor.PID
-	Root                   *lua.LState
-	Thread                 *lua.LState
-	IncludeNegativeMobTime bool
-}
-
-type RespawnMapAck struct {
-	Root    *lua.LState
-	Thread  *lua.LState
-	Spawned int
-}
-
-type RunOnMap struct {
-	ReplyTo      *actor.PID
-	CallerRoot   *lua.LState
-	CallerThread *lua.LState
-	ScriptPath   string
-	FuncName     string
-	Args         []interface{}
-}
-
-type RunOnMapAck struct {
+type MapCallAck struct {
 	Root   *lua.LState
 	Thread *lua.LState
 	Values []lua.LValue
@@ -95,12 +81,6 @@ type RemoveCharacter struct {
 
 type WarpCharacter struct {
 	Character *entity.Character
-	Portal    uint8
-}
-
-type TransferCharacter struct {
-	Character *entity.Character
-	TargetPID *actor.PID
 	Portal    uint8
 }
 

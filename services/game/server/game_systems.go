@@ -6,7 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
-	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/core/async"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	gameconst "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -104,36 +104,17 @@ func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx
 		}
 		return 0
 	}
+	if L == nil || s.gs == nil {
+		return 0
+	}
 	targetPID := mapInstance.GetActorPID()
 	if targetPID == nil {
 		L.Push(lua.LBool(false))
 		return 1
 	}
-	cfg, _ := luax.GetConfiguration(L)
-	callerPID := cfg.MapActorPID
-	if actorCtx != nil {
-		callerPID = actorCtx.Self()
-	}
-	if callerPID != nil && callerPID.Equal(targetPID) {
-		mapInstance.Reset()
-		L.Push(lua.LBool(true))
-		return 1
-	}
-	if callerPID == nil || s.gs == nil {
-		L.Push(lua.LBool(false))
-		return 1
-	}
-	root := L.Parent
-	if root == nil {
-		L.Push(lua.LBool(false))
-		return 1
-	}
-	s.gs.GetRootContext().Send(targetPID, &g_actor.ResetMap{
-		ReplyTo: callerPID,
-		Root:    root,
-		Thread:  L,
+	return (luaMapCall{gs: s.gs}).InvokeAwait(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.MapActor) []lua.LValue {
+		return a.ResetCall(ctx)
 	})
-	return L.Yield(lua.LNil)
 }
 
 func (s mapSystem) RespawnFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx actor.Context, includeNegativeMobTime bool) int {
@@ -144,36 +125,17 @@ func (s mapSystem) RespawnFromLua(L *lua.LState, mapInstance *entity.Map, actorC
 		}
 		return 0
 	}
+	if L == nil || s.gs == nil {
+		return 0
+	}
 	targetPID := mapInstance.GetActorPID()
 	if targetPID == nil {
 		L.Push(lua.LNumber(0))
 		return 1
 	}
-	cfg, _ := luax.GetConfiguration(L)
-	callerPID := cfg.MapActorPID
-	if actorCtx != nil {
-		callerPID = actorCtx.Self()
-	}
-	if callerPID != nil && callerPID.Equal(targetPID) {
-		L.Push(lua.LNumber(mapInstance.Respawn(includeNegativeMobTime)))
-		return 1
-	}
-	if callerPID == nil || s.gs == nil {
-		L.Push(lua.LNumber(0))
-		return 1
-	}
-	root := L.Parent
-	if root == nil {
-		L.Push(lua.LNumber(0))
-		return 1
-	}
-	s.gs.GetRootContext().Send(targetPID, &g_actor.RespawnMap{
-		ReplyTo:                callerPID,
-		Root:                   root,
-		Thread:                 L,
-		IncludeNegativeMobTime: includeNegativeMobTime,
+	return (luaMapCall{gs: s.gs}).InvokeAwait(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.MapActor) []lua.LValue {
+		return a.RespawnCall(ctx, includeNegativeMobTime)
 	})
-	return L.Yield(lua.LNil)
 }
 
 func pushRunOnMapResult(L *lua.LState, ok bool, result lua.LValue, errMsg string) int {
@@ -209,30 +171,12 @@ func (s mapSystem) RunOnMapFromLua(L *lua.LState, actorCtx actor.Context, mapID 
 	if targetPID == nil {
 		return pushRunOnMapResult(L, false, nil, "run_on_map: target map actor not found")
 	}
-	cfg, _ := luax.GetConfiguration(L)
-	callerPID := cfg.MapActorPID
-	if actorCtx != nil {
-		callerPID = actorCtx.Self()
-	}
-	if callerPID == nil {
-		return pushRunOnMapResult(L, false, nil, "run_on_map: caller actor not found")
-	}
 	if s.gs == nil {
 		return pushRunOnMapResult(L, false, nil, "run_on_map: game server not found")
 	}
-	root := L.Parent
-	if root == nil {
-		return pushRunOnMapResult(L, false, nil, "run_on_map: root lua state not found")
-	}
-	s.gs.GetRootContext().Send(targetPID, &g_actor.RunOnMap{
-		ReplyTo:      callerPID,
-		CallerRoot:   root,
-		CallerThread: L,
-		ScriptPath:   scriptPath,
-		FuncName:     funcName,
-		Args:         args,
+	return (luaMapCall{gs: s.gs}).InvokeAwaitAsync(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.MapActor) *async.Promise {
+		return a.RunScriptCall(ctx, scriptPath, funcName, args)
 	})
-	return L.Yield(lua.LNil)
 }
 
 func (s mapSystem) Warp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {
@@ -242,21 +186,13 @@ func (s mapSystem) Warp(character *entity.Character, targetMap *entity.Map, spaw
 	if character == nil {
 		return fmt.Errorf("character is nil")
 	}
+	currentMap := character.GetMap()
+	if currentMap != nil {
+		currentMap.RemovePlayer(character.GetID())
+	}
 	targetPID := targetMap.GetActorPID()
 	if targetPID == nil {
 		return fmt.Errorf("target map actor not found")
-	}
-	currentMap := character.GetMap()
-	if currentMap != nil {
-		if srcPID := currentMap.GetActorPID(); srcPID != nil {
-			s.gs.GetRootContext().Send(srcPID, &g_actor.TransferCharacter{
-				Character: character,
-				TargetPID: targetPID,
-				Portal:    spawnPoint,
-			})
-			return nil
-		}
-		currentMap.RemovePlayer(character.GetID())
 	}
 	s.gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
 		Character: character,

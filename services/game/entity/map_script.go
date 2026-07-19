@@ -49,7 +49,8 @@ func (m *Map) RunScript(ctx actor.Context, scriptPath string, funcName string, a
 		return promise
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
-		MapActorPID: m.GetActorPID(),
+		ActorContext: ctx,
+		MapActorPID:  m.GetActorPID(),
 	})
 	fn := thread.GetGlobal(funcName)
 	if fn.Type() != lua.LTFunction {

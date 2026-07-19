@@ -54,23 +54,23 @@ type MobSpawn struct {
 }
 
 type Map struct {
-	Wz                *wz.Map
-	id                uint32
-	objects           map[constant.ObjectType]map[uint32]Object
-	controllerTable   *ControllerTable
-	MobSpawns         map[uint32]*MobSpawn
-	ReactorSpawns     map[uint32]*ReactorSpawn
-	blockedMobGen     map[uint32]struct{}
-	listener          MapListener
-	mobListener       MobListener
-	sequence          uint32
-	availableOIDs     []uint32
-	GameWorld         GameWorld
-	actorPID          *actor.PID
-	luaRoot           *lua.LState
-	pidMutex          sync.RWMutex
-	propertyMutex     sync.RWMutex
-	properties        map[string]interface{}
+	Wz                  *wz.Map
+	id                  uint32
+	objects             map[constant.ObjectType]map[uint32]Object
+	controllerTable     *ControllerTable
+	MobSpawns           map[uint32]*MobSpawn
+	ReactorSpawns       map[uint32]*ReactorSpawn
+	blockedMobGen       map[uint32]struct{}
+	listener            MapListener
+	mobListener         MobListener
+	sequence            uint32
+	availableOIDs       []uint32
+	GameWorld           GameWorld
+	actorPID            *actor.PID
+	luaRoot             *lua.LState
+	pidMutex            sync.RWMutex
+	propertyMutex       sync.RWMutex
+	properties          map[string]interface{}
 	UsedDoorPortalIDs   map[uint8]struct{}
 	portals             map[uint8]*Portal
 	portalsByName       map[string]*Portal
