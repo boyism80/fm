@@ -12,6 +12,7 @@ type ObjectCore struct {
 	Position  types.Vector2[int16]
 	GameWorld GameWorld
 	Map       *Map
+	section   *section
 	timers    map[string]*ObjectTimer
 }
 
@@ -32,6 +33,8 @@ type Object interface {
 	SetPosition(x, y int16)
 	GetGameWorld() GameWorld
 	GetMap() *Map
+	getSection() *section
+	setSection(section *section)
 	GetObjectType() constant.ObjectType
 	Is(typ constant.ObjectType) bool
 	GetRole() constant.CharacterRole
@@ -64,6 +67,9 @@ func (obj *ObjectCore) GetPosition() types.Vector2[int16] {
 func (obj *ObjectCore) SetPosition(x, y int16) {
 	obj.Position.X = x
 	obj.Position.Y = y
+	if obj.Map != nil && obj.self != nil {
+		obj.Map.MoveObject(obj.self)
+	}
 }
 
 func (obj *ObjectCore) GetGameWorld() GameWorld {
@@ -76,6 +82,14 @@ func (obj *ObjectCore) Is(typ constant.ObjectType) bool {
 
 func (obj *ObjectCore) GetMap() *Map {
 	return obj.Map
+}
+
+func (obj *ObjectCore) getSection() *section {
+	return obj.section
+}
+
+func (obj *ObjectCore) setSection(section *section) {
+	obj.section = section
 }
 
 func (obj *ObjectCore) GetRole() constant.CharacterRole {

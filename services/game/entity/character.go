@@ -686,7 +686,9 @@ func (ch *Character) Relocate(spawnPoint uint8) error {
 			continue
 		}
 		summon.Position = ch.Position
+		m.MoveObject(summon)
 	}
+	m.MoveObject(ch)
 	if ch.Listener != nil {
 		ch.Listener.OnFieldRelocate(ch, spawnPoint)
 		ch.Listener.OnPlayerMove(ch, beforePosition, []dto.MoveFragment{

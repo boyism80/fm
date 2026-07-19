@@ -145,6 +145,7 @@ func (m *Map) SpawnReactor(reactorSpawn *ReactorSpawn) (*Reactor, error) {
 	}
 
 	m.objects[constant.ObjectTypeReactor][oid] = reactor
+	m.sections.add(reactor)
 
 	reactorSpawn.CancelRespawnTimer()
 	reactorSpawn.Spawned = true
@@ -176,6 +177,7 @@ func (m *Map) RemoveReactor(oid uint32, scheduleRespawn bool) error {
 	reactor.ClearReactorTimers()
 
 	reactorSpawn := reactor.Spawn
+	m.sections.remove(reactor)
 	delete(m.objects[constant.ObjectTypeReactor], oid)
 	m.releaseOID(oid)
 

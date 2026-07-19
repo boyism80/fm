@@ -48,6 +48,7 @@ func (h *MovePlayer) Handle(ctx *core.ClientContext, req *request.MovePlayer) er
 		return fmt.Errorf("map not found")
 	}
 
+	mapInstance.MoveObject(character)
 	character.Listener.OnPlayerMove(character, beforePosition, req.Fragments)
 
 	return nil

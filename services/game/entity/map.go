@@ -57,6 +57,7 @@ type Map struct {
 	Wz                  *wz.Map
 	id                  uint32
 	objects             map[constant.ObjectType]map[uint32]Object
+	sections            *sectionContainer
 	controllerTable     *ControllerTable
 	MobSpawns           map[uint32]*MobSpawn
 	ReactorSpawns       map[uint32]*ReactorSpawn
@@ -104,6 +105,7 @@ func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint
 	mapInstance := &Map{
 		id:              id,
 		objects:         make(map[constant.ObjectType]map[uint32]Object),
+		sections:        newSectionContainer(),
 		controllerTable: nil,
 		MobSpawns:       make(map[uint32]*MobSpawn),
 		blockedMobGen:   make(map[uint32]struct{}),
@@ -191,6 +193,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	character.Stance = constant.StanceDefaultValue
 
 	m.objects[constant.ObjectTypeCharacter][playerID] = character
+	m.sections.add(character)
 	m.EnsureLuaRoot(ctx)
 
 	m.listener.OnPlayerAdded(ctx, m, character, init)
@@ -266,11 +269,12 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	}
 
 	delete(m.objects[constant.ObjectTypeCharacter], playerID)
+	m.sections.remove(character)
 
 	character.SuspendTimers()
 	character.SetPartySearchConfig(nil)
-	character.Map = nil
 	m.controllerTable.LeavePlayer(character)
+	character.Map = nil
 
 	m.listener.OnPlayerRemoved(m, character)
 
@@ -380,6 +384,7 @@ func (m *Map) initNpcs() {
 		npc.ObjectCore.self = npc
 		npc.initTimers()
 		m.objects[constant.ObjectTypeNpc][oid] = npc
+		m.sections.add(npc)
 	}
 }
 
@@ -430,6 +435,7 @@ func (m *Map) AddSummon(s *Summon) {
 	}
 	s.initTimers()
 	m.objects[constant.ObjectTypeSummon][s.OID] = s
+	m.sections.add(s)
 
 	s.Owner.Listener.OnSummonSpawn(s.Owner, s)
 }
@@ -445,6 +451,7 @@ func (m *Map) RemoveSummon(oid uint32, animated bool) {
 
 	s, isSummon := obj.(*Summon)
 	if !isSummon {
+		m.sections.remove(obj)
 		delete(m.objects[constant.ObjectTypeSummon], oid)
 		m.releaseOID(oid)
 		return
@@ -452,6 +459,7 @@ func (m *Map) RemoveSummon(oid uint32, animated bool) {
 
 	s.Owner.Listener.OnSummonRemove(s.Owner, s, animated)
 
+	m.sections.remove(s)
 	delete(m.objects[constant.ObjectTypeSummon], oid)
 	m.releaseOID(oid)
 	if s.Map == m {
@@ -497,6 +505,7 @@ func (m *Map) AddMist(mist *Mist) {
 	}
 	mist.initTimers()
 	m.objects[constant.ObjectTypeMist][mist.OID] = mist
+	m.sections.add(mist)
 	m.listener.OnMistSpawned(m, mist)
 }
 
@@ -511,6 +520,7 @@ func (m *Map) RemoveMist(oid uint32) {
 
 	mi, isMist := obj.(*Mist)
 	if !isMist {
+		m.sections.remove(obj)
 		delete(m.objects[constant.ObjectTypeMist], oid)
 		m.releaseOID(oid)
 		return
@@ -518,6 +528,7 @@ func (m *Map) RemoveMist(oid uint32) {
 
 	m.listener.OnMistRemoved(m, mi)
 
+	m.sections.remove(mi)
 	delete(m.objects[constant.ObjectTypeMist], oid)
 	m.releaseOID(oid)
 	if mi.Map == m {
@@ -572,6 +583,7 @@ func (m *Map) AddDoor(door *Door) {
 	}
 	door.initTimers()
 	m.objects[constant.ObjectTypeDoor][door.OID] = door
+	m.sections.add(door)
 	door.BroadcastCall(func(obj Object) {
 		ch, ok := obj.(*Character)
 		if !ok || ch == nil {
@@ -613,6 +625,7 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 
 	door, isDoor := obj.(*Door)
 	if !isDoor {
+		m.sections.remove(obj)
 		delete(m.objects[constant.ObjectTypeDoor], oid)
 		m.releaseOID(oid)
 		return
@@ -639,6 +652,7 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 	}
 
 	delete(m.objects[constant.ObjectTypeDoor], oid)
+	m.sections.remove(door)
 	m.releaseOID(oid)
 	if door.Map == m {
 		door.Map = nil
@@ -796,6 +810,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	}
 
 	m.objects[constant.ObjectTypeNpc][oid] = npc
+	m.sections.add(npc)
 
 	npcDTO := npc.ToDTO()
 	spawnPacket := &response.SpawnNpc{
@@ -879,6 +894,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	}
 
 	m.objects[constant.ObjectTypeMob][oid] = mob
+	m.sections.add(mob)
 	m.listener.OnMobSpawned(m, mob, spawnType, link)
 	m.controllerTable.EnterMob(mob)
 	mob.armRemoveAfter()
@@ -899,6 +915,7 @@ func (m *Map) RemoveMob(mobID uint32, animationType constant.MobDieAnimationType
 	mob.sponge.Disconnect()
 	mob.ClearAllHoming()
 	mob.ClearTimers()
+	m.sections.remove(mob)
 	delete(m.objects[constant.ObjectTypeMob], mobID)
 
 	mob.Buffs.Clear()
@@ -990,6 +1007,26 @@ func (m *Map) GetObjects(filter constant.ObjectType) []Object {
 	return out
 }
 
+func (m *Map) GetObjectsNear(position types.Vector2[int16], filter constant.ObjectType) []Object {
+	if m == nil || m.sections == nil {
+		return nil
+	}
+	return m.sections.objectsNear(position, filter)
+}
+
+func (m *Map) MoveObject(obj Object) {
+	if m == nil || obj == nil || obj.GetMap() != m || m.sections == nil {
+		return
+	}
+	m.sections.add(obj)
+	switch value := obj.(type) {
+	case *Character:
+		m.controllerTable.MovePlayer(value)
+	case *Mob:
+		m.controllerTable.MoveMob(value)
+	}
+}
+
 func (m *Map) GetObjectsIn(filter constant.ObjectType, bounds types.Rect[int32]) []Object {
 	out := make([]Object, 0)
 	for _, obj := range m.GetObjects(filter) {
@@ -1056,6 +1093,7 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 		fp.initTimers()
 	}
 	m.objects[constant.ObjectTypeItem][oid] = mapObj
+	m.sections.add(mapObj)
 	m.listener.OnItemSpawned(m, item, fp)
 
 	owner := m.GetPlayer(ownerID)
@@ -1085,6 +1123,7 @@ func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32
 	}
 
 	m.objects[constant.ObjectTypeItem][oid] = meso
+	m.sections.add(meso)
 
 	m.listener.OnMesoSpawned(m, meso)
 
@@ -1100,6 +1139,7 @@ func (m *Map) RemoveItem(itemID uint32, removeType constant.RemoveItemType, play
 		return fmt.Errorf("item %d not found on map", itemID)
 	}
 
+	m.sections.remove(m.objects[constant.ObjectTypeItem][itemID])
 	delete(m.objects[constant.ObjectTypeItem], itemID)
 
 	m.releaseOID(itemID)

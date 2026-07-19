@@ -23,6 +23,7 @@ func (m *Map) RemoveNpc(oid uint32) error {
 		return fmt.Errorf("npc %d is not an npc", oid)
 	}
 	npc.ClearTimers()
+	m.sections.remove(npc)
 	delete(m.objects[constant.ObjectTypeNpc], oid)
 	m.releaseOID(oid)
 	m.Broadcast(&response.NpcRemoveControl{OID: oid}, nil)
