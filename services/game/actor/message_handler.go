@@ -7,14 +7,14 @@ import (
 )
 
 type MessageHandler[M any] interface {
-	Handle(ctx actor.Context, a *MapActor, msg *M)
+	Handle(ctx actor.Context, a *GameLogicActor, msg *M)
 }
 
 type MessageHandlerConstructor[H MessageHandler[M], M any] interface {
 	New() H
 }
 
-type MessageHandlerFunc func(ctx actor.Context, a *MapActor, msg any)
+type MessageHandlerFunc func(ctx actor.Context, a *GameLogicActor, msg any)
 
 type MessageRegistry struct {
 	byType map[reflect.Type]MessageHandlerFunc
@@ -31,12 +31,12 @@ func Bind[C MessageHandlerConstructor[H, M], H MessageHandler[M], M any](r *Mess
 	var constructor C
 	handler := constructor.New()
 	t := reflect.TypeOf((*M)(nil))
-	r.byType[t] = func(ctx actor.Context, a *MapActor, msg any) {
+	r.byType[t] = func(ctx actor.Context, a *GameLogicActor, msg any) {
 		handler.Handle(ctx, a, msg.(*M))
 	}
 }
 
-func (r *MessageRegistry) Dispatch(ctx actor.Context, a *MapActor, msg any) {
+func (r *MessageRegistry) Dispatch(ctx actor.Context, a *GameLogicActor, msg any) {
 	if r == nil || msg == nil {
 		return
 	}

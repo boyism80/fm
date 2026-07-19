@@ -10,11 +10,15 @@ func (DeliverPartyUpdateLogOnOffHandler) New() *DeliverPartyUpdateLogOnOffHandle
 	return &DeliverPartyUpdateLogOnOffHandler{}
 }
 
-func (h *DeliverPartyUpdateLogOnOffHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverPartyUpdateLogOnOff) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverPartyUpdateLogOnOffHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverPartyUpdateLogOnOff) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

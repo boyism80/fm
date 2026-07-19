@@ -10,11 +10,15 @@ func (DeliverGuildMemberLeftHandler) New() *DeliverGuildMemberLeftHandler {
 	return &DeliverGuildMemberLeftHandler{}
 }
 
-func (h *DeliverGuildMemberLeftHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverGuildMemberLeft) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverGuildMemberLeftHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildMemberLeft) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

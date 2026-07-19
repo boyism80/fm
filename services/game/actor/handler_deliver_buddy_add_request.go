@@ -10,11 +10,15 @@ func (DeliverBuddyAddRequestHandler) New() *DeliverBuddyAddRequestHandler {
 	return &DeliverBuddyAddRequestHandler{}
 }
 
-func (h *DeliverBuddyAddRequestHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverBuddyAddRequest) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverBuddyAddRequestHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverBuddyAddRequest) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.RecipientCharacterID)
+	m := a.GetCharacter(msg.RecipientCharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.RecipientCharacterID)
 	if ch == nil {
 		return
 	}

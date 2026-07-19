@@ -11,7 +11,7 @@ func (StartedHandler) New() *StartedHandler {
 	return &StartedHandler{}
 }
 
-func (h *StartedHandler) Handle(ctx actor.Context, a *MapActor, _ *actor.Started) {
+func (h *StartedHandler) Handle(ctx actor.Context, a *GameLogicActor, _ *actor.Started) {
 	a.scheduler = scheduler.NewTimerScheduler(ctx)
 	a.timerReg = NewTimerRegistry()
 	a.registerTimers()

@@ -8,7 +8,7 @@ func (HandoffCharacterHandler) New() *HandoffCharacterHandler {
 	return &HandoffCharacterHandler{}
 }
 
-func (h *HandoffCharacterHandler) Handle(ctx actor.Context, a *MapActor, msg *HandoffCharacter) {
+func (h *HandoffCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *HandoffCharacter) {
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
@@ -16,7 +16,7 @@ func (h *HandoffCharacterHandler) Handle(ctx actor.Context, a *MapActor, msg *Ha
 	if targetPID == nil {
 		return
 	}
-	source := a.MapForCharacter(msg.Character.GetID())
+	source := a.GetCharacter(msg.Character.GetID())
 	if source == nil {
 		return
 	}

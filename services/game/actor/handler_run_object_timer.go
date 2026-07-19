@@ -12,11 +12,11 @@ func (RunObjectTimerHandler) New() *RunObjectTimerHandler {
 	return &RunObjectTimerHandler{}
 }
 
-func (h *RunObjectTimerHandler) Handle(ctx actor.Context, a *MapActor, msg *c_actor.RunObjectTimer) {
+func (h *RunObjectTimerHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *c_actor.RunObjectTimer) {
 	if msg == nil {
 		return
 	}
-	m := a.MapForObject(constant.ObjectType(msg.ObjectType), msg.ID)
+	m := a.GetObject(constant.ObjectType(msg.ObjectType), msg.ID)
 	if m == nil {
 		return
 	}

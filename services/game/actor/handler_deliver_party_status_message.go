@@ -10,11 +10,15 @@ func (DeliverPartyStatusMessageHandler) New() *DeliverPartyStatusMessageHandler 
 	return &DeliverPartyStatusMessageHandler{}
 }
 
-func (h *DeliverPartyStatusMessageHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverPartyStatusMessage) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverPartyStatusMessageHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverPartyStatusMessage) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

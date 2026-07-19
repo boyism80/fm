@@ -10,11 +10,15 @@ func (DeliverBuddyChannelUpdateHandler) New() *DeliverBuddyChannelUpdateHandler 
 	return &DeliverBuddyChannelUpdateHandler{}
 }
 
-func (h *DeliverBuddyChannelUpdateHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverBuddyChannelUpdate) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverBuddyChannelUpdateHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverBuddyChannelUpdate) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.RecipientCharacterID)
+	m := a.GetCharacter(msg.RecipientCharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.RecipientCharacterID)
 	if ch == nil {
 		return
 	}

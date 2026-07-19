@@ -11,11 +11,15 @@ func (DeliverAllianceGuildAddedHandler) New() *DeliverAllianceGuildAddedHandler 
 	return &DeliverAllianceGuildAddedHandler{}
 }
 
-func (h *DeliverAllianceGuildAddedHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverAllianceGuildAdded) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverAllianceGuildAddedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverAllianceGuildAdded) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

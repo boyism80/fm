@@ -11,7 +11,7 @@ func (RequestSpawnDoorHandler) New() *RequestSpawnDoorHandler {
 	return &RequestSpawnDoorHandler{}
 }
 
-func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *MapActor, msg *RequestSpawnDoor) {
+func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *RequestSpawnDoor) {
 	if msg == nil || msg.ReplyTo == nil {
 		return
 	}

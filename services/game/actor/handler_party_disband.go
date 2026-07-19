@@ -11,7 +11,7 @@ func (PartyDisbandHandler) New() *PartyDisbandHandler {
 	return &PartyDisbandHandler{}
 }
 
-func (h *PartyDisbandHandler) Handle(ctx actor.Context, a *MapActor, msg *PartyDisband) {
+func (h *PartyDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *PartyDisband) {
 	if msg == nil {
 		return
 	}

@@ -10,11 +10,15 @@ func (DeliverPartyUpdateSilentHandler) New() *DeliverPartyUpdateSilentHandler {
 	return &DeliverPartyUpdateSilentHandler{}
 }
 
-func (h *DeliverPartyUpdateSilentHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverPartyUpdateSilent) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverPartyUpdateSilentHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverPartyUpdateSilent) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

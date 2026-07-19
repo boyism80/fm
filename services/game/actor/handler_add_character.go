@@ -10,7 +10,7 @@ func (AddCharacterHandler) New() *AddCharacterHandler {
 	return &AddCharacterHandler{}
 }
 
-func (h *AddCharacterHandler) Handle(ctx actor.Context, a *MapActor, msg *AddCharacter) {
+func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *AddCharacter) {
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}

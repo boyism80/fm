@@ -19,6 +19,16 @@ func (c luaMapCall) callerPID(L *lua.LState, actorCtx actor.Context) *actor.PID 
 	return cfg.MapActorPID
 }
 
+func (c luaMapCall) gameLogic(a actor.Actor) *g_actor.GameLogicActor {
+	switch v := a.(type) {
+	case *g_actor.MapActor:
+		return &v.GameLogicActor
+	case *g_actor.StateMachineActor:
+		return &v.GameLogicActor
+	}
+	return nil
+}
+
 func (c luaMapCall) InvokeAwait(L *lua.LState, actorCtx actor.Context, targetPID *actor.PID, run g_actor.MapCallFunc) int {
 	if c.gs == nil || L == nil || targetPID == nil || run == nil {
 		return 0
@@ -29,12 +39,9 @@ func (c luaMapCall) InvokeAwait(L *lua.LState, actorCtx actor.Context, targetPID
 	}
 	msg := &g_actor.MapCall{Run: run}
 	if actorCtx != nil && callerPID.Equal(targetPID) {
-		owner, ok := actorCtx.Actor().(interface {
-			Owner() *g_actor.LogicActor
-		})
-		if ok {
+		if logic := c.gameLogic(actorCtx.Actor()); logic != nil {
 			handler := g_actor.MapCallHandler{}
-			handler.Handle(actorCtx, owner.Owner(), msg)
+			handler.Handle(actorCtx, logic, msg)
 			for _, value := range msg.Values {
 				L.Push(value)
 			}
@@ -76,12 +83,9 @@ func (c luaMapCall) InvokeAwaitAsync(L *lua.LState, actorCtx actor.Context, targ
 		Thread:  L,
 	}
 	if actorCtx != nil && callerPID.Equal(targetPID) {
-		owner, ok := actorCtx.Actor().(interface {
-			Owner() *g_actor.LogicActor
-		})
-		if ok {
+		if logic := c.gameLogic(actorCtx.Actor()); logic != nil {
 			handler := g_actor.MapCallAsyncHandler{}
-			handler.Handle(actorCtx, owner.Owner(), msg)
+			handler.Handle(actorCtx, logic, msg)
 			return L.Yield(lua.LNil)
 		}
 	}

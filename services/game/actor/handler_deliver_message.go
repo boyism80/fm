@@ -10,11 +10,15 @@ func (DeliverMessageHandler) New() *DeliverMessageHandler {
 	return &DeliverMessageHandler{}
 }
 
-func (h *DeliverMessageHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverMessage) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverMessageHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverMessage) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

@@ -11,11 +11,15 @@ func (DeliverAllianceInviteHandler) New() *DeliverAllianceInviteHandler {
 	return &DeliverAllianceInviteHandler{}
 }
 
-func (h *DeliverAllianceInviteHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverAllianceInvite) {
-	if a.Map == nil || msg == nil || a.GameWorld == nil {
+func (h *DeliverAllianceInviteHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverAllianceInvite) {
+	if msg == nil || a.GameWorld == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

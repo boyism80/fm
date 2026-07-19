@@ -11,7 +11,7 @@ func (RemoveDoorHandler) New() *RemoveDoorHandler {
 	return &RemoveDoorHandler{}
 }
 
-func (h *RemoveDoorHandler) Handle(ctx actor.Context, a *MapActor, msg *RemoveDoor) {
+func (h *RemoveDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *RemoveDoor) {
 	if msg == nil {
 		return
 	}

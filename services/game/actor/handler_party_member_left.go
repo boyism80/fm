@@ -10,12 +10,16 @@ func (PartyMemberLeftHandler) New() *PartyMemberLeftHandler {
 	return &PartyMemberLeftHandler{}
 }
 
-func (h *PartyMemberLeftHandler) Handle(ctx actor.Context, a *MapActor, msg *PartyMemberLeft) {
-	if a.Map == nil || msg == nil {
+func (h *PartyMemberLeftHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *PartyMemberLeft) {
+	if msg == nil {
 		return
 	}
-	a.Map.ApplyPartyLeaveDoorSync(msg.LeaverID)
-	ch := a.Map.GetPlayer(msg.LeaverID)
+	m := a.GetCharacter(msg.LeaverID)
+	if m == nil {
+		return
+	}
+	m.ApplyPartyLeaveDoorSync(msg.LeaverID)
+	ch := m.GetPlayer(msg.LeaverID)
 	if ch == nil {
 		return
 	}

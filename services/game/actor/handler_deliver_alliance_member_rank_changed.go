@@ -10,11 +10,15 @@ func (DeliverAllianceMemberRankChangedHandler) New() *DeliverAllianceMemberRankC
 	return &DeliverAllianceMemberRankChangedHandler{}
 }
 
-func (h *DeliverAllianceMemberRankChangedHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverAllianceMemberRankChanged) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverAllianceMemberRankChangedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverAllianceMemberRankChanged) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

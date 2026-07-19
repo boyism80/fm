@@ -11,7 +11,7 @@ func (SaveMapCharactersHandler) New() *SaveMapCharactersHandler {
 	return &SaveMapCharactersHandler{}
 }
 
-func (h *SaveMapCharactersHandler) Handle(ctx actor.Context, a *MapActor, _ *SaveMapCharacters) {
+func (h *SaveMapCharactersHandler) Handle(ctx actor.Context, a *GameLogicActor, _ *SaveMapCharacters) {
 	sender := ctx.Sender()
 	if sender == nil {
 		return

@@ -10,11 +10,15 @@ func (DeliverGuildMemberFieldsChangeHandler) New() *DeliverGuildMemberFieldsChan
 	return &DeliverGuildMemberFieldsChangeHandler{}
 }
 
-func (h *DeliverGuildMemberFieldsChangeHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverGuildMemberFieldsChange) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverGuildMemberFieldsChangeHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildMemberFieldsChange) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

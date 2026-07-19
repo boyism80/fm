@@ -10,11 +10,15 @@ func (DeliverGuildDisbandSelfHandler) New() *DeliverGuildDisbandSelfHandler {
 	return &DeliverGuildDisbandSelfHandler{}
 }
 
-func (h *DeliverGuildDisbandSelfHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverGuildDisbandSelf) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverGuildDisbandSelfHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildDisbandSelf) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

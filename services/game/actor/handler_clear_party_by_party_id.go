@@ -11,7 +11,7 @@ func (ClearPartyByPartyIDHandler) New() *ClearPartyByPartyIDHandler {
 	return &ClearPartyByPartyIDHandler{}
 }
 
-func (h *ClearPartyByPartyIDHandler) Handle(ctx actor.Context, a *MapActor, msg *ClearPartyByPartyID) {
+func (h *ClearPartyByPartyIDHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *ClearPartyByPartyID) {
 	if msg == nil {
 		return
 	}

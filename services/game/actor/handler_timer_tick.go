@@ -1,8 +1,9 @@
 package actor
 
 import (
-	"github.com/asynkron/protoactor-go/actor"
 	"log"
+
+	"github.com/asynkron/protoactor-go/actor"
 )
 
 type TimerTickHandler struct{}
@@ -11,17 +12,13 @@ func (TimerTickHandler) New() *TimerTickHandler {
 	return &TimerTickHandler{}
 }
 
-func (h *TimerTickHandler) Handle(ctx actor.Context, a *MapActor, msg *TimerTick) {
+func (h *TimerTickHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *TimerTick) {
 	handler := a.timerReg.GetHandler(msg.HandlerName)
 	if handler == nil {
 		return
 	}
 	for _, m := range a.Maps() {
 		if m == nil {
-			continue
-		}
-		pid := m.GetActorPID()
-		if pid == nil || !pid.Equal(ctx.Self()) {
 			continue
 		}
 		if err := handler.Handle(ctx, m); err != nil {

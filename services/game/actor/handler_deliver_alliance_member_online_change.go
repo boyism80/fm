@@ -10,11 +10,15 @@ func (DeliverAllianceMemberOnlineChangeHandler) New() *DeliverAllianceMemberOnli
 	return &DeliverAllianceMemberOnlineChangeHandler{}
 }
 
-func (h *DeliverAllianceMemberOnlineChangeHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverAllianceMemberOnlineChange) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverAllianceMemberOnlineChangeHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverAllianceMemberOnlineChange) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

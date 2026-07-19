@@ -10,11 +10,15 @@ func (DeliverAllianceInfoBroadcastHandler) New() *DeliverAllianceInfoBroadcastHa
 	return &DeliverAllianceInfoBroadcastHandler{}
 }
 
-func (h *DeliverAllianceInfoBroadcastHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverAllianceInfoBroadcast) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverAllianceInfoBroadcastHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverAllianceInfoBroadcast) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

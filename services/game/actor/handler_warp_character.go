@@ -10,7 +10,7 @@ func (WarpCharacterHandler) New() *WarpCharacterHandler {
 	return &WarpCharacterHandler{}
 }
 
-func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *MapActor, msg *WarpCharacter) {
+func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *WarpCharacter) {
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}

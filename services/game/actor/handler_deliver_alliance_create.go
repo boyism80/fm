@@ -10,11 +10,15 @@ func (DeliverAllianceCreateHandler) New() *DeliverAllianceCreateHandler {
 	return &DeliverAllianceCreateHandler{}
 }
 
-func (h *DeliverAllianceCreateHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverAllianceCreate) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverAllianceCreateHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverAllianceCreate) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

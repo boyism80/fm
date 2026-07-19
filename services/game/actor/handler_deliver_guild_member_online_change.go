@@ -10,11 +10,15 @@ func (DeliverGuildMemberOnlineChangeHandler) New() *DeliverGuildMemberOnlineChan
 	return &DeliverGuildMemberOnlineChangeHandler{}
 }
 
-func (h *DeliverGuildMemberOnlineChangeHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverGuildMemberOnlineChange) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverGuildMemberOnlineChangeHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildMemberOnlineChange) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

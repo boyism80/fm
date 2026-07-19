@@ -46,7 +46,7 @@ func (c *GameClient) GetCharacter() *entity.Character {
 }
 
 // GetLogicActorPID is the packet mailbox for the map the character stands on;
-// nil falls back to core.Server's nil MapActor (login / between-maps).
+// nil falls back to core.Server's nil LogicActor (login / between-maps).
 func (c *GameClient) GetLogicActorPID() *actor.PID {
 	c.mu.Lock()
 	ch := c.character

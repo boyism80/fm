@@ -12,7 +12,7 @@ func (RunReactorRespawnHandler) New() *RunReactorRespawnHandler {
 	return &RunReactorRespawnHandler{}
 }
 
-func (h *RunReactorRespawnHandler) Handle(ctx actor.Context, a *MapActor, msg *c_actor.RunReactorRespawn) {
+func (h *RunReactorRespawnHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *c_actor.RunReactorRespawn) {
 	if msg == nil {
 		return
 	}

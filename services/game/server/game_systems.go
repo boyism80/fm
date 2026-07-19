@@ -113,7 +113,7 @@ func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx
 		L.Push(lua.LBool(false))
 		return 1
 	}
-	return (luaMapCall{gs: s.gs}).InvokeAwait(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.MapActor) []lua.LValue {
+	return (luaMapCall{gs: s.gs}).InvokeAwait(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.GameLogicActor) []lua.LValue {
 		mapInstance.Reset()
 		return []lua.LValue{lua.LBool(true)}
 	})
@@ -135,7 +135,7 @@ func (s mapSystem) RespawnFromLua(L *lua.LState, mapInstance *entity.Map, actorC
 		L.Push(lua.LNumber(0))
 		return 1
 	}
-	return (luaMapCall{gs: s.gs}).InvokeAwait(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.MapActor) []lua.LValue {
+	return (luaMapCall{gs: s.gs}).InvokeAwait(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.GameLogicActor) []lua.LValue {
 		return []lua.LValue{lua.LNumber(mapInstance.Respawn(includeNegativeMobTime))}
 	})
 }
@@ -176,7 +176,7 @@ func (s mapSystem) RunOnMapFromLua(L *lua.LState, actorCtx actor.Context, mapID 
 	if s.gs == nil {
 		return pushRunOnMapResult(L, false, nil, "run_on_map: game server not found")
 	}
-	return (luaMapCall{gs: s.gs}).InvokeAwaitAsync(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.MapActor) *async.Promise {
+	return (luaMapCall{gs: s.gs}).InvokeAwaitAsync(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.GameLogicActor) *async.Promise {
 		return targetMap.RunScript(ctx, scriptPath, funcName, args).Then(func(v interface{}) (interface{}, error) {
 			vals := luax.ResultValues(v)
 			result := lua.LNil

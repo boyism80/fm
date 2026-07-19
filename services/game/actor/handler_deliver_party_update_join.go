@@ -12,11 +12,15 @@ func (DeliverPartyUpdateJoinHandler) New() *DeliverPartyUpdateJoinHandler {
 	return &DeliverPartyUpdateJoinHandler{}
 }
 
-func (h *DeliverPartyUpdateJoinHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverPartyUpdateJoin) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverPartyUpdateJoinHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverPartyUpdateJoin) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
@@ -25,7 +29,7 @@ func (h *DeliverPartyUpdateJoinHandler) Handle(ctx actor.Context, a *MapActor, m
 		return
 	}
 	ch.Listener.OnPartyMemberHPChanged(ch, nil)
-	for _, obj := range a.Map.GetObjects(constant.ObjectTypeCharacter) {
+	for _, obj := range m.GetObjects(constant.ObjectTypeCharacter) {
 		peer, ok := obj.(*entity.Character)
 		if !ok || peer == nil || peer.GetID() == ch.GetID() {
 			continue

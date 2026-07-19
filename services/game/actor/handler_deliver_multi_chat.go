@@ -10,11 +10,15 @@ func (DeliverMultiChatHandler) New() *DeliverMultiChatHandler {
 	return &DeliverMultiChatHandler{}
 }
 
-func (h *DeliverMultiChatHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverMultiChat) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverMultiChatHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverMultiChat) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

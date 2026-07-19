@@ -404,10 +404,7 @@ func (gs *GameServer) preCreateMaps() {
 	gameMapListener := NewGameMapListener(gs)
 
 	nilMapProps := actor.PropsFromProducer(func() actor.Actor {
-		return &g_actor.MapActor{
-			Map:       nil,
-			GameWorld: gs,
-		}
+		return g_actor.NewMapActor(nil, gs)
 	})
 
 	nilMapPID := gs.actorRegistry.GetOrCreateActor(
@@ -426,10 +423,7 @@ func (gs *GameServer) preCreateMaps() {
 		gs.maps[mapID] = mapInstance
 
 		props := actor.PropsFromProducer(func() actor.Actor {
-			return &g_actor.MapActor{
-				Map:       mapInstance,
-				GameWorld: gs,
-			}
+			return g_actor.NewMapActor(mapInstance, gs)
 		})
 
 		actual := gs.actorRegistry.GetOrCreateActor(name, props)

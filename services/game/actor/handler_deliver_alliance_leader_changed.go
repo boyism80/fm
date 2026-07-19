@@ -10,11 +10,15 @@ func (DeliverAllianceLeaderChangedHandler) New() *DeliverAllianceLeaderChangedHa
 	return &DeliverAllianceLeaderChangedHandler{}
 }
 
-func (h *DeliverAllianceLeaderChangedHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverAllianceLeaderChanged) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverAllianceLeaderChangedHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverAllianceLeaderChanged) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

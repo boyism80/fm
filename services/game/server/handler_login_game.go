@@ -207,7 +207,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	targetMapPID := mapInstance.GetActorPID()
 	if targetMapPID == nil {
-		return fmt.Errorf("MapActor PID not found for map %d", mapID)
+		return fmt.Errorf("LogicActor PID not found for map %d", mapID)
 	}
 
 	if err := h.gs.characterRuntime.RegisterCharacter(character.GetID(), character.GetName()); err != nil {

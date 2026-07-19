@@ -2,7 +2,6 @@ package actor
 
 func registerMapMessageHandlers(r *MessageRegistry) {
 	Bind[StartedHandler](r)
-	Bind[StoppedHandler](r)
 	Bind[HandlePacketHandler](r)
 	Bind[ScheduleTimerHandler](r)
 	Bind[ExecuteTimerHandler](r)
@@ -10,8 +9,6 @@ func registerMapMessageHandlers(r *MessageRegistry) {
 	Bind[RemoveCharacterHandler](r)
 	Bind[WarpCharacterHandler](r)
 	Bind[HandoffCharacterHandler](r)
-	Bind[AttachStateMachineHandler](r)
-	Bind[DetachStateMachineHandler](r)
 	Bind[RequestSpawnDoorHandler](r)
 	Bind[ResponseSpawnDoorHandler](r)
 	Bind[RemoveDoorHandler](r)

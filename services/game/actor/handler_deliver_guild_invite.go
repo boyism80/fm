@@ -13,11 +13,15 @@ func (DeliverGuildInviteHandler) New() *DeliverGuildInviteHandler {
 	return &DeliverGuildInviteHandler{}
 }
 
-func (h *DeliverGuildInviteHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverGuildInvite) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverGuildInviteHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildInvite) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

@@ -10,11 +10,15 @@ func (DeliverGuildNoticeChangeHandler) New() *DeliverGuildNoticeChangeHandler {
 	return &DeliverGuildNoticeChangeHandler{}
 }
 
-func (h *DeliverGuildNoticeChangeHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverGuildNoticeChange) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverGuildNoticeChangeHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildNoticeChange) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

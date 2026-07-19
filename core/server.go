@@ -288,8 +288,8 @@ func (s *ServerCore) processPacket(client Client, encryptedData []byte) (bool, e
 	if logicActorPID == nil {
 
 		if s.nilMapActorPID == nil {
-			log.Printf("No LogicActor PID for client and nil MapActor PID not set")
-			return false, fmt.Errorf("no LogicActor PID for client and nil MapActor PID not set")
+			log.Printf("No LogicActor PID for client and nil LogicActor PID not set")
+			return false, fmt.Errorf("no LogicActor PID for client and nil LogicActor PID not set")
 		}
 		logicActorPID = s.nilMapActorPID
 	}

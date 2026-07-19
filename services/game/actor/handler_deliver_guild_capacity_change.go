@@ -10,11 +10,15 @@ func (DeliverGuildCapacityChangeHandler) New() *DeliverGuildCapacityChangeHandle
 	return &DeliverGuildCapacityChangeHandler{}
 }
 
-func (h *DeliverGuildCapacityChangeHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverGuildCapacityChange) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverGuildCapacityChangeHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildCapacityChange) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

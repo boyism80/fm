@@ -10,11 +10,15 @@ func (DeliverAllianceDisbandHandler) New() *DeliverAllianceDisbandHandler {
 	return &DeliverAllianceDisbandHandler{}
 }
 
-func (h *DeliverAllianceDisbandHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverAllianceDisband) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverAllianceDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverAllianceDisband) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

@@ -11,7 +11,7 @@ func (SyncPartyHandler) New() *SyncPartyHandler {
 	return &SyncPartyHandler{}
 }
 
-func (h *SyncPartyHandler) Handle(ctx actor.Context, a *MapActor, msg *SyncParty) {
+func (h *SyncPartyHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *SyncParty) {
 	if msg == nil || msg.Party == nil {
 		return
 	}

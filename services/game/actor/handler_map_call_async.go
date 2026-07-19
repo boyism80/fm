@@ -11,7 +11,7 @@ func (MapCallAsyncHandler) New() *MapCallAsyncHandler {
 	return &MapCallAsyncHandler{}
 }
 
-func (h *MapCallAsyncHandler) Handle(ctx actor.Context, a *MapActor, msg *MapCallAsync) {
+func (h *MapCallAsyncHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *MapCallAsync) {
 	if msg == nil || msg.Run == nil || msg.ReplyTo == nil {
 		return
 	}

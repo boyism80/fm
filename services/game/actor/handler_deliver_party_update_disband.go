@@ -10,11 +10,15 @@ func (DeliverPartyUpdateDisbandHandler) New() *DeliverPartyUpdateDisbandHandler 
 	return &DeliverPartyUpdateDisbandHandler{}
 }
 
-func (h *DeliverPartyUpdateDisbandHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverPartyUpdateDisband) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverPartyUpdateDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverPartyUpdateDisband) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

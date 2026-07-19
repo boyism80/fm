@@ -46,9 +46,9 @@ type ResumeLua struct {
 	Args   []lua.LValue
 }
 
-type MapCallFunc func(ctx actor.Context, a *MapActor) []lua.LValue
+type MapCallFunc func(ctx actor.Context, a *GameLogicActor) []lua.LValue
 
-type MapCallAsyncFunc func(ctx actor.Context, a *MapActor) *async.Promise
+type MapCallAsyncFunc func(ctx actor.Context, a *GameLogicActor) *async.Promise
 
 type MapCall struct {
 	Run     MapCallFunc

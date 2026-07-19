@@ -10,11 +10,15 @@ func (DeliverGuildLeaveSelfHandler) New() *DeliverGuildLeaveSelfHandler {
 	return &DeliverGuildLeaveSelfHandler{}
 }
 
-func (h *DeliverGuildLeaveSelfHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverGuildLeaveSelf) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverGuildLeaveSelfHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildLeaveSelf) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

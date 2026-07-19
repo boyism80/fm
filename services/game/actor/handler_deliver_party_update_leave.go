@@ -10,11 +10,15 @@ func (DeliverPartyUpdateLeaveHandler) New() *DeliverPartyUpdateLeaveHandler {
 	return &DeliverPartyUpdateLeaveHandler{}
 }
 
-func (h *DeliverPartyUpdateLeaveHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverPartyUpdateLeave) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverPartyUpdateLeaveHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverPartyUpdateLeave) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

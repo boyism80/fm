@@ -12,7 +12,7 @@ func (ResumeLuaHandler) New() *ResumeLuaHandler {
 	return &ResumeLuaHandler{}
 }
 
-func (h *ResumeLuaHandler) Handle(ctx actor.Context, a *MapActor, msg *ResumeLua) {
+func (h *ResumeLuaHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *ResumeLua) {
 	if msg.Root == nil || msg.Thread == nil {
 		return
 	}

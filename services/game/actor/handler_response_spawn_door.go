@@ -11,15 +11,16 @@ func (ResponseSpawnDoorHandler) New() *ResponseSpawnDoorHandler {
 	return &ResponseSpawnDoorHandler{}
 }
 
-func (h *ResponseSpawnDoorHandler) Handle(ctx actor.Context, a *MapActor, msg *ResponseSpawnDoor) {
-	if msg == nil || a.Map == nil {
+func (h *ResponseSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *ResponseSpawnDoor) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
-		if msg.Ok && a.Map.Wz != nil && a.Map.GameWorld != nil {
-			a.Map.GameWorld.GetMapSystem().RemoveReturnDoor(msg.OwnerID, uint32(msg.SkillID), uint32(a.Map.Wz.ReturnMapId))
-		}
 		return
 	}
 	gw := ch.GameWorld

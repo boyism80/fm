@@ -11,7 +11,8 @@ import (
 )
 
 type StateMachineActor struct {
-	LogicActor
+	GameLogicActor
+	StateMachine   *entity.StateMachine
 	luaRoot        *lua.LState
 	timeoutVersion uint64
 	pendingAttach  int
@@ -23,16 +24,15 @@ type StateMachineActor struct {
 }
 
 func NewStateMachineActor(sm *entity.StateMachine, gameWorld entity.GameWorld) *StateMachineActor {
-	return &StateMachineActor{
-		LogicActor: LogicActor{
-			GameWorld:    gameWorld,
-			StateMachine: sm,
-		},
+	a := &StateMachineActor{StateMachine: sm}
+	a.GameWorld = gameWorld
+	a.maps = func() []*entity.Map {
+		if sm == nil {
+			return nil
+		}
+		return sm.MapList()
 	}
-}
-
-func (a *StateMachineActor) Owner() *LogicActor {
-	return &a.LogicActor
+	return a
 }
 
 func (a *StateMachineActor) Receive(ctx actor.Context) {
@@ -71,9 +71,9 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			a.luaRoot.Close()
 			a.luaRoot = nil
 		}
-		a.LogicActor.Receive(ctx)
+		a.GameLogicActor.Receive(ctx)
 	default:
-		a.LogicActor.Receive(ctx)
+		a.GameLogicActor.Receive(ctx)
 	}
 }
 

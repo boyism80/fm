@@ -10,11 +10,15 @@ func (DeliverGuildEmblemChangeHandler) New() *DeliverGuildEmblemChangeHandler {
 	return &DeliverGuildEmblemChangeHandler{}
 }
 
-func (h *DeliverGuildEmblemChangeHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverGuildEmblemChange) {
-	if a.Map == nil || msg == nil {
+func (h *DeliverGuildEmblemChangeHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverGuildEmblemChange) {
+	if msg == nil {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}

@@ -10,7 +10,7 @@ func (MapCallHandler) New() *MapCallHandler {
 	return &MapCallHandler{}
 }
 
-func (h *MapCallHandler) Handle(ctx actor.Context, a *MapActor, msg *MapCall) {
+func (h *MapCallHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *MapCall) {
 	if msg == nil || msg.Run == nil {
 		return
 	}

@@ -10,11 +10,15 @@ func (DeliverPartyUpdateLeaderChangeHandler) New() *DeliverPartyUpdateLeaderChan
 	return &DeliverPartyUpdateLeaderChangeHandler{}
 }
 
-func (h *DeliverPartyUpdateLeaderChangeHandler) Handle(ctx actor.Context, a *MapActor, msg *DeliverPartyUpdateLeaderChange) {
-	if a.Map == nil || msg == nil || msg.NewLeaderCharacterID == 0 {
+func (h *DeliverPartyUpdateLeaderChangeHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *DeliverPartyUpdateLeaderChange) {
+	if msg == nil || msg.NewLeaderCharacterID == 0 {
 		return
 	}
-	ch := a.Map.GetPlayer(msg.CharacterID)
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
 	if ch == nil {
 		return
 	}
