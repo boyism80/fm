@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/entity"
 	lua "github.com/yuin/gopher-lua"
@@ -15,6 +16,7 @@ type StateMachineActor struct {
 	StateMachine   *entity.StateMachine
 	luaRoot        *lua.LState
 	timeoutVersion uint64
+	timeoutCancel  scheduler.CancelFunc
 	pendingAttach  int
 	attachFailed   bool
 	attachComplete bool
@@ -54,7 +56,10 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	case *entity.ScheduleStateMachineTimeout:
 		if a.scheduler != nil {
 			a.timeoutVersion++
-			a.scheduler.SendOnce(time.Duration(msg.Milliseconds)*time.Millisecond, ctx.Self(), &entity.StateMachineTimeout{
+			if a.timeoutCancel != nil {
+				a.timeoutCancel()
+			}
+			a.timeoutCancel = a.scheduler.SendOnce(time.Duration(msg.Milliseconds)*time.Millisecond, ctx.Self(), &entity.StateMachineTimeout{
 				Version: a.timeoutVersion,
 			})
 		}
@@ -67,6 +72,11 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	case *DetachStateMachineAck:
 		a.handleDetachAck(ctx)
 	case *actor.Stopped:
+		a.StopTimers()
+		if a.timeoutCancel != nil {
+			a.timeoutCancel()
+			a.timeoutCancel = nil
+		}
 		if a.luaRoot != nil {
 			a.luaRoot.Close()
 			a.luaRoot = nil

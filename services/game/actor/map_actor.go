@@ -25,6 +25,7 @@ func NewMapActor(m *entity.Map, gameWorld entity.GameWorld) *MapActor {
 func (a *MapActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Stopped:
+		a.StopTimers()
 		if a.Map != nil {
 			a.Map.ClearLuaRoot()
 		}

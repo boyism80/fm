@@ -10,10 +10,11 @@ import (
 )
 
 type GameLogicActor struct {
-	GameWorld entity.GameWorld
-	scheduler *scheduler.TimerScheduler
-	timerReg  *TimerRegistry
-	maps      func() []*entity.Map
+	GameWorld    entity.GameWorld
+	scheduler    *scheduler.TimerScheduler
+	timerReg     *TimerRegistry
+	timerCancels []scheduler.CancelFunc
+	maps         func() []*entity.Map
 }
 
 func (a *GameLogicActor) Receive(ctx actor.Context) {
@@ -88,6 +89,15 @@ func (a *GameLogicActor) registerTimers() {
 	RegisterTimer[*timers.MistPoisonTickTimer](a.timerReg)
 	RegisterTimer[*timers.CharacterSaveTimer](a.timerReg)
 	RegisterTimer[*timers.PartySearchTimer](a.timerReg)
+}
+
+func (a *GameLogicActor) StopTimers() {
+	for _, cancel := range a.timerCancels {
+		if cancel != nil {
+			cancel()
+		}
+	}
+	a.timerCancels = nil
 }
 
 func (a *GameLogicActor) ensureFinish(ctx actor.Context, msg *ensure.EnsureDeliver, ok bool, reason string) {

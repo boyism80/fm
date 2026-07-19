@@ -17,7 +17,7 @@ func (h *StartedHandler) Handle(ctx actor.Context, a *GameLogicActor, _ *actor.S
 	a.registerTimers()
 
 	for _, handler := range a.timerReg.GetAllHandlers() {
-		a.scheduler.SendRepeatedly(
+		cancel := a.scheduler.SendRepeatedly(
 			handler.GetInitialDelay(),
 			handler.GetInterval(),
 			ctx.Self(),
@@ -25,5 +25,6 @@ func (h *StartedHandler) Handle(ctx actor.Context, a *GameLogicActor, _ *actor.S
 				HandlerName: handler.GetName(),
 			},
 		)
+		a.timerCancels = append(a.timerCancels, cancel)
 	}
 }
