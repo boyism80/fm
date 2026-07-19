@@ -51,7 +51,7 @@ func (rs *ReactorSpawn) ScheduleRespawn(mapInstance *Map) {
 	gameWorld := mapInstance.GameWorld
 	rs.respawnTimer = time.AfterFunc(delay, func() {
 		if gameWorld != nil {
-			gameWorld.GetSchedulerSystem().RunReactorRespawn(pid, spawnID)
+			gameWorld.GetSchedulerSystem().RunReactorRespawn(pid, mapInstance.GetMapID(), spawnID)
 		}
 	})
 }

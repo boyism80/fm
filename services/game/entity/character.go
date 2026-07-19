@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/clock"
 
 	"github.com/boyism80/fm/core/luax"
@@ -658,11 +659,11 @@ func (ch *Character) SetSkillPoint(v uint16, notify bool) {
 	}
 }
 
-func (ch *Character) Warp(targetMap *Map, spawnPoint uint8) error {
+func (ch *Character) Warp(ctx actor.Context, targetMap *Map, spawnPoint uint8) error {
 	if ch.GameWorld == nil {
 		return fmt.Errorf("no game world")
 	}
-	return ch.GameWorld.GetMapSystem().Warp(ch, targetMap, spawnPoint)
+	return ch.GameWorld.GetMapSystem().Warp(ctx, ch, targetMap, spawnPoint)
 }
 
 func (ch *Character) Relocate(spawnPoint uint8) error {

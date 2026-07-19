@@ -20,6 +20,10 @@ func NewActorRegistry(system *ActorSystem) *ActorRegistry {
 	}
 }
 
+func (r *ActorRegistry) PredictPID(name string) *actor.PID {
+	return actor.NewPID(r.system.GetSystem().Address(), name)
+}
+
 func (r *ActorRegistry) GetOrCreateActor(name string, props *actor.Props) *actor.PID {
 	r.mutex.RLock()
 	if pid, exists := r.actors[name]; exists {
@@ -31,7 +35,14 @@ func (r *ActorRegistry) GetOrCreateActor(name string, props *actor.Props) *actor
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	pid := r.system.root.Spawn(props)
+	if pid, exists := r.actors[name]; exists {
+		return pid
+	}
+
+	pid, err := r.system.root.SpawnNamed(props, name)
+	if err != nil {
+		panic(fmt.Sprintf("spawn actor %s: %v", name, err))
+	}
 	r.actors[name] = pid
 	return pid
 }
@@ -52,4 +63,13 @@ func (r *ActorRegistry) RemoveActor(name string) {
 	defer r.mutex.Unlock()
 
 	delete(r.actors, name)
+}
+
+func (r *ActorRegistry) StopActor(name string, pid *actor.PID) {
+	r.mutex.Lock()
+	delete(r.actors, name)
+	r.mutex.Unlock()
+	if pid != nil {
+		r.system.root.Stop(pid)
+	}
 }

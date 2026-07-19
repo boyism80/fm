@@ -88,7 +88,7 @@ func (h *DirectWarp) Handle(ctx *core.ClientContext, req *request.DirectWarp) er
 			return nil
 		}
 
-		if err := character.Warp(targetMap, targetPortal.Wz.ID); err != nil {
+		if err := character.Warp(ctx.ActorContext, targetMap, targetPortal.Wz.ID); err != nil {
 			return err
 		}
 	}

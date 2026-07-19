@@ -67,8 +67,9 @@ type Map struct {
 	availableOIDs       []uint32
 	GameWorld           GameWorld
 	actorPID            *actor.PID
+	stateMachine        *StateMachine
 	luaRoot             *lua.LState
-	pidMutex            sync.RWMutex
+	stateMachineMu      sync.RWMutex
 	propertyMutex       sync.RWMutex
 	properties          map[string]interface{}
 	UsedDoorPortalIDs   map[uint8]struct{}
@@ -81,7 +82,7 @@ type BroadcastOption struct {
 	SendRaw bool
 }
 
-func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint32, gw GameWorld) *Map {
+func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint32, gw GameWorld, actorPID *actor.PID) *Map {
 	if listener == nil {
 		panic("MapListener cannot be nil")
 	}
@@ -90,6 +91,9 @@ func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint
 	}
 	if gw == nil {
 		panic("GameWorld cannot be nil")
+	}
+	if actorPID == nil {
+		panic("actor PID cannot be nil")
 	}
 
 	wz, ok := gw.GetResources().Maps[mapId]
@@ -109,6 +113,7 @@ func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint
 		sequence:        0,
 		availableOIDs:   make([]uint32, 0),
 		GameWorld:       gw,
+		actorPID:        actorPID,
 	}
 
 	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
@@ -1175,13 +1180,66 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 }
 
 func (m *Map) GetActorPID() *actor.PID {
-	m.pidMutex.RLock()
-	defer m.pidMutex.RUnlock()
+	m.stateMachineMu.RLock()
+	sm := m.stateMachine
+	m.stateMachineMu.RUnlock()
+	if sm != nil && sm.ActorPID != nil {
+		return sm.ActorPID
+	}
 	return m.actorPID
 }
 
-func (m *Map) SetActorPID(pid *actor.PID) {
-	m.pidMutex.Lock()
-	defer m.pidMutex.Unlock()
-	m.actorPID = pid
+func (m *Map) MapActorPID() *actor.PID {
+	return m.actorPID
+}
+
+func (m *Map) StateMachine() *StateMachine {
+	if m == nil {
+		return nil
+	}
+	m.stateMachineMu.RLock()
+	defer m.stateMachineMu.RUnlock()
+	return m.stateMachine
+}
+
+func (m *Map) AttachStateMachine(sm *StateMachine) error {
+	if m == nil || sm == nil {
+		return fmt.Errorf("invalid state machine attach")
+	}
+	m.stateMachineMu.Lock()
+	defer m.stateMachineMu.Unlock()
+	if m.stateMachine != nil {
+		return fmt.Errorf("map %d already has a state machine", m.GetMapID())
+	}
+	if m.actorPID == nil {
+		return fmt.Errorf("map %d has no actor", m.GetMapID())
+	}
+	m.stateMachine = sm
+	return nil
+}
+
+func (m *Map) DetachStateMachine(sm *StateMachine) {
+	if m == nil || sm == nil {
+		return
+	}
+	m.stateMachineMu.Lock()
+	defer m.stateMachineMu.Unlock()
+	if m.stateMachine == sm {
+		m.stateMachine = nil
+	}
+}
+
+func (m *Map) RebindObjectTimers(pid *actor.PID) {
+	if m == nil || pid == nil {
+		return
+	}
+	for _, objects := range m.objects {
+		for _, obj := range objects {
+			if obj == nil {
+				continue
+			}
+			obj.SuspendTimers()
+			obj.ResumeTimers(pid)
+		}
+	}
 }

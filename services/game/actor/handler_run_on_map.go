@@ -7,7 +7,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (a *MapActor) RunScriptCall(ctx actor.Context, scriptPath string, funcName string, args []interface{}) *async.Promise {
+func (a *LogicActor) RunScriptCall(ctx actor.Context, scriptPath string, funcName string, args []interface{}) *async.Promise {
 	if a.Map == nil {
 		return async.NewPromise(ctx, 0).Then(func(_ interface{}) (interface{}, error) {
 			return []lua.LValue{lua.LBool(false), lua.LNil, lua.LString("map not found")}, nil

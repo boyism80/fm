@@ -12,7 +12,7 @@ func (SyncPartyHandler) New() *SyncPartyHandler {
 }
 
 func (h *SyncPartyHandler) Handle(ctx actor.Context, a *MapActor, msg *SyncParty) {
-	if a.Map == nil || msg == nil || msg.Party == nil {
+	if msg == nil || msg.Party == nil {
 		return
 	}
 	partyID := msg.Party.GetPartyId()
@@ -23,18 +23,20 @@ func (h *SyncPartyHandler) Handle(ctx actor.Context, a *MapActor, msg *SyncParty
 		}
 		memberSet[member.GetCharacterId()] = struct{}{}
 	}
-	for _, obj := range a.Map.GetAllPlayers() {
-		ch, ok := obj.(*entity.Character)
-		if !ok || ch == nil {
-			continue
-		}
-		if _, exists := memberSet[ch.GetID()]; exists {
-			id := partyID
-			ch.SetPartyID(&id)
-			continue
-		}
-		if cur := ch.GetPartyID(); cur != nil && *cur == partyID {
-			ch.SetPartyID(nil)
+	for _, m := range a.Maps() {
+		for _, obj := range m.GetAllPlayers() {
+			ch, ok := obj.(*entity.Character)
+			if !ok || ch == nil {
+				continue
+			}
+			if _, exists := memberSet[ch.GetID()]; exists {
+				id := partyID
+				ch.SetPartyID(&id)
+				continue
+			}
+			if cur := ch.GetPartyID(); cur != nil && *cur == partyID {
+				ch.SetPartyID(nil)
+			}
 		}
 	}
 }

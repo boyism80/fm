@@ -13,10 +13,18 @@ func (RunObjectTimerHandler) New() *RunObjectTimerHandler {
 }
 
 func (h *RunObjectTimerHandler) Handle(ctx actor.Context, a *MapActor, msg *c_actor.RunObjectTimer) {
-	if a.Map == nil {
+	if msg == nil {
 		return
 	}
-	obj := a.Map.GetObject(constant.ObjectType(msg.ObjectType), msg.ID)
+	m := a.MapForObject(constant.ObjectType(msg.ObjectType), msg.ID)
+	if m == nil {
+		return
+	}
+	pid := m.GetActorPID()
+	if pid == nil || !pid.Equal(ctx.Self()) {
+		return
+	}
+	obj := m.GetObject(constant.ObjectType(msg.ObjectType), msg.ID)
 	if obj == nil {
 		return
 	}

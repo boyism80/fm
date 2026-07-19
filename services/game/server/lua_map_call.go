@@ -29,10 +29,12 @@ func (c luaMapCall) InvokeAwait(L *lua.LState, actorCtx actor.Context, targetPID
 	}
 	msg := &g_actor.MapCall{Run: run}
 	if actorCtx != nil && callerPID.Equal(targetPID) {
-		mapActor, ok := actorCtx.Actor().(*g_actor.MapActor)
+		owner, ok := actorCtx.Actor().(interface {
+			Owner() *g_actor.LogicActor
+		})
 		if ok {
 			handler := g_actor.MapCallHandler{}
-			handler.Handle(actorCtx, mapActor, msg)
+			handler.Handle(actorCtx, owner.Owner(), msg)
 			for _, value := range msg.Values {
 				L.Push(value)
 			}
@@ -74,10 +76,12 @@ func (c luaMapCall) InvokeAwaitAsync(L *lua.LState, actorCtx actor.Context, targ
 		Thread:  L,
 	}
 	if actorCtx != nil && callerPID.Equal(targetPID) {
-		mapActor, ok := actorCtx.Actor().(*g_actor.MapActor)
+		owner, ok := actorCtx.Actor().(interface {
+			Owner() *g_actor.LogicActor
+		})
 		if ok {
 			handler := g_actor.MapCallAsyncHandler{}
-			handler.Handle(actorCtx, mapActor, msg)
+			handler.Handle(actorCtx, owner.Owner(), msg)
 			return L.Yield(lua.LNil)
 		}
 	}

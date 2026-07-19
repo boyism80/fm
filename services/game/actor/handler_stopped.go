@@ -11,7 +11,7 @@ func (StoppedHandler) New() *StoppedHandler {
 }
 
 func (h *StoppedHandler) Handle(ctx actor.Context, a *MapActor, _ *actor.Stopped) {
-	if a.Map != nil {
+	if a.StateMachine == nil && a.Map != nil {
 		a.Map.ClearLuaRoot()
 	}
 }

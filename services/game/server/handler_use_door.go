@@ -73,7 +73,7 @@ func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
 		return nil
 	}
 
-	if err := character.Warp(targetMap, spawnID); err != nil {
+	if err := character.Warp(ctx.ActorContext, targetMap, spawnID); err != nil {
 		log.Printf("use door warp: %v", err)
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil

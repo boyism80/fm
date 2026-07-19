@@ -7,6 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/luax"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	gameconst "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -113,7 +114,8 @@ func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx
 		return 1
 	}
 	return (luaMapCall{gs: s.gs}).InvokeAwait(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.MapActor) []lua.LValue {
-		return a.ResetCall(ctx)
+		mapInstance.Reset()
+		return []lua.LValue{lua.LBool(true)}
 	})
 }
 
@@ -134,7 +136,7 @@ func (s mapSystem) RespawnFromLua(L *lua.LState, mapInstance *entity.Map, actorC
 		return 1
 	}
 	return (luaMapCall{gs: s.gs}).InvokeAwait(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.MapActor) []lua.LValue {
-		return a.RespawnCall(ctx, includeNegativeMobTime)
+		return []lua.LValue{lua.LNumber(mapInstance.Respawn(includeNegativeMobTime))}
 	})
 }
 
@@ -175,11 +177,18 @@ func (s mapSystem) RunOnMapFromLua(L *lua.LState, actorCtx actor.Context, mapID 
 		return pushRunOnMapResult(L, false, nil, "run_on_map: game server not found")
 	}
 	return (luaMapCall{gs: s.gs}).InvokeAwaitAsync(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.MapActor) *async.Promise {
-		return a.RunScriptCall(ctx, scriptPath, funcName, args)
+		return targetMap.RunScript(ctx, scriptPath, funcName, args).Then(func(v interface{}) (interface{}, error) {
+			vals := luax.ResultValues(v)
+			result := lua.LNil
+			if len(vals) > 0 && vals[0] != nil {
+				result = vals[0]
+			}
+			return []lua.LValue{lua.LBool(true), result, lua.LNil}, nil
+		})
 	})
 }
 
-func (s mapSystem) Warp(character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {
+func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {
 	if targetMap == nil {
 		return fmt.Errorf("target map is nil")
 	}
@@ -187,15 +196,50 @@ func (s mapSystem) Warp(character *entity.Character, targetMap *entity.Map, spaw
 		return fmt.Errorf("character is nil")
 	}
 	currentMap := character.GetMap()
-	if currentMap != nil {
-		currentMap.RemovePlayer(character.GetID())
-	}
 	targetPID := targetMap.GetActorPID()
 	if targetPID == nil {
 		return fmt.Errorf("target map actor not found")
 	}
-	s.gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
+	if currentMap == nil {
+		s.gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
+			Character: character,
+			TargetMap: targetMap,
+			Portal:    spawnPoint,
+		})
+		return nil
+	}
+	sourcePID := currentMap.GetActorPID()
+	if sourcePID == nil {
+		return fmt.Errorf("source map actor not found")
+	}
+	if sourcePID.Equal(targetPID) {
+		if actorCtx == nil || actorCtx.Self() == nil || !actorCtx.Self().Equal(sourcePID) {
+			return fmt.Errorf("same-owner warp must run on owner actor")
+		}
+		if err := currentMap.RemovePlayer(character.GetID()); err != nil {
+			return err
+		}
+		if err := targetMap.AddPlayer(actorCtx, character.GetID(), character, spawnPoint, false); err != nil {
+			return err
+		}
+		character.ResumeTimers(actorCtx.Self())
+		character.Listener.OnPartyMemberFieldsChanged(character)
+		return nil
+	}
+	if actorCtx != nil && actorCtx.Self() != nil && actorCtx.Self().Equal(sourcePID) {
+		if err := currentMap.RemovePlayer(character.GetID()); err != nil {
+			return err
+		}
+		actorCtx.Send(targetPID, &g_actor.WarpCharacter{
+			Character: character,
+			TargetMap: targetMap,
+			Portal:    spawnPoint,
+		})
+		return nil
+	}
+	s.gs.GetRootContext().Send(sourcePID, &g_actor.HandoffCharacter{
 		Character: character,
+		TargetMap: targetMap,
 		Portal:    spawnPoint,
 	})
 	return nil
@@ -243,6 +287,7 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.Skil
 	slot = s.gs.party.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
 	root.Send(destPID, &g_actor.RequestSpawnDoor{
 		ReplyTo:     srcPID,
+		TargetMapID: destMap.GetMapID(),
 		CharacterID: ch.GetID(),
 		OwnerID:     ch.GetID(),
 		SkillID:     skillID,
@@ -267,6 +312,7 @@ func (s mapSystem) RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartM
 	}
 	if root := s.gs.GetRootContext(); root != nil {
 		root.Send(pid, &g_actor.RemoveDoor{
+			MapID:   counterpartMapWZID,
 			OwnerID: ownerID,
 			SkillID: skillID,
 		})
@@ -287,11 +333,12 @@ func (s schedulerSystem) RunObjectTimer(pid *actor.PID, obj entity.Object, key s
 	}
 }
 
-func (s schedulerSystem) RunReactorRespawn(pid *actor.PID, spawnID uint32) {
+func (s schedulerSystem) RunReactorRespawn(pid *actor.PID, mapID uint32, spawnID uint32) {
 	if s.gs == nil || pid == nil {
 		return
 	}
 	payload := &c_actor.RunReactorRespawn{
+		MapID:   mapID,
 		SpawnID: spawnID,
 	}
 	if root := s.gs.GetRootContext(); root != nil {

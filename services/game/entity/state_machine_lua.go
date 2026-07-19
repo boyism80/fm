@@ -125,7 +125,8 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if L.GetTop() >= 2 {
 				exitMapID = uint32(L.CheckInt(2))
 			}
-			machine.Finish(exitMapID)
+			cfg, _ := luax.GetConfiguration(L)
+			machine.Finish(cfg.ActorContext, exitMapID)
 			return 0
 		},
 		"start_timer": func(L *lua.LState) int {

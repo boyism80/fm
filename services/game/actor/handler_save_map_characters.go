@@ -17,22 +17,20 @@ func (h *SaveMapCharactersHandler) Handle(ctx actor.Context, a *MapActor, _ *Sav
 		return
 	}
 	ack := &SaveMapCharactersAck{}
-	if a.Map == nil || a.GameWorld == nil {
+	maps := a.Maps()
+	if len(maps) == 0 || a.GameWorld == nil {
 		ctx.Respond(ack)
 		return
 	}
-	if a.Map.Wz != nil {
-		ack.MapID = uint32(a.Map.Wz.ID)
+	if len(maps) == 1 && maps[0].Wz != nil {
+		ack.MapID = uint32(maps[0].Wz.ID)
 	}
-	allPlayers := a.Map.GetAllPlayers()
-	if len(allPlayers) == 0 {
-		ctx.Respond(ack)
-		return
-	}
-	chars := make([]*entity.Character, 0, len(allPlayers))
-	for _, obj := range allPlayers {
-		if ch, ok := obj.(*entity.Character); ok && ch != nil {
-			chars = append(chars, ch)
+	chars := make([]*entity.Character, 0)
+	for _, m := range maps {
+		for _, obj := range m.GetAllPlayers() {
+			if ch, ok := obj.(*entity.Character); ok && ch != nil {
+				chars = append(chars, ch)
+			}
 		}
 	}
 	ack.Saved = len(chars)

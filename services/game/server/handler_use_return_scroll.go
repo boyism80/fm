@@ -80,7 +80,7 @@ func (*UseReturnScroll) Handle(ctx *core.ClientContext, req *request.UseReturnSc
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	if err := ch.Warp(target, 0); err != nil {
+	if err := ch.Warp(ctx.ActorContext, target, 0); err != nil {
 		return err
 	}
 

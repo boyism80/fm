@@ -5,7 +5,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (a *MapActor) ResetCall(_ actor.Context) []lua.LValue {
+func (a *LogicActor) ResetCall(_ actor.Context) []lua.LValue {
 	if a.Map == nil {
 		return []lua.LValue{lua.LBool(false)}
 	}

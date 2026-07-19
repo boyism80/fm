@@ -101,6 +101,32 @@ func (gs *GameServer) GetRootContext() *actor.RootContext {
 	return gs.ServerCore.GetRootContext()
 }
 
+func (gs *GameServer) StartStateMachineActor(sm *entity.StateMachine) *actor.PID {
+	if gs == nil || sm == nil || sm.Group == nil {
+		return nil
+	}
+	name := fmt.Sprintf("state_machine_%s_%s", sm.Group.Name, sm.ID)
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return g_actor.NewStateMachineActor(sm, gs)
+	})
+	return gs.actorRegistry.GetOrCreateActor(name, props)
+}
+
+func (gs *GameServer) SendStateMachineMessage(pid *actor.PID, msg interface{}) {
+	if gs == nil || pid == nil || msg == nil {
+		return
+	}
+	gs.GetRootContext().Send(pid, msg)
+}
+
+func (gs *GameServer) StopStateMachineActor(sm *entity.StateMachine) {
+	if gs == nil || sm == nil || sm.Group == nil {
+		return
+	}
+	name := fmt.Sprintf("state_machine_%s_%s", sm.Group.Name, sm.ID)
+	gs.actorRegistry.StopActor(name, sm.ActorPID)
+}
+
 func (gs *GameServer) GetPacketHandler() *core.PacketHandler {
 	if gs == nil {
 		return nil
@@ -394,7 +420,9 @@ func (gs *GameServer) preCreateMaps() {
 
 	log.Println("Pre-creating map instances...")
 	for mapID := range gs.resources.Maps {
-		mapInstance := entity.NewMap(mapID, gameMapListener, gs.mobListener, mapID, gs)
+		name := fmt.Sprintf("map_%d", mapID)
+		pid := gs.actorRegistry.PredictPID(name)
+		mapInstance := entity.NewMap(mapID, gameMapListener, gs.mobListener, mapID, gs, pid)
 		gs.maps[mapID] = mapInstance
 
 		props := actor.PropsFromProducer(func() actor.Actor {
@@ -404,12 +432,10 @@ func (gs *GameServer) preCreateMaps() {
 			}
 		})
 
-		pid := gs.actorRegistry.GetOrCreateActor(
-			fmt.Sprintf("map_%d", mapID),
-			props,
-		)
-
-		mapInstance.SetActorPID(pid)
+		actual := gs.actorRegistry.GetOrCreateActor(name, props)
+		if !actual.Equal(pid) {
+			panic(fmt.Sprintf("map %d actor pid mismatch", mapID))
+		}
 	}
 	log.Printf("Pre-created %d map instances", len(gs.maps))
 	log.Println("Map listeners configured")

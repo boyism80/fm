@@ -3,20 +3,33 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/scheduler"
+	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/ensure"
 	"github.com/boyism80/fm/services/game/actor/timers"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-type MapActor struct {
-	Map       *entity.Map
-	GameWorld entity.GameWorld
-	scheduler *scheduler.TimerScheduler
-	timerReg  *TimerRegistry
+type LogicActor struct {
+	Map          *entity.Map
+	GameWorld    entity.GameWorld
+	scheduler    *scheduler.TimerScheduler
+	timerReg     *TimerRegistry
+	StateMachine *entity.StateMachine
 }
 
-func (a *MapActor) Receive(ctx actor.Context) {
+type MapActor = LogicActor
+
+func (a *LogicActor) Owner() *LogicActor {
+	return a
+}
+
+func (a *LogicActor) Receive(ctx actor.Context) {
 	msg := ctx.Message()
+	if target := a.forwardTarget(); target != nil && a.shouldForward(msg) {
+		ctx.Send(target, msg)
+		return
+	}
 	if env, ok := msg.(*ensure.EnsureDeliver); ok {
 		a.handleEnsureDeliver(ctx, env)
 		return
@@ -24,11 +37,94 @@ func (a *MapActor) Receive(ctx actor.Context) {
 	a.dispatch(ctx, msg)
 }
 
-func (a *MapActor) dispatch(ctx actor.Context, msg interface{}) {
+func (a *LogicActor) forwardTarget() *actor.PID {
+	if a == nil || a.StateMachine != nil || a.Map == nil {
+		return nil
+	}
+	sm := a.Map.StateMachine()
+	if sm == nil {
+		return nil
+	}
+	return sm.ActorPID
+}
+
+func (a *LogicActor) shouldForward(msg interface{}) bool {
+	switch msg.(type) {
+	case *actor.Started, *actor.Stopping, *actor.Stopped, *actor.Restarting:
+		return false
+	case *AttachStateMachine, *DetachStateMachine:
+		return false
+	case *TimerTick:
+		return false
+	}
+	return true
+}
+
+func (a *LogicActor) dispatch(ctx actor.Context, msg interface{}) {
+	a.selectMap(msg)
 	mapMessageRegistry.Dispatch(ctx, a, msg)
 }
 
-func (a *MapActor) handleEnsureDeliver(ctx actor.Context, env *ensure.EnsureDeliver) {
+func (a *LogicActor) Maps() []*entity.Map {
+	if a == nil {
+		return nil
+	}
+	if a.StateMachine != nil {
+		return a.StateMachine.MapList()
+	}
+	if a.Map == nil {
+		return nil
+	}
+	return []*entity.Map{a.Map}
+}
+
+func (a *LogicActor) MapForCharacter(characterID uint32) *entity.Map {
+	for _, m := range a.Maps() {
+		if m != nil && m.GetPlayer(characterID) != nil {
+			return m
+		}
+	}
+	return nil
+}
+
+func (a *LogicActor) MapForObject(objectType constant.ObjectType, oid uint32) *entity.Map {
+	for _, m := range a.Maps() {
+		if m != nil && m.GetObject(objectType, oid) != nil {
+			return m
+		}
+	}
+	return nil
+}
+
+func (a *LogicActor) selectMap(msg interface{}) {
+	if a == nil || a.StateMachine == nil {
+		return
+	}
+	switch v := msg.(type) {
+	case *WarpCharacter:
+		a.Map = v.TargetMap
+	case *AddCharacter:
+		a.Map = v.TargetMap
+	case *HandoffCharacter:
+		if v.Character == nil {
+			a.Map = nil
+		} else {
+			a.Map = a.MapForCharacter(v.Character.GetID())
+		}
+	case *RemoveCharacter:
+		a.Map = a.MapForCharacter(v.CharacterID)
+	case *PartyMemberLeft:
+		a.Map = a.MapForCharacter(v.LeaverID)
+	case *ResponseSpawnDoor:
+		a.Map = a.MapForCharacter(v.CharacterID)
+	case *c_actor.RunObjectTimer:
+		a.Map = a.MapForObject(constant.ObjectType(v.ObjectType), v.ID)
+	default:
+		a.Map = nil
+	}
+}
+
+func (a *LogicActor) handleEnsureDeliver(ctx actor.Context, env *ensure.EnsureDeliver) {
 	if env == nil {
 		return
 	}
@@ -41,18 +137,21 @@ func (a *MapActor) handleEnsureDeliver(ctx actor.Context, env *ensure.EnsureDeli
 		a.ensureNotOnMap(env)
 		return
 	}
-	a.dispatch(ctx, inner)
+	if a.StateMachine != nil {
+		a.Map = a.MapForCharacter(env.CharacterID)
+	}
+	mapMessageRegistry.Dispatch(ctx, a, inner)
 	a.ensureFinish(ctx, env, true, "")
 }
 
-func (a *MapActor) hasCharacterOnMap(characterID uint32) bool {
-	if a.Map == nil || characterID == 0 {
+func (a *LogicActor) hasCharacterOnMap(characterID uint32) bool {
+	if a == nil || characterID == 0 {
 		return false
 	}
-	return a.Map.GetPlayer(characterID) != nil
+	return a.MapForCharacter(characterID) != nil
 }
 
-func (a *MapActor) registerTimers() {
+func (a *LogicActor) registerTimers() {
 	RegisterTimer[*timers.MobSpawnTimer](a.timerReg)
 	RegisterTimer[*timers.ItemCleanupTimer](a.timerReg)
 	RegisterTimer[*timers.CooldownCheckTimer](a.timerReg)
@@ -66,13 +165,13 @@ func (a *MapActor) registerTimers() {
 	RegisterTimer[*timers.PartySearchTimer](a.timerReg)
 }
 
-func (a *MapActor) ensureNotOnMap(msg *ensure.EnsureDeliver) {
+func (a *LogicActor) ensureNotOnMap(msg *ensure.EnsureDeliver) {
 	if a.GameWorld != nil {
 		a.GameWorld.EnsureRedispatch(msg)
 	}
 }
 
-func (a *MapActor) ensureFinish(ctx actor.Context, msg *ensure.EnsureDeliver, ok bool, reason string) {
+func (a *LogicActor) ensureFinish(ctx actor.Context, msg *ensure.EnsureDeliver, ok bool, reason string) {
 	if msg == nil {
 		return
 	}

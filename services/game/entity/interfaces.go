@@ -21,6 +21,9 @@ type GameWorld interface {
 	GetPartySystem() PartySystem
 	GetDispatchSystem() DispatchSystem
 	GetStateMachineRegistry() StateMachineRegistry
+	StartStateMachineActor(sm *StateMachine) *actor.PID
+	SendStateMachineMessage(pid *actor.PID, msg interface{})
+	StopStateMachineActor(sm *StateMachine)
 }
 
 type StateMachineRegistry interface {

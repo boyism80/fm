@@ -11,10 +11,14 @@ func (AddCharacterHandler) New() *AddCharacterHandler {
 }
 
 func (h *AddCharacterHandler) Handle(ctx actor.Context, a *MapActor, msg *AddCharacter) {
-	if a.Map == nil {
+	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
-	a.Map.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
+	pid := msg.TargetMap.GetActorPID()
+	if pid == nil || !pid.Equal(ctx.Self()) {
+		return
+	}
+	msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 	if msg.Init {

@@ -1,5 +1,7 @@
 -- State machine (old/scripts/event/KerningPQ.js): 커닝시티 파티 퀘스트
 
+local config = require("script/lib/kerning_city_party_quest")
+
 local stage_maps = {
 	103000800,
 	103000801,
@@ -15,6 +17,7 @@ local duration_ms = 1800000
 
 function on_init(group)
 	group:set_property("state", "0")
+	group:declare_maps(stage_maps)
 end
 
 function on_mob_kill(sm, player, mobs)
@@ -54,7 +57,7 @@ function on_changed_map(sm, player, map_id)
 		return
 	end
 	sm:unregister(player)
-	if #sm:players() <= 3 then
+	if #sm:players() < config.required_party_size then
 		sm:finish(exit_map_id)
 		sm:group():set_property("state", "0")
 	end
@@ -68,7 +71,7 @@ function on_player_disconnected(sm, player)
 end
 
 function on_left_party(sm, player)
-	if #sm:players() <= 4 then
+	if #sm:players() <= config.required_party_size then
 		sm:finish(exit_map_id)
 		sm:group():set_property("state", "0")
 	else
@@ -88,7 +91,7 @@ end
 function on_player_exit(sm, player)
 	sm:unregister(player)
 	player:map(exit_map_id)
-	if #sm:players() <= 3 then
+	if #sm:players() < config.required_party_size then
 		sm:finish(exit_map_id)
 		sm:group():set_property("state", "0")
 	end

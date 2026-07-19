@@ -2726,16 +2726,17 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if argc == 4 {
 					allowRelocate = L.CheckBool(4)
 				}
+				cfg, _ := luax.GetConfiguration(L)
 				var err error
 				if allowRelocate {
 					currentMap := ch.GetMap()
 					if currentMap != nil && currentMap.GetMapID() == targetMap.GetMapID() {
 						err = ch.Relocate(spawnPoint)
 					} else {
-						err = ch.Warp(targetMap, spawnPoint)
+						err = ch.Warp(cfg.ActorContext, targetMap, spawnPoint)
 					}
 				} else {
-					err = ch.Warp(targetMap, spawnPoint)
+					err = ch.Warp(cfg.ActorContext, targetMap, spawnPoint)
 				}
 				if err != nil {
 					L.RaiseError("warp: %v", err)

@@ -15,6 +15,7 @@ import (
 
 type RequestSpawnDoor struct {
 	ReplyTo        *actor.PID
+	TargetMapID    uint32
 	CharacterID    uint32
 	OwnerID        uint32
 	SkillID        constant.SkillID
@@ -34,6 +35,7 @@ type ResponseSpawnDoor struct {
 }
 
 type RemoveDoor struct {
+	MapID   uint32
 	OwnerID uint32
 	SkillID uint32
 }
@@ -71,6 +73,7 @@ type MapCallAck struct {
 
 type AddCharacter struct {
 	Character  *entity.Character
+	TargetMap  *entity.Map
 	SpawnPoint uint8
 	Init       bool
 }
@@ -81,7 +84,35 @@ type RemoveCharacter struct {
 
 type WarpCharacter struct {
 	Character *entity.Character
+	TargetMap *entity.Map
 	Portal    uint8
+}
+
+type HandoffCharacter struct {
+	Character *entity.Character
+	TargetMap *entity.Map
+	Portal    uint8
+}
+
+type AttachStateMachine struct {
+	StateMachine *entity.StateMachine
+	ReplyTo      *actor.PID
+	MapID        uint32
+}
+
+type AttachStateMachineAck struct {
+	MapID uint32
+	OK    bool
+}
+
+type DetachStateMachine struct {
+	StateMachine *entity.StateMachine
+	ReplyTo      *actor.PID
+	MapID        uint32
+}
+
+type DetachStateMachineAck struct {
+	MapID uint32
 }
 
 type TimerTick struct {

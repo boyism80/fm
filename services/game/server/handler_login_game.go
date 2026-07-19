@@ -233,6 +233,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	rootContext.Send(targetMapPID, &g_actor.AddCharacter{
 		Character:  character,
+		TargetMap:  mapInstance,
 		SpawnPoint: spawnPoint,
 		Init:       true,
 	})

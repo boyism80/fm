@@ -741,7 +741,8 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if portal := targetMap.FindPortalByName(b.Portal); portal != nil && portal.Wz != nil {
 				spawnPoint = portal.Wz.ID
 			}
-			if err := ch.Warp(targetMap, spawnPoint); err != nil {
+			cfg, _ := luax.GetConfiguration(L)
+			if err := ch.Warp(cfg.ActorContext, targetMap, spawnPoint); err != nil {
 				L.Push(lua.LBool(false))
 				return 1
 			}

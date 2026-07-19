@@ -11,7 +11,7 @@ import (
 
 type MapSystem interface {
 	Get(mapID uint32) *Map
-	Warp(character *Character, targetMap *Map, spawnPoint uint8) error
+	Warp(ctx actor.Context, character *Character, targetMap *Map, spawnPoint uint8) error
 	CreateReturnDoor(ch *Character, skillID constant.SkillID)
 	RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartMapWZID uint32)
 	ResetFromLua(L *lua.LState, mapInstance *Map, actorCtx actor.Context) int
@@ -21,7 +21,7 @@ type MapSystem interface {
 
 type SchedulerSystem interface {
 	RunObjectTimer(pid *actor.PID, obj Object, key string)
-	RunReactorRespawn(pid *actor.PID, spawnID uint32)
+	RunReactorRespawn(pid *actor.PID, mapID uint32, spawnID uint32)
 }
 
 type PartySystem interface {

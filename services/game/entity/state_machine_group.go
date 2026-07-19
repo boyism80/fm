@@ -10,13 +10,14 @@ import (
 )
 
 type StateMachineGroup struct {
-	mu         sync.Mutex
-	Name       string
-	ScriptPath string
-	GameWorld  GameWorld
-	props      map[string]string
-	machines   map[string]*StateMachine
-	bootMapID  uint32
+	mu             sync.Mutex
+	Name           string
+	ScriptPath     string
+	GameWorld      GameWorld
+	props          map[string]string
+	machines       map[string]*StateMachine
+	bootMapID      uint32
+	declaredMapIDs []uint32
 }
 
 func NewStateMachineGroup(name, scriptPath string, gw GameWorld) *StateMachineGroup {
@@ -59,6 +60,26 @@ func (g *StateMachineGroup) GetMap(mapID uint32) *Map {
 		return nil
 	}
 	return g.GameWorld.GetMapSystem().Get(mapID)
+}
+
+func (g *StateMachineGroup) DeclareMaps(ids []uint32) {
+	if g == nil {
+		return
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.declaredMapIDs = append(g.declaredMapIDs[:0], ids...)
+}
+
+func (g *StateMachineGroup) DeclaredMaps() []uint32 {
+	if g == nil {
+		return nil
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	ids := make([]uint32, len(g.declaredMapIDs))
+	copy(ids, g.declaredMapIDs)
+	return ids
 }
 
 func (g *StateMachineGroup) Get(id string) *StateMachine {
@@ -144,9 +165,15 @@ func (g *StateMachineGroup) StartParty(leader *Character, party *Party, opts Sta
 	if party == nil {
 		return nil, fmt.Errorf("party is nil")
 	}
+	if g.GameWorld == nil {
+		return nil, fmt.Errorf("game world is nil")
+	}
 	leaderMap := leader.GetMap()
 	if leaderMap == nil {
 		return nil, fmt.Errorf("leader map is nil")
+	}
+	if len(g.DeclaredMaps()) == 0 {
+		return nil, fmt.Errorf("state machine group %s declared no maps", g.Name)
 	}
 
 	avgLevel, count := 0, 0
@@ -171,6 +198,12 @@ func (g *StateMachineGroup) StartParty(leader *Character, party *Party, opts Sta
 	}
 
 	id := strconv.FormatUint(uint64(party.GetPartyId()), 10)
+	g.mu.Lock()
+	existing := g.machines[id]
+	g.mu.Unlock()
+	if existing != nil && !existing.Disposed() {
+		return nil, fmt.Errorf("state machine %s is already running", id)
+	}
 	sm := NewStateMachine(id, g)
 	sm.Party = party
 	sm.Leader = leader
@@ -187,6 +220,14 @@ func (g *StateMachineGroup) StartParty(leader *Character, party *Party, opts Sta
 		sm.Register(ch)
 	}
 
+	sm.ActorPID = g.GameWorld.StartStateMachineActor(sm)
+	if sm.ActorPID == nil {
+		for _, ch := range sm.Players() {
+			sm.Unregister(ch)
+		}
+		return nil, fmt.Errorf("failed to start state machine actor")
+	}
+
 	g.mu.Lock()
 	if g.machines == nil {
 		g.machines = make(map[string]*StateMachine)
@@ -194,12 +235,6 @@ func (g *StateMachineGroup) StartParty(leader *Character, party *Party, opts Sta
 	g.machines[id] = sm
 	g.mu.Unlock()
 
-	players := sm.Players()
-	sm.CallHook("on_setup", sm).Then(func(interface{}) (interface{}, error) {
-		for _, ch := range players {
-			sm.CallHook("on_player_entry", sm, ch)
-		}
-		return nil, nil
-	})
+	g.GameWorld.SendStateMachineMessage(sm.ActorPID, &BootstrapStateMachine{})
 	return sm, nil
 }

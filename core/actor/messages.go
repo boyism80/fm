@@ -32,6 +32,7 @@ type RunObjectTimer struct {
 }
 
 type RunReactorRespawn struct {
+	MapID   uint32
 	SpawnID uint32
 }
 

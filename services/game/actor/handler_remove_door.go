@@ -12,8 +12,13 @@ func (RemoveDoorHandler) New() *RemoveDoorHandler {
 }
 
 func (h *RemoveDoorHandler) Handle(ctx actor.Context, a *MapActor, msg *RemoveDoor) {
-	if a.Map == nil || msg == nil {
+	if msg == nil {
 		return
 	}
-	a.Map.RemoveDoorByOwnerSkill(msg.OwnerID, constant.SkillID(msg.SkillID), true)
+	for _, m := range a.Maps() {
+		if m != nil && m.GetMapID() == msg.MapID {
+			m.RemoveDoorByOwnerSkill(msg.OwnerID, constant.SkillID(msg.SkillID), true)
+			return
+		}
+	}
 }

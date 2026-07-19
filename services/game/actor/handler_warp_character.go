@@ -11,10 +11,13 @@ func (WarpCharacterHandler) New() *WarpCharacterHandler {
 }
 
 func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *MapActor, msg *WarpCharacter) {
-	if a.Map == nil {
+	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
-	a.Map.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.Portal, false)
+	if pid := msg.TargetMap.GetActorPID(); pid == nil || !pid.Equal(ctx.Self()) {
+		return
+	}
+	msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.Portal, false)
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 }

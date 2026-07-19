@@ -119,7 +119,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 	if targetMap == nil {
 		return fmt.Errorf("target map not found")
 	}
-	if err := character.Warp(targetMap, spawnPoint); err != nil {
+	if err := character.Warp(ctx.ActorContext, targetMap, spawnPoint); err != nil {
 		return err
 	}
 

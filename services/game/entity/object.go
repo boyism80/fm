@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 )
@@ -44,6 +45,8 @@ type Object interface {
 	GetTimerEntry(key string) *ObjectTimer
 	RemoveTimer(key string) bool
 	RescheduleTimer(key string) bool
+	SuspendTimers()
+	ResumeTimers(pid *actor.PID)
 }
 
 func (obj *ObjectCore) GetOID() uint32 {

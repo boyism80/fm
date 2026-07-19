@@ -12,10 +12,20 @@ func (RequestSpawnDoorHandler) New() *RequestSpawnDoorHandler {
 }
 
 func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *MapActor, msg *RequestSpawnDoor) {
-	if msg == nil || msg.ReplyTo == nil || a.Map == nil || a.Map.Wz == nil {
+	if msg == nil || msg.ReplyTo == nil {
 		return
 	}
-	portalID, townPos, ok := a.Map.TryAcquireMysticReturnPortal(msg.PartyOwnerSlot)
+	var targetMap *entity.Map
+	for _, m := range a.Maps() {
+		if m != nil && m.GetMapID() == msg.TargetMapID {
+			targetMap = m
+			break
+		}
+	}
+	if targetMap == nil || targetMap.Wz == nil {
+		return
+	}
+	portalID, townPos, ok := targetMap.TryAcquireMysticReturnPortal(msg.PartyOwnerSlot)
 	if !ok {
 		ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
 			Ok:          false,
@@ -30,10 +40,10 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *MapActor, msg *Re
 	committed := false
 	defer func() {
 		if !committed {
-			a.Map.ReleaseMysticReturnPortal(portalID)
+			targetMap.ReleaseMysticReturnPortal(portalID)
 		}
 	}()
-	wz := a.Map.Wz
+	wz := targetMap.Wz
 	returnEp := entity.DoorEndpoint{
 		MapID:    uint32(wz.ID),
 		PortalID: portalID,
@@ -46,7 +56,7 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *MapActor, msg *Re
 		returnEp,
 		msg.PartyID,
 	)
-	a.Map.AddDoor(door)
+	targetMap.AddDoor(door)
 	committed = true
 	ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
 		Ok:          true,

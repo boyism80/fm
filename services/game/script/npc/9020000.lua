@@ -1,10 +1,10 @@
 -- NPC name (String.wz/Npc.img.xml): 라케리스
 
 local pq = require("script/lib/party_quest")
+local config = require("script/lib/kerning_city_party_quest")
 
 local GROUP_NAME = "kerning_city_party_quest"
 local MIN_LEVEL = 21
-local PARTY_SIZE = 4
 local COUPON_ID = 4001007
 local PASS_ID = 4001008
 
@@ -46,11 +46,14 @@ function on_click(me, npc)
 			end
 		end
 	end
-	if count ~= PARTY_SIZE or in_map ~= PARTY_SIZE then
+	if count ~= config.required_party_size
+		or in_map ~= config.required_party_size then
 		ok = false
 	end
 	if not ok then
-		me:dialog(npc, "당신이 속한 파티의 파티원이 4명이 아니거나 자신 혹은 파티원 중에서 레벨 21이상이 아닌 캐릭터가 있습니다. 혹은 파티원 전원이 현재 맵에 모여있는지 다시 한 번 확인해 주세요.")
+		me:dialog(npc, "당신이 속한 파티의 파티원이 "
+			.. config.required_party_size
+			.. "명이 아니거나 자신 혹은 파티원 중에서 레벨 21이상이 아닌 캐릭터가 있습니다. 혹은 파티원 전원이 현재 맵에 모여있는지 다시 한 번 확인해 주세요.")
 		return
 	end
 

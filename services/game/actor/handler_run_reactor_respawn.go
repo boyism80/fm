@@ -3,6 +3,7 @@ package actor
 import (
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type RunReactorRespawnHandler struct{}
@@ -12,14 +13,26 @@ func (RunReactorRespawnHandler) New() *RunReactorRespawnHandler {
 }
 
 func (h *RunReactorRespawnHandler) Handle(ctx actor.Context, a *MapActor, msg *c_actor.RunReactorRespawn) {
-	if a.Map == nil || msg == nil {
+	if msg == nil {
 		return
 	}
-
-	reactorSpawn := a.Map.GetReactorSpawn(msg.SpawnID)
+	var targetMap *entity.Map
+	for _, m := range a.Maps() {
+		if m != nil && m.GetMapID() == msg.MapID {
+			targetMap = m
+			break
+		}
+	}
+	if targetMap == nil {
+		return
+	}
+	pid := targetMap.GetActorPID()
+	if pid == nil || !pid.Equal(ctx.Self()) {
+		return
+	}
+	reactorSpawn := targetMap.GetReactorSpawn(msg.SpawnID)
 	if reactorSpawn == nil || reactorSpawn.Spawned {
 		return
 	}
-
-	_, _ = a.Map.SpawnReactor(reactorSpawn)
+	_, _ = targetMap.SpawnReactor(reactorSpawn)
 }

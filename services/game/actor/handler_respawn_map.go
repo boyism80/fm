@@ -5,7 +5,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (a *MapActor) RespawnCall(_ actor.Context, includeNegativeMobTime bool) []lua.LValue {
+func (a *LogicActor) RespawnCall(_ actor.Context, includeNegativeMobTime bool) []lua.LValue {
 	if a.Map == nil {
 		return []lua.LValue{lua.LNumber(0)}
 	}
