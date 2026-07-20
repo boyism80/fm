@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -31,7 +30,6 @@ func (h *partyMqPartyInvite) Handle(_ actor.Context, _ amqp.Delivery, _ string, 
 		PartySearch       bool   `json:"party_search"`
 	}
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		log.Printf("party consumer: party_invite JSON: %v", err)
 		return nil
 	}
 	if payload.TargetCharacterID == 0 {

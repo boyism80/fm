@@ -53,7 +53,6 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 	controllerTable := mapInstance.GetControllerTable()
 	controller, exists := controllerTable.GetController(mob)
 	if !exists {
-		log.Printf("No controller found for mob %d", req.OID)
 		return fmt.Errorf("no controller found for this mob")
 	}
 
@@ -70,7 +69,6 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 
 		mob.Stance = mnt.GetStance()
 	}
-	mapInstance.MoveObject(mob, startPoint)
 
 	selectedSkillID := uint32(0)
 	selectedSkillLevel := uint8(0)
@@ -106,6 +104,7 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 		startPoint,
 		req.Movements,
 	)
+	mapInstance.OnMoved(mob, startPoint)
 
 	return nil
 }

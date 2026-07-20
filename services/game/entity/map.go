@@ -1003,40 +1003,50 @@ func (m *Map) GetObjects(filter constant.ObjectType) []Object {
 	return out
 }
 
-func (m *Map) GetObjectsNear(position types.Vector2[int16], filter constant.ObjectType) []Object {
+type SearchOption struct {
+	IncludeHidden bool
+}
+
+func (m *Map) GetObjectsNear(position types.Vector2[int16], filter constant.ObjectType, option *SearchOption) []Object {
 	if m == nil || m.sections == nil {
 		return nil
 	}
-	return m.sections.objectsNear(position, filter)
+	objects := m.sections.objectsNear(position, filter)
+	if option != nil && option.IncludeHidden {
+		return objects
+	}
+	out := make([]Object, 0, len(objects))
+	for _, obj := range objects {
+		if obj == nil || obj.IsHidden() {
+			continue
+		}
+		out = append(out, obj)
+	}
+	return out
 }
 
-func (m *Map) MoveObject(obj Object, before types.Vector2[int16]) {
+func (m *Map) OnMoved(obj Object, before types.Vector2[int16]) {
 	if m == nil || obj == nil || obj.GetMap() != m || m.sections == nil {
 		return
 	}
+	beforeSection := obj.getSection()
 	m.sections.add(obj)
-	switch value := obj.(type) {
-	case *Character:
-		m.controllerTable.MovePlayer(value)
-	case *Mob:
-		m.controllerTable.MoveMob(value)
+	m.updateVisibility(obj, before)
+	if obj.getSection() != beforeSection {
+		switch value := obj.(type) {
+		case *Character:
+			m.controllerTable.Update(value)
+		case *Mob:
+			m.controllerTable.MoveMob(value)
+		}
 	}
-	m.syncVisibilityAroundMove(obj, before)
 }
 
 func (m *Map) GetObjectsIn(filter constant.ObjectType, bounds types.Rect[int32]) []Object {
-	out := make([]Object, 0)
-	for _, obj := range m.GetObjects(filter) {
-		if obj == nil {
-			continue
-		}
-		pos := obj.GetPosition()
-		point := types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}
-		if bounds.ContainsPoint(point) {
-			out = append(out, obj)
-		}
+	if m == nil || m.sections == nil {
+		return nil
 	}
-	return out
+	return m.sections.objectsIn(bounds, filter)
 }
 
 func (m *Map) Broadcast(message types.Packet, option *BroadcastOption) {
@@ -1066,7 +1076,7 @@ func (m *Map) BroadcastNear(position types.Vector2[int16], message types.Packet,
 	if option != nil && option.SendRaw {
 		policy = types.SEND_POLICY_RAW
 	}
-	for _, obj := range m.GetObjectsNear(position, constant.ObjectTypeCharacter) {
+	for _, obj := range m.GetObjectsNear(position, constant.ObjectTypeCharacter, nil) {
 		character, ok := obj.(*Character)
 		if !ok || character == nil {
 			continue

@@ -1179,7 +1179,9 @@ func (l *CharacterListenerImpl) OnMobMoved(ch *entity.Character, mob *entity.Mob
 	if ch != nil {
 		controllerID = ch.GetID()
 	}
-	for _, obj := range mob.Nears(constant.ObjectTypeCharacter) {
+	for _, obj := range mob.Nears(constant.ObjectTypeCharacter, &entity.SearchOption{
+		IncludeHidden: true,
+	}) {
 		peer, ok := obj.(*entity.Character)
 		if !ok || peer == nil || peer.GetID() == controllerID {
 			continue
@@ -1490,7 +1492,7 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 			RecipientsRoleBelowPivot: true,
 		})
 	} else {
-		for _, obj := range mapInstance.GetObjectsNear(ch.GetPosition(), constant.ObjectTypeCharacter) {
+		for _, obj := range mapInstance.GetObjectsNear(ch.GetPosition(), constant.ObjectTypeCharacter, nil) {
 			if viewer, ok := obj.(*entity.Character); ok {
 				ch.SendSpawnSyncToViewer(viewer)
 			}

@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
@@ -32,7 +31,6 @@ func (h *partyMqChat) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw jso
 		Message           string `json:"message"`
 	}
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		log.Printf("party consumer: multi_chat JSON: %v", err)
 		return nil
 	}
 	if payload.MemberID == 0 {

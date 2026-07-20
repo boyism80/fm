@@ -49,7 +49,6 @@ func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope)
 	}
 	partyID := evt.PartyID
 	p.OnError(func(err error) {
-		log.Printf("party consumer: apply type=%s party_id=%d: %v", evt.EventType, partyID, err)
 	})
 
 	if evt.EventType == "disbanded" {
@@ -62,7 +61,6 @@ func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope)
 			delete(pc.revisions, evt.PartyID)
 			delete(pc.parties, evt.PartyID)
 			pc.ClearPartyMembers(memberIDs)
-			log.Printf("party consumer: disbanded applied party_id=%d revision=%d", evt.PartyID, evt.Revision)
 			pc.mu.Unlock()
 			return p
 		}
@@ -113,7 +111,6 @@ func (pc *PartyContainer) mergeGetPartyReplyLocked(partyID uint32, reply *intern
 	}
 	pc.revisions[partyID] = stored.Revision
 	pc.parties[partyID] = stored
-	log.Printf("party consumer: rehydrated party_id=%d revision=%d", partyID, pc.revisions[partyID])
 }
 
 func (pc *PartyContainer) applyStateAfterRehydrateLocked(evt PartyEventEnvelope) error {
@@ -122,7 +119,6 @@ func (pc *PartyContainer) applyStateAfterRehydrateLocked(evt PartyEventEnvelope)
 		if party := pc.parties[partyID]; party != nil {
 			pc.Sync(party)
 		}
-		log.Printf("party consumer: applied type=log_onoff party_id=%d revision=%d", partyID, pc.revisions[partyID])
 		return nil
 	}
 	if evt.EventType == "disbanded" {
@@ -133,13 +129,11 @@ func (pc *PartyContainer) applyStateAfterRehydrateLocked(evt PartyEventEnvelope)
 		delete(pc.revisions, partyID)
 		delete(pc.parties, partyID)
 		pc.ClearPartyMembers(memberIDs)
-		log.Printf("party consumer: disbanded applied party_id=%d revision=%d", partyID, evt.Revision)
 		return nil
 	}
 	if party := pc.parties[partyID]; party != nil {
 		pc.Sync(party)
 	}
-	log.Printf("party consumer: applied type=%s party_id=%d revision=%d", evt.EventType, partyID, pc.revisions[partyID])
 	return nil
 }
 
@@ -166,7 +160,6 @@ func (pc *PartyContainer) applyEmbeddedParty(evt PartyEventEnvelope, partyPb *in
 	if notifySilent {
 		pc.DeliverPartySilent(cloned)
 	}
-	log.Printf("party consumer: applied embedded party party_id=%d revision=%d silent=%v", partyID, rev, notifySilent)
 	return true, nil
 }
 
@@ -188,7 +181,6 @@ func (pc *PartyContainer) Update(partyPb *internal.Party) {
 	pc.revisions[partyID] = stored.Revision
 	pc.parties[partyID] = stored
 	pc.Sync(stored)
-	log.Printf("party consumer: hydrated from login party_id=%d revision=%d", partyID, stored.Revision)
 }
 
 func (pc *PartyContainer) Get(partyID uint32) *entity.Party {

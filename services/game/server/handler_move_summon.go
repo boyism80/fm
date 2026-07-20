@@ -47,7 +47,7 @@ func (h *MoveSummon) Handle(ctx *core.ClientContext, req *request.MoveSummon) er
 		summon.Stance = m.GetStance()
 	}
 
-	mapInstance.MoveObject(summon, start)
+	mapInstance.OnMoved(summon, start)
 	character.Listener.OnSummonMove(character, summon, start, req.Fragments)
 	return nil
 }

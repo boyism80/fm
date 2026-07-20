@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -30,7 +29,6 @@ func (h *partyMqPartyInviteDenied) Handle(_ actor.Context, _ amqp.Delivery, _ st
 		Action              uint8  `json:"action"`
 	}
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		log.Printf("party consumer: party_invite_denied JSON: %v", err)
 		return nil
 	}
 	if payload.InviterCharacterID == 0 {

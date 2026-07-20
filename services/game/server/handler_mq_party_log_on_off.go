@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/base64"
 	"encoding/json"
-	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -44,7 +43,6 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 				if err := proto.Unmarshal(wire, &partyPb); err == nil {
 					applied, err := pc.applyEmbeddedParty(evt, &partyPb, false)
 					if err != nil {
-						log.Printf("party consumer: log_onoff embedded party: %v", err)
 						return nil
 					}
 					if applied && payload.CharacterID != 0 {

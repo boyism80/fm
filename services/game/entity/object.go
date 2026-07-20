@@ -42,7 +42,7 @@ type Object interface {
 	Send(p types.Packet, policy types.SendPolicy) error
 	SendSpawnSyncToViewer(viewer *Character)
 	SendDestroySyncToViewer(viewer *Character)
-	Nears(filter constant.ObjectType) []Object
+	Nears(filter constant.ObjectType, option *SearchOption) []Object
 	ObjectsIn(filter constant.ObjectType, bounds types.Rect[int32]) []Object
 	Broadcast(message types.Packet, option *ObjectBroadcastOption)
 	BroadcastCall(fn func(Object), option *ObjectBroadcastOption)
@@ -70,7 +70,7 @@ func (obj *ObjectCore) SetPosition(x, y int16) {
 	obj.Position.X = x
 	obj.Position.Y = y
 	if obj.Map != nil && obj.self != nil {
-		obj.Map.MoveObject(obj.self, before)
+		obj.Map.OnMoved(obj.self, before)
 	}
 }
 
@@ -110,7 +110,7 @@ func (obj *ObjectCore) SendSpawnSyncToViewer(viewer *Character) {}
 
 func (obj *ObjectCore) SendDestroySyncToViewer(viewer *Character) {}
 
-func (o *ObjectCore) Nears(filter constant.ObjectType) []Object {
+func (o *ObjectCore) Nears(filter constant.ObjectType, option *SearchOption) []Object {
 	pivot := o.self
 	if pivot == nil {
 		return nil
@@ -119,17 +119,9 @@ func (o *ObjectCore) Nears(filter constant.ObjectType) []Object {
 	if m == nil {
 		return nil
 	}
-	pivotPos := pivot.GetPosition()
 	out := make([]Object, 0)
-	for _, cand := range m.GetObjects(filter) {
+	for _, cand := range m.GetObjectsNear(pivot.GetPosition(), filter, option) {
 		if cand == nil || cand == pivot {
-			continue
-		}
-		op := cand.GetPosition()
-		if pivotPos.DistanceSq(op) > constant.MaxViewRangeSq {
-			continue
-		}
-		if cand.IsHidden() && cand.GetRole() > pivot.GetRole() {
 			continue
 		}
 		out = append(out, cand)
@@ -173,7 +165,7 @@ func (o *ObjectCore) BroadcastCall(fn func(Object), option *ObjectBroadcastOptio
 		roleBelow = option.RecipientsRoleBelowPivot
 	}
 	pivotRole := pivot.GetRole()
-	for _, oc := range pivot.Nears(constant.ObjectTypeObject) {
+	for _, oc := range pivot.Nears(constant.ObjectTypeObject, nil) {
 		if oc == nil {
 			continue
 		}

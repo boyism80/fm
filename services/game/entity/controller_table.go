@@ -22,6 +22,18 @@ func NewControllerTable(onControllerChange func(mob *Mob, before *Character, aft
 	}
 }
 
+func (t *ControllerTable) EnterMob(mob *Mob) {
+	if mob == nil {
+		return
+	}
+	mobOID := mob.OID
+	t.mobs[mobOID] = mob
+	if _, ok := t.mob2controller[mobOID]; !ok {
+		t.mob2controller[mobOID] = 0
+	}
+	t.reassign(mob)
+}
+
 func (t *ControllerTable) EnterPlayer(character *Character) {
 	if character == nil {
 		return
@@ -31,12 +43,7 @@ func (t *ControllerTable) EnterPlayer(character *Character) {
 	if _, ok := t.controller2mob[playerID]; !ok {
 		t.controller2mob[playerID] = make(map[uint32]struct{})
 	}
-	if character.IsHidden() {
-		return
-	}
-	for _, mob := range t.nearbyMobs(character) {
-		t.reassign(mob)
-	}
+	t.Update(character)
 }
 
 func (t *ControllerTable) LeavePlayer(character *Character) {
@@ -60,18 +67,6 @@ func (t *ControllerTable) LeavePlayer(character *Character) {
 	}
 }
 
-func (t *ControllerTable) EnterMob(mob *Mob) {
-	if mob == nil {
-		return
-	}
-	mobOID := mob.OID
-	t.mobs[mobOID] = mob
-	if _, ok := t.mob2controller[mobOID]; !ok {
-		t.mob2controller[mobOID] = 0
-	}
-	t.reassign(mob)
-}
-
 func (t *ControllerTable) LeaveMob(mob *Mob) *Character {
 	mobOID := mob.OID
 	controllerID := t.mob2controller[mobOID]
@@ -88,25 +83,6 @@ func (t *ControllerTable) LeaveMob(mob *Mob) *Character {
 	delete(t.mobs, mobOID)
 	delete(t.mob2controller, mobOID)
 	return controller
-}
-
-func (t *ControllerTable) MovePlayer(character *Character) {
-	if character == nil {
-		return
-	}
-	playerID := character.GetID()
-	if _, exists := t.controllers[playerID]; !exists {
-		return
-	}
-	for _, mob := range t.MobsControlledBy(playerID) {
-		t.reassign(mob)
-	}
-	if character.IsHidden() {
-		return
-	}
-	for _, mob := range t.nearbyMobs(character) {
-		t.reassign(mob)
-	}
 }
 
 func (t *ControllerTable) MoveMob(mob *Mob) {
@@ -127,13 +103,23 @@ func (t *ControllerTable) Update(character *Character) {
 	if _, exists := t.controllers[playerID]; !exists {
 		return
 	}
-	if character.IsHidden() {
-		for _, mob := range t.MobsControlledBy(playerID) {
-			t.reassign(mob)
-		}
-		return
+
+	var afterNear []*Mob
+	if !character.IsHidden() {
+		afterNear = t.nearbyMobs(character)
 	}
-	for _, mob := range t.nearbyMobs(character) {
+	nearSet := make(map[*Mob]struct{}, len(afterNear))
+	for _, mob := range afterNear {
+		nearSet[mob] = struct{}{}
+		if _, controlled := t.GetController(mob); !controlled {
+			t.assign(mob, nil, character, false)
+		}
+	}
+
+	for _, mob := range t.MobsControlledBy(playerID) {
+		if _, still := nearSet[mob]; still {
+			continue
+		}
 		t.reassign(mob)
 	}
 }
@@ -172,10 +158,10 @@ func (t *ControllerTable) MobsControlledBy(playerID uint32) []*Mob {
 
 func (t *ControllerTable) reassign(mob *Mob) {
 	current, _ := t.GetController(mob)
-	next := t.choiceNearbyPlayer(mob, 0)
 	if current != nil && !current.IsHidden() && t.canControl(current, mob) {
 		return
 	}
+	next := t.choiceNearbyPlayer(mob, 0)
 	if next == current {
 		return
 	}
@@ -187,7 +173,7 @@ func (t *ControllerTable) choiceNearbyPlayer(mob *Mob, excludeID uint32) *Charac
 	if mapInstance == nil {
 		return nil
 	}
-	for _, candidate := range mapInstance.GetObjectsNear(mob.GetPosition(), constant.ObjectTypeCharacter) {
+	for _, candidate := range mapInstance.GetObjectsNear(mob.GetPosition(), constant.ObjectTypeCharacter, nil) {
 		viewer, ok := candidate.(*Character)
 		if !ok || viewer.IsHidden() {
 			continue
@@ -211,7 +197,7 @@ func (t *ControllerTable) canControl(character *Character, mob *Mob) bool {
 	if mapInstance == nil || character.GetMap() != mapInstance {
 		return false
 	}
-	for _, candidate := range mapInstance.GetObjectsNear(mob.GetPosition(), constant.ObjectTypeCharacter) {
+	for _, candidate := range mapInstance.GetObjectsNear(mob.GetPosition(), constant.ObjectTypeCharacter, nil) {
 		if candidate == character {
 			return true
 		}
@@ -225,7 +211,7 @@ func (t *ControllerTable) nearbyMobs(character *Character) []*Mob {
 		return nil
 	}
 	out := make([]*Mob, 0)
-	for _, candidate := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeMob) {
+	for _, candidate := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeMob, nil) {
 		mob, ok := candidate.(*Mob)
 		if !ok {
 			continue
@@ -247,12 +233,11 @@ func (t *ControllerTable) assign(mob *Mob, before *Character, after *Character, 
 	}
 
 	if after != nil {
-		afterID := after.GetID()
-		t.mob2controller[mobOID] = afterID
-		if _, ok := t.controller2mob[afterID]; !ok {
-			t.controller2mob[afterID] = map[uint32]struct{}{}
+		t.mob2controller[mobOID] = after.GetID()
+		if _, ok := t.controller2mob[after.GetID()]; !ok {
+			t.controller2mob[after.GetID()] = map[uint32]struct{}{}
 		}
-		t.controller2mob[afterID][mobOID] = struct{}{}
+		t.controller2mob[after.GetID()][mobOID] = struct{}{}
 	} else {
 		t.mob2controller[mobOID] = 0
 	}

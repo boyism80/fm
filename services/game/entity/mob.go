@@ -535,12 +535,9 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) 
 	m.grantKillExp()
 	if attacker != nil {
 		if m.Wz != nil {
-			log.Printf("Mob %d (ID: %d) killed by character %d", m.OID, m.Wz.ID, attacker.GetID())
 			attacker.OnQuestMobKilled(m.Wz.ID)
 		}
 		m.dropItems(attacker)
-	} else if m.Wz != nil {
-		log.Printf("Mob %d (ID: %d) killed with no attacker", m.OID, m.Wz.ID)
 	}
 
 	pos := m.Position

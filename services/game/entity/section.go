@@ -57,12 +57,7 @@ func (c *sectionContainer) objectsNear(position types.Vector2[int16], filter con
 	objects := c.objectsAround(position)
 	result := make([]Object, 0, len(objects))
 	for _, obj := range objects {
-		if !obj.Is(filter) {
-			continue
-		}
-		dx := int64(obj.GetPosition().X) - int64(position.X)
-		dy := int64(obj.GetPosition().Y) - int64(position.Y)
-		if dx*dx+dy*dy <= constant.MaxViewRangeSq {
+		if obj.Is(filter) {
 			result = append(result, obj)
 		}
 	}

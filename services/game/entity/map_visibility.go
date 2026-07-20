@@ -1,26 +1,23 @@
 package entity
 
 import (
+	"slices"
+
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 )
 
-func (m *Map) syncVisibilityAroundMove(obj Object, before types.Vector2[int16]) {
+func (m *Map) updateVisibility(obj Object, before types.Vector2[int16]) {
 	if m == nil || obj == nil {
 		return
 	}
 	after := obj.GetPosition()
 	switch mover := obj.(type) {
 	case *Character:
-		beforeNear := m.objectSetNear(before, constant.ObjectTypeObject)
-		afterNear := m.GetObjectsNear(after, constant.ObjectTypeObject)
-		afterSet := make(map[Object]struct{}, len(afterNear))
+		beforeNear := m.GetObjectsNear(before, constant.ObjectTypeObject, nil)
+		afterNear := m.GetObjectsNear(after, constant.ObjectTypeObject, nil)
 		for _, o := range afterNear {
-			if o == nil || o == mover {
-				continue
-			}
-			afterSet[o] = struct{}{}
-			if _, seen := beforeNear[o]; seen {
+			if o == nil || o == mover || slices.Contains(beforeNear, o) {
 				continue
 			}
 			o.SendSpawnSyncToViewer(mover)
@@ -29,11 +26,8 @@ func (m *Map) syncVisibilityAroundMove(obj Object, before types.Vector2[int16]) 
 				syncPartyMemberHP(mover, peer)
 			}
 		}
-		for o := range beforeNear {
-			if o == nil || o == mover {
-				continue
-			}
-			if _, still := afterSet[o]; still {
+		for _, o := range beforeNear {
+			if o == nil || o == mover || slices.Contains(afterNear, o) {
 				continue
 			}
 			o.SendDestroySyncToViewer(mover)
@@ -42,22 +36,18 @@ func (m *Map) syncVisibilityAroundMove(obj Object, before types.Vector2[int16]) 
 			}
 		}
 	default:
-		beforeViewers := m.characterSetNear(before)
-		afterViewers := m.GetObjectsNear(after, constant.ObjectTypeCharacter)
-		afterSet := make(map[*Character]struct{}, len(afterViewers))
+		beforeViewers := m.GetObjectsNear(before, constant.ObjectTypeCharacter, nil)
+		afterViewers := m.GetObjectsNear(after, constant.ObjectTypeCharacter, nil)
 		for _, candidate := range afterViewers {
 			viewer, ok := candidate.(*Character)
-			if !ok || viewer == nil {
-				continue
-			}
-			afterSet[viewer] = struct{}{}
-			if _, seen := beforeViewers[viewer]; seen {
+			if !ok || viewer == nil || slices.Contains(beforeViewers, candidate) {
 				continue
 			}
 			obj.SendSpawnSyncToViewer(viewer)
 		}
-		for viewer := range beforeViewers {
-			if _, still := afterSet[viewer]; still {
+		for _, candidate := range beforeViewers {
+			viewer, ok := candidate.(*Character)
+			if !ok || viewer == nil || slices.Contains(afterViewers, candidate) {
 				continue
 			}
 			obj.SendDestroySyncToViewer(viewer)
@@ -80,26 +70,4 @@ func syncPartyMemberHP(a, b *Character) {
 	if b.Listener != nil {
 		b.Listener.OnPartyMemberHPChanged(b, a)
 	}
-}
-
-func (m *Map) objectSetNear(position types.Vector2[int16], filter constant.ObjectType) map[Object]struct{} {
-	objects := m.GetObjectsNear(position, filter)
-	out := make(map[Object]struct{}, len(objects))
-	for _, o := range objects {
-		if o != nil {
-			out[o] = struct{}{}
-		}
-	}
-	return out
-}
-
-func (m *Map) characterSetNear(position types.Vector2[int16]) map[*Character]struct{} {
-	objects := m.GetObjectsNear(position, constant.ObjectTypeCharacter)
-	out := make(map[*Character]struct{}, len(objects))
-	for _, candidate := range objects {
-		if viewer, ok := candidate.(*Character); ok && viewer != nil {
-			out[viewer] = struct{}{}
-		}
-	}
-	return out
 }
