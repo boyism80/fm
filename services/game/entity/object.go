@@ -165,12 +165,20 @@ func (o *ObjectCore) BroadcastCall(fn func(Object), option *ObjectBroadcastOptio
 		roleBelow = option.RecipientsRoleBelowPivot
 	}
 	pivotRole := pivot.GetRole()
-	for _, oc := range pivot.Nears(constant.ObjectTypeObject, nil) {
+	pivotHidden := pivot.IsHidden()
+	for _, oc := range pivot.Nears(constant.ObjectTypeObject, &SearchOption{IncludeHidden: true}) {
 		if oc == nil {
 			continue
 		}
-		if roleBelow && oc.GetRole() >= pivotRole {
-			continue
+		if roleBelow {
+			if oc.GetRole() >= pivotRole {
+				continue
+			}
+		} else if pivotHidden {
+			viewer, ok := oc.(*Character)
+			if !ok || viewer == nil || !viewer.HasRoleAtLeast(pivotRole) {
+				continue
+			}
 		}
 		fn(oc)
 	}

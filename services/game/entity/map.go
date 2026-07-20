@@ -1076,7 +1076,7 @@ func (m *Map) BroadcastNear(position types.Vector2[int16], message types.Packet,
 	if option != nil && option.SendRaw {
 		policy = types.SEND_POLICY_RAW
 	}
-	for _, obj := range m.GetObjectsNear(position, constant.ObjectTypeCharacter, nil) {
+	for _, obj := range m.GetObjectsNear(position, constant.ObjectTypeCharacter, &SearchOption{IncludeHidden: true}) {
 		character, ok := obj.(*Character)
 		if !ok || character == nil {
 			continue

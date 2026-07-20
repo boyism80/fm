@@ -1492,7 +1492,7 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 			RecipientsRoleBelowPivot: true,
 		})
 	} else {
-		for _, obj := range mapInstance.GetObjectsNear(ch.GetPosition(), constant.ObjectTypeCharacter, nil) {
+		for _, obj := range mapInstance.GetObjectsNear(ch.GetPosition(), constant.ObjectTypeCharacter, &entity.SearchOption{IncludeHidden: true}) {
 			if viewer, ok := obj.(*entity.Character); ok {
 				ch.SendSpawnSyncToViewer(viewer)
 			}

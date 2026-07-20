@@ -14,8 +14,9 @@ func (m *Map) updateVisibility(obj Object, before types.Vector2[int16]) {
 	after := obj.GetPosition()
 	switch mover := obj.(type) {
 	case *Character:
-		beforeNear := m.GetObjectsNear(before, constant.ObjectTypeObject, nil)
-		afterNear := m.GetObjectsNear(after, constant.ObjectTypeObject, nil)
+		includeHidden := &SearchOption{IncludeHidden: true}
+		beforeNear := m.GetObjectsNear(before, constant.ObjectTypeObject, includeHidden)
+		afterNear := m.GetObjectsNear(after, constant.ObjectTypeObject, includeHidden)
 		for _, o := range afterNear {
 			if o == nil || o == mover || slices.Contains(beforeNear, o) {
 				continue
@@ -36,8 +37,9 @@ func (m *Map) updateVisibility(obj Object, before types.Vector2[int16]) {
 			}
 		}
 	default:
-		beforeViewers := m.GetObjectsNear(before, constant.ObjectTypeCharacter, nil)
-		afterViewers := m.GetObjectsNear(after, constant.ObjectTypeCharacter, nil)
+		includeHidden := &SearchOption{IncludeHidden: true}
+		beforeViewers := m.GetObjectsNear(before, constant.ObjectTypeCharacter, includeHidden)
+		afterViewers := m.GetObjectsNear(after, constant.ObjectTypeCharacter, includeHidden)
 		for _, candidate := range afterViewers {
 			viewer, ok := candidate.(*Character)
 			if !ok || viewer == nil || slices.Contains(beforeViewers, candidate) {

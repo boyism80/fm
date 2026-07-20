@@ -52,7 +52,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		character.Send(&response.KeyMap{Slots: kl.Bindings()}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	for _, obj := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeCharacter, nil) {
+	for _, obj := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeCharacter, &entity.SearchOption{IncludeHidden: true}) {
 		if viewer, ok := obj.(*entity.Character); ok {
 			character.SendSpawnSyncToViewer(viewer)
 		}

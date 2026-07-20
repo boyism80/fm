@@ -176,6 +176,9 @@ func (ch *Character) SendDestroySyncToViewer(viewer *Character) {
 	if ch.GetID() == viewer.GetID() {
 		return
 	}
+	if ch.IsHidden() && !viewer.HasRoleAtLeast(ch.Role) {
+		return
+	}
 	viewer.Send(&response.LeavePlayer{ID: ch.GetID()}, types.SEND_POLICY_ENCRYPT)
 }
 
