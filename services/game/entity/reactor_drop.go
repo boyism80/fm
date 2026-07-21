@@ -32,13 +32,14 @@ func (r *Reactor) DropItems() {
 
 	trigger := r.GetTrigger()
 	mesoRate := float32(r.GameWorld.GetMesoRate())
+	gmDrop := trigger != nil && trigger.HasRoleAtLeast(constant.RoleAdmin)
 	spawns := make([]reactorDropSpawn, 0, len(reactorDrops))
 
 	for _, entry := range reactorDrops {
 		if entry.QuestID > 0 && !questInProgress(trigger, entry.QuestID) {
 			continue
 		}
-		if entry.Prob > 0 && rand.Float32() > entry.Prob {
+		if !gmDrop && entry.Prob > 0 && rand.Float32() > entry.Prob {
 			continue
 		}
 

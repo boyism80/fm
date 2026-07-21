@@ -17,8 +17,8 @@ function on_click(me, npc)
 		return
 	end
 	if wz.id == EXIT_MAP then
-		pq.remove_all(me, PASS_ID)
-		pq.remove_all(me, COUPON_ID)
+	pq.remove_all(PASS_ID, me)
+	pq.remove_all(COUPON_ID, me)
 		me:map(TOWN_MAP)
 		return
 	end

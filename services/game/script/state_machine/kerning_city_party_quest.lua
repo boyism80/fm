@@ -18,6 +18,8 @@ local duration_ms = 1800000
 function on_init(group)
 	group:set_property("state", "0")
 	group:declare_maps(stage_maps)
+	group:declare_min_players(config.required_party_size)
+	group:declare_exit_map(exit_map_id)
 end
 
 function on_mob_kill(sm, player, mobs)
@@ -57,48 +59,30 @@ function on_changed_map(sm, player, map_id)
 		return
 	end
 	sm:unregister(player)
-	if #sm:players() < config.required_party_size then
-		sm:finish(exit_map_id)
-		sm:group():set_property("state", "0")
-	end
 end
 
 function on_player_revive(sm, player)
 end
 
 function on_player_disconnected(sm, player)
-	return -3
 end
 
 function on_left_party(sm, player)
-	if #sm:players() <= config.required_party_size then
-		sm:finish(exit_map_id)
-		sm:group():set_property("state", "0")
-	else
-		on_player_exit(sm, player)
-	end
 end
 
 function on_disband_party(sm)
 	sm:finish(exit_map_id)
-	sm:group():set_property("state", "0")
 end
 
 function on_scheduled_timeout(sm)
-	on_clear_party_quest(sm)
+	on_clear(sm)
 end
 
-function on_player_exit(sm, player)
-	sm:unregister(player)
-	player:map(exit_map_id)
-	if #sm:players() < config.required_party_size then
-		sm:finish(exit_map_id)
-		sm:group():set_property("state", "0")
-	end
-end
-
-function on_clear_party_quest(sm)
+function on_clear(sm)
 	sm:finish(exit_map_id)
+end
+
+function on_finish(sm)
 	sm:group():set_property("state", "0")
 end
 

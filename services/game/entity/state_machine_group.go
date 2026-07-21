@@ -18,6 +18,8 @@ type StateMachineGroup struct {
 	machines       map[string]*StateMachine
 	bootMapID      uint32
 	declaredMapIDs []uint32
+	minPlayers     int
+	exitMapID      uint32
 }
 
 func NewStateMachineGroup(name, scriptPath string, gw GameWorld) *StateMachineGroup {
@@ -80,6 +82,48 @@ func (g *StateMachineGroup) DeclaredMaps() []uint32 {
 	ids := make([]uint32, len(g.declaredMapIDs))
 	copy(ids, g.declaredMapIDs)
 	return ids
+}
+
+func (g *StateMachineGroup) DeclareMinPlayers(n int) {
+	if g == nil {
+		return
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if n < 1 {
+		n = 1
+	}
+	g.minPlayers = n
+}
+
+func (g *StateMachineGroup) MinPlayers() int {
+	if g == nil {
+		return 1
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.minPlayers < 1 {
+		return 1
+	}
+	return g.minPlayers
+}
+
+func (g *StateMachineGroup) DeclareExitMap(mapID uint32) {
+	if g == nil {
+		return
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.exitMapID = mapID
+}
+
+func (g *StateMachineGroup) ExitMapID() uint32 {
+	if g == nil {
+		return 0
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.exitMapID
 }
 
 func (g *StateMachineGroup) Get(id string) *StateMachine {
@@ -208,6 +252,8 @@ func (g *StateMachineGroup) StartParty(leader *Character, party *Party, opts Sta
 	sm.Party = party
 	sm.Leader = leader
 	sm.ScaleLevel = scale
+	sm.MinPlayers = g.MinPlayers()
+	sm.ExitMapID = g.ExitMapID()
 
 	for _, mem := range party.GetMembers() {
 		if mem == nil {
@@ -225,6 +271,60 @@ func (g *StateMachineGroup) StartParty(leader *Character, party *Party, opts Sta
 		for _, ch := range sm.Players() {
 			sm.Unregister(ch)
 		}
+		return nil, fmt.Errorf("failed to start state machine actor")
+	}
+
+	g.mu.Lock()
+	if g.machines == nil {
+		g.machines = make(map[string]*StateMachine)
+	}
+	g.machines[id] = sm
+	g.mu.Unlock()
+
+	g.GameWorld.SendStateMachineMessage(sm.ActorPID, &BootstrapStateMachine{})
+	return sm, nil
+}
+
+func (g *StateMachineGroup) StartSolo(player *Character, opts StartPartyOpts) (*StateMachine, error) {
+	if g == nil {
+		return nil, fmt.Errorf("state machine group is nil")
+	}
+	if player == nil {
+		return nil, fmt.Errorf("player is nil")
+	}
+	if g.GameWorld == nil {
+		return nil, fmt.Errorf("game world is nil")
+	}
+	if player.GetMap() == nil {
+		return nil, fmt.Errorf("player map is nil")
+	}
+	if len(g.DeclaredMaps()) == 0 {
+		return nil, fmt.Errorf("state machine group %s declared no maps", g.Name)
+	}
+
+	scale := int(player.GetLevel())
+	if opts.MaxLevel > 0 && scale > opts.MaxLevel {
+		scale = opts.MaxLevel
+	}
+
+	id := strconv.FormatUint(uint64(player.GetID()), 10)
+	g.mu.Lock()
+	existing := g.machines[id]
+	g.mu.Unlock()
+	if existing != nil && !existing.Disposed() {
+		return nil, fmt.Errorf("state machine %s is already running", id)
+	}
+	sm := NewStateMachine(id, g)
+	sm.Party = nil
+	sm.Leader = player
+	sm.ScaleLevel = scale
+	sm.MinPlayers = g.MinPlayers()
+	sm.ExitMapID = g.ExitMapID()
+	sm.Register(player)
+
+	sm.ActorPID = g.GameWorld.StartStateMachineActor(sm)
+	if sm.ActorPID == nil {
+		sm.Unregister(player)
 		return nil, fmt.Errorf("failed to start state machine actor")
 	}
 

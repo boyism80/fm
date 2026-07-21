@@ -119,6 +119,17 @@ func (gs *GameServer) SendStateMachineMessage(pid *actor.PID, msg interface{}) {
 	gs.GetRootContext().Send(pid, msg)
 }
 
+func (gs *GameServer) ResumeLua(pid *actor.PID, root *lua.LState, thread *lua.LState, args []lua.LValue) {
+	if gs == nil || pid == nil || root == nil || thread == nil {
+		return
+	}
+	gs.GetRootContext().Send(pid, &g_actor.ResumeLua{
+		Root:   root,
+		Thread: thread,
+		Args:   args,
+	})
+}
+
 func (gs *GameServer) StopStateMachineActor(sm *entity.StateMachine) {
 	if gs == nil || sm == nil || sm.Group == nil {
 		return
@@ -534,7 +545,7 @@ func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
 		return
 	}
 	if sm := ch.StateMachine(); sm != nil {
-		sm.CallHook("on_player_disconnected", sm, ch)
+		sm.RequestLeave(ch, false)
 	}
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {

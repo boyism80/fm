@@ -30,12 +30,73 @@ function M.has_item(me, id, qty)
 	return M.item_count(me, id) >= qty
 end
 
-function M.remove_all(me, id)
+local function remove_one(me, id)
+	if me == nil or id == nil then
+		return false
+	end
 	local n = M.item_count(me, id)
 	if n <= 0 then
 		return true
 	end
 	return me:rmitem(id, n)
+end
+
+local function is_state_machine(target)
+	return target ~= nil and target.players ~= nil and target.rmitem == nil
+end
+
+local function party_characters_on_map(anchor)
+	local party = anchor:party()
+	local map = anchor:map()
+	if party == nil or map == nil then
+		return { anchor }
+	end
+	local pid = party:id()
+	local out = {}
+	for _, ch in pairs(map:characters()) do
+		if ch ~= nil then
+			local p = ch:party()
+			if p ~= nil and p:id() == pid then
+				out[#out + 1] = ch
+			end
+		end
+	end
+	if #out == 0 then
+		return { anchor }
+	end
+	return out
+end
+
+function M.remove_all_party(id, anchor)
+	if id == nil or anchor == nil then
+		return false
+	end
+	local ok = true
+	for _, ch in ipairs(party_characters_on_map(anchor)) do
+		if not remove_one(ch, id) then
+			ok = false
+		end
+	end
+	return ok
+end
+
+function M.remove_all(id, target)
+	if id == nil then
+		return false
+	end
+	if target == nil then
+		return false
+	end
+	if is_state_machine(target) then
+		local ok = true
+		for _, p in ipairs(target:players()) do
+			if p ~= nil and not remove_one(p, id) then
+				ok = false
+			end
+		end
+		return ok
+	end
+	return remove_one(target, id)
 end
 
 function M.gain_item(me, id, n)

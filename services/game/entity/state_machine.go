@@ -3,24 +3,31 @@ package entity
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/luax"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type StateMachine struct {
-	mu         sync.Mutex
-	ID         string
-	Group      *StateMachineGroup
-	Party      *Party
-	Leader     *Character
-	ScaleLevel int
-	players    []*Character
-	playerSet  map[uint32]*Character
-	props      map[string]string
-	kills      map[uint32]int
-	disposed   bool
-	ActorPID   *actor.PID
-	Maps       map[uint32]*Map
+	mu              sync.Mutex
+	ID              string
+	Group           *StateMachineGroup
+	Party           *Party
+	Leader          *Character
+	ScaleLevel      int
+	MinPlayers      int
+	ExitMapID       uint32
+	players         []*Character
+	playerSet       map[uint32]*Character
+	props           map[string]string
+	kills           map[uint32]int
+	disposed        bool
+	ActorPID        *actor.PID
+	Maps            map[uint32]*Map
+	timeoutDeadline time.Time
 }
 
 func NewStateMachine(id string, group *StateMachineGroup) *StateMachine {
@@ -69,6 +76,48 @@ func (sm *StateMachine) Unregister(ch *Character) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.unregisterLocked(ch)
+}
+
+func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver bool) bool {
+	if sm == nil || ch == nil {
+		return false
+	}
+	sm.mu.Lock()
+	if sm.disposed {
+		sm.mu.Unlock()
+		return false
+	}
+	sm.unregisterLocked(ch)
+	count := len(sm.players)
+	minPlayers := sm.MinPlayers
+	if minPlayers < 1 {
+		minPlayers = 1
+	}
+	exitMapID := sm.ExitMapID
+	group := sm.Group
+	belowMin := count < minPlayers
+	sm.mu.Unlock()
+
+	if belowMin {
+		sm.Finish(ctx, exitMapID)
+		return true
+	}
+	if warpLeaver && exitMapID > 0 && group != nil && group.GameWorld != nil {
+		if exitMap := group.GameWorld.GetMapSystem().Get(exitMapID); exitMap != nil {
+			_ = ch.Warp(ctx, exitMap, 0)
+		}
+	}
+	return false
+}
+
+func (sm *StateMachine) RequestLeave(ch *Character, warpLeaver bool) {
+	if sm == nil || ch == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+		return
+	}
+	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &LeaveStateMachinePlayer{
+		Character:  ch,
+		WarpLeaver: warpLeaver,
+	})
 }
 
 func (sm *StateMachine) unregisterLocked(ch *Character) {
@@ -149,6 +198,63 @@ func (sm *StateMachine) StartTimer(ms int64) {
 	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &ScheduleStateMachineTimeout{Milliseconds: ms})
 }
 
+func (sm *StateMachine) StartTimerAsync(ctx actor.Context, ms int64) *async.Promise {
+	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ms <= 0 || ctx == nil {
+		return nil
+	}
+	gw := sm.Group.GameWorld
+	pid := sm.ActorPID
+	return async.Ask(ctx, pid, 10*time.Second, func(replyTo *actor.PID) {
+		gw.SendStateMachineMessage(pid, &ScheduleStateMachineTimeout{
+			Milliseconds: ms,
+			ReplyTo:      replyTo,
+		})
+	})
+}
+
+func (sm *StateMachine) StopTimer() {
+	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+		return
+	}
+	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &CancelStateMachineTimeout{})
+}
+
+func (sm *StateMachine) StopTimerAsync(ctx actor.Context) *async.Promise {
+	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
+		return nil
+	}
+	gw := sm.Group.GameWorld
+	pid := sm.ActorPID
+	return async.Ask(ctx, pid, 10*time.Second, func(replyTo *actor.PID) {
+		gw.SendStateMachineMessage(pid, &CancelStateMachineTimeout{ReplyTo: replyTo})
+	})
+}
+
+func (sm *StateMachine) TimeLeft() int64 {
+	if sm == nil {
+		return 0
+	}
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	if sm.timeoutDeadline.IsZero() {
+		return 0
+	}
+	left := time.Until(sm.timeoutDeadline).Milliseconds()
+	if left < 0 {
+		return 0
+	}
+	return left
+}
+
+func (sm *StateMachine) SetTimeoutDeadline(deadline time.Time) {
+	if sm == nil {
+		return
+	}
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	sm.timeoutDeadline = deadline
+}
+
 func (sm *StateMachine) RecordMap(mapID uint32, m *Map) {
 	if sm == nil || m == nil {
 		return
@@ -219,9 +325,15 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32) {
 	copy(players, sm.players)
 	group := sm.Group
 	pid := sm.ActorPID
+	scriptPath := ""
+	if group != nil {
+		scriptPath = group.ScriptPath
+	}
 	sm.players = nil
 	sm.playerSet = make(map[uint32]*Character)
 	sm.mu.Unlock()
+
+	sm.callOnFinish(ctx, scriptPath)
 
 	var exitMap *Map
 	if exitMapID > 0 && group != nil && group.GameWorld != nil {
@@ -243,6 +355,33 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32) {
 	}
 }
 
+func (sm *StateMachine) callOnFinish(ctx actor.Context, scriptPath string) {
+	if sm == nil || scriptPath == "" {
+		return
+	}
+	root := luax.NewState()
+	defer root.Close()
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		return
+	}
+	if thread.GetGlobal("on_finish").Type() != lua.LTFunction {
+		luax.Close(thread)
+		return
+	}
+	luax.SetConfiguration(thread, luax.Configuration{
+		ActorContext: ctx,
+		ActorPID:     sm.ActorPID,
+	})
+	if _, err := luax.Call(thread, "on_finish", sm); err != nil {
+		name := ""
+		if sm.Group != nil {
+			name = sm.Group.Name
+		}
+		fmt.Printf("state machine %s hook on_finish: %v\n", name, err)
+	}
+}
+
 func (sm *StateMachine) CallHook(hook string, args ...interface{}) {
 	if sm == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || hook == "" {
 		return
@@ -259,6 +398,11 @@ type StopStateMachine struct{}
 
 type EnterStateMachinePlayers struct{}
 
+type LeaveStateMachinePlayer struct {
+	Character  *Character
+	WarpLeaver bool
+}
+
 type CallStateMachineHook struct {
 	Hook string
 	Args []interface{}
@@ -266,7 +410,14 @@ type CallStateMachineHook struct {
 
 type ScheduleStateMachineTimeout struct {
 	Milliseconds int64
+	ReplyTo      *actor.PID
 }
+
+type CancelStateMachineTimeout struct {
+	ReplyTo *actor.PID
+}
+
+type StateMachineTimerAck struct{}
 
 type StateMachineTimeout struct {
 	Version uint64

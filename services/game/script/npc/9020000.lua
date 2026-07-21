@@ -74,6 +74,6 @@ function on_click(me, npc)
 	else
 		me:dialog(npc, "이 안에 이미 다른 파티가 들어가서 클리어에 도전하고있습니다. 잠시후에 다시 시도해 주세요")
 	end
-	pq.remove_all(me, PASS_ID)
-	pq.remove_all(me, COUPON_ID)
+	pq.remove_all(PASS_ID, me)
+	pq.remove_all(COUPON_ID, me)
 end

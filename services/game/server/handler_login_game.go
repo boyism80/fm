@@ -198,6 +198,14 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 			return fmt.Errorf("default map %d not found", mapID)
 		}
 	}
+	if mapInstance.Wz != nil && mapInstance.Wz.HasForcedReturn() {
+		forcedID := uint32(mapInstance.Wz.ForcedReturn)
+		if alt := h.gs.GetMapSystem().Get(forcedID); alt != nil {
+			mapID = forcedID
+			spawnPoint = 0
+			mapInstance = alt
+		}
+	}
 
 	if mapInstance.FindPortal(spawnPoint) == nil {
 		spawnPoint = 0

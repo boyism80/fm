@@ -74,6 +74,26 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			group.DeclareMaps(ids)
 			return 0
 		},
+		"declare_min_players": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			group.DeclareMinPlayers(L.CheckInt(2))
+			return 0
+		},
+		"declare_exit_map": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			group.DeclareExitMap(uint32(L.CheckInt(2)))
+			return 0
+		},
 		"map": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			group, ok := ud.Value.(*StateMachineGroup)
@@ -141,6 +161,32 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				maxLevel = L.CheckInt(4)
 			}
 			sm, err := group.StartParty(leader, party, StartPartyOpts{MaxLevel: maxLevel})
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 2
+			}
+			L.Push(luax.NewLuable(L, sm))
+			return 1
+		},
+		"start_solo": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			playerUd := L.CheckUserData(2)
+			player, ok := playerUd.Value.(*Character)
+			if !ok || player == nil {
+				L.ArgError(2, "Character expected")
+				return 0
+			}
+			maxLevel := 0
+			if L.GetTop() >= 3 {
+				maxLevel = L.CheckInt(3)
+			}
+			sm, err := group.StartSolo(player, StartPartyOpts{MaxLevel: maxLevel})
 			if err != nil {
 				L.Push(lua.LNil)
 				L.Push(lua.LString(err.Error()))

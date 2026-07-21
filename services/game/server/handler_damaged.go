@@ -50,6 +50,7 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 
 func (h *Damaged) applyDamage(character *entity.Character, damage int32) {
 	if !character.Invincible {
+		wasAlive := character.GetHp() > 0
 		n := int(character.GetHp()) - int(damage)
 		if n < 0 {
 			n = 0
@@ -62,6 +63,11 @@ func (h *Damaged) applyDamage(character *entity.Character, damage int32) {
 		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{
 			constant.StatHP: int32(character.GetHp()),
 		}, true)
+		if wasAlive && character.GetHp() == 0 {
+			if sm := character.StateMachine(); sm != nil {
+				sm.CallHook("on_player_dead", sm, character)
+			}
+		}
 	} else {
 		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)
 	}

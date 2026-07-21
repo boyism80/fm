@@ -3,6 +3,7 @@ package entity
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"time"
 
@@ -23,19 +24,21 @@ type Homing struct {
 
 type Mob struct {
 	LifeCore
-	Listener     MobListener
-	Wz           *wz.Mob
-	Fake         bool
-	Foothold     int16
-	Spawn        *MobSpawn
-	Buffs        *MobBuffContainer
-	Skills       *MobSkillContainer
-	ExpRate      int32
-	DropRate     int32
-	stealOutcome *uint32
-	Homing       map[uint32]*Homing
-	accDamage    map[int64]map[uint32]uint64
-	sponge       Sponge
+	Listener      MobListener
+	Wz            *wz.Mob
+	Fake          bool
+	Foothold      int16
+	Spawn         *MobSpawn
+	Buffs         *MobBuffContainer
+	Skills        *MobSkillContainer
+	ExpRate       int32
+	DropRate      int32
+	stealOutcome  *uint32
+	Homing        map[uint32]*Homing
+	accDamage     map[int64]map[uint32]uint64
+	sponge        Sponge
+	lastHitAt     time.Time
+	dropItemCount int
 }
 
 func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
@@ -131,6 +134,23 @@ func (m *Mob) Is(typ constant.ObjectType) bool {
 
 func (m *Mob) IsFake() bool {
 	return m != nil && m.Fake
+}
+
+func (m *Mob) ApplyScaleLevel(scale int) {
+	if m == nil || m.Wz == nil || scale <= 0 {
+		return
+	}
+	base := int(m.Wz.Level)
+	if base <= 0 || scale == base {
+		return
+	}
+	ratio := float64(scale) / float64(base)
+	hp := uint32(math.Max(1, math.Ceil(float64(m.BaseHp)*ratio)))
+	mp := uint32(math.Ceil(float64(m.BaseMp) * ratio))
+	m.SetBaseHp(hp, false)
+	m.SetHp(hp, false)
+	m.SetBaseMp(mp, false)
+	m.SetMp(mp, false)
 }
 
 func (m *Mob) SetFake(fake bool) {
@@ -481,6 +501,8 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 		bucket[attacker.GetID()] += uint64(damage)
 	}
 
+	m.MarkHit()
+
 	spongeParent := m.sponge.parent
 
 	m.AddHp(-int(damage))
@@ -490,12 +512,14 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 
 	if !killed {
 		if attacker != nil && spongeParent == nil {
-			maxHp := m.GetMaxHp()
-			if maxHp == 0 {
-				return false
+			if m.Wz == nil || !m.Wz.DamagedByMob {
+				maxHp := m.GetMaxHp()
+				if maxHp == 0 {
+					return false
+				}
+				percent := min(m.GetHp()*100/maxHp, 100)
+				attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
 			}
-			percent := min(m.GetHp()*100/maxHp, 100)
-			attacker.Listener.OnShowMobHp(attacker, m, uint8(percent))
 		}
 		return false
 	}
@@ -556,6 +580,9 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) 
 
 	if attacker != nil {
 		attacker.Listener.OnShowMobHp(attacker, m, 0)
+	}
+	if sm := mapInstance.StateMachine(); sm != nil && !mapInstance.HasAliveMobs() {
+		sm.CallHook("on_all_monsters_dead", sm)
 	}
 	return true
 }

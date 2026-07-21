@@ -522,9 +522,22 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			mobWZID := uint32(L.CheckInt(2))
-			enabled := L.CheckBool(3)
-			mapInstance.SetMobGenEnabled(mobWZID, enabled)
+			argc := L.GetTop()
+			if argc < 2 {
+				L.ArgError(2, "block_gen(enabled) or block_gen(enabled, mobId) requires enabled")
+				return 0
+			}
+			enabled := lua.LVAsBool(L.Get(2))
+			if argc == 2 {
+				mapInstance.SetAllMobGenEnabled(enabled)
+				return 0
+			}
+			if argc == 3 {
+				mobWZID := uint32(L.CheckInt(3))
+				mapInstance.SetMobGenEnabled(mobWZID, enabled)
+				return 0
+			}
+			L.ArgError(4, "block_gen(enabled) or block_gen(enabled, mobId)")
 			return 0
 		},
 		"remove_npc": func(L *lua.LState) int {

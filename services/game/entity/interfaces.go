@@ -5,6 +5,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/services/game/wz"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type GameWorld interface {
@@ -24,6 +25,7 @@ type GameWorld interface {
 	StartStateMachineActor(sm *StateMachine) *actor.PID
 	SendStateMachineMessage(pid *actor.PID, msg interface{})
 	StopStateMachineActor(sm *StateMachine)
+	ResumeLua(pid *actor.PID, root *lua.LState, thread *lua.LState, args []lua.LValue)
 }
 
 type StateMachineRegistry interface {

@@ -42,6 +42,14 @@ func loadReactor(path string) (*Reactor, error) {
 				model.Info.ActivateByTouch = intField.Value
 			}
 		}
+		for _, strField := range info.Strings {
+			switch strField.Name {
+			case "link":
+				if id, err := strconv.Atoi(strField.Value); err == nil {
+					model.Info.Link = uint32(id)
+				}
+			}
+		}
 	}
 
 	for _, strField := range root.Strings {

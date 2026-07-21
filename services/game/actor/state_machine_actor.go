@@ -53,18 +53,42 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 		} else {
 			a.pendingHooks = append(a.pendingHooks, msg)
 		}
+	case *entity.LeaveStateMachinePlayer:
+		if msg != nil && a.StateMachine != nil {
+			a.StateMachine.LeavePlayer(ctx, msg.Character, msg.WarpLeaver)
+		}
 	case *entity.ScheduleStateMachineTimeout:
 		if a.scheduler != nil {
 			a.timeoutVersion++
 			if a.timeoutCancel != nil {
 				a.timeoutCancel()
 			}
+			deadline := time.Now().Add(time.Duration(msg.Milliseconds) * time.Millisecond)
+			a.StateMachine.SetTimeoutDeadline(deadline)
 			a.timeoutCancel = a.scheduler.SendOnce(time.Duration(msg.Milliseconds)*time.Millisecond, ctx.Self(), &entity.StateMachineTimeout{
 				Version: a.timeoutVersion,
 			})
 		}
+		if msg.ReplyTo != nil {
+			ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})
+		}
+	case *entity.CancelStateMachineTimeout:
+		a.timeoutVersion++
+		if a.timeoutCancel != nil {
+			a.timeoutCancel()
+			a.timeoutCancel = nil
+		}
+		if a.StateMachine != nil {
+			a.StateMachine.SetTimeoutDeadline(time.Time{})
+		}
+		if msg.ReplyTo != nil {
+			ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})
+		}
 	case *entity.StateMachineTimeout:
 		if msg.Version == a.timeoutVersion {
+			if a.StateMachine != nil {
+				a.StateMachine.SetTimeoutDeadline(time.Time{})
+			}
 			a.callHook(ctx, "on_scheduled_timeout", a.StateMachine)
 		}
 	case *entity.StopStateMachine:
@@ -156,6 +180,13 @@ func (a *StateMachineActor) beginDetach(ctx actor.Context) {
 	}
 	a.detaching = true
 	a.timeoutVersion++
+	if a.timeoutCancel != nil {
+		a.timeoutCancel()
+		a.timeoutCancel = nil
+	}
+	if a.StateMachine != nil {
+		a.StateMachine.SetTimeoutDeadline(time.Time{})
+	}
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()
 	sm := a.StateMachine

@@ -108,7 +108,7 @@ func (r *Reactor) matchesItemDrop(item Item) bool {
 	reactorID := r.Wz.ID
 	hook := fmt.Sprintf("on_reactor_%d", reactorID)
 	result, err := r.callReactorScript(hook, false, r, item)
-	if err != nil || result == nil {
+	if err != nil || result == nil || result == lua.LNil {
 		event := r.currentEvent()
 		if event == nil || event.Type != constant.ReactorEventTypeItem {
 			return false
@@ -147,36 +147,20 @@ func (r *Reactor) callReactorScript(hook string, yield bool, args ...interface{}
 			filtered = append(filtered, arg)
 		}
 	}
-	callArgs := filtered
-	if len(callArgs) == 0 {
-		callArgs = nil
-	}
 	if yield && root.G != nil && root.G.CurrentThread == root.G.MainThread {
-		if len(callArgs) == 0 {
+		if len(filtered) == 0 {
 			luax.CallAsync(root, thread, hook).OnError(func(err error) {
 				log.Printf("reactor script %s: %v", hook, err)
 			})
 		} else {
-			luax.CallAsync(root, thread, hook, callArgs...).OnError(func(err error) {
+			luax.CallAsync(root, thread, hook, filtered...).OnError(func(err error) {
 				log.Printf("reactor script %s: %v", hook, err)
 			})
 		}
 		return nil, nil
 	}
-	var result lua.LValue
-	var callErr error
-	var promise = luax.CallAsync(root, thread, hook)
-	if len(callArgs) > 0 {
-		promise = luax.CallAsync(root, thread, hook, callArgs...)
+	if len(filtered) == 0 {
+		return luax.Call(thread, hook)
 	}
-	promise.Then(func(value interface{}) (interface{}, error) {
-		vals := luax.ResultValues(value)
-		if len(vals) > 0 {
-			result = vals[0]
-		}
-		return nil, nil
-	}).OnError(func(err error) {
-		callErr = err
-	})
-	return result, callErr
+	return luax.Call(thread, hook, filtered...)
 }

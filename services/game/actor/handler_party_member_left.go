@@ -24,6 +24,9 @@ func (h *PartyMemberLeftHandler) Handle(ctx actor.Context, a *GameLogicActor, ms
 		return
 	}
 	if sm := ch.StateMachine(); sm != nil {
-		sm.CallHook("on_left_party", sm, ch)
+		finished := sm.LeavePlayer(ctx, ch, true)
+		if !finished {
+			sm.CallHook("on_left_party", sm, ch)
+		}
 	}
 }

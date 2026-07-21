@@ -161,7 +161,7 @@ local function handle_stage1(me, npc, sm, map)
 		if pq.has_item(me, PASS_ID, psize) then
 			map:clear_effect()
 			pq.party_exp(sm, 1500)
-			pq.remove_all(me, PASS_ID)
+			pq.remove_all(PASS_ID, me)
 			local stage = tonumber(sm:get_property("stage")) or 1
 			sm:set_property("stage", tostring(stage + 1))
 			me:dialog(npc, "다음 스테이지로 통하는 포탈이 열렸습니다. 서둘러 주세요.")
@@ -203,7 +203,7 @@ local function handle_stage1(me, npc, sm, map)
 			return
 		end
 		sm:set_property(key, tostring(#stage1_quests + 1))
-		pq.remove_all(me, COUPON_ID)
+		pq.remove_all(COUPON_ID, me)
 		me:dialog(npc, "정답을 맞추셨습니다! 이 #b통행증#k을 파티장에게 건네주세요.")
 	else
 		me:dialog(npc, "정답이 아닙니다.\r\n\r\n" .. q.question)
@@ -229,7 +229,7 @@ local function handle_stage5(me, npc, sm, map)
 	pq.party_exp(sm, 3500)
 	local stage = tonumber(sm:get_property("stage")) or 5
 	sm:set_property("stage", tostring(stage + 1))
-	pq.remove_all(me, PASS_ID)
+	pq.remove_all(PASS_ID, me)
 	for _, p in ipairs(sm:players()) do
 		if p ~= nil then
 			p:end_party_quest(RANKING_QUEST)

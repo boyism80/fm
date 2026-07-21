@@ -98,8 +98,27 @@ func (l *MobListenerImpl) OnMobDamaged(mob *entity.Mob, amount int32) {
 		return
 	}
 	pkt := &response.DamageMob{
-		OID:    mob.OID,
-		Damage: amount,
+		OID:     mob.OID,
+		Display: constant.MobDamageDisplayNormal,
+		Damage:  amount,
+	}
+	mapInstance.Broadcast(pkt, nil)
+}
+
+func (l *MobListenerImpl) OnMobAllyDamaged(mob *entity.Mob, amount int32) {
+	if mob == nil {
+		return
+	}
+	mapInstance := mob.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	pkt := &response.DamageMob{
+		OID:     mob.OID,
+		Display: constant.MobDamageDisplayAllyShowHp,
+		Damage:  amount,
+		HP:      int32(mob.GetHp()),
+		MaxHP:   int32(mob.GetMaxHp()),
 	}
 	mapInstance.Broadcast(pkt, nil)
 }

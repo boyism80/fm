@@ -62,6 +62,7 @@ type Map struct {
 	MobSpawns           map[uint32]*MobSpawn
 	ReactorSpawns       map[uint32]*ReactorSpawn
 	blockedMobGen       map[uint32]struct{}
+	mobGenBlockedAll    bool
 	listener            MapListener
 	mobListener         MobListener
 	sequence            uint32
@@ -894,6 +895,11 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	m.listener.OnMobSpawned(m, mob, spawnType, link)
 	m.controllerTable.EnterMob(mob)
 	mob.armRemoveAfter()
+	mob.armDropItemPeriod()
+
+	if sm := m.StateMachine(); sm != nil && sm.ScaleLevel > 0 {
+		mob.ApplyScaleLevel(sm.ScaleLevel)
+	}
 
 	return mob, nil
 }
@@ -985,6 +991,19 @@ func (m *Map) GetMobs() map[uint32]Object {
 		return make(map[uint32]Object)
 	}
 	return m.objects[constant.ObjectTypeMob]
+}
+
+func (m *Map) HasAliveMobs() bool {
+	if m == nil {
+		return false
+	}
+	for _, obj := range m.GetMobs() {
+		mob, ok := obj.(*Mob)
+		if ok && mob.IsAlive() {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Map) GetObjects(filter constant.ObjectType) []Object {

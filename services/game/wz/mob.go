@@ -32,4 +32,6 @@ type Mob struct {
 	SelfDestructionAction int8
 	HpTagColor            uint8
 	HpTagBgColor          uint8
+	DropItemPeriod        int
+	DamagedByMob          bool
 }

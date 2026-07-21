@@ -196,14 +196,28 @@ func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint
 	return
 }
 
+func (ch *Character) PersistMapID() uint32 {
+	if ch == nil {
+		return 0
+	}
+	m := ch.GetMap()
+	if m == nil || m.Wz == nil {
+		return 0
+	}
+	if m.Wz.HasForcedReturn() {
+		return uint32(m.Wz.ForcedReturn)
+	}
+	if ch.GetHp() < 1 && m.Wz.ReturnMapId > 0 {
+		return uint32(m.Wz.ReturnMapId)
+	}
+	return m.GetMapID()
+}
+
 func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 	if ch == nil {
 		return nil
 	}
-	mapID := uint32(0)
-	if m := ch.GetMap(); m != nil {
-		mapID = m.GetMapID()
-	}
+	mapID := ch.PersistMapID()
 	baseLooks, overlays := equipmentLooksForPersist(ch)
 	persisted := &internal.CharacterPersisted{
 		CharacterId:  ch.GetID(),

@@ -31,3 +31,15 @@ func AllMobDieAnimationTypes() map[string]MobDieAnimationType {
 		"FadeOut":   MobDieAnimationTypeFadeOut,
 	}
 }
+
+type MobDamageDisplayType uint8
+
+const (
+	MobDamageDisplayNormal     MobDamageDisplayType = 0
+	MobDamageDisplayAllyShowHp MobDamageDisplayType = 1
+	MobDamageDisplayAllySilent MobDamageDisplayType = 2
+)
+
+func (t MobDamageDisplayType) IncludesHpMaxHp() bool {
+	return t == MobDamageDisplayAllyShowHp || t == MobDamageDisplayAllySilent
+}

@@ -111,7 +111,8 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "Character expected")
 				return 0
 			}
-			machine.Unregister(ch)
+			cfg, _ := luax.GetConfiguration(L)
+			machine.LeavePlayer(cfg.ActorContext, ch, false)
 			return 0
 		},
 		"finish": func(L *lua.LState) int {
@@ -137,8 +138,63 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			ms := int64(L.CheckNumber(2))
-			machine.StartTimer(ms)
-			return 0
+			cfg, cfgOK := luax.GetConfiguration(L)
+			if !cfgOK || cfg.ActorContext == nil {
+				machine.StartTimer(ms)
+				return 0
+			}
+			promise := machine.StartTimerAsync(cfg.ActorContext, ms)
+			if promise == nil {
+				return 0
+			}
+			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+		},
+		"restart_timer": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			ms := int64(L.CheckNumber(2))
+			cfg, cfgOK := luax.GetConfiguration(L)
+			if !cfgOK || cfg.ActorContext == nil {
+				machine.StartTimer(ms)
+				return 0
+			}
+			promise := machine.StartTimerAsync(cfg.ActorContext, ms)
+			if promise == nil {
+				return 0
+			}
+			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+		},
+		"stop_timer": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			cfg, cfgOK := luax.GetConfiguration(L)
+			if !cfgOK || cfg.ActorContext == nil {
+				machine.StopTimer()
+				return 0
+			}
+			promise := machine.StopTimerAsync(cfg.ActorContext)
+			if promise == nil {
+				return 0
+			}
+			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+		},
+		"time_left": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			L.Push(lua.LNumber(machine.TimeLeft()))
+			return 1
 		},
 		"set_property": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

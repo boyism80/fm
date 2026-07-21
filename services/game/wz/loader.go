@@ -1753,6 +1753,10 @@ func loadMob(path string) (*Mob, error) {
 			model.HpTagColor = uint8(intField.Value)
 		case "hpTagBgcolor":
 			model.HpTagBgColor = uint8(intField.Value)
+		case "dropItemPeriod":
+			model.DropItemPeriod = intField.Value
+		case "damagedByMob":
+			model.DamagedByMob = intField.Value > 0
 		}
 	}
 
@@ -1869,8 +1873,6 @@ func loadMob(path string) (*Mob, error) {
 		case "underObject":
 		case "damagedBySelectedSkill":
 		case "atom":
-		case "damagedByMob":
-		case "dropItemPeriod":
 		case "getCP":
 		case "damagedBySelectedMob":
 		case "doNotRemove":

@@ -27,14 +27,17 @@ type MobSpawn struct {
 
 const dropPointSearchOffset int16 = 50
 
+const ForcedReturnNone = 999999999
+
 type Map struct {
-	ID                uint32
-	Name              string
-	Version           int
-	Cloud             int
-	ReturnMapId       int
-	ForcedReturn      int
-	FieldLimit        int
+	ID           uint32
+	Name         string
+	Version      int
+	Cloud        int
+	ReturnMapId  int
+	ForcedReturn int
+	FieldLimit   int
+
 	VRTop             int
 	VRLeft            int
 	VRBottom          int
@@ -55,6 +58,13 @@ type Map struct {
 	Areas             []types.Rect[int16]
 	Footholds         *types.QuadTreeNode[int16, Foothold]
 	doorReturnPortals []Portal
+}
+
+func (m *Map) HasForcedReturn() bool {
+	if m == nil {
+		return false
+	}
+	return m.ForcedReturn > 0 && m.ForcedReturn != ForcedReturnNone
 }
 
 func footholdSpansX(f Foothold, x int16) bool {
