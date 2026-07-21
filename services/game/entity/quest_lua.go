@@ -469,7 +469,7 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 	}
 	luax.SetConfiguration(luaThread, luax.Configuration{
 		ActorContext: actx,
-		MapActorPID:  mapInstance.GetActorPID(),
+		ActorPID:     mapInstance.LogicActorPID(),
 		KeepAlive:    true,
 	})
 	luax.CallAsync(root, luaThread, entry, ch, npcID).Then(func(_ interface{}) (interface{}, error) {

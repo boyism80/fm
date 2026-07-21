@@ -70,7 +70,7 @@ type GameServer struct {
 	packetHandlers    *PacketHandlerRegistry
 	actorSystem       *c_actor.ActorSystem
 	actorRegistry     *c_actor.ActorRegistry
-	nilMapActorPID    *actor.PID
+	nilActorPID       *actor.PID
 	characterListener entity.CharacterListener
 	mobListener       entity.MobListener
 	internalClient    internal.InternalClient
@@ -411,9 +411,9 @@ func (gs *GameServer) preCreateMaps() {
 		"map_nil",
 		nilMapProps,
 	)
-	gs.nilMapActorPID = nilMapPID
+	gs.nilActorPID = nilMapPID
 
-	gs.ServerCore.SetNilMapActorPID(nilMapPID)
+	gs.ServerCore.SetNilActorPID(nilMapPID)
 
 	log.Println("Pre-creating map instances...")
 	for mapID := range gs.resources.Maps {
@@ -565,7 +565,7 @@ func (gs *GameServer) getMapByActorPID(pid *actor.PID) *entity.Map {
 		if m == nil {
 			continue
 		}
-		actorPID := m.GetActorPID()
+		actorPID := m.LogicActorPID()
 		if actorPID != nil && actorPID.String() == key {
 			return m
 		}
@@ -628,7 +628,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		gs.runCharacterLogoutScript(character)
 		mapInstance := character.GetMap()
 		if mapInstance != nil {
-			pid := mapInstance.GetActorPID()
+			pid := mapInstance.LogicActorPID()
 			root := gs.GetRootContext()
 			if pid != nil && root != nil {
 				_, err := root.RequestFuture(pid, &g_actor.RemoveCharacter{CharacterID: charID}, mapActorCallTimeout).Result()

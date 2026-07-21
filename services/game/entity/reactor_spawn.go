@@ -42,7 +42,7 @@ func (rs *ReactorSpawn) ScheduleRespawn(mapInstance *Map) {
 
 	rs.CancelRespawnTimer()
 
-	pid := mapInstance.GetActorPID()
+	pid := mapInstance.LogicActorPID()
 	if pid == nil || mapInstance.GameWorld == nil {
 		return
 	}

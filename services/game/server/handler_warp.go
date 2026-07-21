@@ -98,7 +98,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			}
 			luax.SetConfiguration(thread, luax.Configuration{
 				ActorContext: ctx.ActorContext,
-				MapActorPID:  currentMap.GetActorPID(),
+				ActorPID:     currentMap.LogicActorPID(),
 			})
 			luax.CallAsync(root, thread, "on_enter", character).Then(func(_ interface{}) (interface{}, error) {
 				if character.GetDialog() == nil {

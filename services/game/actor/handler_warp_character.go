@@ -14,7 +14,7 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
-	if pid := msg.TargetMap.GetActorPID(); pid == nil || !pid.Equal(ctx.Self()) {
+	if pid := msg.TargetMap.LogicActorPID(); pid == nil || !pid.Equal(ctx.Self()) {
 		return
 	}
 	msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.Portal, false)

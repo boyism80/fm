@@ -637,7 +637,7 @@ func (m *Mob) runReviveScript(pos types.Point[int16], revives []uint32) bool {
 		revivesTbl.RawSetInt(i+1, lua.LNumber(id))
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
-		MapActorPID: mapInstance.GetActorPID(),
+		ActorPID: mapInstance.LogicActorPID(),
 	})
 	luax.CallAsync(root, thread, hook, m, mapInstance, pos.X, pos.Y, revivesTbl).OnError(func(err error) {
 		log.Printf("mob revive script %s: %v", hook, err)

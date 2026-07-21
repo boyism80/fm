@@ -65,7 +65,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 	SyncPartyMemberHPOnMapEnter(mapInstance, character, nil)
 
 	if l.gs != nil && character != nil && l.gs.characterRuntime != nil {
-		_ = l.gs.characterRuntime.SetMapPID(character.GetID(), mapInstance.GetActorPID())
+		_ = l.gs.characterRuntime.SetMapPID(character.GetID(), mapInstance.LogicActorPID())
 	}
 
 	if l.gs != nil {

@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/core/clock"
 	"time"
+
+	"github.com/boyism80/fm/core/clock"
 
 	"github.com/asynkron/protoactor-go/actor"
 )
@@ -31,7 +32,7 @@ func (obj *ObjectCore) AddTimer(key string, interval time.Duration, repeat bool,
 	if mapInstance == nil {
 		return false
 	}
-	pid := mapInstance.GetActorPID()
+	pid := mapInstance.LogicActorPID()
 	if pid == nil {
 		return false
 	}
@@ -67,7 +68,7 @@ func (obj *ObjectCore) RescheduleTimer(key string) bool {
 	if mapInstance == nil {
 		return false
 	}
-	pid := mapInstance.GetActorPID()
+	pid := mapInstance.LogicActorPID()
 	if pid == nil {
 		return false
 	}

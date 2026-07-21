@@ -330,7 +330,7 @@ func (ch *Character) NotifyItemGained(itemID uint32) {
 		return
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
-		MapActorPID: mapInstance.GetActorPID(),
+		ActorPID: mapInstance.LogicActorPID(),
 	})
 	hook := fmt.Sprintf("on_item_gain_%d", itemID)
 	luax.CallAsync(root, thread, hook, ch, itemID).OnError(func(err error) {

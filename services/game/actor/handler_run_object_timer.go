@@ -20,7 +20,7 @@ func (h *RunObjectTimerHandler) Handle(ctx actor.Context, a *GameLogicActor, msg
 	if m == nil {
 		return
 	}
-	pid := m.GetActorPID()
+	pid := m.LogicActorPID()
 	if pid == nil || !pid.Equal(ctx.Self()) {
 		return
 	}

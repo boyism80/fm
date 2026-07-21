@@ -108,7 +108,7 @@ func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx
 	if L == nil || s.gs == nil {
 		return 0
 	}
-	targetPID := mapInstance.GetActorPID()
+	targetPID := mapInstance.LogicActorPID()
 	if targetPID == nil {
 		L.Push(lua.LBool(false))
 		return 1
@@ -130,7 +130,7 @@ func (s mapSystem) RespawnFromLua(L *lua.LState, mapInstance *entity.Map, actorC
 	if L == nil || s.gs == nil {
 		return 0
 	}
-	targetPID := mapInstance.GetActorPID()
+	targetPID := mapInstance.LogicActorPID()
 	if targetPID == nil {
 		L.Push(lua.LNumber(0))
 		return 1
@@ -169,7 +169,7 @@ func (s mapSystem) RunOnMapFromLua(L *lua.LState, actorCtx actor.Context, mapID 
 	if targetMap == nil {
 		return pushRunOnMapResult(L, false, nil, "run_on_map: target map not found")
 	}
-	targetPID := targetMap.GetActorPID()
+	targetPID := targetMap.LogicActorPID()
 	if targetPID == nil {
 		return pushRunOnMapResult(L, false, nil, "run_on_map: target map actor not found")
 	}
@@ -196,7 +196,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		return fmt.Errorf("character is nil")
 	}
 	currentMap := character.GetMap()
-	targetPID := targetMap.GetActorPID()
+	targetPID := targetMap.LogicActorPID()
 	if targetPID == nil {
 		return fmt.Errorf("target map actor not found")
 	}
@@ -208,7 +208,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		})
 		return nil
 	}
-	sourcePID := currentMap.GetActorPID()
+	sourcePID := currentMap.LogicActorPID()
 	if sourcePID == nil {
 		return fmt.Errorf("source map actor not found")
 	}
@@ -262,12 +262,12 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.Skil
 		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
 		return
 	}
-	destPID := destMap.GetActorPID()
+	destPID := destMap.LogicActorPID()
 	if destPID == nil {
 		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
 		return
 	}
-	srcPID := m.GetActorPID()
+	srcPID := m.LogicActorPID()
 	if srcPID == nil {
 		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
 		return
@@ -306,7 +306,7 @@ func (s mapSystem) RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartM
 	if mapInstance == nil {
 		return
 	}
-	pid := mapInstance.GetActorPID()
+	pid := mapInstance.LogicActorPID()
 	if pid == nil {
 		return
 	}

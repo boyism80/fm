@@ -242,7 +242,7 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 		return
 	}
 	luax.SetConfiguration(mapThread, luax.Configuration{
-		MapActorPID: m.GetActorPID(),
+		ActorPID: m.LogicActorPID(),
 	})
 	luax.CallAsync(root, mapThread, mapHook, character, m)
 }
@@ -1245,7 +1245,7 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 	}
 }
 
-func (m *Map) GetActorPID() *actor.PID {
+func (m *Map) LogicActorPID() *actor.PID {
 	m.stateMachineMu.RLock()
 	sm := m.stateMachine
 	m.stateMachineMu.RUnlock()
@@ -1255,7 +1255,7 @@ func (m *Map) GetActorPID() *actor.PID {
 	return m.actorPID
 }
 
-func (m *Map) MapActorPID() *actor.PID {
+func (m *Map) HomeActorPID() *actor.PID {
 	return m.actorPID
 }
 

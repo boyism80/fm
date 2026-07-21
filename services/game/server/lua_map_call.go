@@ -16,7 +16,7 @@ func (c luaMapCall) callerPID(L *lua.LState, actorCtx actor.Context) *actor.PID 
 		return actorCtx.Self()
 	}
 	cfg, _ := luax.GetConfiguration(L)
-	return cfg.MapActorPID
+	return cfg.ActorPID
 }
 
 func (c luaMapCall) gameLogic(a actor.Actor) *g_actor.GameLogicActor {

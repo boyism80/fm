@@ -139,7 +139,7 @@ func (r *Reactor) callReactorScript(hook string, yield bool, args ...interface{}
 		return nil, err
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
-		MapActorPID: mapInstance.GetActorPID(),
+		ActorPID: mapInstance.LogicActorPID(),
 	})
 	filtered := make([]interface{}, 0, len(args))
 	for _, arg := range args {

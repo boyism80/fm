@@ -205,7 +205,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	character.Stance = constant.StanceDefaultValue
 
-	targetMapPID := mapInstance.GetActorPID()
+	targetMapPID := mapInstance.LogicActorPID()
 	if targetMapPID == nil {
 		return fmt.Errorf("LogicActor PID not found for map %d", mapID)
 	}

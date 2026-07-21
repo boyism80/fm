@@ -43,7 +43,7 @@ type ServerCore struct {
 	clientFactory      func(net.Conn, int) (Client, error)
 	config             *ServerConfig
 	rootContext        *actor.RootContext
-	nilMapActorPID     *actor.PID
+	nilActorPID        *actor.PID
 }
 
 type ServerConfig struct {
@@ -80,8 +80,8 @@ func (s *ServerCore) SetRootContext(root *actor.RootContext) {
 	s.rootContext = root
 }
 
-func (s *ServerCore) SetNilMapActorPID(pid *actor.PID) {
-	s.nilMapActorPID = pid
+func (s *ServerCore) SetNilActorPID(pid *actor.PID) {
+	s.nilActorPID = pid
 }
 
 func (s *ServerCore) GetRootContext() *actor.RootContext {
@@ -287,11 +287,11 @@ func (s *ServerCore) processPacket(client Client, encryptedData []byte) (bool, e
 	}
 	if logicActorPID == nil {
 
-		if s.nilMapActorPID == nil {
+		if s.nilActorPID == nil {
 			log.Printf("No LogicActor PID for client and nil LogicActor PID not set")
 			return false, fmt.Errorf("no LogicActor PID for client and nil LogicActor PID not set")
 		}
-		logicActorPID = s.nilMapActorPID
+		logicActorPID = s.nilActorPID
 	}
 
 	msg := &c_actor.HandlePacket{

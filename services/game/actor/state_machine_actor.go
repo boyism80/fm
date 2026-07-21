@@ -102,7 +102,7 @@ func (a *StateMachineActor) beginAttach(ctx actor.Context) {
 			a.attachFailed = true
 			continue
 		}
-		home := m.MapActorPID()
+		home := m.HomeActorPID()
 		if home == nil {
 			a.attachFailed = true
 			continue
@@ -164,7 +164,7 @@ func (a *StateMachineActor) beginDetach(ctx actor.Context) {
 		if m == nil {
 			continue
 		}
-		home := m.MapActorPID()
+		home := m.HomeActorPID()
 		if home == nil {
 			continue
 		}
@@ -219,7 +219,7 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorContext: ctx,
-		MapActorPID:  ctx.Self(),
+		ActorPID:     ctx.Self(),
 	})
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()

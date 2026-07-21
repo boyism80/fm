@@ -753,7 +753,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			pid = cfg.ActorContext.Self()
 		}
 		if pid == nil {
-			pid = cfg.MapActorPID
+			pid = cfg.ActorPID
 		}
 		if pid == nil {
 			return 0

@@ -93,7 +93,7 @@ func (gs *GameServer) SaveAllCharactersAsync(ctx actor.Context) *async.Promise {
 			if m == nil {
 				continue
 			}
-			pid := m.GetActorPID()
+			pid := m.LogicActorPID()
 			if pid == nil {
 				continue
 			}

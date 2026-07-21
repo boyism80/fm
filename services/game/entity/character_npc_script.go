@@ -47,7 +47,7 @@ func (ch *Character) OpenNpc(actx actor.Context, npcID uint32, caller *lua.LStat
 	}
 	luax.SetConfiguration(luaThread, luax.Configuration{
 		ActorContext: actx,
-		MapActorPID:  mapInstance.GetActorPID(),
+		ActorPID:     mapInstance.LogicActorPID(),
 		KeepAlive:    true,
 	})
 	luax.CallAsync(root, luaThread, "on_click", ch, npcID).Then(func(_ interface{}) (interface{}, error) {

@@ -26,7 +26,7 @@ func (h *RunReactorRespawnHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	if targetMap == nil {
 		return
 	}
-	pid := targetMap.GetActorPID()
+	pid := targetMap.LogicActorPID()
 	if pid == nil || !pid.Equal(ctx.Self()) {
 		return
 	}

@@ -14,7 +14,7 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
-	pid := msg.TargetMap.GetActorPID()
+	pid := msg.TargetMap.LogicActorPID()
 	if pid == nil || !pid.Equal(ctx.Self()) {
 		return
 	}

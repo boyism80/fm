@@ -1655,7 +1655,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			luax.SetConfiguration(thread, luax.Configuration{
 				ActorContext: cfg.ActorContext,
-				MapActorPID:  mapInstance.GetActorPID(),
+				ActorPID:     mapInstance.LogicActorPID(),
 				KeepAlive:    true,
 			})
 			p := luax.CallAsync(root, thread, funcName, args...)

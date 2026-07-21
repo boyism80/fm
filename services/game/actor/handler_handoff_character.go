@@ -12,7 +12,7 @@ func (h *HandoffCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
-	targetPID := msg.TargetMap.GetActorPID()
+	targetPID := msg.TargetMap.LogicActorPID()
 	if targetPID == nil {
 		return
 	}
@@ -20,7 +20,7 @@ func (h *HandoffCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 	if source == nil {
 		return
 	}
-	if pid := source.GetActorPID(); pid == nil || !pid.Equal(ctx.Self()) {
+	if pid := source.LogicActorPID(); pid == nil || !pid.Equal(ctx.Self()) {
 		return
 	}
 	if err := source.RemovePlayer(msg.Character.GetID()); err != nil {

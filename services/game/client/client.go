@@ -58,7 +58,7 @@ func (c *GameClient) GetLogicActorPID() *actor.PID {
 	if m == nil {
 		return nil
 	}
-	return m.GetActorPID()
+	return m.LogicActorPID()
 }
 
 func (c *GameClient) SetTransferDisconnect(v bool) {

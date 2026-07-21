@@ -10,7 +10,7 @@ import (
 
 type Configuration struct {
 	ActorContext actor.Context
-	MapActorPID  *actor.PID
+	ActorPID     *actor.PID
 	KeepAlive    bool
 	CallPromise  *async.Promise
 }
