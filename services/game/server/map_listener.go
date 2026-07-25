@@ -1,8 +1,6 @@
 package server
 
 import (
-	"log"
-
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
@@ -33,10 +31,6 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 			Channel:   l.gs.config.ChannelId,
 			Character: characterDTO,
 		}
-		log.Printf("[pos-debug] login char=%d map=%d pos=(%d,%d) stance=%d spawn_point=%d",
-			character.GetID(), mapInstance.GetMapID(),
-			characterDTO.Position.X, characterDTO.Position.Y,
-			characterDTO.Stance, characterDTO.SpawnPoint)
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
 		if character.Listener != nil {
 			character.Listener.OnShowGuildInfo(character)
@@ -50,10 +44,6 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 			Character: characterDTO,
 			Channel:   0,
 		}
-		log.Printf("[pos-debug] warp char=%d map=%d pos=(%d,%d) stance=%d spawn_point=%d",
-			character.GetID(), mapInstance.GetMapID(),
-			characterDTO.Position.X, characterDTO.Position.Y,
-			characterDTO.Stance, characterDTO.SpawnPoint)
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}
 	if character.IsHidden() {
