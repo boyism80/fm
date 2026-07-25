@@ -20,7 +20,7 @@ type StateMachineActor struct {
 	pendingAttach  int
 	attachFailed   bool
 	attachComplete bool
-	pendingHooks   []*entity.CallStateMachineHook
+	pendingMsgs    []interface{}
 	pendingDetach  int
 	detaching      bool
 }
@@ -43,15 +43,25 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 		a.beginAttach(ctx)
 	case *AttachStateMachineAck:
 		a.handleAttachAck(ctx, msg)
-	case *entity.EnterStateMachinePlayers:
-		for _, ch := range a.StateMachine.Players() {
-			a.callHook(ctx, "on_player_entry", a.StateMachine, ch)
+	case *entity.FinishStateMachineCreate:
+		a.finishCreate(ctx)
+	case *entity.EnterStateMachinePlayer:
+		if a.attachComplete {
+			a.handleEnterPlayer(ctx, msg)
+		} else {
+			a.pendingMsgs = append(a.pendingMsgs, msg)
+		}
+	case *entity.StartStateMachine:
+		if a.attachComplete {
+			a.handleStart(ctx)
+		} else {
+			a.pendingMsgs = append(a.pendingMsgs, msg)
 		}
 	case *entity.CallStateMachineHook:
 		if a.attachComplete {
 			a.callHook(ctx, msg.Hook, msg.Args...)
 		} else {
-			a.pendingHooks = append(a.pendingHooks, msg)
+			a.pendingMsgs = append(a.pendingMsgs, msg)
 		}
 	case *entity.LeaveStateMachinePlayer:
 		if msg != nil && a.StateMachine != nil {
@@ -159,19 +169,63 @@ func (a *StateMachineActor) handleAttachAck(ctx actor.Context, msg *AttachStateM
 
 func (a *StateMachineActor) finishAttach(ctx actor.Context) {
 	if a.attachFailed {
-		a.pendingHooks = nil
+		a.pendingMsgs = nil
 		a.StateMachine.AbortStart()
 		a.beginDetach(ctx)
 		return
 	}
+	if a.StateMachine == nil || a.StateMachine.Group == nil {
+		a.finishCreate(ctx)
+		return
+	}
+	if a.luaRoot == nil {
+		a.luaRoot = luax.NewState()
+	}
+	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group.ScriptPath)
+	if err != nil {
+		a.finishCreate(ctx)
+		return
+	}
+	if !luax.HasFunc(thread, "on_create") {
+		luax.Close(thread)
+		a.finishCreate(ctx)
+		return
+	}
+	luax.Close(thread)
+	a.callHook(ctx, "on_create", a.StateMachine)
+}
+
+func (a *StateMachineActor) finishCreate(ctx actor.Context) {
+	if a.attachComplete {
+		return
+	}
 	a.attachComplete = true
-	a.callHook(ctx, "on_setup", a.StateMachine)
-	for _, msg := range a.pendingHooks {
-		if msg != nil {
-			a.callHook(ctx, msg.Hook, msg.Args...)
+	pending := a.pendingMsgs
+	a.pendingMsgs = nil
+	for _, msg := range pending {
+		switch m := msg.(type) {
+		case *entity.EnterStateMachinePlayer:
+			a.handleEnterPlayer(ctx, m)
+		case *entity.StartStateMachine:
+			a.handleStart(ctx)
+		case *entity.CallStateMachineHook:
+			if m != nil {
+				a.callHook(ctx, m.Hook, m.Args...)
+			}
 		}
 	}
-	a.pendingHooks = nil
+}
+
+func (a *StateMachineActor) handleEnterPlayer(ctx actor.Context, msg *entity.EnterStateMachinePlayer) {
+	if msg == nil || msg.Character == nil || a.StateMachine == nil {
+		return
+	}
+	a.StateMachine.Register(msg.Character)
+	a.callHook(ctx, "on_player_enter", a.StateMachine, msg.Character)
+}
+
+func (a *StateMachineActor) handleStart(ctx actor.Context) {
+	a.callHook(ctx, "on_start", a.StateMachine)
 }
 
 func (a *StateMachineActor) beginDetach(ctx actor.Context) {
@@ -242,10 +296,16 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	}
 	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group.ScriptPath)
 	if err != nil {
+		if hook == "on_create" {
+			a.finishCreate(ctx)
+		}
 		return
 	}
 	if !luax.HasFunc(thread, hook) {
 		luax.Close(thread)
+		if hook == "on_create" {
+			a.finishCreate(ctx)
+		}
 		return
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
@@ -255,11 +315,14 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()
 	luax.CallAsync(a.luaRoot, thread, hook, args...).Then(func(interface{}) (interface{}, error) {
-		if hook == "on_setup" && root != nil {
-			root.Send(self, &entity.EnterStateMachinePlayers{})
+		if hook == "on_create" && root != nil {
+			root.Send(self, &entity.FinishStateMachineCreate{})
 		}
 		return nil, nil
 	}).OnError(func(err error) {
 		fmt.Printf("state machine %s hook %s: %v\n", a.StateMachine.Group.Name, hook, err)
+		if hook == "on_create" && root != nil {
+			root.Send(self, &entity.FinishStateMachineCreate{})
+		}
 	})
 }

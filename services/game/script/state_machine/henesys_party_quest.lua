@@ -20,7 +20,7 @@ return {
 		group:declare_exit_map(EXIT_MAP)
 	end,
 
-	on_setup = function(sm)
+	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
 		group:set_property("stage", "0")
@@ -28,10 +28,13 @@ return {
 		local map = group:map(STAGE_MAP)
 		map:reset()
 		map:block_gen(false)
+	end,
+
+	on_start = function(sm)
 		sm:start_timer(DURATION_MS)
 	end,
 
-	on_player_entry = function(sm, player)
+	on_player_enter = function(sm, player)
 		player:map(STAGE_MAP)
 		player:try_party_quest(RANKING_QUEST)
 	end,

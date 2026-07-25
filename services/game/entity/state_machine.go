@@ -119,6 +119,22 @@ func (sm *StateMachine) RequestLeave(ch *Character, warpLeaver bool) {
 	})
 }
 
+func (sm *StateMachine) EnterPlayer(ch *Character) {
+	if sm == nil || ch == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+		return
+	}
+	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &EnterStateMachinePlayer{
+		Character: ch,
+	})
+}
+
+func (sm *StateMachine) Start() {
+	if sm == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+		return
+	}
+	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &StartStateMachine{})
+}
+
 func (sm *StateMachine) unregisterLocked(ch *Character) {
 	if ch == nil {
 		return
@@ -395,7 +411,13 @@ type BootstrapStateMachine struct{}
 
 type StopStateMachine struct{}
 
-type EnterStateMachinePlayers struct{}
+type FinishStateMachineCreate struct{}
+
+type EnterStateMachinePlayer struct {
+	Character *Character
+}
+
+type StartStateMachine struct{}
 
 type LeaveStateMachinePlayer struct {
 	Character  *Character

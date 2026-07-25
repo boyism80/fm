@@ -98,6 +98,32 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(machine.ScaleLevel))
 			return 1
 		},
+		"enter_player": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			chUd := L.CheckUserData(2)
+			ch, ok := chUd.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(2, "Character expected")
+				return 0
+			}
+			machine.EnterPlayer(ch)
+			return 0
+		},
+		"start": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			machine.Start()
+			return 0
+		},
 		"unregister": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			machine, ok := ud.Value.(*StateMachine)

@@ -37,7 +37,7 @@ return {
 		group:declare_exit_map(FAIL_EXIT)
 	end,
 
-	on_setup = function(sm)
+	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
 		sm:set_property("stage1progress", "0")
@@ -47,10 +47,13 @@ return {
 			map:reset()
 			map:respawn(true)
 		end
+	end,
+
+	on_start = function(sm)
 		sm:start_timer(DURATION_MS)
 	end,
 
-	on_player_entry = function(sm, player)
+	on_player_enter = function(sm, player)
 		player:map(stage_maps[1])
 	end,
 

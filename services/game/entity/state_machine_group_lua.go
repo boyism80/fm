@@ -126,6 +126,49 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, sm))
 			return 1
 		},
+		"create": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			id := L.CheckString(2)
+			opts := CreateOpts{}
+			if L.GetTop() >= 3 && L.Get(3).Type() != lua.LTNil {
+				leaderUd := L.CheckUserData(3)
+				leader, ok := leaderUd.Value.(*Character)
+				if !ok || leader == nil {
+					L.ArgError(3, "Character expected")
+					return 0
+				}
+				opts.Leader = leader
+				opts.ScaleLevel = int(leader.GetLevel())
+			}
+			if L.GetTop() >= 4 && L.Get(4).Type() != lua.LTNil {
+				partyUd := L.CheckUserData(4)
+				party, ok := partyUd.Value.(*Party)
+				if !ok || party == nil {
+					L.ArgError(4, "Party expected")
+					return 0
+				}
+				opts.Party = party
+			}
+			if L.GetTop() >= 5 {
+				maxLevel := L.CheckInt(5)
+				if maxLevel > 0 && opts.ScaleLevel > maxLevel {
+					opts.ScaleLevel = maxLevel
+				}
+			}
+			sm, err := group.Create(id, opts)
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 2
+			}
+			L.Push(luax.NewLuable(L, sm))
+			return 1
+		},
 		"start_party": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			group, ok := ud.Value.(*StateMachineGroup)

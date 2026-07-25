@@ -31,7 +31,7 @@ return {
 		sm:add_kill(player, #mobs)
 	end,
 
-	on_setup = function(sm)
+	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
 		for _, map_id in ipairs(stage_maps) do
@@ -43,10 +43,13 @@ return {
 				portal:script("enter_kpq")
 			end
 		end
+	end,
+
+	on_start = function(sm)
 		sm:start_timer(duration_ms)
 	end,
 
-	on_player_entry = function(sm, player)
+	on_player_enter = function(sm, player)
 		player:map(stage_maps[1])
 		player:try_party_quest(ranking_quest_id)
 	end,
