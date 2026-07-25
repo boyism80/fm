@@ -162,11 +162,7 @@ func (model *Map) GetSpawnPosition(spawnPoint uint8) (types.Point[int16], bool) 
 	if !ok {
 		return types.Point[int16]{}, false
 	}
-	position := portal.Position
-	if snapped := model.PointBelow(position); snapped != nil {
-		position = *snapped
-	}
-	return position, true
+	return portal.Position, true
 }
 
 func (model *Map) FindClosestPortalSpawnID(pos types.Point[int16]) uint8 {

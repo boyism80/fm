@@ -17,7 +17,7 @@ import (
 )
 
 type MapListener interface {
-	OnPlayerAdded(ctx actor.Context, mapInstance *Map, character *Character, init bool)
+	OnPlayerAdded(ctx actor.Context, mapInstance *Map, character *Character, spawnPoint uint8, init bool)
 	OnPlayerRemoved(mapInstance *Map, character *Character)
 	OnPlayerMoved(mapInstance *Map, character *Character)
 	OnPlayerMove(mapInstance *Map, character *Character, startPoint types.Vector2[int16], fragments []dto.MoveFragment)
@@ -197,7 +197,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	m.sections.add(character)
 	m.EnsureLuaRoot(ctx)
 
-	m.listener.OnPlayerAdded(ctx, m, character, init)
+	m.listener.OnPlayerAdded(ctx, m, character, spawnPoint, init)
 	m.controllerTable.EnterPlayer(character)
 
 	for _, summon := range character.GetSummons() {

@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"log"
 	"time"
 
 	pconst "github.com/boyism80/fm/protocol/constant"
@@ -1202,6 +1204,23 @@ func (l *CharacterListenerImpl) OnPlayerMove(ch *entity.Character, startPoint ty
 		Fragments:  fragments,
 		StartPoint: startPoint,
 	}
+
+	mapID := uint32(0)
+	if m := ch.GetMap(); m != nil {
+		mapID = m.GetMapID()
+	}
+	abs := ""
+	for i, frag := range fragments {
+		if move, ok := frag.(*dto.AbsoluteLifeMovement); ok {
+			abs += fmt.Sprintf(" abs[%d]=(%d,%d) fh=%d", i, move.Position.X, move.Position.Y, move.Foothold)
+		}
+	}
+	log.Printf("[pos-debug] move char=%d map=%d packet_pos=(%d,%d) start=(%d,%d) after=(%d,%d) stance=%d frags=%d%s",
+		ch.GetID(), mapID,
+		movePacket.Character.Position.X, movePacket.Character.Position.Y,
+		startPoint.X, startPoint.Y,
+		ch.Position.X, ch.Position.Y,
+		ch.Stance, len(fragments), abs)
 
 	ch.Broadcast(movePacket, nil)
 }

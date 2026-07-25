@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -136,6 +137,14 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 			}
 		}
 	}
+	mapID := uint32(0)
+	if m := ch.GetMap(); m != nil {
+		mapID = m.GetMapID()
+	}
+	log.Printf("[pos-debug] spawn_player char=%d viewer=%d map=%d pos=(%d,%d) stance=%d",
+		ch.GetID(), viewer.GetID(), mapID,
+		spawnPacket.Character.Position.X, spawnPacket.Character.Position.Y,
+		spawnPacket.Character.Stance)
 	viewer.Send(spawnPacket, types.SEND_POLICY_ENCRYPT)
 
 	if mountID, active := ch.GetRiddingInfo(); active {

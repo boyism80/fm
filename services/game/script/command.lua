@@ -608,9 +608,9 @@ local command_funcs = {
 				me:notice("사용법: /맵이동 <맵이름|맵ID> [스폰포인트]")
 				return true
 			end
-			local spawn = 1
+			local spawn = 0
 			if args[2] then
-				spawn = tonumber(args[2]) or 1
+				spawn = tonumber(args[2]) or 0
 			end
 			local map_arg = args[1]
 			local map_id = tonumber(map_arg)

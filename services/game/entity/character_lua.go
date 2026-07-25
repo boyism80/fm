@@ -2718,7 +2718,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.ArgError(2, "Map, map name (string), or map id (number) expected")
 					return 0
 				}
-				spawnPoint := uint8(1)
+				spawnPoint := uint8(0)
 				allowRelocate := false
 				if argc >= 3 {
 					spawnPoint = uint8(L.CheckInt(3))

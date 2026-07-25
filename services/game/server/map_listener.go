@@ -1,6 +1,8 @@
 package server
 
 import (
+	"log"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
@@ -19,17 +21,22 @@ func NewGameMapListener(gs *GameServer) *MapListenerImpl {
 	}
 }
 
-func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.Map, character *entity.Character, init bool) {
+func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.Map, character *entity.Character, spawnPoint uint8, init bool) {
 	if mapInstance == nil {
 		return
 	}
 
 	if init {
 		characterDTO := character.ToFullDTO()
+		characterDTO.SpawnPoint = spawnPoint
 		loginPacket := &response.Login{
 			Channel:   l.gs.config.ChannelId,
 			Character: characterDTO,
 		}
+		log.Printf("[pos-debug] login char=%d map=%d pos=(%d,%d) stance=%d spawn_point=%d",
+			character.GetID(), mapInstance.GetMapID(),
+			characterDTO.Position.X, characterDTO.Position.Y,
+			characterDTO.Stance, characterDTO.SpawnPoint)
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
 		if character.Listener != nil {
 			character.Listener.OnShowGuildInfo(character)
@@ -38,10 +45,15 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		character.Buffs.EmitAllBuffAddedEvents()
 	} else {
 		characterDTO := character.ToDTO()
+		characterDTO.SpawnPoint = spawnPoint
 		warpPacket := &response.Warp{
 			Character: characterDTO,
 			Channel:   0,
 		}
+		log.Printf("[pos-debug] warp char=%d map=%d pos=(%d,%d) stance=%d spawn_point=%d",
+			character.GetID(), mapInstance.GetMapID(),
+			characterDTO.Position.X, characterDTO.Position.Y,
+			characterDTO.Stance, characterDTO.SpawnPoint)
 		character.Send(warpPacket, types.SEND_POLICY_ENCRYPT)
 	}
 	if character.IsHidden() {
