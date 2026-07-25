@@ -2,6 +2,8 @@
 
 local combat = require("script/lib/combat")
 
-function on_attack_4111005(me, skill, damages)
-	combat.apply_venom(me, damages, Skill.Venom)
-end
+return {
+	on_attack = function(me, skill, damages)
+		combat.apply_venom(me, damages, Skill.Venom)
+	end
+}

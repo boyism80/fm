@@ -56,7 +56,7 @@ func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) 
 		log.Printf("summon skill script %s: %v", scriptPath, err)
 		return nil
 	}
-	luax.CallAsync(root, thread, fmt.Sprintf("on_summon_skill_%d", req.SubSkillID), character, summon, skillEntry, params).OnError(func(err error) {
+	luax.CallAsync(root, thread, "on_summon_skill", character, summon, skillEntry, params).OnError(func(err error) {
 		log.Printf("summon skill script %s: %v", scriptPath, err)
 	})
 	return nil

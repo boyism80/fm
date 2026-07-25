@@ -2,6 +2,8 @@
 
 local combat = require("script/lib/combat")
 
-function on_attack_4101005(me, skill, damages)
-	combat.drain_hp_from_damage(me, skill, damages)
-end
+return {
+	on_attack = function(me, skill, damages)
+		combat.drain_hp_from_damage(me, skill, damages)
+	end
+}

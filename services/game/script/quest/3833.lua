@@ -86,42 +86,44 @@ local function tier_for(n)
 	return nil
 end
 
-function on_end(me, npc)
-	local q = me:quest(quest_id)
-	if q == nil then
-		return
-	end
+return {
+	on_end = function(me, npc)
+		local q = me:quest(quest_id)
+		if q == nil then
+			return
+		end
 
-	if not q:started() then
-		q:start(npc, true)
-		return
-	end
+		if not q:started() then
+			q:start(npc, true)
+			return
+		end
 
-	local n_item = item_count(me, 4000294)
-	local tier = tier_for(n_item)
-	if tier == nil then
-		me:dialog(npc, "아직 100년 묵은 도라지는 구하지 못한 모양이군. 그건 늙은 도라지를 잡아 얻을 수 있다네.", false, false)
-		return
-	end
+		local n_item = item_count(me, 4000294)
+		local tier = tier_for(n_item)
+		if tier == nil then
+			me:dialog(npc, "아직 100년 묵은 도라지는 구하지 못한 모양이군. 그건 늙은 도라지를 잡아 얻을 수 있다네.", false, false)
+			return
+		end
 
-	local file = "#fUI/UIWindow.img/QuestIcon/"
-	local str = string.format(tier.dialog, n_item)
-	str = str .. file .. "4/0#\r\n" .. file .. "5/0#\r\n\r\n" .. file .. "8/0# " .. tier.exp .. " exp"
-	if not me:dialog(npc, str, false, true) then
-		return
-	end
+		local file = "#fUI/UIWindow.img/QuestIcon/"
+		local str = string.format(tier.dialog, n_item)
+		str = str .. file .. "4/0#\r\n" .. file .. "5/0#\r\n\r\n" .. file .. "8/0# " .. tier.exp .. " exp"
+		if not me:dialog(npc, str, false, true) then
+			return
+		end
 
-	local code = me:exchange(
-		{ item = { [4000294] = n_item } },
-		{ item = tier.reward, exp = tier.exp }
-	)
-	if code == ExchangeResult.LackCapacity then
-		me:dialog(npc, "뭘 그렇게 많이 들고 다니는건가? 인벤토리에 빈 칸이 있는지 확인해 주게.", false, false)
-		return
+		local code = me:exchange(
+			{ item = { [4000294] = n_item } },
+			{ item = tier.reward, exp = tier.exp }
+		)
+		if code == ExchangeResult.LackCapacity then
+			me:dialog(npc, "뭘 그렇게 많이 들고 다니는건가? 인벤토리에 빈 칸이 있는지 확인해 주게.", false, false)
+			return
+		end
+		if code ~= ExchangeResult.OK then
+			return
+		end
+		q:force_complete(npc)
+		me:dialog(npc, tier.ok, false, false)
 	end
-	if code ~= ExchangeResult.OK then
-		return
-	end
-	q:force_complete(npc)
-	me:dialog(npc, tier.ok, false, false)
-end
+}

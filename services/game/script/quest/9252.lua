@@ -2,12 +2,14 @@
 
 local quest_id = 9252
 
-function on_start(me, npc)
-	local q = me:quest(quest_id)
-	if q == nil then
-		return
-	end
+return {
+	on_start = function(me, npc)
+		local q = me:quest(quest_id)
+		if q == nil then
+			return
+		end
 
-	q:start(npc, true)
-	me:show_quest_completion(9252)
-end
+		q:start(npc, true)
+		me:show_quest_completion(9252)
+	end
+}

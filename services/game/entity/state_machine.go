@@ -8,7 +8,6 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type StateMachine struct {
@@ -365,7 +364,7 @@ func (sm *StateMachine) callOnFinish(ctx actor.Context, scriptPath string) {
 	if err != nil {
 		return
 	}
-	if thread.GetGlobal("on_finish").Type() != lua.LTFunction {
+	if !luax.HasFunc(thread, "on_finish") {
 		luax.Close(thread)
 		return
 	}
@@ -434,12 +433,12 @@ func (ch *Character) TryPartyQuest(questID uint32) {
 	if ch == nil || questID == 0 {
 		return
 	}
-	ch.RunQuestHook(questID, fmt.Sprintf("on_quest_try_%d", questID))
+	ch.RunQuestHook(questID, "on_quest_try")
 }
 
 func (ch *Character) EndPartyQuest(questID uint32) {
 	if ch == nil || questID == 0 {
 		return
 	}
-	ch.RunQuestHook(questID, fmt.Sprintf("on_quest_end_%d", questID))
+	ch.RunQuestHook(questID, "on_quest_end")
 }

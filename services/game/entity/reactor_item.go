@@ -105,8 +105,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 }
 
 func (r *Reactor) matchesItemDrop(item Item) bool {
-	reactorID := r.Wz.ID
-	hook := fmt.Sprintf("on_reactor_%d", reactorID)
+	hook := "on_reactor"
 	result, err := r.callReactorScript(hook, false, r, item)
 	if err != nil || result == nil || result == lua.LNil {
 		event := r.currentEvent()

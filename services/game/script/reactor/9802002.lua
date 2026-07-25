@@ -1,5 +1,7 @@
 -- Reactor name (Reactor.wz/9802002.img.xml): 숫자 상자
 
-function on_reactor_9802002(reactor)
-	reactor:drop_items()
-end
+return {
+	on_reactor = function(reactor)
+		reactor:drop_items()
+	end
+}

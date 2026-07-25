@@ -48,7 +48,7 @@ func (h *GuildOperation) resumeGuildCreate(ch *entity.Character, result gamecons
 	if root == nil {
 		return
 	}
-	if _, _, err := luax.Resume(root, thread, "", lua.LNumber(result)); err != nil {
+	if _, _, err := luax.Resume(root, thread, lua.LNumber(result)); err != nil {
 		log.Printf("GuildOperation(create): failed to resume npc script character=%d: %v", ch.GetID(), err)
 	}
 }

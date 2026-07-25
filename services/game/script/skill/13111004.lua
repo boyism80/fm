@@ -2,14 +2,16 @@
 
 local util = require("script/lib/skill")
 
-function on_activated_13111004(me, skill, params)
-	util.mark_archer_puppet(me, skill, params)
-end
+return {
+	on_activated = function(me, skill, params)
+		util.mark_archer_puppet(me, skill, params)
+	end,
 
-function on_buff_13111004(me, skill)
-	util.apply_archer_puppet_buff(me, skill)
-end
+	on_buff = function(me, skill)
+		util.apply_archer_puppet_buff(me, skill)
+	end,
 
-function on_unbuff_13111004(me, skill)
-	util.apply_archer_puppet_unbuff(me, skill)
-end
+	on_unbuff = function(me, skill)
+		util.apply_archer_puppet_unbuff(me, skill)
+	end
+}

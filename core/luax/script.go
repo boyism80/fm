@@ -2,16 +2,65 @@ package luax
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/boyism80/fm/core/async"
 	lua "github.com/yuin/gopher-lua"
 )
+
+type threadScript struct {
+	path string
+	mod  *lua.LTable
+}
+
+var threadScripts = struct {
+	sync.RWMutex
+	m map[*lua.LState]threadScript
+}{
+	m: make(map[*lua.LState]threadScript),
+}
+
+func setThreadScript(thread *lua.LState, path string, mod *lua.LTable) {
+	if thread == nil {
+		return
+	}
+	threadScripts.Lock()
+	defer threadScripts.Unlock()
+	threadScripts.m[thread] = threadScript{path: path, mod: mod}
+}
+
+func clearThreadScript(thread *lua.LState) {
+	if thread == nil {
+		return
+	}
+	threadScripts.Lock()
+	defer threadScripts.Unlock()
+	delete(threadScripts.m, thread)
+}
+
+func threadFunc(thread *lua.LState, name string) *lua.LFunction {
+	if thread == nil || name == "" {
+		return nil
+	}
+	threadScripts.RLock()
+	meta, ok := threadScripts.m[thread]
+	threadScripts.RUnlock()
+	if !ok {
+		return nil
+	}
+	return ModuleFunc(meta.mod, name)
+}
+
+func HasFunc(thread *lua.LState, name string) bool {
+	return threadFunc(thread, name) != nil
+}
 
 func Close(thread *lua.LState) {
 	if thread == nil {
 		return
 	}
 	ClearConfiguration(thread)
+	clearThreadScript(thread)
 	thread.Close()
 }
 
@@ -43,12 +92,25 @@ func completeCall(thread *lua.LState, values []lua.LValue, err error) {
 	promise.SetResult(values)
 }
 
-func Call(thread *lua.LState, funcName string, args ...interface{}) (lua.LValue, error) {
+func NewThread(root *lua.LState, path string) (*lua.LState, error) {
+	if root == nil {
+		return nil, fmt.Errorf("nil lua root")
+	}
+	mod, err := LoadModule(root, path)
+	if err != nil {
+		return nil, err
+	}
+	co, _ := root.NewThread()
+	setThreadScript(co, path, mod)
+	return co, nil
+}
+
+func Call(thread *lua.LState, hook string, args ...interface{}) (lua.LValue, error) {
 	if thread == nil {
 		return nil, fmt.Errorf("nil lua thread")
 	}
-	f := thread.GetGlobal(funcName)
-	if f.Type() != lua.LTFunction {
+	fn := threadFunc(thread, hook)
+	if fn == nil {
 		if shouldAutoClose(thread) {
 			Close(thread)
 		}
@@ -58,7 +120,7 @@ func Call(thread *lua.LState, funcName string, args ...interface{}) (lua.LValue,
 	if err != nil {
 		return nil, err
 	}
-	thread.Push(f)
+	thread.Push(fn)
 	for _, lv := range lvArgs {
 		thread.Push(lv)
 	}
@@ -66,7 +128,7 @@ func Call(thread *lua.LState, funcName string, args ...interface{}) (lua.LValue,
 		if shouldAutoClose(thread) {
 			Close(thread)
 		}
-		return nil, fmt.Errorf("%s: %w", funcName, err)
+		return nil, fmt.Errorf("%s: %w", hook, err)
 	}
 	ret := thread.Get(-1)
 	thread.Pop(1)
@@ -76,38 +138,37 @@ func Call(thread *lua.LState, funcName string, args ...interface{}) (lua.LValue,
 	return ret, nil
 }
 
-func CallAsync(root *lua.LState, thread *lua.LState, funcName string, args ...interface{}) *async.Promise {
+func CallAsync(root *lua.LState, thread *lua.LState, hook string, args ...interface{}) *async.Promise {
 	promise := async.NewDeferred()
 	if root == nil || thread == nil {
 		promise.SetError(fmt.Errorf("nil lua root/thread"))
 		return promise
 	}
-	f := thread.GetGlobal(funcName)
-	if f.Type() != lua.LTFunction {
+	fn := threadFunc(thread, hook)
+	if fn == nil {
 		promise.SetResult(nil)
+		if shouldAutoClose(thread) {
+			Close(thread)
+		}
 		return promise
 	}
 	cfg, _ := GetConfiguration(thread)
 	cfg.CallPromise = promise
 	SetConfiguration(thread, cfg)
-	_, _, err := Resume(root, thread, funcName, args...)
+	_, _, err := resumeFn(root, thread, fn, hook, args...)
 	if err != nil && !promise.Completed() {
 		promise.SetError(err)
 	}
 	return promise
 }
 
-func Resume(root *lua.LState, thread *lua.LState, funcName string, args ...interface{}) (lua.ResumeState, []lua.LValue, error) {
+func Resume(root *lua.LState, thread *lua.LState, args ...interface{}) (lua.ResumeState, []lua.LValue, error) {
+	return resumeFn(root, thread, nil, "", args...)
+}
+
+func resumeFn(root *lua.LState, thread *lua.LState, fn *lua.LFunction, hook string, args ...interface{}) (lua.ResumeState, []lua.LValue, error) {
 	if root == nil || thread == nil {
 		return lua.ResumeOK, nil, fmt.Errorf("nil lua root/thread")
-	}
-	var fn *lua.LFunction
-	if funcName != "" {
-		f := thread.GetGlobal(funcName)
-		if f.Type() != lua.LTFunction {
-			return lua.ResumeOK, nil, nil
-		}
-		fn = f.(*lua.LFunction)
 	}
 	lvArgs, err := toLValues(thread, args)
 	if err != nil {
@@ -119,8 +180,8 @@ func Resume(root *lua.LState, thread *lua.LState, funcName string, args ...inter
 	state, resumeErr, values := root.Resume(thread, fn, lvArgs...)
 	if resumeErr != nil {
 		err := resumeErr
-		if funcName != "" {
-			err = fmt.Errorf("%s: %w", funcName, resumeErr)
+		if hook != "" {
+			err = fmt.Errorf("%s: %w", hook, resumeErr)
 		}
 		completeCall(thread, nil, err)
 		if shouldAutoClose(thread) {

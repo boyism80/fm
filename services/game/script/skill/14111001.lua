@@ -2,6 +2,8 @@
 
 local combat = require("script/lib/combat")
 
-function on_activated_14111001(me, skill, params)
-	combat.apply_shadow_web_skill(me, skill)
-end
+return {
+	on_activated = function(me, skill, params)
+		combat.apply_shadow_web_skill(me, skill)
+	end
+}

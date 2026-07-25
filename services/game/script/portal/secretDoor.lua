@@ -1,3 +1,5 @@
-function on_enter(me)
-	me:open_npc(2111024)
-end
+return {
+	on_enter = function(me)
+		me:open_npc(2111024)
+	end
+}

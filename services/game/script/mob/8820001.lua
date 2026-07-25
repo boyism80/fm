@@ -2,6 +2,8 @@
 
 local pinkbean = require("script/lib/pinkbean")
 
-function on_mob_die_8820001(mob, attacker, map)
-	pinkbean.clear_map_after(map, 3000)
-end
+return {
+	on_mob_die = function(mob, attacker, map)
+		pinkbean.clear_map_after(map, 3000)
+	end
+}

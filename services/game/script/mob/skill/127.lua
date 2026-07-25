@@ -1,9 +1,5 @@
 -- Mob skill name (Skill.wz/MobSkill.img.xml): mob skill 127
 
-function on_mob_skill_choose_127(mob, skill)
-    return true
-end
-
 local function dispel_skill_id(target)
     if target:hidden() then
         return
@@ -29,22 +25,28 @@ local function dispel_skill_id(target)
     end
 end
 
-function on_mob_skill_127(mob, controller, skill)
-    local effect = skill:effect()
-    local targets = {}
-    local bounds = effect.bounds
+return {
+	on_mob_skill_choose = function(mob, skill)
+		return true
+	end,
 
-    if bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0 then
-        for _, target in ipairs(mob:objects_in(bounds, ObjectType.Character)) do
-            table.insert(targets, target)
-        end
-    elseif controller ~= nil then
-        table.insert(targets, controller)
-    end
+	on_mob_skill = function(mob, controller, skill)
+		local effect = skill:effect()
+		local targets = {}
+		local bounds = effect.bounds
 
-    for _, target in ipairs(targets) do
-        dispel_skill_id(target)
-    end
+		if bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0 then
+		    for _, target in ipairs(mob:objects_in(bounds, ObjectType.Character)) do
+		        table.insert(targets, target)
+		    end
+		elseif controller ~= nil then
+		    table.insert(targets, controller)
+		end
 
-    return true
-end
+		for _, target in ipairs(targets) do
+		    dispel_skill_id(target)
+		end
+
+		return true
+	end
+}

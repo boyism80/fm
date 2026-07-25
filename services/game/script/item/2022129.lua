@@ -1,7 +1,9 @@
 -- Item name (String.wz/Consume.img.xml): 공격력 상승
 
-function on_buff(me, item)
-end
+return {
+	on_buff = function(me, item)
+	end,
 
-function on_unbuff(me, item)
-end
+	on_unbuff = function(me, item)
+	end
+}

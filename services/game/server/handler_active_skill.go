@@ -126,7 +126,7 @@ func (h *ActiveSkill) runActivatingHooks(root *lua.LState, ch *entity.Character,
 	if err != nil {
 		return true
 	}
-	skillHook := fmt.Sprintf("on_activating_%d", req.SkillID)
+	skillHook := "on_activating"
 	skillRet, err := luax.Call(skillThread, skillHook, ch, skillEntry, params)
 	if err != nil {
 		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
@@ -157,7 +157,7 @@ func (h *ActiveSkill) runActivatedHooks(ctx *core.ClientContext, root *lua.LStat
 	luax.SetConfiguration(skillThread, luax.Configuration{
 		ActorContext: ctx.ActorContext,
 	})
-	skillHook := fmt.Sprintf("on_activated_%d", req.SkillID)
+	skillHook := "on_activated"
 	if _, err := luax.Call(skillThread, skillHook, ch, skillEntry, params); err != nil {
 		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
 		return false

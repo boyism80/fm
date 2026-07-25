@@ -92,7 +92,7 @@ func (e *SkillBuff) CallOnBuffScript(ch *Character) {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
 		return
 	}
-	luax.CallAsync(root, thread, fmt.Sprintf("on_buff_%d", skillID), ch, e).OnError(func(err error) {
+	luax.CallAsync(root, thread, "on_buff", ch, e).OnError(func(err error) {
 		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
 	})
 }
@@ -117,7 +117,7 @@ func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
 		return
 	}
-	luax.CallAsync(root, thread, fmt.Sprintf("on_unbuff_%d", skillID), ch, e).OnError(func(err error) {
+	luax.CallAsync(root, thread, "on_unbuff", ch, e).OnError(func(err error) {
 		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
 	})
 }

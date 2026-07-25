@@ -82,7 +82,7 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 	for i, a := range args {
 		resumeArgs[i] = a
 	}
-	resumeState, _, err := luax.Resume(root, thread, "", resumeArgs...)
+	resumeState, _, err := luax.Resume(root, thread, resumeArgs...)
 	if err != nil {
 		log.Printf("Failed to resume dialog: %v", err)
 		character.ResetDialog()

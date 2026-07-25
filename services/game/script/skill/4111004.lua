@@ -39,6 +39,8 @@ local function apply_shadow_meso_cost(me, skill)
 	return true
 end
 
-function on_activating_4111004(me, skill, params)
-	return apply_shadow_meso_cost(me, skill)
-end
+return {
+	on_activating = function(me, skill, params)
+		return apply_shadow_meso_cost(me, skill)
+	end
+}

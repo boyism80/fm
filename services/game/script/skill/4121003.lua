@@ -2,30 +2,32 @@
 
 local combat = require("script/lib/combat")
 
-function on_mob_buff_4121003(mob, skill, causer)
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	if effect.x <= 0 then
-		return
-	end
-	mob:exp_rate(mob:exp_rate() + effect.x)
-	mob:drop_rate(mob:drop_rate() + effect.x)
-end
+return {
+	on_mob_buff = function(mob, skill, causer)
+		local effect = skill:effect()
+		if effect == nil then
+			return
+		end
+		if effect.x <= 0 then
+			return
+		end
+		mob:exp_rate(mob:exp_rate() + effect.x)
+		mob:drop_rate(mob:drop_rate() + effect.x)
+	end,
 
-function on_mob_unbuff_4121003(mob, skill, causer)
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	if effect.x <= 0 then
-		return
-	end
-	mob:exp_rate(mob:exp_rate() - effect.x)
-	mob:drop_rate(mob:drop_rate() - effect.x)
-end
+	on_mob_unbuff = function(mob, skill, causer)
+		local effect = skill:effect()
+		if effect == nil then
+			return
+		end
+		if effect.x <= 0 then
+			return
+		end
+		mob:exp_rate(mob:exp_rate() - effect.x)
+		mob:drop_rate(mob:drop_rate() - effect.x)
+	end,
 
-function on_attack_4121003(me, skill, damages)
-	combat.apply_showdown(me, skill, damages)
-end
+	on_attack = function(me, skill, damages)
+		combat.apply_showdown(me, skill, damages)
+	end
+}

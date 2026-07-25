@@ -238,72 +238,74 @@ local function handle_stage5(me, npc, sm, map)
 	me:dialog(npc, "모든 문제를 훌륭히 해결하셨습니다. 모든 스테이지를 클리어 하셨으므로 보너스 스테이지로 이동됩니다. 남은 시간동안 마음껏 사냥하실 수 있습니다. 하지만 중간에 나가고 싶으시면 NPC를 통해 밖으로 나가실 수 있습니다. 저에게 다시 말을 걸어 주시면 작은 보상을 드리도록 할게요.")
 end
 
-function on_click(me, npc)
-	local sm = me:state_machine()
-	if sm == nil then
-		me:map(EXIT_MAP)
-		return
-	end
-	local map = me:map()
-	if map == nil then
-		return
-	end
-	local wz = map:wz()
-	if wz == nil then
-		return
-	end
-	local field_id = wz.id
-	if sm:get_property("stage") == "" then
-		sm:set_property("stage", "1")
-	end
-	local curstage = tonumber(sm:get_property("stage")) or 1
-	local map_stage = (field_id % 10) + 1
+return {
+	on_click = function(me, npc)
+		local sm = me:state_machine()
+		if sm == nil then
+			me:map(EXIT_MAP)
+			return
+		end
+		local map = me:map()
+		if map == nil then
+			return
+		end
+		local wz = map:wz()
+		if wz == nil then
+			return
+		end
+		local field_id = wz.id
+		if sm:get_property("stage") == "" then
+			sm:set_property("stage", "1")
+		end
+		local curstage = tonumber(sm:get_property("stage")) or 1
+		local map_stage = (field_id % 10) + 1
 
-	if curstage > map_stage and field_id ~= 103000804 then
-		me:dialog(npc, "다음 스테이지로 통하는 포탈이 열렸습니다. 서둘러 주세요.")
-		return
-	end
-	if field_id == 103000804 and curstage > map_stage then
-		give_bonus(me, npc)
-		return
-	end
+		if curstage > map_stage and field_id ~= 103000804 then
+			me:dialog(npc, "다음 스테이지로 통하는 포탈이 열렸습니다. 서둘러 주세요.")
+			return
+		end
+		if field_id == 103000804 and curstage > map_stage then
+			give_bonus(me, npc)
+			return
+		end
 
-	if field_id == 103000800 then
-		handle_stage1(me, npc, sm, map)
-	elseif field_id == 103000801 then
-		handle_rope_stage(
-			me,
-			npc,
-			sm,
-			map,
-			"stage2r",
-			"두번째 스테이지에 대해 설명해 드리겠습니다. 옆에 밧줄들이 보일 것입니다. 이 밧줄들 중에서 #b3개가 다음 스테이지로 향하는 포탈#k과 통해 있습니다. 파티원 중에서 #b3 명이 정답 줄을 찾아 매달리면 됩니다.#k\r\n단, 줄 끝에 아슬아슬하게 매달리시지 말고 줄 가운데에 매달려 계셔야 정답으로 인정되니 이점 주의해 주시기 바랍니다. 그리고 반드시 3 명만 줄에 매달려 계셔야 있어야 합니다. 파티원이 줄에 올라서면 파티장은 #b저를 더블클릭하여 정답인지 아닌지 확인#k해야 합니다. 그럼 힘내 주세요!",
-			4,
-			1200
-		)
-	elseif field_id == 103000802 then
-		handle_rope_stage(
-			me,
-			npc,
-			sm,
-			map,
-			"stage3r",
-			"세번째 스테이지에 대해 설명해 드리겠습니다. 옆에 나무 발판들이 보일 것입니다. 이 발판들 중에서 #b3개가 다음 스테이지로 향하는 포탈#k과 통해 있습니다. 파티원 중에서 #b3 명이 정답 발판을 찾아 올라서면 됩니다.#k\r\n단, 발판 끝에 아슬아슬하게 서계시지 말고 발판 가운데에 정확하게 서 계셔야 정답으로 인정되니 이점 주의해 주시기 바랍니다. 그리고 반드시 3명만 발판에 서계셔야 있어야 합니다. 파티원이 발판에 올라서면 파티장은 #b저를 더블클릭하여 정답인지 아닌지 확인#k해야 합니다. 그럼 힘내 주세요!",
-			5,
-			1400
-		)
-	elseif field_id == 103000803 then
-		handle_rope_stage(
-			me,
-			npc,
-			sm,
-			map,
-			"stage4r",
-			"네번째 스테이지에 대해 설명해 드리겠습니다. 옆에 나무통들이 보일 것입니다. 이 통들 중에서 #b3개가 다음 스테이지로 향하는 포탈#k과 통해 있습니다. 파티원 중에서 #b3 명이 정답 통을 찾아 올라서면 됩니다.#k\r\n단, 통 끝에 아슬아슬하게 서계시지 말고 통 가운데에 정확하게 서 계셔야 정답으로 인정되니 이점 주의해 주시기 바랍니다. 그리고 반드시 3명만 통 위에 서계셔야 있어야 합니다. 파티원이 통 위에 올라서면 파티장은 #b저를 더블클릭하여 정답인지 아닌지 확인#k해야 합니다. 그럼 힘내 주세요!",
-			6,
-			1800
-		)
-	elseif field_id == 103000804 then
-		handle_stage5(me, npc, sm, map)
+		if field_id == 103000800 then
+			handle_stage1(me, npc, sm, map)
+		elseif field_id == 103000801 then
+			handle_rope_stage(
+				me,
+				npc,
+				sm,
+				map,
+				"stage2r",
+				"두번째 스테이지에 대해 설명해 드리겠습니다. 옆에 밧줄들이 보일 것입니다. 이 밧줄들 중에서 #b3개가 다음 스테이지로 향하는 포탈#k과 통해 있습니다. 파티원 중에서 #b3 명이 정답 줄을 찾아 매달리면 됩니다.#k\r\n단, 줄 끝에 아슬아슬하게 매달리시지 말고 줄 가운데에 매달려 계셔야 정답으로 인정되니 이점 주의해 주시기 바랍니다. 그리고 반드시 3 명만 줄에 매달려 계셔야 있어야 합니다. 파티원이 줄에 올라서면 파티장은 #b저를 더블클릭하여 정답인지 아닌지 확인#k해야 합니다. 그럼 힘내 주세요!",
+				4,
+				1200
+			)
+		elseif field_id == 103000802 then
+			handle_rope_stage(
+				me,
+				npc,
+				sm,
+				map,
+				"stage3r",
+				"세번째 스테이지에 대해 설명해 드리겠습니다. 옆에 나무 발판들이 보일 것입니다. 이 발판들 중에서 #b3개가 다음 스테이지로 향하는 포탈#k과 통해 있습니다. 파티원 중에서 #b3 명이 정답 발판을 찾아 올라서면 됩니다.#k\r\n단, 발판 끝에 아슬아슬하게 서계시지 말고 발판 가운데에 정확하게 서 계셔야 정답으로 인정되니 이점 주의해 주시기 바랍니다. 그리고 반드시 3명만 발판에 서계셔야 있어야 합니다. 파티원이 발판에 올라서면 파티장은 #b저를 더블클릭하여 정답인지 아닌지 확인#k해야 합니다. 그럼 힘내 주세요!",
+				5,
+				1400
+			)
+		elseif field_id == 103000803 then
+			handle_rope_stage(
+				me,
+				npc,
+				sm,
+				map,
+				"stage4r",
+				"네번째 스테이지에 대해 설명해 드리겠습니다. 옆에 나무통들이 보일 것입니다. 이 통들 중에서 #b3개가 다음 스테이지로 향하는 포탈#k과 통해 있습니다. 파티원 중에서 #b3 명이 정답 통을 찾아 올라서면 됩니다.#k\r\n단, 통 끝에 아슬아슬하게 서계시지 말고 통 가운데에 정확하게 서 계셔야 정답으로 인정되니 이점 주의해 주시기 바랍니다. 그리고 반드시 3명만 통 위에 서계셔야 있어야 합니다. 파티원이 통 위에 올라서면 파티장은 #b저를 더블클릭하여 정답인지 아닌지 확인#k해야 합니다. 그럼 힘내 주세요!",
+				6,
+				1800
+			)
+		elseif field_id == 103000804 then
+			handle_stage5(me, npc, sm, map)
+		end
 	end
-end
+}

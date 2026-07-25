@@ -43,8 +43,7 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 		} else {
 			r.Map.listener.OnReactorTriggered(r.Map, r, stance)
 		}
-		hook := fmt.Sprintf("on_reactor_%d", rid)
-		_, _ = r.callReactorScript(hook, true, r)
+		_, _ = r.callReactorScript("on_reactor", true, r)
 		return
 	}
 
@@ -53,15 +52,13 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 	newEvent := r.eventAt(newState)
 	if newEvent != nil && (newEvent.NextState == newState || rid == 2618000 || rid == 2309000) {
 		if rid > 200011 {
-			hook := fmt.Sprintf("on_reactor_%d", rid)
-			_, _ = r.callReactorScript(hook, true, r)
+			_, _ = r.callReactorScript("on_reactor", true, r)
 		}
 		done = true
 	}
 	if timeout := r.StateTimeOut(newState); timeout > 0 {
 		if !done && rid > 200011 {
-			hook := fmt.Sprintf("on_reactor_%d", rid)
-			_, _ = r.callReactorScript(hook, true, r)
+			_, _ = r.callReactorScript("on_reactor", true, r)
 		}
 		r.ScheduleStateRevert(newState, oldState, timeout)
 	}

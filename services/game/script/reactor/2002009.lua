@@ -1,5 +1,7 @@
 -- Reactor name (Reactor.wz/2002009.img.xml): LP6
 
-function on_reactor_2002009(reactor)
-	reactor:drop_items()
-end
+return {
+	on_reactor = function(reactor)
+		reactor:drop_items()
+	end
+}

@@ -270,20 +270,6 @@ local function default_skill_cost(me, skill)
 	return true
 end
 
-function on_passive(me, skill)
-end
-
-function on_unpassive(me, skill)
-end
-
-function on_activating(me, skill, params)
-	return default_skill_cost(me, skill)
-end
-
-function on_activated(me, skill, params)
-	return true
-end
-
 local function on_energy_charge(me, damages)
 	local ec
 	if me:class_of(Class.Brawler) then
@@ -413,17 +399,33 @@ local function on_dark_sight(me, damages)
 	me:unbuff(BuffFlag.Darksight)
 end
 
-function on_attack(me, skill, damages, attack_info)
-	local targets = combat.damages_to_targets(damages)
-	combat.increment_combo_orbs(me, targets, skill)
-	combat.spawn_pickpocket_meso(me, skill, damages)
-	combat.freeze_from_ice_charge(me, damages)
-	on_attack_consume_item(me, skill, attack_info)
-	on_mp_eater(me, damages)
-	on_hamstring_slow(me, damages)
-	on_blind_acc_debuff(me, damages)
-	combat.roll_mortal_blow(me, damages)
-	on_energy_charge(me, damages)
-	on_dark_sight(me, damages)
-	combat.reflect_mob_attack_damage(me, damages, attack_info)
-end
+return {
+	on_passive = function(me, skill)
+	end,
+
+	on_unpassive = function(me, skill)
+	end,
+
+	on_activating = function(me, skill, params)
+		return default_skill_cost(me, skill)
+	end,
+
+	on_activated = function(me, skill, params)
+		return true
+	end,
+
+	on_attack = function(me, skill, damages, attack_info)
+		local targets = combat.damages_to_targets(damages)
+		combat.increment_combo_orbs(me, targets, skill)
+		combat.spawn_pickpocket_meso(me, skill, damages)
+		combat.freeze_from_ice_charge(me, damages)
+		on_attack_consume_item(me, skill, attack_info)
+		on_mp_eater(me, damages)
+		on_hamstring_slow(me, damages)
+		on_blind_acc_debuff(me, damages)
+		combat.roll_mortal_blow(me, damages)
+		on_energy_charge(me, damages)
+		on_dark_sight(me, damages)
+		combat.reflect_mob_attack_damage(me, damages, attack_info)
+	end
+}

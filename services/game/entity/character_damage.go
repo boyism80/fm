@@ -79,7 +79,7 @@ func (ch *Character) OnKill(mobs []*Mob) {
 	for _, id := range order {
 		group := byID[id]
 		scriptPath := fmt.Sprintf("script/mob/%d.lua", id)
-		mapInstance.runMobLuaHook(root, scriptPath, fmt.Sprintf("on_mob_kill_%d", id), ch, group)
+		mapInstance.runMobLuaHook(root, scriptPath, "on_mob_kill", ch, group)
 	}
 	mapInstance.runMobLuaHook(root, constant.CharacterHookScriptPath, "on_mob_kill", ch, all)
 	if sm := ch.StateMachine(); sm != nil {

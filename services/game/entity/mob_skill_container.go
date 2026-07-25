@@ -179,7 +179,7 @@ func (sc *MobSkillContainer) chooseByScript(controller *Character, skill *MobSki
 	if err != nil {
 		return true
 	}
-	hook := fmt.Sprintf("on_mob_skill_choose_%d", skill.Slot.SkillID)
+	hook := "on_mob_skill_choose"
 	chosen := true
 	luax.CallAsync(root, thread, hook, sc.owner, skill).Then(func(value interface{}) (interface{}, error) {
 		vals := luax.ResultValues(value)

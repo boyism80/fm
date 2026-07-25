@@ -17,27 +17,29 @@ local function notice_all(sm, text)
 	end
 end
 
-function on_click(me, npc)
-	local sm = me:state_machine()
-	if sm == nil then
-		return
+return {
+	on_click = function(me, npc)
+		local sm = me:state_machine()
+		if sm == nil then
+			return
+		end
+		local progress = tonumber(sm:get_property("stage1progress")) or 0
+		local step = KEYS[progress]
+		if step == nil then
+			me:dialog(npc, "미로방을 모두 클리어하셨습니다.")
+			return
+		end
+		if not pq.has_item(me, step.item, 1) then
+			me:dialog(npc, "...")
+			return
+		end
+		local map = me:map()
+		if map ~= nil then
+			map:clear_effect()
+		end
+		notice_all(sm, step.msg)
+		me:dialog(npc, step.msg)
+		pq.remove_all(step.item, me)
+		sm:set_property("stage1progress", tostring(progress + 1))
 	end
-	local progress = tonumber(sm:get_property("stage1progress")) or 0
-	local step = KEYS[progress]
-	if step == nil then
-		me:dialog(npc, "미로방을 모두 클리어하셨습니다.")
-		return
-	end
-	if not pq.has_item(me, step.item, 1) then
-		me:dialog(npc, "...")
-		return
-	end
-	local map = me:map()
-	if map ~= nil then
-		map:clear_effect()
-	end
-	notice_all(sm, step.msg)
-	me:dialog(npc, step.msg)
-	pq.remove_all(step.item, me)
-	sm:set_property("stage1progress", tostring(progress + 1))
-end
+}

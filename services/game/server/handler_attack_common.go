@@ -139,7 +139,7 @@ func CallOnAttackHooks(character *entity.Character, damages []dto.AttackPair, sk
 		return
 	}
 	damagesTable2 := buildDamagesTable(skillThread, character, damages)
-	skillHook := fmt.Sprintf("on_attack_%d", skillID)
+	skillHook := "on_attack"
 	if _, err := luax.Call(skillThread, skillHook, character, skillEntry, damagesTable2); err == nil {
 		readDamagesFromLuaTableInto(damagesTable2, damages)
 	}
@@ -163,7 +163,7 @@ func CallSummonOnAttackHooks(character *entity.Character, mapInstance *entity.Ma
 		return
 	}
 	damagesTable := buildDamagesTable(skillThread, character, damages)
-	skillHook := fmt.Sprintf("on_attack_%d", skillID)
+	skillHook := "on_attack"
 	if _, err := luax.Call(skillThread, skillHook, character, skillEntry, damagesTable); err != nil {
 		log.Printf("summon on_attack %d: %v", skillID, err)
 	}

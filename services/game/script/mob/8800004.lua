@@ -2,6 +2,8 @@
 
 local zakum = require("script/lib/zakum")
 
-function on_mob_die_8800004(mob, attacker, map)
-	zakum.on_arm_die(mob, attacker, map)
-end
+return {
+	on_mob_die = function(mob, attacker, map)
+		zakum.on_arm_die(mob, attacker, map)
+	end
+}

@@ -2,6 +2,8 @@
 
 local util = require("script/lib/skill")
 
-function on_activated_11001001(me, skill, params)
-	util.apply_iron_body(me, skill)
-end
+return {
+	on_activated = function(me, skill, params)
+		util.apply_iron_body(me, skill)
+	end
+}

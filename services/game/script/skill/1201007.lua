@@ -2,6 +2,8 @@
 
 local util = require("script/lib/skill")
 
-function on_activated_1201007(me, skill, params)
-	util.apply_buff_from_effect(me, skill, BuffFlag.Powerguard, "x")
-end
+return {
+	on_activated = function(me, skill, params)
+		util.apply_buff_from_effect(me, skill, BuffFlag.Powerguard, "x")
+	end
+}

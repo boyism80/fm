@@ -1,9 +1,5 @@
 -- Mob skill name (Skill.wz/MobSkill.img.xml): mob skill 131
 
-function on_mob_skill_choose_131(mob, skill)
-    return true
-end
-
 local function mob_facing_left(mob)
     return mob:stance() % 2 ~= 0
 end
@@ -28,12 +24,18 @@ local function world_bounds_from_effect(mob, effect)
     end
 end
 
-function on_mob_skill_131(mob, controller, skill)
-    local effect = skill:effect()
-    local bounds = effect.bounds
-    if bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0 then
-        bounds = world_bounds_from_effect(mob, effect)
-    end
-    mob:create_mist(skill, effect.x * 10, MistType.Poison, bounds)
-    return true
-end
+return {
+	on_mob_skill_choose = function(mob, skill)
+		return true
+	end,
+
+	on_mob_skill = function(mob, controller, skill)
+		local effect = skill:effect()
+		local bounds = effect.bounds
+		if bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0 then
+		    bounds = world_bounds_from_effect(mob, effect)
+		end
+		mob:create_mist(skill, effect.x * 10, MistType.Poison, bounds)
+		return true
+	end
+}

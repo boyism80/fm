@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/boyism80/fm/core/luax"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type StateMachineGroup struct {
@@ -174,8 +173,7 @@ func (g *StateMachineGroup) CallGroupHook(hook string, args ...interface{}) {
 	if err != nil {
 		return
 	}
-	fn := thread.GetGlobal(hook)
-	if fn.Type() != lua.LTFunction {
+	if !luax.HasFunc(thread, hook) {
 		luax.Close(thread)
 		return
 	}

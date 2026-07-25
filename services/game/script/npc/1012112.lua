@@ -103,89 +103,91 @@ local function group_free(name)
 	return state == nil or state == "" or state == "0"
 end
 
-function on_click(me, npc)
-	local map = me:map()
-	if map == nil then
-		return
-	end
-	local wz = map:wz()
-	if wz == nil then
-		return
-	end
-	local map_id = wz.id
-
-	if map_id == SHORTCUT_A or map_id == SHORTCUT_B then
-		local selected = me:dialog_list(npc, "무엇을 도와 드릴까요?", {
-			"이곳에서 나가고 싶어요",
-		})
-		if selected == nil then
+return {
+	on_click = function(me, npc)
+		local map = me:map()
+		if map == nil then
 			return
 		end
-		me:map(TOWN_MAP)
-		pq.gain_item(me, EXIT_TOKEN, 1)
+		local wz = map:wz()
+		if wz == nil then
+			return
+		end
+		local map_id = wz.id
+
+		if map_id == SHORTCUT_A or map_id == SHORTCUT_B then
+			local selected = me:dialog_list(npc, "무엇을 도와 드릴까요?", {
+				"이곳에서 나가고 싶어요",
+			})
+			if selected == nil then
+				return
+			end
+			me:map(TOWN_MAP)
+			pq.gain_item(me, EXIT_TOKEN, 1)
+			remove_clear_items_party(me)
+			return
+		end
+
+		local party = me:party()
+		if party == nil then
+			local selected = me:dialog_list(npc, "안녕하세요? 저는 토리라고 합니다. 이 안은 달맞이꽃이 피어나는 아름다운 언덕이에요. 그런데 그 곳에 살고 있는 어흥이라는 호랑이가 몹시 배가 고파 먹을 것을 찾고 있다고 하네요.", {
+				"떡 20개를 가져 왔어요.",
+			})
+			if selected == 0 then
+				rice_cake_reward(me, npc)
+			end
+			return
+		end
+
+		if party:leader_id() ~= me:id() then
+			local selected = me:dialog_list(npc, "퀘스트에 도전해 보고 싶다면 #b파티장#k에게 제게 말을 걸어달라고 해주세요.", {
+				"떡 20개를 가져 왔어요.",
+			})
+			if selected == 0 then
+				rice_cake_reward(me, npc)
+			end
+			return
+		end
+
+		if not party_ready(me, party, map_id) then
+			local selected = me:dialog_list(npc, "퀘스트에 도전하려면 다음과 같은 조건을 만족시켜야 합니다\r\n\r\n#r필요조건: 최소 "
+				.. MIN_PARTY
+				.. " 명의 파티, 레벨제한 : "
+				.. MIN_LEVEL
+				.. " ~ "
+				.. MAX_LEVEL, {
+				"떡 20개를 가져 왔어요.",
+			})
+			if selected == 0 then
+				rice_cake_reward(me, npc)
+			end
+			return
+		end
+
+		local main = state_machine(GROUP_NAME)
+		local bonus = state_machine(BONUS_GROUP)
+		if main == nil or bonus == nil then
+			me:dialog(npc, "퀘스트에 현재 오류가 있습니다.")
+			return
+		end
+		if not group_free(GROUP_NAME) or not group_free(BONUS_GROUP) then
+			local selected = me:dialog_list(npc, "이미 다른 파티가 이 안에 들어가서 퀘스트에 도전중입니다. 잠시 후 다시 시도해 주세요.", {
+				"떡 20개를 가져 왔어요.",
+			})
+			if selected == 0 then
+				rice_cake_reward(me, npc)
+			end
+			return
+		end
+
+		local sm, err = main:start_party(me, party, 200)
+		if sm == nil then
+			me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
+			if err ~= nil then
+				log("henesys pq start_party:", err)
+			end
+			return
+		end
 		remove_clear_items_party(me)
-		return
 	end
-
-	local party = me:party()
-	if party == nil then
-		local selected = me:dialog_list(npc, "안녕하세요? 저는 토리라고 합니다. 이 안은 달맞이꽃이 피어나는 아름다운 언덕이에요. 그런데 그 곳에 살고 있는 어흥이라는 호랑이가 몹시 배가 고파 먹을 것을 찾고 있다고 하네요.", {
-			"떡 20개를 가져 왔어요.",
-		})
-		if selected == 0 then
-			rice_cake_reward(me, npc)
-		end
-		return
-	end
-
-	if party:leader_id() ~= me:id() then
-		local selected = me:dialog_list(npc, "퀘스트에 도전해 보고 싶다면 #b파티장#k에게 제게 말을 걸어달라고 해주세요.", {
-			"떡 20개를 가져 왔어요.",
-		})
-		if selected == 0 then
-			rice_cake_reward(me, npc)
-		end
-		return
-	end
-
-	if not party_ready(me, party, map_id) then
-		local selected = me:dialog_list(npc, "퀘스트에 도전하려면 다음과 같은 조건을 만족시켜야 합니다\r\n\r\n#r필요조건: 최소 "
-			.. MIN_PARTY
-			.. " 명의 파티, 레벨제한 : "
-			.. MIN_LEVEL
-			.. " ~ "
-			.. MAX_LEVEL, {
-			"떡 20개를 가져 왔어요.",
-		})
-		if selected == 0 then
-			rice_cake_reward(me, npc)
-		end
-		return
-	end
-
-	local main = state_machine(GROUP_NAME)
-	local bonus = state_machine(BONUS_GROUP)
-	if main == nil or bonus == nil then
-		me:dialog(npc, "퀘스트에 현재 오류가 있습니다.")
-		return
-	end
-	if not group_free(GROUP_NAME) or not group_free(BONUS_GROUP) then
-		local selected = me:dialog_list(npc, "이미 다른 파티가 이 안에 들어가서 퀘스트에 도전중입니다. 잠시 후 다시 시도해 주세요.", {
-			"떡 20개를 가져 왔어요.",
-		})
-		if selected == 0 then
-			rice_cake_reward(me, npc)
-		end
-		return
-	end
-
-	local sm, err = main:start_party(me, party, 200)
-	if sm == nil then
-		me:dialog(npc, "파티 퀘스트를 시작할 수 없습니다.")
-		if err ~= nil then
-			log("henesys pq start_party:", err)
-		end
-		return
-	end
-	remove_clear_items_party(me)
-end
+}

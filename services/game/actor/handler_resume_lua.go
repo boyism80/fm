@@ -20,7 +20,7 @@ func (h *ResumeLuaHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *Res
 	for i, a := range msg.Args {
 		resumeArgs[i] = a
 	}
-	state, _, _ := luax.Resume(msg.Root, msg.Thread, "", resumeArgs...)
+	state, _, _ := luax.Resume(msg.Root, msg.Thread, resumeArgs...)
 	if state == lua.ResumeOK {
 		cfg, ok := luax.GetConfiguration(msg.Thread)
 		if ok && cfg.KeepAlive {

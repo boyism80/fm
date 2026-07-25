@@ -1,9 +1,5 @@
 -- Mob skill name (Skill.wz/MobSkill.img.xml): mob skill 105
 
-function on_mob_skill_choose_105(mob, skill)
-    return true
-end
-
 local function effect_has_bounds(effect)
     local bounds = effect.bounds
     return bounds.left ~= 0 or bounds.top ~= 0 or bounds.right ~= 0 or bounds.bottom ~= 0
@@ -33,38 +29,44 @@ local function heal_mob(target, effect)
     end
 end
 
-function on_mob_skill_105(mob, controller, skill)
-    local effect = skill:effect()
-    local is_range = effect_has_bounds(effect)
-    local targets = {}
+return {
+	on_mob_skill_choose = function(mob, skill)
+		return true
+	end,
 
-    if is_range then
-        local map = mob:map()
-        local world_bounds = world_bounds_from_effect(mob, effect)
-        local self_oid = mob:oid()
+	on_mob_skill = function(mob, controller, skill)
+		local effect = skill:effect()
+		local is_range = effect_has_bounds(effect)
+		local targets = {}
 
-        for _, other in pairs(map:mobs()) do
-            if other:oid() ~= self_oid then
-                local other_x, other_y = other:position()
-                if position_in_bounds(other_x, other_y, world_bounds) then
-                    table.insert(targets, other)
-                    break
-                end
-            end
-        end
-    else
-        table.insert(targets, mob)
-    end
+		if is_range then
+		    local map = mob:map()
+		    local world_bounds = world_bounds_from_effect(mob, effect)
+		    local self_oid = mob:oid()
 
-    local map = mob:map()
-    for _, target in ipairs(targets) do
-        if is_range then
-            map:remove_mob(target:oid(), MobDieAnimation.FadeOut)
-            heal_mob(mob, effect)
-        else
-            heal_mob(target, effect)
-        end
-    end
+		    for _, other in pairs(map:mobs()) do
+		        if other:oid() ~= self_oid then
+		            local other_x, other_y = other:position()
+		            if position_in_bounds(other_x, other_y, world_bounds) then
+		                table.insert(targets, other)
+		                break
+		            end
+		        end
+		    end
+		else
+		    table.insert(targets, mob)
+		end
 
-    return true
-end
+		local map = mob:map()
+		for _, target in ipairs(targets) do
+		    if is_range then
+		        map:remove_mob(target:oid(), MobDieAnimation.FadeOut)
+		        heal_mob(mob, effect)
+		    else
+		        heal_mob(target, effect)
+		    end
+		end
+
+		return true
+	end
+}

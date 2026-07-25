@@ -40,7 +40,7 @@ func luaYieldGuildRPC(L *lua.LState, ch *Character, failCode int, result *int, p
 	ch.SetDialog(L)
 	thread := L
 	promise.Finally(func() {
-		_, _, err := luax.Resume(root, thread, "", lua.LNumber(*result))
+		_, _, err := luax.Resume(root, thread, lua.LNumber(*result))
 		if err != nil {
 			log.Printf("guild lua resume: character=%d: %v", ch.GetID(), err)
 		}

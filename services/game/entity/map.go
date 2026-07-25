@@ -238,14 +238,14 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 	if err != nil {
 		return
 	}
-	mapHook := fmt.Sprintf("%s_%d", hook, m.GetMapID())
-	if mapThread.GetGlobal(mapHook).Type() != lua.LTFunction {
+	if !luax.HasFunc(mapThread, hook) {
+		luax.Close(mapThread)
 		return
 	}
 	luax.SetConfiguration(mapThread, luax.Configuration{
 		ActorPID: m.LogicActorPID(),
 	})
-	luax.CallAsync(root, mapThread, mapHook, character, m)
+	luax.CallAsync(root, mapThread, hook, character, m)
 }
 
 func (m *Map) RemovePlayer(playerID uint32) error {

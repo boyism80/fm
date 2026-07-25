@@ -1,9 +1,5 @@
 -- Mob skill name (Skill.wz/MobSkill.img.xml): mob skill 200
 
-function on_mob_skill_choose_200(mob, skill)
-    return true
-end
-
 local function summon_position(mob, summon_id)
     local mob_x, mob_y = mob:position()
     local xpos = mob_x
@@ -48,28 +44,34 @@ local function summon_position(mob, summon_id)
     return xpos, ypos, foothold
 end
 
-function on_mob_skill_200(mob, controller, skill)
-    local effect = skill:effect()
-    local map = mob:map()
-    if map == nil then
-        return true
-    end
-    local summons = effect.summons
-    if summons == nil then
-        return true
-    end
-    for i = 1, #summons do
-        local summon_id = summons[i]
-        local xpos, ypos, foothold = summon_position(mob, summon_id)
-        local ground = map:point_below({x = xpos, y = ypos - 1})
-        if ground ~= nil then
-            xpos = ground.x
-            ypos = ground.y
-        end
-        local spawned = map:spawn_mob(summon_id, xpos, ypos, effect.spawn_effect)
-        if spawned ~= nil and foothold ~= nil then
-            spawned:foothold(foothold)
-        end
-    end
-    return true
-end
+return {
+	on_mob_skill_choose = function(mob, skill)
+		return true
+	end,
+
+	on_mob_skill = function(mob, controller, skill)
+		local effect = skill:effect()
+		local map = mob:map()
+		if map == nil then
+		    return true
+		end
+		local summons = effect.summons
+		if summons == nil then
+		    return true
+		end
+		for i = 1, #summons do
+		    local summon_id = summons[i]
+		    local xpos, ypos, foothold = summon_position(mob, summon_id)
+		    local ground = map:point_below({x = xpos, y = ypos - 1})
+		    if ground ~= nil then
+		        xpos = ground.x
+		        ypos = ground.y
+		    end
+		    local spawned = map:spawn_mob(summon_id, xpos, ypos, effect.spawn_effect)
+		    if spawned ~= nil and foothold ~= nil then
+		        spawned:foothold(foothold)
+		    end
+		end
+		return true
+	end
+}

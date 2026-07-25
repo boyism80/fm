@@ -2,6 +2,8 @@
 
 local util = require("script/lib/skill")
 
-function on_activated_3121009(me, skill, params)
-	util.apply_hero_will(me)
-end
+return {
+	on_activated = function(me, skill, params)
+		util.apply_hero_will(me)
+	end
+}

@@ -13,23 +13,25 @@ local function show_npc_effect(me, npc_id, effect)
 	end
 end
 
-function on_click(me, npc)
-	local q = me:quest(3345)
-	if q == nil or not q:started() then
-		return
-	end
-	local info = q:record()
-	if info == nil or info == "" then
-		info = "0"
-	end
-	if info == "3" then
-		q:record("4")
-		q:sync_progress()
-		me:show_quest_completion(3345)
-		show_npc_effect(me, npc, "act33454")
-		local map = me:map()
-		if map ~= nil then
-			map:message("마법진이 빛을 발하기 시작합니다.")
+return {
+	on_click = function(me, npc)
+		local q = me:quest(3345)
+		if q == nil or not q:started() then
+			return
+		end
+		local info = q:record()
+		if info == nil or info == "" then
+			info = "0"
+		end
+		if info == "3" then
+			q:record("4")
+			q:sync_progress()
+			me:show_quest_completion(3345)
+			show_npc_effect(me, npc, "act33454")
+			local map = me:map()
+			if map ~= nil then
+				map:message("마법진이 빛을 발하기 시작합니다.")
+			end
 		end
 	end
-end
+}

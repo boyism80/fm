@@ -2,6 +2,34 @@ local quest_id = 1203
 
 local RANK_UP = { A = "S", B = "A", C = "B", D = "C", F = "D" }
 
+local function quest_start(me)
+	local quest = me:quest(quest_id)
+	if quest == nil then
+		return
+	end
+	if not quest:started() then
+		if not quest:start(0, true) then
+			return
+		end
+		quest = me:quest(quest_id)
+		if quest == nil then
+			return
+		end
+	end
+	if quest:record_ex("rank") ~= nil then
+		return
+	end
+	quest:record_ex("min", "0")
+	quest:record_ex("sec", "0")
+	quest:record_ex("date", "0000-00-00")
+	quest:record_ex("have", "0")
+	quest:record_ex("rank", "F")
+	quest:record_ex("try", "0")
+	quest:record_ex("cmp", "0")
+	quest:record_ex("CR", "0")
+	quest:record_ex("VR", "0")
+end
+
 local function rank_check_met(mode, value, expected)
 	if mode == "less" then
 		return value < expected
@@ -76,47 +104,8 @@ local function party_members_on_map(me)
 	return out
 end
 
-function on_quest_start_1203(me)
-	local quest = me:quest(quest_id)
-	if quest == nil then
-		return
-	end
-	if not quest:started() then
-		if not quest:start(0, true) then
-			return
-		end
-		quest = me:quest(quest_id)
-		if quest == nil then
-			return
-		end
-	end
-	if quest:record_ex("rank") ~= nil then
-		return
-	end
-	quest:record_ex("min", "0")
-	quest:record_ex("sec", "0")
-	quest:record_ex("date", "0000-00-00")
-	quest:record_ex("have", "0")
-	quest:record_ex("rank", "F")
-	quest:record_ex("try", "0")
-	quest:record_ex("cmp", "0")
-	quest:record_ex("CR", "0")
-	quest:record_ex("VR", "0")
-end
-
-function on_quest_try_1203(me)
-	on_quest_start_1203(me)
-	local quest = me:quest(quest_id)
-	if quest == nil then
-		return
-	end
-	quest:start_time(now())
-	local try_val = tonumber(quest:record_ex("try")) or 0
-	quest:record_ex("try", tostring(try_val + 1))
-end
-
 local function finish_one_1203(me)
-	on_quest_start_1203(me)
+	quest_start(me)
 	local quest = me:quest(quest_id)
 	if quest == nil then
 		return
@@ -157,13 +146,30 @@ local function finish_one_1203(me)
 	quest:start_time(0)
 end
 
-function on_quest_end_1203(me)
-	local members = party_members_on_map(me)
-	if #members <= 1 then
-		finish_one_1203(me)
-		return
+return {
+	on_quest_start = function(me)
+		quest_start(me)
+	end,
+
+	on_quest_try = function(me)
+		quest_start(me)
+		local quest = me:quest(quest_id)
+		if quest == nil then
+			return
+		end
+		quest:start_time(now())
+		local try_val = tonumber(quest:record_ex("try")) or 0
+		quest:record_ex("try", tostring(try_val + 1))
+	end,
+
+	on_quest_end = function(me)
+		local members = party_members_on_map(me)
+		if #members <= 1 then
+			finish_one_1203(me)
+			return
+		end
+		for _, member in ipairs(members) do
+			finish_one_1203(member)
+		end
 	end
-	for _, member in ipairs(members) do
-		finish_one_1203(member)
-	end
-end
+}

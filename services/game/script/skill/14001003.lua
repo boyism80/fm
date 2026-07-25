@@ -2,6 +2,8 @@
 
 local util = require("script/lib/skill")
 
-function on_activated_14001003(me, skill, params)
-	util.apply_buff_fixed(me, skill, BuffFlag.Darksight, 1)
-end
+return {
+	on_activated = function(me, skill, params)
+		util.apply_buff_fixed(me, skill, BuffFlag.Darksight, 1)
+	end
+}

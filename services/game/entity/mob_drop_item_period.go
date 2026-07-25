@@ -52,7 +52,7 @@ func (m *Mob) resolvePeriodDropItemID(nextCount int) (uint32, bool) {
 		return 0, false
 	}
 	mobID := m.Wz.ID
-	hook := fmt.Sprintf("on_mob_period_drop_%d", mobID)
+	hook := "on_mob_period_drop"
 	thread, err := luax.NewThread(root, fmt.Sprintf("script/mob/%d.lua", mobID))
 	if err != nil {
 		return 0, false

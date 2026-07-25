@@ -159,7 +159,7 @@ func (ch *Character) callActiveConsumeScript(consume *Consume) (applyWZ bool, sc
 	if err != nil {
 		return applyWZ, scriptOK
 	}
-	hookName := fmt.Sprintf("on_active_item_%d", itemID)
+	hookName := "on_active_item"
 	applyResult := applyWZ
 	scriptOK = false
 	luax.CallAsync(root, thread, hookName, ch, consume).Then(func(value interface{}) (interface{}, error) {

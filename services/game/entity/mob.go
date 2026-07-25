@@ -547,7 +547,7 @@ func (m *Mob) runDieScript(attacker *Character) {
 
 	mobID := m.Wz.ID
 	scriptPath := fmt.Sprintf("script/mob/%d.lua", mobID)
-	mapInstance.runMobLuaHook(root, scriptPath, fmt.Sprintf("on_mob_die_%d", mobID), m, attackerArg, mapInstance)
+	mapInstance.runMobLuaHook(root, scriptPath, "on_mob_die", m, attackerArg, mapInstance)
 }
 
 func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) bool {
@@ -653,9 +653,9 @@ func (m *Mob) runReviveScript(pos types.Point[int16], revives []uint32) bool {
 		return false
 	}
 
-	hook := fmt.Sprintf("on_revive_%d", mobID)
-	if thread.GetGlobal(hook).Type() != lua.LTFunction {
-		thread.Close()
+	hook := "on_revive"
+	if !luax.HasFunc(thread, hook) {
+		luax.Close(thread)
 		return false
 	}
 

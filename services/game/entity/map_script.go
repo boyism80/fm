@@ -7,7 +7,6 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
-	lua "github.com/yuin/gopher-lua"
 )
 
 func validateScriptPath(path string) error {
@@ -52,8 +51,7 @@ func (m *Map) RunScript(ctx actor.Context, scriptPath string, funcName string, a
 		ActorContext: ctx,
 		ActorPID:     m.LogicActorPID(),
 	})
-	fn := thread.GetGlobal(funcName)
-	if fn.Type() != lua.LTFunction {
+	if !luax.HasFunc(thread, funcName) {
 		luax.Close(thread)
 		promise.SetError(fmt.Errorf("function %q not found", funcName))
 		return promise

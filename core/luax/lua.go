@@ -7,11 +7,13 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
+const modulesRegistryKey = "fm.script_modules"
+
 var (
 	onCreateHooks   []func(*lua.LState)
 	onCreateHooksMu sync.Mutex
 	compileMu       sync.Mutex
-	compiledFuncs   = make(map[string]*lua.LFunction)
+	compiledProtos  = make(map[string]*lua.FunctionProto)
 	alwaysReload    = false
 )
 
@@ -19,6 +21,15 @@ func SetAlwaysReload(enabled bool) {
 	compileMu.Lock()
 	defer compileMu.Unlock()
 	alwaysReload = enabled
+	if enabled {
+		compiledProtos = make(map[string]*lua.FunctionProto)
+	}
+}
+
+func AlwaysReload() bool {
+	compileMu.Lock()
+	defer compileMu.Unlock()
+	return alwaysReload
 }
 
 type Luable interface {
@@ -38,50 +49,124 @@ func NewState() *lua.LState {
 	return luaState
 }
 
-func preloadScript(root *lua.LState, path string) (*lua.LFunction, error) {
+func preloadProto(root *lua.LState, path string) (*lua.FunctionProto, error) {
 	compileMu.Lock()
 	defer compileMu.Unlock()
 
 	optimized := !alwaysReload
-
-	if fn, ok := compiledFuncs[path]; ok && optimized {
-		if fn == nil {
+	if proto, ok := compiledProtos[path]; ok && optimized {
+		if proto == nil {
 			return nil, fmt.Errorf("failed to compile %s: cached missing script", path)
 		}
-		return fn, nil
+		return proto, nil
 	}
 
 	fn, err := root.LoadFile(path)
 	if err != nil {
 		if optimized {
-			compiledFuncs[path] = nil
+			compiledProtos[path] = nil
 		}
 		return nil, fmt.Errorf("failed to compile %s: %w", path, err)
 	}
-	compiledFuncs[path] = fn
-	return fn, nil
+	if fn == nil || fn.Proto == nil {
+		if optimized {
+			compiledProtos[path] = nil
+		}
+		return nil, fmt.Errorf("failed to compile %s: empty proto", path)
+	}
+	compiledProtos[path] = fn.Proto
+	return fn.Proto, nil
 }
 
-func NewThread(root *lua.LState, path string) (*lua.LState, error) {
+func modulesTable(root *lua.LState) *lua.LTable {
+	if root == nil {
+		return nil
+	}
+	reg := root.Get(lua.RegistryIndex)
+	rt, ok := reg.(*lua.LTable)
+	if !ok {
+		return nil
+	}
+	v := root.GetField(rt, modulesRegistryKey)
+	if tbl, ok := v.(*lua.LTable); ok {
+		return tbl
+	}
+	tbl := root.NewTable()
+	root.SetField(rt, modulesRegistryKey, tbl)
+	return tbl
+}
+
+func ClearModules(root *lua.LState) {
+	if root == nil {
+		return
+	}
+	reg := root.Get(lua.RegistryIndex)
+	rt, ok := reg.(*lua.LTable)
+	if !ok {
+		return
+	}
+	root.SetField(rt, modulesRegistryKey, root.NewTable())
+}
+
+func LoadModule(root *lua.LState, path string) (*lua.LTable, error) {
+	if root == nil {
+		return nil, fmt.Errorf("nil lua root")
+	}
+	if path == "" {
+		return nil, fmt.Errorf("empty script path")
+	}
+
 	compileMu.Lock()
 	reload := alwaysReload
 	compileMu.Unlock()
 	if reload {
 		clearRequireCache(root)
+		mods := modulesTable(root)
+		if mods != nil {
+			mods.RawSetString(path, lua.LNil)
+		}
 	}
 
-	fn, err := preloadScript(root, path)
+	mods := modulesTable(root)
+	if mods != nil {
+		if cached := mods.RawGetString(path); cached != lua.LNil {
+			if tbl, ok := cached.(*lua.LTable); ok {
+				return tbl, nil
+			}
+		}
+	}
+
+	proto, err := preloadProto(root, path)
 	if err != nil {
 		return nil, err
 	}
-
-	co, _ := root.NewThread()
-	co.Push(fn)
-	if err := co.PCall(0, lua.MultRet, nil); err != nil {
+	fn := root.NewFunctionFromProto(proto)
+	root.Push(fn)
+	if err := root.PCall(0, 1, nil); err != nil {
 		return nil, fmt.Errorf("script runtime error: %w", err)
 	}
+	ret := root.Get(-1)
+	root.Pop(1)
+	tbl, ok := ret.(*lua.LTable)
+	if !ok {
+		return nil, fmt.Errorf("%s: script must return a module table", path)
+	}
+	if mods != nil {
+		mods.RawSetString(path, tbl)
+	}
+	return tbl, nil
+}
 
-	return co, nil
+func ModuleFunc(mod *lua.LTable, name string) *lua.LFunction {
+	if mod == nil || name == "" {
+		return nil
+	}
+	v := mod.RawGetString(name)
+	fn, ok := v.(*lua.LFunction)
+	if !ok {
+		return nil
+	}
+	return fn
 }
 
 func RegisterOnCreateHook(fn func(*lua.LState)) {

@@ -3,11 +3,13 @@
 local util = require("script/lib/skill")
 local combat = require("script/lib/combat")
 
-function on_activated_4121000(me, skill, params)
-	combat.for_each_near_party_member(me, skill, function(ch)
-		util.apply_buff_from_effect(ch, skill, BuffFlag.MapleWarrior, "x")
-		if ch ~= me then
-			ch:show_skill_effect(skill, SkillEffectType.Affected)
-		end
-	end)
-end
+return {
+	on_activated = function(me, skill, params)
+		combat.for_each_near_party_member(me, skill, function(ch)
+			util.apply_buff_from_effect(ch, skill, BuffFlag.MapleWarrior, "x")
+			if ch ~= me then
+				ch:show_skill_effect(skill, SkillEffectType.Affected)
+			end
+		end)
+	end
+}

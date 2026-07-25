@@ -12,10 +12,12 @@ local KEY_ITEMS = {
 	4001093,
 }
 
-function on_enter(me)
-	for _, id in ipairs(KEY_ITEMS) do
-		pq.remove_all(id, me)
+return {
+	on_enter = function(me)
+		for _, id in ipairs(KEY_ITEMS) do
+			pq.remove_all(id, me)
+		end
+		me:play_portal_sound()
+		me:map(240050400)
 	end
-	me:play_portal_sound()
-	me:map(240050400)
-end
+}

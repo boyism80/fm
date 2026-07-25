@@ -2,6 +2,8 @@
 
 local combat = require("script/lib/combat")
 
-function on_attack_4121008(me, skill, damages)
-	combat.apply_prob_status(me, skill, damages, MobBuff.Stun)
-end
+return {
+	on_attack = function(me, skill, damages)
+		combat.apply_prob_status(me, skill, damages, MobBuff.Stun)
+	end
+}

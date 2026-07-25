@@ -2,15 +2,17 @@
 
 local util = require("script/lib/skill")
 
-function on_activated_1121010(me, skill, params)
-	local effect = skill:effect()
-	if effect == nil then
-		return
+return {
+	on_activated = function(me, skill, params)
+		local effect = skill:effect()
+		if effect == nil then
+			return
+		end
+		local combo = me:buff_value(BuffFlag.Combo)
+		if combo == nil or combo < 10 then
+			return
+		end
+		util.consume_combo_orbs(me, 10)
+		me:buff(skill, BuffFlag.WeaponAtk, effect.pad)
 	end
-	local combo = me:buff_value(BuffFlag.Combo)
-	if combo == nil or combo < 10 then
-		return
-	end
-	util.consume_combo_orbs(me, 10)
-	me:buff(skill, BuffFlag.WeaponAtk, effect.pad)
-end
+}

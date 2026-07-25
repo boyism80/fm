@@ -2,20 +2,22 @@
 
 local combat = require("script/lib/combat")
 
-function on_activated_2311005(me, skill, params)
-	local effect = skill:effect()
-	if effect == nil then
-		return
-	end
-	if effect.time <= 0 then
-		return
-	end
-	combat.for_each_mob_in_skill_area(me, skill, function(mob)
-		local wz = mob:wz()
-		if wz ~= nil and wz.boss then
-			return false
+return {
+	on_activated = function(me, skill, params)
+		local effect = skill:effect()
+		if effect == nil then
+			return
 		end
-		mob:buff(MobBuff.Doom, 1, effect.time, skill, me)
-		return true
-	end)
-end
+		if effect.time <= 0 then
+			return
+		end
+		combat.for_each_mob_in_skill_area(me, skill, function(mob)
+			local wz = mob:wz()
+			if wz ~= nil and wz.boss then
+				return false
+			end
+			mob:buff(MobBuff.Doom, 1, effect.time, skill, me)
+			return true
+		end)
+	end
+}

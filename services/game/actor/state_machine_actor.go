@@ -244,7 +244,7 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	if err != nil {
 		return
 	}
-	if thread.GetGlobal(hook).Type() != lua.LTFunction {
+	if !luax.HasFunc(thread, hook) {
 		luax.Close(thread)
 		return
 	}

@@ -2,6 +2,8 @@
 
 local combat = require("script/lib/combat")
 
-function on_activated_4121004(me, skill, params)
-	combat.apply_ninja_ambush_skill(me, skill)
-end
+return {
+	on_activated = function(me, skill, params)
+		combat.apply_ninja_ambush_skill(me, skill)
+	end
+}

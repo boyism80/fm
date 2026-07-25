@@ -133,7 +133,7 @@ func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *entity.Map, mo
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorContext: ctx.ActorContext,
 	})
-	hook := fmt.Sprintf("on_mob_skill_%d", req.SkillId)
+	hook := "on_mob_skill"
 	luax.CallAsync(root, thread, hook, mob, controller, skill).Then(func(_ interface{}) (interface{}, error) {
 		h.consumeMobSkillMp(mob, skill)
 		return nil, nil

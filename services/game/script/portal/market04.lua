@@ -1,3 +1,5 @@
-function on_enter(me)
-    me:chat('hello')
-end
+return {
+	on_enter = function(me)
+		me:chat('hello')
+	end
+}

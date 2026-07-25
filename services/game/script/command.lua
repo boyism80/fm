@@ -35,7 +35,7 @@ local function resolve_skill_entry(me, skill_arg)
 	return skill, nil
 end
 
-function effect_show_skill(me, skill_arg, skill_effect_type)
+local function effect_show_skill(me, skill_arg, skill_effect_type)
 	local skill, err = resolve_skill_entry(me, skill_arg)
 	if skill == nil then
 		me:notice(err)
@@ -48,7 +48,7 @@ function effect_show_skill(me, skill_arg, skill_effect_type)
 	return true
 end
 
-function effect_show_basic(me, effect_type)
+local function effect_show_basic(me, effect_type)
 	if effect_type == nil then
 		effect_type = EffectType.LevelUp
 	end
@@ -56,7 +56,7 @@ function effect_show_basic(me, effect_type)
 	return true
 end
 
-function effect_show_dragon_blood(me, skill_arg)
+local function effect_show_dragon_blood(me, skill_arg)
 	local skill, err = resolve_skill_entry(me, skill_arg)
 	if skill == nil then
 		me:notice(err)
@@ -66,7 +66,7 @@ function effect_show_dragon_blood(me, skill_arg)
 	return true
 end
 
-function effect_show_hp_healed(me, amount)
+local function effect_show_hp_healed(me, amount)
 	if amount == nil then
 		amount = 1
 	end
@@ -74,7 +74,7 @@ function effect_show_hp_healed(me, amount)
 	return true
 end
 
-function effect_show_reward_item_animation(me, item_id, effect_text)
+local function effect_show_reward_item_animation(me, item_id, effect_text)
 	local id = tonumber(item_id)
 	if id == nil or id <= 0 then
 		me:notice("item_id는 1 이상의 숫자여야 합니다.")
@@ -87,12 +87,12 @@ function effect_show_reward_item_animation(me, item_id, effect_text)
 	return true
 end
 
-function effect_show_item_maker_success(me)
+local function effect_show_item_maker_success(me)
 	me:show_item_maker_success_effect()
 	return true
 end
 
-function effect_show_crafting(me, effect_text, time_value, mode_value)
+local function effect_show_crafting(me, effect_text, time_value, mode_value)
 	if effect_text == nil or effect_text == "" then
 		effect_text = "Effect/BasicEff.img/LevelUp"
 	end
@@ -102,7 +102,7 @@ function effect_show_crafting(me, effect_text, time_value, mode_value)
 	return true
 end
 
-function effect_show_dice(me, effect_id, skill_arg)
+local function effect_show_dice(me, effect_id, skill_arg)
 	local skill, err = resolve_skill_entry(me, skill_arg)
 	if skill == nil then
 		me:notice(err)
@@ -364,7 +364,7 @@ local function start_npc_id(wz)
 	return nil
 end
 
-command_funcs = {
+local command_funcs = {
 	["명령어"] = {
 		privilege = ROLE.User,
 		usage = "- 사용 가능한 명령어 목록 표시",
@@ -1412,33 +1412,35 @@ command_funcs = {
 	},
 }
 
-function on_chat(me, message, shout)
-	if string.sub(message, 1, 1) ~= "/" then
-		return false
+return {
+	on_chat = function(me, message, shout)
+		if string.sub(message, 1, 1) ~= "/" then
+			return false
+		end
+		message = string.sub(message, 2, #message)
+		local args = string_split(message, " ")
+		local cmd = args[1]
+		if cmd == nil or cmd == "" then
+			return false
+		end
+		local cmd_data = command_funcs[cmd]
+		if cmd_data == nil then
+			return false
+		end
+		local cmd_func = nil
+		local required_privilege = ROLE.User
+		if type(cmd_data) == "table" then
+			cmd_func = cmd_data.command
+			required_privilege = cmd_data.privilege or ROLE.User
+		else
+			cmd_func = cmd_data
+		end
+		if me:role() < required_privilege then
+			me:notice("권한이 부족합니다.")
+			return true
+		end
+		table.remove(args, 1)
+		local ok = cmd_func(me, args)
+		return ok
 	end
-	message = string.sub(message, 2, #message)
-	local args = string_split(message, " ")
-	local cmd = args[1]
-	if cmd == nil or cmd == "" then
-		return false
-	end
-	local cmd_data = command_funcs[cmd]
-	if cmd_data == nil then
-		return false
-	end
-	local cmd_func = nil
-	local required_privilege = ROLE.User
-	if type(cmd_data) == "table" then
-		cmd_func = cmd_data.command
-		required_privilege = cmd_data.privilege or ROLE.User
-	else
-		cmd_func = cmd_data
-	end
-	if me:role() < required_privilege then
-		me:notice("권한이 부족합니다.")
-		return true
-	end
-	table.remove(args, 1)
-	local ok = cmd_func(me, args)
-	return ok
-end
+}
