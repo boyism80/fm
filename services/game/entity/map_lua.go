@@ -238,7 +238,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				ownerID = owner.GetID()
 			}
-			meso, err := mapInstance.SpawnMeso(count, pos, ownerID, dropType, false)
+			meso, err := mapInstance.SpawnMeso(count, pos, pos, ownerID, dropType, false)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1

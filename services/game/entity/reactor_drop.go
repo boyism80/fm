@@ -103,7 +103,7 @@ func (r *Reactor) DropItems() {
 		dropX += 25
 
 		if spawn.isMeso {
-			if _, err := r.Map.SpawnMeso(spawn.count, destPoint, ownerID, dropType, false); err != nil {
+			if _, err := r.Map.SpawnMeso(spawn.count, destPoint, spawnPoint, ownerID, dropType, false); err != nil {
 				log.Printf("Failed to spawn reactor meso drop: %v", err)
 			}
 		} else {

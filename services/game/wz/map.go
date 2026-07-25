@@ -67,14 +67,6 @@ func (m *Map) HasForcedReturn() bool {
 	return m.ForcedReturn > 0 && m.ForcedReturn != ForcedReturnNone
 }
 
-func footholdSpansX(f Foothold, x int16) bool {
-	xLo, xHi := f.X1, f.X2
-	if xLo > xHi {
-		xLo, xHi = xHi, xLo
-	}
-	return xLo <= x && x <= xHi
-}
-
 func footholdSurfaceYAtX(f Foothold, x int16) int16 {
 	if f.X1 == f.X2 {
 		return f.Y1
@@ -98,10 +90,20 @@ func (model *Map) findBelow(p types.Point[int16]) (*Foothold, bool) {
 	if model == nil || model.Footholds == nil {
 		return nil, false
 	}
-	rels := model.Footholds.Relations(p)
-	xMatches := make([]Foothold, 0, len(rels))
-	for _, fh := range rels {
-		if footholdSpansX(fh, p.X) {
+	bottom := model.Footholds.Bounds.Bottom
+	if p.Y > bottom {
+		return nil, false
+	}
+	var candidates []Foothold
+	model.Footholds.QueryRange(types.Rect[int16]{
+		Left:   p.X,
+		Top:    p.Y,
+		Right:  p.X,
+		Bottom: bottom,
+	}, &candidates)
+	xMatches := make([]Foothold, 0, len(candidates))
+	for _, fh := range candidates {
+		if fh.X1 <= p.X && fh.X2 >= p.X {
 			xMatches = append(xMatches, fh)
 		}
 	}

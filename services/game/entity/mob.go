@@ -424,7 +424,6 @@ func (m *Mob) dropItems(attacker *Character) {
 	}
 
 	spawnPoint := m.Position
-	spacing := int16(15)
 
 	dropOwner := m.highestDamageCharacter()
 	if dropOwner == nil {
@@ -435,25 +434,25 @@ func (m *Mob) dropItems(attacker *Character) {
 		ownerID = dropOwner.GetID()
 	}
 	dropType := m.mobDropType(dropOwner)
+	spacing := int16(25)
+	if dropType == constant.DropTypeExplosive {
+		spacing = 40
+	}
 
-	for i, spawn := range drops {
+	d := int16(1)
+	for _, spawn := range drops {
 		destPoint := spawnPoint
-		if len(drops) > 1 {
-			offset := spacing * int16(i/2+1)
-			if i%2 == 0 {
-				destPoint.X += offset
-			} else {
-				destPoint.X -= offset
-			}
+		if d%2 == 0 {
+			destPoint.X += spacing * (d + 1) / 2
+		} else {
+			destPoint.X -= spacing * (d / 2)
 		}
 
 		if spawn.isMeso {
-
-			if _, err := mapInstance.SpawnMeso(spawn.count, destPoint, ownerID, dropType, false); err != nil {
+			if _, err := mapInstance.SpawnMeso(spawn.count, destPoint, spawnPoint, ownerID, dropType, false); err != nil {
 				log.Printf("Failed to spawn meso drop: %v", err)
 			}
 		} else {
-
 			fp := &FieldPlacement{
 				ObjectCore: &ObjectCore{
 					OID:       0,
@@ -471,6 +470,7 @@ func (m *Mob) dropItems(attacker *Character) {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}
 		}
+		d++
 	}
 }
 

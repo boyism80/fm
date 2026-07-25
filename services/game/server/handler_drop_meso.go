@@ -52,7 +52,7 @@ func (h *DropMeso) Handle(ctx *core.ClientContext, req *request.DropMeso) error 
 
 	mapInstance := character.GetMap()
 	if mapInstance != nil {
-		if _, err := mapInstance.SpawnMeso(req.Count, character.Position, character.GetID(), constant.DropTypeFFA, true); err != nil {
+		if _, err := mapInstance.SpawnMeso(req.Count, character.Position, character.Position, character.GetID(), constant.DropTypeFFA, true); err != nil {
 			log.Printf("Failed to spawn meso on map: %v", err)
 		}
 	}

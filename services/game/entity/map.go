@@ -1145,18 +1145,19 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	return nil
 }
 
-func (m *Map) SpawnMeso(count int32, position types.Point[int16], ownerID uint32, dropType constant.DropType, playerDrop bool) (*Meso, error) {
+func (m *Map) SpawnMeso(count int32, position, spawnFrom types.Point[int16], ownerID uint32, dropType constant.DropType, playerDrop bool) (*Meso, error) {
 	oid := m.allocateOID()
 
 	dropPoint, ok := m.Wz.DropPoint(position)
 	if !ok {
-		dropPoint = position
+		dropPoint = spawnFrom
 	}
 
 	meso := NewMeso(count, dropPoint, ownerID, dropType, oid, m.GameWorld, m)
 
 	fp := meso.GetFieldPlacement()
 	if fp != nil {
+		fp.SpawnedPoint = spawnFrom
 		fp.PlayerDrop = playerDrop
 		m.registerFieldDropTimers(fp, dropType)
 	}

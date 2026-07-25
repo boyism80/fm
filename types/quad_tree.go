@@ -120,9 +120,21 @@ func (n *QuadTreeNode[T, U]) Relations(p Vector2[T]) []U {
 }
 
 func (n *QuadTreeNode[T, U]) Find(p Vector2[T]) (*U, bool) {
-	relations := n.relations(p)
+	if n == nil {
+		return nil, false
+	}
+	if p.Y > n.Bounds.Bottom {
+		return nil, false
+	}
+	var matched []U
+	n.QueryRange(Rect[T]{
+		Left:   p.X,
+		Top:    p.Y,
+		Right:  p.X,
+		Bottom: n.Bounds.Bottom,
+	}, &matched)
 	items := []U{}
-	for _, item := range relations {
+	for _, item := range matched {
 		b := item.Bounds()
 		if b.Left <= p.X && p.X <= b.Right {
 			items = append(items, item)
@@ -131,7 +143,8 @@ func (n *QuadTreeNode[T, U]) Find(p Vector2[T]) (*U, bool) {
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].Compare(items[j])
 	})
-	for _, item := range items {
+	for i := range items {
+		item := items[i]
 		bound := item.Bounds()
 		if bound.Left != bound.Right && bound.Top != bound.Bottom {
 			s1 := float64(math.Abs(float64(bound.Bottom - bound.Top)))
@@ -147,11 +160,11 @@ func (n *QuadTreeNode[T, U]) Find(p Vector2[T]) (*U, bool) {
 				calcY = T(bound.Top) + T(int64(s5))
 			}
 			if calcY >= p.Y {
-				return &item, true
+				return &items[i], true
 			}
 		} else {
 			if T(bound.Top) >= p.Y {
-				return &item, true
+				return &items[i], true
 			}
 		}
 	}

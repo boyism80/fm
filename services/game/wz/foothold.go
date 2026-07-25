@@ -25,17 +25,11 @@ func (f Foothold) Compare(o types.AnySpatial[int16]) bool {
 	if !ok {
 		return false
 	}
-
 	if f.Y2 < other.Y1 {
 		return true
 	}
 	if f.Y1 > other.Y2 {
 		return false
 	}
-	fTop := min(f.Y1, f.Y2)
-	oTop := min(other.Y1, other.Y2)
-	if fTop != oTop {
-		return fTop < oTop
-	}
-	return f.ID < other.ID
+	return false
 }
