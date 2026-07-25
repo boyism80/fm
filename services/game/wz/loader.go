@@ -1369,9 +1369,9 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 					spawn.Position.Y = int16(intField.Value)
 				case "f":
 					if intField.Value == 0 {
-						spawn.FacingDirection = FACING_DIRECTION_LEFT
-					} else {
 						spawn.FacingDirection = FACING_DIRECTION_RIGHT
+					} else {
+						spawn.FacingDirection = FACING_DIRECTION_LEFT
 					}
 				case "reactorTime":
 					if intField.Value > 0 {
@@ -1404,9 +1404,9 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				case "f":
 					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
 						if val == 0 {
-							spawn.FacingDirection = FACING_DIRECTION_LEFT
-						} else {
 							spawn.FacingDirection = FACING_DIRECTION_RIGHT
+						} else {
+							spawn.FacingDirection = FACING_DIRECTION_LEFT
 						}
 					}
 				case "reactorTime":
