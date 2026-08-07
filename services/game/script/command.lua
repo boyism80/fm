@@ -26,7 +26,7 @@ local function resolve_skill_entry(me, skill_arg)
 		if wz == nil then
 			return nil, "존재하지 않는 스킬입니다: " .. tostring(skill_arg)
 		end
-		skill_id = wz.id
+		skill_id = wz:id()
 	end
 	local skill = me:skill(skill_id)
 	if skill == nil then
@@ -318,7 +318,7 @@ local function prepare_quest_complete(me, quest)
 	if wz == nil then
 		return false, "wz"
 	end
-	local reqs = wz.complete_requirements
+	local reqs = wz:complete_requirements()
 	if reqs == nil then
 		return true
 	end
@@ -336,7 +336,7 @@ local function prepare_quest_start(me, quest)
 	if wz == nil then
 		return false, "wz"
 	end
-	local reqs = wz.start_requirements
+	local reqs = wz:start_requirements()
 	if reqs == nil then
 		return true
 	end
@@ -350,10 +350,10 @@ local function prepare_quest_start(me, quest)
 end
 
 local function start_npc_id(wz)
-	if wz == nil or wz.start_requirements == nil then
+	if wz == nil or wz:start_requirements() == nil then
 		return nil
 	end
-	for _, req in ipairs(wz.start_requirements) do
+	for _, req in ipairs(wz:start_requirements()) do
 		if req.kind == "npc" then
 			local npc_id = req.value or 0
 			if npc_id ~= 0 then
@@ -458,6 +458,39 @@ local command_funcs = {
 			end
 			me:population(v)
 			me:notice(string.format("인기도 설정: %d", v))
+			return true
+		end,
+	},
+	["퀘스트상태"] = {
+		privilege = ROLE.Admin,
+		usage = "<퀘스트ID> - 퀘스트 진행 상태 조회",
+		command = function(me, args)
+			local quest_id = tonumber(args[1])
+			if not quest_id then
+				me:notice("사용법: /퀘스트상태 <퀘스트ID>")
+				return true
+			end
+			local quest = me:quest(quest_id)
+			if quest == nil then
+				me:notice(string.format("퀘스트 %d 없음", quest_id))
+				return true
+			end
+			local name = ""
+			local wz = quest:wz()
+			if wz ~= nil then
+				name = wz:name() or ""
+			end
+			local state = "미시작"
+			if quest:completed() then
+				state = "완료"
+			elseif quest:started() then
+				state = "진행"
+			end
+			if name ~= "" then
+				me:notice(string.format("퀘스트 %d (%s): %s", quest_id, name, state))
+			else
+				me:notice(string.format("퀘스트 %d: %s", quest_id, state))
+			end
 			return true
 		end,
 	},
@@ -624,7 +657,7 @@ local command_funcs = {
 				me:notice("존재하지 않는 맵입니다: " .. tostring(map_arg))
 				return true
 			end
-			me:map(map_info.id, spawn)
+			me:map(map_info:id(), spawn)
 			return true
 		end,
 	},
@@ -944,8 +977,8 @@ local command_funcs = {
 				local mob_id = mob:id()
 				local mob_name = tostring(mob_id)
 				local wz = id2mob(mob_id)
-				if wz ~= nil and wz.name ~= nil and wz.name ~= "" then
-					mob_name = wz.name
+				if wz ~= nil and wz:name() ~= nil and wz:name() ~= "" then
+					mob_name = wz:name()
 				end
 				me:notice(string.format("  %d - %s", mob_id, mob_name))
 			end
@@ -1095,15 +1128,15 @@ local command_funcs = {
 			local added = 0
 			local updated = 0
 			for _, wz in pairs(wz_skills) do
-				local skill = me:skill(wz.id)
+				local skill = me:skill(wz:id())
 				if skill == nil then
-					skill = me:add_skill(wz.id)
+					skill = me:add_skill(wz:id())
 					if skill ~= nil then
 						added = added + 1
 					end
 				end
 				if skill ~= nil then
-					skill:level(wz.max_level, wz.master_level)
+					skill:level(wz:max_level(), wz:master_level())
 					updated = updated + 1
 				end
 			end
@@ -1149,18 +1182,18 @@ local command_funcs = {
 					me:notice("존재하지 않는 스킬입니다: " .. target)
 					return true
 				end
-				skill_id = skill_wz.id
+				skill_id = skill_wz:id()
 			end
 
 			if skill_wz ~= nil then
-				if level > skill_wz.max_level then
-					level = skill_wz.max_level
+				if level > skill_wz:max_level() then
+					level = skill_wz:max_level()
 				end
 			end
 
 			if master_level == nil then
 				if skill_wz ~= nil then
-					master_level = skill_wz.master_level
+					master_level = skill_wz:master_level()
 				else
 					master_level = level
 				end
@@ -1168,8 +1201,8 @@ local command_funcs = {
 			if master_level < level then
 				master_level = level
 			end
-			if skill_wz ~= nil and master_level > skill_wz.master_level then
-				master_level = skill_wz.master_level
+			if skill_wz ~= nil and master_level > skill_wz:master_level() then
+				master_level = skill_wz:master_level()
 			end
 
 			local skill = me:skill(skill_id)

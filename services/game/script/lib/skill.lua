@@ -231,7 +231,7 @@ M.apply_archer_puppet_buff = function(me, skill)
 	else
 		spawn_pos = { x = grounded.x, y = grounded.y }
 	end
-	local s = me:create_summon(wz.id, level, effect.time, SummonMovementType.Stationary, SummonType.Puppet, spawn_pos)
+	local s = me:create_summon(wz:id(), level, effect.time, SummonMovementType.Stationary, SummonType.Puppet, spawn_pos)
 	if s ~= nil then
 		s:max_hp(effect.x, false)
 		s:hp(effect.x, false)
@@ -240,7 +240,7 @@ end
 
 M.apply_archer_puppet_unbuff = function(me, skill)
 	local wz = skill:wz()
-	me:remove_summon(wz.id)
+	me:remove_summon(wz:id())
 end
 
 M.absorb_magic_guard = function(me, attacker, skill, damage)

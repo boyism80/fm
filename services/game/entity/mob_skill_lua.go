@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/boyism80/fm/core/clock"
+	"github.com/boyism80/fm/core/luax"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -55,7 +56,7 @@ func (s *MobSkill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(skill.LevelData.SkillWz.ToLuaTable(L))
+			L.Push(luax.NewLuable(L, skill.LevelData.SkillWz))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {

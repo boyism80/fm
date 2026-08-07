@@ -65,6 +65,8 @@ type GameServer struct {
 	config            *GameConfig
 	resources         *wz.Resources
 	maps              map[uint32]*entity.Map
+	instanceMaps      map[uint32]*entity.Map
+	nextInstanceID    atomic.Uint32
 	mapsMutex         sync.RWMutex
 	packetHandler     *core.PacketHandler
 	packetHandlers    *PacketHandlerRegistry
@@ -73,6 +75,7 @@ type GameServer struct {
 	nilActorPID       *actor.PID
 	characterListener entity.CharacterListener
 	mobListener       entity.MobListener
+	mapListener       entity.MapListener
 	internalClient    internal.InternalClient
 	internalConn      *grpc.ClientConn
 	party             *PartyContainer
@@ -191,6 +194,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		config:           config,
 		resources:        resources,
 		maps:             make(map[uint32]*entity.Map),
+		instanceMaps:     make(map[uint32]*entity.Map),
 		packetHandler:    core.NewPacketHandler(),
 		actorSystem:      actorSystem,
 		actorRegistry:    actorRegistry,
@@ -413,6 +417,7 @@ func (gs *GameServer) GetMesoRate() int {
 func (gs *GameServer) preCreateMaps() {
 	log.Println("Setting up map listeners...")
 	gameMapListener := NewGameMapListener(gs)
+	gs.mapListener = gameMapListener
 
 	nilMapProps := actor.PropsFromProducer(func() actor.Actor {
 		return g_actor.NewMapActor(nil, gs)

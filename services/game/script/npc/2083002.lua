@@ -35,7 +35,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 
 		local options = nil
 		if map_id == ENTRY_MAP then
@@ -88,7 +88,7 @@ return {
 		end
 
 		if map_id == BOSS_ENTRY then
-			if selected == 0 then
+			if selected == 1 then
 				me:dialog(npc, "이곳은 혼테일의 동굴 입구입니다. #b원정대의 표식#k을 클릭하여 원정대 퀘스트를 시작할 수 있습니다.")
 				return
 			end
@@ -100,7 +100,7 @@ return {
 		end
 
 		if map_id >= 240060000 and map_id <= 240060201 then
-			if selected == 0 then
+			if selected == 1 then
 				me:dialog(npc, "이곳은 혼테일의 동굴 입구입니다. 혼테일을 물리치고 평화를 찾아오세요!")
 				return
 			end
@@ -111,7 +111,7 @@ return {
 			return
 		end
 
-		if selected == 0 then
+		if selected == 1 then
 			if map_id == ENTRY_MAP then
 				me:dialog(npc, "이곳은 혼테일의 동굴 입구로써, #b6명#k의 파티원이 퀘스트에 도전할 수 있습니다. #b6명#k의 파티원이 모이면, #b혼테일의 이정표#k를 눌러 퀘스트를 시작할 수 있습니다. #b명예 결사대원의 증표#k가 있다면 #b결사대원의 암호석판#k을 클릭하여 혼테일의 동굴 입구로 바로 이동할수도 있습니다.")
 			elseif map_id >= 240050100 and map_id <= 240050105 then

@@ -25,14 +25,9 @@ local function clear(sm)
 	sm:finish(exit_map)
 end
 
-local function in_stage(map_id)
-	return map_id >= 240050100 and map_id <= 240050310
-end
-
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_maps(stage_maps)
 		group:declare_min_players(5)
 		group:declare_exit_map(FAIL_EXIT)
 	end,
@@ -47,6 +42,8 @@ return {
 			map:reset()
 			map:respawn(true)
 		end
+		return stage_maps
+
 	end,
 
 	on_start = function(sm)
@@ -58,13 +55,6 @@ return {
 	end,
 
 	on_mob_kill = function(sm, player, mobs)
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if in_stage(map_id) then
-			return
-		end
-		sm:unregister(player)
 	end,
 
 	on_player_dead = function(sm, player)

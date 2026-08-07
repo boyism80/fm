@@ -13,7 +13,7 @@ return {
 		end
 		local reactor = map:reactor_by_name("elevator")
 		if reactor ~= nil and reactor:state() == 0 then
-			me:map(map:wz().id + 10)
+			me:map(map:wz():id() + 10)
 			return
 		end
 		me:notice("엘리베이터 문이 닫혀있습니다.", Msg.PinkText)

@@ -22,7 +22,7 @@ return {
 			return
 		end
 
-		if sel == 0 then
+		if sel == 1 then
 			me:dialog(npc, "데우는 몬스터가 아니라고 하지 않았나! 여기서 썩 꺼지게!", false, false)
 			return
 		end
@@ -35,7 +35,7 @@ return {
 			return
 		end
 
-		if sel == 0 then
+		if sel == 1 then
 			me:dialog(npc, "데우에게 모든 죄를 뒤집어 씌우려는 겐가? 더 말할 필요가 없네. 여기서 썩 사라지게.", false, false)
 			return
 		end
@@ -48,7 +48,7 @@ return {
 			return
 		end
 
-		if sel == 0 then
+		if sel == 1 then
 			me:dialog(npc, "쉿, 목소리를 낮추게. 누가 들을라. 그 생각은 아직은 위험한 것 같군. 사막의 수호신이 지금은 뭘 하는지..", false, false)
 			return
 		end
@@ -61,7 +61,7 @@ return {
 			return
 		end
 
-		if sel == 0 then
+		if sel == 1 then
 			me:dialog(npc, "사막의 수호신 데우를 몬스터로 의심하지 말게. 흐음.. 아쉽지만 더 할 얘기는 없어 보이는군.", false, false)
 			return
 		end

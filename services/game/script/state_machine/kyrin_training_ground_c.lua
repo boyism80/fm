@@ -13,7 +13,6 @@ end
 return {
 	on_init = function(group)
 		group:set_property("started", "false")
-		group:declare_maps({ TRAINING_MAP })
 		group:declare_min_players(1)
 	end,
 
@@ -25,6 +24,8 @@ return {
 			map:reset()
 			map:respawn(true)
 		end
+		return { TRAINING_MAP }
+
 	end,
 
 	on_start = function(sm)
@@ -34,13 +35,6 @@ return {
 	on_player_enter = function(sm, player)
 		player:map(TRAINING_MAP)
 		sm:notice("카이린의 공격으로부터 2분 이상 버티세요.", Msg.PinkText)
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if map_id == TRAINING_MAP then
-			return
-		end
-		sm:finish(0)
 	end,
 
 	on_player_disconnected = function(sm, player)

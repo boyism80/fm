@@ -6,21 +6,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (q *Quest) ToLuaTable(L *lua.LState) *lua.LTable {
-	tbl := L.NewTable()
-	if q == nil {
-		return tbl
-	}
-	tbl.RawSetString("id", lua.LNumber(q.ID))
-	tbl.RawSetString("name", lua.LString(q.Meta.Name))
-	tbl.RawSetString("complete_requirements", questRequirementsToLuaTable(L, q.Complete.Requirements))
-	tbl.RawSetString("start_requirements", questRequirementsToLuaTable(L, q.Start.Requirements))
-	if len(q.PartyRanks) > 0 {
-		tbl.RawSetString("party_ranks", partyRanksToLuaTable(L, q.PartyRanks))
-	}
-	return tbl
-}
-
 func partyRanksToLuaTable(L *lua.LState, ranks map[string][]PartyQuestRankCheck) *lua.LTable {
 	out := L.NewTable()
 	if len(ranks) == 0 {

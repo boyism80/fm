@@ -17,7 +17,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 		local progress = tonumber(sm:get_property("stage1progress")) or 0
 
 		if map_id == 240050101 then

@@ -32,8 +32,8 @@ end
 return {
 	on_init = function(group)
 		group:set_property("noEntry", "false")
-		group:declare_maps({ QUEST_MAP })
 		group:declare_min_players(1)
+		group:declare_exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
@@ -45,6 +45,8 @@ return {
 			map:respawn(true)
 			shuffle_reactors(map)
 		end
+		return { QUEST_MAP }
+
 	end,
 
 	on_start = function(sm)
@@ -53,13 +55,6 @@ return {
 
 	on_player_enter = function(sm, player)
 		player:map(QUEST_MAP)
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if map_id == QUEST_MAP then
-			return
-		end
-		finish(sm)
 	end,
 
 	on_player_disconnected = function(sm, player)

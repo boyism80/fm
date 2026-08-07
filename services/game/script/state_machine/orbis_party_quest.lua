@@ -96,7 +96,6 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_maps(STAGE_MAPS)
 		group:declare_min_players(1)
 		group:declare_exit_map(EXIT_MAP)
 	end,
@@ -120,6 +119,8 @@ return {
 		if garden ~= nil then
 			pq.shuffle_reactors(garden, nil, nil, FIXED_REACTOR)
 		end
+		return STAGE_MAPS
+
 	end,
 
 	on_start = function(sm)
@@ -133,10 +134,6 @@ return {
 	end,
 
 	on_changed_map = function(sm, player, map_id)
-		if map_id < 920010000 or map_id > 920011100 then
-			sm:unregister(player)
-			return
-		end
 		if map_id == BONUS_MAP then
 			sm:set_property("allfinish", "1")
 			sm:restart_timer(BONUS_MS)

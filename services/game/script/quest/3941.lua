@@ -8,8 +8,8 @@ local function morph_source(me)
 		return -1
 	end
 	local wz = b:wz()
-	if type(wz.id) == "number" then
-		return wz.id
+	if type(wz:id()) == "number" then
+		return wz:id()
 	end
 	return wz:id()
 end

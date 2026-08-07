@@ -15,7 +15,7 @@ return {
 		end
 
 		local from = me:map()
-		local from_id = from:wz().id
+		local from_id = from:wz():id()
 		me:map(924030000)
 		local m = me:map()
 		if m == nil then

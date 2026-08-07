@@ -76,7 +76,7 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 	}
 	if req.FieldEnter > 0 {
 		mapInst := ch.GetMap()
-		if mapInst == nil || int(mapInst.GetMapID()) != req.FieldEnter {
+		if mapInst == nil || int(mapInst.TemplateID()) != req.FieldEnter {
 			return false
 		}
 	}

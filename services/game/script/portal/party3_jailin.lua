@@ -4,6 +4,6 @@ return {
 		if map == nil or map:wz() == nil then
 			return
 		end
-		me:map(map:wz().id + 2)
+		me:map(map:wz():id() + 2)
 	end
 }

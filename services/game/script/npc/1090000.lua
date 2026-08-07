@@ -106,7 +106,7 @@ return {
 	on_click = function(me, npc)
 		local map = me:map()
 		local wz = map ~= nil and map:wz() or nil
-		if wz ~= nil and wz.id == CLEAR_MAP then
+		if wz ~= nil and wz:id() == CLEAR_MAP then
 			handle_clear(me, npc)
 			return
 		end

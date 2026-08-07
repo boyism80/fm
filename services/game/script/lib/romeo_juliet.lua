@@ -169,7 +169,6 @@ local function create(cfg)
 
 		on_init = function(group)
 			group:set_property("state", "0")
-			group:declare_maps(maps)
 			group:declare_min_players(1)
 			group:declare_exit_map(exit_map)
 		end,
@@ -201,6 +200,7 @@ local function create(cfg)
 				boss:block_gen(true)
 				boss:kill_all_mobs()
 			end
+			return maps
 		end,
 
 		on_start = function(sm)
@@ -214,10 +214,6 @@ local function create(cfg)
 		end,
 
 		on_changed_map = function(sm, player, map_id)
-			if map_id < maps[1] or map_id > reward_map then
-				sm:unregister(player)
-				return
-			end
 			if map_id == boss_map and sm:get_property("urete_boss") == "" then
 				local group = sm:group()
 				local boss = group ~= nil and group:map(boss_map) or nil

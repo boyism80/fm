@@ -29,15 +29,15 @@ end
 
 local function element_weak_multiplier(swz, mwz)
 	local weak = 1.0
-	if mwz == nil or mwz.elem_resist == nil then
+	if mwz == nil or mwz:elem_resist() == nil then
 		return weak
 	end
-	local attr = swz.elem_attr
+	local attr = swz:elem_attr()
 	if attr == nil or attr == "" then
 		return weak
 	end
 	local letter = string.lower(string.sub(tostring(attr), 1, 1))
-	local v = mwz.elem_resist[letter]
+	local v = mwz:elem_resist()[letter]
 	if v == nil then
 		return weak
 	end
@@ -151,8 +151,8 @@ M.drain_hp_from_damage = function(me, skill, damages)
 		end
 		local mob_max_hp = 0
 		local mwz = mob:wz()
-		if mwz ~= nil and mwz.max_hp ~= nil then
-			mob_max_hp = tonumber(mwz.max_hp) or 0
+		if mwz ~= nil and mwz:max_hp() ~= nil then
+			mob_max_hp = tonumber(mwz:max_hp()) or 0
 		end
 		local raw = math.floor(tot_damage * pct / 100.0)
 		local heal = math.min(mob_max_hp, math.min(raw, cap_half))
@@ -220,7 +220,7 @@ M.apply_shadow_web_skill = function(me, skill)
 	end
 	M.for_each_mob_in_skill_area(me, skill, function(mob)
 		local mwz = mob:wz()
-		if mwz ~= nil and mwz.boss then
+		if mwz ~= nil and mwz:boss() then
 			return false
 		end
 		mob:buff(MobBuff.ShadowWeb, 1, duration_ms, skill, me)
@@ -350,7 +350,7 @@ M.compute_poison_tick_damage_wz_level = function(wz, level, mob, multiplier)
 		return 0
 	end
 	local mwz = mob:wz()
-	local max_hp = mwz.max_hp or 0
+	local max_hp = mwz:max_hp() or 0
 	if max_hp <= 0 then
 		return 0
 	end
@@ -468,7 +468,7 @@ M.increment_combo_orbs = function(me, targets, skill)
     if skill ~= nil then
         local wz = skill:wz()
         if wz ~= nil then
-            local sid = wz.id
+            local sid = wz:id()
             if sid == shout_hero or sid == shout_dw then
                 return
             end
@@ -531,7 +531,7 @@ M.spawn_pickpocket_meso = function(me, skill, damages)
         return
     end
     local wz = skill and skill:wz()
-    local skill_id = (wz and wz.id) or 0
+    local skill_id = (wz and wz:id()) or 0
     if not PICKPOCKET_SKILL_IDS[skill_id] then
         return
     end
@@ -588,7 +588,7 @@ M.freeze_from_ice_charge = function(me, damages)
     if wz == nil then
         return
     end
-    local sid = wz.id
+    local sid = wz:id()
     if sid ~= Skill.IceChargeSword and sid ~= Skill.BlizzardChargeBw then
         return
     end

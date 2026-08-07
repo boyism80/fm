@@ -9,7 +9,7 @@ return {
 		if map == nil or map:wz() == nil then
 			return
 		end
-		local map_id = map:wz().id
+		local map_id = map:wz():id()
 		local sm = me:state_machine()
 		if map_id == 926100500 or map_id == 926110500 then
 			if sm == nil then

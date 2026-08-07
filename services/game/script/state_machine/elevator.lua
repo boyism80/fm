@@ -28,14 +28,6 @@ end
 
 return {
 	on_init = function(group)
-		group:declare_maps({
-			FLOOR_2,
-			FLOOR_99,
-			WAIT_DOWN,
-			RUN_DOWN,
-			WAIT_UP,
-			RUN_UP,
-		})
 		local sm, err = group:start_persistent()
 		if sm == nil then
 			if err ~= nil then
@@ -44,6 +36,16 @@ return {
 			return
 		end
 		sm:after("waiting_to_down", 1000, "on_waiting_to_down")
+	end,
+	on_create = function(sm)
+		return {
+			FLOOR_2,
+			FLOOR_99,
+			WAIT_DOWN,
+			RUN_DOWN,
+			WAIT_UP,
+			RUN_UP,
+		}
 	end,
 
 	on_waiting_to_down = function(sm)

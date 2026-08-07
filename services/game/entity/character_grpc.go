@@ -210,7 +210,7 @@ func (ch *Character) PersistMapID() uint32 {
 	if ch.GetHp() < 1 && m.Wz.ReturnMapId > 0 {
 		return uint32(m.Wz.ReturnMapId)
 	}
-	return m.GetMapID()
+	return m.TemplateID()
 }
 
 func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {

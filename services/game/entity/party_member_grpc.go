@@ -53,7 +53,7 @@ func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32, ro
 	}
 	mapID := uint32(0)
 	if m := ch.GetMap(); m != nil {
-		mapID = m.GetMapID()
+		mapID = m.TemplateID()
 	}
 	m := &PartyMember{
 		WorldID:       worldID,

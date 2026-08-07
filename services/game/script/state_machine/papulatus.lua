@@ -36,7 +36,6 @@ end
 return {
 	on_init = function(group)
 		group:set_property("battle", "0")
-		group:declare_maps({ BOSS_MAP })
 		group:declare_min_players(1)
 		group:declare_exit_map(LOBBY_MAP)
 		reset_gate(group)
@@ -49,6 +48,8 @@ return {
 			map:reset()
 		end
 		reset_gate(group)
+		return { BOSS_MAP }
+
 	end,
 
 	on_start = function(sm)
@@ -62,13 +63,6 @@ return {
 
 	on_player_enter = function(sm, player)
 		player:map(BOSS_MAP)
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if map_id == BOSS_MAP then
-			return
-		end
-		sm:unregister(player)
 	end,
 
 	on_player_dead = function(sm, player)

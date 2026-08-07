@@ -35,7 +35,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 
 		if map_id == SHORTCUT_MAP then
 			me:dialog(npc, "안녕하세요? 저는 토미입니다. 이곳 근처에는 돼지마을이 있습니다. 그 곳의 돼지들은 성격이 포악하고 욕심이 유달리 많아 여행자들이 가지고 다니던 각종 무기들을 빼앗아 마을에서 추방되어 이곳에 숨어 지내고 있어요.")

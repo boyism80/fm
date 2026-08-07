@@ -17,7 +17,6 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_maps({ QUEST_MAP })
 		group:declare_min_players(1)
 	end,
 
@@ -33,6 +32,8 @@ return {
 			end
 			map:spawn_mob(TAME_PIG_ID, -26, 335)
 		end
+		return { QUEST_MAP }
+
 	end,
 
 	on_start = function(sm)
@@ -42,13 +43,6 @@ return {
 	on_player_enter = function(sm, player)
 		player:map(QUEST_MAP)
 		sm:notice("멧돼지를 외계인으로부터 보호하고, 페로몬과 연구 보고서를 회수하세요!", Msg.PinkText)
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if map_id == QUEST_MAP then
-			return
-		end
-		sm:finish(0)
 	end,
 
 	on_mob_die = function(sm, mob)

@@ -25,7 +25,7 @@ return {
 
 		local side = 0
 		local map = me:map()
-		if map ~= nil and map:wz().id == 261020200 then
+		if map ~= nil and map:wz():id() == 261020200 then
 			side = 1
 		end
 

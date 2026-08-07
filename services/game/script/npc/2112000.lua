@@ -6,7 +6,7 @@ return {
 		if map == nil or map:wz() == nil then
 			return
 		end
-		local map_id = map:wz().id
+		local map_id = map:wz():id()
 		local sm = me:state_machine()
 		if sm == nil then
 			return

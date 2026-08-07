@@ -47,7 +47,6 @@ return {
 	on_init = function(group)
 		group:set_property("state", "0")
 		group:set_property("allfinish", "")
-		group:declare_maps(STAGE_MAPS)
 		group:declare_min_players(MIN_PARTY_SIZE)
 		group:declare_exit_map(LOBBY_MAP)
 	end,
@@ -69,6 +68,8 @@ return {
 				end
 			end
 		end
+		return STAGE_MAPS
+
 	end,
 
 	on_start = function(sm)
@@ -81,18 +82,13 @@ return {
 	end,
 
 	on_changed_map = function(sm, player, map_id)
-		if map_id > 922010000 and map_id < 922011000 then
-			return
-		end
 		if map_id == BONUS_MAP then
 			local group = sm:group()
 			if group ~= nil and group:get_property("allfinish") ~= "1" then
 				group:set_property("allfinish", "1")
 				sm:restart_timer(BONUS_DURATION_MS)
 			end
-			return
 		end
-		sm:unregister(player)
 	end,
 
 	on_left_party = function(sm, player)

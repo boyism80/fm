@@ -53,9 +53,42 @@ type MobSpawn struct {
 	LastSpawnedAt time.Time
 }
 
+type MapInitOpts struct {
+	Npcs     bool
+	Reactors bool
+	Respawns bool
+	Instance bool
+}
+
+func DefaultMapInitOpts() MapInitOpts {
+	return MapInitOpts{
+		Npcs:     true,
+		Reactors: true,
+		Respawns: true,
+	}
+}
+
+func ParseMapInitOptsLua(tbl *lua.LTable) MapInitOpts {
+	opts := DefaultMapInitOpts()
+	if tbl == nil {
+		return opts
+	}
+	if v := tbl.RawGetString("npcs"); v != lua.LNil {
+		opts.Npcs = lua.LVAsBool(v)
+	}
+	if v := tbl.RawGetString("reactors"); v != lua.LNil {
+		opts.Reactors = lua.LVAsBool(v)
+	}
+	if v := tbl.RawGetString("respawns"); v != lua.LNil {
+		opts.Respawns = lua.LVAsBool(v)
+	}
+	return opts
+}
+
 type Map struct {
 	Wz                  *wz.Map
 	id                  uint32
+	instance            bool
 	objects             map[constant.ObjectType]map[uint32]Object
 	sections            *sectionContainer
 	controllerTable     *ControllerTable
@@ -85,6 +118,10 @@ type BroadcastOption struct {
 }
 
 func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint32, gw GameWorld, actorPID *actor.PID) *Map {
+	return NewMapWithOpts(id, listener, mobListener, mapId, gw, actorPID, DefaultMapInitOpts())
+}
+
+func NewMapWithOpts(id uint32, listener MapListener, mobListener MobListener, mapId uint32, gw GameWorld, actorPID *actor.PID, opts MapInitOpts) *Map {
 	if listener == nil {
 		panic("MapListener cannot be nil")
 	}
@@ -105,6 +142,7 @@ func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint
 
 	mapInstance := &Map{
 		id:              id,
+		instance:        opts.Instance,
 		objects:         make(map[constant.ObjectType]map[uint32]Object),
 		sections:        newSectionContainer(),
 		controllerTable: nil,
@@ -122,9 +160,15 @@ func NewMap(id uint32, listener MapListener, mobListener MobListener, mapId uint
 	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
 
 	mapInstance.initPortals()
-	mapInstance.initNpcs()
-	mapInstance.initReactors()
-	mapInstance.initMobs()
+	if opts.Npcs {
+		mapInstance.initNpcs()
+	}
+	if opts.Reactors {
+		mapInstance.initReactors()
+	}
+	if opts.Respawns {
+		mapInstance.initMobs()
+	}
 
 	return mapInstance
 }
@@ -210,7 +254,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 
 	m.callMapLifecycleScript(character, "on_map_enter")
 	if sm := character.StateMachine(); sm != nil {
-		sm.CallHook("on_changed_map", sm, character, m.GetMapID())
+		sm.HandlePlayerMapEnter(character, m)
 	}
 
 	return nil
@@ -233,7 +277,7 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 	}
 	luax.CallAsync(root, thread, hook, character, m)
 
-	mapScriptPath := fmt.Sprintf("script/map/%d.lua", m.GetMapID())
+	mapScriptPath := fmt.Sprintf("script/map/%d.lua", m.TemplateID())
 	mapThread, err := luax.NewThread(root, mapScriptPath)
 	if err != nil {
 		return
@@ -283,6 +327,17 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 }
 
 func (m *Map) GetMapID() uint32 { return m.id }
+
+func (m *Map) TemplateID() uint32 {
+	if m == nil || m.Wz == nil {
+		return 0
+	}
+	return uint32(m.Wz.ID)
+}
+
+func (m *Map) IsInstance() bool {
+	return m != nil && m.instance
+}
 
 func (m *Map) GetObject(objectType constant.ObjectType, id uint32) Object {
 	if m == nil {

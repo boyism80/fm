@@ -32,12 +32,6 @@ end
 
 return {
 	on_init = function(group)
-		group:declare_maps({
-			WAITING_ORBIS,
-			WAITING_ARIANT,
-			RIDE_ORBIS,
-			RIDE_ARIANT,
-		})
 		group:set_property("ready", "false")
 		group:set_property("docked", "false")
 		group:set_property("entry", "false")
@@ -49,6 +43,14 @@ return {
 			return
 		end
 		sm:cron("dock", DOCK_CRON, "on_dock")
+	end,
+	on_create = function(sm)
+		return {
+			WAITING_ORBIS,
+			WAITING_ARIANT,
+			RIDE_ORBIS,
+			RIDE_ARIANT,
+		}
 	end,
 
 	on_dock = function(sm)

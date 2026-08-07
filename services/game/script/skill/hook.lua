@@ -145,7 +145,7 @@ local function on_mp_eater(me, damages)
 		end
 
 		local wz = mob:wz()
-		local is_boss = wz and wz.boss
+		local is_boss = wz and wz:boss()
 		if is_boss then
 			goto continue_mob
 		end

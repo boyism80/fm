@@ -57,10 +57,10 @@ local function recalc_rank(quest)
 		return
 	end
 	local wz = quest:wz()
-	if wz == nil or wz.party_ranks == nil then
+	if wz == nil or wz:party_ranks() == nil then
 		return
 	end
-	local checks = wz.party_ranks[new_rank]
+	local checks = wz:party_ranks()[new_rank]
 	if checks == nil then
 		return
 	end

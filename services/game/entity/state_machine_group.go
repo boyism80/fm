@@ -9,16 +9,15 @@ import (
 )
 
 type StateMachineGroup struct {
-	mu             sync.Mutex
-	Name           string
-	ScriptPath     string
-	GameWorld      GameWorld
-	props          map[string]string
-	machines       map[string]*StateMachine
-	bootMapID      uint32
-	declaredMapIDs []uint32
-	minPlayers     int
-	exitMapID      uint32
+	mu         sync.Mutex
+	Name       string
+	ScriptPath string
+	GameWorld  GameWorld
+	props      map[string]string
+	machines   map[string]*StateMachine
+	bootMapID  uint32
+	minPlayers int
+	exitMapID  uint32
 }
 
 func NewStateMachineGroup(name, scriptPath string, gw GameWorld) *StateMachineGroup {
@@ -61,26 +60,6 @@ func (g *StateMachineGroup) GetMap(mapID uint32) *Map {
 		return nil
 	}
 	return g.GameWorld.GetMapSystem().Get(mapID)
-}
-
-func (g *StateMachineGroup) DeclareMaps(ids []uint32) {
-	if g == nil {
-		return
-	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.declaredMapIDs = append(g.declaredMapIDs[:0], ids...)
-}
-
-func (g *StateMachineGroup) DeclaredMaps() []uint32 {
-	if g == nil {
-		return nil
-	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	ids := make([]uint32, len(g.declaredMapIDs))
-	copy(ids, g.declaredMapIDs)
-	return ids
 }
 
 func (g *StateMachineGroup) DeclareMinPlayers(n int) {
@@ -245,9 +224,6 @@ func (g *StateMachineGroup) Create(id string, opts CreateOpts) (*StateMachine, e
 	}
 	if g.GameWorld == nil {
 		return nil, fmt.Errorf("game world is nil")
-	}
-	if len(g.DeclaredMaps()) == 0 {
-		return nil, fmt.Errorf("state machine group %s declared no maps", g.Name)
 	}
 
 	g.mu.Lock()

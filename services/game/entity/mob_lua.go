@@ -756,24 +756,11 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Mob expected")
 				return 0
 			}
-
-			tbl := L.NewTable()
-			if mob.Wz != nil {
-				tbl.RawSetString("id", lua.LNumber(mob.Wz.ID))
-				tbl.RawSetString("level", lua.LNumber(mob.Wz.Level))
-				tbl.RawSetString("max_hp", lua.LNumber(mob.Wz.MaxHP))
-				tbl.RawSetString("max_mp", lua.LNumber(mob.Wz.MaxMP))
-				tbl.RawSetString("exp", lua.LNumber(mob.Wz.EXP))
-				tbl.RawSetString("boss", lua.LBool(mob.Wz.Boss))
-				if len(mob.Wz.ElemResist) > 0 {
-					er := L.NewTable()
-					for k, v := range mob.Wz.ElemResist {
-						er.RawSetString(k, lua.LNumber(v))
-					}
-					tbl.RawSetString("elem_resist", er)
-				}
+			if mob.Wz == nil {
+				L.Push(lua.LNil)
+				return 1
 			}
-			L.Push(tbl)
+			L.Push(luax.NewLuable(L, mob.Wz))
 			return 1
 		},
 		"damage": func(L *lua.LState) int {

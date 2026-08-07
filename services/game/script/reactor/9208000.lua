@@ -7,7 +7,7 @@ return {
 			return
 		end
 		local wz = map:wz()
-		if wz == nil or wz.id ~= 910210000 then
+		if wz == nil or wz:id() ~= 910210000 then
 			return
 		end
 		local trigger = reactor:trigger()

@@ -34,7 +34,7 @@ return {
 			return
 		end
 
-		if selected == 0 then
+		if selected == 1 then
 			if me:guild() then
 				me:dialog(npc, '흐음.. 이미 길드에 가입되어 있는 것 같은데?')
 				return
@@ -52,7 +52,7 @@ return {
 			elseif result == guild_create_already_in_guild then
 				me:dialog(npc, '흐음.. 이미 길드에 가입되어 있는 것 같은데?')
 			end
-		elseif selected == 1 then
+		elseif selected == 2 then
 			local g = me:guild()
 			if not g or g:rank(me) ~= 1 then
 				me:dialog(npc, '길드장만이 길드를 해체할 수 있다네.')
@@ -69,7 +69,7 @@ return {
 			elseif result == guild_disband_failed then
 				me:dialog(npc, '길드 해체에 실패했습니다.')
 			end
-		elseif selected == 2 then
+		elseif selected == 3 then
 			local g = me:guild()
 			if not g or g:rank(me) ~= 1 then
 				me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')
@@ -93,7 +93,7 @@ return {
 			else
 				me:dialog(npc, '길드 최대 인원 증가에 실패했습니다.')
 			end
-		elseif selected == 3 then
+		elseif selected == 4 then
 			local g = me:guild()
 			if not g or g:rank(me) ~= 1 then
 				me:dialog(npc, '길드장만이 길드 인원을 늘릴 수 있다네.')

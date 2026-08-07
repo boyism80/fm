@@ -15,10 +15,6 @@ local STAGE_MAPS = {
 	SIDE_MAP,
 }
 
-local function in_stage(map_id)
-	return map_id == ENTRY_MAP or map_id == BOSS_MAP or map_id == SIDE_MAP
-end
-
 local function end_run(sm)
 	sm:finish(EXIT_MAP)
 end
@@ -26,7 +22,6 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_maps(STAGE_MAPS)
 		group:declare_min_players(1)
 		group:declare_exit_map(EXIT_MAP)
 	end,
@@ -46,6 +41,8 @@ return {
 			boss_map:kill_all_mobs()
 			boss_map:spawn_mob(BOSS_MOB, BOSS_SPAWN_X, BOSS_SPAWN_Y)
 		end
+		return STAGE_MAPS
+
 	end,
 
 	on_start = function(sm)
@@ -54,13 +51,6 @@ return {
 
 	on_player_enter = function(sm, player)
 		player:map(ENTRY_MAP)
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if in_stage(map_id) then
-			return
-		end
-		end_run(sm)
 	end,
 
 	on_scheduled_timeout = function(sm)

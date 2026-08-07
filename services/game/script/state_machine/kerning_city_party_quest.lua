@@ -20,7 +20,6 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_maps(stage_maps)
 		group:declare_min_players(2)
 		group:declare_exit_map(exit_map_id)
 	end,
@@ -41,6 +40,8 @@ return {
 				portal:script("enter_kpq")
 			end
 		end
+		return stage_maps
+
 	end,
 
 	on_start = function(sm)
@@ -53,18 +54,6 @@ return {
 	end,
 
 	on_player_dead = function(sm, player)
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if map_id == 103000800
-			or map_id == 103000801
-			or map_id == 103000802
-			or map_id == 103000803
-			or map_id == 103000804
-			or map_id == 103000805 then
-			return
-		end
-		sm:unregister(player)
 	end,
 
 	on_player_revive = function(sm, player)

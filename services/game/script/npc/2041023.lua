@@ -1,5 +1,7 @@
 -- NPC name (String.wz/Npc.img.xml): 플로
 
+local pq = require("script/lib/party_quest")
+
 local GROUP_NAME = "element_thanatos"
 local ENTRY_MAP = 220050300
 local PARTY_SIZE = 2
@@ -18,6 +20,7 @@ local function quest_ready(me)
 		and ice_main:started()
 		and ice_prerequisite ~= nil
 		and ice_prerequisite:completed()
+
 	return fire_ready or ice_ready
 end
 
@@ -39,7 +42,8 @@ return {
 				count = count + 1
 			end
 		end
-		if count ~= PARTY_SIZE then
+		local gm_solo = pq.is_gm(me) and count == 1
+		if count ~= PARTY_SIZE and not gm_solo then
 			me:dialog(npc, "파티 인원을 두명으로 맞춰주세요.")
 			return
 		end

@@ -25,13 +25,13 @@ return {
 		end
 
 		local str = ''
-		if sel == 0 then
+		if sel == 1 then
 			str = '메이플스토리를 처음 접하셨군요.'
 			score = score + 1
-		elseif sel == 1 then
+		elseif sel == 2 then
 			str = '메이플스토리를 몇번 해 보신 경험이 있으시군요.'
 			score = score + 3
-		elseif sel == 2 then
+		elseif sel == 3 then
 			str = '메이플스토리를 몇번 해 보신 경험이 있으시군요.'
 			score = score + 5
 		else
@@ -50,10 +50,10 @@ return {
 		end
 
 		str = ''
-		if sel == 0 then
+		if sel == 1 then
 			str = '어려운 일은 스스로 해결하는 것을 좋아하시나봐요.'
 			score = score + 1
-		elseif sel == 1 then
+		elseif sel == 2 then
 			str = '그렇죠. 어려운 일이 생기면 서로 돕는것이 좋지요.'
 			score = score + 3
 		else
@@ -72,10 +72,10 @@ return {
 		end
 
 		str = ''
-		if sel == 0 then
+		if sel == 1 then
 			score = score + 1
 			str = '가끔은 몬스터를 피하고 싶을 때도 있답니다.'
-		elseif sel == 1 then
+		elseif sel == 2 then
 			str = '몬스터를 공격할 때는 물약을 잊지 말고 꼭 챙기세요.'
 			score = score + 3
 		else
@@ -93,9 +93,9 @@ return {
 			return
 		end
 
-		if sel == 0 then
+		if sel == 1 then
 			score = score + 1
-		elseif sel == 1 then
+		elseif sel == 2 then
 			score = score + 3
 		else
 			score = score + 5

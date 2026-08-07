@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/core/luax"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -57,7 +58,7 @@ func (b *SkillBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() is read-only")
 				return 0
 			}
-			L.Push(sk.Wz.ToLuaTable(L))
+			L.Push(luax.NewLuable(L, sk.Wz))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {

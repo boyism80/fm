@@ -11,7 +11,7 @@ return {
 			return
 		end
 		local wz = map:wz()
-		if wz == nil or wz.id ~= 930000500 then
+		if wz == nil or wz:id() ~= 930000500 then
 			return
 		end
 		if not pq.has_item(me, PURPLE_STONE) then

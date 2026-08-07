@@ -5,7 +5,7 @@ return {
 		for mob, hits in pairs(damages) do
 			if mob and hits then
 				local wz = mob:wz()
-				local is_boss = wz and wz.boss
+				local is_boss = wz and wz:boss()
 				local d
 				if is_boss then
 					d = 5000000

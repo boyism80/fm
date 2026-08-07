@@ -198,9 +198,9 @@ local function handle_stage4(me, npc, sm, map)
 		me:dialog(npc, STAGE4_HELP)
 		return
 	end
-	local a1 = map:players_in_area(0)
-	local a2 = map:players_in_area(1)
-	local a3 = map:players_in_area(2)
+	local a1 = map:players_in_area(1)
+	local a2 = map:players_in_area(2)
+	local a3 = map:players_in_area(3)
 	if a1 + a2 + a3 ~= 3 then
 		me:dialog(npc, "아직 파티원 3명이 정답 발판 3개를 찾지 못한것 같군요. 아슬아슬하게 서 계시지 말고 가운데에 올바르게 서 계셔야 정답으로 인정되니 주의해 주세요!")
 		return
@@ -339,7 +339,7 @@ return {
 		if map == nil or map:wz() == nil then
 			return
 		end
-		local map_id = map:wz().id
+		local map_id = map:wz():id()
 		if map_id == 920011200 then
 			handle_exit(me)
 			return

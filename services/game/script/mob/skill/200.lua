@@ -8,13 +8,13 @@ local function summon_position(mob, summon_id)
 
     local summon_wz = id2mob(summon_id)
     if summon_wz ~= nil then
-        if summon_wz.name == "로우 다크스타" then
+        if summon_wz:name() == "로우 다크스타" then
             foothold = math.random(1, 19)
             ypos = -590
-        elseif summon_wz.name == "하이 다크스타" then
+        elseif summon_wz:name() == "하이 다크스타" then
             xpos = mob_x + math.random(1, 1000) - 500
             ypos = mob_y
-        elseif summon_wz.name == "블러드붐" then
+        elseif summon_wz:name() == "블러드붐" then
             if math.random(1, 5) == 1 then
                 ypos = 78
                 xpos = math.random(1, 5) + (math.random(1, 2) == 1 and 180 or 0)
@@ -26,13 +26,13 @@ local function summon_position(mob, summon_id)
 
     local map_wz = id2map(mob:map_id())
     if map_wz ~= nil then
-        if map_wz.name == "시계탑의 근원" then
+        if map_wz:name() == "시계탑의 근원" then
             if xpos < -890 then
                 xpos = -890 + math.random(1, 150)
             elseif xpos > 230 then
                 xpos = 230 - math.random(1, 150)
             end
-        elseif map_wz.name == "피아누스의 동굴" then
+        elseif map_wz:name() == "피아누스의 동굴" then
             if xpos < -239 then
                 xpos = -239 + math.random(1, 150)
             elseif xpos > 371 then

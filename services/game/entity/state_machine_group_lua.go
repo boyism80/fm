@@ -52,28 +52,6 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LString(group.GetProperty(key)))
 			return 1
 		},
-		"declare_maps": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			group, ok := ud.Value.(*StateMachineGroup)
-			if !ok || group == nil {
-				L.ArgError(1, "StateMachineGroup expected")
-				return 0
-			}
-			ids := make([]uint32, 0)
-			if table, ok := L.Get(2).(*lua.LTable); ok {
-				table.ForEach(func(_ lua.LValue, value lua.LValue) {
-					if value.Type() == lua.LTNumber {
-						ids = append(ids, uint32(lua.LVAsNumber(value)))
-					}
-				})
-			} else {
-				for i := 2; i <= L.GetTop(); i++ {
-					ids = append(ids, uint32(L.CheckInt(i)))
-				}
-			}
-			group.DeclareMaps(ids)
-			return 0
-		},
 		"declare_min_players": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			group, ok := ud.Value.(*StateMachineGroup)

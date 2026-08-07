@@ -12,7 +12,7 @@ return {
 		if map == nil or map:wz() == nil then
 			return
 		end
-		local map_id = map:wz().id
+		local map_id = map:wz():id()
 		local player = reactor:trigger()
 		local sm = player ~= nil and player:state_machine() or nil
 		if sm == nil then

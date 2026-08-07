@@ -160,17 +160,17 @@ return {
 		if selected == nil then
 			return
 		end
-		if selected == 0 then
+		if selected == 1 then
 			me:dialog(npc, '여러개의 길드가 서로 모여서 만든 모임을 길드 연합이라고 해요. 저는 이렇게 만들어진 길드 연합을 관리하는 일을 하고 있답니다.')
-		elseif selected == 1 then
+		elseif selected == 2 then
 			me:dialog(npc, '길드 연합을 만들려면 길드장 2명이 파티를 맺고 있어야 해요. 여기서 파티장이 길드 연합장이 된답니다.', false, true)
 			me:dialog(npc, '2명의 길드장이 모였다면 500만 메소가 필요해요. 이건 길드 연합을 등록하는데 필요한 수수료에요.', false, true)
 			me:dialog(npc, '그리고 또하나! 당연히 다른 길드 연합에 가입되어 있으면 새롭게 길드 연합을 만들지 못해요!', false, true)
-		elseif selected == 2 then
-			try_create_alliance(npc, me)
 		elseif selected == 3 then
-			try_inc_alliance_capacity(npc, me)
+			try_create_alliance(npc, me)
 		elseif selected == 4 then
+			try_inc_alliance_capacity(npc, me)
+		elseif selected == 5 then
 			try_disband_alliance(npc, me)
 		end
 	end

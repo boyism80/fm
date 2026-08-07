@@ -288,14 +288,32 @@ func registerServerMessageConstants(luaState *lua.LState) {
 	luaState.SetGlobal("Msg", t)
 }
 
-func skillToLuaWzTable(luaState *lua.LState, skill *wz.Skill) *lua.LTable {
-	skillTable := luaState.NewTable()
-	skillTable.RawSetString("id", lua.LNumber(skill.ID))
-	skillTable.RawSetString("skill_id", lua.LNumber(skill.ID))
-	skillTable.RawSetString("max_level", lua.LNumber(skill.MaxLevel))
-	skillTable.RawSetString("master_level", lua.LNumber(skill.MasterLevel))
-	skillTable.RawSetString("invisible", lua.LBool(skill.Invisible))
-	return skillTable
+func skillToLuaWz(luaState *lua.LState, skill *wz.Skill) lua.LValue {
+	if skill == nil {
+		return lua.LNil
+	}
+	return luax.NewLuable(luaState, skill)
+}
+
+func registerWzMobName(gs *GameServer, L *lua.LState) {
+	var zero *wz.Mob
+	meta := L.GetTypeMetatable(zero.LuaTypeName()).(*lua.LTable)
+	L.SetFuncs(meta, map[string]lua.LGFunction{
+		"name": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			m, ok := ud.Value.(*wz.Mob)
+			if !ok || m == nil {
+				L.ArgError(1, "WzMob expected")
+				return 0
+			}
+			name := ""
+			if gs.resources != nil {
+				name = gs.resources.GetMobName(m.ID)
+			}
+			L.Push(lua.LString(name))
+			return 1
+		},
+	})
 }
 
 func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
@@ -318,6 +336,13 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Mist, *entity.ObjectCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Npc, *entity.ObjectCore](luaState)
 	luax.RegisterLuaType[*entity.Map](luaState)
+	luax.RegisterLuaType[*wz.Map](luaState)
+	registerWzMapCreateInstance(gs, luaState)
+	luax.RegisterLuaType[*wz.Mob](luaState)
+	registerWzMobName(gs, luaState)
+	luax.RegisterLuaType[*wz.Skill](luaState)
+	luax.RegisterLuaType[*wz.Quest](luaState)
+	luax.RegisterLuaType[*wz.NpcSpawn](luaState)
 	luax.RegisterLuaType[*entity.SkillEntry](luaState)
 	luax.RegisterLuaType[*entity.MobSkill](luaState)
 	luax.RegisterLuaDerivedType[*entity.Reactor, *entity.ObjectCore](luaState)
@@ -411,15 +436,12 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		wz := gs.resources.Maps[id]
-		if wz == nil {
+		m := gs.resources.Maps[id]
+		if m == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		tbl := L.NewTable()
-		tbl.RawSetString("id", lua.LNumber(wz.ID))
-		tbl.RawSetString("name", lua.LString(wz.Name))
-		L.Push(tbl)
+		L.Push(luax.NewLuable(L, m))
 		return 1
 	})
 
@@ -429,15 +451,28 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		wz := gs.resources.Maps[id]
-		if wz == nil {
+		m := gs.resources.Maps[id]
+		if m == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
-		tbl := L.NewTable()
-		tbl.RawSetString("id", lua.LNumber(wz.ID))
-		tbl.RawSetString("name", lua.LString(wz.Name))
-		L.Push(tbl)
+		L.Push(luax.NewLuable(L, m))
+		return 1
+	})
+
+	luax.RegisterFunc(luaState, "instance_map", func(L *lua.LState) int {
+		key := uint32(L.CheckNumber(1))
+		ms := gs.GetMapSystem()
+		if ms == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		m := ms.GetInstance(key)
+		if m == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(luax.NewLuable(L, m))
 		return 1
 	})
 
@@ -494,9 +529,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		tbl := L.NewTable()
-		tbl.RawSetString("id", lua.LNumber(mob.ID))
-		L.Push(tbl)
+		L.Push(luax.NewLuable(L, mob))
 		return 1
 	})
 
@@ -511,13 +544,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		tbl := L.NewTable()
-		tbl.RawSetString("id", lua.LNumber(mob.ID))
-		name := gs.resources.GetMobName(mob.ID)
-		if name != "" {
-			tbl.RawSetString("name", lua.LString(name))
-		}
-		L.Push(tbl)
+		L.Push(luax.NewLuable(L, mob))
 		return 1
 	})
 
@@ -567,7 +594,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		L.Push(skillToLuaWzTable(L, wzSkill))
+		L.Push(skillToLuaWz(L, wzSkill))
 		return 1
 	})
 
@@ -582,7 +609,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LNil)
 			return 1
 		}
-		L.Push(wzQuest.ToLuaTable(L))
+		L.Push(luax.NewLuable(L, wzQuest))
 		return 1
 	})
 
@@ -671,8 +698,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 
 		index := 1
 		for _, skillID := range orderedSkillIDs {
-			skillTable := skillToLuaWzTable(L, skillByID[uint32(skillID)])
-			result.RawSetInt(index, skillTable)
+			result.RawSetInt(index, skillToLuaWz(L, skillByID[uint32(skillID)]))
 			index++
 		}
 

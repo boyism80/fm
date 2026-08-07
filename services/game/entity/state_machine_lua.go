@@ -142,6 +142,23 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			machine.LeavePlayer(cfg.ActorContext, ch, false)
 			return 0
 		},
+		"maps": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			tbl := L.NewTable()
+			for i, m := range machine.MapList() {
+				if m == nil {
+					continue
+				}
+				tbl.RawSetInt(i+1, luax.NewLuable(L, m))
+			}
+			L.Push(tbl)
+			return 1
+		},
 		"finish": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			machine, ok := ud.Value.(*StateMachine)

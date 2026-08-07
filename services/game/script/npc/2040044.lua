@@ -57,7 +57,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local cur = map_stage(wz.id)
+		local cur = map_stage(wz:id())
 		if stage > cur then
 			pq.party_warp(sm, BONUS_MAP)
 			return

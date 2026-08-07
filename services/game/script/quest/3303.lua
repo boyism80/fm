@@ -40,7 +40,7 @@ return {
 			return
 		end
 
-		local need_item = choices[sel + 1]
+		local need_item = choices[sel]
 		if need_item == nil then
 			return
 		end

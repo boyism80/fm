@@ -25,7 +25,7 @@ return {
 			me:dialog(npc, "그런가요? 여러곳으로 여행하는건 즐거운 일이지만 아직 볼일이 남아있으신가 보죠? 마음이 바뀌시면 다시 찾아오세요.")
 			return
 		end
-		local idx = select + 1
+		local idx = select
 		local low = me:level() < 30
 		local ticket
 		local cost

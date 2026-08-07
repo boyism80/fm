@@ -29,9 +29,9 @@ return {
 			return
 		end
 		local reactor_name = "jnr32_out"
-		if wz.id == 926100200 then
+		if wz:id() == 926100200 then
 			reactor_name = "rnj32_out"
 		end
-		run_on_map(wz.id + 2, "script/reactor/2618001.lua", "rnj32_out_hit", reactor_name)
+		run_on_map(wz:id() + 2, "script/reactor/2618001.lua", "rnj32_out_hit", reactor_name)
 	end
 }

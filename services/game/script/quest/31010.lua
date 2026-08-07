@@ -32,7 +32,7 @@ return {
 		if sel == nil then
 			return
 		end
-		if sel < 4 then
+		if sel < 5 then
 			me:dialog(npc, "정말 다녀오신 게 맞으신가요? 아닌 것 같은데...", false, false)
 			return
 		end
@@ -45,11 +45,11 @@ return {
 		if sel == nil then
 			return
 		end
-		if sel == 0 then
+		if sel == 1 then
 			me:dialog(npc, "그렇게 막무가내로 전투에 임했다가는 큰 일 날거에요.", false, false)
 			return
 		end
-		if sel == 2 then
+		if sel == 3 then
 			me:dialog(npc, "혼자서는 위험합니다. 저희와 같이 준비하시는 게 좋을겁니다.", false, false)
 			return
 		end

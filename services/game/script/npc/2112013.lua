@@ -9,7 +9,7 @@ local STAGE1_EXP = 5000
 return {
 	on_click = function(me, npc)
 		local map = me:map()
-		if map == nil or map:wz() == nil or map:wz().id ~= 926110000 then
+		if map == nil or map:wz() == nil or map:wz():id() ~= 926110000 then
 			return
 		end
 		local sm = me:state_machine()

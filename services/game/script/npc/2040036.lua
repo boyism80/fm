@@ -58,7 +58,7 @@ return {
 			stage_prop = "1"
 		end
 		local stage = tonumber(stage_prop) or 1
-		local cur = map_stage(wz.id)
+		local cur = map_stage(wz:id())
 		if stage > cur then
 			me:dialog(npc, "포탈이 열렸어요~ 다음 스테이지로 이동해 주세요!")
 			return

@@ -13,7 +13,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 		if map_id < 922010100 or map_id > 922010900 then
 			return
 		end

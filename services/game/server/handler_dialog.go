@@ -57,7 +57,7 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		args = append(args, lua.LBool(req.Next))
 	case constant.DialogTypeList:
 		if req.Next {
-			args = append(args, lua.LNumber(req.Selected))
+			args = append(args, lua.LNumber(req.Selected+1))
 		} else {
 			args = append(args, lua.LNil)
 		}

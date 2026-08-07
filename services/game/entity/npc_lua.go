@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/core/luax"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -42,19 +43,11 @@ func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Npc expected")
 				return 0
 			}
-
-			tbl := L.NewTable()
-			if npc.Wz != nil && npc.Wz.BaseSpawn != nil {
-				tbl.RawSetString("id", lua.LNumber(npc.Wz.BaseSpawn.ID))
-				if npc.Wz.BaseSpawn.Position.X != 0 || npc.Wz.BaseSpawn.Position.Y != 0 {
-					posTbl := L.NewTable()
-					posTbl.RawSetString("x", lua.LNumber(npc.Wz.BaseSpawn.Position.X))
-					posTbl.RawSetString("y", lua.LNumber(npc.Wz.BaseSpawn.Position.Y))
-					tbl.RawSetString("position", posTbl)
-				}
-				tbl.RawSetString("collision_y", lua.LNumber(npc.Wz.BaseSpawn.CollisionY))
+			if npc.Wz == nil {
+				L.Push(lua.LNil)
+				return 1
 			}
-			L.Push(tbl)
+			L.Push(luax.NewLuable(L, npc.Wz))
 			return 1
 		},
 	}

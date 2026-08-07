@@ -23,7 +23,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 		if map_id == 930000000 then
 			me:dialog(npc, "어서와, 중앙에 보이는 포탈에 들어가면 변신 마법을 걸어줄게.")
 		elseif map_id == 930000010 then

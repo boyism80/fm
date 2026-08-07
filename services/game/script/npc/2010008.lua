@@ -10,7 +10,7 @@ return {
 			{
 				'길드마크 추가/변경',
 			})
-		if selected == nil or selected ~= 0 then
+		if selected == nil or selected ~= 1 then
 			return
 		end
 

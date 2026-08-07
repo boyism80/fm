@@ -12,7 +12,7 @@ return {
 			return
 		end
 		local item_id = 4031857
-		if wz.id >= 108000502 then
+		if wz:id() >= 108000502 then
 			item_id = 4031856
 		end
 		local message

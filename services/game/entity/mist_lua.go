@@ -1,6 +1,9 @@
 package entity
 
-import lua "github.com/yuin/gopher-lua"
+import (
+	"github.com/boyism80/fm/core/luax"
+	lua "github.com/yuin/gopher-lua"
+)
 
 func (mist *Mist) LuaTypeName() string {
 	return "LuaMist"
@@ -56,19 +59,18 @@ func (mist *Mist) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if m.MobLevelData != nil {
-				tbl := L.NewTable()
-				tbl.RawSetString("id", lua.LNumber(m.MobLevelData.SkillID))
-				if m.MobLevelData.ElemAttr != "" {
-					tbl.RawSetString("elem_attr", lua.LString(m.MobLevelData.ElemAttr))
+				if m.MobLevelData.SkillWz != nil {
+					L.Push(luax.NewLuable(L, m.MobLevelData.SkillWz))
+					return 1
 				}
-				L.Push(tbl)
+				L.Push(lua.LNil)
 				return 1
 			}
 			if m.SkillWz == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(m.SkillWz.ToLuaTable(L))
+			L.Push(luax.NewLuable(L, m.SkillWz))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {

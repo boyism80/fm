@@ -13,7 +13,6 @@ local function create(map_id)
 	return {
 		on_init = function(group)
 			group:set_property("state", "0")
-			group:declare_maps({ map_id })
 			group:declare_min_players(1)
 		end,
 
@@ -25,6 +24,7 @@ local function create(map_id)
 				map:reset()
 				map:respawn(true)
 			end
+			return { map_id }
 		end,
 
 		on_start = function(sm)
@@ -33,13 +33,6 @@ local function create(map_id)
 
 		on_player_enter = function(sm, player)
 			player:map(map_id)
-		end,
-
-		on_changed_map = function(sm, player, entered_map_id)
-			if entered_map_id == map_id then
-				return
-			end
-			sm:finish(0)
 		end,
 
 		on_player_disconnected = function(sm, player)

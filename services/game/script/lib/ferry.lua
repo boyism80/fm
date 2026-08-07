@@ -59,7 +59,7 @@ function M.board(me, npc, opts)
 		if map == nil or map:wz() == nil then
 			return
 		end
-		me:map(map:wz().id + warp_delta)
+		me:map(map:wz():id() + warp_delta)
 		return
 	end
 	if M.prop(group_name, "docked") == "true" then
@@ -104,7 +104,7 @@ function M.exit_waiting(me, npc, delta)
 	if map == nil or map:wz() == nil then
 		return
 	end
-	me:map(map:wz().id + (delta or -1))
+	me:map(map:wz():id() + (delta or -1))
 end
 
 return M

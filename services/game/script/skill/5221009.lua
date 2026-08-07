@@ -42,7 +42,7 @@ return {
 			checked = checked + 1
 			if math.random(1, 100) <= prop then
 				local mwz = mob:wz()
-				if mwz == nil or not mwz.boss then
+				if mwz == nil or not mwz:boss() then
 					mob:buff(MobBuff.Hypnotize, 1, duration_ms, skill, me)
 				end
 			end

@@ -25,7 +25,7 @@ local function try_start(me, npc)
 	if map == nil or map:wz() == nil then
 		return
 	end
-	local map_id = map:wz().id
+	local map_id = map:wz():id()
 	local ok = true
 	local in_map = 0
 	local has_gm = false
@@ -96,7 +96,7 @@ return {
 		if map == nil or map:wz() == nil then
 			return
 		end
-		local map_id = map:wz().id
+		local map_id = map:wz():id()
 		if map_id == GIVEUP_MAP then
 			if not pq.is_leader(me) then
 				me:dialog(npc, "아직 포기하긴 이르다구? 조금 더 열심히 노력해 봐~")

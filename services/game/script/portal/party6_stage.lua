@@ -10,7 +10,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 		if map_id == 930000000 then
 			me:notice("엘린의 변신 마법이 몸 안으로 스며든다.", Msg.PinkText)
 			me:play_portal_sound()

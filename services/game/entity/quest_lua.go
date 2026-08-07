@@ -198,7 +198,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			L.Push(q.Wz.ToLuaTable(L))
+			L.Push(luax.NewLuable(L, q.Wz))
 			return 1
 		},
 		"mob_kills": func(L *lua.LState) int {

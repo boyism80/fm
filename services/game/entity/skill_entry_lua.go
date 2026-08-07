@@ -3,6 +3,7 @@ package entity
 import (
 	"time"
 
+	"github.com/boyism80/fm/core/luax"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -64,8 +65,11 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Skill expected")
 				return 0
 			}
-
-			L.Push(skill.Wz.ToLuaTable(L))
+			if skill.Wz == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, skill.Wz))
 			return 1
 		},
 		"effect": func(L *lua.LState) int {

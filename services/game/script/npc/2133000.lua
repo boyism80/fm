@@ -72,7 +72,7 @@ local function try_start(me, npc)
 	if map_wz == nil then
 		return
 	end
-	local map_id = map_wz.id
+	local map_id = map_wz:id()
 	local ok = true
 	local size = 0
 	for _, mem in ipairs(party:members()) do

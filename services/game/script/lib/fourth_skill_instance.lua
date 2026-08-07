@@ -6,7 +6,6 @@ local function create(config)
 	return {
 		on_init = function(group)
 			group:set_property("started", "false")
-			group:declare_maps({ config.map })
 			group:declare_min_players(1)
 			group:declare_exit_map(config.exit_map)
 		end,
@@ -19,6 +18,7 @@ local function create(config)
 				map:reset()
 				map:respawn(true)
 			end
+			return { config.map }
 		end,
 
 		on_start = function(sm)
@@ -27,16 +27,6 @@ local function create(config)
 
 		on_player_enter = function(sm, player)
 			player:map(config.map)
-		end,
-
-		on_changed_map = function(sm, player, map_id)
-			if map_id == config.map then
-				return
-			end
-			sm:unregister(player)
-			if #sm:players() == 0 then
-				sm:finish(0)
-			end
 		end,
 
 		on_disband_party = function(sm)

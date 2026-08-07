@@ -21,7 +21,7 @@ return {
 			return
 		end
 		local wz = target:wz()
-		if wz and wz.boss then
+		if wz and wz:boss() then
 			return
 		end
 		local hp_loss = math.floor(total * effect.x / 100)

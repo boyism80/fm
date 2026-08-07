@@ -97,7 +97,7 @@ local bonus_rewards = {
 local function area_pattern(map, count)
 	local pos = ""
 	local total = 0
-	for i = 0, count - 1 do
+	for i = 1, count do
 		local n = map:players_in_area(i)
 		total = total + n
 		pos = pos .. tostring(n)
@@ -253,7 +253,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local field_id = wz.id
+		local field_id = wz:id()
 		if sm:get_property("stage") == "" then
 			sm:set_property("stage", "1")
 		end

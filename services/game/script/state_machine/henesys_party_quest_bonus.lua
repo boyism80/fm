@@ -12,7 +12,6 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_maps({ STAGE_MAP })
 		group:declare_min_players(1)
 		group:declare_exit_map(EXIT_MAP)
 	end,
@@ -22,6 +21,8 @@ return {
 		group:set_property("state", "1")
 		local map = group:map(STAGE_MAP)
 		map:reset()
+		return { STAGE_MAP }
+
 	end,
 
 	on_start = function(sm)
@@ -40,13 +41,6 @@ return {
 				return
 			end
 		end
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if map_id == STAGE_MAP then
-			return
-		end
-		sm:unregister(player)
 	end,
 
 	on_player_dead = function(sm, player)

@@ -41,7 +41,7 @@ end
 local function area_pattern(map)
 	local pos = ""
 	local total = 0
-	for i = 0, 8 do
+	for i = 1, 9 do
 		local n = map:players_in_area(i)
 		total = total + n
 		pos = pos .. tostring(n)
@@ -65,7 +65,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local cur = map_stage(wz.id)
+		local cur = map_stage(wz:id())
 		if stage > cur then
 			me:dialog(npc, "포탈이 열렸어요~ 다음 스테이지로 이동해 주세요!")
 			return

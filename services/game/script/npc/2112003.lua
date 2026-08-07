@@ -118,7 +118,7 @@ return {
 		if map == nil or map:wz() == nil then
 			return
 		end
-		local map_id = map:wz().id
+		local map_id = map:wz():id()
 		if map_id == ENTRY_MAP then
 			local sel = me:dialog_list(npc, "#e<파티퀘스트 : 로미오와 줄리엣>#n\r\n마가티아는 지금 크나큰 위기를 맞이하고 있습니다. 용감한 메이플의 모험가들께서 저희를 도와주시지 않으시겠어요?\r\n\r\n#b", {
 				"줄리엣의 이야기를 듣는다",

@@ -2,33 +2,6 @@ package wz
 
 import lua "github.com/yuin/gopher-lua"
 
-func (s *Skill) ToLuaTable(L *lua.LState) *lua.LTable {
-	tbl := L.NewTable()
-	if s == nil {
-		return tbl
-	}
-	tbl.RawSetString("id", lua.LNumber(s.ID))
-	tbl.RawSetString("max_level", lua.LNumber(s.MaxLevel))
-	tbl.RawSetString("master_level", lua.LNumber(s.MasterLevel))
-	tbl.RawSetString("invisible", lua.LBool(s.Invisible))
-	tbl.RawSetString("time_limited", lua.LBool(s.TimeLimited))
-	tbl.RawSetString("combat_orders", lua.LBool(s.CombatOrders))
-	if s.ElemAttr != "" {
-		tbl.RawSetString("elem_attr", lua.LString(s.ElemAttr))
-	}
-	effectsTable := L.NewTable()
-	if s.LevelData != nil {
-		for level, levelData := range s.LevelData {
-			if levelData == nil {
-				continue
-			}
-			effectsTable.RawSetInt(level, levelData.ToLuaTable(L))
-		}
-	}
-	tbl.RawSetString("effects", effectsTable)
-	return tbl
-}
-
 func (d *SkillLevelData) ToLuaTable(L *lua.LState) *lua.LTable {
 	tbl := L.NewTable()
 	if d == nil {

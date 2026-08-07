@@ -9,16 +9,16 @@ local function dispel_skill_id(target)
 
     local morph_buff = target:buff(BuffFlag.Morph)
     if morph_buff ~= nil then
-        skip_skill_id[morph_buff:wz().id] = true
+        skip_skill_id[morph_buff:wz():id()] = true
     end
 
     local riding_buff = target:buff(BuffFlag.MonsterRiding)
     if riding_buff ~= nil then
-        skip_skill_id[riding_buff:wz().id] = true
+        skip_skill_id[riding_buff:wz():id()] = true
     end
 
     for _, buff in ipairs(target:buffs(BuffType.Skill)) do
-        local skill_id = buff:wz().id
+        local skill_id = buff:wz():id()
         if not skip_skill_id[skill_id] then
             target:unbuff(skill_id)
         end

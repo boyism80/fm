@@ -35,7 +35,7 @@ return {
 			if total_damage_steal(hits) <= 0 then
 				goto continue_steal
 			end
-			if mob:wz().boss then
+			if mob:wz():boss() then
 				goto continue_steal
 			end
 			if mob:has_stolen() then

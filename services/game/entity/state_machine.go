@@ -8,6 +8,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type StateMachine struct {
@@ -279,6 +280,119 @@ func (sm *StateMachine) RecordMap(mapID uint32, m *Map) {
 	sm.Maps[mapID] = m
 }
 
+func (sm *StateMachine) RegisterMap(m *Map) error {
+	if sm == nil || m == nil {
+		return fmt.Errorf("invalid map register")
+	}
+	if sm.Disposed() {
+		return fmt.Errorf("state machine disposed")
+	}
+	if m.StateMachine() == sm {
+		sm.RecordMap(m.GetMapID(), m)
+		return nil
+	}
+	if err := m.AttachStateMachine(sm); err != nil {
+		return err
+	}
+	if sm.ActorPID != nil {
+		m.RebindObjectTimers(sm.ActorPID)
+	}
+	sm.RecordMap(m.GetMapID(), m)
+	return nil
+}
+
+func (sm *StateMachine) OwnsMap(m *Map) bool {
+	if sm == nil || m == nil {
+		return false
+	}
+	if m.StateMachine() == sm {
+		return true
+	}
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	if sm.Maps == nil {
+		return false
+	}
+	return sm.Maps[m.GetMapID()] == m
+}
+
+func (sm *StateMachine) HandlePlayerMapEnter(ch *Character, m *Map) {
+	if sm == nil || ch == nil || m == nil {
+		return
+	}
+	if sm.OwnsMap(m) {
+		sm.CallHook("on_changed_map", sm, ch, m.TemplateID())
+		return
+	}
+	sm.RequestLeave(ch, false)
+}
+
+func (sm *StateMachine) HasRegisteredMaps() bool {
+	if sm == nil {
+		return false
+	}
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	return len(sm.Maps) > 0
+}
+
+func ResolveCreateMaps(result interface{}, ms MapSystem) ([]*Map, error) {
+	if ms == nil {
+		return nil, fmt.Errorf("map system is nil")
+	}
+	vals := luax.ResultValues(result)
+	if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
+		return nil, fmt.Errorf("on_create must return a non-empty map array")
+	}
+	tbl, ok := vals[0].(*lua.LTable)
+	if !ok {
+		return nil, fmt.Errorf("on_create must return a table")
+	}
+	out := make([]*Map, 0)
+	var resolveErr error
+	tbl.ForEach(func(_ lua.LValue, value lua.LValue) {
+		if resolveErr != nil {
+			return
+		}
+		switch v := value.(type) {
+		case lua.LNumber:
+			id := uint32(v)
+			m := ms.Get(id)
+			if m == nil {
+				m = ms.GetInstance(id)
+			}
+			if m == nil {
+				resolveErr = fmt.Errorf("map %d not found", id)
+				return
+			}
+			out = append(out, m)
+		case *lua.LUserData:
+			if v == nil || v.Value == nil {
+				resolveErr = fmt.Errorf("nil map in on_create return")
+				return
+			}
+			m, ok := v.Value.(*Map)
+			if !ok || m == nil {
+				resolveErr = fmt.Errorf("invalid map userdata in on_create return")
+				return
+			}
+			out = append(out, m)
+		default:
+			if value == nil || value == lua.LNil {
+				return
+			}
+			resolveErr = fmt.Errorf("on_create map entry must be map id or Map")
+		}
+	})
+	if resolveErr != nil {
+		return nil, resolveErr
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("on_create must return a non-empty map array")
+	}
+	return out, nil
+}
+
 func (sm *StateMachine) MapList() []*Map {
 	if sm == nil {
 		return nil
@@ -409,6 +523,11 @@ type BootstrapStateMachine struct{}
 type StopStateMachine struct{}
 
 type FinishStateMachineCreate struct{}
+
+type ApplyStateMachineCreateMaps struct {
+	Maps []*Map
+	Err  string
+}
 
 type EnterStateMachinePlayer struct {
 	Character *Character

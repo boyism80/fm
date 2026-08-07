@@ -37,7 +37,7 @@ return {
 			if sel == nil then
 				return
 			end
-			local selected = opts[sel + 1]
+			local selected = opts[sel]
 
 			if selected == 1 then
 				if not quest_not_started(me:quest(2294)) then

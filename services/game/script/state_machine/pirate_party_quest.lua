@@ -81,7 +81,6 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_maps(STAGE_MAPS)
 		group:declare_min_players(1)
 		group:declare_exit_map(EXIT_MAP)
 	end,
@@ -127,6 +126,8 @@ return {
 		spawn_treasure_guards(group:map(925100201))
 		spawn_deck_pirates(group:map(925100300))
 		spawn_treasure_guards(group:map(925100301))
+		return STAGE_MAPS
+
 	end,
 
 	on_start = function(sm)
@@ -139,10 +140,6 @@ return {
 	end,
 
 	on_changed_map = function(sm, player, map_id)
-		if map_id < 925100000 or map_id > 925100500 then
-			sm:unregister(player)
-			return
-		end
 		if map_id == 925100100 then
 			if sm:get_property("entered_100") == "" then
 				sm:restart_timer(TIMER_DEFAULT_MS)
@@ -251,7 +248,7 @@ return {
 		if #players > 0 and players[1] ~= nil then
 			local map = players[1]:map()
 			if map ~= nil and map:wz() ~= nil then
-				map_id = map:wz().id
+				map_id = map:wz():id()
 			end
 		end
 		if sm:get_property("hd_202") == "1" and map_id == 925100202 then

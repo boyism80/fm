@@ -29,7 +29,6 @@ return {
 	on_init = function(group)
 		group:set_property("state", "0")
 		group:set_property("stage1_cleareff", "0")
-		group:declare_maps(STAGE_MAPS)
 		group:declare_min_players(1)
 		group:declare_exit_map(EXIT_MAP)
 	end,
@@ -48,6 +47,8 @@ return {
 				end
 			end
 		end
+		return STAGE_MAPS
+
 	end,
 
 	on_start = function(sm)
@@ -57,13 +58,6 @@ return {
 	on_player_enter = function(sm, player)
 		player:map(START_MAP)
 		player:try_party_quest(RANKING_QUEST)
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if map_id >= 930000000 and map_id <= 930000700 then
-			return
-		end
-		sm:unregister(player)
 	end,
 
 	on_mob_die = function(sm, mob)

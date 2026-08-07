@@ -14,7 +14,7 @@ local function unbuff_stationary_summons_for_map(me, map_id)
 			goto continue
 		end
 		local swz = sm:wz()
-		if swz == nil or swz.id ~= map_id then
+		if swz == nil or swz:id() ~= map_id then
 			goto continue
 		end
 		local mt = s:movement_type()
@@ -44,7 +44,7 @@ return {
 				goto continue
 			end
 			local wz = mob:wz()
-			if wz ~= nil and wz.level ~= nil and wz.level >= char_level then
+			if wz ~= nil and wz:level() ~= nil and wz:level() >= char_level then
 				count = count + 1
 			end
 			::continue::
@@ -71,7 +71,7 @@ return {
 		if mwz == nil then
 			return
 		end
-		unbuff_stationary_summons_for_map(me, mwz.id)
+		unbuff_stationary_summons_for_map(me, mwz:id())
 	end,
 
 	on_logout = function(me)
@@ -99,12 +99,12 @@ return {
 		me:class(232)
 		local wz_skills = class_learnable_skill_wzs(me:class())
 		for _, wz in pairs(wz_skills) do
-		    local skill = me:skill(wz.id)
+		    local skill = me:skill(wz:id())
 		    if skill == nil then
-		        skill = me:add_skill(wz.id)
+		        skill = me:add_skill(wz:id())
 		    end
 		    if skill ~= nil then
-		        skill:level(wz.max_level, wz.master_level)
+		        skill:level(wz:max_level(), wz:master_level())
 		    end
 		end
 		me:max_hp(20000)

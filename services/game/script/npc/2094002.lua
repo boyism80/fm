@@ -85,7 +85,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 		if map_id == EXIT_MAP then
 			strip_pq_items(me)
 			me:map(ENTRY_MAP)

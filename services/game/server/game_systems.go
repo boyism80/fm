@@ -97,6 +97,93 @@ func (s mapSystem) Get(mapID uint32) *entity.Map {
 	return s.gs.maps[mapID]
 }
 
+func (s mapSystem) GetInstance(instanceKey uint32) *entity.Map {
+	if s.gs == nil {
+		return nil
+	}
+	s.gs.mapsMutex.RLock()
+	defer s.gs.mapsMutex.RUnlock()
+	return s.gs.instanceMaps[instanceKey]
+}
+
+func (s mapSystem) CreateInstanceMap(templateID uint32, opts entity.MapInitOpts) (*entity.Map, error) {
+	if s.gs == nil {
+		return nil, fmt.Errorf("map system not ready")
+	}
+	if s.gs.resources == nil || s.gs.resources.Maps[templateID] == nil {
+		return nil, fmt.Errorf("template map %d not found", templateID)
+	}
+	if s.gs.mapListener == nil || s.gs.mobListener == nil {
+		return nil, fmt.Errorf("map listeners not ready")
+	}
+	opts.Instance = true
+	key := s.gs.nextInstanceID.Add(1)
+	name := fmt.Sprintf("map_inst_%d", key)
+	pid := s.gs.actorRegistry.PredictPID(name)
+	mapInstance := entity.NewMapWithOpts(key, s.gs.mapListener, s.gs.mobListener, templateID, s.gs, pid, opts)
+
+	props := actor.PropsFromProducer(func() actor.Actor {
+		return g_actor.NewMapActor(mapInstance, s.gs)
+	})
+	actual := s.gs.actorRegistry.GetOrCreateActor(name, props)
+	if !actual.Equal(pid) {
+		s.gs.actorRegistry.StopActor(name, actual)
+		return nil, fmt.Errorf("instance map %d actor pid mismatch", key)
+	}
+
+	s.gs.mapsMutex.Lock()
+	if s.gs.instanceMaps == nil {
+		s.gs.instanceMaps = make(map[uint32]*entity.Map)
+	}
+	s.gs.instanceMaps[key] = mapInstance
+	s.gs.mapsMutex.Unlock()
+	return mapInstance, nil
+}
+
+func (s mapSystem) RemoveInstanceMap(instanceKey uint32) error {
+	if s.gs == nil {
+		return fmt.Errorf("map system not ready")
+	}
+	s.gs.mapsMutex.Lock()
+	m := s.gs.instanceMaps[instanceKey]
+	if m == nil {
+		s.gs.mapsMutex.Unlock()
+		return nil
+	}
+	delete(s.gs.instanceMaps, instanceKey)
+	s.gs.mapsMutex.Unlock()
+
+	players := make([]*entity.Character, 0)
+	for _, obj := range m.GetAllPlayers() {
+		ch, ok := obj.(*entity.Character)
+		if ok && ch != nil {
+			players = append(players, ch)
+		}
+	}
+	var exitMap *entity.Map
+	if m.Wz != nil {
+		exitID := uint32(m.Wz.ReturnMapId)
+		if m.Wz.HasForcedReturn() {
+			exitID = uint32(m.Wz.ForcedReturn)
+		}
+		if exitID > 0 {
+			exitMap = s.Get(exitID)
+		}
+	}
+	for _, ch := range players {
+		if exitMap != nil {
+			_ = ch.Warp(nil, exitMap, 0)
+		}
+	}
+	if sm := m.StateMachine(); sm != nil {
+		m.DetachStateMachine(sm)
+		m.RebindObjectTimers(m.HomeActorPID())
+	}
+	name := fmt.Sprintf("map_inst_%d", instanceKey)
+	s.gs.actorRegistry.StopActor(name, m.HomeActorPID())
+	return nil
+}
+
 func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx actor.Context) int {
 	if mapInstance == nil {
 		if L != nil {

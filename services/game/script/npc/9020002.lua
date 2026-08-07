@@ -17,7 +17,7 @@ return {
 		if wz == nil then
 			return
 		end
-		if wz.id == EXIT_MAP then
+		if wz:id() == EXIT_MAP then
 		pq.remove_all(PASS_ID, me)
 		pq.remove_all(COUPON_ID, me)
 			me:map(TOWN_MAP)

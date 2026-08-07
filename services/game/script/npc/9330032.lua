@@ -10,7 +10,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 		if not me:dialog_yes_no(npc, "정말 이곳에서 나가 #b#m" .. (map_id - 1) .. "##k 맵으로 돌아가고 싶나?") then
 			return
 		end

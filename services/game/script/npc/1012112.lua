@@ -113,7 +113,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 
 		if map_id == SHORTCUT_A or map_id == SHORTCUT_B then
 			local selected = me:dialog_list(npc, "무엇을 도와 드릴까요?", {
@@ -133,7 +133,7 @@ return {
 			local selected = me:dialog_list(npc, "안녕하세요? 저는 토리라고 합니다. 이 안은 달맞이꽃이 피어나는 아름다운 언덕이에요. 그런데 그 곳에 살고 있는 어흥이라는 호랑이가 몹시 배가 고파 먹을 것을 찾고 있다고 하네요.", {
 				"떡 20개를 가져 왔어요.",
 			})
-			if selected == 0 then
+			if selected == 1 then
 				rice_cake_reward(me, npc)
 			end
 			return
@@ -143,7 +143,7 @@ return {
 			local selected = me:dialog_list(npc, "퀘스트에 도전해 보고 싶다면 #b파티장#k에게 제게 말을 걸어달라고 해주세요.", {
 				"떡 20개를 가져 왔어요.",
 			})
-			if selected == 0 then
+			if selected == 1 then
 				rice_cake_reward(me, npc)
 			end
 			return
@@ -158,7 +158,7 @@ return {
 				.. MAX_LEVEL, {
 				"떡 20개를 가져 왔어요.",
 			})
-			if selected == 0 then
+			if selected == 1 then
 				rice_cake_reward(me, npc)
 			end
 			return
@@ -174,7 +174,7 @@ return {
 			local selected = me:dialog_list(npc, "이미 다른 파티가 이 안에 들어가서 퀘스트에 도전중입니다. 잠시 후 다시 시도해 주세요.", {
 				"떡 20개를 가져 왔어요.",
 			})
-			if selected == 0 then
+			if selected == 1 then
 				rice_cake_reward(me, npc)
 			end
 			return

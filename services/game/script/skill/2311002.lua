@@ -15,11 +15,11 @@ return {
 			return
 		end
 		local wz = skill:wz()
-		me:create_door(wz.id)
+		me:create_door(wz:id())
 	end,
 
 	on_unbuff = function(me, skill)
 		local wz = skill:wz()
-		me:remove_door(wz.id)
+		me:remove_door(wz:id())
 	end
 }

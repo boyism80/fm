@@ -42,12 +42,12 @@ return {
 		end
 
 		local wz = skill:wz()
-		me:create_summon(wz.id, level, effect.time, SummonMovementType.CircleFollow, SummonType.Normal)
+		me:create_summon(wz:id(), level, effect.time, SummonMovementType.CircleFollow, SummonType.Normal)
 	end,
 
 	on_unbuff = function(me, skill)
 		local wz = skill:wz()
-		me:remove_summon(wz.id)
+		me:remove_summon(wz:id())
 	end,
 
 	on_attack = function(me, skill, damages)

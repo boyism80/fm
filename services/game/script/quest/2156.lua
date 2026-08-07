@@ -4,7 +4,7 @@ local function morph_source(me)
 	local b = me:buff(BuffFlag.Morph)
 	if not b then return -1 end
 	local wz = b:wz()
-	if type(wz.id) == "number" then return wz.id end
+	if type(wz:id()) == "number" then return wz:id() end
 	return wz:id()
 end
 

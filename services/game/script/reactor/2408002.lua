@@ -20,7 +20,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local drop = DROPS[wz.id]
+		local drop = DROPS[wz:id()]
 		if drop == nil then
 			return
 		end

@@ -189,17 +189,90 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			wz := mapInstance.Wz
-			if wz == nil {
+			wzMap := mapInstance.Wz
+			if wzMap == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			tbl := L.NewTable()
-			tbl.RawSetString("id", lua.LNumber(wz.ID))
-			tbl.RawSetString("name", lua.LString(wz.Name))
-			tbl.RawSetString("return_map_id", lua.LNumber(wz.ReturnMapId))
-			tbl.RawSetString("town", lua.LBool(wz.IsTown))
-			L.Push(tbl)
+			L.Push(luax.NewLuable(L, wzMap))
+			return 1
+		},
+		"create_instance": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok || mapInstance == nil {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			if mapInstance.GameWorld == nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LString("map has no context"))
+				return 2
+			}
+			opts := DefaultMapInitOpts()
+			if L.GetTop() >= 2 && L.Get(2).Type() == lua.LTTable {
+				opts = ParseMapInitOptsLua(L.CheckTable(2))
+			}
+			m, err := mapInstance.GameWorld.GetMapSystem().CreateInstanceMap(mapInstance.TemplateID(), opts)
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 2
+			}
+			L.Push(luax.NewLuable(L, m))
+			return 1
+		},
+		"destroy": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok || mapInstance == nil {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			if !mapInstance.IsInstance() {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			if mapInstance.GameWorld == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			err := mapInstance.GameWorld.GetMapSystem().RemoveInstanceMap(mapInstance.GetMapID())
+			L.Push(lua.LBool(err == nil))
+			return 1
+		},
+		"is_instance": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			L.Push(lua.LBool(mapInstance.IsInstance()))
+			return 1
+		},
+		"instance_id": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			if !mapInstance.IsInstance() {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(lua.LNumber(mapInstance.GetMapID()))
+			return 1
+		},
+		"template_id": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			L.Push(lua.LNumber(mapInstance.TemplateID()))
 			return 1
 		},
 		"recovery_rate": func(L *lua.LState) int {
@@ -370,6 +443,128 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			L.Push(luax.NewLuable(L, item))
 			return 1
+		},
+		"drop": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			if mapInstance.GameWorld == nil {
+				return 0
+			}
+			resources := mapInstance.GameWorld.GetResources()
+			if resources == nil {
+				return 0
+			}
+
+			entries := L.CheckTable(2)
+			posTbl := L.CheckTable(3)
+			var ox, oy int16
+			if lx := posTbl.RawGetInt(1); lx != lua.LNil {
+				ox = int16(lua.LVAsNumber(lx))
+			} else if lx := posTbl.RawGetString("x"); lx != lua.LNil {
+				ox = int16(lua.LVAsNumber(lx))
+			}
+			if ly := posTbl.RawGetInt(2); ly != lua.LNil {
+				oy = int16(lua.LVAsNumber(ly))
+			} else if ly := posTbl.RawGetString("y"); ly != lua.LNil {
+				oy = int16(lua.LVAsNumber(ly))
+			}
+			spawnPoint := types.Point[int16]{X: ox, Y: oy}
+
+			var owner *Character
+			if ownerLV := L.Get(4); ownerLV != lua.LNil {
+				if ownerUd, ok := ownerLV.(*lua.LUserData); ok {
+					if ch, ok := ownerUd.Value.(*Character); ok {
+						owner = ch
+					}
+				}
+			}
+			dropType := constant.DropTypeFFA
+			ownerID := uint32(0)
+			if owner != nil {
+				if owner.GetPartyID() != nil {
+					dropType = constant.DropTypeParty
+				} else {
+					dropType = constant.DropTypeOwnerOnly
+				}
+				ownerID = owner.GetID()
+			}
+
+			spacing := int16(25)
+			d := int16(1)
+			for i := 1; ; i++ {
+				entryLV := entries.RawGetInt(i)
+				entry, ok := entryLV.(*lua.LTable)
+				if !ok {
+					break
+				}
+
+				destPoint := spawnPoint
+				if d%2 == 0 {
+					destPoint.X += spacing * (d + 1) / 2
+				} else {
+					destPoint.X -= spacing * (d / 2)
+				}
+
+				spawned := false
+				mesoLV := entry.RawGetString("meso")
+				itemLV := entry.RawGetString("item")
+				if mesoLV != lua.LNil {
+					count := int32(lua.LVAsNumber(mesoLV))
+					if count > 0 {
+						if _, err := mapInstance.SpawnMeso(count, destPoint, spawnPoint, ownerID, dropType, false); err != nil {
+							return 0
+						}
+						spawned = true
+					}
+				} else if itemLV != lua.LNil {
+					var itemID uint32
+					switch lv := itemLV.(type) {
+					case lua.LString:
+						id, found := resources.NameToItem(string(lv))
+						if found {
+							itemID = id
+						}
+					case lua.LNumber:
+						itemID = uint32(lv)
+					}
+					if itemID != 0 {
+						if _, exists := resources.Items[itemID]; exists {
+							count := uint16(1)
+							if countLV := entry.RawGetString("count"); countLV != lua.LNil {
+								if n := int(lua.LVAsNumber(countLV)); n >= 1 {
+									count = uint16(n)
+								}
+							}
+							item, err := NewItem(itemID, count, mapInstance.GameWorld)
+							if err == nil {
+								fp := &FieldPlacement{
+									ObjectCore: &ObjectCore{
+										Position:  destPoint,
+										GameWorld: mapInstance.GameWorld,
+									},
+									Owner:        ownerID,
+									SpawnedPoint: spawnPoint,
+									DropType:     dropType,
+								}
+								fp.ObjectCore.self = fp
+								item.BindFieldPlacement(fp)
+								if err := mapInstance.SpawnItem(item, ownerID, dropType); err != nil {
+									return 0
+								}
+								spawned = true
+							}
+						}
+					}
+				}
+				if spawned {
+					d++
+				}
+			}
+			return 0
 		},
 		"spawn_mob": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -716,7 +911,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			index := L.CheckInt(2)
-			L.Push(lua.LNumber(mapInstance.PlayersInArea(index)))
+			L.Push(lua.LNumber(mapInstance.PlayersInArea(index - 1)))
 			return 1
 		},
 		"reload_reactors": func(L *lua.LState) int {
@@ -751,8 +946,16 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			name := L.CheckString(2)
-			portal := mapInstance.FindPortalByName(name)
+			var portal *Portal
+			switch v := L.Get(2).(type) {
+			case lua.LNumber:
+				portal = mapInstance.FindPortal(uint8(v))
+			case lua.LString:
+				portal = mapInstance.FindPortalByName(string(v))
+			default:
+				L.ArgError(2, "portal id (number) or portal name (string) expected")
+				return 0
+			}
 			if portal == nil {
 				L.Push(lua.LNil)
 				return 1

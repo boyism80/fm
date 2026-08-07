@@ -16,7 +16,7 @@ return {
 		if wz == nil then
 			return
 		end
-		if wz.id == LOBBY_MAP then
+		if wz:id() == LOBBY_MAP then
 			pq.remove_all(PASS_ID, me)
 			pq.remove_all(KEY_ID, me)
 			me:map(ENTRY_MAP)

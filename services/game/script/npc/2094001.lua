@@ -58,7 +58,7 @@ return {
 		if wz == nil then
 			return
 		end
-		local map_id = wz.id
+		local map_id = wz:id()
 		if map_id == BOSS_MAP then
 			local sm = me:state_machine()
 			if sm == nil then

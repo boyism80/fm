@@ -21,7 +21,7 @@ return {
 		if map == nil or map:wz() == nil then
 			return
 		end
-		local room = (map:wz().id % 10) - 1
+		local room = (map:wz():id() % 10) - 1
 		local pname = portal:name()
 		if #pname < 4 then
 			return

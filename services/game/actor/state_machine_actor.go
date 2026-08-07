@@ -26,8 +26,6 @@ type StateMachineActor struct {
 	timeoutVersion uint64
 	timeoutCancel  scheduler.CancelFunc
 	namedSchedules map[string]*namedSchedule
-	pendingAttach  int
-	attachFailed   bool
 	attachComplete bool
 	pendingMsgs    []interface{}
 	pendingDetach  int
@@ -52,9 +50,9 @@ func NewStateMachineActor(sm *entity.StateMachine, gameWorld entity.GameWorld) *
 func (a *StateMachineActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *entity.BootstrapStateMachine:
-		a.beginAttach(ctx)
-	case *AttachStateMachineAck:
-		a.handleAttachAck(ctx, msg)
+		a.beginCreate(ctx)
+	case *entity.ApplyStateMachineCreateMaps:
+		a.applyCreateMaps(ctx, msg)
 	case *entity.FinishStateMachineCreate:
 		a.finishCreate(ctx)
 	case *entity.EnterStateMachinePlayer:
@@ -257,61 +255,8 @@ func (a *StateMachineActor) handleNamedTimeout(ctx actor.Context, msg *entity.St
 	a.callHook(ctx, hook, a.StateMachine)
 }
 
-func (a *StateMachineActor) beginAttach(ctx actor.Context) {
-	sm := a.StateMachine
-	if sm == nil || sm.Group == nil || a.GameWorld == nil {
-		return
-	}
-	root := ctx.ActorSystem().Root
-	self := ctx.Self()
-	a.pendingAttach = 0
-	a.attachFailed = false
-	for _, id := range sm.Group.DeclaredMaps() {
-		m := a.GameWorld.GetMapSystem().Get(id)
-		if m == nil {
-			a.attachFailed = true
-			continue
-		}
-		home := m.HomeActorPID()
-		if home == nil {
-			a.attachFailed = true
-			continue
-		}
-		a.pendingAttach++
-		root.Send(home, &AttachStateMachine{StateMachine: sm, ReplyTo: self, MapID: id})
-	}
-	if a.pendingAttach == 0 {
-		a.finishAttach(ctx)
-	}
-}
-
-func (a *StateMachineActor) handleAttachAck(ctx actor.Context, msg *AttachStateMachineAck) {
-	if msg == nil {
-		return
-	}
-	if msg.OK {
-		m := a.GameWorld.GetMapSystem().Get(msg.MapID)
-		a.StateMachine.RecordMap(msg.MapID, m)
-	} else {
-		a.attachFailed = true
-	}
-	if a.pendingAttach > 0 {
-		a.pendingAttach--
-	}
-	if a.pendingAttach == 0 {
-		a.finishAttach(ctx)
-	}
-}
-
-func (a *StateMachineActor) finishAttach(ctx actor.Context) {
-	if a.attachFailed {
-		a.pendingMsgs = nil
-		a.StateMachine.AbortStart()
-		a.beginDetach(ctx)
-		return
-	}
+func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 	if a.StateMachine == nil || a.StateMachine.Group == nil {
-		a.finishCreate(ctx)
 		return
 	}
 	if a.luaRoot == nil {
@@ -319,20 +264,65 @@ func (a *StateMachineActor) finishAttach(ctx actor.Context) {
 	}
 	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group.ScriptPath)
 	if err != nil {
-		a.finishCreate(ctx)
+		a.abortCreate(ctx, err.Error())
 		return
 	}
 	if !luax.HasFunc(thread, "on_create") {
 		luax.Close(thread)
-		a.finishCreate(ctx)
+		a.abortCreate(ctx, "on_create is required")
 		return
 	}
 	luax.Close(thread)
 	a.callHook(ctx, "on_create", a.StateMachine)
 }
 
+func (a *StateMachineActor) applyCreateMaps(ctx actor.Context, msg *entity.ApplyStateMachineCreateMaps) {
+	if msg == nil {
+		a.abortCreate(ctx, "nil create maps")
+		return
+	}
+	if msg.Err != "" {
+		a.abortCreate(ctx, msg.Err)
+		return
+	}
+	if a.StateMachine == nil || a.StateMachine.Disposed() {
+		a.abortCreate(ctx, "state machine disposed")
+		return
+	}
+	if len(msg.Maps) == 0 {
+		a.abortCreate(ctx, "on_create must return a non-empty map array")
+		return
+	}
+	for _, m := range msg.Maps {
+		if err := a.StateMachine.RegisterMap(m); err != nil {
+			a.abortCreate(ctx, err.Error())
+			return
+		}
+	}
+	a.finishCreate(ctx)
+}
+
+func (a *StateMachineActor) abortCreate(ctx actor.Context, reason string) {
+	name := ""
+	if a.StateMachine != nil && a.StateMachine.Group != nil {
+		name = a.StateMachine.Group.Name
+	}
+	if reason != "" {
+		fmt.Printf("state machine %s create failed: %s\n", name, reason)
+	}
+	a.pendingMsgs = nil
+	if a.StateMachine != nil {
+		a.StateMachine.AbortStart()
+	}
+	a.beginDetach(ctx)
+}
+
 func (a *StateMachineActor) finishCreate(ctx actor.Context) {
 	if a.attachComplete {
+		return
+	}
+	if a.StateMachine != nil && !a.StateMachine.HasRegisteredMaps() {
+		a.abortCreate(ctx, "no maps registered")
 		return
 	}
 	a.attachComplete = true
@@ -434,14 +424,14 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group.ScriptPath)
 	if err != nil {
 		if hook == "on_create" {
-			a.finishCreate(ctx)
+			a.abortCreate(ctx, err.Error())
 		}
 		return
 	}
 	if !luax.HasFunc(thread, hook) {
 		luax.Close(thread)
 		if hook == "on_create" {
-			a.finishCreate(ctx)
+			a.abortCreate(ctx, "on_create is required")
 		}
 		return
 	}
@@ -451,15 +441,28 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	})
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()
-	luax.CallAsync(a.luaRoot, thread, hook, args...).Then(func(interface{}) (interface{}, error) {
-		if hook == "on_create" && root != nil {
-			root.Send(self, &entity.FinishStateMachineCreate{})
+	gw := a.GameWorld
+	luax.CallAsync(a.luaRoot, thread, hook, args...).Then(func(result interface{}) (interface{}, error) {
+		if hook != "on_create" || root == nil {
+			return nil, nil
 		}
+		var ms entity.MapSystem
+		if gw != nil {
+			ms = gw.GetMapSystem()
+		}
+		maps, err := entity.ResolveCreateMaps(result, ms)
+		msg := &entity.ApplyStateMachineCreateMaps{}
+		if err != nil {
+			msg.Err = err.Error()
+		} else {
+			msg.Maps = maps
+		}
+		root.Send(self, msg)
 		return nil, nil
 	}).OnError(func(err error) {
 		fmt.Printf("state machine %s hook %s: %v\n", a.StateMachine.Group.Name, hook, err)
 		if hook == "on_create" && root != nil {
-			root.Send(self, &entity.FinishStateMachineCreate{})
+			root.Send(self, &entity.ApplyStateMachineCreateMaps{Err: err.Error()})
 		}
 	})
 }

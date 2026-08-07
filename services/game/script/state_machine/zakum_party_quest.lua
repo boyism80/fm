@@ -42,15 +42,6 @@ local STAGE_MAPS = {
 	280011006,
 }
 
-local function is_stage_map(map_id)
-	for _, id in ipairs(STAGE_MAPS) do
-		if id == map_id then
-			return true
-		end
-	end
-	return false
-end
-
 local function ensure_quest_started(me, quest_id, record)
 	local q = me:quest(quest_id)
 	if q == nil then
@@ -84,7 +75,6 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_maps(STAGE_MAPS)
 		group:declare_min_players(1)
 		group:declare_exit_map(EXIT_MAP)
 	end,
@@ -106,6 +96,8 @@ return {
 		if hub ~= nil then
 			pq.shuffle_reactors(hub)
 		end
+		return STAGE_MAPS
+
 	end,
 
 	on_start = function(sm)
@@ -115,13 +107,6 @@ return {
 	on_player_enter = function(sm, player)
 		ensure_quest_started(player, STAGE1_QUEST, "")
 		player:map(START_MAP)
-	end,
-
-	on_changed_map = function(sm, player, map_id)
-		if is_stage_map(map_id) then
-			return
-		end
-		sm:unregister(player)
 	end,
 
 	on_left_party = function(sm, player)
