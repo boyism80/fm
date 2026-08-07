@@ -103,7 +103,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 				ActorContext: ctx.ActorContext,
 				ActorPID:     currentMap.LogicActorPID(),
 			})
-			luax.CallAsync(root, thread, "on_enter", character).Then(func(_ interface{}) (interface{}, error) {
+			luax.CallAsync(root, thread, "on_enter", character, portal).Then(func(_ interface{}) (interface{}, error) {
 				if character.GetDialog() == nil {
 					character.Listener.OnUnlockAction(character)
 				}

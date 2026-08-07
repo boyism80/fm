@@ -8,8 +8,16 @@ import (
 	"github.com/asynkron/protoactor-go/scheduler"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/entity"
+	"github.com/robfig/cron/v3"
 	lua "github.com/yuin/gopher-lua"
 )
+
+type namedSchedule struct {
+	version uint64
+	cancel  scheduler.CancelFunc
+	hook    string
+	cron    cron.Schedule
+}
 
 type StateMachineActor struct {
 	GameLogicActor
@@ -17,6 +25,7 @@ type StateMachineActor struct {
 	luaRoot        *lua.LState
 	timeoutVersion uint64
 	timeoutCancel  scheduler.CancelFunc
+	namedSchedules map[string]*namedSchedule
 	pendingAttach  int
 	attachFailed   bool
 	attachComplete bool
@@ -26,7 +35,10 @@ type StateMachineActor struct {
 }
 
 func NewStateMachineActor(sm *entity.StateMachine, gameWorld entity.GameWorld) *StateMachineActor {
-	a := &StateMachineActor{StateMachine: sm}
+	a := &StateMachineActor{
+		StateMachine:   sm,
+		namedSchedules: make(map[string]*namedSchedule),
+	}
 	a.GameWorld = gameWorld
 	a.maps = func() []*entity.Map {
 		if sm == nil {
@@ -101,6 +113,21 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			}
 			a.callHook(ctx, "on_scheduled_timeout", a.StateMachine)
 		}
+	case *entity.ScheduleStateMachineAfter:
+		a.scheduleAfter(ctx, msg)
+	case *entity.ScheduleStateMachineCron:
+		a.scheduleCron(ctx, msg)
+	case *entity.CancelStateMachineNamedSchedule:
+		if msg.ID == "" {
+			a.cancelAllNamedSchedules()
+		} else {
+			a.cancelNamedSchedule(msg.ID)
+		}
+		if msg.ReplyTo != nil {
+			ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})
+		}
+	case *entity.StateMachineNamedTimeout:
+		a.handleNamedTimeout(ctx, msg)
 	case *entity.StopStateMachine:
 		a.beginDetach(ctx)
 	case *DetachStateMachineAck:
@@ -111,6 +138,7 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			a.timeoutCancel()
 			a.timeoutCancel = nil
 		}
+		a.cancelAllNamedSchedules()
 		if a.luaRoot != nil {
 			a.luaRoot.Close()
 			a.luaRoot = nil
@@ -119,6 +147,114 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	default:
 		a.GameLogicActor.Receive(ctx)
 	}
+}
+
+func (a *StateMachineActor) scheduleAfter(ctx actor.Context, msg *entity.ScheduleStateMachineAfter) {
+	if msg == nil {
+		return
+	}
+	if a.scheduler == nil || msg.ID == "" || msg.Hook == "" || msg.Milliseconds <= 0 {
+		if msg.ReplyTo != nil {
+			ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})
+		}
+		return
+	}
+	a.cancelNamedSchedule(msg.ID)
+	entry := &namedSchedule{hook: msg.Hook}
+	entry.version++
+	entry.cancel = a.scheduler.SendOnce(time.Duration(msg.Milliseconds)*time.Millisecond, ctx.Self(), &entity.StateMachineNamedTimeout{
+		ID:      msg.ID,
+		Version: entry.version,
+	})
+	a.namedSchedules[msg.ID] = entry
+	if msg.ReplyTo != nil {
+		ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})
+	}
+}
+
+func (a *StateMachineActor) scheduleCron(ctx actor.Context, msg *entity.ScheduleStateMachineCron) {
+	if msg == nil {
+		return
+	}
+	if a.scheduler == nil || msg.ID == "" || msg.Hook == "" || msg.Expr == "" {
+		if msg.ReplyTo != nil {
+			ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})
+		}
+		return
+	}
+	sched, err := entity.ParseStateMachineCron(msg.Expr)
+	if err != nil {
+		fmt.Printf("state machine cron %s: %v\n", msg.Expr, err)
+		if msg.ReplyTo != nil {
+			ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})
+		}
+		return
+	}
+	a.cancelNamedSchedule(msg.ID)
+	entry := &namedSchedule{hook: msg.Hook, cron: sched}
+	a.namedSchedules[msg.ID] = entry
+	a.armNamedCron(ctx, msg.ID, entry)
+	if msg.ReplyTo != nil {
+		ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})
+	}
+}
+
+func (a *StateMachineActor) armNamedCron(ctx actor.Context, id string, entry *namedSchedule) {
+	if a.scheduler == nil || entry == nil || entry.cron == nil {
+		return
+	}
+	delay := entity.NextStateMachineCronDelay(entry.cron, time.Now())
+	if delay <= 0 {
+		return
+	}
+	entry.version++
+	entry.cancel = a.scheduler.SendOnce(delay, ctx.Self(), &entity.StateMachineNamedTimeout{
+		ID:      id,
+		Version: entry.version,
+	})
+}
+
+func (a *StateMachineActor) cancelNamedSchedule(id string) {
+	if a.namedSchedules == nil {
+		return
+	}
+	entry := a.namedSchedules[id]
+	if entry == nil {
+		return
+	}
+	entry.version++
+	if entry.cancel != nil {
+		entry.cancel()
+		entry.cancel = nil
+	}
+	delete(a.namedSchedules, id)
+}
+
+func (a *StateMachineActor) cancelAllNamedSchedules() {
+	if a.namedSchedules == nil {
+		return
+	}
+	for id := range a.namedSchedules {
+		a.cancelNamedSchedule(id)
+	}
+}
+
+func (a *StateMachineActor) handleNamedTimeout(ctx actor.Context, msg *entity.StateMachineNamedTimeout) {
+	if msg == nil || a.namedSchedules == nil {
+		return
+	}
+	entry := a.namedSchedules[msg.ID]
+	if entry == nil || msg.Version != entry.version {
+		return
+	}
+	hook := entry.hook
+	if entry.cron != nil {
+		entry.cancel = nil
+		a.armNamedCron(ctx, msg.ID, entry)
+	} else {
+		delete(a.namedSchedules, msg.ID)
+	}
+	a.callHook(ctx, hook, a.StateMachine)
 }
 
 func (a *StateMachineActor) beginAttach(ctx actor.Context) {
@@ -238,6 +374,7 @@ func (a *StateMachineActor) beginDetach(ctx actor.Context) {
 		a.timeoutCancel()
 		a.timeoutCancel = nil
 	}
+	a.cancelAllNamedSchedules()
 	if a.StateMachine != nil {
 		a.StateMachine.SetTimeoutDeadline(time.Time{})
 	}

@@ -25,6 +25,7 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
+	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

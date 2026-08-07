@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/services/game/constant"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -263,6 +264,128 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				n = L.CheckInt(3)
 			}
 			machine.AddKill(ch, n)
+			return 0
+		},
+		"notice": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			message := L.CheckString(2)
+			msgType := constant.MsgLightBlueText
+			if L.GetTop() >= 3 {
+				msgType = constant.ServerMessageType(L.CheckInt(3))
+			}
+			for _, ch := range machine.Players() {
+				if ch == nil || ch.Listener == nil {
+					continue
+				}
+				ch.Listener.OnMessage(ch, msgType, message)
+			}
+			return 0
+		},
+		"after": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			var id string
+			var ms int64
+			var hook string
+			if L.GetTop() >= 4 {
+				id = L.CheckString(2)
+				ms = int64(L.CheckNumber(3))
+				hook = L.CheckString(4)
+			} else {
+				ms = int64(L.CheckNumber(2))
+				hook = L.CheckString(3)
+				id = hook
+			}
+			cfg, cfgOK := luax.GetConfiguration(L)
+			if !cfgOK || cfg.ActorContext == nil {
+				machine.After(id, ms, hook)
+				return 0
+			}
+			promise := machine.AfterAsync(cfg.ActorContext, id, ms, hook)
+			if promise == nil {
+				return 0
+			}
+			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+		},
+		"cron": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			id := L.CheckString(2)
+			expr := L.CheckString(3)
+			hook := L.CheckString(4)
+			cfg, cfgOK := luax.GetConfiguration(L)
+			if !cfgOK || cfg.ActorContext == nil {
+				machine.Cron(id, expr, hook)
+				return 0
+			}
+			promise := machine.CronAsync(cfg.ActorContext, id, expr, hook)
+			if promise == nil {
+				return 0
+			}
+			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+		},
+		"cancel": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			id := ""
+			if L.GetTop() >= 2 {
+				id = L.CheckString(2)
+			}
+			cfg, cfgOK := luax.GetConfiguration(L)
+			if !cfgOK || cfg.ActorContext == nil {
+				machine.CancelSchedule(id)
+				return 0
+			}
+			promise := machine.CancelScheduleAsync(cfg.ActorContext, id)
+			if promise == nil {
+				return 0
+			}
+			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+		},
+		"warp_all": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			fromMapID := uint32(L.CheckInt(2))
+			toMapID := uint32(L.CheckInt(3))
+			spawnPoint := uint8(0)
+			if L.GetTop() >= 4 {
+				spawnPoint = uint8(L.CheckInt(4))
+			}
+			cfg, _ := luax.GetConfiguration(L)
+			machine.WarpAll(cfg.ActorContext, fromMapID, toMapID, spawnPoint)
+			return 0
+		},
+		"broadcast_ship": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			mapID := uint32(L.CheckInt(2))
+			effect := uint16(L.CheckInt(3))
+			machine.BroadcastShip(mapID, effect)
 			return 0
 		},
 	}

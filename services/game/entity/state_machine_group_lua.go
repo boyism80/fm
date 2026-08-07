@@ -238,5 +238,25 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, sm))
 			return 1
 		},
+		"start_persistent": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			id := "persistent"
+			if L.GetTop() >= 2 && L.Get(2).Type() != lua.LTNil {
+				id = L.CheckString(2)
+			}
+			sm, err := group.StartPersistent(id)
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 2
+			}
+			L.Push(luax.NewLuable(L, sm))
+			return 1
+		},
 	}
 }

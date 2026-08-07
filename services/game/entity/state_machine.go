@@ -89,12 +89,9 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 	sm.unregisterLocked(ch)
 	count := len(sm.players)
 	minPlayers := sm.MinPlayers
-	if minPlayers < 1 {
-		minPlayers = 1
-	}
 	exitMapID := sm.ExitMapID
 	group := sm.Group
-	belowMin := count < minPlayers
+	belowMin := minPlayers > 0 && count < minPlayers
 	sm.mu.Unlock()
 
 	if belowMin {

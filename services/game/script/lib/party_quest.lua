@@ -1,15 +1,5 @@
 local M = {}
 
-local seeded = false
-
-local function ensure_seed()
-	if seeded then
-		return
-	end
-	math.randomseed(now())
-	seeded = true
-end
-
 function M.item_count(me, id)
 	if me == nil or id == nil then
 		return 0
@@ -110,7 +100,6 @@ function M.gain_item(me, id, n)
 end
 
 function M.shuffle(str)
-	ensure_seed()
 	if str == nil or str == "" then
 		return ""
 	end
@@ -136,13 +125,16 @@ function M.party_exp(sm, amount)
 	end
 end
 
-function M.party_warp(sm, map_id)
+function M.party_warp(sm, map_id, except_id, spawn)
 	if sm == nil or map_id == nil then
 		return
 	end
+	if spawn == nil then
+		spawn = 0
+	end
 	for _, p in ipairs(sm:players()) do
-		if p ~= nil then
-			p:map(map_id)
+		if p ~= nil and (except_id == nil or p:id() ~= except_id) then
+			p:map(map_id, spawn)
 		end
 	end
 end
@@ -154,9 +146,99 @@ function M.is_gm(me)
 	return me:role() == ROLE.Admin
 end
 
-function M.rand(a, b)
-	ensure_seed()
-	return math.random(a, b)
+function M.is_leader(me)
+	local party = me:party()
+	return party ~= nil and party:leader_id() == me:id()
+end
+
+function M.mob_count(map, mob_id)
+	if map == nil then
+		return 0
+	end
+	local n = 0
+	local mobs
+	if mob_id ~= nil then
+		mobs = map:mobs(mob_id)
+	else
+		mobs = map:mobs()
+	end
+	for _, mob in pairs(mobs) do
+		if mob ~= nil then
+			n = n + 1
+		end
+	end
+	return n
+end
+
+function M.shuffle_reactors(map, min_id, max_id, exclude_id)
+	if map == nil then
+		return
+	end
+	local reactors = {}
+	local positions = {}
+	for _, reactor in pairs(map:reactors()) do
+		local id = reactor:id()
+		if exclude_id == nil or id ~= exclude_id then
+			if min_id == nil or max_id == nil or (id >= min_id and id <= max_id) then
+				local x, y = reactor:position()
+				reactors[#reactors + 1] = reactor
+				positions[#positions + 1] = { x, y }
+			end
+		end
+	end
+	for i = #positions, 2, -1 do
+		local j = math.random(i)
+		positions[i], positions[j] = positions[j], positions[i]
+	end
+	for i, reactor in ipairs(reactors) do
+		reactor:position(positions[i][1], positions[i][2])
+	end
+end
+
+function M.warp_portal(me, map_id, portal_name)
+	local sm = me:state_machine()
+	local dest = nil
+	if sm ~= nil then
+		local group = sm:group()
+		if group ~= nil then
+			dest = group:map(map_id)
+		end
+	end
+	if dest == nil then
+		me:map(map_id, 0)
+		return
+	end
+	local spawn = 0
+	if portal_name ~= nil and portal_name ~= "" then
+		local portal = dest:portal(portal_name)
+		if portal ~= nil then
+			spawn = portal:id()
+		end
+	end
+	me:play_portal_sound()
+	me:map(dest, spawn)
+end
+
+function M.party_all_here(me)
+	local party = me:party()
+	local map = me:map()
+	if party == nil or map == nil then
+		return false
+	end
+	local wz = map:wz()
+	if wz == nil then
+		return false
+	end
+	local map_id = wz.id
+	for _, mem in ipairs(party:members()) do
+		if mem == nil or mem:map_id() ~= map_id then
+			return false
+		end
+		if map:characters()[mem:id()] == nil then
+			return false
+		end
+	end
+	return true
 end
 
 return M

@@ -1,7 +1,5 @@
 -- State machine (old/scripts/event/KerningPQ.js): 커닝시티 파티 퀘스트
 
-local config = require("script/lib/kerning_city_party_quest")
-
 local stage_maps = {
 	103000800,
 	103000801,
@@ -23,7 +21,7 @@ return {
 	on_init = function(group)
 		group:set_property("state", "0")
 		group:declare_maps(stage_maps)
-		group:declare_min_players(config.required_party_size)
+		group:declare_min_players(2)
 		group:declare_exit_map(exit_map_id)
 	end,
 

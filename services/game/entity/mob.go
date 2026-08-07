@@ -576,7 +576,11 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) 
 	}
 	m.sponge.onDead(attacker)
 
+	sm := mapInstance.StateMachine()
 	mapInstance.RemoveMob(m.OID, dieAnim)
+	if sm != nil {
+		sm.CallHook("on_mob_die", sm, m)
+	}
 
 	if attacker != nil {
 		attacker.Listener.OnShowMobHp(attacker, m, 0)

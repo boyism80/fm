@@ -35,11 +35,7 @@ return {
 	on_mob_kill = function(sm, player, mobs)
 		for _, mob in ipairs(mobs) do
 			if mob ~= nil and mob:id() == MOON_BUNNY_ID then
-				for _, p in ipairs(sm:players()) do
-					if p ~= nil then
-						p:notice("월묘를 보호하지 못했습니다.", 5)
-					end
-				end
+				sm:notice("월묘를 보호하지 못했습니다.", Msg.PinkText)
 				clear(sm)
 				return
 			end

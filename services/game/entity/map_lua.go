@@ -61,6 +61,22 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(tbl)
 			return 1
 		},
+		"reactors": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			tbl := L.NewTable()
+			for _, reactor := range mapInstance.GetReactors() {
+				if reactorObj, ok := reactor.(*Reactor); ok {
+					tbl.RawSetInt(int(reactorObj.OID), luax.NewLuable(L, reactorObj))
+				}
+			}
+			L.Push(tbl)
+			return 1
+		},
 		"mobs": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

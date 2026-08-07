@@ -139,7 +139,7 @@ local function handle_rope_stage(me, npc, sm, map, prop_key, template, area_coun
 end
 
 local function give_bonus(me, npc)
-	local reward = bonus_rewards[pq.rand(1, #bonus_rewards)]
+	local reward = bonus_rewards[math.random(1, #bonus_rewards)]
 	local item = pq.gain_item(me, reward.id, reward.n)
 	if item == nil then
 		me:dialog(npc, "인벤토리 공간을 확보하신 후 다시 말을 걸어주세요.")
@@ -174,7 +174,7 @@ local function handle_stage1(me, npc, sm, map)
 	local key = "stage1_" .. tostring(me:id())
 	local val = sm:get_property(key)
 	if val == "" then
-		local idx = pq.rand(0, #stage1_quests - 1)
+		local idx = math.random(0, #stage1_quests - 1)
 		sm:set_property(key, tostring(idx))
 		val = tostring(idx)
 		if not me:dialog(npc, "안녕하세요. 첫번째 스테이지에 오신 것을 환영합니다. 주변을 둘러보면 리게이터가 돌아다니고 있는 것을 볼 수 있을 겁니다. 리게이터는 쓰러뜨리면 꼭 한개의 쿠폰을 떨어뜨립니다. 파티장을 제외한 파티원 전원은 각각 저에게 말을 걸어 문제를 받고 문제의 답에 해당하는 수 만큼 리게이터가 주는 쿠폰을 모아와야 합니다. \r\n만일 정답만큼 쿠폰을 모아왔다면 저는 그 파티원에게 #b통행권#k을 드리게 됩니다. 파티장을 제외한 모든 파티원이 통행권을 얻어 파티장에게 넘겨주면 파티장이 그렇게 모은 #b통행권#k을 저에게 넘겨줌으로써 스테이지를 클리어 하게 됩니다. 되도록 빨리 해결해야 더 많은 스테이지에 도전할 수 있으므로 서둘러 주세요. 그럼 행운을 빕니다.", false, true) then

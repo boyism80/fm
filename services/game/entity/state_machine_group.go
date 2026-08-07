@@ -89,8 +89,8 @@ func (g *StateMachineGroup) DeclareMinPlayers(n int) {
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if n < 1 {
-		n = 1
+	if n < 0 {
+		n = 0
 	}
 	g.minPlayers = n
 }
@@ -105,6 +105,21 @@ func (g *StateMachineGroup) MinPlayers() int {
 		return 1
 	}
 	return g.minPlayers
+}
+
+func (g *StateMachineGroup) Machines() []*StateMachine {
+	if g == nil {
+		return nil
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	out := make([]*StateMachine, 0, len(g.machines))
+	for _, sm := range g.machines {
+		if sm != nil && !sm.Disposed() {
+			out = append(out, sm)
+		}
+	}
+	return out
 }
 
 func (g *StateMachineGroup) DeclareExitMap(mapID uint32) {
@@ -191,6 +206,24 @@ func (g *StateMachineGroup) Init() {
 
 func (g *StateMachineGroup) CancelSchedule() {
 	g.CallGroupHook("on_cancel_schedule", g)
+	for _, sm := range g.Machines() {
+		sm.CancelAllSchedules()
+	}
+}
+
+func (g *StateMachineGroup) StartPersistent(id string) (*StateMachine, error) {
+	if g == nil {
+		return nil, fmt.Errorf("state machine group is nil")
+	}
+	if id == "" {
+		id = "persistent"
+	}
+	sm, err := g.Create(id, CreateOpts{})
+	if err != nil {
+		return nil, err
+	}
+	sm.MinPlayers = 0
+	return sm, nil
 }
 
 type StartPartyOpts struct {

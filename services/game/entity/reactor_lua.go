@@ -30,6 +30,24 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(reactor.Wz.ID))
 			return 1
 		},
+		"name": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			reactor, ok := ud.Value.(*Reactor)
+			if !ok || reactor == nil {
+				L.ArgError(1, "Reactor expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "name() is read-only")
+				return 0
+			}
+			if reactor.Spawn == nil || reactor.Spawn.Wz == nil {
+				L.Push(lua.LString(""))
+				return 1
+			}
+			L.Push(lua.LString(reactor.Spawn.Wz.Name))
+			return 1
+		},
 		"state": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			reactor, ok := ud.Value.(*Reactor)

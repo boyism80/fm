@@ -268,7 +268,10 @@ func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
 }
 
 func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
-	if qp == nil || ch == nil || ch.Quests == nil || qp.Wz == nil {
+	if qp == nil || ch == nil || ch.Quests == nil {
+		return ErrQuestNotCompletable
+	}
+	if qp.Wz == nil && !opts.Force {
 		return ErrQuestNotCompletable
 	}
 	if qp.Expired() {

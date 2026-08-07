@@ -3,6 +3,7 @@ package luax
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -40,6 +41,10 @@ type Luable interface {
 
 func NewState() *lua.LState {
 	luaState := lua.NewState()
+	_ = luaState.DoString(fmt.Sprintf(
+		"math.randomseed(%d); math.random(); math.random(); math.random()",
+		time.Now().UnixNano(),
+	))
 	RegisterRequire(luaState)
 	onCreateHooksMu.Lock()
 	for _, hook := range onCreateHooks {
