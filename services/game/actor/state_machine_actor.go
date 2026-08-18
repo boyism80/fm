@@ -78,7 +78,7 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			a.StateMachine.LeavePlayer(ctx, msg.Character, msg.WarpLeaver)
 		}
 	case *entity.ScheduleStateMachineTimeout:
-		if a.scheduler != nil {
+		if a.scheduler != nil && a.StateMachine != nil {
 			a.timeoutVersion++
 			if a.timeoutCancel != nil {
 				a.timeoutCancel()
@@ -88,6 +88,9 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			a.timeoutCancel = a.scheduler.SendOnce(time.Duration(msg.Milliseconds)*time.Millisecond, ctx.Self(), &entity.StateMachineTimeout{
 				Version: a.timeoutVersion,
 			})
+			if msg.Milliseconds > 0 {
+				a.StateMachine.BroadcastClock(int32(msg.Milliseconds / 1000))
+			}
 		}
 		if msg.ReplyTo != nil {
 			ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})

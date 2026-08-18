@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
@@ -52,6 +53,15 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 
 	if kl := character.KeyLayout(); kl != nil {
 		character.Send(&response.KeyMap{Slots: kl.Bindings()}, types.SEND_POLICY_ENCRYPT)
+	}
+
+	if mapInstance.Wz != nil && mapInstance.Wz.HasClock {
+		_, _, _, hour, minute, second := clock.DateTimeTable(clock.Now())
+		character.Send(&response.ClockTime{
+			Hour:   uint8(hour),
+			Minute: uint8(minute),
+			Second: uint8(second),
+		}, types.SEND_POLICY_ENCRYPT)
 	}
 
 	for _, obj := range mapInstance.GetObjectsNear(character.GetPosition(), constant.ObjectTypeCharacter, &entity.SearchOption{IncludeHidden: true}) {

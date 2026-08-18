@@ -866,6 +866,8 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				model.IsTown = iv.Value == 1
 			case "everlast":
 				model.Everlast = iv.Value > 0
+			case "clock":
+				model.HasClock = iv.Value > 0
 			case "mobRate":
 				model.MobRate = float32(iv.Value)
 			case "recoveryRate":
@@ -928,6 +930,8 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				model.IsTown = v.Value == "1"
 			case "everlast":
 				model.Everlast = v.Value != "0" && v.Value != ""
+			case "clock":
+				model.HasClock = v.Value != "0" && v.Value != ""
 			case "mobRate":
 				f, err := strconv.ParseFloat(v.Value, 32)
 				if err == nil {
@@ -952,6 +956,10 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				break
 			}
 		}
+	}
+
+	if root.find("clock") != nil {
+		model.HasClock = true
 	}
 
 	portals := root.find("portal")

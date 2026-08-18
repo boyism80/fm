@@ -303,6 +303,25 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 0
 		},
+		"call_hook": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			hook := L.CheckString(2)
+			if hook == "" {
+				L.ArgError(2, "hook name expected")
+				return 0
+			}
+			args := []interface{}{machine}
+			for i := 3; i <= L.GetTop(); i++ {
+				args = append(args, L.Get(i))
+			}
+			machine.CallHook(hook, args...)
+			return 0
+		},
 		"after": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			machine, ok := ud.Value.(*StateMachine)

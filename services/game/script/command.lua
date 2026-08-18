@@ -1317,12 +1317,105 @@ local command_funcs = {
 			end
 			local arg = string.lower(string.gsub(args[1], "^%s*(.-)%s*$", "%1"))
 			local enable = (arg == "1" or arg == "on" or arg == "true")
-			if not enable and arg ~= "0" and arg ~= "off" and arg ~= "false" then
-				me:notice("사용법: 0|1|on|off")
+			set_packet_log(enable)
+			me:notice("packet log: " .. tostring(enable))
+			return true
+		end,
+	},
+	["수송상태"] = {
+		privilege = ROLE.Admin,
+		usage = "<Boats|Trains|Flight|Geenie|elevator> - 수송 Group prop / persistent SM 상태",
+		command = function(me, args)
+			local name = args[1]
+			if name == nil or name == "" then
+				me:notice("사용법: /수송상태 <Boats|Trains|Flight|Geenie|elevator>")
 				return true
 			end
-			set_packet_log(enable)
-			me:notice("packet log set to " .. tostring(enable))
+			local group = state_machine(name)
+			if group == nil then
+				me:notice("그룹 없음: " .. name)
+				return true
+			end
+			local sm = group:get("persistent")
+			local sm_ok = sm ~= nil
+			me:notice(string.format(
+				"[%s] ready=%s docked=%s entry=%s haveBalrog=%s persistent=%s",
+				name,
+				tostring(group:get_property("ready")),
+				tostring(group:get_property("docked")),
+				tostring(group:get_property("entry")),
+				tostring(group:get_property("haveBalrog")),
+				tostring(sm_ok)
+			))
+			return true
+		end,
+	},
+	["수송"] = {
+		privilege = ROLE.Admin,
+		usage = "<그룹> <phase> - 수송 SM 훅 강제 (예: /수송 Boats dock)",
+		command = function(me, args)
+			local ferry_phases = {
+				dock = "on_dock",
+				stop_entry = "on_stop_entry",
+				takeoff = "on_takeoff",
+				invasion = "on_invasion",
+				arrived = "on_arrived",
+			}
+			local elevator_phases = {
+				waiting_to_down = "on_waiting_to_down",
+				run_to_down = "on_run_to_down",
+				waiting_to_up = "on_waiting_to_up",
+				run_to_up = "on_run_to_up",
+			}
+			local ferry_after = { "stop_entry", "takeoff", "invasion", "arrived" }
+			local elevator_after = { "waiting_to_down", "run_to_down", "waiting_to_up", "run_to_up" }
+			local groups = {
+				Boats = true,
+				Trains = true,
+				Flight = true,
+				Geenie = true,
+				elevator = true,
+			}
+
+			local name = args[1]
+			local phase = args[2]
+			if name == nil or phase == nil or groups[name] ~= true then
+				me:notice("사용법: /수송 <Boats|Trains|Flight|Geenie|elevator> <phase>")
+				me:notice("페리 phase: dock stop_entry takeoff invasion arrived")
+				me:notice("elevator phase: waiting_to_down run_to_down waiting_to_up run_to_up")
+				return true
+			end
+
+			local hook
+			local after_ids
+			if name == "elevator" then
+				hook = elevator_phases[phase]
+				after_ids = elevator_after
+			else
+				hook = ferry_phases[phase]
+				after_ids = ferry_after
+			end
+			if hook == nil then
+				me:notice("알 수 없는 phase: " .. tostring(phase))
+				return true
+			end
+
+			local group = state_machine(name)
+			if group == nil then
+				me:notice("그룹 없음: " .. name)
+				return true
+			end
+			local sm = group:get("persistent")
+			if sm == nil then
+				me:notice("persistent SM 없음 (채널 부팅/on_init 확인): " .. name)
+				return true
+			end
+
+			for _, id in ipairs(after_ids) do
+				sm:cancel(id)
+			end
+			sm:call_hook(hook)
+			me:notice(string.format("[%s] %s (%s) 강제 호출", name, phase, hook))
 			return true
 		end,
 	},

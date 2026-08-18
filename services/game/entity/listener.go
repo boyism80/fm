@@ -19,6 +19,7 @@ type CharacterListener interface {
 	OnChat(ch *Character, message string, highlight bool, dontRecordHistory bool)
 	OnMesoChanged(ch *Character, meso int32)
 	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
+	OnClock(ch *Character, seconds int32)
 	OnPartyCreated(ch *Character, partyID uint32)
 	OnShowGuildInfo(ch *Character)
 	OnShowAllianceInfo(ch *Character)

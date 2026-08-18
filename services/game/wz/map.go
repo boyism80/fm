@@ -45,6 +45,7 @@ type Map struct {
 	HideMinimap       bool
 	IsTown            bool
 	Everlast          bool
+	HasClock          bool
 	MobRate           float32
 	RecoveryRate      float32
 	BGM               string

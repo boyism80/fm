@@ -259,6 +259,35 @@ func (sm *StateMachine) TimeLeft() int64 {
 	return left
 }
 
+func (sm *StateMachine) BroadcastClock(seconds int32) {
+	if sm == nil {
+		return
+	}
+	for _, ch := range sm.Players() {
+		if ch == nil || ch.Listener == nil {
+			continue
+		}
+		if !sm.OwnsMap(ch.GetMap()) {
+			continue
+		}
+		ch.Listener.OnClock(ch, seconds)
+	}
+}
+
+func (sm *StateMachine) SyncClock(ch *Character) {
+	if sm == nil || ch == nil || ch.Listener == nil {
+		return
+	}
+	if !sm.OwnsMap(ch.GetMap()) {
+		return
+	}
+	left := sm.TimeLeft()
+	if left <= 0 {
+		return
+	}
+	ch.Listener.OnClock(ch, int32(left/1000))
+}
+
 func (sm *StateMachine) SetTimeoutDeadline(deadline time.Time) {
 	if sm == nil {
 		return
@@ -321,6 +350,7 @@ func (sm *StateMachine) HandlePlayerMapEnter(ch *Character, m *Map) {
 		return
 	}
 	if sm.OwnsMap(m) {
+		sm.SyncClock(ch)
 		sm.CallHook("on_changed_map", sm, ch, m.TemplateID())
 		return
 	}

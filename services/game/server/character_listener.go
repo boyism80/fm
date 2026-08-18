@@ -93,6 +93,15 @@ func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType cons
 	ch.Send(noticePacket, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnClock(ch *entity.Character, seconds int32) {
+	if ch == nil {
+		return
+	}
+	ch.Send(&response.Clock{
+		Seconds: seconds,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnPartyCreated(ch *entity.Character, partyID uint32) {
 	if ch == nil {
 		return
@@ -757,9 +766,7 @@ func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.
 		}, types.SEND_POLICY_ENCRYPT)
 	}
 	if qp.Wz != nil && qp.Wz.Meta.TimeLimit > 0 {
-		ch.Send(&response.Clock{
-			Seconds: int32(qp.Wz.Meta.TimeLimit),
-		}, types.SEND_POLICY_ENCRYPT)
+		l.OnClock(ch, int32(qp.Wz.Meta.TimeLimit))
 	}
 	l.OnUnlockAction(ch)
 }
