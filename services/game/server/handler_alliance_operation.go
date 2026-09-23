@@ -40,7 +40,10 @@ func (h *AllianceOperation) Handle(ctx *core.ClientContext, req *request.Allianc
 
 	switch req.Operation {
 	case pconst.AllianceC2SLoadInfo:
-		return h.handleLoadInfo(ch)
+		if ch.Listener != nil {
+			ch.Listener.OnAllianceUpdateInfo(ch)
+		}
+		return nil
 	case pconst.AllianceC2SCreate:
 		return h.handleCreate(ctx, ch, req)
 	case pconst.AllianceC2SLeave:
@@ -64,14 +67,6 @@ func (h *AllianceOperation) Handle(ctx *core.ClientContext, req *request.Allianc
 	default:
 		return nil
 	}
-}
-
-func (h *AllianceOperation) handleLoadInfo(ch *entity.Character) error {
-	if ch == nil || ch.Listener == nil {
-		return nil
-	}
-	ch.Listener.OnAllianceUpdateInfo(ch)
-	return nil
 }
 
 func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *entity.Character, req *request.AllianceOperation) error {
@@ -577,7 +572,7 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *entity.Char
 			if len(guildIDs) == 0 && reply.GetRemovedGuildId() != 0 {
 				guildIDs = []uint32{reply.GetRemovedGuildId()}
 			}
-			h.gs.alliance.DisbandAfterGuildRefreshAsync(ctx.ActorContext, allianceID, guildIDs)
+			h.gs.alliance.DisbandAsync(ctx.ActorContext, allianceID, guildIDs)
 			return nil
 		}
 		alliancePb := reply.GetAlliance()

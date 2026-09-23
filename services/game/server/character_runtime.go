@@ -30,10 +30,6 @@ func NewServerCharacterRuntime(gs *GameServer) *ServerCharacterRuntime {
 	}
 }
 
-func normalizeRuntimeName(name string) string {
-	return strings.TrimSpace(name)
-}
-
 func (r *ServerCharacterRuntime) RegisterCharacter(characterID uint32, name string) error {
 	if r == nil {
 		return fmt.Errorf("runtime: nil receiver")
@@ -41,7 +37,7 @@ func (r *ServerCharacterRuntime) RegisterCharacter(characterID uint32, name stri
 	if characterID == 0 {
 		return fmt.Errorf("runtime: invalid character id 0")
 	}
-	key := normalizeRuntimeName(name)
+	key := strings.TrimSpace(name)
 	if key == "" {
 		return fmt.Errorf("runtime: empty character name")
 	}
@@ -121,7 +117,7 @@ func (r *ServerCharacterRuntime) GetCharacterIDByName(name string) (uint32, bool
 	if r == nil {
 		return 0, false
 	}
-	key := normalizeRuntimeName(name)
+	key := strings.TrimSpace(name)
 	if key == "" {
 		return 0, false
 	}

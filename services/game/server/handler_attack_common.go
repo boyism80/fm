@@ -121,7 +121,10 @@ func CallOnAttackHooks(character *entity.Character, damages []dto.AttackPair, sk
 		}
 	}
 	damagesTable := buildDamagesTable(commonThread, character, damages)
-	attackInfoTable := buildAttackInfoTable(commonThread, magicAttack, ranged, consumeSlot)
+	attackInfoTable := commonThread.NewTable()
+	attackInfoTable.RawSetString("magic", lua.LBool(magicAttack))
+	attackInfoTable.RawSetString("ranged", lua.LBool(ranged))
+	attackInfoTable.RawSetString("consume_slot", lua.LNumber(consumeSlot))
 	if _, err := luax.Call(commonThread, "on_attack", character, skillLV, damagesTable, attackInfoTable); err != nil {
 		log.Printf("skill hook on_attack: %v", err)
 		return

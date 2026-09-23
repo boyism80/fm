@@ -89,21 +89,8 @@ func (qp *Quest) MatchesState(state wz.QuestStatus) bool {
 	return qp.Status == QuestStatusType(state)
 }
 
-func (qp *Quest) MeetsMobCounts(mobs map[uint32]int) bool {
-	for mobID, count := range mobs {
-		kills := 0
-		if qp != nil && qp.MobKills != nil {
-			kills = qp.MobKills[mobID]
-		}
-		if kills < count {
-			return false
-		}
-	}
-	return true
-}
-
 func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
-	if qp == nil || ch == nil || ch.Quests == nil || qp.Wz == nil {
+	if qp == nil || ch == nil || qp.Wz == nil {
 		return ErrQuestNotCompletable
 	}
 	if !qp.IsStarted() {
@@ -119,7 +106,7 @@ func (qp *Quest) CanComplete(ch *Character, opts QuestPhaseOpts) error {
 	if qp.Wz.Meta.AutoPreComplete || qp.Wz.Meta.AutoComplete {
 		checkOpts.NpcID = nil
 	}
-	if !phaseRequirementsMet(qp.Wz.Complete, qp.container, qp, checkOpts) {
+	if !requirementsMet(qp.Wz.Complete.Requirements, qp.container, qp, checkOpts) {
 		return ErrQuestNotCompletable
 	}
 	exchange := ch.Quests.buildPhaseExchange(qp.Wz.Complete.Actions, questActionOpts{
@@ -178,7 +165,7 @@ func (qp *Quest) MobKillCountsOrdered() []uint16 {
 }
 
 func (ch *Character) OnQuestMobKilled(mobID uint32) {
-	if ch == nil || mobID == 0 || ch.Quests == nil {
+	if ch == nil || mobID == 0 {
 		return
 	}
 	ch.Quests.ForEach(func(_ uint32, qp *Quest) {
@@ -268,7 +255,7 @@ func (qp *Quest) RestoreLostItem(ch *Character, itemID uint32) error {
 }
 
 func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
-	if qp == nil || ch == nil || ch.Quests == nil {
+	if qp == nil || ch == nil {
 		return ErrQuestNotCompletable
 	}
 	if qp.Wz == nil && !opts.Force {
@@ -285,7 +272,7 @@ func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
 		if err := qp.CanComplete(ch, opts); err != nil {
 			return err
 		}
-		if err := ch.Quests.applyActions(qp, qp.Wz.Complete.Actions, questActionOpts{
+		if err := ch.Quests.grant(qp, qp.Wz.Complete.Actions, questActionOpts{
 			ClassID:       ch.Class,
 			Selection:     opts.Selection,
 			IncludeSkills: true,
@@ -307,7 +294,7 @@ func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
 }
 
 func (qp *Quest) Forfeit(ch *Character) error {
-	if qp == nil || ch == nil || ch.Quests == nil {
+	if qp == nil || ch == nil {
 		return ErrQuestNotForfeitable
 	}
 	if !qp.CanForfeit() {
@@ -415,7 +402,7 @@ func (qc *QuestContainer) ClearAll() int {
 	}
 	count := len(snapshots)
 	qc.progress = make(map[uint32]*Quest)
-	if qc.owner == nil || qc.owner.Listener == nil {
+	if qc.owner == nil {
 		return count
 	}
 	for _, snap := range snapshots {
@@ -518,7 +505,12 @@ func (qp *Quest) SetRecordExField(key, value string) bool {
 		qp.RecordEx = make(map[string]string)
 	}
 	qp.RecordEx[key] = value
-	qp.notifyRecordExChanged()
+	if qp.container != nil {
+		ch := qp.container.owner
+		if ch != nil && ch.Listener != nil {
+			ch.Listener.OnQuestRecordExChanged(ch, qp)
+		}
+	}
 	return true
 }
 
@@ -539,15 +531,4 @@ func (qp *Quest) IncrementRecordExField(key string, delta int) bool {
 		count = 0
 	}
 	return qp.SetRecordExField(key, strconv.Itoa(count))
-}
-
-func (qp *Quest) notifyRecordExChanged() {
-	if qp == nil || qp.container == nil {
-		return
-	}
-	ch := qp.container.owner
-	if ch == nil || ch.Listener == nil {
-		return
-	}
-	ch.Listener.OnQuestRecordExChanged(ch, qp)
 }

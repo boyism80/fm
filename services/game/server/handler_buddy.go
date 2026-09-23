@@ -65,8 +65,9 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 					return nil
 				}
 				if view := reply.GetRequesterView(); view != nil {
-					applyBuddyViewToCharacter(ch, view)
-					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{buddyEntryResponseFromProto(view)})
+					entry := entity.BuddyListEntryFromProto(view)
+					ch.BuddyList().Upsert(entry)
+					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.ToResponse()})
 				}
 				return nil
 			},
@@ -92,8 +93,9 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 					return nil
 				}
 				if view := reply.GetAccepterView(); view != nil {
-					applyBuddyViewToCharacter(ch, view)
-					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{buddyEntryResponseFromProto(view)})
+					entry := entity.BuddyListEntryFromProto(view)
+					ch.BuddyList().Upsert(entry)
+					ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncUpdate, []response.BuddyEntry{entry.ToResponse()})
 				}
 				return nil
 			},
@@ -130,15 +132,4 @@ func (h *Buddy) Handle(ctx *core.ClientContext, req *request.Buddy) error {
 	default:
 		return nil
 	}
-}
-
-func applyBuddyViewToCharacter(ch *entity.Character, view *internal.BuddyEntry) {
-	if ch == nil || view == nil {
-		return
-	}
-	ch.BuddyList().Upsert(entity.BuddyListEntryFromProto(view))
-}
-
-func buddyEntryResponseFromProto(entry *internal.BuddyEntry) response.BuddyEntry {
-	return entity.BuddyListEntryFromProto(entry).ToResponse()
 }

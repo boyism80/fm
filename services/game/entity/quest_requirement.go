@@ -8,13 +8,6 @@ import (
 	"github.com/boyism80/fm/services/game/wz"
 )
 
-func phaseRequirementsMet(phase wz.QuestPhase, qc *QuestContainer, qp *Quest, opts QuestPhaseOpts) bool {
-	if qc == nil || qc.owner == nil {
-		return false
-	}
-	return requirementsMet(phase.Requirements, qc, qp, opts)
-}
-
 func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, opts QuestPhaseOpts) bool {
 	if qc == nil || qc.owner == nil {
 		return false
@@ -63,8 +56,16 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 			return false
 		}
 	}
-	if len(req.Mob) > 0 && !qp.MeetsMobCounts(req.Mob) {
-		return false
+	if len(req.Mob) > 0 {
+		for mobID, count := range req.Mob {
+			kills := 0
+			if qp != nil && qp.MobKills != nil {
+				kills = qp.MobKills[mobID]
+			}
+			if kills < count {
+				return false
+			}
+		}
 	}
 	for questID, state := range req.Quest {
 		if !qc.Get(questID).MatchesState(state) {
@@ -94,11 +95,17 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 			}
 		}
 	}
-	if req.Start != "" && !meetsEventTimeBound(req.Start, true) {
-		return false
+	if req.Start != "" {
+		eventTime, ok := parseQuestEventTime(req.Start)
+		if !ok || clock.Now().Before(eventTime) {
+			return false
+		}
 	}
-	if req.End != "" && !meetsEventTimeBound(req.End, false) {
-		return false
+	if req.End != "" {
+		eventTime, ok := parseQuestEventTime(req.End)
+		if !ok || !clock.Now().Before(eventTime) {
+			return false
+		}
 	}
 	if req.InfoNumber > 0 {
 		if qp == nil || qp.container == nil {
@@ -131,7 +138,38 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 		}
 	}
 	for skillID, acquire := range req.Skill {
-		if !ch.meetsQuestSkillRequirement(skillID, acquire) {
+		if skillID == 0 {
+			continue
+		}
+		mustAcquire := acquire > 0
+		var wzSkill *wz.Skill
+		if ch.GameWorld != nil {
+			resources := ch.GameWorld.GetResources()
+			if resources != nil {
+				wzSkill = resources.GetSkill(skillID)
+			}
+		}
+		entry := (*SkillEntry)(nil)
+		if ch.Skills != nil {
+			entry = ch.Skills.Get(skillID)
+		}
+		skillLevel := 0
+		masterLevel := 0
+		if entry != nil {
+			skillLevel = entry.Level()
+			masterLevel = entry.MasterLevel
+		}
+		if mustAcquire {
+			ok := false
+			if wzSkill != nil && wzSkill.IsFourthJob() {
+				ok = masterLevel > 0
+			} else {
+				ok = skillLevel > 0
+			}
+			if !ok {
+				return false
+			}
+		} else if skillLevel != 0 || masterLevel != 0 {
 			return false
 		}
 	}
@@ -205,16 +243,4 @@ func sameCalendarDay(a, b time.Time) bool {
 	ay, am, ad := a.In(time.Local).Date()
 	by, bm, bd := b.In(time.Local).Date()
 	return ay == by && am == bm && ad == bd
-}
-
-func meetsEventTimeBound(raw string, isStart bool) bool {
-	eventTime, ok := parseQuestEventTime(raw)
-	if !ok {
-		return false
-	}
-	now := clock.Now()
-	if isStart {
-		return !now.Before(eventTime)
-	}
-	return now.Before(eventTime)
 }

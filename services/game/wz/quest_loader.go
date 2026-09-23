@@ -92,18 +92,18 @@ func parseQuestRequirements(phase *node) QuestRequirements {
 	}
 
 	for _, child := range phase.Children {
-		applyQuestRequirementChild(&reqs, &child)
+		mergeQuestRequirementChild(&reqs, &child)
 	}
 	for _, intField := range phase.Ints {
-		applyQuestRequirementInt(&reqs, intField.Name, intField.Value)
+		setQuestRequirementInt(&reqs, intField.Name, intField.Value)
 	}
 	for _, strField := range phase.Strings {
-		applyQuestRequirementStr(&reqs, strField.Name, strField.Value)
+		setQuestRequirementStr(&reqs, strField.Name, strField.Value)
 	}
 	return reqs
 }
 
-func applyQuestRequirementChild(reqs *QuestRequirements, child *node) {
+func mergeQuestRequirementChild(reqs *QuestRequirements, child *node) {
 	switch child.Name {
 	case "job":
 		reqs.Job = collectChildIntValues(child)
@@ -195,14 +195,14 @@ func applyQuestRequirementChild(reqs *QuestRequirements, child *node) {
 		}
 	default:
 		if str := nodeStringValue(child); str != "" {
-			applyQuestRequirementStr(reqs, child.Name, str)
+			setQuestRequirementStr(reqs, child.Name, str)
 		} else {
-			applyQuestRequirementInt(reqs, child.Name, firstIntValue(child))
+			setQuestRequirementInt(reqs, child.Name, firstIntValue(child))
 		}
 	}
 }
 
-func applyQuestRequirementInt(reqs *QuestRequirements, kind string, value int) {
+func setQuestRequirementInt(reqs *QuestRequirements, kind string, value int) {
 	switch kind {
 	case "npc":
 		reqs.NPC = uint32(value)
@@ -252,7 +252,7 @@ func applyQuestRequirementInt(reqs *QuestRequirements, kind string, value int) {
 	}
 }
 
-func applyQuestRequirementStr(reqs *QuestRequirements, kind string, value string) {
+func setQuestRequirementStr(reqs *QuestRequirements, kind string, value string) {
 	switch kind {
 	case "start":
 		reqs.Start = value
@@ -357,17 +357,17 @@ func parseQuestActions(phase *node) QuestActions {
 	}
 
 	for _, intField := range phase.Ints {
-		applyQuestActionInt(&actions, intField.Name, intField.Value)
+		setQuestActionInt(&actions, intField.Name, intField.Value)
 	}
 
 	for _, strField := range phase.Strings {
-		applyQuestActionStr(&actions, strField.Name, strField.Value)
+		setQuestActionStr(&actions, strField.Name, strField.Value)
 	}
 
 	return actions
 }
 
-func applyQuestActionInt(actions *QuestActions, kind string, value int) {
+func setQuestActionInt(actions *QuestActions, kind string, value int) {
 	switch kind {
 	case "exp":
 		actions.Exp = value
@@ -413,7 +413,7 @@ func applyQuestActionInt(actions *QuestActions, kind string, value int) {
 	}
 }
 
-func applyQuestActionStr(actions *QuestActions, kind string, value string) {
+func setQuestActionStr(actions *QuestActions, kind string, value string) {
 	switch kind {
 	case "info":
 		actions.Info = value

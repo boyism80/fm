@@ -10,7 +10,7 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func (gc *GuildContainer) ApplyEventAsync(ctx actor.Context, evt GuildEventEnvelope, after func(guildID uint32)) *async.Promise {
+func (gc *GuildContainer) SyncGuildEventAsync(ctx actor.Context, evt GuildEventEnvelope, after func(guildID uint32)) *async.Promise {
 	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
 	if gc == nil {
 		return promise
@@ -21,23 +21,6 @@ func (gc *GuildContainer) ApplyEventAsync(ctx actor.Context, evt GuildEventEnvel
 		}
 		return nil, nil
 	})
-}
-
-func (gc *GuildContainer) guildGet(guildID uint32) *entity.Guild {
-	if gc == nil || guildID == 0 {
-		return nil
-	}
-	return gc.Get(guildID)
-}
-
-func (gc *GuildContainer) isCharacterOnline(characterID uint32) bool {
-	if gc == nil || gc.gs == nil || characterID == 0 {
-		return false
-	}
-	if gc.gs.characterRuntime == nil {
-		return false
-	}
-	return gc.gs.characterRuntime.Exists(characterID)
 }
 
 func (gc *GuildContainer) forEachOnlineGuildMember(g *entity.Guild, skipCharacterID uint32, fn func(memberID uint32)) {
@@ -52,7 +35,7 @@ func (gc *GuildContainer) forEachOnlineGuildMember(g *entity.Guild, skipCharacte
 		if memberID == 0 || memberID == skipCharacterID {
 			continue
 		}
-		if !gc.isCharacterOnline(memberID) {
+		if gc.gs == nil || gc.gs.characterRuntime == nil || !gc.gs.characterRuntime.Exists(memberID) {
 			continue
 		}
 		fn(memberID)
@@ -60,7 +43,7 @@ func (gc *GuildContainer) forEachOnlineGuildMember(g *entity.Guild, skipCharacte
 }
 
 func (gc *GuildContainer) BroadcastNoticeChanged(guildID uint32) {
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil {
 		return
 	}
@@ -79,7 +62,7 @@ func (gc *GuildContainer) BroadcastMemberRankChanged(guildID uint32, targetChara
 	if targetCharacterID == 0 {
 		return
 	}
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil {
 		return
 	}
@@ -115,7 +98,7 @@ func (gc *GuildContainer) NotifyMemberFieldsChanged(ch *entity.Character) {
 	if !inGuild {
 		return
 	}
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil {
 		return
 	}
@@ -133,7 +116,7 @@ func (gc *GuildContainer) BroadcastMemberFieldsChanged(guildID uint32, subjectID
 	if subjectID == 0 {
 		return
 	}
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil {
 		return
 	}
@@ -153,7 +136,7 @@ func (gc *GuildContainer) BroadcastMemberOnlineChanged(guildID uint32, subjectID
 	if subjectID == 0 {
 		return
 	}
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil {
 		return
 	}
@@ -173,7 +156,7 @@ func (gc *GuildContainer) BroadcastMemberOnlineChanged(guildID uint32, subjectID
 }
 
 func (gc *GuildContainer) BroadcastEmblemChanged(guildID uint32) {
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil || g.Logo == nil {
 		return
 	}
@@ -192,7 +175,7 @@ func (gc *GuildContainer) BroadcastEmblemChanged(guildID uint32) {
 }
 
 func (gc *GuildContainer) BroadcastCapacityChanged(guildID uint32) {
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil {
 		return
 	}
@@ -208,7 +191,7 @@ func (gc *GuildContainer) BroadcastCapacityChanged(guildID uint32) {
 }
 
 func (gc *GuildContainer) BroadcastRankTitlesChanged(guildID uint32) {
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil {
 		return
 	}
@@ -227,7 +210,7 @@ func (gc *GuildContainer) BroadcastMemberJoined(guildID uint32, joinerCharacterI
 	if joinerCharacterID == 0 {
 		return
 	}
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil {
 		return
 	}
@@ -291,7 +274,7 @@ func (gc *GuildContainer) BroadcastMemberLeft(prevGuild *entity.Guild, leftChara
 			}
 			continue
 		}
-		if !gc.isCharacterOnline(memberID) {
+		if gc.gs == nil || gc.gs.characterRuntime == nil || !gc.gs.characterRuntime.Exists(memberID) {
 			continue
 		}
 		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildMemberLeft{
@@ -317,7 +300,7 @@ func (gc *GuildContainer) BroadcastDisbanded(prevGuild *entity.Guild, memberChar
 		if memberID == 0 {
 			continue
 		}
-		if !gc.isCharacterOnline(memberID) {
+		if gc.gs == nil || gc.gs.characterRuntime == nil || !gc.gs.characterRuntime.Exists(memberID) {
 			continue
 		}
 		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildDisbandSelf{
@@ -331,7 +314,7 @@ func (gc *GuildContainer) BroadcastMultiChat(guildID uint32, senderCharacterID u
 	if senderCharacterID == 0 {
 		return
 	}
-	g := gc.guildGet(guildID)
+	g := gc.Get(guildID)
 	if g == nil {
 		return
 	}

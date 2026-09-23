@@ -30,18 +30,9 @@ func (h *ShipObject) Handle(ctx *core.ClientContext, req *request.ShipObject) er
 		return nil
 	}
 
-	pkt, ok := h.resolveShipPacket(req.MapID)
-	if !ok {
-		return nil
-	}
-	ch.Send(pkt, types.SEND_POLICY_ENCRYPT)
-	return nil
-}
-
-func (h *ShipObject) resolveShipPacket(mapID uint32) (types.Packet, bool) {
 	groupName := ""
 	wantBalrog := false
-	switch mapID {
+	switch req.MapID {
 	case 101000300, 200000111:
 		groupName = "Boats"
 	case 200000121, 220000110:
@@ -54,21 +45,25 @@ func (h *ShipObject) resolveShipPacket(mapID uint32) (types.Packet, bool) {
 		groupName = "Boats"
 		wantBalrog = true
 	default:
-		return nil, false
+		return nil
 	}
 
 	prop := h.groupProp(groupName)
+	var pkt types.Packet
 	if wantBalrog {
 		if prop("haveBalrog") != "true" {
-			return nil, false
+			return nil
 		}
-		return &response.ShipSpecialEffect{Effect: response.ShipSpecialBalrog}, true
+		pkt = &response.ShipSpecialEffect{Effect: response.ShipSpecialBalrog}
+	} else {
+		state := response.ShipStateLeaving
+		if prop("docked") == "true" {
+			state = response.ShipStateDocked
+		}
+		pkt = &response.ShipState{State: state}
 	}
-	state := response.ShipStateLeaving
-	if prop("docked") == "true" {
-		state = response.ShipStateDocked
-	}
-	return &response.ShipState{State: state}, true
+	ch.Send(pkt, types.SEND_POLICY_ENCRYPT)
+	return nil
 }
 
 func (h *ShipObject) groupProp(groupName string) func(string) string {

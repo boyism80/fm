@@ -15,26 +15,6 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func enterGameReplyPartyPtr(reply *internal.EnterGameReply) *uint32 {
-	if reply == nil || reply.PartyId == nil {
-		return nil
-	}
-	v := *reply.PartyId
-	p := new(uint32)
-	*p = v
-	return p
-}
-
-func enterGameReplyGuildPtr(reply *internal.EnterGameReply) *uint32 {
-	if reply == nil || reply.GuildId == nil {
-		return nil
-	}
-	v := *reply.GuildId
-	p := new(uint32)
-	*p = v
-	return p
-}
-
 type LoginGame struct {
 	gs *GameServer
 }
@@ -163,8 +143,14 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		PositionY:    int16(p.GetPositionY()),
 		Stance:       uint8(p.GetStance()),
 		Hidden:       p.GetHidden(),
-		PartyID:      enterGameReplyPartyPtr(reply),
-		GuildID:      enterGameReplyGuildPtr(reply),
+	}
+	if reply.PartyId != nil {
+		v := *reply.PartyId
+		initData.PartyID = &v
+	}
+	if reply.GuildId != nil {
+		v := *reply.GuildId
+		initData.GuildID = &v
 	}
 
 	character := entity.NewCharacter(ctx.Client, h.gs.characterListener, initData, h.gs)

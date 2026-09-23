@@ -29,9 +29,6 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 		return fmt.Errorf("change keymap: no character")
 	}
 	kl := ch.KeyLayout()
-	if kl == nil {
-		return fmt.Errorf("change keymap: nil key layout")
-	}
 
 	if len(req.Changes) == 0 {
 		_, _ = req.Type, req.Data
@@ -42,7 +39,7 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 		if !h.allowBinding(ch, c.Type, c.Action) {
 			continue
 		}
-		kl.ApplyChange(int(c.Key), c.Type, c.Action)
+		kl.SetKey(int(c.Key), c.Type, c.Action)
 	}
 	return nil
 }

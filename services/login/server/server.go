@@ -253,15 +253,6 @@ func (ls *LoginServer) GetWorldCatalog() []*internal.WorldCatalog {
 	return ls.worldCatalog
 }
 
-func (ls *LoginServer) ResolveChannelRoute(worldId uint32, channelId uint32) (*internal.ChannelCatalog, bool) {
-	worldRoutes, ok := ls.channelRoutes[worldId]
-	if !ok {
-		return nil, false
-	}
-	route, ok := worldRoutes[channelId]
-	return route, ok
-}
-
 func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 	ic := ls.internalClient
 	if ic == nil {

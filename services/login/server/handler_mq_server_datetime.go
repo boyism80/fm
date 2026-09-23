@@ -27,7 +27,7 @@ func (*loginGlobalMqServerDatetime) Handle(_ actor.Context, _ amqp.Delivery, _ s
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return nil
 	}
-	if err := clock.ApplyDateTime(payload.Reset, payload.Datetime); err != nil {
+	if err := clock.SyncDateTime(payload.Reset, payload.Datetime); err != nil {
 		log.Printf("login mq server_datetime_changed: %v", err)
 	}
 	return nil

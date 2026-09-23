@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func ResolvePath(p string) (string, error) {
+func FindConfigFilePath(p string) (string, error) {
 	try := func(abs string) (string, bool) {
 		st, err := os.Stat(abs)
 		if err != nil || st.IsDir() {

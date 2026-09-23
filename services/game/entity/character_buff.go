@@ -314,7 +314,7 @@ func (bc *BuffContainer) remove(flags []constant.BuffFlag) (removed []Buff, remo
 	return removed, removedFlags
 }
 
-func (bc *BuffContainer) applyAdded(entity Buff, now time.Time, notify bool) {
+func (bc *BuffContainer) commitBuff(entity Buff, now time.Time, notify bool) {
 	removed := bc.add(entity)
 	bc.callUnbuffScripts(removed)
 	entity.CallOnBuffScript(bc.owner)
@@ -357,7 +357,7 @@ func (bc *BuffContainer) AddBuff(wz *wz.Skill, duration time.Duration, skillLeve
 		SkillLevel: skillLevel,
 		CauserID:   causerID,
 	}
-	bc.applyAdded(entity, now, notify)
+	bc.commitBuff(entity, now, notify)
 }
 
 func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Duration, values map[constant.BuffFlag]int32, applyPotionDurationScale bool, notify bool) {
@@ -380,7 +380,7 @@ func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Durati
 		},
 		Wz: consumeWz,
 	}
-	bc.applyAdded(entity, now, notify)
+	bc.commitBuff(entity, now, notify)
 }
 
 func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {

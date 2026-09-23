@@ -49,7 +49,8 @@ func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) 
 	if root == nil {
 		return nil
 	}
-	params := buildSummonSkillParams(root, req)
+	params := root.NewTable()
+	params.RawSetString("buff_effect_index", lua.LNumber(req.BuffEffectIndex))
 	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SubSkillID)
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
@@ -60,10 +61,4 @@ func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) 
 		log.Printf("summon skill script %s: %v", scriptPath, err)
 	})
 	return nil
-}
-
-func buildSummonSkillParams(L *lua.LState, req *request.SummonSkill) lua.LValue {
-	t := L.NewTable()
-	t.RawSetString("buff_effect_index", lua.LNumber(req.BuffEffectIndex))
-	return t
 }

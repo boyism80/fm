@@ -50,7 +50,7 @@ internal:
 		return
 	}
 
-	cfgFile, err := config.ResolvePath(*cfgPath)
+	cfgFile, err := config.FindConfigFilePath(*cfgPath)
 	if err != nil {
 		log.Fatalf("Config: %v", err)
 	}

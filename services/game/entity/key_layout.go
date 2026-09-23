@@ -16,13 +16,10 @@ func NewKeyLayout() *KeyLayout {
 }
 
 func (k *KeyLayout) IsEmpty() bool {
-	return k == nil || len(k.slots) == 0
+	return len(k.slots) == 0
 }
 
-func (k *KeyLayout) ApplyChange(slot int, typ byte, action int32) {
-	if k == nil {
-		return
-	}
+func (k *KeyLayout) SetKey(slot int, typ byte, action int32) {
 	if typ != 0 {
 		k.slots[slot] = keyBinding{typ: typ, action: action}
 		return
@@ -31,7 +28,7 @@ func (k *KeyLayout) ApplyChange(slot int, typ byte, action int32) {
 }
 
 func (k *KeyLayout) Bindings() map[int]dto.KeyBinding {
-	if k == nil || len(k.slots) == 0 {
+	if len(k.slots) == 0 {
 		return map[int]dto.KeyBinding{}
 	}
 	out := make(map[int]dto.KeyBinding, len(k.slots))

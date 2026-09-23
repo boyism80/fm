@@ -47,7 +47,7 @@ func (h *partyMqPartySync) Handle(_ actor.Context, _ amqp.Delivery, _ string, ra
 	if partyPb.GetPartyId() != evt.PartyID {
 		log.Printf("party_sync: party_id mismatch envelope=%d party=%d", evt.PartyID, partyPb.GetPartyId())
 	}
-	if _, err := pc.applyEmbeddedParty(evt, &partyPb, true); err != nil {
+	if _, err := pc.applyPartySnapshot(evt, &partyPb, true); err != nil {
 	}
 	return nil
 }

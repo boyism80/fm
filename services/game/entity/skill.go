@@ -48,7 +48,7 @@ func (s *SkillEntry) SetLevel(level int) {
 	prev := s.level
 	s.level = level
 	if prev != level {
-		s.applyPassiveAfterLevelChange(prev, level)
+		s.refreshPassiveStats(prev, level)
 	}
 	if s.Owner != nil {
 		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
@@ -58,7 +58,7 @@ func (s *SkillEntry) SetLevel(level int) {
 	}
 }
 
-func (s *SkillEntry) SetLevelAndMaster(level, masterLevel int) {
+func (s *SkillEntry) SetLevels(level, masterLevel int) {
 	if level < 0 {
 		level = 0
 	}
@@ -69,7 +69,7 @@ func (s *SkillEntry) SetLevelAndMaster(level, masterLevel int) {
 	prev := s.level
 	s.level = level
 	if prev != level {
-		s.applyPassiveAfterLevelChange(prev, level)
+		s.refreshPassiveStats(prev, level)
 	}
 	if s.Owner != nil {
 		s.Owner.Listener.OnUpdateSkill(s.Owner, s.Wz.ID, int32(s.level), int32(s.MasterLevel))
@@ -89,7 +89,7 @@ func (s *SkillEntry) SetMasterLevel(masterLevel int) {
 	}
 }
 
-func (s *SkillEntry) applyPassiveAfterLevelChange(prevLevel, newLevel int) {
+func (s *SkillEntry) refreshPassiveStats(prevLevel, newLevel int) {
 	if prevLevel == newLevel {
 		return
 	}
@@ -117,7 +117,9 @@ func (s *SkillEntry) StartCooldown(duration time.Duration) {
 	end := clock.Now().Add(duration)
 	s.CooldownEnd = &end
 	sec := min(int(duration.Seconds()), 65535)
-	s.notifyCooldown(uint16(sec))
+	if s.Owner != nil {
+		s.Owner.Listener.OnSkillCooldown(s.Owner, s.Wz.ID, uint16(sec))
+	}
 }
 
 func (s *SkillEntry) CooldownRemaining() time.Duration {
@@ -132,11 +134,7 @@ func (s *SkillEntry) CooldownRemaining() time.Duration {
 
 func (s *SkillEntry) ClearCooldown() {
 	s.CooldownEnd = nil
-	s.notifyCooldown(0)
-}
-
-func (s *SkillEntry) notifyCooldown(remainingSec uint16) {
 	if s.Owner != nil {
-		s.Owner.Listener.OnSkillCooldown(s.Owner, s.Wz.ID, remainingSec)
+		s.Owner.Listener.OnSkillCooldown(s.Owner, s.Wz.ID, 0)
 	}
 }

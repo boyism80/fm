@@ -30,7 +30,7 @@ func (s *SkillEntry) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				skill.SetLevel(L.CheckInt(2))
 				return 0
 			case 3:
-				skill.SetLevelAndMaster(L.CheckInt(2), L.CheckInt(3))
+				skill.SetLevels(L.CheckInt(2), L.CheckInt(3))
 				return 0
 			default:
 				L.ArgError(2, "level() requires 1, 2 or 3 arguments")

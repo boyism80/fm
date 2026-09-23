@@ -19,7 +19,7 @@ func (ch *Character) itemModel(itemID uint32) wz.Item {
 }
 
 func (ch *Character) validateMesoExchange(costMeso, rewardMeso int32) ExchangeResult {
-	if ch == nil || ch.Inventory == nil {
+	if ch == nil {
 		return ExchangeLackCost
 	}
 	if costMeso < 0 || rewardMeso < 0 {
@@ -80,13 +80,13 @@ func (ch *Character) Exchange(spec ExchangeSpec) ExchangeResult {
 	if result != ExchangeOK {
 		return result
 	}
-	ch.applyExchangeCost(spec.Cost)
-	ch.applyExchangeReward(spec.Reward)
+	ch.payExchangeCost(spec.Cost)
+	ch.grantExchangeReward(spec.Reward)
 	return ExchangeOK
 }
 
-func (ch *Character) applyExchangeCost(side ExchangeSide) {
-	if ch == nil || side.isEmpty() {
+func (ch *Character) payExchangeCost(side ExchangeSide) {
+	if side.isEmpty() {
 		return
 	}
 	if side.Meso > 0 {
@@ -102,15 +102,15 @@ func (ch *Character) applyExchangeCost(side ExchangeSide) {
 		ch.Inventory.removeByItemIDCountUnchecked(id, count)
 	}
 	for _, skill := range side.Skills {
-		if skill.SkillID == 0 || ch.Skills == nil {
+		if skill.SkillID == 0 {
 			continue
 		}
 		ch.Skills.Remove(skill.SkillID)
 	}
 }
 
-func (ch *Character) applyExchangeReward(side ExchangeSide) {
-	if ch == nil || side.isEmpty() {
+func (ch *Character) grantExchangeReward(side ExchangeSide) {
+	if side.isEmpty() {
 		return
 	}
 	if side.Meso > 0 {
@@ -127,7 +127,7 @@ func (ch *Character) applyExchangeReward(side ExchangeSide) {
 		if err != nil {
 			continue
 		}
-		ch.Inventory.applyAddItem(item, true)
+		ch.Inventory.addItemUnchecked(item, true)
 	}
 	if side.Exp > 0 {
 		ch.addExpUnchecked(side.Exp)
@@ -136,12 +136,12 @@ func (ch *Character) applyExchangeReward(side ExchangeSide) {
 		ch.gainPopulationUnchecked(side.Population)
 	}
 	for _, skill := range side.Skills {
-		ch.applyExchangeSkillGrant(skill)
+		ch.grantSkill(skill)
 	}
 }
 
-func (ch *Character) applyExchangeSkillGrant(skill ExchangeSkill) {
-	if ch == nil || skill.SkillID == 0 || ch.Skills == nil {
+func (ch *Character) grantSkill(skill ExchangeSkill) {
+	if skill.SkillID == 0 {
 		return
 	}
 	if skill.SkillID/10000 == 0 && !ch.IsBeginner() {
@@ -169,7 +169,7 @@ func (ch *Character) applyExchangeSkillGrant(skill ExchangeSkill) {
 		targetLevel = exchangeSkillTargetLevel(entry.Level(), skill.Level)
 		targetMaster = exchangeSkillTargetMaster(entry.MasterLevel, skill.MasterLevel, wzSkill)
 		if targetLevel != entry.Level() || targetMaster != entry.MasterLevel {
-			entry.SetLevelAndMaster(targetLevel, targetMaster)
+			entry.SetLevels(targetLevel, targetMaster)
 		}
 	}
 }

@@ -85,7 +85,7 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 			return nil
 		}
 		s.gs.alliance.Update(alliancePb)
-		s.gs.alliance.BroadcastCapacityChanged(alliancePb)
+		s.gs.alliance.BroadcastInfoUpdate(alliancePb)
 		*result = int(constant.AllianceIncreaseCapacityResultOK)
 		return nil
 	}).OnError(func(err error) {

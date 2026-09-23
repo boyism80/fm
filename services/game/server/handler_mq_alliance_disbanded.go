@@ -40,7 +40,7 @@ func (h *allianceMqDisbanded) Handle(ctx actor.Context, _ amqp.Delivery, _ strin
 		guildIDs = gs.alliance.GuildIDs(evt.AllianceID)
 	}
 	gs.alliance.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
-		gs.alliance.DisbandAfterGuildRefreshAsync(ctx, evt.AllianceID, guildIDs)
+		gs.alliance.DisbandAsync(ctx, evt.AllianceID, guildIDs)
 		return nil, nil
 	})
 	log.Printf("alliance consumer: applied disbanded alliance_id=%d revision=%d", evt.AllianceID, evt.Revision)

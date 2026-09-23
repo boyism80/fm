@@ -235,11 +235,7 @@ func (ac *AllianceContainer) BroadcastLeaderChanged(alliancePb *internal.Allianc
 	})
 }
 
-func (ac *AllianceContainer) BroadcastRankTitlesChanged(alliancePb *internal.Alliance) {
-	ac.broadcastInfoUpdate(alliancePb)
-}
-
-func (ac *AllianceContainer) broadcastInfoUpdate(alliancePb *internal.Alliance) {
+func (ac *AllianceContainer) BroadcastInfoUpdate(alliancePb *internal.Alliance) {
 	if ac.gs == nil || alliancePb == nil {
 		return
 	}
@@ -326,10 +322,6 @@ func (ac *AllianceContainer) BroadcastMemberRankChanged(alliancePb *internal.All
 		return
 	}
 	ac.broadcastAllianceStateRefresh(alliancePb)
-}
-
-func (ac *AllianceContainer) BroadcastCapacityChanged(alliancePb *internal.Alliance) {
-	ac.broadcastInfoUpdate(alliancePb)
 }
 
 func (ac *AllianceContainer) BroadcastGuildAdded(alliancePb *internal.Alliance, addedGuildPb *internal.Guild) {
@@ -456,7 +448,7 @@ func (ac *AllianceContainer) BroadcastGuildLeft(alliancePb *internal.Alliance, r
 	}
 }
 
-func (ac *AllianceContainer) DisbandAfterGuildRefreshAsync(ctx actor.Context, allianceID uint32, guildIDs []uint32) *async.Promise {
+func (ac *AllianceContainer) DisbandAsync(ctx actor.Context, allianceID uint32, guildIDs []uint32) *async.Promise {
 	if ac.gs == nil {
 		return async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
 	}

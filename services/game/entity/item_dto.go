@@ -127,31 +127,27 @@ func (e *Weapon) ToEquipmentDTO() *dto.Equipment {
 	return ToEquipmentDTOFromCore(e.EquipmentCore)
 }
 
-func equipToDTO(e Equipment) dto.Item {
+func (e *Shield) ToDTO() dto.Item                { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Shield) ToEquipmentDTO() *dto.Equipment { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Cap) ToDTO() dto.Item                   { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Cap) ToEquipmentDTO() *dto.Equipment    { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Face) ToDTO() dto.Item                  { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Face) ToEquipmentDTO() *dto.Equipment   { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Accessory) ToDTO() dto.Item             { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Accessory) ToEquipmentDTO() *dto.Equipment {
 	return ToEquipmentDTOFromCore(e.GetEquipmentCore())
 }
-
-func equipToEquipmentDTO(e Equipment) *dto.Equipment {
+func (e *Top) ToDTO() dto.Item                  { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Top) ToEquipmentDTO() *dto.Equipment   { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Pants) ToDTO() dto.Item                { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Pants) ToEquipmentDTO() *dto.Equipment { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Shoes) ToDTO() dto.Item                { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Shoes) ToEquipmentDTO() *dto.Equipment { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Glove) ToDTO() dto.Item                { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Glove) ToEquipmentDTO() *dto.Equipment { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Cape) ToDTO() dto.Item                 { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *Cape) ToEquipmentDTO() *dto.Equipment  { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *RingEquip) ToDTO() dto.Item            { return ToEquipmentDTOFromCore(e.GetEquipmentCore()) }
+func (e *RingEquip) ToEquipmentDTO() *dto.Equipment {
 	return ToEquipmentDTOFromCore(e.GetEquipmentCore())
 }
-
-func (e *Shield) ToDTO() dto.Item                   { return equipToDTO(e) }
-func (e *Shield) ToEquipmentDTO() *dto.Equipment    { return equipToEquipmentDTO(e) }
-func (e *Cap) ToDTO() dto.Item                      { return equipToDTO(e) }
-func (e *Cap) ToEquipmentDTO() *dto.Equipment       { return equipToEquipmentDTO(e) }
-func (e *Face) ToDTO() dto.Item                     { return equipToDTO(e) }
-func (e *Face) ToEquipmentDTO() *dto.Equipment      { return equipToEquipmentDTO(e) }
-func (e *Accessory) ToDTO() dto.Item                { return equipToDTO(e) }
-func (e *Accessory) ToEquipmentDTO() *dto.Equipment { return equipToEquipmentDTO(e) }
-func (e *Top) ToDTO() dto.Item                      { return equipToDTO(e) }
-func (e *Top) ToEquipmentDTO() *dto.Equipment       { return equipToEquipmentDTO(e) }
-func (e *Pants) ToDTO() dto.Item                    { return equipToDTO(e) }
-func (e *Pants) ToEquipmentDTO() *dto.Equipment     { return equipToEquipmentDTO(e) }
-func (e *Shoes) ToDTO() dto.Item                    { return equipToDTO(e) }
-func (e *Shoes) ToEquipmentDTO() *dto.Equipment     { return equipToEquipmentDTO(e) }
-func (e *Glove) ToDTO() dto.Item                    { return equipToDTO(e) }
-func (e *Glove) ToEquipmentDTO() *dto.Equipment     { return equipToEquipmentDTO(e) }
-func (e *Cape) ToDTO() dto.Item                     { return equipToDTO(e) }
-func (e *Cape) ToEquipmentDTO() *dto.Equipment      { return equipToEquipmentDTO(e) }
-func (e *RingEquip) ToDTO() dto.Item                { return equipToDTO(e) }
-func (e *RingEquip) ToEquipmentDTO() *dto.Equipment { return equipToEquipmentDTO(e) }

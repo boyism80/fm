@@ -35,7 +35,7 @@ type questActionOpts struct {
 	NpcID         uint32
 }
 
-func (qc *QuestContainer) applyActions(qp *Quest, actions wz.QuestActions, opts questActionOpts) error {
+func (qc *QuestContainer) grant(qp *Quest, actions wz.QuestActions, opts questActionOpts) error {
 	if qp == nil {
 		return nil
 	}
@@ -148,78 +148,74 @@ func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, er
 			qc.notifyQuestStart(existing, wireNPC, opts)
 			return existing, nil
 		}
-		return qc.startWZQuest(def, existing, wireNPC, opts)
-	}
-}
-
-func (qc *QuestContainer) startWZQuest(def *wz.Quest, existing *Quest, wireNPC uint32, opts QuestPhaseOpts) (*Quest, error) {
-	ch := qc.owner
-	if !opts.Force {
-		if err := qc.CanStart(def.ID, opts); err != nil {
-			return nil, err
-		}
-	}
-
-	forfeited := 0
-	if existing != nil {
-		if existing.Status == QuestStatusCompleted {
-			if !def.Meta.Repeatable && !opts.Force {
-				return nil, ErrQuestInvalidState
+		ch := qc.owner
+		if !opts.Force {
+			if err := qc.CanStart(def.ID, opts); err != nil {
+				return nil, err
 			}
-			forfeited = existing.Forfeited
-		} else if !opts.Force {
-			return nil, ErrQuestInvalidState
-		} else {
-			forfeited = existing.Forfeited
 		}
-	}
 
-	qp := existing
-	if qp == nil {
-		qp = qc.Create(def.ID, QuestStatusStarted)
+		forfeited := 0
+		if existing != nil {
+			if existing.Status == QuestStatusCompleted {
+				if !def.Meta.Repeatable && !opts.Force {
+					return nil, ErrQuestInvalidState
+				}
+				forfeited = existing.Forfeited
+			} else if !opts.Force {
+				return nil, ErrQuestInvalidState
+			} else {
+				forfeited = existing.Forfeited
+			}
+		}
+
+		qp := existing
 		if qp == nil {
-			raced := qc.Get(def.ID)
-			if raced == nil || !raced.IsStarted() {
-				return nil, ErrQuestInvalidState
-			}
-			if !opts.Force {
-				if err := qc.CanStart(def.ID, opts); err != nil {
-					return nil, err
+			qp = qc.Create(def.ID, QuestStatusStarted)
+			if qp == nil {
+				raced := qc.Get(def.ID)
+				if raced == nil || !raced.IsStarted() {
+					return nil, ErrQuestInvalidState
 				}
-				if err := qc.applyActions(raced, def.Start.Actions, questActionOpts{
-					ClassID:       ch.Class,
-					IncludeSkills: raced.Forfeited == 0,
-					NpcID:         wireNPC,
-				}); err != nil {
-					return nil, err
+				if !opts.Force {
+					if err := qc.CanStart(def.ID, opts); err != nil {
+						return nil, err
+					}
+					if err := qc.grant(raced, def.Start.Actions, questActionOpts{
+						ClassID:       ch.Class,
+						IncludeSkills: raced.Forfeited == 0,
+						NpcID:         wireNPC,
+					}); err != nil {
+						return nil, err
+					}
 				}
+				qc.notifyQuestStart(raced, wireNPC, opts)
+				return raced, nil
 			}
-			qc.notifyQuestStart(raced, wireNPC, opts)
-			return raced, nil
 		}
-	}
 
-	qp.Status = QuestStatusStarted
-	qp.Forfeited = forfeited
-	qp.StatusRecord.WriteString("")
-	if def.Meta.TimeLimit2 > 0 {
-		qp.SetDeadlineAfter(time.Duration(def.Meta.TimeLimit2) * time.Second)
-	} else {
-		qp.ResetDeadline()
-	}
-	qp.MobKills = make(map[uint32]int)
-	qp.InitMobKillCounters()
-	if !opts.Force {
-		if err := qc.applyActions(qp, def.Start.Actions, questActionOpts{
-			ClassID:       ch.Class,
-			IncludeSkills: forfeited == 0,
-			NpcID:         wireNPC,
-		}); err != nil {
-			return nil, err
+		qp.Status = QuestStatusStarted
+		qp.Forfeited = forfeited
+		qp.StatusRecord.WriteString("")
+		if def.Meta.TimeLimit2 > 0 {
+			qp.SetDeadlineAfter(time.Duration(def.Meta.TimeLimit2) * time.Second)
+		} else {
+			qp.ResetDeadline()
 		}
+		qp.MobKills = make(map[uint32]int)
+		qp.InitMobKillCounters()
+		if !opts.Force {
+			if err := qc.grant(qp, def.Start.Actions, questActionOpts{
+				ClassID:       ch.Class,
+				IncludeSkills: forfeited == 0,
+				NpcID:         wireNPC,
+			}); err != nil {
+				return nil, err
+			}
+		}
+		qc.notifyQuestStart(qp, wireNPC, opts)
+		return qp, nil
 	}
-	qc.notifyQuestStart(qp, wireNPC, opts)
-	return qp, nil
 }
 
 func (qc *QuestContainer) notifyQuestStart(qp *Quest, wireNPC uint32, opts QuestPhaseOpts) {
@@ -267,7 +263,7 @@ func (qc *QuestContainer) CanStart(questID uint32, opts QuestPhaseOpts) error {
 	if def.Meta.AutoStart || def.Meta.AutoAccept {
 		checkOpts.NpcID = nil
 	}
-	if !phaseRequirementsMet(def.Start, qc, existing, checkOpts) {
+	if !requirementsMet(def.Start.Requirements, qc, existing, checkOpts) {
 		return ErrQuestNotStartable
 	}
 	exchange := qc.buildPhaseExchange(def.Start.Actions, questActionOpts{ClassID: qc.owner.Class})
@@ -425,37 +421,6 @@ func matchesQuestClass(classID uint16, codes []int) bool {
 		}
 	}
 	return false
-}
-
-func (ch *Character) meetsQuestSkillRequirement(skillID uint32, acquire int) bool {
-	if ch == nil || skillID == 0 {
-		return true
-	}
-	mustAcquire := acquire > 0
-	var wzSkill *wz.Skill
-	if ch.GameWorld != nil {
-		resources := ch.GameWorld.GetResources()
-		if resources != nil {
-			wzSkill = resources.GetSkill(skillID)
-		}
-	}
-	entry := (*SkillEntry)(nil)
-	if ch.Skills != nil {
-		entry = ch.Skills.Get(skillID)
-	}
-	skillLevel := 0
-	masterLevel := 0
-	if entry != nil {
-		skillLevel = entry.Level()
-		masterLevel = entry.MasterLevel
-	}
-	if mustAcquire {
-		if wzSkill != nil && wzSkill.IsFourthJob() {
-			return masterLevel > 0
-		}
-		return skillLevel > 0
-	}
-	return skillLevel == 0 && masterLevel == 0
 }
 
 func (qc *QuestContainer) completedQuestCount() int {

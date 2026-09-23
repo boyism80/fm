@@ -52,7 +52,7 @@ func (ch *Character) LoadSkills(skills []*internal.SkillPersisted) {
 }
 
 func (ch *Character) LoadBuffs(persisted []*internal.BuffPersisted) {
-	if ch == nil || ch.Buffs == nil || ch.GameWorld == nil {
+	if ch == nil || ch.GameWorld == nil {
 		return
 	}
 	res := ch.GameWorld.GetResources()
@@ -109,7 +109,7 @@ func (ch *Character) LoadBuffs(persisted []*internal.BuffPersisted) {
 }
 
 func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
-	if ch == nil || ch.Quests == nil {
+	if ch == nil {
 		return
 	}
 	for _, pb := range persisted {
@@ -294,7 +294,7 @@ func (ch *Character) SkillsPersisted() []*internal.SkillPersisted {
 }
 
 func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {
-	if ch == nil || ch.Buffs == nil {
+	if ch == nil {
 		return nil
 	}
 	now := clock.Now()
@@ -365,7 +365,7 @@ func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {
 }
 
 func (ch *Character) QuestsPersisted() []*internal.QuestPersisted {
-	if ch == nil || ch.Quests == nil {
+	if ch == nil {
 		return nil
 	}
 	out := make([]*internal.QuestPersisted, 0)

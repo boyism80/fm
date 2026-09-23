@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 )
 
@@ -151,6 +152,26 @@ func (m *Map) SpawnReactor(reactorSpawn *ReactorSpawn) (*Reactor, error) {
 	m.listener.OnReactorSpawned(m, reactor)
 
 	return reactor, nil
+}
+
+func (m *Map) SpawnReactorAt(reactorID uint32, pos types.Point[int16]) (*Reactor, error) {
+	if m == nil || m.GameWorld == nil {
+		return nil, fmt.Errorf("map is nil")
+	}
+	template := m.GameWorld.GetResources().GetReactor(reactorID)
+	if template == nil {
+		return nil, fmt.Errorf("reactor %d not found", reactorID)
+	}
+	wzSpawn := &wz.ReactorSpawn{
+		ReactorID: reactorID,
+		Position:  types.Vector2[int16]{X: pos.X, Y: pos.Y},
+	}
+	rs := &ReactorSpawn{
+		ID:       reactorID,
+		Wz:       wzSpawn,
+		Template: template,
+	}
+	return m.SpawnReactor(rs)
 }
 
 func (m *Map) RemoveReactor(oid uint32, scheduleRespawn bool) error {

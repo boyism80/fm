@@ -89,14 +89,6 @@ func (h *Attack) finishAttack(ctx *core.ClientContext, character *entity.Charact
 	return nil
 }
 
-func buildAttackInfoTable(L *lua.LState, magicAttack bool, ranged bool, consumeSlot uint16) *lua.LTable {
-	tbl := L.NewTable()
-	tbl.RawSetString("magic", lua.LBool(magicAttack))
-	tbl.RawSetString("ranged", lua.LBool(ranged))
-	tbl.RawSetString("consume_slot", lua.LNumber(consumeSlot))
-	return tbl
-}
-
 func buildDamagesTable(L *lua.LState, character *entity.Character, damages []dto.AttackPair) *lua.LTable {
 	tbl := L.NewTable()
 	if character == nil {

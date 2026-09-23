@@ -26,5 +26,5 @@ func (*globalMqServerDatetime) Handle(_ actor.Context, _ amqp.Delivery, _ string
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return nil
 	}
-	return clock.ApplyDateTime(payload.Reset, payload.Datetime)
+	return clock.SyncDateTime(payload.Reset, payload.Datetime)
 }

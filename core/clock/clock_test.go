@@ -24,20 +24,20 @@ func TestSetAbsoluteAndReset(t *testing.T) {
 	}
 }
 
-func TestApplyDateTime(t *testing.T) {
+func TestSyncDateTime(t *testing.T) {
 	Reset()
 	defer Reset()
 
-	if err := ApplyDateTime(true, ""); err != nil {
-		t.Fatalf("ApplyDateTime reset: %v", err)
+	if err := SyncDateTime(true, ""); err != nil {
+		t.Fatalf("SyncDateTime reset: %v", err)
 	}
 	if Offset() != 0 {
 		t.Fatalf("expected zero offset")
 	}
 
 	target := time.Date(2007, 1, 1, 12, 0, 0, 0, time.Local)
-	if err := ApplyDateTime(false, FormatDateTime(target)); err != nil {
-		t.Fatalf("ApplyDateTime: %v", err)
+	if err := SyncDateTime(false, FormatDateTime(target)); err != nil {
+		t.Fatalf("SyncDateTime: %v", err)
 	}
 	got := Now()
 	if got.Year() != 2007 || got.Month() != time.January || got.Day() != 1 || got.Hour() != 12 {

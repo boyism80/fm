@@ -224,9 +224,7 @@ func (inv *Inventory) ClearInventory() int {
 		}
 		for _, slot := range slots {
 			delete(inven.Items, slot)
-			if ch.Listener != nil {
-				ch.Listener.OnRemoveInventorySlot(ch, invType, slot)
-			}
+			ch.Listener.OnRemoveInventorySlot(ch, invType, slot)
 			cleared++
 		}
 	}
@@ -250,10 +248,10 @@ func (inv *Inventory) AddItem(item Item, allOrNothing bool) (addedItems []Item, 
 		}
 	}
 
-	return inv.applyAddItem(item, allOrNothing)
+	return inv.addItemUnchecked(item, allOrNothing)
 }
 
-func (inv *Inventory) applyAddItem(item Item, allOrNothing bool) (addedItems []Item, err error) {
+func (inv *Inventory) addItemUnchecked(item Item, allOrNothing bool) (addedItems []Item, err error) {
 	ch := inv.owner
 	if item == nil {
 		return nil, fmt.Errorf("item is nil")

@@ -85,7 +85,7 @@ func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope)
 			pc.mu.Lock()
 			defer pc.mu.Unlock()
 			pc.mergeGetPartyReplyLocked(partyID, reply)
-			return pc.applyStateAfterRehydrateLocked(evt)
+			return pc.finishPartyRehydrate(evt)
 		},
 	)
 	return p
@@ -113,7 +113,7 @@ func (pc *PartyContainer) mergeGetPartyReplyLocked(partyID uint32, reply *intern
 	pc.parties[partyID] = stored
 }
 
-func (pc *PartyContainer) applyStateAfterRehydrateLocked(evt PartyEventEnvelope) error {
+func (pc *PartyContainer) finishPartyRehydrate(evt PartyEventEnvelope) error {
 	partyID := evt.PartyID
 	if evt.EventType == "log_onoff" {
 		if party := pc.parties[partyID]; party != nil {
@@ -137,7 +137,7 @@ func (pc *PartyContainer) applyStateAfterRehydrateLocked(evt PartyEventEnvelope)
 	return nil
 }
 
-func (pc *PartyContainer) applyEmbeddedParty(evt PartyEventEnvelope, partyPb *internal.Party, notifySilent bool) (bool, error) {
+func (pc *PartyContainer) applyPartySnapshot(evt PartyEventEnvelope, partyPb *internal.Party, notifySilent bool) (bool, error) {
 	if pc == nil || partyPb == nil {
 		return false, nil
 	}

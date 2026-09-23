@@ -11,7 +11,7 @@ import (
 )
 
 func (ch *Character) LuaQuest(questID uint32) *Quest {
-	if ch == nil || ch.Quests == nil {
+	if ch == nil {
 		return nil
 	}
 	if qp := ch.Quests.Get(questID); qp != nil {

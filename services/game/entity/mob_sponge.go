@@ -54,8 +54,8 @@ func (s *Sponge) isFinish() bool {
 	return true
 }
 
-func (s *Sponge) applyDamageFromHit(damage uint32) {
-	if s == nil || s.me == nil || damage == 0 {
+func (s *Sponge) damage(amount uint32) {
+	if s == nil || s.me == nil || amount == 0 {
 		return
 	}
 	parent := s.parent
@@ -63,7 +63,7 @@ func (s *Sponge) applyDamageFromHit(damage uint32) {
 		return
 	}
 
-	spongeDamage := damage
+	spongeDamage := amount
 	if spongeDamage > parent.GetHp() {
 		spongeDamage = parent.GetHp()
 	}
@@ -72,9 +72,6 @@ func (s *Sponge) applyDamageFromHit(damage uint32) {
 	}
 
 	parent.LifeCore.AddHp(-int(spongeDamage))
-	if parent.Listener == nil {
-		return
-	}
 	parent.Listener.OnShowBossHp(parent, parent.GetHp() == 0)
 }
 

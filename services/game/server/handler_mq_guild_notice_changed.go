@@ -26,6 +26,6 @@ func (h *guildMqNoticeChanged) Handle(ctx actor.Context, _ amqp.Delivery, _ stri
 	if !ok {
 		return nil
 	}
-	gs.guild.ApplyEventAsync(ctx, evt, gs.guild.BroadcastNoticeChanged)
+	gs.guild.SyncGuildEventAsync(ctx, evt, gs.guild.BroadcastNoticeChanged)
 	return nil
 }

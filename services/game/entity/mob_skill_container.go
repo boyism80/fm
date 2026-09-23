@@ -126,8 +126,22 @@ func (sc *MobSkillContainer) Choice(controller *Character) *MobSkill {
 		if skill.IsOnCooldown(now) {
 			continue
 		}
-		if !sc.meetsCommonConditions(skill) {
+		maxHP := sc.owner.GetMaxHp()
+		if maxHP == 0 {
 			continue
+		}
+		currentPercent := int((uint64(sc.owner.GetHp()) * 100) / uint64(maxHP))
+		if currentPercent > skill.LevelData.HpPercent {
+			continue
+		}
+		if skill.LevelData.Limit > 0 {
+			mapInstance := sc.owner.GetMap()
+			if mapInstance == nil {
+				continue
+			}
+			if len(mapInstance.GetMobs()) >= int(skill.LevelData.Limit) {
+				continue
+			}
 		}
 		if !sc.chooseByScript(controller, skill) {
 			continue
@@ -136,30 +150,6 @@ func (sc *MobSkillContainer) Choice(controller *Character) *MobSkill {
 		return skill
 	}
 	return nil
-}
-
-func (sc *MobSkillContainer) meetsCommonConditions(skill *MobSkill) bool {
-	if sc == nil || sc.owner == nil || skill == nil || skill.LevelData == nil {
-		return false
-	}
-	maxHP := sc.owner.GetMaxHp()
-	if maxHP == 0 {
-		return false
-	}
-	currentPercent := int((uint64(sc.owner.GetHp()) * 100) / uint64(maxHP))
-	if currentPercent > skill.LevelData.HpPercent {
-		return false
-	}
-	if skill.LevelData.Limit > 0 {
-		mapInstance := sc.owner.GetMap()
-		if mapInstance == nil {
-			return false
-		}
-		if len(mapInstance.GetMobs()) >= int(skill.LevelData.Limit) {
-			return false
-		}
-	}
-	return true
 }
 
 func (sc *MobSkillContainer) chooseByScript(controller *Character, skill *MobSkill) bool {

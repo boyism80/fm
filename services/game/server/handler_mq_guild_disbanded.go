@@ -32,7 +32,7 @@ func (h *guildMqDisbanded) Handle(ctx actor.Context, _ amqp.Delivery, _ string, 
 	}
 	_ = json.Unmarshal(raw, &extra)
 	memberIDs := extra.MemberCharacterIDs
-	gs.guild.ApplyEventAsync(ctx, evt, func(uint32) {
+	gs.guild.SyncGuildEventAsync(ctx, evt, func(uint32) {
 		gs.guild.BroadcastDisbanded(prevGuild, memberIDs)
 	})
 	return nil

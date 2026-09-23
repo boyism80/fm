@@ -165,7 +165,7 @@ func (h *GuildOperation) refundGuildEmblemChangeCost(ch *entity.Character, payme
 	}
 }
 
-func (h *GuildOperation) applyLocalGuildMembership(ch *entity.Character, guildPb *internal.Guild) {
+func (h *GuildOperation) applyGuildFromProto(ch *entity.Character, guildPb *internal.Guild) {
 	if h == nil || h.gs == nil || ch == nil || guildPb == nil {
 		return
 	}
@@ -173,9 +173,6 @@ func (h *GuildOperation) applyLocalGuildMembership(ch *entity.Character, guildPb
 	id := guildID
 	ch.SetGuildID(&id)
 	h.gs.guild.Update(guildPb)
-	if ch.Listener == nil {
-		return
-	}
 	ch.Listener.OnShowGuildInfo(ch)
 	ch.Listener.OnBroadcastGuildAppearance(ch)
 }
@@ -244,7 +241,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 				return nil
 			}
-			h.applyLocalGuildMembership(ch, guildPb)
+			h.applyGuildFromProto(ch, guildPb)
 			h.chargeGuildCreateCost(ch)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultOK)
 			return nil
@@ -344,7 +341,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				log.Printf("GuildOperation(accept invite): ok but missing guild character=%d", charID)
 				return nil
 			}
-			h.applyLocalGuildMembership(ch, guildPb)
+			h.applyGuildFromProto(ch, guildPb)
 			return nil
 		})
 		promise.OnError(func(err error) {

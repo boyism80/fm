@@ -1,36 +1,12 @@
 package server
 
 import (
-	pconst "github.com/boyism80/fm/protocol/constant"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/entity"
 )
 
 type partyMqHandler struct {
 	gs *GameServer
-}
-
-func (h *partyMqHandler) sendInvite(targetCharacterID uint32, partyID uint32, inviterName string, partySearch bool) {
-	if h.gs == nil || targetCharacterID == 0 {
-		return
-	}
-	h.gs.EnsureSend(nil, targetCharacterID, &g_actor.DeliverPartyInvite{
-		CharacterID: targetCharacterID,
-		PartyID:     partyID,
-		InviterName: inviterName,
-		PartySearch: partySearch,
-	})
-}
-
-func (h *partyMqHandler) sendDenyStatus(targetCharacterID uint32, action uint8, deniedCharacterName string) {
-	if h.gs == nil || targetCharacterID == 0 {
-		return
-	}
-	h.gs.EnsureSend(nil, targetCharacterID, &g_actor.DeliverPartyStatusMessage{
-		CharacterID: targetCharacterID,
-		Code:        pconst.PartyStatusCode(action),
-		Name:        deniedCharacterName,
-	})
 }
 
 func (h *partyMqHandler) notifyMemberLeftToMaps(leaverID uint32, prev *entity.Party) {

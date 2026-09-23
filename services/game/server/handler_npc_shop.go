@@ -110,7 +110,7 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 	}
 
 	price := shopItem.Price
-	if h.isRechargable(tx.ItemID) {
+	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
 		price = shopItem.Price
 	} else {
 		price = shopItem.Price * int(tx.Quantity)
@@ -127,7 +127,7 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 	}
 
 	quantity := tx.Quantity
-	if h.isRechargable(tx.ItemID) {
+	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
 		quantity = itemModel.GetCapacity()
 	}
 
@@ -175,7 +175,7 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 		return nil
 	}
 
-	if h.isShuriken(tx.ItemID) || h.isBullet(tx.ItemID) {
+	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
 		quantity = item.GetCount()
 	}
 
@@ -188,14 +188,14 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 		return nil
 	}
 
-	if h.isPet(tx.ItemID) {
+	if tx.ItemID/10000 == 500 {
 		return nil
 	}
 
 	itemModel := item.GetModel()
 	price := itemModel.GetPrice()
 
-	if h.isShuriken(tx.ItemID) || h.isBullet(tx.ItemID) {
+	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
 		wholePrice := itemModel.GetPrice()
 		slotMax := itemModel.GetCapacity()
 		if slotMax > 0 {
@@ -252,7 +252,7 @@ func (h *NpcShop) handleRecharge(ch *entity.Character, shop *wz.Shop, tx *reques
 	}
 
 	itemID := item.GetModel().GetID()
-	if !h.isShuriken(itemID) && !h.isBullet(itemID) {
+	if itemID/10000 != 207 && itemID/10000 != 233 {
 		return nil
 	}
 
@@ -280,22 +280,6 @@ func (h *NpcShop) handleRecharge(ch *entity.Character, shop *wz.Shop, tx *reques
 	ch.Send(confirmPacket, types.SEND_POLICY_ENCRYPT)
 
 	return nil
-}
-
-func (h *NpcShop) isShuriken(itemID uint32) bool {
-	return itemID/10000 == 207
-}
-
-func (h *NpcShop) isBullet(itemID uint32) bool {
-	return itemID/10000 == 233
-}
-
-func (h *NpcShop) isRechargable(itemID uint32) bool {
-	return h.isShuriken(itemID) || h.isBullet(itemID)
-}
-
-func (h *NpcShop) isPet(itemID uint32) bool {
-	return itemID/10000 == 500
 }
 
 func (h *NpcShop) getItemInventoryType(itemID uint32, itemModel wz.Item) constant.InventoryType {

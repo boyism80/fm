@@ -47,7 +47,7 @@ func (e *MobBuff) SameSource(skillWz *wz.Skill, skillLevel uint8, causer uint32)
 	return sid == entSid && e.SkillLevel == skillLevel && e.Causer == causer
 }
 
-func (e *MobBuff) SameValuesAndStacks(values map[constant.MobBuffFlag]int32, stacks map[constant.MobBuffFlag]uint8) bool {
+func (e *MobBuff) Equal(values map[constant.MobBuffFlag]int32, stacks map[constant.MobBuffFlag]uint8) bool {
 	if e == nil || len(e.Values) != len(values) {
 		return false
 	}
@@ -141,7 +141,7 @@ func (bc *MobBuffContainer) refreshDuration(now time.Time, duration time.Duratio
 			return false
 		}
 	}
-	if !ent.SameValuesAndStacks(values, stacks) || !ent.SameSource(skillWz, skillLevel, causer) {
+	if !ent.Equal(values, stacks) || !ent.SameSource(skillWz, skillLevel, causer) {
 		return false
 	}
 	ent.StartTime = now

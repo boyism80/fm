@@ -41,7 +41,11 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 	}
 	worldId := loginClient.GetWorldId()
 	channelId := loginClient.GetChannelId()
-	route, ok := h.ls.ResolveChannelRoute(worldId, uint32(channelId))
+	worldRoutes, ok := h.ls.channelRoutes[worldId]
+	if !ok {
+		return fmt.Errorf("select character: route not found for world=%d channel=%d", worldId, channelId)
+	}
+	route, ok := worldRoutes[uint32(channelId)]
 	if !ok {
 		return fmt.Errorf("select character: route not found for world=%d channel=%d", worldId, channelId)
 	}

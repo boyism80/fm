@@ -33,7 +33,7 @@ func (h *guildMqMemberJoined) Handle(ctx actor.Context, _ amqp.Delivery, _ strin
 		return nil
 	}
 	joinerID := extra.CharacterID
-	gs.guild.ApplyEventAsync(ctx, evt, func(guildID uint32) {
+	gs.guild.SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
 		gs.guild.BroadcastMemberJoined(guildID, joinerID)
 	})
 	return nil

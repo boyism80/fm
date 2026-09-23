@@ -35,14 +35,14 @@ func (t *MobPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 		if !ok || mob == nil || !mob.IsAlive() {
 			continue
 		}
-		applyMobBuffDotDamage(mapData, mob, constant.MobBuffPoison)
-		applyMobBuffDotDamage(mapData, mob, constant.MobBuffVenom)
-		applyMobBuffDotDamage(mapData, mob, constant.MobBuffNinjaAmbush)
+		tickDotDamage(mapData, mob, constant.MobBuffPoison)
+		tickDotDamage(mapData, mob, constant.MobBuffVenom)
+		tickDotDamage(mapData, mob, constant.MobBuffNinjaAmbush)
 	}
 	return nil
 }
 
-func applyMobBuffDotDamage(mapData *entity.Map, mob *entity.Mob, status constant.MobBuffFlag) {
+func tickDotDamage(mapData *entity.Map, mob *entity.Mob, status constant.MobBuffFlag) {
 	if !mob.Buffs.Has(status) {
 		return
 	}
@@ -66,5 +66,5 @@ func applyMobBuffDotDamage(mapData *entity.Map, mob *entity.Mob, status constant
 		return
 	}
 	attacker := mapData.GetPlayer(causerID)
-	mob.ApplyDamage(attacker, damage)
+	mob.TakeDamage(attacker, damage)
 }

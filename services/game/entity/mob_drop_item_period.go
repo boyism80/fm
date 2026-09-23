@@ -23,7 +23,7 @@ func (m *Mob) MarkHit() {
 	m.lastHitAt = clock.Now()
 }
 
-func (m *Mob) armDropItemPeriod() {
+func (m *Mob) startTimedDrop() {
 	if m == nil || m.Wz == nil || m.IsFake() {
 		return
 	}
@@ -35,46 +35,11 @@ func (m *Mob) armDropItemPeriod() {
 	m.RemoveTimer(mobTimerDropItemPeriodKey)
 	interval := time.Duration(period) * time.Second
 	m.AddTimer(mobTimerDropItemPeriodKey, interval, true, func() {
-		m.doDropItemPeriod()
+		m.dropTimedItem()
 	})
 }
 
-func (m *Mob) resolvePeriodDropItemID(nextCount int) (uint32, bool) {
-	if m == nil || m.Wz == nil {
-		return 0, false
-	}
-	mapInstance := m.GetMap()
-	if mapInstance == nil {
-		return 0, false
-	}
-	root := mapInstance.EnsureLuaRoot(nil)
-	if root == nil {
-		return 0, false
-	}
-	mobID := m.Wz.ID
-	hook := "on_mob_period_drop"
-	thread, err := luax.NewThread(root, fmt.Sprintf("script/mob/%d.lua", mobID))
-	if err != nil {
-		return 0, false
-	}
-	luax.SetConfiguration(thread, luax.Configuration{
-		ActorPID: mapInstance.LogicActorPID(),
-	})
-	result, err := luax.Call(thread, hook, m, nextCount)
-	if err != nil || result == nil || result == lua.LNil {
-		return 0, false
-	}
-	if result.Type() != lua.LTNumber {
-		return 0, false
-	}
-	itemID := uint32(lua.LVAsNumber(result))
-	if itemID == 0 {
-		return 0, false
-	}
-	return itemID, true
-}
-
-func (m *Mob) doDropItemPeriod() {
+func (m *Mob) dropTimedItem() {
 	if m == nil || m.Wz == nil || m.GetHp() == 0 {
 		return
 	}
@@ -86,8 +51,27 @@ func (m *Mob) doDropItemPeriod() {
 		return
 	}
 	nextCount := m.dropItemCount + 1
-	itemID, ok := m.resolvePeriodDropItemID(nextCount)
-	if !ok {
+	root := mapInstance.EnsureLuaRoot(nil)
+	if root == nil {
+		return
+	}
+	mobID := m.Wz.ID
+	thread, err := luax.NewThread(root, fmt.Sprintf("script/mob/%d.lua", mobID))
+	if err != nil {
+		return
+	}
+	luax.SetConfiguration(thread, luax.Configuration{
+		ActorPID: mapInstance.LogicActorPID(),
+	})
+	result, err := luax.Call(thread, "on_mob_period_drop", m, nextCount)
+	if err != nil || result == nil || result == lua.LNil {
+		return
+	}
+	if result.Type() != lua.LTNumber {
+		return
+	}
+	itemID := uint32(lua.LVAsNumber(result))
+	if itemID == 0 {
 		return
 	}
 	item, err := NewItem(itemID, 1, m.GameWorld)

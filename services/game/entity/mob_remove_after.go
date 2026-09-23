@@ -8,7 +8,7 @@ import (
 
 const mobTimerRemoveAfterKey = "mob:removeAfter"
 
-func (m *Mob) armRemoveAfter() {
+func (m *Mob) scheduleRemoveAfter() {
 	if m == nil || m.Wz == nil {
 		return
 	}
@@ -23,16 +23,10 @@ func (m *Mob) armRemoveAfter() {
 	delay := time.Duration(removeAfter) * time.Second
 	m.RemoveTimer(mobTimerRemoveAfterKey)
 	m.AddTimer(mobTimerRemoveAfterKey, delay, false, func() {
-		m.expireRemoveAfter()
+		if m == nil || m.GetHp() == 0 {
+			return
+		}
+		m.RemoveTimer(mobTimerRemoveAfterKey)
+		m.Kill(nil, constant.MobDieAnimationTypeFadeOut)
 	})
-}
-
-func (m *Mob) expireRemoveAfter() {
-	if m == nil || m.GetHp() == 0 {
-		return
-	}
-
-	m.RemoveTimer(mobTimerRemoveAfterKey)
-	// removeAfterDieAnimation()로 처리하면 핑크빈에서 석상 스폰 이펙트가 발생안함
-	m.Kill(nil, constant.MobDieAnimationTypeFadeOut)
 }

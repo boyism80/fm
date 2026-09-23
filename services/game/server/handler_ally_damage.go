@@ -49,7 +49,7 @@ func (h *AllyDamage) Handle(ctx *core.ClientContext, req *request.AllyDamage) er
 	}
 	damage := (level * rand.Intn(level)) / 3
 	if damage > 0 {
-		killed := to.ApplyDamage(ch, uint32(damage))
+		killed := to.TakeDamage(ch, uint32(damage))
 		if !killed && to.Listener != nil {
 			to.Listener.OnMobAllyDamaged(to, int32(damage))
 		}

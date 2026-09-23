@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
+	pconst "github.com/boyism80/fm/protocol/constant"
+	g_actor "github.com/boyism80/fm/services/game/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -34,6 +36,10 @@ func (h *partyMqPartyInviteDenied) Handle(_ actor.Context, _ amqp.Delivery, _ st
 	if payload.InviterCharacterID == 0 {
 		return nil
 	}
-	h.sendDenyStatus(payload.InviterCharacterID, payload.Action, payload.DeniedCharacterName)
+	h.gs.EnsureSend(nil, payload.InviterCharacterID, &g_actor.DeliverPartyStatusMessage{
+		CharacterID: payload.InviterCharacterID,
+		Code:        pconst.PartyStatusCode(payload.Action),
+		Name:        payload.DeniedCharacterName,
+	})
 	return nil
 }

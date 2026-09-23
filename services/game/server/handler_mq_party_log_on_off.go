@@ -41,7 +41,7 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 			if err == nil {
 				var partyPb internal.Party
 				if err := proto.Unmarshal(wire, &partyPb); err == nil {
-					applied, err := pc.applyEmbeddedParty(evt, &partyPb, false)
+					applied, err := pc.applyPartySnapshot(evt, &partyPb, false)
 					if err != nil {
 						return nil
 					}

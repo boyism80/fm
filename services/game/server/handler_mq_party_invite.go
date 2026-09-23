@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
+	g_actor "github.com/boyism80/fm/services/game/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -35,6 +36,11 @@ func (h *partyMqPartyInvite) Handle(_ actor.Context, _ amqp.Delivery, _ string, 
 	if payload.TargetCharacterID == 0 {
 		return nil
 	}
-	h.sendInvite(payload.TargetCharacterID, payload.PartyID, payload.InviterName, payload.PartySearch)
+	h.gs.EnsureSend(nil, payload.TargetCharacterID, &g_actor.DeliverPartyInvite{
+		CharacterID: payload.TargetCharacterID,
+		PartyID:     payload.PartyID,
+		InviterName: payload.InviterName,
+		PartySearch: payload.PartySearch,
+	})
 	return nil
 }

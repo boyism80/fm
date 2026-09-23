@@ -33,7 +33,7 @@ func SetAbsoluteString(raw string) error {
 	return SetAbsolute(parsed)
 }
 
-func ApplyDateTime(reset bool, raw string) error {
+func SyncDateTime(reset bool, raw string) error {
 	if reset {
 		Reset()
 		return nil
