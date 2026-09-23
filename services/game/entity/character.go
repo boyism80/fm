@@ -77,6 +77,7 @@ type Character struct {
 	buddyList         *BuddyList
 	InstantKill       bool
 	stateMachine      *StateMachine
+	carnivalMatch     *CarnivalMatch
 }
 
 type LastHeal struct {
@@ -124,6 +125,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		CrushRings:        RingsToDTO(ch.Inventory.Rings.Left),
 		FriendshipRings:   RingsToDTO(ch.Inventory.Rings.Mid),
 		MarriageRings:     RingsToDTO(ch.Inventory.Rings.Right),
+		Team:              ch.CarnivalTeamID(),
 	}
 	if guildID, ok := ch.GetGuildID(); ok && ch.GameWorld != nil {
 		if guild := ch.GameWorld.GetGuildSystem().Get(guildID); guild != nil {
@@ -805,9 +807,6 @@ func (ch *Character) LoadBuddyList(entries []*internal.BuddyEntry, capacity uint
 }
 
 func (ch *Character) SendBuddyLoginSync() {
-	if ch == nil || ch.Listener == nil {
-		return
-	}
 	entries := ch.BuddyList().SnapshotForClient()
 	ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncLogin, entries)
 }
@@ -934,7 +933,7 @@ func (ch *Character) ComputeMobKillExp(raw uint32) uint32 {
 }
 
 func (ch *Character) GetHolySymbolExpRate() int32 {
-	if ch == nil || ch.Buffs == nil {
+	if ch == nil {
 		return 100
 	}
 	ent := ch.Buffs.GetEntity(constant.BuffFlagHolySymbol)
@@ -1051,9 +1050,6 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 }
 
 func (ch *Character) KeyLayout() *KeyLayout {
-	if ch == nil {
-		return nil
-	}
 	return ch.keyLayout
 }
 
@@ -1286,7 +1282,7 @@ type SpawnPlayerBuffData struct {
 }
 
 func (ch *Character) GetRiddingInfo() (mountID int32, active bool) {
-	if ch == nil || ch.Buffs == nil {
+	if ch == nil {
 		return 0, false
 	}
 	_, mountID, active = ch.Buffs.GetBuffValue(constant.BuffFlagMonsterRiding)
@@ -1299,7 +1295,7 @@ func (ch *Character) GetSpawnPlayerBuffData() SpawnPlayerBuffData {
 		ComboCount: 1,
 		MountLevel: 1,
 	}
-	if ch == nil || ch.Buffs == nil {
+	if ch == nil {
 		return data
 	}
 

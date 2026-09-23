@@ -296,7 +296,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				msgType = constant.ServerMessageType(L.CheckInt(3))
 			}
 			for _, ch := range machine.Players() {
-				if ch == nil || ch.Listener == nil {
+				if ch == nil {
 					continue
 				}
 				ch.Listener.OnMessage(ch, msgType, message)

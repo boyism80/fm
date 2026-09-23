@@ -157,7 +157,9 @@ func NewMapWithOpts(id uint32, listener MapListener, mobListener MobListener, ma
 		actorPID:        actorPID,
 	}
 
-	mapInstance.controllerTable = NewControllerTable(mapInstance.onMobControllerChange)
+	mapInstance.controllerTable = NewControllerTable(func(mob *Mob, before *Character, after *Character, aggro bool) {
+		mapInstance.listener.OnMobControllerChange(mob, before, after, aggro)
+	})
 
 	mapInstance.initPortals()
 	if opts.Npcs {
@@ -200,11 +202,6 @@ func (m *Map) ClearLuaRoot() {
 		return
 	}
 	m.luaRoot = nil
-}
-
-func (m *Map) onMobControllerChange(mob *Mob, before *Character, after *Character, aggro bool) {
-
-	m.listener.OnMobControllerChange(mob, before, after, aggro)
 }
 
 func (m *Map) allocateOID() uint32 {
@@ -748,33 +745,25 @@ func (m *Map) FindDoorByOwner(ownerID uint32) *Door {
 	return nil
 }
 
-func (m *Map) ApplyPartyLeaveDoorSync(leaverID uint32) {
-	if m == nil || leaverID == 0 {
+func (m *Map) SyncDoors(ownerIDs []uint32) {
+	if m == nil || len(ownerIDs) == 0 {
 		return
 	}
-	ch := m.GetPlayer(leaverID)
-	if ch == nil {
-		return
-	}
-	m.resyncOwnerDoorPortals(ch)
-}
-
-func (m *Map) ApplyPartyDisbandDoorSync(formerMemberIDs []uint32) {
-	if m == nil || len(formerMemberIDs) == 0 {
-		return
-	}
-	former := make(map[uint32]struct{}, len(formerMemberIDs))
-	for _, id := range formerMemberIDs {
+	owners := make(map[uint32]struct{}, len(ownerIDs))
+	for _, id := range ownerIDs {
 		if id != 0 {
-			former[id] = struct{}{}
+			owners[id] = struct{}{}
 		}
+	}
+	if len(owners) == 0 {
+		return
 	}
 	for _, obj := range m.GetAllPlayers() {
 		ch, ok := obj.(*Character)
 		if !ok || ch == nil {
 			continue
 		}
-		if _, in := former[ch.GetID()]; !in {
+		if _, in := owners[ch.GetID()]; !in {
 			continue
 		}
 		m.resyncOwnerDoorPortals(ch)
@@ -920,13 +909,14 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 			BaseMp: uint32(max(0, mobWz.MaxMP)),
 			Stance: 5,
 		},
-		Foothold:  footholdID,
-		Wz:        mobWz,
-		Spawn:     mobSpawn,
-		ExpRate:   100,
-		DropRate:  100,
-		Homing:    make(map[uint32]*Homing),
-		accDamage: make(map[int64]map[uint32]uint64),
+		Foothold:     footholdID,
+		Wz:           mobWz,
+		Spawn:        mobSpawn,
+		ExpRate:      100,
+		DropRate:     100,
+		Homing:       make(map[uint32]*Homing),
+		accDamage:    make(map[int64]map[uint32]uint64),
+		CarnivalTeam: constant.CarnivalTeamNone,
 	}
 	mob.sponge.me = mob
 	mob.sponge.children = make([]*Mob, 0)
@@ -949,11 +939,11 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	m.sections.add(mob)
 	m.listener.OnMobSpawned(m, mob, spawnType, link)
 	m.controllerTable.EnterMob(mob)
-	mob.armRemoveAfter()
-	mob.armDropItemPeriod()
+	mob.scheduleRemoveAfter()
+	mob.startTimedDrop()
 
 	if sm := m.StateMachine(); sm != nil && sm.ScaleLevel > 0 {
-		mob.ApplyScaleLevel(sm.ScaleLevel)
+		mob.SetScaleLevel(sm.ScaleLevel)
 	}
 
 	return mob, nil

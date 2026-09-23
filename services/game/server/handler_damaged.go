@@ -39,16 +39,16 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 	isBlock := req.Damage == -1 && req.Type == constant.IncomingHitCollide
 	if isBlock {
 		h.callOnBlocked(ctx, character, req)
-		h.applyDamage(character, 0)
+		h.takeDamage(character, 0)
 		return nil
 	}
-	h.resolveDamageByScript(ctx, character, req, req.Damage, func(damage int32) {
-		h.applyDamage(character, damage)
+	h.finalizeDamage(ctx, character, req, req.Damage, func(damage int32) {
+		h.takeDamage(character, damage)
 	})
 	return nil
 }
 
-func (h *Damaged) applyDamage(character *entity.Character, damage int32) {
+func (h *Damaged) takeDamage(character *entity.Character, damage int32) {
 	if !character.Invincible {
 		wasAlive := character.GetHp() > 0
 		n := int(character.GetHp()) - int(damage)
@@ -73,7 +73,7 @@ func (h *Damaged) applyDamage(character *entity.Character, damage int32) {
 	}
 }
 
-func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *entity.Character, req *request.Damaged, damage int32, fn func(int32)) {
+func (h *Damaged) finalizeDamage(ctx *core.ClientContext, character *entity.Character, req *request.Damaged, damage int32, fn func(int32)) {
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		fn(damage)
@@ -91,8 +91,21 @@ func (h *Damaged) resolveDamageByScript(ctx *core.ClientContext, character *enti
 		return
 	}
 
-	attackerArg := h.resolveDamageAttackerArg(character, req)
-	skillArg := h.resolveDamageSkillArg(character, req)
+	var attackerArg interface{} = lua.LNil
+	if req.OID != 0 {
+		if mob := mapInstance.GetMob(req.OID); mob != nil {
+			attackerArg = mob
+		}
+	}
+	var skillArg interface{} = lua.LNil
+	if character.GameWorld != nil && req.SkillID != 0 {
+		if resources := character.GameWorld.GetResources(); resources != nil {
+			skillID := uint32(req.SkillID)
+			if skillModel := resources.GetSkill(skillID); skillModel != nil {
+				skillArg = entity.NewSkillEntry(character, skillModel, int(req.Level), 0)
+			}
+		}
+	}
 
 	params := root.NewTable()
 	params.RawSetString("hit_type", lua.LNumber(int32(req.Type)))
@@ -132,7 +145,12 @@ func (h *Damaged) callOnBlocked(ctx *core.ClientContext, character *entity.Chara
 	if root == nil {
 		return
 	}
-	attackerArg := h.resolveDamageAttackerArg(character, req)
+	var attackerArg interface{} = lua.LNil
+	if req.OID != 0 {
+		if mob := mapInstance.GetMob(req.OID); mob != nil {
+			attackerArg = mob
+		}
+	}
 	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 	if err != nil {
 		log.Printf("Failed to call script on_blocked: %v", err)
@@ -141,35 +159,4 @@ func (h *Damaged) callOnBlocked(ctx *core.ClientContext, character *entity.Chara
 	luax.CallAsync(root, thread, "on_blocked", character, attackerArg).OnError(func(err error) {
 		log.Printf("Failed to call script on_blocked: %v", err)
 	})
-}
-
-func (h *Damaged) resolveDamageAttackerArg(character *entity.Character, req *request.Damaged) interface{} {
-	if req.OID == 0 {
-		return lua.LNil
-	}
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
-		return lua.LNil
-	}
-	mob := mapInstance.GetMob(req.OID)
-	if mob == nil {
-		return lua.LNil
-	}
-	return mob
-}
-
-func (h *Damaged) resolveDamageSkillArg(character *entity.Character, req *request.Damaged) interface{} {
-	if character.GameWorld == nil || req.SkillID == 0 {
-		return lua.LNil
-	}
-	resources := character.GameWorld.GetResources()
-	if resources == nil {
-		return lua.LNil
-	}
-	skillID := uint32(req.SkillID)
-	skillModel := resources.GetSkill(skillID)
-	if skillModel == nil {
-		return lua.LNil
-	}
-	return entity.NewSkillEntry(character, skillModel, int(req.Level), 0)
 }

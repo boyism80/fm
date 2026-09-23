@@ -94,25 +94,19 @@ func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType cons
 }
 
 func (l *CharacterListenerImpl) OnClock(ch *entity.Character, seconds int32) {
-	if ch == nil {
-		return
-	}
 	ch.Send(&response.Clock{
 		Seconds: seconds,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnPartyCreated(ch *entity.Character, partyID uint32) {
-	if ch == nil {
-		return
-	}
 	ch.Send(&response.PartyCreated{
 		PartyID: partyID,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnShowGuildInfo(ch *entity.Character) {
-	if l == nil || l.gs == nil || ch == nil {
+	if l.gs == nil {
 		return
 	}
 	guildID, ok := ch.GetGuildID()
@@ -133,7 +127,7 @@ func (l *CharacterListenerImpl) OnShowGuildInfo(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnShowAllianceInfo(ch *entity.Character) {
-	if l == nil || l.gs == nil || ch == nil {
+	if l.gs == nil {
 		return
 	}
 	allianceID := uint32(0)
@@ -154,7 +148,7 @@ func (l *CharacterListenerImpl) OnShowAllianceInfo(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnAllianceUpdateInfo(ch *entity.Character) {
-	if l == nil || l.gs == nil || ch == nil {
+	if l.gs == nil {
 		return
 	}
 	allianceID := uint32(0)
@@ -176,9 +170,6 @@ func (l *CharacterListenerImpl) OnAllianceUpdateInfo(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *entity.Character) {
-	if l == nil || ch == nil {
-		return
-	}
 	guildID, ok := ch.GetGuildID()
 	if !ok || l.gs == nil {
 		return
@@ -207,9 +198,6 @@ func (l *CharacterListenerImpl) OnBroadcastGuildAppearance(ch *entity.Character)
 }
 
 func (l *CharacterListenerImpl) OnPartyInvite(ch *entity.Character, partyID uint32, inviterName string, partySearch bool) {
-	if ch == nil {
-		return
-	}
 	ch.Send(&response.PartyInvite{
 		PartyID:     partyID,
 		InviterName: inviterName,
@@ -218,9 +206,6 @@ func (l *CharacterListenerImpl) OnPartyInvite(ch *entity.Character, partyID uint
 }
 
 func (l *CharacterListenerImpl) OnGuildInvite(ch *entity.Character, guildID uint32, inviterName string) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildInvite{
 		GuildID:     guildID,
 		InviterName: inviterName,
@@ -228,9 +213,6 @@ func (l *CharacterListenerImpl) OnGuildInvite(ch *entity.Character, guildID uint
 }
 
 func (l *CharacterListenerImpl) OnAllianceInvite(ch *entity.Character, inviterGuildID uint32, inviterName string, allianceName string) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.AllianceInvite{
 		InviterGuildID: inviterGuildID,
 		InviterName:    inviterName,
@@ -239,7 +221,7 @@ func (l *CharacterListenerImpl) OnAllianceInvite(ch *entity.Character, inviterGu
 }
 
 func (l *CharacterListenerImpl) OnAllianceCreate(ch *entity.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, membershipGuilds []dto.AllianceMembershipChangeGuild) {
-	if ch == nil || info == nil {
+	if info == nil {
 		return
 	}
 	_ = ch.Send(&response.AllianceCreate{
@@ -260,16 +242,13 @@ func (l *CharacterListenerImpl) OnAllianceCreate(ch *entity.Character, info *dto
 }
 
 func (l *CharacterListenerImpl) OnAllianceDisband(ch *entity.Character, allianceID uint32) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.AllianceDisband{
 		AllianceID: allianceID,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnAllianceInfoBroadcast(ch *entity.Character, info *dto.AllianceInfo) {
-	if ch == nil || info == nil {
+	if info == nil {
 		return
 	}
 	_ = ch.Send(&response.AllianceUpdateInfo{
@@ -282,7 +261,7 @@ func (l *CharacterListenerImpl) OnAllianceNoticeChanged(ch *entity.Character, in
 }
 
 func (l *CharacterListenerImpl) OnAllianceLeaderChanged(ch *entity.Character, allianceID uint32, oldLeaderID uint32, newLeaderID uint32, info *dto.AllianceInfo, guilds []*dto.GuildInfo) {
-	if ch == nil || info == nil {
+	if info == nil {
 		return
 	}
 	_ = ch.Send(&response.AllianceChangeLeader{
@@ -304,7 +283,7 @@ func (l *CharacterListenerImpl) OnAllianceLeaderChanged(ch *entity.Character, al
 }
 
 func (l *CharacterListenerImpl) OnAllianceMemberRankChanged(ch *entity.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo) {
-	if ch == nil || info == nil {
+	if info == nil {
 		return
 	}
 	_ = ch.Send(&response.AllianceUpdateInfo{
@@ -316,7 +295,7 @@ func (l *CharacterListenerImpl) OnAllianceMemberRankChanged(ch *entity.Character
 }
 
 func (l *CharacterListenerImpl) OnAllianceGuildAdded(ch *entity.Character, info *dto.AllianceInfo, guilds []*dto.GuildInfo, newGuildID uint32, addedGuild *dto.GuildInfo, members []dto.AllianceGuildMemberRank, joining bool, membershipGuild *dto.AllianceMembershipChangeGuild) {
-	if ch == nil || info == nil || addedGuild == nil {
+	if info == nil || addedGuild == nil {
 		return
 	}
 	if joining {
@@ -349,7 +328,7 @@ func (l *CharacterListenerImpl) OnAllianceGuildAdded(ch *entity.Character, info 
 }
 
 func (l *CharacterListenerImpl) OnAllianceGuildLeft(ch *entity.Character, info *dto.AllianceInfo, removedGuildID uint32, removedGuild *dto.GuildInfo, removedMembers []dto.AllianceGuildMemberRank, expelled bool, leaving bool) {
-	if ch == nil || info == nil || removedGuild == nil {
+	if info == nil || removedGuild == nil {
 		return
 	}
 	_ = ch.Send(&response.AllianceRemoveGuild{
@@ -370,9 +349,6 @@ func (l *CharacterListenerImpl) OnAllianceGuildLeft(ch *entity.Character, info *
 }
 
 func (l *CharacterListenerImpl) OnGuildNewMember(ch *entity.Character, guildID uint32, member dto.GuildMemberStatus) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildNewMember{
 		GuildID: guildID,
 		Member:  member,
@@ -380,9 +356,6 @@ func (l *CharacterListenerImpl) OnGuildNewMember(ch *entity.Character, guildID u
 }
 
 func (l *CharacterListenerImpl) OnGuildLeaveSelf(ch *entity.Character) {
-	if l == nil || ch == nil {
-		return
-	}
 	ch.SetGuildID(nil)
 	_ = ch.Send(&response.GuildShowInfo{
 		Info: nil,
@@ -399,9 +372,6 @@ func (l *CharacterListenerImpl) OnGuildLeaveSelf(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnGuildExpelledSelf(ch *entity.Character, guildID uint32) {
-	if l == nil || ch == nil {
-		return
-	}
 	ch.SetGuildID(nil)
 	_ = ch.Send(&response.GuildMemberLeft{
 		GuildID:     guildID,
@@ -421,9 +391,6 @@ func (l *CharacterListenerImpl) OnGuildExpelledSelf(ch *entity.Character, guildI
 }
 
 func (l *CharacterListenerImpl) OnGuildMemberLeft(ch *entity.Character, guildID uint32, targetID uint32, targetName string, wasExpelled bool) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildMemberLeft{
 		GuildID:     guildID,
 		CharacterID: targetID,
@@ -433,9 +400,6 @@ func (l *CharacterListenerImpl) OnGuildMemberLeft(ch *entity.Character, guildID 
 }
 
 func (l *CharacterListenerImpl) OnGuildRankTitleChange(ch *entity.Character, guildID uint32, rankTitles [5]string) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildRankTitleChange{
 		GuildID:    guildID,
 		RankTitles: rankTitles,
@@ -443,9 +407,6 @@ func (l *CharacterListenerImpl) OnGuildRankTitleChange(ch *entity.Character, gui
 }
 
 func (l *CharacterListenerImpl) OnGuildMemberRankChange(ch *entity.Character, guildID uint32, targetID uint32, guildRank uint8) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildChangeRank{
 		GuildID:     guildID,
 		CharacterID: targetID,
@@ -454,9 +415,6 @@ func (l *CharacterListenerImpl) OnGuildMemberRankChange(ch *entity.Character, gu
 }
 
 func (l *CharacterListenerImpl) OnGuildEmblemChange(ch *entity.Character, guildID uint32, logoBG uint16, logoBGColor uint8, logo uint16, logoColor uint8) {
-	if l == nil || ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildEmblemChange{
 		GuildID:     guildID,
 		LogoBG:      logoBG,
@@ -468,9 +426,6 @@ func (l *CharacterListenerImpl) OnGuildEmblemChange(ch *entity.Character, guildI
 }
 
 func (l *CharacterListenerImpl) OnGuildNoticeChange(ch *entity.Character, guildID uint32, notice string) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildNotice{
 		GuildID: guildID,
 		Notice:  notice,
@@ -478,9 +433,6 @@ func (l *CharacterListenerImpl) OnGuildNoticeChange(ch *entity.Character, guildI
 }
 
 func (l *CharacterListenerImpl) OnGuildCapacityChange(ch *entity.Character, guildID uint32, capacity uint8) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildCapacityChange{
 		GuildID:  guildID,
 		Capacity: capacity,
@@ -488,9 +440,6 @@ func (l *CharacterListenerImpl) OnGuildCapacityChange(ch *entity.Character, guil
 }
 
 func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *entity.Character, guildID uint32, subjectCharacterID uint32, online bool) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildMemberOnline{
 		GuildID:     guildID,
 		CharacterID: subjectCharacterID,
@@ -499,9 +448,6 @@ func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *entity.Character, 
 }
 
 func (l *CharacterListenerImpl) OnGuildMemberFieldsChange(ch *entity.Character, guildID uint32, subjectCharacterID uint32, level uint32, classID uint32) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildMemberLevelClassUpdate{
 		GuildID:     guildID,
 		CharacterID: subjectCharacterID,
@@ -511,9 +457,6 @@ func (l *CharacterListenerImpl) OnGuildMemberFieldsChange(ch *entity.Character, 
 }
 
 func (l *CharacterListenerImpl) OnAllianceMemberOnlineChange(ch *entity.Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, online bool) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.AllianceMemberOnline{
 		AllianceID:  allianceID,
 		GuildID:     guildID,
@@ -523,9 +466,6 @@ func (l *CharacterListenerImpl) OnAllianceMemberOnlineChange(ch *entity.Characte
 }
 
 func (l *CharacterListenerImpl) OnAllianceMemberFieldsChange(ch *entity.Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, level uint32, classID uint32) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.AllianceUpdateMember{
 		AllianceID:  allianceID,
 		GuildID:     guildID,
@@ -536,9 +476,6 @@ func (l *CharacterListenerImpl) OnAllianceMemberFieldsChange(ch *entity.Characte
 }
 
 func (l *CharacterListenerImpl) OnGuildDisbandSelf(ch *entity.Character, guildID uint32) {
-	if l == nil || ch == nil {
-		return
-	}
 	if gid, ok := ch.GetGuildID(); ok && gid == guildID {
 		_ = ch.Send(&response.GuildDisband{
 			GuildID: guildID,
@@ -560,9 +497,6 @@ func (l *CharacterListenerImpl) OnGuildDisbandSelf(ch *entity.Character, guildID
 }
 
 func (l *CharacterListenerImpl) OnMultiChat(ch *entity.Character, mode pconst.MultiChatMode, senderName string, message string) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.MultiChat{
 		Mode:    mode,
 		Name:    senderName,
@@ -571,9 +505,6 @@ func (l *CharacterListenerImpl) OnMultiChat(ch *entity.Character, mode pconst.Mu
 }
 
 func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *entity.Character, code pconst.PartyStatusCode, name string) {
-	if ch == nil {
-		return
-	}
 	ch.Send(&response.PartyStatusMessage{
 		Code: code,
 		Name: name,
@@ -581,9 +512,6 @@ func (l *CharacterListenerImpl) OnPartyStatusMessage(ch *entity.Character, code 
 }
 
 func (l *CharacterListenerImpl) OnPartyUpdateJoin(ch *entity.Character, forChannel int32, partyID uint32, joinName string, leaderID uint32, members []response.PartyMemberStatus) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.PartyUpdateJoin{
 		ForChannel:           forChannel,
 		PartyID:              partyID,
@@ -594,9 +522,6 @@ func (l *CharacterListenerImpl) OnPartyUpdateJoin(ch *entity.Character, forChann
 }
 
 func (l *CharacterListenerImpl) OnPartyUpdateExpel(ch *entity.Character, forChannel int32, partyID uint32, targetID uint32, targetName string, leaderID uint32, members []response.PartyMemberStatus) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.PartyUpdateExpel{
 		ForChannel:          forChannel,
 		PartyID:             partyID,
@@ -608,9 +533,6 @@ func (l *CharacterListenerImpl) OnPartyUpdateExpel(ch *entity.Character, forChan
 }
 
 func (l *CharacterListenerImpl) OnPartyUpdateLeave(ch *entity.Character, forChannel int32, partyID uint32, targetID uint32, targetName string, leaderID uint32, members []response.PartyMemberStatus) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.PartyUpdateLeave{
 		ForChannel:          forChannel,
 		PartyID:             partyID,
@@ -622,9 +544,6 @@ func (l *CharacterListenerImpl) OnPartyUpdateLeave(ch *entity.Character, forChan
 }
 
 func (l *CharacterListenerImpl) OnPartyUpdateDisband(ch *entity.Character, partyID uint32, leaderID uint32) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.PartyUpdateDisband{
 		PartyID:           partyID,
 		LeaderCharacterID: leaderID,
@@ -632,9 +551,6 @@ func (l *CharacterListenerImpl) OnPartyUpdateDisband(ch *entity.Character, party
 }
 
 func (l *CharacterListenerImpl) OnPartyUpdateLeaderChange(ch *entity.Character, newLeaderID uint32, byDisconnect bool) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.PartyUpdateLeaderChange{
 		NewLeaderCharacterID: newLeaderID,
 		ByDisconnect:         byDisconnect,
@@ -642,9 +558,6 @@ func (l *CharacterListenerImpl) OnPartyUpdateLeaderChange(ch *entity.Character, 
 }
 
 func (l *CharacterListenerImpl) OnPartyUpdateLogOnOff(ch *entity.Character, forChannel int32, partyID uint32, leaderID uint32, members []response.PartyMemberStatus) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.PartyUpdateLogOnOff{
 		ForChannel:        forChannel,
 		PartyID:           partyID,
@@ -654,9 +567,6 @@ func (l *CharacterListenerImpl) OnPartyUpdateLogOnOff(ch *entity.Character, forC
 }
 
 func (l *CharacterListenerImpl) OnPartyUpdateSilent(ch *entity.Character, forChannel int32, partyID uint32, leaderID uint32, members []response.PartyMemberStatus) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.PartyUpdateSilent{
 		ForChannel:        forChannel,
 		PartyID:           partyID,
@@ -666,16 +576,10 @@ func (l *CharacterListenerImpl) OnPartyUpdateSilent(ch *entity.Character, forCha
 }
 
 func (l *CharacterListenerImpl) OnBuddyStatusMessage(ch *entity.Character, code pconst.BuddyStatusCode) {
-	if ch == nil {
-		return
-	}
 	ch.Send(&response.BuddyStatus{Code: code}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnBuddyListUpdate(ch *entity.Character, action pconst.BuddyListSyncAction, entries []response.BuddyEntry) {
-	if ch == nil {
-		return
-	}
 	ch.Send(&response.BuddyListUpdate{
 		Action:  action,
 		Entries: entries,
@@ -683,9 +587,6 @@ func (l *CharacterListenerImpl) OnBuddyListUpdate(ch *entity.Character, action p
 }
 
 func (l *CharacterListenerImpl) OnBuddyChannelUpdate(ch *entity.Character, buddyCharacterID uint32, channel int32) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.BuddyChannelUpdate{
 		CharacterID: buddyCharacterID,
 		Channel:     channel,
@@ -693,9 +594,6 @@ func (l *CharacterListenerImpl) OnBuddyChannelUpdate(ch *entity.Character, buddy
 }
 
 func (l *CharacterListenerImpl) OnBuddyAddRequest(ch *entity.Character, fromCharacterID uint32, fromName string) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.BuddyAddRequest{
 		FromCharacterID: fromCharacterID,
 		FromName:        fromName,
@@ -703,9 +601,6 @@ func (l *CharacterListenerImpl) OnBuddyAddRequest(ch *entity.Character, fromChar
 }
 
 func (l *CharacterListenerImpl) OnGuildMessage(ch *entity.Character, code pconst.GuildResponseCode) {
-	if ch == nil {
-		return
-	}
 	_ = ch.Send(&response.GuildMessage{
 		Code: code,
 	}, types.SEND_POLICY_ENCRYPT)
@@ -744,7 +639,7 @@ func (l *CharacterListenerImpl) OnUnlockAction(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.Quest, npcID uint32) {
-	if ch == nil || qp == nil || qp.Wz == nil {
+	if qp == nil || qp.Wz == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -772,7 +667,7 @@ func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.
 }
 
 func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entity.Quest, npcID uint32, nextQuestID uint32) {
-	if ch == nil || qp == nil || qp.Wz == nil {
+	if qp == nil || qp.Wz == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -794,7 +689,7 @@ func (l *CharacterListenerImpl) OnQuestCompleted(ch *entity.Character, qp *entit
 }
 
 func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entity.Quest) {
-	if ch == nil || qp == nil {
+	if qp == nil {
 		return
 	}
 	if qp.QuestID > 0xFFFF {
@@ -811,7 +706,7 @@ func (l *CharacterListenerImpl) OnQuestForfeited(ch *entity.Character, qp *entit
 }
 
 func (l *CharacterListenerImpl) OnShowQuestCompletion(ch *entity.Character, questID uint32) {
-	if ch == nil || questID == 0 || questID > 0xFFFF {
+	if questID == 0 || questID > 0xFFFF {
 		return
 	}
 	ch.Send(&response.ShowQuestCompletion{
@@ -820,7 +715,7 @@ func (l *CharacterListenerImpl) OnShowQuestCompletion(ch *entity.Character, ques
 }
 
 func (l *CharacterListenerImpl) OnPlaySound(ch *entity.Character, sound string, broadcast bool) {
-	if ch == nil || sound == "" {
+	if sound == "" {
 		return
 	}
 	pkt := &response.EnvironmentChange{
@@ -837,9 +732,6 @@ func (l *CharacterListenerImpl) OnPlaySound(ch *entity.Character, sound string, 
 }
 
 func (l *CharacterListenerImpl) OnPlayPortalSound(ch *entity.Character) {
-	if ch == nil {
-		return
-	}
 	ch.Send(&response.ShowSelfSkillEffect{
 		Type:       pconst.SkillEffectTypePortal,
 		SkillID:    0,
@@ -848,7 +740,7 @@ func (l *CharacterListenerImpl) OnPlayPortalSound(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnQuestProgress(ch *entity.Character, qp *entity.Quest) {
-	if ch == nil || qp == nil || qp.Wz == nil {
+	if qp == nil || qp.Wz == nil {
 		return
 	}
 	ch.Send(&response.UpdateQuest{
@@ -870,7 +762,7 @@ func (l *CharacterListenerImpl) OnQuestProgress(ch *entity.Character, qp *entity
 }
 
 func (l *CharacterListenerImpl) OnQuestRecordExChanged(ch *entity.Character, qp *entity.Quest) {
-	if ch == nil || qp == nil {
+	if qp == nil {
 		return
 	}
 	if qp.QuestID > 0xFFFF {
@@ -1217,37 +1109,38 @@ func (l *CharacterListenerImpl) OnFieldRelocate(ch *entity.Character, spawnPoint
 	ch.Send(&response.FieldRelocate{Portal: spawnPoint}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) broadcastAttack(ch *entity.Character, packet types.Packet) {
+func (l *CharacterListenerImpl) OnAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if ch.GetMap() == nil {
 		return
 	}
-
-	ch.Broadcast(packet, nil)
-}
-
-func (l *CharacterListenerImpl) OnAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	l.broadcastAttack(ch, &response.Attack{
+	ch.Broadcast(&response.Attack{
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		CharacterId: ch.GetID(),
 		SkillLevel:  skillLevel,
-	})
+	}, nil)
 }
 
 func (l *CharacterListenerImpl) OnRangedAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	l.broadcastAttack(ch, &response.RangedAttack{
+	if ch.GetMap() == nil {
+		return
+	}
+	ch.Broadcast(&response.RangedAttack{
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		CharacterId: ch.GetID(),
 		SkillLevel:  skillLevel,
 		CashBullet:  0,
-	})
+	}, nil)
 }
 
 func (l *CharacterListenerImpl) OnMagicAttack(ch *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	l.broadcastAttack(ch, &response.MagicAttack{
+	if ch.GetMap() == nil {
+		return
+	}
+	ch.Broadcast(&response.MagicAttack{
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		CharacterId: ch.GetID(),
 		SkillLevel:  skillLevel,
-	})
+	}, nil)
 }
 
 func (l *CharacterListenerImpl) OnEndSortInventory(ch *entity.Character, inventoryType constant.InventoryType) {
@@ -1341,9 +1234,6 @@ func (l *CharacterListenerImpl) OnPartyMemberFieldsChanged(ch *entity.Character)
 }
 
 func (l *CharacterListenerImpl) OnPartyMemberHPChanged(ch *entity.Character, recipient *entity.Character) {
-	if ch == nil {
-		return
-	}
 	partyIDPtr := ch.GetPartyID()
 	if partyIDPtr == nil {
 		return
@@ -1462,16 +1352,10 @@ func (l *CharacterListenerImpl) OnDebuffRemoved(ch *entity.Character, flags []co
 }
 
 func (l *CharacterListenerImpl) OnSkillPassiveHook(ch *entity.Character, skillID uint32, hook string) {
-	if ch == nil {
-		return
-	}
 	CallPassiveSkillHook(ch, skillID, hook)
 }
 
 func (l *CharacterListenerImpl) OnUpdateSkill(ch *entity.Character, skillID uint32, level int32, masterLevel int32) {
-	if ch == nil {
-		return
-	}
 	ch.Send(&response.UpdateSkills{
 		SkillID:     skillID,
 		Level:       level,
@@ -1596,4 +1480,47 @@ func (l *CharacterListenerImpl) OnSummonDamaged(ch *entity.Character, summon *en
 		MonsterIDFrom: monsterIdFrom,
 	}
 	ch.Broadcast(packet, &entity.ObjectBroadcastOption{WithMe: true})
+}
+
+func (l *CharacterListenerImpl) OnCarnivalStart(ch *entity.Character, team constant.CarnivalTeam, persAvail, persTotal, friendAvail, friendTotal, enemyAvail, enemyTotal int) {
+	ch.Send(&response.CarnivalStart{
+		Team:        team,
+		PersAvail:   uint16(persAvail),
+		PersTotal:   uint16(persTotal),
+		FriendAvail: uint16(friendAvail),
+		FriendTotal: uint16(friendTotal),
+		EnemyAvail:  uint16(enemyAvail),
+		EnemyTotal:  uint16(enemyTotal),
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnCarnivalObtainedCP(ch *entity.Character, avail, total int) {
+	ch.Send(&response.CarnivalObtainedCP{
+		Avail: uint16(avail),
+		Total: uint16(total),
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnCarnivalPartyCP(ch *entity.Character, team constant.CarnivalTeam, avail, total int) {
+	ch.Send(&response.CarnivalPartyCP{
+		Team:  team,
+		Avail: uint16(avail),
+		Total: uint16(total),
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnCarnivalSummon(ch *entity.Character, tab, num uint8, name string) {
+	ch.Broadcast(&response.CarnivalSummon{
+		Tab:  tab,
+		Num:  num,
+		Name: name,
+	}, &entity.ObjectBroadcastOption{WithMe: true})
+}
+
+func (l *CharacterListenerImpl) OnCarnivalDied(ch *entity.Character, team constant.CarnivalTeam, name string, lostCP uint8) {
+	ch.Send(&response.CarnivalDied{
+		Team:   team,
+		Name:   name,
+		LostCP: lostCP,
+	}, types.SEND_POLICY_ENCRYPT)
 }

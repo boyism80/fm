@@ -36,6 +36,9 @@ type Consume struct {
 	Party           bool
 	MoveTo          int32
 	ExpInc          int32
+	CP              int
+	NuffSkillID     uint32
+	NuffSkillLevel  uint8
 
 	CureDebuffs []constant.DebuffFlag
 }

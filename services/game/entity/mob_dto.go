@@ -47,17 +47,18 @@ func (m *Mob) ToDTO() *dto.Mob {
 	}
 
 	return &dto.Mob{
-		OID:         m.OID,
-		MobId:       mobId,
-		Position:    m.Position,
-		Stance:      m.Stance,
-		Foothold:    m.Foothold,
-		Hp:          m.GetHp(),
-		MaxHp:       m.GetMaxHp(),
-		Mp:          m.GetMp(),
-		MaxMp:       m.GetMaxMp(),
-		StatusMask:  mask,
-		Statuses:    statuses,
-		Reflections: m.Buffs.Reflections(),
+		OID:          m.OID,
+		MobId:        mobId,
+		Position:     m.Position,
+		Stance:       m.Stance,
+		Foothold:     m.Foothold,
+		Hp:           m.GetHp(),
+		MaxHp:        m.GetMaxHp(),
+		Mp:           m.GetMp(),
+		MaxMp:        m.GetMaxMp(),
+		StatusMask:   mask,
+		Statuses:     statuses,
+		Reflections:  m.Buffs.Reflections(),
+		CarnivalTeam: m.CarnivalTeam,
 	}
 }

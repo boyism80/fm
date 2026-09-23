@@ -88,6 +88,10 @@ func (gs *GameServer) GetStateMachineRegistry() entity.StateMachineRegistry {
 	return gs.stateMachines
 }
 
+func (gs *GameServer) GetCarnivalRegistry() *entity.CarnivalRegistry {
+	return entity.GlobalCarnivalRegistry()
+}
+
 func (s mapSystem) Get(mapID uint32) *entity.Map {
 	if s.gs == nil {
 		return nil

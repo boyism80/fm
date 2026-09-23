@@ -18,7 +18,7 @@ func (h *PartyMemberLeftHandler) Handle(ctx actor.Context, a *GameLogicActor, ms
 	if m == nil {
 		return
 	}
-	m.ApplyPartyLeaveDoorSync(msg.LeaverID)
+	m.SyncDoors([]uint32{msg.LeaverID})
 	ch := m.GetPlayer(msg.LeaverID)
 	if ch == nil {
 		return

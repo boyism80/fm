@@ -10,7 +10,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (ch *Character) ApplyConsumeEffect(consume *Consume) bool {
+func (ch *Character) UseConsume(consume *Consume) bool {
 	if ch == nil || consume == nil {
 		return false
 	}
@@ -43,31 +43,21 @@ func (ch *Character) ApplyConsumeEffect(consume *Consume) bool {
 			if character == nil {
 				continue
 			}
-			character.applyConsumeCureDebuffs(wzConsume)
-			character.applyConsumeBuff(wzConsume)
-			character.applyConsumeRecovery(wzConsume)
-			character.applyConsumeExp(wzConsume)
+			if len(wzConsume.CureDebuffs) > 0 {
+				character.RemoveDebuff(wzConsume.CureDebuffs...)
+			}
+			character.addItemBuff(wzConsume)
+			character.recover(wzConsume)
+			if wzConsume.ExpInc > 0 {
+				character.AddExp(uint32(wzConsume.ExpInc))
+			}
 		}
 	}
 
 	return true
 }
 
-func (ch *Character) applyConsumeCureDebuffs(consumeItem *wz.Consume) {
-	if ch == nil || consumeItem == nil || len(consumeItem.CureDebuffs) == 0 {
-		return
-	}
-	ch.RemoveDebuff(consumeItem.CureDebuffs...)
-}
-
-func (ch *Character) applyConsumeExp(consumeItem *wz.Consume) {
-	if ch == nil || consumeItem == nil || consumeItem.ExpInc <= 0 {
-		return
-	}
-	ch.AddExp(uint32(consumeItem.ExpInc))
-}
-
-func (ch *Character) applyConsumeBuff(consumeItem *wz.Consume) bool {
+func (ch *Character) addItemBuff(consumeItem *wz.Consume) bool {
 	if ch == nil || consumeItem == nil {
 		return false
 	}
@@ -79,7 +69,7 @@ func (ch *Character) applyConsumeBuff(consumeItem *wz.Consume) bool {
 	return true
 }
 
-func (ch *Character) applyConsumeRecovery(consumeItem *wz.Consume) bool {
+func (ch *Character) recover(consumeItem *wz.Consume) bool {
 	if ch == nil || consumeItem == nil {
 		return false
 	}

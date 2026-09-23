@@ -108,6 +108,8 @@ type Resources struct {
 	ExpTable                []uint32
 	Shops                   map[uint32]*Shop
 	Quests                  map[uint32]*Quest
+	MCSkills                map[uint32]*MCSkill
+	MCGuardians             map[uint32]*MCGuardian
 	questsByStartFieldEnter map[uint32][]*Quest
 	questsByAutoStart       []*Quest
 }
@@ -671,6 +673,24 @@ func NewResources(wzPath string) *Resources {
 		fmt.Printf("Loaded MobSkill definitions: %d skill ids\n", len(mobSkills))
 	}
 
+	mcSkills := map[uint32]*MCSkill{}
+	mcSkillPath := filepath.Join(wzPath, "Skill.wz", "MCSkill.img.xml")
+	if loaded, loadErr := loadMCSkillData(mcSkillPath); loadErr != nil {
+		log.Printf("Failed to load MCSkill.img.xml: %v", loadErr)
+	} else {
+		mcSkills = loaded
+		fmt.Printf("Loaded MCSkill definitions: %d skill ids\n", len(mcSkills))
+	}
+
+	mcGuardians := map[uint32]*MCGuardian{}
+	mcGuardianPath := filepath.Join(wzPath, "Skill.wz", "MCGuardian.img.xml")
+	if loaded, loadErr := loadMCGuardianData(mcGuardianPath); loadErr != nil {
+		log.Printf("Failed to load MCGuardian.img.xml: %v", loadErr)
+	} else {
+		mcGuardians = loaded
+		fmt.Printf("Loaded MCGuardian definitions: %d guardian ids\n", len(mcGuardians))
+	}
+
 	fmt.Println("\nAll files loaded.")
 
 	expTable := getHardcodedExpTable()
@@ -691,6 +711,8 @@ func NewResources(wzPath string) *Resources {
 		ExpTable:      expTable,
 		Skills:        skills,
 		MobSkills:     mobSkills,
+		MCSkills:      mcSkills,
+		MCGuardians:   mcGuardians,
 		Shops:         shops,
 		Quests:        quests,
 	}
@@ -723,6 +745,20 @@ func (r *Resources) GetMobSkill(skillID uint32, level uint8) *MobSkillLevelData 
 		return nil
 	}
 	return levels[level]
+}
+
+func (r *Resources) GetMCSkill(skillID uint32) *MCSkill {
+	if r == nil {
+		return nil
+	}
+	return r.MCSkills[skillID]
+}
+
+func (r *Resources) GetMCGuardian(guardianID uint32) *MCGuardian {
+	if r == nil {
+		return nil
+	}
+	return r.MCGuardians[guardianID]
 }
 
 func (r *Resources) GetShop(npcID uint32) *Shop {

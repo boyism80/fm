@@ -39,6 +39,7 @@ type Mob struct {
 	sponge        Sponge
 	lastHitAt     time.Time
 	dropItemCount int
+	CarnivalTeam  constant.CarnivalTeam
 }
 
 func (m *Mob) SetHoming(causerOID uint32, h *Homing) {
@@ -136,7 +137,7 @@ func (m *Mob) IsFake() bool {
 	return m != nil && m.Fake
 }
 
-func (m *Mob) ApplyScaleLevel(scale int) {
+func (m *Mob) SetScaleLevel(scale int) {
 	if m == nil || m.Wz == nil || scale <= 0 {
 		return
 	}
@@ -212,7 +213,7 @@ func (m *Mob) Relink(spawnType constant.MobSpawnType, link uint32) bool {
 	return true
 }
 
-func (m *Mob) ApplyMobBuff(flag constant.MobBuffFlag, value int32, duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
+func (m *Mob) GiveMobBuff(flag constant.MobBuffFlag, value int32, duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
 	if m == nil {
 		return
 	}
@@ -474,8 +475,11 @@ func (m *Mob) dropItems(attacker *Character) {
 	}
 }
 
-func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
+func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 	if amount == 0 || m.GetHp() == 0 {
+		return false
+	}
+	if attacker != nil && m.CarnivalTeam != constant.CarnivalTeamNone && attacker.CarnivalTeamID() == m.CarnivalTeam {
 		return false
 	}
 
@@ -508,7 +512,7 @@ func (m *Mob) ApplyDamage(attacker *Character, amount uint32) bool {
 	m.AddHp(-int(damage))
 	killed := m.GetHp() == 0
 
-	m.sponge.applyDamageFromHit(damage)
+	m.sponge.damage(damage)
 
 	if !killed {
 		if attacker != nil && spongeParent == nil {
@@ -560,6 +564,15 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) 
 	if attacker != nil {
 		if m.Wz != nil {
 			attacker.OnQuestMobKilled(m.Wz.ID)
+			if match := attacker.CarnivalMatch(); match != nil && m.Wz != nil {
+				cpAmount := m.Wz.CP
+				if cpAmount <= 0 {
+					cpAmount = m.Wz.Point
+				}
+				if cpAmount > 0 {
+					match.OnMobKilled(attacker, cpAmount)
+				}
+			}
 		}
 		m.dropItems(attacker)
 	}
@@ -709,9 +722,6 @@ func (m *Mob) AddHp(amount int) {
 	m.LifeCore.AddHp(amount)
 	after := m.GetHp()
 	if after <= before {
-		return
-	}
-	if m.Listener == nil {
 		return
 	}
 

@@ -30,7 +30,7 @@ func (ch *Character) DamageTo(damages []dto.AttackPair) {
 			if damagePair.Damage == 0 {
 				continue
 			}
-			if !mob.ApplyDamage(ch, damagePair.Damage) {
+			if !mob.TakeDamage(ch, damagePair.Damage) {
 				continue
 			}
 			if _, ok := seen[mob.OID]; ok {

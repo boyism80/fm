@@ -25,7 +25,7 @@ func main() {
 		flag.Usage()
 		log.Println("\nMapleStory Game Server")
 		log.Println("Runtime options are read from a game-only YAML file. CLI flags: -help, -config (default config/game.yaml).")
-		log.Println("If the file is not in cwd, the binary directory and parents of cwd are searched (see common/config.ResolvePath).")
+		log.Println("If the file is not in cwd, the binary directory and parents of cwd are searched (see common/config.FindConfigFilePath).")
 		log.Println("\nExample config/game.yaml (root document = game fields only):")
 		log.Println(strings.TrimSpace(`
 host: "0.0.0.0"
@@ -63,7 +63,7 @@ lua:
 		return
 	}
 
-	cfgFile, err := config.ResolvePath(*cfgPath)
+	cfgFile, err := config.FindConfigFilePath(*cfgPath)
 	if err != nil {
 		log.Fatalf("Config: %v", err)
 	}

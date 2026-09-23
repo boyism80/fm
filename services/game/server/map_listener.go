@@ -33,10 +33,8 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 			Character: characterDTO,
 		}
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
-		if character.Listener != nil {
-			character.Listener.OnShowGuildInfo(character)
-			character.Listener.OnShowAllianceInfo(character)
-		}
+		character.Listener.OnShowGuildInfo(character)
+		character.Listener.OnShowAllianceInfo(character)
 		character.Buffs.EmitAllBuffAddedEvents()
 	} else {
 		characterDTO := character.ToDTO()
@@ -51,9 +49,7 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		character.Send(&response.SuperHide{Hidden: true}, types.SEND_POLICY_ENCRYPT)
 	}
 
-	if kl := character.KeyLayout(); kl != nil {
-		character.Send(&response.KeyMap{Slots: kl.Bindings()}, types.SEND_POLICY_ENCRYPT)
-	}
+	character.Send(&response.KeyMap{Slots: character.KeyLayout().Bindings()}, types.SEND_POLICY_ENCRYPT)
 
 	if mapInstance.Wz != nil && mapInstance.Wz.HasClock {
 		_, _, _, hour, minute, second := clock.DateTimeTable(clock.Now())
@@ -75,6 +71,13 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 	}
 
 	SyncPartyMemberHPOnMapEnter(mapInstance, character, nil)
+
+	if match := character.CarnivalMatch(); match != nil {
+		mapID := mapInstance.GetMapID()
+		if mapID == match.FieldMapID || mapID == match.ReviveMapID {
+			match.NotifyCarnivalStart(character)
+		}
+	}
 
 	if l.gs != nil && character != nil && l.gs.characterRuntime != nil {
 		_ = l.gs.characterRuntime.SetMapPID(character.GetID(), mapInstance.LogicActorPID())
@@ -372,37 +375,38 @@ func (l *MapListenerImpl) OnMobMoved(mapInstance *entity.Map, mob *entity.Mob, i
 	mob.Broadcast(movePacket, nil)
 }
 
-func (l *MapListenerImpl) broadcastAttack(character *entity.Character, packet types.Packet) {
+func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
 	if character == nil || character.GetMap() == nil {
 		return
 	}
-
-	character.Broadcast(packet, nil)
-}
-
-func (l *MapListenerImpl) OnAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	l.broadcastAttack(character, &response.Attack{
+	character.Broadcast(&response.Attack{
 		CharacterId: character.GetID(),
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		SkillLevel:  skillLevel,
-	})
+	}, nil)
 }
 
 func (l *MapListenerImpl) OnRangedAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	l.broadcastAttack(character, &response.RangedAttack{
+	if character == nil || character.GetMap() == nil {
+		return
+	}
+	character.Broadcast(&response.RangedAttack{
 		CharacterId: character.GetID(),
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		SkillLevel:  skillLevel,
 		CashBullet:  0,
-	})
+	}, nil)
 }
 
 func (l *MapListenerImpl) OnMagicAttack(mapInstance *entity.Map, character *entity.Character, attackPayload dto.AttackPayload, skillLevel uint8) {
-	l.broadcastAttack(character, &response.MagicAttack{
+	if character == nil || character.GetMap() == nil {
+		return
+	}
+	character.Broadcast(&response.MagicAttack{
 		CharacterId: character.GetID(),
 		AttackInfo:  attackPayload.ToAttackInfo(),
 		SkillLevel:  skillLevel,
-	})
+	}, nil)
 }
 
 func (l *MapListenerImpl) OnMistSpawned(mapInstance *entity.Map, mist *entity.Mist) {

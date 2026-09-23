@@ -9,6 +9,7 @@ import (
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/wz"
 )
 
 type ItemLoot struct {
@@ -56,10 +57,15 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 			return fmt.Errorf("item is not a Consume for OID %d", req.OID)
 		}
 
-		if !character.ApplyConsumeEffect(consume) {
+		if !character.UseConsume(consume) {
 			log.Printf("Failed to apply consume effect for OID %d", req.OID)
 			character.Listener.OnUpdateStats(character, nil, true)
 			return fmt.Errorf("failed to apply consume effect for OID %d", req.OID)
+		}
+		if wzConsume, ok := consume.GetModel().(*wz.Consume); ok && wzConsume != nil {
+			if wzConsume.CP > 0 || wzConsume.NuffSkillID > 0 {
+				character.PickupCarnivalItem(wzConsume)
+			}
 		}
 	} else {
 		reason := mapInstance.LootItem(obj, character, req.Position)

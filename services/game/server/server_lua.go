@@ -65,7 +65,7 @@ func registerSkillConstants(luaState *lua.LState) {
 	luaState.SetGlobal("Skill", skillTable)
 }
 
-func registerBuffFlagAndMobBuff(luaState *lua.LState) {
+func registerBuffFlag(luaState *lua.LState) {
 	buffFlagTable := luaState.NewTable()
 	for name, bf := range constant.AllBuffFlags() {
 		entry := luaState.NewTable()
@@ -74,6 +74,9 @@ func registerBuffFlagAndMobBuff(luaState *lua.LState) {
 		buffFlagTable.RawSetString(name, entry)
 	}
 	luaState.SetGlobal("BuffFlag", buffFlagTable)
+}
+
+func registerDebuffFlag(luaState *lua.LState) {
 	debuffFlagTable := luaState.NewTable()
 	for name, df := range constant.AllDebuffFlags() {
 		entry := luaState.NewTable()
@@ -83,6 +86,9 @@ func registerBuffFlagAndMobBuff(luaState *lua.LState) {
 		debuffFlagTable.RawSetString(name, entry)
 	}
 	luaState.SetGlobal("DebuffFlag", debuffFlagTable)
+}
+
+func registerMobBuff(luaState *lua.LState) {
 	mobBuffTable := luaState.NewTable()
 	for name, st := range constant.AllMobBuffs() {
 		entry := luaState.NewTable()
@@ -90,6 +96,9 @@ func registerBuffFlagAndMobBuff(luaState *lua.LState) {
 		mobBuffTable.RawSetString(name, entry)
 	}
 	luaState.SetGlobal("MobBuff", mobBuffTable)
+}
+
+func registerBuffType(luaState *lua.LState) {
 	buffTypeTable := luaState.NewTable()
 	for name, buffType := range constant.AllBuffTypes() {
 		buffTypeTable.RawSetString(name, lua.LNumber(buffType))
@@ -97,12 +106,15 @@ func registerBuffFlagAndMobBuff(luaState *lua.LState) {
 	luaState.SetGlobal("BuffType", buffTypeTable)
 }
 
-func registerWeaponTypeAndConsumeType(luaState *lua.LState) {
+func registerWeaponType(luaState *lua.LState) {
 	weaponTypeTable := luaState.NewTable()
 	for name, wt := range constant.AllWeaponTypes() {
 		weaponTypeTable.RawSetString(name, lua.LNumber(wt))
 	}
 	luaState.SetGlobal("WeaponType", weaponTypeTable)
+}
+
+func registerConsumeType(luaState *lua.LState) {
 	consumeTypeTable := luaState.NewTable()
 	for name, ct := range constant.AllConsumeTypes() {
 		consumeTypeTable.RawSetString(name, lua.LNumber(ct))
@@ -377,8 +389,12 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Installation, *entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Pet, *entity.ItemCore](luaState)
 
-	registerBuffFlagAndMobBuff(luaState)
-	registerWeaponTypeAndConsumeType(luaState)
+	registerBuffFlag(luaState)
+	registerDebuffFlag(luaState)
+	registerMobBuff(luaState)
+	registerBuffType(luaState)
+	registerWeaponType(luaState)
+	registerConsumeType(luaState)
 	registerSkillConstants(luaState)
 	registerEquipmentPartConstants(luaState)
 	registerInventoryTypeConstants(luaState)
@@ -399,6 +415,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	registerExchangeResultConstants(luaState)
 	registerServerMessageConstants(luaState)
 	registerClockLuaFuncs(gs, luaState)
+	entity.RegisterCarnivalLua(luaState, gs)
 
 	luax.RegisterFunc(luaState, "log", func(L *lua.LState) int {
 		parts := make([]string, L.GetTop())

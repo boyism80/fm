@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
 )
@@ -12,18 +13,19 @@ type MobBuffEntry struct {
 }
 
 type Mob struct {
-	OID         uint32
-	MobId       uint32
-	Position    types.Vector2[int16]
-	Stance      uint8
-	Foothold    int16
-	Hp          uint32
-	MaxHp       uint32
-	Mp          uint32
-	MaxMp       uint32
-	StatusMask  int32
-	Statuses    []MobBuffEntry
-	Reflections []int32
+	OID          uint32
+	MobId        uint32
+	Position     types.Vector2[int16]
+	Stance       uint8
+	Foothold     int16
+	Hp           uint32
+	MaxHp        uint32
+	Mp           uint32
+	MaxMp        uint32
+	StatusMask   int32
+	Statuses     []MobBuffEntry
+	Reflections  []int32
+	CarnivalTeam constant.CarnivalTeam
 }
 
 func (m *Mob) Serialize(writer *stream.StreamWriter) error {

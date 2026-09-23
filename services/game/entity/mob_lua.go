@@ -798,7 +798,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 
-			killed := mob.ApplyDamage(attacker, uint32(amount))
+			killed := mob.TakeDamage(attacker, uint32(amount))
 			L.Push(lua.LBool(killed))
 			return 1
 		},

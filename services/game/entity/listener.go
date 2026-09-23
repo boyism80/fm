@@ -131,6 +131,11 @@ type CharacterListener interface {
 	OnSummonAttack(ch *Character, summon *Summon, animation uint8, targets []SummonAttackTarget)
 	OnSummonSkill(ch *Character, summon *Summon, newStance uint8)
 	OnSummonDamaged(ch *Character, summon *Summon, unknown uint8, damage uint32, monsterIdFrom uint32)
+	OnCarnivalStart(ch *Character, team constant.CarnivalTeam, persAvail, persTotal, friendAvail, friendTotal, enemyAvail, enemyTotal int)
+	OnCarnivalObtainedCP(ch *Character, avail, total int)
+	OnCarnivalPartyCP(ch *Character, team constant.CarnivalTeam, avail, total int)
+	OnCarnivalSummon(ch *Character, tab, num uint8, name string)
+	OnCarnivalDied(ch *Character, team constant.CarnivalTeam, name string, lostCP uint8)
 }
 
 type MobListener interface {

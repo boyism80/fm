@@ -34,4 +34,6 @@ type Mob struct {
 	HpTagBgColor          uint8
 	DropItemPeriod        int
 	DamagedByMob          bool
+	CP                    int
+	Point                 int
 }

@@ -264,7 +264,7 @@ func (sm *StateMachine) BroadcastClock(seconds int32) {
 		return
 	}
 	for _, ch := range sm.Players() {
-		if ch == nil || ch.Listener == nil {
+		if ch == nil {
 			continue
 		}
 		if !sm.OwnsMap(ch.GetMap()) {
@@ -275,7 +275,7 @@ func (sm *StateMachine) BroadcastClock(seconds int32) {
 }
 
 func (sm *StateMachine) SyncClock(ch *Character) {
-	if sm == nil || ch == nil || ch.Listener == nil {
+	if sm == nil || ch == nil {
 		return
 	}
 	if !sm.OwnsMap(ch.GetMap()) {
@@ -366,22 +366,17 @@ func (sm *StateMachine) HasRegisteredMaps() bool {
 	return len(sm.Maps) > 0
 }
 
-func ResolveCreateMaps(result interface{}, ms MapSystem) ([]*Map, error) {
+func ParseCreateMaps(tbl *lua.LTable, ms MapSystem) ([]*Map, error) {
 	if ms == nil {
 		return nil, fmt.Errorf("map system is nil")
 	}
-	vals := luax.ResultValues(result)
-	if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
-		return nil, fmt.Errorf("on_create must return a non-empty map array")
-	}
-	tbl, ok := vals[0].(*lua.LTable)
-	if !ok {
+	if tbl == nil {
 		return nil, fmt.Errorf("on_create must return a table")
 	}
 	out := make([]*Map, 0)
-	var resolveErr error
+	var parseErr error
 	tbl.ForEach(func(_ lua.LValue, value lua.LValue) {
-		if resolveErr != nil {
+		if parseErr != nil {
 			return
 		}
 		switch v := value.(type) {
@@ -392,18 +387,18 @@ func ResolveCreateMaps(result interface{}, ms MapSystem) ([]*Map, error) {
 				m = ms.GetInstance(id)
 			}
 			if m == nil {
-				resolveErr = fmt.Errorf("map %d not found", id)
+				parseErr = fmt.Errorf("map %d not found", id)
 				return
 			}
 			out = append(out, m)
 		case *lua.LUserData:
 			if v == nil || v.Value == nil {
-				resolveErr = fmt.Errorf("nil map in on_create return")
+				parseErr = fmt.Errorf("nil map in on_create return")
 				return
 			}
 			m, ok := v.Value.(*Map)
 			if !ok || m == nil {
-				resolveErr = fmt.Errorf("invalid map userdata in on_create return")
+				parseErr = fmt.Errorf("invalid map userdata in on_create return")
 				return
 			}
 			out = append(out, m)
@@ -411,11 +406,11 @@ func ResolveCreateMaps(result interface{}, ms MapSystem) ([]*Map, error) {
 			if value == nil || value == lua.LNil {
 				return
 			}
-			resolveErr = fmt.Errorf("on_create map entry must be map id or Map")
+			parseErr = fmt.Errorf("on_create map entry must be map id or Map")
 		}
 	})
-	if resolveErr != nil {
-		return nil, resolveErr
+	if parseErr != nil {
+		return nil, parseErr
 	}
 	if len(out) == 0 {
 		return nil, fmt.Errorf("on_create must return a non-empty map array")

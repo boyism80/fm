@@ -34,6 +34,12 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
+	mapInstance := ch.GetMap()
+	if mapInstance != nil && mapInstance.Wz.BlocksPotionUse() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+
 	useInventory := ch.Inventory.Tabs[constant.InventoryTypeConsume]
 	if useInventory == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)
@@ -62,7 +68,7 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
-	if !ch.ApplyConsumeEffect(consumeEnt) {
+	if !ch.UseConsume(consumeEnt) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}

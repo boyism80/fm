@@ -1016,7 +1016,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 		"buffs": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
-			if !ok || ch == nil || ch.Buffs == nil {
+			if !ok || ch == nil {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
@@ -1945,6 +1945,41 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.EndPartyQuest(questID)
 			return 0
 		},
+		"carnival_team": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			team := ch.CarnivalTeam()
+			if team == nil {
+				L.Push(lua.LNil)
+			} else {
+				L.Push(luax.NewLuable(L, team))
+			}
+			return 1
+		},
+		"max_hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.GetMaxHp()))
+			return 1
+		},
+		"max_mp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LNumber(ch.GetMaxMp()))
+			return 1
+		},
 		"quest": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
@@ -2017,7 +2052,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			questID := uint32(L.CheckInt(2))
 			npcID := uint32(L.CheckInt(3))
-			if ch.Quests == nil || ch.GameWorld == nil {
+			if ch.GameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -2041,10 +2076,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
-			}
-			if ch.Quests == nil {
-				L.Push(lua.LNumber(0))
-				return 1
 			}
 			if L.GetTop() == 1 {
 				L.Push(lua.LNumber(ch.Quests.ClearAll()))
@@ -2072,10 +2103,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if L.GetTop() != 1 {
 				L.ArgError(2, "completed_quest_count() takes no arguments")
 				return 0
-			}
-			if ch.Quests == nil {
-				L.Push(lua.LNumber(0))
-				return 1
 			}
 			L.Push(lua.LNumber(ch.Quests.CompletedCount()))
 			return 1

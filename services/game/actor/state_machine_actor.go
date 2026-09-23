@@ -52,7 +52,7 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	case *entity.BootstrapStateMachine:
 		a.beginCreate(ctx)
 	case *entity.ApplyStateMachineCreateMaps:
-		a.applyCreateMaps(ctx, msg)
+		a.registerCreateMaps(ctx, msg)
 	case *entity.FinishStateMachineCreate:
 		a.finishCreate(ctx)
 	case *entity.EnterStateMachinePlayer:
@@ -194,13 +194,13 @@ func (a *StateMachineActor) scheduleCron(ctx actor.Context, msg *entity.Schedule
 	a.cancelNamedSchedule(msg.ID)
 	entry := &namedSchedule{hook: msg.Hook, cron: sched}
 	a.namedSchedules[msg.ID] = entry
-	a.armNamedCron(ctx, msg.ID, entry)
+	a.scheduleNamedCron(ctx, msg.ID, entry)
 	if msg.ReplyTo != nil {
 		ctx.Send(msg.ReplyTo, &entity.StateMachineTimerAck{})
 	}
 }
 
-func (a *StateMachineActor) armNamedCron(ctx actor.Context, id string, entry *namedSchedule) {
+func (a *StateMachineActor) scheduleNamedCron(ctx actor.Context, id string, entry *namedSchedule) {
 	if a.scheduler == nil || entry == nil || entry.cron == nil {
 		return
 	}
@@ -251,7 +251,7 @@ func (a *StateMachineActor) handleNamedTimeout(ctx actor.Context, msg *entity.St
 	hook := entry.hook
 	if entry.cron != nil {
 		entry.cancel = nil
-		a.armNamedCron(ctx, msg.ID, entry)
+		a.scheduleNamedCron(ctx, msg.ID, entry)
 	} else {
 		delete(a.namedSchedules, msg.ID)
 	}
@@ -279,7 +279,7 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 	a.callHook(ctx, "on_create", a.StateMachine)
 }
 
-func (a *StateMachineActor) applyCreateMaps(ctx actor.Context, msg *entity.ApplyStateMachineCreateMaps) {
+func (a *StateMachineActor) registerCreateMaps(ctx actor.Context, msg *entity.ApplyStateMachineCreateMaps) {
 	if msg == nil {
 		a.abortCreate(ctx, "nil create maps")
 		return
@@ -453,7 +453,16 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 		if gw != nil {
 			ms = gw.GetMapSystem()
 		}
-		maps, err := entity.ResolveCreateMaps(result, ms)
+		vals := luax.ResultValues(result)
+		var maps []*entity.Map
+		var err error
+		if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
+			err = fmt.Errorf("on_create must return a non-empty map array")
+		} else if tbl, ok := vals[0].(*lua.LTable); !ok {
+			err = fmt.Errorf("on_create must return a table")
+		} else {
+			maps, err = entity.ParseCreateMaps(tbl, ms)
+		}
 		msg := &entity.ApplyStateMachineCreateMaps{}
 		if err != nil {
 			msg.Err = err.Error()

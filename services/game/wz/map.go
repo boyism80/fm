@@ -58,6 +58,7 @@ type Map struct {
 	ReactorSpawns     map[uint32]ReactorSpawn
 	Areas             []types.Rect[int16]
 	Footholds         *types.QuadTreeNode[int16, Foothold]
+	MonsterCarnival   *MonsterCarnival
 	doorReturnPortals []Portal
 }
 
@@ -66,6 +67,10 @@ func (m *Map) HasForcedReturn() bool {
 		return false
 	}
 	return m.ForcedReturn > 0 && m.ForcedReturn != ForcedReturnNone
+}
+
+func (m *Map) BlocksPotionUse() bool {
+	return m != nil && m.FieldLimit&0x400 != 0
 }
 
 func footholdSurfaceYAtX(f Foothold, x int16) int16 {

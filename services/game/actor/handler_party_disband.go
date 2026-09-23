@@ -17,7 +17,7 @@ func (h *PartyDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 	}
 	seen := make(map[*entity.StateMachine]struct{})
 	for _, m := range a.Maps() {
-		m.ApplyPartyDisbandDoorSync(msg.FormerMemberIDs)
+		m.SyncDoors(msg.FormerMemberIDs)
 		for _, id := range msg.FormerMemberIDs {
 			ch := m.GetPlayer(id)
 			if ch == nil {

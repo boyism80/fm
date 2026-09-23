@@ -61,4 +61,5 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, SummonAttack](gs)
 	core.Bind[*GameServer, DamageSummon](gs)
 	core.Bind[*GameServer, SummonSkill](gs)
+	core.Bind[*GameServer, MonsterCarnival](gs)
 }

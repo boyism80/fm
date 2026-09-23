@@ -31,7 +31,7 @@ func (p *SpawnMob) Serialize(writer *stream.StreamWriter) error {
 	if p.SpawnType == -3 || p.SpawnType >= 0 {
 		writer.WriteU32(p.Link)
 	}
-	writer.Write8(-1)
+	writer.Write8(int8(p.Mob.CarnivalTeam))
 	writer.WriteU32(0)
 	return nil
 }

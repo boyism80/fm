@@ -248,6 +248,8 @@ func loadConsumes(path string) (*[]*Consume, error) {
 					model.BuffDuration = time.Duration(intField.Value) * time.Millisecond
 				case "consumeOnPickup":
 					model.ConsumeOnPickup = intField.Value != 0
+				case "cp":
+					model.CP = intField.Value
 				case "party":
 					model.Party = intField.Value != 0
 				case "moveTo":
@@ -263,6 +265,31 @@ func loadConsumes(path string) (*[]*Consume, error) {
 						}
 						model.BuffValues[buffFlag] = int32(intField.Value)
 					}
+				}
+			}
+			if nuffNode := specNode.find("nuffSkill"); nuffNode != nil {
+				for _, child := range nuffNode.Children {
+					for _, intField := range child.Ints {
+						switch intField.Name {
+						case "id":
+							model.NuffSkillID = uint32(intField.Value)
+						case "level":
+							model.NuffSkillLevel = uint8(intField.Value)
+						}
+					}
+					for _, field := range child.Children {
+						switch field.Name {
+						case "id":
+							if val, err := strconv.Atoi(field.Value); err == nil {
+								model.NuffSkillID = uint32(val)
+							}
+						case "level":
+							if val, err := strconv.Atoi(field.Value); err == nil {
+								model.NuffSkillLevel = uint8(val)
+							}
+						}
+					}
+					break
 				}
 			}
 		}
@@ -1432,7 +1459,134 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 		}
 	}
 
+	if mcNode := root.find("monsterCarnival"); mcNode != nil {
+		model.MonsterCarnival = parseMonsterCarnival(mcNode)
+	}
+
 	return &model, nil
+}
+
+func parseMonsterCarnival(root *node) *MonsterCarnival {
+	if root == nil {
+		return nil
+	}
+	mc := &MonsterCarnival{}
+	if posNode := root.find("mobGenPos"); posNode != nil {
+		mc.MobGenPos = parseCarnivalPositions(posNode)
+	}
+	if posNode := root.find("guardianGenPos"); posNode != nil {
+		mc.GuardianGenPos = parseCarnivalPositions(posNode)
+	}
+	if mobNode := root.find("mob"); mobNode != nil {
+		for _, child := range mobNode.Children {
+			entry := CarnivalMobEntry{}
+			for _, intField := range child.Ints {
+				switch intField.Name {
+				case "id":
+					entry.ID = uint32(intField.Value)
+				case "spendCP":
+					entry.SpendCP = intField.Value
+				}
+			}
+			for _, field := range child.Children {
+				switch field.Name {
+				case "id":
+					if val, err := strconv.Atoi(field.Value); err == nil {
+						entry.ID = uint32(val)
+					}
+				case "spendCP":
+					if val, err := strconv.Atoi(field.Value); err == nil {
+						entry.SpendCP = val
+					}
+				}
+			}
+			if entry.ID > 0 {
+				mc.Mobs = append(mc.Mobs, entry)
+			}
+		}
+	}
+	if skillNode := root.find("skill"); skillNode != nil {
+		for _, child := range skillNode.Children {
+			entry := CarnivalSkillEntry{}
+			for _, intField := range child.Ints {
+				switch intField.Name {
+				case "id":
+					entry.ID = uint32(intField.Value)
+				case "spendCP":
+					entry.SpendCP = intField.Value
+				}
+			}
+			for _, field := range child.Children {
+				switch field.Name {
+				case "id":
+					if val, err := strconv.Atoi(field.Value); err == nil {
+						entry.ID = uint32(val)
+					}
+				case "spendCP":
+					if val, err := strconv.Atoi(field.Value); err == nil {
+						entry.SpendCP = val
+					}
+				}
+			}
+			if entry.ID > 0 {
+				mc.Skills = append(mc.Skills, entry)
+			}
+		}
+	}
+	return mc
+}
+
+func parseCarnivalPositions(root *node) []CarnivalGenPos {
+	if root == nil {
+		return nil
+	}
+	type posEntry struct {
+		idx int
+		gen CarnivalGenPos
+	}
+	entries := make([]posEntry, 0, len(root.Children))
+	for _, child := range root.Children {
+		idx, err := strconv.Atoi(child.Name)
+		if err != nil {
+			continue
+		}
+		gen := CarnivalGenPos{Team: -1}
+		for _, intField := range child.Ints {
+			switch intField.Name {
+			case "x":
+				gen.Pos.X = int16(intField.Value)
+			case "y":
+				gen.Pos.Y = int16(intField.Value)
+			case "team":
+				gen.Team = intField.Value
+			}
+		}
+		for _, field := range child.Children {
+			switch field.Name {
+			case "x":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					gen.Pos.X = int16(val)
+				}
+			case "y":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					gen.Pos.Y = int16(val)
+				}
+			case "team":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					gen.Team = val
+				}
+			}
+		}
+		entries = append(entries, posEntry{idx: idx, gen: gen})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].idx < entries[j].idx
+	})
+	out := make([]CarnivalGenPos, len(entries))
+	for i, e := range entries {
+		out[i] = e.gen
+	}
+	return out
 }
 
 func loadPets(path string) (*Pet, error) {
@@ -1765,6 +1919,10 @@ func loadMob(path string) (*Mob, error) {
 			model.DropItemPeriod = intField.Value
 		case "damagedByMob":
 			model.DamagedByMob = intField.Value > 0
+		case "CP":
+			model.CP = intField.Value
+		case "point":
+			model.Point = intField.Value
 		}
 	}
 
@@ -2365,4 +2523,130 @@ func calculateDefaultExp(level int) uint32 {
 		multiplier += float64(level-30) * 0.2
 	}
 	return uint32(float64(baseExp*level) * multiplier)
+}
+
+func loadMCSkillData(path string) (map[uint32]*MCSkill, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var root node
+	if err := xml.NewDecoder(file).Decode(&root); err != nil {
+		return nil, err
+	}
+
+	out := make(map[uint32]*MCSkill)
+	for _, skillChild := range root.Children {
+		skillID, err := strconv.Atoi(skillChild.Name)
+		if err != nil {
+			continue
+		}
+		skill := &MCSkill{
+			ID:     uint32(skillID),
+			Levels: make(map[uint8]*MCSkillLevel),
+		}
+		for _, levelChild := range skillChild.Children {
+			levelNum, err := strconv.Atoi(levelChild.Name)
+			if err != nil || levelNum < 1 {
+				continue
+			}
+			levelData := &MCSkillLevel{}
+			for _, intField := range levelChild.Ints {
+				switch intField.Name {
+				case "cp":
+					levelData.CP = intField.Value
+				case "skill":
+					levelData.MobSkillID = uint32(intField.Value)
+				case "level":
+					levelData.MobSkillLevel = uint8(intField.Value)
+				}
+			}
+			for _, field := range levelChild.Children {
+				switch field.Name {
+				case "cp":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+						levelData.CP = val
+					}
+				case "skill":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+						levelData.MobSkillID = uint32(val)
+					}
+				case "level":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+						levelData.MobSkillLevel = uint8(val)
+					}
+				}
+			}
+			skill.Levels[uint8(levelNum)] = levelData
+		}
+		if len(skill.Levels) > 0 {
+			out[skill.ID] = skill
+		}
+	}
+	return out, nil
+}
+
+func loadMCGuardianData(path string) (map[uint32]*MCGuardian, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var root node
+	if err := xml.NewDecoder(file).Decode(&root); err != nil {
+		return nil, err
+	}
+
+	out := make(map[uint32]*MCGuardian)
+	for _, guardianChild := range root.Children {
+		guardianID, err := strconv.Atoi(guardianChild.Name)
+		if err != nil {
+			continue
+		}
+		guardian := &MCGuardian{
+			ID:     uint32(guardianID),
+			Levels: make(map[uint8]*MCGuardianLevel),
+		}
+		for _, levelChild := range guardianChild.Children {
+			levelNum, err := strconv.Atoi(levelChild.Name)
+			if err != nil || levelNum < 1 {
+				continue
+			}
+			levelData := &MCGuardianLevel{}
+			for _, intField := range levelChild.Ints {
+				switch intField.Name {
+				case "cp":
+					levelData.CP = intField.Value
+				case "guardian":
+					levelData.ReactorID = uint32(intField.Value)
+				case "time":
+					levelData.Duration = intField.Value
+				}
+			}
+			for _, field := range levelChild.Children {
+				switch field.Name {
+				case "cp":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+						levelData.CP = val
+					}
+				case "guardian":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+						levelData.ReactorID = uint32(val)
+					}
+				case "time":
+					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+						levelData.Duration = val
+					}
+				}
+			}
+			guardian.Levels[uint8(levelNum)] = levelData
+		}
+		if len(guardian.Levels) > 0 {
+			out[guardian.ID] = guardian
+		}
+	}
+	return out, nil
 }
