@@ -633,6 +633,13 @@ func RegisterCarnivalLua(L *lua.LState, gw GameWorld) {
 		}
 		return 1
 	}))
+	carnivalTable.RawSetString("set_skill_hit_chance", L.NewFunction(func(L *lua.LState) int {
+		if reg == nil {
+			return 0
+		}
+		reg.SetSkillHitChance(uint32(L.CheckNumber(1)), int(L.CheckNumber(2)))
+		return 0
+	}))
 	carnivalTable.RawSetString("enter", L.NewFunction(func(L *lua.LState) int {
 		if reg == nil {
 			L.Push(lua.LFalse)

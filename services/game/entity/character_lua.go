@@ -1960,6 +1960,41 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 1
 		},
+		"save_location": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.SaveLocation(L.CheckString(2))
+			return 0
+		},
+		"saved_location": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			mapID, ok := ch.SavedLocation(L.CheckString(2))
+			if !ok {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(lua.LNumber(mapID))
+			return 1
+		},
+		"clear_saved_location": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.ClearSavedLocation(L.CheckString(2))
+			return 0
+		},
 		"max_hp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

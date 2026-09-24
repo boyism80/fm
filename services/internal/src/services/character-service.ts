@@ -20,6 +20,8 @@ import { BuffRepository } from "../repos/buff-repository";
 import type { BuffModel } from "../repos/buff-repository";
 import { QuestRepository } from "../repos/quest-repository";
 import type { QuestModel } from "../repos/quest-repository";
+import { SavedLocationRepository } from "../repos/saved-location-repository";
+import type { SavedLocationModel } from "../repos/saved-location-repository";
 import { CharacterBuddyRepository } from "../repos/character-buddy-repository";
 import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
@@ -69,6 +71,7 @@ type SaveCharacterEntry = {
     skills?: SkillModel[];
     buffs?: BuffModel[];
     quests?: QuestModel[];
+    savedLocations?: SavedLocationModel[];
     keyLayout?: KeyLayoutBindingModel[];
 };
 
@@ -81,6 +84,7 @@ export class CharacterService {
     private readonly skillRepo: SkillRepository;
     private readonly buffRepo: BuffRepository;
     private readonly questRepo: QuestRepository;
+    private readonly savedLocationRepo: SavedLocationRepository;
     private readonly keyLayoutRepo: KeyLayoutRepository;
     private readonly buddyRepo: CharacterBuddyRepository;
     private readonly realtimeStateRepo: CharacterRealtimeStateRepository;
@@ -97,6 +101,7 @@ export class CharacterService {
         skillRepository: SkillRepository,
         buffRepository: BuffRepository,
         questRepository: QuestRepository,
+        savedLocationRepository: SavedLocationRepository,
         keyLayoutRepository: KeyLayoutRepository,
         characterBuddyRepository: CharacterBuddyRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
@@ -112,6 +117,7 @@ export class CharacterService {
         this.skillRepo = skillRepository;
         this.buffRepo = buffRepository;
         this.questRepo = questRepository;
+        this.savedLocationRepo = savedLocationRepository;
         this.keyLayoutRepo = keyLayoutRepository;
         this.buddyRepo = characterBuddyRepository;
         this.realtimeStateRepo = characterRealtimeStateRepository;
@@ -185,7 +191,7 @@ export class CharacterService {
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, keyLayout } of entries) {
+        for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout } of entries) {
             this.assertWorld(persisted.worldId);
             this.assertCharacterId(persisted.characterId);
             this.assertAccountId(persisted.accountId);
@@ -194,7 +200,7 @@ export class CharacterService {
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld.get(wid)?.push({ persisted, baseLooks, overlays, inventory, skills, buffs, quests, keyLayout });
+            byWorld.get(wid)?.push({ persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout });
         }
 
         for (const [worldId, group] of byWorld) {
@@ -207,7 +213,7 @@ export class CharacterService {
             const models = group.map(({ persisted }) => persisted);
             await this.repo.setAll(worldId, models);
 
-            for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, keyLayout } of group) {
+            for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout } of group) {
                 if (!persisted.accountId) {
                     continue;
                 }
@@ -244,6 +250,9 @@ export class CharacterService {
                 }
                 if (quests !== undefined) {
                     await this.questRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, quests);
+                }
+                if (savedLocations !== undefined) {
+                    await this.savedLocationRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, savedLocations);
                 }
                 if (keyLayout !== undefined) {
                     await this.keyLayoutRepo.set(persisted.worldId, {
@@ -407,6 +416,7 @@ export class CharacterService {
         await this.skillRepo.replaceBySnapshot(worldId, characterId, []);
         await this.buffRepo.replaceBySnapshot(worldId, characterId, []);
         await this.questRepo.replaceBySnapshot(worldId, characterId, []);
+        await this.savedLocationRepo.replaceBySnapshot(worldId, characterId, []);
         await this.buddyRepo.deleteAllForOwner(worldId, characterId);
         await this.buddyRepo.deleteAllReferencingBuddy(worldId, characterId);
         await this.realtimeStateRepo.delete({ worldId, characterId });

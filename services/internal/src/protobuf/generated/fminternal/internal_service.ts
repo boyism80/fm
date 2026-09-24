@@ -997,6 +997,7 @@ export interface EnterGameReply {
   buddies: BuddyEntry[];
   buddyCapacity: number;
   quests: QuestPersisted[];
+  savedLocations: SavedLocationPersisted[];
 }
 
 export interface BeginGameTransitionRequest {
@@ -1039,6 +1040,7 @@ export interface CharacterSaveEntry {
   keyLayout: KeyLayoutBinding[];
   buffs: BuffPersisted[];
   quests: QuestPersisted[];
+  savedLocations: SavedLocationPersisted[];
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -1138,6 +1140,12 @@ export interface QuestPersisted_MobKillsEntry {
 export interface QuestPersisted_RecordExEntry {
   key: string;
   value: string;
+}
+
+export interface SavedLocationPersisted {
+  characterId: number;
+  name: string;
+  mapId: number;
 }
 
 export interface LoginAccountRequest {
@@ -3563,6 +3571,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     buddies: [],
     buddyCapacity: 0,
     quests: [],
+    savedLocations: [],
   };
 }
 
@@ -3600,6 +3609,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     for (const v of message.quests) {
       QuestPersisted.encode(v!, writer.uint32(90).fork()).join();
+    }
+    for (const v of message.savedLocations) {
+      SavedLocationPersisted.encode(v!, writer.uint32(98).fork()).join();
     }
     return writer;
   },
@@ -3699,6 +3711,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.quests.push(QuestPersisted.decode(reader, reader.uint32()));
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.savedLocations.push(SavedLocationPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3739,6 +3759,11 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         ? globalThis.Number(object.buddy_capacity)
         : 0,
       quests: globalThis.Array.isArray(object?.quests) ? object.quests.map((e: any) => QuestPersisted.fromJSON(e)) : [],
+      savedLocations: globalThis.Array.isArray(object?.savedLocations)
+        ? object.savedLocations.map((e: any) => SavedLocationPersisted.fromJSON(e))
+        : globalThis.Array.isArray(object?.saved_locations)
+        ? object.saved_locations.map((e: any) => SavedLocationPersisted.fromJSON(e))
+        : [],
     };
   },
 
@@ -3777,6 +3802,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.quests?.length) {
       obj.quests = message.quests.map((e) => QuestPersisted.toJSON(e));
     }
+    if (message.savedLocations?.length) {
+      obj.savedLocations = message.savedLocations.map((e) => SavedLocationPersisted.toJSON(e));
+    }
     return obj;
   },
 
@@ -3798,6 +3826,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.buddies = object.buddies?.map((e) => BuddyEntry.fromPartial(e)) || [];
     message.buddyCapacity = object.buddyCapacity ?? 0;
     message.quests = object.quests?.map((e) => QuestPersisted.fromPartial(e)) || [];
+    message.savedLocations = object.savedLocations?.map((e) => SavedLocationPersisted.fromPartial(e)) || [];
     return message;
   },
 };
@@ -4366,6 +4395,7 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     keyLayout: [],
     buffs: [],
     quests: [],
+    savedLocations: [],
   };
 }
 
@@ -4394,6 +4424,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     }
     for (const v of message.quests) {
       QuestPersisted.encode(v!, writer.uint32(66).fork()).join();
+    }
+    for (const v of message.savedLocations) {
+      SavedLocationPersisted.encode(v!, writer.uint32(74).fork()).join();
     }
     return writer;
   },
@@ -4475,6 +4508,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.quests.push(QuestPersisted.decode(reader, reader.uint32()));
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.savedLocations.push(SavedLocationPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4524,6 +4565,11 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : [],
       buffs: globalThis.Array.isArray(object?.buffs) ? object.buffs.map((e: any) => BuffPersisted.fromJSON(e)) : [],
       quests: globalThis.Array.isArray(object?.quests) ? object.quests.map((e: any) => QuestPersisted.fromJSON(e)) : [],
+      savedLocations: globalThis.Array.isArray(object?.savedLocations)
+        ? object.savedLocations.map((e: any) => SavedLocationPersisted.fromJSON(e))
+        : globalThis.Array.isArray(object?.saved_locations)
+        ? object.saved_locations.map((e: any) => SavedLocationPersisted.fromJSON(e))
+        : [],
     };
   },
 
@@ -4565,6 +4611,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.quests?.length) {
       obj.quests = message.quests.map((e) => QuestPersisted.toJSON(e));
     }
+    if (message.savedLocations?.length) {
+      obj.savedLocations = message.savedLocations.map((e) => SavedLocationPersisted.toJSON(e));
+    }
     return obj;
   },
 
@@ -4599,6 +4648,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     message.keyLayout = object.keyLayout?.map((e) => KeyLayoutBinding.fromPartial(e)) || [];
     message.buffs = object.buffs?.map((e) => BuffPersisted.fromPartial(e)) || [];
     message.quests = object.quests?.map((e) => QuestPersisted.fromPartial(e)) || [];
+    message.savedLocations = object.savedLocations?.map((e) => SavedLocationPersisted.fromPartial(e)) || [];
     return message;
   },
 };
@@ -6376,6 +6426,106 @@ export const QuestPersisted_RecordExEntry: MessageFns<QuestPersisted_RecordExEnt
     const message = createBaseQuestPersisted_RecordExEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseSavedLocationPersisted(): SavedLocationPersisted {
+  return { characterId: 0, name: "", mapId: 0 };
+}
+
+export const SavedLocationPersisted: MessageFns<SavedLocationPersisted> = {
+  encode(message: SavedLocationPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.characterId !== 0) {
+      writer.uint32(8).uint32(message.characterId);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.mapId !== 0) {
+      writer.uint32(24).uint32(message.mapId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SavedLocationPersisted {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSavedLocationPersisted();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.mapId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SavedLocationPersisted {
+    return {
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      mapId: isSet(object.mapId)
+        ? globalThis.Number(object.mapId)
+        : isSet(object.map_id)
+        ? globalThis.Number(object.map_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: SavedLocationPersisted): unknown {
+    const obj: any = {};
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.mapId !== 0) {
+      obj.mapId = Math.round(message.mapId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SavedLocationPersisted>, I>>(base?: I): SavedLocationPersisted {
+    return SavedLocationPersisted.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SavedLocationPersisted>, I>>(object: I): SavedLocationPersisted {
+    const message = createBaseSavedLocationPersisted();
+    message.characterId = object.characterId ?? 0;
+    message.name = object.name ?? "";
+    message.mapId = object.mapId ?? 0;
     return message;
   },
 };

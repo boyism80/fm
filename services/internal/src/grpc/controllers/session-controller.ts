@@ -5,6 +5,7 @@ import { INVENTORY_MODEL, INVENTORY_PERSISTED } from "../inventory-persisted";
 import { SKILL_MODEL, SKILL_PERSISTED } from "../skill-persisted";
 import { BUFF_MODEL, BUFF_PERSISTED } from "../buff-persisted";
 import { QUEST_MODEL, QUEST_PERSISTED } from "../quest-persisted";
+import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PERSISTED } from "../saved-location-persisted";
 import { grpcMapper } from "../mappers";
 import { SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
 import type { BuddyService, BuddyListEntry } from "../../services/buddy-service";
@@ -14,6 +15,7 @@ import type { BuffService } from "../../services/buff-service";
 import type { SessionService } from "../../services/session-service";
 import type { InventoryRepository } from "../../repos/inventory-repository";
 import type { QuestRepository } from "../../repos/quest-repository";
+import type { SavedLocationRepository } from "../../repos/saved-location-repository";
 import type { CharacterRealtimeStateRepository } from "../../repos/character-realtime-state-repository";
 import type { InternalConfig } from "../../types/internal-config";
 import type {
@@ -34,12 +36,14 @@ import type {
     SkillPersisted,
     BuffPersisted,
     QuestPersisted,
+    SavedLocationPersisted,
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { CharacterModel } from "../../repos/character-repository";
 import type { InventoryModel } from "../../repos/inventory-repository";
 import type { SkillModel } from "../../repos/skill-repository";
 import type { BuffModel } from "../../repos/buff-repository";
 import type { QuestModel } from "../../repos/quest-repository";
+import type { SavedLocationModel } from "../../repos/saved-location-repository";
 import { Controller, Method } from "../grpc-method-decorator";
 
 type OwnedCharacterResult =
@@ -54,6 +58,7 @@ export class SessionGrpcController {
     private readonly skillService: SkillService;
     private readonly buffService: BuffService;
     private readonly questRepository: QuestRepository;
+    private readonly savedLocationRepository: SavedLocationRepository;
     private readonly sessionService: SessionService;
     private readonly buddyService: BuddyService;
     private readonly internalConfig: Pick<InternalConfig, "game_servers">;
@@ -66,6 +71,7 @@ export class SessionGrpcController {
         skillService: SkillService,
         buffService: BuffService,
         questRepository: QuestRepository,
+        savedLocationRepository: SavedLocationRepository,
         sessionService: SessionService,
         buddyService: BuddyService,
         internalConfig: Pick<InternalConfig, "game_servers">,
@@ -77,6 +83,7 @@ export class SessionGrpcController {
         this.skillService = skillService;
         this.buffService = buffService;
         this.questRepository = questRepository;
+        this.savedLocationRepository = savedLocationRepository;
         this.sessionService = sessionService;
         this.buddyService = buddyService;
         this.internalConfig = internalConfig;
@@ -146,6 +153,7 @@ export class SessionGrpcController {
                     skills: [],
                     buffs: [],
                     quests: [],
+                    savedLocations: [],
                     keyLayout: [],
                     partyId: undefined,
                     guildId: undefined,
@@ -166,11 +174,12 @@ export class SessionGrpcController {
                 throw new Error(`attach game session failed: ${attach.code}`);
             }
 
-            const [inventoryList, skillList, buffList, questList, keyLayoutBindings, buddyPack] = await Promise.all([
+            const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack] = await Promise.all([
                 this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
                 this.skillService.getSkills(worldId, characterId),
                 this.buffService.getBuffs(worldId, characterId),
                 this.questRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+                this.savedLocationRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
                 this.characterService.getKeyLayoutBindings(worldId, characterId),
                 this.buddyService.getAll(worldId, characterId),
             ]);
@@ -208,6 +217,13 @@ export class SessionGrpcController {
                         quest,
                         QUEST_MODEL,
                         QUEST_PERSISTED
+                    )
+                ),
+                savedLocations: savedLocationList.map((loc) =>
+                    grpcMapper.map<SavedLocationModel, SavedLocationPersisted>(
+                        loc,
+                        SAVED_LOCATION_MODEL,
+                        SAVED_LOCATION_PERSISTED
                     )
                 ),
                 keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),

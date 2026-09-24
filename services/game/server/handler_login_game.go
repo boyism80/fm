@@ -160,6 +160,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	character.LoadSkills(reply.GetSkills())
 	character.LoadBuffs(reply.GetBuffs())
 	character.LoadQuests(reply.GetQuests())
+	character.LoadSavedLocations(reply.GetSavedLocations())
 	character.LoadBuddyList(reply.GetBuddies(), reply.GetBuddyCapacity())
 
 	gameClient, ok := ctx.Client.(*client.GameClient)

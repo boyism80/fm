@@ -250,6 +250,8 @@ func loadConsumes(path string) (*[]*Consume, error) {
 					model.ConsumeOnPickup = intField.Value != 0
 				case "cp":
 					model.CP = intField.Value
+				case "nuffSkill":
+					model.NuffSkillID = uint32(intField.Value)
 				case "party":
 					model.Party = intField.Value != 0
 				case "moveTo":
@@ -2543,47 +2545,45 @@ func loadMCSkillData(path string) (map[uint32]*MCSkill, error) {
 		if err != nil {
 			continue
 		}
-		skill := &MCSkill{
-			ID:     uint32(skillID),
-			Levels: make(map[uint8]*MCSkillLevel),
-		}
-		for _, levelChild := range skillChild.Children {
-			levelNum, err := strconv.Atoi(levelChild.Name)
-			if err != nil || levelNum < 1 {
-				continue
+		skill := &MCSkill{ID: uint32(skillID), HitChance: 100}
+		target := 1
+		for _, intField := range skillChild.Ints {
+			switch intField.Name {
+			case "spendCP":
+				skill.SpendCP = intField.Value
+			case "mobSkillID":
+				skill.MobSkillID = uint32(intField.Value)
+			case "level":
+				skill.Level = uint8(intField.Value)
+			case "target":
+				target = intField.Value
 			}
-			levelData := &MCSkillLevel{}
-			for _, intField := range levelChild.Ints {
-				switch intField.Name {
-				case "cp":
-					levelData.CP = intField.Value
-				case "skill":
-					levelData.MobSkillID = uint32(intField.Value)
-				case "level":
-					levelData.MobSkillLevel = uint8(intField.Value)
+		}
+		for _, field := range skillChild.Children {
+			switch field.Name {
+			case "spendCP":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					skill.SpendCP = val
+				}
+			case "mobSkillID":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					skill.MobSkillID = uint32(val)
+				}
+			case "level":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					skill.Level = uint8(val)
+				}
+			case "target":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					target = val
 				}
 			}
-			for _, field := range levelChild.Children {
-				switch field.Name {
-				case "cp":
-					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
-						levelData.CP = val
-					}
-				case "skill":
-					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
-						levelData.MobSkillID = uint32(val)
-					}
-				case "level":
-					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
-						levelData.MobSkillLevel = uint8(val)
-					}
-				}
-			}
-			skill.Levels[uint8(levelNum)] = levelData
 		}
-		if len(skill.Levels) > 0 {
-			out[skill.ID] = skill
+		skill.TargetsAll = target > 1
+		if skill.TargetsAll {
+			skill.HitChance = 80
 		}
+		out[skill.ID] = skill
 	}
 	return out, nil
 }
@@ -2606,47 +2606,34 @@ func loadMCGuardianData(path string) (map[uint32]*MCGuardian, error) {
 		if err != nil {
 			continue
 		}
-		guardian := &MCGuardian{
-			ID:     uint32(guardianID),
-			Levels: make(map[uint8]*MCGuardianLevel),
-		}
-		for _, levelChild := range guardianChild.Children {
-			levelNum, err := strconv.Atoi(levelChild.Name)
-			if err != nil || levelNum < 1 {
-				continue
+		guardian := &MCGuardian{ID: uint32(guardianID)}
+		for _, intField := range guardianChild.Ints {
+			switch intField.Name {
+			case "spendCP":
+				guardian.SpendCP = intField.Value
+			case "mobSkillID":
+				guardian.MobSkillID = uint32(intField.Value)
+			case "level":
+				guardian.Level = uint8(intField.Value)
 			}
-			levelData := &MCGuardianLevel{}
-			for _, intField := range levelChild.Ints {
-				switch intField.Name {
-				case "cp":
-					levelData.CP = intField.Value
-				case "guardian":
-					levelData.ReactorID = uint32(intField.Value)
-				case "time":
-					levelData.Duration = intField.Value
+		}
+		for _, field := range guardianChild.Children {
+			switch field.Name {
+			case "spendCP":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					guardian.SpendCP = val
+				}
+			case "mobSkillID":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					guardian.MobSkillID = uint32(val)
+				}
+			case "level":
+				if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
+					guardian.Level = uint8(val)
 				}
 			}
-			for _, field := range levelChild.Children {
-				switch field.Name {
-				case "cp":
-					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
-						levelData.CP = val
-					}
-				case "guardian":
-					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
-						levelData.ReactorID = uint32(val)
-					}
-				case "time":
-					if val, parseErr := strconv.Atoi(field.Value); parseErr == nil {
-						levelData.Duration = val
-					}
-				}
-			}
-			guardian.Levels[uint8(levelNum)] = levelData
 		}
-		if len(guardian.Levels) > 0 {
-			out[guardian.ID] = guardian
-		}
+		out[guardian.ID] = guardian
 	}
 	return out, nil
 }

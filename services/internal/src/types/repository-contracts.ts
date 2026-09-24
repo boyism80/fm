@@ -18,6 +18,7 @@ export type RepositoryQueryValue =
     | null
     | Date
     | number[]
+    | string[]
     | RepositoryQueryJson
     | PartyMemberDoorQuery
     | KeyLayoutJsonRecord

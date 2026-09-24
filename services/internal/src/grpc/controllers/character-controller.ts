@@ -4,6 +4,7 @@ import { INVENTORY_MODEL, INVENTORY_PERSISTED } from "../inventory-persisted";
 import { SKILL_MODEL, SKILL_PERSISTED } from "../skill-persisted";
 import { BUFF_MODEL, BUFF_PERSISTED } from "../buff-persisted";
 import { QUEST_MODEL, QUEST_PERSISTED } from "../quest-persisted";
+import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PERSISTED } from "../saved-location-persisted";
 import { grpcMapper } from "../mappers";
 import type { CharacterOverviewListItem, CharacterOverviewService } from "../../services/character-overview-service";
 import type { CharacterService } from "../../services/character-service";
@@ -13,6 +14,7 @@ import type { InventoryModel } from "../../repos/inventory-repository";
 import type { SkillModel } from "../../repos/skill-repository";
 import type { BuffModel } from "../../repos/buff-repository";
 import type { QuestModel } from "../../repos/quest-repository";
+import type { SavedLocationModel } from "../../repos/saved-location-repository";
 import type {
     BuffPersisted,
     CharacterPersisted,
@@ -31,6 +33,7 @@ import type {
     SaveCharactersReply,
     SaveCharactersRequest,
     QuestPersisted,
+    SavedLocationPersisted,
     SkillPersisted,
 } from "../../protobuf/generated/fminternal/internal_service";
 import { Controller, Method } from "../grpc-method-decorator";
@@ -150,6 +153,13 @@ export class CharacterGrpcController {
                             quest,
                             QUEST_PERSISTED,
                             QUEST_MODEL
+                        )
+                    ),
+                    savedLocations: (entry.savedLocations ?? []).map((loc) =>
+                        grpcMapper.map<SavedLocationPersisted, SavedLocationModel>(
+                            loc,
+                            SAVED_LOCATION_PERSISTED,
+                            SAVED_LOCATION_MODEL
                         )
                     ),
                     keyLayout: bindingsFromProtoList(entry.keyLayout),

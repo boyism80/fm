@@ -252,14 +252,15 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Population:   uint32(ch.population),
 	}
 	return &internal.CharacterSaveEntry{
-		Character: persisted,
-		BaseLooks: baseLooks,
-		Overlays:  overlays,
-		Inventory: ch.InventoryPersisted(),
-		Skills:    ch.SkillsPersisted(),
-		Buffs:     ch.BuffsPersisted(),
-		KeyLayout: ch.KeyLayout().ToProto(),
-		Quests:    ch.QuestsPersisted(),
+		Character:      persisted,
+		BaseLooks:      baseLooks,
+		Overlays:       overlays,
+		Inventory:      ch.InventoryPersisted(),
+		Skills:         ch.SkillsPersisted(),
+		Buffs:          ch.BuffsPersisted(),
+		KeyLayout:      ch.KeyLayout().ToProto(),
+		Quests:         ch.QuestsPersisted(),
+		SavedLocations: ch.SavedLocationsPersisted(),
 	}
 }
 
@@ -359,6 +360,38 @@ func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {
 			RemainingDurationMs: rem,
 			SkillLevel:          skillLevel,
 			CauserId:            causerID,
+		})
+	}
+	return out
+}
+
+func (ch *Character) LoadSavedLocations(persisted []*internal.SavedLocationPersisted) {
+	if ch == nil {
+		return
+	}
+	ch.savedLocations = make(map[string]uint32, len(persisted))
+	for _, pb := range persisted {
+		if pb == nil {
+			continue
+		}
+		name := pb.GetName()
+		if name == "" {
+			continue
+		}
+		ch.savedLocations[name] = pb.GetMapId()
+	}
+}
+
+func (ch *Character) SavedLocationsPersisted() []*internal.SavedLocationPersisted {
+	if ch == nil || len(ch.savedLocations) == 0 {
+		return nil
+	}
+	out := make([]*internal.SavedLocationPersisted, 0, len(ch.savedLocations))
+	for name, mapID := range ch.savedLocations {
+		out = append(out, &internal.SavedLocationPersisted{
+			CharacterId: ch.GetID(),
+			Name:        name,
+			MapId:       mapID,
 		})
 	}
 	return out

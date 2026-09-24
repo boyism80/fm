@@ -10,6 +10,7 @@ import { CharacterOverviewRepository } from "./repos/character-overview-reposito
 import { SkillRepository } from "./repos/skill-repository";
 import { BuffRepository } from "./repos/buff-repository";
 import { QuestRepository } from "./repos/quest-repository";
+import { SavedLocationRepository } from "./repos/saved-location-repository";
 import { SessionRepository } from "./repos/session-repository";
 import { KeyLayoutRepository } from "./repos/key-layout-repository";
 import { PartyRepository } from "./repos/party-repository";
@@ -54,6 +55,7 @@ export function createAppContainer() {
         skillRepository: awilix.asClass(SkillRepository).scoped(),
         buffRepository: awilix.asClass(BuffRepository).scoped(),
         questRepository: awilix.asClass(QuestRepository).scoped(),
+        savedLocationRepository: awilix.asClass(SavedLocationRepository).scoped(),
         sessionRepository: awilix.asClass(SessionRepository).scoped(),
         keyLayoutRepository: awilix.asClass(KeyLayoutRepository).scoped(),
         partyRepository: awilix.asClass(PartyRepository).scoped(),

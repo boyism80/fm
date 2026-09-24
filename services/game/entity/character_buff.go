@@ -383,6 +383,21 @@ func (bc *BuffContainer) AddItemBuff(consumeWz *wz.Consume, duration time.Durati
 	bc.commitBuff(entity, now, notify)
 }
 
+func (bc *BuffContainer) Dispel() {
+	entities := bc.Entities()
+	if len(entities) == 0 {
+		return
+	}
+	flags := make([]constant.BuffFlag, 0)
+	for _, entity := range entities {
+		if entity == nil {
+			continue
+		}
+		flags = append(flags, entity.GetFlags()...)
+	}
+	bc.RemoveBuff(flags)
+}
+
 func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {
 	if len(flags) == 0 {
 		return

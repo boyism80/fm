@@ -501,6 +501,21 @@ export type QuestRow = {
     deleted?: boolean;
 };
 
+export interface SavedLocationModel {
+    characterId: number;
+    name: string;
+    mapId: number;
+    updatedAt?: Date;
+}
+
+export type SavedLocationRow = {
+    character_id: number;
+    location_key: string;
+    map_id: number;
+    updated_at?: Date | string;
+    deleted?: boolean;
+};
+
 export type BuffFlagValueRow = {
     mask: number;
     position: number;

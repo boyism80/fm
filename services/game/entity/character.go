@@ -78,6 +78,7 @@ type Character struct {
 	InstantKill       bool
 	stateMachine      *StateMachine
 	carnivalMatch     *CarnivalMatch
+	savedLocations    map[string]uint32
 }
 
 type LastHeal struct {
@@ -1041,6 +1042,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = data.Meso
 	ch.GuildInvites = make(map[uint32]time.Time)
+	ch.savedLocations = make(map[string]uint32)
 	ch.keyLayout = NewKeyLayout()
 	ch.LifeCore.ObjectCore.self = ch
 	ch.LifeCore.ObjectCore.initTimers()

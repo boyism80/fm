@@ -65,6 +65,7 @@ end
 return {
 	on_init = function(group)
 		carnival.bind_group(group)
+		carnival.set_skill_hit_chance(4, 100)
 		group:declare_exit_map(HUB_MAP)
 		register_slot(0, 980000100, 2)
 		register_slot(1, 980000200, 2)

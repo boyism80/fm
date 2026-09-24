@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -65,22 +66,22 @@ func (m *CarnivalMatch) HandleTab(ch *Character, tab uint8, num int32) bool {
 		if skillDef == nil {
 			return false
 		}
-		levelData := skillDef.LevelData(1)
-		if levelData == nil {
-			return false
-		}
 		spend := entry.SpendCP
 		if spend <= 0 {
-			spend = levelData.CP
+			spend = skillDef.SpendCP
 		}
-		if spend <= 0 || !team.UseCP(ch, spend) {
+		if spend <= 0 {
 			return false
 		}
 		enemy := m.enemyTeam(team.TeamID)
-		if enemy != nil {
-			for _, target := range enemy.Members(gw) {
-				m.giveDebuff(resources, target, levelData.MobSkillID, levelData.MobSkillLevel)
-			}
+		if enemy == nil {
+			return false
+		}
+		if !m.debuffEnemies(gw, resources, enemy, entry.ID, skillDef) {
+			return false
+		}
+		if !team.UseCP(ch, spend) {
+			return false
 		}
 		ch.Listener.OnCarnivalSummon(ch, tab, uint8(idx), ch.GetName())
 		return true
@@ -89,24 +90,23 @@ func (m *CarnivalMatch) HandleTab(ch *Character, tab uint8, num int32) bool {
 		if guardianDef == nil {
 			return false
 		}
-		levelData := guardianDef.LevelData(1)
-		if levelData == nil {
+		if guardianDef.SpendCP <= 0 || !team.UseCP(ch, guardianDef.SpendCP) {
 			return false
 		}
-		if levelData.CP <= 0 || !team.UseCP(ch, levelData.CP) {
+		reactorName := fmt.Sprintf("%d%d", team.TeamID, num)
+		if existing := mapInstance.ReactorByName(reactorName); existing != nil && existing.State < 5 {
 			return false
 		}
 		pos, ok := pickCarnivalGenPos(mc.GuardianGenPos, team.TeamID, mapInstance, false)
 		if !ok {
 			return false
 		}
-		reactorID := levelData.ReactorID
-		if reactorID == 0 {
-			reactorID = 9980000 + uint32(team.TeamID)
-		}
-		if _, err := mapInstance.SpawnReactorAt(reactorID, pos); err != nil {
+		reactorID := 9980000 + uint32(team.TeamID)
+		spawned, err := mapInstance.SpawnReactorAtNamed(reactorID, pos, reactorName)
+		if err != nil || spawned == nil {
 			return false
 		}
+		m.buffAllyMobs(mapInstance, team.TeamID, resources, guardianDef.MobSkillID, guardianDef.Level)
 		ch.Listener.OnCarnivalSummon(ch, tab, uint8(num), ch.GetName())
 		return true
 	default:
@@ -119,6 +119,84 @@ func (m *CarnivalMatch) enemyTeam(teamID constant.CarnivalTeam) *CarnivalTeam {
 		return m.Team(constant.CarnivalTeamBlue)
 	}
 	return m.Team(constant.CarnivalTeamRed)
+}
+
+func (m *CarnivalMatch) debuffEnemies(gw GameWorld, resources *wz.Resources, enemy *CarnivalTeam, catalogID uint32, skillDef *wz.MCSkill) bool {
+	if m == nil || enemy == nil || resources == nil || skillDef == nil {
+		return false
+	}
+	targets := enemy.Members(gw)
+	if len(targets) == 0 {
+		return false
+	}
+	rand.Shuffle(len(targets), func(i, j int) {
+		targets[i], targets[j] = targets[j], targets[i]
+	})
+	chance := GlobalCarnivalRegistry().SkillHitChance(catalogID, skillDef.HitChance)
+	if !skillDef.TargetsAll {
+		targets = targets[:1]
+	}
+	applied := false
+	for _, target := range targets {
+		if skillDef.TargetsAll && rand.Intn(100) >= chance {
+			continue
+		}
+		if !m.giveDebuff(resources, target, skillDef.MobSkillID, skillDef.Level) {
+			target.Buffs.Dispel()
+		}
+		applied = true
+	}
+	return applied
+}
+
+func (m *CarnivalMatch) buffAllyMobs(mapInstance *Map, teamID constant.CarnivalTeam, resources *wz.Resources, skillID uint32, skillLevel uint8) {
+	if mapInstance == nil || resources == nil || skillID == 0 {
+		return
+	}
+	levelData := resources.GetMobSkill(skillID, skillLevel)
+	if levelData == nil {
+		return
+	}
+	flag, ok := carnivalMobSkillBuffFlag(skillID)
+	if !ok {
+		return
+	}
+	duration := time.Duration(levelData.DurationMs) * time.Millisecond
+	if duration <= 0 {
+		duration = 60 * time.Second
+	}
+	for _, obj := range mapInstance.GetMobs() {
+		mob, ok := obj.(*Mob)
+		if !ok || mob == nil || mob.CarnivalTeam != teamID {
+			continue
+		}
+		mob.GiveMobBuff(flag, int32(levelData.X), duration, nil, skillLevel, 0, 1)
+	}
+}
+
+func carnivalMobSkillBuffFlag(skillID uint32) (constant.MobBuffFlag, bool) {
+	switch skillID {
+	case 100, 110, 150:
+		return constant.MobBuffWeaponAttackUp, true
+	case 101, 111, 151:
+		return constant.MobBuffMagicAttackUp, true
+	case 102, 112, 152:
+		return constant.MobBuffWeaponDefenseUp, true
+	case 103, 113, 153:
+		return constant.MobBuffMagicDefenseUp, true
+	case 154:
+		return constant.MobBuffAcc, true
+	case 155:
+		return constant.MobBuffAvoid, true
+	case 115, 156:
+		return constant.MobBuffSpeed, true
+	case 140:
+		return constant.MobBuffWeaponImmunity, true
+	case 141:
+		return constant.MobBuffMagicImmunity, true
+	default:
+		return 0, false
+	}
 }
 
 func pickCarnivalGenPos(gens []wz.CarnivalGenPos, teamID constant.CarnivalTeam, mapInstance *Map, checkMobOccupancy bool) (types.Point[int16], bool) {
@@ -158,13 +236,13 @@ func carnivalGenPosOccupied(mapInstance *Map, pos types.Point[int16], teamID con
 	return false
 }
 
-func (m *CarnivalMatch) giveDebuff(resources *wz.Resources, target *Character, skillID uint32, skillLevel uint8) {
+func (m *CarnivalMatch) giveDebuff(resources *wz.Resources, target *Character, skillID uint32, skillLevel uint8) bool {
 	if target == nil || resources == nil || skillID == 0 {
-		return
+		return false
 	}
 	mobSkill := resources.GetMobSkill(skillID, skillLevel)
 	if mobSkill == nil {
-		return
+		return false
 	}
 	for _, flag := range constant.AllDebuffFlags() {
 		if flag.DiseaseSkillID == uint16(skillID) {
@@ -173,9 +251,10 @@ func (m *CarnivalMatch) giveDebuff(resources *wz.Resources, target *Character, s
 				duration = 5 * time.Second
 			}
 			target.GiveDebuff(flag, duration, int16(mobSkill.X), uint16(skillID), uint16(skillLevel))
-			return
+			return true
 		}
 	}
+	return false
 }
 
 func (ch *Character) PickupCarnivalItem(wzConsume *wz.Consume) bool {
@@ -194,11 +273,14 @@ func (ch *Character) PickupCarnivalItem(wzConsume *wz.Consume) bool {
 		team.AddCP(ch, wzConsume.CP)
 	}
 	if wzConsume.NuffSkillID > 0 {
-		enemy := match.enemyTeam(team.TeamID)
-		if enemy != nil {
-			resources := ch.GameWorld.GetResources()
-			for _, target := range enemy.Members(ch.GameWorld) {
-				match.giveDebuff(resources, target, wzConsume.NuffSkillID, wzConsume.NuffSkillLevel)
+		resources := ch.GameWorld.GetResources()
+		if resources != nil {
+			skillDef := resources.GetMCSkill(wzConsume.NuffSkillID)
+			if skillDef != nil {
+				enemy := match.enemyTeam(team.TeamID)
+				if enemy != nil {
+					match.debuffEnemies(ch.GameWorld, resources, enemy, wzConsume.NuffSkillID, skillDef)
+				}
 			}
 		}
 	}

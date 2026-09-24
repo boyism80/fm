@@ -70,6 +70,7 @@ return {
 				me:dialog(npc, "레벨 30 이상, 50 이하의 캐릭터만 몬스터 카니발을 즐길 수 있다네.")
 				return
 			end
+			me:save_location("MONSTERCARNIVAL")
 			me:map(HUB_MAP, 0)
 		elseif sel == 2 then
 			me:dialog(npc, "직접 그 전율을 느껴보기 전에는 이것이 무엇인지 알 수 없지.")

@@ -173,6 +173,7 @@ message EnterGameReply {
   repeated BuddyEntry         buddies   = 9;
   uint32                       buddy_capacity = 10;
   repeated QuestPersisted      quests    = 11;
+  repeated SavedLocationPersisted saved_locations = 12;
 }
 
 message BeginGameTransitionRequest {
@@ -213,6 +214,7 @@ message CharacterSaveEntry {
   repeated KeyLayoutBinding   key_layout = 6;
   repeated BuffPersisted      buffs     = 7;
   repeated QuestPersisted      quests    = 8;
+  repeated SavedLocationPersisted saved_locations = 9;
 }
 
 message SaveCharactersRequest {
@@ -297,6 +299,12 @@ message QuestPersisted {
   uint32 forfeited                = 8;
   int64 deadline_unix_ms          = 9;
   int64 start_time_unix_ms        = 10;
+}
+
+message SavedLocationPersisted {
+  uint32 character_id = 1;
+  string name         = 2;
+  uint32 map_id       = 3;
 }
 
 message LoginAccountRequest {

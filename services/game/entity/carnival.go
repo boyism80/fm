@@ -479,10 +479,11 @@ func (m *CarnivalMatch) Finish(gw GameWorld) bool {
 }
 
 type CarnivalRegistry struct {
-	mu      sync.RWMutex
-	matches map[int]*CarnivalMatch
-	byMapID map[uint32]*CarnivalMatch
-	group   *StateMachineGroup
+	mu             sync.RWMutex
+	matches        map[int]*CarnivalMatch
+	byMapID        map[uint32]*CarnivalMatch
+	group          *StateMachineGroup
+	skillHitChance map[uint32]int
 }
 
 func NewCarnivalRegistry() *CarnivalRegistry {
@@ -490,6 +491,36 @@ func NewCarnivalRegistry() *CarnivalRegistry {
 		matches: make(map[int]*CarnivalMatch),
 		byMapID: make(map[uint32]*CarnivalMatch),
 	}
+}
+
+func (r *CarnivalRegistry) SetSkillHitChance(skillID uint32, chance int) {
+	if r == nil {
+		return
+	}
+	if chance < 0 {
+		chance = 0
+	}
+	if chance > 100 {
+		chance = 100
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.skillHitChance == nil {
+		r.skillHitChance = make(map[uint32]int)
+	}
+	r.skillHitChance[skillID] = chance
+}
+
+func (r *CarnivalRegistry) SkillHitChance(skillID uint32, fallback int) int {
+	if r == nil {
+		return fallback
+	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if v, ok := r.skillHitChance[skillID]; ok {
+		return v
+	}
+	return fallback
 }
 
 func (r *CarnivalRegistry) registerMaps(match *CarnivalMatch) {
