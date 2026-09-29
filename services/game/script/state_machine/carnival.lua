@@ -1,4 +1,4 @@
--- State machine (old/scripts/event/cpq.js): 몬스터 카니발
+-- State machine: 몬스터 카니발
 
 local HUB_MAP = 980000000
 local RANKING_QUEST = 1301
@@ -24,7 +24,7 @@ local function match_for_sm(sm)
 	if waiting_id == nil then
 		return nil
 	end
-	return carnival.match_by_map(waiting_id)
+	return carnival.map_match(waiting_id)
 end
 
 local function dispose_all(sm, match)

@@ -173,7 +173,7 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 1
 		},
-		"team_of": func(L *lua.LState) int {
+		"find_team": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			match, ok := ud.Value.(*CarnivalMatch)
 			if !ok || match == nil {
@@ -186,32 +186,11 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "Character expected")
 				return 0
 			}
-			team := match.TeamOf(ch)
+			team := match.FindTeam(ch)
 			if team == nil {
 				L.Push(lua.LNil)
 			} else {
 				L.Push(luax.NewLuable(L, team))
-			}
-			return 1
-		},
-		"team_id_of": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			match, ok := ud.Value.(*CarnivalMatch)
-			if !ok || match == nil {
-				L.ArgError(1, "CarnivalMatch expected")
-				return 0
-			}
-			chUD := L.CheckUserData(2)
-			ch, ok := chUD.Value.(*Character)
-			if !ok || ch == nil {
-				L.ArgError(2, "Character expected")
-				return 0
-			}
-			team := match.TeamOf(ch)
-			if team == nil {
-				L.Push(lua.LNil)
-			} else {
-				L.Push(lua.LNumber(team.TeamID))
 			}
 			return 1
 		},
@@ -469,7 +448,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			L.Push(lua.LBool(team.IsWinner()))
+			L.Push(lua.LBool(team.Winner))
 			return 1
 		},
 		"set_winner": func(L *lua.LState) int {
@@ -479,7 +458,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			team.SetWinner(lua.LVAsBool(L.Get(2)))
+			team.Winner = lua.LVAsBool(L.Get(2))
 			L.Push(lua.LTrue)
 			return 1
 		},
@@ -619,13 +598,13 @@ func RegisterCarnivalLua(L *lua.LState, gw GameWorld) {
 		L.Push(tbl)
 		return 1
 	}))
-	carnivalTable.RawSetString("match_by_map", L.NewFunction(func(L *lua.LState) int {
+	carnivalTable.RawSetString("map_match", L.NewFunction(func(L *lua.LState) int {
 		if reg == nil {
 			L.Push(lua.LNil)
 			return 1
 		}
 		mapID := uint32(L.CheckNumber(1))
-		match := reg.MatchByMap(mapID)
+		match := reg.MapMatch(mapID)
 		if match == nil {
 			L.Push(lua.LNil)
 		} else {

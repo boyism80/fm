@@ -1,6 +1,8 @@
 package entity
 
-import "github.com/boyism80/fm/services/game/constant"
+import (
+	"github.com/boyism80/fm/services/game/wz"
+)
 
 func (ch *Character) BindCarnival(match *CarnivalMatch) {
 	ch.carnivalMatch = match
@@ -14,37 +16,62 @@ func (ch *Character) CarnivalMatch() *CarnivalMatch {
 	return ch.carnivalMatch
 }
 
-func (ch *Character) CarnivalTeamID() constant.CarnivalTeam {
-	match := ch.CarnivalMatch()
-	if match == nil {
-		return constant.CarnivalTeamNone
-	}
-	return match.TeamIDOf(ch)
-}
-
 func (ch *Character) CarnivalTeam() *CarnivalTeam {
 	match := ch.CarnivalMatch()
 	if match == nil {
 		return nil
 	}
-	return match.TeamOf(ch)
+	return match.FindTeam(ch)
 }
 
-func (ch *Character) IsInCarnivalBattleMap() bool {
-	match := ch.CarnivalMatch()
-	m := ch.GetMap()
-	if match == nil || m == nil {
-		return false
+func (ch *Character) PartyOnMap() ([]*Character, *Party) {
+	partyID := ch.GetPartyID()
+	if partyID == nil || ch.GameWorld == nil {
+		return nil, nil
 	}
-	mapID := m.GetMapID()
-	return mapID == match.FieldMapID || mapID == match.ReviveMapID
+	party := ch.GameWorld.GetPartySystem().Get(*partyID)
+	leaderMap := ch.GetMap()
+	if party == nil || party.GetLeaderCharacterId() != ch.GetID() || leaderMap == nil {
+		return nil, nil
+	}
+	members := make([]*Character, 0)
+	for _, mem := range party.GetMembers() {
+		if mem == nil {
+			continue
+		}
+		member := leaderMap.GetPlayer(mem.GetCharacterId())
+		if member == nil {
+			return nil, nil
+		}
+		members = append(members, member)
+	}
+	if len(members) == 0 {
+		return nil, nil
+	}
+	return members, party
 }
 
-func (ch *Character) IsOnCarnivalWaitingMap() bool {
+func (ch *Character) PickupCarnivalItem(wzConsume *wz.Consume) bool {
 	match := ch.CarnivalMatch()
-	m := ch.GetMap()
-	if match == nil || m == nil {
+	if match == nil || wzConsume == nil {
 		return false
 	}
-	return m.GetMapID() == match.WaitingMapID
+	team := match.FindTeam(ch)
+	if team == nil {
+		return false
+	}
+	if wzConsume.CP > 0 {
+		team.AddCP(ch, wzConsume.CP)
+	}
+	if wzConsume.NuffSkillID > 0 && ch.GameWorld != nil {
+		resources := ch.GameWorld.GetResources()
+		if resources != nil {
+			skillDef := resources.GetCarnivalSkill(wzConsume.NuffSkillID)
+			enemy := match.enemyTeam(team.TeamID)
+			if skillDef != nil && enemy != nil {
+				match.debuffEnemies(ch.GameWorld, resources, enemy, wzConsume.NuffSkillID, skillDef)
+			}
+		}
+	}
+	return true
 }

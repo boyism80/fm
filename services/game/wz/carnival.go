@@ -17,14 +17,14 @@ type CarnivalGenPos struct {
 	Team int
 }
 
-type MonsterCarnival struct {
+type CarnivalField struct {
 	MobGenPos      []CarnivalGenPos
 	GuardianGenPos []CarnivalGenPos
 	Mobs           []CarnivalMobEntry
 	Skills         []CarnivalSkillEntry
 }
 
-type MCSkill struct {
+type CarnivalSkill struct {
 	ID         uint32
 	SpendCP    int
 	MobSkillID uint32
@@ -33,7 +33,7 @@ type MCSkill struct {
 	HitChance  int
 }
 
-type MCGuardian struct {
+type CarnivalGuardian struct {
 	ID         uint32
 	SpendCP    int
 	MobSkillID uint32

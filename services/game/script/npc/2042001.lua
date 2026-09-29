@@ -5,7 +5,7 @@ local cpq = require("script/lib/carnival")
 
 return {
 	on_click = function(me, npc)
-		local match = carnival.match_by_map(me:map():wz():id())
+		local match = carnival.map_match(me:map():wz():id())
 		if match == nil then
 			return
 		end

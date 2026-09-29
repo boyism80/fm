@@ -11,7 +11,7 @@ return {
 		if map == nil then
 			return
 		end
-		local reactor = map:reactor_by_name("elevator")
+		local reactor = map:find_reactor_name("elevator")
 		if reactor ~= nil and reactor:state() == 0 then
 			me:map(map:wz():id() + 10)
 			return

@@ -108,8 +108,8 @@ type Resources struct {
 	ExpTable                []uint32
 	Shops                   map[uint32]*Shop
 	Quests                  map[uint32]*Quest
-	MCSkills                map[uint32]*MCSkill
-	MCGuardians             map[uint32]*MCGuardian
+	CarnivalSkills          map[uint32]*CarnivalSkill
+	CarnivalGuardians       map[uint32]*CarnivalGuardian
 	questsByStartFieldEnter map[uint32][]*Quest
 	questsByAutoStart       []*Quest
 }
@@ -673,18 +673,18 @@ func NewResources(wzPath string) *Resources {
 		fmt.Printf("Loaded MobSkill definitions: %d skill ids\n", len(mobSkills))
 	}
 
-	mcSkills := map[uint32]*MCSkill{}
+	mcSkills := map[uint32]*CarnivalSkill{}
 	mcSkillPath := filepath.Join(wzPath, "Skill.wz", "MCSkill.img.xml")
-	if loaded, loadErr := loadMCSkillData(mcSkillPath); loadErr != nil {
+	if loaded, loadErr := loadCarnivalSkillData(mcSkillPath); loadErr != nil {
 		log.Printf("Failed to load MCSkill.img.xml: %v", loadErr)
 	} else {
 		mcSkills = loaded
 		fmt.Printf("Loaded MCSkill definitions: %d skill ids\n", len(mcSkills))
 	}
 
-	mcGuardians := map[uint32]*MCGuardian{}
+	mcGuardians := map[uint32]*CarnivalGuardian{}
 	mcGuardianPath := filepath.Join(wzPath, "Skill.wz", "MCGuardian.img.xml")
-	if loaded, loadErr := loadMCGuardianData(mcGuardianPath); loadErr != nil {
+	if loaded, loadErr := loadCarnivalGuardianData(mcGuardianPath); loadErr != nil {
 		log.Printf("Failed to load MCGuardian.img.xml: %v", loadErr)
 	} else {
 		mcGuardians = loaded
@@ -696,25 +696,25 @@ func NewResources(wzPath string) *Resources {
 	expTable := getHardcodedExpTable()
 
 	result := &Resources{
-		mapNameToId:   make(map[string]uint32),
-		mobNameToId:   make(map[string]uint32),
-		npcNameToId:   make(map[string]uint32),
-		itemNameToId:  make(map[string]uint32),
-		skillNameToId: make(map[string]uint32),
-		Maps:          maps,
-		Monsters:      mobs,
-		Reactors:      reactors,
-		Items:         items,
-		MobDrops:      mobDrops,
-		ReactorDrops:  reactorDrops,
-		Strings:       stringData,
-		ExpTable:      expTable,
-		Skills:        skills,
-		MobSkills:     mobSkills,
-		MCSkills:      mcSkills,
-		MCGuardians:   mcGuardians,
-		Shops:         shops,
-		Quests:        quests,
+		mapNameToId:       make(map[string]uint32),
+		mobNameToId:       make(map[string]uint32),
+		npcNameToId:       make(map[string]uint32),
+		itemNameToId:      make(map[string]uint32),
+		skillNameToId:     make(map[string]uint32),
+		Maps:              maps,
+		Monsters:          mobs,
+		Reactors:          reactors,
+		Items:             items,
+		MobDrops:          mobDrops,
+		ReactorDrops:      reactorDrops,
+		Strings:           stringData,
+		ExpTable:          expTable,
+		Skills:            skills,
+		MobSkills:         mobSkills,
+		CarnivalSkills:    mcSkills,
+		CarnivalGuardians: mcGuardians,
+		Shops:             shops,
+		Quests:            quests,
 	}
 
 	result.buildNameIndexes()
@@ -747,18 +747,18 @@ func (r *Resources) GetMobSkill(skillID uint32, level uint8) *MobSkillLevelData 
 	return levels[level]
 }
 
-func (r *Resources) GetMCSkill(skillID uint32) *MCSkill {
+func (r *Resources) GetCarnivalSkill(skillID uint32) *CarnivalSkill {
 	if r == nil {
 		return nil
 	}
-	return r.MCSkills[skillID]
+	return r.CarnivalSkills[skillID]
 }
 
-func (r *Resources) GetMCGuardian(guardianID uint32) *MCGuardian {
+func (r *Resources) GetCarnivalGuardian(guardianID uint32) *CarnivalGuardian {
 	if r == nil {
 		return nil
 	}
-	return r.MCGuardians[guardianID]
+	return r.CarnivalGuardians[guardianID]
 }
 
 func (r *Resources) GetShop(npcID uint32) *Shop {

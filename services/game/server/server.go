@@ -82,6 +82,7 @@ type GameServer struct {
 	guild             *GuildContainer
 	alliance          *AllianceContainer
 	stateMachines     *StateMachineRegistry
+	carnivalRegistry  *entity.CarnivalRegistry
 	rabbitPartyPID    *actor.PID
 	rabbitBuddyPID    *actor.PID
 	rabbitGuildPID    *actor.PID
@@ -222,6 +223,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	gs.guild = NewGuildContainer(gs, config.WorldId, gs.internalClient)
 	gs.alliance = NewAllianceContainer(gs, config.WorldId, gs.internalClient)
 	gs.stateMachines = NewStateMachineRegistry(gs)
+	gs.carnivalRegistry = entity.NewCarnivalRegistry()
 
 	if config.RabbitMQ.Enabled() {
 		queueName := fmt.Sprintf("fm.game.w%d.c%d.party.events", config.WorldId, config.ChannelId)

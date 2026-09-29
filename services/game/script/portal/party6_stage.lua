@@ -26,7 +26,7 @@ return {
 				me:notice("모든 몬스터를 없애기 전에는 이동할 수 없습니다.", Msg.PinkText)
 			end
 		elseif map_id == 930000200 then
-			local spine = map:reactor_by_name("spine")
+			local spine = map:find_reactor_name("spine")
 			if spine ~= nil and spine:state() < 4 then
 				me:notice("가시 덤불이 길을 막고 있습니다.", Msg.PinkText)
 			else

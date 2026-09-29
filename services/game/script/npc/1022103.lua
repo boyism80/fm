@@ -51,7 +51,7 @@ return {
 			local map = me:map()
 			for i = 1, count do
 				sleep(3500)
-				local reactor = map:reactor_by_name(string.sub(combo, i, i))
+				local reactor = map:find_reactor_name(string.sub(combo, i, i))
 				if reactor ~= nil then
 					reactor:hit(me)
 				end

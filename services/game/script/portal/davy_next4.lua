@@ -8,10 +8,10 @@ return {
 		if map == nil then
 			return
 		end
-		local r1 = map:reactor_by_name("sMob1")
-		local r2 = map:reactor_by_name("sMob2")
-		local r3 = map:reactor_by_name("sMob3")
-		local r4 = map:reactor_by_name("sMob4")
+		local r1 = map:find_reactor_name("sMob1")
+		local r2 = map:find_reactor_name("sMob2")
+		local r3 = map:find_reactor_name("sMob3")
+		local r4 = map:find_reactor_name("sMob4")
 		local doors_ok = r1 ~= nil and r1:state() >= 1
 			and r2 ~= nil and r2:state() >= 1
 			and r3 ~= nil and r3:state() >= 1

@@ -23,7 +23,7 @@ return {
 		if map_id == 926100100 then
 			door_name = "rnj2_door"
 		end
-		local door = map:reactor_by_name(door_name)
+		local door = map:find_reactor_name(door_name)
 		local stage3 = (tonumber(sm:get_property("stage3")) or 0) + 1
 		sm:set_property("stage3", tostring(stage3))
 		if door ~= nil then

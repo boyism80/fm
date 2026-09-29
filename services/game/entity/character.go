@@ -111,6 +111,10 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	spawnBuffData := ch.GetSpawnPlayerBuffData()
+	carnivalTeam := constant.CarnivalTeamNone
+	if team := ch.CarnivalTeam(); team != nil {
+		carnivalTeam = team.TeamID
+	}
 	spawnPacket := &response.SpawnPlayer{
 		Character:         ch.ToDTO(),
 		BuffStates:        spawnBuffData.BuffStates,
@@ -126,7 +130,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		CrushRings:        RingsToDTO(ch.Inventory.Rings.Left),
 		FriendshipRings:   RingsToDTO(ch.Inventory.Rings.Mid),
 		MarriageRings:     RingsToDTO(ch.Inventory.Rings.Right),
-		Team:              ch.CarnivalTeamID(),
+		Team:              carnivalTeam,
 	}
 	if guildID, ok := ch.GetGuildID(); ok && ch.GameWorld != nil {
 		if guild := ch.GameWorld.GetGuildSystem().Get(guildID); guild != nil {

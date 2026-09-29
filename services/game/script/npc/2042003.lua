@@ -9,7 +9,7 @@ return {
 			return
 		end
 		me:notice("누군가가 나가기 엔피시를 클릭하여 모두 나가집니다.", Msg.Notice)
-		local match = carnival.match_by_map(tonumber(sm:id()))
+		local match = carnival.map_match(tonumber(sm:id()))
 		if match ~= nil then
 			match:finish()
 		end

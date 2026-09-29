@@ -9,15 +9,15 @@ import (
 	"github.com/boyism80/fm/services/game/client"
 )
 
-type MonsterCarnival struct {
+type Carnival struct {
 	gs *GameServer
 }
 
-func (MonsterCarnival) New(gs *GameServer) *MonsterCarnival {
-	return &MonsterCarnival{gs: gs}
+func (Carnival) New(gs *GameServer) *Carnival {
+	return &Carnival{gs: gs}
 }
 
-func (h *MonsterCarnival) Handle(ctx *core.ClientContext, req *request.MonsterCarnival) error {
+func (h *Carnival) Handle(ctx *core.ClientContext, req *request.Carnival) error {
 	client, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		log.Printf("Client is not a GameClient")
@@ -32,7 +32,7 @@ func (h *MonsterCarnival) Handle(ctx *core.ClientContext, req *request.MonsterCa
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
-	if !match.HandleTab(ch, req.Tab, req.Num) {
+	if !match.Summon(ch, req.Tab, req.Num) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 	}
 	return nil

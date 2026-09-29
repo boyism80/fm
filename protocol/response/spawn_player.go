@@ -122,11 +122,9 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	}
 
 	writer.WriteU8(0)
-	team := uint8(0)
 	if p.Team >= 0 {
-		team = uint8(p.Team)
+		writer.WriteU8(uint8(p.Team))
 	}
-	writer.WriteU8(team)
 	writer.WriteU8(0)
 	writer.WriteU8(0)
 	writer.WriteU8(0)

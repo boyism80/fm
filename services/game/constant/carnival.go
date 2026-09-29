@@ -7,11 +7,3 @@ const (
 	CarnivalTeamRed  CarnivalTeam = 0
 	CarnivalTeamBlue CarnivalTeam = 1
 )
-
-func AllCarnivalTeams() map[string]CarnivalTeam {
-	return map[string]CarnivalTeam{
-		"None": CarnivalTeamNone,
-		"Blue": CarnivalTeamBlue,
-		"Red":  CarnivalTeamRed,
-	}
-}

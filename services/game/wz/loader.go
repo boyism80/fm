@@ -1462,17 +1462,17 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	}
 
 	if mcNode := root.find("monsterCarnival"); mcNode != nil {
-		model.MonsterCarnival = parseMonsterCarnival(mcNode)
+		model.Carnival = parseCarnivalField(mcNode)
 	}
 
 	return &model, nil
 }
 
-func parseMonsterCarnival(root *node) *MonsterCarnival {
+func parseCarnivalField(root *node) *CarnivalField {
 	if root == nil {
 		return nil
 	}
-	mc := &MonsterCarnival{}
+	mc := &CarnivalField{}
 	if posNode := root.find("mobGenPos"); posNode != nil {
 		mc.MobGenPos = parseCarnivalPositions(posNode)
 	}
@@ -2527,7 +2527,7 @@ func calculateDefaultExp(level int) uint32 {
 	return uint32(float64(baseExp*level) * multiplier)
 }
 
-func loadMCSkillData(path string) (map[uint32]*MCSkill, error) {
+func loadCarnivalSkillData(path string) (map[uint32]*CarnivalSkill, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -2539,13 +2539,13 @@ func loadMCSkillData(path string) (map[uint32]*MCSkill, error) {
 		return nil, err
 	}
 
-	out := make(map[uint32]*MCSkill)
+	out := make(map[uint32]*CarnivalSkill)
 	for _, skillChild := range root.Children {
 		skillID, err := strconv.Atoi(skillChild.Name)
 		if err != nil {
 			continue
 		}
-		skill := &MCSkill{ID: uint32(skillID), HitChance: 100}
+		skill := &CarnivalSkill{ID: uint32(skillID), HitChance: 100}
 		target := 1
 		for _, intField := range skillChild.Ints {
 			switch intField.Name {
@@ -2588,7 +2588,7 @@ func loadMCSkillData(path string) (map[uint32]*MCSkill, error) {
 	return out, nil
 }
 
-func loadMCGuardianData(path string) (map[uint32]*MCGuardian, error) {
+func loadCarnivalGuardianData(path string) (map[uint32]*CarnivalGuardian, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -2600,13 +2600,13 @@ func loadMCGuardianData(path string) (map[uint32]*MCGuardian, error) {
 		return nil, err
 	}
 
-	out := make(map[uint32]*MCGuardian)
+	out := make(map[uint32]*CarnivalGuardian)
 	for _, guardianChild := range root.Children {
 		guardianID, err := strconv.Atoi(guardianChild.Name)
 		if err != nil {
 			continue
 		}
-		guardian := &MCGuardian{ID: uint32(guardianID)}
+		guardian := &CarnivalGuardian{ID: uint32(guardianID)}
 		for _, intField := range guardianChild.Ints {
 			switch intField.Name {
 			case "spendCP":

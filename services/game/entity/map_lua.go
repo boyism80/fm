@@ -792,7 +792,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			reactorID := uint32(L.CheckInt(2))
-			reactor := mapInstance.ReactorByTemplate(reactorID)
+			reactor := mapInstance.FindReactor(reactorID)
 			if reactor == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -800,7 +800,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, reactor))
 			return 1
 		},
-		"reactor_by_name": func(L *lua.LState) int {
+		"find_reactor_name": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)
 			if !ok {
@@ -808,7 +808,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			name := L.CheckString(2)
-			reactor := mapInstance.ReactorByName(name)
+			reactor := mapInstance.FindReactorName(name)
 			if reactor == nil {
 				L.Push(lua.LNil)
 				return 1

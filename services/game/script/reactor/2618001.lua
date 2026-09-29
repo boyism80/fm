@@ -4,7 +4,7 @@ local rnj32_out_hit, on_reactor
 
 return {
 	rnj32_out_hit = function(map, reactor_name)
-		local reactor = map:reactor_by_name(reactor_name)
+		local reactor = map:find_reactor_name(reactor_name)
 		if reactor == nil then
 			return false
 		end

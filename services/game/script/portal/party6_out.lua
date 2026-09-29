@@ -12,7 +12,7 @@ return {
 		end
 		local empty = pq.mob_count(map) == 0
 		local has_golem = pq.mob_count(map, 9300183) > 0
-		local reactor = map:reactor_by_name("")
+		local reactor = map:find_reactor_name("")
 		local reactor_ok = reactor == nil or reactor:state() == 1
 		if (empty or has_golem) and reactor_ok then
 			local code = me:exchange({}, {

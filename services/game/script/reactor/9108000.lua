@@ -35,7 +35,7 @@ return {
 		end
 		local stage = (tonumber(group:get_property("stage")) or 0) + 1
 		group:set_property("stage", tostring(stage))
-		local moon = map:reactor_by_name("fullmoon")
+		local moon = map:find_reactor_name("fullmoon")
 		if moon ~= nil then
 			moon:hit(moon:state() + 1)
 		end

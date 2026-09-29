@@ -6,25 +6,25 @@ import (
 )
 
 type CarnivalStart struct {
-	Team        constant.CarnivalTeam
-	PersAvail   uint16
-	PersTotal   uint16
-	FriendAvail uint16
-	FriendTotal uint16
-	EnemyAvail  uint16
-	EnemyTotal  uint16
+	Team                constant.CarnivalTeam
+	PersonalAvailableCP uint16
+	PersonalTotalCP     uint16
+	TeamAvailableCP     uint16
+	TeamTotalCP         uint16
+	EnemyAvailableCP    uint16
+	EnemyTotalCP        uint16
 }
 
 func (p *CarnivalStart) Opcode() uint16 { return 0xDB }
 
 func (p *CarnivalStart) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(p.Team))
-	writer.WriteU16(p.PersAvail)
-	writer.WriteU16(p.PersTotal)
-	writer.WriteU16(p.FriendAvail)
-	writer.WriteU16(p.FriendTotal)
-	writer.WriteU16(p.EnemyAvail)
-	writer.WriteU16(p.EnemyTotal)
+	writer.WriteU16(p.PersonalAvailableCP)
+	writer.WriteU16(p.PersonalTotalCP)
+	writer.WriteU16(p.TeamAvailableCP)
+	writer.WriteU16(p.TeamTotalCP)
+	writer.WriteU16(p.EnemyAvailableCP)
+	writer.WriteU16(p.EnemyTotalCP)
 	writer.WriteU64(0)
 	writer.WriteU16(0)
 	return nil

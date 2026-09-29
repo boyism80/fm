@@ -154,11 +154,7 @@ func (m *Map) SpawnReactor(reactorSpawn *ReactorSpawn) (*Reactor, error) {
 	return reactor, nil
 }
 
-func (m *Map) SpawnReactorAt(reactorID uint32, pos types.Point[int16]) (*Reactor, error) {
-	return m.SpawnReactorAtNamed(reactorID, pos, "")
-}
-
-func (m *Map) SpawnReactorAtNamed(reactorID uint32, pos types.Point[int16], name string) (*Reactor, error) {
+func (m *Map) SpawnReactorTemplate(reactorID uint32, pos types.Point[int16], name string) (*Reactor, error) {
 	if m == nil || m.GameWorld == nil {
 		return nil, fmt.Errorf("map is nil")
 	}
@@ -243,7 +239,7 @@ func (m *Map) ReloadReactors() int {
 	return count
 }
 
-func (m *Map) ReactorByTemplate(reactorID uint32) *Reactor {
+func (m *Map) FindReactor(reactorID uint32) *Reactor {
 	if m == nil {
 		return nil
 	}
@@ -259,7 +255,7 @@ func (m *Map) ReactorByTemplate(reactorID uint32) *Reactor {
 	return nil
 }
 
-func (m *Map) ReactorByName(name string) *Reactor {
+func (m *Map) FindReactorName(name string) *Reactor {
 	if m == nil || name == "" {
 		return nil
 	}

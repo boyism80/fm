@@ -16,7 +16,7 @@ return {
 		end
 		local status = tonumber(sm:get_property("status")) or 0
 		sm:set_property("status", tostring(status + 1))
-		local minerva = map:reactor_by_name("minerva")
+		local minerva = map:find_reactor_name("minerva")
 		if minerva ~= nil then
 			minerva:hit(minerva:state() + 1)
 		end

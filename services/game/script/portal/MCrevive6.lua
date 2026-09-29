@@ -4,7 +4,7 @@ return {
 		if map == nil or map:wz() == nil then
 			return
 		end
-		local match = carnival.match_by_map(map:wz():id())
+		local match = carnival.map_match(map:wz():id())
 		if match == nil then
 			return
 		end

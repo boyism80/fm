@@ -479,8 +479,10 @@ func (m *Mob) TakeDamage(attacker *Character, amount uint32) bool {
 	if amount == 0 || m.GetHp() == 0 {
 		return false
 	}
-	if attacker != nil && m.CarnivalTeam != constant.CarnivalTeamNone && attacker.CarnivalTeamID() == m.CarnivalTeam {
-		return false
+	if attacker != nil && m.CarnivalTeam != constant.CarnivalTeamNone {
+		if team := attacker.CarnivalTeam(); team != nil && team.TeamID == m.CarnivalTeam {
+			return false
+		}
 	}
 
 	if attacker != nil && attacker.GetInstantKill() {
@@ -621,8 +623,8 @@ func (m *Mob) Kill(attacker *Character, dieAnim constant.MobDieAnimationType) bo
 	return m.onDead(attacker, dieAnim)
 }
 
-func (m *Mob) removeAfterDieAnimation() constant.MobDieAnimationType {
-	if m == nil || m.Wz == nil || m.Wz.SelfDestructionAction < 0 {
+func (m *Mob) dieAnimation() constant.MobDieAnimationType {
+	if m.Wz == nil || m.Wz.SelfDestructionAction < 0 {
 		return constant.MobDieAnimationTypeFadeOut
 	}
 	return constant.MobDieAnimationType(m.Wz.SelfDestructionAction)

@@ -10,105 +10,76 @@ import (
 	"github.com/boyism80/fm/types"
 )
 
-func (m *CarnivalMatch) HandleTab(ch *Character, tab uint8, num int32) bool {
-	if m == nil || ch == nil {
-		return false
-	}
+func (m *CarnivalMatch) Summon(ch *Character, tab uint8, num int32) bool {
 	if m.GetState() != CarnivalStateBattle {
 		return false
 	}
-	team := m.TeamOf(ch)
-	if team == nil {
-		return false
-	}
+	team := m.FindTeam(ch)
 	mapInstance := ch.GetMap()
-	if mapInstance == nil || mapInstance.Wz == nil || mapInstance.Wz.MonsterCarnival == nil {
-		return false
-	}
-	mc := mapInstance.Wz.MonsterCarnival
 	gw := m.gameWorld()
-	if gw == nil {
+	if team == nil || mapInstance == nil || mapInstance.Wz == nil || mapInstance.Wz.Carnival == nil || gw == nil {
 		return false
 	}
 	resources := gw.GetResources()
 	if resources == nil {
 		return false
 	}
+	mc := mapInstance.Wz.Carnival
 
 	switch tab {
 	case 0:
 		idx := int(num)
-		if idx < 0 || idx >= len(mc.Mobs) {
-			return false
+		if idx >= 0 && idx < len(mc.Mobs) {
+			entry := mc.Mobs[idx]
+			pos, posOK := m.pickGenPos(mc.MobGenPos, team.TeamID, mapInstance, true)
+			personal := team.PersonalCP(ch.GetID())
+			if entry.SpendCP > 0 && posOK && personal != nil && personal.AvailableCP >= entry.SpendCP && team.AvailableCP >= entry.SpendCP {
+				mob, err := mapInstance.SpawnMob(entry.ID, pos, nil, constant.MobSpawnTypeNone, 0)
+				if err == nil && mob != nil && team.UseCP(ch, entry.SpendCP) {
+					mob.CarnivalTeam = team.TeamID
+					ch.Listener.OnCarnivalSummon(ch, tab, uint8(idx), ch.GetName())
+					return true
+				}
+			}
 		}
-		entry := mc.Mobs[idx]
-		if entry.SpendCP <= 0 || !team.UseCP(ch, entry.SpendCP) {
-			return false
-		}
-		pos, ok := pickCarnivalGenPos(mc.MobGenPos, team.TeamID, mapInstance, true)
-		if !ok {
-			return false
-		}
-		spawned, err := mapInstance.SpawnMob(entry.ID, pos, nil, constant.MobSpawnTypeNone, 0)
-		if err != nil || spawned == nil {
-			return false
-		}
-		spawned.CarnivalTeam = team.TeamID
-		ch.Listener.OnCarnivalSummon(ch, tab, uint8(idx), ch.GetName())
-		return true
+		return false
 	case 1:
 		idx := int(num)
-		if idx < 0 || idx >= len(mc.Skills) {
-			return false
+		if idx >= 0 && idx < len(mc.Skills) {
+			entry := mc.Skills[idx]
+			skillDef := resources.GetCarnivalSkill(entry.ID)
+			if skillDef != nil {
+				spend := entry.SpendCP
+				if spend <= 0 {
+					spend = skillDef.SpendCP
+				}
+				enemy := m.enemyTeam(team.TeamID)
+				personal := team.PersonalCP(ch.GetID())
+				if spend > 0 && enemy != nil && personal != nil && personal.AvailableCP >= spend && team.AvailableCP >= spend && m.debuffEnemies(gw, resources, enemy, entry.ID, skillDef) && team.UseCP(ch, spend) {
+					ch.Listener.OnCarnivalSummon(ch, tab, uint8(idx), ch.GetName())
+					return true
+				}
+			}
 		}
-		entry := mc.Skills[idx]
-		skillDef := resources.GetMCSkill(entry.ID)
-		if skillDef == nil {
-			return false
-		}
-		spend := entry.SpendCP
-		if spend <= 0 {
-			spend = skillDef.SpendCP
-		}
-		if spend <= 0 {
-			return false
-		}
-		enemy := m.enemyTeam(team.TeamID)
-		if enemy == nil {
-			return false
-		}
-		if !m.debuffEnemies(gw, resources, enemy, entry.ID, skillDef) {
-			return false
-		}
-		if !team.UseCP(ch, spend) {
-			return false
-		}
-		ch.Listener.OnCarnivalSummon(ch, tab, uint8(idx), ch.GetName())
-		return true
+		return false
 	case 2:
-		guardianDef := resources.GetMCGuardian(uint32(num))
-		if guardianDef == nil {
-			return false
+		guardianDef := resources.GetCarnivalGuardian(uint32(num))
+		if guardianDef != nil && guardianDef.SpendCP > 0 {
+			personal := team.PersonalCP(ch.GetID())
+			reactorName := fmt.Sprintf("%d%d", team.TeamID, num)
+			existing := mapInstance.FindReactorName(reactorName)
+			pos, posOK := m.pickGenPos(mc.GuardianGenPos, team.TeamID, mapInstance, false)
+			if personal != nil && personal.AvailableCP >= guardianDef.SpendCP && team.AvailableCP >= guardianDef.SpendCP && (existing == nil || existing.State >= 5) && posOK {
+				reactorID := 9980000 + uint32(team.TeamID)
+				reactor, err := mapInstance.SpawnReactorTemplate(reactorID, pos, reactorName)
+				if err == nil && reactor != nil && team.UseCP(ch, guardianDef.SpendCP) {
+					m.buffAllyMobs(mapInstance, team.TeamID, resources, guardianDef.MobSkillID, guardianDef.Level)
+					ch.Listener.OnCarnivalSummon(ch, tab, uint8(num), ch.GetName())
+					return true
+				}
+			}
 		}
-		if guardianDef.SpendCP <= 0 || !team.UseCP(ch, guardianDef.SpendCP) {
-			return false
-		}
-		reactorName := fmt.Sprintf("%d%d", team.TeamID, num)
-		if existing := mapInstance.ReactorByName(reactorName); existing != nil && existing.State < 5 {
-			return false
-		}
-		pos, ok := pickCarnivalGenPos(mc.GuardianGenPos, team.TeamID, mapInstance, false)
-		if !ok {
-			return false
-		}
-		reactorID := 9980000 + uint32(team.TeamID)
-		spawned, err := mapInstance.SpawnReactorAtNamed(reactorID, pos, reactorName)
-		if err != nil || spawned == nil {
-			return false
-		}
-		m.buffAllyMobs(mapInstance, team.TeamID, resources, guardianDef.MobSkillID, guardianDef.Level)
-		ch.Listener.OnCarnivalSummon(ch, tab, uint8(num), ch.GetName())
-		return true
+		return false
 	default:
 		return false
 	}
@@ -121,8 +92,8 @@ func (m *CarnivalMatch) enemyTeam(teamID constant.CarnivalTeam) *CarnivalTeam {
 	return m.Team(constant.CarnivalTeamRed)
 }
 
-func (m *CarnivalMatch) debuffEnemies(gw GameWorld, resources *wz.Resources, enemy *CarnivalTeam, catalogID uint32, skillDef *wz.MCSkill) bool {
-	if m == nil || enemy == nil || resources == nil || skillDef == nil {
+func (m *CarnivalMatch) debuffEnemies(gw GameWorld, resources *wz.Resources, enemy *CarnivalTeam, catalogID uint32, skillDef *wz.CarnivalSkill) bool {
+	if enemy == nil || resources == nil || skillDef == nil {
 		return false
 	}
 	targets := enemy.Members(gw)
@@ -132,7 +103,7 @@ func (m *CarnivalMatch) debuffEnemies(gw GameWorld, resources *wz.Resources, ene
 	rand.Shuffle(len(targets), func(i, j int) {
 		targets[i], targets[j] = targets[j], targets[i]
 	})
-	chance := GlobalCarnivalRegistry().SkillHitChance(catalogID, skillDef.HitChance)
+	chance := m.registry.SkillHitChance(catalogID, skillDef.HitChance)
 	if !skillDef.TargetsAll {
 		targets = targets[:1]
 	}
@@ -157,7 +128,7 @@ func (m *CarnivalMatch) buffAllyMobs(mapInstance *Map, teamID constant.CarnivalT
 	if levelData == nil {
 		return
 	}
-	flag, ok := carnivalMobSkillBuffFlag(skillID)
+	flag, ok := m.mobSkillBuffFlag(skillID)
 	if !ok {
 		return
 	}
@@ -174,7 +145,7 @@ func (m *CarnivalMatch) buffAllyMobs(mapInstance *Map, teamID constant.CarnivalT
 	}
 }
 
-func carnivalMobSkillBuffFlag(skillID uint32) (constant.MobBuffFlag, bool) {
+func (m *CarnivalMatch) mobSkillBuffFlag(skillID uint32) (constant.MobBuffFlag, bool) {
 	switch skillID {
 	case 100, 110, 150:
 		return constant.MobBuffWeaponAttackUp, true
@@ -199,7 +170,7 @@ func carnivalMobSkillBuffFlag(skillID uint32) (constant.MobBuffFlag, bool) {
 	}
 }
 
-func pickCarnivalGenPos(gens []wz.CarnivalGenPos, teamID constant.CarnivalTeam, mapInstance *Map, checkMobOccupancy bool) (types.Point[int16], bool) {
+func (m *CarnivalMatch) pickGenPos(gens []wz.CarnivalGenPos, teamID constant.CarnivalTeam, mapInstance *Map, checkMobOccupancy bool) (types.Point[int16], bool) {
 	if len(gens) == 0 || mapInstance == nil {
 		return types.Point[int16]{}, false
 	}
@@ -208,7 +179,7 @@ func pickCarnivalGenPos(gens []wz.CarnivalGenPos, teamID constant.CarnivalTeam, 
 		if gen.Team != -1 && gen.Team != int(teamID) {
 			continue
 		}
-		if checkMobOccupancy && carnivalGenPosOccupied(mapInstance, gen.Pos, teamID) {
+		if checkMobOccupancy && m.genPosOccupied(mapInstance, gen.Pos, teamID) {
 			continue
 		}
 		candidates = append(candidates, gen.Pos)
@@ -219,7 +190,7 @@ func pickCarnivalGenPos(gens []wz.CarnivalGenPos, teamID constant.CarnivalTeam, 
 	return candidates[rand.Intn(len(candidates))], true
 }
 
-func carnivalGenPosOccupied(mapInstance *Map, pos types.Point[int16], teamID constant.CarnivalTeam) bool {
+func (m *CarnivalMatch) genPosOccupied(mapInstance *Map, pos types.Point[int16], teamID constant.CarnivalTeam) bool {
 	for _, obj := range mapInstance.GetMobs() {
 		mob, ok := obj.(*Mob)
 		if !ok || mob == nil {
@@ -255,34 +226,4 @@ func (m *CarnivalMatch) giveDebuff(resources *wz.Resources, target *Character, s
 		}
 	}
 	return false
-}
-
-func (ch *Character) PickupCarnivalItem(wzConsume *wz.Consume) bool {
-	if ch == nil || wzConsume == nil {
-		return false
-	}
-	match := ch.CarnivalMatch()
-	if match == nil {
-		return false
-	}
-	team := match.TeamOf(ch)
-	if team == nil {
-		return false
-	}
-	if wzConsume.CP > 0 {
-		team.AddCP(ch, wzConsume.CP)
-	}
-	if wzConsume.NuffSkillID > 0 {
-		resources := ch.GameWorld.GetResources()
-		if resources != nil {
-			skillDef := resources.GetMCSkill(wzConsume.NuffSkillID)
-			if skillDef != nil {
-				enemy := match.enemyTeam(team.TeamID)
-				if enemy != nil {
-					match.debuffEnemies(ch.GameWorld, resources, enemy, wzConsume.NuffSkillID, skillDef)
-				}
-			}
-		}
-	}
-	return true
 }

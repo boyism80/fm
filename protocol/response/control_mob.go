@@ -37,8 +37,8 @@ func (p *StartControlMob) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(p.Mob.Stance)
 	writer.WriteU16(0)
 	writer.Write16(p.Mob.Foothold)
-	writer.Write8(int8(p.Mob.CarnivalTeam))
 	writer.Write8(-1)
+	writer.Write8(int8(p.Mob.CarnivalTeam))
 	writer.WriteU32(0)
 	return nil
 }

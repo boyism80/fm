@@ -300,7 +300,7 @@ local function handle_stage6(me, npc, sm, map)
 	end
 	local cur = ""
 	for i = 1, 5 do
-		local lever = map:reactor_by_name(tostring(i))
+		local lever = map:find_reactor_name(tostring(i))
 		local state = 0
 		if lever ~= nil then
 			state = lever:state()

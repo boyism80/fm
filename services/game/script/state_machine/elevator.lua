@@ -20,7 +20,7 @@ local function close_door(map)
 	if map == nil then
 		return
 	end
-	local r = map:reactor_by_name("elevator")
+	local r = map:find_reactor_name("elevator")
 	if r ~= nil then
 		r:hit(1)
 	end

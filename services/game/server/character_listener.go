@@ -1484,13 +1484,13 @@ func (l *CharacterListenerImpl) OnSummonDamaged(ch *entity.Character, summon *en
 
 func (l *CharacterListenerImpl) OnCarnivalStart(ch *entity.Character, team constant.CarnivalTeam, persAvail, persTotal, friendAvail, friendTotal, enemyAvail, enemyTotal int) {
 	ch.Send(&response.CarnivalStart{
-		Team:        team,
-		PersAvail:   uint16(persAvail),
-		PersTotal:   uint16(persTotal),
-		FriendAvail: uint16(friendAvail),
-		FriendTotal: uint16(friendTotal),
-		EnemyAvail:  uint16(enemyAvail),
-		EnemyTotal:  uint16(enemyTotal),
+		Team:                team,
+		PersonalAvailableCP: uint16(persAvail),
+		PersonalTotalCP:     uint16(persTotal),
+		TeamAvailableCP:     uint16(friendAvail),
+		TeamTotalCP:         uint16(friendTotal),
+		EnemyAvailableCP:    uint16(enemyAvail),
+		EnemyTotalCP:        uint16(enemyTotal),
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

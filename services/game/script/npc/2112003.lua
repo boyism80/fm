@@ -81,7 +81,7 @@ local function handle_hub(me, npc, sm, map)
 		map:kill_all_mobs()
 		pq.party_exp(sm, 10000)
 		sm:set_property("stage4", "2")
-		local door = map:reactor_by_name("jnr3_out3")
+		local door = map:find_reactor_name("jnr3_out3")
 		if door ~= nil then
 			door:hit(1)
 		end

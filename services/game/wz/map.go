@@ -58,7 +58,7 @@ type Map struct {
 	ReactorSpawns     map[uint32]ReactorSpawn
 	Areas             []types.Rect[int16]
 	Footholds         *types.QuadTreeNode[int16, Foothold]
-	MonsterCarnival   *MonsterCarnival
+	Carnival          *CarnivalField
 	doorReturnPortals []Portal
 }
 
