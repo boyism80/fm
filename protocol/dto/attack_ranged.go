@@ -20,9 +20,7 @@ func (a *RangedAttackInfo) Deserialize(sr *stream.StreamReader) {
 	a.CsStar = sr.ReadU16()
 	a.AOE = sr.ReadU8()
 	a.Damages = a.AttackHeader.parseNormalDamages(sr, 14)
-	if sr.Remaining() >= 4 {
-		a.Position = types.Vector2[int16]{X: sr.Read16(), Y: sr.Read16()}
-	}
+	a.Position = types.Vector2[int16]{X: sr.Read16(), Y: sr.Read16()}
 }
 
 func (a RangedAttackInfo) ToAttackInfo() AttackInfo {

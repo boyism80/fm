@@ -29,10 +29,14 @@ func (p *Dialog) Deserialize(reader *stream.StreamReader) {
 	case constant.DialogTypeYesNo:
 
 	case constant.DialogTypeList:
-		p.Selected = reader.ReadU32()
+		if p.Next {
+			p.Selected = reader.ReadU32()
+		}
 
 	case constant.DialogTypeInput:
-		p.Text = reader.ReadStr16()
+		if p.Next {
+			p.Text = reader.ReadStr16()
+		}
 
 	case constant.DialogTypeAcceptEscape:
 	case constant.DialogTypeAccept:

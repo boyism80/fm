@@ -24,9 +24,6 @@ func (p *UseInnerPortal) Deserialize(reader *stream.StreamReader) {
 	p.PortalName = reader.ReadStr16()
 	p.ToX = reader.Read16()
 	p.ToY = reader.Read16()
-
-	if reader.Remaining() >= 4 {
-		p.FromX = reader.Read16()
-		p.FromY = reader.Read16()
-	}
+	p.FromX = reader.Read16()
+	p.FromY = reader.Read16()
 }

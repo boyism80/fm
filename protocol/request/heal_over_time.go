@@ -18,10 +18,7 @@ func (p *HealOverTime) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *HealOverTime) Deserialize(reader *stream.StreamReader) {
-	if reader.Remaining() >= 8 {
-		reader.Skip(4)
-	}
-
+	reader.Skip(4)
 	p.HealHP = reader.ReadU16()
 	p.HealMP = reader.ReadU16()
 	p.PRate = reader.ReadU8()

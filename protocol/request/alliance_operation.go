@@ -37,9 +37,7 @@ func (p *AllianceOperation) Deserialize(reader *stream.StreamReader) {
 
 	case constant.AllianceC2SExpel:
 		p.TargetGuildID = reader.ReadU32()
-		if reader.Remaining() >= 4 {
-			p.AllianceID = reader.ReadU32()
-		}
+		p.AllianceID = reader.ReadU32()
 
 	case constant.AllianceC2SChangeLeader:
 		p.NewLeaderID = reader.ReadU32()

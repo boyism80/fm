@@ -30,11 +30,6 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 	}
 	kl := ch.KeyLayout()
 
-	if len(req.Changes) == 0 {
-		_, _ = req.Type, req.Data
-		return nil
-	}
-
 	for _, c := range req.Changes {
 		if !h.allowBinding(ch, c.Type, c.Action) {
 			continue

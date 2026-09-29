@@ -14,9 +14,7 @@ type MagicAttackInfo struct {
 func (a *MagicAttackInfo) Deserialize(sr *stream.StreamReader) {
 	a.AttackHeader.deserialize(sr)
 	a.Damages = a.AttackHeader.parseNormalDamages(sr, 14)
-	if sr.Remaining() >= 4 {
-		a.Position = types.Vector2[int16]{X: sr.Read16(), Y: sr.Read16()}
-	}
+	a.Position = types.Vector2[int16]{X: sr.Read16(), Y: sr.Read16()}
 }
 
 func (a MagicAttackInfo) ToAttackInfo() AttackInfo {

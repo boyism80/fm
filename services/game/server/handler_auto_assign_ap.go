@@ -34,44 +34,36 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 		return fmt.Errorf("character is nil")
 	}
 
-	if req.Amount == 0 && req.Amount2 == 0 {
-		return nil
+	totalAmount := uint32(0)
+	for _, entry := range req.Entries {
+		if int32(entry.Amount) < 0 {
+			return nil
+		}
+		totalAmount += entry.Amount
 	}
-
-	if int32(req.Amount) < 0 || int32(req.Amount2) < 0 {
+	if totalAmount == 0 {
 		return nil
 	}
 
 	stats := map[constant.Stat]int32{}
 	character.Listener.OnUpdateStats(character, stats, true)
 
-	totalAmount := req.Amount + req.Amount2
 	if character.AbilityPoint != uint16(totalAmount) {
 		return nil
 	}
 
 	statUpdate := map[constant.Stat]int32{}
-	success := true
-
-	if !h.processStat(character, req.PrimaryStat, req.Amount, &statUpdate) {
-
-		character.Listener.OnUpdateStats(character, stats, true)
-		return nil
+	for _, entry := range req.Entries {
+		if !h.processStat(character, entry.Stat, entry.Amount, &statUpdate) {
+			character.Listener.OnUpdateStats(character, stats, true)
+			return nil
+		}
 	}
 
-	if !h.processStat(character, req.SecondaryStat, req.Amount2, &statUpdate) {
+	character.AbilityPoint = character.AbilityPoint - uint16(totalAmount)
+	statUpdate[constant.StatAvailableAP] = int32(character.AbilityPoint)
 
-		character.Listener.OnUpdateStats(character, stats, true)
-		return nil
-	}
-
-	if success {
-
-		character.AbilityPoint = character.AbilityPoint - uint16(totalAmount)
-		statUpdate[constant.StatAvailableAP] = int32(character.AbilityPoint)
-
-		character.Listener.OnUpdateStats(character, statUpdate, true)
-	}
+	character.Listener.OnUpdateStats(character, statUpdate, true)
 
 	return nil
 }

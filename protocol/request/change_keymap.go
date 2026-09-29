@@ -5,11 +5,9 @@ import (
 )
 
 type ChangeKeymap struct {
-	Skip       int32
-	NumChanges int32
-	Changes    []KeymapChange
+	Mode    int32
+	Changes []KeymapChange
 
-	Type int32
 	Data int32
 }
 
@@ -26,18 +24,18 @@ func (c *ChangeKeymap) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (c *ChangeKeymap) Deserialize(reader *stream.StreamReader) {
-	available := reader.Remaining()
-	if available > 8 {
-		c.Skip = reader.Read32()
-		c.NumChanges = reader.Read32()
-		c.Changes = make([]KeymapChange, c.NumChanges)
-		for i := int32(0); i < c.NumChanges; i++ {
-			c.Changes[i].Key = reader.Read32()
-			c.Changes[i].Type = reader.ReadU8()
-			c.Changes[i].Action = reader.Read32()
-		}
-	} else {
-		c.Type = reader.Read32()
+	c.Mode = reader.Read32()
+	if c.Mode != 0 {
 		c.Data = reader.Read32()
+		return
+	}
+
+	count := reader.Read32()
+	for range count {
+		c.Changes = append(c.Changes, KeymapChange{
+			Key:    reader.Read32(),
+			Type:   reader.ReadU8(),
+			Action: reader.Read32(),
+		})
 	}
 }
