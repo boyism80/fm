@@ -53,50 +53,16 @@ func (h *GuildOperation) resumeGuildCreate(ch *entity.Character, result gamecons
 	}
 }
 
-func (h *GuildOperation) inviterCanInvite(characterID, guildID uint32) bool {
-	if characterID == 0 {
-		return false
+func (h *GuildOperation) applyGuildFromProto(ch *entity.Character, guildPb *internal.Guild) {
+	if h == nil || h.gs == nil || ch == nil || guildPb == nil {
+		return
 	}
-	g := h.gs.GetGuildSystem().Get(guildID)
-	if g == nil {
-		return false
-	}
-	for _, m := range g.GetMembers() {
-		if m == nil || m.GetCharacterId() != characterID {
-			continue
-		}
-		rank := m.GetRank()
-		if rank == internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
-			return true
-		}
-		if rank == internal.GuildMemberRank_GUILD_MEMBER_RANK_JUNIOR {
-			return true
-		}
-		return false
-	}
-	return false
-}
-
-func (h *GuildOperation) isGuildMaster(characterID, guildID uint32) bool {
-	if characterID == 0 {
-		return false
-	}
-	g := h.gs.GetGuildSystem().Get(guildID)
-	if g == nil {
-		return false
-	}
-	return g.IsGuildMaster(characterID)
-}
-
-func (h *GuildOperation) isOnGuildEmblemMap(ch *entity.Character) bool {
-	if ch == nil {
-		return false
-	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil || mapInstance.Wz == nil {
-		return false
-	}
-	return uint32(mapInstance.Wz.ID) == gameconst.GuildEmblemMapID
+	guildID := guildPb.GetGuildId()
+	id := guildID
+	ch.SetGuildID(&id)
+	h.gs.guild.Update(guildPb)
+	ch.Listener.OnShowGuildInfo(ch)
+	ch.Listener.OnBroadcastGuildAppearance(ch)
 }
 
 type guildEmblemChangePayment struct {
@@ -104,34 +70,7 @@ type guildEmblemChangePayment struct {
 	mesoSpent    int32
 }
 
-func (h *GuildOperation) canPayGuildCreateCost(ch *entity.Character) bool {
-	if ch == nil {
-		return false
-	}
-	return ch.Inventory.Meso >= gameconst.GuildCreateMesoCost
-}
-
-func (h *GuildOperation) chargeGuildCreateCost(ch *entity.Character) {
-	if ch == nil {
-		return
-	}
-	ch.Inventory.RemoveMeso(gameconst.GuildCreateMesoCost)
-}
-
-func (h *GuildOperation) canPayGuildEmblemChangeCost(ch *entity.Character) bool {
-	if ch == nil {
-		return false
-	}
-	if ch.Inventory.HasItem(gameconst.GuildEmblemChangeCashItemID) {
-		return true
-	}
-	return ch.Inventory.Meso >= gameconst.GuildEmblemChangeMesoCost
-}
-
 func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *entity.Character) (guildEmblemChangePayment, bool) {
-	if ch == nil {
-		return guildEmblemChangePayment{}, false
-	}
 	if ch.Inventory.HasItem(gameconst.GuildEmblemChangeCashItemID) {
 		if !ch.Inventory.RemoveByItemIDCount(gameconst.GuildEmblemChangeCashItemID, 1) {
 			return guildEmblemChangePayment{}, false
@@ -146,9 +85,6 @@ func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *entity.Character) (guil
 }
 
 func (h *GuildOperation) refundGuildEmblemChangeCost(ch *entity.Character, payment guildEmblemChangePayment) {
-	if ch == nil {
-		return
-	}
 	if payment.usedCashItem {
 		item, err := entity.NewItem(gameconst.GuildEmblemChangeCashItemID, 1, h.gs)
 		if err != nil {
@@ -163,18 +99,6 @@ func (h *GuildOperation) refundGuildEmblemChangeCost(ch *entity.Character, payme
 	if payment.mesoSpent > 0 {
 		ch.Inventory.AddMeso(payment.mesoSpent)
 	}
-}
-
-func (h *GuildOperation) applyGuildFromProto(ch *entity.Character, guildPb *internal.Guild) {
-	if h == nil || h.gs == nil || ch == nil || guildPb == nil {
-		return
-	}
-	guildID := guildPb.GetGuildId()
-	id := guildID
-	ch.SetGuildID(&id)
-	h.gs.guild.Update(guildPb)
-	ch.Listener.OnShowGuildInfo(ch)
-	ch.Listener.OnBroadcastGuildAppearance(ch)
 }
 
 func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOperation) error {
@@ -206,11 +130,12 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultAlreadyInGuild)
 			return nil
 		}
-		if !h.isOnGuildEmblemMap(ch) {
+		mapInstance := ch.GetMap()
+		if mapInstance == nil || mapInstance.Wz == nil || uint32(mapInstance.Wz.ID) != gameconst.GuildEmblemMapID {
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultNotAllowed)
 			return nil
 		}
-		if !h.canPayGuildCreateCost(ch) {
+		if ch.Inventory.Meso < gameconst.GuildCreateMesoCost {
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultInsufficientMeso)
 			return nil
 		}
@@ -242,7 +167,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				return nil
 			}
 			h.applyGuildFromProto(ch, guildPb)
-			h.chargeGuildCreateCost(ch)
+			ch.Inventory.RemoveMeso(gameconst.GuildCreateMesoCost)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultOK)
 			return nil
 		})
@@ -253,7 +178,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		return nil
 	case pconst.GuildC2SInvite:
 		guildID, inGuild := ch.GetGuildID()
-		if !inGuild || !h.inviterCanInvite(charID, guildID) {
+		g := h.gs.GetGuildSystem().Get(guildID)
+		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
 		targetName := req.TargetName
@@ -263,7 +189,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if h.gs.characterRuntime == nil {
 			return nil
 		}
-		targetID, ok := h.gs.characterRuntime.GetCharacterIDByName(targetName)
+		targetID, ok := h.gs.characterRuntime.NameToCharacterID(targetName)
 		if !ok || targetID == 0 {
 			_ = ch.Send(&response.GuildMessage{
 				Code: pconst.GuildResponseNotInChannel,
@@ -384,7 +310,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 		guildID, inGuild := ch.GetGuildID()
-		if !inGuild || !h.inviterCanInvite(charID, guildID) {
+		g := h.gs.GetGuildSystem().Get(guildID)
+		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
 		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
@@ -412,7 +339,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		return nil
 	case pconst.GuildC2SChangeRankTitles:
 		guildID, inGuild := ch.GetGuildID()
-		if !inGuild || !h.isGuildMaster(charID, guildID) {
+		g := h.gs.GetGuildSystem().Get(guildID)
+		if !inGuild || g == nil || !g.IsGuildMaster(charID) {
 			return nil
 		}
 		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
@@ -453,10 +381,11 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 		guildID, inGuild := ch.GetGuildID()
-		if !inGuild || !h.inviterCanInvite(charID, guildID) {
+		g := h.gs.GetGuildSystem().Get(guildID)
+		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
-		if newRank <= 2 && !h.isGuildMaster(charID, guildID) {
+		if newRank <= 2 && !g.IsGuildMaster(charID) {
 			return nil
 		}
 		protoRank := internal.GuildMemberRank(newRank)
@@ -486,11 +415,10 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		return nil
 	case pconst.GuildC2SChangeEmblem:
 		guildID, inGuild := ch.GetGuildID()
-		if !inGuild || !h.isGuildMaster(charID, guildID) || !h.isOnGuildEmblemMap(ch) {
-			return nil
-		}
-		if !h.canPayGuildEmblemChangeCost(ch) {
-			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildEmblemChangeInsufficientCostMessage)
+		g := h.gs.GetGuildSystem().Get(guildID)
+		mapInstance := ch.GetMap()
+		if !inGuild || g == nil || !g.IsGuildMaster(charID) ||
+			mapInstance == nil || mapInstance.Wz == nil || uint32(mapInstance.Wz.ID) != gameconst.GuildEmblemMapID {
 			return nil
 		}
 		payment, paid := h.chargeGuildEmblemChangeCost(ch)
@@ -528,7 +456,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		return nil
 	case pconst.GuildC2SChangeNotice:
 		guildID, inGuild := ch.GetGuildID()
-		if !inGuild || !h.inviterCanInvite(charID, guildID) {
+		g := h.gs.GetGuildSystem().Get(guildID)
+		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
 		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)

@@ -214,22 +214,18 @@ func (pc *PartyContainer) Sync(party *entity.Party) {
 	}
 }
 
-func (pc *PartyContainer) ClearCharacterPartyID(characterID uint32) {
-	if pc == nil || characterID == 0 || pc.gs == nil {
-		return
-	}
-	pc.gs.EnsureSend(nil, characterID, &g_actor.SyncCharacterPartyState{
-		CharacterID: characterID,
-		PartyID:     nil,
-	})
-}
-
 func (pc *PartyContainer) ClearPartyMembers(memberIDs []uint32) {
 	if pc == nil || len(memberIDs) == 0 || pc.gs == nil {
 		return
 	}
 	for _, cid := range memberIDs {
-		pc.ClearCharacterPartyID(cid)
+		if cid == 0 {
+			continue
+		}
+		pc.gs.EnsureSend(nil, cid, &g_actor.SyncCharacterPartyState{
+			CharacterID: cid,
+			PartyID:     nil,
+		})
 	}
 }
 

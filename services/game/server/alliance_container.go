@@ -287,10 +287,31 @@ func (ac *AllianceContainer) ValidateCreateAlliance(ch *entity.Character) (uint3
 	if _, inAlliance := leaderGuild.GetAllianceID(); inAlliance {
 		return 0, false
 	}
-	partnerID, ok := ac.partyPartnerCharacterID(ch)
-	if !ok || partnerID == 0 {
+
+	partyID := ch.GetPartyID()
+	if partyID == nil {
 		return 0, false
 	}
+	party := ac.gs.party.Get(*partyID)
+	if party == nil {
+		return 0, false
+	}
+	members := party.GetMembers()
+	if len(members) != 2 {
+		return 0, false
+	}
+	var partnerID uint32
+	for _, pm := range members {
+		if pm == nil || pm.CharacterID == 0 || pm.CharacterID == leaderID {
+			continue
+		}
+		partnerID = pm.CharacterID
+		break
+	}
+	if partnerID == 0 {
+		return 0, false
+	}
+
 	partnerGuildID, partnerInGuild := ac.gs.guild.GuildIDForCharacter(partnerID)
 	if !partnerInGuild || partnerGuildID == guildID {
 		return 0, false
@@ -306,30 +327,4 @@ func (ac *AllianceContainer) ValidateCreateAlliance(ch *entity.Character) (uint3
 		return 0, false
 	}
 	return partnerID, true
-}
-
-func (ac *AllianceContainer) partyPartnerCharacterID(ch *entity.Character) (uint32, bool) {
-	if ch == nil || ac.gs == nil {
-		return 0, false
-	}
-	partyID := ch.GetPartyID()
-	if partyID == nil {
-		return 0, false
-	}
-	party := ac.gs.party.Get(*partyID)
-	if party == nil {
-		return 0, false
-	}
-	members := party.GetMembers()
-	if len(members) != 2 {
-		return 0, false
-	}
-	selfID := ch.GetID()
-	for _, pm := range members {
-		if pm == nil || pm.CharacterID == 0 || pm.CharacterID == selfID {
-			continue
-		}
-		return pm.CharacterID, true
-	}
-	return 0, false
 }

@@ -105,7 +105,7 @@ func (gc *GuildContainer) Update(guildPb *internal.Guild) {
 	log.Printf("guild: hydrated guild_id=%d revision=%d", guildID, stored.Revision)
 }
 
-func (gc *GuildContainer) GuildIDByName(guildName string) (uint32, bool) {
+func (gc *GuildContainer) NameToGuildID(guildName string) (uint32, bool) {
 	if gc == nil || guildName == "" {
 		return 0, false
 	}
@@ -137,6 +137,32 @@ func (gc *GuildContainer) TrySetAllianceInvite(targetGuildID, allianceID uint32,
 	}
 	g.SetAllianceInvite(allianceID, expiresAt)
 	return true
+}
+
+func (gc *GuildContainer) PendingAllianceInvite(guildID uint32) (allianceID uint32, expiresAt time.Time, ok bool) {
+	if gc == nil || guildID == 0 {
+		return 0, time.Time{}, false
+	}
+	gc.mu.Lock()
+	defer gc.mu.Unlock()
+	g := gc.guilds[guildID]
+	if g == nil {
+		return 0, time.Time{}, false
+	}
+	return g.PendingAllianceInvite()
+}
+
+func (gc *GuildContainer) ClearAllianceInvite(guildID, allianceID uint32) {
+	if gc == nil || guildID == 0 || allianceID == 0 {
+		return
+	}
+	gc.mu.Lock()
+	defer gc.mu.Unlock()
+	g := gc.guilds[guildID]
+	if g == nil {
+		return
+	}
+	g.ClearAllianceInvite(allianceID)
 }
 
 func (gc *GuildContainer) Get(guildID uint32) *entity.Guild {
@@ -171,14 +197,7 @@ func (gc *GuildContainer) GuildIDForCharacter(characterID uint32) (uint32, bool)
 	return 0, false
 }
 
-func (gc *GuildContainer) RefreshAsync(ctx actor.Context, guildID uint32) *async.Promise {
-	if guildID == 0 {
-		return async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	}
-	return gc.RefreshGuildsAsync(ctx, []uint32{guildID})
-}
-
-func (gc *GuildContainer) RefreshGuildsAsync(ctx actor.Context, guildIDs []uint32) *async.Promise {
+func (gc *GuildContainer) RefreshAsync(ctx actor.Context, guildIDs []uint32) *async.Promise {
 	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
 	if gc == nil || gc.internalClient == nil {
 		return promise

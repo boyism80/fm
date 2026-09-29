@@ -3,12 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/boyism80/fm/core/clock"
 	"log"
-	"time"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/core/clock"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -164,7 +163,7 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *enti
 	if !inAlliance {
 		return nil
 	}
-	a := h.cachedAlliance(allianceID)
+	a := h.gs.GetAllianceSystem().Get(allianceID)
 	if a == nil || a.LeaderCharacterID != charID {
 		return nil
 	}
@@ -270,7 +269,7 @@ func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *
 	if !inAlliance {
 		return nil
 	}
-	a := h.cachedAlliance(allianceID)
+	a := h.gs.GetAllianceSystem().Get(allianceID)
 	if a == nil || a.LeaderCharacterID != charID {
 		return nil
 	}
@@ -387,15 +386,15 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *entity.Cha
 	if !inAlliance {
 		return nil
 	}
-	a, ok := h.inviterMaySendAllianceInvite(allianceID, charID)
-	if !ok {
+	a := h.gs.GetAllianceSystem().Get(allianceID)
+	if a == nil || !a.CanSendInvite(charID) {
 		return nil
 	}
 	guildName := req.TargetGuildLeaderName
 	if guildName == "" {
 		return nil
 	}
-	targetGuildID, nameFound := h.gs.guild.GuildIDByName(guildName)
+	targetGuildID, nameFound := h.gs.guild.NameToGuildID(guildName)
 	if !nameFound {
 		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteGuildNotFoundMessage)
 		return nil
@@ -412,15 +411,6 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *entity.Cha
 	targetLeaderID := targetG.LeaderCharacterID
 	if h.gs.characterRuntime == nil || !h.gs.characterRuntime.Exists(targetLeaderID) {
 		ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.AllianceInviteTargetNotOnlineMessage)
-		return nil
-	}
-	if !h.withStoredGuild(targetGuildID, func(g *entity.Guild) bool {
-		if _, inAlliance := g.GetAllianceID(); inAlliance {
-			return false
-		}
-		return !g.HasAllianceInvite()
-	}) {
-		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.GuildInviteTargetBusyMessage)
 		return nil
 	}
 	h.gs.EnsureSend(nil, targetLeaderID, &g_actor.DeliverAllianceInvite{
@@ -459,13 +449,7 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *enti
 	if _, inAlliance := g.GetAllianceID(); inAlliance {
 		return nil
 	}
-	var allianceID uint32
-	var expiresAt time.Time
-	var hasInvite bool
-	h.withStoredGuild(guildID, func(sg *entity.Guild) bool {
-		allianceID, expiresAt, hasInvite = sg.PendingAllianceInvite()
-		return true
-	})
+	allianceID, expiresAt, hasInvite := h.gs.guild.PendingAllianceInvite(guildID)
 	if !hasInvite || !clock.Now().Before(expiresAt) {
 		return nil
 	}
@@ -486,10 +470,7 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *enti
 			}
 			return nil
 		}
-		h.withStoredGuild(guildID, func(g *entity.Guild) bool {
-			g.ClearAllianceInvite(allianceID)
-			return true
-		})
+		h.gs.guild.ClearAllianceInvite(guildID, allianceID)
 		alliancePb := reply.GetAlliance()
 		if alliancePb == nil {
 			log.Printf("AllianceOperation(accept invite): ok but missing alliance character=%d", charID)
@@ -527,24 +508,33 @@ func (h *AllianceOperation) handleDenyInvite(ctx *core.ClientContext, ch *entity
 	if _, inAlliance := g.GetAllianceID(); inAlliance {
 		return nil
 	}
-	var allianceID uint32
-	var hasInvite bool
-	h.withStoredGuild(guildID, func(sg *entity.Guild) bool {
-		allianceID, _, hasInvite = sg.PendingAllianceInvite()
-		return true
-	})
+	allianceID, _, hasInvite := h.gs.guild.PendingAllianceInvite(guildID)
 	if !hasInvite {
 		return nil
 	}
 	guildName := g.Name
-	h.withStoredGuild(guildID, func(sg *entity.Guild) bool {
-		sg.ClearAllianceInvite(allianceID)
-		return true
-	})
-	if allianceID != 0 {
-		h.notifyAllianceLeaderInviteDenied(allianceID, guildName)
-	}
+	h.gs.guild.ClearAllianceInvite(guildID, allianceID)
+	h.notifyDenied(allianceID, guildName)
 	return nil
+}
+
+func (h *AllianceOperation) notifyDenied(allianceID uint32, guildName string) {
+	if allianceID == 0 || guildName == "" {
+		return
+	}
+	a := h.gs.GetAllianceSystem().Get(allianceID)
+	if a == nil || a.LeaderCharacterID == 0 {
+		return
+	}
+	leaderID := a.LeaderCharacterID
+	if h.gs.characterRuntime == nil || !h.gs.characterRuntime.Exists(leaderID) {
+		return
+	}
+	h.gs.EnsureSend(nil, leaderID, &g_actor.DeliverMessage{
+		CharacterID: leaderID,
+		MessageType: gameconst.MsgPinkText,
+		Message:     guildName + gameconst.AllianceInviteDeniedMessageSuffix,
+	})
 }
 
 func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *entity.Character) error {
@@ -585,7 +575,7 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *entity.Char
 			h.gs.alliance.BroadcastGuildLeft(alliancePb, nil, false)
 			return nil
 		}
-		h.gs.guild.RefreshAsync(actorCtx, removedGuildID).Then(func(interface{}) (interface{}, error) {
+		h.gs.guild.RefreshAsync(actorCtx, []uint32{removedGuildID}).Then(func(interface{}) (interface{}, error) {
 			var removedGuildPb *internal.Guild
 			if g := h.gs.guild.Get(removedGuildID); g != nil {
 				removedGuildPb = g.ToProto()
@@ -643,58 +633,4 @@ func (h *AllianceOperation) handleCreate(ctx *core.ClientContext, ch *entity.Cha
 		log.Printf("AllianceOperation(create) async error: %v", err)
 	})
 	return nil
-}
-
-func (h *AllianceOperation) withStoredGuild(guildID uint32, fn func(*entity.Guild) bool) bool {
-	if h.gs == nil || h.gs.guild == nil || guildID == 0 || fn == nil {
-		return false
-	}
-	gc := h.gs.guild
-	gc.mu.Lock()
-	defer gc.mu.Unlock()
-	g := gc.guilds[guildID]
-	if g == nil {
-		return false
-	}
-	return fn(g)
-}
-
-func (h *AllianceOperation) cachedAlliance(allianceID uint32) *entity.Alliance {
-	if h.gs == nil || allianceID == 0 {
-		return nil
-	}
-	return h.gs.GetAllianceSystem().Get(allianceID)
-}
-
-func (h *AllianceOperation) inviterMaySendAllianceInvite(allianceID uint32, inviterCharacterID uint32) (*entity.Alliance, bool) {
-	a := h.cachedAlliance(allianceID)
-	if a == nil {
-		return nil, false
-	}
-	if !a.HasInviteCapacity() {
-		return nil, false
-	}
-	if a.LeaderCharacterID != inviterCharacterID {
-		return nil, false
-	}
-	return a, true
-}
-
-func (h *AllianceOperation) notifyAllianceLeaderInviteDenied(allianceID uint32, guildName string) {
-	if h.gs == nil || allianceID == 0 || guildName == "" {
-		return
-	}
-	a := h.cachedAlliance(allianceID)
-	if a == nil || a.LeaderCharacterID == 0 {
-		return
-	}
-	leaderID := a.LeaderCharacterID
-	if h.gs.characterRuntime == nil || !h.gs.characterRuntime.Exists(leaderID) {
-		return
-	}
-	h.gs.EnsureSend(nil, leaderID, &g_actor.DeliverMessage{
-		CharacterID: leaderID,
-		MessageType: gameconst.MsgPinkText,
-		Message:     guildName + gameconst.AllianceInviteDeniedMessageSuffix,
-	})
 }

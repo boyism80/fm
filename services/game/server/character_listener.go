@@ -1524,3 +1524,9 @@ func (l *CharacterListenerImpl) OnCarnivalDied(ch *entity.Character, team consta
 		LostCP: lostCP,
 	}, types.SEND_POLICY_ENCRYPT)
 }
+
+func (l *CharacterListenerImpl) OnConfirmShopTransaction(ch *entity.Character, code uint8) {
+	_ = ch.Send(&response.ConfirmShopTransaction{
+		Code: code,
+	}, types.SEND_POLICY_ENCRYPT)
+}

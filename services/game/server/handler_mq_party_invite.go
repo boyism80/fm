@@ -8,12 +8,10 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type partyMqPartyInvite struct {
-	partyMqHandler
-}
+type partyMqPartyInvite struct{ gs *GameServer }
 
 func (partyMqPartyInvite) New(gs *GameServer) *partyMqPartyInvite {
-	return &partyMqPartyInvite{partyMqHandler: partyMqHandler{gs: gs}}
+	return &partyMqPartyInvite{gs: gs}
 }
 
 func (*partyMqPartyInvite) EventType() string {

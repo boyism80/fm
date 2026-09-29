@@ -9,12 +9,10 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type partyMqPartyInviteDenied struct {
-	partyMqHandler
-}
+type partyMqPartyInviteDenied struct{ gs *GameServer }
 
 func (partyMqPartyInviteDenied) New(gs *GameServer) *partyMqPartyInviteDenied {
-	return &partyMqPartyInviteDenied{partyMqHandler: partyMqHandler{gs: gs}}
+	return &partyMqPartyInviteDenied{gs: gs}
 }
 
 func (*partyMqPartyInviteDenied) EventType() string {

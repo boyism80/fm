@@ -7,12 +7,10 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type partyMqDisbanded struct {
-	partyMqHandler
-}
+type partyMqDisbanded struct{ gs *GameServer }
 
 func (partyMqDisbanded) New(gs *GameServer) *partyMqDisbanded {
-	return &partyMqDisbanded{partyMqHandler: partyMqHandler{gs: gs}}
+	return &partyMqDisbanded{gs: gs}
 }
 
 func (*partyMqDisbanded) EventType() string {
@@ -39,7 +37,7 @@ func (h *partyMqDisbanded) Handle(ctx actor.Context, _ amqp.Delivery, _ string, 
 		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 || prevParty == nil {
 			return nil, nil
 		}
-		h.sendDisbandUpdate(prevParty, extra.CharacterID)
+		pc.BroadcastDisbanded(prevParty, extra.CharacterID)
 		return nil, nil
 	})
 	return nil

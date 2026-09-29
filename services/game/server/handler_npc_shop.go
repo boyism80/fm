@@ -7,12 +7,10 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
-	"github.com/boyism80/fm/types"
 )
 
 type NpcShop struct {
@@ -64,28 +62,31 @@ func (h *NpcShop) Handle(ctx *core.ClientContext, req *request.NpcShop) error {
 		if !ok {
 			return nil
 		}
-		return h.handleBuy(character, shop, buyTx, resources)
+		h.buy(character, shop, buyTx, resources)
+		return nil
 	case 1:
 		sellTx, ok := req.Transaction.(*request.SellTransaction)
 		if !ok {
 			return nil
 		}
-		return h.handleSell(character, shop, sellTx, resources)
+		h.sell(character, sellTx)
+		return nil
 	case 2:
 		rechargeTx, ok := req.Transaction.(*request.RechargeTransaction)
 		if !ok {
 			return nil
 		}
-		return h.handleRecharge(character, shop, rechargeTx, resources)
+		h.recharge(character, rechargeTx)
+		return nil
 	default:
 		character.CurrentShopID = 0
 		return nil
 	}
 }
 
-func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *request.BuyTransaction, resources *wz.Resources) error {
-	if tx.Quantity <= 0 {
-		return nil
+func (h *NpcShop) buy(ch *entity.Character, shop *wz.Shop, tx *request.BuyTransaction, resources *wz.Resources) {
+	if shop == nil || tx.Quantity == 0 {
+		return
 	}
 
 	var shopItem *wz.ShopItem
@@ -95,35 +96,26 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 			break
 		}
 	}
-
-	if shopItem == nil {
-		return nil
+	if shopItem == nil || shopItem.Price <= 0 {
+		return
 	}
 
 	itemModel, ok := resources.Items[tx.ItemID]
 	if !ok {
-		return nil
-	}
-
-	if shopItem.Price <= 0 {
-		return nil
+		return
 	}
 
 	price := shopItem.Price
-	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
-		price = shopItem.Price
-	} else {
+	if tx.ItemID/10000 != 207 && tx.ItemID/10000 != 233 {
 		price = shopItem.Price * int(tx.Quantity)
 	}
-
-	if character.Inventory.Meso < int32(price) {
-		return nil
+	if ch.Inventory.Meso < int32(price) {
+		return
 	}
 
-	inventoryType := h.getItemInventoryType(tx.ItemID, itemModel)
-	inventory := character.Inventory.Tabs[inventoryType]
-	if inventory == nil {
-		return nil
+	inventoryType := constant.GetInventoryTypeByItemID(tx.ItemID)
+	if ch.Inventory.Tabs[inventoryType] == nil {
+		return
 	}
 
 	quantity := tx.Quantity
@@ -141,38 +133,32 @@ func (h *NpcShop) handleBuy(character *entity.Character, shop *wz.Shop, tx *requ
 			},
 		},
 	}
-	if character.Exchange(spec) != entity.ExchangeOK {
-		character.Message("인벤토리 공간이 부족합니다.")
-		return nil
+	if ch.Exchange(spec) != entity.ExchangeOK {
+		ch.Message("인벤토리 공간이 부족합니다.")
+		return
 	}
 
-	confirmPacket := &response.ConfirmShopTransaction{
-		Code: 0,
-	}
-	character.Send(confirmPacket, types.SEND_POLICY_ENCRYPT)
-
-	return nil
+	ch.Listener.OnConfirmShopTransaction(ch, 0)
 }
 
-func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.SellTransaction, resources *wz.Resources) error {
+func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 	quantity := tx.Quantity
 	if quantity == 0xFFFF || quantity == 0 {
 		quantity = 1
 	}
 
-	inventoryType := h.getItemInventoryType(tx.ItemID, nil)
+	inventoryType := constant.GetInventoryTypeByItemID(tx.ItemID)
 	inventory := ch.Inventory.Tabs[inventoryType]
 	if inventory == nil {
-		return nil
+		return
 	}
 
 	item := inventory.Items[tx.Slot]
 	if item == nil {
-		return nil
+		return
 	}
-
 	if item.GetModel().GetID() != tx.ItemID {
-		return nil
+		return
 	}
 
 	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
@@ -183,18 +169,15 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 	if itemQuantity == 0xFFFF {
 		itemQuantity = 1
 	}
-
 	if quantity > itemQuantity || itemQuantity <= 0 {
-		return nil
+		return
 	}
-
 	if tx.ItemID/10000 == 500 {
-		return nil
+		return
 	}
 
 	itemModel := item.GetModel()
 	price := itemModel.GetPrice()
-
 	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
 		wholePrice := itemModel.GetPrice()
 		slotMax := itemModel.GetCapacity()
@@ -205,7 +188,7 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 
 	recvMesos := int32(math.Max(math.Ceil(float64(price)*float64(quantity)), 0))
 	if price == -1 || recvMesos <= 0 {
-		return nil
+		return
 	}
 
 	spec := entity.ExchangeSpec{
@@ -219,7 +202,7 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 		},
 	}
 	if spec.Valid(ch) != entity.ExchangeOK {
-		return nil
+		return
 	}
 
 	if quantity >= itemQuantity {
@@ -231,86 +214,38 @@ func (h *NpcShop) handleSell(ch *entity.Character, shop *wz.Shop, tx *request.Se
 	}
 
 	ch.Inventory.GainMeso(recvMesos)
-
-	confirmPacket := &response.ConfirmShopTransaction{
-		Code: 0x8,
-	}
-	ch.Send(confirmPacket, types.SEND_POLICY_ENCRYPT)
-
-	return nil
+	ch.Listener.OnConfirmShopTransaction(ch, 0x8)
 }
 
-func (h *NpcShop) handleRecharge(ch *entity.Character, shop *wz.Shop, tx *request.RechargeTransaction, resources *wz.Resources) error {
+func (h *NpcShop) recharge(ch *entity.Character, tx *request.RechargeTransaction) {
 	inventory := ch.Inventory.Tabs[constant.InventoryTypeConsume]
 	if inventory == nil {
-		return nil
+		return
 	}
 
 	item := inventory.Items[tx.Slot]
 	if item == nil {
-		return nil
+		return
 	}
 
 	itemID := item.GetModel().GetID()
 	if itemID/10000 != 207 && itemID/10000 != 233 {
-		return nil
+		return
 	}
 
 	itemModel := item.GetModel()
 	slotMax := itemModel.GetCapacity()
-
 	if item.GetCount() >= slotMax {
-		return nil
+		return
 	}
 
 	price := int(math.Round(float64(itemModel.GetPrice()) * float64(slotMax-item.GetCount())))
-
 	if ch.Inventory.Meso < int32(price) {
-		return nil
+		return
 	}
 
 	item.SetCount(slotMax)
 	ch.Listener.OnUpdateInventorySlot(ch, constant.InventoryTypeConsume, tx.Slot, item)
-
 	ch.Inventory.RemoveMeso(int32(price))
-
-	confirmPacket := &response.ConfirmShopTransaction{
-		Code: 0x8,
-	}
-	ch.Send(confirmPacket, types.SEND_POLICY_ENCRYPT)
-
-	return nil
-}
-
-func (h *NpcShop) getItemInventoryType(itemID uint32, itemModel wz.Item) constant.InventoryType {
-	if itemModel != nil {
-		switch itemModel.(type) {
-		case *wz.Weapon, *wz.Armor:
-			return constant.InventoryTypeEquipment
-		case *wz.Consume:
-			return constant.InventoryTypeConsume
-		case *wz.Installation:
-			return constant.InventoryTypeInstallation
-		case *wz.MiscItem:
-			return constant.InventoryTypeETC
-		case *wz.CashItem:
-			return constant.InventoryTypeCash
-		}
-	}
-
-	itemType := itemID / 10000
-	switch {
-	case itemType >= 100 && itemType < 200:
-		return constant.InventoryTypeEquipment
-	case itemType >= 200 && itemType < 300:
-		return constant.InventoryTypeConsume
-	case itemType >= 300 && itemType < 400:
-		return constant.InventoryTypeInstallation
-	case itemType >= 400 && itemType < 500:
-		return constant.InventoryTypeETC
-	case itemType >= 500 && itemType < 600:
-		return constant.InventoryTypeCash
-	default:
-		return constant.InventoryTypeETC
-	}
+	ch.Listener.OnConfirmShopTransaction(ch, 0x8)
 }

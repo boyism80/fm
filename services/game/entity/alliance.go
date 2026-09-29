@@ -45,9 +45,12 @@ func AllianceFromInfo(gw GameWorld, info *dto.AllianceInfo) *Alliance {
 	}
 }
 
-func (a *Alliance) HasInviteCapacity() bool {
-	if a == nil {
+func (a *Alliance) CanSendInvite(inviterCharacterID uint32) bool {
+	if a == nil || inviterCharacterID == 0 {
 		return false
 	}
-	return uint32(len(a.GuildIDs)) < a.Capacity
+	if uint32(len(a.GuildIDs)) >= a.Capacity {
+		return false
+	}
+	return a.LeaderCharacterID == inviterCharacterID
 }

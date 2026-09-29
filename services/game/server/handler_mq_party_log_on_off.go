@@ -10,12 +10,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type partyMqLogOnOff struct {
-	partyMqHandler
-}
+type partyMqLogOnOff struct{ gs *GameServer }
 
 func (partyMqLogOnOff) New(gs *GameServer) *partyMqLogOnOff {
-	return &partyMqLogOnOff{partyMqHandler: partyMqHandler{gs: gs}}
+	return &partyMqLogOnOff{gs: gs}
 }
 
 func (*partyMqLogOnOff) EventType() string {
@@ -47,7 +45,7 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 					}
 					if applied && payload.CharacterID != 0 {
 						if party := pc.Get(evt.PartyID); party != nil {
-							h.sendLogOnOff(party)
+							pc.BroadcastLogOnOff(party)
 						}
 					}
 					return nil
@@ -67,7 +65,7 @@ func (h *partyMqLogOnOff) Handle(ctx actor.Context, _ amqp.Delivery, _ string, r
 		}
 		party := pc.Get(evt.PartyID)
 		if party != nil {
-			h.sendLogOnOff(party)
+			pc.BroadcastLogOnOff(party)
 		}
 		return nil, nil
 	})

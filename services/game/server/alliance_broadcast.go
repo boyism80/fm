@@ -19,10 +19,10 @@ func (ac *AllianceContainer) BroadcastCreate(alliancePb *internal.Alliance) {
 	if info == nil {
 		return
 	}
-	guilds := ac.createGuildInfos(alliancePb)
+	guilds := ac.guildInfos(alliancePb)
 	membershipGuilds := entity.AllianceMembershipChangeGuildsFromProto(alliancePb)
 	if len(membershipGuilds) == 0 {
-		membershipGuilds = ac.membershipChangeGuildsFromCache(alliancePb)
+		membershipGuilds = ac.membershipGuilds(alliancePb)
 	}
 	for _, memberID := range ac.createRecipientIDs(alliancePb) {
 		ac.deliverToOnlineMember(memberID, &g_actor.DeliverAllianceCreate{
@@ -34,15 +34,10 @@ func (ac *AllianceContainer) BroadcastCreate(alliancePb *internal.Alliance) {
 	}
 }
 
-func (ac *AllianceContainer) createGuildInfos(alliancePb *internal.Alliance) []*dto.GuildInfo {
-	guilds := entity.AllianceCreateGuildsFromProto(alliancePb)
-	if len(guilds) > 0 {
+func (ac *AllianceContainer) guildInfos(alliancePb *internal.Alliance) []*dto.GuildInfo {
+	if guilds := entity.AllianceCreateGuildsFromProto(alliancePb); len(guilds) > 0 {
 		return guilds
 	}
-	return ac.guildInfosFromCache(alliancePb)
-}
-
-func (ac *AllianceContainer) guildInfosFromCache(alliancePb *internal.Alliance) []*dto.GuildInfo {
 	if ac.gs == nil || alliancePb == nil {
 		return nil
 	}
@@ -68,7 +63,7 @@ func (ac *AllianceContainer) guildInfosFromCache(alliancePb *internal.Alliance) 
 	return out
 }
 
-func (ac *AllianceContainer) membershipChangeGuildsFromCache(alliancePb *internal.Alliance) []dto.AllianceMembershipChangeGuild {
+func (ac *AllianceContainer) membershipGuilds(alliancePb *internal.Alliance) []dto.AllianceMembershipChangeGuild {
 	if ac.gs == nil || alliancePb == nil {
 		return nil
 	}
@@ -211,7 +206,7 @@ func (ac *AllianceContainer) BroadcastLeaderChanged(alliancePb *internal.Allianc
 		return
 	}
 	allianceID := alliancePb.GetAllianceId()
-	guilds := ac.allianceGuildInfos(alliancePb)
+	guilds := ac.guildInfos(alliancePb)
 	leaderNotice := ""
 	if name := ac.allianceCharacterName(alliancePb, newLeaderID); name != "" {
 		leaderNotice = name + gameconst.AllianceLeaderChangedMessageSuffix
@@ -251,14 +246,6 @@ func (ac *AllianceContainer) BroadcastInfoUpdate(alliancePb *internal.Alliance) 
 	})
 }
 
-func (ac *AllianceContainer) allianceGuildInfos(alliancePb *internal.Alliance) []*dto.GuildInfo {
-	guilds := entity.AllianceCreateGuildsFromProto(alliancePb)
-	if len(guilds) > 0 {
-		return guilds
-	}
-	return ac.guildInfosFromCache(alliancePb)
-}
-
 func (ac *AllianceContainer) broadcastAllianceStateRefresh(alliancePb *internal.Alliance) {
 	if ac.gs == nil || alliancePb == nil {
 		return
@@ -267,7 +254,7 @@ func (ac *AllianceContainer) broadcastAllianceStateRefresh(alliancePb *internal.
 	if info == nil {
 		return
 	}
-	guilds := ac.allianceGuildInfos(alliancePb)
+	guilds := ac.guildInfos(alliancePb)
 	ac.forEachOnlineAllianceMember(alliancePb, func(memberID uint32) {
 		ac.deliverToOnlineMember(memberID, &g_actor.DeliverAllianceMemberRankChanged{
 			CharacterID: memberID,
@@ -333,7 +320,7 @@ func (ac *AllianceContainer) BroadcastGuildAdded(alliancePb *internal.Alliance, 
 	if info == nil || addedInfo == nil {
 		return
 	}
-	guilds := ac.allianceGuildInfos(alliancePb)
+	guilds := ac.guildInfos(alliancePb)
 	newGuildID := addedGuildPb.GetGuildId()
 	members := entity.AllianceGuildMemberRanksFromProto(addedGuildPb)
 	var membershipGuild dto.AllianceMembershipChangeGuild
@@ -452,7 +439,7 @@ func (ac *AllianceContainer) DisbandAsync(ctx actor.Context, allianceID uint32, 
 	if ac.gs == nil {
 		return async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
 	}
-	return ac.gs.guild.RefreshGuildsAsync(ctx, guildIDs).Then(func(interface{}) (interface{}, error) {
+	return ac.gs.guild.RefreshAsync(ctx, guildIDs).Then(func(interface{}) (interface{}, error) {
 		ac.Remove(allianceID)
 		ac.broadcastDisband(allianceID, guildIDs)
 		return nil, nil

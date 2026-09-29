@@ -7,12 +7,10 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type partyMqLeaderChanged struct {
-	partyMqHandler
-}
+type partyMqLeaderChanged struct{ gs *GameServer }
 
 func (partyMqLeaderChanged) New(gs *GameServer) *partyMqLeaderChanged {
-	return &partyMqLeaderChanged{partyMqHandler: partyMqHandler{gs: gs}}
+	return &partyMqLeaderChanged{gs: gs}
 }
 
 func (*partyMqLeaderChanged) EventType() string {
@@ -40,7 +38,7 @@ func (h *partyMqLeaderChanged) Handle(ctx actor.Context, _ amqp.Delivery, _ stri
 		}
 		party := pc.Get(evt.PartyID)
 		if party != nil {
-			h.sendLeaderChange(party, extra.NewLeaderCharacterID, false)
+			pc.BroadcastLeaderChanged(party, extra.NewLeaderCharacterID, false)
 		}
 		return nil, nil
 	})

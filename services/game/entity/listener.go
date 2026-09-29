@@ -136,6 +136,7 @@ type CharacterListener interface {
 	OnCarnivalPartyCP(ch *Character, team constant.CarnivalTeam, avail, total int)
 	OnCarnivalSummon(ch *Character, tab, num uint8, name string)
 	OnCarnivalDied(ch *Character, team constant.CarnivalTeam, name string, lostCP uint8)
+	OnConfirmShopTransaction(ch *Character, code uint8)
 }
 
 type MobListener interface {

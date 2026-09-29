@@ -172,6 +172,23 @@ func (g *Guild) IsGuildMaster(characterID uint32) bool {
 	return m.Rank == internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER
 }
 
+func (g *Guild) CanInvite(characterID uint32) bool {
+	if g == nil || characterID == 0 {
+		return false
+	}
+	m := g.FindMember(characterID)
+	if m == nil {
+		return false
+	}
+	switch m.Rank {
+	case internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER,
+		internal.GuildMemberRank_GUILD_MEMBER_RANK_JUNIOR:
+		return true
+	default:
+		return false
+	}
+}
+
 func (g *Guild) Clone() *Guild {
 	if g == nil {
 		return nil
