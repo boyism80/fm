@@ -3,6 +3,7 @@ package constant
 const (
 	ItemCategoryShuriken uint32 = 207
 	ItemCategoryBullet   uint32 = 233
+	ItemCategoryPet      uint32 = 500
 )
 
 const (
@@ -19,6 +20,21 @@ var RechargeableShurikens = []uint32{
 var RechargeableBullets = []uint32{
 	2330000, 2330001, 2330002, 2330003, 2330004, 2330005,
 	2331000, 2332000,
+}
+
+const (
+	ShopTransactionBuyOK    byte   = 0
+	ShopTransactionUpdateOK byte   = 0x8
+	ShopUnspecifiedQuantity uint16 = 0xFFFF
+)
+
+func ItemCategoryOf(itemID uint32) uint32 {
+	return itemID / 10000
+}
+
+func IsRechargeable(itemID uint32) bool {
+	category := ItemCategoryOf(itemID)
+	return category == ItemCategoryShuriken || category == ItemCategoryBullet
 }
 
 func GetEquipmentType(itemID uint32) EquipmentType {

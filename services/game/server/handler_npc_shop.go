@@ -106,7 +106,7 @@ func (h *NpcShop) buy(ch *entity.Character, shop *wz.Shop, tx *request.BuyTransa
 	}
 
 	price := shopItem.Price
-	if tx.ItemID/10000 != 207 && tx.ItemID/10000 != 233 {
+	if !constant.IsRechargeable(tx.ItemID) {
 		price = shopItem.Price * int(tx.Quantity)
 	}
 	if ch.Inventory.Meso < int32(price) {
@@ -119,7 +119,7 @@ func (h *NpcShop) buy(ch *entity.Character, shop *wz.Shop, tx *request.BuyTransa
 	}
 
 	quantity := tx.Quantity
-	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
+	if constant.IsRechargeable(tx.ItemID) {
 		quantity = itemModel.GetCapacity()
 	}
 
@@ -138,12 +138,12 @@ func (h *NpcShop) buy(ch *entity.Character, shop *wz.Shop, tx *request.BuyTransa
 		return
 	}
 
-	ch.Listener.OnConfirmShopTransaction(ch, 0)
+	ch.Listener.OnConfirmShopTransaction(ch, constant.ShopTransactionBuyOK)
 }
 
 func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 	quantity := tx.Quantity
-	if quantity == 0xFFFF || quantity == 0 {
+	if quantity == constant.ShopUnspecifiedQuantity || quantity == 0 {
 		quantity = 1
 	}
 
@@ -161,24 +161,24 @@ func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 		return
 	}
 
-	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
+	if constant.IsRechargeable(tx.ItemID) {
 		quantity = item.GetCount()
 	}
 
 	itemQuantity := item.GetCount()
-	if itemQuantity == 0xFFFF {
+	if itemQuantity == constant.ShopUnspecifiedQuantity {
 		itemQuantity = 1
 	}
 	if quantity > itemQuantity || itemQuantity <= 0 {
 		return
 	}
-	if tx.ItemID/10000 == 500 {
+	if constant.ItemCategoryOf(tx.ItemID) == constant.ItemCategoryPet {
 		return
 	}
 
 	itemModel := item.GetModel()
 	price := itemModel.GetPrice()
-	if tx.ItemID/10000 == 207 || tx.ItemID/10000 == 233 {
+	if constant.IsRechargeable(tx.ItemID) {
 		wholePrice := itemModel.GetPrice()
 		slotMax := itemModel.GetCapacity()
 		if slotMax > 0 {
@@ -214,7 +214,7 @@ func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 	}
 
 	ch.Inventory.GainMeso(recvMesos)
-	ch.Listener.OnConfirmShopTransaction(ch, 0x8)
+	ch.Listener.OnConfirmShopTransaction(ch, constant.ShopTransactionUpdateOK)
 }
 
 func (h *NpcShop) recharge(ch *entity.Character, tx *request.RechargeTransaction) {
@@ -229,7 +229,7 @@ func (h *NpcShop) recharge(ch *entity.Character, tx *request.RechargeTransaction
 	}
 
 	itemID := item.GetModel().GetID()
-	if itemID/10000 != 207 && itemID/10000 != 233 {
+	if !constant.IsRechargeable(itemID) {
 		return
 	}
 
@@ -247,5 +247,5 @@ func (h *NpcShop) recharge(ch *entity.Character, tx *request.RechargeTransaction
 	item.SetCount(slotMax)
 	ch.Listener.OnUpdateInventorySlot(ch, constant.InventoryTypeConsume, tx.Slot, item)
 	ch.Inventory.RemoveMeso(int32(price))
-	ch.Listener.OnConfirmShopTransaction(ch, 0x8)
+	ch.Listener.OnConfirmShopTransaction(ch, constant.ShopTransactionUpdateOK)
 }
