@@ -7,29 +7,29 @@ local MAX_LEVEL = 50
 local RANKING_QUEST = 1301
 local COIN_ID = 4001129
 
-local function exp_for_cp(total_cp, winner)
+local function reward_for_cp(total_cp, winner)
 	if total_cp >= 501 then
 		if winner then
-			return 30000
+			return 30000, "A"
 		end
-		return 25500
+		return 25500, "A"
 	end
 	if total_cp >= 251 then
 		if winner then
-			return 25500
+			return 25500, "B"
 		end
-		return 20500
+		return 20500, "B"
 	end
 	if total_cp >= 50 then
 		if winner then
-			return 21000
+			return 21000, "C"
 		end
-		return 17000
+		return 17000, "C"
 	end
 	if winner then
-		return 3000
+		return 3000, "D"
 	end
-	return 15000
+	return 15000, "D"
 end
 
 local function on_reward(me, npc)
@@ -38,17 +38,24 @@ local function on_reward(me, npc)
 		me:map(HUB_MAP, 0)
 		return
 	end
-	local total_cp = team:total_cp()
 	local winner = team:is_winner()
+	local exp, rank = reward_for_cp(team:total_cp(), winner)
+	local message = "아쉽게도 비기거나 지고 말았군. 승리를 위해 좀 더 노력해주게! \r\n#b랭크 : " .. rank
+	if winner then
+		message = "축하하네. 카니발에서 승리를 거두었군. 자네들의 활약은 잘 지켜보았다네. 다음 번에도 기대하겠네! \r\n#b랭크 : " .. rank
+	end
+	if not me:dialog(npc, message) then
+		return
+	end
 	me:end_party_quest(RANKING_QUEST)
-	me:exchange({}, { exp = exp_for_cp(total_cp, winner) })
-	team:clear()
+	me:exchange({}, { exp = exp })
+	team:remove_member(me)
 	me:map(HUB_MAP, 0)
 end
 
 return {
 	on_click = function(me, npc)
-		local map_id = me:map_id()
+		local map_id = me:map():wz():id()
 		if map_id == 980000010 then
 			me:map(HUB_MAP, 0)
 			return

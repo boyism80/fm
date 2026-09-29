@@ -608,7 +608,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if L.GetTop() >= 6 {
 				link = uint32(L.CheckInt(6))
 			}
-			mob, err := mapInstance.SpawnMob(mobID, pos, nil, spawnType, link)
+			mob, err := mapInstance.SpawnMob(mobID, pos, nil, spawnType, link, constant.CarnivalTeamNone)
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1
@@ -814,6 +814,99 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			L.Push(luax.NewLuable(L, reactor))
+			return 1
+		},
+		"spawn_reactor": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			reactorID := uint32(L.CheckNumber(2))
+			pos := types.Point[int16]{X: int16(L.CheckInt(3)), Y: int16(L.CheckInt(4))}
+			reactor, err := mapInstance.SpawnReactorTemplate(reactorID, pos, L.OptString(5, ""), byte(L.OptInt(6, 0)))
+			if err != nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, reactor))
+			return 1
+		},
+		"carnival": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mc := mapInstance.Wz.Carnival
+			if mc == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			genPositions := func(gens []wz.CarnivalGenPos) *lua.LTable {
+				tbl := L.NewTable()
+				for i, gen := range gens {
+					entry := L.NewTable()
+					entry.RawSetString("x", lua.LNumber(gen.Pos.X))
+					entry.RawSetString("y", lua.LNumber(gen.Pos.Y))
+					entry.RawSetString("team", lua.LNumber(gen.Team))
+					tbl.RawSetInt(i+1, entry)
+				}
+				return tbl
+			}
+			mobs := L.NewTable()
+			for i, mob := range mc.Mobs {
+				entry := L.NewTable()
+				entry.RawSetString("id", lua.LNumber(mob.ID))
+				entry.RawSetString("spend_cp", lua.LNumber(mob.SpendCP))
+				mobs.RawSetInt(i+1, entry)
+			}
+			skills := L.NewTable()
+			for i, skillID := range mc.Skills {
+				skills.RawSetInt(i+1, lua.LNumber(skillID))
+			}
+			tbl := L.NewTable()
+			tbl.RawSetString("mobs", mobs)
+			tbl.RawSetString("skills", skills)
+			tbl.RawSetString("mob_gen_pos", genPositions(mc.MobGenPos))
+			tbl.RawSetString("guardian_gen_pos", genPositions(mc.GuardianGenPos))
+			tbl.RawSetString("reactor_red", lua.LNumber(mc.ReactorRed))
+			tbl.RawSetString("reactor_blue", lua.LNumber(mc.ReactorBlue))
+			L.Push(tbl)
+			return 1
+		},
+		"summon_mob": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mobID := uint32(L.CheckNumber(2))
+			pos := types.Point[int16]{X: int16(L.CheckInt(3)), Y: int16(L.CheckInt(4))}
+			team := constant.CarnivalTeam(L.CheckInt(5))
+			L.Push(lua.LBool(mapInstance.SummonMob(mobID, pos, team) == nil))
+			return 1
+		},
+		"summoned_mob_spawns": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			tbl := L.NewTable()
+			for i, spawn := range mapInstance.SummonedMobSpawns {
+				entry := L.NewTable()
+				entry.RawSetString("id", lua.LNumber(spawn.Wz.ID))
+				entry.RawSetString("x", lua.LNumber(spawn.Wz.Position.X))
+				entry.RawSetString("y", lua.LNumber(spawn.Wz.Position.Y))
+				entry.RawSetString("team", lua.LNumber(spawn.Wz.Team))
+				tbl.RawSetInt(i+1, entry)
+			}
+			L.Push(tbl)
 			return 1
 		},
 		"kill_all_mobs": func(L *lua.LState) int {

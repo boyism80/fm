@@ -143,7 +143,7 @@ func (r *CarnivalRegistry) Enter(slotIndex int, leader *Character) bool {
 	match.mu.Unlock()
 
 	for _, ch := range members {
-		ch.BindCarnival(match)
+		ch.BindCarnival(red)
 	}
 	return true
 }

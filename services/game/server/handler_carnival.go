@@ -27,13 +27,12 @@ func (h *Carnival) Handle(ctx *core.ClientContext, req *request.Carnival) error 
 	if ch == nil {
 		return fmt.Errorf("character is nil")
 	}
-	match := ch.CarnivalMatch()
-	if match == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
+	defer ch.Listener.OnUnlockAction(ch)
+
+	sm := ch.StateMachine()
+	if ch.CarnivalMatch() == nil || sm == nil {
 		return nil
 	}
-	if !match.Summon(ch, req.Tab, req.Num) {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-	}
+	sm.CallHook("on_carnival_summon", ch, int(req.Tab), req.Num)
 	return nil
 }

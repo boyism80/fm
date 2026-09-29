@@ -643,7 +643,7 @@ func (m *Mob) SpawnRevives(reviveIDs []uint32, pos types.Point[int16], spawnType
 		if reviveID == 0 {
 			continue
 		}
-		mob, err := mapInstance.SpawnMob(reviveID, pos, nil, spawnType, link)
+		mob, err := mapInstance.SpawnMob(reviveID, pos, nil, spawnType, link, m.CarnivalTeam)
 		if err != nil {
 			continue
 		}
@@ -708,7 +708,7 @@ func (m *Mob) revive(pos types.Point[int16], revives []uint32) {
 		if reviveID == 0 {
 			continue
 		}
-		_, err := mapInstance.SpawnMob(reviveID, pos, nil, constant.MobSpawnTypeRevive, m.OID)
+		_, err := mapInstance.SpawnMob(reviveID, pos, nil, constant.MobSpawnTypeRevive, m.OID, m.CarnivalTeam)
 		if err != nil {
 			log.Printf("Failed to spawn revive mob %d from mob %d: %v", reviveID, m.Wz.ID, err)
 		}

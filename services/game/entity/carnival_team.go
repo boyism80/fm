@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"math/rand"
+
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
 )
@@ -32,7 +34,7 @@ func (t *CarnivalTeam) HasMember(characterID uint32) bool {
 }
 
 func (t *CarnivalTeam) Members(gw GameWorld) []*Character {
-	if gw == nil {
+	if gw == nil || t.Match == nil {
 		return nil
 	}
 	out := make([]*Character, 0, len(t.MemberIDs))
@@ -142,6 +144,44 @@ func (t *CarnivalTeam) broadcastPartyCP(origin *Character) {
 	}
 }
 
+// Only members standing on field can be hit; a skill that targets all still misses each one by chance.
+func (t *CarnivalTeam) Debuff(field *Map, skillID uint32) bool {
+	if t.Match == nil {
+		return false
+	}
+	skillDef := field.GameWorld.GetResources().GetCarnivalSkill(skillID)
+	if skillDef == nil {
+		return false
+	}
+
+	targets := make([]*Character, 0, len(t.MemberIDs))
+	for _, member := range t.Members(field.GameWorld) {
+		if member.GetMap() == field {
+			targets = append(targets, member)
+		}
+	}
+	if len(targets) == 0 {
+		return false
+	}
+	rand.Shuffle(len(targets), func(i, j int) {
+		targets[i], targets[j] = targets[j], targets[i]
+	})
+	if skillDef.TargetsAll == false {
+		targets = targets[:1]
+	}
+
+	chance := t.Match.registry.SkillHitChance(skillID, skillDef.HitChance)
+	for _, target := range targets {
+		if skillDef.TargetsAll && rand.Intn(100) >= chance {
+			continue
+		}
+		if target.GiveMobSkillDebuff(skillDef.MobSkillID, skillDef.Level) == false {
+			target.Buffs.Dispel()
+		}
+	}
+	return true
+}
+
 func (t *CarnivalTeam) Warp(ctx actor.Context, mapID uint32, portalName string) bool {
 	if t.Match == nil {
 		return false
@@ -167,6 +207,16 @@ func (t *CarnivalTeam) Warp(ctx actor.Context, mapID uint32, portalName string) 
 		_ = ch.Warp(ctx, dest, spawn)
 	}
 	return true
+}
+
+func (t *CarnivalTeam) RemoveMember(ch *Character) {
+	for i, id := range t.MemberIDs {
+		if id == ch.GetID() {
+			t.MemberIDs = append(t.MemberIDs[:i], t.MemberIDs[i+1:]...)
+			break
+		}
+	}
+	ch.UnbindCarnival()
 }
 
 func (t *CarnivalTeam) Clear(gw GameWorld) {

@@ -73,7 +73,7 @@ func (e *MobBuff) Equal(values map[constant.MobBuffFlag]int32, stacks map[consta
 }
 
 func (e *MobBuff) callMobSkillHook(mob *Mob, hookPrefix string) {
-	if e == nil || mob == nil {
+	if e == nil || mob == nil || e.Wz == nil {
 		return
 	}
 	mapInstance := mob.GetMap()

@@ -200,9 +200,21 @@ func (m *CarnivalMatch) WarpAll(ctx actor.Context, mapID uint32, portalName stri
 
 func (m *CarnivalMatch) Finish(gw GameWorld) bool {
 	m.mu.Lock()
-	for id, team := range m.Teams {
+	for _, team := range m.Teams {
 		if team != nil {
 			team.Clear(gw)
+		}
+	}
+	m.mu.Unlock()
+	return m.Conclude(gw)
+}
+
+// Conclude frees the slot but leaves each member bound to its detached team for the reward NPC.
+func (m *CarnivalMatch) Conclude(gw GameWorld) bool {
+	m.mu.Lock()
+	for id, team := range m.Teams {
+		if team != nil {
+			team.Match = nil
 		}
 		delete(m.Teams, id)
 	}
@@ -267,7 +279,7 @@ func (m *CarnivalMatch) AcceptPendingChallenge(gw GameWorld) bool {
 	m.mu.Unlock()
 
 	for _, ch := range found {
-		ch.BindCarnival(m)
+		ch.BindCarnival(blue)
 	}
 	if sm := m.StateMachine(); sm != nil {
 		sm.CallHook("on_challenge_accepted")
@@ -290,6 +302,13 @@ func (m *CarnivalMatch) RejectPendingChallenge() (ok bool, shouldOpen bool) {
 	m.Pending = m.queue[0]
 	m.mu.Unlock()
 	return true, true
+}
+
+func (m *CarnivalMatch) enemyTeam(teamID constant.CarnivalTeam) *CarnivalTeam {
+	if teamID == constant.CarnivalTeamRed {
+		return m.Team(constant.CarnivalTeamBlue)
+	}
+	return m.Team(constant.CarnivalTeamRed)
 }
 
 func (m *CarnivalMatch) NotifyCarnivalStart(ch *Character) {

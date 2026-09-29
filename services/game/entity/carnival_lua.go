@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -27,6 +28,12 @@ func registerCarnivalConstants(L *lua.LState) {
 	resultTable.RawSetString("BLUE_WIN", lua.LNumber(CarnivalResultBlueWin))
 	resultTable.RawSetString("DRAW", lua.LNumber(CarnivalResultDraw))
 	L.SetGlobal("CARNIVAL_RESULT", resultTable)
+
+	tabTable := L.NewTable()
+	tabTable.RawSetString("MOB", lua.LNumber(constant.CarnivalTabMob))
+	tabTable.RawSetString("SKILL", lua.LNumber(constant.CarnivalTabSkill))
+	tabTable.RawSetString("GUARDIAN", lua.LNumber(constant.CarnivalTabGuardian))
+	L.SetGlobal("CARNIVAL_TAB", tabTable)
 }
 
 func (m *CarnivalMatch) LuaTypeName() string { return "LuaCarnivalMatch" }
@@ -173,6 +180,21 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 1
 		},
+		"enemy_team": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			match, ok := ud.Value.(*CarnivalMatch)
+			if !ok || match == nil {
+				L.ArgError(1, "CarnivalMatch expected")
+				return 0
+			}
+			team := match.enemyTeam(constant.CarnivalTeam(L.CheckInt(2)))
+			if team == nil {
+				L.Push(lua.LNil)
+			} else {
+				L.Push(luax.NewLuable(L, team))
+			}
+			return 1
+		},
 		"find_team": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			match, ok := ud.Value.(*CarnivalMatch)
@@ -274,6 +296,17 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			gw := match.gameWorld()
 			L.Push(lua.LBool(match.Finish(gw)))
+			return 1
+		},
+		"conclude": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			match, ok := ud.Value.(*CarnivalMatch)
+			if !ok || match == nil {
+				L.ArgError(1, "CarnivalMatch expected")
+				return 0
+			}
+			gw := match.gameWorld()
+			L.Push(lua.LBool(match.Conclude(gw)))
 			return 1
 		},
 		"set_state": func(L *lua.LState) int {
@@ -487,6 +520,38 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LTrue)
 			return 1
 		},
+		"remove_member": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			team, ok := ud.Value.(*CarnivalTeam)
+			if !ok || team == nil {
+				L.ArgError(1, "CarnivalTeam expected")
+				return 0
+			}
+			chUD := L.CheckUserData(2)
+			ch, ok := chUD.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(2, "Character expected")
+				return 0
+			}
+			team.RemoveMember(ch)
+			return 0
+		},
+		"debuff": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			team, ok := ud.Value.(*CarnivalTeam)
+			if !ok || team == nil {
+				L.ArgError(1, "CarnivalTeam expected")
+				return 0
+			}
+			mapUD := L.CheckUserData(2)
+			field, ok := mapUD.Value.(*Map)
+			if !ok || field == nil {
+				L.ArgError(2, "Map expected")
+				return 0
+			}
+			L.Push(lua.LBool(team.Debuff(field, uint32(L.CheckNumber(3)))))
+			return 1
+		},
 	}
 }
 
@@ -618,6 +683,37 @@ func RegisterCarnivalLua(L *lua.LState, gw GameWorld) {
 		}
 		reg.SetSkillHitChance(uint32(L.CheckNumber(1)), int(L.CheckNumber(2)))
 		return 0
+	}))
+	carnivalTable.RawSetString("skill", L.NewFunction(func(L *lua.LState) int {
+		skill := gw.GetResources().GetCarnivalSkill(uint32(L.CheckNumber(1)))
+		if skill == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		tbl := L.NewTable()
+		tbl.RawSetString("spend_cp", lua.LNumber(skill.SpendCP))
+		tbl.RawSetString("targets_all", lua.LBool(skill.TargetsAll))
+		L.Push(tbl)
+		return 1
+	}))
+	carnivalTable.RawSetString("guardian", L.NewFunction(func(L *lua.LState) int {
+		resources := gw.GetResources()
+		guardian := resources.GetCarnivalGuardian(uint32(L.CheckNumber(1)))
+		if guardian == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		tbl := L.NewTable()
+		tbl.RawSetString("spend_cp", lua.LNumber(guardian.SpendCP))
+		tbl.RawSetString("mob_skill_id", lua.LNumber(guardian.MobSkillID))
+		if levelData := resources.GetMobSkill(guardian.MobSkillID, guardian.Level); levelData != nil {
+			tbl.RawSetString("skill", luax.NewLuable(L, &MobSkill{
+				Slot:      wz.MobSkillSlot{SkillID: guardian.MobSkillID, Level: guardian.Level},
+				LevelData: levelData,
+			}))
+		}
+		L.Push(tbl)
+		return 1
 	}))
 	carnivalTable.RawSetString("enter", L.NewFunction(func(L *lua.LState) int {
 		if reg == nil {

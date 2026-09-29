@@ -41,10 +41,16 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 	if r.eventAt(newState) == nil {
 		if r.Spawn != nil && r.Spawn.RespawnDelay() > 0 {
 			_ = r.Map.RemoveReactor(r.OID, true)
-		} else {
-			r.Map.listener.OnReactorTriggered(r.Map, r, stance)
+			_, _ = r.callReactorScript("on_reactor", true, r)
+			return
 		}
+
+		// The client plays the final collapse only when DESTROY arrives without a preceding TRIGGER.
 		_, _ = r.callReactorScript("on_reactor", true, r)
+		if r.Map.GetReactor(r.OID) != r {
+			return
+		}
+		r.Map.listener.OnReactorTriggered(r.Map, r, stance)
 		return
 	}
 
@@ -133,7 +139,7 @@ func (m *Map) SpawnReactor(reactorSpawn *ReactorSpawn) (*Reactor, error) {
 		},
 		Wz:    reactorSpawn.Template,
 		Spawn: reactorSpawn,
-		State: 0,
+		State: reactorSpawn.State,
 	}
 	reactor.ObjectCore.self = reactor
 	reactor.initTimers()
@@ -154,7 +160,7 @@ func (m *Map) SpawnReactor(reactorSpawn *ReactorSpawn) (*Reactor, error) {
 	return reactor, nil
 }
 
-func (m *Map) SpawnReactorTemplate(reactorID uint32, pos types.Point[int16], name string) (*Reactor, error) {
+func (m *Map) SpawnReactorTemplate(reactorID uint32, pos types.Point[int16], name string, state byte) (*Reactor, error) {
 	if m == nil || m.GameWorld == nil {
 		return nil, fmt.Errorf("map is nil")
 	}
@@ -171,6 +177,7 @@ func (m *Map) SpawnReactorTemplate(reactorID uint32, pos types.Point[int16], nam
 		ID:       reactorID,
 		Wz:       wzSpawn,
 		Template: template,
+		State:    state,
 	}
 	return m.SpawnReactor(rs)
 }
@@ -218,6 +225,18 @@ func (m *Map) RemoveReactor(oid uint32, scheduleRespawn bool) error {
 func (m *Map) ReloadReactors() int {
 	if m == nil {
 		return 0
+	}
+
+	runtimeOIDs := make([]uint32, 0)
+	for oid, obj := range m.GetReactors() {
+		reactor, ok := obj.(*Reactor)
+		if ok && reactor.Spawn != nil && m.ReactorSpawns[reactor.Spawn.ID] == reactor.Spawn {
+			continue
+		}
+		runtimeOIDs = append(runtimeOIDs, oid)
+	}
+	for _, oid := range runtimeOIDs {
+		_ = m.RemoveReactor(oid, false)
 	}
 
 	count := 0

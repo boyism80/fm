@@ -457,6 +457,15 @@ func (l *MapListenerImpl) OnDoorRemoved(mapInstance *entity.Map, door *entity.Do
 	}, nil)
 }
 
+func (l *MapListenerImpl) OnStateMachineDetached(mapInstance *entity.Map) {
+	pid := mapInstance.LogicActorPID()
+	for _, obj := range mapInstance.GetObjects(constant.ObjectTypeCharacter) {
+		if character, ok := obj.(*entity.Character); ok {
+			_ = l.gs.characterRuntime.SetMapPID(character.GetID(), pid)
+		}
+	}
+}
+
 func (l *MapListenerImpl) OnMobHomingRemoved(mapInstance *entity.Map, mob *entity.Mob, removed *entity.Homing, causer *entity.Character) {
 	if causer == nil {
 		return

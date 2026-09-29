@@ -1247,6 +1247,7 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 			var spawn Spawn
 			baseSpawn := BaseSpawn{
 				FacingDirection: FACING_DIRECTION_LEFT,
+				Team:            -1,
 			}
 
 			lifeType := ""
@@ -1325,6 +1326,8 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 					baseSpawn.Info = uint8(intField.Value)
 				case "nofoothold":
 					baseSpawn.NoFoothold = intField.Value != 0
+				case "team":
+					baseSpawn.Team = intField.Value
 				}
 			}
 
@@ -1513,31 +1516,21 @@ func parseCarnivalField(root *node) *CarnivalField {
 		}
 	}
 	if skillNode := root.find("skill"); skillNode != nil {
-		for _, child := range skillNode.Children {
-			entry := CarnivalSkillEntry{}
-			for _, intField := range child.Ints {
-				switch intField.Name {
-				case "id":
-					entry.ID = uint32(intField.Value)
-				case "spendCP":
-					entry.SpendCP = intField.Value
-				}
+		mc.Skills = make([]uint32, len(skillNode.Ints))
+		for _, intField := range skillNode.Ints {
+			idx, err := strconv.Atoi(intField.Name)
+			if err != nil || idx < 0 || idx >= len(mc.Skills) {
+				continue
 			}
-			for _, field := range child.Children {
-				switch field.Name {
-				case "id":
-					if val, err := strconv.Atoi(field.Value); err == nil {
-						entry.ID = uint32(val)
-					}
-				case "spendCP":
-					if val, err := strconv.Atoi(field.Value); err == nil {
-						entry.SpendCP = val
-					}
-				}
-			}
-			if entry.ID > 0 {
-				mc.Skills = append(mc.Skills, entry)
-			}
+			mc.Skills[idx] = uint32(intField.Value)
+		}
+	}
+	for _, intField := range root.Ints {
+		switch intField.Name {
+		case "reactorRed":
+			mc.ReactorRed = uint32(intField.Value)
+		case "reactorBlue":
+			mc.ReactorBlue = uint32(intField.Value)
 		}
 	}
 	return mc
@@ -1926,7 +1919,7 @@ func loadMob(path string) (*Mob, error) {
 			model.DropItemPeriod = intField.Value
 		case "damagedByMob":
 			model.DamagedByMob = intField.Value > 0
-		case "CP":
+		case "getCP":
 			model.CP = intField.Value
 		case "point":
 			model.Point = intField.Value

@@ -77,7 +77,7 @@ type Character struct {
 	buddyList         *BuddyList
 	InstantKill       bool
 	stateMachine      *StateMachine
-	carnivalMatch     *CarnivalMatch
+	carnivalTeam      *CarnivalTeam
 	savedLocations    map[string]uint32
 }
 

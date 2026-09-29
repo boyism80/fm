@@ -7,11 +7,6 @@ type CarnivalMobEntry struct {
 	SpendCP int
 }
 
-type CarnivalSkillEntry struct {
-	ID      uint32
-	SpendCP int
-}
-
 type CarnivalGenPos struct {
 	Pos  types.Point[int16]
 	Team int
@@ -21,7 +16,9 @@ type CarnivalField struct {
 	MobGenPos      []CarnivalGenPos
 	GuardianGenPos []CarnivalGenPos
 	Mobs           []CarnivalMobEntry
-	Skills         []CarnivalSkillEntry
+	Skills         []uint32
+	ReactorRed     uint32
+	ReactorBlue    uint32
 }
 
 type CarnivalSkill struct {

@@ -134,7 +134,7 @@ type CharacterListener interface {
 	OnCarnivalStart(ch *Character, team constant.CarnivalTeam, persAvail, persTotal, friendAvail, friendTotal, enemyAvail, enemyTotal int)
 	OnCarnivalObtainedCP(ch *Character, avail, total int)
 	OnCarnivalPartyCP(ch *Character, team constant.CarnivalTeam, avail, total int)
-	OnCarnivalSummon(ch *Character, tab, num uint8, name string)
+	OnCarnivalSummon(ch *Character, tab constant.CarnivalTab, num uint8, name string)
 	OnCarnivalDied(ch *Character, team constant.CarnivalTeam, name string, lostCP uint8)
 	OnConfirmShopTransaction(ch *Character, code uint8)
 }

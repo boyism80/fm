@@ -10,6 +10,7 @@ type ReactorSpawn struct {
 	ID           uint32
 	Wz           *wz.ReactorSpawn
 	Template     *wz.Reactor
+	State        byte
 	Spawned      bool
 	ActiveOID    uint32
 	respawnTimer *time.Timer

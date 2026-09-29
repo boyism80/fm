@@ -18,6 +18,18 @@ return {
 				portal = "blue_revive"
 			end
 		end
-		me:map(match:field_map_id(), portal)
+		local sm = me:state_machine()
+		if sm == nil then
+			return
+		end
+		local field = sm:group():map(match:field_map_id())
+		if field == nil then
+			return
+		end
+		local target = field:portal(portal)
+		if target == nil then
+			return
+		end
+		me:map(field, target:id())
 	end
 }

@@ -1960,6 +1960,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 1
 		},
+		"carnival_summon": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Listener.OnCarnivalSummon(ch, constant.CarnivalTab(L.CheckInt(2)), uint8(L.CheckInt(3)), ch.GetName())
+			return 0
+		},
 		"save_location": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

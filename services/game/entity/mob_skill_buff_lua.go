@@ -58,6 +58,10 @@ func (e *MobBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "wz() is read-only")
 				return 0
 			}
+			if mb.Wz == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
 			L.Push(luax.NewLuable(L, mb.Wz))
 			return 1
 		},
@@ -71,6 +75,10 @@ func (e *MobBuff) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if L.GetTop() != 1 {
 				L.ArgError(2, "effect() takes no arguments")
 				return 0
+			}
+			if mb.Wz == nil {
+				L.Push(lua.LNil)
+				return 1
 			}
 			ld := mb.Wz.GetLevelData(int(mb.SkillLevel))
 			if ld == nil {

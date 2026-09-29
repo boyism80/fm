@@ -1,9 +1,12 @@
 package request
 
-import "github.com/boyism80/fm/stream"
+import (
+	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/stream"
+)
 
 type Carnival struct {
-	Tab uint8
+	Tab constant.CarnivalTab
 	Num int32
 }
 
@@ -14,6 +17,6 @@ func (p *Carnival) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *Carnival) Deserialize(reader *stream.StreamReader) {
-	p.Tab = reader.ReadU8()
+	p.Tab = constant.CarnivalTab(reader.ReadU8())
 	p.Num = reader.Read32()
 }

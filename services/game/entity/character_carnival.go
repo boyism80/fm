@@ -1,27 +1,34 @@
 package entity
 
 import (
+	"time"
+
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 )
 
-func (ch *Character) BindCarnival(match *CarnivalMatch) {
-	ch.carnivalMatch = match
+func (ch *Character) BindCarnival(team *CarnivalTeam) {
+	ch.carnivalTeam = team
 }
 
 func (ch *Character) UnbindCarnival() {
-	ch.carnivalMatch = nil
+	ch.carnivalTeam = nil
 }
 
 func (ch *Character) CarnivalMatch() *CarnivalMatch {
-	return ch.carnivalMatch
-}
-
-func (ch *Character) CarnivalTeam() *CarnivalTeam {
-	match := ch.CarnivalMatch()
-	if match == nil {
+	team := ch.CarnivalTeam()
+	if team == nil {
 		return nil
 	}
-	return match.FindTeam(ch)
+	return team.Match
+}
+
+// The team outlives the match slot so reward NPCs can read the result after Conclude.
+func (ch *Character) CarnivalTeam() *CarnivalTeam {
+	if ch.carnivalTeam == nil || ch.carnivalTeam.HasMember(ch.GetID()) == false {
+		return nil
+	}
+	return ch.carnivalTeam
 }
 
 func (ch *Character) PartyOnMap() ([]*Character, *Party) {
@@ -63,15 +70,30 @@ func (ch *Character) PickupCarnivalItem(wzConsume *wz.Consume) bool {
 	if wzConsume.CP > 0 {
 		team.AddCP(ch, wzConsume.CP)
 	}
-	if wzConsume.NuffSkillID > 0 && ch.GameWorld != nil {
-		resources := ch.GameWorld.GetResources()
-		if resources != nil {
-			skillDef := resources.GetCarnivalSkill(wzConsume.NuffSkillID)
-			enemy := match.enemyTeam(team.TeamID)
-			if skillDef != nil && enemy != nil {
-				match.debuffEnemies(ch.GameWorld, resources, enemy, wzConsume.NuffSkillID, skillDef)
-			}
+	if wzConsume.NuffSkillID > 0 {
+		if enemy := match.enemyTeam(team.TeamID); enemy != nil {
+			enemy.Debuff(ch.GetMap(), wzConsume.NuffSkillID)
 		}
 	}
 	return true
+}
+
+// Returns false when the mob skill is not a disease, so the caller can fall back to a dispel.
+func (ch *Character) GiveMobSkillDebuff(skillID uint32, skillLevel uint8) bool {
+	mobSkill := ch.GameWorld.GetResources().GetMobSkill(skillID, skillLevel)
+	if mobSkill == nil {
+		return false
+	}
+	for _, flag := range constant.AllDebuffFlags() {
+		if flag.DiseaseSkillID != uint16(skillID) {
+			continue
+		}
+		duration := time.Duration(mobSkill.DurationMs) * time.Millisecond
+		if duration <= 0 {
+			duration = 5 * time.Second
+		}
+		ch.GiveDebuff(flag, duration, int16(mobSkill.X), uint16(skillID), uint16(skillLevel))
+		return true
+	}
+	return false
 }

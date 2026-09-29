@@ -1509,9 +1509,9 @@ func (l *CharacterListenerImpl) OnCarnivalPartyCP(ch *entity.Character, team con
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnCarnivalSummon(ch *entity.Character, tab, num uint8, name string) {
+func (l *CharacterListenerImpl) OnCarnivalSummon(ch *entity.Character, tab constant.CarnivalTab, num uint8, name string) {
 	ch.Broadcast(&response.CarnivalSummon{
-		Tab:  tab,
+		Tab:  uint8(tab),
 		Num:  num,
 		Name: name,
 	}, &entity.ObjectBroadcastOption{WithMe: true})

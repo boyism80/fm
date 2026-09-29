@@ -31,4 +31,5 @@ type BaseSpawn struct {
 	Info            uint8
 	LimitedName     string
 	NoFoothold      bool
+	Team            int
 }

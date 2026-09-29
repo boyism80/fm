@@ -633,6 +633,32 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["CP얻기"] = {
+		privilege = ROLE.Admin,
+		usage = "<값> - 몬스터 카니발 CP 획득",
+		command = function(me, args)
+			if not args[1] then
+				me:notice("사용법: /CP얻기 <값>")
+				return true
+			end
+			local amount = tonumber(args[1])
+			if not amount or amount <= 0 then
+				me:notice("CP는 1 이상의 숫자여야 합니다.")
+				return true
+			end
+			local team = me:carnival_team()
+			if team == nil then
+				me:notice("몬스터 카니발에 참가 중이 아닙니다.")
+				return true
+			end
+			if not team:add_cp(me, amount) then
+				me:notice("CP 획득에 실패했습니다.")
+				return true
+			end
+			me:notice(string.format("CP %d 획득.", amount))
+			return true
+		end,
+	},
 	["맵이동"] = {
 		privilege = ROLE.Admin,
 		usage = "<맵이름|맵ID> [스폰포인트] - 맵 이동",
@@ -675,8 +701,8 @@ local command_funcs = {
 			local map_id = 0
 			local map_name = "?"
 			if wz_t ~= nil then
-				map_id = wz_t.id or 0
-				map_name = tostring(wz_t.name or "?")
+				map_id = wz_t:id()
+				map_name = wz_t:name()
 			end
 			local spawn_id, spawn_name, sx, sy = me:spawn_point()
 			if spawn_name ~= nil then
@@ -707,8 +733,8 @@ local command_funcs = {
 			local map_id = 0
 			local map_name = "?"
 			if wz_t ~= nil then
-				map_id = wz_t.id or 0
-				map_name = tostring(wz_t.name or "?")
+				map_id = wz_t:id()
+				map_name = wz_t:name()
 			end
 			me:chat(string.format("맵: %s (%d), 좌표: %d, %d", map_name, map_id, x, y))
 			return true
@@ -917,7 +943,7 @@ local command_funcs = {
 			local mob_wz = name2mob(args[1])
 			local id = nil
 			if mob_wz ~= nil then
-				id = mob_wz.id
+				id = mob_wz:id()
 			else
 				id = tonumber(args[1])
 			end

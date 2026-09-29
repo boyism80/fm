@@ -1,12 +1,16 @@
 package entity
 
 import (
+	"fmt"
 	"github.com/boyism80/fm/core/clock"
 	"time"
 
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 )
+
+const summonedMobRespawn = 4 * time.Second
 
 func (m *Map) Respawn(includeNegativeMobTime bool) int {
 	if m == nil {
@@ -16,6 +20,11 @@ func (m *Map) Respawn(includeNegativeMobTime bool) int {
 	now := clock.Now()
 	spawned := 0
 	for _, mobSpawn := range m.MobSpawns {
+		if m.trySpawnMobRezen(mobSpawn, now, includeNegativeMobTime, true) {
+			spawned++
+		}
+	}
+	for _, mobSpawn := range m.SummonedMobSpawns {
 		if m.trySpawnMobRezen(mobSpawn, now, includeNegativeMobTime, true) {
 			spawned++
 		}
@@ -32,6 +41,28 @@ func (m *Map) TickMobSpawns() {
 	for _, mobSpawn := range m.MobSpawns {
 		m.trySpawnMobRezen(mobSpawn, now, false, false)
 	}
+	for _, mobSpawn := range m.SummonedMobSpawns {
+		m.trySpawnMobRezen(mobSpawn, now, false, false)
+	}
+}
+
+// Summoned spawn points stay until Reset, respawning their mob like a WZ life entry.
+func (m *Map) SummonMob(mobID uint32, position types.Point[int16], team constant.CarnivalTeam) error {
+	mobSpawn := &MobSpawn{
+		Wz: &wz.MobSpawn{
+			BaseSpawn: &wz.BaseSpawn{
+				ID:       mobID,
+				Position: types.Vector2[int16]{X: position.X, Y: position.Y},
+				MobTime:  summonedMobRespawn,
+				Team:     int(team),
+			},
+		},
+	}
+	if m.trySpawnMobRezen(mobSpawn, clock.Now(), false, true) == false {
+		return fmt.Errorf("failed to summon mob %d", mobID)
+	}
+	m.SummonedMobSpawns = append(m.SummonedMobSpawns, mobSpawn)
+	return nil
 }
 
 func (m *Map) trySpawnMobRezen(mobSpawn *MobSpawn, now time.Time, includeNegativeMobTime bool, immediate bool) bool {
@@ -55,7 +86,7 @@ func (m *Map) trySpawnMobRezen(mobSpawn *MobSpawn, now time.Time, includeNegativ
 		Y: mobSpawn.Wz.Position.Y,
 	}
 
-	_, err := m.SpawnMob(mobSpawn.Wz.ID, position, mobSpawn, constant.MobSpawnTypeAnimate, 0)
+	_, err := m.SpawnMob(mobSpawn.Wz.ID, position, mobSpawn, constant.MobSpawnTypeAnimate, 0, constant.CarnivalTeam(mobSpawn.Wz.Team))
 	if err != nil {
 		return false
 	}

@@ -45,6 +45,7 @@ type MapListener interface {
 	OnMistSpawned(mapInstance *Map, mist *Mist)
 	OnMistRemoved(mapInstance *Map, mist *Mist)
 	OnDoorRemoved(mapInstance *Map, door *Door, animated bool)
+	OnStateMachineDetached(mapInstance *Map)
 }
 
 type MobSpawn struct {
@@ -93,6 +94,7 @@ type Map struct {
 	sections            *sectionContainer
 	controllerTable     *ControllerTable
 	MobSpawns           map[uint32]*MobSpawn
+	SummonedMobSpawns   []*MobSpawn
 	ReactorSpawns       map[uint32]*ReactorSpawn
 	blockedMobGen       map[uint32]struct{}
 	mobGenBlockedAll    bool
@@ -866,7 +868,7 @@ func (m *Map) SpawnNpc(npcId uint32, position types.Point[int16]) (*Npc, error) 
 	return npc, nil
 }
 
-func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn, spawnType constant.MobSpawnType, link uint32) (*Mob, error) {
+func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobSpawn, spawnType constant.MobSpawnType, link uint32, team constant.CarnivalTeam) (*Mob, error) {
 	oid := m.allocateOID()
 
 	mobWz, ok := m.GameWorld.GetResources().Monsters[mobId]
@@ -913,7 +915,7 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 		DropRate:     100,
 		Homing:       make(map[uint32]*Homing),
 		accDamage:    make(map[int64]map[uint32]uint64),
-		CarnivalTeam: constant.CarnivalTeamNone,
+		CarnivalTeam: team,
 	}
 	mob.sponge.me = mob
 	mob.sponge.children = make([]*Mob, 0)
@@ -939,8 +941,11 @@ func (m *Map) SpawnMob(mobId uint32, position types.Point[int16], mobSpawn *MobS
 	mob.scheduleRemoveAfter()
 	mob.startTimedDrop()
 
-	if sm := m.StateMachine(); sm != nil && sm.ScaleLevel > 0 {
-		mob.SetScaleLevel(sm.ScaleLevel)
+	if sm := m.StateMachine(); sm != nil {
+		if sm.ScaleLevel > 0 {
+			mob.SetScaleLevel(sm.ScaleLevel)
+		}
+		sm.CallHook("on_mob_spawn", mob)
 	}
 
 	return mob, nil
@@ -1351,10 +1356,14 @@ func (m *Map) DetachStateMachine(sm *StateMachine) {
 		return
 	}
 	m.stateMachineMu.Lock()
-	defer m.stateMachineMu.Unlock()
-	if m.stateMachine == sm {
-		m.stateMachine = nil
+	if m.stateMachine != sm {
+		m.stateMachineMu.Unlock()
+		return
 	}
+	m.stateMachine = nil
+	m.stateMachineMu.Unlock()
+
+	m.listener.OnStateMachineDetached(m)
 }
 
 func (m *Map) RebindObjectTimers(pid *actor.PID) {
