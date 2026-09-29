@@ -351,7 +351,7 @@ func (sm *StateMachine) HandlePlayerMapEnter(ch *Character, m *Map) {
 	}
 	if sm.OwnsMap(m) {
 		sm.SyncClock(ch)
-		sm.CallHook("on_changed_map", sm, ch, m.TemplateID())
+		sm.CallHook("on_changed_map", ch, m.TemplateID())
 		return
 	}
 	sm.RequestLeave(ch, false)

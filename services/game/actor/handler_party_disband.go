@@ -31,7 +31,7 @@ func (h *PartyDisbandHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 				continue
 			}
 			seen[sm] = struct{}{}
-			sm.CallHook("on_disband_party", sm)
+			sm.CallHook("on_disband_party")
 		}
 	}
 }

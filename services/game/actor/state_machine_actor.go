@@ -112,7 +112,7 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			if a.StateMachine != nil {
 				a.StateMachine.SetTimeoutDeadline(time.Time{})
 			}
-			a.callHook(ctx, "on_scheduled_timeout", a.StateMachine)
+			a.callHook(ctx, "on_scheduled_timeout")
 		}
 	case *entity.ScheduleStateMachineAfter:
 		a.scheduleHook(ctx, msg)
@@ -255,7 +255,7 @@ func (a *StateMachineActor) handleNamedTimeout(ctx actor.Context, msg *entity.St
 	} else {
 		delete(a.namedSchedules, msg.ID)
 	}
-	a.callHook(ctx, hook, a.StateMachine)
+	a.callHook(ctx, hook)
 }
 
 func (a *StateMachineActor) beginCreate(ctx actor.Context) {
@@ -276,7 +276,7 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 		return
 	}
 	luax.Close(thread)
-	a.callHook(ctx, "on_create", a.StateMachine)
+	a.callHook(ctx, "on_create")
 }
 
 func (a *StateMachineActor) registerCreateMaps(ctx actor.Context, msg *entity.ApplyStateMachineCreateMaps) {
@@ -350,11 +350,11 @@ func (a *StateMachineActor) handleEnterPlayer(ctx actor.Context, msg *entity.Ent
 		return
 	}
 	a.StateMachine.Register(msg.Character)
-	a.callHook(ctx, "on_player_enter", a.StateMachine, msg.Character)
+	a.callHook(ctx, "on_player_enter", msg.Character)
 }
 
 func (a *StateMachineActor) handleStart(ctx actor.Context) {
-	a.callHook(ctx, "on_start", a.StateMachine)
+	a.callHook(ctx, "on_start")
 }
 
 func (a *StateMachineActor) beginDetach(ctx actor.Context) {
@@ -445,7 +445,7 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()
 	gw := a.GameWorld
-	luax.CallAsync(a.luaRoot, thread, hook, args...).Then(func(result interface{}) (interface{}, error) {
+	luax.CallAsync(a.luaRoot, thread, hook, append([]interface{}{a.StateMachine}, args...)...).Then(func(result interface{}) (interface{}, error) {
 		if hook != "on_create" || root == nil {
 			return nil, nil
 		}

@@ -62,7 +62,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 
 		character.Listener.OnUpdateStats(character, stats, true)
 		if sm := character.StateMachine(); sm != nil {
-			sm.CallHook("on_player_revive", sm, character)
+			sm.CallHook("on_player_revive", character)
 		}
 	} else {
 		portal := currentMap.FindPortalByName(req.PortalName)

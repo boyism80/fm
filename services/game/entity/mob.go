@@ -594,14 +594,14 @@ func (m *Mob) onDead(attacker *Character, dieAnim constant.MobDieAnimationType) 
 	sm := mapInstance.StateMachine()
 	mapInstance.RemoveMob(m.OID, dieAnim)
 	if sm != nil {
-		sm.CallHook("on_mob_die", sm, m)
+		sm.CallHook("on_mob_die", m)
 	}
 
 	if attacker != nil {
 		attacker.Listener.OnShowMobHp(attacker, m, 0)
 	}
 	if sm := mapInstance.StateMachine(); sm != nil && !mapInstance.HasAliveMobs() {
-		sm.CallHook("on_all_monsters_dead", sm)
+		sm.CallHook("on_all_monsters_dead")
 	}
 	return true
 }

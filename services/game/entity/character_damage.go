@@ -83,6 +83,6 @@ func (ch *Character) OnKill(mobs []*Mob) {
 	}
 	mapInstance.runMobLuaHook(root, constant.CharacterHookScriptPath, "on_mob_kill", ch, all)
 	if sm := ch.StateMachine(); sm != nil {
-		sm.CallHook("on_mob_kill", sm, ch, all)
+		sm.CallHook("on_mob_kill", ch, all)
 	}
 }

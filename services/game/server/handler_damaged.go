@@ -65,7 +65,7 @@ func (h *Damaged) takeDamage(character *entity.Character, damage int32) {
 		}, true)
 		if wasAlive && character.GetHp() == 0 {
 			if sm := character.StateMachine(); sm != nil {
-				sm.CallHook("on_player_dead", sm, character)
+				sm.CallHook("on_player_dead", character)
 			}
 		}
 	} else {

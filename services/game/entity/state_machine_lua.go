@@ -315,7 +315,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "hook name expected")
 				return 0
 			}
-			args := []interface{}{machine}
+			args := []interface{}{}
 			for i := 3; i <= L.GetTop(); i++ {
 				args = append(args, L.Get(i))
 			}
