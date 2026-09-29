@@ -881,6 +881,8 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				model.ForcedReturn = iv.Value
 			case "fieldLimit":
 				model.FieldLimit = iv.Value
+			case "fieldType":
+				model.FieldType = FieldType(iv.Value)
 			case "VRTop":
 				model.VRTop = iv.Value
 			case "VRLeft":
@@ -945,6 +947,9 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 				model.ForcedReturn, _ = strconv.Atoi(v.Value)
 			case "fieldLimit":
 				model.FieldLimit, _ = strconv.Atoi(v.Value)
+			case "fieldType":
+				fieldType, _ := strconv.Atoi(v.Value)
+				model.FieldType = FieldType(fieldType)
 			case "VRTop":
 				model.VRTop, _ = strconv.Atoi(v.Value)
 			case "VRLeft":

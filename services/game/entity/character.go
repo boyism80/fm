@@ -130,6 +130,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		CrushRings:        RingsToDTO(ch.Inventory.Rings.Left),
 		FriendshipRings:   RingsToDTO(ch.Inventory.Rings.Mid),
 		MarriageRings:     RingsToDTO(ch.Inventory.Rings.Right),
+		HasTeam:           ch.GetMap() != nil && ch.GetMap().Wz.HasTeam(),
 		Team:              carnivalTeam,
 	}
 	if guildID, ok := ch.GetGuildID(); ok && ch.GameWorld != nil {

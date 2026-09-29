@@ -27,6 +27,7 @@ type SpawnPlayer struct {
 	MountExp          uint32
 	MountFatigue      uint32
 	Chalkboard        string
+	HasTeam           bool
 	Team              constant.CarnivalTeam
 	CrushRings        []*dto.Ring
 	FriendshipRings   []*dto.Ring
@@ -122,8 +123,8 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	}
 
 	writer.WriteU8(0)
-	if p.Team >= 0 {
-		writer.WriteU8(uint8(p.Team))
+	if p.HasTeam {
+		writer.Write8(int8(p.Team))
 	}
 	writer.WriteU8(0)
 	writer.WriteU8(0)

@@ -29,6 +29,14 @@ const dropPointSearchOffset int16 = 50
 
 const ForcedReturnNone = 999999999
 
+type FieldType int
+
+const (
+	FieldTypeCoconut               FieldType = 4
+	FieldTypeMonsterCarnival       FieldType = 10
+	FieldTypeMonsterCarnivalRevive FieldType = 11
+)
+
 type Map struct {
 	ID           uint32
 	Name         string
@@ -37,6 +45,7 @@ type Map struct {
 	ReturnMapId  int
 	ForcedReturn int
 	FieldLimit   int
+	FieldType    FieldType
 
 	VRTop             int
 	VRLeft            int
@@ -71,6 +80,19 @@ func (m *Map) HasForcedReturn() bool {
 
 func (m *Map) BlocksPotionUse() bool {
 	return m != nil && m.FieldLimit&0x400 != 0
+}
+
+// The client field of these types reads one extra team byte at the end of the spawn player packet.
+func (m *Map) HasTeam() bool {
+	if m == nil {
+		return false
+	}
+	switch m.FieldType {
+	case FieldTypeCoconut, FieldTypeMonsterCarnival, FieldTypeMonsterCarnivalRevive:
+		return true
+	default:
+		return false
+	}
 }
 
 func footholdSurfaceYAtX(f Foothold, x int16) int16 {
