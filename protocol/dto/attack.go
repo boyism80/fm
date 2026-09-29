@@ -58,7 +58,8 @@ func (header *AttackHeader) deserialize(sr *stream.StreamReader) {
 		constant.SkillCorkscrewBlow,
 		constant.SkillCorkscrewBlowCygnus,
 		constant.SkillRapidFire,
-		constant.SkillGrenade:
+		constant.SkillGrenade,
+		constant.SkillPoisonBomb:
 		header.Charge = sr.ReadU32()
 	default:
 		header.Charge = 0
@@ -100,7 +101,8 @@ func (a *AttackInfo) Serialize(sw *stream.StreamWriter) error {
 		constant.SkillCorkscrewBlow,
 		constant.SkillCorkscrewBlowCygnus,
 		constant.SkillRapidFire,
-		constant.SkillGrenade:
+		constant.SkillGrenade,
+		constant.SkillPoisonBomb:
 		sw.WriteU32(a.Charge)
 	}
 

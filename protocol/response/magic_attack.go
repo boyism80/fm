@@ -2,6 +2,7 @@ package response
 
 import (
 	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 )
 
@@ -46,7 +47,8 @@ func (a *MagicAttack) Serialize(writer *stream.StreamWriter) error {
 		}
 	}
 
-	if a.Charge > 0 {
+	switch constant.SkillID(a.Skill) {
+	case constant.SkillBigBang, constant.SkillBigBang2221001, constant.SkillBigBang2321001:
 		writer.WriteU32(a.Charge)
 	}
 
