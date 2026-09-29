@@ -129,6 +129,7 @@ local function create(cfg)
 	local hub_map = cfg.hub_map
 	local lab1 = cfg.lab1
 	local lab2 = cfg.lab2
+	local ending_npcs = cfg.ending_npcs
 
 	local function end_run(sm)
 		sm:finish(exit_map)
@@ -269,32 +270,13 @@ local function create(cfg)
 				else
 					pq.party_exp(sm, 30000)
 				end
-				local urete = group:map(urete_map)
-				local reward = group:map(reward_map)
-				if ok then
-					if urete ~= nil then
-						urete:spawn_npc(2112002, 232, 150)
-					end
-					if reward ~= nil then
-						reward:spawn_npc(2112003, 157, 128)
-						reward:spawn_npc(2112004, 107, 128)
-						reward:spawn_npc(2112002, 320, 128)
-					end
-					if boss ~= nil then
-						boss:spawn_npc(2112004, -416, -116)
-						boss:spawn_npc(2112003, -300, -126)
-					end
-				else
-					if urete ~= nil then
-						urete:spawn_npc(2112001, 232, 150)
-					end
-					if reward ~= nil then
-						reward:spawn_npc(2112009, 111, 128)
-						reward:spawn_npc(2112008, 211, 128)
-					end
-					if boss ~= nil then
-						boss:spawn_npc(2112009, -416, -116)
-						boss:spawn_npc(2112008, -300, -126)
+				local spawns = ok and ending_npcs.success or ending_npcs.fail
+				for _, map_id in ipairs({ urete_map, reward_map, boss_map }) do
+					local map = group:map(map_id)
+					if map ~= nil then
+						for _, npc in ipairs(spawns[map_id]) do
+							map:spawn_npc(npc[1], npc[2], npc[3])
+						end
 					end
 				end
 			end
