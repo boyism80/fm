@@ -453,7 +453,6 @@ func (l *MapListenerImpl) OnDoorRemoved(mapInstance *entity.Map, door *entity.Do
 	door.Broadcast(&response.SpawnPortal{
 		DestMapID:   response.DisabledPortalMapID,
 		SourceMapID: response.DisabledPortalMapID,
-		SkillID:     0,
 		Position:    nil,
 	}, nil)
 }

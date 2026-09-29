@@ -117,7 +117,6 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	viewer.Send(&response.SpawnPortal{
 		DestMapID:   d.Return.MapID,
 		SourceMapID: d.Field.MapID,
-		SkillID:     uint32(d.SkillID),
 		Position:    &portalPoint,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -133,7 +132,6 @@ func (d *Door) SendDestroySyncToViewer(viewer *Character) {
 	viewer.Send(&response.SpawnPortal{
 		DestMapID:   response.DisabledPortalMapID,
 		SourceMapID: response.DisabledPortalMapID,
-		SkillID:     0,
 		Position:    nil,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -174,7 +172,6 @@ func (d *Door) SendOwnerPortalResync(viewer *Character) {
 	_ = viewer.Send(&response.SpawnPortal{
 		DestMapID:   d.Return.MapID,
 		SourceMapID: d.Field.MapID,
-		SkillID:     uint32(d.SkillID),
 		Position:    &portalPoint,
 	}, types.SEND_POLICY_ENCRYPT)
 }
