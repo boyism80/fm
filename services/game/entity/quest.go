@@ -54,13 +54,6 @@ func (qp *Quest) SetDeadline(t time.Time) {
 	qp.Deadline = t
 }
 
-func (qp *Quest) SetDeadlineAfter(d time.Duration) {
-	if qp == nil || d <= 0 {
-		return
-	}
-	qp.Deadline = clock.Now().Add(d)
-}
-
 func (qp *Quest) ResetDeadline() {
 	if qp == nil {
 		return

@@ -17,7 +17,7 @@ func (h *RemoveDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *Re
 	}
 	for _, m := range a.Maps() {
 		if m != nil && m.GetMapID() == msg.MapID {
-			m.RemoveDoorByOwnerSkill(msg.OwnerID, constant.SkillID(msg.SkillID), true)
+			m.RemoveOwnerDoor(msg.OwnerID, constant.SkillID(msg.SkillID), true)
 			return
 		}
 	}

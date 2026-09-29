@@ -189,7 +189,7 @@ func (ch *Character) SendDestroySyncToViewer(viewer *Character) {
 	viewer.Send(&response.LeavePlayer{ID: ch.GetID()}, types.SEND_POLICY_ENCRYPT)
 }
 
-func summonTimerKey(skillID constant.SkillID) string {
+func (ch *Character) summonTimerKey(skillID constant.SkillID) string {
 	return fmt.Sprintf("summon:%d", skillID)
 }
 
@@ -232,8 +232,8 @@ func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, mov
 	ch.summons[skillID] = s
 	m.AddSummon(s)
 	if duration > 0 {
-		_ = ch.AddTimer(summonTimerKey(s.SkillID), duration, false, func() {
-			ch.handleSummonExpireBySkill(s.SkillID)
+		_ = ch.AddTimer(ch.summonTimerKey(s.SkillID), duration, false, func() {
+			ch.expireSummon(s.SkillID)
 		})
 	}
 	return s
@@ -360,7 +360,7 @@ func (ch *Character) RemoveSummon(target *Summon, animated bool) {
 	if target == nil {
 		return
 	}
-	_ = ch.RemoveTimer(summonTimerKey(target.SkillID))
+	_ = ch.RemoveTimer(ch.summonTimerKey(target.SkillID))
 	if m := target.GetMap(); m != nil && target.OID != 0 {
 		m.RemoveSummon(target.OID, animated)
 	}
@@ -382,7 +382,7 @@ func (ch *Character) RemoveDoor(target *Door, animated bool) {
 	ch.Listener.OnPartyMemberFieldsChanged(ch)
 }
 
-func (ch *Character) RemoveDoorBySkill(skillID constant.SkillID, animated bool) {
+func (ch *Character) RemoveSkillDoor(skillID constant.SkillID, animated bool) {
 	if ch.doors == nil {
 		return
 	}
@@ -456,7 +456,7 @@ func (ch *Character) ClearDoors() {
 	}
 }
 
-func (ch *Character) handleSummonExpireBySkill(skillID constant.SkillID) {
+func (ch *Character) expireSummon(skillID constant.SkillID) {
 	if ch.summons == nil {
 		return
 	}
@@ -1196,7 +1196,7 @@ func (ch *Character) broadcastLevelUpEffect() {
 	}, nil)
 }
 
-func debuffTimerKey(flag constant.DebuffFlag) string {
+func (ch *Character) debuffTimerKey(flag constant.DebuffFlag) string {
 	return fmt.Sprintf("debuff_%d_%d", flag.Position, flag.Mask)
 }
 
@@ -1215,12 +1215,12 @@ func (ch *Character) AddDebuff(holder *Debuff) {
 	if ch.debuffs == nil {
 		ch.debuffs = make(map[constant.DebuffFlag]*Debuff)
 	}
-	ch.RemoveTimer(debuffTimerKey(holder.Flag))
+	ch.RemoveTimer(ch.debuffTimerKey(holder.Flag))
 	ch.debuffs[holder.Flag] = holder
 	if holder.Duration > 0 {
 		flag := holder.Flag
-		ch.AddTimer(debuffTimerKey(flag), holder.Duration, false, func() {
-			ch.RemoveTimer(debuffTimerKey(flag))
+		ch.AddTimer(ch.debuffTimerKey(flag), holder.Duration, false, func() {
+			ch.RemoveTimer(ch.debuffTimerKey(flag))
 			if _, ok := ch.debuffs[flag]; ok {
 				delete(ch.debuffs, flag)
 				ch.Listener.OnDebuffRemoved(ch, []constant.DebuffFlag{flag})
@@ -1249,7 +1249,7 @@ func (ch *Character) RemoveDebuff(flags ...constant.DebuffFlag) {
 	var removed []constant.DebuffFlag
 	if ch.debuffs != nil {
 		for _, flag := range flags {
-			ch.RemoveTimer(debuffTimerKey(flag))
+			ch.RemoveTimer(ch.debuffTimerKey(flag))
 			if _, ok := ch.debuffs[flag]; ok {
 				delete(ch.debuffs, flag)
 				removed = append(removed, flag)

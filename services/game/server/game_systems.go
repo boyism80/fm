@@ -191,7 +191,7 @@ func (s mapSystem) RemoveInstanceMap(instanceKey uint32) error {
 	return nil
 }
 
-func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx actor.Context) int {
+func (s mapSystem) Reset(L *lua.LState, mapInstance *entity.Map, actorCtx actor.Context) int {
 	if mapInstance == nil {
 		if L != nil {
 			L.Push(lua.LBool(false))
@@ -213,7 +213,7 @@ func (s mapSystem) ResetFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx
 	})
 }
 
-func (s mapSystem) RespawnFromLua(L *lua.LState, mapInstance *entity.Map, actorCtx actor.Context, includeNegativeMobTime bool) int {
+func (s mapSystem) Respawn(L *lua.LState, mapInstance *entity.Map, actorCtx actor.Context, includeNegativeMobTime bool) int {
 	if mapInstance == nil {
 		if L != nil {
 			L.Push(lua.LNumber(0))
@@ -255,7 +255,7 @@ func pushRunOnMapResult(L *lua.LState, ok bool, result lua.LValue, errMsg string
 	return 3
 }
 
-func (s mapSystem) RunOnMapFromLua(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int {
+func (s mapSystem) RunScript(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int {
 	if L == nil {
 		return 0
 	}

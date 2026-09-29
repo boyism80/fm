@@ -79,7 +79,7 @@ func registerClockLuaFuncs(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LString("actor PID not found"))
 			return 2
 		}
-		mapInstance := gs.getMapByActorPID(pid)
+		mapInstance := gs.actorPIDToMap(pid)
 		if mapInstance == nil {
 			L.Push(lua.LBool(false))
 			L.Push(lua.LString("map not found"))
@@ -156,7 +156,7 @@ func requestServerDateTimeFromLua(gs *GameServer, L *lua.LState, reset bool, dat
 		L.Push(lua.LString("actor PID not found"))
 		return 2
 	}
-	mapInstance := gs.getMapByActorPID(pid)
+	mapInstance := gs.actorPIDToMap(pid)
 	if mapInstance == nil {
 		L.Push(lua.LBool(false))
 		L.Push(lua.LString("map not found"))

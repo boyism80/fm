@@ -343,10 +343,10 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			cfg, cfgOK := luax.GetConfiguration(L)
 			if !cfgOK || cfg.ActorContext == nil {
-				machine.After(id, ms, hook)
+				machine.Schedule(id, ms, hook)
 				return 0
 			}
-			promise := machine.AfterAsync(cfg.ActorContext, id, ms, hook)
+			promise := machine.ScheduleAsync(cfg.ActorContext, id, ms, hook)
 			if promise == nil {
 				return 0
 			}

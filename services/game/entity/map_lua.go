@@ -91,7 +91,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				if v, ok := L.Get(3).(lua.LNumber); ok {
 					limit = int(v)
 				}
-				for _, mob := range mapInstance.MobsByTemplate(mobWZID, limit) {
+				for _, mob := range mapInstance.TemplateMobs(mobWZID, limit) {
 					tbl.RawSetInt(int(mob.OID), luax.NewLuable(L, mob))
 				}
 			} else {
@@ -112,7 +112,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			mobID := uint32(L.CheckInt(2))
-			mobs := mapInstance.MobsByTemplate(mobID, 1)
+			mobs := mapInstance.TemplateMobs(mobID, 1)
 			if len(mobs) == 0 {
 				L.Push(lua.LNil)
 				return 1
@@ -724,7 +724,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				includeNegativeMobTime = lua.LVAsBool(L.Get(2))
 			}
 			cfg, _ := luax.GetConfiguration(L)
-			return mapInstance.GameWorld.GetMapSystem().RespawnFromLua(L, mapInstance, cfg.ActorContext, includeNegativeMobTime)
+			return mapInstance.GameWorld.GetMapSystem().Respawn(L, mapInstance, cfg.ActorContext, includeNegativeMobTime)
 		},
 		"block_gen": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -937,7 +937,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			cfg, _ := luax.GetConfiguration(L)
-			return mapInstance.GameWorld.GetMapSystem().ResetFromLua(L, mapInstance, cfg.ActorContext)
+			return mapInstance.GameWorld.GetMapSystem().Reset(L, mapInstance, cfg.ActorContext)
 		},
 		"portal": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

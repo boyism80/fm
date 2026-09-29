@@ -115,7 +115,7 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			a.callHook(ctx, "on_scheduled_timeout", a.StateMachine)
 		}
 	case *entity.ScheduleStateMachineAfter:
-		a.scheduleAfter(ctx, msg)
+		a.scheduleHook(ctx, msg)
 	case *entity.ScheduleStateMachineCron:
 		a.scheduleCron(ctx, msg)
 	case *entity.CancelStateMachineNamedSchedule:
@@ -150,7 +150,7 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	}
 }
 
-func (a *StateMachineActor) scheduleAfter(ctx actor.Context, msg *entity.ScheduleStateMachineAfter) {
+func (a *StateMachineActor) scheduleHook(ctx actor.Context, msg *entity.ScheduleStateMachineAfter) {
 	if msg == nil {
 		return
 	}

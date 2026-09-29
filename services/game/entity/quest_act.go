@@ -198,7 +198,7 @@ func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, er
 		qp.Forfeited = forfeited
 		qp.StatusRecord.WriteString("")
 		if def.Meta.TimeLimit2 > 0 {
-			qp.SetDeadlineAfter(time.Duration(def.Meta.TimeLimit2) * time.Second)
+			qp.SetDeadline(clock.Now().Add(time.Duration(def.Meta.TimeLimit2) * time.Second))
 		} else {
 			qp.ResetDeadline()
 		}

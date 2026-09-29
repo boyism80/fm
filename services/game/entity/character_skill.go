@@ -1,5 +1,9 @@
 package entity
 
+import (
+	"log"
+)
+
 func (ch *Character) GetSkillBookIndex() int {
 	class := ch.Class
 
@@ -52,4 +56,37 @@ func (ch *Character) GetTotalSkillLevel(skillID uint32) int {
 		return 0
 	}
 	return entry.Level()
+}
+
+func (ch *Character) UseAttackSkill(skillID uint32) bool {
+	if ch.GameWorld == nil {
+		return false
+	}
+	resources := ch.GameWorld.GetResources()
+	if resources == nil {
+		return false
+	}
+	wzSkill := resources.GetSkill(skillID)
+	if wzSkill == nil {
+		log.Printf("Skill not found: %d", skillID)
+		return false
+	}
+	skillLevel := ch.GetTotalSkillLevel(skillID)
+	if skillLevel <= 0 {
+		log.Printf("Character does not have skill %d or skill level is 0", skillID)
+		return false
+	}
+	levelData := wzSkill.GetLevelData(skillLevel)
+	if levelData == nil {
+		return false
+	}
+	if levelData.Cooldown > 0 {
+		skillEntry := ch.Skills.Get(skillID)
+		if skillEntry == nil || skillEntry.IsCooling() {
+			log.Printf("Skill %d is on cooldown", skillID)
+			return false
+		}
+		skillEntry.StartCooldown(levelData.Cooldown)
+	}
+	return true
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
-	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -47,7 +46,7 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	var skillLevel uint8 = 0
 	skillID := req.Skill
 	if skillID != 0 {
-		if !h.validateSkillForAttack(character, skillID) {
+		if !character.UseAttackSkill(skillID) {
 			return nil
 		}
 		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
@@ -143,41 +142,4 @@ func readDamagesFromLuaTableInto(damagesTable *lua.LTable, damages []dto.AttackP
 			damages[i].DamagePairs = pairs
 		}
 	}
-}
-
-func (h *Attack) validateSkillForAttack(character *entity.Character, skillID uint32) bool {
-	var wzSkill *wz.Skill
-	if character.GameWorld != nil {
-		resources := character.GameWorld.GetResources()
-		if resources != nil {
-			wzSkill = resources.GetSkill(skillID)
-		}
-	}
-
-	if wzSkill == nil {
-		log.Printf("Skill not found: %d", skillID)
-		return false
-	}
-
-	skillLevel := character.GetTotalSkillLevel(skillID)
-	if skillLevel <= 0 {
-		log.Printf("Character does not have skill %d or skill level is 0", skillID)
-		return false
-	}
-
-	levelData := wzSkill.GetLevelData(skillLevel)
-	if levelData == nil {
-		return false
-	}
-
-	if levelData.Cooldown > 0 {
-		skillEntry := character.Skills.Get(skillID)
-		if skillEntry == nil || skillEntry.IsCooling() {
-			log.Printf("Skill %d is on cooldown", skillID)
-			return false
-		}
-		skillEntry.StartCooldown(levelData.Cooldown)
-	}
-
-	return true
 }

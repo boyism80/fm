@@ -89,7 +89,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	params := buildActiveSkillParams(root, mapInstance, req)
+	params := h.skillParams(root, mapInstance, req)
 
 	if !h.runActivatingHooks(root, ch, req, skillEntry, params) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
@@ -175,7 +175,7 @@ func (h *ActiveSkill) showActiveSkillEffect(ch *entity.Character, req *request.A
 	ch.Listener.OnUpdateStats(ch, nil, true)
 }
 
-func buildActiveSkillParams(L *lua.LState, mapInstance *entity.Map, req *request.ActiveSkill) lua.LValue {
+func (h *ActiveSkill) skillParams(L *lua.LState, mapInstance *entity.Map, req *request.ActiveSkill) lua.LValue {
 	params := L.NewTable()
 	if req.MagnetMobData != nil {
 		magnet := L.NewTable()

@@ -383,7 +383,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	gs.mobListener = &MobListenerImpl{}
 	gs.packetHandlers = NewPacketHandlerRegistry(gs)
 	luax.RegisterOnCreateHook(func(luaState *lua.LState) {
-		registerGameLuaState(gs, luaState)
+		gs.registerGameLuaState(luaState)
 	})
 
 	gs.preCreateMaps()
@@ -572,7 +572,7 @@ func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
 	})
 }
 
-func (gs *GameServer) getMapByActorPID(pid *actor.PID) *entity.Map {
+func (gs *GameServer) actorPIDToMap(pid *actor.PID) *entity.Map {
 	if gs == nil || pid == nil {
 		return nil
 	}

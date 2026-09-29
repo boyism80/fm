@@ -39,11 +39,10 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 		return fmt.Errorf("character is not in a map")
 	}
 
-	attackHandler := (&Attack{}).New(h.gs)
 	var skillLevel uint8 = 0
 	skillID := req.Skill
 	if skillID != 0 {
-		if !attackHandler.validateSkillForAttack(character, skillID) {
+		if !character.UseAttackSkill(skillID) {
 			return nil
 		}
 		skillLevel = uint8(character.GetTotalSkillLevel(skillID))

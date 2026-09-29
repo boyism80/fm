@@ -37,7 +37,7 @@ func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
 		return nil
 	}
 
-	door := mapInstance.FindDoorByOwner(req.OwnerCharacterID)
+	door := mapInstance.FindDoorOwner(req.OwnerCharacterID)
 	if door == nil || door.Map != mapInstance {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil

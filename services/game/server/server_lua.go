@@ -57,7 +57,7 @@ func luaArgToInterface(v lua.LValue) (interface{}, error) {
 	}
 }
 
-func registerSkillConstants(luaState *lua.LState) {
+func (gs *GameServer) registerSkillConstants(luaState *lua.LState) {
 	skillTable := luaState.NewTable()
 	for key, skillID := range constant.AllSkillConstants() {
 		skillTable.RawSetString(key, lua.LNumber(skillID))
@@ -65,7 +65,7 @@ func registerSkillConstants(luaState *lua.LState) {
 	luaState.SetGlobal("Skill", skillTable)
 }
 
-func registerBuffFlag(luaState *lua.LState) {
+func (gs *GameServer) registerBuffFlag(luaState *lua.LState) {
 	buffFlagTable := luaState.NewTable()
 	for name, bf := range constant.AllBuffFlags() {
 		entry := luaState.NewTable()
@@ -76,7 +76,7 @@ func registerBuffFlag(luaState *lua.LState) {
 	luaState.SetGlobal("BuffFlag", buffFlagTable)
 }
 
-func registerDebuffFlag(luaState *lua.LState) {
+func (gs *GameServer) registerDebuffFlag(luaState *lua.LState) {
 	debuffFlagTable := luaState.NewTable()
 	for name, df := range constant.AllDebuffFlags() {
 		entry := luaState.NewTable()
@@ -88,7 +88,7 @@ func registerDebuffFlag(luaState *lua.LState) {
 	luaState.SetGlobal("DebuffFlag", debuffFlagTable)
 }
 
-func registerMobBuff(luaState *lua.LState) {
+func (gs *GameServer) registerMobBuff(luaState *lua.LState) {
 	mobBuffTable := luaState.NewTable()
 	for name, st := range constant.AllMobBuffs() {
 		entry := luaState.NewTable()
@@ -98,7 +98,7 @@ func registerMobBuff(luaState *lua.LState) {
 	luaState.SetGlobal("MobBuff", mobBuffTable)
 }
 
-func registerBuffType(luaState *lua.LState) {
+func (gs *GameServer) registerBuffType(luaState *lua.LState) {
 	buffTypeTable := luaState.NewTable()
 	for name, buffType := range constant.AllBuffTypes() {
 		buffTypeTable.RawSetString(name, lua.LNumber(buffType))
@@ -106,7 +106,7 @@ func registerBuffType(luaState *lua.LState) {
 	luaState.SetGlobal("BuffType", buffTypeTable)
 }
 
-func registerWeaponType(luaState *lua.LState) {
+func (gs *GameServer) registerWeaponType(luaState *lua.LState) {
 	weaponTypeTable := luaState.NewTable()
 	for name, wt := range constant.AllWeaponTypes() {
 		weaponTypeTable.RawSetString(name, lua.LNumber(wt))
@@ -114,7 +114,7 @@ func registerWeaponType(luaState *lua.LState) {
 	luaState.SetGlobal("WeaponType", weaponTypeTable)
 }
 
-func registerConsumeType(luaState *lua.LState) {
+func (gs *GameServer) registerConsumeType(luaState *lua.LState) {
 	consumeTypeTable := luaState.NewTable()
 	for name, ct := range constant.AllConsumeTypes() {
 		consumeTypeTable.RawSetString(name, lua.LNumber(ct))
@@ -122,7 +122,7 @@ func registerConsumeType(luaState *lua.LState) {
 	luaState.SetGlobal("ConsumeType", consumeTypeTable)
 }
 
-func registerEquipmentPartConstants(luaState *lua.LState) {
+func (gs *GameServer) registerEquipmentPartConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("Cap", lua.LNumber(constant.EquipmentPartsCap))
 	t.RawSetString("Face", lua.LNumber(constant.EquipmentPartsFace))
@@ -139,7 +139,7 @@ func registerEquipmentPartConstants(luaState *lua.LState) {
 	luaState.SetGlobal("EquipmentPart", t)
 }
 
-func registerInventoryTypeConstants(luaState *lua.LState) {
+func (gs *GameServer) registerInventoryTypeConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("Equipment", lua.LNumber(constant.InventoryTypeEquipment))
 	t.RawSetString("Use", lua.LNumber(constant.InventoryTypeConsume))
@@ -150,14 +150,14 @@ func registerInventoryTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("InventoryType", t)
 }
 
-func registerGenderConstants(luaState *lua.LState) {
+func (gs *GameServer) registerGenderConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("Male", lua.LNumber(constant.GenderMale))
 	t.RawSetString("Female", lua.LNumber(constant.GenderFemale))
 	luaState.SetGlobal("Gender", t)
 }
 
-func registerMorphConstants(luaState *lua.LState) {
+func (gs *GameServer) registerMorphConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("Barrel", lua.LNumber(constant.MorphBarrel))
 	t.RawSetString("Transform", lua.LNumber(constant.MorphTransform))
@@ -169,7 +169,7 @@ func registerMorphConstants(luaState *lua.LState) {
 	luaState.SetGlobal("Morph", t)
 }
 
-func registerStatConstants(luaState *lua.LState) {
+func (gs *GameServer) registerStatConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("Level", lua.LNumber(constant.StatLevel))
 	t.RawSetString("Exp", lua.LNumber(constant.StatEXP))
@@ -189,7 +189,7 @@ func registerStatConstants(luaState *lua.LState) {
 	luaState.SetGlobal("STAT", t)
 }
 
-func registerClassConstants(luaState *lua.LState) {
+func (gs *GameServer) registerClassConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, code := range constant.AllClassConstants() {
 		t.RawSetString(name, lua.LNumber(code))
@@ -197,7 +197,7 @@ func registerClassConstants(luaState *lua.LState) {
 	luaState.SetGlobal("Class", t)
 }
 
-func registerStanceConstants(luaState *lua.LState) {
+func (gs *GameServer) registerStanceConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllStanceConstants() {
 		t.RawSetString(name, lua.LNumber(value))
@@ -205,7 +205,7 @@ func registerStanceConstants(luaState *lua.LState) {
 	luaState.SetGlobal("Stance", t)
 }
 
-func registerObjectTypeConstants(luaState *lua.LState) {
+func (gs *GameServer) registerObjectTypeConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllObjectTypeConstants() {
 		t.RawSetString(name, lua.LNumber(value))
@@ -213,7 +213,7 @@ func registerObjectTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("ObjectType", t)
 }
 
-func registerRoleConstants(luaState *lua.LState) {
+func (gs *GameServer) registerRoleConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllCharacterRoles() {
 		t.RawSetString(name, lua.LNumber(value))
@@ -221,7 +221,7 @@ func registerRoleConstants(luaState *lua.LState) {
 	luaState.SetGlobal("ROLE", t)
 }
 
-func registerMobDieAnimationConstants(luaState *lua.LState) {
+func (gs *GameServer) registerMobDieAnimationConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllMobDieAnimationTypes() {
 		t.RawSetString(name, lua.LNumber(value))
@@ -229,7 +229,7 @@ func registerMobDieAnimationConstants(luaState *lua.LState) {
 	luaState.SetGlobal("MobDieAnimation", t)
 }
 
-func registerMobSpawnTypeConstants(luaState *lua.LState) {
+func (gs *GameServer) registerMobSpawnTypeConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllMobSpawnTypes() {
 		t.RawSetString(name, lua.LNumber(value))
@@ -237,7 +237,7 @@ func registerMobSpawnTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("MobSpawnType", t)
 }
 
-func registerSummonConstants(luaState *lua.LState) {
+func (gs *GameServer) registerSummonConstants(luaState *lua.LState) {
 	moveTable := luaState.NewTable()
 	for name, value := range constant.AllSummonMovementTypes() {
 		moveTable.RawSetString(name, lua.LNumber(value))
@@ -251,7 +251,7 @@ func registerSummonConstants(luaState *lua.LState) {
 	luaState.SetGlobal("SummonType", typeTable)
 }
 
-func registerIncomingHitConstants(luaState *lua.LState) {
+func (gs *GameServer) registerIncomingHitConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, v := range constant.AllIncomingHitConstants() {
 		t.RawSetString(name, lua.LNumber(v))
@@ -259,7 +259,7 @@ func registerIncomingHitConstants(luaState *lua.LState) {
 	luaState.SetGlobal("IncomingHit", t)
 }
 
-func registerMistTypeConstants(luaState *lua.LState) {
+func (gs *GameServer) registerMistTypeConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllMistTypes() {
 		t.RawSetString(name, lua.LNumber(value))
@@ -267,14 +267,14 @@ func registerMistTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("MistType", t)
 }
 
-func registerSkillEffectTypeConstants(luaState *lua.LState) {
+func (gs *GameServer) registerSkillEffectTypeConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("Cast", lua.LNumber(pconst.SkillEffectTypeCast))
 	t.RawSetString("Affected", lua.LNumber(pconst.SkillEffectTypeAffected))
 	luaState.SetGlobal("SkillEffectType", t)
 }
 
-func registerEffectTypeConstants(luaState *lua.LState) {
+func (gs *GameServer) registerEffectTypeConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("LevelUp", lua.LNumber(response.EffectTypeLevelUp))
 	t.RawSetString("ClassChange", lua.LNumber(response.EffectTypeClassChange))
@@ -284,7 +284,7 @@ func registerEffectTypeConstants(luaState *lua.LState) {
 	luaState.SetGlobal("EffectType", t)
 }
 
-func registerExchangeResultConstants(luaState *lua.LState) {
+func (gs *GameServer) registerExchangeResultConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	t.RawSetString("OK", lua.LNumber(entity.ExchangeOK))
 	t.RawSetString("LackCost", lua.LNumber(entity.ExchangeLackCost))
@@ -292,7 +292,7 @@ func registerExchangeResultConstants(luaState *lua.LState) {
 	luaState.SetGlobal("ExchangeResult", t)
 }
 
-func registerServerMessageConstants(luaState *lua.LState) {
+func (gs *GameServer) registerServerMessageConstants(luaState *lua.LState) {
 	t := luaState.NewTable()
 	for name, value := range constant.AllServerMessageTypes() {
 		t.RawSetString(name, lua.LNumber(value))
@@ -328,7 +328,7 @@ func registerWzMobName(gs *GameServer, L *lua.LState) {
 	})
 }
 
-func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
+func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	luax.RegisterLuaType[*entity.PartyMember](luaState)
 	luax.RegisterLuaType[*entity.Party](luaState)
 	luax.RegisterLuaType[*entity.StateMachine](luaState)
@@ -389,31 +389,31 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 	luax.RegisterLuaDerivedType[*entity.Installation, *entity.ItemCore](luaState)
 	luax.RegisterLuaDerivedType[*entity.Pet, *entity.ItemCore](luaState)
 
-	registerBuffFlag(luaState)
-	registerDebuffFlag(luaState)
-	registerMobBuff(luaState)
-	registerBuffType(luaState)
-	registerWeaponType(luaState)
-	registerConsumeType(luaState)
-	registerSkillConstants(luaState)
-	registerEquipmentPartConstants(luaState)
-	registerInventoryTypeConstants(luaState)
-	registerStatConstants(luaState)
-	registerGenderConstants(luaState)
-	registerMorphConstants(luaState)
-	registerClassConstants(luaState)
-	registerStanceConstants(luaState)
-	registerObjectTypeConstants(luaState)
-	registerRoleConstants(luaState)
-	registerMobDieAnimationConstants(luaState)
-	registerMobSpawnTypeConstants(luaState)
-	registerSummonConstants(luaState)
-	registerIncomingHitConstants(luaState)
-	registerMistTypeConstants(luaState)
-	registerSkillEffectTypeConstants(luaState)
-	registerEffectTypeConstants(luaState)
-	registerExchangeResultConstants(luaState)
-	registerServerMessageConstants(luaState)
+	gs.registerBuffFlag(luaState)
+	gs.registerDebuffFlag(luaState)
+	gs.registerMobBuff(luaState)
+	gs.registerBuffType(luaState)
+	gs.registerWeaponType(luaState)
+	gs.registerConsumeType(luaState)
+	gs.registerSkillConstants(luaState)
+	gs.registerEquipmentPartConstants(luaState)
+	gs.registerInventoryTypeConstants(luaState)
+	gs.registerStatConstants(luaState)
+	gs.registerGenderConstants(luaState)
+	gs.registerMorphConstants(luaState)
+	gs.registerClassConstants(luaState)
+	gs.registerStanceConstants(luaState)
+	gs.registerObjectTypeConstants(luaState)
+	gs.registerRoleConstants(luaState)
+	gs.registerMobDieAnimationConstants(luaState)
+	gs.registerMobSpawnTypeConstants(luaState)
+	gs.registerSummonConstants(luaState)
+	gs.registerIncomingHitConstants(luaState)
+	gs.registerMistTypeConstants(luaState)
+	gs.registerSkillEffectTypeConstants(luaState)
+	gs.registerEffectTypeConstants(luaState)
+	gs.registerExchangeResultConstants(luaState)
+	gs.registerServerMessageConstants(luaState)
 	registerClockLuaFuncs(gs, luaState)
 	entity.RegisterCarnivalLua(luaState, gs)
 
@@ -742,7 +742,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LString("save: actor PID not found"))
 			return 2
 		}
-		mapInstance := gs.getMapByActorPID(pid)
+		mapInstance := gs.actorPIDToMap(pid)
 		if mapInstance == nil {
 			L.Push(lua.LBool(false))
 			L.Push(lua.LString("save: map not found"))
@@ -801,7 +801,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 		if pid == nil {
 			return 0
 		}
-		mapInstance := gs.getMapByActorPID(pid)
+		mapInstance := gs.actorPIDToMap(pid)
 		if mapInstance == nil {
 			return 0
 		}
@@ -831,7 +831,7 @@ func registerGameLuaState(gs *GameServer, luaState *lua.LState) {
 			args = append(args, arg)
 		}
 		cfg, _ := luax.GetConfiguration(L)
-		return gs.GetMapSystem().RunOnMapFromLua(L, cfg.ActorContext, mapID, scriptPath, funcName, args)
+		return gs.GetMapSystem().RunScript(L, cfg.ActorContext, mapID, scriptPath, funcName, args)
 	})
 
 	luax.RegisterFunc(luaState, "set_packet_log_enabled", func(L *lua.LState) int {

@@ -17,9 +17,9 @@ type MapSystem interface {
 	Warp(ctx actor.Context, character *Character, targetMap *Map, spawnPoint uint8) error
 	CreateReturnDoor(ch *Character, skillID constant.SkillID)
 	RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartMapWZID uint32)
-	ResetFromLua(L *lua.LState, mapInstance *Map, actorCtx actor.Context) int
-	RespawnFromLua(L *lua.LState, mapInstance *Map, actorCtx actor.Context, includeNegativeMobTime bool) int
-	RunOnMapFromLua(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int
+	Reset(L *lua.LState, mapInstance *Map, actorCtx actor.Context) int
+	Respawn(L *lua.LState, mapInstance *Map, actorCtx actor.Context, includeNegativeMobTime bool) int
+	RunScript(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int
 }
 
 type SchedulerSystem interface {

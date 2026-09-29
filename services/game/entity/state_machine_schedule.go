@@ -50,7 +50,7 @@ func NextStateMachineCronDelay(sched cron.Schedule, from time.Time) time.Duratio
 	return d
 }
 
-func (sm *StateMachine) After(id string, ms int64, hook string) {
+func (sm *StateMachine) Schedule(id string, ms int64, hook string) {
 	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
 		return
 	}
@@ -67,7 +67,7 @@ func (sm *StateMachine) After(id string, ms int64, hook string) {
 	})
 }
 
-func (sm *StateMachine) AfterAsync(ctx actor.Context, id string, ms int64, hook string) *async.Promise {
+func (sm *StateMachine) ScheduleAsync(ctx actor.Context, id string, ms int64, hook string) *async.Promise {
 	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
 		return nil
 	}

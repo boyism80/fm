@@ -650,10 +650,7 @@ func (m *Map) RemoveDoor(oid uint32, animated bool) {
 	m.removeDoorInternal(oid, animated, true)
 }
 
-func (m *Map) RemoveDoorByOwnerSkill(ownerID uint32, skillID constant.SkillID, animated bool) {
-	if m == nil {
-		return
-	}
+func (m *Map) RemoveOwnerDoor(ownerID uint32, skillID constant.SkillID, animated bool) {
 	for _, object := range m.GetObjects(constant.ObjectTypeDoor) {
 		door, ok := object.(*Door)
 		if !ok || door == nil || door.OID == 0 {
@@ -729,7 +726,7 @@ func (m *Map) GetDoor(oid uint32) *Door {
 	return nil
 }
 
-func (m *Map) FindDoorByOwner(ownerID uint32) *Door {
+func (m *Map) FindDoorOwner(ownerID uint32) *Door {
 	if m == nil || ownerID == 0 {
 		return nil
 	}
@@ -999,7 +996,7 @@ func (m *Map) KillAllMonsters(animationType constant.MobDieAnimationType) {
 	}
 }
 
-func (m *Map) MobsByTemplate(mobWZID uint32, limit int) []*Mob {
+func (m *Map) TemplateMobs(mobWZID uint32, limit int) []*Mob {
 	if m == nil {
 		return nil
 	}

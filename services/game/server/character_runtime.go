@@ -113,7 +113,7 @@ func (r *ServerCharacterRuntime) GetMapPID(characterID uint32) (pid *actor.PID, 
 	return ent.mapPID, true
 }
 
-func (r *ServerCharacterRuntime) GetCharacterIDByName(name string) (uint32, bool) {
+func (r *ServerCharacterRuntime) NameToCharacterID(name string) (uint32, bool) {
 	if r == nil {
 		return 0, false
 	}

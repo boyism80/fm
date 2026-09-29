@@ -1257,7 +1257,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			skillID := uint32(L.CheckInt(2))
-			ch.RemoveDoorBySkill(constant.SkillID(skillID), true)
+			ch.RemoveSkillDoor(constant.SkillID(skillID), true)
 			return 0
 		},
 		"clear_summons": func(L *lua.LState) int {
