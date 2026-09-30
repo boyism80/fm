@@ -9,7 +9,7 @@ return {
 			return
 		end
 		if sm:time_left() >= 120000 then
-			me:notice("카이린과 싸워 2분 이상 버텨야 합니다.", Msg.PinkText)
+			me:message("카이린과 싸워 2분 이상 버텨야 합니다.", Msg.PinkText)
 			return
 		end
 		sm:finish(0)

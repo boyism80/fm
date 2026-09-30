@@ -5,7 +5,7 @@ return {
 			me:play_portal_sound()
 			me:map(926110300)
 		else
-			me:notice("지금은 포탈이 닫혀있습니다.", Msg.PinkText)
+			me:message("지금은 포탈이 닫혀있습니다.", Msg.PinkText)
 		end
 	end
 }

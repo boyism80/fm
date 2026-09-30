@@ -2,7 +2,7 @@ return {
 	on_enter = function(me)
 		local sm = me:state_machine()
 		if sm == nil then
-			me:notice("지금은 이 포탈을 사용할 수 없습니다.", Msg.PinkText)
+			me:message("지금은 이 포탈을 사용할 수 없습니다.", Msg.PinkText)
 			return
 		end
 		local map = me:map()
@@ -23,7 +23,7 @@ return {
 		local stage = tonumber(sm:get_property("stage")) or 1
 		local curstage = (map_id % 10) + 1
 		if stage <= curstage then
-			me:notice("지금은 이 포탈을 사용할 수 없습니다.", Msg.PinkText)
+			me:message("지금은 이 포탈을 사용할 수 없습니다.", Msg.PinkText)
 			return
 		end
 		local portal = map:portal("next00")

@@ -12,7 +12,7 @@ local KEYS = {
 local function notice_all(sm, text)
 	for _, p in ipairs(sm:players()) do
 		if p ~= nil then
-			p:notice(text, Msg.LightBlueText)
+			p:message(text, Msg.LightBlueText)
 		end
 	end
 end

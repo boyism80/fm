@@ -33,7 +33,7 @@ return {
 		end
 		me:dialog(npc, "#i" .. item_id .. ":# #b#z" .. item_id .. "##k이(가) 나왔습니다.")
 		if tier.announce then
-			me:world_message(2, "[할로캣 핫타임] : " .. me:name() .. " 님이 1% 확률로 정령의힘이 깃든 귀고리를 획득하셨습니다. ")
+			me:message("[할로캣 핫타임] : " .. me:name() .. " 님이 1% 확률로 정령의힘이 깃든 귀고리를 획득하셨습니다. ", Msg.Megaphone, MessageScope.World)
 		end
 	end
 }

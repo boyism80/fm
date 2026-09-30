@@ -55,7 +55,7 @@ return {
 				else
 					qr7062:record(access:sub(1, 1) .. "1")
 				end
-				me:notice("보안장치가 해제되었습니다. 출입허가명단에 등록되었습니다.")
+				me:message("보안장치가 해제되었습니다. 출입허가명단에 등록되었습니다.")
 				local updated = qr7062:record()
 				if updated == "11" then
 					q3360:record("1")

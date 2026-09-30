@@ -251,7 +251,7 @@ local function create(cfg)
 			if id == protect_mob then
 				if sm:get_property("clear_protect") == "" then
 					sm:set_property("stage7", "1")
-					sm:notice(protect_fail_msg, Msg.PinkText)
+					sm:message(protect_fail_msg, Msg.PinkText)
 				end
 				return
 			end
@@ -265,7 +265,7 @@ local function create(cfg)
 				end
 				local ok = sm:get_property("stage7") ~= "1"
 				if ok then
-					sm:notice(protect_ok_msg)
+					sm:message(protect_ok_msg)
 					pq.party_exp(sm, 45000)
 				else
 					pq.party_exp(sm, 30000)

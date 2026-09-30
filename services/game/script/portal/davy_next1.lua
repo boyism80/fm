@@ -11,7 +11,7 @@ return {
 			me:play_portal_sound()
 			me:map(925100200)
 		else
-			me:notice("아직 이 포탈을 이용할 수 없습니다.", Msg.PinkText)
+			me:message("아직 이 포탈을 이용할 수 없습니다.", Msg.PinkText)
 		end
 	end
 }

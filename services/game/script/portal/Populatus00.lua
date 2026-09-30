@@ -37,7 +37,7 @@ end
 return {
 	on_enter = function(me)
 		if not pq.has_item(me, MEDAL_ID) then
-			me:notice("<루디브리엄의 메달>을 갖고 있어야 이 문을 지날 수 있습니다.")
+			me:message("<루디브리엄의 메달>을 갖고 있어야 이 문을 지날 수 있습니다.")
 			return
 		end
 		local record6364 = quest_record(me, 6364)
@@ -53,7 +53,7 @@ return {
 			return
 		end
 		if group:get_property("battle") == "1" then
-			me:notice("이미 파풀라투스와의 전투가 시작되어 입장할 수 없습니다.")
+			me:message("이미 파풀라투스와의 전투가 시작되어 입장할 수 없습니다.")
 			return
 		end
 		local boss_map = group:map(BOSS_MAP)
@@ -61,7 +61,7 @@ return {
 			boss_map = id2map(BOSS_MAP)
 		end
 		if player_count(boss_map) > MAX_PLAYERS then
-			me:notice("이 방은 이미 파풀라투스와의 전투를 위한 최대 인원수 만큼 가득 찼습니다.")
+			me:message("이 방은 이미 파풀라투스와의 전투를 위한 최대 인원수 만큼 가득 찼습니다.")
 			return
 		end
 		me:play_portal_sound()

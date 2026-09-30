@@ -6,7 +6,7 @@ return {
 		if trigger == nil then
 			return
 		end
-		trigger:notice("어딘가로 이동됩니다.")
+		trigger:message("어딘가로 이동됩니다.")
 		local roll = math.random(1, 100)
 		local map_id
 		if roll <= 30 then

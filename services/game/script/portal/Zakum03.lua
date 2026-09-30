@@ -12,7 +12,7 @@ return {
 			return
 		end
 		if sm:get_property("clear") ~= "1" then
-			me:notice("아직 임무를 완료하지 못하여 다음 맵으로 이동할 수 없습니다.", Msg.PinkText)
+			me:message("아직 임무를 완료하지 못하여 다음 맵으로 이동할 수 없습니다.", Msg.PinkText)
 			return
 		end
 		local paper = sm:get_property("paper") == "1"
@@ -31,7 +31,7 @@ return {
 		end
 		local code = me:exchange({}, reward)
 		if code == ExchangeResult.LackCapacity or code ~= ExchangeResult.OK then
-			me:notice("인벤토리에 공간이 부족하여 다음 맵으로 이동할 수 없습니다.", Msg.PinkText)
+			me:message("인벤토리에 공간이 부족하여 다음 맵으로 이동할 수 없습니다.", Msg.PinkText)
 			return
 		end
 		local q = me:quest(STAGE1_QUEST)

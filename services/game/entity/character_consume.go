@@ -160,19 +160,13 @@ func (ch *Character) callActiveConsumeScript(consume *Consume) (applyWZ bool, sc
 	if err != nil {
 		return applyWZ, scriptOK
 	}
-	hookName := "on_active_item"
-	applyResult := applyWZ
-	scriptOK = false
-	luax.CallAsync(root, thread, hookName, ch, consume).Then(func(value interface{}) (interface{}, error) {
-		scriptOK = true
-		vals := luax.ResultValues(value)
-		if len(vals) > 0 && vals[0] == lua.LFalse {
-			applyResult = false
-		}
-		return nil, nil
-	}).OnError(func(err error) {
-		scriptOK = true
+	ret, err := luax.Call(thread, "on_active_item", ch, consume)
+	if err != nil {
 		log.Printf("item script failed %s: %v", scriptPath, err)
-	})
-	return applyResult, scriptOK
+		return true, false
+	}
+	if ret == lua.LFalse {
+		return false, true
+	}
+	return true, true
 }

@@ -336,6 +336,28 @@ func (ch *Character) NotifyItemGained(itemID uint32) {
 	})
 }
 
+func (ch *Character) RunItemGainScript(itemID uint32) {
+	if ch == nil || itemID == 0 {
+		return
+	}
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	root := mapInstance.GetLuaRoot()
+	if root == nil {
+		return
+	}
+	scriptPath := fmt.Sprintf("script/item/%d.lua", itemID)
+	thread, err := luax.NewThread(root, scriptPath)
+	if err != nil {
+		return
+	}
+	if _, err := luax.Call(thread, "on_item_gain", ch, itemID); err != nil {
+		log.Printf("item gain script %s: %v", scriptPath, err)
+	}
+}
+
 func (inv *Inventory) GainMeso(amount int32) {
 	ch := inv.owner
 	if amount <= 0 {

@@ -20,17 +20,17 @@ return {
 				exp = 52000,
 			})
 			if code == ExchangeResult.LackCapacity then
-				me:notice("포이즌 골렘을 제거하고, 인벤토리 공간을 비워주세요.", Msg.PinkText)
+				me:message("포이즌 골렘을 제거하고, 인벤토리 공간을 비워주세요.", Msg.PinkText)
 				return
 			end
 			if code ~= ExchangeResult.OK then
-				me:notice("포이즌 골렘을 제거하고, 인벤토리 공간을 비워주세요.", Msg.PinkText)
+				me:message("포이즌 골렘을 제거하고, 인벤토리 공간을 비워주세요.", Msg.PinkText)
 				return
 			end
 			me:end_party_quest(RANKING_QUEST)
 			me:map(EXIT_MAP)
 			return
 		end
-		me:notice("포이즌 골렘을 제거하고, 인벤토리 공간을 비워주세요.", Msg.PinkText)
+		me:message("포이즌 골렘을 제거하고, 인벤토리 공간을 비워주세요.", Msg.PinkText)
 	end
 }

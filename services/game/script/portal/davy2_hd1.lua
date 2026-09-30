@@ -7,11 +7,11 @@ return {
 			return
 		end
 		if sm:get_property("hd_202") ~= "" then
-			me:notice("이번 스테이지에서는 이상 입장할 수 없습니다.", Msg.PinkText)
+			me:message("이번 스테이지에서는 이상 입장할 수 없습니다.", Msg.PinkText)
 			return
 		end
 		if not pq.is_leader(me) then
-			me:notice("파티장이 입장해야 합니다.", Msg.PinkText)
+			me:message("파티장이 입장해야 합니다.", Msg.PinkText)
 			return
 		end
 		me:play_portal_sound()

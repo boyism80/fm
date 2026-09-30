@@ -6,7 +6,7 @@ return {
 		if trigger == nil then
 			return
 		end
-		trigger:notice('가짜 바트를 때렸습니다.', Msg.PinkText)
+		trigger:message('가짜 바트를 때렸습니다.', Msg.PinkText)
 		trigger:map(120000104)
 	end
 }

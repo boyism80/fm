@@ -133,11 +133,11 @@ local function enhance(me, npc)
 		add_all(item, tier.allstat, tier.atk)
 		item:enhance_count(level + 1)
 		me:sync_item(InventoryType.Equipment, slot)
-		me:notice("강화에 성공했습니다. (" .. (level + 1) .. "강)")
+		me:message("강화에 성공했습니다. (" .. (level + 1) .. "강)")
 		return
 	end
 	if protected then
-		me:notice("[알림] 강화하락방지권으로 인해서 하락이 되지 않았습니다.", Msg.Popup)
+		me:message("[알림] 강화하락방지권으로 인해서 하락이 되지 않았습니다.", Msg.Popup)
 		return
 	end
 	if level > 0 then
@@ -145,7 +145,7 @@ local function enhance(me, npc)
 		item:enhance_count(level - 1)
 		me:sync_item(InventoryType.Equipment, slot)
 	end
-	me:notice("강화에 실패했습니다. (" .. item:enhance_count() .. "강)")
+	me:message("강화에 실패했습니다. (" .. item:enhance_count() .. "강)")
 end
 
 local function transfer(me, npc)

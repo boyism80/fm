@@ -27,13 +27,13 @@ return {
 		end
 		if pq.is_leader(me) then
 			pq.warp_portal(me, DEST, "st00")
-			sm:notice("파티장이 <암흑의 방> 에 입장하였습니다.")
+			sm:message("파티장이 <암흑의 방> 에 입장하였습니다.")
 			return
 		end
 		if map_count(group, DEST) > 0 then
 			pq.warp_portal(me, DEST, "st00")
 		else
-			me:notice("파티장이 먼저 입장해야 합니다.", Msg.PinkText)
+			me:message("파티장이 먼저 입장해야 합니다.", Msg.PinkText)
 		end
 	end
 }

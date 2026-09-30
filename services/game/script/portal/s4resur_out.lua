@@ -8,7 +8,7 @@ return {
 		if not pq.has_item(me, REWARD_ITEM) then
 			local code = me:exchange({}, { item = { [REWARD_ITEM] = 1 } })
 			if code == ExchangeResult.LackCapacity then
-				me:notice("인벤토리 공간이 부족합니다.", Msg.PinkText)
+				me:message("인벤토리 공간이 부족합니다.", Msg.PinkText)
 				return
 			end
 			if code ~= ExchangeResult.OK then

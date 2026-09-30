@@ -15,11 +15,11 @@ end
 return {
 	on_enter = function(me)
 		if not can_enter(me) then
-			me:notice("알 수 없는 힘으로 봉인되어 있습니다.", Msg.PinkText)
+			me:message("알 수 없는 힘으로 봉인되어 있습니다.", Msg.PinkText)
 			return
 		end
 		if pq.has_item(me, EGG_ID) then
-			me:notice("이미 프리져의 알을 갖고 있어 입장할 수 없습니다.", Msg.PinkText)
+			me:message("이미 프리져의 알을 갖고 있어 입장할 수 없습니다.", Msg.PinkText)
 			return
 		end
 		me:play_portal_sound()

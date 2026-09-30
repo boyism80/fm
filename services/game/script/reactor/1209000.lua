@@ -6,7 +6,7 @@ return {
 		if trigger == nil then
 			return
 		end
-		trigger:notice("진짜 바트를 찾았습니다.", Msg.PinkText)
+		trigger:message("진짜 바트를 찾았습니다.", Msg.PinkText)
 		local quest = trigger:quest(116400)
 		if quest ~= nil then
 			if quest:started() then

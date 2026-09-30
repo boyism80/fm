@@ -6,12 +6,12 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func luaYieldPromise(L *lua.LState, gw GameWorld, promise *async.Promise) int {
-	if L == nil || promise == nil {
+func luaYieldPromise(L *lua.LState, gw GameWorld, promise *async.Promise, resume func(result interface{}, err error) []lua.LValue) int {
+	if L == nil || promise == nil || gw == nil {
 		return 0
 	}
 	cfg, ok := luax.GetConfiguration(L)
-	if !ok || cfg.ActorContext == nil || gw == nil {
+	if !ok || cfg.ActorContext == nil {
 		return 0
 	}
 	pid := cfg.ActorContext.Self()
@@ -20,11 +20,18 @@ func luaYieldPromise(L *lua.LState, gw GameWorld, promise *async.Promise) int {
 		return 0
 	}
 	thread := L
-	promise.Then(func(interface{}) (interface{}, error) {
-		gw.ResumeLua(pid, root, thread, nil)
+	finish := func(result interface{}, err error) {
+		var args []lua.LValue
+		if resume != nil {
+			args = resume(result, err)
+		}
+		gw.ResumeLua(pid, root, thread, args)
+	}
+	promise.Then(func(result interface{}) (interface{}, error) {
+		finish(result, nil)
 		return nil, nil
-	}).OnError(func(error) {
-		gw.ResumeLua(pid, root, thread, nil)
+	}).OnError(func(err error) {
+		finish(nil, err)
 	})
 	return L.Yield(lua.LNil)
 }

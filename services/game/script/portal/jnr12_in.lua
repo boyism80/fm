@@ -31,9 +31,9 @@ return {
 		end
 		if n == 4 or map_count(group, 926110401) > 0 then
 			pq.party_warp(sm, 926110401)
-			sm:notice("유레테가 기계장치를 조작하자 거대한 괴물이 나타났다. 유레테는 기분나쁘게 웃으며 사라졌다.")
+			sm:message("유레테가 기계장치를 조작하자 거대한 괴물이 나타났다. 유레테는 기분나쁘게 웃으며 사라졌다.")
 		else
-			me:notice("파티원 전원이 이곳에 모여있지 않습니다.", Msg.PinkText)
+			me:message("파티원 전원이 이곳에 모여있지 않습니다.", Msg.PinkText)
 		end
 	end
 }

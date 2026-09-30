@@ -60,7 +60,7 @@ local function handle_hub(me, npc, sm, map)
 	if pq.has_item(me, 4001130, 1) then
 		pq.remove_all(4001130, me)
 		sm:set_property("stage", "1")
-		sm:notice("줄리엣은 로미오가 쓴 편지를 보고 생각에 잠겼다.")
+		sm:message("줄리엣은 로미오가 쓴 편지를 보고 생각에 잠겼다.")
 		me:dialog(npc, "이.. 이것은 로미오가 쓴 편지..?")
 		return
 	end

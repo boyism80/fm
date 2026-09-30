@@ -23,7 +23,7 @@ return {
 		if map_count(group, 920010920) > 0
 			or map_count(group, 920010921) > 0
 			or map_count(group, 920010922) > 0 then
-			me:notice("이미 감옥에 누군가가 들어가 있습니다.")
+			me:message("이미 감옥에 누군가가 들어가 있습니다.")
 			return
 		end
 		me:map(920010920)

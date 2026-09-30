@@ -161,7 +161,7 @@ return {
 		end
 		local id = mob:id()
 		if id == DARK_NEPENTHES then
-			sm:notice("Boss Spawned.")
+			sm:message("Boss Spawned.")
 			local garden = group:map(GARDEN_MAP)
 			if garden ~= nil then
 				garden:spawn_mob(PAPA_PIXIE, -830, 563)
@@ -184,7 +184,7 @@ return {
 		if count < 14 then
 			local idx = count + 1
 			map:spawn_mob(STAGE2_MOB, CX[idx], CY[idx])
-			sm:notice("Celion Spawned.", Msg.PinkText)
+			sm:message("Celion Spawned.", Msg.PinkText)
 			sm:set_property("stage2mob", tostring(count + 1))
 		else
 			map:spawn_item(STAGE2_PIECE, 1, { CX[14], CY[14] })

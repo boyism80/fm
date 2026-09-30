@@ -10,7 +10,7 @@ return {
 			me:play_portal_sound()
 			me:map(925100100)
 		else
-			me:notice("이 포탈은 잠겨 있습니다.", Msg.PinkText)
+			me:message("이 포탈은 잠겨 있습니다.", Msg.PinkText)
 		end
 	end
 }

@@ -7,7 +7,7 @@ return {
 			break
 		end
 		if not has then
-			me:notice("이곳에 출입하려면 궁전 출입 자격증이 필요합니다.", Msg.PinkText)
+			me:message("이곳에 출입하려면 궁전 출입 자격증이 필요합니다.", Msg.PinkText)
 			return
 		end
 		me:play_portal_sound()

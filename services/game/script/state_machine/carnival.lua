@@ -144,12 +144,12 @@ local function summon_mob(player, team, field, carnival_data, num)
 	local entry = carnival_data.mobs[num + 1]
 	local personal = team:personal_cp(player)
 	if entry == nil or personal == nil or personal:available_cp() < entry.spend_cp then
-		player:notice("CP가 부족합니다.", Msg.PinkText)
+		player:message("CP가 부족합니다.", Msg.PinkText)
 		return false
 	end
 	local gen = find_free_mob_gen_pos(field, carnival_data, team:id())
 	if gen == nil or not field:summon_mob(entry.id, gen.x, gen.y, team:id()) then
-		player:notice("더 이상 소환수를 불러낼 수 없습니다.", Msg.PinkText)
+		player:message("더 이상 소환수를 불러낼 수 없습니다.", Msg.PinkText)
 		return false
 	end
 	return team:use_cp(player, entry.spend_cp)
@@ -158,18 +158,18 @@ end
 local function use_skill(match, player, team, field, carnival_data, num)
 	local skill_id = carnival_data.skills[num + 1]
 	if skill_id == nil then
-		player:notice("오류가 발생했습니다.", Msg.PinkText)
+		player:message("오류가 발생했습니다.", Msg.PinkText)
 		return false
 	end
 	local skill = carnival.skill(skill_id)
 	local personal = team:personal_cp(player)
 	if skill == nil or personal == nil or personal:available_cp() < skill.spend_cp then
-		player:notice("CP가 부족합니다.", Msg.PinkText)
+		player:message("CP가 부족합니다.", Msg.PinkText)
 		return false
 	end
 	local enemy = match:enemy_team(team:id())
 	if enemy == nil or not enemy:debuff(field, skill_id) then
-		player:notice("오류가 발생했습니다.", Msg.PinkText)
+		player:message("오류가 발생했습니다.", Msg.PinkText)
 		return false
 	end
 	return team:use_cp(player, skill.spend_cp)
@@ -179,7 +179,7 @@ local function summon_guardian(player, team, field, carnival_data, num)
 	local guardian = carnival.guardian(num)
 	local personal = team:personal_cp(player)
 	if guardian == nil or personal == nil or personal:available_cp() < guardian.spend_cp then
-		player:notice("CP가 부족합니다.", Msg.PinkText)
+		player:message("CP가 부족합니다.", Msg.PinkText)
 		return false
 	end
 	local name = guardian_name(team:id(), num)
@@ -187,7 +187,7 @@ local function summon_guardian(player, team, field, carnival_data, num)
 	if is_guardian_alive(field:find_reactor_name(name))
 		or gen == nil
 		or field:spawn_reactor(guardian_reactor_id(carnival_data, team:id()), gen.x, gen.y, name, GUARDIAN_SPAWN_STATE) == nil then
-		player:notice("지금은 더 이상 수호물을 불러낼 수 없습니다.", Msg.PinkText)
+		player:message("지금은 더 이상 수호물을 불러낼 수 없습니다.", Msg.PinkText)
 		return false
 	end
 	for _, mob in pairs(field:mobs()) do

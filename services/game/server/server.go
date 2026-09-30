@@ -360,6 +360,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 		globalDisp := mq.NewDispatcher()
 		mq.Bind[*GameServer, globalMqServerDatetime](gs, globalDisp)
+		mq.Bind[*GameServer, globalMqNotice](gs, globalDisp)
 
 		globalRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),

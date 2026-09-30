@@ -3,6 +3,8 @@ package entity
 import (
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
@@ -21,6 +23,8 @@ type CharacterListener interface {
 	OnChat(ch *Character, message string, highlight bool, dontRecordHistory bool)
 	OnMesoChanged(ch *Character, meso int32)
 	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
+	OnNotice(ch *Character, messageType constant.ServerMessageType, message string, channel int, ear bool)
+	BroadcastNoticeAsync(ctx actor.Context, ch *Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise
 	OnKeyMap(ch *Character)
 	OnClock(ch *Character, seconds int32)
 	OnPartyCreated(ch *Character, partyID uint32)

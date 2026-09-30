@@ -33,7 +33,7 @@ return {
 		end
 		me:dialog(npc, "#i" .. item_id .. ":# #b#z" .. item_id .. "##k이(가) 나왔습니다.")
 		if tier.announce then
-			me:world_message(2, "[후원가챠] : " .. me:name() .. " 님이 1% 소울 벨트 또는 장공100%를 획득하였습니다.")
+			me:message("[후원가챠] : " .. me:name() .. " 님이 1% 소울 벨트 또는 장공100%를 획득하였습니다.", Msg.Megaphone, MessageScope.World)
 		end
 	end
 }

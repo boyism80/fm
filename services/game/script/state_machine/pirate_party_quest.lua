@@ -144,13 +144,13 @@ return {
 			if sm:get_property("entered_100") == "" then
 				sm:restart_timer(TIMER_DEFAULT_MS)
 				sm:set_property("entered_100", "1")
-				sm:notice("구옹이 모험가들에게 할 말이 있는 것 같습니다.")
+				sm:message("구옹이 모험가들에게 할 말이 있는 것 같습니다.")
 			end
 		elseif map_id == 925100200 then
 			if sm:get_property("entered_200") == "" then
 				sm:restart_timer(TIMER_DEFAULT_MS)
 				sm:set_property("entered_200", "1")
-				sm:notice("해적들이 외부인들을 경계합니다. 해적들을 모두 쓰러뜨리십시오!")
+				sm:message("해적들이 외부인들을 경계합니다. 해적들을 모두 쓰러뜨리십시오!")
 			elseif sm:get_property("hd_202_out") == "1" then
 				sm:set_property("hd_202_out", "")
 				local left = tonumber(sm:get_property("hd_202_left")) or TIMER_DEFAULT_MS
@@ -162,13 +162,13 @@ return {
 				sm:set_property("hd_202_left", tostring(sm:time_left()))
 				sm:restart_timer(TIMER_HD_MS)
 				sm:set_property("hd_202", "1")
-				sm:notice("해적들이 숨어있는 것 같습니다..")
+				sm:message("해적들이 숨어있는 것 같습니다..")
 			end
 		elseif map_id == 925100300 then
 			if sm:get_property("entered_300") == "" then
 				sm:restart_timer(TIMER_DEFAULT_MS)
 				sm:set_property("entered_300", "1")
-				sm:notice("해적들이 외부인들을 경계합니다. 해적들을 모두 쓰러뜨리십시오!")
+				sm:message("해적들이 외부인들을 경계합니다. 해적들을 모두 쓰러뜨리십시오!")
 			elseif sm:get_property("hd_302_out") == "1" then
 				sm:set_property("hd_302_out", "")
 				local left = tonumber(sm:get_property("hd_302_left")) or TIMER_DEFAULT_MS
@@ -180,13 +180,13 @@ return {
 				sm:set_property("hd_302_left", tostring(sm:time_left()))
 				sm:restart_timer(TIMER_HD_MS)
 				sm:set_property("hd_302", "1")
-				sm:notice("해적들이 숨어있는 것 같습니다..")
+				sm:message("해적들이 숨어있는 것 같습니다..")
 			end
 		elseif map_id == 925100400 then
 			if sm:get_property("entered_400") == "" then
 				sm:restart_timer(TIMER_DEFAULT_MS)
 				sm:set_property("entered_400", "1")
-				sm:notice("열쇠를 획득하여 갑판의 문을 모두 잠가버리고, 해적들이 더 나오지 않게 하세요!")
+				sm:message("열쇠를 획득하여 갑판의 문을 모두 잠가버리고, 해적들이 더 나오지 않게 하세요!")
 			end
 		elseif map_id == 925100500 then
 			if sm:get_property("entered_500") == "" then
@@ -198,13 +198,13 @@ return {
 				local boss_map = group ~= nil and group:map(BOSS_MAP) or nil
 				if boss_map ~= nil then
 					if t1 == 2 and t2 == 2 then
-						sm:notice("데비존이 화가 무척이나 나 있습니다! 주의하세요!")
+						sm:message("데비존이 화가 무척이나 나 있습니다! 주의하세요!")
 						boss_map:spawn_mob(9300106, 630, 213)
 					elseif t1 == 2 or t2 == 2 then
-						sm:notice("데비존이 화가 나 있습니다! 주의하세요!")
+						sm:message("데비존이 화가 나 있습니다! 주의하세요!")
 						boss_map:spawn_mob(9300105, 630, 213)
 					else
-						sm:notice("모든 일의 원흉, 해적왕을 물리쳐야 합니다!")
+						sm:message("모든 일의 원흉, 해적왕을 물리쳐야 합니다!")
 						boss_map:spawn_mob(9300119, 630, 213)
 					end
 				end

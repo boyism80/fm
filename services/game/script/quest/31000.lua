@@ -28,6 +28,6 @@ return {
 		q:force_complete(npc)
 		me:show_effect(EffectType.QuestCompletion)
 		me:map(200100001, 0)
-		me:notice("점프 키를 누르면 하늘을 날아 크리세에 도착 할 수 있습니다.", -1)
+		me:message("점프 키를 누르면 하늘을 날아 크리세에 도착 할 수 있습니다.", -1)
 	end
 }

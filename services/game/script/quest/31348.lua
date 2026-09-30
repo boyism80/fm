@@ -28,7 +28,7 @@ return {
 			end
 		end
 		if others > 0 then
-			me:notice("누군가 안에 퀘스트를 진행중입니다", Msg.PinkText)
+			me:message("누군가 안에 퀘스트를 진행중입니다", Msg.PinkText)
 			me:map(from_id)
 			return
 		end

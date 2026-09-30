@@ -1,10 +1,16 @@
 package server
 
 import (
+	"context"
+	"fmt"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -102,11 +108,56 @@ func (l *CharacterListenerImpl) OnKeyMap(ch *entity.Character) {
 }
 
 func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType constant.ServerMessageType, message string) {
-	noticePacket := &response.Notice{
+	l.OnNotice(ch, messageType, message, 0, false)
+}
+
+func (l *CharacterListenerImpl) OnNotice(ch *entity.Character, messageType constant.ServerMessageType, message string, channel int, ear bool) {
+	ch.Send(&response.Notice{
 		Message: message,
 		Type:    messageType,
+		Channel: channel,
+		MegaEar: ear,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) BroadcastNoticeAsync(ctx actor.Context, ch *entity.Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise {
+	fail := func(err error) *async.Promise {
+		p := async.NewDeferred()
+		p.SetError(err)
+		return p
 	}
-	ch.Send(noticePacket, types.SEND_POLICY_ENCRYPT)
+	if l.gs == nil || l.gs.internalClient == nil || ctx == nil {
+		return fail(fmt.Errorf("broadcast notice unavailable"))
+	}
+	channelID := l.gs.config.ChannelId
+	worldID := l.gs.config.WorldId
+	return async.ThenRPC(
+		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.BroadcastNoticeReply, error) {
+			return l.gs.internalClient.BroadcastNotice(c, &internal.BroadcastNoticeRequest{
+				WorldId:         worldID,
+				SourceChannelId: channelID,
+				MessageType:     uint32(messageType),
+				Message:         message,
+				MegaEar:         ear,
+			})
+		},
+		func(reply *internal.BroadcastNoticeReply) error {
+			if reply == nil || !reply.GetOk() {
+				return fmt.Errorf("broadcast notice failed")
+			}
+			l.gs.GetMapSystem().Visit(func(m *entity.Map) {
+				for _, player := range m.GetAllPlayers() {
+					other, ok := player.(*entity.Character)
+					if !ok || other == nil {
+						continue
+					}
+					other.Listener.OnNotice(other, messageType, message, int(channelID)+1, ear)
+				}
+			})
+			return nil
+		},
+	)
 }
 
 func (l *CharacterListenerImpl) OnClock(ch *entity.Character, seconds int32) {

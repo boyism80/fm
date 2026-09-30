@@ -2008,6 +2008,18 @@ export interface SetServerDateTimeReply {
   ok: boolean;
 }
 
+export interface BroadcastNoticeRequest {
+  worldId: number;
+  sourceChannelId: number;
+  messageType: number;
+  message: string;
+  megaEar: boolean;
+}
+
+export interface BroadcastNoticeReply {
+  ok: boolean;
+}
+
 function createBasePingRequest(): PingRequest {
   return { role: 0, worldId: 0, channelId: 0, loginInstanceId: "" };
 }
@@ -20518,6 +20530,204 @@ export const SetServerDateTimeReply: MessageFns<SetServerDateTimeReply> = {
   },
 };
 
+function createBaseBroadcastNoticeRequest(): BroadcastNoticeRequest {
+  return { worldId: 0, sourceChannelId: 0, messageType: 0, message: "", megaEar: false };
+}
+
+export const BroadcastNoticeRequest: MessageFns<BroadcastNoticeRequest> = {
+  encode(message: BroadcastNoticeRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.sourceChannelId !== 0) {
+      writer.uint32(16).uint32(message.sourceChannelId);
+    }
+    if (message.messageType !== 0) {
+      writer.uint32(24).uint32(message.messageType);
+    }
+    if (message.message !== "") {
+      writer.uint32(34).string(message.message);
+    }
+    if (message.megaEar !== false) {
+      writer.uint32(40).bool(message.megaEar);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BroadcastNoticeRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBroadcastNoticeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.sourceChannelId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.messageType = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.megaEar = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BroadcastNoticeRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      sourceChannelId: isSet(object.sourceChannelId)
+        ? globalThis.Number(object.sourceChannelId)
+        : isSet(object.source_channel_id)
+        ? globalThis.Number(object.source_channel_id)
+        : 0,
+      messageType: isSet(object.messageType)
+        ? globalThis.Number(object.messageType)
+        : isSet(object.message_type)
+        ? globalThis.Number(object.message_type)
+        : 0,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      megaEar: isSet(object.megaEar)
+        ? globalThis.Boolean(object.megaEar)
+        : isSet(object.mega_ear)
+        ? globalThis.Boolean(object.mega_ear)
+        : false,
+    };
+  },
+
+  toJSON(message: BroadcastNoticeRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.sourceChannelId !== 0) {
+      obj.sourceChannelId = Math.round(message.sourceChannelId);
+    }
+    if (message.messageType !== 0) {
+      obj.messageType = Math.round(message.messageType);
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.megaEar !== false) {
+      obj.megaEar = message.megaEar;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BroadcastNoticeRequest>, I>>(base?: I): BroadcastNoticeRequest {
+    return BroadcastNoticeRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BroadcastNoticeRequest>, I>>(object: I): BroadcastNoticeRequest {
+    const message = createBaseBroadcastNoticeRequest();
+    message.worldId = object.worldId ?? 0;
+    message.sourceChannelId = object.sourceChannelId ?? 0;
+    message.messageType = object.messageType ?? 0;
+    message.message = object.message ?? "";
+    message.megaEar = object.megaEar ?? false;
+    return message;
+  },
+};
+
+function createBaseBroadcastNoticeReply(): BroadcastNoticeReply {
+  return { ok: false };
+}
+
+export const BroadcastNoticeReply: MessageFns<BroadcastNoticeReply> = {
+  encode(message: BroadcastNoticeReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BroadcastNoticeReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBroadcastNoticeReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BroadcastNoticeReply {
+    return { ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false };
+  },
+
+  toJSON(message: BroadcastNoticeReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BroadcastNoticeReply>, I>>(base?: I): BroadcastNoticeReply {
+    return BroadcastNoticeReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BroadcastNoticeReply>, I>>(object: I): BroadcastNoticeReply {
+    const message = createBaseBroadcastNoticeReply();
+    message.ok = object.ok ?? false;
+    return message;
+  },
+};
+
 export type InternalService = typeof InternalService;
 export const InternalService = {
   ping: {
@@ -21117,6 +21327,17 @@ export const InternalService = {
       Buffer.from(SetServerDateTimeReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): SetServerDateTimeReply => SetServerDateTimeReply.decode(value),
   },
+  broadcastNotice: {
+    path: "/fm.internal.Internal/BroadcastNotice" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: BroadcastNoticeRequest): Buffer =>
+      Buffer.from(BroadcastNoticeRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): BroadcastNoticeRequest => BroadcastNoticeRequest.decode(value),
+    responseSerialize: (value: BroadcastNoticeReply): Buffer =>
+      Buffer.from(BroadcastNoticeReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): BroadcastNoticeReply => BroadcastNoticeReply.decode(value),
+  },
 } as const;
 
 export interface InternalServer extends UntypedServiceImplementation {
@@ -21195,6 +21416,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   removeBuddy: handleUnaryCall<RemoveBuddyRequest, RemoveBuddyReply>;
   broadcastMultiChat: handleUnaryCall<BroadcastMultiChatRequest, BroadcastMultiChatReply>;
   setServerDateTime: handleUnaryCall<SetServerDateTimeRequest, SetServerDateTimeReply>;
+  broadcastNotice: handleUnaryCall<BroadcastNoticeRequest, BroadcastNoticeReply>;
 }
 
 export interface InternalClient extends Client {
@@ -22049,6 +22271,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: SetServerDateTimeReply) => void,
+  ): ClientUnaryCall;
+  broadcastNotice(
+    request: BroadcastNoticeRequest,
+    callback: (error: ServiceError | null, response: BroadcastNoticeReply) => void,
+  ): ClientUnaryCall;
+  broadcastNotice(
+    request: BroadcastNoticeRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: BroadcastNoticeReply) => void,
+  ): ClientUnaryCall;
+  broadcastNotice(
+    request: BroadcastNoticeRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: BroadcastNoticeReply) => void,
   ): ClientUnaryCall;
 }
 

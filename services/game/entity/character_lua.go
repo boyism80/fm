@@ -1578,34 +1578,54 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.SetDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
-		"notice": func(L *lua.LState) int {
+		"message": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
 			if !ok {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			message := L.CheckString(2)
+			text := L.CheckString(2)
 			msgType := constant.MsgLightBlueText
-			if L.GetTop() >= 3 {
+			scope := constant.MessageScopeSelf
+			ear := false
+			top := L.GetTop()
+			if top >= 3 && L.Get(3) != lua.LNil {
 				msgType = constant.ServerMessageType(L.CheckInt(3))
 			}
-			ch.Listener.OnMessage(ch, msgType, message)
-			return 0
-		},
-		"world_message": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
+			if top >= 4 && L.Get(4) != lua.LNil {
+				scope = constant.MessageScope(L.CheckInt(4))
 			}
-			if L.GetTop() != 3 {
-				L.ArgError(2, "world_message(type, text) requires a message type and text")
-				return 0
+			if top >= 5 {
+				ear = L.ToBool(5)
 			}
-			ch.WorldMessage(constant.ServerMessageType(L.CheckInt(2)), L.CheckString(3))
-			return 0
+			switch scope {
+			case constant.MessageScopeMap:
+				ch.MapMessage(msgType, text)
+			case constant.MessageScopeChannel:
+				ch.WorldMessage(msgType, text)
+			case constant.MessageScopeWorld:
+				cfg, ok := luax.GetConfiguration(L)
+				if !ok || cfg.ActorContext == nil || ch.GameWorld == nil {
+					L.Push(lua.LFalse)
+					return 1
+				}
+				promise := ch.Listener.BroadcastNoticeAsync(cfg.ActorContext, ch, msgType, text, ear)
+				if promise == nil {
+					L.Push(lua.LFalse)
+					return 1
+				}
+				return luaYieldPromise(L, ch.GameWorld, promise, func(_ interface{}, err error) []lua.LValue {
+					if err != nil {
+						return []lua.LValue{lua.LFalse}
+					}
+					return []lua.LValue{lua.LTrue}
+				})
+			default:
+				ch.Listener.OnMessage(ch, msgType, text)
+			}
+			L.Push(lua.LTrue)
+			return 1
 		},
 		"show_instruction": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

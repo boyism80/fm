@@ -38,7 +38,7 @@ end
 local function effect_show_skill(me, skill_arg, skill_effect_type)
 	local skill, err = resolve_skill_entry(me, skill_arg)
 	if skill == nil then
-		me:notice(err)
+		me:message(err)
 		return true
 	end
 	if skill_effect_type == nil then
@@ -59,7 +59,7 @@ end
 local function effect_show_dragon_blood(me, skill_arg)
 	local skill, err = resolve_skill_entry(me, skill_arg)
 	if skill == nil then
-		me:notice(err)
+		me:message(err)
 		return true
 	end
 	me:show_dragon_blood_effect(skill)
@@ -77,7 +77,7 @@ end
 local function effect_show_reward_item_animation(me, item_id, effect_text)
 	local id = tonumber(item_id)
 	if id == nil or id <= 0 then
-		me:notice("item_id는 1 이상의 숫자여야 합니다.")
+		me:message("item_id는 1 이상의 숫자여야 합니다.")
 		return true
 	end
 	if effect_text == nil or effect_text == "" then
@@ -105,7 +105,7 @@ end
 local function effect_show_dice(me, effect_id, skill_arg)
 	local skill, err = resolve_skill_entry(me, skill_arg)
 	if skill == nil then
-		me:notice(err)
+		me:message(err)
 		return true
 	end
 	effect_id = tonumber(effect_id) or 1
@@ -386,11 +386,11 @@ local command_funcs = {
 				end
 			end
 			table.sort(list, function(a, b) return a.name < b.name end)
-			me:notice("=== 사용 가능한 명령어 목록 ===")
+			me:message("=== 사용 가능한 명령어 목록 ===")
 			for i, c in ipairs(list) do
-				me:notice(string.format("%d. /%s %s", i, c.name, c.usage))
+				me:message(string.format("%d. /%s %s", i, c.name, c.usage))
 			end
-			me:notice(string.format("총 %d개의 명령어가 있습니다.", #list))
+			me:message(string.format("총 %d개의 명령어가 있습니다.", #list))
 			return true
 		end,
 	},
@@ -399,7 +399,7 @@ local command_funcs = {
 		usage = "<아이템이름> [개수] - 아이템 생성",
 		command = function(me, args)
 			if not args[1] or args[1] == "" then
-				me:notice("사용법: /아이템생성 <아이템이름> [개수]")
+				me:message("사용법: /아이템생성 <아이템이름> [개수]")
 				return true
 			end
 			local count = 1
@@ -411,15 +411,15 @@ local command_funcs = {
 				item_id = name2item(args[1])
 			end
 			if item_id == nil then
-				me:notice("존재하지 않는 아이템입니다: " .. args[1])
+				me:message("존재하지 않는 아이템입니다: " .. args[1])
 				return true
 			end
 			local item = me:mkitem(item_id, count)
 			if item == nil then
-				me:notice("아이템 생성 실패: " .. args[1])
+				me:message("아이템 생성 실패: " .. args[1])
 				return true
 			end
-			me:notice(string.format("아이템 생성: %s x%d", args[1], count))
+			me:message(string.format("아이템 생성: %s x%d", args[1], count))
 			return true
 		end,
 	},
@@ -428,7 +428,7 @@ local command_funcs = {
 		usage = "- 인벤토리 아이템 전부 제거 (착용 장비 제외)",
 		command = function(me, args)
 			local cleared = me:clear_inventory()
-			me:notice(string.format("인벤토리 %d슬롯 비움", cleared))
+			me:message(string.format("인벤토리 %d슬롯 비움", cleared))
 			return true
 		end,
 	},
@@ -437,7 +437,7 @@ local command_funcs = {
 		usage = "- 메소 초기화",
 		command = function(me, args)
 			me:meso(0)
-			me:notice("메소를 초기화했습니다.")
+			me:message("메소를 초기화했습니다.")
 			return true
 		end,
 	},
@@ -446,7 +446,7 @@ local command_funcs = {
 		usage = "<값> - 인기도 설정",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /인기도 <값>")
+				me:message("사용법: /인기도 <값>")
 				return true
 			end
 			local v = tonumber(args[1])
@@ -457,7 +457,7 @@ local command_funcs = {
 				v = 65535
 			end
 			me:population(v)
-			me:notice(string.format("인기도 설정: %d", v))
+			me:message(string.format("인기도 설정: %d", v))
 			return true
 		end,
 	},
@@ -467,12 +467,12 @@ local command_funcs = {
 		command = function(me, args)
 			local quest_id = tonumber(args[1])
 			if not quest_id then
-				me:notice("사용법: /퀘스트상태 <퀘스트ID>")
+				me:message("사용법: /퀘스트상태 <퀘스트ID>")
 				return true
 			end
 			local quest = me:quest(quest_id)
 			if quest == nil then
-				me:notice(string.format("퀘스트 %d 없음", quest_id))
+				me:message(string.format("퀘스트 %d 없음", quest_id))
 				return true
 			end
 			local name = ""
@@ -487,9 +487,9 @@ local command_funcs = {
 				state = "진행"
 			end
 			if name ~= "" then
-				me:notice(string.format("퀘스트 %d (%s): %s", quest_id, name, state))
+				me:message(string.format("퀘스트 %d (%s): %s", quest_id, name, state))
 			else
-				me:notice(string.format("퀘스트 %d: %s", quest_id, state))
+				me:message(string.format("퀘스트 %d: %s", quest_id, state))
 			end
 			return true
 		end,
@@ -500,17 +500,17 @@ local command_funcs = {
 		command = function(me, args)
 			if not args[1] or args[1] == "" then
 				local count = me:clear_quests()
-				me:notice(string.format("퀘스트 %d개 초기화", count))
+				me:message(string.format("퀘스트 %d개 초기화", count))
 			else
 				local quest_id = tonumber(args[1])
 				if not quest_id then
-					me:notice("사용법: /퀘스트초기화 [퀘스트ID]")
+					me:message("사용법: /퀘스트초기화 [퀘스트ID]")
 					return true
 				end
 				if me:clear_quests(quest_id) == 1 then
-					me:notice(string.format("퀘스트 %d 초기화", quest_id))
+					me:message(string.format("퀘스트 %d 초기화", quest_id))
 				else
-					me:notice(string.format("퀘스트 %d 없음", quest_id))
+					me:message(string.format("퀘스트 %d 없음", quest_id))
 				end
 			end
 			return true
@@ -524,12 +524,12 @@ local command_funcs = {
 			if args[1] and args[1] ~= "" then
 				local quest_id = tonumber(args[1])
 				if not quest_id then
-					me:notice("사용법: /퀘스트완료준비 [퀘스트ID]")
+					me:message("사용법: /퀘스트완료준비 [퀘스트ID]")
 					return true
 				end
 				local quest = me:quest(quest_id)
 				if quest == nil or not quest:started() then
-					me:notice(string.format("퀘스트 %d 진행 중 아님", quest_id))
+					me:message(string.format("퀘스트 %d 진행 중 아님", quest_id))
 					return true
 				end
 				targets[quest_id] = quest
@@ -542,16 +542,16 @@ local command_funcs = {
 				local ok, reason = prepare_quest_complete(me, quest)
 				if ok then
 					prepared = prepared + 1
-					me:notice(string.format("퀘스트 %d 준비 완료", quest_id))
+					me:message(string.format("퀘스트 %d 준비 완료", quest_id))
 				else
 					skipped = skipped + 1
-					me:notice(string.format("퀘스트 %d 스킵 (%s)", quest_id, tostring(reason)))
+					me:message(string.format("퀘스트 %d 스킵 (%s)", quest_id, tostring(reason)))
 				end
 			end
 			if prepared == 0 and skipped == 0 then
-				me:notice("진행 중인 퀘스트 없음")
+				me:message("진행 중인 퀘스트 없음")
 			else
-				me:notice(string.format("완료 준비: %d개 성공, %d개 스킵", prepared, skipped))
+				me:message(string.format("완료 준비: %d개 성공, %d개 스킵", prepared, skipped))
 			end
 			return true
 		end,
@@ -562,37 +562,37 @@ local command_funcs = {
 		command = function(me, args)
 			local quest_id = tonumber(args[1])
 			if not quest_id then
-				me:notice("사용법: /퀘스트시작준비 <퀘스트ID>")
+				me:message("사용법: /퀘스트시작준비 <퀘스트ID>")
 				return true
 			end
 			local quest = me:quest(quest_id)
 			if quest == nil then
-				me:notice(string.format("퀘스트 %d 없음", quest_id))
+				me:message(string.format("퀘스트 %d 없음", quest_id))
 				return true
 			end
 			if quest:started() then
-				me:notice(string.format("퀘스트 %d 이미 진행 중", quest_id))
+				me:message(string.format("퀘스트 %d 이미 진행 중", quest_id))
 				return true
 			end
 			if quest:completed() then
-				me:notice(string.format("퀘스트 %d 이미 완료됨 (필요 시 /퀘스트초기화)", quest_id))
+				me:message(string.format("퀘스트 %d 이미 완료됨 (필요 시 /퀘스트초기화)", quest_id))
 				return true
 			end
 			local ok, reason = prepare_quest_start(me, quest)
 			if not ok then
-				me:notice(string.format("퀘스트 %d 시작 준비 실패 (%s)", quest_id, tostring(reason)))
+				me:message(string.format("퀘스트 %d 시작 준비 실패 (%s)", quest_id, tostring(reason)))
 				return true
 			end
-			me:notice(string.format("퀘스트 %d 시작 조건 준비 완료", quest_id))
+			me:message(string.format("퀘스트 %d 시작 조건 준비 완료", quest_id))
 			local wz = quest:wz()
 			local npc_id = start_npc_id(wz)
 			if npc_id == nil then
-				me:notice("시작 NPC 없음")
+				me:message("시작 NPC 없음")
 				return true
 			end
 			local spawns = npc_spawns(npc_id)
 			if spawns == nil or #spawns == 0 then
-				me:notice(string.format("시작 NPC %d 스폰을 찾지 못함", npc_id))
+				me:message(string.format("시작 NPC %d 스폰을 찾지 못함", npc_id))
 				return true
 			end
 			local spawn = spawns[1]
@@ -602,7 +602,7 @@ local command_funcs = {
 			else
 				me:map(spawn.map_id, spawn_point)
 			end
-			me:notice(string.format("NPC %d → 맵 %d (%d, %d) 근처 스폰으로 이동", npc_id, spawn.map_id, spawn.x, spawn.y))
+			me:message(string.format("NPC %d → 맵 %d (%d, %d) 근처 스폰으로 이동", npc_id, spawn.map_id, spawn.x, spawn.y))
 			return true
 		end,
 	},
@@ -611,16 +611,16 @@ local command_funcs = {
 		usage = "<금액> - 메소 획득",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /메소얻기 <금액>")
+				me:message("사용법: /메소얻기 <금액>")
 				return true
 			end
 			local amount = tonumber(args[1])
 			if not amount or amount < 0 then
-				me:notice("금액은 0 이상의 숫자여야 합니다.")
+				me:message("금액은 0 이상의 숫자여야 합니다.")
 				return true
 			end
 			me:meso(me:meso() + amount)
-			me:notice(string.format("메소 %d 획득.", amount))
+			me:message(string.format("메소 %d 획득.", amount))
 			return true
 		end,
 	},
@@ -629,7 +629,7 @@ local command_funcs = {
 		usage = "- 메소 최대치로 설정",
 		command = function(me, args)
 			me:meso(2147483647)
-			me:notice("메소를 최대치로 설정했습니다.")
+			me:message("메소를 최대치로 설정했습니다.")
 			return true
 		end,
 	},
@@ -638,24 +638,24 @@ local command_funcs = {
 		usage = "<값> - 몬스터 카니발 CP 획득",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /CP얻기 <값>")
+				me:message("사용법: /CP얻기 <값>")
 				return true
 			end
 			local amount = tonumber(args[1])
 			if not amount or amount <= 0 then
-				me:notice("CP는 1 이상의 숫자여야 합니다.")
+				me:message("CP는 1 이상의 숫자여야 합니다.")
 				return true
 			end
 			local team = me:carnival_team()
 			if team == nil then
-				me:notice("몬스터 카니발에 참가 중이 아닙니다.")
+				me:message("몬스터 카니발에 참가 중이 아닙니다.")
 				return true
 			end
 			if not team:add_cp(me, amount) then
-				me:notice("CP 획득에 실패했습니다.")
+				me:message("CP 획득에 실패했습니다.")
 				return true
 			end
-			me:notice(string.format("CP %d 획득.", amount))
+			me:message(string.format("CP %d 획득.", amount))
 			return true
 		end,
 	},
@@ -664,7 +664,7 @@ local command_funcs = {
 		usage = "<맵이름|맵ID> [스폰포인트] - 맵 이동",
 		command = function(me, args)
 			if not args[1] or args[1] == "" then
-				me:notice("사용법: /맵이동 <맵이름|맵ID> [스폰포인트]")
+				me:message("사용법: /맵이동 <맵이름|맵ID> [스폰포인트]")
 				return true
 			end
 			local spawn = 0
@@ -680,7 +680,7 @@ local command_funcs = {
 				map_info = name2map(map_arg)
 			end
 			if map_info == nil then
-				me:notice("존재하지 않는 맵입니다: " .. tostring(map_arg))
+				me:message("존재하지 않는 맵입니다: " .. tostring(map_arg))
 				return true
 			end
 			me:map(map_info:id(), spawn)
@@ -693,7 +693,7 @@ local command_funcs = {
 		command = function(me, args)
 			local m = me:map()
 			if m == nil then
-				me:notice("맵 정보 없음")
+				me:message("맵 정보 없음")
 				return true
 			end
 			local x, y = me:position()
@@ -706,12 +706,12 @@ local command_funcs = {
 			end
 			local spawn_id, spawn_name, sx, sy = me:spawn_point()
 			if spawn_name ~= nil then
-				me:notice(string.format(
+				me:message(string.format(
 					"Map: %s (%d), Position: %d, %d, Spawn: %d (%s) @ %d, %d",
 					map_name, map_id, x, y, spawn_id, spawn_name, sx, sy
 				))
 			else
-				me:notice(string.format(
+				me:message(string.format(
 					"Map: %s (%d), Position: %d, %d, Spawn: %d",
 					map_name, map_id, x, y, spawn_id or 0
 				))
@@ -746,9 +746,9 @@ local command_funcs = {
 		command = function(me, args)
 			local ok, err = save()
 			if ok then
-				me:notice("서버 저장이 완료되었습니다.")
+				me:message("서버 저장이 완료되었습니다.")
 			else
-				me:notice("서버 저장 실패: " .. tostring(err))
+				me:message("서버 저장 실패: " .. tostring(err))
 			end
 			return true
 		end,
@@ -758,18 +758,18 @@ local command_funcs = {
 		usage = "<체력값> - 체력 설정",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /체력바꾸기 <체력값>")
+				me:message("사용법: /체력바꾸기 <체력값>")
 				return true
 			end
 			local v = tonumber(args[1])
 			if not v or v < 0 then
-				me:notice("체력은 0 이상이어야 합니다.")
+				me:message("체력은 0 이상이어야 합니다.")
 				return true
 			end
 			if v > 32767 then v = 32767 end
 			me:hp(v)
 			me:base_hp(v)
-			me:notice(string.format("체력 설정: %d", v))
+			me:message(string.format("체력 설정: %d", v))
 			return true
 		end,
 	},
@@ -778,18 +778,18 @@ local command_funcs = {
 		usage = "<마력값> - 마력 설정",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /마력바꾸기 <마력값>")
+				me:message("사용법: /마력바꾸기 <마력값>")
 				return true
 			end
 			local v = tonumber(args[1])
 			if not v or v < 0 then
-				me:notice("마력은 0 이상이어야 합니다.")
+				me:message("마력은 0 이상이어야 합니다.")
 				return true
 			end
 			if v > 32767 then v = 32767 end
 			me:mp(v)
 			me:base_mp(v)
-			me:notice(string.format("마력 설정: %d", v))
+			me:message(string.format("마력 설정: %d", v))
 			return true
 		end,
 	},
@@ -798,13 +798,13 @@ local command_funcs = {
 		usage = "<힘값> - 힘 설정",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /힘바꾸기 <힘값>")
+				me:message("사용법: /힘바꾸기 <힘값>")
 				return true
 			end
 			local v = tonumber(args[1])
 			if not v or v < 0 then v = 0 end
 			me:base_str(v)
-			me:notice(string.format("힘 설정: %d", v))
+			me:message(string.format("힘 설정: %d", v))
 			return true
 		end,
 	},
@@ -814,13 +814,13 @@ local command_funcs = {
 		command = function(me, args)
 			if not args[1] then
 
-				me:notice("사용법: /덱스바꾸기 <덱스값>")
+				me:message("사용법: /덱스바꾸기 <덱스값>")
 				return true
 			end
 			local v = tonumber(args[1])
 			if not v or v < 0 then v = 0 end
 			me:base_dex(v)
-			me:notice(string.format("덱스 설정: %d", v))
+			me:message(string.format("덱스 설정: %d", v))
 			return true
 		end,
 	},
@@ -829,13 +829,13 @@ local command_funcs = {
 		usage = "<인트값> - 인트 설정",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /인트바꾸기 <인트값>")
+				me:message("사용법: /인트바꾸기 <인트값>")
 				return true
 			end
 			local v = tonumber(args[1])
 			if not v or v < 0 then v = 0 end
 			me:base_int(v)
-			me:notice(string.format("인트 설정: %d", v))
+			me:message(string.format("인트 설정: %d", v))
 			return true
 		end,
 	},
@@ -844,13 +844,13 @@ local command_funcs = {
 		usage = "<럭값> - 럭 설정",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /럭바꾸기 <럭값>")
+				me:message("사용법: /럭바꾸기 <럭값>")
 				return true
 			end
 			local v = tonumber(args[1])
 			if not v or v < 0 then v = 0 end
 			me:base_luk(v)
-			me:notice(string.format("럭 설정: %d", v))
+			me:message(string.format("럭 설정: %d", v))
 			return true
 		end,
 	},
@@ -859,7 +859,7 @@ local command_funcs = {
 		usage = "<값> - 힘/덱/인트/럭 동일값 설정",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /전능 <값>")
+				me:message("사용법: /전능 <값>")
 				return true
 			end
 			local v = tonumber(args[1])
@@ -868,7 +868,7 @@ local command_funcs = {
 			me:base_dex(v)
 			me:base_int(v)
 			me:base_luk(v)
-			me:notice(string.format("전능 설정: %d", v))
+			me:message(string.format("전능 설정: %d", v))
 			return true
 		end,
 	},
@@ -877,14 +877,14 @@ local command_funcs = {
 		usage = "<레벨> - 레벨 설정",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /레벨바꾸기 <레벨>")
+				me:message("사용법: /레벨바꾸기 <레벨>")
 				return true
 			end
 			local v = tonumber(args[1])
 			if not v or v < 1 then v = 1 end
 			if v > 200 then v = 200 end
 			me:level(v)
-			me:notice(string.format("레벨 설정: %d", v))
+			me:message(string.format("레벨 설정: %d", v))
 			return true
 		end,
 	},
@@ -894,7 +894,7 @@ local command_funcs = {
 		command = function(me, args)
 			me:invincible(not me:invincible())
 			local status = me:invincible() and "enabled" or "disabled"
-			me:notice("무적 상태: " .. status)
+			me:message("무적 상태: " .. status)
 			return true
 		end,
 	},
@@ -904,7 +904,7 @@ local command_funcs = {
 		command = function(me, args)
 			me:instant_kill(not me:instant_kill())
 			local status = me:instant_kill() and "enabled" or "disabled"
-			me:notice("즉사 상태: " .. status)
+			me:message("즉사 상태: " .. status)
 			return true
 		end,
 	},
@@ -913,16 +913,16 @@ local command_funcs = {
 		usage = "<직업코드> - 직업 변경",
 		command = function(me, args)
 			if not args[1] then
-				me:notice("사용법: /직업바꾸기 <직업코드>")
+				me:message("사용법: /직업바꾸기 <직업코드>")
 				return true
 			end
 			local v = tonumber(args[1])
 			if not v or v < 0 then
-				me:notice("직업코드는 0 이상이어야 합니다.")
+				me:message("직업코드는 0 이상이어야 합니다.")
 				return true
 			end
 			me:class(v)
-			me:notice(string.format("직업 변경: %d", v))
+			me:message(string.format("직업 변경: %d", v))
 			return true
 		end,
 	},
@@ -931,12 +931,12 @@ local command_funcs = {
 		usage = "<몬스터ID/이름> [마리수] - 현재 위치에 몬스터 생성 (마리수 기본값 1)",
 		command = function(me, args)
 			if not args[1] or args[1] == "" then
-				me:notice("사용법: /몬스터생성 <몬스터ID/이름> [마리수]")
+				me:message("사용법: /몬스터생성 <몬스터ID/이름> [마리수]")
 				return true
 			end
 			local m = me:map()
 			if m == nil then
-				me:notice("맵 정보 없음")
+				me:message("맵 정보 없음")
 				return true
 			end
 			local x, y = me:position()
@@ -948,7 +948,7 @@ local command_funcs = {
 				id = tonumber(args[1])
 			end
 			if id == nil then
-				me:notice("잘못된 몬스터 ID 또는 이름: " .. args[1])
+				me:message("잘못된 몬스터 ID 또는 이름: " .. args[1])
 				return true
 			end
 			local count = 1
@@ -966,9 +966,9 @@ local command_funcs = {
 				end
 			end
 			if spawned == 0 then
-				me:notice("몬스터 생성 실패")
+				me:message("몬스터 생성 실패")
 			else
-				me:notice(string.format("몬스터 생성: %s %d마리", args[1], spawned))
+				me:message(string.format("몬스터 생성: %s %d마리", args[1], spawned))
 			end
 			return true
 		end,
@@ -979,7 +979,7 @@ local command_funcs = {
 		command = function(me, args)
 			local m = me:map()
 			if m == nil then
-				me:notice("맵 정보 없음")
+				me:message("맵 정보 없음")
 				return true
 			end
 			local entries = {}
@@ -995,10 +995,10 @@ local command_funcs = {
 				return a:oid() < b:oid()
 			end)
 			if #entries == 0 then
-				me:notice("맵에 몬스터가 없습니다.")
+				me:message("맵에 몬스터가 없습니다.")
 				return true
 			end
-			me:notice(string.format("몬스터 %d마리", #entries))
+			me:message(string.format("몬스터 %d마리", #entries))
 			for _, mob in ipairs(entries) do
 				local mob_id = mob:id()
 				local mob_name = tostring(mob_id)
@@ -1006,7 +1006,7 @@ local command_funcs = {
 				if wz ~= nil and wz:name() ~= nil and wz:name() ~= "" then
 					mob_name = wz:name()
 				end
-				me:notice(string.format("  %d - %s", mob_id, mob_name))
+				me:message(string.format("  %d - %s", mob_id, mob_name))
 			end
 			return true
 		end,
@@ -1017,7 +1017,7 @@ local command_funcs = {
 		command = function(me, args)
 			local m = me:map()
 			if m == nil then
-				me:notice("맵 정보 없음")
+				me:message("맵 정보 없음")
 				return true
 			end
 			local mobs = {}
@@ -1043,7 +1043,7 @@ local command_funcs = {
 				end
 				::continue::
 			end
-			me:notice(string.format("몬스터 %d마리 제거", count))
+			me:message(string.format("몬스터 %d마리 제거", count))
 			return true
 		end,
 	},
@@ -1053,11 +1053,11 @@ local command_funcs = {
 		command = function(me, args)
 			local m = me:map()
 			if m == nil then
-				me:notice("맵 정보 없음")
+				me:message("맵 정보 없음")
 				return true
 			end
 			local count = m:reload_reactors()
-			me:notice(string.format("리액터 %d개 초기화", count))
+			me:message(string.format("리액터 %d개 초기화", count))
 			return true
 		end,
 	},
@@ -1066,7 +1066,7 @@ local command_funcs = {
 		usage = "<체력값|체력%> - 맵 몬스터 체력 조정 (스펀지 본체 제외)",
 		command = function(me, args)
 			if not args[1] or args[1] == "" then
-				me:notice("사용법: /몬스터체력 <체력값|체력%>")
+				me:message("사용법: /몬스터체력 <체력값|체력%>")
 				return true
 			end
 			local raw = args[1]
@@ -1079,22 +1079,22 @@ local command_funcs = {
 				percent = true
 				num_str = string.sub(raw, 1, -2)
 				if num_str == "" then
-					me:notice("사용법: /몬스터체력 <체력값|체력%>")
+					me:message("사용법: /몬스터체력 <체력값|체력%>")
 					return true
 				end
 			end
 			local value = tonumber(num_str)
 			if value == nil or value < 0 then
-				me:notice("체력 값이 올바르지 않습니다.")
+				me:message("체력 값이 올바르지 않습니다.")
 				return true
 			end
 			if percent and value > 100 then
-				me:notice("체력 %는 0~100 사이여야 합니다.")
+				me:message("체력 %는 0~100 사이여야 합니다.")
 				return true
 			end
 			local m = me:map()
 			if m == nil then
-				me:notice("맵 정보 없음")
+				me:message("맵 정보 없음")
 				return true
 			end
 			local changed = 0
@@ -1130,9 +1130,9 @@ local command_funcs = {
 				::continue_mob_hp::
 			end
 			if percent then
-				me:notice(string.format("몬스터 체력 %.0f%% 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
+				me:message(string.format("몬스터 체력 %.0f%% 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
 			else
-				me:notice(string.format("몬스터 체력 %d 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
+				me:message(string.format("몬스터 체력 %d 적용 - %d마리 변경, %d마리 스킵", value, changed, skipped))
 			end
 			return true
 		end,
@@ -1143,12 +1143,12 @@ local command_funcs = {
 		command = function(me, args)
 			local class = me:class()
 			if class < 100 then
-				me:notice("직업이 2차 이상이어야 합니다.")
+				me:message("직업이 2차 이상이어야 합니다.")
 				return true
 			end
 			local wz_skills = class_learnable_skill_wzs(class)
 			if wz_skills == nil then
-				me:notice("스킬 정보를 가져올 수 없습니다.")
+				me:message("스킬 정보를 가져올 수 없습니다.")
 				return true
 			end
 			local added = 0
@@ -1166,7 +1166,7 @@ local command_funcs = {
 					updated = updated + 1
 				end
 			end
-			me:notice(string.format("스킬마스터: %d 추가, %d 갱신", added, updated))
+			me:message(string.format("스킬마스터: %d 추가, %d 갱신", added, updated))
 			return true
 		end,
 	},
@@ -1175,7 +1175,7 @@ local command_funcs = {
 		usage = "<스킬ID/이름> <레벨> [마스터레벨] - 스킬 레벨 설정",
 		command = function(me, args)
 			if #args < 2 then
-				me:notice("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
+				me:message("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
 				return true
 			end
 
@@ -1190,13 +1190,13 @@ local command_funcs = {
 
 			local level = tonumber(args[level_arg_index])
 			if level == nil or level < 0 then
-				me:notice("레벨은 0 이상의 숫자여야 합니다.")
+				me:message("레벨은 0 이상의 숫자여야 합니다.")
 				return true
 			end
 
 			local target = table.concat(args, " ", 1, target_end_index)
 			if target == nil or target == "" then
-				me:notice("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
+				me:message("사용법: /스킬레벨 <스킬ID/이름> <레벨> [마스터레벨]")
 				return true
 			end
 
@@ -1205,7 +1205,7 @@ local command_funcs = {
 			if skill_id == nil then
 				skill_wz = name2skill(target)
 				if skill_wz == nil then
-					me:notice("존재하지 않는 스킬입니다: " .. target)
+					me:message("존재하지 않는 스킬입니다: " .. target)
 					return true
 				end
 				skill_id = skill_wz:id()
@@ -1236,12 +1236,12 @@ local command_funcs = {
 				skill = me:add_skill(skill_id)
 			end
 			if skill == nil then
-				me:notice(string.format("스킬 추가 실패: %d", skill_id))
+				me:message(string.format("스킬 추가 실패: %d", skill_id))
 				return true
 			end
 
 			skill:level(level, master_level)
-			me:notice(string.format("스킬레벨 설정: %d -> level %d, master %d", skill_id, level, master_level))
+			me:message(string.format("스킬레벨 설정: %d -> level %d, master %d", skill_id, level, master_level))
 			return true
 		end,
 	},
@@ -1252,22 +1252,22 @@ local command_funcs = {
 			if args[1] then
 				local skill_id = tonumber(args[1])
 				if not skill_id or skill_id <= 0 then
-					me:notice("사용법: /쿨타임초기화 [스킬ID]")
+					me:message("사용법: /쿨타임초기화 [스킬ID]")
 					return true
 				end
 				local skill = me:skill(skill_id)
 				if skill == nil then
-					me:notice(string.format("배운 스킬이 아닙니다: %d", skill_id))
+					me:message(string.format("배운 스킬이 아닙니다: %d", skill_id))
 					return true
 				end
 				skill:cooldown(0)
-				me:notice(string.format("스킬 %d 쿨타임 초기화 완료", skill_id))
+				me:message(string.format("스킬 %d 쿨타임 초기화 완료", skill_id))
 				return true
 			end
 
 			local skills = me:skills()
 			if skills == nil then
-				me:notice("스킬 정보가 없습니다.")
+				me:message("스킬 정보가 없습니다.")
 				return true
 			end
 			local cleared = 0
@@ -1277,7 +1277,7 @@ local command_funcs = {
 					cleared = cleared + 1
 				end
 			end
-			me:notice(string.format("쿨타임 초기화 완료: %d개 스킬", cleared))
+			me:message(string.format("쿨타임 초기화 완료: %d개 스킬", cleared))
 			return true
 		end,
 	},
@@ -1286,12 +1286,12 @@ local command_funcs = {
 		usage = "<NPCID/이름> - 현재 위치에 NPC 생성",
 		command = function(me, args)
 			if not args[1] or args[1] == "" then
-				me:notice("사용법: /엔피씨생성 <NPCID/이름>")
+				me:message("사용법: /엔피씨생성 <NPCID/이름>")
 				return true
 			end
 			local m = me:map()
 			if m == nil then
-				me:notice("맵 정보 없음")
+				me:message("맵 정보 없음")
 				return true
 			end
 			local x, y = me:position()
@@ -1300,15 +1300,15 @@ local command_funcs = {
 				id = tonumber(args[1])
 			end
 			if id == nil then
-				me:notice("잘못된 NPC ID 또는 이름: " .. args[1])
+				me:message("잘못된 NPC ID 또는 이름: " .. args[1])
 				return true
 			end
 			local npc = m:spawn_npc(id, x, y)
 			if npc == nil then
-				me:notice("NPC 생성 실패")
+				me:message("NPC 생성 실패")
 				return true
 			end
-			me:notice(string.format("NPC 생성: %s (OID %d)", args[1], npc:oid()))
+			me:message(string.format("NPC 생성: %s (OID %d)", args[1], npc:oid()))
 			return true
 		end,
 	},
@@ -1338,13 +1338,13 @@ local command_funcs = {
 		command = function(me, args)
 			if not args[1] or args[1] == "" then
 				local enabled = get_packet_log()
-				me:notice("packet log: " .. tostring(enabled))
+				me:message("packet log: " .. tostring(enabled))
 				return true
 			end
 			local arg = string.lower(string.gsub(args[1], "^%s*(.-)%s*$", "%1"))
 			local enable = (arg == "1" or arg == "on" or arg == "true")
 			set_packet_log(enable)
-			me:notice("packet log: " .. tostring(enable))
+			me:message("packet log: " .. tostring(enable))
 			return true
 		end,
 	},
@@ -1354,17 +1354,17 @@ local command_funcs = {
 		command = function(me, args)
 			local name = args[1]
 			if name == nil or name == "" then
-				me:notice("사용법: /수송상태 <Boats|Trains|Flight|Geenie|elevator>")
+				me:message("사용법: /수송상태 <Boats|Trains|Flight|Geenie|elevator>")
 				return true
 			end
 			local group = state_machine(name)
 			if group == nil then
-				me:notice("그룹 없음: " .. name)
+				me:message("그룹 없음: " .. name)
 				return true
 			end
 			local sm = group:get("persistent")
 			local sm_ok = sm ~= nil
-			me:notice(string.format(
+			me:message(string.format(
 				"[%s] ready=%s docked=%s entry=%s haveBalrog=%s persistent=%s",
 				name,
 				tostring(group:get_property("ready")),
@@ -1406,9 +1406,9 @@ local command_funcs = {
 			local name = args[1]
 			local phase = args[2]
 			if name == nil or phase == nil or groups[name] ~= true then
-				me:notice("사용법: /수송 <Boats|Trains|Flight|Geenie|elevator> <phase>")
-				me:notice("페리 phase: dock stop_entry takeoff invasion arrived")
-				me:notice("elevator phase: waiting_to_down run_to_down waiting_to_up run_to_up")
+				me:message("사용법: /수송 <Boats|Trains|Flight|Geenie|elevator> <phase>")
+				me:message("페리 phase: dock stop_entry takeoff invasion arrived")
+				me:message("elevator phase: waiting_to_down run_to_down waiting_to_up run_to_up")
 				return true
 			end
 
@@ -1422,18 +1422,18 @@ local command_funcs = {
 				after_ids = ferry_after
 			end
 			if hook == nil then
-				me:notice("알 수 없는 phase: " .. tostring(phase))
+				me:message("알 수 없는 phase: " .. tostring(phase))
 				return true
 			end
 
 			local group = state_machine(name)
 			if group == nil then
-				me:notice("그룹 없음: " .. name)
+				me:message("그룹 없음: " .. name)
 				return true
 			end
 			local sm = group:get("persistent")
 			if sm == nil then
-				me:notice("persistent SM 없음 (채널 부팅/on_init 확인): " .. name)
+				me:message("persistent SM 없음 (채널 부팅/on_init 확인): " .. name)
 				return true
 			end
 
@@ -1441,7 +1441,7 @@ local command_funcs = {
 				sm:cancel(id)
 			end
 			sm:call_hook(hook)
-			me:notice(string.format("[%s] %s (%s) 강제 호출", name, phase, hook))
+			me:message(string.format("[%s] %s (%s) 강제 호출", name, phase, hook))
 			return true
 		end,
 	},
@@ -1451,7 +1451,7 @@ local command_funcs = {
 		command = function(me, args)
 			local kind = args[1]
 			if kind == nil or kind == "" then
-				me:notice("사용법: /이펙트테스트 <skill|basic|dragon|hp|reward|maker|crafting|dice> ...")
+				me:message("사용법: /이펙트테스트 <skill|basic|dragon|hp|reward|maker|crafting|dice> ...")
 				return true
 			end
 			if kind == "skill" then
@@ -1481,7 +1481,7 @@ local command_funcs = {
 			if kind == "dice" then
 				return effect_show_dice(me, args[2], args[3])
 			end
-			me:notice("알 수 없는 종류입니다. skill, basic, dragon, hp, reward, maker, crafting, dice 중에서 선택하세요.")
+			me:message("알 수 없는 종류입니다. skill, basic, dragon, hp, reward, maker, crafting, dice 중에서 선택하세요.")
 			return true
 		end,
 	},
@@ -1491,22 +1491,22 @@ local command_funcs = {
 		command = function(me, args)
 			if #args == 0 then
 				local dt = datetime()
-				me:notice(string.format('현재 서버 시간: %04d-%02d-%02d %02d:%02d:%02d',
+				me:message(string.format('현재 서버 시간: %04d-%02d-%02d %02d:%02d:%02d',
 					dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second))
 				return true
 			end
 
 			local value = table.concat(args, ' ')
 			if not string.match(value, '^%d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d$') then
-				me:notice('사용법: /현재시간 YYYY-MM-DD HH:MM:SS')
+				me:message('사용법: /현재시간 YYYY-MM-DD HH:MM:SS')
 				return true
 			end
 
 			local success, error_message = now(value)
 			if success then
-				me:notice(string.format('현재 시간을 %s 로 설정 요청했습니다.', value))
+				me:message(string.format('현재 시간을 %s 로 설정 요청했습니다.', value))
 			else
-				me:notice(string.format('현재시간 설정 실패: %s', error_message or 'unknown error'))
+				me:message(string.format('현재시간 설정 실패: %s', error_message or 'unknown error'))
 			end
 			return true
 		end,
@@ -1517,9 +1517,9 @@ local command_funcs = {
 		command = function(me, args)
 			local success, error_message = now('reset')
 			if success then
-				me:notice('현재 시간 보정 초기화 요청을 전송했습니다.')
+				me:message('현재 시간 보정 초기화 요청을 전송했습니다.')
 			else
-				me:notice(string.format('현재시간 보정 초기화 실패: %s', error_message or 'unknown error'))
+				me:message(string.format('현재시간 보정 초기화 실패: %s', error_message or 'unknown error'))
 			end
 			return true
 		end,
@@ -1530,15 +1530,15 @@ local command_funcs = {
 		command = function(me, args)
 			local value = args[1]
 			if not value then
-				me:notice('사용법: /시간가속 <timespan>')
+				me:message('사용법: /시간가속 <timespan>')
 				return true
 			end
 
 			local success, error_message = time_forward(value)
 			if success then
-				me:notice(string.format('시간가속 적용 요청: %s', value))
+				me:message(string.format('시간가속 적용 요청: %s', value))
 			else
-				me:notice(string.format('시간가속 실패: %s', error_message or 'unknown error'))
+				me:message(string.format('시간가속 실패: %s', error_message or 'unknown error'))
 			end
 			return true
 		end,
@@ -1549,15 +1549,15 @@ local command_funcs = {
 		command = function(me, args)
 			local value = args[1]
 			if not value then
-				me:notice('사용법: /시간역전 <timespan>')
+				me:message('사용법: /시간역전 <timespan>')
 				return true
 			end
 
 			local success, error_message = time_backward(value)
 			if success then
-				me:notice(string.format('시간역전 적용 요청: %s', value))
+				me:message(string.format('시간역전 적용 요청: %s', value))
 			else
-				me:notice(string.format('시간역전 실패: %s', error_message or 'unknown error'))
+				me:message(string.format('시간역전 실패: %s', error_message or 'unknown error'))
 			end
 			return true
 		end,
@@ -1588,7 +1588,7 @@ return {
 			cmd_func = cmd_data
 		end
 		if me:role() < required_privilege then
-			me:notice("권한이 부족합니다.")
+			me:message("권한이 부족합니다.")
 			return true
 		end
 		table.remove(args, 1)

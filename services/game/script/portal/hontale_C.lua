@@ -13,12 +13,12 @@ return {
 		end
 		local reactor = map:reactor(2408001)
 		if reactor == nil then
-			me:notice("아직 동굴이 선택되지 않았습니다.", Msg.PinkText)
+			me:message("아직 동굴이 선택되지 않았습니다.", Msg.PinkText)
 			return
 		end
 		local party = me:party()
 		if party == nil or party:leader_id() ~= me:id() then
-			me:notice("파티장이 동굴 선택을 결정할 수 있습니다.", Msg.PinkText)
+			me:message("파티장이 동굴 선택을 결정할 수 있습니다.", Msg.PinkText)
 			return
 		end
 		local state = reactor:state()
@@ -27,11 +27,11 @@ return {
 			if sm ~= nil then
 				for _, p in ipairs(sm:players()) do
 					if p ~= nil then
-						p:notice(text, Msg.LightBlueText)
+						p:message(text, Msg.LightBlueText)
 					end
 				end
 			else
-				me:notice(text, Msg.LightBlueText)
+				me:message(text, Msg.LightBlueText)
 			end
 		end
 		if state == 1 then
@@ -52,6 +52,6 @@ return {
 			end
 			return
 		end
-		me:notice("아직 동굴이 선택되지 않았습니다.", Msg.PinkText)
+		me:message("아직 동굴이 선택되지 않았습니다.", Msg.PinkText)
 	end
 }

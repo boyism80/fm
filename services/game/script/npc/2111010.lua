@@ -25,7 +25,7 @@ return {
 	on_click = function(me, npc)
 		local dist = distance_sq(me, npc)
 		if dist ~= nil and dist > 5000 then
-			me:notice("너무 멀어 조사할 수 없다.", 5)
+			me:message("너무 멀어 조사할 수 없다.", 5)
 			return
 		end
 		local q = me:quest(3309)

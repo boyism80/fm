@@ -14,7 +14,7 @@ return {
 		end
 
 		me:map(240091600)
-		me:notice("운이 좋게 벌떼가 나타나지 않았습니다.", 5)
+		me:message("운이 좋게 벌떼가 나타나지 않았습니다.", 5)
 		q:start(npc, true)
 	end,
 

@@ -191,7 +191,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"restart_timer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -210,7 +210,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"stop_timer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -228,7 +228,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"time_left": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -283,7 +283,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			machine.AddKill(ch, n)
 			return 0
 		},
-		"notice": func(L *lua.LState) int {
+		"message": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			machine, ok := ud.Value.(*StateMachine)
 			if !ok || machine == nil {
@@ -350,7 +350,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"cron": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -371,7 +371,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"cancel": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -393,7 +393,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise)
+			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"warp_all": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

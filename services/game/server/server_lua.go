@@ -298,6 +298,12 @@ func (gs *GameServer) registerServerMessageConstants(luaState *lua.LState) {
 		t.RawSetString(name, lua.LNumber(value))
 	}
 	luaState.SetGlobal("Msg", t)
+
+	scopes := luaState.NewTable()
+	for name, value := range constant.AllMessageScopes() {
+		scopes.RawSetString(name, lua.LNumber(value))
+	}
+	luaState.SetGlobal("MessageScope", scopes)
 }
 
 func skillToLuaWz(luaState *lua.LState, skill *wz.Skill) lua.LValue {

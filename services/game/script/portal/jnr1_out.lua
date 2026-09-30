@@ -9,7 +9,7 @@ return {
 			if map ~= nil then
 				local pq = require("script/lib/party_quest")
 				if pq.mob_count(map) > 0 then
-					me:notice("아직 몬스터가 남아 있습니다.", Msg.PinkText)
+					me:message("아직 몬스터가 남아 있습니다.", Msg.PinkText)
 					return
 				end
 			end

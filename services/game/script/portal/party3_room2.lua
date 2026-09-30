@@ -24,7 +24,7 @@ return {
 			return
 		end
 		if sm:get_property(CLEAR_PROP) == "clear" then
-			me:notice("이곳은 이미 클리어한 방입니다.", Msg.PinkText)
+			me:message("이곳은 이미 클리어한 방입니다.", Msg.PinkText)
 			return
 		end
 		local group = sm:group()
@@ -33,13 +33,13 @@ return {
 		end
 		if pq.is_leader(me) then
 			pq.warp_portal(me, DEST, "st00")
-			sm:notice("파티장이 " .. ROOM_NAME .. " 에 입장하였습니다.")
+			sm:message("파티장이 " .. ROOM_NAME .. " 에 입장하였습니다.")
 			return
 		end
 		if map_count(group, DEST) > 0 then
 			pq.warp_portal(me, DEST, "st00")
 		else
-			me:notice("파티장이 먼저 입장해야 합니다.", Msg.PinkText)
+			me:message("파티장이 먼저 입장해야 합니다.", Msg.PinkText)
 		end
 	end
 }

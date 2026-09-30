@@ -33,7 +33,7 @@ return {
 		end
 		me:dialog(npc, "#i" .. item_id .. ":# #b#z" .. item_id .. "##k이(가) 나왔습니다.")
 		if tier.announce then
-			me:world_message(2, "[이벤트] : " .. me:name() .. " 님이 10% 확률로 진귀한 아이템을 획득하였습니다.")
+			me:message("[이벤트] : " .. me:name() .. " 님이 10% 확률로 진귀한 아이템을 획득하였습니다.", Msg.Megaphone, MessageScope.World)
 		end
 	end
 }

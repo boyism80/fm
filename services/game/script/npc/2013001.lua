@@ -226,7 +226,7 @@ local function handle_stage4(me, npc, sm, map)
 		return
 	end
 	if tries == 7 then
-		sm:notice("봉인된 방에서 추방되었습니다.")
+		sm:message("봉인된 방에서 추방되었습니다.")
 		me:mkitem(4001047, 1)
 		sm:set_property("stage4rand", "0")
 		pq.party_warp(sm, 920010100, nil, 13)

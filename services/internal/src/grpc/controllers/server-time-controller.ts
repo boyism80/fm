@@ -1,5 +1,7 @@
 import type { ServerTimeService } from "../../services/server-time-service";
 import type {
+    BroadcastNoticeReply,
+    BroadcastNoticeRequest,
     SetServerDateTimeReply,
     SetServerDateTimeRequest,
 } from "../../protobuf/generated/fminternal/internal_service";
@@ -27,6 +29,26 @@ export class ServerTimeGrpcController {
                 req.worldId >>> 0,
                 req.datetime ?? "",
                 req.reset === true,
+            );
+            callback(null, { ok });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("broadcastNotice")
+    async broadcastNotice(
+        call: GrpcCall<BroadcastNoticeRequest>,
+        callback: GrpcCallback<BroadcastNoticeReply>,
+    ) {
+        const req = call.request;
+        try {
+            const ok = await this.serverTimeService.broadcastNotice(
+                req.worldId >>> 0,
+                req.sourceChannelId >>> 0,
+                req.messageType >>> 0,
+                req.message ?? "",
+                req.megaEar === true,
             );
             callback(null, { ok });
         } catch (err) {

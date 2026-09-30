@@ -7,7 +7,7 @@ local DURATION_MS = 300000
 
 local function finish(sm, message)
 	local players = sm:players()
-	sm:notice(message, Msg.PinkText)
+	sm:message(message, Msg.PinkText)
 	sm:finish(0)
 	for _, player in ipairs(players) do
 		player:map(EXIT_MAP)
@@ -42,7 +42,7 @@ return {
 
 	on_player_enter = function(sm, player)
 		player:map(QUEST_MAP)
-		sm:notice("멧돼지를 외계인으로부터 보호하고, 페로몬과 연구 보고서를 회수하세요!", Msg.PinkText)
+		sm:message("멧돼지를 외계인으로부터 보호하고, 페로몬과 연구 보고서를 회수하세요!", Msg.PinkText)
 	end,
 
 	on_mob_die = function(sm, mob)

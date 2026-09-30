@@ -34,7 +34,7 @@ return {
 
 	on_player_enter = function(sm, player)
 		player:map(TRAINING_MAP)
-		sm:notice("카이린의 공격으로부터 2분 이상 버티세요.", Msg.PinkText)
+		sm:message("카이린의 공격으로부터 2분 이상 버티세요.", Msg.PinkText)
 	end,
 
 	on_player_disconnected = function(sm, player)

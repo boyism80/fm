@@ -514,6 +514,20 @@ func (ch *Character) SetBuddyCapacity(n uint32) {
 	ch.Listener.OnBuddyCapacity(ch, uint8(ch.BuddyList().Capacity()))
 }
 
+func (ch *Character) MapMessage(messageType constant.ServerMessageType, message string) {
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	for _, player := range mapInstance.GetAllPlayers() {
+		other, ok := player.(*Character)
+		if !ok {
+			continue
+		}
+		other.Listener.OnMessage(other, messageType, message)
+	}
+}
+
 func (ch *Character) WorldMessage(messageType constant.ServerMessageType, message string) {
 	if ch.GameWorld == nil {
 		return

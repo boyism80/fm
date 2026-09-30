@@ -63,6 +63,7 @@ service Internal {
   rpc RemoveBuddy (RemoveBuddyRequest) returns (RemoveBuddyReply);
   rpc BroadcastMultiChat (BroadcastMultiChatRequest) returns (BroadcastMultiChatReply);
   rpc SetServerDateTime (SetServerDateTimeRequest) returns (SetServerDateTimeReply);
+  rpc BroadcastNotice (BroadcastNoticeRequest) returns (BroadcastNoticeReply);
 }
 
 enum ServerRole {
@@ -1230,5 +1231,17 @@ message SetServerDateTimeRequest {
 }
 
 message SetServerDateTimeReply {
+  bool ok = 1;
+}
+
+message BroadcastNoticeRequest {
+  uint32 world_id = 1;
+  uint32 source_channel_id = 2;
+  uint32 message_type = 3;
+  string message = 4;
+  bool mega_ear = 5;
+}
+
+message BroadcastNoticeReply {
   bool ok = 1;
 }

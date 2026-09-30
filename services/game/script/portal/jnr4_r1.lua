@@ -10,7 +10,7 @@ return {
 			me:map(926110301)
 			sm:set_property(key, "1")
 		else
-			me:notice("이미 누군가가 이 포탈 안에 들어가 있습니다.", Msg.PinkText)
+			me:message("이미 누군가가 이 포탈 안에 들어가 있습니다.", Msg.PinkText)
 		end
 	end
 }

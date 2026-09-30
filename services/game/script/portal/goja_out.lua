@@ -9,6 +9,6 @@ return {
 			return
 		end
 		me:map(EXIT_MAP)
-		me:notice("의사양반이 있는 안락한 병원을 떠나 버섯똘이에게 돌아갑니다.", Msg.PinkText)
+		me:message("의사양반이 있는 안락한 병원을 떠나 버섯똘이에게 돌아갑니다.", Msg.PinkText)
 	end,
 }

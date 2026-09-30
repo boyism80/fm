@@ -25,7 +25,7 @@ end
 return {
 	on_enter = function(me)
 		if not pq.is_leader(me) then
-			me:notice("파티장이 먼저 이곳에서 퇴장해야 합니다.", Msg.PinkText)
+			me:message("파티장이 먼저 이곳에서 퇴장해야 합니다.", Msg.PinkText)
 			return
 		end
 		local sm = me:state_machine()
@@ -45,13 +45,13 @@ return {
 		if map_id == 920010600 and group ~= nil then
 			for id = 920010601, 920010604 do
 				if map_count(group, id) > 0 then
-					me:notice("객실에 파티원이 입장하고 있어 지금은 퇴장할 수 없습니다.")
+					me:message("객실에 파티원이 입장하고 있어 지금은 퇴장할 수 없습니다.")
 					return
 				end
 			end
 		end
 		pq.party_warp(sm, 920010100, nil, info.portal)
-		sm:notice("파티장이 " .. info.name .. " 에서 퇴장하였습니다.")
+		sm:message("파티장이 " .. info.name .. " 에서 퇴장하였습니다.")
 		me:play_portal_sound()
 	end
 }

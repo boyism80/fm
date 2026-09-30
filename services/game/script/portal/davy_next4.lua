@@ -18,7 +18,7 @@ return {
 			and r4 ~= nil and r4:state() >= 1
 		if pq.mob_count(map) == 0 and doors_ok then
 			if not pq.is_leader(me) then
-				me:notice("파티장이 이 포탈을 이용해야 합니다.", Msg.PinkText)
+				me:message("파티장이 이 포탈을 이용해야 합니다.", Msg.PinkText)
 				return
 			end
 			local sm = me:state_machine()
@@ -28,7 +28,7 @@ return {
 			me:play_portal_sound()
 			pq.party_warp(sm, BOSS_MAP)
 		else
-			me:notice("아직 이 포탈을 이용할 수 없습니다.", Msg.PinkText)
+			me:message("아직 이 포탈을 이용할 수 없습니다.", Msg.PinkText)
 		end
 	end
 }

@@ -8,7 +8,7 @@ return {
 			q:record("5")
 			q:sync_progress()
 			me:show_quest_completion(3900)
-			me:notice("오아시스의 물을 마셨습니다.", Msg.PinkText)
+			me:message("오아시스의 물을 마셨습니다.", Msg.PinkText)
 		end
 	end
 }

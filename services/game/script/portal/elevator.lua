@@ -4,7 +4,7 @@ return {
 	on_enter = function(me)
 		local group = state_machine("elevator")
 		if group == nil then
-			me:notice("엘리베이터가 고장났습니다.", Msg.PinkText)
+			me:message("엘리베이터가 고장났습니다.", Msg.PinkText)
 			return
 		end
 		local map = me:map()
@@ -16,6 +16,6 @@ return {
 			me:map(map:wz():id() + 10)
 			return
 		end
-		me:notice("엘리베이터 문이 닫혀있습니다.", Msg.PinkText)
+		me:message("엘리베이터 문이 닫혀있습니다.", Msg.PinkText)
 	end,
 }

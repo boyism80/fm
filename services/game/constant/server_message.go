@@ -42,4 +42,22 @@ func AllServerMessageTypes() map[string]ServerMessageType {
 	}
 }
 
+type MessageScope int
+
+const (
+	MessageScopeSelf MessageScope = iota
+	MessageScopeMap
+	MessageScopeChannel
+	MessageScopeWorld
+)
+
+func AllMessageScopes() map[string]MessageScope {
+	return map[string]MessageScope{
+		"Self":    MessageScopeSelf,
+		"Map":     MessageScopeMap,
+		"Channel": MessageScopeChannel,
+		"World":   MessageScopeWorld,
+	}
+}
+
 const DoorNoTownPortalMessage = "마을의 미스틱 도어 지점이 꽉 차서 지금은 사용할 수 없습니다."

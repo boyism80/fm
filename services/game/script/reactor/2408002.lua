@@ -44,7 +44,7 @@ return {
 		map:message("열쇠가 어디론가 사라졌습니다.")
 		for _, p in ipairs(sm:players()) do
 			if p ~= nil then
-				p:notice("반짝이는 빛과 함께 어딘가에서 열쇠가 나타났습니다.", Msg.LightBlueText)
+				p:message("반짝이는 빛과 함께 어딘가에서 열쇠가 나타났습니다.", Msg.LightBlueText)
 			end
 		end
 	end

@@ -21,7 +21,7 @@ return {
 			end
 		end
 		if #options == 0 then
-			me:notice("퀘스트를 진행할 경우에만 타임 게이트를 이용할 수 있습니다.")
+			me:message("퀘스트를 진행할 경우에만 타임 게이트를 이용할 수 있습니다.")
 			return
 		end
 		local count = 0
@@ -29,7 +29,7 @@ return {
 			count = count + it:count()
 		end
 		if count < 1 then
-			me:notice("시간여행자의 회중시계를 소지할 경우에만 이동할 수 있습니다.")
+			me:message("시간여행자의 회중시계를 소지할 경우에만 이동할 수 있습니다.")
 			return
 		end
 

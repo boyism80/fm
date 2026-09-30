@@ -23,6 +23,13 @@ return {
 				return
 			end
 		end
+		local left = 0
+		for _, it in pairs(me:item(DARK_MARBLE)) do
+			left = left + it:count()
+		end
+		if left > 0 then
+			me:rmitem(DARK_MARBLE, left)
+		end
 		me:map(101010000)
 	end
 }

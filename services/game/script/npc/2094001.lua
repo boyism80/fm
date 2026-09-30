@@ -71,7 +71,7 @@ return {
 			if sm:get_property("clearstage") ~= "1" then
 				local exp = clear_exp(sm)
 				if exp > 80000 then
-					sm:notice("파티원 중 120 레벨을 넘는 플레이어가 있어 보상 경험치량이 증가하였습니다.")
+					sm:message("파티원 중 120 레벨을 넘는 플레이어가 있어 보상 경험치량이 증가하였습니다.")
 				end
 				pq.party_exp(sm, exp)
 				for _, p in ipairs(sm:players()) do
