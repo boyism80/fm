@@ -3,18 +3,21 @@ name: notify-review
 on:
   push:
     branches: ['**']
+  issues:
+    types: [opened, closed, reopened]
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send push event to reviewer
+      - name: Send event to reviewer
         env:
           URL: ${{ secrets.REVIEW_WEBHOOK_URL }}
           KEY: ${{ secrets.REVIEW_WEBHOOK_KEY }}
+          EVENT: ${{ github.event_name }}
         run: |
           curl -sS --fail-with-body -X POST "$URL" \
             -H "Authorization: Bearer $KEY" \
             -H "Content-Type: application/json" \
-            -H "X-Github-Event: push" \
+            -H "X-Github-Event: $EVENT" \
             --data @"$GITHUB_EVENT_PATH"
