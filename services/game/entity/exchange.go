@@ -26,6 +26,7 @@ type ExchangeSide struct {
 	Population int32
 	Skills     []ExchangeSkill
 	Randomize  bool
+	Bonus      map[string]int16
 }
 
 type ExchangeSpec struct {

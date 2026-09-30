@@ -6,7 +6,7 @@ local DAILY_LIMIT = 1
 return {
 	on_click = function(me, npc)
 		local d = datetime()
-		local today = d.year .. "" .. d.month .. "" .. d.day
+		local today = string.format("%04d%02d%02d", d.year, d.month, d.day)
 		local count_q = me:quest(12191055)
 		local day_q = me:quest(12191056)
 		if not count_q:started() then

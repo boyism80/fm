@@ -60,6 +60,9 @@ return {
 		for i, row in ipairs(goods) do
 			choices[i] = "#i" .. row[1] .. ":# #b#z" .. row[1] .. "##k (가격 : " .. row[2] .. ")"
 		end
+		if #choices == 0 then
+			return
+		end
 		local sel = me:dialog_list(npc, "	#e[ 소지중 메소 : " .. me:meso() .. " ]#n", choices)
 		if sel == nil then
 			return

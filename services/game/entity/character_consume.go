@@ -10,6 +10,17 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
+func (ch *Character) UseItemEffect(itemID uint32) bool {
+	model := ch.itemModel(itemID)
+	consume, ok := model.(*wz.Consume)
+	if !ok || consume == nil {
+		return false
+	}
+	ch.addItemBuff(consume)
+	ch.recover(consume)
+	return true
+}
+
 func (ch *Character) UseConsume(consume *Consume) bool {
 	if ch == nil || consume == nil {
 		return false

@@ -33,6 +33,9 @@ return {
 		for i, spot in ipairs(spots) do
 			choices[i] = spot[2]
 		end
+		if #choices == 0 then
+			return
+		end
 		local sel = me:dialog_list(npc, "사냥이동 기능 오픈!", choices)
 		if sel == nil then
 			return

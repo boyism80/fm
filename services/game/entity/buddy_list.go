@@ -28,6 +28,16 @@ func NewBuddyList() *BuddyList {
 	}
 }
 
+func (bl *BuddyList) SetCapacity(n uint32) {
+	if bl == nil {
+		return
+	}
+	if n > 255 {
+		n = 255
+	}
+	bl.capacity = n
+}
+
 func (bl *BuddyList) Capacity() uint32 {
 	if bl == nil {
 		return uint32(pconst.DefaultBuddyCapacity)

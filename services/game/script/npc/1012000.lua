@@ -31,6 +31,9 @@ return {
 			end
 			choices[i] = "#m" .. town[1] .. "# (" .. fare .. " 메소)"
 		end
+		if #choices == 0 then
+			return
+		end
 		local sel = me:dialog_list(npc, prompt, choices)
 		if sel == nil then
 			return

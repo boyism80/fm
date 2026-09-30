@@ -812,6 +812,20 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(killed))
 			return 1
 		},
+		"hp": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			if L.GetTop() == 1 {
+				L.Push(lua.LNumber(mob.GetHp()))
+				return 1
+			}
+			mob.SetHp(uint32(L.CheckInt(2)), true)
+			return 0
+		},
 		"controller": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)

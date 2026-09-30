@@ -19,6 +19,9 @@ return {
 				table.insert(maps, spot[1])
 			end
 		end
+		if #choices == 0 then
+			return
+		end
 		local sel = me:dialog_list(npc, "입실 장치다. 원하는 장소를 클릭 하면 이동시켜준다.", choices)
 		if sel == nil then
 			return

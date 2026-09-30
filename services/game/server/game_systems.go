@@ -95,6 +95,28 @@ func (gs *GameServer) GetCarnivalRegistry() *entity.CarnivalRegistry {
 	return gs.carnivalRegistry
 }
 
+func (s mapSystem) Visit(fn func(*entity.Map)) {
+	if s.gs == nil || fn == nil {
+		return
+	}
+	s.gs.mapsMutex.RLock()
+	maps := make([]*entity.Map, 0, len(s.gs.maps)+len(s.gs.instanceMaps))
+	for _, m := range s.gs.maps {
+		if m != nil {
+			maps = append(maps, m)
+		}
+	}
+	for _, m := range s.gs.instanceMaps {
+		if m != nil {
+			maps = append(maps, m)
+		}
+	}
+	s.gs.mapsMutex.RUnlock()
+	for _, m := range maps {
+		fn(m)
+	}
+}
+
 func (s mapSystem) Get(mapID uint32) *entity.Map {
 	if s.gs == nil {
 		return nil

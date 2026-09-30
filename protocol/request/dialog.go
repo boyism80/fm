@@ -28,7 +28,7 @@ func (p *Dialog) Deserialize(reader *stream.StreamReader) {
 	case constant.DialogTypeDefault:
 	case constant.DialogTypeYesNo:
 
-	case constant.DialogTypeList:
+	case constant.DialogTypeList, constant.DialogTypeStyle:
 		if p.Next {
 			p.Selected = reader.ReadU32()
 		}

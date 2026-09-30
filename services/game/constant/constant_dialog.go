@@ -7,6 +7,7 @@ const (
 	DialogTypeYesNo        DialogType = 1
 	DialogTypeInput        DialogType = 2
 	DialogTypeList         DialogType = 4
+	DialogTypeStyle        DialogType = 7
 	DialogTypeAcceptEscape DialogType = 11
 	DialogTypeAccept       DialogType = 12
 )

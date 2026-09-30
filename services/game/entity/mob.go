@@ -715,6 +715,29 @@ func (m *Mob) revive(pos types.Point[int16], revives []uint32) {
 	}
 }
 
+func (m *Mob) SetHp(v uint32, notify bool) {
+	if m == nil {
+		return
+	}
+	m.setHp(v)
+	if !notify || m.Map == nil {
+		return
+	}
+	maxHp := m.GetMaxHp()
+	percent := uint8(0)
+	if maxHp > 0 {
+		percent = uint8(uint64(m.GetHp()) * 100 / uint64(maxHp))
+	}
+	packet := &response.ShowMobHp{OID: m.OID, Percentage: percent}
+	for _, player := range m.Map.GetAllPlayers() {
+		ch, ok := player.(*Character)
+		if !ok {
+			continue
+		}
+		ch.Send(packet, types.SEND_POLICY_ENCRYPT)
+	}
+}
+
 func (m *Mob) AddHp(amount int) {
 	if m == nil || amount == 0 {
 		return

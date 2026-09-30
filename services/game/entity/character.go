@@ -475,8 +475,74 @@ func (ch *Character) GetGender() uint8    { return ch.gender }
 func (ch *Character) GetSkinColor() uint8 { return ch.skinColor }
 func (ch *Character) GetFace() uint32     { return ch.face }
 func (ch *Character) GetHair() uint32     { return ch.hair }
-func (ch *Character) GetLevel() uint8     { return ch.level }
-func (ch *Character) GetExp() uint32      { return ch.exp }
+
+func (ch *Character) SetHair(id uint32) {
+	if ch.hair == id {
+		return
+	}
+	ch.hair = id
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatHair: int32(id),
+	}, false)
+	ch.Listener.OnUpdateCharacterLook(ch)
+}
+
+func (ch *Character) SetFace(id uint32) {
+	if ch.face == id {
+		return
+	}
+	ch.face = id
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatFace: int32(id),
+	}, false)
+	ch.Listener.OnUpdateCharacterLook(ch)
+}
+
+func (ch *Character) SetSkin(color uint8) {
+	if ch.skinColor == color {
+		return
+	}
+	ch.skinColor = color
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatSkin: int32(color),
+	}, false)
+	ch.Listener.OnUpdateCharacterLook(ch)
+}
+
+func (ch *Character) SetBuddyCapacity(n uint32) {
+	ch.BuddyList().SetCapacity(n)
+	ch.Listener.OnBuddyCapacity(ch, uint8(ch.BuddyList().Capacity()))
+}
+
+func (ch *Character) WorldMessage(messageType constant.ServerMessageType, message string) {
+	if ch.GameWorld == nil {
+		return
+	}
+	ch.GameWorld.GetMapSystem().Visit(func(m *Map) {
+		for _, player := range m.GetAllPlayers() {
+			other, ok := player.(*Character)
+			if !ok {
+				continue
+			}
+			other.Listener.OnMessage(other, messageType, message)
+		}
+	})
+}
+
+func (ch *Character) ScheduleWarp(mapID uint32, portal uint8, delay time.Duration) {
+	ch.AddTimer("npc_warp", delay, false, func() {
+		if ch.GameWorld == nil {
+			return
+		}
+		target := ch.GameWorld.GetMapSystem().Get(mapID)
+		if target == nil {
+			return
+		}
+		_ = ch.Warp(nil, target, portal)
+	})
+}
+func (ch *Character) GetLevel() uint8 { return ch.level }
+func (ch *Character) GetExp() uint32  { return ch.exp }
 func (ch *Character) GetSpawnPoint() uint8 {
 	mapInstance := ch.GetMap()
 	if mapInstance != nil && mapInstance.Wz != nil {
@@ -1058,6 +1124,11 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 
 func (ch *Character) KeyLayout() *KeyLayout {
 	return ch.keyLayout
+}
+
+func (ch *Character) BindKey(slot int, typ byte, action int32) {
+	ch.KeyLayout().SetKey(slot, typ, action)
+	ch.Listener.OnKeyMap(ch)
 }
 
 func (ch *Character) GetDialog() *lua.LState {

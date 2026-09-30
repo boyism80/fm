@@ -54,6 +54,18 @@ func (l *CharacterListenerImpl) OnDialogList(ch *entity.Character, npc uint32, m
 	ch.Send(dialogPacket, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnDialogStyle(ch *entity.Character, npc uint32, message string, styles []uint32) {
+	ch.Send(&response.DialogStyle{
+		NPC:    npc,
+		Text:   message,
+		Styles: styles,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnBuddyCapacity(ch *entity.Character, capacity uint8) {
+	ch.Send(&response.BuddyCapacityUpdate{Capacity: capacity}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnDialogInput(ch *entity.Character, npc uint32, message string) {
 	dialogPacket := &response.DialogInput{
 		NPC:  npc,
@@ -83,6 +95,10 @@ func (l *CharacterListenerImpl) OnMesoChanged(ch *entity.Character, meso int32) 
 			constant.StatMeso: meso,
 		},
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnKeyMap(ch *entity.Character) {
+	ch.Send(&response.KeyMap{Slots: ch.KeyLayout().Bindings()}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnMessage(ch *entity.Character, messageType constant.ServerMessageType, message string) {
@@ -1199,10 +1215,11 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *entity.Character) {
 		return
 	}
 
-	characterDTO := ch.ToDTO()
-
 	lookPacket := &response.UpdateCharacterLook{
-		Character: characterDTO,
+		Character:       ch.ToDTO(),
+		CrushRings:      entity.RingsToDTO(ch.Inventory.Rings.Left),
+		FriendshipRings: entity.RingsToDTO(ch.Inventory.Rings.Mid),
+		MarriageRings:   entity.RingsToDTO(ch.Inventory.Rings.Right),
 	}
 
 	ch.Broadcast(lookPacket, nil)

@@ -56,7 +56,17 @@ type DialogInput struct {
 	Text string
 }
 
+type DialogStyle struct {
+	NPC    uint32
+	Text   string
+	Styles []uint32
+}
+
 func (p *DialogInput) Opcode() uint16 {
+	return 0xE5
+}
+
+func (p *DialogStyle) Opcode() uint16 {
 	return 0xE5
 }
 
@@ -117,6 +127,18 @@ func (p *DialogInput) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
+func (p *DialogStyle) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(4)
+	writer.WriteU32(p.NPC)
+	writer.WriteU8(uint8(constant.DialogTypeStyle))
+	writer.WriteStr16(p.Text)
+	writer.WriteU8(uint8(len(p.Styles)))
+	for _, style := range p.Styles {
+		writer.WriteU32(style)
+	}
+	return nil
+}
+
 func (p *Dialog) Deserialize(reader *stream.StreamReader) {
 }
 
@@ -130,4 +152,7 @@ func (p *DialogAccept) Deserialize(reader *stream.StreamReader) {
 }
 
 func (p *DialogInput) Deserialize(reader *stream.StreamReader) {
+}
+
+func (p *DialogStyle) Deserialize(reader *stream.StreamReader) {
 }

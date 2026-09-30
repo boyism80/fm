@@ -24,6 +24,9 @@ return {
 				table.insert(maps, spot[1])
 			end
 		end
+		if #choices == 0 then
+			return
+		end
 		local sel = me:dialog_list(npc, "레벨대에 맞는 사냥터를 추천해드립니다.", choices)
 		if sel == nil then
 			return

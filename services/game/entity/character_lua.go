@@ -155,6 +155,26 @@ func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem
 		side.Randomize = lua.LVAsBool(randomLV)
 	}
 
+	if bonusLV := tbl.RawGetString("bonus"); bonusLV != lua.LNil {
+		bonusTbl, ok := bonusLV.(*lua.LTable)
+		if !ok {
+			L.ArgError(argIndex, "exchange side.bonus must be a table")
+			return ExchangeSide{}, false
+		}
+		side.Bonus = map[string]int16{}
+		bonusTbl.ForEach(func(key, value lua.LValue) {
+			name, ok := key.(lua.LString)
+			if !ok {
+				return
+			}
+			n, ok := value.(lua.LNumber)
+			if !ok {
+				return
+			}
+			side.Bonus[string(name)] = int16(n)
+		})
+	}
+
 	return side, true
 }
 
@@ -229,6 +249,48 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			L.Push(lua.LNumber(ch.GetGender()))
 			return 1
+		},
+		"hair": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() == 1 {
+				L.Push(lua.LNumber(ch.GetHair()))
+				return 1
+			}
+			ch.SetHair(uint32(L.CheckInt(2)))
+			return 0
+		},
+		"face": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() == 1 {
+				L.Push(lua.LNumber(ch.GetFace()))
+				return 1
+			}
+			ch.SetFace(uint32(L.CheckInt(2)))
+			return 0
+		},
+		"skin": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() == 1 {
+				L.Push(lua.LNumber(ch.GetSkinColor()))
+				return 1
+			}
+			ch.SetSkin(uint8(L.CheckInt(2)))
+			return 0
 		},
 		"level": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -1411,6 +1473,36 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.SetDialog(L)
 			return L.Yield(lua.LNumber(0))
 		},
+		"dialog_style": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 4 {
+				L.ArgError(2, "dialog_style(npc, text, styles) requires npc, text, and style ids")
+				return 0
+			}
+			npc := 0
+			switch npcArg := L.Get(2).(type) {
+			case lua.LNumber:
+				npc = int(npcArg)
+			case *lua.LUserData:
+				if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
+					npc = int(n.Wz.BaseSpawn.ID)
+				}
+			}
+			styles := []uint32{}
+			L.CheckTable(4).ForEach(func(_, value lua.LValue) {
+				if n, ok := value.(lua.LNumber); ok {
+					styles = append(styles, uint32(n))
+				}
+			})
+			ch.Listener.OnDialogStyle(ch, uint32(npc), L.CheckString(3), styles)
+			ch.SetDialog(L)
+			return L.Yield(lua.LNumber(0))
+		},
 		"dialog_accept": func(L *lua.LState) int {
 			argc := L.GetTop()
 			if argc == 1 {
@@ -1499,6 +1591,20 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				msgType = constant.ServerMessageType(L.CheckInt(3))
 			}
 			ch.Listener.OnMessage(ch, msgType, message)
+			return 0
+		},
+		"world_message": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 3 {
+				L.ArgError(2, "world_message(type, text) requires a message type and text")
+				return 0
+			}
+			ch.WorldMessage(constant.ServerMessageType(L.CheckInt(2)), L.CheckString(3))
 			return 0
 		},
 		"show_instruction": func(L *lua.LState) int {
@@ -2016,8 +2122,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LNumber(ch.GetMaxHp()))
-			return 1
+			if L.GetTop() == 1 {
+				L.Push(lua.LNumber(ch.GetMaxHp()))
+				return 1
+			}
+			ch.SetBaseHp(uint32(L.CheckInt(2)), true)
+			return 0
 		},
 		"max_mp": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -2026,8 +2136,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LNumber(ch.GetMaxMp()))
-			return 1
+			if L.GetTop() == 1 {
+				L.Push(lua.LNumber(ch.GetMaxMp()))
+				return 1
+			}
+			ch.SetBaseMp(uint32(L.CheckInt(2)), true)
+			return 0
 		},
 		"quest": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -3143,6 +3257,163 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			err := ch.Inventory.Unequip(parts)
 			L.Push(lua.LBool(err == nil))
+			return 1
+		},
+		"empty_slots": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "empty_slots(inventory_type) requires inventory type")
+				return 0
+			}
+			inven := ch.Inventory.Tabs[constant.InventoryType(L.CheckInt(2))]
+			if inven == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
+			L.Push(lua.LNumber(inven.EmptySlotCount()))
+			return 1
+		},
+		"put_key": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 4 {
+				L.ArgError(2, "put_key(slot, type, action) requires slot, type, and action")
+				return 0
+			}
+			ch.BindKey(L.CheckInt(2), byte(L.CheckInt(3)), int32(L.CheckInt(4)))
+			return 0
+		},
+		"morph": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() == 1 {
+				_, value, ok := ch.Buffs.GetBuffValue(constant.BuffFlagMorph)
+				if !ok {
+					L.Push(lua.LNumber(0))
+					return 1
+				}
+				L.Push(lua.LNumber(value))
+				return 1
+			}
+			if L.GetTop() != 2 || lua.LVAsBool(L.Get(2)) {
+				L.ArgError(2, "morph() reads the morph id; morph(false) clears it")
+				return 0
+			}
+			ch.Buffs.RemoveBuff([]constant.BuffFlag{constant.BuffFlagMorph})
+			return 0
+		},
+		"use_item": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "use_item(item_id) requires an item id")
+				return 0
+			}
+			L.Push(lua.LBool(ch.UseItemEffect(uint32(L.CheckInt(2)))))
+			return 1
+		},
+		"buddy_capacity": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() == 1 {
+				L.Push(lua.LNumber(ch.BuddyList().Capacity()))
+				return 1
+			}
+			ch.SetBuddyCapacity(uint32(L.CheckInt(2)))
+			return 0
+		},
+		"warp_later": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() < 3 || L.GetTop() > 4 {
+				L.ArgError(2, "warp_later(map_id, seconds[, portal])")
+				return 0
+			}
+			portal := uint8(0)
+			if L.GetTop() == 4 {
+				portal = uint8(L.CheckInt(4))
+			}
+			ch.ScheduleWarp(uint32(L.CheckInt(2)), portal, time.Duration(L.CheckInt(3))*time.Second)
+			return 0
+		},
+		"sync_item": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 3 {
+				L.ArgError(2, "sync_item(inventory_type, slot)")
+				return 0
+			}
+			invType := constant.InventoryType(L.CheckInt(2))
+			slot := int16(L.CheckInt(3))
+			item := ch.Inventory.GetItem(invType, slot)
+			if item == nil {
+				return 0
+			}
+			ch.Listener.OnInventorySlotUpdated(ch, invType, slot, item)
+			return 0
+		},
+		"mob_drops": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if L.GetTop() != 2 {
+				L.ArgError(2, "mob_drops(mob_id) requires a mob id")
+				return 0
+			}
+			t := L.NewTable()
+			if ch.GameWorld == nil {
+				L.Push(t)
+				return 1
+			}
+			resources := ch.GameWorld.GetResources()
+			if resources == nil {
+				L.Push(t)
+				return 1
+			}
+			mobDrops := resources.MobDrops[uint32(L.CheckInt(2))]
+			for i, d := range mobDrops {
+				row := L.NewTable()
+				row.RawSetString("item", lua.LNumber(d.Item))
+				row.RawSetString("money", lua.LNumber(d.Money))
+				row.RawSetString("prob", lua.LNumber(d.Prob))
+				row.RawSetString("min", lua.LNumber(d.Min))
+				row.RawSetString("max", lua.LNumber(d.Max))
+				row.RawSetString("quest", lua.LNumber(d.QuestID))
+				t.RawSetInt(i+1, row)
+			}
+			L.Push(t)
 			return 1
 		},
 		"item": func(L *lua.LState) int {

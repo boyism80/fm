@@ -15,6 +15,9 @@ return {
 				table.insert(maps, spot[1])
 			end
 		end
+		if #choices == 0 then
+			return
+		end
 		local sel = me:dialog_list(npc, "가루다가 당신을 마중나왔다.", choices)
 		if sel == nil then
 			return

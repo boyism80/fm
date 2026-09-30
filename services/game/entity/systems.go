@@ -20,6 +20,7 @@ type MapSystem interface {
 	Reset(L *lua.LState, mapInstance *Map, actorCtx actor.Context) int
 	Respawn(L *lua.LState, mapInstance *Map, actorCtx actor.Context, includeNegativeMobTime bool) int
 	RunScript(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int
+	Visit(fn func(*Map))
 }
 
 type SchedulerSystem interface {

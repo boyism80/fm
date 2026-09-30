@@ -23,6 +23,50 @@ type EquipmentBonusStats struct {
 	Jump  int16 `json:"jump,omitempty"`
 }
 
+func (c *EquipmentCore) SetBonus(stats map[string]int16) {
+	if c == nil || len(stats) == 0 {
+		return
+	}
+	if c.BonusStats == nil {
+		c.BonusStats = &EquipmentBonusStats{}
+	}
+	bonus := c.BonusStats
+	for key, value := range stats {
+		switch key {
+		case "str":
+			bonus.Str = value
+		case "dex":
+			bonus.Dex = value
+		case "int":
+			bonus.Int = value
+		case "luk":
+			bonus.Luk = value
+		case "hp":
+			bonus.MaxHP = value
+		case "mp":
+			bonus.MaxMP = value
+		case "watk":
+			bonus.PAD = value
+		case "matk":
+			bonus.MAD = value
+		case "wdef":
+			bonus.PDD = value
+		case "mdef":
+			bonus.MDD = value
+		case "acc":
+			bonus.ACC = value
+		case "avoid":
+			bonus.Avoid = value
+		case "hands":
+			bonus.Hands = value
+		case "speed":
+			bonus.Speed = value
+		case "jump":
+			bonus.Jump = value
+		}
+	}
+}
+
 func EquipmentBonusStatsFromProto(pb *internal.EquipmentBonusStatsPersisted) *EquipmentBonusStats {
 	if pb == nil {
 		return nil

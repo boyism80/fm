@@ -41,6 +41,9 @@ return {
 		for i, board in ipairs(boards) do
 			choices[i] = "#t" .. board[1] .. "#"
 		end
+		if #choices == 0 then
+			return
+		end
 		local sel = me:dialog_list(npc, prompt, choices)
 		if sel == nil then
 			return

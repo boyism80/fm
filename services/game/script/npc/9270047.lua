@@ -50,7 +50,7 @@ return {
 			me:dialog(npc, "타르가 코인 1개가 필요합니다.")
 			return
 		end
-		count_q:record("1")
+		count_q:record(tostring((tonumber(count_q:record()) or 0) + 1))
 		map:spawn_mob(9420541, -397, 640)
 	end
 }

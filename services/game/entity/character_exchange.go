@@ -127,12 +127,13 @@ func (ch *Character) grantExchangeReward(side ExchangeSide) {
 		if err != nil {
 			continue
 		}
-		if side.Randomize {
-			if eq, ok := item.(Equipment); ok {
+		if eq, ok := item.(Equipment); ok {
+			if side.Randomize {
 				if em, ok := eq.GetModel().(wz.Equipment); ok {
 					eq.GetEquipmentCore().RandomizeStats(em)
 				}
 			}
+			eq.GetEquipmentCore().SetBonus(side.Bonus)
 		}
 		ch.Inventory.addItemUnchecked(item, true)
 	}

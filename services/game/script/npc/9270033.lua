@@ -50,7 +50,7 @@ return {
 			me:dialog(npc, "화이트 에센스가 필요합니다.")
 			return
 		end
-		count_q:record("1")
+		count_q:record(tostring((tonumber(count_q:record()) or 0) + 1))
 		map:spawn_mob(9420513, -178, -212)
 	end
 }
