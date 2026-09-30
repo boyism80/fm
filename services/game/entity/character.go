@@ -63,7 +63,6 @@ type Character struct {
 	CurrentShopID     uint32
 	Chair             uint32
 	LastHeal          LastHeal
-	LastMegaphone     time.Time
 	BaseStats         BaseStats
 	BonusStats        BonusStats
 	Buffs             *BuffContainer

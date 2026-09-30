@@ -31,6 +31,7 @@ type Promise struct {
 	settled  bool
 	rejected bool
 	done     bool
+	started  bool
 	value    interface{}
 	err      error
 	kickGen  uint64
@@ -81,26 +82,17 @@ func (p *Promise) appendStep(step promiseStep) *Promise {
 
 func (p *Promise) scheduleKick(gen uint64) {
 	go func() {
-		for {
-			runtime.Gosched()
-			p.mu.Lock()
-			current := p.kickGen
-			if current != gen {
-				gen = current
-				p.mu.Unlock()
-				continue
-			}
-			settled := p.settled
-			value := p.value
-			rejected := p.rejected
-			done := p.done
+		runtime.Gosched()
+		p.mu.Lock()
+		// A newer kick owns the chain; running this one too would execute every step twice.
+		if p.kickGen != gen || p.started || !p.settled || p.rejected || p.done {
 			p.mu.Unlock()
-			if !settled || rejected || done {
-				return
-			}
-			p.driveFrom(0, value)
 			return
 		}
+		p.started = true
+		value := p.value
+		p.mu.Unlock()
+		p.driveFrom(0, value)
 	}()
 }
 

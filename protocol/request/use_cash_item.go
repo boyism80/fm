@@ -18,10 +18,14 @@ func (p *UseCashItem) Serialize(writer *stream.StreamWriter) error {
 func (p *UseCashItem) Deserialize(reader *stream.StreamReader) {
 	p.Slot = reader.ReadU16()
 	p.ItemID = reader.ReadU32()
-	switch p.ItemID {
-	case 5070000, 5071000:
+
+	if p.ItemID/10000 != 507 {
+		return
+	}
+	switch p.ItemID % 10000 / 1000 {
+	case 1, 8:
 		p.Text = reader.ReadStr16()
-	case 5072000, 5073000, 5074000:
+	case 2:
 		p.Text = reader.ReadStr16()
 		p.Ear = reader.ReadU8() != 0
 	}
