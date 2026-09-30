@@ -35,8 +35,7 @@ local function handle_stage2(me, npc, sm, map)
 		stage = "0"
 	end
 	if stage == "0" then
-		if pq.has_item(me, SEAL_A, 20) then
-			me:exchange({ item = { [SEAL_A] = 20 } }, nil)
+		if me:exchange({ item = { [SEAL_A] = 20 } }, nil) == ExchangeResult.OK then
 			sm:set_property("stage2", "1")
 			map:block_gen(false, 9300114)
 			map:kill_all_mobs()
@@ -47,8 +46,7 @@ local function handle_stage2(me, npc, sm, map)
 			me:dialog(npc, "나타나는 해적을 잡고 #b#t4001120##k 20개를 제게 모아오시면 됩니다. 해적이 바로 나타나지 않더라도 잠시만 기다려 보세요. 행운을 빌어요!")
 		end
 	elseif stage == "1" then
-		if pq.has_item(me, SEAL_B, 20) then
-			me:exchange({ item = { [SEAL_B] = 20 } }, nil)
+		if me:exchange({ item = { [SEAL_B] = 20 } }, nil) == ExchangeResult.OK then
 			sm:set_property("stage2", "2")
 			map:block_gen(false, 9300115)
 			map:kill_all_mobs()
@@ -59,8 +57,7 @@ local function handle_stage2(me, npc, sm, map)
 			me:dialog(npc, "나타나는 해적을 잡고 #b#t4001121##k 20개를 제게 모아오시면 됩니다. 해적이 바로 나타나지 않더라도 잠시만 기다려 보세요. 행운을 빌어요!")
 		end
 	elseif stage == "2" then
-		if pq.has_item(me, SEAL_C, 20) then
-			me:exchange({ item = { [SEAL_C] = 20 } }, nil)
+		if me:exchange({ item = { [SEAL_C] = 20 } }, nil) == ExchangeResult.OK then
 			sm:set_property("stage2", "3")
 			map:block_gen(false, 9300116)
 			map:kill_all_mobs()

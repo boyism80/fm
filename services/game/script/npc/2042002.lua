@@ -1,6 +1,5 @@
 -- NPC name (String.wz/Npc.img.xml): 슈피겔만 - 몬스터 카니발
 
-local pq = require("script/lib/party_quest")
 local HUB_MAP = 980000000
 local MIN_LEVEL = 30
 local MAX_LEVEL = 50
@@ -82,11 +81,16 @@ return {
 		elseif sel == 2 then
 			me:dialog(npc, "직접 그 전율을 느껴보기 전에는 이것이 무엇인지 알 수 없지.")
 		elseif sel == 3 then
-			if not pq.has_item(me, COIN_ID, 50) then
-				me:dialog(npc, "#b#t" .. COIN_ID .. "##k이 부족하거나, 장비창에 빈 칸이 없는건 아닌가?")
+			local code = me:exchange({ item = { [COIN_ID] = 50 } }, { item = { [1122007] = 1 } })
+			if code == ExchangeResult.LackCapacity then
+				me:dialog(npc, "장비창에 빈 칸이 없는 것 같군. 확인해 보게나.")
 				return
 			end
-			me:exchange({ items = { { id = COIN_ID, count = 50 } } }, { items = { { id = 1122007, count = 1 } } })
+			if code ~= ExchangeResult.OK then
+				me:dialog(npc, "#b#t" .. COIN_ID .. "##k이 부족한 것 같군.")
+				return
+			end
+			me:dialog(npc, "여기 #b#t1122007##k일세. 잘 사용하게나.")
 		end
 	end
 }
