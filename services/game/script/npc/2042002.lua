@@ -81,7 +81,7 @@ return {
 		elseif sel == 2 then
 			me:dialog(npc, "직접 그 전율을 느껴보기 전에는 이것이 무엇인지 알 수 없지.")
 		elseif sel == 3 then
-			local code = me:exchange({ item = { [COIN_ID] = 50 } }, { item = { [1122007] = 1 } })
+			local code = me:exchange({ item = { [COIN_ID] = 50 } }, { item = { [1122007] = 1 }, random = true })
 			if code == ExchangeResult.LackCapacity then
 				me:dialog(npc, "장비창에 빈 칸이 없는 것 같군. 확인해 보게나.")
 				return
