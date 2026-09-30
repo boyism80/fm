@@ -358,21 +358,6 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(team.TeamID))
 			return 1
 		},
-		"enemy": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			team, ok := ud.Value.(*CarnivalTeam)
-			if !ok || team == nil || team.Match == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			enemy := team.Match.enemyTeam(team.TeamID)
-			if enemy == nil {
-				L.Push(lua.LNil)
-				return 1
-			}
-			L.Push(luax.NewLuable(L, enemy))
-			return 1
-		},
 		"leader": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			team, ok := ud.Value.(*CarnivalTeam)

@@ -30,12 +30,18 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 		return false
 	}
 
-	applyWZ, scriptOK := ch.callActiveConsumeScript(consume)
-	if !scriptOK {
+	applyWZ, err := ch.callActiveConsumeScript(consume)
+	if err != nil {
+		log.Printf("item script failed %v", err)
 		return false
 	}
 
 	if applyWZ {
+		if wzConsume.CP > 0 || wzConsume.NuffSkillID > 0 {
+			ch.useCarnivalItem(wzConsume)
+			return true
+		}
+
 		var targets []*Character
 		if wzConsume.Party {
 			if pid := ch.GetPartyID(); pid != nil {
@@ -135,38 +141,24 @@ func (ch *Character) recover(consumeItem *wz.Consume) bool {
 	return true
 }
 
-func (ch *Character) callActiveConsumeScript(consume *Consume) (applyWZ bool, scriptOK bool) {
-	applyWZ, scriptOK = true, true
-	if ch == nil || consume == nil {
-		return applyWZ, scriptOK
-	}
-	consumeWz, ok := consume.GetModel().(*wz.Consume)
-	if !ok || consumeWz == nil || consumeWz.ID == 0 {
-		return applyWZ, scriptOK
-	}
-	itemID := consumeWz.ID
-
+func (ch *Character) callActiveConsumeScript(consume *Consume) (applyWZ bool, err error) {
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
-		return applyWZ, scriptOK
+		return true, nil
 	}
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
-		return applyWZ, scriptOK
+		return true, nil
 	}
 
-	scriptPath := fmt.Sprintf("script/item/%d.lua", itemID)
+	scriptPath := fmt.Sprintf("script/item/%d.lua", consume.GetModel().GetID())
 	thread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
-		return applyWZ, scriptOK
+		return true, nil
 	}
 	ret, err := luax.Call(thread, "on_active_item", ch, consume)
 	if err != nil {
-		log.Printf("item script failed %s: %v", scriptPath, err)
-		return true, false
+		return false, fmt.Errorf("%s: %w", scriptPath, err)
 	}
-	if ret == lua.LFalse {
-		return false, true
-	}
-	return true, true
+	return ret != lua.LFalse, nil
 }

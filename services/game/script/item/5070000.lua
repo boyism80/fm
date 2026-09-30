@@ -1,7 +1,9 @@
 -- Item name (String.wz/Cash.img.xml): 일반 확성기
 
+local megaphone = require("script/lib/megaphone")
+
 return {
 	on_cash = function(me, item_id, text, ear)
-		return me:message(me:name() .. " : " .. text, Msg.Megaphone, MessageScope.Map)
+		return megaphone.send(me, text, Msg.Megaphone, MessageScope.Map, ear)
 	end,
 }

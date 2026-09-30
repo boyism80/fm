@@ -136,6 +136,7 @@ func (gs *GameServer) registerEquipmentPartConstants(luaState *lua.LState) {
 	t.RawSetString("Shield", lua.LNumber(constant.EquipmentPartsShield))
 	t.RawSetString("Weapon", lua.LNumber(constant.EquipmentPartsWeapon))
 	t.RawSetString("Ring", lua.LNumber(constant.EquipmentPartsRing))
+	t.RawSetString("Medal", lua.LNumber(constant.EquipmentPartsMedal))
 	luaState.SetGlobal("EquipmentPart", t)
 }
 
@@ -601,6 +602,21 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		return 1
 	})
 
+	luax.RegisterFunc(luaState, "item2name", func(L *lua.LState) int {
+		id := uint32(L.CheckNumber(1))
+		if gs.resources == nil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		name := gs.resources.GetItemName(id)
+		if name == "" {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(lua.LString(name))
+		return 1
+	})
+
 	luax.RegisterFunc(luaState, "name2skill", func(L *lua.LState) int {
 		name := L.CheckString(1)
 		if gs.resources == nil {
@@ -846,6 +862,14 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	})
 	luax.RegisterFunc(luaState, "get_packet_log_enabled", func(L *lua.LState) int {
 		L.Push(lua.LBool(core.GetPacketLogEnabled()))
+		return 1
+	})
+	luax.RegisterFunc(luaState, "set_megaphone_muted", func(L *lua.LState) int {
+		gs.megaphoneMuted.Store(L.CheckBool(1))
+		return 0
+	})
+	luax.RegisterFunc(luaState, "get_megaphone_muted", func(L *lua.LState) int {
+		L.Push(lua.LBool(gs.megaphoneMuted.Load()))
 		return 1
 	})
 	luax.RegisterFunc(luaState, "set_packet_log", func(L *lua.LState) int {

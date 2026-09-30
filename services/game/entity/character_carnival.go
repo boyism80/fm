@@ -58,24 +58,22 @@ func (ch *Character) PartyOnMap() ([]*Character, *Party) {
 	return members, party
 }
 
-func (ch *Character) PickupCarnivalItem(wzConsume *wz.Consume) bool {
-	match := ch.CarnivalMatch()
-	if match == nil || wzConsume == nil {
-		return false
-	}
-	team := match.FindTeam(ch)
-	if team == nil {
-		return false
+func (ch *Character) useCarnivalItem(wzConsume *wz.Consume) {
+	team := ch.CarnivalTeam()
+	if team == nil || team.Match == nil {
+		return
 	}
 	if wzConsume.CP > 0 {
 		team.AddCP(ch, wzConsume.CP)
 	}
-	if wzConsume.NuffSkillID > 0 {
-		if enemy := match.enemyTeam(team.TeamID); enemy != nil {
-			enemy.Debuff(ch.GetMap(), wzConsume.NuffSkillID)
-		}
+	if wzConsume.NuffSkillID == 0 {
+		return
 	}
-	return true
+	enemy := team.Match.enemyTeam(team.TeamID)
+	if enemy == nil {
+		return
+	}
+	enemy.Debuff(ch.GetMap(), wzConsume.NuffSkillID)
 }
 
 // Returns false when the mob skill is not a disease, so the caller can fall back to a dispel.

@@ -50,17 +50,6 @@ func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) er
 		return nil
 	}
 
-	switch req.ItemID {
-	case 5070000, 5071000, 5072000, 5073000, 5074000:
-	default:
-		unlock()
-		return nil
-	}
-	if len(req.Text) == 0 || len(req.Text) > 65 {
-		unlock()
-		return nil
-	}
-
 	mapInstance := ch.GetMap()
 	if mapInstance == nil || mapInstance.GetLuaRoot() == nil {
 		unlock()

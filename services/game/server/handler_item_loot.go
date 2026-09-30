@@ -61,7 +61,6 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 			character.Listener.OnUpdateStats(character, nil, true)
 			return fmt.Errorf("failed to apply consume effect for OID %d", req.OID)
 		}
-		character.RunItemGainScript(consume.GetModel().GetID())
 	} else {
 		reason := mapInstance.LootItem(obj, character, req.Position)
 		if reason != constant.LootSuccess {

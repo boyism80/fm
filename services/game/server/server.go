@@ -99,6 +99,7 @@ type GameServer struct {
 	ensurePending     map[uint64]*ensure.EnsureDeliver
 	ensureNext        atomic.Uint64
 	internalHBCancel  context.CancelFunc
+	megaphoneMuted    atomic.Bool
 }
 
 func (gs *GameServer) GetRootContext() *actor.RootContext {

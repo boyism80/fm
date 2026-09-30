@@ -1348,6 +1348,20 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["확성기금지"] = {
+		privilege = ROLE.Admin,
+		usage = "- 이 채널의 확성기 사용 금지 켜기/끄기",
+		command = function(me, args)
+			local muted = not get_megaphone_muted()
+			set_megaphone_muted(muted)
+			if muted then
+				me:message("확성기 사용 금지: 켜짐")
+			else
+				me:message("확성기 사용 금지: 꺼짐")
+			end
+			return true
+		end,
+	},
 	["수송상태"] = {
 		privilege = ROLE.Admin,
 		usage = "<Boats|Trains|Flight|Geenie|elevator> - 수송 Group prop / persistent SM 상태",

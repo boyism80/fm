@@ -15,4 +15,5 @@ const (
 	EquipmentPartsShield EquipmentPartsType = -10
 	EquipmentPartsWeapon EquipmentPartsType = -11
 	EquipmentPartsRing   EquipmentPartsType = -12
+	EquipmentPartsMedal  EquipmentPartsType = -21
 )
