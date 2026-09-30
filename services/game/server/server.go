@@ -560,18 +560,26 @@ func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
 	if mapInstance == nil {
 		return
 	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
+	pid := mapInstance.LogicActorPID()
+	actorRoot := gs.GetRootContext()
+	if pid == nil || actorRoot == nil {
 		return
 	}
-	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
-	if err != nil {
-		log.Printf("on_logout: %v", err)
-		return
-	}
-	luax.CallAsync(root, thread, "on_logout", ch).OnError(func(err error) {
-		log.Printf("on_logout: %v", err)
-	})
+	// The map Lua root is only safe on its map actor; disconnects finish on RPC goroutines.
+	actorRoot.Send(pid, &c_actor.ExecuteTimer{Logic: func() error {
+		root := mapInstance.GetLuaRoot()
+		if root == nil {
+			return nil
+		}
+		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
+		if err != nil {
+			return fmt.Errorf("on_logout: %w", err)
+		}
+		luax.CallAsync(root, thread, "on_logout", ch).OnError(func(err error) {
+			log.Printf("on_logout: %v", err)
+		})
+		return nil
+	}})
 }
 
 func (gs *GameServer) actorPIDToMap(pid *actor.PID) *entity.Map {
