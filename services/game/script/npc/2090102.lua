@@ -10,7 +10,7 @@ return {
 
 		local styles = { 0, 1, 2, 3, 4 }
 		local pick = me:dialog_style(npc, "원하시는 피부를 골라보세요~", styles)
-		if pick == nil then
+		if pick == nil or styles[pick] == nil then
 			return
 		end
 

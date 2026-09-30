@@ -22,7 +22,7 @@ return {
 			return
 		end
 		if me:base_mp() < 2001 then
-			me:dialog(npc, "마나가 너무 많아요.")
+			me:dialog(npc, "마나가 너무 적어요.")
 			return
 		end
 		if item_count(me, MAPLE_LEAF) < COST then

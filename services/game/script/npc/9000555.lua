@@ -74,7 +74,7 @@ return {
 				end
 			end
 			local pick = me:dialog_style(npc, "원하는 아바타를 선택해주세요. (총 개수 : " .. #styles .. ")", styles)
-			if pick == nil then
+			if pick == nil or styles[pick] == nil then
 				return
 			end
 			me:hair(styles[pick])
@@ -87,7 +87,7 @@ return {
 				end
 			end
 			local pick = me:dialog_style(npc, "원하는 아바타를 선택해주세요.", styles)
-			if pick == nil then
+			if pick == nil or styles[pick] == nil then
 				return
 			end
 			me:hair(styles[pick])
@@ -103,7 +103,7 @@ return {
 				end
 			end
 			local pick = me:dialog_style(npc, "원하는 아바타를 선택해주세요. (총 개수 : " .. #styles .. ")", styles)
-			if pick == nil then
+			if pick == nil or styles[pick] == nil then
 				return
 			end
 			me:face(styles[pick])
@@ -119,13 +119,13 @@ return {
 				table.insert(styles, base + i * 100)
 			end
 			local pick = me:dialog_style(npc, "원하는 아바타를 선택해주세요.", styles)
-			if pick == nil then
+			if pick == nil or styles[pick] == nil then
 				return
 			end
 			me:face(styles[pick])
 		else
 			local pick = me:dialog_style(npc, "원하는 피부를 선택해주세요.", SKINS)
-			if pick == nil then
+			if pick == nil or SKINS[pick] == nil then
 				return
 			end
 			me:skin(SKINS[pick])

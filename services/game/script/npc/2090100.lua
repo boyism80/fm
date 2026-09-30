@@ -35,7 +35,7 @@ return {
 		end
 
 		local pick = me:dialog_style(npc, prompt, styles)
-		if pick == nil then
+		if pick == nil or styles[pick] == nil then
 			return
 		end
 

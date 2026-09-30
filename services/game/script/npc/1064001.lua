@@ -34,7 +34,7 @@ local function challenge(me, npc)
 		local m = "입장 조건을 충족하지 못하셨습니다.\r\n\r\n"
 			.. "#e[ #r입장조건#k ]#n\r\n\r\n"
 			.. "- 파티원 수 : 4명\r\n"
-			.. "- 입장권 수 : 4개\r\n"
+			.. "- 입장권 : 파티장이 4개\r\n"
 			.. "- 티어 등급 : 플래티넘\r\n"
 			.. "- 파티원 맵 : 파티장과 같은 맵\r\n"
 		me:dialog(npc, m)
@@ -44,12 +44,12 @@ local function challenge(me, npc)
 	for _, map_id in ipairs(WAVES) do
 		local ok, count = run_on_map(map_id, SCRIPT, "character_count")
 		if ok and count ~= nil and count > 0 then
-			me:dialog(npc, "이미 다른 파티가 입장 중이거나, 파티원의 수만큼 입장권을 가지고 계시지 않습니다.")
+			me:dialog(npc, "이미 다른 파티가 입장 중이거나, 파티장이 파티원 수만큼 입장권을 가지고 있지 않습니다.")
 			return
 		end
 	end
 	if me:exchange({ item = { [TICKET] = size } }, nil) ~= ExchangeResult.OK then
-		me:dialog(npc, "파티원 중 입장권이 부족한 사람이 있습니다.")
+		me:dialog(npc, "입장권은 파티장이 파티원 수만큼 모아서 내야 합니다. 지금은 그 수에 미치지 못합니다.")
 		return
 	end
 	for _, map_id in ipairs(WAVES) do
