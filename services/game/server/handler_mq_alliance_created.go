@@ -58,6 +58,5 @@ func (h *allianceMqCreated) Handle(_ actor.Context, _ amqp.Delivery, _ string, r
 	}
 	gs.alliance.Update(alliancePb)
 	gs.alliance.BroadcastCreate(alliancePb)
-	log.Printf("alliance consumer: applied created alliance_id=%d revision=%d", evt.AllianceID, evt.Revision)
 	return nil
 }

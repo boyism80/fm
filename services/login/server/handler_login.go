@@ -36,6 +36,9 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 	}
 
 	remoteAddr := ctx.Client.GetConnection().RemoteAddr().String()
+	if loginClient, ok := ctx.Client.(*client.LoginClient); ok && loginClient.GetAccountId() != 0 {
+		log.Printf("Login: packet on authenticated connection remote=%s id=%s account=%d", remoteAddr, req.ID, loginClient.GetAccountId())
+	}
 	reqMsg := &internal.LoginAccountRequest{
 		LoginId:     req.ID,
 		Password:    req.Pw,
@@ -54,9 +57,10 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 		func(c context.Context) (*internal.LoginAccountReply, error) {
 			return ic.LoginAccount(c, reqMsg)
 		}, func(reply *internal.LoginAccountReply) error {
+			log.Printf("Login: reply remote=%s id=%s account=%d status=%v", remoteAddr, req.ID, reply.GetAccountId(), reply.GetStatus())
 			return h.sendLoginAccountResult(ctx, req, reply)
 		}).OnError(func(err error) {
-		log.Printf("Login (async): %v", err)
+		log.Printf("Login (async): remote=%s id=%s: %v", remoteAddr, req.ID, err)
 		_ = ctx.Client.Send(&response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}, types.SEND_POLICY_ENCRYPT)
 	})
 	return nil

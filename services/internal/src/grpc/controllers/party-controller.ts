@@ -71,6 +71,10 @@ export class PartyGrpcController {
         try {
             const req = call.request;
             const result = await this.partyService.joinParty(req.worldId, req.partyId, req.member, req.skipInvitePendingCheck) as PartyMutationResult;
+            console.log(
+                `[party] join character=${req.member?.characterId} party=${req.partyId} skip_pending=${req.skipInvitePendingCheck}` +
+                    ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]}`
+            );
             if (result.ok) {
                 callback(null, {
                     ok: true,
@@ -95,6 +99,11 @@ export class PartyGrpcController {
     async inviteParty(call: GrpcCall<InvitePartyRequest>, callback: GrpcCallback<InvitePartyReply>) {
         try {
             const result = await this.partyService.inviteParty(call.request.worldId, call.request.inviterCharacterId, call.request.targetCharacterName) as InvitePartyResult;
+            console.log(
+                `[party] invite inviter=${call.request.inviterCharacterId} target="${call.request.targetCharacterName}"` +
+                    ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]} party=${result.partyId}` +
+                    ` target_id=${result.targetCharacterId} target_channel=${result.targetChannelId}`
+            );
             callback(null, {
                 ok: result.ok,
                 errorCode: result.code ?? PartyErrorCode.UNKNOWN,
@@ -232,6 +241,10 @@ export class PartyGrpcController {
     async denyParty(call: GrpcCall<DenyPartyRequest>, callback: GrpcCallback<DenyPartyReply>) {
         try {
             const result = await this.partyService.denyParty(call.request.worldId, call.request.deniedCharacterId, call.request.inviterName, call.request.action) as DenyPartyResult;
+            console.log(
+                `[party] deny denied=${call.request.deniedCharacterId} inviter="${call.request.inviterName}" action=${call.request.action}` +
+                    ` ok=${result.ok} code=${PartyErrorCode[result.code ?? PartyErrorCode.NONE]}`
+            );
             callback(null, { ok: result.ok, errorCode: result.code ?? PartyErrorCode.UNKNOWN });
         } catch (err) {
             this.grpcError(err, callback);

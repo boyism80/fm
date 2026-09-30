@@ -30,8 +30,6 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 	if h.gs == nil || req == nil {
 		return fmt.Errorf("switch channel: invalid state")
 	}
-	log.Printf("SwitchChannel recv: channel_id=%d (0-based) from %s",
-		req.Channel, ctx.Client.GetConnection().RemoteAddr())
 	if h.gs.internalClient == nil {
 		return fmt.Errorf("switch channel: internal client not configured")
 	}

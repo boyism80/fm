@@ -139,12 +139,6 @@ func (gs *GameServer) SaveAllCharactersAsync(ctx actor.Context) *async.Promise {
 			return summary, errors.Join(errs...)
 		}
 		return summary, nil
-	}).Then(func(v interface{}) (interface{}, error) {
-		s, _ := v.(*saveAllSummary)
-		if s != nil {
-			log.Printf("save all complete: maps=%d saved=%d", s.Maps, s.Saved)
-		}
-		return v, nil
 	})
 	return p
 }

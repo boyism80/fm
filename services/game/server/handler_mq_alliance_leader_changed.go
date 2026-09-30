@@ -42,6 +42,5 @@ func (h *allianceMqLeaderChanged) Handle(_ actor.Context, _ amqp.Delivery, _ str
 	}
 	gs.alliance.Update(alliancePb)
 	gs.alliance.BroadcastLeaderChanged(alliancePb, extra.OldLeaderCharacterID, extra.NewLeaderCharacterID)
-	log.Printf("alliance consumer: applied leader_changed alliance_id=%d revision=%d", evt.AllianceID, evt.Revision)
 	return nil
 }

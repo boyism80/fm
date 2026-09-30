@@ -514,7 +514,9 @@ export class PartyService {
 
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const inviteKey = this.invitePendingKey(worldId, targetCharacterId);
+        const prevPending = await client.get(inviteKey);
         await client.set(inviteKey, String(partyId), "EX", INVITE_PENDING_TTL_SEC);
+        console.log(`[party] invite pending set target=${targetCharacterId} party=${partyId} prev_pending=${prevPending} publish_channel=${chNum}`);
 
         await this.publishToPartyGameChannel(worldId, chNum, "party_invite", {
             world_id: worldId, party_id: partyId, target_character_id: targetCharacterId, inviter_name: inviterName, party_search: false,
@@ -531,6 +533,7 @@ export class PartyService {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const inviteKey = this.invitePendingKey(worldId, deniedCharacterId);
         const pending = await client.get(inviteKey);
+        console.log(`[party] deny pending denied=${deniedCharacterId} pending=${pending} action=${action}`);
         if (pending == null) {
             return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };
         }
@@ -564,6 +567,10 @@ export class PartyService {
         if (action !== PARTY_DENY_ACTION_TAKING_CARE_OF_ANOTHER_INVITE) {
             await client.del(inviteKey);
         }
+        console.log(
+            `[party] deny publish inviter=${inviterCharacterId} channel=${inviterChannelID} denied="${deniedName}" action=${action}` +
+                ` pending_kept=${action === PARTY_DENY_ACTION_TAKING_CARE_OF_ANOTHER_INVITE}`
+        );
         await this.publishToPartyGameChannel(worldId, inviterChannelID, "party_invite_denied", {
             world_id: worldId,
             inviter_character_id: inviterCharacterId,
@@ -594,6 +601,7 @@ export class PartyService {
         if (!skipInvitePendingCheck) {
             const pending = await client.get(inviteKey);
             if (pending == null || Number(pending) !== partyId) {
+                console.log(`[party] join pending mismatch character=${characterId} party=${partyId} pending=${pending}`);
                 return { ok: false, code: messages.PartyErrorCode.INVITE_EXPIRED_OR_INVALID };
             }
         }

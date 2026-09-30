@@ -38,6 +38,5 @@ func (h *allianceMqNoticeChanged) Handle(_ actor.Context, _ amqp.Delivery, _ str
 	_ = json.Unmarshal(raw, &extra)
 	gs.alliance.Update(alliancePb)
 	gs.alliance.BroadcastNoticeChanged(alliancePb, extra.Notice)
-	log.Printf("alliance consumer: applied notice_changed alliance_id=%d revision=%d", evt.AllianceID, evt.Revision)
 	return nil
 }

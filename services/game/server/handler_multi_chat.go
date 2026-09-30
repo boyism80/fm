@@ -14,7 +14,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type MultiChat struct {
@@ -50,19 +49,7 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 				luax.SetConfiguration(thread, luax.Configuration{
 					ActorContext: ctx.ActorContext,
 				})
-				luax.CallAsync(root, thread, "on_chat", ch, req.Message, false).Then(func(value interface{}) (interface{}, error) {
-					vals := luax.ResultValues(value)
-					if len(vals) == 0 || vals[0] == nil {
-						return nil, nil
-					}
-					if vals[0].Type() == lua.LTBool && lua.LVAsBool(vals[0]) {
-						return nil, nil
-					}
-					if vals[0].Type() == lua.LTBool && !lua.LVAsBool(vals[0]) {
-						log.Printf("Unknown command: %s", strings.TrimSpace(req.Message))
-					}
-					return nil, nil
-				}).OnError(func(err error) {
+				luax.CallAsync(root, thread, "on_chat", ch, req.Message, false).OnError(func(err error) {
 					log.Printf("Command Lua error: %v", err)
 				})
 			}

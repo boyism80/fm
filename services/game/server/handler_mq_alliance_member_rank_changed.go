@@ -63,7 +63,5 @@ func (h *allianceMqMemberRankChanged) Handle(_ actor.Context, _ amqp.Delivery, _
 	}
 	gs.alliance.Update(alliancePb)
 	gs.alliance.BroadcastMemberRankChanged(alliancePb, extra.CharacterID, allianceRank)
-	log.Printf("alliance consumer: applied member_rank_changed alliance_id=%d character=%d revision=%d",
-		evt.AllianceID, extra.CharacterID, evt.Revision)
 	return nil
 }

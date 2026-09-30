@@ -59,11 +59,9 @@ func (ac *AllianceContainer) UpdateAsync(ctx actor.Context, evt AllianceEventEnv
 		func(reply *internal.GetAllianceReply) error {
 			if reply == nil || !reply.GetFound() || reply.GetAlliance() == nil {
 				ac.Remove(allianceID)
-				log.Printf("alliance consumer: removed alliance_id=%d type=%s", allianceID, evt.EventType)
 				return nil
 			}
 			ac.Update(reply.GetAlliance())
-			log.Printf("alliance consumer: applied type=%s alliance_id=%d revision=%d", evt.EventType, allianceID, reply.GetAlliance().GetRevision())
 			return nil
 		},
 	)
@@ -119,7 +117,6 @@ func (ac *AllianceContainer) Update(alliancePb *internal.Alliance) {
 	ac.revisions[allianceID] = alliancePb.GetRevision()
 	ac.alliances[allianceID] = stored
 	ac.mu.Unlock()
-	log.Printf("alliance: hydrated alliance_id=%d revision=%d", allianceID, alliancePb.GetRevision())
 }
 
 func (ac *AllianceContainer) Remove(allianceID uint32) []uint32 {

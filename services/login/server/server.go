@@ -262,12 +262,15 @@ func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 	if !ok {
 		return
 	}
+	remoteAddr := c.GetConnection().RemoteAddr().String()
 	accountId := loginClient.GetAccountId()
 	if accountId == 0 {
+		log.Printf("Login disconnect: remote=%s account=0, no logout", remoteAddr)
 		return
 	}
 	worldId := loginClient.GetWorldId()
 	transfer := loginClient.TakeTransferDisconnect()
+	log.Printf("Login disconnect: remote=%s account=%d transfer=%v", remoteAddr, accountId, transfer)
 
 	p := async.NewPromise(nil, core.InternalRPCPerStepTimeout)
 	p.OnError(func(err error) {
@@ -280,7 +283,8 @@ func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 			DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_LOGIN_SERVER,
 			TransferDisconnect: transfer,
 		})
-	}, func(*internal.LogoutSessionReply) error {
+	}, func(reply *internal.LogoutSessionReply) error {
+		log.Printf("LogoutSession (login disconnect): account=%d ok=%v", accountId, reply.GetOk())
 		return nil
 	})
 

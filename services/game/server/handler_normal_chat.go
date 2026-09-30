@@ -9,7 +9,6 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type NormalChat struct {
@@ -47,19 +46,7 @@ func (h *NormalChat) Handle(ctx *core.ClientContext, req *request.NormalChat) er
 				luax.SetConfiguration(thread, luax.Configuration{
 					ActorContext: ctx.ActorContext,
 				})
-				luax.CallAsync(root, thread, "on_chat", character, req.Message, false).Then(func(value interface{}) (interface{}, error) {
-					vals := luax.ResultValues(value)
-					if len(vals) == 0 || vals[0] == nil {
-						return nil, nil
-					}
-					if vals[0].Type() == lua.LTBool && lua.LVAsBool(vals[0]) {
-						return nil, nil
-					}
-					if vals[0].Type() == lua.LTBool && !lua.LVAsBool(vals[0]) {
-						log.Printf("Unknown command: %s", strings.TrimSpace(req.Message))
-					}
-					return nil, nil
-				}).OnError(func(err error) {
+				luax.CallAsync(root, thread, "on_chat", character, req.Message, false).OnError(func(err error) {
 					log.Printf("Command Lua error: %v", err)
 				})
 			}

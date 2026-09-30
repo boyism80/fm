@@ -43,6 +43,5 @@ func (h *allianceMqDisbanded) Handle(ctx actor.Context, _ amqp.Delivery, _ strin
 		gs.alliance.DisbandAsync(ctx, evt.AllianceID, guildIDs)
 		return nil, nil
 	})
-	log.Printf("alliance consumer: applied disbanded alliance_id=%d revision=%d", evt.AllianceID, evt.Revision)
 	return nil
 }

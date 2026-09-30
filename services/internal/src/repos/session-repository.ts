@@ -492,6 +492,11 @@ return {1, ERR_SESSION_NONE, prev_state}
         return this.accountHashToSession(raw);
     }
 
+    async getAccountSessionTtl(worldId: number, accountId: number): Promise<number> {
+        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        return client.ttl(this.accountKey(accountId));
+    }
+
     async setAccountSession(worldId: number, accountId: number, session: AccountSession, ttlSeconds: number) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         await client.hset(this.accountKey(accountId), this.accountSessionToHash(session));

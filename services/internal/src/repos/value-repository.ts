@@ -10,10 +10,6 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
         this.localCache = new Map();
     }
 
-    protected logL1(method: string, result: "hit" | "miss", key: string): void {
-        console.log(`[L1][${this.constructor.name}][${method}] ${result} key=${key}`);
-    }
-
     override async evictCache(worldId: number, key: TKey): Promise<void> {
         const redisKey = this.getRedisKey(worldId, key);
         this.localCache.delete(redisKey);
@@ -27,10 +23,8 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
         const useCache = !options.txClient;
         if (this.localCache.has(redisKey)) {
             const cachedRow = this.localCache.get(redisKey);
-            this.logL1("get", "hit", redisKey);
             return cachedRow == null ? null : this.rowToModel(this.normalizeRow(cachedRow));
         }
-        this.logL1("get", "miss", redisKey);
 
         if (useCache) {
             const cached = await redis.get(redisKey);
@@ -114,13 +108,11 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
                 const redisKey = this.getRedisKey(worldId, key);
                 if (this.localCache.has(redisKey)) {
                     const cachedRow = this.localCache.get(redisKey);
-                    this.logL1("getMany", "hit", redisKey);
                     if (cachedRow != null) {
                         results.set(key, this.rowToModel(this.normalizeRow(cachedRow)));
                     }
                     continue;
                 }
-                this.logL1("getMany", "miss", redisKey);
                 if (useCache && cached[i]) {
                     try {
                         const parsed = JSON.parse(cached[i] as string) as TRow & { deleted?: boolean };

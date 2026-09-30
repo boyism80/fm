@@ -70,7 +70,6 @@ func (gc *GuildContainer) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope)
 				return nil
 			}
 			gc.Update(reply.GetGuild())
-			log.Printf("guild consumer: applied type=%s guild_id=%d revision=%d", evt.EventType, guildID, reply.GetGuild().GetRevision())
 			return nil
 		},
 	)
@@ -102,7 +101,6 @@ func (gc *GuildContainer) Update(guildPb *internal.Guild) {
 	if _, inAlliance := stored.GetAllianceID(); inAlliance {
 		stored.ClearAllianceInvites()
 	}
-	log.Printf("guild: hydrated guild_id=%d revision=%d", guildID, stored.Revision)
 }
 
 func (gc *GuildContainer) NameToGuildID(guildName string) (uint32, bool) {

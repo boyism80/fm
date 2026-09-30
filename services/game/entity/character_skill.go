@@ -83,7 +83,6 @@ func (ch *Character) UseAttackSkill(skillID uint32) bool {
 	if levelData.Cooldown > 0 {
 		skillEntry := ch.Skills.Get(skillID)
 		if skillEntry == nil || skillEntry.IsCooling() {
-			log.Printf("Skill %d is on cooldown", skillID)
 			return false
 		}
 		skillEntry.StartCooldown(levelData.Cooldown)

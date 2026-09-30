@@ -11,10 +11,6 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         this.localGroupCache = new Map();
     }
 
-    protected logL1Group(method: string, result: "hit" | "miss", hashKey: string): void {
-        console.log(`[L1][${this.constructor.name}][${method}] ${result} hash=${hashKey}`);
-    }
-
     override async evictCache(worldId: number, key: string): Promise<void> {
         await this.evictGroupCache(worldId, key);
     }
@@ -65,14 +61,12 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         const useCache = !options.txClient;
         const localCached = this.localGroupCache.get(hashKey);
         if (localCached) {
-            this.logL1Group("getAll", "hit", hashKey);
             const result = new Map<string, TModel>();
             for (const [itemKey, row] of localCached) {
                 result.set(itemKey, this.rowToModel(this.normalizeRow(row)));
             }
             return result;
         }
-        this.logL1Group("getAll", "miss", hashKey);
 
         if (useCache && await redis.exists(hashKey)) {
             const fields = await redis.hgetall(hashKey);

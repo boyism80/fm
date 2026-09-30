@@ -81,8 +81,17 @@ export class SessionService {
             )
         );
         if (ok !== 1) {
+            const existing = await this.repo.getAccountSession(worldId, accountId);
+            const ttl = await this.repo.getAccountSessionTtl(worldId, accountId);
+            console.log(
+                `[session] begin_login rejected account=${accountId} login_server=${loginServerId} code=${code}` +
+                    ` existing_state=${existing?.state} existing_login_server=${existing?.loginServer?.id}` +
+                    ` login_connected=${existing?.loginServer?.connected} created_at=${existing?.timestamps?.createdAt}` +
+                    ` updated_at=${existing?.timestamps?.updatedAt} ttl=${ttl}`
+            );
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_ALREADY_LOGGED_IN };
         }
+        console.log(`[session] begin_login ok account=${accountId} login_server=${loginServerId}`);
         return { ok: true };
     }
 
@@ -101,8 +110,10 @@ export class SessionService {
             )
         );
         if (ok !== 1) {
+            console.log(`[session] begin_transition failed account=${accountId} character=${characterId} code=${code}`);
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
+        console.log(`[session] begin_transition ok account=${accountId} character=${characterId} game_to_game=${gameToGameTransfer}`);
         return { ok: true };
     }
 
@@ -127,8 +138,10 @@ export class SessionService {
             )
         );
         if (ok !== 1) {
+            console.log(`[session] attach_game failed account=${accountId} character=${characterId} channel=${channelId} code=${code}`);
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
+        console.log(`[session] attach_game ok account=${accountId} character=${characterId} channel=${channelId}`);
         if (this.partyService) {
             await this.partyService.applyMemberChannelIndex(worldId, characterId, channelId);
         }
@@ -193,20 +206,23 @@ export class SessionService {
         }
         const chForRepo =
             channelId !== undefined && Number.isInteger(channelId) && channelId >= 0 ? channelId : undefined;
-        const [ok, code] = this.atomicResultTuple(
-            await this.repo.logoutAtomic(
-                worldId,
-                accountId,
-                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
-                characterName,
-                chForRepo
-            )
+        const raw = await this.repo.logoutAtomic(
+            worldId,
+            accountId,
+            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
+            characterName,
+            chForRepo
+        );
+        const [ok, code] = this.atomicResultTuple(raw);
+        const src = options.disconnectSource ?? SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_UNSPECIFIED;
+        const transferDisconnect = options.transferDisconnect ?? false;
+        console.log(
+            `[session] logout account=${accountId} source=${src} transfer=${transferDisconnect}` +
+                ` character=${characterName ?? ""} ok=${ok} prev_state=${Array.isArray(raw) ? raw[2] : ""}`
         );
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_LOGOUT_FAILED };
         }
-        const src = options.disconnectSource ?? SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_UNSPECIFIED;
-        const transferDisconnect = options.transferDisconnect ?? false;
         const gameNormalDisconnect = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER && !transferDisconnect;
         const cid = options.characterId ?? null;
         if (cid != null && gameNormalDisconnect) {

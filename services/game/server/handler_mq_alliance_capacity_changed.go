@@ -34,6 +34,5 @@ func (h *allianceMqCapacityChanged) Handle(_ actor.Context, _ amqp.Delivery, _ s
 	}
 	gs.alliance.Update(alliancePb)
 	gs.alliance.BroadcastInfoUpdate(alliancePb)
-	log.Printf("alliance consumer: applied capacity_changed alliance_id=%d revision=%d", evt.AllianceID, evt.Revision)
 	return nil
 }

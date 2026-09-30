@@ -59,7 +59,6 @@ func (h *allianceMqGuildLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ strin
 		log.Printf("alliance consumer: guild_left alliance_id=%d missing removed_guild_pb", evt.AllianceID)
 		return nil
 	}
-	removedGuildID := removedGuildPb.GetGuildId()
 	var extra struct {
 		Expelled bool `json:"expelled"`
 	}
@@ -68,6 +67,5 @@ func (h *allianceMqGuildLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ strin
 		gs.alliance.BroadcastGuildLeft(alliancePb, removedGuildPb, extra.Expelled)
 		return nil, nil
 	})
-	log.Printf("alliance consumer: applied guild_left alliance_id=%d removed_guild_id=%d revision=%d", evt.AllianceID, removedGuildID, evt.Revision)
 	return nil
 }

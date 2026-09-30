@@ -50,7 +50,6 @@ func (h *allianceMqGuildAdded) Handle(ctx actor.Context, _ amqp.Delivery, _ stri
 		gs.alliance.BroadcastGuildAdded(alliancePb, addedGuildPb)
 		return nil, nil
 	})
-	log.Printf("alliance consumer: applied guild_added alliance_id=%d revision=%d", evt.AllianceID, evt.Revision)
 	return nil
 }
 

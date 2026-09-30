@@ -39,13 +39,11 @@ func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPart
 		return fmt.Errorf("deny party request: character not found")
 	}
 	if pid := character.GetPartyID(); pid != nil {
-		log.Printf("DenyPartyRequest: ignored, character=%d already in party=%d", character.GetID(), *pid)
 		return nil
 	}
 
 	inviterName := strings.TrimSpace(req.InviterName)
 	if inviterName == "" {
-		log.Printf("DenyPartyRequest: ignored empty inviter, character=%d", character.GetID())
 		return nil
 	}
 	if ctx.ActorContext == nil {
@@ -72,6 +70,5 @@ func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPart
 		log.Printf("DenyPartyRequest async error: %v", err)
 	})
 
-	log.Printf("DenyPartyRequest: action=%d inviter=%s denied_by=%s forwarded_internal=true", req.Action, inviterName, character.GetName())
 	return nil
 }
