@@ -151,6 +151,10 @@ func parseLuaExchangeSide(L *lua.LState, lv lua.LValue, argIndex int, nameToItem
 		side.Population = int32(n)
 	}
 
+	if randomLV := tbl.RawGetString("random"); randomLV != lua.LNil {
+		side.Randomize = lua.LVAsBool(randomLV)
+	}
+
 	return side, true
 }
 
