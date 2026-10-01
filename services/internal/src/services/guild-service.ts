@@ -58,9 +58,6 @@ const GUILD_CAPACITY_EXTENDED_MAX = 200;
 const GUILD_CAPACITY_EXTENDED_GP_COST = 2000;
 const GUILD_GP_MAX = 2147483647;
 const GUILD_RANKING_SIZE = 50;
-const GUILD_RANKING_BUILD_CHUNK = 1000;
-// The lock has no renewal, so the lease must outlast a full build across all data shards.
-const GUILD_RANKING_BUILD_LEASE_SEC = 300;
 const MAX_GUILD_BULLETIN_TITLE_LEN = 25;
 const MAX_GUILD_BULLETIN_BODY_LEN = 600;
 const MAX_GUILD_BULLETIN_REPLY_LEN = 25;
@@ -570,8 +567,6 @@ export class GuildService {
             leader_character_id: leaderCharacterId,
             guild_name: normalizedName,
         });
-        await this.ctx.getRedisGlobalAccess(worldId).client.zadd(this.guildRankingKey(worldId), "NX", savedGuild.gp, String(guildId));
-
         const leaderMember: GuildMemberModel = {
             worldId,
             guildId,
@@ -1350,10 +1345,8 @@ export class GuildService {
         await this.publishToGuildRoutes(EVT.CAPACITY_CHANGED, worldId, result.guildId, result.revision, {
             capacity: result.capacity,
             gp: result.gp,
+            gp_amount: extendedCap ? -GUILD_CAPACITY_EXTENDED_GP_COST : 0,
         });
-        if (extendedCap) {
-            await this.setGuildRanking(worldId, result.guildId, result.gp);
-        }
 
         return {
             ok: true,
@@ -1416,7 +1409,6 @@ export class GuildService {
             gp: result.gp,
             amount: result.changed,
         });
-        await this.setGuildRanking(worldId, guildId, result.gp);
 
         return { ok: true, guildId: result.guildId, revision: result.revision, gp: result.gp };
     }
@@ -1440,24 +1432,11 @@ export class GuildService {
         return true;
     }
 
+    // TODO: Move to a Redis ZSET once its rebuild and consistency with concurrent GP writes are settled; this scans every data shard per request.
     async getGuildRanking(worldId: number): Promise<GuildRankingEntryResult[]> {
         this.assertWorld(worldId);
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        const guildIds = (await client.zrevrange(this.guildRankingKey(worldId), 0, GUILD_RANKING_SIZE - 1)).map(Number);
-        if (guildIds.length === 0) {
-            return [];
-        }
-
-        const guilds = await this.guildRepo.getMany(worldId, guildIds);
-        const entries: GuildRankingEntryResult[] = [];
-        for (const guildId of guildIds) {
-            const guild = guilds.get(guildId);
-            if (!guild) {
-                continue;
-            }
-            entries.push({ guildId, name: guild.name, gp: guild.gp, logo: guild.logo });
-        }
-        return entries;
+        const guilds = await this.guildRepo.getTopByGP(worldId, GUILD_RANKING_SIZE);
+        return guilds.map((guild) => ({ guildId: guild.guildId, name: guild.name, gp: guild.gp, logo: guild.logo }));
     }
 
     async disbandGuild(worldId: number, characterId: number): Promise<DisbandGuildResult> {
@@ -1562,7 +1541,6 @@ export class GuildService {
             requester_character_id: characterId,
             member_character_ids: result.memberCharacterIds ?? [],
         });
-        await this.removeGuildRanking(worldId, result.guildId);
 
         return { ok: true, guildId: result.guildId, revision: result.revision };
     }
@@ -1807,56 +1785,6 @@ export class GuildService {
             icon: loaded.thread.icon,
             replies,
         };
-    }
-
-    private guildRankingKey(worldId: number) {
-        return redisCacheKey(`w${worldId}:guild-ranking`);
-    }
-
-    // Callers hold the guild lock, so score writes for one guild land in commit order.
-    private async setGuildRanking(worldId: number, guildId: number, gp: number) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        await client.zadd(this.guildRankingKey(worldId), gp, String(guildId));
-    }
-
-    private async removeGuildRanking(worldId: number, guildId: number) {
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        await client.zrem(this.guildRankingKey(worldId), String(guildId));
-    }
-
-    // Startup only, before gRPC serves requests: score updates do not take the build lock.
-    async buildGuildRanking(worldId: number) {
-        this.assertWorld(worldId);
-        const { client } = this.ctx.getRedisGlobalAccess(worldId);
-        const key = this.guildRankingKey(worldId);
-        if (await client.exists(key) === 1) {
-            return;
-        }
-
-        // Losers must wait rather than skip: serving before the build lands lets their ZADD be overwritten by the RENAME.
-        await using _buildLock = await this.distributedLockService.acquireWorldGlobalLock(worldId, "guild_ranking_build", {
-            leaseTtlSec: GUILD_RANKING_BUILD_LEASE_SEC,
-            waitTimeoutMs: GUILD_RANKING_BUILD_LEASE_SEC * 1000,
-        });
-        if (await client.exists(key) === 1) {
-            return;
-        }
-
-        const rows = await this.guildRepo.getAllGP(worldId);
-        if (rows.length === 0) {
-            return;
-        }
-
-        const buildKey = `${key}:build`;
-        await client.del(buildKey);
-        for (let i = 0; i < rows.length; i += GUILD_RANKING_BUILD_CHUNK) {
-            const args: Array<number | string> = [];
-            for (const { guildId, gp } of rows.slice(i, i + GUILD_RANKING_BUILD_CHUNK)) {
-                args.push(gp, String(guildId));
-            }
-            await client.zadd(buildKey, ...args);
-        }
-        await client.rename(buildKey, key);
     }
 
     private guildBulletinBoardCooldownKey(worldId: number, characterId: number) {

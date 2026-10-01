@@ -99,7 +99,6 @@ async function main() {
 
     await wzService.preload();
     await rabbitmqService.start();
-    await container.resolve("guildService").buildGuildRanking(Number(wid));
 
     const server = new grpc.Server();
 

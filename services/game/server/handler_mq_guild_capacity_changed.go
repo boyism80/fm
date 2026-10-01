@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -26,9 +27,16 @@ func (h *guildMqCapacityChanged) Handle(ctx actor.Context, _ amqp.Delivery, _ st
 	if !ok {
 		return nil
 	}
+	var payload struct {
+		GPAmount int32 `json:"gp_amount"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		log.Printf("guild consumer: capacity_changed guild_id=%d invalid payload: %v", evt.GuildID, err)
+		return nil
+	}
 	gs.guild.SyncGuildEventAsync(ctx, evt, func(guildID uint32) {
 		gs.guild.BroadcastCapacityChanged(guildID)
-		gs.guild.BroadcastGPChanged(guildID, 0)
+		gs.guild.BroadcastGPChanged(guildID, payload.GPAmount)
 	})
 	return nil
 }
