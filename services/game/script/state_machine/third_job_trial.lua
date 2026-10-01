@@ -45,7 +45,7 @@ return {
 			sm:finish(0)
 			return
 		end
-		entrance:portal(ENTRANCE_PORTAL):script("third_job_trial")
+		entrance:portal(ENTRANCE_PORTAL):script("instance_link")
 		sm:set_property("crack", tostring(crack))
 		return { entrance, arena }
 	end,
