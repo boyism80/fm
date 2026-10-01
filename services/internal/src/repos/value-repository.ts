@@ -2,6 +2,8 @@ import { Repository } from "./repository";
 import type { RepositoryTxOptions } from "./repository";
 import type { InternalContext } from "../context/internal-context";
 
+const VALUE_CACHE_TOMBSTONE = JSON.stringify({ deleted: true });
+
 export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = Record<string, unknown>, TKey = unknown> extends Repository<TModel, TRow, TKey> {
     private readonly localCache: Map<string, TRow | null>;
 
@@ -10,11 +12,21 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
         this.localCache = new Map();
     }
 
-    override async evictCache(worldId: number, key: TKey): Promise<void> {
+    // Writers call this after commit while holding the entity lock. Leaving the key present (row or tombstone)
+    // keeps a reader that loaded the pre-commit row from filling it back with SET NX.
+    override async refreshCache(worldId: number, key: TKey): Promise<void> {
         const redisKey = this.getRedisKey(worldId, key);
         this.localCache.delete(redisKey);
         const redis = this.redis(worldId, key);
-        await redis.del(redisKey).catch(() => {});
+        try {
+            const select = this.onSelect(key, worldId);
+            const res = await this.pool(worldId, key).query(select.text, select.values);
+            const raw = res.rows[0] as (TRow & { deleted?: boolean }) | undefined;
+            const value = raw && !raw.deleted ? JSON.stringify(this.normalizeRow(raw)) : VALUE_CACHE_TOMBSTONE;
+            await redis.set(redisKey, value, "EX", this.getTtlSeconds());
+        } catch {
+            await redis.del(redisKey).catch(() => {});
+        }
     }
 
     override async get(worldId: number, key: TKey, options: RepositoryTxOptions = {}): Promise<TModel | null> {
@@ -59,7 +71,7 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
         const row = this.normalizeRow(raw);
 
         if (useCache) {
-            await redis.set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds()).catch(() => {});
+            await redis.set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds(), "NX").catch(() => {});
         }
         this.localCache.set(redisKey, row);
         return this.rowToModel(row);
@@ -159,7 +171,7 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
                     if (useCache) {
                         const redis = this.redis(worldId, key);
                         const redisKey = this.getRedisKey(worldId, key);
-                        await redis.set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds()).catch(() => {});
+                        await redis.set(redisKey, JSON.stringify(row), "EX", this.getTtlSeconds(), "NX").catch(() => {});
                     }
                     this.localCache.set(this.getRedisKey(worldId, key), row);
                     results.set(key, model);
@@ -218,7 +230,7 @@ export abstract class ValueRepository<TModel = Record<string, unknown>, TRow = R
         const redisKey = this.getRedisKey(worldId, key);
         if (deleted && !options.txClient) {
             const redis = this.redis(worldId, key);
-            await redis.del(redisKey).catch(() => {});
+            await redis.set(redisKey, VALUE_CACHE_TOMBSTONE, "EX", this.getTtlSeconds()).catch(() => {});
         }
         if (deleted) {
             this.localCache.set(redisKey, null);

@@ -95,7 +95,7 @@ export abstract class Repository<TModel = Record<string, unknown>, TRow = Record
         }
         return [...groups.values()];
     }
-    abstract evictCache(worldId: number, key: TKey): Promise<void>;
+    abstract refreshCache(worldId: number, key: TKey): Promise<void>;
     abstract get(worldId: number, key: TKey, options?: RepositoryTxOptions): Promise<TModel | null>;
     abstract set(worldId: number, model: TModel, options?: RepositoryTxOptions): Promise<TModel>;
     abstract getMany(worldId: number, keys: TKey[], options?: RepositoryTxOptions): Promise<Map<TKey, TModel>>;

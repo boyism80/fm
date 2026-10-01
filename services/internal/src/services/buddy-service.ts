@@ -169,7 +169,7 @@ export class BuddyService {
                     { txClient }
                 );
             });
-            await this.buddyRepo.evictGroupCache(worldId, String(requesterCharacterId));
+            await this.buddyRepo.refreshGroupCache(worldId, String(requesterCharacterId));
             const requesterView = await this.buildEntry(worldId, updated);
             const targetChannelIndex = await this.sessionChannelIndex(worldId, targetCharacterId);
             return {
@@ -199,7 +199,7 @@ export class BuddyService {
                     { txClient }
                 );
             });
-            await this.buddyRepo.evictGroupCache(worldId, String(requesterCharacterId));
+            await this.buddyRepo.refreshGroupCache(worldId, String(requesterCharacterId));
             const requesterChannelIndex = await this.sessionChannelIndex(worldId, requesterCharacterId);
             await this.publishBuddyChannelUpdate(worldId, requesterCharacterId, requesterChannelIndex, [
                 targetCharacterId,
@@ -254,8 +254,8 @@ export class BuddyService {
         });
         const result = { requesterBuddy };
 
-        await this.buddyRepo.evictGroupCache(worldId, String(requesterCharacterId));
-        await this.buddyRepo.evictGroupCache(worldId, String(targetCharacterId));
+        await this.buddyRepo.refreshGroupCache(worldId, String(requesterCharacterId));
+        await this.buddyRepo.refreshGroupCache(worldId, String(targetCharacterId));
 
         const targetChannelIndex = await this.sessionChannelIndex(worldId, targetCharacterId);
         const requesterView = await this.buildEntry(worldId, result.requesterBuddy);
@@ -343,8 +343,8 @@ export class BuddyService {
         });
         const result = { accepterBuddy, requesterBuddy };
 
-        await this.buddyRepo.evictGroupCache(worldId, String(accepterCharacterId));
-        await this.buddyRepo.evictGroupCache(worldId, String(requesterCharacterId));
+        await this.buddyRepo.refreshGroupCache(worldId, String(accepterCharacterId));
+        await this.buddyRepo.refreshGroupCache(worldId, String(requesterCharacterId));
 
         const requesterChannelIndex = await this.sessionChannelIndex(worldId, requesterCharacterId);
         const accepterChannelIndex = await this.sessionChannelIndex(worldId, accepterCharacterId);
@@ -379,7 +379,7 @@ export class BuddyService {
 
         const buddyWasAccepted = !row.pending;
         await this.buddyRepo.del(worldId, String(characterId), String(buddyCharacterId));
-        await this.buddyRepo.evictGroupCache(worldId, String(characterId));
+        await this.buddyRepo.refreshGroupCache(worldId, String(characterId));
 
         if (buddyWasAccepted) {
             await this.publishBuddyChannelUpdate(worldId, characterId, -1, [buddyCharacterId]);
