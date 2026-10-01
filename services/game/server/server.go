@@ -622,7 +622,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	charID := character.GetID()
 	p.Finally(func() {
 		if sm := character.StateMachine(); sm != nil {
-			sm.RequestLeave(character, false)
+			sm.RequestLeave(character, false, entity.StateMachineLeaveDisconnect)
 		}
 		mapInstance := character.GetMap()
 		if mapInstance != nil {

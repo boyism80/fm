@@ -6,7 +6,8 @@ local CANCEL_TEXT = "조금 더 노력해 보시면 좋은 결과가 있을거�
 
 return {
 	on_click = function(me, npc)
-		if me:state_machine() == nil then
+		local sm = me:state_machine()
+		if sm == nil then
 			me:dialog(npc, "닐리리야~ 닐리리야아~ 니나노~♪")
 			return
 		end
@@ -21,6 +22,7 @@ return {
 			me:dialog(npc, CANCEL_TEXT)
 			return
 		end
+		sm:unregister(me)
 		me:map(gq.EXIT_MAP)
 	end
 }

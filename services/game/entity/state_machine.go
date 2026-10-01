@@ -78,7 +78,16 @@ func (sm *StateMachine) Unregister(ch *Character) {
 	sm.unregisterLocked(ch)
 }
 
-func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver bool) bool {
+type StateMachineLeaveReason string
+
+const (
+	StateMachineLeaveDisconnect StateMachineLeaveReason = "disconnect"
+	StateMachineLeaveMap        StateMachineLeaveReason = "map"
+	StateMachineLeaveParty      StateMachineLeaveReason = "party"
+	StateMachineLeaveExit       StateMachineLeaveReason = "exit"
+)
+
+func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver bool, reason StateMachineLeaveReason) bool {
 	if sm == nil || ch == nil {
 		return false
 	}
@@ -104,17 +113,18 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 			_ = ch.Warp(ctx, exitMap, 0)
 		}
 	}
-	sm.CallHook("on_player_leave", ch)
+	sm.CallHook("on_player_leave", ch, string(reason))
 	return false
 }
 
-func (sm *StateMachine) RequestLeave(ch *Character, warpLeaver bool) {
+func (sm *StateMachine) RequestLeave(ch *Character, warpLeaver bool, reason StateMachineLeaveReason) {
 	if sm == nil || ch == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
 		return
 	}
 	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &LeaveStateMachinePlayer{
 		Character:  ch,
 		WarpLeaver: warpLeaver,
+		Reason:     reason,
 	})
 }
 
@@ -355,7 +365,7 @@ func (sm *StateMachine) HandlePlayerMapEnter(ch *Character, m *Map) {
 		sm.CallHook("on_changed_map", ch, m.TemplateID())
 		return
 	}
-	sm.RequestLeave(ch, false)
+	sm.RequestLeave(ch, false, StateMachineLeaveMap)
 }
 
 func (sm *StateMachine) HasRegisteredMaps() bool {
@@ -564,6 +574,7 @@ type StartStateMachine struct{}
 type LeaveStateMachinePlayer struct {
 	Character  *Character
 	WarpLeaver bool
+	Reason     StateMachineLeaveReason
 }
 
 type CallStateMachineHook struct {

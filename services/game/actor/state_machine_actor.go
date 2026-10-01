@@ -75,7 +75,7 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 		}
 	case *entity.LeaveStateMachinePlayer:
 		if msg != nil && a.StateMachine != nil {
-			a.StateMachine.LeavePlayer(ctx, msg.Character, msg.WarpLeaver)
+			a.StateMachine.LeavePlayer(ctx, msg.Character, msg.WarpLeaver, msg.Reason)
 		}
 	case *entity.ScheduleStateMachineTimeout:
 		if a.scheduler != nil && a.StateMachine != nil {

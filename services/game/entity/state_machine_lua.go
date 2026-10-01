@@ -139,7 +139,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			cfg, _ := luax.GetConfiguration(L)
-			machine.LeavePlayer(cfg.ActorContext, ch, false)
+			machine.LeavePlayer(cfg.ActorContext, ch, false, StateMachineLeaveExit)
 			return 0
 		},
 		"maps": func(L *lua.LState) int {

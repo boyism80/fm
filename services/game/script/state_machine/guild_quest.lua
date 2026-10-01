@@ -42,6 +42,11 @@ local STAGE_MAPS = {
 local SHUFFLE_MAPS = { 990000501, 990000502 }
 local MAZE_END_MAPS = { 990000611, 990000620, 990000631, 990000641 }
 
+local LEADER_LEFT = {
+	disconnect = "길드 대항전의 리더가 접속이 끊겨 자동으로 모두 퇴장됩니다.",
+	map = "길드 대항전의 리더가 퇴장하여 자동으로 모두 퇴장됩니다.",
+}
+
 local GATE_NOTICES = {
 	{ at = 60000, left = "2분" },
 	{ at = 120000, left = "1분" },
@@ -95,10 +100,14 @@ return {
 		player:open_npc(BOARD_NPC)
 	end,
 
-	on_player_leave = function(sm, player)
-		if gq.is_leader(player, sm) then
-			sm:message("길드 대항전의 리더가 퇴장하여 자동으로 모두 퇴장됩니다.")
+	on_player_leave = function(sm, player, reason)
+		local leader_left = LEADER_LEFT[reason]
+		if leader_left ~= nil and gq.is_leader(player, sm) then
+			sm:message(leader_left)
 			sm:finish(gq.EXIT_MAP)
+			return
+		end
+		if reason ~= "disconnect" and reason ~= "exit" then
 			return
 		end
 		if sm:get_property("state") == "waiting" then
@@ -156,12 +165,12 @@ return {
 			sm:set_property("state", "started")
 			sm:message("샤레니안의 문이 열렸습니다.", Msg.Notice)
 			sm:restart_timer(gq.DURATION_MS)
-			return
-		end
-		if state == "started" then
+		elseif state == "started" then
 			sm:message("제한시간이 다 되었습니다.")
+			sm:finish(gq.EXIT_MAP)
+		else
+			sm:finish(gq.EXIT_MAP)
 		end
-		sm:finish(gq.EXIT_MAP)
 	end,
 
 	on_clear = function(sm)
