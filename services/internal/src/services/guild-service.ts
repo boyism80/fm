@@ -97,6 +97,7 @@ const EVT = {
     GP_CHANGED: "gp_changed",
     MEMBER_ONLINE_CHANGED: "member_online_changed",
     DISBANDED: "disbanded",
+    MESSAGE: "message",
 } as const;
 
 export type CreateGuildResult = {
@@ -1418,6 +1419,25 @@ export class GuildService {
         await this.setGuildRanking(worldId, guildId, result.gp);
 
         return { ok: true, guildId: result.guildId, revision: result.revision, gp: result.gp };
+    }
+
+    async sendGuildMessage(worldId: number, guildId: number, messageType: number, message: string): Promise<boolean> {
+        this.assertWorld(worldId);
+        this.assertGuildId(guildId);
+        const trimmed = (message ?? "").trim();
+        if (trimmed.length <= 0 || trimmed.length > 500) {
+            return false;
+        }
+        const guild = await this.guildRepo.get(worldId, guildId);
+        if (!guild) {
+            return false;
+        }
+
+        await this.publishToGuildRoutes(EVT.MESSAGE, worldId, guildId, guild.revision, {
+            message_type: messageType,
+            message: trimmed,
+        });
+        return true;
     }
 
     async getGuildRanking(worldId: number): Promise<GuildRankingEntryResult[]> {

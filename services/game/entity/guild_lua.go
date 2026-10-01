@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/services/game/constant"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -106,6 +107,23 @@ func (g *Guild) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			guild.GameWorld.GetGuildSystem().GainGPAsync(cfg.ActorContext, guild.GuildID, int32(amount))
+			return 0
+		},
+		"message": func(L *lua.LState) int {
+			guild, ok := LuaCheckGuild(L, 1)
+			if !ok {
+				return 0
+			}
+			message := L.CheckString(2)
+			msgType := constant.MsgPinkText
+			if L.GetTop() >= 3 && L.Get(3) != lua.LNil {
+				msgType = constant.ServerMessageType(L.CheckInt(3))
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if ok == false || cfg.ActorContext == nil {
+				return 0
+			}
+			guild.GameWorld.GetGuildSystem().SendMessageAsync(cfg.ActorContext, guild.GuildID, msgType, message)
 			return 0
 		},
 		"capacity": func(L *lua.LState) int {

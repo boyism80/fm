@@ -304,6 +304,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		mq.Bind[*GameServer, guildMqMemberOnlineChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqDisbanded](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqChat](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqMessage](gs, guildDisp)
 
 		guildRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),

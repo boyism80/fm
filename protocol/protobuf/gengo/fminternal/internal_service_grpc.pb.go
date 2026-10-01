@@ -64,6 +64,7 @@ const (
 	Internal_ChangeGuildNotice_FullMethodName              = "/fm.internal.Internal/ChangeGuildNotice"
 	Internal_IncreaseGuildCapacity_FullMethodName          = "/fm.internal.Internal/IncreaseGuildCapacity"
 	Internal_GainGuildGP_FullMethodName                    = "/fm.internal.Internal/GainGuildGP"
+	Internal_SendGuildMessage_FullMethodName               = "/fm.internal.Internal/SendGuildMessage"
 	Internal_GetGuildRanking_FullMethodName                = "/fm.internal.Internal/GetGuildRanking"
 	Internal_ListGuildBulletinBoardThreads_FullMethodName  = "/fm.internal.Internal/ListGuildBulletinBoardThreads"
 	Internal_ShowGuildBulletinBoardThread_FullMethodName   = "/fm.internal.Internal/ShowGuildBulletinBoardThread"
@@ -130,6 +131,7 @@ type InternalClient interface {
 	ChangeGuildNotice(ctx context.Context, in *ChangeGuildNoticeRequest, opts ...grpc.CallOption) (*ChangeGuildNoticeReply, error)
 	IncreaseGuildCapacity(ctx context.Context, in *IncreaseGuildCapacityRequest, opts ...grpc.CallOption) (*IncreaseGuildCapacityReply, error)
 	GainGuildGP(ctx context.Context, in *GainGuildGPRequest, opts ...grpc.CallOption) (*GainGuildGPReply, error)
+	SendGuildMessage(ctx context.Context, in *SendGuildMessageRequest, opts ...grpc.CallOption) (*SendGuildMessageReply, error)
 	GetGuildRanking(ctx context.Context, in *GetGuildRankingRequest, opts ...grpc.CallOption) (*GetGuildRankingReply, error)
 	ListGuildBulletinBoardThreads(ctx context.Context, in *ListGuildBulletinBoardThreadsRequest, opts ...grpc.CallOption) (*ListGuildBulletinBoardThreadsReply, error)
 	ShowGuildBulletinBoardThread(ctx context.Context, in *ShowGuildBulletinBoardThreadRequest, opts ...grpc.CallOption) (*ShowGuildBulletinBoardThreadReply, error)
@@ -605,6 +607,16 @@ func (c *internalClient) GainGuildGP(ctx context.Context, in *GainGuildGPRequest
 	return out, nil
 }
 
+func (c *internalClient) SendGuildMessage(ctx context.Context, in *SendGuildMessageRequest, opts ...grpc.CallOption) (*SendGuildMessageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendGuildMessageReply)
+	err := c.cc.Invoke(ctx, Internal_SendGuildMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) GetGuildRanking(ctx context.Context, in *GetGuildRankingRequest, opts ...grpc.CallOption) (*GetGuildRankingReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetGuildRankingReply)
@@ -804,6 +816,7 @@ type InternalServer interface {
 	ChangeGuildNotice(context.Context, *ChangeGuildNoticeRequest) (*ChangeGuildNoticeReply, error)
 	IncreaseGuildCapacity(context.Context, *IncreaseGuildCapacityRequest) (*IncreaseGuildCapacityReply, error)
 	GainGuildGP(context.Context, *GainGuildGPRequest) (*GainGuildGPReply, error)
+	SendGuildMessage(context.Context, *SendGuildMessageRequest) (*SendGuildMessageReply, error)
 	GetGuildRanking(context.Context, *GetGuildRankingRequest) (*GetGuildRankingReply, error)
 	ListGuildBulletinBoardThreads(context.Context, *ListGuildBulletinBoardThreadsRequest) (*ListGuildBulletinBoardThreadsReply, error)
 	ShowGuildBulletinBoardThread(context.Context, *ShowGuildBulletinBoardThreadRequest) (*ShowGuildBulletinBoardThreadReply, error)
@@ -963,6 +976,9 @@ func (UnimplementedInternalServer) IncreaseGuildCapacity(context.Context, *Incre
 }
 func (UnimplementedInternalServer) GainGuildGP(context.Context, *GainGuildGPRequest) (*GainGuildGPReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GainGuildGP not implemented")
+}
+func (UnimplementedInternalServer) SendGuildMessage(context.Context, *SendGuildMessageRequest) (*SendGuildMessageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendGuildMessage not implemented")
 }
 func (UnimplementedInternalServer) GetGuildRanking(context.Context, *GetGuildRankingRequest) (*GetGuildRankingReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGuildRanking not implemented")
@@ -1840,6 +1856,24 @@ func _Internal_GainGuildGP_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_SendGuildMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendGuildMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SendGuildMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SendGuildMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SendGuildMessage(ctx, req.(*SendGuildMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_GetGuildRanking_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetGuildRankingRequest)
 	if err := dec(in); err != nil {
@@ -2296,6 +2330,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GainGuildGP",
 			Handler:    _Internal_GainGuildGP_Handler,
+		},
+		{
+			MethodName: "SendGuildMessage",
+			Handler:    _Internal_SendGuildMessage_Handler,
 		},
 		{
 			MethodName: "GetGuildRanking",

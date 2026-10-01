@@ -1728,6 +1728,17 @@ export interface GainGuildGPReply {
   gp: number;
 }
 
+export interface SendGuildMessageRequest {
+  worldId: number;
+  guildId: number;
+  messageType: number;
+  message: string;
+}
+
+export interface SendGuildMessageReply {
+  ok: boolean;
+}
+
 export interface GetGuildRankingRequest {
   worldId: number;
 }
@@ -15659,6 +15670,184 @@ export const GainGuildGPReply: MessageFns<GainGuildGPReply> = {
   },
 };
 
+function createBaseSendGuildMessageRequest(): SendGuildMessageRequest {
+  return { worldId: 0, guildId: 0, messageType: 0, message: "" };
+}
+
+export const SendGuildMessageRequest: MessageFns<SendGuildMessageRequest> = {
+  encode(message: SendGuildMessageRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      writer.uint32(16).uint32(message.guildId);
+    }
+    if (message.messageType !== 0) {
+      writer.uint32(24).uint32(message.messageType);
+    }
+    if (message.message !== "") {
+      writer.uint32(34).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SendGuildMessageRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendGuildMessageRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.messageType = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SendGuildMessageRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : 0,
+      messageType: isSet(object.messageType)
+        ? globalThis.Number(object.messageType)
+        : isSet(object.message_type)
+        ? globalThis.Number(object.message_type)
+        : 0,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+    };
+  },
+
+  toJSON(message: SendGuildMessageRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      obj.guildId = Math.round(message.guildId);
+    }
+    if (message.messageType !== 0) {
+      obj.messageType = Math.round(message.messageType);
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SendGuildMessageRequest>, I>>(base?: I): SendGuildMessageRequest {
+    return SendGuildMessageRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SendGuildMessageRequest>, I>>(object: I): SendGuildMessageRequest {
+    const message = createBaseSendGuildMessageRequest();
+    message.worldId = object.worldId ?? 0;
+    message.guildId = object.guildId ?? 0;
+    message.messageType = object.messageType ?? 0;
+    message.message = object.message ?? "";
+    return message;
+  },
+};
+
+function createBaseSendGuildMessageReply(): SendGuildMessageReply {
+  return { ok: false };
+}
+
+export const SendGuildMessageReply: MessageFns<SendGuildMessageReply> = {
+  encode(message: SendGuildMessageReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SendGuildMessageReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendGuildMessageReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SendGuildMessageReply {
+    return { ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false };
+  },
+
+  toJSON(message: SendGuildMessageReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SendGuildMessageReply>, I>>(base?: I): SendGuildMessageReply {
+    return SendGuildMessageReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SendGuildMessageReply>, I>>(object: I): SendGuildMessageReply {
+    const message = createBaseSendGuildMessageReply();
+    message.ok = object.ok ?? false;
+    return message;
+  },
+};
+
 function createBaseGetGuildRankingRequest(): GetGuildRankingRequest {
   return { worldId: 0 };
 }
@@ -21686,6 +21875,17 @@ export const InternalService = {
     responseSerialize: (value: GainGuildGPReply): Buffer => Buffer.from(GainGuildGPReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): GainGuildGPReply => GainGuildGPReply.decode(value),
   },
+  sendGuildMessage: {
+    path: "/fm.internal.Internal/SendGuildMessage" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SendGuildMessageRequest): Buffer =>
+      Buffer.from(SendGuildMessageRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SendGuildMessageRequest => SendGuildMessageRequest.decode(value),
+    responseSerialize: (value: SendGuildMessageReply): Buffer =>
+      Buffer.from(SendGuildMessageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SendGuildMessageReply => SendGuildMessageReply.decode(value),
+  },
   getGuildRanking: {
     path: "/fm.internal.Internal/GetGuildRanking" as const,
     requestStream: false as const,
@@ -21905,6 +22105,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   changeGuildNotice: handleUnaryCall<ChangeGuildNoticeRequest, ChangeGuildNoticeReply>;
   increaseGuildCapacity: handleUnaryCall<IncreaseGuildCapacityRequest, IncreaseGuildCapacityReply>;
   gainGuildGp: handleUnaryCall<GainGuildGPRequest, GainGuildGPReply>;
+  sendGuildMessage: handleUnaryCall<SendGuildMessageRequest, SendGuildMessageReply>;
   getGuildRanking: handleUnaryCall<GetGuildRankingRequest, GetGuildRankingReply>;
   listGuildBulletinBoardThreads: handleUnaryCall<
     ListGuildBulletinBoardThreadsRequest,
@@ -22612,6 +22813,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GainGuildGPReply) => void,
+  ): ClientUnaryCall;
+  sendGuildMessage(
+    request: SendGuildMessageRequest,
+    callback: (error: ServiceError | null, response: SendGuildMessageReply) => void,
+  ): ClientUnaryCall;
+  sendGuildMessage(
+    request: SendGuildMessageRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SendGuildMessageReply) => void,
+  ): ClientUnaryCall;
+  sendGuildMessage(
+    request: SendGuildMessageRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SendGuildMessageReply) => void,
   ): ClientUnaryCall;
   getGuildRanking(
     request: GetGuildRankingRequest,

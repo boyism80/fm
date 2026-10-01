@@ -133,6 +133,29 @@ func (s guildSystem) GainGPAsync(ctx actor.Context, guildID uint32, amount int32
 	})
 }
 
+func (s guildSystem) SendMessageAsync(ctx actor.Context, guildID uint32, messageType constant.ServerMessageType, message string) *async.Promise {
+	if s.gs == nil || s.gs.internalClient == nil || guildID == 0 || message == "" {
+		return nil
+	}
+	worldID := s.gs.config.WorldId
+	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+	return async.ThenRPC(promise, func(c context.Context) (*internal.SendGuildMessageReply, error) {
+		return s.gs.internalClient.SendGuildMessage(c, &internal.SendGuildMessageRequest{
+			WorldId:     worldID,
+			GuildId:     guildID,
+			MessageType: uint32(messageType),
+			Message:     message,
+		})
+	}, func(reply *internal.SendGuildMessageReply) error {
+		if reply.GetOk() == false {
+			log.Printf("guild message: guild=%d rejected", guildID)
+		}
+		return nil
+	}).OnError(func(err error) {
+		log.Printf("guild message: guild=%d: %v", guildID, err)
+	})
+}
+
 func (s guildSystem) ShowRankingAsync(ctx actor.Context, ch *entity.Character, npcID uint32) *async.Promise {
 	if s.gs == nil || s.gs.internalClient == nil {
 		return nil

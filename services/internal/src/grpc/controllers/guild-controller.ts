@@ -10,6 +10,8 @@ import type {
     IncreaseGuildCapacityRequest,
     GainGuildGPReply,
     GainGuildGPRequest,
+    SendGuildMessageReply,
+    SendGuildMessageRequest,
     GetGuildRankingReply,
     GetGuildRankingRequest,
     CreateGuildBulletinBoardReplyReply,
@@ -408,6 +410,17 @@ export class GuildGrpcController {
                     gp: 0,
                 });
             }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("sendGuildMessage")
+    async sendGuildMessage(call: GrpcCall<SendGuildMessageRequest>, callback: GrpcCallback<SendGuildMessageReply>) {
+        try {
+            const req = call.request;
+            const ok = await this.guildService.sendGuildMessage(req.worldId, req.guildId, req.messageType, req.message);
+            callback(null, { ok });
         } catch (err) {
             this.grpcError(err, callback);
         }

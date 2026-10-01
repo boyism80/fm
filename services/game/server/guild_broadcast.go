@@ -7,6 +7,7 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 )
 
@@ -327,6 +328,20 @@ func (gc *GuildContainer) BroadcastDisbanded(prevGuild *entity.Guild, memberChar
 			GuildID:     guildID,
 		})
 	}
+}
+
+func (gc *GuildContainer) BroadcastMessage(guildID uint32, messageType constant.ServerMessageType, message string) {
+	g := gc.Get(guildID)
+	if g == nil {
+		return
+	}
+	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
+		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverMessage{
+			CharacterID: memberID,
+			MessageType: messageType,
+			Message:     message,
+		})
+	})
 }
 
 func (gc *GuildContainer) BroadcastMultiChat(guildID uint32, senderCharacterID uint32, senderName string, message string) {

@@ -39,6 +39,7 @@ type GuildSystem interface {
 	DisbandAsync(ctx actor.Context, ch *Character, result *int) *async.Promise
 	IncCapacityAsync(ctx actor.Context, ch *Character, extendedCap bool, result *int) *async.Promise
 	GainGPAsync(ctx actor.Context, guildID uint32, amount int32) *async.Promise
+	SendMessageAsync(ctx actor.Context, guildID uint32, messageType constant.ServerMessageType, message string) *async.Promise
 	ShowRankingAsync(ctx actor.Context, ch *Character, npcID uint32) *async.Promise
 	CreateAllianceAsync(ctx actor.Context, ch *Character, allianceName string, result *int) *async.Promise
 	DisbandAllianceAsync(ctx actor.Context, ch *Character, result *int) *async.Promise

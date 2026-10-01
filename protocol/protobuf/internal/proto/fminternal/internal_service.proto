@@ -51,6 +51,7 @@ service Internal {
   rpc ChangeGuildNotice (ChangeGuildNoticeRequest) returns (ChangeGuildNoticeReply);
   rpc IncreaseGuildCapacity (IncreaseGuildCapacityRequest) returns (IncreaseGuildCapacityReply);
   rpc GainGuildGP (GainGuildGPRequest) returns (GainGuildGPReply);
+  rpc SendGuildMessage (SendGuildMessageRequest) returns (SendGuildMessageReply);
   rpc GetGuildRanking (GetGuildRankingRequest) returns (GetGuildRankingReply);
   rpc ListGuildBulletinBoardThreads (ListGuildBulletinBoardThreadsRequest) returns (ListGuildBulletinBoardThreadsReply);
   rpc ShowGuildBulletinBoardThread (ShowGuildBulletinBoardThreadRequest) returns (ShowGuildBulletinBoardThreadReply);
@@ -918,6 +919,17 @@ message GainGuildGPReply {
   optional uint32 guild_id = 3;
   uint64 revision = 4;
   uint32 gp = 5;
+}
+
+message SendGuildMessageRequest {
+  uint32 world_id = 1;
+  uint32 guild_id = 2;
+  uint32 message_type = 3;
+  string message = 4;
+}
+
+message SendGuildMessageReply {
+  bool ok = 1;
 }
 
 message GetGuildRankingRequest {
