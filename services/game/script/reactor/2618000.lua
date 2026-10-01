@@ -31,7 +31,7 @@ return {
 		end
 		if stage3 == 3 then
 			pq.party_exp(sm, 20000)
-			map:block_gen(true)
+			map:set_respawn(true)
 			map:kill_all_mobs()
 			rj.clear_fx(map)
 		end

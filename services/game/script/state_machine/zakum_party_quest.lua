@@ -88,7 +88,7 @@ return {
 			local map = group:map(map_id)
 			if map ~= nil then
 				map:reset()
-				map:respawn(true)
+				map:respawn({ include_one_time = true })
 				pq.shuffle_reactors(map, SHUFFLE_REACTOR_MIN, SHUFFLE_REACTOR_MAX)
 			end
 		end

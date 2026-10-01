@@ -42,7 +42,7 @@ return {
 		local map = group:map(QUEST_MAP)
 		if map ~= nil then
 			map:reset()
-			map:respawn(true)
+			map:respawn({ include_one_time = true })
 			shuffle_reactors(map)
 		end
 		return { QUEST_MAP }

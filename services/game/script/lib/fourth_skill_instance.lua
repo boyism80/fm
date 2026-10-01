@@ -16,7 +16,7 @@ local function create(config)
 			local map = group:map(config.map)
 			if map ~= nil then
 				map:reset()
-				map:respawn(true)
+				map:respawn({ include_one_time = true })
 			end
 			return { config.map }
 		end,

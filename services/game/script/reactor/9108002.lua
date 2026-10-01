@@ -26,8 +26,8 @@ return {
 		end
 		if stage == 6 then
 			map:message("월묘를 보호하세요!")
-			map:block_gen(true)
-			map:respawn(true)
+			map:set_respawn(true)
+			map:respawn({ include_one_time = true })
 			map:spawn_mob(MOON_BUNNY_ID, SPAWN_POS[1], SPAWN_POS[2])
 		end
 	end

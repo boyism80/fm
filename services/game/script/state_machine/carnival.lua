@@ -228,7 +228,7 @@ return {
 			local map = group:map(map_id)
 			if map ~= nil and map_id == match:field_map_id() then
 				map:reset()
-				map:respawn(true)
+				map:respawn({ include_one_time = true })
 			end
 		end
 		return maps

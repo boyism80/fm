@@ -719,14 +719,14 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(0))
 				return 1
 			}
-			includeNegativeMobTime := false
-			if L.GetTop() >= 2 {
-				includeNegativeMobTime = lua.LVAsBool(L.Get(2))
+			includeOneTime := false
+			if opts := L.OptTable(2, nil); opts != nil {
+				includeOneTime = lua.LVAsBool(opts.RawGetString("include_one_time"))
 			}
 			cfg, _ := luax.GetConfiguration(L)
-			return mapInstance.GameWorld.GetMapSystem().Respawn(L, mapInstance, cfg.ActorContext, includeNegativeMobTime)
+			return mapInstance.GameWorld.GetMapSystem().Respawn(L, mapInstance, cfg.ActorContext, includeOneTime)
 		},
-		"block_gen": func(L *lua.LState) int {
+		"set_respawn": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)
 			if !ok {
@@ -735,7 +735,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			argc := L.GetTop()
 			if argc < 2 {
-				L.ArgError(2, "block_gen(enabled) or block_gen(enabled, mobId) requires enabled")
+				L.ArgError(2, "set_respawn(enabled) or set_respawn(enabled, mobId) requires enabled")
 				return 0
 			}
 			enabled := lua.LVAsBool(L.Get(2))
@@ -748,10 +748,10 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				mapInstance.SetMobGenEnabled(mobWZID, enabled)
 				return 0
 			}
-			L.ArgError(4, "block_gen(enabled) or block_gen(enabled, mobId)")
+			L.ArgError(4, "set_respawn(enabled) or set_respawn(enabled, mobId)")
 			return 0
 		},
-		"block_reactor_gen": func(L *lua.LState) int {
+		"set_reactor_respawn": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)
 			if !ok {

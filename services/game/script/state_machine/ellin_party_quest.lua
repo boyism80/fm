@@ -41,7 +41,7 @@ return {
 			local map = group:map(map_id)
 			if map ~= nil then
 				map:reset()
-				map:respawn(true)
+				map:respawn({ include_one_time = true })
 				if map_id == 930000500 then
 					pq.shuffle_reactors(map)
 				end

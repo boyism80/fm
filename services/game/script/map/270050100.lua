@@ -6,7 +6,7 @@ return {
 			return
 		end
 
-		map:respawn(true)
+		map:respawn({ include_one_time = true })
 		map:spawn_npc(2141000, -190, -42)
 		map:property(KEY, true)
 	end

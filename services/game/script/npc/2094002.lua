@@ -37,34 +37,34 @@ local function handle_stage2(me, npc, sm, map)
 	if stage == "0" then
 		if me:exchange({ item = { [SEAL_A] = 20 } }, nil) == ExchangeResult.OK then
 			sm:set_property("stage2", "1")
-			map:block_gen(false, 9300114)
+			map:set_respawn(false, 9300114)
 			map:kill_all_mobs()
 			sm:message("구옹이 포탈의 첫번째 봉인을 해제했습니다.")
 			me:dialog(npc, "#b#t4001120##k를 모두 모아오셨군요. 다음 문제를 해결할 준비가 되면 제게 다시 말을 걸어주세요.")
 		else
-			map:block_gen(true, 9300114)
+			map:set_respawn(true, 9300114)
 			me:dialog(npc, "나타나는 해적을 잡고 #b#t4001120##k 20개를 제게 모아오시면 됩니다. 해적이 바로 나타나지 않더라도 잠시만 기다려 보세요. 행운을 빌어요!")
 		end
 	elseif stage == "1" then
 		if me:exchange({ item = { [SEAL_B] = 20 } }, nil) == ExchangeResult.OK then
 			sm:set_property("stage2", "2")
-			map:block_gen(false, 9300115)
+			map:set_respawn(false, 9300115)
 			map:kill_all_mobs()
 			sm:message("구옹이 포탈의 두번째 봉인을 해제했습니다.")
 			me:dialog(npc, "#b#t4001121##k를 모두 모아오셨군요. 다음 문제를 해결할 준비가 되면 제게 다시 말을 걸어주세요.")
 		else
-			map:block_gen(true, 9300115)
+			map:set_respawn(true, 9300115)
 			me:dialog(npc, "나타나는 해적을 잡고 #b#t4001121##k 20개를 제게 모아오시면 됩니다. 해적이 바로 나타나지 않더라도 잠시만 기다려 보세요. 행운을 빌어요!")
 		end
 	elseif stage == "2" then
 		if me:exchange({ item = { [SEAL_C] = 20 } }, nil) == ExchangeResult.OK then
 			sm:set_property("stage2", "3")
-			map:block_gen(false, 9300116)
+			map:set_respawn(false, 9300116)
 			map:kill_all_mobs()
 			sm:message("구옹이 포탈의 마지막 봉인을 해제했습니다.")
 			me:dialog(npc, "#b#t4001122##k를 모두 모아오셨군요. 우측에 있는 포탈의 봉인이 풀렸으니 포탈을 통해 다음 맵으로 이동해 주시기 바랍니다.")
 		else
-			map:block_gen(true, 9300116)
+			map:set_respawn(true, 9300116)
 			me:dialog(npc, "나타나는 해적을 잡고 #b#t4001122##k 20개를 제게 모아오시면 됩니다. 해적이 바로 나타나지 않더라도 잠시만 기다려 보세요. 행운을 빌어요!")
 		end
 	else

@@ -61,7 +61,7 @@ return {
 			local map = group:map(map_id)
 			if map ~= nil then
 				map:reset()
-				map:respawn(true)
+				map:respawn({ include_one_time = true })
 				local portal = map:portal("next00")
 				if portal ~= nil then
 					portal:script("enter_lpq")

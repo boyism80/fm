@@ -43,6 +43,6 @@ return {
 		sm:set_property("summoned", "1")
 		map:remove_npc(npc)
 		map:spawn_mob(mob_id, 240, 150)
-		map:block_gen(false)
+		map:set_respawn(false)
 	end
 }

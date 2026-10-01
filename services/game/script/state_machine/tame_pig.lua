@@ -26,7 +26,7 @@ return {
 		local map = group:map(QUEST_MAP)
 		if map ~= nil then
 			map:reset()
-			map:respawn(true)
+			map:respawn({ include_one_time = true })
 			for _, mob in pairs(map:mobs(TAME_PIG_ID)) do
 				map:remove_mob(mob:oid(), MobDieAnimation.FadeOut)
 			end

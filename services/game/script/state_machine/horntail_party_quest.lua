@@ -40,7 +40,7 @@ return {
 		for _, map_id in ipairs(stage_maps) do
 			local map = group:map(map_id)
 			map:reset()
-			map:respawn(true)
+			map:respawn({ include_one_time = true })
 		end
 		return stage_maps
 

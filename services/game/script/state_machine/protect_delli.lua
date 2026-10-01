@@ -18,7 +18,7 @@ local machine = solo_instance.create({
 	setup = function(sm, maps)
 		maps[4]:portal("in03"):script("protect_delli_back")
 		for _, map in ipairs(maps) do
-			map:respawn(true)
+			map:respawn({ include_one_time = true })
 		end
 	end,
 })

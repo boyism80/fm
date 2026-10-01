@@ -8,6 +8,6 @@ return solo_instance.create({
 	duration_ms = 900000,
 	timeout_message = "제한시간이 다 되어 실패하였습니다.",
 	setup = function(sm, maps)
-		maps[1]:respawn(true)
+		maps[1]:respawn({ include_one_time = true })
 	end,
 })

@@ -108,7 +108,7 @@ return {
 			local map = group:map(map_id)
 			if map ~= nil then
 				map:reset()
-				map:respawn(true)
+				map:respawn({ include_one_time = true })
 			end
 		end
 		local lobby = group:map(LOBBY_MAP)

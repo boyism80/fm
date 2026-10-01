@@ -20,7 +20,7 @@ return {
 		group:set_property("state", "1")
 		local map = group:map(BOSS_MAP)
 		if map ~= nil then
-			map:respawn(true)
+			map:respawn({ include_one_time = true })
 		end
 		return { BOSS_MAP }
 

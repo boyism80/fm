@@ -22,7 +22,7 @@ local function create(map_id)
 			local map = group:map(map_id)
 			if map ~= nil then
 				map:reset()
-				map:respawn(true)
+				map:respawn({ include_one_time = true })
 			end
 			return { map_id }
 		end,

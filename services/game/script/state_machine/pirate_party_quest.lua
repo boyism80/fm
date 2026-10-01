@@ -110,15 +110,15 @@ return {
 			local map = group:map(map_id)
 			if map ~= nil then
 				map:reset()
-				map:respawn(true)
+				map:respawn({ include_one_time = true })
 			end
 		end
 
 		local bow = group:map(925100100)
 		if bow ~= nil then
-			bow:block_gen(false, 9300114)
-			bow:block_gen(false, 9300115)
-			bow:block_gen(false, 9300116)
+			bow:set_respawn(false, 9300114)
+			bow:set_respawn(false, 9300115)
+			bow:set_respawn(false, 9300116)
 			bow:kill_all_mobs()
 		end
 

@@ -6,7 +6,7 @@ return {
 		if map == nil then
 			return
 		end
-		map:block_gen(false, 9300121)
+		map:set_respawn(false, 9300121)
 		map:message("문이 잠겼습니다. 해적들이 더 이상 나오지 않습니다.")
 		local trigger = reactor:trigger()
 		if trigger == nil then

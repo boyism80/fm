@@ -183,7 +183,7 @@ local function create(cfg)
 				local map = group:map(map_id)
 				if map ~= nil then
 					map:reset()
-					map:respawn(true)
+					map:respawn({ include_one_time = true })
 				end
 			end
 			local s1 = group:map(start_map)
@@ -198,7 +198,7 @@ local function create(cfg)
 			end
 			local boss = group:map(boss_map)
 			if boss ~= nil then
-				boss:block_gen(true)
+				boss:set_respawn(true)
 				boss:kill_all_mobs()
 			end
 			return maps
@@ -260,7 +260,7 @@ local function create(cfg)
 				local boss = group:map(boss_map)
 				if boss ~= nil then
 					clear_fx(boss)
-					boss:block_gen(true)
+					boss:set_respawn(true)
 					boss:kill_all_mobs()
 				end
 				local ok = sm:get_property("stage7") ~= "1"

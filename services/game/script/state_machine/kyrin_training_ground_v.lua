@@ -22,7 +22,7 @@ return {
 		local map = group:map(TRAINING_MAP)
 		if map ~= nil then
 			map:reset()
-			map:respawn(true)
+			map:respawn({ include_one_time = true })
 		end
 		return { TRAINING_MAP }
 

@@ -21,7 +21,7 @@ return {
 		local map = group:map(BOSS_MAP)
 		if map ~= nil then
 			map:reset()
-			map:respawn(true)
+			map:respawn({ include_one_time = true })
 		end
 		return { BOSS_MAP }
 

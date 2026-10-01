@@ -26,7 +26,7 @@ return {
 		group:set_property("clear", "0")
 		local map = group:map(STAGE_MAP)
 		map:reset()
-		map:block_gen(false)
+		map:set_respawn(false)
 		return { STAGE_MAP }
 
 	end,

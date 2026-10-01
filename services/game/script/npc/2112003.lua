@@ -77,7 +77,7 @@ local function handle_hub(me, npc, sm, map)
 	if pq.has_item(me, 4001135, 1) and sm:get_property("stage4") == "1" then
 		pq.remove_all(4001135, me)
 		rj.clear_fx(map)
-		map:block_gen(true)
+		map:set_respawn(true)
 		map:kill_all_mobs()
 		pq.party_exp(sm, 10000)
 		sm:set_property("stage4", "2")

@@ -68,7 +68,7 @@ return {
 			local map = group:map(map_id)
 			if map ~= nil then
 				map:reset()
-				map:respawn(true)
+				map:respawn({ include_one_time = true })
 			end
 		end
 		for _, map_id in ipairs(SHUFFLE_MAPS) do
@@ -77,7 +77,7 @@ return {
 		for _, map_id in ipairs(MAZE_END_MAPS) do
 			local map = group:map(map_id)
 			if map ~= nil then
-				map:block_reactor_gen(false)
+				map:set_reactor_respawn(false)
 			end
 		end
 		local waiting = group:map(WAITING_MAP)
