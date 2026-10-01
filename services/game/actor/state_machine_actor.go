@@ -379,6 +379,10 @@ func (a *StateMachineActor) beginDetach(ctx actor.Context) {
 		if m == nil {
 			continue
 		}
+		// A destroyed instance was already detached and its actor stopped, so it would never ack.
+		if m.IsInstance() && a.GameWorld != nil && a.GameWorld.GetMapSystem().GetInstance(m.GetMapID()) == nil {
+			continue
+		}
 		home := m.HomeActorPID()
 		if home == nil {
 			continue
