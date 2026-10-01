@@ -1,15 +1,18 @@
 import type { Pool, QueryResult } from "pg";
 import type Redis from "ioredis";
 import type { InternalContext } from "../context/internal-context";
+import { DistributedLock, redisLockKey, type DistributedLockGuard } from "../system/distributed-lock";
 import type { RepositoryQuery, RepositoryQueryValue, RepositoryTxOptions } from "../types/repository-contracts";
 
 export type { RepositoryQuery, RepositoryTxOptions };
 
 export abstract class Repository<TModel = Record<string, unknown>, TRow = Record<string, unknown>, TKey = unknown> {
     protected readonly ctx: InternalContext;
+    private readonly cacheLock: DistributedLock;
 
     constructor(internalContext: InternalContext) {
         this.ctx = internalContext;
+        this.cacheLock = new DistributedLock();
     }
 
     abstract getKey(_model: TModel): TKey;
@@ -95,7 +98,34 @@ export abstract class Repository<TModel = Record<string, unknown>, TRow = Record
         }
         return [...groups.values()];
     }
-    abstract refreshCache(worldId: number, key: TKey): Promise<void>;
+
+    // Readers fill the cache only while holding this lock and writers delete under it after commit, so a fill from
+    // rows read before a commit always lands before that commit's delete. Readers never wait; without the lock they
+    // return the rows and skip the fill.
+    protected tryLockCache(worldId: number, key: TKey): Promise<DistributedLockGuard | null> {
+        const lockKey = redisLockKey(`cache:${this.getRedisKey(worldId, key)}`);
+        return this.cacheLock.tryAcquire(this.redis(worldId, key), lockKey).catch(() => null);
+    }
+
+    // Call after the write is committed.
+    async invalidateCache(worldId: number, key: TKey): Promise<void> {
+        const redisKey = this.getRedisKey(worldId, key);
+        const redis = this.redis(worldId, key);
+        let guard: DistributedLockGuard | null = null;
+        try {
+            guard = await this.cacheLock.acquire(redis, redisLockKey(`cache:${redisKey}`));
+        } catch (err) {
+            console.error(`[cache] lock failed key=${redisKey}`, err);
+        }
+        try {
+            await redis.del(redisKey);
+        } catch (err) {
+            console.error(`[cache] delete failed key=${redisKey}`, err);
+        } finally {
+            await guard?.release();
+        }
+    }
+
     abstract get(worldId: number, key: TKey, options?: RepositoryTxOptions): Promise<TModel | null>;
     abstract set(worldId: number, model: TModel, options?: RepositoryTxOptions): Promise<TModel>;
     abstract getMany(worldId: number, keys: TKey[], options?: RepositoryTxOptions): Promise<Map<TKey, TModel>>;

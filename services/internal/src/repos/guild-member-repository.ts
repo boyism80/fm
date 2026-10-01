@@ -80,7 +80,7 @@ export class GuildMemberRepository extends HashRepository<GuildMemberModel, Guil
             options
         );
         if (!options.txClient) {
-            await this.refreshGroupCache(worldId, groupKey);
+            await this.invalidateCache(worldId, groupKey);
         }
     }
 

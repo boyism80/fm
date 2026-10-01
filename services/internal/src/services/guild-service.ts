@@ -437,9 +437,9 @@ export class GuildService {
             await this.guildRepo.delete({ worldId, guildId }, { txClient: dataTx });
         }).catch(() => {});
         await this.unifiedRepo.deleteGuildName(guildId).catch(() => {});
-        await this.guildRepo.refreshCache(worldId, guildId).catch(() => {});
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(guildId)).catch(() => {});
-        await this.characterRealtimeStateRepo.refreshCache(worldId, leaderCharacterId).catch(() => {});
+        await this.guildRepo.invalidateCache(worldId, guildId).catch(() => {});
+        await this.guildMemberRepo.invalidateCache(worldId, String(guildId)).catch(() => {});
+        await this.characterRealtimeStateRepo.invalidateCache(worldId, leaderCharacterId).catch(() => {});
     }
 
     async createGuild(
@@ -559,9 +559,9 @@ export class GuildService {
             throw err;
         }
 
-        await this.guildRepo.refreshCache(worldId, guildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(guildId));
-        await this.characterRealtimeStateRepo.refreshCache(worldId, leaderCharacterId);
+        await this.guildRepo.invalidateCache(worldId, guildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
+        await this.characterRealtimeStateRepo.invalidateCache(worldId, leaderCharacterId);
 
         await this.publishToGuildRoutes(EVT.CREATED, worldId, guildId, revision, {
             leader_character_id: leaderCharacterId,
@@ -677,9 +677,9 @@ export class GuildService {
             );
         });
 
-        await this.guildRepo.refreshCache(worldId, guildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(guildId));
-        await this.characterRealtimeStateRepo.refreshCache(worldId, characterId);
+        await this.guildRepo.invalidateCache(worldId, guildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
+        await this.characterRealtimeStateRepo.invalidateCache(worldId, characterId);
 
         await this.publishToGuildRoutes(EVT.MEMBER_JOINED, worldId, guildId, result.revision, {
             character_id: characterId,
@@ -760,9 +760,9 @@ export class GuildService {
         }
         const result = guildResult;
 
-        await this.guildRepo.refreshCache(worldId, result.guildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(result.guildId));
-        await this.characterRealtimeStateRepo.refreshCache(worldId, characterId);
+        await this.guildRepo.invalidateCache(worldId, result.guildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
+        await this.characterRealtimeStateRepo.invalidateCache(worldId, characterId);
 
         await this.publishToGuildRoutes(EVT.MEMBER_LEFT, worldId, result.guildId, result.revision, {
             character_id: characterId,
@@ -883,9 +883,9 @@ export class GuildService {
         });
         const result = guildResult;
 
-        await this.guildRepo.refreshCache(worldId, result.guildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(result.guildId));
-        await this.characterRealtimeStateRepo.refreshCache(worldId, targetCharacterId);
+        await this.guildRepo.invalidateCache(worldId, result.guildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
+        await this.characterRealtimeStateRepo.invalidateCache(worldId, targetCharacterId);
 
         await this.publishToGuildRoutes(EVT.MEMBER_LEFT, worldId, result.guildId, result.revision, {
             character_id: targetCharacterId,
@@ -970,7 +970,7 @@ export class GuildService {
             return result;
         }
 
-        await this.guildRepo.refreshCache(worldId, result.guildId);
+        await this.guildRepo.invalidateCache(worldId, result.guildId);
 
         await this.publishToGuildRoutes(EVT.RANK_TITLES_CHANGED, worldId, result.guildId, result.revision, {});
 
@@ -1082,8 +1082,8 @@ export class GuildService {
             return result;
         }
 
-        await this.guildRepo.refreshCache(worldId, result.guildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(result.guildId));
+        await this.guildRepo.invalidateCache(worldId, result.guildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
 
         await this.publishToGuildRoutes(EVT.MEMBER_RANK_CHANGED, worldId, result.guildId, result.revision, {
             character_id: targetCharacterId,
@@ -1177,7 +1177,7 @@ export class GuildService {
             return result;
         }
 
-        await this.guildRepo.refreshCache(worldId, result.guildId);
+        await this.guildRepo.invalidateCache(worldId, result.guildId);
 
         await this.publishToGuildRoutes(EVT.EMBLEM_CHANGED, worldId, result.guildId, result.revision, {});
 
@@ -1254,7 +1254,7 @@ export class GuildService {
             return result;
         }
 
-        await this.guildRepo.refreshCache(worldId, result.guildId);
+        await this.guildRepo.invalidateCache(worldId, result.guildId);
 
         await this.publishToGuildRoutes(EVT.NOTICE_CHANGED, worldId, result.guildId, result.revision, {});
 
@@ -1340,7 +1340,7 @@ export class GuildService {
             return result;
         }
 
-        await this.guildRepo.refreshCache(worldId, result.guildId);
+        await this.guildRepo.invalidateCache(worldId, result.guildId);
 
         await this.publishToGuildRoutes(EVT.CAPACITY_CHANGED, worldId, result.guildId, result.revision, {
             capacity: result.capacity,
@@ -1403,7 +1403,7 @@ export class GuildService {
             return { ok: true, guildId: result.guildId, revision: result.revision, gp: result.gp };
         }
 
-        await this.guildRepo.refreshCache(worldId, guildId);
+        await this.guildRepo.invalidateCache(worldId, guildId);
 
         await this.publishToGuildRoutes(EVT.GP_CHANGED, worldId, guildId, result.revision, {
             gp: result.gp,
@@ -1530,10 +1530,10 @@ export class GuildService {
 
         await this.guildBulletinBoardRepo.deleteAllForGuild(worldId, result.guildId);
 
-        await this.guildRepo.refreshCache(worldId, result.guildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(result.guildId));
+        await this.guildRepo.invalidateCache(worldId, result.guildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(result.guildId));
         for (const memberCharacterId of result.memberCharacterIds ?? []) {
-            await this.characterRealtimeStateRepo.refreshCache(worldId, memberCharacterId);
+            await this.characterRealtimeStateRepo.invalidateCache(worldId, memberCharacterId);
         }
         await this.unifiedRepo.deleteGuildName(result.guildId).catch(() => {});
 
@@ -2205,10 +2205,10 @@ export class GuildService {
             }
             await this.allianceRepo.delete({ worldId, allianceId }, { txClient: dataTx });
         }).catch(() => {});
-        await this.allianceRepo.refreshCache(worldId, allianceId).catch(() => {});
+        await this.allianceRepo.invalidateCache(worldId, allianceId).catch(() => {});
         for (const guildId of guildIds) {
-            await this.guildRepo.refreshCache(worldId, guildId).catch(() => {});
-            await this.guildMemberRepo.refreshGroupCache(worldId, String(guildId)).catch(() => {});
+            await this.guildRepo.invalidateCache(worldId, guildId).catch(() => {});
+            await this.guildMemberRepo.invalidateCache(worldId, String(guildId)).catch(() => {});
         }
     }
 
@@ -2356,11 +2356,11 @@ export class GuildService {
 
         const createdAllianceId = savedAlliance.allianceId;
 
-        await this.allianceRepo.refreshCache(worldId, createdAllianceId);
-        await this.guildRepo.refreshCache(worldId, guildId);
-        await this.guildRepo.refreshCache(worldId, partnerGuildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(guildId));
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(partnerGuildId));
+        await this.allianceRepo.invalidateCache(worldId, createdAllianceId);
+        await this.guildRepo.invalidateCache(worldId, guildId);
+        await this.guildRepo.invalidateCache(worldId, partnerGuildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
+        await this.guildMemberRepo.invalidateCache(worldId, String(partnerGuildId));
 
         const allianceMessage = await this.allianceToPb(worldId, savedAlliance, initialGuildIds);
         const wire = Alliance.encode(allianceMessage).finish();
@@ -2558,12 +2558,12 @@ export class GuildService {
             return txResult;
         }
 
-        await this.allianceRepo.refreshCache(worldId, txResult.allianceId);
-        await this.guildRepo.refreshCache(worldId, guildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(guildId));
+        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
+        await this.guildRepo.invalidateCache(worldId, guildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
         for (const gid of otherGuildIds) {
-            await this.guildRepo.refreshCache(worldId, gid);
-            await this.guildMemberRepo.refreshGroupCache(worldId, String(gid));
+            await this.guildRepo.invalidateCache(worldId, gid);
+            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
@@ -2683,7 +2683,7 @@ export class GuildService {
             return txResult;
         }
 
-        await this.allianceRepo.refreshCache(worldId, txResult.allianceId);
+        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
@@ -2811,7 +2811,7 @@ export class GuildService {
             return txResult;
         }
 
-        await this.allianceRepo.refreshCache(worldId, txResult.allianceId);
+        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
@@ -2921,7 +2921,7 @@ export class GuildService {
             return txResult;
         }
 
-        await this.allianceRepo.refreshCache(worldId, txResult.allianceId);
+        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
         const wireAlliance = Alliance.encode(allianceMessage).finish();
@@ -3142,17 +3142,17 @@ export class GuildService {
             return txResult;
         }
 
-        await this.allianceRepo.refreshCache(worldId, txResult.allianceId);
-        await this.guildRepo.refreshCache(worldId, txResult.oldLeaderGuildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(txResult.oldLeaderGuildId));
-        await this.guildRepo.refreshCache(worldId, txResult.newLeaderGuildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(txResult.newLeaderGuildId));
+        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
+        await this.guildRepo.invalidateCache(worldId, txResult.oldLeaderGuildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(txResult.oldLeaderGuildId));
+        await this.guildRepo.invalidateCache(worldId, txResult.newLeaderGuildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(txResult.newLeaderGuildId));
         for (const gid of otherGuildIds) {
             if (gid === txResult.oldLeaderGuildId || gid === txResult.newLeaderGuildId) {
                 continue;
             }
-            await this.guildRepo.refreshCache(worldId, gid);
-            await this.guildMemberRepo.refreshGroupCache(worldId, String(gid));
+            await this.guildRepo.invalidateCache(worldId, gid);
+            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
@@ -3336,14 +3336,14 @@ export class GuildService {
             return txResult;
         }
 
-        await this.allianceRepo.refreshCache(worldId, txResult.allianceId);
+        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
         const guildIdsToEvict = new Set<number>([requesterGuildId]);
         if (txResult.targetGuildId != null) {
             guildIdsToEvict.add(txResult.targetGuildId);
         }
         for (const gid of guildIdsToEvict) {
-            await this.guildRepo.refreshCache(worldId, gid);
-            await this.guildMemberRepo.refreshGroupCache(worldId, String(gid));
+            await this.guildRepo.invalidateCache(worldId, gid);
+            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
@@ -3441,10 +3441,10 @@ export class GuildService {
                 return result;
             }
 
-            await this.allianceRepo.refreshCache(worldId, result.allianceId);
+            await this.allianceRepo.invalidateCache(worldId, result.allianceId);
             for (const gid of result.guildIds ?? []) {
-                await this.guildRepo.refreshCache(worldId, gid);
-                await this.guildMemberRepo.refreshGroupCache(worldId, String(gid));
+                await this.guildRepo.invalidateCache(worldId, gid);
+                await this.guildMemberRepo.invalidateCache(worldId, String(gid));
             }
 
             await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, result.revision, {
@@ -3521,12 +3521,12 @@ export class GuildService {
             return txResult;
         }
 
-        await this.allianceRepo.refreshCache(worldId, txResult.allianceId);
-        await this.guildRepo.refreshCache(worldId, guildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(guildId));
+        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
+        await this.guildRepo.invalidateCache(worldId, guildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
         for (const gid of otherGuildIds) {
-            await this.guildRepo.refreshCache(worldId, gid);
-            await this.guildMemberRepo.refreshGroupCache(worldId, String(gid));
+            await this.guildRepo.invalidateCache(worldId, gid);
+            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
@@ -3653,10 +3653,10 @@ export class GuildService {
                 return result;
             }
 
-            await this.allianceRepo.refreshCache(worldId, result.allianceId);
+            await this.allianceRepo.invalidateCache(worldId, result.allianceId);
             for (const gid of result.guildIds ?? []) {
-                await this.guildRepo.refreshCache(worldId, gid);
-                await this.guildMemberRepo.refreshGroupCache(worldId, String(gid));
+                await this.guildRepo.invalidateCache(worldId, gid);
+                await this.guildMemberRepo.invalidateCache(worldId, String(gid));
             }
 
             await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, result.revision, {
@@ -3733,15 +3733,15 @@ export class GuildService {
             return txResult;
         }
 
-        await this.allianceRepo.refreshCache(worldId, txResult.allianceId);
-        await this.guildRepo.refreshCache(worldId, targetGuildId);
-        await this.guildMemberRepo.refreshGroupCache(worldId, String(targetGuildId));
+        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
+        await this.guildRepo.invalidateCache(worldId, targetGuildId);
+        await this.guildMemberRepo.invalidateCache(worldId, String(targetGuildId));
         for (const gid of otherGuildIds) {
             if (gid === targetGuildId) {
                 continue;
             }
-            await this.guildRepo.refreshCache(worldId, gid);
-            await this.guildMemberRepo.refreshGroupCache(worldId, String(gid));
+            await this.guildRepo.invalidateCache(worldId, gid);
+            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
         const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
@@ -3863,10 +3863,10 @@ export class GuildService {
             return result;
         }
 
-        await this.allianceRepo.refreshCache(worldId, result.allianceId);
+        await this.allianceRepo.invalidateCache(worldId, result.allianceId);
         for (const gid of result.guildIds ?? []) {
-            await this.guildRepo.refreshCache(worldId, gid);
-            await this.guildMemberRepo.refreshGroupCache(worldId, String(gid));
+            await this.guildRepo.invalidateCache(worldId, gid);
+            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
         }
 
         await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, result.revision, {

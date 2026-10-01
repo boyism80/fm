@@ -3,30 +3,6 @@ import { Repository } from "./repository";
 import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-contracts";
 import type { InternalContext } from "../context/internal-context";
 
-// KEYS[1] hash. ARGV[1] ttl, then field/value pairs. A reader that loaded pre-commit rows must not replace a hash a writer already refreshed.
-const HASH_FILL_IF_ABSENT_SCRIPT = `
-if redis.call("EXISTS", KEYS[1]) == 1 then
-    return 0
-end
-redis.call("HSET", KEYS[1], "_loaded", "1")
-for i = 2, #ARGV, 2 do
-    redis.call("HSET", KEYS[1], ARGV[i], ARGV[i + 1])
-end
-redis.call("EXPIRE", KEYS[1], ARGV[1])
-return 1
-`;
-
-// KEYS[1] hash. ARGV field/value pairs. Writing into an expired key would leave a partial hash without a TTL.
-const HASH_SET_IF_PRESENT_SCRIPT = `
-if redis.call("EXISTS", KEYS[1]) == 0 then
-    return 0
-end
-for i = 1, #ARGV, 2 do
-    redis.call("HSET", KEYS[1], ARGV[i], ARGV[i + 1])
-end
-return 1
-`;
-
 export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Record<string, unknown>> extends Repository<TModel, TRow, string> {
     private readonly localGroupCache: Map<string, Map<string, TRow>>;
 
@@ -35,8 +11,9 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         this.localGroupCache = new Map();
     }
 
-    override async refreshCache(worldId: number, key: string): Promise<void> {
-        await this.refreshGroupCache(worldId, key);
+    override async invalidateCache(worldId: number, groupKey: string): Promise<void> {
+        this.localGroupCache.delete(this.getRedisHashKey(worldId, groupKey));
+        await super.invalidateCache(worldId, groupKey);
     }
 
     override getKey(model: TModel): string {
@@ -111,13 +88,24 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
             return result;
         }
 
-        const pool = this.pool(worldId, groupKey) as Pool;
-        const select = this.onSelect(groupKey, worldId);
-        const res = await this.query(pool, select.text, select.values, options);
-        const rows = res.rows as Array<TRow & { deleted?: boolean }>;
+        const guard = useCache ? await this.tryLockCache(worldId, groupKey) : null;
+        let rows: Array<TRow & { deleted?: boolean }>;
+        try {
+            const pool = this.pool(worldId, groupKey) as Pool;
+            const select = this.onSelect(groupKey, worldId);
+            const res = await this.query(pool, select.text, select.values, options);
+            rows = res.rows as Array<TRow & { deleted?: boolean }>;
 
-        if (useCache) {
-            await redis.eval(HASH_FILL_IF_ABSENT_SCRIPT, 1, hashKey, this.getTtlSeconds(), ...this.rowsToHashFields(rows));
+            if (guard) {
+                const fields = this.rowsToHashFields(rows);
+                const multi = redis.multi().del(hashKey).hset(hashKey, "_loaded", "1");
+                if (fields.length > 0) {
+                    multi.hset(hashKey, ...fields);
+                }
+                await multi.expire(hashKey, this.getTtlSeconds()).exec().catch(() => {});
+            }
+        } finally {
+            await guard?.release();
         }
 
         const result = new Map<string, TModel>();
@@ -175,16 +163,10 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
             }
 
             for (const [groupKey, groupItems] of byGroup) {
-                const hashKey = this.getRedisHashKey(worldId, groupKey);
-                const redis = this.redis(worldId, groupKey);
                 if (!options.txClient) {
-                    const fields: string[] = [];
-                    for (const { row, model } of groupItems) {
-                        fields.push(this.getItemKey(model), JSON.stringify(row));
-                    }
-                    await redis.eval(HASH_SET_IF_PRESENT_SCRIPT, 1, hashKey, ...fields);
+                    await this.invalidateCache(worldId, groupKey);
                 }
-                const localCached = this.localGroupCache.get(hashKey);
+                const localCached = this.localGroupCache.get(this.getRedisHashKey(worldId, groupKey));
                 if (localCached) {
                     for (const { row, model } of groupItems) {
                         localCached.set(this.getItemKey(model), row);
@@ -214,16 +196,13 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
         const deleteQuery = this.onBulkDelete(itemKeys.map(String), groupKey, worldId);
         await this.query(pool, deleteQuery.text, deleteQuery.values, options);
 
-        const hashKey = this.getRedisHashKey(worldId, groupKey);
-        const redis = this.redis(worldId, groupKey);
-        const keyStrings = itemKeys.map(String);
-        if (!options.txClient && await redis.exists(hashKey)) {
-            await redis.hdel(hashKey, ...keyStrings);
+        if (!options.txClient) {
+            await this.invalidateCache(worldId, groupKey);
         }
-        const localCached = this.localGroupCache.get(hashKey);
+        const localCached = this.localGroupCache.get(this.getRedisHashKey(worldId, groupKey));
         if (localCached) {
-            for (const itemKey of keyStrings) {
-                localCached.delete(itemKey);
+            for (const itemKey of itemKeys) {
+                localCached.delete(String(itemKey));
             }
         }
     }
@@ -248,25 +227,5 @@ export abstract class HashRepository<TModel = Record<string, unknown>, TRow = Re
             }
         }
         return fields;
-    }
-
-    // Writers call this after commit while holding the entity lock. The hash is rebuilt in one MULTI, so the key
-    // stays present and a reader that loaded pre-commit rows cannot fill it back.
-    async refreshGroupCache(worldId: number, groupKey: string): Promise<void> {
-        const hashKey = this.getRedisHashKey(worldId, groupKey);
-        this.localGroupCache.delete(hashKey);
-        const redis = this.redis(worldId, groupKey);
-        try {
-            const select = this.onSelect(groupKey, worldId);
-            const res = await this.pool(worldId, groupKey).query(select.text, select.values);
-            const fields = this.rowsToHashFields(res.rows as Array<TRow & { deleted?: boolean }>);
-            const multi = redis.multi().del(hashKey).hset(hashKey, "_loaded", "1");
-            if (fields.length > 0) {
-                multi.hset(hashKey, ...fields);
-            }
-            await multi.expire(hashKey, this.getTtlSeconds()).exec();
-        } catch {
-            await redis.del(hashKey).catch(() => {});
-        }
     }
 }

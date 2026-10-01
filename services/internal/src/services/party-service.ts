@@ -334,8 +334,8 @@ export class PartyService {
             return result;
         }
 
-        await this.partyRepo.refreshCache(worldId, result.party.partyId);
-        await this.partyMemberRepo.refreshGroupCache(worldId, String(result.party.partyId));
+        await this.partyRepo.invalidateCache(worldId, result.party.partyId);
+        await this.partyMemberRepo.invalidateCache(worldId, String(result.party.partyId));
         const membersMap = await this.partyMemberRepo.getAll(worldId, String(result.party.partyId));
         const partyPb = await this.partyToPb(worldId, result.party, [...membersMap.values()]);
         const wire = Party.encode(partyPb).finish();
@@ -445,9 +445,9 @@ export class PartyService {
         if (!result.ok || result.partyId == null || result.revision == null) {
             return result;
         }
-        await this.partyRepo.refreshCache(worldId, result.partyId);
-        await this.partyMemberRepo.refreshGroupCache(worldId, String(result.partyId));
-        await this.characterRealtimeStateRepo.refreshCache(worldId, leaderCharacterId);
+        await this.partyRepo.invalidateCache(worldId, result.partyId);
+        await this.partyMemberRepo.invalidateCache(worldId, String(result.partyId));
+        await this.characterRealtimeStateRepo.invalidateCache(worldId, leaderCharacterId);
         await this.publishPartyEvent(EVT.CREATED, worldId, result.partyId, result.revision, { leader_character_id: leaderCharacterId });
         return result;
     }
@@ -650,9 +650,9 @@ export class PartyService {
             );
         });
         await client.del(inviteKey);
-        await this.partyRepo.refreshCache(worldId, partyId);
-        await this.partyMemberRepo.refreshGroupCache(worldId, String(partyId));
-        await this.characterRealtimeStateRepo.refreshCache(worldId, characterId);
+        await this.partyRepo.invalidateCache(worldId, partyId);
+        await this.partyMemberRepo.invalidateCache(worldId, String(partyId));
+        await this.characterRealtimeStateRepo.invalidateCache(worldId, characterId);
         await this.publishPartyEvent(EVT.MEMBER_JOINED, worldId, result.partyId, result.revision, { character_id: characterId });
         return result;
     }
@@ -778,10 +778,10 @@ export class PartyService {
             });
         }
         const result = partyResult;
-        await this.partyRepo.refreshCache(worldId, result.partyId);
-        await this.partyMemberRepo.refreshGroupCache(worldId, String(result.partyId));
+        await this.partyRepo.invalidateCache(worldId, result.partyId);
+        await this.partyMemberRepo.invalidateCache(worldId, String(result.partyId));
         for (const affectedCharacterId of result.realtimeStateCharacterIds ?? [characterId]) {
-            await this.characterRealtimeStateRepo.refreshCache(worldId, affectedCharacterId);
+            await this.characterRealtimeStateRepo.invalidateCache(worldId, affectedCharacterId);
         }
 
         if (result.disbanded) {
@@ -887,10 +887,10 @@ export class PartyService {
         }
         const result = partyResult;
 
-        await this.partyRepo.refreshCache(worldId, result.partyId);
-        await this.partyMemberRepo.refreshGroupCache(worldId, String(result.partyId));
+        await this.partyRepo.invalidateCache(worldId, result.partyId);
+        await this.partyMemberRepo.invalidateCache(worldId, String(result.partyId));
         for (const affectedCharacterId of result.realtimeStateCharacterIds ?? [targetCharacterId]) {
-            await this.characterRealtimeStateRepo.refreshCache(worldId, affectedCharacterId);
+            await this.characterRealtimeStateRepo.invalidateCache(worldId, affectedCharacterId);
         }
 
         if (result.disbanded) {
@@ -954,8 +954,8 @@ export class PartyService {
         if (!result.ok || result.partyId == null || result.revision == null) {
             return result;
         }
-        await this.partyRepo.refreshCache(worldId, partyId);
-        await this.partyMemberRepo.refreshGroupCache(worldId, String(partyId));
+        await this.partyRepo.invalidateCache(worldId, partyId);
+        await this.partyMemberRepo.invalidateCache(worldId, String(partyId));
         await this.publishPartyEvent(EVT.LEADER_CHANGED, worldId, result.partyId, result.revision, {
             old_leader_character_id: requesterCharacterId,
             new_leader_character_id: newLeaderCharacterId,
