@@ -18,7 +18,7 @@ func (h *RemoveCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, ms
 		}
 		return
 	}
-	_ = m.RemovePlayer(msg.CharacterID)
+	_ = m.LogoutPlayer(msg.CharacterID)
 	if ctx.Sender() != nil {
 		ctx.Respond(struct{}{})
 	}

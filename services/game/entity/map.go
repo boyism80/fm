@@ -325,6 +325,26 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	return nil
 }
 
+func (m *Map) LogoutPlayer(playerID uint32) error {
+	character := m.GetPlayer(playerID)
+	if character == nil {
+		return fmt.Errorf("player %d not found on map", playerID)
+	}
+
+	if root := m.GetLuaRoot(); root != nil {
+		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
+		if err != nil {
+			log.Printf("on_logout: %v", err)
+		} else {
+			luax.CallAsync(root, thread, "on_logout", character).OnError(func(err error) {
+				log.Printf("on_logout: %v", err)
+			})
+		}
+	}
+
+	return m.RemovePlayer(playerID)
+}
+
 func (m *Map) GetMapID() uint32 { return m.id }
 
 func (m *Map) TemplateID() uint32 {

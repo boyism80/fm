@@ -24,7 +24,6 @@ import (
 	"github.com/boyism80/fm/services/common/globaltimer"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	gamegtimers "github.com/boyism80/fm/services/game/gtimers"
 	"github.com/boyism80/fm/services/game/wz"
@@ -549,39 +548,6 @@ func (gs *GameServer) Stop() error {
 	return gs.ServerCore.Stop()
 }
 
-func (gs *GameServer) runCharacterLogoutScript(ch *entity.Character) {
-	if ch == nil {
-		return
-	}
-	if sm := ch.StateMachine(); sm != nil {
-		sm.RequestLeave(ch, false)
-	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return
-	}
-	pid := mapInstance.LogicActorPID()
-	actorRoot := gs.GetRootContext()
-	if pid == nil || actorRoot == nil {
-		return
-	}
-	// The map Lua root is only safe on its map actor; disconnects finish on RPC goroutines.
-	actorRoot.Send(pid, &c_actor.ExecuteTimer{Logic: func() error {
-		root := mapInstance.GetLuaRoot()
-		if root == nil {
-			return nil
-		}
-		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
-		if err != nil {
-			return fmt.Errorf("on_logout: %w", err)
-		}
-		luax.CallAsync(root, thread, "on_logout", ch).OnError(func(err error) {
-			log.Printf("on_logout: %v", err)
-		})
-		return nil
-	}})
-}
-
 func (gs *GameServer) actorPIDToMap(pid *actor.PID) *entity.Map {
 	if gs == nil || pid == nil {
 		return nil
@@ -653,7 +619,9 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 
 	charID := character.GetID()
 	p.Finally(func() {
-		gs.runCharacterLogoutScript(character)
+		if sm := character.StateMachine(); sm != nil {
+			sm.RequestLeave(character, false)
+		}
 		mapInstance := character.GetMap()
 		if mapInstance != nil {
 			pid := mapInstance.LogicActorPID()
@@ -673,7 +641,6 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		}
 		character.ClearTimers()
 	})
-
 }
 
 func (gs *GameServer) GetStats() map[string]interface{} {
