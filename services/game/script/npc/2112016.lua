@@ -20,7 +20,10 @@ return {
 		if sm:get_property(key) ~= "" then
 			return
 		end
-		me:mkitem(DOCUMENT, 1)
+		if me:mkitem(DOCUMENT, 1) == nil then
+			me:message("기타 인벤토리 공간이 부족합니다.", Msg.PinkText)
+			return
+		end
 		sm:set_property(key, "1")
 	end
 }

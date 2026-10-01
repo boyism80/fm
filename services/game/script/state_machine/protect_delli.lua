@@ -23,9 +23,9 @@ local machine = solo_instance.create({
 machine.on_scheduled_timeout = function(sm)
 	if sm:get_property("protect") == "1" then
 		solo_instance.leave(sm, SHELTER_MAP)
-		return
+	else
+		solo_instance.leave(sm, EXIT_MAP)
 	end
-	solo_instance.leave(sm, EXIT_MAP)
 end
 
 machine.on_mob_die = function(sm, mob)
