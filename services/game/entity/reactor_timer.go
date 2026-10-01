@@ -95,10 +95,10 @@ func (r *Reactor) ScheduleResetState(delay time.Duration) bool {
 }
 
 func (r *Reactor) ScheduleResetStateFromSpawn() bool {
-	if r == nil || r.Spawn == nil {
+	if r == nil || r.Map == nil {
 		return false
 	}
-	return r.ScheduleResetState(r.Spawn.RespawnDelay())
+	return r.ScheduleResetState(r.respawnDelay())
 }
 
 func (r *Reactor) StateTimeOut(state byte) time.Duration {

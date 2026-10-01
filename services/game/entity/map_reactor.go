@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
@@ -39,7 +40,7 @@ func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stanc
 	rid := r.Wz.ID
 
 	if r.eventAt(newState) == nil {
-		if r.Spawn != nil && r.Spawn.RespawnDelay() > 0 {
+		if r.respawnDelay() > 0 {
 			_ = r.Map.RemoveReactor(r.OID, true)
 			_, _ = r.callReactorScript("on_reactor", true, r)
 			return
@@ -288,6 +289,21 @@ func (m *Map) FindReactorName(name string) *Reactor {
 		}
 	}
 	return nil
+}
+
+func (m *Map) SetReactorGenEnabled(enabled bool) {
+	if m == nil {
+		return
+	}
+	m.reactorGenBlocked = enabled == false
+}
+
+// A blocked map keeps a broken reactor in its final state, as if WZ gave it no respawn delay.
+func (r *Reactor) respawnDelay() time.Duration {
+	if r.Spawn == nil || r.Map.reactorGenBlocked {
+		return 0
+	}
+	return r.Spawn.RespawnDelay()
 }
 
 func (m *Map) GetReactorSpawn(spawnID uint32) *ReactorSpawn {

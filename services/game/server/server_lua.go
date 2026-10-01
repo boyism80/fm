@@ -864,6 +864,10 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		L.Push(lua.LBool(core.GetPacketLogEnabled()))
 		return 1
 	})
+	luax.RegisterFunc(luaState, "channel_id", func(L *lua.LState) int {
+		L.Push(lua.LNumber(gs.config.ChannelId))
+		return 1
+	})
 	luax.RegisterFunc(luaState, "set_megaphone_muted", func(L *lua.LState) int {
 		gs.megaphoneMuted.Store(L.CheckBool(1))
 		return 0

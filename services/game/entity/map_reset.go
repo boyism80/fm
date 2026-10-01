@@ -15,6 +15,7 @@ func (m *Map) Reset() {
 	m.RemoveAllFieldDrops()
 	m.ClearProperties()
 	m.ClearBlockedMobGen()
+	m.SetReactorGenEnabled(true)
 	m.RemoveRuntimeNpcs()
 	m.resetPortalScripts()
 	m.SummonedMobSpawns = nil

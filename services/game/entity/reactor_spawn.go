@@ -37,7 +37,7 @@ func (rs *ReactorSpawn) ScheduleRespawn(mapInstance *Map) {
 	}
 
 	delay := rs.RespawnDelay()
-	if delay <= 0 {
+	if delay <= 0 || mapInstance.reactorGenBlocked {
 		return
 	}
 

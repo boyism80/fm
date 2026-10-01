@@ -751,6 +751,16 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.ArgError(4, "block_gen(enabled) or block_gen(enabled, mobId)")
 			return 0
 		},
+		"block_reactor_gen": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mapInstance.SetReactorGenEnabled(L.CheckBool(2))
+			return 0
+		},
 		"remove_npc": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

@@ -1141,10 +1141,9 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 			sort.Slice(entries, func(i, j int) bool {
 				return entries[i].idx < entries[j].idx
 			})
-			maxIdx := entries[len(entries)-1].idx
-			model.Areas = make([]types.Rect[int16], maxIdx+1)
+			model.Areas = make([]types.Rect[int16], 0, len(entries))
 			for _, e := range entries {
-				model.Areas[e.idx] = e.rect
+				model.Areas = append(model.Areas, e.rect)
 			}
 		}
 	}

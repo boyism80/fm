@@ -104,6 +104,7 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 			_ = ch.Warp(ctx, exitMap, 0)
 		}
 	}
+	sm.CallHook("on_player_leave", ch)
 	return false
 }
 

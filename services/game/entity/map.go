@@ -98,6 +98,7 @@ type Map struct {
 	ReactorSpawns       map[uint32]*ReactorSpawn
 	blockedMobGen       map[uint32]struct{}
 	mobGenBlockedAll    bool
+	reactorGenBlocked   bool
 	listener            MapListener
 	mobListener         MobListener
 	sequence            uint32

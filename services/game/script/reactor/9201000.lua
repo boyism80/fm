@@ -1,7 +1,10 @@
 -- Reactor name (Reactor.wz/9201000.img.xml): 투명리엑터:서브몬스터 소환
 
 return {
-	on_reactor = function(reactor)
+	on_reactor = function(reactor, item)
+		if item ~= nil then
+			return
+		end
 		local map = reactor:map()
 		if map == nil then
 			return

@@ -51,6 +51,27 @@ func (*Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(m.IsTown))
 			return 1
 		},
+		"area": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			m, ok := ud.Value.(*Map)
+			if !ok || m == nil {
+				L.ArgError(1, "WzMap expected")
+				return 0
+			}
+			index := L.CheckInt(2) - 1
+			if index < 0 || index >= len(m.Areas) {
+				L.Push(lua.LNil)
+				return 1
+			}
+			area := m.Areas[index]
+			tbl := L.NewTable()
+			tbl.RawSetString("left", lua.LNumber(area.Left))
+			tbl.RawSetString("top", lua.LNumber(area.Top))
+			tbl.RawSetString("right", lua.LNumber(area.Right))
+			tbl.RawSetString("bottom", lua.LNumber(area.Bottom))
+			L.Push(tbl)
+			return 1
+		},
 	}
 }
 

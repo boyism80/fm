@@ -1,4 +1,6 @@
--- Reactor name (Reactor.wz/9208000.img.xml): 샤레니안 성문 석상
+-- Reactor name (Reactor.wz/9208000.img.xml): 인간형 석상
+
+local gq = require("script/lib/guild_quest")
 
 return {
 	on_reactor = function(reactor)
@@ -6,8 +8,8 @@ return {
 		if map == nil then
 			return
 		end
-		local wz = map:wz()
-		if wz == nil or wz:id() ~= 910210000 then
+		if map:wz():id() ~= 910210000 then
+			gq.record_statue(reactor)
 			return
 		end
 		local trigger = reactor:trigger()

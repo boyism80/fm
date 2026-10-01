@@ -98,9 +98,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 		}
 		_ = mapInstance.RemoveItem(itemOID, constant.RemoveItemTypeExpired, 0)
 		r.Hit(owner, constant.ReactorHitAirLeft, 0)
-		if r.Spawn != nil && r.Spawn.RespawnDelay() > 0 {
-			r.ScheduleResetState(r.Spawn.RespawnDelay())
-		}
+		r.ScheduleResetState(r.respawnDelay())
 	})
 }
 
