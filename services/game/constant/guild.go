@@ -14,6 +14,9 @@ const GuildCreateMesoCost int32 = 1_500_000
 const GuildCapacityIncreaseMesoCost int32 = 500_000
 const GuildCapacityIncreaseGPCost uint32 = 2_000
 
+// GuildLevelGP[level] is the GP at which a guild leaves that level; level 10 has no cap.
+var GuildLevelGP = [...]uint32{0, 20_000, 160_000, 540_000, 1_280_000, 2_500_000, 4_320_000, 6_860_000, 10_240_000, 14_580_000}
+
 const GuildEmblemChangeMesoCost int32 = 5_000_000
 
 const GuildEmblemChangeCashItemID uint32 = 5220001

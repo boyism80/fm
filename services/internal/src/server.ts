@@ -17,6 +17,7 @@ import type { AppConfiguration } from "./config/app-configuration";
 import type { InternalContext } from "./context/internal-context";
 import type { RabbitMQService } from "./services/rabbitmq-service";
 import type { WzService } from "./services/wz-service";
+import type { GuildService } from "./services/guild-service";
 type ServerContainerCradle = {
     catalogController: CatalogGrpcController;
     authController: AuthGrpcController;
@@ -30,6 +31,7 @@ type ServerContainerCradle = {
     internalContext: InternalContext;
     rabbitmqService: RabbitMQService;
     wzService: WzService;
+    guildService: GuildService;
     grpcError: typeof grpcError;
 };
 
@@ -97,6 +99,7 @@ async function main() {
 
     await wzService.preload();
     await rabbitmqService.start();
+    await container.resolve("guildService").buildGuildRanking(Number(wid));
 
     const server = new grpc.Server();
 

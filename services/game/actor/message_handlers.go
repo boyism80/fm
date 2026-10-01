@@ -46,6 +46,8 @@ func registerMapMessageHandlers(r *MessageRegistry) {
 	Bind[DeliverGuildEmblemChangeHandler](r)
 	Bind[DeliverGuildNoticeChangeHandler](r)
 	Bind[DeliverGuildCapacityChangeHandler](r)
+	Bind[DeliverGuildGPChangeHandler](r)
+	Bind[DeliverGuildRankingHandler](r)
 	Bind[DeliverGuildMemberOnlineChangeHandler](r)
 	Bind[DeliverGuildMemberFieldsChangeHandler](r)
 	Bind[DeliverGuildDisbandSelfHandler](r)

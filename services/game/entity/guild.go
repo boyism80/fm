@@ -5,6 +5,7 @@ import (
 	"time"
 
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/game/constant"
 )
 
 type GuildLogo struct {
@@ -139,6 +140,15 @@ func (g *Guild) GetLeaderCharacterId() uint32 {
 
 func (g *Guild) GetRevision() uint64 {
 	return g.Revision
+}
+
+func (g *Guild) Level() uint32 {
+	for level := 1; level < len(constant.GuildLevelGP); level++ {
+		if g.GP < constant.GuildLevelGP[level] {
+			return uint32(level)
+		}
+	}
+	return uint32(len(constant.GuildLevelGP))
 }
 
 func (g *Guild) GetMembers() []*GuildMember {

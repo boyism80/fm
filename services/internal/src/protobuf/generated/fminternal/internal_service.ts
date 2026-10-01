@@ -1714,6 +1714,35 @@ export interface IncreaseGuildCapacityReply {
   gp: number;
 }
 
+export interface GainGuildGPRequest {
+  worldId: number;
+  guildId: number;
+  amount: number;
+}
+
+export interface GainGuildGPReply {
+  ok: boolean;
+  errorCode: GuildErrorCode;
+  guildId?: number | undefined;
+  revision: number;
+  gp: number;
+}
+
+export interface GetGuildRankingRequest {
+  worldId: number;
+}
+
+export interface GuildRankingEntry {
+  guildId: number;
+  name: string;
+  gp: number;
+  logo: GuildLogo | undefined;
+}
+
+export interface GetGuildRankingReply {
+  entries: GuildRankingEntry[];
+}
+
 export interface DisbandGuildRequest {
   worldId: number;
   characterId: number;
@@ -15398,6 +15427,476 @@ export const IncreaseGuildCapacityReply: MessageFns<IncreaseGuildCapacityReply> 
   },
 };
 
+function createBaseGainGuildGPRequest(): GainGuildGPRequest {
+  return { worldId: 0, guildId: 0, amount: 0 };
+}
+
+export const GainGuildGPRequest: MessageFns<GainGuildGPRequest> = {
+  encode(message: GainGuildGPRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      writer.uint32(16).uint32(message.guildId);
+    }
+    if (message.amount !== 0) {
+      writer.uint32(24).int32(message.amount);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GainGuildGPRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGainGuildGPRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.amount = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GainGuildGPRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : 0,
+      amount: isSet(object.amount) ? globalThis.Number(object.amount) : 0,
+    };
+  },
+
+  toJSON(message: GainGuildGPRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.guildId !== 0) {
+      obj.guildId = Math.round(message.guildId);
+    }
+    if (message.amount !== 0) {
+      obj.amount = Math.round(message.amount);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GainGuildGPRequest>, I>>(base?: I): GainGuildGPRequest {
+    return GainGuildGPRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GainGuildGPRequest>, I>>(object: I): GainGuildGPRequest {
+    const message = createBaseGainGuildGPRequest();
+    message.worldId = object.worldId ?? 0;
+    message.guildId = object.guildId ?? 0;
+    message.amount = object.amount ?? 0;
+    return message;
+  },
+};
+
+function createBaseGainGuildGPReply(): GainGuildGPReply {
+  return { ok: false, errorCode: 0, guildId: undefined, revision: 0, gp: 0 };
+}
+
+export const GainGuildGPReply: MessageFns<GainGuildGPReply> = {
+  encode(message: GainGuildGPReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    if (message.errorCode !== 0) {
+      writer.uint32(16).int32(message.errorCode);
+    }
+    if (message.guildId !== undefined) {
+      writer.uint32(24).uint32(message.guildId);
+    }
+    if (message.revision !== 0) {
+      writer.uint32(32).uint64(message.revision);
+    }
+    if (message.gp !== 0) {
+      writer.uint32(40).uint32(message.gp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GainGuildGPReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGainGuildGPReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.errorCode = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.revision = longToNumber(reader.uint64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.gp = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GainGuildGPReply {
+    return {
+      ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false,
+      errorCode: isSet(object.errorCode)
+        ? guildErrorCodeFromJSON(object.errorCode)
+        : isSet(object.error_code)
+        ? guildErrorCodeFromJSON(object.error_code)
+        : 0,
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : undefined,
+      revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      gp: isSet(object.gp) ? globalThis.Number(object.gp) : 0,
+    };
+  },
+
+  toJSON(message: GainGuildGPReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    if (message.errorCode !== 0) {
+      obj.errorCode = guildErrorCodeToJSON(message.errorCode);
+    }
+    if (message.guildId !== undefined) {
+      obj.guildId = Math.round(message.guildId);
+    }
+    if (message.revision !== 0) {
+      obj.revision = Math.round(message.revision);
+    }
+    if (message.gp !== 0) {
+      obj.gp = Math.round(message.gp);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GainGuildGPReply>, I>>(base?: I): GainGuildGPReply {
+    return GainGuildGPReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GainGuildGPReply>, I>>(object: I): GainGuildGPReply {
+    const message = createBaseGainGuildGPReply();
+    message.ok = object.ok ?? false;
+    message.errorCode = object.errorCode ?? 0;
+    message.guildId = object.guildId ?? undefined;
+    message.revision = object.revision ?? 0;
+    message.gp = object.gp ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetGuildRankingRequest(): GetGuildRankingRequest {
+  return { worldId: 0 };
+}
+
+export const GetGuildRankingRequest: MessageFns<GetGuildRankingRequest> = {
+  encode(message: GetGuildRankingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGuildRankingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetGuildRankingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetGuildRankingRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetGuildRankingRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetGuildRankingRequest>, I>>(base?: I): GetGuildRankingRequest {
+    return GetGuildRankingRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetGuildRankingRequest>, I>>(object: I): GetGuildRankingRequest {
+    const message = createBaseGetGuildRankingRequest();
+    message.worldId = object.worldId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGuildRankingEntry(): GuildRankingEntry {
+  return { guildId: 0, name: "", gp: 0, logo: undefined };
+}
+
+export const GuildRankingEntry: MessageFns<GuildRankingEntry> = {
+  encode(message: GuildRankingEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.guildId !== 0) {
+      writer.uint32(8).uint32(message.guildId);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.gp !== 0) {
+      writer.uint32(24).uint32(message.gp);
+    }
+    if (message.logo !== undefined) {
+      GuildLogo.encode(message.logo, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GuildRankingEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGuildRankingEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.guildId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.gp = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.logo = GuildLogo.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GuildRankingEntry {
+    return {
+      guildId: isSet(object.guildId)
+        ? globalThis.Number(object.guildId)
+        : isSet(object.guild_id)
+        ? globalThis.Number(object.guild_id)
+        : 0,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      gp: isSet(object.gp) ? globalThis.Number(object.gp) : 0,
+      logo: isSet(object.logo) ? GuildLogo.fromJSON(object.logo) : undefined,
+    };
+  },
+
+  toJSON(message: GuildRankingEntry): unknown {
+    const obj: any = {};
+    if (message.guildId !== 0) {
+      obj.guildId = Math.round(message.guildId);
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.gp !== 0) {
+      obj.gp = Math.round(message.gp);
+    }
+    if (message.logo !== undefined) {
+      obj.logo = GuildLogo.toJSON(message.logo);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GuildRankingEntry>, I>>(base?: I): GuildRankingEntry {
+    return GuildRankingEntry.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GuildRankingEntry>, I>>(object: I): GuildRankingEntry {
+    const message = createBaseGuildRankingEntry();
+    message.guildId = object.guildId ?? 0;
+    message.name = object.name ?? "";
+    message.gp = object.gp ?? 0;
+    message.logo = (object.logo !== undefined && object.logo !== null) ? GuildLogo.fromPartial(object.logo) : undefined;
+    return message;
+  },
+};
+
+function createBaseGetGuildRankingReply(): GetGuildRankingReply {
+  return { entries: [] };
+}
+
+export const GetGuildRankingReply: MessageFns<GetGuildRankingReply> = {
+  encode(message: GetGuildRankingReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.entries) {
+      GuildRankingEntry.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGuildRankingReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetGuildRankingReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.entries.push(GuildRankingEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetGuildRankingReply {
+    return {
+      entries: globalThis.Array.isArray(object?.entries)
+        ? object.entries.map((e: any) => GuildRankingEntry.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetGuildRankingReply): unknown {
+    const obj: any = {};
+    if (message.entries?.length) {
+      obj.entries = message.entries.map((e) => GuildRankingEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetGuildRankingReply>, I>>(base?: I): GetGuildRankingReply {
+    return GetGuildRankingReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetGuildRankingReply>, I>>(object: I): GetGuildRankingReply {
+    const message = createBaseGetGuildRankingReply();
+    message.entries = object.entries?.map((e) => GuildRankingEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 function createBaseDisbandGuildRequest(): DisbandGuildRequest {
   return { worldId: 0, characterId: 0 };
 }
@@ -21178,6 +21677,26 @@ export const InternalService = {
       Buffer.from(IncreaseGuildCapacityReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): IncreaseGuildCapacityReply => IncreaseGuildCapacityReply.decode(value),
   },
+  gainGuildGp: {
+    path: "/fm.internal.Internal/GainGuildGP" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: GainGuildGPRequest): Buffer => Buffer.from(GainGuildGPRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GainGuildGPRequest => GainGuildGPRequest.decode(value),
+    responseSerialize: (value: GainGuildGPReply): Buffer => Buffer.from(GainGuildGPReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GainGuildGPReply => GainGuildGPReply.decode(value),
+  },
+  getGuildRanking: {
+    path: "/fm.internal.Internal/GetGuildRanking" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: GetGuildRankingRequest): Buffer =>
+      Buffer.from(GetGuildRankingRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetGuildRankingRequest => GetGuildRankingRequest.decode(value),
+    responseSerialize: (value: GetGuildRankingReply): Buffer =>
+      Buffer.from(GetGuildRankingReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GetGuildRankingReply => GetGuildRankingReply.decode(value),
+  },
   listGuildBulletinBoardThreads: {
     path: "/fm.internal.Internal/ListGuildBulletinBoardThreads" as const,
     requestStream: false as const,
@@ -21385,6 +21904,8 @@ export interface InternalServer extends UntypedServiceImplementation {
   changeGuildEmblem: handleUnaryCall<ChangeGuildEmblemRequest, ChangeGuildEmblemReply>;
   changeGuildNotice: handleUnaryCall<ChangeGuildNoticeRequest, ChangeGuildNoticeReply>;
   increaseGuildCapacity: handleUnaryCall<IncreaseGuildCapacityRequest, IncreaseGuildCapacityReply>;
+  gainGuildGp: handleUnaryCall<GainGuildGPRequest, GainGuildGPReply>;
+  getGuildRanking: handleUnaryCall<GetGuildRankingRequest, GetGuildRankingReply>;
   listGuildBulletinBoardThreads: handleUnaryCall<
     ListGuildBulletinBoardThreadsRequest,
     ListGuildBulletinBoardThreadsReply
@@ -22076,6 +22597,36 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: IncreaseGuildCapacityReply) => void,
+  ): ClientUnaryCall;
+  gainGuildGp(
+    request: GainGuildGPRequest,
+    callback: (error: ServiceError | null, response: GainGuildGPReply) => void,
+  ): ClientUnaryCall;
+  gainGuildGp(
+    request: GainGuildGPRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GainGuildGPReply) => void,
+  ): ClientUnaryCall;
+  gainGuildGp(
+    request: GainGuildGPRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GainGuildGPReply) => void,
+  ): ClientUnaryCall;
+  getGuildRanking(
+    request: GetGuildRankingRequest,
+    callback: (error: ServiceError | null, response: GetGuildRankingReply) => void,
+  ): ClientUnaryCall;
+  getGuildRanking(
+    request: GetGuildRankingRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GetGuildRankingReply) => void,
+  ): ClientUnaryCall;
+  getGuildRanking(
+    request: GetGuildRankingRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GetGuildRankingReply) => void,
   ): ClientUnaryCall;
   listGuildBulletinBoardThreads(
     request: ListGuildBulletinBoardThreadsRequest,

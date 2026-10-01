@@ -8,7 +8,9 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 )
@@ -106,6 +108,64 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 	}).OnError(func(err error) {
 		log.Printf("guild inc_capacity: character=%d: %v", charID, err)
 		*result = int(constant.GuildIncreaseCapacityResultFailed)
+	})
+}
+
+func (s guildSystem) GainGPAsync(ctx actor.Context, guildID uint32, amount int32) *async.Promise {
+	if s.gs == nil || s.gs.internalClient == nil || guildID == 0 || amount == 0 {
+		return nil
+	}
+	worldID := s.gs.config.WorldId
+	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+	return async.ThenRPC(promise, func(c context.Context) (*internal.GainGuildGPReply, error) {
+		return s.gs.internalClient.GainGuildGP(c, &internal.GainGuildGPRequest{
+			WorldId: worldID,
+			GuildId: guildID,
+			Amount:  amount,
+		})
+	}, func(reply *internal.GainGuildGPReply) error {
+		if reply.GetOk() == false {
+			log.Printf("guild gain_gp: guild=%d amount=%d: %s", guildID, amount, reply.GetErrorCode())
+		}
+		return nil
+	}).OnError(func(err error) {
+		log.Printf("guild gain_gp: guild=%d amount=%d: %v", guildID, amount, err)
+	})
+}
+
+func (s guildSystem) ShowRankingAsync(ctx actor.Context, ch *entity.Character, npcID uint32) *async.Promise {
+	if s.gs == nil || s.gs.internalClient == nil {
+		return nil
+	}
+	worldID := s.gs.config.WorldId
+	charID := ch.GetID()
+	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+	return async.ThenRPC(promise, func(c context.Context) (*internal.GetGuildRankingReply, error) {
+		return s.gs.internalClient.GetGuildRanking(c, &internal.GetGuildRankingRequest{
+			WorldId: worldID,
+		})
+	}, func(reply *internal.GetGuildRankingReply) error {
+		entries := make([]dto.GuildRankingEntry, 0, len(reply.GetEntries()))
+		for _, e := range reply.GetEntries() {
+			logo := e.GetLogo()
+			entries = append(entries, dto.GuildRankingEntry{
+				Name:        e.GetName(),
+				GP:          e.GetGp(),
+				Logo:        logo.GetLogo(),
+				LogoColor:   logo.GetLogoColor(),
+				LogoBG:      logo.GetLogoBg(),
+				LogoBGColor: logo.GetLogoBgColor(),
+			})
+		}
+		// The character may have changed maps (and actors) while the RPC was in flight.
+		s.gs.EnsureSend(nil, charID, &g_actor.DeliverGuildRanking{
+			CharacterID: charID,
+			NPCID:       npcID,
+			Entries:     entries,
+		})
+		return nil
+	}).OnError(func(err error) {
+		log.Printf("guild ranking: character=%d: %v", charID, err)
 	})
 }
 

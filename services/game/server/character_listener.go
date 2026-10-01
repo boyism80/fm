@@ -506,6 +506,24 @@ func (l *CharacterListenerImpl) OnGuildCapacityChange(ch *entity.Character, guil
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnGuildGPChange(ch *entity.Character, guildID uint32, gp uint32, level uint32, amount int32) {
+	_ = ch.Send(&response.GuildUpdateGP{
+		GuildID:    guildID,
+		GP:         gp,
+		GuildLevel: level,
+	}, types.SEND_POLICY_ENCRYPT)
+	if amount != 0 {
+		_ = ch.Send(&response.ShowGPGain{Amount: amount}, types.SEND_POLICY_ENCRYPT)
+	}
+}
+
+func (l *CharacterListenerImpl) OnGuildRanking(ch *entity.Character, npcID uint32, entries []dto.GuildRankingEntry) {
+	_ = ch.Send(&response.GuildShowRanks{
+		NPCID:   npcID,
+		Entries: entries,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnGuildMemberOnlineChange(ch *entity.Character, guildID uint32, subjectCharacterID uint32, online bool) {
 	_ = ch.Send(&response.GuildMemberOnline{
 		GuildID:     guildID,

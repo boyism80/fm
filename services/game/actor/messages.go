@@ -305,6 +305,20 @@ type DeliverGuildCapacityChange struct {
 	Capacity    uint8
 }
 
+type DeliverGuildGPChange struct {
+	CharacterID uint32
+	GuildID     uint32
+	GP          uint32
+	Level       uint32
+	Amount      int32
+}
+
+type DeliverGuildRanking struct {
+	CharacterID uint32
+	NPCID       uint32
+	Entries     []dto.GuildRankingEntry
+}
+
 type DeliverGuildMemberOnlineChange struct {
 	CharacterID uint32
 	GuildID     uint32

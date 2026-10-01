@@ -52,6 +52,8 @@ type CharacterListener interface {
 	OnGuildEmblemChange(ch *Character, guildID uint32, logoBG uint16, logoBGColor uint8, logo uint16, logoColor uint8)
 	OnGuildNoticeChange(ch *Character, guildID uint32, notice string)
 	OnGuildCapacityChange(ch *Character, guildID uint32, capacity uint8)
+	OnGuildGPChange(ch *Character, guildID uint32, gp uint32, level uint32, amount int32)
+	OnGuildRanking(ch *Character, npcID uint32, entries []dto.GuildRankingEntry)
 	OnGuildMemberOnlineChange(ch *Character, guildID uint32, subjectCharacterID uint32, online bool)
 	OnGuildMemberFieldsChange(ch *Character, guildID uint32, subjectCharacterID uint32, level uint32, classID uint32)
 	OnAllianceMemberOnlineChange(ch *Character, allianceID uint32, guildID uint32, subjectCharacterID uint32, online bool)

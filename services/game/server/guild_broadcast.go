@@ -190,6 +190,25 @@ func (gc *GuildContainer) BroadcastCapacityChanged(guildID uint32) {
 	})
 }
 
+func (gc *GuildContainer) BroadcastGPChanged(guildID uint32, amount int32) {
+	g := gc.Get(guildID)
+	if g == nil {
+		return
+	}
+	gid := g.GetGuildId()
+	gp := g.GP
+	level := g.Level()
+	gc.forEachOnlineGuildMember(g, 0, func(memberID uint32) {
+		gc.gs.EnsureSend(nil, memberID, &g_actor.DeliverGuildGPChange{
+			CharacterID: memberID,
+			GuildID:     gid,
+			GP:          gp,
+			Level:       level,
+			Amount:      amount,
+		})
+	})
+}
+
 func (gc *GuildContainer) BroadcastRankTitlesChanged(guildID uint32) {
 	g := gc.Get(guildID)
 	if g == nil {

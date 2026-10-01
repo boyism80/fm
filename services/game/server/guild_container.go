@@ -92,6 +92,10 @@ func (gc *GuildContainer) Update(guildPb *internal.Guild) {
 	gc.mu.Lock()
 	defer gc.mu.Unlock()
 	if prev := gc.guilds[guildID]; prev != nil {
+		// GetGuild replies for concurrent events can arrive out of order.
+		if stored.Revision < prev.Revision {
+			return
+		}
 		if _, inAlliance := stored.GetAllianceID(); !inAlliance {
 			stored.AllianceInvites = entity.CloneAllianceInvites(prev.AllianceInvites)
 		}

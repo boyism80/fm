@@ -2328,6 +2328,29 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, g))
 			return 1
 		},
+		"show_guild_ranking": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			npc := 0
+			switch npcArg := L.Get(2).(type) {
+			case lua.LNumber:
+				npc = int(npcArg)
+			case *lua.LUserData:
+				if n, ok := npcArg.Value.(*Npc); ok && n.Wz != nil && n.Wz.BaseSpawn != nil {
+					npc = int(n.Wz.BaseSpawn.ID)
+				}
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if ok == false || cfg.ActorContext == nil || ch.GameWorld == nil {
+				return 0
+			}
+			ch.GameWorld.GetGuildSystem().ShowRankingAsync(cfg.ActorContext, ch, uint32(npc))
+			return 0
+		},
 		"create_alliance": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

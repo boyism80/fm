@@ -138,6 +138,20 @@ export class GuildRepository extends ValueRepository<GuildModel, GuildRow, numbe
         };
     }
 
+    async getAllGP(worldId: number): Promise<Array<{ guildId: number; gp: number }>> {
+        const result: Array<{ guildId: number; gp: number }> = [];
+        for (const pool of this.ctx.getPgDataPools(worldId)) {
+            const res = await pool.query(
+                "SELECT guild_id, gp FROM guilds WHERE world_id = $1 AND disbanded_at IS NULL",
+                [worldId]
+            );
+            for (const row of res.rows as Array<Pick<GuildRow, "guild_id" | "gp">>) {
+                result.push({ guildId: toPgInt(row.guild_id), gp: row.gp });
+            }
+        }
+        return result;
+    }
+
     override modelToRow(model: GuildModel): GuildRow {
         return {
             world_id: model.worldId,

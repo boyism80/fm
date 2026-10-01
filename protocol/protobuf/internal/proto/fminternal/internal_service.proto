@@ -50,6 +50,8 @@ service Internal {
   rpc ChangeGuildEmblem (ChangeGuildEmblemRequest) returns (ChangeGuildEmblemReply);
   rpc ChangeGuildNotice (ChangeGuildNoticeRequest) returns (ChangeGuildNoticeReply);
   rpc IncreaseGuildCapacity (IncreaseGuildCapacityRequest) returns (IncreaseGuildCapacityReply);
+  rpc GainGuildGP (GainGuildGPRequest) returns (GainGuildGPReply);
+  rpc GetGuildRanking (GetGuildRankingRequest) returns (GetGuildRankingReply);
   rpc ListGuildBulletinBoardThreads (ListGuildBulletinBoardThreadsRequest) returns (ListGuildBulletinBoardThreadsReply);
   rpc ShowGuildBulletinBoardThread (ShowGuildBulletinBoardThreadRequest) returns (ShowGuildBulletinBoardThreadReply);
   rpc CreateGuildBulletinBoardThread (CreateGuildBulletinBoardThreadRequest) returns (CreateGuildBulletinBoardThreadReply);
@@ -902,6 +904,35 @@ message IncreaseGuildCapacityReply {
   uint64 revision = 4;
   uint32 capacity = 5;
   uint32 gp = 6;
+}
+
+message GainGuildGPRequest {
+  uint32 world_id = 1;
+  uint32 guild_id = 2;
+  int32 amount = 3;
+}
+
+message GainGuildGPReply {
+  bool ok = 1;
+  GuildErrorCode error_code = 2;
+  optional uint32 guild_id = 3;
+  uint64 revision = 4;
+  uint32 gp = 5;
+}
+
+message GetGuildRankingRequest {
+  uint32 world_id = 1;
+}
+
+message GuildRankingEntry {
+  uint32 guild_id = 1;
+  string name = 2;
+  uint32 gp = 3;
+  GuildLogo logo = 4;
+}
+
+message GetGuildRankingReply {
+  repeated GuildRankingEntry entries = 1;
 }
 
 message DisbandGuildRequest {

@@ -300,6 +300,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		mq.Bind[*GameServer, guildMqEmblemChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqNoticeChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqCapacityChanged](gs, guildDisp)
+		mq.Bind[*GameServer, guildMqGPChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqMemberOnlineChanged](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqDisbanded](gs, guildDisp)
 		mq.Bind[*GameServer, guildMqChat](gs, guildDisp)

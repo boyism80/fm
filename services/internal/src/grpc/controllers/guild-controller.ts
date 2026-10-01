@@ -8,6 +8,10 @@ import type {
     ChangeGuildNoticeRequest,
     IncreaseGuildCapacityReply,
     IncreaseGuildCapacityRequest,
+    GainGuildGPReply,
+    GainGuildGPRequest,
+    GetGuildRankingReply,
+    GetGuildRankingRequest,
     CreateGuildBulletinBoardReplyReply,
     CreateGuildBulletinBoardReplyRequest,
     CreateGuildBulletinBoardThreadReply,
@@ -90,6 +94,7 @@ import type {
     GuildService,
     LeaveGuildResult,
     IncreaseGuildCapacityResult,
+    GainGuildGPResult,
 } from "../../services/guild-service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
@@ -376,6 +381,57 @@ export class GuildGrpcController {
                     gp: 0,
                 });
             }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("gainGuildGP")
+    async gainGuildGP(call: GrpcCall<GainGuildGPRequest>, callback: GrpcCallback<GainGuildGPReply>) {
+        try {
+            const req = call.request;
+            const result = await this.guildService.gainGuildGP(req.worldId, req.guildId, req.amount) as GainGuildGPResult;
+            if (result.ok) {
+                callback(null, {
+                    ok: true,
+                    errorCode: GuildErrorCode.GUILD_ERROR_NONE,
+                    guildId: result.guildId,
+                    revision: result.revision ?? 0,
+                    gp: result.gp ?? 0,
+                });
+            } else {
+                callback(null, {
+                    ok: false,
+                    errorCode: result.code ?? GuildErrorCode.GUILD_ERROR_UNKNOWN,
+                    guildId: undefined,
+                    revision: 0,
+                    gp: 0,
+                });
+            }
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("getGuildRanking")
+    async getGuildRanking(call: GrpcCall<GetGuildRankingRequest>, callback: GrpcCallback<GetGuildRankingReply>) {
+        try {
+            const entries = await this.guildService.getGuildRanking(call.request.worldId);
+            callback(null, {
+                entries: entries.map((entry) => {
+                    return {
+                        guildId: entry.guildId,
+                        name: entry.name,
+                        gp: entry.gp,
+                        logo: {
+                            logo: entry.logo.logo,
+                            logoColor: entry.logo.logoColor,
+                            logoBg: entry.logo.logoBG,
+                            logoBgColor: entry.logo.logoBGColor,
+                        },
+                    };
+                }),
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }
