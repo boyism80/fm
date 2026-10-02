@@ -1,0 +1,7 @@
+local mini_dungeon = require("script/lib/mini_dungeon")
+
+return {
+	on_enter = function(me)
+		mini_dungeon.enter(me, 221023400, 221023401)
+	end
+}
