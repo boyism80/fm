@@ -418,7 +418,7 @@ export class BuddyService {
         if (!row) {
             return -1;
         }
-        const sess = await this.sessionRepo.getCharacterSessionByName(worldId, row.name);
+        const sess = await this.sessionRepo.getCharacterSession(worldId, row.accountId, row.characterId);
         if (sess?.state !== CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE || sess?.gameServer?.connected !== true) {
             return -1;
         }

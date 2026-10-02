@@ -3,7 +3,6 @@ import { isRedisEvalArray } from "../types/redis-eval";
 import type { InternalContext } from "../context/internal-context";
 import type { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
 import type { SessionRepository } from "../repos/session-repository";
-import type { CharacterService } from "./character-service";
 import type { PartyService } from "./party-service";
 import type { BuddyService } from "./buddy-service";
 import type { GuildService } from "./guild-service";
@@ -21,7 +20,6 @@ export function formatDateTime(date = new Date()) {
 
 export class SessionService {
     private readonly repo: SessionRepository;
-    private readonly characterService: CharacterService;
     private readonly partyService: PartyService | null;
     private readonly buddyService: BuddyService | null;
     private readonly guildService: GuildService | null;
@@ -30,7 +28,6 @@ export class SessionService {
         internalContext: InternalContext,
         sessionRepository: SessionRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
-        characterService: CharacterService,
         partyService: PartyService | null,
         buddyService: BuddyService | null,
         guildService: GuildService | null
@@ -38,7 +35,6 @@ export class SessionService {
         void internalContext;
         void characterRealtimeStateRepository;
         this.repo = sessionRepository;
-        this.characterService = characterService;
         this.partyService = partyService;
         this.buddyService = buddyService;
         this.guildService = guildService;
@@ -106,7 +102,8 @@ export class SessionService {
                 characterName,
                 this.now(),
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
-                gameToGameTransfer
+                gameToGameTransfer,
+                account?.gameServer.channelId ?? null
             )
         );
         if (ok !== 1) {
@@ -117,21 +114,14 @@ export class SessionService {
         return { ok: true };
     }
 
-    async attachGameSession(
-        worldId: number,
-        accountId: number,
-        characterId: number,
-        characterName: string,
-        channelId: number
-    ) {
-        const transitionSession = await this.repo.getCharacterSessionByName(worldId, characterName);
-        const gameToGameTransfer = transitionSession?.gameToGameTransfer === true;
+    async attachGameSession(worldId: number, accountId: number, characterId: number, channelId: number) {
+        const account = await this.repo.getAccountSession(worldId, accountId);
+        const gameToGameTransfer = account?.gameToGameTransfer === true;
         const [ok, code] = this.atomicResultTuple(
             await this.repo.attachGameSessionAtomic(
                 worldId,
                 accountId,
                 characterId,
-                characterName,
                 channelId,
                 this.now(),
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME)
@@ -154,15 +144,14 @@ export class SessionService {
         return { ok: true };
     }
 
-    async refresh(worldId: number, accountId: number, characterId?: number) {
+    async refresh(worldId: number, accountId: number) {
         const [ok, code] = this.atomicResultTuple(
             await this.repo.refreshAtomic(
                 worldId,
                 accountId,
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN),
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
-                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME),
-                characterId
+                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME)
             )
         );
         if (ok !== 1) {
@@ -178,47 +167,25 @@ export class SessionService {
             disconnectSource?: SessionDisconnectSource;
             transferDisconnect?: boolean;
             characterId?: number;
-            characterName?: string;
             channelId?: number;
         } = {}
     ) {
-        let characterName = options.characterName;
-        if (
-            (characterName == null || characterName === "") &&
-            options.characterId != null &&
-            options.characterId > 0
-        ) {
-            const row = await this.characterService.getCharacter(worldId, options.characterId);
-            characterName = row?.name;
-        }
+        const src = options.disconnectSource ?? SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_UNSPECIFIED;
+        const transferDisconnect = options.transferDisconnect ?? false;
+        const keep = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_LOGIN_SERVER && transferDisconnect;
         let channelId = options.channelId;
-        if (
-            (channelId === undefined || !Number.isInteger(channelId) || channelId < 0) &&
-            characterName != null &&
-            characterName !== "" &&
-            options.disconnectSource === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER
-        ) {
-            const sess = await this.repo.getCharacterSessionByName(worldId, characterName);
-            const sch = sess?.gameServer?.channelId;
+        if (keep === false && (channelId === undefined || !Number.isInteger(channelId) || channelId < 0)) {
+            const account = await this.repo.getAccountSession(worldId, accountId);
+            const sch = account?.gameServer.channelId;
             if (sch != null && Number.isInteger(sch) && sch >= 0) {
                 channelId = sch;
             }
         }
-        const chForRepo =
-            channelId !== undefined && Number.isInteger(channelId) && channelId >= 0 ? channelId : undefined;
-        const raw = await this.repo.logoutAtomic(
-            worldId,
-            accountId,
-            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
-            characterName,
-            chForRepo
-        );
+        const raw = await this.repo.logoutAtomic(worldId, accountId, keep, channelId);
         const [ok, code] = this.atomicResultTuple(raw);
-        const src = options.disconnectSource ?? SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_UNSPECIFIED;
-        const transferDisconnect = options.transferDisconnect ?? false;
         console.log(
             `[session] logout account=${accountId} source=${src} transfer=${transferDisconnect}` +
-                ` character=${characterName ?? ""} ok=${ok} prev_state=${Array.isArray(raw) ? raw[2] : ""}`
+                ` character=${options.characterId ?? ""} ok=${ok} prev_state=${Array.isArray(raw) ? raw[2] : ""}`
         );
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_LOGOUT_FAILED };

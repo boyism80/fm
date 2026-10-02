@@ -120,13 +120,14 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			return fmt.Errorf("switch channel: begin transition failed (world=%d channel=%d code=%v)",
 				worldID, targetChannel, code)
 		}
+		// Set before sending: the client may disconnect as soon as it reads the packet, and a non-transfer logout ends the moving session.
+		gameClient.SetTransferDisconnect(true)
 		if err := ctx.Client.Send(&response.SwitchChannel{
 			IP:   routeHost,
 			Port: routePort,
 		}, types.SEND_POLICY_ENCRYPT); err != nil {
 			return err
 		}
-		gameClient.SetTransferDisconnect(true)
 		return nil
 	})
 	promise.OnError(func(err error) {

@@ -192,7 +192,7 @@ export class PartyService {
         if (!row) {
             return null;
         }
-        return this.sessionRepo.getCharacterSessionByName(worldId, row.name);
+        return this.sessionRepo.getCharacterSession(worldId, row.accountId, row.characterId);
     }
 
     private sortPartyMemberModels(memberModels: PartyMemberModel[] | Map<string, PartyMemberModel>, leaderCharacterId: number) {

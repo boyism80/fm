@@ -100,7 +100,7 @@ export class SessionGrpcController {
             return { kind: "skip" };
         }
         const row = await this.characterService.getCharacter(worldId, characterId);
-        if (!row || row.accountId !== accountId) {
+        if (!row || (accountId !== 0 && row.accountId !== accountId)) {
             return { kind: "bad", code: SessionErrorCode.SESSION_NOT_FOUND };
         }
         return { kind: "ok", row };
@@ -163,13 +163,7 @@ export class SessionGrpcController {
                 return;
             }
 
-            const attach = await this.sessionService.attachGameSession(
-                worldId,
-                row.accountId,
-                row.characterId,
-                row.name,
-                channelId
-            );
+            const attach = await this.sessionService.attachGameSession(worldId, row.accountId, row.characterId, channelId);
             if (!attach.ok) {
                 throw new Error(`attach game session failed: ${attach.code}`);
             }
@@ -254,11 +248,7 @@ export class SessionGrpcController {
                 });
                 return;
             }
-            const result = await this.sessionService.refresh(
-                call.request.worldId,
-                call.request.accountId,
-                call.request.characterId
-            );
+            const result = await this.sessionService.refresh(call.request.worldId, call.request.accountId);
             callback(null, {
                 ok: result.ok,
                 errorCode: result.code ?? SessionErrorCode.SESSION_UNKNOWN,
@@ -280,12 +270,15 @@ export class SessionGrpcController {
                 callback(null, { ok: false });
                 return;
             }
-            const characterName = oc.kind === "ok" ? oc.row.name : undefined;
-            const result = await this.sessionService.logout(call.request.worldId, call.request.accountId, {
+            const accountId = oc.kind === "ok" ? oc.row.accountId : call.request.accountId;
+            if (accountId === 0) {
+                callback(null, { ok: false });
+                return;
+            }
+            const result = await this.sessionService.logout(call.request.worldId, accountId, {
                 disconnectSource: call.request.disconnectSource,
                 transferDisconnect: call.request.transferDisconnect,
                 characterId: call.request.characterId,
-                characterName,
                 channelId: call.request.channelId,
             });
             callback(null, { ok: result.ok });
