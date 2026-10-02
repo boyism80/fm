@@ -521,6 +521,22 @@ func (s mapSystem) RemoveReturnDoor(ownerID uint32, skillID uint32, counterpart 
 	}
 }
 
+// DespawnDoor removes the door on its map's own actor; callers on another actor must not touch that map directly.
+func (s mapSystem) DespawnDoor(m *entity.Map, door *entity.Door, animated bool) {
+	if m == nil || door == nil {
+		return
+	}
+	pid := m.LogicActorPID()
+	if pid == nil {
+		return
+	}
+	s.gs.GetRootContext().Send(pid, &g_actor.DespawnDoor{
+		Map:      m,
+		Door:     door,
+		Animated: animated,
+	})
+}
+
 func (s schedulerSystem) RunObjectTimer(pid *actor.PID, obj entity.Object, key string) {
 	if s.gs == nil || pid == nil || obj == nil || key == "" {
 		return

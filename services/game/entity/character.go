@@ -379,9 +379,8 @@ func (ch *Character) RemoveDoor(target *Door, animated bool) {
 	if target == nil {
 		return
 	}
-	if m := target.GetMap(); m != nil && target.OID != 0 {
-		m.RemoveDoor(target.OID, animated)
-	}
+	// The owner may be in town while the door stands on the field map, which another actor owns.
+	ch.GameWorld.GetMapSystem().DespawnDoor(target.Field.Map, target, animated)
 	if ch.doors != nil {
 		delete(ch.doors, constant.SkillID(target.SkillID))
 	}

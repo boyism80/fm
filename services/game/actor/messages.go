@@ -40,6 +40,13 @@ type RemoveDoor struct {
 	SkillID uint32
 }
 
+// DespawnDoor names the door object itself, so a late message never takes down a newer door of the same owner and skill.
+type DespawnDoor struct {
+	Map      *entity.Map
+	Door     *entity.Door
+	Animated bool
+}
+
 type ResumeLua struct {
 	Root   *lua.LState
 	Thread *lua.LState
