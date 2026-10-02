@@ -13,6 +13,8 @@ import (
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type LoginGame struct {
@@ -102,6 +104,30 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	})
 	promise.OnError(func(err error) {
 		log.Printf("LoginGame (async): %v", err)
+
+		// A rejected EnterGame never attached a session; logging out then would end someone else's session.
+		code := status.Code(err)
+		if enterReply == nil && code != codes.DeadlineExceeded && code != codes.Unavailable {
+			return
+		}
+
+		characterID := req.PlayerId
+		channelID := h.gs.config.ChannelId
+		logout := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		logout = async.ThenRPC(logout, func(c context.Context) (*internal.LogoutSessionReply, error) {
+			return ic.LogoutSession(c, &internal.LogoutSessionRequest{
+				WorldId:          worldId,
+				AccountId:        enterReply.GetCharacter().GetAccountId(),
+				CharacterId:      &characterID,
+				ChannelId:        &channelID,
+				DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
+			})
+		}, func(*internal.LogoutSessionReply) error {
+			return nil
+		})
+		logout.OnError(func(err error) {
+			log.Printf("LoginGame: logout session of character %d after login failure: %v", characterID, err)
+		})
 	})
 	return nil
 }
@@ -167,26 +193,6 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
-	if gameClient.SetCharacter(character) == false {
-		characterID := character.GetID()
-		channelID := h.gs.config.ChannelId
-		logout := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		logout = async.ThenRPC(logout, func(c context.Context) (*internal.LogoutSessionReply, error) {
-			return h.gs.internalClient.LogoutSession(c, &internal.LogoutSessionRequest{
-				WorldId:          h.gs.config.WorldId,
-				AccountId:        character.AccountID,
-				CharacterId:      &characterID,
-				ChannelId:        &channelID,
-				DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
-			})
-		}, func(*internal.LogoutSessionReply) error {
-			return nil
-		})
-		logout.OnError(func(err error) {
-			log.Printf("LoginGame: logout session of character %d after disconnect: %v", characterID, err)
-		})
-		return nil
-	}
 
 	mapID := p.GetMapId()
 	spawnPoint := uint8(p.GetSpawnPoint())
@@ -224,8 +230,18 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		return fmt.Errorf("LogicActor PID not found for map %d", mapID)
 	}
 
+	rootContext := h.gs.GetRootContext()
+	if rootContext == nil {
+		return fmt.Errorf("rootContext not set")
+	}
+
+	// Fail before SetCharacter: the login error path ends the session only while no character is set.
 	if err := h.gs.characterRuntime.RegisterCharacter(character.GetID(), character.GetName()); err != nil {
 		return fmt.Errorf("runtime register: %w", err)
+	}
+	if gameClient.SetCharacter(character) == false {
+		h.gs.characterRuntime.UnregisterCharacter(character.GetID())
+		return fmt.Errorf("character %d: client disconnected during login", character.GetID())
 	}
 
 	if reply.PartyId != nil && partyReply != nil && partyReply.GetFound() && partyReply.GetParty() != nil {
@@ -238,11 +254,6 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 
 	if allianceReply != nil && allianceReply.GetFound() && allianceReply.GetAlliance() != nil {
 		h.gs.alliance.Update(allianceReply.GetAlliance())
-	}
-
-	rootContext := h.gs.GetRootContext()
-	if rootContext == nil {
-		return fmt.Errorf("rootContext not set")
 	}
 
 	rootContext.Send(targetMapPID, &g_actor.AddCharacter{
