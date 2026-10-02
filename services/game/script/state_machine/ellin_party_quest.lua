@@ -56,8 +56,10 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(START_MAP)
-		player:try_party_quest(RANKING_QUEST)
+		local function on_arrive(player)
+			player:try_party_quest(RANKING_QUEST)
+		end
+		player:map(START_MAP, { callback = on_arrive })
 	end,
 
 	on_mob_die = function(sm, mob)

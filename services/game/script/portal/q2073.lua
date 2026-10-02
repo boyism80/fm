@@ -20,7 +20,11 @@ return {
 			me:message("이미 누군가가 이 안에서 퀘스트를 진행하는 중입니다.", Msg.PinkText)
 			return
 		end
-		me:map(ROOM, 0)
-		me:warp_later(100030000, 600)
+		local function on_arrive(me)
+			me:clock(600, function(me)
+				me:map(100030000)
+			end)
+		end
+		me:map(ROOM, 0, { callback = on_arrive })
 	end
 }

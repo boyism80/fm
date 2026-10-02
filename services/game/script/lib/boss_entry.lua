@@ -123,11 +123,17 @@ function M.on_click(me, npc, boss)
 		run_on_map(map_id, SCRIPT, "reset_map")
 	end
 	run_on_map(boss.maps[1], SCRIPT, "spawn_boss", boss.x, boss.y, boss.mobs[1], boss.mobs[2])
+	local room = boss.maps[1]
+	local seconds = boss.time * 60
 	for _, ch in pairs(characters) do
 		local p = ch:party()
 		if p ~= nil and p:id() == pid then
-			ch:map(boss.maps[1], 0)
-			ch:warp_later(EXIT_MAP, boss.time * 60)
+			local function on_arrive(ch)
+				ch:clock(seconds, function(ch)
+					ch:map(EXIT_MAP)
+				end)
+			end
+			ch:map(room, 0, { callback = on_arrive })
 		end
 	end
 end

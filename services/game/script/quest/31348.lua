@@ -1,6 +1,8 @@
 -- Quest name (custom Resonance): [암벽 거인] 수상한 움직임
 
 local quest_id = 31348
+local SCRIPT = "script/quest/31348.lua"
+local ROOM = 924030000
 
 return {
 	on_start = function(me, npc)
@@ -14,31 +16,33 @@ return {
 			return
 		end
 
-		local from = me:map()
-		local from_id = from:wz():id()
-		me:map(924030000)
-		local m = me:map()
-		if m == nil then
-			return
-		end
-		local others = 0
-		for _, ch in pairs(m:characters()) do
-			if ch:id() ~= me:id() then
-				others = others + 1
-			end
-		end
-		if others > 0 then
+		local ok, count = run_on_map(ROOM, SCRIPT, "character_count")
+		if ok == false or count ~= 0 then
 			me:message("누군가 안에 퀘스트를 진행중입니다", Msg.PinkText)
-			me:map(from_id)
 			return
 		end
 
-		m:kill_all_mobs()
-		for _ = 1, 6 do
-			m:spawn_mob(9100044, 674, 60)
-		end
+		run_on_map(ROOM, SCRIPT, "prepare_room")
 		q:start(npc, true)
-		me:open_npc(2210009)
+		local function on_arrive(me)
+			me:open_npc(2210009)
+		end
+		me:map(ROOM, { callback = on_arrive })
+	end,
+
+	character_count = function(map)
+		local n = 0
+		for _, _ in pairs(map:characters()) do
+			n = n + 1
+		end
+		return n
+	end,
+
+	prepare_room = function(map)
+		map:kill_all_mobs()
+		for _ = 1, 6 do
+			map:spawn_mob(9100044, 674, 60)
+		end
 	end,
 
 	on_end = function(me, npc)

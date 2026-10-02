@@ -128,9 +128,11 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(START_MAP)
-		player:try_party_quest(RANKING_QUEST)
-		player:open_npc(GUIDE_NPC)
+		local function on_arrive(player)
+			player:try_party_quest(RANKING_QUEST)
+			player:open_npc(GUIDE_NPC)
+		end
+		player:map(START_MAP, { callback = on_arrive })
 	end,
 
 	on_changed_map = function(sm, player, map_id)

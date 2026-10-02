@@ -41,8 +41,12 @@ return {
 			if ok and count == 0 then
 				run_on_map(room, SCRIPT, "reset_map")
 				me:play_portal_sound()
-				me:map(room, 0)
-				me:warp_later(EXIT, 180)
+				local function on_arrive(me)
+					me:clock(180, function(me)
+						me:map(EXIT)
+					end)
+				end
+				me:map(room, 0, { callback = on_arrive })
 				return
 			end
 		end

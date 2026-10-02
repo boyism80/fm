@@ -40,8 +40,12 @@ return {
 		end
 		if sel == 2 then
 			me:play_portal_sound()
-			me:map(SQUARE_RIDE, 0)
-			me:warp_later(SQUARE, RIDE_SECONDS)
+			local function on_arrive(me)
+				me:clock(RIDE_SECONDS, function(me)
+					me:map(SQUARE)
+				end)
+			end
+			me:map(SQUARE_RIDE, 0, { callback = on_arrive })
 			return
 		end
 		local site = sites[sel - 2]

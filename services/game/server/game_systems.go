@@ -304,7 +304,7 @@ func (s mapSystem) RunScript(L *lua.LState, actorCtx actor.Context, mapID uint32
 	})
 }
 
-func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, targetMap *entity.Map, spawnPoint uint8) error {
+func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, targetMap *entity.Map, spawnPoint uint8, onEnter func(actor.Context)) error {
 	if targetMap == nil {
 		return fmt.Errorf("target map is nil")
 	}
@@ -321,6 +321,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 			Character: character,
 			TargetMap: targetMap,
 			Portal:    spawnPoint,
+			OnEnter:   onEnter,
 		})
 		return nil
 	}
@@ -340,6 +341,13 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		}
 		character.ResumeTimers(actorCtx.Self())
 		character.Listener.OnPartyMemberFieldsChanged(character)
+		if onEnter != nil {
+			// Deferred so a Lua caller finishes its own call before onEnter starts on the same root.
+			actorCtx.Send(targetPID, &g_actor.MapCall{Run: func(ctx actor.Context, _ *g_actor.GameLogicActor) []lua.LValue {
+				onEnter(ctx)
+				return nil
+			}})
+		}
 		return nil
 	}
 	if actorCtx != nil && actorCtx.Self() != nil && actorCtx.Self().Equal(sourcePID) {
@@ -350,6 +358,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 			Character: character,
 			TargetMap: targetMap,
 			Portal:    spawnPoint,
+			OnEnter:   onEnter,
 		})
 		return nil
 	}
@@ -357,6 +366,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		Character: character,
 		TargetMap: targetMap,
 		Portal:    spawnPoint,
+		OnEnter:   onEnter,
 	})
 	return nil
 }

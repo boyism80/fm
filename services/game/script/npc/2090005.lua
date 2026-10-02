@@ -15,8 +15,12 @@ local function fly(me, npc, fare, via, dest)
 		me:dialog(npc, "충분한 메소를 소지하시지 않은 것 같군요.")
 		return
 	end
-	me:map(via, 0)
-	me:warp_later(dest, FLIGHT_SECONDS)
+	local function on_arrive(me)
+		me:clock(FLIGHT_SECONDS, function(me)
+			me:map(dest)
+		end)
+	end
+	me:map(via, 0, { callback = on_arrive })
 end
 
 return {

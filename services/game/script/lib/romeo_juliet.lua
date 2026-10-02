@@ -210,8 +210,10 @@ local function create(cfg)
 
 		on_player_enter = function(sm, player)
 			strip_items(player)
-			player:map(start_map)
-			player:try_party_quest(RANKING_QUEST)
+			local function on_arrive(player)
+				player:try_party_quest(RANKING_QUEST)
+			end
+			player:map(start_map, { callback = on_arrive })
 		end,
 
 		on_changed_map = function(sm, player, map_id)

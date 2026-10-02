@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
@@ -2952,51 +2953,75 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					return 0
 				}
 				spawnPoint := uint8(0)
-				allowRelocate := false
-				if argc >= 3 {
-					switch v := L.Get(3).(type) {
-					case lua.LNumber:
-						spawnPoint = uint8(v)
-					case lua.LString:
-						found := false
-						for id, p := range targetMap.Wz.Portals {
-							if p.Name == string(v) {
-								spawnPoint = id
-								found = true
-								break
-							}
-						}
-						if found == false {
-							L.RaiseError("map: portal %q not found in map %d", string(v), targetMap.GetMapID())
-							return 0
-						}
-					default:
-						L.ArgError(3, "spawn point id (number) or portal name (string) expected")
+				optsIndex := 4
+				switch v := L.Get(3).(type) {
+				case *lua.LNilType:
+				case *lua.LTable:
+					optsIndex = 3
+				case lua.LNumber:
+					spawnPoint = uint8(v)
+				case lua.LString:
+					portal := targetMap.FindPortalByName(string(v))
+					if portal == nil {
+						L.RaiseError("map: portal %q not found in map %d", string(v), targetMap.GetMapID())
 						return 0
 					}
+					spawnPoint = portal.Wz.ID
+				default:
+					L.ArgError(3, "spawn point id (number), portal name (string), or options (table) expected")
+					return 0
 				}
-				if argc == 4 {
-					allowRelocate = L.CheckBool(4)
+
+				relocate := false
+				var callback *lua.LFunction
+				if opts, ok := L.Get(optsIndex).(*lua.LTable); ok {
+					relocate = lua.LVAsBool(opts.RawGetString("relocate"))
+					callback, _ = opts.RawGetString("callback").(*lua.LFunction)
+				}
+
+				currentMap := ch.GetMap()
+				if relocate && currentMap != nil && currentMap.GetMapID() == targetMap.GetMapID() {
+					err := ch.Relocate(spawnPoint)
+					if err != nil {
+						L.RaiseError("warp: %v", err)
+						return 0
+					}
+					if callback != nil {
+						L.CallByParam(lua.P{Fn: callback, NRet: 0, Protect: false}, luax.NewLuable(L, ch))
+					}
+					return 0
+				}
+
+				var onEnter func(actor.Context)
+				if callback != nil {
+					detached, err := luax.Detach(L, callback)
+					if err != nil {
+						L.RaiseError("map: callback %v", err)
+						return 0
+					}
+					onEnter = func(ctx actor.Context) {
+						m := ch.GetMap()
+						if m != targetMap {
+							return
+						}
+						root := m.EnsureLuaRoot(ctx)
+						fn, err := detached.Attach(root)
+						if err == nil {
+							err = luax.Spawn(root, fn, luax.Configuration{ActorContext: ctx, ActorPID: m.LogicActorPID()}, ch)
+						}
+						if err != nil {
+							log.Printf("map callback: %v", err)
+						}
+					}
 				}
 				cfg, _ := luax.GetConfiguration(L)
-				var err error
-				if allowRelocate {
-					currentMap := ch.GetMap()
-					if currentMap != nil && currentMap.GetMapID() == targetMap.GetMapID() {
-						err = ch.Relocate(spawnPoint)
-					} else {
-						err = ch.Warp(cfg.ActorContext, targetMap, spawnPoint)
-					}
-				} else {
-					err = ch.Warp(cfg.ActorContext, targetMap, spawnPoint)
-				}
+				err := ch.GameWorld.GetMapSystem().Warp(cfg.ActorContext, ch, targetMap, spawnPoint, onEnter)
 				if err != nil {
 					L.RaiseError("warp: %v", err)
-					return 0
 				}
 				return 0
 			default:
-				L.ArgError(2, "map() getter: 0 args; setter: map, name (string), or id (number), optional spawnPoint or portal name, optional relocateSameMap")
+				L.ArgError(2, "map() getter: 0 args; setter: map, name (string), or id (number), optional spawnPoint or portal name, optional { relocate, callback }")
 				return 0
 			}
 		},
@@ -3403,24 +3428,6 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			ch.SetBuddyCapacity(uint32(L.CheckInt(2)))
-			return 0
-		},
-		"warp_later": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			ch, ok := ud.Value.(*Character)
-			if !ok {
-				L.ArgError(1, "Character expected")
-				return 0
-			}
-			if L.GetTop() < 3 || L.GetTop() > 4 {
-				L.ArgError(2, "warp_later(map_id, seconds[, portal])")
-				return 0
-			}
-			portal := uint8(0)
-			if L.GetTop() == 4 {
-				portal = uint8(L.CheckInt(4))
-			}
-			ch.ScheduleWarp(uint32(L.CheckInt(2)), portal, time.Duration(L.CheckInt(3))*time.Second)
 			return 0
 		},
 		"sync_item": func(L *lua.LState) int {
@@ -3906,8 +3913,15 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			repeat := L.CheckBool(4)
-			fn := L.CheckFunction(5)
+			detached, err := luax.Detach(L, L.CheckFunction(5))
+			if err != nil {
+				L.RaiseError("mktimer: %v", err)
+				return 0
+			}
 			args := luaValuesToInterfaces(L, 6, argc)
+			// The timer follows the character across maps; each map runs its own copy of fn.
+			var fnRoot *lua.LState
+			var fn *lua.LFunction
 			callback := func() {
 				m := ch.GetMap()
 				if m == nil {
@@ -3916,6 +3930,15 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				root := m.GetLuaRoot()
 				if root == nil {
 					return
+				}
+				if root != fnRoot {
+					attached, err := detached.Attach(root)
+					if err != nil {
+						log.Printf("RunObjectTimer %s: %v", key, err)
+						return
+					}
+					fnRoot = root
+					fn = attached
 				}
 				fullArgs := make([]interface{}, 0, len(args)+1)
 				fullArgs = append(fullArgs, ch)
@@ -3927,6 +3950,36 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			added := ch.AddTimer(key, time.Duration(intervalMs)*time.Millisecond, repeat, callback)
 			L.Push(lua.LBool(added))
 			return 1
+		},
+		"clock": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			seconds := L.CheckInt(2)
+			fn := L.OptFunction(3, nil)
+			ch.RemoveTimer(clockTimer)
+			ch.Listener.OnClock(ch, int32(seconds))
+			if fn == nil {
+				return 0
+			}
+
+			// The client drops the clock with the field, so the timer never outlives this map or its Lua root.
+			added := ch.AddTimer(clockTimer, time.Duration(seconds)*time.Second, false, func() {
+				root := ch.GetMap().GetLuaRoot()
+				if root == nil {
+					return
+				}
+				if _, err := luax.CallFunction(root, fn, ch); err != nil {
+					log.Printf("clock: %v", err)
+				}
+			})
+			if added == false {
+				L.RaiseError("clock: timer not added")
+			}
+			return 0
 		},
 		"rmtimer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

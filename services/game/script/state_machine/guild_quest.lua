@@ -96,8 +96,10 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(WAITING_MAP, 0)
-		player:open_npc(BOARD_NPC)
+		local function on_arrive(player)
+			player:open_npc(BOARD_NPC)
+		end
+		player:map(WAITING_MAP, 0, { callback = on_arrive })
 	end,
 
 	on_player_leave = function(sm, player, reason)

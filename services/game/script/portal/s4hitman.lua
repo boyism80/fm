@@ -33,7 +33,11 @@ return {
 		end
 		me:play_portal_sound()
 		run_on_map(ROOM, SCRIPT, "reset_map")
-		me:map(ROOM, 0)
-		me:warp_later(EXIT, 1200)
+		local function on_arrive(me)
+			me:clock(1200, function(me)
+				me:map(EXIT)
+			end)
+		end
+		me:map(ROOM, 0, { callback = on_arrive })
 	end
 }

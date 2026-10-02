@@ -14,7 +14,7 @@ type MapSystem interface {
 	GetInstance(instanceKey uint32) *Map
 	CreateInstanceMap(templateID uint32, opts MapInitOpts) (*Map, error)
 	RemoveInstanceMap(instanceKey uint32) error
-	Warp(ctx actor.Context, character *Character, targetMap *Map, spawnPoint uint8) error
+	Warp(ctx actor.Context, character *Character, targetMap *Map, spawnPoint uint8, onEnter func(actor.Context)) error
 	CreateReturnDoor(ch *Character, skillID constant.SkillID)
 	RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartMapWZID uint32)
 	Reset(L *lua.LState, mapInstance *Map, actorCtx actor.Context) int

@@ -49,8 +49,10 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(stage_maps[1])
-		player:try_party_quest(ranking_quest_id)
+		local function on_arrive(player)
+			player:try_party_quest(ranking_quest_id)
+		end
+		player:map(stage_maps[1], { callback = on_arrive })
 	end,
 
 	on_player_dead = function(sm, player)

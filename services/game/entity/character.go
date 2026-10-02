@@ -543,18 +543,6 @@ func (ch *Character) WorldMessage(messageType constant.ServerMessageType, messag
 	})
 }
 
-func (ch *Character) ScheduleWarp(mapID uint32, portal uint8, delay time.Duration) {
-	ch.AddTimer("npc_warp", delay, false, func() {
-		if ch.GameWorld == nil {
-			return
-		}
-		target := ch.GameWorld.GetMapSystem().Get(mapID)
-		if target == nil {
-			return
-		}
-		_ = ch.Warp(nil, target, portal)
-	})
-}
 func (ch *Character) GetLevel() uint8 { return ch.level }
 func (ch *Character) GetExp() uint32  { return ch.exp }
 func (ch *Character) GetSpawnPoint() uint8 {
@@ -760,11 +748,13 @@ func (ch *Character) SetSkillPoint(v uint16, notify bool) {
 	}
 }
 
+const clockTimer = "clock"
+
 func (ch *Character) Warp(ctx actor.Context, targetMap *Map, spawnPoint uint8) error {
 	if ch.GameWorld == nil {
 		return fmt.Errorf("no game world")
 	}
-	return ch.GameWorld.GetMapSystem().Warp(ctx, ch, targetMap, spawnPoint)
+	return ch.GameWorld.GetMapSystem().Warp(ctx, ch, targetMap, spawnPoint, nil)
 }
 
 func (ch *Character) Relocate(spawnPoint uint8) error {

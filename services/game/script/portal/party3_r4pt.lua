@@ -8,7 +8,7 @@ local function relocate(me, portal_name)
 		return
 	end
 	me:play_portal_sound()
-	me:map(map, portal:id(), true)
+	me:map(map, portal:id(), { relocate = true })
 end
 
 return {

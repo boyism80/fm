@@ -36,7 +36,11 @@ return {
 		end
 		run_on_map(NEST, SCRIPT, "prepare_nest")
 		me:play_portal_sound()
-		me:map(NEST, 0)
-		me:warp_later(EXIT, 300)
+		local function on_arrive(me)
+			me:clock(300, function(me)
+				me:map(EXIT)
+			end)
+		end
+		me:map(NEST, 0, { callback = on_arrive })
 	end
 }

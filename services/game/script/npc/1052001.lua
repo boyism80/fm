@@ -61,8 +61,12 @@ local function enter_training(me, npc)
 	end
 	q:record(tostring(now()))
 	run_on_map(TRAINING_MAP, SCRIPT, "reset_map")
-	me:map(TRAINING_MAP, 0)
-	me:warp_later(TRAINING_RETURN, TRAINING_SECONDS)
+	local function on_arrive(me)
+		me:clock(TRAINING_SECONDS, function(me)
+			me:map(TRAINING_RETURN)
+		end)
+	end
+	me:map(TRAINING_MAP, 0, { callback = on_arrive })
 end
 
 local function first_job(me, npc)

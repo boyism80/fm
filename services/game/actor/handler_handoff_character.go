@@ -30,5 +30,6 @@ func (h *HandoffCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 		Character: msg.Character,
 		TargetMap: msg.TargetMap,
 		Portal:    msg.Portal,
+		OnEnter:   msg.OnEnter,
 	})
 }

@@ -1,7 +1,11 @@
 return {
 	on_enter = function(me)
 		me:play_portal_sound()
-		me:map(103000301, 0)
-		me:warp_later(103000100, 20)
+		local function on_arrive(me)
+			me:clock(20, function(me)
+				me:map(103000100)
+			end)
+		end
+		me:map(103000301, 0, { callback = on_arrive })
 	end
 }

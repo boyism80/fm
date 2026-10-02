@@ -198,6 +198,16 @@ func resumeFn(root *lua.LState, thread *lua.LState, fn *lua.LFunction, hook stri
 	return state, values, nil
 }
 
+func Spawn(root *lua.LState, fn *lua.LFunction, cfg Configuration, args ...interface{}) error {
+	if root == nil || fn == nil {
+		return fmt.Errorf("nil lua root/function")
+	}
+	co, _ := root.NewThread()
+	SetConfiguration(co, cfg)
+	_, _, err := resumeFn(root, co, fn, "", args...)
+	return err
+}
+
 func CallFunction(root *lua.LState, fn *lua.LFunction, args ...interface{}) (lua.LValue, error) {
 	lvArgs, err := toLValues(root, args)
 	if err != nil {
