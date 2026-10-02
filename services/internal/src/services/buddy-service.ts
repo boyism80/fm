@@ -1,5 +1,5 @@
 import type { PoolClient } from "pg";
-import { BuddyErrorCode, CharacterSessionState } from "../protobuf/generated/fminternal/internal_service";
+import { BuddyErrorCode } from "../protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "../context/internal-context";
 import type { AppConfiguration } from "../config/app-configuration";
 import { CharacterBuddyRepository } from "../repos/character-buddy-repository";
@@ -171,7 +171,7 @@ export class BuddyService {
             });
             await this.buddyRepo.invalidateCache(worldId, String(requesterCharacterId));
             const requesterView = await this.buildEntry(worldId, updated);
-            const targetChannelIndex = await this.sessionChannelIndex(worldId, targetCharacterId);
+            const targetChannelIndex = (await this.sessionRepo.findChannel(worldId, targetCharacterId)) ?? -1;
             return {
                 ok: true,
                 targetCharacterId,
@@ -200,11 +200,11 @@ export class BuddyService {
                 );
             });
             await this.buddyRepo.invalidateCache(worldId, String(requesterCharacterId));
-            const requesterChannelIndex = await this.sessionChannelIndex(worldId, requesterCharacterId);
+            const requesterChannelIndex = (await this.sessionRepo.findChannel(worldId, requesterCharacterId)) ?? -1;
             await this.publishBuddyChannelUpdate(worldId, requesterCharacterId, requesterChannelIndex, [
                 targetCharacterId,
             ]);
-            const targetChannelIndex = await this.sessionChannelIndex(worldId, targetCharacterId);
+            const targetChannelIndex = (await this.sessionRepo.findChannel(worldId, targetCharacterId)) ?? -1;
             const requesterView = await this.buildEntry(worldId, requesterBuddy);
             return {
                 ok: true,
@@ -257,7 +257,7 @@ export class BuddyService {
         await this.buddyRepo.invalidateCache(worldId, String(requesterCharacterId));
         await this.buddyRepo.invalidateCache(worldId, String(targetCharacterId));
 
-        const targetChannelIndex = await this.sessionChannelIndex(worldId, targetCharacterId);
+        const targetChannelIndex = (await this.sessionRepo.findChannel(worldId, targetCharacterId)) ?? -1;
         const requesterView = await this.buildEntry(worldId, result.requesterBuddy);
         const targetIncoming = await this.buddyRepo.getItem(worldId, String(targetCharacterId), requesterCharacterId);
         if (targetIncoming) {
@@ -346,8 +346,8 @@ export class BuddyService {
         await this.buddyRepo.invalidateCache(worldId, String(accepterCharacterId));
         await this.buddyRepo.invalidateCache(worldId, String(requesterCharacterId));
 
-        const requesterChannelIndex = await this.sessionChannelIndex(worldId, requesterCharacterId);
-        const accepterChannelIndex = await this.sessionChannelIndex(worldId, accepterCharacterId);
+        const requesterChannelIndex = (await this.sessionRepo.findChannel(worldId, requesterCharacterId)) ?? -1;
+        const accepterChannelIndex = (await this.sessionRepo.findChannel(worldId, accepterCharacterId)) ?? -1;
         await this.publishBuddyChannelUpdate(worldId, accepterCharacterId, accepterChannelIndex, [requesterCharacterId]);
 
         const accepterView = await this.buildEntry(worldId, result.accepterBuddy);
@@ -385,7 +385,7 @@ export class BuddyService {
             await this.publishBuddyChannelUpdate(worldId, characterId, -1, [buddyCharacterId]);
         }
 
-        const buddyChannelIndex = await this.sessionChannelIndex(worldId, buddyCharacterId);
+        const buddyChannelIndex = (await this.sessionRepo.findChannel(worldId, buddyCharacterId)) ?? -1;
         return {
             ok: true,
             buddyCharacterId,
@@ -411,22 +411,6 @@ export class BuddyService {
             err.code = "INVALID_CHARACTER_ID";
             throw err;
         }
-    }
-
-    private async sessionChannelIndex(worldId: number, characterId: number) {
-        const row = await this.characterRepo.get(worldId, characterId);
-        if (!row) {
-            return -1;
-        }
-        const sess = await this.sessionRepo.getCharacterSession(worldId, row.accountId, row.characterId);
-        if (sess?.state !== CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE || sess?.gameServer?.connected !== true) {
-            return -1;
-        }
-        const ch = sess.gameServer?.channelId;
-        if (ch == null || !Number.isFinite(ch) || ch < 0) {
-            return -1;
-        }
-        return ch;
     }
 
     private async publishBuddyChannelUpdate(
@@ -551,7 +535,7 @@ export class BuddyService {
         const name = buddyRow?.name ?? "";
         let channelIndex = -1;
         if (!buddy.pending) {
-            channelIndex = await this.sessionChannelIndex(worldId, buddy.buddyCharacterId);
+            channelIndex = (await this.sessionRepo.findChannel(worldId, buddy.buddyCharacterId)) ?? -1;
         }
         return {
             characterId: buddy.buddyCharacterId,

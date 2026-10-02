@@ -21,9 +21,7 @@ import { GuildRepository } from "../repos/guild-repository";
 import { GuildMemberRepository } from "../repos/guild-member-repository";
 import { GuildBulletinBoardRepository } from "../repos/guild-bulletin-board-repository";
 import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
-import { CharacterRepository } from "../repos/character-repository";
 import { SessionRepository } from "../repos/session-repository";
-import type { CharacterSession } from "../repos/session-repository";
 import type { AllianceModel } from "../repos/alliance-repository";
 import type { GuildModel } from "../repos/guild-repository";
 import type { GuildMemberModel } from "../repos/guild-member-repository";
@@ -336,7 +334,6 @@ export class GuildService {
     private readonly guildMemberRepo: GuildMemberRepository;
     private readonly guildBulletinBoardRepo: GuildBulletinBoardRepository;
     private readonly characterRealtimeStateRepo: CharacterRealtimeStateRepository;
-    private readonly characterRepo: CharacterRepository;
     private readonly sessionRepo: SessionRepository;
     private readonly rabbitmqService: RabbitMQService;
     private readonly distributedLockService: DistributedLockService;
@@ -350,7 +347,6 @@ export class GuildService {
         guildMemberRepository: GuildMemberRepository,
         guildBulletinBoardRepository: GuildBulletinBoardRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
-        characterRepository: CharacterRepository,
         sessionRepository: SessionRepository,
         rabbitmqService: RabbitMQService,
         distributedLockService: DistributedLockService
@@ -363,7 +359,6 @@ export class GuildService {
         this.guildMemberRepo = guildMemberRepository;
         this.guildBulletinBoardRepo = guildBulletinBoardRepository;
         this.characterRealtimeStateRepo = characterRealtimeStateRepository;
-        this.characterRepo = characterRepository;
         this.sessionRepo = sessionRepository;
         this.rabbitmqService = rabbitmqService;
         this.distributedLockService = distributedLockService;
@@ -892,8 +887,7 @@ export class GuildService {
             expelled: true,
         });
 
-        const targetChannelIndex = await this.sessionChannelIndex(worldId, targetCharacterId);
-        if (targetChannelIndex < 0) {
+        if ((await this.sessionRepo.findChannel(worldId, targetCharacterId)) == null) {
             // TODO: game server -> internal sendNote RPC (promise) when offline member is expelled
         }
 
@@ -1582,27 +1576,6 @@ export class GuildService {
         }
     }
 
-    private computeGuildMemberChannelIndex(sess: CharacterSession | null) {
-        const ch = sess?.gameServer?.channelId;
-        if (ch == null || !Number.isFinite(ch) || ch < 0) {
-            return -2;
-        }
-        return ch;
-    }
-
-    private async getCharacterSession(worldId: number, characterId: number): Promise<CharacterSession | null> {
-        const row = await this.characterRepo.get(worldId, characterId);
-        if (!row) {
-            return null;
-        }
-        return this.sessionRepo.getCharacterSession(worldId, row.accountId, row.characterId);
-    }
-
-    private async sessionChannelIndex(worldId: number, characterId: number) {
-        const sess = await this.getCharacterSession(worldId, characterId);
-        return this.computeGuildMemberChannelIndex(sess);
-    }
-
     private sortGuildMemberModels(memberModels: GuildMemberModel[] | Map<string, GuildMemberModel>, leaderCharacterId: number) {
         const arr = Array.isArray(memberModels) ? [...memberModels] : [...memberModels.values()];
         const leaderId = leaderCharacterId;
@@ -1634,7 +1607,7 @@ export class GuildService {
         const list = this.sortGuildMemberModels(memberModels, guild.leaderCharacterId);
         const members = await Promise.all(
             list.map(async (m): Promise<GuildMember> => {
-                const channelIndex = await this.sessionChannelIndex(worldId, m.characterId);
+                const channelIndex = (await this.sessionRepo.findChannel(worldId, m.characterId)) ?? -2;
                 const memberPb: GuildMember = {
                     worldId,
                     characterId: m.characterId,

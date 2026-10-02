@@ -7,12 +7,10 @@ import {
     PartyErrorCode,
     PartyMemberRole,
     PartyState,
-    CharacterSessionState,
 } from "../protobuf/generated/fminternal/internal_service";
 import type { PoolClient } from "pg";
 import type { PartyModel } from "../repos/party-repository";
 import type { PartyMemberModel } from "../repos/party-member-repository";
-import type { CharacterSession } from "../repos/session-repository";
 import { AppConfiguration } from "../config/app-configuration";
 import { InternalContext } from "../context/internal-context";
 import { PartyRepository } from "../repos/party-repository";
@@ -179,22 +177,6 @@ export class PartyService {
         });
     }
 
-    private computePartyUiChannelIndex(sess: CharacterSession | null) {
-        const ch = sess?.gameServer?.channelId;
-        if (ch == null || !Number.isFinite(ch) || ch < 0) {
-            return -2;
-        }
-        return ch;
-    }
-
-    private async getCharacterSession(worldId: number, characterId: number): Promise<CharacterSession | null> {
-        const row = await this.characterRepo.get(worldId, characterId);
-        if (!row) {
-            return null;
-        }
-        return this.sessionRepo.getCharacterSession(worldId, row.accountId, row.characterId);
-    }
-
     private sortPartyMemberModels(memberModels: PartyMemberModel[] | Map<string, PartyMemberModel>, leaderCharacterId: number) {
         const arr = Array.isArray(memberModels) ? [...memberModels] : [...memberModels.values()];
         const leaderId = leaderCharacterId;
@@ -221,7 +203,7 @@ export class PartyService {
         const list = this.sortPartyMemberModels(memberModels, party.leaderCharacterId);
         const members = await Promise.all(
             list.map(async (m): Promise<PartyMember> => {
-                const channelIndex = this.computePartyUiChannelIndex(await this.getCharacterSession(worldId, m.characterId));
+                const channelIndex = (await this.sessionRepo.findChannel(worldId, m.characterId)) ?? -2;
                 const member: PartyMember = {
                     worldId,
                     characterId: m.characterId,
@@ -498,13 +480,10 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.TARGET_ALREADY_IN_PARTY };
         }
 
-        const sess = await this.getCharacterSession(worldId, targetCharacterId);
-        const ch = sess?.gameServer?.channelId;
-        const online = sess?.state === CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE && sess?.gameServer?.connected === true;
-        if (!online || ch == null || !Number.isFinite(ch) || ch < 0) {
+        const chNum = await this.sessionRepo.findChannel(worldId, targetCharacterId);
+        if (chNum == null) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }
-        const chNum = ch;
 
         const inviterRow = await this.characterRepo.get(worldId, inviterCharacterId);
         const inviterName = inviterRow?.name ?? "";
@@ -548,14 +527,11 @@ export class PartyService {
             return { ok: false, code: messages.PartyErrorCode.CHARACTER_NOT_FOUND };
         }
         const inviterCharacterId = inviterEntry.character_id;
-        const inviterSession = await this.getCharacterSession(worldId, inviterCharacterId);
-        const inviterChRaw = inviterSession?.gameServer?.channelId;
-        const inviterOnline = inviterSession?.state === CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE && inviterSession?.gameServer?.connected === true;
-        if (!inviterOnline || inviterChRaw == null || !Number.isFinite(inviterChRaw) || inviterChRaw < 0) {
+        const inviterChannelID = await this.sessionRepo.findChannel(worldId, inviterCharacterId);
+        if (inviterChannelID == null) {
             await client.del(inviteKey);
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }
-        const inviterChannelID = inviterChRaw;
 
         const deniedRow = await this.characterRepo.get(worldId, deniedCharacterId);
         const deniedName = deniedRow?.name ?? "";
@@ -913,9 +889,7 @@ export class PartyService {
         this.assertCharacterId(requesterCharacterId);
         this.assertCharacterId(newLeaderCharacterId);
 
-        const newLeaderSession = await this.getCharacterSession(worldId, newLeaderCharacterId);
-        const newLeaderOnline = newLeaderSession?.state === CharacterSessionState.CHARACTER_SESSION_STATE_ONLINE && newLeaderSession?.gameServer?.connected === true;
-        if (!newLeaderOnline) {
+        if ((await this.sessionRepo.findChannel(worldId, newLeaderCharacterId)) == null) {
             return { ok: false, code: messages.PartyErrorCode.TARGET_OFFLINE };
         }
 

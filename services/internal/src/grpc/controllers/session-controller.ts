@@ -137,7 +137,7 @@ export class SessionGrpcController {
             const channelId = call.request.channelId;
             const worldCfg = this.internalConfig.game_servers?.worlds?.[String(worldId)];
             if (!worldCfg) {
-                throw Object.assign(new Error(`Unknown world_id for game attach: ${worldId}`), { code: "UNKNOWN_WORLD" });
+                throw Object.assign(new Error(`Unknown world_id for enter game: ${worldId}`), { code: "UNKNOWN_WORLD" });
             }
             const hasChannel = (worldCfg.channels ?? []).some((ch) => ch.channel_id === channelId);
             if (!hasChannel) {
@@ -163,11 +163,6 @@ export class SessionGrpcController {
                 return;
             }
 
-            const attach = await this.sessionService.attachGameSession(worldId, row.accountId, row.characterId, channelId);
-            if (!attach.ok) {
-                throw new Error(`attach game session failed: ${attach.code}`);
-            }
-
             const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack] = await Promise.all([
                 this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
                 this.skillService.getSkills(worldId, characterId),
@@ -178,7 +173,7 @@ export class SessionGrpcController {
                 this.buddyService.getAll(worldId, characterId),
             ]);
             const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
-            callback(null, {
+            const reply: EnterGameReply = {
                 found: true,
                 character: grpcMapper.map<CharacterModel, CharacterPersisted>(
                     row,
@@ -227,7 +222,14 @@ export class SessionGrpcController {
                     grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY)
                 ),
                 buddyCapacity: buddyPack.capacity >>> 0,
-            });
+            };
+
+            // Enter the game last: the game server treats an error reply as "did not enter the game".
+            const enter = await this.sessionService.enterGame(worldId, row.accountId, row.characterId, channelId);
+            if (!enter.ok) {
+                throw new Error(`enter game session failed: ${enter.code}`);
+            }
+            callback(null, reply);
         } catch (err) {
             this.grpcError(err, callback);
         }
