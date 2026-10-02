@@ -122,9 +122,9 @@ return {
 			if selected == nil then
 				return
 			end
-			me:map(TOWN_MAP)
 			pq.gain_item(me, EXIT_TOKEN, 1)
 			remove_clear_items_party(me)
+			me:map(TOWN_MAP)
 			return
 		end
 

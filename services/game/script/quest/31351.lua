@@ -29,7 +29,7 @@ return {
 			return
 		end
 
-		me:map(240092100)
 		q:force_complete(npc)
+		me:map(240092100)
 	end
 }

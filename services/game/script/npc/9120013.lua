@@ -20,8 +20,8 @@ return {
 				me:dialog(npc, "뭐냥? 쫄았냥? 그정도 담력으론 탈의실 못엿본다냥 저리가라냥!")
 				return
 			end
-			me:map(saved)
 			me:clear_saved_location("WORLDTOUR")
+			me:map(saved)
 			return
 		end
 

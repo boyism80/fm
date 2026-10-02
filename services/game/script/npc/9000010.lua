@@ -34,14 +34,15 @@ return {
 		if back == nil then
 			back = FALLBACK_MAP
 		end
-		me:map(back)
 		me:clear_saved_location("EVENT")
-
 		local skill = me:add_skill(HOLY_SYMBOL)
+		if skill ~= nil then
+			me:buff(skill, BuffFlag.HolySymbol, 50, { time = 1200 })
+		end
+		me:map(back)
 		if skill == nil then
 			return
 		end
-		me:buff(skill, BuffFlag.HolySymbol, 50, { time = 1200 })
 		me:message("20분 동안 경험치 1.5배 버프가 적용되었습니다. 게임 재접속, 혹은 홀리심볼 버프를 받게되면 해제되니 주의해주세요.", Msg.PinkText)
 		me:message("20분 동안 경험치 1.5배 버프가 적용되었습니다. \r\n\r\n게임 재접속, 혹은 홀리심볼 버프를 받게되면 해제되니 주의해주세요.", Msg.Popup)
 	end

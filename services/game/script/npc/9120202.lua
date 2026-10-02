@@ -19,8 +19,8 @@ return {
 				me:dialog(npc, "...기회 되면 보지.")
 				return
 			end
-			me:map(saved)
 			me:clear_saved_location("WORLDTOUR")
+			me:map(saved)
 			return
 		end
 

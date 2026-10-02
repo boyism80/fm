@@ -28,8 +28,8 @@ return {
 		if code ~= ExchangeResult.OK then
 			return
 		end
-		me:map(106020000)
 		q:start(npc, true)
+		me:map(106020000)
 	end,
 
 	on_end = function(me, npc)

@@ -26,8 +26,8 @@ return {
 				me:dialog(npc, "아직 이곳에 볼일이 남아 있으신가보죠? 여행을 떠나고 싶으시다면 언제든지 제게 다시 찾아와 주세요.")
 				return
 			end
-			me:map(saved)
 			me:clear_saved_location("WORLDTOUR")
+			me:map(saved)
 			return
 		end
 

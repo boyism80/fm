@@ -10,7 +10,7 @@ return {
 			me:dialog(npc, "아직 이곳에서 볼일이 남은 모양이지? #m" .. return_map .. "# 맵으로 돌아가고 싶다면 언제든지 내게 말을 걸어주게.", false, true)
 			return
 		end
-		me:map(return_map)
 		me:clear_saved_location("FLORINA")
+		me:map(return_map)
 	end
 }

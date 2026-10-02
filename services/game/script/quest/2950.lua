@@ -19,8 +19,8 @@ return {
 			return
 		end
 
-		me:map(120040300)
 		q:start(npc, true)
+		me:map(120040300)
 	end,
 
 	on_end = function(me, npc)

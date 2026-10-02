@@ -13,8 +13,8 @@ return {
 			return
 		end
 		if dragon then
-			me:map(240050000, "out00")
 			me:morph(false)
+			me:map(240050000, "out00")
 			return
 		end
 		local damage = 500

@@ -13,9 +13,9 @@ return {
 			return
 		end
 
+		q:start(npc, true)
 		me:map(240091600)
 		me:message("운이 좋게 벌떼가 나타나지 않았습니다.", 5)
-		q:start(npc, true)
 	end,
 
 	on_end = function(me, npc)

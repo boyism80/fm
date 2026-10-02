@@ -11,8 +11,8 @@ return {
 			return
 		end
 
-		me:map(103000000)
 		q:start(npc, true)
 		q:force_complete(npc)
+		me:map(103000000)
 	end
 }

@@ -25,8 +25,8 @@ return {
 				me:dialog(npc, "아직 갈 수 없는 곳입니다.")
 				return
 			end
-			me:map(back)
 			me:clear_saved_location("FISHING")
+			me:map(back)
 			return
 		end
 		local sel = me:dialog_list(npc, "언제나 코-카 콜라~♪ 새로 오픈된 #b코-크 타운#k으로 놀러가보지 않을래? 시원한 코-카 콜라와 함께해보라구!", {

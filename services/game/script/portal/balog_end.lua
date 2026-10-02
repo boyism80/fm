@@ -10,7 +10,7 @@ return {
 			me:message("기타 인벤토리 공간이 부족합니다.", Msg.PinkText)
 			return
 		end
-		me:map(105100100, 0)
 		me:play_portal_sound()
+		me:map(105100100, 0)
 	end
 }

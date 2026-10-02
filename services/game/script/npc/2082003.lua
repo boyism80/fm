@@ -14,7 +14,7 @@ return {
 			me:dialog(npc, "자네는 아직 그 곳으로 가기에는 너무 약한 모양이네. 좀 더 수련을 쌓고 다시 찾아오시게.")
 			return
 		end
-		me:map(200090500, 0)
 		me:use_item(MORPH)
+		me:map(200090500, 0)
 	end
 }
