@@ -578,10 +578,11 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	if !ok {
 		return
 	}
-	character := client.GetCharacter()
+	character := client.Logout()
 	if character == nil {
 		return
 	}
+	character.MarkLoggedOut()
 
 	p := async.NewPromise(nil, saveCharactersPromiseTimeout)
 	p.OnError(func(err error) {

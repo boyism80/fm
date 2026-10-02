@@ -19,6 +19,10 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		return
 	}
 	msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
+	if msg.Character.LoggedOut() {
+		_ = msg.TargetMap.LogoutPlayer(msg.Character.GetID())
+		return
+	}
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 	if msg.Init {

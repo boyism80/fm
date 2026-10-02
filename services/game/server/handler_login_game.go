@@ -167,7 +167,26 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
-	gameClient.SetCharacter(character)
+	if gameClient.SetCharacter(character) == false {
+		characterID := character.GetID()
+		channelID := h.gs.config.ChannelId
+		logout := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		logout = async.ThenRPC(logout, func(c context.Context) (*internal.LogoutSessionReply, error) {
+			return h.gs.internalClient.LogoutSession(c, &internal.LogoutSessionRequest{
+				WorldId:          h.gs.config.WorldId,
+				AccountId:        character.AccountID,
+				CharacterId:      &characterID,
+				ChannelId:        &channelID,
+				DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
+			})
+		}, func(*internal.LogoutSessionReply) error {
+			return nil
+		})
+		logout.OnError(func(err error) {
+			log.Printf("LoginGame: logout session of character %d after disconnect: %v", characterID, err)
+		})
+		return nil
+	}
 
 	mapID := p.GetMapId()
 	spawnPoint := uint8(p.GetSpawnPoint())

@@ -14,6 +14,7 @@ type GameClient struct {
 	core.BaseClient
 	character          *entity.Character
 	transferDisconnect bool
+	loggedOut          bool
 	mu                 sync.Mutex
 }
 
@@ -33,10 +34,22 @@ func NewGameClient(conn net.Conn, clientID int) (*GameClient, error) {
 	}, nil
 }
 
-func (c *GameClient) SetCharacter(character *entity.Character) {
+// SetCharacter fails once the client has logged out, so a login that finishes after the disconnect never enters the game.
+func (c *GameClient) SetCharacter(character *entity.Character) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if c.loggedOut {
+		return false
+	}
 	c.character = character
+	return true
+}
+
+func (c *GameClient) Logout() *entity.Character {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.loggedOut = true
+	return c.character
 }
 
 func (c *GameClient) GetCharacter() *entity.Character {

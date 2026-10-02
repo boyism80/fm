@@ -3,6 +3,7 @@ package entity
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -79,6 +80,7 @@ type Character struct {
 	stateMachine      *StateMachine
 	carnivalTeam      *CarnivalTeam
 	savedLocations    map[string]uint32
+	loggedOut         atomic.Bool
 }
 
 type LastHeal struct {
@@ -706,6 +708,15 @@ func (ch *Character) SetHidden(hidden bool) {
 
 func (ch *Character) GetID() uint32 {
 	return ch.id
+}
+
+// MarkLoggedOut runs on the disconnect goroutine; whichever actor holds the character next logs it out.
+func (ch *Character) MarkLoggedOut() {
+	ch.loggedOut.Store(true)
+}
+
+func (ch *Character) LoggedOut() bool {
+	return ch.loggedOut.Load()
 }
 
 func (ch *Character) GetPK() uint32 {

@@ -33,6 +33,10 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		log.Printf("warp character %d to map %d: %v", msg.Character.GetID(), msg.TargetMap.GetMapID(), err)
 		return
 	}
+	if msg.Character.LoggedOut() {
+		_ = msg.TargetMap.LogoutPlayer(msg.Character.GetID())
+		return
+	}
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 	if msg.OnEnter != nil {
