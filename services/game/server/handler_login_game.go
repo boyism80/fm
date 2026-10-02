@@ -104,9 +104,10 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	})
 	promise.OnError(func(err error) {
 		log.Printf("LoginGame (async): %v", err)
+		_ = ctx.Client.GetConnection().Close()
 
-		// Only an EnterGame that internal answered with an error is known not to have attached; logging out then would end someone else's session.
-		// A promise future timeout is not a gRPC status, and its RPC may still attach.
+		// Only an EnterGame that internal answered with an error is known not to have entered the game; logging out then would end someone else's session.
+		// A promise future timeout is not a gRPC status, and its RPC may still enter the game.
 		if enterReply == nil {
 			s, ok := status.FromError(err)
 			if ok && s.Code() != codes.DeadlineExceeded && s.Code() != codes.Unavailable && s.Code() != codes.Canceled {
