@@ -13,11 +13,14 @@ type DoorEndpoint struct {
 	Position types.Vector2[int16]
 }
 
-func NewDoor(ownerID uint32, skillID constant.SkillID, field, returnEp DoorEndpoint, partyID *uint32) *Door {
+type DoorKey string
+
+func NewDoor(key DoorKey, ownerID uint32, skillID constant.SkillID, field, returnEp DoorEndpoint, partyID *uint32) *Door {
 	door := &Door{
 		ObjectCore: ObjectCore{
 			Map: nil,
 		},
+		Key:     key,
 		OwnerID: ownerID,
 		SkillID: skillID,
 		Field:   field,
@@ -30,6 +33,7 @@ func NewDoor(ownerID uint32, skillID constant.SkillID, field, returnEp DoorEndpo
 
 type Door struct {
 	ObjectCore
+	Key     DoorKey
 	OwnerID uint32
 	SkillID constant.SkillID
 	Field   DoorEndpoint

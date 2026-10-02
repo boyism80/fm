@@ -679,16 +679,13 @@ func (m *Map) RemoveDoor(oid uint32, animated bool) {
 	m.removeDoorInternal(oid, animated, true)
 }
 
-func (m *Map) RemoveOwnerDoor(ownerID uint32, skillID constant.SkillID, animated bool) {
+func (m *Map) RemoveDoorByKey(key DoorKey, animated bool, notifyCounterpart bool) {
 	for _, object := range m.GetObjects(constant.ObjectTypeDoor) {
 		door, ok := object.(*Door)
-		if !ok || door == nil || door.OID == 0 {
+		if ok == false || door.OID == 0 || door.Key != key {
 			continue
 		}
-		if door.OwnerID != ownerID || door.SkillID != skillID {
-			continue
-		}
-		m.removeDoorInternal(door.OID, animated, false)
+		m.removeDoorInternal(door.OID, animated, notifyCounterpart)
 		return
 	}
 }
@@ -711,7 +708,7 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 	}
 
 	if ch := m.GetPlayer(door.OwnerID); ch != nil {
-		ch.forgetDoorRegistrationIfSame(door)
+		ch.Doors.forget(door)
 	}
 
 	var counterpart *Map
@@ -721,7 +718,6 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 	case door.Return.Map:
 		counterpart = door.Field.Map
 	}
-	ownerID := door.OwnerID
 	skillID := door.SkillID
 
 	m.listener.OnDoorRemoved(m, door, animated)
@@ -739,7 +735,7 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 	}
 
 	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpart != nil && m.GameWorld != nil {
-		m.GameWorld.GetMapSystem().RemoveReturnDoor(ownerID, uint32(skillID), counterpart)
+		m.GameWorld.GetMapSystem().DespawnDoor(counterpart, door.Key, animated, false)
 	}
 	// Last, because releasing the field's ref may close and remove this map.
 	if m == door.Field.Map {

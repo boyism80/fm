@@ -68,7 +68,7 @@ type Character struct {
 	Buffs             *BuffContainer
 	debuffs           map[constant.DebuffFlag]*Debuff
 	summons           map[constant.SkillID]*Summon
-	doors             map[constant.SkillID]*Door
+	Doors             *DoorContainer
 	HomingTargetOID   *uint32
 	partyID           *uint32
 	guildID           *uint32
@@ -292,67 +292,6 @@ func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], m
 	return mist
 }
 
-func (ch *Character) SpawnDoor(skillID constant.SkillID) {
-	if ch == nil {
-		return
-	}
-	m := ch.GetMap()
-	if m == nil || m.Wz == nil {
-		return
-	}
-	if ch.doors != nil {
-		if current, ok := ch.doors[skillID]; ok && current != nil {
-			ch.RemoveDoor(current, true)
-		}
-	}
-
-	if skillID != constant.SkillMysticDoor {
-		return
-	}
-	destMapID := uint32(m.Wz.ReturnMapId)
-	if destMapID == 0 || destMapID == uint32(m.Wz.ID) || ch.GameWorld == nil {
-		return
-	}
-	if gw := ch.GameWorld; gw != nil {
-		gw.GetMapSystem().CreateReturnDoor(ch, skillID)
-	}
-}
-
-func (ch *Character) SpawnFieldMapDoor(skillID constant.SkillID, returnEp, fieldEp DoorEndpoint) *Door {
-	if ch == nil {
-		return nil
-	}
-	m := ch.GetMap()
-	if m == nil || m.Wz == nil || m != fieldEp.Map {
-		return nil
-	}
-	ref, err := m.Reserve()
-	if err != nil {
-		return nil
-	}
-	door := NewDoor(ch.GetID(), skillID, fieldEp, returnEp, ch.partyID)
-	door.fieldRef = ref
-	if ch.doors == nil {
-		ch.doors = make(map[constant.SkillID]*Door)
-	}
-	ch.doors[skillID] = door
-	m.AddDoor(door)
-	ch.Listener.OnPartyMemberFieldsChanged(ch)
-	return door
-}
-
-func (ch *Character) forgetDoorRegistrationIfSame(door *Door) {
-	if ch == nil || door == nil {
-		return
-	}
-	if ch.doors != nil {
-		key := constant.SkillID(door.SkillID)
-		if d := ch.doors[key]; d == door {
-			delete(ch.doors, key)
-		}
-	}
-}
-
 func (ch *Character) RemoveMist(mist *Mist) {
 	if mist == nil {
 		return
@@ -373,29 +312,6 @@ func (ch *Character) RemoveSummon(target *Summon, animated bool) {
 	if ch.summons != nil {
 		delete(ch.summons, constant.SkillID(target.SkillID))
 	}
-}
-
-func (ch *Character) RemoveDoor(target *Door, animated bool) {
-	if target == nil {
-		return
-	}
-	// The owner may be in town while the door stands on the field map, which another actor owns.
-	ch.GameWorld.GetMapSystem().DespawnDoor(target.Field.Map, target, animated)
-	if ch.doors != nil {
-		delete(ch.doors, constant.SkillID(target.SkillID))
-	}
-	ch.Listener.OnPartyMemberFieldsChanged(ch)
-}
-
-func (ch *Character) RemoveSkillDoor(skillID constant.SkillID, animated bool) {
-	if ch.doors == nil {
-		return
-	}
-	door := ch.doors[skillID]
-	if door == nil {
-		return
-	}
-	ch.RemoveDoor(door, animated)
 }
 
 func (ch *Character) GetSummons() []*Summon {
@@ -425,39 +341,6 @@ func (ch *Character) ClearSummons() {
 	}
 	for _, s := range ch.GetSummons() {
 		ch.RemoveSummon(s, true)
-	}
-}
-
-func (ch *Character) GetDoors() []*Door {
-	if len(ch.doors) == 0 {
-		return nil
-	}
-	out := make([]*Door, 0, len(ch.doors))
-	for _, d := range ch.doors {
-		if d != nil {
-			out = append(out, d)
-		}
-	}
-	return out
-}
-
-func (ch *Character) GetDoor(index int) *Door {
-	if ch.doors == nil {
-		return nil
-	}
-	doors := ch.GetDoors()
-	if doors == nil || index < 0 || index >= len(doors) {
-		return nil
-	}
-	return doors[index]
-}
-
-func (ch *Character) ClearDoors() {
-	if len(ch.doors) == 0 {
-		return
-	}
-	for _, d := range ch.GetDoors() {
-		ch.RemoveDoor(d, true)
 	}
 }
 
@@ -862,14 +745,7 @@ func (ch *Character) GetPartyID() *uint32 {
 
 func (ch *Character) SetPartyID(partyID *uint32) {
 	ch.partyID = partyID
-	if ch.doors == nil {
-		return
-	}
-	for _, d := range ch.doors {
-		if d != nil {
-			d.PartyID = partyID
-		}
-	}
+	ch.Doors.SetPartyID(partyID)
 }
 
 func (ch *Character) BuddyList() *BuddyList {
@@ -1118,6 +994,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 	ch.Buffs = NewBuffContainer(ch)
 	ch.Skills = NewSkillContainer(ch)
 	ch.Quests = NewQuestContainer(ch)
+	ch.Doors = NewDoorContainer(ch)
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = data.Meso
 	ch.GuildInvites = make(map[uint32]time.Time)

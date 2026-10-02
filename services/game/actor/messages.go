@@ -16,6 +16,7 @@ import (
 type RequestSpawnDoor struct {
 	ReplyTo        *actor.PID
 	TargetMap      *entity.Map
+	Key            entity.DoorKey
 	CharacterID    uint32
 	OwnerID        uint32
 	SkillID        constant.SkillID
@@ -26,6 +27,7 @@ type RequestSpawnDoor struct {
 
 type ResponseSpawnDoor struct {
 	Ok          bool
+	Key         entity.DoorKey
 	CharacterID uint32
 	OwnerID     uint32
 	SkillID     constant.SkillID
@@ -34,17 +36,11 @@ type ResponseSpawnDoor struct {
 	PartyID     *uint32
 }
 
-type RemoveDoor struct {
-	Map     *entity.Map
-	OwnerID uint32
-	SkillID uint32
-}
-
-// DespawnDoor names the door object itself, so a late message never takes down a newer door of the same owner and skill.
 type DespawnDoor struct {
-	Map      *entity.Map
-	Door     *entity.Door
-	Animated bool
+	Map               *entity.Map
+	Key               entity.DoorKey
+	Animated          bool
+	NotifyCounterpart bool
 }
 
 type ResumeLua struct {

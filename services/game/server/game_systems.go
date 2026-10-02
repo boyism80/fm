@@ -448,36 +448,36 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 	return nil
 }
 
-func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.SkillID) {
+func (s mapSystem) CreateReturnDoor(ch *entity.Character, key entity.DoorKey, skillID gameconst.SkillID) *entity.Map {
 	if s.gs == nil || ch == nil {
-		return
+		return nil
 	}
 	m := ch.GetMap()
 	if m == nil || m.Wz == nil {
-		return
+		return nil
 	}
 	destMapID := uint32(m.Wz.ReturnMapId)
 	if destMapID == 0 || destMapID == uint32(m.Wz.ID) {
-		return
+		return nil
 	}
 	destMap := s.Get(destMapID)
 	if destMap == nil {
 		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
-		return
+		return nil
 	}
 	destPID := destMap.LogicActorPID()
 	if destPID == nil {
 		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
-		return
+		return nil
 	}
 	srcPID := m.LogicActorPID()
 	if srcPID == nil {
 		ch.Listener.OnMessage(ch, gameconst.MsgPinkText, gameconst.DoorNoTownPortalMessage)
-		return
+		return nil
 	}
 	root := s.gs.GetRootContext()
 	if root == nil {
-		return
+		return nil
 	}
 	fieldAnchorPt := types.Point[int16]{X: ch.Position.X, Y: ch.Position.Y}
 	var closestPortalID uint8
@@ -491,6 +491,7 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.Skil
 	root.Send(destPID, &g_actor.RequestSpawnDoor{
 		ReplyTo:     srcPID,
 		TargetMap:   destMap,
+		Key:         key,
 		CharacterID: ch.GetID(),
 		OwnerID:     ch.GetID(),
 		SkillID:     skillID,
@@ -502,28 +503,12 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.Skil
 		PartyOwnerSlot: slot,
 		PartyID:        ch.GetPartyID(),
 	})
-}
-
-func (s mapSystem) RemoveReturnDoor(ownerID uint32, skillID uint32, counterpart *entity.Map) {
-	if counterpart == nil {
-		return
-	}
-	pid := counterpart.LogicActorPID()
-	if pid == nil {
-		return
-	}
-	if root := s.gs.GetRootContext(); root != nil {
-		root.Send(pid, &g_actor.RemoveDoor{
-			Map:     counterpart,
-			OwnerID: ownerID,
-			SkillID: skillID,
-		})
-	}
+	return destMap
 }
 
 // DespawnDoor removes the door on its map's own actor; callers on another actor must not touch that map directly.
-func (s mapSystem) DespawnDoor(m *entity.Map, door *entity.Door, animated bool) {
-	if m == nil || door == nil {
+func (s mapSystem) DespawnDoor(m *entity.Map, key entity.DoorKey, animated bool, notifyCounterpart bool) {
+	if m == nil {
 		return
 	}
 	pid := m.LogicActorPID()
@@ -531,9 +516,10 @@ func (s mapSystem) DespawnDoor(m *entity.Map, door *entity.Door, animated bool) 
 		return
 	}
 	s.gs.GetRootContext().Send(pid, &g_actor.DespawnDoor{
-		Map:      m,
-		Door:     door,
-		Animated: animated,
+		Map:               m,
+		Key:               key,
+		Animated:          animated,
+		NotifyCounterpart: notifyCounterpart,
 	})
 }
 

@@ -29,6 +29,7 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 	if !ok {
 		ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
 			Ok:          false,
+			Key:         msg.Key,
 			CharacterID: msg.CharacterID,
 			OwnerID:     msg.OwnerID,
 			SkillID:     msg.SkillID,
@@ -49,6 +50,7 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 		Position: townPos,
 	}
 	door := entity.NewDoor(
+		msg.Key,
 		msg.OwnerID,
 		msg.SkillID,
 		msg.Field,
@@ -59,6 +61,7 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 	committed = true
 	ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
 		Ok:          true,
+		Key:         msg.Key,
 		CharacterID: msg.CharacterID,
 		OwnerID:     msg.OwnerID,
 		SkillID:     msg.SkillID,

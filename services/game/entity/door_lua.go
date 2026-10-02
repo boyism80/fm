@@ -47,7 +47,7 @@ func (d *Door) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if door.Map != nil && door.OID != 0 {
-				door.GameWorld.GetMapSystem().DespawnDoor(door.Map, door, true)
+				door.GameWorld.GetMapSystem().DespawnDoor(door.Map, door.Key, true, true)
 			}
 			return 0
 		},

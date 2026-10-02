@@ -14,12 +14,10 @@ return {
 		if effect == nil or effect.time <= 0 then
 			return
 		end
-		local wz = skill:wz()
-		me:create_door(wz:id())
+		me:create_door(skill)
 	end,
 
 	on_unbuff = function(me, skill)
-		local wz = skill:wz()
-		me:remove_door(wz:id())
+		me:remove_door(skill)
 	end
 }

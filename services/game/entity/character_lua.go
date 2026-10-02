@@ -1296,8 +1296,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			skillID := uint32(L.CheckInt(2))
-			ch.SpawnDoor(constant.SkillID(skillID))
+			buff, ok := L.CheckUserData(2).Value.(*SkillBuff)
+			if !ok {
+				L.ArgError(2, "SkillBuff expected")
+				return 0
+			}
+			ch.Doors.Spawn(buff)
 			return 0
 		},
 		"remove_summon": func(L *lua.LState) int {
@@ -1323,8 +1327,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			skillID := uint32(L.CheckInt(2))
-			ch.RemoveSkillDoor(constant.SkillID(skillID), true)
+			buff, ok := L.CheckUserData(2).Value.(*SkillBuff)
+			if !ok {
+				L.ArgError(2, "SkillBuff expected")
+				return 0
+			}
+			ch.Doors.Remove(buff, true)
 			return 0
 		},
 		"clear_summons": func(L *lua.LState) int {

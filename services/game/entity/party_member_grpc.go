@@ -1,6 +1,9 @@
 package entity
 
-import internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+import (
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
+	"github.com/boyism80/fm/services/game/constant"
+)
 
 // PartyMemberFromProto builds an entity PartyMember from protobuf.
 func PartyMemberFromProto(pb *internal.PartyMember) *PartyMember {
@@ -68,7 +71,7 @@ func PartyMemberFromCharacter(ch *Character, worldID uint32, channelID int32, ro
 		ci := channelID
 		m.ChannelIndex = &ci
 	}
-	if door := ch.GetDoor(0); door != nil {
+	if door := ch.Doors.Find(constant.SkillMysticDoor); door != nil {
 		if pb := door.ToProto(); pb != nil {
 			m.Door = PartyDoorFromProto(pb)
 		}
