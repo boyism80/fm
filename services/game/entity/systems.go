@@ -13,7 +13,9 @@ type MapSystem interface {
 	Get(mapID uint32) *Map
 	GetInstance(instanceKey uint32) *Map
 	CreateInstanceMap(templateID uint32, opts MapInitOpts) (*Map, error)
+	SlotInstance(templateID uint32, slot uint32) (*Map, error)
 	RemoveInstanceMap(instanceKey uint32) error
+	CloseInstance(m *Map)
 	Warp(ctx actor.Context, character *Character, targetMap *Map, spawnPoint uint8, onEnter func(actor.Context)) error
 	CreateReturnDoor(ch *Character, skillID constant.SkillID)
 	RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartMapWZID uint32)

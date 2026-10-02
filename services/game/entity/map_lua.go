@@ -197,31 +197,6 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, wzMap))
 			return 1
 		},
-		"create_instance": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			mapInstance, ok := ud.Value.(*Map)
-			if !ok || mapInstance == nil {
-				L.ArgError(1, "Map expected")
-				return 0
-			}
-			if mapInstance.GameWorld == nil {
-				L.Push(lua.LNil)
-				L.Push(lua.LString("map has no context"))
-				return 2
-			}
-			opts := DefaultMapInitOpts()
-			if L.GetTop() >= 2 && L.Get(2).Type() == lua.LTTable {
-				opts = ParseMapInitOptsLua(L.CheckTable(2))
-			}
-			m, err := mapInstance.GameWorld.GetMapSystem().CreateInstanceMap(mapInstance.TemplateID(), opts)
-			if err != nil {
-				L.Push(lua.LNil)
-				L.Push(lua.LString(err.Error()))
-				return 2
-			}
-			L.Push(luax.NewLuable(L, m))
-			return 1
-		},
 		"destroy": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)
@@ -229,16 +204,12 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if !mapInstance.IsInstance() {
+			if mapInstance.IsInstance() == false {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			if mapInstance.GameWorld == nil {
-				L.Push(lua.LBool(false))
-				return 1
-			}
-			err := mapInstance.GameWorld.GetMapSystem().RemoveInstanceMap(mapInstance.GetMapID())
-			L.Push(lua.LBool(err == nil))
+			mapInstance.GameWorld.GetMapSystem().CloseInstance(mapInstance)
+			L.Push(lua.LBool(true))
 			return 1
 		},
 		"is_instance": func(L *lua.LState) int {

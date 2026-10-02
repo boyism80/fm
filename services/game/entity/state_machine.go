@@ -27,6 +27,8 @@ type StateMachine struct {
 	disposed        bool
 	ActorPID        *actor.PID
 	Maps            map[uint32]*Map
+	mapRefs         map[*Map]*MapRef
+	mapRefsReleased bool
 	timeoutDeadline time.Time
 }
 
@@ -39,6 +41,7 @@ func NewStateMachine(id string, group *StateMachineGroup) *StateMachine {
 		props:     make(map[string]string),
 		kills:     make(map[uint32]int),
 		Maps:      make(map[uint32]*Map),
+		mapRefs:   make(map[*Map]*MapRef),
 	}
 }
 
@@ -320,12 +323,43 @@ func (sm *StateMachine) RecordMap(mapID uint32, m *Map) {
 	sm.Maps[mapID] = m
 }
 
+// ReleaseMaps runs after every map has detached; instances the machine owned close once their last character leaves.
+func (sm *StateMachine) ReleaseMaps() {
+	sm.mu.Lock()
+	refs := sm.mapRefs
+	sm.mapRefs = make(map[*Map]*MapRef)
+	sm.mapRefsReleased = true
+	sm.mu.Unlock()
+
+	for _, ref := range refs {
+		ref.Release()
+	}
+}
+
 func (sm *StateMachine) RegisterMap(m *Map) error {
 	if sm == nil || m == nil {
 		return fmt.Errorf("invalid map register")
 	}
 	if sm.Disposed() {
 		return fmt.Errorf("state machine disposed")
+	}
+	if m.IsInstance() {
+		ref, err := m.Reserve()
+		if err != nil {
+			return err
+		}
+		sm.mu.Lock()
+		if sm.mapRefsReleased {
+			sm.mu.Unlock()
+			ref.Release()
+			return fmt.Errorf("state machine stopped")
+		}
+		if _, exists := sm.mapRefs[m]; exists {
+			ref.Release()
+		} else {
+			sm.mapRefs[m] = ref
+		}
+		sm.mu.Unlock()
 	}
 	if m.StateMachine() == sm {
 		sm.RecordMap(m.GetMapID(), m)

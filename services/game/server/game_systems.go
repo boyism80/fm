@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -135,6 +136,7 @@ func (s mapSystem) GetInstance(instanceKey uint32) *entity.Map {
 	return s.gs.instanceMaps[instanceKey]
 }
 
+// CreateInstanceMap returns an instance that closes when its last character leaves, or after InstanceLease if nobody ever enters.
 func (s mapSystem) CreateInstanceMap(templateID uint32, opts entity.MapInitOpts) (*entity.Map, error) {
 	if s.gs == nil {
 		return nil, fmt.Errorf("map system not ready")
@@ -161,14 +163,16 @@ func (s mapSystem) CreateInstanceMap(templateID uint32, opts entity.MapInitOpts)
 	}
 
 	s.gs.mapsMutex.Lock()
-	if s.gs.instanceMaps == nil {
-		s.gs.instanceMaps = make(map[uint32]*entity.Map)
-	}
 	s.gs.instanceMaps[key] = mapInstance
 	s.gs.mapsMutex.Unlock()
+
+	if err := mapInstance.StartLease(); err != nil {
+		return nil, err
+	}
 	return mapInstance, nil
 }
 
+// RemoveInstanceMap runs once the instance has closed: no character is on it or on the way, and no owner holds it.
 func (s mapSystem) RemoveInstanceMap(instanceKey uint32) error {
 	if s.gs == nil {
 		return fmt.Errorf("map system not ready")
@@ -182,35 +186,86 @@ func (s mapSystem) RemoveInstanceMap(instanceKey uint32) error {
 	delete(s.gs.instanceMaps, instanceKey)
 	s.gs.mapsMutex.Unlock()
 
-	players := make([]*entity.Character, 0)
-	for _, obj := range m.GetAllPlayers() {
-		ch, ok := obj.(*entity.Character)
-		if ok && ch != nil {
-			players = append(players, ch)
+	s.gs.slotMutex.Lock()
+	for slot, slotMap := range s.gs.slotInstances {
+		if slotMap == m {
+			delete(s.gs.slotInstances, slot)
 		}
 	}
-	var exitMap *entity.Map
-	if m.Wz != nil {
-		exitID := uint32(m.Wz.ReturnMapId)
-		if m.Wz.HasForcedReturn() {
-			exitID = uint32(m.Wz.ForcedReturn)
-		}
-		if exitID > 0 {
-			exitMap = s.Get(exitID)
-		}
-	}
-	for _, ch := range players {
-		if exitMap != nil {
-			_ = ch.Warp(nil, exitMap, 0)
-		}
-	}
-	if sm := m.StateMachine(); sm != nil {
-		m.DetachStateMachine(sm)
-		m.RebindObjectTimers(m.HomeActorPID())
+	s.gs.slotMutex.Unlock()
+
+	if m.GetPlayerCount() > 0 {
+		return fmt.Errorf("instance map %d closed with %d players", instanceKey, m.GetPlayerCount())
 	}
 	name := fmt.Sprintf("map_inst_%d", instanceKey)
 	s.gs.actorRegistry.StopActor(name, m.HomeActorPID())
 	return nil
+}
+
+// CloseInstance refuses new arrivals and sends everyone on the map to its return map; the map is removed when the last ref goes.
+func (s mapSystem) CloseInstance(m *entity.Map) {
+	if m.IsInstance() == false {
+		return
+	}
+	m.Close()
+
+	exitMap := s.returnMap(m)
+	if exitMap == nil {
+		log.Printf("instance map %d (template %d) has no return map; players stay until they leave", m.GetMapID(), m.TemplateID())
+		return
+	}
+	pid := m.LogicActorPID()
+	if pid == nil {
+		return
+	}
+	s.gs.GetRootContext().Send(pid, &g_actor.MapCall{Run: func(ctx actor.Context, _ *g_actor.GameLogicActor) []lua.LValue {
+		for _, obj := range m.GetAllPlayers() {
+			ch, ok := obj.(*entity.Character)
+			if ok == false || ch.GetMap() != m {
+				continue
+			}
+			if err := s.Warp(ctx, ch, exitMap, 0, nil); err != nil {
+				log.Printf("instance map %d: return character %d: %v", m.GetMapID(), ch.GetID(), err)
+			}
+		}
+		return nil
+	}})
+}
+
+func (s mapSystem) returnMap(m *entity.Map) *entity.Map {
+	if m.Wz == nil {
+		return nil
+	}
+	exitID := uint32(m.Wz.ReturnMapId)
+	if m.Wz.HasForcedReturn() {
+		exitID = uint32(m.Wz.ForcedReturn)
+	}
+	if exitID == 0 || exitID == m.TemplateID() {
+		return nil
+	}
+	return s.Get(exitID)
+}
+
+type instanceSlot struct {
+	templateID uint32
+	slot       uint32
+}
+
+// SlotInstance finds or creates the instance for (template, slot) under slotMutex, so callers asking for the same slot share one instance.
+func (s mapSystem) SlotInstance(templateID uint32, slot uint32) (*entity.Map, error) {
+	key := instanceSlot{templateID: templateID, slot: slot}
+
+	s.gs.slotMutex.Lock()
+	defer s.gs.slotMutex.Unlock()
+	if found := s.gs.slotInstances[key]; found != nil && found.Closing() == false {
+		return found, nil
+	}
+	created, err := s.CreateInstanceMap(templateID, entity.DefaultMapInitOpts())
+	if err != nil {
+		return nil, err
+	}
+	s.gs.slotInstances[key] = created
+	return created, nil
 }
 
 func (s mapSystem) Reset(L *lua.LState, mapInstance *entity.Map, actorCtx actor.Context) int {
@@ -311,9 +366,15 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 	if character == nil {
 		return fmt.Errorf("character is nil")
 	}
+	// The ticket is released on every failure below, or carried to the target actor and released after AddPlayer.
+	ticket, err := targetMap.Reserve()
+	if err != nil {
+		return err
+	}
 	currentMap := character.GetMap()
 	targetPID := targetMap.LogicActorPID()
 	if targetPID == nil {
+		ticket.Release()
 		return fmt.Errorf("target map actor not found")
 	}
 	if currentMap == nil {
@@ -322,21 +383,27 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 			TargetMap: targetMap,
 			Portal:    spawnPoint,
 			OnEnter:   onEnter,
+			Ticket:    ticket,
 		})
 		return nil
 	}
 	sourcePID := currentMap.LogicActorPID()
 	if sourcePID == nil {
+		ticket.Release()
 		return fmt.Errorf("source map actor not found")
 	}
 	if sourcePID.Equal(targetPID) {
 		if actorCtx == nil || actorCtx.Self() == nil || !actorCtx.Self().Equal(sourcePID) {
+			ticket.Release()
 			return fmt.Errorf("same-owner warp must run on owner actor")
 		}
 		if err := currentMap.RemovePlayer(character.GetID()); err != nil {
+			ticket.Release()
 			return err
 		}
-		if err := targetMap.AddPlayer(actorCtx, character.GetID(), character, spawnPoint, false); err != nil {
+		err := targetMap.AddPlayer(actorCtx, character.GetID(), character, spawnPoint, false)
+		ticket.Release()
+		if err != nil {
 			return err
 		}
 		character.ResumeTimers(actorCtx.Self())
@@ -352,6 +419,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 	}
 	if actorCtx != nil && actorCtx.Self() != nil && actorCtx.Self().Equal(sourcePID) {
 		if err := currentMap.RemovePlayer(character.GetID()); err != nil {
+			ticket.Release()
 			return err
 		}
 		actorCtx.Send(targetPID, &g_actor.WarpCharacter{
@@ -359,6 +427,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 			TargetMap: targetMap,
 			Portal:    spawnPoint,
 			OnEnter:   onEnter,
+			Ticket:    ticket,
 		})
 		return nil
 	}
@@ -367,6 +436,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		TargetMap: targetMap,
 		Portal:    spawnPoint,
 		OnEnter:   onEnter,
+		Ticket:    ticket,
 	})
 	return nil
 }

@@ -19,8 +19,11 @@ func registerWzMapCreateInstance(gs *GameServer, L *lua.LState) {
 				return 0
 			}
 			opts := entity.DefaultMapInitOpts()
+			var slot lua.LValue = lua.LNil
 			if L.GetTop() >= 2 && L.Get(2).Type() == lua.LTTable {
-				opts = entity.ParseMapInitOptsLua(L.CheckTable(2))
+				tbl := L.CheckTable(2)
+				opts = entity.ParseMapInitOptsLua(tbl)
+				slot = tbl.RawGetString("slot")
 			}
 			ms := gs.GetMapSystem()
 			if ms == nil {
@@ -28,7 +31,13 @@ func registerWzMapCreateInstance(gs *GameServer, L *lua.LState) {
 				L.Push(lua.LString("map system not ready"))
 				return 2
 			}
-			m, err := ms.CreateInstanceMap(tmpl.ID, opts)
+			var m *entity.Map
+			var err error
+			if n, ok := slot.(lua.LNumber); ok {
+				m, err = ms.SlotInstance(tmpl.ID, uint32(n))
+			} else {
+				m, err = ms.CreateInstanceMap(tmpl.ID, opts)
+			}
 			if err != nil {
 				L.Push(lua.LNil)
 				L.Push(lua.LString(err.Error()))

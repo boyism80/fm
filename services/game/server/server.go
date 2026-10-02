@@ -67,6 +67,8 @@ type GameServer struct {
 	instanceMaps      map[uint32]*entity.Map
 	nextInstanceID    atomic.Uint32
 	mapsMutex         sync.RWMutex
+	slotInstances     map[instanceSlot]*entity.Map
+	slotMutex         sync.Mutex
 	packetHandler     *core.PacketHandler
 	packetHandlers    *PacketHandlerRegistry
 	actorSystem       *c_actor.ActorSystem
@@ -196,6 +198,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		resources:        resources,
 		maps:             make(map[uint32]*entity.Map),
 		instanceMaps:     make(map[uint32]*entity.Map),
+		slotInstances:    make(map[instanceSlot]*entity.Map),
 		packetHandler:    core.NewPacketHandler(),
 		actorSystem:      actorSystem,
 		actorRegistry:    actorRegistry,
@@ -208,6 +211,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	gs.guildSystem = guildSystem{gs}
 	gs.allianceSystem = allianceSystem{gs}
 	gs.dispatchSystem = dispatchSystem{gs}
+	gs.subscribeDeadLetters()
 
 	if config.InternalAddr != "" {
 		conn, err := grpc.NewClient(config.InternalAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))

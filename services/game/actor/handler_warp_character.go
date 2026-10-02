@@ -1,6 +1,8 @@
 package actor
 
 import (
+	"log"
+
 	"github.com/asynkron/protoactor-go/actor"
 )
 
@@ -14,13 +16,26 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
-	if pid := msg.TargetMap.LogicActorPID(); pid == nil || !pid.Equal(ctx.Self()) {
+	pid := msg.TargetMap.LogicActorPID()
+	if pid == nil {
+		msg.Ticket.Release()
 		return
 	}
+	// A state machine attached or detached while the message was in flight; the ticket keeps the map open until it arrives.
+	if pid.Equal(ctx.Self()) == false {
+		ctx.Send(pid, msg)
+		return
+	}
+
 	err := msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.Portal, false)
+	msg.Ticket.Release()
+	if err != nil {
+		log.Printf("warp character %d to map %d: %v", msg.Character.GetID(), msg.TargetMap.GetMapID(), err)
+		return
+	}
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
-	if err == nil && msg.OnEnter != nil {
+	if msg.OnEnter != nil {
 		msg.OnEnter(ctx)
 	}
 }

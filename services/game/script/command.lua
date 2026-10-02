@@ -687,6 +687,37 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["인스턴스이동"] = {
+		privilege = ROLE.Admin,
+		usage = "<맵이름|맵ID> <슬롯> [스폰포인트] - 슬롯별 인스턴스 맵 입장 (없으면 생성)",
+		command = function(me, args)
+			local slot = tonumber(args[2] or "")
+			if not args[1] or args[1] == "" or slot == nil then
+				me:message("사용법: /인스턴스이동 <맵이름|맵ID> <슬롯> [스폰포인트]")
+				return true
+			end
+			local spawn = tonumber(args[3] or "") or 0
+			local map_arg = args[1]
+			local map_id = tonumber(map_arg)
+			local map_info
+			if map_id ~= nil then
+				map_info = id2map(map_id)
+			else
+				map_info = name2map(map_arg)
+			end
+			if map_info == nil then
+				me:message("존재하지 않는 맵입니다: " .. tostring(map_arg))
+				return true
+			end
+			local instance, err = map_info:create_instance({ slot = slot })
+			if instance == nil then
+				me:message("인스턴스 생성 실패: " .. tostring(err))
+				return true
+			end
+			me:map(instance, spawn)
+			return true
+		end,
+	},
 	["좌표"] = {
 		privilege = ROLE.Admin,
 		usage = "- 현재 좌표·저장 스폰포인트 확인",

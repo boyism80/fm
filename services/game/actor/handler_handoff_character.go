@@ -14,16 +14,20 @@ func (h *HandoffCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 	}
 	targetPID := msg.TargetMap.LogicActorPID()
 	if targetPID == nil {
+		msg.Ticket.Release()
 		return
 	}
 	source := a.GetCharacter(msg.Character.GetID())
 	if source == nil {
+		msg.Ticket.Release()
 		return
 	}
 	if pid := source.LogicActorPID(); pid == nil || !pid.Equal(ctx.Self()) {
+		msg.Ticket.Release()
 		return
 	}
 	if err := source.RemovePlayer(msg.Character.GetID()); err != nil {
+		msg.Ticket.Release()
 		return
 	}
 	ctx.Send(targetPID, &WarpCharacter{
@@ -31,5 +35,6 @@ func (h *HandoffCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 		TargetMap: msg.TargetMap,
 		Portal:    msg.Portal,
 		OnEnter:   msg.OnEnter,
+		Ticket:    msg.Ticket,
 	})
 }

@@ -87,6 +87,7 @@ type WarpCharacter struct {
 	TargetMap *entity.Map
 	Portal    uint8
 	OnEnter   func(actor.Context)
+	Ticket    *entity.MapRef
 }
 
 type HandoffCharacter struct {
@@ -94,6 +95,7 @@ type HandoffCharacter struct {
 	TargetMap *entity.Map
 	Portal    uint8
 	OnEnter   func(actor.Context)
+	Ticket    *entity.MapRef
 }
 
 type AttachStateMachine struct {

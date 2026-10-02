@@ -89,7 +89,7 @@ func ParseMapInitOptsLua(tbl *lua.LTable) MapInitOpts {
 type Map struct {
 	Wz                  *wz.Map
 	id                  uint32
-	instance            bool
+	instance            *instanceState
 	objects             map[constant.ObjectType]map[uint32]Object
 	sections            *sectionContainer
 	controllerTable     *ControllerTable
@@ -145,7 +145,6 @@ func NewMapWithOpts(id uint32, listener MapListener, mobListener MobListener, ma
 
 	mapInstance := &Map{
 		id:              id,
-		instance:        opts.Instance,
 		objects:         make(map[constant.ObjectType]map[uint32]Object),
 		sections:        newSectionContainer(),
 		controllerTable: nil,
@@ -158,6 +157,10 @@ func NewMapWithOpts(id uint32, listener MapListener, mobListener MobListener, ma
 		availableOIDs:   make([]uint32, 0),
 		GameWorld:       gw,
 		actorPID:        actorPID,
+	}
+
+	if opts.Instance {
+		mapInstance.instance = &instanceState{}
 	}
 
 	mapInstance.controllerTable = NewControllerTable(func(mob *Mob, before *Character, after *Character, aggro bool) {
@@ -227,6 +230,10 @@ func OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro 
 }
 
 func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character, spawnPoint uint8, init bool) error {
+	if err := m.enter(); err != nil {
+		return err
+	}
+
 	if m.objects[constant.ObjectTypeCharacter] == nil {
 		m.objects[constant.ObjectTypeCharacter] = make(map[uint32]Object)
 	}
@@ -323,6 +330,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	character.Map = nil
 
 	m.listener.OnPlayerRemoved(m, character)
+	m.release()
 
 	return nil
 }
@@ -357,7 +365,7 @@ func (m *Map) TemplateID() uint32 {
 }
 
 func (m *Map) IsInstance() bool {
-	return m != nil && m.instance
+	return m != nil && m.instance != nil
 }
 
 func (m *Map) GetObject(objectType constant.ObjectType, id uint32) Object {
