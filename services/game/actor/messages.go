@@ -15,7 +15,7 @@ import (
 
 type RequestSpawnDoor struct {
 	ReplyTo        *actor.PID
-	TargetMapID    uint32
+	TargetMap      *entity.Map
 	CharacterID    uint32
 	OwnerID        uint32
 	SkillID        constant.SkillID
@@ -35,7 +35,7 @@ type ResponseSpawnDoor struct {
 }
 
 type RemoveDoor struct {
-	MapID   uint32
+	Map     *entity.Map
 	OwnerID uint32
 	SkillID uint32
 }

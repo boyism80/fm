@@ -657,14 +657,11 @@ func (m *Map) AddDoor(door *Door) {
 	if door.Map == nil {
 		door.Map = m
 	}
-	if m.Wz != nil {
-		mapID := uint32(m.Wz.ID)
-		switch mapID {
-		case door.Field.MapID:
-			door.Position = door.Field.Position
-		case door.Return.MapID:
-			door.Position = door.Return.Position
-		}
+	switch m {
+	case door.Field.Map:
+		door.Position = door.Field.Position
+	case door.Return.Map:
+		door.Position = door.Return.Position
 	}
 	door.initTimers()
 	m.objects[constant.ObjectTypeDoor][door.OID] = door
@@ -717,19 +714,19 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 		ch.forgetDoorRegistrationIfSame(door)
 	}
 
-	var counterpartMapWZID uint32
-	switch m.Wz.ID {
-	case door.Field.MapID:
-		counterpartMapWZID = door.Return.MapID
-	case door.Return.MapID:
-		counterpartMapWZID = door.Field.MapID
+	var counterpart *Map
+	switch m {
+	case door.Field.Map:
+		counterpart = door.Return.Map
+	case door.Return.Map:
+		counterpart = door.Field.Map
 	}
 	ownerID := door.OwnerID
 	skillID := door.SkillID
 
 	m.listener.OnDoorRemoved(m, door, animated)
 
-	if door.SkillID == constant.SkillMysticDoor && m.Wz != nil && uint32(m.Wz.ID) == door.Return.MapID {
+	if door.SkillID == constant.SkillMysticDoor && m == door.Return.Map {
 		m.ReleaseMysticReturnPortal(door.Return.PortalID)
 	}
 
@@ -741,10 +738,12 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 		door.OID = 0
 	}
 
-	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpartMapWZID != 0 && m.GameWorld != nil {
-		if gw := m.GameWorld; gw != nil {
-			gw.GetMapSystem().RemoveReturnDoor(ownerID, uint32(skillID), counterpartMapWZID)
-		}
+	if notifyMysticCounterpart && skillID == constant.SkillMysticDoor && counterpart != nil && m.GameWorld != nil {
+		m.GameWorld.GetMapSystem().RemoveReturnDoor(ownerID, uint32(skillID), counterpart)
+	}
+	// Last, because releasing the field's ref may close and remove this map.
+	if m == door.Field.Map {
+		door.fieldRef.Release()
 	}
 }
 

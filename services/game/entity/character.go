@@ -323,10 +323,15 @@ func (ch *Character) SpawnFieldMapDoor(skillID constant.SkillID, returnEp, field
 		return nil
 	}
 	m := ch.GetMap()
-	if m == nil || m.Wz == nil {
+	if m == nil || m.Wz == nil || m != fieldEp.Map {
+		return nil
+	}
+	ref, err := m.Reserve()
+	if err != nil {
 		return nil
 	}
 	door := NewDoor(ch.GetID(), skillID, fieldEp, returnEp, ch.partyID)
+	door.fieldRef = ref
 	if ch.doors == nil {
 		ch.doors = make(map[constant.SkillID]*Door)
 	}

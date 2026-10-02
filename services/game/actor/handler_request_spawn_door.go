@@ -17,7 +17,7 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 	}
 	var targetMap *entity.Map
 	for _, m := range a.Maps() {
-		if m != nil && m.GetMapID() == msg.TargetMapID {
+		if m == msg.TargetMap {
 			targetMap = m
 			break
 		}
@@ -43,9 +43,8 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 			targetMap.ReleaseMysticReturnPortal(portalID)
 		}
 	}()
-	wz := targetMap.Wz
 	returnEp := entity.DoorEndpoint{
-		MapID:    uint32(wz.ID),
+		Map:      targetMap,
 		PortalID: portalID,
 		Position: townPos,
 	}

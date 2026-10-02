@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type UseDoor struct {
@@ -47,27 +48,16 @@ func (h *UseDoor) Handle(ctx *core.ClientContext, req *request.UseDoor) error {
 		return nil
 	}
 
-	if door.Return.MapID == 0 || door.Field.MapID == 0 {
-		character.Listener.OnUpdateStats(character, nil, true)
-		return nil
-	}
-
-	fieldWZID := mapInstance.Wz.ID
-	var targetMapID uint32
+	var targetMap *entity.Map
 	var spawnID uint8
-	switch fieldWZID {
-	case door.Field.MapID:
-		targetMapID = door.Return.MapID
+	switch mapInstance {
+	case door.Field.Map:
+		targetMap = door.Return.Map
 		spawnID = door.Return.PortalID
-	case door.Return.MapID:
-		targetMapID = door.Field.MapID
+	case door.Return.Map:
+		targetMap = door.Field.Map
 		spawnID = door.Field.PortalID
-	default:
-		character.Listener.OnUpdateStats(character, nil, true)
-		return nil
 	}
-
-	targetMap := h.gs.GetMapSystem().Get(targetMapID)
 	if targetMap == nil || targetMap.Wz == nil {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil

@@ -32,6 +32,6 @@ func (h *ResponseSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	}
 	door := ch.SpawnFieldMapDoor(msg.SkillID, msg.Return, msg.Field)
 	if door == nil && gw != nil {
-		gw.GetMapSystem().RemoveReturnDoor(msg.OwnerID, uint32(msg.SkillID), uint32(ch.GetMap().Wz.ReturnMapId))
+		gw.GetMapSystem().RemoveReturnDoor(msg.OwnerID, uint32(msg.SkillID), msg.Return.Map)
 	}
 }

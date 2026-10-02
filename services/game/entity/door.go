@@ -8,7 +8,7 @@ import (
 )
 
 type DoorEndpoint struct {
-	MapID    uint32
+	Map      *Map
 	PortalID uint8
 	Position types.Vector2[int16]
 }
@@ -35,6 +35,8 @@ type Door struct {
 	Field   DoorEndpoint
 	Return  DoorEndpoint
 	PartyID *uint32
+	// fieldRef keeps an instance field open while its door stands, so the owner can come back from town.
+	fieldRef *MapRef
 }
 
 func (d *Door) GetObjectType() constant.ObjectType {
@@ -77,8 +79,7 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	if dm == nil || dm.Wz == nil {
 		return
 	}
-	viewerMapID := vm.Wz.ID
-	onFieldMap := viewerMapID == d.Field.MapID
+	onFieldMap := vm == d.Field.Map
 	isOwner := viewer.GetID() == d.OwnerID
 	sameParty := false
 	if d.PartyID != nil {
@@ -95,7 +96,7 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	} else {
 		portalPoint = d.Return.Position
 	}
-	if dm.Wz.ID == d.Field.MapID {
+	if dm == d.Field.Map {
 		viewer.Send(&response.SpawnDoor{
 			OwnerID:  d.OwnerID,
 			Position: portalPoint,
@@ -106,8 +107,8 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 	usePartyPortal := d.PartyID != nil && vParty != nil && (isOwner || *vParty == *d.PartyID)
 	if usePartyPortal {
 		viewer.Send(&response.PartyPortal{
-			TownMapID:   d.Return.MapID,
-			TargetMapID: d.Field.MapID,
+			TownMapID:   d.Return.Map.TemplateID(),
+			TargetMapID: d.Field.Map.TemplateID(),
 			SkillID:     uint32(d.SkillID),
 			Position:    portalPoint,
 			Animated:    false,
@@ -115,8 +116,8 @@ func (d *Door) SendSpawnSyncToViewer(viewer *Character) {
 		return
 	}
 	viewer.Send(&response.SpawnPortal{
-		DestMapID:   d.Return.MapID,
-		SourceMapID: d.Field.MapID,
+		DestMapID:   d.Return.Map.TemplateID(),
+		SourceMapID: d.Field.Map.TemplateID(),
 		Position:    &portalPoint,
 	}, types.SEND_POLICY_ENCRYPT)
 }
@@ -164,22 +165,22 @@ func (d *Door) SendOwnerPortalResync(viewer *Character) {
 		return
 	}
 	var portalPoint types.Vector2[int16]
-	if vm.Wz.ID == d.Field.MapID {
+	if vm == d.Field.Map {
 		portalPoint = d.Field.Position
 	} else {
 		portalPoint = d.Return.Position
 	}
 	_ = viewer.Send(&response.SpawnPortal{
-		DestMapID:   d.Return.MapID,
-		SourceMapID: d.Field.MapID,
+		DestMapID:   d.Return.Map.TemplateID(),
+		SourceMapID: d.Field.Map.TemplateID(),
 		Position:    &portalPoint,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (d *Door) ToProto() *internal.PartyDoor {
 	return &internal.PartyDoor{
-		Town:   d.Return.MapID,
-		Target: d.Field.MapID,
+		Town:   d.Return.Map.TemplateID(),
+		Target: d.Field.Map.TemplateID(),
 		X:      int32(d.Field.Position.X),
 		Y:      int32(d.Field.Position.Y),
 	}

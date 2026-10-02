@@ -202,23 +202,30 @@ func (s mapSystem) RemoveInstanceMap(instanceKey uint32) error {
 	return nil
 }
 
-// CloseInstance refuses new arrivals and sends everyone on the map to its return map; the map is removed when the last ref goes.
+// CloseInstance refuses new arrivals, takes down its doors and sends everyone on the map to its return map;
+// the map is removed when the last ref goes.
 func (s mapSystem) CloseInstance(m *entity.Map) {
 	if m.IsInstance() == false {
 		return
 	}
 	m.Close()
 
-	exitMap := s.returnMap(m)
-	if exitMap == nil {
-		log.Printf("instance map %d (template %d) has no return map; players stay until they leave", m.GetMapID(), m.TemplateID())
-		return
-	}
 	pid := m.LogicActorPID()
 	if pid == nil {
 		return
 	}
+	exitMap := s.returnMap(m)
 	s.gs.GetRootContext().Send(pid, &g_actor.MapCall{Run: func(ctx actor.Context, _ *g_actor.GameLogicActor) []lua.LValue {
+		for _, obj := range m.GetObjects(gameconst.ObjectTypeDoor) {
+			if door, ok := obj.(*entity.Door); ok {
+				m.RemoveDoor(door.OID, true)
+			}
+		}
+
+		if exitMap == nil {
+			log.Printf("instance map %d (template %d) has no return map; players stay until they leave", m.GetMapID(), m.TemplateID())
+			return nil
+		}
 		for _, obj := range m.GetAllPlayers() {
 			ch, ok := obj.(*entity.Character)
 			if ok == false || ch.GetMap() != m {
@@ -483,12 +490,12 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.Skil
 	slot = s.gs.party.PartyMemberIndex(ch.GetID(), ch.GetPartyID())
 	root.Send(destPID, &g_actor.RequestSpawnDoor{
 		ReplyTo:     srcPID,
-		TargetMapID: destMap.GetMapID(),
+		TargetMap:   destMap,
 		CharacterID: ch.GetID(),
 		OwnerID:     ch.GetID(),
 		SkillID:     skillID,
 		Field: entity.DoorEndpoint{
-			MapID:    uint32(m.Wz.ID),
+			Map:      m,
 			PortalID: closestPortalID,
 			Position: ch.Position,
 		},
@@ -497,18 +504,17 @@ func (s mapSystem) CreateReturnDoor(ch *entity.Character, skillID gameconst.Skil
 	})
 }
 
-func (s mapSystem) RemoveReturnDoor(ownerID uint32, skillID uint32, counterpartMapWZID uint32) {
-	mapInstance := s.Get(counterpartMapWZID)
-	if mapInstance == nil {
+func (s mapSystem) RemoveReturnDoor(ownerID uint32, skillID uint32, counterpart *entity.Map) {
+	if counterpart == nil {
 		return
 	}
-	pid := mapInstance.LogicActorPID()
+	pid := counterpart.LogicActorPID()
 	if pid == nil {
 		return
 	}
 	if root := s.gs.GetRootContext(); root != nil {
 		root.Send(pid, &g_actor.RemoveDoor{
-			MapID:   counterpartMapWZID,
+			Map:     counterpart,
 			OwnerID: ownerID,
 			SkillID: skillID,
 		})
