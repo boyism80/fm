@@ -2954,7 +2954,26 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				spawnPoint := uint8(0)
 				allowRelocate := false
 				if argc >= 3 {
-					spawnPoint = uint8(L.CheckInt(3))
+					switch v := L.Get(3).(type) {
+					case lua.LNumber:
+						spawnPoint = uint8(v)
+					case lua.LString:
+						found := false
+						for id, p := range targetMap.Wz.Portals {
+							if p.Name == string(v) {
+								spawnPoint = id
+								found = true
+								break
+							}
+						}
+						if found == false {
+							L.RaiseError("map: portal %q not found in map %d", string(v), targetMap.GetMapID())
+							return 0
+						}
+					default:
+						L.ArgError(3, "spawn point id (number) or portal name (string) expected")
+						return 0
+					}
 				}
 				if argc == 4 {
 					allowRelocate = L.CheckBool(4)
@@ -2977,7 +2996,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				return 0
 			default:
-				L.ArgError(2, "map() getter: 0 args; setter: map, name (string), or id (number), optional spawnPoint, optional relocateSameMap")
+				L.ArgError(2, "map() getter: 0 args; setter: map, name (string), or id (number), optional spawnPoint or portal name, optional relocateSameMap")
 				return 0
 			}
 		},

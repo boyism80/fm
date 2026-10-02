@@ -1,6 +1,5 @@
 -- NPC name (String.wz/Npc.img.xml): 개찰구
 
-local SCRIPT = "script/npc/1052007.lua"
 local SUBWAY = 103000101
 local SQUARE_RIDE = 103000300
 local SQUARE = 103000310
@@ -13,14 +12,6 @@ local SITES = {
 }
 
 return {
-	portal_id = function(map, name)
-		local portal = map:portal(name)
-		if portal == nil then
-			return nil
-		end
-		return portal:id()
-	end,
-
 	on_click = function(me, npc)
 		local level = me:level()
 		if level < 20 then
@@ -57,14 +48,7 @@ return {
 		if site == nil then
 			return
 		end
-		local portal = nil
-		if id2map(site.map) ~= nil then
-			local ok, id = run_on_map(site.map, SCRIPT, "portal_id", "sp")
-			if ok then
-				portal = id
-			end
-		end
-		if portal == nil then
+		if id2map(site.map) == nil then
 			me:dialog(npc, "지금은 그 구간으로 입장하실 수 없습니다.")
 			return
 		end
@@ -72,6 +56,6 @@ return {
 			me:dialog(npc, "입장권이 없으신 것 같습니다. #b지하철 공익요원#k 에게서 입장권을 구매해주세요.")
 			return
 		end
-		me:map(site.map, portal)
+		me:map(site.map, "sp")
 	end
 }
