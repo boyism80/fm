@@ -388,7 +388,7 @@ export class GuildGrpcController {
         }
     }
 
-    @Method("gainGuildGP")
+    @Method("gainGuildGp")
     async gainGuildGP(call: GrpcCall<GainGuildGPRequest>, callback: GrpcCallback<GainGuildGPReply>) {
         try {
             const req = call.request;
