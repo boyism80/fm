@@ -98,6 +98,7 @@ type GameServer struct {
 	maps              map[uint32]*entity.Map
 	instanceMaps      map[uint32]*entity.Map
 	nextInstanceID    atomic.Uint32
+	nextMachineID     atomic.Uint32
 	mapsMutex         sync.RWMutex
 	slotInstances     map[instanceSlot]*entity.Map
 	slotMutex         sync.Mutex
@@ -143,7 +144,7 @@ func (gs *GameServer) StartStateMachineActor(sm *entity.StateMachine) *actor.PID
 	if gs == nil || sm == nil || sm.Group == nil {
 		return nil
 	}
-	name := fmt.Sprintf("state_machine_%s_%s", sm.Group.Name, sm.ID)
+	name := fmt.Sprintf("state_machine_%s_%s_%d", sm.Group.Name, sm.ID, gs.nextMachineID.Add(1))
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return g_actor.NewStateMachineActor(sm, gs)
 	})
@@ -169,11 +170,10 @@ func (gs *GameServer) ResumeLua(pid *actor.PID, root *lua.LState, thread *lua.LS
 }
 
 func (gs *GameServer) StopStateMachineActor(sm *entity.StateMachine) {
-	if gs == nil || sm == nil || sm.Group == nil {
+	if gs == nil || sm == nil || sm.ActorPID == nil {
 		return
 	}
-	name := fmt.Sprintf("state_machine_%s_%s", sm.Group.Name, sm.ID)
-	gs.actorRegistry.StopActor(name, sm.ActorPID)
+	gs.actorRegistry.PoisonActor(sm.ActorPID.Id, sm.ActorPID)
 }
 
 func (gs *GameServer) GetPacketHandler() *core.PacketHandler {

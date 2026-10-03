@@ -6,6 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/asynkron/protoactor-go/scheduler"
+	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/robfig/cron/v3"
@@ -25,6 +26,7 @@ type smLifecycle struct {
 	attachPending int           // outstanding AttachStateMachine acks
 	detachPending int           // outstanding DetachStateMachine acks
 	detaching     bool          // beginDetach has been called
+	stopped       bool          // finalizeStop has run; only packets are still forwarded
 }
 
 type StateMachineActor struct {
@@ -53,6 +55,14 @@ func NewStateMachineActor(sm *entity.StateMachine, gameWorld entity.GameWorld) *
 }
 
 func (a *StateMachineActor) Receive(ctx actor.Context) {
+	if a.lc.stopped {
+		switch ctx.Message().(type) {
+		case *c_actor.HandlePacket, *actor.Stopping, *actor.Stopped:
+		default:
+			return
+		}
+	}
+
 	switch msg := ctx.Message().(type) {
 	case *entity.BootstrapStateMachine:
 		a.beginCreate(ctx)
@@ -451,6 +461,7 @@ func (a *StateMachineActor) finalizeStop() {
 	if sm == nil {
 		return
 	}
+	a.lc.stopped = true
 	sm.ClearMaps()
 	sm.ReleaseMaps()
 	if sm.Group != nil {
