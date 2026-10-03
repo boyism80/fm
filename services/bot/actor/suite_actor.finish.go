@@ -7,7 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 )
 
-func (a *SuiteActor) finish() {
+func (a *SuiteActor) cleanup() {
 	if a.finished {
 		return
 	}
@@ -30,12 +30,12 @@ func (a *SuiteActor) finish() {
 		}
 		for _, text := range commands {
 			if err := a.Command(b, text); err != nil {
-				log.Printf("[%s] cleanup %s %s: %v", a.suite.Name, b.Name, text, err)
+				log.Printf("[%s] cleanup %s %s: %v", a.name, b.Name, text, err)
 			}
 		}
 	}
 	time.AfterFunc(500*time.Millisecond, func() {
-		a.root.Send(a.self, &CleanupDone{})
+		a.actors.Send(a.self, &CleanupDone{})
 	})
 }
 
@@ -44,12 +44,13 @@ func (a *SuiteActor) close(ctx actor.Context) {
 		b.Close()
 	}
 	elapsed := time.Since(a.started)
-	log.Printf("[%s] seat %d finished in %s (%d failures)", a.suite.Name, a.seat, elapsed.Round(time.Millisecond), len(a.failures))
+	log.Printf("[%s] seat %d finished in %s (%d failures)", a.name, a.seat, elapsed.Round(time.Millisecond), len(a.failures))
 	ctx.Send(ctx.Parent(), &SuiteFinished{
-		Name:     a.suite.Name,
+		Name:     a.name,
 		Seat:     a.seat,
 		Serial:   a.suite.Serial,
 		Passed:   len(a.failures) == 0,
+		Skipped:  a.skipped,
 		Infra:    a.infra,
 		Failures: a.failures,
 		Elapsed:  elapsed,

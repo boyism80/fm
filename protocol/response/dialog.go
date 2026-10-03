@@ -140,19 +140,60 @@ func (p *DialogStyle) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *Dialog) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.NPC = reader.ReadU32()
+	p.Type = constant.DialogType(reader.ReadU8())
+	p.Text = reader.ReadStr16()
+	p.Prev = reader.ReadBool()
+	p.Next = reader.ReadBool()
 }
 
 func (p *DialogYesNo) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.NPC = reader.ReadU32()
+	reader.ReadU8()
+	p.Text = reader.ReadStr16()
+	p.Prev = reader.ReadBool()
+	p.Next = reader.ReadBool()
 }
 
 func (p *DialogList) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.NPC = reader.ReadU32()
+	reader.ReadU8()
+	parts := strings.Split(reader.ReadStr16(), "\r\n#b#L")
+	p.Text = parts[0]
+	p.Selections = nil
+	for _, part := range parts[1:] {
+		_, selection, _ := strings.Cut(part, "# ")
+		p.Selections = append(p.Selections, strings.TrimSuffix(selection, "#l"))
+	}
 }
 
 func (p *DialogAccept) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.NPC = reader.ReadU32()
+	p.EnableEscape = constant.DialogType(reader.ReadU8()) == constant.DialogTypeAcceptEscape
+	p.Text = reader.ReadStr16()
 }
 
 func (p *DialogInput) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.NPC = reader.ReadU32()
+	reader.ReadU8()
+	p.Text = reader.ReadStr16()
+	reader.ReadU32()
+	reader.ReadU32()
 }
 
 func (p *DialogStyle) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.NPC = reader.ReadU32()
+	reader.ReadU8()
+	p.Text = reader.ReadStr16()
+	n := int(reader.ReadU8())
+	p.Styles = make([]uint32, 0, n)
+	for i := 0; i < n; i++ {
+		p.Styles = append(p.Styles, reader.ReadU32())
+	}
 }

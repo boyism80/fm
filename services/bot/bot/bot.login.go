@@ -75,24 +75,32 @@ func (b *Bot) login() error {
 	if b.cfg.WorldID > 255 || b.cfg.Channel > 255 {
 		return fmt.Errorf("world_id and channel must fit in one byte")
 	}
-	if err := b.conn.Send(&request.CharacterList{Server: uint8(b.cfg.WorldID), Channel: uint8(b.cfg.Channel)}); err != nil {
-		return err
-	}
-	pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
-		switch pkt.(type) {
-		case *response.CharacterList, *response.LoginFailed:
-			return true
-		default:
-			return false
+	var list *response.CharacterList
+	for attempt := 0; attempt < 20; attempt++ {
+		if err := b.conn.Send(&request.CharacterList{Server: uint8(b.cfg.WorldID), Channel: uint8(b.cfg.Channel)}); err != nil {
+			return err
 		}
-	})
-	if err != nil {
-		return err
+		pkt, err := b.readUntil(b.wait(), loginOpcodes, func(pkt any) bool {
+			switch pkt.(type) {
+			case *response.CharacterList, *response.LoginFailed:
+				return true
+			default:
+				return false
+			}
+		})
+		if err != nil {
+			return err
+		}
+		if failed, ok := pkt.(*response.LoginFailed); ok {
+			if failed.Reason == response.LoginFailedReasonTooManyConnections && attempt < 19 {
+				time.Sleep(time.Second)
+				continue
+			}
+			return fmt.Errorf("character list failed reason %d", failed.Reason)
+		}
+		list = pkt.(*response.CharacterList)
+		break
 	}
-	if failed, ok := pkt.(*response.LoginFailed); ok {
-		return fmt.Errorf("character list failed reason %d", failed.Reason)
-	}
-	list := pkt.(*response.CharacterList)
 	if len(list.Characters) == 0 {
 		return b.createCharacter()
 	}

@@ -48,9 +48,10 @@ wz_path: "resources/wz"
 		log.Println("  - channel and world_id are 0-based. 0 is a valid channel.")
 		log.Println("  - seats is the parallel suite limit and the instance slot count.")
 		log.Println("  - -seats overrides seats when the flag is >= 0.")
-		log.Println("\nExample usage:")
-		log.Println("  go run ./services/bot -mode integration -config config/bot.yaml")
-		log.Println("  go run ./services/bot -mode integration -filter npc_ -seats 3 -junit out/bot.xml")
+		log.Println("  - run from services/bot: suites load script/integration relative to cwd.")
+		log.Println("\nExample usage (cwd services/bot):")
+		log.Println("  go run . -mode integration -config config/bot.yaml")
+		log.Println("  go run . -mode integration -filter npc_ -seats 3 -junit out/bot.xml")
 		return
 	}
 
@@ -96,17 +97,6 @@ func runIntegration(cfg *config.Bot, filter, junit string) int {
 		cfg.TimeoutMs,
 	)
 
-	var suites []*botactor.Suite
-	for _, s := range botactor.Suites {
-		if strings.Contains(s.Name, filter) {
-			suites = append(suites, s)
-		}
-	}
-	if len(suites) == 0 {
-		log.Printf("no suite matches filter %q", filter)
-		return 2
-	}
-
 	log.Printf("loading wz %s", cfg.WzPath)
 	resources := wz.NewResources(cfg.WzPath)
 	if resources == nil {
@@ -117,7 +107,7 @@ func runIntegration(cfg *config.Bot, filter, junit string) int {
 	done := make(chan int, 1)
 	system := coreactor.NewActorSystem()
 	system.GetRoot().Spawn(actor.PropsFromProducer(func() actor.Actor {
-		return botactor.NewRunnerActor(cfg, resources, suites, junit, done)
+		return botactor.NewRunnerActor(cfg, resources, filter, junit, done)
 	}))
 	return <-done
 }

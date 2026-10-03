@@ -11,6 +11,7 @@ import (
 	"github.com/boyism80/fm/services/bot/bot"
 	"github.com/boyism80/fm/services/bot/conn"
 	"github.com/boyism80/fm/stream"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type outbound interface {
@@ -19,22 +20,23 @@ type outbound interface {
 }
 
 type waiter struct {
-	id    uint64
-	bot   *bot.Bot
-	gen   int
-	match func(any) bool
-	done  func(pkt any, ok bool)
-	timer *time.Timer
+	id     uint64
+	thread *lua.LState
+	bot    *bot.Bot
+	gen    int
+	match  func(any) bool
+	done   func(pkt any, ok bool)
+	timer  *time.Timer
 }
 
-func (a *SuiteActor) Request(b *bot.Bot, pkt outbound, match func(any) bool, done func(pkt any, ok bool)) {
+func (a *SuiteActor) Request(thread *lua.LState, b *bot.Bot, pkt outbound, timeout time.Duration, match func(any) bool, done func(pkt any, ok bool)) {
 	if a.finished {
 		return
 	}
 	a.nextWait++
-	w := &waiter{id: a.nextWait, bot: b, gen: b.Gen, match: match, done: done}
-	w.timer = time.AfterFunc(time.Duration(a.cfg.TimeoutMs)*time.Millisecond, func() {
-		a.root.Send(a.self, &WaitTimeout{Wait: w.id})
+	w := &waiter{id: a.nextWait, thread: thread, bot: b, gen: b.Gen, match: match, done: done}
+	w.timer = time.AfterFunc(timeout, func() {
+		a.actors.Send(a.self, &WaitTimeout{Wait: w.id})
 	})
 	a.waiters = append(a.waiters, w)
 
@@ -42,47 +44,28 @@ func (a *SuiteActor) Request(b *bot.Bot, pkt outbound, match func(any) bool, don
 		return
 	}
 	if err := b.Send(pkt); err != nil {
-		a.removeWaiter(w)
 		a.Fail(fmt.Sprintf("%s send: %v", b.Name, err))
-		done(nil, false)
+		w.timer.Stop()
+		a.actors.Send(a.self, &WaitTimeout{Wait: w.id})
 	}
 }
 
-func (a *SuiteActor) Sleep(d time.Duration, done func()) {
+func (a *SuiteActor) Sleep(thread *lua.LState, d time.Duration) {
 	if a.finished {
 		return
 	}
+	a.sleeping[thread] = true
 	time.AfterFunc(d, func() {
-		a.root.Send(a.self, &SleepDone{Done: done})
+		a.actors.Send(a.self, &SleepDone{Thread: thread})
 	})
-}
-
-func (a *SuiteActor) Hook(name string, fn func(b *bot.Bot, pkt any)) {
-	a.hooks[name] = fn
-}
-
-func (a *SuiteActor) Unhook(name string) {
-	delete(a.hooks, name)
 }
 
 func (a *SuiteActor) Command(b *bot.Bot, text string) error {
 	return b.Send(&request.NormalChat{Message: text})
 }
 
-func (a *SuiteActor) InstanceMove(b *bot.Bot, mapID uint32, done func(bool)) {
-	a.warpByCommand(b, fmt.Sprintf("/인스턴스이동 %d %d", mapID, a.seat), mapID, done)
-}
-
-func (a *SuiteActor) MapMove(b *bot.Bot, mapID uint32, done func(bool)) {
-	if b.Map == mapID {
-		done(true)
-		return
-	}
-	a.warpByCommand(b, fmt.Sprintf("/맵이동 %d", mapID), mapID, done)
-}
-
-func (a *SuiteActor) warpByCommand(b *bot.Bot, text string, mapID uint32, done func(bool)) {
-	a.Request(b, &request.NormalChat{Message: text}, func(pkt any) bool {
+func (a *SuiteActor) warpByCommand(thread *lua.LState, b *bot.Bot, text string, mapID uint32, done func(bool)) {
+	a.Request(thread, b, &request.NormalChat{Message: text}, a.timeout(), func(pkt any) bool {
 		warp, ok := pkt.(*response.Warp)
 		return ok && warp.Character != nil && warp.Character.Map == mapID
 	}, func(_ any, ok bool) {
@@ -92,6 +75,10 @@ func (a *SuiteActor) warpByCommand(b *bot.Bot, text string, mapID uint32, done f
 		}
 		done(true)
 	})
+}
+
+func (a *SuiteActor) timeout() time.Duration {
+	return time.Duration(a.cfg.TimeoutMs) * time.Millisecond
 }
 
 func (a *SuiteActor) packetReceived(msg *PacketReceived) {
@@ -132,7 +119,7 @@ func (a *SuiteActor) disconnected(msg *Disconnected) {
 	if a.finished || msg.Gen != b.Gen {
 		return
 	}
-	log.Printf("[%s] %s disconnected: %v", a.suite.Name, b.Name, msg.Err)
+	log.Printf("[%s] %s disconnected: %v", a.name, b.Name, msg.Err)
 	a.Fail(fmt.Sprintf("%s 연결 끊김: %v", b.Name, msg.Err))
 	b.Close()
 	a.endWaiters(b)

@@ -24,6 +24,16 @@ func (p *SpawnNpc) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (s *SpawnNpc) Deserialize(reader *stream.StreamReader) {
+	s.NPC = &dto.Npc{}
+	s.NPC.OID = reader.ReadU32()
+	s.NPC.NpcId = reader.ReadU32()
+	s.NPC.Position.X = reader.Read16()
+	s.NPC.Cy = reader.Read16()
+	reader.ReadU8()
+	s.NPC.Foothold = reader.Read16()
+	s.NPC.Rx0 = reader.Read16()
+	s.NPC.Rx1 = reader.Read16()
+	s.Visible = reader.ReadBool()
 }
 
 func (p *SpawnNpc) Opcode() uint16 {

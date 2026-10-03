@@ -1,6 +1,10 @@
 package actor
 
-import "time"
+import (
+	"time"
+
+	lua "github.com/yuin/gopher-lua"
+)
 
 type BotEntered struct {
 	Bot int
@@ -25,7 +29,7 @@ type WaitTimeout struct {
 }
 
 type SleepDone struct {
-	Done func()
+	Thread *lua.LState
 }
 
 type SuiteDeadline struct{}
@@ -37,6 +41,7 @@ type SuiteFinished struct {
 	Seat     int
 	Serial   bool
 	Passed   bool
+	Skipped  bool
 	Infra    bool
 	Failures []string
 	Elapsed  time.Duration

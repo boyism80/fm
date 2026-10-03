@@ -4,8 +4,32 @@ import (
 	"fmt"
 
 	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 )
+
+var Responses = []any{
+	&response.LoginFailed{},
+	&response.Authenticate{},
+	&response.ServerList{},
+	&response.EndOfServerList{},
+	&response.CharacterList{},
+	&response.Transfer{},
+	&response.CheckName{},
+	&response.CreateCharacter{},
+	&response.Login{},
+	&response.Warp{},
+	&response.KeyMap{},
+	&response.Notice{},
+	&response.SpawnNpc{},
+	&response.RemoveNpc{},
+	&response.Dialog{},
+	&response.DialogYesNo{},
+	&response.DialogInput{},
+	&response.DialogList{},
+	&response.DialogStyle{},
+	&response.DialogAccept{},
+}
 
 func Decode(opcode uint16, body []byte) (any, error) {
 	reader := stream.NewStreamReader(&body, stream.LittleEndian)
@@ -64,6 +88,37 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		return pkt, nil
 	case (&response.Notice{}).Opcode():
 		pkt := &response.Notice{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.SpawnNpc{}).Opcode():
+		pkt := &response.SpawnNpc{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.RemoveNpc{}).Opcode():
+		pkt := &response.RemoveNpc{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.Dialog{}).Opcode():
+		if len(body) < 6 {
+			return nil, fmt.Errorf("short dialog")
+		}
+		var pkt interface {
+			Deserialize(reader *stream.StreamReader)
+		}
+		switch constant.DialogType(body[5]) {
+		case constant.DialogTypeYesNo:
+			pkt = &response.DialogYesNo{}
+		case constant.DialogTypeInput:
+			pkt = &response.DialogInput{}
+		case constant.DialogTypeList:
+			pkt = &response.DialogList{}
+		case constant.DialogTypeStyle:
+			pkt = &response.DialogStyle{}
+		case constant.DialogTypeAccept, constant.DialogTypeAcceptEscape:
+			pkt = &response.DialogAccept{}
+		default:
+			pkt = &response.Dialog{}
+		}
 		pkt.Deserialize(reader)
 		return pkt, nil
 	default:

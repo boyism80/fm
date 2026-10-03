@@ -17,6 +17,19 @@ type Dialog struct {
 func (*Dialog) Opcode() byte { return 0x2B }
 
 func (p *Dialog) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(p.DialogType))
+	writer.WriteBoolean(p.Next)
+
+	switch p.DialogType {
+	case constant.DialogTypeList, constant.DialogTypeStyle:
+		if p.Next {
+			writer.WriteU32(p.Selected)
+		}
+	case constant.DialogTypeInput:
+		if p.Next {
+			writer.WriteStr16(p.Text)
+		}
+	}
 	return nil
 }
 

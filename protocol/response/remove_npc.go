@@ -18,4 +18,5 @@ func (p *RemoveNpc) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (s *RemoveNpc) Deserialize(reader *stream.StreamReader) {
+	s.OID = reader.ReadU32()
 }
