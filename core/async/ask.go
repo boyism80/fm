@@ -8,7 +8,7 @@ import (
 )
 
 func Ask(ctx actor.Context, target *actor.PID, timeout time.Duration, send func(replyTo *actor.PID)) *Promise {
-	p := NewDeferred()
+	p := NewDeferred(ctx)
 	if ctx == nil || target == nil || send == nil {
 		p.SetError(fmt.Errorf("async.Ask: invalid args"))
 		return p
@@ -20,7 +20,6 @@ func Ask(ctx actor.Context, target *actor.PID, timeout time.Duration, send func(
 	if timeout <= 0 {
 		timeout = 10 * time.Second
 	}
-	p.ctx = ctx
 	p.perStepTimeout = timeout
 
 	f := actor.NewFuture(ctx.ActorSystem(), timeout)

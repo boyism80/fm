@@ -12,7 +12,7 @@ import (
 
 func (gs *GameServer) SetServerDateTimeAsync(actorCtx actor.Context, reset bool, datetime string) *async.Promise {
 	if gs == nil || gs.internalClient == nil {
-		p := async.NewDeferred()
+		p := async.NewDeferred(actorCtx)
 		p.SetError(fmt.Errorf("internal client unavailable"))
 		return p
 	}

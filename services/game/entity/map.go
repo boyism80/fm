@@ -286,7 +286,7 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 	if err != nil {
 		return
 	}
-	luax.CallAsync(root, thread, hook, character, m)
+	luax.CallAsync(nil, root, thread, hook, character, m)
 
 	mapScriptPath := fmt.Sprintf("script/map/%d.lua", m.TemplateID())
 	mapThread, err := luax.NewThread(root, mapScriptPath)
@@ -300,7 +300,7 @@ func (m *Map) callMapLifecycleScript(character *Character, hook string) {
 	luax.SetConfiguration(mapThread, luax.Configuration{
 		ActorPID: m.LogicActorPID(),
 	})
-	luax.CallAsync(root, mapThread, hook, character, m)
+	luax.CallAsync(nil, root, mapThread, hook, character, m)
 }
 
 func (m *Map) RemovePlayer(playerID uint32) error {
@@ -351,7 +351,7 @@ func (m *Map) LogoutPlayer(playerID uint32) error {
 		if err != nil {
 			log.Printf("on_logout: %v", err)
 		} else {
-			luax.CallAsync(root, thread, "on_logout", character).OnError(func(err error) {
+			luax.CallAsync(nil, root, thread, "on_logout", character).OnError(func(err error) {
 				log.Printf("on_logout: %v", err)
 			})
 		}

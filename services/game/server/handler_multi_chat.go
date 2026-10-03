@@ -49,7 +49,7 @@ func (h *MultiChat) Handle(ctx *core.ClientContext, req *request.MultiChat) erro
 				luax.SetConfiguration(thread, luax.Configuration{
 					ActorContext: ctx.ActorContext,
 				})
-				luax.CallAsync(root, thread, "on_chat", ch, req.Message, false).OnError(func(err error) {
+				luax.CallAsync(ctx.ActorContext, root, thread, "on_chat", ch, req.Message, false).OnError(func(err error) {
 					log.Printf("Command Lua error: %v", err)
 				})
 			}

@@ -1792,7 +1792,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				ActorContext: cfg.ActorContext,
 				ActorPID:     mapInstance.LogicActorPID(),
 			})
-			p := luax.CallAsync(root, thread, funcName, args...)
+			p := luax.CallAsync(cfg.ActorContext, root, thread, funcName, args...)
 			if !p.Completed() {
 				return 0
 			}

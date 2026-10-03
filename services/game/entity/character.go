@@ -1122,7 +1122,7 @@ func (ch *Character) tryLevelUp() bool {
 	levelDiff := int(targetLevel) - int(oldLevel)
 	if levelDiff >= 1 {
 		if thread, err := luax.NewThread(root, constant.CharacterHookScriptPath); err == nil {
-			luax.CallAsync(root, thread, "on_level_up", ch, int32(oldLevel), int32(targetLevel))
+			luax.CallAsync(nil, root, thread, "on_level_up", ch, int32(oldLevel), int32(targetLevel))
 		}
 
 		stats := map[constant.Stat]int32{

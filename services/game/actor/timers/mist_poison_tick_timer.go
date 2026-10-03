@@ -84,7 +84,7 @@ func (t *MistPoisonTickTimer) Handle(ctx actor.Context, mapData *entity.Map) err
 			if root != nil {
 				thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 				if err == nil {
-					luax.CallAsync(root, thread, "on_poison", mist, candidates).OnError(func(err error) {
+					luax.CallAsync(ctx, root, thread, "on_poison", mist, candidates).OnError(func(err error) {
 						log.Printf("on_poison failed: %v", err)
 					})
 				}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
@@ -31,7 +32,7 @@ func (h *EnhanceEquipment) Handle(ctx *core.ClientContext, req *request.EnhanceE
 		return nil
 	}
 
-	h.runEnhanceScript(ch, req.ScrollSlot, req.TargetSlot, func(ok bool) {
+	h.runEnhanceScript(ctx.ActorContext, ch, req.ScrollSlot, req.TargetSlot, func(ok bool) {
 		if !ok {
 			ch.Listener.OnUpdateStats(ch, nil, true)
 		}
@@ -39,7 +40,7 @@ func (h *EnhanceEquipment) Handle(ctx *core.ClientContext, req *request.EnhanceE
 	return nil
 }
 
-func (*EnhanceEquipment) runEnhanceScript(ch *entity.Character, scrollSlot int16, targetSlot int16, fn func(bool)) {
+func (*EnhanceEquipment) runEnhanceScript(actx actor.Context, ch *entity.Character, scrollSlot int16, targetSlot int16, fn func(bool)) {
 	if ch == nil || scrollSlot <= 0 {
 		fn(false)
 		return
@@ -80,7 +81,7 @@ func (*EnhanceEquipment) runEnhanceScript(ch *entity.Character, scrollSlot int16
 		fn(false)
 		return
 	}
-	luax.CallAsync(root, thread, "on_scroll", ch, int32(scrollSlot), int32(targetSlot)).Then(func(value interface{}) (interface{}, error) {
+	luax.CallAsync(actx, root, thread, "on_scroll", ch, int32(scrollSlot), int32(targetSlot)).Then(func(value interface{}) (interface{}, error) {
 		vals := luax.ResultValues(value)
 		if len(vals) == 0 || vals[0] == nil {
 			fn(false)

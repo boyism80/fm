@@ -127,7 +127,7 @@ func (h *Damaged) callOnBlocked(ctx *core.ClientContext, character *entity.Chara
 		log.Printf("Failed to call script on_blocked: %v", err)
 		return
 	}
-	luax.CallAsync(root, thread, "on_blocked", character, attackerArg).OnError(func(err error) {
+	luax.CallAsync(ctx.ActorContext, root, thread, "on_blocked", character, attackerArg).OnError(func(err error) {
 		log.Printf("Failed to call script on_blocked: %v", err)
 	})
 }

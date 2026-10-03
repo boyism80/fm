@@ -471,7 +471,7 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 		ActorContext: actx,
 		ActorPID:     mapInstance.LogicActorPID(),
 	})
-	luax.CallAsync(root, luaThread, entry, ch, npcID).Then(func(_ interface{}) (interface{}, error) {
+	luax.CallAsync(actx, root, luaThread, entry, ch, npcID).Then(func(_ interface{}) (interface{}, error) {
 		if ch.GetDialog() == nil {
 			ch.ResetDialog()
 			if ch.Listener != nil {

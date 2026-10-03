@@ -918,7 +918,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 			return 0
 		}
 		resumePID := pid
-		luax.CallAsync(root, thread, "on_script", ch).Then(func(_ interface{}) (interface{}, error) {
+		luax.CallAsync(actorCtx, root, thread, "on_script", ch).Then(func(_ interface{}) (interface{}, error) {
 			gs.GetRootContext().Send(resumePID, &g_actor.ResumeLua{Root: root, Thread: L, Args: []lua.LValue{lua.LBool(true)}})
 			return nil, nil
 		}).OnError(func(err error) {

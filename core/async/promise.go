@@ -10,6 +10,8 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 )
 
+const promiseKickTimeout = 5 * time.Second
+
 type promiseResult struct {
 	Value interface{}
 	Err   error
@@ -46,8 +48,8 @@ func NewPromise(ctx actor.Context, perStepTimeout time.Duration) *Promise {
 	}
 }
 
-func NewDeferred() *Promise {
-	return &Promise{}
+func NewDeferred(ctx actor.Context) *Promise {
+	return &Promise{ctx: ctx}
 }
 
 func (p *Promise) Then(fn func(interface{}) (interface{}, error)) *Promise {
@@ -81,19 +83,31 @@ func (p *Promise) appendStep(step promiseStep) *Promise {
 }
 
 func (p *Promise) scheduleKick(gen uint64) {
-	go func() {
-		runtime.Gosched()
-		p.mu.Lock()
-		// A newer kick owns the chain; running this one too would execute every step twice.
-		if p.kickGen != gen || p.started || !p.settled || p.rejected || p.done {
-			p.mu.Unlock()
-			return
-		}
-		p.started = true
-		value := p.value
+	if p.ctx == nil {
+		go func() {
+			runtime.Gosched()
+			p.kick(gen)
+		}()
+		return
+	}
+	f := actor.NewFuture(p.ctx.ActorSystem(), promiseKickTimeout)
+	p.ctx.ReenterAfter(f, func(interface{}, error) {
+		p.kick(gen)
+	})
+	p.ctx.Send(f.PID(), &promiseResult{})
+}
+
+func (p *Promise) kick(gen uint64) {
+	p.mu.Lock()
+	// A newer kick owns the chain; running this one too would execute every step twice.
+	if p.kickGen != gen || p.started || !p.settled || p.rejected || p.done {
 		p.mu.Unlock()
-		p.driveFrom(0, value)
-	}()
+		return
+	}
+	p.started = true
+	value := p.value
+	p.mu.Unlock()
+	p.driveFrom(0, value)
 }
 
 func ThenRPC[T any](p *Promise, call func(context.Context) (T, error), use func(T) error) *Promise {

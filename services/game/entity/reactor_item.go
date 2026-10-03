@@ -146,11 +146,11 @@ func (r *Reactor) callReactorScript(hook string, yield bool, args ...interface{}
 	}
 	if yield && root.G != nil && root.G.CurrentThread == root.G.MainThread {
 		if len(filtered) == 0 {
-			luax.CallAsync(root, thread, hook).OnError(func(err error) {
+			luax.CallAsync(nil, root, thread, hook).OnError(func(err error) {
 				log.Printf("reactor script %s: %v", hook, err)
 			})
 		} else {
-			luax.CallAsync(root, thread, hook, filtered...).OnError(func(err error) {
+			luax.CallAsync(nil, root, thread, hook, filtered...).OnError(func(err error) {
 				log.Printf("reactor script %s: %v", hook, err)
 			})
 		}

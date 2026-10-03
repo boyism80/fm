@@ -169,18 +169,9 @@ func (sc *MobSkillContainer) chooseByScript(controller *Character, skill *MobSki
 	if err != nil {
 		return true
 	}
-	hook := "on_mob_skill_choose"
-	chosen := true
-	luax.CallAsync(root, thread, hook, sc.owner, skill).Then(func(value interface{}) (interface{}, error) {
-		vals := luax.ResultValues(value)
-		if len(vals) == 0 || vals[0] == nil {
-			chosen = true
-			return nil, nil
-		}
-		chosen = lua.LVAsBool(vals[0])
-		return nil, nil
-	}).OnError(func(err error) {
-		chosen = true
-	})
-	return chosen
+	ret, err := luax.Call(thread, "on_mob_skill_choose", sc.owner, skill)
+	if err != nil || ret == nil || ret == lua.LNil {
+		return true
+	}
+	return lua.LVAsBool(ret)
 }

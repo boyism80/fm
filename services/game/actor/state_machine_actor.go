@@ -492,7 +492,7 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()
 	gw := a.GameWorld
-	luax.CallAsync(a.luaRoot, thread, hook, append([]interface{}{a.StateMachine}, args...)...).Then(func(result interface{}) (interface{}, error) {
+	luax.CallAsync(ctx, a.luaRoot, thread, hook, append([]interface{}{a.StateMachine}, args...)...).Then(func(result interface{}) (interface{}, error) {
 		if hook != "on_create" || root == nil {
 			return nil, nil
 		}

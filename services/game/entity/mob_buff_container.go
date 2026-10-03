@@ -99,7 +99,7 @@ func (e *MobBuff) callMobSkillHook(mob *Mob, hookPrefix string) {
 		log.Printf("mob skill hook %s %d: %v", hookPrefix, skillID, err)
 		return
 	}
-	luax.CallAsync(root, thread, hookName, mob, e, causer).OnError(func(err error) {
+	luax.CallAsync(nil, root, thread, hookName, mob, e, causer).OnError(func(err error) {
 		log.Printf("mob skill hook %s %d: %v", hookPrefix, skillID, err)
 	})
 }

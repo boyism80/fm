@@ -59,5 +59,5 @@ func (m *Map) RunScript(ctx actor.Context, scriptPath string, funcName string, a
 	callArgs := make([]interface{}, 0, len(args)+1)
 	callArgs = append(callArgs, m)
 	callArgs = append(callArgs, args...)
-	return luax.CallAsync(root, thread, funcName, callArgs...)
+	return luax.CallAsync(ctx, root, thread, funcName, callArgs...)
 }

@@ -123,7 +123,7 @@ func (l *CharacterListenerImpl) OnNotice(ch *entity.Character, messageType const
 
 func (l *CharacterListenerImpl) BroadcastNoticeAsync(ctx actor.Context, ch *entity.Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise {
 	fail := func(err error) *async.Promise {
-		p := async.NewDeferred()
+		p := async.NewDeferred(ctx)
 		p.SetError(err)
 		return p
 	}

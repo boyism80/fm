@@ -174,7 +174,7 @@ func (g *StateMachineGroup) CallGroupHook(hook string, args ...interface{}) {
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorPID: m.LogicActorPID(),
 	})
-	luax.CallAsync(root, thread, hook, args...).OnError(func(err error) {
+	luax.CallAsync(nil, root, thread, hook, args...).OnError(func(err error) {
 		fmt.Printf("state machine group %s hook %s: %v\n", g.Name, hook, err)
 	})
 }

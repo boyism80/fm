@@ -62,7 +62,7 @@ func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) er
 		return nil
 	}
 	luax.SetConfiguration(thread, luax.Configuration{ActorContext: ctx.ActorContext})
-	luax.CallAsync(mapInstance.GetLuaRoot(), thread, "on_cash", ch, req.ItemID, req.Text, req.Ear).Then(func(value interface{}) (interface{}, error) {
+	luax.CallAsync(ctx.ActorContext, mapInstance.GetLuaRoot(), thread, "on_cash", ch, req.ItemID, req.Text, req.Ear).Then(func(value interface{}) (interface{}, error) {
 		vals := luax.ResultValues(value)
 		if len(vals) == 0 || vals[0] != lua.LTrue {
 			unlock()

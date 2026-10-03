@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -158,8 +159,8 @@ func Call(thread *lua.LState, hook string, args ...interface{}) (lua.LValue, err
 	return ret, nil
 }
 
-func CallAsync(root *lua.LState, thread *lua.LState, hook string, args ...interface{}) *async.Promise {
-	promise := async.NewDeferred()
+func CallAsync(ctx actor.Context, root *lua.LState, thread *lua.LState, hook string, args ...interface{}) *async.Promise {
+	promise := async.NewDeferred(ctx)
 	if root == nil || thread == nil {
 		promise.SetError(fmt.Errorf("nil lua root/thread"))
 		return promise
