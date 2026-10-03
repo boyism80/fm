@@ -62,7 +62,8 @@ export class UnifiedRepository {
      * Atomically reserves the name in Postgres.
      * - New name: inserts a pending row and returns the new character_id.
      * - Same account re-reservation: refreshes reserved_at and returns the existing character_id.
-     * - Expired reservation by another account: reclaims (UPDATE preserving character_id) and returns it.
+     * - Expired reservation by another account: deletes the stale row and inserts fresh (new serial id),
+     *   so no orphan data from a prior failed creation can conflict with the new character_id.
      * - Confirmed or actively reserved by another account: returns null.
      * One pending reservation per account: any other pending row for this account is deleted first.
      */
@@ -113,12 +114,19 @@ export class UnifiedRepository {
                 return null;
             }
 
+            // Expired reservation by a different account: delete and re-insert to get a
+            // fresh serial character_id. Reusing the old id risks conflicting with orphan
+            // data left by a failed creation that never ran its cleanup (e.g. process kill).
             await client.query(
-                `UPDATE character_name_registry SET reserved_at = NOW(), account_id = $1, world_id = $2 WHERE character_id = $3`,
-                [accountId, worldId, character_id]
+                `DELETE FROM character_name_registry WHERE character_id = $1`,
+                [character_id]
+            );
+            const { rows: ins } = await client.query(
+                `INSERT INTO character_name_registry (name, account_id, world_id, reserved_at) VALUES ($1, $2, $3, NOW()) RETURNING character_id`,
+                [name, accountId, worldId]
             );
             await client.query("COMMIT");
-            return Number(character_id);
+            return Number(ins[0].character_id);
         } catch (err) {
             await client.query("ROLLBACK").catch(() => {});
             throw err;
