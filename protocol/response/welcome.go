@@ -42,4 +42,9 @@ func (a *Welcome) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *Welcome) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU16()
+	reader.ReadStr16()
+	a.RecvIv = append([]byte(nil), reader.Read(4)...)
+	a.SendIv = append([]byte(nil), reader.Read(4)...)
+	reader.ReadU8()
 }

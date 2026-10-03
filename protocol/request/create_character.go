@@ -15,6 +15,13 @@ type CreateCharacter struct {
 func (*CreateCharacter) Opcode() byte { return 0x08 }
 
 func (a *CreateCharacter) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteStr16(a.Name)
+	writer.WriteU32(a.Face)
+	writer.WriteU32(a.Hair)
+	writer.WriteU32(a.Top)
+	writer.WriteU32(a.Bottom)
+	writer.WriteU32(a.Shoes)
+	writer.WriteU32(a.Weapon)
 	return nil
 }
 

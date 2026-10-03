@@ -45,4 +45,24 @@ func (s *ServerList) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (s *ServerList) Deserialize(reader *stream.StreamReader) {
+	s.ServerId = reader.ReadU8()
+	s.WorldName = reader.ReadStr16()
+	s.Flag = reader.ReadU8()
+	s.EventMessage = reader.ReadStr16()
+	reader.ReadU16()
+	reader.ReadU16()
+	n := int(reader.ReadU8())
+	if n > 0 {
+		s.Channels = make([]ServerChannel, n)
+	}
+	for i := 0; i < n; i++ {
+		s.Channels[i].Name = reader.ReadStr16()
+		s.Channels[i].Load = reader.ReadU32()
+		reader.ReadU8()
+		s.Channels[i].ChannelID = reader.ReadU16()
+	}
+	reader.ReadU16()
+	reader.ReadU16()
+	reader.ReadU16()
+	reader.ReadStr16()
 }

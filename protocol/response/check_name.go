@@ -20,4 +20,6 @@ func (a *CheckName) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *CheckName) Deserialize(reader *stream.StreamReader) {
+	a.Name = reader.ReadStr16()
+	a.Exists = reader.ReadBool()
 }

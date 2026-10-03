@@ -1,0 +1,11 @@
+login:
+  host: "127.0.0.1"
+  port: 8484
+world_id: 0
+channel: 0
+seats: 3
+password: "bot-pass"
+timeout_ms: 10000
+suite_timeout_ms: 180000
+script_dir: "script/integration"
+wz_path: "resources/wz"

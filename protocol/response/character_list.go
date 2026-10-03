@@ -36,4 +36,17 @@ func (e *CharacterList) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (e *CharacterList) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	reader.ReadU32()
+	n := int(reader.ReadU8())
+	if n > 0 {
+		e.Characters = make([]dto.Character, n)
+	}
+	for i := 0; i < n; i++ {
+		e.Characters[i].DeserializeOverview(reader)
+	}
+	// 1 means a second password is set. The text itself is not in the packet.
+	_ = reader.ReadU8()
+	reader.ReadU8()
+	e.SlotCount = reader.ReadU32()
 }

@@ -25,4 +25,10 @@ func (a *Transfer) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *Transfer) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU16()
+	a.IP = reader.ReadIPAddress()
+	a.Port = reader.ReadU16()
+	a.CharacterId = reader.ReadU32()
+	reader.ReadU8()
+	reader.ReadU32()
 }

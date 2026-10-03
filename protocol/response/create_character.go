@@ -21,4 +21,8 @@ func (a *CreateCharacter) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *CreateCharacter) Deserialize(reader *stream.StreamReader) {
+	a.Success = !reader.ReadBool()
+	ch := &dto.Character{}
+	ch.DeserializeOverview(reader)
+	a.Character = ch
 }

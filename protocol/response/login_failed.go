@@ -52,4 +52,11 @@ func (a *LoginFailed) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *LoginFailed) Deserialize(reader *stream.StreamReader) {
+	a.Reason = reader.ReadU8()
+	switch a.Reason {
+	case LoginFailedReasonPasswordChangeRequired:
+		reader.Skip(8)
+	case LoginFailedReasonAlreadyLoggedIn:
+		reader.Skip(5)
+	}
 }

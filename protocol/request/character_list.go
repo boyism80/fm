@@ -12,6 +12,9 @@ type CharacterList struct {
 func (*CharacterList) Opcode() byte { return 0x04 }
 
 func (a *CharacterList) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(0)
+	writer.WriteU8(a.Server)
+	writer.WriteU8(a.Channel)
 	return nil
 }
 

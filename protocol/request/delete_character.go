@@ -9,6 +9,8 @@ type DeleteCharacter struct {
 func (*DeleteCharacter) Opcode() byte { return 0x09 }
 
 func (a *DeleteCharacter) Serialize(writer *stream.StreamWriter) error {
+	writer.Write(make([]byte, 5))
+	writer.WriteU32(a.ID)
 	return nil
 }
 

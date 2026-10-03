@@ -2,6 +2,7 @@ package request
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/boyism80/fm/stream"
@@ -16,6 +17,21 @@ type Login struct {
 func (*Login) Opcode() byte { return 0x01 }
 
 func (a *Login) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteStr16(a.ID)
+	writer.WriteStr16(a.Pw)
+	parts := strings.Split(a.Mac, "-")
+	if len(parts) != 6 {
+		return fmt.Errorf("login mac %q", a.Mac)
+	}
+	mac := make([]byte, 6)
+	for i, part := range parts {
+		v, err := strconv.ParseUint(part, 16, 8)
+		if err != nil {
+			return fmt.Errorf("login mac %q", a.Mac)
+		}
+		mac[i] = byte(v)
+	}
+	writer.Write(mac)
 	return nil
 }
 

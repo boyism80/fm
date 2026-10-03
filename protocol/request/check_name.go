@@ -9,6 +9,7 @@ type CheckName struct {
 func (*CheckName) Opcode() byte { return 0x07 }
 
 func (a *CheckName) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteStr16(a.Name)
 	return nil
 }
 

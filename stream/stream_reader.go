@@ -3,6 +3,7 @@ package stream
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"math"
 
 	"golang.org/x/text/encoding/korean"
@@ -110,6 +111,24 @@ func (sr *StreamReader) ReadStr16() string {
 		panic(err)
 	}
 	return string(decodedStr)
+}
+
+func (sr *StreamReader) ReadStaticStr(n int) string {
+	b := sr.Read(n)
+	end := 0
+	for end < len(b) && b[end] != 0 {
+		end++
+	}
+	decoded, _, err := transform.Bytes(korean.EUCKR.NewDecoder(), b[:end])
+	if err != nil {
+		panic(err)
+	}
+	return string(decoded)
+}
+
+func (sr *StreamReader) ReadIPAddress() string {
+	b := sr.Read(4)
+	return fmt.Sprintf("%d.%d.%d.%d", b[0], b[1], b[2], b[3])
 }
 
 func (sr *StreamReader) ReadStr32() string {

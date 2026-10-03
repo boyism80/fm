@@ -221,3 +221,93 @@ func LoadGame(path string) (*Game, error) {
 	}
 	return &g, nil
 }
+
+type BotLogin struct {
+	Host string `yaml:"host"`
+	Port int    `yaml:"port"`
+}
+
+type Bot struct {
+	Login          BotLogin `yaml:"login"`
+	WorldID        int      `yaml:"world_id"`
+	Channel        int      `yaml:"channel"`
+	Seats          int      `yaml:"seats"`
+	Password       string   `yaml:"password"`
+	TimeoutMs      int      `yaml:"timeout_ms"`
+	SuiteTimeoutMs int      `yaml:"suite_timeout_ms"`
+	ScriptDir      string   `yaml:"script_dir"`
+	WzPath         string   `yaml:"wz_path"`
+}
+
+func LoadBot(path string) (*Bot, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read config %q: %w", path, err)
+	}
+	var b Bot
+	if err := yaml.Unmarshal(data, &b); err != nil {
+		return nil, fmt.Errorf("parse config %q: %w", path, err)
+	}
+	if b.Login.Host == "" {
+		b.Login.Host = "127.0.0.1"
+	}
+	if b.Login.Port == 0 {
+		b.Login.Port = 8484
+	}
+	if b.Seats == 0 {
+		b.Seats = 3
+	}
+	if b.Password == "" {
+		b.Password = "bot-pass"
+	}
+	if b.TimeoutMs == 0 {
+		b.TimeoutMs = 10000
+	}
+	if b.SuiteTimeoutMs == 0 {
+		b.SuiteTimeoutMs = 180000
+	}
+	if b.ScriptDir == "" {
+		b.ScriptDir = "script/integration"
+	}
+	if b.WzPath == "" {
+		b.WzPath = "resources/wz"
+	}
+	if err := b.Validate(); err != nil {
+		return nil, fmt.Errorf("config %q: %w", path, err)
+	}
+	return &b, nil
+}
+
+func (b *Bot) Validate() error {
+	if b.Login.Host == "" {
+		return fmt.Errorf("login.host is empty")
+	}
+	if b.Login.Port <= 0 {
+		return fmt.Errorf("login.port must be positive")
+	}
+	if b.WorldID < 0 {
+		return fmt.Errorf("world_id must be >= 0")
+	}
+	if b.Channel < 0 {
+		return fmt.Errorf("channel must be >= 0")
+	}
+	if b.Seats < 1 {
+		return fmt.Errorf("seats must be >= 1")
+	}
+	if b.Password == "" {
+		return fmt.Errorf("password is empty")
+	}
+	if b.TimeoutMs <= 0 {
+		return fmt.Errorf("timeout_ms must be positive")
+	}
+	if b.SuiteTimeoutMs <= 0 {
+		return fmt.Errorf("suite_timeout_ms must be positive")
+	}
+	if b.ScriptDir == "" {
+		return fmt.Errorf("script_dir is empty")
+	}
+	if b.WzPath == "" {
+		return fmt.Errorf("wz_path is empty")
+	}
+	return nil
+}

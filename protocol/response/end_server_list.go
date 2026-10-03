@@ -17,4 +17,5 @@ func (e *EndOfServerList) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (e *EndOfServerList) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
 }

@@ -114,6 +114,69 @@ func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 	}
 }
 
+func (c *Character) DeserializeOverview(reader *stream.StreamReader) {
+	c.ID = reader.ReadU32()
+	c.Name = reader.ReadStaticStr(13)
+	c.Gender = reader.ReadU8()
+	c.SkinColor = reader.ReadU8()
+	c.Face = reader.ReadU32()
+	c.Hair = reader.ReadU32()
+	reader.Skip(8)
+	c.Level = reader.ReadU8()
+	c.Class = reader.ReadU16()
+	c.Str = reader.ReadU16()
+	c.Dex = reader.ReadU16()
+	c.Int = reader.ReadU16()
+	c.Luk = reader.ReadU16()
+	c.Hp = reader.ReadU16()
+	c.MaxHp = reader.ReadU16()
+	c.Mp = reader.ReadU16()
+	c.MaxMp = reader.ReadU16()
+	c.AbilityPoint = reader.ReadU16()
+	reader.Skip(2)
+	c.Exp = reader.ReadU32()
+	c.Population = reader.ReadU16()
+	c.Map = reader.ReadU32()
+	c.SpawnPoint = reader.ReadU8()
+
+	c.Gender = reader.ReadU8()
+	c.SkinColor = reader.ReadU8()
+	c.Face = reader.ReadU32()
+	c.Mega = reader.ReadBool()
+	c.Hair = reader.ReadU32()
+
+	for {
+		parts := reader.ReadU8()
+		if parts == 0xFF {
+			break
+		}
+		if c.BaseLooks == nil {
+			c.BaseLooks = make(map[int8]uint32)
+		}
+		c.BaseLooks[int8(parts)] = reader.ReadU32()
+	}
+	for {
+		parts := reader.ReadU8()
+		if parts == 0xFF {
+			break
+		}
+		if c.Overlays == nil {
+			c.Overlays = make(map[int8]uint32)
+		}
+		c.Overlays[int8(parts)] = reader.ReadU32()
+	}
+
+	c.Weapon = reader.ReadU32()
+	reader.Skip(4)
+
+	if reader.ReadBool() {
+		c.Rank = reader.ReadU32()
+		c.RankDiff = reader.Read32()
+		c.ClassRank = reader.ReadU32()
+		c.ClassRankDiff = reader.Read32()
+	}
+}
+
 func (c *Character) SerializeLook(writer *stream.StreamWriter) {
 	writer.WriteU8(c.Gender)
 	writer.WriteU8(c.SkinColor)

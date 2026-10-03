@@ -11,6 +11,7 @@ type SelectCharacter struct {
 func (*SelectCharacter) Opcode() byte { return 0x05 }
 
 func (a *SelectCharacter) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(a.CharacterId)
 	return nil
 }
 

@@ -35,4 +35,17 @@ func (a *Authenticate) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *Authenticate) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	a.AccountId = reader.ReadU32()
+	a.Gender = reader.ReadU8()
+	a.Role = reader.ReadU8()
+	reader.ReadU8()
+	a.AccountName = reader.ReadStr16()
+	reader.ReadU32()
+	reader.ReadU8()
+	reader.ReadU8()
+	a.IsChatBlocked = reader.ReadBool()
+	a.ChatBlockTime = reader.ReadU64()
+	reader.ReadStr16()
+	reader.ReadStr16()
 }

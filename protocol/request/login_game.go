@@ -11,6 +11,7 @@ type LoginGame struct {
 func (*LoginGame) Opcode() byte { return 0x06 }
 
 func (a *LoginGame) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(a.PlayerId)
 	return nil
 }
 
