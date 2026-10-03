@@ -7,7 +7,6 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -86,11 +85,6 @@ func (h *CreateCharacter) sendCreateCharacterResult(ctx *core.ClientContext, rep
 	if reply.Success && reply.Character != nil {
 		ch := overviewToDto(reply.Character)
 		createResp.Character = &ch
-	} else {
-		createResp.Character = &dto.Character{
-			BaseLooks: make(map[int8]uint32),
-			Overlays:  make(map[int8]uint32),
-		}
 	}
 	return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
 }

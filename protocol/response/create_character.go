@@ -16,6 +16,10 @@ func (a *CreateCharacter) Opcode() uint16 {
 
 func (a *CreateCharacter) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteBoolean(!a.Success)
+	if a.Character == nil {
+		(&dto.Character{}).SerializeOverview(writer)
+		return nil
+	}
 	a.Character.SerializeOverview(writer)
 	return nil
 }
