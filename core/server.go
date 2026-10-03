@@ -117,7 +117,7 @@ func (s *ServerCore) Stop() error {
 
 	s.clientsMutex.Lock()
 	for conn, client := range s.clients {
-		client.GetConnection().Close()
+		client.Close()
 		delete(s.clients, conn)
 	}
 	s.clientsMutex.Unlock()
@@ -191,7 +191,7 @@ func (s *ServerCore) handleClient(client Client) {
 		s.clientsMutex.Lock()
 		delete(s.clients, client.GetConnection())
 		s.clientsMutex.Unlock()
-		client.GetConnection().Close()
+		client.Close()
 		s.wg.Done()
 		log.Printf("Client disconnected: %s", client.GetConnection().RemoteAddr())
 	}()

@@ -14,9 +14,17 @@ import (
 
 type Client = client.Client
 
+const (
+	sendQueueSize = 4096
+	sendTimeout   = 10 * time.Second
+)
+
 type BaseClient struct {
 	conn           net.Conn
 	mu             sync.Mutex
+	out            chan []byte
+	done           chan struct{}
+	closeOnce      sync.Once
 	clientID       int
 	fd             int
 	sendEncryption *crypt.Encryption
@@ -41,6 +49,10 @@ func (c *BaseClient) GetFd() int {
 	return c.fd
 }
 
+func (c *BaseClient) GetClientID() int {
+	return c.clientID
+}
+
 func (c *BaseClient) Send(packet types.Packet, policy types.SendPolicy) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -52,13 +64,9 @@ func (c *BaseClient) Send(packet types.Packet, policy types.SendPolicy) error {
 	}
 	packetData := writer.Bytes()
 
-	if policy == types.SEND_POLICY_RAW {
-		_, err := c.conn.Write(packetData)
-		return err
-	}
-
-	if policy&types.SEND_POLICY_ENCRYPT != 0 {
-
+	switch {
+	case policy == types.SEND_POLICY_RAW:
+	case policy&types.SEND_POLICY_ENCRYPT != 0:
 		writer = stream.NewStreamWriter(stream.LittleEndian)
 
 		header := c.sendEncryption.GetPacketHeader(len(packetData))
@@ -67,11 +75,32 @@ func (c *BaseClient) Send(packet types.Packet, policy types.SendPolicy) error {
 		encryptedData := c.sendEncryption.Encrypt(packetData)
 		writer.Write(encryptedData)
 
-		_, err := c.conn.Write(writer.Bytes())
-		return err
+		packetData = writer.Bytes()
+	default:
+		return fmt.Errorf("unsupported send policy: %d", policy)
 	}
 
-	return fmt.Errorf("unsupported send policy: %d", policy)
+	// Encrypted under c.mu and queued in the same order, so the client sees the IV sequence it expects.
+	select {
+	case <-c.done:
+		return net.ErrClosed
+	default:
+	}
+	select {
+	case c.out <- packetData:
+		return nil
+	default:
+		_ = c.conn.Close()
+		return fmt.Errorf("send queue full")
+	}
+}
+
+// Close stops the writer; the reader sees the closed connection and ends the session.
+func (c *BaseClient) Close() {
+	c.closeOnce.Do(func() {
+		close(c.done)
+	})
+	_ = c.conn.Close()
 }
 
 func (c *BaseClient) MarkPongReceived() {
@@ -111,8 +140,28 @@ func GetFileDescriptor(conn net.Conn) (int, error) {
 }
 
 func NewBaseClient(conn net.Conn, clientID int, fd int, sendEncryption, recvEncryption *crypt.Encryption) BaseClient {
+	out := make(chan []byte, sendQueueSize)
+	done := make(chan struct{})
+	// A client that stops reading must not block the actor that sends to it; the writer owns the socket write and its deadline.
+	go func() {
+		for {
+			select {
+			case data := <-out:
+				_ = conn.SetWriteDeadline(time.Now().Add(sendTimeout))
+				if _, err := conn.Write(data); err != nil {
+					_ = conn.Close()
+					return
+				}
+			case <-done:
+				return
+			}
+		}
+	}()
+
 	return BaseClient{
 		conn:           conn,
+		out:            out,
+		done:           done,
 		clientID:       clientID,
 		fd:             fd,
 		sendEncryption: sendEncryption,

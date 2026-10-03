@@ -9,6 +9,7 @@ import (
 
 type Client interface {
 	Send(packet types.Packet, policy types.SendPolicy) error
+	Close()
 	GetConnection() net.Conn
 	GetSendEncryption() *crypt.Encryption
 	GetRecvEncryption() *crypt.Encryption
