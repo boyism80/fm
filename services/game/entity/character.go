@@ -628,6 +628,79 @@ func (ch *Character) SetAbilityPoint(v uint16, notify bool) {
 	}
 }
 
+type APEntry struct {
+	Stat   constant.StatType
+	Amount uint16
+}
+
+// AssignAP validates all entries against current stats, then applies them atomically
+// and deducts AP. Returns false (without mutating state) if any entry is invalid.
+func (ch *Character) AssignAP(entries []APEntry) bool {
+	for _, e := range entries {
+		if !ch.canAddStat(e.Stat, e.Amount) {
+			return false
+		}
+	}
+	statUpdate := map[constant.Stat]int32{}
+	total := uint16(0)
+	for _, e := range entries {
+		ch.applyStatDelta(e.Stat, e.Amount, statUpdate)
+		total += e.Amount
+	}
+	ch.AbilityPoint -= total
+	statUpdate[constant.StatAvailableAP] = int32(ch.AbilityPoint)
+	ch.Listener.OnUpdateStats(ch, statUpdate, true)
+	return true
+}
+
+func (ch *Character) canAddStat(stat constant.StatType, amount uint16) bool {
+	switch stat {
+	case constant.StatTypeStr:
+		return ch.GetTotalStr()+amount <= constant.StatMaxStrDexIntLuk
+	case constant.StatTypeDex:
+		return ch.GetTotalDex()+amount <= constant.StatMaxStrDexIntLuk
+	case constant.StatTypeInt:
+		return ch.GetTotalInt()+amount <= constant.StatMaxStrDexIntLuk
+	case constant.StatTypeLuk:
+		return ch.GetTotalLuk()+amount <= constant.StatMaxStrDexIntLuk
+	default:
+		return false
+	}
+}
+
+func (ch *Character) applyStatDelta(stat constant.StatType, amount uint16, statUpdate map[constant.Stat]int32) {
+	switch stat {
+	case constant.StatTypeStr:
+		newStr := ch.BaseStats.Str + amount
+		if newStr > constant.StatMaxStrDexIntLuk {
+			newStr = constant.StatMaxStrDexIntLuk
+		}
+		ch.BaseStats.Str = newStr
+		statUpdate[constant.StatStr] = int32(ch.GetTotalStr())
+	case constant.StatTypeDex:
+		newDex := ch.BaseStats.Dex + amount
+		if newDex > constant.StatMaxStrDexIntLuk {
+			newDex = constant.StatMaxStrDexIntLuk
+		}
+		ch.BaseStats.Dex = newDex
+		statUpdate[constant.StatDex] = int32(ch.GetTotalDex())
+	case constant.StatTypeInt:
+		newInt := ch.BaseStats.Int + amount
+		if newInt > constant.StatMaxStrDexIntLuk {
+			newInt = constant.StatMaxStrDexIntLuk
+		}
+		ch.BaseStats.Int = newInt
+		statUpdate[constant.StatInt] = int32(ch.GetTotalInt())
+	case constant.StatTypeLuk:
+		newLuk := ch.BaseStats.Luk + amount
+		if newLuk > constant.StatMaxStrDexIntLuk {
+			newLuk = constant.StatMaxStrDexIntLuk
+		}
+		ch.BaseStats.Luk = newLuk
+		statUpdate[constant.StatLuk] = int32(ch.GetTotalLuk())
+	}
+}
+
 func (ch *Character) SetSkillPoint(v uint16, notify bool) {
 	ch.SkillPoint = v
 	if notify {
