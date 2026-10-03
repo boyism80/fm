@@ -15,8 +15,8 @@ import (
 )
 
 type LoginLogicActor struct {
-	Client core.Client
-	Server core.Server
+	Client     core.Client
+	Server     core.Server
 	timer      *scheduler.TimerScheduler
 	cancelPing scheduler.CancelFunc
 }

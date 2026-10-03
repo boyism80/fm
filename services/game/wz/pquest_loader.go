@@ -54,4 +54,3 @@ func attachPartyQuestRules(quests map[uint32]*Quest, path string) error {
 	}
 	return nil
 }
-
