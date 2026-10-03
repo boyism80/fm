@@ -68,20 +68,29 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 }
 
 func (h *MoveItem) drop(ch *entity.Character, invenType constant.InventoryType, slot int16, count uint16) {
-	item, ok := ch.Inventory.Tabs[invenType].Items[slot]
+	inven := ch.Inventory.Tabs[invenType]
+	if inven == nil {
+		return
+	}
+	item, ok := inven.Items[slot]
 	if !ok {
 		return
 	}
 
-	removed := item.Reduce(count) == 0
+	actualCount := min(count, item.GetCount())
+	if actualCount == 0 {
+		return
+	}
+
+	removed := item.Reduce(actualCount) == 0
 	if removed {
 		ch.Listener.OnRemoveInventorySlot(ch, invenType, slot)
-		delete(ch.Inventory.Tabs[invenType].Items, slot)
+		delete(inven.Items, slot)
 	} else {
 		ch.Listener.OnUpdateInventorySlot(ch, invenType, slot, item)
 	}
 
-	spawned := item.Clone(count)
+	spawned := item.Clone(actualCount)
 	spawned.BindFieldPlacement(&entity.FieldPlacement{
 		ObjectCore: &entity.ObjectCore{
 			Position: ch.Position,
@@ -103,6 +112,9 @@ func (h *MoveItem) drop(ch *entity.Character, invenType constant.InventoryType, 
 
 func (h *MoveItem) move(ch *entity.Character, invenType constant.InventoryType, sourceSlot int16, destSlot int16) {
 	inven := ch.Inventory.Tabs[invenType]
+	if inven == nil {
+		return
+	}
 	src, ok := inven.Items[sourceSlot]
 	if !ok {
 		return
