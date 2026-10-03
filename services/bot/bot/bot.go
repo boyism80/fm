@@ -9,7 +9,9 @@ import (
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/bot/conn"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/types"
 )
 
 var ErrConnect = errors.New("connect")
@@ -27,6 +29,8 @@ type Bot struct {
 	CharID uint32
 	Gen    int
 	Map    uint32
+	Spawn  uint8
+	HP     uint16
 	NPCs   map[uint32]uint32
 	Dialog constant.DialogType
 	cfg    *config.Bot
@@ -80,14 +84,18 @@ func (b *Bot) Update(pkt any) {
 	switch p := pkt.(type) {
 	case *response.Login:
 		if p.Character != nil {
-			b.Map = p.Character.Map
+			b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
 		}
 		clear(b.NPCs)
 	case *response.Warp:
 		if p.Character != nil {
-			b.Map = p.Character.Map
+			b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
 		}
 		clear(b.NPCs)
+	case *response.UpdateStats:
+		if hp, ok := p.Stats[constant.StatHP]; ok {
+			b.HP = uint16(hp)
+		}
 	case *response.SpawnNpc:
 		b.NPCs[p.NPC.OID] = p.NPC.NpcId
 	case *response.RemoveNpc:
@@ -117,6 +125,18 @@ func (b *Bot) FindNPC(templateID uint32) (uint32, bool) {
 		}
 	}
 	return 0, false
+}
+
+func (b *Bot) Position(resources *wz.Resources) (types.Point[int16], bool) {
+	m, ok := resources.Maps[b.Map]
+	if ok == false {
+		return types.Point[int16]{}, false
+	}
+	portal, ok := m.Portals[b.Spawn]
+	if ok == false {
+		return types.Point[int16]{}, false
+	}
+	return portal.Position, true
 }
 
 func (b *Bot) wait() time.Duration {

@@ -1,2 +1,5 @@
 register_test("login_smoke")
 register_test("npc_dialog")
+register_test("channel_transfer")
+register_test("portal_subway", { serial = true })
+register_test("kerning_pq", { serial = true })

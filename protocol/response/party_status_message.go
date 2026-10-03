@@ -22,4 +22,9 @@ func (p *PartyStatusMessage) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *PartyStatusMessage) Deserialize(*stream.StreamReader) {}
+func (p *PartyStatusMessage) Deserialize(reader *stream.StreamReader) {
+	p.Code = constant.PartyStatusCode(reader.ReadU8())
+	if reader.Remaining() > 0 {
+		p.Name = reader.ReadStr16()
+	}
+}

@@ -21,4 +21,8 @@ func (p *PartyCreated) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *PartyCreated) Deserialize(*stream.StreamReader) {}
+func (p *PartyCreated) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.PartyID = reader.ReadU32()
+	reader.Skip(18)
+}

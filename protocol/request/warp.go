@@ -14,6 +14,11 @@ type Warp struct {
 func (*Warp) Opcode() byte { return 0x15 }
 
 func (p *Warp) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(p.Reason)
+	writer.WriteU32(p.Target)
+	writer.WriteStr16(p.PortalName)
+	writer.WriteU8(0)
+	writer.WriteBoolean(p.Wheel)
 	return nil
 }
 

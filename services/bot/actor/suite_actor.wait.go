@@ -29,12 +29,12 @@ type waiter struct {
 	timer  *time.Timer
 }
 
-func (a *SuiteActor) Request(thread *lua.LState, b *bot.Bot, pkt outbound, timeout time.Duration, match func(any) bool, done func(pkt any, ok bool)) {
+func (a *SuiteActor) Request(thread *lua.LState, sender, listener *bot.Bot, pkt outbound, timeout time.Duration, match func(any) bool, done func(pkt any, ok bool)) {
 	if a.finished {
 		return
 	}
 	a.nextWait++
-	w := &waiter{id: a.nextWait, thread: thread, bot: b, gen: b.Gen, match: match, done: done}
+	w := &waiter{id: a.nextWait, thread: thread, bot: listener, gen: listener.Gen, match: match, done: done}
 	w.timer = time.AfterFunc(timeout, func() {
 		a.actors.Send(a.self, &WaitTimeout{Wait: w.id})
 	})
@@ -43,8 +43,8 @@ func (a *SuiteActor) Request(thread *lua.LState, b *bot.Bot, pkt outbound, timeo
 	if pkt == nil {
 		return
 	}
-	if err := b.Send(pkt); err != nil {
-		a.Fail(fmt.Sprintf("%s send: %v", b.Name, err))
+	if err := sender.Send(pkt); err != nil {
+		a.Fail(fmt.Sprintf("%s send: %v", sender.Name, err))
 		w.timer.Stop()
 		a.actors.Send(a.self, &WaitTimeout{Wait: w.id})
 	}
@@ -64,16 +64,53 @@ func (a *SuiteActor) Command(b *bot.Bot, text string) error {
 	return b.Send(&request.NormalChat{Message: text})
 }
 
-func (a *SuiteActor) warpByCommand(thread *lua.LState, b *bot.Bot, text string, mapID uint32, done func(bool)) {
-	a.Request(thread, b, &request.NormalChat{Message: text}, a.timeout(), func(pkt any) bool {
+func (a *SuiteActor) warpByCommand(thread *lua.LState, b *bot.Bot, text string, mapID uint32, retry bool, done func(bool)) {
+	a.Request(thread, b, b, &request.NormalChat{Message: text}, a.timeout(), func(pkt any) bool {
 		warp, ok := pkt.(*response.Warp)
 		return ok && warp.Character != nil && warp.Character.Map == mapID
 	}, func(_ any, ok bool) {
-		if ok == false {
+		switch {
+		case ok:
+			done(true)
+		case retry:
+			log.Printf("[%s] %s %s: retry", a.name, b.Name, text)
+			a.warpByCommand(thread, b, text, mapID, false, done)
+		default:
 			done(a.Fail(fmt.Sprintf("%s %s: 이동하지 않음", b.Name, text)))
+		}
+	})
+}
+
+func (a *SuiteActor) switchChannel(thread *lua.LState, i int, channel uint8, done func(bool)) {
+	b := a.bots[i]
+	a.Request(thread, b, b, &request.SwitchChannel{Channel: channel}, a.timeout(), func(pkt any) bool {
+		switch pkt.(type) {
+		case *response.SwitchChannel, *response.ServerBlocked:
+			return true
+		default:
+			return false
+		}
+	}, func(pkt any, ok bool) {
+		if ok == false {
+			done(a.Fail(fmt.Sprintf("%s 채널 %d 이동: 응답 없음", b.Name, channel)))
 			return
 		}
-		done(true)
+		route, ok := pkt.(*response.SwitchChannel)
+		if ok == false {
+			done(a.Fail(fmt.Sprintf("%s 채널 %d 이동: 거절 %d", b.Name, channel, pkt.(*response.ServerBlocked).Reason)))
+			return
+		}
+
+		a.moving[b] = func(err error) {
+			if err != nil {
+				done(a.Fail(fmt.Sprintf("%s 채널 %d 접속: %v", b.Name, channel, err)))
+				return
+			}
+			done(true)
+		}
+		go func() {
+			a.actors.Send(a.self, &ChannelEntered{Bot: i, Err: b.EnterChannel(route.IP, route.Port)})
+		}()
 	})
 }
 
@@ -83,7 +120,7 @@ func (a *SuiteActor) timeout() time.Duration {
 
 func (a *SuiteActor) packetReceived(msg *PacketReceived) {
 	b := a.bots[msg.Bot]
-	if a.finished || msg.Gen != b.Gen {
+	if _, ok := a.moving[b]; ok || a.finished || msg.Gen != b.Gen {
 		return
 	}
 	pkt, err := conn.Decode(msg.Opcode, msg.Body)
@@ -116,7 +153,7 @@ func (a *SuiteActor) packetReceived(msg *PacketReceived) {
 
 func (a *SuiteActor) disconnected(msg *Disconnected) {
 	b := a.bots[msg.Bot]
-	if a.finished || msg.Gen != b.Gen {
+	if _, ok := a.moving[b]; ok || a.finished || msg.Gen != b.Gen {
 		return
 	}
 	log.Printf("[%s] %s disconnected: %v", a.name, b.Name, msg.Err)

@@ -13,6 +13,7 @@ func (*SwitchChannel) Opcode() byte {
 }
 
 func (a *SwitchChannel) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(a.Channel)
 	return nil
 }
 

@@ -30,6 +30,43 @@ func normalizePartyMembersSix(members []PartyMemberStatus) []PartyMemberStatus {
 	return out
 }
 
+func readPartyStatusBlock(r *stream.StreamReader) (uint32, []PartyMemberStatus) {
+	slots := make([]PartyMemberStatus, 6)
+	for i := range slots {
+		slots[i].CharacterID = r.ReadU32()
+	}
+	for i := range slots {
+		slots[i].Name = r.ReadStaticStr(13)
+	}
+	for i := range slots {
+		slots[i].Class = r.ReadU32()
+	}
+	for i := range slots {
+		slots[i].Level = r.ReadU32()
+	}
+	for i := range slots {
+		slots[i].Channel = r.Read32()
+	}
+	leaderCharacterID := r.ReadU32()
+	for i := range slots {
+		slots[i].MapID = r.ReadU32()
+	}
+	for i := range slots {
+		slots[i].DoorTown = r.ReadU32()
+		slots[i].DoorTarget = r.ReadU32()
+		slots[i].DoorX = r.Read32()
+		slots[i].DoorY = r.Read32()
+	}
+
+	var members []PartyMemberStatus
+	for _, m := range slots {
+		if m.CharacterID != 0 {
+			members = append(members, m)
+		}
+	}
+	return leaderCharacterID, members
+}
+
 func writePartyStatusBlock(w *stream.StreamWriter, forChannel int32, leaderCharacterID uint32, members []PartyMemberStatus, leaving bool) {
 	slots := normalizePartyMembersSix(members)
 	for _, m := range slots {

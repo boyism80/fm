@@ -15,6 +15,17 @@ type PartyOperation struct {
 func (*PartyOperation) Opcode() byte { return 0x66 }
 
 func (p *PartyOperation) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(p.Operation))
+	switch p.Operation {
+	case constant.PartyC2SAcceptInvite:
+		writer.WriteU32(p.PartyID)
+	case constant.PartyC2SInvite:
+		writer.WriteStr16(p.TargetName)
+	case constant.PartyC2SExpel:
+		writer.WriteU32(p.TargetCharacterID)
+	case constant.PartyC2SChangeLeader:
+		writer.WriteU32(p.TargetCharacterID)
+	}
 	return nil
 }
 

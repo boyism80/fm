@@ -180,19 +180,31 @@ func (b *Bot) openGame() error {
 	}
 	transfer := pkt.(*response.Transfer)
 	b.Close()
+	return b.joinGame(transfer.IP, transfer.Port, transfer.CharacterId)
+}
 
-	host := transfer.IP
+func (b *Bot) EnterChannel(ip string, port uint16) error {
+	b.Close()
+	if err := b.joinGame(ip, port, b.CharID); err != nil {
+		b.Close()
+		return err
+	}
+	return b.conn.SetDeadline(time.Time{})
+}
+
+func (b *Bot) joinGame(ip string, port uint16, charID uint32) error {
+	host := ip
 	if host == "" || host == "0.0.0.0" {
 		host = "127.0.0.1"
 	}
-	addr := fmt.Sprintf("%s:%d", host, transfer.Port)
+	addr := fmt.Sprintf("%s:%d", host, port)
 	c, err := b.dial(addr)
 	if err != nil {
 		return fmt.Errorf("game %s: %w", addr, err)
 	}
 	b.conn = c
 	b.Gen++
-	if err := b.conn.Send(&request.LoginGame{PlayerId: transfer.CharacterId}); err != nil {
+	if err := b.conn.Send(&request.LoginGame{PlayerId: charID}); err != nil {
 		return err
 	}
 
@@ -203,6 +215,9 @@ func (b *Bot) openGame() error {
 			switch pkt.(type) {
 			case *response.Login, *response.KeyMap, *response.LoginFailed:
 				return true
+			case *response.SpawnNpc, *response.RemoveNpc:
+				b.Update(pkt)
+				return false
 			default:
 				return false
 			}
@@ -290,5 +305,7 @@ var (
 	gameOpcodes = []uint16{
 		(&response.Login{}).Opcode(),
 		(&response.KeyMap{}).Opcode(),
+		(&response.SpawnNpc{}).Opcode(),
+		(&response.RemoveNpc{}).Opcode(),
 	}
 )

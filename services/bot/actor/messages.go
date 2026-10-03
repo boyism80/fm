@@ -11,6 +11,11 @@ type BotEntered struct {
 	Err error
 }
 
+type ChannelEntered struct {
+	Bot int
+	Err error
+}
+
 type PacketReceived struct {
 	Bot    int
 	Gen    int

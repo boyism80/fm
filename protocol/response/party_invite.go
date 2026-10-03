@@ -23,4 +23,9 @@ func (p *PartyInvite) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *PartyInvite) Deserialize(*stream.StreamReader) {}
+func (p *PartyInvite) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.PartyID = reader.ReadU32()
+	p.InviterName = reader.ReadStr16()
+	p.PartySearch = reader.ReadBool()
+}

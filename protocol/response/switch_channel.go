@@ -22,4 +22,8 @@ func (p *SwitchChannel) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *SwitchChannel) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.IP = reader.ReadIPAddress()
+	p.Port = reader.ReadU16()
+	reader.ReadU8()
 }

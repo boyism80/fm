@@ -21,4 +21,8 @@ func (p *PartyUpdateLeaderChange) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *PartyUpdateLeaderChange) Deserialize(*stream.StreamReader) {}
+func (p *PartyUpdateLeaderChange) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.NewLeaderCharacterID = reader.ReadU32()
+	p.ByDisconnect = reader.ReadBool()
+}

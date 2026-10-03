@@ -3,6 +3,7 @@ package conn
 import (
 	"fmt"
 
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
@@ -29,6 +30,21 @@ var Responses = []any{
 	&response.DialogList{},
 	&response.DialogStyle{},
 	&response.DialogAccept{},
+	&response.UpdateStats{},
+	&response.SwitchChannel{},
+	&response.ServerBlocked{},
+	&response.PartyCreated{},
+	&response.PartyInvite{},
+	&response.PartyUpdateJoin{},
+	&response.PartyUpdateLeave{},
+	&response.PartyUpdateExpel{},
+	&response.PartyUpdateDisband{},
+	&response.PartyUpdateLeaderChange{},
+	&response.PartyStatusMessage{},
+}
+
+type deserializer interface {
+	Deserialize(reader *stream.StreamReader)
 }
 
 func Decode(opcode uint16, body []byte) (any, error) {
@@ -102,9 +118,7 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		if len(body) < 6 {
 			return nil, fmt.Errorf("short dialog")
 		}
-		var pkt interface {
-			Deserialize(reader *stream.StreamReader)
-		}
+		var pkt deserializer
 		switch constant.DialogType(body[5]) {
 		case constant.DialogTypeYesNo:
 			pkt = &response.DialogYesNo{}
@@ -118,6 +132,51 @@ func Decode(opcode uint16, body []byte) (any, error) {
 			pkt = &response.DialogAccept{}
 		default:
 			pkt = &response.Dialog{}
+		}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.UpdateStats{}).Opcode():
+		pkt := &response.UpdateStats{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.SwitchChannel{}).Opcode():
+		pkt := &response.SwitchChannel{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.ServerBlocked{}).Opcode():
+		pkt := &response.ServerBlocked{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.PartyCreated{}).Opcode():
+		if len(body) == 0 {
+			return nil, fmt.Errorf("empty party opcode")
+		}
+		var pkt deserializer
+		switch pconst.PartySubOpcode(body[0]) {
+		case pconst.PartyS2CPartyCreated:
+			pkt = &response.PartyCreated{}
+		case pconst.PartyS2CInvite:
+			pkt = &response.PartyInvite{}
+		case pconst.PartyS2CPartyJoin:
+			pkt = &response.PartyUpdateJoin{}
+		case pconst.PartyS2CLeaderChange:
+			pkt = &response.PartyUpdateLeaderChange{}
+		case pconst.PartyS2CPartyUpdate:
+			if len(body) < 11 {
+				return nil, fmt.Errorf("short party update")
+			}
+			switch {
+			case body[9] == 0:
+				pkt = &response.PartyUpdateDisband{}
+			case body[10] == 1:
+				pkt = &response.PartyUpdateExpel{}
+			default:
+				pkt = &response.PartyUpdateLeave{}
+			}
+		case pconst.PartyS2CSilentUpdate, pconst.PartyS2CPartyPortal:
+			return nil, fmt.Errorf("party sub opcode %d is not decoded", body[0])
+		default:
+			pkt = &response.PartyStatusMessage{}
 		}
 		pkt.Deserialize(reader)
 		return pkt, nil

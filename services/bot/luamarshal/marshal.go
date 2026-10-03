@@ -62,6 +62,13 @@ func (m *Marshal) toLua(L *lua.LState, v reflect.Value) lua.LValue {
 			tbl.RawSetInt(i+1, m.toLua(L, v.Index(i)))
 		}
 		return tbl
+	case reflect.Map:
+		tbl := L.NewTable()
+		iter := v.MapRange()
+		for iter.Next() {
+			tbl.RawSet(m.toLua(L, iter.Key()), m.toLua(L, iter.Value()))
+		}
+		return tbl
 	case reflect.Struct:
 		tbl := L.NewTable()
 		t := v.Type()

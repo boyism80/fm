@@ -25,4 +25,9 @@ func (p *PartyUpdateJoin) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *PartyUpdateJoin) Deserialize(*stream.StreamReader) {}
+func (p *PartyUpdateJoin) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.PartyID = reader.ReadU32()
+	p.JoiningCharacterName = reader.ReadStr16()
+	p.LeaderCharacterID, p.Members = readPartyStatusBlock(reader)
+}

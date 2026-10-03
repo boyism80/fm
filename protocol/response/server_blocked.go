@@ -19,4 +19,5 @@ func (p *ServerBlocked) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *ServerBlocked) Deserialize(reader *stream.StreamReader) {
+	p.Reason = constant.ServerBlockedReason(reader.ReadU8())
 }

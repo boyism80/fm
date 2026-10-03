@@ -62,4 +62,35 @@ func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *UpdateStats) Deserialize(reader *stream.StreamReader) {
+	p.UnlockAction = reader.ReadBool()
+	mask := reader.ReadU32()
+	p.Stats = map[constant.Stat]int32{}
+	order := []constant.Stat{constant.StatSkin, constant.StatFace, constant.StatHair, constant.StatPet, constant.StatLevel, constant.StatClass, constant.StatStr, constant.StatDex, constant.StatInt, constant.StatLuk, constant.StatHP, constant.StatMaxHP, constant.StatMP, constant.StatMaxMP, constant.StatAvailableAP, constant.StatAvailableSP, constant.StatEXP, constant.StatPopulation, constant.StatMeso}
+	for _, stat := range order {
+		if mask&uint32(stat) == 0 {
+			continue
+		}
+		switch stat {
+		case constant.StatSkin:
+			p.Stats[stat] = int32(reader.ReadU16())
+
+		case constant.StatFace, constant.StatHair:
+			p.Stats[stat] = int32(reader.ReadU32())
+
+		case constant.StatPet:
+			p.Stats[stat] = int32(reader.ReadU64())
+
+		case constant.StatLevel:
+			p.Stats[stat] = int32(reader.ReadU8())
+
+		case constant.StatClass, constant.StatStr, constant.StatDex,
+			constant.StatInt, constant.StatLuk, constant.StatHP,
+			constant.StatMaxHP, constant.StatMP, constant.StatMaxMP,
+			constant.StatAvailableAP, constant.StatAvailableSP:
+			p.Stats[stat] = int32(reader.ReadU16())
+
+		case constant.StatEXP, constant.StatPopulation, constant.StatMeso:
+			p.Stats[stat] = int32(reader.ReadU32())
+		}
+	}
 }

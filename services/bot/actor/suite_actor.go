@@ -32,6 +32,7 @@ type SuiteActor struct {
 	waiters  []*waiter
 	nextWait uint64
 	hooks    map[string]func(b *bot.Bot, pkt any)
+	moving   map[*bot.Bot]func(err error)
 	started  time.Time
 	deadline *time.Timer
 	failures []string
@@ -59,6 +60,7 @@ func NewSuiteActor(cfg *config.Bot, resources *wz.Resources, suite *Suite, seat 
 		botSeq:   botSeq,
 		name:     suite.Name,
 		hooks:    make(map[string]func(b *bot.Bot, pkt any)),
+		moving:   make(map[*bot.Bot]func(err error)),
 		marshal:  luamarshal.New(),
 		threads:  make(map[*lua.LState]func(values []lua.LValue, err error)),
 		sleeping: make(map[*lua.LState]bool),
@@ -76,6 +78,8 @@ func (a *SuiteActor) Receive(ctx actor.Context) {
 		}
 	case *BotEntered:
 		a.botEntered(msg)
+	case *ChannelEntered:
+		a.channelEntered(msg)
 	case *PacketReceived:
 		a.packetReceived(msg)
 	case *Disconnected:
@@ -172,11 +176,7 @@ func (a *SuiteActor) botEntered(msg *BotEntered) {
 		return
 	}
 
-	b.Listen(func(gen int, opcode uint16, body []byte) {
-		a.actors.Send(a.self, &PacketReceived{Bot: msg.Bot, Gen: gen, Opcode: opcode, Body: body})
-	}, func(gen int, err error) {
-		a.actors.Send(a.self, &Disconnected{Bot: msg.Bot, Gen: gen, Err: err})
-	})
+	a.listen(msg.Bot)
 	a.entered++
 	if a.entered < len(a.bots) {
 		return
@@ -200,6 +200,28 @@ func (a *SuiteActor) botEntered(msg *BotEntered) {
 		}
 		a.runScenarios(1)
 	}, a.ctxUD)
+}
+
+func (a *SuiteActor) listen(i int) {
+	a.bots[i].Listen(func(gen int, opcode uint16, body []byte) {
+		a.actors.Send(a.self, &PacketReceived{Bot: i, Gen: gen, Opcode: opcode, Body: body})
+	}, func(gen int, err error) {
+		a.actors.Send(a.self, &Disconnected{Bot: i, Gen: gen, Err: err})
+	})
+}
+
+func (a *SuiteActor) channelEntered(msg *ChannelEntered) {
+	b := a.bots[msg.Bot]
+	done := a.moving[b]
+	delete(a.moving, b)
+	if a.finished {
+		b.Close()
+		return
+	}
+	if msg.Err == nil {
+		a.listen(msg.Bot)
+	}
+	done(msg.Err)
 }
 
 func (a *SuiteActor) runScenarios(i int) {

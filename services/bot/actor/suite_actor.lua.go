@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/boyism80/fm/core/luax"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/bot/bot"
@@ -19,6 +21,9 @@ var requests = []outbound{
 	&request.NormalChat{},
 	&request.NpcClick{},
 	&request.Dialog{},
+	&request.Warp{},
+	&request.PartyOperation{},
+	&request.SwitchChannel{},
 }
 
 func (a *SuiteActor) register() {
@@ -55,10 +60,19 @@ func (a *SuiteActor) register() {
 	L.SetGlobal("req", req)
 	L.NewTypeMetatable("bot_request")
 
+	party := L.NewTable()
+	party.RawSetString("Create", lua.LNumber(pconst.PartyC2SCreate))
+	party.RawSetString("Leave", lua.LNumber(pconst.PartyC2SLeave))
+	party.RawSetString("AcceptInvite", lua.LNumber(pconst.PartyC2SAcceptInvite))
+	party.RawSetString("Invite", lua.LNumber(pconst.PartyC2SInvite))
+	party.RawSetString("Expel", lua.LNumber(pconst.PartyC2SExpel))
+	party.RawSetString("ChangeLeader", lua.LNumber(pconst.PartyC2SChangeLeader))
+	L.SetGlobal("PARTY", party)
+
 	ctxIndex := L.SetFuncs(L.NewTable(), a.ctxFuncs())
 	botIndex := L.SetFuncs(L.NewTable(), a.botFuncs())
 	a.wrapWaits(ctxIndex, "sleep")
-	a.wrapWaits(botIndex, "request", "instance_move", "map_move", "npc", "npc_click", "dialog")
+	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "npc", "npc_click", "dialog")
 	L.SetField(L.NewTypeMetatable("bot_ctx"), "__index", ctxIndex)
 	L.SetField(L.NewTypeMetatable("bot"), "__index", botIndex)
 	a.ctxUD = a.newUserData(a, "bot_ctx")
@@ -146,6 +160,20 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(a.checkBot(L).Map))
 			return 1
 		},
+		"hp": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).HP))
+			return 1
+		},
+		"position": func(L *lua.LState) int {
+			pos, ok := a.checkBot(L).Position(a.wz)
+			if ok == false {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(lua.LNumber(pos.X))
+			L.Push(lua.LNumber(pos.Y))
+			return 2
+		},
 		"send": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			L.Push(lua.LBool(b.Send(a.checkRequest(L, 2)) == nil))
@@ -175,9 +203,51 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			pred := L.OptFunction(4, nil)
 			timeout := time.Duration(L.OptInt(5, a.cfg.TimeoutMs)) * time.Millisecond
 			a.park(L)
-			a.Request(L, b, pkt, timeout, func(p any) bool {
+			a.Request(L, b, b, pkt, timeout, func(p any) bool {
 				return a.packetName(p) == name && (pred == nil || a.callPredicate(pred, p))
 			}, a.wakeWithPacket(L))
+			return L.Yield()
+		},
+		"request_on": func(L *lua.LState) int {
+			sender := a.checkBot(L)
+			listener, ok := L.CheckUserData(2).Value.(*bot.Bot)
+			if ok == false {
+				L.ArgError(2, "bot expected")
+			}
+			name := L.CheckString(3)
+			var pkt outbound
+			if L.Get(4) != lua.LNil {
+				pkt = a.checkRequest(L, 4)
+			}
+			pred := L.OptFunction(5, nil)
+			timeout := time.Duration(L.OptInt(6, a.cfg.TimeoutMs)) * time.Millisecond
+			a.park(L)
+			a.Request(L, sender, listener, pkt, timeout, func(p any) bool {
+				return a.packetName(p) == name && (pred == nil || a.callPredicate(pred, p))
+			}, a.wakeWithPacket(L))
+			return L.Yield()
+		},
+		"warp": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			pkt := &request.Warp{Target: 0xFFFFFFFF, PortalName: L.CheckString(2)}
+			a.park(L)
+			a.Request(L, b, b, pkt, a.timeout(), func(p any) bool {
+				_, ok := p.(*response.Warp)
+				return ok
+			}, a.wakeWithPacket(L))
+			return L.Yield()
+		},
+		"transfer": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			channel := L.CheckInt(2)
+			if channel < 0 || channel > 255 {
+				L.ArgError(2, "channel must fit in one byte")
+			}
+			i := slices.Index(a.bots, b)
+			a.park(L)
+			a.switchChannel(L, i, uint8(channel), func(ok bool) {
+				a.wake(L, lua.LBool(ok))
+			})
 			return L.Yield()
 		},
 		"instance_move": func(L *lua.LState) int {
@@ -188,7 +258,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				text = fmt.Sprintf("%s %d", text, L.CheckInt(3))
 			}
 			a.park(L)
-			a.warpByCommand(L, b, text, mapID, func(ok bool) {
+			a.warpByCommand(L, b, text, mapID, true, func(ok bool) {
 				a.wake(L, lua.LBool(ok))
 			})
 			return L.Yield()
@@ -205,7 +275,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				text = fmt.Sprintf("%s %d", text, L.CheckInt(3))
 			}
 			a.park(L)
-			a.warpByCommand(L, b, text, mapID, func(ok bool) {
+			a.warpByCommand(L, b, text, mapID, true, func(ok bool) {
 				a.wake(L, lua.LBool(ok))
 			})
 			return L.Yield()
@@ -218,7 +288,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			a.park(L)
-			a.Request(L, b, nil, a.timeout(), func(p any) bool {
+			a.Request(L, b, b, nil, a.timeout(), func(p any) bool {
 				spawn, ok := p.(*response.SpawnNpc)
 				return ok && spawn.NPC.NpcId == templateID
 			}, func(p any, ok bool) {
@@ -234,7 +304,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			b := a.checkBot(L)
 			oid := uint32(L.CheckInt(2))
 			a.park(L)
-			a.Request(L, b, &request.NpcClick{OID: oid}, a.timeout(), a.dialogPacket, a.wakeWithPacket(L))
+			a.Request(L, b, b, &request.NpcClick{OID: oid}, a.timeout(), a.dialogPacket, a.wakeWithPacket(L))
 			return L.Yield()
 		},
 		"dialog": func(L *lua.LState) int {
@@ -253,7 +323,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 			a.park(L)
-			a.Request(L, b, pkt, a.timeout(), a.dialogPacket, func(p any, ok bool) {
+			a.Request(L, b, b, pkt, a.timeout(), a.dialogPacket, func(p any, ok bool) {
 				if ok == false {
 					a.wake(L, lua.LNil)
 					return

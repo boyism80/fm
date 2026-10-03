@@ -23,4 +23,10 @@ func (p *PartyUpdateDisband) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *PartyUpdateDisband) Deserialize(*stream.StreamReader) {}
+func (p *PartyUpdateDisband) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.PartyID = reader.ReadU32()
+	p.LeaderCharacterID = reader.ReadU32()
+	reader.ReadU8()
+	reader.ReadU32()
+}
