@@ -7,10 +7,11 @@ import (
 	"os"
 	"strings"
 
-	"errors"
-
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/config"
-	"github.com/boyism80/fm/services/bot/bot"
+	coreactor "github.com/boyism80/fm/core/actor"
+	botactor "github.com/boyism80/fm/services/bot/actor"
+	"github.com/boyism80/fm/services/game/wz"
 )
 
 func main() {
@@ -94,18 +95,29 @@ func runIntegration(cfg *config.Bot, filter, junit string) int {
 		cfg.Seats,
 		cfg.TimeoutMs,
 	)
-	if filter != "" {
-		log.Printf("filter %s is unused until suites run", filter)
-	}
-	if junit != "" {
-		log.Printf("junit %s is unused until suites run", junit)
-	}
-	if err := bot.Enter(cfg); err != nil {
-		log.Printf("%v", err)
-		if errors.Is(err, bot.ErrConnect) {
-			return 2
+
+	var suites []*botactor.Suite
+	for _, s := range botactor.Suites {
+		if strings.Contains(s.Name, filter) {
+			suites = append(suites, s)
 		}
-		return 1
 	}
-	return 0
+	if len(suites) == 0 {
+		log.Printf("no suite matches filter %q", filter)
+		return 2
+	}
+
+	log.Printf("loading wz %s", cfg.WzPath)
+	resources := wz.NewResources(cfg.WzPath)
+	if resources == nil {
+		log.Printf("failed to load wz %s", cfg.WzPath)
+		return 2
+	}
+
+	done := make(chan int, 1)
+	system := coreactor.NewActorSystem()
+	system.GetRoot().Spawn(actor.PropsFromProducer(func() actor.Actor {
+		return botactor.NewRunnerActor(cfg, resources, suites, junit, done)
+	}))
+	return <-done
 }
