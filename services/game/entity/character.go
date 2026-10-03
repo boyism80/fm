@@ -636,18 +636,55 @@ type APEntry struct {
 // AssignAP validates all entries against current stats, then applies them atomically
 // and deducts AP. Returns false (without mutating state) if any entry is invalid.
 func (ch *Character) AssignAP(entries []APEntry) bool {
+	total := uint32(0)
 	for _, e := range entries {
-		if !ch.canAddStat(e.Stat, e.Amount) {
+		if ch.canAddStat(e.Stat, e.Amount) == false {
 			return false
 		}
+		total += uint32(e.Amount)
 	}
+	if total > uint32(ch.AbilityPoint) {
+		return false
+	}
+
 	statUpdate := map[constant.Stat]int32{}
-	total := uint16(0)
 	for _, e := range entries {
 		ch.applyStatDelta(e.Stat, e.Amount, statUpdate)
-		total += e.Amount
 	}
-	ch.AbilityPoint -= total
+	ch.AbilityPoint -= uint16(total)
+	statUpdate[constant.StatAvailableAP] = int32(ch.AbilityPoint)
+	ch.Listener.OnUpdateStats(ch, statUpdate, true)
+	return true
+}
+
+// AssignAPToHPMP spends one AP on max HP or max MP. increase is the class amount from the stat script.
+func (ch *Character) AssignAPToHPMP(stat constant.StatType, increase uint32) bool {
+	if ch.AbilityPoint == 0 || ch.HpApUsed >= constant.HpAPUsedMax {
+		return false
+	}
+
+	statUpdate := map[constant.Stat]int32{}
+	switch stat {
+	case constant.StatTypeHP:
+		if ch.GetMaxHp() >= constant.StatMaxHPMP {
+			return false
+		}
+		ch.AddBaseHp(increase, false)
+		statUpdate[constant.StatHP] = int32(ch.GetHp())
+		statUpdate[constant.StatMaxHP] = int32(ch.GetMaxHp())
+	case constant.StatTypeMP:
+		if ch.GetMaxMp() >= constant.StatMaxHPMP {
+			return false
+		}
+		ch.AddBaseMp(increase, false)
+		statUpdate[constant.StatMP] = int32(ch.GetMp())
+		statUpdate[constant.StatMaxMP] = int32(ch.GetMaxMp())
+	default:
+		return false
+	}
+
+	ch.HpApUsed++
+	ch.AbilityPoint--
 	statUpdate[constant.StatAvailableAP] = int32(ch.AbilityPoint)
 	ch.Listener.OnUpdateStats(ch, statUpdate, true)
 	return true
