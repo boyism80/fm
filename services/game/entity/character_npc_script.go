@@ -9,15 +9,16 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (ch *Character) OpenNpc(actx actor.Context, npcID uint32, caller *lua.LState) error {
-	if ch == nil {
-		return fmt.Errorf("character is nil")
-	}
+func (ch *Character) OpenNpc(actx actor.Context, npc *Npc, caller *lua.LState) error {
 	if actx == nil {
 		return fmt.Errorf("actor context is nil")
 	}
-	if npcID == 0 {
-		return fmt.Errorf("npc id required")
+	npcID := npc.Wz.ID
+
+	if shop := ch.GameWorld.GetResources().GetShop(npcID); shop != nil {
+		ch.CurrentShopID = npcID
+		ch.Listener.OnOpenNpcShop(ch, npcID, shop)
+		return nil
 	}
 
 	if old := ch.GetDialog(); old != nil {
@@ -49,18 +50,14 @@ func (ch *Character) OpenNpc(actx actor.Context, npcID uint32, caller *lua.LStat
 		ActorContext: actx,
 		ActorPID:     mapInstance.LogicActorPID(),
 	})
-	luax.CallAsync(root, luaThread, "on_click", ch, npcID).Then(func(_ interface{}) (interface{}, error) {
+	luax.CallAsync(root, luaThread, "on_click", ch, npc).Then(func(_ interface{}) (interface{}, error) {
 		ch.ResetDialog()
-		if ch.Listener != nil {
-			ch.Listener.OnUnlockAction(ch)
-		}
+		ch.Listener.OnUnlockAction(ch)
 		return nil, nil
 	}).OnError(func(err error) {
 		log.Printf("npc script on_click npc=%d: %v", npcID, err)
 		ch.ResetDialog()
-		if ch.Listener != nil {
-			ch.Listener.OnUnlockAction(ch)
-		}
+		ch.Listener.OnUnlockAction(ch)
 	})
 	return nil
 }

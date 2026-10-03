@@ -34,10 +34,7 @@ end
 
 return {
 	on_click = function(me, npc)
-		local npc_id = npc
-		if type(npc) ~= "number" then
-			npc_id = npc:id()
-		end
+		local npc_id = npc:id()
 		local qr = me:quest(shuffle_key_quest)
 		local qr2 = me:quest(pipe_progress_quest)
 		if qr == nil or qr2 == nil then

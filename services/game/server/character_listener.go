@@ -14,6 +14,7 @@ import (
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
+	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 )
 
@@ -714,6 +715,14 @@ func (l *CharacterListenerImpl) OnShowMobHp(ch *entity.Character, mob *entity.Mo
 	ch.Send(&response.ShowMobHp{
 		OID:        mob.OID,
 		Percentage: percentage,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnOpenNpcShop(ch *entity.Character, shopID uint32, shop *wz.Shop) {
+	ch.Send(&response.OpenNpcShop{
+		ShopID: int32(shopID),
+		Shop:   shop,
+		Items:  l.gs.GetResources().Items,
 	}, types.SEND_POLICY_ENCRYPT)
 }
 

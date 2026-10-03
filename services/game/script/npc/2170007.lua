@@ -2,10 +2,7 @@
 
 return {
 	on_click = function(me, npc)
-		local npc_id = npc
-		if type(npc) ~= "number" then
-			npc_id = npc:id()
-		end
+		local npc_id = npc:id()
 		if not me:dialog_yes_no(npc, "전투를 마치고 이동합니다.") then
 			return
 		end

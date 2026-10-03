@@ -5,12 +5,9 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
-	"github.com/boyism80/fm/types"
 )
 
 type NpcClick struct {
@@ -42,66 +39,15 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("map not found")
 	}
 
-	npcs := mapInstance.GetNpcs()
-	npcInterface, exists := npcs[req.OID]
-	if !exists {
+	npc, ok := mapInstance.GetNpcs()[req.OID].(*entity.Npc)
+	if !ok {
 		log.Printf("NPC %d not found on map", req.OID)
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 
-	npc, ok := npcInterface.(*entity.Npc)
-	if !ok {
-		log.Printf("Invalid NPC type for OID %d", req.OID)
-		return fmt.Errorf("invalid NPC type")
-	}
-
-	resources := h.gs.GetResources()
-	if resources == nil {
-		log.Printf("Resources not available")
-		return fmt.Errorf("resources not available")
-	}
-
-	npcID := npc.Wz.ID
-	shop := resources.GetShop(npcID)
-
-	if shop != nil {
-
-		character.CurrentShopID = npcID
-		packet := &response.OpenNpcShop{
-			ShopID: int32(npcID),
-			Shop:   shop,
-			Items:  resources.Items,
-		}
-		if err := character.Send(packet, types.SEND_POLICY_ENCRYPT); err != nil {
-			log.Printf("Failed to send OPEN_NPC_SHOP packet: %v", err)
-			return err
-		}
-		return nil
-	}
-
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		log.Printf("No lua root state for map %d", mapInstance.GetMapID())
-		return fmt.Errorf("lua state not available")
-	}
-	scriptPath := fmt.Sprintf("script/npc/%d.lua", npcID)
-	luaThread, err := luax.NewThread(root, scriptPath)
-	if err != nil {
-		log.Printf("Failed to create NPC script thread: %v", err)
+	if err := character.OpenNpc(ctx.ActorContext, npc, nil); err != nil {
+		log.Printf("Failed to open NPC %d: %v", npc.Wz.ID, err)
 		return err
 	}
-	luax.SetConfiguration(luaThread, luax.Configuration{
-		ActorContext: ctx.ActorContext,
-		ActorPID:     mapInstance.LogicActorPID(),
-	})
-	luax.CallAsync(root, luaThread, "on_click", character, npc).Then(func(_ interface{}) (interface{}, error) {
-		character.ResetDialog()
-		character.Listener.OnUnlockAction(character)
-		return nil, nil
-	}).OnError(func(err error) {
-		log.Printf("Failed to execute NPC script: %v", err)
-		character.ResetDialog()
-		character.Listener.OnUnlockAction(character)
-	})
 	return nil
 }

@@ -6,10 +6,7 @@ local HERBS = { 4000276, 4000277, 4000278, 4000279, 4000280, 4000291, 4000292, 4
 
 return {
 	on_click = function(me, npc)
-		local npc_id = npc
-		if type(npc) ~= "number" then
-			npc_id = npc:id()
-		end
+		local npc_id = npc:id()
 
 		local q = me:quest(3821)
 		if q ~= nil and q:started() then

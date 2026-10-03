@@ -4,10 +4,7 @@ local SCROLL = 4001020
 
 return {
 	on_click = function(me, npc)
-		local npc_id = npc
-		if type(npc) ~= "number" then
-			npc_id = npc:id()
-		end
+		local npc_id = npc:id()
 
 		local count = 0
 		for _, it in pairs(me:item(SCROLL)) do

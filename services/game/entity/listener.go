@@ -9,6 +9,7 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 )
 
@@ -19,6 +20,7 @@ type CharacterListener interface {
 	OnDialogList(ch *Character, npc uint32, message string, selections []string)
 	OnDialogInput(ch *Character, npc uint32, message string)
 	OnDialogStyle(ch *Character, npc uint32, message string, styles []uint32)
+	OnOpenNpcShop(ch *Character, shopID uint32, shop *wz.Shop)
 	OnBuddyCapacity(ch *Character, capacity uint8)
 	OnChat(ch *Character, message string, highlight bool, dontRecordHistory bool)
 	OnMesoChanged(ch *Character, meso int32)

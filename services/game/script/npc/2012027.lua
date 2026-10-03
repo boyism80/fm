@@ -4,10 +4,7 @@ local MELODY = "004455433221104433221443322100445543322110"
 
 return {
 	on_click = function(me, npc)
-		local npc_id = npc
-		if type(npc) ~= "number" then
-			npc_id = npc:id()
-		end
+		local npc_id = npc:id()
 		me:play_sound("orbis/do", true)
 		local q = me:quest(3114)
 		if q == nil or not q:started() then

@@ -1740,7 +1740,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.RaiseError("open_npc: thread has no actor context")
 				return 0
 			}
-			if err := ch.OpenNpc(cfg.ActorContext, npcID, L); err != nil {
+			// Scripts open NPCs that are not placed on the map, so those get a template-only Npc.
+			npc := ch.GetMap().NpcByTemplate(npcID)
+			if npc == nil {
+				npc = &Npc{Wz: &wz.NpcSpawn{BaseSpawn: &wz.BaseSpawn{ID: npcID}}}
+			}
+			if err := ch.OpenNpc(cfg.ActorContext, npc, L); err != nil {
 				L.RaiseError("open_npc: %v", err)
 				return 0
 			}

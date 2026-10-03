@@ -15,10 +15,7 @@ return {
 		if next(me:item(4031200)) ~= nil then
 			me:exchange({ item = { [4031200] = 1 } }, nil)
 		end
-		local npc_id = npc
-		if type(npc) ~= "number" then
-			npc_id = npc:id()
-		end
+		local npc_id = npc:id()
 		juice:start(npc_id, true)
 	end
 }
