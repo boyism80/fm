@@ -28,28 +28,35 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 	log.Printf("Select character packet received from %s - Character ID: %d",
 		ctx.Client.GetConnection().RemoteAddr(), req.CharacterId)
 
+	failed := &response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}
 	loginClient, ok := ctx.Client.(*client.LoginClient)
 	if !ok {
+		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
 		return fmt.Errorf("select character: invalid client type")
 	}
 	if h.ls.internalClient == nil {
+		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
 		return fmt.Errorf("select character: internal client not configured")
 	}
 	accountId := loginClient.GetAccountId()
 	if accountId == 0 {
+		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
 		return fmt.Errorf("select character: account id is missing")
 	}
 	worldId := loginClient.GetWorldId()
 	channelId := loginClient.GetChannelId()
 	worldRoutes, ok := h.ls.channelRoutes[worldId]
 	if !ok {
+		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
 		return fmt.Errorf("select character: route not found for world=%d channel=%d", worldId, channelId)
 	}
 	route, ok := worldRoutes[uint32(channelId)]
 	if !ok {
+		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
 		return fmt.Errorf("select character: route not found for world=%d channel=%d", worldId, channelId)
 	}
 	if ctx.ActorContext == nil {
+		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
 		return fmt.Errorf("select character: actor context required for internal RPC")
 	}
 
@@ -77,6 +84,7 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 			return nil
 		}).OnError(func(err error) {
 		log.Printf("SelectCharacter (async): %v", err)
+		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
 	})
 	return nil
 }
