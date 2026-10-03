@@ -10,10 +10,10 @@ import { grpcMapper } from "../mappers";
 import { SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
 import type { BuddyService, BuddyListEntry } from "../../services/buddy-service";
 import type { CharacterService } from "../../services/character-service";
-import type { SkillService } from "../../services/skill-service";
 import type { BuffService } from "../../services/buff-service";
 import type { SessionService } from "../../services/session-service";
 import type { InventoryRepository } from "../../repos/inventory-repository";
+import type { SkillRepository } from "../../repos/skill-repository";
 import type { QuestRepository } from "../../repos/quest-repository";
 import type { SavedLocationRepository } from "../../repos/saved-location-repository";
 import type { CharacterRealtimeStateRepository } from "../../repos/character-realtime-state-repository";
@@ -55,7 +55,7 @@ type OwnedCharacterResult =
 export class SessionGrpcController {
     private readonly characterService: CharacterService;
     private readonly inventoryRepository: InventoryRepository;
-    private readonly skillService: SkillService;
+    private readonly skillRepository: SkillRepository;
     private readonly buffService: BuffService;
     private readonly questRepository: QuestRepository;
     private readonly savedLocationRepository: SavedLocationRepository;
@@ -68,7 +68,7 @@ export class SessionGrpcController {
     constructor(
         characterService: CharacterService,
         inventoryRepository: InventoryRepository,
-        skillService: SkillService,
+        skillRepository: SkillRepository,
         buffService: BuffService,
         questRepository: QuestRepository,
         savedLocationRepository: SavedLocationRepository,
@@ -80,7 +80,7 @@ export class SessionGrpcController {
     ) {
         this.characterService = characterService;
         this.inventoryRepository = inventoryRepository;
-        this.skillService = skillService;
+        this.skillRepository = skillRepository;
         this.buffService = buffService;
         this.questRepository = questRepository;
         this.savedLocationRepository = savedLocationRepository;
@@ -165,7 +165,7 @@ export class SessionGrpcController {
 
             const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack] = await Promise.all([
                 this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-                this.skillService.getSkills(worldId, characterId),
+                this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
                 this.buffService.getBuffs(worldId, characterId),
                 this.questRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
                 this.savedLocationRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),

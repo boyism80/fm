@@ -23,7 +23,6 @@ import { CharacterBuddyRepository } from "./repos/character-buddy-repository";
 import { CharacterRealtimeStateRepository } from "./repos/character-realtime-state-repository";
 import { CharacterService } from "./services/character-service";
 import { WzService } from "./services/wz-service";
-import { SkillService } from "./services/skill-service";
 import { BuffService } from "./services/buff-service";
 import { AccountService } from "./services/account-service";
 import { CharacterOverviewService } from "./services/character-overview-service";
@@ -70,7 +69,6 @@ export function createAppContainer() {
         characterRealtimeStateRepository: awilix.asClass(CharacterRealtimeStateRepository).scoped(),
         characterService: awilix.asClass(CharacterService).transient(),
         wzService: awilix.asClass(WzService).singleton(),
-        skillService: awilix.asClass(SkillService).transient(),
         buffService: awilix.asClass(BuffService).transient(),
         accountService: awilix.asClass(AccountService).transient(),
         characterOverviewService: awilix.asClass(CharacterOverviewService).transient(),
