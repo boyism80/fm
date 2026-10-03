@@ -24,6 +24,26 @@ type QuestAction struct {
 func (*QuestAction) Opcode() byte { return 0x5A }
 
 func (p *QuestAction) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(p.Mode))
+	writer.WriteU16(p.QuestID)
+
+	switch p.Mode {
+	case QuestActionRestoreLostItem:
+		writer.WriteU32(0)
+		writer.WriteU32(p.ItemID)
+
+	case QuestActionStart, QuestActionScriptedStart, QuestActionScriptedEnd:
+		writer.WriteU32(p.NPCID)
+
+	case QuestActionComplete:
+		writer.WriteU32(p.NPCID)
+		writer.WriteU32(0)
+		selection := uint32(0)
+		if p.Selection != nil {
+			selection = *p.Selection
+		}
+		writer.WriteU32(selection)
+	}
 	return nil
 }
 

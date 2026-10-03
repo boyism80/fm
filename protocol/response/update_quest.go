@@ -46,4 +46,7 @@ func (p *UpdateQuest) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *UpdateQuest) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.QuestID = reader.ReadU16()
+	p.Status = reader.ReadU8()
 }
