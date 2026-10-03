@@ -1150,6 +1150,19 @@ func (ch *Character) ResetDialog() {
 	ch.luaDialog = nil
 }
 
+func (ch *Character) CloseDialog() {
+	thread := ch.GetDialog()
+	if thread == nil {
+		return
+	}
+	ch.ResetDialog()
+	if cfg, ok := luax.GetConfiguration(thread); ok {
+		cfg.CallPromise = nil
+		luax.SetConfiguration(thread, cfg)
+	}
+	luax.Close(thread)
+}
+
 func (ch *Character) tryLevelUp() bool {
 	if ch.GameWorld == nil {
 		return false

@@ -6,10 +6,9 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
-	lua "github.com/yuin/gopher-lua"
 )
 
-func (ch *Character) OpenNpc(actx actor.Context, npc *Npc, caller *lua.LState) error {
+func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
 	if actx == nil {
 		return fmt.Errorf("actor context is nil")
 	}
@@ -21,16 +20,7 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc, caller *lua.LState) e
 		return nil
 	}
 
-	if old := ch.GetDialog(); old != nil {
-		ch.ResetDialog()
-		if cfg, ok := luax.GetConfiguration(old); ok {
-			cfg.CallPromise = nil
-			luax.SetConfiguration(old, cfg)
-		}
-		if old != caller {
-			luax.Close(old)
-		}
-	}
+	ch.CloseDialog()
 
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {

@@ -20,6 +20,34 @@ var threadScripts = struct {
 	m: make(map[*lua.LState]threadScript),
 }
 
+var runningThreads = struct {
+	sync.Mutex
+	m map[*lua.LState]int
+}{
+	m: make(map[*lua.LState]int),
+}
+
+func startRunning(thread *lua.LState) {
+	runningThreads.Lock()
+	defer runningThreads.Unlock()
+	runningThreads.m[thread]++
+}
+
+func stopRunning(thread *lua.LState) {
+	runningThreads.Lock()
+	defer runningThreads.Unlock()
+	runningThreads.m[thread]--
+	if runningThreads.m[thread] <= 0 {
+		delete(runningThreads.m, thread)
+	}
+}
+
+func isRunning(thread *lua.LState) bool {
+	runningThreads.Lock()
+	defer runningThreads.Unlock()
+	return runningThreads.m[thread] > 0
+}
+
 func setThreadScript(thread *lua.LState, path string, mod *lua.LTable) {
 	if thread == nil {
 		return
@@ -57,6 +85,9 @@ func HasFunc(thread *lua.LState, name string) bool {
 
 func Close(thread *lua.LState) {
 	if thread == nil {
+		return
+	}
+	if isRunning(thread) {
 		return
 	}
 	ClearConfiguration(thread)
@@ -168,7 +199,9 @@ func resumeFn(root *lua.LState, thread *lua.LState, fn *lua.LFunction, hook stri
 	if fn != nil {
 		thread.Push(fn)
 	}
+	startRunning(thread)
 	state, resumeErr, values := root.Resume(thread, fn, lvArgs...)
+	stopRunning(thread)
 	if resumeErr != nil {
 		err := resumeErr
 		if hook != "" {

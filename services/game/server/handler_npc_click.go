@@ -45,7 +45,7 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("npc %d not found", req.OID)
 	}
 
-	if err := character.OpenNpc(ctx.ActorContext, npc, nil); err != nil {
+	if err := character.OpenNpc(ctx.ActorContext, npc); err != nil {
 		log.Printf("Failed to open NPC %d: %v", npc.Wz.ID, err)
 		return err
 	}

@@ -1744,7 +1744,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if npc == nil {
 				npc = &Npc{Wz: &wz.NpcSpawn{BaseSpawn: &wz.BaseSpawn{ID: npcID}}}
 			}
-			if err := ch.OpenNpc(cfg.ActorContext, npc, L); err != nil {
+			if err := ch.OpenNpc(cfg.ActorContext, npc); err != nil {
 				L.RaiseError("open_npc: %v", err)
 				return 0
 			}
