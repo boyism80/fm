@@ -12,6 +12,11 @@ type MovePlayer struct {
 func (*MovePlayer) Opcode() byte { return 0x18 }
 
 func (m *MovePlayer) Serialize(writer *stream.StreamWriter) error {
+	writer.Write(make([]byte, 5))
+	writer.WriteU8(uint8(len(m.Fragments)))
+	for _, frag := range m.Fragments {
+		frag.Serialize(writer)
+	}
 	return nil
 }
 

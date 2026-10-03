@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/common/config"
+	"github.com/boyism80/fm/protocol/dto"
+	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/bot/conn"
 	"github.com/boyism80/fm/services/game/constant"
@@ -30,6 +32,7 @@ type Bot struct {
 	Gen    int
 	Map    uint32
 	Spawn  uint8
+	Moved  *types.Point[int16]
 	HP     uint16
 	NPCs   map[uint32]uint32
 	Dialog constant.DialogType
@@ -86,11 +89,13 @@ func (b *Bot) Update(pkt any) {
 		if p.Character != nil {
 			b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
 		}
+		b.Moved = nil
 		clear(b.NPCs)
 	case *response.Warp:
 		if p.Character != nil {
 			b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
 		}
+		b.Moved = nil
 		clear(b.NPCs)
 	case *response.UpdateStats:
 		if hp, ok := p.Stats[constant.StatHP]; ok {
@@ -127,7 +132,21 @@ func (b *Bot) FindNPC(templateID uint32) (uint32, bool) {
 	return 0, false
 }
 
+func (b *Bot) Move(pos types.Point[int16], foothold int16) error {
+	err := b.Send(&request.MovePlayer{Fragments: []dto.MoveFragment{
+		&dto.AbsoluteLifeMovement{BasicMovement: &dto.BasicMovement{}, Position: pos, Foothold: foothold},
+	}})
+	if err != nil {
+		return err
+	}
+	b.Moved = &pos
+	return nil
+}
+
 func (b *Bot) Position(resources *wz.Resources) (types.Point[int16], bool) {
+	if b.Moved != nil {
+		return *b.Moved, true
+	}
 	m, ok := resources.Maps[b.Map]
 	if ok == false {
 		return types.Point[int16]{}, false

@@ -79,6 +79,9 @@ func (r *RunnerActor) loadRegistry() error {
 		s := &Suite{Name: L.CheckString(1)}
 		if opts := L.OptTable(2, nil); opts != nil {
 			s.Serial = lua.LVAsBool(opts.RawGetString("serial"))
+			if n, ok := opts.RawGetString("timeout_ms").(lua.LNumber); ok {
+				s.TimeoutMs = int(n)
+			}
 		}
 		if strings.Contains(s.Name, r.filter) == false {
 			return 0

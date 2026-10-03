@@ -93,7 +93,7 @@ func (a *SuiteActor) Receive(ctx actor.Context) {
 		delete(a.sleeping, msg.Thread)
 		a.wake(msg.Thread)
 	case *SuiteDeadline:
-		a.Fail(fmt.Sprintf("suite deadline %dms", a.cfg.SuiteTimeoutMs))
+		a.Fail(fmt.Sprintf("suite deadline %dms", a.timeoutMs()))
 		a.cleanup()
 	case *CleanupDone:
 		a.close(ctx)
@@ -104,7 +104,7 @@ func (a *SuiteActor) start(ctx actor.Context) {
 	a.actors = ctx.ActorSystem().Root
 	a.self = ctx.Self()
 	a.started = time.Now()
-	a.deadline = time.AfterFunc(time.Duration(a.cfg.SuiteTimeoutMs)*time.Millisecond, func() {
+	a.deadline = time.AfterFunc(time.Duration(a.timeoutMs())*time.Millisecond, func() {
 		a.actors.Send(a.self, &SuiteDeadline{})
 	})
 
@@ -344,6 +344,13 @@ func (a *SuiteActor) callHook(name string, args ...lua.LValue) {
 	if _, err := luax.CallFunction(a.L, fn, values...); err != nil {
 		a.Fail(fmt.Sprintf("%s: %v", name, err))
 	}
+}
+
+func (a *SuiteActor) timeoutMs() int {
+	if a.suite.TimeoutMs > 0 {
+		return a.suite.TimeoutMs
+	}
+	return a.cfg.SuiteTimeoutMs
 }
 
 func (a *SuiteActor) Fail(msg string) bool {

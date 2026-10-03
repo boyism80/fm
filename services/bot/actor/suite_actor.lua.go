@@ -14,6 +14,7 @@ import (
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/bot/bot"
 	"github.com/boyism80/fm/services/bot/conn"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -68,6 +69,7 @@ func (a *SuiteActor) register() {
 	party.RawSetString("Expel", lua.LNumber(pconst.PartyC2SExpel))
 	party.RawSetString("ChangeLeader", lua.LNumber(pconst.PartyC2SChangeLeader))
 	L.SetGlobal("PARTY", party)
+	L.SetGlobal("wz", L.SetFuncs(L.NewTable(), a.wzFuncs()))
 
 	ctxIndex := L.SetFuncs(L.NewTable(), a.ctxFuncs())
 	botIndex := L.SetFuncs(L.NewTable(), a.botFuncs())
@@ -79,7 +81,7 @@ func (a *SuiteActor) register() {
 }
 
 func (a *SuiteActor) wrapWaits(index *lua.LTable, names ...string) {
-	if err := a.L.DoString("return function(raw) return function(...) local r = raw(...) return r end end"); err != nil {
+	if err := a.L.DoString("return function(raw) return function(...) local r, name = raw(...) return r, name end end"); err != nil {
 		panic(err)
 	}
 	wrap := a.L.Get(-1).(*lua.LFunction)
@@ -174,6 +176,12 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(pos.Y))
 			return 2
 		},
+		"move": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			pos := types.Point[int16]{X: int16(L.CheckInt(2)), Y: int16(L.CheckInt(3))}
+			L.Push(lua.LBool(b.Move(pos, int16(L.OptInt(4, 0))) == nil))
+			return 1
+		},
 		"send": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			L.Push(lua.LBool(b.Send(a.checkRequest(L, 2)) == nil))
@@ -195,7 +203,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		},
 		"request": func(L *lua.LState) int {
 			b := a.checkBot(L)
-			name := L.CheckString(2)
+			names := a.checkNames(L, 2)
 			var pkt outbound
 			if L.Get(3) != lua.LNil {
 				pkt = a.checkRequest(L, 3)
@@ -204,7 +212,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			timeout := time.Duration(L.OptInt(5, a.cfg.TimeoutMs)) * time.Millisecond
 			a.park(L)
 			a.Request(L, b, b, pkt, timeout, func(p any) bool {
-				return a.packetName(p) == name && (pred == nil || a.callPredicate(pred, p))
+				return names[a.packetName(p)] && (pred == nil || a.callPredicate(pred, p))
 			}, a.wakeWithPacket(L))
 			return L.Yield()
 		},
@@ -214,7 +222,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			if ok == false {
 				L.ArgError(2, "bot expected")
 			}
-			name := L.CheckString(3)
+			names := a.checkNames(L, 3)
 			var pkt outbound
 			if L.Get(4) != lua.LNil {
 				pkt = a.checkRequest(L, 4)
@@ -223,7 +231,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			timeout := time.Duration(L.OptInt(6, a.cfg.TimeoutMs)) * time.Millisecond
 			a.park(L)
 			a.Request(L, sender, listener, pkt, timeout, func(p any) bool {
-				return a.packetName(p) == name && (pred == nil || a.callPredicate(pred, p))
+				return names[a.packetName(p)] && (pred == nil || a.callPredicate(pred, p))
 			}, a.wakeWithPacket(L))
 			return L.Yield()
 		},
@@ -287,8 +295,9 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNumber(oid))
 				return 1
 			}
+			timeout := time.Duration(L.OptInt(3, a.cfg.TimeoutMs)) * time.Millisecond
 			a.park(L)
-			a.Request(L, b, b, nil, a.timeout(), func(p any) bool {
+			a.Request(L, b, b, nil, timeout, func(p any) bool {
 				spawn, ok := p.(*response.SpawnNpc)
 				return ok && spawn.NPC.NpcId == templateID
 			}, func(p any, ok bool) {
@@ -351,6 +360,21 @@ func (a *SuiteActor) checkRequest(L *lua.LState, n int) outbound {
 	return pkt
 }
 
+func (a *SuiteActor) checkNames(L *lua.LState, n int) map[string]bool {
+	names := make(map[string]bool)
+	switch v := L.Get(n).(type) {
+	case lua.LString:
+		names[string(v)] = true
+	case *lua.LTable:
+		v.ForEach(func(_, name lua.LValue) {
+			names[name.String()] = true
+		})
+	default:
+		L.ArgError(n, "resp.* name or a list of names expected")
+	}
+	return names
+}
+
 func (a *SuiteActor) packetName(pkt any) string {
 	return a.marshal.Name(reflect.TypeOf(pkt).Elem().Name())
 }
@@ -365,7 +389,7 @@ func (a *SuiteActor) dialogPacket(pkt any) bool {
 }
 
 func (a *SuiteActor) callPredicate(pred *lua.LFunction, pkt any) bool {
-	ret, err := luax.CallFunction(a.L, pred, a.marshal.ToLua(a.L, pkt))
+	ret, err := luax.CallFunction(a.L, pred, a.marshal.ToLua(a.L, pkt), lua.LString(a.packetName(pkt)))
 	if err != nil {
 		log.Printf("[%s] predicate: %v", a.name, err)
 		return false
@@ -401,7 +425,7 @@ func (a *SuiteActor) wakeWithPacket(co *lua.LState) func(pkt any, ok bool) {
 			a.wake(co, lua.LFalse)
 			return
 		}
-		a.wake(co, a.marshal.ToLua(a.L, pkt))
+		a.wake(co, a.marshal.ToLua(a.L, pkt), lua.LString(a.packetName(pkt)))
 	}
 }
 

@@ -8,4 +8,5 @@ password: "bot-pass"
 timeout_ms: 10000
 suite_timeout_ms: 180000
 script_dir: "script/integration"
+game_script_dir: "../game/script"
 wz_path: "resources/wz"

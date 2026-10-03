@@ -67,6 +67,7 @@ func (p *OpenNpcShop) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (s *OpenNpcShop) Deserialize(reader *stream.StreamReader) {
+	s.ShopID = reader.Read32()
 }
 
 func doubleToShortBits(value float64) int16 {

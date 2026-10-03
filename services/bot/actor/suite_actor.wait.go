@@ -132,10 +132,15 @@ func (a *SuiteActor) packetReceived(msg *PacketReceived) {
 		fn(b, pkt)
 	}
 
-	if notice, ok := pkt.(*response.Notice); ok && strings.Contains(notice.Message, "권한이 부족합니다") {
-		a.Fail(fmt.Sprintf("%s: 권한이 부족합니다", b.Name))
-		a.endWaiters(b)
-		return
+	if notice, ok := pkt.(*response.Notice); ok {
+		switch {
+		case strings.Contains(notice.Message, "권한이 부족합니다"):
+			a.Fail(fmt.Sprintf("%s: 권한이 부족합니다", b.Name))
+			a.endWaiters(b)
+			return
+		case strings.HasPrefix(notice.Message, "스크립트 오류"):
+			a.Fail(fmt.Sprintf("%s: %s", b.Name, notice.Message))
+		}
 	}
 
 	for _, w := range a.waiters {

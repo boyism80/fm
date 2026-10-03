@@ -1,6 +1,7 @@
 package actor
 
 type Suite struct {
-	Name   string
-	Serial bool
+	Name      string
+	Serial    bool
+	TimeoutMs int
 }

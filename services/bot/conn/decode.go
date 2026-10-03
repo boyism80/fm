@@ -31,6 +31,7 @@ var Responses = []any{
 	&response.DialogStyle{},
 	&response.DialogAccept{},
 	&response.UpdateStats{},
+	&response.OpenNpcShop{},
 	&response.SwitchChannel{},
 	&response.ServerBlocked{},
 	&response.PartyCreated{},
@@ -137,6 +138,10 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		return pkt, nil
 	case (&response.UpdateStats{}).Opcode():
 		pkt := &response.UpdateStats{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.OpenNpcShop{}).Opcode():
+		pkt := &response.OpenNpcShop{}
 		pkt.Deserialize(reader)
 		return pkt, nil
 	case (&response.SwitchChannel{}).Opcode():
