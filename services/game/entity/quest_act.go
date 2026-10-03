@@ -194,6 +194,7 @@ func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, er
 			}
 		}
 
+		before := *qp
 		qp.Status = QuestStatusStarted
 		qp.Forfeited = forfeited
 		qp.StatusRecord.WriteString("")
@@ -210,6 +211,11 @@ func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, er
 				IncludeSkills: forfeited == 0,
 				NpcID:         wireNPC,
 			}); err != nil {
+				if existing == nil {
+					qc.Remove(def.ID)
+				} else {
+					*qp = before
+				}
 				return nil, err
 			}
 		}
