@@ -275,6 +275,9 @@ export class CharacterService {
         this.assertWorld(wid);
         this.assertAccountId(accountId);
         this.validatePersisted({ name });
+        if (this.wzService.isForbiddenName(name)) {
+            return { success: false, errorMsg: "사용할 수 없는 이름입니다." };
+        }
 
         await using _createCharacterLock = await this.distributedLockService.acquireWorldDataLock(wid, `create_character:a${accountId}`);
 
@@ -283,6 +286,10 @@ export class CharacterService {
         const slotCount = account?.characterSlotCount ?? 6;
         if (overviewMap.size >= slotCount) {
             return { success: false, errorMsg: "캐릭터 슬롯이 부족합니다." };
+        }
+        const gender = account?.gender ?? 0;
+        if (this.wzService.canMakeCharacter(gender, [face, hair, topItemId, bottomItemId, shoesItemId, weaponItemId]) === false) {
+            return { success: false, errorMsg: "선택할 수 없는 외형입니다." };
         }
 
         let nameEntry;
@@ -304,7 +311,7 @@ export class CharacterService {
             accountId,
             worldId: wid,
             name,
-            gender: 0,
+            gender,
             skinColor,
             face,
             hair,
@@ -376,7 +383,7 @@ export class CharacterService {
             accountId,
             worldId: wid,
             name,
-            gender: 0,
+            gender,
             skinColor,
             face,
             hair,

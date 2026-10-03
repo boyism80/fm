@@ -2,13 +2,20 @@ import path from "path";
 import fs from "fs/promises";
 import type { AppConfiguration } from "../config/app-configuration";
 
+const MAKE_CHAR_INFO_GENDER: Record<string, number> = { CharMale: 0, CharFemale: 1 };
+
 export class WzService {
     private readonly wzRoot: string;
     private readonly itemMetaById: Map<number, { enhanceChance: number }>;
+    // gender -> [face, hair, top, bottom, shoes, weapon] allowed ids
+    private readonly makeCharInfo: Map<number, Set<number>[]>;
+    private readonly forbiddenNames: string[];
 
     constructor(appConfiguration: AppConfiguration) {
         this.wzRoot = appConfiguration?.resources?.wz_root;
         this.itemMetaById = new Map();
+        this.makeCharInfo = new Map();
+        this.forbiddenNames = [];
     }
 
     private parseEnhanceChance(infoBlock: string): number {
@@ -70,6 +77,59 @@ export class WzService {
             const batch = targets.slice(i, i + batchSize);
             await Promise.all(batch.map((p) => this.loadFile(p)));
         }
+        await this.loadMakeCharInfo(path.join(this.wzRoot, "Etc.wz", "MakeCharInfo.img.xml"));
+        await this.loadForbiddenNames(path.join(this.wzRoot, "Etc.wz", "ForbiddenName.img.xml"));
+    }
+
+    private async loadMakeCharInfo(filePath: string): Promise<void> {
+        const xml = await fs.readFile(filePath, "utf8");
+        const stack: string[] = [];
+        for (const m of xml.matchAll(/<imgdir name="([^"]+)">|<\/imgdir>|<int name="\d+" value="(-?\d+)"\/>/g)) {
+            if (m[1] !== undefined) {
+                stack.push(m[1]);
+                continue;
+            }
+            if (m[2] === undefined) {
+                stack.pop();
+                continue;
+            }
+            // MakeCharInfo.img / CharMale / {part}
+            if (stack.length !== 3) {
+                continue;
+            }
+            const gender = MAKE_CHAR_INFO_GENDER[stack[1] ?? ""];
+            const part = Number(stack[2]);
+            if (gender === undefined || Number.isInteger(part) === false || part < 0 || part > 5) {
+                continue;
+            }
+            let parts = this.makeCharInfo.get(gender);
+            if (parts == null) {
+                parts = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set()];
+                this.makeCharInfo.set(gender, parts);
+            }
+            parts[part]?.add(Number(m[2]));
+        }
+    }
+
+    private async loadForbiddenNames(filePath: string): Promise<void> {
+        const xml = await fs.readFile(filePath, "utf8");
+        for (const m of xml.matchAll(/<string name="\d+" value="([^"]+)"\/>/g)) {
+            this.forbiddenNames.push((m[1] ?? "").toLowerCase());
+        }
+    }
+
+    /** face, hair, top, bottom, shoes and weapon must all be in the gender's MakeCharInfo lists. */
+    canMakeCharacter(gender: number, looks: [number, number, number, number, number, number]): boolean {
+        const parts = this.makeCharInfo.get(gender);
+        if (parts == null) {
+            return false;
+        }
+        return looks.every((id, idx) => parts[idx]?.has(id) === true);
+    }
+
+    isForbiddenName(name: string): boolean {
+        const lower = name.toLowerCase();
+        return this.forbiddenNames.some((word) => word.length > 0 && lower.includes(word));
     }
 
     async getEnhanceChance(itemId: number): Promise<number> {
