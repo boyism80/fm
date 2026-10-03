@@ -106,7 +106,7 @@ func (s *Summon) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			newStance := uint8(L.CheckInt(2))
-			summon.UseSkill(newStance)
+			summon.Owner.Listener.OnSummonSkill(summon.Owner, summon, newStance)
 			return 0
 		},
 	}

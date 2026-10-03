@@ -34,6 +34,12 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 		return nil
 	}
 
+	accountId := loginClient.GetAccountId()
+	if accountId == 0 {
+		createResp := &response.CreateCharacter{Success: false}
+		return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
+	}
+
 	ic := h.ls.internalClient
 	if ic == nil {
 		createResp := &response.CreateCharacter{Success: false}
@@ -41,7 +47,7 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 	}
 
 	reqProto := &internal.CreateCharacterRequest{
-		AccountId:    loginClient.GetAccountId(),
+		AccountId:    accountId,
 		WorldId:      loginClient.GetWorldId(),
 		Name:         req.Name,
 		Face:         req.Face,

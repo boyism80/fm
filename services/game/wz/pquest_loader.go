@@ -3,7 +3,6 @@ package wz
 import (
 	"encoding/xml"
 	"os"
-	"path/filepath"
 	"strconv"
 )
 
@@ -56,9 +55,3 @@ func attachPartyQuestRules(quests map[uint32]*Quest, path string) error {
 	return nil
 }
 
-func loadPartyQuestRules(quests map[uint32]*Quest, wzPath string) {
-	path := filepath.Join(wzPath, "Quest.wz", "PQuest.img.xml")
-	if err := attachPartyQuestRules(quests, path); err != nil {
-		return
-	}
-}

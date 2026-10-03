@@ -195,7 +195,7 @@ export class PartyService {
         });
     }
 
-    private async partyToPb(
+    async partyToPb(
         worldId: number,
         party: PartyModel,
         memberModels: PartyMemberModel[] | Map<string, PartyMemberModel>
@@ -236,10 +236,6 @@ export class PartyService {
             state: party.state,
             members,
         };
-    }
-
-    async buildPartyMessage(worldId: number, party: PartyModel, memberModels: PartyMemberModel[]) {
-        return this.partyToPb(worldId, party, memberModels);
     }
 
     private doorJsonFromPayload(doorPayload: PartyDoor | null | undefined): PartyDoor | null {
@@ -328,7 +324,7 @@ export class PartyService {
         return { ok: true, partyId: result.party.partyId, revision: result.party.revision };
     }
 
-    async applyMemberChannelIndex(worldId: number, characterId: number, _channelIndex?: number) {
+    async publishMemberLogOnOff(worldId: number, characterId: number) {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 

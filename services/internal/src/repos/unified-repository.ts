@@ -79,8 +79,10 @@ export class UnifiedRepository {
             );
 
             const { rows } = await client.query(
-                `SELECT character_id, account_id, reserved_at FROM character_name_registry WHERE LOWER(name) = LOWER($1) FOR UPDATE`,
-                [name]
+                `SELECT character_id, account_id, reserved_at,
+                  reserved_at > NOW() - make_interval(secs => $2::numeric) AS reservation_active
+                 FROM character_name_registry WHERE LOWER(name) = LOWER($1) FOR UPDATE`,
+                [name, CHARACTER_NAME_RESERVATION_TTL_SECONDS]
             );
 
             if (rows.length === 0) {
@@ -108,8 +110,7 @@ export class UnifiedRepository {
                 return Number(character_id);
             }
 
-            const ageMs = Date.now() - new Date(reserved_at).getTime();
-            if (ageMs < CHARACTER_NAME_RESERVATION_TTL_SECONDS * 1000) {
+            if (rows[0].reservation_active) {
                 await client.query("ROLLBACK");
                 return null;
             }

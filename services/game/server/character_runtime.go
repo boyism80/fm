@@ -22,6 +22,10 @@ type characterRuntimeEntry struct {
 	ensureBuf []*ensure.EnsureDeliver
 }
 
+func nameKey(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
+}
+
 func NewServerCharacterRuntime(gs *GameServer) *ServerCharacterRuntime {
 	return &ServerCharacterRuntime{
 		gs:     gs,
@@ -37,7 +41,7 @@ func (r *ServerCharacterRuntime) RegisterCharacter(characterID uint32, name stri
 	if characterID == 0 {
 		return fmt.Errorf("runtime: invalid character id 0")
 	}
-	key := strings.TrimSpace(name)
+	key := nameKey(name)
 	if key == "" {
 		return fmt.Errorf("runtime: empty character name")
 	}
@@ -117,7 +121,7 @@ func (r *ServerCharacterRuntime) NameToCharacterID(name string) (uint32, bool) {
 	if r == nil {
 		return 0, false
 	}
-	key := strings.TrimSpace(name)
+	key := nameKey(name)
 	if key == "" {
 		return 0, false
 	}

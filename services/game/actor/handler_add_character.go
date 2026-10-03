@@ -15,7 +15,11 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		return
 	}
 	pid := msg.TargetMap.LogicActorPID()
-	if pid == nil || !pid.Equal(ctx.Self()) {
+	if pid == nil {
+		return
+	}
+	if !pid.Equal(ctx.Self()) {
+		ctx.Send(pid, msg)
 		return
 	}
 	msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)

@@ -506,7 +506,10 @@ func NewResources(wzPath string) *Resources {
 		return nil
 	}
 
-	loadPartyQuestRules(quests, wzPath)
+	pquestPath := filepath.Join(wzPath, "Quest.wz", "PQuest.img.xml")
+	if err := attachPartyQuestRules(quests, pquestPath); err != nil {
+		log.Printf("Failed to load PQuest.img.xml: %v", err)
+	}
 
 	stringData := &StringData{
 		MapStrings:         make(map[string]map[uint32]map[string]string),
@@ -532,7 +535,7 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	mobPath := filepath.Join(wzPath, "String.wz", "Mob.img.xml")
-	if mobData, err := loadMobStrings(mobPath); err == nil && mobData != nil {
+	if mobData, err := loadSimpleStrings(mobPath); err == nil && mobData != nil {
 		maps.Copy(stringData.MobStrings, *mobData)
 		fmt.Println("Mob string files loaded.")
 	} else if err != nil {
@@ -540,7 +543,7 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	npcPath := filepath.Join(wzPath, "String.wz", "Npc.img.xml")
-	if npcData, err := loadNpcStrings(npcPath); err == nil && npcData != nil {
+	if npcData, err := loadSimpleStrings(npcPath); err == nil && npcData != nil {
 		maps.Copy(stringData.NpcStrings, *npcData)
 		fmt.Println("NPC string files loaded.")
 	} else if err != nil {
@@ -548,7 +551,7 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	skillPath := filepath.Join(wzPath, "String.wz", "Skill.img.xml")
-	if skillData, err := loadSkillStrings(skillPath); err == nil && skillData != nil {
+	if skillData, err := loadSimpleStrings(skillPath); err == nil && skillData != nil {
 		maps.Copy(stringData.SkillStrings, *skillData)
 		fmt.Println("Skill string files loaded.")
 	} else if err != nil {
@@ -556,7 +559,7 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	cashPath := filepath.Join(wzPath, "String.wz", "Cash.img.xml")
-	if cashData, err := loadItemStrings(cashPath); err == nil && cashData != nil {
+	if cashData, err := loadSimpleStrings(cashPath); err == nil && cashData != nil {
 		maps.Copy(stringData.ItemCashStrings, *cashData)
 		fmt.Println("Cash item string files loaded.")
 	} else if err != nil {
@@ -564,7 +567,7 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	consumePath := filepath.Join(wzPath, "String.wz", "Consume.img.xml")
-	if consumeData, err := loadItemStrings(consumePath); err == nil && consumeData != nil {
+	if consumeData, err := loadSimpleStrings(consumePath); err == nil && consumeData != nil {
 		maps.Copy(stringData.ItemConsumeStrings, *consumeData)
 		fmt.Println("Consume item string files loaded.")
 	} else if err != nil {
@@ -582,7 +585,7 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	etcPath := filepath.Join(wzPath, "String.wz", "Etc.img.xml")
-	if etcData, err := loadItemStrings(etcPath); err == nil && etcData != nil {
+	if etcData, err := loadSimpleStrings(etcPath); err == nil && etcData != nil {
 		maps.Copy(stringData.ItemEtcStrings, *etcData)
 		fmt.Println("Etc item string files loaded.")
 	} else if err != nil {
@@ -590,7 +593,7 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	insPath := filepath.Join(wzPath, "String.wz", "Ins.img.xml")
-	if insData, err := loadItemStrings(insPath); err == nil && insData != nil {
+	if insData, err := loadSimpleStrings(insPath); err == nil && insData != nil {
 		maps.Copy(stringData.ItemInsStrings, *insData)
 		fmt.Println("Installation item string files loaded.")
 	} else if err != nil {
@@ -598,7 +601,7 @@ func NewResources(wzPath string) *Resources {
 	}
 
 	petPath := filepath.Join(wzPath, "String.wz", "Pet.img.xml")
-	if petData, err := loadItemStrings(petPath); err == nil && petData != nil {
+	if petData, err := loadSimpleStrings(petPath); err == nil && petData != nil {
 		maps.Copy(stringData.ItemPetStrings, *petData)
 		fmt.Println("Pet item string files loaded.")
 	} else if err != nil {

@@ -54,7 +54,7 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 
 	statUpdate := map[constant.Stat]int32{}
 	for _, entry := range req.Entries {
-		if !h.processStat(character, entry.Stat, entry.Amount, &statUpdate) {
+		if !h.addStat(character, entry.Stat, entry.Amount, &statUpdate) {
 			character.Listener.OnUpdateStats(character, stats, true)
 			return nil
 		}
@@ -68,7 +68,7 @@ func (h *AutoAssignAP) Handle(ctx *core.ClientContext, req *request.AutoAssignAP
 	return nil
 }
 
-func (h *AutoAssignAP) processStat(character *entity.Character, statType uint32, amount uint32, statUpdate *map[constant.Stat]int32) bool {
+func (h *AutoAssignAP) addStat(character *entity.Character, statType uint32, amount uint32, statUpdate *map[constant.Stat]int32) bool {
 	switch constant.StatType(statType) {
 	case constant.StatTypeStr:
 		if character.GetTotalStr()+uint16(amount) > constant.StatMaxStrDexIntLuk {

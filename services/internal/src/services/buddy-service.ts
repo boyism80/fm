@@ -101,7 +101,7 @@ export class BuddyService {
         return { capacity, buddies };
     }
 
-    async applyBuddyChannelIndex(worldId: number, characterId: number, channelIndex: number) {
+    async publishBuddyChannel(worldId: number, characterId: number, channelIndex: number) {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
         const ch = channelIndex;

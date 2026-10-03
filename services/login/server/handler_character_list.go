@@ -38,6 +38,10 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 	loginClient.SetWorldId(worldId)
 	loginClient.SetChannelId(req.Channel)
 	accountId := loginClient.GetAccountId()
+	if accountId == 0 {
+		charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
+		return ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
+	}
 
 	ic := h.ls.internalClient
 	if ic == nil {

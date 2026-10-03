@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
@@ -77,18 +76,6 @@ func (s *Summon) Spawn(animated bool) {
 
 func (s *Summon) Remove(animated bool) {
 	s.Owner.RemoveSummon(s, animated)
-}
-
-func (s *Summon) Move(start types.Vector2[int16], movements []dto.MoveFragment) {
-	s.Owner.Listener.OnSummonMove(s.Owner, s, start, movements)
-}
-
-func (s *Summon) Attack(animation uint8, targets []SummonAttackTarget) {
-	s.Owner.Listener.OnSummonAttack(s.Owner, s, animation, targets)
-}
-
-func (s *Summon) UseSkill(newStance uint8) {
-	s.Owner.Listener.OnSummonSkill(s.Owner, s, newStance)
 }
 
 func (s *Summon) TakeDamage(unknown uint8, damage uint32, monsterIdFrom uint32) {

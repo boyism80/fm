@@ -146,7 +146,7 @@ export class GuildGrpcController {
                 callback(null, { found: false, guild: undefined });
                 return;
             }
-            const guild = await this.guildService.buildGuildMessage(worldId, result.guild, result.members ?? []);
+            const guild = await this.guildService.guildToPb(worldId, result.guild, result.members ?? []);
             callback(null, { found: true, guild });
         } catch (err) {
             this.grpcError(err, callback);

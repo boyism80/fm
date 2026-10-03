@@ -67,22 +67,6 @@ func loadMapStrings(path string) (*map[string]map[uint32]map[string]string, erro
 	return &result, nil
 }
 
-func loadMobStrings(path string) (*map[uint32]map[string]string, error) {
-	return loadSimpleStrings(path)
-}
-
-func loadNpcStrings(path string) (*map[uint32]map[string]string, error) {
-	return loadSimpleStrings(path)
-}
-
-func loadSkillStrings(path string) (*map[uint32]map[string]string, error) {
-	return loadSimpleStrings(path)
-}
-
-func loadItemStrings(path string) (*map[uint32]map[string]string, error) {
-	return loadSimpleStrings(path)
-}
-
 func loadEqpStrings(path string) (*map[string]map[uint32]map[string]string, error) {
 	file, err := os.Open(path)
 	if err != nil {

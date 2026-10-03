@@ -206,7 +206,7 @@ export class PartyGrpcController {
                 callback(null, { found: false, party: undefined });
                 return;
             }
-            const party = await this.partyService.buildPartyMessage(worldId, result.party, result.members ?? []);
+            const party = await this.partyService.partyToPb(worldId, result.party, result.members ?? []);
             callback(null, { found: true, party });
         } catch (err) {
             this.grpcError(err, callback);

@@ -769,10 +769,6 @@ func (ch *Character) BuddyList() *BuddyList {
 	return ch.buddyList
 }
 
-func (ch *Character) LoadBuddyList(entries []*internal.BuddyEntry, capacity uint32) {
-	ch.BuddyList().LoadFromProto(entries, capacity)
-}
-
 func (ch *Character) SendBuddyLoginSync() {
 	entries := ch.BuddyList().SnapshotForClient()
 	ch.Listener.OnBuddyListUpdate(ch, pconst.BuddyListSyncLogin, entries)

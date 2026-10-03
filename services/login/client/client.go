@@ -86,15 +86,11 @@ func (c *LoginClient) TakeTransferDisconnect() bool {
 }
 
 func NewLoginClient(conn net.Conn, clientID int) (*LoginClient, error) {
-	fd, err := core.GetFileDescriptor(conn)
-	if err != nil {
-		return nil, err
-	}
 	ivSend := []byte{0x2F, 0xA3, 0x65, 0x43}
 	ivRecv := []byte{0x65, 0x56, 0x12, 0xFD}
 	se := crypt.NewEncryption(ivSend, -5)
 	re := crypt.NewEncryption(ivRecv, 5)
 	return &LoginClient{
-		BaseClient: core.NewBaseClient(conn, clientID, fd, &se, &re),
+		BaseClient: core.NewBaseClient(conn, clientID, &se, &re),
 	}, nil
 }

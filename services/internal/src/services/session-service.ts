@@ -133,13 +133,13 @@ export class SessionService {
         console.log(`[session] enter_game ok account=${accountId} character=${characterId} channel=${channelId}`);
         try {
             if (this.partyService) {
-                await this.partyService.applyMemberChannelIndex(worldId, characterId, channelId);
+                await this.partyService.publishMemberLogOnOff(worldId, characterId);
             }
             if (this.buddyService) {
-                await this.buddyService.applyBuddyChannelIndex(worldId, characterId, channelId);
+                await this.buddyService.publishBuddyChannel(worldId, characterId, channelId);
             }
             if (this.guildService && !gameToGameTransfer) {
-                await this.guildService.applyMemberOnlineState(worldId, characterId, true);
+                await this.guildService.publishMemberOnline(worldId, characterId, true);
             }
         } catch (err) {
             // The caller answers with an error, which the game server reads as "did not enter the game".
@@ -217,13 +217,13 @@ export class SessionService {
         const cid = options.characterId ?? null;
         if (cid != null && gameNormalDisconnect) {
             if (this.partyService) {
-                await this.partyService.applyMemberChannelIndex(worldId, cid, -2);
+                await this.partyService.publishMemberLogOnOff(worldId, cid);
             }
             if (this.buddyService) {
-                await this.buddyService.applyBuddyChannelIndex(worldId, cid, -1);
+                await this.buddyService.publishBuddyChannel(worldId, cid, -1);
             }
             if (this.guildService) {
-                await this.guildService.applyMemberOnlineState(worldId, cid, false);
+                await this.guildService.publishMemberOnline(worldId, cid, false);
             }
         }
         return { ok: true, code: SessionErrorCode.SESSION_NONE };

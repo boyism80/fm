@@ -3,7 +3,6 @@ package actor
 func registerMapMessageHandlers(r *MessageRegistry) {
 	Bind[StartedHandler](r)
 	Bind[HandlePacketHandler](r)
-	Bind[ScheduleTimerHandler](r)
 	Bind[ExecuteTimerHandler](r)
 	Bind[AddCharacterHandler](r)
 	Bind[RemoveCharacterHandler](r)

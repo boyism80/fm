@@ -1,5 +1,6 @@
 import { redisSessionKey } from "../redis-session-key";
 import { AccountSessionState, accountSessionStateFromRedisHash } from "../session-state";
+import { SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "../context/internal-context";
 import type { AccountSession } from "../session-types";
 import type { CharacterRepository } from "./character-repository";
@@ -91,10 +92,8 @@ local account_id = tonumber(ARGV[1])
 local login_server_id = ARGV[2]
 local now = ARGV[3]
 local ttl = tonumber(ARGV[4])
-local ERR_SESSION_NONE = 0
-local ERR_SESSION_ALREADY_LOGGED_IN = 2
 if redis.call("EXISTS", key) == 1 then
-  return {0, ERR_SESSION_ALREADY_LOGGED_IN}
+  return {0, ${SessionErrorCode.SESSION_ALREADY_LOGGED_IN}}
 end
 redis.call("HSET", key,
   "version", "1",
@@ -108,7 +107,7 @@ redis.call("HSET", key,
   "state_changed_at", now
 )
 redis.call("EXPIRE", key, ttl)
-return {1, ERR_SESSION_NONE}
+return {1, ${SessionErrorCode.SESSION_NONE}}
 `;
         return (await client.eval(script, 1, accountKey, String(accountId), String(loginServerId), String(now), String(ttlSeconds))) as Array<
             number | string
@@ -142,10 +141,8 @@ local ttl = tonumber(ARGV[5])
 local game_to_game_transfer = ARGV[6]
 local prev_channel_id = ARGV[7]
 local users_ttl = tonumber(ARGV[8])
-local ERR_SESSION_NONE = 0
-local ERR_SESSION_NOT_FOUND = 3
 if redis.call("EXISTS", account_key) == 0 then
-  return {0, ERR_SESSION_NOT_FOUND}
+  return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
 local prev_state = tonumber(redis.call("HGET", account_key, "state") or "0")
 local channel_id = redis.call("HGET", account_key, "channel_id") or ""
@@ -169,7 +166,7 @@ redis.call("HSET", account_key,
 )
 redis.call("HDEL", account_key, "channel_id")
 redis.call("EXPIRE", account_key, ttl)
-return {1, ERR_SESSION_NONE}
+return {1, ${SessionErrorCode.SESSION_NONE}}
 `;
         return (await client.eval(
             script,
@@ -209,21 +206,18 @@ local channel_id = ARGV[4]
 local now = ARGV[5]
 local ttl = tonumber(ARGV[6])
 local users_ttl = tonumber(ARGV[7])
-local ERR_SESSION_NONE = 0
-local ERR_SESSION_UNKNOWN = 1
-local ERR_SESSION_NOT_FOUND = 3
 if redis.call("EXISTS", account_key) == 0 then
-  return {0, ERR_SESSION_NOT_FOUND}
+  return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
 local state = tonumber(redis.call("HGET", account_key, "state") or "0")
 if state ~= ${AS.ACCOUNT_SESSION_STATE_TRANSITION} then
-  return {0, ERR_SESSION_UNKNOWN}
+  return {0, ${SessionErrorCode.SESSION_UNKNOWN}}
 end
 local account_id = tonumber(redis.call("HGET", account_key, "account_id") or "0")
 local world_id = tonumber(redis.call("HGET", account_key, "world_id") or "0")
 local character_id = tonumber(redis.call("HGET", account_key, "character_id") or "0")
 if account_id ~= expected_account_id or world_id ~= expected_world_id or character_id ~= expected_character_id then
-  return {0, ERR_SESSION_UNKNOWN}
+  return {0, ${SessionErrorCode.SESSION_UNKNOWN}}
 end
 
 redis.call("HSET", account_key,
@@ -237,7 +231,7 @@ redis.call("HSET", account_key,
 redis.call("EXPIRE", account_key, ttl)
 redis.call("INCR", channel_users_key)
 redis.call("EXPIRE", channel_users_key, users_ttl)
-return {1, ERR_SESSION_NONE}
+return {1, ${SessionErrorCode.SESSION_NONE}}
 `;
         return (await client.eval(
             script,
@@ -262,10 +256,8 @@ local account_key = KEYS[1]
 local login_ttl = tonumber(ARGV[1])
 local transition_ttl = tonumber(ARGV[2])
 local game_ttl = tonumber(ARGV[3])
-local ERR_SESSION_NONE = 0
-local ERR_SESSION_NOT_FOUND = 3
 if redis.call("EXISTS", account_key) == 0 then
-  return {0, ERR_SESSION_NOT_FOUND, 0, "0"}
+  return {0, ${SessionErrorCode.SESSION_NOT_FOUND}, 0, "0"}
 end
 local state = tonumber(redis.call("HGET", account_key, "state") or "0")
 local ttl = login_ttl
@@ -275,7 +267,7 @@ elseif state == ${AS.ACCOUNT_SESSION_STATE_GAME} then
   ttl = game_ttl
 end
 redis.call("EXPIRE", account_key, ttl)
-return {1, ERR_SESSION_NONE, ttl, tostring(state)}
+return {1, ${SessionErrorCode.SESSION_NONE}, ttl, tostring(state)}
 `;
         return (await client.eval(script, 1, accountKey, String(loginTtl), String(transitionTtl), String(gameTtl))) as Array<
             number | string
@@ -298,13 +290,12 @@ local channel_users_key = KEYS[2]
 local keep = ARGV[1]
 local channel_id = tonumber(ARGV[2])
 local users_ttl = tonumber(ARGV[3])
-local ERR_SESSION_NONE = 0
 local prev_state = 0
 if redis.call("EXISTS", account_key) == 1 then
   prev_state = tonumber(redis.call("HGET", account_key, "state") or "0")
 end
 if keep == "1" then
-  return {1, ERR_SESSION_NONE, prev_state}
+  return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
 end
 redis.call("DEL", account_key)
 if prev_state == ${AS.ACCOUNT_SESSION_STATE_GAME} and channel_id >= 0 then
@@ -316,7 +307,7 @@ if prev_state == ${AS.ACCOUNT_SESSION_STATE_GAME} and channel_id >= 0 then
     redis.call("EXPIRE", channel_users_key, users_ttl)
   end
 end
-return {1, ERR_SESSION_NONE, prev_state}
+return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
 `;
         return (await client.eval(script, 2, accountKey, channelUsersKey, keep ? "1" : "0", String(ch), String(usersTtl))) as Array<
             number | string

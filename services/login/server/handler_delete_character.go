@@ -33,6 +33,12 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 		return nil
 	}
 
+	accountId := loginClient.GetAccountId()
+	if accountId == 0 {
+		deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
+		return ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)
+	}
+
 	ic := h.ls.internalClient
 	if ic == nil {
 		deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
@@ -40,7 +46,7 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 	}
 
 	reqProto := &internal.DeleteCharacterRequest{
-		AccountId:   loginClient.GetAccountId(),
+		AccountId:   accountId,
 		CharacterId: req.ID,
 	}
 

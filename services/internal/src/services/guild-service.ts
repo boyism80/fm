@@ -571,7 +571,7 @@ export class GuildService {
             classId: leaderClassId,
             guildRank: GuildMemberRank.GUILD_MEMBER_RANK_MASTER,
         };
-        const guildMessage = await this.buildGuildMessage(worldId, savedGuild, [leaderMember]);
+        const guildMessage = await this.guildToPb(worldId, savedGuild, [leaderMember]);
 
         return { ok: true, guildId, revision, guild: guildMessage };
     }
@@ -685,7 +685,7 @@ export class GuildService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_UNKNOWN };
         }
 
-        const guildMessage = await this.buildGuildMessage(worldId, loaded.guild, loaded.members);
+        const guildMessage = await this.guildToPb(worldId, loaded.guild, loaded.members);
         return { ok: true, guild: guildMessage };
     }
 
@@ -1539,7 +1539,7 @@ export class GuildService {
         return { ok: true, guildId: result.guildId, revision: result.revision };
     }
 
-    async applyMemberOnlineState(worldId: number, characterId: number, online: boolean) {
+    async publishMemberOnline(worldId: number, characterId: number, online: boolean) {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
@@ -1599,7 +1599,7 @@ export class GuildService {
         });
     }
 
-    private async guildToPb(
+    async guildToPb(
         worldId: number,
         guild: GuildModel,
         memberModels: GuildMemberModel[] | Map<string, GuildMemberModel>
@@ -1645,10 +1645,6 @@ export class GuildService {
             guildPb.allianceId = guild.allianceId;
         }
         return guildPb;
-    }
-
-    async buildGuildMessage(worldId: number, guild: GuildModel, memberModels: GuildMemberModel[]) {
-        return this.guildToPb(worldId, guild, memberModels);
     }
 
     async getGuild(worldId: number, guildId: number): Promise<GetGuildResult> {
@@ -2104,7 +2100,7 @@ export class GuildService {
         for (const guildId of guildIds) {
             const loaded = await this.getGuild(worldId, guildId);
             if (loaded.guild) {
-                guilds.push(await this.buildGuildMessage(worldId, loaded.guild, loaded.members ?? []));
+                guilds.push(await this.guildToPb(worldId, loaded.guild, loaded.members ?? []));
             }
         }
         return {
@@ -3506,7 +3502,7 @@ export class GuildService {
         const removedGuildLoaded = await this.getGuild(worldId, guildId);
         const removedGuildMessage =
             removedGuildLoaded.guild != null
-                ? await this.buildGuildMessage(worldId, removedGuildLoaded.guild, removedGuildLoaded.members ?? [])
+                ? await this.guildToPb(worldId, removedGuildLoaded.guild, removedGuildLoaded.members ?? [])
                 : undefined;
 
         const wireAlliance = Alliance.encode(allianceMessage).finish();
@@ -3721,7 +3717,7 @@ export class GuildService {
         const removedGuildLoaded = await this.getGuild(worldId, targetGuildId);
         const removedGuildMessage =
             removedGuildLoaded.guild != null
-                ? await this.buildGuildMessage(worldId, removedGuildLoaded.guild, removedGuildLoaded.members ?? [])
+                ? await this.guildToPb(worldId, removedGuildLoaded.guild, removedGuildLoaded.members ?? [])
                 : undefined;
 
         const wireAlliance = Alliance.encode(allianceMessage).finish();

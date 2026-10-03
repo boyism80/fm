@@ -222,7 +222,7 @@ func (s *ServerCore) handleClient(client Client) {
 			return
 		default:
 
-			_, err := s.readPacket(client, reader)
+			err := s.readPacket(client, reader)
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					log.Printf("Client disconnected normally: %s", client.GetConnection().RemoteAddr())
@@ -245,40 +245,40 @@ func (s *ServerCore) handleClient(client Client) {
 	}
 }
 
-func (s *ServerCore) readPacket(client Client, reader *bufio.Reader) (bool, error) {
+func (s *ServerCore) readPacket(client Client, reader *bufio.Reader) error {
 
 	headerBytes := make([]byte, 4)
 	if _, err := io.ReadFull(reader, headerBytes); err != nil {
-		return false, err
+		return err
 	}
 
 	if !client.GetRecvEncryption().CheckPacketHeader(headerBytes) {
-		return false, fmt.Errorf("invalid packet header")
+		return fmt.Errorf("invalid packet header")
 	}
 
 	packetLength, err := crypt.GetPacketLength(headerBytes)
 	if err != nil {
-		return false, fmt.Errorf("failed to get packet length: %w", err)
+		return fmt.Errorf("failed to get packet length: %w", err)
 	}
 
 	if packetLength <= 0 || packetLength > 8192 {
-		return false, fmt.Errorf("invalid packet length: %d", packetLength)
+		return fmt.Errorf("invalid packet length: %d", packetLength)
 	}
 
 	encryptedData := make([]byte, packetLength)
 	if _, err := io.ReadFull(reader, encryptedData); err != nil {
-		return false, err
+		return err
 	}
 
 	return s.processPacket(client, encryptedData)
 }
 
-func (s *ServerCore) processPacket(client Client, encryptedData []byte) (bool, error) {
+func (s *ServerCore) processPacket(client Client, encryptedData []byte) error {
 
 	packetData := client.GetRecvEncryption().Decrypt(encryptedData)
 
 	if len(packetData) < 2 {
-		return false, fmt.Errorf("packet too short for opcode")
+		return fmt.Errorf("packet too short for opcode")
 	}
 	opcode := int(packetData[0]) | int(packetData[1])<<8
 	packetData = packetData[2:]
@@ -286,7 +286,7 @@ func (s *ServerCore) processPacket(client Client, encryptedData []byte) (bool, e
 	logicActorPID := s.PacketActorPID(client)
 	if logicActorPID == nil {
 		log.Printf("No LogicActor PID for client and nil LogicActor PID not set")
-		return false, fmt.Errorf("no LogicActor PID for client and nil LogicActor PID not set")
+		return fmt.Errorf("no LogicActor PID for client and nil LogicActor PID not set")
 	}
 
 	msg := &c_actor.HandlePacket{
@@ -300,10 +300,10 @@ func (s *ServerCore) processPacket(client Client, encryptedData []byte) (bool, e
 		s.rootContext.Send(logicActorPID, msg)
 	} else {
 		log.Printf("RootContext not set, cannot send packet to actor")
-		return false, fmt.Errorf("rootContext not set")
+		return fmt.Errorf("rootContext not set")
 	}
 
-	return true, nil
+	return nil
 }
 
 // PacketActorPID is the actor that handles the client's packets now: its map's actor, or the nil actor between maps.
@@ -314,10 +314,6 @@ func (s *ServerCore) PacketActorPID(client Client) *actor.PID {
 		}
 	}
 	return s.nilActorPID
-}
-
-func (s *ServerCore) RegisterPacketHandler(opcode int, handler func(ctx *ClientContext, data []byte) error) {
-	s.packetHandler.RegisterHandler(opcode, handler)
 }
 
 func (s *ServerCore) GetPacketHandler() *PacketHandler {

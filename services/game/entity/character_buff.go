@@ -464,7 +464,7 @@ func (bc *BuffContainer) SetBuffValue(flag constant.BuffFlag, value int32) (Buff
 	return entity, true
 }
 
-func (bc *BuffContainer) EmitAllBuffAddedEvents() {
+func (bc *BuffContainer) ShowAll() {
 	now := clock.Now()
 	for entity := range bc.entities {
 		if entity == nil {

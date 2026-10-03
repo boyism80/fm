@@ -110,7 +110,7 @@ func mergeQuestRequirementChild(reqs *QuestRequirements, child *node) {
 	case "pet":
 		reqs.Pet = collectChildUint32IDs(child)
 	case "item":
-		reqs.Item = parseQuestItemCounts(child)
+		reqs.Item = parseQuestItemCountsWithField(child, "count")
 	case "mob":
 		reqs.Mob = parseQuestMobCounts(child)
 	case "mbcard":
@@ -431,10 +431,6 @@ func setQuestActionStr(actions *QuestActions, kind string, value string) {
 		}
 		actions.Say[kind] = value
 	}
-}
-
-func parseQuestItemCounts(n *node) map[uint32]int {
-	return parseQuestItemCountsWithField(n, "count")
 }
 
 func parseQuestItemCountsWithField(n *node, countField string) map[uint32]int {

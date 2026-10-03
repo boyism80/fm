@@ -67,7 +67,7 @@ func (bl *BuddyList) LoadFromProto(entries []*internal.BuddyEntry, capacity uint
 		if pb == nil || pb.GetCharacterId() == 0 {
 			continue
 		}
-		bl.entries[pb.GetCharacterId()] = buddyEntryFromProto(pb)
+		bl.entries[pb.GetCharacterId()] = BuddyListEntryFromProto(pb)
 	}
 }
 
@@ -116,7 +116,7 @@ func (bl *BuddyList) SnapshotForClient() []response.BuddyEntry {
 	return out
 }
 
-func buddyEntryFromProto(pb *internal.BuddyEntry) BuddyListEntry {
+func BuddyListEntryFromProto(pb *internal.BuddyEntry) BuddyListEntry {
 	ch := pb.GetChannelIndex()
 	if ch < 0 {
 		ch = -1
@@ -128,10 +128,6 @@ func buddyEntryFromProto(pb *internal.BuddyEntry) BuddyListEntry {
 		Pending:     pb.GetPending(),
 		Channel:     ch,
 	}
-}
-
-func BuddyListEntryFromProto(pb *internal.BuddyEntry) BuddyListEntry {
-	return buddyEntryFromProto(pb)
 }
 
 func (e BuddyListEntry) ToResponse() response.BuddyEntry {

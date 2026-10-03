@@ -24,7 +24,7 @@ func (ac *AllianceContainer) BroadcastCreate(alliancePb *internal.Alliance) {
 	if len(membershipGuilds) == 0 {
 		membershipGuilds = ac.membershipGuilds(alliancePb)
 	}
-	for _, memberID := range ac.createRecipientIDs(alliancePb) {
+	for _, memberID := range ac.recipientIDs(alliancePb) {
 		ac.deliverToOnlineMember(memberID, &g_actor.DeliverAllianceCreate{
 			CharacterID:      memberID,
 			Info:             info,
@@ -85,7 +85,7 @@ func (ac *AllianceContainer) membershipGuilds(alliancePb *internal.Alliance) []d
 	return out
 }
 
-func (ac *AllianceContainer) createRecipientIDs(alliancePb *internal.Alliance) []uint32 {
+func (ac *AllianceContainer) recipientIDs(alliancePb *internal.Alliance) []uint32 {
 	if alliancePb == nil {
 		return nil
 	}

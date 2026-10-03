@@ -26,7 +26,6 @@ type BaseClient struct {
 	done           chan struct{}
 	closeOnce      sync.Once
 	clientID       int
-	fd             int
 	sendEncryption *crypt.Encryption
 	recvEncryption *crypt.Encryption
 	lastPingAt     time.Time
@@ -43,10 +42,6 @@ func (c *BaseClient) GetSendEncryption() *crypt.Encryption {
 
 func (c *BaseClient) GetRecvEncryption() *crypt.Encryption {
 	return c.recvEncryption
-}
-
-func (c *BaseClient) GetFd() int {
-	return c.fd
 }
 
 func (c *BaseClient) GetClientID() int {
@@ -127,19 +122,7 @@ func (c *BaseClient) NextPingAction(now time.Time, interval time.Duration) (send
 	return true, false
 }
 
-func GetFileDescriptor(conn net.Conn) (int, error) {
-	remoteAddr := conn.RemoteAddr().String()
-	fd := 0
-	for _, char := range remoteAddr {
-		fd = fd*31 + int(char)
-	}
-	if fd < 0 {
-		fd = -fd
-	}
-	return fd, nil
-}
-
-func NewBaseClient(conn net.Conn, clientID int, fd int, sendEncryption, recvEncryption *crypt.Encryption) BaseClient {
+func NewBaseClient(conn net.Conn, clientID int, sendEncryption, recvEncryption *crypt.Encryption) BaseClient {
 	out := make(chan []byte, sendQueueSize)
 	done := make(chan struct{})
 	// A client that stops reading must not block the actor that sends to it; the writer owns the socket write and its deadline.
@@ -163,7 +146,6 @@ func NewBaseClient(conn net.Conn, clientID int, fd int, sendEncryption, recvEncr
 		out:            out,
 		done:           done,
 		clientID:       clientID,
-		fd:             fd,
 		sendEncryption: sendEncryption,
 		recvEncryption: recvEncryption,
 	}

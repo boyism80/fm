@@ -61,7 +61,7 @@ func AllianceGuildMemberRanksFromProto(g *internal.Guild) []dto.AllianceGuildMem
 	return out
 }
 
-func allianceMembershipChangeGuildFromProto(g *internal.Guild) (dto.AllianceMembershipChangeGuild, bool) {
+func AllianceMembershipChangeGuildFromProto(g *internal.Guild) (dto.AllianceMembershipChangeGuild, bool) {
 	if g == nil {
 		return dto.AllianceMembershipChangeGuild{}, false
 	}
@@ -83,17 +83,13 @@ func allianceMembershipChangeGuildFromProto(g *internal.Guild) (dto.AllianceMemb
 	return block, true
 }
 
-func AllianceMembershipChangeGuildFromProto(g *internal.Guild) (dto.AllianceMembershipChangeGuild, bool) {
-	return allianceMembershipChangeGuildFromProto(g)
-}
-
 func AllianceMembershipChangeGuildsFromProto(a *internal.Alliance) []dto.AllianceMembershipChangeGuild {
 	if a == nil {
 		return nil
 	}
 	out := make([]dto.AllianceMembershipChangeGuild, 0, len(a.GetGuilds()))
 	for _, g := range a.GetGuilds() {
-		block, ok := allianceMembershipChangeGuildFromProto(g)
+		block, ok := AllianceMembershipChangeGuildFromProto(g)
 		if ok {
 			out = append(out, block)
 		}

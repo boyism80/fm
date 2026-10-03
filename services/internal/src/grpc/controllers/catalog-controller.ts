@@ -46,18 +46,10 @@ export class CatalogGrpcController {
         this.grpcError = grpcError;
     }
 
-    private resolveChannel(worldId: number, channelId: number): ChannelConfig | undefined {
+    private findChannel(worldId: number, channelId: number): ChannelConfig | undefined {
         const world = this.internalConfig.game_servers?.worlds?.[String(worldId)];
         const list = world?.channels ?? [];
         return list.find((c) => c.channel_id === channelId);
-    }
-
-    private resolveChannelMaxConcurrentUsers(worldId: number, channelId: number): number {
-        const row = this.resolveChannel(worldId, channelId);
-        if (!row) {
-            return 0;
-        }
-        return row.max_concurrent_users ?? 0;
     }
 
     @Method("ping")
@@ -97,7 +89,7 @@ export class CatalogGrpcController {
     ) {
         const req = call.request;
         try {
-            const row = this.resolveChannel(req.worldId, req.channelId);
+            const row = this.findChannel(req.worldId, req.channelId);
             if (!row) {
                 callback(null, {
                     alive: false,
@@ -113,7 +105,7 @@ export class CatalogGrpcController {
             const v = await client.get(key);
             const alive = v != null && v !== "";
             const onlineUserCount = await this.sessionRepository.getChannelOnlineUserCount(req.worldId, req.channelId);
-            const maxConcurrentUsers = this.resolveChannelMaxConcurrentUsers(req.worldId, req.channelId);
+            const maxConcurrentUsers = row?.max_concurrent_users ?? 0;
             const channelFull = maxConcurrentUsers > 0 && onlineUserCount >= maxConcurrentUsers;
             callback(null, {
                 alive,

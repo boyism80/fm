@@ -1,4 +1,3 @@
-import type Redis from "ioredis";
 import type { InternalContext } from "../context/internal-context";
 import {
     DistributedLock,
@@ -17,14 +16,6 @@ export class DistributedLockService {
     constructor(internalContext: InternalContext, distributedLock: DistributedLock) {
         this.ctx = internalContext;
         this.lock = distributedLock;
-    }
-
-    acquireWithClient(client: Redis, lockKey: string, options?: DistributedLockOptions): Promise<DistributedLockGuard> {
-        return this.lock.acquire(client, lockKey, options);
-    }
-
-    tryAcquireWithClient(client: Redis, lockKey: string, options?: DistributedLockOptions): Promise<DistributedLockGuard | null> {
-        return this.lock.tryAcquire(client, lockKey, options);
     }
 
     acquireWorldDataLock(worldId: number, keyRest: string, options?: DistributedLockOptions): Promise<DistributedLockGuard> {
