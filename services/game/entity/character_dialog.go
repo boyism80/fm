@@ -74,7 +74,7 @@ func (ch *Character) ResumeDialog(actx actor.Context, dialogType constant.Dialog
 
 	var args []interface{}
 	switch dialogType {
-	case constant.DialogTypeDefault, constant.DialogTypeYesNo, constant.DialogTypeAccept:
+	case constant.DialogTypeDefault, constant.DialogTypeYesNo, constant.DialogTypeAccept, constant.DialogTypeAcceptEscape:
 		args = append(args, lua.LBool(next))
 	case constant.DialogTypeList, constant.DialogTypeStyle:
 		if next == false {
