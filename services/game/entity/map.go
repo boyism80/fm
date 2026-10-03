@@ -254,6 +254,9 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 
 	m.listener.OnPlayerAdded(ctx, m, character, spawnPoint, init)
 	m.controllerTable.EnterPlayer(character)
+	if init {
+		character.Skills.RestorePassives()
+	}
 
 	for _, summon := range character.Summons.All() {
 		if summon == nil || summon.Owner != character {

@@ -56,9 +56,8 @@ func CallSkillHook(character *entity.Character, skillID uint32, hook string) boo
 		log.Printf("Skill hook %s failed for %s: %v", hook, scriptPath, err)
 		return true
 	}
-	skillHook := fmt.Sprintf("%s_%d", hook, skillID)
-	skillRet, err := luax.Call(thread, skillHook, character, skillEntry)
-	return skillHookAllowed(skillRet, err, skillHook, true)
+	skillRet, err := luax.Call(thread, hook, character, skillEntry)
+	return skillHookAllowed(skillRet, err, hook, true)
 }
 
 func CallPassiveSkillHook(character *entity.Character, skillID uint32, hook string) {
@@ -91,9 +90,8 @@ func CallPassiveSkillHook(character *entity.Character, skillID uint32, hook stri
 		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
 		return
 	}
-	skillHook := fmt.Sprintf("%s_%d", hook, skillID)
-	if _, err := luax.Call(thread, skillHook, character, skillEntry); err != nil {
-		log.Printf("Skill passive hook %s failed for %s: %v", skillHook, scriptPath, err)
+	if _, err := luax.Call(thread, hook, character, skillEntry); err != nil {
+		log.Printf("Skill passive hook %s failed for %s: %v", hook, scriptPath, err)
 	}
 }
 
