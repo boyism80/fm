@@ -16,6 +16,7 @@ import { CharacterRealtimeStateRepository } from "../repos/character-realtime-st
 import type { AllianceModel } from "../repos/alliance-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
+import { DistributedLockGuard, DistributedLockMultiGuard } from "../system/distributed-lock";
 import { GuildService } from "./guild-service";
 import {
     ALLIANCE_CAPACITY_MAX,
@@ -680,6 +681,55 @@ export class AllianceService {
         };
     }
 
+    private async lockRequesterAlliance(worldId: number, characterId: number, otherCharacterIds: number[] = []) {
+        const guards: DistributedLockGuard[] = [];
+        const fail = async (code: AllianceErrorCode) => {
+            await new DistributedLockMultiGuard(guards).release();
+            return { ok: false as const, code };
+        };
+        try {
+            const characterIds = [...new Set([characterId, ...otherCharacterIds])].sort((a, b) => a - b);
+            for (const id of characterIds) {
+                guards.push(await this.distributedLockService.acquireWorldDataLock(worldId, `character_realtime:${id}`));
+            }
+
+            const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
+            const guildId = state?.guildId;
+            if (guildId == null || !Number.isInteger(guildId) || guildId < 1) {
+                return await fail(messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND);
+            }
+            guards.push(await this.distributedLockService.acquireWorldDataLock(worldId, `guild:${guildId}`));
+            const guild = await this.guildRepo.get(worldId, guildId);
+            if (!guild) {
+                return await fail(messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND);
+            }
+            const allianceId = guild.allianceId;
+            if (allianceId == null || allianceId < 1) {
+                return await fail(messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE);
+            }
+
+            guards.push(await this.distributedLockService.acquireWorldDataLock(worldId, `alliance:${allianceId}`));
+            const alliance = await this.allianceRepo.get(worldId, allianceId);
+            if (!alliance) {
+                return await fail(messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND);
+            }
+
+            const members = [...(await this.guildMemberRepo.getAll(worldId, String(guildId))).values()];
+            return {
+                ok: true as const,
+                guildId,
+                guild,
+                allianceId,
+                alliance,
+                requester: members.find((m) => m.characterId === characterId),
+                locks: new DistributedLockMultiGuard(guards),
+            };
+        } catch (err) {
+            await new DistributedLockMultiGuard(guards).release();
+            throw err;
+        }
+    }
+
     async increaseAllianceCapacity(
         worldId: number,
         characterId: number
@@ -687,52 +737,18 @@ export class AllianceService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${characterId}`,
-        );
-
-        const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
-        if (state?.guildId == null) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        const locked = await this.lockRequesterAlliance(worldId, characterId);
+        if (!locked.ok) {
+            return locked;
         }
-        const guildId = state.guildId;
-        if (!Number.isInteger(guildId) || guildId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-
-        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `guild:${guildId}`,
-        );
-
-        const guild = await this.guildRepo.get(worldId, guildId);
-        if (!guild) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-        const allianceId = guild.allianceId;
-        if (allianceId == null || allianceId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-        }
+        await using _locks = locked.locks;
+        const { guild, allianceId, alliance, requester: requesterMember } = locked;
         if (guild.leaderCharacterId !== characterId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
-        }
-
-        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `alliance:${allianceId}`,
-        );
-
-        const alliance = await this.allianceRepo.get(worldId, allianceId);
-        if (!alliance) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
         }
         if (alliance.leaderCharacterId !== characterId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_ALLIANCE_LEADER };
         }
-
-        const requesterMembers = [...(await this.guildMemberRepo.getAll(worldId, String(guildId))).values()];
-        const requesterMember = requesterMembers.find((m) => m.characterId === characterId);
         if (!requesterMember || requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
@@ -821,49 +837,15 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_RANK_TITLES };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${characterId}`,
-        );
-
-        const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
-        if (state?.guildId == null) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        const locked = await this.lockRequesterAlliance(worldId, characterId);
+        if (!locked.ok) {
+            return locked;
         }
-        const guildId = state.guildId;
-        if (!Number.isInteger(guildId) || guildId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-
-        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `guild:${guildId}`,
-        );
-
-        const guild = await this.guildRepo.get(worldId, guildId);
-        if (!guild) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-        const allianceId = guild.allianceId;
-        if (allianceId == null || allianceId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-        }
-
-        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `alliance:${allianceId}`,
-        );
-
-        const alliance = await this.allianceRepo.get(worldId, allianceId);
-        if (!alliance) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-        }
+        await using _locks = locked.locks;
+        const { allianceId, alliance, requester: requesterMember } = locked;
         if (alliance.leaderCharacterId !== characterId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_ALLIANCE_LEADER };
         }
-
-        const requesterMembers = [...(await this.guildMemberRepo.getAll(worldId, String(guildId))).values()];
-        const requesterMember = requesterMembers.find((m) => m.characterId === characterId);
         if (!requesterMember || requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
@@ -937,46 +919,12 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_NOTICE };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${characterId}`,
-        );
-
-        const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
-        if (state?.guildId == null) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        const locked = await this.lockRequesterAlliance(worldId, characterId);
+        if (!locked.ok) {
+            return locked;
         }
-        const guildId = state.guildId;
-        if (!Number.isInteger(guildId) || guildId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-
-        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `guild:${guildId}`,
-        );
-
-        const guild = await this.guildRepo.get(worldId, guildId);
-        if (!guild) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-        const allianceId = guild.allianceId;
-        if (allianceId == null || allianceId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-        }
-
-        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `alliance:${allianceId}`,
-        );
-
-        const alliance = await this.allianceRepo.get(worldId, allianceId);
-        if (!alliance) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-        }
-
-        const requesterMembers = [...(await this.guildMemberRepo.getAll(worldId, String(guildId))).values()];
-        const requesterMember = requesterMembers.find((m) => m.characterId === characterId);
+        await using _locks = locked.locks;
+        const { guildId, guild, allianceId, alliance, requester: requesterMember } = locked;
         if (!requesterMember || requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
@@ -1049,53 +997,15 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_LEADER_CANDIDATE };
         }
 
-        await using _requesterCharacterLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${characterId}`,
-        );
-        await using _newLeaderCharacterLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${newLeaderCharacterId}`,
-        );
-
-        const requesterState = await this.characterRealtimeStateRepo.get(worldId, characterId);
-        if (requesterState?.guildId == null) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        const locked = await this.lockRequesterAlliance(worldId, characterId, [newLeaderCharacterId]);
+        if (!locked.ok) {
+            return locked;
         }
-        const requesterGuildId = requesterState.guildId;
-        if (!Number.isInteger(requesterGuildId) || requesterGuildId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-
-        await using _requesterGuildLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `guild:${requesterGuildId}`,
-        );
-
-        const requesterGuild = await this.guildRepo.get(worldId, requesterGuildId);
-        if (!requesterGuild) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-        const allianceId = requesterGuild.allianceId;
-        if (allianceId == null || allianceId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-        }
-
-        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `alliance:${allianceId}`,
-        );
-
-        const alliance = await this.allianceRepo.get(worldId, allianceId);
-        if (!alliance) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-        }
+        await using _locks = locked.locks;
+        const { guildId: requesterGuildId, allianceId, alliance, requester: requesterMember } = locked;
         if (alliance.leaderCharacterId !== characterId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_ALLIANCE_LEADER };
         }
-
-        const requesterMembers = [...(await this.guildMemberRepo.getAll(worldId, String(requesterGuildId))).values()];
-        const requesterMember = requesterMembers.find((m) => m.characterId === characterId);
         if (!requesterMember || requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
@@ -1281,55 +1191,12 @@ export class AllianceService {
         this.assertCharacterId(requesterCharacterId);
         this.assertCharacterId(targetCharacterId);
 
-        const firstCharacterId = requesterCharacterId < targetCharacterId
-            ? requesterCharacterId
-            : targetCharacterId;
-        const secondCharacterId = requesterCharacterId < targetCharacterId
-            ? targetCharacterId
-            : requesterCharacterId;
-
-        await using _firstCharacterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${firstCharacterId}`,
-        );
-
-        await using _secondCharacterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${secondCharacterId}`,
-        );
-
-        const requesterState = await this.characterRealtimeStateRepo.get(worldId, requesterCharacterId);
-        if (requesterState?.guildId == null) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        const locked = await this.lockRequesterAlliance(worldId, requesterCharacterId, [targetCharacterId]);
+        if (!locked.ok) {
+            return locked;
         }
-        const requesterGuildId = requesterState.guildId;
-        if (!Number.isInteger(requesterGuildId) || requesterGuildId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-
-        await using _requesterGuildLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `guild:${requesterGuildId}`,
-        );
-
-        const requesterGuild = await this.guildRepo.get(worldId, requesterGuildId);
-        if (!requesterGuild) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-        const allianceId = requesterGuild.allianceId;
-        if (allianceId == null || allianceId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-        }
-
-        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `alliance:${allianceId}`,
-        );
-
-        const alliance = await this.allianceRepo.get(worldId, allianceId);
-        if (!alliance) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-        }
+        await using _locks = locked.locks;
+        const { guildId: requesterGuildId, allianceId, alliance } = locked;
 
         const otherGuildIds = alliance.guildIds
             .filter((id) => id !== requesterGuildId)
@@ -1466,46 +1333,12 @@ export class AllianceService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${characterId}`,
-        );
-
-        const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
-        if (state?.guildId == null) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        const locked = await this.lockRequesterAlliance(worldId, characterId);
+        if (!locked.ok) {
+            return locked;
         }
-        const guildId = state.guildId;
-        if (!Number.isInteger(guildId) || guildId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-
-        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `guild:${guildId}`,
-        );
-
-        const guild = await this.guildRepo.get(worldId, guildId);
-        if (!guild) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-        const allianceId = guild.allianceId;
-        if (allianceId == null || allianceId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-        }
-
-        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `alliance:${allianceId}`,
-        );
-
-        const alliance = await this.allianceRepo.get(worldId, allianceId);
-        if (!alliance) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-        }
-
-        const requesterMembers = [...(await this.guildMemberRepo.getAll(worldId, String(guildId))).values()];
-        const requesterMember = requesterMembers.find((m) => m.characterId === characterId);
+        await using _locks = locked.locks;
+        const { guildId, guild, allianceId, alliance, requester: requesterMember } = locked;
         if (!requesterMember || requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
@@ -1669,55 +1502,21 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
         }
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${characterId}`,
-        );
-
-        const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
-        if (state?.guildId == null) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        const locked = await this.lockRequesterAlliance(worldId, characterId);
+        if (!locked.ok) {
+            return locked;
         }
-        const requesterGuildId = state.guildId;
-        if (!Number.isInteger(requesterGuildId) || requesterGuildId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
+        await using _locks = locked.locks;
+        const { guildId: requesterGuildId, allianceId, alliance, requester: requesterMember } = locked;
         if (targetGuildId === requesterGuildId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_CANNOT_EXPEL_OWN_GUILD };
         }
-
-        await using _requesterGuildLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `guild:${requesterGuildId}`,
-        );
-
-        const requesterGuild = await this.guildRepo.get(worldId, requesterGuildId);
-        if (!requesterGuild) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-        const allianceId = requesterGuild.allianceId;
-        if (allianceId == null || allianceId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-        }
         if (clientAllianceId != null && clientAllianceId > 0 && clientAllianceId !== allianceId) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-        }
-
-        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `alliance:${allianceId}`,
-        );
-
-        const alliance = await this.allianceRepo.get(worldId, allianceId);
-        if (!alliance) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
         }
         if (!alliance.guildIds.includes(targetGuildId)) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_TARGET_NOT_IN_ALLIANCE };
         }
-
-        const requesterMembers = [...(await this.guildMemberRepo.getAll(worldId, String(requesterGuildId))).values()];
-        const requesterMember = requesterMembers.find((m) => m.characterId === characterId);
         if (!requesterMember || requesterMember.guildRank !== GuildMemberRank.GUILD_MEMBER_RANK_MASTER) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_GUILD_MASTER };
         }
@@ -1876,43 +1675,12 @@ export class AllianceService {
         this.assertWorld(worldId);
         this.assertCharacterId(characterId);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${characterId}`,
-        );
-
-        const state = await this.characterRealtimeStateRepo.get(worldId, characterId);
-        if (state?.guildId == null) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
+        const locked = await this.lockRequesterAlliance(worldId, characterId);
+        if (!locked.ok) {
+            return locked;
         }
-        const guildId = state.guildId;
-        if (!Number.isInteger(guildId) || guildId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-
-        await using _guildLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `guild:${guildId}`,
-        );
-
-        const guild = await this.guildRepo.get(worldId, guildId);
-        if (!guild) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_GUILD_NOT_FOUND };
-        }
-        const allianceId = guild.allianceId;
-        if (allianceId == null || allianceId < 1) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-        }
-
-        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `alliance:${allianceId}`,
-        );
-
-        const alliance = await this.allianceRepo.get(worldId, allianceId);
-        if (!alliance) {
-            return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-        }
+        await using _locks = locked.locks;
+        const { guildId, guild, allianceId, alliance } = locked;
         if (alliance.leaderCharacterId !== characterId) {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_ALLIANCE_LEADER };
         }
