@@ -96,7 +96,6 @@ func (ch *Character) ExplodeMesos(oids []uint32) {
 }
 
 func (ch *Character) TakeDamage(damage int32) {
-	wasAlive := ch.IsAlive()
 	hp := int(ch.GetHp()) - int(damage)
 	if hp < 0 {
 		hp = 0
@@ -108,13 +107,6 @@ func (ch *Character) TakeDamage(damage int32) {
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHP: int32(ch.GetHp()),
 	}, true)
-
-	if wasAlive && ch.IsAlive() == false {
-		ch.Summons.Clear()
-		if sm := ch.StateMachine(); sm != nil {
-			sm.CallHook("on_player_dead", ch)
-		}
-	}
 }
 
 func (ch *Character) OnKill(mobs []*Mob) {

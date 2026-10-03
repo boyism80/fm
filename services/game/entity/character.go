@@ -339,11 +339,22 @@ func (ch *Character) GetSpawnPoint() uint8 {
 }
 
 func (ch *Character) SetHp(v uint32, notify bool) {
+	wasAlive := ch.IsAlive()
 	ch.LifeCore.setHp(v)
-	if !notify {
-		return
+	if notify {
+		ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
 	}
-	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{constant.StatHP: int32(ch.GetHp())}, false)
+
+	if wasAlive && ch.IsAlive() == false {
+		ch.die()
+	}
+}
+
+func (ch *Character) die() {
+	ch.Summons.Clear()
+	if sm := ch.StateMachine(); sm != nil {
+		sm.CallHook("on_player_dead", ch)
+	}
 }
 
 func (ch *Character) SetMp(v uint32, notify bool) {
