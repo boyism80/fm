@@ -17,7 +17,8 @@ import (
 type LoginLogicActor struct {
 	Client core.Client
 	Server core.Server
-	timer  *scheduler.TimerScheduler
+	timer      *scheduler.TimerScheduler
+	cancelPing scheduler.CancelFunc
 }
 
 type pingTick struct{}
@@ -41,7 +42,7 @@ func (a *LoginLogicActor) Receive(ctx actor.Context) {
 
 func (a *LoginLogicActor) onStarted(ctx actor.Context) {
 	a.timer = scheduler.NewTimerScheduler(ctx)
-	a.timer.SendRepeatedly(
+	a.cancelPing = a.timer.SendRepeatedly(
 		5*time.Second,
 		5*time.Second,
 		ctx.Self(),
@@ -80,8 +81,11 @@ func (a *LoginLogicActor) executeTimer(ctx actor.Context, msg *c_actor.ExecuteTi
 }
 
 func (a *LoginLogicActor) onStopped(ctx actor.Context) {
+	if a.cancelPing != nil {
+		a.cancelPing()
+	}
 	if loginClient, ok := a.Client.(*client.LoginClient); ok {
-		log.Printf("LoginLogicActor stopped for client %d", loginClient.GetFd())
+		log.Printf("LoginLogicActor stopped for client %d", loginClient.GetClientID())
 	} else {
 		log.Printf("LoginLogicActor stopped")
 	}

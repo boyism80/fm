@@ -67,7 +67,7 @@ func (ls *LoginServer) handleClient(c core.Client) {
 	})
 
 	pid := ls.actorRegistry.GetOrCreateActor(
-		fmt.Sprintf("login_session_%d", loginClient.GetFd()),
+		fmt.Sprintf("login_session_%d", loginClient.GetClientID()),
 		props,
 	)
 
@@ -254,12 +254,14 @@ func (ls *LoginServer) GetWorldCatalog() []*internal.WorldCatalog {
 }
 
 func (ls *LoginServer) handleClientDisconnect(c core.Client) {
-	ic := ls.internalClient
-	if ic == nil {
-		return
-	}
 	loginClient, ok := c.(*client.LoginClient)
 	if !ok {
+		return
+	}
+	ls.actorRegistry.StopActor(fmt.Sprintf("login_session_%d", loginClient.GetClientID()), loginClient.GetLogicActorPID())
+
+	ic := ls.internalClient
+	if ic == nil {
 		return
 	}
 	remoteAddr := c.GetConnection().RemoteAddr().String()
