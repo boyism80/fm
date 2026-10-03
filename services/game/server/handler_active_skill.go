@@ -74,12 +74,9 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	if levelData.Cooldown > 0 {
-		if skillEntry.IsCooling() {
-			ch.Listener.OnUpdateStats(ch, nil, true)
-			return nil
-		}
-		skillEntry.StartCooldown(levelData.Cooldown)
+	if levelData.Cooldown > 0 && skillEntry.IsCooling() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
 	}
 
 	root := mapInstance.GetLuaRoot()
@@ -106,6 +103,9 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	if !h.runActivatedHooks(ctx, root, ch, req, skillEntry, params) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
+	}
+	if levelData.Cooldown > 0 {
+		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 	h.showActiveSkillEffect(ch, req)
 	return nil
