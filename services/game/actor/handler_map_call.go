@@ -18,9 +18,9 @@ func (h *MapCallHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *MapCa
 	if msg.ReplyTo == nil {
 		return
 	}
-	ctx.Send(msg.ReplyTo, &MapCallAck{
+	ctx.Send(msg.ReplyTo, &ResumeLua{
 		Root:   msg.Root,
 		Thread: msg.Thread,
-		Values: msg.Values,
+		Args:   msg.Values,
 	})
 }

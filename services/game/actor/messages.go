@@ -68,12 +68,6 @@ type MapCallAsync struct {
 	Thread  *lua.LState
 }
 
-type MapCallAck struct {
-	Root   *lua.LState
-	Thread *lua.LState
-	Values []lua.LValue
-}
-
 type AddCharacter struct {
 	Character  *entity.Character
 	TargetMap  *entity.Map

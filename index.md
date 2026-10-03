@@ -20,7 +20,7 @@ This server implementation uses a custom IO/Logic thread pool architecture inste
 ### MapActor messages
 
 - Handlers are registered by message type (`services/game/actor/message_handlers.go`); `MapActor.Receive` dispatches through that registry after `EnsureDeliver` unwrap.
-- Lua map builtins use the private `luaMapCall` intermediary. Synchronous work runs through the registered `MapCallHandler` immediately when the caller is already on the target map actor; cross-actor work is sent as `MapCall` and resumes through `MapCallAck`. Promise-based work uses `MapCallAsync` and always yields. Core systems do not use this intermediary and send actor messages directly.
+- Lua map builtins use the private `luaMapCall` intermediary. Synchronous work runs through the registered `MapCallHandler` immediately when the caller is already on the target map actor; cross-actor work is sent as `MapCall` and resumes through `ResumeLua`. Promise-based work uses `MapCallAsync` and always yields. Core systems do not use this intermediary and send actor messages directly.
 
 ## Project Structure
 

@@ -14,7 +14,6 @@ func registerMapMessageHandlers(r *MessageRegistry) {
 	Bind[ResumeLuaHandler](r)
 	Bind[MapCallHandler](r)
 	Bind[MapCallAsyncHandler](r)
-	Bind[MapCallAckHandler](r)
 	Bind[RunObjectTimerHandler](r)
 	Bind[RunReactorRespawnHandler](r)
 	Bind[TimerTickHandler](r)
