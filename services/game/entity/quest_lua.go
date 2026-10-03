@@ -347,12 +347,14 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				opts.Record = &record
 			} else {
 				if L.GetTop() < 2 || L.GetTop() > 3 {
-					L.ArgError(2, "start(npc[, force|record]) requires npc id")
+					L.ArgError(2, "start(npc[, force|record]) requires npc")
 					return 0
 				}
-				npcID := uint32(L.CheckInt(2))
-				npc := npcID
-				opts.NpcID = &npc
+				npcID, ok := LuaCheckNpcID(L, 2)
+				if ok == false {
+					return 0
+				}
+				opts.NpcID = &npcID
 				if L.GetTop() >= 3 {
 					switch L.Get(3).Type() {
 					case lua.LTBool:
@@ -382,10 +384,13 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() < 2 || L.GetTop() > 3 {
-				L.ArgError(2, "complete(npc[, selection]) requires npc id")
+				L.ArgError(2, "complete(npc[, selection]) requires npc")
 				return 0
 			}
-			npcID := uint32(L.CheckInt(2))
+			npcID, ok := LuaCheckNpcID(L, 2)
+			if ok == false {
+				return 0
+			}
 			opts := QuestPhaseOpts{NpcID: &npcID}
 			if L.GetTop() >= 3 {
 				sel := uint32(L.CheckInt(3))

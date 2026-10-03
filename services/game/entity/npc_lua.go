@@ -53,6 +53,19 @@ func (n *Npc) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 }
 
+func LuaCheckNpcID(L *lua.LState, idx int) (uint32, bool) {
+	switch v := L.Get(idx).(type) {
+	case lua.LNumber:
+		return uint32(v), true
+	case *lua.LUserData:
+		if npc, ok := v.Value.(*Npc); ok && npc.Wz != nil && npc.Wz.BaseSpawn != nil {
+			return uint32(npc.Wz.BaseSpawn.ID), true
+		}
+	}
+	L.ArgError(idx, "Npc or npc id expected")
+	return 0, false
+}
+
 func (n *Npc) String() string {
 	return n.LuaTypeName()
 }
