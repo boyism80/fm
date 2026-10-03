@@ -283,17 +283,10 @@ func (s *ServerCore) processPacket(client Client, encryptedData []byte) (bool, e
 	opcode := int(packetData[0]) | int(packetData[1])<<8
 	packetData = packetData[2:]
 
-	var logicActorPID *actor.PID
-	if logicClient, ok := client.(interface{ GetLogicActorPID() *actor.PID }); ok {
-		logicActorPID = logicClient.GetLogicActorPID()
-	}
+	logicActorPID := s.PacketActorPID(client)
 	if logicActorPID == nil {
-
-		if s.nilActorPID == nil {
-			log.Printf("No LogicActor PID for client and nil LogicActor PID not set")
-			return false, fmt.Errorf("no LogicActor PID for client and nil LogicActor PID not set")
-		}
-		logicActorPID = s.nilActorPID
+		log.Printf("No LogicActor PID for client and nil LogicActor PID not set")
+		return false, fmt.Errorf("no LogicActor PID for client and nil LogicActor PID not set")
 	}
 
 	msg := &c_actor.HandlePacket{
@@ -311,6 +304,16 @@ func (s *ServerCore) processPacket(client Client, encryptedData []byte) (bool, e
 	}
 
 	return true, nil
+}
+
+// PacketActorPID is the actor that handles the client's packets now: its map's actor, or the nil actor between maps.
+func (s *ServerCore) PacketActorPID(client Client) *actor.PID {
+	if logicClient, ok := client.(interface{ GetLogicActorPID() *actor.PID }); ok {
+		if pid := logicClient.GetLogicActorPID(); pid != nil {
+			return pid
+		}
+	}
+	return s.nilActorPID
 }
 
 func (s *ServerCore) RegisterPacketHandler(opcode int, handler func(ctx *ClientContext, data []byte) error) {

@@ -10,6 +10,7 @@ import (
 
 type GameWorld interface {
 	core.Server
+	PacketActorPID(client core.Client) *actor.PID
 	GetResources() *wz.Resources
 	GetExpRate() int
 	GetDropRate() int
