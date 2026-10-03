@@ -257,6 +257,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	if init {
 		character.Skills.RestorePassives()
 	}
+	character.Buffs.scheduleExpires()
 
 	for _, summon := range character.Summons.All() {
 		if summon == nil || summon.Owner != character {

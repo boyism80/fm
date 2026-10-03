@@ -18,6 +18,7 @@ type Buff interface {
 	CallOnBuffScript(ch *Character)
 	CallOnUnbuffScript(ch *Character)
 	GetBuffID() int32
+	expiresAt() (time.Time, bool)
 }
 
 type BaseBuff struct {
@@ -49,6 +50,13 @@ func (e *BaseBuff) RemainingDuration(now time.Time) time.Duration {
 		return 0
 	}
 	return rem
+}
+
+func (e *BaseBuff) expiresAt() (time.Time, bool) {
+	if e.Duration <= 0 {
+		return time.Time{}, false
+	}
+	return e.StartTime.Add(e.Duration), true
 }
 
 func (e *BaseBuff) GetFlags() []constant.BuffFlag {
@@ -265,6 +273,7 @@ func (bc *BuffContainer) add(entity Buff) (removed []Buff) {
 
 	for existing := range conflicts {
 		removed = append(removed, existing)
+		bc.owner.RemoveTimer(bc.timerKey(existing))
 		delete(bc.entities, existing)
 		for _, flag := range existing.GetFlags() {
 			if current := bc.byFlag[flag]; current == existing {
@@ -298,6 +307,7 @@ func (bc *BuffContainer) remove(flags []constant.BuffFlag) (removed []Buff, remo
 		for _, flag := range entity.GetFlags() {
 			removedFlagSet[flag] = struct{}{}
 		}
+		bc.owner.RemoveTimer(bc.timerKey(entity))
 		delete(bc.entities, entity)
 		for _, flag := range entity.GetFlags() {
 			if current := bc.byFlag[flag]; current == entity {
@@ -316,11 +326,47 @@ func (bc *BuffContainer) remove(flags []constant.BuffFlag) (removed []Buff, remo
 
 func (bc *BuffContainer) commitBuff(entity Buff, now time.Time, notify bool) {
 	removed := bc.add(entity)
+	bc.scheduleExpire(entity, now)
 	bc.callUnbuffScripts(removed)
 	entity.CallOnBuffScript(bc.owner)
 	if notify {
 		bc.notifyAdded(entity, now)
 	}
+}
+
+func (bc *BuffContainer) scheduleExpire(entity Buff, now time.Time) {
+	end, ok := entity.expiresAt()
+	if ok == false {
+		return
+	}
+	delay := end.Sub(now)
+	if delay < 0 {
+		delay = 0
+	}
+	bc.owner.AddTimer(bc.timerKey(entity), delay, false, func() {
+		bc.expire(entity)
+	})
+}
+
+func (bc *BuffContainer) scheduleExpires() {
+	now := clock.Now()
+	for entity := range bc.entities {
+		if bc.owner.GetTimerEntry(bc.timerKey(entity)) != nil {
+			continue
+		}
+		bc.scheduleExpire(entity, now)
+	}
+}
+
+func (bc *BuffContainer) expire(entity Buff) {
+	if _, ok := bc.entities[entity]; ok == false {
+		return
+	}
+	bc.RemoveBuff(entity.GetFlags())
+}
+
+func (bc *BuffContainer) timerKey(entity Buff) string {
+	return fmt.Sprintf("buff:%p", entity)
 }
 
 func (bc *BuffContainer) Has(flag constant.BuffFlag) bool {
