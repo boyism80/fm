@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/types"
 )
 
 func (ch *Character) DamageTo(damages []dto.AttackPair) {
@@ -42,6 +43,55 @@ func (ch *Character) DamageTo(damages []dto.AttackPair) {
 	}
 	if len(killed) > 0 {
 		ch.OnKill(killed)
+	}
+}
+
+const mesoExplosionMargin = 50
+
+func (ch *Character) ExplodeMesos(oids []uint32) {
+	if len(oids) == 0 {
+		return
+	}
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	skillID := uint32(constant.SkillMesoExplosion)
+	skill := ch.GameWorld.GetResources().GetSkill(skillID)
+	if skill == nil {
+		return
+	}
+	levelData := skill.GetLevelData(ch.GetTotalSkillLevel(skillID))
+	if levelData == nil {
+		return
+	}
+
+	reach := max(levelData.LT.X, -levelData.LT.X, levelData.RB.X, -levelData.RB.X) + mesoExplosionMargin
+	origin := types.Point[int32]{X: int32(ch.Position.X), Y: int32(ch.Position.Y)}
+	area := types.Rect[int32]{
+		Left:   -reach,
+		Top:    min(levelData.LT.Y, levelData.RB.Y) - mesoExplosionMargin,
+		Right:  reach,
+		Bottom: max(levelData.LT.Y, levelData.RB.Y) + mesoExplosionMargin,
+	}.AtOrigin(origin)
+
+	items := mapInstance.GetItems()
+	for _, oid := range oids {
+		meso, ok := items[oid].(*Meso)
+		if ok == false {
+			continue
+		}
+		fp := meso.GetFieldPlacement()
+		if fp == nil || fp.Owner != ch.GetID() {
+			continue
+		}
+		pos := meso.GetPosition()
+		if area.ContainsPoint(types.Point[int32]{X: int32(pos.X), Y: int32(pos.Y)}) == false {
+			continue
+		}
+		if err := mapInstance.RemoveItem(oid, constant.RemoveItemTypeExplosion, ch.GetID()); err != nil {
+			log.Printf("failed to remove meso oid %d for explosion: %v", oid, err)
+		}
 	}
 }
 

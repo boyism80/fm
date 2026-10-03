@@ -9,7 +9,6 @@ import (
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -67,24 +66,7 @@ func (h *Attack) finishAttack(ctx *core.ClientContext, character *entity.Charact
 	CallOnAttackHooks(character, damages, skillID, false, false, 0)
 	character.DamageTo(damages)
 
-	if len(req.MesoOIDs) > 0 {
-		items := mapInstance.GetItems()
-		for _, oid := range req.MesoOIDs {
-			obj, exists := items[oid]
-			if !exists {
-				log.Printf("invalid meso explosion oid: %d", oid)
-				return nil
-			}
-			if _, ok := obj.(*entity.Meso); !ok {
-				log.Printf("non-meso object used in meso explosion: %d", oid)
-				return nil
-			}
-			if err := mapInstance.RemoveItem(oid, constant.RemoveItemTypeExplosion, character.GetID()); err != nil {
-				log.Printf("failed to remove meso oid %d for explosion: %v", oid, err)
-				return nil
-			}
-		}
-	}
+	character.ExplodeMesos(req.MesoOIDs)
 	character.Listener.OnAttack(character, req, skillLevel)
 	if skillID != 0 {
 		CallSkillHook(character, skillID, "on_activated")
