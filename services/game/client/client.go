@@ -12,10 +12,10 @@ import (
 
 type GameClient struct {
 	core.BaseClient
-	character          *entity.Character
-	transferDisconnect bool
-	loggedOut          bool
-	mu                 sync.Mutex
+	character       *entity.Character
+	changingChannel bool
+	loggedOut       bool
+	mu              sync.Mutex
 }
 
 var _ core.Client = (*GameClient)(nil)
@@ -45,11 +45,14 @@ func (c *GameClient) SetCharacter(character *entity.Character) bool {
 	return true
 }
 
+// Logout takes the character off the client; later packets and the disconnect find no character.
 func (c *GameClient) Logout() *entity.Character {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.loggedOut = true
-	return c.character
+	character := c.character
+	c.character = nil
+	return character
 }
 
 func (c *GameClient) GetCharacter() *entity.Character {
@@ -74,16 +77,14 @@ func (c *GameClient) GetLogicActorPID() *actor.PID {
 	return m.LogicActorPID()
 }
 
-func (c *GameClient) SetTransferDisconnect(v bool) {
+func (c *GameClient) SetChangingChannel(v bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.transferDisconnect = v
+	c.changingChannel = v
 }
 
-func (c *GameClient) TakeTransferDisconnect() bool {
+func (c *GameClient) ChangingChannel() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	v := c.transferDisconnect
-	c.transferDisconnect = false
-	return v
+	return c.changingChannel
 }

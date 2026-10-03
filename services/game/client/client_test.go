@@ -28,4 +28,7 @@ func TestLogoutTakesCharacter(t *testing.T) {
 	if c.Logout() != ch {
 		t.Fatal("logout must return the set character")
 	}
+	if c.GetCharacter() != nil {
+		t.Fatal("logout must take the character off the client")
+	}
 }

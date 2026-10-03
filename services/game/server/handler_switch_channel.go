@@ -59,6 +59,8 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 	var routeHost string
 	var routePort uint16
 
+	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
+	gameClient.SetChangingChannel(true)
 	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
 		return ic.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
@@ -120,18 +122,24 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			return fmt.Errorf("switch channel: begin transition failed (world=%d channel=%d code=%v)",
 				worldID, targetChannel, code)
 		}
-		// Set before sending: the client may disconnect as soon as it reads the packet, and a non-transfer logout ends the moving session.
-		gameClient.SetTransferDisconnect(true)
-		if err := ctx.Client.Send(&response.SwitchChannel{
+		_ = ctx.Client.Send(&response.SwitchChannel{
 			IP:   routeHost,
 			Port: routePort,
-		}, types.SEND_POLICY_ENCRYPT); err != nil {
-			return err
+		}, types.SEND_POLICY_ENCRYPT)
+
+		// The character leaves this channel now, not when the client disconnects: a client that stays connected must not keep playing it,
+		// and the disconnect must neither save it over the next channel nor end the moving session.
+		left := gameClient.Logout()
+		if left == nil {
+			return nil
 		}
+		left.MarkLoggedOut()
+		go h.gs.removeCharacter(left)
 		return nil
 	})
 	promise.OnError(func(err error) {
 		log.Printf("SwitchChannel (async): %v", err)
+		gameClient.SetChangingChannel(false)
 	})
 	return nil
 }

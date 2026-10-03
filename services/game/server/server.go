@@ -590,31 +590,28 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	})
 
 	if gs.internalClient != nil && character.AccountID != 0 {
-		transfer := client.TakeTransferDisconnect()
 		accID := character.AccountID
 		wid := gs.config.WorldId
-		if !transfer {
-			p.ThenAsync(func(interface{}) (interface{}, error) {
-				ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-				defer cancel()
-				req := &internal.LogoutSessionRequest{
-					WorldId:            wid,
-					AccountId:          accID,
-					DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
-					TransferDisconnect: false,
-				}
-				if cid := character.GetID(); cid != 0 {
-					v := cid
-					req.CharacterId = &v
-				}
-				ch := gs.config.ChannelId
-				req.ChannelId = &ch
-				if _, err := gs.internalClient.LogoutSession(ctx, req); err != nil {
-					log.Printf("session RPC on game disconnect failed for account %d: %v", accID, err)
-				}
-				return nil, nil
-			})
-		}
+		p.ThenAsync(func(interface{}) (interface{}, error) {
+			ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
+			defer cancel()
+			req := &internal.LogoutSessionRequest{
+				WorldId:            wid,
+				AccountId:          accID,
+				DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
+				TransferDisconnect: false,
+			}
+			if cid := character.GetID(); cid != 0 {
+				v := cid
+				req.CharacterId = &v
+			}
+			ch := gs.config.ChannelId
+			req.ChannelId = &ch
+			if _, err := gs.internalClient.LogoutSession(ctx, req); err != nil {
+				log.Printf("session RPC on game disconnect failed for account %d: %v", accID, err)
+			}
+			return nil, nil
+		})
 	}
 
 	toSave := []*entity.Character{character}
@@ -624,30 +621,35 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		return nil
 	})
 
-	charID := character.GetID()
 	p.Finally(func() {
-		if sm := character.StateMachine(); sm != nil {
-			sm.RequestLeave(character, false, entity.StateMachineLeaveDisconnect)
-		}
-		mapInstance := character.GetMap()
-		if mapInstance != nil {
-			pid := mapInstance.LogicActorPID()
-			root := gs.GetRootContext()
-			if pid != nil && root != nil {
-				_, err := root.RequestFuture(pid, &g_actor.RemoveCharacter{CharacterID: charID}, mapActorCallTimeout).Result()
-				if err != nil {
-					log.Printf("RemoveCharacter on disconnect (char %d): %v", charID, err)
-				}
-			} else {
-				log.Printf("disconnect: map actor missing for char %d; map remove skipped", charID)
-			}
-		}
-		if gs.characterRuntime != nil {
-			gs.ensureAbandonCharacter(charID)
-			gs.characterRuntime.UnregisterCharacter(charID)
-		}
-		character.ClearTimers()
+		gs.removeCharacter(character)
 	})
+}
+
+// removeCharacter takes a logged-out character out of this channel. It waits on the character's map actor, so it must not run on that actor.
+func (gs *GameServer) removeCharacter(character *entity.Character) {
+	charID := character.GetID()
+	if sm := character.StateMachine(); sm != nil {
+		sm.RequestLeave(character, false, entity.StateMachineLeaveDisconnect)
+	}
+	mapInstance := character.GetMap()
+	if mapInstance != nil {
+		pid := mapInstance.LogicActorPID()
+		root := gs.GetRootContext()
+		if pid != nil && root != nil {
+			_, err := root.RequestFuture(pid, &g_actor.RemoveCharacter{CharacterID: charID}, mapActorCallTimeout).Result()
+			if err != nil {
+				log.Printf("RemoveCharacter (char %d): %v", charID, err)
+			}
+		} else {
+			log.Printf("remove character: map actor missing for char %d; map remove skipped", charID)
+		}
+	}
+	if gs.characterRuntime != nil {
+		gs.ensureAbandonCharacter(charID)
+		gs.characterRuntime.UnregisterCharacter(charID)
+	}
+	character.ClearTimers()
 }
 
 func (gs *GameServer) GetStats() map[string]interface{} {

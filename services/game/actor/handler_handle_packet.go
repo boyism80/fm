@@ -6,6 +6,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	c_actor "github.com/boyism80/fm/core/actor"
+	gameclient "github.com/boyism80/fm/services/game/client"
 )
 
 type HandlePacketHandler struct{}
@@ -15,6 +16,10 @@ func (HandlePacketHandler) New() *HandlePacketHandler {
 }
 
 func (h *HandlePacketHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *c_actor.HandlePacket) {
+	if client, ok := msg.Client.(*gameclient.GameClient); ok && client.ChangingChannel() {
+		return
+	}
+
 	// The character may have changed maps after the packet was queued here; only its current actor may touch its map.
 	pid := a.GameWorld.PacketActorPID(msg.Client)
 	if pid != nil && pid.Equal(ctx.Self()) == false {
