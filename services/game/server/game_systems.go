@@ -198,7 +198,7 @@ func (s mapSystem) RemoveInstanceMap(instanceKey uint32) error {
 		return fmt.Errorf("instance map %d closed with %d players", instanceKey, m.GetPlayerCount())
 	}
 	name := fmt.Sprintf("map_inst_%d", instanceKey)
-	s.gs.actorRegistry.StopActor(name, m.HomeActorPID())
+	s.gs.actorRegistry.PoisonActor(name, m.HomeActorPID())
 	return nil
 }
 

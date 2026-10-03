@@ -73,3 +73,12 @@ func (r *ActorRegistry) StopActor(name string, pid *actor.PID) {
 		r.system.root.Stop(pid)
 	}
 }
+
+func (r *ActorRegistry) PoisonActor(name string, pid *actor.PID) {
+	r.mutex.Lock()
+	delete(r.actors, name)
+	r.mutex.Unlock()
+	if pid != nil {
+		r.system.root.Poison(pid)
+	}
+}
