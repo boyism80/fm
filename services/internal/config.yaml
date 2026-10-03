@@ -59,6 +59,12 @@ postgresql:
 
 
 redis:
+  unified:
+    host: "127.0.0.1"
+    port: 6379
+    password: ""
+    db: 2
+    tls: false
   worlds:
     "0":
       global:

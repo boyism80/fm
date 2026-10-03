@@ -10,6 +10,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
+	"github.com/boyism80/fm/services/login/client"
 	"github.com/boyism80/fm/types"
 )
 
@@ -33,7 +34,11 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 		return ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
 	}
 
-	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name}
+	loginClient, ok := ctx.Client.(*client.LoginClient)
+	if !ok {
+		return fmt.Errorf("check name: invalid client type")
+	}
+	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name, AccountId: loginClient.GetAccountId()}
 
 	if ctx.ActorContext == nil {
 		log.Printf("CheckName: no actor context, cannot run internal RPC")

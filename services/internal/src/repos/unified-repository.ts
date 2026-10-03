@@ -1,4 +1,8 @@
 import type { InternalContext } from "../context/internal-context";
+import { redisNameKey } from "../redis-name-key";
+
+// Same as the login session TTL; RefreshSession extends it while the login session lives.
+const CHARACTER_NAME_RESERVATION_TTL_SECONDS = 120;
 
 export interface AccountIdentityRow {
     id: number;
@@ -56,14 +60,109 @@ export class UnifiedRepository {
         return rows[0] ?? null;
     }
 
-    async reserveCharacterName(name: string, accountId: number, worldId: number): Promise<CharacterNameRegistryRow> {
+    async nextCharacterId(): Promise<number> {
         const { rows } = await this.pool().query(
-            `INSERT INTO character_name_registry (name, account_id, world_id)
-             VALUES ($1, $2, $3)
-             RETURNING character_id, name, account_id, world_id`,
-            [name, accountId, worldId]
+            "SELECT nextval(pg_get_serial_sequence('character_name_registry', 'character_id')) AS id"
         );
-        return rows[0];
+        return Number(rows[0].id);
+    }
+
+    async insertCharacterName(characterId: number, name: string, accountId: number, worldId: number): Promise<void> {
+        await this.pool().query(
+            `INSERT INTO character_name_registry (character_id, name, account_id, world_id)
+             VALUES ($1, $2, $3, $4)`,
+            [characterId, name, accountId, worldId]
+        );
+    }
+
+    private nameReservationKey(name: string) {
+        return redisNameKey(`reserve:${name.toLowerCase()}`);
+    }
+
+    private accountNameReservationKey(accountId: number) {
+        return redisNameKey(`reserve_account:${accountId}`);
+    }
+
+    /** One name per account: reserving a new name releases the account's previous one. */
+    async reserveCharacterName(name: string, accountId: number): Promise<boolean> {
+        const { client } = this.ctx.getRedisUnifiedAccess();
+        const script = `
+local name_key = KEYS[1]
+local account_key = KEYS[2]
+local account_id = ARGV[1]
+local name = ARGV[2]
+local prefix = ARGV[3]
+local ttl = tonumber(ARGV[4])
+local owner = redis.call("GET", name_key)
+if owner and owner ~= account_id then
+  return 0
+end
+local prev = redis.call("GET", account_key)
+if prev and prev ~= name and redis.call("GET", prefix .. prev) == account_id then
+  redis.call("DEL", prefix .. prev)
+end
+redis.call("SET", name_key, account_id, "EX", ttl)
+redis.call("SET", account_key, name, "EX", ttl)
+return 1
+`;
+        const lower = name.toLowerCase();
+        const ok = await client.eval(
+            script,
+            2,
+            this.nameReservationKey(lower),
+            this.accountNameReservationKey(accountId),
+            String(accountId),
+            lower,
+            redisNameKey("reserve:"),
+            String(CHARACTER_NAME_RESERVATION_TTL_SECONDS)
+        );
+        return Number(ok) === 1;
+    }
+
+    async refreshCharacterNameReservation(accountId: number): Promise<void> {
+        const { client } = this.ctx.getRedisUnifiedAccess();
+        const script = `
+local account_key = KEYS[1]
+local account_id = ARGV[1]
+local prefix = ARGV[2]
+local ttl = tonumber(ARGV[3])
+local name = redis.call("GET", account_key)
+if not name then
+  return 0
+end
+redis.call("EXPIRE", account_key, ttl)
+if redis.call("GET", prefix .. name) == account_id then
+  redis.call("EXPIRE", prefix .. name, ttl)
+end
+return 1
+`;
+        await client.eval(
+            script,
+            1,
+            this.accountNameReservationKey(accountId),
+            String(accountId),
+            redisNameKey("reserve:"),
+            String(CHARACTER_NAME_RESERVATION_TTL_SECONDS)
+        );
+    }
+
+    async releaseCharacterNameReservation(accountId: number): Promise<void> {
+        const { client } = this.ctx.getRedisUnifiedAccess();
+        const script = `
+local account_key = KEYS[1]
+local account_id = ARGV[1]
+local prefix = ARGV[2]
+local name = redis.call("GET", account_key)
+if not name then
+  return 0
+end
+redis.call("DEL", account_key)
+if redis.call("GET", prefix .. name) == account_id then
+  redis.call("DEL", prefix .. name)
+end
+return 1
+`;
+        await client.eval(script, 1, this.accountNameReservationKey(accountId), String(accountId), redisNameKey("reserve:"));
     }
 
     async deleteCharacterName(characterId: number) {

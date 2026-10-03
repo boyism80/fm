@@ -369,6 +369,7 @@ message GetCharacterListReply {
 
 message CheckCharacterNameRequest {
   string name = 1;
+  uint32 account_id = 2;
 }
 
 message CheckCharacterNameReply {

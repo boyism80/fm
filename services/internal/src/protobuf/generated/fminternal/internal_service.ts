@@ -1260,6 +1260,7 @@ export interface GetCharacterListReply {
 
 export interface CheckCharacterNameRequest {
   name: string;
+  accountId: number;
 }
 
 export interface CheckCharacterNameReply {
@@ -7676,13 +7677,16 @@ export const GetCharacterListReply: MessageFns<GetCharacterListReply> = {
 };
 
 function createBaseCheckCharacterNameRequest(): CheckCharacterNameRequest {
-  return { name: "" };
+  return { name: "", accountId: 0 };
 }
 
 export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = {
   encode(message: CheckCharacterNameRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
     }
     return writer;
   },
@@ -7702,6 +7706,14 @@ export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = 
           message.name = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -7712,13 +7724,23 @@ export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = 
   },
 
   fromJSON(object: any): CheckCharacterNameRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+    };
   },
 
   toJSON(message: CheckCharacterNameRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
     }
     return obj;
   },
@@ -7729,6 +7751,7 @@ export const CheckCharacterNameRequest: MessageFns<CheckCharacterNameRequest> = 
   fromPartial<I extends Exact<DeepPartial<CheckCharacterNameRequest>, I>>(object: I): CheckCharacterNameRequest {
     const message = createBaseCheckCharacterNameRequest();
     message.name = object.name ?? "";
+    message.accountId = object.accountId ?? 0;
     return message;
   },
 };

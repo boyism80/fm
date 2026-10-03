@@ -292,18 +292,11 @@ export class CharacterService {
             return { success: false, errorMsg: "선택할 수 없는 외형입니다." };
         }
 
-        let nameEntry;
-        try {
-            nameEntry = await this.unifiedRepo.reserveCharacterName(name, accountId, wid);
-        } catch (err: unknown) {
-            const code = (err as { code?: string })?.code;
-            if (code === "23505") {
-                return { success: false, errorMsg: "이미 사용 중인 이름입니다." };
-            }
-            throw err;
+        const reserved = await this.unifiedRepo.reserveCharacterName(name, accountId);
+        if (reserved === false) {
+            return { success: false, errorMsg: "이미 사용 중인 이름입니다." };
         }
-
-        const characterId = nameEntry.character_id;
+        const characterId = await this.unifiedRepo.nextCharacterId();
         const role = account?.role ?? 0;
 
         const persisted = {
@@ -399,6 +392,17 @@ export class CharacterService {
             overlays: {},
         };
         await this.overviewRepo.set(wid, overview);
+
+        // Claims the name in postgres only once the character fully exists, so a failure above never locks it permanently.
+        try {
+            await this.unifiedRepo.insertCharacterName(characterId, name, accountId, wid);
+        } catch (err: unknown) {
+            const code = (err as { code?: string })?.code;
+            if (code === "23505") {
+                return { success: false, errorMsg: "이미 사용 중인 이름입니다." };
+            }
+            throw err;
+        }
 
         return { success: true, errorMsg: "", character: overview };
     }

@@ -1,6 +1,7 @@
 import { AccountSessionState, SessionDisconnectSource, SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
 import { isRedisEvalArray } from "../types/redis-eval";
 import type { SessionRepository } from "../repos/session-repository";
+import type { UnifiedRepository } from "../repos/unified-repository";
 import type { PartyService } from "./party-service";
 import type { BuddyService } from "./buddy-service";
 import type { GuildService } from "./guild-service";
@@ -18,17 +19,20 @@ export function formatDateTime(date = new Date()) {
 
 export class SessionService {
     private readonly repo: SessionRepository;
+    private readonly unifiedRepo: UnifiedRepository;
     private readonly partyService: PartyService | null;
     private readonly buddyService: BuddyService | null;
     private readonly guildService: GuildService | null;
 
     constructor(
         sessionRepository: SessionRepository,
+        unifiedRepository: UnifiedRepository,
         partyService: PartyService | null,
         buddyService: BuddyService | null,
         guildService: GuildService | null
     ) {
         this.repo = sessionRepository;
+        this.unifiedRepo = unifiedRepository;
         this.partyService = partyService;
         this.buddyService = buddyService;
         this.guildService = guildService;
@@ -105,6 +109,7 @@ export class SessionService {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
         console.log(`[session] begin_transition ok account=${accountId} character=${characterId} game_to_game=${gameToGameTransfer}`);
+        await this.releaseCharacterNameReservation(accountId);
         return { ok: true };
     }
 
@@ -151,19 +156,30 @@ export class SessionService {
     }
 
     async refresh(worldId: number, accountId: number) {
-        const [ok, code] = this.atomicResultTuple(
-            await this.repo.refresh(
-                worldId,
-                accountId,
-                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN),
-                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
-                this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME)
-            )
+        const raw = await this.repo.refresh(
+            worldId,
+            accountId,
+            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN),
+            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
+            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME)
         );
+        const [ok, code] = this.atomicResultTuple(raw);
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
+        if (Number(raw[3]) === AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
+            await this.unifiedRepo.refreshCharacterNameReservation(accountId).catch((err) => {
+                console.log(`[session] refresh name reservation failed account=${accountId}: ${err}`);
+            });
+        }
         return { ok: true };
+    }
+
+    // The reservation also expires on its own, so a failure here only delays the release.
+    private async releaseCharacterNameReservation(accountId: number) {
+        await this.unifiedRepo.releaseCharacterNameReservation(accountId).catch((err) => {
+            console.log(`[session] release name reservation failed account=${accountId}: ${err}`);
+        });
     }
 
     async logout(
@@ -196,6 +212,7 @@ export class SessionService {
         if (ok !== 1) {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_LOGOUT_FAILED };
         }
+        await this.releaseCharacterNameReservation(accountId);
         const gameNormalDisconnect = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER && !transferDisconnect;
         const cid = options.characterId ?? null;
         if (cid != null && gameNormalDisconnect) {

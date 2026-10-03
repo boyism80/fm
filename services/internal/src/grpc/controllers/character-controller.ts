@@ -185,7 +185,7 @@ export class CharacterGrpcController {
     @Method("checkCharacterName")
     async checkCharacterName(call: GrpcCall<CheckCharacterNameRequest>, callback: GrpcCallback<CheckCharacterNameReply>) {
         try {
-            const result = await this.characterOverviewService.checkCharacterName(call.request.name);
+            const result = await this.characterOverviewService.checkCharacterName(call.request.name, call.request.accountId);
             callback(null, { exists: result.exists });
         } catch (err) {
             this.grpcError(err, callback);
