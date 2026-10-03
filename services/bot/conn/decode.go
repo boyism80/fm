@@ -32,6 +32,7 @@ var Responses = []any{
 	&response.DialogAccept{},
 	&response.UpdateStats{},
 	&response.OpenNpcShop{},
+	&response.UpdateQuest{},
 	&response.SwitchChannel{},
 	&response.ServerBlocked{},
 	&response.PartyCreated{},
@@ -142,6 +143,13 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		return pkt, nil
 	case (&response.OpenNpcShop{}).Opcode():
 		pkt := &response.OpenNpcShop{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.UpdateQuest{}).Opcode():
+		if len(body) == 0 || body[0] != 1 {
+			return nil, fmt.Errorf("status info is not decoded")
+		}
+		pkt := &response.UpdateQuest{}
 		pkt.Deserialize(reader)
 		return pkt, nil
 	case (&response.SwitchChannel{}).Opcode():

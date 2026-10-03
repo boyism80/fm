@@ -25,6 +25,7 @@ var requests = []outbound{
 	&request.Warp{},
 	&request.PartyOperation{},
 	&request.SwitchChannel{},
+	&request.QuestAction{},
 }
 
 func (a *SuiteActor) register() {
