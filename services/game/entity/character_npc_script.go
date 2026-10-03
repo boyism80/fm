@@ -24,9 +24,9 @@ func (ch *Character) OpenNpc(actx actor.Context, npcID uint32, caller *lua.LStat
 		ch.ResetDialog()
 		if cfg, ok := luax.GetConfiguration(old); ok {
 			cfg.CallPromise = nil
-			cfg.KeepAlive = false
 			luax.SetConfiguration(old, cfg)
 		}
+		// The caller is still running and closes itself when it finishes.
 		if old != caller {
 			luax.Close(old)
 		}
@@ -48,7 +48,6 @@ func (ch *Character) OpenNpc(actx actor.Context, npcID uint32, caller *lua.LStat
 	luax.SetConfiguration(luaThread, luax.Configuration{
 		ActorContext: actx,
 		ActorPID:     mapInstance.LogicActorPID(),
-		KeepAlive:    true,
 	})
 	luax.CallAsync(root, luaThread, "on_click", ch, npcID).Then(func(_ interface{}) (interface{}, error) {
 		ch.ResetDialog()

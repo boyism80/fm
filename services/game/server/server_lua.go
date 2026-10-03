@@ -778,7 +778,6 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		}
 		cfg, _ = luax.GetConfiguration(L)
 		cfg.ActorContext = actorCtx
-		cfg.KeepAlive = true
 		luax.SetConfiguration(L, cfg)
 
 		p := gs.SaveAllCharactersAsync(actorCtx)

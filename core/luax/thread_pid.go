@@ -11,7 +11,6 @@ import (
 type Configuration struct {
 	ActorContext actor.Context
 	ActorPID     *actor.PID
-	KeepAlive    bool
 	CallPromise  *async.Promise
 }
 

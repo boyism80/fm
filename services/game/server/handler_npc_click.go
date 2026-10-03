@@ -93,7 +93,6 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 	luax.SetConfiguration(luaThread, luax.Configuration{
 		ActorContext: ctx.ActorContext,
 		ActorPID:     mapInstance.LogicActorPID(),
-		KeepAlive:    true,
 	})
 	luax.CallAsync(root, luaThread, "on_click", character, npc).Then(func(_ interface{}) (interface{}, error) {
 		character.ResetDialog()

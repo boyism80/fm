@@ -91,8 +91,6 @@ func registerClockLuaFuncs(gs *GameServer, luaState *lua.LState) {
 			L.Push(lua.LString("lua state not found"))
 			return 2
 		}
-		cfg.KeepAlive = true
-		luax.SetConfiguration(L, cfg)
 
 		succeeded := true
 		errMsg := ""
@@ -168,8 +166,6 @@ func requestServerDateTimeFromLua(gs *GameServer, L *lua.LState, reset bool, dat
 		L.Push(lua.LString("lua state not found"))
 		return 2
 	}
-	cfg.KeepAlive = true
-	luax.SetConfiguration(L, cfg)
 
 	succeeded := true
 	errMsg := ""

@@ -55,21 +55,17 @@ func HasFunc(thread *lua.LState, name string) bool {
 	return threadFunc(thread, name) != nil
 }
 
+// Close is safe to call again on a thread that already finished; a finished thread closes itself.
 func Close(thread *lua.LState) {
 	if thread == nil {
 		return
 	}
 	ClearConfiguration(thread)
 	clearThreadScript(thread)
-	thread.Close()
-}
-
-func shouldAutoClose(thread *lua.LState) bool {
-	cfg, ok := GetConfiguration(thread)
-	if !ok {
-		return true
+	if thread.IsClosed() {
+		return
 	}
-	return !cfg.KeepAlive
+	thread.Close()
 }
 
 func ResultValues(value interface{}) []lua.LValue {
@@ -111,9 +107,7 @@ func Call(thread *lua.LState, hook string, args ...interface{}) (lua.LValue, err
 	}
 	fn := threadFunc(thread, hook)
 	if fn == nil {
-		if shouldAutoClose(thread) {
-			Close(thread)
-		}
+		Close(thread)
 		return nil, nil
 	}
 	lvArgs, err := toLValues(thread, args)
@@ -125,16 +119,12 @@ func Call(thread *lua.LState, hook string, args ...interface{}) (lua.LValue, err
 		thread.Push(lv)
 	}
 	if err := thread.PCall(len(lvArgs), 1, nil); err != nil {
-		if shouldAutoClose(thread) {
-			Close(thread)
-		}
+		Close(thread)
 		return nil, fmt.Errorf("%s: %w", hook, err)
 	}
 	ret := thread.Get(-1)
 	thread.Pop(1)
-	if shouldAutoClose(thread) {
-		Close(thread)
-	}
+	Close(thread)
 	return ret, nil
 }
 
@@ -147,9 +137,7 @@ func CallAsync(root *lua.LState, thread *lua.LState, hook string, args ...interf
 	fn := threadFunc(thread, hook)
 	if fn == nil {
 		promise.SetResult(nil)
-		if shouldAutoClose(thread) {
-			Close(thread)
-		}
+		Close(thread)
 		return promise
 	}
 	cfg, _ := GetConfiguration(thread)
@@ -170,6 +158,11 @@ func resumeFn(root *lua.LState, thread *lua.LState, fn *lua.LFunction, hook stri
 	if root == nil || thread == nil {
 		return lua.ResumeOK, nil, fmt.Errorf("nil lua root/thread")
 	}
+	// A finished thread is closed but can still be held as a character dialog until it is reset.
+	if thread.IsClosed() {
+		Close(thread)
+		return lua.ResumeOK, nil, fmt.Errorf("lua thread already finished")
+	}
 	lvArgs, err := toLValues(thread, args)
 	if err != nil {
 		return lua.ResumeOK, nil, err
@@ -184,16 +177,12 @@ func resumeFn(root *lua.LState, thread *lua.LState, fn *lua.LFunction, hook stri
 			err = fmt.Errorf("%s: %w", hook, resumeErr)
 		}
 		completeCall(thread, nil, err)
-		if shouldAutoClose(thread) {
-			Close(thread)
-		}
+		Close(thread)
 		return lua.ResumeOK, nil, err
 	}
 	if state != lua.ResumeYield {
 		completeCall(thread, values, nil)
-		if shouldAutoClose(thread) {
-			Close(thread)
-		}
+		Close(thread)
 	}
 	return state, values, nil
 }
