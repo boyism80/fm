@@ -1723,18 +1723,27 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() != 2 {
-				L.ArgError(2, "open_npc(npc_id) requires npc id")
+				L.ArgError(2, "open_npc(npc) requires npc")
 				return 0
 			}
-			npcID := uint32(L.CheckInt(2))
 			cfg, ok := luax.GetConfiguration(L)
 			if !ok || cfg.ActorContext == nil {
 				L.RaiseError("open_npc: thread has no actor context")
 				return 0
 			}
-			npc := ch.GetMap().NpcByTemplate(npcID)
+			var npc *Npc
+			if ud, ok := L.Get(2).(*lua.LUserData); ok {
+				npc, _ = ud.Value.(*Npc)
+			}
 			if npc == nil {
-				npc = &Npc{Wz: &wz.NpcSpawn{BaseSpawn: &wz.BaseSpawn{ID: npcID}}}
+				npcID, ok := LuaCheckNpcID(L, 2)
+				if ok == false {
+					return 0
+				}
+				npc = ch.GetMap().NpcByTemplate(npcID)
+				if npc == nil {
+					npc = &Npc{Wz: &wz.NpcSpawn{BaseSpawn: &wz.BaseSpawn{ID: npcID}}}
+				}
 			}
 			if err := ch.OpenNpc(cfg.ActorContext, npc); err != nil {
 				L.RaiseError("open_npc: %v", err)
@@ -2229,13 +2238,15 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			questID := uint32(L.CheckInt(2))
-			npcID := uint32(L.CheckInt(3))
+			npcID, ok := LuaCheckNpcID(L, 3)
+			if ok == false {
+				return 0
+			}
 			if ch.GameWorld == nil {
 				L.Push(lua.LNil)
 				return 1
 			}
-			npc := npcID
-			_, err := ch.Quests.Start(questID, QuestPhaseOpts{NpcID: &npc})
+			_, err := ch.Quests.Start(questID, QuestPhaseOpts{NpcID: &npcID})
 			if err != nil {
 				L.Push(lua.LNil)
 				return 1

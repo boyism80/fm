@@ -132,10 +132,12 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if !ok {
 				return 0
 			}
-			npcID := uint32(0)
 			opts := QuestPhaseOpts{}
 			if L.GetTop() >= 2 {
-				npcID = uint32(L.CheckInt(2))
+				npcID, ok := LuaCheckNpcID(L, 2)
+				if ok == false {
+					return 0
+				}
 				opts.NpcID = &npcID
 			}
 			if q.container == nil {
@@ -413,10 +415,13 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			if L.GetTop() != 2 {
-				L.ArgError(2, "force_complete(npc) requires npc id")
+				L.ArgError(2, "force_complete(npc) requires npc")
 				return 0
 			}
-			npcID := uint32(L.CheckInt(2))
+			npcID, ok := LuaCheckNpcID(L, 2)
+			if ok == false {
+				return 0
+			}
 			if q.container == nil || q.container.owner == nil {
 				L.Push(lua.LBool(false))
 				return 1
@@ -424,8 +429,7 @@ func (qp *Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if stored := q.container.Get(q.QuestID); stored != nil {
 				q = stored
 			}
-			npc := npcID
-			err := q.Complete(q.container.owner, QuestPhaseOpts{NpcID: &npc, Force: true})
+			err := q.Complete(q.container.owner, QuestPhaseOpts{NpcID: &npcID, Force: true})
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},
