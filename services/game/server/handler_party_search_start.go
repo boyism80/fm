@@ -73,6 +73,7 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 				if !reply.GetOk() || reply.PartyId == nil {
 					return fmt.Errorf("party create failed")
 				}
+				ch.SetPartyID(reply.PartyId)
 				ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 				ch.SetPartySearchConfig(cfg)
 				return nil
