@@ -1383,7 +1383,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			ch.Listener.OnDialog(ch, uint32(npc), message, prev, next)
-			ch.SetDialog(L)
+			ch.AskDialog(L, constant.DialogTypeDefault, 0)
 			return L.Yield()
 		},
 		"dialog_yes_no": func(L *lua.LState) int {
@@ -1432,7 +1432,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			ch.Listener.OnDialogYesNo(ch, uint32(npc), message, prev, next)
-			ch.SetDialog(L)
+			ch.AskDialog(L, constant.DialogTypeYesNo, 0)
 			return L.Yield()
 		},
 		"dialog_list": func(L *lua.LState) int {
@@ -1471,7 +1471,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			ch.Listener.OnDialogList(ch, uint32(npc), message, selections)
-			ch.SetDialog(L)
+			ch.AskDialog(L, constant.DialogTypeList, len(selections))
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_style": func(L *lua.LState) int {
@@ -1501,7 +1501,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			})
 			ch.Listener.OnDialogStyle(ch, uint32(npc), L.CheckString(3), styles)
-			ch.SetDialog(L)
+			ch.AskDialog(L, constant.DialogTypeStyle, len(styles))
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_accept": func(L *lua.LState) int {
@@ -1546,7 +1546,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			ch.Listener.OnDialogAccept(ch, uint32(npc), message, enableEscape)
-			ch.SetDialog(L)
+			if enableEscape {
+				ch.AskDialog(L, constant.DialogTypeAcceptEscape, 0)
+			} else {
+				ch.AskDialog(L, constant.DialogTypeAccept, 0)
+			}
 			return L.Yield()
 		},
 		"dialog_input": func(L *lua.LState) int {
@@ -1576,7 +1580,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			ch.Listener.OnDialogInput(ch, uint32(npc), message)
-			ch.SetDialog(L)
+			ch.AskDialog(L, constant.DialogTypeInput, 0)
 			return L.Yield(lua.LNumber(0))
 		},
 		"message": func(L *lua.LState) int {

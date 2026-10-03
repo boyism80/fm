@@ -49,6 +49,7 @@ type Character struct {
 	monsterBookCover  uint32
 	monsterBook       *MonsterBook
 	luaDialog         *lua.LState
+	npcDialog         *npcDialog
 	dialogMutex       sync.Mutex
 	hidden            bool
 	Listener          CharacterListener
@@ -1038,37 +1039,6 @@ func (ch *Character) KeyLayout() *KeyLayout {
 func (ch *Character) BindKey(slot int, typ byte, action int32) {
 	ch.KeyLayout().SetKey(slot, typ, action)
 	ch.Listener.OnKeyMap(ch)
-}
-
-func (ch *Character) GetDialog() *lua.LState {
-	ch.dialogMutex.Lock()
-	defer ch.dialogMutex.Unlock()
-	return ch.luaDialog
-}
-
-func (ch *Character) SetDialog(lua *lua.LState) {
-	ch.dialogMutex.Lock()
-	defer ch.dialogMutex.Unlock()
-	ch.luaDialog = lua
-}
-
-func (ch *Character) ResetDialog() {
-	ch.dialogMutex.Lock()
-	defer ch.dialogMutex.Unlock()
-	ch.luaDialog = nil
-}
-
-func (ch *Character) CloseDialog() {
-	thread := ch.GetDialog()
-	if thread == nil {
-		return
-	}
-	ch.ResetDialog()
-	if cfg, ok := luax.GetConfiguration(thread); ok {
-		cfg.CallPromise = nil
-		luax.SetConfiguration(thread, cfg)
-	}
-	luax.Close(thread)
 }
 
 func (ch *Character) tryLevelUp() bool {
