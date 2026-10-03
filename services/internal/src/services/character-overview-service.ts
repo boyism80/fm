@@ -3,6 +3,7 @@ import type { AccountRepository } from "../repos/account-repository";
 import type { CharacterOverviewModel, CharacterOverviewRepository } from "../repos/character-overview-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
 import type { WzService } from "./wz-service";
+import type { DistributedLockService } from "./distributed-lock-service";
 
 export type CharacterOverviewListItem = CharacterOverviewModel;
 
@@ -12,19 +13,22 @@ export class CharacterOverviewService {
     private readonly overviewRepo: CharacterOverviewRepository;
     private readonly accountRepo: AccountRepository;
     private readonly wzService: WzService;
+    private readonly distributedLockService: DistributedLockService;
 
     constructor(
         internalContext: InternalContext,
         unifiedRepository: UnifiedRepository,
         characterOverviewRepository: CharacterOverviewRepository,
         accountRepository: AccountRepository,
-        wzService: WzService
+        wzService: WzService,
+        distributedLockService: DistributedLockService
     ) {
         this.ctx = internalContext;
         this.unifiedRepo = unifiedRepository;
         this.overviewRepo = characterOverviewRepository;
         this.accountRepo = accountRepository;
         this.wzService = wzService;
+        this.distributedLockService = distributedLockService;
     }
 
     private worldId() {
@@ -49,6 +53,12 @@ export class CharacterOverviewService {
         if (accountId <= 0) {
             return { exists: true };
         }
+        // Hold the same lock as createCharacter so a concurrent name check cannot
+        // delete the pending reservation while creation is in progress.
+        await using _lock = await this.distributedLockService.acquireWorldDataLock(
+            this.worldId(),
+            `create_character:a${accountId}`
+        );
         const characterId = await this.unifiedRepo.reserveCharacterName(name, accountId, this.worldId());
         return { exists: characterId === null };
     }
