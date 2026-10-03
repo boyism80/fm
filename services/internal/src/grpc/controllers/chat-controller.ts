@@ -5,6 +5,7 @@ import type {
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { BroadcastBuddyMultiChatResult, BuddyService } from "../../services/buddy-service";
 import type { GuildService } from "../../services/guild-service";
+import type { AllianceService } from "../../services/alliance-service";
 import type { BroadcastMultiChatResult, PartyService } from "../../services/party-service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
@@ -19,17 +20,20 @@ export class ChatGrpcController {
     private readonly partyService: PartyService;
     private readonly buddyService: BuddyService;
     private readonly guildService: GuildService;
+    private readonly allianceService: AllianceService;
     private readonly grpcError: GrpcErrorHandler;
 
     constructor(
         partyService: PartyService,
         buddyService: BuddyService,
         guildService: GuildService,
+        allianceService: AllianceService,
         grpcError: GrpcErrorHandler
     ) {
         this.partyService = partyService;
         this.buddyService = buddyService;
         this.guildService = guildService;
+        this.allianceService = allianceService;
         this.grpcError = grpcError;
     }
 
@@ -86,7 +90,7 @@ export class ChatGrpcController {
                 return;
             }
             if (mode === MULTI_CHAT_MODE_ALLIANCE) {
-                const result = await this.guildService.broadcastAllianceMultiChat(
+                const result = await this.allianceService.broadcastAllianceMultiChat(
                     req.worldId,
                     req.memberId,
                     req.senderCharacterId,

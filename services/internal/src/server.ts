@@ -18,6 +18,8 @@ import type { InternalContext } from "./context/internal-context";
 import type { RabbitMQService } from "./services/rabbitmq-service";
 import type { WzService } from "./services/wz-service";
 import type { GuildService } from "./services/guild-service";
+import type { GuildBulletinBoardService } from "./services/guild-bulletin-board-service";
+import type { AllianceService } from "./services/alliance-service";
 type ServerContainerCradle = {
     catalogController: CatalogGrpcController;
     authController: AuthGrpcController;
@@ -32,6 +34,8 @@ type ServerContainerCradle = {
     rabbitmqService: RabbitMQService;
     wzService: WzService;
     guildService: GuildService;
+    guildBulletinBoardService: GuildBulletinBoardService;
+    allianceService: AllianceService;
     grpcError: typeof grpcError;
 };
 

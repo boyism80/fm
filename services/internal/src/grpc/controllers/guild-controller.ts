@@ -69,28 +69,10 @@ import type {
     AcceptGuildInviteResult,
     ChangeGuildEmblemResult,
     ChangeGuildNoticeResult,
-    CreateGuildBulletinBoardReplyResult,
-    CreateGuildBulletinBoardThreadResult,
-    DeleteGuildBulletinBoardReplyResult,
-    DeleteGuildBulletinBoardThreadResult,
-    ListGuildBulletinBoardThreadsResult,
-    ShowGuildBulletinBoardThreadResult,
-    UpdateGuildBulletinBoardThreadResult,
     ChangeGuildMemberRankResult,
     ChangeGuildRankTitlesResult,
-    AcceptAllianceInviteResult,
-    IncreaseAllianceCapacityResult,
-    ChangeAllianceRankTitlesResult,
-    ChangeAllianceMemberRankResult,
-    ChangeAllianceLeaderResult,
-    ChangeAllianceNoticeResult,
-    CreateAllianceResult,
     CreateGuildResult,
-    DisbandAllianceResult,
-    LeaveAllianceResult,
-    ExpelAllianceGuildResult,
     DisbandGuildResult,
-    GetAllianceResult,
     ExpelGuildResult,
     GetGuildResult,
     GuildService,
@@ -98,16 +80,49 @@ import type {
     IncreaseGuildCapacityResult,
     GainGuildGPResult,
 } from "../../services/guild-service";
+import type {
+    CreateGuildBulletinBoardReplyResult,
+    CreateGuildBulletinBoardThreadResult,
+    DeleteGuildBulletinBoardReplyResult,
+    DeleteGuildBulletinBoardThreadResult,
+    ListGuildBulletinBoardThreadsResult,
+    ShowGuildBulletinBoardThreadResult,
+    UpdateGuildBulletinBoardThreadResult,
+    GuildBulletinBoardService,
+} from "../../services/guild-bulletin-board-service";
+import type {
+    AcceptAllianceInviteResult,
+    IncreaseAllianceCapacityResult,
+    ChangeAllianceRankTitlesResult,
+    ChangeAllianceMemberRankResult,
+    ChangeAllianceLeaderResult,
+    ChangeAllianceNoticeResult,
+    CreateAllianceResult,
+    DisbandAllianceResult,
+    LeaveAllianceResult,
+    ExpelAllianceGuildResult,
+    GetAllianceResult,
+    AllianceService,
+} from "../../services/alliance-service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import { Controller, Method } from "../grpc-method-decorator";
 
 @Controller("guildController")
 export class GuildGrpcController {
     private readonly guildService: GuildService;
+    private readonly guildBulletinBoardService: GuildBulletinBoardService;
+    private readonly allianceService: AllianceService;
     private readonly grpcError: GrpcErrorHandler;
 
-    constructor(guildService: GuildService, grpcError: GrpcErrorHandler) {
+    constructor(
+        guildService: GuildService,
+        guildBulletinBoardService: GuildBulletinBoardService,
+        allianceService: AllianceService,
+        grpcError: GrpcErrorHandler
+    ) {
         this.guildService = guildService;
+        this.guildBulletinBoardService = guildBulletinBoardService;
+        this.allianceService = allianceService;
         this.grpcError = grpcError;
     }
 
@@ -457,7 +472,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.listGuildBulletinBoardThreads(
+            const result = await this.guildBulletinBoardService.listGuildBulletinBoardThreads(
                 req.worldId,
                 req.characterId,
                 req.page
@@ -493,7 +508,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.showGuildBulletinBoardThread(
+            const result = await this.guildBulletinBoardService.showGuildBulletinBoardThread(
                 req.worldId,
                 req.characterId,
                 req.localThreadId
@@ -523,7 +538,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.createGuildBulletinBoardThread(
+            const result = await this.guildBulletinBoardService.createGuildBulletinBoardThread(
                 req.worldId,
                 req.characterId,
                 req.notice,
@@ -564,7 +579,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.updateGuildBulletinBoardThread(
+            const result = await this.guildBulletinBoardService.updateGuildBulletinBoardThread(
                 req.worldId,
                 req.characterId,
                 req.localThreadId,
@@ -597,7 +612,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.deleteGuildBulletinBoardThread(
+            const result = await this.guildBulletinBoardService.deleteGuildBulletinBoardThread(
                 req.worldId,
                 req.characterId,
                 req.localThreadId
@@ -625,7 +640,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.createGuildBulletinBoardReply(
+            const result = await this.guildBulletinBoardService.createGuildBulletinBoardReply(
                 req.worldId,
                 req.characterId,
                 req.localThreadId,
@@ -656,7 +671,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.deleteGuildBulletinBoardReply(
+            const result = await this.guildBulletinBoardService.deleteGuildBulletinBoardReply(
                 req.worldId,
                 req.characterId,
                 req.localThreadId,
@@ -684,7 +699,7 @@ export class GuildGrpcController {
     async createAlliance(call: GrpcCall<CreateAllianceRequest>, callback: GrpcCallback<CreateAllianceReply>) {
         try {
             const req = call.request;
-            const result = await this.guildService.createAlliance(
+            const result = await this.allianceService.createAlliance(
                 req.worldId,
                 req.allianceName,
                 req.leaderCharacterId,
@@ -715,7 +730,7 @@ export class GuildGrpcController {
     @Method("leaveAlliance")
     async leaveAlliance(call: GrpcCall<LeaveAllianceRequest>, callback: GrpcCallback<LeaveAllianceReply>) {
         try {
-            const result = await this.guildService.leaveAlliance(
+            const result = await this.allianceService.leaveAlliance(
                 call.request.worldId,
                 call.request.characterId
             ) as LeaveAllianceResult;
@@ -752,7 +767,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.expelAllianceGuild(
+            const result = await this.allianceService.expelAllianceGuild(
                 req.worldId,
                 req.characterId,
                 req.targetGuildId,
@@ -787,7 +802,7 @@ export class GuildGrpcController {
     @Method("disbandAlliance")
     async disbandAlliance(call: GrpcCall<DisbandAllianceRequest>, callback: GrpcCallback<DisbandAllianceReply>) {
         try {
-            const result = await this.guildService.disbandAlliance(
+            const result = await this.allianceService.disbandAlliance(
                 call.request.worldId,
                 call.request.characterId
             ) as DisbandAllianceResult;
@@ -818,7 +833,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.acceptAllianceInvite(
+            const result = await this.allianceService.acceptAllianceInvite(
                 req.worldId,
                 req.characterId,
                 req.allianceId,
@@ -852,7 +867,7 @@ export class GuildGrpcController {
         callback: GrpcCallback<IncreaseAllianceCapacityReply>
     ) {
         try {
-            const result = await this.guildService.increaseAllianceCapacity(
+            const result = await this.allianceService.increaseAllianceCapacity(
                 call.request.worldId,
                 call.request.characterId
             ) as IncreaseAllianceCapacityResult;
@@ -885,7 +900,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.changeAllianceRankTitles(
+            const result = await this.allianceService.changeAllianceRankTitles(
                 req.worldId,
                 req.characterId,
                 req.rankTitles
@@ -919,7 +934,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.changeAllianceLeader(
+            const result = await this.allianceService.changeAllianceLeader(
                 req.worldId,
                 req.characterId,
                 req.newLeaderCharacterId
@@ -957,7 +972,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.changeAllianceNotice(
+            const result = await this.allianceService.changeAllianceNotice(
                 req.worldId,
                 req.characterId,
                 req.notice
@@ -991,7 +1006,7 @@ export class GuildGrpcController {
     ) {
         try {
             const req = call.request;
-            const result = await this.guildService.changeAllianceMemberRank(
+            const result = await this.allianceService.changeAllianceMemberRank(
                 req.worldId,
                 req.requesterCharacterId,
                 req.targetCharacterId,
@@ -1027,7 +1042,7 @@ export class GuildGrpcController {
     async getAlliance(call: GrpcCall<GetAllianceRequest>, callback: GrpcCallback<GetAllianceReply>) {
         try {
             const worldId = call.request.worldId;
-            const result = await this.guildService.getAlliance(worldId, call.request.allianceId) as GetAllianceResult;
+            const result = await this.allianceService.getAlliance(worldId, call.request.allianceId) as GetAllianceResult;
             if (!result.alliance) {
                 callback(null, { found: false, alliance: undefined });
                 return;

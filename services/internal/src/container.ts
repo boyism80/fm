@@ -31,6 +31,8 @@ import { SessionService } from "./services/session-service";
 import { RabbitMQService } from "./services/rabbitmq-service";
 import { PartyService } from "./services/party-service";
 import { GuildService } from "./services/guild-service";
+import { GuildBulletinBoardService } from "./services/guild-bulletin-board-service";
+import { AllianceService } from "./services/alliance-service";
 import { BuddyService } from "./services/buddy-service";
 import { DistributedLock } from "./system/distributed-lock";
 import { DistributedLockService } from "./services/distributed-lock-service";
@@ -76,6 +78,8 @@ export function createAppContainer() {
         rabbitmqService: awilix.asClass(RabbitMQService).singleton(),
         partyService: awilix.asClass(PartyService).transient(),
         guildService: awilix.asClass(GuildService).transient(),
+        guildBulletinBoardService: awilix.asClass(GuildBulletinBoardService).transient(),
+        allianceService: awilix.asClass(AllianceService).transient(),
         buddyService: awilix.asClass(BuddyService).transient(),
         serverTimeService: awilix.asClass(ServerTimeService).singleton(),
     });
