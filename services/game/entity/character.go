@@ -68,7 +68,7 @@ type Character struct {
 	BonusStats        BonusStats
 	Buffs             *BuffContainer
 	debuffs           map[constant.DebuffFlag]*Debuff
-	summons           map[constant.SkillID]*Summon
+	Summons           *SummonContainer
 	Doors             *DoorContainer
 	HomingTargetOID   *uint32
 	partyID           *uint32
@@ -192,56 +192,6 @@ func (ch *Character) SendDestroySyncToViewer(viewer *Character) {
 	viewer.Send(&response.LeavePlayer{ID: ch.GetID()}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (ch *Character) summonTimerKey(skillID constant.SkillID) string {
-	return fmt.Sprintf("summon:%d", skillID)
-}
-
-func (ch *Character) SpawnSummon(skillID constant.SkillID, skillLevel uint8, movementType constant.SummonMovementType, summonType constant.SummonType, position types.Point[int16], duration time.Duration) *Summon {
-	if ch == nil {
-		return nil
-	}
-	m := ch.GetMap()
-	if m == nil {
-		return nil
-	}
-	if ch.summons != nil {
-		if current, ok := ch.summons[skillID]; ok && current != nil {
-			ch.RemoveSummon(current, true)
-		}
-	}
-
-	s := &Summon{
-		LifeCore: LifeCore{
-			ObjectCore: ObjectCore{
-				Position:  position,
-				GameWorld: m.GameWorld,
-				Map:       nil,
-			},
-			hp:     1,
-			BaseHp: 1,
-			BaseMp: 1,
-		},
-		Owner:        ch,
-		OwnerID:      ch.GetID(),
-		SkillID:      skillID,
-		SkillLevel:   skillLevel,
-		MovementType: movementType,
-		SummonType:   summonType,
-	}
-	s.LifeCore.ObjectCore.self = s
-	if ch.summons == nil {
-		ch.summons = make(map[constant.SkillID]*Summon)
-	}
-	ch.summons[skillID] = s
-	m.AddSummon(s)
-	if duration > 0 {
-		_ = ch.AddTimer(ch.summonTimerKey(s.SkillID), duration, false, func() {
-			ch.expireSummon(s.SkillID)
-		})
-	}
-	return s
-}
-
 func (ch *Character) SpawnMist(skill *SkillEntry, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {
 	if ch == nil || ch.GameWorld == nil {
 		return nil
@@ -301,60 +251,6 @@ func (ch *Character) RemoveMist(mist *Mist) {
 	if m := mist.GetMap(); m != nil && mist.OID != 0 {
 		m.RemoveMist(mist.OID)
 	}
-}
-
-func (ch *Character) RemoveSummon(target *Summon, animated bool) {
-	if target == nil {
-		return
-	}
-	_ = ch.RemoveTimer(ch.summonTimerKey(target.SkillID))
-	if m := target.GetMap(); m != nil && target.OID != 0 {
-		m.RemoveSummon(target.OID, animated)
-	}
-	if ch.summons != nil {
-		delete(ch.summons, constant.SkillID(target.SkillID))
-	}
-}
-
-func (ch *Character) GetSummons() []*Summon {
-	if len(ch.summons) == 0 {
-		return nil
-	}
-	out := make([]*Summon, 0, len(ch.summons))
-	for _, s := range ch.summons {
-		if s != nil {
-			out = append(out, s)
-		}
-	}
-	return out
-}
-
-func (ch *Character) GetSummon(skillId constant.SkillID) *Summon {
-	return ch.summons[skillId]
-}
-
-func (ch *Character) GetSummonsSize() int {
-	return len(ch.summons)
-}
-
-func (ch *Character) ClearSummons() {
-	if len(ch.summons) == 0 {
-		return
-	}
-	for _, s := range ch.GetSummons() {
-		ch.RemoveSummon(s, true)
-	}
-}
-
-func (ch *Character) expireSummon(skillID constant.SkillID) {
-	if ch.summons == nil {
-		return
-	}
-	s := ch.summons[skillID]
-	if s == nil {
-		return
-	}
-	ch.RemoveSummon(s, true)
 }
 
 func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
@@ -770,7 +666,7 @@ func (ch *Character) Relocate(spawnPoint uint8) error {
 	beforePosition := ch.Position
 	ch.Position = pos
 	ch.Stance = constant.StanceDefaultValue
-	for _, summon := range ch.GetSummons() {
+	for _, summon := range ch.Summons.All() {
 		if summon == nil || summon.Owner != ch {
 			continue
 		}
@@ -1110,6 +1006,7 @@ func NewCharacter(sender Sendable, listener CharacterListener, data *CharacterIn
 	ch.Buffs = NewBuffContainer(ch)
 	ch.Skills = NewSkillContainer(ch)
 	ch.Quests = NewQuestContainer(ch)
+	ch.Summons = NewSummonContainer(ch)
 	ch.Doors = NewDoorContainer(ch)
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = data.Meso

@@ -1139,11 +1139,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			tbl := L.NewTable()
 			idx := 1
-			for _, s := range ch.GetSummons() {
-				if s != nil {
-					tbl.RawSetInt(idx, luax.NewLuable(L, s))
-					idx++
-				}
+			for _, s := range ch.Summons.All() {
+				tbl.RawSetInt(idx, luax.NewLuable(L, s))
+				idx++
 			}
 			L.Push(tbl)
 			return 1
@@ -1234,7 +1232,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			duration := time.Duration(durationMs) * time.Millisecond
-			s := ch.SpawnSummon(constant.SkillID(skillID), skillLevel, movType, summonType, pos, duration)
+			s := ch.Summons.Spawn(constant.SkillID(skillID), skillLevel, movType, summonType, pos, duration)
 			if s == nil {
 				L.Push(lua.LNil)
 				return 1
@@ -1311,13 +1309,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			skillID := uint32(L.CheckInt(2))
-			for _, s := range ch.summons {
-				if s != nil && s.SkillID == constant.SkillID(skillID) {
-					ch.RemoveSummon(s, true)
-					break
-				}
-			}
+			ch.Summons.Remove(ch.Summons.Get(constant.SkillID(L.CheckInt(2))), true)
 			return 0
 		},
 		"remove_door": func(L *lua.LState) int {
@@ -1342,7 +1334,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.ClearSummons()
+			ch.Summons.Clear()
 			return 0
 		},
 		"dialog": func(L *lua.LState) int {

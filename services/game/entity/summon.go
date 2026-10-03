@@ -75,7 +75,7 @@ func (s *Summon) Spawn(animated bool) {
 }
 
 func (s *Summon) Remove(animated bool) {
-	s.Owner.RemoveSummon(s, animated)
+	s.Owner.Summons.Remove(s, animated)
 }
 
 func (s *Summon) TakeDamage(unknown uint8, damage uint32, monsterIdFrom uint32) {

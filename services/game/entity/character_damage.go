@@ -110,7 +110,7 @@ func (ch *Character) TakeDamage(damage int32) {
 	}, true)
 
 	if wasAlive && ch.IsAlive() == false {
-		ch.ClearSummons()
+		ch.Summons.Clear()
 		if sm := ch.StateMachine(); sm != nil {
 			sm.CallHook("on_player_dead", ch)
 		}

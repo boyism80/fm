@@ -255,7 +255,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	m.listener.OnPlayerAdded(ctx, m, character, spawnPoint, init)
 	m.controllerTable.EnterPlayer(character)
 
-	for _, summon := range character.GetSummons() {
+	for _, summon := range character.Summons.All() {
 		if summon == nil || summon.Owner != character {
 			continue
 		}
@@ -317,7 +317,7 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 
 	m.callMapLifecycleScript(character, "on_map_leave")
 
-	for _, summon := range character.GetSummons() {
+	for _, summon := range character.Summons.All() {
 		if summon == nil || summon.Map != m || summon.OID == 0 {
 			continue
 		}
