@@ -108,10 +108,7 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 		}
 	}
 	if req.InfoNumber > 0 {
-		if qp == nil || qp.container == nil {
-			return false
-		}
-		refQP := qp.container.Get(uint32(req.InfoNumber))
+		refQP := qc.Get(uint32(req.InfoNumber))
 		if refQP == nil || !refQP.IsStarted() {
 			return false
 		}

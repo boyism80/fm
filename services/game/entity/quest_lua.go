@@ -474,6 +474,7 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 	scriptPath := fmt.Sprintf("script/quest/%d.lua", questID)
 	luaThread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
+		ch.Listener.OnScriptError(ch, scriptPath, err)
 		return err
 	}
 	luax.SetConfiguration(luaThread, luax.Configuration{
@@ -490,6 +491,7 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 		return nil, nil
 	}).OnError(func(err error) {
 		log.Printf("quest script %s quest=%d npc=%d: %v", entry, questID, npcID, err)
+		ch.Listener.OnScriptError(ch, scriptPath, err)
 		if ch.GetDialog() == nil {
 			ch.ResetDialog()
 			if ch.Listener != nil {
