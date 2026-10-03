@@ -210,7 +210,10 @@ func (p *Promise) driveFrom(i int, value interface{}) {
 
 	if step.async {
 		if ctx != nil {
-			f := actor.NewFuture(ctx.ActorSystem(), p.perStepTimeout)
+			// Give the Future slightly more time than the gRPC context so the async
+			// step can complete and deliver its result before the Future times out.
+			const futureGrace = 5 * time.Second
+			f := actor.NewFuture(ctx.ActorSystem(), p.perStepTimeout+futureGrace)
 			go func() {
 				v, err := step.fn(value)
 				ctx.Send(f.PID(), &promiseResult{Value: v, Err: err})
