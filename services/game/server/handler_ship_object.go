@@ -8,7 +8,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/types"
 )
 
 type ShipObject struct {
@@ -49,20 +48,17 @@ func (h *ShipObject) Handle(ctx *core.ClientContext, req *request.ShipObject) er
 	}
 
 	prop := h.groupProp(groupName)
-	var pkt types.Packet
-	if wantBalrog {
+	state := response.ShipStateLeaving
+	switch {
+	case wantBalrog:
 		if prop("haveBalrog") != "true" {
 			return nil
 		}
-		pkt = &response.ShipSpecialEffect{Effect: response.ShipSpecialBalrog}
-	} else {
-		state := response.ShipStateLeaving
-		if prop("docked") == "true" {
-			state = response.ShipStateDocked
-		}
-		pkt = &response.ShipState{State: state}
+		state = response.ShipSpecialBalrog
+	case prop("docked") == "true":
+		state = response.ShipStateDocked
 	}
-	ch.Send(pkt, types.SEND_POLICY_ENCRYPT)
+	ch.Listener.OnShipState(ch, state)
 	return nil
 }
 

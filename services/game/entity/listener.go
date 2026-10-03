@@ -7,6 +7,7 @@ import (
 	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
@@ -21,6 +22,13 @@ type CharacterListener interface {
 	OnDialogInput(ch *Character, npc uint32, message string)
 	OnDialogStyle(ch *Character, npc uint32, message string, styles []uint32)
 	OnOpenNpcShop(ch *Character, shopID uint32, shop *wz.Shop)
+	OnGuildBulletinThreadList(ch *Character, threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry)
+	OnGuildBulletinThread(ch *Character, detail *internal.GuildBulletinBoardThreadDetail)
+	// OnShipState sends a ship state, or the Balrog effect when state is ShipSpecialBalrog.
+	OnShipState(ch *Character, state uint16)
+	OnChairChanged(ch *Character, itemID uint32)
+	// OnMapSeatChanged tells the client its map seat; -1 means the character stood up.
+	OnMapSeatChanged(ch *Character, seatID int16)
 	OnBuddyCapacity(ch *Character, capacity uint8)
 	OnChat(ch *Character, message string, highlight bool, dontRecordHistory bool)
 	OnMesoChanged(ch *Character, meso int32)

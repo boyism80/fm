@@ -3,17 +3,14 @@ package server
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
-	"github.com/boyism80/fm/types"
 )
 
 type GuildBulletinBoardOperation struct {
@@ -65,7 +62,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 			if !reply.GetOk() {
 				return nil
 			}
-			_ = ch.Send(threadListFromListReply(reply), types.SEND_POLICY_ENCRYPT)
+			ch.Listener.OnGuildBulletinThreadList(ch, reply.GetThreads(), int(reply.GetListStart()), int(reply.GetThreadCount()), reply.GetNotice())
 			return nil
 		})
 	case pconst.GuildBulletinBoardC2SShowThread:
@@ -80,7 +77,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 				return nil
 			}
 			if detail := reply.GetThread(); detail != nil {
-				_ = ch.Send(showThreadFromDetail(detail), types.SEND_POLICY_ENCRYPT)
+				ch.Listener.OnGuildBulletinThread(ch, detail)
 			}
 			return nil
 		})
@@ -100,7 +97,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 					return nil
 				}
 				if detail := reply.GetThread(); detail != nil {
-					_ = ch.Send(showThreadFromDetail(detail), types.SEND_POLICY_ENCRYPT)
+					ch.Listener.OnGuildBulletinThread(ch, detail)
 				}
 				return nil
 			})
@@ -119,10 +116,10 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 					return nil
 				}
 				if detail := reply.GetThread(); detail != nil {
-					_ = ch.Send(showThreadFromDetail(detail), types.SEND_POLICY_ENCRYPT)
+					ch.Listener.OnGuildBulletinThread(ch, detail)
 				}
 				if len(reply.GetThreads()) > 0 {
-					_ = ch.Send(threadListFromCreateThreadReply(reply), types.SEND_POLICY_ENCRYPT)
+					ch.Listener.OnGuildBulletinThreadList(ch, reply.GetThreads(), int(reply.GetListStart()), int(reply.GetThreadCount()), reply.GetNotice())
 				}
 				return nil
 			})
@@ -151,7 +148,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 				return nil
 			}
 			if detail := reply.GetThread(); detail != nil {
-				_ = ch.Send(showThreadFromDetail(detail), types.SEND_POLICY_ENCRYPT)
+				ch.Listener.OnGuildBulletinThread(ch, detail)
 			}
 			return nil
 		})
@@ -168,7 +165,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 				return nil
 			}
 			if detail := reply.GetThread(); detail != nil {
-				_ = ch.Send(showThreadFromDetail(detail), types.SEND_POLICY_ENCRYPT)
+				ch.Listener.OnGuildBulletinThread(ch, detail)
 			}
 			return nil
 		})
@@ -188,72 +185,4 @@ func (h *GuildBulletinBoardOperation) validateBulletinIcon(ch *entity.Character,
 		return ch.Inventory.HasItem(itemID)
 	}
 	return icon >= 0 && icon <= 2
-}
-
-func threadListFromListReply(reply *internal.ListGuildBulletinBoardThreadsReply) *response.GuildBulletinBoardThreadList {
-	return threadListFromEntries(
-		reply.GetThreads(),
-		int(reply.GetListStart()),
-		int(reply.GetThreadCount()),
-		reply.GetNotice(),
-	)
-}
-
-func threadListFromCreateThreadReply(reply *internal.CreateGuildBulletinBoardThreadReply) *response.GuildBulletinBoardThreadList {
-	return threadListFromEntries(
-		reply.GetThreads(),
-		int(reply.GetListStart()),
-		int(reply.GetThreadCount()),
-		reply.GetNotice(),
-	)
-}
-
-func threadListFromEntries(threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry) *response.GuildBulletinBoardThreadList {
-	entries := make([]response.GuildBulletinBoardThreadEntry, 0, len(threads))
-	for _, t := range threads {
-		entries = append(entries, bulletinThreadEntryFromProto(t))
-	}
-	var noticeEntry *response.GuildBulletinBoardThreadEntry
-	if notice != nil {
-		n := bulletinThreadEntryFromProto(notice)
-		noticeEntry = &n
-	}
-	return &response.GuildBulletinBoardThreadList{
-		Start:      start,
-		TotalCount: totalCount,
-		Notice:     noticeEntry,
-		Threads:    entries,
-	}
-}
-
-func bulletinThreadEntryFromProto(t *internal.GuildBulletinBoardThreadEntry) response.GuildBulletinBoardThreadEntry {
-	return response.GuildBulletinBoardThreadEntry{
-		LocalThreadID:     t.GetLocalThreadId(),
-		PosterCharacterID: t.GetPosterCharacterId(),
-		Title:             t.GetTitle(),
-		Timestamp:         time.UnixMilli(t.GetTimestampUnixMs()),
-		Icon:              t.GetIcon(),
-		ReplyCount:        t.GetReplyCount(),
-	}
-}
-
-func showThreadFromDetail(detail *internal.GuildBulletinBoardThreadDetail) *response.GuildBulletinBoardShowThread {
-	replies := make([]response.GuildBulletinBoardReplyEntry, 0, len(detail.GetReplies()))
-	for _, r := range detail.GetReplies() {
-		replies = append(replies, response.GuildBulletinBoardReplyEntry{
-			ReplyID:           r.GetReplyId(),
-			PosterCharacterID: r.GetPosterCharacterId(),
-			Timestamp:         time.UnixMilli(r.GetTimestampUnixMs()),
-			Content:           r.GetContent(),
-		})
-	}
-	return &response.GuildBulletinBoardShowThread{
-		LocalThreadID:     detail.GetLocalThreadId(),
-		PosterCharacterID: detail.GetPosterCharacterId(),
-		Timestamp:         time.UnixMilli(detail.GetTimestampUnixMs()),
-		Title:             detail.GetTitle(),
-		Body:              detail.GetBody(),
-		Icon:              detail.GetIcon(),
-		Replies:           replies,
-	}
 }

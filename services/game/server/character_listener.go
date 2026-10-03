@@ -726,6 +726,76 @@ func (l *CharacterListenerImpl) OnOpenNpcShop(ch *entity.Character, shopID uint3
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnGuildBulletinThreadList(ch *entity.Character, threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry) {
+	entryOf := func(t *internal.GuildBulletinBoardThreadEntry) response.GuildBulletinBoardThreadEntry {
+		return response.GuildBulletinBoardThreadEntry{
+			LocalThreadID:     t.GetLocalThreadId(),
+			PosterCharacterID: t.GetPosterCharacterId(),
+			Title:             t.GetTitle(),
+			Timestamp:         time.UnixMilli(t.GetTimestampUnixMs()),
+			Icon:              t.GetIcon(),
+			ReplyCount:        t.GetReplyCount(),
+		}
+	}
+	entries := make([]response.GuildBulletinBoardThreadEntry, 0, len(threads))
+	for _, t := range threads {
+		entries = append(entries, entryOf(t))
+	}
+	var noticeEntry *response.GuildBulletinBoardThreadEntry
+	if notice != nil {
+		n := entryOf(notice)
+		noticeEntry = &n
+	}
+	_ = ch.Send(&response.GuildBulletinBoardThreadList{
+		Start:      start,
+		TotalCount: totalCount,
+		Notice:     noticeEntry,
+		Threads:    entries,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnGuildBulletinThread(ch *entity.Character, detail *internal.GuildBulletinBoardThreadDetail) {
+	replies := make([]response.GuildBulletinBoardReplyEntry, 0, len(detail.GetReplies()))
+	for _, r := range detail.GetReplies() {
+		replies = append(replies, response.GuildBulletinBoardReplyEntry{
+			ReplyID:           r.GetReplyId(),
+			PosterCharacterID: r.GetPosterCharacterId(),
+			Timestamp:         time.UnixMilli(r.GetTimestampUnixMs()),
+			Content:           r.GetContent(),
+		})
+	}
+	_ = ch.Send(&response.GuildBulletinBoardShowThread{
+		LocalThreadID:     detail.GetLocalThreadId(),
+		PosterCharacterID: detail.GetPosterCharacterId(),
+		Timestamp:         time.UnixMilli(detail.GetTimestampUnixMs()),
+		Title:             detail.GetTitle(),
+		Body:              detail.GetBody(),
+		Icon:              detail.GetIcon(),
+		Replies:           replies,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnShipState(ch *entity.Character, state uint16) {
+	if state == response.ShipSpecialBalrog {
+		ch.Send(&response.ShipSpecialEffect{Effect: state}, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+	ch.Send(&response.ShipState{State: state}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnChairChanged(ch *entity.Character, itemID uint32) {
+	ch.Broadcast(&response.ShowChair{
+		CharacterID: ch.GetID(),
+		ItemID:      itemID,
+	}, nil)
+}
+
+func (l *CharacterListenerImpl) OnMapSeatChanged(ch *entity.Character, seatID int16) {
+	ch.Send(&response.CancelChair{
+		ChairID: seatID,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnUnlockAction(ch *entity.Character) {
 	ch.Send(&response.UpdateStats{
 		UnlockAction: true,

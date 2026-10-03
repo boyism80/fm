@@ -13,12 +13,10 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
 	gameconst "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
-	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -124,9 +122,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 	switch req.Operation {
 	case pconst.GuildC2SCreate:
 		if _, inGuild := ch.GetGuildID(); inGuild {
-			_ = ch.Send(&response.GuildMessage{
-				Code: pconst.GuildResponseAlreadyInGuild,
-			}, types.SEND_POLICY_ENCRYPT)
+			ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultAlreadyInGuild)
 			return nil
 		}
@@ -151,9 +147,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}, func(reply *internal.CreateGuildReply) error {
 			if !reply.GetOk() {
 				if reply.GetErrorCode() == internal.GuildErrorCode_GUILD_ERROR_ALREADY_IN_GUILD {
-					_ = ch.Send(&response.GuildMessage{
-						Code: pconst.GuildResponseAlreadyInGuild,
-					}, types.SEND_POLICY_ENCRYPT)
+					ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
 				} else {
 					log.Printf("GuildOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
 				}
@@ -191,17 +185,13 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}
 		targetID, ok := h.gs.characterRuntime.NameToCharacterID(targetName)
 		if !ok || targetID == 0 {
-			_ = ch.Send(&response.GuildMessage{
-				Code: pconst.GuildResponseNotInChannel,
-			}, types.SEND_POLICY_ENCRYPT)
+			ch.Listener.OnGuildMessage(ch, pconst.GuildResponseNotInChannel)
 			return nil
 		}
 		if mapInstance := ch.GetMap(); mapInstance != nil {
 			if target := mapInstance.GetPlayer(targetID); target != nil {
 				if _, targetInGuild := target.GetGuildID(); targetInGuild {
-					_ = ch.Send(&response.GuildMessage{
-						Code: pconst.GuildResponseAlreadyInGuild,
-					}, types.SEND_POLICY_ENCRYPT)
+					ch.Listener.OnGuildMessage(ch, pconst.GuildResponseAlreadyInGuild)
 					return nil
 				}
 				now := clock.Now()

@@ -6,9 +6,7 @@ import (
 
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
-	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
 )
 
 type UseChair struct {
@@ -33,31 +31,13 @@ func (h *UseChair) Handle(ctx *core.ClientContext, req *request.UseChair) error 
 		return nil
 	}
 
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
+	if character.GetMap() == nil {
 		return nil
 	}
 
-	setupInventory := character.Inventory.Tabs[constant.InventoryTypeInstallation]
-	if setupInventory == nil {
-		character.Listener.OnUpdateStats(character, nil, true)
-		return nil
+	if err := character.SitOnChair(req.ItemID); err != nil {
+		log.Printf("Chair %d: %v", req.ItemID, err)
 	}
-
-	item := setupInventory.Find(req.ItemID)
-	if item == nil {
-		log.Printf("Chair item not found: %d", req.ItemID)
-		character.Listener.OnUpdateStats(character, nil, true)
-		return nil
-	}
-
-	character.Chair = req.ItemID
-
-	character.Broadcast(&response.ShowChair{
-		CharacterID: character.GetID(),
-		ItemID:      req.ItemID,
-	}, nil)
-
 	character.Listener.OnUpdateStats(character, nil, true)
 
 	return nil
