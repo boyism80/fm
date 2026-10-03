@@ -93,4 +93,8 @@ func (p *UpdateStats) Deserialize(reader *stream.StreamReader) {
 			p.Stats[stat] = int32(reader.ReadU32())
 		}
 	}
+
+	if mask&uint32(constant.StatPet) != 0 {
+		reader.ReadU8()
+	}
 }
