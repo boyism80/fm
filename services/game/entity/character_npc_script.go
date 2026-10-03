@@ -27,7 +27,6 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc, caller *lua.LState) e
 			cfg.CallPromise = nil
 			luax.SetConfiguration(old, cfg)
 		}
-		// The caller is still running and closes itself when it finishes.
 		if old != caller {
 			luax.Close(old)
 		}

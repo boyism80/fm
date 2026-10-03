@@ -776,24 +776,34 @@ func (l *CharacterListenerImpl) OnGuildBulletinThread(ch *entity.Character, deta
 }
 
 func (l *CharacterListenerImpl) OnShipState(ch *entity.Character, state uint16) {
-	if state == response.ShipSpecialBalrog {
-		ch.Send(&response.ShipSpecialEffect{Effect: state}, types.SEND_POLICY_ENCRYPT)
-		return
-	}
 	ch.Send(&response.ShipState{State: state}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnChairChanged(ch *entity.Character, itemID uint32) {
+func (l *CharacterListenerImpl) OnShipBalrog(ch *entity.Character) {
+	ch.Send(&response.ShipSpecialEffect{Effect: response.ShipSpecialBalrog}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnSitOnChair(ch *entity.Character, itemID uint32) {
 	ch.Broadcast(&response.ShowChair{
 		CharacterID: ch.GetID(),
 		ItemID:      itemID,
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnMapSeatChanged(ch *entity.Character, seatID int16) {
+func (l *CharacterListenerImpl) OnSitOnMapSeat(ch *entity.Character, seatID int16) {
 	ch.Send(&response.CancelChair{
 		ChairID: seatID,
 	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnStandUp(ch *entity.Character) {
+	ch.Send(&response.CancelChair{
+		ChairID: -1,
+	}, types.SEND_POLICY_ENCRYPT)
+	ch.Broadcast(&response.ShowChair{
+		CharacterID: ch.GetID(),
+		ItemID:      0,
+	}, nil)
 }
 
 func (l *CharacterListenerImpl) OnUnlockAction(ch *entity.Character) {

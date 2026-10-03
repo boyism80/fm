@@ -657,7 +657,6 @@ func (ch *Character) AssignAP(entries []APEntry) bool {
 	return true
 }
 
-// AssignAPToHPMP spends one AP on max HP or max MP. increase is the class amount from the stat script.
 func (ch *Character) AssignAPToHPMP(stat constant.StatType, increase uint32) bool {
 	if ch.AbilityPoint == 0 || ch.HpApUsed >= constant.HpAPUsedMax {
 		return false

@@ -55,7 +55,6 @@ func HasFunc(thread *lua.LState, name string) bool {
 	return threadFunc(thread, name) != nil
 }
 
-// Close is safe to call again on a thread that already finished; a finished thread closes itself.
 func Close(thread *lua.LState) {
 	if thread == nil {
 		return
@@ -158,7 +157,6 @@ func resumeFn(root *lua.LState, thread *lua.LState, fn *lua.LFunction, hook stri
 	if root == nil || thread == nil {
 		return lua.ResumeOK, nil, fmt.Errorf("nil lua root/thread")
 	}
-	// A finished thread is closed but can still be held as a character dialog until it is reset.
 	if thread.IsClosed() {
 		Close(thread)
 		return lua.ResumeOK, nil, fmt.Errorf("lua thread already finished")

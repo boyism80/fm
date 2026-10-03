@@ -53,8 +53,6 @@ func (h *DistributeAP) Handle(ctx *core.ClientContext, req *request.DistributeAP
 	return nil
 }
 
-// apIncrease asks the stat script how much one AP adds to max HP or MP. The script does not yield,
-// so it runs synchronously and the caller stays on the map actor.
 func (h *DistributeAP) apIncrease(character *entity.Character, funcName string, fallback uint32) uint32 {
 	mapInstance := character.GetMap()
 	if mapInstance == nil {

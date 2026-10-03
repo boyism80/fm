@@ -24,11 +24,11 @@ type CharacterListener interface {
 	OnOpenNpcShop(ch *Character, shopID uint32, shop *wz.Shop)
 	OnGuildBulletinThreadList(ch *Character, threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry)
 	OnGuildBulletinThread(ch *Character, detail *internal.GuildBulletinBoardThreadDetail)
-	// OnShipState sends a ship state, or the Balrog effect when state is ShipSpecialBalrog.
 	OnShipState(ch *Character, state uint16)
-	OnChairChanged(ch *Character, itemID uint32)
-	// OnMapSeatChanged tells the client its map seat; -1 means the character stood up.
-	OnMapSeatChanged(ch *Character, seatID int16)
+	OnShipBalrog(ch *Character)
+	OnSitOnChair(ch *Character, itemID uint32)
+	OnSitOnMapSeat(ch *Character, seatID int16)
+	OnStandUp(ch *Character)
 	OnBuddyCapacity(ch *Character, capacity uint8)
 	OnChat(ch *Character, message string, highlight bool, dontRecordHistory bool)
 	OnMesoChanged(ch *Character, meso int32)

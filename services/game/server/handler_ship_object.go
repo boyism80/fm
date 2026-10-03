@@ -48,17 +48,16 @@ func (h *ShipObject) Handle(ctx *core.ClientContext, req *request.ShipObject) er
 	}
 
 	prop := h.groupProp(groupName)
-	state := response.ShipStateLeaving
 	switch {
 	case wantBalrog:
-		if prop("haveBalrog") != "true" {
-			return nil
+		if prop("haveBalrog") == "true" {
+			ch.Listener.OnShipBalrog(ch)
 		}
-		state = response.ShipSpecialBalrog
 	case prop("docked") == "true":
-		state = response.ShipStateDocked
+		ch.Listener.OnShipState(ch, response.ShipStateDocked)
+	default:
+		ch.Listener.OnShipState(ch, response.ShipStateLeaving)
 	}
-	ch.Listener.OnShipState(ch, state)
 	return nil
 }
 
