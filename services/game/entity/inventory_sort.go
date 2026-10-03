@@ -7,6 +7,9 @@ import (
 
 func (ch *Character) MergeItems(inventoryType constant.InventoryType) {
 	inven := ch.Inventory.Tabs[inventoryType]
+	if inven == nil {
+		return
+	}
 	buckets := map[wz.Item]map[int16]Item{}
 
 	for i := range inven.SlotLimit {
@@ -45,6 +48,9 @@ func (ch *Character) MergeItems(inventoryType constant.InventoryType) {
 
 func (ch *Character) SortItems(inventoryType constant.InventoryType) {
 	inven := ch.Inventory.Tabs[inventoryType]
+	if inven == nil {
+		return
+	}
 	n := inven.SlotLimit
 	buffer := make([]Item, n)
 	for i := range n {
