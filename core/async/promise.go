@@ -188,6 +188,12 @@ func (p *Promise) Completed() bool {
 	return p.settled || p.rejected
 }
 
+func (p *Promise) Result() (interface{}, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.value, p.err
+}
+
 func (p *Promise) isDone() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()

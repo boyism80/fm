@@ -1804,27 +1804,18 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if !p.Completed() {
 				return 0
 			}
-			var callErr error
-			var result lua.LValue
-			p.Then(func(value interface{}) (interface{}, error) {
-				vals := luax.ResultValues(value)
-				if len(vals) > 0 {
-					result = vals[0]
-				}
-				return nil, nil
-			}).OnError(func(err error) {
-				callErr = err
-			})
-			if callErr != nil {
-				L.RaiseError("script: %v", callErr)
+			value, err := p.Result()
+			if err != nil {
+				L.RaiseError("script: %v", err)
 				return 0
 			}
 			luax.Close(thread)
-			if result != nil {
-				L.Push(result)
-				return 1
+			vals := luax.ResultValues(value)
+			if len(vals) == 0 {
+				return 0
 			}
-			return 0
+			L.Push(vals[0])
+			return 1
 		},
 		"skill": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
