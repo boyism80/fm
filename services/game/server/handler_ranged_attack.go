@@ -33,6 +33,10 @@ func (h *RangedAttack) Handle(ctx *core.ClientContext, req *request.RangedAttack
 		return fmt.Errorf("character is nil")
 	}
 
+	if character.IsAlive() == false {
+		return nil
+	}
+
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		log.Printf("Character is not in a map")

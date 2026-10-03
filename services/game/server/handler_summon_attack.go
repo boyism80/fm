@@ -26,6 +26,9 @@ func (h *SummonAttack) Handle(ctx *core.ClientContext, req *request.SummonAttack
 	if character == nil {
 		return nil
 	}
+	if character.IsAlive() == false {
+		return nil
+	}
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return nil
