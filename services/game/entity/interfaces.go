@@ -15,7 +15,7 @@ type GameWorld interface {
 	GetExpRate() int
 	GetDropRate() int
 	GetMesoRate() int
-	SaveAsync(ctx actor.Context, chars []*Character) *async.Promise
+	SaveAsync(ctx actor.Context, snapshots []*CharacterSnapshot) *async.Promise
 	GetMapSystem() MapSystem
 	GetSchedulerSystem() SchedulerSystem
 	GetGuildSystem() GuildSystem

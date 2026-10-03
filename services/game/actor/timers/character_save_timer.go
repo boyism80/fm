@@ -36,13 +36,24 @@ func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 		return nil
 	}
 
-	chars := make([]*entity.Character, 0, len(allPlayers))
+	// Build snapshots in the map actor's sync context: Map is non-nil here so
+	// PersistMapID() is safe. LoggedOut and mapID==0 characters are filtered out
+	// to avoid writing stale or invalid data from the async goroutine.
+	snapshots := make([]*entity.CharacterSnapshot, 0, len(allPlayers))
 	for _, obj := range allPlayers {
-		if ch, ok := obj.(*entity.Character); ok {
-			chars = append(chars, ch)
+		ch, ok := obj.(*entity.Character)
+		if !ok || ch == nil || ch.LoggedOut() {
+			continue
 		}
+		mapID := ch.PersistMapID()
+		if mapID == 0 {
+			continue
+		}
+		snapshots = append(snapshots, &entity.CharacterSnapshot{Character: ch, MapID: mapID})
 	}
 
-	mapData.GameWorld.SaveAsync(ctx, chars)
+	if len(snapshots) > 0 {
+		mapData.GameWorld.SaveAsync(ctx, snapshots)
+	}
 	return nil
 }

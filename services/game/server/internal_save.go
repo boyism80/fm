@@ -19,10 +19,12 @@ const saveCharactersPromiseTimeout = 30 * time.Second
 
 const saveCharactersChunkSize = 100
 
-// SaveAsync builds a Promise that saves chars in parallel chunks of saveCharactersChunkSize.
-func (gs *GameServer) SaveAsync(ctx actor.Context, chars []*entity.Character) *async.Promise {
+// SaveAsync builds a Promise that saves snapshots in parallel chunks.
+// Snapshots must be created in the map actor's Receive loop so that mapID is
+// captured while the character is still on the map (race-free).
+func (gs *GameServer) SaveAsync(ctx actor.Context, snapshots []*entity.CharacterSnapshot) *async.Promise {
 	p := async.NewPromise(ctx, saveCharactersPromiseTimeout)
-	if gs == nil || gs.internalClient == nil || len(chars) == 0 {
+	if gs == nil || gs.internalClient == nil || len(snapshots) == 0 {
 		return p
 	}
 	p.OnError(func(err error) {
@@ -33,16 +35,16 @@ func (gs *GameServer) SaveAsync(ctx actor.Context, chars []*entity.Character) *a
 		var mu sync.Mutex
 		var firstErr error
 
-		for i := 0; i < len(chars); i += saveCharactersChunkSize {
+		for i := 0; i < len(snapshots); i += saveCharactersChunkSize {
 			end := i + saveCharactersChunkSize
-			if end > len(chars) {
-				end = len(chars)
+			if end > len(snapshots) {
+				end = len(snapshots)
 			}
-			chunk := append([]*entity.Character(nil), chars[i:end]...)
+			chunk := append([]*entity.CharacterSnapshot(nil), snapshots[i:end]...)
 			wg.Add(1)
 			cp := async.NewPromise(nil, saveCharactersPromiseTimeout)
 			async.ThenRPC(cp, func(c context.Context) (*internal.SaveCharactersReply, error) {
-				return gs.grpcSaveCharacters(c, chunk)
+				return gs.grpcSaveSnapshots(c, chunk)
 			}, func(*internal.SaveCharactersReply) error {
 				return nil
 			})

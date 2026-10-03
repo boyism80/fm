@@ -34,7 +34,9 @@ import (
 
 const mapActorCallTimeout = 30 * time.Second
 
-// grpcSaveCharacters performs one SaveCharacters RPC (used by persist promises).
+// grpcSaveCharacters performs one SaveCharacters RPC for callers that hold the
+// map actor context (channel switch, disconnect). Map is still valid here so
+// PersistMapID() is safe to call.
 func (gs *GameServer) grpcSaveCharacters(ctx context.Context, chars []*entity.Character) (*internal.SaveCharactersReply, error) {
 	if gs == nil || gs.internalClient == nil || len(chars) == 0 {
 		return &internal.SaveCharactersReply{}, nil
@@ -46,6 +48,36 @@ func (gs *GameServer) grpcSaveCharacters(ctx context.Context, chars []*entity.Ch
 			continue
 		}
 		if entry := ch.ToProto(worldID); entry != nil {
+			entries = append(entries, entry)
+		}
+	}
+	if len(entries) == 0 {
+		return &internal.SaveCharactersReply{}, nil
+	}
+	reply, err := gs.internalClient.SaveCharacters(ctx, &internal.SaveCharactersRequest{Entries: entries})
+	if err != nil {
+		return nil, fmt.Errorf("SaveCharacters rpc: %w", err)
+	}
+	return reply, nil
+}
+
+// grpcSaveSnapshots is the timer-path variant: uses pre-snapshotted mapIDs to
+// avoid reading the Map pointer from a goroutine, and re-checks LoggedOut() as
+// a second layer of defence.
+func (gs *GameServer) grpcSaveSnapshots(ctx context.Context, snapshots []*entity.CharacterSnapshot) (*internal.SaveCharactersReply, error) {
+	if gs == nil || gs.internalClient == nil || len(snapshots) == 0 {
+		return &internal.SaveCharactersReply{}, nil
+	}
+	worldID := uint32(gs.config.WorldId)
+	entries := make([]*internal.CharacterSaveEntry, 0, len(snapshots))
+	for _, snap := range snapshots {
+		if snap == nil || snap.Character == nil {
+			continue
+		}
+		if snap.Character.LoggedOut() {
+			continue
+		}
+		if entry := snap.Character.ToProtoWithMapID(worldID, snap.MapID); entry != nil {
 			entries = append(entries, entry)
 		}
 	}

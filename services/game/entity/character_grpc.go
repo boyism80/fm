@@ -196,6 +196,14 @@ func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint
 	return
 }
 
+// CharacterSnapshot is a race-free snapshot captured while the character is
+// still on the map (inside the map actor's Receive loop). Use it when saving
+// from a goroutine spawned after the sync context ends.
+type CharacterSnapshot struct {
+	Character *Character
+	MapID     uint32
+}
+
 func (ch *Character) PersistMapID() uint32 {
 	if ch == nil {
 		return 0
@@ -211,6 +219,60 @@ func (ch *Character) PersistMapID() uint32 {
 		return uint32(m.Wz.ReturnMapId)
 	}
 	return m.TemplateID()
+}
+
+// ToProtoWithMapID builds the save proto using a pre-computed mapID instead of
+// calling PersistMapID(), which reads the Map pointer and must not be called
+// from a goroutine spawned after the character may have left the map.
+// Returns nil when mapID is 0.
+func (ch *Character) ToProtoWithMapID(worldID uint32, mapID uint32) *internal.CharacterSaveEntry {
+	if ch == nil || mapID == 0 {
+		return nil
+	}
+	baseLooks, overlays := equipmentLooksForPersist(ch)
+	persisted := &internal.CharacterPersisted{
+		CharacterId:  ch.GetID(),
+		AccountId:    ch.AccountID,
+		WorldId:      worldID,
+		Name:         ch.GetName(),
+		Gender:       uint32(ch.GetGender()),
+		SkinColor:    uint32(ch.GetSkinColor()),
+		Face:         ch.GetFace(),
+		Hair:         ch.GetHair(),
+		Level:        uint32(ch.GetLevel()),
+		ClassId:      uint32(ch.Class),
+		Role:         uint32(ch.Role),
+		Hidden:       ch.IsHidden(),
+		Str:          uint32(ch.BaseStats.Str),
+		Dex:          uint32(ch.BaseStats.Dex),
+		IntStat:      uint32(ch.BaseStats.Int),
+		Luk:          uint32(ch.BaseStats.Luk),
+		Hp:           ch.GetHp(),
+		MaxHp:        ch.BaseHp,
+		Mp:           ch.GetMp(),
+		MaxMp:        ch.BaseMp,
+		AbilityPoint: uint32(ch.AbilityPoint),
+		Exp:          ch.GetExp(),
+		MapId:        mapID,
+		SpawnPoint:   uint32(ch.GetSpawnPoint()),
+		PositionX:    int32(ch.Position.X),
+		PositionY:    int32(ch.Position.Y),
+		Stance:       uint32(ch.Stance),
+		Meso:         ch.Inventory.Meso,
+		SkillPoint:   uint32(ch.SkillPoint),
+		Population:   uint32(ch.population),
+	}
+	return &internal.CharacterSaveEntry{
+		Character:      persisted,
+		BaseLooks:      baseLooks,
+		Overlays:       overlays,
+		Inventory:      ch.InventoryPersisted(),
+		Skills:         ch.SkillsPersisted(),
+		Buffs:          ch.BuffsPersisted(),
+		KeyLayout:      ch.KeyLayout().ToProto(),
+		Quests:         ch.QuestsPersisted(),
+		SavedLocations: ch.SavedLocationsPersisted(),
+	}
 }
 
 func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {

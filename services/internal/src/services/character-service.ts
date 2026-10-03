@@ -196,6 +196,9 @@ export class CharacterService {
             this.assertCharacterId(persisted.characterId);
             this.assertAccountId(persisted.accountId);
             this.validatePersisted(persisted);
+            if (!persisted.mapId || persisted.mapId <= 0) {
+                continue;
+            }
             const wid = persisted.worldId;
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
@@ -330,40 +333,12 @@ export class CharacterService {
             population: 0,
             hidden: false,
         };
-        await this.repo.set(wid, persisted);
-        await this.keyLayoutRepo.set(wid, {
-            characterId,
-            worldId: wid,
-            keyLayoutJson: bindingsToJsonString(getDefaultKeyLayoutBindings()),
-        });
-
         const equips = [
             { itemId: topItemId, slot: EQUIP_SLOT.TOP, lookSlot: LOOK_SLOT.TOP },
             { itemId: bottomItemId, slot: EQUIP_SLOT.BOTTOM, lookSlot: LOOK_SLOT.BOTTOM },
             { itemId: shoesItemId, slot: EQUIP_SLOT.SHOES, lookSlot: LOOK_SLOT.SHOES },
             { itemId: weaponItemId, slot: EQUIP_SLOT.WEAPON, lookSlot: LOOK_SLOT.WEAPON },
         ].filter((e) => e.itemId > 0);
-
-        if (equips.length) {
-            const enhances = await Promise.all(equips.map((e) => this.wzService.getEnhanceChance(e.itemId)));
-            await this.inventoryRepo.setAll(
-                wid,
-                equips.map((e, idx) => ({
-                    uniqueId: null,
-                    ownerId: characterId,
-                    inventoryType: 1,
-                    itemId: e.itemId,
-                    slot: e.slot,
-                    count: 1,
-                    expiration: null,
-                    enhanceChance: Number.isFinite(enhances[idx]) ? Math.max(0, enhances[idx] as number) : 0,
-                    enhanceCount: 0,
-                    flag: 0,
-                    skillBonus: 0,
-                    ownerName: null,
-                }))
-            );
-        }
 
         const baseLooks: Record<string, number> = {};
         for (const e of equips) {
@@ -390,9 +365,50 @@ export class CharacterService {
             baseLooks,
             overlays: {},
         };
-        await this.overviewRepo.set(wid, overview);
 
-        await this.unifiedRepo.confirmCharacterName(name);
+        try {
+            await this.repo.set(wid, persisted);
+            await this.keyLayoutRepo.set(wid, {
+                characterId,
+                worldId: wid,
+                keyLayoutJson: bindingsToJsonString(getDefaultKeyLayoutBindings()),
+            });
+
+            if (equips.length) {
+                const enhances = await Promise.all(equips.map((e) => this.wzService.getEnhanceChance(e.itemId)));
+                await this.inventoryRepo.setAll(
+                    wid,
+                    equips.map((e, idx) => ({
+                        uniqueId: null,
+                        ownerId: characterId,
+                        inventoryType: 1,
+                        itemId: e.itemId,
+                        slot: e.slot,
+                        count: 1,
+                        expiration: null,
+                        enhanceChance: Number.isFinite(enhances[idx]) ? Math.max(0, enhances[idx] as number) : 0,
+                        enhanceCount: 0,
+                        flag: 0,
+                        skillBonus: 0,
+                        ownerName: null,
+                    }))
+                );
+            }
+
+            await this.overviewRepo.set(wid, overview);
+            await this.unifiedRepo.confirmCharacterName(name);
+        } catch (err) {
+            // Remove any data written for this characterId so the reserved slot
+            // stays clean and the name reservation can be reclaimed later.
+            await Promise.allSettled([
+                this.repo.delete({ worldId: wid, characterId, accountId }),
+                this.keyLayoutRepo.delete({ worldId: wid, characterId }),
+                this.inventoryRepo.replaceBySnapshot(wid, characterId, []),
+                this.overviewRepo.delete({ worldId: wid, accountId, characterId }),
+                this.unifiedRepo.releaseCharacterNameReservation(accountId),
+            ]);
+            throw err;
+        }
 
         return { success: true, errorMsg: "", character: overview };
     }
