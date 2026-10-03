@@ -208,7 +208,10 @@ func (m *Map) ClearLuaRoot() {
 	if m == nil {
 		return
 	}
-	m.luaRoot = nil
+	if m.luaRoot != nil {
+		m.luaRoot.Close()
+		m.luaRoot = nil
+	}
 }
 
 func (m *Map) allocateOID() uint32 {
