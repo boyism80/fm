@@ -16,7 +16,8 @@ func (HandlePacketHandler) New() *HandlePacketHandler {
 }
 
 func (h *HandlePacketHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *c_actor.HandlePacket) {
-	if client, ok := msg.Client.(*gameclient.GameClient); ok && client.ChangingChannel() {
+	client, ok := msg.Client.(*gameclient.GameClient)
+	if ok && client.ChangingChannel() {
 		return
 	}
 
@@ -26,6 +27,12 @@ func (h *HandlePacketHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		msg.LogicActorPID = pid
 		ctx.Send(pid, msg)
 		return
+	}
+	if ok {
+		if ch := client.GetCharacter(); ch != nil && ch.GetMap() == nil && ch.Destination != nil {
+			ctx.Send(ctx.Self(), msg)
+			return
+		}
 	}
 
 	err := core.ExecutePacketHandler(ctx, a.GameWorld, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)

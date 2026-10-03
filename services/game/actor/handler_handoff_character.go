@@ -26,7 +26,9 @@ func (h *HandoffCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 		msg.Ticket.Release()
 		return
 	}
+	msg.Character.Destination = msg.TargetMap
 	if err := source.RemovePlayer(msg.Character.GetID()); err != nil {
+		msg.Character.Destination = nil
 		msg.Ticket.Release()
 		return
 	}

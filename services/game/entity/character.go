@@ -82,6 +82,7 @@ type Character struct {
 	carnivalTeam      *CarnivalTeam
 	savedLocations    map[string]uint32
 	loggedOut         atomic.Bool
+	Destination       *Map
 }
 
 type LastHeal struct {

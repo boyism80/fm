@@ -18,6 +18,7 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 	}
 	pid := msg.TargetMap.LogicActorPID()
 	if pid == nil {
+		msg.Character.Destination = nil
 		msg.Ticket.Release()
 		return
 	}
@@ -28,6 +29,7 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 	}
 
 	err := msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.Portal, false)
+	msg.Character.Destination = nil
 	msg.Ticket.Release()
 	if err != nil {
 		log.Printf("warp character %d to map %d: %v", msg.Character.GetID(), msg.TargetMap.GetMapID(), err)

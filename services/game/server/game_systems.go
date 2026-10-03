@@ -385,6 +385,7 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		return fmt.Errorf("target map actor not found")
 	}
 	if currentMap == nil {
+		character.Destination = targetMap
 		s.gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
 			Character: character,
 			TargetMap: targetMap,
@@ -425,7 +426,9 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		return nil
 	}
 	if actorCtx != nil && actorCtx.Self() != nil && actorCtx.Self().Equal(sourcePID) {
+		character.Destination = targetMap
 		if err := currentMap.RemovePlayer(character.GetID()); err != nil {
+			character.Destination = nil
 			ticket.Release()
 			return err
 		}
