@@ -123,19 +123,23 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			return fmt.Errorf("switch channel: begin transition failed (world=%d channel=%d code=%v)",
 				worldID, targetChannel, code)
 		}
-		_ = ctx.Client.Send(&response.SwitchChannel{
+		route := &response.SwitchChannel{
 			IP:   routeHost,
 			Port: routePort,
-		}, types.SEND_POLICY_ENCRYPT)
+		}
 
 		// The character leaves this channel now, not when the client disconnects: a client that stays connected must not keep playing it,
 		// and the disconnect must neither save it over the next channel nor end the moving session.
 		left := gameClient.Logout()
 		if left == nil {
+			_ = ctx.Client.Send(route, types.SEND_POLICY_ENCRYPT)
 			return nil
 		}
 		left.MarkLoggedOut()
-		go h.gs.removeCharacter(left)
+		go func() {
+			h.gs.removeCharacter(left)
+			_ = ctx.Client.Send(route, types.SEND_POLICY_ENCRYPT)
+		}()
 		return nil
 	})
 	promise.OnError(func(err error) {

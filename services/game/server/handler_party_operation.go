@@ -64,6 +64,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(create): ok but missing party_id character=%d", charID)
 					return nil
 				}
+				ch.SetPartyID(reply.PartyId)
 				ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 				return nil
 			},
@@ -169,6 +170,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 							log.Printf("PartyOperation(invite pre-create): ok but missing party_id character=%d", charID)
 							return fmt.Errorf("party create before invite failed")
 						}
+						ch.SetPartyID(reply.PartyId)
 						ch.Listener.OnPartyCreated(ch, *reply.PartyId)
 						return nil
 					}

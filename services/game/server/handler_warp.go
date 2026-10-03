@@ -71,21 +71,6 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			return nil
 		}
 
-		targetMap := h.gs.GetMapSystem().Get(uint32(portal.Wz.TargetMapId))
-		if targetMap == nil {
-			character.Listener.OnUpdateStats(character, nil, true)
-			return nil
-		}
-
-		targetPortal := targetMap.FindPortalByName(portal.Wz.Target)
-		if targetPortal == nil || targetPortal.Wz == nil {
-			character.Listener.OnUpdateStats(character, nil, true)
-			return nil
-		}
-
-		targetMapId = uint32(portal.Wz.TargetMapId)
-		spawnPoint = targetPortal.Wz.ID
-
 		scriptName := portal.Script()
 		if scriptName != "" {
 			root := currentMap.GetLuaRoot()
@@ -116,6 +101,21 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			})
 			return nil
 		}
+
+		targetMap := h.gs.GetMapSystem().Get(uint32(portal.Wz.TargetMapId))
+		if targetMap == nil {
+			character.Listener.OnUpdateStats(character, nil, true)
+			return nil
+		}
+
+		targetPortal := targetMap.FindPortalByName(portal.Wz.Target)
+		if targetPortal == nil || targetPortal.Wz == nil {
+			character.Listener.OnUpdateStats(character, nil, true)
+			return nil
+		}
+
+		targetMapId = uint32(portal.Wz.TargetMapId)
+		spawnPoint = targetPortal.Wz.ID
 	}
 
 	targetMap := h.gs.GetMapSystem().Get(targetMapId)
