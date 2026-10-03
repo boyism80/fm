@@ -46,7 +46,9 @@ func (a *MapActor) handleAttach(ctx actor.Context, msg *AttachStateMachine) {
 	if a.Map != nil && a.Map.GetMapID() == msg.MapID {
 		if err := a.Map.AttachStateMachine(msg.StateMachine); err == nil {
 			ack.OK = true
+			msg.StateMachine.RecordMap(msg.MapID, a.Map)
 			a.Map.RebindObjectTimers(msg.StateMachine.ActorPID)
+			a.Map.NotifyStateMachineAttached(msg.StateMachine)
 		}
 	}
 	ctx.Send(msg.ReplyTo, ack)

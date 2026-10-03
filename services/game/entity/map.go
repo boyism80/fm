@@ -46,6 +46,7 @@ type MapListener interface {
 	OnMistRemoved(mapInstance *Map, mist *Mist)
 	OnDoorRemoved(mapInstance *Map, door *Door, animated bool)
 	OnStateMachineDetached(mapInstance *Map)
+	OnStateMachineAttached(mapInstance *Map, sm *StateMachine)
 }
 
 type MobSpawn struct {
@@ -1389,6 +1390,13 @@ func (m *Map) DetachStateMachine(sm *StateMachine) {
 	m.stateMachineMu.Unlock()
 
 	m.listener.OnStateMachineDetached(m)
+}
+
+func (m *Map) NotifyStateMachineAttached(sm *StateMachine) {
+	if m == nil || sm == nil {
+		return
+	}
+	m.listener.OnStateMachineAttached(m, sm)
 }
 
 func (m *Map) RebindObjectTimers(pid *actor.PID) {

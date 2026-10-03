@@ -336,23 +336,28 @@ func (sm *StateMachine) ReleaseMaps() {
 	}
 }
 
-func (sm *StateMachine) RegisterMap(m *Map) error {
+// ReserveMap reserves the MapRef for instance maps and handles the "already
+// attached" case. It does NOT call AttachStateMachine or RebindObjectTimers —
+// those must run inside the map's own actor goroutine to avoid data races.
+// Returns (alreadyAttached, error); the caller must send an AttachStateMachine
+// message to HomeActorPID when alreadyAttached is false.
+func (sm *StateMachine) ReserveMap(m *Map) (alreadyAttached bool, err error) {
 	if sm == nil || m == nil {
-		return fmt.Errorf("invalid map register")
+		return false, fmt.Errorf("invalid map register")
 	}
 	if sm.Disposed() {
-		return fmt.Errorf("state machine disposed")
+		return false, fmt.Errorf("state machine disposed")
 	}
 	if m.IsInstance() {
 		ref, err := m.Reserve()
 		if err != nil {
-			return err
+			return false, err
 		}
 		sm.mu.Lock()
 		if sm.mapRefsReleased {
 			sm.mu.Unlock()
 			ref.Release()
-			return fmt.Errorf("state machine stopped")
+			return false, fmt.Errorf("state machine stopped")
 		}
 		if _, exists := sm.mapRefs[m]; exists {
 			ref.Release()
@@ -363,16 +368,9 @@ func (sm *StateMachine) RegisterMap(m *Map) error {
 	}
 	if m.StateMachine() == sm {
 		sm.RecordMap(m.GetMapID(), m)
-		return nil
+		return true, nil
 	}
-	if err := m.AttachStateMachine(sm); err != nil {
-		return err
-	}
-	if sm.ActorPID != nil {
-		m.RebindObjectTimers(sm.ActorPID)
-	}
-	sm.RecordMap(m.GetMapID(), m)
-	return nil
+	return false, nil
 }
 
 func (sm *StateMachine) OwnsMap(m *Map) bool {

@@ -28,6 +28,7 @@ type StateMachineActor struct {
 	namedSchedules map[string]*namedSchedule
 	attachComplete bool
 	pendingMsgs    []interface{}
+	pendingAttach  int
 	pendingDetach  int
 	detaching      bool
 }
@@ -129,6 +130,8 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 		}
 	case *entity.StateMachineNamedTimeout:
 		a.handleNamedTimeout(ctx, msg)
+	case *AttachStateMachineAck:
+		a.handleAttachAck(ctx, msg)
 	case *entity.StopStateMachine:
 		a.beginDetach(ctx)
 	case *DetachStateMachineAck:
@@ -296,13 +299,32 @@ func (a *StateMachineActor) registerCreateMaps(ctx actor.Context, msg *entity.Ap
 		a.abortCreate(ctx, "on_create must return a non-empty map array")
 		return
 	}
+	sm := a.StateMachine
+	a.pendingAttach = 0
 	for _, m := range msg.Maps {
-		if err := a.StateMachine.RegisterMap(m); err != nil {
+		already, err := sm.ReserveMap(m)
+		if err != nil {
 			a.abortCreate(ctx, err.Error())
 			return
 		}
+		if already {
+			continue
+		}
+		home := m.HomeActorPID()
+		if home == nil {
+			a.abortCreate(ctx, fmt.Sprintf("map %d has no home actor", m.GetMapID()))
+			return
+		}
+		a.pendingAttach++
+		ctx.Send(home, &AttachStateMachine{
+			StateMachine: sm,
+			ReplyTo:      ctx.Self(),
+			MapID:        m.GetMapID(),
+		})
 	}
-	a.finishCreate(ctx)
+	if a.pendingAttach == 0 {
+		a.finishCreate(ctx)
+	}
 }
 
 func (a *StateMachineActor) abortCreate(ctx actor.Context, reason string) {
@@ -392,6 +414,22 @@ func (a *StateMachineActor) beginDetach(ctx actor.Context) {
 	}
 	if a.pendingDetach == 0 {
 		a.finalizeStop()
+	}
+}
+
+func (a *StateMachineActor) handleAttachAck(ctx actor.Context, msg *AttachStateMachineAck) {
+	if msg == nil {
+		return
+	}
+	if !msg.OK {
+		a.abortCreate(ctx, fmt.Sprintf("attach to map %d failed", msg.MapID))
+		return
+	}
+	if a.pendingAttach > 0 {
+		a.pendingAttach--
+	}
+	if a.pendingAttach == 0 && !a.detaching {
+		a.finishCreate(ctx)
 	}
 }
 
