@@ -12,6 +12,7 @@ const INSERT_COLS = `character_id, account_id, world_id, name, gender, skin_colo
   base_looks, overlays, deleted, updated_at`;
 
 const ON_CONFLICT_SET = `
+  account_id = EXCLUDED.account_id, world_id = EXCLUDED.world_id,
   name = EXCLUDED.name, gender = EXCLUDED.gender, skin_color = EXCLUDED.skin_color,
   face = EXCLUDED.face, hair = EXCLUDED.hair, level = EXCLUDED.level,
   class_id = EXCLUDED.class_id, map_id = EXCLUDED.map_id, spawn_point = EXCLUDED.spawn_point,

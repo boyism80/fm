@@ -376,6 +376,7 @@ export class CharacterService {
 
             if (equips.length) {
                 const enhances = await Promise.all(equips.map((e) => this.wzService.getEnhanceChance(e.itemId)));
+                await this.inventoryRepo.replaceBySnapshot(wid, characterId, []);
                 await this.inventoryRepo.setAll(
                     wid,
                     equips.map((e, idx) => ({
