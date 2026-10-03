@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/boyism80/fm/core/crypt"
 	"github.com/boyism80/fm/protocol/request"
@@ -29,16 +30,22 @@ type Conn struct {
 }
 
 func Dial(addr string) (*Conn, error) {
-	nc, err := net.Dial("tcp", addr)
+	nc, err := net.DialTimeout("tcp", addr, 5*time.Second)
 	if err != nil {
 		return nil, err
 	}
+	_ = nc.SetDeadline(time.Now().Add(5 * time.Second))
 	c := &Conn{nc: nc, br: bufio.NewReader(nc)}
 	if err := c.handshake(); err != nil {
 		_ = nc.Close()
 		return nil, err
 	}
+	_ = nc.SetDeadline(time.Time{})
 	return c, nil
+}
+
+func (c *Conn) SetDeadline(t time.Time) error {
+	return c.nc.SetDeadline(t)
 }
 
 func (c *Conn) Close() error {

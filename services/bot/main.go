@@ -7,7 +7,10 @@ import (
 	"os"
 	"strings"
 
+	"errors"
+
 	"github.com/boyism80/fm/common/config"
+	"github.com/boyism80/fm/services/bot/bot"
 )
 
 func main() {
@@ -92,11 +95,17 @@ func runIntegration(cfg *config.Bot, filter, junit string) int {
 		cfg.TimeoutMs,
 	)
 	if filter != "" {
-		log.Printf("filter: %s", filter)
+		log.Printf("filter %s is unused until suites run", filter)
 	}
 	if junit != "" {
-		log.Printf("junit: %s", junit)
+		log.Printf("junit %s is unused until suites run", junit)
 	}
-	log.Println("integration mode: 미구현")
-	return 2
+	if err := bot.Enter(cfg); err != nil {
+		log.Printf("%v", err)
+		if errors.Is(err, bot.ErrConnect) {
+			return 2
+		}
+		return 1
+	}
+	return 0
 }

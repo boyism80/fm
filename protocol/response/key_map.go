@@ -32,4 +32,18 @@ func (p *KeyMap) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *KeyMap) Deserialize(reader *stream.StreamReader) {}
+func (p *KeyMap) Deserialize(reader *stream.StreamReader) {
+	if reader.ReadU8() != 0 {
+		p.UseEmptyDefaultBranch = true
+		return
+	}
+	p.Slots = make(map[int]dto.KeyBinding, 89)
+	for i := 0; i < 89; i++ {
+		typ := reader.ReadU8()
+		action := reader.Read32()
+		if typ == 0 && action == 0 {
+			continue
+		}
+		p.Slots[i] = dto.KeyBinding{Type: typ, Action: action}
+	}
+}

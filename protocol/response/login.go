@@ -44,6 +44,19 @@ func (p *Login) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *Login) Deserialize(reader *stream.StreamReader) {
+	a.Channel = reader.ReadU32()
+	reader.ReadU8()
+	reader.ReadU8()
+	if reader.ReadU16() != 0 {
+		return
+	}
+	// Random1 (3×int32) and the 0xFFFFFFFFFFFFFFFF marker before stats.
+	reader.Skip(12)
+	reader.Skip(8)
+	if a.Character == nil {
+		a.Character = &dto.Character{}
+	}
+	a.Character.DeserializeStats(reader)
 }
 
 func (l *Login) Opcode() uint16 {

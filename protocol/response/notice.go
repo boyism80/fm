@@ -43,4 +43,19 @@ func (p *Notice) Serialize(sw *stream.StreamWriter) error {
 }
 
 func (p *Notice) Deserialize(sr *stream.StreamReader) {
+	p.Type = constant.ServerMessageType(sr.ReadU8())
+	if p.Type == constant.MsgScrollingTop {
+		sr.ReadU8()
+	}
+	p.Message = sr.ReadStr16()
+	switch p.Type {
+	case constant.MsgSuperMegaphone, constant.MsgHeartMegaphone, constant.MsgSkullSuperMegaphone:
+		p.Channel = int(sr.ReadU8()) + 1
+		p.MegaEar = sr.ReadBool()
+	case constant.MsgLightBlueText, constant.MsgBlueNotice:
+		item := sr.ReadU32()
+		if item != 0 {
+			p.Channel = int(item)
+		}
+	}
 }

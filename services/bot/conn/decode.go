@@ -49,6 +49,23 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		return pkt, nil
 	case (&response.Ping{}).Opcode():
 		return &response.Ping{}, nil
+	case (&response.Login{}).Opcode():
+		if len(body) > 4 && body[4] == 2 {
+			pkt := &response.Warp{}
+			pkt.Deserialize(reader)
+			return pkt, nil
+		}
+		pkt := &response.Login{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.KeyMap{}).Opcode():
+		pkt := &response.KeyMap{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.Notice{}).Opcode():
+		pkt := &response.Notice{}
+		pkt.Deserialize(reader)
+		return pkt, nil
 	default:
 		return nil, fmt.Errorf("unknown opcode %d", opcode)
 	}

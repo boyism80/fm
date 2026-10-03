@@ -12,6 +12,8 @@ type NormalChat struct {
 func (*NormalChat) Opcode() byte { return 0x20 }
 
 func (m *NormalChat) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteStr16(m.Message)
+	writer.WriteBoolean(m.DontRecordHistory)
 	return nil
 }
 

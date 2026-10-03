@@ -26,6 +26,9 @@ if not "%LOGIN_CFG%"=="" (
     set "LOGIN_CMD=!LOGIN_CMD! -config=%LOGIN_CFG%"
 )
 
+echo Starting internal server...
+start "FM Internal" cmd /k "cd /d services\internal && npm start"
+
 echo Starting login server...
 start "FM Login" cmd /k !LOGIN_CMD!
 
@@ -42,14 +45,15 @@ for %%C in (1 2 3) do (
         if errorlevel 1 exit /b 1
     )
     echo Starting game server channel %%C with !CH_CFG!...
-    start "FM Game Ch%%C" cmd /k go run ./services/game/main.go -config=!CH_CFG!
+    start "FM Game Ch%%C" cmd /k "cd /d services\game && go run . -config=!CH_CFG!"
 )
 
 echo.
-echo All servers started in separate windows.
-echo   Login:  optional arg 1 = login config ^(default config/login.yaml^)
-echo   Game:   optional arg 2 = template for generated configs ^(default config/game.yaml^)
-echo           optional args 3-5 = per-channel game configs ^(skip generation^)
+echo Servers started in separate windows. Channel 0 is not started.
+echo   Internal: services/internal
+echo   Login:    optional arg 1 = login config ^(default config/login.yaml^)
+echo   Game:     optional arg 2 = template for generated configs ^(default config/game.yaml^)
+echo             optional args 3-5 = configs for channels 1-3 ^(skip generation^)
 echo.
-echo Ensure services/internal/config.yaml lists ports 8486/8487/8488 for channels 1-3 on world 0.
+echo Bot tests, including channel 0: tools\run-bot-servers.bat
 endlocal

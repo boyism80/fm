@@ -226,6 +226,32 @@ func (c *Character) SerializeStats(writer *stream.StreamWriter) {
 	writer.WriteU8(c.SpawnPoint)
 }
 
+func (c *Character) DeserializeStats(reader *stream.StreamReader) {
+	c.ID = reader.ReadU32()
+	c.Name = reader.ReadStaticStr(13)
+	c.Gender = reader.ReadU8()
+	c.SkinColor = reader.ReadU8()
+	c.Face = reader.ReadU32()
+	c.Hair = reader.ReadU32()
+	reader.Skip(8)
+	c.Level = reader.ReadU8()
+	c.Class = reader.ReadU16()
+	c.Str = reader.ReadU16()
+	c.Dex = reader.ReadU16()
+	c.Int = reader.ReadU16()
+	c.Luk = reader.ReadU16()
+	c.Hp = reader.ReadU16()
+	c.MaxHp = reader.ReadU16()
+	c.Mp = reader.ReadU16()
+	c.MaxMp = reader.ReadU16()
+	c.AbilityPoint = reader.ReadU16()
+	c.SkillPoint = reader.ReadU16()
+	c.Exp = reader.ReadU32()
+	c.Population = reader.ReadU16()
+	c.Map = reader.ReadU32()
+	c.SpawnPoint = reader.ReadU8()
+}
+
 func (c *Character) SerializeInventory(writer *stream.StreamWriter) {
 	writer.Write32(c.Inventory.Meso)
 

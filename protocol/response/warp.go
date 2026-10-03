@@ -24,6 +24,16 @@ func (p *Warp) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (a *Warp) Deserialize(reader *stream.StreamReader) {
+	a.Channel = reader.ReadU32()
+	reader.ReadU16()
+	reader.ReadU16()
+	if a.Character == nil {
+		a.Character = &dto.Character{}
+	}
+	a.Character.Map = reader.ReadU32()
+	a.Character.SpawnPoint = reader.ReadU8()
+	a.Character.Hp = reader.ReadU16()
+	reader.Skip(8)
 }
 
 func (w *Warp) Opcode() uint16 {
