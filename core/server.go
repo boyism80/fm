@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -214,13 +215,14 @@ func (s *ServerCore) handleClient(client Client) {
 		log.Printf("Sent login failed packet to %s", client.GetConnection().RemoteAddr())
 	}
 
+	reader := bufio.NewReader(client.GetConnection())
 	for {
 		select {
 		case <-s.shutdownChan:
 			return
 		default:
 
-			_, err := s.readPacket(client)
+			_, err := s.readPacket(client, reader)
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					log.Printf("Client disconnected normally: %s", client.GetConnection().RemoteAddr())
@@ -243,10 +245,10 @@ func (s *ServerCore) handleClient(client Client) {
 	}
 }
 
-func (s *ServerCore) readPacket(client Client) (bool, error) {
+func (s *ServerCore) readPacket(client Client, reader *bufio.Reader) (bool, error) {
 
 	headerBytes := make([]byte, 4)
-	if _, err := client.GetConnection().Read(headerBytes); err != nil {
+	if _, err := io.ReadFull(reader, headerBytes); err != nil {
 		return false, err
 	}
 
@@ -264,7 +266,7 @@ func (s *ServerCore) readPacket(client Client) (bool, error) {
 	}
 
 	encryptedData := make([]byte, packetLength)
-	if _, err := client.GetConnection().Read(encryptedData); err != nil {
+	if _, err := io.ReadFull(reader, encryptedData); err != nil {
 		return false, err
 	}
 
