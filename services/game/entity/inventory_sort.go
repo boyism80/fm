@@ -38,7 +38,7 @@ func (ch *Character) MergeItems(inventoryType constant.InventoryType) {
 					ch.Listener.OnRemoveInventorySlot(ch, inventoryType, slot)
 					delete(inven.Items, slot)
 				} else {
-					ch.Listener.OnUpdateInventorySlot(ch, inventoryType, slot, item)
+					ch.Listener.OnInventorySlotUpdated(ch, inventoryType, slot, item)
 				}
 			}
 			count -= value

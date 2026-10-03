@@ -68,13 +68,7 @@ func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) er
 			unlock()
 			return nil, nil
 		}
-		item.Reduce(1)
-		if item.GetCount() == 0 {
-			cash.Remove(uint8(req.Slot))
-			ch.Listener.OnRemoveInventorySlot(ch, constant.InventoryTypeCash, int16(req.Slot))
-		} else {
-			ch.Listener.OnInventorySlotUpdated(ch, constant.InventoryTypeCash, int16(req.Slot), item)
-		}
+		ch.Inventory.RemoveItem(constant.InventoryTypeCash, int16(req.Slot), 1)
 		unlock()
 		return nil, nil
 	}).OnError(func(err error) {

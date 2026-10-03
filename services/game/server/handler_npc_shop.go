@@ -191,26 +191,11 @@ func (h *NpcShop) sell(ch *entity.Character, tx *request.SellTransaction) {
 		return
 	}
 
-	spec := entity.ExchangeSpec{
-		Cost: entity.ExchangeSide{
-			Items: map[uint32]uint16{
-				tx.ItemID: quantity,
-			},
-		},
-		Reward: entity.ExchangeSide{
-			Meso: recvMesos,
-		},
-	}
-	if spec.Valid(ch) != entity.ExchangeOK {
+	if recvMesos > math.MaxInt32-ch.Inventory.Meso {
 		return
 	}
-
-	if quantity >= itemQuantity {
-		delete(inventory.Items, tx.Slot)
-		ch.Listener.OnRemoveInventorySlot(ch, inventoryType, tx.Slot)
-	} else {
-		item.Reduce(quantity)
-		ch.Listener.OnUpdateInventorySlot(ch, inventoryType, tx.Slot, item)
+	if ch.Inventory.RemoveItem(inventoryType, tx.Slot, quantity) == false {
+		return
 	}
 
 	ch.Inventory.GainMeso(recvMesos)
@@ -245,7 +230,7 @@ func (h *NpcShop) recharge(ch *entity.Character, tx *request.RechargeTransaction
 	}
 
 	item.SetCount(slotMax)
-	ch.Listener.OnUpdateInventorySlot(ch, constant.InventoryTypeConsume, tx.Slot, item)
+	ch.Listener.OnInventorySlotUpdated(ch, constant.InventoryTypeConsume, tx.Slot, item)
 	ch.Inventory.RemoveMeso(int32(price))
 	ch.Listener.OnConfirmShopTransaction(ch, constant.ShopTransactionUpdateOK)
 }

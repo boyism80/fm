@@ -84,13 +84,7 @@ func (*UseReturnScroll) Handle(ctx *core.ClientContext, req *request.UseReturnSc
 		return err
 	}
 
-	item.Reduce(1)
-	if item.GetCount() == 0 {
-		useInventory.Remove(uint8(req.Slot))
-		ch.Listener.OnRemoveInventorySlot(ch, constant.InventoryTypeConsume, int16(req.Slot))
-	} else {
-		ch.Listener.OnInventorySlotUpdated(ch, constant.InventoryTypeConsume, int16(req.Slot), item)
-	}
+	ch.Inventory.RemoveItem(constant.InventoryTypeConsume, int16(req.Slot), 1)
 	ch.Listener.OnUpdateStats(ch, nil, true)
 	return nil
 }

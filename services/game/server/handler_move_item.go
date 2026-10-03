@@ -82,15 +82,11 @@ func (h *MoveItem) drop(ch *entity.Character, invenType constant.InventoryType, 
 		return
 	}
 
-	removed := item.Reduce(actualCount) == 0
-	if removed {
-		ch.Listener.OnRemoveInventorySlot(ch, invenType, slot)
-		delete(inven.Items, slot)
-	} else {
-		ch.Listener.OnUpdateInventorySlot(ch, invenType, slot, item)
+	spawned := item.Clone(actualCount)
+	if ch.Inventory.RemoveItem(invenType, slot, actualCount) == false {
+		return
 	}
 
-	spawned := item.Clone(actualCount)
 	spawned.BindFieldPlacement(&entity.FieldPlacement{
 		ObjectCore: &entity.ObjectCore{
 			Position: ch.Position,

@@ -1250,15 +1250,6 @@ func (l *CharacterListenerImpl) OnRemoveInventorySlot(ch *entity.Character, inve
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) OnUpdateInventorySlot(ch *entity.Character, inventoryType constant.InventoryType, slot int16, item entity.Item) {
-	itemDTO := entity.ItemToDTO(item)
-	ch.Send(&response.UpdateInventorySlot{
-		InventoryType: inventoryType,
-		Slot:          slot,
-		Item:          itemDTO,
-	}, types.SEND_POLICY_ENCRYPT)
-}
-
 func (l *CharacterListenerImpl) OnFullMergeInventorySlot(ch *entity.Character, inventoryType constant.InventoryType, source int16, dest int16, count uint16) {
 	ch.Send(&response.FullMergeInventorySlot{
 		InventoryType: inventoryType,
