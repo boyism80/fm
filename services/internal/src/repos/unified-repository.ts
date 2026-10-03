@@ -1,7 +1,5 @@
 import type { InternalContext } from "../context/internal-context";
-import { redisNameKey } from "../redis-name-key";
 
-// Same as the login session TTL; RefreshSession extends it while the login session lives.
 const CHARACTER_NAME_RESERVATION_TTL_SECONDS = 120;
 
 export interface AccountIdentityRow {
@@ -54,115 +52,100 @@ export class UnifiedRepository {
 
     async findCharacterNameEntry(name: string): Promise<CharacterNameRegistryRow | null> {
         const { rows } = await this.pool().query(
-            "SELECT character_id, name, account_id, world_id, status FROM character_name_registry WHERE LOWER(name) = LOWER($1)",
+            "SELECT character_id, name, account_id, world_id, status FROM character_name_registry WHERE LOWER(name) = LOWER($1) AND reserved_at IS NULL",
             [name]
         );
         return rows[0] ?? null;
     }
 
-    async nextCharacterId(): Promise<number> {
-        const { rows } = await this.pool().query(
-            "SELECT nextval(pg_get_serial_sequence('character_name_registry', 'character_id')) AS id"
-        );
-        return Number(rows[0].id);
+    /**
+     * Atomically reserves the name in Postgres.
+     * - New name: inserts a pending row and returns the new character_id.
+     * - Same account re-reservation: refreshes reserved_at and returns the existing character_id.
+     * - Expired reservation by another account: reclaims (UPDATE preserving character_id) and returns it.
+     * - Confirmed or actively reserved by another account: returns null.
+     * One pending reservation per account: any other pending row for this account is deleted first.
+     */
+    async reserveCharacterName(name: string, accountId: number, worldId: number): Promise<number | null> {
+        const client = await this.pool().connect();
+        try {
+            await client.query("BEGIN");
+
+            // Release any prior pending reservation for this account under a different name.
+            await client.query(
+                `DELETE FROM character_name_registry WHERE account_id = $1 AND reserved_at IS NOT NULL AND LOWER(name) != LOWER($2)`,
+                [accountId, name]
+            );
+
+            const { rows } = await client.query(
+                `SELECT character_id, account_id, reserved_at FROM character_name_registry WHERE LOWER(name) = LOWER($1) FOR UPDATE`,
+                [name]
+            );
+
+            if (rows.length === 0) {
+                const { rows: ins } = await client.query(
+                    `INSERT INTO character_name_registry (name, account_id, world_id, reserved_at) VALUES ($1, $2, $3, NOW()) RETURNING character_id`,
+                    [name, accountId, worldId]
+                );
+                await client.query("COMMIT");
+                return Number(ins[0].character_id);
+            }
+
+            const { character_id, account_id: existingAccountId, reserved_at } = rows[0];
+
+            if (reserved_at === null) {
+                await client.query("ROLLBACK");
+                return null;
+            }
+
+            if (Number(existingAccountId) === accountId) {
+                await client.query(
+                    `UPDATE character_name_registry SET reserved_at = NOW() WHERE character_id = $1`,
+                    [character_id]
+                );
+                await client.query("COMMIT");
+                return Number(character_id);
+            }
+
+            const ageMs = Date.now() - new Date(reserved_at).getTime();
+            if (ageMs < CHARACTER_NAME_RESERVATION_TTL_SECONDS * 1000) {
+                await client.query("ROLLBACK");
+                return null;
+            }
+
+            await client.query(
+                `UPDATE character_name_registry SET reserved_at = NOW(), account_id = $1, world_id = $2 WHERE character_id = $3`,
+                [accountId, worldId, character_id]
+            );
+            await client.query("COMMIT");
+            return Number(character_id);
+        } catch (err) {
+            await client.query("ROLLBACK").catch(() => {});
+            throw err;
+        } finally {
+            client.release();
+        }
     }
 
-    async insertCharacterName(characterId: number, name: string, accountId: number, worldId: number): Promise<void> {
+    async confirmCharacterName(name: string): Promise<void> {
         await this.pool().query(
-            `INSERT INTO character_name_registry (character_id, name, account_id, world_id)
-             VALUES ($1, $2, $3, $4)`,
-            [characterId, name, accountId, worldId]
+            `UPDATE character_name_registry SET reserved_at = NULL WHERE LOWER(name) = LOWER($1) AND reserved_at IS NOT NULL`,
+            [name]
         );
-    }
-
-    private nameReservationKey(name: string) {
-        return redisNameKey(`reserve:${name.toLowerCase()}`);
-    }
-
-    private accountNameReservationKey(accountId: number) {
-        return redisNameKey(`reserve_account:${accountId}`);
-    }
-
-    /** One name per account: reserving a new name releases the account's previous one. */
-    async reserveCharacterName(name: string, accountId: number): Promise<boolean> {
-        const { client } = this.ctx.getRedisUnifiedAccess();
-        const script = `
-local name_key = KEYS[1]
-local account_key = KEYS[2]
-local account_id = ARGV[1]
-local name = ARGV[2]
-local prefix = ARGV[3]
-local ttl = tonumber(ARGV[4])
-local owner = redis.call("GET", name_key)
-if owner and owner ~= account_id then
-  return 0
-end
-local prev = redis.call("GET", account_key)
-if prev and prev ~= name and redis.call("GET", prefix .. prev) == account_id then
-  redis.call("DEL", prefix .. prev)
-end
-redis.call("SET", name_key, account_id, "EX", ttl)
-redis.call("SET", account_key, name, "EX", ttl)
-return 1
-`;
-        const lower = name.toLowerCase();
-        const ok = await client.eval(
-            script,
-            2,
-            this.nameReservationKey(lower),
-            this.accountNameReservationKey(accountId),
-            String(accountId),
-            lower,
-            redisNameKey("reserve:"),
-            String(CHARACTER_NAME_RESERVATION_TTL_SECONDS)
-        );
-        return Number(ok) === 1;
     }
 
     async refreshCharacterNameReservation(accountId: number): Promise<void> {
-        const { client } = this.ctx.getRedisUnifiedAccess();
-        const script = `
-local account_key = KEYS[1]
-local account_id = ARGV[1]
-local prefix = ARGV[2]
-local ttl = tonumber(ARGV[3])
-local name = redis.call("GET", account_key)
-if not name then
-  return 0
-end
-redis.call("EXPIRE", account_key, ttl)
-if redis.call("GET", prefix .. name) == account_id then
-  redis.call("EXPIRE", prefix .. name, ttl)
-end
-return 1
-`;
-        await client.eval(
-            script,
-            1,
-            this.accountNameReservationKey(accountId),
-            String(accountId),
-            redisNameKey("reserve:"),
-            String(CHARACTER_NAME_RESERVATION_TTL_SECONDS)
+        await this.pool().query(
+            `UPDATE character_name_registry SET reserved_at = NOW() WHERE account_id = $1 AND reserved_at IS NOT NULL`,
+            [accountId]
         );
     }
 
     async releaseCharacterNameReservation(accountId: number): Promise<void> {
-        const { client } = this.ctx.getRedisUnifiedAccess();
-        const script = `
-local account_key = KEYS[1]
-local account_id = ARGV[1]
-local prefix = ARGV[2]
-local name = redis.call("GET", account_key)
-if not name then
-  return 0
-end
-redis.call("DEL", account_key)
-if redis.call("GET", prefix .. name) == account_id then
-  redis.call("DEL", prefix .. name)
-end
-return 1
-`;
-        await client.eval(script, 1, this.accountNameReservationKey(accountId), String(accountId), redisNameKey("reserve:"));
+        await this.pool().query(
+            `DELETE FROM character_name_registry WHERE account_id = $1 AND reserved_at IS NOT NULL`,
+            [accountId]
+        );
     }
 
     async deleteCharacterName(characterId: number) {

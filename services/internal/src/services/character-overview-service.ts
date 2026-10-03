@@ -46,14 +46,10 @@ export class CharacterOverviewService {
         if (this.wzService.isForbiddenName(name)) {
             return { exists: true };
         }
-        const entry = await this.unifiedRepo.findCharacterNameEntry(name);
-        if (entry !== null) {
-            return { exists: true };
-        }
         if (accountId <= 0) {
             return { exists: true };
         }
-        const reserved = await this.unifiedRepo.reserveCharacterName(name, accountId);
-        return { exists: reserved === false };
+        const characterId = await this.unifiedRepo.reserveCharacterName(name, accountId, this.worldId());
+        return { exists: characterId === null };
     }
 }
