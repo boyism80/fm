@@ -51,6 +51,26 @@ func (*Quest) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(questRequirementsToLuaTable(L, q.Start.Requirements))
 			return 1
 		},
+		"start_cost": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			q, ok := ud.Value.(*Quest)
+			if !ok || q == nil {
+				L.ArgError(1, "WzQuest expected")
+				return 0
+			}
+			L.Push(questCostToLuaTable(L, q.Start.Actions))
+			return 1
+		},
+		"complete_cost": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			q, ok := ud.Value.(*Quest)
+			if !ok || q == nil {
+				L.ArgError(1, "WzQuest expected")
+				return 0
+			}
+			L.Push(questCostToLuaTable(L, q.Complete.Actions))
+			return 1
+		},
 		"party_ranks": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			q, ok := ud.Value.(*Quest)

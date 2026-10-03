@@ -31,6 +31,24 @@ func partyRanksToLuaTable(L *lua.LState, ranks map[string][]PartyQuestRankCheck)
 	return out
 }
 
+func questCostToLuaTable(L *lua.LState, actions QuestActions) *lua.LTable {
+	out := L.NewTable()
+	out.RawSetString("meso", lua.LNumber(max(-actions.Money, 0)))
+	out.RawSetString("pop", lua.LNumber(max(-actions.Pop, 0)))
+	items := L.NewTable()
+	for _, item := range actions.Item {
+		if item.Count >= 0 {
+			continue
+		}
+		entry := L.NewTable()
+		entry.RawSetString("id", lua.LNumber(item.ItemID))
+		entry.RawSetString("count", lua.LNumber(-item.Count))
+		items.Append(entry)
+	}
+	out.RawSetString("items", items)
+	return out
+}
+
 func questRequirementsToLuaTable(L *lua.LState, reqs QuestRequirements) *lua.LTable {
 	out := L.NewTable()
 	i := 1
@@ -156,6 +174,11 @@ func questRequirementsToLuaTable(L *lua.LState, reqs QuestRequirements) *lua.LTa
 		tbl := L.NewTable()
 		tbl.RawSetString("kind", lua.LString("infoNumber"))
 		tbl.RawSetString("value", lua.LNumber(reqs.InfoNumber))
+		info := L.NewTable()
+		for _, want := range reqs.Info {
+			info.Append(lua.LString(want))
+		}
+		tbl.RawSetString("info", info)
 		appendReq(tbl)
 	}
 	if reqs.DayByDay {

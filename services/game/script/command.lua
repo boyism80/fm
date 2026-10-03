@@ -133,11 +133,7 @@ local unsupported_quest_req_kinds = {
 	mbmin = true,
 	mbcard = true,
 	subJobFlags = true,
-	dayByDay = true,
-	normalAutoStart = true,
 	partyQuest_S = true,
-	fieldEnter = true,
-	interval = true,
 	start = true,
 	["end"] = true,
 }
@@ -228,6 +224,9 @@ local function prepare_quest_requirement(me, quest, req)
 				if have < need then
 					me:mkitem(item_id, need - have)
 				end
+				if item_count(me, item_id) < need then
+					return false, kind
+				end
 			end
 		end
 		return true
@@ -278,6 +277,34 @@ local function prepare_quest_requirement(me, quest, req)
 	if kind == "npc" or kind == "startscript" or kind == "endscript" then
 		return true
 	end
+	if kind == "interval" or kind == "dayByDay" or kind == "normalAutoStart" or kind == "fieldEnter" then
+		return true
+	end
+	if kind == "infoNumber" then
+		local info_id = req.value or 0
+		if info_id == 0 then
+			return true
+		end
+		local want = "1"
+		for _, value in ipairs(req.info or {}) do
+			if value ~= "" then
+				want = value
+				break
+			end
+		end
+		local info = me:quest(info_id)
+		if info == nil then
+			return false, kind
+		end
+		if info:wz() == nil then
+			return info:start(want), kind
+		end
+		if not ensure_quest_state(me, info_id, 1) then
+			return false, kind
+		end
+		me:quest(info_id):record(want)
+		return true
+	end
 	if kind == "quest" then
 		local quests = req.quests
 		if quests == nil then
@@ -313,11 +340,27 @@ local function prepare_quest_requirement(me, quest, req)
 	return true
 end
 
+local function prepare_quest_cost(me, cost)
+	if me:meso() < cost.meso then
+		me:meso(cost.meso)
+	end
+	if me:population() < cost.pop then
+		me:population(cost.pop)
+	end
+	for _, entry in ipairs(cost.items) do
+		local have = item_count(me, entry.id)
+		if have < entry.count then
+			me:mkitem(entry.id, entry.count - have)
+		end
+	end
+end
+
 local function prepare_quest_complete(me, quest)
 	local wz = quest:wz()
 	if wz == nil then
 		return false, "wz"
 	end
+	prepare_quest_cost(me, wz:complete_cost())
 	local reqs = wz:complete_requirements()
 	if reqs == nil then
 		return true
@@ -336,6 +379,7 @@ local function prepare_quest_start(me, quest)
 	if wz == nil then
 		return false, "wz"
 	end
+	prepare_quest_cost(me, wz:start_cost())
 	local reqs = wz:start_requirements()
 	if reqs == nil then
 		return true
@@ -349,15 +393,15 @@ local function prepare_quest_start(me, quest)
 	return true
 end
 
-local function start_npc_id(wz)
+local function start_requirement_value(wz, kind)
 	if wz == nil or wz:start_requirements() == nil then
 		return nil
 	end
 	for _, req in ipairs(wz:start_requirements()) do
-		if req.kind == "npc" then
-			local npc_id = req.value or 0
-			if npc_id ~= 0 then
-				return npc_id
+		if req.kind == kind then
+			local value = req.value or 0
+			if value ~= 0 then
+				return value
 			end
 		end
 	end
@@ -585,7 +629,13 @@ local command_funcs = {
 			end
 			me:message(string.format("퀘스트 %d 시작 조건 준비 완료", quest_id))
 			local wz = quest:wz()
-			local npc_id = start_npc_id(wz)
+			local field_id = start_requirement_value(wz, "fieldEnter")
+			if field_id ~= nil then
+				me:map(field_id)
+				me:message(string.format("필드 %d로 이동", field_id))
+				return true
+			end
+			local npc_id = start_requirement_value(wz, "npc")
 			if npc_id == nil then
 				me:message("시작 NPC 없음")
 				return true
