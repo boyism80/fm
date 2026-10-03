@@ -79,5 +79,18 @@ func (s *Summon) Remove(animated bool) {
 }
 
 func (s *Summon) TakeDamage(unknown uint8, damage uint32, monsterIdFrom uint32) {
+	if damage == 0 {
+		return
+	}
+
+	if s.GetHp() <= damage {
+		s.SetHp(0, false)
+	} else {
+		s.SetHp(s.GetHp()-damage, false)
+	}
 	s.Owner.Listener.OnSummonDamaged(s.Owner, s, unknown, damage, monsterIdFrom)
+
+	if s.GetHp() == 0 {
+		s.Owner.Buffs.RemoveSkillBuff(uint32(s.SkillID))
+	}
 }

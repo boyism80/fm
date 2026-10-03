@@ -45,6 +45,27 @@ func (ch *Character) DamageTo(damages []dto.AttackPair) {
 	}
 }
 
+func (ch *Character) TakeDamage(damage int32) {
+	wasAlive := ch.IsAlive()
+	hp := int(ch.GetHp()) - int(damage)
+	if hp < 0 {
+		hp = 0
+	}
+	if maxHp := int(ch.GetMaxHp()); hp > maxHp {
+		hp = maxHp
+	}
+	ch.SetHp(uint32(hp), false)
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatHP: int32(ch.GetHp()),
+	}, true)
+
+	if wasAlive && ch.IsAlive() == false {
+		if sm := ch.StateMachine(); sm != nil {
+			sm.CallHook("on_player_dead", ch)
+		}
+	}
+}
+
 func (ch *Character) OnKill(mobs []*Mob) {
 	if ch == nil || len(mobs) == 0 {
 		return

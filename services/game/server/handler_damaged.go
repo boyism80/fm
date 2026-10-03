@@ -36,59 +36,35 @@ func (h *Damaged) Handle(ctx *core.ClientContext, req *request.Damaged) error {
 		return fmt.Errorf("character not found")
 	}
 
-	isBlock := req.Damage == -1 && req.Type == constant.IncomingHitCollide
-	if isBlock {
+	damage := int32(0)
+	if req.Damage == -1 && req.Type == constant.IncomingHitCollide {
 		h.callOnBlocked(ctx, character, req)
-		h.takeDamage(character, 0)
+	} else {
+		damage = h.adjustDamage(character, req)
+	}
+
+	if character.Invincible {
+		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)
 		return nil
 	}
-	h.finalizeDamage(ctx, character, req, req.Damage, func(damage int32) {
-		h.takeDamage(character, damage)
-	})
+	character.TakeDamage(damage)
 	return nil
 }
 
-func (h *Damaged) takeDamage(character *entity.Character, damage int32) {
-	if !character.Invincible {
-		wasAlive := character.GetHp() > 0
-		n := int(character.GetHp()) - int(damage)
-		if n < 0 {
-			n = 0
-		}
-		maxHp := int(character.GetMaxHp())
-		if n > maxHp {
-			n = maxHp
-		}
-		character.SetHp(uint32(n), false)
-		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{
-			constant.StatHP: int32(character.GetHp()),
-		}, true)
-		if wasAlive && character.GetHp() == 0 {
-			if sm := character.StateMachine(); sm != nil {
-				sm.CallHook("on_player_dead", character)
-			}
-		}
-	} else {
-		character.Listener.OnUpdateStats(character, map[constant.Stat]int32{}, true)
-	}
-}
-
-func (h *Damaged) finalizeDamage(ctx *core.ClientContext, character *entity.Character, req *request.Damaged, damage int32, fn func(int32)) {
+func (h *Damaged) adjustDamage(character *entity.Character, req *request.Damaged) int32 {
+	damage := req.Damage
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
-		fn(damage)
-		return
+		return damage
 	}
 	if req.OID != 0 {
 		if mob := mapInstance.GetMob(req.OID); mob != nil && mob.IsFake() {
-			fn(0)
-			return
+			return 0
 		}
 	}
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
-		fn(damage)
-		return
+		return damage
 	}
 
 	var attackerArg interface{} = lua.LNil
@@ -114,26 +90,21 @@ func (h *Damaged) finalizeDamage(ctx *core.ClientContext, character *entity.Char
 	thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
 	if err != nil {
 		log.Printf("Failed to call script on_damaged: %v", err)
-		fn(damage)
-		return
+		return damage
 	}
-	luax.CallAsync(root, thread, "on_damaged", character, attackerArg, skillArg, damage, params).Then(func(value interface{}) (interface{}, error) {
-		vals := luax.ResultValues(value)
-		if len(vals) == 0 || vals[0] == nil || vals[0].Type() != lua.LTNumber {
-			fn(damage)
-			return nil, nil
-		}
-		adjustedDamage := int32(lua.LVAsNumber(vals[0]))
-		if adjustedDamage < 0 {
-			fn(0)
-			return nil, nil
-		}
-		fn(adjustedDamage)
-		return nil, nil
-	}).OnError(func(err error) {
+	ret, err := luax.Call(thread, "on_damaged", character, attackerArg, skillArg, damage, params)
+	if err != nil {
 		log.Printf("Failed to call script on_damaged: %v", err)
-		fn(damage)
-	})
+		return damage
+	}
+	if ret == nil || ret.Type() != lua.LTNumber {
+		return damage
+	}
+	adjusted := int32(lua.LVAsNumber(ret))
+	if adjusted < 0 {
+		return 0
+	}
+	return adjusted
 }
 
 func (h *Damaged) callOnBlocked(ctx *core.ClientContext, character *entity.Character, req *request.Damaged) {
