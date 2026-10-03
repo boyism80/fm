@@ -19,6 +19,14 @@ type namedSchedule struct {
 	cron    cron.Schedule
 }
 
+type smLifecycle struct {
+	attachDone    bool          // all map attaches have been acked
+	deferred      []interface{} // messages queued before attachDone
+	attachPending int           // outstanding AttachStateMachine acks
+	detachPending int           // outstanding DetachStateMachine acks
+	detaching     bool          // beginDetach has been called
+}
+
 type StateMachineActor struct {
 	GameLogicActor
 	StateMachine   *entity.StateMachine
@@ -26,11 +34,7 @@ type StateMachineActor struct {
 	timeoutVersion uint64
 	timeoutCancel  scheduler.CancelFunc
 	namedSchedules map[string]*namedSchedule
-	attachComplete bool
-	pendingMsgs    []interface{}
-	pendingAttach  int
-	pendingDetach  int
-	detaching      bool
+	lc             smLifecycle
 }
 
 func NewStateMachineActor(sm *entity.StateMachine, gameWorld entity.GameWorld) *StateMachineActor {
@@ -57,22 +61,22 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	case *entity.FinishStateMachineCreate:
 		a.finishCreate(ctx)
 	case *entity.EnterStateMachinePlayer:
-		if a.attachComplete {
+		if a.lc.attachDone {
 			a.handleEnterPlayer(ctx, msg)
 		} else {
-			a.pendingMsgs = append(a.pendingMsgs, msg)
+			a.lc.deferred = append(a.lc.deferred, msg)
 		}
 	case *entity.StartStateMachine:
-		if a.attachComplete {
+		if a.lc.attachDone {
 			a.handleStart(ctx)
 		} else {
-			a.pendingMsgs = append(a.pendingMsgs, msg)
+			a.lc.deferred = append(a.lc.deferred, msg)
 		}
 	case *entity.CallStateMachineHook:
-		if a.attachComplete {
+		if a.lc.attachDone {
 			a.callHook(ctx, msg.Hook, msg.Args...)
 		} else {
-			a.pendingMsgs = append(a.pendingMsgs, msg)
+			a.lc.deferred = append(a.lc.deferred, msg)
 		}
 	case *entity.LeaveStateMachinePlayer:
 		if msg != nil && a.StateMachine != nil {
@@ -300,7 +304,7 @@ func (a *StateMachineActor) registerCreateMaps(ctx actor.Context, msg *entity.Ap
 		return
 	}
 	sm := a.StateMachine
-	a.pendingAttach = 0
+	a.lc.attachPending = 0
 	for _, m := range msg.Maps {
 		already, err := sm.ReserveMap(m)
 		if err != nil {
@@ -315,14 +319,14 @@ func (a *StateMachineActor) registerCreateMaps(ctx actor.Context, msg *entity.Ap
 			a.abortCreate(ctx, fmt.Sprintf("map %d has no home actor", m.GetMapID()))
 			return
 		}
-		a.pendingAttach++
+		a.lc.attachPending++
 		ctx.Send(home, &AttachStateMachine{
 			StateMachine: sm,
 			ReplyTo:      ctx.Self(),
 			MapID:        m.GetMapID(),
 		})
 	}
-	if a.pendingAttach == 0 {
+	if a.lc.attachPending == 0 {
 		a.finishCreate(ctx)
 	}
 }
@@ -335,7 +339,7 @@ func (a *StateMachineActor) abortCreate(ctx actor.Context, reason string) {
 	if reason != "" {
 		fmt.Printf("state machine %s create failed: %s\n", name, reason)
 	}
-	a.pendingMsgs = nil
+	a.lc.deferred = nil
 	if a.StateMachine != nil {
 		a.StateMachine.AbortStart()
 	}
@@ -343,17 +347,17 @@ func (a *StateMachineActor) abortCreate(ctx actor.Context, reason string) {
 }
 
 func (a *StateMachineActor) finishCreate(ctx actor.Context) {
-	if a.attachComplete {
+	if a.lc.attachDone {
 		return
 	}
 	if a.StateMachine != nil && !a.StateMachine.HasRegisteredMaps() {
 		a.abortCreate(ctx, "no maps registered")
 		return
 	}
-	a.attachComplete = true
-	pending := a.pendingMsgs
-	a.pendingMsgs = nil
-	for _, msg := range pending {
+	a.lc.attachDone = true
+	deferred := a.lc.deferred
+	a.lc.deferred = nil
+	for _, msg := range deferred {
 		switch m := msg.(type) {
 		case *entity.EnterStateMachinePlayer:
 			a.handleEnterPlayer(ctx, m)
@@ -380,10 +384,10 @@ func (a *StateMachineActor) handleStart(ctx actor.Context) {
 }
 
 func (a *StateMachineActor) beginDetach(ctx actor.Context) {
-	if a.detaching {
+	if a.lc.detaching {
 		return
 	}
-	a.detaching = true
+	a.lc.detaching = true
 	a.timeoutVersion++
 	if a.timeoutCancel != nil {
 		a.timeoutCancel()
@@ -396,7 +400,7 @@ func (a *StateMachineActor) beginDetach(ctx actor.Context) {
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()
 	sm := a.StateMachine
-	a.pendingDetach = 0
+	a.lc.detachPending = 0
 	for _, m := range sm.MapList() {
 		if m == nil {
 			continue
@@ -409,10 +413,10 @@ func (a *StateMachineActor) beginDetach(ctx actor.Context) {
 		if home == nil {
 			continue
 		}
-		a.pendingDetach++
+		a.lc.detachPending++
 		root.Send(home, &DetachStateMachine{StateMachine: sm, ReplyTo: self, MapID: m.GetMapID()})
 	}
-	if a.pendingDetach == 0 {
+	if a.lc.detachPending == 0 {
 		a.finalizeStop()
 	}
 }
@@ -425,19 +429,19 @@ func (a *StateMachineActor) handleAttachAck(ctx actor.Context, msg *AttachStateM
 		a.abortCreate(ctx, fmt.Sprintf("attach to map %d failed", msg.MapID))
 		return
 	}
-	if a.pendingAttach > 0 {
-		a.pendingAttach--
+	if a.lc.attachPending > 0 {
+		a.lc.attachPending--
 	}
-	if a.pendingAttach == 0 && !a.detaching {
+	if a.lc.attachPending == 0 && !a.lc.detaching {
 		a.finishCreate(ctx)
 	}
 }
 
 func (a *StateMachineActor) handleDetachAck(_ actor.Context) {
-	if a.pendingDetach > 0 {
-		a.pendingDetach--
+	if a.lc.detachPending > 0 {
+		a.lc.detachPending--
 	}
-	if a.pendingDetach == 0 {
+	if a.lc.detachPending == 0 {
 		a.finalizeStop()
 	}
 }
