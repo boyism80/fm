@@ -33,6 +33,7 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
 	scriptPath := fmt.Sprintf("script/npc/%d.lua", npcID)
 	luaThread, err := luax.NewThread(root, scriptPath)
 	if err != nil {
+		ch.Listener.OnScriptError(ch, scriptPath, err)
 		return err
 	}
 	luax.SetConfiguration(luaThread, luax.Configuration{
@@ -45,6 +46,7 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
 		return nil, nil
 	}).OnError(func(err error) {
 		log.Printf("npc script on_click npc=%d: %v", npcID, err)
+		ch.Listener.OnScriptError(ch, scriptPath, err)
 		ch.ResetDialog()
 		ch.Listener.OnUnlockAction(ch)
 	})

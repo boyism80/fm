@@ -81,6 +81,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 			scriptPath := fmt.Sprintf("script/portal/%s.lua", scriptName)
 			thread, err := luax.NewThread(root, scriptPath)
 			if err != nil {
+				character.Listener.OnScriptError(character, scriptPath, err)
 				character.Listener.OnUnlockAction(character)
 				return fmt.Errorf("portal script thread: %w", err)
 			}
@@ -95,6 +96,7 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 				return nil, nil
 			}).OnError(func(err error) {
 				log.Printf("portal script %s failed: %v", scriptPath, err)
+				character.Listener.OnScriptError(character, scriptPath, err)
 				if character.GetDialog() == nil {
 					character.Listener.OnUnlockAction(character)
 				}

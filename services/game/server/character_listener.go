@@ -812,6 +812,13 @@ func (l *CharacterListenerImpl) OnUnlockAction(ch *entity.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnScriptError(ch *entity.Character, script string, err error) {
+	if ch.GetRole() != constant.RoleAdmin {
+		return
+	}
+	l.OnMessage(ch, constant.MsgPinkText, fmt.Sprintf("스크립트 오류 %s: %v", script, err))
+}
+
 func (l *CharacterListenerImpl) OnQuestStarted(ch *entity.Character, qp *entity.Quest, npcID uint32) {
 	if qp == nil || qp.Wz == nil {
 		return
