@@ -119,6 +119,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         accountId: number,
         characterId: number,
         characterName: string,
+        clientIp: string,
         now: string,
         ttlSeconds: number,
         gameToGameTransfer: boolean,
@@ -141,6 +142,7 @@ local ttl = tonumber(ARGV[5])
 local game_to_game_transfer = ARGV[6]
 local prev_channel_id = ARGV[7]
 local users_ttl = tonumber(ARGV[8])
+local client_ip = ARGV[9]
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
@@ -160,6 +162,7 @@ redis.call("HSET", account_key,
   "state", "${AS.ACCOUNT_SESSION_STATE_TRANSITION}",
   "character_id", character_id,
   "character_name", character_name,
+  "client_ip", client_ip,
   "game_to_game_transfer", game_to_game_transfer,
   "updated_at", now,
   "state_changed_at", now
@@ -180,7 +183,8 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
             String(ttlSeconds),
             gameToGameTransfer ? "1" : "0",
             String(prevCh),
-            String(usersTtl)
+            String(usersTtl),
+            clientIp
         )) as Array<number | string>;
     }
 
@@ -189,6 +193,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         accountId: number,
         characterId: number,
         channelId: number,
+        clientIp: string,
         now: string,
         ttlSeconds: number
     ) {
@@ -206,6 +211,7 @@ local channel_id = ARGV[4]
 local now = ARGV[5]
 local ttl = tonumber(ARGV[6])
 local users_ttl = tonumber(ARGV[7])
+local client_ip = ARGV[8]
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
@@ -218,6 +224,10 @@ local world_id = tonumber(redis.call("HGET", account_key, "world_id") or "0")
 local character_id = tonumber(redis.call("HGET", account_key, "character_id") or "0")
 if account_id ~= expected_account_id or world_id ~= expected_world_id or character_id ~= expected_character_id then
   return {0, ${SessionErrorCode.SESSION_UNKNOWN}}
+end
+local transition_ip = redis.call("HGET", account_key, "client_ip") or ""
+if client_ip == "" or transition_ip ~= client_ip then
+  return {0, ${SessionErrorCode.SESSION_CLIENT_IP_MISMATCH}}
 end
 
 redis.call("HSET", account_key,
@@ -244,7 +254,8 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
             String(channelId),
             String(now),
             String(ttlSeconds),
-            String(channelUsersTtl)
+            String(channelUsersTtl),
+            clientIp
         )) as Array<number | string>;
     }
 

@@ -36,6 +36,15 @@ func (c *BaseClient) GetConnection() net.Conn {
 	return c.conn
 }
 
+func (c *BaseClient) GetRemoteIP() string {
+	addr := c.conn.RemoteAddr().String()
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return addr
+	}
+	return host
+}
+
 func (c *BaseClient) GetSendEncryption() *crypt.Encryption {
 	return c.sendEncryption
 }

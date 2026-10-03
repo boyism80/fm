@@ -89,7 +89,7 @@ export class SessionService {
         return { ok: true };
     }
 
-    async beginTransition(worldId: number, accountId: number, characterId: number, characterName: string) {
+    async beginTransition(worldId: number, accountId: number, characterId: number, characterName: string, clientIp: string) {
         const account = await this.repo.getAccountSession(worldId, accountId);
         const gameToGameTransfer = account?.state === AccountSessionState.ACCOUNT_SESSION_STATE_GAME;
         const [ok, code] = this.atomicResultTuple(
@@ -98,6 +98,7 @@ export class SessionService {
                 accountId,
                 characterId,
                 characterName,
+                clientIp,
                 this.now(),
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
                 gameToGameTransfer,
@@ -113,7 +114,7 @@ export class SessionService {
         return { ok: true };
     }
 
-    async enterGame(worldId: number, accountId: number, characterId: number, channelId: number) {
+    async enterGame(worldId: number, accountId: number, characterId: number, channelId: number, clientIp: string) {
         const account = await this.repo.getAccountSession(worldId, accountId);
         const gameToGameTransfer = account?.gameToGameTransfer === true;
         const [ok, code] = this.atomicResultTuple(
@@ -122,6 +123,7 @@ export class SessionService {
                 accountId,
                 characterId,
                 channelId,
+                clientIp,
                 this.now(),
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME)
             )

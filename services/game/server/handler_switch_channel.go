@@ -109,6 +109,7 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			WorldId:     worldID,
 			AccountId:   accID,
 			CharacterId: charID,
+			ClientIp:    ctx.Client.GetRemoteIP(),
 		})
 	}, func(transReply *internal.BeginGameTransitionReply) error {
 		if transReply == nil || !transReply.GetOk() {

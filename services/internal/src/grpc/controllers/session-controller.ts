@@ -119,7 +119,7 @@ export class SessionGrpcController {
             if (row.accountId !== accountId) {
                 throw Object.assign(new Error(`account mismatch for character ${characterId}`), { code: "INVALID_PAYLOAD" });
             }
-            const transition = await this.sessionService.beginTransition(worldId, row.accountId, row.characterId, row.name);
+            const transition = await this.sessionService.beginTransition(worldId, row.accountId, row.characterId, row.name, call.request.clientIp);
             callback(null, {
                 ok: transition.ok,
                 errorCode: transition.code ?? SessionErrorCode.SESSION_UNKNOWN,
@@ -225,7 +225,7 @@ export class SessionGrpcController {
             };
 
             // Enter the game last: the game server treats an error reply as "did not enter the game".
-            const enter = await this.sessionService.enterGame(worldId, row.accountId, row.characterId, channelId);
+            const enter = await this.sessionService.enterGame(worldId, row.accountId, row.characterId, channelId, call.request.clientIp);
             if (!enter.ok) {
                 throw new Error(`enter game session failed: ${enter.code}`);
             }

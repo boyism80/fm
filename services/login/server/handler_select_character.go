@@ -71,6 +71,7 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 				WorldId:     worldId,
 				AccountId:   accountId,
 				CharacterId: req.CharacterId,
+				ClientIp:    ctx.Client.GetRemoteIP(),
 			})
 		}, func(reply *internal.BeginGameTransitionReply) error {
 			if !reply.GetOk() {

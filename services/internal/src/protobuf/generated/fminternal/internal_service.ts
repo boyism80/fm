@@ -66,6 +66,7 @@ export enum SessionErrorCode {
   SESSION_ALREADY_LOGGED_IN = 2,
   SESSION_NOT_FOUND = 3,
   SESSION_LOGOUT_FAILED = 4,
+  SESSION_CLIENT_IP_MISMATCH = 5,
   UNRECOGNIZED = -1,
 }
 
@@ -86,6 +87,9 @@ export function sessionErrorCodeFromJSON(object: any): SessionErrorCode {
     case 4:
     case "SESSION_LOGOUT_FAILED":
       return SessionErrorCode.SESSION_LOGOUT_FAILED;
+    case 5:
+    case "SESSION_CLIENT_IP_MISMATCH":
+      return SessionErrorCode.SESSION_CLIENT_IP_MISMATCH;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -105,6 +109,8 @@ export function sessionErrorCodeToJSON(object: SessionErrorCode): string {
       return "SESSION_NOT_FOUND";
     case SessionErrorCode.SESSION_LOGOUT_FAILED:
       return "SESSION_LOGOUT_FAILED";
+    case SessionErrorCode.SESSION_CLIENT_IP_MISMATCH:
+      return "SESSION_CLIENT_IP_MISMATCH";
     case SessionErrorCode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -944,6 +950,7 @@ export interface EnterGameRequest {
   worldId: number;
   characterId: number;
   channelId: number;
+  clientIp: string;
 }
 
 export interface CharacterPersisted {
@@ -1004,6 +1011,7 @@ export interface BeginGameTransitionRequest {
   worldId: number;
   accountId: number;
   characterId: number;
+  clientIp: string;
 }
 
 export interface BeginGameTransitionReply {
@@ -2805,7 +2813,7 @@ export const GetServerCatalogReply: MessageFns<GetServerCatalogReply> = {
 };
 
 function createBaseEnterGameRequest(): EnterGameRequest {
-  return { worldId: 0, characterId: 0, channelId: 0 };
+  return { worldId: 0, characterId: 0, channelId: 0, clientIp: "" };
 }
 
 export const EnterGameRequest: MessageFns<EnterGameRequest> = {
@@ -2818,6 +2826,9 @@ export const EnterGameRequest: MessageFns<EnterGameRequest> = {
     }
     if (message.channelId !== 0) {
       writer.uint32(24).uint32(message.channelId);
+    }
+    if (message.clientIp !== "") {
+      writer.uint32(34).string(message.clientIp);
     }
     return writer;
   },
@@ -2853,6 +2864,14 @@ export const EnterGameRequest: MessageFns<EnterGameRequest> = {
           message.channelId = reader.uint32();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.clientIp = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2879,6 +2898,11 @@ export const EnterGameRequest: MessageFns<EnterGameRequest> = {
         : isSet(object.channel_id)
         ? globalThis.Number(object.channel_id)
         : 0,
+      clientIp: isSet(object.clientIp)
+        ? globalThis.String(object.clientIp)
+        : isSet(object.client_ip)
+        ? globalThis.String(object.client_ip)
+        : "",
     };
   },
 
@@ -2893,6 +2917,9 @@ export const EnterGameRequest: MessageFns<EnterGameRequest> = {
     if (message.channelId !== 0) {
       obj.channelId = Math.round(message.channelId);
     }
+    if (message.clientIp !== "") {
+      obj.clientIp = message.clientIp;
+    }
     return obj;
   },
 
@@ -2904,6 +2931,7 @@ export const EnterGameRequest: MessageFns<EnterGameRequest> = {
     message.worldId = object.worldId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.channelId = object.channelId ?? 0;
+    message.clientIp = object.clientIp ?? "";
     return message;
   },
 };
@@ -3885,7 +3913,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
 };
 
 function createBaseBeginGameTransitionRequest(): BeginGameTransitionRequest {
-  return { worldId: 0, accountId: 0, characterId: 0 };
+  return { worldId: 0, accountId: 0, characterId: 0, clientIp: "" };
 }
 
 export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> = {
@@ -3898,6 +3926,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     }
     if (message.characterId !== 0) {
       writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.clientIp !== "") {
+      writer.uint32(34).string(message.clientIp);
     }
     return writer;
   },
@@ -3933,6 +3964,14 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
           message.characterId = reader.uint32();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.clientIp = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3959,6 +3998,11 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
         : isSet(object.character_id)
         ? globalThis.Number(object.character_id)
         : 0,
+      clientIp: isSet(object.clientIp)
+        ? globalThis.String(object.clientIp)
+        : isSet(object.client_ip)
+        ? globalThis.String(object.client_ip)
+        : "",
     };
   },
 
@@ -3973,6 +4017,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     if (message.characterId !== 0) {
       obj.characterId = Math.round(message.characterId);
     }
+    if (message.clientIp !== "") {
+      obj.clientIp = message.clientIp;
+    }
     return obj;
   },
 
@@ -3984,6 +4031,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     message.worldId = object.worldId ?? 0;
     message.accountId = object.accountId ?? 0;
     message.characterId = object.characterId ?? 0;
+    message.clientIp = object.clientIp ?? "";
     return message;
   },
 };

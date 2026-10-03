@@ -39,6 +39,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		WorldId:     worldId,
 		CharacterId: req.PlayerId,
 		ChannelId:   h.gs.config.ChannelId,
+		ClientIp:    ctx.Client.GetRemoteIP(),
 	}
 
 	if ctx.ActorContext == nil {

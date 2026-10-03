@@ -124,6 +124,7 @@ message EnterGameRequest {
   uint32 world_id = 1;
   uint32 character_id = 2;
   uint32 channel_id = 3;
+  string client_ip = 4;
 }
 
 message CharacterPersisted {
@@ -184,6 +185,7 @@ message BeginGameTransitionRequest {
   uint32 world_id = 1;
   uint32 account_id = 2;
   uint32 character_id = 3;
+  string client_ip = 4;
 }
 
 enum SessionErrorCode {
@@ -192,6 +194,7 @@ enum SessionErrorCode {
   SESSION_ALREADY_LOGGED_IN = 2;
   SESSION_NOT_FOUND = 3;
   SESSION_LOGOUT_FAILED = 4;
+  SESSION_CLIENT_IP_MISMATCH = 5;
 }
 
 message BeginGameTransitionReply {

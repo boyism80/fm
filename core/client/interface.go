@@ -11,6 +11,7 @@ type Client interface {
 	Send(packet types.Packet, policy types.SendPolicy) error
 	Close()
 	GetConnection() net.Conn
+	GetRemoteIP() string
 	GetSendEncryption() *crypt.Encryption
 	GetRecvEncryption() *crypt.Encryption
 }
