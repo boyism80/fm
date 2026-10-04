@@ -9,9 +9,11 @@ const migration: MigrationModule = {
             type: Sequelize.QueryTypes.SELECT,
         });
         const m = String((rows[0] as { m?: string | number })?.m ?? 0);
-        const isCalled = Number(m) > 0;
-        await queryInterface.sequelize.query("SELECT setval('party_id_seq', $1::bigint, $2)", {
-            bind: [m, isCalled],
+        if (Number(m) === 0) {
+            return;
+        }
+        await queryInterface.sequelize.query("SELECT setval('party_id_seq', $1::bigint, true)", {
+            bind: [m],
         });
     },
 
