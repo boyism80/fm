@@ -715,8 +715,7 @@ func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 	}
 	targetPortal := targetMap.FindPortalByName(portal.Wz.Target)
 	if targetPortal == nil || targetPortal.Wz == nil {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
+		return ch.Warp(ctx, targetMap, 0)
 	}
 	return ch.Warp(ctx, targetMap, targetPortal.Wz.ID)
 }
