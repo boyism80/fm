@@ -539,6 +539,9 @@ M.spawn_pickpocket_meso = function(me, skill, damages)
     if map == nil then
         return
     end
+    local buff = me:buff(BuffFlag.Pickpocket)
+    local effect = buff and buff:effect()
+    local prop = (effect and effect.prop) or 0
     for mob, hits in pairs(damages) do
         for _, amount in ipairs(hits) do
             if (amount or 0) <= 0 then
@@ -551,7 +554,7 @@ M.spawn_pickpocket_meso = function(me, skill, damages)
             if meso > maxmeso then
                 meso = maxmeso
             end
-            if math.random(100) >= 100 then
+            if prop < 100 and math.random(1, 100) > prop then
                 goto continue_hit
             end
             local x, y = mob:position()
