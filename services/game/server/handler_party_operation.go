@@ -10,6 +10,7 @@ import (
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
+	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
 )
 
@@ -85,6 +86,10 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 				if !reply.GetOk() {
 					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SLeave, int32(reply.GetErrorCode())), "")
 					log.Printf("PartyOperation(leave): failed character=%d code=%v", charID, reply.GetErrorCode())
+					return nil
+				}
+				if cur := ch.GetPartyID(); cur != nil && reply.PartyId != nil && *cur == *reply.PartyId {
+					ch.SetPartyID(nil)
 				}
 				return nil
 			},
@@ -239,6 +244,13 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 				if !reply.GetOk() {
 					ch.Listener.OnPartyStatusMessage(ch, constant.PartyStatusForInternalError(constant.PartyC2SExpel, int32(reply.GetErrorCode())), "")
 					log.Printf("PartyOperation(expel): failed requester=%d target=%d code=%v", charID, req.TargetCharacterID, reply.GetErrorCode())
+					return nil
+				}
+				if reply.PartyId != nil {
+					h.gs.EnsureSend(nil, req.TargetCharacterID, &g_actor.ClearPartyByPartyID{
+						CharacterID: req.TargetCharacterID,
+						PartyID:     *reply.PartyId,
+					})
 				}
 				return nil
 			},
