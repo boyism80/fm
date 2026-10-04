@@ -676,18 +676,8 @@ func (ch *Character) Relocate(spawnPoint uint8) error {
 	if !ok {
 		return fmt.Errorf("invalid spawn point %d", spawnPoint)
 	}
-	beforePosition := ch.Position
-	ch.Position = pos
 	ch.Stance = constant.StanceDefaultValue
-	for _, summon := range ch.Summons.All() {
-		if summon == nil || summon.Owner != ch {
-			continue
-		}
-		summonBefore := summon.Position
-		summon.Position = ch.Position
-		m.OnMoved(summon, summonBefore)
-	}
-	m.OnMoved(ch, beforePosition)
+	beforePosition := ch.moveTo(m, pos)
 	if ch.Listener != nil {
 		ch.Listener.OnFieldRelocate(ch, spawnPoint)
 		ch.Listener.OnPlayerMove(ch, beforePosition, []dto.MoveFragment{
@@ -702,6 +692,37 @@ func (ch *Character) Relocate(spawnPoint uint8) error {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 	}
 	return nil
+}
+
+func (ch *Character) EnterInnerPortal(portalName string, to types.Vector2[int16]) error {
+	m := ch.GetMap()
+	if m == nil {
+		return fmt.Errorf("not on a map")
+	}
+	portal := m.FindPortalByName(portalName)
+	if portal == nil || portal.Wz == nil {
+		return fmt.Errorf("portal %q not found", portalName)
+	}
+	if portal.Wz.Position.DistanceSq(ch.Position) > 22500 && ch.HasRoleAtLeast(constant.RoleAdmin) == false {
+		return fmt.Errorf("portal %q is too far", portalName)
+	}
+	ch.moveTo(m, to)
+	return nil
+}
+
+func (ch *Character) moveTo(m *Map, pos types.Vector2[int16]) types.Vector2[int16] {
+	before := ch.Position
+	ch.Position = pos
+	for _, summon := range ch.Summons.All() {
+		if summon == nil || summon.Owner != ch {
+			continue
+		}
+		summonBefore := summon.Position
+		summon.Position = pos
+		m.OnMoved(summon, summonBefore)
+	}
+	m.OnMoved(ch, before)
+	return before
 }
 
 func (ch *Character) Send(p types.Packet, policy types.SendPolicy) error {
