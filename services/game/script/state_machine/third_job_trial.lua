@@ -60,10 +60,7 @@ return {
 	end,
 
 	on_scheduled_timeout = function(sm)
-		local crack = tonumber(sm:get_property("crack"))
-		for _, player in ipairs(sm:players()) do
-			player:map(crack)
-		end
+		sm:finish(tonumber(sm:get_property("crack")))
 	end,
 
 	on_finish = function(sm)
