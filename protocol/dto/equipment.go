@@ -95,7 +95,7 @@ func (e *Equipment) Serialize(writer *stream.StreamWriter, opt ItemSerializeOpti
 	if e.UniqueId == nil {
 		writer.Write64(-1)
 	}
-	writer.WriteDateTime(util.TimeZero)
+	writer.WriteU64(util.FileTimeZero)
 	writer.Write32(-1)
 }
 

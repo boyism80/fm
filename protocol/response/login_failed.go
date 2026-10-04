@@ -42,7 +42,7 @@ func (a *LoginFailed) Serialize(writer *stream.StreamWriter) error {
 
 	switch a.Reason {
 	case LoginFailedReasonPasswordChangeRequired:
-		writer.WriteDateTime(util.TimeZero)
+		writer.WriteU64(util.FileTimeZero)
 
 	case LoginFailedReasonAlreadyLoggedIn:
 		writer.Write([]byte{0x00, 0x00, 0x00, 0x00, 0x00})
