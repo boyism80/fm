@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -662,6 +663,57 @@ func (ch *Character) Warp(ctx actor.Context, targetMap *Map, spawnPoint uint8) e
 		return fmt.Errorf("no game world")
 	}
 	return ch.GameWorld.GetMapSystem().Warp(ctx, ch, targetMap, spawnPoint, nil)
+}
+
+func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
+	m := ch.GetMap()
+	if m == nil {
+		return fmt.Errorf("not on a map")
+	}
+
+	if scriptName := portal.Script(); scriptName != "" {
+		root := m.GetLuaRoot()
+		if root == nil {
+			ch.Listener.OnUnlockAction(ch)
+			return fmt.Errorf("root lua state not found")
+		}
+		scriptPath := fmt.Sprintf("script/portal/%s.lua", scriptName)
+		thread, err := luax.NewThread(root, scriptPath)
+		if err != nil {
+			ch.Listener.OnScriptError(ch, scriptPath, err)
+			ch.Listener.OnUnlockAction(ch)
+			return fmt.Errorf("portal script thread: %w", err)
+		}
+		luax.SetConfiguration(thread, luax.Configuration{
+			ActorContext: ctx,
+			ActorPID:     m.LogicActorPID(),
+		})
+		luax.CallAsync(ctx, root, thread, "on_enter", ch, portal).Then(func(_ interface{}) (interface{}, error) {
+			if ch.GetDialog() == nil {
+				ch.Listener.OnUnlockAction(ch)
+			}
+			return nil, nil
+		}).OnError(func(err error) {
+			log.Printf("portal script %s failed: %v", scriptPath, err)
+			ch.Listener.OnScriptError(ch, scriptPath, err)
+			if ch.GetDialog() == nil {
+				ch.Listener.OnUnlockAction(ch)
+			}
+		})
+		return nil
+	}
+
+	targetMap := ch.GameWorld.GetMapSystem().Get(uint32(portal.Wz.TargetMapId))
+	if targetMap == nil {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+	targetPortal := targetMap.FindPortalByName(portal.Wz.Target)
+	if targetPortal == nil || targetPortal.Wz == nil {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+	return ch.Warp(ctx, targetMap, targetPortal.Wz.ID)
 }
 
 func (ch *Character) Relocate(spawnPoint uint8) error {
