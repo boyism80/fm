@@ -137,29 +137,6 @@ export class DistributedLock {
         }
     }
 
-    async acquireAll(client: Redis, lockKeys: string[], options: DistributedLockOptions = {}): Promise<DistributedLockMultiGuard> {
-        const uniqueSorted = [...new Set(lockKeys)].sort();
-        if (uniqueSorted.length === 0) {
-            return new DistributedLockMultiGuard([]);
-        }
-
-        const guards: DistributedLockGuard[] = [];
-        try {
-            await Promise.all(
-                uniqueSorted.map(async (lockKey) => {
-                    const guard = await this.acquire(client, lockKey, options);
-                    guards.push(guard);
-                })
-            );
-            return new DistributedLockMultiGuard(guards);
-        } catch (err) {
-            for (let i = guards.length - 1; i >= 0; i--) {
-                await guards[i]!.release();
-            }
-            throw err;
-        }
-    }
-
     private static sleep(ms: number): Promise<void> {
         return new Promise((resolve) => {
             setTimeout(resolve, ms);
