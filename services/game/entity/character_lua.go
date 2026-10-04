@@ -1719,6 +1719,26 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"player_mode": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LBool(ch.GetPlayerMode()))
+				return 1
+			case 2:
+				ch.SetPlayerMode(L.CheckBool(2))
+				return 0
+			default:
+				L.ArgError(2, "player_mode() requires 0 or 1 arguments")
+				return 0
+			}
+		},
 		"open_npc": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

@@ -1065,6 +1065,16 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["플레이어모드"] = {
+		privilege = ROLE.Admin,
+		usage = "- 컨텐츠 판정을 일반 플레이어처럼 받는 상태 토글",
+		command = function(me, args)
+			me:player_mode(not me:player_mode())
+			local status = me:player_mode() and "enabled" or "disabled"
+			me:message("플레이어 모드: " .. status)
+			return true
+		end,
+	},
 	["직업바꾸기"] = {
 		privilege = ROLE.Admin,
 		usage = "<직업코드> - 직업 변경",

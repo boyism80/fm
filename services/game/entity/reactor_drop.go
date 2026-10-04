@@ -32,7 +32,7 @@ func (r *Reactor) DropItems() {
 
 	trigger := r.GetTrigger()
 	mesoRate := float32(r.GameWorld.GetMesoRate())
-	gmDrop := trigger != nil && trigger.HasRoleAtLeast(constant.RoleAdmin)
+	gmDrop := trigger != nil && trigger.HasRoleAtLeast(constant.RoleAdmin) && trigger.GetPlayerMode() == false
 	spawns := make([]reactorDropSpawn, 0, len(reactorDrops))
 
 	for _, entry := range reactorDrops {

@@ -79,6 +79,7 @@ type Character struct {
 	partySearchConfig *PartySearchConfig
 	buddyList         *BuddyList
 	InstantKill       bool
+	PlayerMode        bool
 	stateMachine      *StateMachine
 	carnivalTeam      *CarnivalTeam
 	savedLocations    map[string]uint32
@@ -419,6 +420,10 @@ func (ch *Character) SetInvincible(b bool) { ch.Invincible = b }
 func (ch *Character) GetInstantKill() bool { return ch.InstantKill }
 
 func (ch *Character) SetInstantKill(b bool) { ch.InstantKill = b }
+
+func (ch *Character) GetPlayerMode() bool { return ch.PlayerMode }
+
+func (ch *Character) SetPlayerMode(b bool) { ch.PlayerMode = b }
 
 func (ch *Character) AddHp(amount int) {
 	n := int(ch.GetHp()) + amount

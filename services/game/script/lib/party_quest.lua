@@ -143,7 +143,7 @@ function M.is_gm(me)
 	if me == nil then
 		return false
 	end
-	return me:role() == ROLE.Admin
+	return me:role() == ROLE.Admin and me:player_mode() == false
 end
 
 function M.is_leader(me)
