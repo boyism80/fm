@@ -39,7 +39,7 @@ func (r *Reactor) DropItems() {
 		if entry.QuestID > 0 && !questInProgress(trigger, entry.QuestID) {
 			continue
 		}
-		if !gmDrop && entry.Prob > 0 && rand.Float32() > entry.Prob {
+		if !gmDrop && rand.Float32() > entry.Prob {
 			continue
 		}
 
