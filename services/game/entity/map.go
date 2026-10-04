@@ -689,14 +689,22 @@ func (m *Map) RemoveDoor(oid uint32, animated bool) {
 }
 
 func (m *Map) RemoveDoorByKey(key DoorKey, animated bool, notifyCounterpart bool) {
+	door := m.FindDoorByKey(key)
+	if door == nil {
+		return
+	}
+	m.removeDoorInternal(door.OID, animated, notifyCounterpart)
+}
+
+func (m *Map) FindDoorByKey(key DoorKey) *Door {
 	for _, object := range m.GetObjects(constant.ObjectTypeDoor) {
 		door, ok := object.(*Door)
 		if ok == false || door.OID == 0 || door.Key != key {
 			continue
 		}
-		m.removeDoorInternal(door.OID, animated, notifyCounterpart)
-		return
+		return door
 	}
+	return nil
 }
 
 func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterpart bool) {

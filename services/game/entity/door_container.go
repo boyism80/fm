@@ -113,5 +113,6 @@ func (dc *DoorContainer) SetPartyID(partyID *uint32) {
 		if cast.door != nil {
 			cast.door.PartyID = partyID
 		}
+		dc.owner.GameWorld.GetMapSystem().SetDoorPartyID(cast.town, cast.key, partyID)
 	}
 }

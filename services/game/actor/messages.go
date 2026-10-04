@@ -43,6 +43,12 @@ type DespawnDoor struct {
 	NotifyCounterpart bool
 }
 
+type SetDoorPartyID struct {
+	Map     *entity.Map
+	Key     entity.DoorKey
+	PartyID *uint32
+}
+
 type ResumeLua struct {
 	Root   *lua.LState
 	Thread *lua.LState

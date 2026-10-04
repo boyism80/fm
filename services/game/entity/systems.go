@@ -19,6 +19,7 @@ type MapSystem interface {
 	Warp(ctx actor.Context, character *Character, targetMap *Map, spawnPoint uint8, onEnter func(actor.Context)) error
 	CreateReturnDoor(ch *Character, key DoorKey, skillID constant.SkillID) *Map
 	DespawnDoor(m *Map, key DoorKey, animated bool, notifyCounterpart bool)
+	SetDoorPartyID(m *Map, key DoorKey, partyID *uint32)
 	Reset(L *lua.LState, mapInstance *Map, actorCtx actor.Context) int
 	Respawn(L *lua.LState, mapInstance *Map, actorCtx actor.Context, includeNegativeMobTime bool) int
 	RunScript(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int

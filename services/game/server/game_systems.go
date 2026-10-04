@@ -526,6 +526,21 @@ func (s mapSystem) DespawnDoor(m *entity.Map, key entity.DoorKey, animated bool,
 	})
 }
 
+func (s mapSystem) SetDoorPartyID(m *entity.Map, key entity.DoorKey, partyID *uint32) {
+	if m == nil {
+		return
+	}
+	pid := m.LogicActorPID()
+	if pid == nil {
+		return
+	}
+	s.gs.GetRootContext().Send(pid, &g_actor.SetDoorPartyID{
+		Map:     m,
+		Key:     key,
+		PartyID: partyID,
+	})
+}
+
 func (s schedulerSystem) RunObjectTimer(pid *actor.PID, obj entity.Object, key string) {
 	if s.gs == nil || pid == nil || obj == nil || key == "" {
 		return
