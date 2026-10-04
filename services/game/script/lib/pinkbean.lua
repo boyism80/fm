@@ -1,5 +1,7 @@
 local M = {}
 
+local SPONGE_DIE_MS = 4380
+
 function M.mobs_by_id(map)
 	local by_id = {}
 	if map == nil then
@@ -15,6 +17,7 @@ function M.mobs_by_id(map)
 end
 
 function M.advance_sponge(map, x, y, next_sponge_id, stages)
+	sleep(SPONGE_DIE_MS)
 	local mobs = M.mobs_by_id(map)
 	local markers = {}
 	for _, stage in ipairs(stages) do
