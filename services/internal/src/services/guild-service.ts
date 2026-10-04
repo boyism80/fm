@@ -19,6 +19,7 @@ import type { GuildModel } from "../repos/guild-repository";
 import type { GuildMemberModel } from "../repos/guild-member-repository";
 import { RabbitMQService } from "./rabbitmq-service";
 import { DistributedLockService } from "./distributed-lock-service";
+import { redisCacheKey } from "../redis-cache-key";
 import {
     DEFAULT_GUILD_LOGO,
     DEFAULT_GUILD_RANK_TITLES,
@@ -64,6 +65,7 @@ const GUILD_CAPACITY_EXTENDED_MAX = 200;
 const GUILD_CAPACITY_EXTENDED_GP_COST = 2000;
 const GUILD_GP_MAX = 2147483647;
 const GUILD_RANKING_SIZE = 50;
+const GUILD_RANKING_TTL_SEC = 60;
 
 const AMQ_DIRECT_EXCHANGE = "amq.direct";
 
@@ -1269,11 +1271,19 @@ export class GuildService {
         return true;
     }
 
-    // TODO: Move to a Redis ZSET once its rebuild and consistency with concurrent GP writes are settled; this scans every data shard per request.
     async getGuildRanking(worldId: number): Promise<GuildRankingEntryResult[]> {
         this.assertWorld(worldId);
+        const { client } = this.ctx.getRedisGlobalAccess(worldId);
+        const key = redisCacheKey(`w${worldId}:guild-ranking`);
+        const cached = await client.get(key);
+        if (cached != null) {
+            return JSON.parse(cached) as GuildRankingEntryResult[];
+        }
+
         const guilds = await this.guildRepo.getTopByGP(worldId, GUILD_RANKING_SIZE);
-        return guilds.map((guild) => ({ guildId: guild.guildId, name: guild.name, gp: guild.gp, logo: guild.logo }));
+        const entries = guilds.map((guild) => ({ guildId: guild.guildId, name: guild.name, gp: guild.gp, logo: guild.logo }));
+        await client.set(key, JSON.stringify(entries), "EX", GUILD_RANKING_TTL_SEC);
+        return entries;
     }
 
     async disbandGuild(worldId: number, characterId: number): Promise<DisbandGuildResult> {
