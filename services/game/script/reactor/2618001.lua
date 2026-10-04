@@ -16,10 +16,7 @@ return {
 		return true
 	end,
 
-	on_reactor = function(reactor, item)
-		if item ~= nil then
-			return
-		end
+	on_reactor = function(reactor)
 		local map = reactor:map()
 		if map == nil then
 			return

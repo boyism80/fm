@@ -35,18 +35,18 @@ func (r *Reactor) EventType() constant.ReactorEventType {
 
 func (r *Reactor) ReactItemID() int {
 	event := r.currentEvent()
-	if event == nil {
+	if event == nil || len(event.Items) == 0 {
 		return 0
 	}
-	return event.ItemID
+	return event.Items[0].ID
 }
 
 func (r *Reactor) ReactItemQuantity() int {
 	event := r.currentEvent()
-	if event == nil || event.ItemQuantity <= 0 {
+	if event == nil || len(event.Items) == 0 {
 		return 1
 	}
-	return event.ItemQuantity
+	return event.Items[0].Quantity
 }
 
 func (r *Reactor) ContainsPoint(point types.Point[int16]) bool {
@@ -80,46 +80,42 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	if fp == nil {
 		return false
 	}
-	if !r.matchesItemDrop(item) {
-		return false
-	}
-	if !r.ContainsPoint(fp.Position) {
+	if r.ContainsPoint(fp.Position) == false {
 		return false
 	}
 	if r.TimerActive {
 		return false
 	}
+	if r.matchesItemDrop(item) == false {
+		return false
+	}
 
 	itemOID := fp.OID
+	itemID := item.GetModel().GetID()
 	return r.ScheduleItemActivation(constant.ItemReactorActivateDelay, func() {
 		mapInstance := r.GetMap()
 		if mapInstance == nil || mapInstance.GetItem(itemOID) == nil {
 			return
 		}
 		_ = mapInstance.RemoveItem(itemOID, constant.RemoveItemTypeExpired, 0)
+		r.ActivatedItemID = itemID
 		r.Hit(owner, constant.ReactorHitAirLeft, 0)
 		r.ScheduleResetState(r.respawnDelay())
 	})
 }
 
 func (r *Reactor) matchesItemDrop(item Item) bool {
-	hook := "on_reactor"
-	result, err := r.callReactorScript(hook, false, r, item)
-	if err != nil || result == nil || result == lua.LNil {
-		event := r.currentEvent()
-		if event == nil || event.Type != constant.ReactorEventTypeItem {
-			return false
-		}
-		model := item.GetModel()
-		if model == nil {
-			return false
-		}
-		if model.GetID() != uint32(event.ItemID) {
-			return false
-		}
-		return int(item.GetCount()) == r.ReactItemQuantity()
+	event := r.currentEvent()
+	model := item.GetModel()
+	if event == nil || model == nil {
+		return false
 	}
-	return lua.LVAsBool(result)
+	for _, reactItem := range event.Items {
+		if model.GetID() == uint32(reactItem.ID) && int(item.GetCount()) == reactItem.Quantity {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Reactor) callReactorScript(hook string, yield bool, args ...interface{}) (lua.LValue, error) {

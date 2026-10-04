@@ -5,10 +5,7 @@ local MOON_BUNNY_ID = 9300061
 local SPAWN_POS = { -183, -187 }
 
 return {
-	on_reactor = function(reactor, item)
-		if item ~= nil then
-			return
-		end
+	on_reactor = function(reactor)
 		local map = reactor:map()
 		if map == nil then
 			return

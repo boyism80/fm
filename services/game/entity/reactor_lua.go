@@ -90,6 +90,20 @@ func (r *Reactor) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(reactor.ReactItemQuantity()))
 			return 1
 		},
+		"activated_item_id": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			reactor, ok := ud.Value.(*Reactor)
+			if !ok || reactor == nil {
+				L.ArgError(1, "Reactor expected")
+				return 0
+			}
+			if L.GetTop() != 1 {
+				L.ArgError(2, "activated_item_id() is read-only")
+				return 0
+			}
+			L.Push(lua.LNumber(reactor.ActivatedItemID))
+			return 1
+		},
 		"hit": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			reactor, ok := ud.Value.(*Reactor)

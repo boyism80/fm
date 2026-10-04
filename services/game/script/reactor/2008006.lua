@@ -26,32 +26,13 @@ local function find_sm(map)
 end
 
 return {
-	on_reactor = function(reactor, item)
-		if item ~= nil then
-			local wz = item:wz()
-			if wz == nil then
-				return false
-			end
-			local item_id = wz:id()
-			if MUSIC[item_id] == nil then
-				return false
-			end
-			if item:count() ~= reactor:react_item_quantity() then
-				return false
-			end
-			local sm = find_sm(reactor:map())
-			if sm ~= nil then
-				sm:set_property("stage3_item", tostring(item_id))
-			end
-			return true
-		end
+	on_reactor = function(reactor)
 		local map = reactor:map()
 		local sm = find_sm(map)
 		if sm == nil or map == nil then
 			return
 		end
-		local item_id = tonumber(sm:get_property("stage3_item")) or 0
-		local info = MUSIC[item_id]
+		local info = MUSIC[reactor:activated_item_id()]
 		if info == nil then
 			return
 		end

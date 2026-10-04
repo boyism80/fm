@@ -1,10 +1,7 @@
 -- Reactor name (Reactor.wz/2201004.img.xml): 균열조각을 떨어뜨리면 시간의 구를 소환한다.
 
 return {
-	on_reactor = function(reactor, item)
-		if item ~= nil then
-			return
-		end
+	on_reactor = function(reactor)
 		local map = reactor:map()
 		if map == nil then
 			return

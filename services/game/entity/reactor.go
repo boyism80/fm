@@ -15,6 +15,7 @@ type Reactor struct {
 	State              byte
 	TimerActive        bool
 	TriggerCharacterID uint32
+	ActivatedItemID    uint32
 }
 
 func (r *Reactor) GetTrigger() *Character {

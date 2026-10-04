@@ -21,12 +21,16 @@ type ReactorEvent struct {
 	Type         constant.ReactorEventType
 	NextState    byte
 	TimeOut      int
-	ItemID       int
-	ItemQuantity int
+	Items        []ReactorItem
 	LT           types.Vector2[int32]
 	RB           types.Vector2[int32]
 	HasLT        bool
 	HasRB        bool
 	TouchFlag    int
 	HasClickArea bool
+}
+
+type ReactorItem struct {
+	ID       int
+	Quantity int
 }

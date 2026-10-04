@@ -561,12 +561,16 @@ func exportReactor(r *wz.Reactor) Reactor {
 		if event == nil {
 			continue
 		}
+		var reactItem wz.ReactorItem
+		if len(event.Items) > 0 {
+			reactItem = event.Items[0]
+		}
 		states[stateID] = &ReactorEvent{
 			Type:         int(event.Type),
 			NextState:    event.NextState,
 			TimeOut:      event.TimeOut,
-			ItemID:       event.ItemID,
-			ItemQuantity: event.ItemQuantity,
+			ItemID:       reactItem.ID,
+			ItemQuantity: reactItem.Quantity,
 			LTX:          event.LT.X,
 			LTY:          event.LT.Y,
 			RBX:          event.RB.X,

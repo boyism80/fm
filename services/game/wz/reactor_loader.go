@@ -95,11 +95,25 @@ func parseReactorEvent(eventNode *node, event0 *node) *ReactorEvent {
 		TouchFlag: nodeInt(event0, "2", 0),
 	}
 
-	if itemID, ok := nodeIntOptional(event0, "0"); ok {
-		event.ItemID = itemID
-	}
-	if itemQty, ok := nodeIntOptional(event0, "1"); ok {
-		event.ItemQuantity = itemQty
+	for _, child := range eventNode.Children {
+		if nodeInt(&child, "type", 0) != int(constant.ReactorEventTypeItem) {
+			continue
+		}
+		itemID, ok := nodeIntOptional(&child, "0")
+		for _, f := range child.Strings {
+			if f.Name == "0" {
+				value, err := strconv.Atoi(f.Value)
+				itemID, ok = value, err == nil
+			}
+		}
+		if ok == false {
+			continue
+		}
+		quantity, _ := nodeIntOptional(&child, "1")
+		if quantity <= 0 {
+			quantity = 1
+		}
+		event.Items = append(event.Items, ReactorItem{ID: itemID, Quantity: quantity})
 	}
 
 	if lt, ok := parsePointFromNode(event0, "lt"); ok {
