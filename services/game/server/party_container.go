@@ -30,6 +30,7 @@ type PartyContainer struct {
 	mu             sync.Mutex
 	revisions      map[uint32]uint64
 	parties        map[uint32]*entity.Party
+	memberUpdates  map[uint32]*internal.UpdatePartyMemberRequest
 }
 
 func NewPartyContainer(gs *GameServer, worldID uint32, ic internal.InternalClient) *PartyContainer {
@@ -39,6 +40,7 @@ func NewPartyContainer(gs *GameServer, worldID uint32, ic internal.InternalClien
 		internalClient: ic,
 		revisions:      make(map[uint32]uint64),
 		parties:        make(map[uint32]*entity.Party),
+		memberUpdates:  make(map[uint32]*internal.UpdatePartyMemberRequest),
 	}
 }
 

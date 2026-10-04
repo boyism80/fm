@@ -24,12 +24,38 @@ func (s partySystem) UpdateMemberAsync(ctx actor.Context, ch *entity.Character) 
 		return p
 	}
 	req := &internal.UpdatePartyMemberRequest{Member: mm}
-	cid := ch.GetID()
+
+	pc := s.gs.party
+	pc.mu.Lock()
+	if _, sending := pc.memberUpdates[ch.GetID()]; sending {
+		pc.memberUpdates[ch.GetID()] = req
+		pc.mu.Unlock()
+		return p
+	}
+	pc.memberUpdates[ch.GetID()] = nil
+	pc.mu.Unlock()
+	return pc.sendMemberUpdate(p, req)
+}
+
+func (pc *PartyContainer) sendMemberUpdate(p *async.Promise, req *internal.UpdatePartyMemberRequest) *async.Promise {
+	cid := req.Member.GetCharacterId()
 	p.OnError(func(err error) {
 		log.Printf("UpdatePartyMember async char %d: %v", cid, err)
 	})
+	p.Finally(func() {
+		pc.mu.Lock()
+		next := pc.memberUpdates[cid]
+		if next == nil {
+			delete(pc.memberUpdates, cid)
+			pc.mu.Unlock()
+			return
+		}
+		pc.memberUpdates[cid] = nil
+		pc.mu.Unlock()
+		pc.sendMemberUpdate(async.NewPromise(nil, core.InternalRPCPerStepTimeout), next)
+	})
 	async.ThenRPC(p, func(c context.Context) (*internal.UpdatePartyMemberReply, error) {
-		return s.gs.internalClient.UpdatePartyMember(c, req)
+		return pc.internalClient.UpdatePartyMember(c, req)
 	}, func(*internal.UpdatePartyMemberReply) error {
 		return nil
 	})

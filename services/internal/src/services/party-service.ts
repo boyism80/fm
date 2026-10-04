@@ -266,11 +266,6 @@ export class PartyService {
         this.assertUInt16(memberClassId, "class_id");
         const doorJson = this.doorJsonFromPayload(member.door);
 
-        await using _characterRealtimeLock = await this.distributedLockService.acquireWorldDataLock(
-            worldId,
-            `character_realtime:${characterId}`,
-        );
-
         const lockedState = await this.characterRealtimeStateRepo.get(worldId, characterId);
         if (lockedState?.partyId == null) {
             return { ok: false, code: messages.PartyErrorCode.NOT_IN_PARTY };
