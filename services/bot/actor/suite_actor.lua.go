@@ -3,6 +3,7 @@ package actor
 import (
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -247,6 +248,51 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(pos.X))
 			L.Push(lua.LNumber(pos.Y))
 			return 2
+		},
+		"areas": func(L *lua.LState) int {
+			t := L.NewTable()
+			if m, ok := a.wz.Maps[a.checkBot(L).Map]; ok {
+				for _, r := range m.Areas {
+					area := L.NewTable()
+					area.RawSetString("x", lua.LNumber((int(r.Left)+int(r.Right))/2))
+					area.RawSetString("y", lua.LNumber((int(r.Top)+int(r.Bottom))/2))
+					t.Append(area)
+				}
+			}
+			L.Push(t)
+			return 1
+		},
+		"npc_position": func(L *lua.LState) int {
+			templateID := uint32(L.CheckInt(2))
+			if m, ok := a.wz.Maps[a.checkBot(L).Map]; ok {
+				for _, spawn := range m.NpcSpawns {
+					if spawn.BaseSpawn != nil && spawn.ID == templateID {
+						L.Push(lua.LNumber(spawn.Position.X))
+						L.Push(lua.LNumber(spawn.Position.Y))
+						return 2
+					}
+				}
+			}
+			L.Push(lua.LNil)
+			return 1
+		},
+		"mob_spots": func(L *lua.LState) int {
+			t := L.NewTable()
+			if m, ok := a.wz.Maps[a.checkBot(L).Map]; ok {
+				for _, key := range slices.Sorted(maps.Keys(m.MobSpawns)) {
+					spawn := m.MobSpawns[key]
+					if spawn.BaseSpawn == nil {
+						continue
+					}
+					spot := L.NewTable()
+					spot.RawSetString("id", lua.LNumber(spawn.ID))
+					spot.RawSetString("x", lua.LNumber(spawn.Position.X))
+					spot.RawSetString("y", lua.LNumber(spawn.Position.Y))
+					t.Append(spot)
+				}
+			}
+			L.Push(t)
+			return 1
 		},
 		"move": func(L *lua.LState) int {
 			b := a.checkBot(L)

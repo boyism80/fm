@@ -28,4 +28,7 @@ func (p *EnvironmentChange) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *EnvironmentChange) Deserialize(*stream.StreamReader) {}
+func (p *EnvironmentChange) Deserialize(reader *stream.StreamReader) {
+	p.Mode = EnvironmentChangeMode(reader.ReadU8())
+	p.Env = reader.ReadStr16()
+}
