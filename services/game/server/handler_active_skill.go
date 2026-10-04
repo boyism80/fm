@@ -79,6 +79,11 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
+	if constant.SkillID(req.SkillID) == constant.SkillMysticDoor && mapInstance.Wz.BlocksMysticDoor() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+
 	root := mapInstance.GetLuaRoot()
 	if root == nil {
 		log.Printf("No lua root state for map %d", mapInstance.GetMapID())

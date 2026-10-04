@@ -82,6 +82,10 @@ func (m *Map) BlocksPotionUse() bool {
 	return m != nil && m.FieldLimit&0x400 != 0
 }
 
+func (m *Map) BlocksMysticDoor() bool {
+	return m != nil && m.FieldLimit&0x08 != 0
+}
+
 // The client field of these types reads one extra team byte at the end of the spawn player packet.
 func (m *Map) HasTeam() bool {
 	if m == nil {
