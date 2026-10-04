@@ -25,7 +25,7 @@ var (
 )
 
 func init() {
-	lua.MaxArrayIndex = 1 << 16
+	lua.MaxArrayIndex = 1 << 12
 }
 
 func SetAlwaysReload(enabled bool) {
