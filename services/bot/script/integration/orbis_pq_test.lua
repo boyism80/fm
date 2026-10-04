@@ -228,7 +228,7 @@ end
 
 test_suite {
 	name = "Party Quest: 오르비스 PQ",
-	bot_count = 4,
+	bot_count = 6,
 
 	on_initialize = function(ctx)
 		for i = 0, ctx:bot_count() - 1 do
@@ -381,7 +381,7 @@ test_suite {
 			if leader == false then
 				return false
 			end
-			for i = 1, 3 do
+			for i = 1, ctx:bot_count() - 1 do
 				if enter_portal(ctx, ctx:bot(i), "in03", SEALED) == false then
 					return false
 				end
@@ -391,9 +391,9 @@ test_suite {
 				return ctx:fail("봉인된 방 발판 정보가 없음")
 			end
 			local candidates = {}
-			for a = 0, 3 do
-				for b = 0, 3 - a do
-					candidates[#candidates + 1] = { a, b, 3 - a - b }
+			for a = 0, 5 do
+				for b = 0, 5 - a do
+					candidates[#candidates + 1] = { a, b, 5 - a - b }
 				end
 			end
 			local oid = pq.npc(ctx, leader, GUIDE)

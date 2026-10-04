@@ -3,7 +3,7 @@
 local pq = require("script/lib/party_quest")
 
 local GROUP_NAME = "orbis_party_quest"
-local MIN_PARTY_SIZE = 4
+local MIN_PARTY_SIZE = 6
 local MIN_LEVEL = 51
 local SCALE_LEVEL = 70
 local FEATHER = 4001158
@@ -48,7 +48,7 @@ local function try_start(me, npc)
 		end
 	end
 	if not ok or (in_map ~= MIN_PARTY_SIZE and not has_gm) then
-		me:dialog(npc, "파티 요구 조건이 맞지 않는 것 같은데? 파티는 #r레벨 51 이상의 파티원으로만 이루어진 4명의 파티#k만 입장이 가능해. 다시 한번 확인해 봐.")
+		me:dialog(npc, "파티 요구 조건이 맞지 않는 것 같은데? 파티는 #r레벨 51 이상의 파티원으로만 이루어진 6명의 파티#k만 입장이 가능해. 다시 한번 확인해 봐.")
 		return
 	end
 	local group = state_machine(GROUP_NAME)
