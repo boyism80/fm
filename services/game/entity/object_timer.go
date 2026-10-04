@@ -129,7 +129,7 @@ func (obj *ObjectCore) ResumeTimers(pid *actor.PID) {
 			continue
 		}
 		duration := entry.Remaining
-		if duration <= 0 {
+		if duration <= 0 && entry.Repeat {
 			duration = entry.Interval
 		}
 		entry.Remaining = 0
