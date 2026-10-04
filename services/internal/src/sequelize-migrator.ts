@@ -7,6 +7,8 @@ import type { MigrationModule } from "./sequelize-migration";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const migrationLockKey = 724900131;
+
 interface MigrationEntry {
     canonicalName: string;
     migrationPath: string;
@@ -14,13 +16,6 @@ interface MigrationEntry {
 
 function getDatabaseUrl(): string {
     return process.env.DATABASE_URL || "postgres://fm:admin@127.0.0.1:5432/fm";
-}
-
-function getDialectOptions(): Record<string, unknown> {
-    if (process.env.PGSSL !== "1") {
-        return {};
-    }
-    return { ssl: { require: true, rejectUnauthorized: false } };
 }
 
 function getMigrationsDir(): string {
@@ -67,65 +62,95 @@ async function loadMigrationModule(migrationPath: string): Promise<MigrationModu
     return migration as MigrationModule;
 }
 
-export async function runMigrate(): Promise<void> {
-    const sequelize = new Sequelize(getDatabaseUrl(), {
+export function connectMigrationDatabase(databaseUrl: string, ssl: boolean): Sequelize {
+    return new Sequelize(databaseUrl, {
         dialect: "postgres",
         logging: false,
-        dialectOptions: getDialectOptions(),
+        dialectOptions: ssl ? { ssl: { require: true, rejectUnauthorized: false } } : {},
+        pool: { max: 1, min: 1, idle: 60000 },
     });
+}
 
+async function withMigrationLock(sequelize: Sequelize, work: () => Promise<void>): Promise<void> {
+    await sequelize.query("SELECT pg_advisory_lock($1)", { bind: [migrationLockKey] });
     try {
         await ensureSequelizeMeta(sequelize);
+        await work();
+    } finally {
+        await sequelize.query("SELECT pg_advisory_unlock($1)", { bind: [migrationLockKey] });
+    }
+}
+
+async function inTransaction(sequelize: Sequelize, work: () => Promise<void>): Promise<void> {
+    await sequelize.query("BEGIN");
+    try {
+        await work();
+        await sequelize.query("COMMIT");
+    } catch (error) {
+        await sequelize.query("ROLLBACK");
+        throw error;
+    }
+}
+
+export async function applyPendingMigrations(sequelize: Sequelize, logPrefix: string): Promise<void> {
+    await withMigrationLock(sequelize, async () => {
         const [appliedRowsRaw] = await sequelize.query('SELECT name FROM "SequelizeMeta" ORDER BY name');
         const appliedRows = appliedRowsRaw as Array<{ name: string }>;
         const applied = new Set(appliedRows.map((row) => row.name));
         const queryInterface = sequelize.getQueryInterface();
+        const sequelizeModule = await import("sequelize");
 
         for (const entry of readMigrationEntries()) {
             if (applied.has(entry.canonicalName)) {
                 continue;
             }
             const migration = await loadMigrationModule(entry.migrationPath);
-            await migration.up(queryInterface, await import("sequelize"));
-            await sequelize.query('INSERT INTO "SequelizeMeta" (name) VALUES ($1)', {
-                bind: [entry.canonicalName],
+            await inTransaction(sequelize, async () => {
+                await migration.up(queryInterface, sequelizeModule);
+                await sequelize.query('INSERT INTO "SequelizeMeta" (name) VALUES ($1)', {
+                    bind: [entry.canonicalName],
+                });
             });
-            console.log(`[migrate] applied ${entry.canonicalName}`);
+            console.log(`${logPrefix} applied ${entry.canonicalName}`);
         }
+    });
+}
+
+export async function runMigrate(): Promise<void> {
+    const sequelize = connectMigrationDatabase(getDatabaseUrl(), process.env.PGSSL === "1");
+    try {
+        await applyPendingMigrations(sequelize, "[migrate]");
     } finally {
         await sequelize.close();
     }
 }
 
 export async function runMigrateUndo(): Promise<void> {
-    const sequelize = new Sequelize(getDatabaseUrl(), {
-        dialect: "postgres",
-        logging: false,
-        dialectOptions: getDialectOptions(),
-    });
-
+    const sequelize = connectMigrationDatabase(getDatabaseUrl(), process.env.PGSSL === "1");
     try {
-        await ensureSequelizeMeta(sequelize);
-        const [rowsRaw] = await sequelize.query('SELECT name FROM "SequelizeMeta" ORDER BY name DESC LIMIT 1');
-        const rows = rowsRaw as Array<{ name: string }>;
-        const lastApplied = rows[0]?.name;
-        if (!lastApplied) {
-            console.log("[migrate:undo] no applied migrations");
-            return;
-        }
+        await withMigrationLock(sequelize, async () => {
+            const [rowsRaw] = await sequelize.query('SELECT name FROM "SequelizeMeta" ORDER BY name DESC LIMIT 1');
+            const rows = rowsRaw as Array<{ name: string }>;
+            const lastApplied = rows[0]?.name;
+            if (!lastApplied) {
+                console.log("[migrate:undo] no applied migrations");
+                return;
+            }
 
-        const migration = readMigrationEntries().find((entry) => entry.canonicalName === lastApplied);
-        if (!migration) {
-            throw new Error(`Migration file not found for ${lastApplied}`);
-        }
+            const migration = readMigrationEntries().find((entry) => entry.canonicalName === lastApplied);
+            if (!migration) {
+                throw new Error(`Migration file not found for ${lastApplied}`);
+            }
 
-        const queryInterface = sequelize.getQueryInterface();
-        const migrationModule = await loadMigrationModule(migration.migrationPath);
-        await migrationModule.down(queryInterface, await import("sequelize"));
-        await sequelize.query('DELETE FROM "SequelizeMeta" WHERE name = $1', {
-            bind: [lastApplied],
+            const migrationModule = await loadMigrationModule(migration.migrationPath);
+            await inTransaction(sequelize, async () => {
+                await migrationModule.down(sequelize.getQueryInterface(), await import("sequelize"));
+                await sequelize.query('DELETE FROM "SequelizeMeta" WHERE name = $1', {
+                    bind: [lastApplied],
+                });
+            });
+            console.log(`[migrate:undo] reverted ${lastApplied}`);
         });
-        console.log(`[migrate:undo] reverted ${lastApplied}`);
     } finally {
         await sequelize.close();
     }
