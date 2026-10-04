@@ -42,11 +42,6 @@ return {
 	end,
 
 	on_unbuff = function(me, skill)
-		local success = me:rmtimer(TIMER_KEY)
-		if success then
-		    me:chat('remove timer success')
-		else
-		    me:chat('remove timer failed')
-		end
+		me:rmtimer(TIMER_KEY)
 	end
 }
