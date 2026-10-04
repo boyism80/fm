@@ -55,7 +55,10 @@ return {
 				return
 			end
 			if prop == "3" then
-				me:mkitem(LETTER, 1)
+				if me:mkitem(LETTER, 1) == nil then
+					me:message("기타 인벤토리 공간이 부족합니다.", Msg.PinkText)
+					return
+				end
 				me:dialog(npc, "무언가 편지를 발견했다.")
 				sm:set_property(key, "1")
 				return
@@ -63,7 +66,10 @@ return {
 			return
 		end
 		if prop == "3" then
-			me:mkitem(LETTER, 1)
+			if me:mkitem(LETTER, 1) == nil then
+				me:message("기타 인벤토리 공간이 부족합니다.", Msg.PinkText)
+				return
+			end
 			me:dialog(npc, "무언가 편지를 발견했다.")
 			sm:set_property(key, "1")
 			return
