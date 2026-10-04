@@ -73,7 +73,6 @@ local MAIN = {
 	{ text = "발록 무기#k", npc = 1061016 },
 	{ text = "메플 무기#k", npc = 2019 },
 	{ text = "벚꽃 무기#k", npc = 9110101 },
-	{ text = "심볼 장비#k", npc = 1052234 },
 }
 
 local ROUTES = {
