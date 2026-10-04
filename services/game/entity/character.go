@@ -697,7 +697,6 @@ func (ch *Character) Relocate(spawnPoint uint8) error {
 					Stance:  ch.Stance,
 				},
 				Position: ch.Position,
-				Velocity: types.Vector2[int16]{},
 			},
 		})
 		ch.Listener.OnUpdateStats(ch, nil, true)
