@@ -4,7 +4,7 @@ return {
 		if map == nil then
 			return
 		end
-		local door = map:find_reactor_name("rnj31_out")
+		local door = map:find_reactor_name("rnj3_out1")
 		if door ~= nil and door:state() > 0 then
 			me:play_portal_sound()
 			me:map(926100201)
