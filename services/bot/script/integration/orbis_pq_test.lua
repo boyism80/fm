@@ -572,18 +572,10 @@ test_suite {
 			if wait_all(ctx, BONUS, 10000) == false then
 				return false
 			end
-			for _ = 1, 3 do
-				if pq.command(leader, "/타이머 1", "남은 시간") == false then
-					return ctx:fail("보너스 시간 단축 실패")
-				end
-				local warp = leader:request(resp.warp, nil, function(p)
-					return p.character.map == REWARD
-				end, 5000)
-				if warp ~= false then
-					break
-				end
+			if pq.command(leader, "/타이머 1", "남은 시간") == false then
+				return ctx:fail("보너스 시간 단축 실패")
 			end
-			return wait_all(ctx, REWARD, 10000)
+			return wait_all(ctx, REWARD, 15000)
 		end,
 		function(ctx)
 			local leader = ctx:bot(0)

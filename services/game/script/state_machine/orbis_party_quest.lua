@@ -136,6 +136,9 @@ return {
 
 	on_changed_map = function(sm, player, map_id)
 		if map_id == BONUS_MAP then
+			if sm:get_property("allfinish") == "1" then
+				return
+			end
 			sm:set_property("allfinish", "1")
 			sm:restart_timer(BONUS_MS)
 			return
