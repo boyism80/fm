@@ -493,6 +493,18 @@ func NewResources(wzPath string) *Resources {
 		log.Fatal(err)
 		return nil
 	}
+	for _, reactor := range reactors {
+		if reactor.Info.Link == 0 {
+			continue
+		}
+		target, ok := reactors[reactor.Info.Link]
+		if ok == false || target.Info.Link != 0 {
+			log.Printf("reactor %d links to missing or linked reactor %d", reactor.ID, reactor.Info.Link)
+			continue
+		}
+		reactor.States = target.States
+		reactor.Info.ActivateByTouch = target.Info.ActivateByTouch
+	}
 
 	quests := map[uint32]*Quest{}
 	err = loadResourceFiles(filepath.Join(wzPath, "Quest.wz", "QuestData"), workerCount, func(path string) (result *Quest, err error) {
@@ -872,14 +884,7 @@ func (r *Resources) GetReactor(id uint32) *Reactor {
 	if r == nil || r.Reactors == nil {
 		return nil
 	}
-	def, ok := r.Reactors[id]
-	if !ok || def == nil {
-		return nil
-	}
-	if def.Info.Link != 0 {
-		return r.GetReactor(def.Info.Link)
-	}
-	return def
+	return r.Reactors[id]
 }
 
 func (r *Resources) GetExpNeededForLevel(level uint8) uint32 {
