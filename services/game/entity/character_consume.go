@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
@@ -72,6 +73,44 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 	}
 
 	return true
+}
+
+func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
+	if itemID/10000 != 227 {
+		return
+	}
+	item := ch.Inventory.Tabs[constant.InventoryTypeConsume].Get(uint8(slot))
+	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
+		return
+	}
+	consume, ok := item.GetModel().(*wz.Consume)
+	if ok == false {
+		return
+	}
+	mapInstance := ch.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	mob := mapInstance.GetMob(mobOID)
+	if mob == nil || mob.Wz == nil || mob.Wz.ID != consume.MobID {
+		return
+	}
+
+	if consume.MobHP > 0 && mob.GetHp() > mob.GetMaxHp()/2 {
+		ch.Broadcast(&response.ShowMagnet{MobID: mob.OID, Success: 0}, &ObjectBroadcastOption{})
+		return
+	}
+
+	spec := ExchangeSpec{Cost: ExchangeSide{Items: map[uint32]uint16{itemID: 1}}}
+	if consume.CreateID > 0 {
+		spec.Reward.Items = map[uint32]uint16{consume.CreateID: 1}
+	}
+	if ch.Exchange(spec) != ExchangeOK {
+		return
+	}
+
+	ch.Broadcast(&response.ShowMagnet{MobID: mob.OID, Success: 1}, &ObjectBroadcastOption{})
+	mob.Kill(ch, constant.MobDieAnimationTypeFadeOut)
 }
 
 func (ch *Character) addItemBuff(consumeItem *wz.Consume) bool {

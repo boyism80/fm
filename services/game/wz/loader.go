@@ -194,7 +194,12 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "success":
 					model.ScrollSuccess = int32(intField.Value)
 				case "masterLevel":
+				case "mob":
+					model.MobID = uint32(intField.Value)
+				case "create":
+					model.CreateID = uint32(intField.Value)
 				case "mobHP":
+					model.MobHP = int32(intField.Value)
 				case "bridleMsgType":
 				case "bridleProp":
 				case "bridlePropChg":

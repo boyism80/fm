@@ -39,6 +39,9 @@ type Consume struct {
 	CP              int
 	NuffSkillID     uint32
 	NuffSkillLevel  uint8
+	MobID           uint32
+	MobHP           int32
+	CreateID        uint32
 
 	CureDebuffs []constant.DebuffFlag
 }
