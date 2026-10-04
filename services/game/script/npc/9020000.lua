@@ -45,14 +45,12 @@ return {
 				end
 			end
 		end
-		if count ~= 2
-			or in_map ~= 2 then
+		if count ~= 4
+			or in_map ~= 4 then
 			ok = false
 		end
 		if not ok then
-			me:dialog(npc, "당신이 속한 파티의 파티원이 "
-				.. 2
-				.. "명이 아니거나 자신 혹은 파티원 중에서 레벨 21이상이 아닌 캐릭터가 있습니다. 혹은 파티원 전원이 현재 맵에 모여있는지 다시 한 번 확인해 주세요.")
+			me:dialog(npc, "당신이 속한 파티의 파티원이 4명이 아니거나 자신 혹은 파티원 중에서 레벨 21이상이 아닌 캐릭터가 있습니다. 혹은 파티원 전원이 현재 맵에 모여있는지 다시 한 번 확인해 주세요.")
 			return
 		end
 

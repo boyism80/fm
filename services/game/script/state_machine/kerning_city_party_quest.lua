@@ -20,7 +20,7 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(2)
+		group:declare_min_players(4)
 		group:declare_exit_map(exit_map_id)
 	end,
 

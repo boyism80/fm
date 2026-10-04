@@ -24,7 +24,7 @@ end
 
 test_suite {
 	name = "Party Quest: 커닝 PQ 입장",
-	bot_count = 2,
+	bot_count = 4,
 
 	on_initialize = function(ctx)
 		for i = 0, ctx:bot_count() - 1 do
@@ -49,24 +49,26 @@ test_suite {
 	scenarios = {
 		function(ctx)
 			local leader = ctx:bot(0)
-			local member = ctx:bot(1)
 			if leader:request(resp.party_created, req.party_operation { operation = PARTY.Create }) == false then
 				return ctx:fail("파티 생성 실패")
 			end
 
-			local invite = leader:request_on(member, resp.party_invite,
-				req.party_operation { operation = PARTY.Invite, target_name = member:name() })
-			if invite == false then
-				return ctx:fail("초대 패킷 없음")
-			end
+			for i = 1, ctx:bot_count() - 1 do
+				local member = ctx:bot(i)
+				local invite = leader:request_on(member, resp.party_invite,
+					req.party_operation { operation = PARTY.Invite, target_name = member:name() })
+				if invite == false then
+					return ctx:fail(member:name() .. " 초대 패킷 없음")
+				end
 
-			local joined = member:request(resp.party_update_join,
-				req.party_operation { operation = PARTY.AcceptInvite, party_id = invite.party_id })
-			if joined == false then
-				return ctx:fail("파티 가입 실패")
-			end
-			if #joined.members ~= 2 then
-				return ctx:fail("파티원 수: " .. #joined.members)
+				local joined = member:request(resp.party_update_join,
+					req.party_operation { operation = PARTY.AcceptInvite, party_id = invite.party_id })
+				if joined == false then
+					return ctx:fail(member:name() .. " 파티 가입 실패")
+				end
+				if #joined.members ~= i + 1 then
+					return ctx:fail("파티원 수: " .. #joined.members)
+				end
 			end
 			return true
 		end,
@@ -77,6 +79,12 @@ test_suite {
 				end,
 				function(ctx)
 					return enter_stage1(ctx, 1)
+				end,
+				function(ctx)
+					return enter_stage1(ctx, 2)
+				end,
+				function(ctx)
+					return enter_stage1(ctx, 3)
 				end,
 			},
 		},
