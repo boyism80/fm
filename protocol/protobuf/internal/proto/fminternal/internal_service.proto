@@ -504,6 +504,7 @@ message CreatePartyReply {
   PartyErrorCode error_code = 2;
   optional uint32 party_id = 3;
   uint64 revision = 4;
+  Party party = 5;
 }
 
 message JoinPartyRequest {

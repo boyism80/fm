@@ -1356,6 +1356,7 @@ export interface CreatePartyReply {
   errorCode: PartyErrorCode;
   partyId?: number | undefined;
   revision: number;
+  party: Party | undefined;
 }
 
 export interface JoinPartyRequest {
@@ -9171,7 +9172,7 @@ export const CreatePartyRequest: MessageFns<CreatePartyRequest> = {
 };
 
 function createBaseCreatePartyReply(): CreatePartyReply {
-  return { ok: false, errorCode: 0, partyId: undefined, revision: 0 };
+  return { ok: false, errorCode: 0, partyId: undefined, revision: 0, party: undefined };
 }
 
 export const CreatePartyReply: MessageFns<CreatePartyReply> = {
@@ -9187,6 +9188,9 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
     }
     if (message.revision !== 0) {
       writer.uint32(32).uint64(message.revision);
+    }
+    if (message.party !== undefined) {
+      Party.encode(message.party, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -9230,6 +9234,14 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
           message.revision = longToNumber(reader.uint64());
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.party = Party.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -9253,6 +9265,7 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
         ? globalThis.Number(object.party_id)
         : undefined,
       revision: isSet(object.revision) ? globalThis.Number(object.revision) : 0,
+      party: isSet(object.party) ? Party.fromJSON(object.party) : undefined,
     };
   },
 
@@ -9270,6 +9283,9 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
     if (message.revision !== 0) {
       obj.revision = Math.round(message.revision);
     }
+    if (message.party !== undefined) {
+      obj.party = Party.toJSON(message.party);
+    }
     return obj;
   },
 
@@ -9282,6 +9298,7 @@ export const CreatePartyReply: MessageFns<CreatePartyReply> = {
     message.errorCode = object.errorCode ?? 0;
     message.partyId = object.partyId ?? undefined;
     message.revision = object.revision ?? 0;
+    message.party = (object.party !== undefined && object.party !== null) ? Party.fromPartial(object.party) : undefined;
     return message;
   },
 };

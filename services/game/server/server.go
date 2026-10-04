@@ -268,7 +268,6 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		routeGame := fmt.Sprintf("fm.%d.%d.party", config.WorldId, config.ChannelId)
 
 		partyDisp := mq.NewDispatcher()
-		mq.Bind[*GameServer, partyMqCreated](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqMemberJoined](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqMemberLeft](gs, partyDisp)
 		mq.Bind[*GameServer, partyMqLeaderChanged](gs, partyDisp)

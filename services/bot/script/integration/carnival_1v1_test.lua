@@ -36,21 +36,15 @@ local function open_field_list(ctx, bot)
 	if oid == false then
 		return false
 	end
-	for _ = 1, 10 do
-		local dlg = bot:npc_click(oid)
-		if dlg == false then
-			return ctx:fail(bot:name() .. " 슈피겔만 대화 응답 없음")
-		end
-		if dlg.selections ~= nil then
-			return dlg
-		end
-		bot:dialog(false)
-		if dlg.text:find("파티를 구성한 후", 1, true) == nil then
-			return ctx:fail(bot:name() .. " 필드 목록 대신 다른 대화: " .. dlg.text)
-		end
-		ctx:sleep(500)
+	local dlg = bot:npc_click(oid)
+	if dlg == false then
+		return ctx:fail(bot:name() .. " 슈피겔만 대화 응답 없음")
 	end
-	return ctx:fail(bot:name() .. " 파티가 서버에 반영되지 않음")
+	if dlg.selections == nil then
+		bot:dialog(false)
+		return ctx:fail(bot:name() .. " 필드 목록 대신 다른 대화: " .. dlg.text)
+	end
+	return dlg
 end
 
 local function earn_cp(ctx, bot, enemy, need)

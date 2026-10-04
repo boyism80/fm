@@ -45,13 +45,14 @@ export class PartyGrpcController {
     async createParty(call: GrpcCall<CreatePartyRequest>, callback: GrpcCallback<CreatePartyReply>) {
         try {
             const req = call.request;
-            const result = await this.partyService.createParty(req.worldId, req.leader) as PartyMutationResult;
+            const result = await this.partyService.createParty(req.worldId, req.leader);
             if (result.ok) {
                 callback(null, {
                     ok: true,
                     errorCode: PartyErrorCode.NONE,
                     partyId: result.partyId,
                     revision: result.revision ?? 0,
+                    party: result.party,
                 });
             } else {
                 callback(null, {
@@ -59,6 +60,7 @@ export class PartyGrpcController {
                     errorCode: result.code ?? PartyErrorCode.UNKNOWN,
                     partyId: undefined,
                     revision: 0,
+                    party: undefined,
                 });
             }
         } catch (err) {

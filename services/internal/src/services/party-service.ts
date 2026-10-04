@@ -26,7 +26,6 @@ const messages = { PartyErrorCode };
 const MAX_PARTY_MEMBERS = 6;
 
 const EVT = {
-    CREATED: "created",
     MEMBER_JOINED: "member_joined",
     MEMBER_LEFT: "member_left",
     DISBANDED: "disbanded",
@@ -40,6 +39,7 @@ const AMQ_DIRECT_EXCHANGE = "amq.direct";
 const PARTY_DENY_ACTION_TAKING_CARE_OF_ANOTHER_INVITE = 22;
 
 export type PartyMutationResult = { ok: boolean; code?: number; partyId?: number; revision?: number };
+export type CreatePartyResult = PartyMutationResult & { party?: PartyMessage };
 export type InvitePartyResult = PartyMutationResult & { targetCharacterId?: number; targetChannelId?: number };
 export type DenyPartyResult = { ok: boolean; code?: number };
 export type LeavePartyResult = PartyMutationResult & {
@@ -353,7 +353,7 @@ export class PartyService {
         });
     }
 
-    async createParty(worldId: number, leader: PartyMember | null | undefined): Promise<PartyMutationResult> {
+    async createParty(worldId: number, leader: PartyMember | null | undefined): Promise<CreatePartyResult> {
         this.assertWorld(worldId);
         if (!leader || leader.worldId !== worldId) {
             return { ok: false, code: messages.PartyErrorCode.UNKNOWN };
@@ -426,8 +426,11 @@ export class PartyService {
         await this.partyRepo.invalidateCache(worldId, result.partyId);
         await this.partyMemberRepo.invalidateCache(worldId, String(result.partyId));
         await this.characterRealtimeStateRepo.invalidateCache(worldId, leaderCharacterId);
-        await this.publishPartyEvent(EVT.CREATED, worldId, result.partyId, result.revision, { leader_character_id: leaderCharacterId });
-        return result;
+        const created = await this.getParty(worldId, result.partyId);
+        if (!created.party) {
+            return result;
+        }
+        return { ...result, party: await this.partyToPb(worldId, created.party, created.members ?? []) };
     }
 
     async inviteParty(worldId: number, inviterCharacterId: number, targetCharacterName: string): Promise<InvitePartyResult> {
