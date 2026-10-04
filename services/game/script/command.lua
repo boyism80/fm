@@ -506,7 +506,7 @@ local command_funcs = {
 	},
 	["봇상태"] = {
 		privilege = ROLE.Admin,
-		usage = "[태그] - 대화 여부·레벨·직업·메소·경험치·인기도·맵·아이템을 한 줄로 표시",
+		usage = "[태그] - 대화 여부·레벨·직업·메소·경험치·인기도·맵·퀘스트·아이템을 한 줄로 표시",
 		command = function(me, args)
 			local counts = {}
 			for _, tab in pairs(me:items()) do
@@ -526,8 +526,13 @@ local command_funcs = {
 			for i, item_id in ipairs(ids) do
 				items[i] = item_id .. ":" .. counts[item_id]
 			end
+			local quests = {}
+			for quest_id, quest in pairs(me:quests()) do
+				quests[#quests + 1] = quest_id .. ":" .. (quest:completed() and 2 or 1)
+			end
+			table.sort(quests)
 			me:message(string.format(
-				"봇상태 tag=%s dialog=%d level=%d job=%d meso=%d exp=%d fame=%d map=%d items=%s",
+				"봇상태 tag=%s dialog=%d level=%d job=%d meso=%d exp=%d fame=%d map=%d quests=%s items=%s",
 				args[1] or "-",
 				me:in_dialog() and 1 or 0,
 				me:level(),
@@ -536,6 +541,7 @@ local command_funcs = {
 				me:exp(),
 				me:population(),
 				me:map():template_id(),
+				table.concat(quests, ","),
 				table.concat(items, ",")
 			))
 			return true
@@ -643,7 +649,11 @@ local command_funcs = {
 				end
 				targets[quest_id] = quest
 			else
-				targets = me:quests()
+				for quest_id, quest in pairs(me:quests()) do
+					if quest:started() then
+						targets[quest_id] = quest
+					end
+				end
 			end
 			local prepared = 0
 			local skipped = 0

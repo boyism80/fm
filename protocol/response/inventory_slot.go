@@ -28,6 +28,45 @@ type SlotItem struct {
 	Item dto.Item
 }
 
+type InventoryChange struct {
+	Mode          InventoryMode
+	InventoryType constant.InventoryType
+	Slot          int16
+	Dest          int16
+	Count         uint16
+	Item          dto.Item
+}
+
+type InventoryOperation struct {
+	FromDrop bool
+	Changes  []InventoryChange
+}
+
+func (p *InventoryOperation) Deserialize(reader *stream.StreamReader) {
+	p.FromDrop = reader.ReadBool()
+	count := reader.ReadU8()
+	for range count {
+		change := InventoryChange{
+			Mode:          InventoryMode(reader.ReadU8()),
+			InventoryType: constant.InventoryType(reader.ReadU8()),
+			Slot:          reader.Read16(),
+		}
+		switch change.Mode {
+		case INVENTORY_MODE_ADD:
+			change.Item = dto.NewItemFromStream(reader)
+		case INVENTORY_MODE_UPDATE:
+			change.Count = reader.ReadU16()
+		case INVENTORY_MODE_MOVE:
+			change.Dest = reader.Read16()
+		}
+		p.Changes = append(p.Changes, change)
+	}
+}
+
+func (p *InventoryOperation) Opcode() uint16 {
+	return 0x12
+}
+
 type UpdateInventorySlot struct {
 	InventoryType constant.InventoryType
 	Slot          int16

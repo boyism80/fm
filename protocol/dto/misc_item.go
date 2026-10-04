@@ -5,6 +5,7 @@ import (
 
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/util"
 )
 
 type MiscItem struct {
@@ -17,6 +18,10 @@ type MiscItem struct {
 
 func (i *MiscItem) GetCount() uint16 {
 	return i.Count
+}
+
+func (i *MiscItem) GetItemID() uint32 {
+	return i.ItemId
 }
 
 func (i *MiscItem) Serialize(writer *stream.StreamWriter, opt ItemSerializeOption) {
@@ -32,4 +37,14 @@ func (i *MiscItem) Serialize(writer *stream.StreamWriter, opt ItemSerializeOptio
 	writer.WriteU16(i.Count)
 	writer.WriteStr16(i.OwnerName)
 	writer.WriteU16(i.Flags)
+}
+
+func (i *MiscItem) Deserialize(reader *stream.StreamReader) {
+	if reader.ReadBool() {
+		reader.Skip(8)
+	}
+	i.Expiration = util.FromFileTime(reader.ReadU64())
+	i.Count = reader.ReadU16()
+	i.OwnerName = reader.ReadStr16()
+	i.Flags = reader.ReadU16()
 }

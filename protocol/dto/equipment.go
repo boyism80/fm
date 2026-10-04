@@ -37,6 +37,10 @@ func (e *Equipment) GetCount() uint16 {
 	return 1
 }
 
+func (e *Equipment) GetItemID() uint32 {
+	return e.ItemId
+}
+
 func (e *Equipment) Serialize(writer *stream.StreamWriter, opt ItemSerializeOption) {
 	slot := opt.Slot
 	if slot < 0 {
@@ -93,4 +97,39 @@ func (e *Equipment) Serialize(writer *stream.StreamWriter, opt ItemSerializeOpti
 	}
 	writer.WriteDateTime(util.TimeZero)
 	writer.Write32(-1)
+}
+
+func (e *Equipment) Deserialize(reader *stream.StreamReader) {
+	if reader.ReadBool() {
+		uid := reader.ReadU64()
+		e.UniqueId = &uid
+	}
+	e.Expiration = util.FromFileTime(reader.ReadU64())
+	e.EnhanceChance = reader.ReadU8()
+	e.EnhanceCount = reader.ReadU8()
+	e.Str = reader.ReadU16()
+	e.Dex = reader.ReadU16()
+	e.Int = reader.ReadU16()
+	e.Luk = reader.ReadU16()
+	e.MaxHP = reader.ReadU16()
+	e.MaxMP = reader.ReadU16()
+	e.PAD = reader.ReadU16()
+	e.MAD = reader.ReadU16()
+	e.PDD = reader.ReadU16()
+	e.MDD = reader.ReadU16()
+	e.ACC = reader.ReadU16()
+	e.Avoid = reader.ReadU16()
+	e.Hands = reader.ReadU16()
+	e.Speed = reader.ReadU16()
+	e.Jump = reader.ReadU16()
+	e.OwnerName = reader.ReadStr16()
+	e.Flag = reader.ReadU16()
+	if reader.ReadBool() {
+		e.SkillBonus = 1
+	}
+	reader.Skip(5)
+	if e.UniqueId == nil {
+		reader.Skip(8)
+	}
+	reader.Skip(12)
 }

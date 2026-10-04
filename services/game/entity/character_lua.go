@@ -2221,7 +2221,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			tbl := L.NewTable()
 			if ch.Quests != nil {
 				ch.Quests.ForEach(func(questID uint32, qp *Quest) {
-					if qp == nil || !qp.IsStarted() {
+					if qp == nil || qp.Status == QuestStatusNotStarted {
 						return
 					}
 					tbl.RawSet(lua.LNumber(questID), luax.NewLuable(L, qp))

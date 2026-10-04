@@ -5,6 +5,7 @@ import (
 
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/util"
 )
 
 type CashItem struct {
@@ -18,6 +19,10 @@ type CashItem struct {
 
 func (i *CashItem) GetCount() uint16 {
 	return i.Count
+}
+
+func (i *CashItem) GetItemID() uint32 {
+	return i.ItemId
 }
 
 func (i *CashItem) Serialize(writer *stream.StreamWriter, opt ItemSerializeOption) {
@@ -37,4 +42,15 @@ func (i *CashItem) Serialize(writer *stream.StreamWriter, opt ItemSerializeOptio
 	writer.WriteU16(i.Count)
 	writer.WriteStr16(i.OwnerName)
 	writer.WriteU16(i.Flags)
+}
+
+func (i *CashItem) Deserialize(reader *stream.StreamReader) {
+	if reader.ReadBool() {
+		uid := reader.ReadU64()
+		i.UniqueId = &uid
+	}
+	i.Expiration = util.FromFileTime(reader.ReadU64())
+	i.Count = reader.ReadU16()
+	i.OwnerName = reader.ReadStr16()
+	i.Flags = reader.ReadU16()
 }

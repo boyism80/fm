@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/util"
 )
 
 type PetItem struct {
@@ -22,6 +23,10 @@ type PetItem struct {
 
 func (i *PetItem) GetCount() uint16 {
 	return 1
+}
+
+func (i *PetItem) GetItemID() uint32 {
+	return i.ItemId
 }
 
 func (i *PetItem) Serialize(writer *stream.StreamWriter, opt ItemSerializeOption) {
@@ -50,4 +55,20 @@ func (i *PetItem) Serialize(writer *stream.StreamWriter, opt ItemSerializeOption
 	} else {
 		writer.WriteU32(0)
 	}
+}
+
+func (i *PetItem) Deserialize(reader *stream.StreamReader) {
+	if reader.ReadBool() {
+		uid := reader.ReadU64()
+		i.UniqueId = &uid
+	}
+	i.Expiration = util.FromFileTime(reader.ReadU64())
+	i.PetName = reader.ReadStaticStr(13)
+	i.PetLevel = reader.ReadU8()
+	i.PetCloseness = reader.ReadU16()
+	i.PetFullness = reader.ReadU8()
+	i.PetExpiration = util.FromFileTime(reader.ReadU64())
+	i.PetSpeed = reader.ReadU16()
+	i.PetFlags = reader.ReadU16()
+	i.PetSecondsLeft = reader.ReadU32()
 }
