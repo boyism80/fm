@@ -17,6 +17,9 @@ type Consume struct {
 	ScrollCursed    int32
 	ScrollRandStat  int32
 	ScrollRecover   int32
+	ScrollFlag      constant.ItemFlag
+	ScrollReqRUC    int32
+	ScrollReqs      []uint32
 	ScrollIncStr    int16
 	ScrollIncDex    int16
 	ScrollIncInt    int16

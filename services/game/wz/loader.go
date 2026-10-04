@@ -182,8 +182,11 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "cursed":
 					model.ScrollCursed = int32(intField.Value)
 				case "preventslip":
+					model.ScrollFlag |= constant.ItemFlagSpikes
 				case "warmsupport":
+					model.ScrollFlag |= constant.ItemFlagCold
 				case "reqRUC":
+					model.ScrollReqRUC = int32(intField.Value)
 				case "recover":
 					model.ScrollRecover = int32(intField.Value)
 				case "randstat":
@@ -235,6 +238,12 @@ func loadConsumes(path string) (*[]*Consume, error) {
 					mutex.Unlock()
 					log.Printf("%s is not declared in %s:info\n", iv.Name, filepath.Base(path))
 				}
+			}
+		}
+
+		if reqNode := v.find("req"); reqNode != nil {
+			for _, intField := range reqNode.Ints {
+				model.ScrollReqs = append(model.ScrollReqs, uint32(intField.Value))
 			}
 		}
 

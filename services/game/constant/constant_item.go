@@ -22,6 +22,8 @@ var RechargeableBullets = []uint32{
 	2331000, 2332000,
 }
 
+const ChaosScrollRange = 5
+
 const (
 	ShopTransactionBuyOK    byte   = 0
 	ShopTransactionUpdateOK byte   = 0x8
