@@ -486,6 +486,26 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.ArgError(2, "drop_rate() get or set one value")
 			return 0
 		},
+		"drop": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			entries := L.CheckTable(2)
+			mapInstance := mob.GetMap()
+			if mapInstance == nil {
+				return 0
+			}
+
+			var owner *Character
+			if ownerUd, ok := L.Get(3).(*lua.LUserData); ok {
+				owner, _ = ownerUd.Value.(*Character)
+			}
+			mapInstance.dropLuaEntries(entries, mob.Position, owner, mapInstance.SpawnMobItem)
+			return 0
+		},
 		"drops": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
@@ -516,7 +536,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				row.RawSetString("prob", lua.LNumber(d.Prob))
 				row.RawSetString("min", lua.LNumber(d.Min))
 				row.RawSetString("max", lua.LNumber(d.Max))
-				row.RawSetString("quest", lua.LNumber(d.QuestID))
+				row.RawSetString("quest", lua.LNumber(resources.QuestItems[d.Item]))
 				t.RawSetInt(idx, row)
 				idx++
 			}

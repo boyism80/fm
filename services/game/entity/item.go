@@ -45,6 +45,7 @@ type FieldPlacement struct {
 	SpawnedPoint types.Point[int16]
 	DropType     constant.DropType
 	PlayerDrop   bool
+	Quest        uint32
 	nextFFA      time.Time
 	nextExpiry   time.Time
 }
@@ -120,6 +121,9 @@ func (item *ItemCore) SendSpawnSyncToViewer(viewer *Character) {
 	}
 	fp := item.GetFieldPlacement()
 	if fp == nil {
+		return
+	}
+	if fp.Quest > 0 && viewer.NeedsQuestItem(fp.Quest, item.GetModel().GetID()) == false {
 		return
 	}
 	viewer.Send(&response.SpawnItem{

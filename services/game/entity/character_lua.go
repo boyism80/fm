@@ -3518,7 +3518,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				row.RawSetString("prob", lua.LNumber(d.Prob))
 				row.RawSetString("min", lua.LNumber(d.Min))
 				row.RawSetString("max", lua.LNumber(d.Max))
-				row.RawSetString("quest", lua.LNumber(d.QuestID))
+				row.RawSetString("quest", lua.LNumber(resources.QuestItems[d.Item]))
 				t.RawSetInt(i+1, row)
 			}
 			L.Push(t)

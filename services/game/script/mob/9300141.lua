@@ -3,7 +3,7 @@
 local drop = require("script/lib/drop")
 
 local DROPS = {
-	{ item = 4031698, min = 1, max = 1, chance = 199999, quest = 3310 },
+	{ item = 4031698, min = 1, max = 1, chance = 199999 },
 }
 
 return {

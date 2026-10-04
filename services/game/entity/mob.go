@@ -467,7 +467,7 @@ func (m *Mob) dropItems(attacker *Character) {
 			fp.ObjectCore.self = fp
 			spawn.item.BindFieldPlacement(fp)
 
-			if err := mapInstance.SpawnItem(spawn.item, ownerID, dropType); err != nil {
+			if err := mapInstance.SpawnMobItem(spawn.item, ownerID, dropType); err != nil {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}
 		}

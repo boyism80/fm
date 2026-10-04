@@ -108,6 +108,7 @@ type Resources struct {
 	ExpTable                []uint32
 	Shops                   map[uint32]*Shop
 	Quests                  map[uint32]*Quest
+	QuestItems              map[uint32]uint32
 	CarnivalSkills          map[uint32]*CarnivalSkill
 	CarnivalGuardians       map[uint32]*CarnivalGuardian
 	questsByStartFieldEnter map[uint32][]*Quest
@@ -731,6 +732,7 @@ func NewResources(wzPath string) *Resources {
 		CarnivalGuardians: mcGuardians,
 		Shops:             shops,
 		Quests:            quests,
+		QuestItems:        make(map[uint32]uint32),
 	}
 
 	result.buildNameIndexes()

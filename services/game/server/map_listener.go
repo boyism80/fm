@@ -190,7 +190,21 @@ func (l *MapListenerImpl) OnItemSpawned(mapInstance *entity.Map, item entity.Ite
 		IsPlayerDrop: placement.PlayerDrop,
 	}
 
-	mapInstance.BroadcastNear(placementObj.Position, spawnPacket, nil)
+	if placement.Quest == 0 {
+		mapInstance.BroadcastNear(placementObj.Position, spawnPacket, nil)
+		return
+	}
+
+	for _, obj := range mapInstance.GetObjectsNear(placementObj.Position, constant.ObjectTypeCharacter, &entity.SearchOption{IncludeHidden: true}) {
+		viewer, ok := obj.(*entity.Character)
+		if ok == false {
+			continue
+		}
+		if viewer.NeedsQuestItem(placement.Quest, item.GetModel().GetID()) == false {
+			continue
+		}
+		viewer.Send(spawnPacket, types.SEND_POLICY_ENCRYPT)
+	}
 }
 
 func (l *MapListenerImpl) OnMesoSpawned(mapInstance *entity.Map, meso *entity.Meso) {

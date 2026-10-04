@@ -142,6 +142,7 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "only":
 				case "timeLimited":
 				case "quest":
+					model.Quest = intField.Value == 1
 				case "incPAD":
 					model.ScrollIncPAD = int16(intField.Value)
 				case "reqLevel":
@@ -715,6 +716,7 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 				case "randOption":
 				case "randStat":
 				case "quest":
+					model.Quest = intField.Value == 1
 				case "exp":
 				case "grade":
 				case "questId":
@@ -2133,8 +2135,6 @@ func parseDropEntry(entry dropEntry) Drop {
 			model.Min = uint16(intField.Value)
 		case "max":
 			model.Max = uint16(intField.Value)
-		case "quest", "questid":
-			model.QuestID = uint32(intField.Value)
 		}
 	}
 

@@ -422,13 +422,6 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Map expected")
 				return 0
 			}
-			if mapInstance.GameWorld == nil {
-				return 0
-			}
-			resources := mapInstance.GameWorld.GetResources()
-			if resources == nil {
-				return 0
-			}
 
 			entries := L.CheckTable(2)
 			posTbl := L.CheckTable(3)
@@ -453,88 +446,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 				}
 			}
-			dropType := constant.DropTypeFFA
-			ownerID := uint32(0)
-			if owner != nil {
-				if owner.GetPartyID() != nil {
-					dropType = constant.DropTypeParty
-				} else {
-					dropType = constant.DropTypeOwnerOnly
-				}
-				ownerID = owner.GetID()
-			}
-
-			spacing := int16(25)
-			d := int16(1)
-			for i := 1; ; i++ {
-				entryLV := entries.RawGetInt(i)
-				entry, ok := entryLV.(*lua.LTable)
-				if !ok {
-					break
-				}
-
-				destPoint := spawnPoint
-				if d%2 == 0 {
-					destPoint.X += spacing * (d + 1) / 2
-				} else {
-					destPoint.X -= spacing * (d / 2)
-				}
-
-				spawned := false
-				mesoLV := entry.RawGetString("meso")
-				itemLV := entry.RawGetString("item")
-				if mesoLV != lua.LNil {
-					count := int32(lua.LVAsNumber(mesoLV))
-					if count > 0 {
-						if _, err := mapInstance.SpawnMeso(count, destPoint, spawnPoint, ownerID, dropType, false); err != nil {
-							return 0
-						}
-						spawned = true
-					}
-				} else if itemLV != lua.LNil {
-					var itemID uint32
-					switch lv := itemLV.(type) {
-					case lua.LString:
-						id, found := resources.NameToItem(string(lv))
-						if found {
-							itemID = id
-						}
-					case lua.LNumber:
-						itemID = uint32(lv)
-					}
-					if itemID != 0 {
-						if _, exists := resources.Items[itemID]; exists {
-							count := uint16(1)
-							if countLV := entry.RawGetString("count"); countLV != lua.LNil {
-								if n := int(lua.LVAsNumber(countLV)); n >= 1 {
-									count = uint16(n)
-								}
-							}
-							item, err := NewItem(itemID, count, mapInstance.GameWorld)
-							if err == nil {
-								fp := &FieldPlacement{
-									ObjectCore: &ObjectCore{
-										Position:  destPoint,
-										GameWorld: mapInstance.GameWorld,
-									},
-									Owner:        ownerID,
-									SpawnedPoint: spawnPoint,
-									DropType:     dropType,
-								}
-								fp.ObjectCore.self = fp
-								item.BindFieldPlacement(fp)
-								if err := mapInstance.SpawnItem(item, ownerID, dropType); err != nil {
-									return 0
-								}
-								spawned = true
-							}
-						}
-					}
-				}
-				if spawned {
-					d++
-				}
-			}
+			mapInstance.dropLuaEntries(entries, spawnPoint, owner, mapInstance.SpawnItem)
 			return 0
 		},
 		"spawn_mob": func(L *lua.LState) int {
@@ -1068,6 +980,99 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 0
 		},
+	}
+}
+
+func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16], owner *Character, spawn func(Item, uint32, constant.DropType) error) {
+	if m.GameWorld == nil {
+		return
+	}
+	resources := m.GameWorld.GetResources()
+	if resources == nil {
+		return
+	}
+
+	dropType := constant.DropTypeFFA
+	ownerID := uint32(0)
+	if owner != nil {
+		if owner.GetPartyID() != nil {
+			dropType = constant.DropTypeParty
+		} else {
+			dropType = constant.DropTypeOwnerOnly
+		}
+		ownerID = owner.GetID()
+	}
+
+	spacing := int16(25)
+	d := int16(1)
+	for i := 1; ; i++ {
+		entryLV := entries.RawGetInt(i)
+		entry, ok := entryLV.(*lua.LTable)
+		if !ok {
+			break
+		}
+
+		destPoint := spawnPoint
+		if d%2 == 0 {
+			destPoint.X += spacing * (d + 1) / 2
+		} else {
+			destPoint.X -= spacing * (d / 2)
+		}
+
+		spawned := false
+		mesoLV := entry.RawGetString("meso")
+		itemLV := entry.RawGetString("item")
+		if mesoLV != lua.LNil {
+			count := int32(lua.LVAsNumber(mesoLV))
+			if count > 0 {
+				if _, err := m.SpawnMeso(count, destPoint, spawnPoint, ownerID, dropType, false); err != nil {
+					return
+				}
+				spawned = true
+			}
+		} else if itemLV != lua.LNil {
+			var itemID uint32
+			switch lv := itemLV.(type) {
+			case lua.LString:
+				id, found := resources.NameToItem(string(lv))
+				if found {
+					itemID = id
+				}
+			case lua.LNumber:
+				itemID = uint32(lv)
+			}
+			if itemID != 0 {
+				if _, exists := resources.Items[itemID]; exists {
+					count := uint16(1)
+					if countLV := entry.RawGetString("count"); countLV != lua.LNil {
+						if n := int(lua.LVAsNumber(countLV)); n >= 1 {
+							count = uint16(n)
+						}
+					}
+					item, err := NewItem(itemID, count, m.GameWorld)
+					if err == nil {
+						fp := &FieldPlacement{
+							ObjectCore: &ObjectCore{
+								Position:  destPoint,
+								GameWorld: m.GameWorld,
+							},
+							Owner:        ownerID,
+							SpawnedPoint: spawnPoint,
+							DropType:     dropType,
+						}
+						fp.ObjectCore.self = fp
+						item.BindFieldPlacement(fp)
+						if err := spawn(item, ownerID, dropType); err != nil {
+							return
+						}
+						spawned = true
+					}
+				}
+			}
+		}
+		if spawned {
+			d++
+		}
 	}
 }
 

@@ -34,8 +34,7 @@ function M.from_mob(drops, mob, attacker, map)
 	if #spawned == 0 then
 		return
 	end
-	local x, y = mob:position()
-	map:drop(spawned, { x, y }, attacker)
+	mob:drop(spawned, attacker)
 end
 
 function M.from_reactor(drops, reactor)

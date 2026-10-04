@@ -318,10 +318,9 @@ type DropsFile struct {
 }
 
 type Drop struct {
-	ItemID  uint32  `yaml:"item_id,omitempty"`
-	Money   uint32  `yaml:"money,omitempty"`
-	Prob    float32 `yaml:"prob"`
-	Min     uint16  `yaml:"min"`
-	Max     uint16  `yaml:"max"`
-	QuestID uint32  `yaml:"quest_id,omitempty"`
+	ItemID uint32  `yaml:"item_id,omitempty"`
+	Money  uint32  `yaml:"money,omitempty"`
+	Prob   float32 `yaml:"prob"`
+	Min    uint16  `yaml:"min"`
+	Max    uint16  `yaml:"max"`
 }

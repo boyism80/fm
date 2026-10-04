@@ -36,7 +36,7 @@ func (r *Reactor) DropItems() {
 	spawns := make([]reactorDropSpawn, 0, len(reactorDrops))
 
 	for _, entry := range reactorDrops {
-		if entry.QuestID > 0 && !questInProgress(trigger, entry.QuestID) {
+		if quest := resources.QuestItems[entry.Item]; quest > 0 && !questInProgress(trigger, quest) {
 			continue
 		}
 		if !gmDrop && rand.Float32() > entry.Prob {

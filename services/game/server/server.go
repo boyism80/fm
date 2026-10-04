@@ -424,6 +424,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	luax.RegisterOnCreateHook(func(luaState *lua.LState) {
 		gs.registerGameLuaState(luaState)
 	})
+	gs.runStartupScript()
 
 	gs.preCreateMaps()
 	if err := gs.stateMachines.LoadFromScripts("script/state_machine"); err != nil {

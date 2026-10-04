@@ -1234,6 +1234,16 @@ func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) e
 	return nil
 }
 
+func (m *Map) SpawnMobItem(item Item, ownerID uint32, dropType constant.DropType) error {
+	fp := item.GetFieldPlacement()
+	if fp == nil {
+		return fmt.Errorf("item has no field placement")
+	}
+
+	fp.Quest = m.GameWorld.GetResources().QuestItems[item.GetModel().GetID()]
+	return m.SpawnItem(item, ownerID, dropType)
+}
+
 func (m *Map) SpawnMeso(count int32, position, spawnFrom types.Point[int16], ownerID uint32, dropType constant.DropType, playerDrop bool) (*Meso, error) {
 	oid := m.allocateOID()
 
@@ -1314,6 +1324,10 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootFailedInvalidItem
 		}
 
+		if fp.Quest > 0 && character.Quests.Get(fp.Quest).IsStarted() == false {
+			return constant.LootFailedNoOwnership
+		}
+
 		if !m.canLootFieldDrop(fp, character) {
 			return constant.LootFailedNoOwnership
 		}
@@ -1321,6 +1335,10 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 		invenType := item.GetInventoryType()
 		inven := character.Inventory.Tabs[invenType]
 		model := item.GetModel()
+
+		if fp.Quest > 0 && character.NeedsQuestItem(fp.Quest, model.GetID()) == false {
+			return constant.LootFailedInventoryFull
+		}
 
 		if !inven.IsFree(model, item.GetCount()) {
 			return constant.LootFailedInventoryFull

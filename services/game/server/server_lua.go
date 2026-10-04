@@ -307,6 +307,19 @@ func (gs *GameServer) registerServerMessageConstants(luaState *lua.LState) {
 	luaState.SetGlobal("MessageScope", scopes)
 }
 
+func (gs *GameServer) runStartupScript() {
+	luaState := luax.NewState()
+	defer luaState.Close()
+
+	luax.RegisterFunc(luaState, "register_quest_item", func(L *lua.LState) int {
+		gs.resources.QuestItems[uint32(L.CheckInt(1))] = uint32(L.CheckInt(2))
+		return 0
+	})
+	if err := luaState.DoFile(constant.StartupScriptPath); err != nil {
+		log.Printf("startup script: %v", err)
+	}
+}
+
 func skillToLuaWz(luaState *lua.LState, skill *wz.Skill) lua.LValue {
 	if skill == nil {
 		return lua.LNil

@@ -843,12 +843,11 @@ func convertDrops(drops []wz.Drop) []Drop {
 	out := make([]Drop, 0, len(drops))
 	for _, d := range drops {
 		out = append(out, Drop{
-			ItemID:  d.Item,
-			Money:   d.Money,
-			Prob:    d.Prob,
-			Min:     d.Min,
-			Max:     d.Max,
-			QuestID: d.QuestID,
+			ItemID: d.Item,
+			Money:  d.Money,
+			Prob:   d.Prob,
+			Min:    d.Min,
+			Max:    d.Max,
 		})
 	}
 	return out
