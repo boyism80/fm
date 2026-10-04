@@ -11,6 +11,7 @@ local PROFILES = {
 	{ name = "숙련자", level = 70, job = 110, meso = 100000000, grant = true },
 	{ name = "퀘스트진행", level = 70, job = 110, meso = 100000000, grant = true, quest = 1 },
 	{ name = "퀘스트완료", level = 70, job = 110, meso = 100000000, grant = true, quest = 2 },
+	{ name = "고레벨", level = 200, job = 112, meso = 100000000, grant = true, level_check = true },
 }
 
 local REPLIES = { resp.notice, resp.update_quest, resp.guild_message }
@@ -18,7 +19,7 @@ for _, name in ipairs(check.REPLIES) do
 	REPLIES[#REPLIES + 1] = name
 end
 
-local summary = { npcs = 0, paths = 0, suspects = 0, time = { reset = 0, move = 0, snapshot = 0, walk = 0 } }
+local summary = { npcs = 0, paths = 0, suspects = 0, unverified = 0, time = { reset = 0, move = 0, snapshot = 0, walk = 0 } }
 
 local function replied(p, name)
 	if name == resp.notice then
@@ -48,14 +49,17 @@ local function probe()
 end
 
 local function parse(m)
-	local s = { items = {} }
+	local s = { items = {}, quests = {} }
 	for key, value in m:gmatch("(%a+)=(%-?%d+)") do
-		if key ~= "items" then
+		if key ~= "items" and key ~= "quests" then
 			s[key] = tonumber(value)
 		end
 	end
 	for id, count in (m:match("items=(%S*)") or ""):gmatch("(%d+):(%d+)") do
 		s.items[tonumber(id)] = tonumber(count)
+	end
+	for id, status in (m:match("quests=(%S*)") or ""):gmatch("(%d+):(%d+)") do
+		s.quests[tonumber(id)] = tonumber(status)
 	end
 	return s
 end
@@ -212,6 +216,51 @@ local function walk(bot, npc, oid, prefix, queue, deferred)
 	return trace
 end
 
+local CLIENT_STATS = {
+	{ key = "level", name = "레벨" },
+	{ key = "job", name = "직업" },
+	{ key = "exp", name = "경험치" },
+	{ key = "meso", name = "메소" },
+	{ key = "fame", name = "인기도" },
+	{ key = "map", name = "맵" },
+}
+
+local function unsent(bot, s)
+	local list = {}
+	if s == nil then
+		return list
+	end
+	for _, stat in ipairs(CLIENT_STATS) do
+		local client = bot[stat.key](bot)
+		if client ~= s[stat.key] then
+			list[#list + 1] = string.format("%s 서버 %d, 클라이언트 %d", stat.name, s[stat.key], client)
+		end
+	end
+	local client = bot:quests()
+	for id, status in pairs(s.quests) do
+		if client[id] ~= status and wz.has_quest(id) then
+			list[#list + 1] = string.format("퀘스트 %d 서버 %d, 클라이언트 %d", id, status, client[id] or 0)
+		end
+	end
+	for id, status in pairs(client) do
+		if s.quests[id] == nil then
+			list[#list + 1] = string.format("퀘스트 %d 서버 0, 클라이언트 %d", id, status)
+		end
+	end
+	local items = bot:items()
+	for id, count in pairs(s.items) do
+		if items[id] ~= count then
+			list[#list + 1] = string.format("아이템 %d 서버 %d, 클라이언트 %d", id, count, items[id] or 0)
+		end
+	end
+	for id, count in pairs(items) do
+		if s.items[id] == nil then
+			list[#list + 1] = string.format("아이템 %d 서버 0, 클라이언트 %d", id, count)
+		end
+	end
+	return list
+end
+
 local function diff(before, after, seen)
 	local effects = {}
 	if before == nil or after == nil then
@@ -257,26 +306,50 @@ local function diff(before, after, seen)
 	return effects
 end
 
-local function suspects(entry, refs, seen)
+local function suspects(spots, refs, seen)
 	local list = {}
-	for _, id in ipairs(refs.maps) do
-		if id ~= entry.map and seen.maps[id] == nil then
-			list[#list + 1] = string.format("스크립트의 맵 %d로 가는 갈래 없음", id)
+	local function add(text, unverified)
+		list[#list + 1] = { text = text, unverified = unverified }
+	end
+
+	local tested, groups = {}, {}
+	for _, spot in ipairs(spots) do
+		tested[spot.map] = true
+	end
+	for _, ref in ipairs(refs.maps) do
+		if ref.group ~= nil and seen.maps[ref.id] then
+			groups[ref.group] = true
+		end
+	end
+	for _, ref in ipairs(refs.maps) do
+		local reached = tested[ref.id] or seen.maps[ref.id] or groups[ref.group or 0]
+			or (ref.from ~= nil and tested[ref.from] == nil)
+		for offset = 1, ref.spread or 0 do
+			reached = reached or seen.maps[ref.id + offset]
+		end
+		if reached ~= true then
+			local reason = nil
+			if seen.capped then
+				reason = "경로 상한"
+			elseif refs.party then
+				reason = "파티 필요"
+			end
+			add(string.format("스크립트의 맵 %d로 가는 갈래 없음", ref.id), reason)
 		end
 	end
 	for _, id in ipairs(refs.changes) do
 		if seen.items[id] == nil then
-			list[#list + 1] = string.format("스크립트의 아이템 %d 변화 없음", id)
+			add(string.format("스크립트의 아이템 %d 변화 없음", id), seen.capped and "경로 상한" or nil)
 		end
 	end
 	if refs.meso and seen.meso == false then
-		list[#list + 1] = "스크립트에 메소 변화가 있으나 일어나지 않음"
+		add("스크립트에 메소 변화가 있으나 일어나지 않음", seen.capped and "경로 상한" or nil)
 	end
 	if refs.exp and seen.exp == false then
-		list[#list + 1] = "스크립트에 경험치 변화가 있으나 일어나지 않음"
+		add("스크립트에 경험치 변화가 있으나 일어나지 않음", seen.capped and "경로 상한" or nil)
 	end
 	for _, path in ipairs(seen.empty) do
-		list[#list + 1] = "선택지가 없는 목록: " .. path
+		add("선택지가 없는 목록: " .. path)
 	end
 	return list
 end
@@ -302,88 +375,118 @@ local function explore(ctx, bot, entry)
 	grants = table.concat(grants, ",")
 
 	local started = os.clock()
-	local seen = { maps = {}, items = {}, meso = false, exp = false, empty = {} }
+	local seen = { maps = {}, items = {}, meso = false, exp = false, empty = {}, capped = false }
 	local lines = { where }
 	summary.npcs = summary.npcs + 1
-	local away = true
+	local spots = { entry }
+	if refs.here then
+		spots = entry.spots
+	end
+	local profiles = {}
 	for _, profile in ipairs(PROFILES) do
-		if profile.quest ~= nil and #refs.quests == 0 then
-			break
+		if (profile.quest == nil or #refs.quests > 0) and (profile.level_check == nil or refs.level) then
+			profiles[#profiles + 1] = profile
 		end
-		local queue = { {} }
-		local runs = 0
-		while #queue > 0 and runs < MAX_PATHS do
-			local prefix = table.remove(queue, 1)
-			runs = runs + 1
-			summary.paths = summary.paths + 1
+	end
+	local away = true
+	for _, spot in ipairs(spots) do
+		local here = ""
+		if #spots > 1 then
+			here = "맵 " .. spot.map .. " "
+		end
+		for _, profile in ipairs(profiles) do
+			local queue = { {} }
+			local runs = 0
+			while #queue > 0 and runs < MAX_PATHS do
+				local prefix = table.remove(queue, 1)
+				runs = runs + 1
+				summary.paths = summary.paths + 1
 
-			local at = os.clock()
-			if reset(bot, profile, grants, refs.quests) == false then
-				ctx:fail(where .. ": /봇초기화 실패")
-				return
-			end
-			summary.time.reset = summary.time.reset + os.clock() - at
-
-			at = os.clock()
-			if away or bot:map() ~= entry.map then
-				if bot:instance_move(entry.map) == false then
-					ctx:fail(where .. ": 맵 이동 실패")
+				local at = os.clock()
+				if reset(bot, profile, grants, refs.quests) == false then
+					ctx:fail(where .. ": /봇초기화 실패")
 					return
 				end
-				bot:move(entry.x, entry.y, entry.foothold)
-			end
-			local oid = bot:npc(entry.npc, 3000)
-			if oid == nil then
-				ctx:fail(where .. ": 맵에 NPC가 없음")
-				return
-			end
-			summary.time.move = summary.time.move + os.clock() - at
+				summary.time.reset = summary.time.reset + os.clock() - at
 
-			at = os.clock()
-			local before = snapshot(bot)
-			summary.time.snapshot = summary.time.snapshot + os.clock() - at
-			at = os.clock()
-			local trace = walk(bot, entry.npc, oid, prefix, queue, refs.deferred)
-			summary.time.walk = summary.time.walk + os.clock() - at
-			at = os.clock()
-			local after = trace.after or snapshot(bot)
-			summary.time.snapshot = summary.time.snapshot + os.clock() - at
-			local effects = diff(before, after, seen)
-			away = after == nil or after.map ~= entry.map
+				at = os.clock()
+				if away or bot:map() ~= spot.map then
+					if bot:instance_move(spot.map) == false then
+						ctx:fail(where .. ": 맵 " .. spot.map .. " 이동 실패")
+						return
+					end
+					bot:move(spot.x, spot.y, spot.foothold)
+				end
+				local oid = bot:npc(entry.npc, 3000)
+				if oid == nil then
+					ctx:fail(where .. ": 맵 " .. spot.map .. "에 NPC가 없음")
+					return
+				end
+				summary.time.move = summary.time.move + os.clock() - at
 
-			local path = table.concat(trace.labels, " > ")
-			if path == "" then
-				path = "-"
+				at = os.clock()
+				local before = snapshot(bot)
+				summary.time.snapshot = summary.time.snapshot + os.clock() - at
+				local stale = unsent(bot, before)
+				if #stale > 0 then
+					ctx:fail(string.format("%s [%s%s] 초기화 후 통지 누락: %s", where, here, profile.name, table.concat(stale, ", ")))
+				end
+				at = os.clock()
+				local trace = walk(bot, entry.npc, oid, prefix, queue, refs.deferred)
+				summary.time.walk = summary.time.walk + os.clock() - at
+				at = os.clock()
+				local after = trace.after or snapshot(bot)
+				summary.time.snapshot = summary.time.snapshot + os.clock() - at
+				local effects = diff(before, after, seen)
+				away = after == nil or after.map ~= spot.map
+
+				local path = table.concat(trace.labels, " > ")
+				if path == "" then
+					path = "-"
+				end
+				local label = string.format("%s [%s%s] %s", where, here, profile.name, path)
+				if trace.error ~= nil then
+					ctx:fail(label .. ": " .. trace.error)
+				end
+				if trace.ended == "응답 없음" then
+					ctx:fail(label .. ": 대화 도중 응답 없음")
+				end
+				local missed = unsent(bot, after)
+				if #missed > 0 then
+					ctx:fail(label .. ": 통지 누락 " .. table.concat(missed, ", "))
+				end
+				if trace.empty then
+					seen.empty[#seen.empty + 1] = string.format("[%s%s] %s", here, profile.name, path)
+				end
+				if #trace.quests > 0 then
+					effects[#effects + 1] = "퀘스트 " .. table.concat(trace.quests, ",")
+				end
+				lines[#lines + 1] = string.format("  [%s%s] %s => %s (대화 %d, %s)", here, profile.name, path, table.concat(effects, ", "), trace.dialogs, trace.ended)
+				if trace.ended == "상점" then
+					break
+				end
 			end
-			local label = string.format("%s [%s] %s", where, profile.name, path)
-			if trace.error ~= nil then
-				ctx:fail(label .. ": " .. trace.error)
+			if #queue > 0 then
+				seen.capped = true
+				lines[#lines + 1] = string.format("  [%s%s] 경로 상한 %d 도달, 남은 분기 %d", here, profile.name, MAX_PATHS, #queue)
 			end
-			if trace.ended == "응답 없음" then
-				ctx:fail(label .. ": 대화 도중 응답 없음")
-			end
-			if trace.empty then
-				seen.empty[#seen.empty + 1] = string.format("[%s] %s", profile.name, path)
-			end
-			if #trace.quests > 0 then
-				effects[#effects + 1] = "퀘스트 " .. table.concat(trace.quests, ",")
-			end
-			lines[#lines + 1] = string.format("  [%s] %s => %s (대화 %d, %s)", profile.name, path, table.concat(effects, ", "), trace.dialogs, trace.ended)
-			if trace.ended == "상점" then
-				break
-			end
-		end
-		if #queue > 0 then
-			lines[#lines + 1] = string.format("  [%s] 경로 상한 %d 도달, 남은 분기 %d", profile.name, MAX_PATHS, #queue)
 		end
 	end
 
-	local list = suspects(entry, refs, seen)
-	for _, s in ipairs(list) do
-		lines[#lines + 1] = "  의심: " .. s
+	local real, unverified = 0, 0
+	for _, s in ipairs(suspects(spots, refs, seen)) do
+		if s.unverified ~= nil then
+			unverified = unverified + 1
+			lines[#lines + 1] = "  미확인(" .. s.unverified .. "): " .. s.text
+		else
+			real = real + 1
+			lines[#lines + 1] = "  의심: " .. s.text
+		end
 	end
-	if #list > 0 then
+	if real > 0 then
 		summary.suspects = summary.suspects + 1
+	elseif unverified > 0 then
+		summary.unverified = summary.unverified + 1
 	end
 	lines[1] = string.format("%s %.1f초", where, os.clock() - started)
 	ctx:report(table.concat(lines, "\n"))
@@ -403,7 +506,10 @@ test_suite {
 	},
 
 	on_finished = function(ctx)
-		local text = string.format("NPC %d개, 경로 %d개, 의심 NPC %d개", summary.npcs, summary.paths, summary.suspects)
+		local text = string.format(
+			"NPC %d개, 경로 %d개, 의심 NPC %d개, 미확인만 있는 NPC %d개",
+			summary.npcs, summary.paths, summary.suspects, summary.unverified
+		)
 		ctx:report(text)
 		log("info", text)
 		local t = summary.time

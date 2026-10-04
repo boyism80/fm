@@ -190,6 +190,50 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(a.checkBot(L).HP))
 			return 1
 		},
+		"level": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).Level))
+			return 1
+		},
+		"job": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).Job))
+			return 1
+		},
+		"exp": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).EXP))
+			return 1
+		},
+		"meso": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).Meso))
+			return 1
+		},
+		"fame": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).Fame))
+			return 1
+		},
+		"items": func(L *lua.LState) int {
+			counts := make(map[uint32]int)
+			for _, tab := range a.checkBot(L).Items {
+				for slot, item := range tab {
+					if slot > 0 {
+						counts[item.ItemID] += int(item.Count)
+					}
+				}
+			}
+			t := L.NewTable()
+			for id, count := range counts {
+				t.RawSetInt(int(id), lua.LNumber(count))
+			}
+			L.Push(t)
+			return 1
+		},
+		"quests": func(L *lua.LState) int {
+			t := L.NewTable()
+			for id, status := range a.checkBot(L).Quests {
+				t.RawSetInt(int(id), lua.LNumber(status))
+			}
+			L.Push(t)
+			return 1
+		},
 		"position": func(L *lua.LState) int {
 			pos, ok := a.checkBot(L).Position(a.wz)
 			if ok == false {

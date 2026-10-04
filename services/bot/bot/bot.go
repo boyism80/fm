@@ -34,10 +34,22 @@ type Bot struct {
 	Spawn  uint8
 	Moved  *types.Point[int16]
 	HP     uint16
+	Level  uint8
+	Job    uint16
+	EXP    int32
+	Meso   int32
+	Fame   int32
 	NPCs   map[uint32]uint32
+	Quests map[uint16]uint8
+	Items  map[constant.InventoryType]map[int16]ItemSlot
 	Dialog constant.DialogType
 	cfg    *config.Bot
 	conn   *conn.Conn
+}
+
+type ItemSlot struct {
+	ItemID uint32
+	Count  uint16
 }
 
 func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
@@ -46,11 +58,13 @@ func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
 		return nil, fmt.Errorf("character name %q is longer than 12 bytes", name)
 	}
 	return &Bot{
-		Index: n,
-		ID:    fmt.Sprintf("bot_%s_%d", runID, n),
-		Name:  name,
-		NPCs:  make(map[uint32]uint32),
-		cfg:   cfg,
+		Index:  n,
+		ID:     fmt.Sprintf("bot_%s_%d", runID, n),
+		Name:   name,
+		NPCs:   make(map[uint32]uint32),
+		Quests: make(map[uint16]uint8),
+		Items:  make(map[constant.InventoryType]map[int16]ItemSlot),
+		cfg:    cfg,
 	}, nil
 }
 
@@ -86,11 +100,30 @@ func (b *Bot) Listen(onPacket func(gen int, opcode uint16, body []byte), onClose
 func (b *Bot) Update(pkt any) {
 	switch p := pkt.(type) {
 	case *response.Login:
-		if p.Character != nil {
-			b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
-		}
 		b.Moved = nil
 		clear(b.NPCs)
+		clear(b.Quests)
+		clear(b.Items)
+		if p.Character == nil {
+			return
+		}
+		b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
+		b.Level, b.Job, b.EXP, b.Fame = p.Character.Level, p.Character.Class, int32(p.Character.Exp), int32(p.Character.Population)
+		b.Meso = p.Character.Inventory.Meso
+		for typ, tab := range p.Character.Inventory.Tabs {
+			for slot, item := range tab.Items {
+				b.setItem(typ, slot, item)
+			}
+		}
+		for parts, item := range p.Character.Inventory.Equipped {
+			b.setItem(constant.InventoryTypeEquipment, int16(parts), item)
+		}
+		for _, q := range p.Character.QuestsStarted {
+			b.Quests[q.QuestID] = q.Status
+		}
+		for _, q := range p.Character.QuestsCompleted {
+			b.Quests[q.QuestID] = q.Status
+		}
 	case *response.Warp:
 		if p.Character != nil {
 			b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
@@ -98,8 +131,53 @@ func (b *Bot) Update(pkt any) {
 		b.Moved = nil
 		clear(b.NPCs)
 	case *response.UpdateStats:
-		if hp, ok := p.Stats[constant.StatHP]; ok {
-			b.HP = uint16(hp)
+		for stat, value := range p.Stats {
+			switch stat {
+			case constant.StatHP:
+				b.HP = uint16(value)
+			case constant.StatLevel:
+				b.Level = uint8(value)
+			case constant.StatClass:
+				b.Job = uint16(value)
+			case constant.StatEXP:
+				b.EXP = value
+			case constant.StatMeso:
+				b.Meso = value
+			case constant.StatPopulation:
+				b.Fame = value
+			}
+		}
+	case *response.UpdateQuest:
+		if p.Status == response.QuestWireStatusNotStarted {
+			delete(b.Quests, p.QuestID)
+		} else {
+			b.Quests[p.QuestID] = p.Status
+		}
+	case *response.InventoryOperation:
+		for _, change := range p.Changes {
+			tab := b.Items[change.InventoryType]
+			switch change.Mode {
+			case response.INVENTORY_MODE_ADD:
+				b.setItem(change.InventoryType, change.Slot, change.Item)
+			case response.INVENTORY_MODE_UPDATE:
+				if slot, ok := tab[change.Slot]; ok {
+					slot.Count = change.Count
+					tab[change.Slot] = slot
+				}
+			case response.INVENTORY_MODE_MOVE:
+				src, ok := tab[change.Slot]
+				if ok == false {
+					continue
+				}
+				if dest, ok := tab[change.Dest]; ok {
+					tab[change.Slot] = dest
+				} else {
+					delete(tab, change.Slot)
+				}
+				tab[change.Dest] = src
+			case response.INVENTORY_MODE_REMOVE:
+				delete(tab, change.Slot)
+			}
 		}
 	case *response.SpawnNpc:
 		b.NPCs[p.NPC.OID] = p.NPC.NpcId
@@ -121,6 +199,18 @@ func (b *Bot) Update(pkt any) {
 			b.Dialog = constant.DialogTypeAcceptEscape
 		}
 	}
+}
+
+func (b *Bot) setItem(typ constant.InventoryType, slot int16, item dto.Item) {
+	if item == nil {
+		return
+	}
+	tab, ok := b.Items[typ]
+	if ok == false {
+		tab = make(map[int16]ItemSlot)
+		b.Items[typ] = tab
+	}
+	tab[slot] = ItemSlot{ItemID: item.GetItemID(), Count: item.GetCount()}
 }
 
 func (b *Bot) FindNPC(templateID uint32) (uint32, bool) {
