@@ -18,4 +18,6 @@ func (p *GuildMessage) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *GuildMessage) Deserialize(*stream.StreamReader) {}
+func (p *GuildMessage) Deserialize(r *stream.StreamReader) {
+	p.Code = constant.GuildResponseCode(r.ReadU8())
+}

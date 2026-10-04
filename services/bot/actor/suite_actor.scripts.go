@@ -3,12 +3,24 @@ package actor
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
+)
+
+var (
+	sevenDigits  = regexp.MustCompile(`\b(\d{7})\b`)
+	questCall    = regexp.MustCompile(`quest\(\s*(\d+)\s*\)`)
+	itemChange   = regexp.MustCompile(`(?:\[\s*(\d{7})\s*\]\s*=|(?:mkitem|rmitem)\(\s*(\d{7})\b)`)
+	mesoChange   = regexp.MustCompile(`\bmeso\s*=`)
+	expChange    = regexp.MustCompile(`\bexp\s*=`)
+	mapLiteral   = regexp.MustCompile(`:map\(\s*(\d{9})\b`)
+	mapVariable  = regexp.MustCompile(`:map\(\s*[^\d\s)]`)
+	mapAnyNumber = regexp.MustCompile(`(?:^|[^#m\d])(\d{9})\b`)
 )
 
 type npcSpot struct {
@@ -74,6 +86,43 @@ func (a *SuiteActor) wzFuncs() map[string]lua.LGFunction {
 			L.Push(found)
 			L.Push(missing)
 			return 2
+		},
+		"script_refs": func(L *lua.LState) int {
+			data, err := os.ReadFile(filepath.Join(a.cfg.GameScriptDir, L.CheckString(1), L.CheckString(2)+".lua"))
+			if err != nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			maps := mapLiteral.FindAllSubmatch(data, -1)
+			if mapVariable.Match(data) {
+				maps = append(maps, mapAnyNumber.FindAllSubmatch(data, -1)...)
+			}
+			var changes [][][]byte
+			for _, m := range itemChange.FindAllSubmatch(data, -1) {
+				if len(m[1]) == 0 {
+					m[1] = m[2]
+				}
+				changes = append(changes, m)
+			}
+			var quests []uint32
+			for _, m := range questCall.FindAllSubmatch(data, -1) {
+				id, err := strconv.ParseUint(string(m[1]), 10, 32)
+				if err != nil || a.wz.GetQuest(uint32(id)) == nil || slices.Contains(quests, uint32(id)) {
+					continue
+				}
+				quests = append(quests, uint32(id))
+			}
+			slices.Sort(quests)
+
+			refs := L.NewTable()
+			refs.RawSetString("items", a.numberList(L, a.itemIDs(sevenDigits.FindAllSubmatch(data, -1))))
+			refs.RawSetString("quests", a.numberList(L, quests))
+			refs.RawSetString("maps", a.numberList(L, a.mapIDs(maps)))
+			refs.RawSetString("changes", a.numberList(L, a.itemIDs(changes)))
+			refs.RawSetString("meso", lua.LBool(mesoChange.Match(data)))
+			refs.RawSetString("exp", lua.LBool(expChange.Match(data)))
+			L.Push(refs)
+			return 1
 		},
 		"portal_scripts": func(L *lua.LState) int {
 			names, err := a.scriptNames("portal")
@@ -152,6 +201,43 @@ func (a *SuiteActor) npcEntry(L *lua.LState, npcID uint32, at npcSpot) *lua.LTab
 	entry.RawSetString("y", lua.LNumber(at.spawn.Position.Y))
 	entry.RawSetString("foothold", lua.LNumber(at.spawn.Foothold))
 	return entry
+}
+
+func (a *SuiteActor) numberList(L *lua.LState, ids []uint32) *lua.LTable {
+	t := L.NewTable()
+	for _, id := range ids {
+		t.Append(lua.LNumber(id))
+	}
+	return t
+}
+
+func (a *SuiteActor) itemIDs(matches [][][]byte) []uint32 {
+	var ids []uint32
+	for _, m := range matches {
+		id, err := strconv.ParseUint(string(m[1]), 10, 32)
+		if err != nil || a.wz.GetItemName(uint32(id)) == "" || slices.Contains(ids, uint32(id)) {
+			continue
+		}
+		ids = append(ids, uint32(id))
+	}
+	slices.Sort(ids)
+	return ids
+}
+
+func (a *SuiteActor) mapIDs(matches [][][]byte) []uint32 {
+	var ids []uint32
+	for _, m := range matches {
+		id, err := strconv.ParseUint(string(m[1]), 10, 32)
+		if err != nil || slices.Contains(ids, uint32(id)) {
+			continue
+		}
+		if _, ok := a.wz.Maps[uint32(id)]; ok == false {
+			continue
+		}
+		ids = append(ids, uint32(id))
+	}
+	slices.Sort(ids)
+	return ids
 }
 
 func (a *SuiteActor) scriptIDs(kind string) ([]uint32, error) {

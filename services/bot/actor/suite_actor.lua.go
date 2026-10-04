@@ -3,6 +3,8 @@ package actor
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
@@ -126,6 +128,27 @@ func (a *SuiteActor) ctxFuncs() map[string]lua.LGFunction {
 			a.Fail(L.CheckString(2))
 			L.Push(lua.LFalse)
 			return 1
+		},
+		"report": func(L *lua.LState) int {
+			text := L.CheckString(2)
+			if a.report == nil {
+				path := filepath.Join(a.cfg.ReportDir, a.suite.Name+".txt")
+				if err := os.MkdirAll(a.cfg.ReportDir, 0o755); err != nil {
+					L.RaiseError("report: %v", err)
+					return 0
+				}
+				f, err := os.Create(path)
+				if err != nil {
+					L.RaiseError("report: %v", err)
+					return 0
+				}
+				a.report = f
+				log.Printf("[%s] report: %s", a.name, path)
+			}
+			if _, err := a.report.WriteString(text + "\n"); err != nil {
+				L.RaiseError("report: %v", err)
+			}
+			return 0
 		},
 		"sleep": func(L *lua.LState) int {
 			a.park(L)

@@ -79,11 +79,15 @@ func (r *RunnerActor) loadRegistry() error {
 		s := &Suite{Name: L.CheckString(1)}
 		if opts := L.OptTable(2, nil); opts != nil {
 			s.Serial = lua.LVAsBool(opts.RawGetString("serial"))
+			s.Explicit = lua.LVAsBool(opts.RawGetString("explicit"))
 			if n, ok := opts.RawGetString("timeout_ms").(lua.LNumber); ok {
 				s.TimeoutMs = int(n)
 			}
 		}
 		if strings.Contains(s.Name, r.filter) == false {
+			return 0
+		}
+		if s.Explicit && r.filter == "" {
 			return 0
 		}
 		if s.Serial {

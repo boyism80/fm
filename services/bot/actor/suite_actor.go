@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"sync/atomic"
 	"time"
@@ -36,6 +37,7 @@ type SuiteActor struct {
 	started  time.Time
 	deadline *time.Timer
 	failures []string
+	report   *os.File
 	infra    bool
 	skipped  bool
 	ended    bool
@@ -75,6 +77,9 @@ func (a *SuiteActor) Receive(ctx actor.Context) {
 	case *actor.Stopped:
 		if a.L != nil {
 			a.L.Close()
+		}
+		if a.report != nil {
+			_ = a.report.Close()
 		}
 	case *BotEntered:
 		a.botEntered(msg)

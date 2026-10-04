@@ -237,6 +237,7 @@ type Bot struct {
 	SuiteTimeoutMs int      `yaml:"suite_timeout_ms"`
 	ScriptDir      string   `yaml:"script_dir"`
 	GameScriptDir  string   `yaml:"game_script_dir"`
+	ReportDir      string   `yaml:"report_dir"`
 	WzPath         string   `yaml:"wz_path"`
 }
 
@@ -272,6 +273,9 @@ func LoadBot(path string) (*Bot, error) {
 	}
 	if b.GameScriptDir == "" {
 		b.GameScriptDir = "../game/script"
+	}
+	if b.ReportDir == "" {
+		b.ReportDir = "out"
 	}
 	if b.WzPath == "" {
 		b.WzPath = "resources/wz"
