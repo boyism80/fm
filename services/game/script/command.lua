@@ -489,6 +489,7 @@ local command_funcs = {
 			end
 			me:clear_inventory()
 			me:clear_quests()
+			me:level(1)
 			me:level(level)
 			me:class(class)
 			me:exp(0)
