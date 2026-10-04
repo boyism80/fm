@@ -30,7 +30,17 @@ func (p *CarnivalStart) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *CarnivalStart) Deserialize(reader *stream.StreamReader) {}
+func (p *CarnivalStart) Deserialize(reader *stream.StreamReader) {
+	p.Team = constant.CarnivalTeam(reader.ReadU8())
+	p.PersonalAvailableCP = reader.ReadU16()
+	p.PersonalTotalCP = reader.ReadU16()
+	p.TeamAvailableCP = reader.ReadU16()
+	p.TeamTotalCP = reader.ReadU16()
+	p.EnemyAvailableCP = reader.ReadU16()
+	p.EnemyTotalCP = reader.ReadU16()
+	reader.ReadU64()
+	reader.ReadU16()
+}
 
 type CarnivalObtainedCP struct {
 	Avail uint16
@@ -45,7 +55,10 @@ func (p *CarnivalObtainedCP) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *CarnivalObtainedCP) Deserialize(reader *stream.StreamReader) {}
+func (p *CarnivalObtainedCP) Deserialize(reader *stream.StreamReader) {
+	p.Avail = reader.ReadU16()
+	p.Total = reader.ReadU16()
+}
 
 type CarnivalPartyCP struct {
 	Team  constant.CarnivalTeam
@@ -62,7 +75,11 @@ func (p *CarnivalPartyCP) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *CarnivalPartyCP) Deserialize(reader *stream.StreamReader) {}
+func (p *CarnivalPartyCP) Deserialize(reader *stream.StreamReader) {
+	p.Team = constant.CarnivalTeam(reader.ReadU8())
+	p.Avail = reader.ReadU16()
+	p.Total = reader.ReadU16()
+}
 
 type CarnivalSummon struct {
 	Tab  uint8
@@ -79,7 +96,11 @@ func (p *CarnivalSummon) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *CarnivalSummon) Deserialize(reader *stream.StreamReader) {}
+func (p *CarnivalSummon) Deserialize(reader *stream.StreamReader) {
+	p.Tab = reader.ReadU8()
+	p.Num = reader.ReadU8()
+	p.Name = reader.ReadStr16()
+}
 
 type CarnivalDied struct {
 	Team   constant.CarnivalTeam
@@ -96,4 +117,8 @@ func (p *CarnivalDied) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *CarnivalDied) Deserialize(reader *stream.StreamReader) {}
+func (p *CarnivalDied) Deserialize(reader *stream.StreamReader) {
+	p.Team = constant.CarnivalTeam(reader.ReadU8())
+	p.Name = reader.ReadStr16()
+	p.LostCP = reader.ReadU8()
+}

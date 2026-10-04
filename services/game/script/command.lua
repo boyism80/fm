@@ -785,6 +785,25 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["타이머"] = {
+		privilege = ROLE.Admin,
+		usage = "<초> - 참가 중인 컨텐츠의 현재 단계 남은 시간 변경",
+		command = function(me, args)
+			local sec = tonumber(args[1])
+			if not sec or sec <= 0 then
+				me:message("사용법: /타이머 <초>")
+				return true
+			end
+			local sm = me:state_machine()
+			if sm == nil then
+				me:message("참가 중인 컨텐츠가 없습니다.")
+				return true
+			end
+			sm:restart_timer(sec * 1000)
+			me:message(string.format("남은 시간: %d초", sec))
+			return true
+		end,
+	},
 	["맵이동"] = {
 		privilege = ROLE.Admin,
 		usage = "<맵이름|맵ID> [스폰포인트] - 맵 이동",

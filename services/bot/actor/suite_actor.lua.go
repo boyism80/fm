@@ -35,6 +35,7 @@ var requests = []outbound{
 	&request.ItemLoot{},
 	&request.MoveItem{},
 	&request.DamageReactor{},
+	&request.Carnival{},
 }
 
 func (a *SuiteActor) register() {
@@ -211,6 +212,10 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		},
 		"meso": func(L *lua.LState) int {
 			L.Push(lua.LNumber(a.checkBot(L).Meso))
+			return 1
+		},
+		"cp": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).CP))
 			return 1
 		},
 		"fame": func(L *lua.LState) int {
@@ -480,13 +485,14 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		"mobs": func(L *lua.LState) int {
 			templateID := uint32(L.OptInt(2, 0))
 			t := L.NewTable()
-			for oid, id := range a.checkBot(L).Mobs {
-				if templateID != 0 && id != templateID {
+			for oid, m := range a.checkBot(L).Mobs {
+				if templateID != 0 && m.MobId != templateID {
 					continue
 				}
 				mob := L.NewTable()
 				mob.RawSetString("oid", lua.LNumber(oid))
-				mob.RawSetString("id", lua.LNumber(id))
+				mob.RawSetString("id", lua.LNumber(m.MobId))
+				mob.RawSetString("team", lua.LNumber(m.CarnivalTeam))
 				t.Append(mob)
 			}
 			L.Push(t)
@@ -618,13 +624,13 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 }
 
 func (a *SuiteActor) attackPacket(b *bot.Bot, oid uint32, damage uint32, hits uint8) (*request.Attack, bool) {
-	templateID, ok := b.Mobs[oid]
+	target, ok := b.Mobs[oid]
 	if ok == false {
 		return nil, false
 	}
 	if damage == 0 {
 		damage = 1
-		if mob, ok := a.wz.Monsters[templateID]; ok && mob.MaxHP > 0 {
+		if mob, ok := a.wz.Monsters[target.MobId]; ok && mob.MaxHP > 0 {
 			damage = uint32(mob.MaxHP)
 		}
 	}

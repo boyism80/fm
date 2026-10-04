@@ -54,6 +54,11 @@ var Responses = []any{
 	&response.SpawnReactor{},
 	&response.TriggerReactor{},
 	&response.DestroyReactor{},
+	&response.CarnivalStart{},
+	&response.CarnivalObtainedCP{},
+	&response.CarnivalPartyCP{},
+	&response.CarnivalSummon{},
+	&response.CarnivalDied{},
 }
 
 type deserializer interface {
@@ -217,6 +222,26 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		return pkt, nil
 	case (&response.DestroyReactor{}).Opcode():
 		pkt := &response.DestroyReactor{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.CarnivalStart{}).Opcode():
+		pkt := &response.CarnivalStart{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.CarnivalObtainedCP{}).Opcode():
+		pkt := &response.CarnivalObtainedCP{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.CarnivalPartyCP{}).Opcode():
+		pkt := &response.CarnivalPartyCP{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.CarnivalSummon{}).Opcode():
+		pkt := &response.CarnivalSummon{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.CarnivalDied{}).Opcode():
+		pkt := &response.CarnivalDied{}
 		pkt.Deserialize(reader)
 		return pkt, nil
 	case (&response.PartyCreated{}).Opcode():

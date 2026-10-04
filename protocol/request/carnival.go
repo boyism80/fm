@@ -13,6 +13,8 @@ type Carnival struct {
 func (*Carnival) Opcode() byte { return 0xB1 }
 
 func (p *Carnival) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(p.Tab))
+	writer.Write32(p.Num)
 	return nil
 }
 

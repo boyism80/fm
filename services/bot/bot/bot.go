@@ -39,8 +39,9 @@ type Bot struct {
 	EXP      int32
 	Meso     int32
 	Fame     int32
+	CP       uint16
 	NPCs     map[uint32]uint32
-	Mobs     map[uint32]uint32
+	Mobs     map[uint32]dto.Mob
 	Drops    map[uint32]Drop
 	Reactors map[uint32]dto.Reactor
 	Quests   map[uint16]uint8
@@ -71,7 +72,7 @@ func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
 		ID:       fmt.Sprintf("bot_%s_%d", runID, n),
 		Name:     name,
 		NPCs:     make(map[uint32]uint32),
-		Mobs:     make(map[uint32]uint32),
+		Mobs:     make(map[uint32]dto.Mob),
 		Drops:    make(map[uint32]Drop),
 		Reactors: make(map[uint32]dto.Reactor),
 		Quests:   make(map[uint16]uint8),
@@ -202,7 +203,7 @@ func (b *Bot) Update(pkt any) {
 	case *response.RemoveNpc:
 		delete(b.NPCs, p.OID)
 	case *response.SpawnMob:
-		b.Mobs[p.Mob.OID] = p.Mob.MobId
+		b.Mobs[p.Mob.OID] = *p.Mob
 	case *response.DieMob:
 		delete(b.Mobs, p.OID)
 	case *response.SpawnItem:
@@ -220,6 +221,10 @@ func (b *Bot) Update(pkt any) {
 		}
 	case *response.DestroyReactor:
 		delete(b.Reactors, p.Reactor.OID)
+	case *response.CarnivalStart:
+		b.CP = p.PersonalAvailableCP
+	case *response.CarnivalObtainedCP:
+		b.CP = p.Avail
 	case *response.Dialog:
 		b.Dialog = p.Type
 	case *response.DialogYesNo:
