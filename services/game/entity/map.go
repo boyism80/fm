@@ -1381,6 +1381,9 @@ func (m *Map) AttachStateMachine(sm *StateMachine) error {
 	if m == nil || sm == nil {
 		return fmt.Errorf("invalid state machine attach")
 	}
+	if sm.Disposed() {
+		return fmt.Errorf("state machine for map %d is disposed", m.GetMapID())
+	}
 	m.stateMachineMu.Lock()
 	defer m.stateMachineMu.Unlock()
 	if m.stateMachine != nil {

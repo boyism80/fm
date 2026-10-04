@@ -426,7 +426,7 @@ func (a *StateMachineActor) beginDetach(ctx actor.Context) {
 		a.lc.detachPending++
 		root.Send(home, &DetachStateMachine{StateMachine: sm, ReplyTo: self, MapID: m.GetMapID()})
 	}
-	if a.lc.detachPending == 0 {
+	if a.lc.detachPending == 0 && a.lc.attachPending == 0 {
 		a.finalizeStop()
 	}
 }
@@ -435,14 +435,28 @@ func (a *StateMachineActor) handleAttachAck(ctx actor.Context, msg *AttachStateM
 	if msg == nil {
 		return
 	}
-	if !msg.OK {
-		a.abortCreate(ctx, fmt.Sprintf("attach to map %d failed", msg.MapID))
-		return
-	}
 	if a.lc.attachPending > 0 {
 		a.lc.attachPending--
 	}
-	if a.lc.attachPending == 0 && !a.lc.detaching {
+
+	if a.lc.detaching {
+		if msg.OK && msg.Map.Closed() == false {
+			if home := msg.Map.HomeActorPID(); home != nil {
+				a.lc.detachPending++
+				ctx.Send(home, &DetachStateMachine{StateMachine: a.StateMachine, ReplyTo: ctx.Self(), MapID: msg.MapID})
+			}
+		}
+		if a.lc.detachPending == 0 && a.lc.attachPending == 0 {
+			a.finalizeStop()
+		}
+		return
+	}
+
+	if msg.OK == false {
+		a.abortCreate(ctx, fmt.Sprintf("attach to map %d failed", msg.MapID))
+		return
+	}
+	if a.lc.attachPending == 0 {
 		a.finishCreate(ctx)
 	}
 }
@@ -451,7 +465,7 @@ func (a *StateMachineActor) handleDetachAck(_ actor.Context) {
 	if a.lc.detachPending > 0 {
 		a.lc.detachPending--
 	}
-	if a.lc.detachPending == 0 {
+	if a.lc.detachPending == 0 && a.lc.attachPending == 0 {
 		a.finalizeStop()
 	}
 }

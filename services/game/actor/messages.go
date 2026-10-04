@@ -109,6 +109,7 @@ type AttachStateMachine struct {
 
 type AttachStateMachineAck struct {
 	MapID uint32
+	Map   *entity.Map
 	OK    bool
 }
 
