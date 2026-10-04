@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/util"
+	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/transform"
 )
@@ -105,23 +106,22 @@ func (sw *StreamWriter) WriteStr8(str string) {
 	}
 }
 
+func (sw *StreamWriter) encodeEUCKR(str string) []byte {
+	encoded, _, err := transform.Bytes(encoding.ReplaceUnsupported(korean.EUCKR.NewEncoder()), []byte(str))
+	if err != nil {
+		panic(err)
+	}
+	return bytes.ReplaceAll(encoded, []byte{encoding.ASCIISub}, []byte{'?'})
+}
+
 func (sw *StreamWriter) WriteStr16(str string) {
 	if len(str) > 65535 {
 		panic(errors.New("string too long for WriteStr16"))
 	}
 
-	encoder := korean.EUCKR.NewEncoder()
-	encodedStr, _, err := transform.Bytes(encoder, []byte(str))
-	if err != nil {
-		panic(err)
-	}
-
+	encodedStr := sw.encodeEUCKR(str)
 	sw.WriteU16(uint16(len(encodedStr)))
-
-	_, err = sw.buf.Write(encodedStr)
-	if err != nil {
-		panic(err)
-	}
+	sw.Write(encodedStr)
 }
 
 func (sw *StreamWriter) WriteStr32(str string) {
@@ -129,31 +129,13 @@ func (sw *StreamWriter) WriteStr32(str string) {
 		panic(errors.New("string too long for WriteStr32"))
 	}
 
-	encoder := korean.EUCKR.NewEncoder()
-	decodedStr, _, err := transform.Bytes(encoder, []byte(str))
-	if err != nil {
-		panic(err)
-	}
-
-	sw.WriteU32(uint32(len(decodedStr)))
-
-	_, err = sw.buf.Write(decodedStr)
-	if err != nil {
-		panic(err)
-	}
+	encodedStr := sw.encodeEUCKR(str)
+	sw.WriteU32(uint32(len(encodedStr)))
+	sw.Write(encodedStr)
 }
 
 func (sw *StreamWriter) WriteStaticStr(str string, max int) {
-	if len(str) > int(^uint32(0)) {
-		panic(errors.New("string too long for WriteStr32"))
-	}
-
-	encoder := korean.EUCKR.NewEncoder()
-	encodedStr, _, err := transform.Bytes(encoder, []byte(str))
-	if err != nil {
-		panic(err)
-	}
-
+	encodedStr := sw.encodeEUCKR(str)
 	if len(encodedStr) > max {
 		encodedStr = encodedStr[:max]
 	}

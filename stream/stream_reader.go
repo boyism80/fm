@@ -1,16 +1,20 @@
 package stream
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
+	"unicode/utf8"
 
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/transform"
 )
 
 var ErrTruncated = errors.New("stream: not enough bytes")
+
+var ErrInvalidEncoding = errors.New("stream: invalid EUC-KR string")
 
 var ErrSkipOutOfBounds = errors.New("stream: skip out of bounds")
 
@@ -102,15 +106,20 @@ func (sr *StreamReader) ReadStr8() string {
 	return string(sr.Read(length))
 }
 
-func (sr *StreamReader) ReadStr16() string {
-	length := int(sr.ReadU16())
-	b := sr.Read(length)
-	decoder := korean.EUCKR.NewDecoder()
-	decodedStr, _, err := transform.Bytes(decoder, b)
+func (sr *StreamReader) decodeEUCKR(b []byte) string {
+	decoded, _, err := transform.Bytes(korean.EUCKR.NewDecoder(), b)
 	if err != nil {
 		panic(err)
 	}
-	return string(decodedStr)
+	if bytes.ContainsRune(decoded, utf8.RuneError) {
+		panic(ErrInvalidEncoding)
+	}
+	return string(decoded)
+}
+
+func (sr *StreamReader) ReadStr16() string {
+	length := int(sr.ReadU16())
+	return sr.decodeEUCKR(sr.Read(length))
 }
 
 func (sr *StreamReader) ReadStaticStr(n int) string {
@@ -119,11 +128,7 @@ func (sr *StreamReader) ReadStaticStr(n int) string {
 	for end < len(b) && b[end] != 0 {
 		end++
 	}
-	decoded, _, err := transform.Bytes(korean.EUCKR.NewDecoder(), b[:end])
-	if err != nil {
-		panic(err)
-	}
-	return string(decoded)
+	return sr.decodeEUCKR(b[:end])
 }
 
 func (sr *StreamReader) ReadIPAddress() string {
@@ -133,13 +138,7 @@ func (sr *StreamReader) ReadIPAddress() string {
 
 func (sr *StreamReader) ReadStr32() string {
 	length := int(sr.ReadU32())
-	b := sr.Read(length)
-	decoder := korean.EUCKR.NewDecoder()
-	decodedStr, _, err := transform.Bytes(decoder, b)
-	if err != nil {
-		panic(err)
-	}
-	return string(decodedStr)
+	return sr.decodeEUCKR(sr.Read(length))
 }
 
 func (sr *StreamReader) Reset() {
