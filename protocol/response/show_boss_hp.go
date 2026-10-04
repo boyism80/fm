@@ -15,7 +15,7 @@ func (p *ShowBossHp) Opcode() uint16 {
 }
 
 func (p *ShowBossHp) Serialize(sw *stream.StreamWriter) error {
-	sw.WriteU8(5)
+	sw.WriteU8(uint8(EnvironmentChangeModeBossHP))
 	sw.WriteU32(p.MobID)
 	sw.Write32(p.CurrentHP)
 	sw.Write32(p.MaxHP)
@@ -24,5 +24,11 @@ func (p *ShowBossHp) Serialize(sw *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *ShowBossHp) Deserialize(*stream.StreamReader) {
+func (p *ShowBossHp) Deserialize(reader *stream.StreamReader) {
+	reader.ReadU8()
+	p.MobID = reader.ReadU32()
+	p.CurrentHP = reader.Read32()
+	p.MaxHP = reader.Read32()
+	p.TagColor = reader.ReadU8()
+	p.TagBgColor = reader.ReadU8()
 }

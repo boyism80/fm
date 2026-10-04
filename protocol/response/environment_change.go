@@ -10,6 +10,7 @@ const (
 	EnvironmentChangeModeObjectState EnvironmentChangeMode = 2
 	EnvironmentChangeModeMapEffect   EnvironmentChangeMode = 3
 	EnvironmentChangeModeSound       EnvironmentChangeMode = 4
+	EnvironmentChangeModeBossHP      EnvironmentChangeMode = 5
 	EnvironmentChangeModeMusic       EnvironmentChangeMode = 6
 )
 

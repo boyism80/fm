@@ -51,6 +51,7 @@ var Responses = []any{
 	&response.SpawnMeso{},
 	&response.RemoveItem{},
 	&response.EnvironmentChange{},
+	&response.ShowBossHp{},
 	&response.SpawnReactor{},
 	&response.TriggerReactor{},
 	&response.DestroyReactor{},
@@ -209,6 +210,14 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		pkt.Deserialize(reader)
 		return pkt, nil
 	case (&response.EnvironmentChange{}).Opcode():
+		if len(body) == 0 {
+			return nil, fmt.Errorf("empty environment change")
+		}
+		if response.EnvironmentChangeMode(body[0]) == response.EnvironmentChangeModeBossHP {
+			pkt := &response.ShowBossHp{}
+			pkt.Deserialize(reader)
+			return pkt, nil
+		}
 		pkt := &response.EnvironmentChange{}
 		pkt.Deserialize(reader)
 		return pkt, nil
