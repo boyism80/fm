@@ -88,15 +88,8 @@ func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *entity.Char
 		return nil
 	}
 	charID := ch.GetID()
-	if g.LeaderCharacterID != charID {
-		return nil
-	}
-	m := g.FindMember(charID)
-	if m == nil || m.GetRank() != internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
-		return nil
-	}
-	ar, hasRank := m.GetAllianceRank()
-	if !hasRank || ar != 1 {
+	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
+	if hasRank == false || ar != 1 {
 		return nil
 	}
 	allianceID, inAlliance := g.GetAllianceID()
@@ -148,15 +141,8 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *enti
 		return nil
 	}
 	charID := ch.GetID()
-	if g.LeaderCharacterID != charID {
-		return nil
-	}
-	m := g.FindMember(charID)
-	if m == nil || m.GetRank() != internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
-		return nil
-	}
-	ar, hasRank := m.GetAllianceRank()
-	if !hasRank || ar != 1 {
+	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
+	if hasRank == false || ar != 1 {
 		return nil
 	}
 	allianceID, inAlliance := g.GetAllianceID()
@@ -204,15 +190,8 @@ func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *enti
 		return nil
 	}
 	charID := ch.GetID()
-	if g.LeaderCharacterID != charID {
-		return nil
-	}
-	m := g.FindMember(charID)
-	if m == nil || m.GetRank() != internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
-		return nil
-	}
-	ar, hasRank := m.GetAllianceRank()
-	if !hasRank || ar > 2 {
+	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
+	if hasRank == false || ar > 2 {
 		return nil
 	}
 	if _, inAlliance := g.GetAllianceID(); !inAlliance {
@@ -254,15 +233,8 @@ func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *
 		return nil
 	}
 	charID := ch.GetID()
-	if g.LeaderCharacterID != charID {
-		return nil
-	}
-	m := g.FindMember(charID)
-	if m == nil || m.GetRank() != internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
-		return nil
-	}
-	ar, hasRank := m.GetAllianceRank()
-	if !hasRank || ar != 1 {
+	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
+	if hasRank == false || ar != 1 {
 		return nil
 	}
 	allianceID, inAlliance := g.GetAllianceID()
@@ -319,15 +291,8 @@ func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *
 		return nil
 	}
 	charID := ch.GetID()
-	if g.LeaderCharacterID != charID {
-		return nil
-	}
-	m := g.FindMember(charID)
-	if m == nil || m.GetRank() != internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
-		return nil
-	}
-	ar, hasRank := m.GetAllianceRank()
-	if !hasRank || ar > 2 {
+	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
+	if hasRank == false || ar > 2 {
 		return nil
 	}
 	if _, inAlliance := g.GetAllianceID(); !inAlliance {
@@ -371,15 +336,8 @@ func (h *AllianceOperation) handleInvite(ctx *core.ClientContext, ch *entity.Cha
 		return nil
 	}
 	charID := ch.GetID()
-	if g.LeaderCharacterID != charID {
-		return nil
-	}
-	m := g.FindMember(charID)
-	if m == nil || m.GetRank() != internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
-		return nil
-	}
-	ar, hasRank := m.GetAllianceRank()
-	if !hasRank || ar != 1 {
+	ar, hasRank := g.FindMaster(charID).GetAllianceRank()
+	if hasRank == false || ar != 1 {
 		return nil
 	}
 	allianceID, inAlliance := g.GetAllianceID()
@@ -439,11 +397,7 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *enti
 		return nil
 	}
 	charID := ch.GetID()
-	if g.LeaderCharacterID != charID {
-		return nil
-	}
-	m := g.FindMember(charID)
-	if m == nil || m.GetRank() != internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
+	if g.FindMaster(charID) == nil {
 		return nil
 	}
 	if _, inAlliance := g.GetAllianceID(); inAlliance {
@@ -498,11 +452,7 @@ func (h *AllianceOperation) handleDenyInvite(ctx *core.ClientContext, ch *entity
 		return nil
 	}
 	charID := ch.GetID()
-	if g.LeaderCharacterID != charID {
-		return nil
-	}
-	m := g.FindMember(charID)
-	if m == nil || m.GetRank() != internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
+	if g.FindMaster(charID) == nil {
 		return nil
 	}
 	if _, inAlliance := g.GetAllianceID(); inAlliance {

@@ -168,6 +168,17 @@ func (g *Guild) FindMember(characterID uint32) *GuildMember {
 	return nil
 }
 
+func (g *Guild) FindMaster(characterID uint32) *GuildMember {
+	if g == nil || g.LeaderCharacterID != characterID {
+		return nil
+	}
+	m := g.FindMember(characterID)
+	if m == nil || m.Rank != internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER {
+		return nil
+	}
+	return m
+}
+
 func (g *Guild) IsGuildMaster(characterID uint32) bool {
 	if g == nil || characterID == 0 {
 		return false
