@@ -45,6 +45,7 @@ return {
 			sm:finish(0)
 			return
 		end
+		arena:respawn({ include_one_time = true })
 		entrance:portal(ENTRANCE_PORTAL):script("instance_link")
 		sm:set_property("crack", tostring(crack))
 		return { entrance, arena }
