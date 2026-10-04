@@ -8,7 +8,7 @@ func (ch *Character) SaveLocation(name string) {
 	if m == nil {
 		return
 	}
-	ch.savedLocations[name] = m.GetMapID()
+	ch.savedLocations[name] = m.TemplateID()
 }
 
 func (ch *Character) SavedLocation(name string) (uint32, bool) {

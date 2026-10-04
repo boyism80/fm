@@ -109,10 +109,12 @@ func (ch *Character) ResumeDialog(actx actor.Context, dialogType constant.Dialog
 
 	state, _, err := luax.Resume(root, thread, args...)
 	if err != nil {
-		ch.ResetDialog()
+		if ch.GetDialog() == thread {
+			ch.ResetDialog()
+		}
 		return fmt.Errorf("resume dialog: %w", err)
 	}
-	if state != lua.ResumeYield {
+	if state != lua.ResumeYield && ch.GetDialog() == thread {
 		ch.ResetDialog()
 	}
 	return nil
