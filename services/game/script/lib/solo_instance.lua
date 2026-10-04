@@ -9,18 +9,13 @@ function M.find_map(sm, template_id)
 	return nil
 end
 
-function M.leave(sm, map_id, portal)
-	for _, player in ipairs(sm:players()) do
-		player:map(map_id, portal or 0)
-	end
-end
-
 function M.create(config)
 	local links = config.links or {}
 
 	return {
 		on_init = function(group)
 			group:declare_min_players(1)
+			group:declare_exit_map(config.exit_map)
 		end,
 
 		on_create = function(sm)
@@ -60,7 +55,7 @@ function M.create(config)
 			if config.timeout_message ~= nil then
 				sm:message(config.timeout_message, Msg.LightBlueText)
 			end
-			M.leave(sm, config.exit_map, config.exit_portal)
+			sm:finish(config.exit_map, config.exit_portal)
 		end,
 
 		on_finish = function(sm)

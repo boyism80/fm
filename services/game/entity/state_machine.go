@@ -108,7 +108,7 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 	sm.mu.Unlock()
 
 	if belowMin {
-		sm.Finish(ctx, exitMapID)
+		sm.Finish(ctx, exitMapID, 0)
 		return true
 	}
 	if warpLeaver && exitMapID > 0 && group != nil && group.GameWorld != nil {
@@ -505,7 +505,7 @@ func (sm *StateMachine) AbortStart() {
 	}
 }
 
-func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32) {
+func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32, exitPortal uint8) {
 	if sm == nil {
 		return
 	}
@@ -541,7 +541,7 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32) {
 			ch.stateMachine = nil
 		}
 		if exitMap != nil {
-			_ = ch.Warp(ctx, exitMap, 0)
+			_ = ch.Warp(ctx, exitMap, exitPortal)
 		}
 	}
 	if group != nil && group.GameWorld != nil && pid != nil {
