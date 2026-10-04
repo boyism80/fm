@@ -10,6 +10,7 @@ const DisabledPortalMapID uint32 = 999999999
 type SpawnPortal struct {
 	DestMapID   uint32
 	SourceMapID uint32
+	SkillID     uint32
 	Position    *types.Vector2[int16]
 }
 
@@ -21,6 +22,7 @@ func (p *SpawnPortal) Serialize(w *stream.StreamWriter) error {
 	w.WriteU32(p.DestMapID)
 	w.WriteU32(p.SourceMapID)
 	if p.DestMapID != DisabledPortalMapID && p.SourceMapID != DisabledPortalMapID {
+		w.WriteU32(p.SkillID)
 		if p.Position == nil {
 			w.Write16(0)
 			w.Write16(0)
