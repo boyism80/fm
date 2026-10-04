@@ -50,13 +50,13 @@ func requireModule(L *lua.LState) int {
 		return 1
 	}
 
-	fn, err := L.LoadFile(path)
+	proto, err := preloadProto(L, path)
 	if err != nil {
 		L.RaiseError("require %s: %v", name, err)
 		return 0
 	}
 
-	L.Push(fn)
+	L.Push(L.NewFunctionFromProto(proto))
 	if err := L.PCall(0, 1, nil); err != nil {
 		L.RaiseError("require %s: %v", name, err)
 		return 0

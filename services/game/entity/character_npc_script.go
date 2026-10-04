@@ -40,6 +40,7 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
 		ActorContext: actx,
 		ActorPID:     mapInstance.LogicActorPID(),
 	})
+	ch.SetDialog(luaThread)
 	luax.CallAsync(actx, root, luaThread, "on_click", ch, npc).Then(func(_ interface{}) (interface{}, error) {
 		ch.ResetDialog()
 		ch.Listener.OnUnlockAction(ch)

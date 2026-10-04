@@ -2,6 +2,7 @@ package luax
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -10,20 +11,29 @@ import (
 
 const modulesRegistryKey = "fm.script_modules"
 
+type compiledScript struct {
+	proto   *lua.FunctionProto
+	modTime time.Time
+}
+
 var (
 	onCreateHooks   []func(*lua.LState)
 	onCreateHooksMu sync.Mutex
 	compileMu       sync.Mutex
-	compiledProtos  = make(map[string]*lua.FunctionProto)
+	compiledProtos  = make(map[string]compiledScript)
 	alwaysReload    = false
 )
+
+func init() {
+	lua.MaxArrayIndex = 1 << 16
+}
 
 func SetAlwaysReload(enabled bool) {
 	compileMu.Lock()
 	defer compileMu.Unlock()
 	alwaysReload = enabled
 	if enabled {
-		compiledProtos = make(map[string]*lua.FunctionProto)
+		compiledProtos = make(map[string]compiledScript)
 	}
 }
 
@@ -58,28 +68,29 @@ func preloadProto(root *lua.LState, path string) (*lua.FunctionProto, error) {
 	compileMu.Lock()
 	defer compileMu.Unlock()
 
-	optimized := !alwaysReload
-	if proto, ok := compiledProtos[path]; ok && optimized {
-		if proto == nil {
+	var modTime time.Time
+	if alwaysReload {
+		if info, err := os.Stat(path); err == nil {
+			modTime = info.ModTime()
+		}
+	}
+	if cached, ok := compiledProtos[path]; ok && cached.modTime.Equal(modTime) {
+		if cached.proto == nil {
 			return nil, fmt.Errorf("failed to compile %s: cached missing script", path)
 		}
-		return proto, nil
+		return cached.proto, nil
 	}
 
 	fn, err := root.LoadFile(path)
 	if err != nil {
-		if optimized {
-			compiledProtos[path] = nil
-		}
+		compiledProtos[path] = compiledScript{modTime: modTime}
 		return nil, fmt.Errorf("failed to compile %s: %w", path, err)
 	}
 	if fn == nil || fn.Proto == nil {
-		if optimized {
-			compiledProtos[path] = nil
-		}
+		compiledProtos[path] = compiledScript{modTime: modTime}
 		return nil, fmt.Errorf("failed to compile %s: empty proto", path)
 	}
-	compiledProtos[path] = fn.Proto
+	compiledProtos[path] = compiledScript{proto: fn.Proto, modTime: modTime}
 	return fn.Proto, nil
 }
 
