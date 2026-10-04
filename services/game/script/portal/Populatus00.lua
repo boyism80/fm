@@ -60,7 +60,7 @@ return {
 		if boss_map == nil then
 			boss_map = id2map(BOSS_MAP)
 		end
-		if player_count(boss_map) > MAX_PLAYERS then
+		if player_count(boss_map) >= MAX_PLAYERS then
 			me:message("이 방은 이미 파풀라투스와의 전투를 위한 최대 인원수 만큼 가득 찼습니다.")
 			return
 		end
