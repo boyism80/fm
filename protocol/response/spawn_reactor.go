@@ -24,4 +24,10 @@ func (p *SpawnReactor) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *SpawnReactor) Deserialize(*stream.StreamReader) {}
+func (p *SpawnReactor) Deserialize(reader *stream.StreamReader) {
+	p.Reactor = &dto.Reactor{OID: reader.ReadU32(), ReactorID: reader.ReadU32(), State: reader.ReadU8()}
+	p.Reactor.Position.X = reader.Read16()
+	p.Reactor.Position.Y = reader.Read16()
+	p.Reactor.Facing = reader.ReadU8()
+	p.Reactor.Name = reader.ReadStr16()
+}

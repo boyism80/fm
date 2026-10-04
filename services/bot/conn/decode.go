@@ -51,6 +51,9 @@ var Responses = []any{
 	&response.SpawnMeso{},
 	&response.RemoveItem{},
 	&response.EnvironmentChange{},
+	&response.SpawnReactor{},
+	&response.TriggerReactor{},
+	&response.DestroyReactor{},
 }
 
 type deserializer interface {
@@ -202,6 +205,18 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		return pkt, nil
 	case (&response.EnvironmentChange{}).Opcode():
 		pkt := &response.EnvironmentChange{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.SpawnReactor{}).Opcode():
+		pkt := &response.SpawnReactor{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.TriggerReactor{}).Opcode():
+		pkt := &response.TriggerReactor{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.DestroyReactor{}).Opcode():
+		pkt := &response.DestroyReactor{}
 		pkt.Deserialize(reader)
 		return pkt, nil
 	case (&response.PartyCreated{}).Opcode():

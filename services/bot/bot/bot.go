@@ -24,29 +24,30 @@ type outbound interface {
 }
 
 type Bot struct {
-	Index  int
-	ID     string
-	Name   string
-	Gender uint8
-	CharID uint32
-	Gen    int
-	Map    uint32
-	Spawn  uint8
-	Moved  *types.Point[int16]
-	HP     uint16
-	Level  uint8
-	Job    uint16
-	EXP    int32
-	Meso   int32
-	Fame   int32
-	NPCs   map[uint32]uint32
-	Mobs   map[uint32]uint32
-	Drops  map[uint32]Drop
-	Quests map[uint16]uint8
-	Items  map[constant.InventoryType]map[int16]ItemSlot
-	Dialog constant.DialogType
-	cfg    *config.Bot
-	conn   *conn.Conn
+	Index    int
+	ID       string
+	Name     string
+	Gender   uint8
+	CharID   uint32
+	Gen      int
+	Map      uint32
+	Spawn    uint8
+	Moved    *types.Point[int16]
+	HP       uint16
+	Level    uint8
+	Job      uint16
+	EXP      int32
+	Meso     int32
+	Fame     int32
+	NPCs     map[uint32]uint32
+	Mobs     map[uint32]uint32
+	Drops    map[uint32]Drop
+	Reactors map[uint32]dto.Reactor
+	Quests   map[uint16]uint8
+	Items    map[constant.InventoryType]map[int16]ItemSlot
+	Dialog   constant.DialogType
+	cfg      *config.Bot
+	conn     *conn.Conn
 }
 
 type ItemSlot struct {
@@ -66,15 +67,16 @@ func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
 		return nil, fmt.Errorf("character name %q is longer than 12 bytes", name)
 	}
 	return &Bot{
-		Index:  n,
-		ID:     fmt.Sprintf("bot_%s_%d", runID, n),
-		Name:   name,
-		NPCs:   make(map[uint32]uint32),
-		Mobs:   make(map[uint32]uint32),
-		Drops:  make(map[uint32]Drop),
-		Quests: make(map[uint16]uint8),
-		Items:  make(map[constant.InventoryType]map[int16]ItemSlot),
-		cfg:    cfg,
+		Index:    n,
+		ID:       fmt.Sprintf("bot_%s_%d", runID, n),
+		Name:     name,
+		NPCs:     make(map[uint32]uint32),
+		Mobs:     make(map[uint32]uint32),
+		Drops:    make(map[uint32]Drop),
+		Reactors: make(map[uint32]dto.Reactor),
+		Quests:   make(map[uint16]uint8),
+		Items:    make(map[constant.InventoryType]map[int16]ItemSlot),
+		cfg:      cfg,
 	}, nil
 }
 
@@ -114,6 +116,7 @@ func (b *Bot) Update(pkt any) {
 		clear(b.NPCs)
 		clear(b.Mobs)
 		clear(b.Drops)
+		clear(b.Reactors)
 		clear(b.Quests)
 		clear(b.Items)
 		if p.Character == nil {
@@ -144,6 +147,7 @@ func (b *Bot) Update(pkt any) {
 		clear(b.NPCs)
 		clear(b.Mobs)
 		clear(b.Drops)
+		clear(b.Reactors)
 	case *response.UpdateStats:
 		for stat, value := range p.Stats {
 			switch stat {
@@ -207,6 +211,15 @@ func (b *Bot) Update(pkt any) {
 		b.Drops[p.ID] = Drop{Meso: p.Count, Owner: p.OwnerID}
 	case *response.RemoveItem:
 		delete(b.Drops, p.OID)
+	case *response.SpawnReactor:
+		b.Reactors[p.Reactor.OID] = *p.Reactor
+	case *response.TriggerReactor:
+		if reactor, ok := b.Reactors[p.Reactor.OID]; ok {
+			reactor.State = p.Reactor.State
+			b.Reactors[p.Reactor.OID] = reactor
+		}
+	case *response.DestroyReactor:
+		delete(b.Reactors, p.Reactor.OID)
 	case *response.Dialog:
 		b.Dialog = p.Type
 	case *response.DialogYesNo:

@@ -21,4 +21,8 @@ func (p *DestroyReactor) Serialize(writer *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *DestroyReactor) Deserialize(*stream.StreamReader) {}
+func (p *DestroyReactor) Deserialize(reader *stream.StreamReader) {
+	p.Reactor = &dto.Reactor{OID: reader.ReadU32(), State: reader.ReadU8()}
+	p.Reactor.Position.X = reader.Read16()
+	p.Reactor.Position.Y = reader.Read16()
+}

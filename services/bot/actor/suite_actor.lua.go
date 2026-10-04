@@ -18,6 +18,7 @@ import (
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/bot/bot"
 	"github.com/boyism80/fm/services/bot/conn"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -33,6 +34,7 @@ var requests = []outbound{
 	&request.Attack{},
 	&request.ItemLoot{},
 	&request.MoveItem{},
+	&request.DamageReactor{},
 }
 
 func (a *SuiteActor) register() {
@@ -82,7 +84,7 @@ func (a *SuiteActor) register() {
 	ctxIndex := L.SetFuncs(L.NewTable(), a.ctxFuncs())
 	botIndex := L.SetFuncs(L.NewTable(), a.botFuncs())
 	a.wrapWaits(ctxIndex, "sleep")
-	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "npc", "npc_click", "dialog", "kill", "loot", "drop")
+	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "npc", "npc_click", "dialog", "kill", "loot", "drop", "hit_reactor")
 	L.SetField(L.NewTypeMetatable("bot_ctx"), "__index", ctxIndex)
 	L.SetField(L.NewTypeMetatable("bot"), "__index", botIndex)
 	a.ctxUD = a.newUserData(a, "bot_ctx")
@@ -286,6 +288,22 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 					}
 					spot := L.NewTable()
 					spot.RawSetString("id", lua.LNumber(spawn.ID))
+					spot.RawSetString("x", lua.LNumber(spawn.Position.X))
+					spot.RawSetString("y", lua.LNumber(spawn.Position.Y))
+					t.Append(spot)
+				}
+			}
+			L.Push(t)
+			return 1
+		},
+		"reactor_spots": func(L *lua.LState) int {
+			t := L.NewTable()
+			if m, ok := a.wz.Maps[a.checkBot(L).Map]; ok {
+				for _, key := range slices.Sorted(maps.Keys(m.ReactorSpawns)) {
+					spawn := m.ReactorSpawns[key]
+					spot := L.NewTable()
+					spot.RawSetString("id", lua.LNumber(spawn.ReactorID))
+					spot.RawSetString("name", lua.LString(spawn.Name))
 					spot.RawSetString("x", lua.LNumber(spawn.Position.X))
 					spot.RawSetString("y", lua.LNumber(spawn.Position.Y))
 					t.Append(spot)
@@ -558,6 +576,42 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				}
 				a.wake(L, lua.LNumber(p.(*response.SpawnItem).ID))
 			})
+			return L.Yield()
+		},
+		"reactors": func(L *lua.LState) int {
+			templateID := uint32(L.OptInt(2, 0))
+			t := L.NewTable()
+			for oid, r := range a.checkBot(L).Reactors {
+				if templateID != 0 && r.ReactorID != templateID {
+					continue
+				}
+				reactor := L.NewTable()
+				reactor.RawSetString("oid", lua.LNumber(oid))
+				reactor.RawSetString("id", lua.LNumber(r.ReactorID))
+				reactor.RawSetString("state", lua.LNumber(r.State))
+				reactor.RawSetString("name", lua.LString(r.Name))
+				reactor.RawSetString("x", lua.LNumber(r.Position.X))
+				reactor.RawSetString("y", lua.LNumber(r.Position.Y))
+				t.Append(reactor)
+			}
+			L.Push(t)
+			return 1
+		},
+		"hit_reactor": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			oid := uint32(L.CheckInt(2))
+			pkt := &request.DamageReactor{OID: oid, HitSide: constant.ReactorHitGroundRight}
+			a.park(L)
+			a.Request(L, b, b, pkt, a.timeout(), func(p any) bool {
+				switch p := p.(type) {
+				case *response.TriggerReactor:
+					return p.Reactor.OID == oid
+				case *response.DestroyReactor:
+					return p.Reactor.OID == oid
+				default:
+					return false
+				}
+			}, a.wakeWithPacket(L))
 			return L.Yield()
 		},
 	}

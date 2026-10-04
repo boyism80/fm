@@ -15,7 +15,10 @@ func (*DamageReactor) Opcode() byte {
 	return 0xA6
 }
 
-func (p *DamageReactor) Serialize(_ *stream.StreamWriter) error {
+func (p *DamageReactor) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.OID)
+	writer.Write32(int32(p.HitSide))
+	writer.Write16(p.Stance)
 	return nil
 }
 
