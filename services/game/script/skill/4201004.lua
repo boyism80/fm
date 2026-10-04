@@ -42,10 +42,12 @@ return {
 				goto continue_steal
 			end
 			if not roll_percent_steal(prop) then
+				mob:record_failed_steal()
 				goto continue_steal
 			end
 			local rows = mob:drops()
 			if #rows == 0 then
+				mob:record_failed_steal()
 				goto continue_steal
 			end
 			local candidates = {}

@@ -598,6 +598,17 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			mob.stealOutcome = &v
 			return 0
 		},
+		"record_failed_steal": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mob, ok := ud.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(1, "Mob expected")
+				return 0
+			}
+			nothing := uint32(0)
+			mob.stealOutcome = &nothing
+			return 0
+		},
 		"clear_buffs": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mob, ok := ud.Value.(*Mob)
