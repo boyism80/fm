@@ -14,8 +14,8 @@ type Move struct {
 
 func (p *Move) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.Character.ID)
-	writer.Write16(p.Character.Position.X)
-	writer.Write16(p.Character.Position.Y)
+	writer.Write16(p.StartPoint.X)
+	writer.Write16(p.StartPoint.Y)
 	writer.WriteU8(uint8(len(p.Fragments)))
 	for _, move := range p.Fragments {
 		move.Serialize(writer)
