@@ -168,10 +168,11 @@ func (a *SuiteActor) start(ctx actor.Context) {
 }
 
 func (a *SuiteActor) botEntered(msg *BotEntered) {
+	b := a.bots[msg.Bot]
 	if a.finished {
+		b.Close()
 		return
 	}
-	b := a.bots[msg.Bot]
 	if msg.Err != nil {
 		if errors.Is(msg.Err, bot.ErrConnect) {
 			a.infra = true
