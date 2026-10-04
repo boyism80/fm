@@ -120,12 +120,9 @@ type TimerTick struct {
 	HandlerName string
 }
 
-type SyncParty struct {
-	Party *entity.Party
-}
-
 type ClearPartyByPartyID struct {
-	PartyID uint32
+	CharacterID uint32
+	PartyID     uint32
 }
 
 type SyncCharacterPartyState struct {

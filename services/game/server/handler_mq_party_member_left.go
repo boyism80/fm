@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
+	g_actor "github.com/boyism80/fm/services/game/actor"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -40,6 +41,10 @@ func (h *partyMqMemberLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ string,
 		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
 			return nil, nil
 		}
+		h.gs.EnsureSend(nil, extra.CharacterID, &g_actor.ClearPartyByPartyID{
+			CharacterID: extra.CharacterID,
+			PartyID:     evt.PartyID,
+		})
 		party := pc.Get(evt.PartyID)
 		pc.BroadcastMemberLeft(prevParty, party, extra.CharacterID, extra.ExpelledByCharacter != 0)
 		if extra.LeaderChanged && extra.NewLeaderCharacterID != 0 && party != nil {

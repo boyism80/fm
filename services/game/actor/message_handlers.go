@@ -17,7 +17,6 @@ func registerMapMessageHandlers(r *MessageRegistry) {
 	Bind[RunObjectTimerHandler](r)
 	Bind[RunReactorRespawnHandler](r)
 	Bind[TimerTickHandler](r)
-	Bind[SyncPartyHandler](r)
 	Bind[ClearPartyByPartyIDHandler](r)
 	Bind[SyncCharacterPartyStateHandler](r)
 	Bind[PartyMemberLeftHandler](r)

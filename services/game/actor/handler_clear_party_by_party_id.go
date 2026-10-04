@@ -2,7 +2,6 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
-	"github.com/boyism80/fm/services/game/entity"
 )
 
 type ClearPartyByPartyIDHandler struct{}
@@ -15,15 +14,15 @@ func (h *ClearPartyByPartyIDHandler) Handle(ctx actor.Context, a *GameLogicActor
 	if msg == nil {
 		return
 	}
-	for _, m := range a.Maps() {
-		for _, obj := range m.GetAllPlayers() {
-			ch, ok := obj.(*entity.Character)
-			if !ok || ch == nil {
-				continue
-			}
-			if cur := ch.GetPartyID(); cur != nil && *cur == msg.PartyID {
-				ch.SetPartyID(nil)
-			}
-		}
+	m := a.GetCharacter(msg.CharacterID)
+	if m == nil {
+		return
+	}
+	ch := m.GetPlayer(msg.CharacterID)
+	if ch == nil {
+		return
+	}
+	if cur := ch.GetPartyID(); cur != nil && *cur == msg.PartyID {
+		ch.SetPartyID(nil)
 	}
 }
