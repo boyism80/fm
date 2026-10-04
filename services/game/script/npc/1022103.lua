@@ -31,7 +31,7 @@ return {
 			me:map(EXIT_MAP, 1)
 			return
 		end
-		if sm:get_property("ready") == nil then
+		if sm:get_property("ready") == "" then
 			me:dialog(npc, "... 조나단에게 이야기는 전해 들었다. 내가 자네를 시험해 주도록 하겠다.")
 			me:dialog(npc, "내가 말하는 수만큼 동상이 임의로 반짝일 것이다. 반짝인 동상을 같은 순서로 타격한 후 다시 말을 걸라.")
 			sm:set_property("ready", "1")
