@@ -250,7 +250,9 @@ export class SessionGrpcController {
                 });
                 return;
             }
-            const result = await this.sessionService.refresh(call.request.worldId, call.request.accountId);
+            const { characterId, channelId } = call.request;
+            const owner = characterId != null && channelId != null ? { characterId, channelId } : null;
+            const result = await this.sessionService.refresh(call.request.worldId, call.request.accountId, owner);
             callback(null, {
                 ok: result.ok,
                 errorCode: result.code ?? SessionErrorCode.SESSION_UNKNOWN,

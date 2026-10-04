@@ -259,7 +259,14 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         )) as Array<number | string>;
     }
 
-    async refresh(worldId: number, accountId: number, loginTtl: number, transitionTtl: number, gameTtl: number) {
+    async refresh(
+        worldId: number,
+        accountId: number,
+        loginTtl: number,
+        transitionTtl: number,
+        gameTtl: number,
+        owner: { characterId: number; channelId: number } | null
+    ) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
         const script = `
@@ -267,10 +274,19 @@ local account_key = KEYS[1]
 local login_ttl = tonumber(ARGV[1])
 local transition_ttl = tonumber(ARGV[2])
 local game_ttl = tonumber(ARGV[3])
+local owner_character_id = ARGV[4]
+local owner_channel_id = ARGV[5]
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ${SessionErrorCode.SESSION_NOT_FOUND}, 0, "0"}
 end
 local state = tonumber(redis.call("HGET", account_key, "state") or "0")
+if owner_character_id ~= "" then
+  local character_id = redis.call("HGET", account_key, "character_id") or ""
+  local channel_id = redis.call("HGET", account_key, "channel_id") or ""
+  if state ~= ${AS.ACCOUNT_SESSION_STATE_GAME} or character_id ~= owner_character_id or channel_id ~= owner_channel_id then
+    return {0, ${SessionErrorCode.SESSION_NOT_OWNER}, 0, tostring(state)}
+  end
+end
 local ttl = login_ttl
 if state == ${AS.ACCOUNT_SESSION_STATE_TRANSITION} then
   ttl = transition_ttl
@@ -280,12 +296,19 @@ end
 redis.call("EXPIRE", account_key, ttl)
 return {1, ${SessionErrorCode.SESSION_NONE}, ttl, tostring(state)}
 `;
-        return (await client.eval(script, 1, accountKey, String(loginTtl), String(transitionTtl), String(gameTtl))) as Array<
-            number | string
-        >;
+        return (await client.eval(
+            script,
+            1,
+            accountKey,
+            String(loginTtl),
+            String(transitionTtl),
+            String(gameTtl),
+            owner ? String(owner.characterId) : "",
+            owner ? String(owner.channelId) : ""
+        )) as Array<number | string>;
     }
 
-    async logout(worldId: number, accountId: number, keep: boolean, requestChannelId?: number) {
+    async logout(worldId: number, accountId: number, keep: boolean, requestChannelId?: number, ownerCharacterId?: number) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
         const usersTtl = this.ctx.appConfiguration.getServerAliveTtlSeconds();
@@ -301,12 +324,20 @@ local channel_users_key = KEYS[2]
 local keep = ARGV[1]
 local channel_id = tonumber(ARGV[2])
 local users_ttl = tonumber(ARGV[3])
+local owner_character_id = ARGV[4]
 local prev_state = 0
 if redis.call("EXISTS", account_key) == 1 then
   prev_state = tonumber(redis.call("HGET", account_key, "state") or "0")
 end
 if keep == "1" then
   return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
+end
+if owner_character_id ~= "" then
+  local character_id = redis.call("HGET", account_key, "character_id") or ""
+  local session_channel_id = redis.call("HGET", account_key, "channel_id") or ""
+  if prev_state ~= ${AS.ACCOUNT_SESSION_STATE_GAME} or character_id ~= owner_character_id or session_channel_id ~= ARGV[2] then
+    return {0, ${SessionErrorCode.SESSION_NOT_OWNER}, prev_state}
+  end
 end
 redis.call("DEL", account_key)
 if prev_state == ${AS.ACCOUNT_SESSION_STATE_GAME} and channel_id >= 0 then
@@ -320,9 +351,16 @@ if prev_state == ${AS.ACCOUNT_SESSION_STATE_GAME} and channel_id >= 0 then
 end
 return {1, ${SessionErrorCode.SESSION_NONE}, prev_state}
 `;
-        return (await client.eval(script, 2, accountKey, channelUsersKey, keep ? "1" : "0", String(ch), String(usersTtl))) as Array<
-            number | string
-        >;
+        return (await client.eval(
+            script,
+            2,
+            accountKey,
+            channelUsersKey,
+            keep ? "1" : "0",
+            String(ch),
+            String(usersTtl),
+            ownerCharacterId != null ? String(ownerCharacterId) : ""
+        )) as Array<number | string>;
     }
 
     async getAccountSession(worldId: number, accountId: number): Promise<AccountSession | null> {

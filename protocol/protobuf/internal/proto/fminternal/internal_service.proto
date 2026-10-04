@@ -195,6 +195,7 @@ enum SessionErrorCode {
   SESSION_NOT_FOUND = 3;
   SESSION_LOGOUT_FAILED = 4;
   SESSION_CLIENT_IP_MISMATCH = 5;
+  SESSION_NOT_OWNER = 6;
 }
 
 message BeginGameTransitionReply {
@@ -411,6 +412,7 @@ message RefreshSessionRequest {
   uint32 world_id = 1;
   uint32 account_id = 2;
   optional uint32 character_id = 3;
+  optional uint32 channel_id = 4;
 }
 
 message RefreshSessionReply {

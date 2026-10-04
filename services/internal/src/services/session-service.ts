@@ -157,13 +157,14 @@ export class SessionService {
         return { ok: true };
     }
 
-    async refresh(worldId: number, accountId: number) {
+    async refresh(worldId: number, accountId: number, owner: { characterId: number; channelId: number } | null) {
         const raw = await this.repo.refresh(
             worldId,
             accountId,
             this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN),
             this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
-            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME)
+            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_GAME),
+            owner
         );
         const [ok, code] = this.atomicResultTuple(raw);
         if (ok !== 1) {
@@ -205,7 +206,8 @@ export class SessionService {
                 channelId = sch;
             }
         }
-        const raw = await this.repo.logout(worldId, accountId, keep, channelId);
+        const ownerCharacterId = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER ? options.characterId : undefined;
+        const raw = await this.repo.logout(worldId, accountId, keep, channelId, ownerCharacterId);
         const [ok, code] = this.atomicResultTuple(raw);
         console.log(
             `[session] logout account=${accountId} source=${src} transfer=${transferDisconnect}` +

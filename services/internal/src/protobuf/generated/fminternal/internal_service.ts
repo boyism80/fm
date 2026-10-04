@@ -67,6 +67,7 @@ export enum SessionErrorCode {
   SESSION_NOT_FOUND = 3,
   SESSION_LOGOUT_FAILED = 4,
   SESSION_CLIENT_IP_MISMATCH = 5,
+  SESSION_NOT_OWNER = 6,
   UNRECOGNIZED = -1,
 }
 
@@ -90,6 +91,9 @@ export function sessionErrorCodeFromJSON(object: any): SessionErrorCode {
     case 5:
     case "SESSION_CLIENT_IP_MISMATCH":
       return SessionErrorCode.SESSION_CLIENT_IP_MISMATCH;
+    case 6:
+    case "SESSION_NOT_OWNER":
+      return SessionErrorCode.SESSION_NOT_OWNER;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -111,6 +115,8 @@ export function sessionErrorCodeToJSON(object: SessionErrorCode): string {
       return "SESSION_LOGOUT_FAILED";
     case SessionErrorCode.SESSION_CLIENT_IP_MISMATCH:
       return "SESSION_CLIENT_IP_MISMATCH";
+    case SessionErrorCode.SESSION_NOT_OWNER:
+      return "SESSION_NOT_OWNER";
     case SessionErrorCode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -1307,6 +1313,7 @@ export interface RefreshSessionRequest {
   worldId: number;
   accountId: number;
   characterId?: number | undefined;
+  channelId?: number | undefined;
 }
 
 export interface RefreshSessionReply {
@@ -8347,7 +8354,7 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
 };
 
 function createBaseRefreshSessionRequest(): RefreshSessionRequest {
-  return { worldId: 0, accountId: 0, characterId: undefined };
+  return { worldId: 0, accountId: 0, characterId: undefined, channelId: undefined };
 }
 
 export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
@@ -8360,6 +8367,9 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
     }
     if (message.characterId !== undefined) {
       writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.channelId !== undefined) {
+      writer.uint32(32).uint32(message.channelId);
     }
     return writer;
   },
@@ -8395,6 +8405,14 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
           message.characterId = reader.uint32();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.channelId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -8421,6 +8439,11 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
         : isSet(object.character_id)
         ? globalThis.Number(object.character_id)
         : undefined,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : undefined,
     };
   },
 
@@ -8435,6 +8458,9 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
     if (message.characterId !== undefined) {
       obj.characterId = Math.round(message.characterId);
     }
+    if (message.channelId !== undefined) {
+      obj.channelId = Math.round(message.channelId);
+    }
     return obj;
   },
 
@@ -8446,6 +8472,7 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
     message.worldId = object.worldId ?? 0;
     message.accountId = object.accountId ?? 0;
     message.characterId = object.characterId ?? undefined;
+    message.channelId = object.channelId ?? undefined;
     return message;
   },
 };

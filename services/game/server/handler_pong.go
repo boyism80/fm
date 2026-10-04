@@ -44,13 +44,21 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 			if cid := character.GetID(); cid != 0 {
 				v := cid
 				req.CharacterId = &v
+				ch := h.gs.config.ChannelId
+				req.ChannelId = &ch
 			}
 			return h.gs.internalClient.RefreshSession(cctx, req)
 		}, func(reply *internal.RefreshSessionReply) error {
-			if !reply.GetOk() {
-				return fmt.Errorf("refresh session failed: %s", reply.GetErrorCode())
+			if reply.GetOk() {
+				return nil
 			}
-			return nil
+			switch reply.GetErrorCode() {
+			case internal.SessionErrorCode_SESSION_NOT_FOUND, internal.SessionErrorCode_SESSION_NOT_OWNER:
+				if c.GetCharacter() == character {
+					_ = c.GetConnection().Close()
+				}
+			}
+			return fmt.Errorf("refresh session failed: %s", reply.GetErrorCode())
 		}).OnError(func(err error) {
 		log.Printf("Game Pong refresh (async): %v", err)
 	})
