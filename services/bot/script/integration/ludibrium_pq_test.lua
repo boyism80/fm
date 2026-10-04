@@ -22,34 +22,13 @@ local CLIMB = {
 	"h025", "h027", "h032", "h034", "h036", "h039", "h044",
 }
 
-local function wait_map(ctx, bot, map_id, timeout)
-	if bot:map() == map_id then
-		return true
-	end
-	local warp = bot:request(resp.warp, nil, function(p)
-		return p.character.map == map_id
-	end, timeout)
-	if warp == false then
-		return ctx:fail(bot:name() .. " 맵 이동 없음: " .. map_id .. " (현재 " .. bot:map() .. ")")
-	end
-	return true
-end
-
-local function enter_portal(ctx, bot, portal, map_id)
-	local warp = bot:warp(portal)
-	if warp == false or bot:map() ~= map_id then
-		return ctx:fail(bot:name() .. " 포탈 이동 실패: " .. portal .. " (현재 " .. bot:map() .. ")")
-	end
-	return true
-end
-
 local function climb(ctx, bot)
 	for _, portal in ipairs(CLIMB) do
-		if enter_portal(ctx, bot, portal, CLIMB_MAP) == false then
+		if pq.portal(ctx, bot, portal, CLIMB_MAP) == false then
 			return false
 		end
 	end
-	return enter_portal(ctx, bot, "next00", CLIMB_MAP + 100)
+	return pq.portal(ctx, bot, "next00", CLIMB_MAP + 100)
 end
 
 local function catch_up(ctx, bot, map_id)
@@ -58,7 +37,7 @@ local function catch_up(ctx, bot, map_id)
 			if climb(ctx, bot) == false then
 				return false
 			end
-		elseif enter_portal(ctx, bot, "next00", bot:map() + 100) == false then
+		elseif pq.portal(ctx, bot, "next00", bot:map() + 100) == false then
 			return false
 		end
 	end
@@ -71,13 +50,13 @@ local function sweep_rooms(ctx, bot, rooms, count)
 		if (bot:items()[PASS] or 0) >= count then
 			return true
 		end
-		if enter_portal(ctx, bot, string.format("in%02d", i), hall + i) == false then
+		if pq.portal(ctx, bot, string.format("in%02d", i), hall + i) == false then
 			return false
 		end
 		if pq.sweep(ctx, bot, PASS, count) == false then
 			return false
 		end
-		if enter_portal(ctx, bot, "out00", hall) == false then
+		if pq.portal(ctx, bot, "out00", hall) == false then
 			return false
 		end
 	end
@@ -115,7 +94,7 @@ local function pass_stage(ctx, npc, guide, count, collect)
 	if pq.talk(ctx, leader, npc, OPENED) == false then
 		return false
 	end
-	return enter_portal(ctx, leader, "next00", leader:map() + 100)
+	return pq.portal(ctx, leader, "next00", leader:map() + 100)
 end
 
 local function summon_alishar(ctx, leader)
@@ -184,7 +163,7 @@ test_suite {
 				return ctx:fail("1스테이지 입장 실패")
 			end
 			for i = 1, ctx:bot_count() - 1 do
-				if wait_map(ctx, ctx:bot(i), START, 15000) == false then
+				if pq.wait_map(ctx, ctx:bot(i), START, 15000) == false then
 					return false
 				end
 			end
@@ -222,7 +201,7 @@ test_suite {
 				if pq.sweep(ctx, leader, PASS, 15) == false then
 					return false
 				end
-				return enter_portal(ctx, leader, "out00", hall)
+				return pq.portal(ctx, leader, "out00", hall)
 			end)
 		end,
 		function(ctx)
@@ -286,7 +265,7 @@ test_suite {
 						return ctx:fail("예상과 다른 판정 대화: " .. p.text)
 					end
 					for i = 0, ctx:bot_count() - 1 do
-						if enter_portal(ctx, ctx:bot(i), "next00", AREA_MAP + 100) == false then
+						if pq.portal(ctx, ctx:bot(i), "next00", AREA_MAP + 100) == false then
 							return false
 						end
 					end
@@ -334,7 +313,7 @@ test_suite {
 				return ctx:fail("보너스 맵 이동 실패")
 			end
 			for i = 1, ctx:bot_count() - 1 do
-				if wait_map(ctx, ctx:bot(i), BONUS, 10000) == false then
+				if pq.wait_map(ctx, ctx:bot(i), BONUS, 10000) == false then
 					return false
 				end
 			end
@@ -345,7 +324,7 @@ test_suite {
 				return ctx:fail("보너스 시간 단축 실패")
 			end
 			for i = 0, ctx:bot_count() - 1 do
-				if wait_map(ctx, ctx:bot(i), REWARD, 15000) == false then
+				if pq.wait_map(ctx, ctx:bot(i), REWARD, 15000) == false then
 					return false
 				end
 			end

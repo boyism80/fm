@@ -205,6 +205,142 @@ function M.give(ctx, from, to, item_id, count)
 	return true
 end
 
+function M.wait_map(ctx, bot, map_id, timeout)
+	if bot:map() == map_id then
+		return true
+	end
+	local warp = bot:request(resp.warp, nil, function(p)
+		return p.character.map == map_id
+	end, timeout)
+	if warp == false then
+		return ctx:fail(bot:name() .. " 맵 이동 없음: " .. map_id .. " (현재 " .. bot:map() .. ")")
+	end
+	return true
+end
+
+function M.wait_all(ctx, map_id, timeout)
+	for i = 0, ctx:bot_count() - 1 do
+		if M.wait_map(ctx, ctx:bot(i), map_id, timeout) == false then
+			return false
+		end
+	end
+	return true
+end
+
+function M.portal(ctx, bot, portal, map_id)
+	local warp = bot:warp(portal)
+	if warp == false or bot:map() ~= map_id then
+		return ctx:fail(bot:name() .. " 포탈 이동 실패: " .. portal .. " (현재 " .. bot:map() .. ")")
+	end
+	return true
+end
+
+function M.seek_reactor(ctx, bot, match)
+	local function visible()
+		for _, r in ipairs(bot:reactors()) do
+			if match(r) then
+				return r
+			end
+		end
+		return nil
+	end
+	local found = visible()
+	for _, spot in ipairs(bot:reactor_spots()) do
+		if found ~= nil then
+			break
+		end
+		if M.move(bot, spot.x, spot.y) == false then
+			return ctx:fail(bot:name() .. " 리액터 위치로 이동 실패")
+		end
+		found = visible()
+	end
+	if found == nil then
+		return ctx:fail(bot:name() .. " 리액터를 찾지 못함 (맵 " .. bot:map() .. ")")
+	end
+	if M.move(bot, found.x, found.y) == false then
+		return ctx:fail(bot:name() .. " 리액터 앞으로 이동 실패: " .. found.id)
+	end
+	return found
+end
+
+function M.reactor_by_id(id)
+	return function(r)
+		return r.id == id
+	end
+end
+
+function M.feed(ctx, bot, reactor_id, item_id, count)
+	local reactor = M.seek_reactor(ctx, bot, M.reactor_by_id(reactor_id))
+	if reactor == false then
+		return false
+	end
+	if bot:drop(item_id, count) == nil then
+		return ctx:fail(bot:name() .. " 아이템 버리기 실패: " .. item_id)
+	end
+	local p = bot:request({ resp.trigger_reactor, resp.destroy_reactor }, nil, function(p)
+		return p.reactor.oid == reactor.oid
+	end, 12000)
+	if p == false then
+		return ctx:fail(string.format("%s 리액터가 아이템에 반응하지 않음: %d <- %d", bot:name(), reactor_id, item_id))
+	end
+	return reactor
+end
+
+function M.pick_up(ctx, bot, item_id)
+	if (bot:items()[item_id] or 0) > 0 then
+		return true
+	end
+	return M.loot_spawn(ctx, bot, item_id)
+end
+
+function M.loot_spawn(ctx, bot, item_id)
+	local drop = bot:drops(item_id)[1]
+	if drop == nil then
+		local spawn = bot:request(resp.spawn_item, nil, function(p)
+			return p.item_model ~= nil and p.item_model.id == item_id
+		end, 5000)
+		if spawn == false then
+			return ctx:fail(bot:name() .. " 아이템이 떨어지지 않음: " .. item_id)
+		end
+		drop = bot:drops(item_id)[1]
+	end
+	if drop == nil or bot:loot(drop.oid) == false then
+		return ctx:fail(bot:name() .. " 줍기 실패: " .. item_id)
+	end
+	return true
+end
+
+function M.open_box(ctx, bot, box_id, item_id)
+	local box = M.seek_reactor(ctx, bot, M.reactor_by_id(box_id))
+	if box == false then
+		return false
+	end
+	if M.break_reactor(ctx, bot, box) == false then
+		return false
+	end
+	return M.pick_up(ctx, bot, item_id)
+end
+
+function M.kill_at(ctx, bot, mob_id, x, y)
+	if M.move(bot, x, y) == false then
+		return ctx:fail(bot:name() .. " 몹 위치로 이동 실패")
+	end
+	local mob = bot:mobs(mob_id)[1]
+	if mob == nil then
+		local spawn = bot:request(resp.spawn_mob, nil, function(p)
+			return p.mob.mob_id == mob_id
+		end, 10000)
+		if spawn == false then
+			return ctx:fail(bot:name() .. " 몹이 보이지 않음: " .. mob_id)
+		end
+		mob = { oid = spawn.mob.oid }
+	end
+	if bot:kill(mob.oid) == false then
+		return ctx:fail(bot:name() .. " 처치 실패: " .. mob_id)
+	end
+	return true
+end
+
 function M.combinations(n, k)
 	local result = {}
 	local picked = {}
