@@ -8,7 +8,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
-	"github.com/boyism80/fm/services/game/wz"
 )
 
 type MagicAttack struct {
@@ -50,47 +49,15 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 	}
 
 	skillID := req.Skill
-	var wzSkill *wz.Skill
-	if character.GameWorld != nil {
-		resources := character.GameWorld.GetResources()
-		if resources != nil {
-			wzSkill = resources.GetSkill(skillID)
-		}
-	}
-
-	if wzSkill == nil {
-		log.Printf("Skill not found: %d", skillID)
+	activated := character.UseAttackSkill(skillID, func() bool {
+		return CallSkillHook(character, skillID, "on_activating")
+	})
+	if activated == false {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
-
 	skillLevel := character.GetTotalSkillLevel(skillID)
-	if skillLevel <= 0 {
-		log.Printf("Character does not have skill %d or skill level is 0", skillID)
-		character.Listener.OnUpdateStats(character, nil, true)
-		return nil
-	}
-
-	levelData := wzSkill.GetLevelData(skillLevel)
-	if levelData == nil {
-		character.Listener.OnUpdateStats(character, nil, true)
-		return nil
-	}
-
-	if levelData.Cooldown > 0 {
-		skillEntry := character.Skills.Get(skillID)
-		if skillEntry == nil || skillEntry.IsCooling() {
-			character.Listener.OnUpdateStats(character, nil, true)
-			return nil
-		}
-		skillEntry.StartCooldown(levelData.Cooldown)
-	}
-
-	if !CallSkillHook(character, uint32(skillID), "on_activating") {
-		character.Listener.OnUpdateStats(character, nil, true)
-		return nil
-	}
-	return h.finishMagicAttack(ctx, character, mapInstance, req, uint8(skillLevel), uint32(skillID))
+	return h.finishMagicAttack(ctx, character, mapInstance, req, uint8(skillLevel), skillID)
 }
 
 func (h *MagicAttack) finishMagicAttack(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, req *request.MagicAttack, skillLevel uint8, skillID uint32) error {

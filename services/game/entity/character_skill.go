@@ -135,7 +135,7 @@ func (ch *Character) GetTotalSkillLevel(skillID uint32) int {
 	return entry.Level()
 }
 
-func (ch *Character) UseAttackSkill(skillID uint32) bool {
+func (ch *Character) UseAttackSkill(skillID uint32, activate func() bool) bool {
 	if ch.GameWorld == nil {
 		return false
 	}
@@ -157,11 +157,14 @@ func (ch *Character) UseAttackSkill(skillID uint32) bool {
 	if levelData == nil {
 		return false
 	}
+	skillEntry := ch.Skills.Get(skillID)
+	if levelData.Cooldown > 0 && (skillEntry == nil || skillEntry.IsCooling()) {
+		return false
+	}
+	if activate() == false {
+		return false
+	}
 	if levelData.Cooldown > 0 {
-		skillEntry := ch.Skills.Get(skillID)
-		if skillEntry == nil || skillEntry.IsCooling() {
-			return false
-		}
 		skillEntry.StartCooldown(levelData.Cooldown)
 	}
 	return true

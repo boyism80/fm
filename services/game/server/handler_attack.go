@@ -49,14 +49,14 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 	var skillLevel uint8 = 0
 	skillID := req.Skill
 	if skillID != 0 {
-		if !character.UseAttackSkill(skillID) {
-			return nil
-		}
-		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
-		if !CallSkillHook(character, skillID, "on_activating") {
+		activated := character.UseAttackSkill(skillID, func() bool {
+			return CallSkillHook(character, skillID, "on_activating")
+		})
+		if activated == false {
 			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
+		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
 	}
 	return h.finishAttack(ctx, character, mapInstance, req, skillLevel, skillID)
 }
