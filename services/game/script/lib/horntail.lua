@@ -14,6 +14,18 @@ function M.relink_sponge(map, dying_sponge, new_sponge)
 	end
 end
 
+function M.replace_sponge(map, dying_sponge, next_sponge_id)
+	if map:mob_by_template(next_sponge_id) ~= nil then
+		return
+	end
+	local x, y = dying_sponge:position()
+	local next_sponge = map:spawn_mob(next_sponge_id, x, y)
+	if next_sponge == nil then
+		return
+	end
+	M.relink_sponge(map, dying_sponge, next_sponge)
+end
+
 function M.clear_map_after(map, delay_ms)
 	sleep(delay_ms or 3000)
 	if map == nil then
