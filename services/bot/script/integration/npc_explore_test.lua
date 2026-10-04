@@ -9,6 +9,7 @@ local entries, missing = wz.npc_scripts()
 local PROFILES = {
 	{ name = "초보자", level = 10, job = 0, meso = 0, grant = false },
 	{ name = "숙련자", level = 70, job = 110, meso = 100000000, grant = true },
+	{ name = "보상미보유", level = 70, job = 110, meso = 100000000, grant = true, unrewarded = true },
 	{ name = "퀘스트진행", level = 70, job = 110, meso = 100000000, grant = true, quest = 1 },
 	{ name = "퀘스트완료", level = 70, job = 110, meso = 100000000, grant = true, quest = 2 },
 	{ name = "고레벨", level = 200, job = 112, meso = 100000000, grant = true, level_check = true },
@@ -361,18 +362,27 @@ local function explore(ctx, bot, entry)
 		ctx:fail(where .. ": 스크립트 파일을 읽지 못함")
 		return
 	end
-	local grants = {}
-	for _, id in ipairs(refs.items) do
-		if #grants >= MAX_GRANTS then
-			break
-		end
-		local count = STACK
-		if id < 2000000 then
-			count = 1
-		end
-		grants[#grants + 1] = id .. ":" .. count
+	local rewards = {}
+	for _, id in ipairs(refs.rewards) do
+		rewards[id] = true
 	end
-	grants = table.concat(grants, ",")
+	local function grant_list(unrewarded)
+		local list = {}
+		for _, id in ipairs(refs.items) do
+			if #list >= MAX_GRANTS then
+				break
+			end
+			if unrewarded == false or rewards[id] == nil then
+				local count = STACK
+				if id < 2000000 then
+					count = 1
+				end
+				list[#list + 1] = id .. ":" .. count
+			end
+		end
+		return table.concat(list, ",")
+	end
+	local grants = { all = grant_list(false), unrewarded = grant_list(true) }
 
 	local started = os.clock()
 	local seen = { maps = {}, items = {}, meso = false, exp = false, empty = {}, capped = false }
@@ -384,7 +394,9 @@ local function explore(ctx, bot, entry)
 	end
 	local profiles = {}
 	for _, profile in ipairs(PROFILES) do
-		if (profile.quest == nil or #refs.quests > 0) and (profile.level_check == nil or refs.level) then
+		if (profile.quest == nil or #refs.quests > 0)
+			and (profile.level_check == nil or refs.level)
+			and (profile.unrewarded == nil or #refs.rewards > 0) then
 			profiles[#profiles + 1] = profile
 		end
 	end
@@ -403,7 +415,11 @@ local function explore(ctx, bot, entry)
 				summary.paths = summary.paths + 1
 
 				local at = os.clock()
-				if reset(bot, profile, grants, refs.quests) == false then
+				local granted = grants.all
+				if profile.unrewarded then
+					granted = grants.unrewarded
+				end
+				if reset(bot, profile, granted, refs.quests) == false then
 					ctx:fail(where .. ": /봇초기화 실패")
 					return
 				end

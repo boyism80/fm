@@ -28,6 +28,10 @@ var (
 	currentMap   = regexp.MustCompile(`:map\(\)`)
 	levelCheck   = regexp.MustCompile(`:level\(\)`)
 	mapSpread    = regexp.MustCompile(`(\d{9})\s*\+\s*math\.random\(\s*\d+\s*,\s*(\d+)\s*\)`)
+	exchangeCall = regexp.MustCompile(`exchange\(`)
+	itemKey      = regexp.MustCompile(`\[\s*(\d{7})\s*\]\s*=`)
+	itemMake     = regexp.MustCompile(`mkitem\(\s*(\d{7})\b`)
+	itemTake     = regexp.MustCompile(`rmitem\(\s*(\d{7})\b`)
 	requireCall  = regexp.MustCompile(`require\(\s*"script/([^"]+)"\s*\)`)
 	deferredCall = regexp.MustCompile(`start_solo|start_party|state_machine\(|run_on_map`)
 )
@@ -133,6 +137,7 @@ func (a *SuiteActor) wzFuncs() map[string]lua.LGFunction {
 			refs.RawSetString("quests", a.numberList(L, quests))
 			refs.RawSetString("maps", a.mapRefs(L, data))
 			refs.RawSetString("changes", a.numberList(L, a.itemIDs(changes)))
+			refs.RawSetString("rewards", a.numberList(L, a.rewardItems(data)))
 			refs.RawSetString("meso", lua.LBool(mesoChange.Match(data)))
 			refs.RawSetString("exp", lua.LBool(expChange.Match(data)))
 			refs.RawSetString("here", lua.LBool(currentMap.Match(data)))
@@ -256,6 +261,55 @@ func (a *SuiteActor) itemIDs(matches [][][]byte) []uint32 {
 		ids = append(ids, uint32(id))
 	}
 	slices.Sort(ids)
+	return ids
+}
+
+func (a *SuiteActor) rewardItems(data []byte) []uint32 {
+	var costs, rewards [][][]byte
+	for _, at := range exchangeCall.FindAllIndex(data, -1) {
+		var args [][]byte
+		depth, start := 0, at[1]
+	scan:
+		for i := at[1]; i < len(data); i++ {
+			switch c := data[i]; c {
+			case '"', '\'':
+				for i++; i < len(data) && data[i] != c; i++ {
+					if data[i] == '\\' {
+						i++
+					}
+				}
+			case '(', '{', '[':
+				depth++
+			case ')', '}', ']':
+				if depth == 0 {
+					args = append(args, data[start:i])
+					break scan
+				}
+				depth--
+			case ',':
+				if depth == 0 {
+					args = append(args, data[start:i])
+					start = i + 1
+				}
+			}
+		}
+		if len(args) > 0 {
+			costs = append(costs, itemKey.FindAllSubmatch(args[0], -1)...)
+		}
+		if len(args) > 1 {
+			rewards = append(rewards, itemKey.FindAllSubmatch(args[1], -1)...)
+		}
+	}
+	costs = append(costs, itemTake.FindAllSubmatch(data, -1)...)
+	rewards = append(rewards, itemMake.FindAllSubmatch(data, -1)...)
+
+	paid := a.itemIDs(costs)
+	var ids []uint32
+	for _, id := range a.itemIDs(rewards) {
+		if slices.Contains(paid, id) == false {
+			ids = append(ids, id)
+		}
+	}
 	return ids
 }
 
