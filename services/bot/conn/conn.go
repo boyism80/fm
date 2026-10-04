@@ -20,7 +20,6 @@ type outbound interface {
 	Serialize(writer *stream.StreamWriter) error
 }
 
-// Conn is one bot TCP session. Send is safe for concurrent callers. Read is not.
 type Conn struct {
 	nc   net.Conn
 	br   *bufio.Reader
@@ -91,7 +90,6 @@ func (c *Conn) Send(pkt outbound) error {
 	return writeFull(c.nc, frame)
 }
 
-// Read returns the next packet. Ping is answered with Pong and not returned.
 func (c *Conn) Read() (uint16, []byte, error) {
 	for {
 		opcode, body, err := c.readPacket()
