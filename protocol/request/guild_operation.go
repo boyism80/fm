@@ -28,6 +28,16 @@ func (*GuildOperation) Opcode() byte {
 }
 
 func (p *GuildOperation) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(p.Operation))
+	switch p.Operation {
+	case constant.GuildC2SCreate:
+		writer.WriteStr16(p.GuildName)
+	case constant.GuildC2SInvite:
+		writer.WriteStr16(p.TargetName)
+	case constant.GuildC2SAcceptInvite:
+		writer.WriteU32(p.GuildID)
+		writer.WriteU32(p.CharacterID)
+	}
 	return nil
 }
 

@@ -21,4 +21,8 @@ func (p *GuildInvite) Serialize(w *stream.StreamWriter) error {
 	return nil
 }
 
-func (p *GuildInvite) Deserialize(*stream.StreamReader) {}
+func (p *GuildInvite) Deserialize(r *stream.StreamReader) {
+	r.ReadU8()
+	p.GuildID = r.ReadU32()
+	p.InviterName = r.ReadStr16()
+}

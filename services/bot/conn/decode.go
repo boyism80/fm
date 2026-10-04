@@ -35,6 +35,7 @@ var Responses = []any{
 	&response.InventoryOperation{},
 	&response.UpdateQuest{},
 	&response.GuildMessage{},
+	&response.GuildInvite{},
 	&response.SwitchChannel{},
 	&response.ServerBlocked{},
 	&response.PartyCreated{},
@@ -174,6 +175,11 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		pkt.Deserialize(reader)
 		return pkt, nil
 	case (&response.GuildMessage{}).Opcode():
+		if len(body) > 0 && pconst.GuildSubOpcode(body[0]) == pconst.GuildS2CInvite {
+			pkt := &response.GuildInvite{}
+			pkt.Deserialize(reader)
+			return pkt, nil
+		}
 		pkt := &response.GuildMessage{}
 		pkt.Deserialize(reader)
 		return pkt, nil

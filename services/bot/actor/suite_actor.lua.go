@@ -30,6 +30,7 @@ var requests = []outbound{
 	&request.Dialog{},
 	&request.Warp{},
 	&request.PartyOperation{},
+	&request.GuildOperation{},
 	&request.SwitchChannel{},
 	&request.QuestAction{},
 	&request.Attack{},
@@ -81,6 +82,12 @@ func (a *SuiteActor) register() {
 	party.RawSetString("Expel", lua.LNumber(pconst.PartyC2SExpel))
 	party.RawSetString("ChangeLeader", lua.LNumber(pconst.PartyC2SChangeLeader))
 	L.SetGlobal("PARTY", party)
+
+	guild := L.NewTable()
+	guild.RawSetString("Create", lua.LNumber(pconst.GuildC2SCreate))
+	guild.RawSetString("Invite", lua.LNumber(pconst.GuildC2SInvite))
+	guild.RawSetString("AcceptInvite", lua.LNumber(pconst.GuildC2SAcceptInvite))
+	L.SetGlobal("GUILD", guild)
 	L.SetGlobal("wz", L.SetFuncs(L.NewTable(), a.wzFuncs()))
 
 	ctxIndex := L.SetFuncs(L.NewTable(), a.ctxFuncs())
