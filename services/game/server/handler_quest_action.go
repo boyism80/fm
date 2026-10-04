@@ -98,7 +98,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 		}
 
 	case request.QuestActionScriptedStart:
-		if character.GetDialog() != nil {
+		if questDef.HasStartScript() == false || character.GetDialog() != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
@@ -114,7 +114,7 @@ func (h *QuestAction) Handle(ctx *core.ClientContext, req *request.QuestAction) 
 		}
 
 	case request.QuestActionScriptedEnd:
-		if character.GetDialog() != nil {
+		if questDef.HasEndScript() == false || character.GetDialog() != nil {
 			character.Listener.OnUnlockAction(character)
 			return nil
 		}
