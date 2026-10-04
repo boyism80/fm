@@ -17,7 +17,7 @@ return {
 			return
 		end
 		if effect.x > 0 then
-			local hp_loss = math.floor(cur_hp * effect.x / 100)
+			local hp_loss = math.floor(max_hp * effect.x / 100)
 			if hp_loss > 0 then
 				local new_hp = math.max(cur_hp - hp_loss, 1)
 				me:hp(new_hp, true)
