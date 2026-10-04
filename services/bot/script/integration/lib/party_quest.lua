@@ -235,6 +235,27 @@ function M.portal(ctx, bot, portal, map_id)
 	return true
 end
 
+function M.visit_reactors(ctx, bot, match, visit)
+	local done = {}
+	for _, spot in ipairs(bot:reactor_spots()) do
+		if M.move(bot, spot.x, spot.y) == false then
+			return ctx:fail(bot:name() .. " 리액터 위치로 이동 실패")
+		end
+		for _, r in ipairs(bot:reactors()) do
+			if done[r.oid] == nil and r.broken == false and match(r) then
+				done[r.oid] = true
+				if M.move(bot, r.x, r.y) == false then
+					return ctx:fail(bot:name() .. " 리액터 앞으로 이동 실패: " .. r.id)
+				end
+				if visit(r) == false then
+					return false
+				end
+			end
+		end
+	end
+	return true
+end
+
 function M.seek_reactor(ctx, bot, match)
 	local function visible()
 		for _, r in ipairs(bot:reactors()) do
