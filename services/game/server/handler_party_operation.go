@@ -115,6 +115,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 					log.Printf("PartyOperation(join): ok but missing party_id character=%d", charID)
 					return nil
 				}
+				ch.SetPartyID(reply.PartyId)
 				return nil
 			},
 		).OnError(func(err error) {
