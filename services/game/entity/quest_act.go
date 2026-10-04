@@ -132,8 +132,7 @@ func (qc *QuestContainer) Start(questID uint32, opts QuestPhaseOpts) (*Quest, er
 		if qp.MobKills == nil {
 			qp.MobKills = make(map[uint32]int)
 		}
-		qc.RunAutoTriggers(nil, AutoQuestTriggerLogin, 0)
-		qc.RunAutoTriggers(nil, AutoQuestTriggerLevelUp, 0)
+		qc.RunAutoTriggers(nil, AutoQuestTriggerInfoStart, questID)
 		return qp, nil
 	} else {
 		wireNPC := uint32(0)

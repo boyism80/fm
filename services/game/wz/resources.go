@@ -112,6 +112,7 @@ type Resources struct {
 	CarnivalGuardians       map[uint32]*CarnivalGuardian
 	questsByStartFieldEnter map[uint32][]*Quest
 	questsByAutoStart       []*Quest
+	questsByAutoStartInfo   map[uint32][]*Quest
 }
 
 func (node *node) find(name string) *node {
@@ -861,13 +862,18 @@ func (r *Resources) buildQuestAutoStartIndex() {
 		return
 	}
 	list := make([]*Quest, 0)
+	byInfo := make(map[uint32][]*Quest)
 	for _, quest := range r.Quests {
 		if quest == nil || !quest.HasAutoStartMeta() {
 			continue
 		}
 		list = append(list, quest)
+		if info := quest.Start.Requirements.InfoNumber; info > 0 {
+			byInfo[uint32(info)] = append(byInfo[uint32(info)], quest)
+		}
 	}
 	r.questsByAutoStart = list
+	r.questsByAutoStartInfo = byInfo
 }
 
 func (r *Resources) GetQuestsByAutoStart() []*Quest {
@@ -878,6 +884,16 @@ func (r *Resources) GetQuestsByAutoStart() []*Quest {
 		r.buildQuestAutoStartIndex()
 	}
 	return r.questsByAutoStart
+}
+
+func (r *Resources) GetQuestsByAutoStartInfo(questID uint32) []*Quest {
+	if r == nil {
+		return nil
+	}
+	if r.questsByAutoStartInfo == nil {
+		r.buildQuestAutoStartIndex()
+	}
+	return r.questsByAutoStartInfo[questID]
 }
 
 func (r *Resources) GetReactor(id uint32) *Reactor {

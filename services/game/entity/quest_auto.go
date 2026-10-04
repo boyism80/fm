@@ -11,9 +11,10 @@ const (
 	AutoQuestTriggerMapEnter AutoQuestTrigger = iota
 	AutoQuestTriggerLogin
 	AutoQuestTriggerLevelUp
+	AutoQuestTriggerInfoStart
 )
 
-func (qc *QuestContainer) RunAutoTriggers(actx actor.Context, trigger AutoQuestTrigger, mapID uint32) {
+func (qc *QuestContainer) RunAutoTriggers(actx actor.Context, trigger AutoQuestTrigger, key uint32) {
 	if qc == nil {
 		return
 	}
@@ -24,7 +25,7 @@ func (qc *QuestContainer) RunAutoTriggers(actx actor.Context, trigger AutoQuestT
 	if resources == nil {
 		return
 	}
-	quests := qc.autoCandidates(resources, trigger, mapID)
+	quests := qc.autoCandidates(resources, trigger, key)
 	if len(quests) == 0 {
 		return
 	}
@@ -36,15 +37,17 @@ func (qc *QuestContainer) RunAutoTriggers(actx actor.Context, trigger AutoQuestT
 	}
 }
 
-func (qc *QuestContainer) autoCandidates(resources *wz.Resources, trigger AutoQuestTrigger, mapID uint32) []*wz.Quest {
+func (qc *QuestContainer) autoCandidates(resources *wz.Resources, trigger AutoQuestTrigger, key uint32) []*wz.Quest {
 	if resources == nil {
 		return nil
 	}
 	switch trigger {
 	case AutoQuestTriggerMapEnter:
-		return resources.GetQuestsByStartFieldEnter(mapID)
+		return resources.GetQuestsByStartFieldEnter(key)
 	case AutoQuestTriggerLogin, AutoQuestTriggerLevelUp:
 		return resources.GetQuestsByAutoStart()
+	case AutoQuestTriggerInfoStart:
+		return resources.GetQuestsByAutoStartInfo(key)
 	default:
 		return nil
 	}
