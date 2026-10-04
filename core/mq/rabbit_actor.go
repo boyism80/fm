@@ -3,6 +3,7 @@ package mq
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/common/config"
@@ -11,6 +12,11 @@ import (
 
 // DirectExchange is the default RabbitMQ direct exchange name used by publishers.
 const DirectExchange = "amq.direct"
+
+const (
+	reconnectMinDelay = time.Second
+	reconnectMaxDelay = 30 * time.Second
+)
 
 // RabbitActorConfig is passed when spawning a RabbitActor (one actor per logical consumer).
 type RabbitActorConfig struct {
@@ -35,13 +41,15 @@ type RabbitActor struct {
 	ch          *amqp.Channel
 	consumerTag string
 	consumeWG   sync.WaitGroup
+	stop        chan struct{}
+	stopOnce    sync.Once
 }
 
 func NewRabbitActor(cfg RabbitActorConfig) *RabbitActor {
 	if cfg.Exchange == "" {
 		cfg.Exchange = DirectExchange
 	}
-	return &RabbitActor{cfg: cfg}
+	return &RabbitActor{cfg: cfg, stop: make(chan struct{})}
 }
 
 func (a *RabbitActor) Receive(ctx actor.Context) {
@@ -60,6 +68,9 @@ func (a *RabbitActor) Receive(ctx actor.Context) {
 }
 
 func (a *RabbitActor) shutdownConsume() {
+	a.stopOnce.Do(func() {
+		close(a.stop)
+	})
 	a.mu.Lock()
 	ch := a.ch
 	tag := a.consumerTag
@@ -83,16 +94,31 @@ func (a *RabbitActor) runConsume(root *actor.RootContext, self *actor.PID) {
 		log.Printf("mq: RabbitActor: empty AMQP URL, skip consume")
 		return
 	}
+	delay := reconnectMinDelay
+	for {
+		if a.consume(root, self, url) {
+			delay = reconnectMinDelay
+		}
+		select {
+		case <-a.stop:
+			return
+		case <-time.After(delay):
+		}
+		delay = min(delay*2, reconnectMaxDelay)
+	}
+}
+
+func (a *RabbitActor) consume(root *actor.RootContext, self *actor.PID, url string) bool {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		log.Printf("mq: Dial: %v", err)
-		return
+		return false
 	}
 	ch, err := conn.Channel()
 	if err != nil {
 		_ = conn.Close()
 		log.Printf("mq: Channel: %v", err)
-		return
+		return false
 	}
 	ex := a.cfg.Exchange
 	if ex == DirectExchange {
@@ -100,20 +126,20 @@ func (a *RabbitActor) runConsume(root *actor.RootContext, self *actor.PID) {
 			_ = ch.Close()
 			_ = conn.Close()
 			log.Printf("mq: ExchangeDeclarePassive: %v", err)
-			return
+			return false
 		}
 	} else if err := ch.ExchangeDeclare(ex, "direct", true, false, false, false, nil); err != nil {
 		_ = ch.Close()
 		_ = conn.Close()
 		log.Printf("mq: ExchangeDeclare: %v", err)
-		return
+		return false
 	}
 	q, err := ch.QueueDeclare(a.cfg.QueueName, true, false, false, false, nil)
 	if err != nil {
 		_ = ch.Close()
 		_ = conn.Close()
 		log.Printf("mq: QueueDeclare: %v", err)
-		return
+		return false
 	}
 	for _, rk := range a.cfg.RoutingKeys {
 		if rk == "" {
@@ -123,7 +149,7 @@ func (a *RabbitActor) runConsume(root *actor.RootContext, self *actor.PID) {
 			_ = ch.Close()
 			_ = conn.Close()
 			log.Printf("mq: QueueBind: %v", err)
-			return
+			return false
 		}
 	}
 	deliveries, err := ch.Consume(q.Name, a.cfg.ConsumerTag, false, false, false, false, nil)
@@ -131,7 +157,7 @@ func (a *RabbitActor) runConsume(root *actor.RootContext, self *actor.PID) {
 		_ = ch.Close()
 		_ = conn.Close()
 		log.Printf("mq: Consume: %v", err)
-		return
+		return false
 	}
 
 	a.mu.Lock()
@@ -147,6 +173,12 @@ func (a *RabbitActor) runConsume(root *actor.RootContext, self *actor.PID) {
 		a.mu.Unlock()
 	}()
 
+	select {
+	case <-a.stop:
+		return true
+	default:
+	}
+
 	log.Printf("mq: RabbitActor consuming queue=%s", a.cfg.QueueName)
 
 	for msg := range deliveries {
@@ -160,4 +192,5 @@ func (a *RabbitActor) runConsume(root *actor.RootContext, self *actor.PID) {
 		copy(body, msg.Body)
 		root.Send(self, &IncomingAMQP{Body: body})
 	}
+	return true
 }
