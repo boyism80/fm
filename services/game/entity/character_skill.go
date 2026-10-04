@@ -91,6 +91,7 @@ func (ch *Character) DistributeSP(skillID uint32) bool {
 	if skillEntry.Level() == 0 {
 		skillEntry.SetLevel(1)
 		ch.Skills.Bind(skillID, skillEntry)
+		ch.Listener.OnSkillPassiveHook(ch, skillID, "on_passive")
 	} else {
 		skillEntry.SetLevel(skillEntry.Level() + 1)
 	}
