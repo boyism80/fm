@@ -476,6 +476,69 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["봇초기화"] = {
+		privilege = ROLE.Admin,
+		usage = "<레벨> <직업코드> <메소> [아이템ID:개수,...|-] [퀘스트ID:상태,...] - 인벤토리·퀘스트를 비우고 상태 설정",
+		command = function(me, args)
+			local level = tonumber(args[1])
+			local class = tonumber(args[2])
+			local meso = tonumber(args[3])
+			if level == nil or class == nil or meso == nil then
+				me:message("사용법: /봇초기화 <레벨> <직업코드> <메소> [아이템ID:개수,...|-] [퀘스트ID:상태,...]")
+				return true
+			end
+			me:clear_inventory()
+			me:clear_quests()
+			me:level(level)
+			me:class(class)
+			me:exp(0)
+			me:meso(meso)
+			me:population(0)
+			for item_id, count in string.gmatch(args[4] or "", "(%d+):(%d+)") do
+				me:mkitem(tonumber(item_id), tonumber(count))
+			end
+			for quest_id, state in string.gmatch(args[5] or "", "(%d+):(%d+)") do
+				ensure_quest_state(me, tonumber(quest_id), tonumber(state))
+			end
+			me:message("봇초기화 완료")
+			return true
+		end,
+	},
+	["봇상태"] = {
+		privilege = ROLE.Admin,
+		usage = "- 레벨·직업·메소·경험치·인기도·맵·아이템을 한 줄로 표시",
+		command = function(me, args)
+			local counts = {}
+			for _, tab in pairs(me:items()) do
+				for _, it in pairs(tab) do
+					local wz = it:wz()
+					if wz ~= nil then
+						counts[wz:id()] = (counts[wz:id()] or 0) + it:count()
+					end
+				end
+			end
+			local ids = {}
+			for item_id in pairs(counts) do
+				ids[#ids + 1] = item_id
+			end
+			table.sort(ids)
+			local items = {}
+			for i, item_id in ipairs(ids) do
+				items[i] = item_id .. ":" .. counts[item_id]
+			end
+			me:message(string.format(
+				"봇상태 level=%d job=%d meso=%d exp=%d fame=%d map=%d items=%s",
+				me:level(),
+				me:class(),
+				me:meso(),
+				me:exp(),
+				me:population(),
+				me:map():template_id(),
+				table.concat(items, ",")
+			))
+			return true
+		end,
+	},
 	["메소초기화"] = {
 		privilege = ROLE.Admin,
 		usage = "- 메소 초기화",
