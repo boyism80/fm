@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"maps"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -511,7 +512,7 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		"kill": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			oid := uint32(L.CheckInt(2))
-			pkt, ok := a.attackPacket(b, oid, 0, 1)
+			pkt, ok := a.attackPacket(b, oid, math.MaxInt32, 1)
 			if ok == false {
 				L.Push(lua.LFalse)
 				return 1

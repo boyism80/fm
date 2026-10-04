@@ -2,7 +2,9 @@ package wz
 
 import (
 	"encoding/xml"
+	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -20,6 +22,9 @@ func loadReactor(path string) (*Reactor, error) {
 	var root node
 	if err := xml.NewDecoder(file).Decode(&root); err != nil {
 		return nil, err
+	}
+	if filepath.Base(path) != root.Name+".xml" {
+		return nil, fmt.Errorf("reactor file %s does not match %s", path, root.Name)
 	}
 
 	id, err := strconv.Atoi(strings.TrimSuffix(root.Name, ".img"))
