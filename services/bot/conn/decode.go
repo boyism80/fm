@@ -9,290 +9,142 @@ import (
 	"github.com/boyism80/fm/stream"
 )
 
-var Responses = []any{
-	&response.LoginFailed{},
-	&response.Authenticate{},
-	&response.ServerList{},
-	&response.EndOfServerList{},
-	&response.CharacterList{},
-	&response.Transfer{},
-	&response.CheckName{},
-	&response.CreateCharacter{},
-	&response.Login{},
-	&response.Warp{},
-	&response.KeyMap{},
-	&response.Notice{},
-	&response.SpawnNpc{},
-	&response.RemoveNpc{},
-	&response.Dialog{},
-	&response.DialogYesNo{},
-	&response.DialogInput{},
-	&response.DialogList{},
-	&response.DialogStyle{},
-	&response.DialogAccept{},
-	&response.UpdateStats{},
-	&response.OpenNpcShop{},
-	&response.InventoryOperation{},
-	&response.UpdateQuest{},
-	&response.GuildMessage{},
-	&response.GuildInvite{},
-	&response.SwitchChannel{},
-	&response.ServerBlocked{},
-	&response.PartyCreated{},
-	&response.PartyInvite{},
-	&response.PartyUpdateJoin{},
-	&response.PartyUpdateLeave{},
-	&response.PartyUpdateExpel{},
-	&response.PartyUpdateDisband{},
-	&response.PartyUpdateLeaderChange{},
-	&response.PartyStatusMessage{},
-	&response.SpawnMob{},
-	&response.DieMob{},
-	&response.SpawnItem{},
-	&response.SpawnMeso{},
-	&response.RemoveItem{},
-	&response.EnvironmentChange{},
-	&response.ShowBossHp{},
-	&response.SpawnReactor{},
-	&response.TriggerReactor{},
-	&response.DestroyReactor{},
-	&response.CarnivalStart{},
-	&response.CarnivalObtainedCP{},
-	&response.CarnivalPartyCP{},
-	&response.CarnivalSummon{},
-	&response.CarnivalDied{},
-}
-
-type deserializer interface {
+type packet interface {
+	Opcode() uint16
 	Deserialize(reader *stream.StreamReader)
 }
 
-func Decode(opcode uint16, body []byte) (any, error) {
-	reader := stream.NewStreamReader(&body, stream.LittleEndian)
-	switch opcode {
-	case (&response.LoginFailed{}).Opcode():
-		if len(body) == 0 {
-			return nil, fmt.Errorf("empty login opcode")
-		}
-		if body[0] == 0 {
-			pkt := &response.Authenticate{}
-			pkt.Deserialize(reader)
-			return pkt, nil
-		}
-		pkt := &response.LoginFailed{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.ServerList{}).Opcode():
-		if len(body) > 0 && body[0] == 0xFF {
-			pkt := &response.EndOfServerList{}
-			pkt.Deserialize(reader)
-			return pkt, nil
-		}
-		pkt := &response.ServerList{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.CharacterList{}).Opcode():
-		pkt := &response.CharacterList{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.Transfer{}).Opcode():
-		pkt := &response.Transfer{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.CheckName{}).Opcode():
-		pkt := &response.CheckName{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.CreateCharacter{}).Opcode():
-		pkt := &response.CreateCharacter{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.Ping{}).Opcode():
-		return &response.Ping{}, nil
-	case (&response.Login{}).Opcode():
-		if len(body) > 4 && body[4] == 2 {
-			pkt := &response.Warp{}
-			pkt.Deserialize(reader)
-			return pkt, nil
-		}
-		pkt := &response.Login{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.KeyMap{}).Opcode():
-		pkt := &response.KeyMap{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.Notice{}).Opcode():
-		pkt := &response.Notice{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.SpawnNpc{}).Opcode():
-		pkt := &response.SpawnNpc{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.RemoveNpc{}).Opcode():
-		pkt := &response.RemoveNpc{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.Dialog{}).Opcode():
-		if len(body) < 6 {
-			return nil, fmt.Errorf("short dialog")
-		}
-		var pkt deserializer
-		switch constant.DialogType(body[5]) {
-		case constant.DialogTypeYesNo:
-			pkt = &response.DialogYesNo{}
-		case constant.DialogTypeInput:
-			pkt = &response.DialogInput{}
-		case constant.DialogTypeList:
-			pkt = &response.DialogList{}
-		case constant.DialogTypeStyle:
-			pkt = &response.DialogStyle{}
-		case constant.DialogTypeAccept, constant.DialogTypeAcceptEscape:
-			pkt = &response.DialogAccept{}
-		default:
-			pkt = &response.Dialog{}
-		}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.UpdateStats{}).Opcode():
-		pkt := &response.UpdateStats{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.OpenNpcShop{}).Opcode():
-		pkt := &response.OpenNpcShop{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.InventoryOperation{}).Opcode():
-		pkt := &response.InventoryOperation{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.UpdateQuest{}).Opcode():
-		if len(body) == 0 || body[0] != 1 {
-			return nil, fmt.Errorf("status info is not decoded")
-		}
-		pkt := &response.UpdateQuest{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.GuildMessage{}).Opcode():
-		if len(body) > 0 && pconst.GuildSubOpcode(body[0]) == pconst.GuildS2CInvite {
-			pkt := &response.GuildInvite{}
-			pkt.Deserialize(reader)
-			return pkt, nil
-		}
-		pkt := &response.GuildMessage{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.SwitchChannel{}).Opcode():
-		pkt := &response.SwitchChannel{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.ServerBlocked{}).Opcode():
-		pkt := &response.ServerBlocked{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.SpawnMob{}).Opcode():
-		pkt := &response.SpawnMob{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.DieMob{}).Opcode():
-		pkt := &response.DieMob{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.SpawnItem{}).Opcode():
-		if len(body) < 6 {
-			return nil, fmt.Errorf("short drop")
-		}
-		if body[5] == 1 {
-			pkt := &response.SpawnMeso{}
-			pkt.Deserialize(reader)
-			return pkt, nil
-		}
-		pkt := &response.SpawnItem{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.RemoveItem{}).Opcode():
-		pkt := &response.RemoveItem{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.EnvironmentChange{}).Opcode():
-		if len(body) == 0 {
-			return nil, fmt.Errorf("empty environment change")
-		}
-		if response.EnvironmentChangeMode(body[0]) == response.EnvironmentChangeModeBossHP {
-			pkt := &response.ShowBossHp{}
-			pkt.Deserialize(reader)
-			return pkt, nil
-		}
-		pkt := &response.EnvironmentChange{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.SpawnReactor{}).Opcode():
-		pkt := &response.SpawnReactor{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.TriggerReactor{}).Opcode():
-		pkt := &response.TriggerReactor{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.DestroyReactor{}).Opcode():
-		pkt := &response.DestroyReactor{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.CarnivalStart{}).Opcode():
-		pkt := &response.CarnivalStart{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.CarnivalObtainedCP{}).Opcode():
-		pkt := &response.CarnivalObtainedCP{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.CarnivalPartyCP{}).Opcode():
-		pkt := &response.CarnivalPartyCP{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.CarnivalSummon{}).Opcode():
-		pkt := &response.CarnivalSummon{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.CarnivalDied{}).Opcode():
-		pkt := &response.CarnivalDied{}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	case (&response.PartyCreated{}).Opcode():
-		if len(body) == 0 {
-			return nil, fmt.Errorf("empty party opcode")
-		}
-		var pkt deserializer
-		switch pconst.PartySubOpcode(body[0]) {
-		case pconst.PartyS2CPartyCreated:
-			pkt = &response.PartyCreated{}
-		case pconst.PartyS2CInvite:
-			pkt = &response.PartyInvite{}
-		case pconst.PartyS2CPartyJoin:
-			pkt = &response.PartyUpdateJoin{}
-		case pconst.PartyS2CLeaderChange:
-			pkt = &response.PartyUpdateLeaderChange{}
-		case pconst.PartyS2CPartyUpdate:
-			if len(body) < 11 {
-				return nil, fmt.Errorf("short party update")
+type decoder struct {
+	new  func() packet
+	peek func(body []byte) bool
+}
+
+func newDecoder[T any, P interface {
+	*T
+	packet
+}](peek func(body []byte) bool) decoder {
+	return decoder{new: func() packet { return P(new(T)) }, peek: peek}
+}
+
+var decoders = func() []decoder {
+	dialog := func(types ...constant.DialogType) func([]byte) bool {
+		return func(body []byte) bool {
+			if len(body) < 6 {
+				return false
 			}
-			switch {
-			case body[9] == 0:
-				pkt = &response.PartyUpdateDisband{}
-			case body[10] == 1:
-				pkt = &response.PartyUpdateExpel{}
-			default:
-				pkt = &response.PartyUpdateLeave{}
+			for _, t := range types {
+				if constant.DialogType(body[5]) == t {
+					return true
+				}
 			}
-		case pconst.PartyS2CSilentUpdate, pconst.PartyS2CPartyPortal:
-			return nil, fmt.Errorf("party sub opcode %d is not decoded", body[0])
-		default:
-			pkt = &response.PartyStatusMessage{}
+			return false
 		}
-		pkt.Deserialize(reader)
-		return pkt, nil
-	default:
-		return nil, fmt.Errorf("unknown opcode %d", opcode)
 	}
+	party := func(sub pconst.PartySubOpcode) func([]byte) bool {
+		return func(body []byte) bool {
+			return len(body) > 0 && pconst.PartySubOpcode(body[0]) == sub
+		}
+	}
+	partyUpdate := func(match func(body []byte) bool) func([]byte) bool {
+		return func(body []byte) bool {
+			return len(body) >= 11 && pconst.PartySubOpcode(body[0]) == pconst.PartyS2CPartyUpdate && match(body)
+		}
+	}
+
+	return []decoder{
+		newDecoder[response.Authenticate](func(body []byte) bool { return len(body) > 0 && body[0] == 0 }),
+		newDecoder[response.LoginFailed](func(body []byte) bool { return len(body) > 0 }),
+		newDecoder[response.EndOfServerList](func(body []byte) bool { return len(body) > 0 && body[0] == 0xFF }),
+		newDecoder[response.ServerList](nil),
+		newDecoder[response.CharacterList](nil),
+		newDecoder[response.Transfer](nil),
+		newDecoder[response.CheckName](nil),
+		newDecoder[response.CreateCharacter](nil),
+		newDecoder[response.Ping](nil),
+		newDecoder[response.Warp](func(body []byte) bool { return len(body) > 4 && body[4] == 2 }),
+		newDecoder[response.Login](nil),
+		newDecoder[response.KeyMap](nil),
+		newDecoder[response.Notice](nil),
+		newDecoder[response.SpawnNpc](nil),
+		newDecoder[response.RemoveNpc](nil),
+		newDecoder[response.DialogYesNo](dialog(constant.DialogTypeYesNo)),
+		newDecoder[response.DialogInput](dialog(constant.DialogTypeInput)),
+		newDecoder[response.DialogList](dialog(constant.DialogTypeList)),
+		newDecoder[response.DialogStyle](dialog(constant.DialogTypeStyle)),
+		newDecoder[response.DialogAccept](dialog(constant.DialogTypeAccept, constant.DialogTypeAcceptEscape)),
+		newDecoder[response.Dialog](func(body []byte) bool { return len(body) >= 6 }),
+		newDecoder[response.UpdateStats](nil),
+		newDecoder[response.OpenNpcShop](nil),
+		newDecoder[response.InventoryOperation](nil),
+		newDecoder[response.UpdateQuest](func(body []byte) bool { return len(body) > 0 && body[0] == 1 }),
+		newDecoder[response.GuildInvite](func(body []byte) bool {
+			return len(body) > 0 && pconst.GuildSubOpcode(body[0]) == pconst.GuildS2CInvite
+		}),
+		newDecoder[response.GuildMessage](nil),
+		newDecoder[response.SwitchChannel](nil),
+		newDecoder[response.ServerBlocked](nil),
+		newDecoder[response.PartyCreated](party(pconst.PartyS2CPartyCreated)),
+		newDecoder[response.PartyInvite](party(pconst.PartyS2CInvite)),
+		newDecoder[response.PartyUpdateJoin](party(pconst.PartyS2CPartyJoin)),
+		newDecoder[response.PartyUpdateLeaderChange](party(pconst.PartyS2CLeaderChange)),
+		newDecoder[response.PartyUpdateDisband](partyUpdate(func(body []byte) bool { return body[9] == 0 })),
+		newDecoder[response.PartyUpdateExpel](partyUpdate(func(body []byte) bool { return body[10] == 1 })),
+		newDecoder[response.PartyUpdateLeave](partyUpdate(func([]byte) bool { return true })),
+		newDecoder[response.PartyStatusMessage](func(body []byte) bool {
+			if len(body) == 0 {
+				return false
+			}
+			switch pconst.PartySubOpcode(body[0]) {
+			case pconst.PartyS2CPartyUpdate, pconst.PartyS2CSilentUpdate, pconst.PartyS2CPartyPortal:
+				return false
+			}
+			return true
+		}),
+		newDecoder[response.SpawnMob](nil),
+		newDecoder[response.DieMob](nil),
+		newDecoder[response.SpawnMeso](func(body []byte) bool { return len(body) >= 6 && body[5] == 1 }),
+		newDecoder[response.SpawnItem](func(body []byte) bool { return len(body) >= 6 }),
+		newDecoder[response.RemoveItem](nil),
+		newDecoder[response.ShowBossHp](func(body []byte) bool {
+			return len(body) > 0 && response.EnvironmentChangeMode(body[0]) == response.EnvironmentChangeModeBossHP
+		}),
+		newDecoder[response.EnvironmentChange](func(body []byte) bool { return len(body) > 0 }),
+		newDecoder[response.SpawnReactor](nil),
+		newDecoder[response.TriggerReactor](nil),
+		newDecoder[response.DestroyReactor](nil),
+		newDecoder[response.CarnivalStart](nil),
+		newDecoder[response.CarnivalObtainedCP](nil),
+		newDecoder[response.CarnivalPartyCP](nil),
+		newDecoder[response.CarnivalSummon](nil),
+		newDecoder[response.CarnivalDied](nil),
+	}
+}()
+
+var decodersByOpcode = func() map[uint16][]decoder {
+	m := make(map[uint16][]decoder)
+	for _, d := range decoders {
+		op := d.new().Opcode()
+		m[op] = append(m[op], d)
+	}
+	return m
+}()
+
+var Responses = func() []any {
+	out := make([]any, 0, len(decoders))
+	for _, d := range decoders {
+		out = append(out, d.new())
+	}
+	return out
+}()
+
+func Decode(opcode uint16, body []byte) (any, error) {
+	for _, d := range decodersByOpcode[opcode] {
+		if d.peek != nil && d.peek(body) == false {
+			continue
+		}
+		pkt := d.new()
+		pkt.Deserialize(stream.NewStreamReader(&body, stream.LittleEndian))
+		return pkt, nil
+	}
+	return nil, fmt.Errorf("opcode %d is not decoded", opcode)
 }
