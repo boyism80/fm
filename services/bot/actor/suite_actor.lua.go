@@ -595,6 +595,11 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				reactor.RawSetString("oid", lua.LNumber(oid))
 				reactor.RawSetString("id", lua.LNumber(r.ReactorID))
 				reactor.RawSetString("state", lua.LNumber(r.State))
+				broken := true
+				if tpl := a.wz.GetReactor(r.ReactorID); tpl != nil && tpl.States[r.State] != nil {
+					broken = false
+				}
+				reactor.RawSetString("broken", lua.LBool(broken))
 				reactor.RawSetString("name", lua.LString(r.Name))
 				reactor.RawSetString("x", lua.LNumber(r.Position.X))
 				reactor.RawSetString("y", lua.LNumber(r.Position.Y))

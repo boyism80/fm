@@ -4,6 +4,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/entity"
 )
 
 type RunObjectTimerHandler struct{}
@@ -16,7 +17,13 @@ func (h *RunObjectTimerHandler) Handle(ctx actor.Context, a *GameLogicActor, msg
 	if msg == nil {
 		return
 	}
-	m := a.GetObject(constant.ObjectType(msg.ObjectType), msg.ID)
+	var m *entity.Map
+	for _, candidate := range a.Maps() {
+		if candidate != nil && candidate.GetMapID() == msg.MapID {
+			m = candidate
+			break
+		}
+	}
 	if m == nil {
 		return
 	}

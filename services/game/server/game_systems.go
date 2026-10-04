@@ -403,7 +403,13 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 	if sourcePID.Equal(targetPID) {
 		if actorCtx == nil || actorCtx.Self() == nil || !actorCtx.Self().Equal(sourcePID) {
 			ticket.Release()
-			return fmt.Errorf("same-owner warp must run on owner actor")
+			s.gs.GetRootContext().Send(sourcePID, &g_actor.MapCall{Run: func(ctx actor.Context, _ *g_actor.GameLogicActor) []lua.LValue {
+				if err := s.Warp(ctx, character, targetMap, spawnPoint, onEnter); err != nil {
+					log.Printf("warp %d to map %d: %v", character.GetID(), targetMap.GetMapID(), err)
+				}
+				return nil
+			}})
+			return nil
 		}
 		if err := currentMap.RemovePlayer(character.GetID()); err != nil {
 			ticket.Release()
@@ -545,7 +551,12 @@ func (s schedulerSystem) RunObjectTimer(pid *actor.PID, obj entity.Object, key s
 	if s.gs == nil || pid == nil || obj == nil || key == "" {
 		return
 	}
+	m := obj.GetMap()
+	if m == nil {
+		return
+	}
 	payload := &c_actor.RunObjectTimer{
+		MapID:      m.GetMapID(),
 		ObjectType: obj.GetObjectType(),
 		ID:         obj.GetPK(),
 		Key:        key,

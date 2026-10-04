@@ -26,6 +26,7 @@ type ExecuteTimer struct {
 }
 
 type RunObjectTimer struct {
+	MapID      uint32
 	ObjectType constant.ObjectType
 	ID         uint32
 	Key        string
