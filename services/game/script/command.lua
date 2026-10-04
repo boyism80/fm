@@ -165,6 +165,13 @@ local function pick_class(codes)
 	return codes[1]
 end
 
+local function force_start(quest)
+	if quest:wz() == nil then
+		return quest:start("")
+	end
+	return quest:start(0, true)
+end
+
 local function ensure_quest_state(me, quest_id, state)
 	local other = me:quest(quest_id)
 	if other == nil then
@@ -175,7 +182,7 @@ local function ensure_quest_state(me, quest_id, state)
 			return true
 		end
 		if not other:started() then
-			if not other:start(0, true) then
+			if not force_start(other) then
 				return false
 			end
 			other = me:quest(quest_id)
@@ -196,7 +203,7 @@ local function ensure_quest_state(me, quest_id, state)
 				return false
 			end
 		end
-		return other:start(0, true)
+		return force_start(other)
 	end
 	if state == 0 then
 		if other:status() == 0 then

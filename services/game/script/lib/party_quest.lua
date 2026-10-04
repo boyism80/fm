@@ -225,16 +225,8 @@ function M.party_all_here(me)
 	if party == nil or map == nil then
 		return false
 	end
-	local wz = map:wz()
-	if wz == nil then
-		return false
-	end
-	local map_id = wz:id()
 	for _, mem in ipairs(party:members()) do
-		if mem == nil or mem:map_id() ~= map_id then
-			return false
-		end
-		if map:characters()[mem:id()] == nil then
+		if mem == nil or map:characters()[mem:id()] == nil then
 			return false
 		end
 	end
