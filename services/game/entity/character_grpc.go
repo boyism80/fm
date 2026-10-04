@@ -276,54 +276,7 @@ func (ch *Character) ToProtoWithMapID(worldID uint32, mapID uint32) *internal.Ch
 }
 
 func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
-	if ch == nil {
-		return nil
-	}
-	mapID := ch.PersistMapID()
-	baseLooks, overlays := equipmentLooksForPersist(ch)
-	persisted := &internal.CharacterPersisted{
-		CharacterId:  ch.GetID(),
-		AccountId:    ch.AccountID,
-		WorldId:      worldID,
-		Name:         ch.GetName(),
-		Gender:       uint32(ch.GetGender()),
-		SkinColor:    uint32(ch.GetSkinColor()),
-		Face:         ch.GetFace(),
-		Hair:         ch.GetHair(),
-		Level:        uint32(ch.GetLevel()),
-		ClassId:      uint32(ch.Class),
-		Role:         uint32(ch.Role),
-		Hidden:       ch.IsHidden(),
-		Str:          uint32(ch.BaseStats.Str),
-		Dex:          uint32(ch.BaseStats.Dex),
-		IntStat:      uint32(ch.BaseStats.Int),
-		Luk:          uint32(ch.BaseStats.Luk),
-		Hp:           ch.GetHp(),
-		MaxHp:        ch.BaseHp,
-		Mp:           ch.GetMp(),
-		MaxMp:        ch.BaseMp,
-		AbilityPoint: uint32(ch.AbilityPoint),
-		Exp:          ch.GetExp(),
-		MapId:        mapID,
-		SpawnPoint:   uint32(ch.GetSpawnPoint()),
-		PositionX:    int32(ch.Position.X),
-		PositionY:    int32(ch.Position.Y),
-		Stance:       uint32(ch.Stance),
-		Meso:         ch.Inventory.Meso,
-		SkillPoint:   uint32(ch.SkillPoint),
-		Population:   uint32(ch.population),
-	}
-	return &internal.CharacterSaveEntry{
-		Character:      persisted,
-		BaseLooks:      baseLooks,
-		Overlays:       overlays,
-		Inventory:      ch.InventoryPersisted(),
-		Skills:         ch.SkillsPersisted(),
-		Buffs:          ch.BuffsPersisted(),
-		KeyLayout:      ch.KeyLayout().ToProto(),
-		Quests:         ch.QuestsPersisted(),
-		SavedLocations: ch.SavedLocationsPersisted(),
-	}
+	return ch.ToProtoWithMapID(worldID, ch.PersistMapID())
 }
 
 func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {
