@@ -6,7 +6,6 @@ local MAX_STEPS = 40
 local MAX_GRANTS = 24
 local STACK = 50
 local entries, missing = wz.npc_scripts()
-
 local PROFILES = {
 	{ name = "초보자", level = 10, job = 0, meso = 0, grant = false },
 	{ name = "숙련자", level = 70, job = 110, meso = 100000000, grant = true },
@@ -19,7 +18,7 @@ for _, name in ipairs(check.REPLIES) do
 	REPLIES[#REPLIES + 1] = name
 end
 
-local summary = { npcs = 0, paths = 0, suspects = 0 }
+local summary = { npcs = 0, paths = 0, suspects = 0, time = { reset = 0, move = 0, snapshot = 0, walk = 0 } }
 
 local function replied(p, name)
 	if name == resp.notice then
@@ -38,13 +37,17 @@ local function command(bot, text, done)
 	return p.message
 end
 
-local function snapshot(bot)
-	local m = command(bot, "/봇상태", function(m)
-		return m:find("봇상태 ", 1, true) == 1
-	end)
-	if m == nil then
-		return nil
+local tags = 0
+
+local function probe()
+	tags = tags + 1
+	local head = "봇상태 tag=" .. tags .. " "
+	return req.normal_chat { message = "/봇상태 " .. tags }, function(m)
+		return m:find(head, 1, true) == 1
 	end
+end
+
+local function parse(m)
 	local s = { items = {} }
 	for key, value in m:gmatch("(%a+)=(%-?%d+)") do
 		if key ~= "items" then
@@ -55,6 +58,17 @@ local function snapshot(bot)
 		s.items[tonumber(id)] = tonumber(count)
 	end
 	return s
+end
+
+local function snapshot(bot)
+	local pkt, mine = probe()
+	local p = bot:request(resp.notice, pkt, function(p)
+		return mine(p.message)
+	end)
+	if p == false then
+		return nil
+	end
+	return parse(p.message)
 end
 
 local function reset(bot, profile, grants, quests)
@@ -102,7 +116,7 @@ local function options(p, name)
 	return { { pkt = req.dialog { dialog_type = 0, next = true } } }
 end
 
-local function walk(bot, npc, oid, prefix, queue)
+local function walk(bot, npc, oid, prefix, queue, deferred)
 	local trace = { picks = {}, labels = {}, quests = {}, dialogs = 0 }
 	local p, name = bot:request(REPLIES, req.npc_click { oid = oid }, replied, 5000)
 	if p == false then
@@ -117,8 +131,7 @@ local function walk(bot, npc, oid, prefix, queue)
 	end
 
 	for _ = 1, MAX_STEPS do
-		local next = nil
-		local wait = 5000
+		local next, mine = nil, nil
 		if name == resp.warp then
 			trace.ended = "맵 이동"
 			return trace
@@ -135,11 +148,11 @@ local function walk(bot, npc, oid, prefix, queue)
 			return trace
 		elseif name == resp.notice then
 			trace.error = p.message
-			wait = 1000
+			next, mine = probe()
 		elseif name == resp.update_quest then
 			trace.quests[#trace.quests + 1] = p.quest_status.quest_id .. ":" .. p.quest_status.status
 		elseif name == resp.update_stats then
-			wait = 500
+			next, mine = probe()
 		else
 			trace.dialogs = trace.dialogs + 1
 			local opts = options(p, name)
@@ -166,14 +179,32 @@ local function walk(bot, npc, oid, prefix, queue)
 			next = opts[pick].pkt
 		end
 
-		local more, more_name = bot:request(REPLIES, next, replied, wait)
-		if more == false then
-			if name == resp.update_stats or name == resp.notice then
-				trace.ended = "종료"
-			else
-				trace.ended = "응답 없음"
+		local more, more_name = bot:request(REPLIES, next, function(p, name)
+			if mine ~= nil and name == resp.notice and mine(p.message) then
+				return true
 			end
+			return replied(p, name)
+		end, 5000)
+		if more == false then
+			trace.ended = "응답 없음"
 			return trace
+		end
+		if mine ~= nil and more_name == resp.notice and mine(more.message) then
+			local after = parse(more.message)
+			if after.dialog == 0 then
+				trace.ended = "종료"
+				trace.after = after
+				if deferred and bot:request({ resp.warp }, nil, nil, 500) ~= false then
+					trace.ended = "맵 이동"
+					trace.after = nil
+				end
+				return trace
+			end
+			more, more_name = bot:request(REPLIES, nil, replied, 5000)
+			if more == false then
+				trace.ended = "응답 없음"
+				return trace
+			end
 		end
 		p, name = more, more_name
 	end
@@ -270,26 +301,31 @@ local function explore(ctx, bot, entry)
 	end
 	grants = table.concat(grants, ",")
 
+	local started = os.clock()
 	local seen = { maps = {}, items = {}, meso = false, exp = false, empty = {} }
 	local lines = { where }
 	summary.npcs = summary.npcs + 1
+	local away = true
 	for _, profile in ipairs(PROFILES) do
 		if profile.quest ~= nil and #refs.quests == 0 then
 			break
 		end
 		local queue = { {} }
 		local runs = 0
-		local away = true
 		while #queue > 0 and runs < MAX_PATHS do
 			local prefix = table.remove(queue, 1)
 			runs = runs + 1
 			summary.paths = summary.paths + 1
 
+			local at = os.clock()
 			if reset(bot, profile, grants, refs.quests) == false then
 				ctx:fail(where .. ": /봇초기화 실패")
 				return
 			end
-			if away then
+			summary.time.reset = summary.time.reset + os.clock() - at
+
+			at = os.clock()
+			if away or bot:map() ~= entry.map then
 				if bot:instance_move(entry.map) == false then
 					ctx:fail(where .. ": 맵 이동 실패")
 					return
@@ -301,10 +337,17 @@ local function explore(ctx, bot, entry)
 				ctx:fail(where .. ": 맵에 NPC가 없음")
 				return
 			end
+			summary.time.move = summary.time.move + os.clock() - at
 
+			at = os.clock()
 			local before = snapshot(bot)
-			local trace = walk(bot, entry.npc, oid, prefix, queue)
-			local after = snapshot(bot)
+			summary.time.snapshot = summary.time.snapshot + os.clock() - at
+			at = os.clock()
+			local trace = walk(bot, entry.npc, oid, prefix, queue, refs.deferred)
+			summary.time.walk = summary.time.walk + os.clock() - at
+			at = os.clock()
+			local after = trace.after or snapshot(bot)
+			summary.time.snapshot = summary.time.snapshot + os.clock() - at
 			local effects = diff(before, after, seen)
 			away = after == nil or after.map ~= entry.map
 
@@ -342,6 +385,7 @@ local function explore(ctx, bot, entry)
 	if #list > 0 then
 		summary.suspects = summary.suspects + 1
 	end
+	lines[1] = string.format("%s %.1f초", where, os.clock() - started)
 	ctx:report(table.concat(lines, "\n"))
 end
 
@@ -362,5 +406,12 @@ test_suite {
 		local text = string.format("NPC %d개, 경로 %d개, 의심 NPC %d개", summary.npcs, summary.paths, summary.suspects)
 		ctx:report(text)
 		log("info", text)
+		local t = summary.time
+		local times = string.format(
+			"봇 합계 시간: 초기화 %.0f초, 이동 %.0f초, 상태 조회 %.0f초, 대화 %.0f초",
+			t.reset, t.move, t.snapshot, t.walk
+		)
+		ctx:report(times)
+		log("info", times)
 	end,
 }

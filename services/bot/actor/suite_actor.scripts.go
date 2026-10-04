@@ -21,6 +21,8 @@ var (
 	mapLiteral   = regexp.MustCompile(`:map\(\s*(\d{9})\b`)
 	mapVariable  = regexp.MustCompile(`:map\(\s*[^\d\s)]`)
 	mapAnyNumber = regexp.MustCompile(`(?:^|[^#m\d])(\d{9})\b`)
+	requireCall  = regexp.MustCompile(`require\(\s*"script/([^"]+)"\s*\)`)
+	deferredCall = regexp.MustCompile(`start_solo|start_party|state_machine\(|run_on_map`)
 )
 
 type npcSpot struct {
@@ -121,6 +123,14 @@ func (a *SuiteActor) wzFuncs() map[string]lua.LGFunction {
 			refs.RawSetString("changes", a.numberList(L, a.itemIDs(changes)))
 			refs.RawSetString("meso", lua.LBool(mesoChange.Match(data)))
 			refs.RawSetString("exp", lua.LBool(expChange.Match(data)))
+			deferred := deferredCall.Match(data)
+			for _, m := range requireCall.FindAllSubmatch(data, -1) {
+				lib, err := os.ReadFile(filepath.Join(a.cfg.GameScriptDir, string(m[1])+".lua"))
+				if err == nil && deferredCall.Match(lib) {
+					deferred = true
+				}
+			}
+			refs.RawSetString("deferred", lua.LBool(deferred))
 			L.Push(refs)
 			return 1
 		},

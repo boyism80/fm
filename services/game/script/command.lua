@@ -506,7 +506,7 @@ local command_funcs = {
 	},
 	["봇상태"] = {
 		privilege = ROLE.Admin,
-		usage = "- 레벨·직업·메소·경험치·인기도·맵·아이템을 한 줄로 표시",
+		usage = "[태그] - 대화 여부·레벨·직업·메소·경험치·인기도·맵·아이템을 한 줄로 표시",
 		command = function(me, args)
 			local counts = {}
 			for _, tab in pairs(me:items()) do
@@ -527,7 +527,9 @@ local command_funcs = {
 				items[i] = item_id .. ":" .. counts[item_id]
 			end
 			me:message(string.format(
-				"봇상태 level=%d job=%d meso=%d exp=%d fame=%d map=%d items=%s",
+				"봇상태 tag=%s dialog=%d level=%d job=%d meso=%d exp=%d fame=%d map=%d items=%s",
+				args[1] or "-",
+				me:in_dialog() and 1 or 0,
 				me:level(),
 				me:class(),
 				me:meso(),

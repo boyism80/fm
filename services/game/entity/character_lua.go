@@ -2430,6 +2430,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"in_dialog": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LBool(ch.GetDialog() != nil))
+			return 1
+		},
 		"base_str": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
