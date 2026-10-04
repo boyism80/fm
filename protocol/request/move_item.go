@@ -16,6 +16,11 @@ type MoveItem struct {
 func (*MoveItem) Opcode() byte { return 0x36 }
 
 func (p *MoveItem) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.WriteU8(uint8(p.InventoryType))
+	writer.Write16(p.Source)
+	writer.Write16(p.Dest)
+	writer.WriteU16(p.Count)
 	return nil
 }
 

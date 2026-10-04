@@ -24,6 +24,14 @@ func (p *RemoveItem) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *RemoveItem) Deserialize(reader *stream.StreamReader) {
+	p.Mode = constant.RemoveItemType(reader.ReadU8())
+	p.OID = reader.ReadU32()
+	switch p.Mode {
+	case constant.RemoveItemTypeExplosion:
+		reader.Skip(2)
+	case constant.RemoveItemTypeAnimated, constant.RemoveItemTypeLootByPet:
+		p.CharacterId = reader.ReadU32()
+	}
 }
 
 func (p *RemoveItem) Opcode() uint16 {

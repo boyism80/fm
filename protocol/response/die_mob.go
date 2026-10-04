@@ -25,4 +25,6 @@ func (p *DieMob) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *DieMob) Deserialize(reader *stream.StreamReader) {
+	p.OID = reader.ReadU32()
+	p.AnimationType = constant.MobDieAnimationType(reader.ReadU8())
 }

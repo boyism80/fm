@@ -12,7 +12,7 @@ type Attack struct {
 func (*Attack) Opcode() byte { return 0x1B }
 
 func (a *Attack) Serialize(writer *stream.StreamWriter) error {
-	return nil
+	return a.CloseAttackInfo.Serialize(writer)
 }
 
 func (a *Attack) Deserialize(reader *stream.StreamReader) {

@@ -45,6 +45,11 @@ var Responses = []any{
 	&response.PartyUpdateDisband{},
 	&response.PartyUpdateLeaderChange{},
 	&response.PartyStatusMessage{},
+	&response.SpawnMob{},
+	&response.DieMob{},
+	&response.SpawnItem{},
+	&response.SpawnMeso{},
+	&response.RemoveItem{},
 }
 
 type deserializer interface {
@@ -168,6 +173,30 @@ func Decode(opcode uint16, body []byte) (any, error) {
 		return pkt, nil
 	case (&response.ServerBlocked{}).Opcode():
 		pkt := &response.ServerBlocked{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.SpawnMob{}).Opcode():
+		pkt := &response.SpawnMob{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.DieMob{}).Opcode():
+		pkt := &response.DieMob{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.SpawnItem{}).Opcode():
+		if len(body) < 6 {
+			return nil, fmt.Errorf("short drop")
+		}
+		if body[5] == 1 {
+			pkt := &response.SpawnMeso{}
+			pkt.Deserialize(reader)
+			return pkt, nil
+		}
+		pkt := &response.SpawnItem{}
+		pkt.Deserialize(reader)
+		return pkt, nil
+	case (&response.RemoveItem{}).Opcode():
+		pkt := &response.RemoveItem{}
 		pkt.Deserialize(reader)
 		return pkt, nil
 	case (&response.PartyCreated{}).Opcode():

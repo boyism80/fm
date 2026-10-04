@@ -12,6 +12,7 @@ import (
 
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/bot/bot"
@@ -28,6 +29,9 @@ var requests = []outbound{
 	&request.PartyOperation{},
 	&request.SwitchChannel{},
 	&request.QuestAction{},
+	&request.Attack{},
+	&request.ItemLoot{},
+	&request.MoveItem{},
 }
 
 func (a *SuiteActor) register() {
@@ -77,7 +81,7 @@ func (a *SuiteActor) register() {
 	ctxIndex := L.SetFuncs(L.NewTable(), a.ctxFuncs())
 	botIndex := L.SetFuncs(L.NewTable(), a.botFuncs())
 	a.wrapWaits(ctxIndex, "sleep")
-	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "npc", "npc_click", "dialog")
+	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "npc", "npc_click", "dialog", "kill", "loot", "drop")
 	L.SetField(L.NewTypeMetatable("bot_ctx"), "__index", ctxIndex)
 	L.SetField(L.NewTypeMetatable("bot"), "__index", botIndex)
 	a.ctxUD = a.newUserData(a, "bot_ctx")
@@ -409,7 +413,131 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			})
 			return L.Yield()
 		},
+		"mobs": func(L *lua.LState) int {
+			templateID := uint32(L.OptInt(2, 0))
+			t := L.NewTable()
+			for oid, id := range a.checkBot(L).Mobs {
+				if templateID != 0 && id != templateID {
+					continue
+				}
+				mob := L.NewTable()
+				mob.RawSetString("oid", lua.LNumber(oid))
+				mob.RawSetString("id", lua.LNumber(id))
+				t.Append(mob)
+			}
+			L.Push(t)
+			return 1
+		},
+		"attack": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			pkt, ok := a.attackPacket(b, uint32(L.CheckInt(2)), uint32(L.OptInt(3, 0)), uint8(L.OptInt(4, 1)))
+			if ok == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LBool(b.Send(pkt) == nil))
+			return 1
+		},
+		"kill": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			oid := uint32(L.CheckInt(2))
+			pkt, ok := a.attackPacket(b, oid, 0, 1)
+			if ok == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			a.park(L)
+			a.Request(L, b, b, pkt, a.timeout(), func(p any) bool {
+				die, ok := p.(*response.DieMob)
+				return ok && die.OID == oid
+			}, func(_ any, ok bool) {
+				a.wake(L, lua.LBool(ok))
+			})
+			return L.Yield()
+		},
+		"drops": func(L *lua.LState) int {
+			itemID := uint32(L.OptInt(2, 0))
+			t := L.NewTable()
+			for oid, d := range a.checkBot(L).Drops {
+				if itemID != 0 && d.ItemID != itemID {
+					continue
+				}
+				drop := L.NewTable()
+				drop.RawSetString("oid", lua.LNumber(oid))
+				drop.RawSetString("item", lua.LNumber(d.ItemID))
+				drop.RawSetString("meso", lua.LNumber(d.Meso))
+				drop.RawSetString("owner", lua.LNumber(d.Owner))
+				t.Append(drop)
+			}
+			L.Push(t)
+			return 1
+		},
+		"loot": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			oid := uint32(L.CheckInt(2))
+			pos, _ := b.Position(a.wz)
+			a.park(L)
+			a.Request(L, b, b, &request.ItemLoot{Position: pos, OID: oid}, a.timeout(), func(p any) bool {
+				remove, ok := p.(*response.RemoveItem)
+				return ok && remove.OID == oid
+			}, func(_ any, ok bool) {
+				a.wake(L, lua.LBool(ok))
+			})
+			return L.Yield()
+		},
+		"drop": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			itemID := uint32(L.CheckInt(2))
+			count := uint16(L.OptInt(3, 1))
+			var pkt *request.MoveItem
+			for typ, tab := range b.Items {
+				for slot, item := range tab {
+					if slot > 0 && item.ItemID == itemID {
+						pkt = &request.MoveItem{InventoryType: typ, Source: slot, Count: count}
+					}
+				}
+			}
+			if pkt == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			a.park(L)
+			a.Request(L, b, b, pkt, a.timeout(), func(p any) bool {
+				spawn, ok := p.(*response.SpawnItem)
+				return ok && spawn.OwnerID == b.CharID && spawn.ItemModel.GetID() == itemID
+			}, func(p any, ok bool) {
+				if ok == false {
+					a.wake(L, lua.LNil)
+					return
+				}
+				a.wake(L, lua.LNumber(p.(*response.SpawnItem).ID))
+			})
+			return L.Yield()
+		},
 	}
+}
+
+func (a *SuiteActor) attackPacket(b *bot.Bot, oid uint32, damage uint32, hits uint8) (*request.Attack, bool) {
+	templateID, ok := b.Mobs[oid]
+	if ok == false {
+		return nil, false
+	}
+	if damage == 0 {
+		damage = 1
+		if mob, ok := a.wz.Monsters[templateID]; ok && mob.MaxHP > 0 {
+			damage = uint32(mob.MaxHP)
+		}
+	}
+	pairs := make([]dto.DamagePair, hits)
+	for i := range pairs {
+		pairs[i] = dto.DamagePair{Damage: damage}
+	}
+	pos, _ := b.Position(a.wz)
+	return &request.Attack{CloseAttackInfo: dto.CloseAttackInfo{
+		AttackHeader: dto.AttackHeader{Targets: 1, Hits: hits},
+		Damages:      []dto.AttackPair{{OID: oid, DamagePairs: pairs}},
+		Position:     pos,
+	}}, true
 }
 
 func (a *SuiteActor) checkBot(L *lua.LState) *bot.Bot {

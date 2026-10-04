@@ -60,6 +60,16 @@ func (a *CloseAttackInfo) Deserialize(sr *stream.StreamReader) {
 	}
 }
 
+func (a *CloseAttackInfo) Serialize(sw *stream.StreamWriter) error {
+	info := AttackInfo{AttackHeader: a.AttackHeader, Damages: a.Damages}
+	if err := info.Serialize(sw); err != nil {
+		return err
+	}
+	sw.Write16(a.Position.X)
+	sw.Write16(a.Position.Y)
+	return nil
+}
+
 func (a CloseAttackInfo) ToAttackInfo() AttackInfo {
 	return AttackInfo{
 		AttackHeader: a.AttackHeader,

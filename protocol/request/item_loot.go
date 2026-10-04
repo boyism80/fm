@@ -14,6 +14,11 @@ type ItemLoot struct {
 func (*ItemLoot) Opcode() byte { return 0xA3 }
 
 func (p *ItemLoot) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.WriteU8(0)
+	writer.Write16(p.Position.X)
+	writer.Write16(p.Position.Y)
+	writer.WriteU32(p.OID)
 	return nil
 }
 

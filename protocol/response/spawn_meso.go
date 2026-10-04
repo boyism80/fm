@@ -43,6 +43,19 @@ func (p *SpawnMeso) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *SpawnMeso) Deserialize(reader *stream.StreamReader) {
+	p.Animation = constant.DropItemAnimationType(reader.ReadU8())
+	p.ID = reader.ReadU32()
+	reader.Skip(1)
+	p.Count = reader.Read32()
+	p.OwnerID = reader.ReadU32()
+	p.DropType = constant.DropType(reader.ReadU8())
+	p.Position = types.Vector2[int16]{X: reader.Read16(), Y: reader.Read16()}
+	reader.Skip(4)
+	if p.Animation != constant.DropItemAnimationTypeNone {
+		p.SpawnedPoint = types.Vector2[int16]{X: reader.Read16(), Y: reader.Read16()}
+		reader.Skip(2)
+	}
+	p.IsPlayerDrop = reader.ReadU16() == 0
 }
 
 func (p *SpawnMeso) Opcode() uint16 {

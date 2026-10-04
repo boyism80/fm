@@ -40,6 +40,8 @@ type Bot struct {
 	Meso   int32
 	Fame   int32
 	NPCs   map[uint32]uint32
+	Mobs   map[uint32]uint32
+	Drops  map[uint32]Drop
 	Quests map[uint16]uint8
 	Items  map[constant.InventoryType]map[int16]ItemSlot
 	Dialog constant.DialogType
@@ -52,6 +54,12 @@ type ItemSlot struct {
 	Count  uint16
 }
 
+type Drop struct {
+	ItemID uint32
+	Meso   int32
+	Owner  uint32
+}
+
 func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
 	name := fmt.Sprintf("b%s%d", runID, n)
 	if len(name) > 12 {
@@ -62,6 +70,8 @@ func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
 		ID:     fmt.Sprintf("bot_%s_%d", runID, n),
 		Name:   name,
 		NPCs:   make(map[uint32]uint32),
+		Mobs:   make(map[uint32]uint32),
+		Drops:  make(map[uint32]Drop),
 		Quests: make(map[uint16]uint8),
 		Items:  make(map[constant.InventoryType]map[int16]ItemSlot),
 		cfg:    cfg,
@@ -102,6 +112,8 @@ func (b *Bot) Update(pkt any) {
 	case *response.Login:
 		b.Moved = nil
 		clear(b.NPCs)
+		clear(b.Mobs)
+		clear(b.Drops)
 		clear(b.Quests)
 		clear(b.Items)
 		if p.Character == nil {
@@ -130,6 +142,8 @@ func (b *Bot) Update(pkt any) {
 		}
 		b.Moved = nil
 		clear(b.NPCs)
+		clear(b.Mobs)
+		clear(b.Drops)
 	case *response.UpdateStats:
 		for stat, value := range p.Stats {
 			switch stat {
@@ -183,6 +197,16 @@ func (b *Bot) Update(pkt any) {
 		b.NPCs[p.NPC.OID] = p.NPC.NpcId
 	case *response.RemoveNpc:
 		delete(b.NPCs, p.OID)
+	case *response.SpawnMob:
+		b.Mobs[p.Mob.OID] = p.Mob.MobId
+	case *response.DieMob:
+		delete(b.Mobs, p.OID)
+	case *response.SpawnItem:
+		b.Drops[p.ID] = Drop{ItemID: p.ItemModel.GetID(), Owner: p.OwnerID}
+	case *response.SpawnMeso:
+		b.Drops[p.ID] = Drop{Meso: p.Count, Owner: p.OwnerID}
+	case *response.RemoveItem:
+		delete(b.Drops, p.OID)
 	case *response.Dialog:
 		b.Dialog = p.Type
 	case *response.DialogYesNo:
