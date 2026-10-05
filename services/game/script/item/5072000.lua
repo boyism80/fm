@@ -4,6 +4,7 @@ local megaphone = require("script/lib/megaphone")
 
 return {
 	on_cash = function(me, item_id, text, ear)
-		return megaphone.send(me, text, Msg.SuperMegaphone, MessageScope.World, ear)
+		local sent = megaphone.send(me, text, Msg.SuperMegaphone, MessageScope.World, ear)
+		return sent
 	end,
 }
