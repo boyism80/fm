@@ -108,6 +108,9 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 	sm.mu.Unlock()
 
 	if belowMin {
+		if group != nil {
+			sm.callHookNow(ctx, group.ScriptPath, "on_player_leave", ch, string(reason))
+		}
 		sm.Finish(ctx, exitMapID, 0)
 		return true
 	}
@@ -539,7 +542,7 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32, exitPortal u
 	sm.playerSet = make(map[uint32]*Character)
 	sm.mu.Unlock()
 
-	sm.callOnFinish(ctx, scriptPath)
+	sm.callHookNow(ctx, scriptPath, "on_finish")
 
 	var exitMap *Map
 	if exitMapID > 0 && group != nil && group.GameWorld != nil {
@@ -561,7 +564,7 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32, exitPortal u
 	}
 }
 
-func (sm *StateMachine) callOnFinish(ctx actor.Context, scriptPath string) {
+func (sm *StateMachine) callHookNow(ctx actor.Context, scriptPath string, hook string, args ...interface{}) {
 	if sm == nil || scriptPath == "" {
 		return
 	}
@@ -571,7 +574,7 @@ func (sm *StateMachine) callOnFinish(ctx actor.Context, scriptPath string) {
 	if err != nil {
 		return
 	}
-	if !luax.HasFunc(thread, "on_finish") {
+	if !luax.HasFunc(thread, hook) {
 		luax.Close(thread)
 		return
 	}
@@ -579,12 +582,12 @@ func (sm *StateMachine) callOnFinish(ctx actor.Context, scriptPath string) {
 		ActorContext: ctx,
 		ActorPID:     sm.ActorPID,
 	})
-	if _, err := luax.Call(thread, "on_finish", sm); err != nil {
+	if _, err := luax.Call(thread, hook, append([]interface{}{sm}, args...)...); err != nil {
 		name := ""
 		if sm.Group != nil {
 			name = sm.Group.Name
 		}
-		fmt.Printf("state machine %s hook on_finish: %v\n", name, err)
+		fmt.Printf("state machine %s hook %s: %v\n", name, hook, err)
 	}
 }
 
