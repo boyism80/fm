@@ -5,6 +5,7 @@ import { EQUIP_SLOT, LOOK_SLOT } from "../constants/equipment-slots";
 import { getDefaultKeyLayoutBindings } from "../constants/default-key-layout-bindings";
 import { bindingsToJsonString, jsonStringToBindings } from "../grpc/key-layout-io";
 import type { KeyLayoutBindingModel } from "../grpc/key-layout-io";
+import { GuildErrorCode, PartyErrorCode } from "../protobuf/generated/fminternal/internal_service";
 import type { CreateCharacterRequest } from "../protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "../config/app-configuration";
 import { AccountRepository } from "../repos/account-repository";
@@ -27,6 +28,8 @@ import { CharacterRealtimeStateRepository } from "../repos/character-realtime-st
 import { UnifiedRepository } from "../repos/unified-repository";
 import { WzService } from "./wz-service";
 import { DistributedLockService } from "./distributed-lock-service";
+import { GuildService } from "./guild-service";
+import { PartyService } from "./party-service";
 
 type CharacterPersistedInput = {
     worldId: number;
@@ -91,6 +94,8 @@ export class CharacterService {
     private readonly app: AppConfiguration;
     private readonly wzService: WzService;
     private readonly distributedLockService: DistributedLockService;
+    private readonly guildService: GuildService;
+    private readonly partyService: PartyService;
 
     constructor(
         characterRepository: CharacterRepository,
@@ -107,7 +112,9 @@ export class CharacterService {
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         appConfiguration: AppConfiguration,
         wzService: WzService,
-        distributedLockService: DistributedLockService
+        distributedLockService: DistributedLockService,
+        guildService: GuildService,
+        partyService: PartyService
     ) {
         this.repo = characterRepository;
         this.overviewRepo = characterOverviewRepository;
@@ -124,6 +131,8 @@ export class CharacterService {
         this.app = appConfiguration;
         this.wzService = wzService;
         this.distributedLockService = distributedLockService;
+        this.guildService = guildService;
+        this.partyService = partyService;
     }
 
     private worldId() {
@@ -427,6 +436,15 @@ export class CharacterService {
 
         const character = await this.repo.get(worldId, characterId);
         if (!character || character.accountId !== accountId) {
+            return { success: false };
+        }
+
+        const guildLeft = await this.guildService.leaveGuild(worldId, characterId);
+        if (!guildLeft.ok && guildLeft.code !== GuildErrorCode.GUILD_ERROR_NOT_IN_GUILD) {
+            return { success: false };
+        }
+        const partyLeft = await this.partyService.leaveParty(worldId, characterId);
+        if (!partyLeft.ok && partyLeft.code !== PartyErrorCode.NOT_IN_PARTY) {
             return { success: false };
         }
 
