@@ -107,8 +107,8 @@ func exportQuestRequirements(r wz.QuestRequirements) []QuestRequirement {
 	if r.Level != 0 {
 		out = append(out, QuestRequirement{Kind: "level", IntValue: r.Level})
 	}
-	if len(r.Job) > 0 {
-		out = append(out, QuestRequirement{Kind: "job", Classes: r.Job})
+	if len(r.Classes) > 0 {
+		out = append(out, QuestRequirement{Kind: "job", Classes: r.Classes})
 	}
 	if len(r.Item) > 0 {
 		out = append(out, QuestRequirement{Kind: "item", Items: r.Item})
@@ -146,8 +146,8 @@ func exportQuestRequirements(r wz.QuestRequirements) []QuestRequirement {
 	if len(r.MBCard) > 0 {
 		out = append(out, QuestRequirement{Kind: "mbcard", Items: r.MBCard})
 	}
-	if r.SubJobFlags != 0 {
-		out = append(out, QuestRequirement{Kind: "subJobFlags", IntValue: r.SubJobFlags})
+	if r.SubClassFlags != 0 {
+		out = append(out, QuestRequirement{Kind: "subJobFlags", IntValue: r.SubClassFlags})
 	}
 	if r.DayByDay {
 		out = append(out, QuestRequirement{Kind: "dayByDay", IntValue: 1})
@@ -263,7 +263,7 @@ func exportQuestActions(a wz.QuestActions) []QuestAction {
 		}
 		out = append(out, QuestAction{
 			Kind:              "skill",
-			ApplicableClasses: a.SkillJobs,
+			ApplicableClasses: a.SkillClasses,
 			Skills:            skills,
 		})
 	}
@@ -271,7 +271,7 @@ func exportQuestActions(a wz.QuestActions) []QuestAction {
 		out = append(out, QuestAction{
 			Kind:              "sp",
 			IntValue:          a.SP,
-			ApplicableClasses: a.SPJobs,
+			ApplicableClasses: a.SPClasses,
 		})
 	}
 	if a.InfoNumber != 0 {
@@ -286,8 +286,8 @@ func exportQuestActions(a wz.QuestActions) []QuestAction {
 	if a.Map != 0 {
 		out = append(out, QuestAction{Kind: "map", IntValue: a.Map})
 	}
-	if a.Job != 0 {
-		out = append(out, QuestAction{Kind: "job", IntValue: a.Job})
+	if a.Class != 0 {
+		out = append(out, QuestAction{Kind: "job", IntValue: a.Class})
 	}
 	if a.LvMin != 0 {
 		out = append(out, QuestAction{Kind: "lvmin", IntValue: a.LvMin})

@@ -42,17 +42,17 @@ local function second_trial(me, npc, cfg, q)
 		me:dialog(npc, cfg.text.sp_left)
 		return
 	end
-	local job = cfg.jobs[me:class()]
-	if job == nil then
+	local next_class = cfg.classes[me:class()]
+	if next_class == nil then
 		me:dialog(npc, cfg.text.not_ready)
 		return
 	end
 	if me:exchange({ item = { [WISDOM_NECKLACE] = 1 } }, nil) ~= ExchangeResult.OK then
 		return
 	end
-	me:class(job.class)
+	me:class(next_class.class)
 	q:record("job3_clear")
-	me:dialog(npc, cfg.text.done .. job.text)
+	me:dialog(npc, cfg.text.done .. next_class.text)
 end
 
 function M.advance(me, npc, cfg)
@@ -75,7 +75,7 @@ function M.advance(me, npc, cfg)
 		return
 	end
 
-	if cfg.jobs[me:class()] == nil or me:level() < MIN_LEVEL then
+	if cfg.classes[me:class()] == nil or me:level() < MIN_LEVEL then
 		me:dialog(npc, cfg.greetings[me:class()] or cfg.text.not_ready)
 		return
 	end

@@ -44,7 +44,7 @@ type QuestRequirement struct {
 	IntValue    int            `yaml:"int_value,omitempty"`
 	StrValue    string         `yaml:"str_value,omitempty"`
 	InfoStrings []string       `yaml:"info_strings,omitempty"`
-	Classes     []int          `yaml:"jobs,omitempty"`
+	Classes     []int          `yaml:"classes,omitempty"`
 	PetIDs      []uint32       `yaml:"pet_ids,omitempty"`
 	Items       map[uint32]int `yaml:"items,omitempty"`
 	Mobs        map[uint32]int `yaml:"mobs,omitempty"`
@@ -56,7 +56,7 @@ type QuestAction struct {
 	Kind              string             `yaml:"kind"`
 	IntValue          int                `yaml:"int_value,omitempty"`
 	StrValue          string             `yaml:"str_value,omitempty"`
-	ApplicableClasses []int              `yaml:"applicable_jobs,omitempty"`
+	ApplicableClasses []int              `yaml:"applicable_classes,omitempty"`
 	Items             []QuestRewardItem  `yaml:"items,omitempty"`
 	Skills            []QuestRewardSkill `yaml:"skills,omitempty"`
 	Quests            map[uint32]int     `yaml:"quests,omitempty"`
@@ -65,8 +65,8 @@ type QuestAction struct {
 type QuestRewardItem struct {
 	ItemID     uint32 `yaml:"item_id"`
 	Count      int    `yaml:"count"`
-	Class      int    `yaml:"job,omitempty"`
-	ClassEx    int    `yaml:"job_ex,omitempty"`
+	Class      int    `yaml:"class,omitempty"`
+	ClassEx    int    `yaml:"class_ex,omitempty"`
 	Gender     int    `yaml:"gender,omitempty"`
 	Period     int    `yaml:"period,omitempty"`
 	Prop       int    `yaml:"prop,omitempty"`
@@ -77,7 +77,7 @@ type QuestRewardSkill struct {
 	SkillID     uint32 `yaml:"skill_id"`
 	SkillLevel  int    `yaml:"skill_level"`
 	MasterLevel int    `yaml:"master_level"`
-	Classes     []int  `yaml:"jobs,omitempty"`
+	Classes     []int  `yaml:"classes,omitempty"`
 }
 
 type MapsFile struct {

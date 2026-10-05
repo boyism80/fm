@@ -1,4 +1,4 @@
--- State machine (old/scripts/event/3rdjob.js): 3rd job trial
+-- State machine (old/scripts/event/3rdjob.js): 3rd class trial
 
 local DURATION_MS = 1200000
 local ENTRANCE_PORTAL = "in00"
@@ -34,13 +34,13 @@ return {
 		end
 		local entrance, err = id2map(trial):create_instance()
 		if entrance == nil then
-			log("third_job_trial create_instance:", err)
+			log("third_class_trial create_instance:", err)
 			sm:finish(0)
 			return
 		end
 		local arena, arena_err = id2map(trial + 1):create_instance()
 		if arena == nil then
-			log("third_job_trial create_instance:", arena_err)
+			log("third_class_trial create_instance:", arena_err)
 			entrance:destroy()
 			sm:finish(0)
 			return

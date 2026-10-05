@@ -1,13 +1,13 @@
 -- NPC name (String.wz/Npc.img.xml): 레네
 
-local third_job = require("script/lib/third_job")
+local third_class = require("script/lib/third_class")
 
 local APPROVAL_QUEST = 100000
 local MIN_LEVEL = 50
 
-local THIRD_JOB = {
+local THIRD_CLASS = {
 	family = Class.Bowman,
-	jobs = {
+	classes = {
 		[Class.Hunter] = {
 			class = Class.Ranger,
 			text = "#b레인저#k입니다. 활에 관한 여러 가지 고급 공격 스킬을 익힐 수 있고 특히나 궁수 특유의 근접시 활쏘기가 불가능했던 단점을 보완해 줄 수 있는 #b모탈 블로우#k라는 스킬로 더욱 더 강력한 직업이 된답니다. #b파이어 샷#k이라는 스킬로 제한적이나마 속성 공격을 할 수 있게 되었으며 분신을 만드는 #b퍼펫#k이나 매를 소환하는 #b실버 호크#k 등으로 원활한 원거리 공격이 가능하지요. 그리고 당신에게 약간의 SP와 AP와 주었으니 확인해 보세요. 이로써 당신은 충분히 강한 궁수가 되었다고 봅니다. 하지만 앞으로는 더욱 더 어렵고 힘든 모험이 기다리고 있을테죠. 만일 당신이 더 이상 올라갈 곳이 없다고 느껴질 만큼 많은 수련을 했을 때 다시 한 번 절 찾아와 주세요. 언제나 당신을 기다리겠습니다.",
@@ -66,7 +66,7 @@ return {
 			"자쿰던전 퀘스트를 허가해 주세요",
 		})
 		if sel == 1 then
-			third_job.advance(me, npc, THIRD_JOB)
+			third_class.advance(me, npc, THIRD_CLASS)
 		elseif sel == 2 then
 			grant_approval(me, npc)
 		end

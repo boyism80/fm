@@ -7,12 +7,12 @@ local MAX_GRANTS = 24
 local STACK = 50
 local entries, missing = wz.npc_scripts()
 local PROFILES = {
-	{ name = "초보자", level = 10, job = 0, meso = 0, grant = false },
-	{ name = "숙련자", level = 70, job = 110, meso = 100000000, grant = true },
-	{ name = "보상미보유", level = 70, job = 110, meso = 100000000, grant = true, unrewarded = true },
-	{ name = "퀘스트진행", level = 70, job = 110, meso = 100000000, grant = true, quest = 1 },
-	{ name = "퀘스트완료", level = 70, job = 110, meso = 100000000, grant = true, quest = 2 },
-	{ name = "고레벨", level = 200, job = 112, meso = 100000000, grant = true, level_check = true },
+	{ name = "초보자", level = 10, class = 0, meso = 0, grant = false },
+	{ name = "숙련자", level = 70, class = 110, meso = 100000000, grant = true },
+	{ name = "보상미보유", level = 70, class = 110, meso = 100000000, grant = true, unrewarded = true },
+	{ name = "퀘스트진행", level = 70, class = 110, meso = 100000000, grant = true, quest = 1 },
+	{ name = "퀘스트완료", level = 70, class = 110, meso = 100000000, grant = true, quest = 2 },
+	{ name = "고레벨", level = 200, class = 112, meso = 100000000, grant = true, level_check = true },
 }
 
 local REPLIES = { resp.notice, resp.update_quest, resp.guild_message }
@@ -77,7 +77,7 @@ local function snapshot(bot)
 end
 
 local function reset(bot, profile, grants, quests)
-	local text = string.format("/봇초기화 %d %d %d", profile.level, profile.job, profile.meso)
+	local text = string.format("/봇초기화 %d %d %d", profile.level, profile.class, profile.meso)
 	if profile.grant and grants ~= "" then
 		text = text .. " " .. grants
 	else
@@ -219,7 +219,7 @@ end
 
 local CLIENT_STATS = {
 	{ key = "level", name = "레벨" },
-	{ key = "job", name = "직업" },
+	{ key = "class", name = "직업" },
 	{ key = "exp", name = "경험치" },
 	{ key = "meso", name = "메소" },
 	{ key = "fame", name = "인기도" },
@@ -273,8 +273,8 @@ local function diff(before, after, seen)
 		effects[#effects + 1] = string.format("경험치 %+d", after.exp - before.exp)
 		seen.exp = true
 	end
-	if after.job ~= before.job then
-		effects[#effects + 1] = string.format("직업 %d→%d", before.job, after.job)
+	if after.class ~= before.class then
+		effects[#effects + 1] = string.format("직업 %d→%d", before.class, after.class)
 	end
 	if after.meso ~= before.meso then
 		effects[#effects + 1] = string.format("메소 %+d", after.meso - before.meso)

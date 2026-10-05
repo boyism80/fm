@@ -48,7 +48,7 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 	if req.Level > 0 && int(ch.GetLevel()) < req.Level {
 		return false
 	}
-	if len(req.Job) > 0 && !matchesQuestClass(ch.Class, req.Job) {
+	if len(req.Classes) > 0 && !matchesQuestClass(ch.Class, req.Classes) {
 		return false
 	}
 	for itemID, count := range req.Item {
@@ -158,7 +158,7 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 		}
 		if mustAcquire {
 			ok := false
-			if wzSkill != nil && wzSkill.IsFourthJob() {
+			if wzSkill != nil && wzSkill.IsFourthClass() {
 				ok = masterLevel > 0
 			} else {
 				ok = skillLevel > 0
@@ -194,7 +194,7 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 			return false
 		}
 	}
-	if len(req.Pet) > 0 || req.PetTamenessMin > 0 || req.MBMin > 0 || len(req.MBCard) > 0 || req.SubJobFlags != 0 {
+	if len(req.Pet) > 0 || req.PetTamenessMin > 0 || req.MBMin > 0 || len(req.MBCard) > 0 || req.SubClassFlags != 0 {
 		return false
 	}
 	if req.EndMeso > 0 || req.EquipAllNeed > 0 || req.EquipSelectNeed > 0 || req.TamingMobLevelMin > 0 {

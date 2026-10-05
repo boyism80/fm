@@ -612,7 +612,7 @@ local command_funcs = {
 			end
 			table.sort(quests)
 			me:message(string.format(
-				"봇상태 tag=%s dialog=%d level=%d job=%d meso=%d exp=%d fame=%d map=%d quests=%s items=%s",
+				"봇상태 tag=%s dialog=%d level=%d class=%d meso=%d exp=%d fame=%d map=%d quests=%s items=%s",
 				args[1] or "-",
 				me:in_dialog() and 1 or 0,
 				me:level(),

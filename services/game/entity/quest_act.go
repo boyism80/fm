@@ -86,7 +86,7 @@ func (qc *QuestContainer) buildPhaseExchange(actions wz.QuestActions, opts quest
 	if !opts.IncludeSkills || len(actions.Skills) == 0 {
 		return spec
 	}
-	if len(actions.SkillJobs) > 0 && !matchesQuestClass(opts.ClassID, actions.SkillJobs) {
+	if len(actions.SkillClasses) > 0 && !matchesQuestClass(opts.ClassID, actions.SkillClasses) {
 		return spec
 	}
 	for _, skill := range actions.Skills {

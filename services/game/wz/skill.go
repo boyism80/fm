@@ -69,11 +69,11 @@ func (s *Skill) IsBeginnerSkill() bool {
 	if s == nil {
 		return false
 	}
-	jobID := int(s.ID / 10000)
-	return jobID == 0 || jobID == 1 || jobID == 1000 || jobID == 2000 || jobID == 2001 || jobID == 3000 || jobID == 3001 || jobID == 2002
+	classID := int(s.ID / 10000)
+	return classID == 0 || classID == 1 || classID == 1000 || classID == 2000 || classID == 2001 || classID == 3000 || classID == 3001 || classID == 2002
 }
 
-func (s *Skill) IsFourthJob() bool {
+func (s *Skill) IsFourthClass() bool {
 	if s == nil {
 		return false
 	}

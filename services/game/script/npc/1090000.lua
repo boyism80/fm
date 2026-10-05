@@ -17,7 +17,7 @@ local GREETINGS = {
 	[Class.Corsair] = "자네의 소식은 잘 알고 있다네, 얼마 전에 #b캡틴#k으로 전직하였던가. #r#h ##k여 캡틴으로 전직한 것을 축하하네, 더 강한 해적이 되기 위하여 더 정진하길 바라네..",
 }
 
-local FIRST_JOB_WEAPONS = {
+local FIRST_CLASS_WEAPONS = {
 	{
 		item = { [1482014] = 1 },
 		stats = { 25, 4, 4, 4 },
@@ -28,7 +28,7 @@ local FIRST_JOB_WEAPONS = {
 	},
 }
 
-local SECOND_JOBS = {
+local SECOND_CLASSES = {
 	[2191] = {
 		class = Class.Brawler,
 		text = "좋아. 너는 이제부터 #b인파이터#k야. 인파이터는 맨 몸과 맨주먹 만으로 적을 제압하는 자... 그렇기 때문에 남들보다 수련에 더 힘써야하지. 수련에 어려움이 있다면 나도 도와주겠어. 그리고 너에게 인파이터가 익힐 수 있는 스킬들이 적혀있는 책을 주었어... 그 책에는 여러가지 인파이터에 관련된 스킬들이 들어 있어. 또한 너에게 약간의 #bSP#k를 주었으니 #bSkill 메뉴#k를 열어봐. 스킬을 올릴 수 있을거야. 참고로 1차 전직 때처럼 다른 스킬들을 어느 정도 익혀야만 배울수 있는 스킬도 있으니까, 명심해 둬. 이제 인파이터로써 너는 더 한층 높은 해적이 되었어. 열심히 수련해 주길 바래. 그리고 자신이 강하다고 생각할 때가 되면 나를 찾아오도록해.",
@@ -83,12 +83,12 @@ local function reset_stats(me, str, dex, int, luk)
 	me:base_luk(luk)
 end
 
-local function is_second_job(me)
+local function is_second_class(me)
 	local class = me:class()
 	return class == Class.Brawler or class == Class.Gunslinger
 end
 
-local function first_job(me, npc)
+local function first_class(me, npc)
 	if me:dialog(npc, "해적이 되고 싶어서 저를 찾아 온 건가요? 그렇다면 제대로 찾아 왔어요.", false, true) == false then
 		return
 	end
@@ -113,7 +113,7 @@ local function first_job(me, npc)
 	if sel == nil then
 		return
 	end
-	local weapon = FIRST_JOB_WEAPONS[sel]
+	local weapon = FIRST_CLASS_WEAPONS[sel]
 	if me:exchange(nil, { item = weapon.item }) ~= ExchangeResult.OK then
 		me:dialog(npc, "뭘 그렇게 많이 가지고 다니는거야? 장비와 소비 인벤토리를 비우고 다시 와.")
 		return
@@ -129,24 +129,24 @@ local function first_job(me, npc)
 	me:dialog(npc, "제가 가르쳐 드릴 수 있는건 여기까지 입니다. 이곳 저곳 여행을 하면서 자기 자신을 단련시키는 일만이 남았어요. 자신이 더욱 강해졌다고 생각되면 다시 절 찾아오세요. 당신을 계속 기다리고 있겠습니다.")
 end
 
-local function second_job(me, npc)
-	for quest_id, job in pairs(SECOND_JOBS) do
+local function second_class(me, npc)
+	for quest_id, next_class in pairs(SECOND_CLASSES) do
 		if me:quest(quest_id):completed() then
 			if me:skill_point() > (me:level() - 30) * 3 then
 				me:dialog(npc, "음.. SP를 아직 다 사용하지 않은 것 같은데? SP가 너무 많아 남아 아직 2차전직을 할 수 없어.")
 				return
 			end
-			me:class(job.class)
-			me:dialog(npc, job.text)
+			me:class(next_class.class)
+			me:dialog(npc, next_class.text)
 			return
 		end
 	end
 	me:dialog(npc, "해적이 되고 싶은 자는 나에게...")
 end
 
-local function third_job_trial(me, npc, value)
+local function third_class_trial(me, npc, value)
 	if value == "job3_trial1_1" then
-		if is_second_job(me) == false or me:level() < 70 then
+		if is_second_class(me) == false or me:level() < 70 then
 			me:dialog(npc, DEFAULT_TEXT)
 			return
 		end
@@ -164,7 +164,7 @@ local function third_job_trial(me, npc, value)
 			me:dialog(npc, "이럴수가... 제 분신을 쓰러뜨리고 #b검은 부적#k을 가져오셨군요! 좋아요... 이걸로 당신의 힘은 충분히 증명되었습니다. 힘에 한해서는 #b3차 전직#k을 하기에 부족함이 없어 보이는군요. 약속대로 당신에게 #b강인함의 목걸이#k를 드리겠습니다. 이 목걸이를 가지고 오시리아의 #b페드로#k님에게 돌아가면 두번째 시험을 치를 수 있겠지요. 그럼 당신이 무사히 3차 전직을 할 수 있기를 빌겠습니다.")
 			return
 		end
-		if is_second_job(me) == false or me:level() < 70 then
+		if is_second_class(me) == false or me:level() < 70 then
 			me:dialog(npc, DEFAULT_TEXT)
 			return
 		end
@@ -264,11 +264,11 @@ return {
 			end
 		end
 		if me:class() == Class.Beginner then
-			first_job(me, npc)
+			first_class(me, npc)
 			return
 		end
 		if me:class() == Class.Pirate and me:level() >= 30 then
-			second_job(me, npc)
+			second_class(me, npc)
 			return
 		end
 
@@ -278,7 +278,7 @@ return {
 		end
 		local value = q:record()
 		if string.sub(value, 1, 11) == "job3_trial1" then
-			third_job_trial(me, npc, value)
+			third_class_trial(me, npc, value)
 			return
 		end
 

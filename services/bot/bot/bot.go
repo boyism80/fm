@@ -35,7 +35,7 @@ type Bot struct {
 	Moved    *types.Point[int16]
 	HP       uint16
 	Level    uint8
-	Job      uint16
+	Class    uint16
 	EXP      int32
 	Meso     int32
 	Fame     int32
@@ -124,7 +124,7 @@ func (b *Bot) Update(pkt any) {
 			return
 		}
 		b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
-		b.Level, b.Job, b.EXP, b.Fame = p.Character.Level, p.Character.Class, int32(p.Character.Exp), int32(p.Character.Population)
+		b.Level, b.Class, b.EXP, b.Fame = p.Character.Level, p.Character.Class, int32(p.Character.Exp), int32(p.Character.Population)
 		b.Meso = p.Character.Inventory.Meso
 		for typ, tab := range p.Character.Inventory.Tabs {
 			for slot, item := range tab.Items {
@@ -159,7 +159,7 @@ func (b *Bot) Update(pkt any) {
 			case constant.StatLevel:
 				b.Level = uint8(value)
 			case constant.StatClass:
-				b.Job = uint16(value)
+				b.Class = uint16(value)
 			case constant.StatEXP:
 				b.EXP = value
 			case constant.StatMeso:

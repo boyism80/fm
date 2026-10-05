@@ -29,9 +29,9 @@ return {
 			me:dialog(npc, DEFAULT_TEXT)
 			return
 		end
-		local sm, err = state_machine("third_job_trial"):start_solo(me)
+		local sm, err = state_machine("third_class_trial"):start_solo(me)
 		if sm == nil then
-			log("third_job_trial start_solo:", err)
+			log("third_class_trial start_solo:", err)
 			me:dialog(npc, "이미 이 균열 안에는 다른 누군가가 들어가 있는 것 같다. 지금은 들어갈 수 없을 것 같다..")
 		end
 	end

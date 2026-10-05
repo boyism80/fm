@@ -210,8 +210,8 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(a.checkBot(L).Level))
 			return 1
 		},
-		"job": func(L *lua.LState) int {
-			L.Push(lua.LNumber(a.checkBot(L).Job))
+		"class": func(L *lua.LState) int {
+			L.Push(lua.LNumber(a.checkBot(L).Class))
 			return 1
 		},
 		"exp": func(L *lua.LState) int {

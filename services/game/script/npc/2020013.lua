@@ -1,13 +1,13 @@
 -- NPC name (String.wz/Npc.img.xml): 페드로
 
-local third_job = require("script/lib/third_job")
+local third_class = require("script/lib/third_class")
 
 local APPROVAL_QUEST = 100000
 local MIN_LEVEL = 50
 
-local THIRD_JOB = {
+local THIRD_CLASS = {
 	family = Class.Pirate,
-	jobs = {
+	classes = {
 		[Class.Brawler] = {
 			class = Class.Marauder,
 			text = "#b버커니어#k라네. 몸으로 하는 근접 전투에 관한 여러 가지 고급 공격 스킬을 익힐 수 있네. 자네의 힘과 자네가 입는 데미지를 특별한 에너지로 축적할 수 있는 #b에너지 차지#k라는 스킬로 더욱 더 강력한 직업이 된다네. 이 에너지를 채워 #b에너지 버스터#k라는 스킬로 강력한 공격을 할 수 있으며 #b에너지 드레인#k으로 적의 HP를 자신의 HP로 치환할 수 있지. 또 #b트랜스폼#k으로 근접 전투에 알맞는 초인으로 변신하여 #b쇼크웨이브#k라는 스킬로 지면을 폭파하여 적을 공격할 수 있다네. 그리고 자네에게 약간의 SP와 AP와 주었으니 확인해 보게나. 이로써 자네는 충분히 강한 해적이 되었다고 보네. 하지만 앞으로는 더욱 더 어렵고 힘든 모험이 기다리고 있을테지... 만일 자네가 더 이상 올라갈 곳이 없다고 느껴질 만큼 많은 수련을 했을 때 다시 한 번 날 찾아와 주게나 언제나 자네를 기다리겠네.",
@@ -65,7 +65,7 @@ return {
 			"자쿰던전 퀘스트를 허가해 주세요",
 		})
 		if sel == 1 then
-			third_job.advance(me, npc, THIRD_JOB)
+			third_class.advance(me, npc, THIRD_CLASS)
 		elseif sel == 2 then
 			grant_approval(me, npc)
 		end

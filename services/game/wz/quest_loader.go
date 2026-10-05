@@ -106,7 +106,7 @@ func parseQuestRequirements(phase *node) QuestRequirements {
 func mergeQuestRequirementChild(reqs *QuestRequirements, child *node) {
 	switch child.Name {
 	case "job":
-		reqs.Job = collectChildIntValues(child)
+		reqs.Classes = collectChildIntValues(child)
 	case "pet":
 		reqs.Pet = collectChildUint32IDs(child)
 	case "item":
@@ -154,7 +154,7 @@ func mergeQuestRequirementChild(reqs *QuestRequirements, child *node) {
 	case "mbmin":
 		reqs.MBMin = firstIntValue(child)
 	case "subJobFlags":
-		reqs.SubJobFlags = firstIntValue(child)
+		reqs.SubClassFlags = firstIntValue(child)
 	case "dayByDay":
 		reqs.DayByDay = true
 	case "normalAutoStart":
@@ -226,7 +226,7 @@ func setQuestRequirementInt(reqs *QuestRequirements, kind string, value int) {
 	case "mbmin":
 		reqs.MBMin = value
 	case "subJobFlags":
-		reqs.SubJobFlags = value
+		reqs.SubClassFlags = value
 	case "dayByDay":
 		reqs.DayByDay = true
 	case "normalAutoStart":
@@ -286,12 +286,12 @@ func parseQuestActions(phase *node) QuestActions {
 			actions.Item = append(actions.Item, parseQuestActionItems(&child)...)
 		case "skill":
 			actions.Skills = append(actions.Skills, parseQuestActionSkills(&child)...)
-			actions.SkillJobs = collectQuestActionClasses(&child)
+			actions.SkillClasses = collectQuestActionClasses(&child)
 		case "quest":
 			actions.Quests = parseQuestStateRefs(&child)
 		case "sp":
 			actions.SP = nodeInt(child.find("0"), "sp_value", firstIntValue(&child))
-			actions.SPJobs = collectQuestActionClasses(&child)
+			actions.SPClasses = collectQuestActionClasses(&child)
 		case "info":
 			actions.Info = nodeStringValue(&child)
 		case "npcAct":
@@ -317,7 +317,7 @@ func parseQuestActions(phase *node) QuestActions {
 		case "map":
 			actions.Map = firstIntValue(&child)
 		case "job":
-			actions.Job = firstIntValue(&child)
+			actions.Class = firstIntValue(&child)
 		case "lvmin":
 			actions.LvMin = firstIntValue(&child)
 		case "lvmax":
@@ -392,7 +392,7 @@ func setQuestActionInt(actions *QuestActions, kind string, value int) {
 	case "map":
 		actions.Map = value
 	case "job":
-		actions.Job = value
+		actions.Class = value
 	case "lvmin":
 		actions.LvMin = value
 	case "lvmax":

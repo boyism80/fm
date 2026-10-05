@@ -49,25 +49,25 @@ func (ch *Character) DistributeSP(skillID uint32) bool {
 }
 
 func (ch *Character) canLearn(skillID uint32) bool {
-	job := uint32(ch.Class)
-	skillJob := skillID / 10000
-	switch skillJob {
+	class := uint32(ch.Class)
+	skillClass := skillID / 10000
+	switch skillClass {
 	case uint32(constant.ClassBeginner):
-		return job < uint32(constant.ClassNoblesse)
+		return class < uint32(constant.ClassNoblesse)
 	case uint32(constant.ClassNoblesse):
-		return job >= uint32(constant.ClassNoblesse) && job < uint32(constant.ClassLegend)
+		return class >= uint32(constant.ClassNoblesse) && class < uint32(constant.ClassLegend)
 	case uint32(constant.ClassLegend):
-		return job >= uint32(constant.ClassLegend) && job <= uint32(constant.ClassAran5)
+		return class >= uint32(constant.ClassLegend) && class <= uint32(constant.ClassAran5)
 	}
 
-	if job/100 != skillJob/100 {
+	if class/100 != skillClass/100 {
 		return false
 	}
-	skillBranch := (skillJob / 10) % 10
-	if skillBranch != 0 && skillBranch != (job/10)%10 {
+	skillBranch := (skillClass / 10) % 10
+	if skillBranch != 0 && skillBranch != (class/10)%10 {
 		return false
 	}
-	return skillJob%10 <= job%10
+	return skillClass%10 <= class%10
 }
 
 func (ch *Character) CallSkillHook(ctx actor.Context, skill *SkillEntry, hook string, args ...interface{}) bool {

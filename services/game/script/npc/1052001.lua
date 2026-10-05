@@ -21,7 +21,7 @@ local ADVANCED = {
 	[Class.Shadower] = "너의 소식은 잘 알고 있지, 얼마 전에 #b섀도어#k로 전직하였던가? 정말 축하한다, 더 강한 도적이 되기 위하여 더 정진하길 바란다",
 }
 
-local SECOND_JOBS = {
+local SECOND_CLASSES = {
 	{
 		class = Class.Assassin,
 		info = "#b어쌔신#k은 표창을 더 자유 자재로 사용할 수 있는 도적 클레스야, #b헤이스트#k로 파티원의 이동속도와 점프력을 올려주는 스킬이나, #b드레인#k같은 적의 HP를 흡수하여 자신의 HP로 치환하는 스킬, 또한 #b부스터#k와 같은 스킬로 공격 속도를 한 단계 늘릴 수 있어.",
@@ -69,7 +69,7 @@ local function enter_training(me, npc)
 	me:map(TRAINING_MAP, 0, { callback = on_arrive })
 end
 
-local function first_job(me, npc)
+local function first_class(me, npc)
 	if me:dialog(npc, "도적이 되고 싶어서 나를 찾아 온 건가...그렇다면 제대로 찾아 왔어...", false, true) == false then
 		return
 	end
@@ -107,9 +107,9 @@ local function first_job(me, npc)
 	me:dialog(npc, "내가 너에게 가르쳐 줄 수 있는건 여기까지야... 이제는 혼자서 자기 자신을 더욱 단련시키는 일만 남은 거겠지. 자신이 더욱 강해졌다고 생각하면 다시 날 찾아오도록 해.")
 end
 
-local function second_job(me, npc)
-	local job = nil
-	while job == nil do
+local function second_class(me, npc)
+	local next_class = nil
+	while next_class == nil do
 		local sel = me:dialog_list(npc, "자... 결정이 끝났다면 가장 아래에 있는 [직업을 선택하겠습니다!]를 선택해...\r\n\r\n#b", {
 			"어쌔신에 대해 알려주세요",
 			"시프에 대해 알려주세요",
@@ -126,12 +126,12 @@ local function second_job(me, npc)
 			if pick == nil then
 				return
 			end
-			job = SECOND_JOBS[pick]
+			next_class = SECOND_CLASSES[pick]
 		else
-			me:dialog(npc, SECOND_JOBS[sel].info, true, false)
+			me:dialog(npc, SECOND_CLASSES[sel].info, true, false)
 		end
 	end
-	if me:dialog_yes_no(npc, job.confirm) == false then
+	if me:dialog_yes_no(npc, next_class.confirm) == false then
 		me:dialog(npc, "신중하게 생각해 본 후 다시 말을 걸어주게나.")
 		return
 	end
@@ -142,11 +142,11 @@ local function second_job(me, npc)
 	if me:exchange({ item = { [PROOF] = 1 } }, nil) ~= ExchangeResult.OK then
 		return
 	end
-	me:class(job.class)
-	me:dialog(npc, "좋아. 너는 이제부터 " .. job.done)
+	me:class(next_class.class)
+	me:dialog(npc, "좋아. 너는 이제부터 " .. next_class.done)
 end
 
-local function second_job_test(me, npc)
+local function second_class_test(me, npc)
 	if item_count(me, LETTER) > 0 then
 		me:dialog(npc, "아직 그를 만나지 못한거야? 커닝시티 근처 #b커닝시티북쪽공사장#k 어딘가에 있는 #b도적 전직 교관#k을 찾아가 봐... 그에게 편지를 전해주면 어떻게 해야 하는지 자세한 내용을 들을 수 있을 거야...")
 		return
@@ -155,7 +155,7 @@ local function second_job_test(me, npc)
 		if me:dialog(npc, "후후... 무사히 돌아왔군! 너라면 그런 시험쯤은 간단하게 통과할 거라고 생각했어. 네가 정말 뛰어난 도적이라는 것을 인정하지. 자... 널 더욱 더 강하게 만들어 주겠어! 그 전에... 너는 2개의 길 중 하나를 선택해야만 해. 어렵긴 하겠지만... 모르는 것이 있다면 물어보도록 해.", false, true) == false then
 			return
 		end
-		second_job(me, npc)
+		second_class(me, npc)
 		return
 	end
 	if me:dialog_yes_no(npc, "흠... 너 몰라보게 강해졌군! 예전에 그 허약한 모습은 어디로 가고 지금은 도적으로서의 위엄이 넘쳐 흐르고 있군... 자... 어때? 여기서 조금 더 강해지고 싶지 않은가? 간단한 시험만 통과한다면 널 더욱 더 강하게 만들어 주겠네! 해보겠나?") == false then
@@ -192,11 +192,11 @@ return {
 		end
 		local class = me:class()
 		if class == Class.Beginner then
-			first_job(me, npc)
+			first_class(me, npc)
 			return
 		end
 		if class == Class.Thief and me:level() >= 30 then
-			second_job_test(me, npc)
+			second_class_test(me, npc)
 			return
 		end
 

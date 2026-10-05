@@ -1,13 +1,13 @@
 -- NPC name (String.wz/Npc.img.xml): 로베이라
 
-local third_job = require("script/lib/third_job")
+local third_class = require("script/lib/third_class")
 
 local APPROVAL_QUEST = 100000
 local MIN_LEVEL = 50
 
-local THIRD_JOB = {
+local THIRD_CLASS = {
 	family = Class.Magician,
-	jobs = {
+	classes = {
 		[Class.FpWizard] = {
 			class = Class.FpMage,
 			text = "#b불,독 계열의 메이지#k라네. 불과 독 속성에 대한 여러가지 고급 공격 마법을 익힐 수 있고 속성 마법을 증폭시키는 #b엘리먼트 엠플리피케이션#k과 마법 시전 속도를 향상시키는 #b매직 부스터#k로 신속하고 강한 공격이 가능할걸세. 일부 속성에 내성을 높혀주는 #b파셜 레지스턴스#k와 적을 봉인 상태로 만드는 #b씰#k 스킬 등을 통해 HP가 적은 마법사의 단점을 보완 해보게나. 그리고 자네에게 약간의 SP와 AP와 주었으니 확인해 보게나. 이로써 자네는 충분히 강한 마법사가 되었다고 보네. 하지만 앞으로는 더욱 더 어렵고 힘든 모험이 기다리고 있을테지... 만일 자네가 더 이상 올라갈 곳이 없다고 느껴질 만큼 많은 수련을 했을 때 다시 한 번 날 찾아와 주게나 언제나 자네를 기다리겠네.",
@@ -71,7 +71,7 @@ return {
 			"자쿰던전 퀘스트를 허가해 주세요",
 		})
 		if sel == 1 then
-			third_job.advance(me, npc, THIRD_JOB)
+			third_class.advance(me, npc, THIRD_CLASS)
 		elseif sel == 2 then
 			grant_approval(me, npc)
 		end

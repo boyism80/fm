@@ -20,7 +20,7 @@ local GREETINGS = {
 	[Class.DarkKnight] = "자네의 소식은 잘 알고 있다네, 얼마 전에 #b다크나이트#k로 전직하였던가. #r#h ##k여 다크나이트로 전직한 것을 축하하네, 더 강한 존재가 되기 위하여 더 정진하길 바라네..",
 }
 
-local SECOND_JOBS = {
+local SECOND_CLASSES = {
 	{
 		class = Class.Fighter,
 		info = "#b파이터#k는 검과 도끼에 숙련된 전사 클레스일세, #b분노#k와 같은 보조 스킬은 방어력은 떨어지지만 공격력을 더 강하게 만들어 주는 보조 스킬이지, 그리고 #b파워 가드#k라는 스킬은 데미지를 감소시켜주는 스킬이라네. 또한 #b파이널 어택#k과 같은 스킬로 기본 공격 외에 치명타를 한 방 먹일 수 있으며, #b부스터#k와 같은 스킬로 공격 속도를 한 단계 늘릴 수 있다네.",
@@ -58,12 +58,12 @@ local function reset_stats(me, str, dex, int, luk)
 	me:base_luk(luk)
 end
 
-local function is_second_job(me)
+local function is_second_class(me)
 	local class = me:class()
 	return class == Class.Fighter or class == Class.Page or class == Class.Spearman
 end
 
-local function first_job(me, npc)
+local function first_class(me, npc)
 	if me:dialog(npc, "전사가 되고 싶어서 나를 찾아 온 건가...그렇다면 제대로 찾아 왔네...", false, true) == false then
 		return
 	end
@@ -100,7 +100,7 @@ local function first_job(me, npc)
 	me:dialog(npc, "내가 자네에게 가르쳐 줄 수 있는건 여기까지 일세... 이제는 혼자서 자기 자신을 더욱 단련시키는 일만 남은 거겠지. 자신이 더욱 강해졌다고 생각하면 다시 날 찾아오게나.")
 end
 
-local function second_job(me, npc)
+local function second_class(me, npc)
 	if item_count(me, LETTER) >= 1 then
 		me:dialog(npc, "아직 그를 만나지 못한건가... 페리온 근처 #b서쪽바위산4#k 어딘가에 있는 #b전사 전직 교관#k을 찾아가 보게. 그에게 편지를 전해주면 어떻게 해야 하는지 자세한 내용을 들을 수 있을 거야...")
 		return
@@ -134,8 +134,8 @@ local function second_job(me, npc)
 	if sel == nil then
 		return
 	end
-	if sel <= #SECOND_JOBS then
-		me:dialog(npc, SECOND_JOBS[sel].info, true, false)
+	if sel <= #SECOND_CLASSES then
+		me:dialog(npc, SECOND_CLASSES[sel].info, true, false)
 		return
 	end
 
@@ -147,8 +147,8 @@ local function second_job(me, npc)
 	if pick == nil then
 		return
 	end
-	local job = SECOND_JOBS[pick]
-	if me:dialog_yes_no(npc, job.confirm) == false then
+	local next_class = SECOND_CLASSES[pick]
+	if me:dialog_yes_no(npc, next_class.confirm) == false then
 		me:dialog(npc, "신중하게 생각해 본 후 다시 말을 걸어주게나.")
 		return
 	end
@@ -159,8 +159,8 @@ local function second_job(me, npc)
 	if me:exchange({ item = { [PROOF] = 1 } }, nil) ~= ExchangeResult.OK then
 		return
 	end
-	me:class(job.class)
-	me:dialog(npc, "좋아! 자네는 이제부터 " .. job.done)
+	me:class(next_class.class)
+	me:dialog(npc, "좋아! 자네는 이제부터 " .. next_class.done)
 end
 
 return {
@@ -172,16 +172,16 @@ return {
 		local value = q:record()
 
 		if me:class() == Class.Beginner then
-			first_job(me, npc)
+			first_class(me, npc)
 			return
 		end
 		if me:class() == Class.Warrior and me:level() >= 30 then
-			second_job(me, npc)
+			second_class(me, npc)
 			return
 		end
 
 		if value == "job3_trial1_1" then
-			if is_second_job(me) == false or me:level() < 70 then
+			if is_second_class(me) == false or me:level() < 70 then
 				me:dialog(npc, DEFAULT_TEXT)
 				return
 			end
@@ -199,7 +199,7 @@ return {
 				me:dialog(npc, "이럴수가... 나의 분신을 쓰러뜨리고 #b검은 부적#k을 가져왔군. 그래! 좋아... 이걸로 너의 힘은 충분히 증명되었다네. 힘에 한해서는 #b3차 전직#k을 하기에 부족함이 없어 보이는군. 약속대로 너에게 #b강인함의 목걸이#k를 주겠네. 이 목걸이를 가지고 오시리아의 #b타일러스#k님에게 돌아가면 두번째 시험을 치를 수 있겠지. 그럼 네가 무사히 3차 전직을 할 수 있기를 빌겠네.")
 				return
 			end
-			if is_second_job(me) == false or me:level() < 70 then
+			if is_second_class(me) == false or me:level() < 70 then
 				me:dialog(npc, DEFAULT_TEXT)
 				return
 			end

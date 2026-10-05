@@ -80,10 +80,10 @@ func questRequirementsToLuaTable(L *lua.LState, reqs QuestRequirements) *lua.LTa
 		tbl.RawSetString("value", lua.LNumber(reqs.Level))
 		appendReq(tbl)
 	}
-	if len(reqs.Job) > 0 {
+	if len(reqs.Classes) > 0 {
 		tbl := L.NewTable()
 		tbl.RawSetString("kind", lua.LString("class"))
-		tbl.RawSetString("classes", intSliceToLuaTable(L, reqs.Job))
+		tbl.RawSetString("classes", intSliceToLuaTable(L, reqs.Classes))
 		appendReq(tbl)
 	}
 	if len(reqs.Item) > 0 {

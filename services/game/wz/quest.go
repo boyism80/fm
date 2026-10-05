@@ -50,7 +50,7 @@ type QuestRequirements struct {
 	LevelMin          int
 	LevelMax          int
 	Level             int
-	Job               []int
+	Classes           []int
 	Item              map[uint32]int
 	Mob               map[uint32]int
 	Quest             map[uint32]QuestStatus
@@ -64,7 +64,7 @@ type QuestRequirements struct {
 	PetTamenessMin    int
 	MBMin             int
 	MBCard            map[uint32]int
-	SubJobFlags       int
+	SubClassFlags     int
 	DayByDay          bool
 	NormalAutoStart   bool
 	PartyQuestS       int
@@ -86,35 +86,35 @@ type QuestRequirements struct {
 }
 
 type QuestActions struct {
-	Item        []QuestActionItem
-	Exp         int
-	Money       int
-	Pop         int
-	NextQuest   uint32
-	BuffItemID  uint32
-	Info        string
-	NPCAct      string
-	NPC         int
-	Quests      map[uint32]QuestStatus
-	Skills      []QuestActionSkill
-	SkillJobs   []int
-	SP          int
-	SPJobs      []int
-	InfoNumber  uint32
-	PetTameness int
-	PetSpeed    int
-	Map         int
-	Job         int
-	LvMin       int
-	LvMax       int
-	FieldEnter  int
-	Interval    int
-	Message     string
-	Start       string
-	End         string
-	Ask         int
-	Stop        int
-	Say         map[string]string
+	Item         []QuestActionItem
+	Exp          int
+	Money        int
+	Pop          int
+	NextQuest    uint32
+	BuffItemID   uint32
+	Info         string
+	NPCAct       string
+	NPC          int
+	Quests       map[uint32]QuestStatus
+	Skills       []QuestActionSkill
+	SkillClasses []int
+	SP           int
+	SPClasses    []int
+	InfoNumber   uint32
+	PetTameness  int
+	PetSpeed     int
+	Map          int
+	Class        int
+	LvMin        int
+	LvMax        int
+	FieldEnter   int
+	Interval     int
+	Message      string
+	Start        string
+	End          string
+	Ask          int
+	Stop         int
+	Say          map[string]string
 }
 
 type QuestStatus uint8
