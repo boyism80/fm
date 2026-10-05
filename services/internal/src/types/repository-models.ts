@@ -527,6 +527,7 @@ export interface CharacterBuddyModel {
     buddyCharacterId: number;
     groupName: string;
     pending: boolean;
+    requested: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -536,6 +537,7 @@ export type CharacterBuddyRow = {
     buddy_character_id: number;
     group_name: string;
     pending: boolean;
+    requested: boolean;
     created_at?: Date | string;
     updated_at?: Date | string;
 };

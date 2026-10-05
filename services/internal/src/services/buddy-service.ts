@@ -195,6 +195,7 @@ export class BuddyService {
                         buddyCharacterId: targetCharacterId,
                         groupName: trimmedGroup,
                         pending: false,
+                        requested: false,
                     },
                     { txClient }
                 );
@@ -226,15 +227,16 @@ export class BuddyService {
             return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_TARGET_LIST_FULL };
         }
 
-        if (!reverse) {
+        if (!reverse || reverse.requested) {
             await this.ctx.withPgDataTransaction(worldId, targetCharacterId, async (txClient: PoolClient) => {
                 await this.buddyRepo.set(
                     worldId,
                     {
                         characterId: targetCharacterId,
                         buddyCharacterId: requesterCharacterId,
-                        groupName: DEFAULT_BUDDY_GROUP,
+                        groupName: reverse?.groupName ?? DEFAULT_BUDDY_GROUP,
                         pending: true,
+                        requested: false,
                     },
                     { txClient }
                 );
@@ -248,6 +250,7 @@ export class BuddyService {
                     buddyCharacterId: targetCharacterId,
                     groupName: trimmedGroup,
                     pending: true,
+                    requested: true,
                 },
                 { txClient }
             );
@@ -296,7 +299,7 @@ export class BuddyService {
         );
 
         const incoming = await this.buddyRepo.getItem(worldId, String(accepterCharacterId), requesterCharacterId);
-        if (!incoming) {
+        if (!incoming || incoming.requested) {
             return { ok: false, code: BuddyErrorCode.BUDDY_ERROR_NOT_PENDING };
         }
         if (!incoming.pending) {
@@ -317,6 +320,7 @@ export class BuddyService {
                     buddyCharacterId: requesterCharacterId,
                     groupName: DEFAULT_BUDDY_GROUP,
                     pending: false,
+                    requested: false,
                 },
                 { txClient }
             );
@@ -331,12 +335,13 @@ export class BuddyService {
             return this.buddyRepo.set(
                 worldId,
                 onRequester
-                    ? { ...onRequester, pending: false }
+                    ? { ...onRequester, pending: false, requested: false }
                     : {
                           characterId: requesterCharacterId,
                           buddyCharacterId: accepterCharacterId,
                           groupName: DEFAULT_BUDDY_GROUP,
                           pending: false,
+                          requested: false,
                       },
                 { txClient }
             );

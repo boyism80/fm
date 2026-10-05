@@ -3,7 +3,7 @@ import { HashRepository } from "./hash-repository";
 import type { RepositoryQuery, RepositoryTxOptions } from "../types/repository-contracts";
 import type { CharacterBuddyModel, CharacterBuddyRow } from "../types/repository-models";
 
-const SELECT_COLS = "character_id, buddy_character_id, group_name, pending, created_at, updated_at";
+const SELECT_COLS = "character_id, buddy_character_id, group_name, pending, requested, created_at, updated_at";
 
 export type { CharacterBuddyModel };
 
@@ -32,18 +32,19 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
             return { text: "", values: [] };
         }
         const placeholders = rows
-            .map((_, i) => `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4},NOW(),NOW())`)
+            .map((_, i) => `($${i * 5 + 1},$${i * 5 + 2},$${i * 5 + 3},$${i * 5 + 4},$${i * 5 + 5},NOW(),NOW())`)
             .join(",\n");
         return {
-            text: `INSERT INTO character_buddies (character_id, buddy_character_id, group_name, pending, created_at, updated_at)
+            text: `INSERT INTO character_buddies (character_id, buddy_character_id, group_name, pending, requested, created_at, updated_at)
                    VALUES
                    ${placeholders}
                    ON CONFLICT (character_id, buddy_character_id) DO UPDATE
                    SET group_name = EXCLUDED.group_name,
                        pending = EXCLUDED.pending,
+                       requested = EXCLUDED.requested,
                        updated_at = NOW()
                    RETURNING ${SELECT_COLS}`,
-            values: rows.flatMap((r) => [r.character_id, r.buddy_character_id, r.group_name, r.pending]),
+            values: rows.flatMap((r) => [r.character_id, r.buddy_character_id, r.group_name, r.pending, r.requested]),
         };
     }
 
@@ -60,6 +61,7 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
             buddyCharacterId: row.buddy_character_id,
             groupName: row.group_name ?? "",
             pending: row.pending === true,
+            requested: row.requested === true,
             createdAt: row.created_at instanceof Date ? row.created_at : row.created_at ? new Date(row.created_at) : undefined,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
@@ -71,6 +73,7 @@ export class CharacterBuddyRepository extends HashRepository<CharacterBuddyModel
             buddy_character_id: model.buddyCharacterId,
             group_name: model.groupName,
             pending: model.pending,
+            requested: model.requested === true,
         };
     }
 
