@@ -81,12 +81,13 @@ func (h *MoveMob) Handle(ctx *core.ClientContext, req *request.MoveMob) error {
 			}
 		} else {
 			delay := time.Duration(int(req.SkillDelay)*100+450) * time.Millisecond
+			controllerID := ch.GetID()
 			mob.RemoveTimer(mobSkillScriptTimerKey)
 			mob.AddTimer(mobSkillScriptTimerKey, delay, false, func() {
-				if mob == nil || !mob.IsAlive() {
+				if mob.IsAlive() == false {
 					return
 				}
-				h.runScript(ctx, mapInstance, mob, ch, req)
+				h.runScript(ctx, mapInstance, mob, mapInstance.GetPlayer(controllerID), req)
 			})
 		}
 	}
@@ -133,8 +134,12 @@ func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *entity.Map, mo
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorContext: ctx.ActorContext,
 	})
+	var target interface{}
+	if controller != nil {
+		target = controller
+	}
 	hook := "on_mob_skill"
-	luax.CallAsync(ctx.ActorContext, root, thread, hook, mob, controller, skill).Then(func(_ interface{}) (interface{}, error) {
+	luax.CallAsync(ctx.ActorContext, root, thread, hook, mob, target, skill).Then(func(_ interface{}) (interface{}, error) {
 		h.consumeMobSkillMp(mob, skill)
 		return nil, nil
 	}).OnError(func(err error) {
