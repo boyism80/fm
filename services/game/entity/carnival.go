@@ -197,11 +197,9 @@ func (m *CarnivalMatch) Conclude(gw GameWorld) bool {
 	if smID != "" {
 		group := m.registry.Group()
 		if group != nil {
-			if sm := group.Get(smID); sm != nil {
-				if !sm.Disposed() {
-					sm.AbortStart()
-				}
-				group.RemoveMachine(sm)
+			if sm := group.Get(smID); sm != nil && sm.Disposed() == false {
+				sm.AbortStart()
+				group.GameWorld.SendStateMachineMessage(sm.ActorPID, &StopStateMachine{})
 			}
 		}
 	}
