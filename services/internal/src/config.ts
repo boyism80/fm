@@ -231,7 +231,7 @@ export function withDefaults(raw: RawConfig): Omit<InternalConfig, "configPath">
         sequelize: {
             dialect: sequelizeObject.dialect ?? "postgres",
             migration_storage: sequelizeObject.migration_storage ?? "sequelize",
-            auto_migrate_on_startup: sequelizeObject.auto_migrate_on_startup ?? false,
+            auto_migrate_on_startup: sequelizeObject.auto_migrate_on_startup ?? true,
             define: sequelizeObject.define ?? {},
         },
         resources: {

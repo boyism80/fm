@@ -2,14 +2,9 @@ import type { MigrationModule } from "../../src/sequelize-migration";
 
 const migration: MigrationModule = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.sequelize.query("DROP TABLE IF EXISTS character_overview CASCADE;");
-        await queryInterface.sequelize.query("DROP TABLE IF EXISTS character_skills CASCADE;");
-        await queryInterface.sequelize.query("DROP TABLE IF EXISTS inventory CASCADE;");
-        await queryInterface.sequelize.query("DROP TABLE IF EXISTS characters CASCADE;");
-        await queryInterface.sequelize.query("DROP TABLE IF EXISTS accounts CASCADE;");
-        await queryInterface.sequelize.query("DROP TABLE IF EXISTS character_name_registry CASCADE;");
-        await queryInterface.sequelize.query("DROP TABLE IF EXISTS account_identity CASCADE;");
-
+        if (await queryInterface.tableExists("characters")) {
+            return;
+        }
         await queryInterface.createTable("account_identity", {
             id: {
                 type: Sequelize.INTEGER,
@@ -59,7 +54,7 @@ const migration: MigrationModule = {
             },
         });
         await queryInterface.sequelize.query(
-            "CREATE UNIQUE INDEX idx_character_name_lower ON character_name_registry (LOWER(name));"
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_character_name_lower ON character_name_registry (LOWER(name));"
         );
 
         await queryInterface.createTable("accounts", {
@@ -178,10 +173,10 @@ const migration: MigrationModule = {
             updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal("NOW()") },
         });
         await queryInterface.sequelize.query(
-            "CREATE INDEX idx_characters_world_alive ON characters (world_id) WHERE deleted = false;"
+            "CREATE INDEX IF NOT EXISTS idx_characters_world_alive ON characters (world_id) WHERE deleted = false;"
         );
         await queryInterface.sequelize.query(
-            "CREATE INDEX idx_characters_account_world ON characters (account_id, world_id) WHERE deleted = false;"
+            "CREATE INDEX IF NOT EXISTS idx_characters_account_world ON characters (account_id, world_id) WHERE deleted = false;"
         );
 
         await queryInterface.createTable("inventory", {
@@ -249,7 +244,7 @@ const migration: MigrationModule = {
             },
         });
         await queryInterface.sequelize.query(
-            "CREATE INDEX idx_inventory_owner_alive ON inventory (owner_id) WHERE deleted = false;"
+            "CREATE INDEX IF NOT EXISTS idx_inventory_owner_alive ON inventory (owner_id) WHERE deleted = false;"
         );
 
         await queryInterface.createTable("character_overview", {
@@ -300,7 +295,7 @@ const migration: MigrationModule = {
             },
         });
         await queryInterface.sequelize.query(
-            "CREATE INDEX idx_character_overview_account ON character_overview (account_id, world_id) WHERE deleted = false;"
+            "CREATE INDEX IF NOT EXISTS idx_character_overview_account ON character_overview (account_id, world_id) WHERE deleted = false;"
         );
 
         await queryInterface.createTable("character_skills", {
@@ -332,15 +327,17 @@ const migration: MigrationModule = {
                 defaultValue: Sequelize.literal("NOW()"),
             },
         });
-        await queryInterface.addConstraint("character_skills", {
-            fields: ["character_id", "skill_id"],
-            type: "primary key",
-            name: "pk_character_skills",
-        });
-        await queryInterface.addIndex("character_skills", {
-            fields: ["character_id"],
-            name: "idx_character_skills_owner",
-        });
+        await queryInterface.sequelize.query(`
+DO $pk$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'pk_character_skills') THEN
+    ALTER TABLE character_skills ADD CONSTRAINT pk_character_skills PRIMARY KEY (character_id, skill_id);
+  END IF;
+END $pk$;
+`);
+        await queryInterface.sequelize.query(
+            "CREATE INDEX IF NOT EXISTS idx_character_skills_owner ON character_skills (character_id);"
+        );
     },
 
     async down(queryInterface) {

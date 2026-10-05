@@ -31,7 +31,7 @@ function collectPgEndpoints(config: InternalConfig): TargetEndpoint[] {
 }
 
 export async function autoMigrateAllIfEnabled(internalConfig: InternalConfig): Promise<void> {
-    const enabled = internalConfig.sequelize?.auto_migrate_on_startup ?? false;
+    const enabled = internalConfig.sequelize?.auto_migrate_on_startup ?? true;
     if (!enabled) {
         return;
     }
