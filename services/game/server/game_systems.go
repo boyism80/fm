@@ -655,3 +655,10 @@ func (s dispatchSystem) SendTo(characterID uint32, msg interface{}) {
 	}
 	s.gs.EnsureSend(nil, characterID, msg)
 }
+
+func (s dispatchSystem) Call(characterID uint32, run func(ctx actor.Context)) {
+	s.SendTo(characterID, &g_actor.MapCall{Run: func(ctx actor.Context, _ *g_actor.GameLogicActor) []lua.LValue {
+		run(ctx)
+		return nil
+	}})
+}

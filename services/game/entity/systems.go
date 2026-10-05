@@ -59,4 +59,5 @@ type AllianceSystem interface {
 
 type DispatchSystem interface {
 	SendTo(characterID uint32, msg interface{})
+	Call(characterID uint32, run func(ctx actor.Context))
 }

@@ -640,13 +640,13 @@ func (ch *Character) Spectating() bool {
 }
 
 func (ch *Character) bindStateMachine(sm *StateMachine) {
-	ch.Call(func() {
+	ch.GameWorld.GetDispatchSystem().Call(ch.GetID(), func(actor.Context) {
 		ch.stateMachine = sm
 	})
 }
 
 func (ch *Character) unbindStateMachine(sm *StateMachine) {
-	ch.Call(func() {
+	ch.GameWorld.GetDispatchSystem().Call(ch.GetID(), func(actor.Context) {
 		if ch.stateMachine == sm {
 			ch.stateMachine = nil
 		}
