@@ -567,6 +567,7 @@ local command_funcs = {
 			me:level(level)
 			me:class(class)
 			me:exp(0)
+			me:skill_point(0)
 			me:meso(meso)
 			me:population(0)
 			for item_id, count in string.gmatch(args[4] or "", "(%d+):(%d+)") do
