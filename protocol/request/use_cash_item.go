@@ -12,6 +12,19 @@ type UseCashItem struct {
 func (*UseCashItem) Opcode() byte { return 0x3E }
 
 func (p *UseCashItem) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU16(p.Slot)
+	writer.WriteU32(p.ItemID)
+
+	if p.ItemID/10000 != 507 {
+		return nil
+	}
+	switch p.ItemID % 10000 / 1000 {
+	case 1, 8:
+		writer.WriteStr16(p.Text)
+	case 2:
+		writer.WriteStr16(p.Text)
+		writer.WriteBoolean(p.Ear)
+	}
 	return nil
 }
 

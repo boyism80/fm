@@ -38,6 +38,7 @@ var requests = []outbound{
 	&request.MoveItem{},
 	&request.DamageReactor{},
 	&request.Carnival{},
+	&request.UseCashItem{},
 }
 
 func (a *SuiteActor) register() {
@@ -244,6 +245,19 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				t.RawSetInt(int(id), lua.LNumber(count))
 			}
 			L.Push(t)
+			return 1
+		},
+		"slot": func(L *lua.LState) int {
+			itemID := uint32(L.CheckInt(2))
+			for _, tab := range a.checkBot(L).Items {
+				for slot, item := range tab {
+					if slot > 0 && item.ItemID == itemID {
+						L.Push(lua.LNumber(slot))
+						return 1
+					}
+				}
+			}
+			L.Push(lua.LNil)
 			return 1
 		},
 		"quests": func(L *lua.LState) int {
