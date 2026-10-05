@@ -424,8 +424,11 @@ test_suite {
 			if pq.wait_all(ctx, BONUS, 10000) == false then
 				return false
 			end
-			if pq.command(leader, "/타이머 1", "남은 시간") == false then
+			if pq.command(leader, "/타이머 1", "타이머 제한: 1") == false then
 				return ctx:fail("보너스 시간 단축 실패")
+			end
+			if pq.command(leader, "/타이머 0", "타이머 제한: 0") == false then
+				return ctx:fail("타이머 제한 해제 실패")
 			end
 			return pq.wait_all(ctx, REWARD, 15000)
 		end,
