@@ -14,6 +14,10 @@ type UseCatchItem struct {
 func (*UseCatchItem) Opcode() byte { return 0x40 }
 
 func (p *UseCatchItem) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU32(p.Tick)
+	writer.WriteU16(p.Slot)
+	writer.WriteU32(p.ItemID)
+	writer.WriteU32(p.MobOID)
 	return nil
 }
 

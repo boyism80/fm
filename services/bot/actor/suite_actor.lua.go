@@ -93,7 +93,7 @@ func (a *SuiteActor) register() {
 	ctxIndex := L.SetFuncs(L.NewTable(), a.ctxFuncs())
 	botIndex := L.SetFuncs(L.NewTable(), a.botFuncs())
 	a.wrapWaits(ctxIndex, "sleep")
-	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "npc", "npc_click", "dialog", "kill", "loot", "drop", "hit_reactor")
+	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "npc", "npc_click", "dialog", "kill", "catch", "loot", "drop", "hit_reactor")
 	L.SetField(L.NewTypeMetatable("bot_ctx"), "__index", ctxIndex)
 	L.SetField(L.NewTypeMetatable("bot"), "__index", botIndex)
 	a.ctxUD = a.newUserData(a, "bot_ctx")
@@ -567,6 +567,29 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			oid := uint32(L.CheckInt(2))
 			pkt, ok := a.attackPacket(b, oid, math.MaxInt32, 1)
 			if ok == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			a.park(L)
+			a.Request(L, b, b, pkt, a.timeout(), func(p any) bool {
+				die, ok := p.(*response.DieMob)
+				return ok && die.OID == oid
+			}, func(_ any, ok bool) {
+				a.wake(L, lua.LBool(ok))
+			})
+			return L.Yield()
+		},
+		"catch": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			oid := uint32(L.CheckInt(2))
+			itemID := uint32(L.CheckInt(3))
+			var pkt *request.UseCatchItem
+			for slot, item := range b.Items[constant.InventoryTypeConsume] {
+				if slot > 0 && item.ItemID == itemID {
+					pkt = &request.UseCatchItem{Slot: uint16(slot), ItemID: itemID, MobOID: oid}
+				}
+			}
+			if pkt == nil {
 				L.Push(lua.LFalse)
 				return 1
 			}
