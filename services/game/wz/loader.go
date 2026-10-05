@@ -1945,6 +1945,10 @@ func loadMob(path string) (*Mob, error) {
 		switch strField.Name {
 		case "link":
 			model.Link = strField.Value
+		case "maxHP":
+			if v, err := strconv.Atoi(strField.Value); err == nil {
+				model.MaxHP = v
+			}
 		}
 	}
 
