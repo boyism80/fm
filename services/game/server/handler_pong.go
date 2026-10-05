@@ -53,7 +53,11 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 				return nil
 			}
 			switch reply.GetErrorCode() {
-			case internal.SessionErrorCode_SESSION_NOT_FOUND, internal.SessionErrorCode_SESSION_NOT_OWNER:
+			case internal.SessionErrorCode_SESSION_NOT_FOUND:
+				if c.GetCharacter() == character {
+					_ = c.GetConnection().Close()
+				}
+			case internal.SessionErrorCode_SESSION_NOT_OWNER:
 				if c.GetCharacter() == character {
 					c.LoseSession()
 					_ = c.GetConnection().Close()
