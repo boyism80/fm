@@ -34,6 +34,11 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		return fmt.Errorf("character is nil")
 	}
 
+	if character.Spectating() {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
+	}
+
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		log.Printf("Map not found for character %d", character.GetID())

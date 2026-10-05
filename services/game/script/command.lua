@@ -924,6 +924,71 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["SM목록"] = {
+		privilege = ROLE.Admin,
+		usage = "<그룹> - 진행 중인 SM과 맵 목록",
+		command = function(me, args)
+			local name = args[1]
+			if name == nil or name == "" then
+				me:message("사용법: /SM목록 <그룹>")
+				return true
+			end
+			local group = state_machine(name)
+			if group == nil then
+				me:message("그룹 없음: " .. name)
+				return true
+			end
+			local machines = group:machines()
+			if #machines == 0 then
+				me:message("[" .. name .. "] 진행 중인 SM 없음")
+				return true
+			end
+			for _, sm in ipairs(machines) do
+				local ids = {}
+				for _, map in ipairs(sm:maps()) do
+					ids[#ids + 1] = tostring(map:template_id())
+				end
+				table.sort(ids)
+				me:message(string.format("[%s] id=%s players=%d maps=%s", name, sm:id(), #sm:players(), table.concat(ids, ",")))
+			end
+			return true
+		end,
+	},
+	["SM관전"] = {
+		privilege = ROLE.Admin,
+		usage = "<그룹> <id> [템플릿맵ID] - SM 맵에 관전자로 입장",
+		command = function(me, args)
+			local name = args[1]
+			local id = args[2]
+			if name == nil or name == "" or id == nil or id == "" then
+				me:message("사용법: /SM관전 <그룹> <id> [템플릿맵ID]")
+				return true
+			end
+			local group = state_machine(name)
+			if group == nil then
+				me:message("그룹 없음: " .. name)
+				return true
+			end
+			local sm = group:get(id)
+			if sm == nil or sm:disposed() then
+				me:message("진행 중인 SM 없음: " .. name .. " " .. id)
+				return true
+			end
+			local template_id = tonumber(args[3] or "")
+			local map
+			if template_id ~= nil then
+				map = sm:map(template_id)
+			else
+				map = sm:maps()[1]
+			end
+			if map == nil then
+				me:message("SM 맵 없음: " .. tostring(args[3]))
+				return true
+			end
+			me:map(map, 0)
+			return true
+		end,
+	},
 	["좌표"] = {
 		privilege = ROLE.Admin,
 		usage = "- 현재 좌표·저장 스폰포인트 확인",

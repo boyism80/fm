@@ -32,6 +32,10 @@ func (h *DamageReactor) Handle(ctx *core.ClientContext, req *request.DamageReact
 		return fmt.Errorf("character not found")
 	}
 
+	if character.Spectating() {
+		return nil
+	}
+
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		return nil

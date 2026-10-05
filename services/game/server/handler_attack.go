@@ -36,6 +36,10 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		return fmt.Errorf("character is nil")
 	}
 
+	if character.Spectating() {
+		return nil
+	}
+
 	if character.IsAlive() == false {
 		return nil
 	}

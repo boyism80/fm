@@ -33,6 +33,11 @@ func (h *DropMeso) Handle(ctx *core.ClientContext, req *request.DropMeso) error 
 		return fmt.Errorf("character is nil")
 	}
 
+	if character.Spectating() {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
+	}
+
 	if req.Count < 10 || req.Count > 50000 {
 		log.Printf("Invalid meso count: %d", req.Count)
 		character.Listener.OnUpdateStats(character, nil, true)

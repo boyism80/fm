@@ -30,6 +30,9 @@ func (h *SummonSkill) Handle(ctx *core.ClientContext, req *request.SummonSkill) 
 	if character == nil {
 		return nil
 	}
+	if character.Spectating() {
+		return nil
+	}
 	if req.SubSkillID == 0 {
 		return nil
 	}

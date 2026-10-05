@@ -9,6 +9,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/services/game/constant"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -410,7 +411,10 @@ func (sm *StateMachine) HasPlayer(ch *Character) bool {
 }
 
 func (sm *StateMachine) Admits(ch *Character) bool {
-	return sm.HasPlayer(ch)
+	if sm.HasPlayer(ch) {
+		return true
+	}
+	return ch.HasRoleAtLeast(constant.RoleAdmin) && ch.GetPlayerMode() == false
 }
 
 func (sm *StateMachine) HandlePlayerMapEnter(ch *Character, m *Map) {
@@ -628,6 +632,11 @@ func (ch *Character) StateMachine() *StateMachine {
 		return nil
 	}
 	return ch.stateMachine
+}
+
+func (ch *Character) Spectating() bool {
+	sm := ch.GetMap().StateMachine()
+	return sm != nil && sm.HasPlayer(ch) == false
 }
 
 func (ch *Character) bindStateMachine(sm *StateMachine) {

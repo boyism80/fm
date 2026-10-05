@@ -68,6 +68,11 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 }
 
 func (h *MoveItem) drop(ch *entity.Character, invenType constant.InventoryType, slot int16, count uint16) {
+	if ch.Spectating() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return
+	}
+
 	inven := ch.Inventory.Tabs[invenType]
 	if inven == nil {
 		return

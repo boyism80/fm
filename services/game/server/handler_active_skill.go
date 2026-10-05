@@ -37,6 +37,11 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
+	if ch.Spectating() {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)

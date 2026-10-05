@@ -102,6 +102,20 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(luax.NewLuable(L, sm))
 			return 1
 		},
+		"machines": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			tbl := L.NewTable()
+			for _, sm := range group.Machines() {
+				tbl.Append(luax.NewLuable(L, sm))
+			}
+			L.Push(tbl)
+			return 1
+		},
 		"create": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			group, ok := ud.Value.(*StateMachineGroup)

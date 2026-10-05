@@ -33,6 +33,11 @@ func (h *NpcClick) Handle(ctx *core.ClientContext, req *request.NpcClick) error 
 		return fmt.Errorf("character not found")
 	}
 
+	if character.Spectating() {
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
+	}
+
 	mapInstance := character.GetMap()
 	if mapInstance == nil {
 		log.Printf("Map not found")
