@@ -105,8 +105,10 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		ensure_quest_started(player, STAGE1_QUEST, "")
-		player:map(START_MAP)
+		local function on_arrive(player)
+			ensure_quest_started(player, STAGE1_QUEST, "")
+		end
+		player:map(START_MAP, { callback = on_arrive })
 	end,
 
 	on_left_party = function(sm, player)
