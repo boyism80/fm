@@ -196,14 +196,6 @@ func equipmentLooksForPersist(ch *Character) (baseLooks, overlays map[int32]uint
 	return
 }
 
-// CharacterSnapshot is a race-free snapshot captured while the character is
-// still on the map (inside the map actor's Receive loop). Use it when saving
-// from a goroutine spawned after the sync context ends.
-type CharacterSnapshot struct {
-	Character *Character
-	MapID     uint32
-}
-
 func (ch *Character) PersistMapID() uint32 {
 	if ch == nil {
 		return 0
@@ -221,12 +213,9 @@ func (ch *Character) PersistMapID() uint32 {
 	return m.TemplateID()
 }
 
-// ToProtoWithMapID builds the save proto using a pre-computed mapID instead of
-// calling PersistMapID(), which reads the Map pointer and must not be called
-// from a goroutine spawned after the character may have left the map.
-// Returns nil when mapID is 0.
-func (ch *Character) ToProtoWithMapID(worldID uint32, mapID uint32) *internal.CharacterSaveEntry {
-	if ch == nil || mapID == 0 {
+func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
+	mapID := ch.PersistMapID()
+	if mapID == 0 {
 		return nil
 	}
 	baseLooks, overlays := equipmentLooksForPersist(ch)
@@ -273,10 +262,6 @@ func (ch *Character) ToProtoWithMapID(worldID uint32, mapID uint32) *internal.Ch
 		Quests:         ch.QuestsPersisted(),
 		SavedLocations: ch.SavedLocationsPersisted(),
 	}
-}
-
-func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
-	return ch.ToProtoWithMapID(worldID, ch.PersistMapID())
 }
 
 func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {

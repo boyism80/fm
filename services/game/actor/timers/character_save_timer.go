@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/entity"
 )
 
@@ -36,24 +37,22 @@ func (t *CharacterSaveTimer) Handle(ctx actor.Context, mapData *entity.Map) erro
 		return nil
 	}
 
-	// Build snapshots in the map actor's sync context: Map is non-nil here so
-	// PersistMapID() is safe. LoggedOut and mapID==0 characters are filtered out
-	// to avoid writing stale or invalid data from the async goroutine.
-	snapshots := make([]*entity.CharacterSnapshot, 0, len(allPlayers))
+	worldID := mapData.GameWorld.GetWorldID()
+	entries := make([]*internal.CharacterSaveEntry, 0, len(allPlayers))
 	for _, obj := range allPlayers {
 		ch, ok := obj.(*entity.Character)
 		if !ok || ch == nil || ch.LoggedOut() {
 			continue
 		}
-		mapID := ch.PersistMapID()
-		if mapID == 0 {
+		entry := ch.ToProto(worldID)
+		if entry == nil {
 			continue
 		}
-		snapshots = append(snapshots, &entity.CharacterSnapshot{Character: ch, MapID: mapID})
+		entries = append(entries, entry)
 	}
 
-	if len(snapshots) > 0 {
-		mapData.GameWorld.SaveAsync(ctx, snapshots)
+	if len(entries) > 0 {
+		mapData.GameWorld.SaveAsync(ctx, entries)
 	}
 	return nil
 }

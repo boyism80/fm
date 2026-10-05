@@ -12,7 +12,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/types"
 )
 
@@ -58,6 +57,7 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 	ic := h.gs.internalClient
 	var routeHost string
 	var routePort uint16
+	var entry *internal.CharacterSaveEntry
 
 	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
 	gameClient.SetChangingChannel(true)
@@ -86,10 +86,17 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			}, types.SEND_POLICY_ENCRYPT)
 			return fmt.Errorf("switch channel: missing route (world=%d channel=%d)", worldID, targetChannel)
 		}
+		entry = character.ToProto(worldID)
+		if entry == nil {
+			_ = ctx.Client.Send(&response.ServerBlocked{
+				Reason: constant.ServerBlockedChannelMoveUnavailable,
+			}, types.SEND_POLICY_ENCRYPT)
+			return fmt.Errorf("switch channel: character %d has no map to save", character.GetID())
+		}
 		return nil
 	})
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.SaveCharactersReply, error) {
-		return h.gs.grpcSaveCharacters(c, []*entity.Character{character})
+		return ic.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}})
 	}, func(saveReply *internal.SaveCharactersReply) error {
 		if saveReply == nil || !saveReply.GetOk() {
 			_ = ctx.Client.Send(&response.ServerBlocked{

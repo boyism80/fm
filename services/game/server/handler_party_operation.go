@@ -46,9 +46,9 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 
 	switch req.Operation {
 	case constant.PartyC2SCreate:
+		leader := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
 		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 			func(c context.Context) (*internal.CreatePartyReply, error) {
-				leader := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
 				req := &internal.CreatePartyRequest{
 					WorldId: worldID,
 					Leader:  leader,
@@ -101,9 +101,9 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 
 	case constant.PartyC2SAcceptInvite:
 		skipPending := ch.ShouldSkipInvitePendingForPartySearch(req.PartyID)
+		member := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)
 		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 			func(c context.Context) (*internal.JoinPartyReply, error) {
-				member := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)
 				return h.gs.internalClient.JoinParty(c, &internal.JoinPartyRequest{
 					WorldId:                worldID,
 					PartyId:                req.PartyID,
@@ -162,9 +162,9 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		var inv *internal.InvitePartyReply
 		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		if !hasParty {
+			leader := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
 			promise = async.ThenRPC(promise,
 				func(c context.Context) (*internal.CreatePartyReply, error) {
-					leader := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
 					req := &internal.CreatePartyRequest{
 						WorldId: worldID,
 						Leader:  leader,

@@ -34,63 +34,6 @@ import (
 
 const mapActorCallTimeout = 30 * time.Second
 
-// grpcSaveCharacters performs one SaveCharacters RPC for callers that hold the
-// map actor context (channel switch, disconnect). Map is still valid here so
-// PersistMapID() is safe to call.
-func (gs *GameServer) grpcSaveCharacters(ctx context.Context, chars []*entity.Character) (*internal.SaveCharactersReply, error) {
-	if gs == nil || gs.internalClient == nil || len(chars) == 0 {
-		return &internal.SaveCharactersReply{}, nil
-	}
-	worldID := uint32(gs.config.WorldId)
-	entries := make([]*internal.CharacterSaveEntry, 0, len(chars))
-	for _, ch := range chars {
-		if ch == nil {
-			continue
-		}
-		if entry := ch.ToProto(worldID); entry != nil {
-			entries = append(entries, entry)
-		}
-	}
-	if len(entries) == 0 {
-		return &internal.SaveCharactersReply{}, nil
-	}
-	reply, err := gs.internalClient.SaveCharacters(ctx, &internal.SaveCharactersRequest{Entries: entries})
-	if err != nil {
-		return nil, fmt.Errorf("SaveCharacters rpc: %w", err)
-	}
-	return reply, nil
-}
-
-// grpcSaveSnapshots is the timer-path variant: uses pre-snapshotted mapIDs to
-// avoid reading the Map pointer from a goroutine, and re-checks LoggedOut() as
-// a second layer of defence.
-func (gs *GameServer) grpcSaveSnapshots(ctx context.Context, snapshots []*entity.CharacterSnapshot) (*internal.SaveCharactersReply, error) {
-	if gs == nil || gs.internalClient == nil || len(snapshots) == 0 {
-		return &internal.SaveCharactersReply{}, nil
-	}
-	worldID := uint32(gs.config.WorldId)
-	entries := make([]*internal.CharacterSaveEntry, 0, len(snapshots))
-	for _, snap := range snapshots {
-		if snap == nil || snap.Character == nil {
-			continue
-		}
-		if snap.Character.LoggedOut() {
-			continue
-		}
-		if entry := snap.Character.ToProtoWithMapID(worldID, snap.MapID); entry != nil {
-			entries = append(entries, entry)
-		}
-	}
-	if len(entries) == 0 {
-		return &internal.SaveCharactersReply{}, nil
-	}
-	reply, err := gs.internalClient.SaveCharacters(ctx, &internal.SaveCharactersRequest{Entries: entries})
-	if err != nil {
-		return nil, fmt.Errorf("SaveCharacters rpc: %w", err)
-	}
-	return reply, nil
-}
-
 type GameServer struct {
 	*core.ServerCore
 	config            *GameConfig
@@ -443,6 +386,10 @@ func (gs *GameServer) GetResources() *wz.Resources {
 	return gs.resources
 }
 
+func (gs *GameServer) GetWorldID() uint32 {
+	return gs.config.WorldId
+}
+
 func (gs *GameServer) GetExpRate() int {
 	return gs.config.ExpRate
 }
@@ -647,9 +594,15 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	}
 
 	if client.SessionLost() == false {
-		toSave := []*entity.Character{character}
 		async.ThenRPC(p, func(c context.Context) (*internal.SaveCharactersReply, error) {
-			return gs.grpcSaveCharacters(c, toSave)
+			if gs.internalClient == nil {
+				return nil, nil
+			}
+			entry, err := gs.saveEntryOnMap(c, character)
+			if err != nil || entry == nil {
+				return nil, err
+			}
+			return gs.internalClient.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}})
 		}, func(*internal.SaveCharactersReply) error {
 			return nil
 		})

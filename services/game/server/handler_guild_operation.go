@@ -135,9 +135,9 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 
+		leader := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER)
 		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		promise = async.ThenRPC(promise, func(c context.Context) (*internal.CreateGuildReply, error) {
-			leader := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER)
 			return h.gs.internalClient.CreateGuild(c, &internal.CreateGuildRequest{
 				WorldId:   worldID,
 				GuildName: req.GuildName,
@@ -236,9 +236,9 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}
 		delete(ch.GuildInvites, req.GuildID)
 
+		member := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_NEW)
 		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		promise = async.ThenRPC(promise, func(c context.Context) (*internal.AcceptGuildInviteReply, error) {
-			member := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_NEW)
 			return h.gs.internalClient.AcceptGuildInvite(c, &internal.AcceptGuildInviteRequest{
 				WorldId: worldID,
 				GuildId: req.GuildID,

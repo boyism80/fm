@@ -2,6 +2,7 @@ package actor
 
 import (
 	"github.com/asynkron/protoactor-go/actor"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/entity"
 )
 
@@ -25,26 +26,27 @@ func (h *SaveMapCharactersHandler) Handle(ctx actor.Context, a *GameLogicActor, 
 	if len(maps) == 1 && maps[0].Wz != nil {
 		ack.MapID = uint32(maps[0].Wz.ID)
 	}
-	snapshots := make([]*entity.CharacterSnapshot, 0)
+	worldID := a.GameWorld.GetWorldID()
+	entries := make([]*internal.CharacterSaveEntry, 0)
 	for _, m := range maps {
 		for _, obj := range m.GetAllPlayers() {
 			ch, ok := obj.(*entity.Character)
 			if !ok || ch == nil || ch.LoggedOut() {
 				continue
 			}
-			mapID := ch.PersistMapID()
-			if mapID == 0 {
+			entry := ch.ToProto(worldID)
+			if entry == nil {
 				continue
 			}
-			snapshots = append(snapshots, &entity.CharacterSnapshot{Character: ch, MapID: mapID})
+			entries = append(entries, entry)
 		}
 	}
-	ack.Saved = len(snapshots)
-	if len(snapshots) == 0 {
+	ack.Saved = len(entries)
+	if len(entries) == 0 {
 		ctx.Respond(ack)
 		return
 	}
-	p := a.GameWorld.SaveAsync(ctx, snapshots)
+	p := a.GameWorld.SaveAsync(ctx, entries)
 	if p == nil {
 		ack.Err = "nil save promise"
 		ctx.Respond(ack)

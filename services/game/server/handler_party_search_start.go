@@ -60,10 +60,10 @@ func (h *PartySearchStart) Handle(ctx *core.ClientContext, req *request.PartySea
 	}
 
 	if ch.GetPartyID() == nil {
+		leader := ch.ToProtoPartyMember(h.gs.config.WorldId, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
 		async.ThenRPC(
 			async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 			func(c context.Context) (*internal.CreatePartyReply, error) {
-				leader := ch.ToProtoPartyMember(h.gs.config.WorldId, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
 				return h.gs.internalClient.CreateParty(c, &internal.CreatePartyRequest{
 					WorldId: h.gs.config.WorldId,
 					Leader:  leader,

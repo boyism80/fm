@@ -13,18 +13,17 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/entity"
+	lua "github.com/yuin/gopher-lua"
 )
 
 const saveCharactersPromiseTimeout = 30 * time.Second
 
 const saveCharactersChunkSize = 100
 
-// SaveAsync builds a Promise that saves snapshots in parallel chunks.
-// Snapshots must be created in the map actor's Receive loop so that mapID is
-// captured while the character is still on the map (race-free).
-func (gs *GameServer) SaveAsync(ctx actor.Context, snapshots []*entity.CharacterSnapshot) *async.Promise {
+// SaveAsync builds a Promise that saves entries in parallel chunks.
+func (gs *GameServer) SaveAsync(ctx actor.Context, entries []*internal.CharacterSaveEntry) *async.Promise {
 	p := async.NewPromise(ctx, saveCharactersPromiseTimeout)
-	if gs == nil || gs.internalClient == nil || len(snapshots) == 0 {
+	if gs == nil || gs.internalClient == nil || len(entries) == 0 {
 		return p
 	}
 	p.OnError(func(err error) {
@@ -35,16 +34,16 @@ func (gs *GameServer) SaveAsync(ctx actor.Context, snapshots []*entity.Character
 		var mu sync.Mutex
 		var firstErr error
 
-		for i := 0; i < len(snapshots); i += saveCharactersChunkSize {
+		for i := 0; i < len(entries); i += saveCharactersChunkSize {
 			end := i + saveCharactersChunkSize
-			if end > len(snapshots) {
-				end = len(snapshots)
+			if end > len(entries) {
+				end = len(entries)
 			}
-			chunk := append([]*entity.CharacterSnapshot(nil), snapshots[i:end]...)
+			chunk := append([]*internal.CharacterSaveEntry(nil), entries[i:end]...)
 			wg.Add(1)
 			cp := async.NewPromise(nil, saveCharactersPromiseTimeout)
 			async.ThenRPC(cp, func(c context.Context) (*internal.SaveCharactersReply, error) {
-				return gs.grpcSaveSnapshots(c, chunk)
+				return gs.internalClient.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: chunk})
 			}, func(*internal.SaveCharactersReply) error {
 				return nil
 			})
@@ -67,6 +66,30 @@ func (gs *GameServer) SaveAsync(ctx actor.Context, snapshots []*entity.Character
 		return nil, err
 	})
 	return p
+}
+
+func (gs *GameServer) saveEntryOnMap(ctx context.Context, character *entity.Character) (*internal.CharacterSaveEntry, error) {
+	mapInstance := character.GetMap()
+	if mapInstance == nil {
+		return nil, nil
+	}
+	pid := mapInstance.LogicActorPID()
+	root := gs.GetRootContext()
+	if pid == nil || root == nil {
+		return nil, fmt.Errorf("save entry: map actor missing for character %d", character.GetID())
+	}
+	worldID := gs.config.WorldId
+	entries := make(chan *internal.CharacterSaveEntry, 1)
+	root.Send(pid, &g_actor.MapCall{Run: func(actor.Context, *g_actor.GameLogicActor) []lua.LValue {
+		entries <- character.ToProto(worldID)
+		return nil
+	}})
+	select {
+	case entry := <-entries:
+		return entry, nil
+	case <-ctx.Done():
+		return nil, fmt.Errorf("save entry: character %d: %w", character.GetID(), ctx.Err())
+	}
 }
 
 type saveAllSummary struct {
