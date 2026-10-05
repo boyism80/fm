@@ -1,6 +1,8 @@
 local pq = require("script/integration/lib/party_quest")
 
 local HUB = 980000000
+local HUB_DELAY_MS = 1000
+local AWAY = 100000000
 local SPIEGELMANN = 2042000
 local REWARD_NPC = 2042002
 local GUARDIAN_REACTOR = 9980000
@@ -45,6 +47,32 @@ local function open_field_list(ctx, bot)
 		return ctx:fail(bot:name() .. " 필드 목록 대신 다른 대화: " .. dlg.text)
 	end
 	return dlg
+end
+
+local function challenge(ctx, red, blue)
+	local dlg = open_field_list(ctx, blue)
+	if dlg == false then
+		return false
+	end
+	local index = nil
+	for i, label in ipairs(dlg.selections) do
+		if label:find("카니발 필드" .. field_number .. " (", 1, true) ~= nil then
+			index = i
+		end
+	end
+	if index == nil then
+		return ctx:fail("대기 중인 필드가 목록에 없음: " .. field_number)
+	end
+
+	if blue:dialog(true, index - 1) == nil then
+		return ctx:fail("도전 확인 대화 없음")
+	end
+	local ask = blue:request_on(red, resp.dialog_yes_no, req.dialog { dialog_type = DIALOG_YES_NO, next = true })
+	if ask == false then
+		return ctx:fail("레드팀 파티장에게 도전 수락 대화가 오지 않음")
+	end
+	blue:send(req.dialog { dialog_type = DIALOG_DEFAULT, next = false })
+	return true
 end
 
 local function earn_cp(ctx, bot, enemy, need)
@@ -93,6 +121,7 @@ test_suite {
 	end,
 
 	on_finished = function(ctx)
+		pq.command(ctx:bot(0), "/액터지연 map_" .. HUB .. " 0", "액터 지연")
 		for i = 0, ctx:bot_count() - 1 do
 			ctx:bot(i):request(resp.party_update_disband, req.party_operation { operation = PARTY.Leave }, nil, 5000)
 		end
@@ -131,28 +160,37 @@ test_suite {
 		function(ctx)
 			local red = ctx:bot(0)
 			local blue = ctx:bot(1)
-			local dlg = open_field_list(ctx, blue)
-			if dlg == false then
+			if challenge(ctx, red, blue) == false then
 				return false
 			end
-			local index = nil
-			for i, label in ipairs(dlg.selections) do
-				if label:find("카니발 필드" .. field_number .. " (", 1, true) ~= nil then
-					index = i
-				end
+
+			if pq.command(red, "/액터지연 map_" .. HUB .. " " .. HUB_DELAY_MS, "액터 지연") == false then
+				return ctx:fail("허브 맵 액터 지연 설정 실패")
 			end
-			if index == nil then
-				return ctx:fail("대기 중인 필드가 목록에 없음: " .. field_number)
+			blue:send(req.normal_chat { message = "/맵이동 " .. AWAY })
+			ctx:sleep(HUB_DELAY_MS / 2)
+			local failed = red:request(resp.notice, req.dialog { dialog_type = DIALOG_YES_NO, next = true }, function(p)
+				return p.message:find("도전을 수락하는데 실패", 1, true) ~= nil
+			end, 30000)
+			pq.command(red, "/액터지연 map_" .. HUB .. " 0", "액터 지연")
+			if failed == false then
+				return ctx:fail("블루팀이 떠난 뒤 수락했는데 실패 안내가 없음")
 			end
 
-			if blue:dialog(true, index - 1) == nil then
-				return ctx:fail("도전 확인 대화 없음")
+			if wait_map(ctx, blue, AWAY, 30000) == false then
+				return false
 			end
-			local ask = blue:request_on(red, resp.dialog_yes_no, req.dialog { dialog_type = DIALOG_YES_NO, next = true })
-			if ask == false then
-				return ctx:fail("레드팀 파티장에게 도전 수락 대화가 오지 않음")
+			if blue:map_move(HUB) == false then
+				return ctx:fail("블루팀 허브 복귀 실패")
 			end
-			blue:send(req.dialog { dialog_type = DIALOG_DEFAULT, next = false })
+			return true
+		end,
+		function(ctx)
+			local red = ctx:bot(0)
+			local blue = ctx:bot(1)
+			if challenge(ctx, red, blue) == false then
+				return false
+			end
 
 			local enter = red:request_on(blue, resp.warp, req.dialog { dialog_type = DIALOG_YES_NO, next = true }, function(p)
 				return p.character.map == waiting_map()
