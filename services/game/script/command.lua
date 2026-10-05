@@ -1106,6 +1106,20 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["타이머"] = {
+		privilege = ROLE.Admin,
+		usage = "<초> - 내가 들어간 PQ·인스턴스 타이머를 최대 <초>로 줄임 (0이면 원래대로)",
+		command = function(me, args)
+			local seconds = tonumber(args[1])
+			if seconds == nil or seconds < 0 then
+				me:message("사용법: /타이머 <초>")
+				return true
+			end
+			me:timer_limit(math.floor(seconds))
+			me:message("타이머 제한: " .. math.floor(seconds))
+			return true
+		end,
+	},
 	["직업바꾸기"] = {
 		privilege = ROLE.Admin,
 		usage = "<직업코드> - 직업 변경",

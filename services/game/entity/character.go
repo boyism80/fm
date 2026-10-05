@@ -80,6 +80,7 @@ type Character struct {
 	buddyList         *BuddyList
 	InstantKill       bool
 	PlayerMode        bool
+	TimerLimit        uint32
 	stateMachine      *StateMachine
 	carnivalTeam      *CarnivalTeam
 	savedLocations    map[string]uint32

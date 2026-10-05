@@ -98,13 +98,14 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 			if a.timeoutCancel != nil {
 				a.timeoutCancel()
 			}
-			deadline := time.Now().Add(time.Duration(msg.Milliseconds) * time.Millisecond)
+			ms := a.StateMachine.LimitTimer(msg.Milliseconds)
+			deadline := time.Now().Add(time.Duration(ms) * time.Millisecond)
 			a.StateMachine.SetTimeoutDeadline(deadline)
-			a.timeoutCancel = a.scheduler.SendOnce(time.Duration(msg.Milliseconds)*time.Millisecond, ctx.Self(), &entity.StateMachineTimeout{
+			a.timeoutCancel = a.scheduler.SendOnce(time.Duration(ms)*time.Millisecond, ctx.Self(), &entity.StateMachineTimeout{
 				Version: a.timeoutVersion,
 			})
-			if msg.Milliseconds > 0 {
-				a.StateMachine.BroadcastClock(int32(msg.Milliseconds / 1000))
+			if ms > 0 {
+				a.StateMachine.BroadcastClock(int32(ms / 1000))
 			}
 		}
 		if msg.ReplyTo != nil {
@@ -180,7 +181,7 @@ func (a *StateMachineActor) scheduleHook(ctx actor.Context, msg *entity.Schedule
 	a.cancelNamedSchedule(msg.ID)
 	entry := &namedSchedule{hook: msg.Hook}
 	entry.version++
-	entry.cancel = a.scheduler.SendOnce(time.Duration(msg.Milliseconds)*time.Millisecond, ctx.Self(), &entity.StateMachineNamedTimeout{
+	entry.cancel = a.scheduler.SendOnce(time.Duration(a.StateMachine.LimitTimer(msg.Milliseconds))*time.Millisecond, ctx.Self(), &entity.StateMachineNamedTimeout{
 		ID:      msg.ID,
 		Version: entry.version,
 	})

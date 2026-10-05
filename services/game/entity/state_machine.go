@@ -218,6 +218,18 @@ func (sm *StateMachine) AddKill(ch *Character, n int) {
 	sm.kills[ch.GetID()] += n
 }
 
+func (sm *StateMachine) LimitTimer(ms int64) int64 {
+	for _, ch := range append(sm.Players(), sm.Leader) {
+		if ch == nil || ch.TimerLimit == 0 {
+			continue
+		}
+		if limit := int64(ch.TimerLimit) * 1000; limit < ms {
+			ms = limit
+		}
+	}
+	return ms
+}
+
 func (sm *StateMachine) StartTimer(ms int64) {
 	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ms <= 0 {
 		return

@@ -1738,6 +1738,26 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 		},
+		"timer_limit": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			argc := L.GetTop()
+			switch argc {
+			case 1:
+				L.Push(lua.LNumber(ch.TimerLimit))
+				return 1
+			case 2:
+				ch.TimerLimit = uint32(L.CheckNumber(2))
+				return 0
+			default:
+				L.ArgError(2, "timer_limit() requires 0 or 1 arguments")
+				return 0
+			}
+		},
 		"open_npc": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
