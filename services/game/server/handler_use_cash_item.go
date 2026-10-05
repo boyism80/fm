@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
@@ -68,8 +69,13 @@ func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) er
 			unlock()
 			return nil, nil
 		}
-		ch.Inventory.RemoveItem(constant.InventoryTypeCash, int16(req.Slot), 1)
-		unlock()
+		ch.GameWorld.GetDispatchSystem().Call(ch.GetID(), func(actor.Context) {
+			item := cash.Get(uint8(req.Slot))
+			if item != nil && item.GetModel().GetID() == req.ItemID {
+				ch.Inventory.RemoveItem(constant.InventoryTypeCash, int16(req.Slot), 1)
+			}
+			unlock()
+		})
 		return nil, nil
 	}).OnError(func(err error) {
 		log.Printf("cash item script %s: %v", scriptPath, err)
