@@ -151,6 +151,8 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 		a.beginDetach(ctx)
 	case *DetachStateMachineAck:
 		a.handleDetachAck(ctx)
+	case *actor.Restarting:
+		a.StopTimers()
 	case *actor.Stopped:
 		a.StopTimers()
 		if a.timeoutCancel != nil {

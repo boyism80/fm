@@ -90,8 +90,9 @@ func (gs *GameServer) StartStateMachineActor(sm *entity.StateMachine) *actor.PID
 		return nil
 	}
 	name := fmt.Sprintf("state_machine_%s_%s_%d", sm.Group.Name, sm.ID, gs.nextMachineID.Add(1))
+	smActor := g_actor.NewStateMachineActor(sm, gs)
 	props := actor.PropsFromProducer(func() actor.Actor {
-		return g_actor.NewStateMachineActor(sm, gs)
+		return smActor
 	})
 	return gs.actorRegistry.GetOrCreateActor(name, props)
 }
