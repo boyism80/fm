@@ -198,6 +198,7 @@ func resumeFn(root *lua.LState, thread *lua.LState, fn *lua.LFunction, hook stri
 		return lua.ResumeOK, nil, err
 	}
 	if fn != nil {
+		fn, lvArgs = NewEntry(root, fn, lvArgs)
 		thread.Push(fn)
 	}
 	startRunning(thread)

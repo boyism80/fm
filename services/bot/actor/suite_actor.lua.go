@@ -804,7 +804,8 @@ func (a *SuiteActor) park(L *lua.LState) {
 func (a *SuiteActor) spawn(fn *lua.LFunction, done func(values []lua.LValue, err error), args ...lua.LValue) {
 	co, _ := a.L.NewThread()
 	a.threads[co] = done
-	a.resume(co, fn, args...)
+	entry, entryArgs := luax.NewEntry(a.L, fn, args)
+	a.resume(co, entry, entryArgs...)
 }
 
 func (a *SuiteActor) wake(co *lua.LState, values ...lua.LValue) {
