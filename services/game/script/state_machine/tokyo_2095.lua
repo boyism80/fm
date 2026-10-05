@@ -61,13 +61,6 @@ return {
 		end
 	end,
 
-	on_player_disconnected = function(sm, player)
-		sm:unregister(player)
-		if #sm:players() == 0 then
-			finish(sm, 0)
-		end
-	end,
-
 	on_scheduled_timeout = function(sm)
 		finish(sm, EXIT_MAP)
 	end,

@@ -61,9 +61,6 @@ return {
 	on_player_revive = function(sm, player)
 	end,
 
-	on_player_disconnected = function(sm, player)
-	end,
-
 	on_left_party = function(sm, player)
 	end,
 

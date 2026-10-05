@@ -352,8 +352,10 @@ return {
 		end
 	end,
 
-	on_player_disconnected = function(sm, player)
-		dispose_all(sm, match_for_sm(sm))
+	on_player_leave = function(sm, player, reason)
+		if reason == "disconnect" then
+			dispose_all(sm, match_for_sm(sm))
+		end
 	end,
 
 	on_left_party = function(sm, player)

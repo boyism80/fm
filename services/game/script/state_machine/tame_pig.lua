@@ -51,10 +51,6 @@ return {
 		end
 	end,
 
-	on_player_disconnected = function(sm, player)
-		sm:finish(0)
-	end,
-
 	on_scheduled_timeout = function(sm)
 		finish(sm, "제한시간이 다 되어 실패하였습니다.")
 	end,

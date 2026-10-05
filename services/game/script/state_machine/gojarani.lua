@@ -11,14 +11,6 @@ local function instance(sm)
 	return maps[1]
 end
 
-local function finish(sm)
-	local map = instance(sm)
-	sm:finish(EXIT_MAP)
-	if map ~= nil then
-		map:destroy()
-	end
-end
-
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
@@ -65,10 +57,6 @@ return {
 		if map ~= nil then
 			player:map(map, 0)
 		end
-	end,
-
-	on_player_disconnected = function(sm, player)
-		finish(sm)
 	end,
 
 	on_finish = function(sm)

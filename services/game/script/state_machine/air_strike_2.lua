@@ -37,10 +37,6 @@ return {
 		player:map(QUEST_MAP)
 	end,
 
-	on_player_disconnected = function(sm, player)
-		sm:finish(0)
-	end,
-
 	on_scheduled_timeout = function(sm)
 		finish(sm)
 	end,
