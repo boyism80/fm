@@ -3,6 +3,7 @@ package entity
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
@@ -90,9 +91,14 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 		return false
 	}
 
+	delay := constant.ItemReactorActivateDelay
+	if owner != nil && owner.GetInstantKill() {
+		delay = time.Millisecond
+	}
+
 	itemOID := fp.OID
 	itemID := item.GetModel().GetID()
-	return r.ScheduleItemActivation(constant.ItemReactorActivateDelay, func() {
+	return r.ScheduleItemActivation(delay, func() {
 		mapInstance := r.GetMap()
 		if mapInstance == nil || mapInstance.GetItem(itemOID) == nil {
 			return

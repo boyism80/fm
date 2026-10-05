@@ -11,6 +11,11 @@ function M.move(bot, x, y)
 	return M.command(bot, "/좌표", string.format("Position: %d, %d", x, y)) ~= false
 end
 
+function M.regen(bot)
+	local p = M.command(bot, "/리젠", "리젠 ")
+	return p ~= false and p.message:find("리젠 0마리", 1, true) == nil
+end
+
 function M.npc(ctx, bot, template)
 	local x, y = bot:npc_position(template)
 	if x == nil then
@@ -49,7 +54,7 @@ function M.collect(ctx, bot, mob_id, item_id, count)
 			end
 			bot:request(resp.spawn_item, nil, function(p)
 				return p.item_model ~= nil and p.item_model.id == item_id
-			end, 2000)
+			end, 300)
 			visited = 0
 		elseif visited < #spots then
 			local spot = spots[visited % #spots + 1]
@@ -57,6 +62,8 @@ function M.collect(ctx, bot, mob_id, item_id, count)
 				return ctx:fail(bot:name() .. " 몹 위치로 이동 실패")
 			end
 			visited = visited + 1
+		elseif M.regen(bot) then
+			visited = 0
 		else
 			local spawn = bot:request(resp.spawn_mob, nil, function(p)
 				return mob_id == nil or p.mob.mob_id == mob_id
@@ -95,6 +102,10 @@ function M.find_reactor(bot, oid)
 end
 
 function M.break_reactor(ctx, bot, reactor)
+	local current = M.find_reactor(bot, reactor.oid)
+	if current == nil or current.broken then
+		return true
+	end
 	for _ = 1, 10 do
 		local p, name = bot:hit_reactor(reactor.oid)
 		if p == false then

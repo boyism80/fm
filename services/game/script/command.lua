@@ -1136,7 +1136,7 @@ local command_funcs = {
 	},
 	["즉사"] = {
 		privilege = ROLE.Admin,
-		usage = "- 즉사 상태 토글",
+		usage = "- 즉사 상태 토글 (몬스터·리액터를 한 번에 처치, 아이템 리액터 즉시 반응)",
 		command = function(me, args)
 			me:instant_kill(not me:instant_kill())
 			local status = me:instant_kill() and "enabled" or "disabled"
@@ -1309,6 +1309,19 @@ local command_funcs = {
 				::continue::
 			end
 			me:message(string.format("몬스터 %d마리 제거", count))
+			return true
+		end,
+	},
+	["리젠"] = {
+		privilege = ROLE.Admin,
+		usage = "- 현재 맵의 비어 있는 몬스터 리젠 위치를 리젠 시간 없이 즉시 채움",
+		command = function(me, args)
+			local m = me:map()
+			if m == nil then
+				me:message("맵 정보 없음")
+				return true
+			end
+			me:message(string.format("리젠 %d마리", m:respawn()))
 			return true
 		end,
 	},
