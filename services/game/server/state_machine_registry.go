@@ -17,12 +17,14 @@ type StateMachineRegistry struct {
 	gs     *GameServer
 	mu     sync.RWMutex
 	groups map[string]*entity.StateMachineGroup
+	actors map[string]*entity.StateMachine
 }
 
 func NewStateMachineRegistry(gs *GameServer) *StateMachineRegistry {
 	return &StateMachineRegistry{
 		gs:     gs,
 		groups: make(map[string]*entity.StateMachineGroup),
+		actors: make(map[string]*entity.StateMachine),
 	}
 }
 
@@ -50,14 +52,21 @@ func (r *StateMachineRegistry) FindByActor(pid *actor.PID) *entity.StateMachine 
 	if pid == nil {
 		return nil
 	}
-	for _, group := range r.Groups() {
-		for _, sm := range group.Machines() {
-			if sm.ActorPID != nil && sm.ActorPID.Equal(pid) {
-				return sm
-			}
-		}
-	}
-	return nil
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.actors[pid.Id]
+}
+
+func (r *StateMachineRegistry) registerActor(pid *actor.PID, sm *entity.StateMachine) {
+	r.mu.Lock()
+	r.actors[pid.Id] = sm
+	r.mu.Unlock()
+}
+
+func (r *StateMachineRegistry) unregisterActor(pid *actor.PID) {
+	r.mu.Lock()
+	delete(r.actors, pid.Id)
+	r.mu.Unlock()
 }
 
 func (r *StateMachineRegistry) Register(group *entity.StateMachineGroup) {

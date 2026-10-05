@@ -97,7 +97,12 @@ func (gs *GameServer) StartStateMachineActor(sm *entity.StateMachine) *actor.PID
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return smActor
 	})
-	return gs.actorRegistry.GetOrCreateActor(name, props)
+	pid := gs.actorRegistry.GetOrCreateActor(name, props)
+	if pid == nil {
+		return nil
+	}
+	gs.stateMachines.registerActor(pid, sm)
+	return pid
 }
 
 func (gs *GameServer) SendStateMachineMessage(pid *actor.PID, msg interface{}) {
@@ -122,6 +127,7 @@ func (gs *GameServer) StopStateMachineActor(sm *entity.StateMachine) {
 	if gs == nil || sm == nil || sm.ActorPID == nil {
 		return
 	}
+	gs.stateMachines.unregisterActor(sm.ActorPID)
 	gs.actorRegistry.PoisonActor(sm.ActorPID.Id, sm.ActorPID)
 }
 
