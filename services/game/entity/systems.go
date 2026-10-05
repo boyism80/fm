@@ -6,6 +6,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -16,6 +17,7 @@ type MapSystem interface {
 	SlotInstance(templateID uint32, slot uint32) (*Map, error)
 	RemoveInstanceMap(instanceKey uint32) error
 	CloseInstance(m *Map)
+	Broadcast(m *Map, message types.Packet)
 	Warp(ctx actor.Context, character *Character, targetMap *Map, spawnPoint uint8, onEnter func(actor.Context)) error
 	CreateReturnDoor(ch *Character, key DoorKey, skillID constant.SkillID) *Map
 	DespawnDoor(m *Map, key DoorKey, animated bool, notifyCounterpart bool)

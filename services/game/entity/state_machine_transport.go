@@ -50,13 +50,14 @@ func (sm *StateMachine) BroadcastShip(mapID uint32, effect uint16) {
 	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil {
 		return
 	}
-	m := sm.Group.GameWorld.GetMapSystem().Get(mapID)
+	ms := sm.Group.GameWorld.GetMapSystem()
+	m := ms.Get(mapID)
 	if m == nil {
 		return
 	}
 	if effect == response.ShipSpecialBalrog {
-		m.Broadcast(&response.ShipSpecialEffect{Effect: effect}, nil)
+		ms.Broadcast(m, &response.ShipSpecialEffect{Effect: effect})
 		return
 	}
-	m.Broadcast(&response.ShipState{State: effect}, nil)
+	ms.Broadcast(m, &response.ShipState{State: effect})
 }

@@ -239,6 +239,17 @@ func (s mapSystem) CloseInstance(m *entity.Map) {
 	}})
 }
 
+func (s mapSystem) Broadcast(m *entity.Map, message types.Packet) {
+	pid := m.LogicActorPID()
+	if pid == nil {
+		return
+	}
+	s.gs.GetRootContext().Send(pid, &g_actor.MapCall{Run: func(actor.Context, *g_actor.GameLogicActor) []lua.LValue {
+		m.Broadcast(message, nil)
+		return nil
+	}})
+}
+
 func (s mapSystem) returnMap(m *entity.Map) *entity.Map {
 	if m.Wz == nil {
 		return nil
