@@ -539,6 +539,146 @@ export class AllianceService {
         };
     }
 
+    private async disband(worldId: number, allianceId: number) {
+        const result = await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
+            return this.dissolveAllianceInTransaction(worldId, allianceId, dataTx);
+        });
+        if (!result.ok) {
+            return result;
+        }
+
+        await this.allianceRepo.invalidateCache(worldId, result.allianceId);
+        for (const gid of result.guildIds) {
+            await this.guildRepo.invalidateCache(worldId, gid);
+            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
+        }
+
+        await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, result.revision, {
+            guild_ids: result.guildIds,
+            member_character_ids: result.memberCharacterIds,
+        });
+        return result;
+    }
+
+    private async removeGuild(worldId: number, allianceId: number, guildId: number, expelled: boolean) {
+        const notInAllianceCode = expelled
+            ? messages.AllianceErrorCode.ALLIANCE_ERROR_TARGET_NOT_IN_ALLIANCE
+            : messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE;
+        const txResult = await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
+            const lockedAlliance = await this.allianceRepo.get(worldId, allianceId, { txClient: dataTx });
+            if (!lockedAlliance) {
+                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
+            }
+            if (!lockedAlliance.guildIds.includes(guildId)) {
+                return { ok: false as const, code: notInAllianceCode };
+            }
+
+            const lockedGuild = await this.guildRepo.get(worldId, guildId, { txClient: dataTx });
+            if (lockedGuild) {
+                if (lockedGuild.allianceId !== allianceId) {
+                    return { ok: false as const, code: notInAllianceCode };
+                }
+                await this.guildRepo.set(
+                    worldId,
+                    { ...lockedGuild, allianceId: null, revision: lockedGuild.revision + 1 },
+                    { txClient: dataTx }
+                );
+                const members = [...(await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient: dataTx })).values()];
+                if (members.length > 0) {
+                    const cleared = members.map((member) => ({
+                        ...member,
+                        allianceRank: null,
+                    }));
+                    await this.guildMemberRepo.setAll(worldId, cleared, { txClient: dataTx });
+                }
+            }
+
+            const nextRevision = lockedAlliance.revision + 1;
+            const savedAlliance = await this.allianceRepo.set(
+                worldId,
+                {
+                    ...lockedAlliance,
+                    guildIds: lockedAlliance.guildIds.filter((id) => id !== guildId),
+                    revision: nextRevision,
+                },
+                { txClient: dataTx }
+            );
+
+            return {
+                ok: true as const,
+                revision: nextRevision,
+                guildIds: lockedAlliance.guildIds,
+                savedAlliance,
+            };
+        });
+
+        if (!txResult.ok) {
+            return txResult;
+        }
+
+        await this.allianceRepo.invalidateCache(worldId, allianceId);
+        for (const gid of txResult.guildIds) {
+            await this.guildRepo.invalidateCache(worldId, gid);
+            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
+        }
+
+        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
+        const removedGuildLoaded = await this.guildService.getGuild(worldId, guildId);
+        const removedGuildMessage =
+            removedGuildLoaded.guild != null
+                ? await this.guildService.guildToPb(worldId, removedGuildLoaded.guild, removedGuildLoaded.members ?? [])
+                : undefined;
+
+        const wireAlliance = Alliance.encode(allianceMessage).finish();
+        const extraPayload: Record<string, unknown> = {
+            removed_guild_id: guildId,
+            expelled,
+            alliance_pb: Buffer.from(wireAlliance).toString("base64"),
+        };
+        if (removedGuildMessage != null) {
+            const wireRemoved = Guild.encode(removedGuildMessage).finish();
+            extraPayload.removed_guild_pb = Buffer.from(wireRemoved).toString("base64");
+        }
+
+        await this.publishToAllianceRoutes(
+            ALLIANCE_EVT.GUILD_LEFT,
+            worldId,
+            allianceId,
+            txResult.revision,
+            extraPayload
+        );
+
+        return {
+            ok: true as const,
+            allianceId,
+            revision: txResult.revision,
+            disbanded: false,
+            removedGuildId: guildId,
+            alliance: allianceMessage,
+        };
+    }
+
+    async removeDisbandedGuild(worldId: number, allianceId: number, guildId: number) {
+        await using _allianceLock = await this.distributedLockService.acquireWorldDataLock(
+            worldId,
+            `alliance:${allianceId}`,
+        );
+        const alliance = await this.allianceRepo.get(worldId, allianceId);
+        if (!alliance || !alliance.guildIds.includes(guildId)) {
+            return;
+        }
+
+        await using _guildLocks = await this.distributedLockService.acquireWorldDataLocks(
+            worldId,
+            [...alliance.guildIds].sort((a, b) => a - b).map((id) => `guild:${id}`),
+        );
+        if (alliance.guildIds[0] === guildId) {
+            await this.disband(worldId, allianceId);
+            return;
+        }
+        await this.removeGuild(worldId, allianceId, guildId, false);
+    }
+
     async acceptAllianceInvite(
         worldId: number,
         characterId: number,
@@ -1343,37 +1483,17 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_UNKNOWN };
         }
 
-        const leaderGuildId = alliance.guildIds[0];
-        if (leaderGuildId === guildId) {
-            const guildIds = [...alliance.guildIds];
-            const guildLocks = guildIds
-                .filter((id) => id !== guildId)
-                .sort((a, b) => a - b)
-                .map((id) => `guild:${id}`);
-            await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
-                worldId,
-                guildLocks,
-            );
+        const otherGuildIds = alliance.guildIds.filter((id) => id !== guildId).sort((a, b) => a - b);
+        await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
+            worldId,
+            otherGuildIds.map((id) => `guild:${id}`),
+        );
 
-            const result = await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
-                return this.dissolveAllianceInTransaction(worldId, allianceId, dataTx);
-            });
-
-            if (!result.ok || result.allianceId == null || result.revision == null) {
+        if (alliance.guildIds[0] === guildId) {
+            const result = await this.disband(worldId, allianceId);
+            if (!result.ok) {
                 return result;
             }
-
-            await this.allianceRepo.invalidateCache(worldId, result.allianceId);
-            for (const gid of result.guildIds ?? []) {
-                await this.guildRepo.invalidateCache(worldId, gid);
-                await this.guildMemberRepo.invalidateCache(worldId, String(gid));
-            }
-
-            await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, result.revision, {
-                guild_ids: result.guildIds ?? [],
-                member_character_ids: result.memberCharacterIds ?? [],
-            });
-
             return {
                 ok: true,
                 allianceId: result.allianceId,
@@ -1383,108 +1503,7 @@ export class AllianceService {
             };
         }
 
-        const otherGuildIds = alliance.guildIds.filter((id) => id !== guildId);
-        await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
-            worldId,
-            otherGuildIds.sort((a, b) => a - b).map((id) => `guild:${id}`),
-        );
-
-        const txResult = await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
-            const lockedAlliance = await this.allianceRepo.get(worldId, allianceId, { txClient: dataTx });
-            if (!lockedAlliance) {
-                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-            }
-            if (!lockedAlliance.guildIds.includes(guildId)) {
-                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-            }
-
-            const lockedGuild = await this.guildRepo.get(worldId, guildId, { txClient: dataTx });
-            if (!lockedGuild || lockedGuild.allianceId == null || lockedGuild.allianceId !== allianceId) {
-                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_IN_ALLIANCE };
-            }
-
-            const nextRevision = lockedAlliance.revision + 1;
-            const nextGuildIds = lockedAlliance.guildIds.filter((id) => id !== guildId);
-
-            await this.guildRepo.set(
-                worldId,
-                { ...lockedGuild, allianceId: null, revision: lockedGuild.revision + 1 },
-                { txClient: dataTx }
-            );
-            const members = [...(await this.guildMemberRepo.getAll(worldId, String(guildId), { txClient: dataTx })).values()];
-            if (members.length > 0) {
-                const cleared = members.map((member) => ({
-                    ...member,
-                    allianceRank: null,
-                }));
-                await this.guildMemberRepo.setAll(worldId, cleared, { txClient: dataTx });
-            }
-
-            const savedAlliance = await this.allianceRepo.set(
-                worldId,
-                {
-                    ...lockedAlliance,
-                    guildIds: nextGuildIds,
-                    revision: nextRevision,
-                },
-                { txClient: dataTx }
-            );
-
-            return {
-                ok: true as const,
-                allianceId,
-                revision: nextRevision,
-                removedGuildId: guildId,
-                savedAlliance,
-            };
-        });
-
-        if (!txResult.ok || txResult.allianceId == null || txResult.revision == null || txResult.removedGuildId == null) {
-            return txResult;
-        }
-
-        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
-        await this.guildRepo.invalidateCache(worldId, guildId);
-        await this.guildMemberRepo.invalidateCache(worldId, String(guildId));
-        for (const gid of otherGuildIds) {
-            await this.guildRepo.invalidateCache(worldId, gid);
-            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
-        }
-
-        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
-        const removedGuildLoaded = await this.guildService.getGuild(worldId, guildId);
-        const removedGuildMessage =
-            removedGuildLoaded.guild != null
-                ? await this.guildService.guildToPb(worldId, removedGuildLoaded.guild, removedGuildLoaded.members ?? [])
-                : undefined;
-
-        const wireAlliance = Alliance.encode(allianceMessage).finish();
-        const extraPayload: Record<string, unknown> = {
-            removed_guild_id: txResult.removedGuildId,
-            expelled: false,
-            alliance_pb: Buffer.from(wireAlliance).toString("base64"),
-        };
-        if (removedGuildMessage != null) {
-            const wireRemoved = Guild.encode(removedGuildMessage).finish();
-            extraPayload.removed_guild_pb = Buffer.from(wireRemoved).toString("base64");
-        }
-
-        await this.publishToAllianceRoutes(
-            ALLIANCE_EVT.GUILD_LEFT,
-            worldId,
-            txResult.allianceId,
-            txResult.revision,
-            extraPayload
-        );
-
-        return {
-            ok: true,
-            allianceId: txResult.allianceId,
-            revision: txResult.revision,
-            disbanded: false,
-            removedGuildId: txResult.removedGuildId,
-            alliance: allianceMessage,
-        };
+        return this.removeGuild(worldId, allianceId, guildId, false);
     }
 
     async expelAllianceGuild(
@@ -1521,151 +1540,13 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_ALLIANCE_LEADER };
         }
 
-        const leaderGuildId = alliance.guildIds[0];
-        if (leaderGuildId === targetGuildId) {
-            const guildIds = [...alliance.guildIds];
-            const guildLocks = guildIds
-                .filter((id) => id !== requesterGuildId)
-                .sort((a, b) => a - b)
-                .map((id) => `guild:${id}`);
-            await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
-                worldId,
-                guildLocks,
-            );
-
-            const result = await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
-                return this.dissolveAllianceInTransaction(worldId, allianceId, dataTx);
-            });
-
-            if (!result.ok || result.allianceId == null || result.revision == null) {
-                return result;
-            }
-
-            await this.allianceRepo.invalidateCache(worldId, result.allianceId);
-            for (const gid of result.guildIds ?? []) {
-                await this.guildRepo.invalidateCache(worldId, gid);
-                await this.guildMemberRepo.invalidateCache(worldId, String(gid));
-            }
-
-            await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, result.revision, {
-                guild_ids: result.guildIds ?? [],
-                member_character_ids: result.memberCharacterIds ?? [],
-            });
-
-            return {
-                ok: true,
-                allianceId: result.allianceId,
-                revision: result.revision,
-                disbanded: true,
-                removedGuildId: targetGuildId,
-            };
-        }
-
-        const otherGuildIds = alliance.guildIds.filter((id) => id !== requesterGuildId);
+        const otherGuildIds = alliance.guildIds.filter((id) => id !== requesterGuildId).sort((a, b) => a - b);
         await using _otherGuildLocks = await this.distributedLockService.acquireWorldDataLocks(
             worldId,
-            otherGuildIds.sort((a, b) => a - b).map((id) => `guild:${id}`),
+            otherGuildIds.map((id) => `guild:${id}`),
         );
 
-        const txResult = await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
-            const lockedAlliance = await this.allianceRepo.get(worldId, allianceId, { txClient: dataTx });
-            if (!lockedAlliance) {
-                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-            }
-            if (!lockedAlliance.guildIds.includes(targetGuildId)) {
-                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_TARGET_NOT_IN_ALLIANCE };
-            }
-
-            const lockedGuild = await this.guildRepo.get(worldId, targetGuildId, { txClient: dataTx });
-            if (!lockedGuild || lockedGuild.allianceId == null || lockedGuild.allianceId !== allianceId) {
-                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_TARGET_NOT_IN_ALLIANCE };
-            }
-
-            const nextRevision = lockedAlliance.revision + 1;
-            const nextGuildIds = lockedAlliance.guildIds.filter((id) => id !== targetGuildId);
-
-            await this.guildRepo.set(
-                worldId,
-                { ...lockedGuild, allianceId: null, revision: lockedGuild.revision + 1 },
-                { txClient: dataTx }
-            );
-            const members = [...(await this.guildMemberRepo.getAll(worldId, String(targetGuildId), { txClient: dataTx })).values()];
-            if (members.length > 0) {
-                const cleared = members.map((member) => ({
-                    ...member,
-                    allianceRank: null,
-                }));
-                await this.guildMemberRepo.setAll(worldId, cleared, { txClient: dataTx });
-            }
-
-            const savedAlliance = await this.allianceRepo.set(
-                worldId,
-                {
-                    ...lockedAlliance,
-                    guildIds: nextGuildIds,
-                    revision: nextRevision,
-                },
-                { txClient: dataTx }
-            );
-
-            return {
-                ok: true as const,
-                allianceId,
-                revision: nextRevision,
-                removedGuildId: targetGuildId,
-                savedAlliance,
-            };
-        });
-
-        if (!txResult.ok || txResult.allianceId == null || txResult.revision == null || txResult.removedGuildId == null) {
-            return txResult;
-        }
-
-        await this.allianceRepo.invalidateCache(worldId, txResult.allianceId);
-        await this.guildRepo.invalidateCache(worldId, targetGuildId);
-        await this.guildMemberRepo.invalidateCache(worldId, String(targetGuildId));
-        for (const gid of otherGuildIds) {
-            if (gid === targetGuildId) {
-                continue;
-            }
-            await this.guildRepo.invalidateCache(worldId, gid);
-            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
-        }
-
-        const allianceMessage = await this.allianceToPb(worldId, txResult.savedAlliance);
-        const removedGuildLoaded = await this.guildService.getGuild(worldId, targetGuildId);
-        const removedGuildMessage =
-            removedGuildLoaded.guild != null
-                ? await this.guildService.guildToPb(worldId, removedGuildLoaded.guild, removedGuildLoaded.members ?? [])
-                : undefined;
-
-        const wireAlliance = Alliance.encode(allianceMessage).finish();
-        const extraPayload: Record<string, unknown> = {
-            removed_guild_id: txResult.removedGuildId,
-            expelled: true,
-            alliance_pb: Buffer.from(wireAlliance).toString("base64"),
-        };
-        if (removedGuildMessage != null) {
-            const wireRemoved = Guild.encode(removedGuildMessage).finish();
-            extraPayload.removed_guild_pb = Buffer.from(wireRemoved).toString("base64");
-        }
-
-        await this.publishToAllianceRoutes(
-            ALLIANCE_EVT.GUILD_LEFT,
-            worldId,
-            txResult.allianceId,
-            txResult.revision,
-            extraPayload
-        );
-
-        return {
-            ok: true,
-            allianceId: txResult.allianceId,
-            revision: txResult.revision,
-            disbanded: false,
-            removedGuildId: txResult.removedGuildId,
-            alliance: allianceMessage,
-        };
+        return this.removeGuild(worldId, allianceId, targetGuildId, true);
     }
 
     async disbandAlliance(worldId: number, characterId: number): Promise<DisbandAllianceResult> {
@@ -1704,33 +1585,10 @@ export class AllianceService {
             return { ok: false, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_ALLIANCE_LEADER };
         }
 
-        const result = await this.ctx.withPgDataTransaction(worldId, allianceId, async (dataTx: PoolClient) => {
-            const lockedAlliance = await this.allianceRepo.get(worldId, allianceId, { txClient: dataTx });
-            if (!lockedAlliance) {
-                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_ALLIANCE_NOT_FOUND };
-            }
-            if (lockedAlliance.leaderCharacterId !== characterId) {
-                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_ALLIANCE_LEADER };
-            }
-
-            return this.dissolveAllianceInTransaction(worldId, allianceId, dataTx);
-        });
-
-        if (!result.ok || result.allianceId == null || result.revision == null) {
+        const result = await this.disband(worldId, allianceId);
+        if (!result.ok) {
             return result;
         }
-
-        await this.allianceRepo.invalidateCache(worldId, result.allianceId);
-        for (const gid of result.guildIds ?? []) {
-            await this.guildRepo.invalidateCache(worldId, gid);
-            await this.guildMemberRepo.invalidateCache(worldId, String(gid));
-        }
-
-        await this.publishToAllianceRoutes(ALLIANCE_EVT.DISBANDED, worldId, result.allianceId, result.revision, {
-            guild_ids: result.guildIds ?? [],
-            member_character_ids: result.memberCharacterIds ?? [],
-        });
-
         return {
             ok: true,
             allianceId: result.allianceId,

@@ -1061,6 +1061,9 @@ export class GuildGrpcController {
                 call.request.characterId
             ) as DisbandGuildResult;
             if (result.ok) {
+                if (result.allianceId != null && result.guildId != null) {
+                    await this.allianceService.removeDisbandedGuild(call.request.worldId, result.allianceId, result.guildId);
+                }
                 callback(null, {
                     ok: true,
                     errorCode: GuildErrorCode.GUILD_ERROR_NONE,

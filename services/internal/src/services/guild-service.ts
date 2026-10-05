@@ -148,6 +148,7 @@ export type DisbandGuildResult = {
     code?: GuildErrorCode;
     guildId?: number;
     revision?: number;
+    allianceId?: number | null;
 };
 
 export type IncreaseGuildCapacityResult = {
@@ -1352,6 +1353,7 @@ export class GuildService {
                 guildId: lockedGuildId,
                 revision: nextRevision,
                 memberCharacterIds,
+                allianceId: guild.allianceId,
             };
         });
 
@@ -1394,7 +1396,7 @@ export class GuildService {
             member_character_ids: result.memberCharacterIds ?? [],
         });
 
-        return { ok: true, guildId: result.guildId, revision: result.revision };
+        return { ok: true, guildId: result.guildId, revision: result.revision, allianceId: result.allianceId };
     }
 
     async publishMemberOnline(worldId: number, characterId: number, online: boolean) {
