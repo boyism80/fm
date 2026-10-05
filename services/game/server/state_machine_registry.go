@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/entity"
 )
 
@@ -43,6 +44,20 @@ func (r *StateMachineRegistry) Groups() []*entity.StateMachineGroup {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
+}
+
+func (r *StateMachineRegistry) FindByActor(pid *actor.PID) *entity.StateMachine {
+	if pid == nil {
+		return nil
+	}
+	for _, group := range r.Groups() {
+		for _, sm := range group.Machines() {
+			if sm.ActorPID != nil && sm.ActorPID.Equal(pid) {
+				return sm
+			}
+		}
+	}
+	return nil
 }
 
 func (r *StateMachineRegistry) Register(group *entity.StateMachineGroup) {

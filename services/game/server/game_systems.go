@@ -127,6 +127,13 @@ func (s mapSystem) Get(mapID uint32) *entity.Map {
 	return s.gs.maps[mapID]
 }
 
+func (s mapSystem) Find(sm *entity.StateMachine, mapID uint32) *entity.Map {
+	if m := sm.Map(mapID); m != nil {
+		return m
+	}
+	return s.Get(mapID)
+}
+
 func (s mapSystem) GetInstance(instanceKey uint32) *entity.Map {
 	if s.gs == nil {
 		return nil
@@ -378,11 +385,10 @@ func pushRunOnMapResult(L *lua.LState, ok bool, result lua.LValue, errMsg string
 	return 3
 }
 
-func (s mapSystem) RunScript(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int {
+func (s mapSystem) RunScript(L *lua.LState, actorCtx actor.Context, targetMap *entity.Map, scriptPath string, funcName string, args []interface{}) int {
 	if L == nil {
 		return 0
 	}
-	targetMap := s.Get(mapID)
 	if targetMap == nil {
 		return pushRunOnMapResult(L, false, nil, "run_on_map: target map not found")
 	}

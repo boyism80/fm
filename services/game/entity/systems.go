@@ -12,6 +12,7 @@ import (
 
 type MapSystem interface {
 	Get(mapID uint32) *Map
+	Find(sm *StateMachine, mapID uint32) *Map
 	GetInstance(instanceKey uint32) *Map
 	CreateInstanceMap(templateID uint32, opts MapInitOpts) (*Map, error)
 	CreateStateMachineMap(templateID uint32, sm *StateMachine, opts MapInitOpts) (*Map, error)
@@ -26,7 +27,7 @@ type MapSystem interface {
 	SetDoorPartyID(m *Map, key DoorKey, partyID *uint32)
 	Reset(L *lua.LState, mapInstance *Map, actorCtx actor.Context) int
 	Respawn(L *lua.LState, mapInstance *Map, actorCtx actor.Context, includeNegativeMobTime bool) int
-	RunScript(L *lua.LState, actorCtx actor.Context, mapID uint32, scriptPath string, funcName string, args []interface{}) int
+	RunScript(L *lua.LState, actorCtx actor.Context, targetMap *Map, scriptPath string, funcName string, args []interface{}) int
 	Visit(fn func(*Map))
 }
 

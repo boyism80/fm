@@ -17,10 +17,7 @@ func (sm *StateMachine) WarpAll(ctx actor.Context, fromMapID, toMapID uint32, sp
 	if from == nil {
 		return
 	}
-	to := sm.Map(toMapID)
-	if to == nil {
-		to = ms.Get(toMapID)
-	}
+	to := ms.Find(sm, toMapID)
 	if to == nil {
 		return
 	}
@@ -41,7 +38,7 @@ func (sm *StateMachine) WarpAll(ctx actor.Context, fromMapID, toMapID uint32, sp
 			if returnID == 0 || returnID == fromMapID {
 				continue
 			}
-			ret := ms.Get(returnID)
+			ret := ms.Find(sm, returnID)
 			if ret == nil {
 				continue
 			}
@@ -57,10 +54,7 @@ func (sm *StateMachine) BroadcastShip(mapID uint32, effect uint16) {
 		return
 	}
 	ms := sm.Group.GameWorld.GetMapSystem()
-	m := sm.Map(mapID)
-	if m == nil {
-		m = ms.Get(mapID)
-	}
+	m := ms.Find(sm, mapID)
 	if m == nil {
 		return
 	}

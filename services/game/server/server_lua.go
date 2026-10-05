@@ -810,7 +810,12 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 			args = append(args, arg)
 		}
 		cfg, _ := luax.GetConfiguration(L)
-		return gs.GetMapSystem().RunScript(L, cfg.ActorContext, mapID, scriptPath, funcName, args)
+		caller := cfg.ActorPID
+		if cfg.ActorContext != nil {
+			caller = cfg.ActorContext.Self()
+		}
+		targetMap := gs.GetMapSystem().Find(gs.stateMachines.FindByActor(caller), mapID)
+		return gs.GetMapSystem().RunScript(L, cfg.ActorContext, targetMap, scriptPath, funcName, args)
 	})
 
 	luax.RegisterFunc(luaState, "set_packet_log_enabled", func(L *lua.LState) int {

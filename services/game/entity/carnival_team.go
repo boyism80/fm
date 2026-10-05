@@ -162,10 +162,7 @@ func (t *CarnivalTeam) Warp(ctx actor.Context, mapID uint32, portalName string) 
 	if gw == nil {
 		return false
 	}
-	dest := t.Match.StateMachine().Map(mapID)
-	if dest == nil {
-		dest = gw.GetMapSystem().Get(mapID)
-	}
+	dest := gw.GetMapSystem().Find(t.Match.StateMachine(), mapID)
 	if dest == nil {
 		return false
 	}

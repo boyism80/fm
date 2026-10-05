@@ -773,7 +773,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LBool(false))
 				return 1
 			}
-			targetMap := ch.GameWorld.GetMapSystem().Get(uint32(b.MapID))
+			targetMap := ch.GameWorld.GetMapSystem().Find(mob.GetMap().StateMachine(), uint32(b.MapID))
 			if targetMap == nil || targetMap.Wz == nil {
 				L.Push(lua.LBool(false))
 				return 1
