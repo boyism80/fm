@@ -24,6 +24,7 @@ type ExchangeSide struct {
 	Meso       int32
 	Exp        uint32
 	Population int32
+	SkillPoint uint16
 	Skills     []ExchangeSkill
 	Randomize  bool
 	Bonus      map[string]int16
@@ -47,7 +48,7 @@ func exchangeItemsEmpty(items map[uint32]uint16) bool {
 }
 
 func (side ExchangeSide) isEmpty() bool {
-	return side.Meso <= 0 && side.Exp == 0 && side.Population <= 0 && exchangeItemsEmpty(side.Items) && len(side.Skills) == 0
+	return side.Meso <= 0 && side.Exp == 0 && side.Population <= 0 && side.SkillPoint == 0 && exchangeItemsEmpty(side.Items) && len(side.Skills) == 0
 }
 
 func (spec ExchangeSpec) Valid(ch *Character) ExchangeResult {

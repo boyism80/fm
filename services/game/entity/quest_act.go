@@ -86,6 +86,9 @@ func (qc *QuestContainer) buildPhaseExchange(actions wz.QuestActions, opts quest
 		} else if actions.Pop < 0 {
 			spec.Cost.Population += int32(-actions.Pop)
 		}
+		if actions.SP > 0 {
+			spec.Reward.SkillPoint += uint16(actions.SP)
+		}
 	}
 	if len(actions.Item) > 0 {
 		qc.appendPhaseActItems(&spec, opts.ClassID, actions.Item, opts.Selection)

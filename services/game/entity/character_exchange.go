@@ -143,6 +143,9 @@ func (ch *Character) grantExchangeReward(side ExchangeSide) {
 	if side.Population > 0 {
 		ch.gainPopulationUnchecked(side.Population)
 	}
+	if side.SkillPoint > 0 {
+		ch.SetSkillPoint(ch.SkillPoint+side.SkillPoint, true)
+	}
 	for _, skill := range side.Skills {
 		ch.grantSkill(skill)
 	}
