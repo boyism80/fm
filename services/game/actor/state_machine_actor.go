@@ -290,13 +290,45 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 		a.abortCreate(ctx, err.Error())
 		return
 	}
-	if !luax.HasFunc(thread, "on_create") {
+	if luax.HasFunc(thread, "on_create") == false {
 		luax.Close(thread)
 		a.abortCreate(ctx, "on_create is required")
 		return
 	}
-	luax.Close(thread)
-	a.callHook(ctx, "on_create")
+	luax.SetConfiguration(thread, luax.Configuration{
+		ActorContext: ctx,
+		ActorPID:     ctx.Self(),
+	})
+
+	root := ctx.ActorSystem().Root
+	self := ctx.Self()
+	gw := a.GameWorld
+	luax.CallAsync(ctx, a.luaRoot, thread, "on_create", a.StateMachine).Then(func(result interface{}) (interface{}, error) {
+		var ms entity.MapSystem
+		if gw != nil {
+			ms = gw.GetMapSystem()
+		}
+		vals := luax.ResultValues(result)
+		var maps []*entity.Map
+		var err error
+		if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
+			err = fmt.Errorf("on_create must return a non-empty map array")
+		} else if tbl, ok := vals[0].(*lua.LTable); !ok {
+			err = fmt.Errorf("on_create must return a table")
+		} else {
+			maps, err = entity.ParseCreateMaps(tbl, ms)
+		}
+		msg := &entity.ApplyStateMachineCreateMaps{}
+		if err != nil {
+			msg.Err = err.Error()
+		} else {
+			msg.Maps = maps
+		}
+		root.Send(self, msg)
+		return nil, nil
+	}).OnError(func(err error) {
+		root.Send(self, &entity.ApplyStateMachineCreateMaps{Err: err.Error()})
+	})
 }
 
 func (a *StateMachineActor) registerCreateMaps(ctx actor.Context, msg *entity.ApplyStateMachineCreateMaps) {
@@ -501,55 +533,17 @@ func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...int
 	}
 	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group.ScriptPath)
 	if err != nil {
-		if hook == "on_create" {
-			a.abortCreate(ctx, err.Error())
-		}
 		return
 	}
-	if !luax.HasFunc(thread, hook) {
+	if luax.HasFunc(thread, hook) == false {
 		luax.Close(thread)
-		if hook == "on_create" {
-			a.abortCreate(ctx, "on_create is required")
-		}
 		return
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
 		ActorContext: ctx,
 		ActorPID:     ctx.Self(),
 	})
-	root := ctx.ActorSystem().Root
-	self := ctx.Self()
-	gw := a.GameWorld
-	luax.CallAsync(ctx, a.luaRoot, thread, hook, append([]interface{}{a.StateMachine}, args...)...).Then(func(result interface{}) (interface{}, error) {
-		if hook != "on_create" || root == nil {
-			return nil, nil
-		}
-		var ms entity.MapSystem
-		if gw != nil {
-			ms = gw.GetMapSystem()
-		}
-		vals := luax.ResultValues(result)
-		var maps []*entity.Map
-		var err error
-		if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
-			err = fmt.Errorf("on_create must return a non-empty map array")
-		} else if tbl, ok := vals[0].(*lua.LTable); !ok {
-			err = fmt.Errorf("on_create must return a table")
-		} else {
-			maps, err = entity.ParseCreateMaps(tbl, ms)
-		}
-		msg := &entity.ApplyStateMachineCreateMaps{}
-		if err != nil {
-			msg.Err = err.Error()
-		} else {
-			msg.Maps = maps
-		}
-		root.Send(self, msg)
-		return nil, nil
-	}).OnError(func(err error) {
+	luax.CallAsync(ctx, a.luaRoot, thread, hook, append([]interface{}{a.StateMachine}, args...)...).OnError(func(err error) {
 		fmt.Printf("state machine %s hook %s: %v\n", a.StateMachine.Group.Name, hook, err)
-		if hook == "on_create" && root != nil {
-			root.Send(self, &entity.ApplyStateMachineCreateMaps{Err: err.Error()})
-		}
 	})
 }

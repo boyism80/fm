@@ -186,13 +186,6 @@ func (g *StateMachineGroup) Init() {
 	g.CallGroupHook("on_init", g)
 }
 
-func (g *StateMachineGroup) CancelSchedule() {
-	g.CallGroupHook("on_cancel_schedule", g)
-	for _, sm := range g.Machines() {
-		sm.CancelAllSchedules()
-	}
-}
-
 func (g *StateMachineGroup) StartPersistent(id string) (*StateMachine, error) {
 	if g == nil {
 		return nil, fmt.Errorf("state machine group is nil")

@@ -73,7 +73,4 @@ return {
 		close_door(sm:group():map(FLOOR_2))
 		sm:after("waiting_to_down", RUN_MS, "on_waiting_to_down")
 	end,
-
-	on_cancel_schedule = function(group)
-	end,
 }

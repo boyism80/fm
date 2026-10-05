@@ -71,7 +71,4 @@ return {
 
 	on_all_monsters_dead = function(sm)
 	end,
-
-	on_cancel_schedule = function(group)
-	end
 }

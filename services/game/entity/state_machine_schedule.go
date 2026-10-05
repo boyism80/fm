@@ -149,10 +149,6 @@ func (sm *StateMachine) CancelScheduleAsync(ctx actor.Context, id string) *async
 	})
 }
 
-func (sm *StateMachine) CancelAllSchedules() {
-	sm.CancelSchedule("")
-}
-
 type ScheduleStateMachineAfter struct {
 	ID           string
 	Milliseconds int64

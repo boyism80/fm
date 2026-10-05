@@ -74,7 +74,4 @@ return {
 	on_arrived = function(sm)
 		disembark(sm)
 	end,
-
-	on_cancel_schedule = function(group)
-	end,
 }

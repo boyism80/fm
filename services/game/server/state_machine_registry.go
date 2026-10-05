@@ -71,18 +71,3 @@ func (r *StateMachineRegistry) LoadFromScripts(dir string) error {
 	}
 	return nil
 }
-
-func (r *StateMachineRegistry) CancelAll() {
-	if r == nil {
-		return
-	}
-	r.mu.RLock()
-	groups := make([]*entity.StateMachineGroup, 0, len(r.groups))
-	for _, g := range r.groups {
-		groups = append(groups, g)
-	}
-	r.mu.RUnlock()
-	for _, g := range groups {
-		g.CancelSchedule()
-	}
-}
