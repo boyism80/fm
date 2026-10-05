@@ -147,15 +147,7 @@ func (l *CharacterListenerImpl) BroadcastNoticeAsync(ctx actor.Context, ch *enti
 			if reply == nil || !reply.GetOk() {
 				return fmt.Errorf("broadcast notice failed")
 			}
-			l.gs.GetMapSystem().Visit(func(m *entity.Map) {
-				for _, player := range m.GetAllPlayers() {
-					other, ok := player.(*entity.Character)
-					if !ok || other == nil {
-						continue
-					}
-					other.Listener.OnNotice(other, messageType, message, int(channelID)+1, ear)
-				}
-			})
+			l.gs.BroadcastNotice(messageType, message, int(channelID)+1, ear)
 			return nil
 		},
 	)

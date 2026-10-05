@@ -332,6 +332,16 @@ func (s *ServerCore) GetStats() map[string]interface{} {
 	}
 }
 
+func (s *ServerCore) Clients() []Client {
+	s.clientsMutex.RLock()
+	defer s.clientsMutex.RUnlock()
+	clients := make([]Client, 0, len(s.clients))
+	for _, c := range s.clients {
+		clients = append(clients, c)
+	}
+	return clients
+}
+
 func (s *ServerCore) SetOnClientDisconnect(callback func(Client)) {
 	s.onClientDisconnect = callback
 }

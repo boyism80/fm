@@ -5,7 +5,6 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -42,14 +41,6 @@ func (h *globalMqNotice) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw 
 	}
 	messageType := constant.ServerMessageType(payload.MessageType)
 	channel := int(payload.SourceChannelID) + 1
-	h.gs.GetMapSystem().Visit(func(m *entity.Map) {
-		for _, player := range m.GetAllPlayers() {
-			ch, ok := player.(*entity.Character)
-			if !ok || ch == nil {
-				continue
-			}
-			ch.Listener.OnNotice(ch, messageType, payload.Message, channel, payload.MegaEar)
-		}
-	})
+	h.gs.BroadcastNotice(messageType, payload.Message, channel, payload.MegaEar)
 	return nil
 }

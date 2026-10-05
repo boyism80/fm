@@ -4,6 +4,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -15,6 +16,7 @@ type GameWorld interface {
 	GetExpRate() int
 	GetDropRate() int
 	GetMesoRate() int
+	BroadcastNotice(messageType constant.ServerMessageType, message string, channel int, ear bool)
 	SaveAsync(ctx actor.Context, snapshots []*CharacterSnapshot) *async.Promise
 	GetMapSystem() MapSystem
 	GetSchedulerSystem() SchedulerSystem

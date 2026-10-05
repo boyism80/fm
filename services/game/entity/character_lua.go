@@ -1607,7 +1607,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			case constant.MessageScopeMap:
 				ch.MapMessage(msgType, text)
 			case constant.MessageScopeChannel:
-				ch.WorldMessage(msgType, text)
+				if ch.GameWorld != nil {
+					ch.GameWorld.BroadcastNotice(msgType, text, 0, false)
+				}
 			case constant.MessageScopeWorld:
 				cfg, ok := luax.GetConfiguration(L)
 				if !ok || cfg.ActorContext == nil || ch.GameWorld == nil {

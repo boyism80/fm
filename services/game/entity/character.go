@@ -318,21 +318,6 @@ func (ch *Character) MapMessage(messageType constant.ServerMessageType, message 
 	}
 }
 
-func (ch *Character) WorldMessage(messageType constant.ServerMessageType, message string) {
-	if ch.GameWorld == nil {
-		return
-	}
-	ch.GameWorld.GetMapSystem().Visit(func(m *Map) {
-		for _, player := range m.GetAllPlayers() {
-			other, ok := player.(*Character)
-			if !ok {
-				continue
-			}
-			other.Listener.OnMessage(other, messageType, message)
-		}
-	})
-}
-
 func (ch *Character) GetLevel() uint8 { return ch.level }
 func (ch *Character) GetExp() uint32  { return ch.exp }
 func (ch *Character) GetSpawnPoint() uint8 {
