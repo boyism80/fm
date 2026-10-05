@@ -11,7 +11,7 @@ function M.character_count(map)
 	return n
 end
 
-function M.enter(me, base, first_room)
+function M.enter(me, base, first_room, rooms)
 	if me:map():wz():id() ~= base then
 		me:play_portal_sound()
 		me:map(base, "MD00")
@@ -28,7 +28,7 @@ function M.enter(me, base, first_room)
 		return
 	end
 
-	for i = 0, ROOMS - 1 do
+	for i = 0, (rooms or ROOMS) - 1 do
 		local room = first_room + i
 		local ok, count = run_on_map(room, SCRIPT, "character_count")
 		if ok and count == 0 then
