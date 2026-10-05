@@ -7,12 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
+	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
-	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
 	"github.com/boyism80/fm/services/game/wz"
@@ -779,90 +778,22 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 			L.Push(lua.LString("save: actor context not found"))
 			return 2
 		}
-		actorCtx := cfg.ActorContext
-		if actorCtx == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("save: actor context not found"))
-			return 2
-		}
-		pid := actorCtx.Self()
-		if pid == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("save: actor PID not found"))
-			return 2
-		}
-		mapInstance := gs.actorPIDToMap(pid)
-		if mapInstance == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("save: map not found"))
-			return 2
-		}
-		root := mapInstance.GetLuaRoot()
-		if root == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("save: root lua state not found"))
-			return 2
-		}
-		cfg, _ = luax.GetConfiguration(L)
-		cfg.ActorContext = actorCtx
-		luax.SetConfiguration(L, cfg)
-
-		p := gs.SaveAllCharactersAsync(actorCtx)
-		if p == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("save: promise creation failed"))
-			return 2
-		}
-		var succeeded = true
-		var errMsg string
-		p.OnError(func(err error) {
-			succeeded = false
+		return entity.LuaYieldPromise(L, gs, gs.SaveAllCharactersAsync(cfg.ActorContext), func(_ interface{}, err error) []lua.LValue {
 			if err != nil {
-				errMsg = err.Error()
 				log.Printf("save: %v", err)
+				return []lua.LValue{lua.LFalse, lua.LString(err.Error())}
 			}
-		}).Finally(func() {
-			args := []lua.LValue{lua.LBool(succeeded)}
-			if errMsg != "" {
-				args = append(args, lua.LString(errMsg))
-			} else {
-				args = append(args, lua.LNil)
-			}
-			gs.GetRootContext().Send(pid, &g_actor.ResumeLua{Root: root, Thread: L, Args: args})
+			return []lua.LValue{lua.LTrue, lua.LNil}
 		})
-		return L.Yield(lua.LNil, lua.LNil)
 	})
 
 	luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
-		duration := L.CheckNumber(1)
-		cfg, ok := luax.GetConfiguration(L)
-		if !ok {
-			return 0
-		}
-		var pid *actor.PID
-		if cfg.ActorContext != nil {
-			pid = cfg.ActorContext.Self()
-		}
-		if pid == nil {
-			pid = cfg.ActorPID
-		}
-		if pid == nil {
-			return 0
-		}
-		mapInstance := gs.actorPIDToMap(pid)
-		if mapInstance == nil {
-			return 0
-		}
-		root := mapInstance.GetLuaRoot()
-		if root == nil {
-			return 0
-		}
-		d := time.Duration(float64(duration) * float64(time.Millisecond))
-		resumePID := pid
+		d := time.Duration(float64(L.CheckNumber(1)) * float64(time.Millisecond))
+		promise := async.NewDeferred(nil)
 		time.AfterFunc(d, func() {
-			gs.GetRootContext().Send(resumePID, &g_actor.ResumeLua{Root: root, Thread: L})
+			promise.SetResult(nil)
 		})
-		return L.Yield(lua.LNil)
+		return entity.LuaYieldPromise(L, gs, promise, nil)
 	})
 
 	luax.RegisterFunc(luaState, "run_on_map", func(L *lua.LState) int {
@@ -909,49 +840,5 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	luax.RegisterFunc(luaState, "get_packet_log", func(L *lua.LState) int {
 		L.Push(lua.LBool(core.GetPacketLogEnabled()))
 		return 1
-	})
-
-	luax.RegisterFunc(luaState, "run_on_script", func(L *lua.LState) int {
-		ud := L.CheckUserData(1)
-		ch, ok := ud.Value.(*entity.Character)
-		if !ok || ch == nil {
-			L.RaiseError("run_on_script: Character expected")
-			return 0
-		}
-		cfg, ok := luax.GetConfiguration(L)
-		if !ok || cfg.ActorContext == nil {
-			L.RaiseError("run_on_script: thread has no actor PID (call from command context)")
-			return 0
-		}
-		actorCtx := cfg.ActorContext
-		pid := actorCtx.Self()
-		if pid == nil {
-			L.RaiseError("run_on_script: thread has no actor PID")
-			return 0
-		}
-		mapInstance := ch.GetMap()
-		if mapInstance == nil {
-			L.RaiseError("run_on_script: character map not found")
-			return 0
-		}
-		root := mapInstance.GetLuaRoot()
-		if root == nil {
-			L.RaiseError("run_on_script: root lua state not found")
-			return 0
-		}
-		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
-		if err != nil {
-			L.RaiseError("run_on_script: %v", err)
-			return 0
-		}
-		resumePID := pid
-		luax.CallAsync(actorCtx, root, thread, "on_script", ch).Then(func(_ interface{}) (interface{}, error) {
-			gs.GetRootContext().Send(resumePID, &g_actor.ResumeLua{Root: root, Thread: L, Args: []lua.LValue{lua.LBool(true)}})
-			return nil, nil
-		}).OnError(func(err error) {
-			log.Printf("run_on_script: %v", err)
-			gs.GetRootContext().Send(resumePID, &g_actor.ResumeLua{Root: root, Thread: L, Args: []lua.LValue{lua.LNil}})
-		})
-		return L.Yield(lua.LNil)
 	})
 }

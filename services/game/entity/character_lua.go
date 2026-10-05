@@ -1621,7 +1621,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(lua.LFalse)
 					return 1
 				}
-				return luaYieldPromise(L, ch.GameWorld, promise, func(_ interface{}, err error) []lua.LValue {
+				return LuaYieldPromise(L, ch.GameWorld, promise, func(_ interface{}, err error) []lua.LValue {
 					if err != nil {
 						return []lua.LValue{lua.LFalse}
 					}

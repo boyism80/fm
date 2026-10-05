@@ -537,25 +537,6 @@ func (gs *GameServer) Stop() error {
 	return gs.ServerCore.Stop()
 }
 
-func (gs *GameServer) actorPIDToMap(pid *actor.PID) *entity.Map {
-	if gs == nil || pid == nil {
-		return nil
-	}
-	key := pid.String()
-	gs.mapsMutex.RLock()
-	defer gs.mapsMutex.RUnlock()
-	for _, m := range gs.maps {
-		if m == nil {
-			continue
-		}
-		actorPID := m.LogicActorPID()
-		if actorPID != nil && actorPID.String() == key {
-			return m
-		}
-	}
-	return nil
-}
-
 func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	client, ok := c.(*client.GameClient)
 	if !ok {

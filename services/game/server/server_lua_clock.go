@@ -5,7 +5,7 @@ import (
 
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
-	g_actor "github.com/boyism80/fm/services/game/actor"
+	"github.com/boyism80/fm/services/game/entity"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -66,50 +66,7 @@ func registerClockLuaFuncs(gs *GameServer, luaState *lua.LState) {
 			}
 		}
 
-		cfg, ok := luax.GetConfiguration(L)
-		if !ok || cfg.ActorContext == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("actor context not found"))
-			return 2
-		}
-		actorCtx := cfg.ActorContext
-		pid := actorCtx.Self()
-		if pid == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("actor PID not found"))
-			return 2
-		}
-		mapInstance := gs.actorPIDToMap(pid)
-		if mapInstance == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("map not found"))
-			return 2
-		}
-		root := mapInstance.GetLuaRoot()
-		if root == nil {
-			L.Push(lua.LBool(false))
-			L.Push(lua.LString("lua state not found"))
-			return 2
-		}
-
-		succeeded := true
-		errMsg := ""
-		gs.SetServerDateTimeAsync(actorCtx, reset, datetime).OnError(func(err error) {
-			succeeded = false
-			if err != nil {
-				errMsg = err.Error()
-				log.Printf("now: %v", err)
-			}
-		}).Finally(func() {
-			args := []lua.LValue{lua.LBool(succeeded)}
-			if errMsg != "" {
-				args = append(args, lua.LString(errMsg))
-			} else {
-				args = append(args, lua.LNil)
-			}
-			gs.GetRootContext().Send(pid, &g_actor.ResumeLua{Root: root, Thread: L, Args: args})
-		})
-		return L.Yield(lua.LNil, lua.LNil)
+		return requestServerDateTimeFromLua(gs, L, reset, datetime)
 	})
 
 	luax.RegisterFunc(luaState, "time_forward", func(L *lua.LState) int {
@@ -147,41 +104,11 @@ func requestServerDateTimeFromLua(gs *GameServer, L *lua.LState, reset bool, dat
 		L.Push(lua.LString("actor context not found"))
 		return 2
 	}
-	actorCtx := cfg.ActorContext
-	pid := actorCtx.Self()
-	if pid == nil {
-		L.Push(lua.LBool(false))
-		L.Push(lua.LString("actor PID not found"))
-		return 2
-	}
-	mapInstance := gs.actorPIDToMap(pid)
-	if mapInstance == nil {
-		L.Push(lua.LBool(false))
-		L.Push(lua.LString("map not found"))
-		return 2
-	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		L.Push(lua.LBool(false))
-		L.Push(lua.LString("lua state not found"))
-		return 2
-	}
-
-	succeeded := true
-	errMsg := ""
-	gs.SetServerDateTimeAsync(actorCtx, reset, datetime).OnError(func(err error) {
-		succeeded = false
+	return entity.LuaYieldPromise(L, gs, gs.SetServerDateTimeAsync(cfg.ActorContext, reset, datetime), func(_ interface{}, err error) []lua.LValue {
 		if err != nil {
-			errMsg = err.Error()
+			log.Printf("server datetime: %v", err)
+			return []lua.LValue{lua.LFalse, lua.LString(err.Error())}
 		}
-	}).Finally(func() {
-		args := []lua.LValue{lua.LBool(succeeded)}
-		if errMsg != "" {
-			args = append(args, lua.LString(errMsg))
-		} else {
-			args = append(args, lua.LNil)
-		}
-		gs.GetRootContext().Send(pid, &g_actor.ResumeLua{Root: root, Thread: L, Args: args})
+		return []lua.LValue{lua.LTrue, lua.LNil}
 	})
-	return L.Yield(lua.LNil, lua.LNil)
 }

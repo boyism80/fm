@@ -226,7 +226,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"restart_timer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -245,7 +245,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"stop_timer": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -263,7 +263,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"time_left": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -385,7 +385,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"cron": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -406,7 +406,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"cancel": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -428,7 +428,7 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if promise == nil {
 				return 0
 			}
-			return luaYieldPromise(L, machine.Group.GameWorld, promise, nil)
+			return LuaYieldPromise(L, machine.Group.GameWorld, promise, nil)
 		},
 		"warp_all": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
