@@ -264,6 +264,17 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(pos.Y))
 			return 2
 		},
+		"spawn_portal": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			if m, ok := a.wz.Maps[b.Map]; ok {
+				if portal, ok := m.Portals[b.Spawn]; ok {
+					L.Push(lua.LString(portal.Name))
+					return 1
+				}
+			}
+			L.Push(lua.LNil)
+			return 1
+		},
 		"areas": func(L *lua.LState) int {
 			t := L.NewTable()
 			if m, ok := a.wz.Maps[a.checkBot(L).Map]; ok {
@@ -296,6 +307,24 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			if m, ok := a.wz.Maps[a.checkBot(L).Map]; ok {
 				for _, key := range slices.Sorted(maps.Keys(m.MobSpawns)) {
 					spawn := m.MobSpawns[key]
+					if spawn.BaseSpawn == nil {
+						continue
+					}
+					spot := L.NewTable()
+					spot.RawSetString("id", lua.LNumber(spawn.ID))
+					spot.RawSetString("x", lua.LNumber(spawn.Position.X))
+					spot.RawSetString("y", lua.LNumber(spawn.Position.Y))
+					t.Append(spot)
+				}
+			}
+			L.Push(t)
+			return 1
+		},
+		"npc_spots": func(L *lua.LState) int {
+			t := L.NewTable()
+			if m, ok := a.wz.Maps[a.checkBot(L).Map]; ok {
+				for _, key := range slices.Sorted(maps.Keys(m.NpcSpawns)) {
+					spawn := m.NpcSpawns[key]
 					if spawn.BaseSpawn == nil {
 						continue
 					}
@@ -457,6 +486,23 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 				a.wake(L, lua.LNumber(p.(*response.SpawnNpc).NPC.OID))
 			})
 			return L.Yield()
+		},
+		"npcs": func(L *lua.LState) int {
+			templateID := uint32(L.OptInt(2, 0))
+			t := L.NewTable()
+			for oid, n := range a.checkBot(L).NPCs {
+				if templateID != 0 && n.NpcId != templateID {
+					continue
+				}
+				npc := L.NewTable()
+				npc.RawSetString("oid", lua.LNumber(oid))
+				npc.RawSetString("id", lua.LNumber(n.NpcId))
+				npc.RawSetString("x", lua.LNumber(n.Position.X))
+				npc.RawSetString("y", lua.LNumber(n.Cy))
+				t.Append(npc)
+			}
+			L.Push(t)
+			return 1
 		},
 		"npc_click": func(L *lua.LState) int {
 			b := a.checkBot(L)

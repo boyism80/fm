@@ -40,7 +40,7 @@ type Bot struct {
 	Meso     int32
 	Fame     int32
 	CP       uint16
-	NPCs     map[uint32]uint32
+	NPCs     map[uint32]dto.Npc
 	Mobs     map[uint32]dto.Mob
 	Drops    map[uint32]Drop
 	Reactors map[uint32]dto.Reactor
@@ -71,7 +71,7 @@ func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
 		Index:    n,
 		ID:       fmt.Sprintf("bot_%s_%d", runID, n),
 		Name:     name,
-		NPCs:     make(map[uint32]uint32),
+		NPCs:     make(map[uint32]dto.Npc),
 		Mobs:     make(map[uint32]dto.Mob),
 		Drops:    make(map[uint32]Drop),
 		Reactors: make(map[uint32]dto.Reactor),
@@ -149,6 +149,8 @@ func (b *Bot) Update(pkt any) {
 		clear(b.Mobs)
 		clear(b.Drops)
 		clear(b.Reactors)
+	case *response.FieldRelocate:
+		b.Spawn, b.Moved = p.Portal, nil
 	case *response.UpdateStats:
 		for stat, value := range p.Stats {
 			switch stat {
@@ -199,7 +201,7 @@ func (b *Bot) Update(pkt any) {
 			}
 		}
 	case *response.SpawnNpc:
-		b.NPCs[p.NPC.OID] = p.NPC.NpcId
+		b.NPCs[p.NPC.OID] = *p.NPC
 	case *response.RemoveNpc:
 		delete(b.NPCs, p.OID)
 	case *response.SpawnMob:
@@ -256,8 +258,8 @@ func (b *Bot) setItem(typ constant.InventoryType, slot int16, item dto.Item) {
 }
 
 func (b *Bot) FindNPC(templateID uint32) (uint32, bool) {
-	for oid, id := range b.NPCs {
-		if id == templateID {
+	for oid, npc := range b.NPCs {
+		if npc.NpcId == templateID {
 			return oid, true
 		}
 	}
