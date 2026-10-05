@@ -4,7 +4,11 @@ local ENTRY = 251010404
 local STAGE1 = 925100000
 local BOW = 925100100
 local DECK1 = 925100200
+local TREASURE1 = 925100201
+local HIDEOUT1 = 925100202
 local DECK2 = 925100300
+local TREASURE2 = 925100301
+local HIDEOUT2 = 925100302
 local DOORS = 925100400
 local BOSS = 925100500
 local REWARD = 925100600
@@ -19,7 +23,12 @@ local SEALS = {
 }
 local KEY = 4001117
 local DOOR = 2519000
-local PIRATE_KING = 9300119
+local TREASURE = 2512001
+local TREASURE_KEY = 4031437
+local FURIOUS_DAVY = 9300106
+local HIDEOUT_SECONDS = 5
+local GUARD_SPAWNS = { { x = 0, y = 238 }, { x = 1700, y = 238 } }
+local PIRATE_SPAWNS = { { x = 430, y = 75 }, { x = 1600, y = 75 }, { x = 430, y = 238 }, { x = 1600, y = 238 } }
 local DIALOG_LIST = 4
 
 local function clear_mobs(ctx, bot)
@@ -31,6 +40,22 @@ local function clear_mobs(ctx, bot)
 		bot:kill(mob.oid)
 	end
 	return ctx:fail(bot:name() .. " 몹을 모두 처치하지 못함 (맵 " .. bot:map() .. ")")
+end
+
+local function sweep(ctx, bot, spawns)
+	local spots = bot:mob_spots()
+	for _, spawn in ipairs(spawns) do
+		spots[#spots + 1] = spawn
+	end
+	for _, spot in ipairs(spots) do
+		if pq.move(bot, spot.x, spot.y) == false then
+			return ctx:fail(bot:name() .. " 몹 위치로 이동 실패")
+		end
+		if clear_mobs(ctx, bot) == false then
+			return false
+		end
+	end
+	return true
 end
 
 local function pass(ctx, bot, x, y, map_id)
@@ -56,6 +81,64 @@ local function pass_all(ctx, x, y, map_id)
 		end
 	end
 	return true
+end
+
+local function visit_hideout(ctx, x, y, hideout, deck)
+	local leader = ctx:bot(0)
+	if pq.move(leader, x, y) == false then
+		return ctx:fail("숨겨진 방 포탈 앞으로 이동 실패")
+	end
+	leader:warp("in01")
+	if pq.wait_all(ctx, hideout, 15000) == false then
+		return false
+	end
+	if pq.command(leader, "/타이머 " .. HIDEOUT_SECONDS, "타이머 제한: " .. HIDEOUT_SECONDS) == false then
+		return ctx:fail("타이머 제한 설정 실패")
+	end
+	if pq.command(leader, "/타이머 0", "타이머 제한: 0") == false then
+		return ctx:fail("타이머 제한 해제 실패")
+	end
+	return pq.wait_all(ctx, deck, HIDEOUT_SECONDS * 1000 + 15000)
+end
+
+local function steal_treasure(ctx, x, y, room, deck)
+	local leader = ctx:bot(0)
+	if pq.move(leader, x, y) == false then
+		return ctx:fail("보물방 포탈 앞으로 이동 실패")
+	end
+	if pq.portal(ctx, leader, "in00", room) == false then
+		return false
+	end
+	local treasure = pq.seek_reactor(ctx, leader, pq.reactor_by_id(TREASURE))
+	if treasure == false then
+		return false
+	end
+	for _ = 1, 3 do
+		if sweep(ctx, leader, GUARD_SPAWNS) == false then
+			return false
+		end
+		local current = pq.find_reactor(leader, treasure.oid)
+		if current ~= nil and current.state ~= 0 then
+			break
+		end
+		leader:request(resp.trigger_reactor, nil, function(p)
+			return p.reactor.oid == treasure.oid
+		end, 3000)
+	end
+	local opened = pq.find_reactor(leader, treasure.oid)
+	if opened == nil or opened.state == 0 then
+		return ctx:fail("경비를 모두 처치해도 보물상자가 열리지 않음: " .. room)
+	end
+	if pq.command(leader, "/아이템생성 " .. TREASURE_KEY .. " 1", "아이템 생성") == false then
+		return ctx:fail("보물상자 열쇠 생성 실패")
+	end
+	if pq.feed(ctx, leader, TREASURE, TREASURE_KEY, 1) == false then
+		return false
+	end
+	if pq.move(leader, 744, 234) == false then
+		return ctx:fail("보물방 출구로 이동 실패")
+	end
+	return pq.portal(ctx, leader, "out00", deck)
 end
 
 local function select_warp(ctx, bot, npc, selected, map_id)
@@ -141,9 +224,27 @@ test_suite {
 			return pass_all(ctx, 1324, 240, DECK1)
 		end,
 		function(ctx)
+			return visit_hideout(ctx, 1653, 235, HIDEOUT1, DECK1)
+		end,
+		function(ctx)
+			if steal_treasure(ctx, 523, 229, TREASURE1, DECK1) == false then
+				return false
+			end
+			if sweep(ctx, ctx:bot(0), PIRATE_SPAWNS) == false then
+				return false
+			end
 			return pass_all(ctx, 2133, 240, DECK2)
 		end,
 		function(ctx)
+			return visit_hideout(ctx, 436, 233, HIDEOUT2, DECK2)
+		end,
+		function(ctx)
+			if steal_treasure(ctx, 1653, 229, TREASURE2, DECK2) == false then
+				return false
+			end
+			if sweep(ctx, ctx:bot(0), PIRATE_SPAWNS) == false then
+				return false
+			end
 			return pass_all(ctx, 2133, 240, DOORS)
 		end,
 		function(ctx)
@@ -172,10 +273,10 @@ test_suite {
 		end,
 		function(ctx)
 			local leader = ctx:bot(0)
-			if leader:mobs(PIRATE_KING)[1] == nil and leader:request(resp.spawn_mob, nil, function(p)
-				return p.mob.mob_id == PIRATE_KING
+			if leader:mobs(FURIOUS_DAVY)[1] == nil and leader:request(resp.spawn_mob, nil, function(p)
+				return p.mob.mob_id == FURIOUS_DAVY
 			end, 10000) == false then
-				return ctx:fail("해적왕이 나타나지 않음")
+				return ctx:fail("보물을 두 번 훔쳤는데 몹시 화난 데비존이 나타나지 않음")
 			end
 			if clear_mobs(ctx, leader) == false then
 				return false
