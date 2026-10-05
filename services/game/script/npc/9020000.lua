@@ -22,11 +22,6 @@ return {
 		if map == nil then
 			return
 		end
-		local map_wz = map:wz()
-		if map_wz == nil then
-			return
-		end
-		local map_id = map_wz:id()
 		local members = party:members()
 		local ok = true
 		local in_map = 0
@@ -37,11 +32,8 @@ return {
 				if mem:level() < MIN_LEVEL then
 					ok = false
 				end
-				if mem:map_id() == map_id and mem:channel_index() ~= nil then
-					local ch = map:characters()[mem:id()]
-					if ch ~= nil then
-						in_map = in_map + 1
-					end
+				if map:characters()[mem:id()] ~= nil then
+					in_map = in_map + 1
 				end
 			end
 		end

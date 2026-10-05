@@ -27,11 +27,6 @@ local function try_start(me, npc)
 	if map == nil then
 		return
 	end
-	local map_wz = map:wz()
-	if map_wz == nil then
-		return
-	end
-	local map_id = map_wz:id()
 	local members = party:members()
 	local ok = true
 	local in_map = 0
@@ -42,14 +37,12 @@ local function try_start(me, npc)
 			if mem:level() < MIN_LEVEL or mem:level() > MAX_LEVEL then
 				ok = false
 			end
-			if mem:map_id() == map_id and mem:channel_index() ~= nil then
-				local ch = map:characters()[mem:id()]
-				if ch ~= nil then
-					if pq.is_gm(ch) then
-						in_map = in_map + 6
-					else
-						in_map = in_map + 1
-					end
+			local ch = map:characters()[mem:id()]
+			if ch ~= nil then
+				if pq.is_gm(ch) then
+					in_map = in_map + 6
+				else
+					in_map = in_map + 1
 				end
 			end
 		end

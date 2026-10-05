@@ -33,7 +33,7 @@ return {
 				me:dialog(npc, "4차 전직을 한 궁수 두 명이 파티를 구성해서 파티장이 내게 말을 걸어야 하네.")
 				return
 			end
-			if member:level() < MIN_LEVEL or member:channel_index() == nil or member:map_id() ~= ENTRY_MAP then
+			if member:level() < MIN_LEVEL or me:map():characters()[member:id()] == nil then
 				me:dialog(npc, "4차 전직을 한 궁수 두 명이 이곳에 모인 뒤 다시 말을 걸어야 하네.")
 				return
 			end

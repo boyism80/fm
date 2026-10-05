@@ -26,14 +26,14 @@ local function remove_keys(me)
 	end
 end
 
-local function party_ready(me, party, map_id)
+local function party_ready(me, party)
 	local members = party:members()
 	local count = 0
 	local in_map = 0
 	for _, mem in ipairs(members) do
 		if mem ~= nil then
 			count = count + 1
-			if mem:map_id() == map_id and mem:channel_index() ~= nil then
+			if me:map():characters()[mem:id()] ~= nil then
 				in_map = in_map + 1
 			end
 		end
@@ -69,7 +69,7 @@ return {
 				me:dialog(npc, "만용을 부리는군. 어리석은 자여.. 강한자들과 함께 도전하라.")
 				return
 			end
-			if not party_ready(me, party, map_id) then
+			if not party_ready(me, party) then
 				me:dialog(npc, "만용을 부리는군. 어리석은 자들이여.. 강한자들과 함께 도전하라.")
 				return
 			end

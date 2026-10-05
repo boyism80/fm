@@ -57,7 +57,7 @@ return {
 				me:dialog(npc, "파티원 중 한명의 레벨이 다른 세계로 입장하는데 맞지 않는 것 같군요.")
 				return
 			end
-			if member:channel_index() == nil or member:map_id() ~= ENTRY_MAP then
+			if me:map():characters()[member:id()] == nil then
 				me:dialog(npc, "파티원 두 명 모두 이곳에 모인 뒤 다시 말을 걸어주세요.")
 				return
 			end

@@ -38,7 +38,7 @@ return {
 				me:dialog(npc, "흠.. 파티 중에 4차 전직을 하지 않은 플레이어가 있나?")
 				return
 			end
-			if member:level() < MIN_LEVEL or member:channel_index() == nil or member:map_id() ~= ENTRY_MAP then
+			if member:level() < MIN_LEVEL or me:map():characters()[member:id()] == nil then
 				me:dialog(npc, "파티원 모두 이곳에 모인 뒤 다시 말을 걸게.")
 				return
 			end

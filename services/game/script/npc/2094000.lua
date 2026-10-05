@@ -29,16 +29,11 @@ local function try_start(me, npc)
 	if map == nil then
 		return
 	end
-	local wz = map:wz()
-	if wz == nil then
-		return
-	end
-	local map_id = wz:id()
 	local ok = true
 	local size = 0
 	for _, mem in ipairs(party:members()) do
 		if mem ~= nil then
-			if mem:map_id() ~= map_id or mem:level() < MIN_LEVEL then
+			if mem:level() < MIN_LEVEL then
 				ok = false
 				break
 			end

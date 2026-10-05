@@ -22,10 +22,9 @@ local function try_start(me, npc)
 		return
 	end
 	local map = me:map()
-	if map == nil or map:wz() == nil then
+	if map == nil then
 		return
 	end
-	local map_id = map:wz():id()
 	local ok = true
 	local in_map = 0
 	local has_gm = false
@@ -34,16 +33,12 @@ local function try_start(me, npc)
 			if mem:level() < MIN_LEVEL then
 				ok = false
 			end
-			if mem:map_id() == map_id then
-				local ch = map:characters()[mem:id()]
-				if ch ~= nil then
-					if pq.is_gm(ch) then
-						has_gm = true
-					end
-					in_map = in_map + 1
-				else
-					ok = false
+			local ch = map:characters()[mem:id()]
+			if ch ~= nil then
+				if pq.is_gm(ch) then
+					has_gm = true
 				end
+				in_map = in_map + 1
 			end
 		end
 	end

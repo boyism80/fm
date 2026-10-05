@@ -61,7 +61,7 @@ local function rice_cake_reward(me, npc)
 	me:dialog(npc, "떡 20개를 모아오셨군요! 선물로 #b머리위에 떡 하나#k 를 드리도록 할게요!")
 end
 
-local function party_ready(me, party, map_id)
+local function party_ready(me, party)
 	local members = party:members()
 	local map = me:map()
 	if map == nil then
@@ -76,14 +76,12 @@ local function party_ready(me, party, map_id)
 			if lv < MIN_LEVEL or lv > MAX_LEVEL then
 				return false
 			end
-			if mem:map_id() == map_id and mem:channel_index() ~= nil then
-				local ch = map:characters()[mem:id()]
-				if ch ~= nil then
-					if pq.is_gm(ch) then
-						in_map = in_map + 6
-					else
-						in_map = in_map + 1
-					end
+			local ch = map:characters()[mem:id()]
+			if ch ~= nil then
+				if pq.is_gm(ch) then
+					in_map = in_map + 6
+				else
+					in_map = in_map + 1
 				end
 			end
 		end
@@ -149,7 +147,7 @@ return {
 			return
 		end
 
-		if not party_ready(me, party, map_id) then
+		if not party_ready(me, party) then
 			local selected = me:dialog_list(npc, "퀘스트에 도전하려면 다음과 같은 조건을 만족시켜야 합니다\r\n\r\n#r필요조건: 최소 "
 				.. MIN_PARTY
 				.. " 명의 파티, 레벨제한 : "

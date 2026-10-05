@@ -24,13 +24,10 @@ local function party_on_map(me)
 	if party == nil or map == nil then
 		return false, 0
 	end
-	local map_id = map:wz():id()
 	local count = 0
 	for _, mem in ipairs(party:members()) do
-		if mem ~= nil and mem:map_id() == map_id then
-			if map:characters()[mem:id()] ~= nil then
-				count = count + 1
-			end
+		if mem ~= nil and map:characters()[mem:id()] ~= nil then
+			count = count + 1
 		end
 	end
 	return count == #party:members(), count
