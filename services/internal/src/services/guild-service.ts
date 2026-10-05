@@ -66,6 +66,7 @@ const GUILD_CAPACITY_EXTENDED_GP_COST = 2000;
 const GUILD_GP_MAX = 2147483647;
 const GUILD_RANKING_SIZE = 50;
 const GUILD_RANKING_TTL_SEC = 60;
+const DEFAULT_ALLIANCE_MEMBER_RANK = 5;
 
 const AMQ_DIRECT_EXCHANGE = "amq.direct";
 
@@ -485,6 +486,7 @@ export class GuildService {
                     level: memberLevel,
                     classId: memberClassId,
                     guildRank: GuildMemberRank.GUILD_MEMBER_RANK_NEW,
+                    allianceRank: guild.allianceId != null ? DEFAULT_ALLIANCE_MEMBER_RANK : null,
                 },
                 { txClient }
             );

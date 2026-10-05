@@ -627,7 +627,7 @@ export class AllianceService {
                 { ...lockedGuild, allianceId, revision: lockedGuild.revision + 1 },
                 { txClient: dataTx }
             );
-            await this.assignAllianceRanks(worldId, guildId, 3, dataTx);
+            await this.assignAllianceRanks(worldId, guildId, 2, dataTx);
 
             const savedAlliance = await this.allianceRepo.set(
                 worldId,
@@ -1246,11 +1246,8 @@ export class AllianceService {
             }
 
             const newAllianceRank = promote ? currentRank - 1 : currentRank + 1;
-            if (newAllianceRank < 2 || newAllianceRank > 5) {
+            if (newAllianceRank < 3 || newAllianceRank > 5) {
                 return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_INVALID_MEMBER_RANK };
-            }
-            if (newAllianceRank === 2 && requesterMember.allianceRank !== 1) {
-                return { ok: false as const, code: messages.AllianceErrorCode.ALLIANCE_ERROR_NOT_AUTHORIZED };
             }
 
             await this.guildMemberRepo.set(
