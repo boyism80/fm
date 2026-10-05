@@ -152,7 +152,7 @@ func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
 		}
 		status := QuestStatusType(pb.GetStatus())
 		hasRecordEx := len(pb.GetRecordEx()) > 0
-		if status != QuestStatusStarted && status != QuestStatusCompleted && !hasRecordEx {
+		if status != QuestStatusStarted && status != QuestStatusCompleted && pb.GetForfeited() == 0 && !hasRecordEx {
 			continue
 		}
 		q := ch.Quests.Get(questID)
@@ -460,7 +460,7 @@ func (ch *Character) QuestsPersisted() []*internal.QuestPersisted {
 		if q == nil {
 			return
 		}
-		if q.Status != QuestStatusStarted && q.Status != QuestStatusCompleted && len(q.RecordEx) == 0 {
+		if q.Status != QuestStatusStarted && q.Status != QuestStatusCompleted && q.Forfeited == 0 && len(q.RecordEx) == 0 {
 			return
 		}
 		mobKills := make(map[uint32]uint32, len(q.MobKills))

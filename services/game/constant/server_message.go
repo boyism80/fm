@@ -61,3 +61,5 @@ func AllMessageScopes() map[string]MessageScope {
 }
 
 const DoorNoTownPortalMessage = "마을의 미스틱 도어 지점이 꽉 차서 지금은 사용할 수 없습니다."
+
+const NineSpiritCryMessage = "나인스피릿 아기용의 힘찬 울음소리를 듣자 신비로운 힘이 솟아오른다."

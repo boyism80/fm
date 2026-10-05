@@ -266,10 +266,9 @@ func (qp *Quest) Complete(ch *Character, opts QuestPhaseOpts) error {
 			return err
 		}
 		if err := ch.Quests.grant(qp, qp.Wz.Complete.Actions, questActionOpts{
-			ClassID:       ch.Class,
-			Selection:     opts.Selection,
-			IncludeSkills: true,
-			NpcID:         wireNPC,
+			ClassID:   ch.Class,
+			Selection: opts.Selection,
+			NpcID:     wireNPC,
 		}); err != nil {
 			return err
 		}
@@ -293,14 +292,12 @@ func (qp *Quest) Forfeit(ch *Character) error {
 	if !qp.CanForfeit() {
 		return ErrQuestNotForfeitable
 	}
-	snapshot := &Quest{
-		QuestID:   qp.QuestID,
-		Wz:        qp.Wz,
-		Status:    QuestStatusNotStarted,
-		Forfeited: qp.Forfeited + 1,
-	}
-	ch.Quests.Remove(qp.QuestID)
-	ch.Listener.OnQuestForfeited(ch, snapshot)
+	qp.Status = QuestStatusNotStarted
+	qp.Forfeited++
+	qp.StatusRecord.WriteString("")
+	qp.MobKills = make(map[uint32]int)
+	qp.ResetDeadline()
+	ch.Listener.OnQuestForfeited(ch, qp)
 	return nil
 }
 
