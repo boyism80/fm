@@ -47,7 +47,7 @@ local function shake_flower(ctx, leader, spot, seed)
 end
 
 local function gather_seeds(ctx, leader)
-	for _ = 1, 40 do
+	for _ = 1, 100 do
 		local seed = missing_seed(leader)
 		if seed == nil then
 			return true
