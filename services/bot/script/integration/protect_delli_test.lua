@@ -5,16 +5,22 @@ local ROAD_1 = 925010000
 local ROAD_2 = 925010100
 local ROAD_3 = 925010200
 local PROTECT = 925010300
+local SHELTER = 925010400
 local SCHRINTZ = 1092008
 local DELLI_NPC = 2095000
 local DELLI_MOB = 9300162
 
 local DIALOG_DEFAULT = 0
 local DIALOG_YES_NO = 1
+local PROTECT_SECONDS = 10
 
 test_suite {
 	name = "Quest: 델리를 지켜라",
 	bot_count = 1,
+
+	on_finished = function(ctx)
+		pq.command(ctx:bot(0), "/타이머 0", "타이머 제한: 0")
+	end,
 
 	on_initialize = function(ctx)
 		local bot = ctx:bot(0)
@@ -75,6 +81,26 @@ test_suite {
 					return p.mob.mob_id == DELLI_MOB
 				end, 5000) == false then
 				return ctx:fail("보호할 델리가 없음")
+			end
+			if pq.command(bot, "/타이머 " .. PROTECT_SECONDS, "타이머 제한: " .. PROTECT_SECONDS) == false then
+				return ctx:fail("타이머 제한 설정 실패")
+			end
+			return true
+		end,
+		function(ctx)
+			local bot = ctx:bot(0)
+			if pq.wait_map(ctx, bot, SHELTER, PROTECT_SECONDS * 1000 + 15000) == false then
+				return ctx:fail("보호 시간이 끝난 뒤 은신처로 이동하지 않음")
+			end
+			if bot:mobs(DELLI_MOB)[1] ~= nil then
+				return ctx:fail("은신처에 몬스터 델리가 남아 있음")
+			end
+			local oid = pq.npc(ctx, bot, DELLI_NPC)
+			if oid == false then
+				return false
+			end
+			if bot:npc_click(oid) == false then
+				return ctx:fail("은신처 델리 감사 대화가 오지 않음")
 			end
 			return true
 		end,

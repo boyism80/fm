@@ -2,7 +2,6 @@ local pq = require("script/integration/lib/party_quest")
 
 local ZOO = 230000003
 local PIG_ROOM = 923010000
-local PIG_ROOM_EXIT = 923010100
 local KENTA_OUTSIDE = 2060005
 local KENTA_INSIDE = 9060000
 local PIG = 9300102
@@ -10,7 +9,8 @@ local REPORT_BOX = 2302005
 local PHEROMONE = 4031507
 local RESEARCH_REPORT = 4031508
 
-local DIALOG_YES_NO = 1
+local DIALOG_DEFAULT = 0
+local COUNT = 5
 
 test_suite {
 	name = "Quest: 켄타의 사육실",
@@ -49,38 +49,53 @@ test_suite {
 			if bot:mobs(PIG)[1] == nil then
 				return ctx:fail("호위용 멧돼지가 없음")
 			end
-			if bot:request(resp.spawn_item, nil, function(p)
-					return p.item_model ~= nil and p.item_model.id == PHEROMONE
-				end, 60000) == false then
-				return ctx:fail("멧돼지가 페로몬을 떨어뜨리지 않음")
+			for _ = 1, 40 do
+				if (bot:items()[PHEROMONE] or 0) >= COUNT then
+					return true
+				end
+				local drop = bot:drops(PHEROMONE)[1]
+				if drop == nil then
+					bot:request(resp.spawn_item, nil, function(p)
+						return p.item_model ~= nil and p.item_model.id == PHEROMONE
+					end, 20000)
+					drop = bot:drops(PHEROMONE)[1]
+				end
+				if drop ~= nil then
+					bot:loot(drop.oid)
+				end
 			end
-			return pq.loot_spawn(ctx, bot, PHEROMONE)
+			return ctx:fail("페로몬 부족: " .. (bot:items()[PHEROMONE] or 0))
 		end,
 		function(ctx)
 			local bot = ctx:bot(0)
-			local result = pq.visit_reactors(ctx, bot, pq.reactor_by_id(REPORT_BOX), function(r)
-				if (bot:items()[RESEARCH_REPORT] or 0) > 0 then
+			for _ = 1, 8 do
+				if (bot:items()[RESEARCH_REPORT] or 0) >= COUNT then
 					return true
 				end
-				if pq.break_reactor(ctx, bot, r) == false then
+				local result = pq.visit_reactors(ctx, bot, pq.reactor_by_id(REPORT_BOX), function(r)
+					if (bot:items()[RESEARCH_REPORT] or 0) >= COUNT then
+						return true
+					end
+					if pq.break_reactor(ctx, bot, r) == false then
+						return false
+					end
+					bot:request(resp.spawn_item, nil, function(p)
+						return p.item_model ~= nil and p.item_model.id == RESEARCH_REPORT
+					end, 2000)
+					local drop = bot:drops(RESEARCH_REPORT)[1]
+					if drop ~= nil then
+						return bot:loot(drop.oid)
+					end
+					return true
+				end)
+				if result == false then
 					return false
 				end
-				bot:request(resp.spawn_item, nil, function(p)
-					return p.item_model ~= nil and p.item_model.id == RESEARCH_REPORT
-				end, 2000)
-				local drop = bot:drops(RESEARCH_REPORT)[1]
-				if drop ~= nil then
-					return bot:loot(drop.oid)
+				if (bot:items()[RESEARCH_REPORT] or 0) < COUNT then
+					ctx:sleep(10000)
 				end
-				return true
-			end)
-			if result == false then
-				return false
 			end
-			if (bot:items()[RESEARCH_REPORT] or 0) == 0 then
-				return ctx:fail("연구 보고서를 얻지 못함")
-			end
-			return true
+			return ctx:fail("연구 보고서 부족: " .. (bot:items()[RESEARCH_REPORT] or 0))
 		end,
 		function(ctx)
 			local bot = ctx:bot(0)
@@ -91,10 +106,10 @@ test_suite {
 			if bot:npc_click(oid) == false then
 				return ctx:fail("켄타 대화가 오지 않음")
 			end
-			if bot:request(resp.warp, req.dialog { dialog_type = DIALOG_YES_NO, next = true }, function(p)
-					return p.character.map == PIG_ROOM_EXIT
+			if bot:request(resp.warp, req.dialog { dialog_type = DIALOG_DEFAULT, next = true }, function(p)
+					return p.character.map == ZOO
 				end, 10000) == false then
-				return ctx:fail("사육실 밖으로 나가지 않음")
+				return ctx:fail("5+5 완료 후 아쿠아리움 동물원으로 나가지 않음")
 			end
 			return true
 		end,
