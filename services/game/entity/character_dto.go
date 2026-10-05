@@ -156,11 +156,9 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO.Skills = make([]*dto.Skill, 0)
 	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
 		skillDTO := &dto.Skill{
-			ID:         skillID,
-			SkillLevel: uint32(entry.Level()),
-		}
-		if entry.Wz.MasterLevel > 0 {
-			skillDTO.MasterLevel = uint32(entry.MasterLevel)
+			ID:          skillID,
+			SkillLevel:  uint32(entry.Level()),
+			MasterLevel: uint32(entry.MasterLevel),
 		}
 		charDTO.Skills = append(charDTO.Skills, skillDTO)
 	})

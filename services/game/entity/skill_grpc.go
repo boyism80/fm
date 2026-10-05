@@ -41,7 +41,11 @@ func NewSkillEntryFromInternalProto(owner *Character, pb *internal.SkillPersiste
 	if !ok {
 		return nil, fmt.Errorf("skill %d not found in resources", skillID)
 	}
-	entry := NewSkillEntry(owner, w, int(pb.GetLevel()), int(pb.GetMasterLevel()))
+	masterLevel := int(pb.GetMasterLevel())
+	if masterLevel == 0 {
+		masterLevel = w.DefaultMasterLevel()
+	}
+	entry := NewSkillEntry(owner, w, int(pb.GetLevel()), masterLevel)
 	if cd := pb.GetCooldownEndUnixMs(); cd > 0 {
 		t := time.UnixMilli(cd)
 		if clock.Now().Before(t) {

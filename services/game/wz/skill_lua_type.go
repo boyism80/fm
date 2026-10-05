@@ -48,7 +48,7 @@ func (*Skill) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "WzSkill expected")
 				return 0
 			}
-			L.Push(lua.LNumber(s.MasterLevel))
+			L.Push(lua.LNumber(s.DefaultMasterLevel()))
 			return 1
 		},
 		"invisible": func(L *lua.LState) int {

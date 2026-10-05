@@ -1911,14 +1911,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 1
 			}
 
-			masterLevel := 0
-			if wzSkill.MasterLevel > 0 {
-				masterLevel = wzSkill.MasterLevel
-			} else if wzSkill.MaxLevel > 0 {
-				masterLevel = wzSkill.MaxLevel
-			}
-
-			skillEntry := NewSkillEntry(ch, wzSkill, 1, masterLevel)
+			skillEntry := NewSkillEntry(ch, wzSkill, 1, wzSkill.DefaultMasterLevel())
 			skillEntry.Expiration = time.Time{}
 			ch.Skills.Register(skillID, skillEntry)
 

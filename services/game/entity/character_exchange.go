@@ -167,7 +167,10 @@ func (ch *Character) grantSkill(skill ExchangeSkill) {
 		return
 	}
 	targetLevel := exchangeSkillTargetLevel(0, skill.Level)
-	targetMaster := exchangeSkillTargetMaster(0, skill.MasterLevel, wzSkill)
+	targetMaster := skill.MasterLevel
+	if targetMaster <= 0 {
+		targetMaster = wzSkill.DefaultMasterLevel()
+	}
 	entry := ch.Skills.Get(skill.SkillID)
 	if entry == nil {
 		entry = NewSkillEntry(ch, wzSkill, targetLevel, targetMaster)
@@ -175,7 +178,7 @@ func (ch *Character) grantSkill(skill ExchangeSkill) {
 		ch.Skills.Register(skill.SkillID, entry)
 	} else {
 		targetLevel = exchangeSkillTargetLevel(entry.Level(), skill.Level)
-		targetMaster = exchangeSkillTargetMaster(entry.MasterLevel, skill.MasterLevel, wzSkill)
+		targetMaster = max(entry.MasterLevel, targetMaster)
 		if targetLevel != entry.Level() || targetMaster != entry.MasterLevel {
 			entry.SetLevels(targetLevel, targetMaster)
 		}
@@ -193,19 +196,4 @@ func exchangeSkillTargetLevel(current int, rewardLevel int) int {
 		return current
 	}
 	return rewardLevel
-}
-
-func exchangeSkillTargetMaster(current int, rewardMaster int, wzSkill *wz.Skill) int {
-	resolved := rewardMaster
-	if resolved <= 0 && wzSkill != nil {
-		if wzSkill.MasterLevel > 0 {
-			resolved = wzSkill.MasterLevel
-		} else if wzSkill.MaxLevel > 0 {
-			resolved = wzSkill.MaxLevel
-		}
-	}
-	if current > resolved {
-		return current
-	}
-	return resolved
 }

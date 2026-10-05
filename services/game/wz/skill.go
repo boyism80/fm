@@ -58,6 +58,13 @@ type Skill struct {
 	LevelData    map[int]*SkillLevelData
 }
 
+func (s *Skill) DefaultMasterLevel() int {
+	if s.MasterLevel > 0 {
+		return s.MasterLevel
+	}
+	return s.MaxLevel
+}
+
 func (s *Skill) IsBeginnerSkill() bool {
 	if s == nil {
 		return false
