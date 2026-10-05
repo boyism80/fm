@@ -34,6 +34,7 @@ type SuiteActor struct {
 	nextWait uint64
 	hooks    map[string]func(b *bot.Bot, pkt any)
 	moving   map[*bot.Bot]func(err error)
+	entering map[*bot.Bot]bool
 	started  time.Time
 	deadline *time.Timer
 	failures []string
@@ -42,6 +43,7 @@ type SuiteActor struct {
 	skipped  bool
 	ended    bool
 	finished bool
+	closed   bool
 
 	L        *lua.LState
 	def      *lua.LTable
@@ -63,6 +65,7 @@ func NewSuiteActor(cfg *config.Bot, resources *wz.Resources, suite *Suite, seat 
 		name:     suite.Name,
 		hooks:    make(map[string]func(b *bot.Bot, pkt any)),
 		moving:   make(map[*bot.Bot]func(err error)),
+		entering: make(map[*bot.Bot]bool),
 		marshal:  luamarshal.New(),
 		threads:  make(map[*lua.LState]func(values []lua.LValue, err error)),
 		sleeping: make(map[*lua.LState]bool),
@@ -161,6 +164,7 @@ func (a *SuiteActor) start(ctx actor.Context) {
 	log.Printf("[%s] seat %d starts with %d bots", a.name, a.seat, len(a.bots))
 
 	for i, b := range a.bots {
+		a.entering[b] = true
 		go func() {
 			a.actors.Send(a.self, &BotEntered{Bot: i, Err: b.Enter()})
 		}()
@@ -169,8 +173,9 @@ func (a *SuiteActor) start(ctx actor.Context) {
 
 func (a *SuiteActor) botEntered(msg *BotEntered) {
 	b := a.bots[msg.Bot]
+	delete(a.entering, b)
 	if a.finished {
-		b.Close()
+		a.closeLate(b)
 		return
 	}
 	if msg.Err != nil {
@@ -221,7 +226,7 @@ func (a *SuiteActor) channelEntered(msg *ChannelEntered) {
 	done := a.moving[b]
 	delete(a.moving, b)
 	if a.finished {
-		b.Close()
+		a.closeLate(b)
 		return
 	}
 	if msg.Err == nil {

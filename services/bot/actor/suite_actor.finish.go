@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/services/bot/bot"
 )
 
 func (a *SuiteActor) cleanup() {
@@ -20,6 +21,9 @@ func (a *SuiteActor) cleanup() {
 
 	reset := make(map[uint32]bool)
 	for _, b := range a.bots {
+		if _, moving := a.moving[b]; moving || a.entering[b] {
+			continue
+		}
 		if b.Gen == 0 {
 			continue
 		}
@@ -41,6 +45,9 @@ func (a *SuiteActor) cleanup() {
 
 func (a *SuiteActor) close(ctx actor.Context) {
 	for _, b := range a.bots {
+		if _, moving := a.moving[b]; moving || a.entering[b] {
+			continue
+		}
 		b.Close()
 	}
 	elapsed := time.Since(a.started)
@@ -55,5 +62,19 @@ func (a *SuiteActor) close(ctx actor.Context) {
 		Failures: a.failures,
 		Elapsed:  elapsed,
 	})
+
+	a.closed = true
+	if len(a.entering) > 0 || len(a.moving) > 0 {
+		log.Printf("[%s] seat %d waits for %d bots still connecting", a.name, a.seat, len(a.entering)+len(a.moving))
+		return
+	}
 	ctx.Stop(a.self)
+}
+
+func (a *SuiteActor) closeLate(b *bot.Bot) {
+	b.Close()
+	if a.closed == false || len(a.entering) > 0 || len(a.moving) > 0 {
+		return
+	}
+	a.actors.Stop(a.self)
 }
