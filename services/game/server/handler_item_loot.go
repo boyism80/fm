@@ -63,6 +63,11 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		}
 	} else {
 		reason := mapInstance.LootItem(obj, character, req.Position)
+		if reason == constant.LootPartial {
+			character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
+			character.Listener.OnUpdateStats(character, nil, true)
+			return nil
+		}
 		if reason != constant.LootSuccess {
 			log.Printf("Failed to loot item %d for character %d, reason: %d", req.OID, character.GetID(), reason)
 			if reason == constant.LootFailedInventoryFull || reason == constant.LootFailedMesoFull {

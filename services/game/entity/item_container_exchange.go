@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 )
 
@@ -24,79 +25,44 @@ func (inv *ItemContainer) validateItemExchange(cost map[uint32]uint16, reward ma
 	}
 
 	slots := make(map[int16]itemSlotSnapshot, inv.SlotLimit)
-	emptySlots := uint16(0)
+	slotsByID := make(map[uint32][]int16)
+	freeSlots := 0
 	for slot := int16(1); slot <= int16(inv.SlotLimit); slot++ {
 		item := inv.Items[slot]
 		if item == nil {
-			emptySlots++
+			freeSlots++
 			continue
 		}
-		slots[slot] = itemSlotSnapshot{
-			itemID: item.GetModel().GetID(),
-			count:  item.GetCount(),
-		}
+		id := item.GetModel().GetID()
+		slots[slot] = itemSlotSnapshot{itemID: id, count: item.GetCount()}
+		slotsByID[id] = append(slotsByID[id], slot)
 	}
-
-	slotsByID := make(map[uint32][]int16)
-	for slot, snap := range slots {
-		slotsByID[snap.itemID] = append(slotsByID[snap.itemID], slot)
-	}
-
-	effectiveFreeSlots := emptySlots
 
 	for id, costCount := range cost {
 		if costCount == 0 {
 			continue
 		}
-		model := modelOf(id)
-		if model == nil {
+		if modelOf(id) == nil {
 			return ExchangeLackCost
 		}
-		indices := slotsByID[id]
-		if len(indices) == 0 {
-			return ExchangeLackCost
-		}
-
-		if model.GetCapacity() > 1 {
-			slot := indices[0]
-			snap, ok := slots[slot]
-			if !ok {
-				return ExchangeLackCost
+		remaining := costCount
+		for _, slot := range slotsByID[id] {
+			if remaining == 0 {
+				break
 			}
-			if snap.count < costCount {
-				return ExchangeLackCost
-			}
-			remain := snap.count - costCount
-			if remain == 0 {
+			snap := slots[slot]
+			take := min(snap.count, remaining)
+			remaining -= take
+			snap.count -= take
+			if snap.count == 0 {
 				delete(slots, slot)
-				effectiveFreeSlots++
+				freeSlots++
 			} else {
-				snap.count = remain
 				slots[slot] = snap
 			}
-		} else {
-			if uint16(len(indices)) < costCount {
-				return ExchangeLackCost
-			}
-			for i := uint16(0); i < costCount; i++ {
-				slot := indices[i]
-				if _, ok := slots[slot]; !ok {
-					return ExchangeLackCost
-				}
-				delete(slots, slot)
-				effectiveFreeSlots++
-			}
 		}
-	}
-
-	bundleRemaining := make(map[uint32]uint16)
-	for _, snap := range slots {
-		model := modelOf(snap.itemID)
-		if model == nil {
-			continue
-		}
-		if model.GetCapacity() > 1 {
-			bundleRemaining[snap.itemID] += snap.count
+		if remaining > 0 {
+			return ExchangeLackCost
 		}
 	}
 
@@ -109,35 +75,22 @@ func (inv *ItemContainer) validateItemExchange(cost map[uint32]uint16, reward ma
 		if model == nil {
 			return ExchangeLackCapacity
 		}
-		if model.GetCapacity() > 1 {
-			requiredSlots++
-		} else {
-			requiredSlots += int(count)
+		capacity := max(int(model.GetCapacity()), 1)
+		need := int(count)
+		if capacity > 1 && constant.IsRechargeable(id) == false {
+			for _, slot := range slotsByID[id] {
+				snap, ok := slots[slot]
+				if ok == false {
+					continue
+				}
+				need -= min(need, max(capacity-int(snap.count), 0))
+			}
 		}
+		requiredSlots += (need + capacity - 1) / capacity
 	}
 
-	availableSlots := int(effectiveFreeSlots)
-	for id, count := range reward {
-		if count == 0 {
-			continue
-		}
-		model := modelOf(id)
-		if model == nil {
-			return ExchangeLackCapacity
-		}
-		if model.GetCapacity() <= 1 {
-			continue
-		}
-		existing := bundleRemaining[id]
-		if uint16(model.GetCapacity()) < existing+count {
-			return ExchangeLackCapacity
-		}
-		availableSlots++
-	}
-
-	if availableSlots < requiredSlots {
+	if requiredSlots > freeSlots {
 		return ExchangeLackCapacity
 	}
-
 	return ExchangeOK
 }

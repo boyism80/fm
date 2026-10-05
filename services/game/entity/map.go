@@ -1332,20 +1332,21 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootFailedNoOwnership
 		}
 
-		invenType := item.GetInventoryType()
-		inven := character.Inventory.Tabs[invenType]
-		model := item.GetModel()
-
-		if fp.Quest > 0 && character.NeedsQuestItem(fp.Quest, model.GetID()) == false {
+		if fp.Quest > 0 && character.NeedsQuestItem(fp.Quest, item.GetModel().GetID()) == false {
 			return constant.LootFailedInventoryFull
 		}
 
-		if !inven.IsFree(model, item.GetCount()) {
-			return constant.LootFailedInventoryFull
-		}
-
-		if _, err := character.Inventory.AddItem(item, false); err != nil {
+		count := item.GetCount()
+		added, err := character.Inventory.AddItem(item, false)
+		if err != nil {
 			log.Printf("Failed to add item: %v", err)
+			return constant.LootFailedInventoryFull
+		}
+		if len(added) == 0 {
+			return constant.LootFailedInventoryFull
+		}
+		if item.GetCount() < count {
+			return constant.LootPartial
 		}
 		return constant.LootSuccess
 

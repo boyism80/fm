@@ -3,6 +3,7 @@ package entity
 import (
 	"errors"
 
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 )
 
@@ -38,6 +39,9 @@ func (m *ItemContainer) NextSlot() (uint8, bool) {
 }
 
 func (m *ItemContainer) FindSlot(model wz.Item) (uint8, bool) {
+	if constant.IsRechargeable(model.GetID()) {
+		return m.NextSlot()
+	}
 	for i := 1; i <= int(m.SlotLimit); i++ {
 		item := m.Items[int16(i)]
 		if item == nil {
@@ -68,20 +72,6 @@ func (m *ItemContainer) EmptySlotCount() uint16 {
 	}
 
 	return count
-}
-
-func (m *ItemContainer) IsFree(model wz.Item, count uint16) bool {
-	if model == nil || count == 0 {
-		return true
-	}
-	modelOf := func(id uint32) wz.Item {
-		if id == model.GetID() {
-			return model
-		}
-		return nil
-	}
-	reward := map[uint32]uint16{model.GetID(): count}
-	return m.validateItemExchange(nil, reward, modelOf) == ExchangeOK
 }
 
 func (m *ItemContainer) Get(slot uint8) Item {

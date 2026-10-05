@@ -9,4 +9,5 @@ const (
 	LootFailedInventoryFull LootResult = 3
 	LootFailedMesoFull      LootResult = 4
 	LootFailedInvalidItem   LootResult = 5
+	LootPartial             LootResult = 6
 )
