@@ -95,31 +95,23 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
 		clear_props(sm)
-		for _, map_id in ipairs(STAGE_MAPS) do
-			local map = group:map(map_id)
-			if map ~= nil then
-				map:reset()
-				map:respawn({ include_one_time = true })
-			end
-		end
-		local lobby = group:map(LOBBY_MAP)
-		if lobby ~= nil then
-			pq.shuffle_reactors(lobby, 2002004, 2002010)
-		end
-		local garden = group:map(GARDEN_MAP)
-		if garden ~= nil then
-			pq.shuffle_reactors(garden, nil, nil, FIXED_REACTOR)
-		end
 		return STAGE_MAPS
+	end,
 
+	on_prepare = function(sm)
+		for _, map_id in ipairs(STAGE_MAPS) do
+			sm:map(map_id):respawn({ include_one_time = true })
+		end
+		pq.shuffle_reactors(sm:map(LOBBY_MAP), 2002004, 2002010)
+		pq.shuffle_reactors(sm:map(GARDEN_MAP), nil, nil, FIXED_REACTOR)
 	end,
 
 	on_start = function(sm)
@@ -131,7 +123,7 @@ return {
 			player:try_party_quest(RANKING_QUEST)
 			player:open_npc(GUIDE_NPC)
 		end
-		player:map(START_MAP, { callback = on_arrive })
+		player:map(sm:map(START_MAP), { callback = on_arrive })
 	end,
 
 	on_changed_map = function(sm, player, map_id)
@@ -159,14 +151,10 @@ return {
 		if mob == nil then
 			return
 		end
-		local group = sm:group()
-		if group == nil then
-			return
-		end
 		local id = mob:id()
 		if id == DARK_NEPENTHES then
 			sm:message("Boss Spawned.")
-			local garden = group:map(GARDEN_MAP)
+			local garden = sm:map(GARDEN_MAP)
 			if garden ~= nil then
 				garden:spawn_mob(PAPA_PIXIE, -830, 563)
 			end
@@ -181,7 +169,7 @@ return {
 			st = "0"
 		end
 		local count = tonumber(st) or 0
-		local map = group:map(STAGE2_MAP)
+		local map = sm:map(STAGE2_MAP)
 		if map == nil then
 			return
 		end

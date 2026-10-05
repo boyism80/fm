@@ -14,14 +14,14 @@ return {
 		if map_id == 930000000 then
 			me:message("엘린의 변신 마법이 몸 안으로 스며든다.", Msg.PinkText)
 			me:play_portal_sound()
-			me:map(930000010)
+			pq.warp(me, 930000010)
 		elseif map_id == 930000010 then
 			me:play_portal_sound()
-			me:map(930000100)
+			pq.warp(me, 930000100)
 		elseif map_id == 930000100 then
 			if pq.mob_count(map) == 0 then
 				me:play_portal_sound()
-				me:map(930000200)
+				pq.warp(me, 930000200)
 			else
 				me:message("모든 몬스터를 없애기 전에는 이동할 수 없습니다.", Msg.PinkText)
 			end
@@ -31,7 +31,7 @@ return {
 				me:message("가시 덤불이 길을 막고 있습니다.", Msg.PinkText)
 			else
 				me:play_portal_sound()
-				me:map(930000300)
+				pq.warp(me, 930000300)
 			end
 		end
 	end

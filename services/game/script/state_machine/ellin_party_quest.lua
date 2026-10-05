@@ -29,26 +29,25 @@ return {
 	on_init = function(group)
 		group:set_property("state", "0")
 		group:set_property("stage1_cleareff", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
 		group:set_property("stage1_cleareff", "0")
+		return STAGE_MAPS
+	end,
+
+	on_prepare = function(sm)
 		for _, map_id in ipairs(STAGE_MAPS) do
-			local map = group:map(map_id)
-			if map ~= nil then
-				map:reset()
-				map:respawn({ include_one_time = true })
-				if map_id == 930000500 then
-					pq.shuffle_reactors(map)
-				end
+			local map = sm:map(map_id)
+			map:respawn({ include_one_time = true })
+			if map_id == 930000500 then
+				pq.shuffle_reactors(map)
 			end
 		end
-		return STAGE_MAPS
-
 	end,
 
 	on_start = function(sm)
@@ -59,7 +58,7 @@ return {
 		local function on_arrive(player)
 			player:try_party_quest(RANKING_QUEST)
 		end
-		player:map(START_MAP, { callback = on_arrive })
+		player:map(sm:map(START_MAP), { callback = on_arrive })
 	end,
 
 	on_mob_die = function(sm, mob)
@@ -70,7 +69,7 @@ return {
 		if group == nil or group:get_property("stage1_cleareff") == "1" then
 			return
 		end
-		local map = group:map(STAGE1_MAP)
+		local map = sm:map(STAGE1_MAP)
 		if map == nil then
 			return
 		end

@@ -122,7 +122,11 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "Character expected")
 				return 0
 			}
-			machine.EnterPlayer(ch)
+			args := []interface{}{}
+			for i := 3; i <= L.GetTop(); i++ {
+				args = append(args, L.Get(i))
+			}
+			machine.EnterPlayer(ch, args...)
 			return 0
 		},
 		"start": func(L *lua.LState) int {
@@ -155,6 +159,21 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				machine.RequestLeave(ch, false, StateMachineLeaveExit)
 			}
 			return 0
+		},
+		"map": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			m := machine.Map(uint32(L.CheckInt(2)))
+			if m == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, m))
+			return 1
 		},
 		"maps": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

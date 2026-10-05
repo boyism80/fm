@@ -1,3 +1,5 @@
+local pq = require("script/lib/party_quest")
+
 local M = {}
 
 M.GROUP = "guild_quest"
@@ -38,7 +40,7 @@ function M.pass_gate(me, name, clear_key, map_id, spawn, closed)
 		return
 	end
 	me:play_portal_sound()
-	me:map(map_id, spawn or 0)
+	pq.warp(me, map_id, spawn or 0)
 end
 
 function M.maze(me)

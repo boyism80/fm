@@ -11,19 +11,18 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
-		local map = group:map(QUEST_MAP)
-		if map ~= nil then
-			map:reload_reactors()
-		end
 		return { QUEST_MAP }
+	end,
 
+	on_prepare = function(sm)
+		sm:map(QUEST_MAP):reload_reactors()
 	end,
 
 	on_start = function(sm)
@@ -31,7 +30,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(QUEST_MAP)
+		player:map(sm:map(QUEST_MAP))
 	end,
 
 	on_scheduled_timeout = function(sm)

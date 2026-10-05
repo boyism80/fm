@@ -3,53 +3,40 @@
 local LOBBY_MAP = 220080000
 local BOSS_MAP = 220080001
 local GATE_REACTOR = 2208001
+local SCRIPT = "script/state_machine/papulatus.lua"
 
 local function reset_gate(group)
 	if group == nil then
 		return
 	end
 	group:set_property("battle", "0")
-	local lobby = group:map(LOBBY_MAP)
-	if lobby == nil then
-		return
-	end
-	local gate = lobby:reactor(GATE_REACTOR)
-	if gate ~= nil then
-		gate:hit(0)
-	end
+	run_on_map(LOBBY_MAP, SCRIPT, "hit_gate", 0)
 end
 
 local function close_gate(group)
 	if group == nil then
 		return
 	end
-	local lobby = group:map(LOBBY_MAP)
-	if lobby == nil then
-		return
-	end
-	local gate = lobby:reactor(GATE_REACTOR)
-	if gate ~= nil then
-		gate:hit(1)
-	end
+	run_on_map(LOBBY_MAP, SCRIPT, "hit_gate", 1)
 end
 
 return {
+	hit_gate = function(map, state)
+		local gate = map:reactor(GATE_REACTOR)
+		if gate ~= nil then
+			gate:hit(state)
+		end
+	end,
+
 	on_init = function(group)
 		group:set_property("battle", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(LOBBY_MAP)
-		reset_gate(group)
+		group:min_players(1)
+		group:exit_map(LOBBY_MAP)
 	end,
 
 	on_create = function(sm)
-		local group = sm:group()
-		local map = group:map(BOSS_MAP)
-		if map ~= nil then
-			map:reset()
-		end
-		reset_gate(group)
+		reset_gate(sm:group())
 		return { BOSS_MAP }
-
 	end,
 
 	on_start = function(sm)
@@ -62,7 +49,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(BOSS_MAP)
+		player:map(sm:map(BOSS_MAP))
 	end,
 
 	on_player_dead = function(sm, player)

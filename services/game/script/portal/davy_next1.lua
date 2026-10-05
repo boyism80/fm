@@ -9,7 +9,7 @@ return {
 		end
 		if sm:get_property("stage2") == "3" and pq.mob_count(map) == 0 then
 			me:play_portal_sound()
-			me:map(925100200)
+			pq.warp(me, 925100200)
 		else
 			me:message("아직 이 포탈을 이용할 수 없습니다.", Msg.PinkText)
 		end

@@ -81,20 +81,7 @@ return {
 			if selected == nil then
 				return
 			end
-			local spawn = 0
-			local group = state_machine(GROUP_NAME)
-			if group ~= nil then
-				local dest = group:map(SHORTCUT_OUT)
-				if dest ~= nil then
-					local portal = dest:portal("st00")
-					if portal ~= nil then
-						spawn = portal:id()
-					end
-					me:map(dest, spawn)
-					return
-				end
-			end
-			me:map(SHORTCUT_OUT)
+			me:map(SHORTCUT_OUT, "st00")
 			return
 		end
 

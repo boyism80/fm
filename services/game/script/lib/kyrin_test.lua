@@ -13,18 +13,17 @@ local function create(map_id)
 	return {
 		on_init = function(group)
 			group:set_property("state", "0")
-			group:declare_min_players(1)
+			group:min_players(1)
 		end,
 
 		on_create = function(sm)
 			local group = sm:group()
 			group:set_property("state", "1")
-			local map = group:map(map_id)
-			if map ~= nil then
-				map:reset()
-				map:respawn({ include_one_time = true })
-			end
 			return { map_id }
+		end,
+
+		on_prepare = function(sm)
+			sm:map(map_id):respawn({ include_one_time = true })
 		end,
 
 		on_start = function(sm)
@@ -32,7 +31,7 @@ local function create(map_id)
 		end,
 
 		on_player_enter = function(sm, player)
-			player:map(map_id)
+			player:map(sm:map(map_id))
 		end,
 
 		on_scheduled_timeout = function(sm)

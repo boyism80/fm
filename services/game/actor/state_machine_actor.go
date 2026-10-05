@@ -21,12 +21,10 @@ type namedSchedule struct {
 }
 
 type smLifecycle struct {
-	attachDone    bool          // all map attaches have been acked
-	deferred      []interface{} // messages queued before attachDone
-	attachPending int           // outstanding AttachStateMachine acks
-	detachPending int           // outstanding DetachStateMachine acks
-	detaching     bool          // beginDetach has been called
-	stopped       bool          // finalizeStop has run; only packets are still forwarded
+	ready    bool
+	deferred []interface{}
+	stopping bool
+	stopped  bool
 }
 
 type StateMachineActor struct {
@@ -66,24 +64,24 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *entity.BootstrapStateMachine:
 		a.beginCreate(ctx)
-	case *entity.ApplyStateMachineCreateMaps:
-		a.registerCreateMaps(ctx, msg)
-	case *entity.FinishStateMachineCreate:
-		a.finishCreate(ctx)
+	case *entity.CreateStateMachineMaps:
+		a.createMaps(ctx, msg)
+	case *entity.StateMachineMapRemoved:
+		a.handleMapRemoved(msg)
 	case *entity.EnterStateMachinePlayer:
-		if a.lc.attachDone {
+		if a.lc.ready {
 			a.handleEnterPlayer(ctx, msg)
 		} else {
 			a.lc.deferred = append(a.lc.deferred, msg)
 		}
 	case *entity.StartStateMachine:
-		if a.lc.attachDone {
+		if a.lc.ready {
 			a.handleStart(ctx)
 		} else {
 			a.lc.deferred = append(a.lc.deferred, msg)
 		}
 	case *entity.CallStateMachineHook:
-		if a.lc.attachDone {
+		if a.lc.ready {
 			a.callHook(ctx, msg.Hook, msg.Args...)
 		} else {
 			a.lc.deferred = append(a.lc.deferred, msg)
@@ -152,12 +150,8 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 		}
 	case *entity.StateMachineNamedTimeout:
 		a.handleNamedTimeout(ctx, msg)
-	case *AttachStateMachineAck:
-		a.handleAttachAck(ctx, msg)
 	case *entity.StopStateMachine:
-		a.beginDetach(ctx)
-	case *DetachStateMachineAck:
-		a.handleDetachAck(ctx)
+		a.beginStop()
 	case *actor.Restarting:
 		a.StopTimers()
 	case *actor.Stopped:
@@ -294,12 +288,12 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 	}
 	thread, err := luax.NewThread(a.luaRoot, a.StateMachine.Group.ScriptPath)
 	if err != nil {
-		a.abortCreate(ctx, err.Error())
+		a.abortCreate(err.Error())
 		return
 	}
 	if luax.HasFunc(thread, "on_create") == false {
 		luax.Close(thread)
-		a.abortCreate(ctx, "on_create is required")
+		a.abortCreate("on_create is required")
 		return
 	}
 	luax.SetConfiguration(thread, luax.Configuration{
@@ -309,104 +303,41 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()
-	gw := a.GameWorld
 	luax.CallAsync(ctx, a.luaRoot, thread, "on_create", a.StateMachine).Then(func(result interface{}) (interface{}, error) {
-		var ms entity.MapSystem
-		if gw != nil {
-			ms = gw.GetMapSystem()
-		}
 		vals := luax.ResultValues(result)
-		var maps []*entity.Map
-		var err error
+		msg := &entity.CreateStateMachineMaps{}
 		if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
-			err = fmt.Errorf("on_create must return a non-empty map array")
-		} else if tbl, ok := vals[0].(*lua.LTable); !ok {
-			err = fmt.Errorf("on_create must return a table")
-		} else {
-			maps, err = entity.ParseCreateMaps(tbl, ms)
-		}
-		msg := &entity.ApplyStateMachineCreateMaps{}
-		if err != nil {
+			msg.Err = "on_create must return a non-empty map id array"
+		} else if tbl, ok := vals[0].(*lua.LTable); ok == false {
+			msg.Err = "on_create must return a table"
+		} else if specs, err := entity.ParseCreateMaps(tbl); err != nil {
 			msg.Err = err.Error()
 		} else {
-			msg.Maps = maps
+			msg.Specs = specs
 		}
 		root.Send(self, msg)
 		return nil, nil
 	}).OnError(func(err error) {
-		root.Send(self, &entity.ApplyStateMachineCreateMaps{Err: err.Error()})
+		root.Send(self, &entity.CreateStateMachineMaps{Err: err.Error()})
 	})
 }
 
-func (a *StateMachineActor) registerCreateMaps(ctx actor.Context, msg *entity.ApplyStateMachineCreateMaps) {
-	if msg == nil {
-		a.abortCreate(ctx, "nil create maps")
-		return
-	}
+func (a *StateMachineActor) createMaps(ctx actor.Context, msg *entity.CreateStateMachineMaps) {
 	if msg.Err != "" {
-		a.abortCreate(ctx, msg.Err)
+		a.abortCreate(msg.Err)
 		return
 	}
-	if a.StateMachine == nil || a.StateMachine.Disposed() {
-		a.abortCreate(ctx, "state machine disposed")
+	if a.StateMachine.Disposed() {
+		a.abortCreate("state machine disposed")
 		return
 	}
-	if len(msg.Maps) == 0 {
-		a.abortCreate(ctx, "on_create must return a non-empty map array")
+	if err := a.StateMachine.CreateMaps(msg.Specs); err != nil {
+		a.abortCreate(err.Error())
 		return
 	}
-	sm := a.StateMachine
-	a.lc.attachPending = 0
-	for _, m := range msg.Maps {
-		already, err := sm.ReserveMap(m)
-		if err != nil {
-			a.abortCreate(ctx, err.Error())
-			return
-		}
-		if already {
-			continue
-		}
-		home := m.HomeActorPID()
-		if home == nil {
-			a.abortCreate(ctx, fmt.Sprintf("map %d has no home actor", m.GetMapID()))
-			return
-		}
-		a.lc.attachPending++
-		ctx.Send(home, &AttachStateMachine{
-			StateMachine: sm,
-			ReplyTo:      ctx.Self(),
-			MapID:        m.GetMapID(),
-		})
-	}
-	if a.lc.attachPending == 0 {
-		a.finishCreate(ctx)
-	}
-}
 
-func (a *StateMachineActor) abortCreate(ctx actor.Context, reason string) {
-	name := ""
-	if a.StateMachine != nil && a.StateMachine.Group != nil {
-		name = a.StateMachine.Group.Name
-	}
-	if reason != "" {
-		fmt.Printf("state machine %s create failed: %s\n", name, reason)
-	}
-	a.lc.deferred = nil
-	if a.StateMachine != nil {
-		a.StateMachine.AbortStart()
-	}
-	a.beginDetach(ctx)
-}
-
-func (a *StateMachineActor) finishCreate(ctx actor.Context) {
-	if a.lc.attachDone {
-		return
-	}
-	if a.StateMachine != nil && !a.StateMachine.HasRegisteredMaps() {
-		a.abortCreate(ctx, "no maps registered")
-		return
-	}
-	a.lc.attachDone = true
+	a.lc.ready = true
+	a.callHook(ctx, "on_prepare")
 	deferred := a.lc.deferred
 	a.lc.deferred = nil
 	for _, msg := range deferred {
@@ -416,11 +347,16 @@ func (a *StateMachineActor) finishCreate(ctx actor.Context) {
 		case *entity.StartStateMachine:
 			a.handleStart(ctx)
 		case *entity.CallStateMachineHook:
-			if m != nil {
-				a.callHook(ctx, m.Hook, m.Args...)
-			}
+			a.callHook(ctx, m.Hook, m.Args...)
 		}
 	}
+}
+
+func (a *StateMachineActor) abortCreate(reason string) {
+	fmt.Printf("state machine %s create failed: %s\n", a.StateMachine.Group.Name, reason)
+	a.lc.deferred = nil
+	a.StateMachine.AbortStart()
+	a.beginStop()
 }
 
 func (a *StateMachineActor) handleEnterPlayer(ctx actor.Context, msg *entity.EnterStateMachinePlayer) {
@@ -428,104 +364,49 @@ func (a *StateMachineActor) handleEnterPlayer(ctx actor.Context, msg *entity.Ent
 		return
 	}
 	a.StateMachine.Register(msg.Character)
-	a.callHook(ctx, "on_player_enter", msg.Character)
+	a.callHook(ctx, "on_player_enter", append([]interface{}{msg.Character}, msg.Args...)...)
 }
 
 func (a *StateMachineActor) handleStart(ctx actor.Context) {
 	a.callHook(ctx, "on_start")
 }
 
-func (a *StateMachineActor) beginDetach(ctx actor.Context) {
-	if a.lc.detaching {
+func (a *StateMachineActor) beginStop() {
+	if a.lc.stopping {
 		return
 	}
-	a.lc.detaching = true
+	a.lc.stopping = true
 	a.timeoutVersion++
 	if a.timeoutCancel != nil {
 		a.timeoutCancel()
 		a.timeoutCancel = nil
 	}
 	a.cancelAllNamedSchedules()
-	if a.StateMachine != nil {
-		a.StateMachine.SetTimeoutDeadline(time.Time{})
-	}
-	root := ctx.ActorSystem().Root
-	self := ctx.Self()
-	sm := a.StateMachine
-	a.lc.detachPending = 0
-	for _, m := range sm.MapList() {
-		if m == nil {
-			continue
-		}
-		// A closed instance has stopped its actor, so it would never ack.
-		if m.Closed() {
-			continue
-		}
-		home := m.HomeActorPID()
-		if home == nil {
-			continue
-		}
-		a.lc.detachPending++
-		root.Send(home, &DetachStateMachine{StateMachine: sm, ReplyTo: self, MapID: m.GetMapID()})
-	}
-	if a.lc.detachPending == 0 && a.lc.attachPending == 0 {
+	a.StateMachine.SetTimeoutDeadline(time.Time{})
+
+	if len(a.StateMachine.MapList()) == 0 {
 		a.finalizeStop()
+		return
 	}
+	a.StateMachine.CloseMaps()
 }
 
-func (a *StateMachineActor) handleAttachAck(ctx actor.Context, msg *AttachStateMachineAck) {
-	if msg == nil {
+func (a *StateMachineActor) handleMapRemoved(msg *entity.StateMachineMapRemoved) {
+	if a.StateMachine.RemoveMap(msg.Map) == false {
 		return
 	}
-	if a.lc.attachPending > 0 {
-		a.lc.attachPending--
-	}
-
-	if a.lc.detaching {
-		if msg.OK && msg.Map.Closed() == false {
-			if home := msg.Map.HomeActorPID(); home != nil {
-				a.lc.detachPending++
-				ctx.Send(home, &DetachStateMachine{StateMachine: a.StateMachine, ReplyTo: ctx.Self(), MapID: msg.MapID})
-			}
-		}
-		if a.lc.detachPending == 0 && a.lc.attachPending == 0 {
-			a.finalizeStop()
-		}
-		return
-	}
-
-	if msg.OK == false {
-		a.abortCreate(ctx, fmt.Sprintf("attach to map %d failed", msg.MapID))
-		return
-	}
-	if a.lc.attachPending == 0 {
-		a.finishCreate(ctx)
-	}
-}
-
-func (a *StateMachineActor) handleDetachAck(_ actor.Context) {
-	if a.lc.detachPending > 0 {
-		a.lc.detachPending--
-	}
-	if a.lc.detachPending == 0 && a.lc.attachPending == 0 {
+	if a.lc.stopping {
 		a.finalizeStop()
 	}
 }
 
 func (a *StateMachineActor) finalizeStop() {
-	sm := a.StateMachine
-	if sm == nil {
+	if a.lc.stopped {
 		return
 	}
 	a.lc.stopped = true
-	sm.ClearMaps()
-	sm.ReleaseMaps()
-	if sm.Group != nil {
-		sm.Group.RemoveMachine(sm)
-	}
-	if a.GameWorld != nil {
-		a.GameWorld.StopStateMachineActor(sm)
-	}
+	a.StateMachine.Group.RemoveMachine(a.StateMachine)
+	a.GameWorld.StopStateMachineActor(a.StateMachine)
 }
 
 func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...interface{}) {

@@ -21,19 +21,6 @@ local function quest_record(me, id)
 	return q:record()
 end
 
-local function player_count(map)
-	if map == nil then
-		return 0
-	end
-	local n = 0
-	for _, ch in pairs(map:characters()) do
-		if ch ~= nil then
-			n = n + 1
-		end
-	end
-	return n
-end
-
 return {
 	on_enter = function(me)
 		if not pq.has_item(me, MEDAL_ID) then
@@ -56,15 +43,11 @@ return {
 			me:message("이미 파풀라투스와의 전투가 시작되어 입장할 수 없습니다.")
 			return
 		end
-		local boss_map = group:map(BOSS_MAP)
-		if boss_map == nil then
-			boss_map = id2map(BOSS_MAP)
-		end
-		if player_count(boss_map) >= MAX_PLAYERS then
+		local sm = group:get(INSTANCE_ID)
+		if sm ~= nil and #sm:players() >= MAX_PLAYERS then
 			me:message("이 방은 이미 파풀라투스와의 전투를 위한 최대 인원수 만큼 가득 찼습니다.")
 			return
 		end
-		local sm = group:get(INSTANCE_ID)
 		if sm ~= nil and sm:disposed() then
 			me:message("이전 전투를 정리하고 있습니다. 잠시 후 다시 시도해 주세요.")
 			return

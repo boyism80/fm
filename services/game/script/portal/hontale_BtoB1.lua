@@ -11,6 +11,6 @@ return {
 		pq.remove_all(4001087, me)
 		me:message("첫 번째 미로방의 수정의 힘에 의해 어딘가로 이동됩니다.", Msg.PinkText)
 		me:play_portal_sound()
-		me:map(240050101)
+		pq.warp(me, 240050101)
 	end
 }

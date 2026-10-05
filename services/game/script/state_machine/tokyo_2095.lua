@@ -4,50 +4,27 @@ local EXIT_MAP = 802000312
 local TEMPLATE_MAP = 802000311
 local DURATION_MS = 1200000
 
-local function instance(sm)
-	local maps = sm:maps()
-	return maps[1]
-end
-
 local function finish(sm, exit_map)
-	if exit_map == nil then
-		exit_map = EXIT_MAP
-	end
-	local map = instance(sm)
-	sm:finish(exit_map)
-	if map ~= nil then
-		map:destroy()
-	end
+	sm:finish(exit_map or EXIT_MAP)
 end
 
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
 		group:set_property("leader", "true")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
 		group:set_property("leader", "true")
-		local tmpl = id2map(TEMPLATE_MAP)
-		if tmpl == nil then
-			sm:finish(0)
-			return
-		end
-		local map, err = tmpl:create_instance()
-		if map == nil then
-			if err ~= nil then
-				log("tokyo_2095 create_instance:", err)
-			end
-			sm:finish(0)
-			return
-		end
-		map:kill_all_mobs()
-		return { map }
+		return { TEMPLATE_MAP }
+	end,
 
+	on_prepare = function(sm)
+		sm:map(TEMPLATE_MAP):kill_all_mobs()
 	end,
 
 	on_start = function(sm)
@@ -55,10 +32,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		local map = instance(sm)
-		if map ~= nil then
-			player:map(map, 0)
-		end
+		player:map(sm:map(TEMPLATE_MAP), 0)
 	end,
 
 	on_scheduled_timeout = function(sm)
@@ -70,10 +44,6 @@ return {
 	end,
 
 	on_finish = function(sm)
-		local map = instance(sm)
-		if map ~= nil then
-			map:destroy()
-		end
 		local group = sm:group()
 		group:set_property("state", "0")
 		group:set_property("leader", "true")

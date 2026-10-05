@@ -56,38 +56,31 @@ local GATE_NOTICES = {
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(gq.EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(gq.EXIT_MAP)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
 		sm:set_property("state", "waiting")
+		return STAGE_MAPS
+	end,
+
+	on_prepare = function(sm)
 		for _, map_id in ipairs(STAGE_MAPS) do
-			local map = group:map(map_id)
-			if map ~= nil then
-				map:reset()
-				map:respawn({ include_one_time = true })
-			end
+			sm:map(map_id):respawn({ include_one_time = true })
 		end
 		for _, map_id in ipairs(SHUFFLE_MAPS) do
-			pq.shuffle_reactors(group:map(map_id))
+			pq.shuffle_reactors(sm:map(map_id))
 		end
 		for _, map_id in ipairs(MAZE_END_MAPS) do
-			local map = group:map(map_id)
-			if map ~= nil then
-				map:set_reactor_respawn(false)
-			end
+			sm:map(map_id):set_reactor_respawn(false)
 		end
-		local waiting = group:map(WAITING_MAP)
-		if waiting ~= nil then
-			local portal = waiting:portal(5)
-			if portal ~= nil then
-				portal:script("guildwaitingenter")
-			end
+		local portal = sm:map(WAITING_MAP):portal(5)
+		if portal ~= nil then
+			portal:script("guildwaitingenter")
 		end
-		return STAGE_MAPS
 	end,
 
 	on_start = function(sm)
@@ -99,7 +92,7 @@ return {
 		local function on_arrive(player)
 			player:open_npc(BOARD_NPC)
 		end
-		player:map(WAITING_MAP, 0, { callback = on_arrive })
+		player:map(sm:map(WAITING_MAP), 0, { callback = on_arrive })
 	end,
 
 	on_player_leave = function(sm, player, reason)
@@ -144,7 +137,7 @@ return {
 			return
 		end
 		sm:set_property("stage1pending", rest)
-		local gate = sm:group():map(GATE_MAP)
+		local gate = sm:map(GATE_MAP)
 		if gate ~= nil then
 			local statue = gate:reactors()[tonumber(oid)]
 			if statue ~= nil then
@@ -176,7 +169,7 @@ return {
 	end,
 
 	on_clear = function(sm)
-		local bonus = sm:group():map(BONUS_MAP)
+		local bonus = sm:map(BONUS_MAP)
 		if bonus ~= nil then
 			bonus:reload_reactors()
 		end

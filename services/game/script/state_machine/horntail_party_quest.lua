@@ -28,8 +28,8 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(5)
-		group:declare_exit_map(FAIL_EXIT)
+		group:min_players(5)
+		group:exit_map(FAIL_EXIT)
 	end,
 
 	on_create = function(sm)
@@ -37,13 +37,13 @@ return {
 		group:set_property("state", "1")
 		sm:set_property("stage1progress", "0")
 		sm:set_property("allfinish", "")
-		for _, map_id in ipairs(stage_maps) do
-			local map = group:map(map_id)
-			map:reset()
-			map:respawn({ include_one_time = true })
-		end
 		return stage_maps
+	end,
 
+	on_prepare = function(sm)
+		for _, map_id in ipairs(stage_maps) do
+			sm:map(map_id):respawn({ include_one_time = true })
+		end
 	end,
 
 	on_start = function(sm)
@@ -51,7 +51,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(stage_maps[1])
+		player:map(sm:map(stage_maps[1]))
 	end,
 
 	on_mob_kill = function(sm, player, mobs)

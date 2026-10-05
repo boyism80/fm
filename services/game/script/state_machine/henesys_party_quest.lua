@@ -15,8 +15,8 @@ return {
 		group:set_property("state", "0")
 		group:set_property("stage", "0")
 		group:set_property("clear", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
@@ -24,11 +24,11 @@ return {
 		group:set_property("state", "1")
 		group:set_property("stage", "0")
 		group:set_property("clear", "0")
-		local map = group:map(STAGE_MAP)
-		map:reset()
-		map:set_respawn(false)
 		return { STAGE_MAP }
+	end,
 
+	on_prepare = function(sm)
+		sm:map(STAGE_MAP):set_respawn(false)
 	end,
 
 	on_start = function(sm)
@@ -39,7 +39,7 @@ return {
 		local function on_arrive(player)
 			player:try_party_quest(RANKING_QUEST)
 		end
-		player:map(STAGE_MAP, { callback = on_arrive })
+		player:map(sm:map(STAGE_MAP), { callback = on_arrive })
 	end,
 
 	on_mob_kill = function(sm, player, mobs)

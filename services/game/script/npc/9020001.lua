@@ -145,7 +145,7 @@ local function give_bonus(me, npc)
 		me:dialog(npc, "인벤토리 공간을 확보하신 후 다시 말을 걸어주세요.")
 		return
 	end
-	me:map(BONUS_MAP)
+	pq.warp(me, BONUS_MAP)
 end
 
 local function handle_stage1(me, npc, sm, map)

@@ -12,8 +12,9 @@ return {
 			return
 		end
 		local reactor = map:find_reactor_name("elevator")
-		if reactor ~= nil and reactor:state() == 0 then
-			me:map(map:wz():id() + 10)
+		local sm = group:get("persistent")
+		if reactor ~= nil and reactor:state() == 0 and sm ~= nil then
+			sm:enter_player(me, map:wz():id() + 10)
 			return
 		end
 		me:message("엘리베이터 문이 닫혀있습니다.", Msg.PinkText)

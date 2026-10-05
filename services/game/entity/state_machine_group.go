@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -9,25 +10,31 @@ import (
 )
 
 type StateMachineGroup struct {
-	mu         sync.Mutex
-	Name       string
-	ScriptPath string
-	GameWorld  GameWorld
-	props      map[string]string
-	machines   map[string]*StateMachine
-	bootMapID  uint32
-	minPlayers int
-	exitMapID  uint32
+	mu            sync.Mutex
+	Name          string
+	ScriptPath    string
+	GameWorld     GameWorld
+	props         map[string]string
+	machines      map[string]*StateMachine
+	bootMapID     uint32
+	minPlayers    int
+	exitMapID     uint32
+	limitMachines bool
+	maxMachines   int
 }
+
+var ErrStateMachineLimit = errors.New("state machine limit reached")
 
 func NewStateMachineGroup(name, scriptPath string, gw GameWorld) *StateMachineGroup {
 	return &StateMachineGroup{
-		Name:       name,
-		ScriptPath: scriptPath,
-		GameWorld:  gw,
-		props:      make(map[string]string),
-		machines:   make(map[string]*StateMachine),
-		bootMapID:  180000000,
+		Name:          name,
+		ScriptPath:    scriptPath,
+		GameWorld:     gw,
+		props:         make(map[string]string),
+		machines:      make(map[string]*StateMachine),
+		bootMapID:     180000000,
+		limitMachines: true,
+		maxMachines:   1,
 	}
 }
 
@@ -55,14 +62,20 @@ func (g *StateMachineGroup) GetProperty(key string) string {
 	return g.props[key]
 }
 
-func (g *StateMachineGroup) GetMap(mapID uint32) *Map {
-	if g == nil || g.GameWorld == nil {
-		return nil
-	}
-	return g.GameWorld.GetMapSystem().Get(mapID)
+func (g *StateMachineGroup) SetMaxMachines(n int) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.limitMachines = true
+	g.maxMachines = n
 }
 
-func (g *StateMachineGroup) DeclareMinPlayers(n int) {
+func (g *StateMachineGroup) RemoveMachineLimit() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.limitMachines = false
+}
+
+func (g *StateMachineGroup) SetMinPlayers(n int) {
 	if g == nil {
 		return
 	}
@@ -101,7 +114,7 @@ func (g *StateMachineGroup) Machines() []*StateMachine {
 	return out
 }
 
-func (g *StateMachineGroup) DeclareExitMap(mapID uint32) {
+func (g *StateMachineGroup) SetExitMap(mapID uint32) {
 	if g == nil {
 		return
 	}
@@ -222,34 +235,49 @@ func (g *StateMachineGroup) Create(id string, opts CreateOpts) (*StateMachine, e
 		return nil, fmt.Errorf("game world is nil")
 	}
 
-	g.mu.Lock()
-	existing := g.machines[id]
-	g.mu.Unlock()
-	if existing != nil && !existing.Disposed() {
-		return nil, fmt.Errorf("state machine %s is already running", id)
-	}
-
 	sm := NewStateMachine(id, g)
 	sm.Party = opts.Party
 	sm.Leader = opts.Leader
 	sm.ScaleLevel = opts.ScaleLevel
 	sm.MinPlayers = g.MinPlayers()
 	sm.ExitMapID = g.ExitMapID()
-
 	sm.ActorPID = g.GameWorld.StartStateMachineActor(sm)
 	if sm.ActorPID == nil {
 		return nil, fmt.Errorf("failed to start state machine actor")
 	}
 
 	g.mu.Lock()
-	if g.machines == nil {
-		g.machines = make(map[string]*StateMachine)
+	err := g.checkCreateLocked(id)
+	if err == nil {
+		g.machines[id] = sm
 	}
-	g.machines[id] = sm
 	g.mu.Unlock()
+	if err != nil {
+		g.GameWorld.StopStateMachineActor(sm)
+		return nil, err
+	}
 
 	g.GameWorld.SendStateMachineMessage(sm.ActorPID, &BootstrapStateMachine{})
 	return sm, nil
+}
+
+func (g *StateMachineGroup) checkCreateLocked(id string) error {
+	if existing := g.machines[id]; existing != nil && existing.Disposed() == false {
+		return fmt.Errorf("state machine %s is already running", id)
+	}
+	if g.limitMachines == false {
+		return nil
+	}
+	running := 0
+	for _, sm := range g.machines {
+		if sm.Disposed() == false {
+			running++
+		}
+	}
+	if running >= g.maxMachines {
+		return ErrStateMachineLimit
+	}
+	return nil
 }
 
 func (g *StateMachineGroup) EnterPlayer(sm *StateMachine, ch *Character) {

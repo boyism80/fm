@@ -65,7 +65,10 @@ func (h *Warp) Handle(ctx *core.ClientContext, req *request.Warp) error {
 		sm.CallHook("on_player_revive", character)
 	}
 
-	targetMap := h.gs.GetMapSystem().Get(uint32(wz.ReturnMapId))
+	targetMap := currentMap.StateMachine().Map(uint32(wz.ReturnMapId))
+	if targetMap == nil {
+		targetMap = h.gs.GetMapSystem().Get(uint32(wz.ReturnMapId))
+	}
 	if targetMap == nil {
 		return fmt.Errorf("target map not found")
 	}

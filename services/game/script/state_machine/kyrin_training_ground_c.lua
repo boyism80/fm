@@ -13,19 +13,17 @@ end
 return {
 	on_init = function(group)
 		group:set_property("started", "false")
-		group:declare_min_players(1)
+		group:min_players(1)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("started", "true")
-		local map = group:map(TRAINING_MAP)
-		if map ~= nil then
-			map:reset()
-			map:respawn({ include_one_time = true })
-		end
 		return { TRAINING_MAP }
+	end,
 
+	on_prepare = function(sm)
+		sm:map(TRAINING_MAP):respawn({ include_one_time = true })
 	end,
 
 	on_start = function(sm)
@@ -33,7 +31,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(TRAINING_MAP)
+		player:map(sm:map(TRAINING_MAP))
 		sm:message("카이린의 공격으로부터 2분 이상 버티세요.", Msg.PinkText)
 	end,
 

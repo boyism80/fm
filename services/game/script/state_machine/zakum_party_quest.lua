@@ -75,8 +75,8 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
@@ -84,20 +84,16 @@ return {
 		group:set_property("state", "1")
 		sm:set_property("clear", "")
 		sm:set_property("paper", "")
-		for _, map_id in ipairs(STAGE_MAPS) do
-			local map = group:map(map_id)
-			if map ~= nil then
-				map:reset()
-				map:respawn({ include_one_time = true })
-				pq.shuffle_reactors(map, SHUFFLE_REACTOR_MIN, SHUFFLE_REACTOR_MAX)
-			end
-		end
-		local hub = group:map(START_MAP)
-		if hub ~= nil then
-			pq.shuffle_reactors(hub)
-		end
 		return STAGE_MAPS
+	end,
 
+	on_prepare = function(sm)
+		for _, map_id in ipairs(STAGE_MAPS) do
+			local map = sm:map(map_id)
+			map:respawn({ include_one_time = true })
+			pq.shuffle_reactors(map, SHUFFLE_REACTOR_MIN, SHUFFLE_REACTOR_MAX)
+		end
+		pq.shuffle_reactors(sm:map(START_MAP))
 	end,
 
 	on_start = function(sm)
@@ -108,7 +104,7 @@ return {
 		local function on_arrive(player)
 			ensure_quest_started(player, STAGE1_QUEST, "")
 		end
-		player:map(START_MAP, { callback = on_arrive })
+		player:map(sm:map(START_MAP), { callback = on_arrive })
 	end,
 
 	on_left_party = function(sm, player)

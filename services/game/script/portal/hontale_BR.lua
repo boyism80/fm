@@ -11,6 +11,6 @@ return {
 			return
 		end
 		me:play_portal_sound()
-		me:map(map:wz():id() + 100)
+		pq.warp(me, map:wz():id() + 100)
 	end
 }

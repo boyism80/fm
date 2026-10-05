@@ -8,7 +8,7 @@ return {
 		end
 		if pq.mob_count(map) == 0 then
 			me:play_portal_sound()
-			me:map(925100300)
+			pq.warp(me, 925100300)
 		else
 			me:message("아직 이 포탈을 이용할 수 없습니다.", Msg.PinkText)
 		end

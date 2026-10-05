@@ -32,11 +32,7 @@ return {
 		end
 		local target_map_id = portal:target_map()
 		local target_name = portal:target()
-		local group = sm:group()
-		if group == nil then
-			return
-		end
-		local dest = group:map(target_map_id)
+		local dest = sm:map(target_map_id)
 		if dest == nil then
 			return
 		end

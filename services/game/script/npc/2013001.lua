@@ -57,14 +57,14 @@ local function handle_prestage(me, npc, sm)
 	local rewarded = sm:get_property("prestageRewarded")
 	if not pq.is_leader(me) then
 		if rewarded == "clear" then
-			me:map(920010000, 2)
+			pq.warp(me, 920010000, 2)
 		else
 			me:dialog(npc, "제 몸을 다시 만들어 주셔서 너무 고마워요! 여신의 탑으로 들어가려면 파티장이 제게 말을 걸어주면 된답니다.")
 		end
 		return
 	end
 	if rewarded == "clear" then
-		me:map(920010000, 2)
+		pq.warp(me, 920010000, 2)
 		return
 	end
 	local map = me:map()

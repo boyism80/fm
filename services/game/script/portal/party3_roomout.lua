@@ -10,8 +10,8 @@ local OUT = {
 	[920011000] = { portal = 16, name = "<암흑의 방>" },
 }
 
-local function map_count(group, map_id)
-	local map = group:map(map_id)
+local function map_count(sm, map_id)
+	local map = sm:map(map_id)
 	if map == nil then
 		return 0
 	end
@@ -44,7 +44,7 @@ return {
 		local group = sm:group()
 		if map_id == 920010600 and group ~= nil then
 			for id = 920010601, 920010604 do
-				if map_count(group, id) > 0 then
+				if map_count(sm, id) > 0 then
 					me:message("객실에 파티원이 입장하고 있어 지금은 퇴장할 수 없습니다.")
 					return
 				end

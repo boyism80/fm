@@ -6,64 +6,32 @@ local NPC_ID = 1052004
 local NPC_X = -70
 local NPC_Y = 95
 
-local function instance(sm)
-	local maps = sm:maps()
-	return maps[1]
-end
-
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
-		local group = sm:group()
-		group:set_property("state", "1")
-		local tmpl = id2map(TEMPLATE_MAP)
-		if tmpl == nil then
-			sm:finish(0)
-			return
-		end
-		local map, err = tmpl:create_instance({
-			npcs = false,
-			reactors = false,
-			respawns = false,
-		})
-		if map == nil then
-			if err ~= nil then
-				log("gojarani create_instance:", err)
-			end
-			sm:finish(0)
-			return
-		end
-		map:reset()
-		map:spawn_npc(NPC_ID, NPC_X, NPC_Y)
-		local p2 = map:portal(2)
-		if p2 ~= nil then
-			p2:script("goja_out")
-		end
-		local p3 = map:portal(3)
-		if p3 ~= nil then
-			p3:script("goja_out")
-		end
-		return { map }
+		sm:group():set_property("state", "1")
+		return {
+			{ id = TEMPLATE_MAP, npcs = false, reactors = false, respawns = false },
+		}
+	end,
 
+	on_prepare = function(sm)
+		local map = sm:map(TEMPLATE_MAP)
+		map:spawn_npc(NPC_ID, NPC_X, NPC_Y)
+		map:portal(2):script("goja_out")
+		map:portal(3):script("goja_out")
 	end,
 
 	on_player_enter = function(sm, player)
-		local map = instance(sm)
-		if map ~= nil then
-			player:map(map, 0)
-		end
+		player:map(sm:map(TEMPLATE_MAP), 0)
 	end,
 
 	on_finish = function(sm)
-		local map = instance(sm)
-		if map ~= nil then
-			map:destroy()
-		end
 		sm:group():set_property("state", "0")
 	end,
 }

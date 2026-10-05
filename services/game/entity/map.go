@@ -45,8 +45,6 @@ type MapListener interface {
 	OnMistSpawned(mapInstance *Map, mist *Mist)
 	OnMistRemoved(mapInstance *Map, mist *Mist)
 	OnDoorRemoved(mapInstance *Map, door *Door, animated bool)
-	OnStateMachineDetached(mapInstance *Map)
-	OnStateMachineAttached(mapInstance *Map, sm *StateMachine)
 }
 
 type MobSpawn struct {
@@ -56,10 +54,11 @@ type MobSpawn struct {
 }
 
 type MapInitOpts struct {
-	Npcs     bool
-	Reactors bool
-	Respawns bool
-	Instance bool
+	Npcs         bool
+	Reactors     bool
+	Respawns     bool
+	Instance     bool
+	StateMachine *StateMachine
 }
 
 func DefaultMapInitOpts() MapInitOpts {
@@ -108,7 +107,6 @@ type Map struct {
 	actorPID            *actor.PID
 	stateMachine        *StateMachine
 	luaRoot             *lua.LState
-	stateMachineMu      sync.RWMutex
 	propertyMutex       sync.RWMutex
 	properties          map[string]interface{}
 	UsedDoorPortalIDs   map[uint8]struct{}
@@ -158,6 +156,7 @@ func NewMapWithOpts(id uint32, listener MapListener, mobListener MobListener, ma
 		availableOIDs:   make([]uint32, 0),
 		GameWorld:       gw,
 		actorPID:        actorPID,
+		stateMachine:    opts.StateMachine,
 	}
 
 	if opts.Instance {
@@ -1375,16 +1374,6 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 }
 
 func (m *Map) LogicActorPID() *actor.PID {
-	m.stateMachineMu.RLock()
-	sm := m.stateMachine
-	m.stateMachineMu.RUnlock()
-	if sm != nil && sm.ActorPID != nil {
-		return sm.ActorPID
-	}
-	return m.actorPID
-}
-
-func (m *Map) HomeActorPID() *actor.PID {
 	return m.actorPID
 }
 
@@ -1392,63 +1381,5 @@ func (m *Map) StateMachine() *StateMachine {
 	if m == nil {
 		return nil
 	}
-	m.stateMachineMu.RLock()
-	defer m.stateMachineMu.RUnlock()
 	return m.stateMachine
-}
-
-func (m *Map) AttachStateMachine(sm *StateMachine) error {
-	if m == nil || sm == nil {
-		return fmt.Errorf("invalid state machine attach")
-	}
-	if sm.Disposed() {
-		return fmt.Errorf("state machine for map %d is disposed", m.GetMapID())
-	}
-	m.stateMachineMu.Lock()
-	defer m.stateMachineMu.Unlock()
-	if m.stateMachine != nil {
-		return fmt.Errorf("map %d already has a state machine", m.GetMapID())
-	}
-	if m.actorPID == nil {
-		return fmt.Errorf("map %d has no actor", m.GetMapID())
-	}
-	m.stateMachine = sm
-	return nil
-}
-
-func (m *Map) DetachStateMachine(sm *StateMachine) {
-	if m == nil || sm == nil {
-		return
-	}
-	m.stateMachineMu.Lock()
-	if m.stateMachine != sm {
-		m.stateMachineMu.Unlock()
-		return
-	}
-	m.stateMachine = nil
-	m.stateMachineMu.Unlock()
-
-	m.listener.OnStateMachineDetached(m)
-}
-
-func (m *Map) NotifyStateMachineAttached(sm *StateMachine) {
-	if m == nil || sm == nil {
-		return
-	}
-	m.listener.OnStateMachineAttached(m, sm)
-}
-
-func (m *Map) RebindObjectTimers(pid *actor.PID) {
-	if m == nil || pid == nil {
-		return
-	}
-	for _, objects := range m.objects {
-		for _, obj := range objects {
-			if obj == nil {
-				continue
-			}
-			obj.SuspendTimers()
-			obj.ResumeTimers(pid)
-		}
-	}
 }

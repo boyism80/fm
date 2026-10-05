@@ -39,6 +39,9 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		_ = msg.TargetMap.LogoutPlayer(msg.Character.GetID())
 		return
 	}
+	if msg.TargetMap.Closing() {
+		a.GameWorld.GetMapSystem().CloseInstance(msg.TargetMap)
+	}
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 	if msg.OnEnter != nil {

@@ -172,6 +172,21 @@ func (s mapSystem) CreateInstanceMap(templateID uint32, opts entity.MapInitOpts)
 	return mapInstance, nil
 }
 
+func (s mapSystem) CreateStateMachineMap(templateID uint32, sm *entity.StateMachine, opts entity.MapInitOpts) (*entity.Map, error) {
+	if s.gs.resources.Maps[templateID] == nil {
+		return nil, fmt.Errorf("template map %d not found", templateID)
+	}
+	opts.Instance = true
+	opts.StateMachine = sm
+	key := s.gs.nextInstanceID.Add(1)
+	mapInstance := entity.NewMapWithOpts(key, s.gs.mapListener, s.gs.mobListener, templateID, s.gs, sm.ActorPID, opts)
+
+	s.gs.mapsMutex.Lock()
+	s.gs.instanceMaps[key] = mapInstance
+	s.gs.mapsMutex.Unlock()
+	return mapInstance, nil
+}
+
 // RemoveInstanceMap runs once the instance has closed: no character is on it or on the way, and no owner holds it.
 func (s mapSystem) RemoveInstanceMap(instanceKey uint32) error {
 	if s.gs == nil {
@@ -194,11 +209,18 @@ func (s mapSystem) RemoveInstanceMap(instanceKey uint32) error {
 	}
 	s.gs.slotMutex.Unlock()
 
+	sm := m.StateMachine()
+	if sm != nil {
+		s.gs.SendStateMachineMessage(sm.ActorPID, &entity.StateMachineMapRemoved{Map: m})
+	}
 	if m.GetPlayerCount() > 0 {
 		return fmt.Errorf("instance map %d closed with %d players", instanceKey, m.GetPlayerCount())
 	}
+	if sm != nil {
+		return nil
+	}
 	name := fmt.Sprintf("map_inst_%d", instanceKey)
-	s.gs.actorRegistry.PoisonActor(name, m.HomeActorPID())
+	s.gs.actorRegistry.PoisonActor(name, m.LogicActorPID())
 	return nil
 }
 
@@ -389,6 +411,9 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 	}
 	if character == nil {
 		return fmt.Errorf("character is nil")
+	}
+	if sm := targetMap.StateMachine(); sm != nil && sm.Admits(character) == false {
+		return entity.ErrStateMachineEntryDenied
 	}
 	// The ticket is released on every failure below, or carried to the target actor and released after AddPlayer.
 	ticket, err := targetMap.Reserve()

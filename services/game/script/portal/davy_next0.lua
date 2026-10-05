@@ -8,7 +8,7 @@ return {
 		end
 		if pq.mob_count(map) == 0 then
 			me:play_portal_sound()
-			me:map(925100100)
+			pq.warp(me, 925100100)
 		else
 			me:message("이 포탈은 잠겨 있습니다.", Msg.PinkText)
 		end

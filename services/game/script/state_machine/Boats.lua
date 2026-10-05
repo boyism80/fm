@@ -19,9 +19,8 @@ local INVASION_MS = 180000
 local BALROG = 8150000
 
 local function kill_decks(sm)
-	local group = sm:group()
-	local m1 = group:map(RIDE_ORBIS)
-	local m2 = group:map(RIDE_ELLINIA)
+	local m1 = sm:map(RIDE_ORBIS)
+	local m2 = sm:map(RIDE_ELLINIA)
 	if m1 ~= nil then
 		m1:kill_all_mobs()
 	end
@@ -78,6 +77,15 @@ return {
 		}
 	end,
 
+	on_player_enter = function(sm, player, map_id)
+		local map = sm:map(map_id)
+		if map == nil then
+			sm:unregister(player)
+			return
+		end
+		player:map(map)
+	end,
+
 	on_dock = function(sm)
 		disembark(sm)
 		open_dock(sm)
@@ -85,9 +93,8 @@ return {
 
 	on_stop_entry = function(sm)
 		sm:group():set_property("entry", "false")
-		local group = sm:group()
-		local c1 = group:map(CABIN_ORBIS)
-		local c2 = group:map(CABIN_ELLINIA)
+		local c1 = sm:map(CABIN_ORBIS)
+		local c2 = sm:map(CABIN_ELLINIA)
 		if c1 ~= nil then
 			c1:reload_reactors()
 		end
@@ -107,9 +114,8 @@ return {
 	end,
 
 	on_invasion = function(sm)
-		local group = sm:group()
-		local m1 = group:map(RIDE_ORBIS)
-		local m2 = group:map(RIDE_ELLINIA)
+		local m1 = sm:map(RIDE_ORBIS)
+		local m2 = sm:map(RIDE_ELLINIA)
 		if m1 ~= nil then
 			m1:spawn_mob(BALROG, -538, 143)
 			m1:spawn_mob(BALROG, -538, 143)
@@ -118,7 +124,7 @@ return {
 			m2:spawn_mob(BALROG, 339, 148)
 			m2:spawn_mob(BALROG, 339, 148)
 		end
-		group:set_property("haveBalrog", "true")
+		sm:group():set_property("haveBalrog", "true")
 		sm:broadcast_ship(RIDE_ORBIS, 1034)
 		sm:broadcast_ship(RIDE_ELLINIA, 1034)
 	end,

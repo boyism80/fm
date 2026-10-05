@@ -47,8 +47,8 @@ return {
 	on_init = function(group)
 		group:set_property("state", "0")
 		group:set_property("allfinish", "")
-		group:declare_min_players(MIN_PARTY_SIZE)
-		group:declare_exit_map(LOBBY_MAP)
+		group:min_players(MIN_PARTY_SIZE)
+		group:exit_map(LOBBY_MAP)
 	end,
 
 	on_create = function(sm)
@@ -57,19 +57,18 @@ return {
 		group:set_property("allfinish", "")
 		sm:set_property("stage", "1")
 		sm:set_property("guideRead", "0")
+		return STAGE_MAPS
+	end,
+
+	on_prepare = function(sm)
 		for _, map_id in ipairs(STAGE_MAPS) do
-			local map = group:map(map_id)
-			if map ~= nil then
-				map:reset()
-				map:respawn({ include_one_time = true })
-				local portal = map:portal("next00")
-				if portal ~= nil then
-					portal:script("enter_lpq")
-				end
+			local map = sm:map(map_id)
+			map:respawn({ include_one_time = true })
+			local portal = map:portal("next00")
+			if portal ~= nil then
+				portal:script("enter_lpq")
 			end
 		end
-		return STAGE_MAPS
-
 	end,
 
 	on_start = function(sm)
@@ -80,7 +79,7 @@ return {
 		local function on_arrive(player)
 			player:try_party_quest(RANKING_QUEST)
 		end
-		player:map(START_MAP, { callback = on_arrive })
+		player:map(sm:map(START_MAP), { callback = on_arrive })
 	end,
 
 	on_changed_map = function(sm, player, map_id)

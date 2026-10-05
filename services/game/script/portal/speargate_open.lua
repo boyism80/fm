@@ -1,12 +1,13 @@
 -- Portal (old/scripts/portal/speargate_open.js): 기사의 홀
 
+local pq = require("script/lib/party_quest")
 local gq = require("script/lib/guild_quest")
 
 local SPEAR_MAP = 990000440
 local SPEARS = { "spear1", "spear2", "spear3", "spear4" }
 
 local function spears_lit(sm)
-	local spear_map = sm:group():map(SPEAR_MAP)
+	local spear_map = sm:map(SPEAR_MAP)
 	if spear_map == nil then
 		return false
 	end
@@ -33,6 +34,6 @@ return {
 		end
 		gq.gain_gp_once(me, sm, "gainGP00", 20)
 		me:play_portal_sound()
-		me:map(990000401)
+		pq.warp(me, 990000401)
 	end
 }

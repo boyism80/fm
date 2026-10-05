@@ -29,10 +29,10 @@ return {
 			return
 		end
 		local sm = player:state_machine()
-		if sm == nil or sm:group() == nil then
+		if sm == nil then
 			return
 		end
-		local hub = sm:group():map(HUB_MAP)
+		local hub = sm:map(HUB_MAP)
 		if hub == nil then
 			return
 		end

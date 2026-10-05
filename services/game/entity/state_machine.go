@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -28,8 +29,14 @@ type StateMachine struct {
 	ActorPID        *actor.PID
 	Maps            map[uint32]*Map
 	mapRefs         map[*Map]*MapRef
-	mapRefsReleased bool
 	timeoutDeadline time.Time
+}
+
+var ErrStateMachineEntryDenied = errors.New("state machine map entry denied")
+
+type StateMachineMapSpec struct {
+	TemplateID uint32
+	Opts       MapInitOpts
 }
 
 func NewStateMachine(id string, group *StateMachineGroup) *StateMachine {
@@ -143,12 +150,13 @@ func (sm *StateMachine) RequestFinish(exitMapID uint32, exitPortal uint8) {
 	})
 }
 
-func (sm *StateMachine) EnterPlayer(ch *Character) {
+func (sm *StateMachine) EnterPlayer(ch *Character, args ...interface{}) {
 	if sm == nil || ch == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
 		return
 	}
 	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &EnterStateMachinePlayer{
 		Character: ch,
+		Args:      args,
 	})
 }
 
@@ -334,81 +342,75 @@ func (sm *StateMachine) SetTimeoutDeadline(deadline time.Time) {
 	sm.timeoutDeadline = deadline
 }
 
-func (sm *StateMachine) RecordMap(mapID uint32, m *Map) {
-	if sm == nil || m == nil {
-		return
+func (sm *StateMachine) CreateMaps(specs []StateMachineMapSpec) error {
+	ms := sm.Group.GameWorld.GetMapSystem()
+	for _, spec := range specs {
+		if sm.Map(spec.TemplateID) != nil {
+			continue
+		}
+		m, err := ms.CreateStateMachineMap(spec.TemplateID, sm, spec.Opts)
+		if err != nil {
+			return err
+		}
+		ref, err := m.Reserve()
+		if err != nil {
+			return err
+		}
+		sm.mu.Lock()
+		sm.Maps[spec.TemplateID] = m
+		sm.mapRefs[m] = ref
+		sm.mu.Unlock()
+	}
+	return nil
+}
+
+func (sm *StateMachine) Map(templateID uint32) *Map {
+	if sm == nil {
+		return nil
 	}
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	if sm.Maps == nil {
-		sm.Maps = make(map[uint32]*Map)
-	}
-	sm.Maps[mapID] = m
+	return sm.Maps[templateID]
 }
 
-// ReleaseMaps runs after every map has detached; instances the machine owned close once their last character leaves.
-func (sm *StateMachine) ReleaseMaps() {
+func (sm *StateMachine) CloseMaps() {
+	ms := sm.Group.GameWorld.GetMapSystem()
 	sm.mu.Lock()
 	refs := sm.mapRefs
 	sm.mapRefs = make(map[*Map]*MapRef)
-	sm.mapRefsReleased = true
 	sm.mu.Unlock()
 
-	for _, ref := range refs {
+	for m, ref := range refs {
+		ms.CloseInstance(m)
 		ref.Release()
 	}
 }
 
-// ReserveMap reserves the MapRef for instance maps and handles the "already
-// attached" case. It does NOT call AttachStateMachine or RebindObjectTimers —
-// those must run inside the map's own actor goroutine to avoid data races.
-// Returns (alreadyAttached, error); the caller must send an AttachStateMachine
-// message to HomeActorPID when alreadyAttached is false.
-func (sm *StateMachine) ReserveMap(m *Map) (alreadyAttached bool, err error) {
-	if sm == nil || m == nil {
-		return false, fmt.Errorf("invalid map register")
+func (sm *StateMachine) RemoveMap(m *Map) (empty bool) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	if sm.Maps[m.TemplateID()] == m {
+		delete(sm.Maps, m.TemplateID())
 	}
-	if sm.Disposed() {
-		return false, fmt.Errorf("state machine disposed")
-	}
-	if m.IsInstance() {
-		ref, err := m.Reserve()
-		if err != nil {
-			return false, err
-		}
-		sm.mu.Lock()
-		if sm.mapRefsReleased {
-			sm.mu.Unlock()
-			ref.Release()
-			return false, fmt.Errorf("state machine stopped")
-		}
-		if _, exists := sm.mapRefs[m]; exists {
-			ref.Release()
-		} else {
-			sm.mapRefs[m] = ref
-		}
-		sm.mu.Unlock()
-	}
-	if m.StateMachine() == sm {
-		sm.RecordMap(m.GetMapID(), m)
-		return true, nil
-	}
-	return false, nil
+	return len(sm.Maps) == 0
 }
 
 func (sm *StateMachine) OwnsMap(m *Map) bool {
 	if sm == nil || m == nil {
 		return false
 	}
-	if m.StateMachine() == sm {
-		return true
-	}
+	return m.StateMachine() == sm
+}
+
+func (sm *StateMachine) HasPlayer(ch *Character) bool {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	if sm.Maps == nil {
-		return false
-	}
-	return sm.Maps[m.GetMapID()] == m
+	_, ok := sm.playerSet[ch.GetID()]
+	return ok
+}
+
+func (sm *StateMachine) Admits(ch *Character) bool {
+	return sm.HasPlayer(ch)
 }
 
 func (sm *StateMachine) HandlePlayerMapEnter(ch *Character, m *Map) {
@@ -423,23 +425,11 @@ func (sm *StateMachine) HandlePlayerMapEnter(ch *Character, m *Map) {
 	sm.RequestLeave(ch, false, StateMachineLeaveMap)
 }
 
-func (sm *StateMachine) HasRegisteredMaps() bool {
-	if sm == nil {
-		return false
-	}
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	return len(sm.Maps) > 0
-}
-
-func ParseCreateMaps(tbl *lua.LTable, ms MapSystem) ([]*Map, error) {
-	if ms == nil {
-		return nil, fmt.Errorf("map system is nil")
-	}
+func ParseCreateMaps(tbl *lua.LTable) ([]StateMachineMapSpec, error) {
 	if tbl == nil {
 		return nil, fmt.Errorf("on_create must return a table")
 	}
-	out := make([]*Map, 0)
+	out := make([]StateMachineMapSpec, 0)
 	var parseErr error
 	tbl.ForEach(func(_ lua.LValue, value lua.LValue) {
 		if parseErr != nil {
@@ -447,39 +437,23 @@ func ParseCreateMaps(tbl *lua.LTable, ms MapSystem) ([]*Map, error) {
 		}
 		switch v := value.(type) {
 		case lua.LNumber:
-			id := uint32(v)
-			m := ms.Get(id)
-			if m == nil {
-				m = ms.GetInstance(id)
-			}
-			if m == nil {
-				parseErr = fmt.Errorf("map %d not found", id)
+			out = append(out, StateMachineMapSpec{TemplateID: uint32(v), Opts: DefaultMapInitOpts()})
+		case *lua.LTable:
+			id, ok := v.RawGetString("id").(lua.LNumber)
+			if ok == false {
+				parseErr = fmt.Errorf("on_create map entry table needs a numeric id")
 				return
 			}
-			out = append(out, m)
-		case *lua.LUserData:
-			if v == nil || v.Value == nil {
-				parseErr = fmt.Errorf("nil map in on_create return")
-				return
-			}
-			m, ok := v.Value.(*Map)
-			if !ok || m == nil {
-				parseErr = fmt.Errorf("invalid map userdata in on_create return")
-				return
-			}
-			out = append(out, m)
+			out = append(out, StateMachineMapSpec{TemplateID: uint32(id), Opts: ParseMapInitOptsLua(v)})
 		default:
-			if value == nil || value == lua.LNil {
-				return
-			}
-			parseErr = fmt.Errorf("on_create map entry must be map id or Map")
+			parseErr = fmt.Errorf("on_create map entry must be a map id")
 		}
 	})
 	if parseErr != nil {
 		return nil, parseErr
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("on_create must return a non-empty map array")
+		return nil, fmt.Errorf("on_create must return a non-empty map id array")
 	}
 	return out, nil
 }
@@ -495,15 +469,6 @@ func (sm *StateMachine) MapList() []*Map {
 		maps = append(maps, m)
 	}
 	return maps
-}
-
-func (sm *StateMachine) ClearMaps() {
-	if sm == nil {
-		return
-	}
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
-	sm.Maps = make(map[uint32]*Map)
 }
 
 func (sm *StateMachine) AbortStart() {
@@ -611,15 +576,18 @@ type BootstrapStateMachine struct{}
 
 type StopStateMachine struct{}
 
-type FinishStateMachineCreate struct{}
+type CreateStateMachineMaps struct {
+	Specs []StateMachineMapSpec
+	Err   string
+}
 
-type ApplyStateMachineCreateMaps struct {
-	Maps []*Map
-	Err  string
+type StateMachineMapRemoved struct {
+	Map *Map
 }
 
 type EnterStateMachinePlayer struct {
 	Character *Character
+	Args      []interface{}
 }
 
 type StartStateMachine struct{}

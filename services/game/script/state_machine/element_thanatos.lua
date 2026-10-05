@@ -11,19 +11,18 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
-		local map = group:map(BOSS_MAP)
-		if map ~= nil then
-			map:respawn({ include_one_time = true })
-		end
 		return { BOSS_MAP }
+	end,
 
+	on_prepare = function(sm)
+		sm:map(BOSS_MAP):respawn({ include_one_time = true })
 	end,
 
 	on_start = function(sm)
@@ -31,7 +30,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(BOSS_MAP)
+		player:map(sm:map(BOSS_MAP))
 	end,
 
 	on_left_party = function(sm, player)

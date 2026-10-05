@@ -4,8 +4,8 @@ local DEST = 920010700
 local CLEAR_PROP = "stage6clear"
 local ROOM_NAME = "<올라가는 길>"
 
-local function map_count(group, map_id)
-	local map = group:map(map_id)
+local function map_count(sm, map_id)
+	local map = sm:map(map_id)
 	if map == nil then
 		return 0
 	end
@@ -27,16 +27,12 @@ return {
 			me:message("이곳은 이미 클리어한 방입니다.", Msg.PinkText)
 			return
 		end
-		local group = sm:group()
-		if group == nil then
-			return
-		end
 		if pq.is_leader(me) then
 			pq.warp_portal(me, DEST, "st00")
 			sm:message("파티장이 " .. ROOM_NAME .. " 에 입장하였습니다.")
 			return
 		end
-		if map_count(group, DEST) > 0 then
+		if map_count(sm, DEST) > 0 then
 			pq.warp_portal(me, DEST, "st00")
 		else
 			me:message("파티장이 먼저 입장해야 합니다.", Msg.PinkText)

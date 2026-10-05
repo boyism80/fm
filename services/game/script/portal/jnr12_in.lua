@@ -1,7 +1,7 @@
 local pq = require("script/lib/party_quest")
 
-local function map_count(group, map_id)
-	local map = group:map(map_id)
+local function map_count(sm, map_id)
+	local map = sm:map(map_id)
 	if map == nil then
 		return 0
 	end
@@ -18,10 +18,6 @@ return {
 		if sm == nil then
 			return
 		end
-		local group = sm:group()
-		if group == nil then
-			return
-		end
 		local here = me:map()
 		local n = 0
 		if here ~= nil then
@@ -29,7 +25,7 @@ return {
 				n = n + 1
 			end
 		end
-		if n == 4 or map_count(group, 926110401) > 0 then
+		if n == 4 or map_count(sm, 926110401) > 0 then
 			pq.party_warp(sm, 926110401)
 			sm:message("유레테가 기계장치를 조작하자 거대한 괴물이 나타났다. 유레테는 기분나쁘게 웃으며 사라졌다.")
 		else

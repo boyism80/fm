@@ -1,5 +1,7 @@
 -- Portal (old/scripts/portal/under30gate.js): 지하수로
 
+local pq = require("script/lib/party_quest")
+
 return {
 	on_enter = function(me)
 		if me:level() > 30 then
@@ -7,6 +9,6 @@ return {
 			return
 		end
 		me:play_portal_sound()
-		me:map(990000640, 1)
+		pq.warp(me, 990000640, 1)
 	end
 }

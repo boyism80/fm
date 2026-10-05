@@ -101,28 +101,6 @@ type HandoffCharacter struct {
 	Ticket    *entity.MapRef
 }
 
-type AttachStateMachine struct {
-	StateMachine *entity.StateMachine
-	ReplyTo      *actor.PID
-	MapID        uint32
-}
-
-type AttachStateMachineAck struct {
-	MapID uint32
-	Map   *entity.Map
-	OK    bool
-}
-
-type DetachStateMachine struct {
-	StateMachine *entity.StateMachine
-	ReplyTo      *actor.PID
-	MapID        uint32
-}
-
-type DetachStateMachineAck struct {
-	MapID uint32
-}
-
 type TimerTick struct {
 	HandlerName string
 }

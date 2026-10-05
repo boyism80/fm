@@ -31,11 +31,7 @@ local function end_run(sm)
 end
 
 local function treasure_state(sm, map_id)
-	local group = sm:group()
-	if group == nil then
-		return 0
-	end
-	local map = group:map(map_id)
+	local map = sm:map(map_id)
 	if map == nil then
 		return 0
 	end
@@ -81,8 +77,8 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
@@ -106,28 +102,24 @@ return {
 		sm:set_property("hd_202_out", "")
 		sm:set_property("hd_302_out", "")
 
-		for _, map_id in ipairs(STAGE_MAPS) do
-			local map = group:map(map_id)
-			if map ~= nil then
-				map:reset()
-				map:respawn({ include_one_time = true })
-			end
-		end
-
-		local bow = group:map(925100100)
-		if bow ~= nil then
-			bow:set_respawn(false, 9300114)
-			bow:set_respawn(false, 9300115)
-			bow:set_respawn(false, 9300116)
-			bow:kill_all_mobs()
-		end
-
-		spawn_deck_pirates(group:map(925100200))
-		spawn_treasure_guards(group:map(925100201))
-		spawn_deck_pirates(group:map(925100300))
-		spawn_treasure_guards(group:map(925100301))
 		return STAGE_MAPS
+	end,
 
+	on_prepare = function(sm)
+		for _, map_id in ipairs(STAGE_MAPS) do
+			sm:map(map_id):respawn({ include_one_time = true })
+		end
+
+		local bow = sm:map(925100100)
+		bow:set_respawn(false, 9300114)
+		bow:set_respawn(false, 9300115)
+		bow:set_respawn(false, 9300116)
+		bow:kill_all_mobs()
+
+		spawn_deck_pirates(sm:map(925100200))
+		spawn_treasure_guards(sm:map(925100201))
+		spawn_deck_pirates(sm:map(925100300))
+		spawn_treasure_guards(sm:map(925100301))
 	end,
 
 	on_start = function(sm)
@@ -138,7 +130,7 @@ return {
 		local function on_arrive(player)
 			player:try_party_quest(RANKING_QUEST)
 		end
-		player:map(START_MAP, { callback = on_arrive })
+		player:map(sm:map(START_MAP), { callback = on_arrive })
 	end,
 
 	on_changed_map = function(sm, player, map_id)
@@ -196,8 +188,7 @@ return {
 				sm:set_property("entered_500", "1")
 				local t1 = treasure_state(sm, 925100201)
 				local t2 = treasure_state(sm, 925100301)
-				local group = sm:group()
-				local boss_map = group ~= nil and group:map(BOSS_MAP) or nil
+				local boss_map = sm:map(BOSS_MAP)
 				if boss_map ~= nil then
 					if t1 == 2 and t2 == 2 then
 						sm:message("데비존이 화가 무척이나 나 있습니다! 주의하세요!")
@@ -215,18 +206,14 @@ return {
 	end,
 
 	on_mob_die = function(sm, mob)
-		local group = sm:group()
-		if group == nil then
-			return
-		end
-		open_treasure_if_empty(group:map(925100201))
-		open_treasure_if_empty(group:map(925100301))
+		open_treasure_if_empty(sm:map(925100201))
+		open_treasure_if_empty(sm:map(925100301))
 		if mob == nil then
 			return
 		end
 		local id = mob:id()
 		if id == 9300119 or id == 9300105 or id == 9300106 then
-			local boss_map = group:map(BOSS_MAP)
+			local boss_map = sm:map(BOSS_MAP)
 			if boss_map ~= nil then
 				local reactor = boss_map:reactor(WYANG_REACTOR)
 				if reactor ~= nil then

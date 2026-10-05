@@ -211,7 +211,8 @@ return {
 	on_init = function(group)
 		carnival.bind_group(group)
 		carnival.set_skill_hit_chance(4, 100)
-		group:declare_exit_map(HUB_MAP)
+		group:exit_map(HUB_MAP)
+		group:max_machines(nil)
 		register_slot(0, 980000100, 2)
 		register_slot(1, 980000200, 2)
 		register_slot(2, 980000300, 2)
@@ -225,22 +226,19 @@ return {
 		if match == nil then
 			return { tonumber(sm:id()) }
 		end
-		local group = sm:group()
-		local maps = {
+		return {
 			match:waiting_map_id(),
 			match:revive_map_id(),
 			match:field_map_id(),
-			match:win_map_id(),
-			match:lose_map_id(),
 		}
-		for _, map_id in ipairs(maps) do
-			local map = group:map(map_id)
-			if map ~= nil and map_id == match:field_map_id() then
-				map:reset()
-				map:respawn({ include_one_time = true })
-			end
+	end,
+
+	on_prepare = function(sm)
+		local match = match_for_sm(sm)
+		if match == nil then
+			return
 		end
-		return maps
+		sm:map(match:field_map_id()):respawn({ include_one_time = true })
 	end,
 
 	on_player_enter = function(sm, player)
@@ -248,10 +246,7 @@ return {
 		if match == nil then
 			return
 		end
-		local waiting = sm:group():map(match:waiting_map_id())
-		if waiting ~= nil then
-			player:map(waiting, 0)
-		end
+		player:map(sm:map(match:waiting_map_id()), 0)
 	end,
 
 	on_start = function(sm)

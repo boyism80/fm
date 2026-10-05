@@ -12,17 +12,14 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
-		local map = group:map(STAGE_MAP)
-		map:reset()
 		return { STAGE_MAP }
-
 	end,
 
 	on_start = function(sm)
@@ -30,7 +27,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(STAGE_MAP)
+		player:map(sm:map(STAGE_MAP))
 	end,
 
 	on_mob_kill = function(sm, player, mobs)

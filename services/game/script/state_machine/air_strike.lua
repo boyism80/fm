@@ -32,20 +32,19 @@ end
 return {
 	on_init = function(group)
 		group:set_property("noEntry", "false")
-		group:declare_min_players(1)
+		group:min_players(1)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("noEntry", "true")
-		local map = group:map(QUEST_MAP)
-		if map ~= nil then
-			map:reset()
-			map:respawn({ include_one_time = true })
-			shuffle_reactors(map)
-		end
 		return { QUEST_MAP }
+	end,
 
+	on_prepare = function(sm)
+		local map = sm:map(QUEST_MAP)
+		map:respawn({ include_one_time = true })
+		shuffle_reactors(map)
 	end,
 
 	on_start = function(sm)
@@ -53,7 +52,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(QUEST_MAP)
+		player:map(sm:map(QUEST_MAP))
 	end,
 
 	on_scheduled_timeout = function(sm)

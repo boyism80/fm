@@ -1,5 +1,6 @@
-local function map_count(group, map_id)
-	local map = group:map(map_id)
+local pq = require("script/lib/party_quest")
+local function map_count(sm, map_id)
+	local map = sm:map(map_id)
 	if map == nil then
 		return 0
 	end
@@ -16,16 +17,12 @@ return {
 		if sm == nil then
 			return
 		end
-		local group = sm:group()
-		if group == nil then
-			return
-		end
-		if map_count(group, 920010930) > 0
-			or map_count(group, 920010931) > 0
-			or map_count(group, 920010932) > 0 then
+		if map_count(sm, 920010930) > 0
+			or map_count(sm, 920010931) > 0
+			or map_count(sm, 920010932) > 0 then
 			me:message("이미 감옥에 누군가가 들어가 있습니다.")
 			return
 		end
-		me:map(920010930)
+		pq.warp(me, 920010930)
 	end
 }

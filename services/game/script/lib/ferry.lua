@@ -56,10 +56,11 @@ function M.board(me, npc, opts)
 			return
 		end
 		local map = me:map()
-		if map == nil or map:wz() == nil then
+		local sm = g:get("persistent")
+		if map == nil or map:wz() == nil or sm == nil then
 			return
 		end
-		me:map(map:wz():id() + warp_delta)
+		sm:enter_player(me, map:wz():id() + warp_delta)
 		return
 	end
 	if M.prop(group_name, "docked") == "true" then

@@ -20,8 +20,8 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(4)
-		group:declare_exit_map(exit_map_id)
+		group:min_players(4)
+		group:exit_map(exit_map_id)
 	end,
 
 	on_mob_kill = function(sm, player, mobs)
@@ -31,17 +31,18 @@ return {
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
+		return stage_maps
+	end,
+
+	on_prepare = function(sm)
 		for _, map_id in ipairs(stage_maps) do
-			local map = group:map(map_id)
-			map:reset()
+			local map = sm:map(map_id)
 			map:respawn({ include_one_time = true })
 			local portal = map:portal("next00")
 			if portal ~= nil then
 				portal:script("enter_kpq")
 			end
 		end
-		return stage_maps
-
 	end,
 
 	on_start = function(sm)
@@ -52,7 +53,7 @@ return {
 		local function on_arrive(player)
 			player:try_party_quest(ranking_quest_id)
 		end
-		player:map(stage_maps[1], { callback = on_arrive })
+		player:map(sm:map(stage_maps[1]), { callback = on_arrive })
 	end,
 
 	on_player_dead = function(sm, player)

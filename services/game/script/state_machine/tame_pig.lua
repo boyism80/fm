@@ -17,23 +17,22 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
+		group:min_players(1)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
-		local map = group:map(QUEST_MAP)
-		if map ~= nil then
-			map:reset()
-			map:respawn({ include_one_time = true })
-			for _, mob in pairs(map:mobs(TAME_PIG_ID)) do
-				map:remove_mob(mob:oid(), MobDieAnimation.FadeOut)
-			end
-			map:spawn_mob(TAME_PIG_ID, -26, 335)
-		end
 		return { QUEST_MAP }
+	end,
 
+	on_prepare = function(sm)
+		local map = sm:map(QUEST_MAP)
+		map:respawn({ include_one_time = true })
+		for _, mob in pairs(map:mobs(TAME_PIG_ID)) do
+			map:remove_mob(mob:oid(), MobDieAnimation.FadeOut)
+		end
+		map:spawn_mob(TAME_PIG_ID, -26, 335)
 	end,
 
 	on_start = function(sm)
@@ -41,7 +40,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(QUEST_MAP)
+		player:map(sm:map(QUEST_MAP))
 		sm:message("멧돼지를 외계인으로부터 보호하고, 페로몬과 연구 보고서를 회수하세요!", Msg.PinkText)
 	end,
 

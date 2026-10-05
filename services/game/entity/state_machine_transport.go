@@ -13,15 +13,21 @@ func (sm *StateMachine) WarpAll(ctx actor.Context, fromMapID, toMapID uint32, sp
 	if ms == nil {
 		return
 	}
-	from := ms.Get(fromMapID)
-	to := ms.Get(toMapID)
-	if from == nil || to == nil {
+	from := sm.Map(fromMapID)
+	if from == nil {
+		return
+	}
+	to := sm.Map(toMapID)
+	if to == nil {
+		to = ms.Get(toMapID)
+	}
+	if to == nil {
 		return
 	}
 	players := make([]*Character, 0)
 	for _, obj := range from.GetAllPlayers() {
 		ch, ok := obj.(*Character)
-		if !ok || ch == nil {
+		if !ok || ch == nil || sm.HasPlayer(ch) == false {
 			continue
 		}
 		players = append(players, ch)
@@ -51,7 +57,10 @@ func (sm *StateMachine) BroadcastShip(mapID uint32, effect uint16) {
 		return
 	}
 	ms := sm.Group.GameWorld.GetMapSystem()
-	m := ms.Get(mapID)
+	m := sm.Map(mapID)
+	if m == nil {
+		m = ms.Get(mapID)
+	}
 	if m == nil {
 		return
 	}

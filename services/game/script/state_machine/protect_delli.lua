@@ -8,11 +8,6 @@ local SHELTER_MAP = 925010400
 
 local machine = solo_instance.create({
 	maps = { 925010000, 925010100, 925010200, 925010300 },
-	links = {
-		[925010000] = { "out00" },
-		[925010100] = { "in01", "out01" },
-		[925010200] = { "in02" },
-	},
 	exit_map = EXIT_MAP,
 	duration_ms = 1200000,
 	setup = function(sm, maps)

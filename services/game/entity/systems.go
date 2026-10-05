@@ -14,6 +14,7 @@ type MapSystem interface {
 	Get(mapID uint32) *Map
 	GetInstance(instanceKey uint32) *Map
 	CreateInstanceMap(templateID uint32, opts MapInitOpts) (*Map, error)
+	CreateStateMachineMap(templateID uint32, sm *StateMachine, opts MapInitOpts) (*Map, error)
 	SlotInstance(templateID uint32, slot uint32) (*Map, error)
 	RemoveInstanceMap(instanceKey uint32) error
 	CloseInstance(m *Map)

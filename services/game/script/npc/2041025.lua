@@ -31,15 +31,5 @@ return {
 			group:set_property("battle", "0")
 		end
 		me:map(LOBBY_MAP)
-		if group ~= nil then
-			local boss = group:map(BOSS_MAP)
-			if boss ~= nil then
-				boss:reset()
-			end
-			local lobby = group:map(LOBBY_MAP)
-			if lobby ~= nil then
-				lobby:reset()
-			end
-		end
 	end
 }

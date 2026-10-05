@@ -50,7 +50,7 @@ function M.revive(me)
 	if sm == nil then
 		return
 	end
-	local field = sm:group():map(match:field_map_id())
+	local field = sm:map(match:field_map_id())
 	if field == nil then
 		return
 	end

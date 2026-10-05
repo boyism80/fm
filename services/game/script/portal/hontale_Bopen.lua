@@ -26,7 +26,7 @@ return {
 				return
 			end
 			me:play_portal_sound()
-			me:map(240050102)
+			pq.warp(me, 240050102)
 			return
 		end
 		if map_id == 240050102 then
@@ -35,7 +35,7 @@ return {
 				return
 			end
 			me:play_portal_sound()
-			me:map(240050103)
+			pq.warp(me, 240050103)
 			return
 		end
 		if map_id == 240050103 then
@@ -44,7 +44,7 @@ return {
 				return
 			end
 			me:play_portal_sound()
-			me:map(240050104)
+			pq.warp(me, 240050104)
 			return
 		end
 		if map_id == 240050104 then
@@ -53,7 +53,7 @@ return {
 				return
 			end
 			me:play_portal_sound()
-			me:map(240050105)
+			pq.warp(me, 240050105)
 			return
 		end
 		if map_id == 240050105 then

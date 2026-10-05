@@ -714,7 +714,10 @@ func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 		return nil
 	}
 
-	targetMap := ch.GameWorld.GetMapSystem().Get(uint32(portal.Wz.TargetMapId))
+	targetMap := m.StateMachine().Map(uint32(portal.Wz.TargetMapId))
+	if targetMap == nil {
+		targetMap = ch.GameWorld.GetMapSystem().Get(uint32(portal.Wz.TargetMapId))
+	}
 	if targetMap == nil {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil

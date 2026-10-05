@@ -22,27 +22,23 @@ end
 return {
 	on_init = function(group)
 		group:set_property("state", "0")
-		group:declare_min_players(1)
-		group:declare_exit_map(EXIT_MAP)
+		group:min_players(1)
+		group:exit_map(EXIT_MAP)
 	end,
 
 	on_create = function(sm)
 		local group = sm:group()
 		group:set_property("state", "1")
-		for _, map_id in ipairs(STAGE_MAPS) do
-			local map = group:map(map_id)
-			if map ~= nil then
-				map:reset()
-				map:respawn({ include_one_time = true })
-			end
-		end
-		local boss_map = group:map(BOSS_MAP)
-		if boss_map ~= nil then
-			boss_map:kill_all_mobs()
-			boss_map:spawn_mob(BOSS_MOB, BOSS_SPAWN_X, BOSS_SPAWN_Y)
-		end
 		return STAGE_MAPS
+	end,
 
+	on_prepare = function(sm)
+		for _, map_id in ipairs(STAGE_MAPS) do
+			sm:map(map_id):respawn({ include_one_time = true })
+		end
+		local boss_map = sm:map(BOSS_MAP)
+		boss_map:kill_all_mobs()
+		boss_map:spawn_mob(BOSS_MOB, BOSS_SPAWN_X, BOSS_SPAWN_Y)
 	end,
 
 	on_start = function(sm)
@@ -50,7 +46,7 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		player:map(ENTRY_MAP)
+		player:map(sm:map(ENTRY_MAP))
 	end,
 
 	on_scheduled_timeout = function(sm)

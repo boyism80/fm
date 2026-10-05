@@ -1,7 +1,5 @@
 -- NPC name (String.wz/Npc.img.xml): 델리
 
-local solo_instance = require("script/lib/solo_instance")
-
 local QUEST = 6410
 local PROGRESS_QUEST = 6411
 local ROAD_MAP = 925010200
@@ -26,7 +24,7 @@ local function protect(me, npc)
 	end
 	sm:set_property("protect", "1")
 	sm:restart_timer(PROTECT_MS)
-	me:map(solo_instance.find_map(sm, PROTECT_MAP), 0)
+	me:map(sm:map(PROTECT_MAP), 0)
 end
 
 local function thank(me, npc)

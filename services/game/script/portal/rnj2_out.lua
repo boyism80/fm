@@ -1,3 +1,4 @@
+local pq = require("script/lib/party_quest")
 local DEST = 926100200
 local PROP = "stage3"
 local NEED = "3"
@@ -7,7 +8,7 @@ return {
 		local sm = me:state_machine()
 		if sm ~= nil and sm:get_property(PROP) == NEED then
 			me:play_portal_sound()
-			me:map(DEST)
+			pq.warp(me, DEST)
 		else
 			me:message("지금은 포탈이 닫혀있습니다.", Msg.PinkText)
 		end

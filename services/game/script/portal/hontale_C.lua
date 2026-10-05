@@ -39,7 +39,7 @@ return {
 			if sm ~= nil then
 				pq.party_warp(sm, LIGHT_CAVE)
 			else
-				me:map(LIGHT_CAVE)
+				pq.warp(me, LIGHT_CAVE)
 			end
 			return
 		end
@@ -48,7 +48,7 @@ return {
 			if sm ~= nil then
 				pq.party_warp(sm, DARK_CAVE)
 			else
-				me:map(DARK_CAVE)
+				pq.warp(me, DARK_CAVE)
 			end
 			return
 		end

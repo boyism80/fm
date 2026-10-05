@@ -52,41 +52,39 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LString(group.GetProperty(key)))
 			return 1
 		},
-		"declare_min_players": func(L *lua.LState) int {
+		"min_players": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			group, ok := ud.Value.(*StateMachineGroup)
 			if !ok || group == nil {
 				L.ArgError(1, "StateMachineGroup expected")
 				return 0
 			}
-			group.DeclareMinPlayers(L.CheckInt(2))
+			group.SetMinPlayers(L.CheckInt(2))
 			return 0
 		},
-		"declare_exit_map": func(L *lua.LState) int {
+		"exit_map": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			group, ok := ud.Value.(*StateMachineGroup)
 			if !ok || group == nil {
 				L.ArgError(1, "StateMachineGroup expected")
 				return 0
 			}
-			group.DeclareExitMap(uint32(L.CheckInt(2)))
+			group.SetExitMap(uint32(L.CheckInt(2)))
 			return 0
 		},
-		"map": func(L *lua.LState) int {
+		"max_machines": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			group, ok := ud.Value.(*StateMachineGroup)
 			if !ok || group == nil {
 				L.ArgError(1, "StateMachineGroup expected")
 				return 0
 			}
-			mapID := uint32(L.CheckInt(2))
-			m := group.GetMap(mapID)
-			if m == nil {
-				L.Push(lua.LNil)
-				return 1
+			if L.Get(2) == lua.LNil {
+				group.RemoveMachineLimit()
+				return 0
 			}
-			L.Push(luax.NewLuable(L, m))
-			return 1
+			group.SetMaxMachines(L.CheckInt(2))
+			return 0
 		},
 		"get": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

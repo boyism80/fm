@@ -53,6 +53,15 @@ return {
 		}
 	end,
 
+	on_player_enter = function(sm, player, map_id)
+		local map = sm:map(map_id)
+		if map == nil then
+			sm:unregister(player)
+			return
+		end
+		player:map(map)
+	end,
+
 	on_dock = function(sm)
 		disembark(sm)
 		open_dock(sm)

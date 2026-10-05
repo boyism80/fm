@@ -1,7 +1,5 @@
 -- Reactor name (Reactor.wz/9208007.img.xml): 창의 제단
 
-local gq = require("script/lib/guild_quest")
-
 local HALL_MAP = 990000400
 
 return {
@@ -10,7 +8,15 @@ return {
 		if map == nil then
 			return
 		end
-		local hall = state_machine(gq.GROUP):map(HALL_MAP)
+		local player = reactor:trigger()
+		if player == nil then
+			return
+		end
+		local sm = player:state_machine()
+		if sm == nil then
+			return
+		end
+		local hall = sm:map(HALL_MAP)
 		if hall == nil then
 			return
 		end

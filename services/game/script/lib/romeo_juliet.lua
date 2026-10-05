@@ -170,8 +170,8 @@ local function create(cfg)
 
 		on_init = function(group)
 			group:set_property("state", "0")
-			group:declare_min_players(1)
-			group:declare_exit_map(exit_map)
+			group:min_players(1)
+			group:exit_map(exit_map)
 		end,
 
 		on_create = function(sm)
@@ -179,29 +179,20 @@ local function create(cfg)
 			group:set_property("state", "1")
 			clear_props(sm)
 			init_stage6(sm)
-			for _, map_id in ipairs(maps) do
-				local map = group:map(map_id)
-				if map ~= nil then
-					map:reset()
-					map:respawn({ include_one_time = true })
-				end
-			end
-			local s1 = group:map(start_map)
-			if s1 ~= nil then
-				pick_investigate(sm, s1, investigate_npc)
-			end
-			shuffle_lab(group:map(lab1))
-			shuffle_lab(group:map(lab2))
-			local office = group:map(urete_office)
-			if office ~= nil then
-				office:spawn_npc(2112000, 200, 188)
-			end
-			local boss = group:map(boss_map)
-			if boss ~= nil then
-				boss:set_respawn(true)
-				boss:kill_all_mobs()
-			end
 			return maps
+		end,
+
+		on_prepare = function(sm)
+			for _, map_id in ipairs(maps) do
+				sm:map(map_id):respawn({ include_one_time = true })
+			end
+			pick_investigate(sm, sm:map(start_map), investigate_npc)
+			shuffle_lab(sm:map(lab1))
+			shuffle_lab(sm:map(lab2))
+			sm:map(urete_office):spawn_npc(2112000, 200, 188)
+			local boss = sm:map(boss_map)
+			boss:set_respawn(true)
+			boss:kill_all_mobs()
 		end,
 
 		on_start = function(sm)
@@ -213,13 +204,12 @@ local function create(cfg)
 				strip_items(player)
 				player:try_party_quest(RANKING_QUEST)
 			end
-			player:map(start_map, { callback = on_arrive })
+			player:map(sm:map(start_map), { callback = on_arrive })
 		end,
 
 		on_changed_map = function(sm, player, map_id)
 			if map_id == boss_map and sm:get_property("urete_boss") == "" then
-				local group = sm:group()
-				local boss = group ~= nil and group:map(boss_map) or nil
+				local boss = sm:map(boss_map)
 				if boss ~= nil then
 					boss:spawn_npc(2112010, 242, 150)
 					sm:set_property("urete_boss", "1")
@@ -231,18 +221,14 @@ local function create(cfg)
 			if mob == nil then
 				return
 			end
-			local group = sm:group()
-			if group == nil then
-				return
-			end
 			local id = mob:id()
-			local hall = group:map(hallway)
+			local hall = sm:map(hallway)
 			if hall ~= nil and pq.mob_count(hall) == 0 and sm:get_property("stage1_way_clear") == "" then
 				clear_fx(hall)
 				sm:set_property("stage1_way_clear", "1")
 			end
 			if id >= 9300142 and id <= 9300146 then
-				local office = group:map(urete_office)
+				local office = sm:map(urete_office)
 				if office ~= nil and pq.mob_count(office) == 0 and sm:get_property("stage5") == "1" then
 					sm:set_property("stage5", "2")
 					clear_fx(office)
@@ -259,7 +245,7 @@ local function create(cfg)
 			end
 			if id == 9300139 or id == 9300140 then
 				sm:set_property("clear_protect", "1")
-				local boss = group:map(boss_map)
+				local boss = sm:map(boss_map)
 				if boss ~= nil then
 					clear_fx(boss)
 					boss:set_respawn(true)
@@ -274,7 +260,7 @@ local function create(cfg)
 				end
 				local spawns = ok and ending_npcs.success or ending_npcs.fail
 				for _, map_id in ipairs({ urete_map, reward_map, boss_map }) do
-					local map = group:map(map_id)
+					local map = sm:map(map_id)
 					if map ~= nil then
 						for _, npc in ipairs(spawns[map_id]) do
 							map:spawn_npc(npc[1], npc[2], npc[3])

@@ -6,19 +6,18 @@ local function create(config)
 	return {
 		on_init = function(group)
 			group:set_property("started", "false")
-			group:declare_min_players(1)
-			group:declare_exit_map(config.exit_map)
+			group:min_players(1)
+			group:exit_map(config.exit_map)
 		end,
 
 		on_create = function(sm)
 			local group = sm:group()
 			group:set_property("started", "true")
-			local map = group:map(config.map)
-			if map ~= nil then
-				map:reset()
-				map:respawn({ include_one_time = true })
-			end
 			return { config.map }
+		end,
+
+		on_prepare = function(sm)
+			sm:map(config.map):respawn({ include_one_time = true })
 		end,
 
 		on_start = function(sm)
@@ -26,7 +25,7 @@ local function create(config)
 		end,
 
 		on_player_enter = function(sm, player)
-			player:map(config.map)
+			player:map(sm:map(config.map))
 		end,
 
 		on_disband_party = function(sm)
