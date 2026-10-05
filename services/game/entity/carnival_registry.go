@@ -114,22 +114,19 @@ func (r *CarnivalRegistry) Enter(slotIndex int, leader *Character) bool {
 		return false
 	}
 
-	memberIDs := make([]uint32, len(members))
 	roster := make([]*CarnivalMember, len(members))
 	personal := make(map[uint32]*CarnivalPersonalCP, len(members))
 	for i, ch := range members {
-		memberIDs[i] = ch.GetID()
 		roster[i] = ch.CarnivalMember()
 		personal[ch.GetID()] = &CarnivalPersonalCP{}
 	}
 	red := &CarnivalTeam{
-		Match:     match,
-		TeamID:    constant.CarnivalTeamRed,
-		LeaderID:  leader.GetID(),
-		PartyID:   party.GetPartyId(),
-		MemberIDs: memberIDs,
-		Roster:    roster,
-		Personal:  personal,
+		Match:    match,
+		TeamID:   constant.CarnivalTeamRed,
+		LeaderID: leader.GetID(),
+		PartyID:  party.GetPartyId(),
+		Roster:   roster,
+		Personal: personal,
 	}
 
 	smID := strconv.FormatUint(uint64(match.WaitingMapID), 10)
@@ -177,7 +174,7 @@ func (r *CarnivalRegistry) Challenge(slotIndex int, leader *Character) bool {
 		match.mu.Unlock()
 		return false
 	}
-	if len(members) != len(red.MemberIDs) {
+	if len(members) != len(red.Roster) {
 		match.mu.Unlock()
 		return false
 	}

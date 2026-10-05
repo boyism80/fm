@@ -234,20 +234,17 @@ func (m *CarnivalMatch) admitChallengers(challenge *CarnivalChallenge) {
 		members = append(members, ch)
 	}
 
-	memberIDs := make([]uint32, len(challenge.Members))
 	personal := make(map[uint32]*CarnivalPersonalCP, len(challenge.Members))
-	for i, member := range challenge.Members {
-		memberIDs[i] = member.ID
+	for _, member := range challenge.Members {
 		personal[member.ID] = &CarnivalPersonalCP{}
 	}
 	blue := &CarnivalTeam{
-		Match:     m,
-		TeamID:    constant.CarnivalTeamBlue,
-		LeaderID:  challenge.LeaderID,
-		PartyID:   challenge.PartyID,
-		MemberIDs: memberIDs,
-		Roster:    challenge.Members,
-		Personal:  personal,
+		Match:    m,
+		TeamID:   constant.CarnivalTeamBlue,
+		LeaderID: challenge.LeaderID,
+		PartyID:  challenge.PartyID,
+		Roster:   challenge.Members,
+		Personal: personal,
 	}
 
 	m.mu.Lock()
@@ -285,21 +282,18 @@ func (m *CarnivalMatch) dropChallenge(challenge *CarnivalChallenge) {
 	m.StateMachine().CallHook("on_challenge_failed")
 }
 
-func (m *CarnivalMatch) RejectPendingChallenge() (ok bool, shouldOpen bool) {
+func (m *CarnivalMatch) RejectPendingChallenge() {
 	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.Pending == nil || len(m.queue) == 0 {
-		m.mu.Unlock()
-		return false, false
+		return
 	}
 	m.queue = m.queue[1:]
-	if len(m.queue) == 0 {
-		m.Pending = nil
-		m.mu.Unlock()
-		return true, false
+	m.Pending = nil
+	if len(m.queue) > 0 {
+		m.Pending = m.queue[0]
 	}
-	m.Pending = m.queue[0]
-	m.mu.Unlock()
-	return true, true
 }
 
 func (m *CarnivalMatch) enemyTeam(teamID constant.CarnivalTeam) *CarnivalTeam {

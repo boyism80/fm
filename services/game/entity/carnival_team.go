@@ -2,6 +2,7 @@ package entity
 
 import (
 	"math/rand"
+	"slices"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
@@ -17,7 +18,6 @@ type CarnivalTeam struct {
 	TeamID      constant.CarnivalTeam
 	LeaderID    uint32
 	PartyID     uint32
-	MemberIDs   []uint32
 	Roster      []*CarnivalMember
 	AvailableCP int
 	TotalCP     int
@@ -26,8 +26,8 @@ type CarnivalTeam struct {
 }
 
 func (t *CarnivalTeam) HasMember(characterID uint32) bool {
-	for _, id := range t.MemberIDs {
-		if id == characterID {
+	for _, member := range t.Roster {
+		if member.ID == characterID {
 			return true
 		}
 	}
@@ -38,7 +38,7 @@ func (t *CarnivalTeam) Members() []*Character {
 	if t.Match == nil {
 		return nil
 	}
-	out := make([]*Character, 0, len(t.MemberIDs))
+	out := make([]*Character, 0, len(t.Roster))
 	for _, ch := range t.Match.StateMachine().Players() {
 		if t.HasMember(ch.GetID()) {
 			out = append(out, ch)
@@ -126,7 +126,7 @@ func (t *CarnivalTeam) Debuff(field *Map, skillID uint32) bool {
 		return false
 	}
 
-	targets := make([]*Character, 0, len(t.MemberIDs))
+	targets := make([]*Character, 0, len(t.Roster))
 	for _, member := range t.Members() {
 		if member.GetMap() == field {
 			targets = append(targets, member)
@@ -182,12 +182,9 @@ func (t *CarnivalTeam) Warp(ctx actor.Context, mapID uint32, portalName string) 
 }
 
 func (t *CarnivalTeam) RemoveMember(ch *Character) {
-	for i, id := range t.MemberIDs {
-		if id == ch.GetID() {
-			t.MemberIDs = append(t.MemberIDs[:i], t.MemberIDs[i+1:]...)
-			break
-		}
-	}
+	t.Roster = slices.DeleteFunc(t.Roster, func(member *CarnivalMember) bool {
+		return member.ID == ch.GetID()
+	})
 	ch.UnbindCarnival()
 }
 
@@ -195,7 +192,6 @@ func (t *CarnivalTeam) Clear() {
 	for _, ch := range t.Members() {
 		ch.UnbindCarnival()
 	}
-	t.MemberIDs = nil
 	t.Roster = nil
 	t.LeaderID = 0
 	t.AvailableCP = 0

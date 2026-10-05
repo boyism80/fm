@@ -260,9 +260,8 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			_, shouldOpen := match.RejectPendingChallenge()
-			L.Push(lua.LBool(shouldOpen))
-			return 1
+			match.RejectPendingChallenge()
+			return 0
 		},
 		"result": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -408,7 +407,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			L.Push(lua.LNumber(len(team.MemberIDs)))
+			L.Push(lua.LNumber(len(team.Roster)))
 			return 1
 		},
 		"available_cp": func(L *lua.LState) int {
