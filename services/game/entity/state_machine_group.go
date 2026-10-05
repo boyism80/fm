@@ -10,31 +10,35 @@ import (
 )
 
 type StateMachineGroup struct {
-	mu            sync.Mutex
-	Name          string
-	ScriptPath    string
-	GameWorld     GameWorld
-	props         map[string]string
-	machines      map[string]*StateMachine
-	bootMapID     uint32
-	minPlayers    int
-	exitMapID     uint32
-	limitMachines bool
-	maxMachines   int
+	mu          sync.Mutex
+	Name        string
+	ScriptPath  string
+	GameWorld   GameWorld
+	props       map[string]string
+	machines    map[string]*StateMachine
+	bootMapID   uint32
+	minPlayers  int
+	exitMapID   uint32
+	machineCap  MachineCap
+	capOverride *MachineCap
+}
+
+type MachineCap struct {
+	Limited bool
+	Max     int
 }
 
 var ErrStateMachineLimit = errors.New("state machine limit reached")
 
 func NewStateMachineGroup(name, scriptPath string, gw GameWorld) *StateMachineGroup {
 	return &StateMachineGroup{
-		Name:          name,
-		ScriptPath:    scriptPath,
-		GameWorld:     gw,
-		props:         make(map[string]string),
-		machines:      make(map[string]*StateMachine),
-		bootMapID:     180000000,
-		limitMachines: true,
-		maxMachines:   1,
+		Name:       name,
+		ScriptPath: scriptPath,
+		GameWorld:  gw,
+		props:      make(map[string]string),
+		machines:   make(map[string]*StateMachine),
+		bootMapID:  180000000,
+		machineCap: MachineCap{Limited: true, Max: 1},
 	}
 }
 
@@ -65,14 +69,34 @@ func (g *StateMachineGroup) GetProperty(key string) string {
 func (g *StateMachineGroup) SetMaxMachines(n int) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.limitMachines = true
-	g.maxMachines = n
+	g.machineCap = MachineCap{Limited: true, Max: n}
 }
 
 func (g *StateMachineGroup) RemoveMachineLimit() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.limitMachines = false
+	g.machineCap = MachineCap{}
+}
+
+func (g *StateMachineGroup) OverrideMachineCap(c MachineCap) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.capOverride = &c
+}
+
+func (g *StateMachineGroup) ClearMachineCapOverride() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.capOverride = nil
+}
+
+func (g *StateMachineGroup) MachineCap() (MachineCap, bool) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.capOverride != nil {
+		return *g.capOverride, true
+	}
+	return g.machineCap, false
 }
 
 func (g *StateMachineGroup) SetMinPlayers(n int) {
@@ -265,7 +289,11 @@ func (g *StateMachineGroup) checkCreateLocked(id string) error {
 	if existing := g.machines[id]; existing != nil && existing.Disposed() == false {
 		return fmt.Errorf("state machine %s is already running", id)
 	}
-	if g.limitMachines == false {
+	c := g.machineCap
+	if g.capOverride != nil {
+		c = *g.capOverride
+	}
+	if c.Limited == false {
 		return nil
 	}
 	running := 0
@@ -274,7 +302,7 @@ func (g *StateMachineGroup) checkCreateLocked(id string) error {
 			running++
 		}
 	}
-	if running >= g.maxMachines {
+	if running >= c.Max {
 		return ErrStateMachineLimit
 	}
 	return nil

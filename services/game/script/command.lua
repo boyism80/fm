@@ -989,6 +989,59 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["SM상한"] = {
+		privilege = ROLE.Admin,
+		usage = "<그룹|전체> [개수|무제한|기본] - 이 채널의 SM 동시 진행 상한 확인·변경 (기본: 스크립트 설정으로 복원)",
+		command = function(me, args)
+			local name = args[1]
+			local value = args[2]
+			if name == nil or name == "" then
+				me:message("사용법: /SM상한 <그룹|전체> [개수|무제한|기본]")
+				return true
+			end
+
+			local groups
+			if name == "전체" then
+				groups = state_machines()
+			else
+				local group = state_machine(name)
+				if group == nil then
+					me:message("그룹 없음: " .. name)
+					return true
+				end
+				groups = { group }
+			end
+
+			if value == nil or value == "" then
+				for _, group in ipairs(groups) do
+					local max, overridden = group:machine_cap()
+					local text = max == nil and "무제한" or tostring(max)
+					if overridden then
+						text = text .. " (변경됨)"
+					end
+					me:message(string.format("[%s] SM상한: %s", group:name(), text))
+				end
+				return true
+			end
+
+			local count = tonumber(value)
+			if value ~= "무제한" and value ~= "기본" and (count == nil or count < 0) then
+				me:message("사용법: /SM상한 <그룹|전체> [개수|무제한|기본]")
+				return true
+			end
+			for _, group in ipairs(groups) do
+				if value == "기본" then
+					group:reset_max_machines()
+				elseif value == "무제한" then
+					group:override_max_machines(nil)
+				else
+					group:override_max_machines(math.floor(count))
+				end
+			end
+			me:message(string.format("SM상한 %s: %s (%d개 그룹)", name, value, #groups))
+			return true
+		end,
+	},
 	["좌표"] = {
 		privilege = ROLE.Admin,
 		usage = "- 현재 좌표·저장 스폰포인트 확인",

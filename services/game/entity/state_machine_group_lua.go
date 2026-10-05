@@ -86,6 +86,46 @@ func (g *StateMachineGroup) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			group.SetMaxMachines(L.CheckInt(2))
 			return 0
 		},
+		"override_max_machines": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			if L.Get(2) == lua.LNil {
+				group.OverrideMachineCap(MachineCap{})
+				return 0
+			}
+			group.OverrideMachineCap(MachineCap{Limited: true, Max: L.CheckInt(2)})
+			return 0
+		},
+		"reset_max_machines": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			group.ClearMachineCapOverride()
+			return 0
+		},
+		"machine_cap": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			group, ok := ud.Value.(*StateMachineGroup)
+			if !ok || group == nil {
+				L.ArgError(1, "StateMachineGroup expected")
+				return 0
+			}
+			c, overridden := group.MachineCap()
+			if c.Limited {
+				L.Push(lua.LNumber(c.Max))
+			} else {
+				L.Push(lua.LNil)
+			}
+			L.Push(lua.LBool(overridden))
+			return 2
+		},
 		"get": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			group, ok := ud.Value.(*StateMachineGroup)

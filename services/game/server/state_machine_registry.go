@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -31,6 +32,17 @@ func (r *StateMachineRegistry) Get(name string) *entity.StateMachineGroup {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.groups[name]
+}
+
+func (r *StateMachineRegistry) Groups() []*entity.StateMachineGroup {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := make([]*entity.StateMachineGroup, 0, len(r.groups))
+	for _, group := range r.groups {
+		out = append(out, group)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
 }
 
 func (r *StateMachineRegistry) Register(group *entity.StateMachineGroup) {

@@ -463,6 +463,19 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 		return 1
 	})
 
+	luax.RegisterFunc(luaState, "state_machines", func(L *lua.LState) int {
+		tbl := L.NewTable()
+		if gs.stateMachines == nil {
+			L.Push(tbl)
+			return 1
+		}
+		for _, group := range gs.stateMachines.Groups() {
+			tbl.Append(luax.NewLuable(L, group))
+		}
+		L.Push(tbl)
+		return 1
+	})
+
 	luax.RegisterFunc(luaState, "name2map", func(L *lua.LState) int {
 		name := L.CheckString(1)
 		if gs.resources == nil {
