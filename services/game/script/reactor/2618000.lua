@@ -4,7 +4,7 @@ local pq = require("script/lib/party_quest")
 local rj = require("script/lib/romeo_juliet")
 
 return {
-	on_reactor = function(reactor)
+	on_state = function(reactor)
 		if reactor:state() < 7 then
 			return
 		end
