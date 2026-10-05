@@ -99,6 +99,16 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(machine.ScaleLevel))
 			return 1
 		},
+		"disposed": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			machine, ok := ud.Value.(*StateMachine)
+			if !ok || machine == nil {
+				L.ArgError(1, "StateMachine expected")
+				return 0
+			}
+			L.Push(lua.LBool(machine.Disposed()))
+			return 1
+		},
 		"enter_player": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			machine, ok := ud.Value.(*StateMachine)

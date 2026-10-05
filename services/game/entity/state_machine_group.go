@@ -128,13 +128,16 @@ func (g *StateMachineGroup) Get(id string) *StateMachine {
 	return g.machines[id]
 }
 
-func (g *StateMachineGroup) RemoveMachine(id string) {
+func (g *StateMachineGroup) RemoveMachine(sm *StateMachine) {
 	if g == nil {
 		return
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	delete(g.machines, id)
+	if g.machines[sm.ID] != sm {
+		return
+	}
+	delete(g.machines, sm.ID)
 }
 
 func (g *StateMachineGroup) bootMap() *Map {

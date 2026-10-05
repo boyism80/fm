@@ -64,8 +64,12 @@ return {
 			me:message("이 방은 이미 파풀라투스와의 전투를 위한 최대 인원수 만큼 가득 찼습니다.")
 			return
 		end
-		me:play_portal_sound()
 		local sm = group:get(INSTANCE_ID)
+		if sm ~= nil and sm:disposed() then
+			me:message("이전 전투를 정리하고 있습니다. 잠시 후 다시 시도해 주세요.")
+			return
+		end
+		me:play_portal_sound()
 		if sm == nil then
 			local err
 			sm, err = group:create(INSTANCE_ID, me)

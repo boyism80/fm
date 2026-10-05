@@ -479,7 +479,7 @@ func (a *StateMachineActor) finalizeStop() {
 	sm.ClearMaps()
 	sm.ReleaseMaps()
 	if sm.Group != nil {
-		sm.Group.RemoveMachine(sm.ID)
+		sm.Group.RemoveMachine(sm)
 	}
 	if a.GameWorld != nil {
 		a.GameWorld.StopStateMachineActor(sm)
