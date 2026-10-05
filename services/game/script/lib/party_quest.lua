@@ -132,10 +132,9 @@ function M.party_warp(sm, map_id, except_id, spawn)
 	if spawn == nil then
 		spawn = 0
 	end
-	local dest = sm:map(map_id) or map_id
 	for _, p in ipairs(sm:players()) do
 		if p ~= nil and (except_id == nil or p:id() ~= except_id) then
-			p:map(dest, spawn)
+			p:map(map_id, spawn)
 		end
 	end
 end
@@ -197,30 +196,12 @@ function M.shuffle_reactors(map, min_id, max_id, exclude_id)
 end
 
 function M.warp(me, map_id, spawn)
-	local sm = me:state_machine()
-	local dest = sm ~= nil and sm:map(map_id) or map_id
-	me:map(dest, spawn)
+	me:map(map_id, spawn)
 end
 
 function M.warp_portal(me, map_id, portal_name)
-	local sm = me:state_machine()
-	local dest = nil
-	if sm ~= nil then
-		dest = sm:map(map_id)
-	end
-	if dest == nil then
-		me:map(map_id, 0)
-		return
-	end
-	local spawn = 0
-	if portal_name ~= nil and portal_name ~= "" then
-		local portal = dest:portal(portal_name)
-		if portal ~= nil then
-			spawn = portal:id()
-		end
-	end
 	me:play_portal_sound()
-	me:map(dest, spawn)
+	me:map(map_id, portal_name)
 end
 
 function M.party_all_here(me)

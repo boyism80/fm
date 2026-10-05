@@ -2985,7 +2985,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						L.RaiseError("map: unknown map name %q", string(v))
 						return 0
 					}
-					targetMap = ch.GameWorld.GetMapSystem().Get(mapId)
+					targetMap = ch.GameWorld.GetMapSystem().Find(ch.StateMachine(), mapId)
 					if targetMap == nil {
 						L.RaiseError("map: map %q (id %d) not found", string(v), mapId)
 						return 0
@@ -2996,7 +2996,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 						return 0
 					}
 					mapId := uint32(v)
-					targetMap = ch.GameWorld.GetMapSystem().Get(mapId)
+					targetMap = ch.GameWorld.GetMapSystem().Find(ch.StateMachine(), mapId)
 					if targetMap == nil {
 						L.RaiseError("map: map id %d not found", mapId)
 						return 0
