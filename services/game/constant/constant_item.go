@@ -22,10 +22,6 @@ var RechargeableBullets = []uint32{
 	2331000, 2332000,
 }
 
-const ItemNineSpiritCry uint32 = 2022109
-
-var NineSpiritCryMaps = []uint32{240000000, 240040611}
-
 const ChaosScrollRange = 5
 
 const (

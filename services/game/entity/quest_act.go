@@ -5,9 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/clock"
-	"github.com/boyism80/fm/services/game/constant"
+
 	"github.com/boyism80/fm/services/game/wz"
 )
 
@@ -49,7 +48,9 @@ func (qc *QuestContainer) grant(qp *Quest, actions wz.QuestActions, opts questAc
 		return ErrQuestExchangeFailed
 	}
 	if actions.BuffItemID != 0 && opts.Forfeited == false {
-		qc.grantBuff(actions.BuffItemID)
+		if ch.RunQuestHook(qp.QuestID, "on_buff_item", actions.BuffItemID) == false {
+			ch.UseItemEffect(actions.BuffItemID)
+		}
 	}
 	if actions.Info != "" {
 		qp.StatusRecord.WriteString(actions.Info)
@@ -64,30 +65,6 @@ func (qc *QuestContainer) grant(qp *Quest, actions wz.QuestActions, opts questAc
 		qc.broadcastNpcAct(opts.NpcID, actions.NPCAct)
 	}
 	return nil
-}
-
-func (qc *QuestContainer) grantBuff(itemID uint32) {
-	if itemID != constant.ItemNineSpiritCry {
-		qc.owner.UseItemEffect(itemID)
-		return
-	}
-	gw := qc.owner.GameWorld
-	for _, mapID := range constant.NineSpiritCryMaps {
-		m := gw.GetMapSystem().Get(mapID)
-		if m == nil {
-			continue
-		}
-		for _, obj := range m.GetAllPlayers() {
-			ch, ok := obj.(*Character)
-			if ok == false {
-				continue
-			}
-			gw.GetDispatchSystem().Call(ch.GetID(), func(actor.Context) {
-				ch.Listener.OnMessage(ch, constant.MsgPinkText, constant.NineSpiritCryMessage)
-				ch.UseItemEffect(itemID)
-			})
-		}
-	}
 }
 
 func (qc *QuestContainer) buildPhaseExchange(actions wz.QuestActions, opts questActionOpts) ExchangeSpec {
