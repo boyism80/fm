@@ -85,6 +85,7 @@ type Character struct {
 	carnivalTeam      *CarnivalTeam
 	savedLocations    map[string]uint32
 	loggedOut         atomic.Bool
+	logoutEntry       chan *internal.CharacterSaveEntry
 	Destination       *Map
 }
 
@@ -797,8 +798,10 @@ func (ch *Character) GetID() uint32 {
 }
 
 // MarkLoggedOut runs on the disconnect goroutine; whichever actor holds the character next logs it out.
-func (ch *Character) MarkLoggedOut() {
+func (ch *Character) MarkLoggedOut() <-chan *internal.CharacterSaveEntry {
+	ch.logoutEntry = make(chan *internal.CharacterSaveEntry, 1)
 	ch.loggedOut.Store(true)
+	return ch.logoutEntry
 }
 
 func (ch *Character) LoggedOut() bool {

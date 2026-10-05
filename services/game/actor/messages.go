@@ -81,10 +81,6 @@ type AddCharacter struct {
 	Init       bool
 }
 
-type RemoveCharacter struct {
-	CharacterID uint32
-}
-
 type WarpCharacter struct {
 	Character *entity.Character
 	TargetMap *entity.Map

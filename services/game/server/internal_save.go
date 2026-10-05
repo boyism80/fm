@@ -12,8 +12,6 @@ import (
 	"github.com/boyism80/fm/core/async"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	g_actor "github.com/boyism80/fm/services/game/actor"
-	"github.com/boyism80/fm/services/game/entity"
-	lua "github.com/yuin/gopher-lua"
 )
 
 const saveCharactersPromiseTimeout = 30 * time.Second
@@ -66,30 +64,6 @@ func (gs *GameServer) SaveAsync(ctx actor.Context, entries []*internal.Character
 		return nil, err
 	})
 	return p
-}
-
-func (gs *GameServer) saveEntryOnMap(ctx context.Context, character *entity.Character) (*internal.CharacterSaveEntry, error) {
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
-		return nil, nil
-	}
-	pid := mapInstance.LogicActorPID()
-	root := gs.GetRootContext()
-	if pid == nil || root == nil {
-		return nil, fmt.Errorf("save entry: map actor missing for character %d", character.GetID())
-	}
-	worldID := gs.config.WorldId
-	entries := make(chan *internal.CharacterSaveEntry, 1)
-	root.Send(pid, &g_actor.MapCall{Run: func(actor.Context, *g_actor.GameLogicActor) []lua.LValue {
-		entries <- character.ToProto(worldID)
-		return nil
-	}})
-	select {
-	case entry := <-entries:
-		return entry, nil
-	case <-ctx.Done():
-		return nil, fmt.Errorf("save entry: character %d: %w", character.GetID(), ctx.Err())
-	}
 }
 
 type saveAllSummary struct {

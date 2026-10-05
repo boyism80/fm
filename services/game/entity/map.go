@@ -361,7 +361,14 @@ func (m *Map) LogoutPlayer(playerID uint32) error {
 		}
 	}
 
-	return m.RemovePlayer(playerID)
+	entry := character.ToProto(m.GameWorld.GetWorldID())
+	err := m.RemovePlayer(playerID)
+	character.ClearTimers()
+	select {
+	case character.logoutEntry <- entry:
+	default:
+	}
+	return err
 }
 
 func (m *Map) GetMapID() uint32 { return m.id }

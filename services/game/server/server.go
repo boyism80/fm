@@ -33,7 +33,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const mapActorCallTimeout = 30 * time.Second
+const (
+	mapActorCallTimeout = 30 * time.Second
+	logoutWaitTimeout   = ensureWallTimeout + time.Second
+)
 
 type GameServer struct {
 	*core.ServerCore
@@ -546,7 +549,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	if character == nil {
 		return
 	}
-	character.MarkLoggedOut()
+	logout := character.MarkLoggedOut()
 
 	p := async.NewPromise(nil, saveCharactersPromiseTimeout)
 	p.OnError(func(err error) {
@@ -578,50 +581,47 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		})
 	}
 
+	var entry *internal.CharacterSaveEntry
+	p.ThenAsync(func(interface{}) (interface{}, error) {
+		entry = gs.removeCharacter(character, logout)
+		return nil, nil
+	})
+
 	if client.SessionLost() == false {
 		async.ThenRPC(p, func(c context.Context) (*internal.SaveCharactersReply, error) {
-			if gs.internalClient == nil {
+			if gs.internalClient == nil || entry == nil {
 				return nil, nil
-			}
-			entry, err := gs.saveEntryOnMap(c, character)
-			if err != nil || entry == nil {
-				return nil, err
 			}
 			return gs.internalClient.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}})
 		}, func(*internal.SaveCharactersReply) error {
 			return nil
 		})
 	}
-
-	p.Finally(func() {
-		gs.removeCharacter(character)
-	})
 }
 
-// removeCharacter takes a logged-out character out of this channel. It waits on the character's map actor, so it must not run on that actor.
-func (gs *GameServer) removeCharacter(character *entity.Character) {
+// removeCharacter takes a logged-out character out of this channel on whichever map actor owns it at that moment,
+// and returns the save entry built there. It blocks, so it must not run on a map actor.
+func (gs *GameServer) removeCharacter(character *entity.Character, logout <-chan *internal.CharacterSaveEntry) *internal.CharacterSaveEntry {
 	charID := character.GetID()
 	if sm := character.StateMachine(); sm != nil {
 		sm.RequestLeave(character, false, entity.StateMachineLeaveDisconnect)
 	}
-	mapInstance := character.GetMap()
-	if mapInstance != nil {
-		pid := mapInstance.LogicActorPID()
-		root := gs.GetRootContext()
-		if pid != nil && root != nil {
-			_, err := root.RequestFuture(pid, &g_actor.RemoveCharacter{CharacterID: charID}, mapActorCallTimeout).Result()
-			if err != nil {
-				log.Printf("RemoveCharacter (char %d): %v", charID, err)
-			}
-		} else {
-			log.Printf("remove character: map actor missing for char %d; map remove skipped", charID)
-		}
+	gs.GetDispatchSystem().Call(charID, func(actor.Context) {
+		_ = character.GetMap().LogoutPlayer(charID)
+	})
+
+	var entry *internal.CharacterSaveEntry
+	select {
+	case entry = <-logout:
+	case <-time.After(logoutWaitTimeout):
+		log.Printf("remove character %d: no map actor owns it; clearing timers here", charID)
+		entry = character.ToProto(gs.config.WorldId)
+		character.ClearTimers()
 	}
-	if gs.characterRuntime != nil {
-		gs.ensureAbandonCharacter(charID)
-		gs.characterRuntime.UnregisterCharacter(charID)
-	}
-	character.ClearTimers()
+
+	gs.ensureAbandonCharacter(charID)
+	gs.characterRuntime.UnregisterCharacter(charID)
+	return entry
 }
 
 func (gs *GameServer) GetStats() map[string]interface{} {

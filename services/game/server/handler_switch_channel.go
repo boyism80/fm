@@ -145,9 +145,9 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			_ = ctx.Client.Send(route, types.SEND_POLICY_ENCRYPT)
 			return nil
 		}
-		left.MarkLoggedOut()
+		logout := left.MarkLoggedOut()
 		go func() {
-			h.gs.removeCharacter(left)
+			h.gs.removeCharacter(left, logout)
 			_ = ctx.Client.Send(route, types.SEND_POLICY_ENCRYPT)
 		}()
 		return nil

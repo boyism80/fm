@@ -5,7 +5,6 @@ func registerMapMessageHandlers(r *MessageRegistry) {
 	Bind[HandlePacketHandler](r)
 	Bind[ExecuteTimerHandler](r)
 	Bind[AddCharacterHandler](r)
-	Bind[RemoveCharacterHandler](r)
 	Bind[WarpCharacterHandler](r)
 	Bind[HandoffCharacterHandler](r)
 	Bind[RequestSpawnDoorHandler](r)
