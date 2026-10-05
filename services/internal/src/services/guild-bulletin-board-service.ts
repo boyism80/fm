@@ -472,21 +472,26 @@ export class GuildBulletinBoardService {
             return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_COOLDOWN };
         }
 
-        const created = await this.guildBulletinBoardRepo.createReply(worldId, {
-            guildId: membership.guildId,
-            localThreadId,
-            posterCharacterId: characterId,
-            content: normalizedContent,
-        });
-        if (!created) {
+        try {
+            const created = await this.guildBulletinBoardRepo.createReply(worldId, {
+                guildId: membership.guildId,
+                localThreadId,
+                posterCharacterId: characterId,
+                content: normalizedContent,
+            });
+            if (!created) {
+                await this.unsetBulletinBoardCooldown(worldId, characterId);
+                return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND };
+            }
+            const thread = await this.loadBulletinThreadDetail(worldId, membership.guildId, localThreadId);
+            if (!thread) {
+                return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND };
+            }
+            return { ok: true, thread };
+        } catch {
             await this.unsetBulletinBoardCooldown(worldId, characterId);
-            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND };
+            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_UNKNOWN };
         }
-        const thread = await this.loadBulletinThreadDetail(worldId, membership.guildId, localThreadId);
-        if (!thread) {
-            return { ok: false, code: messages.GuildErrorCode.GUILD_ERROR_BULLETIN_THREAD_NOT_FOUND };
-        }
-        return { ok: true, thread };
     }
 
     async deleteGuildBulletinBoardReply(

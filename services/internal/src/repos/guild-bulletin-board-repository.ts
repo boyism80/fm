@@ -372,8 +372,7 @@ export class GuildBulletinBoardRepository {
             const nextRes = await client.query(
                 `SELECT COALESCE(MAX(reply_id), -1) + 1 AS next_reply_id
                  FROM guild_bulletin_board_replies
-                 WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3
-                 FOR UPDATE`,
+                 WHERE world_id = $1 AND guild_id = $2 AND local_thread_id = $3`,
                 [worldId, input.guildId, input.localThreadId]
             );
             const replyId = Number(
