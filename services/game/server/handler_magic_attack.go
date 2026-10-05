@@ -7,7 +7,6 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/entity"
 )
 
 type MagicAttack struct {
@@ -37,8 +36,7 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		return nil
 	}
 
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
+	if character.GetMap() == nil {
 		log.Printf("Character is not in a map")
 		return fmt.Errorf("character is not in a map")
 	}
@@ -48,23 +46,19 @@ func (h *MagicAttack) Handle(ctx *core.ClientContext, req *request.MagicAttack) 
 		return nil
 	}
 
-	skillID := req.Skill
-	activated := character.UseAttackSkill(skillID, func() bool {
-		return CallSkillHook(character, skillID, "on_activating")
+	skill := character.Skills.Get(req.Skill)
+	activated := character.UseAttackSkill(req.Skill, func() bool {
+		return skill != nil && character.CallSkillHook(ctx.ActorContext, skill, "on_activating")
 	})
 	if activated == false {
 		character.Listener.OnUpdateStats(character, nil, true)
 		return nil
 	}
-	skillLevel := character.GetTotalSkillLevel(skillID)
-	return h.finishMagicAttack(ctx, character, mapInstance, req, uint8(skillLevel), skillID)
-}
+	skillLevel := uint8(character.GetTotalSkillLevel(req.Skill))
 
-func (h *MagicAttack) finishMagicAttack(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, req *request.MagicAttack, skillLevel uint8, skillID uint32) error {
-	damages := req.Damages
-	CallOnAttackHooks(character, damages, skillID, true, false, 0)
-	character.DamageTo(damages)
+	CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, true, false, 0)
+	character.DamageTo(req.Damages)
 	character.Listener.OnMagicAttack(character, req, skillLevel)
-	CallSkillHook(character, skillID, "on_activated")
+	character.CallSkillHook(ctx.ActorContext, skill, "on_activated")
 	return nil
 }

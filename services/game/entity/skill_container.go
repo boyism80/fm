@@ -27,14 +27,14 @@ func (sc *SkillContainer) Register(skillID uint32, entry *SkillEntry) {
 	sc.Bind(skillID, entry)
 	ch := sc.owner
 	if entry.Level() > 0 {
-		ch.Listener.OnSkillPassiveHook(ch, skillID, "on_passive")
+		ch.CallSkillHook(nil, entry, "on_passive")
 	}
 	ch.Listener.OnUpdateSkill(ch, skillID, int32(entry.Level()), int32(entry.MasterLevel))
 }
 
 func (sc *SkillContainer) RestorePassives() {
-	for skillID := range sc.entries {
-		sc.owner.Listener.OnSkillPassiveHook(sc.owner, skillID, "on_passive")
+	for _, entry := range sc.entries {
+		sc.owner.CallSkillHook(nil, entry, "on_passive")
 	}
 }
 
@@ -45,7 +45,7 @@ func (sc *SkillContainer) Remove(skillID uint32) bool {
 	}
 	ch := sc.owner
 	if entry.Level() > 0 {
-		ch.Listener.OnSkillPassiveHook(ch, skillID, "on_unpassive")
+		ch.CallSkillHook(nil, entry, "on_unpassive")
 	}
 	delete(sc.entries, skillID)
 	return true

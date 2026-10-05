@@ -93,7 +93,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 
 	params := h.skillParams(root, mapInstance, req)
 
-	if !h.runActivatingHooks(root, ch, req, skillEntry, params) {
+	if ch.CallSkillHook(ctx.ActorContext, skillEntry, "on_activating", params) == false {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
@@ -105,7 +105,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		}
 	}
 
-	if !h.runActivatedHooks(ctx, root, ch, req, skillEntry, params) {
+	if ch.CallSkillHook(ctx.ActorContext, skillEntry, "on_activated", params) == false {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}
@@ -114,60 +114,6 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 	}
 	h.showActiveSkillEffect(ch, req)
 	return nil
-}
-
-func (h *ActiveSkill) runActivatingHooks(root *lua.LState, ch *entity.Character, req *request.ActiveSkill, skillEntry *entity.SkillEntry, params lua.LValue) bool {
-	commonThread, err := luax.NewThread(root, constant.SkillHookScriptPath)
-	if err != nil {
-		log.Printf("Skill common on_activating: %v", err)
-		return true
-	}
-	commonRet, err := luax.Call(commonThread, "on_activating", ch, skillEntry, params)
-	if !skillHookAllowed(commonRet, err, "on_activating", true) {
-		return false
-	}
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
-	skillThread, err := luax.NewThread(root, scriptPath)
-	if err != nil {
-		return true
-	}
-	skillHook := "on_activating"
-	skillRet, err := luax.Call(skillThread, skillHook, ch, skillEntry, params)
-	if err != nil {
-		log.Printf("Skill script not found or failed %s: %v", scriptPath, err)
-		return false
-	}
-	return skillHookAllowed(skillRet, err, skillHook, true)
-}
-
-func (h *ActiveSkill) runActivatedHooks(ctx *core.ClientContext, root *lua.LState, ch *entity.Character, req *request.ActiveSkill, skillEntry *entity.SkillEntry, params lua.LValue) bool {
-	commonThread, err := luax.NewThread(root, constant.SkillHookScriptPath)
-	if err != nil {
-		log.Printf("common on_activated: %v", err)
-		return false
-	}
-	commonRet, err := luax.Call(commonThread, "on_activated", ch, skillEntry, params)
-	if err != nil {
-		log.Printf("common on_activated: %v", err)
-		return false
-	}
-	if !skillHookAllowed(commonRet, err, "on_activated", true) {
-		return false
-	}
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", req.SkillID)
-	skillThread, err := luax.NewThread(root, scriptPath)
-	if err != nil {
-		return true
-	}
-	luax.SetConfiguration(skillThread, luax.Configuration{
-		ActorContext: ctx.ActorContext,
-	})
-	skillHook := "on_activated"
-	if _, err := luax.Call(skillThread, skillHook, ch, skillEntry, params); err != nil {
-		log.Printf("Failed to execute skill script %s: %v", scriptPath, err)
-		return false
-	}
-	return true
 }
 
 func (h *ActiveSkill) showActiveSkillEffect(ch *entity.Character, req *request.ActiveSkill) {

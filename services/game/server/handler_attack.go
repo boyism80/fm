@@ -40,36 +40,31 @@ func (h *Attack) Handle(ctx *core.ClientContext, req *request.Attack) error {
 		return nil
 	}
 
-	mapInstance := character.GetMap()
-	if mapInstance == nil {
+	if character.GetMap() == nil {
 		log.Printf("Character is not in a map")
 		return fmt.Errorf("character is not in a map")
 	}
 
 	var skillLevel uint8 = 0
-	skillID := req.Skill
-	if skillID != 0 {
-		activated := character.UseAttackSkill(skillID, func() bool {
-			return CallSkillHook(character, skillID, "on_activating")
+	var skill *entity.SkillEntry
+	if req.Skill != 0 {
+		skill = character.Skills.Get(req.Skill)
+		activated := character.UseAttackSkill(req.Skill, func() bool {
+			return skill != nil && character.CallSkillHook(ctx.ActorContext, skill, "on_activating")
 		})
 		if activated == false {
 			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
-		skillLevel = uint8(character.GetTotalSkillLevel(skillID))
+		skillLevel = uint8(character.GetTotalSkillLevel(req.Skill))
 	}
-	return h.finishAttack(ctx, character, mapInstance, req, skillLevel, skillID)
-}
 
-func (h *Attack) finishAttack(ctx *core.ClientContext, character *entity.Character, mapInstance *entity.Map, req *request.Attack, skillLevel uint8, skillID uint32) error {
-	damages := req.Damages
-	CallOnAttackHooks(character, damages, skillID, false, false, 0)
-	character.DamageTo(damages)
-
+	CallOnAttackHooks(ctx.ActorContext, character, req.Damages, skill, false, false, 0)
+	character.DamageTo(req.Damages)
 	character.ExplodeMesos(req.MesoOIDs)
 	character.Listener.OnAttack(character, req, skillLevel)
-	if skillID != 0 {
-		CallSkillHook(character, skillID, "on_activated")
+	if skill != nil {
+		character.CallSkillHook(ctx.ActorContext, skill, "on_activated")
 	}
 	return nil
 }

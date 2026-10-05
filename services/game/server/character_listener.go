@@ -1516,10 +1516,6 @@ func (l *CharacterListenerImpl) OnDebuffRemoved(ch *entity.Character, flags []co
 	}, nil)
 }
 
-func (l *CharacterListenerImpl) OnSkillPassiveHook(ch *entity.Character, skillID uint32, hook string) {
-	CallPassiveSkillHook(ch, skillID, hook)
-}
-
 func (l *CharacterListenerImpl) OnUpdateSkill(ch *entity.Character, skillID uint32, level int32, masterLevel int32) {
 	ch.Send(&response.UpdateSkills{
 		SkillID:     skillID,

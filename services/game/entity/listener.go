@@ -124,7 +124,6 @@ type CharacterListener interface {
 	OnDebuffRemoved(ch *Character, flags []constant.DebuffFlag)
 	OnSkillCooldown(ch *Character, skillID uint32, remainingSec uint16)
 	OnUpdateSkill(ch *Character, skillID uint32, level int32, masterLevel int32)
-	OnSkillPassiveHook(ch *Character, skillID uint32, hook string)
 	OnHiddenChanged(ch *Character, hidden bool)
 	OnShowSelfSkillEffect(ch *Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8)
 	OnShowSkillEffect(ch *Character, effectType pconst.SkillEffectType, skillID uint32, skillLevel uint8, additional *uint8)
