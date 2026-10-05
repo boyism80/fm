@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/boyism80/fm/util"
-	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/transform"
 )
@@ -107,11 +106,11 @@ func (sw *StreamWriter) WriteStr8(str string) {
 }
 
 func (sw *StreamWriter) encodeEUCKR(str string) []byte {
-	encoded, _, err := transform.Bytes(encoding.ReplaceUnsupported(korean.EUCKR.NewEncoder()), []byte(str))
+	encoded, _, err := transform.Bytes(korean.EUCKR.NewEncoder(), []byte(str))
 	if err != nil {
-		panic(err)
+		panic(ErrInvalidEncoding)
 	}
-	return bytes.ReplaceAll(encoded, []byte{encoding.ASCIISub}, []byte{'?'})
+	return encoded
 }
 
 func (sw *StreamWriter) WriteStr16(str string) {
