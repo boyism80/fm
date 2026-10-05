@@ -12,8 +12,8 @@ local alliance_inc_capacity_ok = 0
 local alliance_inc_capacity_not_in_alliance = 1
 local alliance_inc_capacity_not_leader = 2
 local alliance_inc_capacity_not_guild_master = 3
+local alliance_inc_capacity_insufficient_meso = 4
 local alliance_inc_capacity_capacity_max = 5
-local alliance_inc_capacity_meso_cost = 5000000
 local alliance_inc_capacity_failed = 6
 
 local function try_create_alliance(npc, me)
@@ -130,15 +130,10 @@ local function try_inc_alliance_capacity(npc, me)
 	if not me:dialog_yes_no(npc, '길드 수를 늘리는데에는 수수료 5백만 메소가 소비됩니다. 정말 만들고 싶으세요?') then
 		return
 	end
-	if me:meso() < alliance_inc_capacity_meso_cost then
-		me:dialog(npc, '최대 길드 연합의 길드 수는 5개 까지 늘릴 수 있습니다. 또는 수수료가 부족하신 건 아닌지 확인해 주세요.')
-		return
-	end
 	local result = me:inc_alliance_capacity()
 	if result == alliance_inc_capacity_ok then
-		me:meso(me:meso() - alliance_inc_capacity_meso_cost)
 		me:dialog(npc, '길드 연합의 길드수를 늘렸어요.')
-	elseif result == alliance_inc_capacity_capacity_max then
+	elseif result == alliance_inc_capacity_capacity_max or result == alliance_inc_capacity_insufficient_meso then
 		me:dialog(npc, '최대 길드 연합의 길드 수는 5개 까지 늘릴 수 있습니다. 또는 수수료가 부족하신 건 아닌지 확인해 주세요.')
 	else
 		me:dialog(npc, '길드 연합의 길드 수를 늘리지 못했습니다. 잠시 후 다시 시도해 주세요.')

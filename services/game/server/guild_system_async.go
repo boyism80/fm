@@ -66,9 +66,13 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 		*result = fail
 		return nil
 	}
-	if !extendedCap && ch.Inventory.Meso < constant.GuildCapacityIncreaseMesoCost {
-		*result = int(constant.GuildIncreaseCapacityResultInsufficientMeso)
-		return nil
+	mesoCost := int32(0)
+	if !extendedCap {
+		mesoCost = constant.GuildCapacityIncreaseMesoCost
+		if ch.Inventory.RemoveMeso(mesoCost) == false {
+			*result = int(constant.GuildIncreaseCapacityResultInsufficientMeso)
+			return nil
+		}
 	}
 	*result = fail
 	worldID := s.gs.config.WorldId
@@ -81,17 +85,11 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 			ExtendedCap: extendedCap,
 		})
 	}, func(reply *internal.IncreaseGuildCapacityReply) error {
-		if reply == nil {
-			*result = int(constant.GuildIncreaseCapacityResultFailed)
-			return nil
-		}
 		if reply.GetOk() {
-			if !extendedCap {
-				ch.Inventory.RemoveMeso(constant.GuildCapacityIncreaseMesoCost)
-			}
 			*result = int(constant.GuildIncreaseCapacityResultOK)
 			return nil
 		}
+		ch.Inventory.AddMeso(mesoCost)
 		switch reply.GetErrorCode() {
 		case internal.GuildErrorCode_GUILD_ERROR_NOT_IN_GUILD:
 			*result = int(constant.GuildIncreaseCapacityResultNotInGuild)
@@ -107,6 +105,7 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("guild inc_capacity: character=%d: %v", charID, err)
+		ch.Inventory.AddMeso(mesoCost)
 		*result = int(constant.GuildIncreaseCapacityResultFailed)
 	})
 }
@@ -211,7 +210,7 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 		*result = int(constant.AllianceCreateResultInvalidName)
 		return nil
 	}
-	if ch.Inventory.Meso < constant.AllianceCreateMesoCost {
+	if ch.Inventory.RemoveMeso(constant.AllianceCreateMesoCost) == false {
 		*result = int(constant.AllianceCreateResultInsufficientMeso)
 		return nil
 	}
@@ -227,11 +226,8 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 			PartnerCharacterId: partnerID,
 		})
 	}, func(reply *internal.CreateAllianceReply) error {
-		if reply == nil {
-			*result = int(constant.AllianceCreateResultFailed)
-			return nil
-		}
-		if !reply.GetOk() {
+		if !reply.GetOk() || reply.GetAlliance() == nil {
+			ch.Inventory.AddMeso(constant.AllianceCreateMesoCost)
 			switch reply.GetErrorCode() {
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NAME_INVALID:
 				*result = int(constant.AllianceCreateResultInvalidName)
@@ -243,17 +239,13 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 			return nil
 		}
 		alliancePb := reply.GetAlliance()
-		if alliancePb == nil {
-			*result = int(constant.AllianceCreateResultFailed)
-			return nil
-		}
-		ch.Inventory.RemoveMeso(constant.AllianceCreateMesoCost)
 		s.gs.alliance.Update(alliancePb)
 		s.gs.alliance.BroadcastCreate(alliancePb)
 		*result = int(constant.AllianceCreateResultOK)
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("alliance create: character=%d: %v", charID, err)
+		ch.Inventory.AddMeso(constant.AllianceCreateMesoCost)
 		*result = int(constant.AllianceCreateResultFailed)
 	})
 }

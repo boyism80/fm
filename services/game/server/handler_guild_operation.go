@@ -75,10 +75,9 @@ func (h *GuildOperation) chargeGuildEmblemChangeCost(ch *entity.Character) (guil
 		}
 		return guildEmblemChangePayment{usedCashItem: true}, true
 	}
-	if ch.Inventory.Meso < gameconst.GuildEmblemChangeMesoCost {
+	if ch.Inventory.RemoveMeso(gameconst.GuildEmblemChangeMesoCost) == false {
 		return guildEmblemChangePayment{}, false
 	}
-	ch.Inventory.RemoveMeso(gameconst.GuildEmblemChangeMesoCost)
 	return guildEmblemChangePayment{mesoSpent: gameconst.GuildEmblemChangeMesoCost}, true
 }
 
@@ -131,7 +130,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultNotAllowed)
 			return nil
 		}
-		if ch.Inventory.Meso < gameconst.GuildCreateMesoCost {
+		if ch.Inventory.RemoveMeso(gameconst.GuildCreateMesoCost) == false {
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultInsufficientMeso)
 			return nil
 		}
@@ -151,22 +150,24 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 				} else {
 					log.Printf("GuildOperation(create): failed character=%d code=%v", charID, reply.GetErrorCode())
 				}
+				ch.Inventory.AddMeso(gameconst.GuildCreateMesoCost)
 				h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 				return nil
 			}
 			guildPb := reply.GetGuild()
 			if guildPb == nil {
 				log.Printf("GuildOperation(create): ok but missing guild character=%d", charID)
+				ch.Inventory.AddMeso(gameconst.GuildCreateMesoCost)
 				h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 				return nil
 			}
 			h.applyGuildFromProto(ch, guildPb)
-			ch.Inventory.RemoveMeso(gameconst.GuildCreateMesoCost)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultOK)
 			return nil
 		})
 		promise.OnError(func(err error) {
 			log.Printf("GuildOperation(create) async error: %v", err)
+			ch.Inventory.AddMeso(gameconst.GuildCreateMesoCost)
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 		})
 		return nil

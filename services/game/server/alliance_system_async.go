@@ -51,6 +51,10 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 		*result = int(constant.AllianceIncreaseCapacityResultNotLeader)
 		return nil
 	}
+	if ch.Inventory.RemoveMeso(constant.AllianceIncreaseCapacityMesoCost) == false {
+		*result = int(constant.AllianceIncreaseCapacityResultInsufficientMeso)
+		return nil
+	}
 	worldID := s.gs.config.WorldId
 	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
 	return async.ThenRPC(promise, func(c context.Context) (*internal.IncreaseAllianceCapacityReply, error) {
@@ -59,11 +63,8 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 			CharacterId: charID,
 		})
 	}, func(reply *internal.IncreaseAllianceCapacityReply) error {
-		if reply == nil {
-			*result = int(constant.AllianceIncreaseCapacityResultFailed)
-			return nil
-		}
-		if !reply.GetOk() {
+		if !reply.GetOk() || reply.GetAlliance() == nil {
+			ch.Inventory.AddMeso(constant.AllianceIncreaseCapacityMesoCost)
 			switch reply.GetErrorCode() {
 			case internal.AllianceErrorCode_ALLIANCE_ERROR_NOT_IN_ALLIANCE,
 				internal.AllianceErrorCode_ALLIANCE_ERROR_ALLIANCE_NOT_FOUND,
@@ -80,16 +81,13 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 			return nil
 		}
 		alliancePb := reply.GetAlliance()
-		if alliancePb == nil {
-			*result = int(constant.AllianceIncreaseCapacityResultFailed)
-			return nil
-		}
 		s.gs.alliance.Update(alliancePb)
 		s.gs.alliance.BroadcastInfoUpdate(alliancePb)
 		*result = int(constant.AllianceIncreaseCapacityResultOK)
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("alliance inc_capacity: character=%d: %v", charID, err)
+		ch.Inventory.AddMeso(constant.AllianceIncreaseCapacityMesoCost)
 		*result = int(constant.AllianceIncreaseCapacityResultFailed)
 	})
 }

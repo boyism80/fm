@@ -36,15 +36,16 @@ func (inv *Inventory) addMesoUnchecked(amount int32) {
 	ch.Listener.OnMesoChanged(ch, inv.Meso)
 }
 
-func (inv *Inventory) RemoveMeso(amount int32) {
+func (inv *Inventory) RemoveMeso(amount int32) bool {
 	ch := inv.owner
 	if amount <= 0 {
-		return
+		return false
 	}
 	if ch.validateMesoExchange(amount, 0) != ExchangeOK {
-		return
+		return false
 	}
 	inv.removeMesoUnchecked(amount)
+	return true
 }
 
 func (inv *Inventory) removeMesoUnchecked(amount int32) {
