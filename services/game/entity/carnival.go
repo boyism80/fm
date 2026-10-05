@@ -27,59 +27,28 @@ const (
 	CarnivalResultDraw      CarnivalResult = 3
 )
 
+type CarnivalMember struct {
+	ID    uint32
+	Name  string
+	Level uint8
+	Class uint16
+}
+
 type CarnivalChallenge struct {
 	LeaderID    uint32
 	PartyID     uint32
-	MemberIDs   []uint32
+	Map         *Map
+	Members     []*CarnivalMember
 	RequestedAt time.Time
 }
 
-func (m *CarnivalMatch) findCharacters(gw GameWorld, ids []uint32, partyID uint32, mapIDs []uint32) []*Character {
-	out := make([]*Character, 0, len(ids))
-	seen := make(map[uint32]bool)
-	ms := gw.GetMapSystem()
-	tryMap := func(mapID uint32) {
-		mp := ms.Get(mapID)
-		if mp == nil {
-			return
-		}
-		for _, id := range ids {
-			if seen[id] {
-				continue
-			}
-			ch := mp.GetPlayer(id)
-			if ch == nil {
-				continue
-			}
-			out = append(out, ch)
-			seen[id] = true
-		}
-	}
-	for _, mapID := range mapIDs {
-		tryMap(mapID)
-	}
-	if partyID != 0 {
-		if party := gw.GetPartySystem().Get(partyID); party != nil {
-			for _, mem := range party.GetMembers() {
-				tryMap(mem.GetMapId())
-			}
-		}
-	}
-	return out
-}
-
-func (m *CarnivalMatch) PendingChallengeMembers(gw GameWorld) ([]*Character, int) {
+func (m *CarnivalMatch) PendingChallengeMembers() []*CarnivalMember {
 	m.mu.Lock()
-	challenge := m.Pending
-	m.mu.Unlock()
-	if challenge == nil {
-		return nil, 0
+	defer m.mu.Unlock()
+	if m.Pending == nil {
+		return nil
 	}
-	size := len(challenge.MemberIDs)
-	if gw == nil || gw.GetMapSystem() == nil {
-		return nil, size
-	}
-	return m.findCharacters(gw, challenge.MemberIDs, challenge.PartyID, []uint32{m.WaitingMapID}), size
+	return m.Pending.Members
 }
 
 type CarnivalMatch struct {
@@ -202,7 +171,7 @@ func (m *CarnivalMatch) Finish(gw GameWorld) bool {
 	m.mu.Lock()
 	for _, team := range m.Teams {
 		if team != nil {
-			team.Clear(gw)
+			team.Clear()
 		}
 	}
 	m.mu.Unlock()
@@ -240,9 +209,6 @@ func (m *CarnivalMatch) Conclude(gw GameWorld) bool {
 }
 
 func (m *CarnivalMatch) AcceptPendingChallenge(gw GameWorld) bool {
-	if gw == nil {
-		return false
-	}
 	m.mu.Lock()
 	challenge := m.Pending
 	if challenge == nil || m.Teams[constant.CarnivalTeamRed] == nil || m.State != CarnivalStateWaiting {
@@ -251,28 +217,43 @@ func (m *CarnivalMatch) AcceptPendingChallenge(gw GameWorld) bool {
 	}
 	m.mu.Unlock()
 
-	blueMemberIDs := append([]uint32(nil), challenge.MemberIDs...)
-	personal := make(map[uint32]*CarnivalPersonalCP, len(blueMemberIDs))
-	for _, id := range blueMemberIDs {
-		personal[id] = &CarnivalPersonalCP{}
+	gw.GetMapSystem().Call(challenge.Map, func(actor.Context) {
+		m.admitChallengers(challenge)
+	})
+	return true
+}
+
+func (m *CarnivalMatch) admitChallengers(challenge *CarnivalChallenge) {
+	members := make([]*Character, 0, len(challenge.Members))
+	for _, member := range challenge.Members {
+		ch := challenge.Map.GetPlayer(member.ID)
+		if ch == nil {
+			m.dropChallenge(challenge)
+			return
+		}
+		members = append(members, ch)
+	}
+
+	memberIDs := make([]uint32, len(challenge.Members))
+	personal := make(map[uint32]*CarnivalPersonalCP, len(challenge.Members))
+	for i, member := range challenge.Members {
+		memberIDs[i] = member.ID
+		personal[member.ID] = &CarnivalPersonalCP{}
 	}
 	blue := &CarnivalTeam{
 		Match:     m,
 		TeamID:    constant.CarnivalTeamBlue,
 		LeaderID:  challenge.LeaderID,
 		PartyID:   challenge.PartyID,
-		MemberIDs: blueMemberIDs,
+		MemberIDs: memberIDs,
+		Roster:    challenge.Members,
 		Personal:  personal,
-	}
-	found := blue.Members(gw)
-	if len(found) != len(blue.MemberIDs) {
-		return false
 	}
 
 	m.mu.Lock()
 	if m.Pending != challenge || m.State != CarnivalStateWaiting {
 		m.mu.Unlock()
-		return false
+		return
 	}
 	m.Pending = nil
 	m.queue = nil
@@ -280,13 +261,28 @@ func (m *CarnivalMatch) AcceptPendingChallenge(gw GameWorld) bool {
 	m.State = CarnivalStateReady
 	m.mu.Unlock()
 
-	for _, ch := range found {
+	sm := m.StateMachine()
+	for _, ch := range members {
 		ch.BindCarnival(blue)
+		sm.EnterPlayer(ch)
 	}
-	if sm := m.StateMachine(); sm != nil {
-		sm.CallHook("on_challenge_accepted")
+	sm.CallHook("on_challenge_accepted")
+}
+
+func (m *CarnivalMatch) dropChallenge(challenge *CarnivalChallenge) {
+	m.mu.Lock()
+	if m.Pending != challenge {
+		m.mu.Unlock()
+		return
 	}
-	return true
+	m.queue = m.queue[1:]
+	m.Pending = nil
+	if len(m.queue) > 0 {
+		m.Pending = m.queue[0]
+	}
+	m.mu.Unlock()
+
+	m.StateMachine().CallHook("on_challenge_failed")
 }
 
 func (m *CarnivalMatch) RejectPendingChallenge() (ok bool, shouldOpen bool) {

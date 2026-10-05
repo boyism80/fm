@@ -2,7 +2,6 @@
 
 local MIN_LEVEL = 30
 local MAX_LEVEL = 50
-local ACCEPT_NPC = 2042001
 local cpq = require("script/lib/carnival")
 
 local function party_level_ok(party)
@@ -81,8 +80,12 @@ local function start_red(me, match)
 	if sm == nil then
 		return false
 	end
-	for _, ch in ipairs(match:red_team():members()) do
-		sm:enter_player(ch)
+	local characters = me:map():characters()
+	for _, mem in ipairs(me:party():members()) do
+		local ch = characters[mem:id()]
+		if ch ~= nil then
+			sm:enter_player(ch)
+		end
 	end
 	sm:start()
 	return true
@@ -137,7 +140,7 @@ return {
 				me:dialog(npc, "상대 파티와 인원수가 일치해야 도전할 수 있다네.")
 				return
 			end
-			local info = cpq.challenge_info(red:members(), red:size())
+			local info = cpq.challenge_info(red:roster(), red:size())
 			local ask = "이 파티에 카니발 도전을 하겠는가?"
 			if info ~= nil and info ~= "" then
 				ask = info .. ask
@@ -145,16 +148,9 @@ return {
 			if not me:dialog_yes_no(npc, ask) then
 				return
 			end
-			local ok, should_open = carnival.challenge(slot, me)
-			if not ok then
+			if not carnival.challenge(slot, me) then
 				me:dialog(npc, "도전 신청에 실패했네.")
 				return
-			end
-			if should_open then
-				local leader = match:red_team():leader()
-				if leader ~= nil then
-					leader:open_npc(ACCEPT_NPC)
-				end
 			end
 			me:dialog(npc, "도전 신청을 보냈네. 상대 파티장이 수락하면 이동할걸세.")
 		else

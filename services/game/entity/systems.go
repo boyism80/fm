@@ -17,6 +17,7 @@ type MapSystem interface {
 	SlotInstance(templateID uint32, slot uint32) (*Map, error)
 	RemoveInstanceMap(instanceKey uint32) error
 	CloseInstance(m *Map)
+	Call(m *Map, run func(ctx actor.Context))
 	Broadcast(m *Map, message types.Packet)
 	Warp(ctx actor.Context, character *Character, targetMap *Map, spawnPoint uint8, onEnter func(actor.Context)) error
 	CreateReturnDoor(ch *Character, key DoorKey, skillID constant.SkillID) *Map

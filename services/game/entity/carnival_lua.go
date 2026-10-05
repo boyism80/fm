@@ -233,13 +233,13 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalMatch expected")
 				return 0
 			}
-			members, size := match.PendingChallengeMembers(match.gameWorld())
+			members := match.PendingChallengeMembers()
 			tbl := L.NewTable()
-			for i, ch := range members {
-				tbl.RawSetInt(i+1, luax.NewLuable(L, ch))
+			for i, member := range members {
+				tbl.RawSetInt(i+1, luax.NewLuable(L, member))
 			}
 			L.Push(tbl)
-			L.Push(lua.LNumber(size))
+			L.Push(lua.LNumber(len(members)))
 			return 2
 		},
 		"accept_pending_challenge": func(L *lua.LState) int {
@@ -365,8 +365,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			gw := team.Match.gameWorld()
-			leader := team.Leader(gw)
+			leader := team.Leader()
 			if leader == nil {
 				L.Push(lua.LNil)
 			} else {
@@ -381,10 +380,23 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			gw := team.Match.gameWorld()
 			tbl := L.NewTable()
-			for i, ch := range team.Members(gw) {
+			for i, ch := range team.Members() {
 				tbl.RawSetInt(i+1, luax.NewLuable(L, ch))
+			}
+			L.Push(tbl)
+			return 1
+		},
+		"roster": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			team, ok := ud.Value.(*CarnivalTeam)
+			if !ok || team == nil {
+				L.ArgError(1, "CarnivalTeam expected")
+				return 0
+			}
+			tbl := L.NewTable()
+			for i, member := range team.Roster {
+				tbl.RawSetInt(i+1, luax.NewLuable(L, member))
 			}
 			L.Push(tbl)
 			return 1
@@ -515,8 +527,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "CarnivalTeam expected")
 				return 0
 			}
-			gw := team.Match.gameWorld()
-			team.Clear(gw)
+			team.Clear()
 			L.Push(lua.LTrue)
 			return 1
 		},
@@ -586,11 +597,48 @@ func (p *CarnivalPersonalCP) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 }
 
+func (member *CarnivalMember) LuaTypeName() string { return "LuaCarnivalMember" }
+
+func (member *CarnivalMember) String() string { return member.LuaTypeName() }
+
+func (member *CarnivalMember) Type() lua.LValueType { return lua.LTUserData }
+
+func (member *CarnivalMember) LuaBuiltinFuncs() map[string]lua.LGFunction {
+	check := func(L *lua.LState) *CarnivalMember {
+		ud := L.CheckUserData(1)
+		member, ok := ud.Value.(*CarnivalMember)
+		if !ok || member == nil {
+			L.ArgError(1, "CarnivalMember expected")
+			return nil
+		}
+		return member
+	}
+	return map[string]lua.LGFunction{
+		"id": func(L *lua.LState) int {
+			L.Push(lua.LNumber(check(L).ID))
+			return 1
+		},
+		"name": func(L *lua.LState) int {
+			L.Push(lua.LString(check(L).Name))
+			return 1
+		},
+		"level": func(L *lua.LState) int {
+			L.Push(lua.LNumber(check(L).Level))
+			return 1
+		},
+		"class": func(L *lua.LState) int {
+			L.Push(lua.LNumber(check(L).Class))
+			return 1
+		},
+	}
+}
+
 func RegisterCarnivalLua(L *lua.LState, gw GameWorld) {
 	registerCarnivalConstants(L)
 	luax.RegisterLuaType[*CarnivalMatch](L)
 	luax.RegisterLuaType[*CarnivalTeam](L)
 	luax.RegisterLuaType[*CarnivalPersonalCP](L)
+	luax.RegisterLuaType[*CarnivalMember](L)
 
 	carnivalTable := L.NewTable()
 	reg := gw.GetCarnivalRegistry()
@@ -733,8 +781,7 @@ func RegisterCarnivalLua(L *lua.LState, gw GameWorld) {
 	carnivalTable.RawSetString("challenge", L.NewFunction(func(L *lua.LState) int {
 		if reg == nil {
 			L.Push(lua.LFalse)
-			L.Push(lua.LFalse)
-			return 2
+			return 1
 		}
 		slot := int(L.CheckNumber(1))
 		chUD := L.CheckUserData(2)
@@ -743,10 +790,8 @@ func RegisterCarnivalLua(L *lua.LState, gw GameWorld) {
 			L.ArgError(2, "Character expected")
 			return 0
 		}
-		succeeded, shouldOpen := reg.Challenge(slot, ch)
-		L.Push(lua.LBool(succeeded))
-		L.Push(lua.LBool(shouldOpen))
-		return 2
+		L.Push(lua.LBool(reg.Challenge(slot, ch)))
+		return 1
 	}))
 	L.SetGlobal("carnival", carnivalTable)
 }

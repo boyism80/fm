@@ -239,15 +239,21 @@ func (s mapSystem) CloseInstance(m *entity.Map) {
 	}})
 }
 
-func (s mapSystem) Broadcast(m *entity.Map, message types.Packet) {
+func (s mapSystem) Call(m *entity.Map, run func(ctx actor.Context)) {
 	pid := m.LogicActorPID()
 	if pid == nil {
 		return
 	}
-	s.gs.GetRootContext().Send(pid, &g_actor.MapCall{Run: func(actor.Context, *g_actor.GameLogicActor) []lua.LValue {
-		m.Broadcast(message, nil)
+	s.gs.GetRootContext().Send(pid, &g_actor.MapCall{Run: func(ctx actor.Context, _ *g_actor.GameLogicActor) []lua.LValue {
+		run(ctx)
 		return nil
 	}})
+}
+
+func (s mapSystem) Broadcast(m *entity.Map, message types.Packet) {
+	s.Call(m, func(actor.Context) {
+		m.Broadcast(message, nil)
+	})
 }
 
 func (s mapSystem) returnMap(m *entity.Map) *entity.Map {

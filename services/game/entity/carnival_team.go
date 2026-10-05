@@ -18,6 +18,7 @@ type CarnivalTeam struct {
 	LeaderID    uint32
 	PartyID     uint32
 	MemberIDs   []uint32
+	Roster      []*CarnivalMember
 	AvailableCP int
 	TotalCP     int
 	Personal    map[uint32]*CarnivalPersonalCP
@@ -33,50 +34,21 @@ func (t *CarnivalTeam) HasMember(characterID uint32) bool {
 	return false
 }
 
-func (t *CarnivalTeam) Members(gw GameWorld) []*Character {
-	if gw == nil || t.Match == nil {
+func (t *CarnivalTeam) Members() []*Character {
+	if t.Match == nil {
 		return nil
 	}
 	out := make([]*Character, 0, len(t.MemberIDs))
-	seen := make(map[uint32]bool)
-	add := func(ch *Character) {
-		if ch == nil || seen[ch.GetID()] {
-			return
+	for _, ch := range t.Match.StateMachine().Players() {
+		if t.HasMember(ch.GetID()) {
+			out = append(out, ch)
 		}
-		out = append(out, ch)
-		seen[ch.GetID()] = true
-	}
-	if sm := t.Match.StateMachine(); sm != nil {
-		for _, ch := range sm.Players() {
-			if ch != nil && t.HasMember(ch.GetID()) {
-				add(ch)
-			}
-		}
-		if len(out) == len(t.MemberIDs) {
-			return out
-		}
-	}
-	ms := gw.GetMapSystem()
-	if ms == nil {
-		return out
-	}
-	for _, ch := range t.Match.findCharacters(gw, t.MemberIDs, t.PartyID, []uint32{
-		t.Match.WaitingMapID,
-		t.Match.FieldMapID,
-		t.Match.ReviveMapID,
-		t.Match.WinMapID,
-		t.Match.LoseMapID,
-	}) {
-		add(ch)
 	}
 	return out
 }
 
-func (t *CarnivalTeam) Leader(gw GameWorld) *Character {
-	if gw == nil {
-		return nil
-	}
-	for _, ch := range t.Members(gw) {
+func (t *CarnivalTeam) Leader() *Character {
+	for _, ch := range t.Members() {
 		if ch.GetID() == t.LeaderID {
 			return ch
 		}
@@ -155,7 +127,7 @@ func (t *CarnivalTeam) Debuff(field *Map, skillID uint32) bool {
 	}
 
 	targets := make([]*Character, 0, len(t.MemberIDs))
-	for _, member := range t.Members(field.GameWorld) {
+	for _, member := range t.Members() {
 		if member.GetMap() == field {
 			targets = append(targets, member)
 		}
@@ -203,7 +175,7 @@ func (t *CarnivalTeam) Warp(ctx actor.Context, mapID uint32, portalName string) 
 			}
 		}
 	}
-	for _, ch := range t.Members(gw) {
+	for _, ch := range t.Members() {
 		_ = ch.Warp(ctx, dest, spawn)
 	}
 	return true
@@ -219,11 +191,12 @@ func (t *CarnivalTeam) RemoveMember(ch *Character) {
 	ch.UnbindCarnival()
 }
 
-func (t *CarnivalTeam) Clear(gw GameWorld) {
-	for _, ch := range t.Members(gw) {
+func (t *CarnivalTeam) Clear() {
+	for _, ch := range t.Members() {
 		ch.UnbindCarnival()
 	}
 	t.MemberIDs = nil
+	t.Roster = nil
 	t.LeaderID = 0
 	t.AvailableCP = 0
 	t.TotalCP = 0

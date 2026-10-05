@@ -1,6 +1,7 @@
 -- State machine: 몬스터 카니발
 
 local HUB_MAP = 980000000
+local ACCEPT_NPC = 2042001
 local RANKING_QUEST = 1301
 local WAITING_MS = 180000
 local READY_MS = 10000
@@ -46,6 +47,22 @@ local function dispose_all(sm, match)
 	if match ~= nil then
 		match:finish()
 	end
+end
+
+local function red_leader(sm)
+	local match = match_for_sm(sm)
+	local red = match ~= nil and match:red_team() or nil
+	if red == nil then
+		return nil, match
+	end
+	return red:leader(), match
+end
+
+local function offer_challenge(leader, match)
+	if leader == nil or leader:in_dialog() or not match:has_pending_challenge() then
+		return
+	end
+	leader:open_npc(ACCEPT_NPC)
 end
 
 local function warp_out(sm, match)
@@ -247,6 +264,20 @@ return {
 
 	on_start = function(sm)
 		sm:start_timer(WAITING_MS)
+	end,
+
+	on_challenge = function(sm)
+		local leader, match = red_leader(sm)
+		offer_challenge(leader, match)
+	end,
+
+	on_challenge_failed = function(sm)
+		local leader, match = red_leader(sm)
+		if leader == nil then
+			return
+		end
+		leader:message("도전을 수락하는데 실패하였네.", Msg.PinkText)
+		offer_challenge(leader, match)
 	end,
 
 	on_challenge_accepted = function(sm)

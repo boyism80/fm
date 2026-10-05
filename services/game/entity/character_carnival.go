@@ -31,6 +31,15 @@ func (ch *Character) CarnivalTeam() *CarnivalTeam {
 	return ch.carnivalTeam
 }
 
+func (ch *Character) CarnivalMember() *CarnivalMember {
+	return &CarnivalMember{
+		ID:    ch.GetID(),
+		Name:  ch.GetName(),
+		Level: ch.GetLevel(),
+		Class: ch.Class,
+	}
+}
+
 func (ch *Character) PartyOnMap() ([]*Character, *Party) {
 	partyID := ch.GetPartyID()
 	if partyID == nil || ch.GameWorld == nil {

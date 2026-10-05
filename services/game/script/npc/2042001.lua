@@ -25,16 +25,6 @@ return {
 		end
 		if not match:accept_pending_challenge() then
 			me:dialog(npc, "도전을 수락하는데 실패하였네.")
-			return
-		end
-		local sm = me:state_machine()
-		if sm == nil then
-			match:finish()
-			me:dialog(npc, "도전을 수락하는데 실패하였네.")
-			return
-		end
-		for _, ch in ipairs(match:blue_team():members()) do
-			sm:enter_player(ch)
 		end
 	end
 }

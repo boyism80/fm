@@ -115,12 +115,12 @@ func (r *CarnivalRegistry) Enter(slotIndex int, leader *Character) bool {
 	}
 
 	memberIDs := make([]uint32, len(members))
+	roster := make([]*CarnivalMember, len(members))
+	personal := make(map[uint32]*CarnivalPersonalCP, len(members))
 	for i, ch := range members {
 		memberIDs[i] = ch.GetID()
-	}
-	personal := make(map[uint32]*CarnivalPersonalCP, len(memberIDs))
-	for _, id := range memberIDs {
-		personal[id] = &CarnivalPersonalCP{}
+		roster[i] = ch.CarnivalMember()
+		personal[ch.GetID()] = &CarnivalPersonalCP{}
 	}
 	red := &CarnivalTeam{
 		Match:     match,
@@ -128,6 +128,7 @@ func (r *CarnivalRegistry) Enter(slotIndex int, leader *Character) bool {
 		LeaderID:  leader.GetID(),
 		PartyID:   party.GetPartyId(),
 		MemberIDs: memberIDs,
+		Roster:    roster,
 		Personal:  personal,
 	}
 
@@ -148,24 +149,25 @@ func (r *CarnivalRegistry) Enter(slotIndex int, leader *Character) bool {
 	return true
 }
 
-func (r *CarnivalRegistry) Challenge(slotIndex int, leader *Character) (ok bool, shouldOpen bool) {
+func (r *CarnivalRegistry) Challenge(slotIndex int, leader *Character) bool {
 	match := r.Match(slotIndex)
 	if match == nil {
-		return false, false
+		return false
 	}
 	members, party := leader.PartyOnMap()
 	if party == nil {
-		return false, false
+		return false
 	}
 
-	memberIDs := make([]uint32, len(members))
+	roster := make([]*CarnivalMember, len(members))
 	for i, ch := range members {
-		memberIDs[i] = ch.GetID()
+		roster[i] = ch.CarnivalMember()
 	}
 	challenge := &CarnivalChallenge{
 		LeaderID:    leader.GetID(),
 		PartyID:     party.GetPartyId(),
-		MemberIDs:   memberIDs,
+		Map:         leader.GetMap(),
+		Members:     roster,
 		RequestedAt: time.Now(),
 	}
 
@@ -173,11 +175,11 @@ func (r *CarnivalRegistry) Challenge(slotIndex int, leader *Character) (ok bool,
 	red := match.Teams[constant.CarnivalTeamRed]
 	if match.State != CarnivalStateWaiting || red == nil {
 		match.mu.Unlock()
-		return false, false
+		return false
 	}
 	if len(members) != len(red.MemberIDs) {
 		match.mu.Unlock()
-		return false, false
+		return false
 	}
 	wasEmpty := len(match.queue) == 0
 	match.queue = append(match.queue, challenge)
@@ -186,12 +188,8 @@ func (r *CarnivalRegistry) Challenge(slotIndex int, leader *Character) (ok bool,
 	}
 	match.mu.Unlock()
 
-	if !wasEmpty {
-		return true, false
+	if wasEmpty {
+		match.StateMachine().CallHook("on_challenge")
 	}
-	redLeader := red.Leader(leader.GameWorld)
-	if redLeader == nil || redLeader.GetDialog() != nil {
-		return true, false
-	}
-	return true, true
+	return true
 }
