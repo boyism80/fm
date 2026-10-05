@@ -1,6 +1,6 @@
 local pq = require("script/integration/lib/party_quest")
 
-local DIALOGS = { resp.dialog, resp.dialog_yes_no, resp.dialog_accept, resp.warp }
+local DIALOGS = { resp.dialog, resp.dialog_yes_no, resp.dialog_accept, resp.dialog_list, resp.warp }
 local LAB_HALL = 926130100
 
 local function setup(ctx, bot, args, map_id)
@@ -18,6 +18,8 @@ local function answer(p, name)
 		return req.dialog { dialog_type = 1, next = true }
 	elseif name == resp.dialog_accept then
 		return req.dialog { dialog_type = p.enable_escape and 11 or 12, next = true }
+	elseif name == resp.dialog_list then
+		return req.dialog { dialog_type = 4, next = true, selected = 0 }
 	end
 	return req.dialog { dialog_type = 0, next = true }
 end
@@ -81,6 +83,31 @@ local function hunt(ctx, bot, mob_id, count)
 		end
 	end
 	return true
+end
+
+local function enter_tokyo(ctx, bot)
+	for _ = 1, 10 do
+		local oid = pq.npc(ctx, bot, 9120028)
+		if oid == false then
+			return false
+		end
+		local p, name = bot:request(DIALOGS, req.npc_click { oid = oid })
+		if p == false then
+			return ctx:fail("박 경관이 반응하지 않음")
+		end
+		if name ~= resp.dialog or p.text:find("이미 다른 사람이 도전 중", 1, true) == nil then
+			p, name = bot:request(resp.warp, answer(p, name), function(p)
+				return p.character.map == 802000311
+			end, 10000)
+			if p == false then
+				return ctx:fail("2095년 공원에 입장하지 못함")
+			end
+			return true
+		end
+		bot:dialog(false)
+		ctx:sleep(500)
+	end
+	return ctx:fail("2095년 공원이 계속 사용 중")
 end
 
 local function milk(ctx, bot, template)
@@ -365,6 +392,27 @@ test_suite {
 				return false
 			end
 			return talk_until_warp(ctx, bot, 1072008, { [120000101] = true })
+		end,
+		function(ctx)
+			local bot = ctx:bot(0)
+			if setup(ctx, bot, "120 100 0 - -", 802000300) == false then
+				return false
+			end
+			for _ = 1, 2 do
+				if enter_tokyo(ctx, bot) == false then
+					return false
+				end
+				if hunt(ctx, bot, 9400256, 3) == false then
+					return false
+				end
+				if talk_until_warp(ctx, bot, 9120030, { [802000101] = true }) == false then
+					return false
+				end
+				if bot:map_move(802000300) == false then
+					return ctx:fail("박 경관에게 돌아가지 못함")
+				end
+			end
+			return true
 		end,
 	},
 }
