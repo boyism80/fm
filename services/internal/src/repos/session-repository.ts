@@ -1,6 +1,7 @@
 import { redisSessionKey } from "../redis-session-key";
 import { AccountSessionState, accountSessionStateFromRedisHash } from "../session-state";
 import { SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
+import type { DebuffPersisted } from "../protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "../context/internal-context";
 import type { AccountSession } from "../session-types";
 import type { CharacterRepository } from "./character-repository";
@@ -75,6 +76,7 @@ export class SessionRepository {
             characterName: hash.character_name || null,
             channelId: toNumberOrNull(hash.channel_id),
             gameToGameTransfer: (hash.game_to_game_transfer || "0") === "1",
+            debuffs: hash.debuffs ? (JSON.parse(hash.debuffs) as DebuffPersisted[]) : [],
             timestamps: {
                 createdAt: hash.created_at || null,
                 updatedAt: hash.updated_at || null,
@@ -123,7 +125,8 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         now: string,
         ttlSeconds: number,
         gameToGameTransfer: boolean,
-        prevChannelId: number | null
+        prevChannelId: number | null,
+        debuffs: DebuffPersisted[]
     ) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
@@ -143,6 +146,7 @@ local game_to_game_transfer = ARGV[6]
 local prev_channel_id = ARGV[7]
 local users_ttl = tonumber(ARGV[8])
 local client_ip = ARGV[9]
+local debuffs = ARGV[10]
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
@@ -164,6 +168,7 @@ redis.call("HSET", account_key,
   "character_name", character_name,
   "client_ip", client_ip,
   "game_to_game_transfer", game_to_game_transfer,
+  "debuffs", debuffs,
   "updated_at", now,
   "state_changed_at", now
 )
@@ -184,7 +189,8 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
             gameToGameTransfer ? "1" : "0",
             String(prevCh),
             String(usersTtl),
-            clientIp
+            clientIp,
+            gameToGameTransfer && debuffs.length > 0 ? JSON.stringify(debuffs) : ""
         )) as Array<number | string>;
     }
 
@@ -238,6 +244,7 @@ redis.call("HSET", account_key,
   "updated_at", now,
   "state_changed_at", now
 )
+redis.call("HDEL", account_key, "debuffs")
 redis.call("EXPIRE", account_key, ttl)
 redis.call("INCR", channel_users_key)
 redis.call("EXPIRE", channel_users_key, users_ttl)

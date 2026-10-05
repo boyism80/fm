@@ -190,6 +190,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 	character.LoadInventory(reply.GetInventory())
 	character.LoadSkills(reply.GetSkills())
 	character.LoadBuffs(reply.GetBuffs())
+	character.LoadDebuffs(reply.GetDebuffs())
 	character.LoadQuests(reply.GetQuests())
 	character.LoadSavedLocations(reply.GetSavedLocations())
 	character.BuddyList().LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())

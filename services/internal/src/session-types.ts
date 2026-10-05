@@ -1,4 +1,5 @@
 import type { AccountSessionState } from "./session-state";
+import type { DebuffPersisted } from "./protobuf/generated/fminternal/internal_service";
 
 export interface AccountSession {
     version: number;
@@ -10,5 +11,6 @@ export interface AccountSession {
     characterName: string | null;
     channelId: number | null;
     gameToGameTransfer: boolean;
+    debuffs: DebuffPersisted[];
     timestamps: { createdAt: string | null; updatedAt: string | null; stateChangedAt: string | null };
 }

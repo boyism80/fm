@@ -119,7 +119,14 @@ export class SessionGrpcController {
             if (row.accountId !== accountId) {
                 throw Object.assign(new Error(`account mismatch for character ${characterId}`), { code: "INVALID_PAYLOAD" });
             }
-            const transition = await this.sessionService.beginTransition(worldId, row.accountId, row.characterId, row.name, call.request.clientIp);
+            const transition = await this.sessionService.beginTransition(
+                worldId,
+                row.accountId,
+                row.characterId,
+                row.name,
+                call.request.clientIp,
+                call.request.debuffs ?? [],
+            );
             callback(null, {
                 ok: transition.ok,
                 errorCode: transition.code ?? SessionErrorCode.SESSION_UNKNOWN,
@@ -159,6 +166,7 @@ export class SessionGrpcController {
                     guildId: undefined,
                     buddies: [],
                     buddyCapacity: 0,
+                    debuffs: [],
                 });
                 return;
             }
@@ -222,6 +230,7 @@ export class SessionGrpcController {
                     grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY)
                 ),
                 buddyCapacity: buddyPack.capacity >>> 0,
+                debuffs: [],
             };
 
             // Enter the game last: the game server treats an error reply as "did not enter the game".
@@ -229,6 +238,7 @@ export class SessionGrpcController {
             if (!enter.ok) {
                 throw new Error(`enter game session failed: ${enter.code}`);
             }
+            reply.debuffs = enter.debuffs ?? [];
             callback(null, reply);
         } catch (err) {
             this.grpcError(err, callback);

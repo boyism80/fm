@@ -1,4 +1,5 @@
 import { AccountSessionState, SessionDisconnectSource, SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
+import type { DebuffPersisted } from "../protobuf/generated/fminternal/internal_service";
 import { isRedisEvalArray } from "../types/redis-eval";
 import type { SessionRepository } from "../repos/session-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
@@ -89,7 +90,7 @@ export class SessionService {
         return { ok: true };
     }
 
-    async beginTransition(worldId: number, accountId: number, characterId: number, characterName: string, clientIp: string) {
+    async beginTransition(worldId: number, accountId: number, characterId: number, characterName: string, clientIp: string, debuffs: DebuffPersisted[]) {
         const account = await this.repo.getAccountSession(worldId, accountId);
         const gameToGameTransfer = account?.state === AccountSessionState.ACCOUNT_SESSION_STATE_GAME;
         const [ok, code] = this.atomicResultTuple(
@@ -102,7 +103,8 @@ export class SessionService {
                 this.now(),
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
                 gameToGameTransfer,
-                account?.channelId ?? null
+                account?.channelId ?? null,
+                debuffs
             )
         );
         if (ok !== 1) {
@@ -154,7 +156,7 @@ export class SessionService {
             });
             throw err;
         }
-        return { ok: true };
+        return { ok: true, debuffs: gameToGameTransfer ? account?.debuffs ?? [] : [] };
     }
 
     async refresh(worldId: number, accountId: number, owner: { characterId: number; channelId: number } | null) {

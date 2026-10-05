@@ -108,6 +108,36 @@ func (ch *Character) LoadBuffs(persisted []*internal.BuffPersisted) {
 	}
 }
 
+func (ch *Character) LoadDebuffs(persisted []*internal.DebuffPersisted) {
+	now := clock.Now()
+	flags := constant.AllDebuffFlags()
+	for _, pb := range persisted {
+		var duration time.Duration
+		if pb.GetEndUnixMs() != 0 {
+			duration = time.UnixMilli(pb.GetEndUnixMs()).Sub(now)
+			if duration <= 0 {
+				continue
+			}
+		}
+		for _, flag := range flags {
+			if flag.Mask != pb.GetMask() || flag.Position != int(pb.GetPosition()) {
+				continue
+			}
+			if ch.debuffs == nil {
+				ch.debuffs = make(map[constant.DebuffFlag]*Debuff)
+			}
+			ch.debuffs[flag] = &Debuff{
+				Flag:       flag,
+				StartTime:  now,
+				Duration:   duration,
+				X:          int16(pb.GetX()),
+				SkillID:    uint16(pb.GetSkillId()),
+				SkillLevel: uint16(pb.GetSkillLevel()),
+			}
+		}
+	}
+}
+
 func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
 	if ch == nil {
 		return
@@ -292,6 +322,30 @@ func (ch *Character) SkillsPersisted() []*internal.SkillPersisted {
 		}
 	})
 	return skills
+}
+
+func (ch *Character) DebuffsPersisted() []*internal.DebuffPersisted {
+	now := clock.Now()
+	out := make([]*internal.DebuffPersisted, 0, len(ch.debuffs))
+	for _, holder := range ch.debuffs {
+		var endUnixMs int64
+		if holder.Duration > 0 {
+			end := holder.StartTime.Add(holder.Duration)
+			if end.After(now) == false {
+				continue
+			}
+			endUnixMs = end.UnixMilli()
+		}
+		out = append(out, &internal.DebuffPersisted{
+			Mask:       holder.Flag.Mask,
+			Position:   int32(holder.Flag.Position),
+			X:          int32(holder.X),
+			SkillId:    uint32(holder.SkillID),
+			SkillLevel: uint32(holder.SkillLevel),
+			EndUnixMs:  endUnixMs,
+		})
+	}
+	return out
 }
 
 func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {

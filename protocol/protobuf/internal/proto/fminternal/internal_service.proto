@@ -180,6 +180,16 @@ message EnterGameReply {
   uint32                       buddy_capacity = 10;
   repeated QuestPersisted      quests    = 11;
   repeated SavedLocationPersisted saved_locations = 12;
+  repeated DebuffPersisted     debuffs   = 13;
+}
+
+message DebuffPersisted {
+  uint32 mask = 1;
+  int32 position = 2;
+  int32 x = 3;
+  uint32 skill_id = 4;
+  uint32 skill_level = 5;
+  int64 end_unix_ms = 6;
 }
 
 message BeginGameTransitionRequest {
@@ -187,6 +197,7 @@ message BeginGameTransitionRequest {
   uint32 account_id = 2;
   uint32 character_id = 3;
   string client_ip = 4;
+  repeated DebuffPersisted debuffs = 5;
 }
 
 enum SessionErrorCode {

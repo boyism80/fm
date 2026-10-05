@@ -1011,6 +1011,16 @@ export interface EnterGameReply {
   buddyCapacity: number;
   quests: QuestPersisted[];
   savedLocations: SavedLocationPersisted[];
+  debuffs: DebuffPersisted[];
+}
+
+export interface DebuffPersisted {
+  mask: number;
+  position: number;
+  x: number;
+  skillId: number;
+  skillLevel: number;
+  endUnixMs: number;
 }
 
 export interface BeginGameTransitionRequest {
@@ -1018,6 +1028,7 @@ export interface BeginGameTransitionRequest {
   accountId: number;
   characterId: number;
   clientIp: string;
+  debuffs: DebuffPersisted[];
 }
 
 export interface BeginGameTransitionReply {
@@ -3674,6 +3685,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     buddyCapacity: 0,
     quests: [],
     savedLocations: [],
+    debuffs: [],
   };
 }
 
@@ -3714,6 +3726,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     for (const v of message.savedLocations) {
       SavedLocationPersisted.encode(v!, writer.uint32(98).fork()).join();
+    }
+    for (const v of message.debuffs) {
+      DebuffPersisted.encode(v!, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -3821,6 +3836,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.savedLocations.push(SavedLocationPersisted.decode(reader, reader.uint32()));
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.debuffs.push(DebuffPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3866,6 +3889,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : globalThis.Array.isArray(object?.saved_locations)
         ? object.saved_locations.map((e: any) => SavedLocationPersisted.fromJSON(e))
         : [],
+      debuffs: globalThis.Array.isArray(object?.debuffs)
+        ? object.debuffs.map((e: any) => DebuffPersisted.fromJSON(e))
+        : [],
     };
   },
 
@@ -3907,6 +3933,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.savedLocations?.length) {
       obj.savedLocations = message.savedLocations.map((e) => SavedLocationPersisted.toJSON(e));
     }
+    if (message.debuffs?.length) {
+      obj.debuffs = message.debuffs.map((e) => DebuffPersisted.toJSON(e));
+    }
     return obj;
   },
 
@@ -3929,12 +3958,165 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.buddyCapacity = object.buddyCapacity ?? 0;
     message.quests = object.quests?.map((e) => QuestPersisted.fromPartial(e)) || [];
     message.savedLocations = object.savedLocations?.map((e) => SavedLocationPersisted.fromPartial(e)) || [];
+    message.debuffs = object.debuffs?.map((e) => DebuffPersisted.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDebuffPersisted(): DebuffPersisted {
+  return { mask: 0, position: 0, x: 0, skillId: 0, skillLevel: 0, endUnixMs: 0 };
+}
+
+export const DebuffPersisted: MessageFns<DebuffPersisted> = {
+  encode(message: DebuffPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.mask !== 0) {
+      writer.uint32(8).uint32(message.mask);
+    }
+    if (message.position !== 0) {
+      writer.uint32(16).int32(message.position);
+    }
+    if (message.x !== 0) {
+      writer.uint32(24).int32(message.x);
+    }
+    if (message.skillId !== 0) {
+      writer.uint32(32).uint32(message.skillId);
+    }
+    if (message.skillLevel !== 0) {
+      writer.uint32(40).uint32(message.skillLevel);
+    }
+    if (message.endUnixMs !== 0) {
+      writer.uint32(48).int64(message.endUnixMs);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DebuffPersisted {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDebuffPersisted();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.mask = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.position = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.x = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.skillId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.skillLevel = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.endUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DebuffPersisted {
+    return {
+      mask: isSet(object.mask) ? globalThis.Number(object.mask) : 0,
+      position: isSet(object.position) ? globalThis.Number(object.position) : 0,
+      x: isSet(object.x) ? globalThis.Number(object.x) : 0,
+      skillId: isSet(object.skillId)
+        ? globalThis.Number(object.skillId)
+        : isSet(object.skill_id)
+        ? globalThis.Number(object.skill_id)
+        : 0,
+      skillLevel: isSet(object.skillLevel)
+        ? globalThis.Number(object.skillLevel)
+        : isSet(object.skill_level)
+        ? globalThis.Number(object.skill_level)
+        : 0,
+      endUnixMs: isSet(object.endUnixMs)
+        ? globalThis.Number(object.endUnixMs)
+        : isSet(object.end_unix_ms)
+        ? globalThis.Number(object.end_unix_ms)
+        : 0,
+    };
+  },
+
+  toJSON(message: DebuffPersisted): unknown {
+    const obj: any = {};
+    if (message.mask !== 0) {
+      obj.mask = Math.round(message.mask);
+    }
+    if (message.position !== 0) {
+      obj.position = Math.round(message.position);
+    }
+    if (message.x !== 0) {
+      obj.x = Math.round(message.x);
+    }
+    if (message.skillId !== 0) {
+      obj.skillId = Math.round(message.skillId);
+    }
+    if (message.skillLevel !== 0) {
+      obj.skillLevel = Math.round(message.skillLevel);
+    }
+    if (message.endUnixMs !== 0) {
+      obj.endUnixMs = Math.round(message.endUnixMs);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DebuffPersisted>, I>>(base?: I): DebuffPersisted {
+    return DebuffPersisted.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DebuffPersisted>, I>>(object: I): DebuffPersisted {
+    const message = createBaseDebuffPersisted();
+    message.mask = object.mask ?? 0;
+    message.position = object.position ?? 0;
+    message.x = object.x ?? 0;
+    message.skillId = object.skillId ?? 0;
+    message.skillLevel = object.skillLevel ?? 0;
+    message.endUnixMs = object.endUnixMs ?? 0;
     return message;
   },
 };
 
 function createBaseBeginGameTransitionRequest(): BeginGameTransitionRequest {
-  return { worldId: 0, accountId: 0, characterId: 0, clientIp: "" };
+  return { worldId: 0, accountId: 0, characterId: 0, clientIp: "", debuffs: [] };
 }
 
 export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> = {
@@ -3950,6 +4132,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     }
     if (message.clientIp !== "") {
       writer.uint32(34).string(message.clientIp);
+    }
+    for (const v of message.debuffs) {
+      DebuffPersisted.encode(v!, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -3993,6 +4178,14 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
           message.clientIp = reader.string();
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.debuffs.push(DebuffPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4024,6 +4217,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
         : isSet(object.client_ip)
         ? globalThis.String(object.client_ip)
         : "",
+      debuffs: globalThis.Array.isArray(object?.debuffs)
+        ? object.debuffs.map((e: any) => DebuffPersisted.fromJSON(e))
+        : [],
     };
   },
 
@@ -4041,6 +4237,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     if (message.clientIp !== "") {
       obj.clientIp = message.clientIp;
     }
+    if (message.debuffs?.length) {
+      obj.debuffs = message.debuffs.map((e) => DebuffPersisted.toJSON(e));
+    }
     return obj;
   },
 
@@ -4053,6 +4252,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     message.accountId = object.accountId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.clientIp = object.clientIp ?? "";
+    message.debuffs = object.debuffs?.map((e) => DebuffPersisted.fromPartial(e)) || [];
     return message;
   },
 };

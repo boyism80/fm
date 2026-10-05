@@ -94,9 +94,12 @@ type LastHeal struct {
 }
 
 type Debuff struct {
-	Flag      constant.DebuffFlag
-	StartTime time.Time
-	Duration  time.Duration
+	Flag       constant.DebuffFlag
+	StartTime  time.Time
+	Duration   time.Duration
+	X          int16
+	SkillID    uint16
+	SkillLevel uint16
 }
 
 func (ch *Character) GetObjectType() constant.ObjectType {
@@ -1264,12 +1267,26 @@ func (ch *Character) GiveDebuff(flag constant.DebuffFlag, duration time.Duration
 		skillLevel = 1
 	}
 	holder := &Debuff{
-		Flag:      flag,
-		StartTime: clock.Now(),
-		Duration:  duration,
+		Flag:       flag,
+		StartTime:  clock.Now(),
+		Duration:   duration,
+		X:          x,
+		SkillID:    skillID,
+		SkillLevel: skillLevel,
 	}
 	ch.AddDebuff(holder)
 	ch.Listener.OnDebuffAdded(ch, flag, x, skillID, skillLevel, int32(duration.Milliseconds()))
+}
+
+func (ch *Character) restoreDebuffs() {
+	restored := make([]*Debuff, 0, len(ch.debuffs))
+	for _, holder := range ch.debuffs {
+		restored = append(restored, holder)
+	}
+	for _, holder := range restored {
+		ch.AddDebuff(holder)
+		ch.Listener.OnDebuffAdded(ch, holder.Flag, holder.X, holder.SkillID, holder.SkillLevel, int32(holder.Duration.Milliseconds()))
+	}
 }
 
 func (ch *Character) RemoveDebuff(flags ...constant.DebuffFlag) {
