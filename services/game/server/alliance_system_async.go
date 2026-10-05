@@ -87,7 +87,7 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("alliance inc_capacity: character=%d: %v", charID, err)
-		ch.Inventory.AddMeso(constant.AllianceIncreaseCapacityMesoCost)
+		s.gs.WriteOperationLogAsync(ctx, charID, constant.OperationLogAllianceIncCapacityUnsettled, constant.AllianceIncreaseCapacityMesoCost, err.Error())
 		*result = int(constant.AllianceIncreaseCapacityResultFailed)
 	})
 }

@@ -167,7 +167,7 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		})
 		promise.OnError(func(err error) {
 			log.Printf("GuildOperation(create) async error: %v", err)
-			ch.Inventory.AddMeso(gameconst.GuildCreateMesoCost)
+			h.gs.WriteOperationLogAsync(ctx.ActorContext, charID, gameconst.OperationLogGuildCreateUnsettled, gameconst.GuildCreateMesoCost, err.Error())
 			h.resumeGuildCreate(ch, gameconst.GuildCreateResultFailed)
 		})
 		return nil

@@ -80,6 +80,7 @@ const (
 	Internal_BroadcastMultiChat_FullMethodName             = "/fm.internal.Internal/BroadcastMultiChat"
 	Internal_SetServerDateTime_FullMethodName              = "/fm.internal.Internal/SetServerDateTime"
 	Internal_BroadcastNotice_FullMethodName                = "/fm.internal.Internal/BroadcastNotice"
+	Internal_WriteOperationLog_FullMethodName              = "/fm.internal.Internal/WriteOperationLog"
 )
 
 // InternalClient is the client API for Internal service.
@@ -147,6 +148,7 @@ type InternalClient interface {
 	BroadcastMultiChat(ctx context.Context, in *BroadcastMultiChatRequest, opts ...grpc.CallOption) (*BroadcastMultiChatReply, error)
 	SetServerDateTime(ctx context.Context, in *SetServerDateTimeRequest, opts ...grpc.CallOption) (*SetServerDateTimeReply, error)
 	BroadcastNotice(ctx context.Context, in *BroadcastNoticeRequest, opts ...grpc.CallOption) (*BroadcastNoticeReply, error)
+	WriteOperationLog(ctx context.Context, in *WriteOperationLogRequest, opts ...grpc.CallOption) (*WriteOperationLogReply, error)
 }
 
 type internalClient struct {
@@ -767,6 +769,16 @@ func (c *internalClient) BroadcastNotice(ctx context.Context, in *BroadcastNotic
 	return out, nil
 }
 
+func (c *internalClient) WriteOperationLog(ctx context.Context, in *WriteOperationLogRequest, opts ...grpc.CallOption) (*WriteOperationLogReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WriteOperationLogReply)
+	err := c.cc.Invoke(ctx, Internal_WriteOperationLog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InternalServer is the server API for Internal service.
 // All implementations must embed UnimplementedInternalServer
 // for forward compatibility.
@@ -832,6 +844,7 @@ type InternalServer interface {
 	BroadcastMultiChat(context.Context, *BroadcastMultiChatRequest) (*BroadcastMultiChatReply, error)
 	SetServerDateTime(context.Context, *SetServerDateTimeRequest) (*SetServerDateTimeReply, error)
 	BroadcastNotice(context.Context, *BroadcastNoticeRequest) (*BroadcastNoticeReply, error)
+	WriteOperationLog(context.Context, *WriteOperationLogRequest) (*WriteOperationLogReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
 
@@ -1024,6 +1037,9 @@ func (UnimplementedInternalServer) SetServerDateTime(context.Context, *SetServer
 }
 func (UnimplementedInternalServer) BroadcastNotice(context.Context, *BroadcastNoticeRequest) (*BroadcastNoticeReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BroadcastNotice not implemented")
+}
+func (UnimplementedInternalServer) WriteOperationLog(context.Context, *WriteOperationLogRequest) (*WriteOperationLogReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WriteOperationLog not implemented")
 }
 func (UnimplementedInternalServer) mustEmbedUnimplementedInternalServer() {}
 func (UnimplementedInternalServer) testEmbeddedByValue()                  {}
@@ -2144,6 +2160,24 @@ func _Internal_BroadcastNotice_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_WriteOperationLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WriteOperationLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).WriteOperationLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_WriteOperationLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).WriteOperationLog(ctx, req.(*WriteOperationLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Internal_ServiceDesc is the grpc.ServiceDesc for Internal service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2394,6 +2428,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BroadcastNotice",
 			Handler:    _Internal_BroadcastNotice_Handler,
+		},
+		{
+			MethodName: "WriteOperationLog",
+			Handler:    _Internal_WriteOperationLog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

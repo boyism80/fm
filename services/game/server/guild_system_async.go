@@ -105,7 +105,9 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("guild inc_capacity: character=%d: %v", charID, err)
-		ch.Inventory.AddMeso(mesoCost)
+		if mesoCost > 0 {
+			s.gs.WriteOperationLogAsync(ctx, charID, constant.OperationLogGuildIncCapacityUnsettled, mesoCost, err.Error())
+		}
 		*result = int(constant.GuildIncreaseCapacityResultFailed)
 	})
 }
@@ -245,7 +247,7 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 		return nil
 	}).OnError(func(err error) {
 		log.Printf("alliance create: character=%d: %v", charID, err)
-		ch.Inventory.AddMeso(constant.AllianceCreateMesoCost)
+		s.gs.WriteOperationLogAsync(ctx, charID, constant.OperationLogAllianceCreateUnsettled, constant.AllianceCreateMesoCost, err.Error())
 		*result = int(constant.AllianceCreateResultFailed)
 	})
 }

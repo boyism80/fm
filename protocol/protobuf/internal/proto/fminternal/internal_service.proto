@@ -67,6 +67,7 @@ service Internal {
   rpc BroadcastMultiChat (BroadcastMultiChatRequest) returns (BroadcastMultiChatReply);
   rpc SetServerDateTime (SetServerDateTimeRequest) returns (SetServerDateTimeReply);
   rpc BroadcastNotice (BroadcastNoticeRequest) returns (BroadcastNoticeReply);
+  rpc WriteOperationLog (WriteOperationLogRequest) returns (WriteOperationLogReply);
 }
 
 enum ServerRole {
@@ -1293,5 +1294,18 @@ message BroadcastNoticeRequest {
 }
 
 message BroadcastNoticeReply {
+  bool ok = 1;
+}
+
+message WriteOperationLogRequest {
+  uint32 world_id = 1;
+  uint32 channel_id = 2;
+  uint32 character_id = 3;
+  string kind = 4;
+  int64 meso = 5;
+  string detail = 6;
+}
+
+message WriteOperationLogReply {
   bool ok = 1;
 }

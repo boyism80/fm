@@ -2077,6 +2077,19 @@ export interface BroadcastNoticeReply {
   ok: boolean;
 }
 
+export interface WriteOperationLogRequest {
+  worldId: number;
+  channelId: number;
+  characterId: number;
+  kind: string;
+  meso: number;
+  detail: string;
+}
+
+export interface WriteOperationLogReply {
+  ok: boolean;
+}
+
 function createBasePingRequest(): PingRequest {
   return { role: 0, worldId: 0, channelId: 0, loginInstanceId: "" };
 }
@@ -21531,6 +21544,216 @@ export const BroadcastNoticeReply: MessageFns<BroadcastNoticeReply> = {
   },
 };
 
+function createBaseWriteOperationLogRequest(): WriteOperationLogRequest {
+  return { worldId: 0, channelId: 0, characterId: 0, kind: "", meso: 0, detail: "" };
+}
+
+export const WriteOperationLogRequest: MessageFns<WriteOperationLogRequest> = {
+  encode(message: WriteOperationLogRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.channelId !== 0) {
+      writer.uint32(16).uint32(message.channelId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.kind !== "") {
+      writer.uint32(34).string(message.kind);
+    }
+    if (message.meso !== 0) {
+      writer.uint32(40).int64(message.meso);
+    }
+    if (message.detail !== "") {
+      writer.uint32(50).string(message.detail);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): WriteOperationLogRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWriteOperationLogRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.channelId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.kind = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.meso = longToNumber(reader.int64());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.detail = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WriteOperationLogRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      channelId: isSet(object.channelId)
+        ? globalThis.Number(object.channelId)
+        : isSet(object.channel_id)
+        ? globalThis.Number(object.channel_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      kind: isSet(object.kind) ? globalThis.String(object.kind) : "",
+      meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
+      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
+    };
+  },
+
+  toJSON(message: WriteOperationLogRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.channelId !== 0) {
+      obj.channelId = Math.round(message.channelId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.kind !== "") {
+      obj.kind = message.kind;
+    }
+    if (message.meso !== 0) {
+      obj.meso = Math.round(message.meso);
+    }
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WriteOperationLogRequest>, I>>(base?: I): WriteOperationLogRequest {
+    return WriteOperationLogRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<WriteOperationLogRequest>, I>>(object: I): WriteOperationLogRequest {
+    const message = createBaseWriteOperationLogRequest();
+    message.worldId = object.worldId ?? 0;
+    message.channelId = object.channelId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.kind = object.kind ?? "";
+    message.meso = object.meso ?? 0;
+    message.detail = object.detail ?? "";
+    return message;
+  },
+};
+
+function createBaseWriteOperationLogReply(): WriteOperationLogReply {
+  return { ok: false };
+}
+
+export const WriteOperationLogReply: MessageFns<WriteOperationLogReply> = {
+  encode(message: WriteOperationLogReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): WriteOperationLogReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWriteOperationLogReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WriteOperationLogReply {
+    return { ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false };
+  },
+
+  toJSON(message: WriteOperationLogReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WriteOperationLogReply>, I>>(base?: I): WriteOperationLogReply {
+    return WriteOperationLogReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<WriteOperationLogReply>, I>>(object: I): WriteOperationLogReply {
+    const message = createBaseWriteOperationLogReply();
+    message.ok = object.ok ?? false;
+    return message;
+  },
+};
+
 export type InternalService = typeof InternalService;
 export const InternalService = {
   ping: {
@@ -22172,6 +22395,17 @@ export const InternalService = {
       Buffer.from(BroadcastNoticeReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): BroadcastNoticeReply => BroadcastNoticeReply.decode(value),
   },
+  writeOperationLog: {
+    path: "/fm.internal.Internal/WriteOperationLog" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: WriteOperationLogRequest): Buffer =>
+      Buffer.from(WriteOperationLogRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): WriteOperationLogRequest => WriteOperationLogRequest.decode(value),
+    responseSerialize: (value: WriteOperationLogReply): Buffer =>
+      Buffer.from(WriteOperationLogReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): WriteOperationLogReply => WriteOperationLogReply.decode(value),
+  },
 } as const;
 
 export interface InternalServer extends UntypedServiceImplementation {
@@ -22254,6 +22488,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   broadcastMultiChat: handleUnaryCall<BroadcastMultiChatRequest, BroadcastMultiChatReply>;
   setServerDateTime: handleUnaryCall<SetServerDateTimeRequest, SetServerDateTimeReply>;
   broadcastNotice: handleUnaryCall<BroadcastNoticeRequest, BroadcastNoticeReply>;
+  writeOperationLog: handleUnaryCall<WriteOperationLogRequest, WriteOperationLogReply>;
 }
 
 export interface InternalClient extends Client {
@@ -23168,6 +23403,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: BroadcastNoticeReply) => void,
+  ): ClientUnaryCall;
+  writeOperationLog(
+    request: WriteOperationLogRequest,
+    callback: (error: ServiceError | null, response: WriteOperationLogReply) => void,
+  ): ClientUnaryCall;
+  writeOperationLog(
+    request: WriteOperationLogRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: WriteOperationLogReply) => void,
+  ): ClientUnaryCall;
+  writeOperationLog(
+    request: WriteOperationLogRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: WriteOperationLogReply) => void,
   ): ClientUnaryCall;
 }
 
