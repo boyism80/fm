@@ -67,11 +67,7 @@ function M.leave(me)
 		return
 	end
 	me:message("누군가가 나가기 엔피시를 클릭하여 모두 나가집니다.", Msg.Notice)
-	local match = carnival.map_match(tonumber(sm:id()))
 	sm:finish(HUB_MAP)
-	if match ~= nil then
-		match:finish()
-	end
 end
 
 function M.dispel_artifact(reactor)

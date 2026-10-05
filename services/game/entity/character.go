@@ -659,6 +659,23 @@ func (ch *Character) Warp(ctx actor.Context, targetMap *Map, spawnPoint uint8) e
 	return ch.GameWorld.GetMapSystem().Warp(ctx, ch, targetMap, spawnPoint, nil)
 }
 
+func (ch *Character) Call(run func()) {
+	m := ch.GetMap()
+	if m == nil {
+		m = ch.Destination
+	}
+	if m == nil || ch.GameWorld == nil {
+		return
+	}
+	ch.GameWorld.GetMapSystem().Call(m, func(ctx actor.Context) {
+		if current := ch.GetMap(); current != nil && current.LogicActorPID().Equal(ctx.Self()) == false {
+			ch.Call(run)
+			return
+		}
+		run()
+	})
+}
+
 func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 	m := ch.GetMap()
 	if m == nil {

@@ -90,7 +90,14 @@ func (a *StateMachineActor) Receive(ctx actor.Context) {
 		}
 	case *entity.LeaveStateMachinePlayer:
 		if msg != nil && a.StateMachine != nil {
-			a.StateMachine.LeavePlayer(ctx, msg.Character, msg.WarpLeaver, msg.Reason)
+			finished := a.StateMachine.LeavePlayer(ctx, msg.Character, msg.WarpLeaver, msg.Reason)
+			if finished == false && msg.Reason == entity.StateMachineLeaveParty {
+				a.callHook(ctx, "on_left_party", msg.Character)
+			}
+		}
+	case *entity.FinishStateMachine:
+		if a.StateMachine != nil {
+			a.StateMachine.Finish(ctx, msg.ExitMapID, msg.ExitPortal)
 		}
 	case *entity.ScheduleStateMachineTimeout:
 		if a.scheduler != nil && a.StateMachine != nil {

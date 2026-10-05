@@ -69,7 +69,7 @@ func (sm *StateMachine) Register(ch *Character) {
 	}
 	sm.players = append(sm.players, ch)
 	sm.playerSet[id] = ch
-	ch.stateMachine = sm
+	ch.bindStateMachine(sm)
 }
 
 func (sm *StateMachine) Unregister(ch *Character) {
@@ -95,11 +95,10 @@ func (sm *StateMachine) LeavePlayer(ctx actor.Context, ch *Character, warpLeaver
 		return false
 	}
 	sm.mu.Lock()
-	if sm.disposed {
+	if sm.disposed || sm.unregisterLocked(ch) == false {
 		sm.mu.Unlock()
 		return false
 	}
-	sm.unregisterLocked(ch)
 	count := len(sm.players)
 	minPlayers := sm.MinPlayers
 	exitMapID := sm.ExitMapID
@@ -134,6 +133,16 @@ func (sm *StateMachine) RequestLeave(ch *Character, warpLeaver bool, reason Stat
 	})
 }
 
+func (sm *StateMachine) RequestFinish(exitMapID uint32, exitPortal uint8) {
+	if sm == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
+		return
+	}
+	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &FinishStateMachine{
+		ExitMapID:  exitMapID,
+		ExitPortal: exitPortal,
+	})
+}
+
 func (sm *StateMachine) EnterPlayer(ch *Character) {
 	if sm == nil || ch == nil || sm.Disposed() || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil {
 		return
@@ -150,13 +159,13 @@ func (sm *StateMachine) Start() {
 	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &StartStateMachine{})
 }
 
-func (sm *StateMachine) unregisterLocked(ch *Character) {
+func (sm *StateMachine) unregisterLocked(ch *Character) bool {
 	if ch == nil {
-		return
+		return false
 	}
 	id := ch.GetID()
 	if _, ok := sm.playerSet[id]; !ok {
-		return
+		return false
 	}
 	delete(sm.playerSet, id)
 	out := sm.players[:0]
@@ -166,9 +175,8 @@ func (sm *StateMachine) unregisterLocked(ch *Character) {
 		}
 	}
 	sm.players = out
-	if ch.stateMachine == sm {
-		ch.stateMachine = nil
-	}
+	ch.unbindStateMachine(sm)
+	return true
 }
 
 func (sm *StateMachine) Players() []*Character {
@@ -514,8 +522,8 @@ func (sm *StateMachine) AbortStart() {
 	sm.playerSet = make(map[uint32]*Character)
 	sm.mu.Unlock()
 	for _, ch := range players {
-		if ch != nil && ch.stateMachine == sm {
-			ch.stateMachine = nil
+		if ch != nil {
+			ch.unbindStateMachine(sm)
 		}
 	}
 }
@@ -552,9 +560,7 @@ func (sm *StateMachine) Finish(ctx actor.Context, exitMapID uint32, exitPortal u
 		if ch == nil {
 			continue
 		}
-		if ch.stateMachine == sm {
-			ch.stateMachine = nil
-		}
+		ch.unbindStateMachine(sm)
 		if exitMap != nil {
 			_ = ch.Warp(ctx, exitMap, exitPortal)
 		}
@@ -618,6 +624,11 @@ type EnterStateMachinePlayer struct {
 
 type StartStateMachine struct{}
 
+type FinishStateMachine struct {
+	ExitMapID  uint32
+	ExitPortal uint8
+}
+
 type LeaveStateMachinePlayer struct {
 	Character  *Character
 	WarpLeaver bool
@@ -649,6 +660,20 @@ func (ch *Character) StateMachine() *StateMachine {
 		return nil
 	}
 	return ch.stateMachine
+}
+
+func (ch *Character) bindStateMachine(sm *StateMachine) {
+	ch.Call(func() {
+		ch.stateMachine = sm
+	})
+}
+
+func (ch *Character) unbindStateMachine(sm *StateMachine) {
+	ch.Call(func() {
+		if ch.stateMachine == sm {
+			ch.stateMachine = nil
+		}
+	})
 }
 
 func (ch *Character) TryPartyQuest(questID uint32) {

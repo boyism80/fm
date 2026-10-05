@@ -149,7 +149,11 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			cfg, _ := luax.GetConfiguration(L)
-			machine.LeavePlayer(cfg.ActorContext, ch, false, StateMachineLeaveExit)
+			if cfg.ActorContext != nil && cfg.ActorContext.Self().Equal(machine.ActorPID) {
+				machine.LeavePlayer(cfg.ActorContext, ch, false, StateMachineLeaveExit)
+			} else {
+				machine.RequestLeave(ch, false, StateMachineLeaveExit)
+			}
 			return 0
 		},
 		"maps": func(L *lua.LState) int {
@@ -179,7 +183,11 @@ func (sm *StateMachine) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			exitMapID := uint32(L.OptInt(2, 0))
 			exitPortal := uint8(L.OptInt(3, 0))
 			cfg, _ := luax.GetConfiguration(L)
-			machine.Finish(cfg.ActorContext, exitMapID, exitPortal)
+			if cfg.ActorContext != nil && cfg.ActorContext.Self().Equal(machine.ActorPID) {
+				machine.Finish(cfg.ActorContext, exitMapID, exitPortal)
+			} else {
+				machine.RequestFinish(exitMapID, exitPortal)
+			}
 			return 0
 		},
 		"start_timer": func(L *lua.LState) int {

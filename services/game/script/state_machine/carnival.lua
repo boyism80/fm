@@ -42,13 +42,6 @@ local function match_for_sm(sm)
 	return carnival.map_match(waiting_id)
 end
 
-local function dispose_all(sm, match)
-	sm:finish(HUB_MAP)
-	if match ~= nil then
-		match:finish()
-	end
-end
-
 local function red_leader(sm)
 	local match = match_for_sm(sm)
 	local red = match ~= nil and match:red_team() or nil
@@ -67,7 +60,7 @@ end
 
 local function warp_out(sm, match)
 	if match == nil then
-		dispose_all(sm, match)
+		sm:finish(HUB_MAP)
 		return
 	end
 	local blue = match:blue_team()
@@ -91,7 +84,6 @@ local function warp_out(sm, match)
 		end
 	end
 	sm:finish(0)
-	match:conclude()
 end
 
 local function guardian_reactor_id(carnival_data, team_id)
@@ -287,12 +279,12 @@ return {
 	on_scheduled_timeout = function(sm)
 		local match = match_for_sm(sm)
 		if match == nil then
-			dispose_all(sm, match)
+			sm:finish(HUB_MAP)
 			return
 		end
 		local state = match:state()
 		if state == CARNIVAL_STATE.WAITING then
-			dispose_all(sm, match)
+			sm:finish(HUB_MAP)
 		elseif state == CARNIVAL_STATE.READY then
 			match:set_state(CARNIVAL_STATE.BATTLE)
 			local field_id = match:field_map_id()
@@ -385,15 +377,27 @@ return {
 
 	on_player_leave = function(sm, player, reason)
 		if reason == "disconnect" then
-			dispose_all(sm, match_for_sm(sm))
+			sm:finish(HUB_MAP)
 		end
 	end,
 
 	on_left_party = function(sm, player)
-		dispose_all(sm, match_for_sm(sm))
+		sm:finish(HUB_MAP)
 	end,
 
 	on_disband_party = function(sm)
-		dispose_all(sm, match_for_sm(sm))
+		sm:finish(HUB_MAP)
+	end,
+
+	on_finish = function(sm)
+		local match = match_for_sm(sm)
+		if match == nil then
+			return
+		end
+		if match:state() == CARNIVAL_STATE.REWARD then
+			match:conclude()
+		else
+			match:finish()
+		end
 	end,
 }
