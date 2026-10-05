@@ -646,12 +646,14 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		})
 	}
 
-	toSave := []*entity.Character{character}
-	async.ThenRPC(p, func(c context.Context) (*internal.SaveCharactersReply, error) {
-		return gs.grpcSaveCharacters(c, toSave)
-	}, func(*internal.SaveCharactersReply) error {
-		return nil
-	})
+	if client.SessionLost() == false {
+		toSave := []*entity.Character{character}
+		async.ThenRPC(p, func(c context.Context) (*internal.SaveCharactersReply, error) {
+			return gs.grpcSaveCharacters(c, toSave)
+		}, func(*internal.SaveCharactersReply) error {
+			return nil
+		})
+	}
 
 	p.Finally(func() {
 		gs.removeCharacter(character)

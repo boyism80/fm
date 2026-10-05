@@ -15,6 +15,7 @@ type GameClient struct {
 	character       *entity.Character
 	changingChannel bool
 	loggedOut       bool
+	sessionLost     bool
 	mu              sync.Mutex
 }
 
@@ -86,4 +87,16 @@ func (c *GameClient) ChangingChannel() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.changingChannel
+}
+
+func (c *GameClient) LoseSession() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.sessionLost = true
+}
+
+func (c *GameClient) SessionLost() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.sessionLost
 }
