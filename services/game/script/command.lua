@@ -415,6 +415,73 @@ local function start_requirement_value(wz, kind)
 	return nil
 end
 
+local function delay_command(label, key_name, delay)
+	return {
+		privilege = ROLE.Admin,
+		usage = string.format("[%s] [밀리초] - %s 지연 조회/설정, %s 지정 시 접두어가 일치하는 대상만 (0이면 전체 값 사용) (테스트용)", key_name, label, key_name),
+		command = function(me, args)
+			local key = nil
+			local value_arg = args[1]
+			if args[1] ~= nil and tonumber(args[1]) == nil then
+				key = args[1]
+				value_arg = args[2]
+			end
+
+			if value_arg == nil then
+				local current = key and delay(key) or delay()
+				me:message(string.format("현재 %s 지연(%s): %dms", label, key or "전체", current))
+				return true
+			end
+
+			local value = tonumber(value_arg)
+			if value == nil or value < 0 then
+				me:message("지연 시간은 0 이상의 숫자여야 합니다.")
+				return true
+			end
+
+			if key then
+				delay(key, value)
+			else
+				delay(value)
+			end
+			me:message(string.format("%s 지연(%s)을 %dms로 설정했습니다. (이 서버에만 적용됩니다)", label, key or "전체", value))
+			return true
+		end,
+	}
+end
+
+local function fault_command(label, key_name, fault)
+	return {
+		privilege = ROLE.Admin,
+		usage = string.format("<%s> [on|lost|timeout|off] - on: 요청 미전송, lost: 요청 처리 후 응답 유실, timeout: 응답 없이 대기. 모두 지연 후 적용 (테스트용)", key_name),
+		command = function(me, args)
+			local key = args[1]
+			if key == nil then
+				me:message(string.format("사용법: /%s장애 <%s> [on|lost|timeout|off]", label, key_name))
+				return true
+			end
+
+			local modes = {
+				on = "unreachable",
+				lost = "lost",
+				timeout = "timeout",
+				off = "off",
+			}
+			if args[2] ~= nil then
+				local mode = modes[string.lower(args[2])]
+				if mode == nil then
+					me:message("on, lost, timeout, off 중 하나를 입력해야 합니다.")
+					return true
+				end
+				fault(key, mode)
+			end
+
+			me:message(string.format("%s 장애(%s): %s (이 서버에만 적용됩니다)", label, key, string.upper(fault(key))))
+			return true
+		end,
+	}
+end
+
 local command_funcs = {
 	["명령어"] = {
 		privilege = ROLE.User,
@@ -1774,6 +1841,10 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["액터지연"] = delay_command("액터", "액터이름", actor_delay),
+	["액터장애"] = fault_command("액터", "액터이름", actor_fault),
+	["RPC지연"] = delay_command("RPC", "메서드", rpc_delay),
+	["RPC장애"] = fault_command("RPC", "메서드", rpc_fault),
 }
 
 return {

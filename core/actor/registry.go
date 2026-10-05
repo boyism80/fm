@@ -5,18 +5,21 @@ import (
 	"sync"
 
 	"github.com/asynkron/protoactor-go/actor"
+	"github.com/boyism80/fm/core/fault"
 )
 
 type ActorRegistry struct {
 	system *ActorSystem
 	actors map[string]*actor.PID
 	mutex  sync.RWMutex
+	Faults *fault.Injector
 }
 
 func NewActorRegistry(system *ActorSystem) *ActorRegistry {
 	return &ActorRegistry{
 		system: system,
 		actors: make(map[string]*actor.PID),
+		Faults: fault.NewInjector(),
 	}
 }
 
@@ -39,6 +42,7 @@ func (r *ActorRegistry) GetOrCreateActor(name string, props *actor.Props) *actor
 		return pid
 	}
 
+	props.Configure(actor.WithReceiverMiddleware(r.Faults.ReceiverMiddleware(name)))
 	pid, err := r.system.root.SpawnNamed(props, name)
 	if err != nil {
 		panic(fmt.Sprintf("spawn actor %s: %v", name, err))

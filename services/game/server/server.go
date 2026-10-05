@@ -18,6 +18,7 @@ import (
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/ensure"
+	"github.com/boyism80/fm/core/fault"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/mq"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -55,6 +56,7 @@ type GameServer struct {
 	mapListener       entity.MapListener
 	internalClient    internal.InternalClient
 	internalConn      *grpc.ClientConn
+	rpcFaults         *fault.Injector
 	party             *PartyContainer
 	guild             *GuildContainer
 	alliance          *AllianceContainer
@@ -177,6 +179,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		packetHandler:    core.NewPacketHandler(),
 		actorSystem:      actorSystem,
 		actorRegistry:    actorRegistry,
+		rpcFaults:        fault.NewInjector(),
 		characterRuntime: nil,
 	}
 	gs.characterRuntime = NewServerCharacterRuntime(gs)
@@ -189,7 +192,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	gs.subscribeDeadLetters()
 
 	if config.InternalAddr != "" {
-		conn, err := grpc.NewClient(config.InternalAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(config.InternalAddr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithUnaryInterceptor(gs.rpcFaults.UnaryClientInterceptor()))
 		if err != nil {
 			log.Printf("internal grpc dial %q failed: %v", config.InternalAddr, err)
 		} else {

@@ -435,6 +435,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	gs.registerExchangeResultConstants(luaState)
 	gs.registerServerMessageConstants(luaState)
 	registerClockLuaFuncs(gs, luaState)
+	registerFaultLuaFuncs(gs, luaState)
 	entity.RegisterCarnivalLua(luaState, gs)
 
 	luax.RegisterFunc(luaState, "log", func(L *lua.LState) int {
