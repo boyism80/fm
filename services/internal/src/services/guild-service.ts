@@ -905,6 +905,9 @@ export class GuildService {
             if (!targetMember) {
                 return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_TARGET_NOT_IN_GUILD };
             }
+            if (this.guildMemberRankValue(requesterMember.guildRank) >= this.guildMemberRankValue(targetMember.guildRank)) {
+                return { ok: false as const, code: messages.GuildErrorCode.GUILD_ERROR_NOT_AUTHORIZED };
+            }
 
             await this.guildMemberRepo.set(
                 worldId,
