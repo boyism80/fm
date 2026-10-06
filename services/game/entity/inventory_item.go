@@ -90,13 +90,13 @@ func (inv *Inventory) RemoveItem(invType constant.InventoryType, slot int16, cou
 	if item.GetCount() < count {
 		return false
 	}
-	item.Reduce(count)
-	if item.GetCount() == 0 {
+	if item.GetCount() == count {
 		if err := inven.Remove(uint8(slot)); err != nil {
 			return false
 		}
 		ch.Listener.OnRemoveInventorySlot(ch, invType, slot)
 	} else {
+		item.Reduce(count)
 		ch.Listener.OnInventorySlotUpdated(ch, invType, slot, item)
 	}
 	return true

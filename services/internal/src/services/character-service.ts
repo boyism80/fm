@@ -15,6 +15,9 @@ import type { CharacterModel } from "../repos/character-repository";
 import { InventoryRepository } from "../repos/inventory-repository";
 import type { InventoryModel } from "../repos/inventory-repository";
 import { KeyLayoutRepository } from "../repos/key-layout-repository";
+import { StorageRepository } from "../repos/storage-repository";
+import type { StorageModel } from "../repos/storage-repository";
+import { StorageItemRepository } from "../repos/storage-item-repository";
 import { SkillRepository } from "../repos/skill-repository";
 import type { SkillModel } from "../repos/skill-repository";
 import { BuffRepository } from "../repos/buff-repository";
@@ -78,6 +81,7 @@ type SaveCharacterEntry = {
     quests?: QuestModel[];
     savedLocations?: SavedLocationModel[];
     keyLayout?: KeyLayoutBindingModel[];
+    storage?: { storage: StorageModel; items: InventoryModel[] };
 };
 
 export class CharacterService {
@@ -91,6 +95,8 @@ export class CharacterService {
     private readonly questRepo: QuestRepository;
     private readonly savedLocationRepo: SavedLocationRepository;
     private readonly keyLayoutRepo: KeyLayoutRepository;
+    private readonly storageRepo: StorageRepository;
+    private readonly storageItemRepo: StorageItemRepository;
     private readonly buddyRepo: CharacterBuddyRepository;
     private readonly realtimeStateRepo: CharacterRealtimeStateRepository;
     private readonly sessionRepo: SessionRepository;
@@ -111,6 +117,8 @@ export class CharacterService {
         questRepository: QuestRepository,
         savedLocationRepository: SavedLocationRepository,
         keyLayoutRepository: KeyLayoutRepository,
+        storageRepository: StorageRepository,
+        storageItemRepository: StorageItemRepository,
         characterBuddyRepository: CharacterBuddyRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
         sessionRepository: SessionRepository,
@@ -130,6 +138,8 @@ export class CharacterService {
         this.questRepo = questRepository;
         this.savedLocationRepo = savedLocationRepository;
         this.keyLayoutRepo = keyLayoutRepository;
+        this.storageRepo = storageRepository;
+        this.storageItemRepo = storageItemRepository;
         this.buddyRepo = characterBuddyRepository;
         this.realtimeStateRepo = characterRealtimeStateRepository;
         this.sessionRepo = sessionRepository;
@@ -195,6 +205,17 @@ export class CharacterService {
         return jsonStringToBindings(keyLayoutJsonString);
     }
 
+    async loadStorage(worldId: number, accountId: number) {
+        this.assertWorld(worldId);
+        this.assertAccountId(accountId);
+        const storage = await this.storageRepo.get(worldId, accountId);
+        const items = await this.storageItemRepo.getAll(worldId, String(accountId));
+        return {
+            storage: storage ?? { accountId, worldId, slots: 4, meso: 0 },
+            items: [...items.values()],
+        };
+    }
+
     async saveCharacter(persisted: CharacterPersistedInput, baseLooks?: Record<string, number>, overlays?: Record<string, number>) {
         return this.saveCharacters([{ persisted, baseLooks, overlays }]);
     }
@@ -205,7 +226,7 @@ export class CharacterService {
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout } of entries) {
+        for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage } of entries) {
             this.assertWorld(persisted.worldId);
             this.assertCharacterId(persisted.characterId);
             this.assertAccountId(persisted.accountId);
@@ -217,7 +238,7 @@ export class CharacterService {
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld.get(wid)?.push({ persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout });
+            byWorld.get(wid)?.push({ persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage });
         }
 
         for (const [worldId, group] of byWorld) {
@@ -230,7 +251,7 @@ export class CharacterService {
             const models = group.map(({ persisted }) => persisted);
             await this.repo.setAll(worldId, models);
 
-            for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout } of group) {
+            for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage } of group) {
                 if (!persisted.accountId) {
                     continue;
                 }
@@ -277,6 +298,10 @@ export class CharacterService {
                         worldId: persisted.worldId,
                         keyLayoutJson: bindingsToJsonString(keyLayout),
                     });
+                }
+                if (storage !== undefined) {
+                    await this.storageRepo.set(persisted.worldId, { ...storage.storage, accountId: persisted.accountId, worldId: persisted.worldId });
+                    await this.storageItemRepo.replaceBySnapshot(persisted.worldId, String(persisted.accountId), storage.items);
                 }
             }
         }

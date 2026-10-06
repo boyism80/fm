@@ -1068,6 +1068,7 @@ export interface CharacterSaveEntry {
   buffs: BuffPersisted[];
   quests: QuestPersisted[];
   savedLocations: SavedLocationPersisted[];
+  storage: StoragePersisted | undefined;
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -1078,6 +1079,23 @@ export interface CharacterSaveEntry_BaseLooksEntry {
 export interface CharacterSaveEntry_OverlaysEntry {
   key: number;
   value: number;
+}
+
+export interface StoragePersisted {
+  accountId: number;
+  worldId: number;
+  slots: number;
+  meso: number;
+  items: InventoryPersisted[];
+}
+
+export interface LoadStorageRequest {
+  accountId: number;
+  worldId: number;
+}
+
+export interface LoadStorageReply {
+  storage: StoragePersisted | undefined;
 }
 
 export interface SaveCharactersRequest {
@@ -4761,6 +4779,7 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     buffs: [],
     quests: [],
     savedLocations: [],
+    storage: undefined,
   };
 }
 
@@ -4792,6 +4811,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     }
     for (const v of message.savedLocations) {
       SavedLocationPersisted.encode(v!, writer.uint32(74).fork()).join();
+    }
+    if (message.storage !== undefined) {
+      StoragePersisted.encode(message.storage, writer.uint32(82).fork()).join();
     }
     return writer;
   },
@@ -4881,6 +4903,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.savedLocations.push(SavedLocationPersisted.decode(reader, reader.uint32()));
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.storage = StoragePersisted.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4935,6 +4965,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         : globalThis.Array.isArray(object?.saved_locations)
         ? object.saved_locations.map((e: any) => SavedLocationPersisted.fromJSON(e))
         : [],
+      storage: isSet(object.storage) ? StoragePersisted.fromJSON(object.storage) : undefined,
     };
   },
 
@@ -4979,6 +5010,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.savedLocations?.length) {
       obj.savedLocations = message.savedLocations.map((e) => SavedLocationPersisted.toJSON(e));
     }
+    if (message.storage !== undefined) {
+      obj.storage = StoragePersisted.toJSON(message.storage);
+    }
     return obj;
   },
 
@@ -5014,6 +5048,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     message.buffs = object.buffs?.map((e) => BuffPersisted.fromPartial(e)) || [];
     message.quests = object.quests?.map((e) => QuestPersisted.fromPartial(e)) || [];
     message.savedLocations = object.savedLocations?.map((e) => SavedLocationPersisted.fromPartial(e)) || [];
+    message.storage = (object.storage !== undefined && object.storage !== null)
+      ? StoragePersisted.fromPartial(object.storage)
+      : undefined;
     return message;
   },
 };
@@ -5174,6 +5211,284 @@ export const CharacterSaveEntry_OverlaysEntry: MessageFns<CharacterSaveEntry_Ove
     const message = createBaseCharacterSaveEntry_OverlaysEntry();
     message.key = object.key ?? 0;
     message.value = object.value ?? 0;
+    return message;
+  },
+};
+
+function createBaseStoragePersisted(): StoragePersisted {
+  return { accountId: 0, worldId: 0, slots: 0, meso: 0, items: [] };
+}
+
+export const StoragePersisted: MessageFns<StoragePersisted> = {
+  encode(message: StoragePersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.accountId !== 0) {
+      writer.uint32(8).uint32(message.accountId);
+    }
+    if (message.worldId !== 0) {
+      writer.uint32(16).uint32(message.worldId);
+    }
+    if (message.slots !== 0) {
+      writer.uint32(24).uint32(message.slots);
+    }
+    if (message.meso !== 0) {
+      writer.uint32(32).int32(message.meso);
+    }
+    for (const v of message.items) {
+      InventoryPersisted.encode(v!, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StoragePersisted {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStoragePersisted();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.slots = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.meso = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.items.push(InventoryPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StoragePersisted {
+    return {
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      slots: isSet(object.slots) ? globalThis.Number(object.slots) : 0,
+      meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
+      items: globalThis.Array.isArray(object?.items)
+        ? object.items.map((e: any) => InventoryPersisted.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: StoragePersisted): unknown {
+    const obj: any = {};
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.slots !== 0) {
+      obj.slots = Math.round(message.slots);
+    }
+    if (message.meso !== 0) {
+      obj.meso = Math.round(message.meso);
+    }
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => InventoryPersisted.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<StoragePersisted>, I>>(base?: I): StoragePersisted {
+    return StoragePersisted.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<StoragePersisted>, I>>(object: I): StoragePersisted {
+    const message = createBaseStoragePersisted();
+    message.accountId = object.accountId ?? 0;
+    message.worldId = object.worldId ?? 0;
+    message.slots = object.slots ?? 0;
+    message.meso = object.meso ?? 0;
+    message.items = object.items?.map((e) => InventoryPersisted.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseLoadStorageRequest(): LoadStorageRequest {
+  return { accountId: 0, worldId: 0 };
+}
+
+export const LoadStorageRequest: MessageFns<LoadStorageRequest> = {
+  encode(message: LoadStorageRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.accountId !== 0) {
+      writer.uint32(8).uint32(message.accountId);
+    }
+    if (message.worldId !== 0) {
+      writer.uint32(16).uint32(message.worldId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoadStorageRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadStorageRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadStorageRequest {
+    return {
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: LoadStorageRequest): unknown {
+    const obj: any = {};
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadStorageRequest>, I>>(base?: I): LoadStorageRequest {
+    return LoadStorageRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoadStorageRequest>, I>>(object: I): LoadStorageRequest {
+    const message = createBaseLoadStorageRequest();
+    message.accountId = object.accountId ?? 0;
+    message.worldId = object.worldId ?? 0;
+    return message;
+  },
+};
+
+function createBaseLoadStorageReply(): LoadStorageReply {
+  return { storage: undefined };
+}
+
+export const LoadStorageReply: MessageFns<LoadStorageReply> = {
+  encode(message: LoadStorageReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.storage !== undefined) {
+      StoragePersisted.encode(message.storage, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoadStorageReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadStorageReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.storage = StoragePersisted.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadStorageReply {
+    return { storage: isSet(object.storage) ? StoragePersisted.fromJSON(object.storage) : undefined };
+  },
+
+  toJSON(message: LoadStorageReply): unknown {
+    const obj: any = {};
+    if (message.storage !== undefined) {
+      obj.storage = StoragePersisted.toJSON(message.storage);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadStorageReply>, I>>(base?: I): LoadStorageReply {
+    return LoadStorageReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoadStorageReply>, I>>(object: I): LoadStorageReply {
+    const message = createBaseLoadStorageReply();
+    message.storage = (object.storage !== undefined && object.storage !== null)
+      ? StoragePersisted.fromPartial(object.storage)
+      : undefined;
     return message;
   },
 };
@@ -22069,6 +22384,15 @@ export const InternalService = {
     responseSerialize: (value: SaveCharactersReply): Buffer => Buffer.from(SaveCharactersReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): SaveCharactersReply => SaveCharactersReply.decode(value),
   },
+  loadStorage: {
+    path: "/fm.internal.Internal/LoadStorage" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: LoadStorageRequest): Buffer => Buffer.from(LoadStorageRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): LoadStorageRequest => LoadStorageRequest.decode(value),
+    responseSerialize: (value: LoadStorageReply): Buffer => Buffer.from(LoadStorageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): LoadStorageReply => LoadStorageReply.decode(value),
+  },
   loginAccount: {
     path: "/fm.internal.Internal/LoginAccount" as const,
     requestStream: false as const,
@@ -22659,6 +22983,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   beginGameTransition: handleUnaryCall<BeginGameTransitionRequest, BeginGameTransitionReply>;
   saveCharacter: handleUnaryCall<SaveCharacterRequest, SaveCharacterReply>;
   saveCharacters: handleUnaryCall<SaveCharactersRequest, SaveCharactersReply>;
+  loadStorage: handleUnaryCall<LoadStorageRequest, LoadStorageReply>;
   loginAccount: handleUnaryCall<LoginAccountRequest, LoginAccountReply>;
   getCharacterList: handleUnaryCall<GetCharacterListRequest, GetCharacterListReply>;
   checkCharacterName: handleUnaryCall<CheckCharacterNameRequest, CheckCharacterNameReply>;
@@ -22836,6 +23161,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: SaveCharactersReply) => void,
+  ): ClientUnaryCall;
+  loadStorage(
+    request: LoadStorageRequest,
+    callback: (error: ServiceError | null, response: LoadStorageReply) => void,
+  ): ClientUnaryCall;
+  loadStorage(
+    request: LoadStorageRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: LoadStorageReply) => void,
+  ): ClientUnaryCall;
+  loadStorage(
+    request: LoadStorageRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: LoadStorageReply) => void,
   ): ClientUnaryCall;
   loginAccount(
     request: LoginAccountRequest,

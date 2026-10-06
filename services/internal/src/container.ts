@@ -13,6 +13,8 @@ import { QuestRepository } from "./repos/quest-repository";
 import { SavedLocationRepository } from "./repos/saved-location-repository";
 import { SessionRepository } from "./repos/session-repository";
 import { KeyLayoutRepository } from "./repos/key-layout-repository";
+import { StorageRepository } from "./repos/storage-repository";
+import { StorageItemRepository } from "./repos/storage-item-repository";
 import { PartyRepository } from "./repos/party-repository";
 import { PartyMemberRepository } from "./repos/party-member-repository";
 import { AllianceRepository } from "./repos/alliance-repository";
@@ -60,6 +62,8 @@ export function createAppContainer() {
         savedLocationRepository: awilix.asClass(SavedLocationRepository).scoped(),
         sessionRepository: awilix.asClass(SessionRepository).scoped(),
         keyLayoutRepository: awilix.asClass(KeyLayoutRepository).scoped(),
+        storageRepository: awilix.asClass(StorageRepository).scoped(),
+        storageItemRepository: awilix.asClass(StorageItemRepository).scoped(),
         partyRepository: awilix.asClass(PartyRepository).scoped(),
         partyMemberRepository: awilix.asClass(PartyMemberRepository).scoped(),
         allianceRepository: awilix.asClass(AllianceRepository).scoped(),

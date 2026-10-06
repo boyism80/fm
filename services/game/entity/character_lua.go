@@ -1633,6 +1633,24 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LTrue)
 			return 1
 		},
+		"open_storage": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			npcID := uint32(L.CheckInt(2))
+			storeFee := int32(L.OptInt(3, 100))
+			takeOutFee := int32(L.OptInt(4, 0))
+			cfg, ok := luax.GetConfiguration(L)
+			if ok == false || cfg.ActorContext == nil {
+				L.ArgError(1, "actor context not available")
+				return 0
+			}
+			ch.OpenStorage(cfg.ActorContext, npcID, storeFee, takeOutFee)
+			return 0
+		},
 		"show_instruction": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

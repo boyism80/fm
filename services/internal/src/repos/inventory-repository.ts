@@ -37,6 +37,10 @@ function rowValues(row: InventoryRow) {
 }
 
 export class InventoryRepository extends HashRepository<InventoryModel, InventoryRow> {
+    protected get table() {
+        return "inventory";
+    }
+
     override getTtlSeconds() {
         return this.ctx.appConfiguration.getItemCacheTtlSeconds();
     }
@@ -50,12 +54,12 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
     }
 
     override getRedisHashKey(worldId: number, ownerId: string) {
-        return redisCacheKey(`w${worldId}:inventory:${ownerId}`);
+        return redisCacheKey(`w${worldId}:${this.table}:${ownerId}`);
     }
 
     override onSelect(ownerId: string): RepositoryQuery {
         return {
-            text: `SELECT ${SELECT_COLS} FROM inventory WHERE owner_id = $1`,
+            text: `SELECT ${SELECT_COLS} FROM ${this.table} WHERE owner_id = $1`,
             values: [Number(ownerId)],
         };
     }
@@ -71,7 +75,7 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
             })
             .join(",\n");
         return {
-            text: `INSERT INTO inventory (${INSERT_COLS}) VALUES\n${placeholders}\nRETURNING ${SELECT_COLS}`,
+            text: `INSERT INTO ${this.table} (${INSERT_COLS}) VALUES\n${placeholders}\nRETURNING ${SELECT_COLS}`,
             values: rows.flatMap(rowValues),
         };
     }
@@ -87,7 +91,7 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
         const values = [Number(ownerId), ...tuples.flat()];
         const conds = tuples.map((_, i) => `(inventory_type = $${2 + i * 2} AND slot = $${3 + i * 2})`).join(" OR ");
         return {
-            text: `DELETE FROM inventory WHERE owner_id = $1 AND (${conds})`,
+            text: `DELETE FROM ${this.table} WHERE owner_id = $1 AND (${conds})`,
             values,
         };
     }
@@ -149,7 +153,7 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
         });
 
         await this.ctx.withPgDataTransaction(worldId, ownerId, async (txClient) => {
-            await txClient.query("DELETE FROM inventory WHERE owner_id = $1", [ownerId]);
+            await txClient.query(`DELETE FROM ${this.table} WHERE owner_id = $1`, [ownerId]);
             if (normalized.length > 0) {
                 const insert = this.onBulkUpsert(normalized);
                 if (insert.text) {

@@ -226,6 +226,24 @@ export type KeyLayoutRow = {
 
 export type KeyLayoutDeleteModel = { worldId: number; characterId: number };
 
+export interface StorageModel {
+    accountId: number;
+    worldId: number;
+    slots: number;
+    meso: number;
+    updatedAt?: Date;
+}
+
+export type StorageRow = {
+    account_id: number;
+    world_id: number;
+    slots: number;
+    meso: number;
+    updated_at?: Date | string;
+};
+
+export type StorageDeleteModel = { worldId: number; accountId: number };
+
 export interface PartyModel {
     worldId: number;
     partyId: number;

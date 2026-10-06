@@ -13,6 +13,7 @@ service Internal {
   rpc BeginGameTransition (BeginGameTransitionRequest) returns (BeginGameTransitionReply);
   rpc SaveCharacter (SaveCharacterRequest) returns (SaveCharacterReply);
   rpc SaveCharacters (SaveCharactersRequest) returns (SaveCharactersReply);
+  rpc LoadStorage (LoadStorageRequest) returns (LoadStorageReply);
   rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
   rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
   rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
@@ -237,6 +238,24 @@ message CharacterSaveEntry {
   repeated BuffPersisted      buffs     = 7;
   repeated QuestPersisted      quests    = 8;
   repeated SavedLocationPersisted saved_locations = 9;
+  StoragePersisted storage = 10;
+}
+
+message StoragePersisted {
+  uint32 account_id = 1;
+  uint32 world_id   = 2;
+  uint32 slots      = 3;
+  int32  meso       = 4;
+  repeated InventoryPersisted items = 5;
+}
+
+message LoadStorageRequest {
+  uint32 account_id = 1;
+  uint32 world_id   = 2;
+}
+
+message LoadStorageReply {
+  StoragePersisted storage = 1;
 }
 
 message SaveCharactersRequest {

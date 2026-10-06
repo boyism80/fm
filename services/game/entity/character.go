@@ -58,6 +58,7 @@ type Character struct {
 	SkillPoint        uint16
 	HpApUsed          uint16
 	Inventory         *Inventory
+	Storage           *Storage
 	Skills            *SkillContainer
 	keyLayout         *KeyLayout
 	CurrentShopID     uint32

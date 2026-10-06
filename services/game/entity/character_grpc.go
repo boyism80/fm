@@ -383,6 +383,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		KeyLayout:      ch.KeyLayout().ToProto(),
 		Quests:         ch.QuestsPersisted(),
 		SavedLocations: ch.SavedLocationsPersisted(),
+		Storage:        ch.Storage.ToProto(worldID),
 	}
 }
 

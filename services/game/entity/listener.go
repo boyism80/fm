@@ -22,6 +22,12 @@ type CharacterListener interface {
 	OnDialogInput(ch *Character, npc uint32, message string)
 	OnDialogStyle(ch *Character, npc uint32, message string, styles []uint32)
 	OnOpenNpcShop(ch *Character, shopID uint32, shop *wz.Shop)
+	LoadStorageAsync(ctx actor.Context, ch *Character) *async.Promise
+	OnOpenStorage(ch *Character, npcID uint32)
+	OnStorageTabChanged(ch *Character, result pconst.StorageResult, invType constant.InventoryType)
+	OnStorageArranged(ch *Character)
+	OnStorageMesoChanged(ch *Character)
+	OnStorageError(ch *Character, result pconst.StorageResult)
 	OnGuildBulletinThreadList(ch *Character, threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry)
 	OnGuildBulletinThread(ch *Character, detail *internal.GuildBulletinBoardThreadDetail)
 	OnShipState(ch *Character, state uint16)

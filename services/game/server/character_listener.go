@@ -722,6 +722,89 @@ func (l *CharacterListenerImpl) OnOpenNpcShop(ch *entity.Character, shopID uint3
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) LoadStorageAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
+	accountID := ch.AccountID
+	worldID := l.gs.config.WorldId
+	return async.ThenRPC(
+		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.LoadStorageReply, error) {
+			return l.gs.internalClient.LoadStorage(c, &internal.LoadStorageRequest{
+				AccountId: accountID,
+				WorldId:   worldID,
+			})
+		},
+		func(reply *internal.LoadStorageReply) error {
+			return nil
+		},
+	)
+}
+
+func (l *CharacterListenerImpl) storageTabs(storage *entity.Storage, invTypes ...constant.InventoryType) map[constant.InventoryType][]dto.Item {
+	tabs := make(map[constant.InventoryType][]dto.Item, len(invTypes))
+	for _, invType := range invTypes {
+		items := make([]dto.Item, 0, len(storage.Tabs[invType]))
+		for _, item := range storage.Tabs[invType] {
+			items = append(items, item.ToDTO())
+		}
+		tabs[invType] = items
+	}
+	return tabs
+}
+
+func (l *CharacterListenerImpl) OnOpenStorage(ch *entity.Character, npcID uint32) {
+	meso := ch.Storage.Meso
+	ch.Send(&response.Storage{
+		Result: pconst.StorageResultOpen,
+		NpcID:  npcID,
+		Slots:  ch.Storage.Slots,
+		Meso:   &meso,
+		Tabs: l.storageTabs(ch.Storage,
+			constant.InventoryTypeEquipment,
+			constant.InventoryTypeConsume,
+			constant.InventoryTypeInstallation,
+			constant.InventoryTypeETC,
+			constant.InventoryTypeCash,
+		),
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnStorageTabChanged(ch *entity.Character, result pconst.StorageResult, invType constant.InventoryType) {
+	ch.Send(&response.Storage{
+		Result: result,
+		Slots:  ch.Storage.Slots,
+		Tabs:   l.storageTabs(ch.Storage, invType),
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnStorageArranged(ch *entity.Character) {
+	ch.Send(&response.Storage{
+		Result: pconst.StorageResultArrange,
+		Slots:  ch.Storage.Slots,
+		Tabs: l.storageTabs(ch.Storage,
+			constant.InventoryTypeEquipment,
+			constant.InventoryTypeConsume,
+			constant.InventoryTypeInstallation,
+			constant.InventoryTypeETC,
+			constant.InventoryTypeCash,
+		),
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnStorageMesoChanged(ch *entity.Character) {
+	meso := ch.Storage.Meso
+	ch.Send(&response.Storage{
+		Result: pconst.StorageResultMeso,
+		Slots:  ch.Storage.Slots,
+		Meso:   &meso,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnStorageError(ch *entity.Character, result pconst.StorageResult) {
+	ch.Send(&response.StorageError{
+		Result: result,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnGuildBulletinThreadList(ch *entity.Character, threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry) {
 	entryOf := func(t *internal.GuildBulletinBoardThreadEntry) response.GuildBulletinBoardThreadEntry {
 		return response.GuildBulletinBoardThreadEntry{

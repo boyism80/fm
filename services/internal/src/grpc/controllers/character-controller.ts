@@ -28,6 +28,8 @@ import type {
     DeleteCharacterRequest,
     GetCharacterListReply,
     GetCharacterListRequest,
+    LoadStorageReply,
+    LoadStorageRequest,
     SaveCharacterReply,
     SaveCharacterRequest,
     SaveCharactersReply,
@@ -163,10 +165,51 @@ export class CharacterGrpcController {
                         )
                     ),
                     keyLayout: bindingsFromProtoList(entry.keyLayout),
+                    storage: entry.storage
+                        ? {
+                            storage: {
+                                accountId: entry.storage.accountId,
+                                worldId: entry.storage.worldId,
+                                slots: entry.storage.slots,
+                                meso: entry.storage.meso,
+                            },
+                            items: entry.storage.items.map((item) =>
+                                grpcMapper.map<InventoryPersisted, InventoryModel>(
+                                    item,
+                                    INVENTORY_PERSISTED,
+                                    INVENTORY_MODEL
+                                )
+                            ),
+                        }
+                        : undefined,
                 };
             });
             await this.characterService.saveCharacters(entries);
             callback(null, { ok: true });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("loadStorage")
+    async loadStorage(call: GrpcCall<LoadStorageRequest>, callback: GrpcCallback<LoadStorageReply>) {
+        try {
+            const result = await this.characterService.loadStorage(call.request.worldId, call.request.accountId);
+            callback(null, {
+                storage: {
+                    accountId: result.storage.accountId,
+                    worldId: result.storage.worldId,
+                    slots: result.storage.slots,
+                    meso: result.storage.meso,
+                    items: result.items.map((item) =>
+                        grpcMapper.map<InventoryModel, InventoryPersisted>(
+                            item,
+                            INVENTORY_MODEL,
+                            INVENTORY_PERSISTED
+                        )
+                    ),
+                },
+            });
         } catch (err) {
             this.grpcError(err, callback);
         }
