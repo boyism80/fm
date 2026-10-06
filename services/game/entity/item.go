@@ -73,6 +73,14 @@ type EquipmentCore struct {
 }
 
 func (e *EquipmentCore) GetEquipmentCore() *EquipmentCore { return e }
+func (e *EquipmentCore) GetInventoryType() constant.InventoryType {
+	return constant.InventoryTypeEquipment
+}
+func (e *EquipmentCore) GetCount() uint16             { return 1 }
+func (e *EquipmentCore) Reduce(count uint16) uint16   { return 0 }
+func (e *EquipmentCore) Increase(count uint16) uint16 { return 0 }
+func (e *EquipmentCore) Clone(count uint16) Item      { return cloneEquipmentCore(e, count) }
+func (e *EquipmentCore) IsOverall() bool              { return e.GetModel().GetID()/10000 == 105 }
 
 type Equipment interface {
 	Item
@@ -186,40 +194,14 @@ func NewItem(itemId uint32, count uint16, gw GameWorld) (Item, error) {
 		if !constant.IsEquipment(itemId) {
 			return nil, fmt.Errorf("item %d: model is equipment but GetEquipmentType is not equippable", itemId)
 		}
-		core := &EquipmentCore{
+		return &EquipmentCore{
 			ItemCore: &ItemCore{
 				Wz:         m,
 				Count:      1,
 				Expiration: util.TimeMax,
 			},
 			EnhanceChance: m.GetEnhanceChance(),
-		}
-		switch constant.GetEquipmentType(itemId) {
-		case constant.EquipmentTypeWeapon:
-			return &Weapon{EquipmentCore: core}, nil
-		case constant.EquipmentTypeShield:
-			return &Shield{EquipmentCore: core}, nil
-		case constant.EquipmentTypeCap:
-			return &Cap{EquipmentCore: core}, nil
-		case constant.EquipmentTypeCoat, constant.EquipmentTypeLongcoat:
-			return &Top{EquipmentCore: core}, nil
-		case constant.EquipmentTypePants:
-			return &Pants{EquipmentCore: core}, nil
-		case constant.EquipmentTypeShoes:
-			return &Shoes{EquipmentCore: core}, nil
-		case constant.EquipmentTypeGlove:
-			return &Glove{EquipmentCore: core}, nil
-		case constant.EquipmentTypeCape:
-			return &Cape{EquipmentCore: core}, nil
-		case constant.EquipmentTypeRing:
-			return &RingEquip{EquipmentCore: core}, nil
-		case constant.EquipmentTypeFace:
-			return &Face{EquipmentCore: core}, nil
-		case constant.EquipmentTypeAccessory:
-			return &Accessory{EquipmentCore: core}, nil
-		default:
-			return nil, fmt.Errorf("item %d: unsupported equipment type", itemId)
-		}
+		}, nil
 	case *wz.Consume:
 		return &Consume{
 			ItemCore: &ItemCore{Wz: m, Count: count, Expiration: util.TimeMax},

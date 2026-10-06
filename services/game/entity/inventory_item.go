@@ -452,7 +452,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 
 	switch parts {
 	case constant.EquipmentPartsTop:
-		if topNew, ok := newEq.(*Top); ok && topNew.IsOverall() {
+		if newEq.GetEquipmentCore().IsOverall() {
 			if equipments[constant.EquipmentPartsPants] != nil {
 				storageSlot, isFree := inven.NextSlot()
 				if !isFree {
@@ -466,7 +466,7 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 	case constant.EquipmentPartsPants:
 		topEq := equipments[constant.EquipmentPartsTop]
 		if topEq != nil {
-			if top, ok := topEq.(*Top); ok && top.IsOverall() {
+			if topEq.GetEquipmentCore().IsOverall() {
 				storageSlot, isFree := inven.NextSlot()
 				if swap && !isFree {
 					return ErrInventoryFull

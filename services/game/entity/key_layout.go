@@ -20,6 +20,9 @@ func (k *KeyLayout) IsEmpty() bool {
 }
 
 func (k *KeyLayout) SetKey(slot int, typ byte, action int32) {
+	if slot < 0 || slot >= dto.KeyMapSlotCount {
+		return
+	}
 	if typ != 0 {
 		k.slots[slot] = keyBinding{typ: typ, action: action}
 		return

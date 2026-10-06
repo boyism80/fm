@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
@@ -114,6 +115,61 @@ func (ch *Character) UseCatchItem(slot int16, itemID uint32, mobOID uint32) {
 
 	ch.Broadcast(&response.ShowMagnet{MobID: mob.OID, Success: 1}, &ObjectBroadcastOption{})
 	mob.Kill(ch, constant.MobDieAnimationTypeFadeOut)
+}
+
+func (ch *Character) UseReturnScroll(ctx actor.Context, slot int16, itemID uint32) error {
+	item := ch.Inventory.Tabs[constant.InventoryTypeConsume].Get(uint8(slot))
+	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != itemID {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+	consume, ok := item.GetModel().(*wz.Consume)
+	if ok == false || consume.MoveTo <= 0 {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+	m := ch.GetMap()
+	if m == nil || m.Wz == nil || m.GetLuaRoot() == nil {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+
+	thread, err := luax.NewThread(m.GetLuaRoot(), constant.CharacterQueryScriptPath)
+	if err != nil {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return err
+	}
+	allowed, err := luax.Call(thread, "can_use_return_scroll", ch, itemID, consume.MoveTo)
+	if err != nil {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return err
+	}
+	if allowed != lua.LTrue {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+
+	targetID := uint32(consume.MoveTo)
+	if consume.MoveTo == wz.ConsumeMoveToReturnMap {
+		targetID = uint32(m.Wz.ReturnMapId)
+	}
+	target := ch.GameWorld.GetMapSystem().Find(m.StateMachine(), targetID)
+	if target == nil {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+
+	err = ch.GameWorld.GetMapSystem().Warp(ctx, ch, target, 0, func(actor.Context) {
+		item := ch.Inventory.Tabs[constant.InventoryTypeConsume].Get(uint8(slot))
+		if item != nil && item.GetModel().GetID() == itemID {
+			ch.Inventory.RemoveItem(constant.InventoryTypeConsume, slot, 1)
+		}
+		ch.Listener.OnUpdateStats(ch, nil, true)
+	})
+	if err != nil {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+	}
+	return err
 }
 
 func (ch *Character) addItemBuff(consumeItem *wz.Consume) bool {

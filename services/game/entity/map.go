@@ -87,32 +87,30 @@ func ParseMapInitOptsLua(tbl *lua.LTable) MapInitOpts {
 }
 
 type Map struct {
-	Wz                  *wz.Map
-	id                  uint32
-	instance            *instanceState
-	objects             map[constant.ObjectType]map[uint32]Object
-	sections            *sectionContainer
-	controllerTable     *ControllerTable
-	MobSpawns           map[uint32]*MobSpawn
-	SummonedMobSpawns   []*MobSpawn
-	ReactorSpawns       map[uint32]*ReactorSpawn
-	blockedMobGen       map[uint32]struct{}
-	mobGenBlockedAll    bool
-	reactorGenBlocked   bool
-	listener            MapListener
-	mobListener         MobListener
-	sequence            uint32
-	availableOIDs       []uint32
-	GameWorld           GameWorld
-	actorPID            *actor.PID
-	stateMachine        *StateMachine
-	luaRoot             *lua.LState
-	propertyMutex       sync.RWMutex
-	properties          map[string]interface{}
-	UsedDoorPortalIDs   map[uint8]struct{}
-	portals             map[uint8]*Portal
-	portalsByName       map[string]*Portal
-	doorReturnPortalIDs []uint8
+	Wz                *wz.Map
+	id                uint32
+	instance          *instanceState
+	objects           map[constant.ObjectType]map[uint32]Object
+	sections          *sectionContainer
+	controllerTable   *ControllerTable
+	MobSpawns         map[uint32]*MobSpawn
+	SummonedMobSpawns []*MobSpawn
+	ReactorSpawns     map[uint32]*ReactorSpawn
+	blockedMobGen     map[uint32]struct{}
+	mobGenBlockedAll  bool
+	reactorGenBlocked bool
+	listener          MapListener
+	mobListener       MobListener
+	sequence          uint32
+	availableOIDs     []uint32
+	GameWorld         GameWorld
+	actorPID          *actor.PID
+	stateMachine      *StateMachine
+	luaRoot           *lua.LState
+	propertyMutex     sync.RWMutex
+	properties        map[string]interface{}
+	portals           map[uint8]*Portal
+	portalsByName     map[string]*Portal
 }
 
 type BroadcastOption struct {
@@ -749,10 +747,6 @@ func (m *Map) removeDoorInternal(oid uint32, animated bool, notifyMysticCounterp
 	skillID := door.SkillID
 
 	m.listener.OnDoorRemoved(m, door, animated)
-
-	if door.SkillID == constant.SkillMysticDoor && m == door.Return.Map {
-		m.ReleaseMysticReturnPortal(door.Return.PortalID)
-	}
 
 	delete(m.objects[constant.ObjectTypeDoor], oid)
 	m.sections.remove(door)

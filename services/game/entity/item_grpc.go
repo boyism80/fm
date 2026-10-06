@@ -41,63 +41,12 @@ func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64
 	return out
 }
 
-func equipmentToInventoryProto(e Equipment, ownerID uint32, slot int32) *internal.InventoryPersisted {
-	if e == nil {
-		return nil
-	}
-	c := e.GetEquipmentCore()
-	if c == nil {
-		return nil
-	}
-	pb := buildInventoryProto(e, ownerID, slot, c.UniqueId, c.OwnerName, c.Flag, c.EnhanceChance, c.EnhanceCount, c.SkillBonus)
-	if bonus := c.BonusStats.ToProto(); bonus != nil {
+func (e *EquipmentCore) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+	pb := buildInventoryProto(e, ownerID, slot, e.UniqueId, e.OwnerName, e.Flag, e.EnhanceChance, e.EnhanceCount, e.SkillBonus)
+	if bonus := e.BonusStats.ToProto(); bonus != nil {
 		pb.EquipBonusStats = bonus
 	}
 	return pb
-}
-
-func (item *Weapon) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *Shield) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *Cap) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *Face) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *Accessory) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *Top) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *Pants) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *Shoes) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *Glove) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *Cape) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
-}
-
-func (item *RingEquip) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
-	return equipmentToInventoryProto(item, ownerID, slot)
 }
 
 func (item *Consume) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
@@ -155,7 +104,7 @@ func NewItemFromInternalProto(pb *internal.InventoryPersisted, gw GameWorld) (It
 		if !constant.IsEquipment(itemID) {
 			return nil, fmt.Errorf("item %d: not equippable", itemID)
 		}
-		core := &EquipmentCore{
+		return &EquipmentCore{
 			ItemCore: &ItemCore{
 				Wz:         m,
 				Count:      1,
@@ -168,33 +117,7 @@ func NewItemFromInternalProto(pb *internal.InventoryPersisted, gw GameWorld) (It
 			SkillBonus:    skillBonus,
 			UniqueId:      uniqueID,
 			BonusStats:    EquipmentBonusStatsFromProto(pb.GetEquipBonusStats()),
-		}
-		switch constant.GetEquipmentType(itemID) {
-		case constant.EquipmentTypeWeapon:
-			return &Weapon{EquipmentCore: core}, nil
-		case constant.EquipmentTypeShield:
-			return &Shield{EquipmentCore: core}, nil
-		case constant.EquipmentTypeCap:
-			return &Cap{EquipmentCore: core}, nil
-		case constant.EquipmentTypeCoat, constant.EquipmentTypeLongcoat:
-			return &Top{EquipmentCore: core}, nil
-		case constant.EquipmentTypePants:
-			return &Pants{EquipmentCore: core}, nil
-		case constant.EquipmentTypeShoes:
-			return &Shoes{EquipmentCore: core}, nil
-		case constant.EquipmentTypeGlove:
-			return &Glove{EquipmentCore: core}, nil
-		case constant.EquipmentTypeCape:
-			return &Cape{EquipmentCore: core}, nil
-		case constant.EquipmentTypeRing:
-			return &RingEquip{EquipmentCore: core}, nil
-		case constant.EquipmentTypeFace:
-			return &Face{EquipmentCore: core}, nil
-		case constant.EquipmentTypeAccessory:
-			return &Accessory{EquipmentCore: core}, nil
-		default:
-			return nil, fmt.Errorf("item %d: unsupported equipment type", itemID)
-		}
+		}, nil
 	case *wz.Consume:
 		return &Consume{
 			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration},

@@ -65,7 +65,7 @@ type Character struct {
 	keyLayout         *KeyLayout
 	CurrentShopID     uint32
 	Chair             uint32
-	LastHeal          LastHeal
+	lastHeal          lastHeal
 	BaseStats         BaseStats
 	BonusStats        BonusStats
 	Buffs             *BuffContainer
@@ -87,6 +87,7 @@ type Character struct {
 	loggedOut         atomic.Bool
 	logoutEntry       chan *internal.CharacterSaveEntry
 	destination       atomic.Pointer[Map]
+	cashItemInUse     atomic.Bool
 }
 
 func (ch *Character) Destination() *Map {
@@ -99,11 +100,6 @@ func (ch *Character) BeginMove(target *Map) bool {
 
 func (ch *Character) FinishMove(target *Map) {
 	ch.destination.CompareAndSwap(target, nil)
-}
-
-type LastHeal struct {
-	HP time.Time
-	MP time.Time
 }
 
 type Debuff struct {
@@ -735,6 +731,33 @@ func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 		return ch.Warp(ctx, targetMap, 0)
 	}
 	return ch.Warp(ctx, targetMap, targetPortal.Wz.ID)
+}
+
+func (ch *Character) Revive(ctx actor.Context) error {
+	m := ch.GetMap()
+	if m == nil || m.Wz == nil {
+		return fmt.Errorf("not on a map")
+	}
+	if ch.GetHp() > 0 {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return nil
+	}
+
+	targetMap := ch.GameWorld.GetMapSystem().Find(m.StateMachine(), uint32(m.Wz.ReturnMapId))
+	if targetMap == nil {
+		ch.Listener.OnUpdateStats(ch, nil, true)
+		return fmt.Errorf("return map %d not found", m.Wz.ReturnMapId)
+	}
+
+	ch.SetHp(50, false)
+	ch.Stance = constant.StanceDefaultValue
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatHP: int32(ch.GetHp()),
+	}, true)
+	if sm := ch.StateMachine(); sm != nil {
+		sm.CallHook("on_player_revive", ch)
+	}
+	return ch.Warp(ctx, targetMap, 0)
 }
 
 func (ch *Character) Relocate(spawnPoint uint8) error {

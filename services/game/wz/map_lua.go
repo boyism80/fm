@@ -51,6 +51,16 @@ func (*Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(m.IsTown))
 			return 1
 		},
+		"blocks_potion_use": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			m, ok := ud.Value.(*Map)
+			if !ok || m == nil {
+				L.ArgError(1, "WzMap expected")
+				return 0
+			}
+			L.Push(lua.LBool(m.BlocksPotionUse()))
+			return 1
+		},
 		"area": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			m, ok := ud.Value.(*Map)

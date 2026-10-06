@@ -116,37 +116,81 @@ local function ap_to_mp_base(me)
     return math.random(50, 100)
 end
 
+local function endure_hp_interval(me)
+    if me:class_of(Class.Warrior) then
+        local s = me:skill(Skill.Endure)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.time > 0 then
+                return effect.time / 1000
+            end
+        end
+    end
+    if me:class_of(Class.Assassin) then
+        local s = me:skill(Skill.Endure4100002)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.time > 0 then
+                return effect.time / 1000
+            end
+        end
+    end
+    if me:class_of(Class.Bandit) then
+        local s = me:skill(Skill.Endure4200001)
+        if s ~= nil then
+            local effect = s:effect()
+            if effect.time > 0 then
+                return effect.time / 1000
+            end
+        end
+    end
+    return 0
+end
+
+local function return_scroll_continent_allowed(from_map_id, to_map_id)
+    local from = math.floor(from_map_id / 10000000)
+    local to = math.floor(to_map_id / 10000000)
+    if to == 60 or from == 61 then
+        return true
+    end
+    if to == 21 or from == 20 then
+        return true
+    end
+    if to == 12 or from == 10 then
+        return true
+    end
+    if to == 10 or from == 12 then
+        return true
+    end
+    return from == to
+end
+
 return {
-	get_endure_hp_interval = function(me)
-		if me:class_of(Class.Warrior) then
-		    local s = me:skill(Skill.Endure)
-		    if s ~= nil then
-		        local effect = s:effect()
-		        if effect.time > 0 then
-		            return effect.time / 1000
-		        end
-		    end
+	can_use_return_scroll = function(me, item_id, move_to)
+		if me:hp() <= 0 then
+		    return false
 		end
-		if me:class_of(Class.Assassin) then
-		    local s = me:skill(Skill.Endure4100002)
-		    if s ~= nil then
-		        local effect = s:effect()
-		        if effect.time > 0 then
-		            return effect.time / 1000
-		        end
-		    end
+		local map = me:map()
+		if map == nil then
+		    return false
 		end
-		if me:class_of(Class.Bandit) then
-		    local s = me:skill(Skill.Endure4200001)
-		    if s ~= nil then
-		        local effect = s:effect()
-		        if effect.time > 0 then
-		            return effect.time / 1000
-		        end
-		    end
+		local wz = map:wz()
+		if wz == nil or wz:blocks_potion_use() then
+		    return false
 		end
-		return 0
+		local current = map:template_id()
+		if current == 749040100 then
+		    return false
+		end
+		if move_to == current and item_id ~= 2031010 and item_id ~= 2030021 then
+		    return false
+		end
+		if move_to == 999999999 then
+		    return true
+		end
+		return return_scroll_continent_allowed(current, move_to)
 	end,
+
 
 	get_heal_over_time_cap = function(me)
 		local recovery_rate = 1.0
@@ -184,6 +228,7 @@ return {
 		return {
 		    max_hp = math.floor(hp_check + 0.5),
 		    max_mp = math.floor(mp_check + 0.5),
+		    endure_hp_interval = endure_hp_interval(me),
 		}
 	end,
 

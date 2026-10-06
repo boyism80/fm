@@ -33,7 +33,6 @@ func (dc *DoorContainer) Spawn(buff *SkillBuff) {
 	}
 
 	skillID := constant.SkillID(buff.Wz.ID)
-	// The old town half must be removed before the new one is requested, so its portal slot is free again.
 	if cast := dc.casts[skillID]; cast != nil {
 		dc.despawn(skillID, cast, true)
 	}

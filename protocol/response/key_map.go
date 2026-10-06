@@ -20,7 +20,7 @@ func (p *KeyMap) Serialize(writer *stream.StreamWriter) error {
 		return nil
 	}
 	writer.WriteU8(0)
-	for i := 0; i < 89; i++ {
+	for i := 0; i < dto.KeyMapSlotCount; i++ {
 		if b, ok := p.Slots[i]; ok {
 			writer.WriteU8(b.Type)
 			writer.Write32(b.Action)
@@ -37,8 +37,8 @@ func (p *KeyMap) Deserialize(reader *stream.StreamReader) {
 		p.UseEmptyDefaultBranch = true
 		return
 	}
-	p.Slots = make(map[int]dto.KeyBinding, 89)
-	for i := 0; i < 89; i++ {
+	p.Slots = make(map[int]dto.KeyBinding, dto.KeyMapSlotCount)
+	for i := 0; i < dto.KeyMapSlotCount; i++ {
 		typ := reader.ReadU8()
 		action := reader.Read32()
 		if typ == 0 && action == 0 {

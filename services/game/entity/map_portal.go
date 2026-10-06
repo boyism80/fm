@@ -37,7 +37,6 @@ func (m *Map) initPortals() {
 	}
 	m.portals = make(map[uint8]*Portal)
 	m.portalsByName = make(map[string]*Portal)
-	m.doorReturnPortalIDs = nil
 	if m.Wz == nil {
 		return
 	}
@@ -53,14 +52,6 @@ func (m *Map) initPortals() {
 		if cp.Name != "" {
 			m.portalsByName[cp.Name] = p
 		}
-	}
-	slots := m.Wz.DoorReturnPortalSlots()
-	if len(slots) == 0 {
-		return
-	}
-	m.doorReturnPortalIDs = make([]uint8, 0, len(slots))
-	for _, s := range slots {
-		m.doorReturnPortalIDs = append(m.doorReturnPortalIDs, s.ID)
 	}
 }
 

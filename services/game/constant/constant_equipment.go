@@ -5,23 +5,28 @@ import "slices"
 type EquipmentPartsType int16
 
 const (
-	EquipmentPartsCap     EquipmentPartsType = -1
-	EquipmentPartsFace    EquipmentPartsType = -2
-	EquipmentPartsEye     EquipmentPartsType = -3
-	EquipmentPartsEar     EquipmentPartsType = -4
-	EquipmentPartsTop     EquipmentPartsType = -5
-	EquipmentPartsPants   EquipmentPartsType = -6
-	EquipmentPartsShoes   EquipmentPartsType = -7
-	EquipmentPartsGlove   EquipmentPartsType = -8
-	EquipmentPartsCape    EquipmentPartsType = -9
-	EquipmentPartsShield  EquipmentPartsType = -10
-	EquipmentPartsWeapon  EquipmentPartsType = -11
-	EquipmentPartsRing    EquipmentPartsType = -12
-	EquipmentPartsRing2   EquipmentPartsType = -13
-	EquipmentPartsRing3   EquipmentPartsType = -15
-	EquipmentPartsRing4   EquipmentPartsType = -16
-	EquipmentPartsPendant EquipmentPartsType = -17
-	EquipmentPartsMedal   EquipmentPartsType = -21
+	EquipmentPartsCap       EquipmentPartsType = -1
+	EquipmentPartsFace      EquipmentPartsType = -2
+	EquipmentPartsEye       EquipmentPartsType = -3
+	EquipmentPartsEar       EquipmentPartsType = -4
+	EquipmentPartsTop       EquipmentPartsType = -5
+	EquipmentPartsPants     EquipmentPartsType = -6
+	EquipmentPartsShoes     EquipmentPartsType = -7
+	EquipmentPartsGlove     EquipmentPartsType = -8
+	EquipmentPartsCape      EquipmentPartsType = -9
+	EquipmentPartsShield    EquipmentPartsType = -10
+	EquipmentPartsWeapon    EquipmentPartsType = -11
+	EquipmentPartsRing      EquipmentPartsType = -12
+	EquipmentPartsRing2     EquipmentPartsType = -13
+	EquipmentPartsPetEquip  EquipmentPartsType = -14
+	EquipmentPartsRing3     EquipmentPartsType = -15
+	EquipmentPartsRing4     EquipmentPartsType = -16
+	EquipmentPartsPendant   EquipmentPartsType = -17
+	EquipmentPartsTamingMob EquipmentPartsType = -18
+	EquipmentPartsSaddle    EquipmentPartsType = -19
+	EquipmentPartsMobEquip  EquipmentPartsType = -20
+	EquipmentPartsMedal     EquipmentPartsType = -21
+	EquipmentPartsBelt      EquipmentPartsType = -22
 )
 
 const equipmentPartsCashOffset EquipmentPartsType = -100
@@ -40,15 +45,22 @@ var equipmentPartsByCategory = map[uint32][]EquipmentPartsType{
 	110: {EquipmentPartsCape},
 	111: {EquipmentPartsRing, EquipmentPartsRing2, EquipmentPartsRing3, EquipmentPartsRing4},
 	112: {EquipmentPartsPendant},
+	113: {EquipmentPartsBelt},
 	114: {EquipmentPartsMedal},
-	134: {EquipmentPartsShield},
+	119: {EquipmentPartsShield},
+	180: {EquipmentPartsPetEquip},
+	190: {EquipmentPartsTamingMob},
+	191: {EquipmentPartsSaddle},
+	192: {EquipmentPartsMobEquip},
 }
 
 func EquipmentParts(itemID uint32) []EquipmentPartsType {
-	if parts, ok := equipmentPartsByCategory[ItemCategoryOf(itemID)]; ok {
+	category := ItemCategoryOf(itemID)
+	if parts, ok := equipmentPartsByCategory[category]; ok {
 		return parts
 	}
-	if GetEquipmentType(itemID) == EquipmentTypeWeapon {
+	switch category / 10 {
+	case 13, 14, 16, 17:
 		return []EquipmentPartsType{EquipmentPartsWeapon}
 	}
 	return nil
@@ -65,19 +77,5 @@ func CanEquipAt(itemID uint32, parts EquipmentPartsType) bool {
 		return false
 	}
 
-	if known := EquipmentParts(itemID); known != nil {
-		return slices.Contains(known, parts)
-	}
-	if GetEquipmentType(itemID) != EquipmentTypeAccessory {
-		return false
-	}
-	if parts == EquipmentPartsWeapon {
-		return false
-	}
-	for _, claimed := range equipmentPartsByCategory {
-		if slices.Contains(claimed, parts) {
-			return false
-		}
-	}
-	return true
+	return slices.Contains(EquipmentParts(itemID), parts)
 }

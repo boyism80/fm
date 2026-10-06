@@ -26,9 +26,6 @@ func (k *KeyLayout) LoadKeyLayoutProto(list []*internal.KeyLayoutBinding) {
 		if b == nil {
 			continue
 		}
-		k.slots[int(b.GetSlot())] = keyBinding{
-			typ:    byte(b.GetType()),
-			action: b.GetAction(),
-		}
+		k.SetKey(int(b.GetSlot()), byte(b.GetType()), b.GetAction())
 	}
 }

@@ -4,13 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
-	"github.com/boyism80/fm/services/game/constant"
-	lua "github.com/yuin/gopher-lua"
 )
 
 type UseCashItem struct{}
@@ -31,55 +27,6 @@ func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) er
 		return nil
 	}
 
-	unlock := func() {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-	}
-
-	if ch.GetHp() <= 0 {
-		unlock()
-		return nil
-	}
-
-	cash := ch.Inventory.Tabs[constant.InventoryTypeCash]
-	if cash == nil {
-		unlock()
-		return nil
-	}
-	item := cash.Get(uint8(req.Slot))
-	if item == nil || item.GetCount() < 1 || item.GetModel().GetID() != req.ItemID {
-		unlock()
-		return nil
-	}
-
-	mapInstance := ch.GetMap()
-	if mapInstance == nil || mapInstance.GetLuaRoot() == nil {
-		unlock()
-		return nil
-	}
-	scriptPath := fmt.Sprintf("script/item/%d.lua", req.ItemID)
-	thread, err := luax.NewThread(mapInstance.GetLuaRoot(), scriptPath)
-	if err != nil {
-		unlock()
-		return nil
-	}
-	luax.SetConfiguration(thread, luax.Configuration{ActorContext: ctx.ActorContext})
-	luax.CallAsync(ctx.ActorContext, mapInstance.GetLuaRoot(), thread, "on_cash", ch, req.ItemID, req.Text, req.Ear).Then(func(value interface{}) (interface{}, error) {
-		vals := luax.ResultValues(value)
-		if len(vals) == 0 || vals[0] != lua.LTrue {
-			unlock()
-			return nil, nil
-		}
-		ch.GameWorld.GetDispatchSystem().Call(ch.GetID(), func(actor.Context) {
-			item := cash.Get(uint8(req.Slot))
-			if item != nil && item.GetModel().GetID() == req.ItemID {
-				ch.Inventory.RemoveItem(constant.InventoryTypeCash, int16(req.Slot), 1)
-			}
-			unlock()
-		})
-		return nil, nil
-	}).OnError(func(err error) {
-		log.Printf("cash item script %s: %v", scriptPath, err)
-		unlock()
-	})
+	ch.UseCashItem(ctx.ActorContext, int16(req.Slot), req.ItemID, req.Text, req.Ear)
 	return nil
 }

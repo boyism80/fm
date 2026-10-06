@@ -25,8 +25,8 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 	if targetMap == nil || targetMap.Wz == nil {
 		return
 	}
-	portalID, townPos, ok := targetMap.TryAcquireMysticReturnPortal(msg.PartyOwnerSlot)
-	if !ok {
+	portalID, townPos, ok := targetMap.FindMysticReturnPortal(msg.PartyOwnerSlot)
+	if ok == false {
 		ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
 			Ok:          false,
 			Key:         msg.Key,
@@ -38,12 +38,6 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 		})
 		return
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			targetMap.ReleaseMysticReturnPortal(portalID)
-		}
-	}()
 	returnEp := entity.DoorEndpoint{
 		Map:      targetMap,
 		PortalID: portalID,
@@ -58,7 +52,6 @@ func (h *RequestSpawnDoorHandler) Handle(ctx actor.Context, a *GameLogicActor, m
 		msg.PartyID,
 	)
 	targetMap.AddDoor(door)
-	committed = true
 	ctx.Send(msg.ReplyTo, &ResponseSpawnDoor{
 		Ok:          true,
 		Key:         msg.Key,
