@@ -116,9 +116,9 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			return nil, fmt.Errorf("switch channel: missing account or character id")
 		}
 		return ic.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
-			WorldId:     worldID,
-			AccountId:   accID,
-			CharacterId: charID,
+			WorldId:         worldID,
+			AccountId:       accID,
+			CharacterId:     charID,
 			ClientIp:        ctx.Client.GetRemoteIP(),
 			Debuffs:         debuffs,
 			SourceChannelId: &sourceChannel,

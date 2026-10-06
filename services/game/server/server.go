@@ -562,47 +562,43 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 		log.Printf("disconnect async: %v", err)
 	})
 
-	if gs.internalClient != nil && character.AccountID != 0 {
-		accID := character.AccountID
-		wid := gs.config.WorldId
-		p.ThenAsync(func(interface{}) (interface{}, error) {
-			ctx, cancel := context.WithTimeout(context.Background(), core.InternalRPCPerStepTimeout)
-			defer cancel()
-			req := &internal.LogoutSessionRequest{
-				WorldId:            wid,
-				AccountId:          accID,
-				DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
-				TransferDisconnect: false,
-			}
-			if cid := character.GetID(); cid != 0 {
-				v := cid
-				req.CharacterId = &v
-			}
-			ch := gs.config.ChannelId
-			req.ChannelId = &ch
-			if _, err := gs.internalClient.LogoutSession(ctx, req); err != nil {
-				log.Printf("session RPC on game disconnect failed for account %d: %v", accID, err)
-			}
-			return nil, nil
-		})
-	}
-
 	var entry *internal.CharacterSaveEntry
 	p.ThenAsync(func(interface{}) (interface{}, error) {
 		entry = gs.removeCharacter(character, logout)
 		return nil, nil
 	})
 
+	if gs.internalClient == nil {
+		return
+	}
+
 	if client.SessionLost() == false {
 		async.ThenRPC(p, func(c context.Context) (*internal.SaveCharactersReply, error) {
-			if gs.internalClient == nil || entry == nil {
-				return nil, nil
+			return gs.internalClient.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}}, grpc.WaitForReady(true))
+		}, func(reply *internal.SaveCharactersReply) error {
+			if reply.GetOk() == false {
+				return fmt.Errorf("save character %d on disconnect failed; session kept", character.GetID())
 			}
-			return gs.internalClient.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}})
-		}, func(*internal.SaveCharactersReply) error {
 			return nil
 		})
 	}
+
+	if character.AccountID == 0 {
+		return
+	}
+	charID := character.GetID()
+	channelID := gs.config.ChannelId
+	async.ThenRPC(p, func(c context.Context) (*internal.LogoutSessionReply, error) {
+		return gs.internalClient.LogoutSession(c, &internal.LogoutSessionRequest{
+			WorldId:          gs.config.WorldId,
+			AccountId:        character.AccountID,
+			CharacterId:      &charID,
+			ChannelId:        &channelID,
+			DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
+		}, grpc.WaitForReady(true))
+	}, func(*internal.LogoutSessionReply) error {
+		return nil
+	})
 }
 
 // removeCharacter takes a logged-out character out of this channel on whichever map actor owns it at that moment,
