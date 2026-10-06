@@ -6,7 +6,6 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	pconst "github.com/boyism80/fm/protocol/constant"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type guildMqChat struct {
@@ -21,7 +20,7 @@ func (*guildMqChat) EventType() string {
 	return "multi_chat"
 }
 
-func (h *guildMqChat) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *guildMqChat) Handle(_ actor.Context, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil

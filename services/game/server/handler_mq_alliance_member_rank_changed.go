@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type allianceMqMemberRankChanged struct{ gs *GameServer }
@@ -18,7 +17,7 @@ func (*allianceMqMemberRankChanged) EventType() string {
 	return "member_rank_changed"
 }
 
-func (h *allianceMqMemberRankChanged) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *allianceMqMemberRankChanged) Handle(_ actor.Context, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil

@@ -8,7 +8,6 @@ import (
 	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/response"
 	g_actor "github.com/boyism80/fm/services/game/actor"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type buddyMqUpdate struct {
@@ -23,7 +22,7 @@ func (*buddyMqUpdate) EventType() string {
 	return "list_update"
 }
 
-func (h *buddyMqUpdate) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *buddyMqUpdate) Handle(_ actor.Context, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil

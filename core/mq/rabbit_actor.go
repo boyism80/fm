@@ -61,7 +61,7 @@ func (a *RabbitActor) Receive(ctx actor.Context) {
 		if a.cfg.Dispatcher == nil || len(m.Body) == 0 {
 			return
 		}
-		_ = a.cfg.Dispatcher.Dispatch(ctx, m.Body)
+		a.cfg.Dispatcher.Dispatch(ctx, m.Body)
 	case *actor.Stopping:
 		a.shutdownConsume()
 	}

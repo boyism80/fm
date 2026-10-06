@@ -6,7 +6,6 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type guildMqMessage struct{ gs *GameServer }
@@ -19,7 +18,7 @@ func (*guildMqMessage) EventType() string {
 	return "message"
 }
 
-func (h *guildMqMessage) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *guildMqMessage) Handle(_ actor.Context, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil

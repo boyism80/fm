@@ -6,7 +6,6 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	g_actor "github.com/boyism80/fm/services/game/actor"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type buddyMqChannelUpdate struct {
@@ -21,7 +20,7 @@ func (*buddyMqChannelUpdate) EventType() string {
 	return "channel_update"
 }
 
-func (h *buddyMqChannelUpdate) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *buddyMqChannelUpdate) Handle(_ actor.Context, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil

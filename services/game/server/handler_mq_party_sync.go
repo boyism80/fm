@@ -7,7 +7,6 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -17,7 +16,7 @@ func (partyMqPartySync) New(gs *GameServer) *partyMqPartySync {
 	return &partyMqPartySync{gs: gs}
 }
 func (*partyMqPartySync) EventType() string { return "party_sync" }
-func (h *partyMqPartySync) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *partyMqPartySync) Handle(_ actor.Context, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil

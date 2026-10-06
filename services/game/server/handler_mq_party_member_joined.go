@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/asynkron/protoactor-go/actor"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type partyMqMemberJoined struct{ gs *GameServer }
@@ -17,7 +16,7 @@ func (*partyMqMemberJoined) EventType() string {
 	return "member_joined"
 }
 
-func (h *partyMqMemberJoined) Handle(ctx actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *partyMqMemberJoined) Handle(ctx actor.Context, raw json.RawMessage) error {
 	if h.gs == nil {
 		return nil
 	}

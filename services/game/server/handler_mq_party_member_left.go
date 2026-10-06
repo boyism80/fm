@@ -5,7 +5,6 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	g_actor "github.com/boyism80/fm/services/game/actor"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type partyMqMemberLeft struct{ gs *GameServer }
@@ -18,7 +17,7 @@ func (*partyMqMemberLeft) EventType() string {
 	return "member_left"
 }
 
-func (h *partyMqMemberLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *partyMqMemberLeft) Handle(ctx actor.Context, raw json.RawMessage) error {
 	if h.gs == nil {
 		return nil
 	}

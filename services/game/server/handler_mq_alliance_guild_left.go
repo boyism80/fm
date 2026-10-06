@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/protobuf/proto"
 
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -40,7 +39,7 @@ func allianceGuildFromMQPayload(raw json.RawMessage) (*internal.Guild, bool) {
 	return &guildPb, true
 }
 
-func (h *allianceMqGuildLeft) Handle(ctx actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *allianceMqGuildLeft) Handle(ctx actor.Context, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil

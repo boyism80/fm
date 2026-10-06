@@ -5,12 +5,11 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type JSONHandler interface {
 	EventType() string
-	Handle(ctx actor.Context, msg amqp.Delivery, eventType string, payload json.RawMessage) error
+	Handle(ctx actor.Context, payload json.RawMessage) error
 }
 
 type JSONHandlerConstructor[S any, H JSONHandler] interface {
@@ -28,8 +27,6 @@ func Bind[S any, C JSONHandlerConstructor[S, H], H JSONHandler](registry S, d *D
 	if et == "" {
 		return
 	}
-	d.Register(et, func(ctx actor.Context, msg amqp.Delivery, eventType string, raw json.RawMessage) error {
-		return h.Handle(ctx, msg, eventType, raw)
-	})
+	d.Register(h)
 	log.Printf("mq: registered handler for event_type=%s %T", et, h)
 }

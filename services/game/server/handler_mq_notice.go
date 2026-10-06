@@ -5,7 +5,6 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/services/game/constant"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type globalMqNotice struct {
@@ -20,7 +19,7 @@ func (*globalMqNotice) EventType() string {
 	return "notice"
 }
 
-func (h *globalMqNotice) Handle(_ actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *globalMqNotice) Handle(_ actor.Context, raw json.RawMessage) error {
 	if h.gs == nil {
 		return nil
 	}

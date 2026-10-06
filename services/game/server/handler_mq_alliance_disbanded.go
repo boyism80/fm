@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/asynkron/protoactor-go/actor"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type allianceMqDisbanded struct{ gs *GameServer }
@@ -18,7 +17,7 @@ func (*allianceMqDisbanded) EventType() string {
 	return "disbanded"
 }
 
-func (h *allianceMqDisbanded) Handle(ctx actor.Context, _ amqp.Delivery, _ string, raw json.RawMessage) error {
+func (h *allianceMqDisbanded) Handle(ctx actor.Context, raw json.RawMessage) error {
 	gs := h.gs
 	if gs == nil {
 		return nil
