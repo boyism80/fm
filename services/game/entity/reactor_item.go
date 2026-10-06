@@ -100,7 +100,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	itemID := item.GetModel().GetID()
 	return r.ScheduleItemActivation(delay, func() {
 		mapInstance := r.GetMap()
-		if mapInstance == nil || mapInstance.GetItem(itemOID) == nil {
+		if mapInstance == nil || mapInstance.GetItem(itemOID) != item {
 			return
 		}
 		_ = mapInstance.RemoveItem(itemOID, constant.RemoveItemTypeExpired, 0)
