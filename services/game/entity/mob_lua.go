@@ -503,7 +503,7 @@ func (m *Mob) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if ownerUd, ok := L.Get(3).(*lua.LUserData); ok {
 				owner, _ = ownerUd.Value.(*Character)
 			}
-			mapInstance.dropLuaEntries(entries, mob.Position, owner, mapInstance.SpawnMobItem)
+			mapInstance.dropLuaEntries(entries, mob.Position, owner, true)
 			return 0
 		},
 		"drops": func(L *lua.LState) int {

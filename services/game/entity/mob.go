@@ -455,20 +455,13 @@ func (m *Mob) dropItems(attacker *Character) {
 				log.Printf("Failed to spawn meso drop: %v", err)
 			}
 		} else {
-			fp := &FieldPlacement{
-				ObjectCore: &ObjectCore{
-					OID:       0,
-					Position:  destPoint,
-					GameWorld: m.GameWorld,
-				},
-				Owner:        ownerID,
-				SpawnedPoint: spawnPoint,
-				DropType:     dropType,
-			}
-			fp.ObjectCore.self = fp
-			spawn.item.BindFieldPlacement(fp)
-
-			if err := mapInstance.SpawnMobItem(spawn.item, ownerID, dropType); err != nil {
+			if err := mapInstance.SpawnItem(spawn.item, ItemSpawn{
+				Position:    destPoint,
+				From:        spawnPoint,
+				Owner:       ownerID,
+				DropType:    dropType,
+				QuestTagged: true,
+			}); err != nil {
 				log.Printf("Failed to spawn item drop: %v", err)
 			}
 		}

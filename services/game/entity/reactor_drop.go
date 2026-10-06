@@ -107,19 +107,12 @@ func (r *Reactor) DropItems() {
 				log.Printf("Failed to spawn reactor meso drop: %v", err)
 			}
 		} else {
-			fp := &FieldPlacement{
-				ObjectCore: &ObjectCore{
-					Position:  destPoint,
-					GameWorld: r.GameWorld,
-				},
-				Owner:        ownerID,
-				SpawnedPoint: spawnPoint,
-				DropType:     dropType,
-			}
-			fp.ObjectCore.self = fp
-			spawn.item.BindFieldPlacement(fp)
-
-			if err := r.Map.SpawnItem(spawn.item, ownerID, dropType); err != nil {
+			if err := r.Map.SpawnItem(spawn.item, ItemSpawn{
+				Position: destPoint,
+				From:     spawnPoint,
+				Owner:    ownerID,
+				DropType: dropType,
+			}); err != nil {
 				log.Printf("Failed to spawn reactor item drop: %v", err)
 			}
 		}

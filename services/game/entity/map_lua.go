@@ -399,16 +399,12 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 				ownerID = owner.GetID()
 			}
-			fp := &FieldPlacement{
-				ObjectCore:   &ObjectCore{Position: pos},
-				Owner:        ownerID,
-				SpawnedPoint: pos,
-				DropType:     dropType,
-			}
-			fp.ObjectCore.self = fp
-			item.BindFieldPlacement(fp)
-
-			if err := mapInstance.SpawnItem(item, ownerID, dropType); err != nil {
+			if err := mapInstance.SpawnItem(item, ItemSpawn{
+				Position: pos,
+				From:     pos,
+				Owner:    ownerID,
+				DropType: dropType,
+			}); err != nil {
 				L.Push(lua.LNil)
 				return 1
 			}
@@ -446,7 +442,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					}
 				}
 			}
-			mapInstance.dropLuaEntries(entries, spawnPoint, owner, mapInstance.SpawnItem)
+			mapInstance.dropLuaEntries(entries, spawnPoint, owner, false)
 			return 0
 		},
 		"spawn_mob": func(L *lua.LState) int {
@@ -983,7 +979,7 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 	}
 }
 
-func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16], owner *Character, spawn func(Item, uint32, constant.DropType) error) {
+func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16], owner *Character, questTagged bool) {
 	if m.GameWorld == nil {
 		return
 	}
@@ -1051,18 +1047,13 @@ func (m *Map) dropLuaEntries(entries *lua.LTable, spawnPoint types.Point[int16],
 					}
 					item, err := NewItem(itemID, count, m.GameWorld)
 					if err == nil {
-						fp := &FieldPlacement{
-							ObjectCore: &ObjectCore{
-								Position:  destPoint,
-								GameWorld: m.GameWorld,
-							},
-							Owner:        ownerID,
-							SpawnedPoint: spawnPoint,
-							DropType:     dropType,
-						}
-						fp.ObjectCore.self = fp
-						item.BindFieldPlacement(fp)
-						if err := spawn(item, ownerID, dropType); err != nil {
+						if err := m.SpawnItem(item, ItemSpawn{
+							Position:    destPoint,
+							From:        spawnPoint,
+							Owner:       ownerID,
+							DropType:    dropType,
+							QuestTagged: questTagged,
+						}); err != nil {
 							return
 						}
 						spawned = true

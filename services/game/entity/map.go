@@ -1200,55 +1200,57 @@ func (m *Map) BroadcastNear(position types.Vector2[int16], message types.Packet,
 	}
 }
 
-func (m *Map) SpawnItem(item Item, ownerID uint32, dropType constant.DropType) error {
-	oid := m.allocateOID()
+type ItemSpawn struct {
+	Position    types.Point[int16]
+	From        types.Point[int16]
+	Owner       uint32
+	DropType    constant.DropType
+	PlayerDrop  bool
+	QuestTagged bool
+}
 
-	fp := item.GetFieldPlacement()
-	if fp == nil {
-		return fmt.Errorf("item has no field placement")
-	}
-
-	dropPoint, ok := m.Wz.DropPoint(fp.Position)
-	if !ok {
-		dropPoint = fp.SpawnedPoint
-	}
-
-	fp.Position = dropPoint
-	fp.OID = oid
-	fp.Owner = ownerID
-	fp.DropType = dropType
-	fp.Map = m
-	m.registerFieldDropTimers(fp, dropType)
-
-	if m.objects[constant.ObjectTypeItem] == nil {
-		m.objects[constant.ObjectTypeItem] = make(map[uint32]Object)
-	}
+func (m *Map) SpawnItem(item Item, spawn ItemSpawn) error {
 	mapObj, ok := item.(Object)
 	if !ok {
 		return fmt.Errorf("item must implement Object")
 	}
-	if fp.ObjectCore != nil {
-		fp.ObjectCore.self = mapObj
-		fp.initTimers()
+
+	dropPoint, ok := m.Wz.DropPoint(spawn.Position)
+	if !ok {
+		dropPoint = spawn.From
 	}
-	m.objects[constant.ObjectTypeItem][oid] = mapObj
+
+	fp := &FieldPlacement{
+		ObjectCore: &ObjectCore{
+			self:      mapObj,
+			OID:       m.allocateOID(),
+			Position:  dropPoint,
+			GameWorld: m.GameWorld,
+			Map:       m,
+		},
+		Owner:        spawn.Owner,
+		SpawnedPoint: spawn.From,
+		DropType:     spawn.DropType,
+		PlayerDrop:   spawn.PlayerDrop,
+	}
+	if spawn.QuestTagged {
+		fp.Quest = m.GameWorld.GetResources().QuestItems[item.GetModel().GetID()]
+	}
+	fp.initTimers()
+	item.BindFieldPlacement(fp)
+	m.registerFieldDropTimers(fp, spawn.DropType)
+
+	if m.objects[constant.ObjectTypeItem] == nil {
+		m.objects[constant.ObjectTypeItem] = make(map[uint32]Object)
+	}
+	m.objects[constant.ObjectTypeItem][fp.OID] = mapObj
 	m.sections.add(mapObj)
 	m.listener.OnItemSpawned(m, item, fp)
 
-	owner := m.GetPlayer(ownerID)
+	owner := m.GetPlayer(spawn.Owner)
 	m.activateItemReactors(item, owner)
 
 	return nil
-}
-
-func (m *Map) SpawnMobItem(item Item, ownerID uint32, dropType constant.DropType) error {
-	fp := item.GetFieldPlacement()
-	if fp == nil {
-		return fmt.Errorf("item has no field placement")
-	}
-
-	fp.Quest = m.GameWorld.GetResources().QuestItems[item.GetModel().GetID()]
-	return m.SpawnItem(item, ownerID, dropType)
 }
 
 func (m *Map) SpawnMeso(count int32, position, spawnFrom types.Point[int16], ownerID uint32, dropType constant.DropType, playerDrop bool) (*Meso, error) {

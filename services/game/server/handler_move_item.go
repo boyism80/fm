@@ -107,21 +107,17 @@ func (h *MoveItem) drop(ctx *core.ClientContext, ch *entity.Character, invenType
 		}
 	}
 
-	spawned.BindFieldPlacement(&entity.FieldPlacement{
-		ObjectCore: &entity.ObjectCore{
-			Position: ch.Position,
-		},
-		Owner:        ch.GetID(),
-		SpawnedPoint: ch.Position,
-		DropType:     constant.DropTypeFFA,
-		PlayerDrop:   true,
-	})
-
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
 		return
 	}
-	if err := mapInstance.SpawnItem(spawned, ch.GetID(), constant.DropTypeFFA); err != nil {
+	if err := mapInstance.SpawnItem(spawned, entity.ItemSpawn{
+		Position:   ch.Position,
+		From:       ch.Position,
+		Owner:      ch.GetID(),
+		DropType:   constant.DropTypeFFA,
+		PlayerDrop: true,
+	}); err != nil {
 		log.Printf("Failed to spawn item on map: %v", err)
 	}
 }

@@ -79,20 +79,15 @@ func (m *Mob) dropTimedItem() {
 		return
 	}
 	pos := m.GetPosition()
-	fp := &FieldPlacement{
-		ObjectCore:   &ObjectCore{Position: pos},
-		SpawnedPoint: pos,
-		DropType:     constant.DropTypeFFA,
-	}
-	fp.ObjectCore.self = fp
-	item.BindFieldPlacement(fp)
-	if err := mapInstance.SpawnItem(item, 0, constant.DropTypeFFA); err != nil {
+	if err := mapInstance.SpawnItem(item, ItemSpawn{
+		Position: pos,
+		From:     pos,
+		DropType: constant.DropTypeFFA,
+	}); err != nil {
 		return
 	}
 	if itemID == 4001101 {
-		if placed := item.GetFieldPlacement(); placed != nil {
-			placed.RegisterExpire(mobAutoDropRiceCakeExpire)
-		}
+		item.GetFieldPlacement().RegisterExpire(mobAutoDropRiceCakeExpire)
 	}
 	m.dropItemCount = nextCount
 }
