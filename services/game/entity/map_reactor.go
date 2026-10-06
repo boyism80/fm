@@ -2,102 +2,11 @@ package entity
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
 )
-
-func (r *Reactor) ForceHitState(state byte) {
-	if r == nil || r.Map == nil {
-		return
-	}
-	r.State = state
-	r.TimerActive = false
-	r.Map.listener.OnReactorTriggered(r.Map, r, 0)
-}
-
-func (r *Reactor) Hit(trigger *Character, hitSide constant.ReactorHitSide, stance int32) {
-	if r == nil || r.Wz == nil || r.Map == nil {
-		return
-	}
-	r.TriggerCharacterID = 0
-	if trigger != nil {
-		r.TriggerCharacterID = trigger.GetID()
-	}
-	event := r.currentEvent()
-	if event == nil {
-		return
-	}
-	if event.Type == constant.ReactorEventTypeDirectionalHit && hitSide.IsLeft() {
-		return
-	}
-
-	oldState := r.State
-	newState := event.NextState
-	r.State = newState
-
-	if r.eventAt(newState) == nil {
-		if r.respawnDelay() > 0 {
-			_ = r.Map.RemoveReactor(r.OID, true)
-			_, _ = r.callReactorScript("on_reactor", true, r)
-			return
-		}
-
-		// The client plays the final collapse only when DESTROY arrives without a preceding TRIGGER.
-		_, _ = r.callReactorScript("on_reactor", true, r)
-		if r.Map.GetReactor(r.OID) != r {
-			return
-		}
-		r.Map.listener.OnReactorTriggered(r.Map, r, stance)
-		return
-	}
-
-	done := false
-	r.Map.listener.OnReactorTriggered(r.Map, r, stance)
-	_, _ = r.callReactorScript("on_state", true, r)
-	newEvent := r.eventAt(newState)
-	if newEvent.NextState == newState {
-		_, _ = r.callReactorScript("on_reactor", true, r)
-		done = true
-	}
-	timeout := r.StateTimeOut(newState)
-	if timeout > 0 {
-		if done == false {
-			_, _ = r.callReactorScript("on_reactor", true, r)
-		}
-		r.ScheduleStateRevert(newState, oldState, timeout)
-	}
-	if done || timeout > 0 || trigger == nil || trigger.GetInstantKill() == false {
-		return
-	}
-	if newEvent.Type == constant.ReactorEventTypeHit || newEvent.Type == constant.ReactorEventTypeDirectionalHit {
-		r.Hit(trigger, hitSide, stance)
-	}
-}
-
-func (m *Map) activateItemReactors(item Item, owner *Character) {
-	if m == nil || item == nil {
-		return
-	}
-	fp := item.GetFieldPlacement()
-	if fp == nil {
-		return
-	}
-	if m.Wz != nil && m.Wz.Everlast && fp.PlayerDrop {
-		return
-	}
-	for _, obj := range m.GetReactors() {
-		reactor, ok := obj.(*Reactor)
-		if !ok || reactor == nil {
-			continue
-		}
-		if reactor.Activate(item, owner) {
-			break
-		}
-	}
-}
 
 func (m *Map) initReactors() {
 	m.ReactorSpawns = make(map[uint32]*ReactorSpawn)
@@ -301,14 +210,6 @@ func (m *Map) SetReactorGenEnabled(enabled bool) {
 		return
 	}
 	m.reactorGenBlocked = enabled == false
-}
-
-// A blocked map keeps a broken reactor in its final state, as if WZ gave it no respawn delay.
-func (r *Reactor) respawnDelay() time.Duration {
-	if r.Spawn == nil || r.Map.reactorGenBlocked {
-		return 0
-	}
-	return r.Spawn.RespawnDelay()
 }
 
 func (m *Map) GetReactorSpawn(spawnID uint32) *ReactorSpawn {

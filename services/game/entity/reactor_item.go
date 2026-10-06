@@ -1,38 +1,11 @@
 package entity
 
 import (
-	"fmt"
-	"log"
 	"time"
 
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/wz"
 	"github.com/boyism80/fm/types"
-	lua "github.com/yuin/gopher-lua"
 )
-
-func (r *Reactor) currentEvent() *wz.ReactorEvent {
-	if r == nil {
-		return nil
-	}
-	return r.eventAt(r.State)
-}
-
-func (r *Reactor) eventAt(state byte) *wz.ReactorEvent {
-	if r == nil || r.Wz == nil {
-		return nil
-	}
-	return r.Wz.States[state]
-}
-
-func (r *Reactor) EventType() constant.ReactorEventType {
-	event := r.currentEvent()
-	if event == nil {
-		return constant.ReactorEventType(-1)
-	}
-	return event.Type
-}
 
 func (r *Reactor) ReactItemID() int {
 	event := r.currentEvent()
@@ -70,6 +43,28 @@ func (r *Reactor) ContainsPoint(point types.Point[int16]) bool {
 	return point.X >= left && point.X <= right && point.Y >= top && point.Y <= bottom
 }
 
+func (m *Map) activateItemReactors(item Item, owner *Character) {
+	if m == nil || item == nil {
+		return
+	}
+	fp := item.GetFieldPlacement()
+	if fp == nil {
+		return
+	}
+	if m.Wz != nil && m.Wz.Everlast && fp.PlayerDrop {
+		return
+	}
+	for _, obj := range m.GetReactors() {
+		reactor, ok := obj.(*Reactor)
+		if !ok || reactor == nil {
+			continue
+		}
+		if reactor.Activate(item, owner) {
+			break
+		}
+	}
+}
+
 func (r *Reactor) Activate(item Item, owner *Character) bool {
 	if r == nil || item == nil || r.Wz == nil {
 		return false
@@ -84,7 +79,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 	if r.ContainsPoint(fp.Position) == false {
 		return false
 	}
-	if r.TimerActive {
+	if r.itemActivationPending() {
 		return false
 	}
 	if r.matchesItemDrop(item) == false {
@@ -98,7 +93,7 @@ func (r *Reactor) Activate(item Item, owner *Character) bool {
 
 	itemOID := fp.OID
 	itemID := item.GetModel().GetID()
-	return r.ScheduleItemActivation(delay, func() {
+	return r.AddTimer(reactorTimerItemActivateKey, delay, false, func() {
 		mapInstance := r.GetMap()
 		if mapInstance == nil || mapInstance.GetItem(itemOID) != item {
 			return
@@ -124,42 +119,6 @@ func (r *Reactor) matchesItemDrop(item Item) bool {
 	return false
 }
 
-func (r *Reactor) callReactorScript(hook string, yield bool, args ...interface{}) (lua.LValue, error) {
-	mapInstance := r.GetMap()
-	if mapInstance == nil {
-		return nil, fmt.Errorf("reactor has no map")
-	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		return nil, fmt.Errorf("map has no lua root")
-	}
-	thread, err := luax.NewThread(root, fmt.Sprintf("script/reactor/%d.lua", r.Wz.ID))
-	if err != nil {
-		return nil, err
-	}
-	luax.SetConfiguration(thread, luax.Configuration{
-		ActorPID: mapInstance.LogicActorPID(),
-	})
-	filtered := make([]interface{}, 0, len(args))
-	for _, arg := range args {
-		if arg != nil {
-			filtered = append(filtered, arg)
-		}
-	}
-	if yield && root.G != nil && root.G.CurrentThread == root.G.MainThread {
-		if len(filtered) == 0 {
-			luax.CallAsync(nil, root, thread, hook).OnError(func(err error) {
-				log.Printf("reactor script %s: %v", hook, err)
-			})
-		} else {
-			luax.CallAsync(nil, root, thread, hook, filtered...).OnError(func(err error) {
-				log.Printf("reactor script %s: %v", hook, err)
-			})
-		}
-		return nil, nil
-	}
-	if len(filtered) == 0 {
-		return luax.Call(thread, hook)
-	}
-	return luax.Call(thread, hook, filtered...)
+func (r *Reactor) itemActivationPending() bool {
+	return r.GetTimerEntry(reactorTimerItemActivateKey) != nil
 }

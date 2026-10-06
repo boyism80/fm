@@ -28,21 +28,6 @@ func (r *Reactor) ScheduleStateRevert(oldState byte, newState byte, delay time.D
 	})
 }
 
-func (r *Reactor) ScheduleItemActivation(delay time.Duration, activate func()) bool {
-	if r == nil || delay <= 0 || activate == nil || r.TimerActive {
-		return false
-	}
-	r.TimerActive = true
-	if !r.AddTimer(reactorTimerItemActivateKey, delay, false, func() {
-		r.TimerActive = false
-		activate()
-	}) {
-		r.TimerActive = false
-		return false
-	}
-	return true
-}
-
 func (r *Reactor) ScheduleResetState(delay time.Duration) bool {
 	if r == nil || delay <= 0 {
 		return false
