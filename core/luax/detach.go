@@ -16,7 +16,6 @@ type DetachedFunc struct {
 type detachedValue struct {
 	value  lua.LValue
 	luable Luable
-	module string
 	script string
 	table  *detachedTable
 	fn     *DetachedFunc
@@ -28,7 +27,6 @@ type detachedTable struct {
 }
 
 type detachScope struct {
-	modules map[*lua.LTable]string
 	scripts map[*lua.LTable]string
 	tables  map[*lua.LTable]*detachedTable
 	funcs   map[*lua.LFunction]*DetachedFunc
@@ -36,19 +34,9 @@ type detachScope struct {
 
 func Detach(L *lua.LState, fn *lua.LFunction) (*DetachedFunc, error) {
 	scope := &detachScope{
-		modules: make(map[*lua.LTable]string),
 		scripts: make(map[*lua.LTable]string),
 		tables:  make(map[*lua.LTable]*detachedTable),
 		funcs:   make(map[*lua.LFunction]*DetachedFunc),
-	}
-	if pt, ok := L.GetGlobal("package").(*lua.LTable); ok {
-		if loaded, ok := pt.RawGetString("loaded").(*lua.LTable); ok {
-			loaded.ForEach(func(k, v lua.LValue) {
-				if t, ok := v.(*lua.LTable); ok {
-					scope.modules[t] = k.String()
-				}
-			})
-		}
 	}
 	if mods := modulesTable(L); mods != nil {
 		mods.ForEach(func(k, v lua.LValue) {
@@ -102,9 +90,6 @@ func (s *detachScope) value(v lua.LValue) (detachedValue, error) {
 		}
 		return detachedValue{fn: fn}, nil
 	case *lua.LTable:
-		if name, ok := s.modules[t]; ok {
-			return detachedValue{module: name}, nil
-		}
 		if path, ok := s.scripts[t]; ok {
 			return detachedValue{script: path}, nil
 		}
@@ -188,16 +173,8 @@ func (s *attachScope) value(dv detachedValue) (lua.LValue, error) {
 		return NewLuable(s.L, dv.luable), nil
 	case dv.fn != nil:
 		return s.function(dv.fn)
-	case dv.module != "":
-		err := s.L.CallByParam(lua.P{Fn: s.L.GetGlobal("require"), NRet: 1, Protect: true}, lua.LString(dv.module))
-		if err != nil {
-			return nil, err
-		}
-		v := s.L.Get(-1)
-		s.L.Pop(1)
-		return v, nil
 	case dv.script != "":
-		return LoadModule(s.L, dv.script)
+		return loadModule(s.L, dv.script)
 	case dv.table != nil:
 		if t, ok := s.tables[dv.table]; ok {
 			return t, nil

@@ -37,12 +37,6 @@ func SetAlwaysReload(enabled bool) {
 	}
 }
 
-func AlwaysReload() bool {
-	compileMu.Lock()
-	defer compileMu.Unlock()
-	return alwaysReload
-}
-
 type Luable interface {
 	lua.LValue
 	LuaTypeName() string
@@ -112,18 +106,6 @@ func modulesTable(root *lua.LState) *lua.LTable {
 	return tbl
 }
 
-func ClearModules(root *lua.LState) {
-	if root == nil {
-		return
-	}
-	reg := root.Get(lua.RegistryIndex)
-	rt, ok := reg.(*lua.LTable)
-	if !ok {
-		return
-	}
-	root.SetField(rt, modulesRegistryKey, root.NewTable())
-}
-
 func LoadModule(root *lua.LState, path string) (*lua.LTable, error) {
 	if root == nil {
 		return nil, fmt.Errorf("nil lua root")
@@ -131,24 +113,26 @@ func LoadModule(root *lua.LState, path string) (*lua.LTable, error) {
 	if path == "" {
 		return nil, fmt.Errorf("empty script path")
 	}
+	mod, err := loadModule(root, path)
+	if err != nil {
+		return nil, err
+	}
+	tbl, ok := mod.(*lua.LTable)
+	if ok == false {
+		return nil, fmt.Errorf("%s: script must return a module table", path)
+	}
+	return tbl, nil
+}
 
+func loadModule(root *lua.LState, path string) (lua.LValue, error) {
 	compileMu.Lock()
 	reload := alwaysReload
 	compileMu.Unlock()
-	if reload {
-		clearRequireCache(root)
-		mods := modulesTable(root)
-		if mods != nil {
-			mods.RawSetString(path, lua.LNil)
-		}
-	}
 
 	mods := modulesTable(root)
-	if mods != nil {
+	if reload == false && mods != nil {
 		if cached := mods.RawGetString(path); cached != lua.LNil {
-			if tbl, ok := cached.(*lua.LTable); ok {
-				return tbl, nil
-			}
+			return cached, nil
 		}
 	}
 
@@ -156,21 +140,19 @@ func LoadModule(root *lua.LState, path string) (*lua.LTable, error) {
 	if err != nil {
 		return nil, err
 	}
-	fn := root.NewFunctionFromProto(proto)
-	root.Push(fn)
+	root.Push(root.NewFunctionFromProto(proto))
 	if err := root.PCall(0, 1, nil); err != nil {
 		return nil, fmt.Errorf("script runtime error: %w", err)
 	}
-	ret := root.Get(-1)
+	mod := root.Get(-1)
 	root.Pop(1)
-	tbl, ok := ret.(*lua.LTable)
-	if !ok {
-		return nil, fmt.Errorf("%s: script must return a module table", path)
+	if mod == lua.LNil {
+		mod = lua.LBool(true)
 	}
 	if mods != nil {
-		mods.RawSetString(path, tbl)
+		mods.RawSetString(path, mod)
 	}
-	return tbl, nil
+	return mod, nil
 }
 
 func ModuleFunc(mod *lua.LTable, name string) *lua.LFunction {
