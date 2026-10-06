@@ -150,38 +150,4 @@ export class QuestRepository extends HashRepository<QuestModel, QuestRow> {
             start_time_unix_ms: model.startTimeUnixMs || null,
         };
     }
-
-    async replaceBySnapshot(worldId: number, characterId: number, models: QuestModel[]) {
-        const groupKey = String(characterId);
-        const normalized = models.map((m) => {
-            const row = this.modelToRow(m);
-            row.character_id = characterId;
-            return row;
-        });
-
-        await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient) => {
-            const { text: selectText, values: selectValues } = this.onSelect(groupKey);
-            const existingRes = await txClient.query(selectText, selectValues);
-            const existingRows = existingRes.rows ?? [];
-
-            if (normalized.length > 0) {
-                const upsert = this.onBulkUpsert(normalized);
-                if (upsert.text) {
-                    await txClient.query(upsert.text, upsert.values);
-                }
-            }
-
-            const incoming = new Set(normalized.map((r) => String(r.quest_id)));
-            const deleteIds = (existingRows as QuestRow[])
-                .map((r) => String(r.quest_id))
-                .filter((id) => !incoming.has(id));
-            if (deleteIds.length > 0) {
-                const delQuery = this.onBulkDelete(deleteIds, groupKey);
-                await txClient.query(delQuery.text, delQuery.values);
-            }
-        });
-
-        const redis = this.redis(worldId, groupKey);
-        await redis.del(this.getRedisHashKey(worldId, String(characterId))).catch(() => {});
-    }
 }

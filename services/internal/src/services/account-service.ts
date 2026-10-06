@@ -29,9 +29,8 @@ export class AccountService {
         const worldId = this.worldId();
         const identity = await this.unifiedRepo.findAccountByLoginId(loginId);
 
-        if (!identity) {
-            const newIdentity = await this.unifiedRepo.insertAccountIdentity(loginId);
-            const accountId = newIdentity.id;
+        if (!identity || identity.registered_at === null) {
+            const accountId = identity ? identity.id : (await this.unifiedRepo.insertAccountIdentity(loginId)).id;
             const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
             const role = Number.isInteger(initialRole) ? initialRole : 0;
             const newAccount = {
@@ -48,7 +47,14 @@ export class AccountService {
                 lastLoginIp: ipAddress ?? null,
                 macAddress: macAddress ?? null,
             };
-            const saved = await this.accountRepo.set(worldId, newAccount);
+            let saved: Awaited<ReturnType<AccountRepository["set"]>>;
+            try {
+                saved = await this.accountRepo.set(worldId, newAccount);
+                await this.unifiedRepo.confirmAccountIdentity(accountId);
+            } catch (err) {
+                await this.unifiedRepo.deletePendingAccountIdentity(accountId).catch(() => {});
+                throw err;
+            }
             return {
                 status: LoginAccountReply_Status.REGISTERED,
                 accountId: saved.accountId,

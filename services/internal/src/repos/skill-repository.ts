@@ -94,36 +94,4 @@ export class SkillRepository extends HashRepository<SkillModel, SkillRow> {
             cooldown_end_unix_ms: model.cooldownEndUnixMs ?? null,
         };
     }
-
-    async replaceBySnapshot(worldId: number, characterId: number, models: SkillModel[]) {
-        const groupKey = String(characterId);
-        const normalized = models.map((m) => {
-            const row = this.modelToRow(m);
-            row.character_id = characterId;
-            return row;
-        });
-
-        await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient) => {
-            const { text: selectText, values: selectValues } = this.onSelect(groupKey);
-            const existingRes = await txClient.query(selectText, selectValues);
-            const existingRows = existingRes.rows ?? [];
-
-            if (normalized.length > 0) {
-                const upsert = this.onBulkUpsert(normalized);
-                if (upsert.text) {
-                    await txClient.query(upsert.text, upsert.values);
-                }
-            }
-
-            const incomingSkillIds = new Set(normalized.map((r) => String(r.skill_id)));
-            const deleteSkillIds = (existingRows as SkillRow[]).map((r) => String(r.skill_id)).filter((id) => !incomingSkillIds.has(id));
-            if (deleteSkillIds.length > 0) {
-                const delQuery = this.onBulkDelete(deleteSkillIds, groupKey);
-                await txClient.query(delQuery.text, delQuery.values);
-            }
-        });
-
-        const redis = this.redis(worldId, groupKey);
-        await redis.del(this.getRedisHashKey(worldId, String(characterId))).catch(() => {});
-    }
 }

@@ -87,38 +87,4 @@ export class SavedLocationRepository extends HashRepository<SavedLocationModel, 
             map_id: model.mapId,
         };
     }
-
-    async replaceBySnapshot(worldId: number, characterId: number, models: SavedLocationModel[]) {
-        const groupKey = String(characterId);
-        const normalized = models.map((m) => {
-            const row = this.modelToRow(m);
-            row.character_id = characterId;
-            return row;
-        });
-
-        await this.ctx.withPgDataTransaction(worldId, characterId, async (txClient) => {
-            const { text: selectText, values: selectValues } = this.onSelect(groupKey);
-            const existingRes = await txClient.query(selectText, selectValues);
-            const existingRows = existingRes.rows ?? [];
-
-            if (normalized.length > 0) {
-                const upsert = this.onBulkUpsert(normalized);
-                if (upsert.text) {
-                    await txClient.query(upsert.text, upsert.values);
-                }
-            }
-
-            const incoming = new Set(normalized.map((r) => r.location_key));
-            const deleteIds = (existingRows as SavedLocationRow[])
-                .map((r) => r.location_key)
-                .filter((id) => !incoming.has(id));
-            if (deleteIds.length > 0) {
-                const delQuery = this.onBulkDelete(deleteIds, groupKey);
-                await txClient.query(delQuery.text, delQuery.values);
-            }
-        });
-
-        const redis = this.redis(worldId, groupKey);
-        await redis.del(this.getRedisHashKey(worldId, String(characterId))).catch(() => {});
-    }
 }

@@ -6,6 +6,7 @@ export interface AccountIdentityRow {
     id: number;
     login_id: string;
     created_at: Date | string;
+    registered_at: Date | string | null;
 }
 
 export interface CharacterNameRegistryRow {
@@ -36,7 +37,7 @@ export class UnifiedRepository {
 
     async findAccountByLoginId(loginId: string): Promise<AccountIdentityRow | null> {
         const { rows } = await this.pool().query(
-            "SELECT id, login_id, created_at FROM account_identity WHERE login_id = $1",
+            "SELECT id, login_id, created_at, registered_at FROM account_identity WHERE login_id = $1",
             [loginId]
         );
         return rows[0] ?? null;
@@ -44,10 +45,18 @@ export class UnifiedRepository {
 
     async insertAccountIdentity(loginId: string): Promise<AccountIdentityRow> {
         const { rows } = await this.pool().query(
-            "INSERT INTO account_identity (login_id) VALUES ($1) RETURNING id, login_id, created_at",
+            "INSERT INTO account_identity (login_id) VALUES ($1) RETURNING id, login_id, created_at, registered_at",
             [loginId]
         );
         return rows[0];
+    }
+
+    async confirmAccountIdentity(id: number): Promise<void> {
+        await this.pool().query("UPDATE account_identity SET registered_at = NOW() WHERE id = $1", [id]);
+    }
+
+    async deletePendingAccountIdentity(id: number): Promise<void> {
+        await this.pool().query("DELETE FROM account_identity WHERE id = $1 AND registered_at IS NULL", [id]);
     }
 
     async findCharacterNameEntry(name: string): Promise<CharacterNameRegistryRow | null> {

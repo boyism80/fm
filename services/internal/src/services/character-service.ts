@@ -256,19 +256,19 @@ export class CharacterService {
                 await this.overviewRepo.set(persisted.worldId, overview);
 
                 if (inventory !== undefined) {
-                    await this.inventoryRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, inventory);
+                    await this.inventoryRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), inventory);
                 }
                 if (skills !== undefined) {
-                    await this.skillRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, skills);
+                    await this.skillRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), skills.map((m) => ({ ...m, characterId: persisted.characterId })));
                 }
                 if (buffs !== undefined) {
-                    await this.buffRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, buffs);
+                    await this.buffRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), buffs.map((m) => ({ ...m, characterId: persisted.characterId })));
                 }
                 if (quests !== undefined) {
-                    await this.questRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, quests);
+                    await this.questRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), quests.map((m) => ({ ...m, characterId: persisted.characterId })));
                 }
                 if (savedLocations !== undefined) {
-                    await this.savedLocationRepo.replaceBySnapshot(persisted.worldId, persisted.characterId, savedLocations);
+                    await this.savedLocationRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), savedLocations.map((m) => ({ ...m, characterId: persisted.characterId })));
                 }
                 if (keyLayout !== undefined) {
                     await this.keyLayoutRepo.set(persisted.worldId, {
@@ -393,7 +393,7 @@ export class CharacterService {
 
             if (equips.length) {
                 const enhances = await Promise.all(equips.map((e) => this.wzService.getEnhanceChance(e.itemId)));
-                await this.inventoryRepo.replaceBySnapshot(wid, characterId, []);
+                await this.inventoryRepo.replaceBySnapshot(wid, String(characterId), []);
                 await this.inventoryRepo.setAll(
                     wid,
                     equips.map((e, idx) => ({
@@ -421,7 +421,7 @@ export class CharacterService {
             await Promise.allSettled([
                 this.repo.delete({ worldId: wid, characterId, accountId }),
                 this.keyLayoutRepo.delete({ worldId: wid, characterId }),
-                this.inventoryRepo.replaceBySnapshot(wid, characterId, []),
+                this.inventoryRepo.replaceBySnapshot(wid, String(characterId), []),
                 this.overviewRepo.delete({ worldId: wid, accountId, characterId }),
                 this.unifiedRepo.releaseCharacterNameReservation(accountId),
             ]);
@@ -461,11 +461,11 @@ export class CharacterService {
             return { success: false };
         }
 
-        await this.inventoryRepo.replaceBySnapshot(worldId, characterId, []);
-        await this.skillRepo.replaceBySnapshot(worldId, characterId, []);
-        await this.buffRepo.replaceBySnapshot(worldId, characterId, []);
-        await this.questRepo.replaceBySnapshot(worldId, characterId, []);
-        await this.savedLocationRepo.replaceBySnapshot(worldId, characterId, []);
+        await this.inventoryRepo.replaceBySnapshot(worldId, String(characterId), []);
+        await this.skillRepo.replaceBySnapshot(worldId, String(characterId), []);
+        await this.buffRepo.replaceBySnapshot(worldId, String(characterId), []);
+        await this.questRepo.replaceBySnapshot(worldId, String(characterId), []);
+        await this.savedLocationRepo.replaceBySnapshot(worldId, String(characterId), []);
         await this.buddyRepo.deleteAllForOwner(worldId, characterId);
         await this.buddyRepo.deleteAllReferencingBuddy(worldId, characterId);
         await this.realtimeStateRepo.delete({ worldId, characterId });

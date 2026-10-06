@@ -140,8 +140,8 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
         };
     }
 
-    async replaceBySnapshot(worldId: number, ownerId: number, models: InventoryModel[]) {
-        const groupKey = String(ownerId);
+    override async replaceBySnapshot(worldId: number, groupKey: string, models: InventoryModel[]): Promise<void> {
+        const ownerId = Number(groupKey);
         const normalized = models.map((m) => {
             const row = this.modelToRow(m);
             row.owner_id = ownerId;
@@ -157,8 +157,6 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
                 }
             }
         });
-
-        const redis = this.redis(worldId, groupKey);
-        await redis.del(this.getRedisHashKey(worldId, String(ownerId))).catch(() => {});
+        await this.invalidateCache(worldId, groupKey);
     }
 }
