@@ -45,6 +45,11 @@ var decoders = func() []decoder {
 			return len(body) > 0 && pconst.PartySubOpcode(body[0]) == sub
 		}
 	}
+	duey := func(result pconst.DueyResult) func([]byte) bool {
+		return func(body []byte) bool {
+			return len(body) > 0 && pconst.DueyResult(body[0]) == result
+		}
+	}
 	partyUpdate := func(match func(body []byte) bool) func([]byte) bool {
 		return func(body []byte) bool {
 			return len(body) >= 11 && pconst.PartySubOpcode(body[0]) == pconst.PartyS2CPartyUpdate && match(body)
@@ -78,6 +83,11 @@ var decoders = func() []decoder {
 		newDecoder[response.OpenNpcShop](nil),
 		newDecoder[response.StorageError](func(body []byte) bool { return len(body) == 1 }),
 		newDecoder[response.Storage](nil),
+		newDecoder[response.DueyOpen](duey(pconst.DueyResultOpen)),
+		newDecoder[response.DueyRemoved](duey(pconst.DueyResultRemoved)),
+		newDecoder[response.DueyArrival](duey(pconst.DueyResultArrival)),
+		newDecoder[response.DueyArrivals](duey(pconst.DueyResultArrivals)),
+		newDecoder[response.Duey](nil),
 		newDecoder[response.InventoryOperation](nil),
 		newDecoder[response.UpdateQuest](func(body []byte) bool { return len(body) > 0 && body[0] == 1 }),
 		newDecoder[response.GuildInvite](func(body []byte) bool {

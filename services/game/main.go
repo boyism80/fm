@@ -52,6 +52,8 @@ rabbitmq:
 high_rate: false
 lua:
   always_reload: false
+duey:
+  identity_prompt: false
 `))
 		log.Println("Notes:")
 		log.Println("  - internal.heartbeat_interval_seconds: periodic Ping to internal (seconds); omit or 0 to disable loop.")
@@ -103,6 +105,7 @@ lua:
 		InternalHeartbeatIntervalSeconds: g.Internal.HeartbeatIntervalSeconds,
 		RabbitMQ:                         g.RabbitMQ,
 		LuaAlwaysReload:                  g.Lua.AlwaysReload,
+		DueyIdentityPrompt:               g.Duey.IdentityPrompt,
 	}
 
 	gs, err := server.NewGameServer(srvCfg)

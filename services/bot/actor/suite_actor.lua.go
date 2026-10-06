@@ -40,6 +40,7 @@ var requests = []outbound{
 	&request.Carnival{},
 	&request.UseCashItem{},
 	&request.Storage{},
+	&request.Duey{},
 }
 
 func (a *SuiteActor) register() {

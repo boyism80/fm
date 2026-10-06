@@ -71,7 +71,7 @@ type CharacterPersistedInput = {
 
 export type CharacterRowModel = CharacterModel;
 
-type SaveCharacterEntry = {
+export type SaveCharacterEntry = {
     persisted: CharacterPersistedInput;
     baseLooks?: Record<string, number>;
     overlays?: Record<string, number>;

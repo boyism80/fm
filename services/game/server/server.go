@@ -69,6 +69,7 @@ type GameServer struct {
 	rabbitGuildPID    *actor.PID
 	rabbitAlliancePID *actor.PID
 	rabbitGlobalPID   *actor.PID
+	rabbitParcelPID   *actor.PID
 	characterRuntime  *ServerCharacterRuntime
 	mapSystem         mapSystem
 	schedulerSystem   schedulerSystem
@@ -152,6 +153,7 @@ type GameConfig struct {
 	InternalHeartbeatIntervalSeconds int
 	RabbitMQ                         config.RabbitMQEndpoint
 	LuaAlwaysReload                  bool
+	DueyIdentityPrompt               bool
 }
 
 func NewGameServer(config *GameConfig) (*GameServer, error) {
@@ -371,6 +373,26 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 			fmt.Sprintf("rabbitmq_global_w%d_c%d", config.WorldId, config.ChannelId),
 			globalRabbitProps,
 		)
+
+		parcelDisp := mq.NewDispatcher()
+		mq.Bind[*GameServer, parcelMqArrived](gs, parcelDisp)
+
+		parcelRabbitCfg := mq.RabbitActorConfig{
+			Root:        gs.GetRootContext(),
+			Broker:      config.RabbitMQ,
+			Exchange:    mq.DirectExchange,
+			QueueName:   fmt.Sprintf("fm.game.w%d.c%d.parcel.events", config.WorldId, config.ChannelId),
+			ConsumerTag: fmt.Sprintf("fm-game-w%d-c%d-parcel", config.WorldId, config.ChannelId),
+			RoutingKeys: []string{fmt.Sprintf("fm.%d.%d.parcel", config.WorldId, config.ChannelId)},
+			Dispatcher:  parcelDisp,
+		}
+		parcelRabbitProps := actor.PropsFromProducer(func() actor.Actor {
+			return mq.NewRabbitActor(parcelRabbitCfg)
+		})
+		gs.rabbitParcelPID = gs.actorRegistry.GetOrCreateActor(
+			fmt.Sprintf("rabbitmq_parcel_w%d_c%d", config.WorldId, config.ChannelId),
+			parcelRabbitProps,
+		)
 	}
 
 	gs.characterListener = &CharacterListenerImpl{gs: gs}
@@ -413,6 +435,10 @@ func (gs *GameServer) GetDropRate() int {
 
 func (gs *GameServer) GetMesoRate() int {
 	return gs.config.MesoRate
+}
+
+func (gs *GameServer) DueyIdentityPrompt() bool {
+	return gs.config.DueyIdentityPrompt
 }
 
 func (gs *GameServer) preCreateMaps() {
@@ -532,6 +558,12 @@ func (gs *GameServer) Stop() error {
 		root := gs.GetRootContext()
 		if root != nil {
 			root.Poison(gs.rabbitGlobalPID)
+		}
+	}
+	if gs.rabbitParcelPID != nil {
+		root := gs.GetRootContext()
+		if root != nil {
+			root.Poison(gs.rabbitParcelPID)
 		}
 	}
 	if gs.internalConn != nil {

@@ -77,6 +77,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Doors = NewDoorContainer(ch)
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = p.GetMeso()
+	ch.Duey = &Duey{owner: ch}
 	ch.GuildInvites = make(map[uint32]time.Time)
 	ch.savedLocations = make(map[string]uint32)
 	ch.keyLayout = NewKeyLayout()

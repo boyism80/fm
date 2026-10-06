@@ -59,6 +59,7 @@ type Character struct {
 	HpApUsed          uint16
 	Inventory         *Inventory
 	Storage           *Storage
+	Duey              *Duey
 	Skills            *SkillContainer
 	keyLayout         *KeyLayout
 	CurrentShopID     uint32

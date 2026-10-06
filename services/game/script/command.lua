@@ -627,6 +627,43 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["듀이"] = {
+		privilege = ROLE.Admin,
+		usage = "- 택배 보관함 열기",
+		command = function(me, args)
+			me:open_duey()
+			return true
+		end,
+	},
+	["퀵배송"] = {
+		privilege = ROLE.Admin,
+		usage = "- 퀵배송 창 열기",
+		command = function(me, args)
+			if not me:open_quick_delivery() then
+				me:message("퀵배송 창을 열 수 없습니다.")
+			end
+			return true
+		end,
+	},
+	["택배"] = {
+		privilege = ROLE.Admin,
+		usage = "<받는사람> <보내는이름> <아이템ID|-> [개수] [메소] - 서버 이름으로 택배 발송",
+		command = function(me, args)
+			if not args[1] or not args[2] or not args[3] then
+				me:message("사용법: /택배 <받는사람> <보내는이름> <아이템ID|-> [개수] [메소]")
+				return true
+			end
+			local item_id = tonumber(args[3]) or 0
+			local count = tonumber(args[4]) or 1
+			local meso = tonumber(args[5]) or 0
+			if me:send_parcel(args[1], args[2], item_id, count, meso) then
+				me:message(string.format("택배 발송: %s <- %s", args[1], args[2]))
+			else
+				me:message("택배 발송 실패")
+			end
+			return true
+		end,
+	},
 	["메소초기화"] = {
 		privilege = ROLE.Admin,
 		usage = "- 메소 초기화",

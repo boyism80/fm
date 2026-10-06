@@ -22,3 +22,5 @@ rabbitmq:
 high_rate: false
 lua:
   always_reload: true
+duey:
+  identity_prompt: false

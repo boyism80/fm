@@ -24,5 +24,6 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
 	if msg.Init {
 		msg.Character.SendBuddyLoginSync()
+		msg.Character.Duey.CheckArrivals(ctx)
 	}
 }

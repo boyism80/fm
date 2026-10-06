@@ -68,6 +68,14 @@ export class AppConfiguration {
         return 45;
     }
 
+    getMaxParcels(): number {
+        const n = this.config.app?.max_parcels;
+        if (typeof n === "number" && Number.isFinite(n) && n > 0) {
+            return Math.floor(n);
+        }
+        return 50;
+    }
+
     getSection(
         section: "app" | "grpc" | "postgresql" | "redis" | "rabbitmq" | "cache" | "sequelize" | "resources"
     ) {

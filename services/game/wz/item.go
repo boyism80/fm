@@ -8,6 +8,9 @@ type Item interface {
 	IsQuest() bool
 	GetCapacity() uint16
 	IsTradeAvailable() int
+	IsTradeBlock() bool
+	IsOnly() bool
+	IsAccountSharable() bool
 
 	IsConsumeOnPickup() bool
 }

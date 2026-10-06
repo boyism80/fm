@@ -15,6 +15,7 @@ import { SessionRepository } from "./repos/session-repository";
 import { KeyLayoutRepository } from "./repos/key-layout-repository";
 import { StorageRepository } from "./repos/storage-repository";
 import { StorageItemRepository } from "./repos/storage-item-repository";
+import { ParcelRepository } from "./repos/parcel-repository";
 import { PartyRepository } from "./repos/party-repository";
 import { PartyMemberRepository } from "./repos/party-member-repository";
 import { AllianceRepository } from "./repos/alliance-repository";
@@ -39,6 +40,7 @@ import { DistributedLock } from "./system/distributed-lock";
 import { DistributedLockService } from "./services/distributed-lock-service";
 import { ServerTimeService } from "./services/server-time-service";
 import { OperationLogService } from "./services/operation-log-service";
+import { ParcelService } from "./services/parcel-service";
 
 export function createAppContainer() {
     const internalConfig = loadConfig();
@@ -64,6 +66,7 @@ export function createAppContainer() {
         keyLayoutRepository: awilix.asClass(KeyLayoutRepository).scoped(),
         storageRepository: awilix.asClass(StorageRepository).scoped(),
         storageItemRepository: awilix.asClass(StorageItemRepository).scoped(),
+        parcelRepository: awilix.asClass(ParcelRepository).scoped(),
         partyRepository: awilix.asClass(PartyRepository).scoped(),
         partyMemberRepository: awilix.asClass(PartyMemberRepository).scoped(),
         allianceRepository: awilix.asClass(AllianceRepository).scoped(),
@@ -86,6 +89,7 @@ export function createAppContainer() {
         buddyService: awilix.asClass(BuddyService).transient(),
         serverTimeService: awilix.asClass(ServerTimeService).singleton(),
         operationLogService: awilix.asClass(OperationLogService).transient(),
+        parcelService: awilix.asClass(ParcelService).transient(),
     });
     return container;
 }

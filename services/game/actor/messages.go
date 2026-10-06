@@ -127,6 +127,12 @@ type SaveMapCharactersAck struct {
 	Err   string
 }
 
+type DeliverParcelArrived struct {
+	CharacterID uint32
+	SenderName  string
+	Quick       bool
+}
+
 type DeliverPartyInvite struct {
 	CharacterID uint32
 	PartyID     uint32

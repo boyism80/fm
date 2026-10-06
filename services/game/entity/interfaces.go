@@ -17,6 +17,7 @@ type GameWorld interface {
 	GetExpRate() int
 	GetDropRate() int
 	GetMesoRate() int
+	DueyIdentityPrompt() bool
 	BroadcastNotice(messageType constant.ServerMessageType, message string, channel int, ear bool)
 	GetWorldID() uint32
 	SaveAsync(ctx actor.Context, entries []*internal.CharacterSaveEntry) *async.Promise

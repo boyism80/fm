@@ -28,6 +28,15 @@ type CharacterListener interface {
 	OnStorageArranged(ch *Character)
 	OnStorageMesoChanged(ch *Character)
 	OnStorageError(ch *Character, result pconst.StorageResult)
+	LoadParcelsAsync(ctx actor.Context, ch *Character) *async.Promise
+	SendParcelAsync(ctx actor.Context, ch *Character, recipient string, parcel *internal.ParcelPersisted, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise
+	ClaimParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise
+	DeleteParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise
+	CheckParcelArrivalsAsync(ctx actor.Context, ch *Character) *async.Promise
+	OnOpenDuey(ch *Character, fromArrival bool)
+	OnDueyResult(ch *Character, result pconst.DueyResult)
+	OnDueyRemoved(ch *Character, parcelID uint32, reason uint8)
+	OnDueyArrival(ch *Character, sender string, quick bool, count int)
 	OnGuildBulletinThreadList(ch *Character, threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry)
 	OnGuildBulletinThread(ch *Character, detail *internal.GuildBulletinBoardThreadDetail)
 	OnShipState(ch *Character, state uint16)

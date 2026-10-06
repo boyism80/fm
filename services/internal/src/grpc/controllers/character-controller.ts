@@ -7,7 +7,7 @@ import { QUEST_MODEL, QUEST_PERSISTED } from "../quest-persisted";
 import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PERSISTED } from "../saved-location-persisted";
 import { grpcMapper } from "../mappers";
 import type { CharacterOverviewListItem, CharacterOverviewService } from "../../services/character-overview-service";
-import type { CharacterService } from "../../services/character-service";
+import type { CharacterService, SaveCharacterEntry } from "../../services/character-service";
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import type { CharacterModel } from "../../repos/character-repository";
 import type { InventoryModel } from "../../repos/inventory-repository";
@@ -19,6 +19,7 @@ import type {
     BuffPersisted,
     CharacterPersisted,
     CharacterOverview,
+    CharacterSaveEntry,
     InventoryPersisted,
     CheckCharacterNameReply,
     CheckCharacterNameRequest,
@@ -51,6 +52,75 @@ function protoMapToObject(protoMap: Record<number, number> | undefined): Record<
         }
     }
     return obj;
+}
+
+export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacterEntry {
+    const msgChar = entry.character;
+    if (!msgChar) {
+        throw Object.assign(new Error("character is required in entry"), { code: "INVALID_PAYLOAD" });
+    }
+    return {
+        persisted: grpcMapper.map<CharacterPersisted, CharacterModel>(
+            msgChar,
+            CHARACTER_PERSISTED,
+            CHARACTER_MODEL
+        ),
+        baseLooks: protoMapToObject(entry.baseLooks),
+        overlays: protoMapToObject(entry.overlays),
+        inventory: entry.inventory.map((inventory) =>
+            grpcMapper.map<InventoryPersisted, InventoryModel>(
+                inventory,
+                INVENTORY_PERSISTED,
+                INVENTORY_MODEL
+            )
+        ),
+        skills: entry.skills.map((skill) =>
+            grpcMapper.map<SkillPersisted, SkillModel>(
+                skill,
+                SKILL_PERSISTED,
+                SKILL_MODEL
+            )
+        ),
+        buffs: (entry.buffs ?? []).map((buff) =>
+            grpcMapper.map<BuffPersisted, BuffModel>(
+                buff,
+                BUFF_PERSISTED,
+                BUFF_MODEL
+            )
+        ),
+        quests: (entry.quests ?? []).map((quest) =>
+            grpcMapper.map<QuestPersisted, QuestModel>(
+                quest,
+                QUEST_PERSISTED,
+                QUEST_MODEL
+            )
+        ),
+        savedLocations: (entry.savedLocations ?? []).map((loc) =>
+            grpcMapper.map<SavedLocationPersisted, SavedLocationModel>(
+                loc,
+                SAVED_LOCATION_PERSISTED,
+                SAVED_LOCATION_MODEL
+            )
+        ),
+        keyLayout: bindingsFromProtoList(entry.keyLayout),
+        storage: entry.storage
+            ? {
+                storage: {
+                    accountId: entry.storage.accountId,
+                    worldId: entry.storage.worldId,
+                    slots: entry.storage.slots,
+                    meso: entry.storage.meso,
+                },
+                items: entry.storage.items.map((item) =>
+                    grpcMapper.map<InventoryPersisted, InventoryModel>(
+                        item,
+                        INVENTORY_PERSISTED,
+                        INVENTORY_MODEL
+                    )
+                ),
+            }
+            : undefined,
+    };
 }
 
 function makeCharacterOverview(model: CharacterListItem): CharacterOverview {
@@ -116,74 +186,7 @@ export class CharacterGrpcController {
     @Method("saveCharacters")
     async saveCharacters(call: GrpcCall<SaveCharactersRequest>, callback: GrpcCallback<SaveCharactersReply>) {
         try {
-            const entries = call.request.entries.map((entry) => {
-                const msgChar = entry.character;
-                if (!msgChar) {
-                    throw Object.assign(new Error("character is required in entry"), { code: "INVALID_PAYLOAD" });
-                }
-                return {
-                    persisted: grpcMapper.map<CharacterPersisted, CharacterModel>(
-                        msgChar,
-                        CHARACTER_PERSISTED,
-                        CHARACTER_MODEL
-                    ),
-                    baseLooks: protoMapToObject(entry.baseLooks),
-                    overlays: protoMapToObject(entry.overlays),
-                    inventory: entry.inventory.map((inventory) =>
-                        grpcMapper.map<InventoryPersisted, InventoryModel>(
-                            inventory,
-                            INVENTORY_PERSISTED,
-                            INVENTORY_MODEL
-                        )
-                    ),
-                    skills: entry.skills.map((skill) =>
-                        grpcMapper.map<SkillPersisted, SkillModel>(
-                            skill,
-                            SKILL_PERSISTED,
-                            SKILL_MODEL
-                        )
-                    ),
-                    buffs: (entry.buffs ?? []).map((buff) =>
-                        grpcMapper.map<BuffPersisted, BuffModel>(
-                            buff,
-                            BUFF_PERSISTED,
-                            BUFF_MODEL
-                        )
-                    ),
-                    quests: (entry.quests ?? []).map((quest) =>
-                        grpcMapper.map<QuestPersisted, QuestModel>(
-                            quest,
-                            QUEST_PERSISTED,
-                            QUEST_MODEL
-                        )
-                    ),
-                    savedLocations: (entry.savedLocations ?? []).map((loc) =>
-                        grpcMapper.map<SavedLocationPersisted, SavedLocationModel>(
-                            loc,
-                            SAVED_LOCATION_PERSISTED,
-                            SAVED_LOCATION_MODEL
-                        )
-                    ),
-                    keyLayout: bindingsFromProtoList(entry.keyLayout),
-                    storage: entry.storage
-                        ? {
-                            storage: {
-                                accountId: entry.storage.accountId,
-                                worldId: entry.storage.worldId,
-                                slots: entry.storage.slots,
-                                meso: entry.storage.meso,
-                            },
-                            items: entry.storage.items.map((item) =>
-                                grpcMapper.map<InventoryPersisted, InventoryModel>(
-                                    item,
-                                    INVENTORY_PERSISTED,
-                                    INVENTORY_MODEL
-                                )
-                            ),
-                        }
-                        : undefined,
-                };
-            });
+            const entries = call.request.entries.map(makeSaveCharacterEntry);
             await this.characterService.saveCharacters(entries);
             callback(null, { ok: true });
         } catch (err) {

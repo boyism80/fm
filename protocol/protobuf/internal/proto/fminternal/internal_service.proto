@@ -14,6 +14,11 @@ service Internal {
   rpc SaveCharacter (SaveCharacterRequest) returns (SaveCharacterReply);
   rpc SaveCharacters (SaveCharactersRequest) returns (SaveCharactersReply);
   rpc LoadStorage (LoadStorageRequest) returns (LoadStorageReply);
+  rpc LoadParcels (LoadParcelsRequest) returns (LoadParcelsReply);
+  rpc SendParcel (SendParcelRequest) returns (SendParcelReply);
+  rpc ClaimParcel (ClaimParcelRequest) returns (ClaimParcelReply);
+  rpc DeleteParcel (DeleteParcelRequest) returns (DeleteParcelReply);
+  rpc CheckParcelArrivals (CheckParcelArrivalsRequest) returns (CheckParcelArrivalsReply);
   rpc LoginAccount (LoginAccountRequest) returns (LoginAccountReply);
   rpc GetCharacterList (GetCharacterListRequest) returns (GetCharacterListReply);
   rpc CheckCharacterName (CheckCharacterNameRequest) returns (CheckCharacterNameReply);
@@ -256,6 +261,82 @@ message LoadStorageRequest {
 
 message LoadStorageReply {
   StoragePersisted storage = 1;
+}
+
+enum ParcelResult {
+  PARCEL_RESULT_OK                  = 0;
+  PARCEL_RESULT_RECIPIENT_NOT_FOUND = 1;
+  PARCEL_RESULT_SAME_ACCOUNT        = 2;
+  PARCEL_RESULT_RECIPIENT_FULL      = 3;
+  PARCEL_RESULT_ONE_OF_A_KIND       = 4;
+  PARCEL_RESULT_NOT_FOUND           = 5;
+  PARCEL_RESULT_NOT_ARRIVED         = 6;
+}
+
+message ParcelPersisted {
+  uint32 parcel_id       = 1;
+  uint32 receiver_id     = 2;
+  string sender_name     = 3;
+  int32  meso            = 4;
+  bool   quick           = 5;
+  string message         = 6;
+  int64  sent_at_unix_ms = 7;
+  InventoryPersisted item = 8;
+}
+
+message LoadParcelsRequest {
+  uint32 world_id     = 1;
+  uint32 character_id = 2;
+}
+
+message LoadParcelsReply {
+  repeated ParcelPersisted parcels = 1;
+  repeated ParcelPersisted expired = 2;
+}
+
+message SendParcelRequest {
+  uint32 world_id          = 1;
+  string recipient_name    = 2;
+  ParcelPersisted parcel   = 3;
+  uint32 sender_account_id = 4;
+  CharacterSaveEntry sender = 5;
+  bool   one_of_a_kind     = 6;
+}
+
+message SendParcelReply {
+  ParcelResult result = 1;
+}
+
+message ClaimParcelRequest {
+  uint32 world_id     = 1;
+  uint32 character_id = 2;
+  uint32 parcel_id    = 3;
+}
+
+message ClaimParcelReply {
+  ParcelResult    result = 1;
+  ParcelPersisted parcel = 2;
+}
+
+message DeleteParcelRequest {
+  uint32 world_id     = 1;
+  uint32 character_id = 2;
+  uint32 parcel_id    = 3;
+}
+
+message DeleteParcelReply {
+  ParcelResult result = 1;
+}
+
+message CheckParcelArrivalsRequest {
+  uint32 world_id     = 1;
+  uint32 character_id = 2;
+}
+
+message CheckParcelArrivalsReply {
+  uint32 count       = 1;
+  string sender_name = 2;
+  bool   quick       = 3;
 }
 
 message SaveCharactersRequest {

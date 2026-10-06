@@ -1651,6 +1651,52 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.OpenStorage(cfg.ActorContext, npcID, storeFee, takeOutFee)
 			return 0
 		},
+		"open_duey": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if ok == false || cfg.ActorContext == nil {
+				L.ArgError(1, "actor context not available")
+				return 0
+			}
+			ch.Duey.Open(cfg.ActorContext, false)
+			return 0
+		},
+		"open_quick_delivery": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LBool(ch.Duey.OpenQuick() == nil))
+			return 1
+		},
+		"send_parcel": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			recipient := L.CheckString(2)
+			senderName := L.CheckString(3)
+			itemID := uint32(L.OptInt(4, 0))
+			count := uint16(L.OptInt(5, 1))
+			meso := int32(L.OptInt(6, 0))
+			message := L.OptString(7, "")
+			cfg, ok := luax.GetConfiguration(L)
+			if ok == false || cfg.ActorContext == nil {
+				L.ArgError(1, "actor context not available")
+				return 0
+			}
+			L.Push(lua.LBool(ch.Duey.SendFromSystem(cfg.ActorContext, recipient, senderName, itemID, count, meso, message) == nil))
+			return 1
+		},
 		"show_instruction": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

@@ -27,6 +27,11 @@ const (
 	Internal_SaveCharacter_FullMethodName                  = "/fm.internal.Internal/SaveCharacter"
 	Internal_SaveCharacters_FullMethodName                 = "/fm.internal.Internal/SaveCharacters"
 	Internal_LoadStorage_FullMethodName                    = "/fm.internal.Internal/LoadStorage"
+	Internal_LoadParcels_FullMethodName                    = "/fm.internal.Internal/LoadParcels"
+	Internal_SendParcel_FullMethodName                     = "/fm.internal.Internal/SendParcel"
+	Internal_ClaimParcel_FullMethodName                    = "/fm.internal.Internal/ClaimParcel"
+	Internal_DeleteParcel_FullMethodName                   = "/fm.internal.Internal/DeleteParcel"
+	Internal_CheckParcelArrivals_FullMethodName            = "/fm.internal.Internal/CheckParcelArrivals"
 	Internal_LoginAccount_FullMethodName                   = "/fm.internal.Internal/LoginAccount"
 	Internal_GetCharacterList_FullMethodName               = "/fm.internal.Internal/GetCharacterList"
 	Internal_CheckCharacterName_FullMethodName             = "/fm.internal.Internal/CheckCharacterName"
@@ -96,6 +101,11 @@ type InternalClient interface {
 	SaveCharacter(ctx context.Context, in *SaveCharacterRequest, opts ...grpc.CallOption) (*SaveCharacterReply, error)
 	SaveCharacters(ctx context.Context, in *SaveCharactersRequest, opts ...grpc.CallOption) (*SaveCharactersReply, error)
 	LoadStorage(ctx context.Context, in *LoadStorageRequest, opts ...grpc.CallOption) (*LoadStorageReply, error)
+	LoadParcels(ctx context.Context, in *LoadParcelsRequest, opts ...grpc.CallOption) (*LoadParcelsReply, error)
+	SendParcel(ctx context.Context, in *SendParcelRequest, opts ...grpc.CallOption) (*SendParcelReply, error)
+	ClaimParcel(ctx context.Context, in *ClaimParcelRequest, opts ...grpc.CallOption) (*ClaimParcelReply, error)
+	DeleteParcel(ctx context.Context, in *DeleteParcelRequest, opts ...grpc.CallOption) (*DeleteParcelReply, error)
+	CheckParcelArrivals(ctx context.Context, in *CheckParcelArrivalsRequest, opts ...grpc.CallOption) (*CheckParcelArrivalsReply, error)
 	LoginAccount(ctx context.Context, in *LoginAccountRequest, opts ...grpc.CallOption) (*LoginAccountReply, error)
 	GetCharacterList(ctx context.Context, in *GetCharacterListRequest, opts ...grpc.CallOption) (*GetCharacterListReply, error)
 	CheckCharacterName(ctx context.Context, in *CheckCharacterNameRequest, opts ...grpc.CallOption) (*CheckCharacterNameReply, error)
@@ -235,6 +245,56 @@ func (c *internalClient) LoadStorage(ctx context.Context, in *LoadStorageRequest
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoadStorageReply)
 	err := c.cc.Invoke(ctx, Internal_LoadStorage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) LoadParcels(ctx context.Context, in *LoadParcelsRequest, opts ...grpc.CallOption) (*LoadParcelsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoadParcelsReply)
+	err := c.cc.Invoke(ctx, Internal_LoadParcels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SendParcel(ctx context.Context, in *SendParcelRequest, opts ...grpc.CallOption) (*SendParcelReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendParcelReply)
+	err := c.cc.Invoke(ctx, Internal_SendParcel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ClaimParcel(ctx context.Context, in *ClaimParcelRequest, opts ...grpc.CallOption) (*ClaimParcelReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClaimParcelReply)
+	err := c.cc.Invoke(ctx, Internal_ClaimParcel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) DeleteParcel(ctx context.Context, in *DeleteParcelRequest, opts ...grpc.CallOption) (*DeleteParcelReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteParcelReply)
+	err := c.cc.Invoke(ctx, Internal_DeleteParcel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) CheckParcelArrivals(ctx context.Context, in *CheckParcelArrivalsRequest, opts ...grpc.CallOption) (*CheckParcelArrivalsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckParcelArrivalsReply)
+	err := c.cc.Invoke(ctx, Internal_CheckParcelArrivals_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -803,6 +863,11 @@ type InternalServer interface {
 	SaveCharacter(context.Context, *SaveCharacterRequest) (*SaveCharacterReply, error)
 	SaveCharacters(context.Context, *SaveCharactersRequest) (*SaveCharactersReply, error)
 	LoadStorage(context.Context, *LoadStorageRequest) (*LoadStorageReply, error)
+	LoadParcels(context.Context, *LoadParcelsRequest) (*LoadParcelsReply, error)
+	SendParcel(context.Context, *SendParcelRequest) (*SendParcelReply, error)
+	ClaimParcel(context.Context, *ClaimParcelRequest) (*ClaimParcelReply, error)
+	DeleteParcel(context.Context, *DeleteParcelRequest) (*DeleteParcelReply, error)
+	CheckParcelArrivals(context.Context, *CheckParcelArrivalsRequest) (*CheckParcelArrivalsReply, error)
 	LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error)
 	GetCharacterList(context.Context, *GetCharacterListRequest) (*GetCharacterListReply, error)
 	CheckCharacterName(context.Context, *CheckCharacterNameRequest) (*CheckCharacterNameReply, error)
@@ -891,6 +956,21 @@ func (UnimplementedInternalServer) SaveCharacters(context.Context, *SaveCharacte
 }
 func (UnimplementedInternalServer) LoadStorage(context.Context, *LoadStorageRequest) (*LoadStorageReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LoadStorage not implemented")
+}
+func (UnimplementedInternalServer) LoadParcels(context.Context, *LoadParcelsRequest) (*LoadParcelsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LoadParcels not implemented")
+}
+func (UnimplementedInternalServer) SendParcel(context.Context, *SendParcelRequest) (*SendParcelReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendParcel not implemented")
+}
+func (UnimplementedInternalServer) ClaimParcel(context.Context, *ClaimParcelRequest) (*ClaimParcelReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ClaimParcel not implemented")
+}
+func (UnimplementedInternalServer) DeleteParcel(context.Context, *DeleteParcelRequest) (*DeleteParcelReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteParcel not implemented")
+}
+func (UnimplementedInternalServer) CheckParcelArrivals(context.Context, *CheckParcelArrivalsRequest) (*CheckParcelArrivalsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckParcelArrivals not implemented")
 }
 func (UnimplementedInternalServer) LoginAccount(context.Context, *LoginAccountRequest) (*LoginAccountReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LoginAccount not implemented")
@@ -1218,6 +1298,96 @@ func _Internal_LoadStorage_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InternalServer).LoadStorage(ctx, req.(*LoadStorageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_LoadParcels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoadParcelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).LoadParcels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_LoadParcels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).LoadParcels(ctx, req.(*LoadParcelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SendParcel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendParcelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SendParcel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SendParcel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SendParcel(ctx, req.(*SendParcelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ClaimParcel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClaimParcelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ClaimParcel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ClaimParcel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ClaimParcel(ctx, req.(*ClaimParcelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_DeleteParcel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteParcelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).DeleteParcel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_DeleteParcel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).DeleteParcel(ctx, req.(*DeleteParcelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_CheckParcelArrivals_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckParcelArrivalsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CheckParcelArrivals(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CheckParcelArrivals_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CheckParcelArrivals(ctx, req.(*CheckParcelArrivalsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2250,6 +2420,26 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LoadStorage",
 			Handler:    _Internal_LoadStorage_Handler,
+		},
+		{
+			MethodName: "LoadParcels",
+			Handler:    _Internal_LoadParcels_Handler,
+		},
+		{
+			MethodName: "SendParcel",
+			Handler:    _Internal_SendParcel_Handler,
+		},
+		{
+			MethodName: "ClaimParcel",
+			Handler:    _Internal_ClaimParcel_Handler,
+		},
+		{
+			MethodName: "DeleteParcel",
+			Handler:    _Internal_DeleteParcel_Handler,
+		},
+		{
+			MethodName: "CheckParcelArrivals",
+			Handler:    _Internal_CheckParcelArrivals_Handler,
 		},
 		{
 			MethodName: "LoginAccount",

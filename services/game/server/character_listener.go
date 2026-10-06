@@ -805,6 +805,145 @@ func (l *CharacterListenerImpl) OnStorageError(ch *entity.Character, result pcon
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) LoadParcelsAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
+	req := &internal.LoadParcelsRequest{
+		WorldId:     l.gs.config.WorldId,
+		CharacterId: ch.GetID(),
+	}
+	return async.ThenRPC(
+		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.LoadParcelsReply, error) {
+			return l.gs.internalClient.LoadParcels(c, req)
+		},
+		func(reply *internal.LoadParcelsReply) error {
+			return nil
+		},
+	)
+}
+
+func (l *CharacterListenerImpl) SendParcelAsync(ctx actor.Context, ch *entity.Character, recipient string, parcel *internal.ParcelPersisted, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise {
+	req := &internal.SendParcelRequest{
+		WorldId:         l.gs.config.WorldId,
+		RecipientName:   recipient,
+		Parcel:          parcel,
+		SenderAccountId: sender.GetCharacter().GetAccountId(),
+		Sender:          sender,
+		OneOfAKind:      oneOfAKind,
+	}
+	return async.ThenRPC(
+		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.SendParcelReply, error) {
+			return l.gs.internalClient.SendParcel(c, req)
+		},
+		func(reply *internal.SendParcelReply) error {
+			return nil
+		},
+	)
+}
+
+func (l *CharacterListenerImpl) ClaimParcelAsync(ctx actor.Context, ch *entity.Character, parcelID uint32) *async.Promise {
+	req := &internal.ClaimParcelRequest{
+		WorldId:     l.gs.config.WorldId,
+		CharacterId: ch.GetID(),
+		ParcelId:    parcelID,
+	}
+	return async.ThenRPC(
+		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.ClaimParcelReply, error) {
+			return l.gs.internalClient.ClaimParcel(c, req)
+		},
+		func(reply *internal.ClaimParcelReply) error {
+			return nil
+		},
+	)
+}
+
+func (l *CharacterListenerImpl) DeleteParcelAsync(ctx actor.Context, ch *entity.Character, parcelID uint32) *async.Promise {
+	req := &internal.DeleteParcelRequest{
+		WorldId:     l.gs.config.WorldId,
+		CharacterId: ch.GetID(),
+		ParcelId:    parcelID,
+	}
+	return async.ThenRPC(
+		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.DeleteParcelReply, error) {
+			return l.gs.internalClient.DeleteParcel(c, req)
+		},
+		func(reply *internal.DeleteParcelReply) error {
+			return nil
+		},
+	)
+}
+
+func (l *CharacterListenerImpl) CheckParcelArrivalsAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
+	req := &internal.CheckParcelArrivalsRequest{
+		WorldId:     l.gs.config.WorldId,
+		CharacterId: ch.GetID(),
+	}
+	return async.ThenRPC(
+		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.CheckParcelArrivalsReply, error) {
+			return l.gs.internalClient.CheckParcelArrivals(c, req)
+		},
+		func(reply *internal.CheckParcelArrivalsReply) error {
+			return nil
+		},
+	)
+}
+
+func (l *CharacterListenerImpl) parcelsDTO(parcels []*entity.Parcel) []dto.Parcel {
+	out := make([]dto.Parcel, 0, len(parcels))
+	for _, parcel := range parcels {
+		p := dto.Parcel{
+			ID:      parcel.ID,
+			Sender:  parcel.Sender,
+			Meso:    parcel.Meso,
+			Expire:  parcel.ExpiresAt(),
+			Quick:   parcel.Quick,
+			Message: parcel.Message,
+		}
+		if parcel.Item != nil {
+			p.Item = parcel.Item.ToDTO()
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+func (l *CharacterListenerImpl) OnOpenDuey(ch *entity.Character, fromArrival bool) {
+	ch.Send(&response.DueyOpen{
+		FromArrival: fromArrival,
+		Parcels:     l.parcelsDTO(ch.Duey.Parcels),
+		Expired:     l.parcelsDTO(ch.Duey.Expired),
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnDueyResult(ch *entity.Character, result pconst.DueyResult) {
+	ch.Send(&response.Duey{
+		Result: result,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnDueyRemoved(ch *entity.Character, parcelID uint32, reason uint8) {
+	ch.Send(&response.DueyRemoved{
+		ParcelID: parcelID,
+		Reason:   reason,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnDueyArrival(ch *entity.Character, sender string, quick bool, count int) {
+	if count > 1 {
+		ch.Send(&response.DueyArrivals{
+			Quick: quick,
+		}, types.SEND_POLICY_ENCRYPT)
+		return
+	}
+	ch.Send(&response.DueyArrival{
+		Sender: sender,
+		Quick:  quick,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnGuildBulletinThreadList(ch *entity.Character, threads []*internal.GuildBulletinBoardThreadEntry, start int, totalCount int, notice *internal.GuildBulletinBoardThreadEntry) {
 	entryOf := func(t *internal.GuildBulletinBoardThreadEntry) response.GuildBulletinBoardThreadEntry {
 		return response.GuildBulletinBoardThreadEntry{

@@ -43,6 +43,7 @@ func loadCashItems(path string) (*[]*CashItem, error) {
 		}
 		model.ID = uint32(id)
 		info := v.find("info")
+		model.setTradeFlags(info)
 		if info != nil {
 			for _, intField := range info.Ints {
 				switch intField.Name {
@@ -130,6 +131,7 @@ func loadConsumes(path string) (*[]*Consume, error) {
 		}
 		model.ID = uint32(id)
 		nodeInfo := v.find("info")
+		model.setTradeFlags(nodeInfo)
 		if nodeInfo != nil {
 			for _, intField := range nodeInfo.Ints {
 				switch intField.Name {
@@ -484,6 +486,7 @@ func loadWeapons(path string) (Item, error) {
 	if node == nil {
 		return nil, fmt.Errorf("'info' does not exist in %s", path)
 	}
+	model.setTradeFlags(node)
 
 	for _, intField := range node.Ints {
 		switch intField.Name {
@@ -697,6 +700,7 @@ func loadMiscItems(path string) (*[]*MiscItem, error) {
 		}
 		model.ID = uint32(id)
 		info := v.find("info")
+		model.setTradeFlags(info)
 		if info != nil {
 			for _, intField := range info.Ints {
 				switch intField.Name {
@@ -803,6 +807,7 @@ func loadInstallations(path string) (*[]*Installation, error) {
 		}
 		model.ID = uint32(id)
 		info := v.find("info")
+		model.setTradeFlags(info)
 		if info != nil {
 			for _, intField := range info.Ints {
 				switch intField.Name {
@@ -1525,6 +1530,7 @@ func loadPets(path string) (*Pet, error) {
 		},
 	}
 	info := root.find("info")
+	model.setTradeFlags(info)
 	for _, iv := range info.Children {
 		switch iv.Name {
 		case "mob":

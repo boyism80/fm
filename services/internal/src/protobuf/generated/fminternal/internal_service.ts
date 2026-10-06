@@ -123,6 +123,69 @@ export function sessionErrorCodeToJSON(object: SessionErrorCode): string {
   }
 }
 
+export enum ParcelResult {
+  PARCEL_RESULT_OK = 0,
+  PARCEL_RESULT_RECIPIENT_NOT_FOUND = 1,
+  PARCEL_RESULT_SAME_ACCOUNT = 2,
+  PARCEL_RESULT_RECIPIENT_FULL = 3,
+  PARCEL_RESULT_ONE_OF_A_KIND = 4,
+  PARCEL_RESULT_NOT_FOUND = 5,
+  PARCEL_RESULT_NOT_ARRIVED = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function parcelResultFromJSON(object: any): ParcelResult {
+  switch (object) {
+    case 0:
+    case "PARCEL_RESULT_OK":
+      return ParcelResult.PARCEL_RESULT_OK;
+    case 1:
+    case "PARCEL_RESULT_RECIPIENT_NOT_FOUND":
+      return ParcelResult.PARCEL_RESULT_RECIPIENT_NOT_FOUND;
+    case 2:
+    case "PARCEL_RESULT_SAME_ACCOUNT":
+      return ParcelResult.PARCEL_RESULT_SAME_ACCOUNT;
+    case 3:
+    case "PARCEL_RESULT_RECIPIENT_FULL":
+      return ParcelResult.PARCEL_RESULT_RECIPIENT_FULL;
+    case 4:
+    case "PARCEL_RESULT_ONE_OF_A_KIND":
+      return ParcelResult.PARCEL_RESULT_ONE_OF_A_KIND;
+    case 5:
+    case "PARCEL_RESULT_NOT_FOUND":
+      return ParcelResult.PARCEL_RESULT_NOT_FOUND;
+    case 6:
+    case "PARCEL_RESULT_NOT_ARRIVED":
+      return ParcelResult.PARCEL_RESULT_NOT_ARRIVED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ParcelResult.UNRECOGNIZED;
+  }
+}
+
+export function parcelResultToJSON(object: ParcelResult): string {
+  switch (object) {
+    case ParcelResult.PARCEL_RESULT_OK:
+      return "PARCEL_RESULT_OK";
+    case ParcelResult.PARCEL_RESULT_RECIPIENT_NOT_FOUND:
+      return "PARCEL_RESULT_RECIPIENT_NOT_FOUND";
+    case ParcelResult.PARCEL_RESULT_SAME_ACCOUNT:
+      return "PARCEL_RESULT_SAME_ACCOUNT";
+    case ParcelResult.PARCEL_RESULT_RECIPIENT_FULL:
+      return "PARCEL_RESULT_RECIPIENT_FULL";
+    case ParcelResult.PARCEL_RESULT_ONE_OF_A_KIND:
+      return "PARCEL_RESULT_ONE_OF_A_KIND";
+    case ParcelResult.PARCEL_RESULT_NOT_FOUND:
+      return "PARCEL_RESULT_NOT_FOUND";
+    case ParcelResult.PARCEL_RESULT_NOT_ARRIVED:
+      return "PARCEL_RESULT_NOT_ARRIVED";
+    case ParcelResult.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum BuffKind {
   BUFF_KIND_SKILL = 0,
   BUFF_KIND_ITEM = 1,
@@ -1096,6 +1159,72 @@ export interface LoadStorageRequest {
 
 export interface LoadStorageReply {
   storage: StoragePersisted | undefined;
+}
+
+export interface ParcelPersisted {
+  parcelId: number;
+  receiverId: number;
+  senderName: string;
+  meso: number;
+  quick: boolean;
+  message: string;
+  sentAtUnixMs: number;
+  item: InventoryPersisted | undefined;
+}
+
+export interface LoadParcelsRequest {
+  worldId: number;
+  characterId: number;
+}
+
+export interface LoadParcelsReply {
+  parcels: ParcelPersisted[];
+  expired: ParcelPersisted[];
+}
+
+export interface SendParcelRequest {
+  worldId: number;
+  recipientName: string;
+  parcel: ParcelPersisted | undefined;
+  senderAccountId: number;
+  sender: CharacterSaveEntry | undefined;
+  oneOfAKind: boolean;
+}
+
+export interface SendParcelReply {
+  result: ParcelResult;
+}
+
+export interface ClaimParcelRequest {
+  worldId: number;
+  characterId: number;
+  parcelId: number;
+}
+
+export interface ClaimParcelReply {
+  result: ParcelResult;
+  parcel: ParcelPersisted | undefined;
+}
+
+export interface DeleteParcelRequest {
+  worldId: number;
+  characterId: number;
+  parcelId: number;
+}
+
+export interface DeleteParcelReply {
+  result: ParcelResult;
+}
+
+export interface CheckParcelArrivalsRequest {
+  worldId: number;
+  characterId: number;
+}
+
+export interface CheckParcelArrivalsReply {
+  count: number;
+  senderName: string;
+  quick: boolean;
 }
 
 export interface SaveCharactersRequest {
@@ -5489,6 +5618,1111 @@ export const LoadStorageReply: MessageFns<LoadStorageReply> = {
     message.storage = (object.storage !== undefined && object.storage !== null)
       ? StoragePersisted.fromPartial(object.storage)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseParcelPersisted(): ParcelPersisted {
+  return {
+    parcelId: 0,
+    receiverId: 0,
+    senderName: "",
+    meso: 0,
+    quick: false,
+    message: "",
+    sentAtUnixMs: 0,
+    item: undefined,
+  };
+}
+
+export const ParcelPersisted: MessageFns<ParcelPersisted> = {
+  encode(message: ParcelPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.parcelId !== 0) {
+      writer.uint32(8).uint32(message.parcelId);
+    }
+    if (message.receiverId !== 0) {
+      writer.uint32(16).uint32(message.receiverId);
+    }
+    if (message.senderName !== "") {
+      writer.uint32(26).string(message.senderName);
+    }
+    if (message.meso !== 0) {
+      writer.uint32(32).int32(message.meso);
+    }
+    if (message.quick !== false) {
+      writer.uint32(40).bool(message.quick);
+    }
+    if (message.message !== "") {
+      writer.uint32(50).string(message.message);
+    }
+    if (message.sentAtUnixMs !== 0) {
+      writer.uint32(56).int64(message.sentAtUnixMs);
+    }
+    if (message.item !== undefined) {
+      InventoryPersisted.encode(message.item, writer.uint32(66).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ParcelPersisted {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParcelPersisted();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.parcelId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.receiverId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.senderName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.meso = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.quick = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.sentAtUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.item = InventoryPersisted.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParcelPersisted {
+    return {
+      parcelId: isSet(object.parcelId)
+        ? globalThis.Number(object.parcelId)
+        : isSet(object.parcel_id)
+        ? globalThis.Number(object.parcel_id)
+        : 0,
+      receiverId: isSet(object.receiverId)
+        ? globalThis.Number(object.receiverId)
+        : isSet(object.receiver_id)
+        ? globalThis.Number(object.receiver_id)
+        : 0,
+      senderName: isSet(object.senderName)
+        ? globalThis.String(object.senderName)
+        : isSet(object.sender_name)
+        ? globalThis.String(object.sender_name)
+        : "",
+      meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
+      quick: isSet(object.quick) ? globalThis.Boolean(object.quick) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      sentAtUnixMs: isSet(object.sentAtUnixMs)
+        ? globalThis.Number(object.sentAtUnixMs)
+        : isSet(object.sent_at_unix_ms)
+        ? globalThis.Number(object.sent_at_unix_ms)
+        : 0,
+      item: isSet(object.item) ? InventoryPersisted.fromJSON(object.item) : undefined,
+    };
+  },
+
+  toJSON(message: ParcelPersisted): unknown {
+    const obj: any = {};
+    if (message.parcelId !== 0) {
+      obj.parcelId = Math.round(message.parcelId);
+    }
+    if (message.receiverId !== 0) {
+      obj.receiverId = Math.round(message.receiverId);
+    }
+    if (message.senderName !== "") {
+      obj.senderName = message.senderName;
+    }
+    if (message.meso !== 0) {
+      obj.meso = Math.round(message.meso);
+    }
+    if (message.quick !== false) {
+      obj.quick = message.quick;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.sentAtUnixMs !== 0) {
+      obj.sentAtUnixMs = Math.round(message.sentAtUnixMs);
+    }
+    if (message.item !== undefined) {
+      obj.item = InventoryPersisted.toJSON(message.item);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ParcelPersisted>, I>>(base?: I): ParcelPersisted {
+    return ParcelPersisted.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ParcelPersisted>, I>>(object: I): ParcelPersisted {
+    const message = createBaseParcelPersisted();
+    message.parcelId = object.parcelId ?? 0;
+    message.receiverId = object.receiverId ?? 0;
+    message.senderName = object.senderName ?? "";
+    message.meso = object.meso ?? 0;
+    message.quick = object.quick ?? false;
+    message.message = object.message ?? "";
+    message.sentAtUnixMs = object.sentAtUnixMs ?? 0;
+    message.item = (object.item !== undefined && object.item !== null)
+      ? InventoryPersisted.fromPartial(object.item)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseLoadParcelsRequest(): LoadParcelsRequest {
+  return { worldId: 0, characterId: 0 };
+}
+
+export const LoadParcelsRequest: MessageFns<LoadParcelsRequest> = {
+  encode(message: LoadParcelsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoadParcelsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadParcelsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadParcelsRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: LoadParcelsRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadParcelsRequest>, I>>(base?: I): LoadParcelsRequest {
+    return LoadParcelsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoadParcelsRequest>, I>>(object: I): LoadParcelsRequest {
+    const message = createBaseLoadParcelsRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseLoadParcelsReply(): LoadParcelsReply {
+  return { parcels: [], expired: [] };
+}
+
+export const LoadParcelsReply: MessageFns<LoadParcelsReply> = {
+  encode(message: LoadParcelsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.parcels) {
+      ParcelPersisted.encode(v!, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.expired) {
+      ParcelPersisted.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoadParcelsReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadParcelsReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parcels.push(ParcelPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.expired.push(ParcelPersisted.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadParcelsReply {
+    return {
+      parcels: globalThis.Array.isArray(object?.parcels)
+        ? object.parcels.map((e: any) => ParcelPersisted.fromJSON(e))
+        : [],
+      expired: globalThis.Array.isArray(object?.expired)
+        ? object.expired.map((e: any) => ParcelPersisted.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: LoadParcelsReply): unknown {
+    const obj: any = {};
+    if (message.parcels?.length) {
+      obj.parcels = message.parcels.map((e) => ParcelPersisted.toJSON(e));
+    }
+    if (message.expired?.length) {
+      obj.expired = message.expired.map((e) => ParcelPersisted.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadParcelsReply>, I>>(base?: I): LoadParcelsReply {
+    return LoadParcelsReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoadParcelsReply>, I>>(object: I): LoadParcelsReply {
+    const message = createBaseLoadParcelsReply();
+    message.parcels = object.parcels?.map((e) => ParcelPersisted.fromPartial(e)) || [];
+    message.expired = object.expired?.map((e) => ParcelPersisted.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseSendParcelRequest(): SendParcelRequest {
+  return { worldId: 0, recipientName: "", parcel: undefined, senderAccountId: 0, sender: undefined, oneOfAKind: false };
+}
+
+export const SendParcelRequest: MessageFns<SendParcelRequest> = {
+  encode(message: SendParcelRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.recipientName !== "") {
+      writer.uint32(18).string(message.recipientName);
+    }
+    if (message.parcel !== undefined) {
+      ParcelPersisted.encode(message.parcel, writer.uint32(26).fork()).join();
+    }
+    if (message.senderAccountId !== 0) {
+      writer.uint32(32).uint32(message.senderAccountId);
+    }
+    if (message.sender !== undefined) {
+      CharacterSaveEntry.encode(message.sender, writer.uint32(42).fork()).join();
+    }
+    if (message.oneOfAKind !== false) {
+      writer.uint32(48).bool(message.oneOfAKind);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SendParcelRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendParcelRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.recipientName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.parcel = ParcelPersisted.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.senderAccountId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.sender = CharacterSaveEntry.decode(reader, reader.uint32());
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.oneOfAKind = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SendParcelRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      recipientName: isSet(object.recipientName)
+        ? globalThis.String(object.recipientName)
+        : isSet(object.recipient_name)
+        ? globalThis.String(object.recipient_name)
+        : "",
+      parcel: isSet(object.parcel) ? ParcelPersisted.fromJSON(object.parcel) : undefined,
+      senderAccountId: isSet(object.senderAccountId)
+        ? globalThis.Number(object.senderAccountId)
+        : isSet(object.sender_account_id)
+        ? globalThis.Number(object.sender_account_id)
+        : 0,
+      sender: isSet(object.sender) ? CharacterSaveEntry.fromJSON(object.sender) : undefined,
+      oneOfAKind: isSet(object.oneOfAKind)
+        ? globalThis.Boolean(object.oneOfAKind)
+        : isSet(object.one_of_a_kind)
+        ? globalThis.Boolean(object.one_of_a_kind)
+        : false,
+    };
+  },
+
+  toJSON(message: SendParcelRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.recipientName !== "") {
+      obj.recipientName = message.recipientName;
+    }
+    if (message.parcel !== undefined) {
+      obj.parcel = ParcelPersisted.toJSON(message.parcel);
+    }
+    if (message.senderAccountId !== 0) {
+      obj.senderAccountId = Math.round(message.senderAccountId);
+    }
+    if (message.sender !== undefined) {
+      obj.sender = CharacterSaveEntry.toJSON(message.sender);
+    }
+    if (message.oneOfAKind !== false) {
+      obj.oneOfAKind = message.oneOfAKind;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SendParcelRequest>, I>>(base?: I): SendParcelRequest {
+    return SendParcelRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SendParcelRequest>, I>>(object: I): SendParcelRequest {
+    const message = createBaseSendParcelRequest();
+    message.worldId = object.worldId ?? 0;
+    message.recipientName = object.recipientName ?? "";
+    message.parcel = (object.parcel !== undefined && object.parcel !== null)
+      ? ParcelPersisted.fromPartial(object.parcel)
+      : undefined;
+    message.senderAccountId = object.senderAccountId ?? 0;
+    message.sender = (object.sender !== undefined && object.sender !== null)
+      ? CharacterSaveEntry.fromPartial(object.sender)
+      : undefined;
+    message.oneOfAKind = object.oneOfAKind ?? false;
+    return message;
+  },
+};
+
+function createBaseSendParcelReply(): SendParcelReply {
+  return { result: 0 };
+}
+
+export const SendParcelReply: MessageFns<SendParcelReply> = {
+  encode(message: SendParcelReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SendParcelReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendParcelReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SendParcelReply {
+    return { result: isSet(object.result) ? parcelResultFromJSON(object.result) : 0 };
+  },
+
+  toJSON(message: SendParcelReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = parcelResultToJSON(message.result);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SendParcelReply>, I>>(base?: I): SendParcelReply {
+    return SendParcelReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SendParcelReply>, I>>(object: I): SendParcelReply {
+    const message = createBaseSendParcelReply();
+    message.result = object.result ?? 0;
+    return message;
+  },
+};
+
+function createBaseClaimParcelRequest(): ClaimParcelRequest {
+  return { worldId: 0, characterId: 0, parcelId: 0 };
+}
+
+export const ClaimParcelRequest: MessageFns<ClaimParcelRequest> = {
+  encode(message: ClaimParcelRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.parcelId !== 0) {
+      writer.uint32(24).uint32(message.parcelId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClaimParcelRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClaimParcelRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.parcelId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClaimParcelRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      parcelId: isSet(object.parcelId)
+        ? globalThis.Number(object.parcelId)
+        : isSet(object.parcel_id)
+        ? globalThis.Number(object.parcel_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ClaimParcelRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.parcelId !== 0) {
+      obj.parcelId = Math.round(message.parcelId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClaimParcelRequest>, I>>(base?: I): ClaimParcelRequest {
+    return ClaimParcelRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClaimParcelRequest>, I>>(object: I): ClaimParcelRequest {
+    const message = createBaseClaimParcelRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.parcelId = object.parcelId ?? 0;
+    return message;
+  },
+};
+
+function createBaseClaimParcelReply(): ClaimParcelReply {
+  return { result: 0, parcel: undefined };
+}
+
+export const ClaimParcelReply: MessageFns<ClaimParcelReply> = {
+  encode(message: ClaimParcelReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.parcel !== undefined) {
+      ParcelPersisted.encode(message.parcel, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClaimParcelReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClaimParcelReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.parcel = ParcelPersisted.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClaimParcelReply {
+    return {
+      result: isSet(object.result) ? parcelResultFromJSON(object.result) : 0,
+      parcel: isSet(object.parcel) ? ParcelPersisted.fromJSON(object.parcel) : undefined,
+    };
+  },
+
+  toJSON(message: ClaimParcelReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = parcelResultToJSON(message.result);
+    }
+    if (message.parcel !== undefined) {
+      obj.parcel = ParcelPersisted.toJSON(message.parcel);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClaimParcelReply>, I>>(base?: I): ClaimParcelReply {
+    return ClaimParcelReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClaimParcelReply>, I>>(object: I): ClaimParcelReply {
+    const message = createBaseClaimParcelReply();
+    message.result = object.result ?? 0;
+    message.parcel = (object.parcel !== undefined && object.parcel !== null)
+      ? ParcelPersisted.fromPartial(object.parcel)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDeleteParcelRequest(): DeleteParcelRequest {
+  return { worldId: 0, characterId: 0, parcelId: 0 };
+}
+
+export const DeleteParcelRequest: MessageFns<DeleteParcelRequest> = {
+  encode(message: DeleteParcelRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.parcelId !== 0) {
+      writer.uint32(24).uint32(message.parcelId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteParcelRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteParcelRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.parcelId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteParcelRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      parcelId: isSet(object.parcelId)
+        ? globalThis.Number(object.parcelId)
+        : isSet(object.parcel_id)
+        ? globalThis.Number(object.parcel_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: DeleteParcelRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.parcelId !== 0) {
+      obj.parcelId = Math.round(message.parcelId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteParcelRequest>, I>>(base?: I): DeleteParcelRequest {
+    return DeleteParcelRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteParcelRequest>, I>>(object: I): DeleteParcelRequest {
+    const message = createBaseDeleteParcelRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.parcelId = object.parcelId ?? 0;
+    return message;
+  },
+};
+
+function createBaseDeleteParcelReply(): DeleteParcelReply {
+  return { result: 0 };
+}
+
+export const DeleteParcelReply: MessageFns<DeleteParcelReply> = {
+  encode(message: DeleteParcelReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteParcelReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteParcelReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteParcelReply {
+    return { result: isSet(object.result) ? parcelResultFromJSON(object.result) : 0 };
+  },
+
+  toJSON(message: DeleteParcelReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = parcelResultToJSON(message.result);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteParcelReply>, I>>(base?: I): DeleteParcelReply {
+    return DeleteParcelReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteParcelReply>, I>>(object: I): DeleteParcelReply {
+    const message = createBaseDeleteParcelReply();
+    message.result = object.result ?? 0;
+    return message;
+  },
+};
+
+function createBaseCheckParcelArrivalsRequest(): CheckParcelArrivalsRequest {
+  return { worldId: 0, characterId: 0 };
+}
+
+export const CheckParcelArrivalsRequest: MessageFns<CheckParcelArrivalsRequest> = {
+  encode(message: CheckParcelArrivalsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckParcelArrivalsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckParcelArrivalsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckParcelArrivalsRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CheckParcelArrivalsRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckParcelArrivalsRequest>, I>>(base?: I): CheckParcelArrivalsRequest {
+    return CheckParcelArrivalsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckParcelArrivalsRequest>, I>>(object: I): CheckParcelArrivalsRequest {
+    const message = createBaseCheckParcelArrivalsRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseCheckParcelArrivalsReply(): CheckParcelArrivalsReply {
+  return { count: 0, senderName: "", quick: false };
+}
+
+export const CheckParcelArrivalsReply: MessageFns<CheckParcelArrivalsReply> = {
+  encode(message: CheckParcelArrivalsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.count !== 0) {
+      writer.uint32(8).uint32(message.count);
+    }
+    if (message.senderName !== "") {
+      writer.uint32(18).string(message.senderName);
+    }
+    if (message.quick !== false) {
+      writer.uint32(24).bool(message.quick);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckParcelArrivalsReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckParcelArrivalsReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.count = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.senderName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.quick = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckParcelArrivalsReply {
+    return {
+      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
+      senderName: isSet(object.senderName)
+        ? globalThis.String(object.senderName)
+        : isSet(object.sender_name)
+        ? globalThis.String(object.sender_name)
+        : "",
+      quick: isSet(object.quick) ? globalThis.Boolean(object.quick) : false,
+    };
+  },
+
+  toJSON(message: CheckParcelArrivalsReply): unknown {
+    const obj: any = {};
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    if (message.senderName !== "") {
+      obj.senderName = message.senderName;
+    }
+    if (message.quick !== false) {
+      obj.quick = message.quick;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckParcelArrivalsReply>, I>>(base?: I): CheckParcelArrivalsReply {
+    return CheckParcelArrivalsReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckParcelArrivalsReply>, I>>(object: I): CheckParcelArrivalsReply {
+    const message = createBaseCheckParcelArrivalsReply();
+    message.count = object.count ?? 0;
+    message.senderName = object.senderName ?? "";
+    message.quick = object.quick ?? false;
     return message;
   },
 };
@@ -22393,6 +23627,53 @@ export const InternalService = {
     responseSerialize: (value: LoadStorageReply): Buffer => Buffer.from(LoadStorageReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): LoadStorageReply => LoadStorageReply.decode(value),
   },
+  loadParcels: {
+    path: "/fm.internal.Internal/LoadParcels" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: LoadParcelsRequest): Buffer => Buffer.from(LoadParcelsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): LoadParcelsRequest => LoadParcelsRequest.decode(value),
+    responseSerialize: (value: LoadParcelsReply): Buffer => Buffer.from(LoadParcelsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): LoadParcelsReply => LoadParcelsReply.decode(value),
+  },
+  sendParcel: {
+    path: "/fm.internal.Internal/SendParcel" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SendParcelRequest): Buffer => Buffer.from(SendParcelRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SendParcelRequest => SendParcelRequest.decode(value),
+    responseSerialize: (value: SendParcelReply): Buffer => Buffer.from(SendParcelReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SendParcelReply => SendParcelReply.decode(value),
+  },
+  claimParcel: {
+    path: "/fm.internal.Internal/ClaimParcel" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ClaimParcelRequest): Buffer => Buffer.from(ClaimParcelRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ClaimParcelRequest => ClaimParcelRequest.decode(value),
+    responseSerialize: (value: ClaimParcelReply): Buffer => Buffer.from(ClaimParcelReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ClaimParcelReply => ClaimParcelReply.decode(value),
+  },
+  deleteParcel: {
+    path: "/fm.internal.Internal/DeleteParcel" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: DeleteParcelRequest): Buffer => Buffer.from(DeleteParcelRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): DeleteParcelRequest => DeleteParcelRequest.decode(value),
+    responseSerialize: (value: DeleteParcelReply): Buffer => Buffer.from(DeleteParcelReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): DeleteParcelReply => DeleteParcelReply.decode(value),
+  },
+  checkParcelArrivals: {
+    path: "/fm.internal.Internal/CheckParcelArrivals" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CheckParcelArrivalsRequest): Buffer =>
+      Buffer.from(CheckParcelArrivalsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CheckParcelArrivalsRequest => CheckParcelArrivalsRequest.decode(value),
+    responseSerialize: (value: CheckParcelArrivalsReply): Buffer =>
+      Buffer.from(CheckParcelArrivalsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CheckParcelArrivalsReply => CheckParcelArrivalsReply.decode(value),
+  },
   loginAccount: {
     path: "/fm.internal.Internal/LoginAccount" as const,
     requestStream: false as const,
@@ -22984,6 +24265,11 @@ export interface InternalServer extends UntypedServiceImplementation {
   saveCharacter: handleUnaryCall<SaveCharacterRequest, SaveCharacterReply>;
   saveCharacters: handleUnaryCall<SaveCharactersRequest, SaveCharactersReply>;
   loadStorage: handleUnaryCall<LoadStorageRequest, LoadStorageReply>;
+  loadParcels: handleUnaryCall<LoadParcelsRequest, LoadParcelsReply>;
+  sendParcel: handleUnaryCall<SendParcelRequest, SendParcelReply>;
+  claimParcel: handleUnaryCall<ClaimParcelRequest, ClaimParcelReply>;
+  deleteParcel: handleUnaryCall<DeleteParcelRequest, DeleteParcelReply>;
+  checkParcelArrivals: handleUnaryCall<CheckParcelArrivalsRequest, CheckParcelArrivalsReply>;
   loginAccount: handleUnaryCall<LoginAccountRequest, LoginAccountReply>;
   getCharacterList: handleUnaryCall<GetCharacterListRequest, GetCharacterListReply>;
   checkCharacterName: handleUnaryCall<CheckCharacterNameRequest, CheckCharacterNameReply>;
@@ -23176,6 +24462,81 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: LoadStorageReply) => void,
+  ): ClientUnaryCall;
+  loadParcels(
+    request: LoadParcelsRequest,
+    callback: (error: ServiceError | null, response: LoadParcelsReply) => void,
+  ): ClientUnaryCall;
+  loadParcels(
+    request: LoadParcelsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: LoadParcelsReply) => void,
+  ): ClientUnaryCall;
+  loadParcels(
+    request: LoadParcelsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: LoadParcelsReply) => void,
+  ): ClientUnaryCall;
+  sendParcel(
+    request: SendParcelRequest,
+    callback: (error: ServiceError | null, response: SendParcelReply) => void,
+  ): ClientUnaryCall;
+  sendParcel(
+    request: SendParcelRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SendParcelReply) => void,
+  ): ClientUnaryCall;
+  sendParcel(
+    request: SendParcelRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SendParcelReply) => void,
+  ): ClientUnaryCall;
+  claimParcel(
+    request: ClaimParcelRequest,
+    callback: (error: ServiceError | null, response: ClaimParcelReply) => void,
+  ): ClientUnaryCall;
+  claimParcel(
+    request: ClaimParcelRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ClaimParcelReply) => void,
+  ): ClientUnaryCall;
+  claimParcel(
+    request: ClaimParcelRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ClaimParcelReply) => void,
+  ): ClientUnaryCall;
+  deleteParcel(
+    request: DeleteParcelRequest,
+    callback: (error: ServiceError | null, response: DeleteParcelReply) => void,
+  ): ClientUnaryCall;
+  deleteParcel(
+    request: DeleteParcelRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: DeleteParcelReply) => void,
+  ): ClientUnaryCall;
+  deleteParcel(
+    request: DeleteParcelRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: DeleteParcelReply) => void,
+  ): ClientUnaryCall;
+  checkParcelArrivals(
+    request: CheckParcelArrivalsRequest,
+    callback: (error: ServiceError | null, response: CheckParcelArrivalsReply) => void,
+  ): ClientUnaryCall;
+  checkParcelArrivals(
+    request: CheckParcelArrivalsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CheckParcelArrivalsReply) => void,
+  ): ClientUnaryCall;
+  checkParcelArrivals(
+    request: CheckParcelArrivalsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CheckParcelArrivalsReply) => void,
   ): ClientUnaryCall;
   loginAccount(
     request: LoginAccountRequest,

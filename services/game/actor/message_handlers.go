@@ -22,6 +22,7 @@ func registerMapMessageHandlers(r *MessageRegistry) {
 	Bind[PartyMemberLeftHandler](r)
 	Bind[PartyDisbandHandler](r)
 	Bind[DeliverPartyInviteHandler](r)
+	Bind[DeliverParcelArrivedHandler](r)
 	Bind[DeliverMultiChatHandler](r)
 	Bind[DeliverPartyStatusMessageHandler](r)
 	Bind[DeliverPartyUpdateJoinHandler](r)

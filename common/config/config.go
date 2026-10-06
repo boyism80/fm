@@ -120,6 +120,7 @@ type Game struct {
 	RabbitMQ   RabbitMQEndpoint `yaml:"rabbitmq"`
 	HighRate   bool             `yaml:"high_rate"`
 	Lua        GameLuaConfig    `yaml:"lua"`
+	Duey       GameDueyConfig   `yaml:"duey"`
 }
 
 type GameRates struct {
@@ -130,6 +131,10 @@ type GameRates struct {
 
 type GameLuaConfig struct {
 	AlwaysReload bool `yaml:"always_reload"`
+}
+
+type GameDueyConfig struct {
+	IdentityPrompt bool `yaml:"identity_prompt"`
 }
 
 func LoadLogin(path string) (*Login, error) {
