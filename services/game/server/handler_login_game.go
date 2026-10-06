@@ -42,11 +42,6 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		ClientIp:    ctx.Client.GetRemoteIP(),
 	}
 
-	if ctx.ActorContext == nil {
-		log.Printf("LoginGame: no actor context, cannot run internal RPC")
-		return fmt.Errorf("login game: actor context required for internal RPC")
-	}
-
 	var enterReply *internal.EnterGameReply
 	var partyReply *internal.GetPartyReply
 	var guildReply *internal.GetGuildReply
@@ -63,7 +58,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		return nil
 	})
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetPartyReply, error) {
-		if enterReply == nil || enterReply.PartyId == nil {
+		if enterReply.PartyId == nil {
 			return &internal.GetPartyReply{Found: false}, nil
 		}
 		return ic.GetParty(c, &internal.GetPartyRequest{
@@ -75,7 +70,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		return nil
 	})
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGuildReply, error) {
-		if enterReply == nil || enterReply.GuildId == nil {
+		if enterReply.GuildId == nil {
 			return &internal.GetGuildReply{Found: false}, nil
 		}
 		guildID := *enterReply.GuildId
@@ -138,70 +133,15 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 }
 
 func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginGame, reply *internal.EnterGameReply, partyReply *internal.GetPartyReply, guildReply *internal.GetGuildReply, allianceReply *internal.GetAllianceReply) error {
-	if !reply.GetFound() {
-		return fmt.Errorf("character %d not found", req.PlayerId)
-	}
-
-	p := reply.GetCharacter()
-	if p == nil {
-		return fmt.Errorf("character %d not found: empty character payload", req.PlayerId)
-	}
-	initData := &entity.CharacterInitData{
-		ID:           p.GetCharacterId(),
-		AccountID:    p.GetAccountId(),
-		Name:         p.GetName(),
-		Gender:       uint8(p.GetGender()),
-		SkinColor:    uint8(p.GetSkinColor()),
-		Face:         p.GetFace(),
-		Hair:         p.GetHair(),
-		Level:        uint8(p.GetLevel()),
-		Class:        uint16(p.GetClassId()),
-		Role:         uint8(p.GetRole()),
-		Str:          uint16(p.GetStr()),
-		Dex:          uint16(p.GetDex()),
-		Int:          uint16(p.GetIntStat()),
-		Luk:          uint16(p.GetLuk()),
-		Hp:           p.GetHp(),
-		MaxHp:        p.GetMaxHp(),
-		Mp:           p.GetMp(),
-		MaxMp:        p.GetMaxMp(),
-		AbilityPoint: uint16(p.GetAbilityPoint()),
-		SkillPoint:   uint16(p.GetSkillPoint()),
-		Exp:          p.GetExp(),
-		Meso:         p.GetMeso(),
-		Population:   uint16(p.GetPopulation()),
-		PositionX:    int16(p.GetPositionX()),
-		PositionY:    int16(p.GetPositionY()),
-		Stance:       uint8(p.GetStance()),
-		Hidden:       p.GetHidden(),
-	}
-	if reply.PartyId != nil {
-		v := *reply.PartyId
-		initData.PartyID = &v
-	}
-	if reply.GuildId != nil {
-		v := *reply.GuildId
-		initData.GuildID = &v
-	}
-
-	character := entity.NewCharacter(ctx.Client, h.gs.characterListener, initData, h.gs)
-	character.KeyLayout().LoadKeyLayoutProto(reply.GetKeyLayout())
-
-	character.LoadInventory(reply.GetInventory())
-	character.LoadSkills(reply.GetSkills())
-	character.LoadBuffs(reply.GetBuffs())
-	character.LoadDebuffs(reply.GetDebuffs())
-	character.LoadQuests(reply.GetQuests())
-	character.LoadSavedLocations(reply.GetSavedLocations())
-	character.BuddyList().LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
+	character := entity.NewCharacterFromInternalProto(ctx.Client, h.gs.characterListener, reply, h.gs)
 
 	gameClient, ok := ctx.Client.(*client.GameClient)
 	if !ok {
 		return fmt.Errorf("client is not a GameClient")
 	}
 
-	mapID := p.GetMapId()
-	spawnPoint := uint8(p.GetSpawnPoint())
+	mapID := reply.GetCharacter().GetMapId()
+	spawnPoint := uint8(reply.GetCharacter().GetSpawnPoint())
 	mapInstance := h.gs.GetMapSystem().Get(mapID)
 	if mapInstance == nil {
 		log.Printf("saved map %d not found, falling back to default", mapID)
@@ -236,15 +176,11 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		return fmt.Errorf("LogicActor PID not found for map %d", mapID)
 	}
 
-	rootContext := h.gs.GetRootContext()
-	if rootContext == nil {
-		return fmt.Errorf("rootContext not set")
-	}
-
 	// Fail before SetCharacter: the login error path ends the session only while no character is set.
 	if err := h.gs.characterRuntime.RegisterCharacter(character.GetID(), character.GetName()); err != nil {
 		return fmt.Errorf("runtime register: %w", err)
 	}
+	character.Destination = mapInstance
 	if gameClient.SetCharacter(character) == false {
 		h.gs.characterRuntime.UnregisterCharacter(character.GetID())
 		return fmt.Errorf("character %d: client disconnected during login", character.GetID())
@@ -262,7 +198,7 @@ func (h *LoginGame) finishLoginGame(ctx *core.ClientContext, req *request.LoginG
 		h.gs.alliance.Update(allianceReply.GetAlliance())
 	}
 
-	rootContext.Send(targetMapPID, &g_actor.AddCharacter{
+	h.gs.GetRootContext().Send(targetMapPID, &g_actor.AddCharacter{
 		Character:  character,
 		TargetMap:  mapInstance,
 		SpawnPoint: spawnPoint,

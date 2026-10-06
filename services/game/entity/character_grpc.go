@@ -8,7 +8,91 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
+	"github.com/boyism80/fm/stream"
+	"github.com/boyism80/fm/types"
 )
+
+func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, reply *internal.EnterGameReply, gw GameWorld) *Character {
+	if listener == nil {
+		panic("NewCharacterFromInternalProto: listener must not be nil")
+	}
+	p := reply.GetCharacter()
+	var partyID, guildID *uint32
+	if reply.PartyId != nil {
+		v := *reply.PartyId
+		partyID = &v
+	}
+	if reply.GuildId != nil {
+		v := *reply.GuildId
+		guildID = &v
+	}
+	ch := &Character{
+		Sendable: sender,
+		Listener: listener,
+		LifeCore: LifeCore{
+			ObjectCore: ObjectCore{
+				GameWorld: gw,
+				Position: types.Vector2[int16]{
+					X: int16(p.GetPositionX()),
+					Y: int16(p.GetPositionY()),
+				},
+			},
+			BaseHp: p.GetMaxHp(),
+			BaseMp: p.GetMaxMp(),
+			Stance: uint8(p.GetStance()),
+		},
+		id:           p.GetCharacterId(),
+		AccountID:    p.GetAccountId(),
+		name:         p.GetName(),
+		gender:       uint8(p.GetGender()),
+		skinColor:    uint8(p.GetSkinColor()),
+		face:         p.GetFace(),
+		hair:         p.GetHair(),
+		level:        uint8(p.GetLevel()),
+		Class:        uint16(p.GetClassId()),
+		Role:         constant.CharacterRole(p.GetRole()),
+		hidden:       p.GetHidden(),
+		BaseStats:    BaseStats{Str: uint16(p.GetStr()), Dex: uint16(p.GetDex()), Int: uint16(p.GetIntStat()), Luk: uint16(p.GetLuk())},
+		AbilityPoint: uint16(p.GetAbilityPoint()),
+		SkillPoint:   uint16(p.GetSkillPoint()),
+		exp:          p.GetExp(),
+		population:   uint16(p.GetPopulation()),
+		partyID:      partyID,
+		guildID:      guildID,
+		buddyList:    NewBuddyList(),
+
+		random1: stream.NewRandomStream(),
+		random2: stream.NewRandomStream(),
+		random3: stream.NewRandomStream(),
+
+		regRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
+		rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
+	}
+	ch.Buffs = NewBuffContainer(ch)
+	ch.Skills = NewSkillContainer(ch)
+	ch.Quests = NewQuestContainer(ch)
+	ch.Summons = NewSummonContainer(ch)
+	ch.Doors = NewDoorContainer(ch)
+	ch.Inventory = NewInventory(ch)
+	ch.Inventory.Meso = p.GetMeso()
+	ch.GuildInvites = make(map[uint32]time.Time)
+	ch.savedLocations = make(map[string]uint32)
+	ch.keyLayout = NewKeyLayout()
+	ch.LifeCore.ObjectCore.self = ch
+	ch.LifeCore.ObjectCore.initTimers()
+	ch.LifeCore.setHp(p.GetHp())
+	ch.LifeCore.setMp(p.GetMp())
+
+	ch.KeyLayout().LoadKeyLayoutProto(reply.GetKeyLayout())
+	ch.LoadInventory(reply.GetInventory())
+	ch.LoadSkills(reply.GetSkills())
+	ch.LoadBuffs(reply.GetBuffs())
+	ch.LoadDebuffs(reply.GetDebuffs())
+	ch.LoadQuests(reply.GetQuests())
+	ch.LoadSavedLocations(reply.GetSavedLocations())
+	ch.BuddyList().LoadFromProto(reply.GetBuddies(), reply.GetBuddyCapacity())
+	return ch
+}
 
 func (ch *Character) LoadInventory(items []*internal.InventoryPersisted) {
 	for _, pb := range items {
