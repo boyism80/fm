@@ -1,6 +1,5 @@
 -- Skill name (String.wz/Skill.img.xml): 하이퍼 바디
 
-local util = require("script/lib/skill")
 local combat = require("script/lib/combat")
 
 return {
@@ -18,13 +17,5 @@ return {
 				ch:show_skill_effect(skill, SkillEffectType.Affected)
 			end
 		end)
-	end,
-
-	on_buff = function(me, skill)
-		util.add_hyper_body_bonus(me, skill)
-	end,
-
-	on_unbuff = function(me, skill)
-		util.remove_hyper_body_bonus(me, skill)
 	end
 }

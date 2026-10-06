@@ -19,42 +19,6 @@ M.apply_buff_fixed = function(me, skill, flag, value)
 	me:buff(skill, flag, value)
 end
 
-M.add_hyper_body_bonus = function(me, skill)
-	local effect = skill:effect()
-	if effect == nil then return end
-	local hp_percent = me:bonus_max_hp_ratio()
-	local mp_percent = me:bonus_max_mp_ratio()
-
-	-- Apply ratio delta without intermediate notifications.
-	me:bonus_max_hp_ratio(hp_percent + effect.x, false)
-	me:bonus_max_mp_ratio(mp_percent + effect.x, false)
-
-	-- Notify once after clamping to the new max values.
-	me:update_stats({
-		STAT.MaxHp,
-		STAT.Hp,
-		STAT.MaxMp,
-		STAT.Mp,
-	})
-end
-
-M.remove_hyper_body_bonus = function(me, skill)
-	local effect = skill:effect()
-	if effect == nil then return end
-	local hp_percent = me:bonus_max_hp_ratio()
-	local mp_percent = me:bonus_max_mp_ratio()
-
-	me:bonus_max_hp_ratio(hp_percent - effect.x, false)
-	me:bonus_max_mp_ratio(mp_percent - effect.x, false)
-
-	me:update_stats({
-		STAT.MaxHp,
-		STAT.Hp,
-		STAT.MaxMp,
-		STAT.Mp,
-	})
-end
-
 M.apply_iron_body = function(me, skill)
 	local effect = skill:effect()
 	if effect == nil then

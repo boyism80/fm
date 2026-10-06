@@ -405,6 +405,21 @@ func (ch *Character) SetMaxMpPercent(p int16, notify bool) {
 	}
 }
 
+func (ch *Character) updateMaxHpMp() {
+	if ch.GetHp() > ch.GetMaxHp() {
+		ch.SetHp(ch.GetMaxHp(), false)
+	}
+	if ch.GetMp() > ch.GetMaxMp() {
+		ch.SetMp(ch.GetMaxMp(), false)
+	}
+	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
+		constant.StatHP:    int32(ch.GetHp()),
+		constant.StatMaxHP: int32(ch.GetMaxHp()),
+		constant.StatMP:    int32(ch.GetMp()),
+		constant.StatMaxMP: int32(ch.GetMaxMp()),
+	}, false)
+}
+
 func (ch *Character) SetInvincible(b bool) { ch.Invincible = b }
 
 func (ch *Character) GetInstantKill() bool { return ch.InstantKill }

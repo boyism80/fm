@@ -77,7 +77,11 @@ func (ch *Character) GetTotalLuk() uint16 {
 
 func (ch *Character) GetMaxHp() uint32 {
 	base := int32(ch.BaseHp) + ch.BonusHp
-	total := base + (base*int32(ch.BonusStats.MaxHpPercent))/100
+	percent := int32(ch.BonusStats.MaxHpPercent)
+	if _, v, ok := ch.Buffs.GetBuffValue(constant.BuffFlagMaxHp); ok {
+		percent += v
+	}
+	total := base + (base*percent)/100
 	if total < 1 {
 		return 1
 	}
@@ -105,7 +109,11 @@ func (ch *Character) PotionDurationMultiplierPercent() int {
 
 func (ch *Character) GetMaxMp() uint32 {
 	base := int32(ch.BaseMp) + ch.BonusMp
-	total := base + (base*int32(ch.BonusStats.MaxMpPercent))/100
+	percent := int32(ch.BonusStats.MaxMpPercent)
+	if _, v, ok := ch.Buffs.GetBuffValue(constant.BuffFlagMaxMp); ok {
+		percent += v
+	}
+	total := base + (base*percent)/100
 	if total < 0 {
 		return 0
 	}

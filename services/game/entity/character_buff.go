@@ -15,8 +15,7 @@ type Buff interface {
 	RemainingDuration(now time.Time) time.Duration
 	GetFlags() []constant.BuffFlag
 	GetValues() map[constant.BuffFlag]int32
-	CallOnBuffScript(ch *Character)
-	CallOnUnbuffScript(ch *Character)
+	hookScript(ch *Character) (string, interface{}, bool)
 	GetBuffID() int32
 	expiresAt() (time.Time, bool)
 }
@@ -80,54 +79,8 @@ func (e *SkillBuff) GetBuffID() int32 {
 	return int32(e.Wz.ID)
 }
 
-func (e *SkillBuff) CallOnBuffScript(ch *Character) {
-	if e == nil || ch == nil || ch.GameWorld == nil {
-		return
-	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return
-	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		return
-	}
-
-	skillID := e.Wz.ID
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	thread, err := luax.NewThread(root, scriptPath)
-	if err != nil {
-		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
-		return
-	}
-	luax.CallAsync(nil, root, thread, "on_buff", ch, e).OnError(func(err error) {
-		log.Printf("Failed to call on_buff for skill %d: %v", skillID, err)
-	})
-}
-
-func (e *SkillBuff) CallOnUnbuffScript(ch *Character) {
-	if e == nil || ch == nil || ch.GameWorld == nil {
-		return
-	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return
-	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		return
-	}
-
-	skillID := e.Wz.ID
-	scriptPath := fmt.Sprintf("script/skill/%d.lua", skillID)
-	thread, err := luax.NewThread(root, scriptPath)
-	if err != nil {
-		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
-		return
-	}
-	luax.CallAsync(nil, root, thread, "on_unbuff", ch, e).OnError(func(err error) {
-		log.Printf("Failed to call on_unbuff for skill %d: %v", skillID, err)
-	})
+func (e *SkillBuff) hookScript(ch *Character) (string, interface{}, bool) {
+	return fmt.Sprintf("script/skill/%d.lua", e.Wz.ID), e, true
 }
 
 func (e *ItemBuff) GetBuffID() int32 {
@@ -137,76 +90,17 @@ func (e *ItemBuff) GetBuffID() int32 {
 	return -int32(e.Wz.ID)
 }
 
-func (e *ItemBuff) CallOnBuffScript(ch *Character) {
-	if e == nil || ch == nil || ch.GameWorld == nil {
-		return
-	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return
-	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		return
-	}
-
-	itemWzID := e.Wz.ID
-	scriptPath := fmt.Sprintf("script/item/%d.lua", itemWzID)
-
-	tempItem, err := NewItem(itemWzID, 1, ch.GameWorld)
+func (e *ItemBuff) hookScript(ch *Character) (string, interface{}, bool) {
+	item, err := NewItem(e.Wz.ID, 1, ch.GameWorld)
 	if err != nil {
-		log.Printf("Failed to create temp item %d: %v", itemWzID, err)
-		return
+		log.Printf("Failed to create temp item %d: %v", e.Wz.ID, err)
+		return "", nil, false
 	}
-	consume, ok := tempItem.(*Consume)
-	if !ok || consume == nil {
-		return
+	consume, ok := item.(*Consume)
+	if ok == false {
+		return "", nil, false
 	}
-
-	thread, callErr := luax.NewThread(root, scriptPath)
-	if callErr != nil {
-		log.Printf("Failed to call on_buff for item %d: %v", itemWzID, callErr)
-		return
-	}
-	luax.CallAsync(nil, root, thread, "on_buff", ch, consume).OnError(func(err error) {
-		log.Printf("Failed to call on_buff for item %d: %v", itemWzID, err)
-	})
-}
-
-func (e *ItemBuff) CallOnUnbuffScript(ch *Character) {
-	if e == nil || ch == nil || ch.GameWorld == nil {
-		return
-	}
-	mapInstance := ch.GetMap()
-	if mapInstance == nil {
-		return
-	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		return
-	}
-
-	itemWzID := e.Wz.ID
-	scriptPath := fmt.Sprintf("script/item/%d.lua", itemWzID)
-
-	tempItem, err := NewItem(itemWzID, 1, ch.GameWorld)
-	if err != nil {
-		log.Printf("Failed to create temp item %d: %v", itemWzID, err)
-		return
-	}
-	consume, ok := tempItem.(*Consume)
-	if !ok || consume == nil {
-		return
-	}
-
-	thread, callErr := luax.NewThread(root, scriptPath)
-	if callErr != nil {
-		log.Printf("Failed to call on_unbuff for item %d: %v", itemWzID, callErr)
-		return
-	}
-	luax.CallAsync(nil, root, thread, "on_unbuff", ch, consume).OnError(func(err error) {
-		log.Printf("Failed to call on_unbuff for item %d: %v", itemWzID, err)
-	})
+	return fmt.Sprintf("script/item/%d.lua", e.Wz.ID), consume, true
 }
 
 type BuffContainer struct {
@@ -239,13 +133,52 @@ func copyBuffValues(values map[constant.BuffFlag]int32) ([]constant.BuffFlag, ma
 	return flags, valCopy
 }
 
+func (bc *BuffContainer) callHook(entity Buff, hook string) {
+	mapInstance := bc.owner.GetMap()
+	if mapInstance == nil {
+		return
+	}
+	root := mapInstance.GetLuaRoot()
+	if root == nil {
+		return
+	}
+	path, arg, ok := entity.hookScript(bc.owner)
+	if ok == false {
+		return
+	}
+	thread, err := luax.NewThread(root, path)
+	if err != nil {
+		log.Printf("Failed to call %s for %s: %v", hook, path, err)
+		return
+	}
+	luax.CallAsync(nil, root, thread, hook, bc.owner, arg).OnError(func(err error) {
+		log.Printf("Failed to call %s for %s: %v", hook, path, err)
+	})
+}
+
 func (bc *BuffContainer) callUnbuffScripts(removed []Buff) {
-	ch := bc.owner
 	for _, entity := range removed {
 		if entity == nil {
 			continue
 		}
-		entity.CallOnUnbuffScript(ch)
+		bc.callHook(entity, "on_unbuff")
+	}
+}
+
+func (bc *BuffContainer) restoreSummons() {
+	for entity := range bc.entities {
+		if _, ok := entity.GetValues()[constant.BuffFlagSummon]; ok {
+			bc.callHook(entity, "on_buff")
+		}
+	}
+}
+
+func (bc *BuffContainer) updateMaxHpMp(flags []constant.BuffFlag) {
+	for _, flag := range flags {
+		if flag == constant.BuffFlagMaxHp || flag == constant.BuffFlagMaxMp {
+			bc.owner.updateMaxHpMp()
+			return
+		}
 	}
 }
 
@@ -328,9 +261,14 @@ func (bc *BuffContainer) commitBuff(entity Buff, now time.Time, notify bool) {
 	removed := bc.add(entity)
 	bc.scheduleExpire(entity, now)
 	bc.callUnbuffScripts(removed)
-	entity.CallOnBuffScript(bc.owner)
+	bc.callHook(entity, "on_buff")
 	if notify {
 		bc.notifyAdded(entity, now)
+		flags := entity.GetFlags()
+		for _, existing := range removed {
+			flags = append(flags, existing.GetFlags()...)
+		}
+		bc.updateMaxHpMp(flags)
 	}
 }
 
@@ -456,26 +394,15 @@ func (bc *BuffContainer) RemoveBuff(flags []constant.BuffFlag) {
 	if len(removedFlags) > 0 {
 		bc.owner.Listener.OnBuffRemoved(bc.owner, removedFlags)
 	}
+	bc.updateMaxHpMp(removedFlags)
 }
 
-func (bc *BuffContainer) RemoveSkillBuff(skillID uint32) {
-	var target Buff
+func (bc *BuffContainer) CancelBySource(buffID int32) {
+	var flags []constant.BuffFlag
 	for entity := range bc.entities {
-		skillBuff, ok := entity.(*SkillBuff)
-		if !ok || skillBuff == nil {
-			continue
+		if entity.GetBuffID() == buffID {
+			flags = append(flags, entity.GetFlags()...)
 		}
-		if skillBuff.Wz.ID == skillID {
-			target = entity
-			break
-		}
-	}
-	if target == nil {
-		return
-	}
-	flags := target.GetFlags()
-	if len(flags) == 0 {
-		return
 	}
 	bc.RemoveBuff(flags)
 }

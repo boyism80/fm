@@ -384,6 +384,9 @@ func (m *Mob) dropItems(attacker *Character) {
 	if attacker.BonusStats.MesoMultiplier > 0 {
 		mesoAmountMul = attacker.BonusStats.MesoMultiplier
 	}
+	if _, v, ok := attacker.Buffs.GetBuffValue(constant.BuffFlagMesoUp); ok {
+		mesoAmountMul += int16(v - 100)
+	}
 	dropRateMulF := float32(dropRateMul) / 100.0
 	mesoAmountMulF := float32(mesoAmountMul) / 100.0
 

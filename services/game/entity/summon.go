@@ -91,6 +91,6 @@ func (s *Summon) TakeDamage(unknown uint8, damage uint32, monsterIdFrom uint32) 
 	s.Owner.Listener.OnSummonDamaged(s.Owner, s, unknown, damage, monsterIdFrom)
 
 	if s.GetHp() == 0 {
-		s.Owner.Buffs.RemoveSkillBuff(uint32(s.SkillID))
+		s.Owner.Buffs.CancelBySource(int32(s.SkillID))
 	}
 }

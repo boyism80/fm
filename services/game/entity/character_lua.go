@@ -1054,7 +1054,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				lv := L.Get(i)
 				switch v := lv.(type) {
 				case lua.LNumber:
-					ch.Buffs.RemoveSkillBuff(uint32(L.CheckInt(i)))
+					ch.Buffs.CancelBySource(int32(L.CheckInt(i)))
 				case *lua.LTable:
 					fields, ok := luax.ParseTable(L, v, i)
 					if !ok {
