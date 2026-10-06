@@ -1686,6 +1686,26 @@ func (l *CharacterListenerImpl) OnCarnivalDied(ch *entity.Character, team consta
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnCarnivalResult(ch *entity.Character, winner bool) {
+	message := "아쉽게도 패배하였습니다. 잠시 후 자동으로 보상 맵으로 나가집니다."
+	effect := "quest/carnival/lose"
+	sound := "MobCarnival/Lose"
+	if winner {
+		message = "승리하였습니다! 잠시 후 자동으로 보상 맵으로 나가집니다."
+		effect = "quest/carnival/win"
+		sound = "MobCarnival/Win"
+	}
+	l.OnMessage(ch, constant.MsgLightBlueText, message)
+	ch.Send(&response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeMapEffect,
+		Env:  effect,
+	}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.EnvironmentChange{
+		Mode: response.EnvironmentChangeModeSound,
+		Env:  sound,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnConfirmShopTransaction(ch *entity.Character, code uint8) {
 	_ = ch.Send(&response.ConfirmShopTransaction{
 		Code: code,

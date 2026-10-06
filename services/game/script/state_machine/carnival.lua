@@ -7,20 +7,6 @@ local WAITING_MS = 180000
 local READY_MS = 10000
 local BATTLE_MS = 600000
 local REWARD_MS = 10000
-local GUARDIAN_SPAWN_STATE = 1
-local GUARDIAN_DESTROYED_STATE = 5
-
-local GUARDIAN_BUFFS = {
-	[140] = MobBuff.WeaponImmunity,
-	[141] = MobBuff.MagicImmunity,
-	[150] = MobBuff.WeaponAttackUp,
-	[151] = MobBuff.MagicAttackUp,
-	[152] = MobBuff.WeaponDefenseUp,
-	[153] = MobBuff.MagicDefenseUp,
-	[154] = MobBuff.Acc,
-	[155] = MobBuff.Avoid,
-	[156] = MobBuff.Speed,
-}
 
 local function register_slot(slot, waiting, max_members)
 	carnival.register(
@@ -84,127 +70,6 @@ local function warp_out(sm, match)
 		end
 	end
 	sm:finish(0)
-end
-
-local function guardian_reactor_id(carnival_data, team_id)
-	if team_id == CARNIVAL_TEAM.RED then
-		return carnival_data.reactor_red
-	end
-	return carnival_data.reactor_blue
-end
-
-local function guardian_name(team_id, num)
-	return tostring(team_id) .. tostring(num)
-end
-
-local function is_guardian_alive(reactor)
-	return reactor ~= nil and reactor:state() < GUARDIAN_DESTROYED_STATE
-end
-
-local function buff_guardian(mob, guardian)
-	local flag = GUARDIAN_BUFFS[guardian.mob_skill_id]
-	local skill = guardian.skill
-	if flag == nil or skill == nil then
-		return
-	end
-	local effect = skill:effect()
-	mob:buff(flag, effect.x, effect.time, skill)
-end
-
-local function find_free_mob_gen_pos(field, carnival_data, team_id)
-	local spawns = field:summoned_mob_spawns()
-	for _, gen in ipairs(carnival_data.mob_gen_pos) do
-		if gen.team == team_id or gen.team == CARNIVAL_TEAM.NONE then
-			local used = false
-			for _, spawn in ipairs(spawns) do
-				if spawn.x == gen.x and spawn.y == gen.y and (gen.team == CARNIVAL_TEAM.NONE or spawn.team == gen.team) then
-					used = true
-					break
-				end
-			end
-			if not used then
-				return gen
-			end
-		end
-	end
-	return nil
-end
-
-local function find_free_guardian_gen_pos(field, carnival_data, team_id)
-	for _, gen in ipairs(carnival_data.guardian_gen_pos) do
-		if gen.team == team_id or gen.team == CARNIVAL_TEAM.NONE then
-			local used = false
-			for _, reactor in pairs(field:reactors()) do
-				local x, y = reactor:position()
-				if x == gen.x and y == gen.y and is_guardian_alive(reactor) then
-					used = true
-					break
-				end
-			end
-			if not used then
-				return gen
-			end
-		end
-	end
-	return nil
-end
-
-local function summon_mob(player, team, field, carnival_data, num)
-	local entry = carnival_data.mobs[num + 1]
-	local personal = team:personal_cp(player)
-	if entry == nil or personal == nil or personal:available_cp() < entry.spend_cp then
-		player:message("CP가 부족합니다.", Msg.PinkText)
-		return false
-	end
-	local gen = find_free_mob_gen_pos(field, carnival_data, team:id())
-	if gen == nil or not field:summon_mob(entry.id, gen.x, gen.y, team:id()) then
-		player:message("더 이상 소환수를 불러낼 수 없습니다.", Msg.PinkText)
-		return false
-	end
-	return team:use_cp(player, entry.spend_cp)
-end
-
-local function use_skill(match, player, team, field, carnival_data, num)
-	local skill_id = carnival_data.skills[num + 1]
-	if skill_id == nil then
-		player:message("오류가 발생했습니다.", Msg.PinkText)
-		return false
-	end
-	local skill = carnival.skill(skill_id)
-	local personal = team:personal_cp(player)
-	if skill == nil or personal == nil or personal:available_cp() < skill.spend_cp then
-		player:message("CP가 부족합니다.", Msg.PinkText)
-		return false
-	end
-	local enemy = match:enemy_team(team:id())
-	if enemy == nil or not enemy:debuff(field, skill_id) then
-		player:message("오류가 발생했습니다.", Msg.PinkText)
-		return false
-	end
-	return team:use_cp(player, skill.spend_cp)
-end
-
-local function summon_guardian(player, team, field, carnival_data, num)
-	local guardian = carnival.guardian(num)
-	local personal = team:personal_cp(player)
-	if guardian == nil or personal == nil or personal:available_cp() < guardian.spend_cp then
-		player:message("CP가 부족합니다.", Msg.PinkText)
-		return false
-	end
-	local name = guardian_name(team:id(), num)
-	local gen = find_free_guardian_gen_pos(field, carnival_data, team:id())
-	if is_guardian_alive(field:find_reactor_name(name))
-		or gen == nil
-		or field:spawn_reactor(guardian_reactor_id(carnival_data, team:id()), gen.x, gen.y, name, GUARDIAN_SPAWN_STATE) == nil then
-		player:message("지금은 더 이상 수호물을 불러낼 수 없습니다.", Msg.PinkText)
-		return false
-	end
-	for _, mob in pairs(field:mobs()) do
-		if mob:carnival_team() == team:id() then
-			buff_guardian(mob, guardian)
-		end
-	end
-	return team:use_cp(player, guardian.spend_cp)
 end
 
 return {
@@ -303,6 +168,10 @@ return {
 				match:blue_team():set_winner(true)
 			end
 			match:set_state(CARNIVAL_STATE.REWARD)
+			match:show_result()
+			local field = sm:map(match:field_map_id())
+			field:set_respawn(false)
+			field:kill_all_mobs()
 			sm:restart_timer(REWARD_MS)
 		elseif state == CARNIVAL_STATE.REWARD then
 			warp_out(sm, match)
@@ -329,45 +198,37 @@ return {
 		if team == nil or field == nil then
 			return
 		end
-		local carnival_data = field:carnival()
-		if carnival_data == nil then
+
+		local result
+		if tab == CARNIVAL_TAB.MOB then
+			result = team:summon_mob(player, field, num)
+		elseif tab == CARNIVAL_TAB.SKILL then
+			result = team:use_skill(player, field, num)
+		elseif tab == CARNIVAL_TAB.GUARDIAN then
+			result = team:summon_guardian(player, field, num)
+		else
 			return
 		end
 
-		local summoned = false
-		if tab == CARNIVAL_TAB.MOB then
-			summoned = summon_mob(player, team, field, carnival_data, num)
-		elseif tab == CARNIVAL_TAB.SKILL then
-			summoned = use_skill(match, player, team, field, carnival_data, num)
-		elseif tab == CARNIVAL_TAB.GUARDIAN then
-			summoned = summon_guardian(player, team, field, carnival_data, num)
-		end
-		if summoned then
+		if result == CARNIVAL_SUMMON_RESULT.SUCCESS then
 			player:carnival_summon(tab, num)
+		elseif result == CARNIVAL_SUMMON_RESULT.LACK_CP then
+			player:message("CP가 부족합니다.", Msg.PinkText)
+		elseif result == CARNIVAL_SUMMON_RESULT.NO_SLOT and tab == CARNIVAL_TAB.GUARDIAN then
+			player:message("지금은 더 이상 수호물을 불러낼 수 없습니다.", Msg.PinkText)
+		elseif result == CARNIVAL_SUMMON_RESULT.NO_SLOT then
+			player:message("더 이상 소환수를 불러낼 수 없습니다.", Msg.PinkText)
+		else
+			player:message("오류가 발생했습니다.", Msg.PinkText)
 		end
 	end,
 
 	on_mob_spawn = function(sm, mob)
-		local team_id = mob:carnival_team()
-		local field = mob:map()
-		if team_id == CARNIVAL_TEAM.NONE or field == nil then
+		local match = match_for_sm(sm)
+		if match == nil then
 			return
 		end
-		local carnival_data = field:carnival()
-		if carnival_data == nil then
-			return
-		end
-		local reactor_id = guardian_reactor_id(carnival_data, team_id)
-		local prefix = tostring(team_id)
-		for _, reactor in pairs(field:reactors()) do
-			local name = reactor:name()
-			if reactor:id() == reactor_id and is_guardian_alive(reactor) and name:sub(1, #prefix) == prefix then
-				local guardian = carnival.guardian(tonumber(name:sub(#prefix + 1)))
-				if guardian ~= nil then
-					buff_guardian(mob, guardian)
-				end
-			end
-		end
+		match:on_mob_spawn(mob)
 	end,
 
 	on_player_leave = function(sm, player, reason)

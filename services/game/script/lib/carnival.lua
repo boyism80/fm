@@ -70,17 +70,11 @@ function M.leave(me)
 	sm:finish(HUB_MAP)
 end
 
-function M.dispel_artifact(reactor)
-	local name = reactor:name()
-	local team_id = tonumber(name:sub(1, 1))
-	local guardian = carnival.guardian(tonumber(name:sub(2)))
+function M.destroy_guardian(reactor)
 	local field = reactor:map()
-	if guardian ~= nil and field ~= nil then
-		for _, mob in pairs(field:mobs()) do
-			if mob:carnival_team() == team_id then
-				mob:dispel(guardian.mob_skill_id)
-			end
-		end
+	local match = field ~= nil and carnival.map_match(field:wz():id()) or nil
+	if match ~= nil then
+		match:destroy_guardian(reactor)
 	end
 	reactor:destroy()
 end

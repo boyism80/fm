@@ -157,14 +157,31 @@ func (m *CarnivalMatch) GetState() CarnivalState {
 	return m.State
 }
 
-func (m *CarnivalMatch) WarpAll(ctx actor.Context, mapID uint32, portalName string) bool {
-	ok := false
-	for _, team := range m.Teams {
-		if team != nil {
-			ok = team.Warp(ctx, mapID, portalName) || ok
+func (m *CarnivalMatch) ShowResult() {
+	for _, teamID := range []constant.CarnivalTeam{constant.CarnivalTeamRed, constant.CarnivalTeamBlue} {
+		if team := m.Team(teamID); team != nil {
+			team.ShowResult()
 		}
 	}
-	return ok
+}
+
+func (m *CarnivalMatch) OnMobSpawn(mob *Mob) {
+	if mob.CarnivalTeam == constant.CarnivalTeamNone {
+		return
+	}
+	team := m.Team(mob.CarnivalTeam)
+	if team == nil {
+		return
+	}
+	team.buffGuardians(mob)
+}
+
+func (m *CarnivalMatch) DestroyGuardian(reactor *Reactor) {
+	for _, teamID := range []constant.CarnivalTeam{constant.CarnivalTeamRed, constant.CarnivalTeamBlue} {
+		if team := m.Team(teamID); team != nil && team.destroyGuardian(reactor) {
+			return
+		}
+	}
 }
 
 func (m *CarnivalMatch) Finish(gw GameWorld) bool {
@@ -324,9 +341,6 @@ func (m *CarnivalMatch) NotifyCarnivalStart(ch *Character) {
 
 func (m *CarnivalMatch) OnMobKilled(killer *Character, cpAmount int) {
 	if cpAmount <= 0 {
-		return
-	}
-	if m.GetState() != CarnivalStateBattle {
 		return
 	}
 	team := m.FindTeam(killer)

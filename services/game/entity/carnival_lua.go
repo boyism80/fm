@@ -3,7 +3,6 @@ package entity
 import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -34,6 +33,13 @@ func registerCarnivalConstants(L *lua.LState) {
 	tabTable.RawSetString("SKILL", lua.LNumber(constant.CarnivalTabSkill))
 	tabTable.RawSetString("GUARDIAN", lua.LNumber(constant.CarnivalTabGuardian))
 	L.SetGlobal("CARNIVAL_TAB", tabTable)
+
+	summonTable := L.NewTable()
+	summonTable.RawSetString("SUCCESS", lua.LNumber(CarnivalSummonSuccess))
+	summonTable.RawSetString("LACK_CP", lua.LNumber(CarnivalSummonLackCP))
+	summonTable.RawSetString("NO_SLOT", lua.LNumber(CarnivalSummonNoSlot))
+	summonTable.RawSetString("FAILED", lua.LNumber(CarnivalSummonFailed))
+	L.SetGlobal("CARNIVAL_SUMMON_RESULT", summonTable)
 }
 
 func (m *CarnivalMatch) LuaTypeName() string { return "LuaCarnivalMatch" }
@@ -164,22 +170,6 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			return 1
 		},
-		"team": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			match, ok := ud.Value.(*CarnivalMatch)
-			if !ok || match == nil {
-				L.ArgError(1, "CarnivalMatch expected")
-				return 0
-			}
-			teamID := constant.CarnivalTeam(L.CheckInt(2))
-			team := match.Team(teamID)
-			if team == nil {
-				L.Push(lua.LNil)
-			} else {
-				L.Push(luax.NewLuable(L, team))
-			}
-			return 1
-		},
 		"enemy_team": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			match, ok := ud.Value.(*CarnivalMatch)
@@ -273,19 +263,6 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(match.Result()))
 			return 1
 		},
-		"warp_all": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			match, ok := ud.Value.(*CarnivalMatch)
-			if !ok || match == nil {
-				L.ArgError(1, "CarnivalMatch expected")
-				return 0
-			}
-			mapID := uint32(L.CheckNumber(2))
-			portalName := L.OptString(3, "")
-			cfg, _ := luax.GetConfiguration(L)
-			L.Push(lua.LBool(match.WarpAll(cfg.ActorContext, mapID, portalName)))
-			return 1
-		},
 		"finish": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			match, ok := ud.Value.(*CarnivalMatch)
@@ -318,6 +295,48 @@ func (m *CarnivalMatch) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			match.SetState(CarnivalState(L.CheckNumber(2)))
 			L.Push(lua.LTrue)
 			return 1
+		},
+		"show_result": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			match, ok := ud.Value.(*CarnivalMatch)
+			if !ok || match == nil {
+				L.ArgError(1, "CarnivalMatch expected")
+				return 0
+			}
+			match.ShowResult()
+			return 0
+		},
+		"on_mob_spawn": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			match, ok := ud.Value.(*CarnivalMatch)
+			if !ok || match == nil {
+				L.ArgError(1, "CarnivalMatch expected")
+				return 0
+			}
+			mobUD := L.CheckUserData(2)
+			mob, ok := mobUD.Value.(*Mob)
+			if !ok || mob == nil {
+				L.ArgError(2, "Mob expected")
+				return 0
+			}
+			match.OnMobSpawn(mob)
+			return 0
+		},
+		"destroy_guardian": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			match, ok := ud.Value.(*CarnivalMatch)
+			if !ok || match == nil {
+				L.ArgError(1, "CarnivalMatch expected")
+				return 0
+			}
+			reactorUD := L.CheckUserData(2)
+			reactor, ok := reactorUD.Value.(*Reactor)
+			if !ok || reactor == nil {
+				L.ArgError(2, "Reactor expected")
+				return 0
+			}
+			match.DestroyGuardian(reactor)
+			return 0
 		},
 		"on_player_died": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -468,7 +487,7 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(team.AddCP(ch, amount)))
 			return 1
 		},
-		"use_cp": func(L *lua.LState) int {
+		"summon_mob": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			team, ok := ud.Value.(*CarnivalTeam)
 			if !ok || team == nil {
@@ -481,8 +500,57 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "Character expected")
 				return 0
 			}
-			amount := int(L.CheckNumber(3))
-			L.Push(lua.LBool(team.UseCP(ch, amount)))
+			mapUD := L.CheckUserData(3)
+			field, ok := mapUD.Value.(*Map)
+			if !ok || field == nil {
+				L.ArgError(3, "Map expected")
+				return 0
+			}
+			L.Push(lua.LNumber(team.SummonMob(ch, field, L.CheckInt(4))))
+			return 1
+		},
+		"use_skill": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			team, ok := ud.Value.(*CarnivalTeam)
+			if !ok || team == nil {
+				L.ArgError(1, "CarnivalTeam expected")
+				return 0
+			}
+			chUD := L.CheckUserData(2)
+			ch, ok := chUD.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(2, "Character expected")
+				return 0
+			}
+			mapUD := L.CheckUserData(3)
+			field, ok := mapUD.Value.(*Map)
+			if !ok || field == nil {
+				L.ArgError(3, "Map expected")
+				return 0
+			}
+			L.Push(lua.LNumber(team.UseSkill(ch, field, L.CheckInt(4))))
+			return 1
+		},
+		"summon_guardian": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			team, ok := ud.Value.(*CarnivalTeam)
+			if !ok || team == nil {
+				L.ArgError(1, "CarnivalTeam expected")
+				return 0
+			}
+			chUD := L.CheckUserData(2)
+			ch, ok := chUD.Value.(*Character)
+			if !ok || ch == nil {
+				L.ArgError(2, "Character expected")
+				return 0
+			}
+			mapUD := L.CheckUserData(3)
+			field, ok := mapUD.Value.(*Map)
+			if !ok || field == nil {
+				L.ArgError(3, "Map expected")
+				return 0
+			}
+			L.Push(lua.LNumber(team.SummonGuardian(ch, field, uint32(L.CheckInt(4)))))
 			return 1
 		},
 		"is_winner": func(L *lua.LState) int {
@@ -517,17 +585,6 @@ func (t *CarnivalTeam) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			portalName := L.OptString(3, "")
 			cfg, _ := luax.GetConfiguration(L)
 			L.Push(lua.LBool(team.Warp(cfg.ActorContext, mapID, portalName)))
-			return 1
-		},
-		"clear": func(L *lua.LState) int {
-			ud := L.CheckUserData(1)
-			team, ok := ud.Value.(*CarnivalTeam)
-			if !ok || team == nil || team.Match == nil {
-				L.ArgError(1, "CarnivalTeam expected")
-				return 0
-			}
-			team.Clear()
-			L.Push(lua.LTrue)
 			return 1
 		},
 		"remove_member": func(L *lua.LState) int {
@@ -730,37 +787,6 @@ func RegisterCarnivalLua(L *lua.LState, gw GameWorld) {
 		}
 		reg.SetSkillHitChance(uint32(L.CheckNumber(1)), int(L.CheckNumber(2)))
 		return 0
-	}))
-	carnivalTable.RawSetString("skill", L.NewFunction(func(L *lua.LState) int {
-		skill := gw.GetResources().GetCarnivalSkill(uint32(L.CheckNumber(1)))
-		if skill == nil {
-			L.Push(lua.LNil)
-			return 1
-		}
-		tbl := L.NewTable()
-		tbl.RawSetString("spend_cp", lua.LNumber(skill.SpendCP))
-		tbl.RawSetString("targets_all", lua.LBool(skill.TargetsAll))
-		L.Push(tbl)
-		return 1
-	}))
-	carnivalTable.RawSetString("guardian", L.NewFunction(func(L *lua.LState) int {
-		resources := gw.GetResources()
-		guardian := resources.GetCarnivalGuardian(uint32(L.CheckNumber(1)))
-		if guardian == nil {
-			L.Push(lua.LNil)
-			return 1
-		}
-		tbl := L.NewTable()
-		tbl.RawSetString("spend_cp", lua.LNumber(guardian.SpendCP))
-		tbl.RawSetString("mob_skill_id", lua.LNumber(guardian.MobSkillID))
-		if levelData := resources.GetMobSkill(guardian.MobSkillID, guardian.Level); levelData != nil {
-			tbl.RawSetString("skill", luax.NewLuable(L, &MobSkill{
-				Slot:      wz.MobSkillSlot{SkillID: guardian.MobSkillID, Level: guardian.Level},
-				LevelData: levelData,
-			}))
-		}
-		L.Push(tbl)
-		return 1
 	}))
 	carnivalTable.RawSetString("enter", L.NewFunction(func(L *lua.LState) int {
 		if reg == nil {

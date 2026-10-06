@@ -4,6 +4,6 @@ local cpq = require("script/lib/carnival")
 
 return {
 	on_reactor = function(reactor)
-		cpq.dispel_artifact(reactor)
+		cpq.destroy_guardian(reactor)
 	end
 }
