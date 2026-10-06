@@ -41,13 +41,15 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 			BaseMp: p.GetMaxMp(),
 			Stance: uint8(p.GetStance()),
 		},
-		id:           p.GetCharacterId(),
-		AccountID:    p.GetAccountId(),
-		name:         p.GetName(),
-		gender:       uint8(p.GetGender()),
-		skinColor:    uint8(p.GetSkinColor()),
-		face:         p.GetFace(),
-		hair:         p.GetHair(),
+		id:        p.GetCharacterId(),
+		AccountID: p.GetAccountId(),
+		name:      p.GetName(),
+		look: Look{
+			Gender:    uint8(p.GetGender()),
+			SkinColor: uint8(p.GetSkinColor()),
+			Face:      p.GetFace(),
+			Hair:      p.GetHair(),
+		},
 		level:        uint8(p.GetLevel()),
 		Class:        uint16(p.GetClassId()),
 		Role:         constant.CharacterRole(p.GetRole()),
@@ -61,13 +63,12 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		guildID:      guildID,
 		buddyList:    NewBuddyList(),
 
-		random1: stream.NewRandomStream(),
-		random2: stream.NewRandomStream(),
-		random3: stream.NewRandomStream(),
+		random: [3]stream.RandomStream{stream.NewRandomStream(), stream.NewRandomStream(), stream.NewRandomStream()},
 
 		regRocks: []uint32{999999999, 999999999, 999999999, 999999999, 999999999},
 		rocks:    []uint32{999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999, 999999999},
 	}
+	ch.Dialog = NewDialog(ch)
 	ch.Buffs = NewBuffContainer(ch)
 	ch.Skills = NewSkillContainer(ch)
 	ch.Quests = NewQuestContainer(ch)

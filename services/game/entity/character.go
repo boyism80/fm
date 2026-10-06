@@ -3,7 +3,6 @@ package entity
 import (
 	"fmt"
 	"log"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -18,20 +17,22 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
-	lua "github.com/yuin/gopher-lua"
 )
+
+type Look struct {
+	Gender    uint8
+	SkinColor uint8
+	Face      uint32
+	Hair      uint32
+}
 
 type Character struct {
 	LifeCore
 	Sendable
 
-	dialog            *lua.LState
 	id                uint32
 	name              string
-	gender            uint8
-	skinColor         uint8
-	face              uint32
-	hair              uint32
+	look              Look
 	level             uint8
 	rank              uint32
 	rankDiff          int32
@@ -40,18 +41,14 @@ type Character struct {
 	exp               uint32
 	population        uint16
 	mega              bool
-	random1           stream.RandomStream
-	random2           stream.RandomStream
-	random3           stream.RandomStream
+	random            [3]stream.RandomStream
 	Quests            *QuestContainer
 	marriageId        uint32
 	regRocks          []uint32
 	rocks             []uint32
 	monsterBookCover  uint32
 	monsterBook       *MonsterBook
-	luaDialog         *lua.LState
-	npcDialog         *npcDialog
-	dialogMutex       sync.Mutex
+	Dialog            *Dialog
 	hidden            bool
 	Listener          CharacterListener
 	Class             uint16
@@ -273,16 +270,16 @@ func (ch *Character) RemoveMist(mist *Mist) {
 func (ch *Character) GetBonusHp() int32   { return ch.BonusHp }
 func (ch *Character) GetBonusMp() int32   { return ch.BonusMp }
 func (ch *Character) GetInvincible() bool { return ch.Invincible }
-func (ch *Character) GetGender() uint8    { return ch.gender }
-func (ch *Character) GetSkinColor() uint8 { return ch.skinColor }
-func (ch *Character) GetFace() uint32     { return ch.face }
-func (ch *Character) GetHair() uint32     { return ch.hair }
+func (ch *Character) GetGender() uint8    { return ch.look.Gender }
+func (ch *Character) GetSkinColor() uint8 { return ch.look.SkinColor }
+func (ch *Character) GetFace() uint32     { return ch.look.Face }
+func (ch *Character) GetHair() uint32     { return ch.look.Hair }
 
 func (ch *Character) SetHair(id uint32) {
-	if ch.hair == id {
+	if ch.look.Hair == id {
 		return
 	}
-	ch.hair = id
+	ch.look.Hair = id
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatHair: int32(id),
 	}, false)
@@ -290,10 +287,10 @@ func (ch *Character) SetHair(id uint32) {
 }
 
 func (ch *Character) SetFace(id uint32) {
-	if ch.face == id {
+	if ch.look.Face == id {
 		return
 	}
-	ch.face = id
+	ch.look.Face = id
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatFace: int32(id),
 	}, false)
@@ -301,10 +298,10 @@ func (ch *Character) SetFace(id uint32) {
 }
 
 func (ch *Character) SetSkin(color uint8) {
-	if ch.skinColor == color {
+	if ch.look.SkinColor == color {
 		return
 	}
-	ch.skinColor = color
+	ch.look.SkinColor = color
 	ch.Listener.OnUpdateStats(ch, map[constant.Stat]int32{
 		constant.StatSkin: int32(color),
 	}, false)
@@ -707,14 +704,14 @@ func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 			ActorPID:     m.LogicActorPID(),
 		})
 		luax.CallAsync(ctx, root, thread, "on_enter", ch, portal).Then(func(_ interface{}) (interface{}, error) {
-			if ch.GetDialog() == nil {
+			if ch.Dialog.Thread() == nil {
 				ch.Listener.OnUnlockAction(ch)
 			}
 			return nil, nil
 		}).OnError(func(err error) {
 			log.Printf("portal script %s failed: %v", scriptPath, err)
 			ch.Listener.OnScriptError(ch, scriptPath, err)
-			if ch.GetDialog() == nil {
+			if ch.Dialog.Thread() == nil {
 				ch.Listener.OnUnlockAction(ch)
 			}
 		})

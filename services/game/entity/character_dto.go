@@ -53,10 +53,10 @@ func (ch *Character) ToDTO() *dto.Character {
 	return &dto.Character{
 		ID:            ch.GetID(),
 		Name:          ch.name,
-		Gender:        ch.gender,
-		SkinColor:     ch.skinColor,
-		Face:          ch.face,
-		Hair:          ch.hair,
+		Gender:        ch.look.Gender,
+		SkinColor:     ch.look.SkinColor,
+		Face:          ch.look.Face,
+		Hair:          ch.look.Hair,
 		Level:         ch.level,
 		Class:         ch.Class,
 		Str:           ch.GetTotalStr(),
@@ -107,9 +107,9 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		charDTO.BuddyCapacity = pconst.DefaultBuddyCapacity
 	}
 
-	charDTO.Random1 = &ch.random1
-	charDTO.Random2 = &ch.random2
-	charDTO.Random3 = &ch.random3
+	charDTO.Random1 = &ch.random[0]
+	charDTO.Random2 = &ch.random[1]
+	charDTO.Random3 = &ch.random[2]
 
 	charDTO.Inventory = &dto.Inventory{
 		Tabs:     make(map[constant.InventoryType]*dto.ItemContainer),

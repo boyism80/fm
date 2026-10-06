@@ -3,6 +3,7 @@ package entity
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
@@ -21,39 +22,50 @@ type npcDialog struct {
 	choices    int
 }
 
-func (ch *Character) GetDialog() *lua.LState {
-	ch.dialogMutex.Lock()
-	defer ch.dialogMutex.Unlock()
-	return ch.luaDialog
+type Dialog struct {
+	owner  *Character
+	mutex  sync.Mutex
+	thread *lua.LState
+	asked  *npcDialog
 }
 
-func (ch *Character) SetDialog(thread *lua.LState) {
-	ch.dialogMutex.Lock()
-	defer ch.dialogMutex.Unlock()
-	ch.luaDialog = thread
-	ch.npcDialog = nil
+func NewDialog(owner *Character) *Dialog {
+	return &Dialog{owner: owner}
 }
 
-func (ch *Character) AskDialog(thread *lua.LState, dialogType constant.DialogType, choices int) {
-	ch.dialogMutex.Lock()
-	defer ch.dialogMutex.Unlock()
-	ch.luaDialog = thread
-	ch.npcDialog = &npcDialog{dialogType: dialogType, choices: choices}
+func (d *Dialog) Thread() *lua.LState {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	return d.thread
 }
 
-func (ch *Character) ResetDialog() {
-	ch.dialogMutex.Lock()
-	defer ch.dialogMutex.Unlock()
-	ch.luaDialog = nil
-	ch.npcDialog = nil
+func (d *Dialog) Set(thread *lua.LState) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.thread = thread
+	d.asked = nil
 }
 
-func (ch *Character) CloseDialog() {
-	thread := ch.GetDialog()
+func (d *Dialog) Ask(thread *lua.LState, dialogType constant.DialogType, choices int) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.thread = thread
+	d.asked = &npcDialog{dialogType: dialogType, choices: choices}
+}
+
+func (d *Dialog) Reset() {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.thread = nil
+	d.asked = nil
+}
+
+func (d *Dialog) Close() {
+	thread := d.Thread()
 	if thread == nil {
 		return
 	}
-	ch.ResetDialog()
+	d.Reset()
 	if cfg, ok := luax.GetConfiguration(thread); ok {
 		cfg.CallPromise = nil
 		luax.SetConfiguration(thread, cfg)
@@ -61,16 +73,16 @@ func (ch *Character) CloseDialog() {
 	luax.Close(thread)
 }
 
-func (ch *Character) ResumeDialog(actx actor.Context, dialogType constant.DialogType, next bool, selected uint32, text string) error {
-	ch.dialogMutex.Lock()
-	thread := ch.luaDialog
-	asked := ch.npcDialog
+func (d *Dialog) Resume(actx actor.Context, dialogType constant.DialogType, next bool, selected uint32, text string) error {
+	d.mutex.Lock()
+	thread := d.thread
+	asked := d.asked
 	if thread == nil || asked == nil || asked.dialogType != dialogType {
-		ch.dialogMutex.Unlock()
+		d.mutex.Unlock()
 		return ErrDialogNotExpected
 	}
-	ch.npcDialog = nil
-	ch.dialogMutex.Unlock()
+	d.asked = nil
+	d.mutex.Unlock()
 
 	var args []interface{}
 	switch dialogType {
@@ -82,8 +94,8 @@ func (ch *Character) ResumeDialog(actx actor.Context, dialogType constant.Dialog
 			break
 		}
 		if selected >= uint32(asked.choices) {
-			ch.CloseDialog()
-			ch.Listener.OnUnlockAction(ch)
+			d.Close()
+			d.owner.Listener.OnUnlockAction(d.owner)
 			return ErrDialogChoiceRange
 		}
 		args = append(args, lua.LNumber(selected+1))
@@ -95,7 +107,7 @@ func (ch *Character) ResumeDialog(actx actor.Context, dialogType constant.Dialog
 		}
 	}
 
-	mapInstance := ch.GetMap()
+	mapInstance := d.owner.GetMap()
 	if mapInstance == nil {
 		return ErrDialogNoLuaRoot
 	}
@@ -109,13 +121,13 @@ func (ch *Character) ResumeDialog(actx actor.Context, dialogType constant.Dialog
 
 	state, _, err := luax.Resume(root, thread, args...)
 	if err != nil {
-		if ch.GetDialog() == thread {
-			ch.ResetDialog()
+		if d.Thread() == thread {
+			d.Reset()
 		}
 		return fmt.Errorf("resume dialog: %w", err)
 	}
-	if state != lua.ResumeYield && ch.GetDialog() == thread {
-		ch.ResetDialog()
+	if state != lua.ResumeYield && d.Thread() == thread {
+		d.Reset()
 	}
 	return nil
 }

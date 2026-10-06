@@ -460,7 +460,7 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 	if ch == nil {
 		return fmt.Errorf("character is nil")
 	}
-	if ch.GetDialog() != nil {
+	if ch.Dialog.Thread() != nil {
 		return fmt.Errorf("dialog already active")
 	}
 	mapInstance := ch.GetMap()
@@ -482,8 +482,8 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 		ActorPID:     mapInstance.LogicActorPID(),
 	})
 	luax.CallAsync(actx, root, luaThread, entry, ch, npcID).Then(func(_ interface{}) (interface{}, error) {
-		if ch.GetDialog() == nil {
-			ch.ResetDialog()
+		if ch.Dialog.Thread() == nil {
+			ch.Dialog.Reset()
 			if ch.Listener != nil {
 				ch.Listener.OnUnlockAction(ch)
 			}
@@ -492,8 +492,8 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 	}).OnError(func(err error) {
 		log.Printf("quest script %s quest=%d npc=%d: %v", entry, questID, npcID, err)
 		ch.Listener.OnScriptError(ch, scriptPath, err)
-		if ch.GetDialog() == nil {
-			ch.ResetDialog()
+		if ch.Dialog.Thread() == nil {
+			ch.Dialog.Reset()
 			if ch.Listener != nil {
 				ch.Listener.OnUnlockAction(ch)
 			}

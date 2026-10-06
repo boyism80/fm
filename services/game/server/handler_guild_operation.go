@@ -34,7 +34,7 @@ func (h *GuildOperation) resumeGuildCreate(ch *entity.Character, result gamecons
 	if ch == nil {
 		return
 	}
-	thread := ch.GetDialog()
+	thread := ch.Dialog.Thread()
 	if thread == nil {
 		return
 	}

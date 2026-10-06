@@ -413,7 +413,7 @@ func (qc *QuestContainer) matchesRewardItem(item wz.QuestRewardItem, classID uin
 	if qc == nil || qc.owner == nil {
 		return false
 	}
-	if item.Gender <= 1 && item.Gender != int(qc.owner.gender) {
+	if item.Gender <= 1 && item.Gender != int(qc.owner.look.Gender) {
 		return false
 	}
 	if item.Class <= 0 {

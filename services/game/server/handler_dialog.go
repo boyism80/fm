@@ -32,5 +32,5 @@ func (h *Dialog) Handle(ctx *core.ClientContext, req *request.Dialog) error {
 		return fmt.Errorf("character not found")
 	}
 
-	return character.ResumeDialog(ctx.ActorContext, req.DialogType, req.Next, req.Selected, req.Text)
+	return character.Dialog.Resume(ctx.ActorContext, req.DialogType, req.Next, req.Selected, req.Text)
 }

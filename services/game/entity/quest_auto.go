@@ -72,7 +72,7 @@ func (qc *QuestContainer) tryRunAutoQuest(actx actor.Context, def *wz.Quest) {
 	}
 
 	if def.HasStartScript() {
-		if qc.owner.GetDialog() != nil {
+		if qc.owner.Dialog.Thread() != nil {
 			return
 		}
 		if err := qc.CanStart(def.ID, autoOpts); err != nil {

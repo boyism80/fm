@@ -20,7 +20,7 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
 		return nil
 	}
 
-	ch.CloseDialog()
+	ch.Dialog.Close()
 
 	mapInstance := ch.GetMap()
 	if mapInstance == nil {
@@ -40,15 +40,15 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
 		ActorContext: actx,
 		ActorPID:     mapInstance.LogicActorPID(),
 	})
-	ch.SetDialog(luaThread)
+	ch.Dialog.Set(luaThread)
 	luax.CallAsync(actx, root, luaThread, "on_click", ch, npc).Then(func(_ interface{}) (interface{}, error) {
-		ch.ResetDialog()
+		ch.Dialog.Reset()
 		ch.Listener.OnUnlockAction(ch)
 		return nil, nil
 	}).OnError(func(err error) {
 		log.Printf("npc script on_click npc=%d: %v", npcID, err)
 		ch.Listener.OnScriptError(ch, scriptPath, err)
-		ch.ResetDialog()
+		ch.Dialog.Reset()
 		ch.Listener.OnUnlockAction(ch)
 	})
 	return nil

@@ -1382,7 +1382,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			ch.Listener.OnDialog(ch, uint32(npc), message, prev, next)
-			ch.AskDialog(L, constant.DialogTypeDefault, 0)
+			ch.Dialog.Ask(L, constant.DialogTypeDefault, 0)
 			return L.Yield()
 		},
 		"dialog_yes_no": func(L *lua.LState) int {
@@ -1431,7 +1431,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			}
 			ch.Listener.OnDialogYesNo(ch, uint32(npc), message, prev, next)
-			ch.AskDialog(L, constant.DialogTypeYesNo, 0)
+			ch.Dialog.Ask(L, constant.DialogTypeYesNo, 0)
 			return L.Yield()
 		},
 		"dialog_list": func(L *lua.LState) int {
@@ -1470,7 +1470,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			ch.Listener.OnDialogList(ch, uint32(npc), message, selections)
-			ch.AskDialog(L, constant.DialogTypeList, len(selections))
+			ch.Dialog.Ask(L, constant.DialogTypeList, len(selections))
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_style": func(L *lua.LState) int {
@@ -1500,7 +1500,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				}
 			})
 			ch.Listener.OnDialogStyle(ch, uint32(npc), L.CheckString(3), styles)
-			ch.AskDialog(L, constant.DialogTypeStyle, len(styles))
+			ch.Dialog.Ask(L, constant.DialogTypeStyle, len(styles))
 			return L.Yield(lua.LNumber(0))
 		},
 		"dialog_accept": func(L *lua.LState) int {
@@ -1546,9 +1546,9 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			ch.Listener.OnDialogAccept(ch, uint32(npc), message, enableEscape)
 			if enableEscape {
-				ch.AskDialog(L, constant.DialogTypeAcceptEscape, 0)
+				ch.Dialog.Ask(L, constant.DialogTypeAcceptEscape, 0)
 			} else {
-				ch.AskDialog(L, constant.DialogTypeAccept, 0)
+				ch.Dialog.Ask(L, constant.DialogTypeAccept, 0)
 			}
 			return L.Yield()
 		},
@@ -1579,7 +1579,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 
 			ch.Listener.OnDialogInput(ch, uint32(npc), message)
-			ch.AskDialog(L, constant.DialogTypeInput, 0)
+			ch.Dialog.Ask(L, constant.DialogTypeInput, 0)
 			return L.Yield(lua.LNumber(0))
 		},
 		"message": func(L *lua.LState) int {
@@ -2440,7 +2440,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if code == pconst.GuildResponseEmblemDialog {
 				return 0
 			}
-			ch.SetDialog(L)
+			ch.Dialog.Set(L)
 			return L.Yield(lua.LNumber(0))
 		},
 		"hidden": func(L *lua.LState) int {
@@ -2471,7 +2471,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			L.Push(lua.LBool(ch.GetDialog() != nil))
+			L.Push(lua.LBool(ch.Dialog.Thread() != nil))
 			return 1
 		},
 		"base_str": func(L *lua.LState) int {
