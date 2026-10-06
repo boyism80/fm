@@ -54,6 +54,28 @@ func (p *Storage) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *Storage) Deserialize(reader *stream.StreamReader) {
+	p.Result = pconst.StorageResult(reader.ReadU8())
+	if p.Result == pconst.StorageResultOpen {
+		p.NpcID = reader.ReadU32()
+	}
+	p.Slots = reader.ReadU8()
+	mask := reader.ReadU64()
+	if mask&2 != 0 {
+		meso := reader.Read32()
+		p.Meso = &meso
+	}
+	p.Tabs = map[constant.InventoryType][]dto.Item{}
+	for invType := constant.InventoryTypeEquipment; invType <= constant.InventoryTypeCash; invType++ {
+		if mask&(2<<invType) == 0 {
+			continue
+		}
+		count := int(reader.ReadU8())
+		items := make([]dto.Item, 0, count)
+		for i := 0; i < count; i++ {
+			items = append(items, dto.NewItemFromStream(reader))
+		}
+		p.Tabs[invType] = items
+	}
 }
 
 type StorageError struct {
@@ -70,4 +92,5 @@ func (p *StorageError) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *StorageError) Deserialize(reader *stream.StreamReader) {
+	p.Result = pconst.StorageResult(reader.ReadU8())
 }

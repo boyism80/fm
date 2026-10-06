@@ -76,6 +76,8 @@ var decoders = func() []decoder {
 		newDecoder[response.Dialog](func(body []byte) bool { return len(body) >= 6 }),
 		newDecoder[response.UpdateStats](nil),
 		newDecoder[response.OpenNpcShop](nil),
+		newDecoder[response.StorageError](func(body []byte) bool { return len(body) == 1 }),
+		newDecoder[response.Storage](nil),
 		newDecoder[response.InventoryOperation](nil),
 		newDecoder[response.UpdateQuest](func(body []byte) bool { return len(body) > 0 && body[0] == 1 }),
 		newDecoder[response.GuildInvite](func(body []byte) bool {

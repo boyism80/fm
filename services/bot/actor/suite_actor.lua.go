@@ -39,6 +39,7 @@ var requests = []outbound{
 	&request.DamageReactor{},
 	&request.Carnival{},
 	&request.UseCashItem{},
+	&request.Storage{},
 }
 
 func (a *SuiteActor) register() {

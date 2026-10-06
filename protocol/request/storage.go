@@ -18,6 +18,18 @@ type Storage struct {
 func (*Storage) Opcode() byte { return 0x2D }
 
 func (p *Storage) Serialize(writer *stream.StreamWriter) error {
+	writer.WriteU8(uint8(p.Mode))
+	switch p.Mode {
+	case constant.StorageTakeOut:
+		writer.WriteU8(p.InventoryType)
+		writer.WriteU8(p.Index)
+	case constant.StorageStore:
+		writer.Write16(p.Slot)
+		writer.WriteU32(p.ItemID)
+		writer.WriteU16(p.Count)
+	case constant.StorageMeso:
+		writer.Write32(p.Meso)
+	}
 	return nil
 }
 
