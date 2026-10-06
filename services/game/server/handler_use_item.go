@@ -29,11 +29,6 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 		return nil
 	}
 
-	if ch.GetHp() <= 0 {
-		ch.Listener.OnUpdateStats(ch, nil, true)
-		return nil
-	}
-
 	mapInstance := ch.GetMap()
 	if mapInstance != nil && mapInstance.Wz.BlocksPotionUse() {
 		ch.Listener.OnUpdateStats(ch, nil, true)

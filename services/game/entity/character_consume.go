@@ -26,6 +26,9 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 	if ch == nil || consume == nil {
 		return false
 	}
+	if ch.GetHp() == 0 {
+		return false
+	}
 	wzConsume, ok := consume.GetModel().(*wz.Consume)
 	if !ok || wzConsume == nil {
 		return false
@@ -58,7 +61,7 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 		}
 
 		for _, character := range targets {
-			if character == nil {
+			if character == nil || character.GetHp() == 0 {
 				continue
 			}
 			if len(wzConsume.CureDebuffs) > 0 {
