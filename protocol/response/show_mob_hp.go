@@ -18,4 +18,6 @@ func (m *ShowMobHp) Serialize(sw *stream.StreamWriter) error {
 }
 
 func (m *ShowMobHp) Deserialize(sr *stream.StreamReader) {
+	m.OID = sr.ReadU32()
+	m.Percentage = sr.ReadU8()
 }

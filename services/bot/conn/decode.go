@@ -103,6 +103,7 @@ var decoders = func() []decoder {
 		}),
 		newDecoder[response.SpawnMob](nil),
 		newDecoder[response.DieMob](nil),
+		newDecoder[response.ShowMobHp](nil),
 		newDecoder[response.SpawnMeso](func(body []byte) bool { return len(body) >= 6 && body[5] == 1 }),
 		newDecoder[response.SpawnItem](func(body []byte) bool { return len(body) >= 6 }),
 		newDecoder[response.RemoveItem](nil),

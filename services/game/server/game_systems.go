@@ -96,6 +96,10 @@ func (gs *GameServer) GetCarnivalRegistry() *entity.CarnivalRegistry {
 	return gs.carnivalRegistry
 }
 
+func (gs *GameServer) GetExpeditionRegistry() *entity.ExpeditionRegistry {
+	return gs.expeditions
+}
+
 func (s mapSystem) Visit(fn func(*entity.Map)) {
 	if s.gs == nil || fn == nil {
 		return

@@ -37,6 +37,7 @@ type CharacterListener interface {
 	BroadcastNoticeAsync(ctx actor.Context, ch *Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise
 	OnKeyMap(ch *Character)
 	OnClock(ch *Character, seconds int32)
+	OnStopClock(ch *Character)
 	OnPartyCreated(ch *Character, partyID uint32)
 	OnShowGuildInfo(ch *Character)
 	OnShowAllianceInfo(ch *Character)

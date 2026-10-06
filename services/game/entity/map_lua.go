@@ -222,6 +222,21 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(mapInstance.IsInstance()))
 			return 1
 		},
+		"state_machine": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if ok == false {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			sm := mapInstance.StateMachine()
+			if sm == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, sm))
+			return 1
+		},
 		"instance_id": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

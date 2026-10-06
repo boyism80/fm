@@ -273,6 +273,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	if sm := character.StateMachine(); sm != nil {
 		sm.HandlePlayerMapEnter(character, m)
 	}
+	m.GameWorld.GetExpeditionRegistry().SyncClock(character, m)
 
 	return nil
 }

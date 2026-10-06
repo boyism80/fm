@@ -61,3 +61,13 @@ func AllMessageScopes() map[string]MessageScope {
 }
 
 const DoorNoTownPortalMessage = "마을의 미스틱 도어 지점이 꽉 차서 지금은 사용할 수 없습니다."
+
+const (
+	ExpeditionJoinedMessage    = "%s님이 원정대에 참가하였습니다."
+	ExpeditionLeftMessage      = "%s님이 원정대에서 탈퇴하였습니다."
+	ExpeditionKickedMessage    = "원정대장이 귀하를 원정대 제재 대상에 등록하였습니다."
+	ExpeditionAllowedMessage   = "원정대장이 귀하의 원정대 참여를 허가하였습니다."
+	ExpeditionExpiredMessage   = "원정대 모집 시간이 종료되었습니다."
+	ExpeditionDisbandedMessage = "원정대장이 자리를 비워 원정대가 해산되었습니다."
+	ExpeditionSkippedMessage   = "%s님이 자리에 없어 원정대 대기 순서를 넘깁니다."
+)

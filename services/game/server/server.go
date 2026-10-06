@@ -63,6 +63,7 @@ type GameServer struct {
 	alliance          *AllianceContainer
 	stateMachines     *StateMachineRegistry
 	carnivalRegistry  *entity.CarnivalRegistry
+	expeditions       *entity.ExpeditionRegistry
 	rabbitPartyPID    *actor.PID
 	rabbitBuddyPID    *actor.PID
 	rabbitGuildPID    *actor.PID
@@ -214,6 +215,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 	gs.alliance = NewAllianceContainer(gs, config.WorldId, gs.internalClient)
 	gs.stateMachines = NewStateMachineRegistry(gs)
 	gs.carnivalRegistry = entity.NewCarnivalRegistry()
+	gs.expeditions = entity.NewExpeditionRegistry(gs)
 
 	if config.RabbitMQ.Enabled() {
 		queueName := fmt.Sprintf("fm.game.w%d.c%d.party.events", config.WorldId, config.ChannelId)
@@ -619,6 +621,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 // and returns the save entry built there. It blocks, so it must not run on a map actor.
 func (gs *GameServer) removeCharacter(character *entity.Character, logout <-chan *internal.CharacterSaveEntry) *internal.CharacterSaveEntry {
 	charID := character.GetID()
+	gs.expeditions.LeaveChannel(character)
 	if sm := character.StateMachine(); sm != nil {
 		sm.RequestLeave(character, false, entity.StateMachineLeaveDisconnect)
 	}

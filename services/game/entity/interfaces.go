@@ -28,6 +28,7 @@ type GameWorld interface {
 	GetDispatchSystem() DispatchSystem
 	GetStateMachineRegistry() StateMachineRegistry
 	GetCarnivalRegistry() *CarnivalRegistry
+	GetExpeditionRegistry() *ExpeditionRegistry
 	StartStateMachineActor(sm *StateMachine) *actor.PID
 	SendStateMachineMessage(pid *actor.PID, msg interface{})
 	StopStateMachineActor(sm *StateMachine)

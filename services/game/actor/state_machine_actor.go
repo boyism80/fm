@@ -407,6 +407,7 @@ func (a *StateMachineActor) finalizeStop() {
 	a.lc.stopped = true
 	a.StateMachine.Group.RemoveMachine(a.StateMachine)
 	a.GameWorld.StopStateMachineActor(a.StateMachine)
+	a.GameWorld.GetExpeditionRegistry().EndBattle(a.StateMachine)
 }
 
 func (a *StateMachineActor) callHook(ctx actor.Context, hook string, args ...interface{}) {

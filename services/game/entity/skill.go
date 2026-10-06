@@ -1,9 +1,9 @@
 package entity
 
 import (
-	"github.com/boyism80/fm/core/clock"
 	"time"
 
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/services/game/wz"
 )
 

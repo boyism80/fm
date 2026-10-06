@@ -1,5 +1,4 @@
-
-
+local ex = require("script/lib/expedition")
 
 local function string_split(s, sep)
 	sep = sep or " "
@@ -707,6 +706,29 @@ local command_funcs = {
 					me:message(string.format("퀘스트 %d 초기화", quest_id))
 				else
 					me:message(string.format("퀘스트 %d 없음", quest_id))
+				end
+			end
+			return true
+		end,
+	},
+	["원정대제한초기화"] = {
+		privilege = ROLE.Admin,
+		usage = "[보스] - 원정대 입장 제한 기록 삭제 (생략 시 전체)",
+		command = function(me, args)
+			local target = args[1]
+			if target ~= nil and target ~= "" and ex.BOSS[target] == nil then
+				local keys = {}
+				for key in pairs(ex.BOSS) do
+					keys[#keys + 1] = key
+				end
+				table.sort(keys)
+				me:message("사용법: /원정대제한초기화 [" .. table.concat(keys, "|") .. "]")
+				return true
+			end
+			for key, boss in pairs(ex.BOSS) do
+				if target == nil or target == "" or target == key then
+					me:clear_quests(boss.cooldown_quest)
+					me:message(string.format("%s 원정대 입장 제한 초기화", boss.name))
 				end
 			end
 			return true

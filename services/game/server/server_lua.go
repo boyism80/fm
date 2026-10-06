@@ -434,6 +434,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 	registerClockLuaFuncs(gs, luaState)
 	registerFaultLuaFuncs(gs, luaState)
 	entity.RegisterCarnivalLua(luaState, gs)
+	entity.RegisterExpeditionLua(luaState, gs)
 
 	luax.RegisterFunc(luaState, "log", func(L *lua.LState) int {
 		parts := make([]string, L.GetTop())
