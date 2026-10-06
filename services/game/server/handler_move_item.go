@@ -36,14 +36,18 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 		return fmt.Errorf("character is nil")
 	}
 
-	if req.Source < 0 {
+	switch {
+	case req.Dest == 0:
+		h.drop(ctx, character, req.InventoryType, req.Source, req.Count)
+	case req.Source < 0:
 		parts := constant.EquipmentPartsType(req.Source)
 		before := character.Inventory.Equipped[parts]
 		if err := character.Inventory.UnequipToSlot(parts, req.Dest); err != nil {
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 		callOnEquipmentChanged(ctx, character, parts, before, nil)
-	} else if req.Dest < 0 {
+	case req.Dest < 0:
 		parts := constant.EquipmentPartsType(req.Dest)
 		before := character.Inventory.Equipped[parts]
 		inven := character.Inventory.Tabs[constant.InventoryTypeEquipment]
@@ -51,45 +55,56 @@ func (h *MoveItem) Handle(ctx *core.ClientContext, req *request.MoveItem) error 
 		if item := inven.Items[req.Source]; item != nil {
 			after, _ = item.(entity.Equipment)
 		}
-		if err := character.Inventory.Equip(req.Source); err != nil {
+		if err := character.Inventory.Equip(req.Source, parts); err != nil {
 			if errors.Is(err, entity.ErrInventoryFull) {
 				character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
 			}
+			character.Listener.OnUpdateStats(character, nil, true)
 			return nil
 		}
 		callOnEquipmentChanged(ctx, character, parts, before, after)
-	} else if req.Dest == 0 {
-		h.drop(character, req.InventoryType, req.Source, req.Count)
-	} else {
+	default:
 		h.move(character, req.InventoryType, req.Source, req.Dest)
 	}
 
 	return nil
 }
 
-func (h *MoveItem) drop(ch *entity.Character, invenType constant.InventoryType, slot int16, count uint16) {
+func (h *MoveItem) drop(ctx *core.ClientContext, ch *entity.Character, invenType constant.InventoryType, slot int16, count uint16) {
 	if ch.Spectating() {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
 
-	inven := ch.Inventory.Tabs[invenType]
-	if inven == nil {
-		return
-	}
-	item, ok := inven.Items[slot]
-	if !ok {
-		return
-	}
+	var spawned entity.Item
+	if slot < 0 {
+		parts := constant.EquipmentPartsType(slot)
+		equipment := ch.Inventory.RemoveEquipped(parts)
+		if equipment == nil {
+			ch.Listener.OnUpdateStats(ch, nil, true)
+			return
+		}
+		callOnEquipmentChanged(ctx, ch, parts, equipment, nil)
+		spawned = equipment
+	} else {
+		inven := ch.Inventory.Tabs[invenType]
+		if inven == nil {
+			return
+		}
+		item, ok := inven.Items[slot]
+		if !ok {
+			return
+		}
 
-	actualCount := min(count, item.GetCount())
-	if actualCount == 0 {
-		return
-	}
+		actualCount := min(count, item.GetCount())
+		if actualCount == 0 {
+			return
+		}
 
-	spawned := item.Clone(actualCount)
-	if ch.Inventory.RemoveItem(invenType, slot, actualCount) == false {
-		return
+		spawned = item.Clone(actualCount)
+		if ch.Inventory.RemoveItem(invenType, slot, actualCount) == false {
+			return
+		}
 	}
 
 	spawned.BindFieldPlacement(&entity.FieldPlacement{
@@ -114,6 +129,10 @@ func (h *MoveItem) drop(ch *entity.Character, invenType constant.InventoryType, 
 func (h *MoveItem) move(ch *entity.Character, invenType constant.InventoryType, sourceSlot int16, destSlot int16) {
 	inven := ch.Inventory.Tabs[invenType]
 	if inven == nil {
+		return
+	}
+	if destSlot < 1 || destSlot > int16(inven.SlotLimit) {
+		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
 	}
 	src, ok := inven.Items[sourceSlot]

@@ -135,6 +135,10 @@ func (gs *GameServer) registerEquipmentPartConstants(luaState *lua.LState) {
 	t.RawSetString("Shield", lua.LNumber(constant.EquipmentPartsShield))
 	t.RawSetString("Weapon", lua.LNumber(constant.EquipmentPartsWeapon))
 	t.RawSetString("Ring", lua.LNumber(constant.EquipmentPartsRing))
+	t.RawSetString("Ring2", lua.LNumber(constant.EquipmentPartsRing2))
+	t.RawSetString("Ring3", lua.LNumber(constant.EquipmentPartsRing3))
+	t.RawSetString("Ring4", lua.LNumber(constant.EquipmentPartsRing4))
+	t.RawSetString("Pendant", lua.LNumber(constant.EquipmentPartsPendant))
 	t.RawSetString("Medal", lua.LNumber(constant.EquipmentPartsMedal))
 	luaState.SetGlobal("EquipmentPart", t)
 }

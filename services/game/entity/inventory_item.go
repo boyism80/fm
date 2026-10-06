@@ -388,7 +388,13 @@ func (inv *Inventory) UnequipToSlot(parts constant.EquipmentPartsType, destSlot 
 		return nil
 	}
 	inven := inventory[constant.InventoryTypeEquipment]
-	if inven == nil || inven.Items[destSlot] != nil {
+	if inven == nil {
+		return errors.New("equipment inventory not found")
+	}
+	if destSlot < 1 || destSlot > int16(inven.SlotLimit) {
+		return ErrSlotNotFound
+	}
+	if inven.Items[destSlot] != nil {
 		return ErrSlotAlreadyOccupied
 	}
 	inven.Items[destSlot] = equipments[parts]
@@ -396,6 +402,18 @@ func (inv *Inventory) UnequipToSlot(parts constant.EquipmentPartsType, destSlot 
 	ch.Listener.OnSwapInventorySlot(ch, constant.InventoryTypeEquipment, int16(parts), destSlot, int8(response.EQUIPMENT_ACTION_TYPE_OFF))
 	ch.Listener.OnUpdateCharacterLook(ch)
 	return nil
+}
+
+func (inv *Inventory) RemoveEquipped(parts constant.EquipmentPartsType) Equipment {
+	ch := inv.owner
+	equipment := inv.Equipped[parts]
+	if equipment == nil {
+		return nil
+	}
+	delete(inv.Equipped, parts)
+	ch.Listener.OnRemoveInventorySlot(ch, constant.InventoryTypeEquipment, int16(parts))
+	ch.Listener.OnUpdateCharacterLook(ch)
+	return equipment
 }
 
 func (inv *Inventory) Unequip(parts constant.EquipmentPartsType) error {
@@ -410,7 +428,7 @@ func (inv *Inventory) Unequip(parts constant.EquipmentPartsType) error {
 	return inv.UnequipToSlot(parts, int16(destSlot))
 }
 
-func (inv *Inventory) Equip(slot int16) error {
+func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error {
 	ch := inv.owner
 	equipments := inv.Equipped
 	inventory := inv.Tabs
@@ -426,8 +444,7 @@ func (inv *Inventory) Equip(slot int16) error {
 	if !ok {
 		return ErrItemNotEquipment
 	}
-	parts := constant.GetEquipmentPartsType(newEq.GetModel().GetID())
-	if parts == 0 {
+	if constant.CanEquipAt(newEq.GetModel().GetID(), parts) == false {
 		return ErrInvalidEquipmentPart
 	}
 

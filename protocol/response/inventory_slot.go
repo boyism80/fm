@@ -151,6 +151,9 @@ func (p *RemoveInventorySlot) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(INVENTORY_MODE_REMOVE))
 	writer.WriteU8(uint8(p.InventoryType))
 	writer.Write16(p.Slot)
+	if p.Slot < 0 {
+		writer.WriteU8(1)
+	}
 	return nil
 }
 

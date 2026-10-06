@@ -3328,7 +3328,17 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(2, "equip(slot | item | name): slot (number), item (equipment), or name (string) expected")
 				return 0
 			}
-			err := ch.Inventory.Equip(slot)
+			item := ch.Inventory.Tabs[constant.InventoryTypeEquipment].Items[slot]
+			if item == nil {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			parts := constant.EquipmentParts(item.GetModel().GetID())
+			if len(parts) == 0 {
+				L.Push(lua.LBool(false))
+				return 1
+			}
+			err := ch.Inventory.Equip(slot, parts[0])
 			L.Push(lua.LBool(err == nil))
 			return 1
 		},

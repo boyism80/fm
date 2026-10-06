@@ -90,35 +90,6 @@ func IsEquipment(itemID uint32) bool {
 		t != EquipmentTypeDragon && t != EquipmentTypePetEquip && t != EquipmentTypeTaming && t != EquipmentTypeMechanic && t != EquipmentTypeHair
 }
 
-func GetEquipmentPartsType(itemID uint32) EquipmentPartsType {
-	switch GetEquipmentType(itemID) {
-	case EquipmentTypeWeapon:
-		return EquipmentPartsWeapon
-	case EquipmentTypeShield:
-		return EquipmentPartsShield
-	case EquipmentTypeCap:
-		return EquipmentPartsCap
-	case EquipmentTypeCoat, EquipmentTypeLongcoat:
-		return EquipmentPartsTop
-	case EquipmentTypePants:
-		return EquipmentPartsPants
-	case EquipmentTypeShoes:
-		return EquipmentPartsShoes
-	case EquipmentTypeGlove:
-		return EquipmentPartsGlove
-	case EquipmentTypeCape:
-		return EquipmentPartsCape
-	case EquipmentTypeRing:
-		return EquipmentPartsRing
-	case EquipmentTypeFace:
-		return EquipmentPartsFace
-	case EquipmentTypeAccessory:
-		return EquipmentPartsEye
-	default:
-		return 0
-	}
-}
-
 func GetWeaponType(itemID uint32) WeaponType {
 	if itemID < 1300000 || itemID >= 1800000 {
 		return WeaponTypeNone

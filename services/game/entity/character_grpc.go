@@ -23,6 +23,11 @@ func (ch *Character) LoadInventory(items []*internal.InventoryPersisted) {
 		itemID := pb.GetItemId()
 		if slot < 0 {
 			parts := constant.EquipmentPartsType(slot)
+			if constant.CanEquipAt(itemID, parts) == false {
+				if known := constant.EquipmentParts(itemID); len(known) > 0 && ch.Inventory.Equipped[known[0]] == nil {
+					parts = known[0]
+				}
+			}
 			if eq, ok := item.(Equipment); ok {
 				ch.Inventory.Equipped[parts] = eq
 			}
