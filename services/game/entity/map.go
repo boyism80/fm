@@ -1339,6 +1339,17 @@ func (m *Map) LootItem(obj Object, character *Character, position types.Point[in
 			return constant.LootFailedNoOwnership
 		}
 
+		if item.GetModel().IsConsumeOnPickup() {
+			consume, ok := item.(*Consume)
+			if ok == false {
+				return constant.LootFailedInvalidItem
+			}
+			if character.UseConsume(consume) == false {
+				return constant.LootFailedInvalidItem
+			}
+			return constant.LootSuccess
+		}
+
 		if fp.Quest > 0 && character.NeedsQuestItem(fp.Quest, item.GetModel().GetID()) == false {
 			return constant.LootFailedInventoryFull
 		}

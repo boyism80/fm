@@ -8,7 +8,6 @@ import (
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
-	"github.com/boyism80/fm/services/game/entity"
 )
 
 type ItemLoot struct {
@@ -53,34 +52,19 @@ func (h *ItemLoot) Handle(ctx *core.ClientContext, req *request.ItemLoot) error 
 		return fmt.Errorf("item not found")
 	}
 
-	if item, ok := obj.(entity.Item); ok && item.GetModel().IsConsumeOnPickup() {
-		consume, ok := item.(*entity.Consume)
-		if !ok {
-			log.Printf("Item is not a Consume for OID %d", req.OID)
-			character.Listener.OnUpdateStats(character, nil, true)
-			return fmt.Errorf("item is not a Consume for OID %d", req.OID)
-		}
-
-		if !character.UseConsume(consume) {
-			log.Printf("Failed to apply consume effect for OID %d", req.OID)
-			character.Listener.OnUpdateStats(character, nil, true)
-			return fmt.Errorf("failed to apply consume effect for OID %d", req.OID)
-		}
-	} else {
-		reason := mapInstance.LootItem(obj, character, req.Position)
-		if reason == constant.LootPartial {
+	reason := mapInstance.LootItem(obj, character, req.Position)
+	if reason == constant.LootPartial {
+		character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
+		character.Listener.OnUpdateStats(character, nil, true)
+		return nil
+	}
+	if reason != constant.LootSuccess {
+		log.Printf("Failed to loot item %d for character %d, reason: %d", req.OID, character.GetID(), reason)
+		if reason == constant.LootFailedInventoryFull || reason == constant.LootFailedMesoFull {
 			character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
-			character.Listener.OnUpdateStats(character, nil, true)
-			return nil
 		}
-		if reason != constant.LootSuccess {
-			log.Printf("Failed to loot item %d for character %d, reason: %d", req.OID, character.GetID(), reason)
-			if reason == constant.LootFailedInventoryFull || reason == constant.LootFailedMesoFull {
-				character.Listener.OnItemGainFailed(character, constant.ItemGainFailedTypeFull)
-			}
-			character.Listener.OnUpdateStats(character, nil, true)
-			return fmt.Errorf("failed to loot item for OID %d", req.OID)
-		}
+		character.Listener.OnUpdateStats(character, nil, true)
+		return fmt.Errorf("failed to loot item for OID %d", req.OID)
 	}
 
 	if err := mapInstance.RemoveItem(req.OID, constant.RemoveItemTypeAnimated, character.GetID()); err != nil {
