@@ -61,7 +61,7 @@ export class InternalContext {
     }
 
     private static createPool(endpoint: PgEndpoint): Pool {
-        return new Pool({
+        const pool = new Pool({
             host: endpoint.host,
             port: endpoint.port,
             database: endpoint.database,
@@ -71,6 +71,10 @@ export class InternalContext {
             max: endpoint.pool.max,
             min: endpoint.pool.min,
         });
+        pool.on("error", (error) => {
+            console.error(`[pg] idle client error host=${endpoint.host} database=${endpoint.database}`, error);
+        });
+        return pool;
     }
 
     private static createRedis(endpoint: RedisEndpoint): Redis {
@@ -103,23 +107,38 @@ export class InternalContext {
         return this.pgData[worldKey] ?? [];
     }
 
-    async withPgDataTransaction<T>(worldId: number, hash: number, fn: TxFn<T>): Promise<T> {
-        const pool = this.getPgDataPool(worldId, hash);
+    async withPgClient<T>(pool: Pool, fn: TxFn<T>): Promise<T> {
         const client = await pool.connect();
+        let lost: Error | undefined;
+        const onError = (error: Error) => {
+            lost = error;
+            console.error("[pg] checked-out client error", error);
+        };
+        client.on("error", onError);
         try {
-            await client.query("BEGIN");
-            const result = await fn(client);
-            await client.query("COMMIT");
-            return result;
-        } catch (error) {
-            try {
-                await client.query("ROLLBACK");
-            } catch {
-            }
-            throw error;
+            return await fn(client);
         } finally {
-            client.release();
+            client.removeListener("error", onError);
+            client.release(lost);
         }
+    }
+
+    private async withPgTransaction<T>(pool: Pool, fn: TxFn<T>): Promise<T> {
+        return this.withPgClient(pool, async (client) => {
+            try {
+                await client.query("BEGIN");
+                const result = await fn(client);
+                await client.query("COMMIT");
+                return result;
+            } catch (error) {
+                await client.query("ROLLBACK").catch(() => {});
+                throw error;
+            }
+        });
+    }
+
+    async withPgDataTransaction<T>(worldId: number, hash: number, fn: TxFn<T>): Promise<T> {
+        return this.withPgTransaction(this.getPgDataPool(worldId, hash), fn);
     }
 
     async withPgGlobalTransaction<T>(worldId: number, fn: TxFn<T>): Promise<T> {
@@ -128,21 +147,7 @@ export class InternalContext {
         if (!pool) {
             throw new Error(`Unknown world_id for global transaction: ${worldId}`);
         }
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
-            const result = await fn(client);
-            await client.query("COMMIT");
-            return result;
-        } catch (error) {
-            try {
-                await client.query("ROLLBACK");
-            } catch {
-            }
-            throw error;
-        } finally {
-            client.release();
-        }
+        return this.withPgTransaction(pool, fn);
     }
 
     getPgUnifiedPool(): Pool {

@@ -68,72 +68,71 @@ export class UnifiedRepository {
      * One pending reservation per account: any other pending row for this account is deleted first.
      */
     async reserveCharacterName(name: string, accountId: number, worldId: number): Promise<number | null> {
-        const client = await this.pool().connect();
-        try {
-            await client.query("BEGIN");
+        return this.ctx.withPgClient(this.pool(), async (client) => {
+            try {
+                await client.query("BEGIN");
 
-            // Release any prior pending reservation for this account under a different name.
-            await client.query(
-                `DELETE FROM character_name_registry WHERE account_id = $1 AND reserved_at IS NOT NULL AND LOWER(name) != LOWER($2)`,
-                [accountId, name]
-            );
+                // Release any prior pending reservation for this account under a different name.
+                await client.query(
+                    `DELETE FROM character_name_registry WHERE account_id = $1 AND reserved_at IS NOT NULL AND LOWER(name) != LOWER($2)`,
+                    [accountId, name]
+                );
 
-            const { rows } = await client.query(
-                `SELECT character_id, account_id, reserved_at,
-                  reserved_at > NOW() - make_interval(secs => $2::numeric) AS reservation_active
-                 FROM character_name_registry WHERE LOWER(name) = LOWER($1) FOR UPDATE`,
-                [name, CHARACTER_NAME_RESERVATION_TTL_SECONDS]
-            );
+                const { rows } = await client.query(
+                    `SELECT character_id, account_id, reserved_at,
+                      reserved_at > NOW() - make_interval(secs => $2::numeric) AS reservation_active
+                     FROM character_name_registry WHERE LOWER(name) = LOWER($1) FOR UPDATE`,
+                    [name, CHARACTER_NAME_RESERVATION_TTL_SECONDS]
+                );
 
-            if (rows.length === 0) {
+                if (rows.length === 0) {
+                    const { rows: ins } = await client.query(
+                        `INSERT INTO character_name_registry (name, account_id, world_id, reserved_at) VALUES ($1, $2, $3, NOW()) RETURNING character_id`,
+                        [name, accountId, worldId]
+                    );
+                    await client.query("COMMIT");
+                    return Number(ins[0].character_id);
+                }
+
+                const { character_id, account_id: existingAccountId, reserved_at } = rows[0];
+
+                if (reserved_at === null) {
+                    await client.query("ROLLBACK");
+                    return null;
+                }
+
+                if (Number(existingAccountId) === accountId) {
+                    await client.query(
+                        `UPDATE character_name_registry SET reserved_at = NOW() WHERE character_id = $1`,
+                        [character_id]
+                    );
+                    await client.query("COMMIT");
+                    return Number(character_id);
+                }
+
+                if (rows[0].reservation_active) {
+                    await client.query("ROLLBACK");
+                    return null;
+                }
+
+                // Expired reservation by a different account: delete and re-insert to get a
+                // fresh serial character_id. Reusing the old id risks conflicting with orphan
+                // data left by a failed creation that never ran its cleanup (e.g. process kill).
+                await client.query(
+                    `DELETE FROM character_name_registry WHERE character_id = $1`,
+                    [character_id]
+                );
                 const { rows: ins } = await client.query(
                     `INSERT INTO character_name_registry (name, account_id, world_id, reserved_at) VALUES ($1, $2, $3, NOW()) RETURNING character_id`,
                     [name, accountId, worldId]
                 );
                 await client.query("COMMIT");
                 return Number(ins[0].character_id);
+            } catch (err) {
+                await client.query("ROLLBACK").catch(() => {});
+                throw err;
             }
-
-            const { character_id, account_id: existingAccountId, reserved_at } = rows[0];
-
-            if (reserved_at === null) {
-                await client.query("ROLLBACK");
-                return null;
-            }
-
-            if (Number(existingAccountId) === accountId) {
-                await client.query(
-                    `UPDATE character_name_registry SET reserved_at = NOW() WHERE character_id = $1`,
-                    [character_id]
-                );
-                await client.query("COMMIT");
-                return Number(character_id);
-            }
-
-            if (rows[0].reservation_active) {
-                await client.query("ROLLBACK");
-                return null;
-            }
-
-            // Expired reservation by a different account: delete and re-insert to get a
-            // fresh serial character_id. Reusing the old id risks conflicting with orphan
-            // data left by a failed creation that never ran its cleanup (e.g. process kill).
-            await client.query(
-                `DELETE FROM character_name_registry WHERE character_id = $1`,
-                [character_id]
-            );
-            const { rows: ins } = await client.query(
-                `INSERT INTO character_name_registry (name, account_id, world_id, reserved_at) VALUES ($1, $2, $3, NOW()) RETURNING character_id`,
-                [name, accountId, worldId]
-            );
-            await client.query("COMMIT");
-            return Number(ins[0].character_id);
-        } catch (err) {
-            await client.query("ROLLBACK").catch(() => {});
-            throw err;
-        } finally {
-            client.release();
-        }
+        });
     }
 
     async confirmCharacterName(name: string): Promise<void> {
