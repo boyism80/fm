@@ -86,7 +86,19 @@ type Character struct {
 	savedLocations    map[string]uint32
 	loggedOut         atomic.Bool
 	logoutEntry       chan *internal.CharacterSaveEntry
-	Destination       *Map
+	destination       atomic.Pointer[Map]
+}
+
+func (ch *Character) Destination() *Map {
+	return ch.destination.Load()
+}
+
+func (ch *Character) BeginMove(target *Map) bool {
+	return ch.destination.CompareAndSwap(nil, target)
+}
+
+func (ch *Character) FinishMove(target *Map) {
+	ch.destination.CompareAndSwap(target, nil)
 }
 
 type LastHeal struct {

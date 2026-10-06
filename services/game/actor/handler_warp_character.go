@@ -16,20 +16,14 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
-	pid := msg.TargetMap.LogicActorPID()
-	if pid == nil {
-		msg.Character.Destination = nil
+	if msg.Character.Destination() != msg.TargetMap {
+		log.Printf("warp character %d to map %d: character is moving elsewhere", msg.Character.GetID(), msg.TargetMap.GetMapID())
 		msg.Ticket.Release()
-		return
-	}
-	// A state machine attached or detached while the message was in flight; the ticket keeps the map open until it arrives.
-	if pid.Equal(ctx.Self()) == false {
-		ctx.Send(pid, msg)
 		return
 	}
 
 	err := msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.Portal, false)
-	msg.Character.Destination = nil
+	msg.Character.FinishMove(msg.TargetMap)
 	msg.Ticket.Release()
 	if err != nil {
 		log.Printf("warp character %d to map %d: %v", msg.Character.GetID(), msg.TargetMap.GetMapID(), err)

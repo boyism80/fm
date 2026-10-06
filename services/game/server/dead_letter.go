@@ -8,7 +8,6 @@ import (
 )
 
 // Warps that reach a stopped actor would strand the character between maps and leak the instance ticket.
-// Map lifetimes are meant to make that impossible, so every case here is logged as a broken invariant.
 func (gs *GameServer) subscribeDeadLetters() {
 	gs.actorSystem.GetSystem().EventStream.Subscribe(func(evt interface{}) {
 		dead, ok := evt.(*actor.DeadLetterEvent)
@@ -27,23 +26,19 @@ func (gs *GameServer) subscribeDeadLetters() {
 func (gs *GameServer) recoverWarp(deadPID *actor.PID, msg *g_actor.WarpCharacter) {
 	log.Printf("invariant: warp of character %d to map %d reached stopped actor %v", msg.Character.GetID(), msg.TargetMap.GetMapID(), deadPID)
 
-	if pid := msg.TargetMap.LogicActorPID(); pid != nil && pid.Equal(deadPID) == false {
-		gs.GetRootContext().Send(pid, msg)
-		return
-	}
 	msg.Ticket.Release()
+	msg.Character.FinishMove(msg.TargetMap)
 
 	exitMap := mapSystem{gs}.returnMap(msg.TargetMap)
 	if exitMap == nil {
 		log.Printf("invariant: character %d stranded; map %d has no return map", msg.Character.GetID(), msg.TargetMap.GetMapID())
 		return
 	}
-	pid := exitMap.LogicActorPID()
-	if pid == nil {
-		log.Printf("invariant: character %d stranded; return map %d has no actor", msg.Character.GetID(), exitMap.GetMapID())
+	if msg.Character.BeginMove(exitMap) == false {
+		log.Printf("invariant: character %d stranded; it is already moving elsewhere", msg.Character.GetID())
 		return
 	}
-	gs.GetRootContext().Send(pid, &g_actor.WarpCharacter{
+	gs.GetRootContext().Send(exitMap.LogicActorPID(), &g_actor.WarpCharacter{
 		Character: msg.Character,
 		TargetMap: exitMap,
 	})

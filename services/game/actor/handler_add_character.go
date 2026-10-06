@@ -14,17 +14,8 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 	if msg == nil || msg.Character == nil || msg.TargetMap == nil {
 		return
 	}
-	pid := msg.TargetMap.LogicActorPID()
-	if pid == nil {
-		msg.Character.Destination = nil
-		return
-	}
-	if !pid.Equal(ctx.Self()) {
-		ctx.Send(pid, msg)
-		return
-	}
 	msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
-	msg.Character.Destination = nil
+	msg.Character.FinishMove(msg.TargetMap)
 	if msg.Character.LoggedOut() {
 		_ = msg.TargetMap.LogoutPlayer(msg.Character.GetID())
 		return

@@ -69,7 +69,7 @@ func (c *GameClient) GetLogicActorPID() *actor.PID {
 	}
 	m := ch.GetMap()
 	if m == nil {
-		m = ch.Destination
+		m = ch.Destination()
 	}
 	if m == nil {
 		return nil

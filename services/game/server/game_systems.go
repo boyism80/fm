@@ -239,12 +239,8 @@ func (s mapSystem) CloseInstance(m *entity.Map) {
 	}
 	m.Close()
 
-	pid := m.LogicActorPID()
-	if pid == nil {
-		return
-	}
 	exitMap := s.returnMap(m)
-	s.gs.GetRootContext().Send(pid, &g_actor.MapCall{Run: func(ctx actor.Context, _ *g_actor.GameLogicActor) []lua.LValue {
+	s.gs.GetRootContext().Send(m.LogicActorPID(), &g_actor.MapCall{Run: func(ctx actor.Context, _ *g_actor.GameLogicActor) []lua.LValue {
 		for _, obj := range m.GetObjects(gameconst.ObjectTypeDoor) {
 			if door, ok := obj.(*entity.Door); ok {
 				m.RemoveDoor(door.OID, true)
@@ -427,14 +423,17 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		return err
 	}
 	currentMap := character.GetMap()
-	targetPID := targetMap.LogicActorPID()
-	if targetPID == nil {
-		ticket.Release()
-		return fmt.Errorf("target map actor not found")
+	owner := currentMap
+	if owner == nil {
+		owner = character.Destination()
 	}
-	if currentMap == nil {
-		character.Destination = targetMap
-		s.gs.GetRootContext().Send(targetPID, &g_actor.WarpCharacter{
+	if owner == nil {
+		ticket.Release()
+		return fmt.Errorf("character %d is on no map", character.GetID())
+	}
+	ownerPID := owner.LogicActorPID()
+	if currentMap == nil || actorCtx == nil || ownerPID.Equal(actorCtx.Self()) == false {
+		s.gs.GetRootContext().Send(ownerPID, &g_actor.HandoffCharacter{
 			Character: character,
 			TargetMap: targetMap,
 			Portal:    spawnPoint,
@@ -443,22 +442,9 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		})
 		return nil
 	}
-	sourcePID := currentMap.LogicActorPID()
-	if sourcePID == nil {
-		ticket.Release()
-		return fmt.Errorf("source map actor not found")
-	}
-	if sourcePID.Equal(targetPID) {
-		if actorCtx == nil || actorCtx.Self() == nil || !actorCtx.Self().Equal(sourcePID) {
-			ticket.Release()
-			s.gs.GetRootContext().Send(sourcePID, &g_actor.MapCall{Run: func(ctx actor.Context, _ *g_actor.GameLogicActor) []lua.LValue {
-				if err := s.Warp(ctx, character, targetMap, spawnPoint, onEnter); err != nil {
-					log.Printf("warp %d to map %d: %v", character.GetID(), targetMap.GetMapID(), err)
-				}
-				return nil
-			}})
-			return nil
-		}
+
+	targetPID := targetMap.LogicActorPID()
+	if ownerPID.Equal(targetPID) {
 		if err := currentMap.RemovePlayer(character.GetID()); err != nil {
 			ticket.Release()
 			return err
@@ -479,23 +465,16 @@ func (s mapSystem) Warp(actorCtx actor.Context, character *entity.Character, tar
 		}
 		return nil
 	}
-	if actorCtx != nil && actorCtx.Self() != nil && actorCtx.Self().Equal(sourcePID) {
-		character.Destination = targetMap
-		if err := currentMap.RemovePlayer(character.GetID()); err != nil {
-			character.Destination = nil
-			ticket.Release()
-			return err
-		}
-		actorCtx.Send(targetPID, &g_actor.WarpCharacter{
-			Character: character,
-			TargetMap: targetMap,
-			Portal:    spawnPoint,
-			OnEnter:   onEnter,
-			Ticket:    ticket,
-		})
-		return nil
+	if character.BeginMove(targetMap) == false {
+		ticket.Release()
+		return fmt.Errorf("character %d is already moving", character.GetID())
 	}
-	s.gs.GetRootContext().Send(sourcePID, &g_actor.HandoffCharacter{
+	if err := currentMap.RemovePlayer(character.GetID()); err != nil {
+		character.FinishMove(targetMap)
+		ticket.Release()
+		return err
+	}
+	actorCtx.Send(targetPID, &g_actor.WarpCharacter{
 		Character: character,
 		TargetMap: targetMap,
 		Portal:    spawnPoint,

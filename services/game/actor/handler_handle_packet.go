@@ -29,7 +29,7 @@ func (h *HandlePacketHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		return
 	}
 	if ok {
-		if ch := client.GetCharacter(); ch != nil && ch.GetMap() == nil && ch.Destination != nil {
+		if ch := client.GetCharacter(); ch != nil && ch.GetMap() == nil && ch.Destination() != nil {
 			ctx.Send(ctx.Self(), msg)
 			return
 		}

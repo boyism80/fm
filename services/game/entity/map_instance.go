@@ -97,15 +97,6 @@ func (m *Map) Closing() bool {
 	return m.instance.closing || m.instance.closed
 }
 
-func (m *Map) Closed() bool {
-	if m.IsInstance() == false {
-		return false
-	}
-	m.instance.mu.Lock()
-	defer m.instance.mu.Unlock()
-	return m.instance.closed
-}
-
 func (m *Map) enter() error {
 	if m.IsInstance() == false {
 		return nil

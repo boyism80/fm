@@ -233,6 +233,9 @@ func OnMobControllerChange(mob *Mob, before *Character, after *Character, aggro 
 }
 
 func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character, spawnPoint uint8, init bool) error {
+	if character.Map != nil {
+		return fmt.Errorf("character %d is still on map %d", playerID, character.Map.GetMapID())
+	}
 	if err := m.enter(); err != nil {
 		return err
 	}
