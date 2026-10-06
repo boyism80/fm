@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"math"
+
+	"github.com/boyism80/fm/services/game/constant"
 )
 
 const soloDamageBucketID int64 = -1
@@ -24,6 +26,7 @@ func (m *Mob) grantKillExp() {
 	if mobExpRate <= 0 {
 		mobExpRate = 100
 	}
+	mobExpRate += m.Buffs.GetValue(constant.MobBuffShowdown)
 
 	for bucketID, damagers := range m.accDamage {
 		if len(damagers) == 0 {
@@ -98,6 +101,7 @@ func (m *Mob) grantPartyKillExp(mapInst *Map, partyID uint32, damagers map[uint3
 	if mobExpRate <= 0 {
 		mobExpRate = 100
 	}
+	mobExpRate += m.Buffs.GetValue(constant.MobBuffShowdown)
 	poolRaw = poolRaw * uint32(mobExpRate) / 100
 
 	mobLv := int(m.Wz.Level)

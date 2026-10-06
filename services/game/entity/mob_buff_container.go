@@ -1,12 +1,9 @@
 package entity
 
 import (
-	"fmt"
 	"github.com/boyism80/fm/core/clock"
-	"log"
 	"time"
 
-	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
 )
@@ -70,38 +67,6 @@ func (e *MobBuff) Equal(values map[constant.MobBuffFlag]int32, stacks map[consta
 		}
 	}
 	return true
-}
-
-func (e *MobBuff) callMobSkillHook(mob *Mob, hookPrefix string) {
-	if e == nil || mob == nil || e.Wz == nil {
-		return
-	}
-	mapInstance := mob.GetMap()
-	if mapInstance == nil {
-		return
-	}
-	root := mapInstance.GetLuaRoot()
-	if root == nil {
-		return
-	}
-	skillID := e.Wz.ID
-	var causer *Character
-	if e.Causer != 0 {
-		causer = mapInstance.GetPlayer(e.Causer)
-	}
-	if causer == nil {
-		return
-	}
-	scriptPath := fmt.Sprintf("script/mob/skill/%d.lua", skillID)
-	hookName := fmt.Sprintf("%s_%d", hookPrefix, skillID)
-	thread, err := luax.NewThread(root, scriptPath)
-	if err != nil {
-		log.Printf("mob skill hook %s %d: %v", hookPrefix, skillID, err)
-		return
-	}
-	luax.CallAsync(nil, root, thread, hookName, mob, e, causer).OnError(func(err error) {
-		log.Printf("mob skill hook %s %d: %v", hookPrefix, skillID, err)
-	})
 }
 
 type MobBuffContainer struct {
@@ -207,7 +172,6 @@ func (bc *MobBuffContainer) Add(duration time.Duration, skillWz *wz.Skill, skill
 		bc.byFlag[flag] = ent
 	}
 	mob := bc.owner
-	ent.callMobSkillHook(mob, "on_mob_buff")
 	remaining := ent.RemainingDuration(now)
 	mob.Listener.OnMobBuffApplied(mob, ent, addedReflections, remaining)
 }
@@ -235,7 +199,6 @@ func (bc *MobBuffContainer) Remove(flag constant.MobBuffFlag) {
 	for f := range ent.Values {
 		mob.Listener.OnMobBuffCancelled(mob, f)
 	}
-	ent.callMobSkillHook(mob, "on_mob_unbuff")
 }
 
 func (bc *MobBuffContainer) Dispel(skillID uint32) {

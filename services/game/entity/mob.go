@@ -365,6 +365,7 @@ func (m *Mob) dropItems(attacker *Character) {
 	if mobDrop <= 0 {
 		mobDrop = 100
 	}
+	mobDrop += m.Buffs.GetValue(constant.MobBuffShowdown)
 	mobDropF := float32(mobDrop) / 100.0
 
 	for _, entry := range mobDrops {

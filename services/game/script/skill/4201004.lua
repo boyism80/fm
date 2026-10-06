@@ -66,7 +66,7 @@ return {
 			end
 			local channel = me:channel_drop_rate()
 			local bonus = me:bonus_drop_rate()
-			local mob_dr = mob:drop_rate()
+			local mob_dr = mob:drop_rate() + mob:buff_value(MobBuff.Showdown)
 			for _, e in ipairs(candidates) do
 				local prob = e.prob
 				if prob > 0 then
