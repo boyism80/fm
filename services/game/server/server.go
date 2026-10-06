@@ -22,11 +22,9 @@ import (
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/mq"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/common/globaltimer"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/entity"
-	gamegtimers "github.com/boyism80/fm/services/game/gtimers"
 	"github.com/boyism80/fm/services/game/wz"
 	lua "github.com/yuin/gopher-lua"
 	"google.golang.org/grpc"
@@ -462,13 +460,7 @@ func (gs *GameServer) Start() error {
 	if gs.internalClient != nil && gs.config.InternalHeartbeatIntervalSeconds > 0 {
 		hbCtx, cancel := context.WithCancel(context.Background())
 		gs.internalHBCancel = cancel
-		wid := gs.config.WorldId
-		ch := gs.config.ChannelId
-		iv := gs.config.InternalHeartbeatIntervalSeconds
-		gamegtimers.WireInternalPing(gs.internalClient, time.Duration(iv)*time.Second, wid, ch)
-		reg := globaltimer.NewRegistry()
-		globaltimer.RegisterTimer[*gamegtimers.InternalPingTimer](reg)
-		reg.Start(hbCtx)
+		go gs.pingInternal(hbCtx, time.Duration(gs.config.InternalHeartbeatIntervalSeconds)*time.Second)
 	}
 
 	log.Printf("Game server started on %s:%d", gs.config.Host, gs.config.Port)
@@ -544,6 +536,28 @@ func (gs *GameServer) Stop() error {
 		_ = gs.internalConn.Close()
 	}
 	return gs.ServerCore.Stop()
+}
+
+func (gs *GameServer) pingInternal(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+		pingCtx, cancel := context.WithTimeout(ctx, core.InternalRPCPerStepTimeout)
+		_, err := gs.internalClient.Ping(pingCtx, &internal.PingRequest{
+			Role:      internal.ServerRole_SERVER_ROLE_GAME,
+			WorldId:   gs.config.WorldId,
+			ChannelId: gs.config.ChannelId,
+		})
+		cancel()
+		if err != nil {
+			log.Printf("internal ping: %v", err)
+		}
+	}
 }
 
 func (gs *GameServer) handleClientDisconnect(c core.Client) {

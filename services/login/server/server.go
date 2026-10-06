@@ -18,10 +18,8 @@ import (
 	"github.com/boyism80/fm/core/ensure"
 	"github.com/boyism80/fm/core/mq"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
-	"github.com/boyism80/fm/services/common/globaltimer"
 	loginactor "github.com/boyism80/fm/services/login/actor"
 	"github.com/boyism80/fm/services/login/client"
-	logingtimers "github.com/boyism80/fm/services/login/gtimers"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -270,6 +268,27 @@ func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 
 }
 
+func (ls *LoginServer) pingInternal(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+		pingCtx, cancel := context.WithTimeout(ctx, core.InternalRPCPerStepTimeout)
+		_, err := ls.internalClient.Ping(pingCtx, &internal.PingRequest{
+			Role:            internal.ServerRole_SERVER_ROLE_LOGIN,
+			LoginInstanceId: ls.config.LoginInstanceID,
+		})
+		cancel()
+		if err != nil {
+			log.Printf("internal ping: %v", err)
+		}
+	}
+}
+
 func (ls *LoginServer) Start() error {
 	log.Println("Starting MapleStory Login Server...")
 
@@ -280,12 +299,7 @@ func (ls *LoginServer) Start() error {
 	if ls.config.InternalHeartbeatIntervalSeconds > 0 && ls.config.LoginInstanceID != "" {
 		hbCtx, cancel := context.WithCancel(context.Background())
 		ls.internalHBCancel = cancel
-		instanceID := ls.config.LoginInstanceID
-		iv := ls.config.InternalHeartbeatIntervalSeconds
-		logingtimers.WireInternalPing(ls.internalClient, time.Duration(iv)*time.Second, instanceID)
-		reg := globaltimer.NewRegistry()
-		globaltimer.RegisterTimer[*logingtimers.InternalPingTimer](reg)
-		reg.Start(hbCtx)
+		go ls.pingInternal(hbCtx, time.Duration(ls.config.InternalHeartbeatIntervalSeconds)*time.Second)
 	} else if ls.config.LoginInstanceID == "" {
 		log.Printf("login_instance_id empty: internal heartbeat disabled")
 	}
