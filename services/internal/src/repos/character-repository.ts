@@ -5,7 +5,7 @@ import type { CharacterDeleteModel, CharacterModel, CharacterRow } from "../type
 
 const SELECT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hidden, deleted, created_at, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, hidden, deleted, created_at, updated_at`;
 
 const ON_CONFLICT_SET = `
   account_id = EXCLUDED.account_id, world_id = EXCLUDED.world_id, name = EXCLUDED.name, gender = EXCLUDED.gender,
@@ -15,14 +15,15 @@ const ON_CONFLICT_SET = `
   hp = EXCLUDED.hp, max_hp = EXCLUDED.max_hp, mp = EXCLUDED.mp, max_mp = EXCLUDED.max_mp,
   ability_point = EXCLUDED.ability_point, exp = EXCLUDED.exp, map_id = EXCLUDED.map_id,
   spawn_point = EXCLUDED.spawn_point, pos_x = EXCLUDED.pos_x, pos_y = EXCLUDED.pos_y,
-  stance = EXCLUDED.stance, meso = EXCLUDED.meso, skill_point = EXCLUDED.skill_point, population = EXCLUDED.population, hidden = EXCLUDED.hidden,
+  stance = EXCLUDED.stance, meso = EXCLUDED.meso, skill_point = EXCLUDED.skill_point, population = EXCLUDED.population,
+  hp_ap_used = EXCLUDED.hp_ap_used, hidden = EXCLUDED.hidden,
   deleted = FALSE, updated_at = NOW()`;
 
 const INSERT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hidden, deleted, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, hidden, deleted, updated_at`;
 
-const PER_ROW_PARAMS = 30;
+const PER_ROW_PARAMS = 31;
 
 export type { CharacterModel };
 
@@ -35,7 +36,7 @@ function rowValues(row: CharacterRow) {
         row.max_hp, row.mp, row.max_mp, row.ability_point,
         row.exp, row.map_id, row.spawn_point, row.pos_x,
         row.pos_y, row.stance, row.meso, row.skill_point,
-        row.population, row.hidden,
+        row.population, row.hp_ap_used, row.hidden,
     ];
 }
 
@@ -68,7 +69,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
 
     override onUpsert(row: CharacterRow): RepositoryQuery {
         return {
-            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
+            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
             values: rowValues(row),
         };
     }
@@ -124,6 +125,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             meso: row.meso,
             skillPoint: row.skill_point,
             population: row.population,
+            hpApUsed: row.hp_ap_used,
             hidden: row.hidden,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
@@ -160,6 +162,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             meso: model.meso ?? 0,
             skill_point: model.skillPoint ?? 0,
             population: model.population ?? 0,
+            hp_ap_used: model.hpApUsed ?? 0,
             hidden: model.hidden ?? false,
         };
     }

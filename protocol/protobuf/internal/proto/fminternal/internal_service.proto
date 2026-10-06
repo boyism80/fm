@@ -159,6 +159,7 @@ message CharacterPersisted {
   uint32 role              = 28;
   bool   hidden            = 29;
   uint32 population        = 30;
+  uint32 hp_ap_used        = 31;
 }
 
 message KeyLayoutBinding {

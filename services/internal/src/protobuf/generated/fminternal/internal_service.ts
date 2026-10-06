@@ -990,6 +990,7 @@ export interface CharacterPersisted {
   role: number;
   hidden: boolean;
   population: number;
+  hpApUsed: number;
 }
 
 export interface KeyLayoutBinding {
@@ -3001,6 +3002,7 @@ function createBaseCharacterPersisted(): CharacterPersisted {
     role: 0,
     hidden: false,
     population: 0,
+    hpApUsed: 0,
   };
 }
 
@@ -3095,6 +3097,9 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     }
     if (message.population !== 0) {
       writer.uint32(240).uint32(message.population);
+    }
+    if (message.hpApUsed !== 0) {
+      writer.uint32(248).uint32(message.hpApUsed);
     }
     return writer;
   },
@@ -3346,6 +3351,14 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
           message.population = reader.uint32();
           continue;
         }
+        case 31: {
+          if (tag !== 248) {
+            break;
+          }
+
+          message.hpApUsed = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3443,6 +3456,11 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
       role: isSet(object.role) ? globalThis.Number(object.role) : 0,
       hidden: isSet(object.hidden) ? globalThis.Boolean(object.hidden) : false,
       population: isSet(object.population) ? globalThis.Number(object.population) : 0,
+      hpApUsed: isSet(object.hpApUsed)
+        ? globalThis.Number(object.hpApUsed)
+        : isSet(object.hp_ap_used)
+        ? globalThis.Number(object.hp_ap_used)
+        : 0,
     };
   },
 
@@ -3538,6 +3556,9 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     if (message.population !== 0) {
       obj.population = Math.round(message.population);
     }
+    if (message.hpApUsed !== 0) {
+      obj.hpApUsed = Math.round(message.hpApUsed);
+    }
     return obj;
   },
 
@@ -3576,6 +3597,7 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     message.role = object.role ?? 0;
     message.hidden = object.hidden ?? false;
     message.population = object.population ?? 0;
+    message.hpApUsed = object.hpApUsed ?? 0;
     return message;
   },
 };

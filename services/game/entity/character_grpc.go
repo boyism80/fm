@@ -57,6 +57,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		BaseStats:    BaseStats{Str: uint16(p.GetStr()), Dex: uint16(p.GetDex()), Int: uint16(p.GetIntStat()), Luk: uint16(p.GetLuk())},
 		AbilityPoint: uint16(p.GetAbilityPoint()),
 		SkillPoint:   uint16(p.GetSkillPoint()),
+		HpApUsed:     uint16(p.GetHpApUsed()),
 		exp:          p.GetExp(),
 		population:   uint16(p.GetPopulation()),
 		partyID:      partyID,
@@ -370,6 +371,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		Meso:         ch.Inventory.Meso,
 		SkillPoint:   uint32(ch.SkillPoint),
 		Population:   uint32(ch.population),
+		HpApUsed:     uint32(ch.HpApUsed),
 	}
 	return &internal.CharacterSaveEntry{
 		Character:      persisted,

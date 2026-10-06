@@ -62,6 +62,7 @@ type CharacterPersistedInput = {
     meso?: number;
     skillPoint?: number;
     population?: number;
+    hpApUsed?: number;
     hidden?: boolean;
 };
 
@@ -348,6 +349,7 @@ export class CharacterService {
             meso: 0,
             skillPoint: 0,
             population: 0,
+            hpApUsed: 0,
             hidden: false,
         };
         const equips = [
