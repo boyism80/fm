@@ -53,8 +53,10 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		ex.stamp(player, "zakum")
-		player:map(sm:map(ALTAR_MAP))
+		local function on_arrive(player)
+			ex.stamp(player, "zakum")
+		end
+		player:map(sm:map(ALTAR_MAP), { callback = on_arrive })
 	end,
 
 	on_finish = function(sm)

@@ -65,8 +65,10 @@ function M.machine(key)
 		end,
 
 		on_player_enter = function(sm, player)
-			ex.stamp(player, key)
-			player:map(sm:map(mode.tomb))
+			local function on_arrive(player)
+				ex.stamp(player, key)
+			end
+			player:map(sm:map(mode.tomb), { callback = on_arrive })
 		end,
 
 		on_spawn = function(sm)

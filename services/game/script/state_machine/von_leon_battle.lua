@@ -28,8 +28,10 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		ex.stamp(player, "von_leon")
-		player:map(sm:map(AUDIENCE_HALL))
+		local function on_arrive(player)
+			ex.stamp(player, "von_leon")
+		end
+		player:map(sm:map(AUDIENCE_HALL), { callback = on_arrive })
 	end,
 
 	on_scheduled_timeout = function(sm)

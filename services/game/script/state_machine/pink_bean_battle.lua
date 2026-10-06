@@ -22,8 +22,10 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		ex.stamp(player, "pink_bean")
-		player:map(sm:map(TWILIGHT))
+		local function on_arrive(player)
+			ex.stamp(player, "pink_bean")
+		end
+		player:map(sm:map(TWILIGHT), { callback = on_arrive })
 	end,
 
 	on_scheduled_timeout = function(sm)

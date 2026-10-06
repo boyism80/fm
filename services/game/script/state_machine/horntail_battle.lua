@@ -24,8 +24,10 @@ return {
 	end,
 
 	on_player_enter = function(sm, player)
-		ex.stamp(player, "horntail")
-		player:map(sm:map(CAVE1))
+		local function on_arrive(player)
+			ex.stamp(player, "horntail")
+		end
+		player:map(sm:map(CAVE1), { callback = on_arrive })
 	end,
 
 	on_scheduled_timeout = function(sm)
