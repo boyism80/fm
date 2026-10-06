@@ -79,6 +79,7 @@ return {
 			return
 		end
 		me:unbuff(Skill.MysticDoor)
+		me:unbuff(BuffFlag.Puppet)
 	end,
 
 	on_start = function(me)

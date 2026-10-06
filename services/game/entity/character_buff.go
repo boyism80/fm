@@ -165,11 +165,9 @@ func (bc *BuffContainer) callUnbuffScripts(removed []Buff) {
 	}
 }
 
-func (bc *BuffContainer) restoreSummons() {
+func (bc *BuffContainer) restoreEffects() {
 	for entity := range bc.entities {
-		if _, ok := entity.GetValues()[constant.BuffFlagSummon]; ok {
-			bc.callHook(entity, "on_buff")
-		}
+		bc.callHook(entity, "on_buff")
 	}
 }
 

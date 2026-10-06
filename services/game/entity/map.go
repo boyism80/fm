@@ -257,7 +257,7 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 	if init {
 		character.Skills.RestorePassives()
 		character.restoreDebuffs()
-		character.Buffs.restoreSummons()
+		character.Buffs.restoreEffects()
 	}
 	character.Buffs.scheduleExpires()
 
