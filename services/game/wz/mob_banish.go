@@ -18,7 +18,7 @@ func parseMobBanish(banNode *node) *MobBanish {
 				if entry.Name != "0" {
 					continue
 				}
-				mapID = nodeInt(&entry, "field", -1)
+				mapID = entry.Int("field", -1)
 				for _, sf := range entry.Strings {
 					if sf.Name == "portal" {
 						portal = sf.Value

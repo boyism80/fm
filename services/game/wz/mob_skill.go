@@ -60,18 +60,6 @@ func (m *Mob) HasSkill(skillID uint32, level uint8) bool {
 	return false
 }
 
-func nodeInt(n *node, name string, defaultVal int) int {
-	if n == nil {
-		return defaultVal
-	}
-	for _, f := range n.Ints {
-		if f.Name == name {
-			return f.Value
-		}
-	}
-	return defaultVal
-}
-
 func parseMobInfoSkills(skillRoot node) []MobSkillSlot {
 	var out []MobSkillSlot
 	for _, slotDir := range skillRoot.Children {
@@ -79,8 +67,8 @@ func parseMobInfoSkills(skillRoot node) []MobSkillSlot {
 		if err != nil {
 			continue
 		}
-		skillID := nodeInt(&slotDir, "skill", 0)
-		level := nodeInt(&slotDir, "level", 0)
+		skillID := slotDir.Int("skill", 0)
+		level := slotDir.Int("level", 0)
 		if skillID <= 0 || level <= 0 {
 			continue
 		}
@@ -90,7 +78,7 @@ func parseMobInfoSkills(skillRoot node) []MobSkillSlot {
 			Level:   uint8(level),
 			Action:  -1,
 		}
-		if action := nodeInt(&slotDir, "action", -1); action >= 0 {
+		if action := slotDir.Int("action", -1); action >= 0 {
 			entry.Action = action
 		}
 		out = append(out, entry)
@@ -104,14 +92,14 @@ func parseMobAttackInfo(attackIndex int, info *node) *MobAttack {
 	}
 	attack := &MobAttack{
 		Index:        attackIndex,
-		DiseaseSkill: uint32(nodeInt(info, "disease", 0)),
-		DiseaseLevel: uint8(nodeInt(info, "level", 0)),
-		MpCon:        nodeInt(info, "conMP", 0),
-		MpBurn:       nodeInt(info, "mpBurn", 0),
-		AttackAfter:  nodeInt(info, "attackAfter", 0),
-		PADamage:     nodeInt(info, "PADamage", 0),
-		MADamage:     nodeInt(info, "PADamage", 0),
-		Magic:        nodeInt(info, "magic", 0) > 0,
+		DiseaseSkill: uint32(info.Int("disease", 0)),
+		DiseaseLevel: uint8(info.Int("level", 0)),
+		MpCon:        info.Int("conMP", 0),
+		MpBurn:       info.Int("mpBurn", 0),
+		AttackAfter:  info.Int("attackAfter", 0),
+		PADamage:     info.Int("PADamage", 0),
+		MADamage:     info.Int("PADamage", 0),
+		Magic:        info.Int("magic", 0) > 0,
 	}
 	for _, ch := range info.Children {
 		if ch.Name == "deadlyAttack" {
@@ -121,7 +109,7 @@ func parseMobAttackInfo(attackIndex int, info *node) *MobAttack {
 	}
 	rangeNode := info.find("range")
 	if rangeNode != nil {
-		attack.RangeR = nodeInt(rangeNode, "r", 0)
+		attack.RangeR = rangeNode.Int("r", 0)
 	}
 	return attack
 }
@@ -169,7 +157,7 @@ func parseMobSkillSummons(levelNode *node) []uint32 {
 		if child == nil {
 			break
 		}
-		val := nodeInt(child, "id", 0)
+		val := child.Int("id", 0)
 		if val == 0 {
 			for _, intf := range child.Ints {
 				if intf.Name == "id" || intf.Name == "value" {
@@ -194,18 +182,6 @@ func parseMobSkillSummons(levelNode *node) []uint32 {
 	return summons
 }
 
-func nodeString(n *node, name string) string {
-	if n == nil {
-		return ""
-	}
-	for _, f := range n.Strings {
-		if f.Name == name {
-			return f.Value
-		}
-	}
-	return ""
-}
-
 func parseMobSkillLevel(skillID uint32, level uint8, levelNode *node) *MobSkillLevelData {
 	if levelNode == nil {
 		return nil
@@ -213,17 +189,17 @@ func parseMobSkillLevel(skillID uint32, level uint8, levelNode *node) *MobSkillL
 	data := &MobSkillLevelData{
 		SkillID:     skillID,
 		Level:       level,
-		HpPercent:   nodeInt(levelNode, "hp", 100),
-		MpCon:       nodeInt(levelNode, "mpCon", 0),
-		X:           nodeInt(levelNode, "x", 1),
-		Y:           nodeInt(levelNode, "y", 1),
-		DurationMs:  int64(nodeInt(levelNode, "time", 0)) * 1000,
-		CooltimeMs:  int64(nodeInt(levelNode, "interval", 0)) * 1000,
-		Prop:        float32(nodeInt(levelNode, "prop", 100)) / 100,
-		Limit:       int16(nodeInt(levelNode, "limit", 0)),
-		ElemAttr:    nodeString(levelNode, "elemAttr"),
-		SpawnEffect: nodeInt(levelNode, "summonEffect", 0),
-		SummonOnce:  nodeInt(levelNode, "summonOnce", 0) > 0,
+		HpPercent:   levelNode.Int("hp", 100),
+		MpCon:       levelNode.Int("mpCon", 0),
+		X:           levelNode.Int("x", 1),
+		Y:           levelNode.Int("y", 1),
+		DurationMs:  int64(levelNode.Int("time", 0)) * 1000,
+		CooltimeMs:  int64(levelNode.Int("interval", 0)) * 1000,
+		Prop:        float32(levelNode.Int("prop", 100)) / 100,
+		Limit:       int16(levelNode.Int("limit", 0)),
+		ElemAttr:    levelNode.Text("elemAttr", ""),
+		SpawnEffect: levelNode.Int("summonEffect", 0),
+		SummonOnce:  levelNode.Int("summonOnce", 0) > 0,
 		Summons:     parseMobSkillSummons(levelNode),
 		Bounds:      GetRectFromWzNode(levelNode),
 	}

@@ -48,7 +48,78 @@ type node struct {
 	Strings  []stringField `xml:"string"`
 	Ints     []intField    `xml:"int"`
 	Floats   []floatField  `xml:"float"`
+	Doubles  []floatField  `xml:"double"`
 	Vectors  []vectorField `xml:"vector"`
+}
+
+func (n *node) IntOK(name string) (int, bool) {
+	if n == nil {
+		return 0, false
+	}
+	for _, f := range n.Ints {
+		if f.Name == name {
+			return f.Value, true
+		}
+	}
+	for _, f := range n.Strings {
+		if f.Name != name {
+			continue
+		}
+		if v, err := strconv.Atoi(strings.TrimSpace(f.Value)); err == nil {
+			return v, true
+		}
+	}
+	return 0, false
+}
+
+func (n *node) Int(name string, def int) int {
+	if v, ok := n.IntOK(name); ok {
+		return v
+	}
+	return def
+}
+
+func (n *node) Text(name string, def string) string {
+	if n == nil {
+		return def
+	}
+	for _, f := range n.Strings {
+		if f.Name == name {
+			return f.Value
+		}
+	}
+	for _, f := range n.Ints {
+		if f.Name == name {
+			return strconv.Itoa(f.Value)
+		}
+	}
+	return def
+}
+
+func (n *node) Float(name string, def float64) float64 {
+	if n == nil {
+		return def
+	}
+	for _, f := range n.Floats {
+		if f.Name != name {
+			continue
+		}
+		if v, err := strconv.ParseFloat(f.Value, 64); err == nil {
+			return v
+		}
+	}
+	for _, f := range n.Doubles {
+		if f.Name != name {
+			continue
+		}
+		if v, err := strconv.ParseFloat(f.Value, 64); err == nil {
+			return v
+		}
+	}
+	if v, ok := n.IntOK(name); ok {
+		return float64(v)
+	}
+	return def
 }
 
 type floatField struct {

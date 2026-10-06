@@ -62,19 +62,19 @@ func parseQuestMeta(info *node) QuestMeta {
 	meta := QuestMeta{
 		Descriptions: make(map[int]string),
 	}
-	meta.Name = nodeString(info, "name")
-	meta.Parent = nodeString(info, "parent")
-	meta.Order = nodeInt(info, "order", 0)
-	meta.Area = nodeInt(info, "area", 0)
-	meta.AutoStart = nodeInt(info, "autoStart", 0) > 0
-	meta.AutoPreComplete = nodeInt(info, "autoPreComplete", 0) > 0
-	meta.AutoComplete = nodeInt(info, "autoComplete", 0) > 0
-	meta.AutoAccept = nodeInt(info, "autoAccept", 0) > 0
-	meta.Blocked = nodeInt(info, "blocked", 0) > 0
-	meta.ViewMedalItem = nodeInt(info, "viewMedalItem", 0)
-	meta.SelectedSkillID = nodeInt(info, "selectedSkillID", 0)
-	meta.TimeLimit = nodeInt(info, "timeLimit", 0)
-	meta.TimeLimit2 = nodeInt(info, "timeLimit2", 0)
+	meta.Name = info.Text("name", "")
+	meta.Parent = info.Text("parent", "")
+	meta.Order = info.Int("order", 0)
+	meta.Area = info.Int("area", 0)
+	meta.AutoStart = info.Int("autoStart", 0) > 0
+	meta.AutoPreComplete = info.Int("autoPreComplete", 0) > 0
+	meta.AutoComplete = info.Int("autoComplete", 0) > 0
+	meta.AutoAccept = info.Int("autoAccept", 0) > 0
+	meta.Blocked = info.Int("blocked", 0) > 0
+	meta.ViewMedalItem = info.Int("viewMedalItem", 0)
+	meta.SelectedSkillID = info.Int("selectedSkillID", 0)
+	meta.TimeLimit = info.Int("timeLimit", 0)
+	meta.TimeLimit2 = info.Int("timeLimit2", 0)
 
 	for _, strField := range info.Strings {
 		if idx, err := strconv.Atoi(strField.Name); err == nil {
@@ -128,7 +128,7 @@ func mergeQuestRequirementChild(reqs *QuestRequirements, child *node) {
 	case "endscript":
 		reqs.EndScript = nodeStringValue(child)
 	case "fieldEnter":
-		reqs.FieldEnter = nodeInt(child, "0", nodeInt(child, "", 0))
+		reqs.FieldEnter = child.Int("0", child.Int("", 0))
 		if reqs.FieldEnter == 0 {
 			reqs.FieldEnter = firstChildIntValue(child)
 		}
@@ -290,7 +290,7 @@ func parseQuestActions(phase *node) QuestActions {
 		case "quest":
 			actions.Quests = parseQuestStateRefs(&child)
 		case "sp":
-			actions.SP = nodeInt(child.find("0"), "sp_value", firstIntValue(&child))
+			actions.SP = child.find("0").Int("sp_value", firstIntValue(&child))
 			actions.SPClasses = collectQuestActionClasses(&child)
 		case "info":
 			actions.Info = nodeStringValue(&child)
@@ -439,8 +439,8 @@ func parseQuestItemCountsWithField(n *node, countField string) map[uint32]int {
 	}
 	out := make(map[uint32]int, len(n.Children))
 	for _, child := range n.Children {
-		itemID := uint32(nodeInt(&child, "id", 0))
-		count := nodeInt(&child, countField, 0)
+		itemID := uint32(child.Int("id", 0))
+		count := child.Int(countField, 0)
 		if itemID == 0 && count == 0 {
 			continue
 		}
@@ -458,8 +458,8 @@ func parseQuestMobCounts(n *node) map[uint32]int {
 	}
 	out := make(map[uint32]int, len(n.Children))
 	for _, child := range n.Children {
-		mobID := uint32(nodeInt(&child, "id", 0))
-		count := nodeInt(&child, "count", 0)
+		mobID := uint32(child.Int("id", 0))
+		count := child.Int("count", 0)
 		if mobID == 0 && count == 0 {
 			continue
 		}
@@ -477,8 +477,8 @@ func parseQuestStateRefs(n *node) map[uint32]QuestStatus {
 	}
 	out := make(map[uint32]QuestStatus, len(n.Children))
 	for _, child := range n.Children {
-		questID := uint32(nodeInt(&child, "id", 0))
-		state := nodeInt(&child, "state", 0)
+		questID := uint32(child.Int("id", 0))
+		state := child.Int("state", 0)
 		if questID == 0 {
 			continue
 		}
@@ -496,8 +496,8 @@ func parseQuestSkillRefs(n *node) map[uint32]int {
 	}
 	out := make(map[uint32]int, len(n.Children))
 	for _, child := range n.Children {
-		skillID := uint32(nodeInt(&child, "id", 0))
-		acquire := nodeInt(&child, "acquire", 0)
+		skillID := uint32(child.Int("id", 0))
+		acquire := child.Int("acquire", 0)
 		if skillID == 0 {
 			continue
 		}
@@ -516,16 +516,16 @@ func parseQuestActionItems(n *node) []QuestActionItem {
 	out := make([]QuestActionItem, 0, len(n.Children))
 	for _, child := range n.Children {
 		item := QuestActionItem{
-			ItemID:     uint32(nodeInt(&child, "id", 0)),
-			Count:      nodeInt(&child, "count", 0),
-			Class:      nodeInt(&child, "job", -1),
-			ClassEx:    nodeInt(&child, "jobEx", -1),
-			Gender:     nodeInt(&child, "gender", 2),
-			Period:     nodeInt(&child, "period", 0),
+			ItemID:     uint32(child.Int("id", 0)),
+			Count:      child.Int("count", 0),
+			Class:      child.Int("job", -1),
+			ClassEx:    child.Int("jobEx", -1),
+			Gender:     child.Int("gender", 2),
+			Period:     child.Int("period", 0),
 			Prop:       QuestRewardPropAlways,
-			DateExpire: nodeString(&child, "dateExpire"),
+			DateExpire: child.Text("dateExpire", ""),
 		}
-		if prop, ok := nodeIntOptional(&child, "prop"); ok {
+		if prop, ok := child.IntOK("prop"); ok {
 			item.Prop = QuestRewardProp(prop)
 		}
 		if item.ItemID == 0 && item.Count == 0 {
@@ -543,9 +543,9 @@ func parseQuestActionSkills(n *node) []QuestActionSkill {
 	out := make([]QuestActionSkill, 0, len(n.Children))
 	for _, child := range n.Children {
 		skill := QuestActionSkill{
-			SkillID:     uint32(nodeInt(&child, "id", 0)),
-			SkillLevel:  nodeInt(&child, "skillLevel", 0),
-			MasterLevel: nodeInt(&child, "masterLevel", 0),
+			SkillID:     uint32(child.Int("id", 0)),
+			SkillLevel:  child.Int("skillLevel", 0),
+			MasterLevel: child.Int("masterLevel", 0),
 		}
 		if classes := child.find("job"); classes != nil {
 			skill.Classes = collectChildIntValues(classes)
@@ -589,7 +589,7 @@ func collectChildUint32IDs(n *node) []uint32 {
 	}
 	out := make([]uint32, 0, len(n.Children))
 	for _, child := range n.Children {
-		id := uint32(nodeInt(&child, "id", 0))
+		id := uint32(child.Int("id", 0))
 		if id > 0 {
 			out = append(out, id)
 		}
@@ -603,11 +603,11 @@ func collectChildIntValues(n *node) []int {
 	}
 	out := make([]int, 0, len(n.Children)+len(n.Ints))
 	for _, child := range n.Children {
-		if val, ok := nodeIntOptional(&child, ""); ok {
+		if val, ok := child.IntOK(""); ok {
 			out = append(out, val)
 			continue
 		}
-		if val := nodeInt(&child, "id", 0); val != 0 {
+		if val := child.Int("id", 0); val != 0 {
 			out = append(out, val)
 			continue
 		}
@@ -671,7 +671,7 @@ func firstIntValue(n *node) int {
 		}
 	}
 	for _, child := range n.Children {
-		if val := nodeInt(&child, "", 0); val != 0 {
+		if val := child.Int("", 0); val != 0 {
 			return val
 		}
 		if val := firstIntValue(&child); val != 0 {
@@ -697,7 +697,7 @@ func nodeStringValue(n *node) string {
 	if n == nil {
 		return ""
 	}
-	if s := nodeString(n, ""); s != "" {
+	if s := n.Text("", ""); s != "" {
 		return s
 	}
 	for _, strField := range n.Strings {

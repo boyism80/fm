@@ -884,129 +884,27 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	}
 
 	info := root.find("info")
-	if info != nil {
-		for _, iv := range info.Ints {
-			switch iv.Name {
-			case "version":
-				model.Version = iv.Value
-			case "cloud":
-				model.Cloud = iv.Value
-			case "returnMap":
-				model.ReturnMapId = iv.Value
-			case "forcedReturn":
-				model.ForcedReturn = iv.Value
-			case "fieldLimit":
-				model.FieldLimit = iv.Value
-			case "fieldType":
-				model.FieldType = FieldType(iv.Value)
-			case "VRTop":
-				model.VRTop = iv.Value
-			case "VRLeft":
-				model.VRLeft = iv.Value
-			case "VRBottom":
-				model.VRBottom = iv.Value
-			case "VRRight":
-				model.VRRight = iv.Value
-			case "hideMinimap":
-				model.HideMinimap = iv.Value != 0
-			case "town":
-				model.IsTown = iv.Value == 1
-			case "everlast":
-				model.Everlast = iv.Value > 0
-			case "clock":
-				model.HasClock = iv.Value > 0
-			case "mobRate":
-				model.MobRate = float32(iv.Value)
-			case "recoveryRate":
-				if iv.Value > 0 {
-					model.RecoveryRate = float32(iv.Value)
-				} else {
-					model.RecoveryRate = 1.0
-				}
-			case "miniMapOnOff":
-				model.MiniMapOnOff = iv.Value != 0
-			}
-		}
-		for _, fv := range info.Floats {
-			if f, err := strconv.ParseFloat(fv.Value, 32); err == nil {
-				switch fv.Name {
-				case "mobRate":
-					model.MobRate = float32(f)
-				case "recoveryRate":
-					if f > 0 {
-						model.RecoveryRate = float32(f)
-					}
-				}
-			}
-		}
-		for _, sv := range info.Strings {
-			switch sv.Name {
-			case "bgm":
-				model.BGM = sv.Value
-			case "mapMark":
-				model.MapMark = sv.Value
-			case "mapDesc":
-				model.MapDesc = sv.Value
-			}
-		}
-		for _, v := range info.Children {
-			switch v.Name {
-			case "mapName":
-				model.Name = v.Value
-			case "version":
-				model.Version, _ = strconv.Atoi(v.Value)
-			case "cloud":
-				model.Cloud, _ = strconv.Atoi(v.Value)
-			case "returnMap":
-				model.ReturnMapId, _ = strconv.Atoi(v.Value)
-			case "forcedReturn":
-				model.ForcedReturn, _ = strconv.Atoi(v.Value)
-			case "fieldLimit":
-				model.FieldLimit, _ = strconv.Atoi(v.Value)
-			case "fieldType":
-				fieldType, _ := strconv.Atoi(v.Value)
-				model.FieldType = FieldType(fieldType)
-			case "VRTop":
-				model.VRTop, _ = strconv.Atoi(v.Value)
-			case "VRLeft":
-				model.VRLeft, _ = strconv.Atoi(v.Value)
-			case "VRBottom":
-				model.VRBottom, _ = strconv.Atoi(v.Value)
-			case "VRRight":
-				model.VRRight, _ = strconv.Atoi(v.Value)
-			case "hideMinimap":
-				model.HideMinimap = v.Value == "1"
-			case "town":
-				model.IsTown = v.Value == "1"
-			case "everlast":
-				model.Everlast = v.Value != "0" && v.Value != ""
-			case "clock":
-				model.HasClock = v.Value != "0" && v.Value != ""
-			case "mobRate":
-				f, err := strconv.ParseFloat(v.Value, 32)
-				if err == nil {
-					model.MobRate = float32(f)
-				}
-			case "recoveryRate":
-				f, err := strconv.ParseFloat(v.Value, 32)
-				if err == nil && f > 0 {
-					model.RecoveryRate = float32(f)
-				} else {
-					model.RecoveryRate = 1.0
-				}
-			case "bgm":
-				model.BGM = v.Value
-			case "mapMark":
-				model.MapMark = v.Value
-			case "mapDesc":
-				model.MapDesc = v.Value
-			case "miniMapOnOff":
-				model.MiniMapOnOff = v.Value == "1"
-			default:
-				break
-			}
-		}
-	}
+	model.Name = info.Text("mapName", "")
+	model.Version = info.Int("version", 0)
+	model.Cloud = info.Int("cloud", 0)
+	model.ReturnMapId = info.Int("returnMap", 0)
+	model.ForcedReturn = info.Int("forcedReturn", 0)
+	model.FieldLimit = info.Int("fieldLimit", 0)
+	model.FieldType = FieldType(info.Int("fieldType", 0))
+	model.VRTop = info.Int("VRTop", 0)
+	model.VRLeft = info.Int("VRLeft", 0)
+	model.VRBottom = info.Int("VRBottom", 0)
+	model.VRRight = info.Int("VRRight", 0)
+	model.HideMinimap = info.Int("hideMinimap", 0) != 0
+	model.IsTown = info.Int("town", 0) == 1
+	model.Everlast = info.Int("everlast", 0) > 0
+	model.HasClock = info.Int("clock", 0) > 0
+	model.MobRate = float32(info.Float("mobRate", 0))
+	model.RecoveryRate = float32(info.Float("recovery", 1))
+	model.MiniMapOnOff = info.Int("miniMapOnOff", 0) != 0
+	model.BGM = info.Text("bgm", "")
+	model.MapMark = info.Text("mapMark", "")
+	model.MapDesc = info.Text("mapDesc", "")
 
 	if root.find("clock") != nil {
 		model.HasClock = true
@@ -1884,88 +1782,43 @@ func loadMob(path string) (*Mob, error) {
 		return nil, fmt.Errorf("'info' node not found: %s", path)
 	}
 
-	for _, intField := range info.Ints {
-		switch intField.Name {
-		case "bodyAttack":
-			model.BodyAttack = intField.Value
-		case "level":
-			model.Level = uint8(intField.Value)
-		case "maxHP":
-			model.MaxHP = intField.Value
-		case "maxMP":
-			model.MaxMP = intField.Value
-		case "speed":
-			model.Speed = int16(intField.Value)
-		case "PADamage":
-			model.PADamage = intField.Value
-		case "PDDamage":
-			model.PDDamage = intField.Value
-		case "MADamage":
-			model.MADamage = intField.Value
-		case "MDDamage":
-			model.MDDamage = intField.Value
-		case "acc":
-			model.ACC = intField.Value
-		case "eva":
-			model.EVA = intField.Value
-		case "exp":
-			model.EXP = uint32(intField.Value)
-		case "undead":
-			model.Undead = (intField.Value == 1)
-		case "pushed":
-			model.Pushed = (intField.Value == 1)
-		case "summonType":
-			model.SummonType = uint8(intField.Value)
-		case "mobType":
-			model.MobType = uint8(intField.Value)
-		case "boss":
-			model.Boss = (intField.Value != 0)
-		case "publicReward":
-			model.FfaLoot = intField.Value > 0
-		case "explosiveReward":
-			model.ExplosiveReward = intField.Value > 0
-		case "removeAfter":
-			model.RemoveAfter = intField.Value
-		case "hpTagColor":
-			model.HpTagColor = uint8(intField.Value)
-		case "hpTagBgcolor":
-			model.HpTagBgColor = uint8(intField.Value)
-		case "dropItemPeriod":
-			model.DropItemPeriod = intField.Value
-		case "damagedByMob":
-			model.DamagedByMob = intField.Value > 0
-		case "getCP":
-			model.CP = intField.Value
-		case "point":
-			model.Point = intField.Value
-		}
-	}
-
-	for _, strField := range info.Strings {
-		switch strField.Name {
-		case "link":
-			model.Link = strField.Value
-		case "maxHP":
-			if v, err := strconv.Atoi(strField.Value); err == nil {
-				model.MaxHP = v
-			}
+	model.BodyAttack = info.Int("bodyAttack", 0)
+	model.Level = uint8(info.Int("level", 0))
+	model.MaxHP = info.Int("maxHP", 0)
+	model.MaxMP = info.Int("maxMP", 0)
+	model.Speed = int16(info.Int("speed", 0))
+	model.PADamage = info.Int("PADamage", 0)
+	model.PDDamage = info.Int("PDDamage", 0)
+	model.MADamage = info.Int("MADamage", 0)
+	model.MDDamage = info.Int("MDDamage", 0)
+	model.ACC = info.Int("acc", 0)
+	model.EVA = info.Int("eva", 0)
+	model.EXP = uint32(info.Int("exp", 0))
+	model.Undead = info.Int("undead", 0) == 1
+	model.Pushed = info.Int("pushed", 0) == 1
+	model.SummonType = uint8(info.Int("summonType", 0))
+	model.MobType = uint8(info.Int("mobType", 0))
+	model.Boss = info.Int("boss", 0) != 0
+	model.FfaLoot = info.Int("publicReward", 0) > 0
+	model.ExplosiveReward = info.Int("explosiveReward", 0) > 0
+	model.RemoveAfter = info.Int("removeAfter", 0)
+	model.HpTagColor = uint8(info.Int("hpTagColor", 0))
+	model.HpTagBgColor = uint8(info.Int("hpTagBgcolor", 0))
+	model.DropItemPeriod = info.Int("dropItemPeriod", 0)
+	model.DamagedByMob = info.Int("damagedByMob", 0) > 0
+	model.CP = info.Int("getCP", 0)
+	model.Point = info.Int("point", 0)
+	model.Link = info.Text("link", "")
+	model.FS = float32(info.Float("fs", 0))
+	if elemAttr := info.Text("elemAttr", ""); elemAttr != "" {
+		model.ElemResist = make(map[string]int)
+		for i := 0; i+1 < len(elemAttr); i += 2 {
+			model.ElemResist[strings.ToLower(elemAttr[i:i+1])] = int(elemAttr[i+1] - '0')
 		}
 	}
 
 	for _, iv := range info.Children {
 		switch iv.Name {
-		case "elemAttr":
-			for _, el := range iv.Children {
-				key := strings.ToLower(el.Name)
-				for _, inf := range el.Ints {
-					if inf.Name == "value" {
-						if model.ElemResist == nil {
-							model.ElemResist = make(map[string]int)
-						}
-						model.ElemResist[key] = inf.Value
-					}
-				}
-			}
 		case "PDRate":
 		case "MDRate":
 		case "category":
@@ -1980,8 +1833,6 @@ func loadMob(path string) (*Mob, error) {
 		case "boss":
 			model.Boss = true
 		case "hpRecovery":
-		case "removeAfter":
-			model.RemoveAfter = nodeInt(&iv, "removeAfter", model.RemoveAfter)
 		case "revive":
 			for _, child := range iv.Children {
 				for _, intf := range child.Ints {
@@ -1995,10 +1846,6 @@ func loadMob(path string) (*Mob, error) {
 					model.Revives = append(model.Revives, uint32(intf.Value))
 				}
 			}
-		case "hpTagColor":
-			model.HpTagColor = uint8(nodeInt(&iv, "hpTagColor", int(model.HpTagColor)))
-		case "hpTagBgcolor":
-			model.HpTagBgColor = uint8(nodeInt(&iv, "hpTagBgcolor", int(model.HpTagBgColor)))
 		case "HPgaugeHide":
 		case "rareItemDropLevel":
 		case "noFlip":
@@ -2006,14 +1853,6 @@ func loadMob(path string) (*Mob, error) {
 		case "finalmaxHP":
 		case "changeableMob":
 		case "changeableMob_Type":
-		case "publicReward":
-			if v, err := strconv.Atoi(iv.Value); err == nil {
-				model.FfaLoot = v > 0
-			}
-		case "explosiveReward":
-			if v, err := strconv.Atoi(iv.Value); err == nil {
-				model.ExplosiveReward = v > 0
-			}
 		case "wp":
 		case "ban":
 			model.Banish = parseMobBanish(&iv)
@@ -2078,10 +1917,6 @@ func loadMob(path string) (*Mob, error) {
 		case "removeQuest":
 		case "bodyattack":
 		case "damageModification":
-
-		case "fs":
-			f, _ := strconv.ParseFloat(iv.Value, 32)
-			model.FS = float32(f)
 		default:
 			mutex.Lock()
 			if _, seen := visit[iv.Name]; !seen {

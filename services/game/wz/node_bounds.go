@@ -27,8 +27,8 @@ func GetRectFromWzNode(parent *node) types.Rect[int32] {
 	if !ltSet {
 		ltNode := parent.find("lt")
 		if ltNode != nil {
-			lt.X = int32(nodeInt(ltNode, "x", 0))
-			lt.Y = int32(nodeInt(ltNode, "y", 0))
+			lt.X = int32(ltNode.Int("x", 0))
+			lt.Y = int32(ltNode.Int("y", 0))
 			for _, v := range ltNode.Vectors {
 				if v.Name == "lt" || v.Name == "" {
 					lt.X = int32(v.X)
@@ -41,8 +41,8 @@ func GetRectFromWzNode(parent *node) types.Rect[int32] {
 	if !rbSet {
 		rbNode := parent.find("rb")
 		if rbNode != nil {
-			rb.X = int32(nodeInt(rbNode, "x", 0))
-			rb.Y = int32(nodeInt(rbNode, "y", 0))
+			rb.X = int32(rbNode.Int("x", 0))
+			rb.Y = int32(rbNode.Int("y", 0))
 			for _, v := range rbNode.Vectors {
 				if v.Name == "rb" || v.Name == "" {
 					rb.X = int32(v.X)

@@ -94,17 +94,17 @@ func loadReactor(path string) (*Reactor, error) {
 
 func parseReactorEvent(eventNode *node, event0 *node) *ReactorEvent {
 	event := &ReactorEvent{
-		Type:      constant.ReactorEventType(nodeInt(event0, "type", 0)),
-		NextState: byte(nodeInt(event0, "state", 0)),
-		TimeOut:   nodeInt(eventNode, "timeOut", -1),
-		TouchFlag: nodeInt(event0, "2", 0),
+		Type:      constant.ReactorEventType(event0.Int("type", 0)),
+		NextState: byte(event0.Int("state", 0)),
+		TimeOut:   eventNode.Int("timeOut", -1),
+		TouchFlag: event0.Int("2", 0),
 	}
 
 	for _, child := range eventNode.Children {
-		if nodeInt(&child, "type", 0) != int(constant.ReactorEventTypeItem) {
+		if child.Int("type", 0) != int(constant.ReactorEventTypeItem) {
 			continue
 		}
-		itemID, ok := nodeIntOptional(&child, "0")
+		itemID, ok := child.IntOK("0")
 		for _, f := range child.Strings {
 			if f.Name == "0" {
 				value, err := strconv.Atoi(f.Value)
@@ -114,7 +114,7 @@ func parseReactorEvent(eventNode *node, event0 *node) *ReactorEvent {
 		if ok == false {
 			continue
 		}
-		quantity, _ := nodeIntOptional(&child, "1")
+		quantity, _ := child.IntOK("1")
 		if quantity <= 0 {
 			quantity = 1
 		}
@@ -163,8 +163,8 @@ func parsePointFromNode(parent *node, name string) (types.Vector2[int32], bool) 
 		}, true
 	}
 
-	x, xOk := nodeIntOptional(child, "x")
-	y, yOk := nodeIntOptional(child, "y")
+	x, xOk := child.IntOK("x")
+	y, yOk := child.IntOK("y")
 	if xOk && yOk {
 		return types.Vector2[int32]{
 			X: int32(x),
@@ -173,21 +173,4 @@ func parsePointFromNode(parent *node, name string) (types.Vector2[int32], bool) 
 	}
 
 	return types.Vector2[int32]{}, false
-}
-
-func nodeIntOptional(n *node, name string) (int, bool) {
-	if n == nil {
-		return 0, false
-	}
-	for _, f := range n.Ints {
-		if f.Name == name {
-			return f.Value, true
-		}
-	}
-	if child := n.find(name); child != nil {
-		if val, err := strconv.Atoi(child.Value); err == nil {
-			return val, true
-		}
-	}
-	return 0, false
 }
