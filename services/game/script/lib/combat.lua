@@ -219,10 +219,6 @@ M.apply_shadow_web_skill = function(me, skill)
 		return
 	end
 	M.for_each_mob_in_skill_area(me, skill, function(mob)
-		local mwz = mob:wz()
-		if mwz ~= nil and mwz:boss() then
-			return false
-		end
 		mob:buff(MobBuff.ShadowWeb, 1, duration_ms, skill, me)
 		return true
 	end)

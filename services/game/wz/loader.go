@@ -1799,6 +1799,7 @@ func loadMob(path string) (*Mob, error) {
 	model.SummonType = uint8(info.Int("summonType", 0))
 	model.MobType = uint8(info.Int("mobType", 0))
 	model.Boss = info.Int("boss", 0) != 0
+	model.NoDoom = info.Int("noDoom", 0) != 0
 	model.FfaLoot = info.Int("publicReward", 0) > 0
 	model.ExplosiveReward = info.Int("explosiveReward", 0) > 0
 	model.RemoveAfter = info.Int("removeAfter", 0)

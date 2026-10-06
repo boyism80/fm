@@ -55,6 +55,7 @@ type Skill struct {
 	TimeLimited  bool
 	CombatOrders bool
 	ElemAttr     string
+	MobSkill     bool
 	LevelData    map[int]*SkillLevelData
 }
 

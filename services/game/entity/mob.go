@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/boyism80/fm/core/clock"
@@ -169,16 +170,56 @@ func (m *Mob) SetFake(fake bool) {
 	mapInstance.listener.OnMobSpawned(mapInstance, m, constant.MobSpawnTypeFake, 0)
 }
 
-func (m *Mob) canReceiveMobBuff(flag constant.MobBuffFlag) bool {
-	if !m.IsFake() {
+func (m *Mob) canReceiveMobBuff(flag constant.MobBuffFlag, skillWz *wz.Skill) bool {
+	if skillWz != nil && skillWz.MobSkill {
 		return true
 	}
-	switch flag {
-	case constant.MobBuffStun, constant.MobBuffSpeed, constant.MobBuffPoison, constant.MobBuffVenom:
+	if m.IsFake() {
+		switch flag {
+		case constant.MobBuffStun, constant.MobBuffSpeed, constant.MobBuffPoison, constant.MobBuffVenom:
+			return false
+		}
+	}
+	if m.Wz == nil {
+		return true
+	}
+	if skillWz != nil && m.resistsElement(skillWz) {
 		return false
-	default:
-		return true
 	}
+	if flag == constant.MobBuffDoom && m.Wz.NoDoom {
+		return false
+	}
+	if m.Wz.Boss {
+		switch flag {
+		case constant.MobBuffSpeed, constant.MobBuffWatk, constant.MobBuffBlind:
+			return true
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func (m *Mob) resistsElement(skillWz *wz.Skill) bool {
+	elements := make([]string, 0, 2)
+	if skillWz.ElemAttr != "" {
+		elements = append(elements, strings.ToLower(skillWz.ElemAttr[:1]))
+	}
+	switch constant.SkillID(skillWz.ID) {
+	case constant.SkillElementComposition, constant.SkillVenom, constant.SkillVenom4220005, constant.SkillVenomCygnus:
+		elements = append(elements, "s")
+	case constant.SkillElementComposition2211006:
+		elements = append(elements, "i")
+	case constant.SkillFlamethrower:
+		elements = append(elements, "f")
+	}
+	for _, element := range elements {
+		switch m.Wz.ElemResist[element] {
+		case 1, 2:
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Mob) SendSpawnSyncToViewer(viewer *Character) {
@@ -211,21 +252,6 @@ func (m *Mob) Relink(spawnType constant.MobSpawnType, link uint32) bool {
 	}
 	mapInstance.listener.OnMobSpawned(mapInstance, m, spawnType, link)
 	return true
-}
-
-func (m *Mob) GiveMobBuff(flag constant.MobBuffFlag, value int32, duration time.Duration, skillWz *wz.Skill, skillLevel uint8, causerOID uint32, stack uint8) {
-	if m == nil {
-		return
-	}
-	if !m.canReceiveMobBuff(flag) {
-		return
-	}
-	if stack < 1 {
-		stack = 1
-	}
-	m.Buffs.Add(duration, skillWz, skillLevel, causerOID,
-		map[constant.MobBuffFlag]int32{flag: value},
-		map[constant.MobBuffFlag]uint8{flag: stack})
 }
 
 func (m *Mob) SpawnMist(skill *MobSkill, position types.Point[int16], mistType constant.MistType, bounds types.Rect[int32], duration time.Duration, initialDelay time.Duration, poisonTickMultiplier float64) *Mist {

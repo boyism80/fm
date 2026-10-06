@@ -17,6 +17,7 @@ type Mob struct {
 	Undead                bool
 	Pushed                bool
 	Boss                  bool
+	NoDoom                bool
 	FfaLoot               bool
 	ExplosiveReward       bool
 	FS                    float32

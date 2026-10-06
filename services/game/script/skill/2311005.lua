@@ -12,10 +12,6 @@ return {
 			return
 		end
 		combat.for_each_mob_in_skill_area(me, skill, function(mob)
-			local wz = mob:wz()
-			if wz ~= nil and wz:boss() then
-				return false
-			end
 			mob:buff(MobBuff.Doom, 1, effect.time, skill, me)
 			return true
 		end)

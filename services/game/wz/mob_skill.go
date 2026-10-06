@@ -225,7 +225,7 @@ func loadMobSkillData(path string) (map[uint32]map[uint8]*MobSkillLevelData, err
 			continue
 		}
 		skillID := uint32(skillID64)
-		skillWz := &Skill{ID: skillID}
+		skillWz := &Skill{ID: skillID, MobSkill: true}
 		levelRoot := skillDir.find("level")
 		if levelRoot == nil {
 			continue
