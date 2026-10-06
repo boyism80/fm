@@ -110,6 +110,7 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 	})
 	accID := character.AccountID
 	charID := character.GetID()
+	sourceChannel := h.gs.config.ChannelId
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.BeginGameTransitionReply, error) {
 		if accID == 0 || charID == 0 {
 			return nil, fmt.Errorf("switch channel: missing account or character id")
@@ -118,8 +119,9 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			WorldId:     worldID,
 			AccountId:   accID,
 			CharacterId: charID,
-			ClientIp:    ctx.Client.GetRemoteIP(),
-			Debuffs:     debuffs,
+			ClientIp:        ctx.Client.GetRemoteIP(),
+			Debuffs:         debuffs,
+			SourceChannelId: &sourceChannel,
 		})
 	}, func(transReply *internal.BeginGameTransitionReply) error {
 		if transReply == nil || !transReply.GetOk() {

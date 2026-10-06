@@ -29,11 +29,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 	log.Printf("Character list packet received from %s - Server: %d, Channel: %d",
 		ctx.Client.GetConnection().RemoteAddr(), req.Server, req.Channel)
 
-	loginClient, ok := ctx.Client.(*client.LoginClient)
-	if !ok {
-		return nil
-	}
-
+	loginClient := ctx.Client.(*client.LoginClient)
 	worldId := uint32(req.Server)
 	loginClient.SetWorldId(worldId)
 	loginClient.SetChannelId(req.Channel)
@@ -43,28 +39,15 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 		return ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
 	}
 
-	ic := h.ls.internalClient
-	if ic == nil {
-		charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
-		return ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
-	}
-
 	reqMsg := &internal.GetCharacterListRequest{
 		AccountId: accountId,
 		WorldId:   worldId,
 	}
 
-	if ctx.ActorContext == nil {
-		log.Printf("CharacterList: no actor context, cannot run internal RPC")
-		charListResp := &response.CharacterList{Characters: nil, SlotCount: 6}
-		_ = ctx.Client.Send(charListResp, types.SEND_POLICY_ENCRYPT)
-		return fmt.Errorf("character list: actor context required for internal RPC")
-	}
-
 	sendCharListFallback := true
 	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
-		return ic.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
+		return h.ls.internalClient.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
 			WorldId:   worldId,
 			ChannelId: uint32(req.Channel),
 		})
@@ -82,7 +65,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 		return nil
 	})
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetCharacterListReply, error) {
-		return ic.GetCharacterList(c, reqMsg)
+		return h.ls.internalClient.GetCharacterList(c, reqMsg)
 	}, func(reply *internal.GetCharacterListReply) error {
 		return h.sendCharacterList(ctx, reply)
 	})

@@ -124,41 +124,50 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         clientIp: string,
         now: string,
         ttlSeconds: number,
-        gameToGameTransfer: boolean,
-        prevChannelId: number | null,
+        sourceChannelId: number | null,
         debuffs: DebuffPersisted[]
     ) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);
-        const prevCh = prevChannelId != null && Number.isInteger(prevChannelId) && prevChannelId >= 0 ? prevChannelId : -1;
-        const prevChannelUsersKey =
-            prevCh >= 0 ? this.channelOnlineUsersKey(worldId, prevCh) : this.channelOnlineUsersNoopKey(worldId);
+        const sourceCh = sourceChannelId != null && Number.isInteger(sourceChannelId) && sourceChannelId >= 0 ? sourceChannelId : -1;
+        const sourceChannelUsersKey =
+            sourceCh >= 0 ? this.channelOnlineUsersKey(worldId, sourceCh) : this.channelOnlineUsersNoopKey(worldId);
         const usersTtl = this.ctx.appConfiguration.getServerAliveTtlSeconds();
         const script = `
 local account_key = KEYS[1]
-local prev_channel_users_key = KEYS[2]
+local source_channel_users_key = KEYS[2]
 local world_id = ARGV[1]
 local character_id = ARGV[2]
 local character_name = ARGV[3]
 local now = ARGV[4]
 local ttl = tonumber(ARGV[5])
-local game_to_game_transfer = ARGV[6]
-local prev_channel_id = ARGV[7]
-local users_ttl = tonumber(ARGV[8])
-local client_ip = ARGV[9]
-local debuffs = ARGV[10]
+local source_channel_id = ARGV[6]
+local users_ttl = tonumber(ARGV[7])
+local client_ip = ARGV[8]
+local debuffs = ARGV[9]
 if redis.call("EXISTS", account_key) == 0 then
   return {0, ${SessionErrorCode.SESSION_NOT_FOUND}}
 end
 local prev_state = tonumber(redis.call("HGET", account_key, "state") or "0")
-local channel_id = redis.call("HGET", account_key, "channel_id") or ""
-if prev_state == ${AS.ACCOUNT_SESSION_STATE_GAME} and prev_channel_id ~= "-1" and channel_id == prev_channel_id then
-  local v = redis.call("GET", prev_channel_users_key)
-  if v and tonumber(v) > 0 then
-    redis.call("DECR", prev_channel_users_key)
+local game_to_game_transfer = "0"
+if source_channel_id == "-1" then
+  local from_game = redis.call("HGET", account_key, "game_to_game_transfer") or "0"
+  if prev_state ~= ${AS.ACCOUNT_SESSION_STATE_LOGIN} and (prev_state ~= ${AS.ACCOUNT_SESSION_STATE_TRANSITION} or from_game == "1") then
+    return {0, ${SessionErrorCode.SESSION_NOT_OWNER}}
   end
-  if redis.call("EXISTS", prev_channel_users_key) == 1 then
-    redis.call("EXPIRE", prev_channel_users_key, users_ttl)
+else
+  local session_character_id = redis.call("HGET", account_key, "character_id") or ""
+  local channel_id = redis.call("HGET", account_key, "channel_id") or ""
+  if prev_state ~= ${AS.ACCOUNT_SESSION_STATE_GAME} or session_character_id ~= character_id or channel_id ~= source_channel_id then
+    return {0, ${SessionErrorCode.SESSION_NOT_OWNER}}
+  end
+  game_to_game_transfer = "1"
+  local v = redis.call("GET", source_channel_users_key)
+  if v and tonumber(v) > 0 then
+    redis.call("DECR", source_channel_users_key)
+  end
+  if redis.call("EXISTS", source_channel_users_key) == 1 then
+    redis.call("EXPIRE", source_channel_users_key, users_ttl)
   end
 end
 redis.call("HSET", account_key,
@@ -180,17 +189,16 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
             script,
             2,
             accountKey,
-            prevChannelUsersKey,
+            sourceChannelUsersKey,
             String(worldId),
             String(characterId),
             String(characterName),
             String(now),
             String(ttlSeconds),
-            gameToGameTransfer ? "1" : "0",
-            String(prevCh),
+            String(sourceCh),
             String(usersTtl),
             clientIp,
-            gameToGameTransfer && debuffs.length > 0 ? JSON.stringify(debuffs) : ""
+            sourceCh >= 0 && debuffs.length > 0 ? JSON.stringify(debuffs) : ""
         )) as Array<number | string>;
     }
 

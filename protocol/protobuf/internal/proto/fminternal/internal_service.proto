@@ -198,6 +198,7 @@ message BeginGameTransitionRequest {
   uint32 character_id = 3;
   string client_ip = 4;
   repeated DebuffPersisted debuffs = 5;
+  optional uint32 source_channel_id = 6;
 }
 
 enum SessionErrorCode {

@@ -28,15 +28,9 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 	log.Printf("Login packet received from %s - ID: %s, MAC: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.ID, req.Mac)
 
-	ic := h.ls.internalClient
-	if ic == nil {
-		log.Printf("Internal gRPC client not configured, rejecting login")
-		failedResp := &response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}
-		return ctx.Client.Send(failedResp, types.SEND_POLICY_ENCRYPT)
-	}
-
 	remoteAddr := ctx.Client.GetConnection().RemoteAddr().String()
-	if loginClient, ok := ctx.Client.(*client.LoginClient); ok && loginClient.GetAccountId() != 0 {
+	loginClient := ctx.Client.(*client.LoginClient)
+	if loginClient.GetAccountId() != 0 {
 		log.Printf("Login: packet on authenticated connection remote=%s id=%s account=%d", remoteAddr, req.ID, loginClient.GetAccountId())
 	}
 	reqMsg := &internal.LoginAccountRequest{
@@ -47,18 +41,12 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 		InitialRole: h.ls.config.InitialRole,
 	}
 
-	if ctx.ActorContext == nil {
-		log.Printf("Login: no actor context, cannot run internal RPC")
-		_ = ctx.Client.Send(&response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}, types.SEND_POLICY_ENCRYPT)
-		return fmt.Errorf("login: actor context required for internal RPC")
-	}
-
 	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 		func(c context.Context) (*internal.LoginAccountReply, error) {
-			return ic.LoginAccount(c, reqMsg)
+			return h.ls.internalClient.LoginAccount(c, reqMsg)
 		}, func(reply *internal.LoginAccountReply) error {
 			log.Printf("Login: reply remote=%s id=%s account=%d status=%v", remoteAddr, req.ID, reply.GetAccountId(), reply.GetStatus())
-			return h.sendLoginAccountResult(ctx, req, reply)
+			return h.sendLoginAccountResult(ctx, loginClient, req, reply)
 		}).OnError(func(err error) {
 		log.Printf("Login (async): remote=%s id=%s: %v", remoteAddr, req.ID, err)
 		_ = ctx.Client.Send(&response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}, types.SEND_POLICY_ENCRYPT)
@@ -66,7 +54,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 	return nil
 }
 
-func (h *Login) sendLoginAccountResult(ctx *core.ClientContext, req *request.Login, reply *internal.LoginAccountReply) error {
+func (h *Login) sendLoginAccountResult(ctx *core.ClientContext, loginClient *client.LoginClient, req *request.Login, reply *internal.LoginAccountReply) error {
 	switch reply.Status {
 	case internal.LoginAccountReply_WRONG_PASSWORD:
 		failedResp := &response.LoginFailed{Reason: response.LoginFailedReasonIncorrectPassword}
@@ -79,10 +67,7 @@ func (h *Login) sendLoginAccountResult(ctx *core.ClientContext, req *request.Log
 		return ctx.Client.Send(failedResp, types.SEND_POLICY_ENCRYPT)
 	}
 
-	loginClient, ok := ctx.Client.(*client.LoginClient)
-	if ok {
-		loginClient.SetAccountId(reply.AccountId)
-	}
+	loginClient.SetAccountId(reply.AccountId)
 
 	authResp := &response.Authenticate{
 		AccountId:     reply.AccountId,

@@ -5,7 +5,7 @@ import { EQUIP_SLOT, LOOK_SLOT } from "../constants/equipment-slots";
 import { getDefaultKeyLayoutBindings } from "../constants/default-key-layout-bindings";
 import { bindingsToJsonString, jsonStringToBindings } from "../grpc/key-layout-io";
 import type { KeyLayoutBindingModel } from "../grpc/key-layout-io";
-import { GuildErrorCode, PartyErrorCode } from "../protobuf/generated/fminternal/internal_service";
+import { AccountSessionState, GuildErrorCode, PartyErrorCode } from "../protobuf/generated/fminternal/internal_service";
 import type { CreateCharacterRequest } from "../protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "../config/app-configuration";
 import { AccountRepository } from "../repos/account-repository";
@@ -25,6 +25,7 @@ import { SavedLocationRepository } from "../repos/saved-location-repository";
 import type { SavedLocationModel } from "../repos/saved-location-repository";
 import { CharacterBuddyRepository } from "../repos/character-buddy-repository";
 import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
+import { SessionRepository } from "../repos/session-repository";
 import { UnifiedRepository } from "../repos/unified-repository";
 import { WzService } from "./wz-service";
 import { DistributedLockService } from "./distributed-lock-service";
@@ -91,6 +92,7 @@ export class CharacterService {
     private readonly keyLayoutRepo: KeyLayoutRepository;
     private readonly buddyRepo: CharacterBuddyRepository;
     private readonly realtimeStateRepo: CharacterRealtimeStateRepository;
+    private readonly sessionRepo: SessionRepository;
     private readonly app: AppConfiguration;
     private readonly wzService: WzService;
     private readonly distributedLockService: DistributedLockService;
@@ -110,6 +112,7 @@ export class CharacterService {
         keyLayoutRepository: KeyLayoutRepository,
         characterBuddyRepository: CharacterBuddyRepository,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
+        sessionRepository: SessionRepository,
         appConfiguration: AppConfiguration,
         wzService: WzService,
         distributedLockService: DistributedLockService,
@@ -128,6 +131,7 @@ export class CharacterService {
         this.keyLayoutRepo = keyLayoutRepository;
         this.buddyRepo = characterBuddyRepository;
         this.realtimeStateRepo = characterRealtimeStateRepository;
+        this.sessionRepo = sessionRepository;
         this.app = appConfiguration;
         this.wzService = wzService;
         this.distributedLockService = distributedLockService;
@@ -287,6 +291,10 @@ export class CharacterService {
         this.assertWorld(wid);
         this.assertAccountId(accountId);
         this.validatePersisted({ name });
+        const session = await this.sessionRepo.getAccountSession(wid, accountId);
+        if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
+            return { success: false, errorMsg: "로그인 상태가 아닙니다." };
+        }
         if (this.wzService.isForbiddenName(name)) {
             return { success: false, errorMsg: "사용할 수 없는 이름입니다." };
         }
@@ -428,6 +436,11 @@ export class CharacterService {
         this.assertWorld(worldId);
         this.assertAccountId(accountId);
         this.assertCharacterId(characterId);
+
+        const session = await this.sessionRepo.getAccountSession(worldId, accountId);
+        if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
+            return { success: false };
+        }
 
         await using _characterLock = await this.distributedLockService.acquireWorldDataLock(
             worldId,

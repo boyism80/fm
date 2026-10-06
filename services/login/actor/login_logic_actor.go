@@ -15,7 +15,7 @@ import (
 )
 
 type LoginLogicActor struct {
-	Client     core.Client
+	Client     *client.LoginClient
 	Server     core.Server
 	timer      *scheduler.TimerScheduler
 	cancelPing scheduler.CancelFunc
@@ -29,10 +29,6 @@ func (a *LoginLogicActor) Receive(ctx actor.Context) {
 		a.onStarted(ctx)
 	case *c_actor.HandlePacket:
 		a.handlePacket(ctx, msg)
-	case *c_actor.ScheduleTimer:
-		a.scheduleTimer(ctx, msg)
-	case *c_actor.ExecuteTimer:
-		a.executeTimer(ctx, msg)
 	case *pingTick:
 		a.onPingTick()
 	case *actor.Stopped:
@@ -51,32 +47,13 @@ func (a *LoginLogicActor) onStarted(ctx actor.Context) {
 }
 
 func (a *LoginLogicActor) handlePacket(ctx actor.Context, msg *c_actor.HandlePacket) {
+	if a.Client.Transferred() {
+		log.Printf("Dropping packet 0x%02X from transferred client %d", msg.Opcode, a.Client.GetClientID())
+		return
+	}
 	err := core.ExecutePacketHandler(ctx, a.Server, msg.Client, msg.Opcode, msg.Data, msg.LogicActorPID)
 	if err != nil {
 		log.Printf("Error handling packet 0x%02X: %v", msg.Opcode, err)
-	}
-}
-
-func (a *LoginLogicActor) scheduleTimer(ctx actor.Context, msg *c_actor.ScheduleTimer) {
-	if msg.Logic == nil {
-		return
-	}
-
-	go func() {
-		time.Sleep(msg.Interval)
-		ctx.Send(ctx.Self(), &c_actor.ExecuteTimer{
-			Logic: msg.Logic,
-		})
-	}()
-}
-
-func (a *LoginLogicActor) executeTimer(ctx actor.Context, msg *c_actor.ExecuteTimer) {
-	if msg.Logic == nil {
-		return
-	}
-
-	if err := msg.Logic(); err != nil {
-		log.Printf("Error executing timer logic: %v", err)
 	}
 }
 
@@ -84,28 +61,24 @@ func (a *LoginLogicActor) onStopped(ctx actor.Context) {
 	if a.cancelPing != nil {
 		a.cancelPing()
 	}
-	if loginClient, ok := a.Client.(*client.LoginClient); ok {
-		log.Printf("LoginLogicActor stopped for client %d", loginClient.GetClientID())
-	} else {
-		log.Printf("LoginLogicActor stopped")
-	}
+	log.Printf("LoginLogicActor stopped for client %d", a.Client.GetClientID())
 }
 
 func (a *LoginLogicActor) onPingTick() {
-	loginClient, ok := a.Client.(*client.LoginClient)
-	if !ok {
+	if a.Client.Transferred() {
+		_ = a.Client.GetConnection().Close()
 		return
 	}
 
-	sendPing, disconnect := loginClient.NextPingAction(clock.Now(), 5*time.Second)
+	sendPing, disconnect := a.Client.NextPingAction(clock.Now(), 5*time.Second)
 	if disconnect {
-		_ = loginClient.GetConnection().Close()
+		_ = a.Client.GetConnection().Close()
 		return
 	}
 	if !sendPing {
 		return
 	}
-	if err := loginClient.Send(&response.Ping{}, types.SEND_POLICY_ENCRYPT); err != nil {
-		_ = loginClient.GetConnection().Close()
+	if err := a.Client.Send(&response.Ping{}, types.SEND_POLICY_ENCRYPT); err != nil {
+		_ = a.Client.GetConnection().Close()
 	}
 }

@@ -42,9 +42,6 @@ type LoginServer struct {
 }
 
 func (ls *LoginServer) GetPacketHandler() *core.PacketHandler {
-	if ls == nil {
-		return nil
-	}
 	return ls.packetHandler
 }
 
@@ -53,11 +50,7 @@ func (ls *LoginServer) EnsureRedispatch(_ *ensure.EnsureDeliver) {}
 func (ls *LoginServer) EnsureComplete(_ uint64) {}
 
 func (ls *LoginServer) handleClient(c core.Client) {
-	loginClient, ok := c.(*client.LoginClient)
-	if !ok {
-		log.Printf("Client is not a LoginClient")
-		return
-	}
+	loginClient := c.(*client.LoginClient)
 
 	props := actor.PropsFromProducer(func() actor.Actor {
 		return &loginactor.LoginLogicActor{
@@ -102,20 +95,15 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		config.CatalogRetryMaxAttempts = 30
 	}
 
-	if config.internalAddr() == "" {
+	addr := config.internalAddr()
+	if addr == "" {
 		return nil, fmt.Errorf("login server requires internal gRPC endpoint")
 	}
-	var internalClient internal.InternalClient
-	var internalConn *grpc.ClientConn
-	if addr := config.internalAddr(); addr != "" {
-		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			return nil, fmt.Errorf("internal gRPC dial %s: %w", addr, err)
-		}
-		internalConn = conn
-		internalClient = internal.NewInternalClient(conn)
-		log.Printf("Internal gRPC client connected to %s", addr)
+	internalConn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, fmt.Errorf("internal gRPC dial %s: %w", addr, err)
 	}
+	log.Printf("Internal gRPC client connected to %s", addr)
 
 	actorSystem := c_actor.NewActorSystem()
 	actorRegistry := c_actor.NewActorRegistry(actorSystem)
@@ -142,7 +130,7 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		ServerCore:     server,
 		config:         config,
 		packetHandler:  core.NewPacketHandler(),
-		internalClient: internalClient,
+		internalClient: internal.NewInternalClient(internalConn),
 		internalConn:   internalConn,
 		packetHandlers: NewPacketHandlerRegistry(nil),
 		actorSystem:    actorSystem,
@@ -198,9 +186,6 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 }
 
 func (ls *LoginServer) loadServerCatalog() error {
-	if ls.internalClient == nil {
-		return fmt.Errorf("internal gRPC client is required")
-	}
 	interval := time.Duration(ls.config.CatalogRetryIntervalSeconds) * time.Second
 	maxAttempts := ls.config.CatalogRetryMaxAttempts
 
@@ -254,16 +239,9 @@ func (ls *LoginServer) GetWorldCatalog() []*internal.WorldCatalog {
 }
 
 func (ls *LoginServer) handleClientDisconnect(c core.Client) {
-	loginClient, ok := c.(*client.LoginClient)
-	if !ok {
-		return
-	}
+	loginClient := c.(*client.LoginClient)
 	ls.actorRegistry.StopActor(fmt.Sprintf("login_session_%d", loginClient.GetClientID()), loginClient.GetLogicActorPID())
 
-	ic := ls.internalClient
-	if ic == nil {
-		return
-	}
 	remoteAddr := c.GetConnection().RemoteAddr().String()
 	accountId := loginClient.GetAccountId()
 	if accountId == 0 {
@@ -279,7 +257,7 @@ func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 		log.Printf("LogoutSession (login disconnect) failed for world=%d account=%d: %v", worldId, accountId, err)
 	})
 	async.ThenRPC(p, func(ctx context.Context) (*internal.LogoutSessionReply, error) {
-		return ic.LogoutSession(ctx, &internal.LogoutSessionRequest{
+		return ls.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
 			WorldId:            worldId,
 			AccountId:          accountId,
 			DisconnectSource:   internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_LOGIN_SERVER,
@@ -299,7 +277,7 @@ func (ls *LoginServer) Start() error {
 		return err
 	}
 
-	if ls.internalClient != nil && ls.config.InternalHeartbeatIntervalSeconds > 0 && ls.config.LoginInstanceID != "" {
+	if ls.config.InternalHeartbeatIntervalSeconds > 0 && ls.config.LoginInstanceID != "" {
 		hbCtx, cancel := context.WithCancel(context.Background())
 		ls.internalHBCancel = cancel
 		instanceID := ls.config.LoginInstanceID
@@ -308,7 +286,7 @@ func (ls *LoginServer) Start() error {
 		reg := globaltimer.NewRegistry()
 		globaltimer.RegisterTimer[*logingtimers.InternalPingTimer](reg)
 		reg.Start(hbCtx)
-	} else if ls.internalClient != nil && ls.config.LoginInstanceID == "" {
+	} else if ls.config.LoginInstanceID == "" {
 		log.Printf("login_instance_id empty: internal heartbeat disabled")
 	}
 

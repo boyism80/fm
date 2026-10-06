@@ -126,6 +126,7 @@ export class SessionGrpcController {
                 row.name,
                 call.request.clientIp,
                 call.request.debuffs ?? [],
+                call.request.sourceChannelId ?? null,
             );
             callback(null, {
                 ok: transition.ok,

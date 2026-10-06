@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
@@ -28,19 +27,9 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 	log.Printf("Create character packet received from %s - Name: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
-	loginClient, ok := ctx.Client.(*client.LoginClient)
-	if !ok {
-		return nil
-	}
-
+	loginClient := ctx.Client.(*client.LoginClient)
 	accountId := loginClient.GetAccountId()
 	if accountId == 0 {
-		createResp := &response.CreateCharacter{Success: false}
-		return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
-	}
-
-	ic := h.ls.internalClient
-	if ic == nil {
 		createResp := &response.CreateCharacter{Success: false}
 		return ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
 	}
@@ -58,16 +47,9 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 		WeaponItemId: req.Weapon,
 	}
 
-	if ctx.ActorContext == nil {
-		log.Printf("CreateCharacter: no actor context, cannot run internal RPC")
-		createResp := &response.CreateCharacter{Success: false}
-		_ = ctx.Client.Send(createResp, types.SEND_POLICY_ENCRYPT)
-		return fmt.Errorf("create character: actor context required for internal RPC")
-	}
-
 	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 		func(c context.Context) (*internal.CreateCharacterReply, error) {
-			return ic.CreateCharacter(c, reqProto)
+			return h.ls.internalClient.CreateCharacter(c, reqProto)
 		}, func(reply *internal.CreateCharacterReply) error {
 			return h.sendCreateCharacterResult(ctx, reply)
 		}).OnError(func(err error) {

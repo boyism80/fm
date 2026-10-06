@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
@@ -28,28 +27,11 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 	log.Printf("Check name packet received from %s - Name: %s",
 		ctx.Client.GetConnection().RemoteAddr(), req.Name)
 
-	ic := h.ls.internalClient
-	if ic == nil {
-		checkResp := &response.CheckName{Name: req.Name, Exists: false}
-		return ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
-	}
-
-	loginClient, ok := ctx.Client.(*client.LoginClient)
-	if !ok {
-		return fmt.Errorf("check name: invalid client type")
-	}
-	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name, AccountId: loginClient.GetAccountId()}
-
-	if ctx.ActorContext == nil {
-		log.Printf("CheckName: no actor context, cannot run internal RPC")
-		checkResp := &response.CheckName{Name: req.Name, Exists: false}
-		_ = ctx.Client.Send(checkResp, types.SEND_POLICY_ENCRYPT)
-		return fmt.Errorf("check name: actor context required for internal RPC")
-	}
+	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name, AccountId: ctx.Client.(*client.LoginClient).GetAccountId()}
 
 	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 		func(c context.Context) (*internal.CheckCharacterNameReply, error) {
-			return ic.CheckCharacterName(c, reqMsg)
+			return h.ls.internalClient.CheckCharacterName(c, reqMsg)
 		}, func(reply *internal.CheckCharacterNameReply) error {
 			checkResp := &response.CheckName{
 				Name:   req.Name,

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/boyism80/fm/core"
@@ -28,38 +27,15 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 	log.Printf("Delete character packet received from %s - Character ID: %d",
 		ctx.Client.GetConnection().RemoteAddr(), req.ID)
 
-	loginClient, ok := ctx.Client.(*client.LoginClient)
-	if !ok {
-		return nil
-	}
-
-	accountId := loginClient.GetAccountId()
+	accountId := ctx.Client.(*client.LoginClient).GetAccountId()
 	if accountId == 0 {
 		deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
 		return ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)
 	}
 
-	ic := h.ls.internalClient
-	if ic == nil {
-		deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
-		return ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)
-	}
-
-	reqProto := &internal.DeleteCharacterRequest{
-		AccountId:   accountId,
-		CharacterId: req.ID,
-	}
-
-	if ctx.ActorContext == nil {
-		log.Printf("DeleteCharacter: no actor context, cannot run internal RPC")
-		deleteResp := &response.DeleteCharacter{ID: req.ID, Success: false}
-		_ = ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)
-		return fmt.Errorf("delete character: actor context required for internal RPC")
-	}
-
 	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
 		func(c context.Context) (*internal.DeleteCharacterReply, error) {
-			return ic.DeleteCharacter(c, reqProto)
+			return h.ls.internalClient.DeleteCharacter(c, &internal.DeleteCharacterRequest{AccountId: accountId, CharacterId: req.ID})
 		}, func(reply *internal.DeleteCharacterReply) error {
 			deleteResp := &response.DeleteCharacter{
 				ID:      req.ID,

@@ -77,6 +77,12 @@ func (c *LoginClient) SetTransferDisconnect(v bool) {
 	c.transferDisconnect = v
 }
 
+func (c *LoginClient) Transferred() bool {
+	c.transferMu.Lock()
+	defer c.transferMu.Unlock()
+	return c.transferDisconnect
+}
+
 func (c *LoginClient) TakeTransferDisconnect() bool {
 	c.transferMu.Lock()
 	defer c.transferMu.Unlock()

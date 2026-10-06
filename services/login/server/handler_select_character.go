@@ -29,15 +29,7 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 		ctx.Client.GetConnection().RemoteAddr(), req.CharacterId)
 
 	failed := &response.LoginFailed{Reason: response.LoginFailedReasonSystemError6}
-	loginClient, ok := ctx.Client.(*client.LoginClient)
-	if !ok {
-		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
-		return fmt.Errorf("select character: invalid client type")
-	}
-	if h.ls.internalClient == nil {
-		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
-		return fmt.Errorf("select character: internal client not configured")
-	}
+	loginClient := ctx.Client.(*client.LoginClient)
 	accountId := loginClient.GetAccountId()
 	if accountId == 0 {
 		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
@@ -55,11 +47,6 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
 		return fmt.Errorf("select character: route not found for world=%d channel=%d", worldId, channelId)
 	}
-	if ctx.ActorContext == nil {
-		_ = ctx.Client.Send(failed, types.SEND_POLICY_ENCRYPT)
-		return fmt.Errorf("select character: actor context required for internal RPC")
-	}
-
 	transferResp := &response.Transfer{
 		IP:          route.GetHost(),
 		Port:        uint16(route.GetPort()),

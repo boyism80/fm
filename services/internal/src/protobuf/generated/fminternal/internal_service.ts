@@ -1029,6 +1029,7 @@ export interface BeginGameTransitionRequest {
   characterId: number;
   clientIp: string;
   debuffs: DebuffPersisted[];
+  sourceChannelId?: number | undefined;
 }
 
 export interface BeginGameTransitionReply {
@@ -4116,7 +4117,7 @@ export const DebuffPersisted: MessageFns<DebuffPersisted> = {
 };
 
 function createBaseBeginGameTransitionRequest(): BeginGameTransitionRequest {
-  return { worldId: 0, accountId: 0, characterId: 0, clientIp: "", debuffs: [] };
+  return { worldId: 0, accountId: 0, characterId: 0, clientIp: "", debuffs: [], sourceChannelId: undefined };
 }
 
 export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> = {
@@ -4135,6 +4136,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     }
     for (const v of message.debuffs) {
       DebuffPersisted.encode(v!, writer.uint32(42).fork()).join();
+    }
+    if (message.sourceChannelId !== undefined) {
+      writer.uint32(48).uint32(message.sourceChannelId);
     }
     return writer;
   },
@@ -4186,6 +4190,14 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
           message.debuffs.push(DebuffPersisted.decode(reader, reader.uint32()));
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.sourceChannelId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4220,6 +4232,11 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
       debuffs: globalThis.Array.isArray(object?.debuffs)
         ? object.debuffs.map((e: any) => DebuffPersisted.fromJSON(e))
         : [],
+      sourceChannelId: isSet(object.sourceChannelId)
+        ? globalThis.Number(object.sourceChannelId)
+        : isSet(object.source_channel_id)
+        ? globalThis.Number(object.source_channel_id)
+        : undefined,
     };
   },
 
@@ -4240,6 +4257,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     if (message.debuffs?.length) {
       obj.debuffs = message.debuffs.map((e) => DebuffPersisted.toJSON(e));
     }
+    if (message.sourceChannelId !== undefined) {
+      obj.sourceChannelId = Math.round(message.sourceChannelId);
+    }
     return obj;
   },
 
@@ -4253,6 +4273,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     message.characterId = object.characterId ?? 0;
     message.clientIp = object.clientIp ?? "";
     message.debuffs = object.debuffs?.map((e) => DebuffPersisted.fromPartial(e)) || [];
+    message.sourceChannelId = object.sourceChannelId ?? undefined;
     return message;
   },
 };

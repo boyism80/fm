@@ -90,9 +90,15 @@ export class SessionService {
         return { ok: true };
     }
 
-    async beginTransition(worldId: number, accountId: number, characterId: number, characterName: string, clientIp: string, debuffs: DebuffPersisted[]) {
-        const account = await this.repo.getAccountSession(worldId, accountId);
-        const gameToGameTransfer = account?.state === AccountSessionState.ACCOUNT_SESSION_STATE_GAME;
+    async beginTransition(
+        worldId: number,
+        accountId: number,
+        characterId: number,
+        characterName: string,
+        clientIp: string,
+        debuffs: DebuffPersisted[],
+        sourceChannelId: number | null
+    ) {
         const [ok, code] = this.atomicResultTuple(
             await this.repo.beginTransition(
                 worldId,
@@ -102,8 +108,7 @@ export class SessionService {
                 clientIp,
                 this.now(),
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
-                gameToGameTransfer,
-                account?.channelId ?? null,
+                sourceChannelId,
                 debuffs
             )
         );
@@ -111,7 +116,7 @@ export class SessionService {
             console.log(`[session] begin_transition failed account=${accountId} character=${characterId} code=${code}`);
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
-        console.log(`[session] begin_transition ok account=${accountId} character=${characterId} game_to_game=${gameToGameTransfer}`);
+        console.log(`[session] begin_transition ok account=${accountId} character=${characterId} source_channel=${sourceChannelId ?? ""}`);
         await this.releaseCharacterNameReservation(accountId);
         return { ok: true };
     }
