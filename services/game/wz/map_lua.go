@@ -2,6 +2,7 @@ package wz
 
 import (
 	"github.com/boyism80/fm/core/luax"
+	"github.com/boyism80/fm/services/game/constant"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -58,7 +59,7 @@ func (*Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "WzMap expected")
 				return 0
 			}
-			L.Push(lua.LBool(m.BlocksPotionUse()))
+			L.Push(lua.LBool(m.Limits(constant.FieldLimitPotion)))
 			return 1
 		},
 		"area": func(L *lua.LState) int {

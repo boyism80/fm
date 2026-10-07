@@ -600,6 +600,15 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["순간이동초기화"] = {
+		privilege = ROLE.Admin,
+		usage = "- 순간이동의 돌 등록 맵 초기화",
+		command = function(me, args)
+			me:reset_teleport_stones()
+			me:message("순간이동 초기화 완료")
+			return true
+		end,
+	},
 	["아이템드롭"] = {
 		privilege = ROLE.Admin,
 		usage = "<아이템ID> [개수] - 내 위치에 아이템 떨어뜨리기",

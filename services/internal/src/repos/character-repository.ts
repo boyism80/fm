@@ -6,7 +6,7 @@ import type { CharacterDeleteModel, CharacterModel, CharacterRow } from "../type
 
 const SELECT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, hidden, deleted, created_at, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, deleted, created_at, updated_at`;
 
 const ON_CONFLICT_SET = `
   account_id = EXCLUDED.account_id, world_id = EXCLUDED.world_id, name = EXCLUDED.name, gender = EXCLUDED.gender,
@@ -18,14 +18,15 @@ const ON_CONFLICT_SET = `
   spawn_point = EXCLUDED.spawn_point, pos_x = EXCLUDED.pos_x, pos_y = EXCLUDED.pos_y,
   stance = EXCLUDED.stance, meso = EXCLUDED.meso, skill_point = EXCLUDED.skill_point, population = EXCLUDED.population,
   hp_ap_used = EXCLUDED.hp_ap_used, pet_hp_item = EXCLUDED.pet_hp_item, pet_mp_item = EXCLUDED.pet_mp_item,
-  summoned_pet = EXCLUDED.summoned_pet, slot_limits = EXCLUDED.slot_limits, monster_book_cover = EXCLUDED.monster_book_cover, hidden = EXCLUDED.hidden,
+  summoned_pet = EXCLUDED.summoned_pet, slot_limits = EXCLUDED.slot_limits, monster_book_cover = EXCLUDED.monster_book_cover,
+  teleport_stones = EXCLUDED.teleport_stones, vip_teleport_stones = EXCLUDED.vip_teleport_stones, hidden = EXCLUDED.hidden,
   deleted = FALSE, updated_at = NOW()`;
 
 const INSERT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, hidden, deleted, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, slot_limits, monster_book_cover, teleport_stones, vip_teleport_stones, hidden, deleted, updated_at`;
 
-const PER_ROW_PARAMS = 36;
+const PER_ROW_PARAMS = 38;
 
 const DEFAULT_SLOT_LIMITS = [32, 32, 32, 32, 32];
 
@@ -41,7 +42,8 @@ function rowValues(row: CharacterRow) {
         row.exp, row.map_id, row.spawn_point, row.pos_x,
         row.pos_y, row.stance, row.meso, row.skill_point,
         row.population, row.hp_ap_used, row.pet_hp_item, row.pet_mp_item,
-        row.summoned_pet, row.slot_limits ?? DEFAULT_SLOT_LIMITS, row.monster_book_cover, row.hidden,
+        row.summoned_pet, row.slot_limits ?? DEFAULT_SLOT_LIMITS, row.monster_book_cover,
+        row.teleport_stones ?? [], row.vip_teleport_stones ?? [], row.hidden,
     ];
 }
 
@@ -74,7 +76,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
 
     override onUpsert(row: CharacterRow): RepositoryQuery {
         return {
-            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
+            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
             values: rowValues(row),
         };
     }
@@ -136,6 +138,8 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             summonedPet: toPgInt(row.summoned_pet),
             slotLimits: row.slot_limits ?? DEFAULT_SLOT_LIMITS,
             monsterBookCover: toPgInt(row.monster_book_cover),
+            teleportStones: row.teleport_stones ?? [],
+            vipTeleportStones: row.vip_teleport_stones ?? [],
             hidden: row.hidden,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
@@ -178,6 +182,8 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             summoned_pet: model.summonedPet ?? 0,
             slot_limits: model.slotLimits?.length === DEFAULT_SLOT_LIMITS.length ? model.slotLimits : DEFAULT_SLOT_LIMITS,
             monster_book_cover: model.monsterBookCover ?? 0,
+            teleport_stones: model.teleportStones ?? [],
+            vip_teleport_stones: model.vipTeleportStones ?? [],
             hidden: model.hidden ?? false,
         };
     }

@@ -24,6 +24,17 @@ func (m *Marriage) Serialize(writer *stream.StreamWriter) {
 	writer.WriteStaticStr(m.BrideName, 13)
 }
 
+func (m *Marriage) Deserialize(reader *stream.StreamReader) {
+	m.ID = reader.ReadU32()
+	m.GroomID = reader.ReadU32()
+	m.BrideID = reader.ReadU32()
+	m.Status = reader.ReadU16()
+	m.GroomItemID = reader.ReadU32()
+	m.BrideItemID = reader.ReadU32()
+	m.GroomName = reader.ReadStaticStr(13)
+	m.BrideName = reader.ReadStaticStr(13)
+}
+
 type MarriageRing struct {
 	CharacterID uint32
 	PartnerID   uint32

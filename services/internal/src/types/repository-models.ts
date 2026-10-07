@@ -71,6 +71,8 @@ export interface CharacterModel {
     summonedPet?: number;
     slotLimits?: number[];
     monsterBookCover?: number;
+    teleportStones?: number[];
+    vipTeleportStones?: number[];
     hidden?: boolean;
     updatedAt?: Date;
 }
@@ -111,6 +113,8 @@ export type CharacterRow = {
     summoned_pet: number | string;
     slot_limits: number[] | null;
     monster_book_cover: number;
+    teleport_stones: number[] | null;
+    vip_teleport_stones: number[] | null;
     hidden: boolean;
     deleted?: boolean;
     created_at?: Date | string;

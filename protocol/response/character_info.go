@@ -33,7 +33,7 @@ func (p *CharacterInfo) Serialize(writer *stream.StreamWriter) {
 
 	p.serializeRings(writer)
 
-	p.serializeRocks(writer)
+	p.serializeTeleportStones(writer)
 
 	p.serializeMonsterBook(writer)
 
@@ -214,17 +214,12 @@ func (p *CharacterInfo) serializeRings(writer *stream.StreamWriter) {
 	p.Character.Marriage.Serialize(writer)
 }
 
-func (p *CharacterInfo) serializeRocks(writer *stream.StreamWriter) {
-	if p.Character.RegRocks != nil {
-		for _, regRock := range p.Character.RegRocks {
-			writer.WriteU32(regRock)
-		}
+func (p *CharacterInfo) serializeTeleportStones(writer *stream.StreamWriter) {
+	for _, mapID := range p.Character.TeleportStones {
+		writer.WriteU32(mapID)
 	}
-
-	if p.Character.Rocks != nil {
-		for _, rock := range p.Character.Rocks {
-			writer.WriteU32(rock)
-		}
+	for _, mapID := range p.Character.VipTeleportStones {
+		writer.WriteU32(mapID)
 	}
 }
 
@@ -268,6 +263,8 @@ func (a *CharacterInfo) Deserialize(reader *stream.StreamReader) {
 	a.deserializeSkills(reader)
 	a.deserializeCooldowns(reader)
 	a.deserializeQuests(reader)
+	a.deserializeRings(reader)
+	a.deserializeTeleportStones(reader)
 }
 
 func (a *CharacterInfo) deserializeStats(reader *stream.StreamReader) {
@@ -364,5 +361,45 @@ func (a *CharacterInfo) deserializeQuests(reader *stream.StreamReader) {
 		q := &dto.QuestStatus{QuestID: reader.ReadU16(), Status: QuestWireStatusCompleted}
 		q.CompletionTime = util.FromFileTime(reader.ReadU64())
 		a.Character.QuestsCompleted = append(a.Character.QuestsCompleted, q)
+	}
+}
+
+func (a *CharacterInfo) deserializeRings(reader *stream.StreamReader) {
+	reader.ReadU16()
+
+	left := reader.ReadU16()
+	a.Character.Inventory.Rings.Left = make([]*dto.Ring, 0, left)
+	for range left {
+		ring := &dto.Ring{PartnerChrId: reader.ReadU32(), PartnerName: reader.ReadStaticStr(13)}
+		ring.RingId = reader.ReadU64()
+		ring.PartnerId = reader.ReadU64()
+		a.Character.Inventory.Rings.Left = append(a.Character.Inventory.Rings.Left, ring)
+	}
+
+	mid := reader.ReadU16()
+	a.Character.Inventory.Rings.Mid = make([]*dto.Ring, 0, mid)
+	for range mid {
+		ring := &dto.Ring{PartnerChrId: reader.ReadU32(), PartnerName: reader.ReadStaticStr(13)}
+		ring.RingId = reader.ReadU64()
+		ring.PartnerId = reader.ReadU64()
+		ring.ItemId = reader.ReadU32()
+		a.Character.Inventory.Rings.Mid = append(a.Character.Inventory.Rings.Mid, ring)
+	}
+
+	if reader.ReadU16() == 0 {
+		return
+	}
+	a.Character.Marriage = &dto.Marriage{}
+	a.Character.Marriage.Deserialize(reader)
+}
+
+func (a *CharacterInfo) deserializeTeleportStones(reader *stream.StreamReader) {
+	a.Character.TeleportStones = make([]uint32, constant.TeleportStoneCount)
+	for i := range a.Character.TeleportStones {
+		a.Character.TeleportStones[i] = reader.ReadU32()
+	}
+	a.Character.VipTeleportStones = make([]uint32, constant.VipTeleportStoneCount)
+	for i := range a.Character.VipTeleportStones {
+		a.Character.VipTeleportStones[i] = reader.ReadU32()
 	}
 }

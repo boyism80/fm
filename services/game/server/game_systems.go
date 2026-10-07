@@ -649,3 +649,22 @@ func (s dispatchSystem) Call(characterID uint32, run func(ctx actor.Context)) {
 		return nil
 	}})
 }
+
+func (s dispatchSystem) CallCharacter(characterID uint32, run func(ctx actor.Context, ch *entity.Character)) {
+	s.SendTo(characterID, &g_actor.MapCall{Run: func(ctx actor.Context, a *g_actor.GameLogicActor) []lua.LValue {
+		m := a.GetCharacter(characterID)
+		if m == nil {
+			run(ctx, nil)
+			return nil
+		}
+		run(ctx, m.GetPlayer(characterID))
+		return nil
+	}})
+}
+
+func (s dispatchSystem) FindCharacterID(name string) (uint32, bool) {
+	if s.gs == nil {
+		return 0, false
+	}
+	return s.gs.characterRuntime.NameToCharacterID(name)
+}

@@ -150,6 +150,7 @@ var decoders = func() []decoder {
 		newDecoder[response.UpdateCharacterLook](nil),
 		newDecoder[response.MonsterBookSetCard](nil),
 		newDecoder[response.MonsterBookSetCover](nil),
+		newDecoder[response.TeleportStoneResult](nil),
 		newDecoder[response.ShowSelfEffect](nil),
 		newDecoder[response.ShowEffect](nil),
 	}

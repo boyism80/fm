@@ -4,6 +4,7 @@ local VILLAGE = 680000000
 local LOBBY = 680000200
 local CATHEDRAL = 680000210
 local EXIT_MAP = 680000500
+local HENESYS = 100000000
 
 local CLARANCE = 9201005
 local VALENTINA = 9201006
@@ -418,6 +419,16 @@ local function ceremony(ctx)
 	if check(ctx, profile.character_id == bride:id() and profile.married and profile.self == false, "신부 캐릭터 정보의 결혼 여부가 다름") == false then
 		return false
 	end
+
+	local spouse = groom:request_on(bride, resp.spouse_map, req.normal_chat { message = "/맵이동 " .. HENESYS }, function(p)
+		return p.character_id == groom:id() and p.map_id == HENESYS
+	end, 5000)
+	if spouse == false then
+		return ctx:fail("신랑이 맵을 옮겼는데 신부에게 배우자 위치가 오지 않음")
+	end
+	if groom:map_move(VILLAGE) == false then
+		return ctx:fail("신랑 웨딩빌리지 복귀 실패")
+	end
 	return true
 end
 
@@ -524,11 +535,23 @@ local function divorce(ctx)
 	if groom:dialog(true) == nil then
 		return ctx:fail("이혼 확인 질문이 오지 않음")
 	end
+	local hidden = {}
+	ctx:hook("spouse_hidden", function(_, bot, p)
+		if p.map_id == 0 and p.character_id == 0 then
+			hidden[bot:id()] = true
+		end
+	end)
 	local divorced = groom:request(resp.engage_result, req.dialog { dialog_type = DIALOG.yes_no, next = true }, function(p)
 		return p.result == ENGAGE.divorced
 	end, 5000)
 	if divorced == false then
+		ctx:unhook("spouse_hidden")
 		return ctx:fail("이혼 결과가 오지 않음")
+	end
+	ctx:sleep(1000)
+	ctx:unhook("spouse_hidden")
+	if check(ctx, hidden[groom:id()] == true and hidden[bride:id()] == true, "이혼 후 배우자 위치가 지워지지 않음") == false then
+		return false
 	end
 	if shift_clock(ctx, groom, "/현재시간초기화", "현재 시간 보정 초기화") == false then
 		return false

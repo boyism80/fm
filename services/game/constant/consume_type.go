@@ -16,7 +16,7 @@ const (
 	ConsumeTypeSkillBookGet    ConsumeType = 10
 	ConsumeTypeSkillBookUnlock ConsumeType = 11
 	ConsumeTypeMinervaOwl      ConsumeType = 12
-	ConsumeTypeTeleportRock    ConsumeType = 13
+	ConsumeTypeTeleportStone   ConsumeType = 13
 	ConsumeTypeBullet          ConsumeType = 14
 	ConsumeTypeCard            ConsumeType = 15
 )
@@ -36,7 +36,7 @@ func AllConsumeTypes() map[string]ConsumeType {
 		"SkillBookGet":    ConsumeTypeSkillBookGet,
 		"SkillBookUnlock": ConsumeTypeSkillBookUnlock,
 		"MinervaOwl":      ConsumeTypeMinervaOwl,
-		"TeleportRock":    ConsumeTypeTeleportRock,
+		"TeleportStone":   ConsumeTypeTeleportStone,
 		"Bullet":          ConsumeTypeBullet,
 		"Card":            ConsumeTypeCard,
 	}

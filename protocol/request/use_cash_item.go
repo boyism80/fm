@@ -8,6 +8,7 @@ type UseCashItem struct {
 	Text   string
 	Ear    bool
 	PetSN  uint64
+	Target TeleportStoneTarget
 }
 
 func (*UseCashItem) Opcode() byte { return 0x3E }
@@ -22,6 +23,9 @@ func (p *UseCashItem) Serialize(writer *stream.StreamWriter) error {
 		return nil
 	case 519:
 		writer.WriteU64(p.PetSN)
+		return nil
+	case 504:
+		p.Target.Serialize(writer)
 		return nil
 	case 507:
 	default:
@@ -47,6 +51,9 @@ func (p *UseCashItem) Deserialize(reader *stream.StreamReader) {
 		return
 	case 519:
 		p.PetSN = reader.ReadU64()
+		return
+	case 504:
+		p.Target.Deserialize(reader)
 		return
 	case 507:
 	default:

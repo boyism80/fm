@@ -1751,6 +1751,8 @@ export interface Character {
   summonedPet: number;
   slotLimits: number[];
   monsterBookCover: number;
+  teleportStones: number[];
+  vipTeleportStones: number[];
 }
 
 export interface MonsterBookCard {
@@ -10177,6 +10179,8 @@ function createBaseCharacter(): Character {
     summonedPet: 0,
     slotLimits: [],
     monsterBookCover: 0,
+    teleportStones: [],
+    vipTeleportStones: [],
   };
 }
 
@@ -10292,6 +10296,16 @@ export const Character: MessageFns<Character> = {
     if (message.monsterBookCover !== 0) {
       writer.uint32(288).uint32(message.monsterBookCover);
     }
+    writer.uint32(298).fork();
+    for (const v of message.teleportStones) {
+      writer.uint32(v);
+    }
+    writer.join();
+    writer.uint32(306).fork();
+    for (const v of message.vipTeleportStones) {
+      writer.uint32(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -10600,6 +10614,42 @@ export const Character: MessageFns<Character> = {
           message.monsterBookCover = reader.uint32();
           continue;
         }
+        case 37: {
+          if (tag === 296) {
+            message.teleportStones.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 298) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.teleportStones.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 38: {
+          if (tag === 304) {
+            message.vipTeleportStones.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 306) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.vipTeleportStones.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10727,6 +10777,16 @@ export const Character: MessageFns<Character> = {
         : isSet(object.monster_book_cover)
         ? globalThis.Number(object.monster_book_cover)
         : 0,
+      teleportStones: globalThis.Array.isArray(object?.teleportStones)
+        ? object.teleportStones.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.teleport_stones)
+        ? object.teleport_stones.map((e: any) => globalThis.Number(e))
+        : [],
+      vipTeleportStones: globalThis.Array.isArray(object?.vipTeleportStones)
+        ? object.vipTeleportStones.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.vip_teleport_stones)
+        ? object.vip_teleport_stones.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
@@ -10840,6 +10900,12 @@ export const Character: MessageFns<Character> = {
     if (message.monsterBookCover !== 0) {
       obj.monsterBookCover = Math.round(message.monsterBookCover);
     }
+    if (message.teleportStones?.length) {
+      obj.teleportStones = message.teleportStones.map((e) => Math.round(e));
+    }
+    if (message.vipTeleportStones?.length) {
+      obj.vipTeleportStones = message.vipTeleportStones.map((e) => Math.round(e));
+    }
     return obj;
   },
 
@@ -10884,6 +10950,8 @@ export const Character: MessageFns<Character> = {
     message.summonedPet = object.summonedPet ?? 0;
     message.slotLimits = object.slotLimits?.map((e) => e) || [];
     message.monsterBookCover = object.monsterBookCover ?? 0;
+    message.teleportStones = object.teleportStones?.map((e) => e) || [];
+    message.vipTeleportStones = object.vipTeleportStones?.map((e) => e) || [];
     return message;
   },
 };

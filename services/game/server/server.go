@@ -665,8 +665,8 @@ func (gs *GameServer) removeCharacter(character *entity.Character, logout <-chan
 	if sm := character.StateMachine(); sm != nil {
 		sm.RequestLeave(character, false, entity.StateMachineLeaveDisconnect)
 	}
-	gs.GetDispatchSystem().Call(charID, func(actor.Context) {
-		_ = character.GetMap().LogoutPlayer(charID)
+	gs.GetDispatchSystem().Call(charID, func(ctx actor.Context) {
+		_ = character.GetMap().LogoutPlayer(ctx, charID)
 	})
 
 	var entry *internal.CharacterSaveEntry

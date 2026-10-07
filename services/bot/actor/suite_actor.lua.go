@@ -52,6 +52,8 @@ var requests = []outbound{
 	&request.WeddingPresent{},
 	&request.InspectCharacter{},
 	&request.MonsterBookCover{},
+	&request.TeleportStoneList{},
+	&request.UseTeleportStone{},
 	&request.MoveItem{},
 }
 
@@ -499,6 +501,10 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		"slot_limit": func(L *lua.LState) int {
 			b := a.checkBot(L)
 			L.Push(lua.LNumber(b.SlotLimits[constant.InventoryType(L.CheckInt(2))]))
+			return 1
+		},
+		"teleport_stones": func(L *lua.LState) int {
+			L.Push(a.marshal.ToLua(L, a.checkBot(L).Stones[L.OptBool(2, false)]))
 			return 1
 		},
 		"instance_move": func(L *lua.LState) int {

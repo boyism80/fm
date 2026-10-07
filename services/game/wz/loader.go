@@ -947,7 +947,7 @@ func loadMaps(path string, mapId uint32) (*Map, error) {
 	model.Cloud = info.Int("cloud", 0)
 	model.ReturnMapId = info.Int("returnMap", 0)
 	model.ForcedReturn = info.Int("forcedReturn", 0)
-	model.FieldLimit = info.Int("fieldLimit", 0)
+	model.FieldLimit = constant.FieldLimit(info.Int("fieldLimit", 0))
 	model.FieldType = FieldType(info.Int("fieldType", 0))
 	model.VRTop = info.Int("VRTop", 0)
 	model.VRLeft = info.Int("VRLeft", 0)

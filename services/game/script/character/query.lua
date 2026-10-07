@@ -165,6 +165,52 @@ local function return_scroll_continent_allowed(from_map_id, to_map_id)
     return from == to
 end
 
+local teleport_stone_blocked_maps = {
+    [109050000] = true,
+    [180000001] = true,
+    [180000002] = true,
+    [240060200] = true,
+    [240060201] = true,
+    [280030000] = true,
+    [280030001] = true,
+    [280090000] = true,
+    [950101010] = true,
+    [950101100] = true,
+}
+
+local function teleport_stone_blocked(map_id)
+    if map_id < 100000000 then
+        return true
+    end
+    if math.floor(map_id / 1000000) % 100 == 9 then
+        return true
+    end
+    if map_id >= 680000210 and map_id <= 680000502 then
+        return true
+    end
+    if map_id >= 270010200 and map_id <= 270030500 then
+        return true
+    end
+    if map_id >= 925020100 and map_id <= 925039999 then
+        return true
+    end
+    return teleport_stone_blocked_maps[map_id] == true
+end
+
+local function teleport_stone_region_allowed(item_id, from_map_id, to_map_id, by_name)
+    if item_id ~= 5040000 or by_name == false then
+        return true
+    end
+    local region = math.floor(to_map_id / 10000000)
+    if region >= 20 and region <= 23 then
+        return math.floor(from_map_id / 100000000) == math.floor(to_map_id / 100000000)
+    end
+    if region >= 24 and region <= 26 then
+        return math.floor(from_map_id / 10000000) == region
+    end
+    return true
+end
+
 return {
 	can_use_return_scroll = function(me, item_id, move_to)
 		if me:hp() <= 0 then
@@ -189,6 +235,17 @@ return {
 		    return true
 		end
 		return return_scroll_continent_allowed(current, move_to)
+	end,
+
+	can_register_teleport_stone = function(me, map_id)
+		return teleport_stone_blocked(map_id) == false
+	end,
+
+	can_teleport_stone = function(me, item_id, from_map_id, to_map_id, by_name)
+		if teleport_stone_blocked(from_map_id) or teleport_stone_blocked(to_map_id) then
+		    return false
+		end
+		return teleport_stone_region_allowed(item_id, from_map_id, to_map_id, by_name)
 	end,
 
 

@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 
+	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 )
 
@@ -44,7 +45,7 @@ type Map struct {
 	Cloud        int
 	ReturnMapId  int
 	ForcedReturn int
-	FieldLimit   int
+	FieldLimit   constant.FieldLimit
 	FieldType    FieldType
 
 	VRTop             int
@@ -78,12 +79,8 @@ func (m *Map) HasForcedReturn() bool {
 	return m.ForcedReturn > 0 && m.ForcedReturn != ForcedReturnNone
 }
 
-func (m *Map) BlocksPotionUse() bool {
-	return m != nil && m.FieldLimit&0x400 != 0
-}
-
-func (m *Map) BlocksMysticDoor() bool {
-	return m != nil && m.FieldLimit&0x08 != 0
+func (m *Map) Limits(limit constant.FieldLimit) bool {
+	return m != nil && m.FieldLimit&limit != 0
 }
 
 // The client field of these types reads one extra team byte at the end of the spawn player packet.

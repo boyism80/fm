@@ -240,12 +240,14 @@ func (ch *Character) RefreshMarriage(actx actor.Context, event string) {
 		case "broken":
 			ch.Listener.OnEngageResult(ch, pconst.EngageResultBroken)
 		case "divorced":
+			ch.Listener.OnSpouseMap(ch, 0, 0)
 			ch.Listener.OnEngageResult(ch, pconst.EngageResultDivorced)
 		case "reserved":
 			ch.Listener.OnEngageResult(ch, pconst.EngageResultReserved)
 		case "married":
 			if ch.Marriage != nil {
 				ch.Listener.OnEngageResult(ch, pconst.EngageResultMarried)
+				ch.NotifySpouseMap(actx, false)
 			}
 		}
 		return nil
@@ -412,6 +414,7 @@ func (ch *Character) RequestDivorce(actx actor.Context) (*async.Promise[string],
 			return "requested", nil
 		}
 		ch.discardMarriageRings()
+		ch.Listener.OnSpouseMap(ch, 0, 0)
 		ch.Listener.OnEngageResult(ch, pconst.EngageResultDivorced)
 		return "divorced", nil
 	}), nil
@@ -432,11 +435,20 @@ func (ch *Character) CancelDivorce(actx actor.Context) (*async.Promise[bool], er
 }
 
 func (ch *Character) NotifySpouseMap(actx actor.Context, reply bool) {
-	if ch.Marriage == nil {
+	if ch.Marriage == nil || ch.Marriage.Status != MarriageStatusMarried {
 		return
 	}
 	ch.Listener.NotifySpouseMapAsync(actx, ch, ch.Marriage.PartnerID(ch.GetID()), ch.GetMap().TemplateID(), reply).OnError(func(err error) {
 		log.Printf("NotifySpouseMap character=%d: %v", ch.GetID(), err)
+	})
+}
+
+func (ch *Character) HideFromSpouse(actx actor.Context) {
+	if ch.Marriage == nil || ch.Marriage.Status != MarriageStatusMarried {
+		return
+	}
+	ch.Listener.NotifySpouseMapAsync(actx, ch, ch.Marriage.PartnerID(ch.GetID()), 0, false).OnError(func(err error) {
+		log.Printf("HideFromSpouse character=%d: %v", ch.GetID(), err)
 	})
 }
 

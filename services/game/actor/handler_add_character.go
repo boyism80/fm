@@ -17,7 +17,7 @@ func (h *AddCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 	msg.TargetMap.AddPlayer(ctx, msg.Character.GetID(), msg.Character, msg.SpawnPoint, msg.Init)
 	msg.Character.FinishMove(msg.TargetMap)
 	if msg.Character.LoggedOut() {
-		_ = msg.TargetMap.LogoutPlayer(msg.Character.GetID())
+		_ = msg.TargetMap.LogoutPlayer(ctx, msg.Character.GetID())
 		return
 	}
 	msg.Character.ResumeTimers(ctx.Self())

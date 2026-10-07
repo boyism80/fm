@@ -84,7 +84,7 @@ func (h *ActiveSkill) Handle(ctx *core.ClientContext, req *request.ActiveSkill) 
 		return nil
 	}
 
-	if constant.SkillID(req.SkillID) == constant.SkillMysticDoor && mapInstance.Wz.BlocksMysticDoor() {
+	if constant.SkillID(req.SkillID) == constant.SkillMysticDoor && mapInstance.Wz.Limits(constant.FieldLimitMysticDoor) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}

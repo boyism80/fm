@@ -44,6 +44,8 @@ createMap(
     forMember((destination: any) => destination.summonedPet, mapFrom((source: CharacterModel) => source.summonedPet ?? 0)),
     forMember((destination: any) => destination.slotLimits, mapFrom((source: CharacterModel) => source.slotLimits ?? [])),
     forMember((destination: any) => destination.monsterBookCover, mapFrom((source: CharacterModel) => (source.monsterBookCover ?? 0) >>> 0)),
+    forMember((destination: any) => destination.teleportStones, mapFrom((source: CharacterModel) => source.teleportStones ?? [])),
+    forMember((destination: any) => destination.vipTeleportStones, mapFrom((source: CharacterModel) => source.vipTeleportStones ?? [])),
     forMember((destination: any) => destination.accountId, mapFrom((source: CharacterModel) => source.accountId >>> 0)),
     forMember((destination: any) => destination.hidden, mapFrom((source: CharacterModel) => source.hidden ?? false))
 );
@@ -86,6 +88,8 @@ createMap(
     forMember((destination: any) => destination.summonedPet, mapFrom((source: Character) => source.summonedPet)),
     forMember((destination: any) => destination.slotLimits, mapFrom((source: Character) => source.slotLimits ?? [])),
     forMember((destination: any) => destination.monsterBookCover, mapFrom((source: Character) => source.monsterBookCover >>> 0)),
+    forMember((destination: any) => destination.teleportStones, mapFrom((source: Character) => source.teleportStones ?? [])),
+    forMember((destination: any) => destination.vipTeleportStones, mapFrom((source: Character) => source.vipTeleportStones ?? [])),
     forMember((destination: any) => destination.accountId, mapFrom((source: Character) => source.accountId >>> 0)),
     forMember((destination: any) => destination.hidden, mapFrom((source: Character) => source.hidden))
 );

@@ -30,7 +30,7 @@ func (*UseItem) Handle(ctx *core.ClientContext, req *request.UseItem) error {
 	}
 
 	mapInstance := ch.GetMap()
-	if mapInstance != nil && mapInstance.Wz.BlocksPotionUse() {
+	if mapInstance != nil && mapInstance.Wz.Limits(constant.FieldLimitPotion) {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return nil
 	}

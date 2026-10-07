@@ -357,11 +357,12 @@ func (m *Map) RemovePlayer(playerID uint32) error {
 	return nil
 }
 
-func (m *Map) LogoutPlayer(playerID uint32) error {
+func (m *Map) LogoutPlayer(ctx actor.Context, playerID uint32) error {
 	character := m.GetPlayer(playerID)
 	if character == nil {
 		return fmt.Errorf("player %d not found on map", playerID)
 	}
+	character.HideFromSpouse(ctx)
 
 	if root := m.GetLuaRoot(); root != nil {
 		thread, err := luax.NewThread(root, constant.CharacterHookScriptPath)
@@ -395,6 +396,10 @@ func (m *Map) TemplateID() uint32 {
 
 func (m *Map) IsInstance() bool {
 	return m != nil && m.instance != nil
+}
+
+func (m *Map) BlocksTeleportStone() bool {
+	return m.Wz.Limits(constant.FieldLimitTeleportStone|constant.FieldLimitMovementSkill) || m.IsInstance() || m.StateMachine() != nil
 }
 
 func (m *Map) GetObject(objectType constant.ObjectType, id uint32) Object {

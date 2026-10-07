@@ -2749,6 +2749,16 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.ResetMonsterBook()
 			return 0
 		},
+		"reset_teleport_stones": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.ResetTeleportStones()
+			return 0
+		},
 		"guild": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

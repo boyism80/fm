@@ -30,7 +30,7 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 		return
 	}
 	if msg.Character.LoggedOut() {
-		_ = msg.TargetMap.LogoutPlayer(msg.Character.GetID())
+		_ = msg.TargetMap.LogoutPlayer(ctx, msg.Character.GetID())
 		return
 	}
 	if msg.TargetMap.Closing() {
@@ -38,6 +38,7 @@ func (h *WarpCharacterHandler) Handle(ctx actor.Context, a *GameLogicActor, msg 
 	}
 	msg.Character.ResumeTimers(ctx.Self())
 	msg.Character.Listener.OnPartyMemberFieldsChanged(msg.Character)
+	msg.Character.NotifySpouseMap(ctx, false)
 	if msg.OnEnter != nil {
 		msg.OnEnter(ctx)
 	}

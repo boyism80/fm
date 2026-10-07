@@ -174,7 +174,7 @@ func GetConsumeType(itemID uint32) ConsumeType {
 	case 231:
 		return ConsumeTypeMinervaOwl
 	case 232:
-		return ConsumeTypeTeleportRock
+		return ConsumeTypeTeleportStone
 	case 233:
 		return ConsumeTypeBullet
 	case 238:

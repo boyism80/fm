@@ -1057,6 +1057,14 @@ func (l *CharacterListenerImpl) OnMonsterBookCover(ch *entity.Character, cardID 
 	ch.Send(&response.MonsterBookSetCover{CardID: cardID}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnTeleportStones(ch *entity.Character, vip bool) {
+	ch.Send(&response.TeleportStoneResult{Result: pconst.TeleportStoneResultList, VIP: vip, Maps: ch.TeleportStones(vip)}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnTeleportStoneFailed(ch *entity.Character, vip bool, result pconst.TeleportStoneResult) {
+	ch.Send(&response.TeleportStoneResult{Result: result, VIP: vip}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnScriptError(ch *entity.Character, script string, err error) {
 	if ch.GetRole() != constant.RoleAdmin {
 		return

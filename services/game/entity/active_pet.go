@@ -162,7 +162,7 @@ func (p *ActivePet) UsePotion(slot int16, itemID uint32) error {
 	if p.owner.IsAlive() == false {
 		return ErrPetPotionRefused
 	}
-	if m := p.owner.GetMap(); m == nil || m.Wz.BlocksPotionUse() {
+	if m := p.owner.GetMap(); m == nil || m.Wz.Limits(constant.FieldLimitPotion) {
 		return ErrPetPotionRefused
 	}
 	consume, ok := p.owner.Inventory.GetItem(constant.InventoryTypeConsume, slot).(*Consume)

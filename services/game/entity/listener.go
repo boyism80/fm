@@ -128,6 +128,8 @@ type CharacterListener interface {
 	OnMonsterBookCardRegistered(ch *Character, cardID uint32, count uint32)
 	OnMonsterBookCardFull(ch *Character)
 	OnMonsterBookCover(ch *Character, cardID uint32)
+	OnTeleportStones(ch *Character, vip bool)
+	OnTeleportStoneFailed(ch *Character, vip bool, result pconst.TeleportStoneResult)
 	OnScriptError(ch *Character, script string, err error)
 	OnQuestStarted(ch *Character, qp *Quest, npcID uint32)
 	OnQuestCompleted(ch *Character, qp *Quest, npcID uint32, nextQuestID uint32)

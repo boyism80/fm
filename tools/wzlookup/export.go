@@ -384,7 +384,7 @@ func exportMap(m *wz.Map, street, mapName string, res *wz.Resources) Map {
 		MapName:      mapName,
 		ReturnMapID:  m.ReturnMapId,
 		ForcedReturn: m.ForcedReturn,
-		FieldLimit:   m.FieldLimit,
+		FieldLimit:   int(m.FieldLimit),
 		IsTown:       m.IsTown,
 		BGM:          m.BGM,
 		MapMark:      m.MapMark,

@@ -73,6 +73,8 @@ type CharacterInput = {
     summonedPet?: number;
     slotLimits?: number[];
     monsterBookCover?: number;
+    teleportStones?: number[];
+    vipTeleportStones?: number[];
     hidden?: boolean;
 };
 

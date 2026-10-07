@@ -617,6 +617,8 @@ message Character {
   uint64 summoned_pet = 34;
   repeated uint32 slot_limits = 35;
   uint32 monster_book_cover = 36;
+  repeated uint32 teleport_stones = 37;
+  repeated uint32 vip_teleport_stones = 38;
 }
 
 message MonsterBookCard {

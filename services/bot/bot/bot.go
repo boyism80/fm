@@ -54,6 +54,7 @@ type Bot struct {
 	Locker     []*dto.CashShopItem
 	Gifts      []*dto.CashShopGift
 	SlotLimits map[constant.InventoryType]uint8
+	Stones     map[bool][]uint32
 	cfg        *config.Bot
 	conn       *conn.Conn
 }
@@ -85,6 +86,7 @@ func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
 		Quests:     make(map[uint16]uint8),
 		Items:      make(map[constant.InventoryType]map[int16]ItemSlot),
 		SlotLimits: make(map[constant.InventoryType]uint8),
+		Stones:     make(map[bool][]uint32),
 		cfg:        cfg,
 	}, nil
 }
@@ -156,6 +158,10 @@ func (b *Bot) Update(pkt any) {
 			b.Gifts = p.Gifts
 		case pconst.CashShopResultInventorySlots:
 			b.SlotLimits[constant.InventoryType(p.InventoryType)] = uint8(p.Slots)
+		}
+	case *response.TeleportStoneResult:
+		if p.Result == pconst.TeleportStoneResultList {
+			b.Stones[p.VIP] = p.Maps
 		}
 	case *response.Warp:
 		if p.Character != nil {
@@ -276,6 +282,7 @@ func (b *Bot) load(character *dto.Character) {
 	b.Map, b.Spawn, b.HP = character.Map, character.SpawnPoint, character.Hp
 	b.Level, b.Class, b.EXP, b.Fame = character.Level, character.Class, int32(character.Exp), int32(character.Population)
 	b.Meso = character.Inventory.Meso
+	b.Stones[false], b.Stones[true] = character.TeleportStones, character.VipTeleportStones
 	for typ, tab := range character.Inventory.Tabs {
 		b.SlotLimits[typ] = tab.SlotLimit
 		for slot, item := range tab.Items {
