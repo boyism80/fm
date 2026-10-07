@@ -1,10 +1,10 @@
-import type { QuestPersisted } from "../protobuf/generated/fminternal/internal_service";
+import type { Quest } from "../protobuf/generated/fminternal/internal_service";
 import type { QuestModel } from "../repos/quest-repository";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 
 export const QUEST_MODEL = "QuestModel";
-export const QUEST_PERSISTED = "QuestPersisted";
+export const QUEST_PROTO = "QuestProto";
 
 function normalizeNumberMap(input: Record<number, number> | Record<string, number> | undefined): Record<string, number> {
     const out: Record<string, number> = {};
@@ -25,7 +25,7 @@ function normalizeStringMap(input: Record<string, string> | undefined): Record<s
 createMap(
     grpcMapper,
     QUEST_MODEL,
-    QUEST_PERSISTED,
+    QUEST_PROTO,
     forMember((destination: any) => destination.characterId, mapFrom((source: QuestModel) => source.characterId >>> 0)),
     forMember((destination: any) => destination.questId, mapFrom((source: QuestModel) => source.questId >>> 0)),
     forMember((destination: any) => destination.status, mapFrom((source: QuestModel) => source.status >>> 0)),
@@ -40,16 +40,16 @@ createMap(
 
 createMap(
     grpcMapper,
-    QUEST_PERSISTED,
+    QUEST_PROTO,
     QUEST_MODEL,
-    forMember((destination: any) => destination.characterId, mapFrom((source: QuestPersisted) => source.characterId >>> 0)),
-    forMember((destination: any) => destination.questId, mapFrom((source: QuestPersisted) => source.questId >>> 0)),
-    forMember((destination: any) => destination.status, mapFrom((source: QuestPersisted) => source.status >>> 0)),
-    forMember((destination: any) => destination.mobKills, mapFrom((source: QuestPersisted) => normalizeNumberMap(source.mobKills))),
-    forMember((destination: any) => destination.statusRecord, mapFrom((source: QuestPersisted) => source.statusRecord ?? "")),
-    forMember((destination: any) => destination.recordEx, mapFrom((source: QuestPersisted) => normalizeStringMap(source.recordEx))),
-    forMember((destination: any) => destination.completionTimeUnixMs, mapFrom((source: QuestPersisted) => source.completionTimeUnixMs || 0)),
-    forMember((destination: any) => destination.forfeited, mapFrom((source: QuestPersisted) => source.forfeited >>> 0)),
-    forMember((destination: any) => destination.deadlineUnixMs, mapFrom((source: QuestPersisted) => source.deadlineUnixMs || 0)),
-    forMember((destination: any) => destination.startTimeUnixMs, mapFrom((source: QuestPersisted) => source.startTimeUnixMs || 0))
+    forMember((destination: any) => destination.characterId, mapFrom((source: Quest) => source.characterId >>> 0)),
+    forMember((destination: any) => destination.questId, mapFrom((source: Quest) => source.questId >>> 0)),
+    forMember((destination: any) => destination.status, mapFrom((source: Quest) => source.status >>> 0)),
+    forMember((destination: any) => destination.mobKills, mapFrom((source: Quest) => normalizeNumberMap(source.mobKills))),
+    forMember((destination: any) => destination.statusRecord, mapFrom((source: Quest) => source.statusRecord ?? "")),
+    forMember((destination: any) => destination.recordEx, mapFrom((source: Quest) => normalizeStringMap(source.recordEx))),
+    forMember((destination: any) => destination.completionTimeUnixMs, mapFrom((source: Quest) => source.completionTimeUnixMs || 0)),
+    forMember((destination: any) => destination.forfeited, mapFrom((source: Quest) => source.forfeited >>> 0)),
+    forMember((destination: any) => destination.deadlineUnixMs, mapFrom((source: Quest) => source.deadlineUnixMs || 0)),
+    forMember((destination: any) => destination.startTimeUnixMs, mapFrom((source: Quest) => source.startTimeUnixMs || 0))
 );

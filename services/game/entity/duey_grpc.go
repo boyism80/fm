@@ -6,7 +6,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-func NewParcelFromInternalProto(pb *internal.ParcelPersisted, gw GameWorld) *Parcel {
+func NewParcelFromInternalProto(pb *internal.Parcel, gw GameWorld) *Parcel {
 	parcel := &Parcel{
 		ID:      pb.GetParcelId(),
 		Sender:  pb.GetSenderName(),

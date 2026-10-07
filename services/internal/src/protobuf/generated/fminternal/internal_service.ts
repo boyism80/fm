@@ -1022,7 +1022,7 @@ export interface EnterGameRequest {
   clientIp: string;
 }
 
-export interface CharacterPersisted {
+export interface Character {
   characterId: number;
   worldId: number;
   name: string;
@@ -1064,21 +1064,21 @@ export interface KeyLayoutBinding {
 
 export interface EnterGameReply {
   found: boolean;
-  character: CharacterPersisted | undefined;
-  inventory: InventoryPersisted[];
-  skills: SkillPersisted[];
+  character: Character | undefined;
+  inventory: Inventory[];
+  skills: Skill[];
   keyLayout: KeyLayoutBinding[];
   partyId?: number | undefined;
   guildId?: number | undefined;
-  buffs: BuffPersisted[];
+  buffs: Buff[];
   buddies: BuddyEntry[];
   buddyCapacity: number;
-  quests: QuestPersisted[];
-  savedLocations: SavedLocationPersisted[];
-  debuffs: DebuffPersisted[];
+  quests: Quest[];
+  savedLocations: SavedLocation[];
+  debuffs: Debuff[];
 }
 
-export interface DebuffPersisted {
+export interface Debuff {
   mask: number;
   position: number;
   x: number;
@@ -1092,7 +1092,7 @@ export interface BeginGameTransitionRequest {
   accountId: number;
   characterId: number;
   clientIp: string;
-  debuffs: DebuffPersisted[];
+  debuffs: Debuff[];
   sourceChannelId?: number | undefined;
 }
 
@@ -1102,7 +1102,7 @@ export interface BeginGameTransitionReply {
 }
 
 export interface SaveCharacterRequest {
-  character: CharacterPersisted | undefined;
+  character: Character | undefined;
   baseLooks: { [key: number]: number };
   overlays: { [key: number]: number };
 }
@@ -1122,16 +1122,16 @@ export interface SaveCharacterReply {
 }
 
 export interface CharacterSaveEntry {
-  character: CharacterPersisted | undefined;
+  character: Character | undefined;
   baseLooks: { [key: number]: number };
   overlays: { [key: number]: number };
-  inventory: InventoryPersisted[];
-  skills: SkillPersisted[];
+  inventory: Inventory[];
+  skills: Skill[];
   keyLayout: KeyLayoutBinding[];
-  buffs: BuffPersisted[];
-  quests: QuestPersisted[];
-  savedLocations: SavedLocationPersisted[];
-  storage: StoragePersisted | undefined;
+  buffs: Buff[];
+  quests: Quest[];
+  savedLocations: SavedLocation[];
+  storage: Storage | undefined;
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -1144,12 +1144,12 @@ export interface CharacterSaveEntry_OverlaysEntry {
   value: number;
 }
 
-export interface StoragePersisted {
+export interface Storage {
   accountId: number;
   worldId: number;
   slots: number;
   meso: number;
-  items: InventoryPersisted[];
+  items: Inventory[];
 }
 
 export interface LoadStorageRequest {
@@ -1158,10 +1158,10 @@ export interface LoadStorageRequest {
 }
 
 export interface LoadStorageReply {
-  storage: StoragePersisted | undefined;
+  storage: Storage | undefined;
 }
 
-export interface ParcelPersisted {
+export interface Parcel {
   parcelId: number;
   receiverId: number;
   senderName: string;
@@ -1169,7 +1169,7 @@ export interface ParcelPersisted {
   quick: boolean;
   message: string;
   sentAtUnixMs: number;
-  item: InventoryPersisted | undefined;
+  item: Inventory | undefined;
 }
 
 export interface LoadParcelsRequest {
@@ -1178,14 +1178,14 @@ export interface LoadParcelsRequest {
 }
 
 export interface LoadParcelsReply {
-  parcels: ParcelPersisted[];
-  expired: ParcelPersisted[];
+  parcels: Parcel[];
+  expired: Parcel[];
 }
 
 export interface SendParcelRequest {
   worldId: number;
   recipientName: string;
-  parcel: ParcelPersisted | undefined;
+  parcel: Parcel | undefined;
   senderAccountId: number;
   sender: CharacterSaveEntry | undefined;
   oneOfAKind: boolean;
@@ -1203,7 +1203,7 @@ export interface ClaimParcelRequest {
 
 export interface ClaimParcelReply {
   result: ParcelResult;
-  parcel: ParcelPersisted | undefined;
+  parcel: Parcel | undefined;
 }
 
 export interface DeleteParcelRequest {
@@ -1235,7 +1235,7 @@ export interface SaveCharactersReply {
   ok: boolean;
 }
 
-export interface EquipmentBonusStatsPersisted {
+export interface EquipmentBonusStats {
   str: number;
   dex: number;
   intStat: number;
@@ -1253,7 +1253,7 @@ export interface EquipmentBonusStatsPersisted {
   jump: number;
 }
 
-export interface InventoryPersisted {
+export interface Inventory {
   uniqueId?: number | undefined;
   ownerId: number;
   itemId: number;
@@ -1265,11 +1265,11 @@ export interface InventoryPersisted {
   skillBonus: number;
   ownerName: string;
   inventoryType: number;
-  equipBonusStats?: EquipmentBonusStatsPersisted | undefined;
+  equipBonusStats?: EquipmentBonusStats | undefined;
   enhanceCount: number;
 }
 
-export interface SkillPersisted {
+export interface Skill {
   characterId: number;
   skillId: number;
   level: number;
@@ -1277,23 +1277,23 @@ export interface SkillPersisted {
   cooldownEndUnixMs: number;
 }
 
-export interface BuffFlagValuePersisted {
+export interface BuffFlagValue {
   mask: number;
   position: number;
   value: number;
 }
 
-export interface BuffPersisted {
+export interface Buff {
   characterId: number;
   buffSourceId: number;
   kind: BuffKind;
-  flagValues: BuffFlagValuePersisted[];
+  flagValues: BuffFlagValue[];
   remainingDurationMs?: number | undefined;
   skillLevel: number;
   causerId: number;
 }
 
-export interface QuestPersisted {
+export interface Quest {
   characterId: number;
   questId: number;
   status: number;
@@ -1306,17 +1306,17 @@ export interface QuestPersisted {
   startTimeUnixMs: number;
 }
 
-export interface QuestPersisted_MobKillsEntry {
+export interface Quest_MobKillsEntry {
   key: number;
   value: number;
 }
 
-export interface QuestPersisted_RecordExEntry {
+export interface Quest_RecordExEntry {
   key: string;
   value: string;
 }
 
-export interface SavedLocationPersisted {
+export interface SavedLocation {
   characterId: number;
   name: string;
   mapId: number;
@@ -3117,7 +3117,7 @@ export const EnterGameRequest: MessageFns<EnterGameRequest> = {
   },
 };
 
-function createBaseCharacterPersisted(): CharacterPersisted {
+function createBaseCharacter(): Character {
   return {
     characterId: 0,
     worldId: 0,
@@ -3153,8 +3153,8 @@ function createBaseCharacterPersisted(): CharacterPersisted {
   };
 }
 
-export const CharacterPersisted: MessageFns<CharacterPersisted> = {
-  encode(message: CharacterPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Character: MessageFns<Character> = {
+  encode(message: Character, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.characterId !== 0) {
       writer.uint32(8).uint32(message.characterId);
     }
@@ -3251,10 +3251,10 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CharacterPersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): Character {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCharacterPersisted();
+    const message = createBaseCharacter();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3515,7 +3515,7 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     return message;
   },
 
-  fromJSON(object: any): CharacterPersisted {
+  fromJSON(object: any): Character {
     return {
       characterId: isSet(object.characterId)
         ? globalThis.Number(object.characterId)
@@ -3611,7 +3611,7 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     };
   },
 
-  toJSON(message: CharacterPersisted): unknown {
+  toJSON(message: Character): unknown {
     const obj: any = {};
     if (message.characterId !== 0) {
       obj.characterId = Math.round(message.characterId);
@@ -3709,11 +3709,11 @@ export const CharacterPersisted: MessageFns<CharacterPersisted> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CharacterPersisted>, I>>(base?: I): CharacterPersisted {
-    return CharacterPersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Character>, I>>(base?: I): Character {
+    return Character.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CharacterPersisted>, I>>(object: I): CharacterPersisted {
-    const message = createBaseCharacterPersisted();
+  fromPartial<I extends Exact<DeepPartial<Character>, I>>(object: I): Character {
+    const message = createBaseCharacter();
     message.characterId = object.characterId ?? 0;
     message.worldId = object.worldId ?? 0;
     message.name = object.name ?? "";
@@ -3865,13 +3865,13 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       writer.uint32(8).bool(message.found);
     }
     if (message.character !== undefined) {
-      CharacterPersisted.encode(message.character, writer.uint32(18).fork()).join();
+      Character.encode(message.character, writer.uint32(18).fork()).join();
     }
     for (const v of message.inventory) {
-      InventoryPersisted.encode(v!, writer.uint32(26).fork()).join();
+      Inventory.encode(v!, writer.uint32(26).fork()).join();
     }
     for (const v of message.skills) {
-      SkillPersisted.encode(v!, writer.uint32(34).fork()).join();
+      Skill.encode(v!, writer.uint32(34).fork()).join();
     }
     for (const v of message.keyLayout) {
       KeyLayoutBinding.encode(v!, writer.uint32(42).fork()).join();
@@ -3883,7 +3883,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       writer.uint32(56).uint32(message.guildId);
     }
     for (const v of message.buffs) {
-      BuffPersisted.encode(v!, writer.uint32(66).fork()).join();
+      Buff.encode(v!, writer.uint32(66).fork()).join();
     }
     for (const v of message.buddies) {
       BuddyEntry.encode(v!, writer.uint32(74).fork()).join();
@@ -3892,13 +3892,13 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       writer.uint32(80).uint32(message.buddyCapacity);
     }
     for (const v of message.quests) {
-      QuestPersisted.encode(v!, writer.uint32(90).fork()).join();
+      Quest.encode(v!, writer.uint32(90).fork()).join();
     }
     for (const v of message.savedLocations) {
-      SavedLocationPersisted.encode(v!, writer.uint32(98).fork()).join();
+      SavedLocation.encode(v!, writer.uint32(98).fork()).join();
     }
     for (const v of message.debuffs) {
-      DebuffPersisted.encode(v!, writer.uint32(106).fork()).join();
+      Debuff.encode(v!, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -3923,7 +3923,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.character = CharacterPersisted.decode(reader, reader.uint32());
+          message.character = Character.decode(reader, reader.uint32());
           continue;
         }
         case 3: {
@@ -3931,7 +3931,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.inventory.push(InventoryPersisted.decode(reader, reader.uint32()));
+          message.inventory.push(Inventory.decode(reader, reader.uint32()));
           continue;
         }
         case 4: {
@@ -3939,7 +3939,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.skills.push(SkillPersisted.decode(reader, reader.uint32()));
+          message.skills.push(Skill.decode(reader, reader.uint32()));
           continue;
         }
         case 5: {
@@ -3971,7 +3971,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.buffs.push(BuffPersisted.decode(reader, reader.uint32()));
+          message.buffs.push(Buff.decode(reader, reader.uint32()));
           continue;
         }
         case 9: {
@@ -3995,7 +3995,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.quests.push(QuestPersisted.decode(reader, reader.uint32()));
+          message.quests.push(Quest.decode(reader, reader.uint32()));
           continue;
         }
         case 12: {
@@ -4003,7 +4003,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.savedLocations.push(SavedLocationPersisted.decode(reader, reader.uint32()));
+          message.savedLocations.push(SavedLocation.decode(reader, reader.uint32()));
           continue;
         }
         case 13: {
@@ -4011,7 +4011,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
             break;
           }
 
-          message.debuffs.push(DebuffPersisted.decode(reader, reader.uint32()));
+          message.debuffs.push(Debuff.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -4026,11 +4026,11 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
   fromJSON(object: any): EnterGameReply {
     return {
       found: isSet(object.found) ? globalThis.Boolean(object.found) : false,
-      character: isSet(object.character) ? CharacterPersisted.fromJSON(object.character) : undefined,
+      character: isSet(object.character) ? Character.fromJSON(object.character) : undefined,
       inventory: globalThis.Array.isArray(object?.inventory)
-        ? object.inventory.map((e: any) => InventoryPersisted.fromJSON(e))
+        ? object.inventory.map((e: any) => Inventory.fromJSON(e))
         : [],
-      skills: globalThis.Array.isArray(object?.skills) ? object.skills.map((e: any) => SkillPersisted.fromJSON(e)) : [],
+      skills: globalThis.Array.isArray(object?.skills) ? object.skills.map((e: any) => Skill.fromJSON(e)) : [],
       keyLayout: globalThis.Array.isArray(object?.keyLayout)
         ? object.keyLayout.map((e: any) => KeyLayoutBinding.fromJSON(e))
         : globalThis.Array.isArray(object?.key_layout)
@@ -4046,21 +4046,23 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : isSet(object.guild_id)
         ? globalThis.Number(object.guild_id)
         : undefined,
-      buffs: globalThis.Array.isArray(object?.buffs) ? object.buffs.map((e: any) => BuffPersisted.fromJSON(e)) : [],
+      buffs: globalThis.Array.isArray(object?.buffs)
+        ? object.buffs.map((e: any) => Buff.fromJSON(e))
+        : [],
       buddies: globalThis.Array.isArray(object?.buddies) ? object.buddies.map((e: any) => BuddyEntry.fromJSON(e)) : [],
       buddyCapacity: isSet(object.buddyCapacity)
         ? globalThis.Number(object.buddyCapacity)
         : isSet(object.buddy_capacity)
         ? globalThis.Number(object.buddy_capacity)
         : 0,
-      quests: globalThis.Array.isArray(object?.quests) ? object.quests.map((e: any) => QuestPersisted.fromJSON(e)) : [],
+      quests: globalThis.Array.isArray(object?.quests) ? object.quests.map((e: any) => Quest.fromJSON(e)) : [],
       savedLocations: globalThis.Array.isArray(object?.savedLocations)
-        ? object.savedLocations.map((e: any) => SavedLocationPersisted.fromJSON(e))
+        ? object.savedLocations.map((e: any) => SavedLocation.fromJSON(e))
         : globalThis.Array.isArray(object?.saved_locations)
-        ? object.saved_locations.map((e: any) => SavedLocationPersisted.fromJSON(e))
+        ? object.saved_locations.map((e: any) => SavedLocation.fromJSON(e))
         : [],
       debuffs: globalThis.Array.isArray(object?.debuffs)
-        ? object.debuffs.map((e: any) => DebuffPersisted.fromJSON(e))
+        ? object.debuffs.map((e: any) => Debuff.fromJSON(e))
         : [],
     };
   },
@@ -4071,13 +4073,13 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       obj.found = message.found;
     }
     if (message.character !== undefined) {
-      obj.character = CharacterPersisted.toJSON(message.character);
+      obj.character = Character.toJSON(message.character);
     }
     if (message.inventory?.length) {
-      obj.inventory = message.inventory.map((e) => InventoryPersisted.toJSON(e));
+      obj.inventory = message.inventory.map((e) => Inventory.toJSON(e));
     }
     if (message.skills?.length) {
-      obj.skills = message.skills.map((e) => SkillPersisted.toJSON(e));
+      obj.skills = message.skills.map((e) => Skill.toJSON(e));
     }
     if (message.keyLayout?.length) {
       obj.keyLayout = message.keyLayout.map((e) => KeyLayoutBinding.toJSON(e));
@@ -4089,7 +4091,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       obj.guildId = Math.round(message.guildId);
     }
     if (message.buffs?.length) {
-      obj.buffs = message.buffs.map((e) => BuffPersisted.toJSON(e));
+      obj.buffs = message.buffs.map((e) => Buff.toJSON(e));
     }
     if (message.buddies?.length) {
       obj.buddies = message.buddies.map((e) => BuddyEntry.toJSON(e));
@@ -4098,13 +4100,13 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       obj.buddyCapacity = Math.round(message.buddyCapacity);
     }
     if (message.quests?.length) {
-      obj.quests = message.quests.map((e) => QuestPersisted.toJSON(e));
+      obj.quests = message.quests.map((e) => Quest.toJSON(e));
     }
     if (message.savedLocations?.length) {
-      obj.savedLocations = message.savedLocations.map((e) => SavedLocationPersisted.toJSON(e));
+      obj.savedLocations = message.savedLocations.map((e) => SavedLocation.toJSON(e));
     }
     if (message.debuffs?.length) {
-      obj.debuffs = message.debuffs.map((e) => DebuffPersisted.toJSON(e));
+      obj.debuffs = message.debuffs.map((e) => Debuff.toJSON(e));
     }
     return obj;
   },
@@ -4116,29 +4118,29 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     const message = createBaseEnterGameReply();
     message.found = object.found ?? false;
     message.character = (object.character !== undefined && object.character !== null)
-      ? CharacterPersisted.fromPartial(object.character)
+      ? Character.fromPartial(object.character)
       : undefined;
-    message.inventory = object.inventory?.map((e) => InventoryPersisted.fromPartial(e)) || [];
-    message.skills = object.skills?.map((e) => SkillPersisted.fromPartial(e)) || [];
+    message.inventory = object.inventory?.map((e) => Inventory.fromPartial(e)) || [];
+    message.skills = object.skills?.map((e) => Skill.fromPartial(e)) || [];
     message.keyLayout = object.keyLayout?.map((e) => KeyLayoutBinding.fromPartial(e)) || [];
     message.partyId = object.partyId ?? undefined;
     message.guildId = object.guildId ?? undefined;
-    message.buffs = object.buffs?.map((e) => BuffPersisted.fromPartial(e)) || [];
+    message.buffs = object.buffs?.map((e) => Buff.fromPartial(e)) || [];
     message.buddies = object.buddies?.map((e) => BuddyEntry.fromPartial(e)) || [];
     message.buddyCapacity = object.buddyCapacity ?? 0;
-    message.quests = object.quests?.map((e) => QuestPersisted.fromPartial(e)) || [];
-    message.savedLocations = object.savedLocations?.map((e) => SavedLocationPersisted.fromPartial(e)) || [];
-    message.debuffs = object.debuffs?.map((e) => DebuffPersisted.fromPartial(e)) || [];
+    message.quests = object.quests?.map((e) => Quest.fromPartial(e)) || [];
+    message.savedLocations = object.savedLocations?.map((e) => SavedLocation.fromPartial(e)) || [];
+    message.debuffs = object.debuffs?.map((e) => Debuff.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseDebuffPersisted(): DebuffPersisted {
+function createBaseDebuff(): Debuff {
   return { mask: 0, position: 0, x: 0, skillId: 0, skillLevel: 0, endUnixMs: 0 };
 }
 
-export const DebuffPersisted: MessageFns<DebuffPersisted> = {
-  encode(message: DebuffPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Debuff: MessageFns<Debuff> = {
+  encode(message: Debuff, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.mask !== 0) {
       writer.uint32(8).uint32(message.mask);
     }
@@ -4160,10 +4162,10 @@ export const DebuffPersisted: MessageFns<DebuffPersisted> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DebuffPersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): Debuff {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDebuffPersisted();
+    const message = createBaseDebuff();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4224,7 +4226,7 @@ export const DebuffPersisted: MessageFns<DebuffPersisted> = {
     return message;
   },
 
-  fromJSON(object: any): DebuffPersisted {
+  fromJSON(object: any): Debuff {
     return {
       mask: isSet(object.mask) ? globalThis.Number(object.mask) : 0,
       position: isSet(object.position) ? globalThis.Number(object.position) : 0,
@@ -4247,7 +4249,7 @@ export const DebuffPersisted: MessageFns<DebuffPersisted> = {
     };
   },
 
-  toJSON(message: DebuffPersisted): unknown {
+  toJSON(message: Debuff): unknown {
     const obj: any = {};
     if (message.mask !== 0) {
       obj.mask = Math.round(message.mask);
@@ -4270,11 +4272,11 @@ export const DebuffPersisted: MessageFns<DebuffPersisted> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<DebuffPersisted>, I>>(base?: I): DebuffPersisted {
-    return DebuffPersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Debuff>, I>>(base?: I): Debuff {
+    return Debuff.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<DebuffPersisted>, I>>(object: I): DebuffPersisted {
-    const message = createBaseDebuffPersisted();
+  fromPartial<I extends Exact<DeepPartial<Debuff>, I>>(object: I): Debuff {
+    const message = createBaseDebuff();
     message.mask = object.mask ?? 0;
     message.position = object.position ?? 0;
     message.x = object.x ?? 0;
@@ -4304,7 +4306,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
       writer.uint32(34).string(message.clientIp);
     }
     for (const v of message.debuffs) {
-      DebuffPersisted.encode(v!, writer.uint32(42).fork()).join();
+      Debuff.encode(v!, writer.uint32(42).fork()).join();
     }
     if (message.sourceChannelId !== undefined) {
       writer.uint32(48).uint32(message.sourceChannelId);
@@ -4356,7 +4358,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
             break;
           }
 
-          message.debuffs.push(DebuffPersisted.decode(reader, reader.uint32()));
+          message.debuffs.push(Debuff.decode(reader, reader.uint32()));
           continue;
         }
         case 6: {
@@ -4399,7 +4401,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
         ? globalThis.String(object.client_ip)
         : "",
       debuffs: globalThis.Array.isArray(object?.debuffs)
-        ? object.debuffs.map((e: any) => DebuffPersisted.fromJSON(e))
+        ? object.debuffs.map((e: any) => Debuff.fromJSON(e))
         : [],
       sourceChannelId: isSet(object.sourceChannelId)
         ? globalThis.Number(object.sourceChannelId)
@@ -4424,7 +4426,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
       obj.clientIp = message.clientIp;
     }
     if (message.debuffs?.length) {
-      obj.debuffs = message.debuffs.map((e) => DebuffPersisted.toJSON(e));
+      obj.debuffs = message.debuffs.map((e) => Debuff.toJSON(e));
     }
     if (message.sourceChannelId !== undefined) {
       obj.sourceChannelId = Math.round(message.sourceChannelId);
@@ -4441,7 +4443,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     message.accountId = object.accountId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.clientIp = object.clientIp ?? "";
-    message.debuffs = object.debuffs?.map((e) => DebuffPersisted.fromPartial(e)) || [];
+    message.debuffs = object.debuffs?.map((e) => Debuff.fromPartial(e)) || [];
     message.sourceChannelId = object.sourceChannelId ?? undefined;
     return message;
   },
@@ -4534,7 +4536,7 @@ function createBaseSaveCharacterRequest(): SaveCharacterRequest {
 export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
   encode(message: SaveCharacterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.character !== undefined) {
-      CharacterPersisted.encode(message.character, writer.uint32(10).fork()).join();
+      Character.encode(message.character, writer.uint32(10).fork()).join();
     }
     globalThis.Object.entries(message.baseLooks).forEach(([key, value]: [string, number]) => {
       SaveCharacterRequest_BaseLooksEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).join();
@@ -4557,7 +4559,7 @@ export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
             break;
           }
 
-          message.character = CharacterPersisted.decode(reader, reader.uint32());
+          message.character = Character.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -4593,7 +4595,7 @@ export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
 
   fromJSON(object: any): SaveCharacterRequest {
     return {
-      character: isSet(object.character) ? CharacterPersisted.fromJSON(object.character) : undefined,
+      character: isSet(object.character) ? Character.fromJSON(object.character) : undefined,
       baseLooks: isObject(object.baseLooks)
         ? (globalThis.Object.entries(object.baseLooks) as [string, any][]).reduce(
           (acc: { [key: number]: number }, [key, value]: [string, any]) => {
@@ -4626,7 +4628,7 @@ export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
   toJSON(message: SaveCharacterRequest): unknown {
     const obj: any = {};
     if (message.character !== undefined) {
-      obj.character = CharacterPersisted.toJSON(message.character);
+      obj.character = Character.toJSON(message.character);
     }
     if (message.baseLooks) {
       const entries = globalThis.Object.entries(message.baseLooks) as [string, number][];
@@ -4655,7 +4657,7 @@ export const SaveCharacterRequest: MessageFns<SaveCharacterRequest> = {
   fromPartial<I extends Exact<DeepPartial<SaveCharacterRequest>, I>>(object: I): SaveCharacterRequest {
     const message = createBaseSaveCharacterRequest();
     message.character = (object.character !== undefined && object.character !== null)
-      ? CharacterPersisted.fromPartial(object.character)
+      ? Character.fromPartial(object.character)
       : undefined;
     message.baseLooks = (globalThis.Object.entries(object.baseLooks ?? {}) as [string, number][]).reduce(
       (acc: { [key: number]: number }, [key, value]: [string, number]) => {
@@ -4915,7 +4917,7 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
 export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
   encode(message: CharacterSaveEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.character !== undefined) {
-      CharacterPersisted.encode(message.character, writer.uint32(10).fork()).join();
+      Character.encode(message.character, writer.uint32(10).fork()).join();
     }
     globalThis.Object.entries(message.baseLooks).forEach(([key, value]: [string, number]) => {
       CharacterSaveEntry_BaseLooksEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).join();
@@ -4924,25 +4926,25 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
       CharacterSaveEntry_OverlaysEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).join();
     });
     for (const v of message.inventory) {
-      InventoryPersisted.encode(v!, writer.uint32(34).fork()).join();
+      Inventory.encode(v!, writer.uint32(34).fork()).join();
     }
     for (const v of message.skills) {
-      SkillPersisted.encode(v!, writer.uint32(42).fork()).join();
+      Skill.encode(v!, writer.uint32(42).fork()).join();
     }
     for (const v of message.keyLayout) {
       KeyLayoutBinding.encode(v!, writer.uint32(50).fork()).join();
     }
     for (const v of message.buffs) {
-      BuffPersisted.encode(v!, writer.uint32(58).fork()).join();
+      Buff.encode(v!, writer.uint32(58).fork()).join();
     }
     for (const v of message.quests) {
-      QuestPersisted.encode(v!, writer.uint32(66).fork()).join();
+      Quest.encode(v!, writer.uint32(66).fork()).join();
     }
     for (const v of message.savedLocations) {
-      SavedLocationPersisted.encode(v!, writer.uint32(74).fork()).join();
+      SavedLocation.encode(v!, writer.uint32(74).fork()).join();
     }
     if (message.storage !== undefined) {
-      StoragePersisted.encode(message.storage, writer.uint32(82).fork()).join();
+      Storage.encode(message.storage, writer.uint32(82).fork()).join();
     }
     return writer;
   },
@@ -4959,7 +4961,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
             break;
           }
 
-          message.character = CharacterPersisted.decode(reader, reader.uint32());
+          message.character = Character.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -4989,7 +4991,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
             break;
           }
 
-          message.inventory.push(InventoryPersisted.decode(reader, reader.uint32()));
+          message.inventory.push(Inventory.decode(reader, reader.uint32()));
           continue;
         }
         case 5: {
@@ -4997,7 +4999,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
             break;
           }
 
-          message.skills.push(SkillPersisted.decode(reader, reader.uint32()));
+          message.skills.push(Skill.decode(reader, reader.uint32()));
           continue;
         }
         case 6: {
@@ -5013,7 +5015,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
             break;
           }
 
-          message.buffs.push(BuffPersisted.decode(reader, reader.uint32()));
+          message.buffs.push(Buff.decode(reader, reader.uint32()));
           continue;
         }
         case 8: {
@@ -5021,7 +5023,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
             break;
           }
 
-          message.quests.push(QuestPersisted.decode(reader, reader.uint32()));
+          message.quests.push(Quest.decode(reader, reader.uint32()));
           continue;
         }
         case 9: {
@@ -5029,7 +5031,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
             break;
           }
 
-          message.savedLocations.push(SavedLocationPersisted.decode(reader, reader.uint32()));
+          message.savedLocations.push(SavedLocation.decode(reader, reader.uint32()));
           continue;
         }
         case 10: {
@@ -5037,7 +5039,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
             break;
           }
 
-          message.storage = StoragePersisted.decode(reader, reader.uint32());
+          message.storage = Storage.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -5051,7 +5053,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
 
   fromJSON(object: any): CharacterSaveEntry {
     return {
-      character: isSet(object.character) ? CharacterPersisted.fromJSON(object.character) : undefined,
+      character: isSet(object.character) ? Character.fromJSON(object.character) : undefined,
       baseLooks: isObject(object.baseLooks)
         ? (globalThis.Object.entries(object.baseLooks) as [string, any][]).reduce(
           (acc: { [key: number]: number }, [key, value]: [string, any]) => {
@@ -5079,29 +5081,31 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         )
         : {},
       inventory: globalThis.Array.isArray(object?.inventory)
-        ? object.inventory.map((e: any) => InventoryPersisted.fromJSON(e))
+        ? object.inventory.map((e: any) => Inventory.fromJSON(e))
         : [],
-      skills: globalThis.Array.isArray(object?.skills) ? object.skills.map((e: any) => SkillPersisted.fromJSON(e)) : [],
+      skills: globalThis.Array.isArray(object?.skills) ? object.skills.map((e: any) => Skill.fromJSON(e)) : [],
       keyLayout: globalThis.Array.isArray(object?.keyLayout)
         ? object.keyLayout.map((e: any) => KeyLayoutBinding.fromJSON(e))
         : globalThis.Array.isArray(object?.key_layout)
         ? object.key_layout.map((e: any) => KeyLayoutBinding.fromJSON(e))
         : [],
-      buffs: globalThis.Array.isArray(object?.buffs) ? object.buffs.map((e: any) => BuffPersisted.fromJSON(e)) : [],
-      quests: globalThis.Array.isArray(object?.quests) ? object.quests.map((e: any) => QuestPersisted.fromJSON(e)) : [],
-      savedLocations: globalThis.Array.isArray(object?.savedLocations)
-        ? object.savedLocations.map((e: any) => SavedLocationPersisted.fromJSON(e))
-        : globalThis.Array.isArray(object?.saved_locations)
-        ? object.saved_locations.map((e: any) => SavedLocationPersisted.fromJSON(e))
+      buffs: globalThis.Array.isArray(object?.buffs)
+        ? object.buffs.map((e: any) => Buff.fromJSON(e))
         : [],
-      storage: isSet(object.storage) ? StoragePersisted.fromJSON(object.storage) : undefined,
+      quests: globalThis.Array.isArray(object?.quests) ? object.quests.map((e: any) => Quest.fromJSON(e)) : [],
+      savedLocations: globalThis.Array.isArray(object?.savedLocations)
+        ? object.savedLocations.map((e: any) => SavedLocation.fromJSON(e))
+        : globalThis.Array.isArray(object?.saved_locations)
+        ? object.saved_locations.map((e: any) => SavedLocation.fromJSON(e))
+        : [],
+      storage: isSet(object.storage) ? Storage.fromJSON(object.storage) : undefined,
     };
   },
 
   toJSON(message: CharacterSaveEntry): unknown {
     const obj: any = {};
     if (message.character !== undefined) {
-      obj.character = CharacterPersisted.toJSON(message.character);
+      obj.character = Character.toJSON(message.character);
     }
     if (message.baseLooks) {
       const entries = globalThis.Object.entries(message.baseLooks) as [string, number][];
@@ -5122,25 +5126,25 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
       }
     }
     if (message.inventory?.length) {
-      obj.inventory = message.inventory.map((e) => InventoryPersisted.toJSON(e));
+      obj.inventory = message.inventory.map((e) => Inventory.toJSON(e));
     }
     if (message.skills?.length) {
-      obj.skills = message.skills.map((e) => SkillPersisted.toJSON(e));
+      obj.skills = message.skills.map((e) => Skill.toJSON(e));
     }
     if (message.keyLayout?.length) {
       obj.keyLayout = message.keyLayout.map((e) => KeyLayoutBinding.toJSON(e));
     }
     if (message.buffs?.length) {
-      obj.buffs = message.buffs.map((e) => BuffPersisted.toJSON(e));
+      obj.buffs = message.buffs.map((e) => Buff.toJSON(e));
     }
     if (message.quests?.length) {
-      obj.quests = message.quests.map((e) => QuestPersisted.toJSON(e));
+      obj.quests = message.quests.map((e) => Quest.toJSON(e));
     }
     if (message.savedLocations?.length) {
-      obj.savedLocations = message.savedLocations.map((e) => SavedLocationPersisted.toJSON(e));
+      obj.savedLocations = message.savedLocations.map((e) => SavedLocation.toJSON(e));
     }
     if (message.storage !== undefined) {
-      obj.storage = StoragePersisted.toJSON(message.storage);
+      obj.storage = Storage.toJSON(message.storage);
     }
     return obj;
   },
@@ -5151,7 +5155,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
   fromPartial<I extends Exact<DeepPartial<CharacterSaveEntry>, I>>(object: I): CharacterSaveEntry {
     const message = createBaseCharacterSaveEntry();
     message.character = (object.character !== undefined && object.character !== null)
-      ? CharacterPersisted.fromPartial(object.character)
+      ? Character.fromPartial(object.character)
       : undefined;
     message.baseLooks = (globalThis.Object.entries(object.baseLooks ?? {}) as [string, number][]).reduce(
       (acc: { [key: number]: number }, [key, value]: [string, number]) => {
@@ -5171,14 +5175,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
       },
       {},
     );
-    message.inventory = object.inventory?.map((e) => InventoryPersisted.fromPartial(e)) || [];
-    message.skills = object.skills?.map((e) => SkillPersisted.fromPartial(e)) || [];
+    message.inventory = object.inventory?.map((e) => Inventory.fromPartial(e)) || [];
+    message.skills = object.skills?.map((e) => Skill.fromPartial(e)) || [];
     message.keyLayout = object.keyLayout?.map((e) => KeyLayoutBinding.fromPartial(e)) || [];
-    message.buffs = object.buffs?.map((e) => BuffPersisted.fromPartial(e)) || [];
-    message.quests = object.quests?.map((e) => QuestPersisted.fromPartial(e)) || [];
-    message.savedLocations = object.savedLocations?.map((e) => SavedLocationPersisted.fromPartial(e)) || [];
+    message.buffs = object.buffs?.map((e) => Buff.fromPartial(e)) || [];
+    message.quests = object.quests?.map((e) => Quest.fromPartial(e)) || [];
+    message.savedLocations = object.savedLocations?.map((e) => SavedLocation.fromPartial(e)) || [];
     message.storage = (object.storage !== undefined && object.storage !== null)
-      ? StoragePersisted.fromPartial(object.storage)
+      ? Storage.fromPartial(object.storage)
       : undefined;
     return message;
   },
@@ -5344,12 +5348,12 @@ export const CharacterSaveEntry_OverlaysEntry: MessageFns<CharacterSaveEntry_Ove
   },
 };
 
-function createBaseStoragePersisted(): StoragePersisted {
+function createBaseStorage(): Storage {
   return { accountId: 0, worldId: 0, slots: 0, meso: 0, items: [] };
 }
 
-export const StoragePersisted: MessageFns<StoragePersisted> = {
-  encode(message: StoragePersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Storage: MessageFns<Storage> = {
+  encode(message: Storage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.accountId !== 0) {
       writer.uint32(8).uint32(message.accountId);
     }
@@ -5363,15 +5367,15 @@ export const StoragePersisted: MessageFns<StoragePersisted> = {
       writer.uint32(32).int32(message.meso);
     }
     for (const v of message.items) {
-      InventoryPersisted.encode(v!, writer.uint32(42).fork()).join();
+      Inventory.encode(v!, writer.uint32(42).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): StoragePersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): Storage {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseStoragePersisted();
+    const message = createBaseStorage();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -5412,7 +5416,7 @@ export const StoragePersisted: MessageFns<StoragePersisted> = {
             break;
           }
 
-          message.items.push(InventoryPersisted.decode(reader, reader.uint32()));
+          message.items.push(Inventory.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -5424,7 +5428,7 @@ export const StoragePersisted: MessageFns<StoragePersisted> = {
     return message;
   },
 
-  fromJSON(object: any): StoragePersisted {
+  fromJSON(object: any): Storage {
     return {
       accountId: isSet(object.accountId)
         ? globalThis.Number(object.accountId)
@@ -5438,13 +5442,11 @@ export const StoragePersisted: MessageFns<StoragePersisted> = {
         : 0,
       slots: isSet(object.slots) ? globalThis.Number(object.slots) : 0,
       meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
-      items: globalThis.Array.isArray(object?.items)
-        ? object.items.map((e: any) => InventoryPersisted.fromJSON(e))
-        : [],
+      items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => Inventory.fromJSON(e)) : [],
     };
   },
 
-  toJSON(message: StoragePersisted): unknown {
+  toJSON(message: Storage): unknown {
     const obj: any = {};
     if (message.accountId !== 0) {
       obj.accountId = Math.round(message.accountId);
@@ -5459,21 +5461,21 @@ export const StoragePersisted: MessageFns<StoragePersisted> = {
       obj.meso = Math.round(message.meso);
     }
     if (message.items?.length) {
-      obj.items = message.items.map((e) => InventoryPersisted.toJSON(e));
+      obj.items = message.items.map((e) => Inventory.toJSON(e));
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<StoragePersisted>, I>>(base?: I): StoragePersisted {
-    return StoragePersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Storage>, I>>(base?: I): Storage {
+    return Storage.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<StoragePersisted>, I>>(object: I): StoragePersisted {
-    const message = createBaseStoragePersisted();
+  fromPartial<I extends Exact<DeepPartial<Storage>, I>>(object: I): Storage {
+    const message = createBaseStorage();
     message.accountId = object.accountId ?? 0;
     message.worldId = object.worldId ?? 0;
     message.slots = object.slots ?? 0;
     message.meso = object.meso ?? 0;
-    message.items = object.items?.map((e) => InventoryPersisted.fromPartial(e)) || [];
+    message.items = object.items?.map((e) => Inventory.fromPartial(e)) || [];
     return message;
   },
 };
@@ -5569,7 +5571,7 @@ function createBaseLoadStorageReply(): LoadStorageReply {
 export const LoadStorageReply: MessageFns<LoadStorageReply> = {
   encode(message: LoadStorageReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.storage !== undefined) {
-      StoragePersisted.encode(message.storage, writer.uint32(10).fork()).join();
+      Storage.encode(message.storage, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -5586,7 +5588,7 @@ export const LoadStorageReply: MessageFns<LoadStorageReply> = {
             break;
           }
 
-          message.storage = StoragePersisted.decode(reader, reader.uint32());
+          message.storage = Storage.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -5599,13 +5601,13 @@ export const LoadStorageReply: MessageFns<LoadStorageReply> = {
   },
 
   fromJSON(object: any): LoadStorageReply {
-    return { storage: isSet(object.storage) ? StoragePersisted.fromJSON(object.storage) : undefined };
+    return { storage: isSet(object.storage) ? Storage.fromJSON(object.storage) : undefined };
   },
 
   toJSON(message: LoadStorageReply): unknown {
     const obj: any = {};
     if (message.storage !== undefined) {
-      obj.storage = StoragePersisted.toJSON(message.storage);
+      obj.storage = Storage.toJSON(message.storage);
     }
     return obj;
   },
@@ -5616,13 +5618,13 @@ export const LoadStorageReply: MessageFns<LoadStorageReply> = {
   fromPartial<I extends Exact<DeepPartial<LoadStorageReply>, I>>(object: I): LoadStorageReply {
     const message = createBaseLoadStorageReply();
     message.storage = (object.storage !== undefined && object.storage !== null)
-      ? StoragePersisted.fromPartial(object.storage)
+      ? Storage.fromPartial(object.storage)
       : undefined;
     return message;
   },
 };
 
-function createBaseParcelPersisted(): ParcelPersisted {
+function createBaseParcel(): Parcel {
   return {
     parcelId: 0,
     receiverId: 0,
@@ -5635,8 +5637,8 @@ function createBaseParcelPersisted(): ParcelPersisted {
   };
 }
 
-export const ParcelPersisted: MessageFns<ParcelPersisted> = {
-  encode(message: ParcelPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Parcel: MessageFns<Parcel> = {
+  encode(message: Parcel, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.parcelId !== 0) {
       writer.uint32(8).uint32(message.parcelId);
     }
@@ -5659,15 +5661,15 @@ export const ParcelPersisted: MessageFns<ParcelPersisted> = {
       writer.uint32(56).int64(message.sentAtUnixMs);
     }
     if (message.item !== undefined) {
-      InventoryPersisted.encode(message.item, writer.uint32(66).fork()).join();
+      Inventory.encode(message.item, writer.uint32(66).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ParcelPersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): Parcel {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseParcelPersisted();
+    const message = createBaseParcel();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -5732,7 +5734,7 @@ export const ParcelPersisted: MessageFns<ParcelPersisted> = {
             break;
           }
 
-          message.item = InventoryPersisted.decode(reader, reader.uint32());
+          message.item = Inventory.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -5744,7 +5746,7 @@ export const ParcelPersisted: MessageFns<ParcelPersisted> = {
     return message;
   },
 
-  fromJSON(object: any): ParcelPersisted {
+  fromJSON(object: any): Parcel {
     return {
       parcelId: isSet(object.parcelId)
         ? globalThis.Number(object.parcelId)
@@ -5769,11 +5771,11 @@ export const ParcelPersisted: MessageFns<ParcelPersisted> = {
         : isSet(object.sent_at_unix_ms)
         ? globalThis.Number(object.sent_at_unix_ms)
         : 0,
-      item: isSet(object.item) ? InventoryPersisted.fromJSON(object.item) : undefined,
+      item: isSet(object.item) ? Inventory.fromJSON(object.item) : undefined,
     };
   },
 
-  toJSON(message: ParcelPersisted): unknown {
+  toJSON(message: Parcel): unknown {
     const obj: any = {};
     if (message.parcelId !== 0) {
       obj.parcelId = Math.round(message.parcelId);
@@ -5797,16 +5799,16 @@ export const ParcelPersisted: MessageFns<ParcelPersisted> = {
       obj.sentAtUnixMs = Math.round(message.sentAtUnixMs);
     }
     if (message.item !== undefined) {
-      obj.item = InventoryPersisted.toJSON(message.item);
+      obj.item = Inventory.toJSON(message.item);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ParcelPersisted>, I>>(base?: I): ParcelPersisted {
-    return ParcelPersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Parcel>, I>>(base?: I): Parcel {
+    return Parcel.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ParcelPersisted>, I>>(object: I): ParcelPersisted {
-    const message = createBaseParcelPersisted();
+  fromPartial<I extends Exact<DeepPartial<Parcel>, I>>(object: I): Parcel {
+    const message = createBaseParcel();
     message.parcelId = object.parcelId ?? 0;
     message.receiverId = object.receiverId ?? 0;
     message.senderName = object.senderName ?? "";
@@ -5814,9 +5816,7 @@ export const ParcelPersisted: MessageFns<ParcelPersisted> = {
     message.quick = object.quick ?? false;
     message.message = object.message ?? "";
     message.sentAtUnixMs = object.sentAtUnixMs ?? 0;
-    message.item = (object.item !== undefined && object.item !== null)
-      ? InventoryPersisted.fromPartial(object.item)
-      : undefined;
+    message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
     return message;
   },
 };
@@ -5912,10 +5912,10 @@ function createBaseLoadParcelsReply(): LoadParcelsReply {
 export const LoadParcelsReply: MessageFns<LoadParcelsReply> = {
   encode(message: LoadParcelsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.parcels) {
-      ParcelPersisted.encode(v!, writer.uint32(10).fork()).join();
+      Parcel.encode(v!, writer.uint32(10).fork()).join();
     }
     for (const v of message.expired) {
-      ParcelPersisted.encode(v!, writer.uint32(18).fork()).join();
+      Parcel.encode(v!, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -5932,7 +5932,7 @@ export const LoadParcelsReply: MessageFns<LoadParcelsReply> = {
             break;
           }
 
-          message.parcels.push(ParcelPersisted.decode(reader, reader.uint32()));
+          message.parcels.push(Parcel.decode(reader, reader.uint32()));
           continue;
         }
         case 2: {
@@ -5940,7 +5940,7 @@ export const LoadParcelsReply: MessageFns<LoadParcelsReply> = {
             break;
           }
 
-          message.expired.push(ParcelPersisted.decode(reader, reader.uint32()));
+          message.expired.push(Parcel.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -5954,22 +5954,18 @@ export const LoadParcelsReply: MessageFns<LoadParcelsReply> = {
 
   fromJSON(object: any): LoadParcelsReply {
     return {
-      parcels: globalThis.Array.isArray(object?.parcels)
-        ? object.parcels.map((e: any) => ParcelPersisted.fromJSON(e))
-        : [],
-      expired: globalThis.Array.isArray(object?.expired)
-        ? object.expired.map((e: any) => ParcelPersisted.fromJSON(e))
-        : [],
+      parcels: globalThis.Array.isArray(object?.parcels) ? object.parcels.map((e: any) => Parcel.fromJSON(e)) : [],
+      expired: globalThis.Array.isArray(object?.expired) ? object.expired.map((e: any) => Parcel.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: LoadParcelsReply): unknown {
     const obj: any = {};
     if (message.parcels?.length) {
-      obj.parcels = message.parcels.map((e) => ParcelPersisted.toJSON(e));
+      obj.parcels = message.parcels.map((e) => Parcel.toJSON(e));
     }
     if (message.expired?.length) {
-      obj.expired = message.expired.map((e) => ParcelPersisted.toJSON(e));
+      obj.expired = message.expired.map((e) => Parcel.toJSON(e));
     }
     return obj;
   },
@@ -5979,8 +5975,8 @@ export const LoadParcelsReply: MessageFns<LoadParcelsReply> = {
   },
   fromPartial<I extends Exact<DeepPartial<LoadParcelsReply>, I>>(object: I): LoadParcelsReply {
     const message = createBaseLoadParcelsReply();
-    message.parcels = object.parcels?.map((e) => ParcelPersisted.fromPartial(e)) || [];
-    message.expired = object.expired?.map((e) => ParcelPersisted.fromPartial(e)) || [];
+    message.parcels = object.parcels?.map((e) => Parcel.fromPartial(e)) || [];
+    message.expired = object.expired?.map((e) => Parcel.fromPartial(e)) || [];
     return message;
   },
 };
@@ -5998,7 +5994,7 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
       writer.uint32(18).string(message.recipientName);
     }
     if (message.parcel !== undefined) {
-      ParcelPersisted.encode(message.parcel, writer.uint32(26).fork()).join();
+      Parcel.encode(message.parcel, writer.uint32(26).fork()).join();
     }
     if (message.senderAccountId !== 0) {
       writer.uint32(32).uint32(message.senderAccountId);
@@ -6040,7 +6036,7 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
             break;
           }
 
-          message.parcel = ParcelPersisted.decode(reader, reader.uint32());
+          message.parcel = Parcel.decode(reader, reader.uint32());
           continue;
         }
         case 4: {
@@ -6088,7 +6084,7 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
         : isSet(object.recipient_name)
         ? globalThis.String(object.recipient_name)
         : "",
-      parcel: isSet(object.parcel) ? ParcelPersisted.fromJSON(object.parcel) : undefined,
+      parcel: isSet(object.parcel) ? Parcel.fromJSON(object.parcel) : undefined,
       senderAccountId: isSet(object.senderAccountId)
         ? globalThis.Number(object.senderAccountId)
         : isSet(object.sender_account_id)
@@ -6112,7 +6108,7 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
       obj.recipientName = message.recipientName;
     }
     if (message.parcel !== undefined) {
-      obj.parcel = ParcelPersisted.toJSON(message.parcel);
+      obj.parcel = Parcel.toJSON(message.parcel);
     }
     if (message.senderAccountId !== 0) {
       obj.senderAccountId = Math.round(message.senderAccountId);
@@ -6134,7 +6130,7 @@ export const SendParcelRequest: MessageFns<SendParcelRequest> = {
     message.worldId = object.worldId ?? 0;
     message.recipientName = object.recipientName ?? "";
     message.parcel = (object.parcel !== undefined && object.parcel !== null)
-      ? ParcelPersisted.fromPartial(object.parcel)
+      ? Parcel.fromPartial(object.parcel)
       : undefined;
     message.senderAccountId = object.senderAccountId ?? 0;
     message.sender = (object.sender !== undefined && object.sender !== null)
@@ -6317,7 +6313,7 @@ export const ClaimParcelReply: MessageFns<ClaimParcelReply> = {
       writer.uint32(8).int32(message.result);
     }
     if (message.parcel !== undefined) {
-      ParcelPersisted.encode(message.parcel, writer.uint32(18).fork()).join();
+      Parcel.encode(message.parcel, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -6342,7 +6338,7 @@ export const ClaimParcelReply: MessageFns<ClaimParcelReply> = {
             break;
           }
 
-          message.parcel = ParcelPersisted.decode(reader, reader.uint32());
+          message.parcel = Parcel.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -6357,7 +6353,7 @@ export const ClaimParcelReply: MessageFns<ClaimParcelReply> = {
   fromJSON(object: any): ClaimParcelReply {
     return {
       result: isSet(object.result) ? parcelResultFromJSON(object.result) : 0,
-      parcel: isSet(object.parcel) ? ParcelPersisted.fromJSON(object.parcel) : undefined,
+      parcel: isSet(object.parcel) ? Parcel.fromJSON(object.parcel) : undefined,
     };
   },
 
@@ -6367,7 +6363,7 @@ export const ClaimParcelReply: MessageFns<ClaimParcelReply> = {
       obj.result = parcelResultToJSON(message.result);
     }
     if (message.parcel !== undefined) {
-      obj.parcel = ParcelPersisted.toJSON(message.parcel);
+      obj.parcel = Parcel.toJSON(message.parcel);
     }
     return obj;
   },
@@ -6379,7 +6375,7 @@ export const ClaimParcelReply: MessageFns<ClaimParcelReply> = {
     const message = createBaseClaimParcelReply();
     message.result = object.result ?? 0;
     message.parcel = (object.parcel !== undefined && object.parcel !== null)
-      ? ParcelPersisted.fromPartial(object.parcel)
+      ? Parcel.fromPartial(object.parcel)
       : undefined;
     return message;
   },
@@ -6847,7 +6843,7 @@ export const SaveCharactersReply: MessageFns<SaveCharactersReply> = {
   },
 };
 
-function createBaseEquipmentBonusStatsPersisted(): EquipmentBonusStatsPersisted {
+function createBaseEquipmentBonusStats(): EquipmentBonusStats {
   return {
     str: 0,
     dex: 0,
@@ -6867,8 +6863,8 @@ function createBaseEquipmentBonusStatsPersisted(): EquipmentBonusStatsPersisted 
   };
 }
 
-export const EquipmentBonusStatsPersisted: MessageFns<EquipmentBonusStatsPersisted> = {
-  encode(message: EquipmentBonusStatsPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const EquipmentBonusStats: MessageFns<EquipmentBonusStats> = {
+  encode(message: EquipmentBonusStats, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.str !== 0) {
       writer.uint32(8).int32(message.str);
     }
@@ -6917,10 +6913,10 @@ export const EquipmentBonusStatsPersisted: MessageFns<EquipmentBonusStatsPersist
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EquipmentBonusStatsPersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): EquipmentBonusStats {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEquipmentBonusStatsPersisted();
+    const message = createBaseEquipmentBonusStats();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -7053,7 +7049,7 @@ export const EquipmentBonusStatsPersisted: MessageFns<EquipmentBonusStatsPersist
     return message;
   },
 
-  fromJSON(object: any): EquipmentBonusStatsPersisted {
+  fromJSON(object: any): EquipmentBonusStats {
     return {
       str: isSet(object.str) ? globalThis.Number(object.str) : 0,
       dex: isSet(object.dex) ? globalThis.Number(object.dex) : 0,
@@ -7085,7 +7081,7 @@ export const EquipmentBonusStatsPersisted: MessageFns<EquipmentBonusStatsPersist
     };
   },
 
-  toJSON(message: EquipmentBonusStatsPersisted): unknown {
+  toJSON(message: EquipmentBonusStats): unknown {
     const obj: any = {};
     if (message.str !== 0) {
       obj.str = Math.round(message.str);
@@ -7135,11 +7131,11 @@ export const EquipmentBonusStatsPersisted: MessageFns<EquipmentBonusStatsPersist
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EquipmentBonusStatsPersisted>, I>>(base?: I): EquipmentBonusStatsPersisted {
-    return EquipmentBonusStatsPersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<EquipmentBonusStats>, I>>(base?: I): EquipmentBonusStats {
+    return EquipmentBonusStats.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EquipmentBonusStatsPersisted>, I>>(object: I): EquipmentBonusStatsPersisted {
-    const message = createBaseEquipmentBonusStatsPersisted();
+  fromPartial<I extends Exact<DeepPartial<EquipmentBonusStats>, I>>(object: I): EquipmentBonusStats {
+    const message = createBaseEquipmentBonusStats();
     message.str = object.str ?? 0;
     message.dex = object.dex ?? 0;
     message.intStat = object.intStat ?? 0;
@@ -7159,7 +7155,7 @@ export const EquipmentBonusStatsPersisted: MessageFns<EquipmentBonusStatsPersist
   },
 };
 
-function createBaseInventoryPersisted(): InventoryPersisted {
+function createBaseInventory(): Inventory {
   return {
     uniqueId: undefined,
     ownerId: 0,
@@ -7177,8 +7173,8 @@ function createBaseInventoryPersisted(): InventoryPersisted {
   };
 }
 
-export const InventoryPersisted: MessageFns<InventoryPersisted> = {
-  encode(message: InventoryPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Inventory: MessageFns<Inventory> = {
+  encode(message: Inventory, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.uniqueId !== undefined) {
       writer.uint32(8).uint64(message.uniqueId);
     }
@@ -7213,7 +7209,7 @@ export const InventoryPersisted: MessageFns<InventoryPersisted> = {
       writer.uint32(88).uint32(message.inventoryType);
     }
     if (message.equipBonusStats !== undefined) {
-      EquipmentBonusStatsPersisted.encode(message.equipBonusStats, writer.uint32(98).fork()).join();
+      EquipmentBonusStats.encode(message.equipBonusStats, writer.uint32(98).fork()).join();
     }
     if (message.enhanceCount !== 0) {
       writer.uint32(104).uint32(message.enhanceCount);
@@ -7221,10 +7217,10 @@ export const InventoryPersisted: MessageFns<InventoryPersisted> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): InventoryPersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): Inventory {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseInventoryPersisted();
+    const message = createBaseInventory();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -7321,7 +7317,7 @@ export const InventoryPersisted: MessageFns<InventoryPersisted> = {
             break;
           }
 
-          message.equipBonusStats = EquipmentBonusStatsPersisted.decode(reader, reader.uint32());
+          message.equipBonusStats = EquipmentBonusStats.decode(reader, reader.uint32());
           continue;
         }
         case 13: {
@@ -7341,7 +7337,7 @@ export const InventoryPersisted: MessageFns<InventoryPersisted> = {
     return message;
   },
 
-  fromJSON(object: any): InventoryPersisted {
+  fromJSON(object: any): Inventory {
     return {
       uniqueId: isSet(object.uniqueId)
         ? globalThis.Number(object.uniqueId)
@@ -7387,9 +7383,9 @@ export const InventoryPersisted: MessageFns<InventoryPersisted> = {
         ? globalThis.Number(object.inventory_type)
         : 0,
       equipBonusStats: isSet(object.equipBonusStats)
-        ? EquipmentBonusStatsPersisted.fromJSON(object.equipBonusStats)
+        ? EquipmentBonusStats.fromJSON(object.equipBonusStats)
         : isSet(object.equip_bonus_stats)
-        ? EquipmentBonusStatsPersisted.fromJSON(object.equip_bonus_stats)
+        ? EquipmentBonusStats.fromJSON(object.equip_bonus_stats)
         : undefined,
       enhanceCount: isSet(object.enhanceCount)
         ? globalThis.Number(object.enhanceCount)
@@ -7399,7 +7395,7 @@ export const InventoryPersisted: MessageFns<InventoryPersisted> = {
     };
   },
 
-  toJSON(message: InventoryPersisted): unknown {
+  toJSON(message: Inventory): unknown {
     const obj: any = {};
     if (message.uniqueId !== undefined) {
       obj.uniqueId = Math.round(message.uniqueId);
@@ -7435,7 +7431,7 @@ export const InventoryPersisted: MessageFns<InventoryPersisted> = {
       obj.inventoryType = Math.round(message.inventoryType);
     }
     if (message.equipBonusStats !== undefined) {
-      obj.equipBonusStats = EquipmentBonusStatsPersisted.toJSON(message.equipBonusStats);
+      obj.equipBonusStats = EquipmentBonusStats.toJSON(message.equipBonusStats);
     }
     if (message.enhanceCount !== 0) {
       obj.enhanceCount = Math.round(message.enhanceCount);
@@ -7443,11 +7439,11 @@ export const InventoryPersisted: MessageFns<InventoryPersisted> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<InventoryPersisted>, I>>(base?: I): InventoryPersisted {
-    return InventoryPersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Inventory>, I>>(base?: I): Inventory {
+    return Inventory.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<InventoryPersisted>, I>>(object: I): InventoryPersisted {
-    const message = createBaseInventoryPersisted();
+  fromPartial<I extends Exact<DeepPartial<Inventory>, I>>(object: I): Inventory {
+    const message = createBaseInventory();
     message.uniqueId = object.uniqueId ?? undefined;
     message.ownerId = object.ownerId ?? 0;
     message.itemId = object.itemId ?? 0;
@@ -7460,19 +7456,19 @@ export const InventoryPersisted: MessageFns<InventoryPersisted> = {
     message.ownerName = object.ownerName ?? "";
     message.inventoryType = object.inventoryType ?? 0;
     message.equipBonusStats = (object.equipBonusStats !== undefined && object.equipBonusStats !== null)
-      ? EquipmentBonusStatsPersisted.fromPartial(object.equipBonusStats)
+      ? EquipmentBonusStats.fromPartial(object.equipBonusStats)
       : undefined;
     message.enhanceCount = object.enhanceCount ?? 0;
     return message;
   },
 };
 
-function createBaseSkillPersisted(): SkillPersisted {
+function createBaseSkill(): Skill {
   return { characterId: 0, skillId: 0, level: 0, masterLevel: 0, cooldownEndUnixMs: 0 };
 }
 
-export const SkillPersisted: MessageFns<SkillPersisted> = {
-  encode(message: SkillPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Skill: MessageFns<Skill> = {
+  encode(message: Skill, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.characterId !== 0) {
       writer.uint32(8).uint32(message.characterId);
     }
@@ -7491,10 +7487,10 @@ export const SkillPersisted: MessageFns<SkillPersisted> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SkillPersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): Skill {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSkillPersisted();
+    const message = createBaseSkill();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -7547,7 +7543,7 @@ export const SkillPersisted: MessageFns<SkillPersisted> = {
     return message;
   },
 
-  fromJSON(object: any): SkillPersisted {
+  fromJSON(object: any): Skill {
     return {
       characterId: isSet(object.characterId)
         ? globalThis.Number(object.characterId)
@@ -7573,7 +7569,7 @@ export const SkillPersisted: MessageFns<SkillPersisted> = {
     };
   },
 
-  toJSON(message: SkillPersisted): unknown {
+  toJSON(message: Skill): unknown {
     const obj: any = {};
     if (message.characterId !== 0) {
       obj.characterId = Math.round(message.characterId);
@@ -7593,11 +7589,11 @@ export const SkillPersisted: MessageFns<SkillPersisted> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SkillPersisted>, I>>(base?: I): SkillPersisted {
-    return SkillPersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Skill>, I>>(base?: I): Skill {
+    return Skill.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SkillPersisted>, I>>(object: I): SkillPersisted {
-    const message = createBaseSkillPersisted();
+  fromPartial<I extends Exact<DeepPartial<Skill>, I>>(object: I): Skill {
+    const message = createBaseSkill();
     message.characterId = object.characterId ?? 0;
     message.skillId = object.skillId ?? 0;
     message.level = object.level ?? 0;
@@ -7607,12 +7603,12 @@ export const SkillPersisted: MessageFns<SkillPersisted> = {
   },
 };
 
-function createBaseBuffFlagValuePersisted(): BuffFlagValuePersisted {
+function createBaseBuffFlagValue(): BuffFlagValue {
   return { mask: 0, position: 0, value: 0 };
 }
 
-export const BuffFlagValuePersisted: MessageFns<BuffFlagValuePersisted> = {
-  encode(message: BuffFlagValuePersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const BuffFlagValue: MessageFns<BuffFlagValue> = {
+  encode(message: BuffFlagValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.mask !== 0) {
       writer.uint32(8).uint32(message.mask);
     }
@@ -7625,10 +7621,10 @@ export const BuffFlagValuePersisted: MessageFns<BuffFlagValuePersisted> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): BuffFlagValuePersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): BuffFlagValue {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBuffFlagValuePersisted();
+    const message = createBaseBuffFlagValue();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -7665,7 +7661,7 @@ export const BuffFlagValuePersisted: MessageFns<BuffFlagValuePersisted> = {
     return message;
   },
 
-  fromJSON(object: any): BuffFlagValuePersisted {
+  fromJSON(object: any): BuffFlagValue {
     return {
       mask: isSet(object.mask) ? globalThis.Number(object.mask) : 0,
       position: isSet(object.position) ? globalThis.Number(object.position) : 0,
@@ -7673,7 +7669,7 @@ export const BuffFlagValuePersisted: MessageFns<BuffFlagValuePersisted> = {
     };
   },
 
-  toJSON(message: BuffFlagValuePersisted): unknown {
+  toJSON(message: BuffFlagValue): unknown {
     const obj: any = {};
     if (message.mask !== 0) {
       obj.mask = Math.round(message.mask);
@@ -7687,11 +7683,11 @@ export const BuffFlagValuePersisted: MessageFns<BuffFlagValuePersisted> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<BuffFlagValuePersisted>, I>>(base?: I): BuffFlagValuePersisted {
-    return BuffFlagValuePersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<BuffFlagValue>, I>>(base?: I): BuffFlagValue {
+    return BuffFlagValue.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<BuffFlagValuePersisted>, I>>(object: I): BuffFlagValuePersisted {
-    const message = createBaseBuffFlagValuePersisted();
+  fromPartial<I extends Exact<DeepPartial<BuffFlagValue>, I>>(object: I): BuffFlagValue {
+    const message = createBaseBuffFlagValue();
     message.mask = object.mask ?? 0;
     message.position = object.position ?? 0;
     message.value = object.value ?? 0;
@@ -7699,7 +7695,7 @@ export const BuffFlagValuePersisted: MessageFns<BuffFlagValuePersisted> = {
   },
 };
 
-function createBaseBuffPersisted(): BuffPersisted {
+function createBaseBuff(): Buff {
   return {
     characterId: 0,
     buffSourceId: 0,
@@ -7711,8 +7707,8 @@ function createBaseBuffPersisted(): BuffPersisted {
   };
 }
 
-export const BuffPersisted: MessageFns<BuffPersisted> = {
-  encode(message: BuffPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Buff: MessageFns<Buff> = {
+  encode(message: Buff, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.characterId !== 0) {
       writer.uint32(8).uint32(message.characterId);
     }
@@ -7723,7 +7719,7 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
       writer.uint32(24).int32(message.kind);
     }
     for (const v of message.flagValues) {
-      BuffFlagValuePersisted.encode(v!, writer.uint32(34).fork()).join();
+      BuffFlagValue.encode(v!, writer.uint32(34).fork()).join();
     }
     if (message.remainingDurationMs !== undefined) {
       writer.uint32(40).uint64(message.remainingDurationMs);
@@ -7737,10 +7733,10 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): BuffPersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): Buff {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseBuffPersisted();
+    const message = createBaseBuff();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -7773,7 +7769,7 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
             break;
           }
 
-          message.flagValues.push(BuffFlagValuePersisted.decode(reader, reader.uint32()));
+          message.flagValues.push(BuffFlagValue.decode(reader, reader.uint32()));
           continue;
         }
         case 5: {
@@ -7809,7 +7805,7 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
     return message;
   },
 
-  fromJSON(object: any): BuffPersisted {
+  fromJSON(object: any): Buff {
     return {
       characterId: isSet(object.characterId)
         ? globalThis.Number(object.characterId)
@@ -7823,9 +7819,9 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
         : 0,
       kind: isSet(object.kind) ? buffKindFromJSON(object.kind) : 0,
       flagValues: globalThis.Array.isArray(object?.flagValues)
-        ? object.flagValues.map((e: any) => BuffFlagValuePersisted.fromJSON(e))
+        ? object.flagValues.map((e: any) => BuffFlagValue.fromJSON(e))
         : globalThis.Array.isArray(object?.flag_values)
-        ? object.flag_values.map((e: any) => BuffFlagValuePersisted.fromJSON(e))
+        ? object.flag_values.map((e: any) => BuffFlagValue.fromJSON(e))
         : [],
       remainingDurationMs: isSet(object.remainingDurationMs)
         ? globalThis.Number(object.remainingDurationMs)
@@ -7845,7 +7841,7 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
     };
   },
 
-  toJSON(message: BuffPersisted): unknown {
+  toJSON(message: Buff): unknown {
     const obj: any = {};
     if (message.characterId !== 0) {
       obj.characterId = Math.round(message.characterId);
@@ -7857,7 +7853,7 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
       obj.kind = buffKindToJSON(message.kind);
     }
     if (message.flagValues?.length) {
-      obj.flagValues = message.flagValues.map((e) => BuffFlagValuePersisted.toJSON(e));
+      obj.flagValues = message.flagValues.map((e) => BuffFlagValue.toJSON(e));
     }
     if (message.remainingDurationMs !== undefined) {
       obj.remainingDurationMs = Math.round(message.remainingDurationMs);
@@ -7871,15 +7867,15 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<BuffPersisted>, I>>(base?: I): BuffPersisted {
-    return BuffPersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Buff>, I>>(base?: I): Buff {
+    return Buff.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<BuffPersisted>, I>>(object: I): BuffPersisted {
-    const message = createBaseBuffPersisted();
+  fromPartial<I extends Exact<DeepPartial<Buff>, I>>(object: I): Buff {
+    const message = createBaseBuff();
     message.characterId = object.characterId ?? 0;
     message.buffSourceId = object.buffSourceId ?? 0;
     message.kind = object.kind ?? 0;
-    message.flagValues = object.flagValues?.map((e) => BuffFlagValuePersisted.fromPartial(e)) || [];
+    message.flagValues = object.flagValues?.map((e) => BuffFlagValue.fromPartial(e)) || [];
     message.remainingDurationMs = object.remainingDurationMs ?? undefined;
     message.skillLevel = object.skillLevel ?? 0;
     message.causerId = object.causerId ?? 0;
@@ -7887,7 +7883,7 @@ export const BuffPersisted: MessageFns<BuffPersisted> = {
   },
 };
 
-function createBaseQuestPersisted(): QuestPersisted {
+function createBaseQuest(): Quest {
   return {
     characterId: 0,
     questId: 0,
@@ -7902,8 +7898,8 @@ function createBaseQuestPersisted(): QuestPersisted {
   };
 }
 
-export const QuestPersisted: MessageFns<QuestPersisted> = {
-  encode(message: QuestPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Quest: MessageFns<Quest> = {
+  encode(message: Quest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.characterId !== 0) {
       writer.uint32(8).uint32(message.characterId);
     }
@@ -7914,13 +7910,13 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
       writer.uint32(24).uint32(message.status);
     }
     globalThis.Object.entries(message.mobKills).forEach(([key, value]: [string, number]) => {
-      QuestPersisted_MobKillsEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).join();
+      Quest_MobKillsEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).join();
     });
     if (message.statusRecord !== "") {
       writer.uint32(42).string(message.statusRecord);
     }
     globalThis.Object.entries(message.recordEx).forEach(([key, value]: [string, string]) => {
-      QuestPersisted_RecordExEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).join();
+      Quest_RecordExEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).join();
     });
     if (message.completionTimeUnixMs !== 0) {
       writer.uint32(56).int64(message.completionTimeUnixMs);
@@ -7937,10 +7933,10 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): QuestPersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): Quest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQuestPersisted();
+    const message = createBaseQuest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -7973,7 +7969,7 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
             break;
           }
 
-          const entry4 = QuestPersisted_MobKillsEntry.decode(reader, reader.uint32());
+          const entry4 = Quest_MobKillsEntry.decode(reader, reader.uint32());
           if (entry4.value !== undefined) {
             message.mobKills[entry4.key] = entry4.value;
           }
@@ -7992,7 +7988,7 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
             break;
           }
 
-          const entry6 = QuestPersisted_RecordExEntry.decode(reader, reader.uint32());
+          const entry6 = Quest_RecordExEntry.decode(reader, reader.uint32());
           if (entry6.value !== undefined) {
             message.recordEx[entry6.key] = entry6.value;
           }
@@ -8039,7 +8035,7 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     return message;
   },
 
-  fromJSON(object: any): QuestPersisted {
+  fromJSON(object: any): Quest {
     return {
       characterId: isSet(object.characterId)
         ? globalThis.Number(object.characterId)
@@ -8110,7 +8106,7 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     };
   },
 
-  toJSON(message: QuestPersisted): unknown {
+  toJSON(message: Quest): unknown {
     const obj: any = {};
     if (message.characterId !== 0) {
       obj.characterId = Math.round(message.characterId);
@@ -8157,11 +8153,11 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<QuestPersisted>, I>>(base?: I): QuestPersisted {
-    return QuestPersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Quest>, I>>(base?: I): Quest {
+    return Quest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<QuestPersisted>, I>>(object: I): QuestPersisted {
-    const message = createBaseQuestPersisted();
+  fromPartial<I extends Exact<DeepPartial<Quest>, I>>(object: I): Quest {
+    const message = createBaseQuest();
     message.characterId = object.characterId ?? 0;
     message.questId = object.questId ?? 0;
     message.status = object.status ?? 0;
@@ -8192,12 +8188,12 @@ export const QuestPersisted: MessageFns<QuestPersisted> = {
   },
 };
 
-function createBaseQuestPersisted_MobKillsEntry(): QuestPersisted_MobKillsEntry {
+function createBaseQuest_MobKillsEntry(): Quest_MobKillsEntry {
   return { key: 0, value: 0 };
 }
 
-export const QuestPersisted_MobKillsEntry: MessageFns<QuestPersisted_MobKillsEntry> = {
-  encode(message: QuestPersisted_MobKillsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Quest_MobKillsEntry: MessageFns<Quest_MobKillsEntry> = {
+  encode(message: Quest_MobKillsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.key !== 0) {
       writer.uint32(8).uint32(message.key);
     }
@@ -8207,10 +8203,10 @@ export const QuestPersisted_MobKillsEntry: MessageFns<QuestPersisted_MobKillsEnt
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): QuestPersisted_MobKillsEntry {
+  decode(input: BinaryReader | Uint8Array, length?: number): Quest_MobKillsEntry {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQuestPersisted_MobKillsEntry();
+    const message = createBaseQuest_MobKillsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -8239,14 +8235,14 @@ export const QuestPersisted_MobKillsEntry: MessageFns<QuestPersisted_MobKillsEnt
     return message;
   },
 
-  fromJSON(object: any): QuestPersisted_MobKillsEntry {
+  fromJSON(object: any): Quest_MobKillsEntry {
     return {
       key: isSet(object.key) ? globalThis.Number(object.key) : 0,
       value: isSet(object.value) ? globalThis.Number(object.value) : 0,
     };
   },
 
-  toJSON(message: QuestPersisted_MobKillsEntry): unknown {
+  toJSON(message: Quest_MobKillsEntry): unknown {
     const obj: any = {};
     if (message.key !== 0) {
       obj.key = Math.round(message.key);
@@ -8257,23 +8253,23 @@ export const QuestPersisted_MobKillsEntry: MessageFns<QuestPersisted_MobKillsEnt
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<QuestPersisted_MobKillsEntry>, I>>(base?: I): QuestPersisted_MobKillsEntry {
-    return QuestPersisted_MobKillsEntry.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Quest_MobKillsEntry>, I>>(base?: I): Quest_MobKillsEntry {
+    return Quest_MobKillsEntry.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<QuestPersisted_MobKillsEntry>, I>>(object: I): QuestPersisted_MobKillsEntry {
-    const message = createBaseQuestPersisted_MobKillsEntry();
+  fromPartial<I extends Exact<DeepPartial<Quest_MobKillsEntry>, I>>(object: I): Quest_MobKillsEntry {
+    const message = createBaseQuest_MobKillsEntry();
     message.key = object.key ?? 0;
     message.value = object.value ?? 0;
     return message;
   },
 };
 
-function createBaseQuestPersisted_RecordExEntry(): QuestPersisted_RecordExEntry {
+function createBaseQuest_RecordExEntry(): Quest_RecordExEntry {
   return { key: "", value: "" };
 }
 
-export const QuestPersisted_RecordExEntry: MessageFns<QuestPersisted_RecordExEntry> = {
-  encode(message: QuestPersisted_RecordExEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Quest_RecordExEntry: MessageFns<Quest_RecordExEntry> = {
+  encode(message: Quest_RecordExEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
     }
@@ -8283,10 +8279,10 @@ export const QuestPersisted_RecordExEntry: MessageFns<QuestPersisted_RecordExEnt
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): QuestPersisted_RecordExEntry {
+  decode(input: BinaryReader | Uint8Array, length?: number): Quest_RecordExEntry {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQuestPersisted_RecordExEntry();
+    const message = createBaseQuest_RecordExEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -8315,14 +8311,14 @@ export const QuestPersisted_RecordExEntry: MessageFns<QuestPersisted_RecordExEnt
     return message;
   },
 
-  fromJSON(object: any): QuestPersisted_RecordExEntry {
+  fromJSON(object: any): Quest_RecordExEntry {
     return {
       key: isSet(object.key) ? globalThis.String(object.key) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
     };
   },
 
-  toJSON(message: QuestPersisted_RecordExEntry): unknown {
+  toJSON(message: Quest_RecordExEntry): unknown {
     const obj: any = {};
     if (message.key !== "") {
       obj.key = message.key;
@@ -8333,23 +8329,23 @@ export const QuestPersisted_RecordExEntry: MessageFns<QuestPersisted_RecordExEnt
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<QuestPersisted_RecordExEntry>, I>>(base?: I): QuestPersisted_RecordExEntry {
-    return QuestPersisted_RecordExEntry.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Quest_RecordExEntry>, I>>(base?: I): Quest_RecordExEntry {
+    return Quest_RecordExEntry.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<QuestPersisted_RecordExEntry>, I>>(object: I): QuestPersisted_RecordExEntry {
-    const message = createBaseQuestPersisted_RecordExEntry();
+  fromPartial<I extends Exact<DeepPartial<Quest_RecordExEntry>, I>>(object: I): Quest_RecordExEntry {
+    const message = createBaseQuest_RecordExEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
     return message;
   },
 };
 
-function createBaseSavedLocationPersisted(): SavedLocationPersisted {
+function createBaseSavedLocation(): SavedLocation {
   return { characterId: 0, name: "", mapId: 0 };
 }
 
-export const SavedLocationPersisted: MessageFns<SavedLocationPersisted> = {
-  encode(message: SavedLocationPersisted, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const SavedLocation: MessageFns<SavedLocation> = {
+  encode(message: SavedLocation, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.characterId !== 0) {
       writer.uint32(8).uint32(message.characterId);
     }
@@ -8362,10 +8358,10 @@ export const SavedLocationPersisted: MessageFns<SavedLocationPersisted> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SavedLocationPersisted {
+  decode(input: BinaryReader | Uint8Array, length?: number): SavedLocation {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSavedLocationPersisted();
+    const message = createBaseSavedLocation();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -8402,7 +8398,7 @@ export const SavedLocationPersisted: MessageFns<SavedLocationPersisted> = {
     return message;
   },
 
-  fromJSON(object: any): SavedLocationPersisted {
+  fromJSON(object: any): SavedLocation {
     return {
       characterId: isSet(object.characterId)
         ? globalThis.Number(object.characterId)
@@ -8418,7 +8414,7 @@ export const SavedLocationPersisted: MessageFns<SavedLocationPersisted> = {
     };
   },
 
-  toJSON(message: SavedLocationPersisted): unknown {
+  toJSON(message: SavedLocation): unknown {
     const obj: any = {};
     if (message.characterId !== 0) {
       obj.characterId = Math.round(message.characterId);
@@ -8432,11 +8428,11 @@ export const SavedLocationPersisted: MessageFns<SavedLocationPersisted> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SavedLocationPersisted>, I>>(base?: I): SavedLocationPersisted {
-    return SavedLocationPersisted.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SavedLocation>, I>>(base?: I): SavedLocation {
+    return SavedLocation.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SavedLocationPersisted>, I>>(object: I): SavedLocationPersisted {
-    const message = createBaseSavedLocationPersisted();
+  fromPartial<I extends Exact<DeepPartial<SavedLocation>, I>>(object: I): SavedLocation {
+    const message = createBaseSavedLocation();
     message.characterId = object.characterId ?? 0;
     message.name = object.name ?? "";
     message.mapId = object.mapId ?? 0;

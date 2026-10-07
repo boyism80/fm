@@ -58,7 +58,7 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 	var routeHost string
 	var routePort uint16
 	var entry *internal.CharacterSaveEntry
-	var debuffs []*internal.DebuffPersisted
+	var debuffs []*internal.Debuff
 
 	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
 	gameClient.SetChangingChannel(true)
@@ -94,7 +94,7 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 			}, types.SEND_POLICY_ENCRYPT)
 			return fmt.Errorf("switch channel: character %d has no map to save", character.GetID())
 		}
-		debuffs = character.DebuffsPersisted()
+		debuffs = character.DebuffsToProto()
 		return nil
 	})
 	promise = async.ThenRPC(promise, func(c context.Context) (*internal.SaveCharactersReply, error) {

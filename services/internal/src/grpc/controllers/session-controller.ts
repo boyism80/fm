@@ -1,11 +1,11 @@
-import { CHARACTER_MODEL, CHARACTER_PERSISTED } from "../character-persisted";
-import { BUDDY_ENTRY, BUDDY_LIST_ENTRY } from "../buddy-persisted";
+import { CHARACTER_MODEL, CHARACTER_PROTO } from "../character-proto";
+import { BUDDY_ENTRY, BUDDY_LIST_ENTRY } from "../buddy-proto";
 import { makeKeyLayoutProtoList } from "../key-layout-io";
-import { INVENTORY_MODEL, INVENTORY_PERSISTED } from "../inventory-persisted";
-import { SKILL_MODEL, SKILL_PERSISTED } from "../skill-persisted";
-import { BUFF_MODEL, BUFF_PERSISTED } from "../buff-persisted";
-import { QUEST_MODEL, QUEST_PERSISTED } from "../quest-persisted";
-import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PERSISTED } from "../saved-location-persisted";
+import { INVENTORY_MODEL, INVENTORY_PROTO } from "../inventory-proto";
+import { SKILL_MODEL, SKILL_PROTO } from "../skill-proto";
+import { BUFF_MODEL, BUFF_PROTO } from "../buff-proto";
+import { QUEST_MODEL, QUEST_PROTO } from "../quest-proto";
+import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../saved-location-proto";
 import { grpcMapper } from "../mappers";
 import { SessionErrorCode } from "../../protobuf/generated/fminternal/internal_service";
 import type { BuddyService, BuddyListEntry } from "../../services/buddy-service";
@@ -31,12 +31,12 @@ import type {
 import type { GrpcCall, GrpcCallback, GrpcErrorHandler } from "./types";
 import type {
     BuddyEntry,
-    CharacterPersisted,
-    InventoryPersisted,
-    SkillPersisted,
-    BuffPersisted,
-    QuestPersisted,
-    SavedLocationPersisted,
+    Character,
+    Inventory,
+    Skill,
+    Buff,
+    Quest,
+    SavedLocation,
 } from "../../protobuf/generated/fminternal/internal_service";
 import type { CharacterModel } from "../../repos/character-repository";
 import type { InventoryModel } from "../../repos/inventory-repository";
@@ -184,44 +184,44 @@ export class SessionGrpcController {
             const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
             const reply: EnterGameReply = {
                 found: true,
-                character: grpcMapper.map<CharacterModel, CharacterPersisted>(
+                character: grpcMapper.map<CharacterModel, Character>(
                     row,
                     CHARACTER_MODEL,
-                    CHARACTER_PERSISTED
+                    CHARACTER_PROTO
                 ),
                 inventory: inventoryList.map((inventory) =>
-                    grpcMapper.map<InventoryModel, InventoryPersisted>(
+                    grpcMapper.map<InventoryModel, Inventory>(
                         inventory,
                         INVENTORY_MODEL,
-                        INVENTORY_PERSISTED
+                        INVENTORY_PROTO
                     )
                 ),
                 skills: skillList.map((skill) =>
-                    grpcMapper.map<SkillModel, SkillPersisted>(
+                    grpcMapper.map<SkillModel, Skill>(
                         skill,
                         SKILL_MODEL,
-                        SKILL_PERSISTED
+                        SKILL_PROTO
                     )
                 ),
                 buffs: buffList.map((buff) =>
-                    grpcMapper.map<BuffModel, BuffPersisted>(
+                    grpcMapper.map<BuffModel, Buff>(
                         buff,
                         BUFF_MODEL,
-                        BUFF_PERSISTED
+                        BUFF_PROTO
                     )
                 ),
                 quests: questList.map((quest) =>
-                    grpcMapper.map<QuestModel, QuestPersisted>(
+                    grpcMapper.map<QuestModel, Quest>(
                         quest,
                         QUEST_MODEL,
-                        QUEST_PERSISTED
+                        QUEST_PROTO
                     )
                 ),
                 savedLocations: savedLocationList.map((loc) =>
-                    grpcMapper.map<SavedLocationModel, SavedLocationPersisted>(
+                    grpcMapper.map<SavedLocationModel, SavedLocation>(
                         loc,
                         SAVED_LOCATION_MODEL,
-                        SAVED_LOCATION_PERSISTED
+                        SAVED_LOCATION_PROTO
                     )
                 ),
                 keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),

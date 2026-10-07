@@ -67,7 +67,7 @@ func (c *EquipmentCore) SetBonus(stats map[string]int16) {
 	}
 }
 
-func EquipmentBonusStatsFromProto(pb *internal.EquipmentBonusStatsPersisted) *EquipmentBonusStats {
+func EquipmentBonusStatsFromProto(pb *internal.EquipmentBonusStats) *EquipmentBonusStats {
 	if pb == nil {
 		return nil
 	}
@@ -90,11 +90,11 @@ func EquipmentBonusStatsFromProto(pb *internal.EquipmentBonusStatsPersisted) *Eq
 	return &s
 }
 
-func (s *EquipmentBonusStats) ToProto() *internal.EquipmentBonusStatsPersisted {
+func (s *EquipmentBonusStats) ToProto() *internal.EquipmentBonusStats {
 	if s == nil {
 		return nil
 	}
-	return &internal.EquipmentBonusStatsPersisted{
+	return &internal.EquipmentBonusStats{
 		Str:     int32(s.Str),
 		Dex:     int32(s.Dex),
 		IntStat: int32(s.Int),

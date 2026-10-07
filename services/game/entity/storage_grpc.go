@@ -7,7 +7,7 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 )
 
-func NewStorageFromInternalProto(pb *internal.StoragePersisted, owner *Character) *Storage {
+func NewStorageFromInternalProto(pb *internal.Storage, owner *Character) *Storage {
 	storage := &Storage{
 		owner: owner,
 		Slots: uint8(pb.GetSlots()),
@@ -15,7 +15,7 @@ func NewStorageFromInternalProto(pb *internal.StoragePersisted, owner *Character
 		Tabs:  map[constant.InventoryType][]Item{},
 	}
 
-	items := append([]*internal.InventoryPersisted(nil), pb.GetItems()...)
+	items := append([]*internal.Inventory(nil), pb.GetItems()...)
 	sort.Slice(items, func(i, j int) bool {
 		if items[i].GetInventoryType() != items[j].GetInventoryType() {
 			return items[i].GetInventoryType() < items[j].GetInventoryType()
@@ -32,11 +32,11 @@ func NewStorageFromInternalProto(pb *internal.StoragePersisted, owner *Character
 	return storage
 }
 
-func (s *Storage) ToProto(worldID uint32) *internal.StoragePersisted {
+func (s *Storage) ToProto(worldID uint32) *internal.Storage {
 	if s == nil {
 		return nil
 	}
-	pb := &internal.StoragePersisted{
+	pb := &internal.Storage{
 		AccountId: s.owner.AccountID,
 		WorldId:   worldID,
 		Slots:     uint32(s.Slots),

@@ -29,7 +29,7 @@ type CharacterListener interface {
 	OnStorageMesoChanged(ch *Character)
 	OnStorageError(ch *Character, result pconst.StorageResult)
 	LoadParcelsAsync(ctx actor.Context, ch *Character) *async.Promise
-	SendParcelAsync(ctx actor.Context, ch *Character, recipient string, parcel *internal.ParcelPersisted, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise
+	SendParcelAsync(ctx actor.Context, ch *Character, recipient string, parcel *internal.Parcel, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise
 	ClaimParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise
 	DeleteParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise
 	CheckParcelArrivalsAsync(ctx actor.Context, ch *Character) *async.Promise

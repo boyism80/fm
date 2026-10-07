@@ -134,7 +134,7 @@ message EnterGameRequest {
   string client_ip = 4;
 }
 
-message CharacterPersisted {
+message Character {
   uint32 character_id      = 1;
   uint32 world_id          = 2;
   string name              = 3;
@@ -176,21 +176,21 @@ message KeyLayoutBinding {
 
 message EnterGameReply {
   bool                        found     = 1;
-  CharacterPersisted          character = 2;
-  repeated InventoryPersisted inventory = 3;
-  repeated SkillPersisted     skills    = 4;
+  Character          character = 2;
+  repeated Inventory inventory = 3;
+  repeated Skill     skills    = 4;
   repeated KeyLayoutBinding   key_layout = 5;
   optional uint32              party_id  = 6;
   optional uint32              guild_id  = 7;
-  repeated BuffPersisted      buffs     = 8;
+  repeated Buff      buffs     = 8;
   repeated BuddyEntry         buddies   = 9;
   uint32                       buddy_capacity = 10;
-  repeated QuestPersisted      quests    = 11;
-  repeated SavedLocationPersisted saved_locations = 12;
-  repeated DebuffPersisted     debuffs   = 13;
+  repeated Quest      quests    = 11;
+  repeated SavedLocation saved_locations = 12;
+  repeated Debuff     debuffs   = 13;
 }
 
-message DebuffPersisted {
+message Debuff {
   uint32 mask = 1;
   int32 position = 2;
   int32 x = 3;
@@ -204,7 +204,7 @@ message BeginGameTransitionRequest {
   uint32 account_id = 2;
   uint32 character_id = 3;
   string client_ip = 4;
-  repeated DebuffPersisted debuffs = 5;
+  repeated Debuff debuffs = 5;
   optional uint32 source_channel_id = 6;
 }
 
@@ -224,7 +224,7 @@ message BeginGameTransitionReply {
 }
 
 message SaveCharacterRequest {
-  CharacterPersisted     character  = 1;
+  Character     character  = 1;
   map<int32, uint32>     base_looks = 2;
   map<int32, uint32>     overlays   = 3;
 }
@@ -234,24 +234,24 @@ message SaveCharacterReply {
 }
 
 message CharacterSaveEntry {
-  CharacterPersisted     character  = 1;
+  Character     character  = 1;
   map<int32, uint32>     base_looks = 2;
   map<int32, uint32>     overlays   = 3;
-  repeated InventoryPersisted inventory = 4;
-  repeated SkillPersisted     skills    = 5;
+  repeated Inventory inventory = 4;
+  repeated Skill     skills    = 5;
   repeated KeyLayoutBinding   key_layout = 6;
-  repeated BuffPersisted      buffs     = 7;
-  repeated QuestPersisted      quests    = 8;
-  repeated SavedLocationPersisted saved_locations = 9;
-  StoragePersisted storage = 10;
+  repeated Buff      buffs     = 7;
+  repeated Quest      quests    = 8;
+  repeated SavedLocation saved_locations = 9;
+  Storage storage = 10;
 }
 
-message StoragePersisted {
+message Storage {
   uint32 account_id = 1;
   uint32 world_id   = 2;
   uint32 slots      = 3;
   int32  meso       = 4;
-  repeated InventoryPersisted items = 5;
+  repeated Inventory items = 5;
 }
 
 message LoadStorageRequest {
@@ -260,7 +260,7 @@ message LoadStorageRequest {
 }
 
 message LoadStorageReply {
-  StoragePersisted storage = 1;
+  Storage storage = 1;
 }
 
 enum ParcelResult {
@@ -273,7 +273,7 @@ enum ParcelResult {
   PARCEL_RESULT_NOT_ARRIVED         = 6;
 }
 
-message ParcelPersisted {
+message Parcel {
   uint32 parcel_id       = 1;
   uint32 receiver_id     = 2;
   string sender_name     = 3;
@@ -281,7 +281,7 @@ message ParcelPersisted {
   bool   quick           = 5;
   string message         = 6;
   int64  sent_at_unix_ms = 7;
-  InventoryPersisted item = 8;
+  Inventory item = 8;
 }
 
 message LoadParcelsRequest {
@@ -290,14 +290,14 @@ message LoadParcelsRequest {
 }
 
 message LoadParcelsReply {
-  repeated ParcelPersisted parcels = 1;
-  repeated ParcelPersisted expired = 2;
+  repeated Parcel parcels = 1;
+  repeated Parcel expired = 2;
 }
 
 message SendParcelRequest {
   uint32 world_id          = 1;
   string recipient_name    = 2;
-  ParcelPersisted parcel   = 3;
+  Parcel parcel   = 3;
   uint32 sender_account_id = 4;
   CharacterSaveEntry sender = 5;
   bool   one_of_a_kind     = 6;
@@ -315,7 +315,7 @@ message ClaimParcelRequest {
 
 message ClaimParcelReply {
   ParcelResult    result = 1;
-  ParcelPersisted parcel = 2;
+  Parcel parcel = 2;
 }
 
 message DeleteParcelRequest {
@@ -347,7 +347,7 @@ message SaveCharactersReply {
   bool ok = 1;
 }
 
-message EquipmentBonusStatsPersisted {
+message EquipmentBonusStats {
   int32 str    = 1;
   int32 dex    = 2;
   int32 int_stat = 3;
@@ -365,7 +365,7 @@ message EquipmentBonusStatsPersisted {
   int32 jump   = 15;
 }
 
-message InventoryPersisted {
+message Inventory {
   optional uint64 unique_id = 1;
   uint32 owner_id           = 2;
   uint32 item_id            = 3;
@@ -377,11 +377,11 @@ message InventoryPersisted {
   uint32 skill_bonus        = 9;
   string owner_name         = 10;
   uint32 inventory_type     = 11;
-  optional EquipmentBonusStatsPersisted equip_bonus_stats = 12;
+  optional EquipmentBonusStats equip_bonus_stats = 12;
   uint32 enhance_count      = 13;
 }
 
-message SkillPersisted {
+message Skill {
   uint32 character_id         = 1;
   uint32 skill_id             = 2;
   int32  level                = 3;
@@ -394,23 +394,23 @@ enum BuffKind {
   BUFF_KIND_ITEM  = 1;
 }
 
-message BuffFlagValuePersisted {
+message BuffFlagValue {
   uint32 mask     = 1;
   int32  position = 2;
   int32  value    = 3;
 }
 
-message BuffPersisted {
+message Buff {
   uint32 character_id                 = 1;
   int32  buff_source_id               = 2;
   BuffKind kind                       = 3;
-  repeated BuffFlagValuePersisted flag_values = 4;
+  repeated BuffFlagValue flag_values = 4;
   optional uint64 remaining_duration_ms = 5;
   uint32 skill_level                  = 6;
   uint32 causer_id                    = 7;
 }
 
-message QuestPersisted {
+message Quest {
   uint32 character_id             = 1;
   uint32 quest_id                 = 2;
   uint32 status                   = 3;
@@ -423,7 +423,7 @@ message QuestPersisted {
   int64 start_time_unix_ms        = 10;
 }
 
-message SavedLocationPersisted {
+message SavedLocation {
   uint32 character_id = 1;
   string name         = 2;
   uint32 map_id       = 3;

@@ -821,7 +821,7 @@ func (l *CharacterListenerImpl) LoadParcelsAsync(ctx actor.Context, ch *entity.C
 	)
 }
 
-func (l *CharacterListenerImpl) SendParcelAsync(ctx actor.Context, ch *entity.Character, recipient string, parcel *internal.ParcelPersisted, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise {
+func (l *CharacterListenerImpl) SendParcelAsync(ctx actor.Context, ch *entity.Character, recipient string, parcel *internal.Parcel, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise {
 	req := &internal.SendParcelRequest{
 		WorldId:         l.gs.config.WorldId,
 		RecipientName:   recipient,

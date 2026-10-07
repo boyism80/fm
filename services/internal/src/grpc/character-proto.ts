@@ -1,15 +1,15 @@
-import type { CharacterPersisted } from "../protobuf/generated/fminternal/internal_service";
+import type { Character } from "../protobuf/generated/fminternal/internal_service";
 import type { CharacterModel } from "../repos/character-repository";
 import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 
 export const CHARACTER_MODEL = "CharacterModel";
-export const CHARACTER_PERSISTED = "CharacterPersisted";
+export const CHARACTER_PROTO = "CharacterProto";
 
 createMap(
     grpcMapper,
     CHARACTER_MODEL,
-    CHARACTER_PERSISTED,
+    CHARACTER_PROTO,
     forMember((destination: any) => destination.characterId, mapFrom((source: CharacterModel) => source.characterId >>> 0)),
     forMember((destination: any) => destination.worldId, mapFrom((source: CharacterModel) => source.worldId >>> 0)),
     forMember((destination: any) => destination.name, mapFrom((source: CharacterModel) => source.name ?? "")),
@@ -45,37 +45,37 @@ createMap(
 
 createMap(
     grpcMapper,
-    CHARACTER_PERSISTED,
+    CHARACTER_PROTO,
     CHARACTER_MODEL,
-    forMember((destination: any) => destination.characterId, mapFrom((source: CharacterPersisted) => source.characterId >>> 0)),
-    forMember((destination: any) => destination.worldId, mapFrom((source: CharacterPersisted) => source.worldId >>> 0)),
-    forMember((destination: any) => destination.name, mapFrom((source: CharacterPersisted) => source.name)),
-    forMember((destination: any) => destination.gender, mapFrom((source: CharacterPersisted) => source.gender >>> 0)),
-    forMember((destination: any) => destination.skinColor, mapFrom((source: CharacterPersisted) => source.skinColor >>> 0)),
-    forMember((destination: any) => destination.face, mapFrom((source: CharacterPersisted) => source.face >>> 0)),
-    forMember((destination: any) => destination.hair, mapFrom((source: CharacterPersisted) => source.hair >>> 0)),
-    forMember((destination: any) => destination.level, mapFrom((source: CharacterPersisted) => source.level >>> 0)),
-    forMember((destination: any) => destination.classId, mapFrom((source: CharacterPersisted) => source.classId >>> 0)),
-    forMember((destination: any) => destination.role, mapFrom((source: CharacterPersisted) => source.role >>> 0)),
-    forMember((destination: any) => destination.str, mapFrom((source: CharacterPersisted) => source.str >>> 0)),
-    forMember((destination: any) => destination.dex, mapFrom((source: CharacterPersisted) => source.dex >>> 0)),
-    forMember((destination: any) => destination.intStat, mapFrom((source: CharacterPersisted) => source.intStat >>> 0)),
-    forMember((destination: any) => destination.luk, mapFrom((source: CharacterPersisted) => source.luk >>> 0)),
-    forMember((destination: any) => destination.hp, mapFrom((source: CharacterPersisted) => source.hp >>> 0)),
-    forMember((destination: any) => destination.maxHp, mapFrom((source: CharacterPersisted) => source.maxHp >>> 0)),
-    forMember((destination: any) => destination.mp, mapFrom((source: CharacterPersisted) => source.mp >>> 0)),
-    forMember((destination: any) => destination.maxMp, mapFrom((source: CharacterPersisted) => source.maxMp >>> 0)),
-    forMember((destination: any) => destination.abilityPoint, mapFrom((source: CharacterPersisted) => source.abilityPoint >>> 0)),
-    forMember((destination: any) => destination.exp, mapFrom((source: CharacterPersisted) => source.exp >>> 0)),
-    forMember((destination: any) => destination.mapId, mapFrom((source: CharacterPersisted) => source.mapId >>> 0)),
-    forMember((destination: any) => destination.spawnPoint, mapFrom((source: CharacterPersisted) => source.spawnPoint >>> 0)),
-    forMember((destination: any) => destination.positionX, mapFrom((source: CharacterPersisted) => source.positionX | 0)),
-    forMember((destination: any) => destination.positionY, mapFrom((source: CharacterPersisted) => source.positionY | 0)),
-    forMember((destination: any) => destination.stance, mapFrom((source: CharacterPersisted) => source.stance >>> 0)),
-    forMember((destination: any) => destination.meso, mapFrom((source: CharacterPersisted) => source.meso | 0)),
-    forMember((destination: any) => destination.skillPoint, mapFrom((source: CharacterPersisted) => source.skillPoint >>> 0)),
-    forMember((destination: any) => destination.population, mapFrom((source: CharacterPersisted) => source.population >>> 0)),
-    forMember((destination: any) => destination.hpApUsed, mapFrom((source: CharacterPersisted) => source.hpApUsed >>> 0)),
-    forMember((destination: any) => destination.accountId, mapFrom((source: CharacterPersisted) => source.accountId >>> 0)),
-    forMember((destination: any) => destination.hidden, mapFrom((source: CharacterPersisted) => source.hidden))
+    forMember((destination: any) => destination.characterId, mapFrom((source: Character) => source.characterId >>> 0)),
+    forMember((destination: any) => destination.worldId, mapFrom((source: Character) => source.worldId >>> 0)),
+    forMember((destination: any) => destination.name, mapFrom((source: Character) => source.name)),
+    forMember((destination: any) => destination.gender, mapFrom((source: Character) => source.gender >>> 0)),
+    forMember((destination: any) => destination.skinColor, mapFrom((source: Character) => source.skinColor >>> 0)),
+    forMember((destination: any) => destination.face, mapFrom((source: Character) => source.face >>> 0)),
+    forMember((destination: any) => destination.hair, mapFrom((source: Character) => source.hair >>> 0)),
+    forMember((destination: any) => destination.level, mapFrom((source: Character) => source.level >>> 0)),
+    forMember((destination: any) => destination.classId, mapFrom((source: Character) => source.classId >>> 0)),
+    forMember((destination: any) => destination.role, mapFrom((source: Character) => source.role >>> 0)),
+    forMember((destination: any) => destination.str, mapFrom((source: Character) => source.str >>> 0)),
+    forMember((destination: any) => destination.dex, mapFrom((source: Character) => source.dex >>> 0)),
+    forMember((destination: any) => destination.intStat, mapFrom((source: Character) => source.intStat >>> 0)),
+    forMember((destination: any) => destination.luk, mapFrom((source: Character) => source.luk >>> 0)),
+    forMember((destination: any) => destination.hp, mapFrom((source: Character) => source.hp >>> 0)),
+    forMember((destination: any) => destination.maxHp, mapFrom((source: Character) => source.maxHp >>> 0)),
+    forMember((destination: any) => destination.mp, mapFrom((source: Character) => source.mp >>> 0)),
+    forMember((destination: any) => destination.maxMp, mapFrom((source: Character) => source.maxMp >>> 0)),
+    forMember((destination: any) => destination.abilityPoint, mapFrom((source: Character) => source.abilityPoint >>> 0)),
+    forMember((destination: any) => destination.exp, mapFrom((source: Character) => source.exp >>> 0)),
+    forMember((destination: any) => destination.mapId, mapFrom((source: Character) => source.mapId >>> 0)),
+    forMember((destination: any) => destination.spawnPoint, mapFrom((source: Character) => source.spawnPoint >>> 0)),
+    forMember((destination: any) => destination.positionX, mapFrom((source: Character) => source.positionX | 0)),
+    forMember((destination: any) => destination.positionY, mapFrom((source: Character) => source.positionY | 0)),
+    forMember((destination: any) => destination.stance, mapFrom((source: Character) => source.stance >>> 0)),
+    forMember((destination: any) => destination.meso, mapFrom((source: Character) => source.meso | 0)),
+    forMember((destination: any) => destination.skillPoint, mapFrom((source: Character) => source.skillPoint >>> 0)),
+    forMember((destination: any) => destination.population, mapFrom((source: Character) => source.population >>> 0)),
+    forMember((destination: any) => destination.hpApUsed, mapFrom((source: Character) => source.hpApUsed >>> 0)),
+    forMember((destination: any) => destination.accountId, mapFrom((source: Character) => source.accountId >>> 0)),
+    forMember((destination: any) => destination.hidden, mapFrom((source: Character) => source.hidden))
 );

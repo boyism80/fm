@@ -1,6 +1,6 @@
 import type {
-    EquipmentBonusStatsPersisted,
-    InventoryPersisted,
+    EquipmentBonusStats,
+    Inventory,
 } from "../protobuf/generated/fminternal/internal_service";
 import type { InventoryModel } from "../repos/inventory-repository";
 import type { EquipmentBonusStatsJson } from "../types/equipment-bonus-stats";
@@ -8,14 +8,14 @@ import { createMap, forMember, mapFrom } from "@automapper/core";
 import { grpcMapper } from "./mappers";
 
 export const INVENTORY_MODEL = "InventoryModel";
-export const INVENTORY_PERSISTED = "InventoryPersisted";
+export const INVENTORY_PROTO = "InventoryProto";
 
-function plainObjectToBonusProto(input: EquipmentBonusStatsJson | undefined): EquipmentBonusStatsPersisted | undefined {
+function plainObjectToBonusProto(input: EquipmentBonusStatsJson | undefined): EquipmentBonusStats | undefined {
     const o = input;
     if (o == null || typeof o !== "object") {
         return undefined;
     }
-    const b: EquipmentBonusStatsPersisted = {
+    const b: EquipmentBonusStats = {
         str: 0, dex: 0, intStat: 0, luk: 0, maxHp: 0, maxMp: 0, pad: 0, mad: 0, pdd: 0, mdd: 0,
         acc: 0, avoid: 0, hands: 0, speed: 0, jump: 0,
     };
@@ -45,7 +45,7 @@ function plainObjectToBonusProto(input: EquipmentBonusStatsJson | undefined): Eq
     return hasAny ? b : undefined;
 }
 
-function bonusProtoToPlainObject(b: EquipmentBonusStatsPersisted | undefined): Record<string, number> | undefined {
+function bonusProtoToPlainObject(b: EquipmentBonusStats | undefined): Record<string, number> | undefined {
     if (b == null) {
         return undefined;
     }
@@ -71,7 +71,7 @@ function bonusProtoToPlainObject(b: EquipmentBonusStatsPersisted | undefined): R
 createMap(
     grpcMapper,
     INVENTORY_MODEL,
-    INVENTORY_PERSISTED,
+    INVENTORY_PROTO,
     forMember((destination: any) => destination.uniqueId, mapFrom((source: InventoryModel) => {
         const uid = source.uniqueId;
         return uid != null && uid !== 0 ? uid : undefined;
@@ -92,20 +92,20 @@ createMap(
 
 createMap(
     grpcMapper,
-    INVENTORY_PERSISTED,
+    INVENTORY_PROTO,
     INVENTORY_MODEL,
-    forMember((destination: any) => destination.uniqueId, mapFrom((source: InventoryPersisted) => source.uniqueId ?? null)),
-    forMember((destination: any) => destination.ownerId, mapFrom((source: InventoryPersisted) => source.ownerId >>> 0)),
-    forMember((destination: any) => destination.inventoryType, mapFrom((source: InventoryPersisted) => source.inventoryType >>> 0)),
-    forMember((destination: any) => destination.itemId, mapFrom((source: InventoryPersisted) => source.itemId >>> 0)),
-    forMember((destination: any) => destination.slot, mapFrom((source: InventoryPersisted) => source.slot | 0)),
-    forMember((destination: any) => destination.count, mapFrom((source: InventoryPersisted) => source.count >>> 0)),
-    forMember((destination: any) => destination.expiration, mapFrom((source: InventoryPersisted) => source.expirationUnixMs > 0 ? new Date(source.expirationUnixMs) : null)),
-    forMember((destination: any) => destination.enhanceChance, mapFrom((source: InventoryPersisted) => source.enhanceChance || null)),
-    forMember((destination: any) => destination.enhanceCount, mapFrom((source: InventoryPersisted) => source.enhanceCount || null)),
-    forMember((destination: any) => destination.flag, mapFrom((source: InventoryPersisted) => source.flag || null)),
-    forMember((destination: any) => destination.skillBonus, mapFrom((source: InventoryPersisted) => source.skillBonus || null)),
-    forMember((destination: any) => destination.ownerName, mapFrom((source: InventoryPersisted) => source.ownerName || null)),
-    forMember((destination: any) => destination.equipBonusStats, mapFrom((source: InventoryPersisted) => bonusProtoToPlainObject(source.equipBonusStats)))
+    forMember((destination: any) => destination.uniqueId, mapFrom((source: Inventory) => source.uniqueId ?? null)),
+    forMember((destination: any) => destination.ownerId, mapFrom((source: Inventory) => source.ownerId >>> 0)),
+    forMember((destination: any) => destination.inventoryType, mapFrom((source: Inventory) => source.inventoryType >>> 0)),
+    forMember((destination: any) => destination.itemId, mapFrom((source: Inventory) => source.itemId >>> 0)),
+    forMember((destination: any) => destination.slot, mapFrom((source: Inventory) => source.slot | 0)),
+    forMember((destination: any) => destination.count, mapFrom((source: Inventory) => source.count >>> 0)),
+    forMember((destination: any) => destination.expiration, mapFrom((source: Inventory) => source.expirationUnixMs > 0 ? new Date(source.expirationUnixMs) : null)),
+    forMember((destination: any) => destination.enhanceChance, mapFrom((source: Inventory) => source.enhanceChance || null)),
+    forMember((destination: any) => destination.enhanceCount, mapFrom((source: Inventory) => source.enhanceCount || null)),
+    forMember((destination: any) => destination.flag, mapFrom((source: Inventory) => source.flag || null)),
+    forMember((destination: any) => destination.skillBonus, mapFrom((source: Inventory) => source.skillBonus || null)),
+    forMember((destination: any) => destination.ownerName, mapFrom((source: Inventory) => source.ownerName || null)),
+    forMember((destination: any) => destination.equipBonusStats, mapFrom((source: Inventory) => bonusProtoToPlainObject(source.equipBonusStats)))
 );
 

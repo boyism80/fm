@@ -94,7 +94,7 @@ func (d *Duey) Open(actx actor.Context, fromArrival bool) {
 	})
 }
 
-func (d *Duey) parcelsOf(pbs []*internal.ParcelPersisted) []*Parcel {
+func (d *Duey) parcelsOf(pbs []*internal.Parcel) []*Parcel {
 	parcels := make([]*Parcel, 0, len(pbs))
 	for _, pb := range pbs {
 		parcels = append(parcels, NewParcelFromInternalProto(pb, d.owner.GameWorld))
@@ -205,7 +205,7 @@ func (d *Duey) Send(actx actor.Context, invType constant.InventoryType, slot int
 		return ErrDueyNotEnoughMeso
 	}
 
-	parcel := &internal.ParcelPersisted{
+	parcel := &internal.Parcel{
 		SenderName: d.owner.GetName(),
 		Meso:       meso,
 		Quick:      quick,
@@ -352,7 +352,7 @@ func (d *Duey) checkReceive(parcel *Parcel) error {
 	return nil
 }
 
-func (d *Duey) returnToBox(actx actor.Context, pb *internal.ParcelPersisted) {
+func (d *Duey) returnToBox(actx actor.Context, pb *internal.Parcel) {
 	pb.Quick = true
 	d.owner.Listener.SendParcelAsync(actx, d.owner, d.owner.GetName(), pb, false, nil).OnError(func(err error) {
 		log.Printf("Duey.returnToBox character=%d parcel=%d: %v", d.owner.GetID(), pb.GetParcelId(), err)
@@ -395,7 +395,7 @@ func (d *Duey) SendFromSystem(actx actor.Context, recipient string, senderName s
 	if recipient == "" || senderName == "" || meso < 0 {
 		return ErrDueyInvalid
 	}
-	parcel := &internal.ParcelPersisted{
+	parcel := &internal.Parcel{
 		SenderName: senderName,
 		Meso:       meso,
 		Quick:      true,

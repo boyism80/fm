@@ -8,7 +8,7 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-func (e *SkillEntry) ToProto(characterID uint32, skillID uint32) *internal.SkillPersisted {
+func (e *SkillEntry) ToProto(characterID uint32, skillID uint32) *internal.Skill {
 	if e == nil {
 		return nil
 	}
@@ -16,7 +16,7 @@ func (e *SkillEntry) ToProto(characterID uint32, skillID uint32) *internal.Skill
 	if e.CooldownEnd != nil {
 		cooldownEnd = e.CooldownEnd.UnixMilli()
 	}
-	return &internal.SkillPersisted{
+	return &internal.Skill{
 		CharacterId:       characterID,
 		SkillId:           skillID,
 		Level:             int32(e.Level()),
@@ -25,9 +25,9 @@ func (e *SkillEntry) ToProto(characterID uint32, skillID uint32) *internal.Skill
 	}
 }
 
-func NewSkillEntryFromInternalProto(owner *Character, pb *internal.SkillPersisted, gw GameWorld) (*SkillEntry, error) {
+func NewSkillEntryFromInternalProto(owner *Character, pb *internal.Skill, gw GameWorld) (*SkillEntry, error) {
 	if pb == nil {
-		return nil, fmt.Errorf("nil SkillPersisted")
+		return nil, fmt.Errorf("nil Skill")
 	}
 	if gw == nil {
 		return nil, fmt.Errorf("nil GameWorld")

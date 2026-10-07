@@ -1,7 +1,7 @@
 import { redisSessionKey } from "../redis-session-key";
 import { AccountSessionState, accountSessionStateFromRedisHash } from "../session-state";
 import { SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
-import type { DebuffPersisted } from "../protobuf/generated/fminternal/internal_service";
+import type { Debuff } from "../protobuf/generated/fminternal/internal_service";
 import type { InternalContext } from "../context/internal-context";
 import type { AccountSession } from "../session-types";
 import type { CharacterRepository } from "./character-repository";
@@ -76,7 +76,7 @@ export class SessionRepository {
             characterName: hash.character_name || null,
             channelId: toNumberOrNull(hash.channel_id),
             gameToGameTransfer: (hash.game_to_game_transfer || "0") === "1",
-            debuffs: hash.debuffs ? (JSON.parse(hash.debuffs) as DebuffPersisted[]) : [],
+            debuffs: hash.debuffs ? (JSON.parse(hash.debuffs) as Debuff[]) : [],
             timestamps: {
                 createdAt: hash.created_at || null,
                 updatedAt: hash.updated_at || null,
@@ -125,7 +125,7 @@ return {1, ${SessionErrorCode.SESSION_NONE}}
         now: string,
         ttlSeconds: number,
         sourceChannelId: number | null,
-        debuffs: DebuffPersisted[]
+        debuffs: Debuff[]
     ) {
         const { client } = this.ctx.getRedisGlobalAccess(worldId);
         const accountKey = this.accountKey(accountId);

@@ -35,7 +35,7 @@ import { DistributedLockService } from "./distributed-lock-service";
 import { GuildService } from "./guild-service";
 import { PartyService } from "./party-service";
 
-type CharacterPersistedInput = {
+type CharacterInput = {
     worldId: number;
     characterId: number;
     accountId: number;
@@ -72,7 +72,7 @@ type CharacterPersistedInput = {
 export type CharacterRowModel = CharacterModel;
 
 export type SaveCharacterEntry = {
-    persisted: CharacterPersistedInput;
+    character: CharacterInput;
     baseLooks?: Record<string, number>;
     overlays?: Record<string, number>;
     inventory?: InventoryModel[];
@@ -179,7 +179,7 @@ export class CharacterService {
         }
     }
 
-    private validatePersisted(p: { name?: string }) {
+    private validateCharacter(p: { name?: string }) {
         if (typeof p.name !== "string" || p.name.length > MAX_NAME_LEN) {
             const err = new Error(`name must be a string of length <= ${MAX_NAME_LEN}`) as Error & { code?: string };
             err.code = "INVALID_PAYLOAD";
@@ -216,8 +216,8 @@ export class CharacterService {
         };
     }
 
-    async saveCharacter(persisted: CharacterPersistedInput, baseLooks?: Record<string, number>, overlays?: Record<string, number>) {
-        return this.saveCharacters([{ persisted, baseLooks, overlays }]);
+    async saveCharacter(character: CharacterInput, baseLooks?: Record<string, number>, overlays?: Record<string, number>) {
+        return this.saveCharacters([{ character, baseLooks, overlays }]);
     }
 
     async saveCharacters(entries: SaveCharacterEntry[]) {
@@ -226,48 +226,48 @@ export class CharacterService {
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage } of entries) {
-            this.assertWorld(persisted.worldId);
-            this.assertCharacterId(persisted.characterId);
-            this.assertAccountId(persisted.accountId);
-            this.validatePersisted(persisted);
-            if (!persisted.mapId || persisted.mapId <= 0) {
+        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage } of entries) {
+            this.assertWorld(character.worldId);
+            this.assertCharacterId(character.characterId);
+            this.assertAccountId(character.accountId);
+            this.validateCharacter(character);
+            if (!character.mapId || character.mapId <= 0) {
                 continue;
             }
-            const wid = persisted.worldId;
+            const wid = character.worldId;
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld.get(wid)?.push({ persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage });
+            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage });
         }
 
         for (const [worldId, group] of byWorld) {
             const lockKeys = group
-                .map(({ persisted }) => persisted.characterId)
+                .map(({ character }) => character.characterId)
                 .sort((a, b) => a - b)
                 .map((characterId) => `character:${characterId}`);
             await using _characterLocks = await this.distributedLockService.acquireWorldDataLocks(worldId, lockKeys);
 
-            const models = group.map(({ persisted }) => persisted);
+            const models = group.map(({ character }) => character);
             await this.repo.setAll(worldId, models);
 
-            for (const { persisted, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage } of group) {
-                if (!persisted.accountId) {
+            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage } of group) {
+                if (!character.accountId) {
                     continue;
                 }
                 const overview = {
-                    characterId: persisted.characterId,
-                    accountId: persisted.accountId,
-                    worldId: persisted.worldId,
-                    name: persisted.name,
-                    gender: persisted.gender,
-                    skinColor: persisted.skinColor,
-                    face: persisted.face,
-                    hair: persisted.hair,
-                    level: persisted.level,
-                    classId: persisted.classId,
-                    mapId: persisted.mapId,
-                    spawnPoint: persisted.spawnPoint,
+                    characterId: character.characterId,
+                    accountId: character.accountId,
+                    worldId: character.worldId,
+                    name: character.name,
+                    gender: character.gender,
+                    skinColor: character.skinColor,
+                    face: character.face,
+                    hair: character.hair,
+                    level: character.level,
+                    classId: character.classId,
+                    mapId: character.mapId,
+                    spawnPoint: character.spawnPoint,
                     rank: 0,
                     rankDiff: 0,
                     classRank: 0,
@@ -275,33 +275,33 @@ export class CharacterService {
                     baseLooks: baseLooks ?? {},
                     overlays: overlays ?? {},
                 };
-                await this.overviewRepo.set(persisted.worldId, overview);
+                await this.overviewRepo.set(character.worldId, overview);
 
                 if (inventory !== undefined) {
-                    await this.inventoryRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), inventory);
+                    await this.inventoryRepo.replaceBySnapshot(character.worldId, String(character.characterId), inventory);
                 }
                 if (skills !== undefined) {
-                    await this.skillRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), skills.map((m) => ({ ...m, characterId: persisted.characterId })));
+                    await this.skillRepo.replaceBySnapshot(character.worldId, String(character.characterId), skills.map((m) => ({ ...m, characterId: character.characterId })));
                 }
                 if (buffs !== undefined) {
-                    await this.buffRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), buffs.map((m) => ({ ...m, characterId: persisted.characterId })));
+                    await this.buffRepo.replaceBySnapshot(character.worldId, String(character.characterId), buffs.map((m) => ({ ...m, characterId: character.characterId })));
                 }
                 if (quests !== undefined) {
-                    await this.questRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), quests.map((m) => ({ ...m, characterId: persisted.characterId })));
+                    await this.questRepo.replaceBySnapshot(character.worldId, String(character.characterId), quests.map((m) => ({ ...m, characterId: character.characterId })));
                 }
                 if (savedLocations !== undefined) {
-                    await this.savedLocationRepo.replaceBySnapshot(persisted.worldId, String(persisted.characterId), savedLocations.map((m) => ({ ...m, characterId: persisted.characterId })));
+                    await this.savedLocationRepo.replaceBySnapshot(character.worldId, String(character.characterId), savedLocations.map((m) => ({ ...m, characterId: character.characterId })));
                 }
                 if (keyLayout !== undefined) {
-                    await this.keyLayoutRepo.set(persisted.worldId, {
-                        characterId: persisted.characterId,
-                        worldId: persisted.worldId,
+                    await this.keyLayoutRepo.set(character.worldId, {
+                        characterId: character.characterId,
+                        worldId: character.worldId,
                         keyLayoutJson: bindingsToJsonString(keyLayout),
                     });
                 }
                 if (storage !== undefined) {
-                    await this.storageRepo.set(persisted.worldId, { ...storage.storage, accountId: persisted.accountId, worldId: persisted.worldId });
-                    await this.storageItemRepo.replaceBySnapshot(persisted.worldId, String(persisted.accountId), storage.items);
+                    await this.storageRepo.set(character.worldId, { ...storage.storage, accountId: character.accountId, worldId: character.worldId });
+                    await this.storageItemRepo.replaceBySnapshot(character.worldId, String(character.accountId), storage.items);
                 }
             }
         }
@@ -316,7 +316,7 @@ export class CharacterService {
         const wid = worldId ?? this.worldId();
         this.assertWorld(wid);
         this.assertAccountId(accountId);
-        this.validatePersisted({ name });
+        this.validateCharacter({ name });
         const session = await this.sessionRepo.getAccountSession(wid, accountId);
         if (session?.state !== AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN) {
             return { success: false, errorMsg: "로그인 상태가 아닙니다." };
@@ -344,7 +344,7 @@ export class CharacterService {
         }
         const role = account?.role ?? 0;
 
-        const persisted = {
+        const character = {
             characterId,
             accountId,
             worldId: wid,
@@ -411,7 +411,7 @@ export class CharacterService {
         };
 
         try {
-            await this.repo.set(wid, persisted);
+            await this.repo.set(wid, character);
             await this.keyLayoutRepo.set(wid, {
                 characterId,
                 worldId: wid,

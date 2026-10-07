@@ -97,7 +97,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	return ch
 }
 
-func (ch *Character) LoadInventory(items []*internal.InventoryPersisted) {
+func (ch *Character) LoadInventory(items []*internal.Inventory) {
 	for _, pb := range items {
 		if pb == nil {
 			continue
@@ -130,7 +130,7 @@ func (ch *Character) LoadInventory(items []*internal.InventoryPersisted) {
 	}
 }
 
-func (ch *Character) LoadSkills(skills []*internal.SkillPersisted) {
+func (ch *Character) LoadSkills(skills []*internal.Skill) {
 	for _, pb := range skills {
 		if pb == nil {
 			continue
@@ -143,7 +143,7 @@ func (ch *Character) LoadSkills(skills []*internal.SkillPersisted) {
 	}
 }
 
-func (ch *Character) LoadBuffs(persisted []*internal.BuffPersisted) {
+func (ch *Character) LoadBuffs(pbs []*internal.Buff) {
 	if ch == nil || ch.GameWorld == nil {
 		return
 	}
@@ -152,7 +152,7 @@ func (ch *Character) LoadBuffs(persisted []*internal.BuffPersisted) {
 		return
 	}
 	const permanentDur = 100 * 365 * 24 * time.Hour
-	for _, pb := range persisted {
+	for _, pb := range pbs {
 		if pb == nil {
 			continue
 		}
@@ -200,10 +200,10 @@ func (ch *Character) LoadBuffs(persisted []*internal.BuffPersisted) {
 	}
 }
 
-func (ch *Character) LoadDebuffs(persisted []*internal.DebuffPersisted) {
+func (ch *Character) LoadDebuffs(pbs []*internal.Debuff) {
 	now := clock.Now()
 	flags := constant.AllDebuffFlags()
-	for _, pb := range persisted {
+	for _, pb := range pbs {
 		var duration time.Duration
 		if pb.GetEndUnixMs() != 0 {
 			duration = time.UnixMilli(pb.GetEndUnixMs()).Sub(now)
@@ -230,11 +230,11 @@ func (ch *Character) LoadDebuffs(persisted []*internal.DebuffPersisted) {
 	}
 }
 
-func (ch *Character) LoadQuests(persisted []*internal.QuestPersisted) {
+func (ch *Character) LoadQuests(pbs []*internal.Quest) {
 	if ch == nil {
 		return
 	}
-	for _, pb := range persisted {
+	for _, pb := range pbs {
 		if pb == nil {
 			continue
 		}
@@ -341,7 +341,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		return nil
 	}
 	baseLooks, overlays := equipmentLooksForPersist(ch)
-	persisted := &internal.CharacterPersisted{
+	pb := &internal.Character{
 		CharacterId:  ch.GetID(),
 		AccountId:    ch.AccountID,
 		WorldId:      worldID,
@@ -375,21 +375,21 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		HpApUsed:     uint32(ch.HpApUsed),
 	}
 	return &internal.CharacterSaveEntry{
-		Character:      persisted,
+		Character:      pb,
 		BaseLooks:      baseLooks,
 		Overlays:       overlays,
-		Inventory:      ch.InventoryPersisted(),
-		Skills:         ch.SkillsPersisted(),
-		Buffs:          ch.BuffsPersisted(),
+		Inventory:      ch.InventoryToProto(),
+		Skills:         ch.SkillsToProto(),
+		Buffs:          ch.BuffsToProto(),
 		KeyLayout:      ch.KeyLayout().ToProto(),
-		Quests:         ch.QuestsPersisted(),
-		SavedLocations: ch.SavedLocationsPersisted(),
+		Quests:         ch.QuestsToProto(),
+		SavedLocations: ch.SavedLocationsToProto(),
 		Storage:        ch.Storage.ToProto(worldID),
 	}
 }
 
-func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {
-	items := make([]*internal.InventoryPersisted, 0, len(ch.Inventory.Equipped)+64)
+func (ch *Character) InventoryToProto() []*internal.Inventory {
+	items := make([]*internal.Inventory, 0, len(ch.Inventory.Equipped)+64)
 	ownerID := ch.GetID()
 	for parts, item := range ch.Inventory.Equipped {
 		if item == nil {
@@ -405,8 +405,8 @@ func (ch *Character) InventoryPersisted() []*internal.InventoryPersisted {
 	return items
 }
 
-func (ch *Character) SkillsPersisted() []*internal.SkillPersisted {
-	skills := make([]*internal.SkillPersisted, 0, 64)
+func (ch *Character) SkillsToProto() []*internal.Skill {
+	skills := make([]*internal.Skill, 0, 64)
 	ch.Skills.ForEach(func(skillID uint32, entry *SkillEntry) {
 		if entry == nil {
 			return
@@ -418,9 +418,9 @@ func (ch *Character) SkillsPersisted() []*internal.SkillPersisted {
 	return skills
 }
 
-func (ch *Character) DebuffsPersisted() []*internal.DebuffPersisted {
+func (ch *Character) DebuffsToProto() []*internal.Debuff {
 	now := clock.Now()
-	out := make([]*internal.DebuffPersisted, 0, len(ch.debuffs))
+	out := make([]*internal.Debuff, 0, len(ch.debuffs))
 	for _, holder := range ch.debuffs {
 		var endUnixMs int64
 		if holder.Duration > 0 {
@@ -430,7 +430,7 @@ func (ch *Character) DebuffsPersisted() []*internal.DebuffPersisted {
 			}
 			endUnixMs = end.UnixMilli()
 		}
-		out = append(out, &internal.DebuffPersisted{
+		out = append(out, &internal.Debuff{
 			Mask:       holder.Flag.Mask,
 			Position:   int32(holder.Flag.Position),
 			X:          int32(holder.X),
@@ -442,12 +442,12 @@ func (ch *Character) DebuffsPersisted() []*internal.DebuffPersisted {
 	return out
 }
 
-func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {
+func (ch *Character) BuffsToProto() []*internal.Buff {
 	if ch == nil {
 		return nil
 	}
 	now := clock.Now()
-	out := make([]*internal.BuffPersisted, 0)
+	out := make([]*internal.Buff, 0)
 	for _, ent := range ch.Buffs.Entities() {
 		if ent == nil {
 			continue
@@ -457,13 +457,13 @@ func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {
 		if len(flags) == 0 || len(values) == 0 {
 			continue
 		}
-		flagPB := make([]*internal.BuffFlagValuePersisted, 0, len(flags))
+		flagPB := make([]*internal.BuffFlagValue, 0, len(flags))
 		for _, f := range flags {
 			v, ok := values[f]
 			if !ok {
 				continue
 			}
-			flagPB = append(flagPB, &internal.BuffFlagValuePersisted{
+			flagPB = append(flagPB, &internal.BuffFlagValue{
 				Mask:     f.Mask,
 				Position: int32(f.Position),
 				Value:    v,
@@ -500,7 +500,7 @@ func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {
 		default:
 			continue
 		}
-		out = append(out, &internal.BuffPersisted{
+		out = append(out, &internal.Buff{
 			CharacterId:         ch.GetID(),
 			BuffSourceId:        ent.GetBuffID(),
 			Kind:                kind,
@@ -513,12 +513,12 @@ func (ch *Character) BuffsPersisted() []*internal.BuffPersisted {
 	return out
 }
 
-func (ch *Character) LoadSavedLocations(persisted []*internal.SavedLocationPersisted) {
+func (ch *Character) LoadSavedLocations(pbs []*internal.SavedLocation) {
 	if ch == nil {
 		return
 	}
-	ch.savedLocations = make(map[string]uint32, len(persisted))
-	for _, pb := range persisted {
+	ch.savedLocations = make(map[string]uint32, len(pbs))
+	for _, pb := range pbs {
 		if pb == nil {
 			continue
 		}
@@ -530,13 +530,13 @@ func (ch *Character) LoadSavedLocations(persisted []*internal.SavedLocationPersi
 	}
 }
 
-func (ch *Character) SavedLocationsPersisted() []*internal.SavedLocationPersisted {
+func (ch *Character) SavedLocationsToProto() []*internal.SavedLocation {
 	if ch == nil || len(ch.savedLocations) == 0 {
 		return nil
 	}
-	out := make([]*internal.SavedLocationPersisted, 0, len(ch.savedLocations))
+	out := make([]*internal.SavedLocation, 0, len(ch.savedLocations))
 	for name, mapID := range ch.savedLocations {
-		out = append(out, &internal.SavedLocationPersisted{
+		out = append(out, &internal.SavedLocation{
 			CharacterId: ch.GetID(),
 			Name:        name,
 			MapId:       mapID,
@@ -545,11 +545,11 @@ func (ch *Character) SavedLocationsPersisted() []*internal.SavedLocationPersiste
 	return out
 }
 
-func (ch *Character) QuestsPersisted() []*internal.QuestPersisted {
+func (ch *Character) QuestsToProto() []*internal.Quest {
 	if ch == nil {
 		return nil
 	}
-	out := make([]*internal.QuestPersisted, 0)
+	out := make([]*internal.Quest, 0)
 	ch.Quests.ForEach(func(questID uint32, q *Quest) {
 		if q == nil {
 			return
@@ -580,7 +580,7 @@ func (ch *Character) QuestsPersisted() []*internal.QuestPersisted {
 		if !q.StartTime.IsZero() {
 			startTimeUnixMs = q.StartTime.UnixMilli()
 		}
-		out = append(out, &internal.QuestPersisted{
+		out = append(out, &internal.Quest{
 			CharacterId:          ch.GetID(),
 			QuestId:              questID,
 			Status:               uint32(q.Status),

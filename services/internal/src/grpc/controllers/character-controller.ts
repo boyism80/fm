@@ -1,10 +1,10 @@
-import { CHARACTER_MODEL, CHARACTER_PERSISTED } from "../character-persisted";
+import { CHARACTER_MODEL, CHARACTER_PROTO } from "../character-proto";
 import { bindingsFromProtoList } from "../key-layout-io";
-import { INVENTORY_MODEL, INVENTORY_PERSISTED } from "../inventory-persisted";
-import { SKILL_MODEL, SKILL_PERSISTED } from "../skill-persisted";
-import { BUFF_MODEL, BUFF_PERSISTED } from "../buff-persisted";
-import { QUEST_MODEL, QUEST_PERSISTED } from "../quest-persisted";
-import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PERSISTED } from "../saved-location-persisted";
+import { INVENTORY_MODEL, INVENTORY_PROTO } from "../inventory-proto";
+import { SKILL_MODEL, SKILL_PROTO } from "../skill-proto";
+import { BUFF_MODEL, BUFF_PROTO } from "../buff-proto";
+import { QUEST_MODEL, QUEST_PROTO } from "../quest-proto";
+import { SAVED_LOCATION_MODEL, SAVED_LOCATION_PROTO } from "../saved-location-proto";
 import { grpcMapper } from "../mappers";
 import type { CharacterOverviewListItem, CharacterOverviewService } from "../../services/character-overview-service";
 import type { CharacterService, SaveCharacterEntry } from "../../services/character-service";
@@ -16,11 +16,11 @@ import type { BuffModel } from "../../repos/buff-repository";
 import type { QuestModel } from "../../repos/quest-repository";
 import type { SavedLocationModel } from "../../repos/saved-location-repository";
 import type {
-    BuffPersisted,
-    CharacterPersisted,
+    Buff,
+    Character,
     CharacterOverview,
     CharacterSaveEntry,
-    InventoryPersisted,
+    Inventory,
     CheckCharacterNameReply,
     CheckCharacterNameRequest,
     CreateCharacterReply,
@@ -35,9 +35,9 @@ import type {
     SaveCharacterRequest,
     SaveCharactersReply,
     SaveCharactersRequest,
-    QuestPersisted,
-    SavedLocationPersisted,
-    SkillPersisted,
+    Quest,
+    SavedLocation,
+    Skill,
 } from "../../protobuf/generated/fminternal/internal_service";
 import { Controller, Method } from "../grpc-method-decorator";
 
@@ -60,45 +60,45 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
         throw Object.assign(new Error("character is required in entry"), { code: "INVALID_PAYLOAD" });
     }
     return {
-        persisted: grpcMapper.map<CharacterPersisted, CharacterModel>(
+        character: grpcMapper.map<Character, CharacterModel>(
             msgChar,
-            CHARACTER_PERSISTED,
+            CHARACTER_PROTO,
             CHARACTER_MODEL
         ),
         baseLooks: protoMapToObject(entry.baseLooks),
         overlays: protoMapToObject(entry.overlays),
         inventory: entry.inventory.map((inventory) =>
-            grpcMapper.map<InventoryPersisted, InventoryModel>(
+            grpcMapper.map<Inventory, InventoryModel>(
                 inventory,
-                INVENTORY_PERSISTED,
+                INVENTORY_PROTO,
                 INVENTORY_MODEL
             )
         ),
         skills: entry.skills.map((skill) =>
-            grpcMapper.map<SkillPersisted, SkillModel>(
+            grpcMapper.map<Skill, SkillModel>(
                 skill,
-                SKILL_PERSISTED,
+                SKILL_PROTO,
                 SKILL_MODEL
             )
         ),
         buffs: (entry.buffs ?? []).map((buff) =>
-            grpcMapper.map<BuffPersisted, BuffModel>(
+            grpcMapper.map<Buff, BuffModel>(
                 buff,
-                BUFF_PERSISTED,
+                BUFF_PROTO,
                 BUFF_MODEL
             )
         ),
         quests: (entry.quests ?? []).map((quest) =>
-            grpcMapper.map<QuestPersisted, QuestModel>(
+            grpcMapper.map<Quest, QuestModel>(
                 quest,
-                QUEST_PERSISTED,
+                QUEST_PROTO,
                 QUEST_MODEL
             )
         ),
         savedLocations: (entry.savedLocations ?? []).map((loc) =>
-            grpcMapper.map<SavedLocationPersisted, SavedLocationModel>(
+            grpcMapper.map<SavedLocation, SavedLocationModel>(
                 loc,
-                SAVED_LOCATION_PERSISTED,
+                SAVED_LOCATION_PROTO,
                 SAVED_LOCATION_MODEL
             )
         ),
@@ -112,9 +112,9 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
                     meso: entry.storage.meso,
                 },
                 items: entry.storage.items.map((item) =>
-                    grpcMapper.map<InventoryPersisted, InventoryModel>(
+                    grpcMapper.map<Inventory, InventoryModel>(
                         item,
-                        INVENTORY_PERSISTED,
+                        INVENTORY_PROTO,
                         INVENTORY_MODEL
                     )
                 ),
@@ -169,14 +169,14 @@ export class CharacterGrpcController {
             if (!msgChar) {
                 throw Object.assign(new Error("character is required"), { code: "INVALID_PAYLOAD" });
             }
-            const persisted = grpcMapper.map<CharacterPersisted, CharacterModel>(
+            const character = grpcMapper.map<Character, CharacterModel>(
                 msgChar,
-                CHARACTER_PERSISTED,
+                CHARACTER_PROTO,
                 CHARACTER_MODEL
             );
             const baseLooks = protoMapToObject(call.request.baseLooks);
             const overlays = protoMapToObject(call.request.overlays);
-            await this.characterService.saveCharacter(persisted, baseLooks, overlays);
+            await this.characterService.saveCharacter(character, baseLooks, overlays);
             callback(null, { ok: true });
         } catch (err) {
             this.grpcError(err, callback);
@@ -205,10 +205,10 @@ export class CharacterGrpcController {
                     slots: result.storage.slots,
                     meso: result.storage.meso,
                     items: result.items.map((item) =>
-                        grpcMapper.map<InventoryModel, InventoryPersisted>(
+                        grpcMapper.map<InventoryModel, Inventory>(
                             item,
                             INVENTORY_MODEL,
-                            INVENTORY_PERSISTED
+                            INVENTORY_PROTO
                         )
                     ),
                 },

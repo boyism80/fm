@@ -1,5 +1,5 @@
 import { AccountSessionState, SessionDisconnectSource, SessionErrorCode } from "../protobuf/generated/fminternal/internal_service";
-import type { DebuffPersisted } from "../protobuf/generated/fminternal/internal_service";
+import type { Debuff } from "../protobuf/generated/fminternal/internal_service";
 import { isRedisEvalArray } from "../types/redis-eval";
 import type { SessionRepository } from "../repos/session-repository";
 import type { UnifiedRepository } from "../repos/unified-repository";
@@ -96,7 +96,7 @@ export class SessionService {
         characterId: number,
         characterName: string,
         clientIp: string,
-        debuffs: DebuffPersisted[],
+        debuffs: Debuff[],
         sourceChannelId: number | null
     ) {
         const [ok, code] = this.atomicResultTuple(

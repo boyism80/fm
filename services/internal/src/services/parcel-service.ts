@@ -1,10 +1,10 @@
 import {
-    InventoryPersisted,
+    Inventory,
     ParcelResult,
     type CheckParcelArrivalsReply,
     type ClaimParcelReply,
     type LoadParcelsReply,
-    type ParcelPersisted,
+    type Parcel,
 } from "../protobuf/generated/fminternal/internal_service";
 import { AppConfiguration } from "../config/app-configuration";
 import { ParcelRepository, type ParcelRow } from "../repos/parcel-repository";
@@ -20,7 +20,7 @@ const AMQ_DIRECT_EXCHANGE = "amq.direct";
 export type SendParcelInput = {
     worldId: number;
     recipientName: string;
-    parcel: ParcelPersisted;
+    parcel: Parcel;
     senderAccountId: number;
     sender?: SaveCharacterEntry;
     oneOfAKind: boolean;
@@ -62,7 +62,7 @@ export class ParcelService {
         return this.arrivedAt(row) + KEEP_MS <= now;
     }
 
-    private toProto(row: ParcelRow): ParcelPersisted {
+    private toProto(row: ParcelRow): Parcel {
         return {
             parcelId: row.parcel_id,
             receiverId: row.receiver_id,
@@ -71,7 +71,7 @@ export class ParcelService {
             quick: row.quick,
             message: row.message,
             sentAtUnixMs: new Date(row.sent_at).getTime(),
-            item: row.item ? InventoryPersisted.fromJSON(row.item) : undefined,
+            item: row.item ? Inventory.fromJSON(row.item) : undefined,
         };
     }
 
@@ -123,7 +123,7 @@ export class ParcelService {
                     meso: input.parcel.meso,
                     quick: input.parcel.quick,
                     message: input.parcel.message,
-                    item: input.parcel.item ? InventoryPersisted.toJSON(input.parcel.item) : null,
+                    item: input.parcel.item ? Inventory.toJSON(input.parcel.item) : null,
                 },
                 { txClient }
             );

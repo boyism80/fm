@@ -17,11 +17,11 @@ func expirationUnixMs(t time.Time) int64 {
 	return t.UnixMilli()
 }
 
-func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64, ownerName string, flag uint16, enhanceChance uint8, enhanceCount uint8, skillBonus uint16) *internal.InventoryPersisted {
+func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64, ownerName string, flag uint16, enhanceChance uint8, enhanceCount uint8, skillBonus uint16) *internal.Inventory {
 	if item == nil {
 		return nil
 	}
-	out := &internal.InventoryPersisted{
+	out := &internal.Inventory{
 		OwnerId:          ownerID,
 		ItemId:           item.GetModel().GetID(),
 		Slot:             slot,
@@ -41,7 +41,7 @@ func buildInventoryProto(item Item, ownerID uint32, slot int32, uniqueID *uint64
 	return out
 }
 
-func (e *EquipmentCore) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (e *EquipmentCore) ToProto(ownerID uint32, slot int32) *internal.Inventory {
 	pb := buildInventoryProto(e, ownerID, slot, e.UniqueId, e.OwnerName, e.Flag, e.EnhanceChance, e.EnhanceCount, e.SkillBonus)
 	if bonus := e.BonusStats.ToProto(); bonus != nil {
 		pb.EquipBonusStats = bonus
@@ -49,29 +49,29 @@ func (e *EquipmentCore) ToProto(ownerID uint32, slot int32) *internal.InventoryP
 	return pb
 }
 
-func (item *Consume) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Consume) ToProto(ownerID uint32, slot int32) *internal.Inventory {
 	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
-func (item *Installation) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Installation) ToProto(ownerID uint32, slot int32) *internal.Inventory {
 	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
-func (item *MiscItem) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *MiscItem) ToProto(ownerID uint32, slot int32) *internal.Inventory {
 	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
-func (item *CashItem) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *CashItem) ToProto(ownerID uint32, slot int32) *internal.Inventory {
 	return buildInventoryProto(item, ownerID, slot, item.UniqueId, item.OwnerName, item.Flags, 0, 0, 0)
 }
 
-func (item *Pet) ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted {
+func (item *Pet) ToProto(ownerID uint32, slot int32) *internal.Inventory {
 	return buildInventoryProto(item, ownerID, slot, item.UniqueId, "", item.Flags, 0, 0, 0)
 }
 
-func NewItemFromInternalProto(pb *internal.InventoryPersisted, gw GameWorld) (Item, error) {
+func NewItemFromInternalProto(pb *internal.Inventory, gw GameWorld) (Item, error) {
 	if pb == nil {
-		return nil, fmt.Errorf("nil InventoryPersisted")
+		return nil, fmt.Errorf("nil Inventory")
 	}
 	if gw == nil {
 		return nil, fmt.Errorf("nil GameWorld")

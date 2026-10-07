@@ -36,7 +36,7 @@ type Item interface {
 	Clone(count uint16) Item
 	BindFieldPlacement(placement *FieldPlacement)
 	ToDTO() dto.Item
-	ToProto(ownerID uint32, slot int32) *internal.InventoryPersisted
+	ToProto(ownerID uint32, slot int32) *internal.Inventory
 }
 
 type FieldPlacement struct {
