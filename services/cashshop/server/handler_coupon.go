@@ -14,6 +14,7 @@ import (
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/cashshop/client"
 	"github.com/boyism80/fm/services/cashshop/entity"
+	gconstant "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 )
 
@@ -58,22 +59,18 @@ func (h *Coupon) start(ctx *core.ClientContext, character *entity.Character) *as
 }
 
 func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, req *request.CashShopCoupon) {
-	if req.Recipient != "" && req.Code != "" {
+	if req.Recipient != "" {
 		h.fail(ctx, constant.CashShopFailureCouponNoGift)
 		return
 	}
-	code := req.Code
-	if code == "" {
-		code = req.Recipient
-	}
-	if code == "" {
+	if req.Code == "" {
 		h.fail(ctx, constant.CashShopFailureCouponWrong)
 		return
 	}
 
 	promise := h.start(ctx, character)
 	async.ThenRPC(promise, func(c context.Context) (*internal.FindCashCouponReply, error) {
-		return h.cs.internalClient.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: h.cs.worldID(), Code: code})
+		return h.cs.internalClient.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: h.cs.worldID(), Code: req.Code})
 	}, func(reply *internal.FindCashCouponReply) error {
 		character.Busy = false
 		switch reply.GetResult() {
@@ -100,7 +97,7 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, re
 			}
 			item = created
 		}
-		h.claim(ctx, character, code, reply.GetKind(), reply.GetValue(), item)
+		h.claim(ctx, character, req.Code, reply.GetKind(), reply.GetValue(), item)
 		return nil
 	})
 }
@@ -144,6 +141,9 @@ func (h *Coupon) claim(ctx *core.ClientContext, character *entity.Character, cod
 			redeemed.Items = []*dto.CashShopItem{character.LockerItemDTO(item)}
 		}
 		_ = ctx.Client.Send(redeemed, types.SEND_POLICY_ENCRYPT)
+		if kind == internal.CashCouponKind_CASH_COUPON_KIND_MESO {
+			_ = ctx.Client.Send(&response.UpdateStats{Stats: map[gconstant.Stat]int32{gconstant.StatMeso: reply.GetMeso()}}, types.SEND_POLICY_ENCRYPT)
+		}
 		_ = ctx.Client.Send(&response.CashShopBalance{NXCash: character.NXCash, MaplePoint: character.MaplePoint}, types.SEND_POLICY_ENCRYPT)
 		return nil
 	})

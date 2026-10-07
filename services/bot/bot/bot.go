@@ -148,18 +148,12 @@ func (b *Bot) Update(pkt any) {
 			b.Locker = append(b.Locker, p.Items...)
 		case pconst.CashShopResultCouponRedeemed:
 			b.Locker = append(b.Locker, p.Items...)
-			b.Meso += int32(p.Meso)
 		case pconst.CashShopResultPaidBack, pconst.CashShopResultExpired:
 			b.Locker = slices.DeleteFunc(b.Locker, func(item *dto.CashShopItem) bool {
 				return item.Serial == p.Serial
 			})
 		case pconst.CashShopResultGifts:
 			b.Gifts = p.Gifts
-		case pconst.CashShopResultQuestItemBought:
-			b.Meso -= int32(p.Meso)
-			for _, granted := range p.Granted {
-				b.setItem(constant.InventoryType(granted.ItemID/1000000), int16(granted.Slot), &dto.MiscItem{ItemId: granted.ItemID, Count: granted.Count})
-			}
 		case pconst.CashShopResultInventorySlots:
 			b.SlotLimits[constant.InventoryType(p.InventoryType)] = uint8(p.Slots)
 		}

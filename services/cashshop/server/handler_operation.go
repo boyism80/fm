@@ -255,9 +255,10 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 		case internal.CashShopResult_CASH_SHOP_RESULT_OK:
 			character.Game.Character.Meso = reply.GetMeso()
 			character.Game.Inventory = append(character.Game.Inventory, pb)
+			_ = ctx.Client.Send(&response.AddInventorySlot{InventoryType: invType, Slot: int16(slot), Item: item.ToDTO()}, types.SEND_POLICY_ENCRYPT)
+			_ = ctx.Client.Send(&response.UpdateStats{Stats: map[gconstant.Stat]int32{gconstant.StatMeso: reply.GetMeso()}}, types.SEND_POLICY_ENCRYPT)
 			_ = ctx.Client.Send(&response.CashShopResult{
 				Kind:    constant.CashShopResultQuestItemBought,
-				Meso:    commodity.Price,
 				Granted: []*dto.CashShopGrantedItem{{Count: uint16(pb.GetCount()), Slot: uint16(slot), ItemID: commodity.ItemID}},
 			}, types.SEND_POLICY_ENCRYPT)
 		case internal.CashShopResult_CASH_SHOP_RESULT_NOT_ENOUGH_MESO:

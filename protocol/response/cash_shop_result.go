@@ -104,8 +104,10 @@ func (p *CashShopResult) Serialize(writer *stream.StreamWriter) error {
 		}
 		writer.WriteU16(0)
 	case constant.CashShopResultQuestItemBought:
-		writer.WriteU32(p.Meso)
-		p.Granted[0].Serialize(writer)
+		writer.WriteU32(uint32(len(p.Granted)))
+		for _, granted := range p.Granted {
+			granted.Serialize(writer)
+		}
 	}
 	return nil
 }
@@ -180,10 +182,12 @@ func (p *CashShopResult) Deserialize(reader *stream.StreamReader) {
 		p.Items = p.deserializeItems(reader, int(reader.ReadU8()))
 		reader.ReadU16()
 	case constant.CashShopResultQuestItemBought:
-		p.Meso = reader.ReadU32()
-		granted := &dto.CashShopGrantedItem{}
-		granted.Deserialize(reader)
-		p.Granted = []*dto.CashShopGrantedItem{granted}
+		count := reader.ReadU32()
+		for range count {
+			granted := &dto.CashShopGrantedItem{}
+			granted.Deserialize(reader)
+			p.Granted = append(p.Granted, granted)
+		}
 	}
 }
 
