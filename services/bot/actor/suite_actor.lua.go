@@ -45,6 +45,7 @@ var requests = []outbound{
 	&request.PetCommand{},
 	&request.PetFood{},
 	&request.PetExceptions{},
+	&request.PetReviveInquiry{},
 	&request.CashShopOperation{},
 	&request.CashShopCoupon{},
 }

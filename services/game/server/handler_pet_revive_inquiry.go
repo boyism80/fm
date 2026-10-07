@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/protocol/request"
+	"github.com/boyism80/fm/services/game/client"
 )
 
 type PetReviveInquiry struct {
@@ -16,6 +17,15 @@ func (PetReviveInquiry) New(gs *GameServer) *PetReviveInquiry {
 }
 
 func (h *PetReviveInquiry) Handle(ctx *core.ClientContext, req *request.PetReviveInquiry) error {
-	// TODO: open the cash shop revive flow once the cash shop exists
+	gameClient, ok := ctx.Client.(*client.GameClient)
+	if !ok {
+		return nil
+	}
+	character := gameClient.GetCharacter()
+	if character == nil {
+		return nil
+	}
+
+	character.Listener.OnUnlockAction(character)
 	return nil
 }

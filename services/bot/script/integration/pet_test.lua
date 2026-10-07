@@ -51,6 +51,13 @@ local function summon_and_dismiss(ctx)
 		return false
 	end
 
+	local unlock = bot:request(resp.update_stats, req.pet_revive_inquiry { sn = p.pet.sn }, function(p)
+		return p.unlock_action
+	end, 3000)
+	if unlock == false then
+		return ctx:fail("펫 부활 문의 후 잠금이 풀리지 않음")
+	end
+
 	p = summon(ctx, bot, "해제")
 	if p == false then
 		return false
