@@ -329,124 +329,124 @@ message CreateCashCouponsReply {
 }
 
 enum MarriageStatus {
-  MARRIAGE_STATUS_NONE    = 0;
+  MARRIAGE_STATUS_NONE = 0;
   MARRIAGE_STATUS_ENGAGED = 1;
   MARRIAGE_STATUS_MARRIED = 3;
 }
 
 enum MarriageResult {
-  MARRIAGE_RESULT_OK                    = 0;
-  MARRIAGE_RESULT_NOT_FOUND             = 1;
-  MARRIAGE_RESULT_ALREADY_ENGAGED       = 2;
-  MARRIAGE_RESULT_PARTNER_ENGAGED       = 3;
-  MARRIAGE_RESULT_INVALID_STATE         = 4;
-  MARRIAGE_RESULT_GUEST_NOT_FOUND       = 5;
+  MARRIAGE_RESULT_OK = 0;
+  MARRIAGE_RESULT_NOT_FOUND = 1;
+  MARRIAGE_RESULT_ALREADY_ENGAGED = 2;
+  MARRIAGE_RESULT_PARTNER_ENGAGED = 3;
+  MARRIAGE_RESULT_INVALID_STATE = 4;
+  MARRIAGE_RESULT_GUEST_NOT_FOUND = 5;
   MARRIAGE_RESULT_GUEST_ALREADY_INVITED = 6;
-  MARRIAGE_RESULT_GIFT_NOT_FOUND        = 7;
+  MARRIAGE_RESULT_GIFT_NOT_FOUND = 7;
 }
 
 message Marriage {
-  uint32 marriage_id                  = 1;
-  uint32 groom_id                     = 2;
-  uint32 bride_id                     = 3;
-  string groom_name                   = 4;
-  string bride_name                   = 5;
-  uint32 groom_item_id                = 6;
-  uint32 bride_item_id                = 7;
-  MarriageStatus status               = 8;
-  uint32 ticket_item_id               = 9;
-  bool   groom_wished                 = 10;
-  bool   bride_wished                 = 11;
-  repeated string groom_wishes        = 12;
-  repeated string bride_wishes        = 13;
-  repeated uint32 guests              = 14;
-  uint32 divorce_requester_id         = 15;
-  int64  divorce_requested_at_unix_ms = 16;
+  uint32 marriage_id = 1;
+  uint32 groom_id = 2;
+  uint32 bride_id = 3;
+  string groom_name = 4;
+  string bride_name = 5;
+  uint32 groom_item_id = 6;
+  uint32 bride_item_id = 7;
+  MarriageStatus status = 8;
+  uint32 ticket_item_id = 9;
+  bool groom_wished = 10;
+  bool bride_wished = 11;
+  repeated string groom_wishes = 12;
+  repeated string bride_wishes = 13;
+  repeated uint32 guests = 14;
+  uint32 divorce_requester_id = 15;
+  int64 divorce_requested_at_unix_ms = 16;
 }
 
 message MarriageReply {
-  MarriageResult result      = 1;
+  MarriageResult result = 1;
   optional Marriage marriage = 2;
 }
 
 message CreateMarriageRequest {
-  uint32 world_id      = 1;
-  uint32 groom_id      = 2;
-  string groom_name    = 3;
-  uint32 bride_id      = 4;
-  string bride_name    = 5;
-  uint32 ring_item_id  = 6;
+  uint32 world_id = 1;
+  uint32 groom_id = 2;
+  string groom_name = 3;
+  uint32 bride_id = 4;
+  string bride_name = 5;
+  uint32 ring_item_id = 6;
 }
 
 message LoadMarriageRequest {
-  uint32 world_id     = 1;
+  uint32 world_id = 1;
   uint32 character_id = 2;
 }
 
 message GetMarriageRequest {
-  uint32 world_id    = 1;
+  uint32 world_id = 1;
   uint32 marriage_id = 2;
 }
 
 message BreakEngagementRequest {
-  uint32 world_id     = 1;
-  uint32 marriage_id  = 2;
+  uint32 world_id = 1;
+  uint32 marriage_id = 2;
   uint32 character_id = 3;
 }
 
 message ReserveWeddingRequest {
-  uint32 world_id       = 1;
-  uint32 marriage_id    = 2;
+  uint32 world_id = 1;
+  uint32 marriage_id = 2;
   uint32 ticket_item_id = 3;
 }
 
 message SetWeddingWishlistRequest {
-  uint32 world_id        = 1;
-  uint32 marriage_id     = 2;
-  uint32 character_id    = 3;
+  uint32 world_id = 1;
+  uint32 marriage_id = 2;
+  uint32 character_id = 3;
   repeated string wishes = 4;
 }
 
 message InviteWeddingGuestRequest {
-  uint32 world_id    = 1;
+  uint32 world_id = 1;
   uint32 marriage_id = 2;
-  string guest_name  = 3;
+  string guest_name = 3;
 }
 
 message InviteWeddingGuestReply {
   MarriageResult result = 1;
-  uint32 guest_id       = 2;
-  string guest_name     = 3;
+  uint32 guest_id = 2;
+  string guest_name = 3;
 }
 
 message FinishWeddingRequest {
-  uint32 world_id    = 1;
+  uint32 world_id = 1;
   uint32 marriage_id = 2;
 }
 
 message RequestDivorceRequest {
-  uint32 world_id     = 1;
-  uint32 marriage_id  = 2;
+  uint32 world_id = 1;
+  uint32 marriage_id = 2;
   uint32 character_id = 3;
-  uint64 now_unix_ms  = 4;
+  uint64 now_unix_ms = 4;
 }
 
 message CancelDivorceRequest {
-  uint32 world_id     = 1;
-  uint32 marriage_id  = 2;
+  uint32 world_id = 1;
+  uint32 marriage_id = 2;
   uint32 character_id = 3;
 }
 
 message WeddingGift {
-  uint32 gift_id     = 1;
+  uint32 gift_id = 1;
   string sender_name = 2;
-  Inventory item     = 3;
+  Inventory item = 3;
 }
 
 message GiveWeddingGiftRequest {
-  uint32 world_id           = 1;
-  uint32 receiver_id        = 2;
-  WeddingGift gift          = 3;
+  uint32 world_id = 1;
+  uint32 receiver_id = 2;
+  WeddingGift gift = 3;
   CharacterSaveEntry sender = 4;
 }
 
@@ -455,7 +455,7 @@ message GiveWeddingGiftReply {
 }
 
 message LoadWeddingGiftsRequest {
-  uint32 world_id     = 1;
+  uint32 world_id = 1;
   uint32 character_id = 2;
 }
 
@@ -464,22 +464,22 @@ message LoadWeddingGiftsReply {
 }
 
 message ClaimWeddingGiftRequest {
-  uint32 world_id     = 1;
+  uint32 world_id = 1;
   uint32 character_id = 2;
-  uint32 gift_id      = 3;
+  uint32 gift_id = 3;
 }
 
 message ClaimWeddingGiftReply {
   MarriageResult result = 1;
-  WeddingGift gift      = 2;
+  WeddingGift gift = 2;
 }
 
 message NotifySpouseMapRequest {
-  uint32 world_id     = 1;
+  uint32 world_id = 1;
   uint32 character_id = 2;
-  uint32 spouse_id    = 3;
-  uint32 map_id       = 4;
-  bool   reply        = 5;
+  uint32 spouse_id = 3;
+  uint32 map_id = 4;
+  bool reply = 5;
 }
 
 message NotifySpouseMapReply {
@@ -581,66 +581,66 @@ message EnterGameRequest {
 }
 
 message Character {
-  uint32 character_id      = 1;
-  uint32 world_id          = 2;
-  string name              = 3;
-  uint32 gender            = 4;
-  uint32 skin_color        = 5;
-  uint32 face              = 6;
-  uint32 hair              = 7;
-  uint32 level             = 8;
-  uint32 class_id          = 9;
-  uint32 str               = 10;
-  uint32 dex               = 11;
-  uint32 int_stat          = 12;
-  uint32 luk               = 13;
-  uint32 hp                = 14;
-  uint32 max_hp            = 15;
-  uint32 mp                = 16;
-  uint32 max_mp            = 17;
-  uint32 ability_point     = 18;
-  uint32 exp               = 19;
-  uint32 map_id            = 20;
-  uint32 spawn_point       = 21;
-  int32  position_x        = 22;
-  int32  position_y        = 23;
-  uint32 stance            = 24;
-  int32  meso              = 25;
-  uint32 skill_point       = 26;
-  uint32 account_id        = 27;
-  uint32 role              = 28;
-  bool   hidden            = 29;
-  uint32 population        = 30;
-  uint32 hp_ap_used        = 31;
-  uint32 pet_hp_item       = 32;
-  uint32 pet_mp_item       = 33;
-  uint64 summoned_pet      = 34;
+  uint32 character_id = 1;
+  uint32 world_id = 2;
+  string name = 3;
+  uint32 gender = 4;
+  uint32 skin_color = 5;
+  uint32 face = 6;
+  uint32 hair = 7;
+  uint32 level = 8;
+  uint32 class_id = 9;
+  uint32 str = 10;
+  uint32 dex = 11;
+  uint32 int_stat = 12;
+  uint32 luk = 13;
+  uint32 hp = 14;
+  uint32 max_hp = 15;
+  uint32 mp = 16;
+  uint32 max_mp = 17;
+  uint32 ability_point = 18;
+  uint32 exp = 19;
+  uint32 map_id = 20;
+  uint32 spawn_point = 21;
+  int32 position_x = 22;
+  int32 position_y = 23;
+  uint32 stance = 24;
+  int32 meso = 25;
+  uint32 skill_point = 26;
+  uint32 account_id = 27;
+  uint32 role = 28;
+  bool hidden = 29;
+  uint32 population = 30;
+  uint32 hp_ap_used = 31;
+  uint32 pet_hp_item = 32;
+  uint32 pet_mp_item = 33;
+  uint64 summoned_pet = 34;
   repeated uint32 slot_limits = 35;
 }
 
 message KeyLayoutBinding {
-  int32  slot  = 1;
-  uint32 type  = 2;
-  int32  action = 3;
+  int32 slot = 1;
+  uint32 type = 2;
+  int32 action = 3;
 }
 
 message EnterGameReply {
-  bool                        found     = 1;
-  Character          character = 2;
+  bool found = 1;
+  Character character = 2;
   repeated Inventory inventory = 3;
-  repeated Skill     skills    = 4;
-  repeated KeyLayoutBinding   key_layout = 5;
-  optional uint32              party_id  = 6;
-  optional uint32              guild_id  = 7;
-  repeated Buff      buffs     = 8;
-  repeated BuddyEntry         buddies   = 9;
-  uint32                       buddy_capacity = 10;
-  repeated Quest      quests    = 11;
+  repeated Skill skills = 4;
+  repeated KeyLayoutBinding key_layout = 5;
+  optional uint32 party_id = 6;
+  optional uint32 guild_id = 7;
+  repeated Buff buffs = 8;
+  repeated BuddyEntry buddies = 9;
+  uint32 buddy_capacity = 10;
+  repeated Quest quests = 11;
   repeated SavedLocation saved_locations = 12;
-  repeated Debuff     debuffs   = 13;
-  optional Marriage   marriage  = 14;
-  repeated uint32     cash_wishlist = 15;
-  repeated CashRing   rings = 16;
+  repeated Debuff debuffs = 13;
+  optional Marriage marriage = 14;
+  repeated uint32 cash_wishlist = 15;
+  repeated CashRing rings = 16;
 }
 
 message Debuff {
@@ -678,9 +678,9 @@ message BeginGameTransitionReply {
 }
 
 message SaveCharacterRequest {
-  Character     character  = 1;
-  map<int32, uint32>     base_looks = 2;
-  map<int32, uint32>     overlays   = 3;
+  Character character = 1;
+  map<int32, uint32> base_looks = 2;
+  map<int32, uint32> overlays = 3;
 }
 
 message SaveCharacterReply {
@@ -688,29 +688,29 @@ message SaveCharacterReply {
 }
 
 message CharacterSaveEntry {
-  Character     character  = 1;
-  map<int32, uint32>     base_looks = 2;
-  map<int32, uint32>     overlays   = 3;
+  Character character = 1;
+  map<int32, uint32> base_looks = 2;
+  map<int32, uint32> overlays = 3;
   repeated Inventory inventory = 4;
-  repeated Skill     skills    = 5;
-  repeated KeyLayoutBinding   key_layout = 6;
-  repeated Buff      buffs     = 7;
-  repeated Quest      quests    = 8;
+  repeated Skill skills = 5;
+  repeated KeyLayoutBinding key_layout = 6;
+  repeated Buff buffs = 7;
+  repeated Quest quests = 8;
   repeated SavedLocation saved_locations = 9;
   Storage storage = 10;
 }
 
 message Storage {
   uint32 account_id = 1;
-  uint32 world_id   = 2;
-  uint32 slots      = 3;
-  int32  meso       = 4;
+  uint32 world_id = 2;
+  uint32 slots = 3;
+  int32 meso = 4;
   repeated Inventory items = 5;
 }
 
 message LoadStorageRequest {
   uint32 account_id = 1;
-  uint32 world_id   = 2;
+  uint32 world_id = 2;
 }
 
 message LoadStorageReply {
@@ -718,28 +718,28 @@ message LoadStorageReply {
 }
 
 enum ParcelResult {
-  PARCEL_RESULT_OK                  = 0;
+  PARCEL_RESULT_OK = 0;
   PARCEL_RESULT_RECIPIENT_NOT_FOUND = 1;
-  PARCEL_RESULT_SAME_ACCOUNT        = 2;
-  PARCEL_RESULT_RECIPIENT_FULL      = 3;
-  PARCEL_RESULT_ONE_OF_A_KIND       = 4;
-  PARCEL_RESULT_NOT_FOUND           = 5;
-  PARCEL_RESULT_NOT_ARRIVED         = 6;
+  PARCEL_RESULT_SAME_ACCOUNT = 2;
+  PARCEL_RESULT_RECIPIENT_FULL = 3;
+  PARCEL_RESULT_ONE_OF_A_KIND = 4;
+  PARCEL_RESULT_NOT_FOUND = 5;
+  PARCEL_RESULT_NOT_ARRIVED = 6;
 }
 
 message Parcel {
-  uint32 parcel_id       = 1;
-  uint32 receiver_id     = 2;
-  string sender_name     = 3;
-  int32  meso            = 4;
-  bool   quick           = 5;
-  string message         = 6;
-  int64  sent_at_unix_ms = 7;
+  uint32 parcel_id = 1;
+  uint32 receiver_id = 2;
+  string sender_name = 3;
+  int32 meso = 4;
+  bool quick = 5;
+  string message = 6;
+  int64 sent_at_unix_ms = 7;
   Inventory item = 8;
 }
 
 message LoadParcelsRequest {
-  uint32 world_id     = 1;
+  uint32 world_id = 1;
   uint32 character_id = 2;
 }
 
@@ -749,12 +749,12 @@ message LoadParcelsReply {
 }
 
 message SendParcelRequest {
-  uint32 world_id          = 1;
-  string recipient_name    = 2;
-  Parcel parcel   = 3;
+  uint32 world_id = 1;
+  string recipient_name = 2;
+  Parcel parcel = 3;
   uint32 sender_account_id = 4;
   CharacterSaveEntry sender = 5;
-  bool   one_of_a_kind     = 6;
+  bool one_of_a_kind = 6;
 }
 
 message SendParcelReply {
@@ -762,20 +762,20 @@ message SendParcelReply {
 }
 
 message ClaimParcelRequest {
-  uint32 world_id     = 1;
+  uint32 world_id = 1;
   uint32 character_id = 2;
-  uint32 parcel_id    = 3;
+  uint32 parcel_id = 3;
 }
 
 message ClaimParcelReply {
-  ParcelResult    result = 1;
+  ParcelResult result = 1;
   Parcel parcel = 2;
 }
 
 message DeleteParcelRequest {
-  uint32 world_id     = 1;
+  uint32 world_id = 1;
   uint32 character_id = 2;
-  uint32 parcel_id    = 3;
+  uint32 parcel_id = 3;
 }
 
 message DeleteParcelReply {
@@ -783,14 +783,14 @@ message DeleteParcelReply {
 }
 
 message CheckParcelArrivalsRequest {
-  uint32 world_id     = 1;
+  uint32 world_id = 1;
   uint32 character_id = 2;
 }
 
 message CheckParcelArrivalsReply {
-  uint32 count       = 1;
+  uint32 count = 1;
   string sender_name = 2;
-  bool   quick       = 3;
+  bool quick = 3;
 }
 
 message SaveCharactersRequest {
@@ -802,154 +802,154 @@ message SaveCharactersReply {
 }
 
 message EquipmentBonusStats {
-  int32 str    = 1;
-  int32 dex    = 2;
+  int32 str = 1;
+  int32 dex = 2;
   int32 int_stat = 3;
-  int32 luk    = 4;
+  int32 luk = 4;
   int32 max_hp = 5;
   int32 max_mp = 6;
-  int32 pad    = 7;
-  int32 mad    = 8;
-  int32 pdd    = 9;
-  int32 mdd    = 10;
-  int32 acc    = 11;
-  int32 avoid  = 12;
-  int32 hands  = 13;
-  int32 speed  = 14;
-  int32 jump   = 15;
+  int32 pad = 7;
+  int32 mad = 8;
+  int32 pdd = 9;
+  int32 mdd = 10;
+  int32 acc = 11;
+  int32 avoid = 12;
+  int32 hands = 13;
+  int32 speed = 14;
+  int32 jump = 15;
 }
 
 message Inventory {
   optional uint64 unique_id = 1;
-  uint32 owner_id           = 2;
-  uint32 item_id            = 3;
-  int32  slot               = 4;
-  uint32 count              = 5;
-  int64  expiration_unix_ms = 6;
-  uint32 enhance_chance     = 7;
-  uint32 flag               = 8;
-  uint32 skill_bonus        = 9;
-  string owner_name         = 10;
-  uint32 inventory_type     = 11;
+  uint32 owner_id = 2;
+  uint32 item_id = 3;
+  int32 slot = 4;
+  uint32 count = 5;
+  int64 expiration_unix_ms = 6;
+  uint32 enhance_chance = 7;
+  uint32 flag = 8;
+  uint32 skill_bonus = 9;
+  string owner_name = 10;
+  uint32 inventory_type = 11;
   optional EquipmentBonusStats equip_bonus_stats = 12;
-  uint32 enhance_count      = 13;
-  optional Pet pet          = 14;
-  uint32 marriage_id        = 15;
+  uint32 enhance_count = 13;
+  optional Pet pet = 14;
+  uint32 marriage_id = 15;
 }
 
 message Pet {
-  string name                = 1;
-  uint32 level               = 2;
-  uint32 closeness           = 3;
-  uint32 fullness            = 4;
-  uint32 speed               = 5;
-  uint32 skills              = 6;
-  uint32 seconds_left        = 7;
+  string name = 1;
+  uint32 level = 2;
+  uint32 closeness = 3;
+  uint32 fullness = 4;
+  uint32 speed = 5;
+  uint32 skills = 6;
+  uint32 seconds_left = 7;
   repeated uint32 exceptions = 8;
 }
 
 message Skill {
-  uint32 character_id         = 1;
-  uint32 skill_id             = 2;
-  int32  level                = 3;
-  int32  master_level         = 4;
-  int64  cooldown_end_unix_ms = 5;
+  uint32 character_id = 1;
+  uint32 skill_id = 2;
+  int32 level = 3;
+  int32 master_level = 4;
+  int64 cooldown_end_unix_ms = 5;
 }
 
 enum BuffKind {
   BUFF_KIND_SKILL = 0;
-  BUFF_KIND_ITEM  = 1;
+  BUFF_KIND_ITEM = 1;
 }
 
 message BuffFlagValue {
-  uint32 mask     = 1;
-  int32  position = 2;
-  int32  value    = 3;
+  uint32 mask = 1;
+  int32 position = 2;
+  int32 value = 3;
 }
 
 message Buff {
-  uint32 character_id                 = 1;
-  int32  buff_source_id               = 2;
-  BuffKind kind                       = 3;
+  uint32 character_id = 1;
+  int32 buff_source_id = 2;
+  BuffKind kind = 3;
   repeated BuffFlagValue flag_values = 4;
   optional uint64 remaining_duration_ms = 5;
-  uint32 skill_level                  = 6;
-  uint32 causer_id                    = 7;
+  uint32 skill_level = 6;
+  uint32 causer_id = 7;
 }
 
 message Quest {
-  uint32 character_id             = 1;
-  uint32 quest_id                 = 2;
-  uint32 status                   = 3;
-  map<uint32, uint32> mob_kills   = 4;
-  string status_record            = 5;
-  map<string, string> record_ex   = 6;
-  int64 completion_time_unix_ms   = 7;
-  uint32 forfeited                = 8;
-  int64 deadline_unix_ms          = 9;
-  int64 start_time_unix_ms        = 10;
+  uint32 character_id = 1;
+  uint32 quest_id = 2;
+  uint32 status = 3;
+  map<uint32, uint32> mob_kills = 4;
+  string status_record = 5;
+  map<string, string> record_ex = 6;
+  int64 completion_time_unix_ms = 7;
+  uint32 forfeited = 8;
+  int64 deadline_unix_ms = 9;
+  int64 start_time_unix_ms = 10;
 }
 
 message SavedLocation {
   uint32 character_id = 1;
-  string name         = 2;
-  uint32 map_id       = 3;
+  string name = 2;
+  uint32 map_id = 3;
 }
 
 message LoginAccountRequest {
-  string login_id    = 1;
-  string password    = 2;
+  string login_id = 1;
+  string password = 2;
   string mac_address = 3;
-  string ip_address  = 4;
+  string ip_address = 4;
   uint32 initial_role = 5;
 }
 
 message LoginAccountReply {
   enum Status {
-    SUCCESS        = 0;
+    SUCCESS = 0;
     WRONG_PASSWORD = 1;
-    BANNED         = 2;
-    REGISTERED     = 3;
+    BANNED = 2;
+    REGISTERED = 3;
     ALREADY_LOGGED_IN = 4;
   }
-  Status  status                     = 1;
-  uint32  account_id                 = 2;
-  uint32  gender                     = 3;
-  bool    is_chat_blocked            = 4;
-  int64   chat_blocked_until_unix_ms = 5;
-  uint32  character_slot_count       = 6;
-  uint32  role                       = 7;
+  Status status = 1;
+  uint32 account_id = 2;
+  uint32 gender = 3;
+  bool is_chat_blocked = 4;
+  int64 chat_blocked_until_unix_ms = 5;
+  uint32 character_slot_count = 6;
+  uint32 role = 7;
 }
 
 message CharacterOverview {
-  uint32             character_id    = 1;
-  string             name            = 2;
-  uint32             gender          = 3;
-  uint32             skin_color      = 4;
-  uint32             face            = 5;
-  uint32             hair            = 6;
-  uint32             level           = 7;
-  uint32             class_id        = 8;
-  uint32             map_id          = 9;
-  uint32             spawn_point     = 10;
-  uint32             account_id      = 11;
-  uint32             world_id        = 12;
-  int32              rank            = 13;
-  int32              rank_diff       = 14;
-  int32              class_rank      = 15;
-  int32              class_rank_diff = 16;
-  map<int32, uint32> base_looks      = 17;
-  map<int32, uint32> overlays        = 18;
+  uint32 character_id = 1;
+  string name = 2;
+  uint32 gender = 3;
+  uint32 skin_color = 4;
+  uint32 face = 5;
+  uint32 hair = 6;
+  uint32 level = 7;
+  uint32 class_id = 8;
+  uint32 map_id = 9;
+  uint32 spawn_point = 10;
+  uint32 account_id = 11;
+  uint32 world_id = 12;
+  int32 rank = 13;
+  int32 rank_diff = 14;
+  int32 class_rank = 15;
+  int32 class_rank_diff = 16;
+  map<int32, uint32> base_looks = 17;
+  map<int32, uint32> overlays = 18;
 }
 
 message GetCharacterListRequest {
   uint32 account_id = 1;
-  uint32 world_id   = 2;
+  uint32 world_id = 2;
 }
 
 message GetCharacterListReply {
   repeated CharacterOverview characters = 1;
-  uint32                     slot_count = 2;
+  uint32 slot_count = 2;
 }
 
 message CheckCharacterNameRequest {
@@ -962,26 +962,26 @@ message CheckCharacterNameReply {
 }
 
 message CreateCharacterRequest {
-  uint32 account_id     = 1;
-  uint32 world_id       = 2;
-  string name           = 3;
-  uint32 face           = 4;
-  uint32 hair           = 5;
-  uint32 skin_color     = 6;
-  uint32 top_item_id    = 7;
+  uint32 account_id = 1;
+  uint32 world_id = 2;
+  string name = 3;
+  uint32 face = 4;
+  uint32 hair = 5;
+  uint32 skin_color = 6;
+  uint32 top_item_id = 7;
   uint32 bottom_item_id = 8;
-  uint32 shoes_item_id  = 9;
+  uint32 shoes_item_id = 9;
   uint32 weapon_item_id = 10;
 }
 
 message CreateCharacterReply {
-  bool              success   = 1;
-  string            error_msg = 2;
+  bool success = 1;
+  string error_msg = 2;
   CharacterOverview character = 3;
 }
 
 message DeleteCharacterRequest {
-  uint32 account_id   = 1;
+  uint32 account_id = 1;
   uint32 character_id = 2;
 }
 

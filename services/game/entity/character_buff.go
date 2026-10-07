@@ -2,10 +2,10 @@ package entity
 
 import (
 	"fmt"
-	"github.com/boyism80/fm/core/clock"
 	"log"
 	"time"
 
+	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
