@@ -87,6 +87,13 @@ const (
 	Internal_SetServerDateTime_FullMethodName              = "/fm.internal.Internal/SetServerDateTime"
 	Internal_BroadcastNotice_FullMethodName                = "/fm.internal.Internal/BroadcastNotice"
 	Internal_WriteOperationLog_FullMethodName              = "/fm.internal.Internal/WriteOperationLog"
+	Internal_FindCashShop_FullMethodName                   = "/fm.internal.Internal/FindCashShop"
+	Internal_EnterCashShop_FullMethodName                  = "/fm.internal.Internal/EnterCashShop"
+	Internal_BuyCashItem_FullMethodName                    = "/fm.internal.Internal/BuyCashItem"
+	Internal_TakeOutCashItem_FullMethodName                = "/fm.internal.Internal/TakeOutCashItem"
+	Internal_PutInCashItem_FullMethodName                  = "/fm.internal.Internal/PutInCashItem"
+	Internal_SetCashWishlist_FullMethodName                = "/fm.internal.Internal/SetCashWishlist"
+	Internal_AddCash_FullMethodName                        = "/fm.internal.Internal/AddCash"
 )
 
 // InternalClient is the client API for Internal service.
@@ -161,6 +168,13 @@ type InternalClient interface {
 	SetServerDateTime(ctx context.Context, in *SetServerDateTimeRequest, opts ...grpc.CallOption) (*SetServerDateTimeReply, error)
 	BroadcastNotice(ctx context.Context, in *BroadcastNoticeRequest, opts ...grpc.CallOption) (*BroadcastNoticeReply, error)
 	WriteOperationLog(ctx context.Context, in *WriteOperationLogRequest, opts ...grpc.CallOption) (*WriteOperationLogReply, error)
+	FindCashShop(ctx context.Context, in *FindCashShopRequest, opts ...grpc.CallOption) (*FindCashShopReply, error)
+	EnterCashShop(ctx context.Context, in *EnterCashShopRequest, opts ...grpc.CallOption) (*EnterCashShopReply, error)
+	BuyCashItem(ctx context.Context, in *BuyCashItemRequest, opts ...grpc.CallOption) (*BuyCashItemReply, error)
+	TakeOutCashItem(ctx context.Context, in *TakeOutCashItemRequest, opts ...grpc.CallOption) (*TakeOutCashItemReply, error)
+	PutInCashItem(ctx context.Context, in *PutInCashItemRequest, opts ...grpc.CallOption) (*PutInCashItemReply, error)
+	SetCashWishlist(ctx context.Context, in *SetCashWishlistRequest, opts ...grpc.CallOption) (*SetCashWishlistReply, error)
+	AddCash(ctx context.Context, in *AddCashRequest, opts ...grpc.CallOption) (*AddCashReply, error)
 }
 
 type internalClient struct {
@@ -851,6 +865,76 @@ func (c *internalClient) WriteOperationLog(ctx context.Context, in *WriteOperati
 	return out, nil
 }
 
+func (c *internalClient) FindCashShop(ctx context.Context, in *FindCashShopRequest, opts ...grpc.CallOption) (*FindCashShopReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FindCashShopReply)
+	err := c.cc.Invoke(ctx, Internal_FindCashShop_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) EnterCashShop(ctx context.Context, in *EnterCashShopRequest, opts ...grpc.CallOption) (*EnterCashShopReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EnterCashShopReply)
+	err := c.cc.Invoke(ctx, Internal_EnterCashShop_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) BuyCashItem(ctx context.Context, in *BuyCashItemRequest, opts ...grpc.CallOption) (*BuyCashItemReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BuyCashItemReply)
+	err := c.cc.Invoke(ctx, Internal_BuyCashItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) TakeOutCashItem(ctx context.Context, in *TakeOutCashItemRequest, opts ...grpc.CallOption) (*TakeOutCashItemReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TakeOutCashItemReply)
+	err := c.cc.Invoke(ctx, Internal_TakeOutCashItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) PutInCashItem(ctx context.Context, in *PutInCashItemRequest, opts ...grpc.CallOption) (*PutInCashItemReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PutInCashItemReply)
+	err := c.cc.Invoke(ctx, Internal_PutInCashItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SetCashWishlist(ctx context.Context, in *SetCashWishlistRequest, opts ...grpc.CallOption) (*SetCashWishlistReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetCashWishlistReply)
+	err := c.cc.Invoke(ctx, Internal_SetCashWishlist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) AddCash(ctx context.Context, in *AddCashRequest, opts ...grpc.CallOption) (*AddCashReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddCashReply)
+	err := c.cc.Invoke(ctx, Internal_AddCash_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InternalServer is the server API for Internal service.
 // All implementations must embed UnimplementedInternalServer
 // for forward compatibility.
@@ -923,6 +1007,13 @@ type InternalServer interface {
 	SetServerDateTime(context.Context, *SetServerDateTimeRequest) (*SetServerDateTimeReply, error)
 	BroadcastNotice(context.Context, *BroadcastNoticeRequest) (*BroadcastNoticeReply, error)
 	WriteOperationLog(context.Context, *WriteOperationLogRequest) (*WriteOperationLogReply, error)
+	FindCashShop(context.Context, *FindCashShopRequest) (*FindCashShopReply, error)
+	EnterCashShop(context.Context, *EnterCashShopRequest) (*EnterCashShopReply, error)
+	BuyCashItem(context.Context, *BuyCashItemRequest) (*BuyCashItemReply, error)
+	TakeOutCashItem(context.Context, *TakeOutCashItemRequest) (*TakeOutCashItemReply, error)
+	PutInCashItem(context.Context, *PutInCashItemRequest) (*PutInCashItemReply, error)
+	SetCashWishlist(context.Context, *SetCashWishlistRequest) (*SetCashWishlistReply, error)
+	AddCash(context.Context, *AddCashRequest) (*AddCashReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
 
@@ -1136,6 +1227,27 @@ func (UnimplementedInternalServer) BroadcastNotice(context.Context, *BroadcastNo
 }
 func (UnimplementedInternalServer) WriteOperationLog(context.Context, *WriteOperationLogRequest) (*WriteOperationLogReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WriteOperationLog not implemented")
+}
+func (UnimplementedInternalServer) FindCashShop(context.Context, *FindCashShopRequest) (*FindCashShopReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindCashShop not implemented")
+}
+func (UnimplementedInternalServer) EnterCashShop(context.Context, *EnterCashShopRequest) (*EnterCashShopReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnterCashShop not implemented")
+}
+func (UnimplementedInternalServer) BuyCashItem(context.Context, *BuyCashItemRequest) (*BuyCashItemReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BuyCashItem not implemented")
+}
+func (UnimplementedInternalServer) TakeOutCashItem(context.Context, *TakeOutCashItemRequest) (*TakeOutCashItemReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TakeOutCashItem not implemented")
+}
+func (UnimplementedInternalServer) PutInCashItem(context.Context, *PutInCashItemRequest) (*PutInCashItemReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PutInCashItem not implemented")
+}
+func (UnimplementedInternalServer) SetCashWishlist(context.Context, *SetCashWishlistRequest) (*SetCashWishlistReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetCashWishlist not implemented")
+}
+func (UnimplementedInternalServer) AddCash(context.Context, *AddCashRequest) (*AddCashReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddCash not implemented")
 }
 func (UnimplementedInternalServer) mustEmbedUnimplementedInternalServer() {}
 func (UnimplementedInternalServer) testEmbeddedByValue()                  {}
@@ -2382,6 +2494,132 @@ func _Internal_WriteOperationLog_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_FindCashShop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindCashShopRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).FindCashShop(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_FindCashShop_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).FindCashShop(ctx, req.(*FindCashShopRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_EnterCashShop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnterCashShopRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).EnterCashShop(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_EnterCashShop_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).EnterCashShop(ctx, req.(*EnterCashShopRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_BuyCashItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BuyCashItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).BuyCashItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_BuyCashItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).BuyCashItem(ctx, req.(*BuyCashItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_TakeOutCashItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TakeOutCashItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).TakeOutCashItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_TakeOutCashItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).TakeOutCashItem(ctx, req.(*TakeOutCashItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_PutInCashItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutInCashItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).PutInCashItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_PutInCashItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).PutInCashItem(ctx, req.(*PutInCashItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SetCashWishlist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetCashWishlistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SetCashWishlist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SetCashWishlist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SetCashWishlist(ctx, req.(*SetCashWishlistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_AddCash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddCashRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).AddCash(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_AddCash_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).AddCash(ctx, req.(*AddCashRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Internal_ServiceDesc is the grpc.ServiceDesc for Internal service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2660,6 +2898,34 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "WriteOperationLog",
 			Handler:    _Internal_WriteOperationLog_Handler,
+		},
+		{
+			MethodName: "FindCashShop",
+			Handler:    _Internal_FindCashShop_Handler,
+		},
+		{
+			MethodName: "EnterCashShop",
+			Handler:    _Internal_EnterCashShop_Handler,
+		},
+		{
+			MethodName: "BuyCashItem",
+			Handler:    _Internal_BuyCashItem_Handler,
+		},
+		{
+			MethodName: "TakeOutCashItem",
+			Handler:    _Internal_TakeOutCashItem_Handler,
+		},
+		{
+			MethodName: "PutInCashItem",
+			Handler:    _Internal_PutInCashItem_Handler,
+		},
+		{
+			MethodName: "SetCashWishlist",
+			Handler:    _Internal_SetCashWishlist_Handler,
+		},
+		{
+			MethodName: "AddCash",
+			Handler:    _Internal_AddCash_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -74,12 +74,20 @@ service Internal {
   rpc SetServerDateTime (SetServerDateTimeRequest) returns (SetServerDateTimeReply);
   rpc BroadcastNotice (BroadcastNoticeRequest) returns (BroadcastNoticeReply);
   rpc WriteOperationLog (WriteOperationLogRequest) returns (WriteOperationLogReply);
+  rpc FindCashShop (FindCashShopRequest) returns (FindCashShopReply);
+  rpc EnterCashShop (EnterCashShopRequest) returns (EnterCashShopReply);
+  rpc BuyCashItem (BuyCashItemRequest) returns (BuyCashItemReply);
+  rpc TakeOutCashItem (TakeOutCashItemRequest) returns (TakeOutCashItemReply);
+  rpc PutInCashItem (PutInCashItemRequest) returns (PutInCashItemReply);
+  rpc SetCashWishlist (SetCashWishlistRequest) returns (SetCashWishlistReply);
+  rpc AddCash (AddCashRequest) returns (AddCashReply);
 }
 
 enum ServerRole {
   SERVER_ROLE_UNSPECIFIED = 0;
   SERVER_ROLE_LOGIN = 1;
   SERVER_ROLE_GAME = 2;
+  SERVER_ROLE_CASH_SHOP = 3;
 }
 
 message PingRequest {
@@ -87,6 +95,112 @@ message PingRequest {
   uint32 world_id = 2;
   uint32 channel_id = 3;
   string login_instance_id = 4;
+  uint32 cash_shop_id = 5;
+}
+
+message FindCashShopRequest {
+  uint32 world_id = 1;
+}
+
+message FindCashShopReply {
+  bool found = 1;
+  uint32 cash_shop_id = 2;
+  string host = 3;
+  uint32 port = 4;
+}
+
+message EnterCashShopRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 cash_shop_id = 3;
+  string client_ip = 4;
+}
+
+message CashItem {
+  uint32 commodity_sn = 1;
+  string buyer_name = 2;
+  Inventory item = 3;
+}
+
+message EnterCashShopReply {
+  EnterGameReply game = 1;
+  uint32 return_channel_id = 2;
+  uint32 nx_cash = 3;
+  uint32 maple_point = 4;
+  repeated CashItem locker = 5;
+  repeated uint32 wishlist = 6;
+  uint32 character_slot_count = 7;
+  uint32 storage_slot_count = 8;
+}
+
+enum CashCurrency {
+  CASH_CURRENCY_NX_CASH = 0;
+  CASH_CURRENCY_MAPLE_POINT = 1;
+}
+
+enum CashShopResult {
+  CASH_SHOP_RESULT_OK = 0;
+  CASH_SHOP_RESULT_NOT_ENOUGH_CASH = 1;
+  CASH_SHOP_RESULT_LOCKER_FULL = 2;
+  CASH_SHOP_RESULT_NOT_FOUND = 3;
+}
+
+message BuyCashItemRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  CashCurrency currency = 3;
+  uint32 price = 4;
+  CashItem item = 5;
+}
+
+message BuyCashItemReply {
+  CashShopResult result = 1;
+  uint32 nx_cash = 2;
+  uint32 maple_point = 3;
+}
+
+message TakeOutCashItemRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+  Inventory item = 4;
+}
+
+message TakeOutCashItemReply {
+  CashShopResult result = 1;
+}
+
+message PutInCashItemRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+  CashItem item = 4;
+}
+
+message PutInCashItemReply {
+  CashShopResult result = 1;
+}
+
+message SetCashWishlistRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  repeated uint32 commodity_sns = 3;
+}
+
+message SetCashWishlistReply {
+  bool ok = 1;
+}
+
+message AddCashRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  int32 nx_cash = 3;
+  int32 maple_point = 4;
+}
+
+message AddCashReply {
+  uint32 nx_cash = 1;
+  uint32 maple_point = 2;
 }
 
 message PingReply {
@@ -209,6 +323,7 @@ message BeginGameTransitionRequest {
   string client_ip = 4;
   repeated Debuff debuffs = 5;
   optional uint32 source_channel_id = 6;
+  optional uint32 source_cash_shop_id = 7;
 }
 
 enum SessionErrorCode {
@@ -542,6 +657,7 @@ message RefreshSessionRequest {
   uint32 account_id = 2;
   optional uint32 character_id = 3;
   optional uint32 channel_id = 4;
+  optional uint32 cash_shop_id = 5;
 }
 
 message RefreshSessionReply {
@@ -554,6 +670,7 @@ enum AccountSessionState {
   ACCOUNT_SESSION_STATE_LOGIN = 1;
   ACCOUNT_SESSION_STATE_TRANSITION = 2;
   ACCOUNT_SESSION_STATE_GAME = 3;
+  ACCOUNT_SESSION_STATE_CASH_SHOP = 4;
 }
 
 enum CharacterSessionState {
@@ -566,6 +683,7 @@ enum SessionDisconnectSource {
   SESSION_DISCONNECT_SOURCE_UNSPECIFIED = 0;
   SESSION_DISCONNECT_SOURCE_LOGIN_SERVER = 1;
   SESSION_DISCONNECT_SOURCE_GAME_SERVER = 2;
+  SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER = 3;
 }
 
 message LogoutSessionRequest {
@@ -575,6 +693,7 @@ message LogoutSessionRequest {
   bool transfer_disconnect = 4;
   optional uint32 character_id = 5;
   optional uint32 channel_id = 6;
+  optional uint32 cash_shop_id = 7;
 }
 
 message LogoutSessionReply {

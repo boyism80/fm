@@ -25,6 +25,7 @@ export enum ServerRole {
   SERVER_ROLE_UNSPECIFIED = 0,
   SERVER_ROLE_LOGIN = 1,
   SERVER_ROLE_GAME = 2,
+  SERVER_ROLE_CASH_SHOP = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -39,6 +40,9 @@ export function serverRoleFromJSON(object: any): ServerRole {
     case 2:
     case "SERVER_ROLE_GAME":
       return ServerRole.SERVER_ROLE_GAME;
+    case 3:
+    case "SERVER_ROLE_CASH_SHOP":
+      return ServerRole.SERVER_ROLE_CASH_SHOP;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -54,7 +58,87 @@ export function serverRoleToJSON(object: ServerRole): string {
       return "SERVER_ROLE_LOGIN";
     case ServerRole.SERVER_ROLE_GAME:
       return "SERVER_ROLE_GAME";
+    case ServerRole.SERVER_ROLE_CASH_SHOP:
+      return "SERVER_ROLE_CASH_SHOP";
     case ServerRole.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum CashCurrency {
+  CASH_CURRENCY_NX_CASH = 0,
+  CASH_CURRENCY_MAPLE_POINT = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function cashCurrencyFromJSON(object: any): CashCurrency {
+  switch (object) {
+    case 0:
+    case "CASH_CURRENCY_NX_CASH":
+      return CashCurrency.CASH_CURRENCY_NX_CASH;
+    case 1:
+    case "CASH_CURRENCY_MAPLE_POINT":
+      return CashCurrency.CASH_CURRENCY_MAPLE_POINT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CashCurrency.UNRECOGNIZED;
+  }
+}
+
+export function cashCurrencyToJSON(object: CashCurrency): string {
+  switch (object) {
+    case CashCurrency.CASH_CURRENCY_NX_CASH:
+      return "CASH_CURRENCY_NX_CASH";
+    case CashCurrency.CASH_CURRENCY_MAPLE_POINT:
+      return "CASH_CURRENCY_MAPLE_POINT";
+    case CashCurrency.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum CashShopResult {
+  CASH_SHOP_RESULT_OK = 0,
+  CASH_SHOP_RESULT_NOT_ENOUGH_CASH = 1,
+  CASH_SHOP_RESULT_LOCKER_FULL = 2,
+  CASH_SHOP_RESULT_NOT_FOUND = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function cashShopResultFromJSON(object: any): CashShopResult {
+  switch (object) {
+    case 0:
+    case "CASH_SHOP_RESULT_OK":
+      return CashShopResult.CASH_SHOP_RESULT_OK;
+    case 1:
+    case "CASH_SHOP_RESULT_NOT_ENOUGH_CASH":
+      return CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH;
+    case 2:
+    case "CASH_SHOP_RESULT_LOCKER_FULL":
+      return CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL;
+    case 3:
+    case "CASH_SHOP_RESULT_NOT_FOUND":
+      return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CashShopResult.UNRECOGNIZED;
+  }
+}
+
+export function cashShopResultToJSON(object: CashShopResult): string {
+  switch (object) {
+    case CashShopResult.CASH_SHOP_RESULT_OK:
+      return "CASH_SHOP_RESULT_OK";
+    case CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH:
+      return "CASH_SHOP_RESULT_NOT_ENOUGH_CASH";
+    case CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL:
+      return "CASH_SHOP_RESULT_LOCKER_FULL";
+    case CashShopResult.CASH_SHOP_RESULT_NOT_FOUND:
+      return "CASH_SHOP_RESULT_NOT_FOUND";
+    case CashShopResult.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -224,6 +308,7 @@ export enum AccountSessionState {
   ACCOUNT_SESSION_STATE_LOGIN = 1,
   ACCOUNT_SESSION_STATE_TRANSITION = 2,
   ACCOUNT_SESSION_STATE_GAME = 3,
+  ACCOUNT_SESSION_STATE_CASH_SHOP = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -241,6 +326,9 @@ export function accountSessionStateFromJSON(object: any): AccountSessionState {
     case 3:
     case "ACCOUNT_SESSION_STATE_GAME":
       return AccountSessionState.ACCOUNT_SESSION_STATE_GAME;
+    case 4:
+    case "ACCOUNT_SESSION_STATE_CASH_SHOP":
+      return AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -258,6 +346,8 @@ export function accountSessionStateToJSON(object: AccountSessionState): string {
       return "ACCOUNT_SESSION_STATE_TRANSITION";
     case AccountSessionState.ACCOUNT_SESSION_STATE_GAME:
       return "ACCOUNT_SESSION_STATE_GAME";
+    case AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP:
+      return "ACCOUNT_SESSION_STATE_CASH_SHOP";
     case AccountSessionState.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -307,6 +397,7 @@ export enum SessionDisconnectSource {
   SESSION_DISCONNECT_SOURCE_UNSPECIFIED = 0,
   SESSION_DISCONNECT_SOURCE_LOGIN_SERVER = 1,
   SESSION_DISCONNECT_SOURCE_GAME_SERVER = 2,
+  SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -321,6 +412,9 @@ export function sessionDisconnectSourceFromJSON(object: any): SessionDisconnectS
     case 2:
     case "SESSION_DISCONNECT_SOURCE_GAME_SERVER":
       return SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER;
+    case 3:
+    case "SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER":
+      return SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -336,6 +430,8 @@ export function sessionDisconnectSourceToJSON(object: SessionDisconnectSource): 
       return "SESSION_DISCONNECT_SOURCE_LOGIN_SERVER";
     case SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER:
       return "SESSION_DISCONNECT_SOURCE_GAME_SERVER";
+    case SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER:
+      return "SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER";
     case SessionDisconnectSource.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -974,6 +1070,100 @@ export interface PingRequest {
   worldId: number;
   channelId: number;
   loginInstanceId: string;
+  cashShopId: number;
+}
+
+export interface FindCashShopRequest {
+  worldId: number;
+}
+
+export interface FindCashShopReply {
+  found: boolean;
+  cashShopId: number;
+  host: string;
+  port: number;
+}
+
+export interface EnterCashShopRequest {
+  worldId: number;
+  characterId: number;
+  cashShopId: number;
+  clientIp: string;
+}
+
+export interface CashItem {
+  commoditySn: number;
+  buyerName: string;
+  item: Inventory | undefined;
+}
+
+export interface EnterCashShopReply {
+  game: EnterGameReply | undefined;
+  returnChannelId: number;
+  nxCash: number;
+  maplePoint: number;
+  locker: CashItem[];
+  wishlist: number[];
+  characterSlotCount: number;
+  storageSlotCount: number;
+}
+
+export interface BuyCashItemRequest {
+  worldId: number;
+  accountId: number;
+  currency: CashCurrency;
+  price: number;
+  item: CashItem | undefined;
+}
+
+export interface BuyCashItemReply {
+  result: CashShopResult;
+  nxCash: number;
+  maplePoint: number;
+}
+
+export interface TakeOutCashItemRequest {
+  worldId: number;
+  accountId: number;
+  characterId: number;
+  item: Inventory | undefined;
+}
+
+export interface TakeOutCashItemReply {
+  result: CashShopResult;
+}
+
+export interface PutInCashItemRequest {
+  worldId: number;
+  accountId: number;
+  characterId: number;
+  item: CashItem | undefined;
+}
+
+export interface PutInCashItemReply {
+  result: CashShopResult;
+}
+
+export interface SetCashWishlistRequest {
+  worldId: number;
+  characterId: number;
+  commoditySns: number[];
+}
+
+export interface SetCashWishlistReply {
+  ok: boolean;
+}
+
+export interface AddCashRequest {
+  worldId: number;
+  accountId: number;
+  nxCash: number;
+  maplePoint: number;
+}
+
+export interface AddCashReply {
+  nxCash: number;
+  maplePoint: number;
 }
 
 export interface PingReply {
@@ -1097,6 +1287,7 @@ export interface BeginGameTransitionRequest {
   clientIp: string;
   debuffs: Debuff[];
   sourceChannelId?: number | undefined;
+  sourceCashShopId?: number | undefined;
 }
 
 export interface BeginGameTransitionReply {
@@ -1489,6 +1680,7 @@ export interface RefreshSessionRequest {
   accountId: number;
   characterId?: number | undefined;
   channelId?: number | undefined;
+  cashShopId?: number | undefined;
 }
 
 export interface RefreshSessionReply {
@@ -1503,6 +1695,7 @@ export interface LogoutSessionRequest {
   transferDisconnect: boolean;
   characterId?: number | undefined;
   channelId?: number | undefined;
+  cashShopId?: number | undefined;
 }
 
 export interface LogoutSessionReply {
@@ -2266,7 +2459,7 @@ export interface WriteOperationLogReply {
 }
 
 function createBasePingRequest(): PingRequest {
-  return { role: 0, worldId: 0, channelId: 0, loginInstanceId: "" };
+  return { role: 0, worldId: 0, channelId: 0, loginInstanceId: "", cashShopId: 0 };
 }
 
 export const PingRequest: MessageFns<PingRequest> = {
@@ -2282,6 +2475,9 @@ export const PingRequest: MessageFns<PingRequest> = {
     }
     if (message.loginInstanceId !== "") {
       writer.uint32(34).string(message.loginInstanceId);
+    }
+    if (message.cashShopId !== 0) {
+      writer.uint32(40).uint32(message.cashShopId);
     }
     return writer;
   },
@@ -2325,6 +2521,14 @@ export const PingRequest: MessageFns<PingRequest> = {
           message.loginInstanceId = reader.string();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.cashShopId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2352,6 +2556,11 @@ export const PingRequest: MessageFns<PingRequest> = {
         : isSet(object.login_instance_id)
         ? globalThis.String(object.login_instance_id)
         : "",
+      cashShopId: isSet(object.cashShopId)
+        ? globalThis.Number(object.cashShopId)
+        : isSet(object.cash_shop_id)
+        ? globalThis.Number(object.cash_shop_id)
+        : 0,
     };
   },
 
@@ -2369,6 +2578,9 @@ export const PingRequest: MessageFns<PingRequest> = {
     if (message.loginInstanceId !== "") {
       obj.loginInstanceId = message.loginInstanceId;
     }
+    if (message.cashShopId !== 0) {
+      obj.cashShopId = Math.round(message.cashShopId);
+    }
     return obj;
   },
 
@@ -2381,6 +2593,1592 @@ export const PingRequest: MessageFns<PingRequest> = {
     message.worldId = object.worldId ?? 0;
     message.channelId = object.channelId ?? 0;
     message.loginInstanceId = object.loginInstanceId ?? "";
+    message.cashShopId = object.cashShopId ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindCashShopRequest(): FindCashShopRequest {
+  return { worldId: 0 };
+}
+
+export const FindCashShopRequest: MessageFns<FindCashShopRequest> = {
+  encode(message: FindCashShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindCashShopRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindCashShopRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindCashShopRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: FindCashShopRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindCashShopRequest>, I>>(base?: I): FindCashShopRequest {
+    return FindCashShopRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindCashShopRequest>, I>>(object: I): FindCashShopRequest {
+    const message = createBaseFindCashShopRequest();
+    message.worldId = object.worldId ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindCashShopReply(): FindCashShopReply {
+  return { found: false, cashShopId: 0, host: "", port: 0 };
+}
+
+export const FindCashShopReply: MessageFns<FindCashShopReply> = {
+  encode(message: FindCashShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.found !== false) {
+      writer.uint32(8).bool(message.found);
+    }
+    if (message.cashShopId !== 0) {
+      writer.uint32(16).uint32(message.cashShopId);
+    }
+    if (message.host !== "") {
+      writer.uint32(26).string(message.host);
+    }
+    if (message.port !== 0) {
+      writer.uint32(32).uint32(message.port);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindCashShopReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindCashShopReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.found = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.cashShopId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.host = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.port = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindCashShopReply {
+    return {
+      found: isSet(object.found) ? globalThis.Boolean(object.found) : false,
+      cashShopId: isSet(object.cashShopId)
+        ? globalThis.Number(object.cashShopId)
+        : isSet(object.cash_shop_id)
+        ? globalThis.Number(object.cash_shop_id)
+        : 0,
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      port: isSet(object.port) ? globalThis.Number(object.port) : 0,
+    };
+  },
+
+  toJSON(message: FindCashShopReply): unknown {
+    const obj: any = {};
+    if (message.found !== false) {
+      obj.found = message.found;
+    }
+    if (message.cashShopId !== 0) {
+      obj.cashShopId = Math.round(message.cashShopId);
+    }
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.port !== 0) {
+      obj.port = Math.round(message.port);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindCashShopReply>, I>>(base?: I): FindCashShopReply {
+    return FindCashShopReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindCashShopReply>, I>>(object: I): FindCashShopReply {
+    const message = createBaseFindCashShopReply();
+    message.found = object.found ?? false;
+    message.cashShopId = object.cashShopId ?? 0;
+    message.host = object.host ?? "";
+    message.port = object.port ?? 0;
+    return message;
+  },
+};
+
+function createBaseEnterCashShopRequest(): EnterCashShopRequest {
+  return { worldId: 0, characterId: 0, cashShopId: 0, clientIp: "" };
+}
+
+export const EnterCashShopRequest: MessageFns<EnterCashShopRequest> = {
+  encode(message: EnterCashShopRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.cashShopId !== 0) {
+      writer.uint32(24).uint32(message.cashShopId);
+    }
+    if (message.clientIp !== "") {
+      writer.uint32(34).string(message.clientIp);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EnterCashShopRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnterCashShopRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.cashShopId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.clientIp = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnterCashShopRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      cashShopId: isSet(object.cashShopId)
+        ? globalThis.Number(object.cashShopId)
+        : isSet(object.cash_shop_id)
+        ? globalThis.Number(object.cash_shop_id)
+        : 0,
+      clientIp: isSet(object.clientIp)
+        ? globalThis.String(object.clientIp)
+        : isSet(object.client_ip)
+        ? globalThis.String(object.client_ip)
+        : "",
+    };
+  },
+
+  toJSON(message: EnterCashShopRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.cashShopId !== 0) {
+      obj.cashShopId = Math.round(message.cashShopId);
+    }
+    if (message.clientIp !== "") {
+      obj.clientIp = message.clientIp;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EnterCashShopRequest>, I>>(base?: I): EnterCashShopRequest {
+    return EnterCashShopRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EnterCashShopRequest>, I>>(object: I): EnterCashShopRequest {
+    const message = createBaseEnterCashShopRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.cashShopId = object.cashShopId ?? 0;
+    message.clientIp = object.clientIp ?? "";
+    return message;
+  },
+};
+
+function createBaseCashItem(): CashItem {
+  return { commoditySn: 0, buyerName: "", item: undefined };
+}
+
+export const CashItem: MessageFns<CashItem> = {
+  encode(message: CashItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.commoditySn !== 0) {
+      writer.uint32(8).uint32(message.commoditySn);
+    }
+    if (message.buyerName !== "") {
+      writer.uint32(18).string(message.buyerName);
+    }
+    if (message.item !== undefined) {
+      Inventory.encode(message.item, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CashItem {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCashItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.commoditySn = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.buyerName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.item = Inventory.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CashItem {
+    return {
+      commoditySn: isSet(object.commoditySn)
+        ? globalThis.Number(object.commoditySn)
+        : isSet(object.commodity_sn)
+        ? globalThis.Number(object.commodity_sn)
+        : 0,
+      buyerName: isSet(object.buyerName)
+        ? globalThis.String(object.buyerName)
+        : isSet(object.buyer_name)
+        ? globalThis.String(object.buyer_name)
+        : "",
+      item: isSet(object.item) ? Inventory.fromJSON(object.item) : undefined,
+    };
+  },
+
+  toJSON(message: CashItem): unknown {
+    const obj: any = {};
+    if (message.commoditySn !== 0) {
+      obj.commoditySn = Math.round(message.commoditySn);
+    }
+    if (message.buyerName !== "") {
+      obj.buyerName = message.buyerName;
+    }
+    if (message.item !== undefined) {
+      obj.item = Inventory.toJSON(message.item);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CashItem>, I>>(base?: I): CashItem {
+    return CashItem.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CashItem>, I>>(object: I): CashItem {
+    const message = createBaseCashItem();
+    message.commoditySn = object.commoditySn ?? 0;
+    message.buyerName = object.buyerName ?? "";
+    message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
+    return message;
+  },
+};
+
+function createBaseEnterCashShopReply(): EnterCashShopReply {
+  return {
+    game: undefined,
+    returnChannelId: 0,
+    nxCash: 0,
+    maplePoint: 0,
+    locker: [],
+    wishlist: [],
+    characterSlotCount: 0,
+    storageSlotCount: 0,
+  };
+}
+
+export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
+  encode(message: EnterCashShopReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.game !== undefined) {
+      EnterGameReply.encode(message.game, writer.uint32(10).fork()).join();
+    }
+    if (message.returnChannelId !== 0) {
+      writer.uint32(16).uint32(message.returnChannelId);
+    }
+    if (message.nxCash !== 0) {
+      writer.uint32(24).uint32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(32).uint32(message.maplePoint);
+    }
+    for (const v of message.locker) {
+      CashItem.encode(v!, writer.uint32(42).fork()).join();
+    }
+    writer.uint32(50).fork();
+    for (const v of message.wishlist) {
+      writer.uint32(v);
+    }
+    writer.join();
+    if (message.characterSlotCount !== 0) {
+      writer.uint32(56).uint32(message.characterSlotCount);
+    }
+    if (message.storageSlotCount !== 0) {
+      writer.uint32(64).uint32(message.storageSlotCount);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EnterCashShopReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnterCashShopReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.game = EnterGameReply.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.returnChannelId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.nxCash = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.locker.push(CashItem.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 6: {
+          if (tag === 48) {
+            message.wishlist.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 50) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.wishlist.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.characterSlotCount = reader.uint32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.storageSlotCount = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnterCashShopReply {
+    return {
+      game: isSet(object.game) ? EnterGameReply.fromJSON(object.game) : undefined,
+      returnChannelId: isSet(object.returnChannelId)
+        ? globalThis.Number(object.returnChannelId)
+        : isSet(object.return_channel_id)
+        ? globalThis.Number(object.return_channel_id)
+        : 0,
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+      locker: globalThis.Array.isArray(object?.locker) ? object.locker.map((e: any) => CashItem.fromJSON(e)) : [],
+      wishlist: globalThis.Array.isArray(object?.wishlist) ? object.wishlist.map((e: any) => globalThis.Number(e)) : [],
+      characterSlotCount: isSet(object.characterSlotCount)
+        ? globalThis.Number(object.characterSlotCount)
+        : isSet(object.character_slot_count)
+        ? globalThis.Number(object.character_slot_count)
+        : 0,
+      storageSlotCount: isSet(object.storageSlotCount)
+        ? globalThis.Number(object.storageSlotCount)
+        : isSet(object.storage_slot_count)
+        ? globalThis.Number(object.storage_slot_count)
+        : 0,
+    };
+  },
+
+  toJSON(message: EnterCashShopReply): unknown {
+    const obj: any = {};
+    if (message.game !== undefined) {
+      obj.game = EnterGameReply.toJSON(message.game);
+    }
+    if (message.returnChannelId !== 0) {
+      obj.returnChannelId = Math.round(message.returnChannelId);
+    }
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    if (message.locker?.length) {
+      obj.locker = message.locker.map((e) => CashItem.toJSON(e));
+    }
+    if (message.wishlist?.length) {
+      obj.wishlist = message.wishlist.map((e) => Math.round(e));
+    }
+    if (message.characterSlotCount !== 0) {
+      obj.characterSlotCount = Math.round(message.characterSlotCount);
+    }
+    if (message.storageSlotCount !== 0) {
+      obj.storageSlotCount = Math.round(message.storageSlotCount);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EnterCashShopReply>, I>>(base?: I): EnterCashShopReply {
+    return EnterCashShopReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EnterCashShopReply>, I>>(object: I): EnterCashShopReply {
+    const message = createBaseEnterCashShopReply();
+    message.game = (object.game !== undefined && object.game !== null)
+      ? EnterGameReply.fromPartial(object.game)
+      : undefined;
+    message.returnChannelId = object.returnChannelId ?? 0;
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    message.locker = object.locker?.map((e) => CashItem.fromPartial(e)) || [];
+    message.wishlist = object.wishlist?.map((e) => e) || [];
+    message.characterSlotCount = object.characterSlotCount ?? 0;
+    message.storageSlotCount = object.storageSlotCount ?? 0;
+    return message;
+  },
+};
+
+function createBaseBuyCashItemRequest(): BuyCashItemRequest {
+  return { worldId: 0, accountId: 0, currency: 0, price: 0, item: undefined };
+}
+
+export const BuyCashItemRequest: MessageFns<BuyCashItemRequest> = {
+  encode(message: BuyCashItemRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.currency !== 0) {
+      writer.uint32(24).int32(message.currency);
+    }
+    if (message.price !== 0) {
+      writer.uint32(32).uint32(message.price);
+    }
+    if (message.item !== undefined) {
+      CashItem.encode(message.item, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BuyCashItemRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBuyCashItemRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.currency = reader.int32() as any;
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.price = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.item = CashItem.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BuyCashItemRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      currency: isSet(object.currency) ? cashCurrencyFromJSON(object.currency) : 0,
+      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
+      item: isSet(object.item) ? CashItem.fromJSON(object.item) : undefined,
+    };
+  },
+
+  toJSON(message: BuyCashItemRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.currency !== 0) {
+      obj.currency = cashCurrencyToJSON(message.currency);
+    }
+    if (message.price !== 0) {
+      obj.price = Math.round(message.price);
+    }
+    if (message.item !== undefined) {
+      obj.item = CashItem.toJSON(message.item);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BuyCashItemRequest>, I>>(base?: I): BuyCashItemRequest {
+    return BuyCashItemRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BuyCashItemRequest>, I>>(object: I): BuyCashItemRequest {
+    const message = createBaseBuyCashItemRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.currency = object.currency ?? 0;
+    message.price = object.price ?? 0;
+    message.item = (object.item !== undefined && object.item !== null) ? CashItem.fromPartial(object.item) : undefined;
+    return message;
+  },
+};
+
+function createBaseBuyCashItemReply(): BuyCashItemReply {
+  return { result: 0, nxCash: 0, maplePoint: 0 };
+}
+
+export const BuyCashItemReply: MessageFns<BuyCashItemReply> = {
+  encode(message: BuyCashItemReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.nxCash !== 0) {
+      writer.uint32(16).uint32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(24).uint32(message.maplePoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BuyCashItemReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBuyCashItemReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nxCash = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BuyCashItemReply {
+    return {
+      result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0,
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+    };
+  },
+
+  toJSON(message: BuyCashItemReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BuyCashItemReply>, I>>(base?: I): BuyCashItemReply {
+    return BuyCashItemReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BuyCashItemReply>, I>>(object: I): BuyCashItemReply {
+    const message = createBaseBuyCashItemReply();
+    message.result = object.result ?? 0;
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    return message;
+  },
+};
+
+function createBaseTakeOutCashItemRequest(): TakeOutCashItemRequest {
+  return { worldId: 0, accountId: 0, characterId: 0, item: undefined };
+}
+
+export const TakeOutCashItemRequest: MessageFns<TakeOutCashItemRequest> = {
+  encode(message: TakeOutCashItemRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.item !== undefined) {
+      Inventory.encode(message.item, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TakeOutCashItemRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTakeOutCashItemRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.item = Inventory.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TakeOutCashItemRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      item: isSet(object.item) ? Inventory.fromJSON(object.item) : undefined,
+    };
+  },
+
+  toJSON(message: TakeOutCashItemRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.item !== undefined) {
+      obj.item = Inventory.toJSON(message.item);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TakeOutCashItemRequest>, I>>(base?: I): TakeOutCashItemRequest {
+    return TakeOutCashItemRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<TakeOutCashItemRequest>, I>>(object: I): TakeOutCashItemRequest {
+    const message = createBaseTakeOutCashItemRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
+    return message;
+  },
+};
+
+function createBaseTakeOutCashItemReply(): TakeOutCashItemReply {
+  return { result: 0 };
+}
+
+export const TakeOutCashItemReply: MessageFns<TakeOutCashItemReply> = {
+  encode(message: TakeOutCashItemReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TakeOutCashItemReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTakeOutCashItemReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TakeOutCashItemReply {
+    return { result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0 };
+  },
+
+  toJSON(message: TakeOutCashItemReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TakeOutCashItemReply>, I>>(base?: I): TakeOutCashItemReply {
+    return TakeOutCashItemReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<TakeOutCashItemReply>, I>>(object: I): TakeOutCashItemReply {
+    const message = createBaseTakeOutCashItemReply();
+    message.result = object.result ?? 0;
+    return message;
+  },
+};
+
+function createBasePutInCashItemRequest(): PutInCashItemRequest {
+  return { worldId: 0, accountId: 0, characterId: 0, item: undefined };
+}
+
+export const PutInCashItemRequest: MessageFns<PutInCashItemRequest> = {
+  encode(message: PutInCashItemRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.item !== undefined) {
+      CashItem.encode(message.item, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PutInCashItemRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePutInCashItemRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.item = CashItem.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PutInCashItemRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      item: isSet(object.item) ? CashItem.fromJSON(object.item) : undefined,
+    };
+  },
+
+  toJSON(message: PutInCashItemRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.item !== undefined) {
+      obj.item = CashItem.toJSON(message.item);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PutInCashItemRequest>, I>>(base?: I): PutInCashItemRequest {
+    return PutInCashItemRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PutInCashItemRequest>, I>>(object: I): PutInCashItemRequest {
+    const message = createBasePutInCashItemRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.item = (object.item !== undefined && object.item !== null) ? CashItem.fromPartial(object.item) : undefined;
+    return message;
+  },
+};
+
+function createBasePutInCashItemReply(): PutInCashItemReply {
+  return { result: 0 };
+}
+
+export const PutInCashItemReply: MessageFns<PutInCashItemReply> = {
+  encode(message: PutInCashItemReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PutInCashItemReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePutInCashItemReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PutInCashItemReply {
+    return { result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0 };
+  },
+
+  toJSON(message: PutInCashItemReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PutInCashItemReply>, I>>(base?: I): PutInCashItemReply {
+    return PutInCashItemReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PutInCashItemReply>, I>>(object: I): PutInCashItemReply {
+    const message = createBasePutInCashItemReply();
+    message.result = object.result ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetCashWishlistRequest(): SetCashWishlistRequest {
+  return { worldId: 0, characterId: 0, commoditySns: [] };
+}
+
+export const SetCashWishlistRequest: MessageFns<SetCashWishlistRequest> = {
+  encode(message: SetCashWishlistRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    writer.uint32(26).fork();
+    for (const v of message.commoditySns) {
+      writer.uint32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetCashWishlistRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetCashWishlistRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag === 24) {
+            message.commoditySns.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 26) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.commoditySns.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetCashWishlistRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      commoditySns: globalThis.Array.isArray(object?.commoditySns)
+        ? object.commoditySns.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.commodity_sns)
+        ? object.commodity_sns.map((e: any) => globalThis.Number(e))
+        : [],
+    };
+  },
+
+  toJSON(message: SetCashWishlistRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.commoditySns?.length) {
+      obj.commoditySns = message.commoditySns.map((e) => Math.round(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetCashWishlistRequest>, I>>(base?: I): SetCashWishlistRequest {
+    return SetCashWishlistRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetCashWishlistRequest>, I>>(object: I): SetCashWishlistRequest {
+    const message = createBaseSetCashWishlistRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.commoditySns = object.commoditySns?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseSetCashWishlistReply(): SetCashWishlistReply {
+  return { ok: false };
+}
+
+export const SetCashWishlistReply: MessageFns<SetCashWishlistReply> = {
+  encode(message: SetCashWishlistReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ok !== false) {
+      writer.uint32(8).bool(message.ok);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetCashWishlistReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetCashWishlistReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ok = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetCashWishlistReply {
+    return { ok: isSet(object.ok) ? globalThis.Boolean(object.ok) : false };
+  },
+
+  toJSON(message: SetCashWishlistReply): unknown {
+    const obj: any = {};
+    if (message.ok !== false) {
+      obj.ok = message.ok;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetCashWishlistReply>, I>>(base?: I): SetCashWishlistReply {
+    return SetCashWishlistReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetCashWishlistReply>, I>>(object: I): SetCashWishlistReply {
+    const message = createBaseSetCashWishlistReply();
+    message.ok = object.ok ?? false;
+    return message;
+  },
+};
+
+function createBaseAddCashRequest(): AddCashRequest {
+  return { worldId: 0, accountId: 0, nxCash: 0, maplePoint: 0 };
+}
+
+export const AddCashRequest: MessageFns<AddCashRequest> = {
+  encode(message: AddCashRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.nxCash !== 0) {
+      writer.uint32(24).int32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(32).int32(message.maplePoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AddCashRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAddCashRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.nxCash = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.maplePoint = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AddCashRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+    };
+  },
+
+  toJSON(message: AddCashRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AddCashRequest>, I>>(base?: I): AddCashRequest {
+    return AddCashRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AddCashRequest>, I>>(object: I): AddCashRequest {
+    const message = createBaseAddCashRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    return message;
+  },
+};
+
+function createBaseAddCashReply(): AddCashReply {
+  return { nxCash: 0, maplePoint: 0 };
+}
+
+export const AddCashReply: MessageFns<AddCashReply> = {
+  encode(message: AddCashReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.nxCash !== 0) {
+      writer.uint32(8).uint32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(16).uint32(message.maplePoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AddCashReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAddCashReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.nxCash = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AddCashReply {
+    return {
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+    };
+  },
+
+  toJSON(message: AddCashReply): unknown {
+    const obj: any = {};
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AddCashReply>, I>>(base?: I): AddCashReply {
+    return AddCashReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AddCashReply>, I>>(object: I): AddCashReply {
+    const message = createBaseAddCashReply();
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
     return message;
   },
 };
@@ -4366,7 +6164,15 @@ export const Debuff: MessageFns<Debuff> = {
 };
 
 function createBaseBeginGameTransitionRequest(): BeginGameTransitionRequest {
-  return { worldId: 0, accountId: 0, characterId: 0, clientIp: "", debuffs: [], sourceChannelId: undefined };
+  return {
+    worldId: 0,
+    accountId: 0,
+    characterId: 0,
+    clientIp: "",
+    debuffs: [],
+    sourceChannelId: undefined,
+    sourceCashShopId: undefined,
+  };
 }
 
 export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> = {
@@ -4388,6 +6194,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     }
     if (message.sourceChannelId !== undefined) {
       writer.uint32(48).uint32(message.sourceChannelId);
+    }
+    if (message.sourceCashShopId !== undefined) {
+      writer.uint32(56).uint32(message.sourceCashShopId);
     }
     return writer;
   },
@@ -4447,6 +6256,14 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
           message.sourceChannelId = reader.uint32();
           continue;
         }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.sourceCashShopId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4486,6 +6303,11 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
         : isSet(object.source_channel_id)
         ? globalThis.Number(object.source_channel_id)
         : undefined,
+      sourceCashShopId: isSet(object.sourceCashShopId)
+        ? globalThis.Number(object.sourceCashShopId)
+        : isSet(object.source_cash_shop_id)
+        ? globalThis.Number(object.source_cash_shop_id)
+        : undefined,
     };
   },
 
@@ -4509,6 +6331,9 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     if (message.sourceChannelId !== undefined) {
       obj.sourceChannelId = Math.round(message.sourceChannelId);
     }
+    if (message.sourceCashShopId !== undefined) {
+      obj.sourceCashShopId = Math.round(message.sourceCashShopId);
+    }
     return obj;
   },
 
@@ -4523,6 +6348,7 @@ export const BeginGameTransitionRequest: MessageFns<BeginGameTransitionRequest> 
     message.clientIp = object.clientIp ?? "";
     message.debuffs = object.debuffs?.map((e) => Debuff.fromPartial(e)) || [];
     message.sourceChannelId = object.sourceChannelId ?? undefined;
+    message.sourceCashShopId = object.sourceCashShopId ?? undefined;
     return message;
   },
 };
@@ -10440,7 +12266,7 @@ export const DeleteCharacterReply: MessageFns<DeleteCharacterReply> = {
 };
 
 function createBaseRefreshSessionRequest(): RefreshSessionRequest {
-  return { worldId: 0, accountId: 0, characterId: undefined, channelId: undefined };
+  return { worldId: 0, accountId: 0, characterId: undefined, channelId: undefined, cashShopId: undefined };
 }
 
 export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
@@ -10456,6 +12282,9 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
     }
     if (message.channelId !== undefined) {
       writer.uint32(32).uint32(message.channelId);
+    }
+    if (message.cashShopId !== undefined) {
+      writer.uint32(40).uint32(message.cashShopId);
     }
     return writer;
   },
@@ -10499,6 +12328,14 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
           message.channelId = reader.uint32();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.cashShopId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10530,6 +12367,11 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
         : isSet(object.channel_id)
         ? globalThis.Number(object.channel_id)
         : undefined,
+      cashShopId: isSet(object.cashShopId)
+        ? globalThis.Number(object.cashShopId)
+        : isSet(object.cash_shop_id)
+        ? globalThis.Number(object.cash_shop_id)
+        : undefined,
     };
   },
 
@@ -10547,6 +12389,9 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
     if (message.channelId !== undefined) {
       obj.channelId = Math.round(message.channelId);
     }
+    if (message.cashShopId !== undefined) {
+      obj.cashShopId = Math.round(message.cashShopId);
+    }
     return obj;
   },
 
@@ -10559,6 +12404,7 @@ export const RefreshSessionRequest: MessageFns<RefreshSessionRequest> = {
     message.accountId = object.accountId ?? 0;
     message.characterId = object.characterId ?? undefined;
     message.channelId = object.channelId ?? undefined;
+    message.cashShopId = object.cashShopId ?? undefined;
     return message;
   },
 };
@@ -10651,6 +12497,7 @@ function createBaseLogoutSessionRequest(): LogoutSessionRequest {
     transferDisconnect: false,
     characterId: undefined,
     channelId: undefined,
+    cashShopId: undefined,
   };
 }
 
@@ -10673,6 +12520,9 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
     }
     if (message.channelId !== undefined) {
       writer.uint32(48).uint32(message.channelId);
+    }
+    if (message.cashShopId !== undefined) {
+      writer.uint32(56).uint32(message.cashShopId);
     }
     return writer;
   },
@@ -10732,6 +12582,14 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
           message.channelId = reader.uint32();
           continue;
         }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.cashShopId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10773,6 +12631,11 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
         : isSet(object.channel_id)
         ? globalThis.Number(object.channel_id)
         : undefined,
+      cashShopId: isSet(object.cashShopId)
+        ? globalThis.Number(object.cashShopId)
+        : isSet(object.cash_shop_id)
+        ? globalThis.Number(object.cash_shop_id)
+        : undefined,
     };
   },
 
@@ -10796,6 +12659,9 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
     if (message.channelId !== undefined) {
       obj.channelId = Math.round(message.channelId);
     }
+    if (message.cashShopId !== undefined) {
+      obj.cashShopId = Math.round(message.cashShopId);
+    }
     return obj;
   },
 
@@ -10810,6 +12676,7 @@ export const LogoutSessionRequest: MessageFns<LogoutSessionRequest> = {
     message.transferDisconnect = object.transferDisconnect ?? false;
     message.characterId = object.characterId ?? undefined;
     message.channelId = object.channelId ?? undefined;
+    message.cashShopId = object.cashShopId ?? undefined;
     return message;
   },
 };
@@ -24535,6 +26402,73 @@ export const InternalService = {
       Buffer.from(WriteOperationLogReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): WriteOperationLogReply => WriteOperationLogReply.decode(value),
   },
+  findCashShop: {
+    path: "/fm.internal.Internal/FindCashShop" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: FindCashShopRequest): Buffer => Buffer.from(FindCashShopRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): FindCashShopRequest => FindCashShopRequest.decode(value),
+    responseSerialize: (value: FindCashShopReply): Buffer => Buffer.from(FindCashShopReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FindCashShopReply => FindCashShopReply.decode(value),
+  },
+  enterCashShop: {
+    path: "/fm.internal.Internal/EnterCashShop" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: EnterCashShopRequest): Buffer => Buffer.from(EnterCashShopRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): EnterCashShopRequest => EnterCashShopRequest.decode(value),
+    responseSerialize: (value: EnterCashShopReply): Buffer => Buffer.from(EnterCashShopReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): EnterCashShopReply => EnterCashShopReply.decode(value),
+  },
+  buyCashItem: {
+    path: "/fm.internal.Internal/BuyCashItem" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: BuyCashItemRequest): Buffer => Buffer.from(BuyCashItemRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): BuyCashItemRequest => BuyCashItemRequest.decode(value),
+    responseSerialize: (value: BuyCashItemReply): Buffer => Buffer.from(BuyCashItemReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): BuyCashItemReply => BuyCashItemReply.decode(value),
+  },
+  takeOutCashItem: {
+    path: "/fm.internal.Internal/TakeOutCashItem" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: TakeOutCashItemRequest): Buffer =>
+      Buffer.from(TakeOutCashItemRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): TakeOutCashItemRequest => TakeOutCashItemRequest.decode(value),
+    responseSerialize: (value: TakeOutCashItemReply): Buffer =>
+      Buffer.from(TakeOutCashItemReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): TakeOutCashItemReply => TakeOutCashItemReply.decode(value),
+  },
+  putInCashItem: {
+    path: "/fm.internal.Internal/PutInCashItem" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: PutInCashItemRequest): Buffer => Buffer.from(PutInCashItemRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): PutInCashItemRequest => PutInCashItemRequest.decode(value),
+    responseSerialize: (value: PutInCashItemReply): Buffer => Buffer.from(PutInCashItemReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): PutInCashItemReply => PutInCashItemReply.decode(value),
+  },
+  setCashWishlist: {
+    path: "/fm.internal.Internal/SetCashWishlist" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SetCashWishlistRequest): Buffer =>
+      Buffer.from(SetCashWishlistRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SetCashWishlistRequest => SetCashWishlistRequest.decode(value),
+    responseSerialize: (value: SetCashWishlistReply): Buffer =>
+      Buffer.from(SetCashWishlistReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): SetCashWishlistReply => SetCashWishlistReply.decode(value),
+  },
+  addCash: {
+    path: "/fm.internal.Internal/AddCash" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: AddCashRequest): Buffer => Buffer.from(AddCashRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): AddCashRequest => AddCashRequest.decode(value),
+    responseSerialize: (value: AddCashReply): Buffer => Buffer.from(AddCashReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): AddCashReply => AddCashReply.decode(value),
+  },
 } as const;
 
 export interface InternalServer extends UntypedServiceImplementation {
@@ -24624,6 +26558,13 @@ export interface InternalServer extends UntypedServiceImplementation {
   setServerDateTime: handleUnaryCall<SetServerDateTimeRequest, SetServerDateTimeReply>;
   broadcastNotice: handleUnaryCall<BroadcastNoticeRequest, BroadcastNoticeReply>;
   writeOperationLog: handleUnaryCall<WriteOperationLogRequest, WriteOperationLogReply>;
+  findCashShop: handleUnaryCall<FindCashShopRequest, FindCashShopReply>;
+  enterCashShop: handleUnaryCall<EnterCashShopRequest, EnterCashShopReply>;
+  buyCashItem: handleUnaryCall<BuyCashItemRequest, BuyCashItemReply>;
+  takeOutCashItem: handleUnaryCall<TakeOutCashItemRequest, TakeOutCashItemReply>;
+  putInCashItem: handleUnaryCall<PutInCashItemRequest, PutInCashItemReply>;
+  setCashWishlist: handleUnaryCall<SetCashWishlistRequest, SetCashWishlistReply>;
+  addCash: handleUnaryCall<AddCashRequest, AddCashReply>;
 }
 
 export interface InternalClient extends Client {
@@ -25643,6 +27584,111 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: WriteOperationLogReply) => void,
+  ): ClientUnaryCall;
+  findCashShop(
+    request: FindCashShopRequest,
+    callback: (error: ServiceError | null, response: FindCashShopReply) => void,
+  ): ClientUnaryCall;
+  findCashShop(
+    request: FindCashShopRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FindCashShopReply) => void,
+  ): ClientUnaryCall;
+  findCashShop(
+    request: FindCashShopRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FindCashShopReply) => void,
+  ): ClientUnaryCall;
+  enterCashShop(
+    request: EnterCashShopRequest,
+    callback: (error: ServiceError | null, response: EnterCashShopReply) => void,
+  ): ClientUnaryCall;
+  enterCashShop(
+    request: EnterCashShopRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: EnterCashShopReply) => void,
+  ): ClientUnaryCall;
+  enterCashShop(
+    request: EnterCashShopRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: EnterCashShopReply) => void,
+  ): ClientUnaryCall;
+  buyCashItem(
+    request: BuyCashItemRequest,
+    callback: (error: ServiceError | null, response: BuyCashItemReply) => void,
+  ): ClientUnaryCall;
+  buyCashItem(
+    request: BuyCashItemRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: BuyCashItemReply) => void,
+  ): ClientUnaryCall;
+  buyCashItem(
+    request: BuyCashItemRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: BuyCashItemReply) => void,
+  ): ClientUnaryCall;
+  takeOutCashItem(
+    request: TakeOutCashItemRequest,
+    callback: (error: ServiceError | null, response: TakeOutCashItemReply) => void,
+  ): ClientUnaryCall;
+  takeOutCashItem(
+    request: TakeOutCashItemRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: TakeOutCashItemReply) => void,
+  ): ClientUnaryCall;
+  takeOutCashItem(
+    request: TakeOutCashItemRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: TakeOutCashItemReply) => void,
+  ): ClientUnaryCall;
+  putInCashItem(
+    request: PutInCashItemRequest,
+    callback: (error: ServiceError | null, response: PutInCashItemReply) => void,
+  ): ClientUnaryCall;
+  putInCashItem(
+    request: PutInCashItemRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: PutInCashItemReply) => void,
+  ): ClientUnaryCall;
+  putInCashItem(
+    request: PutInCashItemRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: PutInCashItemReply) => void,
+  ): ClientUnaryCall;
+  setCashWishlist(
+    request: SetCashWishlistRequest,
+    callback: (error: ServiceError | null, response: SetCashWishlistReply) => void,
+  ): ClientUnaryCall;
+  setCashWishlist(
+    request: SetCashWishlistRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: SetCashWishlistReply) => void,
+  ): ClientUnaryCall;
+  setCashWishlist(
+    request: SetCashWishlistRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: SetCashWishlistReply) => void,
+  ): ClientUnaryCall;
+  addCash(
+    request: AddCashRequest,
+    callback: (error: ServiceError | null, response: AddCashReply) => void,
+  ): ClientUnaryCall;
+  addCash(
+    request: AddCashRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: AddCashReply) => void,
+  ): ClientUnaryCall;
+  addCash(
+    request: AddCashRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: AddCashReply) => void,
   ): ClientUnaryCall;
 }
 
