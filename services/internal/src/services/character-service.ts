@@ -69,6 +69,7 @@ type CharacterInput = {
     petHpItem?: number;
     petMpItem?: number;
     summonedPet?: number;
+    slotLimits?: number[];
     hidden?: boolean;
 };
 

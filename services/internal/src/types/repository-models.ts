@@ -69,6 +69,7 @@ export interface CharacterModel {
     petHpItem?: number;
     petMpItem?: number;
     summonedPet?: number;
+    slotLimits?: number[];
     hidden?: boolean;
     updatedAt?: Date;
 }
@@ -107,6 +108,7 @@ export type CharacterRow = {
     pet_hp_item: number;
     pet_mp_item: number;
     summoned_pet: number | string;
+    slot_limits: number[] | null;
     hidden: boolean;
     deleted?: boolean;
     created_at?: Date | string;

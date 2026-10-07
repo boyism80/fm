@@ -104,6 +104,12 @@ export enum CashShopResult {
   CASH_SHOP_RESULT_NOT_ENOUGH_CASH = 1,
   CASH_SHOP_RESULT_LOCKER_FULL = 2,
   CASH_SHOP_RESULT_NOT_FOUND = 3,
+  CASH_SHOP_RESULT_SLOT_LIMIT = 4,
+  CASH_SHOP_RESULT_SAME_ACCOUNT = 5,
+  CASH_SHOP_RESULT_GENDER = 6,
+  CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL = 7,
+  CASH_SHOP_RESULT_COUPON_USED = 8,
+  CASH_SHOP_RESULT_NOT_ENOUGH_MESO = 9,
   UNRECOGNIZED = -1,
 }
 
@@ -121,6 +127,24 @@ export function cashShopResultFromJSON(object: any): CashShopResult {
     case 3:
     case "CASH_SHOP_RESULT_NOT_FOUND":
       return CashShopResult.CASH_SHOP_RESULT_NOT_FOUND;
+    case 4:
+    case "CASH_SHOP_RESULT_SLOT_LIMIT":
+      return CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT;
+    case 5:
+    case "CASH_SHOP_RESULT_SAME_ACCOUNT":
+      return CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT;
+    case 6:
+    case "CASH_SHOP_RESULT_GENDER":
+      return CashShopResult.CASH_SHOP_RESULT_GENDER;
+    case 7:
+    case "CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL":
+      return CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL;
+    case 8:
+    case "CASH_SHOP_RESULT_COUPON_USED":
+      return CashShopResult.CASH_SHOP_RESULT_COUPON_USED;
+    case 9:
+    case "CASH_SHOP_RESULT_NOT_ENOUGH_MESO":
+      return CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_MESO;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -138,7 +162,103 @@ export function cashShopResultToJSON(object: CashShopResult): string {
       return "CASH_SHOP_RESULT_LOCKER_FULL";
     case CashShopResult.CASH_SHOP_RESULT_NOT_FOUND:
       return "CASH_SHOP_RESULT_NOT_FOUND";
+    case CashShopResult.CASH_SHOP_RESULT_SLOT_LIMIT:
+      return "CASH_SHOP_RESULT_SLOT_LIMIT";
+    case CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT:
+      return "CASH_SHOP_RESULT_SAME_ACCOUNT";
+    case CashShopResult.CASH_SHOP_RESULT_GENDER:
+      return "CASH_SHOP_RESULT_GENDER";
+    case CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL:
+      return "CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL";
+    case CashShopResult.CASH_SHOP_RESULT_COUPON_USED:
+      return "CASH_SHOP_RESULT_COUPON_USED";
+    case CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_MESO:
+      return "CASH_SHOP_RESULT_NOT_ENOUGH_MESO";
     case CashShopResult.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum CashSlotKind {
+  CASH_SLOT_KIND_INVENTORY = 0,
+  CASH_SLOT_KIND_STORAGE = 1,
+  CASH_SLOT_KIND_CHARACTER = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function cashSlotKindFromJSON(object: any): CashSlotKind {
+  switch (object) {
+    case 0:
+    case "CASH_SLOT_KIND_INVENTORY":
+      return CashSlotKind.CASH_SLOT_KIND_INVENTORY;
+    case 1:
+    case "CASH_SLOT_KIND_STORAGE":
+      return CashSlotKind.CASH_SLOT_KIND_STORAGE;
+    case 2:
+    case "CASH_SLOT_KIND_CHARACTER":
+      return CashSlotKind.CASH_SLOT_KIND_CHARACTER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CashSlotKind.UNRECOGNIZED;
+  }
+}
+
+export function cashSlotKindToJSON(object: CashSlotKind): string {
+  switch (object) {
+    case CashSlotKind.CASH_SLOT_KIND_INVENTORY:
+      return "CASH_SLOT_KIND_INVENTORY";
+    case CashSlotKind.CASH_SLOT_KIND_STORAGE:
+      return "CASH_SLOT_KIND_STORAGE";
+    case CashSlotKind.CASH_SLOT_KIND_CHARACTER:
+      return "CASH_SLOT_KIND_CHARACTER";
+    case CashSlotKind.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum CashCouponKind {
+  CASH_COUPON_KIND_NX_CASH = 0,
+  CASH_COUPON_KIND_MAPLE_POINT = 1,
+  CASH_COUPON_KIND_ITEM = 2,
+  CASH_COUPON_KIND_MESO = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function cashCouponKindFromJSON(object: any): CashCouponKind {
+  switch (object) {
+    case 0:
+    case "CASH_COUPON_KIND_NX_CASH":
+      return CashCouponKind.CASH_COUPON_KIND_NX_CASH;
+    case 1:
+    case "CASH_COUPON_KIND_MAPLE_POINT":
+      return CashCouponKind.CASH_COUPON_KIND_MAPLE_POINT;
+    case 2:
+    case "CASH_COUPON_KIND_ITEM":
+      return CashCouponKind.CASH_COUPON_KIND_ITEM;
+    case 3:
+    case "CASH_COUPON_KIND_MESO":
+      return CashCouponKind.CASH_COUPON_KIND_MESO;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CashCouponKind.UNRECOGNIZED;
+  }
+}
+
+export function cashCouponKindToJSON(object: CashCouponKind): string {
+  switch (object) {
+    case CashCouponKind.CASH_COUPON_KIND_NX_CASH:
+      return "CASH_COUPON_KIND_NX_CASH";
+    case CashCouponKind.CASH_COUPON_KIND_MAPLE_POINT:
+      return "CASH_COUPON_KIND_MAPLE_POINT";
+    case CashCouponKind.CASH_COUPON_KIND_ITEM:
+      return "CASH_COUPON_KIND_ITEM";
+    case CashCouponKind.CASH_COUPON_KIND_MESO:
+      return "CASH_COUPON_KIND_MESO";
+    case CashCouponKind.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -1106,6 +1226,15 @@ export interface EnterCashShopReply {
   wishlist: number[];
   characterSlotCount: number;
   storageSlotCount: number;
+  gifts: CashGift[];
+  expired: number[];
+}
+
+export interface CashGift {
+  serial: number;
+  itemId: number;
+  senderName: string;
+  message: string;
 }
 
 export interface BuyCashItemRequest {
@@ -1113,7 +1242,104 @@ export interface BuyCashItemRequest {
   accountId: number;
   currency: CashCurrency;
   price: number;
+  items: CashItem[];
+}
+
+export interface ExpandCashSlotRequest {
+  worldId: number;
+  accountId: number;
+  characterId: number;
+  kind: CashSlotKind;
+  inventoryType: number;
+  currency: CashCurrency;
+  price: number;
+  amount: number;
+  max: number;
+}
+
+export interface ExpandCashSlotReply {
+  result: CashShopResult;
+  slots: number;
+  nxCash: number;
+  maplePoint: number;
+}
+
+export interface GiftCashItemRequest {
+  worldId: number;
+  accountId: number;
+  recipientName: string;
+  message: string;
+  price: number;
+  gender: number;
+  items: CashItem[];
+}
+
+export interface GiftCashItemReply {
+  result: CashShopResult;
+  nxCash: number;
+  maplePoint: number;
+}
+
+export interface PayBackCashItemRequest {
+  worldId: number;
+  accountId: number;
+  serial: number;
+  maplePoint: number;
+}
+
+export interface PayBackCashItemReply {
+  result: CashShopResult;
+  nxCash: number;
+  maplePoint: number;
+}
+
+export interface BuyCashQuestItemRequest {
+  worldId: number;
+  characterId: number;
+  price: number;
+  item: Inventory | undefined;
+}
+
+export interface BuyCashQuestItemReply {
+  result: CashShopResult;
+  meso: number;
+}
+
+export interface FindCashCouponRequest {
+  worldId: number;
+  code: string;
+}
+
+export interface FindCashCouponReply {
+  result: CashShopResult;
+  kind: CashCouponKind;
+  value: number;
+}
+
+export interface RedeemCashCouponRequest {
+  worldId: number;
+  accountId: number;
+  characterId: number;
+  code: string;
   item: CashItem | undefined;
+}
+
+export interface RedeemCashCouponReply {
+  result: CashShopResult;
+  nxCash: number;
+  maplePoint: number;
+  meso: number;
+}
+
+export interface CreateCashCouponsRequest {
+  worldId: number;
+  kind: CashCouponKind;
+  value: number;
+  count: number;
+}
+
+export interface CreateCashCouponsReply {
+  codes: string[];
 }
 
 export interface BuyCashItemReply {
@@ -1247,6 +1473,7 @@ export interface Character {
   petHpItem: number;
   petMpItem: number;
   summonedPet: number;
+  slotLimits: number[];
 }
 
 export interface KeyLayoutBinding {
@@ -3008,6 +3235,8 @@ function createBaseEnterCashShopReply(): EnterCashShopReply {
     wishlist: [],
     characterSlotCount: 0,
     storageSlotCount: 0,
+    gifts: [],
+    expired: [],
   };
 }
 
@@ -3039,6 +3268,14 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
     if (message.storageSlotCount !== 0) {
       writer.uint32(64).uint32(message.storageSlotCount);
     }
+    for (const v of message.gifts) {
+      CashGift.encode(v!, writer.uint32(74).fork()).join();
+    }
+    writer.uint32(82).fork();
+    for (const v of message.expired) {
+      writer.uint64(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -3123,6 +3360,32 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
           message.storageSlotCount = reader.uint32();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.gifts.push(CashGift.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 10: {
+          if (tag === 80) {
+            message.expired.push(longToNumber(reader.uint64()));
+
+            continue;
+          }
+
+          if (tag === 82) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.expired.push(longToNumber(reader.uint64()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3162,6 +3425,10 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
         : isSet(object.storage_slot_count)
         ? globalThis.Number(object.storage_slot_count)
         : 0,
+      gifts: globalThis.Array.isArray(object?.gifts)
+        ? object.gifts.map((e: any) => CashGift.fromJSON(e))
+        : [],
+      expired: globalThis.Array.isArray(object?.expired) ? object.expired.map((e: any) => globalThis.Number(e)) : [],
     };
   },
 
@@ -3191,6 +3458,12 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
     if (message.storageSlotCount !== 0) {
       obj.storageSlotCount = Math.round(message.storageSlotCount);
     }
+    if (message.gifts?.length) {
+      obj.gifts = message.gifts.map((e) => CashGift.toJSON(e));
+    }
+    if (message.expired?.length) {
+      obj.expired = message.expired.map((e) => Math.round(e));
+    }
     return obj;
   },
 
@@ -3209,12 +3482,130 @@ export const EnterCashShopReply: MessageFns<EnterCashShopReply> = {
     message.wishlist = object.wishlist?.map((e) => e) || [];
     message.characterSlotCount = object.characterSlotCount ?? 0;
     message.storageSlotCount = object.storageSlotCount ?? 0;
+    message.gifts = object.gifts?.map((e) => CashGift.fromPartial(e)) || [];
+    message.expired = object.expired?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseCashGift(): CashGift {
+  return { serial: 0, itemId: 0, senderName: "", message: "" };
+}
+
+export const CashGift: MessageFns<CashGift> = {
+  encode(message: CashGift, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.serial !== 0) {
+      writer.uint32(8).uint64(message.serial);
+    }
+    if (message.itemId !== 0) {
+      writer.uint32(16).uint32(message.itemId);
+    }
+    if (message.senderName !== "") {
+      writer.uint32(26).string(message.senderName);
+    }
+    if (message.message !== "") {
+      writer.uint32(34).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CashGift {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCashGift();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.serial = longToNumber(reader.uint64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.itemId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.senderName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CashGift {
+    return {
+      serial: isSet(object.serial) ? globalThis.Number(object.serial) : 0,
+      itemId: isSet(object.itemId)
+        ? globalThis.Number(object.itemId)
+        : isSet(object.item_id)
+        ? globalThis.Number(object.item_id)
+        : 0,
+      senderName: isSet(object.senderName)
+        ? globalThis.String(object.senderName)
+        : isSet(object.sender_name)
+        ? globalThis.String(object.sender_name)
+        : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+    };
+  },
+
+  toJSON(message: CashGift): unknown {
+    const obj: any = {};
+    if (message.serial !== 0) {
+      obj.serial = Math.round(message.serial);
+    }
+    if (message.itemId !== 0) {
+      obj.itemId = Math.round(message.itemId);
+    }
+    if (message.senderName !== "") {
+      obj.senderName = message.senderName;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CashGift>, I>>(base?: I): CashGift {
+    return CashGift.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CashGift>, I>>(object: I): CashGift {
+    const message = createBaseCashGift();
+    message.serial = object.serial ?? 0;
+    message.itemId = object.itemId ?? 0;
+    message.senderName = object.senderName ?? "";
+    message.message = object.message ?? "";
     return message;
   },
 };
 
 function createBaseBuyCashItemRequest(): BuyCashItemRequest {
-  return { worldId: 0, accountId: 0, currency: 0, price: 0, item: undefined };
+  return { worldId: 0, accountId: 0, currency: 0, price: 0, items: [] };
 }
 
 export const BuyCashItemRequest: MessageFns<BuyCashItemRequest> = {
@@ -3231,8 +3622,8 @@ export const BuyCashItemRequest: MessageFns<BuyCashItemRequest> = {
     if (message.price !== 0) {
       writer.uint32(32).uint32(message.price);
     }
-    if (message.item !== undefined) {
-      CashItem.encode(message.item, writer.uint32(42).fork()).join();
+    for (const v of message.items) {
+      CashItem.encode(v!, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -3281,7 +3672,7 @@ export const BuyCashItemRequest: MessageFns<BuyCashItemRequest> = {
             break;
           }
 
-          message.item = CashItem.decode(reader, reader.uint32());
+          message.items.push(CashItem.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -3307,7 +3698,7 @@ export const BuyCashItemRequest: MessageFns<BuyCashItemRequest> = {
         : 0,
       currency: isSet(object.currency) ? cashCurrencyFromJSON(object.currency) : 0,
       price: isSet(object.price) ? globalThis.Number(object.price) : 0,
-      item: isSet(object.item) ? CashItem.fromJSON(object.item) : undefined,
+      items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => CashItem.fromJSON(e)) : [],
     };
   },
 
@@ -3325,8 +3716,8 @@ export const BuyCashItemRequest: MessageFns<BuyCashItemRequest> = {
     if (message.price !== 0) {
       obj.price = Math.round(message.price);
     }
-    if (message.item !== undefined) {
-      obj.item = CashItem.toJSON(message.item);
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => CashItem.toJSON(e));
     }
     return obj;
   },
@@ -3340,7 +3731,1611 @@ export const BuyCashItemRequest: MessageFns<BuyCashItemRequest> = {
     message.accountId = object.accountId ?? 0;
     message.currency = object.currency ?? 0;
     message.price = object.price ?? 0;
+    message.items = object.items?.map((e) => CashItem.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseExpandCashSlotRequest(): ExpandCashSlotRequest {
+  return {
+    worldId: 0,
+    accountId: 0,
+    characterId: 0,
+    kind: 0,
+    inventoryType: 0,
+    currency: 0,
+    price: 0,
+    amount: 0,
+    max: 0,
+  };
+}
+
+export const ExpandCashSlotRequest: MessageFns<ExpandCashSlotRequest> = {
+  encode(message: ExpandCashSlotRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.kind !== 0) {
+      writer.uint32(32).int32(message.kind);
+    }
+    if (message.inventoryType !== 0) {
+      writer.uint32(40).uint32(message.inventoryType);
+    }
+    if (message.currency !== 0) {
+      writer.uint32(48).int32(message.currency);
+    }
+    if (message.price !== 0) {
+      writer.uint32(56).uint32(message.price);
+    }
+    if (message.amount !== 0) {
+      writer.uint32(64).uint32(message.amount);
+    }
+    if (message.max !== 0) {
+      writer.uint32(72).uint32(message.max);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExpandCashSlotRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExpandCashSlotRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.inventoryType = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.currency = reader.int32() as any;
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.price = reader.uint32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.amount = reader.uint32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.max = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExpandCashSlotRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      kind: isSet(object.kind) ? cashSlotKindFromJSON(object.kind) : 0,
+      inventoryType: isSet(object.inventoryType)
+        ? globalThis.Number(object.inventoryType)
+        : isSet(object.inventory_type)
+        ? globalThis.Number(object.inventory_type)
+        : 0,
+      currency: isSet(object.currency) ? cashCurrencyFromJSON(object.currency) : 0,
+      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
+      amount: isSet(object.amount) ? globalThis.Number(object.amount) : 0,
+      max: isSet(object.max) ? globalThis.Number(object.max) : 0,
+    };
+  },
+
+  toJSON(message: ExpandCashSlotRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.kind !== 0) {
+      obj.kind = cashSlotKindToJSON(message.kind);
+    }
+    if (message.inventoryType !== 0) {
+      obj.inventoryType = Math.round(message.inventoryType);
+    }
+    if (message.currency !== 0) {
+      obj.currency = cashCurrencyToJSON(message.currency);
+    }
+    if (message.price !== 0) {
+      obj.price = Math.round(message.price);
+    }
+    if (message.amount !== 0) {
+      obj.amount = Math.round(message.amount);
+    }
+    if (message.max !== 0) {
+      obj.max = Math.round(message.max);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExpandCashSlotRequest>, I>>(base?: I): ExpandCashSlotRequest {
+    return ExpandCashSlotRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExpandCashSlotRequest>, I>>(object: I): ExpandCashSlotRequest {
+    const message = createBaseExpandCashSlotRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.kind = object.kind ?? 0;
+    message.inventoryType = object.inventoryType ?? 0;
+    message.currency = object.currency ?? 0;
+    message.price = object.price ?? 0;
+    message.amount = object.amount ?? 0;
+    message.max = object.max ?? 0;
+    return message;
+  },
+};
+
+function createBaseExpandCashSlotReply(): ExpandCashSlotReply {
+  return { result: 0, slots: 0, nxCash: 0, maplePoint: 0 };
+}
+
+export const ExpandCashSlotReply: MessageFns<ExpandCashSlotReply> = {
+  encode(message: ExpandCashSlotReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.slots !== 0) {
+      writer.uint32(16).uint32(message.slots);
+    }
+    if (message.nxCash !== 0) {
+      writer.uint32(24).uint32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(32).uint32(message.maplePoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExpandCashSlotReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExpandCashSlotReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.slots = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.nxCash = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExpandCashSlotReply {
+    return {
+      result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0,
+      slots: isSet(object.slots) ? globalThis.Number(object.slots) : 0,
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+    };
+  },
+
+  toJSON(message: ExpandCashSlotReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    if (message.slots !== 0) {
+      obj.slots = Math.round(message.slots);
+    }
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExpandCashSlotReply>, I>>(base?: I): ExpandCashSlotReply {
+    return ExpandCashSlotReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExpandCashSlotReply>, I>>(object: I): ExpandCashSlotReply {
+    const message = createBaseExpandCashSlotReply();
+    message.result = object.result ?? 0;
+    message.slots = object.slots ?? 0;
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    return message;
+  },
+};
+
+function createBaseGiftCashItemRequest(): GiftCashItemRequest {
+  return { worldId: 0, accountId: 0, recipientName: "", message: "", price: 0, gender: 0, items: [] };
+}
+
+export const GiftCashItemRequest: MessageFns<GiftCashItemRequest> = {
+  encode(message: GiftCashItemRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.recipientName !== "") {
+      writer.uint32(26).string(message.recipientName);
+    }
+    if (message.message !== "") {
+      writer.uint32(34).string(message.message);
+    }
+    if (message.price !== 0) {
+      writer.uint32(40).uint32(message.price);
+    }
+    if (message.gender !== 0) {
+      writer.uint32(48).uint32(message.gender);
+    }
+    for (const v of message.items) {
+      CashItem.encode(v!, writer.uint32(58).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GiftCashItemRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGiftCashItemRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.recipientName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.price = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.gender = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.items.push(CashItem.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GiftCashItemRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      recipientName: isSet(object.recipientName)
+        ? globalThis.String(object.recipientName)
+        : isSet(object.recipient_name)
+        ? globalThis.String(object.recipient_name)
+        : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
+      gender: isSet(object.gender) ? globalThis.Number(object.gender) : 0,
+      items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => CashItem.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: GiftCashItemRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.recipientName !== "") {
+      obj.recipientName = message.recipientName;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.price !== 0) {
+      obj.price = Math.round(message.price);
+    }
+    if (message.gender !== 0) {
+      obj.gender = Math.round(message.gender);
+    }
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => CashItem.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GiftCashItemRequest>, I>>(base?: I): GiftCashItemRequest {
+    return GiftCashItemRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GiftCashItemRequest>, I>>(object: I): GiftCashItemRequest {
+    const message = createBaseGiftCashItemRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.recipientName = object.recipientName ?? "";
+    message.message = object.message ?? "";
+    message.price = object.price ?? 0;
+    message.gender = object.gender ?? 0;
+    message.items = object.items?.map((e) => CashItem.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseGiftCashItemReply(): GiftCashItemReply {
+  return { result: 0, nxCash: 0, maplePoint: 0 };
+}
+
+export const GiftCashItemReply: MessageFns<GiftCashItemReply> = {
+  encode(message: GiftCashItemReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.nxCash !== 0) {
+      writer.uint32(16).uint32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(24).uint32(message.maplePoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GiftCashItemReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGiftCashItemReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nxCash = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GiftCashItemReply {
+    return {
+      result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0,
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+    };
+  },
+
+  toJSON(message: GiftCashItemReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GiftCashItemReply>, I>>(base?: I): GiftCashItemReply {
+    return GiftCashItemReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GiftCashItemReply>, I>>(object: I): GiftCashItemReply {
+    const message = createBaseGiftCashItemReply();
+    message.result = object.result ?? 0;
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    return message;
+  },
+};
+
+function createBasePayBackCashItemRequest(): PayBackCashItemRequest {
+  return { worldId: 0, accountId: 0, serial: 0, maplePoint: 0 };
+}
+
+export const PayBackCashItemRequest: MessageFns<PayBackCashItemRequest> = {
+  encode(message: PayBackCashItemRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.serial !== 0) {
+      writer.uint32(24).uint64(message.serial);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(32).uint32(message.maplePoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PayBackCashItemRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePayBackCashItemRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.serial = longToNumber(reader.uint64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PayBackCashItemRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      serial: isSet(object.serial) ? globalThis.Number(object.serial) : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+    };
+  },
+
+  toJSON(message: PayBackCashItemRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.serial !== 0) {
+      obj.serial = Math.round(message.serial);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PayBackCashItemRequest>, I>>(base?: I): PayBackCashItemRequest {
+    return PayBackCashItemRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PayBackCashItemRequest>, I>>(object: I): PayBackCashItemRequest {
+    const message = createBasePayBackCashItemRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.serial = object.serial ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    return message;
+  },
+};
+
+function createBasePayBackCashItemReply(): PayBackCashItemReply {
+  return { result: 0, nxCash: 0, maplePoint: 0 };
+}
+
+export const PayBackCashItemReply: MessageFns<PayBackCashItemReply> = {
+  encode(message: PayBackCashItemReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.nxCash !== 0) {
+      writer.uint32(16).uint32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(24).uint32(message.maplePoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PayBackCashItemReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePayBackCashItemReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nxCash = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PayBackCashItemReply {
+    return {
+      result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0,
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+    };
+  },
+
+  toJSON(message: PayBackCashItemReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PayBackCashItemReply>, I>>(base?: I): PayBackCashItemReply {
+    return PayBackCashItemReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<PayBackCashItemReply>, I>>(object: I): PayBackCashItemReply {
+    const message = createBasePayBackCashItemReply();
+    message.result = object.result ?? 0;
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    return message;
+  },
+};
+
+function createBaseBuyCashQuestItemRequest(): BuyCashQuestItemRequest {
+  return { worldId: 0, characterId: 0, price: 0, item: undefined };
+}
+
+export const BuyCashQuestItemRequest: MessageFns<BuyCashQuestItemRequest> = {
+  encode(message: BuyCashQuestItemRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.price !== 0) {
+      writer.uint32(24).uint32(message.price);
+    }
+    if (message.item !== undefined) {
+      Inventory.encode(message.item, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BuyCashQuestItemRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBuyCashQuestItemRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.price = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.item = Inventory.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BuyCashQuestItemRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
+      item: isSet(object.item) ? Inventory.fromJSON(object.item) : undefined,
+    };
+  },
+
+  toJSON(message: BuyCashQuestItemRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.price !== 0) {
+      obj.price = Math.round(message.price);
+    }
+    if (message.item !== undefined) {
+      obj.item = Inventory.toJSON(message.item);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BuyCashQuestItemRequest>, I>>(base?: I): BuyCashQuestItemRequest {
+    return BuyCashQuestItemRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BuyCashQuestItemRequest>, I>>(object: I): BuyCashQuestItemRequest {
+    const message = createBaseBuyCashQuestItemRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.price = object.price ?? 0;
+    message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
+    return message;
+  },
+};
+
+function createBaseBuyCashQuestItemReply(): BuyCashQuestItemReply {
+  return { result: 0, meso: 0 };
+}
+
+export const BuyCashQuestItemReply: MessageFns<BuyCashQuestItemReply> = {
+  encode(message: BuyCashQuestItemReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.meso !== 0) {
+      writer.uint32(16).int32(message.meso);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BuyCashQuestItemReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBuyCashQuestItemReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.meso = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BuyCashQuestItemReply {
+    return {
+      result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0,
+      meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
+    };
+  },
+
+  toJSON(message: BuyCashQuestItemReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    if (message.meso !== 0) {
+      obj.meso = Math.round(message.meso);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BuyCashQuestItemReply>, I>>(base?: I): BuyCashQuestItemReply {
+    return BuyCashQuestItemReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BuyCashQuestItemReply>, I>>(object: I): BuyCashQuestItemReply {
+    const message = createBaseBuyCashQuestItemReply();
+    message.result = object.result ?? 0;
+    message.meso = object.meso ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindCashCouponRequest(): FindCashCouponRequest {
+  return { worldId: 0, code: "" };
+}
+
+export const FindCashCouponRequest: MessageFns<FindCashCouponRequest> = {
+  encode(message: FindCashCouponRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.code !== "") {
+      writer.uint32(18).string(message.code);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindCashCouponRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindCashCouponRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindCashCouponRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      code: isSet(object.code) ? globalThis.String(object.code) : "",
+    };
+  },
+
+  toJSON(message: FindCashCouponRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindCashCouponRequest>, I>>(base?: I): FindCashCouponRequest {
+    return FindCashCouponRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindCashCouponRequest>, I>>(object: I): FindCashCouponRequest {
+    const message = createBaseFindCashCouponRequest();
+    message.worldId = object.worldId ?? 0;
+    message.code = object.code ?? "";
+    return message;
+  },
+};
+
+function createBaseFindCashCouponReply(): FindCashCouponReply {
+  return { result: 0, kind: 0, value: 0 };
+}
+
+export const FindCashCouponReply: MessageFns<FindCashCouponReply> = {
+  encode(message: FindCashCouponReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.kind !== 0) {
+      writer.uint32(16).int32(message.kind);
+    }
+    if (message.value !== 0) {
+      writer.uint32(24).uint32(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindCashCouponReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindCashCouponReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.value = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindCashCouponReply {
+    return {
+      result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0,
+      kind: isSet(object.kind) ? cashCouponKindFromJSON(object.kind) : 0,
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
+  },
+
+  toJSON(message: FindCashCouponReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    if (message.kind !== 0) {
+      obj.kind = cashCouponKindToJSON(message.kind);
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindCashCouponReply>, I>>(base?: I): FindCashCouponReply {
+    return FindCashCouponReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindCashCouponReply>, I>>(object: I): FindCashCouponReply {
+    const message = createBaseFindCashCouponReply();
+    message.result = object.result ?? 0;
+    message.kind = object.kind ?? 0;
+    message.value = object.value ?? 0;
+    return message;
+  },
+};
+
+function createBaseRedeemCashCouponRequest(): RedeemCashCouponRequest {
+  return { worldId: 0, accountId: 0, characterId: 0, code: "", item: undefined };
+}
+
+export const RedeemCashCouponRequest: MessageFns<RedeemCashCouponRequest> = {
+  encode(message: RedeemCashCouponRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.code !== "") {
+      writer.uint32(34).string(message.code);
+    }
+    if (message.item !== undefined) {
+      CashItem.encode(message.item, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RedeemCashCouponRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRedeemCashCouponRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.item = CashItem.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RedeemCashCouponRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      code: isSet(object.code) ? globalThis.String(object.code) : "",
+      item: isSet(object.item) ? CashItem.fromJSON(object.item) : undefined,
+    };
+  },
+
+  toJSON(message: RedeemCashCouponRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    if (message.item !== undefined) {
+      obj.item = CashItem.toJSON(message.item);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RedeemCashCouponRequest>, I>>(base?: I): RedeemCashCouponRequest {
+    return RedeemCashCouponRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RedeemCashCouponRequest>, I>>(object: I): RedeemCashCouponRequest {
+    const message = createBaseRedeemCashCouponRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.code = object.code ?? "";
     message.item = (object.item !== undefined && object.item !== null) ? CashItem.fromPartial(object.item) : undefined;
+    return message;
+  },
+};
+
+function createBaseRedeemCashCouponReply(): RedeemCashCouponReply {
+  return { result: 0, nxCash: 0, maplePoint: 0, meso: 0 };
+}
+
+export const RedeemCashCouponReply: MessageFns<RedeemCashCouponReply> = {
+  encode(message: RedeemCashCouponReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.nxCash !== 0) {
+      writer.uint32(16).uint32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(24).uint32(message.maplePoint);
+    }
+    if (message.meso !== 0) {
+      writer.uint32(32).int32(message.meso);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RedeemCashCouponReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRedeemCashCouponReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nxCash = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.meso = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RedeemCashCouponReply {
+    return {
+      result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0,
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+      meso: isSet(object.meso) ? globalThis.Number(object.meso) : 0,
+    };
+  },
+
+  toJSON(message: RedeemCashCouponReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    if (message.meso !== 0) {
+      obj.meso = Math.round(message.meso);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RedeemCashCouponReply>, I>>(base?: I): RedeemCashCouponReply {
+    return RedeemCashCouponReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RedeemCashCouponReply>, I>>(object: I): RedeemCashCouponReply {
+    const message = createBaseRedeemCashCouponReply();
+    message.result = object.result ?? 0;
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    message.meso = object.meso ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateCashCouponsRequest(): CreateCashCouponsRequest {
+  return { worldId: 0, kind: 0, value: 0, count: 0 };
+}
+
+export const CreateCashCouponsRequest: MessageFns<CreateCashCouponsRequest> = {
+  encode(message: CreateCashCouponsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.kind !== 0) {
+      writer.uint32(16).int32(message.kind);
+    }
+    if (message.value !== 0) {
+      writer.uint32(24).uint32(message.value);
+    }
+    if (message.count !== 0) {
+      writer.uint32(32).uint32(message.count);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateCashCouponsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateCashCouponsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.value = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.count = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateCashCouponsRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      kind: isSet(object.kind) ? cashCouponKindFromJSON(object.kind) : 0,
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
+    };
+  },
+
+  toJSON(message: CreateCashCouponsRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.kind !== 0) {
+      obj.kind = cashCouponKindToJSON(message.kind);
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateCashCouponsRequest>, I>>(base?: I): CreateCashCouponsRequest {
+    return CreateCashCouponsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateCashCouponsRequest>, I>>(object: I): CreateCashCouponsRequest {
+    const message = createBaseCreateCashCouponsRequest();
+    message.worldId = object.worldId ?? 0;
+    message.kind = object.kind ?? 0;
+    message.value = object.value ?? 0;
+    message.count = object.count ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateCashCouponsReply(): CreateCashCouponsReply {
+  return { codes: [] };
+}
+
+export const CreateCashCouponsReply: MessageFns<CreateCashCouponsReply> = {
+  encode(message: CreateCashCouponsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.codes) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateCashCouponsReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateCashCouponsReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.codes.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateCashCouponsReply {
+    return { codes: globalThis.Array.isArray(object?.codes) ? object.codes.map((e: any) => globalThis.String(e)) : [] };
+  },
+
+  toJSON(message: CreateCashCouponsReply): unknown {
+    const obj: any = {};
+    if (message.codes?.length) {
+      obj.codes = message.codes;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateCashCouponsReply>, I>>(base?: I): CreateCashCouponsReply {
+    return CreateCashCouponsReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateCashCouponsReply>, I>>(object: I): CreateCashCouponsReply {
+    const message = createBaseCreateCashCouponsReply();
+    message.codes = object.codes?.map((e) => e) || [];
     return message;
   },
 };
@@ -4966,6 +6961,7 @@ function createBaseCharacter(): Character {
     petHpItem: 0,
     petMpItem: 0,
     summonedPet: 0,
+    slotLimits: [],
   };
 }
 
@@ -5073,6 +7069,11 @@ export const Character: MessageFns<Character> = {
     if (message.summonedPet !== 0) {
       writer.uint32(272).uint64(message.summonedPet);
     }
+    writer.uint32(282).fork();
+    for (const v of message.slotLimits) {
+      writer.uint32(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -5355,6 +7356,24 @@ export const Character: MessageFns<Character> = {
           message.summonedPet = longToNumber(reader.uint64());
           continue;
         }
+        case 35: {
+          if (tag === 280) {
+            message.slotLimits.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 282) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.slotLimits.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5472,6 +7491,11 @@ export const Character: MessageFns<Character> = {
         : isSet(object.summoned_pet)
         ? globalThis.Number(object.summoned_pet)
         : 0,
+      slotLimits: globalThis.Array.isArray(object?.slotLimits)
+        ? object.slotLimits.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.slot_limits)
+        ? object.slot_limits.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
@@ -5579,6 +7603,9 @@ export const Character: MessageFns<Character> = {
     if (message.summonedPet !== 0) {
       obj.summonedPet = Math.round(message.summonedPet);
     }
+    if (message.slotLimits?.length) {
+      obj.slotLimits = message.slotLimits.map((e) => Math.round(e));
+    }
     return obj;
   },
 
@@ -5621,6 +7648,7 @@ export const Character: MessageFns<Character> = {
     message.petHpItem = object.petHpItem ?? 0;
     message.petMpItem = object.petMpItem ?? 0;
     message.summonedPet = object.summonedPet ?? 0;
+    message.slotLimits = object.slotLimits?.map((e) => e) || [];
     return message;
   },
 };
@@ -26469,6 +28497,79 @@ export const InternalService = {
     responseSerialize: (value: AddCashReply): Buffer => Buffer.from(AddCashReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): AddCashReply => AddCashReply.decode(value),
   },
+  expandCashSlot: {
+    path: "/fm.internal.Internal/ExpandCashSlot" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ExpandCashSlotRequest): Buffer =>
+      Buffer.from(ExpandCashSlotRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ExpandCashSlotRequest => ExpandCashSlotRequest.decode(value),
+    responseSerialize: (value: ExpandCashSlotReply): Buffer => Buffer.from(ExpandCashSlotReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ExpandCashSlotReply => ExpandCashSlotReply.decode(value),
+  },
+  giftCashItem: {
+    path: "/fm.internal.Internal/GiftCashItem" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: GiftCashItemRequest): Buffer => Buffer.from(GiftCashItemRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GiftCashItemRequest => GiftCashItemRequest.decode(value),
+    responseSerialize: (value: GiftCashItemReply): Buffer => Buffer.from(GiftCashItemReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GiftCashItemReply => GiftCashItemReply.decode(value),
+  },
+  payBackCashItem: {
+    path: "/fm.internal.Internal/PayBackCashItem" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: PayBackCashItemRequest): Buffer =>
+      Buffer.from(PayBackCashItemRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): PayBackCashItemRequest => PayBackCashItemRequest.decode(value),
+    responseSerialize: (value: PayBackCashItemReply): Buffer =>
+      Buffer.from(PayBackCashItemReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): PayBackCashItemReply => PayBackCashItemReply.decode(value),
+  },
+  buyCashQuestItem: {
+    path: "/fm.internal.Internal/BuyCashQuestItem" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: BuyCashQuestItemRequest): Buffer =>
+      Buffer.from(BuyCashQuestItemRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): BuyCashQuestItemRequest => BuyCashQuestItemRequest.decode(value),
+    responseSerialize: (value: BuyCashQuestItemReply): Buffer =>
+      Buffer.from(BuyCashQuestItemReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): BuyCashQuestItemReply => BuyCashQuestItemReply.decode(value),
+  },
+  findCashCoupon: {
+    path: "/fm.internal.Internal/FindCashCoupon" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: FindCashCouponRequest): Buffer =>
+      Buffer.from(FindCashCouponRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): FindCashCouponRequest => FindCashCouponRequest.decode(value),
+    responseSerialize: (value: FindCashCouponReply): Buffer => Buffer.from(FindCashCouponReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): FindCashCouponReply => FindCashCouponReply.decode(value),
+  },
+  redeemCashCoupon: {
+    path: "/fm.internal.Internal/RedeemCashCoupon" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: RedeemCashCouponRequest): Buffer =>
+      Buffer.from(RedeemCashCouponRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): RedeemCashCouponRequest => RedeemCashCouponRequest.decode(value),
+    responseSerialize: (value: RedeemCashCouponReply): Buffer =>
+      Buffer.from(RedeemCashCouponReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): RedeemCashCouponReply => RedeemCashCouponReply.decode(value),
+  },
+  createCashCoupons: {
+    path: "/fm.internal.Internal/CreateCashCoupons" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CreateCashCouponsRequest): Buffer =>
+      Buffer.from(CreateCashCouponsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CreateCashCouponsRequest => CreateCashCouponsRequest.decode(value),
+    responseSerialize: (value: CreateCashCouponsReply): Buffer =>
+      Buffer.from(CreateCashCouponsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): CreateCashCouponsReply => CreateCashCouponsReply.decode(value),
+  },
 } as const;
 
 export interface InternalServer extends UntypedServiceImplementation {
@@ -26565,6 +28666,13 @@ export interface InternalServer extends UntypedServiceImplementation {
   putInCashItem: handleUnaryCall<PutInCashItemRequest, PutInCashItemReply>;
   setCashWishlist: handleUnaryCall<SetCashWishlistRequest, SetCashWishlistReply>;
   addCash: handleUnaryCall<AddCashRequest, AddCashReply>;
+  expandCashSlot: handleUnaryCall<ExpandCashSlotRequest, ExpandCashSlotReply>;
+  giftCashItem: handleUnaryCall<GiftCashItemRequest, GiftCashItemReply>;
+  payBackCashItem: handleUnaryCall<PayBackCashItemRequest, PayBackCashItemReply>;
+  buyCashQuestItem: handleUnaryCall<BuyCashQuestItemRequest, BuyCashQuestItemReply>;
+  findCashCoupon: handleUnaryCall<FindCashCouponRequest, FindCashCouponReply>;
+  redeemCashCoupon: handleUnaryCall<RedeemCashCouponRequest, RedeemCashCouponReply>;
+  createCashCoupons: handleUnaryCall<CreateCashCouponsRequest, CreateCashCouponsReply>;
 }
 
 export interface InternalClient extends Client {
@@ -27689,6 +29797,111 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: AddCashReply) => void,
+  ): ClientUnaryCall;
+  expandCashSlot(
+    request: ExpandCashSlotRequest,
+    callback: (error: ServiceError | null, response: ExpandCashSlotReply) => void,
+  ): ClientUnaryCall;
+  expandCashSlot(
+    request: ExpandCashSlotRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ExpandCashSlotReply) => void,
+  ): ClientUnaryCall;
+  expandCashSlot(
+    request: ExpandCashSlotRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ExpandCashSlotReply) => void,
+  ): ClientUnaryCall;
+  giftCashItem(
+    request: GiftCashItemRequest,
+    callback: (error: ServiceError | null, response: GiftCashItemReply) => void,
+  ): ClientUnaryCall;
+  giftCashItem(
+    request: GiftCashItemRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GiftCashItemReply) => void,
+  ): ClientUnaryCall;
+  giftCashItem(
+    request: GiftCashItemRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GiftCashItemReply) => void,
+  ): ClientUnaryCall;
+  payBackCashItem(
+    request: PayBackCashItemRequest,
+    callback: (error: ServiceError | null, response: PayBackCashItemReply) => void,
+  ): ClientUnaryCall;
+  payBackCashItem(
+    request: PayBackCashItemRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: PayBackCashItemReply) => void,
+  ): ClientUnaryCall;
+  payBackCashItem(
+    request: PayBackCashItemRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: PayBackCashItemReply) => void,
+  ): ClientUnaryCall;
+  buyCashQuestItem(
+    request: BuyCashQuestItemRequest,
+    callback: (error: ServiceError | null, response: BuyCashQuestItemReply) => void,
+  ): ClientUnaryCall;
+  buyCashQuestItem(
+    request: BuyCashQuestItemRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: BuyCashQuestItemReply) => void,
+  ): ClientUnaryCall;
+  buyCashQuestItem(
+    request: BuyCashQuestItemRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: BuyCashQuestItemReply) => void,
+  ): ClientUnaryCall;
+  findCashCoupon(
+    request: FindCashCouponRequest,
+    callback: (error: ServiceError | null, response: FindCashCouponReply) => void,
+  ): ClientUnaryCall;
+  findCashCoupon(
+    request: FindCashCouponRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: FindCashCouponReply) => void,
+  ): ClientUnaryCall;
+  findCashCoupon(
+    request: FindCashCouponRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: FindCashCouponReply) => void,
+  ): ClientUnaryCall;
+  redeemCashCoupon(
+    request: RedeemCashCouponRequest,
+    callback: (error: ServiceError | null, response: RedeemCashCouponReply) => void,
+  ): ClientUnaryCall;
+  redeemCashCoupon(
+    request: RedeemCashCouponRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: RedeemCashCouponReply) => void,
+  ): ClientUnaryCall;
+  redeemCashCoupon(
+    request: RedeemCashCouponRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: RedeemCashCouponReply) => void,
+  ): ClientUnaryCall;
+  createCashCoupons(
+    request: CreateCashCouponsRequest,
+    callback: (error: ServiceError | null, response: CreateCashCouponsReply) => void,
+  ): ClientUnaryCall;
+  createCashCoupons(
+    request: CreateCashCouponsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CreateCashCouponsReply) => void,
+  ): ClientUnaryCall;
+  createCashCoupons(
+    request: CreateCashCouponsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CreateCashCouponsReply) => void,
   ): ClientUnaryCall;
 }
 

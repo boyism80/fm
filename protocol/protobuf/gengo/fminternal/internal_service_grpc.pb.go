@@ -94,6 +94,13 @@ const (
 	Internal_PutInCashItem_FullMethodName                  = "/fm.internal.Internal/PutInCashItem"
 	Internal_SetCashWishlist_FullMethodName                = "/fm.internal.Internal/SetCashWishlist"
 	Internal_AddCash_FullMethodName                        = "/fm.internal.Internal/AddCash"
+	Internal_ExpandCashSlot_FullMethodName                 = "/fm.internal.Internal/ExpandCashSlot"
+	Internal_GiftCashItem_FullMethodName                   = "/fm.internal.Internal/GiftCashItem"
+	Internal_PayBackCashItem_FullMethodName                = "/fm.internal.Internal/PayBackCashItem"
+	Internal_BuyCashQuestItem_FullMethodName               = "/fm.internal.Internal/BuyCashQuestItem"
+	Internal_FindCashCoupon_FullMethodName                 = "/fm.internal.Internal/FindCashCoupon"
+	Internal_RedeemCashCoupon_FullMethodName               = "/fm.internal.Internal/RedeemCashCoupon"
+	Internal_CreateCashCoupons_FullMethodName              = "/fm.internal.Internal/CreateCashCoupons"
 )
 
 // InternalClient is the client API for Internal service.
@@ -175,6 +182,13 @@ type InternalClient interface {
 	PutInCashItem(ctx context.Context, in *PutInCashItemRequest, opts ...grpc.CallOption) (*PutInCashItemReply, error)
 	SetCashWishlist(ctx context.Context, in *SetCashWishlistRequest, opts ...grpc.CallOption) (*SetCashWishlistReply, error)
 	AddCash(ctx context.Context, in *AddCashRequest, opts ...grpc.CallOption) (*AddCashReply, error)
+	ExpandCashSlot(ctx context.Context, in *ExpandCashSlotRequest, opts ...grpc.CallOption) (*ExpandCashSlotReply, error)
+	GiftCashItem(ctx context.Context, in *GiftCashItemRequest, opts ...grpc.CallOption) (*GiftCashItemReply, error)
+	PayBackCashItem(ctx context.Context, in *PayBackCashItemRequest, opts ...grpc.CallOption) (*PayBackCashItemReply, error)
+	BuyCashQuestItem(ctx context.Context, in *BuyCashQuestItemRequest, opts ...grpc.CallOption) (*BuyCashQuestItemReply, error)
+	FindCashCoupon(ctx context.Context, in *FindCashCouponRequest, opts ...grpc.CallOption) (*FindCashCouponReply, error)
+	RedeemCashCoupon(ctx context.Context, in *RedeemCashCouponRequest, opts ...grpc.CallOption) (*RedeemCashCouponReply, error)
+	CreateCashCoupons(ctx context.Context, in *CreateCashCouponsRequest, opts ...grpc.CallOption) (*CreateCashCouponsReply, error)
 }
 
 type internalClient struct {
@@ -935,6 +949,76 @@ func (c *internalClient) AddCash(ctx context.Context, in *AddCashRequest, opts .
 	return out, nil
 }
 
+func (c *internalClient) ExpandCashSlot(ctx context.Context, in *ExpandCashSlotRequest, opts ...grpc.CallOption) (*ExpandCashSlotReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExpandCashSlotReply)
+	err := c.cc.Invoke(ctx, Internal_ExpandCashSlot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) GiftCashItem(ctx context.Context, in *GiftCashItemRequest, opts ...grpc.CallOption) (*GiftCashItemReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GiftCashItemReply)
+	err := c.cc.Invoke(ctx, Internal_GiftCashItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) PayBackCashItem(ctx context.Context, in *PayBackCashItemRequest, opts ...grpc.CallOption) (*PayBackCashItemReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PayBackCashItemReply)
+	err := c.cc.Invoke(ctx, Internal_PayBackCashItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) BuyCashQuestItem(ctx context.Context, in *BuyCashQuestItemRequest, opts ...grpc.CallOption) (*BuyCashQuestItemReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BuyCashQuestItemReply)
+	err := c.cc.Invoke(ctx, Internal_BuyCashQuestItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) FindCashCoupon(ctx context.Context, in *FindCashCouponRequest, opts ...grpc.CallOption) (*FindCashCouponReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FindCashCouponReply)
+	err := c.cc.Invoke(ctx, Internal_FindCashCoupon_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) RedeemCashCoupon(ctx context.Context, in *RedeemCashCouponRequest, opts ...grpc.CallOption) (*RedeemCashCouponReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RedeemCashCouponReply)
+	err := c.cc.Invoke(ctx, Internal_RedeemCashCoupon_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) CreateCashCoupons(ctx context.Context, in *CreateCashCouponsRequest, opts ...grpc.CallOption) (*CreateCashCouponsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateCashCouponsReply)
+	err := c.cc.Invoke(ctx, Internal_CreateCashCoupons_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InternalServer is the server API for Internal service.
 // All implementations must embed UnimplementedInternalServer
 // for forward compatibility.
@@ -1014,6 +1098,13 @@ type InternalServer interface {
 	PutInCashItem(context.Context, *PutInCashItemRequest) (*PutInCashItemReply, error)
 	SetCashWishlist(context.Context, *SetCashWishlistRequest) (*SetCashWishlistReply, error)
 	AddCash(context.Context, *AddCashRequest) (*AddCashReply, error)
+	ExpandCashSlot(context.Context, *ExpandCashSlotRequest) (*ExpandCashSlotReply, error)
+	GiftCashItem(context.Context, *GiftCashItemRequest) (*GiftCashItemReply, error)
+	PayBackCashItem(context.Context, *PayBackCashItemRequest) (*PayBackCashItemReply, error)
+	BuyCashQuestItem(context.Context, *BuyCashQuestItemRequest) (*BuyCashQuestItemReply, error)
+	FindCashCoupon(context.Context, *FindCashCouponRequest) (*FindCashCouponReply, error)
+	RedeemCashCoupon(context.Context, *RedeemCashCouponRequest) (*RedeemCashCouponReply, error)
+	CreateCashCoupons(context.Context, *CreateCashCouponsRequest) (*CreateCashCouponsReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
 
@@ -1248,6 +1339,27 @@ func (UnimplementedInternalServer) SetCashWishlist(context.Context, *SetCashWish
 }
 func (UnimplementedInternalServer) AddCash(context.Context, *AddCashRequest) (*AddCashReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddCash not implemented")
+}
+func (UnimplementedInternalServer) ExpandCashSlot(context.Context, *ExpandCashSlotRequest) (*ExpandCashSlotReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExpandCashSlot not implemented")
+}
+func (UnimplementedInternalServer) GiftCashItem(context.Context, *GiftCashItemRequest) (*GiftCashItemReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GiftCashItem not implemented")
+}
+func (UnimplementedInternalServer) PayBackCashItem(context.Context, *PayBackCashItemRequest) (*PayBackCashItemReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PayBackCashItem not implemented")
+}
+func (UnimplementedInternalServer) BuyCashQuestItem(context.Context, *BuyCashQuestItemRequest) (*BuyCashQuestItemReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BuyCashQuestItem not implemented")
+}
+func (UnimplementedInternalServer) FindCashCoupon(context.Context, *FindCashCouponRequest) (*FindCashCouponReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindCashCoupon not implemented")
+}
+func (UnimplementedInternalServer) RedeemCashCoupon(context.Context, *RedeemCashCouponRequest) (*RedeemCashCouponReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RedeemCashCoupon not implemented")
+}
+func (UnimplementedInternalServer) CreateCashCoupons(context.Context, *CreateCashCouponsRequest) (*CreateCashCouponsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateCashCoupons not implemented")
 }
 func (UnimplementedInternalServer) mustEmbedUnimplementedInternalServer() {}
 func (UnimplementedInternalServer) testEmbeddedByValue()                  {}
@@ -2620,6 +2732,132 @@ func _Internal_AddCash_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_ExpandCashSlot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExpandCashSlotRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ExpandCashSlot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ExpandCashSlot_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ExpandCashSlot(ctx, req.(*ExpandCashSlotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_GiftCashItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GiftCashItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).GiftCashItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_GiftCashItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).GiftCashItem(ctx, req.(*GiftCashItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_PayBackCashItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PayBackCashItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).PayBackCashItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_PayBackCashItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).PayBackCashItem(ctx, req.(*PayBackCashItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_BuyCashQuestItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BuyCashQuestItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).BuyCashQuestItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_BuyCashQuestItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).BuyCashQuestItem(ctx, req.(*BuyCashQuestItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_FindCashCoupon_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindCashCouponRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).FindCashCoupon(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_FindCashCoupon_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).FindCashCoupon(ctx, req.(*FindCashCouponRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_RedeemCashCoupon_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeemCashCouponRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).RedeemCashCoupon(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_RedeemCashCoupon_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).RedeemCashCoupon(ctx, req.(*RedeemCashCouponRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_CreateCashCoupons_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCashCouponsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CreateCashCoupons(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CreateCashCoupons_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CreateCashCoupons(ctx, req.(*CreateCashCouponsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Internal_ServiceDesc is the grpc.ServiceDesc for Internal service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2926,6 +3164,34 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddCash",
 			Handler:    _Internal_AddCash_Handler,
+		},
+		{
+			MethodName: "ExpandCashSlot",
+			Handler:    _Internal_ExpandCashSlot_Handler,
+		},
+		{
+			MethodName: "GiftCashItem",
+			Handler:    _Internal_GiftCashItem_Handler,
+		},
+		{
+			MethodName: "PayBackCashItem",
+			Handler:    _Internal_PayBackCashItem_Handler,
+		},
+		{
+			MethodName: "BuyCashQuestItem",
+			Handler:    _Internal_BuyCashQuestItem_Handler,
+		},
+		{
+			MethodName: "FindCashCoupon",
+			Handler:    _Internal_FindCashCoupon_Handler,
+		},
+		{
+			MethodName: "RedeemCashCoupon",
+			Handler:    _Internal_RedeemCashCoupon_Handler,
+		},
+		{
+			MethodName: "CreateCashCoupons",
+			Handler:    _Internal_CreateCashCoupons_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

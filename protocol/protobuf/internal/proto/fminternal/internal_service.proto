@@ -81,6 +81,13 @@ service Internal {
   rpc PutInCashItem (PutInCashItemRequest) returns (PutInCashItemReply);
   rpc SetCashWishlist (SetCashWishlistRequest) returns (SetCashWishlistReply);
   rpc AddCash (AddCashRequest) returns (AddCashReply);
+  rpc ExpandCashSlot (ExpandCashSlotRequest) returns (ExpandCashSlotReply);
+  rpc GiftCashItem (GiftCashItemRequest) returns (GiftCashItemReply);
+  rpc PayBackCashItem (PayBackCashItemRequest) returns (PayBackCashItemReply);
+  rpc BuyCashQuestItem (BuyCashQuestItemRequest) returns (BuyCashQuestItemReply);
+  rpc FindCashCoupon (FindCashCouponRequest) returns (FindCashCouponReply);
+  rpc RedeemCashCoupon (RedeemCashCouponRequest) returns (RedeemCashCouponReply);
+  rpc CreateCashCoupons (CreateCashCouponsRequest) returns (CreateCashCouponsReply);
 }
 
 enum ServerRole {
@@ -131,6 +138,15 @@ message EnterCashShopReply {
   repeated uint32 wishlist = 6;
   uint32 character_slot_count = 7;
   uint32 storage_slot_count = 8;
+  repeated CashGift gifts = 9;
+  repeated uint64 expired = 10;
+}
+
+message CashGift {
+  uint64 serial = 1;
+  uint32 item_id = 2;
+  string sender_name = 3;
+  string message = 4;
 }
 
 enum CashCurrency {
@@ -143,6 +159,12 @@ enum CashShopResult {
   CASH_SHOP_RESULT_NOT_ENOUGH_CASH = 1;
   CASH_SHOP_RESULT_LOCKER_FULL = 2;
   CASH_SHOP_RESULT_NOT_FOUND = 3;
+  CASH_SHOP_RESULT_SLOT_LIMIT = 4;
+  CASH_SHOP_RESULT_SAME_ACCOUNT = 5;
+  CASH_SHOP_RESULT_GENDER = 6;
+  CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL = 7;
+  CASH_SHOP_RESULT_COUPON_USED = 8;
+  CASH_SHOP_RESULT_NOT_ENOUGH_MESO = 9;
 }
 
 message BuyCashItemRequest {
@@ -150,7 +172,117 @@ message BuyCashItemRequest {
   uint32 account_id = 2;
   CashCurrency currency = 3;
   uint32 price = 4;
+  repeated CashItem items = 5;
+}
+
+enum CashSlotKind {
+  CASH_SLOT_KIND_INVENTORY = 0;
+  CASH_SLOT_KIND_STORAGE = 1;
+  CASH_SLOT_KIND_CHARACTER = 2;
+}
+
+message ExpandCashSlotRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+  CashSlotKind kind = 4;
+  uint32 inventory_type = 5;
+  CashCurrency currency = 6;
+  uint32 price = 7;
+  uint32 amount = 8;
+  uint32 max = 9;
+}
+
+message ExpandCashSlotReply {
+  CashShopResult result = 1;
+  uint32 slots = 2;
+  uint32 nx_cash = 3;
+  uint32 maple_point = 4;
+}
+
+message GiftCashItemRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  string recipient_name = 3;
+  string message = 4;
+  uint32 price = 5;
+  uint32 gender = 6;
+  repeated CashItem items = 7;
+}
+
+message GiftCashItemReply {
+  CashShopResult result = 1;
+  uint32 nx_cash = 2;
+  uint32 maple_point = 3;
+}
+
+message PayBackCashItemRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint64 serial = 3;
+  uint32 maple_point = 4;
+}
+
+message PayBackCashItemReply {
+  CashShopResult result = 1;
+  uint32 nx_cash = 2;
+  uint32 maple_point = 3;
+}
+
+message BuyCashQuestItemRequest {
+  uint32 world_id = 1;
+  uint32 character_id = 2;
+  uint32 price = 3;
+  Inventory item = 4;
+}
+
+message BuyCashQuestItemReply {
+  CashShopResult result = 1;
+  int32 meso = 2;
+}
+
+enum CashCouponKind {
+  CASH_COUPON_KIND_NX_CASH = 0;
+  CASH_COUPON_KIND_MAPLE_POINT = 1;
+  CASH_COUPON_KIND_ITEM = 2;
+  CASH_COUPON_KIND_MESO = 3;
+}
+
+message FindCashCouponRequest {
+  uint32 world_id = 1;
+  string code = 2;
+}
+
+message FindCashCouponReply {
+  CashShopResult result = 1;
+  CashCouponKind kind = 2;
+  uint32 value = 3;
+}
+
+message RedeemCashCouponRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+  string code = 4;
   CashItem item = 5;
+}
+
+message RedeemCashCouponReply {
+  CashShopResult result = 1;
+  uint32 nx_cash = 2;
+  uint32 maple_point = 3;
+  int32 meso = 4;
+}
+
+message CreateCashCouponsRequest {
+  uint32 world_id = 1;
+  CashCouponKind kind = 2;
+  uint32 value = 3;
+  uint32 count = 4;
+}
+
+message CreateCashCouponsReply {
+  repeated string codes = 1;
 }
 
 message BuyCashItemReply {
@@ -283,6 +415,7 @@ message Character {
   uint32 pet_hp_item       = 32;
   uint32 pet_mp_item       = 33;
   uint64 summoned_pet      = 34;
+  repeated uint32 slot_limits = 35;
 }
 
 message KeyLayoutBinding {
