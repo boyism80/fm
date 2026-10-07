@@ -45,6 +45,7 @@ var requests = []outbound{
 	&request.PetCommand{},
 	&request.PetFood{},
 	&request.PetExceptions{},
+	&request.CashShopOperation{},
 }
 
 func (a *SuiteActor) register() {
@@ -100,7 +101,7 @@ func (a *SuiteActor) register() {
 	ctxIndex := L.SetFuncs(L.NewTable(), a.ctxFuncs())
 	botIndex := L.SetFuncs(L.NewTable(), a.botFuncs())
 	a.wrapWaits(ctxIndex, "sleep")
-	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "npc", "npc_click", "dialog", "kill", "catch", "loot", "drop", "hit_reactor")
+	a.wrapWaits(botIndex, "request", "request_on", "instance_move", "map_move", "warp", "transfer", "enter_cash_shop", "leave_cash_shop", "npc", "npc_click", "dialog", "kill", "catch", "loot", "drop", "hit_reactor")
 	L.SetField(L.NewTypeMetatable("bot_ctx"), "__index", ctxIndex)
 	L.SetField(L.NewTypeMetatable("bot"), "__index", botIndex)
 	a.ctxUD = a.newUserData(a, "bot_ctx")
@@ -451,10 +452,38 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 			}
 			i := slices.Index(a.bots, b)
 			a.park(L)
-			a.switchChannel(L, i, uint8(channel), func(ok bool) {
+			a.move(L, i, &request.SwitchChannel{Channel: uint8(channel)}, fmt.Sprintf("채널 %d", channel), b.EnterChannel, func(ok bool) {
 				a.wake(L, lua.LBool(ok))
 			})
 			return L.Yield()
+		},
+		"enter_cash_shop": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			i := slices.Index(a.bots, b)
+			a.park(L)
+			a.move(L, i, &request.EnterCashShop{}, "캐시샵", b.EnterCashShop, func(ok bool) {
+				a.wake(L, lua.LBool(ok))
+			})
+			return L.Yield()
+		},
+		"leave_cash_shop": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			i := slices.Index(a.bots, b)
+			a.park(L)
+			a.move(L, i, &request.LeaveCashShop{}, "캐시샵 퇴장", b.EnterChannel, func(ok bool) {
+				a.wake(L, lua.LBool(ok))
+			})
+			return L.Yield()
+		},
+		"cash": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			L.Push(lua.LNumber(b.NXCash))
+			L.Push(lua.LNumber(b.MaplePoint))
+			return 2
+		},
+		"locker": func(L *lua.LState) int {
+			L.Push(a.marshal.ToLua(L, a.checkBot(L).Locker))
+			return 1
 		},
 		"instance_move": func(L *lua.LState) int {
 			b := a.checkBot(L)

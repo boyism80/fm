@@ -81,9 +81,9 @@ func (a *SuiteActor) warpByCommand(thread *lua.LState, b *bot.Bot, text string, 
 	})
 }
 
-func (a *SuiteActor) switchChannel(thread *lua.LState, i int, channel uint8, done func(bool)) {
+func (a *SuiteActor) move(thread *lua.LState, i int, pkt outbound, label string, enter func(ip string, port uint16) error, done func(bool)) {
 	b := a.bots[i]
-	a.Request(thread, b, b, &request.SwitchChannel{Channel: channel}, a.timeout(), func(pkt any) bool {
+	a.Request(thread, b, b, pkt, a.timeout(), func(pkt any) bool {
 		switch pkt.(type) {
 		case *response.SwitchChannel, *response.ServerBlocked:
 			return true
@@ -92,24 +92,24 @@ func (a *SuiteActor) switchChannel(thread *lua.LState, i int, channel uint8, don
 		}
 	}, func(pkt any, ok bool) {
 		if ok == false {
-			done(a.Fail(fmt.Sprintf("%s 채널 %d 이동: 응답 없음", b.Name, channel)))
+			done(a.Fail(fmt.Sprintf("%s %s 이동: 응답 없음", b.Name, label)))
 			return
 		}
 		route, ok := pkt.(*response.SwitchChannel)
 		if ok == false {
-			done(a.Fail(fmt.Sprintf("%s 채널 %d 이동: 거절 %d", b.Name, channel, pkt.(*response.ServerBlocked).Reason)))
+			done(a.Fail(fmt.Sprintf("%s %s 이동: 거절 %d", b.Name, label, pkt.(*response.ServerBlocked).Reason)))
 			return
 		}
 
 		a.moving[b] = func(err error) {
 			if err != nil {
-				done(a.Fail(fmt.Sprintf("%s 채널 %d 접속: %v", b.Name, channel, err)))
+				done(a.Fail(fmt.Sprintf("%s %s 접속: %v", b.Name, label, err)))
 				return
 			}
 			done(true)
 		}
 		go func() {
-			a.actors.Send(a.self, &ChannelEntered{Bot: i, Err: b.EnterChannel(route.IP, route.Port)})
+			a.actors.Send(a.self, &ChannelEntered{Bot: i, Err: enter(route.IP, route.Port)})
 		}()
 	})
 }

@@ -135,6 +135,9 @@ var decoders = func() []decoder {
 		newDecoder[response.PetCommand](nil),
 		newDecoder[response.PetExceptions](nil),
 		newDecoder[response.PetNameChanged](nil),
+		newDecoder[response.SetCashShop](nil),
+		newDecoder[response.CashShopBalance](nil),
+		newDecoder[response.CashShopResult](nil),
 	}
 }()
 

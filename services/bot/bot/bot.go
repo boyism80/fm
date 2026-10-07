@@ -3,9 +3,11 @@ package bot
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/boyism80/fm/common/config"
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/dto"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -24,31 +26,34 @@ type outbound interface {
 }
 
 type Bot struct {
-	Index    int
-	ID       string
-	Name     string
-	Gender   uint8
-	CharID   uint32
-	Gen      int
-	Map      uint32
-	Spawn    uint8
-	Moved    *types.Point[int16]
-	HP       uint16
-	Level    uint8
-	Class    uint16
-	EXP      int32
-	Meso     int32
-	Fame     int32
-	CP       uint16
-	NPCs     map[uint32]dto.Npc
-	Mobs     map[uint32]dto.Mob
-	Drops    map[uint32]Drop
-	Reactors map[uint32]dto.Reactor
-	Quests   map[uint16]uint8
-	Items    map[constant.InventoryType]map[int16]ItemSlot
-	Dialog   constant.DialogType
-	cfg      *config.Bot
-	conn     *conn.Conn
+	Index      int
+	ID         string
+	Name       string
+	Gender     uint8
+	CharID     uint32
+	Gen        int
+	Map        uint32
+	Spawn      uint8
+	Moved      *types.Point[int16]
+	HP         uint16
+	Level      uint8
+	Class      uint16
+	EXP        int32
+	Meso       int32
+	Fame       int32
+	CP         uint16
+	NPCs       map[uint32]dto.Npc
+	Mobs       map[uint32]dto.Mob
+	Drops      map[uint32]Drop
+	Reactors   map[uint32]dto.Reactor
+	Quests     map[uint16]uint8
+	Items      map[constant.InventoryType]map[int16]ItemSlot
+	Dialog     constant.DialogType
+	NXCash     uint32
+	MaplePoint uint32
+	Locker     []*dto.CashShopItem
+	cfg        *config.Bot
+	conn       *conn.Conn
 }
 
 type ItemSlot struct {
@@ -113,32 +118,29 @@ func (b *Bot) Listen(onPacket func(gen int, opcode uint16, body []byte), onClose
 func (b *Bot) Update(pkt any) {
 	switch p := pkt.(type) {
 	case *response.Login:
-		b.Moved = nil
-		clear(b.NPCs)
-		clear(b.Mobs)
-		clear(b.Drops)
-		clear(b.Reactors)
-		clear(b.Quests)
-		clear(b.Items)
-		if p.Character == nil {
-			return
-		}
-		b.Map, b.Spawn, b.HP = p.Character.Map, p.Character.SpawnPoint, p.Character.Hp
-		b.Level, b.Class, b.EXP, b.Fame = p.Character.Level, p.Character.Class, int32(p.Character.Exp), int32(p.Character.Population)
-		b.Meso = p.Character.Inventory.Meso
-		for typ, tab := range p.Character.Inventory.Tabs {
-			for slot, item := range tab.Items {
-				b.setItem(typ, slot, item)
+		b.load(p.Character)
+	case *response.SetCashShop:
+		b.load(p.Character)
+	case *response.CashShopBalance:
+		b.NXCash, b.MaplePoint = p.NXCash, p.MaplePoint
+	case *response.CashShopResult:
+		switch p.Kind {
+		case pconst.CashShopResultLocker:
+			b.Locker = p.Locker
+		case pconst.CashShopResultBought, pconst.CashShopResultPutIn:
+			b.Locker = append(b.Locker, p.Item)
+			if p.Kind == pconst.CashShopResultPutIn {
+				b.removeItem(constant.InventoryType(p.Item.ItemID/1000000), p.Item.ItemID)
 			}
-		}
-		for parts, item := range p.Character.Inventory.Equipped {
-			b.setItem(constant.InventoryTypeEquipment, int16(parts), item)
-		}
-		for _, q := range p.Character.QuestsStarted {
-			b.Quests[q.QuestID] = q.Status
-		}
-		for _, q := range p.Character.QuestsCompleted {
-			b.Quests[q.QuestID] = q.Status
+		case pconst.CashShopResultTakenOut:
+			typ := constant.InventoryType(p.TakenOut.GetItemID() / 1000000)
+			b.setItem(typ, p.Slot, p.TakenOut)
+			for i, item := range b.Locker {
+				if item.ItemID == p.TakenOut.GetItemID() {
+					b.Locker = slices.Delete(b.Locker, i, i+1)
+					break
+				}
+			}
 		}
 	case *response.Warp:
 		if p.Character != nil {
@@ -241,6 +243,45 @@ func (b *Bot) Update(pkt any) {
 		b.Dialog = constant.DialogTypeAccept
 		if p.EnableEscape {
 			b.Dialog = constant.DialogTypeAcceptEscape
+		}
+	}
+}
+
+func (b *Bot) load(character *dto.Character) {
+	b.Moved = nil
+	clear(b.NPCs)
+	clear(b.Mobs)
+	clear(b.Drops)
+	clear(b.Reactors)
+	clear(b.Quests)
+	clear(b.Items)
+	if character == nil {
+		return
+	}
+	b.Map, b.Spawn, b.HP = character.Map, character.SpawnPoint, character.Hp
+	b.Level, b.Class, b.EXP, b.Fame = character.Level, character.Class, int32(character.Exp), int32(character.Population)
+	b.Meso = character.Inventory.Meso
+	for typ, tab := range character.Inventory.Tabs {
+		for slot, item := range tab.Items {
+			b.setItem(typ, slot, item)
+		}
+	}
+	for parts, item := range character.Inventory.Equipped {
+		b.setItem(constant.InventoryTypeEquipment, int16(parts), item)
+	}
+	for _, q := range character.QuestsStarted {
+		b.Quests[q.QuestID] = q.Status
+	}
+	for _, q := range character.QuestsCompleted {
+		b.Quests[q.QuestID] = q.Status
+	}
+}
+
+func (b *Bot) removeItem(typ constant.InventoryType, itemID uint32) {
+	for slot, item := range b.Items[typ] {
+		if slot > 0 && item.ItemID == itemID {
+			delete(b.Items[typ], slot)
+			return
 		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	pconst "github.com/boyism80/fm/protocol/constant"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/bot/conn"
@@ -192,6 +193,42 @@ func (b *Bot) EnterChannel(ip string, port uint16) error {
 	return b.conn.SetDeadline(time.Time{})
 }
 
+func (b *Bot) EnterCashShop(ip string, port uint16) error {
+	b.Close()
+	host := ip
+	if host == "" || host == "0.0.0.0" {
+		host = "127.0.0.1"
+	}
+	addr := fmt.Sprintf("%s:%d", host, port)
+	c, err := b.dial(addr)
+	if err != nil {
+		return fmt.Errorf("cash shop %s: %w", addr, err)
+	}
+	b.conn = c
+	b.Gen++
+	if err := b.conn.Send(&request.LoginGame{PlayerId: b.CharID}); err != nil {
+		b.Close()
+		return err
+	}
+
+	deadline := time.Now().Add(b.wait())
+	for {
+		pkt, err := b.readUntil(time.Until(deadline), cashShopOpcodes, func(any) bool {
+			return true
+		})
+		if err != nil {
+			b.Close()
+			return fmt.Errorf("cash shop login: %w", err)
+		}
+		b.Update(pkt)
+		if result, ok := pkt.(*response.CashShopResult); ok && result.Kind == pconst.CashShopResultWishlist {
+			break
+		}
+	}
+	log.Printf("%s entered cash shop", b.Name)
+	return b.conn.SetDeadline(time.Time{})
+}
+
 func (b *Bot) joinGame(ip string, port uint16, charID uint32) error {
 	host := ip
 	if host == "" || host == "0.0.0.0" {
@@ -307,5 +344,10 @@ var (
 		(&response.KeyMap{}).Opcode(),
 		(&response.SpawnNpc{}).Opcode(),
 		(&response.RemoveNpc{}).Opcode(),
+	}
+	cashShopOpcodes = []uint16{
+		(&response.SetCashShop{}).Opcode(),
+		(&response.CashShopBalance{}).Opcode(),
+		(&response.CashShopResult{}).Opcode(),
 	}
 )
