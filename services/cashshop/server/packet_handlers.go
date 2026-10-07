@@ -10,4 +10,5 @@ func (cs *CashShopServer) registerPacketHandlers() {
 	core.Bind[*CashShopServer, Leave](cs)
 	core.Bind[*CashShopServer, Refresh](cs)
 	core.Bind[*CashShopServer, Operation](cs)
+	core.Bind[*CashShopServer, Coupon](cs)
 }

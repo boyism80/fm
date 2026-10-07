@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"slices"
 	"time"
 
 	"github.com/boyism80/fm/protocol/dto"
@@ -11,10 +12,7 @@ import (
 	"github.com/boyism80/fm/util"
 )
 
-const (
-	inventorySlotLimit = 32
-	cashTabSlotLimit   = 60
-)
+const defaultSlotLimit = 32
 
 type Character struct {
 	Game           *internal.EnterGameReply
@@ -25,6 +23,8 @@ type Character struct {
 	Wishlist       []uint32
 	CharacterSlots uint16
 	StorageSlots   uint16
+	Gifts          []*internal.CashGift
+	Expired        []uint64
 	Busy           bool
 }
 
@@ -38,6 +38,8 @@ func NewCharacter(reply *internal.EnterCashShopReply) *Character {
 		Wishlist:       reply.GetWishlist(),
 		CharacterSlots: uint16(reply.GetCharacterSlotCount()),
 		StorageSlots:   uint16(reply.GetStorageSlotCount()),
+		Gifts:          reply.GetGifts(),
+		Expired:        reply.GetExpired(),
 	}
 }
 
@@ -57,13 +59,47 @@ func (ch *Character) Gender() uint8 {
 	return uint8(ch.Game.GetCharacter().GetGender())
 }
 
-func (ch *Character) FindLocker(serial uint64) (int, *internal.CashItem) {
-	for i, item := range ch.Locker {
+func (ch *Character) Meso() int32 {
+	return ch.Game.GetCharacter().GetMeso()
+}
+
+func (ch *Character) SlotLimit(invType constant.InventoryType) uint8 {
+	limits := ch.Game.GetCharacter().GetSlotLimits()
+	index := int(invType) - 1
+	if index < 0 || index >= len(limits) {
+		return defaultSlotLimit
+	}
+	return uint8(limits[index])
+}
+
+func (ch *Character) SetSlotLimit(invType constant.InventoryType, limit uint8) {
+	p := ch.Game.GetCharacter()
+	for len(p.SlotLimits) < int(constant.InventoryTypeCash) {
+		p.SlotLimits = append(p.SlotLimits, defaultSlotLimit)
+	}
+	p.SlotLimits[invType-1] = uint32(limit)
+}
+
+func (ch *Character) RemoveLocker(serial uint64) {
+	ch.Locker = slices.DeleteFunc(ch.Locker, func(item *internal.CashItem) bool {
+		return item.GetItem().GetUniqueId() == serial
+	})
+}
+
+func (ch *Character) FindLocker(serial uint64) *internal.CashItem {
+	for _, item := range ch.Locker {
 		if item.GetItem().GetUniqueId() == serial {
-			return i, item
+			return item
 		}
 	}
-	return -1, nil
+	return nil
+}
+
+func (ch *Character) Balance(currency uint8) (internal.CashCurrency, uint32) {
+	if currency == 1 {
+		return internal.CashCurrency_CASH_CURRENCY_MAPLE_POINT, ch.MaplePoint
+	}
+	return internal.CashCurrency_CASH_CURRENCY_NX_CASH, ch.NXCash
 }
 
 func (ch *Character) FindInventory(serial uint64, invType constant.InventoryType) (int, *internal.Inventory) {
@@ -82,7 +118,7 @@ func (ch *Character) FreeSlot(invType constant.InventoryType) (int16, bool) {
 			used[int16(item.GetSlot())] = true
 		}
 	}
-	for slot := int16(1); slot <= inventorySlotLimit; slot++ {
+	for slot := int16(1); slot <= int16(ch.SlotLimit(invType)); slot++ {
 		if used[slot] == false {
 			return slot, true
 		}
@@ -95,6 +131,23 @@ func (ch *Character) inventoryType(item *internal.Inventory) constant.InventoryT
 		return constant.InventoryType(item.GetInventoryType())
 	}
 	return constant.GetInventoryTypeByItemID(item.GetItemId())
+}
+
+func (ch *Character) NewCashItem(commodity *wz.Commodity, world gentity.ItemWorld) (*internal.CashItem, error) {
+	item, err := gentity.NewItem(commodity.ItemID, max(commodity.Count, 1), world)
+	if err != nil {
+		return nil, err
+	}
+
+	pb := item.ToProto(ch.ID(), 0)
+	if pb.UniqueId == nil {
+		serial := world.NewUniqueID()
+		pb.UniqueId = &serial
+	}
+	if commodity.Period > 0 {
+		pb.ExpirationUnixMs = time.Now().AddDate(0, 0, int(commodity.Period)).UnixMilli()
+	}
+	return &internal.CashItem{CommoditySn: commodity.SN, BuyerName: ch.Name(), Item: pb}, nil
 }
 
 func (ch *Character) LockerItemDTO(item *internal.CashItem) *dto.CashShopItem {
@@ -158,9 +211,8 @@ func (ch *Character) ToDTO(world gentity.ItemWorld) *dto.Character {
 	}
 
 	for _, invType := range []constant.InventoryType{constant.InventoryTypeEquipment, constant.InventoryTypeConsume, constant.InventoryTypeInstallation, constant.InventoryTypeETC, constant.InventoryTypeCash} {
-		character.Inventory.Tabs[invType] = &dto.ItemContainer{Type: invType, SlotLimit: inventorySlotLimit, Items: make(map[int16]dto.Item)}
+		character.Inventory.Tabs[invType] = &dto.ItemContainer{Type: invType, SlotLimit: ch.SlotLimit(invType), Items: make(map[int16]dto.Item)}
 	}
-	character.Inventory.Tabs[constant.InventoryTypeCash].SlotLimit = cashTabSlotLimit
 	for _, pb := range ch.Game.Inventory {
 		item, err := gentity.NewItemFromInternalProto(pb, world)
 		if err != nil {

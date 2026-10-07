@@ -42,3 +42,42 @@ func (i *CashShopItem) Deserialize(reader *stream.StreamReader) {
 	i.Expiration = util.FromFileTime(reader.ReadU64())
 	reader.Skip(8)
 }
+
+type CashShopGift struct {
+	Serial     uint64
+	ItemID     uint32
+	SenderName string
+	Message    string
+}
+
+func (g *CashShopGift) Serialize(writer *stream.StreamWriter) {
+	writer.WriteU64(g.Serial)
+	writer.WriteU32(g.ItemID)
+	writer.WriteStaticStr(g.SenderName, 13)
+	writer.WriteStaticStr(g.Message, 73)
+}
+
+func (g *CashShopGift) Deserialize(reader *stream.StreamReader) {
+	g.Serial = reader.ReadU64()
+	g.ItemID = reader.ReadU32()
+	g.SenderName = reader.ReadStaticStr(13)
+	g.Message = reader.ReadStaticStr(73)
+}
+
+type CashShopGrantedItem struct {
+	Count  uint16
+	Slot   uint16
+	ItemID uint32
+}
+
+func (g *CashShopGrantedItem) Serialize(writer *stream.StreamWriter) {
+	writer.WriteU16(g.Count)
+	writer.WriteU16(g.Slot)
+	writer.WriteU32(g.ItemID)
+}
+
+func (g *CashShopGrantedItem) Deserialize(reader *stream.StreamReader) {
+	g.Count = reader.ReadU16()
+	g.Slot = reader.ReadU16()
+	g.ItemID = reader.ReadU32()
+}

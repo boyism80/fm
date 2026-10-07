@@ -8,6 +8,7 @@ import (
 	"github.com/boyism80/fm/core"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/constant"
+	"github.com/boyism80/fm/protocol/dto"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
 	"github.com/boyism80/fm/protocol/response"
@@ -61,7 +62,20 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 			StorageSlots:   character.StorageSlots,
 			CharacterSlots: character.CharacterSlots,
 		}, types.SEND_POLICY_ENCRYPT)
-		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultGifts}, types.SEND_POLICY_ENCRYPT)
+		for _, serial := range character.Expired {
+			_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultExpired, Serial: serial}, types.SEND_POLICY_ENCRYPT)
+			character.RemoveLocker(serial)
+		}
+		gifts := make([]*dto.CashShopGift, 0, len(character.Gifts))
+		for _, gift := range character.Gifts {
+			gifts = append(gifts, &dto.CashShopGift{
+				Serial:     gift.GetSerial(),
+				ItemID:     gift.GetItemId(),
+				SenderName: gift.GetSenderName(),
+				Message:    gift.GetMessage(),
+			})
+		}
+		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultGifts, Gifts: gifts}, types.SEND_POLICY_ENCRYPT)
 		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultWishlist, Wishlist: character.Wishlist}, types.SEND_POLICY_ENCRYPT)
 		return nil
 	})
