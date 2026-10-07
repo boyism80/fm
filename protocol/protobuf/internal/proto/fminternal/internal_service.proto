@@ -97,6 +97,7 @@ service Internal {
   rpc InviteWeddingGuest (InviteWeddingGuestRequest) returns (InviteWeddingGuestReply);
   rpc FinishWedding (FinishWeddingRequest) returns (MarriageReply);
   rpc RequestDivorce (RequestDivorceRequest) returns (MarriageReply);
+  rpc CancelDivorce (CancelDivorceRequest) returns (MarriageReply);
   rpc GiveWeddingGift (GiveWeddingGiftRequest) returns (GiveWeddingGiftReply);
   rpc LoadWeddingGifts (LoadWeddingGiftsRequest) returns (LoadWeddingGiftsReply);
   rpc ClaimWeddingGift (ClaimWeddingGiftRequest) returns (ClaimWeddingGiftReply);
@@ -399,6 +400,12 @@ message RequestDivorceRequest {
   uint32 marriage_id  = 2;
   uint32 character_id = 3;
   uint64 now_unix_ms  = 4;
+}
+
+message CancelDivorceRequest {
+  uint32 world_id     = 1;
+  uint32 marriage_id  = 2;
+  uint32 character_id = 3;
 }
 
 message WeddingGift {

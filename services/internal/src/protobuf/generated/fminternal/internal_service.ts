@@ -1536,6 +1536,12 @@ export interface RequestDivorceRequest {
   nowUnixMs: number;
 }
 
+export interface CancelDivorceRequest {
+  worldId: number;
+  marriageId: number;
+  characterId: number;
+}
+
 export interface WeddingGift {
   giftId: number;
   senderName: string;
@@ -7117,6 +7123,110 @@ export const RequestDivorceRequest: MessageFns<RequestDivorceRequest> = {
     message.marriageId = object.marriageId ?? 0;
     message.characterId = object.characterId ?? 0;
     message.nowUnixMs = object.nowUnixMs ?? 0;
+    return message;
+  },
+};
+
+function createBaseCancelDivorceRequest(): CancelDivorceRequest {
+  return { worldId: 0, marriageId: 0, characterId: 0 };
+}
+
+export const CancelDivorceRequest: MessageFns<CancelDivorceRequest> = {
+  encode(message: CancelDivorceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      writer.uint32(16).uint32(message.marriageId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CancelDivorceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCancelDivorceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CancelDivorceRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CancelDivorceRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CancelDivorceRequest>, I>>(base?: I): CancelDivorceRequest {
+    return CancelDivorceRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CancelDivorceRequest>, I>>(object: I): CancelDivorceRequest {
+    const message = createBaseCancelDivorceRequest();
+    message.worldId = object.worldId ?? 0;
+    message.marriageId = object.marriageId ?? 0;
+    message.characterId = object.characterId ?? 0;
     return message;
   },
 };
@@ -31266,6 +31376,15 @@ export const InternalService = {
     responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
   },
+  cancelDivorce: {
+    path: "/fm.internal.Internal/CancelDivorce" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CancelDivorceRequest): Buffer => Buffer.from(CancelDivorceRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CancelDivorceRequest => CancelDivorceRequest.decode(value),
+    responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
+  },
   giveWeddingGift: {
     path: "/fm.internal.Internal/GiveWeddingGift" as const,
     requestStream: false as const,
@@ -31422,6 +31541,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   inviteWeddingGuest: handleUnaryCall<InviteWeddingGuestRequest, InviteWeddingGuestReply>;
   finishWedding: handleUnaryCall<FinishWeddingRequest, MarriageReply>;
   requestDivorce: handleUnaryCall<RequestDivorceRequest, MarriageReply>;
+  cancelDivorce: handleUnaryCall<CancelDivorceRequest, MarriageReply>;
   giveWeddingGift: handleUnaryCall<GiveWeddingGiftRequest, GiveWeddingGiftReply>;
   loadWeddingGifts: handleUnaryCall<LoadWeddingGiftsRequest, LoadWeddingGiftsReply>;
   claimWeddingGift: handleUnaryCall<ClaimWeddingGiftRequest, ClaimWeddingGiftReply>;
@@ -32787,6 +32907,21 @@ export interface InternalClient extends Client {
   ): ClientUnaryCall;
   requestDivorce(
     request: RequestDivorceRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  cancelDivorce(
+    request: CancelDivorceRequest,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  cancelDivorce(
+    request: CancelDivorceRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  cancelDivorce(
+    request: CancelDivorceRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: MarriageReply) => void,

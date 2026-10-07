@@ -417,6 +417,20 @@ func (ch *Character) RequestDivorce(actx actor.Context) (*async.Promise[string],
 	}), nil
 }
 
+func (ch *Character) CancelDivorce(actx actor.Context) (*async.Promise[bool], error) {
+	if ch.Marriage == nil || ch.Marriage.Status != MarriageStatusMarried || ch.Marriage.DivorceRequestedAt.IsZero() {
+		return nil, ErrMarriageInvalid
+	}
+
+	return ch.Listener.CancelDivorceAsync(actx, ch, ch.Marriage.ID).Then(func(reply *internal.MarriageReply) (bool, error) {
+		if reply.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
+			return false, nil
+		}
+		ch.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
+		return true, nil
+	}), nil
+}
+
 func (ch *Character) NotifySpouseMap(actx actor.Context, reply bool) {
 	if ch.Marriage == nil {
 		return

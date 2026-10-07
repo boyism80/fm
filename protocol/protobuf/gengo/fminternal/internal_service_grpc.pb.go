@@ -110,6 +110,7 @@ const (
 	Internal_InviteWeddingGuest_FullMethodName             = "/fm.internal.Internal/InviteWeddingGuest"
 	Internal_FinishWedding_FullMethodName                  = "/fm.internal.Internal/FinishWedding"
 	Internal_RequestDivorce_FullMethodName                 = "/fm.internal.Internal/RequestDivorce"
+	Internal_CancelDivorce_FullMethodName                  = "/fm.internal.Internal/CancelDivorce"
 	Internal_GiveWeddingGift_FullMethodName                = "/fm.internal.Internal/GiveWeddingGift"
 	Internal_LoadWeddingGifts_FullMethodName               = "/fm.internal.Internal/LoadWeddingGifts"
 	Internal_ClaimWeddingGift_FullMethodName               = "/fm.internal.Internal/ClaimWeddingGift"
@@ -211,6 +212,7 @@ type InternalClient interface {
 	InviteWeddingGuest(ctx context.Context, in *InviteWeddingGuestRequest, opts ...grpc.CallOption) (*InviteWeddingGuestReply, error)
 	FinishWedding(ctx context.Context, in *FinishWeddingRequest, opts ...grpc.CallOption) (*MarriageReply, error)
 	RequestDivorce(ctx context.Context, in *RequestDivorceRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	CancelDivorce(ctx context.Context, in *CancelDivorceRequest, opts ...grpc.CallOption) (*MarriageReply, error)
 	GiveWeddingGift(ctx context.Context, in *GiveWeddingGiftRequest, opts ...grpc.CallOption) (*GiveWeddingGiftReply, error)
 	LoadWeddingGifts(ctx context.Context, in *LoadWeddingGiftsRequest, opts ...grpc.CallOption) (*LoadWeddingGiftsReply, error)
 	ClaimWeddingGift(ctx context.Context, in *ClaimWeddingGiftRequest, opts ...grpc.CallOption) (*ClaimWeddingGiftReply, error)
@@ -1135,6 +1137,16 @@ func (c *internalClient) RequestDivorce(ctx context.Context, in *RequestDivorceR
 	return out, nil
 }
 
+func (c *internalClient) CancelDivorce(ctx context.Context, in *CancelDivorceRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarriageReply)
+	err := c.cc.Invoke(ctx, Internal_CancelDivorce_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *internalClient) GiveWeddingGift(ctx context.Context, in *GiveWeddingGiftRequest, opts ...grpc.CallOption) (*GiveWeddingGiftReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GiveWeddingGiftReply)
@@ -1270,6 +1282,7 @@ type InternalServer interface {
 	InviteWeddingGuest(context.Context, *InviteWeddingGuestRequest) (*InviteWeddingGuestReply, error)
 	FinishWedding(context.Context, *FinishWeddingRequest) (*MarriageReply, error)
 	RequestDivorce(context.Context, *RequestDivorceRequest) (*MarriageReply, error)
+	CancelDivorce(context.Context, *CancelDivorceRequest) (*MarriageReply, error)
 	GiveWeddingGift(context.Context, *GiveWeddingGiftRequest) (*GiveWeddingGiftReply, error)
 	LoadWeddingGifts(context.Context, *LoadWeddingGiftsRequest) (*LoadWeddingGiftsReply, error)
 	ClaimWeddingGift(context.Context, *ClaimWeddingGiftRequest) (*ClaimWeddingGiftReply, error)
@@ -1556,6 +1569,9 @@ func (UnimplementedInternalServer) FinishWedding(context.Context, *FinishWedding
 }
 func (UnimplementedInternalServer) RequestDivorce(context.Context, *RequestDivorceRequest) (*MarriageReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestDivorce not implemented")
+}
+func (UnimplementedInternalServer) CancelDivorce(context.Context, *CancelDivorceRequest) (*MarriageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelDivorce not implemented")
 }
 func (UnimplementedInternalServer) GiveWeddingGift(context.Context, *GiveWeddingGiftRequest) (*GiveWeddingGiftReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GiveWeddingGift not implemented")
@@ -3228,6 +3244,24 @@ func _Internal_RequestDivorce_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_CancelDivorce_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelDivorceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CancelDivorce(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CancelDivorce_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CancelDivorce(ctx, req.(*CancelDivorceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Internal_GiveWeddingGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GiveWeddingGiftRequest)
 	if err := dec(in); err != nil {
@@ -3670,6 +3704,10 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RequestDivorce",
 			Handler:    _Internal_RequestDivorce_Handler,
+		},
+		{
+			MethodName: "CancelDivorce",
+			Handler:    _Internal_CancelDivorce_Handler,
 		},
 		{
 			MethodName: "GiveWeddingGift",

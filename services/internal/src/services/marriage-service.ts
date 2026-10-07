@@ -284,7 +284,7 @@ export class MarriageService {
                 row.divorce_requester_id = characterId;
                 row.divorce_requested_at = new Date(nowMs);
                 await this.marriageRepo.update(client, row);
-                return { result: MarriageResult.MARRIAGE_RESULT_OK, row, divorced: false };
+                return { result: MarriageResult.MARRIAGE_RESULT_OK, row, divorced: false, requested: true };
             }
             if (this.divorceDue(row, nowMs) === false) {
                 return { result: MarriageResult.MARRIAGE_RESULT_INVALID_STATE, row, divorced: false };
@@ -299,7 +299,33 @@ export class MarriageService {
             await this.notify(worldId, [loaded.row.groom_id, loaded.row.bride_id], "divorced");
             return { result: loaded.result, marriage: undefined };
         }
+        if (loaded.requested) {
+            const partnerId = loaded.row.groom_id === characterId ? loaded.row.bride_id : loaded.row.groom_id;
+            await this.notify(worldId, [partnerId], "divorce_requested");
+        }
         return { result: loaded.result, marriage: this.toProto(loaded.row) };
+    }
+
+    async cancelDivorce(worldId: number, marriageId: number, characterId: number): Promise<MarriageReply> {
+        const row = await this.marriageRepo.withTransaction(worldId, async (client) => {
+            const found = await this.marriageRepo.find(client, marriageId);
+            if (found == null || found.status !== MarriageStatus.MARRIAGE_STATUS_MARRIED || found.divorce_requested_at == null) {
+                return null;
+            }
+            if (found.groom_id !== characterId && found.bride_id !== characterId) {
+                return null;
+            }
+            found.divorce_requester_id = 0;
+            found.divorce_requested_at = null;
+            await this.marriageRepo.update(client, found);
+            return found;
+        });
+        if (row == null) {
+            return { result: MarriageResult.MARRIAGE_RESULT_INVALID_STATE, marriage: undefined };
+        }
+        const partnerId = row.groom_id === characterId ? row.bride_id : row.groom_id;
+        await this.notify(worldId, [partnerId], "divorce_canceled");
+        return { result: MarriageResult.MARRIAGE_RESULT_OK, marriage: this.toProto(row) };
     }
 
     async giveWeddingGift(input: GiveWeddingGiftInput): Promise<MarriageResult> {

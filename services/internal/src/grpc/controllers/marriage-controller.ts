@@ -1,6 +1,7 @@
 import type { MarriageService } from "../../services/marriage-service";
 import type {
     BreakEngagementRequest,
+    CancelDivorceRequest,
     ClaimWeddingGiftReply,
     ClaimWeddingGiftRequest,
     CreateMarriageRequest,
@@ -119,6 +120,16 @@ export class MarriageGrpcController {
         try {
             const req = call.request;
             callback(null, await this.marriageService.requestDivorce(req.worldId, req.marriageId, req.characterId, Number(req.nowUnixMs) || Date.now()));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("cancelDivorce")
+    async cancelDivorce(call: GrpcCall<CancelDivorceRequest>, callback: GrpcCallback<MarriageReply>) {
+        try {
+            const req = call.request;
+            callback(null, await this.marriageService.cancelDivorce(req.worldId, req.marriageId, req.characterId));
         } catch (err) {
             this.grpcError(err, callback);
         }

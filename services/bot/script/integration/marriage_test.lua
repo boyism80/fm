@@ -440,24 +440,62 @@ local function gifts(ctx)
 	return has(ctx, groom, GIFT, 2)
 end
 
-local function divorce(ctx)
-	local groom, bride = ctx:bot(0), ctx:bot(1)
-	local dlg = click(ctx, groom, PILA)
+local function request_divorce(ctx, bot)
+	local dlg = click(ctx, bot, PILA)
 	if dlg == false then
 		return false
 	end
-	if said(ctx, groom, groom:dialog(true, 0), "안타깝군요", "이혼 상담") == false then
+	if check(ctx, #dlg.selections == 1, bot:name() .. " 이혼 신청 전 취소 메뉴가 보임") == false then
+		bot:dialog(false)
 		return false
 	end
-	if groom:dialog(true) == nil then
+	if said(ctx, bot, bot:dialog(true, 0), "안타깝군요", "이혼 상담") == false then
+		return false
+	end
+	if bot:dialog(true) == nil then
 		return ctx:fail("이혼 유예 질문이 오지 않음")
 	end
-	if said(ctx, groom, groom:dialog(true), "이혼 신청이 접수되었습니다", "이혼 신청") == false then
+	if said(ctx, bot, bot:dialog(true), "이혼 신청이 접수되었습니다", "이혼 신청") == false then
 		return false
 	end
-	groom:dialog(false)
+	bot:dialog(false)
+	return true
+end
 
-	dlg = click(ctx, groom, PILA)
+local function cancel_divorce(ctx, bot)
+	ctx:sleep(1000)
+	local dlg = click(ctx, bot, PILA)
+	if dlg == false then
+		return false
+	end
+	if check(ctx, #dlg.selections == 2, bot:name() .. " 이혼 신청 취소 메뉴가 없음") == false then
+		bot:dialog(false)
+		return false
+	end
+	if said(ctx, bot, bot:dialog(true, 1), "취소하러 오셨군요", "이혼 신청 취소") == false then
+		return false
+	end
+	if said(ctx, bot, bot:dialog(true), "이혼 신청이 취소되었습니다", "이혼 신청 취소 결과") == false then
+		return false
+	end
+	bot:dialog(false)
+	ctx:sleep(1000)
+	return true
+end
+
+local function divorce(ctx)
+	local groom, bride = ctx:bot(0), ctx:bot(1)
+	if request_divorce(ctx, groom) == false then
+		return false
+	end
+	if cancel_divorce(ctx, bride) == false then
+		return false
+	end
+	if request_divorce(ctx, groom) == false then
+		return false
+	end
+
+	local dlg = click(ctx, groom, PILA)
 	if dlg == false then
 		return false
 	end

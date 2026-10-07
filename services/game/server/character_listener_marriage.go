@@ -131,6 +131,20 @@ func (l *CharacterListenerImpl) RequestDivorceAsync(ctx actor.Context, ch *entit
 	)
 }
 
+func (l *CharacterListenerImpl) CancelDivorceAsync(ctx actor.Context, ch *entity.Character, marriageID uint32) *async.Promise[*internal.MarriageReply] {
+	req := &internal.CancelDivorceRequest{
+		WorldId:     l.gs.config.WorldId,
+		MarriageId:  marriageID,
+		CharacterId: ch.GetID(),
+	}
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
+		func(c context.Context) (*internal.MarriageReply, error) {
+			return l.gs.internalClient.CancelDivorce(c, req)
+		},
+		nil,
+	)
+}
+
 func (l *CharacterListenerImpl) GiveWeddingGiftAsync(ctx actor.Context, ch *entity.Character, receiverID uint32, gift *internal.WeddingGift, sender *internal.CharacterSaveEntry) *async.Promise[*internal.GiveWeddingGiftReply] {
 	req := &internal.GiveWeddingGiftRequest{
 		WorldId:    l.gs.config.WorldId,

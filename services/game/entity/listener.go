@@ -43,6 +43,7 @@ type CharacterListener interface {
 	SetWeddingWishlistAsync(ctx actor.Context, ch *Character, marriageID uint32, wishes []string) *async.Promise[*internal.MarriageReply]
 	InviteWeddingGuestAsync(ctx actor.Context, ch *Character, marriageID uint32, guestName string) *async.Promise[*internal.InviteWeddingGuestReply]
 	RequestDivorceAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise[*internal.MarriageReply]
+	CancelDivorceAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise[*internal.MarriageReply]
 	GiveWeddingGiftAsync(ctx actor.Context, ch *Character, receiverID uint32, gift *internal.WeddingGift, sender *internal.CharacterSaveEntry) *async.Promise[*internal.GiveWeddingGiftReply]
 	LoadWeddingGiftsAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.LoadWeddingGiftsReply]
 	ClaimWeddingGiftAsync(ctx actor.Context, ch *Character, giftID uint32) *async.Promise[*internal.ClaimWeddingGiftReply]

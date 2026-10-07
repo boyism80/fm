@@ -1720,6 +1720,27 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return []lua.LValue{lua.LString(result)}
 			})
 		},
+		"cancel_divorce": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			promise, err := ch.CancelDivorce(cfg.ActorContext)
+			if err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(canceled bool, err error) []lua.LValue {
+				return []lua.LValue{lua.LBool(err == nil && canceled)}
+			})
+		},
 		"invited_to": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)
