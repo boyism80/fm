@@ -43,7 +43,9 @@ type Character struct {
 	mega              bool
 	random            [3]stream.RandomStream
 	Quests            *QuestContainer
-	marriageId        uint32
+	Marriage          *Marriage
+	proposal          proposal
+	weddingGift       weddingGiftWindow
 	regRocks          []uint32
 	rocks             []uint32
 	monsterBookCover  uint32
@@ -151,7 +153,7 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		MountFatigue:      spawnBuffData.MountFatigue,
 		CrushRings:        RingsToDTO(ch.Inventory.Rings.Left),
 		FriendshipRings:   RingsToDTO(ch.Inventory.Rings.Mid),
-		MarriageRings:     RingsToDTO(ch.Inventory.Rings.Right),
+		MarriageRing:      ch.MarriageRingToDTO(),
 		HasTeam:           ch.GetMap() != nil && ch.GetMap().Wz.HasTeam(),
 		Team:              carnivalTeam,
 	}
@@ -283,6 +285,14 @@ func (ch *Character) GetGender() uint8    { return ch.look.Gender }
 func (ch *Character) GetSkinColor() uint8 { return ch.look.SkinColor }
 func (ch *Character) GetFace() uint32     { return ch.look.Face }
 func (ch *Character) GetHair() uint32     { return ch.look.Hair }
+
+func (ch *Character) SetGender(gender uint8) {
+	if ch.look.Gender == gender {
+		return
+	}
+	ch.look.Gender = gender
+	ch.Listener.OnUpdateCharacterLook(ch)
+}
 
 func (ch *Character) SetHair(id uint32) {
 	if ch.look.Hair == id {

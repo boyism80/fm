@@ -336,6 +336,27 @@ func (l *MapListenerImpl) OnMapMessage(mapInstance *entity.Map, messageType cons
 	}, nil)
 }
 
+func (l *MapListenerImpl) OnWeather(mapInstance *entity.Map, itemID uint32, message string) {
+	mapInstance.Broadcast(&response.Weather{
+		ItemID:  itemID,
+		Message: message,
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnYellowChat(mapInstance *entity.Map, message string) {
+	mapInstance.Broadcast(&response.YellowChat{
+		Message: message,
+	}, nil)
+}
+
+func (l *MapListenerImpl) OnWeddingEffect(mapInstance *entity.Map, groomID uint32, brideID uint32) {
+	mapInstance.Broadcast(&response.WeddingCouple{
+		GroomID: groomID,
+		BrideID: brideID,
+	}, nil)
+	mapInstance.Broadcast(&response.WeddingEffect{}, nil)
+}
+
 func (l *MapListenerImpl) OnClearEffect(mapInstance *entity.Map) {
 	if mapInstance == nil {
 		return

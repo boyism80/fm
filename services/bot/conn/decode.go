@@ -138,6 +138,14 @@ var decoders = func() []decoder {
 		newDecoder[response.SetCashShop](nil),
 		newDecoder[response.CashShopBalance](nil),
 		newDecoder[response.CashShopResult](nil),
+		newDecoder[response.EngageRequest](nil),
+		newDecoder[response.EngageResult](nil),
+		newDecoder[response.SpouseMap](nil),
+		newDecoder[response.WeddingGift](nil),
+		newDecoder[response.Weather](nil),
+		newDecoder[response.YellowChat](nil),
+		newDecoder[response.WeddingCouple](nil),
+		newDecoder[response.WeddingEffect](nil),
 	}
 }()
 

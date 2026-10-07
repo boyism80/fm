@@ -88,6 +88,19 @@ service Internal {
   rpc FindCashCoupon (FindCashCouponRequest) returns (FindCashCouponReply);
   rpc RedeemCashCoupon (RedeemCashCouponRequest) returns (RedeemCashCouponReply);
   rpc CreateCashCoupons (CreateCashCouponsRequest) returns (CreateCashCouponsReply);
+  rpc CreateMarriage (CreateMarriageRequest) returns (MarriageReply);
+  rpc LoadMarriage (LoadMarriageRequest) returns (MarriageReply);
+  rpc GetMarriage (GetMarriageRequest) returns (MarriageReply);
+  rpc BreakEngagement (BreakEngagementRequest) returns (MarriageReply);
+  rpc ReserveWedding (ReserveWeddingRequest) returns (MarriageReply);
+  rpc SetWeddingWishlist (SetWeddingWishlistRequest) returns (MarriageReply);
+  rpc InviteWeddingGuest (InviteWeddingGuestRequest) returns (InviteWeddingGuestReply);
+  rpc FinishWedding (FinishWeddingRequest) returns (MarriageReply);
+  rpc RequestDivorce (RequestDivorceRequest) returns (MarriageReply);
+  rpc GiveWeddingGift (GiveWeddingGiftRequest) returns (GiveWeddingGiftReply);
+  rpc LoadWeddingGifts (LoadWeddingGiftsRequest) returns (LoadWeddingGiftsReply);
+  rpc ClaimWeddingGift (ClaimWeddingGiftRequest) returns (ClaimWeddingGiftReply);
+  rpc NotifySpouseMap (NotifySpouseMapRequest) returns (NotifySpouseMapReply);
 }
 
 enum ServerRole {
@@ -285,6 +298,157 @@ message CreateCashCouponsReply {
   repeated string codes = 1;
 }
 
+enum MarriageStatus {
+  MARRIAGE_STATUS_NONE    = 0;
+  MARRIAGE_STATUS_ENGAGED = 1;
+  MARRIAGE_STATUS_MARRIED = 3;
+}
+
+enum MarriageResult {
+  MARRIAGE_RESULT_OK                    = 0;
+  MARRIAGE_RESULT_NOT_FOUND             = 1;
+  MARRIAGE_RESULT_ALREADY_ENGAGED       = 2;
+  MARRIAGE_RESULT_PARTNER_ENGAGED       = 3;
+  MARRIAGE_RESULT_INVALID_STATE         = 4;
+  MARRIAGE_RESULT_GUEST_NOT_FOUND       = 5;
+  MARRIAGE_RESULT_GUEST_ALREADY_INVITED = 6;
+  MARRIAGE_RESULT_GIFT_NOT_FOUND        = 7;
+}
+
+message Marriage {
+  uint32 marriage_id                  = 1;
+  uint32 groom_id                     = 2;
+  uint32 bride_id                     = 3;
+  string groom_name                   = 4;
+  string bride_name                   = 5;
+  uint32 groom_item_id                = 6;
+  uint32 bride_item_id                = 7;
+  MarriageStatus status               = 8;
+  uint32 ticket_item_id               = 9;
+  bool   groom_wished                 = 10;
+  bool   bride_wished                 = 11;
+  repeated string groom_wishes        = 12;
+  repeated string bride_wishes        = 13;
+  repeated uint32 guests              = 14;
+  uint32 divorce_requester_id         = 15;
+  int64  divorce_requested_at_unix_ms = 16;
+}
+
+message MarriageReply {
+  MarriageResult result      = 1;
+  optional Marriage marriage = 2;
+}
+
+message CreateMarriageRequest {
+  uint32 world_id      = 1;
+  uint32 groom_id      = 2;
+  string groom_name    = 3;
+  uint32 bride_id      = 4;
+  string bride_name    = 5;
+  uint32 ring_item_id  = 6;
+}
+
+message LoadMarriageRequest {
+  uint32 world_id     = 1;
+  uint32 character_id = 2;
+}
+
+message GetMarriageRequest {
+  uint32 world_id    = 1;
+  uint32 marriage_id = 2;
+}
+
+message BreakEngagementRequest {
+  uint32 world_id     = 1;
+  uint32 marriage_id  = 2;
+  uint32 character_id = 3;
+}
+
+message ReserveWeddingRequest {
+  uint32 world_id       = 1;
+  uint32 marriage_id    = 2;
+  uint32 ticket_item_id = 3;
+}
+
+message SetWeddingWishlistRequest {
+  uint32 world_id        = 1;
+  uint32 marriage_id     = 2;
+  uint32 character_id    = 3;
+  repeated string wishes = 4;
+}
+
+message InviteWeddingGuestRequest {
+  uint32 world_id    = 1;
+  uint32 marriage_id = 2;
+  string guest_name  = 3;
+}
+
+message InviteWeddingGuestReply {
+  MarriageResult result = 1;
+  uint32 guest_id       = 2;
+  string guest_name     = 3;
+}
+
+message FinishWeddingRequest {
+  uint32 world_id    = 1;
+  uint32 marriage_id = 2;
+}
+
+message RequestDivorceRequest {
+  uint32 world_id     = 1;
+  uint32 marriage_id  = 2;
+  uint32 character_id = 3;
+  uint64 now_unix_ms  = 4;
+}
+
+message WeddingGift {
+  uint32 gift_id     = 1;
+  string sender_name = 2;
+  Inventory item     = 3;
+}
+
+message GiveWeddingGiftRequest {
+  uint32 world_id           = 1;
+  uint32 receiver_id        = 2;
+  WeddingGift gift          = 3;
+  CharacterSaveEntry sender = 4;
+}
+
+message GiveWeddingGiftReply {
+  MarriageResult result = 1;
+}
+
+message LoadWeddingGiftsRequest {
+  uint32 world_id     = 1;
+  uint32 character_id = 2;
+}
+
+message LoadWeddingGiftsReply {
+  repeated WeddingGift gifts = 1;
+}
+
+message ClaimWeddingGiftRequest {
+  uint32 world_id     = 1;
+  uint32 character_id = 2;
+  uint32 gift_id      = 3;
+}
+
+message ClaimWeddingGiftReply {
+  MarriageResult result = 1;
+  WeddingGift gift      = 2;
+}
+
+message NotifySpouseMapRequest {
+  uint32 world_id     = 1;
+  uint32 character_id = 2;
+  uint32 spouse_id    = 3;
+  uint32 map_id       = 4;
+  bool   reply        = 5;
+}
+
+message NotifySpouseMapReply {
+}
+
 message BuyCashItemReply {
   CashShopResult result = 1;
   uint32 nx_cash = 2;
@@ -438,6 +602,7 @@ message EnterGameReply {
   repeated Quest      quests    = 11;
   repeated SavedLocation saved_locations = 12;
   repeated Debuff     debuffs   = 13;
+  optional Marriage   marriage  = 14;
 }
 
 message Debuff {
@@ -631,6 +796,7 @@ message Inventory {
   optional EquipmentBonusStats equip_bonus_stats = 12;
   uint32 enhance_count      = 13;
   optional Pet pet          = 14;
+  uint32 marriage_id        = 15;
 }
 
 message Pet {

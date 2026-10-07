@@ -94,7 +94,9 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	charDTO := ch.ToDTO()
 
 	charDTO.SkillPoint = ch.SkillPoint
-	charDTO.MarriageId = ch.marriageId
+	if ch.Marriage != nil {
+		charDTO.Marriage = ch.Marriage.ToDTO()
+	}
 	charDTO.RegRocks = ch.regRocks
 	charDTO.Rocks = ch.rocks
 	charDTO.MonsterBookCover = ch.monsterBookCover
@@ -120,9 +122,8 @@ func (ch *Character) ToFullDTO() *dto.Character {
 		Tabs:     make(map[constant.InventoryType]*dto.ItemContainer),
 		Equipped: make(map[constant.EquipmentPartsType]*dto.Equipment),
 		Rings: dto.RingContainer{
-			Left:  RingsToDTO(ch.Inventory.Rings.Left),
-			Mid:   RingsToDTO(ch.Inventory.Rings.Mid),
-			Right: RingsToDTO(ch.Inventory.Rings.Right),
+			Left: RingsToDTO(ch.Inventory.Rings.Left),
+			Mid:  RingsToDTO(ch.Inventory.Rings.Mid),
 		},
 		Meso: ch.Inventory.Meso,
 	}

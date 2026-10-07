@@ -206,22 +206,12 @@ func (p *CharacterInfo) serializeRings(writer *stream.StreamWriter) {
 		writer.WriteU32(ring.ItemId)
 	}
 
-	right := p.Character.Inventory.Rings.Right
-	if right == nil {
-		right = []*dto.Ring{}
-	}
-	writer.WriteU16(uint16(len(right)))
-
-	for _, ring := range right {
-		writer.WriteU32(p.Character.MarriageId)
-		writer.WriteU32(0)
-		writer.WriteU32(0)
+	if p.Character.Marriage == nil {
 		writer.WriteU16(0)
-		writer.WriteU32(ring.ItemId)
-		writer.WriteU32(ring.ItemId)
-		writer.WriteStaticStr("", 13)
-		writer.WriteStaticStr("", 13)
+		return
 	}
+	writer.WriteU16(1)
+	p.Character.Marriage.Serialize(writer)
 }
 
 func (p *CharacterInfo) serializeRocks(writer *stream.StreamWriter) {

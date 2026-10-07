@@ -48,6 +48,8 @@ var requests = []outbound{
 	&request.PetReviveInquiry{},
 	&request.CashShopOperation{},
 	&request.CashShopCoupon{},
+	&request.RingAction{},
+	&request.WeddingPresent{},
 }
 
 func (a *SuiteActor) register() {

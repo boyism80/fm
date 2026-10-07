@@ -196,6 +196,7 @@ export interface InventoryModel {
     ownerName: string | null;
     equipBonusStats?: EquipmentBonusStatsJson;
     pet?: Pet | null;
+    marriageId?: number;
     updatedAt?: Date;
 }
 
@@ -214,6 +215,7 @@ export type InventoryRow = {
     owner_name: string | null;
     equip_bonus_stats: string | EquipmentBonusStatsJson;
     pet: string | Pet | null;
+    marriage_id?: number;
     created_at?: Date | string;
     updated_at?: Date | string;
     deleted?: boolean;

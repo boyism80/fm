@@ -11,7 +11,6 @@ type Ring struct {
 }
 
 type RingContainer struct {
-	Left  []*Ring
-	Mid   []*Ring
-	Right []*Ring
+	Left []*Ring
+	Mid  []*Ring
 }

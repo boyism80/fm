@@ -133,6 +133,18 @@ type DeliverParcelArrived struct {
 	Quick       bool
 }
 
+type DeliverMarriageChanged struct {
+	CharacterID uint32
+	Event       string
+}
+
+type DeliverSpouseMoved struct {
+	CharacterID uint32
+	SpouseID    uint32
+	MapID       uint32
+	Reply       bool
+}
+
 type DeliverPartyInvite struct {
 	CharacterID uint32
 	PartyID     uint32

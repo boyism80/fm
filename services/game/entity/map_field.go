@@ -18,6 +18,18 @@ func (m *Map) MapMessage(message string) {
 	m.listener.OnMapMessage(m, constant.MsgPinkText, message)
 }
 
+func (m *Map) Weather(itemID uint32, message string) {
+	m.listener.OnWeather(m, itemID, message)
+}
+
+func (m *Map) YellowChat(message string) {
+	m.listener.OnYellowChat(m, message)
+}
+
+func (m *Map) WeddingEffect(groomID uint32, brideID uint32) {
+	m.listener.OnWeddingEffect(m, groomID, brideID)
+}
+
 func (m *Map) ClearEffect() {
 	if m == nil || m.listener == nil {
 		return

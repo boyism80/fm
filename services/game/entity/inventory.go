@@ -24,9 +24,8 @@ func NewInventory(owner *Character) *Inventory {
 		},
 		Equipped: map[constant.EquipmentPartsType]Equipment{},
 		Rings: RingContainer{
-			Left:  []*Ring{},
-			Right: []*Ring{},
-			Mid:   []*Ring{},
+			Left: []*Ring{},
+			Mid:  []*Ring{},
 		},
 	}
 }

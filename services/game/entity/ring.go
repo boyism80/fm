@@ -10,8 +10,8 @@ type Ring struct {
 	Equipped     bool
 }
 
+// TODO: load cash couple and friendship rings into Left and Mid (#258)
 type RingContainer struct {
-	Left  []*Ring
-	Mid   []*Ring
-	Right []*Ring
+	Left []*Ring
+	Mid  []*Ring
 }

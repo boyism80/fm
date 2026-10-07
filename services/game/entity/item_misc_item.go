@@ -6,8 +6,9 @@ import (
 
 type MiscItem struct {
 	*ItemCore
-	OwnerName string
-	Flags     uint16
+	OwnerName  string
+	Flags      uint16
+	MarriageID uint32
 }
 
 func (item *MiscItem) GetInventoryType() constant.InventoryType {
@@ -34,7 +35,8 @@ func (item *MiscItem) Clone(count uint16) Item {
 			Wz:             item.Wz,
 			Expiration:     item.Expiration,
 		},
-		OwnerName: item.OwnerName,
-		Flags:     item.Flags,
+		OwnerName:  item.OwnerName,
+		Flags:      item.Flags,
+		MarriageID: item.MarriageID,
 	}
 }

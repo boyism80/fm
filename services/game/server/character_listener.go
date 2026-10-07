@@ -1629,7 +1629,7 @@ func (l *CharacterListenerImpl) OnUpdateCharacterLook(ch *entity.Character) {
 		Character:       ch.ToDTO(),
 		CrushRings:      entity.RingsToDTO(ch.Inventory.Rings.Left),
 		FriendshipRings: entity.RingsToDTO(ch.Inventory.Rings.Mid),
-		MarriageRings:   entity.RingsToDTO(ch.Inventory.Rings.Right),
+		MarriageRing:    ch.MarriageRingToDTO(),
 	}
 
 	ch.Broadcast(lookPacket, nil)

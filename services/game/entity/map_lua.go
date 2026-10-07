@@ -805,6 +805,36 @@ func (m *Map) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			mapInstance.MapMessage(message)
 			return 0
 		},
+		"weather": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mapInstance.Weather(uint32(L.CheckNumber(2)), L.OptString(3, ""))
+			return 0
+		},
+		"yellow_chat": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mapInstance.YellowChat(L.CheckString(2))
+			return 0
+		},
+		"wedding_effect": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			mapInstance, ok := ud.Value.(*Map)
+			if !ok {
+				L.ArgError(1, "Map expected")
+				return 0
+			}
+			mapInstance.WeddingEffect(uint32(L.CheckNumber(2)), uint32(L.CheckNumber(3)))
+			return 0
+		},
 		"clear_effect": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			mapInstance, ok := ud.Value.(*Map)

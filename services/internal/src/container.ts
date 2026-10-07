@@ -17,6 +17,7 @@ import { StorageRepository } from "./repos/storage-repository";
 import { StorageItemRepository } from "./repos/storage-item-repository";
 import { ParcelRepository } from "./repos/parcel-repository";
 import { CashShopRepository } from "./repos/cash-shop-repository";
+import { MarriageRepository } from "./repos/marriage-repository";
 import { PartyRepository } from "./repos/party-repository";
 import { PartyMemberRepository } from "./repos/party-member-repository";
 import { AllianceRepository } from "./repos/alliance-repository";
@@ -43,6 +44,7 @@ import { ServerTimeService } from "./services/server-time-service";
 import { OperationLogService } from "./services/operation-log-service";
 import { ParcelService } from "./services/parcel-service";
 import { CashShopService } from "./services/cash-shop-service";
+import { MarriageService } from "./services/marriage-service";
 
 export function createAppContainer() {
     const internalConfig = loadConfig();
@@ -70,6 +72,7 @@ export function createAppContainer() {
         storageItemRepository: awilix.asClass(StorageItemRepository).scoped(),
         parcelRepository: awilix.asClass(ParcelRepository).scoped(),
         cashShopRepository: awilix.asClass(CashShopRepository).scoped(),
+        marriageRepository: awilix.asClass(MarriageRepository).scoped(),
         partyRepository: awilix.asClass(PartyRepository).scoped(),
         partyMemberRepository: awilix.asClass(PartyMemberRepository).scoped(),
         allianceRepository: awilix.asClass(AllianceRepository).scoped(),
@@ -94,6 +97,7 @@ export function createAppContainer() {
         operationLogService: awilix.asClass(OperationLogService).transient(),
         parcelService: awilix.asClass(ParcelService).transient(),
         cashShopService: awilix.asClass(CashShopService).transient(),
+        marriageService: awilix.asClass(MarriageService).transient(),
     });
     return container;
 }

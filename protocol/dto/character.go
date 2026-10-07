@@ -48,7 +48,7 @@ type Character struct {
 	Rocks            []uint32
 	MonsterBookCover uint32
 	RecordExByQuest  map[uint16]string
-	MarriageId       uint32
+	Marriage         *Marriage
 	Random1          *stream.RandomStream
 	Random2          *stream.RandomStream
 	Random3          *stream.RandomStream

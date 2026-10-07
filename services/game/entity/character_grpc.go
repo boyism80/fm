@@ -95,6 +95,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.LifeCore.setMp(p.GetMp())
 
 	ch.KeyLayout().LoadKeyLayoutProto(reply.GetKeyLayout())
+	ch.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
 	ch.LoadInventory(reply.GetInventory())
 	ch.LoadSkills(reply.GetSkills())
 	ch.LoadBuffs(reply.GetBuffs())
@@ -110,12 +111,15 @@ func (ch *Character) LoadInventory(items []*internal.Inventory) {
 		if pb == nil {
 			continue
 		}
+		itemID := pb.GetItemId()
+		if ch.Marriage == nil && (constant.IsEngagementRing(itemID) || constant.IsWeddingRing(itemID)) {
+			continue
+		}
 		item, err := NewItemFromInternalProto(pb, ch.GameWorld)
 		if err != nil {
 			continue
 		}
 		slot := int16(pb.GetSlot())
-		itemID := pb.GetItemId()
 		if slot < 0 {
 			parts := constant.EquipmentPartsType(slot)
 			if constant.CanEquipAt(itemID, parts) == false {

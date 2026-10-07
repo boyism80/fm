@@ -244,12 +244,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			if L.GetTop() != 1 {
-				L.ArgError(2, "gender() is read-only")
-				return 0
+			if L.GetTop() == 1 {
+				L.Push(lua.LNumber(ch.GetGender()))
+				return 1
 			}
-			L.Push(lua.LNumber(ch.GetGender()))
-			return 1
+			ch.SetGender(uint8(L.CheckInt(2)))
+			return 0
 		},
 		"hair": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
@@ -1633,6 +1633,148 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			}
 			L.Push(lua.LTrue)
 			return 1
+		},
+		"marriage": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Marriage == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(luax.NewLuable(L, ch.Marriage))
+			return 1
+		},
+		"reserve_wedding": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			promise, err := ch.ReserveWedding(cfg.ActorContext, uint32(L.CheckNumber(2)))
+			if err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(result interface{}, err error) []lua.LValue {
+				if err != nil {
+					return []lua.LValue{lua.LFalse}
+				}
+				return []lua.LValue{lua.LBool(result.(bool))}
+			})
+		},
+		"break_engagement": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			promise, err := ch.BreakEngagement(cfg.ActorContext)
+			if err != nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(result interface{}, err error) []lua.LValue {
+				if err != nil {
+					return []lua.LValue{lua.LFalse}
+				}
+				return []lua.LValue{lua.LBool(result.(bool))}
+			})
+		},
+		"request_divorce": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			promise, err := ch.RequestDivorce(cfg.ActorContext)
+			if err != nil {
+				L.Push(lua.LNil)
+				return 1
+			}
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(result interface{}, err error) []lua.LValue {
+				if err != nil {
+					return []lua.LValue{lua.LNil}
+				}
+				return []lua.LValue{lua.LString(result.(string))}
+			})
+		},
+		"invited_to": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LBool(ch.InvitedTo(uint32(L.CheckNumber(2)))))
+			return 1
+		},
+		"open_wedding_wishlist": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.Listener.OnWeddingWishlistInput(ch)
+			return 0
+		},
+		"open_wedding_gift": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			receiverID := uint32(L.CheckNumber(2))
+			wishes := make([]string, 0)
+			if tbl, ok := L.Get(3).(*lua.LTable); ok {
+				tbl.ForEach(func(_, value lua.LValue) {
+					wishes = append(wishes, value.String())
+				})
+			}
+			ch.OpenWeddingGift(receiverID, wishes)
+			return 0
+		},
+		"open_wedding_gift_box": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			cfg, ok := luax.GetConfiguration(L)
+			if !ok || cfg.ActorContext == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			return LuaYieldPromise(L, ch.GameWorld, ch.OpenWeddingGiftBox(cfg.ActorContext), func(result interface{}, err error) []lua.LValue {
+				if err != nil {
+					return []lua.LValue{lua.LFalse}
+				}
+				return []lua.LValue{lua.LBool(result.(bool))}
+			})
 		},
 		"open_storage": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)

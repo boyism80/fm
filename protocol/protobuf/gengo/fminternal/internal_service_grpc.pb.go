@@ -101,6 +101,19 @@ const (
 	Internal_FindCashCoupon_FullMethodName                 = "/fm.internal.Internal/FindCashCoupon"
 	Internal_RedeemCashCoupon_FullMethodName               = "/fm.internal.Internal/RedeemCashCoupon"
 	Internal_CreateCashCoupons_FullMethodName              = "/fm.internal.Internal/CreateCashCoupons"
+	Internal_CreateMarriage_FullMethodName                 = "/fm.internal.Internal/CreateMarriage"
+	Internal_LoadMarriage_FullMethodName                   = "/fm.internal.Internal/LoadMarriage"
+	Internal_GetMarriage_FullMethodName                    = "/fm.internal.Internal/GetMarriage"
+	Internal_BreakEngagement_FullMethodName                = "/fm.internal.Internal/BreakEngagement"
+	Internal_ReserveWedding_FullMethodName                 = "/fm.internal.Internal/ReserveWedding"
+	Internal_SetWeddingWishlist_FullMethodName             = "/fm.internal.Internal/SetWeddingWishlist"
+	Internal_InviteWeddingGuest_FullMethodName             = "/fm.internal.Internal/InviteWeddingGuest"
+	Internal_FinishWedding_FullMethodName                  = "/fm.internal.Internal/FinishWedding"
+	Internal_RequestDivorce_FullMethodName                 = "/fm.internal.Internal/RequestDivorce"
+	Internal_GiveWeddingGift_FullMethodName                = "/fm.internal.Internal/GiveWeddingGift"
+	Internal_LoadWeddingGifts_FullMethodName               = "/fm.internal.Internal/LoadWeddingGifts"
+	Internal_ClaimWeddingGift_FullMethodName               = "/fm.internal.Internal/ClaimWeddingGift"
+	Internal_NotifySpouseMap_FullMethodName                = "/fm.internal.Internal/NotifySpouseMap"
 )
 
 // InternalClient is the client API for Internal service.
@@ -189,6 +202,19 @@ type InternalClient interface {
 	FindCashCoupon(ctx context.Context, in *FindCashCouponRequest, opts ...grpc.CallOption) (*FindCashCouponReply, error)
 	RedeemCashCoupon(ctx context.Context, in *RedeemCashCouponRequest, opts ...grpc.CallOption) (*RedeemCashCouponReply, error)
 	CreateCashCoupons(ctx context.Context, in *CreateCashCouponsRequest, opts ...grpc.CallOption) (*CreateCashCouponsReply, error)
+	CreateMarriage(ctx context.Context, in *CreateMarriageRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	LoadMarriage(ctx context.Context, in *LoadMarriageRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	GetMarriage(ctx context.Context, in *GetMarriageRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	BreakEngagement(ctx context.Context, in *BreakEngagementRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	ReserveWedding(ctx context.Context, in *ReserveWeddingRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	SetWeddingWishlist(ctx context.Context, in *SetWeddingWishlistRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	InviteWeddingGuest(ctx context.Context, in *InviteWeddingGuestRequest, opts ...grpc.CallOption) (*InviteWeddingGuestReply, error)
+	FinishWedding(ctx context.Context, in *FinishWeddingRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	RequestDivorce(ctx context.Context, in *RequestDivorceRequest, opts ...grpc.CallOption) (*MarriageReply, error)
+	GiveWeddingGift(ctx context.Context, in *GiveWeddingGiftRequest, opts ...grpc.CallOption) (*GiveWeddingGiftReply, error)
+	LoadWeddingGifts(ctx context.Context, in *LoadWeddingGiftsRequest, opts ...grpc.CallOption) (*LoadWeddingGiftsReply, error)
+	ClaimWeddingGift(ctx context.Context, in *ClaimWeddingGiftRequest, opts ...grpc.CallOption) (*ClaimWeddingGiftReply, error)
+	NotifySpouseMap(ctx context.Context, in *NotifySpouseMapRequest, opts ...grpc.CallOption) (*NotifySpouseMapReply, error)
 }
 
 type internalClient struct {
@@ -1019,6 +1045,136 @@ func (c *internalClient) CreateCashCoupons(ctx context.Context, in *CreateCashCo
 	return out, nil
 }
 
+func (c *internalClient) CreateMarriage(ctx context.Context, in *CreateMarriageRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarriageReply)
+	err := c.cc.Invoke(ctx, Internal_CreateMarriage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) LoadMarriage(ctx context.Context, in *LoadMarriageRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarriageReply)
+	err := c.cc.Invoke(ctx, Internal_LoadMarriage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) GetMarriage(ctx context.Context, in *GetMarriageRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarriageReply)
+	err := c.cc.Invoke(ctx, Internal_GetMarriage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) BreakEngagement(ctx context.Context, in *BreakEngagementRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarriageReply)
+	err := c.cc.Invoke(ctx, Internal_BreakEngagement_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ReserveWedding(ctx context.Context, in *ReserveWeddingRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarriageReply)
+	err := c.cc.Invoke(ctx, Internal_ReserveWedding_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) SetWeddingWishlist(ctx context.Context, in *SetWeddingWishlistRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarriageReply)
+	err := c.cc.Invoke(ctx, Internal_SetWeddingWishlist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) InviteWeddingGuest(ctx context.Context, in *InviteWeddingGuestRequest, opts ...grpc.CallOption) (*InviteWeddingGuestReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InviteWeddingGuestReply)
+	err := c.cc.Invoke(ctx, Internal_InviteWeddingGuest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) FinishWedding(ctx context.Context, in *FinishWeddingRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarriageReply)
+	err := c.cc.Invoke(ctx, Internal_FinishWedding_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) RequestDivorce(ctx context.Context, in *RequestDivorceRequest, opts ...grpc.CallOption) (*MarriageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarriageReply)
+	err := c.cc.Invoke(ctx, Internal_RequestDivorce_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) GiveWeddingGift(ctx context.Context, in *GiveWeddingGiftRequest, opts ...grpc.CallOption) (*GiveWeddingGiftReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GiveWeddingGiftReply)
+	err := c.cc.Invoke(ctx, Internal_GiveWeddingGift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) LoadWeddingGifts(ctx context.Context, in *LoadWeddingGiftsRequest, opts ...grpc.CallOption) (*LoadWeddingGiftsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoadWeddingGiftsReply)
+	err := c.cc.Invoke(ctx, Internal_LoadWeddingGifts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) ClaimWeddingGift(ctx context.Context, in *ClaimWeddingGiftRequest, opts ...grpc.CallOption) (*ClaimWeddingGiftReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClaimWeddingGiftReply)
+	err := c.cc.Invoke(ctx, Internal_ClaimWeddingGift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *internalClient) NotifySpouseMap(ctx context.Context, in *NotifySpouseMapRequest, opts ...grpc.CallOption) (*NotifySpouseMapReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NotifySpouseMapReply)
+	err := c.cc.Invoke(ctx, Internal_NotifySpouseMap_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InternalServer is the server API for Internal service.
 // All implementations must embed UnimplementedInternalServer
 // for forward compatibility.
@@ -1105,6 +1261,19 @@ type InternalServer interface {
 	FindCashCoupon(context.Context, *FindCashCouponRequest) (*FindCashCouponReply, error)
 	RedeemCashCoupon(context.Context, *RedeemCashCouponRequest) (*RedeemCashCouponReply, error)
 	CreateCashCoupons(context.Context, *CreateCashCouponsRequest) (*CreateCashCouponsReply, error)
+	CreateMarriage(context.Context, *CreateMarriageRequest) (*MarriageReply, error)
+	LoadMarriage(context.Context, *LoadMarriageRequest) (*MarriageReply, error)
+	GetMarriage(context.Context, *GetMarriageRequest) (*MarriageReply, error)
+	BreakEngagement(context.Context, *BreakEngagementRequest) (*MarriageReply, error)
+	ReserveWedding(context.Context, *ReserveWeddingRequest) (*MarriageReply, error)
+	SetWeddingWishlist(context.Context, *SetWeddingWishlistRequest) (*MarriageReply, error)
+	InviteWeddingGuest(context.Context, *InviteWeddingGuestRequest) (*InviteWeddingGuestReply, error)
+	FinishWedding(context.Context, *FinishWeddingRequest) (*MarriageReply, error)
+	RequestDivorce(context.Context, *RequestDivorceRequest) (*MarriageReply, error)
+	GiveWeddingGift(context.Context, *GiveWeddingGiftRequest) (*GiveWeddingGiftReply, error)
+	LoadWeddingGifts(context.Context, *LoadWeddingGiftsRequest) (*LoadWeddingGiftsReply, error)
+	ClaimWeddingGift(context.Context, *ClaimWeddingGiftRequest) (*ClaimWeddingGiftReply, error)
+	NotifySpouseMap(context.Context, *NotifySpouseMapRequest) (*NotifySpouseMapReply, error)
 	mustEmbedUnimplementedInternalServer()
 }
 
@@ -1360,6 +1529,45 @@ func (UnimplementedInternalServer) RedeemCashCoupon(context.Context, *RedeemCash
 }
 func (UnimplementedInternalServer) CreateCashCoupons(context.Context, *CreateCashCouponsRequest) (*CreateCashCouponsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateCashCoupons not implemented")
+}
+func (UnimplementedInternalServer) CreateMarriage(context.Context, *CreateMarriageRequest) (*MarriageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateMarriage not implemented")
+}
+func (UnimplementedInternalServer) LoadMarriage(context.Context, *LoadMarriageRequest) (*MarriageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LoadMarriage not implemented")
+}
+func (UnimplementedInternalServer) GetMarriage(context.Context, *GetMarriageRequest) (*MarriageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMarriage not implemented")
+}
+func (UnimplementedInternalServer) BreakEngagement(context.Context, *BreakEngagementRequest) (*MarriageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BreakEngagement not implemented")
+}
+func (UnimplementedInternalServer) ReserveWedding(context.Context, *ReserveWeddingRequest) (*MarriageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReserveWedding not implemented")
+}
+func (UnimplementedInternalServer) SetWeddingWishlist(context.Context, *SetWeddingWishlistRequest) (*MarriageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetWeddingWishlist not implemented")
+}
+func (UnimplementedInternalServer) InviteWeddingGuest(context.Context, *InviteWeddingGuestRequest) (*InviteWeddingGuestReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InviteWeddingGuest not implemented")
+}
+func (UnimplementedInternalServer) FinishWedding(context.Context, *FinishWeddingRequest) (*MarriageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FinishWedding not implemented")
+}
+func (UnimplementedInternalServer) RequestDivorce(context.Context, *RequestDivorceRequest) (*MarriageReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestDivorce not implemented")
+}
+func (UnimplementedInternalServer) GiveWeddingGift(context.Context, *GiveWeddingGiftRequest) (*GiveWeddingGiftReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GiveWeddingGift not implemented")
+}
+func (UnimplementedInternalServer) LoadWeddingGifts(context.Context, *LoadWeddingGiftsRequest) (*LoadWeddingGiftsReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LoadWeddingGifts not implemented")
+}
+func (UnimplementedInternalServer) ClaimWeddingGift(context.Context, *ClaimWeddingGiftRequest) (*ClaimWeddingGiftReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ClaimWeddingGift not implemented")
+}
+func (UnimplementedInternalServer) NotifySpouseMap(context.Context, *NotifySpouseMapRequest) (*NotifySpouseMapReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NotifySpouseMap not implemented")
 }
 func (UnimplementedInternalServer) mustEmbedUnimplementedInternalServer() {}
 func (UnimplementedInternalServer) testEmbeddedByValue()                  {}
@@ -2858,6 +3066,240 @@ func _Internal_CreateCashCoupons_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Internal_CreateMarriage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateMarriageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).CreateMarriage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_CreateMarriage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).CreateMarriage(ctx, req.(*CreateMarriageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_LoadMarriage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoadMarriageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).LoadMarriage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_LoadMarriage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).LoadMarriage(ctx, req.(*LoadMarriageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_GetMarriage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMarriageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).GetMarriage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_GetMarriage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).GetMarriage(ctx, req.(*GetMarriageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_BreakEngagement_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BreakEngagementRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).BreakEngagement(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_BreakEngagement_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).BreakEngagement(ctx, req.(*BreakEngagementRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ReserveWedding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReserveWeddingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ReserveWedding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ReserveWedding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ReserveWedding(ctx, req.(*ReserveWeddingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_SetWeddingWishlist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetWeddingWishlistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).SetWeddingWishlist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_SetWeddingWishlist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).SetWeddingWishlist(ctx, req.(*SetWeddingWishlistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_InviteWeddingGuest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InviteWeddingGuestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).InviteWeddingGuest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_InviteWeddingGuest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).InviteWeddingGuest(ctx, req.(*InviteWeddingGuestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_FinishWedding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FinishWeddingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).FinishWedding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_FinishWedding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).FinishWedding(ctx, req.(*FinishWeddingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_RequestDivorce_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestDivorceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).RequestDivorce(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_RequestDivorce_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).RequestDivorce(ctx, req.(*RequestDivorceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_GiveWeddingGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GiveWeddingGiftRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).GiveWeddingGift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_GiveWeddingGift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).GiveWeddingGift(ctx, req.(*GiveWeddingGiftRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_LoadWeddingGifts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoadWeddingGiftsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).LoadWeddingGifts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_LoadWeddingGifts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).LoadWeddingGifts(ctx, req.(*LoadWeddingGiftsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_ClaimWeddingGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClaimWeddingGiftRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).ClaimWeddingGift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_ClaimWeddingGift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).ClaimWeddingGift(ctx, req.(*ClaimWeddingGiftRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Internal_NotifySpouseMap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NotifySpouseMapRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InternalServer).NotifySpouseMap(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Internal_NotifySpouseMap_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InternalServer).NotifySpouseMap(ctx, req.(*NotifySpouseMapRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Internal_ServiceDesc is the grpc.ServiceDesc for Internal service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -3192,6 +3634,58 @@ var Internal_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateCashCoupons",
 			Handler:    _Internal_CreateCashCoupons_Handler,
+		},
+		{
+			MethodName: "CreateMarriage",
+			Handler:    _Internal_CreateMarriage_Handler,
+		},
+		{
+			MethodName: "LoadMarriage",
+			Handler:    _Internal_LoadMarriage_Handler,
+		},
+		{
+			MethodName: "GetMarriage",
+			Handler:    _Internal_GetMarriage_Handler,
+		},
+		{
+			MethodName: "BreakEngagement",
+			Handler:    _Internal_BreakEngagement_Handler,
+		},
+		{
+			MethodName: "ReserveWedding",
+			Handler:    _Internal_ReserveWedding_Handler,
+		},
+		{
+			MethodName: "SetWeddingWishlist",
+			Handler:    _Internal_SetWeddingWishlist_Handler,
+		},
+		{
+			MethodName: "InviteWeddingGuest",
+			Handler:    _Internal_InviteWeddingGuest_Handler,
+		},
+		{
+			MethodName: "FinishWedding",
+			Handler:    _Internal_FinishWedding_Handler,
+		},
+		{
+			MethodName: "RequestDivorce",
+			Handler:    _Internal_RequestDivorce_Handler,
+		},
+		{
+			MethodName: "GiveWeddingGift",
+			Handler:    _Internal_GiveWeddingGift_Handler,
+		},
+		{
+			MethodName: "LoadWeddingGifts",
+			Handler:    _Internal_LoadWeddingGifts_Handler,
+		},
+		{
+			MethodName: "ClaimWeddingGift",
+			Handler:    _Internal_ClaimWeddingGift_Handler,
+		},
+		{
+			MethodName: "NotifySpouseMap",
+			Handler:    _Internal_NotifySpouseMap_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

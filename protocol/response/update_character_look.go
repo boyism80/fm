@@ -9,7 +9,7 @@ type UpdateCharacterLook struct {
 	Character       *dto.Character
 	CrushRings      []*dto.Ring
 	FriendshipRings []*dto.Ring
-	MarriageRings   []*dto.Ring
+	MarriageRing    *dto.MarriageRing
 }
 
 func writeLookRings(writer *stream.StreamWriter, rings []*dto.Ring) {
@@ -30,22 +30,15 @@ func writeLookRings(writer *stream.StreamWriter, rings []*dto.Ring) {
 	}
 }
 
-func writeMarriageRings(writer *stream.StreamWriter, characterID uint32, rings []*dto.Ring) {
-	count := 0
-	for _, ring := range rings {
-		if ring != nil {
-			count++
-		}
+func writeMarriageRing(writer *stream.StreamWriter, ring *dto.MarriageRing) {
+	if ring == nil {
+		writer.WriteU8(0)
+		return
 	}
-	writer.WriteU8(uint8(count))
-	for _, ring := range rings {
-		if ring == nil {
-			continue
-		}
-		writer.WriteU32(characterID)
-		writer.WriteU32(ring.PartnerChrId)
-		writer.WriteU32(ring.ItemId)
-	}
+	writer.WriteU8(1)
+	writer.WriteU32(ring.CharacterID)
+	writer.WriteU32(ring.PartnerID)
+	writer.WriteU32(ring.ItemID)
 }
 
 func (p *UpdateCharacterLook) Serialize(writer *stream.StreamWriter) error {
@@ -57,7 +50,7 @@ func (p *UpdateCharacterLook) Serialize(writer *stream.StreamWriter) error {
 	p.Character.SerializeLook(writer)
 	writeLookRings(writer, p.CrushRings)
 	writeLookRings(writer, p.FriendshipRings)
-	writeMarriageRings(writer, p.Character.ID, p.MarriageRings)
+	writeMarriageRing(writer, p.MarriageRing)
 	return nil
 }
 

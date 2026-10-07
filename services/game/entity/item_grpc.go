@@ -59,7 +59,9 @@ func (item *Installation) ToProto(ownerID uint32, slot int32) *internal.Inventor
 }
 
 func (item *MiscItem) ToProto(ownerID uint32, slot int32) *internal.Inventory {
-	return buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
+	pb := buildInventoryProto(item, ownerID, slot, nil, item.OwnerName, item.Flags, 0, 0, 0)
+	pb.MarriageId = item.MarriageID
+	return pb
 }
 
 func (item *CashItem) ToProto(ownerID uint32, slot int32) *internal.Inventory {
@@ -144,9 +146,10 @@ func NewItemFromInternalProto(pb *internal.Inventory, gw ItemWorld) (Item, error
 		}, nil
 	case *wz.MiscItem:
 		return &MiscItem{
-			ItemCore:  &ItemCore{Wz: m, Count: count, Expiration: expiration},
-			OwnerName: ownerName,
-			Flags:     flag,
+			ItemCore:   &ItemCore{Wz: m, Count: count, Expiration: expiration},
+			OwnerName:  ownerName,
+			Flags:      flag,
+			MarriageID: pb.GetMarriageId(),
 		}, nil
 	case *wz.CashItem:
 		return &CashItem{

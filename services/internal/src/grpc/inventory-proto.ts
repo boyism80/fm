@@ -88,7 +88,8 @@ createMap(
     forMember((destination: any) => destination.skillBonus, mapFrom((source: InventoryModel) => (source.skillBonus ?? 0) >>> 0)),
     forMember((destination: any) => destination.ownerName, mapFrom((source: InventoryModel) => source.ownerName ?? "")),
     forMember((destination: any) => destination.equipBonusStats, mapFrom((source: InventoryModel) => plainObjectToBonusProto(source.equipBonusStats))),
-    forMember((destination: any) => destination.pet, mapFrom((source: InventoryModel) => source.pet ?? undefined))
+    forMember((destination: any) => destination.pet, mapFrom((source: InventoryModel) => source.pet ?? undefined)),
+    forMember((destination: any) => destination.marriageId, mapFrom((source: InventoryModel) => (source.marriageId ?? 0) >>> 0))
 );
 
 createMap(
@@ -108,6 +109,7 @@ createMap(
     forMember((destination: any) => destination.skillBonus, mapFrom((source: Inventory) => source.skillBonus || null)),
     forMember((destination: any) => destination.ownerName, mapFrom((source: Inventory) => source.ownerName || null)),
     forMember((destination: any) => destination.equipBonusStats, mapFrom((source: Inventory) => bonusProtoToPlainObject(source.equipBonusStats))),
-    forMember((destination: any) => destination.pet, mapFrom((source: Inventory) => source.pet ?? null))
+    forMember((destination: any) => destination.pet, mapFrom((source: Inventory) => source.pet ?? null)),
+    forMember((destination: any) => destination.marriageId, mapFrom((source: Inventory) => source.marriageId >>> 0))
 );
 

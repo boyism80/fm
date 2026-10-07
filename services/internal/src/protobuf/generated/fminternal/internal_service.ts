@@ -264,6 +264,114 @@ export function cashCouponKindToJSON(object: CashCouponKind): string {
   }
 }
 
+export enum MarriageStatus {
+  MARRIAGE_STATUS_NONE = 0,
+  MARRIAGE_STATUS_ENGAGED = 1,
+  MARRIAGE_STATUS_MARRIED = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function marriageStatusFromJSON(object: any): MarriageStatus {
+  switch (object) {
+    case 0:
+    case "MARRIAGE_STATUS_NONE":
+      return MarriageStatus.MARRIAGE_STATUS_NONE;
+    case 1:
+    case "MARRIAGE_STATUS_ENGAGED":
+      return MarriageStatus.MARRIAGE_STATUS_ENGAGED;
+    case 3:
+    case "MARRIAGE_STATUS_MARRIED":
+      return MarriageStatus.MARRIAGE_STATUS_MARRIED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return MarriageStatus.UNRECOGNIZED;
+  }
+}
+
+export function marriageStatusToJSON(object: MarriageStatus): string {
+  switch (object) {
+    case MarriageStatus.MARRIAGE_STATUS_NONE:
+      return "MARRIAGE_STATUS_NONE";
+    case MarriageStatus.MARRIAGE_STATUS_ENGAGED:
+      return "MARRIAGE_STATUS_ENGAGED";
+    case MarriageStatus.MARRIAGE_STATUS_MARRIED:
+      return "MARRIAGE_STATUS_MARRIED";
+    case MarriageStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum MarriageResult {
+  MARRIAGE_RESULT_OK = 0,
+  MARRIAGE_RESULT_NOT_FOUND = 1,
+  MARRIAGE_RESULT_ALREADY_ENGAGED = 2,
+  MARRIAGE_RESULT_PARTNER_ENGAGED = 3,
+  MARRIAGE_RESULT_INVALID_STATE = 4,
+  MARRIAGE_RESULT_GUEST_NOT_FOUND = 5,
+  MARRIAGE_RESULT_GUEST_ALREADY_INVITED = 6,
+  MARRIAGE_RESULT_GIFT_NOT_FOUND = 7,
+  UNRECOGNIZED = -1,
+}
+
+export function marriageResultFromJSON(object: any): MarriageResult {
+  switch (object) {
+    case 0:
+    case "MARRIAGE_RESULT_OK":
+      return MarriageResult.MARRIAGE_RESULT_OK;
+    case 1:
+    case "MARRIAGE_RESULT_NOT_FOUND":
+      return MarriageResult.MARRIAGE_RESULT_NOT_FOUND;
+    case 2:
+    case "MARRIAGE_RESULT_ALREADY_ENGAGED":
+      return MarriageResult.MARRIAGE_RESULT_ALREADY_ENGAGED;
+    case 3:
+    case "MARRIAGE_RESULT_PARTNER_ENGAGED":
+      return MarriageResult.MARRIAGE_RESULT_PARTNER_ENGAGED;
+    case 4:
+    case "MARRIAGE_RESULT_INVALID_STATE":
+      return MarriageResult.MARRIAGE_RESULT_INVALID_STATE;
+    case 5:
+    case "MARRIAGE_RESULT_GUEST_NOT_FOUND":
+      return MarriageResult.MARRIAGE_RESULT_GUEST_NOT_FOUND;
+    case 6:
+    case "MARRIAGE_RESULT_GUEST_ALREADY_INVITED":
+      return MarriageResult.MARRIAGE_RESULT_GUEST_ALREADY_INVITED;
+    case 7:
+    case "MARRIAGE_RESULT_GIFT_NOT_FOUND":
+      return MarriageResult.MARRIAGE_RESULT_GIFT_NOT_FOUND;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return MarriageResult.UNRECOGNIZED;
+  }
+}
+
+export function marriageResultToJSON(object: MarriageResult): string {
+  switch (object) {
+    case MarriageResult.MARRIAGE_RESULT_OK:
+      return "MARRIAGE_RESULT_OK";
+    case MarriageResult.MARRIAGE_RESULT_NOT_FOUND:
+      return "MARRIAGE_RESULT_NOT_FOUND";
+    case MarriageResult.MARRIAGE_RESULT_ALREADY_ENGAGED:
+      return "MARRIAGE_RESULT_ALREADY_ENGAGED";
+    case MarriageResult.MARRIAGE_RESULT_PARTNER_ENGAGED:
+      return "MARRIAGE_RESULT_PARTNER_ENGAGED";
+    case MarriageResult.MARRIAGE_RESULT_INVALID_STATE:
+      return "MARRIAGE_RESULT_INVALID_STATE";
+    case MarriageResult.MARRIAGE_RESULT_GUEST_NOT_FOUND:
+      return "MARRIAGE_RESULT_GUEST_NOT_FOUND";
+    case MarriageResult.MARRIAGE_RESULT_GUEST_ALREADY_INVITED:
+      return "MARRIAGE_RESULT_GUEST_ALREADY_INVITED";
+    case MarriageResult.MARRIAGE_RESULT_GIFT_NOT_FOUND:
+      return "MARRIAGE_RESULT_GIFT_NOT_FOUND";
+    case MarriageResult.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum SessionErrorCode {
   SESSION_NONE = 0,
   SESSION_UNKNOWN = 1,
@@ -1342,6 +1450,140 @@ export interface CreateCashCouponsReply {
   codes: string[];
 }
 
+export interface Marriage {
+  marriageId: number;
+  groomId: number;
+  brideId: number;
+  groomName: string;
+  brideName: string;
+  groomItemId: number;
+  brideItemId: number;
+  status: MarriageStatus;
+  ticketItemId: number;
+  groomWished: boolean;
+  brideWished: boolean;
+  groomWishes: string[];
+  brideWishes: string[];
+  guests: number[];
+  divorceRequesterId: number;
+  divorceRequestedAtUnixMs: number;
+}
+
+export interface MarriageReply {
+  result: MarriageResult;
+  marriage?: Marriage | undefined;
+}
+
+export interface CreateMarriageRequest {
+  worldId: number;
+  groomId: number;
+  groomName: string;
+  brideId: number;
+  brideName: string;
+  ringItemId: number;
+}
+
+export interface LoadMarriageRequest {
+  worldId: number;
+  characterId: number;
+}
+
+export interface GetMarriageRequest {
+  worldId: number;
+  marriageId: number;
+}
+
+export interface BreakEngagementRequest {
+  worldId: number;
+  marriageId: number;
+  characterId: number;
+}
+
+export interface ReserveWeddingRequest {
+  worldId: number;
+  marriageId: number;
+  ticketItemId: number;
+}
+
+export interface SetWeddingWishlistRequest {
+  worldId: number;
+  marriageId: number;
+  characterId: number;
+  wishes: string[];
+}
+
+export interface InviteWeddingGuestRequest {
+  worldId: number;
+  marriageId: number;
+  guestName: string;
+}
+
+export interface InviteWeddingGuestReply {
+  result: MarriageResult;
+  guestId: number;
+  guestName: string;
+}
+
+export interface FinishWeddingRequest {
+  worldId: number;
+  marriageId: number;
+}
+
+export interface RequestDivorceRequest {
+  worldId: number;
+  marriageId: number;
+  characterId: number;
+  nowUnixMs: number;
+}
+
+export interface WeddingGift {
+  giftId: number;
+  senderName: string;
+  item: Inventory | undefined;
+}
+
+export interface GiveWeddingGiftRequest {
+  worldId: number;
+  receiverId: number;
+  gift: WeddingGift | undefined;
+  sender: CharacterSaveEntry | undefined;
+}
+
+export interface GiveWeddingGiftReply {
+  result: MarriageResult;
+}
+
+export interface LoadWeddingGiftsRequest {
+  worldId: number;
+  characterId: number;
+}
+
+export interface LoadWeddingGiftsReply {
+  gifts: WeddingGift[];
+}
+
+export interface ClaimWeddingGiftRequest {
+  worldId: number;
+  characterId: number;
+  giftId: number;
+}
+
+export interface ClaimWeddingGiftReply {
+  result: MarriageResult;
+  gift: WeddingGift | undefined;
+}
+
+export interface NotifySpouseMapRequest {
+  worldId: number;
+  characterId: number;
+  spouseId: number;
+  mapId: number;
+  reply: boolean;
+}
+
+export interface NotifySpouseMapReply {
+}
+
 export interface BuyCashItemReply {
   result: CashShopResult;
   nxCash: number;
@@ -1496,6 +1738,7 @@ export interface EnterGameReply {
   quests: Quest[];
   savedLocations: SavedLocation[];
   debuffs: Debuff[];
+  marriage?: Marriage | undefined;
 }
 
 export interface Debuff {
@@ -1689,6 +1932,7 @@ export interface Inventory {
   equipBonusStats?: EquipmentBonusStats | undefined;
   enhanceCount: number;
   pet?: Pet | undefined;
+  marriageId: number;
 }
 
 export interface Pet {
@@ -5340,6 +5584,2330 @@ export const CreateCashCouponsReply: MessageFns<CreateCashCouponsReply> = {
   },
 };
 
+function createBaseMarriage(): Marriage {
+  return {
+    marriageId: 0,
+    groomId: 0,
+    brideId: 0,
+    groomName: "",
+    brideName: "",
+    groomItemId: 0,
+    brideItemId: 0,
+    status: 0,
+    ticketItemId: 0,
+    groomWished: false,
+    brideWished: false,
+    groomWishes: [],
+    brideWishes: [],
+    guests: [],
+    divorceRequesterId: 0,
+    divorceRequestedAtUnixMs: 0,
+  };
+}
+
+export const Marriage: MessageFns<Marriage> = {
+  encode(message: Marriage, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.marriageId !== 0) {
+      writer.uint32(8).uint32(message.marriageId);
+    }
+    if (message.groomId !== 0) {
+      writer.uint32(16).uint32(message.groomId);
+    }
+    if (message.brideId !== 0) {
+      writer.uint32(24).uint32(message.brideId);
+    }
+    if (message.groomName !== "") {
+      writer.uint32(34).string(message.groomName);
+    }
+    if (message.brideName !== "") {
+      writer.uint32(42).string(message.brideName);
+    }
+    if (message.groomItemId !== 0) {
+      writer.uint32(48).uint32(message.groomItemId);
+    }
+    if (message.brideItemId !== 0) {
+      writer.uint32(56).uint32(message.brideItemId);
+    }
+    if (message.status !== 0) {
+      writer.uint32(64).int32(message.status);
+    }
+    if (message.ticketItemId !== 0) {
+      writer.uint32(72).uint32(message.ticketItemId);
+    }
+    if (message.groomWished !== false) {
+      writer.uint32(80).bool(message.groomWished);
+    }
+    if (message.brideWished !== false) {
+      writer.uint32(88).bool(message.brideWished);
+    }
+    for (const v of message.groomWishes) {
+      writer.uint32(98).string(v!);
+    }
+    for (const v of message.brideWishes) {
+      writer.uint32(106).string(v!);
+    }
+    writer.uint32(114).fork();
+    for (const v of message.guests) {
+      writer.uint32(v);
+    }
+    writer.join();
+    if (message.divorceRequesterId !== 0) {
+      writer.uint32(120).uint32(message.divorceRequesterId);
+    }
+    if (message.divorceRequestedAtUnixMs !== 0) {
+      writer.uint32(128).int64(message.divorceRequestedAtUnixMs);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Marriage {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMarriage();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.groomId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.brideId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.groomName = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.brideName = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.groomItemId = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.brideItemId = reader.uint32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.ticketItemId = reader.uint32();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.groomWished = reader.bool();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.brideWished = reader.bool();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.groomWishes.push(reader.string());
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.brideWishes.push(reader.string());
+          continue;
+        }
+        case 14: {
+          if (tag === 112) {
+            message.guests.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 114) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.guests.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 15: {
+          if (tag !== 120) {
+            break;
+          }
+
+          message.divorceRequesterId = reader.uint32();
+          continue;
+        }
+        case 16: {
+          if (tag !== 128) {
+            break;
+          }
+
+          message.divorceRequestedAtUnixMs = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Marriage {
+    return {
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
+      groomId: isSet(object.groomId)
+        ? globalThis.Number(object.groomId)
+        : isSet(object.groom_id)
+        ? globalThis.Number(object.groom_id)
+        : 0,
+      brideId: isSet(object.brideId)
+        ? globalThis.Number(object.brideId)
+        : isSet(object.bride_id)
+        ? globalThis.Number(object.bride_id)
+        : 0,
+      groomName: isSet(object.groomName)
+        ? globalThis.String(object.groomName)
+        : isSet(object.groom_name)
+        ? globalThis.String(object.groom_name)
+        : "",
+      brideName: isSet(object.brideName)
+        ? globalThis.String(object.brideName)
+        : isSet(object.bride_name)
+        ? globalThis.String(object.bride_name)
+        : "",
+      groomItemId: isSet(object.groomItemId)
+        ? globalThis.Number(object.groomItemId)
+        : isSet(object.groom_item_id)
+        ? globalThis.Number(object.groom_item_id)
+        : 0,
+      brideItemId: isSet(object.brideItemId)
+        ? globalThis.Number(object.brideItemId)
+        : isSet(object.bride_item_id)
+        ? globalThis.Number(object.bride_item_id)
+        : 0,
+      status: isSet(object.status) ? marriageStatusFromJSON(object.status) : 0,
+      ticketItemId: isSet(object.ticketItemId)
+        ? globalThis.Number(object.ticketItemId)
+        : isSet(object.ticket_item_id)
+        ? globalThis.Number(object.ticket_item_id)
+        : 0,
+      groomWished: isSet(object.groomWished)
+        ? globalThis.Boolean(object.groomWished)
+        : isSet(object.groom_wished)
+        ? globalThis.Boolean(object.groom_wished)
+        : false,
+      brideWished: isSet(object.brideWished)
+        ? globalThis.Boolean(object.brideWished)
+        : isSet(object.bride_wished)
+        ? globalThis.Boolean(object.bride_wished)
+        : false,
+      groomWishes: globalThis.Array.isArray(object?.groomWishes)
+        ? object.groomWishes.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.groom_wishes)
+        ? object.groom_wishes.map((e: any) => globalThis.String(e))
+        : [],
+      brideWishes: globalThis.Array.isArray(object?.brideWishes)
+        ? object.brideWishes.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.bride_wishes)
+        ? object.bride_wishes.map((e: any) => globalThis.String(e))
+        : [],
+      guests: globalThis.Array.isArray(object?.guests)
+        ? object.guests.map((e: any) => globalThis.Number(e))
+        : [],
+      divorceRequesterId: isSet(object.divorceRequesterId)
+        ? globalThis.Number(object.divorceRequesterId)
+        : isSet(object.divorce_requester_id)
+        ? globalThis.Number(object.divorce_requester_id)
+        : 0,
+      divorceRequestedAtUnixMs: isSet(object.divorceRequestedAtUnixMs)
+        ? globalThis.Number(object.divorceRequestedAtUnixMs)
+        : isSet(object.divorce_requested_at_unix_ms)
+        ? globalThis.Number(object.divorce_requested_at_unix_ms)
+        : 0,
+    };
+  },
+
+  toJSON(message: Marriage): unknown {
+    const obj: any = {};
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
+    if (message.groomId !== 0) {
+      obj.groomId = Math.round(message.groomId);
+    }
+    if (message.brideId !== 0) {
+      obj.brideId = Math.round(message.brideId);
+    }
+    if (message.groomName !== "") {
+      obj.groomName = message.groomName;
+    }
+    if (message.brideName !== "") {
+      obj.brideName = message.brideName;
+    }
+    if (message.groomItemId !== 0) {
+      obj.groomItemId = Math.round(message.groomItemId);
+    }
+    if (message.brideItemId !== 0) {
+      obj.brideItemId = Math.round(message.brideItemId);
+    }
+    if (message.status !== 0) {
+      obj.status = marriageStatusToJSON(message.status);
+    }
+    if (message.ticketItemId !== 0) {
+      obj.ticketItemId = Math.round(message.ticketItemId);
+    }
+    if (message.groomWished !== false) {
+      obj.groomWished = message.groomWished;
+    }
+    if (message.brideWished !== false) {
+      obj.brideWished = message.brideWished;
+    }
+    if (message.groomWishes?.length) {
+      obj.groomWishes = message.groomWishes;
+    }
+    if (message.brideWishes?.length) {
+      obj.brideWishes = message.brideWishes;
+    }
+    if (message.guests?.length) {
+      obj.guests = message.guests.map((e) => Math.round(e));
+    }
+    if (message.divorceRequesterId !== 0) {
+      obj.divorceRequesterId = Math.round(message.divorceRequesterId);
+    }
+    if (message.divorceRequestedAtUnixMs !== 0) {
+      obj.divorceRequestedAtUnixMs = Math.round(message.divorceRequestedAtUnixMs);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Marriage>, I>>(base?: I): Marriage {
+    return Marriage.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Marriage>, I>>(object: I): Marriage {
+    const message = createBaseMarriage();
+    message.marriageId = object.marriageId ?? 0;
+    message.groomId = object.groomId ?? 0;
+    message.brideId = object.brideId ?? 0;
+    message.groomName = object.groomName ?? "";
+    message.brideName = object.brideName ?? "";
+    message.groomItemId = object.groomItemId ?? 0;
+    message.brideItemId = object.brideItemId ?? 0;
+    message.status = object.status ?? 0;
+    message.ticketItemId = object.ticketItemId ?? 0;
+    message.groomWished = object.groomWished ?? false;
+    message.brideWished = object.brideWished ?? false;
+    message.groomWishes = object.groomWishes?.map((e) => e) || [];
+    message.brideWishes = object.brideWishes?.map((e) => e) || [];
+    message.guests = object.guests?.map((e) => e) || [];
+    message.divorceRequesterId = object.divorceRequesterId ?? 0;
+    message.divorceRequestedAtUnixMs = object.divorceRequestedAtUnixMs ?? 0;
+    return message;
+  },
+};
+
+function createBaseMarriageReply(): MarriageReply {
+  return { result: 0, marriage: undefined };
+}
+
+export const MarriageReply: MessageFns<MarriageReply> = {
+  encode(message: MarriageReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.marriage !== undefined) {
+      Marriage.encode(message.marriage, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MarriageReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMarriageReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.marriage = Marriage.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MarriageReply {
+    return {
+      result: isSet(object.result) ? marriageResultFromJSON(object.result) : 0,
+      marriage: isSet(object.marriage) ? Marriage.fromJSON(object.marriage) : undefined,
+    };
+  },
+
+  toJSON(message: MarriageReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = marriageResultToJSON(message.result);
+    }
+    if (message.marriage !== undefined) {
+      obj.marriage = Marriage.toJSON(message.marriage);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MarriageReply>, I>>(base?: I): MarriageReply {
+    return MarriageReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MarriageReply>, I>>(object: I): MarriageReply {
+    const message = createBaseMarriageReply();
+    message.result = object.result ?? 0;
+    message.marriage = (object.marriage !== undefined && object.marriage !== null)
+      ? Marriage.fromPartial(object.marriage)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCreateMarriageRequest(): CreateMarriageRequest {
+  return { worldId: 0, groomId: 0, groomName: "", brideId: 0, brideName: "", ringItemId: 0 };
+}
+
+export const CreateMarriageRequest: MessageFns<CreateMarriageRequest> = {
+  encode(message: CreateMarriageRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.groomId !== 0) {
+      writer.uint32(16).uint32(message.groomId);
+    }
+    if (message.groomName !== "") {
+      writer.uint32(26).string(message.groomName);
+    }
+    if (message.brideId !== 0) {
+      writer.uint32(32).uint32(message.brideId);
+    }
+    if (message.brideName !== "") {
+      writer.uint32(42).string(message.brideName);
+    }
+    if (message.ringItemId !== 0) {
+      writer.uint32(48).uint32(message.ringItemId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateMarriageRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateMarriageRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.groomId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.groomName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.brideId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.brideName = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.ringItemId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateMarriageRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      groomId: isSet(object.groomId)
+        ? globalThis.Number(object.groomId)
+        : isSet(object.groom_id)
+        ? globalThis.Number(object.groom_id)
+        : 0,
+      groomName: isSet(object.groomName)
+        ? globalThis.String(object.groomName)
+        : isSet(object.groom_name)
+        ? globalThis.String(object.groom_name)
+        : "",
+      brideId: isSet(object.brideId)
+        ? globalThis.Number(object.brideId)
+        : isSet(object.bride_id)
+        ? globalThis.Number(object.bride_id)
+        : 0,
+      brideName: isSet(object.brideName)
+        ? globalThis.String(object.brideName)
+        : isSet(object.bride_name)
+        ? globalThis.String(object.bride_name)
+        : "",
+      ringItemId: isSet(object.ringItemId)
+        ? globalThis.Number(object.ringItemId)
+        : isSet(object.ring_item_id)
+        ? globalThis.Number(object.ring_item_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CreateMarriageRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.groomId !== 0) {
+      obj.groomId = Math.round(message.groomId);
+    }
+    if (message.groomName !== "") {
+      obj.groomName = message.groomName;
+    }
+    if (message.brideId !== 0) {
+      obj.brideId = Math.round(message.brideId);
+    }
+    if (message.brideName !== "") {
+      obj.brideName = message.brideName;
+    }
+    if (message.ringItemId !== 0) {
+      obj.ringItemId = Math.round(message.ringItemId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateMarriageRequest>, I>>(base?: I): CreateMarriageRequest {
+    return CreateMarriageRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateMarriageRequest>, I>>(object: I): CreateMarriageRequest {
+    const message = createBaseCreateMarriageRequest();
+    message.worldId = object.worldId ?? 0;
+    message.groomId = object.groomId ?? 0;
+    message.groomName = object.groomName ?? "";
+    message.brideId = object.brideId ?? 0;
+    message.brideName = object.brideName ?? "";
+    message.ringItemId = object.ringItemId ?? 0;
+    return message;
+  },
+};
+
+function createBaseLoadMarriageRequest(): LoadMarriageRequest {
+  return { worldId: 0, characterId: 0 };
+}
+
+export const LoadMarriageRequest: MessageFns<LoadMarriageRequest> = {
+  encode(message: LoadMarriageRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoadMarriageRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadMarriageRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadMarriageRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: LoadMarriageRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadMarriageRequest>, I>>(base?: I): LoadMarriageRequest {
+    return LoadMarriageRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoadMarriageRequest>, I>>(object: I): LoadMarriageRequest {
+    const message = createBaseLoadMarriageRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetMarriageRequest(): GetMarriageRequest {
+  return { worldId: 0, marriageId: 0 };
+}
+
+export const GetMarriageRequest: MessageFns<GetMarriageRequest> = {
+  encode(message: GetMarriageRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      writer.uint32(16).uint32(message.marriageId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetMarriageRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetMarriageRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetMarriageRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetMarriageRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetMarriageRequest>, I>>(base?: I): GetMarriageRequest {
+    return GetMarriageRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetMarriageRequest>, I>>(object: I): GetMarriageRequest {
+    const message = createBaseGetMarriageRequest();
+    message.worldId = object.worldId ?? 0;
+    message.marriageId = object.marriageId ?? 0;
+    return message;
+  },
+};
+
+function createBaseBreakEngagementRequest(): BreakEngagementRequest {
+  return { worldId: 0, marriageId: 0, characterId: 0 };
+}
+
+export const BreakEngagementRequest: MessageFns<BreakEngagementRequest> = {
+  encode(message: BreakEngagementRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      writer.uint32(16).uint32(message.marriageId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BreakEngagementRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBreakEngagementRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BreakEngagementRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: BreakEngagementRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BreakEngagementRequest>, I>>(base?: I): BreakEngagementRequest {
+    return BreakEngagementRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BreakEngagementRequest>, I>>(object: I): BreakEngagementRequest {
+    const message = createBaseBreakEngagementRequest();
+    message.worldId = object.worldId ?? 0;
+    message.marriageId = object.marriageId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseReserveWeddingRequest(): ReserveWeddingRequest {
+  return { worldId: 0, marriageId: 0, ticketItemId: 0 };
+}
+
+export const ReserveWeddingRequest: MessageFns<ReserveWeddingRequest> = {
+  encode(message: ReserveWeddingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      writer.uint32(16).uint32(message.marriageId);
+    }
+    if (message.ticketItemId !== 0) {
+      writer.uint32(24).uint32(message.ticketItemId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ReserveWeddingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReserveWeddingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.ticketItemId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReserveWeddingRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
+      ticketItemId: isSet(object.ticketItemId)
+        ? globalThis.Number(object.ticketItemId)
+        : isSet(object.ticket_item_id)
+        ? globalThis.Number(object.ticket_item_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ReserveWeddingRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
+    if (message.ticketItemId !== 0) {
+      obj.ticketItemId = Math.round(message.ticketItemId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReserveWeddingRequest>, I>>(base?: I): ReserveWeddingRequest {
+    return ReserveWeddingRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ReserveWeddingRequest>, I>>(object: I): ReserveWeddingRequest {
+    const message = createBaseReserveWeddingRequest();
+    message.worldId = object.worldId ?? 0;
+    message.marriageId = object.marriageId ?? 0;
+    message.ticketItemId = object.ticketItemId ?? 0;
+    return message;
+  },
+};
+
+function createBaseSetWeddingWishlistRequest(): SetWeddingWishlistRequest {
+  return { worldId: 0, marriageId: 0, characterId: 0, wishes: [] };
+}
+
+export const SetWeddingWishlistRequest: MessageFns<SetWeddingWishlistRequest> = {
+  encode(message: SetWeddingWishlistRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      writer.uint32(16).uint32(message.marriageId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    for (const v of message.wishes) {
+      writer.uint32(34).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SetWeddingWishlistRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSetWeddingWishlistRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.wishes.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SetWeddingWishlistRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      wishes: globalThis.Array.isArray(object?.wishes) ? object.wishes.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: SetWeddingWishlistRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.wishes?.length) {
+      obj.wishes = message.wishes;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SetWeddingWishlistRequest>, I>>(base?: I): SetWeddingWishlistRequest {
+    return SetWeddingWishlistRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SetWeddingWishlistRequest>, I>>(object: I): SetWeddingWishlistRequest {
+    const message = createBaseSetWeddingWishlistRequest();
+    message.worldId = object.worldId ?? 0;
+    message.marriageId = object.marriageId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.wishes = object.wishes?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseInviteWeddingGuestRequest(): InviteWeddingGuestRequest {
+  return { worldId: 0, marriageId: 0, guestName: "" };
+}
+
+export const InviteWeddingGuestRequest: MessageFns<InviteWeddingGuestRequest> = {
+  encode(message: InviteWeddingGuestRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      writer.uint32(16).uint32(message.marriageId);
+    }
+    if (message.guestName !== "") {
+      writer.uint32(26).string(message.guestName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InviteWeddingGuestRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInviteWeddingGuestRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.guestName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InviteWeddingGuestRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
+      guestName: isSet(object.guestName)
+        ? globalThis.String(object.guestName)
+        : isSet(object.guest_name)
+        ? globalThis.String(object.guest_name)
+        : "",
+    };
+  },
+
+  toJSON(message: InviteWeddingGuestRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
+    if (message.guestName !== "") {
+      obj.guestName = message.guestName;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<InviteWeddingGuestRequest>, I>>(base?: I): InviteWeddingGuestRequest {
+    return InviteWeddingGuestRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<InviteWeddingGuestRequest>, I>>(object: I): InviteWeddingGuestRequest {
+    const message = createBaseInviteWeddingGuestRequest();
+    message.worldId = object.worldId ?? 0;
+    message.marriageId = object.marriageId ?? 0;
+    message.guestName = object.guestName ?? "";
+    return message;
+  },
+};
+
+function createBaseInviteWeddingGuestReply(): InviteWeddingGuestReply {
+  return { result: 0, guestId: 0, guestName: "" };
+}
+
+export const InviteWeddingGuestReply: MessageFns<InviteWeddingGuestReply> = {
+  encode(message: InviteWeddingGuestReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.guestId !== 0) {
+      writer.uint32(16).uint32(message.guestId);
+    }
+    if (message.guestName !== "") {
+      writer.uint32(26).string(message.guestName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InviteWeddingGuestReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInviteWeddingGuestReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.guestId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.guestName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InviteWeddingGuestReply {
+    return {
+      result: isSet(object.result) ? marriageResultFromJSON(object.result) : 0,
+      guestId: isSet(object.guestId)
+        ? globalThis.Number(object.guestId)
+        : isSet(object.guest_id)
+        ? globalThis.Number(object.guest_id)
+        : 0,
+      guestName: isSet(object.guestName)
+        ? globalThis.String(object.guestName)
+        : isSet(object.guest_name)
+        ? globalThis.String(object.guest_name)
+        : "",
+    };
+  },
+
+  toJSON(message: InviteWeddingGuestReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = marriageResultToJSON(message.result);
+    }
+    if (message.guestId !== 0) {
+      obj.guestId = Math.round(message.guestId);
+    }
+    if (message.guestName !== "") {
+      obj.guestName = message.guestName;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<InviteWeddingGuestReply>, I>>(base?: I): InviteWeddingGuestReply {
+    return InviteWeddingGuestReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<InviteWeddingGuestReply>, I>>(object: I): InviteWeddingGuestReply {
+    const message = createBaseInviteWeddingGuestReply();
+    message.result = object.result ?? 0;
+    message.guestId = object.guestId ?? 0;
+    message.guestName = object.guestName ?? "";
+    return message;
+  },
+};
+
+function createBaseFinishWeddingRequest(): FinishWeddingRequest {
+  return { worldId: 0, marriageId: 0 };
+}
+
+export const FinishWeddingRequest: MessageFns<FinishWeddingRequest> = {
+  encode(message: FinishWeddingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      writer.uint32(16).uint32(message.marriageId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FinishWeddingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFinishWeddingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FinishWeddingRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: FinishWeddingRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FinishWeddingRequest>, I>>(base?: I): FinishWeddingRequest {
+    return FinishWeddingRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FinishWeddingRequest>, I>>(object: I): FinishWeddingRequest {
+    const message = createBaseFinishWeddingRequest();
+    message.worldId = object.worldId ?? 0;
+    message.marriageId = object.marriageId ?? 0;
+    return message;
+  },
+};
+
+function createBaseRequestDivorceRequest(): RequestDivorceRequest {
+  return { worldId: 0, marriageId: 0, characterId: 0, nowUnixMs: 0 };
+}
+
+export const RequestDivorceRequest: MessageFns<RequestDivorceRequest> = {
+  encode(message: RequestDivorceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      writer.uint32(16).uint32(message.marriageId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.nowUnixMs !== 0) {
+      writer.uint32(32).uint64(message.nowUnixMs);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RequestDivorceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRequestDivorceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.nowUnixMs = longToNumber(reader.uint64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RequestDivorceRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      nowUnixMs: isSet(object.nowUnixMs)
+        ? globalThis.Number(object.nowUnixMs)
+        : isSet(object.now_unix_ms)
+        ? globalThis.Number(object.now_unix_ms)
+        : 0,
+    };
+  },
+
+  toJSON(message: RequestDivorceRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.nowUnixMs !== 0) {
+      obj.nowUnixMs = Math.round(message.nowUnixMs);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RequestDivorceRequest>, I>>(base?: I): RequestDivorceRequest {
+    return RequestDivorceRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RequestDivorceRequest>, I>>(object: I): RequestDivorceRequest {
+    const message = createBaseRequestDivorceRequest();
+    message.worldId = object.worldId ?? 0;
+    message.marriageId = object.marriageId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.nowUnixMs = object.nowUnixMs ?? 0;
+    return message;
+  },
+};
+
+function createBaseWeddingGift(): WeddingGift {
+  return { giftId: 0, senderName: "", item: undefined };
+}
+
+export const WeddingGift: MessageFns<WeddingGift> = {
+  encode(message: WeddingGift, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.giftId !== 0) {
+      writer.uint32(8).uint32(message.giftId);
+    }
+    if (message.senderName !== "") {
+      writer.uint32(18).string(message.senderName);
+    }
+    if (message.item !== undefined) {
+      Inventory.encode(message.item, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): WeddingGift {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWeddingGift();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.giftId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.senderName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.item = Inventory.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WeddingGift {
+    return {
+      giftId: isSet(object.giftId)
+        ? globalThis.Number(object.giftId)
+        : isSet(object.gift_id)
+        ? globalThis.Number(object.gift_id)
+        : 0,
+      senderName: isSet(object.senderName)
+        ? globalThis.String(object.senderName)
+        : isSet(object.sender_name)
+        ? globalThis.String(object.sender_name)
+        : "",
+      item: isSet(object.item) ? Inventory.fromJSON(object.item) : undefined,
+    };
+  },
+
+  toJSON(message: WeddingGift): unknown {
+    const obj: any = {};
+    if (message.giftId !== 0) {
+      obj.giftId = Math.round(message.giftId);
+    }
+    if (message.senderName !== "") {
+      obj.senderName = message.senderName;
+    }
+    if (message.item !== undefined) {
+      obj.item = Inventory.toJSON(message.item);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WeddingGift>, I>>(base?: I): WeddingGift {
+    return WeddingGift.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<WeddingGift>, I>>(object: I): WeddingGift {
+    const message = createBaseWeddingGift();
+    message.giftId = object.giftId ?? 0;
+    message.senderName = object.senderName ?? "";
+    message.item = (object.item !== undefined && object.item !== null) ? Inventory.fromPartial(object.item) : undefined;
+    return message;
+  },
+};
+
+function createBaseGiveWeddingGiftRequest(): GiveWeddingGiftRequest {
+  return { worldId: 0, receiverId: 0, gift: undefined, sender: undefined };
+}
+
+export const GiveWeddingGiftRequest: MessageFns<GiveWeddingGiftRequest> = {
+  encode(message: GiveWeddingGiftRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.receiverId !== 0) {
+      writer.uint32(16).uint32(message.receiverId);
+    }
+    if (message.gift !== undefined) {
+      WeddingGift.encode(message.gift, writer.uint32(26).fork()).join();
+    }
+    if (message.sender !== undefined) {
+      CharacterSaveEntry.encode(message.sender, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GiveWeddingGiftRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGiveWeddingGiftRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.receiverId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.gift = WeddingGift.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sender = CharacterSaveEntry.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GiveWeddingGiftRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      receiverId: isSet(object.receiverId)
+        ? globalThis.Number(object.receiverId)
+        : isSet(object.receiver_id)
+        ? globalThis.Number(object.receiver_id)
+        : 0,
+      gift: isSet(object.gift) ? WeddingGift.fromJSON(object.gift) : undefined,
+      sender: isSet(object.sender) ? CharacterSaveEntry.fromJSON(object.sender) : undefined,
+    };
+  },
+
+  toJSON(message: GiveWeddingGiftRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.receiverId !== 0) {
+      obj.receiverId = Math.round(message.receiverId);
+    }
+    if (message.gift !== undefined) {
+      obj.gift = WeddingGift.toJSON(message.gift);
+    }
+    if (message.sender !== undefined) {
+      obj.sender = CharacterSaveEntry.toJSON(message.sender);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GiveWeddingGiftRequest>, I>>(base?: I): GiveWeddingGiftRequest {
+    return GiveWeddingGiftRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GiveWeddingGiftRequest>, I>>(object: I): GiveWeddingGiftRequest {
+    const message = createBaseGiveWeddingGiftRequest();
+    message.worldId = object.worldId ?? 0;
+    message.receiverId = object.receiverId ?? 0;
+    message.gift = (object.gift !== undefined && object.gift !== null)
+      ? WeddingGift.fromPartial(object.gift)
+      : undefined;
+    message.sender = (object.sender !== undefined && object.sender !== null)
+      ? CharacterSaveEntry.fromPartial(object.sender)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGiveWeddingGiftReply(): GiveWeddingGiftReply {
+  return { result: 0 };
+}
+
+export const GiveWeddingGiftReply: MessageFns<GiveWeddingGiftReply> = {
+  encode(message: GiveWeddingGiftReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GiveWeddingGiftReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGiveWeddingGiftReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GiveWeddingGiftReply {
+    return { result: isSet(object.result) ? marriageResultFromJSON(object.result) : 0 };
+  },
+
+  toJSON(message: GiveWeddingGiftReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = marriageResultToJSON(message.result);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GiveWeddingGiftReply>, I>>(base?: I): GiveWeddingGiftReply {
+    return GiveWeddingGiftReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GiveWeddingGiftReply>, I>>(object: I): GiveWeddingGiftReply {
+    const message = createBaseGiveWeddingGiftReply();
+    message.result = object.result ?? 0;
+    return message;
+  },
+};
+
+function createBaseLoadWeddingGiftsRequest(): LoadWeddingGiftsRequest {
+  return { worldId: 0, characterId: 0 };
+}
+
+export const LoadWeddingGiftsRequest: MessageFns<LoadWeddingGiftsRequest> = {
+  encode(message: LoadWeddingGiftsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoadWeddingGiftsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadWeddingGiftsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadWeddingGiftsRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: LoadWeddingGiftsRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadWeddingGiftsRequest>, I>>(base?: I): LoadWeddingGiftsRequest {
+    return LoadWeddingGiftsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoadWeddingGiftsRequest>, I>>(object: I): LoadWeddingGiftsRequest {
+    const message = createBaseLoadWeddingGiftsRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    return message;
+  },
+};
+
+function createBaseLoadWeddingGiftsReply(): LoadWeddingGiftsReply {
+  return { gifts: [] };
+}
+
+export const LoadWeddingGiftsReply: MessageFns<LoadWeddingGiftsReply> = {
+  encode(message: LoadWeddingGiftsReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.gifts) {
+      WeddingGift.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoadWeddingGiftsReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadWeddingGiftsReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.gifts.push(WeddingGift.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadWeddingGiftsReply {
+    return {
+      gifts: globalThis.Array.isArray(object?.gifts) ? object.gifts.map((e: any) => WeddingGift.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: LoadWeddingGiftsReply): unknown {
+    const obj: any = {};
+    if (message.gifts?.length) {
+      obj.gifts = message.gifts.map((e) => WeddingGift.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadWeddingGiftsReply>, I>>(base?: I): LoadWeddingGiftsReply {
+    return LoadWeddingGiftsReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoadWeddingGiftsReply>, I>>(object: I): LoadWeddingGiftsReply {
+    const message = createBaseLoadWeddingGiftsReply();
+    message.gifts = object.gifts?.map((e) => WeddingGift.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseClaimWeddingGiftRequest(): ClaimWeddingGiftRequest {
+  return { worldId: 0, characterId: 0, giftId: 0 };
+}
+
+export const ClaimWeddingGiftRequest: MessageFns<ClaimWeddingGiftRequest> = {
+  encode(message: ClaimWeddingGiftRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.giftId !== 0) {
+      writer.uint32(24).uint32(message.giftId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClaimWeddingGiftRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClaimWeddingGiftRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.giftId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClaimWeddingGiftRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      giftId: isSet(object.giftId)
+        ? globalThis.Number(object.giftId)
+        : isSet(object.gift_id)
+        ? globalThis.Number(object.gift_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ClaimWeddingGiftRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.giftId !== 0) {
+      obj.giftId = Math.round(message.giftId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClaimWeddingGiftRequest>, I>>(base?: I): ClaimWeddingGiftRequest {
+    return ClaimWeddingGiftRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClaimWeddingGiftRequest>, I>>(object: I): ClaimWeddingGiftRequest {
+    const message = createBaseClaimWeddingGiftRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.giftId = object.giftId ?? 0;
+    return message;
+  },
+};
+
+function createBaseClaimWeddingGiftReply(): ClaimWeddingGiftReply {
+  return { result: 0, gift: undefined };
+}
+
+export const ClaimWeddingGiftReply: MessageFns<ClaimWeddingGiftReply> = {
+  encode(message: ClaimWeddingGiftReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.gift !== undefined) {
+      WeddingGift.encode(message.gift, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClaimWeddingGiftReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClaimWeddingGiftReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.gift = WeddingGift.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClaimWeddingGiftReply {
+    return {
+      result: isSet(object.result) ? marriageResultFromJSON(object.result) : 0,
+      gift: isSet(object.gift) ? WeddingGift.fromJSON(object.gift) : undefined,
+    };
+  },
+
+  toJSON(message: ClaimWeddingGiftReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = marriageResultToJSON(message.result);
+    }
+    if (message.gift !== undefined) {
+      obj.gift = WeddingGift.toJSON(message.gift);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClaimWeddingGiftReply>, I>>(base?: I): ClaimWeddingGiftReply {
+    return ClaimWeddingGiftReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClaimWeddingGiftReply>, I>>(object: I): ClaimWeddingGiftReply {
+    const message = createBaseClaimWeddingGiftReply();
+    message.result = object.result ?? 0;
+    message.gift = (object.gift !== undefined && object.gift !== null)
+      ? WeddingGift.fromPartial(object.gift)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseNotifySpouseMapRequest(): NotifySpouseMapRequest {
+  return { worldId: 0, characterId: 0, spouseId: 0, mapId: 0, reply: false };
+}
+
+export const NotifySpouseMapRequest: MessageFns<NotifySpouseMapRequest> = {
+  encode(message: NotifySpouseMapRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(16).uint32(message.characterId);
+    }
+    if (message.spouseId !== 0) {
+      writer.uint32(24).uint32(message.spouseId);
+    }
+    if (message.mapId !== 0) {
+      writer.uint32(32).uint32(message.mapId);
+    }
+    if (message.reply !== false) {
+      writer.uint32(40).bool(message.reply);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): NotifySpouseMapRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseNotifySpouseMapRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.spouseId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.mapId = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.reply = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): NotifySpouseMapRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      spouseId: isSet(object.spouseId)
+        ? globalThis.Number(object.spouseId)
+        : isSet(object.spouse_id)
+        ? globalThis.Number(object.spouse_id)
+        : 0,
+      mapId: isSet(object.mapId)
+        ? globalThis.Number(object.mapId)
+        : isSet(object.map_id)
+        ? globalThis.Number(object.map_id)
+        : 0,
+      reply: isSet(object.reply) ? globalThis.Boolean(object.reply) : false,
+    };
+  },
+
+  toJSON(message: NotifySpouseMapRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.spouseId !== 0) {
+      obj.spouseId = Math.round(message.spouseId);
+    }
+    if (message.mapId !== 0) {
+      obj.mapId = Math.round(message.mapId);
+    }
+    if (message.reply !== false) {
+      obj.reply = message.reply;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NotifySpouseMapRequest>, I>>(base?: I): NotifySpouseMapRequest {
+    return NotifySpouseMapRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<NotifySpouseMapRequest>, I>>(object: I): NotifySpouseMapRequest {
+    const message = createBaseNotifySpouseMapRequest();
+    message.worldId = object.worldId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.spouseId = object.spouseId ?? 0;
+    message.mapId = object.mapId ?? 0;
+    message.reply = object.reply ?? false;
+    return message;
+  },
+};
+
+function createBaseNotifySpouseMapReply(): NotifySpouseMapReply {
+  return {};
+}
+
+export const NotifySpouseMapReply: MessageFns<NotifySpouseMapReply> = {
+  encode(_: NotifySpouseMapReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): NotifySpouseMapReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseNotifySpouseMapReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): NotifySpouseMapReply {
+    return {};
+  },
+
+  toJSON(_: NotifySpouseMapReply): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NotifySpouseMapReply>, I>>(base?: I): NotifySpouseMapReply {
+    return NotifySpouseMapReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<NotifySpouseMapReply>, I>>(_: I): NotifySpouseMapReply {
+    const message = createBaseNotifySpouseMapReply();
+    return message;
+  },
+};
+
 function createBaseBuyCashItemReply(): BuyCashItemReply {
   return { result: 0, nxCash: 0, maplePoint: 0 };
 }
@@ -7760,6 +10328,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     quests: [],
     savedLocations: [],
     debuffs: [],
+    marriage: undefined,
   };
 }
 
@@ -7803,6 +10372,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     }
     for (const v of message.debuffs) {
       Debuff.encode(v!, writer.uint32(106).fork()).join();
+    }
+    if (message.marriage !== undefined) {
+      Marriage.encode(message.marriage, writer.uint32(114).fork()).join();
     }
     return writer;
   },
@@ -7918,6 +10490,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.debuffs.push(Debuff.decode(reader, reader.uint32()));
           continue;
         }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.marriage = Marriage.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -7968,6 +10548,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       debuffs: globalThis.Array.isArray(object?.debuffs)
         ? object.debuffs.map((e: any) => Debuff.fromJSON(e))
         : [],
+      marriage: isSet(object.marriage) ? Marriage.fromJSON(object.marriage) : undefined,
     };
   },
 
@@ -8012,6 +10593,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.debuffs?.length) {
       obj.debuffs = message.debuffs.map((e) => Debuff.toJSON(e));
     }
+    if (message.marriage !== undefined) {
+      obj.marriage = Marriage.toJSON(message.marriage);
+    }
     return obj;
   },
 
@@ -8035,6 +10619,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.quests = object.quests?.map((e) => Quest.fromPartial(e)) || [];
     message.savedLocations = object.savedLocations?.map((e) => SavedLocation.fromPartial(e)) || [];
     message.debuffs = object.debuffs?.map((e) => Debuff.fromPartial(e)) || [];
+    message.marriage = (object.marriage !== undefined && object.marriage !== null)
+      ? Marriage.fromPartial(object.marriage)
+      : undefined;
     return message;
   },
 };
@@ -11103,6 +13690,7 @@ function createBaseInventory(): Inventory {
     equipBonusStats: undefined,
     enhanceCount: 0,
     pet: undefined,
+    marriageId: 0,
   };
 }
 
@@ -11149,6 +13737,9 @@ export const Inventory: MessageFns<Inventory> = {
     }
     if (message.pet !== undefined) {
       Pet.encode(message.pet, writer.uint32(114).fork()).join();
+    }
+    if (message.marriageId !== 0) {
+      writer.uint32(120).uint32(message.marriageId);
     }
     return writer;
   },
@@ -11272,6 +13863,14 @@ export const Inventory: MessageFns<Inventory> = {
           message.pet = Pet.decode(reader, reader.uint32());
           continue;
         }
+        case 15: {
+          if (tag !== 120) {
+            break;
+          }
+
+          message.marriageId = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -11337,6 +13936,11 @@ export const Inventory: MessageFns<Inventory> = {
         ? globalThis.Number(object.enhance_count)
         : 0,
       pet: isSet(object.pet) ? Pet.fromJSON(object.pet) : undefined,
+      marriageId: isSet(object.marriageId)
+        ? globalThis.Number(object.marriageId)
+        : isSet(object.marriage_id)
+        ? globalThis.Number(object.marriage_id)
+        : 0,
     };
   },
 
@@ -11384,6 +13988,9 @@ export const Inventory: MessageFns<Inventory> = {
     if (message.pet !== undefined) {
       obj.pet = Pet.toJSON(message.pet);
     }
+    if (message.marriageId !== 0) {
+      obj.marriageId = Math.round(message.marriageId);
+    }
     return obj;
   },
 
@@ -11408,6 +14015,7 @@ export const Inventory: MessageFns<Inventory> = {
       : undefined;
     message.enhanceCount = object.enhanceCount ?? 0;
     message.pet = (object.pet !== undefined && object.pet !== null) ? Pet.fromPartial(object.pet) : undefined;
+    message.marriageId = object.marriageId ?? 0;
     return message;
   },
 };
@@ -28570,6 +31178,138 @@ export const InternalService = {
       Buffer.from(CreateCashCouponsReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): CreateCashCouponsReply => CreateCashCouponsReply.decode(value),
   },
+  createMarriage: {
+    path: "/fm.internal.Internal/CreateMarriage" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: CreateMarriageRequest): Buffer =>
+      Buffer.from(CreateMarriageRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): CreateMarriageRequest => CreateMarriageRequest.decode(value),
+    responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
+  },
+  loadMarriage: {
+    path: "/fm.internal.Internal/LoadMarriage" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: LoadMarriageRequest): Buffer => Buffer.from(LoadMarriageRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): LoadMarriageRequest => LoadMarriageRequest.decode(value),
+    responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
+  },
+  getMarriage: {
+    path: "/fm.internal.Internal/GetMarriage" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: GetMarriageRequest): Buffer => Buffer.from(GetMarriageRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GetMarriageRequest => GetMarriageRequest.decode(value),
+    responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
+  },
+  breakEngagement: {
+    path: "/fm.internal.Internal/BreakEngagement" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: BreakEngagementRequest): Buffer =>
+      Buffer.from(BreakEngagementRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): BreakEngagementRequest => BreakEngagementRequest.decode(value),
+    responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
+  },
+  reserveWedding: {
+    path: "/fm.internal.Internal/ReserveWedding" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ReserveWeddingRequest): Buffer =>
+      Buffer.from(ReserveWeddingRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ReserveWeddingRequest => ReserveWeddingRequest.decode(value),
+    responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
+  },
+  setWeddingWishlist: {
+    path: "/fm.internal.Internal/SetWeddingWishlist" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: SetWeddingWishlistRequest): Buffer =>
+      Buffer.from(SetWeddingWishlistRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): SetWeddingWishlistRequest => SetWeddingWishlistRequest.decode(value),
+    responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
+  },
+  inviteWeddingGuest: {
+    path: "/fm.internal.Internal/InviteWeddingGuest" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: InviteWeddingGuestRequest): Buffer =>
+      Buffer.from(InviteWeddingGuestRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): InviteWeddingGuestRequest => InviteWeddingGuestRequest.decode(value),
+    responseSerialize: (value: InviteWeddingGuestReply): Buffer =>
+      Buffer.from(InviteWeddingGuestReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): InviteWeddingGuestReply => InviteWeddingGuestReply.decode(value),
+  },
+  finishWedding: {
+    path: "/fm.internal.Internal/FinishWedding" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: FinishWeddingRequest): Buffer => Buffer.from(FinishWeddingRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): FinishWeddingRequest => FinishWeddingRequest.decode(value),
+    responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
+  },
+  requestDivorce: {
+    path: "/fm.internal.Internal/RequestDivorce" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: RequestDivorceRequest): Buffer =>
+      Buffer.from(RequestDivorceRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): RequestDivorceRequest => RequestDivorceRequest.decode(value),
+    responseSerialize: (value: MarriageReply): Buffer => Buffer.from(MarriageReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): MarriageReply => MarriageReply.decode(value),
+  },
+  giveWeddingGift: {
+    path: "/fm.internal.Internal/GiveWeddingGift" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: GiveWeddingGiftRequest): Buffer =>
+      Buffer.from(GiveWeddingGiftRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): GiveWeddingGiftRequest => GiveWeddingGiftRequest.decode(value),
+    responseSerialize: (value: GiveWeddingGiftReply): Buffer =>
+      Buffer.from(GiveWeddingGiftReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): GiveWeddingGiftReply => GiveWeddingGiftReply.decode(value),
+  },
+  loadWeddingGifts: {
+    path: "/fm.internal.Internal/LoadWeddingGifts" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: LoadWeddingGiftsRequest): Buffer =>
+      Buffer.from(LoadWeddingGiftsRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): LoadWeddingGiftsRequest => LoadWeddingGiftsRequest.decode(value),
+    responseSerialize: (value: LoadWeddingGiftsReply): Buffer =>
+      Buffer.from(LoadWeddingGiftsReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): LoadWeddingGiftsReply => LoadWeddingGiftsReply.decode(value),
+  },
+  claimWeddingGift: {
+    path: "/fm.internal.Internal/ClaimWeddingGift" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: ClaimWeddingGiftRequest): Buffer =>
+      Buffer.from(ClaimWeddingGiftRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ClaimWeddingGiftRequest => ClaimWeddingGiftRequest.decode(value),
+    responseSerialize: (value: ClaimWeddingGiftReply): Buffer =>
+      Buffer.from(ClaimWeddingGiftReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ClaimWeddingGiftReply => ClaimWeddingGiftReply.decode(value),
+  },
+  notifySpouseMap: {
+    path: "/fm.internal.Internal/NotifySpouseMap" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: NotifySpouseMapRequest): Buffer =>
+      Buffer.from(NotifySpouseMapRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): NotifySpouseMapRequest => NotifySpouseMapRequest.decode(value),
+    responseSerialize: (value: NotifySpouseMapReply): Buffer =>
+      Buffer.from(NotifySpouseMapReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): NotifySpouseMapReply => NotifySpouseMapReply.decode(value),
+  },
 } as const;
 
 export interface InternalServer extends UntypedServiceImplementation {
@@ -28673,6 +31413,19 @@ export interface InternalServer extends UntypedServiceImplementation {
   findCashCoupon: handleUnaryCall<FindCashCouponRequest, FindCashCouponReply>;
   redeemCashCoupon: handleUnaryCall<RedeemCashCouponRequest, RedeemCashCouponReply>;
   createCashCoupons: handleUnaryCall<CreateCashCouponsRequest, CreateCashCouponsReply>;
+  createMarriage: handleUnaryCall<CreateMarriageRequest, MarriageReply>;
+  loadMarriage: handleUnaryCall<LoadMarriageRequest, MarriageReply>;
+  getMarriage: handleUnaryCall<GetMarriageRequest, MarriageReply>;
+  breakEngagement: handleUnaryCall<BreakEngagementRequest, MarriageReply>;
+  reserveWedding: handleUnaryCall<ReserveWeddingRequest, MarriageReply>;
+  setWeddingWishlist: handleUnaryCall<SetWeddingWishlistRequest, MarriageReply>;
+  inviteWeddingGuest: handleUnaryCall<InviteWeddingGuestRequest, InviteWeddingGuestReply>;
+  finishWedding: handleUnaryCall<FinishWeddingRequest, MarriageReply>;
+  requestDivorce: handleUnaryCall<RequestDivorceRequest, MarriageReply>;
+  giveWeddingGift: handleUnaryCall<GiveWeddingGiftRequest, GiveWeddingGiftReply>;
+  loadWeddingGifts: handleUnaryCall<LoadWeddingGiftsRequest, LoadWeddingGiftsReply>;
+  claimWeddingGift: handleUnaryCall<ClaimWeddingGiftRequest, ClaimWeddingGiftReply>;
+  notifySpouseMap: handleUnaryCall<NotifySpouseMapRequest, NotifySpouseMapReply>;
 }
 
 export interface InternalClient extends Client {
@@ -29902,6 +32655,201 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: CreateCashCouponsReply) => void,
+  ): ClientUnaryCall;
+  createMarriage(
+    request: CreateMarriageRequest,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  createMarriage(
+    request: CreateMarriageRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  createMarriage(
+    request: CreateMarriageRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  loadMarriage(
+    request: LoadMarriageRequest,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  loadMarriage(
+    request: LoadMarriageRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  loadMarriage(
+    request: LoadMarriageRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  getMarriage(
+    request: GetMarriageRequest,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  getMarriage(
+    request: GetMarriageRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  getMarriage(
+    request: GetMarriageRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  breakEngagement(
+    request: BreakEngagementRequest,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  breakEngagement(
+    request: BreakEngagementRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  breakEngagement(
+    request: BreakEngagementRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  reserveWedding(
+    request: ReserveWeddingRequest,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  reserveWedding(
+    request: ReserveWeddingRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  reserveWedding(
+    request: ReserveWeddingRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  setWeddingWishlist(
+    request: SetWeddingWishlistRequest,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  setWeddingWishlist(
+    request: SetWeddingWishlistRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  setWeddingWishlist(
+    request: SetWeddingWishlistRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  inviteWeddingGuest(
+    request: InviteWeddingGuestRequest,
+    callback: (error: ServiceError | null, response: InviteWeddingGuestReply) => void,
+  ): ClientUnaryCall;
+  inviteWeddingGuest(
+    request: InviteWeddingGuestRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: InviteWeddingGuestReply) => void,
+  ): ClientUnaryCall;
+  inviteWeddingGuest(
+    request: InviteWeddingGuestRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: InviteWeddingGuestReply) => void,
+  ): ClientUnaryCall;
+  finishWedding(
+    request: FinishWeddingRequest,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  finishWedding(
+    request: FinishWeddingRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  finishWedding(
+    request: FinishWeddingRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  requestDivorce(
+    request: RequestDivorceRequest,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  requestDivorce(
+    request: RequestDivorceRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  requestDivorce(
+    request: RequestDivorceRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MarriageReply) => void,
+  ): ClientUnaryCall;
+  giveWeddingGift(
+    request: GiveWeddingGiftRequest,
+    callback: (error: ServiceError | null, response: GiveWeddingGiftReply) => void,
+  ): ClientUnaryCall;
+  giveWeddingGift(
+    request: GiveWeddingGiftRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: GiveWeddingGiftReply) => void,
+  ): ClientUnaryCall;
+  giveWeddingGift(
+    request: GiveWeddingGiftRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: GiveWeddingGiftReply) => void,
+  ): ClientUnaryCall;
+  loadWeddingGifts(
+    request: LoadWeddingGiftsRequest,
+    callback: (error: ServiceError | null, response: LoadWeddingGiftsReply) => void,
+  ): ClientUnaryCall;
+  loadWeddingGifts(
+    request: LoadWeddingGiftsRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: LoadWeddingGiftsReply) => void,
+  ): ClientUnaryCall;
+  loadWeddingGifts(
+    request: LoadWeddingGiftsRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: LoadWeddingGiftsReply) => void,
+  ): ClientUnaryCall;
+  claimWeddingGift(
+    request: ClaimWeddingGiftRequest,
+    callback: (error: ServiceError | null, response: ClaimWeddingGiftReply) => void,
+  ): ClientUnaryCall;
+  claimWeddingGift(
+    request: ClaimWeddingGiftRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ClaimWeddingGiftReply) => void,
+  ): ClientUnaryCall;
+  claimWeddingGift(
+    request: ClaimWeddingGiftRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ClaimWeddingGiftReply) => void,
+  ): ClientUnaryCall;
+  notifySpouseMap(
+    request: NotifySpouseMapRequest,
+    callback: (error: ServiceError | null, response: NotifySpouseMapReply) => void,
+  ): ClientUnaryCall;
+  notifySpouseMap(
+    request: NotifySpouseMapRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: NotifySpouseMapReply) => void,
+  ): ClientUnaryCall;
+  notifySpouseMap(
+    request: NotifySpouseMapRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: NotifySpouseMapReply) => void,
   ): ClientUnaryCall;
 }
 

@@ -35,6 +35,24 @@ type CharacterListener interface {
 	CheckParcelArrivalsAsync(ctx actor.Context, ch *Character) *async.Promise
 	AddCashAsync(ctx actor.Context, ch *Character, nxCash int32, maplePoint int32) *async.Promise
 	CreateCashCouponsAsync(ctx actor.Context, ch *Character, kind internal.CashCouponKind, value uint32, count uint32) *async.Promise
+	CreateMarriageAsync(ctx actor.Context, groom *Character, bride *Character, ringItemID uint32) *async.Promise
+	LoadMarriageAsync(ctx actor.Context, ch *Character) *async.Promise
+	GetMarriageAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise
+	BreakEngagementAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise
+	ReserveWeddingAsync(ctx actor.Context, ch *Character, marriageID uint32, ticketItemID uint32) *async.Promise
+	SetWeddingWishlistAsync(ctx actor.Context, ch *Character, marriageID uint32, wishes []string) *async.Promise
+	InviteWeddingGuestAsync(ctx actor.Context, ch *Character, marriageID uint32, guestName string) *async.Promise
+	RequestDivorceAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise
+	GiveWeddingGiftAsync(ctx actor.Context, ch *Character, receiverID uint32, gift *internal.WeddingGift, sender *internal.CharacterSaveEntry) *async.Promise
+	LoadWeddingGiftsAsync(ctx actor.Context, ch *Character) *async.Promise
+	ClaimWeddingGiftAsync(ctx actor.Context, ch *Character, giftID uint32) *async.Promise
+	NotifySpouseMapAsync(ctx actor.Context, ch *Character, spouseID uint32, mapID uint32, reply bool) *async.Promise
+	OnEngageRequest(ch *Character, name string, characterID uint32)
+	OnWeddingWishlistInput(ch *Character)
+	OnEngageResult(ch *Character, result pconst.EngageResult)
+	OnWeddingInvitation(ch *Character, groomName string, brideName string, weddingType uint16)
+	OnWeddingGift(ch *Character, mode pconst.WeddingGiftMode, wishes []string, tabs map[constant.InventoryType][]Item)
+	OnSpouseMap(ch *Character, mapID uint32, spouseID uint32)
 	OnOpenDuey(ch *Character, fromArrival bool)
 	OnDueyResult(ch *Character, result pconst.DueyResult)
 	OnDueyRemoved(ch *Character, parcelID uint32, reason uint8)

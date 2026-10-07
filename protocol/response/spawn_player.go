@@ -31,21 +31,8 @@ type SpawnPlayer struct {
 	Team              constant.CarnivalTeam
 	CrushRings        []*dto.Ring
 	FriendshipRings   []*dto.Ring
-	MarriageRings     []*dto.Ring
+	MarriageRing      *dto.MarriageRing
 	Pet               *dto.ActivePet
-}
-
-func writeRings(writer *stream.StreamWriter, rings []*dto.Ring) error {
-	writer.WriteU8(uint8(len(rings)))
-	for _, ring := range rings {
-		if ring == nil {
-			continue
-		}
-		writer.WriteU64(ring.RingId)
-		writer.WriteU64(ring.PartnerId)
-		writer.WriteU64(ring.RingUniqueId)
-	}
-	return nil
 }
 
 func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
@@ -116,15 +103,9 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU8(0)
 	}
 
-	if err := writeRings(writer, p.CrushRings); err != nil {
-		return err
-	}
-	if err := writeRings(writer, p.FriendshipRings); err != nil {
-		return err
-	}
-	if err := writeRings(writer, p.MarriageRings); err != nil {
-		return err
-	}
+	writeLookRings(writer, p.CrushRings)
+	writeLookRings(writer, p.FriendshipRings)
+	writeMarriageRing(writer, p.MarriageRing)
 
 	writer.WriteU8(0)
 	if p.HasTeam {

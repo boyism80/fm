@@ -540,6 +540,32 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["성별"] = {
+		privilege = ROLE.Admin,
+		usage = "<0|1> - 성별 변경 (0 남성, 1 여성)",
+		command = function(me, args)
+			local gender = tonumber(args[1])
+			if gender ~= 0 and gender ~= 1 then
+				me:message("사용법: /성별 <0|1>")
+				return true
+			end
+			me:gender(gender)
+			me:message("성별 변경: " .. gender)
+			return true
+		end,
+	},
+	["파혼"] = {
+		privilege = ROLE.Admin,
+		usage = "- 약혼 강제 해제 (예약 여부 무관)",
+		command = function(me, args)
+			if me:break_engagement() then
+				me:message("파혼 완료")
+			else
+				me:message("약혼 상태가 아닙니다.")
+			end
+			return true
+		end,
+	},
 	["인벤토리초기화"] = {
 		privilege = ROLE.Admin,
 		usage = "- 인벤토리 아이템 전부 제거 (착용 장비 제외)",
