@@ -247,6 +247,13 @@ func (m *Map) AddPlayer(ctx actor.Context, playerID uint32, character *Character
 		character.Position = pos
 	}
 	character.Stance = constant.StanceDefaultValue
+	if init {
+		character.restorePet()
+	}
+	if character.Pet != nil {
+		character.Pet.Position = character.Position
+		character.Pet.Stance = character.Stance
+	}
 
 	m.objects[constant.ObjectTypeCharacter][playerID] = character
 	m.sections.add(character)

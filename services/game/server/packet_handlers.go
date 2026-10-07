@@ -68,4 +68,13 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, Carnival](gs)
 	core.Bind[*GameServer, ExpireTemporaryStat](gs)
 	core.Bind[*GameServer, ChangeTemporaryStat](gs)
+	core.Bind[*GameServer, SummonPet](gs)
+	core.Bind[*GameServer, MovePet](gs)
+	core.Bind[*GameServer, PetChat](gs)
+	core.Bind[*GameServer, PetCommand](gs)
+	core.Bind[*GameServer, PetFood](gs)
+	core.Bind[*GameServer, PetLoot](gs)
+	core.Bind[*GameServer, PetAutoPotion](gs)
+	core.Bind[*GameServer, PetExceptions](gs)
+	core.Bind[*GameServer, PetReviveInquiry](gs)
 }

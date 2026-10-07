@@ -36,6 +36,7 @@ type Consume struct {
 	ScrollIncSpeed  int16
 	ScrollIncJump   int16
 	ConsumeOnPickup bool
+	PetFood         *PetFood
 	Party           bool
 	MoveTo          int32
 	ExpInc          int32

@@ -59,23 +59,17 @@ func (item *Installation) ToDTO() dto.Item {
 }
 
 func (pet *Pet) ToDTO() dto.Item {
-	model := pet.GetModel()
-	petModel, ok := model.(*wz.Pet)
-	petName := ""
-	if ok {
-		petName = petModel.Name
-	}
 	return &dto.PetItem{
-		ItemId:         model.GetID(),
+		ItemId:         pet.GetModel().GetID(),
 		UniqueId:       copyUint64Ptr(pet.UniqueId),
 		Expiration:     pet.GetExpiration(),
-		PetName:        petName,
+		PetName:        pet.Name,
 		PetLevel:       pet.Level,
 		PetCloseness:   pet.Closeness,
 		PetFullness:    pet.Fullness,
 		PetSpeed:       pet.Speed,
-		PetFlags:       pet.Flags,
-		PetExpiration:  pet.Expiration,
+		PetFlags:       uint16(pet.Skills),
+		PetExpiration:  pet.GetExpiration(),
 		PetSecondsLeft: pet.SecondsLeft,
 	}
 }

@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 )
 
 func (inv *Inventory) AddMeso(amount int32) {
@@ -446,6 +448,11 @@ func (inv *Inventory) Equip(slot int16, parts constant.EquipmentPartsType) error
 	}
 	if constant.CanEquipAt(newEq.GetModel().GetID(), parts) == false {
 		return ErrInvalidEquipmentPart
+	}
+	if armor, ok := newEq.GetModel().(*wz.Armor); ok && constant.GetEquipmentType(armor.ID) == constant.EquipmentTypePetEquip {
+		if ch.Pet == nil || slices.Contains(armor.Pets, ch.Pet.Item.GetModel().GetID()) == false {
+			return ErrInvalidEquipmentPart
+		}
 	}
 
 	old, swap := equipments[parts]

@@ -7,6 +7,7 @@ import (
 
 type UpdateStats struct {
 	Stats        map[constant.Stat]int32
+	Pet          *uint64
 	UnlockAction bool
 }
 
@@ -25,9 +26,16 @@ func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 	for k := range p.Stats {
 		mask = mask | uint32(k)
 	}
+	if p.Pet != nil {
+		mask = mask | uint32(constant.StatPet)
+	}
 	writer.WriteU32(mask)
 	order := []constant.Stat{constant.StatSkin, constant.StatFace, constant.StatHair, constant.StatPet, constant.StatLevel, constant.StatClass, constant.StatStr, constant.StatDex, constant.StatInt, constant.StatLuk, constant.StatHP, constant.StatMaxHP, constant.StatMP, constant.StatMaxMP, constant.StatAvailableAP, constant.StatAvailableSP, constant.StatEXP, constant.StatPopulation, constant.StatMeso}
 	for _, stat := range order {
+		if stat == constant.StatPet && p.Pet != nil {
+			writer.WriteU64(*p.Pet)
+			continue
+		}
 		if val, ok := p.Stats[stat]; ok {
 			switch stat {
 			case constant.StatSkin:
@@ -35,9 +43,6 @@ func (p *UpdateStats) Serialize(writer *stream.StreamWriter) error {
 
 			case constant.StatFace, constant.StatHair:
 				writer.WriteU32(uint32(val))
-
-			case constant.StatPet:
-				writer.WriteU64(uint64(val))
 
 			case constant.StatLevel:
 				writer.WriteU8(uint8(val))
@@ -78,7 +83,8 @@ func (p *UpdateStats) Deserialize(reader *stream.StreamReader) {
 			p.Stats[stat] = int32(reader.ReadU32())
 
 		case constant.StatPet:
-			p.Stats[stat] = int32(reader.ReadU64())
+			pet := reader.ReadU64()
+			p.Pet = &pet
 
 		case constant.StatLevel:
 			p.Stats[stat] = int32(reader.ReadU8())

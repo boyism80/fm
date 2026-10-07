@@ -57,6 +57,9 @@ type Character struct {
 	AbilityPoint      uint16
 	SkillPoint        uint16
 	HpApUsed          uint16
+	PetHPItem         uint32
+	PetMPItem         uint32
+	summonedPet       uint64
 	Inventory         *Inventory
 	Storage           *Storage
 	Duey              *Duey
@@ -70,6 +73,7 @@ type Character struct {
 	Buffs             *BuffContainer
 	debuffs           map[constant.DebuffFlag]*Debuff
 	Summons           *SummonContainer
+	Pet               *ActivePet
 	Doors             *DoorContainer
 	HomingTargetOID   *uint32
 	partyID           *uint32
@@ -150,6 +154,9 @@ func (ch *Character) SendSpawnSyncToViewer(viewer *Character) {
 		MarriageRings:     RingsToDTO(ch.Inventory.Rings.Right),
 		HasTeam:           ch.GetMap() != nil && ch.GetMap().Wz.HasTeam(),
 		Team:              carnivalTeam,
+	}
+	if ch.Pet != nil {
+		spawnPacket.Pet = ch.Pet.ToDTO()
 	}
 	if guildID, ok := ch.GetGuildID(); ok && ch.GameWorld != nil {
 		if guild := ch.GameWorld.GetGuildSystem().Get(guildID); guild != nil {

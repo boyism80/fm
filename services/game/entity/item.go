@@ -219,10 +219,15 @@ func NewItem(itemId uint32, count uint16, gw GameWorld) (Item, error) {
 			ItemCore: &ItemCore{Wz: m, Count: count, Expiration: util.TimeMax},
 		}, nil
 	case *wz.Pet:
-		petExpiration, _ := time.ParseInLocation("2006-01-02 15:04:05", "2025-05-30 09:30:00", util.KST)
+		uniqueID := gw.NewUniqueID()
 		return &Pet{
-			ItemCore:   &ItemCore{Wz: m, Count: 1},
-			Expiration: petExpiration,
+			ItemCore:    &ItemCore{Wz: m, Count: 1, Expiration: time.Now().AddDate(0, 0, m.Life)},
+			UniqueId:    &uniqueID,
+			Name:        gw.GetResources().GetItemName(itemId),
+			Level:       1,
+			Fullness:    constant.PetMaxFullness,
+			Skills:      m.Skills,
+			SecondsLeft: uint32(m.LimitedLife),
 		}, nil
 	default:
 		return nil, fmt.Errorf("not supported item type")

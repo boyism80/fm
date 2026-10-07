@@ -5,7 +5,8 @@ import (
 )
 
 type ShowSelfEffect struct {
-	Type EffectType
+	Type      EffectType
+	PetEffect uint8
 }
 
 func (p *ShowSelfEffect) Opcode() uint16 {
@@ -14,6 +15,9 @@ func (p *ShowSelfEffect) Opcode() uint16 {
 
 func (p *ShowSelfEffect) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU8(uint8(p.Type))
+	if p.Type == EffectTypePet {
+		writer.WriteU8(p.PetEffect)
+	}
 	return nil
 }
 

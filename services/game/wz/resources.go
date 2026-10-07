@@ -50,6 +50,7 @@ type node struct {
 	Floats   []floatField  `xml:"float"`
 	Doubles  []floatField  `xml:"double"`
 	Vectors  []vectorField `xml:"vector"`
+	Uols     []stringField `xml:"uol"`
 }
 
 func (n *node) IntOK(name string) (int, bool) {
@@ -185,6 +186,19 @@ type Resources struct {
 	questsByStartFieldEnter map[uint32][]*Quest
 	questsByAutoStart       []*Quest
 	questsByAutoStartInfo   map[uint32][]*Quest
+}
+
+func (node *node) petFood() *PetFood {
+	if node == nil {
+		return nil
+	}
+	food := &PetFood{Fullness: node.Int("inc", 0)}
+	for _, f := range node.Ints {
+		if _, err := strconv.Atoi(f.Name); err == nil {
+			food.Pets = append(food.Pets, uint32(f.Value))
+		}
+	}
+	return food
 }
 
 func (node *node) find(name string) *node {

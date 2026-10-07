@@ -95,6 +95,10 @@ func (h *MoveItem) drop(ctx *core.ClientContext, ch *entity.Character, invenType
 		if !ok {
 			return
 		}
+		if _, isPet := item.(*entity.Pet); isPet {
+			ch.Listener.OnUpdateStats(ch, nil, true)
+			return
+		}
 
 		actualCount := min(count, item.GetCount())
 		if actualCount == 0 {

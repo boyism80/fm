@@ -49,6 +49,24 @@ func loadCashItems(path string) (*[]*CashItem, error) {
 				switch intField.Name {
 				case "slotMax":
 					model.SlotMax = uint16(intField.Value)
+				case "life":
+					model.Life = intField.Value
+				case "add":
+					model.PetSkillAdd = intField.Value == 1
+				case "pickupItem":
+					model.PetSkill |= constant.PetSkillPickupItem
+				case "longRange":
+					model.PetSkill |= constant.PetSkillLongRange
+				case "dropSweep":
+					model.PetSkill |= constant.PetSkillDropSweep
+				case "ignorePickup":
+					model.PetSkill |= constant.PetSkillIgnorePickup
+				case "pickupAll":
+					model.PetSkill |= constant.PetSkillPickupAll
+				case "consumeHP":
+					model.PetSkill |= constant.PetSkillConsumeHP
+				case "consumeMP":
+					model.PetSkill |= constant.PetSkillConsumeMP
 				case "cash":
 				}
 			}
@@ -98,6 +116,9 @@ func loadCashItems(path string) (*[]*CashItem, error) {
 					log.Printf("%s is not declared in %s:info\n", iv.Name, filepath.Base(path))
 				}
 			}
+		}
+		if model.ID/10000 == constant.ItemCategoryPetCashFood {
+			model.PetFood = v.find("spec").petFood()
 		}
 
 		specs = append(specs, &model)
@@ -285,6 +306,9 @@ func loadConsumes(path string) (*[]*Consume, error) {
 						model.BuffValues[buffFlag] = int32(intField.Value)
 					}
 				}
+			}
+			if model.ID/10000 == constant.ItemCategoryPetFood {
+				model.PetFood = specNode.petFood()
 			}
 			if nuffNode := specNode.find("nuffSkill"); nuffNode != nil {
 				for _, child := range nuffNode.Children {
@@ -667,6 +691,19 @@ func loadWeapons(path string) (Item, error) {
 
 	if model.SlotMax == 0 {
 		model.SlotMax = 1
+	}
+
+	if constant.GetEquipmentType(model.ID) == constant.EquipmentTypePetEquip {
+		for _, v := range root.Children {
+			if petID, err := strconv.ParseUint(v.Name, 10, 32); err == nil {
+				model.Pets = append(model.Pets, uint32(petID))
+			}
+		}
+		for _, v := range root.Uols {
+			if petID, err := strconv.ParseUint(v.Name, 10, 32); err == nil {
+				model.Pets = append(model.Pets, uint32(petID))
+			}
+		}
 	}
 
 	eq := &model
@@ -1531,6 +1568,46 @@ func loadPets(path string) (*Pet, error) {
 	}
 	info := root.find("info")
 	model.setTradeFlags(info)
+	model.Hungry = info.Int("hungry", 1)
+	model.Life = info.Int("life", 0)
+	model.LimitedLife = info.Int("limitedLife", 0)
+	model.NoRevive = info.Int("noRevive", 0) == 1
+	for _, f := range info.Ints {
+		if f.Value != 1 {
+			continue
+		}
+		switch f.Name {
+		case "pickupItem":
+			model.Skills |= constant.PetSkillPickupItem
+		case "longRange":
+			model.Skills |= constant.PetSkillLongRange
+		case "sweepForDrop":
+			model.Skills |= constant.PetSkillDropSweep
+		case "pickupAll":
+			model.Skills |= constant.PetSkillPickupAll
+		case "consumeHP":
+			model.Skills |= constant.PetSkillConsumeHP
+		case "consumeMP":
+			model.Skills |= constant.PetSkillConsumeMP
+		}
+	}
+	if interact := root.find("interact"); interact != nil {
+		for _, cmd := range interact.Children {
+			idx, err := strconv.Atoi(cmd.Name)
+			if err != nil || idx < 0 {
+				continue
+			}
+			for len(model.Commands) <= idx {
+				model.Commands = append(model.Commands, PetCommand{})
+			}
+			model.Commands[idx] = PetCommand{
+				Prob:     cmd.Int("prob", 0),
+				Inc:      cmd.Int("inc", 0),
+				MinLevel: cmd.Int("l0", 1),
+				MaxLevel: cmd.Int("l1", constant.PetMaxLevel),
+			}
+		}
+	}
 	for _, iv := range info.Children {
 		switch iv.Name {
 		case "mob":

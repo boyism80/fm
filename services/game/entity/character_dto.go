@@ -50,8 +50,13 @@ func (ch *Character) ToDTO() *dto.Character {
 	if m := ch.GetMap(); m != nil {
 		mapID = m.TemplateID()
 	}
+	var pet uint64
+	if ch.Pet != nil {
+		pet = *ch.Pet.Item.UniqueId
+	}
 	return &dto.Character{
 		ID:            ch.GetID(),
+		Pet:           pet,
 		Name:          ch.name,
 		Gender:        ch.look.Gender,
 		SkinColor:     ch.look.SkinColor,

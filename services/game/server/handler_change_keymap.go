@@ -28,8 +28,16 @@ func (h *ChangeKeymap) Handle(ctx *core.ClientContext, req *request.ChangeKeymap
 	if ch == nil {
 		return fmt.Errorf("change keymap: no character")
 	}
-	kl := ch.KeyLayout()
+	switch req.Mode {
+	case 1:
+		ch.PetHPItem = uint32(req.Data)
+		return nil
+	case 2:
+		ch.PetMPItem = uint32(req.Data)
+		return nil
+	}
 
+	kl := ch.KeyLayout()
 	for _, c := range req.Changes {
 		if !h.allowBinding(ch, c.Type, c.Action) {
 			continue

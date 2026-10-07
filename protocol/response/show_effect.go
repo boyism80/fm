@@ -8,6 +8,7 @@ type EffectType uint8
 
 const (
 	EffectTypeLevelUp         EffectType = 0
+	EffectTypePet             EffectType = 4
 	EffectTypeClassChange     EffectType = 8
 	EffectTypeQuestCompletion EffectType = 9
 	EffectTypeRegisterCard    EffectType = 13
@@ -17,6 +18,7 @@ const (
 type ShowEffect struct {
 	CharacterID uint32
 	Type        EffectType
+	PetEffect   uint8
 }
 
 func (p *ShowEffect) Opcode() uint16 {
@@ -26,6 +28,9 @@ func (p *ShowEffect) Opcode() uint16 {
 func (p *ShowEffect) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU32(p.CharacterID)
 	writer.WriteU8(uint8(p.Type))
+	if p.Type == EffectTypePet {
+		writer.WriteU8(p.PetEffect)
+	}
 	return nil
 }
 

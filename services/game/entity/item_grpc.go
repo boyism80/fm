@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
@@ -66,7 +67,18 @@ func (item *CashItem) ToProto(ownerID uint32, slot int32) *internal.Inventory {
 }
 
 func (item *Pet) ToProto(ownerID uint32, slot int32) *internal.Inventory {
-	return buildInventoryProto(item, ownerID, slot, item.UniqueId, "", item.Flags, 0, 0, 0)
+	pb := buildInventoryProto(item, ownerID, slot, item.UniqueId, "", 0, 0, 0, 0)
+	pb.Pet = &internal.Pet{
+		Name:        item.Name,
+		Level:       uint32(item.Level),
+		Closeness:   uint32(item.Closeness),
+		Fullness:    uint32(item.Fullness),
+		Speed:       uint32(item.Speed),
+		Skills:      uint32(item.Skills),
+		SecondsLeft: item.SecondsLeft,
+		Exceptions:  slices.Clone(item.Exceptions),
+	}
+	return pb
 }
 
 func NewItemFromInternalProto(pb *internal.Inventory, gw GameWorld) (Item, error) {
@@ -144,14 +156,31 @@ func NewItemFromInternalProto(pb *internal.Inventory, gw GameWorld) (Item, error
 			Flags:     flag,
 		}, nil
 	case *wz.Pet:
-		petExpiration, _ := time.ParseInLocation("2006-01-02 15:04:05", "2025-05-30 09:30:00", util.KST)
-		if exp := pb.GetExpirationUnixMs(); exp > 0 {
-			petExpiration = time.UnixMilli(exp)
+		if uniqueID == nil {
+			v := gw.NewUniqueID()
+			uniqueID = &v
+		}
+		pet := pb.GetPet()
+		if pet == nil {
+			pet = &internal.Pet{
+				Name:        gw.GetResources().GetItemName(itemID),
+				Level:       1,
+				Fullness:    constant.PetMaxFullness,
+				Skills:      uint32(m.Skills),
+				SecondsLeft: uint32(m.LimitedLife),
+			}
 		}
 		return &Pet{
-			ItemCore:   &ItemCore{Wz: m, Count: 1, Expiration: expiration},
-			UniqueId:   uniqueID,
-			Expiration: petExpiration,
+			ItemCore:    &ItemCore{Wz: m, Count: 1, Expiration: expiration},
+			UniqueId:    uniqueID,
+			Name:        pet.GetName(),
+			Level:       uint8(pet.GetLevel()),
+			Closeness:   uint16(pet.GetCloseness()),
+			Fullness:    uint8(pet.GetFullness()),
+			Speed:       uint16(pet.GetSpeed()),
+			Skills:      constant.PetSkill(pet.GetSkills()),
+			SecondsLeft: pet.GetSecondsLeft(),
+			Exceptions:  slices.Clone(pet.GetExceptions()),
 		}, nil
 	default:
 		return nil, fmt.Errorf("item %d: unsupported item type", itemID)

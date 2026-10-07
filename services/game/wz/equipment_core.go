@@ -10,6 +10,7 @@ type EquipmentCore struct {
 	MasterSpecial   bool
 	Hide            bool
 	AttackSpeed     int
+	Pets            []uint32
 }
 
 func (core *EquipmentCore) GetEnhanceChance() uint8 { return core.EnhanceChance }

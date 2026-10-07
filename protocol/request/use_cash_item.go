@@ -7,6 +7,7 @@ type UseCashItem struct {
 	ItemID uint32
 	Text   string
 	Ear    bool
+	PetSN  uint64
 }
 
 func (*UseCashItem) Opcode() byte { return 0x3E }
@@ -15,7 +16,15 @@ func (p *UseCashItem) Serialize(writer *stream.StreamWriter) error {
 	writer.WriteU16(p.Slot)
 	writer.WriteU32(p.ItemID)
 
-	if p.ItemID/10000 != 507 {
+	switch p.ItemID / 10000 {
+	case 517:
+		writer.WriteStr16(p.Text)
+		return nil
+	case 519:
+		writer.WriteU64(p.PetSN)
+		return nil
+	case 507:
+	default:
 		return nil
 	}
 	switch p.ItemID % 10000 / 1000 {
@@ -32,7 +41,15 @@ func (p *UseCashItem) Deserialize(reader *stream.StreamReader) {
 	p.Slot = reader.ReadU16()
 	p.ItemID = reader.ReadU32()
 
-	if p.ItemID/10000 != 507 {
+	switch p.ItemID / 10000 {
+	case 517:
+		p.Text = reader.ReadStr16()
+		return
+	case 519:
+		p.PetSN = reader.ReadU64()
+		return
+	case 507:
+	default:
 		return
 	}
 	switch p.ItemID % 10000 / 1000 {

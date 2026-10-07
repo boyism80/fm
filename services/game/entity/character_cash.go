@@ -10,7 +10,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, text string, ear bool) {
+func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, text string, ear bool, petSN uint64) {
 	if ch.cashItemInUse.CompareAndSwap(false, true) == false {
 		ch.Listener.OnUpdateStats(ch, nil, true)
 		return
@@ -47,7 +47,7 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, t
 		return
 	}
 	luax.SetConfiguration(thread, luax.Configuration{ActorContext: ctx})
-	luax.CallAsync(ctx, m.GetLuaRoot(), thread, "on_cash", ch, itemID, text, ear).Then(func(value interface{}) (interface{}, error) {
+	luax.CallAsync(ctx, m.GetLuaRoot(), thread, "on_cash", ch, itemID, text, ear, petSN).Then(func(value interface{}) (interface{}, error) {
 		vals := luax.ResultValues(value)
 		if len(vals) == 0 || vals[0] != lua.LTrue {
 			finish()

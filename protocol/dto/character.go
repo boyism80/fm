@@ -12,6 +12,7 @@ type Character struct {
 	SkinColor        uint8
 	Face             uint32
 	Hair             uint32
+	Pet              uint64
 	Level            uint8
 	Class            uint16
 	Str              uint16
@@ -61,7 +62,7 @@ func (c *Character) SerializeOverview(writer *stream.StreamWriter) {
 	writer.WriteU8(c.SkinColor)
 	writer.WriteU32(c.Face)
 	writer.WriteU32(c.Hair)
-	writer.Write([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	writer.WriteU64(c.Pet)
 	writer.WriteU8(c.Level)
 	writer.WriteU16(c.Class)
 	writer.WriteU16(c.Str)
@@ -117,7 +118,7 @@ func (c *Character) DeserializeOverview(reader *stream.StreamReader) {
 	c.SkinColor = reader.ReadU8()
 	c.Face = reader.ReadU32()
 	c.Hair = reader.ReadU32()
-	reader.Skip(8)
+	c.Pet = reader.ReadU64()
 	c.Level = reader.ReadU8()
 	c.Class = reader.ReadU16()
 	c.Str = reader.ReadU16()

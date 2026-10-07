@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"slices"
 	"strconv"
 	"time"
 
@@ -194,7 +195,13 @@ func requirementsMet(req wz.QuestRequirements, qc *QuestContainer, qp *Quest, op
 			return false
 		}
 	}
-	if len(req.Pet) > 0 || req.PetTamenessMin > 0 || req.MBMin > 0 || len(req.MBCard) > 0 || req.SubClassFlags != 0 {
+	if len(req.Pet) > 0 && (ch.Pet == nil || slices.Contains(req.Pet, ch.Pet.Item.GetModel().GetID()) == false) {
+		return false
+	}
+	if req.PetTamenessMin > 0 && (ch.Pet == nil || int(ch.Pet.Item.Closeness) < req.PetTamenessMin) {
+		return false
+	}
+	if req.MBMin > 0 || len(req.MBCard) > 0 || req.SubClassFlags != 0 {
 		return false
 	}
 	if req.EndMeso > 0 || req.EquipAllNeed > 0 || req.EquipSelectNeed > 0 || req.TamingMobLevelMin > 0 {

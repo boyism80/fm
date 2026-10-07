@@ -1666,6 +1666,116 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			ch.Duey.Open(cfg.ActorContext, false)
 			return 0
 		},
+		"pet_id": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pet == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
+			L.Push(lua.LNumber(ch.Pet.Item.GetModel().GetID()))
+			return 1
+		},
+		"pet_closeness": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pet == nil {
+				L.Push(lua.LNumber(0))
+				return 1
+			}
+			L.Push(lua.LNumber(ch.Pet.Item.Closeness))
+			return 1
+		},
+		"add_pet_closeness": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pet == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			ch.Pet.AddCloseness(L.CheckInt(2))
+			L.Push(lua.LTrue)
+			return 1
+		},
+		"rename_pet": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pet == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LBool(ch.Pet.Rename(L.CheckString(2)) == nil))
+			return 1
+		},
+		"feed_pet_cash": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			if ch.Pet == nil {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			L.Push(lua.LBool(ch.Pet.FeedCash(uint32(L.CheckInt(2))) == nil))
+			return 1
+		},
+		"change_pet_skill": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			sn := uint64(L.CheckNumber(2))
+			L.Push(lua.LBool(ch.ChangePetSkill(sn, uint32(L.CheckInt(3))) == nil))
+			return 1
+		},
+		"expired_pets": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			tbl := L.NewTable()
+			for slot, pet := range ch.ExpiredPets() {
+				entry := L.NewTable()
+				entry.RawSetString("slot", lua.LNumber(slot))
+				entry.RawSetString("id", lua.LNumber(pet.GetModel().GetID()))
+				entry.RawSetString("name", lua.LString(pet.Name))
+				tbl.Append(entry)
+			}
+			L.Push(tbl)
+			return 1
+		},
+		"revive_pet": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			L.Push(lua.LBool(ch.RevivePet(int16(L.CheckInt(2))) == nil))
+			return 1
+		},
 		"open_quick_delivery": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

@@ -32,6 +32,7 @@ type SpawnPlayer struct {
 	CrushRings        []*dto.Ring
 	FriendshipRings   []*dto.Ring
 	MarriageRings     []*dto.Ring
+	Pet               *dto.ActivePet
 }
 
 func writeRings(writer *stream.StreamWriter, rings []*dto.Ring) error {
@@ -100,7 +101,10 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 	writer.Write16(p.Character.Position.Y)
 	writer.WriteU8(p.Character.Stance)
 	writer.WriteU16(0)
-	writer.WriteU8(0)
+	writer.WriteBoolean(p.Pet != nil)
+	if p.Pet != nil {
+		p.Pet.Serialize(writer)
+	}
 	writer.WriteU32(p.MountLevel)
 	writer.WriteU32(p.MountExp)
 	writer.WriteU32(p.MountFatigue)

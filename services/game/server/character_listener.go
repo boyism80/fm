@@ -1781,6 +1781,83 @@ func (l *CharacterListenerImpl) OnHiddenChanged(ch *entity.Character, hidden boo
 	}
 }
 
+func (l *CharacterListenerImpl) OnPetSpawn(ch *entity.Character) {
+	ch.Broadcast(&response.SpawnPet{
+		CharacterID: ch.GetID(),
+		Pet:         ch.Pet.ToDTO(),
+	}, &entity.ObjectBroadcastOption{WithMe: true})
+	l.OnPetExceptions(ch)
+	sn := *ch.Pet.Item.UniqueId
+	ch.Send(&response.UpdateStats{Pet: &sn, UnlockAction: true}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPetRemove(ch *entity.Character, reason constant.PetRemoveReason) {
+	ch.Broadcast(&response.SpawnPet{
+		CharacterID: ch.GetID(),
+		Reason:      reason,
+	}, &entity.ObjectBroadcastOption{WithMe: true})
+	sn := uint64(0)
+	ch.Send(&response.UpdateStats{Pet: &sn, UnlockAction: true}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPetMove(ch *entity.Character, startPoint types.Vector2[int16], movements []dto.MoveFragment) {
+	ch.Broadcast(&response.MovePet{
+		CharacterID: ch.GetID(),
+		StartPoint:  startPoint,
+		Fragments:   movements,
+	}, nil)
+}
+
+func (l *CharacterListenerImpl) OnPetChat(ch *entity.Character, typ uint8, action uint8, text string) {
+	ch.Broadcast(&response.PetChat{
+		CharacterID: ch.GetID(),
+		Type:        typ,
+		Action:      action,
+		Text:        text,
+	}, &entity.ObjectBroadcastOption{WithMe: true})
+}
+
+func (l *CharacterListenerImpl) OnPetCommand(ch *entity.Character, index uint8, success bool) {
+	ch.Send(&response.PetCommand{CharacterID: ch.GetID(), Index: index, Success: success}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPetFood(ch *entity.Character, success bool) {
+	ch.Send(&response.PetCommand{CharacterID: ch.GetID(), Food: true, Success: success}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPetUpdated(ch *entity.Character, pet *entity.Pet) {
+	slot, ok := ch.Inventory.FindSlot(constant.InventoryTypeCash, pet)
+	if ok == false {
+		return
+	}
+	l.OnInventorySlotUpdated(ch, constant.InventoryTypeCash, slot, pet)
+}
+
+func (l *CharacterListenerImpl) OnPetExceptions(ch *entity.Character) {
+	ch.Send(&response.PetExceptions{
+		CharacterID: ch.GetID(),
+		SN:          *ch.Pet.Item.UniqueId,
+		ItemIDs:     ch.Pet.Item.Exceptions,
+	}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPetNameChanged(ch *entity.Character) {
+	ch.Broadcast(&response.PetNameChanged{
+		CharacterID: ch.GetID(),
+		Name:        ch.Pet.Item.Name,
+	}, &entity.ObjectBroadcastOption{WithMe: true})
+}
+
+func (l *CharacterListenerImpl) OnPetSkillChanged(ch *entity.Character, pet *entity.Pet, skill constant.PetSkill, add bool) {
+	l.OnPetUpdated(ch, pet)
+	ch.Send(&response.PetSkillChanged{SN: *pet.UniqueId, Add: add, Skill: skill}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnPetLevelUp(ch *entity.Character) {
+	ch.Send(&response.ShowSelfEffect{Type: response.EffectTypePet}, types.SEND_POLICY_ENCRYPT)
+	ch.Broadcast(&response.ShowEffect{CharacterID: ch.GetID(), Type: response.EffectTypePet}, nil)
+}
+
 func (l *CharacterListenerImpl) OnSummonSpawn(ch *entity.Character, summon *entity.Summon) {
 	if summon.GetMap() == nil {
 		return

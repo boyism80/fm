@@ -1,9 +1,13 @@
 package constant
 
 const (
-	ItemCategoryShuriken uint32 = 207
-	ItemCategoryBullet   uint32 = 233
-	ItemCategoryPet      uint32 = 500
+	ItemCategoryShuriken    uint32 = 207
+	ItemCategoryPetFood     uint32 = 212
+	ItemCategoryBullet      uint32 = 233
+	ItemCategoryPet         uint32 = 500
+	ItemCategoryPetNameTag  uint32 = 517
+	ItemCategoryPetSkill    uint32 = 519
+	ItemCategoryPetCashFood uint32 = 524
 )
 
 const (
@@ -87,7 +91,7 @@ func GetEquipmentType(itemID uint32) EquipmentType {
 func IsEquipment(itemID uint32) bool {
 	t := GetEquipmentType(itemID)
 	return t != EquipmentTypeUnknown && t != EquipmentTypeMonsterBook && t != EquipmentTypeAndroid &&
-		t != EquipmentTypeDragon && t != EquipmentTypePetEquip && t != EquipmentTypeTaming && t != EquipmentTypeMechanic && t != EquipmentTypeHair
+		t != EquipmentTypeDragon && t != EquipmentTypeTaming && t != EquipmentTypeMechanic && t != EquipmentTypeHair
 }
 
 func GetWeaponType(itemID uint32) WeaponType {

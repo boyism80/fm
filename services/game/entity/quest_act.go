@@ -52,6 +52,13 @@ func (qc *QuestContainer) grant(qp *Quest, actions wz.QuestActions, opts questAc
 			ch.UseItemEffect(actions.BuffItemID)
 		}
 	}
+	if actions.PetTameness > 0 && ch.Pet != nil && opts.Forfeited == false {
+		ch.Pet.AddCloseness(actions.PetTameness)
+	}
+	if actions.PetSpeed > 0 && ch.Pet != nil && opts.Forfeited == false {
+		ch.Pet.Item.Speed = uint16(actions.PetSpeed)
+		ch.Listener.OnPetUpdated(ch, ch.Pet.Item)
+	}
 	if actions.Info != "" {
 		qp.StatusRecord.WriteString(actions.Info)
 	}

@@ -82,6 +82,7 @@ type GameServer struct {
 	ensureNext        atomic.Uint64
 	internalHBCancel  context.CancelFunc
 	megaphoneMuted    atomic.Bool
+	uniqueIDs         uniqueIDs
 }
 
 func (gs *GameServer) GetRootContext() *actor.RootContext {
@@ -192,6 +193,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		actorRegistry:    actorRegistry,
 		rpcFaults:        fault.NewInjector(),
 		characterRuntime: nil,
+		uniqueIDs:        uniqueIDs{node: uint64(config.WorldId)<<5 | uint64(config.ChannelId)},
 	}
 	gs.characterRuntime = NewServerCharacterRuntime(gs)
 	gs.mapSystem = mapSystem{gs}
@@ -439,6 +441,10 @@ func (gs *GameServer) GetMesoRate() int {
 
 func (gs *GameServer) DueyIdentityPrompt() bool {
 	return gs.config.DueyIdentityPrompt
+}
+
+func (gs *GameServer) NewUniqueID() uint64 {
+	return gs.uniqueIDs.next()
 }
 
 func (gs *GameServer) preCreateMaps() {

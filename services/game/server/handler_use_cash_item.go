@@ -27,6 +27,6 @@ func (*UseCashItem) Handle(ctx *core.ClientContext, req *request.UseCashItem) er
 		return nil
 	}
 
-	ch.UseCashItem(ctx.ActorContext, int16(req.Slot), req.ItemID, req.Text, req.Ear)
+	ch.UseCashItem(ctx.ActorContext, int16(req.Slot), req.ItemID, req.Text, req.Ear, req.PetSN)
 	return nil
 }
