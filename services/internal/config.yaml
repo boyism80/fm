@@ -130,6 +130,10 @@ game_servers:
           host: "127.0.0.1"
           port: 8485
           max_concurrent_users: 1000
+      cash_shops:
+        - cash_shop_id: 0
+          host: "127.0.0.1"
+          port: 8596
     "1":
       world_name: "Bera"
       flag: 0

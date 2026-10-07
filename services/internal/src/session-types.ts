@@ -10,6 +10,8 @@ export interface AccountSession {
     characterId: number | null;
     characterName: string | null;
     channelId: number | null;
+    cashShopId: number | null;
+    returnChannelId: number | null;
     gameToGameTransfer: boolean;
     debuffs: Debuff[];
     timestamps: { createdAt: string | null; updatedAt: string | null; stateChangedAt: string | null };

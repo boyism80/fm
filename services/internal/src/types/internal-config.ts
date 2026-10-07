@@ -86,11 +86,18 @@ export interface GameServerChannelConfig {
     max_concurrent_users: number;
 }
 
+export interface CashShopServerConfig {
+    cash_shop_id: number;
+    host: string;
+    port: number;
+}
+
 export interface GameServerWorldConfig {
     world_name: string;
     flag: number;
     event_message: string;
     channels: GameServerChannelConfig[];
+    cash_shops?: CashShopServerConfig[];
 }
 
 export interface GameServersConfig {

@@ -1,6 +1,8 @@
 import type { AppConfiguration } from "../../config/app-configuration";
 import type { InternalContext } from "../../context/internal-context";
 import type {
+    FindCashShopReply,
+    FindCashShopRequest,
     GetGameChannelStatusReply,
     GetGameChannelStatusRequest,
     GetServerCatalogReply,
@@ -62,6 +64,11 @@ export class CatalogGrpcController {
                 const key = redisAliveKey(`game:w${req.worldId}:c${req.channelId}`);
                 await client.set(key, String(Date.now()), "EX", ttl);
                 await this.sessionRepository.touchChannelOnlineUsersTtl(req.worldId, req.channelId);
+            } else if (req.role === ServerRole.SERVER_ROLE_CASH_SHOP) {
+                const { client } = this.internalContext.getRedisGlobalAccess(req.worldId);
+                const key = redisAliveKey(`cashshop:w${req.worldId}:cs${req.cashShopId}`);
+                await client.set(key, String(Date.now()), "EX", ttl);
+                await this.sessionRepository.touchCashShopOnlineUsersTtl(req.worldId, req.cashShopId);
             } else if (req.role === ServerRole.SERVER_ROLE_LOGIN) {
                 const id = (req.loginInstanceId ?? "").trim();
                 if (!id) {
@@ -73,7 +80,7 @@ export class CatalogGrpcController {
                 const key = redisAliveKey(`login:${id}`);
                 await client.set(key, String(Date.now()), "EX", ttl);
             } else {
-                this.grpcError({ code: "INVALID_PAYLOAD", message: "ping requires role LOGIN or GAME" }, callback);
+                this.grpcError({ code: "INVALID_PAYLOAD", message: "ping requires role LOGIN, GAME or CASH_SHOP" }, callback);
                 return;
             }
             callback(null, { message: "pong" });
@@ -114,6 +121,33 @@ export class CatalogGrpcController {
                 host: row.host,
                 port: row.port,
             });
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("findCashShop")
+    async findCashShop(call: GrpcCall<FindCashShopRequest>, callback: GrpcCallback<FindCashShopReply>) {
+        const worldId = call.request.worldId;
+        try {
+            const cashShops = this.internalConfig.game_servers?.worlds?.[String(worldId)]?.cash_shops ?? [];
+            const { client } = this.internalContext.getRedisGlobalAccess(worldId);
+            let best: { cashShopId: number; host: string; port: number; users: number } | null = null;
+            for (const cs of cashShops) {
+                const alive = await client.get(redisAliveKey(`cashshop:w${worldId}:cs${cs.cash_shop_id}`));
+                if (alive == null || alive === "") {
+                    continue;
+                }
+                const users = await this.sessionRepository.getCashShopOnlineUserCount(worldId, cs.cash_shop_id);
+                if (best == null || users < best.users) {
+                    best = { cashShopId: cs.cash_shop_id, host: cs.host, port: cs.port, users };
+                }
+            }
+            if (best == null) {
+                callback(null, { found: false, cashShopId: 0, host: "", port: 0 });
+                return;
+            }
+            callback(null, { found: true, cashShopId: best.cashShopId, host: best.host, port: best.port });
         } catch (err) {
             this.grpcError(err, callback);
         }

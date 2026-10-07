@@ -31,7 +31,14 @@ type RawGameServerChannel = Partial<{
     name: string;
     max_concurrent_users: number;
 }>;
-type RawGameServerWorld = Partial<{ world_name: string; flag: number; event_message: string; channels: RawGameServerChannel[] }>;
+type RawCashShopServer = Partial<{ cash_shop_id: number; host: string; port: number }>;
+type RawGameServerWorld = Partial<{
+    world_name: string;
+    flag: number;
+    event_message: string;
+    channels: RawGameServerChannel[];
+    cash_shops: RawCashShopServer[];
+}>;
 type RawSequelize = Partial<Omit<InternalConfig["sequelize"], "define"> & { define: SequelizeDefineConfig }>;
 type RawConfig = Partial<{
     app: Partial<InternalConfig["app"]>;
@@ -183,11 +190,27 @@ function normalizeGameServers(rawGameServers: RawConfig["game_servers"]): Intern
                 max_concurrent_users: maxConcurrentUsers,
             };
         });
+        const cashShops = (world.cash_shops ?? []).map((cashShop, idx) => {
+            const cs = cashShop ?? {};
+            if (!cs.host) {
+                throw new Error(`game_servers.worlds[${worldKey}].cash_shops[${idx}].host is required`);
+            }
+            const port = cs.port ?? 0;
+            if (!Number.isFinite(port) || port <= 0) {
+                throw new Error(`game_servers.worlds[${worldKey}].cash_shops[${idx}].port must be > 0`);
+            }
+            return {
+                cash_shop_id: cs.cash_shop_id ?? idx,
+                host: cs.host,
+                port,
+            };
+        });
         worlds[worldKey] = {
             world_name: world.world_name || `World-${worldKey}`,
             flag: world.flag ?? 0,
             event_message: world.event_message ?? "",
             channels,
+            cash_shops: cashShops,
         };
     }
     return { worlds };

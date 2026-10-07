@@ -14,6 +14,7 @@ import { ChatGrpcController } from "./grpc/controllers/chat-controller";
 import { ServerTimeGrpcController } from "./grpc/controllers/server-time-controller";
 import { OperationLogGrpcController } from "./grpc/controllers/operation-log-controller";
 import { ParcelGrpcController } from "./grpc/controllers/parcel-controller";
+import { CashShopGrpcController } from "./grpc/controllers/cash-shop-controller";
 import { getGrpcRoutes } from "./grpc/grpc-method-decorator";
 import type { AppConfiguration } from "./config/app-configuration";
 import type { InternalContext } from "./context/internal-context";
@@ -121,6 +122,7 @@ async function main() {
         serverTimeController: awilix.asClass(ServerTimeGrpcController).scoped(),
         operationLogController: awilix.asClass(OperationLogGrpcController).scoped(),
         parcelController: awilix.asClass(ParcelGrpcController).scoped(),
+        cashShopController: awilix.asClass(CashShopGrpcController).scoped(),
     });
 
     const serviceImplementation: Record<string, handleUnaryCall<unknown, unknown>> = {};

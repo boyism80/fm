@@ -7,6 +7,7 @@ const VALID_ACCOUNT_SESSION_STATES: ReadonlySet<AccountSessionState> = new Set([
     AccountSessionState.ACCOUNT_SESSION_STATE_LOGIN,
     AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION,
     AccountSessionState.ACCOUNT_SESSION_STATE_GAME,
+    AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP,
 ]);
 
 export function accountSessionStateFromRedisHash(value: string | undefined): AccountSessionState {

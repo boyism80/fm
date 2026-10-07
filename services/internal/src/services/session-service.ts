@@ -50,6 +50,7 @@ export class SessionService {
             case AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION:
                 return 30;
             case AccountSessionState.ACCOUNT_SESSION_STATE_GAME:
+            case AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP:
                 return 180;
             default:
                 return 120;
@@ -97,7 +98,8 @@ export class SessionService {
         characterName: string,
         clientIp: string,
         debuffs: Debuff[],
-        sourceChannelId: number | null
+        sourceChannelId: number | null,
+        sourceCashShopId: number | null
     ) {
         const [ok, code] = this.atomicResultTuple(
             await this.repo.beginTransition(
@@ -109,6 +111,7 @@ export class SessionService {
                 this.now(),
                 this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_TRANSITION),
                 sourceChannelId,
+                sourceCashShopId,
                 debuffs
             )
         );
@@ -116,7 +119,7 @@ export class SessionService {
             console.log(`[session] begin_transition failed account=${accountId} character=${characterId} code=${code}`);
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
         }
-        console.log(`[session] begin_transition ok account=${accountId} character=${characterId} source_channel=${sourceChannelId ?? ""}`);
+        console.log(`[session] begin_transition ok account=${accountId} character=${characterId} source_channel=${sourceChannelId ?? ""} source_cash_shop=${sourceCashShopId ?? ""}`);
         await this.releaseCharacterNameReservation(accountId);
         return { ok: true };
     }
@@ -164,7 +167,34 @@ export class SessionService {
         return { ok: true, debuffs: gameToGameTransfer ? account?.debuffs ?? [] : [] };
     }
 
-    async refresh(worldId: number, accountId: number, owner: { characterId: number; channelId: number } | null) {
+    async enterCashShop(worldId: number, accountId: number, characterId: number, cashShopId: number, clientIp: string) {
+        const account = await this.repo.getAccountSession(worldId, accountId);
+        const raw = await this.repo.enterCashShop(
+            worldId,
+            accountId,
+            characterId,
+            cashShopId,
+            clientIp,
+            this.now(),
+            this.ttlByState(AccountSessionState.ACCOUNT_SESSION_STATE_CASH_SHOP)
+        );
+        const [ok, code] = this.atomicResultTuple(raw);
+        if (ok !== 1) {
+            console.log(`[session] enter_cash_shop failed account=${accountId} character=${characterId} cash_shop=${cashShopId} code=${code}`);
+            return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_NOT_FOUND };
+        }
+        console.log(`[session] enter_cash_shop ok account=${accountId} character=${characterId} cash_shop=${cashShopId}`);
+        if (this.partyService) {
+            await this.partyService.publishMemberLogOnOff(worldId, characterId);
+        }
+        return { ok: true, returnChannelId: Number(raw[2]), debuffs: account?.debuffs ?? [] };
+    }
+
+    async refresh(
+        worldId: number,
+        accountId: number,
+        owner: { characterId: number; channelId?: number; cashShopId?: number } | null
+    ) {
         const raw = await this.repo.refresh(
             worldId,
             accountId,
@@ -200,6 +230,7 @@ export class SessionService {
             transferDisconnect?: boolean;
             characterId?: number;
             channelId?: number;
+            cashShopId?: number;
         } = {}
     ) {
         const src = options.disconnectSource ?? SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_UNSPECIFIED;
@@ -213,8 +244,12 @@ export class SessionService {
                 channelId = sch;
             }
         }
-        const ownerCharacterId = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER ? options.characterId : undefined;
-        const raw = await this.repo.logout(worldId, accountId, keep, channelId, ownerCharacterId);
+        const serverDisconnect =
+            src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER ||
+            src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER;
+        const ownerCharacterId = serverDisconnect ? options.characterId : undefined;
+        const cashShopId = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER ? options.cashShopId : undefined;
+        const raw = await this.repo.logout(worldId, accountId, keep, channelId, ownerCharacterId, cashShopId);
         const [ok, code] = this.atomicResultTuple(raw);
         console.log(
             `[session] logout account=${accountId} source=${src} transfer=${transferDisconnect}` +
@@ -224,7 +259,7 @@ export class SessionService {
             return { ok: false, code: Number.isInteger(code) ? code : SessionErrorCode.SESSION_LOGOUT_FAILED };
         }
         await this.releaseCharacterNameReservation(accountId);
-        const gameNormalDisconnect = src === SessionDisconnectSource.SESSION_DISCONNECT_SOURCE_GAME_SERVER && !transferDisconnect;
+        const gameNormalDisconnect = serverDisconnect && !transferDisconnect;
         const cid = options.characterId ?? null;
         if (cid != null && gameNormalDisconnect) {
             if (this.partyService) {

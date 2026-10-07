@@ -12,6 +12,7 @@ import type { BuddyService, BuddyListEntry } from "../../services/buddy-service"
 import type { CharacterService } from "../../services/character-service";
 import type { BuffService } from "../../services/buff-service";
 import type { SessionService } from "../../services/session-service";
+import type { CashShopService } from "../../services/cash-shop-service";
 import type { InventoryRepository } from "../../repos/inventory-repository";
 import type { SkillRepository } from "../../repos/skill-repository";
 import type { QuestRepository } from "../../repos/quest-repository";
@@ -21,6 +22,8 @@ import type { InternalConfig } from "../../types/internal-config";
 import type {
     BeginGameTransitionReply,
     BeginGameTransitionRequest,
+    EnterCashShopReply,
+    EnterCashShopRequest,
     EnterGameReply,
     EnterGameRequest,
     LogoutSessionReply,
@@ -63,6 +66,7 @@ export class SessionGrpcController {
     private readonly buddyService: BuddyService;
     private readonly internalConfig: Pick<InternalConfig, "game_servers">;
     private readonly characterRealtimeStateRepository: CharacterRealtimeStateRepository;
+    private readonly cashShopService: CashShopService;
     private readonly grpcError: GrpcErrorHandler;
 
     constructor(
@@ -76,6 +80,7 @@ export class SessionGrpcController {
         buddyService: BuddyService,
         internalConfig: Pick<InternalConfig, "game_servers">,
         characterRealtimeStateRepository: CharacterRealtimeStateRepository,
+        cashShopService: CashShopService,
         grpcError: GrpcErrorHandler
     ) {
         this.characterService = characterService;
@@ -88,6 +93,7 @@ export class SessionGrpcController {
         this.buddyService = buddyService;
         this.internalConfig = internalConfig;
         this.characterRealtimeStateRepository = characterRealtimeStateRepository;
+        this.cashShopService = cashShopService;
         this.grpcError = grpcError;
     }
 
@@ -127,6 +133,7 @@ export class SessionGrpcController {
                 call.request.clientIp,
                 call.request.debuffs ?? [],
                 call.request.sourceChannelId ?? null,
+                call.request.sourceCashShopId ?? null,
             );
             callback(null, {
                 ok: transition.ok,
@@ -135,6 +142,71 @@ export class SessionGrpcController {
         } catch (err) {
             this.grpcError(err, callback);
         }
+    }
+
+    private async loadCharacterReply(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
+        const characterId = row.characterId;
+        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack] = await Promise.all([
+            this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.buffService.getBuffs(worldId, characterId),
+            this.questRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.savedLocationRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
+            this.characterService.getKeyLayoutBindings(worldId, characterId),
+            this.buddyService.getAll(worldId, characterId),
+        ]);
+        const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
+        return {
+            found: true,
+            character: grpcMapper.map<CharacterModel, Character>(
+                row,
+                CHARACTER_MODEL,
+                CHARACTER_PROTO
+            ),
+            inventory: inventoryList.map((inventory) =>
+                grpcMapper.map<InventoryModel, Inventory>(
+                    inventory,
+                    INVENTORY_MODEL,
+                    INVENTORY_PROTO
+                )
+            ),
+            skills: skillList.map((skill) =>
+                grpcMapper.map<SkillModel, Skill>(
+                    skill,
+                    SKILL_MODEL,
+                    SKILL_PROTO
+                )
+            ),
+            buffs: buffList.map((buff) =>
+                grpcMapper.map<BuffModel, Buff>(
+                    buff,
+                    BUFF_MODEL,
+                    BUFF_PROTO
+                )
+            ),
+            quests: questList.map((quest) =>
+                grpcMapper.map<QuestModel, Quest>(
+                    quest,
+                    QUEST_MODEL,
+                    QUEST_PROTO
+                )
+            ),
+            savedLocations: savedLocationList.map((loc) =>
+                grpcMapper.map<SavedLocationModel, SavedLocation>(
+                    loc,
+                    SAVED_LOCATION_MODEL,
+                    SAVED_LOCATION_PROTO
+                )
+            ),
+            keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),
+            partyId: realtime?.partyId != null ? realtime.partyId : undefined,
+            guildId: realtime?.guildId != null ? realtime.guildId : undefined,
+            buddies: buddyPack.buddies.map((buddy) =>
+                grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY)
+            ),
+            buddyCapacity: buddyPack.capacity >>> 0,
+            debuffs: [],
+        };
     }
 
     @Method("enterGame")
@@ -171,68 +243,7 @@ export class SessionGrpcController {
                 });
                 return;
             }
-
-            const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack] = await Promise.all([
-                this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-                this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-                this.buffService.getBuffs(worldId, characterId),
-                this.questRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-                this.savedLocationRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
-                this.characterService.getKeyLayoutBindings(worldId, characterId),
-                this.buddyService.getAll(worldId, characterId),
-            ]);
-            const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
-            const reply: EnterGameReply = {
-                found: true,
-                character: grpcMapper.map<CharacterModel, Character>(
-                    row,
-                    CHARACTER_MODEL,
-                    CHARACTER_PROTO
-                ),
-                inventory: inventoryList.map((inventory) =>
-                    grpcMapper.map<InventoryModel, Inventory>(
-                        inventory,
-                        INVENTORY_MODEL,
-                        INVENTORY_PROTO
-                    )
-                ),
-                skills: skillList.map((skill) =>
-                    grpcMapper.map<SkillModel, Skill>(
-                        skill,
-                        SKILL_MODEL,
-                        SKILL_PROTO
-                    )
-                ),
-                buffs: buffList.map((buff) =>
-                    grpcMapper.map<BuffModel, Buff>(
-                        buff,
-                        BUFF_MODEL,
-                        BUFF_PROTO
-                    )
-                ),
-                quests: questList.map((quest) =>
-                    grpcMapper.map<QuestModel, Quest>(
-                        quest,
-                        QUEST_MODEL,
-                        QUEST_PROTO
-                    )
-                ),
-                savedLocations: savedLocationList.map((loc) =>
-                    grpcMapper.map<SavedLocationModel, SavedLocation>(
-                        loc,
-                        SAVED_LOCATION_MODEL,
-                        SAVED_LOCATION_PROTO
-                    )
-                ),
-                keyLayout: makeKeyLayoutProtoList(keyLayoutBindings),
-                partyId: realtime?.partyId != null ? realtime.partyId : undefined,
-                guildId: realtime?.guildId != null ? realtime.guildId : undefined,
-                buddies: buddyPack.buddies.map((buddy) =>
-                    grpcMapper.map<BuddyListEntry, BuddyEntry>(buddy, BUDDY_LIST_ENTRY, BUDDY_ENTRY)
-                ),
-                buddyCapacity: buddyPack.capacity >>> 0,
-                debuffs: [],
-            };
+            const reply = await this.loadCharacterReply(worldId, row);
 
             // Enter the game last: the game server treats an error reply as "did not enter the game".
             const enter = await this.sessionService.enterGame(worldId, row.accountId, row.characterId, channelId, call.request.clientIp);
@@ -241,6 +252,34 @@ export class SessionGrpcController {
             }
             reply.debuffs = enter.debuffs ?? [];
             callback(null, reply);
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("enterCashShop")
+    async enterCashShop(call: GrpcCall<EnterCashShopRequest>, callback: GrpcCallback<EnterCashShopReply>) {
+        try {
+            const { worldId, characterId, cashShopId } = call.request;
+            const worldCfg = this.internalConfig.game_servers?.worlds?.[String(worldId)];
+            const hasCashShop = (worldCfg?.cash_shops ?? []).some((cs) => cs.cash_shop_id === cashShopId);
+            if (hasCashShop === false) {
+                throw Object.assign(new Error(`Unknown cash_shop_id for world ${worldId}: ${cashShopId}`), { code: "UNKNOWN_CHANNEL" });
+            }
+
+            const row = await this.characterService.getCharacter(worldId, characterId);
+            if (!row) {
+                throw Object.assign(new Error(`character not found: ${characterId}`), { code: "INVALID_CHARACTER_ID" });
+            }
+            const game = await this.loadCharacterReply(worldId, row);
+            const account = await this.cashShopService.loadAccount(worldId, row.accountId, characterId);
+
+            const enter = await this.sessionService.enterCashShop(worldId, row.accountId, characterId, cashShopId, call.request.clientIp);
+            if (!enter.ok) {
+                throw new Error(`enter cash shop session failed: ${enter.code}`);
+            }
+            game.debuffs = enter.debuffs ?? [];
+            callback(null, { game, returnChannelId: enter.returnChannelId ?? 0, ...account });
         } catch (err) {
             this.grpcError(err, callback);
         }
@@ -261,8 +300,13 @@ export class SessionGrpcController {
                 });
                 return;
             }
-            const { characterId, channelId } = call.request;
-            const owner = characterId != null && channelId != null ? { characterId, channelId } : null;
+            const { characterId, channelId, cashShopId } = call.request;
+            let owner: { characterId: number; channelId?: number; cashShopId?: number } | null = null;
+            if (characterId != null && cashShopId != null) {
+                owner = { characterId, cashShopId };
+            } else if (characterId != null && channelId != null) {
+                owner = { characterId, channelId };
+            }
             const result = await this.sessionService.refresh(call.request.worldId, call.request.accountId, owner);
             callback(null, {
                 ok: result.ok,
@@ -295,6 +339,7 @@ export class SessionGrpcController {
                 transferDisconnect: call.request.transferDisconnect,
                 characterId: call.request.characterId,
                 channelId: call.request.channelId,
+                cashShopId: call.request.cashShopId,
             });
             callback(null, { ok: result.ok });
         } catch (err) {

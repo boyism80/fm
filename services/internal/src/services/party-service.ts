@@ -203,7 +203,7 @@ export class PartyService {
         const list = this.sortPartyMemberModels(memberModels, party.leaderCharacterId);
         const members = await Promise.all(
             list.map(async (m): Promise<PartyMember> => {
-                const channelIndex = (await this.sessionRepo.findChannel(worldId, m.characterId)) ?? -2;
+                const channelIndex = (await this.sessionRepo.findPartyChannel(worldId, m.characterId)) ?? -2;
                 const member: PartyMember = {
                     worldId,
                     characterId: m.characterId,
