@@ -1,0 +1,10 @@
+host: "0.0.0.0"
+port: 8596
+cash_shop_id: 0
+world_id: 0
+wz_path: "resources/wz"
+internal:
+  host: "127.0.0.1"
+  port: 50051
+  timeout: 3600
+  heartbeat_interval_seconds: 15

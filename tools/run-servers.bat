@@ -32,6 +32,9 @@ start "FM Internal" cmd /k "cd /d services\internal && npm start"
 echo Starting login server...
 start "FM Login" cmd /k !LOGIN_CMD!
 
+echo Starting cash shop server...
+start "FM CashShop" cmd /k "go run ./services/cashshop -config=config\dev\cashshop-0.yaml"
+
 set "IDX=0"
 for %%C in (1 2 3) do (
     set /a IDX+=1
