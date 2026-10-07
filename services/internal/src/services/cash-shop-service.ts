@@ -419,6 +419,10 @@ export class CashShopService {
         return this.cashShopRepo.insertCoupons(worldId, kind, value, codes);
     }
 
+    async getWishlist(worldId: number, characterId: number): Promise<number[]> {
+        return this.cashShopRepo.findWishlist(worldId, characterId);
+    }
+
     async setWishlist(worldId: number, characterId: number, commoditySns: number[]): Promise<void> {
         await this.cashShopRepo.setWishlist(worldId, characterId, commoditySns.slice(0, 10));
     }

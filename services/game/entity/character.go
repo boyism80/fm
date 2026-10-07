@@ -45,6 +45,7 @@ type Character struct {
 	random            [3]stream.RandomStream
 	Quests            *QuestContainer
 	Marriage          *Marriage
+	CashWishlist      []uint32
 	proposal          proposal
 	weddingGift       weddingGiftWindow
 	regRocks          []uint32

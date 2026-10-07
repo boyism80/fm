@@ -146,6 +146,7 @@ var decoders = func() []decoder {
 		newDecoder[response.YellowChat](nil),
 		newDecoder[response.WeddingCouple](nil),
 		newDecoder[response.WeddingEffect](nil),
+		newDecoder[response.CharacterProfile](nil),
 	}
 }()
 

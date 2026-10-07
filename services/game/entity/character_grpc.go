@@ -96,6 +96,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 
 	ch.KeyLayout().LoadKeyLayoutProto(reply.GetKeyLayout())
 	ch.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
+	ch.CashWishlist = reply.GetCashWishlist()
 	ch.LoadInventory(reply.GetInventory())
 	ch.LoadSkills(reply.GetSkills())
 	ch.LoadBuffs(reply.GetBuffs())

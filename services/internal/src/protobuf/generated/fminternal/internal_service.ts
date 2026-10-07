@@ -1745,6 +1745,7 @@ export interface EnterGameReply {
   savedLocations: SavedLocation[];
   debuffs: Debuff[];
   marriage?: Marriage | undefined;
+  cashWishlist: number[];
 }
 
 export interface Debuff {
@@ -10439,6 +10440,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     savedLocations: [],
     debuffs: [],
     marriage: undefined,
+    cashWishlist: [],
   };
 }
 
@@ -10486,6 +10488,11 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.marriage !== undefined) {
       Marriage.encode(message.marriage, writer.uint32(114).fork()).join();
     }
+    writer.uint32(122).fork();
+    for (const v of message.cashWishlist) {
+      writer.uint32(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -10608,6 +10615,24 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.marriage = Marriage.decode(reader, reader.uint32());
           continue;
         }
+        case 15: {
+          if (tag === 120) {
+            message.cashWishlist.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 122) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.cashWishlist.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10659,6 +10684,11 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         ? object.debuffs.map((e: any) => Debuff.fromJSON(e))
         : [],
       marriage: isSet(object.marriage) ? Marriage.fromJSON(object.marriage) : undefined,
+      cashWishlist: globalThis.Array.isArray(object?.cashWishlist)
+        ? object.cashWishlist.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.cash_wishlist)
+        ? object.cash_wishlist.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
@@ -10706,6 +10736,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.marriage !== undefined) {
       obj.marriage = Marriage.toJSON(message.marriage);
     }
+    if (message.cashWishlist?.length) {
+      obj.cashWishlist = message.cashWishlist.map((e) => Math.round(e));
+    }
     return obj;
   },
 
@@ -10732,6 +10765,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     message.marriage = (object.marriage !== undefined && object.marriage !== null)
       ? Marriage.fromPartial(object.marriage)
       : undefined;
+    message.cashWishlist = object.cashWishlist?.map((e) => e) || [];
     return message;
   },
 };

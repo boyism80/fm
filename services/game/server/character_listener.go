@@ -1041,6 +1041,10 @@ func (l *CharacterListenerImpl) OnUnlockAction(ch *entity.Character) {
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnInspect(ch *entity.Character, profile *response.CharacterProfile) {
+	ch.Send(profile, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnScriptError(ch *entity.Character, script string, err error) {
 	if ch.GetRole() != constant.RoleAdmin {
 		return

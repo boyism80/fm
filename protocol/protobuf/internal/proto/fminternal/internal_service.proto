@@ -610,6 +610,7 @@ message EnterGameReply {
   repeated SavedLocation saved_locations = 12;
   repeated Debuff     debuffs   = 13;
   optional Marriage   marriage  = 14;
+  repeated uint32     cash_wishlist = 15;
 }
 
 message Debuff {

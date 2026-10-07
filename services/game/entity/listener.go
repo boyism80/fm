@@ -124,6 +124,7 @@ type CharacterListener interface {
 	OnControlMoveMob(ch *Character, mob *Mob, moveId uint16, enabledSkill bool, mp uint16, skillId uint32, skillLevel uint8)
 	OnShowMobHp(ch *Character, mob *Mob, percentage uint8)
 	OnUnlockAction(ch *Character)
+	OnInspect(ch *Character, profile *response.CharacterProfile)
 	OnScriptError(ch *Character, script string, err error)
 	OnQuestStarted(ch *Character, qp *Quest, npcID uint32)
 	OnQuestCompleted(ch *Character, qp *Quest, npcID uint32, nextQuestID uint32)

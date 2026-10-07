@@ -31,6 +31,10 @@ const (
 
 const equipmentPartsCashOffset EquipmentPartsType = -100
 
+func (p EquipmentPartsType) Cash() EquipmentPartsType {
+	return p + equipmentPartsCashOffset
+}
+
 var equipmentPartsByCategory = map[uint32][]EquipmentPartsType{
 	100: {EquipmentPartsCap},
 	101: {EquipmentPartsFace},

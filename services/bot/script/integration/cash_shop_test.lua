@@ -178,6 +178,13 @@ local function shop_flow(ctx)
 	if check(ctx, bot:items()[SUPER_MEGAPHONE.item_id] == 1, "꺼낸 아이템이 게임 인벤토리에 저장되지 않음") == false then
 		return false
 	end
+	local profile = bot:request(resp.character_profile, req.inspect_character { character_id = bot:id() }, nil, 3000)
+	if profile == false then
+		return ctx:fail("캐릭터 정보 응답 없음")
+	end
+	if check(ctx, profile.self and profile.guild_name == "-" and #profile.wishlist == 2 and profile.wishlist[1] == MEGAPHONE.sn and profile.wishlist[2] == SUPER_MEGAPHONE.sn, "캐릭터 정보 위시리스트가 다름: " .. #profile.wishlist) == false then
+		return false
+	end
 
 	if bot:enter_cash_shop() == false then
 		return ctx:fail("캐시샵 재입장 실패")

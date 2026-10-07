@@ -80,5 +80,5 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, PetReviveInquiry](gs)
 	core.Bind[*GameServer, RingAction](gs)
 	core.Bind[*GameServer, WeddingPresent](gs)
-	// TODO: 0x50 character info request and 0x2C response with the married flag (#257)
+	core.Bind[*GameServer, InspectCharacter](gs)
 }

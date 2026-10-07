@@ -50,6 +50,7 @@ var requests = []outbound{
 	&request.CashShopCoupon{},
 	&request.RingAction{},
 	&request.WeddingPresent{},
+	&request.InspectCharacter{},
 }
 
 func (a *SuiteActor) register() {

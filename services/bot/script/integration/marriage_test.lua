@@ -411,6 +411,13 @@ local function ceremony(ctx)
 			return false
 		end
 	end
+	local profile = groom:request(resp.character_profile, req.inspect_character { character_id = bride:id() }, nil, 3000)
+	if profile == false then
+		return ctx:fail("신부 캐릭터 정보 응답 없음")
+	end
+	if check(ctx, profile.character_id == bride:id() and profile.married and profile.self == false, "신부 캐릭터 정보의 결혼 여부가 다름") == false then
+		return false
+	end
 	return true
 end
 
