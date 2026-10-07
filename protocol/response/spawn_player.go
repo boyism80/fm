@@ -29,8 +29,8 @@ type SpawnPlayer struct {
 	Chalkboard        string
 	HasTeam           bool
 	Team              constant.CarnivalTeam
-	CrushRings        []*dto.Ring
-	FriendshipRings   []*dto.Ring
+	CrushRing         *dto.Ring
+	FriendshipRing    *dto.Ring
 	MarriageRing      *dto.MarriageRing
 	Pet               *dto.ActivePet
 }
@@ -103,8 +103,8 @@ func (p *SpawnPlayer) Serialize(writer *stream.StreamWriter) error {
 		writer.WriteU8(0)
 	}
 
-	writeLookRings(writer, p.CrushRings)
-	writeLookRings(writer, p.FriendshipRings)
+	writeLookRing(writer, p.CrushRing)
+	writeLookRing(writer, p.FriendshipRing)
 	writeMarriageRing(writer, p.MarriageRing)
 
 	writer.WriteU8(0)

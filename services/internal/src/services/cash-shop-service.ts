@@ -8,6 +8,9 @@ import {
     type BuyCashItemReply,
     type BuyCashItemRequest,
     type BuyCashQuestItemReply,
+    type BuyCashRingReply,
+    type BuyCashRingRequest,
+    type CashRing,
     type ExpandCashSlotReply,
     type ExpandCashSlotRequest,
     type FindCashCouponReply,
@@ -250,18 +253,31 @@ export class CashShopService {
         });
     }
 
-    private async deliverGift(req: GiftCashItemRequest, recipientAccountId: number): Promise<void> {
-        await this.cashShopRepo.withAccount(req.worldId, recipientAccountId, async (txClient) => {
-            for (const item of req.items) {
+    private async deliverGift(worldId: number, recipientAccountId: number, items: CashItem[], message: string): Promise<void> {
+        await this.cashShopRepo.withAccount(worldId, recipientAccountId, async (txClient) => {
+            for (const item of items) {
                 const serial = String(item.item?.uniqueId ?? 0);
-                await this.cashShopRepo.insertItem(req.worldId, recipientAccountId, serial, CashItem.toJSON(item), { txClient });
+                await this.cashShopRepo.insertItem(worldId, recipientAccountId, serial, CashItem.toJSON(item), { txClient });
                 await this.cashShopRepo.insertGift(
-                    req.worldId,
+                    worldId,
                     recipientAccountId,
-                    { serial, item_id: item.item?.itemId ?? 0, sender_name: item.buyerName, message: req.message },
+                    { serial, item_id: item.item?.itemId ?? 0, sender_name: item.buyerName, message },
                     { txClient }
                 );
             }
+        });
+    }
+
+    private async notifyGift(worldId: number, recipientId: number, senderName: string): Promise<void> {
+        const channelId = await this.sessionRepo.findChannel(worldId, recipientId);
+        if (channelId == null || channelId < 0) {
+            return;
+        }
+        await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
+        await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${worldId}.${channelId}.parcel`, "cash_gift_arrived", {
+            occurred_at: new Date().toISOString(),
+            character_id: recipientId,
+            sender_name: senderName,
         });
     }
 
@@ -293,7 +309,7 @@ export class CashShopService {
                 return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
             }
 
-            await this.deliverGift(req, entry.account_id);
+            await this.deliverGift(req.worldId, entry.account_id, req.items, req.message);
             await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
             return {
                 result: CashShopResult.CASH_SHOP_RESULT_OK,
@@ -306,16 +322,90 @@ export class CashShopService {
             return { result: reply.result, nxCash: reply.nxCash, maplePoint: reply.maplePoint };
         }
 
-        const channelId = await this.sessionRepo.findChannel(req.worldId, reply.recipientId);
-        if (channelId != null && channelId >= 0) {
-            await this.rabbitmqService.assertDirectExchange(AMQ_DIRECT_EXCHANGE);
-            await this.rabbitmqService.publish(AMQ_DIRECT_EXCHANGE, `fm.${req.worldId}.${channelId}.parcel`, "cash_gift_arrived", {
-                occurred_at: new Date().toISOString(),
-                character_id: reply.recipientId,
-                sender_name: req.items[0]?.buyerName ?? "",
-            });
-        }
+        await this.notifyGift(req.worldId, reply.recipientId, req.items[0]?.buyerName ?? "");
         return { result: reply.result, nxCash: reply.nxCash, maplePoint: reply.maplePoint };
+    }
+
+    async buyRing(req: BuyCashRingRequest): Promise<BuyCashRingReply> {
+        const item = req.item!;
+        const partnerItem = req.partnerItem!;
+        const reply = await this.cashShopRepo.withAccountLock(req.worldId, req.accountId, async (txClient) => {
+            const balance = await this.cashShopRepo.findBalance(req.worldId, req.accountId, { txClient });
+            const fail = (result: CashShopResult) => ({ result, nxCash: balance.nxCash, maplePoint: balance.maplePoint, partnerId: 0 });
+            const delta = this.debit(CashCurrency.CASH_CURRENCY_NX_CASH, req.price);
+            if (this.affordable(balance, delta) === false) {
+                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_ENOUGH_CASH);
+            }
+
+            const entry = await this.unifiedRepo.findCharacterNameEntry(req.partnerName);
+            if (entry == null || entry.world_id !== req.worldId || entry.character_id === req.characterId) {
+                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+            }
+            if (entry.account_id === req.accountId) {
+                return fail(CashShopResult.CASH_SHOP_RESULT_SAME_ACCOUNT);
+            }
+            const partner = await this.characterRepo.get(req.worldId, entry.character_id);
+            if (partner == null) {
+                return fail(CashShopResult.CASH_SHOP_RESULT_NOT_FOUND);
+            }
+            if (req.couple && partner.gender === req.gender) {
+                return fail(CashShopResult.CASH_SHOP_RESULT_GENDER);
+            }
+            const lockerItems = await this.cashShopRepo.findItems(req.worldId, req.accountId, { txClient });
+            if (lockerItems.length >= LOCKER_CAPACITY) {
+                return fail(CashShopResult.CASH_SHOP_RESULT_LOCKER_FULL);
+            }
+            const partnerLockerItems = await this.cashShopRepo.findItems(req.worldId, entry.account_id);
+            if (partnerLockerItems.length >= LOCKER_CAPACITY) {
+                return fail(CashShopResult.CASH_SHOP_RESULT_RECIPIENT_LOCKER_FULL);
+            }
+
+            const serial = String(item.item?.uniqueId ?? 0);
+            const partnerSerial = String(partnerItem.item?.uniqueId ?? 0);
+            const itemId = item.item?.itemId ?? 0;
+            await this.deliverGift(req.worldId, entry.account_id, [partnerItem], req.message);
+            await this.cashShopRepo.insertItem(req.worldId, req.accountId, serial, CashItem.toJSON(item), { txClient });
+            await this.cashShopRepo.insertRing(req.worldId, {
+                serial,
+                partner_serial: partnerSerial,
+                character_id: req.characterId,
+                partner_id: entry.character_id,
+                partner_name: partner.name,
+                item_id: itemId,
+            });
+            await this.cashShopRepo.insertRing(req.worldId, {
+                serial: partnerSerial,
+                partner_serial: serial,
+                character_id: entry.character_id,
+                partner_id: req.characterId,
+                partner_name: req.characterName,
+                item_id: itemId,
+            });
+            await this.cashShopRepo.addBalance(req.worldId, req.accountId, delta, { txClient });
+            return {
+                result: CashShopResult.CASH_SHOP_RESULT_OK,
+                nxCash: balance.nxCash + delta.nxCash,
+                maplePoint: balance.maplePoint + delta.maplePoint,
+                partnerId: entry.character_id,
+            };
+        });
+        if (reply.result !== CashShopResult.CASH_SHOP_RESULT_OK) {
+            return { result: reply.result, nxCash: reply.nxCash, maplePoint: reply.maplePoint };
+        }
+
+        await this.notifyGift(req.worldId, reply.partnerId, req.characterName);
+        return { result: reply.result, nxCash: reply.nxCash, maplePoint: reply.maplePoint };
+    }
+
+    async getRings(worldId: number, characterId: number): Promise<CashRing[]> {
+        const rows = await this.cashShopRepo.findRings(worldId, characterId);
+        return rows.map((row) => ({
+            serial: Number(row.serial),
+            partnerSerial: Number(row.partner_serial),
+            partnerId: row.partner_id,
+            partnerName: row.partner_name,
+            itemId: row.item_id,
+        }));
     }
 
     async payBack(req: PayBackCashItemRequest): Promise<PayBackCashItemReply> {

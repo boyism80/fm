@@ -98,6 +98,7 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
 	ch.CashWishlist = reply.GetCashWishlist()
 	ch.LoadInventory(reply.GetInventory())
+	ch.Inventory.LoadRings(reply.GetRings())
 	ch.LoadSkills(reply.GetSkills())
 	ch.LoadBuffs(reply.GetBuffs())
 	ch.LoadDebuffs(reply.GetDebuffs())

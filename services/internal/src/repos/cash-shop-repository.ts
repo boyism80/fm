@@ -15,6 +15,15 @@ export type CashGiftRow = {
     message: string;
 };
 
+export type CashRingRow = {
+    serial: string;
+    partner_serial: string;
+    character_id: number;
+    partner_id: number;
+    partner_name: string;
+    item_id: number;
+};
+
 export type CashCouponRow = {
     code: string;
     kind: number;
@@ -143,6 +152,23 @@ export class CashShopRepository {
             );
             return (res.rows as Array<{ code: string }>).map((row) => row.code);
         });
+    }
+
+    async insertRing(worldId: number, ring: CashRingRow): Promise<void> {
+        await this.ctx.getPgDataPool(worldId, ring.character_id).query(
+            `INSERT INTO cash_rings (serial, partner_serial, character_id, partner_id, partner_name, item_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [ring.serial, ring.partner_serial, ring.character_id, ring.partner_id, ring.partner_name, ring.item_id]
+        );
+    }
+
+    async findRings(worldId: number, characterId: number): Promise<CashRingRow[]> {
+        const res = await this.ctx.getPgDataPool(worldId, characterId).query(
+            `SELECT serial, partner_serial, character_id, partner_id, partner_name, item_id
+             FROM cash_rings WHERE character_id = $1 ORDER BY serial`,
+            [characterId]
+        );
+        return res.rows as CashRingRow[];
     }
 
     async findWishlist(worldId: number, characterId: number): Promise<number[]> {

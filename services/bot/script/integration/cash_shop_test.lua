@@ -19,6 +19,7 @@ local ACTION = {
 	couple_ring = 28,
 	package = 29,
 	quest_item = 31,
+	friendship_ring = 34,
 }
 local KIND = {
 	wishlist_updated = 50,
@@ -41,6 +42,7 @@ local SAME_ACCOUNT = 125
 local WRONG_NAME = 126
 local COUPON_WRONG = 131
 local COUPON_USED = 133
+local UNKNOWN = 0
 local RING = 143
 
 local MEGAPHONE = { sn = 10000804, item_id = 5060002, price = 990 }
@@ -50,6 +52,9 @@ local HAT = { sn = 20000000, item_id = 1002186, price = 1500, refund = 450 }
 local QUEST_ITEM = { sn = 80000054, item_id = 4031191, price = 1 }
 local CHARACTER_SLOT = { sn = 50200034, price = 6900 }
 local SLOT_PRICE = 3800
+local COUPLE_RING = { sn = 20900006, item_id = 1112001, price = 3500 }
+local FRIENDSHIP_RING = { sn = 20900056, item_id = 1112800, price = 3500 }
+local CASH_RING_SLOT = -112
 
 local function check(ctx, ok, message)
 	if ok == false then
@@ -289,8 +294,8 @@ local function purchase_flow(ctx, bot)
 		return false
 	end
 
-	p = result(ctx, bot, req.cash_shop_operation { action = ACTION.couple_ring, commodity_sn = MEGAPHONE.sn, recipient = "nobody_here", message = "" }, KIND.buy_failed, "커플링")
-	if p == false or check(ctx, p.failure == RING, "커플링 실패 코드 " .. p.failure) == false then
+	p = result(ctx, bot, req.cash_shop_operation { action = ACTION.couple_ring, commodity_sn = MEGAPHONE.sn, recipient = "nobody_here", message = "" }, KIND.buy_failed, "반지가 아닌 커플링")
+	if p == false or check(ctx, p.failure == UNKNOWN, "반지가 아닌 커플링 실패 코드 " .. p.failure) == false then
 		return false
 	end
 	return nx
@@ -413,12 +418,116 @@ local function service_flow(ctx)
 	return true
 end
 
+local function ring_failed(ctx, bot, action, commodity, recipient, message, failure, what)
+	local p = result(ctx, bot, req.cash_shop_operation { action = action, commodity_sn = commodity.sn, recipient = recipient, message = message }, KIND.buy_failed, what)
+	if p == false then
+		return false
+	end
+	return check(ctx, p.failure == failure, string.format("%s 실패 코드 %d (기대 %d)", what, p.failure, failure))
+end
+
+local function ring_flow(ctx)
+	local buyer, partner = ctx:bot(1), ctx:bot(0)
+	if pq.command(buyer, "/성별 0", "성별 변경: 0") == false or pq.command(partner, "/성별 0", "성별 변경: 0") == false then
+		return ctx:fail("성별 변경 실패")
+	end
+	if partner:enter_cash_shop() == false or partner:leave_cash_shop() == false then
+		return ctx:fail("받는 캐릭터 성별 저장 실패")
+	end
+	if pq.command(buyer, "/캐시얻기 10000 0", "캐시 잔액: ") == false then
+		return ctx:fail("캐시 지급 실패")
+	end
+
+	if buyer:enter_cash_shop() == false then
+		return ctx:fail("캐시샵 입장 실패")
+	end
+	if ring_failed(ctx, buyer, ACTION.couple_ring, COUPLE_RING, partner:name(), "", UNKNOWN, "메시지 없는 커플링") == false then
+		return false
+	end
+	if ring_failed(ctx, buyer, ACTION.friendship_ring, FRIENDSHIP_RING, buyer:name(), "친구", WRONG_NAME, "자기 자신에게 우정링") == false then
+		return false
+	end
+	if ring_failed(ctx, buyer, ACTION.couple_ring, COUPLE_RING, partner:name(), "사랑해", RING, "동성 커플링") == false then
+		return false
+	end
+	if buyer:leave_cash_shop() == false then
+		return ctx:fail("캐시샵 퇴장 실패")
+	end
+
+	if pq.command(partner, "/성별 1", "성별 변경: 1") == false then
+		return ctx:fail("성별 변경 실패")
+	end
+	if partner:enter_cash_shop() == false or partner:leave_cash_shop() == false then
+		return ctx:fail("받는 캐릭터 성별 저장 실패")
+	end
+	if buyer:enter_cash_shop() == false then
+		return ctx:fail("캐시샵 재입장 실패")
+	end
+	local nx, mp = buyer:cash()
+	local sent = buyer:request(resp.cash_shop_result, req.cash_shop_operation {
+		action = ACTION.couple_ring,
+		commodity_sn = COUPLE_RING.sn,
+		recipient = partner:name(),
+		message = "사랑해",
+	}, function(p)
+		return p.kind == KIND.gift_sent or p.kind == KIND.buy_failed
+	end, 5000)
+	if sent == false or sent.kind ~= KIND.gift_sent then
+		return ctx:fail("커플링 구매 실패: " .. (sent and sent.failure or -1))
+	end
+	ctx:sleep(300)
+	if cash_is(ctx, buyer, nx - COUPLE_RING.price, mp) == false then
+		return false
+	end
+	local ring = find_locker(buyer, COUPLE_RING.item_id)
+	if check(ctx, ring ~= nil, "산 커플링이 보관함에 없음") == false then
+		return false
+	end
+	if result(ctx, buyer, req.cash_shop_operation { action = ACTION.take_out, serial = ring.serial, inventory_type = EQUIP }, KIND.taken_out, "커플링 꺼내기") == false then
+		return false
+	end
+	if buyer:leave_cash_shop() == false then
+		return ctx:fail("캐시샵 퇴장 실패")
+	end
+
+	if partner:map() ~= buyer:map() and partner:map_move(buyer:map()) == false then
+		return ctx:fail("받는 캐릭터 맵 이동 실패")
+	end
+	local look = buyer:request_on(partner, resp.update_character_look, req.move_item {
+		inventory_type = EQUIP,
+		source = buyer:slot(COUPLE_RING.item_id),
+		dest = CASH_RING_SLOT,
+		count = 1,
+	}, function(p)
+		return p.character.id == buyer:id()
+	end, 5000)
+	if look == false then
+		return ctx:fail("커플링 착용 외형 갱신이 상대에게 오지 않음")
+	end
+	if check(ctx, look.crush_ring ~= nil and look.crush_ring.item_id == COUPLE_RING.item_id, "착용한 커플링이 외형에 없음") == false then
+		return false
+	end
+
+	if partner:enter_cash_shop() == false then
+		return ctx:fail("받는 캐릭터 캐시샵 입장 실패")
+	end
+	local gifts = partner:gifts()
+	if check(ctx, #gifts == 1 and gifts[1].item_id == COUPLE_RING.item_id and gifts[1].sender_name == buyer:name(), "커플링 선물이 다름: " .. #gifts) == false then
+		return false
+	end
+	if partner:leave_cash_shop() == false then
+		return ctx:fail("받는 캐릭터 캐시샵 퇴장 실패")
+	end
+	return true
+end
+
 test_suite {
-	name = "Cash shop: 구매·보관함·선물·패키지·환불·슬롯·쿠폰",
+	name = "Cash shop: 구매·보관함·선물·패키지·환불·슬롯·쿠폰·반지",
 	bot_count = 2,
 
 	scenarios = {
 		shop_flow,
 		service_flow,
+		ring_flow,
 	},
 }

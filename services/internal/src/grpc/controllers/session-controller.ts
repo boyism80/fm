@@ -150,7 +150,7 @@ export class SessionGrpcController {
 
     private async loadCharacterReply(worldId: number, row: CharacterModel): Promise<EnterGameReply> {
         const characterId = row.characterId;
-        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack, marriage, cashWishlist] = await Promise.all([
+        const [inventoryList, skillList, buffList, questList, savedLocationList, keyLayoutBindings, buddyPack, marriage, cashWishlist, rings] = await Promise.all([
             this.inventoryRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.skillRepository.getAll(worldId, String(characterId)).then((map) => [...map.values()]),
             this.buffService.getBuffs(worldId, characterId),
@@ -160,6 +160,7 @@ export class SessionGrpcController {
             this.buddyService.getAll(worldId, characterId),
             this.marriageService.loadMarriage(worldId, characterId),
             this.cashShopService.getWishlist(worldId, characterId),
+            this.cashShopService.getRings(worldId, characterId),
         ]);
         const realtime = await this.characterRealtimeStateRepository.get(worldId, characterId);
         return {
@@ -214,6 +215,7 @@ export class SessionGrpcController {
             debuffs: [],
             marriage: marriage.marriage,
             cashWishlist: cashWishlist.filter((sn) => sn !== 0),
+            rings,
         };
     }
 
@@ -249,6 +251,7 @@ export class SessionGrpcController {
                     buddyCapacity: 0,
                     debuffs: [],
                     cashWishlist: [],
+                    rings: [],
                 });
                 return;
             }

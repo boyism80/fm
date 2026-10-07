@@ -62,8 +62,7 @@ func (h *Operation) Handle(ctx *core.ClientContext, req *request.CashShopOperati
 	case request.CashShopActionQuestItem:
 		h.buyQuestItem(ctx, character, req)
 	case request.CashShopActionCoupleRing, request.CashShopActionFriendshipRing:
-		// TODO: ring system (equip effect, partner display on spawn, ring persistence) before selling couple and friendship rings
-		_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultBuyFailed, Failure: constant.CashShopFailureRing}, types.SEND_POLICY_ENCRYPT)
+		h.buyRing(ctx, character, req)
 	default:
 		return fmt.Errorf("cash shop operation: unsupported action %d", req.Action)
 	}

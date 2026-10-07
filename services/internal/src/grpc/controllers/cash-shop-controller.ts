@@ -12,6 +12,8 @@ import type {
     ExpandCashSlotRequest,
     FindCashCouponReply,
     FindCashCouponRequest,
+    BuyCashRingReply,
+    BuyCashRingRequest,
     GiftCashItemReply,
     GiftCashItemRequest,
     PayBackCashItemReply,
@@ -119,6 +121,18 @@ export class CashShopGrpcController {
                 throw Object.assign(new Error("items with unique_id are required"), { code: "INVALID_PAYLOAD" });
             }
             callback(null, await this.cashShopService.gift(call.request));
+        } catch (err) {
+            this.grpcError(err, callback);
+        }
+    }
+
+    @Method("buyCashRing")
+    async buyCashRing(call: GrpcCall<BuyCashRingRequest>, callback: GrpcCallback<BuyCashRingReply>) {
+        try {
+            if (!call.request.item?.item?.uniqueId || !call.request.partnerItem?.item?.uniqueId) {
+                throw Object.assign(new Error("item and partner_item with unique_id are required"), { code: "INVALID_PAYLOAD" });
+            }
+            callback(null, await this.cashShopService.buyRing(call.request));
         } catch (err) {
             this.grpcError(err, callback);
         }

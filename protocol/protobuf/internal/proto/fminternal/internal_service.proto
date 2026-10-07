@@ -83,6 +83,7 @@ service Internal {
   rpc AddCash (AddCashRequest) returns (AddCashReply);
   rpc ExpandCashSlot (ExpandCashSlotRequest) returns (ExpandCashSlotReply);
   rpc GiftCashItem (GiftCashItemRequest) returns (GiftCashItemReply);
+  rpc BuyCashRing (BuyCashRingRequest) returns (BuyCashRingReply);
   rpc PayBackCashItem (PayBackCashItemRequest) returns (PayBackCashItemReply);
   rpc BuyCashQuestItem (BuyCashQuestItemRequest) returns (BuyCashQuestItemReply);
   rpc FindCashCoupon (FindCashCouponRequest) returns (FindCashCouponReply);
@@ -228,6 +229,34 @@ message GiftCashItemReply {
   CashShopResult result = 1;
   uint32 nx_cash = 2;
   uint32 maple_point = 3;
+}
+
+message BuyCashRingRequest {
+  uint32 world_id = 1;
+  uint32 account_id = 2;
+  uint32 character_id = 3;
+  string character_name = 4;
+  uint32 gender = 5;
+  bool couple = 6;
+  string partner_name = 7;
+  string message = 8;
+  uint32 price = 9;
+  CashItem item = 10;
+  CashItem partner_item = 11;
+}
+
+message BuyCashRingReply {
+  CashShopResult result = 1;
+  uint32 nx_cash = 2;
+  uint32 maple_point = 3;
+}
+
+message CashRing {
+  uint64 serial = 1;
+  uint64 partner_serial = 2;
+  uint32 partner_id = 3;
+  string partner_name = 4;
+  uint32 item_id = 5;
 }
 
 message PayBackCashItemRequest {
@@ -611,6 +640,7 @@ message EnterGameReply {
   repeated Debuff     debuffs   = 13;
   optional Marriage   marriage  = 14;
   repeated uint32     cash_wishlist = 15;
+  repeated CashRing   rings = 16;
 }
 
 message Debuff {

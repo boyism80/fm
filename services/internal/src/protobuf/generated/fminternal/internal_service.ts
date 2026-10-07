@@ -1388,6 +1388,34 @@ export interface GiftCashItemReply {
   maplePoint: number;
 }
 
+export interface BuyCashRingRequest {
+  worldId: number;
+  accountId: number;
+  characterId: number;
+  characterName: string;
+  gender: number;
+  couple: boolean;
+  partnerName: string;
+  message: string;
+  price: number;
+  item: CashItem | undefined;
+  partnerItem: CashItem | undefined;
+}
+
+export interface BuyCashRingReply {
+  result: CashShopResult;
+  nxCash: number;
+  maplePoint: number;
+}
+
+export interface CashRing {
+  serial: number;
+  partnerSerial: number;
+  partnerId: number;
+  partnerName: string;
+  itemId: number;
+}
+
 export interface PayBackCashItemRequest {
   worldId: number;
   accountId: number;
@@ -1746,6 +1774,7 @@ export interface EnterGameReply {
   debuffs: Debuff[];
   marriage?: Marriage | undefined;
   cashWishlist: number[];
+  rings: CashRing[];
 }
 
 export interface Debuff {
@@ -4581,6 +4610,504 @@ export const GiftCashItemReply: MessageFns<GiftCashItemReply> = {
     message.result = object.result ?? 0;
     message.nxCash = object.nxCash ?? 0;
     message.maplePoint = object.maplePoint ?? 0;
+    return message;
+  },
+};
+
+function createBaseBuyCashRingRequest(): BuyCashRingRequest {
+  return {
+    worldId: 0,
+    accountId: 0,
+    characterId: 0,
+    characterName: "",
+    gender: 0,
+    couple: false,
+    partnerName: "",
+    message: "",
+    price: 0,
+    item: undefined,
+    partnerItem: undefined,
+  };
+}
+
+export const BuyCashRingRequest: MessageFns<BuyCashRingRequest> = {
+  encode(message: BuyCashRingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.worldId !== 0) {
+      writer.uint32(8).uint32(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      writer.uint32(16).uint32(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      writer.uint32(24).uint32(message.characterId);
+    }
+    if (message.characterName !== "") {
+      writer.uint32(34).string(message.characterName);
+    }
+    if (message.gender !== 0) {
+      writer.uint32(40).uint32(message.gender);
+    }
+    if (message.couple !== false) {
+      writer.uint32(48).bool(message.couple);
+    }
+    if (message.partnerName !== "") {
+      writer.uint32(58).string(message.partnerName);
+    }
+    if (message.message !== "") {
+      writer.uint32(66).string(message.message);
+    }
+    if (message.price !== 0) {
+      writer.uint32(72).uint32(message.price);
+    }
+    if (message.item !== undefined) {
+      CashItem.encode(message.item, writer.uint32(82).fork()).join();
+    }
+    if (message.partnerItem !== undefined) {
+      CashItem.encode(message.partnerItem, writer.uint32(90).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BuyCashRingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBuyCashRingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.worldId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accountId = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.characterId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.characterName = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.gender = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.couple = reader.bool();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.partnerName = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.price = reader.uint32();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.item = CashItem.decode(reader, reader.uint32());
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.partnerItem = CashItem.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BuyCashRingRequest {
+    return {
+      worldId: isSet(object.worldId)
+        ? globalThis.Number(object.worldId)
+        : isSet(object.world_id)
+        ? globalThis.Number(object.world_id)
+        : 0,
+      accountId: isSet(object.accountId)
+        ? globalThis.Number(object.accountId)
+        : isSet(object.account_id)
+        ? globalThis.Number(object.account_id)
+        : 0,
+      characterId: isSet(object.characterId)
+        ? globalThis.Number(object.characterId)
+        : isSet(object.character_id)
+        ? globalThis.Number(object.character_id)
+        : 0,
+      characterName: isSet(object.characterName)
+        ? globalThis.String(object.characterName)
+        : isSet(object.character_name)
+        ? globalThis.String(object.character_name)
+        : "",
+      gender: isSet(object.gender) ? globalThis.Number(object.gender) : 0,
+      couple: isSet(object.couple) ? globalThis.Boolean(object.couple) : false,
+      partnerName: isSet(object.partnerName)
+        ? globalThis.String(object.partnerName)
+        : isSet(object.partner_name)
+        ? globalThis.String(object.partner_name)
+        : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
+      item: isSet(object.item) ? CashItem.fromJSON(object.item) : undefined,
+      partnerItem: isSet(object.partnerItem)
+        ? CashItem.fromJSON(object.partnerItem)
+        : isSet(object.partner_item)
+        ? CashItem.fromJSON(object.partner_item)
+        : undefined,
+    };
+  },
+
+  toJSON(message: BuyCashRingRequest): unknown {
+    const obj: any = {};
+    if (message.worldId !== 0) {
+      obj.worldId = Math.round(message.worldId);
+    }
+    if (message.accountId !== 0) {
+      obj.accountId = Math.round(message.accountId);
+    }
+    if (message.characterId !== 0) {
+      obj.characterId = Math.round(message.characterId);
+    }
+    if (message.characterName !== "") {
+      obj.characterName = message.characterName;
+    }
+    if (message.gender !== 0) {
+      obj.gender = Math.round(message.gender);
+    }
+    if (message.couple !== false) {
+      obj.couple = message.couple;
+    }
+    if (message.partnerName !== "") {
+      obj.partnerName = message.partnerName;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.price !== 0) {
+      obj.price = Math.round(message.price);
+    }
+    if (message.item !== undefined) {
+      obj.item = CashItem.toJSON(message.item);
+    }
+    if (message.partnerItem !== undefined) {
+      obj.partnerItem = CashItem.toJSON(message.partnerItem);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BuyCashRingRequest>, I>>(base?: I): BuyCashRingRequest {
+    return BuyCashRingRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BuyCashRingRequest>, I>>(object: I): BuyCashRingRequest {
+    const message = createBaseBuyCashRingRequest();
+    message.worldId = object.worldId ?? 0;
+    message.accountId = object.accountId ?? 0;
+    message.characterId = object.characterId ?? 0;
+    message.characterName = object.characterName ?? "";
+    message.gender = object.gender ?? 0;
+    message.couple = object.couple ?? false;
+    message.partnerName = object.partnerName ?? "";
+    message.message = object.message ?? "";
+    message.price = object.price ?? 0;
+    message.item = (object.item !== undefined && object.item !== null) ? CashItem.fromPartial(object.item) : undefined;
+    message.partnerItem = (object.partnerItem !== undefined && object.partnerItem !== null)
+      ? CashItem.fromPartial(object.partnerItem)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseBuyCashRingReply(): BuyCashRingReply {
+  return { result: 0, nxCash: 0, maplePoint: 0 };
+}
+
+export const BuyCashRingReply: MessageFns<BuyCashRingReply> = {
+  encode(message: BuyCashRingReply, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== 0) {
+      writer.uint32(8).int32(message.result);
+    }
+    if (message.nxCash !== 0) {
+      writer.uint32(16).uint32(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      writer.uint32(24).uint32(message.maplePoint);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BuyCashRingReply {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBuyCashRingReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.result = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nxCash = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maplePoint = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BuyCashRingReply {
+    return {
+      result: isSet(object.result) ? cashShopResultFromJSON(object.result) : 0,
+      nxCash: isSet(object.nxCash)
+        ? globalThis.Number(object.nxCash)
+        : isSet(object.nx_cash)
+        ? globalThis.Number(object.nx_cash)
+        : 0,
+      maplePoint: isSet(object.maplePoint)
+        ? globalThis.Number(object.maplePoint)
+        : isSet(object.maple_point)
+        ? globalThis.Number(object.maple_point)
+        : 0,
+    };
+  },
+
+  toJSON(message: BuyCashRingReply): unknown {
+    const obj: any = {};
+    if (message.result !== 0) {
+      obj.result = cashShopResultToJSON(message.result);
+    }
+    if (message.nxCash !== 0) {
+      obj.nxCash = Math.round(message.nxCash);
+    }
+    if (message.maplePoint !== 0) {
+      obj.maplePoint = Math.round(message.maplePoint);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BuyCashRingReply>, I>>(base?: I): BuyCashRingReply {
+    return BuyCashRingReply.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BuyCashRingReply>, I>>(object: I): BuyCashRingReply {
+    const message = createBaseBuyCashRingReply();
+    message.result = object.result ?? 0;
+    message.nxCash = object.nxCash ?? 0;
+    message.maplePoint = object.maplePoint ?? 0;
+    return message;
+  },
+};
+
+function createBaseCashRing(): CashRing {
+  return { serial: 0, partnerSerial: 0, partnerId: 0, partnerName: "", itemId: 0 };
+}
+
+export const CashRing: MessageFns<CashRing> = {
+  encode(message: CashRing, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.serial !== 0) {
+      writer.uint32(8).uint64(message.serial);
+    }
+    if (message.partnerSerial !== 0) {
+      writer.uint32(16).uint64(message.partnerSerial);
+    }
+    if (message.partnerId !== 0) {
+      writer.uint32(24).uint32(message.partnerId);
+    }
+    if (message.partnerName !== "") {
+      writer.uint32(34).string(message.partnerName);
+    }
+    if (message.itemId !== 0) {
+      writer.uint32(40).uint32(message.itemId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CashRing {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCashRing();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.serial = longToNumber(reader.uint64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.partnerSerial = longToNumber(reader.uint64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.partnerId = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.partnerName = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.itemId = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CashRing {
+    return {
+      serial: isSet(object.serial) ? globalThis.Number(object.serial) : 0,
+      partnerSerial: isSet(object.partnerSerial)
+        ? globalThis.Number(object.partnerSerial)
+        : isSet(object.partner_serial)
+        ? globalThis.Number(object.partner_serial)
+        : 0,
+      partnerId: isSet(object.partnerId)
+        ? globalThis.Number(object.partnerId)
+        : isSet(object.partner_id)
+        ? globalThis.Number(object.partner_id)
+        : 0,
+      partnerName: isSet(object.partnerName)
+        ? globalThis.String(object.partnerName)
+        : isSet(object.partner_name)
+        ? globalThis.String(object.partner_name)
+        : "",
+      itemId: isSet(object.itemId)
+        ? globalThis.Number(object.itemId)
+        : isSet(object.item_id)
+        ? globalThis.Number(object.item_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CashRing): unknown {
+    const obj: any = {};
+    if (message.serial !== 0) {
+      obj.serial = Math.round(message.serial);
+    }
+    if (message.partnerSerial !== 0) {
+      obj.partnerSerial = Math.round(message.partnerSerial);
+    }
+    if (message.partnerId !== 0) {
+      obj.partnerId = Math.round(message.partnerId);
+    }
+    if (message.partnerName !== "") {
+      obj.partnerName = message.partnerName;
+    }
+    if (message.itemId !== 0) {
+      obj.itemId = Math.round(message.itemId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CashRing>, I>>(base?: I): CashRing {
+    return CashRing.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CashRing>, I>>(object: I): CashRing {
+    const message = createBaseCashRing();
+    message.serial = object.serial ?? 0;
+    message.partnerSerial = object.partnerSerial ?? 0;
+    message.partnerId = object.partnerId ?? 0;
+    message.partnerName = object.partnerName ?? "";
+    message.itemId = object.itemId ?? 0;
     return message;
   },
 };
@@ -10441,6 +10968,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     debuffs: [],
     marriage: undefined,
     cashWishlist: [],
+    rings: [],
   };
 }
 
@@ -10493,6 +11021,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       writer.uint32(v);
     }
     writer.join();
+    for (const v of message.rings) {
+      CashRing.encode(v!, writer.uint32(130).fork()).join();
+    }
     return writer;
   },
 
@@ -10633,6 +11164,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
 
           break;
         }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.rings.push(CashRing.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10689,6 +11228,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
         : globalThis.Array.isArray(object?.cash_wishlist)
         ? object.cash_wishlist.map((e: any) => globalThis.Number(e))
         : [],
+      rings: globalThis.Array.isArray(object?.rings)
+        ? object.rings.map((e: any) => CashRing.fromJSON(e))
+        : [],
     };
   },
 
@@ -10739,6 +11281,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.cashWishlist?.length) {
       obj.cashWishlist = message.cashWishlist.map((e) => Math.round(e));
     }
+    if (message.rings?.length) {
+      obj.rings = message.rings.map((e) => CashRing.toJSON(e));
+    }
     return obj;
   },
 
@@ -10766,6 +11311,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       ? Marriage.fromPartial(object.marriage)
       : undefined;
     message.cashWishlist = object.cashWishlist?.map((e) => e) || [];
+    message.rings = object.rings?.map((e) => CashRing.fromPartial(e)) || [];
     return message;
   },
 };
@@ -31268,6 +31814,15 @@ export const InternalService = {
     responseSerialize: (value: GiftCashItemReply): Buffer => Buffer.from(GiftCashItemReply.encode(value).finish()),
     responseDeserialize: (value: Buffer): GiftCashItemReply => GiftCashItemReply.decode(value),
   },
+  buyCashRing: {
+    path: "/fm.internal.Internal/BuyCashRing" as const,
+    requestStream: false as const,
+    responseStream: false as const,
+    requestSerialize: (value: BuyCashRingRequest): Buffer => Buffer.from(BuyCashRingRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): BuyCashRingRequest => BuyCashRingRequest.decode(value),
+    responseSerialize: (value: BuyCashRingReply): Buffer => Buffer.from(BuyCashRingReply.encode(value).finish()),
+    responseDeserialize: (value: Buffer): BuyCashRingReply => BuyCashRingReply.decode(value),
+  },
   payBackCashItem: {
     path: "/fm.internal.Internal/PayBackCashItem" as const,
     requestStream: false as const,
@@ -31561,6 +32116,7 @@ export interface InternalServer extends UntypedServiceImplementation {
   addCash: handleUnaryCall<AddCashRequest, AddCashReply>;
   expandCashSlot: handleUnaryCall<ExpandCashSlotRequest, ExpandCashSlotReply>;
   giftCashItem: handleUnaryCall<GiftCashItemRequest, GiftCashItemReply>;
+  buyCashRing: handleUnaryCall<BuyCashRingRequest, BuyCashRingReply>;
   payBackCashItem: handleUnaryCall<PayBackCashItemRequest, PayBackCashItemReply>;
   buyCashQuestItem: handleUnaryCall<BuyCashQuestItemRequest, BuyCashQuestItemReply>;
   findCashCoupon: handleUnaryCall<FindCashCouponRequest, FindCashCouponReply>;
@@ -32734,6 +33290,21 @@ export interface InternalClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: GiftCashItemReply) => void,
+  ): ClientUnaryCall;
+  buyCashRing(
+    request: BuyCashRingRequest,
+    callback: (error: ServiceError | null, response: BuyCashRingReply) => void,
+  ): ClientUnaryCall;
+  buyCashRing(
+    request: BuyCashRingRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: BuyCashRingReply) => void,
+  ): ClientUnaryCall;
+  buyCashRing(
+    request: BuyCashRingRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: BuyCashRingReply) => void,
   ): ClientUnaryCall;
   payBackCashItem(
     request: PayBackCashItemRequest,

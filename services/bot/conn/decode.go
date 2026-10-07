@@ -147,6 +147,7 @@ var decoders = func() []decoder {
 		newDecoder[response.WeddingCouple](nil),
 		newDecoder[response.WeddingEffect](nil),
 		newDecoder[response.CharacterProfile](nil),
+		newDecoder[response.UpdateCharacterLook](nil),
 	}
 }()
 

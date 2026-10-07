@@ -196,3 +196,24 @@ func (c *Character) SerializeLook(writer *stream.StreamWriter) {
 	writer.WriteU32(c.Weapon)
 	writer.WriteU32(0)
 }
+
+func (c *Character) DeserializeLook(reader *stream.StreamReader) {
+	c.Gender = reader.ReadU8()
+	c.SkinColor = reader.ReadU8()
+	c.Face = reader.ReadU32()
+	c.Mega = reader.ReadBool()
+	c.Hair = reader.ReadU32()
+
+	c.BaseLooks = map[int8]uint32{}
+	for parts := int8(reader.ReadU8()); parts != -1; parts = int8(reader.ReadU8()) {
+		c.BaseLooks[parts] = reader.ReadU32()
+	}
+
+	c.Overlays = map[int8]uint32{}
+	for parts := int8(reader.ReadU8()); parts != -1; parts = int8(reader.ReadU8()) {
+		c.Overlays[parts] = reader.ReadU32()
+	}
+
+	c.Weapon = reader.ReadU32()
+	reader.ReadU32()
+}
