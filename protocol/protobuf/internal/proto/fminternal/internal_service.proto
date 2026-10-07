@@ -166,6 +166,9 @@ message Character {
   bool   hidden            = 29;
   uint32 population        = 30;
   uint32 hp_ap_used        = 31;
+  uint32 pet_hp_item       = 32;
+  uint32 pet_mp_item       = 33;
+  uint64 summoned_pet      = 34;
 }
 
 message KeyLayoutBinding {
@@ -379,6 +382,18 @@ message Inventory {
   uint32 inventory_type     = 11;
   optional EquipmentBonusStats equip_bonus_stats = 12;
   uint32 enhance_count      = 13;
+  optional Pet pet          = 14;
+}
+
+message Pet {
+  string name                = 1;
+  uint32 level               = 2;
+  uint32 closeness           = 3;
+  uint32 fullness            = 4;
+  uint32 speed               = 5;
+  uint32 skills              = 6;
+  uint32 seconds_left        = 7;
+  repeated uint32 exceptions = 8;
 }
 
 message Skill {

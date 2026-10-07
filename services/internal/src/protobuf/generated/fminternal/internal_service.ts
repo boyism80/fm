@@ -1054,6 +1054,9 @@ export interface Character {
   hidden: boolean;
   population: number;
   hpApUsed: number;
+  petHpItem: number;
+  petMpItem: number;
+  summonedPet: number;
 }
 
 export interface KeyLayoutBinding {
@@ -1267,6 +1270,18 @@ export interface Inventory {
   inventoryType: number;
   equipBonusStats?: EquipmentBonusStats | undefined;
   enhanceCount: number;
+  pet?: Pet | undefined;
+}
+
+export interface Pet {
+  name: string;
+  level: number;
+  closeness: number;
+  fullness: number;
+  speed: number;
+  skills: number;
+  secondsLeft: number;
+  exceptions: number[];
 }
 
 export interface Skill {
@@ -3150,6 +3165,9 @@ function createBaseCharacter(): Character {
     hidden: false,
     population: 0,
     hpApUsed: 0,
+    petHpItem: 0,
+    petMpItem: 0,
+    summonedPet: 0,
   };
 }
 
@@ -3247,6 +3265,15 @@ export const Character: MessageFns<Character> = {
     }
     if (message.hpApUsed !== 0) {
       writer.uint32(248).uint32(message.hpApUsed);
+    }
+    if (message.petHpItem !== 0) {
+      writer.uint32(256).uint32(message.petHpItem);
+    }
+    if (message.petMpItem !== 0) {
+      writer.uint32(264).uint32(message.petMpItem);
+    }
+    if (message.summonedPet !== 0) {
+      writer.uint32(272).uint64(message.summonedPet);
     }
     return writer;
   },
@@ -3506,6 +3533,30 @@ export const Character: MessageFns<Character> = {
           message.hpApUsed = reader.uint32();
           continue;
         }
+        case 32: {
+          if (tag !== 256) {
+            break;
+          }
+
+          message.petHpItem = reader.uint32();
+          continue;
+        }
+        case 33: {
+          if (tag !== 264) {
+            break;
+          }
+
+          message.petMpItem = reader.uint32();
+          continue;
+        }
+        case 34: {
+          if (tag !== 272) {
+            break;
+          }
+
+          message.summonedPet = longToNumber(reader.uint64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3608,6 +3659,21 @@ export const Character: MessageFns<Character> = {
         : isSet(object.hp_ap_used)
         ? globalThis.Number(object.hp_ap_used)
         : 0,
+      petHpItem: isSet(object.petHpItem)
+        ? globalThis.Number(object.petHpItem)
+        : isSet(object.pet_hp_item)
+        ? globalThis.Number(object.pet_hp_item)
+        : 0,
+      petMpItem: isSet(object.petMpItem)
+        ? globalThis.Number(object.petMpItem)
+        : isSet(object.pet_mp_item)
+        ? globalThis.Number(object.pet_mp_item)
+        : 0,
+      summonedPet: isSet(object.summonedPet)
+        ? globalThis.Number(object.summonedPet)
+        : isSet(object.summoned_pet)
+        ? globalThis.Number(object.summoned_pet)
+        : 0,
     };
   },
 
@@ -3706,6 +3772,15 @@ export const Character: MessageFns<Character> = {
     if (message.hpApUsed !== 0) {
       obj.hpApUsed = Math.round(message.hpApUsed);
     }
+    if (message.petHpItem !== 0) {
+      obj.petHpItem = Math.round(message.petHpItem);
+    }
+    if (message.petMpItem !== 0) {
+      obj.petMpItem = Math.round(message.petMpItem);
+    }
+    if (message.summonedPet !== 0) {
+      obj.summonedPet = Math.round(message.summonedPet);
+    }
     return obj;
   },
 
@@ -3745,6 +3820,9 @@ export const Character: MessageFns<Character> = {
     message.hidden = object.hidden ?? false;
     message.population = object.population ?? 0;
     message.hpApUsed = object.hpApUsed ?? 0;
+    message.petHpItem = object.petHpItem ?? 0;
+    message.petMpItem = object.petMpItem ?? 0;
+    message.summonedPet = object.summonedPet ?? 0;
     return message;
   },
 };
@@ -7170,6 +7248,7 @@ function createBaseInventory(): Inventory {
     inventoryType: 0,
     equipBonusStats: undefined,
     enhanceCount: 0,
+    pet: undefined,
   };
 }
 
@@ -7213,6 +7292,9 @@ export const Inventory: MessageFns<Inventory> = {
     }
     if (message.enhanceCount !== 0) {
       writer.uint32(104).uint32(message.enhanceCount);
+    }
+    if (message.pet !== undefined) {
+      Pet.encode(message.pet, writer.uint32(114).fork()).join();
     }
     return writer;
   },
@@ -7328,6 +7410,14 @@ export const Inventory: MessageFns<Inventory> = {
           message.enhanceCount = reader.uint32();
           continue;
         }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.pet = Pet.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -7392,6 +7482,7 @@ export const Inventory: MessageFns<Inventory> = {
         : isSet(object.enhance_count)
         ? globalThis.Number(object.enhance_count)
         : 0,
+      pet: isSet(object.pet) ? Pet.fromJSON(object.pet) : undefined,
     };
   },
 
@@ -7436,6 +7527,9 @@ export const Inventory: MessageFns<Inventory> = {
     if (message.enhanceCount !== 0) {
       obj.enhanceCount = Math.round(message.enhanceCount);
     }
+    if (message.pet !== undefined) {
+      obj.pet = Pet.toJSON(message.pet);
+    }
     return obj;
   },
 
@@ -7459,6 +7553,197 @@ export const Inventory: MessageFns<Inventory> = {
       ? EquipmentBonusStats.fromPartial(object.equipBonusStats)
       : undefined;
     message.enhanceCount = object.enhanceCount ?? 0;
+    message.pet = (object.pet !== undefined && object.pet !== null) ? Pet.fromPartial(object.pet) : undefined;
+    return message;
+  },
+};
+
+function createBasePet(): Pet {
+  return { name: "", level: 0, closeness: 0, fullness: 0, speed: 0, skills: 0, secondsLeft: 0, exceptions: [] };
+}
+
+export const Pet: MessageFns<Pet> = {
+  encode(message: Pet, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.level !== 0) {
+      writer.uint32(16).uint32(message.level);
+    }
+    if (message.closeness !== 0) {
+      writer.uint32(24).uint32(message.closeness);
+    }
+    if (message.fullness !== 0) {
+      writer.uint32(32).uint32(message.fullness);
+    }
+    if (message.speed !== 0) {
+      writer.uint32(40).uint32(message.speed);
+    }
+    if (message.skills !== 0) {
+      writer.uint32(48).uint32(message.skills);
+    }
+    if (message.secondsLeft !== 0) {
+      writer.uint32(56).uint32(message.secondsLeft);
+    }
+    writer.uint32(66).fork();
+    for (const v of message.exceptions) {
+      writer.uint32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Pet {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePet();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.level = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.closeness = reader.uint32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.fullness = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.speed = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.skills = reader.uint32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.secondsLeft = reader.uint32();
+          continue;
+        }
+        case 8: {
+          if (tag === 64) {
+            message.exceptions.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 66) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.exceptions.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Pet {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+      closeness: isSet(object.closeness) ? globalThis.Number(object.closeness) : 0,
+      fullness: isSet(object.fullness) ? globalThis.Number(object.fullness) : 0,
+      speed: isSet(object.speed) ? globalThis.Number(object.speed) : 0,
+      skills: isSet(object.skills) ? globalThis.Number(object.skills) : 0,
+      secondsLeft: isSet(object.secondsLeft)
+        ? globalThis.Number(object.secondsLeft)
+        : isSet(object.seconds_left)
+        ? globalThis.Number(object.seconds_left)
+        : 0,
+      exceptions: globalThis.Array.isArray(object?.exceptions)
+        ? object.exceptions.map((e: any) => globalThis.Number(e))
+        : [],
+    };
+  },
+
+  toJSON(message: Pet): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
+    if (message.closeness !== 0) {
+      obj.closeness = Math.round(message.closeness);
+    }
+    if (message.fullness !== 0) {
+      obj.fullness = Math.round(message.fullness);
+    }
+    if (message.speed !== 0) {
+      obj.speed = Math.round(message.speed);
+    }
+    if (message.skills !== 0) {
+      obj.skills = Math.round(message.skills);
+    }
+    if (message.secondsLeft !== 0) {
+      obj.secondsLeft = Math.round(message.secondsLeft);
+    }
+    if (message.exceptions?.length) {
+      obj.exceptions = message.exceptions.map((e) => Math.round(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Pet>, I>>(base?: I): Pet {
+    return Pet.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<Pet>, I>>(object: I): Pet {
+    const message = createBasePet();
+    message.name = object.name ?? "";
+    message.level = object.level ?? 0;
+    message.closeness = object.closeness ?? 0;
+    message.fullness = object.fullness ?? 0;
+    message.speed = object.speed ?? 0;
+    message.skills = object.skills ?? 0;
+    message.secondsLeft = object.secondsLeft ?? 0;
+    message.exceptions = object.exceptions?.map((e) => e) || [];
     return message;
   },
 };

@@ -66,6 +66,9 @@ type CharacterInput = {
     skillPoint?: number;
     population?: number;
     hpApUsed?: number;
+    petHpItem?: number;
+    petMpItem?: number;
+    summonedPet?: number;
     hidden?: boolean;
 };
 

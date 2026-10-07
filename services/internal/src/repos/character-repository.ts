@@ -1,11 +1,12 @@
 import { redisCacheKey } from "../redis-cache-key";
+import { toPgInt } from "./pg-int";
 import { ValueRepository } from "./value-repository";
 import type { RepositoryQuery } from "../types/repository-contracts";
 import type { CharacterDeleteModel, CharacterModel, CharacterRow } from "../types/repository-models";
 
 const SELECT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, hidden, deleted, created_at, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, hidden, deleted, created_at, updated_at`;
 
 const ON_CONFLICT_SET = `
   account_id = EXCLUDED.account_id, world_id = EXCLUDED.world_id, name = EXCLUDED.name, gender = EXCLUDED.gender,
@@ -16,14 +17,15 @@ const ON_CONFLICT_SET = `
   ability_point = EXCLUDED.ability_point, exp = EXCLUDED.exp, map_id = EXCLUDED.map_id,
   spawn_point = EXCLUDED.spawn_point, pos_x = EXCLUDED.pos_x, pos_y = EXCLUDED.pos_y,
   stance = EXCLUDED.stance, meso = EXCLUDED.meso, skill_point = EXCLUDED.skill_point, population = EXCLUDED.population,
-  hp_ap_used = EXCLUDED.hp_ap_used, hidden = EXCLUDED.hidden,
+  hp_ap_used = EXCLUDED.hp_ap_used, pet_hp_item = EXCLUDED.pet_hp_item, pet_mp_item = EXCLUDED.pet_mp_item,
+  summoned_pet = EXCLUDED.summoned_pet, hidden = EXCLUDED.hidden,
   deleted = FALSE, updated_at = NOW()`;
 
 const INSERT_COLS = `id, account_id, world_id, name, gender, skin_color, face, hair, level, class_id, role,
   str, dex, int_stat, luk, hp, max_hp, mp, max_mp, ability_point, exp,
-  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, hidden, deleted, updated_at`;
+  map_id, spawn_point, pos_x, pos_y, stance, meso, skill_point, population, hp_ap_used, pet_hp_item, pet_mp_item, summoned_pet, hidden, deleted, updated_at`;
 
-const PER_ROW_PARAMS = 31;
+const PER_ROW_PARAMS = 34;
 
 export type { CharacterModel };
 
@@ -36,7 +38,8 @@ function rowValues(row: CharacterRow) {
         row.max_hp, row.mp, row.max_mp, row.ability_point,
         row.exp, row.map_id, row.spawn_point, row.pos_x,
         row.pos_y, row.stance, row.meso, row.skill_point,
-        row.population, row.hp_ap_used, row.hidden,
+        row.population, row.hp_ap_used, row.pet_hp_item, row.pet_mp_item,
+        row.summoned_pet, row.hidden,
     ];
 }
 
@@ -69,7 +72,7 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
 
     override onUpsert(row: CharacterRow): RepositoryQuery {
         return {
-            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
+            text: `INSERT INTO characters (${INSERT_COLS}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,FALSE,NOW()) ON CONFLICT (id) DO UPDATE SET${ON_CONFLICT_SET} RETURNING ${SELECT_COLS}`,
             values: rowValues(row),
         };
     }
@@ -126,6 +129,9 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             skillPoint: row.skill_point,
             population: row.population,
             hpApUsed: row.hp_ap_used,
+            petHpItem: row.pet_hp_item,
+            petMpItem: row.pet_mp_item,
+            summonedPet: toPgInt(row.summoned_pet),
             hidden: row.hidden,
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
@@ -163,6 +169,9 @@ export class CharacterRepository extends ValueRepository<CharacterModel, Charact
             skill_point: model.skillPoint ?? 0,
             population: model.population ?? 0,
             hp_ap_used: model.hpApUsed ?? 0,
+            pet_hp_item: model.petHpItem ?? 0,
+            pet_mp_item: model.petMpItem ?? 0,
+            summoned_pet: model.summonedPet ?? 0,
             hidden: model.hidden ?? false,
         };
     }

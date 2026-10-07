@@ -1,4 +1,4 @@
-import type { PartyMemberRole, PartyState, GuildMemberRank } from "../protobuf/generated/fminternal/internal_service";
+import type { PartyMemberRole, PartyState, GuildMemberRank, Pet } from "../protobuf/generated/fminternal/internal_service";
 import type { EquipmentBonusStatsJson } from "./equipment-bonus-stats";
 import type { KeyLayoutJsonRecord } from "./key-layout-json";
 import type { GuildLogo as GuildLogoModel, GuildRankTitles as GuildRankTitlesModel } from "./guild-json";
@@ -66,6 +66,9 @@ export interface CharacterModel {
     skillPoint?: number;
     population?: number;
     hpApUsed?: number;
+    petHpItem?: number;
+    petMpItem?: number;
+    summonedPet?: number;
     hidden?: boolean;
     updatedAt?: Date;
 }
@@ -101,6 +104,9 @@ export type CharacterRow = {
     skill_point: number;
     population: number;
     hp_ap_used: number;
+    pet_hp_item: number;
+    pet_mp_item: number;
+    summoned_pet: number | string;
     hidden: boolean;
     deleted?: boolean;
     created_at?: Date | string;
@@ -187,6 +193,7 @@ export interface InventoryModel {
     skillBonus: number | null;
     ownerName: string | null;
     equipBonusStats?: EquipmentBonusStatsJson;
+    pet?: Pet | null;
     updatedAt?: Date;
 }
 
@@ -204,6 +211,7 @@ export type InventoryRow = {
     skill_bonus: number | null;
     owner_name: string | null;
     equip_bonus_stats: string | EquipmentBonusStatsJson;
+    pet: string | Pet | null;
     created_at?: Date | string;
     updated_at?: Date | string;
     deleted?: boolean;

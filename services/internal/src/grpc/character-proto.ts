@@ -39,6 +39,9 @@ createMap(
     forMember((destination: any) => destination.skillPoint, mapFrom((source: CharacterModel) => (source.skillPoint ?? 0) >>> 0)),
     forMember((destination: any) => destination.population, mapFrom((source: CharacterModel) => (source.population ?? 0) >>> 0)),
     forMember((destination: any) => destination.hpApUsed, mapFrom((source: CharacterModel) => (source.hpApUsed ?? 0) >>> 0)),
+    forMember((destination: any) => destination.petHpItem, mapFrom((source: CharacterModel) => (source.petHpItem ?? 0) >>> 0)),
+    forMember((destination: any) => destination.petMpItem, mapFrom((source: CharacterModel) => (source.petMpItem ?? 0) >>> 0)),
+    forMember((destination: any) => destination.summonedPet, mapFrom((source: CharacterModel) => source.summonedPet ?? 0)),
     forMember((destination: any) => destination.accountId, mapFrom((source: CharacterModel) => source.accountId >>> 0)),
     forMember((destination: any) => destination.hidden, mapFrom((source: CharacterModel) => source.hidden ?? false))
 );
@@ -76,6 +79,9 @@ createMap(
     forMember((destination: any) => destination.skillPoint, mapFrom((source: Character) => source.skillPoint >>> 0)),
     forMember((destination: any) => destination.population, mapFrom((source: Character) => source.population >>> 0)),
     forMember((destination: any) => destination.hpApUsed, mapFrom((source: Character) => source.hpApUsed >>> 0)),
+    forMember((destination: any) => destination.petHpItem, mapFrom((source: Character) => source.petHpItem >>> 0)),
+    forMember((destination: any) => destination.petMpItem, mapFrom((source: Character) => source.petMpItem >>> 0)),
+    forMember((destination: any) => destination.summonedPet, mapFrom((source: Character) => source.summonedPet)),
     forMember((destination: any) => destination.accountId, mapFrom((source: Character) => source.accountId >>> 0)),
     forMember((destination: any) => destination.hidden, mapFrom((source: Character) => source.hidden))
 );

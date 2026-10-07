@@ -5,12 +5,12 @@ import type { RepositoryQuery } from "../types/repository-contracts";
 import type { InventoryModel, InventoryRow } from "../types/repository-models";
 
 const SELECT_COLS = `unique_id, owner_id, inventory_type, item_id, slot, count, expiration,
-  enhance_chance, enhance_count, flag, skill_bonus, owner_name, equip_bonus_stats, created_at, updated_at`;
+  enhance_chance, enhance_count, flag, skill_bonus, owner_name, equip_bonus_stats, pet, created_at, updated_at`;
 
 const INSERT_COLS = `unique_id, owner_id, inventory_type, item_id, slot, count, expiration,
-  enhance_chance, enhance_count, flag, skill_bonus, owner_name, equip_bonus_stats, updated_at`;
+  enhance_chance, enhance_count, flag, skill_bonus, owner_name, equip_bonus_stats, pet, updated_at`;
 
-const PER_ROW_PARAMS = 13;
+const PER_ROW_PARAMS = 14;
 
 export type { InventoryModel };
 
@@ -33,6 +33,7 @@ function rowValues(row: InventoryRow) {
         row.skill_bonus,
         row.owner_name,
         row.equip_bonus_stats,
+        row.pet === null ? null : JSON.stringify(row.pet),
     ];
 }
 
@@ -118,6 +119,7 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
             skillBonus: row.skill_bonus,
             ownerName: row.owner_name ?? null,
             equipBonusStats: typeof row.equip_bonus_stats === "string" ? JSON.parse(row.equip_bonus_stats) : (row.equip_bonus_stats ?? {}),
+            pet: typeof row.pet === "string" ? JSON.parse(row.pet) : (row.pet ?? null),
             updatedAt: row.updated_at instanceof Date ? row.updated_at : row.updated_at ? new Date(row.updated_at) : undefined,
         };
     }
@@ -141,6 +143,7 @@ export class InventoryRepository extends HashRepository<InventoryModel, Inventor
             skill_bonus: model.skillBonus ?? null,
             owner_name: model.ownerName ?? null,
             equip_bonus_stats: model.equipBonusStats ?? {},
+            pet: model.pet ?? null,
         };
     }
 
