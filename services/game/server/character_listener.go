@@ -859,6 +859,24 @@ func (l *CharacterListenerImpl) AddCashAsync(ctx actor.Context, ch *entity.Chara
 	)
 }
 
+func (l *CharacterListenerImpl) CreateCashCouponsAsync(ctx actor.Context, ch *entity.Character, kind internal.CashCouponKind, value uint32, count uint32) *async.Promise {
+	req := &internal.CreateCashCouponsRequest{
+		WorldId: l.gs.config.WorldId,
+		Kind:    kind,
+		Value:   value,
+		Count:   count,
+	}
+	return async.ThenRPC(
+		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.CreateCashCouponsReply, error) {
+			return l.gs.internalClient.CreateCashCoupons(c, req)
+		},
+		func(reply *internal.CreateCashCouponsReply) error {
+			return nil
+		},
+	)
+}
+
 func (l *CharacterListenerImpl) ClaimParcelAsync(ctx actor.Context, ch *entity.Character, parcelID uint32) *async.Promise {
 	req := &internal.ClaimParcelRequest{
 		WorldId:     l.gs.config.WorldId,

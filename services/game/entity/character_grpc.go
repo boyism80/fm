@@ -80,6 +80,11 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Doors = NewDoorContainer(ch)
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = p.GetMeso()
+	for i, limit := range p.GetSlotLimits() {
+		if tab := ch.Inventory.Tabs[constant.InventoryType(i+1)]; tab != nil {
+			tab.SlotLimit = uint8(limit)
+		}
+	}
 	ch.Duey = &Duey{owner: ch}
 	ch.GuildInvites = make(map[uint32]time.Time)
 	ch.savedLocations = make(map[string]uint32)
@@ -344,6 +349,10 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		return nil
 	}
 	baseLooks, overlays := equipmentLooksForPersist(ch)
+	slotLimits := make([]uint32, 0, constant.InventoryTypeCash)
+	for typ := constant.InventoryTypeEquipment; typ <= constant.InventoryTypeCash; typ++ {
+		slotLimits = append(slotLimits, uint32(ch.Inventory.Tabs[typ].SlotLimit))
+	}
 	pb := &internal.Character{
 		CharacterId:  ch.GetID(),
 		AccountId:    ch.AccountID,
@@ -379,6 +388,7 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		PetHpItem:    ch.PetHPItem,
 		PetMpItem:    ch.PetMPItem,
 		SummonedPet:  ch.summonedPet,
+		SlotLimits:   slotLimits,
 	}
 	return &internal.CharacterSaveEntry{
 		Character:      pb,

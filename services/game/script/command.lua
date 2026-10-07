@@ -903,6 +903,27 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["쿠폰생성"] = {
+		privilege = ROLE.Admin,
+		usage = "<캐시|포인트|아이템|메소> <값> [개수] - 캐시샵 쿠폰 생성 (아이템은 커머디티 SN)",
+		command = function(me, args)
+			local kinds = {
+				["캐시"] = 0,
+				["포인트"] = 1,
+				["아이템"] = 2,
+				["메소"] = 3,
+			}
+			local kind = kinds[args[1] or ""]
+			local value = tonumber(args[2])
+			local count = tonumber(args[3] or "1")
+			if not kind or not value or not count or value < 1 or count < 1 or count > 100 then
+				me:message("사용법: /쿠폰생성 <캐시|포인트|아이템|메소> <값> [개수(1~100)]")
+				return true
+			end
+			me:create_cash_coupons(kind, value, count)
+			return true
+		end,
+	},
 	["풀메소"] = {
 		privilege = ROLE.Admin,
 		usage = "- 메소 최대치로 설정",

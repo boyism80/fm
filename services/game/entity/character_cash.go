@@ -77,3 +77,14 @@ func (ch *Character) AddCash(actx actor.Context, nxCash int32, maplePoint int32)
 		log.Printf("Character.AddCash character=%d: %v", ch.GetID(), err)
 	})
 }
+
+func (ch *Character) CreateCashCoupons(actx actor.Context, kind internal.CashCouponKind, value uint32, count uint32) {
+	ch.Listener.CreateCashCouponsAsync(actx, ch, kind, value, count).Then(func(v interface{}) (interface{}, error) {
+		for _, code := range v.(*internal.CreateCashCouponsReply).GetCodes() {
+			ch.Message(fmt.Sprintf("쿠폰: %s", code))
+		}
+		return nil, nil
+	}).OnError(func(err error) {
+		log.Printf("Character.CreateCashCoupons character=%d: %v", ch.GetID(), err)
+	})
+}

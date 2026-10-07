@@ -450,7 +450,7 @@ func NewResources(wzPath string) *Resources {
 		log.Printf("Failed to load NpcShop.img.xml: %v", err)
 	}
 
-	commodities, err := loadCommodities(filepath.Join(wzPath, "Etc.wz", "Commodity.img.xml"))
+	commodities, err := loadCommodities(filepath.Join(wzPath, "Etc.wz", "Commodity.img.xml"), filepath.Join(wzPath, "Etc.wz", "CashPackage.img.xml"))
 	if err != nil {
 		log.Printf("Failed to load Commodity.img.xml: %v", err)
 		commodities = map[uint32]*Commodity{}

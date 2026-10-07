@@ -379,6 +379,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 
 		parcelDisp := mq.NewDispatcher()
 		mq.Bind[*GameServer, parcelMqArrived](gs, parcelDisp)
+		mq.Bind[*GameServer, cashGiftMqArrived](gs, parcelDisp)
 
 		parcelRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),

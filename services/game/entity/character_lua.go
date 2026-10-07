@@ -7,6 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
 	pconst "github.com/boyism80/fm/protocol/constant"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/wz"
@@ -1822,6 +1823,24 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				return 0
 			}
 			ch.AddCash(cfg.ActorContext, nxCash, maplePoint)
+			return 0
+		},
+		"create_cash_coupons": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			kind := internal.CashCouponKind(L.CheckInt(2))
+			value := uint32(L.CheckInt(3))
+			count := uint32(L.OptInt(4, 1))
+			cfg, ok := luax.GetConfiguration(L)
+			if ok == false || cfg.ActorContext == nil {
+				L.ArgError(1, "actor context not available")
+				return 0
+			}
+			ch.CreateCashCoupons(cfg.ActorContext, kind, value, count)
 			return 0
 		},
 		"show_instruction": func(L *lua.LState) int {
