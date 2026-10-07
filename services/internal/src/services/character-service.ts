@@ -26,6 +26,8 @@ import { QuestRepository } from "../repos/quest-repository";
 import type { QuestModel } from "../repos/quest-repository";
 import { SavedLocationRepository } from "../repos/saved-location-repository";
 import type { SavedLocationModel } from "../repos/saved-location-repository";
+import { MonsterBookRepository } from "../repos/monster-book-repository";
+import type { MonsterBookCardModel } from "../repos/monster-book-repository";
 import { CharacterBuddyRepository } from "../repos/character-buddy-repository";
 import { CharacterRealtimeStateRepository } from "../repos/character-realtime-state-repository";
 import { SessionRepository } from "../repos/session-repository";
@@ -70,6 +72,7 @@ type CharacterInput = {
     petMpItem?: number;
     summonedPet?: number;
     slotLimits?: number[];
+    monsterBookCover?: number;
     hidden?: boolean;
 };
 
@@ -84,6 +87,7 @@ export type SaveCharacterEntry = {
     buffs?: BuffModel[];
     quests?: QuestModel[];
     savedLocations?: SavedLocationModel[];
+    monsterBook?: MonsterBookCardModel[];
     keyLayout?: KeyLayoutBindingModel[];
     storage?: { storage: StorageModel; items: InventoryModel[] };
 };
@@ -98,6 +102,7 @@ export class CharacterService {
     private readonly buffRepo: BuffRepository;
     private readonly questRepo: QuestRepository;
     private readonly savedLocationRepo: SavedLocationRepository;
+    private readonly monsterBookRepo: MonsterBookRepository;
     private readonly keyLayoutRepo: KeyLayoutRepository;
     private readonly storageRepo: StorageRepository;
     private readonly storageItemRepo: StorageItemRepository;
@@ -120,6 +125,7 @@ export class CharacterService {
         buffRepository: BuffRepository,
         questRepository: QuestRepository,
         savedLocationRepository: SavedLocationRepository,
+        monsterBookRepository: MonsterBookRepository,
         keyLayoutRepository: KeyLayoutRepository,
         storageRepository: StorageRepository,
         storageItemRepository: StorageItemRepository,
@@ -141,6 +147,7 @@ export class CharacterService {
         this.buffRepo = buffRepository;
         this.questRepo = questRepository;
         this.savedLocationRepo = savedLocationRepository;
+        this.monsterBookRepo = monsterBookRepository;
         this.keyLayoutRepo = keyLayoutRepository;
         this.storageRepo = storageRepository;
         this.storageItemRepo = storageItemRepository;
@@ -230,7 +237,7 @@ export class CharacterService {
         }
 
         const byWorld = new Map<number, SaveCharacterEntry[]>();
-        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage } of entries) {
+        for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, monsterBook, keyLayout, storage } of entries) {
             this.assertWorld(character.worldId);
             this.assertCharacterId(character.characterId);
             this.assertAccountId(character.accountId);
@@ -242,7 +249,7 @@ export class CharacterService {
             if (!byWorld.has(wid)) {
                 byWorld.set(wid, []);
             }
-            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage });
+            byWorld.get(wid)?.push({ character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, monsterBook, keyLayout, storage });
         }
 
         for (const [worldId, group] of byWorld) {
@@ -255,7 +262,7 @@ export class CharacterService {
             const models = group.map(({ character }) => character);
             await this.repo.setAll(worldId, models);
 
-            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, keyLayout, storage } of group) {
+            for (const { character, baseLooks, overlays, inventory, skills, buffs, quests, savedLocations, monsterBook, keyLayout, storage } of group) {
                 if (!character.accountId) {
                     continue;
                 }
@@ -295,6 +302,9 @@ export class CharacterService {
                 }
                 if (savedLocations !== undefined) {
                     await this.savedLocationRepo.replaceBySnapshot(character.worldId, String(character.characterId), savedLocations.map((m) => ({ ...m, characterId: character.characterId })));
+                }
+                if (monsterBook !== undefined) {
+                    await this.monsterBookRepo.replaceBySnapshot(character.worldId, String(character.characterId), monsterBook.map((m) => ({ ...m, characterId: character.characterId })));
                 }
                 if (keyLayout !== undefined) {
                     await this.keyLayoutRepo.set(character.worldId, {
@@ -497,6 +507,7 @@ export class CharacterService {
         await this.buffRepo.replaceBySnapshot(worldId, String(characterId), []);
         await this.questRepo.replaceBySnapshot(worldId, String(characterId), []);
         await this.savedLocationRepo.replaceBySnapshot(worldId, String(characterId), []);
+        await this.monsterBookRepo.replaceBySnapshot(worldId, String(characterId), []);
         await this.buddyRepo.deleteAllForOwner(worldId, characterId);
         await this.buddyRepo.deleteAllReferencingBuddy(worldId, characterId);
         await this.realtimeStateRepo.delete({ worldId, characterId });

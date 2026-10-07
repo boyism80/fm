@@ -35,4 +35,9 @@ func (p *ShowEffect) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *ShowEffect) Deserialize(reader *stream.StreamReader) {
+	p.CharacterID = reader.ReadU32()
+	p.Type = EffectType(reader.ReadU8())
+	if p.Type == EffectTypePet {
+		p.PetEffect = reader.ReadU8()
+	}
 }

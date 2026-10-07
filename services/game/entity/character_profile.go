@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/boyism80/fm/protocol/response"
 	"github.com/boyism80/fm/services/game/constant"
+	"github.com/boyism80/fm/services/game/wz"
 )
 
 func (ch *Character) Inspect(targetID uint32) {
@@ -63,6 +64,10 @@ func (ch *Character) Inspect(targetID uint32) {
 			Fatigue: buffData.MountFatigue,
 		}
 	}
-	// TODO: send monster book level, card counts and cover mob once the monster book is loaded (#254)
+	profile.BookLevel = target.MonsterBook.Level()
+	profile.BookNormalCards, profile.BookSpecialCards = target.MonsterBook.Count()
+	if card, ok := target.itemModel(target.MonsterBook.Cover).(*wz.Consume); ok {
+		profile.BookCoverMobID = card.MobID
+	}
 	ch.Listener.OnInspect(ch, profile)
 }

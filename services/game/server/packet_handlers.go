@@ -81,4 +81,5 @@ func (gs *GameServer) registerPacketHandlers() {
 	core.Bind[*GameServer, RingAction](gs)
 	core.Bind[*GameServer, WeddingPresent](gs)
 	core.Bind[*GameServer, InspectCharacter](gs)
+	core.Bind[*GameServer, MonsterBookCover](gs)
 }

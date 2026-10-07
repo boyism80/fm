@@ -47,6 +47,7 @@ type Character struct {
 	RegRocks         []uint32
 	Rocks            []uint32
 	MonsterBookCover uint32
+	MonsterBookCards map[uint32]uint32
 	RecordExByQuest  map[uint16]string
 	Marriage         *Marriage
 	Random1          *stream.RandomStream

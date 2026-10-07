@@ -102,6 +102,11 @@ export function makeSaveCharacterEntry(entry: CharacterSaveEntry): SaveCharacter
                 SAVED_LOCATION_MODEL
             )
         ),
+        monsterBook: (entry.monsterBook ?? []).map((card) => ({
+            characterId: entry.character?.characterId ?? 0,
+            cardId: card.cardId,
+            count: card.count,
+        })),
         keyLayout: bindingsFromProtoList(entry.keyLayout),
         storage: entry.storage
             ? {

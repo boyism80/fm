@@ -223,6 +223,8 @@ func loadConsumes(path string) (*[]*Consume, error) {
 				case "masterLevel":
 				case "mob":
 					model.MobID = uint32(intField.Value)
+				case "monsterBook":
+					model.MonsterBook = intField.Value != 0
 				case "create":
 					model.CreateID = uint32(intField.Value)
 				case "mobHP":
@@ -309,6 +311,20 @@ func loadConsumes(path string) (*[]*Consume, error) {
 			}
 			if model.ID/10000 == constant.ItemCategoryPetFood {
 				model.PetFood = specNode.petFood()
+			}
+			if conNode := specNode.find("con"); conNode != nil {
+				for _, child := range conNode.Children {
+					r := MapRange{End: 999999999}
+					for _, intField := range child.Ints {
+						switch intField.Name {
+						case "sMap":
+							r.Start = uint32(intField.Value)
+						case "eMap":
+							r.End = uint32(intField.Value)
+						}
+					}
+					model.AvailableMaps = append(model.AvailableMaps, r)
+				}
 			}
 			if nuffNode := specNode.find("nuffSkill"); nuffNode != nil {
 				for _, child := range nuffNode.Children {

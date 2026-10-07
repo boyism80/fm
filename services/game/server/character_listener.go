@@ -1045,6 +1045,18 @@ func (l *CharacterListenerImpl) OnInspect(ch *entity.Character, profile *respons
 	ch.Send(profile, types.SEND_POLICY_ENCRYPT)
 }
 
+func (l *CharacterListenerImpl) OnMonsterBookCardRegistered(ch *entity.Character, cardID uint32, count uint32) {
+	ch.Send(&response.MonsterBookSetCard{Success: true, CardID: cardID, Count: count}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnMonsterBookCardFull(ch *entity.Character) {
+	ch.Send(&response.MonsterBookSetCard{}, types.SEND_POLICY_ENCRYPT)
+}
+
+func (l *CharacterListenerImpl) OnMonsterBookCover(ch *entity.Character, cardID uint32) {
+	ch.Send(&response.MonsterBookSetCover{CardID: cardID}, types.SEND_POLICY_ENCRYPT)
+}
+
 func (l *CharacterListenerImpl) OnScriptError(ch *entity.Character, script string, err error) {
 	if ch.GetRole() != constant.RoleAdmin {
 		return

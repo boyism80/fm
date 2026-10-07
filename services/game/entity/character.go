@@ -50,8 +50,7 @@ type Character struct {
 	weddingGift       weddingGiftWindow
 	regRocks          []uint32
 	rocks             []uint32
-	monsterBookCover  uint32
-	monsterBook       *MonsterBook
+	MonsterBook       *MonsterBook
 	Dialog            *Dialog
 	hidden            bool
 	Listener          CharacterListener

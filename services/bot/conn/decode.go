@@ -148,6 +148,10 @@ var decoders = func() []decoder {
 		newDecoder[response.WeddingEffect](nil),
 		newDecoder[response.CharacterProfile](nil),
 		newDecoder[response.UpdateCharacterLook](nil),
+		newDecoder[response.MonsterBookSetCard](nil),
+		newDecoder[response.MonsterBookSetCover](nil),
+		newDecoder[response.ShowSelfEffect](nil),
+		newDecoder[response.ShowEffect](nil),
 	}
 }()
 

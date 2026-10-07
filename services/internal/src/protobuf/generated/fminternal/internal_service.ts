@@ -1750,6 +1750,12 @@ export interface Character {
   petMpItem: number;
   summonedPet: number;
   slotLimits: number[];
+  monsterBookCover: number;
+}
+
+export interface MonsterBookCard {
+  cardId: number;
+  count: number;
 }
 
 export interface KeyLayoutBinding {
@@ -1775,6 +1781,7 @@ export interface EnterGameReply {
   marriage?: Marriage | undefined;
   cashWishlist: number[];
   rings: CashRing[];
+  monsterBook: MonsterBookCard[];
 }
 
 export interface Debuff {
@@ -1832,6 +1839,7 @@ export interface CharacterSaveEntry {
   quests: Quest[];
   savedLocations: SavedLocation[];
   storage: Storage | undefined;
+  monsterBook: MonsterBookCard[];
 }
 
 export interface CharacterSaveEntry_BaseLooksEntry {
@@ -10168,6 +10176,7 @@ function createBaseCharacter(): Character {
     petMpItem: 0,
     summonedPet: 0,
     slotLimits: [],
+    monsterBookCover: 0,
   };
 }
 
@@ -10280,6 +10289,9 @@ export const Character: MessageFns<Character> = {
       writer.uint32(v);
     }
     writer.join();
+    if (message.monsterBookCover !== 0) {
+      writer.uint32(288).uint32(message.monsterBookCover);
+    }
     return writer;
   },
 
@@ -10580,6 +10592,14 @@ export const Character: MessageFns<Character> = {
 
           break;
         }
+        case 36: {
+          if (tag !== 288) {
+            break;
+          }
+
+          message.monsterBookCover = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -10702,6 +10722,11 @@ export const Character: MessageFns<Character> = {
         : globalThis.Array.isArray(object?.slot_limits)
         ? object.slot_limits.map((e: any) => globalThis.Number(e))
         : [],
+      monsterBookCover: isSet(object.monsterBookCover)
+        ? globalThis.Number(object.monsterBookCover)
+        : isSet(object.monster_book_cover)
+        ? globalThis.Number(object.monster_book_cover)
+        : 0,
     };
   },
 
@@ -10812,6 +10837,9 @@ export const Character: MessageFns<Character> = {
     if (message.slotLimits?.length) {
       obj.slotLimits = message.slotLimits.map((e) => Math.round(e));
     }
+    if (message.monsterBookCover !== 0) {
+      obj.monsterBookCover = Math.round(message.monsterBookCover);
+    }
     return obj;
   },
 
@@ -10855,6 +10883,87 @@ export const Character: MessageFns<Character> = {
     message.petMpItem = object.petMpItem ?? 0;
     message.summonedPet = object.summonedPet ?? 0;
     message.slotLimits = object.slotLimits?.map((e) => e) || [];
+    message.monsterBookCover = object.monsterBookCover ?? 0;
+    return message;
+  },
+};
+
+function createBaseMonsterBookCard(): MonsterBookCard {
+  return { cardId: 0, count: 0 };
+}
+
+export const MonsterBookCard: MessageFns<MonsterBookCard> = {
+  encode(message: MonsterBookCard, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.cardId !== 0) {
+      writer.uint32(8).uint32(message.cardId);
+    }
+    if (message.count !== 0) {
+      writer.uint32(16).uint32(message.count);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MonsterBookCard {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMonsterBookCard();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.cardId = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.count = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MonsterBookCard {
+    return {
+      cardId: isSet(object.cardId)
+        ? globalThis.Number(object.cardId)
+        : isSet(object.card_id)
+        ? globalThis.Number(object.card_id)
+        : 0,
+      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
+    };
+  },
+
+  toJSON(message: MonsterBookCard): unknown {
+    const obj: any = {};
+    if (message.cardId !== 0) {
+      obj.cardId = Math.round(message.cardId);
+    }
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MonsterBookCard>, I>>(base?: I): MonsterBookCard {
+    return MonsterBookCard.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<MonsterBookCard>, I>>(object: I): MonsterBookCard {
+    const message = createBaseMonsterBookCard();
+    message.cardId = object.cardId ?? 0;
+    message.count = object.count ?? 0;
     return message;
   },
 };
@@ -10969,6 +11078,7 @@ function createBaseEnterGameReply(): EnterGameReply {
     marriage: undefined,
     cashWishlist: [],
     rings: [],
+    monsterBook: [],
   };
 }
 
@@ -11023,6 +11133,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     writer.join();
     for (const v of message.rings) {
       CashRing.encode(v!, writer.uint32(130).fork()).join();
+    }
+    for (const v of message.monsterBook) {
+      MonsterBookCard.encode(v!, writer.uint32(138).fork()).join();
     }
     return writer;
   },
@@ -11172,6 +11285,14 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
           message.rings.push(CashRing.decode(reader, reader.uint32()));
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.monsterBook.push(MonsterBookCard.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -11231,6 +11352,11 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       rings: globalThis.Array.isArray(object?.rings)
         ? object.rings.map((e: any) => CashRing.fromJSON(e))
         : [],
+      monsterBook: globalThis.Array.isArray(object?.monsterBook)
+        ? object.monsterBook.map((e: any) => MonsterBookCard.fromJSON(e))
+        : globalThis.Array.isArray(object?.monster_book)
+        ? object.monster_book.map((e: any) => MonsterBookCard.fromJSON(e))
+        : [],
     };
   },
 
@@ -11284,6 +11410,9 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
     if (message.rings?.length) {
       obj.rings = message.rings.map((e) => CashRing.toJSON(e));
     }
+    if (message.monsterBook?.length) {
+      obj.monsterBook = message.monsterBook.map((e) => MonsterBookCard.toJSON(e));
+    }
     return obj;
   },
 
@@ -11312,6 +11441,7 @@ export const EnterGameReply: MessageFns<EnterGameReply> = {
       : undefined;
     message.cashWishlist = object.cashWishlist?.map((e) => e) || [];
     message.rings = object.rings?.map((e) => CashRing.fromPartial(e)) || [];
+    message.monsterBook = object.monsterBook?.map((e) => MonsterBookCard.fromPartial(e)) || [];
     return message;
   },
 };
@@ -12120,6 +12250,7 @@ function createBaseCharacterSaveEntry(): CharacterSaveEntry {
     quests: [],
     savedLocations: [],
     storage: undefined,
+    monsterBook: [],
   };
 }
 
@@ -12154,6 +12285,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     }
     if (message.storage !== undefined) {
       Storage.encode(message.storage, writer.uint32(82).fork()).join();
+    }
+    for (const v of message.monsterBook) {
+      MonsterBookCard.encode(v!, writer.uint32(90).fork()).join();
     }
     return writer;
   },
@@ -12251,6 +12385,14 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
           message.storage = Storage.decode(reader, reader.uint32());
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.monsterBook.push(MonsterBookCard.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -12308,6 +12450,11 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
         ? object.saved_locations.map((e: any) => SavedLocation.fromJSON(e))
         : [],
       storage: isSet(object.storage) ? Storage.fromJSON(object.storage) : undefined,
+      monsterBook: globalThis.Array.isArray(object?.monsterBook)
+        ? object.monsterBook.map((e: any) => MonsterBookCard.fromJSON(e))
+        : globalThis.Array.isArray(object?.monster_book)
+        ? object.monster_book.map((e: any) => MonsterBookCard.fromJSON(e))
+        : [],
     };
   },
 
@@ -12355,6 +12502,9 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     if (message.storage !== undefined) {
       obj.storage = Storage.toJSON(message.storage);
     }
+    if (message.monsterBook?.length) {
+      obj.monsterBook = message.monsterBook.map((e) => MonsterBookCard.toJSON(e));
+    }
     return obj;
   },
 
@@ -12393,6 +12543,7 @@ export const CharacterSaveEntry: MessageFns<CharacterSaveEntry> = {
     message.storage = (object.storage !== undefined && object.storage !== null)
       ? Storage.fromPartial(object.storage)
       : undefined;
+    message.monsterBook = object.monsterBook?.map((e) => MonsterBookCard.fromPartial(e)) || [];
     return message;
   },
 };

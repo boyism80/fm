@@ -575,6 +575,48 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["몬스터북카드"] = {
+		privilege = ROLE.Admin,
+		usage = "<카드ID> [횟수] - 몬스터북에 카드 등록",
+		command = function(me, args)
+			local card_id = tonumber(args[1])
+			local count = tonumber(args[2] or "1")
+			if card_id == nil or count == nil or count < 1 then
+				me:message("사용법: /몬스터북카드 <카드ID> [횟수]")
+				return true
+			end
+			if me:register_card(card_id, count) == false then
+				me:message("몬스터 카드가 아닙니다: " .. card_id)
+			end
+			return true
+		end,
+	},
+	["몬스터북초기화"] = {
+		privilege = ROLE.Admin,
+		usage = "- 몬스터북 카드와 표지 초기화 (재접속 후 반영)",
+		command = function(me, args)
+			me:reset_monster_book()
+			me:message("몬스터북 초기화 완료")
+			return true
+		end,
+	},
+	["아이템드롭"] = {
+		privilege = ROLE.Admin,
+		usage = "<아이템ID> [개수] - 내 위치에 아이템 떨어뜨리기",
+		command = function(me, args)
+			local item_id = tonumber(args[1])
+			local count = tonumber(args[2] or "1")
+			if item_id == nil or count == nil or count < 1 then
+				me:message("사용법: /아이템드롭 <아이템ID> [개수]")
+				return true
+			end
+			local x, y = me:position()
+			if me:map():spawn_item(item_id, count, { x, y }, me) == nil then
+				me:message("아이템을 떨어뜨릴 수 없습니다: " .. item_id)
+			end
+			return true
+		end,
+	},
 	["봇초기화"] = {
 		privilege = ROLE.Admin,
 		usage = "<레벨> <직업코드> <메소> [아이템ID:개수,...|-] [퀘스트ID:상태,...|-] [퀘스트ID=기록,...] - 인벤토리·퀘스트를 비우고 상태 설정",

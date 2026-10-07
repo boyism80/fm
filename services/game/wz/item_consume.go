@@ -46,8 +46,27 @@ type Consume struct {
 	MobID           uint32
 	MobHP           int32
 	CreateID        uint32
+	MonsterBook     bool
 
-	CureDebuffs []constant.DebuffFlag
+	CureDebuffs   []constant.DebuffFlag
+	AvailableMaps []MapRange
+}
+
+type MapRange struct {
+	Start uint32
+	End   uint32
+}
+
+func (c *Consume) IsAvailableAt(mapID uint32) bool {
+	if len(c.AvailableMaps) == 0 {
+		return true
+	}
+	for _, r := range c.AvailableMaps {
+		if mapID >= r.Start && mapID <= r.End {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Consume) IsShuriken() bool {

@@ -41,6 +41,10 @@ func (ch *Character) UseConsume(consume *Consume) bool {
 		return false
 	}
 
+	if wzConsume.MonsterBook {
+		ch.RegisterCard(wzConsume.ID)
+	}
+
 	if applyWZ {
 		if wzConsume.CP > 0 || wzConsume.NuffSkillID > 0 {
 			ch.useCarnivalItem(wzConsume)
@@ -178,6 +182,9 @@ func (ch *Character) addItemBuff(consumeItem *wz.Consume) bool {
 	}
 	buffValues := consumeItem.BuffSpecValues()
 	if len(buffValues) == 0 {
+		return false
+	}
+	if m := ch.GetMap(); m != nil && consumeItem.IsAvailableAt(m.TemplateID()) == false {
 		return false
 	}
 	ch.Buffs.AddItemBuff(consumeItem, consumeItem.BuffDuration, buffValues, true, true)

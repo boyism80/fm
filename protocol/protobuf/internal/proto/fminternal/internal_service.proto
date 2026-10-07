@@ -616,6 +616,12 @@ message Character {
   uint32 pet_mp_item = 33;
   uint64 summoned_pet = 34;
   repeated uint32 slot_limits = 35;
+  uint32 monster_book_cover = 36;
+}
+
+message MonsterBookCard {
+  uint32 card_id = 1;
+  uint32 count = 2;
 }
 
 message KeyLayoutBinding {
@@ -641,6 +647,7 @@ message EnterGameReply {
   optional Marriage marriage = 14;
   repeated uint32 cash_wishlist = 15;
   repeated CashRing rings = 16;
+  repeated MonsterBookCard monster_book = 17;
 }
 
 message Debuff {
@@ -698,6 +705,7 @@ message CharacterSaveEntry {
   repeated Quest quests = 8;
   repeated SavedLocation saved_locations = 9;
   Storage storage = 10;
+  repeated MonsterBookCard monster_book = 11;
 }
 
 message Storage {

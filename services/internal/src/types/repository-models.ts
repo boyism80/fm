@@ -70,6 +70,7 @@ export interface CharacterModel {
     petMpItem?: number;
     summonedPet?: number;
     slotLimits?: number[];
+    monsterBookCover?: number;
     hidden?: boolean;
     updatedAt?: Date;
 }
@@ -109,6 +110,7 @@ export type CharacterRow = {
     pet_mp_item: number;
     summoned_pet: number | string;
     slot_limits: number[] | null;
+    monster_book_cover: number;
     hidden: boolean;
     deleted?: boolean;
     created_at?: Date | string;
@@ -544,6 +546,20 @@ export type SavedLocationRow = {
     character_id: number;
     location_key: string;
     map_id: number;
+    updated_at?: Date | string;
+    deleted?: boolean;
+};
+
+export interface MonsterBookCardModel {
+    characterId: number;
+    cardId: number;
+    count: number;
+}
+
+export type MonsterBookCardRow = {
+    character_id: number;
+    card_id: number;
+    count: number;
     updated_at?: Date | string;
     deleted?: boolean;
 };

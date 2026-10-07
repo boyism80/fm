@@ -231,7 +231,17 @@ func (p *CharacterInfo) serializeRocks(writer *stream.StreamWriter) {
 func (p *CharacterInfo) serializeMonsterBook(writer *stream.StreamWriter) {
 	writer.WriteU32(p.Character.MonsterBookCover)
 	writer.WriteU8(0)
-	writer.WriteU16(0)
+
+	cards := make([]uint32, 0, len(p.Character.MonsterBookCards))
+	for cardID := range p.Character.MonsterBookCards {
+		cards = append(cards, cardID)
+	}
+	sort.Slice(cards, func(i, j int) bool { return cards[i] < cards[j] })
+	writer.WriteU16(uint16(len(cards)))
+	for _, cardID := range cards {
+		writer.WriteU16(uint16(cardID - constant.MonsterBookCardFirst))
+		writer.WriteU8(uint8(p.Character.MonsterBookCards[cardID]))
+	}
 }
 
 func (p *CharacterInfo) serializeRecordEx(writer *stream.StreamWriter) {

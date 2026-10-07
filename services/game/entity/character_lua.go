@@ -2720,6 +2720,35 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LNumber(ch.Inventory.ClearInventory()))
 			return 1
 		},
+		"register_card": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			cardID := uint32(L.CheckInt(2))
+			card, ok := ch.itemModel(cardID).(*wz.Consume)
+			if ok == false || card.MonsterBook == false {
+				L.Push(lua.LFalse)
+				return 1
+			}
+			for range L.OptInt(3, 1) {
+				ch.RegisterCard(cardID)
+			}
+			L.Push(lua.LTrue)
+			return 1
+		},
+		"reset_monster_book": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if !ok {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			ch.ResetMonsterBook()
+			return 0
+		},
 		"guild": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

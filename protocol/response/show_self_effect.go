@@ -22,4 +22,8 @@ func (p *ShowSelfEffect) Serialize(writer *stream.StreamWriter) error {
 }
 
 func (p *ShowSelfEffect) Deserialize(reader *stream.StreamReader) {
+	p.Type = EffectType(reader.ReadU8())
+	if p.Type == EffectTypePet {
+		p.PetEffect = reader.ReadU8()
+	}
 }

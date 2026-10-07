@@ -491,6 +491,21 @@ func NewResources(wzPath string) *Resources {
 		log.Fatal(err)
 		return nil
 	}
+	for _, item := range items {
+		card, ok := item.(*Consume)
+		if ok == false || card.MonsterBook == false {
+			continue
+		}
+		mob := mobs[card.MobID]
+		if mob == nil {
+			continue
+		}
+		prob := float32(0.001)
+		if mob.Boss {
+			prob = 0.025
+		}
+		mobDrops[card.MobID] = append(mobDrops[card.MobID], Drop{Item: card.ID, Prob: prob})
+	}
 
 	err = loadResourceFiles(filepath.Join(wzPath, "Item.wz", "Cash"),
 		workerCount,

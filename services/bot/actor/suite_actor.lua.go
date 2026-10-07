@@ -51,6 +51,7 @@ var requests = []outbound{
 	&request.RingAction{},
 	&request.WeddingPresent{},
 	&request.InspectCharacter{},
+	&request.MonsterBookCover{},
 	&request.MoveItem{},
 }
 
