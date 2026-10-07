@@ -841,6 +841,24 @@ func (l *CharacterListenerImpl) SendParcelAsync(ctx actor.Context, ch *entity.Ch
 	)
 }
 
+func (l *CharacterListenerImpl) AddCashAsync(ctx actor.Context, ch *entity.Character, nxCash int32, maplePoint int32) *async.Promise {
+	req := &internal.AddCashRequest{
+		WorldId:    l.gs.config.WorldId,
+		AccountId:  ch.AccountID,
+		NxCash:     nxCash,
+		MaplePoint: maplePoint,
+	}
+	return async.ThenRPC(
+		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+		func(c context.Context) (*internal.AddCashReply, error) {
+			return l.gs.internalClient.AddCash(c, req)
+		},
+		func(reply *internal.AddCashReply) error {
+			return nil
+		},
+	)
+}
+
 func (l *CharacterListenerImpl) ClaimParcelAsync(ctx actor.Context, ch *entity.Character, parcelID uint32) *async.Promise {
 	req := &internal.ClaimParcelRequest{
 		WorldId:     l.gs.config.WorldId,

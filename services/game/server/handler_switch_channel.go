@@ -3,10 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -54,109 +52,18 @@ func (h *SwitchChannel) Handle(ctx *core.ClientContext, req *request.SwitchChann
 		return fmt.Errorf("switch channel: already on channel %d", targetChannel)
 	}
 
-	ic := h.gs.internalClient
-	var routeHost string
-	var routePort uint16
-	var entry *internal.CharacterSaveEntry
-	var debuffs []*internal.Debuff
-
-	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
-	gameClient.SetChangingChannel(true)
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
-		return ic.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
+	h.gs.handOver(ctx, gameClient, character, constant.ServerBlockedChannelMoveUnavailable, func(c context.Context) (*response.SwitchChannel, error) {
+		statusReply, err := h.gs.internalClient.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
 			WorldId:   worldID,
 			ChannelId: targetChannel,
 		})
-	}, func(statusReply *internal.GetGameChannelStatusReply) error {
-		if statusReply == nil || !statusReply.GetFound() || !statusReply.GetAlive() || statusReply.GetChannelFull() {
-			_ = ctx.Client.Send(&response.ServerBlocked{
-				Reason: constant.ServerBlockedChannelMoveUnavailable,
-			}, types.SEND_POLICY_ENCRYPT)
-			if statusReply == nil {
-				return fmt.Errorf("switch channel: nil status reply (world=%d channel=%d)", worldID, targetChannel)
-			}
-			return fmt.Errorf("switch channel: unavailable (world=%d channel=%d found=%v alive=%v full=%v)",
-				worldID, targetChannel, statusReply.GetFound(), statusReply.GetAlive(), statusReply.GetChannelFull())
+		if err != nil {
+			return nil, err
 		}
-		routeHost = statusReply.GetHost()
-		routePort = uint16(statusReply.GetPort())
-		if routeHost == "" || routePort == 0 {
-			_ = ctx.Client.Send(&response.ServerBlocked{
-				Reason: constant.ServerBlockedChannelMoveUnavailable,
-			}, types.SEND_POLICY_ENCRYPT)
-			return fmt.Errorf("switch channel: missing route (world=%d channel=%d)", worldID, targetChannel)
+		if !statusReply.GetFound() || !statusReply.GetAlive() || statusReply.GetChannelFull() {
+			return nil, nil
 		}
-		entry = character.ToProto(worldID)
-		if entry == nil {
-			_ = ctx.Client.Send(&response.ServerBlocked{
-				Reason: constant.ServerBlockedChannelMoveUnavailable,
-			}, types.SEND_POLICY_ENCRYPT)
-			return fmt.Errorf("switch channel: character %d has no map to save", character.GetID())
-		}
-		debuffs = character.DebuffsToProto()
-		return nil
-	})
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.SaveCharactersReply, error) {
-		return ic.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}})
-	}, func(saveReply *internal.SaveCharactersReply) error {
-		if saveReply == nil || !saveReply.GetOk() {
-			_ = ctx.Client.Send(&response.ServerBlocked{
-				Reason: constant.ServerBlockedChannelMoveUnavailable,
-			}, types.SEND_POLICY_ENCRYPT)
-			return fmt.Errorf("switch channel: save failed (world=%d channel=%d)", worldID, targetChannel)
-		}
-		return nil
-	})
-	accID := character.AccountID
-	charID := character.GetID()
-	sourceChannel := h.gs.config.ChannelId
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.BeginGameTransitionReply, error) {
-		if accID == 0 || charID == 0 {
-			return nil, fmt.Errorf("switch channel: missing account or character id")
-		}
-		return ic.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
-			WorldId:         worldID,
-			AccountId:       accID,
-			CharacterId:     charID,
-			ClientIp:        ctx.Client.GetRemoteIP(),
-			Debuffs:         debuffs,
-			SourceChannelId: &sourceChannel,
-		})
-	}, func(transReply *internal.BeginGameTransitionReply) error {
-		if transReply == nil || !transReply.GetOk() {
-			_ = ctx.Client.Send(&response.ServerBlocked{
-				Reason: constant.ServerBlockedChannelMoveUnavailable,
-			}, types.SEND_POLICY_ENCRYPT)
-			code := internal.SessionErrorCode_SESSION_NONE
-			if transReply != nil {
-				code = transReply.GetErrorCode()
-			}
-			return fmt.Errorf("switch channel: begin transition failed (world=%d channel=%d code=%v)",
-				worldID, targetChannel, code)
-		}
-		route := &response.SwitchChannel{
-			IP:   routeHost,
-			Port: routePort,
-		}
-
-		// The character leaves this channel now, not when the client disconnects: a client that stays connected must not keep playing it,
-		// and the disconnect must neither save it over the next channel nor end the moving session.
-		left := gameClient.Logout()
-		if left == nil {
-			_ = ctx.Client.Send(route, types.SEND_POLICY_ENCRYPT)
-			return nil
-		}
-		logout := left.MarkLoggedOut()
-		go func() {
-			h.gs.removeCharacter(left, logout)
-			_ = ctx.Client.Send(route, types.SEND_POLICY_ENCRYPT)
-		}()
-		return nil
-	})
-	promise.OnError(func(err error) {
-		log.Printf("SwitchChannel (async): %v", err)
-		gameClient.SetChangingChannel(false)
+		return &response.SwitchChannel{IP: statusReply.GetHost(), Port: uint16(statusReply.GetPort())}, nil
 	})
 	return nil
 }

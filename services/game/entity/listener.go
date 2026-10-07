@@ -33,6 +33,7 @@ type CharacterListener interface {
 	ClaimParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise
 	DeleteParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise
 	CheckParcelArrivalsAsync(ctx actor.Context, ch *Character) *async.Promise
+	AddCashAsync(ctx actor.Context, ch *Character, nxCash int32, maplePoint int32) *async.Promise
 	OnOpenDuey(ch *Character, fromArrival bool)
 	OnDueyResult(ch *Character, result pconst.DueyResult)
 	OnDueyRemoved(ch *Character, parcelID uint32, reason uint8)

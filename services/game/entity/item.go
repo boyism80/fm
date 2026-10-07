@@ -184,7 +184,7 @@ func (fp *FieldPlacement) ShouldFFA(now time.Time) bool {
 	return fp.DropType != constant.DropTypeFFA && !fp.nextFFA.IsZero() && now.After(fp.nextFFA)
 }
 
-func NewItem(itemId uint32, count uint16, gw GameWorld) (Item, error) {
+func NewItem(itemId uint32, count uint16, gw ItemWorld) (Item, error) {
 	model, ok := gw.GetResources().Items[itemId]
 	if !ok {
 		return nil, fmt.Errorf("item model not found for ID: %d", itemId)

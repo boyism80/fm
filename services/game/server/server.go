@@ -21,6 +21,7 @@ import (
 	"github.com/boyism80/fm/core/fault"
 	"github.com/boyism80/fm/core/luax"
 	"github.com/boyism80/fm/core/mq"
+	"github.com/boyism80/fm/core/uniqueid"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	"github.com/boyism80/fm/services/game/client"
@@ -82,7 +83,7 @@ type GameServer struct {
 	ensureNext        atomic.Uint64
 	internalHBCancel  context.CancelFunc
 	megaphoneMuted    atomic.Bool
-	uniqueIDs         uniqueIDs
+	uniqueIDs         *uniqueid.Generator
 }
 
 func (gs *GameServer) GetRootContext() *actor.RootContext {
@@ -193,7 +194,7 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		actorRegistry:    actorRegistry,
 		rpcFaults:        fault.NewInjector(),
 		characterRuntime: nil,
-		uniqueIDs:        uniqueIDs{node: uint64(config.WorldId)<<5 | uint64(config.ChannelId)},
+		uniqueIDs:        uniqueid.NewForChannel(uint32(config.WorldId), uint32(config.ChannelId)),
 	}
 	gs.characterRuntime = NewServerCharacterRuntime(gs)
 	gs.mapSystem = mapSystem{gs}
@@ -444,7 +445,7 @@ func (gs *GameServer) DueyIdentityPrompt() bool {
 }
 
 func (gs *GameServer) NewUniqueID() uint64 {
-	return gs.uniqueIDs.next()
+	return gs.uniqueIDs.Next()
 }
 
 func (gs *GameServer) preCreateMaps() {

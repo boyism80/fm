@@ -10,6 +10,11 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
+type ItemWorld interface {
+	GetResources() *wz.Resources
+	NewUniqueID() uint64
+}
+
 type GameWorld interface {
 	core.Server
 	PacketActorPID(client core.Client) *actor.PID

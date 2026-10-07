@@ -1807,6 +1807,23 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			L.Push(lua.LBool(ch.Duey.SendFromSystem(cfg.ActorContext, recipient, senderName, itemID, count, meso, message) == nil))
 			return 1
 		},
+		"add_cash": func(L *lua.LState) int {
+			ud := L.CheckUserData(1)
+			ch, ok := ud.Value.(*Character)
+			if ok == false {
+				L.ArgError(1, "Character expected")
+				return 0
+			}
+			nxCash := int32(L.CheckInt(2))
+			maplePoint := int32(L.OptInt(3, 0))
+			cfg, ok := luax.GetConfiguration(L)
+			if ok == false || cfg.ActorContext == nil {
+				L.ArgError(1, "actor context not available")
+				return 0
+			}
+			ch.AddCash(cfg.ActorContext, nxCash, maplePoint)
+			return 0
+		},
 		"show_instruction": func(L *lua.LState) int {
 			ud := L.CheckUserData(1)
 			ch, ok := ud.Value.(*Character)

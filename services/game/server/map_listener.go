@@ -29,8 +29,8 @@ func (l *MapListenerImpl) OnPlayerAdded(ctx actor.Context, mapInstance *entity.M
 		characterDTO := character.ToFullDTO()
 		characterDTO.SpawnPoint = spawnPoint
 		loginPacket := &response.Login{
-			Channel:   l.gs.config.ChannelId,
-			Character: characterDTO,
+			Channel:       l.gs.config.ChannelId,
+			CharacterInfo: response.CharacterInfo{Character: characterDTO},
 		}
 		character.Send(loginPacket, types.SEND_POLICY_ENCRYPT)
 		character.Listener.OnShowGuildInfo(character)

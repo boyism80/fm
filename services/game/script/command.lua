@@ -889,6 +889,20 @@ local command_funcs = {
 			return true
 		end,
 	},
+	["캐시얻기"] = {
+		privilege = ROLE.Admin,
+		usage = "<NX캐시> [메이플포인트] - 계정 캐시 증감",
+		command = function(me, args)
+			local nx = tonumber(args[1])
+			local mp = tonumber(args[2] or "0")
+			if not nx or not mp then
+				me:message("사용법: /캐시얻기 <NX캐시> [메이플포인트]")
+				return true
+			end
+			me:add_cash(nx, mp)
+			return true
+		end,
+	},
 	["풀메소"] = {
 		privilege = ROLE.Admin,
 		usage = "- 메소 최대치로 설정",

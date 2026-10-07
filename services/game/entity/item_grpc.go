@@ -81,7 +81,7 @@ func (item *Pet) ToProto(ownerID uint32, slot int32) *internal.Inventory {
 	return pb
 }
 
-func NewItemFromInternalProto(pb *internal.Inventory, gw GameWorld) (Item, error) {
+func NewItemFromInternalProto(pb *internal.Inventory, gw ItemWorld) (Item, error) {
 	if pb == nil {
 		return nil, fmt.Errorf("nil Inventory")
 	}

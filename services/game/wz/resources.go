@@ -179,6 +179,7 @@ type Resources struct {
 	Strings                 *StringData
 	ExpTable                []uint32
 	Shops                   map[uint32]*Shop
+	Commodities             map[uint32]*Commodity
 	Quests                  map[uint32]*Quest
 	QuestItems              map[uint32]uint32
 	CarnivalSkills          map[uint32]*CarnivalSkill
@@ -449,8 +450,13 @@ func NewResources(wzPath string) *Resources {
 		log.Printf("Failed to load NpcShop.img.xml: %v", err)
 	}
 
+	commodities, err := loadCommodities(filepath.Join(wzPath, "Etc.wz", "Commodity.img.xml"))
+	if err != nil {
+		log.Printf("Failed to load Commodity.img.xml: %v", err)
+		commodities = map[uint32]*Commodity{}
+	}
+
 	items := map[uint32]Item{}
-	var err error
 	err = loadEquipmentFiles(filepath.Join(wzPath, "Character.wz"), workerCount, items)
 	if err != nil {
 		log.Fatal(err)
@@ -816,6 +822,7 @@ func NewResources(wzPath string) *Resources {
 		CarnivalSkills:    mcSkills,
 		CarnivalGuardians: mcGuardians,
 		Shops:             shops,
+		Commodities:       commodities,
 		Quests:            quests,
 		QuestItems:        make(map[uint32]uint32),
 	}

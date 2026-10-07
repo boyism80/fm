@@ -176,6 +176,36 @@ func LoadLogin(path string) (*Login, error) {
 	return &l, nil
 }
 
+type CashShop struct {
+	Host       string           `yaml:"host"`
+	Port       int              `yaml:"port"`
+	CashShopID int              `yaml:"cash_shop_id"`
+	WorldID    int              `yaml:"world_id"`
+	WzPath     string           `yaml:"wz_path"`
+	Internal   InternalEndpoint `yaml:"internal"`
+}
+
+func LoadCashShop(path string) (*CashShop, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read config %q: %w", path, err)
+	}
+	var c CashShop
+	if err := yaml.Unmarshal(data, &c); err != nil {
+		return nil, fmt.Errorf("parse config %q: %w", path, err)
+	}
+	if c.Host == "" {
+		c.Host = "0.0.0.0"
+	}
+	if c.Port == 0 {
+		c.Port = 8596
+	}
+	if c.WzPath == "" {
+		c.WzPath = "resources/wz"
+	}
+	return &c, nil
+}
+
 func LoadGame(path string) (*Game, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
