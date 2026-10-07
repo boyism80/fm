@@ -22,7 +22,7 @@ type promiseStep struct {
 	fn    func(interface{}) (interface{}, error)
 }
 
-type Promise struct {
+type chain struct {
 	ctx            actor.Context
 	perStepTimeout time.Duration
 	steps          []promiseStep
@@ -39,35 +39,169 @@ type Promise struct {
 	kickGen  uint64
 }
 
-func NewPromise(ctx actor.Context, perStepTimeout time.Duration) *Promise {
-	return &Promise{
-		ctx:            ctx,
-		perStepTimeout: perStepTimeout,
-		settled:        true,
-		value:          nil,
+type Task struct {
+	c *chain
+}
+
+type Promise[T any] struct {
+	c *chain
+}
+
+func NewTask(ctx actor.Context, perStepTimeout time.Duration) *Task {
+	return &Task{c: &chain{ctx: ctx, perStepTimeout: perStepTimeout, settled: true}}
+}
+
+func NewDeferredTask(ctx actor.Context) *Task {
+	return &Task{c: &chain{ctx: ctx}}
+}
+
+func NewDeferred[T any](ctx actor.Context) *Promise[T] {
+	return &Promise[T]{c: &chain{ctx: ctx}}
+}
+
+func (t *Task) Do(fn func() error) *Task {
+	t.c.appendStep(promiseStep{fn: func(v interface{}) (interface{}, error) {
+		return v, fn()
+	}})
+	return t
+}
+
+func (t *Task) DoAsync(fn func() error) *Task {
+	t.c.appendStep(promiseStep{async: true, fn: func(v interface{}) (interface{}, error) {
+		return v, fn()
+	}})
+	return t
+}
+
+func (t *Task) Then[U any](fn func() (U, error)) *Promise[U] {
+	t.c.appendStep(promiseStep{fn: func(interface{}) (interface{}, error) {
+		return fn()
+	}})
+	return &Promise[U]{c: t.c}
+}
+
+func (t *Task) ThenAsync[U any](fn func() (U, error)) *Promise[U] {
+	t.c.appendStep(promiseStep{async: true, fn: func(interface{}) (interface{}, error) {
+		return fn()
+	}})
+	return &Promise[U]{c: t.c}
+}
+
+func (t *Task) ThenRPC[U any](call func(context.Context) (U, error), use func(U) error) *Promise[U] {
+	timeout := t.c.perStepTimeout
+	next := t.ThenAsync(func() (U, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		return call(ctx)
+	})
+	if use == nil {
+		return next
 	}
+	return next.Do(use)
 }
 
-func NewDeferred(ctx actor.Context) *Promise {
-	return &Promise{ctx: ctx}
-}
-
-func (p *Promise) Then(fn func(interface{}) (interface{}, error)) *Promise {
-	return p.appendStep(promiseStep{async: false, fn: fn})
-}
-
-func (p *Promise) ThenAsync(fn func(interface{}) (interface{}, error)) *Promise {
-	return p.appendStep(promiseStep{async: true, fn: fn})
-}
-
-func (p *Promise) appendStep(step promiseStep) *Promise {
-	if step.fn == nil {
-		return p
+func (t *Task) OnError(fn func(error)) *Task {
+	if fn != nil {
+		t.c.onErrorSet(fn)
 	}
+	return t
+}
+
+func (t *Task) Finally(fn func()) *Task {
+	if fn != nil {
+		t.c.finallySet(fn)
+	}
+	return t
+}
+
+func (t *Task) Complete() {
+	t.c.setResult(nil)
+}
+
+func (t *Task) SetError(err error) {
+	t.c.setError(err)
+}
+
+func (p *Promise[T]) Task() *Task {
+	return &Task{c: p.c}
+}
+
+func (p *Promise[T]) Then[U any](fn func(T) (U, error)) *Promise[U] {
+	p.c.appendStep(promiseStep{fn: func(v interface{}) (interface{}, error) {
+		value, _ := v.(T)
+		return fn(value)
+	}})
+	return &Promise[U]{c: p.c}
+}
+
+func (p *Promise[T]) Do(fn func(T) error) *Promise[T] {
+	p.c.appendStep(promiseStep{fn: func(v interface{}) (interface{}, error) {
+		value, _ := v.(T)
+		return v, fn(value)
+	}})
+	return p
+}
+
+func (p *Promise[T]) DoAsync(fn func(T) error) *Promise[T] {
+	p.c.appendStep(promiseStep{async: true, fn: func(v interface{}) (interface{}, error) {
+		value, _ := v.(T)
+		return v, fn(value)
+	}})
+	return p
+}
+
+func (p *Promise[T]) ThenAsync[U any](fn func(T) (U, error)) *Promise[U] {
+	p.c.appendStep(promiseStep{async: true, fn: func(v interface{}) (interface{}, error) {
+		value, _ := v.(T)
+		return fn(value)
+	}})
+	return &Promise[U]{c: p.c}
+}
+
+func (p *Promise[T]) ThenRPC[U any](call func(context.Context) (U, error), use func(U) error) *Promise[U] {
+	return p.Task().ThenRPC(call, use)
+}
+
+func (p *Promise[T]) OnError(fn func(error)) *Promise[T] {
+	if fn != nil {
+		p.c.onErrorSet(fn)
+	}
+	return p
+}
+
+func (p *Promise[T]) Finally(fn func()) *Promise[T] {
+	if fn != nil {
+		p.c.finallySet(fn)
+	}
+	return p
+}
+
+func (p *Promise[T]) SetResult(value T) {
+	p.c.setResult(value)
+}
+
+func (p *Promise[T]) SetError(err error) {
+	p.c.setError(err)
+}
+
+func (p *Promise[T]) Completed() bool {
+	p.c.mu.Lock()
+	defer p.c.mu.Unlock()
+	return p.c.settled || p.c.rejected
+}
+
+func (p *Promise[T]) Result() (T, error) {
+	p.c.mu.Lock()
+	defer p.c.mu.Unlock()
+	value, _ := p.c.value.(T)
+	return value, p.c.err
+}
+
+func (p *chain) appendStep(step promiseStep) {
 	p.mu.Lock()
 	if p.rejected {
 		p.mu.Unlock()
-		return p
+		return
 	}
 	p.steps = append(p.steps, step)
 	var gen uint64
@@ -79,10 +213,9 @@ func (p *Promise) appendStep(step promiseStep) *Promise {
 	if gen != 0 {
 		p.scheduleKick(gen)
 	}
-	return p
 }
 
-func (p *Promise) scheduleKick(gen uint64) {
+func (p *chain) scheduleKick(gen uint64) {
 	if p.ctx == nil {
 		go func() {
 			runtime.Gosched()
@@ -97,7 +230,7 @@ func (p *Promise) scheduleKick(gen uint64) {
 	p.ctx.Send(f.PID(), &promiseResult{})
 }
 
-func (p *Promise) kick(gen uint64) {
+func (p *chain) kick(gen uint64) {
 	p.mu.Lock()
 	// A newer kick owns the chain; running this one too would execute every step twice.
 	if p.kickGen != gen || p.started || !p.settled || p.rejected || p.done {
@@ -110,49 +243,30 @@ func (p *Promise) kick(gen uint64) {
 	p.driveFrom(0, value)
 }
 
-func ThenRPC[T any](p *Promise, call func(context.Context) (T, error), use func(T) error) *Promise {
-	p.ThenAsync(func(_ interface{}) (interface{}, error) {
-		ctx, cancel := context.WithTimeout(context.Background(), p.perStepTimeout)
-		defer cancel()
-		return call(ctx)
-	})
-	return p.Then(func(v interface{}) (interface{}, error) {
-		return v, use(v.(T))
-	})
-}
-
-func (p *Promise) OnError(fn func(error)) *Promise {
-	if fn == nil {
-		return p
-	}
+func (p *chain) onErrorSet(fn func(error)) {
 	p.mu.Lock()
 	if p.rejected {
 		err := p.err
 		p.mu.Unlock()
 		fn(err)
-		return p
+		return
 	}
 	p.onError = fn
 	p.mu.Unlock()
-	return p
 }
 
-func (p *Promise) Finally(fn func()) *Promise {
-	if fn == nil {
-		return p
-	}
+func (p *chain) finallySet(fn func()) {
 	p.mu.Lock()
 	if p.done {
 		p.mu.Unlock()
 		fn()
-		return p
+		return
 	}
 	p.finally = fn
 	p.mu.Unlock()
-	return p
 }
 
-func (p *Promise) SetResult(value interface{}) {
+func (p *chain) setResult(value interface{}) {
 	p.mu.Lock()
 	if p.settled || p.rejected || p.done {
 		p.mu.Unlock()
@@ -172,9 +286,9 @@ func (p *Promise) SetResult(value interface{}) {
 	}
 }
 
-func (p *Promise) SetError(err error) {
+func (p *chain) setError(err error) {
 	if err == nil {
-		p.SetResult(nil)
+		p.setResult(nil)
 		return
 	}
 	p.mu.Lock()
@@ -196,25 +310,13 @@ func (p *Promise) SetError(err error) {
 	}
 }
 
-func (p *Promise) Completed() bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.settled || p.rejected
-}
-
-func (p *Promise) Result() (interface{}, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.value, p.err
-}
-
-func (p *Promise) isDone() bool {
+func (p *chain) isDone() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.done || p.rejected
 }
 
-func (p *Promise) driveFrom(i int, value interface{}) {
+func (p *chain) driveFrom(i int, value interface{}) {
 	if p.isDone() {
 		return
 	}
@@ -278,7 +380,7 @@ func (p *Promise) driveFrom(i int, value interface{}) {
 	p.driveFrom(i+1, v)
 }
 
-func (p *Promise) completeSuccess(value interface{}) {
+func (p *chain) completeSuccess(value interface{}) {
 	p.mu.Lock()
 	if p.done || p.rejected {
 		p.mu.Unlock()
@@ -294,7 +396,7 @@ func (p *Promise) completeSuccess(value interface{}) {
 	}
 }
 
-func (p *Promise) completeError(err error) {
+func (p *chain) completeError(err error) {
 	p.mu.Lock()
 	if p.done || p.rejected {
 		p.mu.Unlock()

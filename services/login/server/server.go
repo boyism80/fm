@@ -160,7 +160,7 @@ func NewLoginServer(config *LoginConfig) (*LoginServer, error) {
 		}
 
 		globalDisp := mq.NewDispatcher()
-		mq.Bind[*LoginServer, loginGlobalMqServerDatetime](ls, globalDisp)
+		globalDisp.Bind[loginGlobalMqServerDatetime](ls)
 
 		globalRabbitCfg := mq.RabbitActorConfig{
 			Root:        ls.GetRootContext(),
@@ -250,11 +250,11 @@ func (ls *LoginServer) handleClientDisconnect(c core.Client) {
 	transfer := loginClient.TakeTransferDisconnect()
 	log.Printf("Login disconnect: remote=%s account=%d transfer=%v", remoteAddr, accountId, transfer)
 
-	p := async.NewPromise(nil, core.InternalRPCPerStepTimeout)
+	p := async.NewTask(nil, core.InternalRPCPerStepTimeout)
 	p.OnError(func(err error) {
 		log.Printf("LogoutSession (login disconnect) failed for world=%d account=%d: %v", worldId, accountId, err)
 	})
-	async.ThenRPC(p, func(ctx context.Context) (*internal.LogoutSessionReply, error) {
+	p.ThenRPC(func(ctx context.Context) (*internal.LogoutSessionReply, error) {
 		return ls.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
 			WorldId:            worldId,
 			AccountId:          accountId,

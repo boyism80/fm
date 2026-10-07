@@ -9,10 +9,6 @@ import (
 
 type MobSpawnTimer struct{}
 
-func (*MobSpawnTimer) New() *MobSpawnTimer {
-	return &MobSpawnTimer{}
-}
-
 func (t *MobSpawnTimer) GetName() string {
 	return "MobSpawn"
 }

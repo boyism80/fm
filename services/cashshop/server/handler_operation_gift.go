@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -52,7 +51,7 @@ func (h *Operation) gift(ctx *core.ClientContext, character *entity.Character, r
 	}
 
 	promise := h.start(ctx, character, constant.CashShopResultGiftFailed)
-	async.ThenRPC(promise, func(c context.Context) (*internal.GiftCashItemReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.GiftCashItemReply, error) {
 		return h.cs.internalClient.GiftCashItem(c, &internal.GiftCashItemRequest{
 			WorldId:       h.cs.worldID(),
 			AccountId:     character.AccountID(),

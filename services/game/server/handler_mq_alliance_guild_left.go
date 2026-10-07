@@ -58,13 +58,13 @@ func (h *allianceMqGuildLeft) Handle(ctx actor.Context, raw json.RawMessage) err
 		Expelled bool `json:"expelled"`
 	}
 	_ = json.Unmarshal(raw, &extra)
-	gs.alliance.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+	gs.alliance.UpdateAsync(ctx, evt).Do(func() error {
 		if removedGuildFound == false {
 			gs.alliance.BroadcastInfoUpdate(alliancePb)
-			return nil, nil
+			return nil
 		}
 		gs.alliance.BroadcastGuildLeft(alliancePb, removedGuildPb, extra.Expelled)
-		return nil, nil
+		return nil
 	})
 	return nil
 }

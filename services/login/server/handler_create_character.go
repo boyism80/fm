@@ -47,7 +47,7 @@ func (h *CreateCharacter) Handle(ctx *core.ClientContext, req *request.CreateCha
 		WeaponItemId: req.Weapon,
 	}
 
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.CreateCharacterReply, error) {
 			return h.ls.internalClient.CreateCharacter(c, reqProto)
 		}, func(reply *internal.CreateCharacterReply) error {

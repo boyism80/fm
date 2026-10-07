@@ -7,8 +7,8 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 )
 
-func Ask(ctx actor.Context, target *actor.PID, timeout time.Duration, send func(replyTo *actor.PID)) *Promise {
-	p := NewDeferred(ctx)
+func Ask(ctx actor.Context, target *actor.PID, timeout time.Duration, send func(replyTo *actor.PID)) *Promise[interface{}] {
+	p := NewDeferred[interface{}](ctx)
 	if ctx == nil || target == nil || send == nil {
 		p.SetError(fmt.Errorf("async.Ask: invalid args"))
 		return p
@@ -20,7 +20,7 @@ func Ask(ctx actor.Context, target *actor.PID, timeout time.Duration, send func(
 	if timeout <= 0 {
 		timeout = 10 * time.Second
 	}
-	p.perStepTimeout = timeout
+	p.c.perStepTimeout = timeout
 
 	f := actor.NewFuture(ctx.ActorSystem(), timeout)
 	send(f.PID())

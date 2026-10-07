@@ -9,10 +9,6 @@ import (
 
 type MobBuffExpireTimer struct{}
 
-func (*MobBuffExpireTimer) New() *MobBuffExpireTimer {
-	return &MobBuffExpireTimer{}
-}
-
 func (t *MobBuffExpireTimer) GetName() string {
 	return "MobBuffExpire"
 }

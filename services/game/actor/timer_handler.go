@@ -24,13 +24,8 @@ func NewTimerRegistry() *TimerRegistry {
 	}
 }
 
-func RegisterTimer[H interface {
-	TimerHandler
-	New() H
-}](registry *TimerRegistry) {
-	var zero H
-	handler := zero.New()
-	registry.handlers[handler.GetName()] = handler
+func (r *TimerRegistry) Register(handler TimerHandler) {
+	r.handlers[handler.GetName()] = handler
 }
 
 func (r *TimerRegistry) GetAllHandlers() []TimerHandler {

@@ -40,8 +40,8 @@ func NewAllianceContainer(gs *GameServer, worldID uint32, ic internal.InternalCl
 	}
 }
 
-func (ac *AllianceContainer) UpdateAsync(ctx actor.Context, evt AllianceEventEnvelope) *async.Promise {
-	p := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+func (ac *AllianceContainer) UpdateAsync(ctx actor.Context, evt AllianceEventEnvelope) *async.Task {
+	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	allianceID := evt.AllianceID
 	p.OnError(func(err error) {
 		log.Printf("alliance consumer: apply type=%s alliance_id=%d: %v", evt.EventType, allianceID, err)
@@ -49,7 +49,7 @@ func (ac *AllianceContainer) UpdateAsync(ctx actor.Context, evt AllianceEventEnv
 	if ac.internalClient == nil {
 		return p
 	}
-	async.ThenRPC(p,
+	p.ThenRPC(
 		func(c context.Context) (*internal.GetAllianceReply, error) {
 			return ac.internalClient.GetAlliance(c, &internal.GetAllianceRequest{
 				WorldId:    ac.worldID,

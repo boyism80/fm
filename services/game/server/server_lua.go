@@ -779,7 +779,7 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 			L.Push(lua.LString("save: actor context not found"))
 			return 2
 		}
-		return entity.LuaYieldPromise(L, gs, gs.SaveAllCharactersAsync(cfg.ActorContext), func(_ interface{}, err error) []lua.LValue {
+		return entity.LuaYieldPromise(L, gs, gs.SaveAllCharactersAsync(cfg.ActorContext), func(_ *saveAllSummary, err error) []lua.LValue {
 			if err != nil {
 				log.Printf("save: %v", err)
 				return []lua.LValue{lua.LFalse, lua.LString(err.Error())}
@@ -790,11 +790,11 @@ func (gs *GameServer) registerGameLuaState(luaState *lua.LState) {
 
 	luax.RegisterFunc(luaState, "sleep", func(L *lua.LState) int {
 		d := time.Duration(float64(L.CheckNumber(1)) * float64(time.Millisecond))
-		promise := async.NewDeferred(nil)
+		task := async.NewDeferredTask(nil)
 		time.AfterFunc(d, func() {
-			promise.SetResult(nil)
+			task.Complete()
 		})
-		return entity.LuaYieldPromise(L, gs, promise, nil)
+		return entity.LuaYieldTask(L, gs, task, nil)
 	})
 
 	luax.RegisterFunc(luaState, "run_on_map", func(L *lua.LState) int {

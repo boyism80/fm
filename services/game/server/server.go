@@ -229,15 +229,15 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		routeGame := fmt.Sprintf("fm.%d.%d.party", config.WorldId, config.ChannelId)
 
 		partyDisp := mq.NewDispatcher()
-		mq.Bind[*GameServer, partyMqMemberJoined](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqMemberLeft](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqLeaderChanged](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqLogOnOff](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqDisbanded](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqPartySync](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqPartyInvite](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqChat](gs, partyDisp)
-		mq.Bind[*GameServer, partyMqPartyInviteDenied](gs, partyDisp)
+		partyDisp.Bind[partyMqMemberJoined](gs)
+		partyDisp.Bind[partyMqMemberLeft](gs)
+		partyDisp.Bind[partyMqLeaderChanged](gs)
+		partyDisp.Bind[partyMqLogOnOff](gs)
+		partyDisp.Bind[partyMqDisbanded](gs)
+		partyDisp.Bind[partyMqPartySync](gs)
+		partyDisp.Bind[partyMqPartyInvite](gs)
+		partyDisp.Bind[partyMqChat](gs)
+		partyDisp.Bind[partyMqPartyInviteDenied](gs)
 
 		rabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),
@@ -261,10 +261,10 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		buddyRouteAll := fmt.Sprintf("fm.%d.all.buddy", config.WorldId)
 
 		buddyDisp := mq.NewDispatcher()
-		mq.Bind[*GameServer, buddyMqChannelUpdate](gs, buddyDisp)
-		mq.Bind[*GameServer, buddyMqUpdate](gs, buddyDisp)
-		mq.Bind[*GameServer, buddyMqAddRequest](gs, buddyDisp)
-		mq.Bind[*GameServer, buddyMqChat](gs, buddyDisp)
+		buddyDisp.Bind[buddyMqChannelUpdate](gs)
+		buddyDisp.Bind[buddyMqUpdate](gs)
+		buddyDisp.Bind[buddyMqAddRequest](gs)
+		buddyDisp.Bind[buddyMqChat](gs)
 
 		buddyRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),
@@ -288,19 +288,19 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		guildRouteAll := fmt.Sprintf("fm.%d.all.guild", config.WorldId)
 
 		guildDisp := mq.NewDispatcher()
-		mq.Bind[*GameServer, guildMqCreated](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqMemberJoined](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqMemberLeft](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqRankTitlesChanged](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqMemberRankChanged](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqEmblemChanged](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqNoticeChanged](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqCapacityChanged](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqGPChanged](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqMemberOnlineChanged](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqDisbanded](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqChat](gs, guildDisp)
-		mq.Bind[*GameServer, guildMqMessage](gs, guildDisp)
+		guildDisp.Bind[guildMqCreated](gs)
+		guildDisp.Bind[guildMqMemberJoined](gs)
+		guildDisp.Bind[guildMqMemberLeft](gs)
+		guildDisp.Bind[guildMqRankTitlesChanged](gs)
+		guildDisp.Bind[guildMqMemberRankChanged](gs)
+		guildDisp.Bind[guildMqEmblemChanged](gs)
+		guildDisp.Bind[guildMqNoticeChanged](gs)
+		guildDisp.Bind[guildMqCapacityChanged](gs)
+		guildDisp.Bind[guildMqGPChanged](gs)
+		guildDisp.Bind[guildMqMemberOnlineChanged](gs)
+		guildDisp.Bind[guildMqDisbanded](gs)
+		guildDisp.Bind[guildMqChat](gs)
+		guildDisp.Bind[guildMqMessage](gs)
 
 		guildRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),
@@ -324,16 +324,16 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		allianceRouteAll := fmt.Sprintf("fm.%d.all.alliance", config.WorldId)
 
 		allianceDisp := mq.NewDispatcher()
-		mq.Bind[*GameServer, allianceMqCreated](gs, allianceDisp)
-		mq.Bind[*GameServer, allianceMqDisbanded](gs, allianceDisp)
-		mq.Bind[*GameServer, allianceMqGuildLeft](gs, allianceDisp)
-		mq.Bind[*GameServer, allianceMqGuildAdded](gs, allianceDisp)
-		mq.Bind[*GameServer, allianceMqCapacityChanged](gs, allianceDisp)
-		mq.Bind[*GameServer, allianceMqRankTitlesChanged](gs, allianceDisp)
-		mq.Bind[*GameServer, allianceMqMemberRankChanged](gs, allianceDisp)
-		mq.Bind[*GameServer, allianceMqLeaderChanged](gs, allianceDisp)
-		mq.Bind[*GameServer, allianceMqNoticeChanged](gs, allianceDisp)
-		mq.Bind[*GameServer, allianceMqChat](gs, allianceDisp)
+		allianceDisp.Bind[allianceMqCreated](gs)
+		allianceDisp.Bind[allianceMqDisbanded](gs)
+		allianceDisp.Bind[allianceMqGuildLeft](gs)
+		allianceDisp.Bind[allianceMqGuildAdded](gs)
+		allianceDisp.Bind[allianceMqCapacityChanged](gs)
+		allianceDisp.Bind[allianceMqRankTitlesChanged](gs)
+		allianceDisp.Bind[allianceMqMemberRankChanged](gs)
+		allianceDisp.Bind[allianceMqLeaderChanged](gs)
+		allianceDisp.Bind[allianceMqNoticeChanged](gs)
+		allianceDisp.Bind[allianceMqChat](gs)
 
 		allianceRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),
@@ -357,8 +357,8 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		globalRouteAll := fmt.Sprintf("fm.%d.all.global", config.WorldId)
 
 		globalDisp := mq.NewDispatcher()
-		mq.Bind[*GameServer, globalMqServerDatetime](gs, globalDisp)
-		mq.Bind[*GameServer, globalMqNotice](gs, globalDisp)
+		globalDisp.Bind[globalMqServerDatetime](gs)
+		globalDisp.Bind[globalMqNotice](gs)
 
 		globalRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),
@@ -378,10 +378,10 @@ func NewGameServer(config *GameConfig) (*GameServer, error) {
 		)
 
 		parcelDisp := mq.NewDispatcher()
-		mq.Bind[*GameServer, parcelMqArrived](gs, parcelDisp)
-		mq.Bind[*GameServer, cashGiftMqArrived](gs, parcelDisp)
-		mq.Bind[*GameServer, marriageMqChanged](gs, parcelDisp)
-		mq.Bind[*GameServer, marriageMqSpouseMoved](gs, parcelDisp)
+		parcelDisp.Bind[parcelMqArrived](gs)
+		parcelDisp.Bind[cashGiftMqArrived](gs)
+		parcelDisp.Bind[marriageMqChanged](gs)
+		parcelDisp.Bind[marriageMqSpouseMoved](gs)
 
 		parcelRabbitCfg := mq.RabbitActorConfig{
 			Root:        gs.GetRootContext(),
@@ -615,15 +615,15 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	}
 	logout := character.MarkLoggedOut()
 
-	p := async.NewPromise(nil, saveCharactersPromiseTimeout)
+	p := async.NewTask(nil, saveCharactersPromiseTimeout)
 	p.OnError(func(err error) {
 		log.Printf("disconnect async: %v", err)
 	})
 
 	var entry *internal.CharacterSaveEntry
-	p.ThenAsync(func(interface{}) (interface{}, error) {
+	p.DoAsync(func() error {
 		entry = gs.removeCharacter(character, logout)
-		return nil, nil
+		return nil
 	})
 
 	if gs.internalClient == nil {
@@ -631,7 +631,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	}
 
 	if client.SessionLost() == false {
-		async.ThenRPC(p, func(c context.Context) (*internal.SaveCharactersReply, error) {
+		p.ThenRPC(func(c context.Context) (*internal.SaveCharactersReply, error) {
 			return gs.internalClient.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}}, grpc.WaitForReady(true))
 		}, func(reply *internal.SaveCharactersReply) error {
 			if reply.GetOk() == false {
@@ -646,7 +646,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 	}
 	charID := character.GetID()
 	channelID := gs.config.ChannelId
-	async.ThenRPC(p, func(c context.Context) (*internal.LogoutSessionReply, error) {
+	p.ThenRPC(func(c context.Context) (*internal.LogoutSessionReply, error) {
 		return gs.internalClient.LogoutSession(c, &internal.LogoutSessionRequest{
 			WorldId:          gs.config.WorldId,
 			AccountId:        character.AccountID,
@@ -654,9 +654,7 @@ func (gs *GameServer) handleClientDisconnect(c core.Client) {
 			ChannelId:        &channelID,
 			DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
 		}, grpc.WaitForReady(true))
-	}, func(*internal.LogoutSessionReply) error {
-		return nil
-	})
+	}, nil)
 }
 
 // removeCharacter takes a logged-out character out of this channel on whichever map actor owns it at that moment,

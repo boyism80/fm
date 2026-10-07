@@ -11,10 +11,6 @@ import (
 
 type MistExpireTimer struct{}
 
-func (*MistExpireTimer) New() *MistExpireTimer {
-	return &MistExpireTimer{}
-}
-
 func (t *MistExpireTimer) GetName() string {
 	return "MistExpire"
 }

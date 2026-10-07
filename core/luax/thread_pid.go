@@ -11,7 +11,7 @@ import (
 type Configuration struct {
 	ActorContext actor.Context
 	ActorPID     *actor.PID
-	CallPromise  *async.Promise
+	CallPromise  *async.Promise[[]lua.LValue]
 }
 
 var threadConfig = struct {

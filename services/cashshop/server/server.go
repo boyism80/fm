@@ -117,11 +117,11 @@ func (cs *CashShopServer) handleClientDisconnect(c core.Client) {
 
 	characterID := character.ID()
 	cashShopID := cs.cashShopID()
-	p := async.NewPromise(nil, core.InternalRPCPerStepTimeout)
+	p := async.NewTask(nil, core.InternalRPCPerStepTimeout)
 	p.OnError(func(err error) {
 		log.Printf("LogoutSession (cash shop disconnect) failed for character %d: %v", characterID, err)
 	})
-	async.ThenRPC(p, func(ctx context.Context) (*internal.LogoutSessionReply, error) {
+	p.ThenRPC(func(ctx context.Context) (*internal.LogoutSessionReply, error) {
 		return cs.internalClient.LogoutSession(ctx, &internal.LogoutSessionRequest{
 			WorldId:          cs.worldID(),
 			AccountId:        character.AccountID(),
@@ -129,9 +129,7 @@ func (cs *CashShopServer) handleClientDisconnect(c core.Client) {
 			CharacterId:      &characterID,
 			CashShopId:       &cashShopID,
 		})
-	}, func(*internal.LogoutSessionReply) error {
-		return nil
-	})
+	}, nil)
 }
 
 func (cs *CashShopServer) pingInternal(ctx context.Context, interval time.Duration) {

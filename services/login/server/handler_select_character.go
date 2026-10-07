@@ -52,7 +52,7 @@ func (h *SelectCharacter) Handle(ctx *core.ClientContext, req *request.SelectCha
 		Port:        uint16(route.GetPort()),
 		CharacterId: req.CharacterId,
 	}
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BeginGameTransitionReply, error) {
 			return h.ls.internalClient.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
 				WorldId:     worldId,

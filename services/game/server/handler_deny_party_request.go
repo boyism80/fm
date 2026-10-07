@@ -51,7 +51,7 @@ func (h *DenyPartyRequest) Handle(ctx *core.ClientContext, req *request.DenyPart
 	}
 	worldID := h.gs.config.WorldId
 	deniedCharacterID := character.GetID()
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.DenyPartyReply, error) {
 			return h.gs.internalClient.DenyParty(c, &internal.DenyPartyRequest{
 				WorldId:           worldID,

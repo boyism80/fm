@@ -6,6 +6,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/luax"
+	lua "github.com/yuin/gopher-lua"
 )
 
 func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
@@ -41,10 +42,10 @@ func (ch *Character) OpenNpc(actx actor.Context, npc *Npc) error {
 		ActorPID:     mapInstance.LogicActorPID(),
 	})
 	ch.Dialog.Set(luaThread)
-	luax.CallAsync(actx, root, luaThread, "on_click", ch, npc).Then(func(_ interface{}) (interface{}, error) {
+	luax.CallAsync(actx, root, luaThread, "on_click", ch, npc).Do(func([]lua.LValue) error {
 		ch.Dialog.Reset()
 		ch.Listener.OnUnlockAction(ch)
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("npc script on_click npc=%d: %v", npcID, err)
 		ch.Listener.OnScriptError(ch, scriptPath, err)

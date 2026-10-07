@@ -78,16 +78,16 @@ func (a *GameLogicActor) hasCharacterOnMap(characterID uint32) bool {
 }
 
 func (a *GameLogicActor) registerTimers() {
-	RegisterTimer[*timers.MobSpawnTimer](a.timerReg)
-	RegisterTimer[*timers.ItemCleanupTimer](a.timerReg)
-	RegisterTimer[*timers.CooldownCheckTimer](a.timerReg)
-	RegisterTimer[*timers.ClientPingTimer](a.timerReg)
-	RegisterTimer[*timers.MobBuffExpireTimer](a.timerReg)
-	RegisterTimer[*timers.MobPoisonTickTimer](a.timerReg)
-	RegisterTimer[*timers.MistExpireTimer](a.timerReg)
-	RegisterTimer[*timers.MistPoisonTickTimer](a.timerReg)
-	RegisterTimer[*timers.CharacterSaveTimer](a.timerReg)
-	RegisterTimer[*timers.PartySearchTimer](a.timerReg)
+	a.timerReg.Register(&timers.MobSpawnTimer{})
+	a.timerReg.Register(&timers.ItemCleanupTimer{})
+	a.timerReg.Register(&timers.CooldownCheckTimer{})
+	a.timerReg.Register(&timers.ClientPingTimer{})
+	a.timerReg.Register(&timers.MobBuffExpireTimer{})
+	a.timerReg.Register(&timers.MobPoisonTickTimer{})
+	a.timerReg.Register(&timers.MistExpireTimer{})
+	a.timerReg.Register(&timers.MistPoisonTickTimer{})
+	a.timerReg.Register(&timers.CharacterSaveTimer{})
+	a.timerReg.Register(&timers.PartySearchTimer{})
 }
 
 func (a *GameLogicActor) StopTimers() {

@@ -140,16 +140,16 @@ func (ch *Character) AnswerProposal(actx actor.Context, accepted bool, name stri
 	if ch.GetGender() == 0 {
 		groom, bride = ch, proposer
 	}
-	ch.Listener.CreateMarriageAsync(actx, groom, bride, ring).Then(func(v interface{}) (interface{}, error) {
-		reply := v.(*internal.MarriageReply)
+	ch.Listener.CreateMarriageAsync(actx, groom, bride, ring).Do(func(v *internal.MarriageReply) error {
+		reply := v
 		switch reply.GetResult() {
 		case internal.MarriageResult_MARRIAGE_RESULT_OK:
 		case internal.MarriageResult_MARRIAGE_RESULT_ALREADY_ENGAGED:
 			ch.Listener.OnEngageResult(ch, pconst.EngageResultAlreadyEngaged)
-			return nil, nil
+			return nil
 		default:
 			ch.Listener.OnEngageResult(ch, pconst.EngageResultPartnerEngaged)
-			return nil, nil
+			return nil
 		}
 
 		for _, member := range []*Character{ch, proposer} {
@@ -166,7 +166,7 @@ func (ch *Character) AnswerProposal(actx actor.Context, accepted bool, name stri
 			member.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
 			member.Listener.OnEngageResult(member, pconst.EngageResultEngaged)
 		}
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("AnswerProposal character=%d: %v", ch.GetID(), err)
 	})
@@ -213,13 +213,13 @@ func (ch *Character) DropMarriageItem(actx actor.Context, itemID uint32) {
 	})
 }
 
-func (ch *Character) BreakEngagement(actx actor.Context) (*async.Promise, error) {
+func (ch *Character) BreakEngagement(actx actor.Context) (*async.Promise[bool], error) {
 	if ch.Marriage == nil || ch.Marriage.Status != MarriageStatusEngaged {
 		return nil, ErrMarriageInvalid
 	}
 
-	return ch.Listener.BreakEngagementAsync(actx, ch, ch.Marriage.ID).Then(func(v interface{}) (interface{}, error) {
-		if v.(*internal.MarriageReply).GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
+	return ch.Listener.BreakEngagementAsync(actx, ch, ch.Marriage.ID).Then(func(v *internal.MarriageReply) (bool, error) {
+		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
 			ch.Listener.OnEngageResult(ch, pconst.EngageResultCannotCancel)
 			return false, nil
 		}
@@ -231,8 +231,8 @@ func (ch *Character) BreakEngagement(actx actor.Context) (*async.Promise, error)
 }
 
 func (ch *Character) RefreshMarriage(actx actor.Context, event string) {
-	ch.Listener.LoadMarriageAsync(actx, ch).Then(func(v interface{}) (interface{}, error) {
-		ch.Marriage = NewMarriageFromInternalProto(v.(*internal.MarriageReply).GetMarriage())
+	ch.Listener.LoadMarriageAsync(actx, ch).Do(func(v *internal.MarriageReply) error {
+		ch.Marriage = NewMarriageFromInternalProto(v.GetMarriage())
 		if ch.Marriage == nil {
 			ch.discardMarriageRings()
 		}
@@ -248,13 +248,13 @@ func (ch *Character) RefreshMarriage(actx actor.Context, event string) {
 				ch.Listener.OnEngageResult(ch, pconst.EngageResultMarried)
 			}
 		}
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("RefreshMarriage character=%d: %v", ch.GetID(), err)
 	})
 }
 
-func (ch *Character) ReserveWedding(actx actor.Context, ticketItemID uint32) (*async.Promise, error) {
+func (ch *Character) ReserveWedding(actx actor.Context, ticketItemID uint32) (*async.Promise[bool], error) {
 	if ch.Marriage == nil || ch.Marriage.Status != MarriageStatusEngaged || ch.Marriage.TicketItemID != 0 {
 		return nil, ErrMarriageInvalid
 	}
@@ -266,8 +266,8 @@ func (ch *Character) ReserveWedding(actx actor.Context, ticketItemID uint32) (*a
 		return nil, ErrMarriageInvalid
 	}
 
-	return ch.Listener.ReserveWeddingAsync(actx, ch, ch.Marriage.ID, ticketItemID).Then(func(v interface{}) (interface{}, error) {
-		reply := v.(*internal.MarriageReply)
+	return ch.Listener.ReserveWeddingAsync(actx, ch, ch.Marriage.ID, ticketItemID).Then(func(v *internal.MarriageReply) (bool, error) {
+		reply := v
 		if reply.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
 			return false, nil
 		}
@@ -296,10 +296,10 @@ func (ch *Character) SubmitWeddingWishlist(actx actor.Context, wishes []string) 
 		wishes = wishes[:10]
 	}
 
-	ch.Listener.SetWeddingWishlistAsync(actx, ch, ch.Marriage.ID, wishes).Then(func(v interface{}) (interface{}, error) {
-		reply := v.(*internal.MarriageReply)
+	ch.Listener.SetWeddingWishlistAsync(actx, ch, ch.Marriage.ID, wishes).Do(func(v *internal.MarriageReply) error {
+		reply := v
 		if reply.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
-			return nil, nil
+			return nil
 		}
 		ch.Marriage = NewMarriageFromInternalProto(reply.GetMarriage())
 		if item, err := NewItem(ticket.Invitation, ticket.InvitationCount, ch.GameWorld); err == nil {
@@ -307,10 +307,10 @@ func (ch *Character) SubmitWeddingWishlist(actx actor.Context, wishes []string) 
 		}
 		if ch.Marriage.Reserved() {
 			ch.Listener.OnEngageResult(ch, pconst.EngageResultReserved)
-			return nil, nil
+			return nil
 		}
 		ch.Listener.OnMessage(ch, constant.MsgPopup, "위시리스트를 등록했습니다. 상대방이 위시리스트 등록을 끝낼 때까지 잠시 기다려주세요.")
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("SubmitWeddingWishlist character=%d: %v", ch.GetID(), err)
 	})
@@ -326,22 +326,22 @@ func (ch *Character) InviteWeddingGuest(actx actor.Context, guestName string, ma
 		return
 	}
 
-	ch.Listener.InviteWeddingGuestAsync(actx, ch, marriageID, guestName).Then(func(v interface{}) (interface{}, error) {
-		reply := v.(*internal.InviteWeddingGuestReply)
+	ch.Listener.InviteWeddingGuestAsync(actx, ch, marriageID, guestName).Do(func(v *internal.InviteWeddingGuestReply) error {
+		reply := v
 		switch reply.GetResult() {
 		case internal.MarriageResult_MARRIAGE_RESULT_OK:
 		case internal.MarriageResult_MARRIAGE_RESULT_GUEST_ALREADY_INVITED:
 			ch.Listener.OnMessage(ch, constant.MsgPopup, "대상은 이미 결혼식에 초대되었습니다.")
-			return nil, nil
+			return nil
 		default:
 			ch.Listener.OnEngageResult(ch, pconst.EngageResultWrongName)
-			return nil, nil
+			return nil
 		}
 
 		ch.Inventory.RemoveByItemIDCount(ticket.Invitation, 1)
 		invited, err := NewItem(ticket.InvitedItem, 1, ch.GameWorld)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		invited.(*MiscItem).MarriageID = marriageID
 		parcel := &internal.Parcel{
@@ -354,7 +354,7 @@ func (ch *Character) InviteWeddingGuest(actx actor.Context, guestName string, ma
 			log.Printf("InviteWeddingGuest parcel character=%d guest=%s: %v", ch.GetID(), reply.GetGuestName(), err)
 		})
 		ch.Listener.OnMessage(ch, constant.MsgPopup, "청첩장을 보냈습니다.")
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("InviteWeddingGuest character=%d: %v", ch.GetID(), err)
 	})
@@ -380,30 +380,30 @@ func (ch *Character) OpenWeddingInvitation(actx actor.Context, slot int16, itemI
 		return
 	}
 
-	ch.Listener.GetMarriageAsync(actx, ch, item.MarriageID).Then(func(v interface{}) (interface{}, error) {
-		marriage := NewMarriageFromInternalProto(v.(*internal.MarriageReply).GetMarriage())
+	ch.Listener.GetMarriageAsync(actx, ch, item.MarriageID).Do(func(v *internal.MarriageReply) error {
+		marriage := NewMarriageFromInternalProto(v.GetMarriage())
 		if marriage == nil {
 			ch.Listener.OnEngageResult(ch, pconst.EngageResultInvalidInvitation)
-			return nil, nil
+			return nil
 		}
 		weddingType := uint16(0)
 		if marriage.TicketItemID != 0 {
 			weddingType = uint16(marriage.TicketItemID - constant.WeddingTicketFirst)
 		}
 		ch.Listener.OnWeddingInvitation(ch, marriage.GroomName, marriage.BrideName, weddingType)
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("OpenWeddingInvitation character=%d: %v", ch.GetID(), err)
 	})
 }
 
-func (ch *Character) RequestDivorce(actx actor.Context) (*async.Promise, error) {
+func (ch *Character) RequestDivorce(actx actor.Context) (*async.Promise[string], error) {
 	if ch.Marriage == nil || ch.Marriage.Status != MarriageStatusMarried {
 		return nil, ErrMarriageInvalid
 	}
 
-	return ch.Listener.RequestDivorceAsync(actx, ch, ch.Marriage.ID).Then(func(v interface{}) (interface{}, error) {
-		reply := v.(*internal.MarriageReply)
+	return ch.Listener.RequestDivorceAsync(actx, ch, ch.Marriage.ID).Then(func(v *internal.MarriageReply) (string, error) {
+		reply := v
 		if reply.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
 			return "pending", nil
 		}
@@ -457,10 +457,10 @@ func (ch *Character) GiveWeddingGift(actx actor.Context, slot int16, itemID uint
 	ch.Inventory.RemoveItem(invType, slot, count)
 	ch.weddingGift.pending = true
 	pb := &internal.WeddingGift{SenderName: ch.GetName(), Item: gift.ToProto(0, 0)}
-	ch.Listener.GiveWeddingGiftAsync(actx, ch, ch.weddingGift.receiverID, pb, ch.ToProto(ch.GameWorld.GetWorldID())).Then(func(v interface{}) (interface{}, error) {
+	ch.Listener.GiveWeddingGiftAsync(actx, ch, ch.weddingGift.receiverID, pb, ch.ToProto(ch.GameWorld.GetWorldID())).Do(func(*internal.GiveWeddingGiftReply) error {
 		ch.weddingGift.pending = false
 		ch.Listener.OnWeddingGift(ch, pconst.WeddingGiftGiven, ch.weddingGift.wishes, map[constant.InventoryType][]Item{invType: {gift}})
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		ch.weddingGift.pending = false
 		ch.Inventory.addItemUnchecked(gift, true)
@@ -480,10 +480,10 @@ func (ch *Character) weddingGiftTab(invType constant.InventoryType) []Item {
 	return items
 }
 
-func (ch *Character) OpenWeddingGiftBox(actx actor.Context) *async.Promise {
-	return ch.Listener.LoadWeddingGiftsAsync(actx, ch).Then(func(v interface{}) (interface{}, error) {
+func (ch *Character) OpenWeddingGiftBox(actx actor.Context) *async.Promise[bool] {
+	return ch.Listener.LoadWeddingGiftsAsync(actx, ch).Then(func(v *internal.LoadWeddingGiftsReply) (bool, error) {
 		ch.weddingGift = weddingGiftWindow{}
-		for _, pb := range v.(*internal.LoadWeddingGiftsReply).GetGifts() {
+		for _, pb := range v.GetGifts() {
 			item, err := NewItemFromInternalProto(pb.GetItem(), ch.GameWorld)
 			if err != nil {
 				continue
@@ -533,7 +533,7 @@ func (ch *Character) ReceiveWeddingGift(actx actor.Context, invType constant.Inv
 	}
 
 	ch.weddingGift.pending = true
-	ch.Listener.ClaimWeddingGiftAsync(actx, ch, gift.ID).Then(func(v interface{}) (interface{}, error) {
+	ch.Listener.ClaimWeddingGiftAsync(actx, ch, gift.ID).Do(func(v *internal.ClaimWeddingGiftReply) error {
 		ch.weddingGift.pending = false
 		for i, candidate := range ch.weddingGift.gifts {
 			if candidate == gift {
@@ -541,16 +541,16 @@ func (ch *Character) ReceiveWeddingGift(actx actor.Context, invType constant.Inv
 				break
 			}
 		}
-		if v.(*internal.ClaimWeddingGiftReply).GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
+		if v.GetResult() != internal.MarriageResult_MARRIAGE_RESULT_OK {
 			ch.Listener.OnWeddingGift(ch, pconst.WeddingGiftReceiveFail, nil, nil)
-			return nil, nil
+			return nil
 		}
 		ch.Inventory.addItemUnchecked(gift.Item, true)
 		ch.Listener.OnWeddingGift(ch, pconst.WeddingGiftReceived, nil, map[constant.InventoryType][]Item{invType: ch.weddingGiftTab(invType)})
 		ch.GameWorld.SaveAsync(actx, []*internal.CharacterSaveEntry{ch.ToProto(ch.GameWorld.GetWorldID())}).OnError(func(err error) {
 			log.Printf("ReceiveWeddingGift save character=%d: %v", ch.GetID(), err)
 		})
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		ch.weddingGift.pending = false
 		ch.Listener.OnWeddingGift(ch, pconst.WeddingGiftReceiveFail, nil, nil)

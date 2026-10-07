@@ -435,14 +435,14 @@ func (ac *AllianceContainer) BroadcastGuildLeft(alliancePb *internal.Alliance, r
 	}
 }
 
-func (ac *AllianceContainer) DisbandAsync(ctx actor.Context, allianceID uint32, guildIDs []uint32) *async.Promise {
+func (ac *AllianceContainer) DisbandAsync(ctx actor.Context, allianceID uint32, guildIDs []uint32) *async.Task {
 	if ac.gs == nil {
-		return async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+		return async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	}
-	return ac.gs.guild.RefreshAsync(ctx, guildIDs).Then(func(interface{}) (interface{}, error) {
+	return ac.gs.guild.RefreshAsync(ctx, guildIDs).Do(func() error {
 		ac.Remove(allianceID)
 		ac.broadcastDisband(allianceID, guildIDs)
-		return nil, nil
+		return nil
 	})
 }
 

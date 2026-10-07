@@ -38,9 +38,9 @@ func (h *allianceMqDisbanded) Handle(ctx actor.Context, raw json.RawMessage) err
 	if len(guildIDs) == 0 {
 		guildIDs = gs.alliance.GuildIDs(evt.AllianceID)
 	}
-	gs.alliance.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+	gs.alliance.UpdateAsync(ctx, evt).Do(func() error {
 		gs.alliance.DisbandAsync(ctx, evt.AllianceID, guildIDs)
-		return nil, nil
+		return nil
 	})
 	return nil
 }

@@ -29,7 +29,7 @@ func (h *CheckName) Handle(ctx *core.ClientContext, req *request.CheckName) erro
 
 	reqMsg := &internal.CheckCharacterNameRequest{Name: req.Name, AccountId: ctx.Client.(*client.LoginClient).GetAccountId()}
 
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.CheckCharacterNameReply, error) {
 			return h.ls.internalClient.CheckCharacterName(c, reqMsg)
 		}, func(reply *internal.CheckCharacterNameReply) error {

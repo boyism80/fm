@@ -70,9 +70,9 @@ func (h *Operation) Handle(ctx *core.ClientContext, req *request.CashShopOperati
 	return nil
 }
 
-func (h *Operation) start(ctx *core.ClientContext, character *entity.Character, failed constant.CashShopResultKind) *async.Promise {
+func (h *Operation) start(ctx *core.ClientContext, character *entity.Character, failed constant.CashShopResultKind) *async.Task {
 	character.Busy = true
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise.OnError(func(err error) {
 		character.Busy = false
 		log.Printf("cash shop operation (async): character %d: %v", character.ID(), err)
@@ -176,7 +176,7 @@ func (h *Operation) purchase(ctx *core.ClientContext, character *entity.Characte
 	}
 
 	promise := h.start(ctx, character, failed)
-	async.ThenRPC(promise, func(c context.Context) (*internal.BuyCashItemReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.BuyCashItemReply, error) {
 		return h.cs.internalClient.BuyCashItem(c, &internal.BuyCashItemRequest{
 			WorldId:   h.cs.worldID(),
 			AccountId: character.AccountID(),
@@ -242,7 +242,7 @@ func (h *Operation) buyQuestItem(ctx *core.ClientContext, character *entity.Char
 	}
 
 	promise := h.start(ctx, character, constant.CashShopResultQuestItemFailed)
-	async.ThenRPC(promise, func(c context.Context) (*internal.BuyCashQuestItemReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.BuyCashQuestItemReply, error) {
 		return h.cs.internalClient.BuyCashQuestItem(c, &internal.BuyCashQuestItemRequest{
 			WorldId:     h.cs.worldID(),
 			CharacterId: character.ID(),
@@ -292,7 +292,7 @@ func (h *Operation) payBack(ctx *core.ClientContext, character *entity.Character
 	refund := commodity.Price * commodity.PayBackRate / 100
 
 	promise := h.start(ctx, character, constant.CashShopResultPayBackFailed)
-	async.ThenRPC(promise, func(c context.Context) (*internal.PayBackCashItemReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.PayBackCashItemReply, error) {
 		return h.cs.internalClient.PayBackCashItem(c, &internal.PayBackCashItemRequest{
 			WorldId:    h.cs.worldID(),
 			AccountId:  character.AccountID(),
@@ -323,7 +323,7 @@ func (h *Operation) setWishlist(ctx *core.ClientContext, character *entity.Chara
 	}
 
 	promise := h.start(ctx, character, constant.CashShopResultWishlistFailed)
-	async.ThenRPC(promise, func(c context.Context) (*internal.SetCashWishlistReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.SetCashWishlistReply, error) {
 		return h.cs.internalClient.SetCashWishlist(c, &internal.SetCashWishlistRequest{
 			WorldId:      h.cs.worldID(),
 			CharacterId:  character.ID(),
@@ -362,7 +362,7 @@ func (h *Operation) takeOut(ctx *core.ClientContext, character *entity.Character
 	pb.InventoryType = uint32(invType)
 
 	promise := h.start(ctx, character, constant.CashShopResultTakeOutFailed)
-	async.ThenRPC(promise, func(c context.Context) (*internal.TakeOutCashItemReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.TakeOutCashItemReply, error) {
 		return h.cs.internalClient.TakeOutCashItem(c, &internal.TakeOutCashItemRequest{
 			WorldId:     h.cs.worldID(),
 			AccountId:   character.AccountID(),
@@ -397,7 +397,7 @@ func (h *Operation) putIn(ctx *core.ClientContext, character *entity.Character, 
 	cashItem := &internal.CashItem{BuyerName: character.Name(), Item: stored}
 
 	promise := h.start(ctx, character, constant.CashShopResultPutInFailed)
-	async.ThenRPC(promise, func(c context.Context) (*internal.PutInCashItemReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.PutInCashItemReply, error) {
 		return h.cs.internalClient.PutInCashItem(c, &internal.PutInCashItemRequest{
 			WorldId:     h.cs.worldID(),
 			AccountId:   character.AccountID(),

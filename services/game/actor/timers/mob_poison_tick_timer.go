@@ -10,10 +10,6 @@ import (
 
 type MobPoisonTickTimer struct{}
 
-func (*MobPoisonTickTimer) New() *MobPoisonTickTimer {
-	return &MobPoisonTickTimer{}
-}
-
 func (t *MobPoisonTickTimer) GetName() string {
 	return "MobPoisonTick"
 }

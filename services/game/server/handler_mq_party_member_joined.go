@@ -25,21 +25,21 @@ func (h *partyMqMemberJoined) Handle(ctx actor.Context, raw json.RawMessage) err
 	if !ok {
 		return nil
 	}
-	pc.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+	pc.UpdateAsync(ctx, evt).Do(func() error {
 		if raw == nil {
-			return nil, nil
+			return nil
 		}
 		var extra struct {
 			CharacterID uint32 `json:"character_id"`
 		}
 		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 {
-			return nil, nil
+			return nil
 		}
 		party := pc.Get(evt.PartyID)
 		if party != nil {
 			pc.BroadcastMemberJoined(party, extra.CharacterID)
 		}
-		return nil, nil
+		return nil
 	})
 	return nil
 }

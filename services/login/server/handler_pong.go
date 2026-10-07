@@ -28,7 +28,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 	accountId := c.GetAccountId()
 	worldId := c.GetWorldId()
 	if accountId != 0 {
-		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(cctx context.Context) (*internal.RefreshSessionReply, error) {
 				return h.ls.internalClient.RefreshSession(cctx, &internal.RefreshSessionRequest{
 					WorldId:   worldId,

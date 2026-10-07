@@ -14,10 +14,6 @@ import (
 
 type ClientPingTimer struct{}
 
-func (*ClientPingTimer) New() *ClientPingTimer {
-	return &ClientPingTimer{}
-}
-
 func (t *ClientPingTimer) GetName() string {
 	return "ClientPing"
 }

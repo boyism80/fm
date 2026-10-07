@@ -47,8 +47,8 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 	var guildReply *internal.GetGuildReply
 	var allianceReply *internal.GetAllianceReply
 
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.EnterGameReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.EnterGameReply, error) {
 		return ic.EnterGame(c, reqMsg)
 	}, func(reply *internal.EnterGameReply) error {
 		if !reply.GetFound() || reply.GetCharacter() == nil {
@@ -57,7 +57,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		enterReply = reply
 		return nil
 	})
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetPartyReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.GetPartyReply, error) {
 		if enterReply.PartyId == nil {
 			return &internal.GetPartyReply{Found: false}, nil
 		}
@@ -69,7 +69,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		partyReply = reply
 		return nil
 	})
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGuildReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.GetGuildReply, error) {
 		if enterReply.GuildId == nil {
 			return &internal.GetGuildReply{Found: false}, nil
 		}
@@ -82,7 +82,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 		guildReply = reply
 		return nil
 	})
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetAllianceReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.GetAllianceReply, error) {
 		if guildReply == nil || !guildReply.GetFound() || guildReply.GetGuild() == nil {
 			return &internal.GetAllianceReply{Found: false}, nil
 		}
@@ -113,8 +113,8 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 
 		characterID := req.PlayerId
 		channelID := h.gs.config.ChannelId
-		logout := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		logout = async.ThenRPC(logout, func(c context.Context) (*internal.LogoutSessionReply, error) {
+		logout := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		logout.ThenRPC(func(c context.Context) (*internal.LogoutSessionReply, error) {
 			return ic.LogoutSession(c, &internal.LogoutSessionRequest{
 				WorldId:          worldId,
 				AccountId:        enterReply.GetCharacter().GetAccountId(),
@@ -122,9 +122,7 @@ func (h *LoginGame) Handle(ctx *core.ClientContext, req *request.LoginGame) erro
 				ChannelId:        &channelID,
 				DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_GAME_SERVER,
 			})
-		}, func(*internal.LogoutSessionReply) error {
-			return nil
-		})
+		}, nil)
 		logout.OnError(func(err error) {
 			log.Printf("LoginGame: logout session of character %d after login failure: %v", characterID, err)
 		})

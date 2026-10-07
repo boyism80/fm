@@ -17,6 +17,7 @@ import (
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/stream"
 	"github.com/boyism80/fm/types"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type Look struct {
@@ -722,11 +723,11 @@ func (ch *Character) EnterPortal(ctx actor.Context, portal *Portal) error {
 			ActorContext: ctx,
 			ActorPID:     m.LogicActorPID(),
 		})
-		luax.CallAsync(ctx, root, thread, "on_enter", ch, portal).Then(func(_ interface{}) (interface{}, error) {
+		luax.CallAsync(ctx, root, thread, "on_enter", ch, portal).Do(func([]lua.LValue) error {
 			if ch.Dialog.Thread() == nil {
 				ch.Listener.OnUnlockAction(ch)
 			}
-			return nil, nil
+			return nil
 		}).OnError(func(err error) {
 			log.Printf("portal script %s failed: %v", scriptPath, err)
 			ch.Listener.OnScriptError(ch, scriptPath, err)

@@ -23,21 +23,18 @@ func registerMarriageLuaFuncs(gs *GameServer, luaState *lua.LState) {
 			WorldId:    gs.config.WorldId,
 			MarriageId: uint32(L.CheckNumber(1)),
 		}
-		promise := async.ThenRPC(
-			async.NewPromise(cfg.ActorContext, core.InternalRPCPerStepTimeout),
+		promise := async.NewTask(cfg.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.MarriageReply, error) {
 				return gs.internalClient.FinishWedding(c, req)
 			},
-			func(reply *internal.MarriageReply) error {
-				return nil
-			},
+			nil,
 		)
-		return entity.LuaYieldPromise(L, gs, promise, func(result interface{}, err error) []lua.LValue {
+		return entity.LuaYieldPromise(L, gs, promise, func(reply *internal.MarriageReply, err error) []lua.LValue {
 			if err != nil {
 				log.Printf("finish_wedding marriage=%d: %v", req.GetMarriageId(), err)
 				return []lua.LValue{lua.LFalse}
 			}
-			return []lua.LValue{lua.LBool(result.(*internal.MarriageReply).GetResult() == internal.MarriageResult_MARRIAGE_RESULT_OK)}
+			return []lua.LValue{lua.LBool(reply.GetResult() == internal.MarriageResult_MARRIAGE_RESULT_OK)}
 		})
 	})
 }

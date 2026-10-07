@@ -11,8 +11,8 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func (s partySystem) UpdateMemberAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
-	p := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+func (s partySystem) UpdateMemberAsync(ctx actor.Context, ch *entity.Character) *async.Task {
+	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if s.gs == nil || ch == nil || s.gs.internalClient == nil {
 		return p
 	}
@@ -37,7 +37,7 @@ func (s partySystem) UpdateMemberAsync(ctx actor.Context, ch *entity.Character) 
 	return pc.sendMemberUpdate(p, req)
 }
 
-func (pc *PartyContainer) sendMemberUpdate(p *async.Promise, req *internal.UpdatePartyMemberRequest) *async.Promise {
+func (pc *PartyContainer) sendMemberUpdate(p *async.Task, req *internal.UpdatePartyMemberRequest) *async.Task {
 	cid := req.Member.GetCharacterId()
 	p.OnError(func(err error) {
 		log.Printf("UpdatePartyMember async char %d: %v", cid, err)
@@ -52,12 +52,10 @@ func (pc *PartyContainer) sendMemberUpdate(p *async.Promise, req *internal.Updat
 		}
 		pc.memberUpdates[cid] = nil
 		pc.mu.Unlock()
-		pc.sendMemberUpdate(async.NewPromise(nil, core.InternalRPCPerStepTimeout), next)
+		pc.sendMemberUpdate(async.NewTask(nil, core.InternalRPCPerStepTimeout), next)
 	})
-	async.ThenRPC(p, func(c context.Context) (*internal.UpdatePartyMemberReply, error) {
+	p.ThenRPC(func(c context.Context) (*internal.UpdatePartyMemberReply, error) {
 		return pc.internalClient.UpdatePartyMember(c, req)
-	}, func(*internal.UpdatePartyMemberReply) error {
-		return nil
-	})
+	}, nil)
 	return p
 }

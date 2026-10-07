@@ -44,8 +44,8 @@ func NewPartyContainer(gs *GameServer, worldID uint32, ic internal.InternalClien
 	}
 }
 
-func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *async.Promise {
-	p := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope) *async.Task {
+	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if pc == nil {
 		return p
 	}
@@ -70,13 +70,13 @@ func (pc *PartyContainer) UpdateAsync(ctx actor.Context, evt PartyEventEnvelope)
 	}
 
 	if pc.internalClient == nil {
-		p.Then(func(interface{}) (interface{}, error) {
-			return nil, errors.New("party apply: internal client unavailable")
+		p.Do(func() error {
+			return errors.New("party apply: internal client unavailable")
 		})
 		return p
 	}
 
-	async.ThenRPC(p,
+	p.ThenRPC(
 		func(c context.Context) (*internal.GetPartyReply, error) {
 			return pc.internalClient.GetParty(c, &internal.GetPartyRequest{
 				WorldId: pc.worldID,
@@ -253,8 +253,8 @@ func (pc *PartyContainer) DeliverPartySilent(party *entity.Party) {
 
 // SendPartySilentAsync builds a Promise that sends party silent UI state to the character. Uses cache
 // when warm; otherwise schedules GetParty via ThenRPC (from map actor Receive).
-func (pc *PartyContainer) SendPartySilentAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
-	p := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+func (pc *PartyContainer) SendPartySilentAsync(ctx actor.Context, ch *entity.Character) *async.Task {
+	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if pc == nil || ch == nil || pc.gs == nil || ctx == nil {
 		return p
 	}
@@ -267,16 +267,16 @@ func (pc *PartyContainer) SendPartySilentAsync(ctx actor.Context, ch *entity.Cha
 		log.Printf("SendPartySilentAsync: GetParty char %d party %d: %v", ch.GetID(), partyID, err)
 	})
 	if ent := pc.Get(partyID); ent != nil {
-		p.Then(func(interface{}) (interface{}, error) {
+		p.Do(func() error {
 			pc.sendPartySilentToCharacter(ch, ent)
-			return nil, nil
+			return nil
 		})
 		return p
 	}
 	if pc.internalClient == nil {
 		return p
 	}
-	async.ThenRPC(p,
+	p.ThenRPC(
 		func(c context.Context) (*internal.GetPartyReply, error) {
 			return pc.internalClient.GetParty(c, &internal.GetPartyRequest{
 				WorldId: pc.worldID,

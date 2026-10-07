@@ -48,11 +48,11 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 
 	worldID := h.gs.config.WorldId
 	charID := ch.GetID()
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 
 	switch req.Action {
 	case pconst.GuildBulletinBoardC2SListThreads:
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.ListGuildBulletinBoardThreadsReply, error) {
+		promise.ThenRPC(func(c context.Context) (*internal.ListGuildBulletinBoardThreadsReply, error) {
 			return h.gs.internalClient.ListGuildBulletinBoardThreads(c, &internal.ListGuildBulletinBoardThreadsRequest{
 				WorldId:     worldID,
 				CharacterId: charID,
@@ -66,7 +66,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 			return nil
 		})
 	case pconst.GuildBulletinBoardC2SShowThread:
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.ShowGuildBulletinBoardThreadReply, error) {
+		promise.ThenRPC(func(c context.Context) (*internal.ShowGuildBulletinBoardThreadReply, error) {
 			return h.gs.internalClient.ShowGuildBulletinBoardThread(c, &internal.ShowGuildBulletinBoardThreadRequest{
 				WorldId:       worldID,
 				CharacterId:   charID,
@@ -83,7 +83,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 		})
 	case pconst.GuildBulletinBoardC2SWriteThread:
 		if req.Edit {
-			promise = async.ThenRPC(promise, func(c context.Context) (*internal.UpdateGuildBulletinBoardThreadReply, error) {
+			promise.ThenRPC(func(c context.Context) (*internal.UpdateGuildBulletinBoardThreadReply, error) {
 				return h.gs.internalClient.UpdateGuildBulletinBoardThread(c, &internal.UpdateGuildBulletinBoardThreadRequest{
 					WorldId:       worldID,
 					CharacterId:   charID,
@@ -102,7 +102,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 				return nil
 			})
 		} else {
-			promise = async.ThenRPC(promise, func(c context.Context) (*internal.CreateGuildBulletinBoardThreadReply, error) {
+			promise.ThenRPC(func(c context.Context) (*internal.CreateGuildBulletinBoardThreadReply, error) {
 				return h.gs.internalClient.CreateGuildBulletinBoardThread(c, &internal.CreateGuildBulletinBoardThreadRequest{
 					WorldId:     worldID,
 					CharacterId: charID,
@@ -125,7 +125,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 			})
 		}
 	case pconst.GuildBulletinBoardC2SDeleteThread:
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.DeleteGuildBulletinBoardThreadReply, error) {
+		promise.ThenRPC(func(c context.Context) (*internal.DeleteGuildBulletinBoardThreadReply, error) {
 			return h.gs.internalClient.DeleteGuildBulletinBoardThread(c, &internal.DeleteGuildBulletinBoardThreadRequest{
 				WorldId:       worldID,
 				CharacterId:   charID,
@@ -136,7 +136,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 			return nil
 		})
 	case pconst.GuildBulletinBoardC2SWriteReply:
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.CreateGuildBulletinBoardReplyReply, error) {
+		promise.ThenRPC(func(c context.Context) (*internal.CreateGuildBulletinBoardReplyReply, error) {
 			return h.gs.internalClient.CreateGuildBulletinBoardReply(c, &internal.CreateGuildBulletinBoardReplyRequest{
 				WorldId:       worldID,
 				CharacterId:   charID,
@@ -153,7 +153,7 @@ func (h *GuildBulletinBoardOperation) Handle(ctx *core.ClientContext, req *reque
 			return nil
 		})
 	case pconst.GuildBulletinBoardC2SDeleteReply:
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.DeleteGuildBulletinBoardReplyReply, error) {
+		promise.ThenRPC(func(c context.Context) (*internal.DeleteGuildBulletinBoardReplyReply, error) {
 			return h.gs.internalClient.DeleteGuildBulletinBoardReply(c, &internal.DeleteGuildBulletinBoardReplyRequest{
 				WorldId:       worldID,
 				CharacterId:   charID,

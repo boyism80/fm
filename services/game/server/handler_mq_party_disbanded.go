@@ -26,18 +26,18 @@ func (h *partyMqDisbanded) Handle(ctx actor.Context, raw json.RawMessage) error 
 		return nil
 	}
 	prevParty := pc.Get(evt.PartyID)
-	pc.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+	pc.UpdateAsync(ctx, evt).Do(func() error {
 		if raw == nil {
-			return nil, nil
+			return nil
 		}
 		var extra struct {
 			CharacterID uint32 `json:"character_id"`
 		}
 		if err := json.Unmarshal(raw, &extra); err != nil || extra.CharacterID == 0 || prevParty == nil {
-			return nil, nil
+			return nil
 		}
 		pc.BroadcastDisbanded(prevParty, extra.CharacterID)
-		return nil, nil
+		return nil
 	})
 	return nil
 }

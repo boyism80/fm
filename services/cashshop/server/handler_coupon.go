@@ -47,9 +47,9 @@ func (h *Coupon) fail(ctx *core.ClientContext, failure constant.CashShopFailure)
 	_ = ctx.Client.Send(&response.CashShopResult{Kind: constant.CashShopResultCouponFailed, Failure: failure}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (h *Coupon) start(ctx *core.ClientContext, character *entity.Character) *async.Promise {
+func (h *Coupon) start(ctx *core.ClientContext, character *entity.Character) *async.Task {
 	character.Busy = true
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 	promise.OnError(func(err error) {
 		character.Busy = false
 		log.Printf("cash shop coupon (async): character %d: %v", character.ID(), err)
@@ -69,7 +69,7 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, re
 	}
 
 	promise := h.start(ctx, character)
-	async.ThenRPC(promise, func(c context.Context) (*internal.FindCashCouponReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.FindCashCouponReply, error) {
 		return h.cs.internalClient.FindCashCoupon(c, &internal.FindCashCouponRequest{WorldId: h.cs.worldID(), Code: req.Code})
 	}, func(reply *internal.FindCashCouponReply) error {
 		character.Busy = false
@@ -104,7 +104,7 @@ func (h *Coupon) redeem(ctx *core.ClientContext, character *entity.Character, re
 
 func (h *Coupon) claim(ctx *core.ClientContext, character *entity.Character, code string, kind internal.CashCouponKind, value uint32, item *internal.CashItem) {
 	promise := h.start(ctx, character)
-	async.ThenRPC(promise, func(c context.Context) (*internal.RedeemCashCouponReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.RedeemCashCouponReply, error) {
 		return h.cs.internalClient.RedeemCashCoupon(c, &internal.RedeemCashCouponRequest{
 			WorldId:     h.cs.worldID(),
 			AccountId:   character.AccountID(),

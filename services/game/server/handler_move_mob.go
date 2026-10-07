@@ -12,6 +12,7 @@ import (
 	"github.com/boyism80/fm/services/game/client"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
+	lua "github.com/yuin/gopher-lua"
 )
 
 const mobSkillScriptTimerKey = "mobSkillScript"
@@ -139,9 +140,9 @@ func (h *MoveMob) runScript(ctx *core.ClientContext, mapInstance *entity.Map, mo
 		target = controller
 	}
 	hook := "on_mob_skill"
-	luax.CallAsync(ctx.ActorContext, root, thread, hook, mob, target, skill).Then(func(_ interface{}) (interface{}, error) {
+	luax.CallAsync(ctx.ActorContext, root, thread, hook, mob, target, skill).Do(func([]lua.LValue) error {
 		h.consumeMobSkillMp(mob, skill)
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("mob skill %s: %v", hook, err)
 	})

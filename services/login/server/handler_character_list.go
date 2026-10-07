@@ -45,8 +45,8 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 	}
 
 	sendCharListFallback := true
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
 		return h.ls.internalClient.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
 			WorldId:   worldId,
 			ChannelId: uint32(req.Channel),
@@ -64,7 +64,7 @@ func (h *CharacterList) Handle(ctx *core.ClientContext, req *request.CharacterLi
 		}
 		return nil
 	})
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetCharacterListReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.GetCharacterListReply, error) {
 		return h.ls.internalClient.GetCharacterList(c, reqMsg)
 	}, func(reply *internal.GetCharacterListReply) error {
 		return h.sendCharacterList(ctx, reply)

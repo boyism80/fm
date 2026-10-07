@@ -15,7 +15,7 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func (s guildSystem) DisbandAsync(ctx actor.Context, ch *entity.Character, result *int) *async.Promise {
+func (s guildSystem) DisbandAsync(ctx actor.Context, ch *entity.Character, result *int) *async.Promise[*internal.DisbandGuildReply] {
 	fail := int(constant.GuildDisbandResultFailed)
 	if result == nil {
 		result = &fail
@@ -27,8 +27,8 @@ func (s guildSystem) DisbandAsync(ctx actor.Context, ch *entity.Character, resul
 	*result = fail
 	worldID := s.gs.config.WorldId
 	charID := ch.GetID()
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	return async.ThenRPC(promise, func(c context.Context) (*internal.DisbandGuildReply, error) {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+	return promise.ThenRPC(func(c context.Context) (*internal.DisbandGuildReply, error) {
 		return s.gs.internalClient.DisbandGuild(c, &internal.DisbandGuildRequest{
 			WorldId:     worldID,
 			CharacterId: charID,
@@ -57,7 +57,7 @@ func (s guildSystem) DisbandAsync(ctx actor.Context, ch *entity.Character, resul
 	})
 }
 
-func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, extendedCap bool, result *int) *async.Promise {
+func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, extendedCap bool, result *int) *async.Promise[*internal.IncreaseGuildCapacityReply] {
 	fail := int(constant.GuildIncreaseCapacityResultFailed)
 	if result == nil {
 		result = &fail
@@ -77,8 +77,8 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 	*result = fail
 	worldID := s.gs.config.WorldId
 	charID := ch.GetID()
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	return async.ThenRPC(promise, func(c context.Context) (*internal.IncreaseGuildCapacityReply, error) {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+	return promise.ThenRPC(func(c context.Context) (*internal.IncreaseGuildCapacityReply, error) {
 		return s.gs.internalClient.IncreaseGuildCapacity(c, &internal.IncreaseGuildCapacityRequest{
 			WorldId:     worldID,
 			CharacterId: charID,
@@ -112,13 +112,13 @@ func (s guildSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, e
 	})
 }
 
-func (s guildSystem) GainGPAsync(ctx actor.Context, guildID uint32, amount int32) *async.Promise {
+func (s guildSystem) GainGPAsync(ctx actor.Context, guildID uint32, amount int32) *async.Promise[*internal.GainGuildGPReply] {
 	if s.gs == nil || s.gs.internalClient == nil || guildID == 0 || amount == 0 {
 		return nil
 	}
 	worldID := s.gs.config.WorldId
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	return async.ThenRPC(promise, func(c context.Context) (*internal.GainGuildGPReply, error) {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+	return promise.ThenRPC(func(c context.Context) (*internal.GainGuildGPReply, error) {
 		return s.gs.internalClient.GainGuildGP(c, &internal.GainGuildGPRequest{
 			WorldId: worldID,
 			GuildId: guildID,
@@ -134,13 +134,13 @@ func (s guildSystem) GainGPAsync(ctx actor.Context, guildID uint32, amount int32
 	})
 }
 
-func (s guildSystem) SendMessageAsync(ctx actor.Context, guildID uint32, messageType constant.ServerMessageType, message string) *async.Promise {
+func (s guildSystem) SendMessageAsync(ctx actor.Context, guildID uint32, messageType constant.ServerMessageType, message string) *async.Promise[*internal.SendGuildMessageReply] {
 	if s.gs == nil || s.gs.internalClient == nil || guildID == 0 || message == "" {
 		return nil
 	}
 	worldID := s.gs.config.WorldId
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	return async.ThenRPC(promise, func(c context.Context) (*internal.SendGuildMessageReply, error) {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+	return promise.ThenRPC(func(c context.Context) (*internal.SendGuildMessageReply, error) {
 		return s.gs.internalClient.SendGuildMessage(c, &internal.SendGuildMessageRequest{
 			WorldId:     worldID,
 			GuildId:     guildID,
@@ -157,14 +157,14 @@ func (s guildSystem) SendMessageAsync(ctx actor.Context, guildID uint32, message
 	})
 }
 
-func (s guildSystem) ShowRankingAsync(ctx actor.Context, ch *entity.Character, npcID uint32) *async.Promise {
+func (s guildSystem) ShowRankingAsync(ctx actor.Context, ch *entity.Character, npcID uint32) *async.Promise[*internal.GetGuildRankingReply] {
 	if s.gs == nil || s.gs.internalClient == nil {
 		return nil
 	}
 	worldID := s.gs.config.WorldId
 	charID := ch.GetID()
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	return async.ThenRPC(promise, func(c context.Context) (*internal.GetGuildRankingReply, error) {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+	return promise.ThenRPC(func(c context.Context) (*internal.GetGuildRankingReply, error) {
 		return s.gs.internalClient.GetGuildRanking(c, &internal.GetGuildRankingRequest{
 			WorldId: worldID,
 		})
@@ -193,7 +193,7 @@ func (s guildSystem) ShowRankingAsync(ctx actor.Context, ch *entity.Character, n
 	})
 }
 
-func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character, allianceName string, result *int) *async.Promise {
+func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character, allianceName string, result *int) *async.Promise[*internal.CreateAllianceReply] {
 	fail := int(constant.AllianceCreateResultFailed)
 	if result == nil {
 		result = &fail
@@ -219,8 +219,8 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 	*result = fail
 	worldID := s.gs.config.WorldId
 	charID := ch.GetID()
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	return async.ThenRPC(promise, func(c context.Context) (*internal.CreateAllianceReply, error) {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+	return promise.ThenRPC(func(c context.Context) (*internal.CreateAllianceReply, error) {
 		return s.gs.internalClient.CreateAlliance(c, &internal.CreateAllianceRequest{
 			WorldId:            worldID,
 			AllianceName:       trimmed,
@@ -252,7 +252,7 @@ func (s guildSystem) CreateAllianceAsync(ctx actor.Context, ch *entity.Character
 	})
 }
 
-func (s guildSystem) DisbandAllianceAsync(ctx actor.Context, ch *entity.Character, result *int) *async.Promise {
+func (s guildSystem) DisbandAllianceAsync(ctx actor.Context, ch *entity.Character, result *int) *async.Promise[*internal.DisbandAllianceReply] {
 	fail := int(constant.AllianceDisbandResultFailed)
 	if result == nil {
 		result = &fail
@@ -289,8 +289,8 @@ func (s guildSystem) DisbandAllianceAsync(ctx actor.Context, ch *entity.Characte
 		return nil
 	}
 	worldID := s.gs.config.WorldId
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	return async.ThenRPC(promise, func(c context.Context) (*internal.DisbandAllianceReply, error) {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+	return promise.ThenRPC(func(c context.Context) (*internal.DisbandAllianceReply, error) {
 		return s.gs.internalClient.DisbandAlliance(c, &internal.DisbandAllianceRequest{
 			WorldId:     worldID,
 			CharacterId: charID,

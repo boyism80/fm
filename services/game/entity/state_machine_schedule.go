@@ -67,7 +67,7 @@ func (sm *StateMachine) Schedule(id string, ms int64, hook string) {
 	})
 }
 
-func (sm *StateMachine) ScheduleAsync(ctx actor.Context, id string, ms int64, hook string) *async.Promise {
+func (sm *StateMachine) ScheduleAsync(ctx actor.Context, id string, ms int64, hook string) *async.Promise[interface{}] {
 	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
 		return nil
 	}
@@ -106,7 +106,7 @@ func (sm *StateMachine) Cron(id, expr, hook string) {
 	})
 }
 
-func (sm *StateMachine) CronAsync(ctx actor.Context, id, expr, hook string) *async.Promise {
+func (sm *StateMachine) CronAsync(ctx actor.Context, id, expr, hook string) *async.Promise[interface{}] {
 	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
 		return nil
 	}
@@ -135,7 +135,7 @@ func (sm *StateMachine) CancelSchedule(id string) {
 	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &CancelStateMachineNamedSchedule{ID: id})
 }
 
-func (sm *StateMachine) CancelScheduleAsync(ctx actor.Context, id string) *async.Promise {
+func (sm *StateMachine) CancelScheduleAsync(ctx actor.Context, id string) *async.Promise[interface{}] {
 	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
 		return nil
 	}

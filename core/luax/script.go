@@ -99,11 +99,6 @@ func Close(thread *lua.LState) {
 	thread.Close()
 }
 
-func ResultValues(value interface{}) []lua.LValue {
-	vals, _ := value.([]lua.LValue)
-	return vals
-}
-
 func completeCall(thread *lua.LState, values []lua.LValue, err error) {
 	cfg, ok := GetConfiguration(thread)
 	if !ok || cfg.CallPromise == nil {
@@ -159,8 +154,8 @@ func Call(thread *lua.LState, hook string, args ...interface{}) (lua.LValue, err
 	return ret, nil
 }
 
-func CallAsync(ctx actor.Context, root *lua.LState, thread *lua.LState, hook string, args ...interface{}) *async.Promise {
-	promise := async.NewDeferred(ctx)
+func CallAsync(ctx actor.Context, root *lua.LState, thread *lua.LState, hook string, args ...interface{}) *async.Promise[[]lua.LValue] {
+	promise := async.NewDeferred[[]lua.LValue](ctx)
 	if root == nil || thread == nil {
 		promise.SetError(fmt.Errorf("nil lua root/thread"))
 		return promise

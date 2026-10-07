@@ -36,13 +36,13 @@ func (ch *Character) OpenStorage(actx actor.Context, npcID uint32, storeFee int3
 		return
 	}
 
-	ch.Listener.LoadStorageAsync(actx, ch).Then(func(v interface{}) (interface{}, error) {
+	ch.Listener.LoadStorageAsync(actx, ch).Do(func(v *internal.LoadStorageReply) error {
 		if ch.Storage != nil {
-			return nil, nil
+			return nil
 		}
-		ch.Storage = NewStorageFromInternalProto(v.(*internal.LoadStorageReply).GetStorage(), ch)
+		ch.Storage = NewStorageFromInternalProto(v.GetStorage(), ch)
 		ch.Storage.Open(npcID, storeFee, takeOutFee)
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("OpenStorage character=%d: %v", ch.GetID(), err)
 	})

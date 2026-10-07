@@ -5,6 +5,7 @@ import (
 
 	"github.com/boyism80/fm/core/clock"
 	"github.com/boyism80/fm/core/luax"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/entity"
 	lua "github.com/yuin/gopher-lua"
 )
@@ -104,7 +105,7 @@ func requestServerDateTimeFromLua(gs *GameServer, L *lua.LState, reset bool, dat
 		L.Push(lua.LString("actor context not found"))
 		return 2
 	}
-	return entity.LuaYieldPromise(L, gs, gs.SetServerDateTimeAsync(cfg.ActorContext, reset, datetime), func(_ interface{}, err error) []lua.LValue {
+	return entity.LuaYieldPromise(L, gs, gs.SetServerDateTimeAsync(cfg.ActorContext, reset, datetime), func(_ *internal.SetServerDateTimeReply, err error) []lua.LValue {
 		if err != nil {
 			log.Printf("server datetime: %v", err)
 			return []lua.LValue{lua.LFalse, lua.LString(err.Error())}

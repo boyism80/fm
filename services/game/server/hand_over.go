@@ -27,8 +27,8 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 
 	// Packets that arrive while the character is saved and handed over are dropped, so nothing changes after the save.
 	gameClient.SetChangingChannel(true)
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, findRoute, func(found *response.SwitchChannel) error {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(findRoute, func(found *response.SwitchChannel) error {
 		if found == nil || found.IP == "" || found.Port == 0 {
 			block()
 			return fmt.Errorf("hand over: no route (world=%d)", worldID)
@@ -42,7 +42,7 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 		debuffs = character.DebuffsToProto()
 		return nil
 	})
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.SaveCharactersReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.SaveCharactersReply, error) {
 		return ic.SaveCharacters(c, &internal.SaveCharactersRequest{Entries: []*internal.CharacterSaveEntry{entry}})
 	}, func(saveReply *internal.SaveCharactersReply) error {
 		if saveReply == nil || !saveReply.GetOk() {
@@ -54,7 +54,7 @@ func (gs *GameServer) handOver(ctx *core.ClientContext, gameClient *client.GameC
 	accID := character.AccountID
 	charID := character.GetID()
 	sourceChannel := gs.config.ChannelId
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.BeginGameTransitionReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.BeginGameTransitionReply, error) {
 		if accID == 0 || charID == 0 {
 			return nil, fmt.Errorf("hand over: missing account or character id")
 		}

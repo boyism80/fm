@@ -14,10 +14,6 @@ import (
 
 type MistPoisonTickTimer struct{}
 
-func (*MistPoisonTickTimer) New() *MistPoisonTickTimer {
-	return &MistPoisonTickTimer{}
-}
-
 func (t *MistPoisonTickTimer) GetName() string {
 	return "MistPoisonTick"
 }

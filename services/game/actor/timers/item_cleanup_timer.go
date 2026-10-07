@@ -11,10 +11,6 @@ import (
 
 type ItemCleanupTimer struct{}
 
-func (*ItemCleanupTimer) New() *ItemCleanupTimer {
-	return &ItemCleanupTimer{}
-}
-
 func (t *ItemCleanupTimer) GetName() string {
 	return "ItemCleanup"
 }

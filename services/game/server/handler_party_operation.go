@@ -47,7 +47,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 	switch req.Operation {
 	case constant.PartyC2SCreate:
 		leader := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
-		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.CreatePartyReply, error) {
 				req := &internal.CreatePartyRequest{
 					WorldId: worldID,
@@ -76,7 +76,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		return nil
 
 	case constant.PartyC2SLeave:
-		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.LeavePartyReply, error) {
 				return h.gs.internalClient.LeaveParty(c, &internal.LeavePartyRequest{
 					WorldId:     worldID,
@@ -102,7 +102,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 	case constant.PartyC2SAcceptInvite:
 		skipPending := ch.ShouldSkipInvitePendingForPartySearch(req.PartyID)
 		member := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_MEMBER)
-		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.JoinPartyReply, error) {
 				return h.gs.internalClient.JoinParty(c, &internal.JoinPartyRequest{
 					WorldId:                worldID,
@@ -134,7 +134,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		if partyIDPtr == nil || req.TargetCharacterID == 0 {
 			return nil
 		}
-		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.ChangePartyLeaderReply, error) {
 				return h.gs.internalClient.ChangePartyLeader(c, &internal.ChangePartyLeaderRequest{
 					WorldId:              worldID,
@@ -160,10 +160,10 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		pid := ch.GetPartyID()
 		hasParty := pid != nil
 		var inv *internal.InvitePartyReply
-		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
 		if !hasParty {
 			leader := ch.ToProtoPartyMember(worldID, int32(h.gs.config.ChannelId), internal.PartyMemberRole_PARTY_MEMBER_ROLE_LEADER)
-			promise = async.ThenRPC(promise,
+			promise.ThenRPC(
 				func(c context.Context) (*internal.CreatePartyReply, error) {
 					req := &internal.CreatePartyRequest{
 						WorldId: worldID,
@@ -188,7 +188,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 				},
 			)
 		}
-		promise = async.ThenRPC(promise,
+		promise.ThenRPC(
 			func(c context.Context) (*internal.InvitePartyReply, error) {
 				return h.gs.internalClient.InviteParty(c, &internal.InvitePartyRequest{
 					WorldId:             worldID,
@@ -207,7 +207,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 				return nil
 			},
 		)
-		promise = async.ThenRPC(promise,
+		promise.ThenRPC(
 			func(c context.Context) (*internal.GetPartyReply, error) {
 				if inv == nil || !inv.GetOk() {
 					return &internal.GetPartyReply{Found: false}, nil
@@ -234,7 +234,7 @@ func (h *PartyOperation) Handle(ctx *core.ClientContext, req *request.PartyOpera
 		return nil
 
 	case constant.PartyC2SExpel:
-		async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+		async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 			func(c context.Context) (*internal.ExpelPartyReply, error) {
 				return h.gs.internalClient.ExpelParty(c, &internal.ExpelPartyRequest{
 					WorldId:              worldID,

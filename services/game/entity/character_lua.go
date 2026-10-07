@@ -1622,7 +1622,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 					L.Push(lua.LFalse)
 					return 1
 				}
-				return LuaYieldPromise(L, ch.GameWorld, promise, func(_ interface{}, err error) []lua.LValue {
+				return LuaYieldPromise(L, ch.GameWorld, promise, func(_ *internal.BroadcastNoticeReply, err error) []lua.LValue {
 					if err != nil {
 						return []lua.LValue{lua.LFalse}
 					}
@@ -1665,11 +1665,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(result interface{}, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(result bool, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LFalse}
 				}
-				return []lua.LValue{lua.LBool(result.(bool))}
+				return []lua.LValue{lua.LBool(result)}
 			})
 		},
 		"break_engagement": func(L *lua.LState) int {
@@ -1689,11 +1689,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(result interface{}, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(result bool, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LFalse}
 				}
-				return []lua.LValue{lua.LBool(result.(bool))}
+				return []lua.LValue{lua.LBool(result)}
 			})
 		},
 		"request_divorce": func(L *lua.LState) int {
@@ -1713,11 +1713,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LNil)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, promise, func(result interface{}, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.GameWorld, promise, func(result string, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LNil}
 				}
-				return []lua.LValue{lua.LString(result.(string))}
+				return []lua.LValue{lua.LString(result)}
 			})
 		},
 		"invited_to": func(L *lua.LState) int {
@@ -1769,11 +1769,11 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.Push(lua.LFalse)
 				return 1
 			}
-			return LuaYieldPromise(L, ch.GameWorld, ch.OpenWeddingGiftBox(cfg.ActorContext), func(result interface{}, err error) []lua.LValue {
+			return LuaYieldPromise(L, ch.GameWorld, ch.OpenWeddingGiftBox(cfg.ActorContext), func(result bool, err error) []lua.LValue {
 				if err != nil {
 					return []lua.LValue{lua.LFalse}
 				}
-				return []lua.LValue{lua.LBool(result.(bool))}
+				return []lua.LValue{lua.LBool(result)}
 			})
 		},
 		"open_storage": func(L *lua.LState) int {
@@ -2202,13 +2202,12 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 			if !p.Completed() {
 				return 0
 			}
-			value, err := p.Result()
+			vals, err := p.Result()
 			if err != nil {
 				L.RaiseError("script: %v", err)
 				return 0
 			}
 			luax.Close(thread)
-			vals := luax.ResultValues(value)
 			if len(vals) == 0 {
 				return 0
 			}

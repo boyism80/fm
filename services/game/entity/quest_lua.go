@@ -481,14 +481,14 @@ func (ch *Character) RunQuestScript(actx actor.Context, questID uint32, npcID ui
 		ActorContext: actx,
 		ActorPID:     mapInstance.LogicActorPID(),
 	})
-	luax.CallAsync(actx, root, luaThread, entry, ch, npcID).Then(func(_ interface{}) (interface{}, error) {
+	luax.CallAsync(actx, root, luaThread, entry, ch, npcID).Do(func([]lua.LValue) error {
 		if ch.Dialog.Thread() == nil {
 			ch.Dialog.Reset()
 			if ch.Listener != nil {
 				ch.Listener.OnUnlockAction(ch)
 			}
 		}
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("quest script %s quest=%d npc=%d: %v", entry, questID, npcID, err)
 		ch.Listener.OnScriptError(ch, scriptPath, err)

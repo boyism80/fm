@@ -42,8 +42,8 @@ func NewGuildContainer(gs *GameServer, worldID uint32, ic internal.InternalClien
 	}
 }
 
-func (gc *GuildContainer) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope) *async.Promise {
-	p := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+func (gc *GuildContainer) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope) *async.Task {
+	p := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if gc == nil {
 		return p
 	}
@@ -54,7 +54,7 @@ func (gc *GuildContainer) UpdateAsync(ctx actor.Context, evt GuildEventEnvelope)
 	if gc.internalClient == nil {
 		return p
 	}
-	async.ThenRPC(p,
+	p.ThenRPC(
 		func(c context.Context) (*internal.GetGuildReply, error) {
 			return gc.internalClient.GetGuild(c, &internal.GetGuildRequest{
 				WorldId: gc.worldID,
@@ -199,8 +199,8 @@ func (gc *GuildContainer) GuildIDForCharacter(characterID uint32) (uint32, bool)
 	return 0, false
 }
 
-func (gc *GuildContainer) RefreshAsync(ctx actor.Context, guildIDs []uint32) *async.Promise {
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+func (gc *GuildContainer) RefreshAsync(ctx actor.Context, guildIDs []uint32) *async.Task {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if gc == nil || gc.internalClient == nil {
 		return promise
 	}
@@ -210,7 +210,7 @@ func (gc *GuildContainer) RefreshAsync(ctx actor.Context, guildIDs []uint32) *as
 			continue
 		}
 		gid := guildID
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGuildReply, error) {
+		promise.ThenRPC(func(c context.Context) (*internal.GetGuildReply, error) {
 			return gc.internalClient.GetGuild(c, &internal.GetGuildRequest{
 				WorldId: worldID,
 				GuildId: gid,

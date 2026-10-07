@@ -1,6 +1,6 @@
 module github.com/boyism80/fm
 
-go 1.24.1
+go 1.27
 
 require (
 	github.com/asynkron/goconsole v0.0.0-20160504192649-bfa12eebf716

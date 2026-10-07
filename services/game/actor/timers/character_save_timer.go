@@ -12,10 +12,6 @@ const CharacterSaveTimerName = "CharacterSave"
 
 type CharacterSaveTimer struct{}
 
-func (*CharacterSaveTimer) New() *CharacterSaveTimer {
-	return &CharacterSaveTimer{}
-}
-
 func (t *CharacterSaveTimer) GetName() string {
 	return CharacterSaveTimerName
 }

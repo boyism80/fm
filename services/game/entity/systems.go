@@ -5,6 +5,7 @@ import (
 
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
+	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/types"
 	lua "github.com/yuin/gopher-lua"
@@ -38,24 +39,24 @@ type SchedulerSystem interface {
 
 type PartySystem interface {
 	Get(partyID uint32) *Party
-	UpdateMemberAsync(ctx actor.Context, ch *Character) *async.Promise
+	UpdateMemberAsync(ctx actor.Context, ch *Character) *async.Task
 }
 
 type GuildSystem interface {
 	Get(guildID uint32) *Guild
 	TrySetAllianceInvite(guildID, allianceID uint32, expiresAt time.Time) bool
-	DisbandAsync(ctx actor.Context, ch *Character, result *int) *async.Promise
-	IncCapacityAsync(ctx actor.Context, ch *Character, extendedCap bool, result *int) *async.Promise
-	GainGPAsync(ctx actor.Context, guildID uint32, amount int32) *async.Promise
-	SendMessageAsync(ctx actor.Context, guildID uint32, messageType constant.ServerMessageType, message string) *async.Promise
-	ShowRankingAsync(ctx actor.Context, ch *Character, npcID uint32) *async.Promise
-	CreateAllianceAsync(ctx actor.Context, ch *Character, allianceName string, result *int) *async.Promise
-	DisbandAllianceAsync(ctx actor.Context, ch *Character, result *int) *async.Promise
+	DisbandAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.DisbandGuildReply]
+	IncCapacityAsync(ctx actor.Context, ch *Character, extendedCap bool, result *int) *async.Promise[*internal.IncreaseGuildCapacityReply]
+	GainGPAsync(ctx actor.Context, guildID uint32, amount int32) *async.Promise[*internal.GainGuildGPReply]
+	SendMessageAsync(ctx actor.Context, guildID uint32, messageType constant.ServerMessageType, message string) *async.Promise[*internal.SendGuildMessageReply]
+	ShowRankingAsync(ctx actor.Context, ch *Character, npcID uint32) *async.Promise[*internal.GetGuildRankingReply]
+	CreateAllianceAsync(ctx actor.Context, ch *Character, allianceName string, result *int) *async.Promise[*internal.CreateAllianceReply]
+	DisbandAllianceAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.DisbandAllianceReply]
 }
 
 type AllianceSystem interface {
 	Get(allianceID uint32) *Alliance
-	IncCapacityAsync(ctx actor.Context, ch *Character, result *int) *async.Promise
+	IncCapacityAsync(ctx actor.Context, ch *Character, result *int) *async.Promise[*internal.IncreaseAllianceCapacityReply]
 }
 
 type DispatchSystem interface {

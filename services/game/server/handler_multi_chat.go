@@ -91,7 +91,7 @@ func (h *MultiChat) handleGuildMultiChat(ctx *core.ClientContext, ch *entity.Cha
 	senderID := ch.GetID()
 	senderName := ch.GetName()
 	worldID := h.gs.config.WorldId
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
 			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
 				WorldId:           worldID,
@@ -136,7 +136,7 @@ func (h *MultiChat) handleAllianceMultiChat(ctx *core.ClientContext, ch *entity.
 	senderID := ch.GetID()
 	senderName := ch.GetName()
 	worldID := h.gs.config.WorldId
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
 			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
 				WorldId:           worldID,
@@ -177,7 +177,7 @@ func (h *MultiChat) handlePartyMultiChat(ctx *core.ClientContext, ch *entity.Cha
 	senderID := ch.GetID()
 	senderName := ch.GetName()
 	worldID := h.gs.config.WorldId
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
 			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
 				WorldId:           worldID,
@@ -216,7 +216,7 @@ func (h *MultiChat) handleBuddyMultiChat(ctx *core.ClientContext, ch *entity.Cha
 	senderID := ch.GetID()
 	senderName := ch.GetName()
 	worldID := h.gs.config.WorldId
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BroadcastMultiChatReply, error) {
 			return h.gs.internalClient.BroadcastMultiChat(c, &internal.BroadcastMultiChatRequest{
 				WorldId:               worldID,

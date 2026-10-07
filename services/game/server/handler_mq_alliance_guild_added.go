@@ -44,10 +44,10 @@ func (h *allianceMqGuildAdded) Handle(ctx actor.Context, raw json.RawMessage) er
 		log.Printf("alliance consumer: guild_added alliance_id=%d guild_id=%d not in alliance_pb", evt.AllianceID, payload.AddedGuildID)
 		return nil
 	}
-	gs.alliance.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+	gs.alliance.UpdateAsync(ctx, evt).Do(func() error {
 		gs.alliance.Update(alliancePb)
 		gs.alliance.BroadcastGuildAdded(alliancePb, addedGuildPb)
-		return nil, nil
+		return nil
 	})
 	return nil
 }

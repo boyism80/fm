@@ -28,14 +28,13 @@ func (h *MapCallAsyncHandler) Handle(ctx actor.Context, a *GameLogicActor, msg *
 		})
 		return
 	}
-	promise.Then(func(value interface{}) (interface{}, error) {
-		values, _ := value.([]lua.LValue)
+	promise.Do(func(values []lua.LValue) error {
 		system.Root.Send(msg.ReplyTo, &ResumeLua{
 			Root:   msg.Root,
 			Thread: msg.Thread,
 			Args:   values,
 		})
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		system.Root.Send(msg.ReplyTo, &ResumeLua{
 			Root:   msg.Root,

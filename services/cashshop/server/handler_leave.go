@@ -43,8 +43,8 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 	}
 	var route *response.SwitchChannel
 	cashShopID := h.cs.cashShopID()
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.GetGameChannelStatusReply, error) {
 		return h.cs.internalClient.GetGameChannelStatus(c, &internal.GetGameChannelStatusRequest{
 			WorldId:   h.cs.worldID(),
 			ChannelId: character.ReturnChannel,
@@ -57,7 +57,7 @@ func (h *Leave) Handle(ctx *core.ClientContext, req *request.LeaveCashShop) erro
 		route = &response.SwitchChannel{IP: reply.GetHost(), Port: uint16(reply.GetPort())}
 		return nil
 	})
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.BeginGameTransitionReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.BeginGameTransitionReply, error) {
 		return h.cs.internalClient.BeginGameTransition(c, &internal.BeginGameTransitionRequest{
 			WorldId:          h.cs.worldID(),
 			AccountId:        character.AccountID(),

@@ -24,10 +24,7 @@ func NewMessageRegistry() *MessageRegistry {
 	return &MessageRegistry{byType: make(map[reflect.Type]MessageHandlerFunc)}
 }
 
-func Bind[C MessageHandlerConstructor[H, M], H MessageHandler[M], M any](r *MessageRegistry) {
-	if r == nil {
-		return
-	}
+func (r *MessageRegistry) Bind[C MessageHandlerConstructor[H, M], H MessageHandler[M], M any]() {
 	var constructor C
 	handler := constructor.New()
 	t := reflect.TypeOf((*M)(nil))

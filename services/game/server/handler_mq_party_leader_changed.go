@@ -25,21 +25,21 @@ func (h *partyMqLeaderChanged) Handle(ctx actor.Context, raw json.RawMessage) er
 	if !ok {
 		return nil
 	}
-	pc.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+	pc.UpdateAsync(ctx, evt).Do(func() error {
 		if raw == nil {
-			return nil, nil
+			return nil
 		}
 		var extra struct {
 			NewLeaderCharacterID uint32 `json:"new_leader_character_id"`
 		}
 		if err := json.Unmarshal(raw, &extra); err != nil || extra.NewLeaderCharacterID == 0 {
-			return nil, nil
+			return nil
 		}
 		party := pc.Get(evt.PartyID)
 		if party != nil {
 			pc.BroadcastLeaderChanged(party, extra.NewLeaderCharacterID, false)
 		}
-		return nil, nil
+		return nil
 	})
 	return nil
 }

@@ -136,8 +136,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		}
 
 		leader := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_MASTER)
-		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.CreateGuildReply, error) {
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise.ThenRPC(func(c context.Context) (*internal.CreateGuildReply, error) {
 			return h.gs.internalClient.CreateGuild(c, &internal.CreateGuildRequest{
 				WorldId:   worldID,
 				GuildName: req.GuildName,
@@ -237,8 +237,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		delete(ch.GuildInvites, req.GuildID)
 
 		member := ch.ToProtoGuildMember(worldID, int32(h.gs.config.ChannelId), internal.GuildMemberRank_GUILD_MEMBER_RANK_NEW)
-		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.AcceptGuildInviteReply, error) {
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise.ThenRPC(func(c context.Context) (*internal.AcceptGuildInviteReply, error) {
 			return h.gs.internalClient.AcceptGuildInvite(c, &internal.AcceptGuildInviteRequest{
 				WorldId: worldID,
 				GuildId: req.GuildID,
@@ -275,8 +275,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if _, inGuild := ch.GetGuildID(); !inGuild {
 			return nil
 		}
-		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.LeaveGuildReply, error) {
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise.ThenRPC(func(c context.Context) (*internal.LeaveGuildReply, error) {
 			return h.gs.internalClient.LeaveGuild(c, &internal.LeaveGuildRequest{
 				WorldId:     worldID,
 				CharacterId: charID,
@@ -305,8 +305,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
-		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.ExpelGuildReply, error) {
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise.ThenRPC(func(c context.Context) (*internal.ExpelGuildReply, error) {
 			return h.gs.internalClient.ExpelGuild(c, &internal.ExpelGuildRequest{
 				WorldId:              worldID,
 				RequesterCharacterId: charID,
@@ -334,8 +334,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if !inGuild || g == nil || !g.IsGuildMaster(charID) {
 			return nil
 		}
-		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.ChangeGuildRankTitlesReply, error) {
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise.ThenRPC(func(c context.Context) (*internal.ChangeGuildRankTitlesReply, error) {
 			return h.gs.internalClient.ChangeGuildRankTitles(c, &internal.ChangeGuildRankTitlesRequest{
 				WorldId:     worldID,
 				CharacterId: charID,
@@ -380,8 +380,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			return nil
 		}
 		protoRank := internal.GuildMemberRank(newRank)
-		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.ChangeGuildMemberRankReply, error) {
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise.ThenRPC(func(c context.Context) (*internal.ChangeGuildMemberRankReply, error) {
 			return h.gs.internalClient.ChangeGuildMemberRank(c, &internal.ChangeGuildMemberRankRequest{
 				WorldId:              worldID,
 				RequesterCharacterId: charID,
@@ -417,8 +417,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 			ch.Listener.OnMessage(ch, gameconst.MsgPopup, gameconst.GuildEmblemChangeInsufficientCostMessage)
 			return nil
 		}
-		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.ChangeGuildEmblemReply, error) {
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise.ThenRPC(func(c context.Context) (*internal.ChangeGuildEmblemReply, error) {
 			return h.gs.internalClient.ChangeGuildEmblem(c, &internal.ChangeGuildEmblemRequest{
 				WorldId:     worldID,
 				CharacterId: charID,
@@ -451,8 +451,8 @@ func (h *GuildOperation) Handle(ctx *core.ClientContext, req *request.GuildOpera
 		if !inGuild || g == nil || !g.CanInvite(charID) {
 			return nil
 		}
-		promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		promise = async.ThenRPC(promise, func(c context.Context) (*internal.ChangeGuildNoticeReply, error) {
+		promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		promise.ThenRPC(func(c context.Context) (*internal.ChangeGuildNoticeReply, error) {
 			return h.gs.internalClient.ChangeGuildNotice(c, &internal.ChangeGuildNoticeRequest{
 				WorldId:     worldID,
 				CharacterId: charID,

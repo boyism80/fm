@@ -48,11 +48,10 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, t
 		return
 	}
 	luax.SetConfiguration(thread, luax.Configuration{ActorContext: ctx})
-	luax.CallAsync(ctx, m.GetLuaRoot(), thread, "on_cash", ch, itemID, text, ear, petSN).Then(func(value interface{}) (interface{}, error) {
-		vals := luax.ResultValues(value)
+	luax.CallAsync(ctx, m.GetLuaRoot(), thread, "on_cash", ch, itemID, text, ear, petSN).Do(func(vals []lua.LValue) error {
 		if len(vals) == 0 || vals[0] != lua.LTrue {
 			finish()
-			return nil, nil
+			return nil
 		}
 		ch.GameWorld.GetDispatchSystem().Call(ch.GetID(), func(actor.Context) {
 			item := cash.Get(uint8(slot))
@@ -61,7 +60,7 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, t
 			}
 			finish()
 		})
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("cash item script %s: %v", scriptPath, err)
 		finish()
@@ -69,21 +68,21 @@ func (ch *Character) UseCashItem(ctx actor.Context, slot int16, itemID uint32, t
 }
 
 func (ch *Character) AddCash(actx actor.Context, nxCash int32, maplePoint int32) {
-	ch.Listener.AddCashAsync(actx, ch, nxCash, maplePoint).Then(func(v interface{}) (interface{}, error) {
-		reply := v.(*internal.AddCashReply)
+	ch.Listener.AddCashAsync(actx, ch, nxCash, maplePoint).Do(func(v *internal.AddCashReply) error {
+		reply := v
 		ch.Message(fmt.Sprintf("캐시 잔액: NX %d, 메이플포인트 %d", reply.GetNxCash(), reply.GetMaplePoint()))
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("Character.AddCash character=%d: %v", ch.GetID(), err)
 	})
 }
 
 func (ch *Character) CreateCashCoupons(actx actor.Context, kind internal.CashCouponKind, value uint32, count uint32) {
-	ch.Listener.CreateCashCouponsAsync(actx, ch, kind, value, count).Then(func(v interface{}) (interface{}, error) {
-		for _, code := range v.(*internal.CreateCashCouponsReply).GetCodes() {
+	ch.Listener.CreateCashCouponsAsync(actx, ch, kind, value, count).Do(func(v *internal.CreateCashCouponsReply) error {
+		for _, code := range v.GetCodes() {
 			ch.Message(fmt.Sprintf("쿠폰: %s", code))
 		}
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		log.Printf("Character.CreateCashCoupons character=%d: %v", ch.GetID(), err)
 	})

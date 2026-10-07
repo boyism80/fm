@@ -16,8 +16,7 @@ type JSONHandlerConstructor[S any, H JSONHandler] interface {
 	New(S) H
 }
 
-// Bind registers a JSON event handler on d for use with RabbitActor.Dispatcher.
-func Bind[S any, C JSONHandlerConstructor[S, H], H JSONHandler](registry S, d *Dispatcher) {
+func (d *Dispatcher) Bind[C JSONHandlerConstructor[S, H], S any, H JSONHandler](registry S) {
 	if d == nil {
 		return
 	}

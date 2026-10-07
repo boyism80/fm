@@ -7,8 +7,25 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func LuaYieldPromise(L *lua.LState, gw GameWorld, promise *async.Promise, resume func(result interface{}, err error) []lua.LValue) int {
-	if L == nil || promise == nil || gw == nil {
+func LuaYieldPromise[T any](L *lua.LState, gw GameWorld, promise *async.Promise[T], resume func(result T, err error) []lua.LValue) int {
+	if promise == nil {
+		return 0
+	}
+	var result T
+	task := promise.Do(func(value T) error {
+		result = value
+		return nil
+	}).Task()
+	return LuaYieldTask(L, gw, task, func(err error) []lua.LValue {
+		if resume == nil {
+			return nil
+		}
+		return resume(result, err)
+	})
+}
+
+func LuaYieldTask(L *lua.LState, gw GameWorld, task *async.Task, resume func(err error) []lua.LValue) int {
+	if L == nil || task == nil || gw == nil {
 		return 0
 	}
 	cfg, ok := luax.GetConfiguration(L)
@@ -27,18 +44,16 @@ func LuaYieldPromise(L *lua.LState, gw GameWorld, promise *async.Promise, resume
 		return 0
 	}
 	thread := L
-	finish := func(result interface{}, err error) {
+	finish := func(err error) {
 		var args []lua.LValue
 		if resume != nil {
-			args = resume(result, err)
+			args = resume(err)
 		}
 		gw.ResumeLua(pid, root, thread, args)
 	}
-	promise.Then(func(result interface{}) (interface{}, error) {
-		finish(result, nil)
-		return nil, nil
-	}).OnError(func(err error) {
-		finish(nil, err)
-	})
+	task.Do(func() error {
+		finish(nil)
+		return nil
+	}).OnError(finish)
 	return L.Yield(lua.LNil)
 }

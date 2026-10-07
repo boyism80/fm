@@ -12,7 +12,7 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, result *int) *async.Promise {
+func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character, result *int) *async.Promise[*internal.IncreaseAllianceCapacityReply] {
 	fail := int(constant.AllianceIncreaseCapacityResultFailed)
 	if result == nil {
 		result = &fail
@@ -56,8 +56,8 @@ func (s allianceSystem) IncCapacityAsync(ctx actor.Context, ch *entity.Character
 		return nil
 	}
 	worldID := s.gs.config.WorldId
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
-	return async.ThenRPC(promise, func(c context.Context) (*internal.IncreaseAllianceCapacityReply, error) {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
+	return promise.ThenRPC(func(c context.Context) (*internal.IncreaseAllianceCapacityReply, error) {
 		return s.gs.internalClient.IncreaseAllianceCapacity(c, &internal.IncreaseAllianceCapacityRequest{
 			WorldId:     worldID,
 			CharacterId: charID,

@@ -32,8 +32,8 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 	}
 
 	var entered *internal.EnterCashShopReply
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.EnterCashShopReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.EnterCashShopReply, error) {
 		return h.cs.internalClient.EnterCashShop(c, &internal.EnterCashShopRequest{
 			WorldId:     h.cs.worldID(),
 			CharacterId: req.PlayerId,
@@ -88,8 +88,8 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 
 		characterID := req.PlayerId
 		cashShopID := h.cs.cashShopID()
-		logout := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-		logout = async.ThenRPC(logout, func(c context.Context) (*internal.LogoutSessionReply, error) {
+		logout := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+		logout.ThenRPC(func(c context.Context) (*internal.LogoutSessionReply, error) {
 			return h.cs.internalClient.LogoutSession(c, &internal.LogoutSessionRequest{
 				WorldId:          h.cs.worldID(),
 				AccountId:        entered.GetGame().GetCharacter().GetAccountId(),
@@ -97,9 +97,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.LoginGame) error {
 				CashShopId:       &cashShopID,
 				DisconnectSource: internal.SessionDisconnectSource_SESSION_DISCONNECT_SOURCE_CASH_SHOP_SERVER,
 			})
-		}, func(*internal.LogoutSessionReply) error {
-			return nil
-		})
+		}, nil)
 		logout.OnError(func(err error) {
 			log.Printf("cash shop login: logout session of character %d after login failure: %v", characterID, err)
 		})

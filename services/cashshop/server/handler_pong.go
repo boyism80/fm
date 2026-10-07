@@ -33,7 +33,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 
 	characterID := character.ID()
 	cashShopID := h.cs.cashShopID()
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout), func(c context.Context) (*internal.RefreshSessionReply, error) {
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(func(c context.Context) (*internal.RefreshSessionReply, error) {
 		return h.cs.internalClient.RefreshSession(c, &internal.RefreshSessionRequest{
 			WorldId:     h.cs.worldID(),
 			AccountId:   character.AccountID(),

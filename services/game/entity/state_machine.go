@@ -257,7 +257,7 @@ func (sm *StateMachine) StartTimer(ms int64) {
 	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &ScheduleStateMachineTimeout{Milliseconds: ms})
 }
 
-func (sm *StateMachine) StartTimerAsync(ctx actor.Context, ms int64) *async.Promise {
+func (sm *StateMachine) StartTimerAsync(ctx actor.Context, ms int64) *async.Promise[interface{}] {
 	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ms <= 0 || ctx == nil {
 		return nil
 	}
@@ -278,7 +278,7 @@ func (sm *StateMachine) StopTimer() {
 	sm.Group.GameWorld.SendStateMachineMessage(sm.ActorPID, &CancelStateMachineTimeout{})
 }
 
-func (sm *StateMachine) StopTimerAsync(ctx actor.Context) *async.Promise {
+func (sm *StateMachine) StopTimerAsync(ctx actor.Context) *async.Promise[interface{}] {
 	if sm == nil || sm.Group == nil || sm.Group.GameWorld == nil || sm.ActorPID == nil || ctx == nil {
 		return nil
 	}

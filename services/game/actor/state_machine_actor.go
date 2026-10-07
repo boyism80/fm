@@ -303,8 +303,7 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 
 	root := ctx.ActorSystem().Root
 	self := ctx.Self()
-	luax.CallAsync(ctx, a.luaRoot, thread, "on_create", a.StateMachine).Then(func(result interface{}) (interface{}, error) {
-		vals := luax.ResultValues(result)
+	luax.CallAsync(ctx, a.luaRoot, thread, "on_create", a.StateMachine).Do(func(vals []lua.LValue) error {
 		msg := &entity.CreateStateMachineMaps{}
 		if len(vals) == 0 || vals[0] == nil || vals[0] == lua.LNil {
 			msg.Err = "on_create must return a non-empty map id array"
@@ -316,7 +315,7 @@ func (a *StateMachineActor) beginCreate(ctx actor.Context) {
 			msg.Specs = specs
 		}
 		root.Send(self, msg)
-		return nil, nil
+		return nil
 	}).OnError(func(err error) {
 		root.Send(self, &entity.CreateStateMachineMaps{Err: err.Error()})
 	})

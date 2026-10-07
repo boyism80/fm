@@ -121,9 +121,9 @@ func (l *CharacterListenerImpl) OnNotice(ch *entity.Character, messageType const
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) BroadcastNoticeAsync(ctx actor.Context, ch *entity.Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise {
-	fail := func(err error) *async.Promise {
-		p := async.NewDeferred(ctx)
+func (l *CharacterListenerImpl) BroadcastNoticeAsync(ctx actor.Context, ch *entity.Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise[*internal.BroadcastNoticeReply] {
+	fail := func(err error) *async.Promise[*internal.BroadcastNoticeReply] {
+		p := async.NewDeferred[*internal.BroadcastNoticeReply](ctx)
 		p.SetError(err)
 		return p
 	}
@@ -132,8 +132,7 @@ func (l *CharacterListenerImpl) BroadcastNoticeAsync(ctx actor.Context, ch *enti
 	}
 	channelID := l.gs.config.ChannelId
 	worldID := l.gs.config.WorldId
-	return async.ThenRPC(
-		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.BroadcastNoticeReply, error) {
 			return l.gs.internalClient.BroadcastNotice(c, &internal.BroadcastNoticeRequest{
 				WorldId:         worldID,
@@ -722,20 +721,17 @@ func (l *CharacterListenerImpl) OnOpenNpcShop(ch *entity.Character, shopID uint3
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) LoadStorageAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
+func (l *CharacterListenerImpl) LoadStorageAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.LoadStorageReply] {
 	accountID := ch.AccountID
 	worldID := l.gs.config.WorldId
-	return async.ThenRPC(
-		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.LoadStorageReply, error) {
 			return l.gs.internalClient.LoadStorage(c, &internal.LoadStorageRequest{
 				AccountId: accountID,
 				WorldId:   worldID,
 			})
 		},
-		func(reply *internal.LoadStorageReply) error {
-			return nil
-		},
+		nil,
 	)
 }
 
@@ -805,23 +801,20 @@ func (l *CharacterListenerImpl) OnStorageError(ch *entity.Character, result pcon
 	}, types.SEND_POLICY_ENCRYPT)
 }
 
-func (l *CharacterListenerImpl) LoadParcelsAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
+func (l *CharacterListenerImpl) LoadParcelsAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.LoadParcelsReply] {
 	req := &internal.LoadParcelsRequest{
 		WorldId:     l.gs.config.WorldId,
 		CharacterId: ch.GetID(),
 	}
-	return async.ThenRPC(
-		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.LoadParcelsReply, error) {
 			return l.gs.internalClient.LoadParcels(c, req)
 		},
-		func(reply *internal.LoadParcelsReply) error {
-			return nil
-		},
+		nil,
 	)
 }
 
-func (l *CharacterListenerImpl) SendParcelAsync(ctx actor.Context, ch *entity.Character, recipient string, parcel *internal.Parcel, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise {
+func (l *CharacterListenerImpl) SendParcelAsync(ctx actor.Context, ch *entity.Character, recipient string, parcel *internal.Parcel, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise[*internal.SendParcelReply] {
 	req := &internal.SendParcelRequest{
 		WorldId:         l.gs.config.WorldId,
 		RecipientName:   recipient,
@@ -830,100 +823,82 @@ func (l *CharacterListenerImpl) SendParcelAsync(ctx actor.Context, ch *entity.Ch
 		Sender:          sender,
 		OneOfAKind:      oneOfAKind,
 	}
-	return async.ThenRPC(
-		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.SendParcelReply, error) {
 			return l.gs.internalClient.SendParcel(c, req)
 		},
-		func(reply *internal.SendParcelReply) error {
-			return nil
-		},
+		nil,
 	)
 }
 
-func (l *CharacterListenerImpl) AddCashAsync(ctx actor.Context, ch *entity.Character, nxCash int32, maplePoint int32) *async.Promise {
+func (l *CharacterListenerImpl) AddCashAsync(ctx actor.Context, ch *entity.Character, nxCash int32, maplePoint int32) *async.Promise[*internal.AddCashReply] {
 	req := &internal.AddCashRequest{
 		WorldId:    l.gs.config.WorldId,
 		AccountId:  ch.AccountID,
 		NxCash:     nxCash,
 		MaplePoint: maplePoint,
 	}
-	return async.ThenRPC(
-		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.AddCashReply, error) {
 			return l.gs.internalClient.AddCash(c, req)
 		},
-		func(reply *internal.AddCashReply) error {
-			return nil
-		},
+		nil,
 	)
 }
 
-func (l *CharacterListenerImpl) CreateCashCouponsAsync(ctx actor.Context, ch *entity.Character, kind internal.CashCouponKind, value uint32, count uint32) *async.Promise {
+func (l *CharacterListenerImpl) CreateCashCouponsAsync(ctx actor.Context, ch *entity.Character, kind internal.CashCouponKind, value uint32, count uint32) *async.Promise[*internal.CreateCashCouponsReply] {
 	req := &internal.CreateCashCouponsRequest{
 		WorldId: l.gs.config.WorldId,
 		Kind:    kind,
 		Value:   value,
 		Count:   count,
 	}
-	return async.ThenRPC(
-		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.CreateCashCouponsReply, error) {
 			return l.gs.internalClient.CreateCashCoupons(c, req)
 		},
-		func(reply *internal.CreateCashCouponsReply) error {
-			return nil
-		},
+		nil,
 	)
 }
 
-func (l *CharacterListenerImpl) ClaimParcelAsync(ctx actor.Context, ch *entity.Character, parcelID uint32) *async.Promise {
+func (l *CharacterListenerImpl) ClaimParcelAsync(ctx actor.Context, ch *entity.Character, parcelID uint32) *async.Promise[*internal.ClaimParcelReply] {
 	req := &internal.ClaimParcelRequest{
 		WorldId:     l.gs.config.WorldId,
 		CharacterId: ch.GetID(),
 		ParcelId:    parcelID,
 	}
-	return async.ThenRPC(
-		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.ClaimParcelReply, error) {
 			return l.gs.internalClient.ClaimParcel(c, req)
 		},
-		func(reply *internal.ClaimParcelReply) error {
-			return nil
-		},
+		nil,
 	)
 }
 
-func (l *CharacterListenerImpl) DeleteParcelAsync(ctx actor.Context, ch *entity.Character, parcelID uint32) *async.Promise {
+func (l *CharacterListenerImpl) DeleteParcelAsync(ctx actor.Context, ch *entity.Character, parcelID uint32) *async.Promise[*internal.DeleteParcelReply] {
 	req := &internal.DeleteParcelRequest{
 		WorldId:     l.gs.config.WorldId,
 		CharacterId: ch.GetID(),
 		ParcelId:    parcelID,
 	}
-	return async.ThenRPC(
-		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.DeleteParcelReply, error) {
 			return l.gs.internalClient.DeleteParcel(c, req)
 		},
-		func(reply *internal.DeleteParcelReply) error {
-			return nil
-		},
+		nil,
 	)
 }
 
-func (l *CharacterListenerImpl) CheckParcelArrivalsAsync(ctx actor.Context, ch *entity.Character) *async.Promise {
+func (l *CharacterListenerImpl) CheckParcelArrivalsAsync(ctx actor.Context, ch *entity.Character) *async.Promise[*internal.CheckParcelArrivalsReply] {
 	req := &internal.CheckParcelArrivalsRequest{
 		WorldId:     l.gs.config.WorldId,
 		CharacterId: ch.GetID(),
 	}
-	return async.ThenRPC(
-		async.NewPromise(ctx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(ctx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.CheckParcelArrivalsReply, error) {
 			return l.gs.internalClient.CheckParcelArrivals(c, req)
 		},
-		func(reply *internal.CheckParcelArrivalsReply) error {
-			return nil
-		},
+		nil,
 	)
 }
 

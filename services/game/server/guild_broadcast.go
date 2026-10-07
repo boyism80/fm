@@ -11,16 +11,16 @@ import (
 	"github.com/boyism80/fm/services/game/entity"
 )
 
-func (gc *GuildContainer) SyncGuildEventAsync(ctx actor.Context, evt GuildEventEnvelope, after func(guildID uint32)) *async.Promise {
-	promise := async.NewPromise(ctx, core.InternalRPCPerStepTimeout)
+func (gc *GuildContainer) SyncGuildEventAsync(ctx actor.Context, evt GuildEventEnvelope, after func(guildID uint32)) *async.Task {
+	promise := async.NewTask(ctx, core.InternalRPCPerStepTimeout)
 	if gc == nil {
 		return promise
 	}
-	return gc.UpdateAsync(ctx, evt).Then(func(interface{}) (interface{}, error) {
+	return gc.UpdateAsync(ctx, evt).Do(func() error {
 		if after != nil {
 			after(evt.GuildID)
 		}
-		return nil, nil
+		return nil
 	})
 }
 

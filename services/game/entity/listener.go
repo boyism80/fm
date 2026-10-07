@@ -22,31 +22,31 @@ type CharacterListener interface {
 	OnDialogInput(ch *Character, npc uint32, message string)
 	OnDialogStyle(ch *Character, npc uint32, message string, styles []uint32)
 	OnOpenNpcShop(ch *Character, shopID uint32, shop *wz.Shop)
-	LoadStorageAsync(ctx actor.Context, ch *Character) *async.Promise
+	LoadStorageAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.LoadStorageReply]
 	OnOpenStorage(ch *Character, npcID uint32)
 	OnStorageTabChanged(ch *Character, result pconst.StorageResult, invType constant.InventoryType)
 	OnStorageArranged(ch *Character)
 	OnStorageMesoChanged(ch *Character)
 	OnStorageError(ch *Character, result pconst.StorageResult)
-	LoadParcelsAsync(ctx actor.Context, ch *Character) *async.Promise
-	SendParcelAsync(ctx actor.Context, ch *Character, recipient string, parcel *internal.Parcel, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise
-	ClaimParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise
-	DeleteParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise
-	CheckParcelArrivalsAsync(ctx actor.Context, ch *Character) *async.Promise
-	AddCashAsync(ctx actor.Context, ch *Character, nxCash int32, maplePoint int32) *async.Promise
-	CreateCashCouponsAsync(ctx actor.Context, ch *Character, kind internal.CashCouponKind, value uint32, count uint32) *async.Promise
-	CreateMarriageAsync(ctx actor.Context, groom *Character, bride *Character, ringItemID uint32) *async.Promise
-	LoadMarriageAsync(ctx actor.Context, ch *Character) *async.Promise
-	GetMarriageAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise
-	BreakEngagementAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise
-	ReserveWeddingAsync(ctx actor.Context, ch *Character, marriageID uint32, ticketItemID uint32) *async.Promise
-	SetWeddingWishlistAsync(ctx actor.Context, ch *Character, marriageID uint32, wishes []string) *async.Promise
-	InviteWeddingGuestAsync(ctx actor.Context, ch *Character, marriageID uint32, guestName string) *async.Promise
-	RequestDivorceAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise
-	GiveWeddingGiftAsync(ctx actor.Context, ch *Character, receiverID uint32, gift *internal.WeddingGift, sender *internal.CharacterSaveEntry) *async.Promise
-	LoadWeddingGiftsAsync(ctx actor.Context, ch *Character) *async.Promise
-	ClaimWeddingGiftAsync(ctx actor.Context, ch *Character, giftID uint32) *async.Promise
-	NotifySpouseMapAsync(ctx actor.Context, ch *Character, spouseID uint32, mapID uint32, reply bool) *async.Promise
+	LoadParcelsAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.LoadParcelsReply]
+	SendParcelAsync(ctx actor.Context, ch *Character, recipient string, parcel *internal.Parcel, oneOfAKind bool, sender *internal.CharacterSaveEntry) *async.Promise[*internal.SendParcelReply]
+	ClaimParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise[*internal.ClaimParcelReply]
+	DeleteParcelAsync(ctx actor.Context, ch *Character, parcelID uint32) *async.Promise[*internal.DeleteParcelReply]
+	CheckParcelArrivalsAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.CheckParcelArrivalsReply]
+	AddCashAsync(ctx actor.Context, ch *Character, nxCash int32, maplePoint int32) *async.Promise[*internal.AddCashReply]
+	CreateCashCouponsAsync(ctx actor.Context, ch *Character, kind internal.CashCouponKind, value uint32, count uint32) *async.Promise[*internal.CreateCashCouponsReply]
+	CreateMarriageAsync(ctx actor.Context, groom *Character, bride *Character, ringItemID uint32) *async.Promise[*internal.MarriageReply]
+	LoadMarriageAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.MarriageReply]
+	GetMarriageAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise[*internal.MarriageReply]
+	BreakEngagementAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise[*internal.MarriageReply]
+	ReserveWeddingAsync(ctx actor.Context, ch *Character, marriageID uint32, ticketItemID uint32) *async.Promise[*internal.MarriageReply]
+	SetWeddingWishlistAsync(ctx actor.Context, ch *Character, marriageID uint32, wishes []string) *async.Promise[*internal.MarriageReply]
+	InviteWeddingGuestAsync(ctx actor.Context, ch *Character, marriageID uint32, guestName string) *async.Promise[*internal.InviteWeddingGuestReply]
+	RequestDivorceAsync(ctx actor.Context, ch *Character, marriageID uint32) *async.Promise[*internal.MarriageReply]
+	GiveWeddingGiftAsync(ctx actor.Context, ch *Character, receiverID uint32, gift *internal.WeddingGift, sender *internal.CharacterSaveEntry) *async.Promise[*internal.GiveWeddingGiftReply]
+	LoadWeddingGiftsAsync(ctx actor.Context, ch *Character) *async.Promise[*internal.LoadWeddingGiftsReply]
+	ClaimWeddingGiftAsync(ctx actor.Context, ch *Character, giftID uint32) *async.Promise[*internal.ClaimWeddingGiftReply]
+	NotifySpouseMapAsync(ctx actor.Context, ch *Character, spouseID uint32, mapID uint32, reply bool) *async.Promise[*internal.NotifySpouseMapReply]
 	OnEngageRequest(ch *Character, name string, characterID uint32)
 	OnWeddingWishlistInput(ch *Character)
 	OnEngageResult(ch *Character, result pconst.EngageResult)
@@ -69,7 +69,7 @@ type CharacterListener interface {
 	OnMesoChanged(ch *Character, meso int32)
 	OnMessage(ch *Character, messageType constant.ServerMessageType, message string)
 	OnNotice(ch *Character, messageType constant.ServerMessageType, message string, channel int, ear bool)
-	BroadcastNoticeAsync(ctx actor.Context, ch *Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise
+	BroadcastNoticeAsync(ctx actor.Context, ch *Character, messageType constant.ServerMessageType, message string, ear bool) *async.Promise[*internal.BroadcastNoticeReply]
 	OnKeyMap(ch *Character)
 	OnClock(ch *Character, seconds int32)
 	OnStopClock(ch *Character)

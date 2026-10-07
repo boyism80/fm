@@ -41,7 +41,7 @@ func (h *Login) Handle(ctx *core.ClientContext, req *request.Login) error {
 		InitialRole: h.ls.config.InitialRole,
 	}
 
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.LoginAccountReply, error) {
 			return h.ls.internalClient.LoginAccount(c, reqMsg)
 		}, func(reply *internal.LoginAccountReply) error {

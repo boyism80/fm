@@ -10,10 +10,6 @@ import (
 
 type PartySearchTimer struct{}
 
-func (*PartySearchTimer) New() *PartySearchTimer {
-	return &PartySearchTimer{}
-}
-
 func (t *PartySearchTimer) GetName() string {
 	return "PartySearch"
 }

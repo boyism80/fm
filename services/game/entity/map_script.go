@@ -7,6 +7,7 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/core/luax"
+	lua "github.com/yuin/gopher-lua"
 )
 
 func validateScriptPath(path string) error {
@@ -23,8 +24,8 @@ func validateScriptPath(path string) error {
 	return nil
 }
 
-func (m *Map) RunScript(ctx actor.Context, scriptPath string, funcName string, args []interface{}) *async.Promise {
-	promise := async.NewPromise(nil, 0)
+func (m *Map) RunScript(ctx actor.Context, scriptPath string, funcName string, args []interface{}) *async.Promise[[]lua.LValue] {
+	promise := async.NewDeferred[[]lua.LValue](nil)
 	if m == nil {
 		promise.SetError(fmt.Errorf("map is nil"))
 		return promise

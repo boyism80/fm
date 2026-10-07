@@ -10,10 +10,6 @@ import (
 
 type CooldownCheckTimer struct{}
 
-func (*CooldownCheckTimer) New() *CooldownCheckTimer {
-	return &CooldownCheckTimer{}
-}
-
 func (t *CooldownCheckTimer) GetName() string {
 	return "CooldownCheck"
 }

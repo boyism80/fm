@@ -8,7 +8,6 @@ import (
 	"github.com/asynkron/protoactor-go/actor"
 	c_actor "github.com/boyism80/fm/core/actor"
 	"github.com/boyism80/fm/core/async"
-	"github.com/boyism80/fm/core/luax"
 	g_actor "github.com/boyism80/fm/services/game/actor"
 	gameconst "github.com/boyism80/fm/services/game/constant"
 	"github.com/boyism80/fm/services/game/entity"
@@ -399,9 +398,8 @@ func (s mapSystem) RunScript(L *lua.LState, actorCtx actor.Context, targetMap *e
 	if s.gs == nil {
 		return pushRunOnMapResult(L, false, nil, "run_on_map: game server not found")
 	}
-	return (luaMapCall{gs: s.gs}).InvokeAwaitAsync(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.GameLogicActor) *async.Promise {
-		return targetMap.RunScript(ctx, scriptPath, funcName, args).Then(func(v interface{}) (interface{}, error) {
-			vals := luax.ResultValues(v)
+	return (luaMapCall{gs: s.gs}).InvokeAwaitAsync(L, actorCtx, targetPID, func(ctx actor.Context, a *g_actor.GameLogicActor) *async.Promise[[]lua.LValue] {
+		return targetMap.RunScript(ctx, scriptPath, funcName, args).Then(func(vals []lua.LValue) ([]lua.LValue, error) {
 			result := lua.LNil
 			if len(vals) > 0 && vals[0] != nil {
 				result = vals[0]

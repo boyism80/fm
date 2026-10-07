@@ -100,8 +100,8 @@ func (h *AllianceOperation) handleExpel(ctx *core.ClientContext, ch *entity.Char
 		return nil
 	}
 	worldID := h.gs.config.WorldId
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.ExpelAllianceGuildReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.ExpelAllianceGuildReply, error) {
 		return h.gs.internalClient.ExpelAllianceGuild(c, &internal.ExpelAllianceGuildRequest{
 			WorldId:       worldID,
 			CharacterId:   charID,
@@ -154,8 +154,8 @@ func (h *AllianceOperation) handleChangeLeader(ctx *core.ClientContext, ch *enti
 		return nil
 	}
 	worldID := h.gs.config.WorldId
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.ChangeAllianceLeaderReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.ChangeAllianceLeaderReply, error) {
 		return h.gs.internalClient.ChangeAllianceLeader(c, &internal.ChangeAllianceLeaderRequest{
 			WorldId:              worldID,
 			CharacterId:          charID,
@@ -198,8 +198,8 @@ func (h *AllianceOperation) handleChangeNotice(ctx *core.ClientContext, ch *enti
 		return nil
 	}
 	worldID := h.gs.config.WorldId
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.ChangeAllianceNoticeReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.ChangeAllianceNoticeReply, error) {
 		return h.gs.internalClient.ChangeAllianceNotice(c, &internal.ChangeAllianceNoticeRequest{
 			WorldId:     worldID,
 			CharacterId: charID,
@@ -246,8 +246,8 @@ func (h *AllianceOperation) handleChangeRankTitles(ctx *core.ClientContext, ch *
 		return nil
 	}
 	worldID := h.gs.config.WorldId
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.ChangeAllianceRankTitlesReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.ChangeAllianceRankTitlesReply, error) {
 		return h.gs.internalClient.ChangeAllianceRankTitles(c, &internal.ChangeAllianceRankTitlesRequest{
 			WorldId:     worldID,
 			CharacterId: charID,
@@ -299,8 +299,8 @@ func (h *AllianceOperation) handleChangeMemberRank(ctx *core.ClientContext, ch *
 		return nil
 	}
 	worldID := h.gs.config.WorldId
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.ChangeAllianceMemberRankReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.ChangeAllianceMemberRankReply, error) {
 		return h.gs.internalClient.ChangeAllianceMemberRank(c, &internal.ChangeAllianceMemberRankRequest{
 			WorldId:              worldID,
 			RequesterCharacterId: charID,
@@ -408,8 +408,8 @@ func (h *AllianceOperation) handleAcceptInvite(ctx *core.ClientContext, ch *enti
 		return nil
 	}
 	worldID := h.gs.config.WorldId
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.AcceptAllianceInviteReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.AcceptAllianceInviteReply, error) {
 		return h.gs.internalClient.AcceptAllianceInvite(c, &internal.AcceptAllianceInviteRequest{
 			WorldId:     worldID,
 			CharacterId: charID,
@@ -493,8 +493,8 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *entity.Char
 	}
 	worldID := h.gs.config.WorldId
 	charID := ch.GetID()
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.LeaveAllianceReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.LeaveAllianceReply, error) {
 		return h.gs.internalClient.LeaveAlliance(c, &internal.LeaveAllianceRequest{
 			WorldId:     worldID,
 			CharacterId: charID,
@@ -525,13 +525,13 @@ func (h *AllianceOperation) handleLeave(ctx *core.ClientContext, ch *entity.Char
 			h.gs.alliance.BroadcastGuildLeft(alliancePb, nil, false)
 			return nil
 		}
-		h.gs.guild.RefreshAsync(actorCtx, []uint32{removedGuildID}).Then(func(interface{}) (interface{}, error) {
+		h.gs.guild.RefreshAsync(actorCtx, []uint32{removedGuildID}).Do(func() error {
 			var removedGuildPb *internal.Guild
 			if g := h.gs.guild.Get(removedGuildID); g != nil {
 				removedGuildPb = g.ToProto()
 			}
 			h.gs.alliance.BroadcastGuildLeft(alliancePb, removedGuildPb, false)
-			return nil, nil
+			return nil
 		})
 		return nil
 	})
@@ -557,8 +557,8 @@ func (h *AllianceOperation) handleCreate(ctx *core.ClientContext, ch *entity.Cha
 		return nil
 	}
 
-	promise := async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout)
-	promise = async.ThenRPC(promise, func(c context.Context) (*internal.CreateAllianceReply, error) {
+	promise := async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout)
+	promise.ThenRPC(func(c context.Context) (*internal.CreateAllianceReply, error) {
 		return h.gs.internalClient.CreateAlliance(c, &internal.CreateAllianceRequest{
 			WorldId:            worldID,
 			AllianceName:       allianceName,

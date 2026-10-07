@@ -33,7 +33,7 @@ func (h *DeleteCharacter) Handle(ctx *core.ClientContext, req *request.DeleteCha
 		return ctx.Client.Send(deleteResp, types.SEND_POLICY_ENCRYPT)
 	}
 
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.DeleteCharacterReply, error) {
 			return h.ls.internalClient.DeleteCharacter(c, &internal.DeleteCharacterRequest{AccountId: accountId, CharacterId: req.ID})
 		}, func(reply *internal.DeleteCharacterReply) error {

@@ -35,7 +35,7 @@ func (h *Pong) Handle(ctx *core.ClientContext, req *request.Pong) error {
 	if ctx.ActorContext == nil {
 		return fmt.Errorf("game pong: actor context required for internal RPC")
 	}
-	async.ThenRPC(async.NewPromise(ctx.ActorContext, core.InternalRPCPerStepTimeout),
+	async.NewTask(ctx.ActorContext, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(cctx context.Context) (*internal.RefreshSessionReply, error) {
 			req := &internal.RefreshSessionRequest{
 				WorldId:   h.gs.config.WorldId,

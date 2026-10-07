@@ -10,14 +10,13 @@ import (
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 )
 
-func (gs *GameServer) SetServerDateTimeAsync(actorCtx actor.Context, reset bool, datetime string) *async.Promise {
+func (gs *GameServer) SetServerDateTimeAsync(actorCtx actor.Context, reset bool, datetime string) *async.Promise[*internal.SetServerDateTimeReply] {
 	if gs == nil || gs.internalClient == nil {
-		p := async.NewDeferred(actorCtx)
+		p := async.NewDeferred[*internal.SetServerDateTimeReply](actorCtx)
 		p.SetError(fmt.Errorf("internal client unavailable"))
 		return p
 	}
-	return async.ThenRPC(
-		async.NewPromise(actorCtx, core.InternalRPCPerStepTimeout),
+	return async.NewTask(actorCtx, core.InternalRPCPerStepTimeout).ThenRPC(
 		func(c context.Context) (*internal.SetServerDateTimeReply, error) {
 			return gs.internalClient.SetServerDateTime(c, &internal.SetServerDateTimeRequest{
 				WorldId:  gs.config.WorldId,

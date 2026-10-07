@@ -9,7 +9,7 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-func luaYieldGuildRPC(L *lua.LState, ch *Character, failCode int, result *int, promise *async.Promise) int {
+func luaYieldGuildRPC[T any](L *lua.LState, ch *Character, failCode int, result *int, promise *async.Promise[T]) int {
 	if result == nil {
 		L.Push(lua.LNumber(failCode))
 		return 1

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/boyism80/fm/core"
-	"github.com/boyism80/fm/core/async"
 	"github.com/boyism80/fm/protocol/constant"
 	internal "github.com/boyism80/fm/protocol/protobuf/gengo/fminternal"
 	"github.com/boyism80/fm/protocol/request"
@@ -88,7 +87,7 @@ func (h *Operation) expandSlot(ctx *core.ClientContext, character *entity.Charac
 	expansion.Currency = pay
 
 	promise := h.start(ctx, character, failed)
-	async.ThenRPC(promise, func(c context.Context) (*internal.ExpandCashSlotReply, error) {
+	promise.ThenRPC(func(c context.Context) (*internal.ExpandCashSlotReply, error) {
 		return h.cs.internalClient.ExpandCashSlot(c, expansion)
 	}, func(reply *internal.ExpandCashSlotReply) error {
 		character.Busy = false
