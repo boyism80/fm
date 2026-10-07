@@ -131,6 +131,10 @@ var decoders = func() []decoder {
 		newDecoder[response.CarnivalPartyCP](nil),
 		newDecoder[response.CarnivalSummon](nil),
 		newDecoder[response.CarnivalDied](nil),
+		newDecoder[response.SpawnPet](nil),
+		newDecoder[response.PetCommand](nil),
+		newDecoder[response.PetExceptions](nil),
+		newDecoder[response.PetNameChanged](nil),
 	}
 }()
 

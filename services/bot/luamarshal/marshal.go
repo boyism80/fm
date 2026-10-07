@@ -23,7 +23,8 @@ func (m *Marshal) Name(goName string) string {
 	for i, r := range runes {
 		if i > 0 && unicode.IsUpper(r) {
 			prev := runes[i-1]
-			nextLower := i+1 < len(runes) && unicode.IsLower(runes[i+1])
+			plural := i+2 == len(runes) && runes[i+1] == 's'
+			nextLower := i+1 < len(runes) && unicode.IsLower(runes[i+1]) && plural == false
 			if unicode.IsLower(prev) || unicode.IsDigit(prev) || (unicode.IsUpper(prev) && nextLower) {
 				sb.WriteByte('_')
 			}

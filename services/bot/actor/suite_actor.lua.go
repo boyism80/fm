@@ -41,6 +41,10 @@ var requests = []outbound{
 	&request.UseCashItem{},
 	&request.Storage{},
 	&request.Duey{},
+	&request.SummonPet{},
+	&request.PetCommand{},
+	&request.PetFood{},
+	&request.PetExceptions{},
 }
 
 func (a *SuiteActor) register() {
