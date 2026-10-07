@@ -52,6 +52,8 @@ type Bot struct {
 	NXCash     uint32
 	MaplePoint uint32
 	Locker     []*dto.CashShopItem
+	Gifts      []*dto.CashShopGift
+	SlotLimits map[constant.InventoryType]uint8
 	cfg        *config.Bot
 	conn       *conn.Conn
 }
@@ -73,16 +75,17 @@ func New(cfg *config.Bot, runID string, n int) (*Bot, error) {
 		return nil, fmt.Errorf("character name %q is longer than 12 bytes", name)
 	}
 	return &Bot{
-		Index:    n,
-		ID:       fmt.Sprintf("bot_%s_%d", runID, n),
-		Name:     name,
-		NPCs:     make(map[uint32]dto.Npc),
-		Mobs:     make(map[uint32]dto.Mob),
-		Drops:    make(map[uint32]Drop),
-		Reactors: make(map[uint32]dto.Reactor),
-		Quests:   make(map[uint16]uint8),
-		Items:    make(map[constant.InventoryType]map[int16]ItemSlot),
-		cfg:      cfg,
+		Index:      n,
+		ID:         fmt.Sprintf("bot_%s_%d", runID, n),
+		Name:       name,
+		NPCs:       make(map[uint32]dto.Npc),
+		Mobs:       make(map[uint32]dto.Mob),
+		Drops:      make(map[uint32]Drop),
+		Reactors:   make(map[uint32]dto.Reactor),
+		Quests:     make(map[uint16]uint8),
+		Items:      make(map[constant.InventoryType]map[int16]ItemSlot),
+		SlotLimits: make(map[constant.InventoryType]uint8),
+		cfg:        cfg,
 	}, nil
 }
 
@@ -141,6 +144,24 @@ func (b *Bot) Update(pkt any) {
 					break
 				}
 			}
+		case pconst.CashShopResultPackageBought:
+			b.Locker = append(b.Locker, p.Items...)
+		case pconst.CashShopResultCouponRedeemed:
+			b.Locker = append(b.Locker, p.Items...)
+			b.Meso += int32(p.Meso)
+		case pconst.CashShopResultPaidBack, pconst.CashShopResultExpired:
+			b.Locker = slices.DeleteFunc(b.Locker, func(item *dto.CashShopItem) bool {
+				return item.Serial == p.Serial
+			})
+		case pconst.CashShopResultGifts:
+			b.Gifts = p.Gifts
+		case pconst.CashShopResultQuestItemBought:
+			b.Meso -= int32(p.Meso)
+			for _, granted := range p.Granted {
+				b.setItem(constant.InventoryType(granted.ItemID/1000000), int16(granted.Slot), &dto.MiscItem{ItemId: granted.ItemID, Count: granted.Count})
+			}
+		case pconst.CashShopResultInventorySlots:
+			b.SlotLimits[constant.InventoryType(p.InventoryType)] = uint8(p.Slots)
 		}
 	case *response.Warp:
 		if p.Character != nil {
@@ -262,6 +283,7 @@ func (b *Bot) load(character *dto.Character) {
 	b.Level, b.Class, b.EXP, b.Fame = character.Level, character.Class, int32(character.Exp), int32(character.Population)
 	b.Meso = character.Inventory.Meso
 	for typ, tab := range character.Inventory.Tabs {
+		b.SlotLimits[typ] = tab.SlotLimit
 		for slot, item := range tab.Items {
 			b.setItem(typ, slot, item)
 		}

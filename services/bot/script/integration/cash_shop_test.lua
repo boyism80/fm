@@ -4,12 +4,52 @@ local NX = 0
 local MAPLE_POINT = 1
 local CASH = 5
 
-local ACTION = { buy = 3, wishlist = 5, take_out = 12, put_in = 13 }
-local KIND = { wishlist_updated = 50, buy_failed = 51, taken_out = 67, take_out_failed = 68, put_in = 69 }
+local EQUIP = 1
+
+local ACTION = {
+	buy = 3,
+	gift = 4,
+	wishlist = 5,
+	inventory_slots = 6,
+	storage_slots = 7,
+	character_slots = 8,
+	take_out = 12,
+	put_in = 13,
+	pay_back = 25,
+	couple_ring = 28,
+	package = 29,
+	quest_item = 31,
+}
+local KIND = {
+	wishlist_updated = 50,
+	buy_failed = 53,
+	coupon_redeemed = 54,
+	coupon_failed = 57,
+	gift_sent = 59,
+	inventory_slots = 61,
+	storage_slots = 63,
+	character_slots = 65,
+	taken_out = 67,
+	take_out_failed = 68,
+	put_in = 69,
+	paid_back = 96,
+	package_bought = 100,
+	quest_item_bought = 104,
+}
 local NOT_ENOUGH_CASH = 122
+local SAME_ACCOUNT = 125
+local WRONG_NAME = 126
+local COUPON_WRONG = 131
+local COUPON_USED = 133
+local RING = 143
 
 local MEGAPHONE = { sn = 10000804, item_id = 5060002, price = 990 }
 local SUPER_MEGAPHONE = { sn = 10001513, item_id = 5076000, price = 1150 }
+local PACKAGE = { sn = 70000003, price = 3540, size = 3 }
+local HAT = { sn = 20000000, item_id = 1002186, price = 1500, refund = 450 }
+local QUEST_ITEM = { sn = 80000054, item_id = 4031191, price = 1 }
+local CHARACTER_SLOT = { sn = 50200034, price = 6900 }
+local SLOT_PRICE = 3800
 
 local function check(ctx, ok, message)
 	if ok == false then
@@ -50,6 +90,15 @@ local function result(ctx, bot, request, kind, what)
 	if p.kind ~= kind then
 		return ctx:fail(string.format("%s %s: 결과 %d (기대 %d), 실패 코드 %d", bot:name(), what, p.kind, kind, p.failure))
 	end
+	return p
+end
+
+local function paid(ctx, bot, request, kind, what)
+	local p = result(ctx, bot, request, kind, what)
+	if p == false then
+		return false
+	end
+	ctx:sleep(300)
 	return p
 end
 
@@ -145,11 +194,224 @@ local function shop_flow(ctx)
 	return true
 end
 
+local function coupon(ctx, bot, code, kind, what)
+	local p = bot:request(resp.cash_shop_result, req.cash_shop_coupon { code = code }, function(p)
+		return p.kind == KIND.coupon_redeemed or p.kind == KIND.coupon_failed
+	end, 5000)
+	if p == false then
+		return ctx:fail(bot:name() .. " 쿠폰 응답 없음: " .. what)
+	end
+	if p.kind ~= kind then
+		return ctx:fail(string.format("%s 쿠폰 %s: 결과 %d (기대 %d), 실패 코드 %d", bot:name(), what, p.kind, kind, p.failure))
+	end
+	return p
+end
+
+local function create_coupons(ctx, bot)
+	local codes = {}
+	for _, spec in ipairs({ { "캐시", 100 }, { "포인트", 50 }, { "메소", 1000 }, { "아이템", MEGAPHONE.sn } }) do
+		local p = pq.command(bot, string.format("/쿠폰생성 %s %d", spec[1], spec[2]), "쿠폰: ")
+		if p == false then
+			return ctx:fail("쿠폰 생성 실패: " .. spec[1])
+		end
+		codes[spec[1]] = p.message:match("쿠폰: (%w+)")
+	end
+	return codes
+end
+
+local function gift_flow(ctx, buyer, receiver)
+	local notice = buyer:request_on(receiver, resp.notice, req.cash_shop_operation {
+		action = ACTION.gift,
+		commodity_sn = MEGAPHONE.sn,
+		recipient = receiver:name(),
+		message = "선물입니다",
+	}, function(p)
+		return p.message:find("캐시샵 선물", 1, true) ~= nil
+	end, 5000)
+	if notice == false then
+		return ctx:fail(receiver:name() .. " 선물 알림을 받지 못함")
+	end
+	ctx:sleep(500)
+	if cash_is(ctx, buyer, 30000 - MEGAPHONE.price, 5000) == false then
+		return false
+	end
+
+	local p = paid(ctx, buyer, req.cash_shop_operation { action = ACTION.gift, commodity_sn = MEGAPHONE.sn, recipient = buyer:name(), message = "" }, KIND.gift_sent + 1, "같은 계정 선물")
+	if p == false or check(ctx, p.failure == SAME_ACCOUNT, "같은 계정 선물 실패 코드 " .. p.failure) == false then
+		return false
+	end
+	p = paid(ctx, buyer, req.cash_shop_operation { action = ACTION.gift, commodity_sn = MEGAPHONE.sn, recipient = "nobody_here", message = "" }, KIND.gift_sent + 1, "없는 캐릭터 선물")
+	if p == false or check(ctx, p.failure == WRONG_NAME, "없는 캐릭터 선물 실패 코드 " .. p.failure) == false then
+		return false
+	end
+	return true
+end
+
+local function purchase_flow(ctx, bot)
+	local nx = 30000 - MEGAPHONE.price
+	local before = #bot:locker()
+	local p = paid(ctx, bot, req.cash_shop_operation { action = ACTION.package, currency = NX, commodity_sn = PACKAGE.sn }, KIND.package_bought, "패키지 구매")
+	if p == false then
+		return false
+	end
+	nx = nx - PACKAGE.price
+	if check(ctx, #p.items == PACKAGE.size and #bot:locker() == before + PACKAGE.size, "패키지 구성품 수가 다름: " .. #p.items) == false then
+		return false
+	end
+
+	if paid(ctx, bot, req.cash_shop_operation { action = ACTION.buy, currency = NX, commodity_sn = HAT.sn }, KIND.buy_failed - 1, "모자 구매") == false then
+		return false
+	end
+	nx = nx - HAT.price
+	p = paid(ctx, bot, req.cash_shop_operation { action = ACTION.pay_back, serial = find_locker(bot, HAT.item_id).serial }, KIND.paid_back, "환불")
+	if p == false then
+		return false
+	end
+	if check(ctx, p.maple_point == HAT.refund and find_locker(bot, HAT.item_id) == nil, "환불 포인트 " .. p.maple_point) == false then
+		return false
+	end
+	if cash_is(ctx, bot, nx, 5000 + HAT.refund) == false then
+		return false
+	end
+
+	p = result(ctx, bot, req.cash_shop_operation { action = ACTION.quest_item, commodity_sn = QUEST_ITEM.sn }, KIND.quest_item_bought, "메소 퀘스트 아이템")
+	if p == false then
+		return false
+	end
+	if check(ctx, bot:items()[QUEST_ITEM.item_id] == 1, "퀘스트 아이템이 인벤토리에 없음") == false then
+		return false
+	end
+
+	p = result(ctx, bot, req.cash_shop_operation { action = ACTION.couple_ring, commodity_sn = MEGAPHONE.sn, recipient = "nobody_here", message = "" }, KIND.buy_failed, "커플링")
+	if p == false or check(ctx, p.failure == RING, "커플링 실패 코드 " .. p.failure) == false then
+		return false
+	end
+	return nx
+end
+
+local function slot_flow(ctx, bot, nx, equip_slots)
+	local p = paid(ctx, bot, req.cash_shop_operation { action = ACTION.inventory_slots, currency = NX, inventory_type = EQUIP }, KIND.inventory_slots, "인벤토리 확장")
+	if p == false or check(ctx, p.slots == equip_slots, string.format("장비 슬롯 %d (기대 %d)", p.slots, equip_slots)) == false then
+		return false
+	end
+	return nx - SLOT_PRICE
+end
+
+local function service_flow(ctx)
+	local buyer = ctx:bot(1)
+	local receiver = ctx:bot(0)
+	if pq.command(buyer, "/캐시얻기 30000 5000", "캐시 잔액: NX 30000, 메이플포인트 5000") == false then
+		return ctx:fail("캐시 지급 실패")
+	end
+	if pq.command(buyer, "/메소얻기 10", "메소 10 획득.") == false then
+		return ctx:fail("메소 지급 실패")
+	end
+	local codes = create_coupons(ctx, buyer)
+	if codes == false then
+		return false
+	end
+
+	if buyer:enter_cash_shop() == false then
+		return ctx:fail("캐시샵 입장 실패")
+	end
+	if check(ctx, buyer:slot_limit(EQUIP) == 32, "기본 장비 슬롯 " .. buyer:slot_limit(EQUIP)) == false then
+		return false
+	end
+	if gift_flow(ctx, buyer, receiver) == false then
+		return false
+	end
+	local nx = purchase_flow(ctx, buyer)
+	if nx == false then
+		return false
+	end
+
+	nx = slot_flow(ctx, buyer, nx, 36)
+	if nx == false then
+		return false
+	end
+	local p = paid(ctx, buyer, req.cash_shop_operation { action = ACTION.storage_slots, currency = NX }, KIND.storage_slots, "창고 확장")
+	if p == false or check(ctx, p.slots == 8, "창고 슬롯 " .. p.slots) == false then
+		return false
+	end
+	nx = nx - SLOT_PRICE
+	if paid(ctx, buyer, req.cash_shop_operation { action = ACTION.character_slots, currency = NX, commodity_sn = CHARACTER_SLOT.sn }, KIND.character_slots, "캐릭터 슬롯 확장") == false then
+		return false
+	end
+	nx = nx - CHARACTER_SLOT.price
+	if cash_is(ctx, buyer, nx, 5000 + HAT.refund) == false then
+		return false
+	end
+
+	if coupon(ctx, buyer, codes["캐시"], KIND.coupon_redeemed, "NX") == false then
+		return false
+	end
+	p = coupon(ctx, buyer, codes["포인트"], KIND.coupon_redeemed, "메이플포인트")
+	if p == false or check(ctx, p.maple_point == 50, "포인트 쿠폰 " .. p.maple_point) == false then
+		return false
+	end
+	p = coupon(ctx, buyer, codes["메소"], KIND.coupon_redeemed, "메소")
+	if p == false or check(ctx, p.meso == 1000, "메소 쿠폰 " .. p.meso) == false then
+		return false
+	end
+	p = coupon(ctx, buyer, codes["아이템"], KIND.coupon_redeemed, "아이템")
+	if p == false or check(ctx, #p.items == 1 and p.items[1].item_id == MEGAPHONE.item_id, "아이템 쿠폰 내용이 다름") == false then
+		return false
+	end
+	p = coupon(ctx, buyer, codes["캐시"], KIND.coupon_failed, "재사용")
+	if p == false or check(ctx, p.failure == COUPON_USED, "재사용 쿠폰 실패 코드 " .. p.failure) == false then
+		return false
+	end
+	p = coupon(ctx, buyer, "NOSUCHCOUPON0000", KIND.coupon_failed, "없는 코드")
+	if p == false or check(ctx, p.failure == COUPON_WRONG, "없는 쿠폰 실패 코드 " .. p.failure) == false then
+		return false
+	end
+	ctx:sleep(500)
+	if cash_is(ctx, buyer, nx + 100, 5000 + HAT.refund + 50) == false then
+		return false
+	end
+
+	if buyer:leave_cash_shop() == false then
+		return ctx:fail("캐시샵 퇴장 실패")
+	end
+	if check(ctx, buyer:slot_limit(EQUIP) == 36, "퇴장 후 장비 슬롯 " .. buyer:slot_limit(EQUIP)) == false then
+		return false
+	end
+	if check(ctx, buyer:items()[QUEST_ITEM.item_id] == 1, "퀘스트 아이템이 저장되지 않음") == false then
+		return false
+	end
+	if check(ctx, buyer:meso() == 10 - QUEST_ITEM.price + 1000, "퇴장 후 메소 " .. buyer:meso()) == false then
+		return false
+	end
+
+	if receiver:enter_cash_shop() == false then
+		return ctx:fail("받는 캐릭터 캐시샵 입장 실패")
+	end
+	local gifts = receiver:gifts()
+	if check(ctx, #gifts == 1 and gifts[1].item_id == MEGAPHONE.item_id and gifts[1].sender_name == buyer:name(), "선물 목록이 다름: " .. #gifts) == false then
+		return false
+	end
+	if receiver:leave_cash_shop() == false then
+		return ctx:fail("받는 캐릭터 캐시샵 퇴장 실패")
+	end
+
+	if buyer:enter_cash_shop() == false then
+		return ctx:fail("캐시샵 재입장 실패")
+	end
+	if slot_flow(ctx, buyer, nx, 40) == false then
+		return false
+	end
+	if buyer:leave_cash_shop() == false then
+		return ctx:fail("캐시샵 재퇴장 실패")
+	end
+	return true
+end
+
 test_suite {
-	name = "Cash shop: 입장·구매·보관함·위시리스트·퇴장",
-	bot_count = 1,
+	name = "Cash shop: 구매·보관함·선물·패키지·환불·슬롯·쿠폰",
+	bot_count = 2,
 
 	scenarios = {
 		shop_flow,
+		service_flow,
 	},
 }

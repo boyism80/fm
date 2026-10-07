@@ -46,6 +46,7 @@ var requests = []outbound{
 	&request.PetFood{},
 	&request.PetExceptions{},
 	&request.CashShopOperation{},
+	&request.CashShopCoupon{},
 }
 
 func (a *SuiteActor) register() {
@@ -483,6 +484,15 @@ func (a *SuiteActor) botFuncs() map[string]lua.LGFunction {
 		},
 		"locker": func(L *lua.LState) int {
 			L.Push(a.marshal.ToLua(L, a.checkBot(L).Locker))
+			return 1
+		},
+		"gifts": func(L *lua.LState) int {
+			L.Push(a.marshal.ToLua(L, a.checkBot(L).Gifts))
+			return 1
+		},
+		"slot_limit": func(L *lua.LState) int {
+			b := a.checkBot(L)
+			L.Push(lua.LNumber(b.SlotLimits[constant.InventoryType(L.CheckInt(2))]))
 			return 1
 		},
 		"instance_move": func(L *lua.LState) int {
