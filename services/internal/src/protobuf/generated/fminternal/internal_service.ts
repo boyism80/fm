@@ -2131,7 +2131,7 @@ export interface Record {
   value: number;
   text: string;
   expiresAtUnixMs: number;
-  updatedAtUnixMs: number;
+  recordedAtUnixMs: number;
 }
 
 export interface LoginAccountRequest {
@@ -17552,7 +17552,7 @@ export const SavedLocation: MessageFns<SavedLocation> = {
 };
 
 function createBaseRecord(): Record {
-  return { key: "", value: 0, text: "", expiresAtUnixMs: 0, updatedAtUnixMs: 0 };
+  return { key: "", value: 0, text: "", expiresAtUnixMs: 0, recordedAtUnixMs: 0 };
 }
 
 export const Record: MessageFns<Record> = {
@@ -17569,8 +17569,8 @@ export const Record: MessageFns<Record> = {
     if (message.expiresAtUnixMs !== 0) {
       writer.uint32(32).int64(message.expiresAtUnixMs);
     }
-    if (message.updatedAtUnixMs !== 0) {
-      writer.uint32(40).int64(message.updatedAtUnixMs);
+    if (message.recordedAtUnixMs !== 0) {
+      writer.uint32(40).int64(message.recordedAtUnixMs);
     }
     return writer;
   },
@@ -17619,7 +17619,7 @@ export const Record: MessageFns<Record> = {
             break;
           }
 
-          message.updatedAtUnixMs = longToNumber(reader.int64());
+          message.recordedAtUnixMs = longToNumber(reader.int64());
           continue;
         }
       }
@@ -17641,10 +17641,10 @@ export const Record: MessageFns<Record> = {
         : isSet(object.expires_at_unix_ms)
         ? globalThis.Number(object.expires_at_unix_ms)
         : 0,
-      updatedAtUnixMs: isSet(object.updatedAtUnixMs)
-        ? globalThis.Number(object.updatedAtUnixMs)
-        : isSet(object.updated_at_unix_ms)
-        ? globalThis.Number(object.updated_at_unix_ms)
+      recordedAtUnixMs: isSet(object.recordedAtUnixMs)
+        ? globalThis.Number(object.recordedAtUnixMs)
+        : isSet(object.recorded_at_unix_ms)
+        ? globalThis.Number(object.recorded_at_unix_ms)
         : 0,
     };
   },
@@ -17663,8 +17663,8 @@ export const Record: MessageFns<Record> = {
     if (message.expiresAtUnixMs !== 0) {
       obj.expiresAtUnixMs = Math.round(message.expiresAtUnixMs);
     }
-    if (message.updatedAtUnixMs !== 0) {
-      obj.updatedAtUnixMs = Math.round(message.updatedAtUnixMs);
+    if (message.recordedAtUnixMs !== 0) {
+      obj.recordedAtUnixMs = Math.round(message.recordedAtUnixMs);
     }
     return obj;
   },
@@ -17678,7 +17678,7 @@ export const Record: MessageFns<Record> = {
     message.value = object.value ?? 0;
     message.text = object.text ?? "";
     message.expiresAtUnixMs = object.expiresAtUnixMs ?? 0;
-    message.updatedAtUnixMs = object.updatedAtUnixMs ?? 0;
+    message.recordedAtUnixMs = object.recordedAtUnixMs ?? 0;
     return message;
   },
 };

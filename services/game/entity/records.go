@@ -23,10 +23,10 @@ type RecordReset struct {
 }
 
 type Record struct {
-	Value     int64
-	Text      string
-	ExpiresAt time.Time
-	UpdatedAt time.Time
+	Value      int64
+	Text       string
+	ExpiresAt  time.Time
+	RecordedAt time.Time
 }
 
 type Records struct {
@@ -88,7 +88,7 @@ func (r *Records) touch(key string, reset RecordReset) *Record {
 	case reset.Restart:
 		record.ExpiresAt = reset.expiresAt(now)
 	}
-	record.UpdatedAt = now
+	record.RecordedAt = now
 	return record
 }
 

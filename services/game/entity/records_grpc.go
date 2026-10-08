@@ -13,9 +13,9 @@ func NewRecordsFromInternalProto(pbs []*internal.Record) *Records {
 			continue
 		}
 		record := &Record{
-			Value:     pb.GetValue(),
-			Text:      pb.GetText(),
-			UpdatedAt: time.UnixMilli(pb.GetUpdatedAtUnixMs()),
+			Value:      pb.GetValue(),
+			Text:       pb.GetText(),
+			RecordedAt: time.UnixMilli(pb.GetRecordedAtUnixMs()),
 		}
 		if pb.GetExpiresAtUnixMs() != 0 {
 			record.ExpiresAt = time.UnixMilli(pb.GetExpiresAtUnixMs())
@@ -33,10 +33,10 @@ func (r *Records) ToProto() []*internal.Record {
 			continue
 		}
 		pb := &internal.Record{
-			Key:             key,
-			Value:           record.Value,
-			Text:            record.Text,
-			UpdatedAtUnixMs: record.UpdatedAt.UnixMilli(),
+			Key:              key,
+			Value:            record.Value,
+			Text:             record.Text,
+			RecordedAtUnixMs: record.RecordedAt.UnixMilli(),
 		}
 		if record.ExpiresAt.IsZero() == false {
 			pb.ExpiresAtUnixMs = record.ExpiresAt.UnixMilli()
