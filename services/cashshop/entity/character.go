@@ -201,8 +201,8 @@ func (ch *Character) ToDTO(world gentity.ItemWorld) *dto.Character {
 		Map:               p.GetMapId(),
 		SpawnPoint:        uint8(p.GetSpawnPoint()),
 		BuddyCapacity:     uint8(min(ch.Game.GetBuddyCapacity(), 255)),
-		TeleportStones:    constant.NewTeleportStones(p.GetTeleportStones(), constant.TeleportStoneCount),
-		VipTeleportStones: constant.NewTeleportStones(p.GetVipTeleportStones(), constant.VipTeleportStoneCount),
+		TeleportStones:    constant.NewTeleportStoneSlots(p.GetTeleportStones(), constant.TeleportStoneCount),
+		VipTeleportStones: constant.NewTeleportStoneSlots(p.GetVipTeleportStones(), constant.VipTeleportStoneCount),
 		Inventory: &dto.Inventory{
 			Tabs:     make(map[constant.InventoryType]*dto.InventoryTab),
 			Equipped: make(map[constant.EquipmentPartsType]*dto.Equipment),

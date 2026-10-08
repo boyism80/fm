@@ -1058,7 +1058,7 @@ func (l *CharacterListenerImpl) OnMonsterBookCover(ch *entity.Character, cardID 
 }
 
 func (l *CharacterListenerImpl) OnTeleportStones(ch *entity.Character, vip bool) {
-	ch.Send(&response.TeleportStoneResult{Result: pconst.TeleportStoneResultList, VIP: vip, Maps: ch.TeleportStones(vip)}, types.SEND_POLICY_ENCRYPT)
+	ch.Send(&response.TeleportStoneResult{Result: pconst.TeleportStoneResultList, VIP: vip, Maps: ch.TeleportStones.Slots(vip)}, types.SEND_POLICY_ENCRYPT)
 }
 
 func (l *CharacterListenerImpl) OnTeleportStoneFailed(ch *entity.Character, vip bool, result pconst.TeleportStoneResult) {

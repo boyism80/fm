@@ -23,6 +23,6 @@ func (h *UseTeleportStone) Handle(ctx *core.ClientContext, req *request.UseTelep
 		return nil
 	}
 
-	character.UseTeleportStone(ctx.ActorContext, constant.InventoryTypeConsume, int16(req.Slot), req.ItemID, req.Target.MapID, req.Target.Name)
+	character.TeleportStones.Use(ctx.ActorContext, constant.InventoryTypeConsume, int16(req.Slot), req.ItemID, req.Target.MapID, req.Target.Name)
 	return nil
 }

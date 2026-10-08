@@ -97,8 +97,8 @@ func (ch *Character) ToFullDTO() *dto.Character {
 	if ch.Marriage != nil {
 		charDTO.Marriage = ch.Marriage.ToDTO()
 	}
-	charDTO.TeleportStones = ch.teleportStones
-	charDTO.VipTeleportStones = ch.vipTeleportStones
+	charDTO.TeleportStones = ch.TeleportStones.regular
+	charDTO.VipTeleportStones = ch.TeleportStones.vip
 	charDTO.MonsterBookCover = ch.MonsterBook.Cover
 	charDTO.MonsterBookCards = ch.MonsterBook.Cards
 	if ch.Quests != nil {

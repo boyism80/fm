@@ -65,9 +65,6 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 		buddyList:    NewBuddyList(),
 
 		random: [3]stream.RandomStream{stream.NewRandomStream(), stream.NewRandomStream(), stream.NewRandomStream()},
-
-		teleportStones:    constant.NewTeleportStones(p.GetTeleportStones(), constant.TeleportStoneCount),
-		vipTeleportStones: constant.NewTeleportStones(p.GetVipTeleportStones(), constant.VipTeleportStoneCount),
 	}
 	ch.Dialog = NewDialog(ch)
 	ch.Buffs = NewBuffs(ch)
@@ -75,6 +72,11 @@ func NewCharacterFromInternalProto(sender Sendable, listener CharacterListener, 
 	ch.Quests = NewQuests(ch)
 	ch.Summons = NewSummons(ch)
 	ch.Doors = NewDoors(ch)
+	ch.TeleportStones = &TeleportStones{
+		owner:   ch,
+		regular: constant.NewTeleportStoneSlots(p.GetTeleportStones(), constant.TeleportStoneCount),
+		vip:     constant.NewTeleportStoneSlots(p.GetVipTeleportStones(), constant.VipTeleportStoneCount),
+	}
 	ch.Pets = &Pets{owner: ch, summoned: p.GetSummonedPet(), HPItem: p.GetPetHpItem(), MPItem: p.GetPetMpItem()}
 	ch.Inventory = NewInventory(ch)
 	ch.Inventory.Meso = p.GetMeso()
@@ -395,8 +397,8 @@ func (ch *Character) ToProto(worldID uint32) *internal.CharacterSaveEntry {
 		SummonedPet:       ch.Pets.summoned,
 		SlotLimits:        slotLimits,
 		MonsterBookCover:  ch.MonsterBook.Cover,
-		TeleportStones:    ch.teleportStones.Registered(),
-		VipTeleportStones: ch.vipTeleportStones.Registered(),
+		TeleportStones:    ch.TeleportStones.regular.Registered(),
+		VipTeleportStones: ch.TeleportStones.vip.Registered(),
 	}
 	return &internal.CharacterSaveEntry{
 		Character:      pb,

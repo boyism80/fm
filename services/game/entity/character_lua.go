@@ -2756,7 +2756,7 @@ func (ch *Character) LuaBuiltinFuncs() map[string]lua.LGFunction {
 				L.ArgError(1, "Character expected")
 				return 0
 			}
-			ch.ResetTeleportStones()
+			ch.TeleportStones.Reset()
 			return 0
 		},
 		"guild": func(L *lua.LState) int {

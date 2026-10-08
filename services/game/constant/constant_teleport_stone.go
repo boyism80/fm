@@ -6,7 +6,7 @@ const (
 	TeleportStoneEmpty    = uint32(999999999)
 )
 
-type TeleportStones []uint32
+type TeleportStoneSlots []uint32
 
 func IsCashTeleportStone(itemID uint32) bool {
 	return itemID/10000 == 504
@@ -16,8 +16,8 @@ func IsVipTeleportStone(itemID uint32) bool {
 	return IsCashTeleportStone(itemID) && itemID/1000 != 5040
 }
 
-func NewTeleportStones(registered []uint32, size int) TeleportStones {
-	stones := make(TeleportStones, size)
+func NewTeleportStoneSlots(registered []uint32, size int) TeleportStoneSlots {
+	stones := make(TeleportStoneSlots, size)
 	for i := range stones {
 		stones[i] = TeleportStoneEmpty
 	}
@@ -25,7 +25,7 @@ func NewTeleportStones(registered []uint32, size int) TeleportStones {
 	return stones
 }
 
-func (r TeleportStones) Registered() []uint32 {
+func (r TeleportStoneSlots) Registered() []uint32 {
 	out := make([]uint32, 0, len(r))
 	for _, mapID := range r {
 		if mapID != TeleportStoneEmpty {
@@ -35,7 +35,7 @@ func (r TeleportStones) Registered() []uint32 {
 	return out
 }
 
-func (r TeleportStones) Contains(mapID uint32) bool {
+func (r TeleportStoneSlots) Contains(mapID uint32) bool {
 	for _, registered := range r {
 		if registered == mapID {
 			return true

@@ -48,8 +48,7 @@ type Character struct {
 	CashWishlist      []uint32
 	proposal          proposal
 	weddingGift       weddingGiftWindow
-	teleportStones    constant.TeleportStones
-	vipTeleportStones constant.TeleportStones
+	TeleportStones    *TeleportStones
 	MonsterBook       *MonsterBook
 	Dialog            *Dialog
 	hidden            bool
