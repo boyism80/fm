@@ -7,6 +7,8 @@ local FLOOR_2 = 925020200
 local FLOOR_6 = 925020600
 local FLOOR_7 = 925020700
 local SO_GONG = 2091005
+local SO_GONG_MOB = 9300269
+local TUTORIAL = 925020010
 local BOSS = 9300184
 local SNAIL = 100100
 local WHITE_BELT = 1132000
@@ -187,7 +189,21 @@ test_suite {
 			if climb(ctx, bot, FLOOR_2, 4) == false then
 				return false
 			end
-			return give_up(ctx, bot)
+			if give_up(ctx, bot) == false then
+				return false
+			end
+			if bot:map_move(LOBBY) == false then
+				return ctx:fail("로비로 돌아가지 못함")
+			end
+			if talk(ctx, bot) == false then
+				return false
+			end
+			local record = bot:dialog(true, 4)
+			if record == nil or record.text:find("1층#k까지", 1, true) == nil then
+				return ctx:fail("최고 층 기록이 남지 않음")
+			end
+			bot:dialog(false)
+			return true
 		end,
 		function(ctx)
 			local bot = ctx:bot(0)
@@ -240,6 +256,38 @@ test_suite {
 			end
 			if bot:items()[WHITE_BELT] == nil then
 				return ctx:fail("인벤토리에 하얀 띠가 없음")
+			end
+			return true
+		end,
+		function(ctx)
+			local bot = ctx:bot(0)
+			if talk(ctx, bot) == false then
+				return false
+			end
+			if bot:request(resp.weather, req.dialog { dialog_type = DIALOG_LIST, next = true, selected = 5 }, function(p)
+					return p.item_id ~= 0
+				end, 10000) == false then
+				return ctx:fail("소공의 방 도발 메시지가 오지 않음")
+			end
+			if bot:map() ~= TUTORIAL then
+				return ctx:fail("소공의 방으로 이동하지 않음")
+			end
+			local so_gong = find_boss(ctx, bot, SO_GONG_MOB)
+			if so_gong == false then
+				return false
+			end
+			for _, mob in ipairs(bot:mobs(SO_GONG_MOB)) do
+				if bot:kill(mob.oid) == false then
+					return ctx:fail("소공 처치 실패")
+				end
+			end
+			if pq.move(bot, 2, -366) == false then
+				return ctx:fail("소공의 방 출구로 이동 실패")
+			end
+			if bot:request(resp.warp, req.warp { target = 0xFFFFFFFF, portal_name = "out000" }, function(p)
+					return p.character.map == LOBBY
+				end, 5000) == false then
+				return ctx:fail("소공의 방에서 로비로 나가지 못함")
 			end
 			return true
 		end,

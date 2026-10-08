@@ -100,12 +100,39 @@ local function reset_points(me, npc)
 	me:dialog(npc, "수련점수를 초기화 했어.")
 end
 
+local function show_record(me, npc)
+	local floor = dojo.record(me, dojo.BEST_FLOOR_QUEST)
+	if floor == 0 then
+		me:dialog(npc, "아직 한 층도 통과하지 못했잖아? 기록을 남기고 싶으면 먼저 도전부터 해 봐.")
+		return
+	end
+	local text = string.format("지금까지 #b%d층#k까지 통과했어.", floor)
+	local seconds = dojo.record(me, dojo.BEST_TIME_QUEST)
+	if seconds > 0 then
+		text = text .. string.format("\r\n1층부터 옥상까지 가장 빨리 올라간 기록은 #b%s#k이야.", dojo.format_time(seconds))
+	end
+	me:dialog(npc, text)
+end
+
+local function spar(me, npc)
+	local sm, err = state_machine(dojo.TUTORIAL_GROUP):start_solo(me)
+	if sm ~= nil then
+		return
+	end
+	me:dialog(npc, "지금은 대련할 수 없어. 다음에 다시 와.")
+	if err ~= nil then
+		log("mu_lung_dojo_tutorial start:", err)
+	end
+end
+
 local function lobby(me, npc)
 	local sel = me:dialog_list(npc, "우리 사부님은 무릉에서 최고로 강한 분이지. 그런 분에게 네가 도전하겠다고? 나중에 후회하지마.", {
 		"혼자 도전해볼게.",
 		"같이 도전해볼게.",
 		"허리띠를 받고 싶어.",
 		"수련점수를 초기화 할게.",
+		"내 기록을 보고 싶어.",
+		"너와 대련해 보고 싶어.",
 		"무릉 도장이 뭐지?",
 	})
 	if sel == 1 then
@@ -117,6 +144,10 @@ local function lobby(me, npc)
 	elseif sel == 4 then
 		reset_points(me, npc)
 	elseif sel == 5 then
+		show_record(me, npc)
+	elseif sel == 6 then
+		spar(me, npc)
+	elseif sel == 7 then
 		me:dialog(npc, "우리 사부님은 무릉에서 가장 강한 분이야. 그런 사부님께서 만드신 곳이 바로 이 무릉 도장이라는 것이지. 무릉 도장은 38층이나 되는 높은 건물이야. 하나하나 올라가면서 자신을 수련할 수 있어. 물론 너의 실력으로는 끝까지 가기 힘들겠지만.")
 	end
 end

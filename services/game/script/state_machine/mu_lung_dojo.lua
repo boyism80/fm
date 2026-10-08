@@ -14,6 +14,7 @@ return {
 	on_create = function(sm)
 		local start = tonumber(sm:group():get_property("start:" .. sm:id())) or 1
 		sm:set_property("start", tostring(start))
+		sm:set_property("started_at", tostring(os.time()))
 		local maps = {}
 		for floor = start, dojo.LAST_FLOOR do
 			table.insert(maps, dojo.map_id(floor))
